@@ -1,26 +1,21 @@
-# SPIN.CLINIC + PRZESZLOSC.TODAY - Complete Project Specification
+# SPIN.CLINIC + PRZESZLOSC.TODAY - Project Specification
 
-## PROJECT OVERVIEW
+## OVERVIEW
 
 **Name:** spin.clinic + przeszlosc.today
-**Type:** News aggregation + fact-checking platform
+**Type:** News aggregation + fact-checking
 **Market:** Poland (10M politically active users)
 **Timeline:** 4 weeks MVP, 12 months to profitability
 **Stack:** Django + Next.js + PostgreSQL + Celery
 
-**Mission:**
-Context-before-content news discovery through chronological timelines.
-
----
-
 ## DATA SOURCES
 
 ### Aggregators (3)
-- **GDELT:** 300 PL sources, free, every 2h
-- **NewsAPI:** 150 PL sources, free (100 req/day), 3x daily
-- **Google News RSS:** All PL media, free, on-demand
+- GDELT: 300 PL sources, free, every 2h
+- NewsAPI: 150 PL sources, free (100 req/day), 3x daily
+- Google News RSS: All PL media, free, on-demand
 
-### RSS Sources (42 portals)
+### RSS Sources (42)
 1. Onet - https://www.onet.pl/informacje/rss
 2. Wirtualna Polska - https://wiadomosci.wp.pl/rss.xml
 3. TVN24 - https://tvn24.pl/najwazniejsze.xml
@@ -38,58 +33,31 @@ Context-before-content news discovery through chronological timelines.
 15. OKO.press - https://oko.press/feed/
 16. Konkret24 - https://konkret24.tvn24.pl/feed
 17. Demagog - https://demagog.org.pl/feed/
-... (42 total - see full list in code)
+18-42. (Full list in code - 42 total)
 
-### Government (16 institutions)
+### Government Institutions (16)
 1. Senat RP - https://www.senat.gov.pl/rss/aktualnosci.xml
 2. Kancelaria Prezydenta - https://www.prezydent.pl/rss/
 3. NIK - https://www.nik.gov.pl/rss/
 4. RPO - https://bip.brpo.gov.pl/rss
 5. GUS - https://stat.gov.pl/rss/
-... (16 total)
+6-16. (Full list in code)
 
 ### Twitter (40 politicians)
-- @AndrzejDuda (ID: 233961134)
-- @donaldtusk (ID: 2548841281)
-- @morawieckim (ID: 701536909381132288)
-- @pisorgpl (ID: 172906058)
-- @Platforma_org (ID: 15913039)
-... (40 total - see full list in code)
-
----
+- AndrzejDuda (ID: 233961134)
+- donaldtusk (ID: 2548841281)
+- morawieckim (ID: 701536909381132288)
+- (37 more - full list in code)
 
 ## FEATURES
 
 ### Core (MVP)
-1. **Search Timeline**
-   - Input: Keyword + date range
-   - Output: Articles grouped by date
-   - Layout: Date rows with article columns (4/row)
-   - Filtering: Category badges
-
-2. **Article Box**
-   - Image, badge, title, source, date
-   - Hover: Scale animation
-   - Click: Open modal
-
-3. **Article Modal**
-   - Full details
-   - Related articles (3 items)
-   - External link button
-
-4. **Thread Detail**
-   - Horizontal scrollable timeline
-   - Chronological order (left→right)
-   - Click to expand
-
-5. **Homepage**
-   - Featured threads (3-6 cards)
-   - Different per domain
-
-6. **Admin Panel**
-   - Thread creation
-   - Article selection
-   - Editorial notes
+1. Search Timeline - Articles grouped by date
+2. Article Box - Card with image, title, source, date
+3. Article Modal - Full details + related articles
+4. Thread Detail - Horizontal scrollable timeline
+5. Homepage - Featured threads
+6. Admin Panel - Thread creation
 
 ### Premium (Month 2+)
 - Category unlocks (tweets, mentions)
@@ -97,36 +65,32 @@ Context-before-content news discovery through chronological timelines.
 - CSV/PDF export
 - API access
 
----
-
 ## USER FLOWS
 
-### Flow 1: Search News
+### Search News
 1. Land on przeszlosc.today
-2. Type "ZondaCrypto"
-3. See timeline grid (grouped by date)
-4. Click article → Modal opens
-5. View related articles
-6. Open source link
+2. Type keyword
+3. See timeline grid
+4. Click article → Modal
+5. View related
+6. Open source
 
-### Flow 2: Fact-Check
-1. See tweet: "Morawiecki: Never promised 500+"
+### Fact-Check
+1. See politician tweet
 2. Open spin.clinic
-3. Find thread: "Morawiecki vs 500+"
-4. Browse timeline (7 items, 2016-2025)
-5. Verify: He DID promise in 2016
-6. Share on Twitter
+3. Find relevant thread
+4. Browse timeline
+5. Verify claim
+6. Share
 
-### Flow 3: Admin Creates Thread
-1. Login to /admin
+### Admin Creates Thread
+1. Login /admin
 2. Add Thread
 3. Search articles
-4. Select 10 articles
-5. Set chronological order
-6. Add editorial notes
+4. Select 10 items
+5. Set order
+6. Add notes
 7. Publish
-
----
 
 ## API ENDPOINTS
 
@@ -134,28 +98,14 @@ Context-before-content news discovery through chronological timelines.
 Query: ?q=keyword&from_date=YYYY-MM-DD&categories=article,statement
 Response: { total, timeline: { "2025-01-20": [articles] } }
 
-text
-
-
 **GET /api/articles/{id}/related/**
 Response: { related: [articles] }
 
-text
-
-
 **GET /api/threads/**
-Response: [{ id, title, slug, items: [...] }]
-
-text
-
+Response: [{ id, title, slug, items }]
 
 **GET /api/threads/{slug}/**
 Response: { id, title, items: [{ position, article, editorial_note }] }
-
-text
-
-
----
 
 ## TECH STACK
 
@@ -171,102 +121,56 @@ text
 - TailwindCSS 3.4
 - Framer Motion
 - React Query
-- Lucide icons
 
 ### Infrastructure
-- Railway (backend + DB)
+- Railway (backend)
 - Vercel (frontend × 2)
 - Sentry (errors)
 - Plausible (analytics)
 
----
-
 ## REPOSITORY STRUCTURE
+
+```
 spin-clinic/
 ├── backend/
-│ ├── config/
-│ │ ├── settings.py
-│ │ └── celery.py
-│ ├── core/
-│ │ ├── models.py
-│ │ └── admin.py
-│ ├── api/
-│ │ ├── views.py
-│ │ └── serializers.py
-│ ├── scraper/
-│ │ ├── tasks.py
-│ │ └── sources_config.py
-│ ├── requirements.txt
-│ └── Procfile
+│   ├── config/
+│   ├── core/
+│   ├── api/
+│   ├── scraper/
+│   └── requirements.txt
 ├── frontend/
-│ ├── spin-clinic/
-│ │ ├── app/
-│ │ ├── components/
-│ │ └── package.json
-│ └── przeszlosc-today/
-│ └── (same structure)
+│   ├── spin-clinic/
+│   └── przeszlosc-today/
 └── docs/
-├── roadmap.md
-├── infrastructure.md
-└── project.md
-
-text
-
-
----
-
-## DEPLOYMENT CHECKLIST
-
-### Backend (Railway)
-- [ ] Create account
-- [ ] Add PostgreSQL + Redis
-- [ ] Set environment variables
-- [ ] Deploy from GitHub
-- [ ] Run migrations
-- [ ] Create superuser
-- [ ] Start Celery worker
-
-### Frontend (Vercel)
-- [ ] Create account
-- [ ] Import GitHub repos (×2)
-- [ ] Set API URL env var
-- [ ] Deploy
-- [ ] Configure custom domains
-- [ ] Verify SSL
-
----
+    ├── roadmap.md
+    ├── infrastructure.md
+    └── project.md
+```
 
 ## SUCCESS METRICS
 
-### Week 3 (MVP Launch)
-- ✅ 10 threads published
-- ✅ 30,000+ articles in database
-- ✅ Both domains live
-- ✅ Scrapers running automatically
+### Week 3 (MVP)
+- 10 threads published
+- 30,000+ articles
+- Both domains live
+- Scrapers running
 
 ### Month 3
-- ✅ 5,000 users/month
-- ✅ 20 Patronite supporters
-- ✅ 50+ threads total
-- ✅ 3+ media mentions
+- 5,000 users/month
+- 20 Patronite supporters
+- 50+ threads
+- 3+ media mentions
 
 ### Month 12
-- ✅ 10,000+ users/month
-- ✅ 100+ paying users
-- ✅ Break-even or profitable
-- ✅ Recognized fact-checking tool
+- 10,000+ users/month
+- 100+ paying users
+- Break-even or profitable
 
----
+## COSTS
 
-## COST ESTIMATES
+**MVP:** 60 PLN/m infrastructure
+**Scaled:** 220-300 PLN/m
+**Optional APIs:** 400-2000 PLN/m
 
-**MVP (Month 1-3):**
-- Infrastructure: 60 PLN/m
-- Time investment: 200h
-- Total cash: 180 PLN
 
-**Scaled (Month 6+):**
-- Infrastructure: 220 PLN/m
-- Optional APIs: 400-2000 PLN/m
-- Expected revenue: 500-3000 PLN/m
 
