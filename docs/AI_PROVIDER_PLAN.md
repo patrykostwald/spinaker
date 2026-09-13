@@ -20,6 +20,8 @@ Do zewnętrznych modeli nie wysyłamy danych kont, komentarzy, adresów e-mail a
 
 Przed rozszerzeniem ruchu wykonujemy ten sam zestaw 30–50 polskich zapytań dla obu dostawców. Mierzymy poprawność linków i dat, zgodność z dozwolonymi źródłami, trafność chronologii i wyboru do 15 boxów, twierdzenia bez pokrycia, czas, koszt i stabilność formatu. Wynik decyduje, który dostawca obsługuje daną funkcję.
 
+Redakcyjny szablon przypadków: `AI_EVALUATION_SET_TEMPLATE_PL.csv`. Wypełnione przykłady są własnym zasobem ewaluacyjnym projektu i nie służą automatycznie do treningu.
+
 ## Konfiguracja Mistral
 
 Klucz jest przechowywany wyłącznie po stronie serwera i nigdy nie trafia do GitHub, przeglądarki ani rozmowy. Początkowo ustawiamy `MISTRAL_ENABLED=false`; włączymy go dopiero po dodaniu adaptera, limitu kosztu i dziennika wywołań. Pierwszy test korzysta z europejskiego endpointu i sztucznych lub publicznych danych.

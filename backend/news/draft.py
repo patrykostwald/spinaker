@@ -11,7 +11,9 @@ from rest_framework.views import APIView
 
 from news.models import Article, ImportState
 from news.serializers import ArticleSerializer
-from news.selection_provider import OpenAIResponsesSelectionProvider, SelectionProviderError
+from news.selection_provider import (MistralEUSelectionProvider,
+                                     OpenAIResponsesSelectionProvider,
+                                     SelectionProviderError)
 
 LIMITATION = ('Szkic AI na podstawie zapisanych metadanych. Nie jest weryfikacją twierdzeń '
               'ani dowodem związku przyczynowego. Wymaga sprawdzenia przez redakcję.')
@@ -62,11 +64,25 @@ def reserve_daily_attempt():
     return True
 
 
-def select_ids(topic, articles, key, model):
+def configured_provider():
+    provider_name = os.environ.get('DR_SPIN_PROVIDER', 'openai').strip().lower()
+    if provider_name == 'mistral':
+        if os.environ.get('MISTRAL_ENABLED', '').lower() != 'true':
+            return None
+        key = os.environ.get('MISTRAL_API_KEY', '').strip()
+        model = os.environ.get('MISTRAL_MODEL', '').strip()
+        return MistralEUSelectionProvider(api_key=key, model=model, instructions=INSTRUCTIONS) if key and model else None
+    if provider_name == 'openai':
+        key = os.environ.get('OPENAI_API_KEY', '').strip()
+        model = os.environ.get('DR_SPIN_MODEL', '').strip()
+        return OpenAIResponsesSelectionProvider(api_key=key, model=model, instructions=INSTRUCTIONS) if key and model else None
+    return None
+
+
+def select_ids(topic, articles, provider):
     candidates = [{'id': a.pk, 'title': a.title[:500], 'source': a.source.name,
                    'category': a.category, 'published_date': a.published_date.isoformat() if a.published_date else None}
                   for a in articles]
-    provider = OpenAIResponsesSelectionProvider(api_key=key, model=model, instructions=INSTRUCTIONS)
     return provider.select(topic, candidates)
 
 
@@ -77,9 +93,8 @@ class EditorialDraftView(APIView):
     def post(self, request):
         serializer = DraftRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        key = os.environ.get('OPENAI_API_KEY', '').strip()
-        model = os.environ.get('DR_SPIN_MODEL', '').strip()
-        if not key or not model:
+        provider = configured_provider()
+        if provider is None:
             return Response({'status': 'disabled', 'detail': 'Szkice AI wymagają konfiguracji klucza API i modelu.',
                              'limitation': LIMITATION}, status=503)
         articles = list(Article.objects.filter(pk__in=serializer.validated_data['article_ids'])
@@ -93,7 +108,7 @@ class EditorialDraftView(APIView):
         try:
             if not reserve_daily_attempt():
                 return Response({'status': 'budget_exhausted', 'detail': 'Wykorzystano dzienny limit szkiców AI. Możesz ułożyć nitkę ręcznie.'}, status=429)
-            ids = select_ids(serializer.validated_data['topic'], articles, key, model)
+            ids = select_ids(serializer.validated_data['topic'], articles, provider)
         except DraftProviderError:
             return Response({'status': 'unavailable', 'detail': 'Nie udało się przygotować poprawnego szkicu. Możesz ułożyć nitkę ręcznie.'}, status=502)
         finally:
