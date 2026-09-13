@@ -1,5 +1,11 @@
 # Stan pracy — aktualizacja 9 września 2026
 
+## 2026-09-14 — pomiar archiwum i plan X
+
+Lokalna baza miała 132 248 Article, 314 Source i około 3,62 mln oczekujących ArchiveJob. Przy 32 workerach ostatni pomiar dawał około 111 rekordów/min, wcześniejszy szczyt około 230–238/min. Pierwszy szeroki przebieg oszacowano na 3–6 tygodni, a kontrolę jakości na dalsze 3–6 tygodni. Plan pojemności: `docs/ARCHIVE_CAPACITY_2026-09-14.md`.
+
+Integracja X została ograniczona do oficjalnego API i pilota 100–150 ręcznie zweryfikowanych kont. AI przygotowuje kandydatów, twierdzenia i powiązane boxy; redaktor zatwierdza każdą publiczną etykietę i publikację. Nie wdrażamy automatycznych odpowiedzi pod postami polityków ani treningu modelu na danych X. Plan i koszt: `docs/X_EDITORIAL_PIPELINE.md`.
+
 ## 2026-09-14 — uproszczenie AI w MVP
 
 Publiczna rozmowa z AI i wyszukiwarka pytań nie są warunkiem MVP. Rdzeń startu to baza boxów, nitki redakcji i autoryzowanych autorów oraz kontekst boxa po kliknięciu. Publiczne wyszukiwanie może pozostać klasycznym wyszukiwaniem zapisanych rekordów. AI działa początkowo jako narzędzie redakcyjne. Zestaw ewaluacyjny zostanie wypełniony realnymi boxami po osiągnięciu użytecznego pokrycia archiwum; właściciel nie przygotowuje teraz hipotetycznych nitek.
