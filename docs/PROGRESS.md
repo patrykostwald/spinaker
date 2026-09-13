@@ -4,6 +4,8 @@
 
 OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. Mistral EU został wybrany jako drugi dostawca pilotażowy do klasyfikacji, rankingu kandydatów i embeddings po dodaniu adaptera oraz limitów kosztu. Globalne narzędzia wyszukiwania Mistral nie są częścią decyzji MVP. DeepSeek pozostaje wykluczony. Dane kont, komentarze i prywatna aktywność użytkowników nie trafiają do zewnętrznych modeli. Projekt otrzyma publiczny opis sposobu zbierania danych, wyszukiwania, działania Dr Spina, ocen, znanych braków i korekt, bez publikowania zabezpieczeń oraz szczegółów umożliwiających manipulowanie rankingiem. Szczegóły: `docs/AI_PROVIDER_PLAN.md`.
 
+Raport Mistral Studio został odebrany w trzech częściach i zweryfikowany z dokumentacją oraz repozytorium. Przyjęto adapter, ścisłą walidację, audyt i wspólną ewaluację. Odrzucono przenoszenie chronologii, dat, URL, deduplikacji, 404 i modyfikacji tytułu do AI, publiczne procenty confidence, automatyczny fallback oraz niepotwierdzone nazwy modeli. Recenzja: `docs/MISTRAL_REPORT_REVIEW_2026-09-14.md`.
+
 ## PAUZA rozbudowy bazy — 2026-09-09 20:46 UTC
 
 Aktualizacja końcowa: regionalne raporty media-discovery-regional-2026-09-09.csv/json/md zapisane:276wierszy,273hosty,183nowehosty tylko w raporcie (bez wpisówSource),103wierszeRSS z niedawną publikacją. Żaden nowyimport nieuruchomiony. Trzypropozycjebrandingu są w reports/branding-2026-09-09/grafit-mineralny.png, archiwum-bursztynowe.png, atrament-stalowy.png; rootobejrzał. Rekomendowanygrafit+teal. To koncepcjeImageGen, niezmieniony live; bursztynowamakieta ma omyłkowe godziny w pustejośi —nieprzenosić ich jako danych. Palety/kontrasty i weryfikacjafontów JSON oraz3fonty/licencje zapisanewtymfolderze. Raporttekstowydomykaagent.

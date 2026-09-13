@@ -27,3 +27,5 @@ Klucz jest przechowywany wyłącznie po stronie serwera i nigdy nie trafia do Gi
 Konto płatne i większy limit nie są potrzebne przed testem połączenia. Do produkcji włączymy budżet oraz alerty wydatków po pomiarze kosztu pilotażu.
 
 Pierwsze zadanie w Mistral Studio powinno pozostać odizolowaną analizą bez dostępów do systemów. Gotowy prompt: `MISTRAL_PILOT_PROMPT_PL.md`.
+
+Raport pilotażowy został zweryfikowany. Wiążące korekty i kolejność implementacji: `MISTRAL_REPORT_REVIEW_2026-09-14.md`.
