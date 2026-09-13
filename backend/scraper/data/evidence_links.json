@@ -1,0 +1,16 @@
+[
+  {
+    "provider": "sejm",
+    "external_id": "vote/10/46/75",
+    "phrase": "zondacrypto",
+    "source_url": "https://www.gov.pl/web/premier/prezydent-nie-stanal-po-stronie-polakow-weto-w-sprawie-kryptowalut-utrzymane",
+    "explanation": "Komunikat KPRM z 17 kwietnia 2026 r. omawia Zondacrypto w kontekście dwóch wet do ustaw o rynku kryptoaktywów. To powiązanie tematyczne z wcześniejszym głosowaniem, a nie dowód motywacji posłów ani potwierdzenie zarzutów przedstawionych w komunikacie. Wynik imienny pochodzi osobno z API Sejmu."
+  },
+  {
+    "provider": "sejm",
+    "external_id": "vote/10/55/13",
+    "phrase": "zondacrypto",
+    "source_url": "https://www.gov.pl/web/premier/prezydent-nie-stanal-po-stronie-polakow-weto-w-sprawie-kryptowalut-utrzymane",
+    "explanation": "Komunikat KPRM z 17 kwietnia 2026 r. łączy omówienie Zondacrypto z odbytą tego dnia próbą ponownego uchwalenia ustawy. Powiązanie służy wyszukiwaniu kontekstu; nie rozstrzyga zarzutów wobec firmy ani motywacji posłów. Wynik imienny pochodzi osobno z API Sejmu."
+  }
+]

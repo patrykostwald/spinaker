@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.venv
+node_modules
+.local
+**/node_modules
+**/.next
+**/__pycache__
+**/*.sqlite3
+**/staticfiles
+.git

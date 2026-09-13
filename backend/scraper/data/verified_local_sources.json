@@ -1,0 +1,284 @@
+[
+  {
+    "name": "DdWloclawek.pl",
+    "url": "https://ddwloclawek.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://ddwloclawek.pl/sitemap/index.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/2022/03/ddwloclawek-pl/",
+      "https://ddwloclawek.pl/pl/",
+      "https://ddwloclawek.pl/robots.txt",
+      "https://ddwloclawek.pl/sitemap/index.xml"
+    ],
+    "verification_note": "Mapy i próbka artykułu sprawdzone. Aktywacja po naprawie i ponownej kontroli źródłowej kategorii /pl/701_artykuly-sponsorowane/: sponsored, z dowodem klasyfikacji. RSS nie wykryto.",
+    "ai_bot_restrictions": []
+  },
+  {
+    "name": "Aktualności Lokalne",
+    "url": "https://zlotowskie.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://zlotowskie.pl/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/aktualnosci-lokalne/",
+      "https://zlotowskie.pl",
+      "https://zlotowskie.pl/robots.txt",
+      "https://zlotowskie.pl/sitemap.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": [
+      "GPTBot",
+      "ChatGPT-User",
+      "Google-Extended",
+      "CCBot"
+    ]
+  },
+  {
+    "name": "Co Tydzień Jaworzno",
+    "url": "https://jaw.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://jaw.pl/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/co-tydzien-jaworzno/",
+      "https://jaw.pl",
+      "https://jaw.pl/robots.txt",
+      "https://jaw.pl/sitemap.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": [
+      "GPTBot",
+      "ChatGPT-User",
+      "Google-Extended",
+      "CCBot"
+    ]
+  },
+  {
+    "name": "Co Tydzień Mysłowice",
+    "url": "https://ctmyslowice.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://ctmyslowice.pl/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/co-tydzien-myslowice/",
+      "https://ctmyslowice.pl",
+      "https://ctmyslowice.pl/robots.txt",
+      "https://ctmyslowice.pl/sitemap.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": [
+      "GPTBot",
+      "ChatGPT-User",
+      "Google-Extended",
+      "CCBot"
+    ]
+  },
+  {
+    "name": "CzasChojnic.pl",
+    "url": "https://czaschojnic.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://czaschojnic.pl/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/2022/03/czaschojnic-pl/",
+      "https://czaschojnic.pl",
+      "https://czaschojnic.pl/robots.txt",
+      "https://czaschojnic.pl/sitemap.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": [
+      "GPTBot",
+      "ChatGPT-User",
+      "Google-Extended",
+      "CCBot"
+    ]
+  },
+  {
+    "name": "DdTorun.pl",
+    "url": "http://ddtorun.pl/pl/",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://ddtorun.pl/sitemap/index.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/2022/03/ddtorun-pl/",
+      "http://ddtorun.pl/pl/",
+      "http://ddtorun.pl/robots.txt",
+      "https://ddtorun.pl/sitemap/index.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": []
+  },
+  {
+    "name": "Gazeta Gryfińska",
+    "url": "https://gryfinska.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://gryfinska.pl/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/gazeta-gryfinska/",
+      "https://gryfinska.pl",
+      "https://gryfinska.pl/robots.txt",
+      "https://gryfinska.pl/sitemap.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": [
+      "GPTBot",
+      "ChatGPT-User",
+      "Google-Extended",
+      "CCBot"
+    ]
+  },
+  {
+    "name": "Gazeta Ostrowiecka",
+    "url": "https://ostrowiecka.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://ostrowiecka.pl/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/gazeta-ostrowiecka/",
+      "https://ostrowiecka.pl",
+      "https://ostrowiecka.pl/robots.txt",
+      "https://ostrowiecka.pl/sitemap.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": [
+      "GPTBot",
+      "ChatGPT-User",
+      "Google-Extended",
+      "CCBot"
+    ]
+  },
+  {
+    "name": "Gazeta Powiatowa-Wiadomości Oławskie",
+    "url": "https://www.tuolawa.pl/",
+    "rss_url": "https://www.tuolawa.pl/rss/articles/pl",
+    "sitemap_urls": [],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "http://www.gazeta.olawa.pl/",
+      "https://www.tuolawa.pl/",
+      "https://www.tuolawa.pl/robots.txt",
+      "https://www.tuolawa.pl/rss/articles/pl"
+    ],
+    "verification_note": "RSS wydawcy: 30 pozycji; próbka ma tytuł, datę ze strefą czasu i miniaturę. Stary adres gazeta.olawa.pl wskazał gazeta-olawa.pl, a strona docelowa canonical www.tuolawa.pl. W robots brak mapy witryny.",
+    "ai_bot_restrictions": []
+  },
+  {
+    "name": "Radio Poznań",
+    "url": "https://radiopoznan.fm/",
+    "rss_url": "https://radiopoznan.fm/rss/informacje",
+    "sitemap_urls": [],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://radiopoznan.fm/feeds",
+      "https://radiopoznan.fm/",
+      "https://radiopoznan.fm/robots.txt",
+      "https://radiopoznan.fm/rss/informacje"
+    ],
+    "verification_note": "RSS wydawcy: 10 pozycji. W próbkach brak daty published w RSS oraz daty rozpoznawanej przez parser strony. Data pozostaje null. W robots brak mapy witryny; zakres archiwum nieustalony.",
+    "ai_bot_restrictions": []
+  },
+  {
+    "name": "e-Sochaczew",
+    "url": "https://e-sochaczew.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://e-sochaczew.pl/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://gazetylokalne.pl/2022/03/e-sochaczew/",
+      "https://e-sochaczew.pl",
+      "https://e-sochaczew.pl/robots.txt",
+      "https://e-sochaczew.pl/sitemap.xml"
+    ],
+    "verification_note": "Sprawdzono stronę, robots, indeks sitemap, jedną mapę podrzędną i metadane jednej publikacji. RSS nie znaleziono w ograniczonym sprawdzeniu strony głównej.",
+    "ai_bot_restrictions": [
+      "GPTBot",
+      "ChatGPT-User",
+      "Google-Extended",
+      "CCBot"
+    ]
+  },
+  {
+    "name": "Zero.pl",
+    "url": "https://zero.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://zero.pl/sitemap_index.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 15,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://zero.pl/",
+      "https://zero.pl/robots.txt",
+      "https://zero.pl/sitemap_index.xml",
+      "https://zero.pl/sitemap-news.xml",
+      "https://zero.pl/sitemap-post-0.xml"
+    ],
+    "verification_note": "Portal Kanału Zero. RSS niepotwierdzony (/feed/404), import przez mapy i HTML wydawcy; pilot2prawdziwych metadanych. Brak odkrytego API w HTML.",
+    "ai_bot_restrictions": [],
+    "news_sitemap_urls": [
+      "https://zero.pl/sitemap-news.xml"
+    ]
+  },
+  {
+    "name": "TV Republika",
+    "url": "https://tvrepublika.pl",
+    "rss_url": "",
+    "sitemap_urls": [
+      "https://tvrepublika.pl/article/sitemap.xml"
+    ],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 15,
+    "verified_on": "2026-09-09",
+    "evidence_urls": [
+      "https://tvrepublika.pl/",
+      "https://tvrepublika.pl/robots.txt",
+      "https://tvrepublika.pl/article/sitemap.xml",
+      "https://tvrepublika.pl/skontaktuj-sie-z-nami"
+    ],
+    "verification_note": "Oficjalny portal TV Republika; RSS /rss i /rss.xml 404. Potwierdzony indeks 107 map artykułów, pierwsza mapa 2000 URL. Dwie rzeczywiste daty publikacji z JSON-LD z 2013 roku. Robots bez deklaracji mapy. Nie potwierdzono małej mapy bieżącej.",
+    "ai_bot_restrictions": []
+  }
+]

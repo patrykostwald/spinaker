@@ -1,0 +1,1210 @@
+openapi: 3.0.3
+info:
+  title: Polish News Aggregator API
+  version: 1.0.0
+  description: REST API dla spin.clinic i przeszlosc.today — wyszukiwanie timeline,
+    wątki i artykuły.
+paths:
+  /api/admin/google-news/:
+    post:
+      operationId: admin_google_news_create
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleNewsQueryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GoogleNewsQueryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GoogleNewsQueryRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/articles/{id}/:
+    get:
+      operationId: articles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this artykuł.
+        required: true
+      tags:
+      - articles
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+          description: ''
+  /api/articles/{id}/ballots/:
+    get:
+      operationId: articles_ballots_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this artykuł.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+      tags:
+      - articles
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBallotList'
+          description: ''
+  /api/articles/{id}/official/:
+    get:
+      operationId: articles_official_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this artykuł.
+        required: true
+      tags:
+      - articles
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/articles/{id}/related/:
+    get:
+      operationId: articles_related_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this artykuł.
+        required: true
+      tags:
+      - articles
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelatedArticles'
+          description: ''
+  /api/editor/articles/:
+    post:
+      operationId: editor_articles_create
+      tags:
+      - editor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteArticleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WriteArticleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WriteArticleRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteArticle'
+          description: ''
+  /api/editor/preview-url/:
+    post:
+      operationId: editor_preview_url_create
+      tags:
+      - editor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewURLRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PreviewURLRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PreviewURLRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/editor/status/:
+    get:
+      operationId: editor_status_retrieve
+      tags:
+      - editor
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/editor/threads/:
+    get:
+      operationId: editor_threads_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - editor
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedThreadList'
+          description: ''
+    post:
+      operationId: editor_threads_create
+      tags:
+      - editor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteThreadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WriteThreadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WriteThreadRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteThread'
+          description: ''
+  /api/editor/threads/{slug}/:
+    get:
+      operationId: editor_threads_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - editor
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thread'
+          description: ''
+    put:
+      operationId: editor_threads_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - editor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteThreadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WriteThreadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WriteThreadRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteThread'
+          description: ''
+    patch:
+      operationId: editor_threads_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - editor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWriteThreadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWriteThreadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWriteThreadRequest'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteThread'
+          description: ''
+  /api/health/:
+    get:
+      operationId: health_retrieve
+      tags:
+      - health
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+  /api/me/:
+    get:
+      operationId: me_retrieve
+      tags:
+      - me
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+          description: ''
+  /api/patronite/webhook/:
+    post:
+      operationId: patronite_webhook_create
+      tags:
+      - patronite
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '501':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/search/:
+    get:
+      operationId: search_list
+      parameters:
+      - in: query
+        name: categories
+        schema:
+          type: string
+      - in: query
+        name: from_date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: q
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: to_date
+        schema:
+          type: string
+          format: date
+      tags:
+      - search
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchTimeline'
+          description: ''
+  /api/threads/:
+    get:
+      operationId: threads_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - threads
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedThreadListList'
+          description: ''
+  /api/threads/{slug}/:
+    get:
+      operationId: threads_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - threads
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thread'
+          description: ''
+components:
+  schemas:
+    Article:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          title: Tytuł
+          maxLength: 500
+        url:
+          type: string
+          format: uri
+          title: Adres URL
+          maxLength: 1024
+        published_date:
+          type: string
+          format: date-time
+          nullable: true
+          title: Data publikacji
+        date_precision:
+          $ref: '#/components/schemas/DatePrecisionEnum'
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: Kategoria
+        image_url:
+          title: Obraz
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 1024
+          - type: string
+            maxLength: 0
+        source:
+          allOf:
+          - $ref: '#/components/schemas/Source'
+          readOnly: true
+        author:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        tweet_id:
+          type: string
+          maxLength: 64
+        likes_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        retweets_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        discovered_at:
+          type: string
+          format: date-time
+          nullable: true
+        ingestion_method:
+          $ref: '#/components/schemas/IngestionMethodEnum'
+        category_reviewed:
+          type: boolean
+        evidence_note:
+          type: string
+          description: Jak redakcja sprawdziła pochodzenie lub treść materiału.
+        voting:
+          allOf:
+          - $ref: '#/components/schemas/VotingSummary'
+          nullable: true
+          readOnly: true
+        evidence_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceLink'
+          readOnly: true
+        official:
+          nullable: true
+          readOnly: true
+      required:
+      - evidence_links
+      - id
+      - official
+      - source
+      - title
+      - url
+      - voting
+    Ballot:
+      type: object
+      properties:
+        mp_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        name:
+          type: string
+          maxLength: 255
+        club:
+          type: string
+          maxLength: 100
+        vote:
+          type: string
+          maxLength: 30
+        list_votes: {}
+      required:
+      - mp_id
+      - name
+      - vote
+    CategoryEnum:
+      enum:
+      - voting
+      - legislation
+      - parliamentary_print
+      - reportage
+      - advertisement
+      - other
+      - statement
+      - mention
+      - video
+      - sponsored
+      - article
+      - tweet
+      - factcheck
+      - context
+      - opinion
+      type: string
+      description: |-
+        * `voting` - Głosowanie Sejmu
+        * `legislation` - Akt prawny / obwieszczenie
+        * `parliamentary_print` - Druk sejmowy
+        * `reportage` - Reportaż
+        * `advertisement` - Reklama
+        * `other` - Inne / nieustalona kategoria
+        * `statement` - Oświadczenie
+        * `mention` - Wzmianka
+        * `video` - Wideo
+        * `sponsored` - Sponsorowane
+        * `article` - Artykuł
+        * `tweet` - Tweet
+        * `factcheck` - Fact-check
+        * `context` - Kontekst
+        * `opinion` - Opinia
+    CurrentUser:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        is_editor:
+          type: boolean
+        username:
+          type: string
+        patronite_url:
+          type: string
+        buycoffee_url:
+          type: string
+      required:
+      - authenticated
+      - buycoffee_url
+      - is_editor
+      - patronite_url
+      - username
+    DatePrecisionEnum:
+      enum:
+      - time
+      - day
+      type: string
+      description: |-
+        * `time` - Data i czas
+        * `day` - Tylko dzień
+    EvidenceLink:
+      type: object
+      properties:
+        phrase:
+          type: string
+        source_url:
+          type: string
+          format: uri
+        explanation:
+          type: string
+      required:
+      - explanation
+      - phrase
+      - source_url
+    GoogleNewsQueryRequest:
+      type: object
+      properties:
+        q:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - q
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+    IngestionMethodEnum:
+      enum:
+      - manual
+      - rss
+      - gdelt
+      - newsapi
+      - x
+      - sejm
+      - eli
+      type: string
+      description: |-
+        * `manual` - Redakcja
+        * `rss` - RSS
+        * `gdelt` - GDELT
+        * `newsapi` - NewsAPI
+        * `x` - X
+        * `sejm` - API Sejmu
+        * `eli` - ELI
+    PaginatedBallotList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ballot'
+    PaginatedThreadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Thread'
+    PaginatedThreadListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThreadList'
+    PatchedWriteThreadRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          title: Tytuł
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 5000
+        published:
+          type: boolean
+        is_featured:
+          type: boolean
+          title: Wyróżniony
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WriteItemRequest'
+    PreviewURLRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          minLength: 1
+      required:
+      - url
+    RelatedArticles:
+      type: object
+      properties:
+        related:
+          type: array
+          items:
+            $ref: '#/components/schemas/Article'
+      required:
+      - related
+    SearchTimeline:
+      type: object
+      properties:
+        total:
+          type: integer
+        returned:
+          type: integer
+        truncated:
+          type: boolean
+        timeline:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/Article'
+      required:
+      - returned
+      - timeline
+      - total
+      - truncated
+    Source:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Nazwa
+          maxLength: 255
+        url:
+          type: string
+          format: uri
+          title: Adres URL
+          maxLength: 4096
+        source_type:
+          allOf:
+          - $ref: '#/components/schemas/SourceTypeEnum'
+          title: Typ źródła
+      required:
+      - id
+      - name
+      - url
+    SourceTypeEnum:
+      enum:
+      - portal
+      - newspaper
+      - politician
+      - institution
+      - rss
+      - twitter
+      - newsapi
+      - gdelt
+      - editorial
+      type: string
+      description: |-
+        * `portal` - Portal
+        * `newspaper` - Prasa
+        * `politician` - Polityk
+        * `institution` - Instytucja
+        * `rss` - RSS
+        * `twitter` - Twitter
+        * `newsapi` - NewsAPI
+        * `gdelt` - GDELT
+        * `editorial` - Redakcja
+    Thread:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          title: Tytuł
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        thread_type:
+          allOf:
+          - $ref: '#/components/schemas/ThreadTypeEnum'
+          title: Typ wątku
+        is_featured:
+          type: boolean
+          title: Wyróżniony
+        featured:
+          type: boolean
+          readOnly: true
+        description:
+          type: string
+        published:
+          type: boolean
+        views_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        item_count:
+          type: integer
+          readOnly: true
+        image_url:
+          type: string
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThreadItem'
+          readOnly: true
+      required:
+      - created_at
+      - featured
+      - id
+      - image_url
+      - item_count
+      - items
+      - slug
+      - title
+      - updated_at
+    ThreadItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        position:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Pozycja
+        editorial_note:
+          type: string
+          title: Notatka redakcyjna
+        article:
+          allOf:
+          - $ref: '#/components/schemas/Article'
+          readOnly: true
+      required:
+      - article
+      - id
+    ThreadList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          title: Tytuł
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        thread_type:
+          allOf:
+          - $ref: '#/components/schemas/ThreadTypeEnum'
+          title: Typ wątku
+        is_featured:
+          type: boolean
+          title: Wyróżniony
+        featured:
+          type: boolean
+          readOnly: true
+        description:
+          type: string
+        published:
+          type: boolean
+        views_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        item_count:
+          type: integer
+          readOnly: true
+        image_url:
+          type: string
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThreadItem'
+          readOnly: true
+      required:
+      - created_at
+      - featured
+      - id
+      - image_url
+      - item_count
+      - items
+      - slug
+      - title
+      - updated_at
+    ThreadTypeEnum:
+      enum:
+      - sponsored
+      - factcheck
+      - context
+      type: string
+      description: |-
+        * `sponsored` - Sponsorowane
+        * `factcheck` - Fact-check
+        * `context` - Kontekst
+    VotingSummary:
+      type: object
+      properties:
+        term:
+          type: integer
+        sitting:
+          type: integer
+        number:
+          type: integer
+        motion:
+          type: string
+        kind:
+          type: string
+        counts: {}
+        options: {}
+        matching_ballots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ballot'
+        matching_ballots_count:
+          type: integer
+        ballots_url:
+          type: string
+      required:
+      - ballots_url
+      - counts
+      - kind
+      - matching_ballots
+      - matching_ballots_count
+      - motion
+      - number
+      - options
+      - sitting
+      - term
+    WriteArticle:
+      type: object
+      properties:
+        title:
+          type: string
+          title: Tytuł
+          maxLength: 500
+        url:
+          type: string
+          format: uri
+          title: Adres URL
+          maxLength: 1024
+        published_date:
+          type: string
+          format: date-time
+          nullable: true
+          title: Data publikacji
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: Kategoria
+        author:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+        evidence_note:
+          type: string
+          maxLength: 4000
+      required:
+      - title
+      - url
+    WriteArticleRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          title: Tytuł
+          maxLength: 500
+        url:
+          type: string
+          format: uri
+          minLength: 1
+          title: Adres URL
+          maxLength: 1024
+        published_date:
+          type: string
+          format: date-time
+          nullable: true
+          title: Data publikacji
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          title: Kategoria
+        author:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 4000
+        source_name:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 255
+        evidence_note:
+          type: string
+          maxLength: 4000
+      required:
+      - source_name
+      - title
+      - url
+    WriteItem:
+      type: object
+      properties:
+        article_id:
+          type: integer
+        editorial_note:
+          type: string
+          maxLength: 5000
+      required:
+      - article_id
+    WriteItemRequest:
+      type: object
+      properties:
+        article_id:
+          type: integer
+        editorial_note:
+          type: string
+          maxLength: 5000
+      required:
+      - article_id
+    WriteThread:
+      type: object
+      properties:
+        title:
+          type: string
+          title: Tytuł
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 5000
+        published:
+          type: boolean
+        is_featured:
+          type: boolean
+          title: Wyróżniony
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WriteItem'
+      required:
+      - items
+      - title
+    WriteThreadRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          title: Tytuł
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 5000
+        published:
+          type: boolean
+        is_featured:
+          type: boolean
+          title: Wyróżniony
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WriteItemRequest'
+      required:
+      - items
+      - title
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

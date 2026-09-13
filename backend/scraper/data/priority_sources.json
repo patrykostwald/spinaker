@@ -1,0 +1,21 @@
+{
+  "interval_minutes": 5,
+  "selection_note": "Robocze 15 źródeł do aktualności; nie ranking zasięgu. Pobieranie kanałów nie gwarantuje pełnego pokrycia publikacji.",
+  "names": [
+    "Onet Wiadomości",
+    "Wirtualna Polska",
+    "TVN24",
+    "Interia",
+    "Polsat News",
+    "RMF24",
+    "Rzeczpospolita",
+    "Dziennik.pl",
+    "Dziennik Gazeta Prawna",
+    "Polityka",
+    "Wprost",
+    "Newsweek Polska",
+    "Do Rzeczy",
+    "Money.pl",
+    "Bankier.pl"
+  ]
+}

@@ -1,0 +1,25 @@
+from celery.schedules import crontab
+from celery import Celery
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+app = Celery('spin_clinic')
+app.config_from_object('django.conf:settings', namespace='CELERY')
+app.autodiscover_tasks()
+app.conf.beat_schedule = {
+    'sejm-votes-15m': {'task': 'scraper.tasks.import_official_task', 'args': ['votings'], 'schedule': crontab(minute='*/15')},
+    'sejm-prints-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['prints'], 'schedule': crontab(minute=10)},
+    'eli-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['eli'], 'schedule': crontab(minute=20)},
+    'gdelt-2h': {'task': 'scraper.tasks.gdelt_daily_topics', 'schedule': crontab(minute=0, hour='*/2')},
+    'archive-discovery-daily': {'task': 'scraper.tasks.discover_archives', 'schedule': crontab(hour=3, minute=30)},
+    'quality-5m': {'task': 'scraper.tasks.check_data_quality', 'schedule': crontab(minute='*/5')},
+    'archives-minute': {'task': 'scraper.tasks.archive_batch', 'schedule': crontab(minute='*')},
+    'kprm-listing-minute': {'task': 'scraper.tasks.discover_kprm_html', 'schedule': crontab(minute='*')},
+    'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
+    'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
+    'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},
+}
+if os.environ.get('NEWSAPI_TIER', 'free') in ('business', 'advanced'):
+    app.conf.beat_schedule['newsapi-frequent'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(minute='*/15')}
+else:
+    for hour, minute in [(6, 30), (12, 30), (18, 0)]:
+        app.conf.beat_schedule[f'newsapi-{hour}'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(hour=hour, minute=minute)}

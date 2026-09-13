@@ -1,0 +1,171 @@
+from datetime import datetime, timezone as dt_timezone
+from functools import wraps
+from urllib.parse import urlparse
+import ipaddress, logging, socket, re
+import requests
+from dateutil.parser import parse as parse_date
+from django.core.cache import cache
+from django.db import transaction, IntegrityError
+from django.db.models import F
+from django.utils import timezone
+from django.utils.html import strip_tags
+from news.models import Article, ArticleCategory, Source, SourceType
+from news.classification import publisher_category, normalize_publisher_tags
+
+log = logging.getLogger('scraper')
+
+def safe_url(url):
+    value = str(url or '').strip()
+    try:
+        parsed = urlparse(value)
+        parsed.port  # Reject malformed ports before any downstream network call.
+        return value if parsed.scheme in ('http', 'https') and parsed.hostname and not parsed.username and len(value) <= 4096 else ''
+    except ValueError:
+        return ''
+
+def parse_published(value):
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, str):
+        if not re.search(r'\b\d{4}\b', value):
+            return None
+        try:
+            dt = parse_date(value)
+        except (ValueError, TypeError, OverflowError):
+            return None
+    else:
+        return None
+    # Unknown timezone is not silently assumed to be UTC or Warsaw.
+    return None if timezone.is_naive(dt) else dt
+
+def guarded(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        try:
+            result = fn(*args, **kwargs)
+            log.info('%s imported=%s', fn.__name__, result)
+            cache.set('import-status:' + fn.__name__, {'status': 'ok', 'imported': result, 'at': timezone.now().isoformat()}, 86400)
+            return result
+        except Exception as exc:
+            # Never include request URLs containing API credentials in logs.
+            log.error('%s failed (%s)', fn.__name__, type(exc).__name__)
+            cache.set('import-status:' + fn.__name__, {'status': 'error', 'error': type(exc).__name__, 'at': timezone.now().isoformat()}, 86400)
+            return 0
+    return wrapped
+
+def reserve_budget(name, units, limit, seconds):
+    key = 'budget:' + name
+    cache.add(key, 0, timeout=seconds)
+    # Atomic INCR on Redis; conservative reservations include failed requests.
+    used = cache.incr(key, units)
+    if used > limit:
+        cache.decr(key, units)
+        log.error('Import budget exhausted: %s', name)
+    return used <= limit
+
+def get_or_create_source(*, name, url, source_type=SourceType.PORTAL, rss_url='', twitter_user_id='', scrape_frequency_minutes=60):
+    from hashlib import sha256
+    key = sha256(url.encode('utf-8')).hexdigest()
+    original = Source.objects.filter(catalog_seed_key=key).first()
+    if original is not None:
+        return original
+    source, _ = Source.objects.get_or_create(url=url, defaults={
+        'name': name[:255], 'source_type': source_type, 'rss_url': rss_url, 'twitter_user_id': twitter_user_id,
+        'scrape_frequency_minutes': scrape_frequency_minutes, 'catalog_seed_key': key})
+    if not source.catalog_seed_key:
+        source.catalog_seed_key = key
+        source.save(update_fields=['catalog_seed_key'])
+    return source
+
+def source_from_article_url(article_url, fallback_name):
+    parsed = urlparse(article_url)
+    return get_or_create_source(name=parsed.netloc.replace('www.', '') or fallback_name,
+        url=f'{parsed.scheme}://{parsed.netloc}', source_type=SourceType.PORTAL)
+
+def upsert_article(*, source, title, url, published_date, category=ArticleCategory.ARTICLE,
+                   image_url='', author=None, description='', tweet_id='',
+                   likes_count=0, retweets_count=0, discovered_at=None, ingestion_method='manual', category_reviewed=False,
+                   tags=None, declared_genre='', category_evidence=''):
+    url = safe_url(url)
+    if not url or len(url) > 1024 or not title:
+        return None, False
+    tags = normalize_publisher_tags(tags)
+    if declared_genre in ('interview', 'reportage', 'video', 'podcast') and category_evidence and category in ('article', 'other') and not category_reviewed:
+        category = declared_genre
+    if ingestion_method in ('rss', 'archive') and not category_reviewed and category in ('article', 'other'):
+        category, url_evidence = publisher_category(url, category)
+        category_evidence = url_evidence or category_evidence
+    defaults = dict(source=source, title=strip_tags(str(title))[:500], published_date=parse_published(published_date),
+        category=category, evidence_note=category_evidence, tags=tags,
+        image_url=safe_url(image_url) if len(str(image_url or '')) <= 1024 else '',
+        author=str(author or '')[:200], discovered_at=discovered_at, ingestion_method=ingestion_method, category_reviewed=category_reviewed, description=strip_tags(str(description or ''))[:4000],
+        tweet_id=str(tweet_id or '')[:64], likes_count=max(0, int(likes_count or 0)), retweets_count=max(0, int(retweets_count or 0)))
+    try:
+        with transaction.atomic():
+            article, created = Article.objects.get_or_create(url=url, defaults=defaults)
+            if created:
+                Source.objects.filter(pk=source.pk).update(total_articles=F('total_articles') + 1)
+            elif article.source_id == source.pk:
+                # Never replace existing source facts or a manually reviewed genre.
+                if tags and not article.tags:
+                    Article.objects.filter(pk=article.pk, tags=[]).update(tags=tags)
+                    article.refresh_from_db(fields=['tags'])
+                if (not article.category_reviewed and article.category in ('article', 'other')
+                        and category_evidence and category in ('interview', 'reportage', 'video', 'podcast', 'sponsored')):
+                    note = (article.evidence_note + '\n' + category_evidence).strip()
+                    Article.objects.filter(pk=article.pk, category_reviewed=False,
+                        category__in=['article', 'other']).update(category=category, evidence_note=note)
+                    article.refresh_from_db(fields=['category', 'evidence_note'])
+            return article, created
+    except IntegrityError:
+        return Article.objects.get(url=url), False
+
+def fetch_feed(url):
+    """Bounded public HTTP fetch with DNS pinning and validation on every redirect."""
+    from urllib.parse import urljoin, urlunsplit
+    import ssl
+    import urllib3
+    for _ in range(4):
+        if not safe_url(url):
+            raise ValueError('Invalid source URL')
+        parsed = urlparse(url)
+        hostname = parsed.hostname.encode('idna').decode('ascii')
+        port = parsed.port or (443 if parsed.scheme == 'https' else 80)
+        addresses = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+        if not addresses or any(not ipaddress.ip_address(a[4][0]).is_global for a in addresses):
+            raise ValueError('Source address must be public')
+        # Connect to the validated IP, avoiding a second DNS lookup that could rebind locally.
+        address = addresses[0][4][0]
+        if parsed.scheme == 'https':
+            pool = urllib3.HTTPSConnectionPool(address, port=port, server_hostname=hostname,
+                assert_hostname=hostname, cert_reqs=ssl.CERT_REQUIRED, ca_certs=requests.certs.where())
+        else:
+            pool = urllib3.HTTPConnectionPool(address, port=port)
+        host_header = f'[{hostname}]' if ':' in hostname else hostname
+        if parsed.port:
+            host_header += ':' + str(port)
+        path = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
+        response = None
+        try:
+            response = pool.urlopen('GET', path, redirect=False, preload_content=False, retries=False,
+                timeout=urllib3.Timeout(connect=5, read=30),
+                headers={'Host': host_header, 'User-Agent': 'ContextBeforeContent/1.0 source reader'})
+            if response.status in (301, 302, 303, 307, 308):
+                url = urljoin(url, response.headers['Location'])
+                continue
+            if response.status >= 400:
+                error_response = requests.Response()
+                error_response.status_code = response.status
+                raise requests.HTTPError(f'HTTP {response.status}', response=error_response)
+            chunks, size = [], 0
+            for chunk in response.stream(65536, decode_content=True):
+                size += len(chunk)
+                if size > 5_000_000:
+                    raise ValueError('Source response too large')
+                chunks.append(chunk)
+            return b''.join(chunks)
+        finally:
+            if response is not None:
+                response.close()
+            pool.close()
+    raise ValueError('Too many source redirects')
