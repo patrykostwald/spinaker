@@ -1,3 +1,8 @@
+param(
+    [ValidateRange(1, 64)]
+    [int]$Workers = 4
+)
+
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -23,7 +28,7 @@ if (Test-Path -LiteralPath $pidFile) {
 
 $env:USE_SQLITE = 'true'
 $env:DJANGO_DEBUG = 'true'
-$env:ARCHIVE_WORKERS = '4'
+$env:ARCHIVE_WORKERS = $Workers.ToString()
 $env:ARCHIVE_STORE_FULL_TEXT = 'false'
 
 $process = Start-Process -FilePath $python `
@@ -35,6 +40,6 @@ $process = Start-Process -FilePath $python `
     -PassThru
 
 Set-Content -LiteralPath $pidFile -Value $process.Id -Encoding ascii
-Write-Host "Uruchomiono harvestery metadanych (PID $($process.Id), 4 wykonawców archiwum)."
+Write-Host "Uruchomiono harvestery metadanych (PID $($process.Id), $Workers wykonawców archiwum)."
 Write-Host "Log: $stdoutLog"
 Write-Host 'Pełne teksty są wyłączone; zbierane są metadane potrzebne do Boxów.'

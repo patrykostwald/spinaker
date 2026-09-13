@@ -38,6 +38,6 @@ Nie proś właściciela o wklejenie hasła bazy, klucza `service_role`, klucza A
 4. Przygotuj testy kontraktu na fikcyjnych domenach. Nie uruchamiaj masowego pobierania.
 5. Zgłoś rozbieżności z `PLAN_AKTUALNY.md`; nie zmieniaj samodzielnie decyzji produktu.
 
-## Kandydat na dostawcę AI
+## Wybór dostawcy AI
 
-DeepSeek V4 Flash/Pro jest kandydatem ze względu na API zgodne z formatem OpenAI Responses, duży kontekst i niski deklarowany koszt. Nie jest jeszcze wybranym dostawcą. Przed integracją trzeba porównać jakość na naszym zamkniętym zestawie testowym, limit kosztu, stabilność JSON/tool calls, warunki użycia, retencję i miejsce przetwarzania danych. Do pilota można wysyłać wyłącznie publiczne metadane źródeł; komentarze, dane kont i inne dane użytkowników pozostają wyłączone do czasu analizy prywatności i zawarcia wymaganych umów.
+DeepSeek został wykluczony decyzją właściciela ze względu na ryzyko związane z miejscem przetwarzania danych. Dostawca MVP pozostaje niewybrany. Przed integracją trzeba porównać jakość na naszym zamkniętym zestawie testowym, koszt, stabilność JSON/tool calls, warunki użycia, retencję, miejsce przetwarzania danych oraz możliwość zawarcia wymaganych umów. Komentarze, dane kont i inne dane użytkowników pozostają wyłączone z zewnętrznych modeli do czasu analizy prywatności.
