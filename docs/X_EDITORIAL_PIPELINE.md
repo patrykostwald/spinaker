@@ -18,6 +18,12 @@ Nie wykonujemy pełnego archiwalnego importu X w MVP. Zachowujemy identyfikatory
 6. W MVP dyżurny redaktor zatwierdza, poprawia albo odrzuca. Decyzja jest publikowana jako wynik procesu `spin.clinic`, a nie osobista opinia administratora.
 7. Po publikacji system przygotowuje teksty do ręcznego opublikowania na koncie spin.clinic wraz z linkiem do boxa/nitki.
 
+## Panel dyżurny Dr Spin
+
+MVP zawiera prywatną kolejkę alertów dostępną na komputerze i telefonie administratora. Nowy post trafia do niej, gdy zawiera sprawdzalne twierdzenie, szybko zyskuje znaczenie w monitorowanym zbiorze albo jest częścią wykrytego przekazu dnia. Alert pokazuje oryginalny post, autora i obóz zapisany w katalogu, wyodrębnione twierdzenie, znalezione boxy, braki dowodowe, sugerowany wynik oraz gotowy szkic wpisu na X.
+
+Priorytety kolejki: `PILNE` (jednoznaczne twierdzenie i mocne źródło pierwotne), `DO SPRAWDZENIA` (prawdopodobny spin, potrzebna ocena) i `OBSERWUJ` (powtarzający się przekaz bez wystarczających dowodów). Powiadomienie push lub e-mail prowadzi bezpośrednio do karty decyzji: `zatwierdź`, `popraw`, `odrzuć`, `dołącz źródło`. Celem pilotażu jest mediana poniżej 10 minut od wykrycia posta do gotowego szkicu i osobny pomiar czasu do publikacji.
+
 ## Odpowiedzialność redakcyjna i dojście do automatyzacji
 
 Automatyzacja ani podpis „AI” nie przenoszą odpowiedzialności z wydawcy na model. Dlatego rozdzielamy autora analizy od operatora technicznego: publicznym autorem jest `Redakcja spin.clinic`, a nazwisko osoby klikającej zatwierdzenie pozostaje w prywatnym dzienniku audytowym. Na stronie pokazujemy wersję metody, czas analizy, wykorzystane źródła, stopień pewności, historię zmian oraz przycisk „zgłoś źródło / poproś o korektę”.
