@@ -20,7 +20,9 @@ Do zewnętrznych modeli nie wysyłamy danych kont, komentarzy, adresów e-mail a
 
 Przed rozszerzeniem ruchu wykonujemy ten sam zestaw 30–50 polskich zapytań dla obu dostawców. Mierzymy poprawność linków i dat, zgodność z dozwolonymi źródłami, trafność chronologii i wyboru do 15 boxów, twierdzenia bez pokrycia, czas, koszt i stabilność formatu. Wynik decyduje, który dostawca obsługuje daną funkcję.
 
-Redakcyjny szablon przypadków: `AI_EVALUATION_SET_TEMPLATE_PL.csv`. Wypełnione przykłady są własnym zasobem ewaluacyjnym projektu i nie służą automatycznie do treningu.
+Redakcyjny szablon przypadków: `AI_EVALUATION_SET_TEMPLATE_PL.csv`. Wypełnimy go dopiero na podstawie rzeczywistych zaimportowanych boxów, gdy baza osiągnie użyteczne pokrycie. Właściciel nie ma teraz obowiązku przygotowywania hipotetycznych nitek. Przykłady są zasobem ewaluacyjnym i nie służą automatycznie do treningu.
+
+Publiczne generowanie odpowiedzi i rozmowa z AI nie są warunkiem MVP. Pierwsze zastosowania modeli pozostają po stronie redakcji: klasyfikacja pomocnicza i propozycja istniejących boxów do nitki. Publiczna wyszukiwarka może korzystać z deterministycznego wyszukiwania zapisanej bazy.
 
 ## Konfiguracja Mistral
 

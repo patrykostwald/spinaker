@@ -31,7 +31,7 @@ Nitka sponsorowana ma widoczne oznaczenie finansowania także w boxach i eksporc
 
 ## AI i X
 
-AI wspiera odnajdywanie powiązanych publikacji i pracę redakcji. Zaplecze monitorowania potwierdzonych kont politycznych wymaga konfiguracji X, limitów i przeglądu redakcyjnego. Nie deklarujemy uruchomionego AI lub pobierania X bez rzeczywistych kluczy. W pierwszej wersji eksportujemy gotowe teksty; automatyczne publikowanie całych nitek wymaga osobnej integracji konta X.
+AI wspiera odnajdywanie powiązanych publikacji i pracę redakcji. Publiczne pytania do AI i generowane odpowiedzi nie są potrzebne do startu: użytkownik przegląda boxy, klasyczną wyszukiwarkę bazy, nitki redakcji i autoryzowanych autorów oraz kontekst po kliknięciu boxa. Zaplecze monitorowania potwierdzonych kont politycznych wymaga konfiguracji X, limitów i przeglądu redakcyjnego. Nie deklarujemy uruchomionego AI lub pobierania X bez rzeczywistych kluczy. W pierwszej wersji eksportujemy gotowe teksty; automatyczne publikowanie całych nitek wymaga osobnej integracji konta X.
 
 ## Jakość i bezpieczeństwo
 

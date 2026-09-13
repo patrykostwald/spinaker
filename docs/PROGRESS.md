@@ -1,5 +1,9 @@
 # Stan pracy — aktualizacja 9 września 2026
 
+## 2026-09-14 — uproszczenie AI w MVP
+
+Publiczna rozmowa z AI i wyszukiwarka pytań nie są warunkiem MVP. Rdzeń startu to baza boxów, nitki redakcji i autoryzowanych autorów oraz kontekst boxa po kliknięciu. Publiczne wyszukiwanie może pozostać klasycznym wyszukiwaniem zapisanych rekordów. AI działa początkowo jako narzędzie redakcyjne. Zestaw ewaluacyjny zostanie wypełniony realnymi boxami po osiągnięciu użytecznego pokrycia archiwum; właściciel nie przygotowuje teraz hipotetycznych nitek.
+
 ## 2026-09-14 — strategia dostawców i przejrzystości
 
 OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. Mistral EU został wybrany jako drugi dostawca pilotażowy do klasyfikacji, rankingu kandydatów i embeddings po dodaniu adaptera oraz limitów kosztu. Globalne narzędzia wyszukiwania Mistral nie są częścią decyzji MVP. DeepSeek pozostaje wykluczony. Dane kont, komentarze i prywatna aktywność użytkowników nie trafiają do zewnętrznych modeli. Projekt otrzyma publiczny opis sposobu zbierania danych, wyszukiwania, działania Dr Spina, ocen, znanych braków i korekt, bez publikowania zabezpieczeń oraz szczegółów umożliwiających manipulowanie rankingiem. Szczegóły: `docs/AI_PROVIDER_PLAN.md`.
