@@ -19,6 +19,8 @@ Najpierw przeczytaj, jeśli są dostępne:
 
 Jeżeli nie możesz otworzyć repozytorium lub któregoś pliku, zatrzymaj się i dokładnie wypisz brakujące dokumenty. Nie zgaduj ich treści.
 
+Jeżeli otrzymasz załącznik `MISTRAL_CONTEXT_PACK_PL.md`, traktuj go jako autorytatywny zamiennik sześciu dokumentów wymienionych wyżej i kontynuuj bez żądania pozostałych plików.
+
 Twoje pierwsze zadanie jest wyłącznie analityczne. Zaprojektuj pilotaż Mistral EU jako drugiego, wymiennego dostawcy AI. OpenAI obsługuje istniejący prototyp wyszukiwania internetowego. Mistral ma być najpierw oceniony w trzech funkcjach: klasyfikacja publicznych metadanych boxa, ranking kandydatów do chronologicznej nitki oraz embeddings do wyszukiwania podobnych rekordów.
 
 Ograniczenia:
