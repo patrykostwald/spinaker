@@ -1,6 +1,6 @@
 # Pilotaż hybrydowy: wyszukiwanie, źródła i szkice
 
-Decyzja: bez paywalla w walidacji. Baza lokalna i import archiwalny pozostają. Publiczne wyszukiwanie uruchamia równolegle zapytanie do bazy oraz OpenAI Responses z web_search po aktywnych źródłach. Odnośniki napływają w strumieniu, a odczytane metadane zasilają oś czasu. Nitki redakcyjne nadal zatwierdza i publikuje człowiek. Bieżący opis demo: LIVE_SEARCH_DEMO.md.
+Decyzja: bez paywalla w walidacji. Baza lokalna i import archiwalny pozostają. Obecna implementacja uruchamia równolegle bazę oraz OpenAI Responses z web_search. Mistral EU zostanie dodany później przez wspólny adapter do porównawczych zadań klasyfikacji i rankingu; endpointu regionalnego nie traktujemy jako zamiennika web_search bez testu. Nitki redakcyjne zatwierdza człowiek. Szczegóły: AI_PROVIDER_PLAN.md.
 
 ## Wyszukiwanie zewnętrzne
 
@@ -22,7 +22,8 @@ Wcześniejsze konfiguracje 2 lub 8 importerów zostały zastąpione pomiarem do 
 
 ## Co właściciel konfiguruje na końcu
 
-- Konto OpenAI API, klucz serwerowy, model z obsługą web_search i limity prób (AI_START_CHECKLIST_PL.md). To jedyna niezbędna płatna integracja tego wariantu demo.
+- Konto OpenAI API, klucz serwerowy, model z obsługą web_search i limity prób (AI_START_CHECKLIST_PL.md). To jedyna niezbędna płatna integracja obecnej wersji demo.
+- Konto Mistral i klucz testowy są opcjonalne do czasu dodania adaptera.
 - Opcjonalnie Brave Search API jako dodatkowe odkrywanie odnośników; nie jest potrzebne do OpenAI web_search.
 - Docelowy serwer, domena, HTTPS i kopie poza maszyną.
 - Pilotaż redakcyjny 20–30 tematów: trafność i brakujące źródła, poprawność dat, koszt, czas oraz błędne skojarzenia. Dopiero po tym decyzja o automatycznej publikacji.

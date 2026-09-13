@@ -40,4 +40,4 @@ Nie proś właściciela o wklejenie hasła bazy, klucza `service_role`, klucza A
 
 ## Wybór dostawcy AI
 
-DeepSeek został wykluczony decyzją właściciela ze względu na ryzyko związane z miejscem przetwarzania danych. Dostawca MVP pozostaje niewybrany. Przed integracją trzeba porównać jakość na naszym zamkniętym zestawie testowym, koszt, stabilność JSON/tool calls, warunki użycia, retencję, miejsce przetwarzania danych oraz możliwość zawarcia wymaganych umów. Komentarze, dane kont i inne dane użytkowników pozostają wyłączone z zewnętrznych modeli do czasu analizy prywatności.
+OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. Mistral EU jest drugim dostawcą pilotażowym do klasyfikacji, rankingu kandydatów i embeddings po potwierdzeniu dostępności funkcji regionalnych. Globalnego wyszukiwania Mistral nie włączamy automatycznie. DeepSeek pozostaje wykluczony. Komentarze, dane kont i prywatna aktywność użytkowników nie trafiają do zewnętrznych modeli. Szczegóły: `docs/AI_PROVIDER_PLAN.md`.

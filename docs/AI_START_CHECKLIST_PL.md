@@ -1,5 +1,7 @@
 # Uruchomienie dr. Spina — lista dla właściciela
 
+Obecna wersja kodu obsługuje OpenAI. Mistral jest zaplanowany jako drugi adapter i jego klucz nie jest jeszcze używany przez aplikację. Nie kupuj większego planu Mistral przed pomiarem pilotażu; patrz `AI_PROVIDER_PLAN.md`.
+
 Projekt ma dwie osobne konfiguracje: publiczne wyszukiwanie kontekstu i wewnętrzną redakcyjną analizę wypowiedzi z internetem oraz redakcyjny wybór materiałów już zapisanych w bazie.
 
 ## Co ustawić lokalnie na serwerze

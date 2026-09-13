@@ -1,5 +1,7 @@
 # spin.clinic — obowiązujący zakres MVP
 
+Strategia dostawców AI: [AI_PROVIDER_PLAN.md](AI_PROVIDER_PLAN.md).
+
 Aktualizacja 13 września 2026: nadrzędne uzupełnienie etapów, harvestingu, uprawnień i współpracy z Claude znajduje się w [PLAN_2026-09-13.md](PLAN_2026-09-13.md). Poniższy opis z 9 września zachowuje kontekst funkcji; nie oznacza wdrożenia nowego Supabase.
 
 Aktualizacja: 9 września 2026. Ten dokument zastępuje wcześniejsze warianty produktu opisane w historycznych sekcjach PROGRESS.md.
