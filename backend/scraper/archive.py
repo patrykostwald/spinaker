@@ -9,6 +9,7 @@ from collections import deque
 from urllib.parse import urlsplit, urljoin
 from urllib.robotparser import RobotFileParser
 from xml.etree import ElementTree
+import requests
 from django.core.cache import cache
 from django.db import transaction, close_old_connections, connections
 from django.db.models import Q, Count, Max, F
@@ -16,19 +17,37 @@ from django.utils import timezone
 from news.models import ArchiveJob, Article, ArticleContent, Source, ImportState
 from news.metadata import extract_metadata, MetadataParser, decode_source_html
 from scraper.utils import fetch_feed, upsert_article, safe_url
+from scraper.utils import retry_delay
 
 USER_AGENT = 'ContextBeforeContent'
 # A safety ceiling for configuration, not a claim about measured throughput.
 MAX_ARCHIVE_WORKERS = 64
+HOST_CIRCUIT_FAILURES = 3
+HOST_CIRCUIT_MAX_SECONDS = 900
 _HOST_STATES = {}
 _HOST_STATES_LOCK = Lock()
 
 def host_state(host):
     with _HOST_STATES_LOCK:
-        return _HOST_STATES.setdefault(host, {'lock': Lock(), 'next_allowed': 0.0})
+        return _HOST_STATES.setdefault(host, {'lock': Lock(), 'next_allowed': 0.0,
+            'failures': 0, 'circuit_until': 0.0})
 
 class SourceDelay(Exception):
     pass
+
+def _transient_error(exc):
+    response = getattr(exc, 'response', None)
+    status = getattr(response, 'status_code', None)
+    return status == 429 or status is not None and 500 <= status <= 599 or isinstance(exc, (TimeoutError, requests.Timeout, requests.ConnectionError))
+
+def _record_host_failure(state, exc):
+    state['failures'] += 1
+    if state['failures'] >= HOST_CIRCUIT_FAILURES:
+        state['circuit_until'] = time.monotonic() + min(HOST_CIRCUIT_MAX_SECONDS, retry_delay(exc, state['failures']))
+
+def _clear_host_failures(state):
+    state['failures'] = 0
+    state['circuit_until'] = 0.0
 
 def same_host(url, base):
     return urlsplit(url).hostname == urlsplit(base).hostname
@@ -148,17 +167,25 @@ def process(job):
     delay = 3
     attempted = False
     try:
+        if time.monotonic() < state['circuit_until']:
+            raise SourceDelay()
         if time.monotonic() < state['next_allowed']:
             raise SourceDelay()
         attempted = True
-        policy = robots(job.url)
-        if not policy.can_fetch(USER_AGENT, job.url):
-            raise ValueError('robots_disallowed')
-        delay = max(policy.crawl_delay(USER_AGENT) or 0, 3)
-        request_rate = policy.request_rate(USER_AGENT)
-        if request_rate and request_rate.requests:
-            delay = max(delay, request_rate.seconds / request_rate.requests)
-        raw = fetch_feed(job.url)
+        try:
+            policy = robots(job.url)
+            if not policy.can_fetch(USER_AGENT, job.url):
+                raise ValueError('robots_disallowed')
+            delay = max(policy.crawl_delay(USER_AGENT) or 0, 3)
+            request_rate = policy.request_rate(USER_AGENT)
+            if request_rate and request_rate.requests:
+                delay = max(delay, request_rate.seconds / request_rate.requests)
+            raw = fetch_feed(job.url)
+            _clear_host_failures(state)
+        except Exception as exc:
+            if _transient_error(exc):
+                _record_host_failure(state, exc)
+            raise
     finally:
         if attempted:
             state['next_allowed'] = time.monotonic() + delay
@@ -226,7 +253,8 @@ def process(job):
     body = article_body(raw, job.url) if store_full_text else ''
     if metadata['publisher_type'] != 'article' and not body and not metadata['published_date']:
         raise ValueError('unclassified_page')
-    article, created = upsert_article(source=job.source, title=metadata['title'], url=job.url,
+    article_url = metadata.get('canonical_url') or job.url
+    article, created = upsert_article(source=job.source, title=metadata['title'], url=article_url,
         published_date=metadata['published_date'], category='statement' if job.source.source_type == 'institution' else 'article',
         description=metadata['description'], image_url=metadata['image_url'], author=metadata['author'], ingestion_method='archive',
         tags=metadata.get('tags'), declared_genre=metadata.get('declared_genre', ''),
@@ -302,7 +330,8 @@ def run_batch(limit=10, source_ids=None, metrics=None):
             job.status = 'error'
             job.last_error = str(exc) if str(exc) in {'robots_disallowed', 'missing_source_title', 'not_a_sitemap',
                 'unclassified_page', 'directory_link_limit', 'source_unavailable'} else type(exc).__name__
-            job.available_at = timezone.now() + timedelta(hours=min(24, 2 ** min(job.attempts, 5)))
+            delay = retry_delay(exc, job.attempts) if _transient_error(exc) else min(86400, 3600 * 2 ** min(job.attempts, 5))
+            job.available_at = timezone.now() + timedelta(seconds=delay)
         job.checked_at = timezone.now()
         ArchiveJob.objects.filter(pk=job.pk, status='running', available_at=lease).update(
             status=job.status, last_error=job.last_error, available_at=job.available_at, checked_at=job.checked_at, attempts=job.attempts)

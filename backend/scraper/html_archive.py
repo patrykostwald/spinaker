@@ -12,6 +12,7 @@ from django.utils import timezone
 from news.models import Source, ImportState, ArchiveJob
 from news.metadata import decode_source_html, extract_metadata
 from scraper.archive import robots, USER_AGENT, host_state, SourceDelay
+from scraper.utils import retry_delay as bounded_retry_delay
 from scraper.utils import fetch_feed, safe_url
 
 START_URL = 'https://www.gov.pl/web/premier/wydarzenia'
@@ -148,15 +149,7 @@ def extract_kprm_metadata(raw, url):
 
 
 def retry_delay(exc, failures):
-    delay = min(86400,60*2**min(failures,10))
-    response = getattr(exc,'response',None)
-    value = getattr(response,'headers',{}).get('Retry-After','')
-    try:
-        requested = int(value) if str(value).isdigit() else ceil((parsedate_to_datetime(value)-timezone.now()).total_seconds())
-        delay = max(delay,requested)
-    except (ValueError,TypeError,OverflowError):
-        pass
-    return delay
+    return bounded_retry_delay(exc, failures)
 
 
 def fetch_listing(url):

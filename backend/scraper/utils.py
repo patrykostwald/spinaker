@@ -1,7 +1,8 @@
 from datetime import datetime, timezone as dt_timezone
 from functools import wraps
 from urllib.parse import urlparse
-import ipaddress, logging, socket, re
+from email.utils import parsedate_to_datetime
+import ipaddress, logging, random, socket, re
 import requests
 from dateutil.parser import parse as parse_date
 from django.core.cache import cache
@@ -62,6 +63,20 @@ def reserve_budget(name, units, limit, seconds):
         cache.decr(key, units)
         log.error('Import budget exhausted: %s', name)
     return used <= limit
+
+def retry_delay(exc, failures, cap=86400):
+    """Return bounded exponential backoff, honoring a provider Retry-After floor."""
+    failures = max(1, int(failures or 1))
+    base = min(cap, 60 * 2 ** min(failures - 1, 10))
+    delay = base + random.uniform(0, base * 0.25)
+    response = getattr(exc, 'response', None)
+    value = getattr(response, 'headers', {}).get('Retry-After', '') if response is not None else ''
+    try:
+        requested = int(value) if str(value).isdigit() else (parsedate_to_datetime(value) - datetime.now(dt_timezone.utc)).total_seconds()
+        delay = max(delay, requested)
+    except (TypeError, ValueError, OverflowError):
+        pass
+    return min(cap, max(0, round(delay)))
 
 def get_or_create_source(*, name, url, source_type=SourceType.PORTAL, rss_url='', twitter_user_id='', scrape_frequency_minutes=60):
     from hashlib import sha256
@@ -156,6 +171,7 @@ def fetch_feed(url):
             if response.status >= 400:
                 error_response = requests.Response()
                 error_response.status_code = response.status
+                error_response.headers.update(dict(response.headers))
                 raise requests.HTTPError(f'HTTP {response.status}', response=error_response)
             chunks, size = [], 0
             for chunk in response.stream(65536, decode_content=True):

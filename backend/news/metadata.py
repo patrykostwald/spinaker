@@ -17,6 +17,7 @@ class MetadataParser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.meta, self.title, self.in_title = {}, '', False
+        self.canonical = ''
         self.in_json = False
         self.json_buffer = ''
         self.json_documents = []
@@ -31,6 +32,8 @@ class MetadataParser(HTMLParser):
             key = (attrs.get('property') or attrs.get('name') or '').lower()
             if key and attrs.get('content'):
                 self.meta.setdefault(key, attrs['content'].strip())
+        if tag == 'link' and 'canonical' in (attrs.get('rel') or '').lower().split():
+            self.canonical = attrs.get('href', '').strip()
 
     def handle_endtag(self, tag):
         if tag == 'script' and self.in_json:
@@ -88,6 +91,11 @@ def extract_metadata(raw, url):
     parser = MetadataParser()
     parser.feed(decode_source_html(raw))
     meta = parser.meta
+    canonical_url = ''
+    if parser.canonical:
+        candidate = urljoin(url, parser.canonical)
+        if safe_url(candidate) and urlsplit(candidate).hostname.lower() == urlsplit(url).hostname.lower():
+            canonical_url = candidate
     # Only positively identified main-page objects can declare genre. Foreign
     # recommendation cards and unidentifiable listing objects are not evidence.
     matched_nodes = []
@@ -166,7 +174,7 @@ def extract_metadata(raw, url):
         category_evidence = 'Gatunek jawnie zadeklarowany w JSON-LD wydawcy dla adresu tego materiału: ' + declared_genre + '.'
     elif matched_nodes and category == 'other':
         category = 'article'
-    return {'url': url, 'title': (meta.get('og:title') or parser.title).strip()[:500],
+    return {'url': url, 'canonical_url': canonical_url, 'title': (meta.get('og:title') or parser.title).strip()[:500],
         'source_name': (meta.get('og:site_name') or urlparse(url).hostname or '')[:255],
         'description': (meta.get('og:description') or meta.get('description') or '')[:4000],
         'image_url': image,

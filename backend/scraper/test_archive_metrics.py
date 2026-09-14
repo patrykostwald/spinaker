@@ -1,5 +1,8 @@
 from unittest.mock import patch
+from datetime import timedelta
+import requests
 import pytest
+from django.utils import timezone
 from news.models import Source, ArchiveJob
 from scraper.archive import run_batch, SourceDelay
 
@@ -45,3 +48,29 @@ def test_parallel_capacity_rejects_outside_safety_ceiling(workers):
     from scraper.archive import run_parallel_batch
     with pytest.raises(ValueError):
         run_parallel_batch(workers=workers)
+
+
+@pytest.mark.django_db
+def test_transient_retry_honors_retry_after_without_duplicate_job():
+    source = Source.objects.create(name='Publisher', url='https://example.org')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
+    response = requests.Response(); response.status_code = 429; response.headers['Retry-After'] = '1800'
+    error = requests.HTTPError(response=response)
+    with patch('scraper.archive.process', side_effect=error), patch('scraper.archive.time.sleep'):
+        assert run_batch(1) == 0
+    job.refresh_from_db()
+    assert job.status == 'error' and job.attempts == 1
+    assert job.available_at >= timezone.now() + timedelta(minutes=29)
+    assert ArchiveJob.objects.count() == 1
+
+
+def test_host_circuit_opens_after_three_transient_failures(monkeypatch):
+    from types import SimpleNamespace
+    from scraper.archive import HOST_CIRCUIT_FAILURES, _HOST_STATES, _record_host_failure, host_state
+    _HOST_STATES.clear()
+    state = host_state('example.org')
+    error = requests.Timeout()
+    for _ in range(HOST_CIRCUIT_FAILURES):
+        _record_host_failure(state, error)
+    assert state['failures'] == HOST_CIRCUIT_FAILURES
+    assert state['circuit_until'] > 0

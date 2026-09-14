@@ -38,6 +38,23 @@ def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
     process(page)
     assert Article.objects.count() == 1
 
+    @pytest.mark.django_db
+    def test_archive_deduplicates_by_same_host_canonical_url(monkeypatch):
+        source = Source.objects.create(name='Canonical source', url='https://example.org')
+        first = ArchiveJob.objects.create(source=source, url='https://example.org/alias', kind='page')
+        second = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
+        html = (b'<title>Canonical story</title><link rel="canonical" href="/story">'
+            b'<meta property="og:type" content="article">')
+        monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else html)
+        process(first)
+        from scraper.archive import _HOST_STATES
+        _HOST_STATES.clear()
+        process(second)
+        assert Article.objects.count() == 1
+        article = Article.objects.get()
+        assert article.url == 'https://example.org/story'
+        assert article.content.source_url == first.url
+
 @pytest.mark.django_db
 def test_failed_archive_is_retained_without_article(monkeypatch):
     source = Source.objects.create(name='Test', url='https://example.org')
