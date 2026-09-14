@@ -31,7 +31,8 @@ def approved_source_ids():
         status=SourceAccessInstruction.Status.APPROVED,
         channel=SourceAccessInstruction.Channel.SITEMAP,
         minimum_interval_seconds__gte=3,
-    ).values_list('source_id', 'endpoint')
+        terms_url__gt='', reviewed_at__isnull=False, reviewed_by__gt='',
+    ).exclude(evidence={}).values_list('source_id', 'endpoint')
     approved_endpoints = {}
     for source_id, endpoint in approved:
         approved_endpoints.setdefault(source_id, set()).add(endpoint)

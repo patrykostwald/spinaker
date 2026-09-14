@@ -114,6 +114,18 @@ def test_approved_access_instruction_requires_terms_evidence_and_review():
         instruction.full_clean()
 
 
+@pytest.mark.django_db
+def test_dynamic_pool_fails_closed_when_invalid_approved_instruction_bypasses_clean(monkeypatch):
+    source = Source.objects.create(name='Bypassed', url='https://bypassed.example',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    monkeypatch.setattr('scraper.backfill.verified_maps',
+        lambda current, require_archive_approval=False: ['https://bypassed.example/sitemap.xml'])
+    # ORM create does not call full_clean; the scheduler must still refuse it.
+    SourceAccessInstruction.objects.create(source=source, status='approved', channel='sitemap',
+        endpoint='https://bypassed.example/sitemap.xml', minimum_interval_seconds=3)
+    assert source.pk not in approved_source_ids()
+
+
 def test_loop_requires_static_ids_unless_dynamic_mode_is_explicit():
     with pytest.raises(CommandError, match='source-id'):
         call_command('backfill_archives_loop', max_hours=0.1)
