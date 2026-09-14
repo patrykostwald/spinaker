@@ -102,7 +102,10 @@ def fetch_page(fetcher, endpoint, *, page, per_page=DEFAULT_PER_PAGE):
         raise RateLimited(_retry_after_seconds(getattr(response, 'headers', {})))
     if response.status_code != 200:
         raise WordPressRestError(f'wordpress_rest_http_{response.status_code}')
-    body = response.json()
+    try:
+        body = response.json()
+    except ValueError as error:
+        raise WordPressRestError('invalid_wordpress_json') from error
     if not isinstance(body, list):
         raise WordPressRestError('invalid_wordpress_page_shape')
     return body

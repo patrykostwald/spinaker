@@ -135,6 +135,18 @@ def test_non_429_error_status_raises_plain_wordpress_error():
         collect_since_cutoff(fetcher, entry(), ENDPOINT, CUTOFF)
 
 
+def test_invalid_json_body_raises_wordpress_error_not_a_raw_value_error():
+    class BrokenJsonResponse(FakeResponse):
+        def json(self):
+            raise ValueError('invalid json')
+
+    def fetcher(url):
+        return BrokenJsonResponse(200)
+
+    with pytest.raises(WordPressRestError, match='invalid_wordpress_json'):
+        collect_since_cutoff(fetcher, entry(), ENDPOINT, CUTOFF)
+
+
 # --- cutoff ------------------------------------------------------------------
 
 def test_cutoff_stops_collection_and_excludes_older_posts():
