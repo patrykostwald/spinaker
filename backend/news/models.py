@@ -175,6 +175,110 @@ class SourceAccessInstruction(models.Model):
             raise ValidationError(errors)
 
 
+class SourceRecoveryCase(models.Model):
+    """A bounded diagnosis of one failed source instruction, never a bypass."""
+    class Status(models.TextChoices):
+        DETECTED = 'detected', 'Wykryto'
+        TRIAGE = 'triage', 'Triage'
+        COOLDOWN = 'cooldown', 'Przerwa techniczna'
+        AUDITING = 'auditing', 'Audyt'
+        DRY_RUN = 'dry_run', 'Mały test'
+        REPAIRED = 'repaired', 'Naprawiono'
+        MANUAL_REVIEW = 'manual_review', 'Kontrola ręczna'
+        CONTACT_REQUIRED = 'contact_required', 'Wymaga kontaktu'
+        RETIRED = 'retired', 'Wycofano'
+        CLOSED = 'closed', 'Zamknięto'
+
+    source = models.ForeignKey(Source, on_delete=models.CASCADE, related_name='recovery_cases')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DETECTED)
+    trigger = models.CharField(max_length=32, choices=[
+        ('no_new_boxes', 'Brak nowych boxów'), ('terminal_error', 'Błąd trwały'),
+        ('retry_threshold', 'Próg ponowień'), ('quality_drift', 'Dryf jakości'), ('manual', 'Ręcznie'),
+    ])
+    failure_fingerprint = models.CharField(max_length=128)
+    sample_error = models.CharField(max_length=500, blank=True)
+    failed_instruction = models.ForeignKey(SourceAccessInstruction, on_delete=models.PROTECT,
+        null=True, blank=True, related_name='failed_recovery_cases')
+    proposed_instruction = models.ForeignKey(SourceAccessInstruction, on_delete=models.PROTECT,
+        null=True, blank=True, related_name='proposed_recovery_cases')
+    opened_at = models.DateTimeField(default=timezone.now)
+    last_observed_at = models.DateTimeField(default=timezone.now)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    last_success_at = models.DateTimeField(null=True, blank=True)
+    boxes_before = models.PositiveIntegerField(default=0)
+    boxes_after = models.PositiveIntegerField(default=0)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    audit_evidence = models.JSONField(default=dict)
+    dry_run_result = models.JSONField(default=dict)
+    decision_reason = models.TextField(blank=True)
+    decided_by = models.CharField(max_length=120, blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-last_observed_at', '-pk']
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.attempt_count > 2:
+            errors['attempt_count'] = 'Sprawa recovery ma najwyżej dwie kontrolowane próby.'
+        if self.status == self.Status.REPAIRED:
+            if not self.proposed_instruction or self.proposed_instruction.status != SourceAccessInstruction.Status.APPROVED:
+                errors['proposed_instruction'] = 'Naprawa wymaga zatwierdzonej instrukcji dostępu.'
+            if self.boxes_after <= self.boxes_before or not self.dry_run_result.get('succeeded'):
+                errors['dry_run_result'] = 'Naprawa wymaga dodatniego, udanego dry-runu.'
+        if errors:
+            raise ValidationError(errors)
+
+
+class SourceContactCard(models.Model):
+    """A reviewable draft for a future human contact; this model never sends."""
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Szkic'
+        READY_FOR_REVIEW = 'ready_for_review', 'Gotowa do kontroli'
+        APPROVED_TO_SEND = 'approved_to_send', 'Zatwierdzona do wysyłki'
+        SENT = 'sent', 'Wysłano ręcznie'
+        ANSWERED = 'answered', 'Odpowiedziano'
+        DECLINED = 'declined', 'Odmowa'
+        AGREEMENT_RECORDED = 'agreement_recorded', 'Zgoda zapisana'
+        CLOSED = 'closed', 'Zamknięto'
+
+    source = models.ForeignKey(Source, on_delete=models.CASCADE, related_name='contact_cards')
+    recovery_case = models.OneToOneField(SourceRecoveryCase, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='contact_card')
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
+    publisher_name = models.CharField(max_length=255, blank=True)
+    contact_url = models.URLField(max_length=1024, blank=True)
+    requested_scope = models.JSONField(default=list)
+    requested_channels = models.JSONField(default=list)
+    technical_findings = models.JSONField(default=dict)
+    reason_for_contact = models.TextField(blank=True)
+    message_draft = models.TextField(blank=True)
+    approval_by = models.CharField(max_length=120, blank=True)
+    approval_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    delivery_reference = models.CharField(max_length=255, blank=True)
+    reply_summary = models.TextField(blank=True)
+    reply_evidence_url = models.URLField(max_length=1024, blank=True)
+    granted_instruction = models.ForeignKey(SourceAccessInstruction, on_delete=models.PROTECT,
+        null=True, blank=True, related_name='granted_contact_cards')
+    next_review_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['status', 'next_review_at', 'pk']
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.status == self.Status.APPROVED_TO_SEND and (not self.approval_by or not self.approval_at):
+            errors['approval_by'] = 'Wysyłka wymaga osoby i czasu wyraźnego zatwierdzenia.'
+        if self.status == self.Status.SENT and not self.sent_at:
+            errors['sent_at'] = 'Status wysłano można zapisać tylko po ręcznej wysyłce.'
+        if errors:
+            raise ValidationError(errors)
+
+
 class Article(models.Model):
     source = models.ForeignKey(
         Source,
