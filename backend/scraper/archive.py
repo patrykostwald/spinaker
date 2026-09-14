@@ -1,5 +1,5 @@
 """Resumable publisher archive discovery. Sitemap lastmod is never publication time."""
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from hashlib import sha256
 import time
 import os
@@ -33,6 +33,9 @@ def host_state(host):
             'failures': 0, 'circuit_until': 0.0})
 
 class SourceDelay(Exception):
+    pass
+
+class ArchiveCutoff(Exception):
     pass
 
 def _transient_error(exc):
@@ -146,7 +149,7 @@ def article_body(raw, url=None):
     return ''
 
 
-def process(job):
+def process(job, cutoff_at=None):
     from scraper.directory_archive import directory_spec, directory_links
     job_kind = getattr(job, 'kind', None)
     if job_kind == 'sitemap':
@@ -247,6 +250,11 @@ def process(job):
         except ValueError:
             pass
     if not metadata['title']: raise ValueError('missing_source_title')
+    if cutoff_at is not None and metadata.get('published_date'):
+        published = datetime.fromisoformat(metadata['published_date'].replace('Z', '+00:00'))
+        cutoff = cutoff_at.astimezone(dt_timezone.utc)
+        if published.astimezone(dt_timezone.utc) > cutoff:
+            raise ArchiveCutoff()
     # The public Box needs metadata. Full-text extraction is a separate,
     # explicitly enabled processing mode because source permissions differ.
     store_full_text = os.environ.get('ARCHIVE_STORE_FULL_TEXT', '').strip().lower() in ('1', 'true', 'yes', 'on')
@@ -280,9 +288,12 @@ def process(job):
         'response_sha256': sha256(raw).hexdigest(), 'source_url': job.url})
     return int(created)
 
-def run_batch(limit=10, source_ids=None, metrics=None):
+def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_callback=None, per_source_limit=None):
     completed = 0
-    counters = {key: 0 for key in ('pages_completed', 'sitemaps_completed', 'new_articles', 'failed_jobs', 'deferred_jobs')}
+    counters = {key: 0 for key in ('pages_completed', 'sitemaps_completed', 'new_articles', 'deferred_jobs', 'failed_jobs')}
+    if cutoff_at is not None:
+        counters['skipped_cutoff'] = 0
+    source_counts = {}
     source_order = deque()
     if source_ids is not None:
         # Start with publishers least recently checked, then rotate. A newly
@@ -298,6 +309,10 @@ def run_batch(limit=10, source_ids=None, metrics=None):
             eligible = ArchiveJob.objects.select_for_update().filter(status__in=['pending', 'error', 'running'], available_at__lte=now, source__is_active=True, source__scrape_enabled=True)
             if source_ids is not None:
                 eligible = eligible.filter(source_id__in=source_ids)
+            if per_source_limit is not None:
+                remaining_sources = [source_id for source_id in (source_ids or [])
+                    if source_counts.get(source_id, 0) < per_source_limit]
+                eligible = eligible.filter(source_id__in=remaining_sources)
             # One in four slots favors search/editorial requests. Historical work
             # retains the other slots even while new requests keep arriving.
             job = eligible.filter(priority__gt=0).order_by('-priority', 'available_at', 'pk').first() if index % 4 == 0 else None
@@ -314,14 +329,19 @@ def run_batch(limit=10, source_ids=None, metrics=None):
             job.status = 'running'; job.attempts += 1; job.available_at = now + timedelta(minutes=15)
             job.save(update_fields=['status', 'attempts', 'available_at'])
             lease = job.available_at
+            source_counts[job.source_id] = source_counts.get(job.source_id, 0) + 1
         try:
-            created = process(job)
+            created = process(job) if cutoff_at is None else process(job, cutoff_at=cutoff_at)
             job.status = 'done'; job.last_error = ''; completed += 1
             if job.kind == 'page':
                 counters['pages_completed'] += 1
                 counters['new_articles'] += int(created or 0)
             else:
                 counters['sitemaps_completed'] += 1
+        except ArchiveCutoff:
+            counters['skipped_cutoff'] += 1
+            job.status = 'done'; job.last_error = 'after_cutoff'
+            completed += 1
         except SourceDelay:
             counters['deferred_jobs'] += 1
             job.status = 'pending'; job.attempts -= 1; job.available_at = timezone.now() + timedelta(minutes=1)
@@ -335,16 +355,21 @@ def run_batch(limit=10, source_ids=None, metrics=None):
         job.checked_at = timezone.now()
         ArchiveJob.objects.filter(pk=job.pk, status='running', available_at=lease).update(
             status=job.status, last_error=job.last_error, available_at=job.available_at, checked_at=job.checked_at, attempts=job.attempts)
+        if state_callback is not None:
+            state_callback(job)
     if metrics is not None:
         metrics.update(counters)
     return completed
 
 
-def run_parallel_batch(workers=4, per_worker=20, metrics=None):
+def run_parallel_batch(workers=4, per_worker=20, metrics=None, source_ids=None, cutoff_at=None, state_callback=None, per_source_limit=None):
     if not 1 <= workers <= MAX_ARCHIVE_WORKERS or not 1 <= per_worker <= 100:
         raise ValueError(f'Use 1..{MAX_ARCHIVE_WORKERS} workers and 1..100 jobs per worker')
-    sources = list(ArchiveJob.objects.filter(status__in=['pending', 'error', 'running'],
+    jobs = ArchiveJob.objects.filter(status__in=['pending', 'error', 'running'],
         available_at__lte=timezone.now(), source__is_active=True, source__scrape_enabled=True)
+    if source_ids is not None:
+        jobs = jobs.filter(source_id__in=source_ids)
+    sources = list(jobs
         .order_by().values('source_id').annotate(queued=Count('id')).order_by('-queued', 'source_id'))
     if metrics is not None:
         metrics.update(active_workers=min(workers, len(sources)), eligible_sources=len(sources))
@@ -358,7 +383,15 @@ def run_parallel_batch(workers=4, per_worker=20, metrics=None):
         close_old_connections()
         try:
             counters = {}
-            completed = run_batch(per_worker, source_ids=ids, metrics=counters)
+            limit = per_source_limit * len(ids) if per_source_limit is not None else per_worker
+            options = {'source_ids': ids, 'metrics': counters}
+            if cutoff_at is not None:
+                options['cutoff_at'] = cutoff_at
+            if state_callback is not None:
+                options['state_callback'] = state_callback
+            if per_source_limit is not None:
+                options['per_source_limit'] = per_source_limit
+            completed = run_batch(limit, **options)
             return completed, counters
         finally:
             connections.close_all()

@@ -22,19 +22,39 @@ Stan propozycji: 14 wrzesnia 2026. Dokument opisuje lokalny pilot, ale nie uruch
 - 429 i 5xx zachowuja zadanie w kolejce z backoffem; `Retry-After` jest dolna granica opoznienia.
 - Po 10% bledow przejsciowych lub 5 bledach tego samego hosta zatrzymac pilot i przejrzec robots/limity wydawcy.
 
-## Start po zatwierdzeniu listy zrodel
+## Wybór źródeł i start
+
+Najpierw wyświetl lokalne kandydatury bez pobierania sieciowego:
+
+```powershell
+$env:USE_SQLITE='true'
+Set-Location backend
+.venv\Scripts\python.exe manage.py backfill_candidates
+```
+
+Do pilota wpisuj tylko `source_id` z wyniku tej komendy. Nazwa, ID, URL i mapa są dowodem lokalnej konfiguracji; daty najnowszej i najstarszej osiągalnej publikacji nie wolno zgadywać przed pomiarem.
 
 W katalogu repozytorium, po ustawieniu lokalnego interpretera:
 
 ```powershell
 $env:USE_SQLITE='true'
 $env:ARCHIVE_STORE_FULL_TEXT='false'
+$env:SQLITE_DATABASE_PATH="$PWD\db.sqlite3"
 $env:ARCHIVE_WORKERS='2'
 Set-Location backend
 .venv\Scripts\python.exe manage.py import_archives --source-id <ID_ZRODLA> --limit 20
 ```
 
 Polecenie nalezy wykonac osobno dla kazdego z 5-10 zatwierdzonych ID. Nie podstawia kodu produkcyjnego Supabase i nie wysyla wiadomosci. Przed startem sprawdzic, ze zrodla maja `is_active=true`, `scrape_enabled=true`, `catalog_stage=configured` i jawnie potwierdzony kanal.
+
+Test progresywny uruchamia się dopiero po zebraniu listy ID:
+
+```powershell
+Set-Location ..
+.\Run-Harvester-Progressive.ps1 -SourceId 12,18,23
+```
+
+Skrypt tworzy osobną kopię SQLite dla 2, 8, 16, 24 i 32 workerów. Nie uruchamia bieżącego schedulera i nie zmienia bazy bazowej. Wyniki zapisuje do `reports/archive-pilot/results.json`; CPU, RAM, transfer i p95 trzeba uzupełnić z monitora komputera, nie z samego czasu procesu.
 
 Pilot zatrzymuje sie przez `Ctrl+C`. Biezace zadanie moze dokonczyc zapis; zadania pozostale w kolejce pozostaja do wznowienia. Ponowne uruchomienie tego samego polecenia jest idempotentne po URL i nie powinno tworzyc drugiego `Article` ani `ArchiveJob`.
 

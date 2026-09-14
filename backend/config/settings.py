@@ -73,7 +73,7 @@ if os.environ.get("PYTEST_VERSION") or env.bool("USE_SQLITE", default=False):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": Path(env("SQLITE_DATABASE_PATH", default=str(BASE_DIR / "db.sqlite3"))),
             "OPTIONS": {"timeout": 30, "transaction_mode": "IMMEDIATE"},
         }
     }
