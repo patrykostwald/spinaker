@@ -21,6 +21,10 @@ while ($true) {
     Write-Output ''
     & (Join-Path $PSScriptRoot 'Harvester-Live-Status.ps1')
     Write-Output ''
+    Write-Output 'Important AI activity:'
+    $activity = Join-Path $queue '..\activity.log'
+    if (Test-Path $activity) { Get-Content $activity -Tail 8 }
+    Write-Output ''
     Write-Output 'Recently changed Claude files:'
     Get-ChildItem $worktree -File -Recurse |
         Where-Object { $_.FullName -notmatch '\\.git|\\.pytest_cache|__pycache__' } |
