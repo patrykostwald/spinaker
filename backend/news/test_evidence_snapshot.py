@@ -5,6 +5,7 @@ import pytest
 from news.evidence_snapshot import (
     EvidenceSnapshotDisabled,
     SnapshotConsentStatus,
+    SnapshotAllowedUse,
     SnapshotRetentionPolicy,
     capture_snapshot,
 )
@@ -38,6 +39,7 @@ def test_capture_stores_metadata_separately_from_bytes(article, settings, local_
         article, source_url=article.url, content=b"<html>evidence</html>",
         artifact_type="html", parser_version="parser-v1",
         consent_status=SnapshotConsentStatus.RESTRICTED,
+        allowed_uses=[SnapshotAllowedUse.TEXT_EXTRACTION],
         retention_policy=SnapshotRetentionPolicy.EVIDENCE_HOLD,
         storage=local_storage,
     )
@@ -46,6 +48,7 @@ def test_capture_stores_metadata_separately_from_bytes(article, settings, local_
     assert snapshot.artifact_type == "html"
     assert snapshot.parser_version == "parser-v1"
     assert snapshot.consent_status == SnapshotConsentStatus.RESTRICTED
+    assert snapshot.allowed_uses == [SnapshotAllowedUse.TEXT_EXTRACTION]
     assert snapshot.content_sha256 == sha256(b"<html>evidence</html>").hexdigest()
     # The row never carries the bytes; they live only in the storage backend.
     assert local_storage.get(snapshot.storage_key) == b"<html>evidence</html>"
@@ -84,6 +87,24 @@ def test_repeated_capture_of_identical_content_shares_storage_key(article, setti
     # but still records a distinct evidentiary row with its own fetch time.
     assert first.storage_key == second.storage_key
     assert first.pk != second.pk
+
+
+def test_capture_defaults_to_no_allowed_uses(article, settings, local_storage):
+    settings.EVIDENCE_SNAPSHOT_ENABLED = True
+    snapshot = capture_snapshot(
+        article, source_url=article.url, content=b"scope", artifact_type="html",
+        parser_version="v1", consent_status=SnapshotConsentStatus.ALLOWED,
+        storage=local_storage)
+    assert snapshot.allowed_uses == []
+
+
+def test_capture_rejects_unknown_allowed_use(article, settings, local_storage):
+    settings.EVIDENCE_SNAPSHOT_ENABLED = True
+    with pytest.raises(ValueError, match="unknown use"):
+        capture_snapshot(
+            article, source_url=article.url, content=b"scope", artifact_type="html",
+            parser_version="v1", consent_status=SnapshotConsentStatus.ALLOWED,
+            allowed_uses=["anything_goes"], storage=local_storage)
 
 
 def test_public_thumbnail_and_private_snapshot_stay_separate(article, settings, local_storage):

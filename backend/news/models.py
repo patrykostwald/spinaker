@@ -362,6 +362,46 @@ class QualityIssue(models.Model):
         constraints = [models.UniqueConstraint(fields=['article', 'code'], name='unique_article_quality_issue')]
 
 
+class ArticleQualityProfile(models.Model):
+    """Deterministic, rebuildable identity and provenance facts for an article."""
+    article = models.OneToOneField(Article, on_delete=models.CASCADE, related_name='quality_profile')
+    canonical_url = models.URLField(max_length=1024)
+    canonical_sha256 = models.CharField(max_length=64, db_index=True)
+    title_sha256 = models.CharField(max_length=64, db_index=True)
+    content_sha256 = models.CharField(max_length=64, blank=True, db_index=True)
+    provenance = models.JSONField(default=dict)
+    rules_version = models.CharField(max_length=32)
+    checked_at = models.DateTimeField(default=timezone.now)
+
+
+class ArticleRelation(models.Model):
+    """A reviewable link; articles remain independent records."""
+    left = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='quality_relations_left')
+    right = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='quality_relations_right')
+    relation_type = models.CharField(max_length=24, choices=[('similar_publication', 'Podobna publikacja')])
+    score = models.DecimalField(max_digits=5, decimal_places=4)
+    evidence = models.JSONField(default=dict)
+    rules_version = models.CharField(max_length=32)
+    checked_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['left', 'right', 'relation_type'], name='unique_article_quality_relation'),
+            models.CheckConstraint(condition=models.Q(left_id__lt=models.F('right_id')), name='article_relation_ordered'),
+        ]
+
+
+class SourceQualityState(models.Model):
+    """Current bounded quality sample and parser-drift signal for one source."""
+    source = models.OneToOneField(Source, on_delete=models.CASCADE, related_name='quality_state')
+    sample_size = models.PositiveIntegerField(default=0)
+    metrics = models.JSONField(default=dict)
+    baseline_metrics = models.JSONField(default=dict)
+    drift = models.JSONField(default=dict)
+    rules_version = models.CharField(max_length=32)
+    checked_at = models.DateTimeField(default=timezone.now)
+
+
 class AIResearchCall(models.Model):
     """Operational audit only: no prompts, generated text, URLs or credentials."""
     started_at = models.DateTimeField(default=timezone.now, db_index=True)
@@ -386,8 +426,13 @@ from .evidence_snapshot import (  # noqa: E402,F401
     EvidenceSnapshot,
     SnapshotArtifactType,
     SnapshotConsentStatus,
+    SnapshotAllowedUse,
     SnapshotRetentionPolicy,
     EvidenceSnapshotDisabled,
     capture_snapshot,
     is_evidence_snapshot_enabled,
+)
+from .evidence_extraction import (  # noqa: E402,F401
+    EvidenceTextExtraction,
+    EvidenceExtractionStatus,
 )

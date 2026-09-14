@@ -37,6 +37,12 @@ class SnapshotConsentStatus(models.TextChoices):
     DENIED = "denied", "Odmówione — artefakt do usunięcia"
 
 
+class SnapshotAllowedUse(models.TextChoices):
+    TEXT_EXTRACTION = "text_extraction", "Prywatna ekstrakcja tekstu / OCR"
+    RAG = "rag", "Prywatne wyszukiwanie i RAG"
+    MODEL_TRAINING = "model_training", "Trening modelu"
+
+
 class SnapshotRetentionPolicy(models.TextChoices):
     EVIDENCE_HOLD = "evidence_hold", "Zatrzymane jako dowód do decyzji redakcji"
     TEMPORARY = "temporary", "Tymczasowe, do automatycznego usunięcia"
@@ -65,6 +71,9 @@ class EvidenceSnapshot(models.Model):
     consent_status = models.CharField(
         "stan zgody/licencji", max_length=16,
         choices=SnapshotConsentStatus.choices, default=SnapshotConsentStatus.UNKNOWN)
+    allowed_uses = models.JSONField(
+        "jawnie dozwolone zastosowania", default=list, blank=True,
+        help_text="Wersjonowany zakres zgody. Pusta lista nie zezwala na ekstrakcję, RAG ani trening.")
     storage_key = models.CharField(
         "prywatny klucz storage", max_length=512, db_index=True,
         help_text="Odniesienie do prywatnego backendu (news.snapshot_storage). Nigdy publiczny URL ani binaria. "
@@ -102,6 +111,7 @@ def capture_snapshot(
     consent_status: str = SnapshotConsentStatus.UNKNOWN,
     retention_policy: str = SnapshotRetentionPolicy.EVIDENCE_HOLD,
     retention_expires_at=None,
+    allowed_uses=None,
     storage: SnapshotStorage | None = None,
 ) -> EvidenceSnapshot:
     """Store `content` privately and record its evidentiary metadata.
@@ -117,6 +127,12 @@ def capture_snapshot(
             "EVIDENCE_SNAPSHOT_ENABLED is False; snapshot capture is disabled by default.")
     if consent_status in (SnapshotConsentStatus.UNKNOWN, SnapshotConsentStatus.DENIED):
         raise ValueError("Snapshot storage requires an explicit allowed or restricted consent status.")
+    allowed_uses = list(allowed_uses or [])
+    known_uses = set(SnapshotAllowedUse.values)
+    if any(not isinstance(use, str) or use not in known_uses for use in allowed_uses):
+        raise ValueError("Snapshot allowed_uses contains an unknown use.")
+    if len(allowed_uses) != len(set(allowed_uses)):
+        raise ValueError("Snapshot allowed_uses must not contain duplicates.")
     digest = sha256(content).hexdigest()
     key = f"{article.pk}/{artifact_type}/{digest}"
     (storage or get_snapshot_storage()).put(key, content)
@@ -128,6 +144,7 @@ def capture_snapshot(
         artifact_type=artifact_type,
         parser_version=parser_version,
         consent_status=consent_status,
+        allowed_uses=allowed_uses,
         storage_key=key,
         retention_policy=retention_policy,
         retention_expires_at=retention_expires_at,

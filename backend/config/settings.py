@@ -226,3 +226,7 @@ EXTERNAL_SEARCH_ARCHIVE_URLS = env.bool('EXTERNAL_SEARCH_ARCHIVE_URLS', default=
 # no bulk capture, no production Supabase storage. See docs/EVIDENCE_SNAPSHOT.md.
 EVIDENCE_SNAPSHOT_ENABLED = env.bool('EVIDENCE_SNAPSHOT_ENABLED', default=False)
 EVIDENCE_SNAPSHOT_STORAGE_ROOT = env('EVIDENCE_SNAPSHOT_STORAGE_ROOT', default='')
+# Private, local-only extraction from explicitly allowed evidence snapshots.
+# There is intentionally no scheduler or public endpoint wired to this flag.
+EVIDENCE_TEXT_EXTRACTION_ENABLED = env.bool(
+    'EVIDENCE_TEXT_EXTRACTION_ENABLED', default=False)
