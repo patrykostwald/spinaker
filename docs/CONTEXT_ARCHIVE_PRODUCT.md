@@ -19,6 +19,10 @@ Produkt pokazuje:
 - zapisane wyszukiwania, alerty i eksport w dozwolonym zakresie;
 - opcjonalne narzędzia AI do wyszukiwania i porządkowania, zawsze z identyfikatorami dowodów.
 
+Pierwszy widok odpowiada obrazem danych: użytkownik otwiera box i widzi oś czasu oraz podstawowe relacje do innych materiałów, źródeł, osób, organizacji i dokumentów. Portal nie musi dopisywać perswazyjnego podsumowania, jeśli same dowody wystarczają.
+
+Analiza na żądanie jest oddzielną usługą. Użytkownik może wkleić URL albo uruchomić `Dr Spin` z istniejącego boxa. Narzędzie pracuje jak asystent OSINT: rozpoznaje materiał, wydobywa sprawdzalne twierdzenia, przeszukuje zgromadzony kontekst, układa chronologię, wskazuje zgodne i sprzeczne dowody oraz jawnie opisuje luki. Rozszerzone limity, raport i eksport mogą być funkcją płatną.
+
 Produkt nie pokazuje komentarzy, reakcji, profili społecznościowych, Dr Spina ani redakcyjnych etykiet spin.clinic. Nie sprzedajemy cudzych pełnych tekstów. Oferta obejmuje dostęp do uporządkowanych metadanych, pochodzenia, relacji, chronologii, narzędzi pracy i własnych analiz, w zakresie dozwolonym dla danego źródła.
 
 ## Rozdzielenie techniczne
