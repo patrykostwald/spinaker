@@ -14,6 +14,15 @@ jedną, wersjonowaną i zatwierdzoną metodę automatycznego dostępu.
 przyszły kontakt. Żaden z dwóch nowych modeli nie może sam włączyć źródła,
 ustawić `scrape_enabled` ani tworzyć `ArchiveJob`.
 
+## Pilot nowego źródła
+
+Przed pierwszym zatwierdzeniem każdej instrukcji dostępu działa ograniczony
+pilot. Sprawdza wyłącznie jeden udokumentowany kanał i najwyżej trzy URL-e,
+z odstępem co najmniej trzech sekund na host. Zapisuje wynik, użyty kanał,
+zakres i liczbę poprawnie utworzonych boxów; nie uruchamia masowego pobierania.
+Udany pilot jest dowodem technicznym, lecz nie zastępuje decyzji redakcyjnej o
+zatwierdzeniu podstawy dostępu. Taka sama bramka obowiązuje po naprawie źródła.
+
 ## SourceRecoveryCase
 
 ### Pola
@@ -131,4 +140,3 @@ logowania i treść odpowiedzi nie są widoczne publicznie.
 3. Jeden ręcznie utworzony case na źródle kontrolnym.
 4. Dopiero potem automatyczne tworzenie spraw po progu błędów.
 5. Osobna decyzja przed automatycznym przywracaniem źródeł do puli.
-

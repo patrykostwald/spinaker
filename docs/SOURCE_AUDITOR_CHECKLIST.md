@@ -13,3 +13,9 @@ Przy każdym kanale zapisuje: URL dokumentacji lub warunków, zakres danych,
 atrybucję, limit, status robots, możliwość archiwum historycznego i decyzję.
 Brak jednoznacznej podstawy kończy automatyczne pobieranie i tworzy kartę do
 kontaktu z wydawcą. Audytor nie wykonuje masowego pobierania.
+
+Przed utworzeniem instrukcji audytor sprawdza też, czy ten sam host nie jest
+już obsługiwany przez inne źródło lub drugi mechanizm pobierania. Dla jednego
+wydawcy aktywna może być tylko jedna udokumentowana metoda, chyba że redakcja
+jawnie zatwierdzi wyjątek wraz z uzasadnieniem. Chroni to przed podwójnym
+ruchem, duplikatami oraz błędną diagnozą źródła.
