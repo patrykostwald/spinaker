@@ -4,20 +4,13 @@ Stan decyzji na 14 września 2026.
 
 ## Identyfikacja domyślna
 
-Główna szata ma być najciemniejsza: głęboki grafit bliski czerni, złamana biel oraz oszczędny chłodny miętowy akcent. Portal pozostaje minimalistyczny i spokojny mimo dużej liczby tytułów. Ruch przewijanych nitek, odstęp, typografia i wyrównanie rozdzielają informacje częściej niż ramki.
+Główna szata to **Monochrome Control**: głęboki grafit bliski czerni, złamana biel oraz oszczędny mineralny brąz i miedź. Portal pozostaje minimalistyczny i spokojny mimo dużej liczby tytułów. Ruch przewijanych nitek, odstęp, typografia i wyrównanie rozdzielają informacje częściej niż ramki.
 
-Ostateczny wariant główny wybieramy przed wdrożeniem całej identyfikacji. Wersja domyślna jest również wyglądem dla użytkownika niezalogowanego oraz podstawą materiałów udostępnianych poza portalem.
+Wersja ciemna jest wyglądem domyślnym dla użytkownika niezalogowanego oraz podstawą materiałów udostępnianych poza portalem.
 
 ## Znak
 
-Znak składa się z czterech liter czytanych zgodnie z ruchem wskazówek zegara:
-
-- `S` — góra,
-- `P` — prawa strona,
-- `I` — dół,
-- `N` — lewa strona.
-
-Środek pozostaje pusty. Ruch mogą zaznaczać najwyżej cztery bardzo drobne punkty; bez pełnego okręgu i bez dosłownego krzyża medycznego. Znak ma działać jako favicon, avatar na X oraz element pełnego logotypu `spin.clinic`. Skojarzenie z diagnostyką jest pożądane, ale znak nie może udawać placówki medycznej.
+Znak składa się wyłącznie z liter `S`, `P`, `I`, `N` rozmieszczonych wokół pustego środka. Bez pełnego okręgu, kropek, obramowania i dosłownego krzyża medycznego. Docelowa pozycja startowa liter i stopień ich zbliżenia pozostają do wyboru na planszy porównawczej; badamy również wariant `I` u góry, `P` po prawej, `S` u dołu i `N` po lewej. Znak ma działać jako favicon, avatar na X oraz element pełnego logotypu `spin.clinic`. Skojarzenie z diagnostyką jest pożądane, ale znak nie może udawać placówki medycznej.
 
 ## Typografia
 
@@ -31,13 +24,15 @@ Na telefonie pozostają te same kroje. Zmieniamy skalę, szerokość wiersza i o
 
 ## Trzy szaty użytkownika
 
-Zarejestrowany użytkownik może wybrać jedną z trzech kompletnych szat. MVP przygotowuje architekturę tokenów, a wybór w profilu może zostać udostępniony razem z personalizacją konta.
+Zarejestrowany użytkownik wybiera w profilu jedną z trzech kompletnych szat. Wybór jest przypisany do konta i odtwarzany na jego urządzeniach. Niezalogowany użytkownik może zachować wybór lokalnie.
 
-1. **Clinical Dark** — domyślna; grafit, złamana biel, chłodna mięta.
-2. **Civic Ink** — ciemny atramentowy granat, papierowa biel, mineralny błękit.
-3. **Light Archive** — jasne, ciepłe tło przypominające papier, ciemny atrament i ten sam miętowy kolor funkcjonalny.
+1. **Ciemny / Monochrome Control** — domyślny; grafit, złamana biel, mineralny brąz i miedź; autorski nocny pejzaż polskiej drogi.
+2. **Jasny** — ciepła papierowa biel, ciemny atrament, archiwalny szaroniebieski i odrobina ochry; autorski dzienny pejzaż polskiej drogi.
+3. **Pastelowy** — ciepły papier oraz jasne odcienie zachodu: maślany żółty, pomarańcz, koral i ciemna śliwka; wcześniejsza zaakceptowana ilustracja polskiej drogi pozostaje podstawą tego wariantu.
 
-Szata nie zmienia znaczenia informacji. Kolory ocen, ostrzeżeń, sponsorowania i statusów weryfikacji muszą zachowywać ten sam sens i odpowiedni kontrast. Ustawienie jest przypisane do profilu, a przed zalogowaniem może być zachowane lokalnie w urządzeniu. System respektuje `prefers-color-scheme`, `prefers-reduced-motion` i ustawienia kontrastu.
+W nagłówku znajduje się zwarty przełącznik przedstawiony jako trzy smukłe paski w przewodnich kolorach aktywnej szaty. Daje bezpośredni wybór trzech motywów oraz opcję **Auto**, która respektuje ustawienie jasny/ciemny urządzenia; Auto nie jest czwartą szatą. Szata nie zmienia znaczenia informacji. Kolory ocen, ostrzeżeń, sponsorowania i statusów weryfikacji zachowują ten sam sens oraz odpowiedni kontrast. System respektuje `prefers-color-scheme`, `prefers-reduced-motion` i ustawienia kontrastu.
+
+Ilustracje pejzażu są autorskie i fikcyjne. Mają przywoływać codzienny polski krajobraz przez drogi, pola, wsie, lasy i infrastrukturę, bez używania oficjalnych symboli ani udawania konkretnego zabytku.
 
 ## Stały układ głównej
 
