@@ -42,10 +42,15 @@ Statyczne czytanie pełnego repozytorium potwierdziło, że `rss_scraper.py` i
 tych kanałów. Testy potwierdzają odmowę przed transportem przy braku zgody i
 przy nowszej instrukcji wstrzymującej poprzednią zgodę.
 
-To jest etap częściowy: bezpośrednie wejścia HTML/sitemap, discovery,
-WordPress i recovery nadal wymagają podłączenia do tej samej decyzji oraz
-zapisu wersji instrukcji przy próbie pobrania. Harvestery pozostają
-zatrzymane do domknięcia tej listy.
+Drugi niezależny przegląd potwierdził także lukę między sitemap a HTML.
+Naprawa z tego samego dnia przeniosła kontrolę do `archive.process()` — tuż
+przed transportem — i rozdzieliła kanały: job `sitemap` wymaga instrukcji
+`sitemap`, a job `page` osobnej instrukcji `html`. Goły tekst zakresu nie
+jest już wystarczający do uruchomienia pobrania ani zapisu strony.
+
+To nadal etap częściowy: discovery, WordPress i recovery wymagają podłączenia
+do tej samej decyzji, a każda próba pobrania musi zapisywać wersję instrukcji
+i pełną proweniencję. Harvestery pozostają zatrzymane do domknięcia tej listy.
 
 ## Minimalna kolejność pracy
 
