@@ -43,8 +43,12 @@ Nie odczytuj ani nie wypisuj sekretów. Nie zapisuj do produkcyjnego Supabase, n
             1> $output 2> $errorOutput
         if ($LASTEXITCODE -eq 0) {
             Move-Item -LiteralPath $runningPath -Destination (Join-Path $done $task.Name)
+            & "$PSScriptRoot\Log-AI-Activity.ps1" -Actor Claude `
+                -Message "Completed task $($task.BaseName); result: $output"
         } else {
             Move-Item -LiteralPath $runningPath -Destination (Join-Path $failed $task.Name)
+            & "$PSScriptRoot\Log-AI-Activity.ps1" -Actor Claude `
+                -Message "Failed task $($task.BaseName); inspect: $output"
         }
     } finally {
         Pop-Location
