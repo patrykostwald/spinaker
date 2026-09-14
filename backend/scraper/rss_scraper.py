@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 import feedparser
 from django.utils import timezone
 from news.models import Source
+from news.models import SourceAccessInstruction
+from scraper.access_gate import approved_instruction
 from scraper.catalog import RSS_SOURCES, INSTITUTIONS
 from scraper.utils import guarded, fetch_feed, get_or_create_source, upsert_article
 
@@ -41,6 +43,9 @@ def scrape_rss_sources():
 def scrape_rss_source(source_id):
     source = Source.objects.get(pk=source_id)
     if not source.is_active or not source.scrape_enabled or not source.rss_url:
+        return 0
+    if approved_instruction(source, SourceAccessInstruction.Channel.RSS, source.rss_url) is None:
+        Source.objects.filter(pk=source.pk).update(last_error='no_approved_instruction')
         return 0
     Source.objects.filter(pk=source.pk).update(last_attempted=timezone.now())
     try:

@@ -5,6 +5,8 @@ import requests
 from django.db import transaction
 from django.utils import timezone
 from news.models import Article, ArticleCategory, Ballot, OfficialRecord, OfficialRevision, ParliamentaryVoting, SourceType
+from news.models import SourceAccessInstruction
+from scraper.access_gate import approved_instruction, AccessDenied
 from scraper.utils import get_or_create_source, upsert_article
 
 API = 'https://api.sejm.gov.pl'
@@ -12,6 +14,11 @@ VOTE_CODES = {'YES', 'NO', 'ABSTAIN', 'NO_VOTE', 'ABSENT', 'VOTE_VALID', 'VOTE_I
 
 
 def fetch_json(path, **params):
+    provider = 'eli' if path.startswith('/eli/') else 'sejm'
+    source = official_source(provider)
+    endpoint = API + ('/eli' if provider == 'eli' else '/sejm')
+    if approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint) is None:
+        raise AccessDenied('no_approved_instruction')
     response = requests.get(API + path, params=params, timeout=(5, 60), headers={'User-Agent': 'spin.clinic/1.0 official records'})
     response.raise_for_status()
     return response.json()
@@ -70,6 +77,8 @@ def save_voting(data, term, sitting, number):
 
 
 def import_voting(term, sitting, number, *, guard=None):
+    if not official_access_allowed('sejm'):
+        return 0
     data = fetch_json(f'/sejm/term{term}/votings/{sitting}/{number}')
     if guard:
         guard()
@@ -77,6 +86,8 @@ def import_voting(term, sitting, number, *, guard=None):
 
 
 def _import_voting_pages(term, guard=None, **filters):
+    if not official_access_allowed('sejm'):
+        return 0
     # The search endpoint defaults to 50 results. An empty page is the only
     # completion signal: a server-side page cap may be smaller than our limit.
     count, offset, seen = 0, 0, set()
@@ -135,6 +146,8 @@ def save_document(data, provider, external_id, api_url, url, category, date_key)
 def import_eli_year(publisher, year):
     if publisher not in {'DU', 'MP'} or not 1918 <= year <= timezone.now().year:
         raise ValueError('Invalid ELI journal or year')
+    if not official_access_allowed('eli'):
+        return 0
     offset, count = 0, 0
     while True:
         payload = fetch_json('/eli/acts/search', publisher=publisher, year=year, offset=offset, limit=100)
@@ -153,6 +166,8 @@ def import_eli_year(publisher, year):
 def import_print(term, number):
     if not str(number).replace('-', '').isdigit():
         raise ValueError('Invalid print number')
+    if not official_access_allowed('sejm'):
+        return 0
     path = f'/sejm/term{term}/prints/{number}'
     data = fetch_json(path)
     if str(data['number']) != str(number) or data['term'] != term:
@@ -163,6 +178,8 @@ def import_print(term, number):
 
 def import_prints(term):
     # This endpoint returns the full list and ignores limit/offset parameters.
+    if not official_access_allowed('sejm'):
+        return 0
     count = 0
     for row in fetch_json(f'/sejm/term{term}/prints'):
         if row['term'] != term:
@@ -178,6 +195,8 @@ def import_prints(term):
 
 
 def import_eli_changes(since):
+    if not official_access_allowed('eli'):
+        return 0
     count, offset, seen = 0, 0, set()
     while True:
         payload = fetch_json('/eli/changes/acts', since=since, offset=offset)
@@ -196,3 +215,9 @@ def import_eli_changes(since):
             return count
         if not items:
             raise ValueError('Incomplete ELI changes pagination')
+
+
+def official_access_allowed(provider):
+    source = official_source(provider)
+    endpoint = API + ('/eli' if provider == 'eli' else '/sejm')
+    return approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint) is not None

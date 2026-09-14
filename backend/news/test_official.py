@@ -2,9 +2,21 @@ from copy import deepcopy
 import pytest
 from django.core.cache import cache
 from rest_framework.test import APIClient
-from news.models import Article, Ballot, EvidenceLink, OfficialRecord
+from news.models import Article, Ballot, EvidenceLink, OfficialRecord, SourceAccessInstruction
 from news.metadata import extract_metadata
 from scraper.official import save_voting, save_document
+
+
+def approve_api(provider):
+    from django.utils import timezone
+    from scraper.official import API, official_source
+    source = official_source(provider)
+    endpoint = API + ('/eli' if provider == 'eli' else '/sejm')
+    return SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api',
+        allowed_scope='metadata', endpoint=endpoint,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
 
 # Synthetic records are test-only and never loaded into the portal database.
 @pytest.fixture
@@ -79,6 +91,7 @@ def test_url_preview_requires_staff():
 def test_eli_changes_reads_all_pages():
     from unittest.mock import patch
     from scraper.official import import_eli_changes
+    approve_api('eli')
     rows = [{'publisher': 'DU', 'year': 2026, 'pos': position, 'title': f'Test {position}', 'promulgation': '2026-01-01'} for position in (1, 2)]
     with patch('scraper.official.fetch_json', side_effect=[{'items': [rows[0]], 'totalCount': 2}, {'items': [rows[1]], 'totalCount': 2}]) as fetch:
         assert import_eli_changes('2026-01-01T00:00:00') == 2
@@ -94,7 +107,8 @@ def test_failed_official_task_does_not_advance_last_success():
     cache.clear()
     stamp = timezone.now()
     state = ImportState.objects.create(name='official:eli', last_success=stamp)
-    with patch('scraper.official.import_eli_changes', side_effect=TimeoutError):
+    with patch('scraper.official.official_access_allowed', return_value=True), \
+            patch('scraper.official.import_eli_changes', side_effect=TimeoutError):
         with pytest.raises(TimeoutError):
             import_official_task('eli')
     state.refresh_from_db()

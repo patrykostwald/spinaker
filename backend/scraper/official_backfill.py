@@ -9,7 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from news.models import ImportState, Source
-from scraper.official import API, fetch_json, import_voting_period
+from scraper.official import API, fetch_json, import_voting_period, official_access_allowed
 
 # Confirmed by https://api.sejm.gov.pl/sejm/term10 and the Sejm API docs.
 TERM_STARTS = {10: date(2023, 11, 13)}
@@ -30,6 +30,8 @@ def backfill_votings_cycle():
     source = Source.objects.filter(url=API + '/sejm').first()
     if not source or not _source_enabled(source.pk):
         return {'status': 'disabled', 'new_records': 0}
+    if not official_access_allowed('sejm'):
+        return {'status': 'blocked_access_review', 'new_records': 0}
     token = uuid4().hex
     if not cache.add(LOCK, token, 3600):
         return {'status': 'already_running', 'new_records': 0}

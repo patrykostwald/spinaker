@@ -59,8 +59,14 @@ def test_upsert_specializes_only_default_and_preserves_source_facts():
 @pytest.mark.django_db
 def test_rss_category_is_topic_not_sponsorship(monkeypatch):
     from scraper.rss_scraper import scrape_rss_source
-    from news.models import Article
+    from news.models import Article, SourceAccessInstruction
     source = Source.objects.create(name='Publisher', url='https://example.org', rss_url='https://example.org/rss', is_active=True)
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='rss',
+        allowed_scope='metadata', endpoint=source.rss_url,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=__import__('django.utils.timezone', fromlist=['now']).now(),
+        reviewed_by='test', minimum_interval_seconds=3)
     feed = b'<rss version="2.0"><channel><title>News</title><link>https://example.org</link><description>News</description><item><title>Wywiad o reklamie</title><link>https://example.org/news/a</link><category>Reklama</category><category>Sponsorowane</category></item></channel></rss>'
     monkeypatch.setattr('scraper.rss_scraper.fetch_feed', lambda url: feed)
     scrape_rss_source(source.pk)

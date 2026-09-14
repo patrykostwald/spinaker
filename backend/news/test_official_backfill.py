@@ -9,6 +9,13 @@ from news.models import ImportState, Source
 from scraper.official_backfill import LOCK, backfill_votings_cycle
 
 
+@pytest.fixture(autouse=True)
+def allow_official_api_for_backfill_unit_tests(monkeypatch):
+    """These tests exercise the persisted cursor, not the access gate."""
+    monkeypatch.setattr('scraper.official_backfill.official_access_allowed', lambda provider: True)
+    monkeypatch.setattr('scraper.official.official_access_allowed', lambda provider: True)
+
+
 @pytest.fixture
 def source(db):
     cache.clear()

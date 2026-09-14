@@ -7,6 +7,12 @@ from news.models import Article, Ballot, OfficialRecord, OfficialRevision, Parli
 from scraper.official import import_voting_period, import_voting_search
 
 
+@pytest.fixture(autouse=True)
+def allow_official_api_for_pure_pagination_tests(monkeypatch):
+    """Network is mocked here; keep parser tests independent from Django state."""
+    monkeypatch.setattr('scraper.official.official_access_allowed', lambda provider: True)
+
+
 def summaries(start, stop):
     return [{'term': 10, 'sitting': 1, 'votingNumber': number} for number in range(start, stop)]
 

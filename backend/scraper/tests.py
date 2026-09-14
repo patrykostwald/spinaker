@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
 import pytest
 from django.core.cache import cache
-from news.models import Article, Source
+from news.models import Article, Source, SourceAccessInstruction
 from scraper.catalog import RSS_SOURCES, INSTITUTIONS, TWITTER_POLITICIANS, NEWSAPI_TOPICS
 from scraper.gdelt_scraper import scrape_gdelt, _parse_gdelt_date
 from scraper.newsapi_scraper import scrape_newsapi_batch
@@ -18,6 +18,15 @@ def clear_cache():
 
 def response(payload):
     return MagicMock(json=lambda: payload, raise_for_status=lambda: None)
+
+
+def approve_rss(source):
+    return SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='rss',
+        allowed_scope='metadata', endpoint=source.rss_url,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=__import__('django.utils.timezone', fromlist=['now']).now(),
+        reviewed_by='test', minimum_interval_seconds=3)
 
 def test_catalog():
     assert len(RSS_SOURCES) == 43  # The brief labels this as 42, but lists 43.
@@ -109,6 +118,7 @@ def test_scrape_newsapi(mock_get, settings):
 def test_rss_dedup_counters_and_dates(fetch):
     fetch.return_value = b'''<rss version="2.0"><channel><title>Test</title><item><title>News</title><link>https://example.org/1</link><pubDate>Mon, 20 Jan 2025 14:30:00 +0000</pubDate><description>Summary</description></item></channel></rss>'''
     source = Source.objects.create(name='Institution', url='https://example.org', rss_url='https://example.org/rss', source_type='institution')
+    approve_rss(source)
     assert scrape_rss_source(source.pk) == 1
     assert scrape_rss_source(source.pk) == 0
     source.refresh_from_db()
@@ -124,8 +134,11 @@ def test_rss_dedup_counters_and_dates(fetch):
 @patch('scraper.rss_scraper.fetch_feed')
 def test_rss_failures_do_not_stop_other_sources(fetch):
     fetch.side_effect = TimeoutError()
+    first = Source.objects.create(name='Allowed one', url='https://allowed-one.example', rss_url='https://allowed-one.example/feed')
+    second = Source.objects.create(name='Allowed two', url='https://allowed-two.example', rss_url='https://allowed-two.example/feed')
+    approve_rss(first); approve_rss(second)
     assert scrape_rss_sources() == 0
-    expected_feeds = set(Source.objects.exclude(rss_url='').values_list('rss_url', flat=True))
+    expected_feeds = {first.rss_url, second.rss_url}
     assert {call.args[0] for call in fetch.call_args_list} == expected_feeds
     assert fetch.call_count == len(expected_feeds)
 
@@ -182,6 +195,7 @@ def test_seeding_preserves_increased_frequency():
 def test_rss_updated_date_is_not_publication(fetch):
     fetch.return_value = b'<feed xmlns="http://www.w3.org/2005/Atom"><title>Test</title><entry><title>Test</title><link href="https://example.org/a"/><updated>2026-09-01T12:00:00Z</updated></entry></feed>'
     source = Source.objects.create(name='Test', url='https://example.org', rss_url='https://example.org/feed')
+    approve_rss(source)
     assert scrape_rss_source(source.pk) == 1
     assert Article.objects.get().published_date is None
 
@@ -241,6 +255,7 @@ def test_x_partial_failure_preserves_cursor(mock_get, settings):
 def test_html_response_never_counts_as_successful_feed(monkeypatch):
     from django.utils import timezone as dj_timezone
     source = Source.objects.create(name='Publisher', url='https://example.org', rss_url='https://example.org/feed', last_scraped=dj_timezone.now())
+    approve_rss(source)
     previous = source.last_scraped
     monkeypatch.setattr('scraper.rss_scraper.fetch_feed', lambda url: b'<html><head><title>Welcome</title></head><body>Not an RSS feed</body></html>')
     assert scrape_rss_source(source.pk) == 0
@@ -253,6 +268,7 @@ def test_html_response_never_counts_as_successful_feed(monkeypatch):
 @pytest.mark.django_db
 def test_valid_empty_feed_is_successful(monkeypatch):
     source = Source.objects.create(name='Publisher', url='https://example.org', rss_url='https://example.org/feed')
+    approve_rss(source)
     monkeypatch.setattr('scraper.rss_scraper.fetch_feed', lambda url: b'<?xml version="1.0"?><rss version="2.0"><channel><title>Publisher</title><link>https://example.org</link><description>Updates</description></channel></rss>')
     assert scrape_rss_source(source.pk) == 0
     source.refresh_from_db()

@@ -71,7 +71,7 @@ def import_official_task(kind):
     from django.conf import settings
     from django.utils import timezone
     from news.models import ImportState
-    from scraper.official import import_voting_period, import_prints, import_eli_changes
+    from scraper.official import import_voting_period, import_prints, import_eli_changes, official_access_allowed
     if kind not in {'votings', 'prints', 'eli'}:
         raise ValueError('Unknown official import')
     lock = 'lock:official:' + kind
@@ -82,6 +82,11 @@ def import_official_task(kind):
     state.last_started = started
     state.save(update_fields=['last_started'])
     try:
+        provider = 'eli' if kind == 'eli' else 'sejm'
+        if not official_access_allowed(provider):
+            state.last_error = 'no_approved_instruction'
+            state.save(update_fields=['last_error'])
+            return {'status': 'blocked_access_review', 'new_records': 0}
         # Revisit seven days for corrections; resume from last success after downtime.
         since = (state.last_success or started) - timedelta(days=7)
         if kind == 'votings':

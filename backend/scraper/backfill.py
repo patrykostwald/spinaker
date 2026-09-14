@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from news.models import ArchiveJob, ImportState, Source, SourceAccessInstruction
 from scraper.archive import run_parallel_batch
+from scraper.access_gate import approved_instruction
 from scraper.news_sitemaps import verified_maps
 
 STATE_PREFIX = 'archive-backfill:'
@@ -27,19 +28,14 @@ def approved_access_instructions():
     candidates = Source.objects.filter(is_active=True, scrape_enabled=True,
         catalog_stage='configured').order_by('pk')
     instructions = {}
-    for instruction in SourceAccessInstruction.objects.filter(
-            source_id__in=candidates.values('pk'),
-            status=SourceAccessInstruction.Status.APPROVED,
-            channel=SourceAccessInstruction.Channel.SITEMAP,
-            minimum_interval_seconds__gte=3, terms_url__gt='', reviewed_at__isnull=False,
-            reviewed_by__gt='').exclude(evidence={}).order_by('source_id', '-version'):
-        instructions.setdefault(instruction.source_id, instruction)
-    return {
-        source.pk: instruction
-        for source in candidates
-        if (instruction := instructions.get(source.pk))
-        and instruction.endpoint in set(verified_maps(source, require_archive_approval=True))
-    }
+    for source in candidates:
+        for sitemap in verified_maps(source, require_archive_approval=True):
+            instruction = approved_instruction(
+                source, SourceAccessInstruction.Channel.SITEMAP, sitemap)
+            if instruction is not None:
+                instructions[source.pk] = instruction
+                break
+    return instructions
 
 
 def approved_source_ids():
