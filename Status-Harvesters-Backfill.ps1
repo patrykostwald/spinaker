@@ -7,6 +7,7 @@ $python = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $python) { throw "Missing Python virtualenv in project root or backend directory." }
 $env:USE_SQLITE = 'true'
+$env:SQLITE_DATABASE_PATH = 'C:\Users\User\spin-clinic\backend\db.sqlite3'
 $env:ARCHIVE_STORE_FULL_TEXT = 'false'
 $ids = if ($SourceId) { $SourceId | ForEach-Object { "--source-id $_" } } else { @() }
 & $python "$PSScriptRoot\backend\manage.py" backfill_status @ids
