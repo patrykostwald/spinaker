@@ -12,12 +12,13 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from news.models import Article, ArticleContent, ArchiveJob, ImportState, Source
+from news.models import Article, ArticleContent, ArchiveJob, ImportState, Source, SourceAccessInstruction
 from news.signals import invalidate_search
 from scraper.archive import SourceDelay, USER_AGENT, host_state, robots
 from scraper.html_archive import retry_delay
 from scraper.source_probe import public_link
 from scraper.utils import fetch_feed, upsert_article
+from scraper.access_gate import approved_instruction
 
 # Publisher-disclosed endpoints measured in wordpress-archive-volume-2026-09-09.json.
 # GZC remains a disabled candidate. Other WordPress sites were not confirmed.
@@ -59,7 +60,12 @@ def host(url):
 def endpoint_for(source):
     if source.catalog_stage != 'configured' or not source.is_active or not source.scrape_enabled:
         return None
-    return VERIFIED_ENDPOINTS.get(host(source.url))
+    endpoint = VERIFIED_ENDPOINTS.get(host(source.url))
+    if endpoint is None:
+        return None
+    if approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint) is None:
+        return None
+    return endpoint
 
 
 def ensure_enabled(source_id, endpoint):

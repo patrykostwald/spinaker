@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 from django.utils import timezone
 
-from news.models import Article, ArticleContent, ArchiveJob, ImportState, Source
+from news.models import Article, ArticleContent, ArchiveJob, ImportState, Source, SourceAccessInstruction
 from scraper.archive import SourceDelay
 from scraper.wordpress_backfill import (VERIFIED_ENDPOINTS, collection_url, decode_collection,
     featured_image, fetch_collection, gmt_date, run_wordpress_source, wordpress_cycle)
@@ -32,7 +32,13 @@ def envelope(rows, total=None):
 
 @pytest.fixture
 def source(db):
-    return Source.objects.create(name='WordPress fixture', url='https://liberte.pl/feed/')
+    source = Source.objects.create(name='WordPress fixture', url='https://liberte.pl/feed/')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api',
+        allowed_scope='metadata', endpoint=ENDPOINT,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+    return source
 
 
 def due(source):

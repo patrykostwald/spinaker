@@ -147,3 +147,18 @@ def test_discovery_refuses_robots_request_without_sitemap_instruction(monkeypatc
 
     assert discover(source) == 0
     robots.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_wordpress_backfill_refuses_transport_without_api_instruction(monkeypatch):
+    from scraper.wordpress_backfill import VERIFIED_ENDPOINTS, collection_url, fetch_collection, SourceDisabled
+
+    source = Source.objects.create(name='WordPress without instruction', url='https://liberte.pl/feed/')
+    fetch = Mock()
+    monkeypatch.setattr('scraper.wordpress_backfill.fetch_feed', fetch)
+
+    with pytest.raises(SourceDisabled):
+        fetch_collection(source.pk, VERIFIED_ENDPOINTS['liberte.pl'],
+            collection_url(VERIFIED_ENDPOINTS['liberte.pl']))
+
+    fetch.assert_not_called()
