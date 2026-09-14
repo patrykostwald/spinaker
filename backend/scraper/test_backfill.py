@@ -6,7 +6,7 @@ from django.core.management.base import CommandError
 
 from news.models import ArchiveJob, ImportState, Source
 from scraper.archive import ArchiveCutoff
-from scraper.backfill import parse_cutoff, prepare_source
+from scraper.backfill import approved_source_ids, parse_cutoff, prepare_source
 
 
 def test_cutoff_requires_timezone():
@@ -48,3 +48,55 @@ def test_command_rejects_different_aware_cutoff():
 
 def test_cutoff_exception_is_explicit():
     assert issubclass(ArchiveCutoff, Exception)
+
+
+@pytest.mark.django_db
+def test_dynamic_source_pool_reloads_additions_and_removals_between_cycles(monkeypatch):
+    first = Source.objects.create(name='First', url='https://first.example',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    second = Source.objects.create(name='Second', url='https://second.example',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    pools = iter([[first.pk], [second.pk]])
+    calls = []
+
+    monkeypatch.setattr(
+        'scraper.management.commands.backfill_archives_loop.approved_source_ids',
+        lambda: next(pools))
+    monkeypatch.setattr(
+        'scraper.management.commands.backfill_archives_loop.run_backfill',
+        lambda source_ids, *args, **kwargs: calls.append(list(source_ids)) or {
+            'status': 'ok', 'completed': 0})
+    ticks = iter([0, 0, 1, 999999])
+    monkeypatch.setattr(
+        'scraper.management.commands.backfill_archives_loop.time.monotonic',
+        lambda: next(ticks))
+    monkeypatch.setattr(
+        'scraper.management.commands.backfill_archives_loop.time.sleep', lambda _: None)
+
+    call_command('backfill_archives_loop', dynamic_sources=True, max_hours=0.1)
+
+    assert calls == [[first.pk], [second.pk]]
+
+
+@pytest.mark.django_db
+def test_dynamic_source_pool_refuses_unapproved_or_unconfigured_sources(monkeypatch):
+    approved = Source.objects.create(name='Approved', url='https://approved.example',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    unapproved = Source.objects.create(name='Unapproved', url='https://no.example',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    Source.objects.create(name='Inactive', url='https://inactive.example',
+        is_active=False, scrape_enabled=True, catalog_stage='configured')
+    Source.objects.create(name='Candidate', url='https://candidate.example',
+        is_active=True, scrape_enabled=True, catalog_stage='candidate')
+    monkeypatch.setattr('scraper.backfill.verified_maps',
+        lambda source, require_archive_approval=False: (
+            ['https://approved.example/sitemap.xml'] if source.pk == approved.pk
+            and require_archive_approval else []))
+
+    assert approved_source_ids() == [approved.pk]
+    assert unapproved.pk not in approved_source_ids()
+
+
+def test_loop_requires_static_ids_unless_dynamic_mode_is_explicit():
+    with pytest.raises(CommandError, match='source-id'):
+        call_command('backfill_archives_loop', max_hours=0.1)

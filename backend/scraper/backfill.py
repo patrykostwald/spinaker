@@ -22,6 +22,14 @@ def state_name(source_id):
     return f'{STATE_PREFIX}{source_id}'
 
 
+def approved_source_ids():
+    """Resolve the current local allowlist without making network requests."""
+    candidates = Source.objects.filter(is_active=True, scrape_enabled=True,
+        catalog_stage='configured').order_by('pk')
+    return [source.pk for source in candidates
+        if verified_maps(source, require_archive_approval=True)]
+
+
 def prepare_source(source, cutoff_at):
     maps = verified_maps(source, require_archive_approval=True)
     if not maps:
