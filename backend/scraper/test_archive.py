@@ -13,8 +13,18 @@ def reset_archive_cache(monkeypatch):
     from scraper.archive import _HOST_STATES
     _HOST_STATES.clear()
 from rest_framework.test import APIClient
-from news.models import Article, ArchiveJob, Source, ArticleContent
+from news.models import Article, ArchiveJob, Source, ArticleContent, SourceAccessInstruction
 from scraper.archive import process, run_batch, article_body
+
+
+def approve_access(source, channel, endpoint=None, scope='metadata'):
+    version = (SourceAccessInstruction.objects.filter(source=source)
+        .order_by('-version').values_list('version', flat=True).first() or 0) + 1
+    return SourceAccessInstruction.objects.create(
+        source=source, version=version, status='approved', channel=channel,
+        allowed_scope=scope, endpoint=endpoint or source.url,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
 
 
 @pytest.mark.django_db
@@ -28,6 +38,7 @@ def test_generic_archive_scheduler_stays_blocked_without_access_instruction(monk
 @pytest.mark.django_db
 def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
     source = Source.objects.create(name='Test archive', url='https://example.org')
+    approve_access(source, 'sitemap', 'https://example.org/map.xml')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/map.xml', kind='sitemap')
     xml = b'<urlset><url><loc>https://example.org/old</loc><lastmod>2026-09-08</lastmod></url><url><loc>https://evil.org/other</loc></url></urlset>'
     html = b'<title>Old article</title><meta property="og:type" content="article"><script type="application/ld+json">{"@type":"NewsArticle","articleBody":"Uniquehistoricalword"}</script>'
@@ -35,6 +46,7 @@ def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
     process(job)
     assert ArchiveJob.objects.count() == 2
     page = ArchiveJob.objects.get(kind='page')
+    approve_access(source, 'html', source.url, 'content')
     from scraper.archive import _HOST_STATES
     _HOST_STATES.clear()
     process(page, allowed_scope='content')
@@ -67,6 +79,7 @@ def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
 @pytest.mark.django_db
 def test_failed_archive_is_retained_without_article(monkeypatch):
     source = Source.objects.create(name='Test', url='https://example.org')
+    approve_access(source, 'html')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/old', kind='page')
     monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nDisallow: /')
     assert run_batch(1) == 0
@@ -128,6 +141,7 @@ def test_reader_honors_declared_encoding():
 @pytest.mark.django_db
 def test_unrelated_body_is_not_saved_or_searchable(monkeypatch):
     source = Source.objects.create(name='Test publisher', url='https://example.org')
+    approve_access(source, 'html')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/target', kind='page')
     raw = b'<title>Source title</title><meta property="og:type" content="article">' + body_document(
         {'@type': 'NewsArticle', 'url': '/other', 'articleBody': 'Foreignuniquesearchterm'})
@@ -142,6 +156,7 @@ def test_unrelated_body_is_not_saved_or_searchable(monkeypatch):
 @pytest.mark.django_db
 def test_metadata_scope_never_stores_article_body_even_when_full_text_mode_is_on(monkeypatch):
     source = Source.objects.create(name='Metadata only', url='https://example.org')
+    approve_access(source, 'html', scope='metadata')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/metadata-only', kind='page')
     raw = b'<title>Source title</title><meta property="og:type" content="article">' + body_document(
         {'@type': 'NewsArticle', 'url': '/metadata-only', 'articleBody': 'Do not retain this body'})
@@ -153,6 +168,7 @@ def test_metadata_scope_never_stores_article_body_even_when_full_text_mode_is_on
 @pytest.mark.django_db
 def test_reviewed_archive_job_uses_hostname_transport(monkeypatch):
     source = Source.objects.create(name='Reviewed', url='https://example.org')
+    approve_access(source, 'html')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/reviewed', kind='page')
     calls = []
     html = b'<title>Reviewed source</title><meta property="og:type" content="article">'
@@ -192,6 +208,7 @@ def test_archive_host_gate_covers_robots_and_fetch(monkeypatch):
 @pytest.mark.django_db
 def test_archive_preserves_publisher_thumbnail_url(monkeypatch):
     source = Source.objects.create(name='Thumbnail source', url='https://example.org')
+    approve_access(source, 'html')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/archive/story')
     html = b'<title>Source title</title><meta property="og:type" content="article"><meta property="og:image" content="/images/photo.jpg">'
     monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else html)

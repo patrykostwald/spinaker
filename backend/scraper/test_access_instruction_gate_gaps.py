@@ -12,6 +12,8 @@ from django.utils import timezone
 from news.models import Article, Source, SourceAccessInstruction
 from scraper.official import import_voting
 from scraper.rss_scraper import scrape_rss_source
+from scraper.archive import process
+from scraper.access_gate import AccessDenied
 
 
 RSS = (b'<rss version="2.0"><channel><title>Test</title><item>'
@@ -100,3 +102,36 @@ def test_voting_backfill_refuses_before_import_without_instruction(monkeypatch):
 
     assert result['status'] == 'blocked_access_review'
     importer.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_sitemap_instruction_never_authorizes_page_fetch(monkeypatch):
+    source = Source.objects.create(name='Sitemap only', url='https://example.org')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='sitemap',
+        allowed_scope='content', endpoint='https://example.org/map.xml',
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+    from news.models import ArchiveJob
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
+    fetch = Mock()
+    monkeypatch.setattr('scraper.archive.fetch_feed', fetch)
+
+    with pytest.raises(AccessDenied, match='no_approved_instruction'):
+        process(job)
+
+    fetch.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_direct_page_process_refuses_without_html_instruction(monkeypatch):
+    source = Source.objects.create(name='No HTML instruction', url='https://example.org')
+    from news.models import ArchiveJob
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
+    fetch = Mock()
+    monkeypatch.setattr('scraper.archive.fetch_feed', fetch)
+
+    with pytest.raises(AccessDenied, match='no_approved_instruction'):
+        process(job)
+
+    fetch.assert_not_called()

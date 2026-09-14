@@ -15,10 +15,11 @@ from django.core.cache import cache
 from django.db import transaction, close_old_connections, connections
 from django.db.models import Q, Count, Max, F
 from django.utils import timezone
-from news.models import ArchiveJob, Article, ArticleContent, Source, ImportState, SourceRecoveryCase
+from news.models import ArchiveJob, Article, ArticleContent, Source, ImportState, SourceRecoveryCase, SourceAccessInstruction
 from news.metadata import extract_metadata, MetadataParser, decode_source_html
 from scraper.utils import fetch_feed, upsert_article, safe_url
 from scraper.utils import retry_delay
+from scraper.access_gate import require_approved_instruction, AccessDenied
 
 USER_AGENT = 'ContextBeforeContent'
 # A safety ceiling for configuration, not a claim about measured throughput.
@@ -188,15 +189,22 @@ def article_body(raw, url=None):
 def process(job, cutoff_at=None, allowed_scope=None):
     from scraper.directory_archive import directory_spec, directory_links
     job_kind = getattr(job, 'kind', None)
-    if job_kind == 'sitemap':
-        current = Source.objects.filter(pk=job.source_id, is_active=True,
+    # The network boundary enforces access again.  A scheduler may narrow the
+    # job pool, but it must never be the sole permission check.
+    if job_kind in ('sitemap', 'page'):
+        source = Source.objects.filter(pk=job.source_id, is_active=True,
             scrape_enabled=True, catalog_stage='configured').first()
-        if current is None or not same_host(job.url, current.url):
+        channel = (SourceAccessInstruction.Channel.SITEMAP if job_kind == 'sitemap'
+            else SourceAccessInstruction.Channel.HTML)
+        instruction = require_approved_instruction(source, channel, job.url)
+        if allowed_scope is not None and allowed_scope != instruction.allowed_scope:
+            raise AccessDenied('access_scope_mismatch')
+        allowed_scope = instruction.allowed_scope
+    if job_kind == 'sitemap':
+        if source is None or not same_host(job.url, source.url):
             raise ValueError('source_unavailable')
     listing = job_kind == 'page' and directory_spec(job.url) is not None
     if listing:
-        source = Source.objects.filter(pk=job.source_id, is_active=True, scrape_enabled=True,
-            catalog_stage='configured').first()
         if source is None or not same_host(job.url, source.url):
             raise ValueError('source_unavailable')
     # Gate spans robots and the complete fetch; LocMem eviction cannot remove it.
