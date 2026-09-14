@@ -14,6 +14,8 @@ Stan na 14 września 2026.
 
 Każdy dostawca działa przez wymienny adapter. Model nie zapisuje bezpośrednio rekordów, nie publikuje nitek i nie wydaje samodzielnie ocen politycznych. Zwraca propozycje oparte na identyfikatorach boxów i jawnych adresach źródeł. Publikację zatwierdza redakcja.
 
+Płatny model jest elementem MVP, nie opcjonalnym eksperymentem po premierze. Wynik przechodzi przez walidator i trafia do oddzielnych, wersjonowanych rekordów wraz z dostawcą, modelem, wersją promptu, identyfikatorami wejściowych boxów, cytowanymi dowodami, pewnością, opóźnieniem, użyciem tokenów/kosztem oraz decyzją i korektą redakcji. Materiał źródłowy pozostaje oddzielony od interpretacji modelu. Tak powstaje przenośny zbiór ewaluacyjny i — po sprawdzeniu praw oraz jakości — treningowy dla własnego modelu.
+
 Do zewnętrznych modeli nie wysyłamy danych kont, komentarzy, adresów e-mail ani prywatnej aktywności użytkowników. W pilotażu przekazujemy tylko zapytanie, publiczne metadane źródeł i — jeśli istnieje odpowiednia podstawa — niezbędny fragment publicznego materiału.
 
 ## Porównanie dostawców

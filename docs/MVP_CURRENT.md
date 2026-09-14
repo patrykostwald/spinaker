@@ -14,7 +14,7 @@ Archiwum źródłowych doniesień medialnych i dokumentów, z osobistym wyborem 
 
 1. Większy pasek najnowszych publikacji wszystkich aktywnych źródeł.
 2. Pasek bieżących publikacji wybranych dziesięciu źródeł — wybór źródeł przez redakcję, nie pomiar popularności ani streszczenie.
-3. Własne zapisane paski: hasło, temat, rodzaj materiału i źródła; możliwość kilku pasków.
+3. Własne zapisane paski: jeden lub więcej widoków z hasła, źródeł, kategorii/rodzaju materiału albo ich połączenia. Pasek jest prywatnym filtrem archiwum, nie publiczną nitką autora.
 4. Dwie redakcyjne nitki marki spin.clinic: przekaz obozu rządzącego i opozycji. Bez fikcyjnych wypowiedzi. Publikacja po decyzji redaktora.
 5. Jedno oznaczone miejsce na nitkę sponsorowaną. Wizualny przykład nie jest rzeczywistą płatną kampanią i nie trafia jako fikcyjne wydarzenie do archiwum.
 6. Siatka bieżących materiałów z filtrami. Typ materiału i temat są osobnymi wymiarami. Tematy opierają się na kategoriach/oznaczeniach wydawców; niewiadome pozostają niewiadome.
@@ -23,7 +23,7 @@ Kliknięcie boxa otwiera źródło i kontekst z całej dostępnej historii, licz
 
 ## Konta i nitki
 
-Konto publiczne od startu: personalizacja, ulubione nitki, jedna opinia na materiał i eksport do X. Historia aktywności na profilu jest prywatna domyślnie i publikowana tylko po decyzji użytkownika. Publiczny komentarz pod materiałem należy wyraźnie odróżnić od udostępnienia zbiorczej historii profilu. Minimalne dane konta; brak wymogu prawdziwego nazwiska.
+Konto od startu: personalizacja, ulubione nitki, jedna reakcja i jeden komentarz na box lub nitkę oraz udostępnianie na X. Historia aktywności na profilu jest prywatna domyślnie i publikowana tylko po decyzji użytkownika. Publiczny komentarz pod materiałem należy wyraźnie odróżnić od udostępnienia zbiorczej historii profilu. Minimalne dane konta; brak wymogu prawdziwego nazwiska.
 
 Zwykłe konta nie publikują nitek. Redakcja może przyznać dziennikarzowi bezpłatne uprawnienia autorskie; użytkownik nie nadaje ich sobie sam. Docelowa wylęgarnia, awanse według ocen i otwarte tworzenie nitek są późniejszym etapem.
 
@@ -31,7 +31,7 @@ Nitka sponsorowana ma widoczne oznaczenie finansowania także w boxach i eksporc
 
 ## AI i X
 
-AI wspiera odnajdywanie powiązanych publikacji i pracę redakcji. Publiczne pytania do AI i generowane odpowiedzi nie są potrzebne do startu: użytkownik przegląda boxy, klasyczną wyszukiwarkę bazy, nitki redakcji i autoryzowanych autorów oraz kontekst po kliknięciu boxa. Zaplecze monitorowania potwierdzonych kont politycznych wymaga konfiguracji X, limitów i przeglądu redakcyjnego. Nie deklarujemy uruchomionego AI lub pobierania X bez rzeczywistych kluczy. W pierwszej wersji eksportujemy gotowe teksty; automatyczne publikowanie całych nitek wymaga osobnej integracji konta X.
+Płatne AI działa od MVP przez wymienny adapter: klasyfikuje boxy, wykrywa twierdzenia, proponuje powiązania, chronologię i szkice redakcyjne. Zapisujemy wersjonowane wyniki, dowody, koszty, decyzje redakcji i korekty jako własny zbiór do ewaluacji oraz przyszłego treningu. Publiczne pytania do AI nie są potrzebne do startu. Przycisk udostępnienia na X otwiera przygotowany wpis z publicznym linkiem do boxa lub nitki; automatyczne publikowanie z konta spin.clinic pozostaje późniejszą integracją.
 
 ## Jakość i bezpieczeństwo
 
