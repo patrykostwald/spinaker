@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 
 from news.models import ArchiveJob, ImportState, Source, SourceAccessInstruction
 from scraper.archive import ArchiveCutoff
-from scraper.backfill import approved_source_ids, parse_cutoff, prepare_source, run_backfill
+from scraper.backfill import approved_access_instructions, approved_source_ids, parse_cutoff, prepare_source, run_backfill
 
 
 def test_cutoff_requires_timezone():
@@ -102,6 +102,7 @@ def test_dynamic_source_pool_refuses_unapproved_or_unconfigured_sources(monkeypa
         reviewed_by='test', minimum_interval_seconds=3)
 
     assert approved_source_ids() == [approved.pk]
+    assert approved_access_instructions()[approved.pk].allowed_scope == 'metadata'
     assert unapproved.pk not in approved_source_ids()
 
 

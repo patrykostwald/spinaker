@@ -28,14 +28,14 @@ def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
     page = ArchiveJob.objects.get(kind='page')
     from scraper.archive import _HOST_STATES
     _HOST_STATES.clear()
-    process(page)
+    process(page, allowed_scope='content')
     a = Article.objects.get()
     assert a.published_date is None
     assert a.content.text == 'Uniquehistoricalword'
     assert APIClient().get('/api/search/', {'q': 'Uniquehistoricalword'}).json()['total'] == 1
     from scraper.archive import _HOST_STATES
     _HOST_STATES.clear()
-    process(page)
+    process(page, allowed_scope='content')
     assert Article.objects.count() == 1
 
     @pytest.mark.django_db
@@ -128,6 +128,17 @@ def test_unrelated_body_is_not_saved_or_searchable(monkeypatch):
     assert article.url == job.url
     assert article.content.text == '' and article.content.status == 'metadata_only'
     assert APIClient().get('/api/search/', {'q': 'Foreignuniquesearchterm'}).json()['total'] == 0
+
+
+@pytest.mark.django_db
+def test_metadata_scope_never_stores_article_body_even_when_full_text_mode_is_on(monkeypatch):
+    source = Source.objects.create(name='Metadata only', url='https://example.org')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/metadata-only', kind='page')
+    raw = b'<title>Source title</title><meta property="og:type" content="article">' + body_document(
+        {'@type': 'NewsArticle', 'url': '/metadata-only', 'articleBody': 'Do not retain this body'})
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else raw)
+    process(job, allowed_scope='metadata')
+    assert Article.objects.get().content.text == ''
 
 
 def test_archive_host_gate_covers_robots_and_fetch(monkeypatch):

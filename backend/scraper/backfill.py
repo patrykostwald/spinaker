@@ -22,23 +22,28 @@ def state_name(source_id):
     return f'{STATE_PREFIX}{source_id}'
 
 
-def approved_source_ids():
-    """Resolve the current legal allowlist without making network requests."""
+def approved_access_instructions():
+    """Resolve the current legal allowlist with its explicit scope."""
     candidates = Source.objects.filter(is_active=True, scrape_enabled=True,
         catalog_stage='configured').order_by('pk')
-    approved = SourceAccessInstruction.objects.filter(
-        source_id__in=candidates.values('pk'),
-        status=SourceAccessInstruction.Status.APPROVED,
-        channel=SourceAccessInstruction.Channel.SITEMAP,
-        minimum_interval_seconds__gte=3,
-        terms_url__gt='', reviewed_at__isnull=False, reviewed_by__gt='',
-    ).exclude(evidence={}).values_list('source_id', 'endpoint')
-    approved_endpoints = {}
-    for source_id, endpoint in approved:
-        approved_endpoints.setdefault(source_id, set()).add(endpoint)
-    return [source.pk for source in candidates
-        if (maps := set(verified_maps(source, require_archive_approval=True)))
-        and maps & approved_endpoints.get(source.pk, set())]
+    instructions = {}
+    for instruction in SourceAccessInstruction.objects.filter(
+            source_id__in=candidates.values('pk'),
+            status=SourceAccessInstruction.Status.APPROVED,
+            channel=SourceAccessInstruction.Channel.SITEMAP,
+            minimum_interval_seconds__gte=3, terms_url__gt='', reviewed_at__isnull=False,
+            reviewed_by__gt='').exclude(evidence={}).order_by('source_id', '-version'):
+        instructions.setdefault(instruction.source_id, instruction)
+    return {
+        source.pk: instruction
+        for source in candidates
+        if (instruction := instructions.get(source.pk))
+        and instruction.endpoint in set(verified_maps(source, require_archive_approval=True))
+    }
+
+
+def approved_source_ids():
+    return list(approved_access_instructions())
 
 
 def prepare_source(source, cutoff_at):
@@ -65,7 +70,8 @@ def prepare_source(source, cutoff_at):
 
 def run_backfill(source_ids, cutoff_at, workers=2, per_source_limit=20):
     requested_ids = set(source_ids)
-    allowed_ids = set(approved_source_ids())
+    instructions = approved_access_instructions()
+    allowed_ids = set(instructions)
     if not requested_ids <= allowed_ids:
         raise ValueError('source_access_not_approved')
     sources = list(Source.objects.filter(pk__in=source_ids, is_active=True,
@@ -95,7 +101,8 @@ def run_backfill(source_ids, cutoff_at, workers=2, per_source_limit=20):
             state.save(update_fields=['cursor'])
     completed = run_parallel_batch(workers=workers, per_worker=per_source_limit,
         metrics=metrics, source_ids=[source.pk for source, _, _ in prepared], cutoff_at=cutoff_at,
-        state_callback=checkpoint, per_source_limit=per_source_limit)
+        state_callback=checkpoint, per_source_limit=per_source_limit,
+        source_access_scopes={source_id: instructions[source_id].allowed_scope for source_id in requested_ids})
     for source, state, _ in prepared:
         state.refresh_from_db()
         state.cursor = {**state.cursor,

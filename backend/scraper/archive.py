@@ -163,7 +163,7 @@ def article_body(raw, url=None):
     return ''
 
 
-def process(job, cutoff_at=None):
+def process(job, cutoff_at=None, allowed_scope=None):
     from scraper.directory_archive import directory_spec, directory_links
     job_kind = getattr(job, 'kind', None)
     if job_kind == 'sitemap':
@@ -276,7 +276,8 @@ def process(job, cutoff_at=None):
             raise ArchiveCutoff()
     # The public Box needs metadata. Full-text extraction is a separate,
     # explicitly enabled processing mode because source permissions differ.
-    store_full_text = os.environ.get('ARCHIVE_STORE_FULL_TEXT', '').strip().lower() in ('1', 'true', 'yes', 'on')
+    store_full_text = (allowed_scope in ('content', 'snapshot')
+        and os.environ.get('ARCHIVE_STORE_FULL_TEXT', '').strip().lower() in ('1', 'true', 'yes', 'on'))
     body = article_body(raw, job.url) if store_full_text else ''
     if metadata['publisher_type'] != 'article' and not body and not metadata['published_date']:
         raise ValueError('unclassified_page')
@@ -307,7 +308,8 @@ def process(job, cutoff_at=None):
         'response_sha256': sha256(raw).hexdigest(), 'source_url': job.url})
     return int(created)
 
-def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_callback=None, per_source_limit=None):
+def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_callback=None,
+              per_source_limit=None, source_access_scopes=None):
     completed = 0
     counters = {key: 0 for key in ('pages_completed', 'sitemaps_completed', 'new_articles', 'deferred_jobs', 'failed_jobs')}
     if cutoff_at is not None:
@@ -350,7 +352,9 @@ def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_cal
             lease = job.available_at
             source_counts[job.source_id] = source_counts.get(job.source_id, 0) + 1
         try:
-            created = process(job) if cutoff_at is None else process(job, cutoff_at=cutoff_at)
+            scope = (source_access_scopes or {}).get(job.source_id)
+            created = process(job, allowed_scope=scope) if cutoff_at is None else process(
+                job, cutoff_at=cutoff_at, allowed_scope=scope)
             job.status = 'done'; job.last_error = ''; completed += 1
             if job.kind == 'page':
                 counters['pages_completed'] += 1
@@ -387,7 +391,8 @@ def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_cal
     return completed
 
 
-def run_parallel_batch(workers=4, per_worker=20, metrics=None, source_ids=None, cutoff_at=None, state_callback=None, per_source_limit=None):
+def run_parallel_batch(workers=4, per_worker=20, metrics=None, source_ids=None, cutoff_at=None,
+                       state_callback=None, per_source_limit=None, source_access_scopes=None):
     if not 1 <= workers <= MAX_ARCHIVE_WORKERS or not 1 <= per_worker <= 100:
         raise ValueError(f'Use 1..{MAX_ARCHIVE_WORKERS} workers and 1..100 jobs per worker')
     jobs = ArchiveJob.objects.filter(status__in=['pending', 'error', 'running'],
@@ -416,6 +421,10 @@ def run_parallel_batch(workers=4, per_worker=20, metrics=None, source_ids=None, 
                 options['state_callback'] = state_callback
             if per_source_limit is not None:
                 options['per_source_limit'] = per_source_limit
+            if source_access_scopes is not None:
+                options['source_access_scopes'] = {
+                    source_id: source_access_scopes[source_id]
+                    for source_id in ids if source_id in source_access_scopes}
             completed = run_batch(limit, **options)
             return completed, counters
         finally:
