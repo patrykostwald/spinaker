@@ -48,16 +48,22 @@ przed transportem — i rozdzieliła kanały: job `sitemap` wymaga instrukcji
 `sitemap`, a job `page` osobnej instrukcji `html`. Goły tekst zakresu nie
 jest już wystarczający do uruchomienia pobrania ani zapisu strony.
 
-To nadal etap częściowy: discovery, WordPress i recovery wymagają podłączenia
+Discovery sprawdza już instrukcję `sitemap` przed odczytem `robots.txt`, więc
+nie wykorzysta nieautoryzowanej sondy technicznej do zasilenia kolejki.
+WordPress backfill i uśpiony mostek REST wymagają zaś instrukcji `api`
+bezpośrednio przed transportem albo zapisem kolejki. Pole katalogowe
+`archive_verification` pozostało dowodem technicznym; samo nie autoryzuje pracy.
+
+To nadal etap częściowy: recovery i każdy przyszły adapter wymagają podłączenia
 do tej samej decyzji, a każda próba pobrania musi zapisywać wersję instrukcji
 i pełną proweniencję. Harvestery pozostają zatrzymane do domknięcia tej listy.
 
 ## Minimalna kolejność pracy
 
-1. Napisać testy odmowy dla RSS, API, sitemap/discovery, recovery i WordPress:
+1. Napisać testy odmowy dla recovery i każdego przyszłego adaptera:
    brak, wygaśnięcie lub cofnięcie instrukcji oznacza zero wywołań transportu.
-2. Ujednolicić wspólną funkcję decyzji polityki i przeprowadzić przez nią
-   wszystkie adaptery; nie aktywować żadnego źródła w tej zmianie.
+2. Utrzymywać wspólną funkcję decyzji polityki na granicy każdego nowego
+   adaptera; nie aktywować żadnego źródła w tej zmianie.
 3. Dodać test pilota z twardym budżetem trzech żądań, gdzie retry i redirect
    także go zużywają.
 4. Rozdzielić `FetchAttempt`, wersję dozwolonego materiału i artefakty
