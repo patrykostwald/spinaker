@@ -482,6 +482,10 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .theme-error { position: absolute; z-index: 81; top: calc(100% + 7px); right: 0; width: 190px; padding: 8px 10px; border: 1px solid var(--color-negative); background: var(--surface); color: var(--text); font-size: 11px; }
 .material-actions, .thread-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .share-x-button { border-color: rgb(var(--accent-rgb) / .2); }
+.thread-opinions { margin-top: 36px; padding-top: 30px; border-top: 1px solid var(--line); }
+.thread-opinions > header { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+.thread-opinions > header h2 { margin-top: 7px; font-family: 'IBM Plex Serif', Georgia, serif; font-size: 22px; }
+.thread-opinions > header > p { display: flex; gap: 13px; color: var(--text-secondary); font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 12px; }
 .bg-primary:not([data-category]), .site-header button[type="submit"], .profile-primary { background: var(--color-primary); color: var(--background); }
 .bg-primary:not([data-category]):hover, .site-header button[type="submit"]:hover, .profile-primary:hover { background: var(--color-primary-hover); }
 .live-dot { background: var(--color-live); }

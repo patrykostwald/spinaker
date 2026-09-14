@@ -1,6 +1,6 @@
 from django.urls import path
 from news.accounts import (RegisterView, LoginView, LogoutView, AccountMeView,
-                           TopicsView, TopicDetailView, OpinionsView)
+                           TopicsView, TopicDetailView, OpinionsView, ThreadOpinionsView)
 
 from news.profiles import ProfileView, HistoryView, PublicActivityView, FavoritesView, FavoriteDetailView
 
@@ -17,4 +17,5 @@ urlpatterns = [
     path('account/topics/', TopicsView.as_view()),
     path('account/topics/<int:topic_id>/', TopicDetailView.as_view()),
     path('articles/<int:article_id>/opinions/', OpinionsView.as_view()),
+    path('threads/<slug:slug>/opinions/', ThreadOpinionsView.as_view()),
 ]

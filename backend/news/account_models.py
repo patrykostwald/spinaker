@@ -35,6 +35,21 @@ class ArticleOpinion(models.Model):
         ]
 
 
+class ThreadOpinion(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='thread_opinions')
+    thread = models.ForeignKey('news.Thread', on_delete=models.CASCADE, related_name='opinions')
+    polarity = models.CharField(max_length=8, choices=[('positive', 'Pozytywny'), ('negative', 'Negatywny')])
+    body = models.CharField(max_length=240, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'thread'], name='one_opinion_per_user_thread'),
+            models.CheckConstraint(condition=models.Q(polarity__in=['positive', 'negative']), name='thread_opinion_valid_polarity'),
+        ]
+
+
 class ProfilePreference(models.Model):
     THEME_CHOICES = [
         ('auto', 'Automatyczny'),

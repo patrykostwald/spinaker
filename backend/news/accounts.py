@@ -17,8 +17,8 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from news.account_models import ArticleOpinion, SavedTopic
-from news.models import Article, ArticleCategory, Source
+from news.account_models import ArticleOpinion, ThreadOpinion, SavedTopic
+from news.models import Article, ArticleCategory, Source, Thread
 from news.topics import TOPICS
 from news.editorial_roles import role_data
 
@@ -269,3 +269,57 @@ class OpinionsView(APIView):
                 return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
             opinion.body = body
         return Response(OpinionSerializer(opinion).data)
+
+
+class ThreadOpinionSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    class Meta:
+        model = ThreadOpinion
+        fields = ['id', 'author', 'polarity', 'body', 'created_at']
+    def get_author(self, opinion):
+        return {'id': opinion.user_id, 'username': opinion.user.username}
+
+
+class ThreadOpinionsView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
+    def get_permissions(self):
+        return [IsAuthenticated()] if self.request.method in ('POST', 'PATCH') else super().get_permissions()
+    def _thread(self, slug):
+        return get_object_or_404(Thread, slug=slug, published=True)
+    def get(self, request, slug):
+        rows = self._thread(slug).opinions.select_related('user')
+        counts = {'positive': 0, 'negative': 0}
+        counts.update({row['polarity']: row['n'] for row in rows.values('polarity').annotate(n=Count('id'))})
+        mine = rows.filter(user=request.user).first() if request.user.is_authenticated else None
+        return Response({
+            'counts': counts,
+            'mine': ThreadOpinionSerializer(mine).data if mine else None,
+            'positive': ThreadOpinionSerializer(rows.filter(polarity='positive').exclude(body='')[:20], many=True).data,
+            'negative': ThreadOpinionSerializer(rows.filter(polarity='negative').exclude(body='')[:20], many=True).data,
+        })
+    def post(self, request, slug):
+        thread = self._thread(slug)
+        serializer = OpinionInput(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            with transaction.atomic():
+                opinion = ThreadOpinion.objects.create(user=request.user, thread=thread, **serializer.validated_data)
+        except IntegrityError:
+            return Response({'detail': 'Twoja opinia o tej nitce jest już zapisana.'}, status=409)
+        return Response(ThreadOpinionSerializer(opinion).data, status=201)
+    def patch(self, request, slug):
+        if not isinstance(request.data, dict) or set(request.data) - {'body'}:
+            raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
+        serializer = OpinionInput(data={'polarity': 'positive', **request.data})
+        serializer.is_valid(raise_exception=True)
+        body = serializer.validated_data['body']
+        if not body:
+            raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
+        with transaction.atomic():
+            opinion = get_object_or_404(ThreadOpinion.objects.select_for_update().select_related('user'), thread__slug=slug,
+                                        thread__published=True, user=request.user)
+            if opinion.body or not ThreadOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
+                return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
+            opinion.body = body
+        return Response(ThreadOpinionSerializer(opinion).data)

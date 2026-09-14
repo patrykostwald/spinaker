@@ -11,6 +11,7 @@ export { HorizontalTimeline } from "./components/HorizontalTimeline";
 export { SiteHeader } from "./components/SiteHeader";
 export { ThemeSwitcher } from "./components/ThemeSwitcher";
 export { ShareOnX } from "./components/ShareOnX";
+export { ThreadOpinions } from "./components/ThreadOpinions";
 
 export { SearchPageContent } from "./components/SearchPageContent";
 export { ThreadCard } from "./components/ThreadCard";

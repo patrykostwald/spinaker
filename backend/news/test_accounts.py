@@ -5,8 +5,8 @@ from django.db import IntegrityError, transaction
 from django.test import override_settings
 from django.urls import include, path
 from rest_framework.test import APIClient
-from news.account_models import SavedTopic, ArticleOpinion
-from news.models import Article, Source
+from news.account_models import SavedTopic, ArticleOpinion, ThreadOpinion
+from news.models import Article, Source, Thread
 
 urlpatterns = [path('api/', include('news.account_urls')), path('api/', include('news.urls'))]
 pytestmark = pytest.mark.django_db
@@ -142,3 +142,24 @@ def test_opinion_unicode_budget_csrf_and_pagination(user, article):
     assert data['counts']['positive'] == 23 and len(data['positive']['results']) == 20
     assert data['positive']['next_page'] == 2
     assert len(client.get(url + '?positive_page=2').data['positive']['results']) == 3
+
+
+def test_one_opinion_per_user_on_published_thread(user):
+    published = Thread.objects.create(title='Published', slug='published', published=True)
+    draft = Thread.objects.create(title='Draft', slug='draft', published=False)
+    client = APIClient()
+    published_url = '/api/threads/published/opinions/'
+    assert client.get('/api/threads/draft/opinions/').status_code == 404
+    assert client.post(published_url, {'polarity': 'positive'}, format='json').status_code == 403
+    client.force_authenticate(user)
+    response = client.post(published_url, {'polarity': 'negative', 'body': ''}, format='json')
+    assert response.status_code == 201
+    assert client.post(published_url, {'polarity': 'positive'}, format='json').status_code == 409
+    response = client.patch(published_url, {'body': 'Brakuje ważnego źródła.'}, format='json')
+    assert response.status_code == 200
+    assert client.patch(published_url, {'body': 'Zmiana'}, format='json').status_code == 409
+    assert ThreadOpinion.objects.get(user=user, thread=published).polarity == 'negative'
+    data = client.get(published_url).data
+    assert data['counts'] == {'positive': 0, 'negative': 1}
+    assert data['negative'][0]['body'] == 'Brakuje ważnego źródła.'
+    assert not ThreadOpinion.objects.filter(thread=draft).exists()
