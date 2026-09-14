@@ -1,0 +1,92 @@
+[
+  {
+    "name": "PAP",
+    "base_url": "https://www.pap.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://www.pap.pl/robots.txt"],
+    "reason": "Named AI agents are restricted; do not ingest until the publisher confirms the permitted scope.",
+    "contacted": false
+  },
+  {
+    "name": "WP Wiadomości",
+    "base_url": "https://wiadomosci.wp.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://www.wp.pl/regulamin"],
+    "reason": "The publisher terms require prior written permission for automated reuse, including AI or machine-learning use.",
+    "contacted": false
+  },
+  {
+    "name": "Bankier.pl",
+    "base_url": "https://www.bankier.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://www.bankier.pl/robots.txt", "https://www.bankier.pl/regulamin"],
+    "reason": "AI-oriented agents are restricted and the broader reuse terms still require confirmation.",
+    "contacted": false
+  },
+  {
+    "name": "Wprost",
+    "base_url": "https://www.wprost.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://www.wprost.pl/regulamin"],
+    "reason": "The terms reserve text-and-data-mining and systematic automated collection rights.",
+    "contacted": false
+  },
+  {
+    "name": "Do Rzeczy",
+    "base_url": "https://dorzeczy.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://dorzeczy.pl/regulamin"],
+    "reason": "The terms reserve text-and-data-mining and systematic automated collection rights.",
+    "contacted": false
+  },
+  {
+    "name": "Radio Lublin",
+    "base_url": "https://radio.lublin.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://radio.lublin.pl/robots.txt", "https://cdn.radio.lublin.pl/regulaminy/"],
+    "reason": "Technical feeds exist, but archival reuse and third-party agency material need an explicit scope.",
+    "contacted": false
+  },
+  {
+    "name": "Rzeszów News",
+    "base_url": "https://rzeszow-news.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://rzeszow-news.pl/regulamin-portalu/"],
+    "reason": "The published terms do not grant bulk archival reuse or processing.",
+    "contacted": false
+  },
+  {
+    "name": "CyberDefence24",
+    "base_url": "https://cyberdefence24.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://cyberdefence24.pl/robots.txt"],
+    "reason": "The archive is technically discoverable, but no archival reuse permission was confirmed.",
+    "contacted": false
+  },
+  {
+    "name": "Energetyka24",
+    "base_url": "https://energetyka24.com/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://energetyka24.com/robots.txt"],
+    "reason": "The archive is technically discoverable, but no archival reuse permission was confirmed.",
+    "contacted": false
+  },
+  {
+    "name": "PortalSamorzadowy.pl",
+    "base_url": "https://www.portalsamorzadowy.pl/",
+    "status": "permission_required",
+    "requested_scopes": ["metadata_archive", "search_context", "rag"],
+    "evidence": ["https://www.portalsamorzadowy.pl/robots.txt"],
+    "reason": "The publisher restricts the agents used by this project; permission or licensing is required.",
+    "contacted": false
+  }
+]
