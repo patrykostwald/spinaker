@@ -36,6 +36,7 @@ Nazwa i język produktu świadomie nawiązują do kliniki: Dr Spin analizuje twi
 - Kolejka archiwalna przekroczyła 158 tysięcy zapisanych boxów przy tempie około 5,6 tysiąca na godzinę. Równolegle oddzielono błędy trwałe od ponawialnych: techniczne ślepe uliczki trafiają do kwarantanny, a przejściowe awarie zachowują kontrolowane próby. Dzięki temu licznik pracy coraz lepiej opisuje faktyczne materiały zamiast wielokrotnie liczonych nieudanych adresów.
 - Wspólny audyt Codexa i Claude wykrył rzadki wyścig przy przejmowaniu wygasłej dzierżawy zadania. Dane artykułu pozostawały bezpieczne, lecz postęp mógł zostać policzony podwójnie. Poprawkę przyjęto dopiero po lokalnym teście regresyjnym; 30 testów ścieżki archiwalnej przeszło.
 - Cel 32 równoległych źródeł pozostał limitem pojemności, nie powodem do omijania zasad dostępu. W tej chwili dziewięć archiwów ma jednocześnie potwierdzony mechanizm i zgodę operacyjną. Następne źródła są dopuszczane dopiero po osobnym audycie technicznym i prawnym.
+- Trzy równoległe audyty kandydatów — źródeł oficjalnych, publicznych interfejsów danych oraz mediów regionalnych — nie dopisały automatycznie żadnej domeny do puli. Wynik był celowy: publiczny adres, RSS albo mapa strony nie zastępują jasnych warunków ponownego użycia. Raporty zostawiają ślad dowodowy i wskazują, co musi zostać zweryfikowane ręcznie przed kolejną falą.
 
 ## Zasada dalszego zapisu
 
