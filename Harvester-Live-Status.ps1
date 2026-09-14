@@ -31,3 +31,13 @@ if (Test-Path $configPath) {
     $config = Get-Content $configPath -Raw | ConvertFrom-Json
     Write-Output "HARVESTERS: configured=$($config.workers), approved sources=$($config.source_count), one request/domain, interval >=3s"
 }
+$continuationPidPath = Join-Path $PSScriptRoot '.runtime\harvesters-continuation.pid'
+if (Test-Path $continuationPidPath) {
+    $continuationPid = [int](Get-Content $continuationPidPath)
+    $continuationActive = [bool](Get-Process -Id $continuationPid -ErrorAction SilentlyContinue)
+    if ($continuationActive) {
+        Write-Output "NEXT CYCLE: armed (watcher PID $continuationPid); dynamic approved-source pool, 32 workers, max 10h"
+    } else {
+        Write-Output "NEXT CYCLE: watcher PID $continuationPid is no longer active; inspect continuation log"
+    }
+}
