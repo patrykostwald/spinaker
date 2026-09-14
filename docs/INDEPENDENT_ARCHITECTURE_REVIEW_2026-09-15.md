@@ -33,13 +33,19 @@ Nie uruchamiał pobierania, nie używał sekretów i nie zmieniał danych.
    i końcowy, przekierowania, status HTTP, czasy UTC, metodę, zakres, hash,
    wersję parsera/OCR/modelu oraz zależne artefakty.
 
-## Zweryfikowana luka do naprawy
+## Zweryfikowana luka i jej stan
 
 Statyczne czytanie pełnego repozytorium potwierdziło, że `rss_scraper.py` i
-`official.py` nie korzystają obecnie z `SourceAccessInstruction`, podczas gdy
-`backfill.py` i `archive_cycle()` są nią objęte. Harvestery są zatrzymane, ale
-przed ich wznowieniem konieczne są testy pokazujące brak i jedna wspólna
-bramka, również dla kanałów RSS i API.
+`official.py` nie korzystały z `SourceAccessInstruction`, podczas gdy
+`backfill.py` i `archive_cycle()` były nią objęte. Naprawa z 15 września
+2026 r. wprowadziła wspólną bramkę dla RSS, API Sejmu/ELI oraz schedulerów
+tych kanałów. Testy potwierdzają odmowę przed transportem przy braku zgody i
+przy nowszej instrukcji wstrzymującej poprzednią zgodę.
+
+To jest etap częściowy: bezpośrednie wejścia HTML/sitemap, discovery,
+WordPress i recovery nadal wymagają podłączenia do tej samej decyzji oraz
+zapisu wersji instrukcji przy próbie pobrania. Harvestery pozostają
+zatrzymane do domknięcia tej listy.
 
 ## Minimalna kolejność pracy
 
