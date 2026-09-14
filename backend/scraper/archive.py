@@ -15,7 +15,7 @@ from django.core.cache import cache
 from django.db import transaction, close_old_connections, connections
 from django.db.models import Q, Count, Max, F
 from django.utils import timezone
-from news.models import ArchiveJob, Article, ArticleContent, Source, ImportState
+from news.models import ArchiveJob, Article, ArticleContent, Source, ImportState, SourceRecoveryCase
 from news.metadata import extract_metadata, MetadataParser, decode_source_html
 from scraper.utils import fetch_feed, upsert_article, safe_url
 from scraper.utils import retry_delay
@@ -56,6 +56,28 @@ def _record_host_failure(state, exc):
 def _clear_host_failures(state):
     state['failures'] = 0
     state['circuit_until'] = 0.0
+
+
+def _record_recovery_case(job, error, terminal):
+    """Create one audit case for a source failure; never re-enable a source."""
+    fingerprint = str(error or 'unknown_error')[:128]
+    open_case = SourceRecoveryCase.objects.filter(source_id=job.source_id,
+        failure_fingerprint=fingerprint).exclude(
+            status__in=[SourceRecoveryCase.Status.CLOSED, SourceRecoveryCase.Status.RETIRED]).first()
+    if open_case:
+        open_case.last_observed_at = timezone.now()
+        open_case.sample_error = fingerprint[:500]
+        open_case.save(update_fields=['last_observed_at', 'sample_error'])
+        return open_case
+    return SourceRecoveryCase.objects.create(
+        source_id=job.source_id,
+        trigger='terminal_error' if terminal else 'retry_threshold',
+        failure_fingerprint=fingerprint,
+        sample_error=fingerprint[:500],
+        status=SourceRecoveryCase.Status.DETECTED,
+        boxes_before=Article.objects.filter(source_id=job.source_id).count(),
+        audit_evidence={'first_job_id': job.pk, 'first_job_url': job.url},
+    )
 
 def same_host(url, base):
     def normalized(value):
@@ -377,6 +399,8 @@ def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_cal
             terminal = known_error in TERMINAL_ERRORS
             exhausted = job.attempts >= MAX_ARCHIVE_ATTEMPTS
             job.status = 'quarantined' if terminal or exhausted else 'error'
+            if terminal or job.attempts >= HOST_CIRCUIT_FAILURES:
+                _record_recovery_case(job, known_error, terminal)
             delay = retry_delay(exc, job.attempts) if _transient_error(exc) else min(86400, 3600 * 2 ** min(job.attempts, 5))
             job.available_at = timezone.now() + timedelta(seconds=delay)
         job.checked_at = timezone.now()

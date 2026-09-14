@@ -2,7 +2,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from news.models import Source, SourceAccessInstruction, SourceContactCard, SourceRecoveryCase
+from news.models import ArchiveJob, Source, SourceAccessInstruction, SourceContactCard, SourceRecoveryCase
 
 
 @pytest.mark.django_db
@@ -33,3 +33,15 @@ def test_contact_card_needs_human_approval_before_send_status():
     card = SourceContactCard(source=source, status='approved_to_send')
     with pytest.raises(ValidationError):
         card.full_clean()
+
+
+@pytest.mark.django_db
+def test_repeated_source_failure_creates_one_open_recovery_case():
+    from scraper.archive import _record_recovery_case
+    source = Source.objects.create(name='Broken', url='https://broken.example')
+    job = ArchiveJob.objects.create(source=source, url='https://broken.example/map.xml', kind='sitemap')
+    first = _record_recovery_case(job, 'NewConnectionError', terminal=False)
+    second = _record_recovery_case(job, 'NewConnectionError', terminal=False)
+    assert first.pk == second.pk
+    assert SourceRecoveryCase.objects.filter(source=source).count() == 1
+    assert first.trigger == 'retry_threshold'
