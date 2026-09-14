@@ -240,6 +240,57 @@
     ]
   },
   {
+    "name": "Interia",
+    "url": "https://fakty.interia.pl/feed",
+    "rss_url": "https://fakty.interia.pl/feed",
+    "sitemap_hosts": ["wydarzenia.interia.pl"],
+    "sitemap_urls": ["https://wydarzenia.interia.pl/sitemap/wydarzenia.interia.pl-sitemap-index.xml.gz"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 15,
+    "verified_on": "2026-09-14",
+    "evidence_urls": [
+      "https://wydarzenia.interia.pl/robots.txt",
+      "https://wydarzenia.interia.pl/sitemap/wydarzenia.interia.pl-sitemap-index.xml.gz",
+      "https://wydarzenia.interia.pl/sitemap/wydarzenia.interia.pl-siteindex-9.xml.gz",
+      "https://wydarzenia.interia.pl/sitemap/wydarzenia.interia.pl-content-2021-01-01.xml.gz"
+    ],
+    "verification_note": "Oficjalny indeks gzip z dziewięcioma segmentami; próbki map treści obejmują lata 2021–2026.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified",
+      "mechanism": "sitemap_index",
+      "urls": ["https://wydarzenia.interia.pl/sitemap/wydarzenia.interia.pl-sitemap-index.xml.gz"],
+      "can_backfill": true,
+      "date_range": {"oldest_sample": "2021-01-01", "newest_sample": "2026-09-13"},
+      "reason": "Official gzip index and bounded old/new content-map samples were decompressed and parsed."
+    }
+  },
+  {
+    "name": "TVP Info",
+    "url": "https://www.tvp.info/rss/wiadomosci",
+    "rss_url": "http://www.tvp.info/tvp.info/rss+xml.php",
+    "sitemap_urls": ["https://tvp.info/sitemap-full_index.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 15,
+    "verified_on": "2026-09-14",
+    "evidence_urls": [
+      "https://www.tvp.info/robots.txt",
+      "https://www.tvp.info/sitemap-full_index.xml",
+      "https://www.tvp.info/sitemap-full-2026-1.xml",
+      "https://www.tvp.info/sitemap-full-2026-2.xml"
+    ],
+    "verification_note": "Oficjalny indeks map; segment 2026-1 zawiera rekordy do 13 września 2026.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified",
+      "mechanism": "sitemap_index",
+      "urls": ["https://tvp.info/sitemap-full_index.xml"],
+      "can_backfill": true,
+      "date_range": {"oldest_sample": "2026-01-01", "newest_sample": "2026-09-13"},
+      "reason": "Official index and bounded latest/older segment samples were parsed; publication dates still come from article metadata."
+    }
+  },
+  {
     "name": "Polsat News",
     "url": "https://www.polsatnews.pl/rss/polska.xml",
     "rss_url": "https://www.polsatnews.pl/rss/polska.xml",

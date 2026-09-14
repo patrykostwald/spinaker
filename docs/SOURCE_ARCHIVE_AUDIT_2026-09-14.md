@@ -44,12 +44,13 @@ Weryfikacja nie zapisala danych do Supabase, Source, Article ani ArchiveJob. Nie
 
 ### Interia
 
-- Lokalny ID: nie ustalono.
+- Lokalny ID: `6` (`https://fakty.interia.pl/feed`).
 - Domena: `wydarzenia.interia.pl`.
 - Robots: `https://wydarzenia.interia.pl/robots.txt` deklaruje `https://wydarzenia.interia.pl/sitemap/wydarzenia.interia.pl-sitemap-index.xml.gz`.
-- Indeks gzip nie zaladowal sie w kontrolowanym odczycie przegladarkowym.
-- Wynik: `needs_review`.
-- Powod: sama deklaracja robots nie potwierdza dostepnego indeksu; nie ponawiano przez alternatywne adresy ani IP.
+- Indeks gzip zostal poprawnie pobrany, zdekompresowany i sparsowany; zawiera dziewiec segmentow.
+- Probki map tresci obejmuja 78 URL z segmentu 2026-09-13 oraz 108 URL z segmentu 2021-01-01.
+- Wynik: `verified`, `can_backfill=true`.
+- Ograniczenie: data z mapy nie zastepuje daty publikacji odczytanej z metadanych materialu.
 
 ### Polsat News
 
@@ -94,13 +95,13 @@ Weryfikacja nie zapisala danych do Supabase, Source, Article ani ArchiveJob. Nie
 
 ### TVP Info
 
-- Lokalny ID: nie ustalono.
+- Lokalny ID: `12` (`https://www.tvp.info/rss/wiadomosci`).
 - Domena: `tvp.info`.
 - Robots deklaruje `https://tvp.info/sitemap-full_index.xml`.
 - Indeks zawiera roczne/czastkowe mapy od 2024 do 2026.
-- Probka `sitemap-full-2026-2.xml`: 9833 URL, lastmod 2026-01-01 do 2026-08-06.
-- Wynik: `needs_review` dla benchmarku cutoff 2026-09-14.
-- Powod: mechanizm historyczny jest potwierdzony, ale probka nie pokazuje segmentu obejmujacego wrzesien 2026; przed backfillem trzeba potwierdzic najnowsza mape i przypisac lokalne ID.
+- Probka `sitemap-full-2026-1.xml` zawiera 19 787 URL i rekordy do 2026-09-13; sprawdzono takze segment `2026-2`.
+- Wynik: `verified`, `can_backfill=true` dla stalego cutoffu 2026-09-14.
+- Ograniczenie: `lastmod` nie zastepuje daty publikacji odczytanej z metadanych materialu.
 
 ### Radio ZET
 
@@ -127,4 +128,4 @@ Weryfikacja nie zapisala danych do Supabase, Source, Article ani ArchiveJob. Nie
 
 ## Rekomendacja
 
-Do kolejnego etapu mozna przygotowac tylko rekordy z Polsat News, RMF24 i Rzeczpospolitej. TVP Info wymaga potwierdzenia najnowszej mapy; Interia wymaga ponownego odczytu gzip; pozostale zrodla wymagaja dowodu sitemap, API albo jawnego paginowanego archiwum. Lokalny benchmark 2/8/16/24/32 nie moze wystartowac, dopoki te zrodla nie zostana przypisane do lokalnych ID i zapisane w lokalnej bazie bez zmiany decyzji wlasciciela.
+Do ograniczonego pilota mozna przygotowac Interie, Polsat News, RMF24, TVP Info i Rzeczpospolita. Zero.pl zachowuje wczesniejszy status kandydata, lecz jego zakres dat trzeba zmierzyc w pilocie. Pozostale zrodla wymagaja dowodu sitemap, API albo jawnego paginowanego archiwum. Rzeczywista liczba rownoleglych workerow nie przekroczy liczby zrodel z gotowymi zadaniami.

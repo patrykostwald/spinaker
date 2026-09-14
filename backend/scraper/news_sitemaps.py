@@ -13,7 +13,9 @@ NEWS_PRIORITY = 10
 
 
 def _publisher_host(url):
-    return (urlsplit(url or '').hostname or '').casefold().removeprefix('www.')
+    value = url or ''
+    parsed = urlsplit(value if '://' in value else f'//{value}')
+    return (parsed.hostname or '').casefold().removeprefix('www.')
 
 
 def verified_maps(source, field='sitemap_urls', require_archive_approval=False):
@@ -30,9 +32,11 @@ def verified_maps(source, field='sitemap_urls', require_archive_approval=False):
             and row.get('archive_verification', {}).get('can_backfill') is True
         ):
             continue
+        allowed_hosts = {_publisher_host(row.get('url'))}
+        allowed_hosts.update(_publisher_host(host) for host in row.get('sitemap_hosts', []))
         for url in row.get(field, []):
             if (isinstance(url, str) and safe_url(url) and len(url) <= 1024
-                    and _publisher_host(url) == _publisher_host(row.get('url'))):
+                    and _publisher_host(url) in allowed_hosts):
                 result.append(url)
     return list(dict.fromkeys(result))
 

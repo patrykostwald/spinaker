@@ -24,6 +24,21 @@ def test_archive_map_matches_rss_source_and_requires_explicit_approval(tmp_path,
     assert verified_maps(source, require_archive_approval=True) == []
 
 
+def test_archive_map_allows_only_explicit_publisher_alias_host(tmp_path, monkeypatch):
+    path = tmp_path / 'catalog.json'
+    row = {'name': 'Interia', 'url': 'https://fakty.interia.pl/feed',
+        'sitemap_hosts': ['wydarzenia.interia.pl'],
+        'sitemap_urls': ['https://wydarzenia.interia.pl/sitemap/index.xml'],
+        'archive_verification': {'status': 'verified', 'can_backfill': True}}
+    path.write_text(json.dumps([row]), encoding='utf-8')
+    monkeypatch.setattr('scraper.news_sitemaps.CATALOG_PATH', path)
+    source = SimpleNamespace(name='Interia', url='https://fakty.interia.pl/feed')
+    assert verified_maps(source, require_archive_approval=True) == row['sitemap_urls']
+    row['sitemap_urls'] = ['https://attacker.example/sitemap.xml']
+    path.write_text(json.dumps([row]), encoding='utf-8')
+    assert verified_maps(source, require_archive_approval=True) == []
+
+
 @pytest.fixture
 def setup_maps(tmp_path, monkeypatch):
     def configure(source, maps=None, news=None):
