@@ -3,7 +3,7 @@ from datetime import datetime
 from django.db import transaction
 from django.utils import timezone
 
-from news.models import ArchiveJob, ImportState, Source
+from news.models import ArchiveJob, ImportState, Source, SourceAccessInstruction
 from scraper.archive import run_parallel_batch
 from scraper.news_sitemaps import verified_maps
 
@@ -23,11 +23,21 @@ def state_name(source_id):
 
 
 def approved_source_ids():
-    """Resolve the current local allowlist without making network requests."""
+    """Resolve the current legal allowlist without making network requests."""
     candidates = Source.objects.filter(is_active=True, scrape_enabled=True,
         catalog_stage='configured').order_by('pk')
+    approved = SourceAccessInstruction.objects.filter(
+        source_id__in=candidates.values('pk'),
+        status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.SITEMAP,
+        minimum_interval_seconds__gte=3,
+    ).values_list('source_id', 'endpoint')
+    approved_endpoints = {}
+    for source_id, endpoint in approved:
+        approved_endpoints.setdefault(source_id, set()).add(endpoint)
     return [source.pk for source in candidates
-        if verified_maps(source, require_archive_approval=True)]
+        if (maps := set(verified_maps(source, require_archive_approval=True)))
+        and maps & approved_endpoints.get(source.pk, set())]
 
 
 def prepare_source(source, cutoff_at):

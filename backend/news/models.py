@@ -113,6 +113,68 @@ class Source(models.Model):
             raise ValidationError(errors)
 
 
+class SourceAccessInstruction(models.Model):
+    """Versioned, reviewable permission for one automated source channel.
+
+    A configured Source is only a catalogue record.  This model is the
+    fail-closed gate that permits an archive worker to use one documented
+    endpoint and one explicitly reviewed scope.
+    """
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Szkic'
+        APPROVED = 'approved', 'Zatwierdzona'
+        SUSPENDED = 'suspended', 'Wstrzymana'
+        CONTACT_REQUIRED = 'contact_required', 'Wymaga kontaktu'
+
+    class Channel(models.TextChoices):
+        API = 'api', 'API'
+        RSS = 'rss', 'RSS / Atom'
+        EXPORT = 'export', 'Eksport danych'
+        OAI_PMH = 'oai_pmh', 'OAI-PMH'
+        SITEMAP = 'sitemap', 'Sitemap'
+        HTML = 'html', 'Jawnie dozwolony HTML'
+
+    class Scope(models.TextChoices):
+        METADATA = 'metadata', 'Metadane'
+        CONTENT = 'content', 'Treść'
+        SNAPSHOT = 'snapshot', 'Snapshot'
+
+    source = models.ForeignKey(Source, on_delete=models.CASCADE,
+        related_name='access_instructions')
+    version = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    channel = models.CharField(max_length=16, choices=Channel.choices)
+    allowed_scope = models.CharField(max_length=16, choices=Scope.choices, default=Scope.METADATA)
+    endpoint = models.URLField(max_length=1024)
+    terms_url = models.URLField(max_length=1024, blank=True)
+    evidence = models.JSONField(default=dict, help_text='URL-e i krótkie fakty potwierdzające decyzję.')
+    minimum_interval_seconds = models.PositiveIntegerField(default=3)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['source_id', '-version']
+        constraints = [
+            models.UniqueConstraint(fields=['source', 'version'], name='unique_source_access_instruction_version'),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.minimum_interval_seconds < 3:
+            errors['minimum_interval_seconds'] = 'Automatyczny dostęp wymaga odstępu co najmniej 3 sekund.'
+        if self.status == self.Status.APPROVED:
+            if not self.terms_url:
+                errors['terms_url'] = 'Zatwierdzona instrukcja wymaga linku do warunków lub licencji.'
+            if not self.reviewed_at or not self.reviewed_by:
+                errors['reviewed_at'] = 'Zatwierdzona instrukcja wymaga daty i autora przeglądu.'
+            if not self.evidence:
+                errors['evidence'] = 'Zatwierdzona instrukcja wymaga dowodu decyzji.'
+        if errors:
+            raise ValidationError(errors)
+
+
 class Article(models.Model):
     source = models.ForeignKey(
         Source,

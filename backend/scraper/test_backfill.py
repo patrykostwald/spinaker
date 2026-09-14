@@ -3,8 +3,9 @@ from unittest.mock import patch
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.core.exceptions import ValidationError
 
-from news.models import ArchiveJob, ImportState, Source
+from news.models import ArchiveJob, ImportState, Source, SourceAccessInstruction
 from scraper.archive import ArchiveCutoff
 from scraper.backfill import approved_source_ids, parse_cutoff, prepare_source
 
@@ -93,8 +94,24 @@ def test_dynamic_source_pool_refuses_unapproved_or_unconfigured_sources(monkeypa
             ['https://approved.example/sitemap.xml'] if source.pk == approved.pk
             and require_archive_approval else []))
 
+    SourceAccessInstruction.objects.create(
+        source=approved, version=1, status='approved', channel='sitemap',
+        allowed_scope='metadata', endpoint='https://approved.example/sitemap.xml',
+        terms_url='https://approved.example/terms', evidence={'basis': 'test'},
+        reviewed_at=__import__('django.utils.timezone', fromlist=['now']).now(),
+        reviewed_by='test', minimum_interval_seconds=3)
+
     assert approved_source_ids() == [approved.pk]
     assert unapproved.pk not in approved_source_ids()
+
+
+@pytest.mark.django_db
+def test_approved_access_instruction_requires_terms_evidence_and_review():
+    source = Source.objects.create(name='Guarded', url='https://guarded.example')
+    instruction = SourceAccessInstruction(source=source, status='approved', channel='sitemap',
+        endpoint='https://guarded.example/sitemap.xml', minimum_interval_seconds=3)
+    with pytest.raises(ValidationError):
+        instruction.full_clean()
 
 
 def test_loop_requires_static_ids_unless_dynamic_mode_is_explicit():
