@@ -135,3 +135,15 @@ def test_direct_page_process_refuses_without_html_instruction(monkeypatch):
         process(job)
 
     fetch.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_discovery_refuses_robots_request_without_sitemap_instruction(monkeypatch):
+    from scraper.archive import discover
+
+    source = Source.objects.create(name='Discovery without instruction', url='https://example.org')
+    robots = Mock()
+    monkeypatch.setattr('scraper.archive.robots', robots)
+
+    assert discover(source) == 0
+    robots.assert_not_called()

@@ -4,10 +4,20 @@ from types import SimpleNamespace
 from urllib.robotparser import RobotFileParser
 import pytest
 from django.utils import timezone
-from news.models import Source, ArchiveJob, ImportState
+from news.models import Source, ArchiveJob, ImportState, SourceAccessInstruction
 from scraper.archive import discover, process, _HOST_STATES, same_host
 from scraper.news_sitemaps import news_sitemap_cycle
 from scraper.news_sitemaps import verified_maps
+
+
+def approve_sitemap(source):
+    version = (SourceAccessInstruction.objects.filter(source=source)
+        .order_by('-version').values_list('version', flat=True).first() or 0) + 1
+    return SourceAccessInstruction.objects.create(
+        source=source, version=version, status='approved', channel='sitemap',
+        allowed_scope='metadata', endpoint=source.url,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
 
 
 def test_archive_map_matches_rss_source_and_requires_explicit_approval(tmp_path, monkeypatch):
@@ -56,7 +66,7 @@ def test_sitemap_index_enqueues_only_configured_article_children(setup_maps, mon
     job = ArchiveJob.objects.create(source=source, url='https://example.org/index.xml', kind='sitemap')
     xml = '<sitemapindex><sitemap><loc>https://example.org/post-sitemap1.xml</loc></sitemap>' \
           '<sitemap><loc>https://example.org/tag-sitemap1.xml</loc></sitemap></sitemapindex>'
-    monkeypatch.setattr('scraper.archive.fetch_feed', lambda _: xml.encode())
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda *_, **__: xml.encode())
     _HOST_STATES.clear(); process(job)
     assert ArchiveJob.objects.filter(url='https://example.org/post-sitemap1.xml').exists()
     assert not ArchiveJob.objects.filter(url='https://example.org/tag-sitemap1.xml').exists()
@@ -65,12 +75,13 @@ def test_sitemap_index_enqueues_only_configured_article_children(setup_maps, mon
 @pytest.fixture
 def setup_maps(tmp_path, monkeypatch):
     def configure(source, maps=None, news=None):
+        approve_sitemap(source)
         path = tmp_path / 'catalog.json'
         path.write_text(json.dumps([{'url': source.url,
             'sitemap_urls': maps or [], 'news_sitemap_urls': news or []}]), encoding='utf-8')
         monkeypatch.setattr('scraper.news_sitemaps.CATALOG_PATH', path)
         policy = RobotFileParser(); policy.parse(['User-agent: *', 'Allow: /'])
-        monkeypatch.setattr('scraper.archive.robots', lambda _: policy)
+        monkeypatch.setattr('scraper.archive.robots', lambda *_, **__: policy)
         return policy
     return configure
 
@@ -147,7 +158,7 @@ def test_news_children_priority_keeps_foreign_owner_and_error_backoff(setup_maps
     foreign=ArchiveJob.objects.create(source=other,url='https://example.org/foreign',kind='page',priority=0)
     pending=ArchiveJob.objects.create(source=source,url='https://example.org/pending',kind='page',available_at=lease)
     xml='<urlset>'+''.join('<url><loc>https://example.org/'+x+'</loc></url>' for x in ['new','new','error','foreign','pending'])+'</urlset>'
-    monkeypatch.setattr('scraper.archive.fetch_feed',lambda _:xml.encode())
+    monkeypatch.setattr('scraper.archive.fetch_feed',lambda *_, **__:xml.encode())
     _HOST_STATES.clear(); process(job)
     assert ArchiveJob.objects.get(url='https://example.org/new').priority==10
     protected.refresh_from_db(); assert protected.available_at==lease and protected.status=='error' and protected.priority==0
@@ -159,7 +170,7 @@ def test_news_children_priority_keeps_foreign_owner_and_error_backoff(setup_maps
 def test_source_disabled_during_robots_fetch_cannot_enqueue(setup_maps,monkeypatch):
     source=Source.objects.create(name='A',url='https://example.org')
     policy=setup_maps(source,maps=['https://example.org/all.xml'])
-    def disabled(_):
+    def disabled(*_, **__):
         Source.objects.filter(pk=source.pk).update(is_active=False)
         return policy
     monkeypatch.setattr('scraper.archive.robots',disabled)

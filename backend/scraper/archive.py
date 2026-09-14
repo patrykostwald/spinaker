@@ -19,7 +19,7 @@ from news.models import ArchiveJob, Article, ArticleContent, Source, ImportState
 from news.metadata import extract_metadata, MetadataParser, decode_source_html
 from scraper.utils import fetch_feed, upsert_article, safe_url
 from scraper.utils import retry_delay
-from scraper.access_gate import require_approved_instruction, AccessDenied
+from scraper.access_gate import approved_instruction, require_approved_instruction, AccessDenied
 
 USER_AGENT = 'ContextBeforeContent'
 # A safety ceiling for configuration, not a claim about measured throughput.
@@ -117,6 +117,11 @@ def discover(source):
     source = Source.objects.filter(pk=source.pk, is_active=True,
         scrape_enabled=True, catalog_stage='configured').first()
     if source is None:
+        return 0
+    # Discovery performs a real robots request.  It therefore needs a
+    # reviewed sitemap instruction whose endpoint covers the source root.
+    if approved_instruction(source, SourceAccessInstruction.Channel.SITEMAP,
+            source.url) is None:
         return 0
     policy = robots(source.url, hostname_transport=True)
     count = 0
