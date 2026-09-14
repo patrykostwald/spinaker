@@ -260,7 +260,15 @@
     "ai_bot_restrictions": [],
     "news_sitemap_urls": [
       "https://zero.pl/sitemap-news.xml"
-    ]
+    ],
+    "archive_verification": {
+      "status": "verified",
+      "mechanism": "sitemap_index",
+      "urls": ["https://zero.pl/sitemap_index.xml"],
+      "can_backfill": true,
+      "date_range": {},
+      "reason": "Existing catalog evidence confirms an official sitemap index; date range requires the bounded audit before benchmark."
+    }
   },
   {
     "name": "TV Republika",
@@ -279,6 +287,14 @@
       "https://tvrepublika.pl/skontaktuj-sie-z-nami"
     ],
     "verification_note": "Oficjalny portal TV Republika; RSS /rss i /rss.xml 404. Potwierdzony indeks 107 map artykułów, pierwsza mapa 2000 URL. Dwie rzeczywiste daty publikacji z JSON-LD z 2013 roku. Robots bez deklaracji mapy. Nie potwierdzono małej mapy bieżącej.",
-    "ai_bot_restrictions": []
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "needs_review",
+      "mechanism": "sitemap_index",
+      "urls": ["https://tvrepublika.pl/article/sitemap.xml"],
+      "can_backfill": false,
+      "date_range": {"oldest_sample": "2013"},
+      "reason": "Existing evidence confirms an index, but not a safe current-to-older traversal suitable for the benchmark."
+    }
   }
 ]
