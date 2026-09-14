@@ -31,16 +31,15 @@ while ((Get-Date) -lt $deadline -and -not (Test-Path $stopFile)) {
     $errorOutput = Join-Path $logs "$($task.BaseName)-$stamp.err.txt"
     $policy = @'
 Pracujesz jako Claude Code w projekcie spin.clinic. Wykonaj wyłącznie zadanie poniżej.
-Nie odczytuj ani nie wypisuj sekretów. Nie zapisuj do produkcyjnego Supabase, nie pushuj, nie kupuj usług i nie uruchamiaj masowego pobierania bez jawnego polecenia w zadaniu. Pracuj na bieżącej gałęzi, uruchom adekwatne testy, zapisz lokalny commit i w wyniku podaj hash, testy, zmienione pliki, ryzyka oraz następny krok. Użyj najmniejszego wystarczającego modelu/effortu.
+Nie odczytuj ani nie wypisuj sekretów. Nie zapisuj do produkcyjnego Supabase, nie pushuj, nie kupuj usług i nie uruchamiaj masowego pobierania bez jawnego polecenia w zadaniu. Nie używaj Git i nie twórz commitów; Codex przejrzy i zapisze wynik. Edytuj tylko pliki potrzebne do zadania, uruchom adekwatne testy, a w wyniku podaj testy, zmienione pliki, ryzyka oraz następny krok. Użyj najmniejszego wystarczającego modelu/effortu.
 
 '@
     $prompt = $policy + (Get-Content -LiteralPath $runningPath -Raw)
     Push-Location $Worktree
     try {
-        $prompt | & $claude -p --output-format text --max-turns 50 `
+        $prompt | & $claude -p --output-format text --max-turns 80 `
             --allowedTools Read Glob Grep Edit Write WebFetch WebSearch `
-            'Bash(git status:*)' 'Bash(git diff:*)' 'Bash(git log:*)' `
-            'Bash(git add:*)' 'Bash(git commit:*)' 'Bash(python:*)' 'Bash(pytest:*)' `
+            'Bash(python:*)' 'Bash(pytest:*)' `
             1> $output 2> $errorOutput
         if ($LASTEXITCODE -eq 0) {
             Move-Item -LiteralPath $runningPath -Destination (Join-Path $done $task.Name)
