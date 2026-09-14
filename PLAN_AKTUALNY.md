@@ -2,6 +2,8 @@
 
 Stan: 14 września 2026. Plan, nie deklaracja wdrożenia. Uzupełnia PDF v3 użytkownika; koryguje jego założenie o automatycznej legalności agregacji. Nie zmieniono Supabase, nie uruchomiono importerów ani wysyłki.
 
+Kontrakt danych dla prywatnych oryginałów, ekstrakcji tekstu/OCR, segmentacji, indeksów i przyszłego RAG znajduje się w `docs/DATA_ENRICHMENT_PIPELINE.md`. Trzeba go stosować już podczas budowy archiwum, aby każdy późniejszy fragment i wynik modelu zachował pochodzenie do konkretnego boxa oraz źródła.
+
 ## Zasady pracy i pojęcia — decyzja właściciela
 
 Domyślnie zadania wykonujemy na poziomie Lekki. Przed migracjami, projektowaniem uprawnień, złożonymi zmianami współbieżności lub bezpieczeństwa agent informuje właściciela, dlaczego zaleca wyższy poziom. Nie zmienia ustawień sam i nie zakłada, że większa liczba agentów oznacza szybszy lub tańszy wynik. Zewnętrzne wiadomości, publikacje i wdrożenia wymagające decyzji właściciela nie są zatwierdzane w jego imieniu.
