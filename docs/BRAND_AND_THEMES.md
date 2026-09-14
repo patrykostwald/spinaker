@@ -10,7 +10,7 @@ Wersja ciemna jest wyglądem domyślnym dla użytkownika niezalogowanego oraz po
 
 ## Znak
 
-Znak składa się wyłącznie z liter `S`, `P`, `I`, `N` rozmieszczonych wokół pustego środka. Bez pełnego okręgu, kropek, obramowania i dosłownego krzyża medycznego. Docelowa pozycja startowa liter i stopień ich zbliżenia pozostają do wyboru na planszy porównawczej; badamy również wariant `I` u góry, `P` po prawej, `S` u dołu i `N` po lewej. Znak ma działać jako favicon, avatar na X oraz element pełnego logotypu `spin.clinic`. Skojarzenie z diagnostyką jest pożądane, ale znak nie może udawać placówki medycznej.
+Rezygnujemy z osobnego sygnetu z literami `S`, `P`, `I`, `N`. Podstawowym znakiem jest sam lowercase wordmark `spin.clinic`, bez symbolu medycznego, okręgu, kropek ani dodatkowego monogramu. Favicon i avatar wymagają późniejszego, odrębnego rozwiązania opartego na wordmarku; nie przywracamy automatycznie odrzuconego układu liter.
 
 ## Typografia
 
@@ -26,11 +26,13 @@ Na telefonie pozostają te same kroje. Zmieniamy skalę, szerokość wiersza i o
 
 Zarejestrowany użytkownik wybiera w profilu jedną z trzech kompletnych szat. Wybór jest przypisany do konta i odtwarzany na jego urządzeniach. Niezalogowany użytkownik może zachować wybór lokalnie.
 
-1. **Ciemny / Monochrome Control** — domyślny; grafit, złamana biel, mineralny brąz i miedź; autorski nocny pejzaż polskiej drogi.
+1. **Ciemny / Monochrome Control** — domyślny; atramentowa czerń i grafit, złamana biel, ciepły bursztyn dla głównych akcji, koral dla stanów na żywo i pilnych alertów, a przygaszona śliwka dla stanów drugorzędnych; bez mięty i turkusu; autorski nocny pejzaż polskiej drogi.
 2. **Jasny** — ciepła papierowa biel, ciemny atrament, archiwalny szaroniebieski i odrobina ochry; autorski dzienny pejzaż polskiej drogi.
 3. **Pastelowy** — ciepły papier oraz jasne odcienie zachodu: maślany żółty, pomarańcz, koral i ciemna śliwka; wcześniejsza zaakceptowana ilustracja polskiej drogi pozostaje podstawą tego wariantu.
 
 W nagłówku znajduje się zwarty przełącznik przedstawiony jako trzy smukłe paski w przewodnich kolorach aktywnej szaty. Daje bezpośredni wybór trzech motywów oraz opcję **Auto**, która respektuje ustawienie jasny/ciemny urządzenia; Auto nie jest czwartą szatą. Szata nie zmienia znaczenia informacji. Kolory ocen, ostrzeżeń, sponsorowania i statusów weryfikacji zachowują ten sam sens oraz odpowiedni kontrast. System respektuje `prefers-color-scheme`, `prefers-reduced-motion` i ustawienia kontrastu.
+
+W motywie ciemnym bursztynowe wypełnienie jest zarezerwowane dla głównego CTA i aktywnej nawigacji. Koral występuje jako niewielki punkt, tekst, strzałka lub cienkie podkreślenie stanów na żywo i pilnej akcji. Morela służy wyłącznie do dyskretnego podświetlenia, a śliwka do tagów i stanów drugorzędnych. Zwykłe strzałki oraz sterowanie paskami pozostają bez ramek. `Dodaj temat` ma delikatne, jednoliniowe obramowanie i przezroczyste tło.
 
 Ilustracje pejzażu są autorskie i fikcyjne. Mają przywoływać codzienny polski krajobraz przez drogi, pola, wsie, lasy i infrastrukturę, bez używania oficjalnych symboli ani udawania konkretnego zabytku.
 
