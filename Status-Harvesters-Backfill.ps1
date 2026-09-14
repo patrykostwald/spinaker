@@ -2,7 +2,8 @@ param([int[]]$SourceId)
 $ErrorActionPreference = 'Stop'
 $python = @(
     "$PSScriptRoot\.venv\Scripts\python.exe",
-    "$PSScriptRoot\backend\.venv\Scripts\python.exe"
+    "$PSScriptRoot\backend\.venv\Scripts\python.exe",
+    "$PSScriptRoot\..\..\.venv\Scripts\python.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $python) { throw "Missing Python virtualenv in project root or backend directory." }
 $env:USE_SQLITE = 'true'

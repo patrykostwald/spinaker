@@ -23,11 +23,14 @@ if (Test-Path $pidPath) {
     Remove-Item $pidPath -Force
 }
 New-Item -ItemType Directory -Force (Split-Path $pidPath) | Out-Null
-$env:USE_SQLITE = 'true'
-$env:ARCHIVE_STORE_FULL_TEXT = 'false'
-$env:SQLITE_DATABASE_PATH = $DatabasePath
-$ids = ($SourceId | ForEach-Object { "--source-id $_" }) -join ' '
-$arguments = "manage.py backfill_archives_loop $ids --cutoff-at `"$CutoffAt`" --workers $Workers --limit-per-source $LimitPerSource --max-hours $MaxHours"
-$process = Start-Process -FilePath $python -WorkingDirectory "$PSScriptRoot\backend" -ArgumentList $arguments -RedirectStandardOutput $logPath -RedirectStandardError $errorPath -PassThru
+$idText = $SourceId -join ','
+$process = Start-Process powershell.exe -WindowStyle Hidden -WorkingDirectory "$PSScriptRoot\backend" `
+    -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',"$PSScriptRoot\Run-Harvesters-Backfill.ps1",
+        '-SourceIdText',$idText,'-CutoffAt',$CutoffAt,'-Workers',$Workers,'-LimitPerSource',$LimitPerSource,
+        '-MaxHours',$MaxHours,'-DatabasePath',$DatabasePath) `
+    -RedirectStandardOutput $logPath -RedirectStandardError $errorPath -PassThru
 $process.Id | Set-Content $pidPath
+$config = @{workers=$Workers; source_count=$SourceId.Count; source_ids=$SourceId;
+    cutoff_at=$CutoffAt; max_hours=$MaxHours; started_at=(Get-Date).ToString('o')} | ConvertTo-Json
+$config | Set-Content "$PSScriptRoot\.runtime\harvesters-backfill.config.json"
 Write-Output "Started archive backfill PID $($process.Id), cutoff $CutoffAt, workers $Workers, database $DatabasePath"

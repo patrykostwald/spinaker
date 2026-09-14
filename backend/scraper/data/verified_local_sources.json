@@ -286,12 +286,12 @@
     "verified_on": "2026-09-14",
     "evidence_urls": ["https://www.portalsamorzadowy.pl/robots.txt", "https://www.portalsamorzadowy.pl/sitemapindex.xml"],
     "verification_note": "Oficjalny indeks 21 paczek; sprawdzono bieżącą i starszą paczkę URL.",
-    "ai_bot_restrictions": [],
+    "ai_bot_restrictions": ["ChatGPT-User", "ClaudeBot", "GPTBot", "OAI-SearchBot"],
     "archive_verification": {
-      "status": "verified", "mechanism": "sitemap_index", "can_backfill": true,
+      "status": "blocked", "mechanism": "sitemap_index", "can_backfill": false,
       "urls": ["https://www.portalsamorzadowy.pl/sitemapindex.xml"],
       "date_range": {},
-      "reason": "Official sitemap index and bounded newer/older packs were parsed."
+      "reason": "Technically indexed, but publisher robots disallows the agent user-agents used by this project; permission or licensing is required."
     }
   },
   {
