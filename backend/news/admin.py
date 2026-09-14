@@ -15,7 +15,8 @@ from django.contrib.auth.models import Group, User
 from django import forms
 from rest_framework.exceptions import ValidationError as APIValidationError
 
-from news.models import Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord, ImportState
+from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
+    ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard)
 from scraper.tasks import (
     scrape_gdelt_task,
     scrape_newsapi_batch_task,
@@ -217,6 +218,51 @@ class EvidenceSnapshotAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 site.register(EvidenceSnapshot, EvidenceSnapshotAdmin)
+
+
+class SourceAccessInstructionAdmin(admin.ModelAdmin):
+    list_display = ('source', 'version', 'status', 'channel', 'allowed_scope',
+        'minimum_interval_seconds', 'reviewed_at', 'reviewed_by')
+    list_filter = ('status', 'channel', 'allowed_scope')
+    search_fields = ('source__name', 'endpoint', 'terms_url', 'reviewed_by')
+    autocomplete_fields = ('source',)
+    readonly_fields = ('created_at',)
+
+    def has_delete_permission(self, request, obj=None):
+        # Historical access decisions stay auditable; suspend with a new decision.
+        return False
+
+
+class SourceRecoveryCaseAdmin(admin.ModelAdmin):
+    list_display = ('source', 'status', 'trigger', 'failure_fingerprint',
+        'boxes_before', 'boxes_after', 'last_observed_at')
+    list_filter = ('status', 'trigger')
+    search_fields = ('source__name', 'failure_fingerprint', 'sample_error')
+    autocomplete_fields = ('source', 'failed_instruction', 'proposed_instruction')
+    readonly_fields = ('source', 'trigger', 'failure_fingerprint', 'sample_error',
+        'failed_instruction', 'opened_at', 'last_observed_at', 'boxes_before')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class SourceContactCardAdmin(admin.ModelAdmin):
+    list_display = ('source', 'publisher_name', 'status', 'approval_by', 'approval_at', 'next_review_at')
+    list_filter = ('status',)
+    search_fields = ('source__name', 'publisher_name', 'reason_for_contact')
+    autocomplete_fields = ('source', 'recovery_case', 'granted_instruction')
+    readonly_fields = ('created_at', 'sent_at', 'delivery_reference')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+site.register(SourceAccessInstruction, SourceAccessInstructionAdmin)
+site.register(SourceRecoveryCase, SourceRecoveryCaseAdmin)
+site.register(SourceContactCard, SourceContactCardAdmin)
 
 
 from news.political_admin import register_political_admin
