@@ -14,7 +14,11 @@ $logs = Join-Path $QueueRoot 'claude\logs'
 $stopFile = Join-Path $QueueRoot 'STOP_CLAUDE_QUEUE'
 @($inbox,$running,$done,$failed,$logs) | ForEach-Object { New-Item -ItemType Directory -Force $_ | Out-Null }
 if (-not (Test-Path $Worktree)) { throw "Claude worktree does not exist: $Worktree" }
-if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { throw 'Claude Code is not installed or is not available in PATH.' }
+$claude = @(
+    (Get-Command claude -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
+    "$env:APPDATA\npm\claude.cmd"
+) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+if (-not $claude) { throw 'Claude Code is not installed or is not available in PATH.' }
 
 $deadline = (Get-Date).AddHours($MaxHours)
 while ((Get-Date) -lt $deadline -and -not (Test-Path $stopFile)) {
@@ -33,7 +37,7 @@ Nie odczytuj ani nie wypisuj sekretów. Nie zapisuj do produkcyjnego Supabase, n
     $prompt = $policy + (Get-Content -LiteralPath $runningPath -Raw)
     Push-Location $Worktree
     try {
-        $prompt | & claude -p --output-format text --max-turns 50 `
+        $prompt | & $claude -p --output-format text --max-turns 50 `
             --allowedTools Read Glob Grep Edit Write WebFetch WebSearch `
             'Bash(git status:*)' 'Bash(git diff:*)' 'Bash(git log:*)' `
             'Bash(git add:*)' 'Bash(git commit:*)' 'Bash(python:*)' 'Bash(pytest:*)' `
