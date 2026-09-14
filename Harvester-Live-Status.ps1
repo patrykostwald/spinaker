@@ -21,7 +21,9 @@ try {
     Write-Output "URL RESULTS: success=$($data.done)   retry=$($data.errors)   quarantined=$($data.quarantined)   waiting=$($data.pending)   active=$($data.running)"
     Write-Output "ERROR ROUTING: retry/unclassified=$($data.errors_retry_or_unclassified)   adapter review=$($data.errors_adapter_review)   permission/contact=$($data.errors_permission_review)"
     Write-Output "QUARANTINE: terminal=$($data.quarantine_terminal)   attempts exhausted=$($data.quarantine_exhausted)"
-    Write-Output "QUALITY: successful requests=$success%   |   sources active=$($data.active_sources) / queued=$($data.queued_sources)"
+    Write-Output "QUALITY: historical request success=$success%   |   queue sources=$($data.queued_sources)"
+    Write-Output "LEGAL ACCESS: archive sources approved=$($data.legal_archive_sources)   |   instructions approved=$($data.access_instructions_approved) draft=$($data.access_instructions_draft)"
+    Write-Output "SOURCE RECOVERY: open=$($data.recovery_open)   |   contact required=$($data.recovery_contact_required)"
     Write-Output '============================================================'
 } catch {
     Write-Output 'ARCHIVE DATABASE: metrics temporarily unavailable.'
@@ -29,7 +31,7 @@ try {
 $configPath = Join-Path $PSScriptRoot '.runtime\harvesters-backfill.config.json'
 if (Test-Path $configPath) {
     $config = Get-Content $configPath -Raw | ConvertFrom-Json
-    Write-Output "HARVESTERS: configured=$($config.workers), approved sources=$($config.source_count), one request/domain, interval >=3s"
+    Write-Output "HARVESTERS: configured cap=$($config.workers), dynamic mode=$($config.dynamic_sources), one request/domain, interval >=3s"
 }
 $continuationPidPath = Join-Path $PSScriptRoot '.runtime\harvesters-continuation.pid'
 if (Test-Path $continuationPidPath) {
