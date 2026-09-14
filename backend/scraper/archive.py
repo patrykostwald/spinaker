@@ -69,7 +69,7 @@ def archive_child_allowed(source, url):
     patterns = row.get('archive_sitemap_child_patterns') or []
     return not patterns or any(re.search(pattern, url) for pattern in patterns)
 
-def robots(url):
+def robots(url, *, hostname_transport=False):
     parsed = urlsplit(url)
     address = f'{parsed.scheme}://{parsed.netloc}/robots.txt'
     key = 'archive-robots:' + sha256(address.encode()).hexdigest()
@@ -77,7 +77,7 @@ def robots(url):
     if raw is not None:
         policy = RobotFileParser(); policy.parse(raw.splitlines()); return policy
     try:
-        raw = fetch_feed(address).decode('utf-8', errors='replace')
+        raw = fetch_feed(address, hostname_transport=hostname_transport).decode('utf-8', errors='replace')
     except Exception as exc:
         response = getattr(exc, 'response', None)
         if response is not None and response.status_code in (404, 410):
@@ -95,7 +95,7 @@ def discover(source):
         scrape_enabled=True, catalog_stage='configured').first()
     if source is None:
         return 0
-    policy = robots(source.url)
+    policy = robots(source.url, hostname_transport=True)
     count = 0
     for url in dict.fromkeys((policy.site_maps() or []) + verified_maps(source)):
         if safe_url(url) and same_host(url, source.url) and len(url) <= 1024:
@@ -190,14 +190,16 @@ def process(job, cutoff_at=None):
             raise SourceDelay()
         attempted = True
         try:
-            policy = robots(job.url)
+            # Jobs are only admitted through the configured source catalogue;
+            # use normal hostname transport for those approved publishers.
+            policy = robots(job.url, hostname_transport=True)
             if not policy.can_fetch(USER_AGENT, job.url):
                 raise ValueError('robots_disallowed')
             delay = max(policy.crawl_delay(USER_AGENT) or 0, 3)
             request_rate = policy.request_rate(USER_AGENT)
             if request_rate and request_rate.requests:
                 delay = max(delay, request_rate.seconds / request_rate.requests)
-            raw = fetch_feed(job.url)
+            raw = fetch_feed(job.url, hostname_transport=True)
             _clear_host_failures(state)
         except Exception as exc:
             if _transient_error(exc):

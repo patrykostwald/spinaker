@@ -135,8 +135,14 @@ def upsert_article(*, source, title, url, published_date, category=ArticleCatego
     except IntegrityError:
         return Article.objects.get(url=url), False
 
-def fetch_feed(url):
-    """Bounded public HTTP fetch with DNS pinning and validation on every redirect."""
+def fetch_feed(url, *, hostname_transport=False):
+    """Bounded public HTTP fetch with validation on every redirect.
+
+    ``hostname_transport`` is reserved for an already approved publisher
+    source.  It keeps the normal HTTPS hostname connection that CDNs require,
+    while the DNS preflight still rejects private destinations.  Arbitrary
+    URLs retain the pinned-IP transport by default.
+    """
     from urllib.parse import urljoin, urlunsplit
     import ssl
     import urllib3
@@ -149,22 +155,36 @@ def fetch_feed(url):
         addresses = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
         if not addresses or any(not ipaddress.ip_address(a[4][0]).is_global for a in addresses):
             raise ValueError('Source address must be public')
-        # Connect to the validated IP, avoiding a second DNS lookup that could rebind locally.
+        # Arbitrary URLs use a pinned IP, avoiding a second DNS lookup that
+        # could rebind locally.  Approved publishers can opt into normal
+        # hostname transport because many CDN/load-balancer deployments reject
+        # direct connections to an edge IP.
         address = addresses[0][4][0]
-        if parsed.scheme == 'https':
+        if hostname_transport:
+            pool = urllib3.PoolManager(cert_reqs=ssl.CERT_REQUIRED,
+                ca_certs=requests.certs.where())
+            request_url = url
+            headers = {'User-Agent': 'ContextBeforeContent/1.0 source reader'}
+        elif parsed.scheme == 'https':
             pool = urllib3.HTTPSConnectionPool(address, port=port, server_hostname=hostname,
                 assert_hostname=hostname, cert_reqs=ssl.CERT_REQUIRED, ca_certs=requests.certs.where())
+            host_header = f'[{hostname}]' if ':' in hostname else hostname
+            if parsed.port:
+                host_header += ':' + str(port)
+            request_url = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
+            headers = {'Host': host_header, 'User-Agent': 'ContextBeforeContent/1.0 source reader'}
         else:
             pool = urllib3.HTTPConnectionPool(address, port=port)
-        host_header = f'[{hostname}]' if ':' in hostname else hostname
-        if parsed.port:
-            host_header += ':' + str(port)
-        path = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
+            host_header = f'[{hostname}]' if ':' in hostname else hostname
+            if parsed.port:
+                host_header += ':' + str(port)
+            request_url = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
+            headers = {'Host': host_header, 'User-Agent': 'ContextBeforeContent/1.0 source reader'}
         response = None
         try:
-            response = pool.urlopen('GET', path, redirect=False, preload_content=False, retries=False,
+            response = pool.urlopen('GET', request_url, redirect=False, preload_content=False, retries=False,
                 timeout=urllib3.Timeout(connect=5, read=30),
-                headers={'Host': host_header, 'User-Agent': 'ContextBeforeContent/1.0 source reader'})
+                headers=headers)
             if response.status in (301, 302, 303, 307, 308):
                 url = urljoin(url, response.headers['Location'])
                 continue
@@ -183,5 +203,7 @@ def fetch_feed(url):
         finally:
             if response is not None:
                 response.close()
-            pool.close()
+            close = getattr(pool, 'close', None) or getattr(pool, 'clear', None)
+            if close is not None:
+                close()
     raise ValueError('Too many source redirects')

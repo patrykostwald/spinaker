@@ -58,10 +58,11 @@ def test_archive_enriches_rss_record_without_an_extra_network_request(record):
     job = ArchiveJob.objects.create(source=record.source, url=record.url, kind='page')
     html = b'<title>Later headline</title><meta property="og:type" content="article"><meta property="og:image" content="/image.jpg">'
     _HOST_STATES.clear()
-    with patch('scraper.archive.fetch_feed', side_effect=lambda url: b'User-agent: *\nAllow: /' if url.endswith('/robots.txt') else html):
+    with patch('scraper.archive.fetch_feed', side_effect=lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('/robots.txt') else html):
         assert process(job) == 0
     record.refresh_from_db()
     assert record.image_url == 'https://example.org/image.jpg'
     assert record.title == 'Source title'
     assert 'meta:og:image' in record.evidence_note
     _HOST_STATES.clear()
+

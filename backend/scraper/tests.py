@@ -54,6 +54,20 @@ def test_public_fetch_pins_ip_and_rejects_private_redirect(resolve):
         assert pool.call_args.kwargs['assert_hostname'] == 'source.example'
         assert pool.call_count == 1
 
+
+@patch('scraper.utils.socket.getaddrinfo')
+def test_approved_source_uses_hostname_transport_after_public_dns_check(resolve):
+    from scraper.utils import fetch_feed
+    resolve.return_value = [(2, 1, 6, '', ('8.8.8.8', 443))]
+    payload = MagicMock(status=200, headers={})
+    payload.stream.return_value = [b'ok']
+    with patch('urllib3.PoolManager') as pool:
+        pool.return_value.urlopen.return_value = payload
+        assert fetch_feed('https://source.example/a', hostname_transport=True) == b'ok'
+        assert pool.call_args.kwargs['cert_reqs']
+        assert pool.return_value.urlopen.call_args.args == ('GET', 'https://source.example/a')
+        assert 'Host' not in pool.return_value.urlopen.call_args.kwargs['headers']
+
 @pytest.mark.django_db
 @patch('scraper.gdelt_scraper.requests.get')
 def test_scrape_gdelt(mock_get):

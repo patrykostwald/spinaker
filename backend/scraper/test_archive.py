@@ -22,7 +22,7 @@ def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
     job = ArchiveJob.objects.create(source=source, url='https://example.org/map.xml', kind='sitemap')
     xml = b'<urlset><url><loc>https://example.org/old</loc><lastmod>2026-09-08</lastmod></url><url><loc>https://evil.org/other</loc></url></urlset>'
     html = b'<title>Old article</title><meta property="og:type" content="article"><script type="application/ld+json">{"@type":"NewsArticle","articleBody":"Uniquehistoricalword"}</script>'
-    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else xml if url.endswith('.xml') else html)
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else xml if url.endswith('.xml') else html)
     process(job)
     assert ArchiveJob.objects.count() == 2
     page = ArchiveJob.objects.get(kind='page')
@@ -45,7 +45,7 @@ def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
         second = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
         html = (b'<title>Canonical story</title><link rel="canonical" href="/story">'
             b'<meta property="og:type" content="article">')
-        monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else html)
+        monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else html)
         process(first)
         from scraper.archive import _HOST_STATES
         _HOST_STATES.clear()
@@ -59,7 +59,7 @@ def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
 def test_failed_archive_is_retained_without_article(monkeypatch):
     source = Source.objects.create(name='Test', url='https://example.org')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/old', kind='page')
-    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nDisallow: /')
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nDisallow: /')
     assert run_batch(1) == 0
     job.refresh_from_db()
     assert job.last_error == 'robots_disallowed' and job.status == 'quarantined'
@@ -122,7 +122,7 @@ def test_unrelated_body_is_not_saved_or_searchable(monkeypatch):
     job = ArchiveJob.objects.create(source=source, url='https://example.org/target', kind='page')
     raw = b'<title>Source title</title><meta property="og:type" content="article">' + body_document(
         {'@type': 'NewsArticle', 'url': '/other', 'articleBody': 'Foreignuniquesearchterm'})
-    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else raw)
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else raw)
     process(job)
     article = Article.objects.get()
     assert article.url == job.url
@@ -138,12 +138,12 @@ def test_archive_host_gate_covers_robots_and_fetch(monkeypatch):
     from urllib.robotparser import RobotFileParser
     entered, release = Event(), Event()
     policy = RobotFileParser(); policy.parse(['User-agent: *', 'Allow: /', 'Crawl-delay: 10'])
-    def robot(url):
+    def robot(url, **_):
         entered.set()
         assert release.wait(3)
         return policy
     monkeypatch.setattr('scraper.archive.robots', robot)
-    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: (_ for _ in ()).throw(RuntimeError('network failed')))
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: (_ for _ in ()).throw(RuntimeError('network failed')))
     job = SimpleNamespace(url='https://example.org/a')
     with ThreadPoolExecutor(max_workers=2) as pool:
         first = pool.submit(process, job)
@@ -160,9 +160,10 @@ def test_archive_preserves_publisher_thumbnail_url(monkeypatch):
     source = Source.objects.create(name='Thumbnail source', url='https://example.org')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/archive/story')
     html = b'<title>Source title</title><meta property="og:type" content="article"><meta property="og:image" content="/images/photo.jpg">'
-    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else html)
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else html)
     process(job)
     assert Article.objects.get().image_url == 'https://example.org/images/photo.jpg'
     from news.metadata import extract_metadata
     assert extract_metadata(b'<title>No photo</title>', job.url)['image_url'] == ''
     assert extract_metadata(b'<meta property="og:image" content="javascript:alert(1)">', job.url)['image_url'] == ''
+
