@@ -31,8 +31,8 @@ Automatyzacja ani podpis „AI” nie przenoszą odpowiedzialności z wydawcy na
 Droga do automatyzacji ma trzy poziomy:
 
 1. **Asystent** — AI przygotowuje twierdzenia, dowody i szkic; jedna osoba zatwierdza publikację.
-2. **Kontrolowana autopublikacja** — po zebraniu reprezentatywnego zestawu decyzji redakcji system może sam publikować jedynie niskiego ryzyka etykiety oparte na jednoznacznym, ustrukturyzowanym źródle, np. wynik głosowania, data, liczba lub dosłowne porównanie dwóch oficjalnych dokumentów. Losowa próbka i wszystkie odwołania trafiają do kontroli człowieka.
-3. **Szersza automatyzacja** — dopiero po niezależnym audycie jakości i prawnym, ustalonym progu błędów, mechanizmie natychmiastowego wycofania oraz uzyskaniu wymaganych zgód X. Oceny typu „pomija kontekst” i „spin dnia” pozostają decyzją redakcyjną, dopóki nie istnieje wiarygodny, sprawdzony standard ich automatycznej oceny.
+2. **Kontrolowana autopublikacja** — domyślny proces nie wymaga akceptowania każdego wyniku. Po zebraniu reprezentatywnego zestawu decyzji redakcji system sam publikuje tylko zakres spełniający ustalone progi jakości i niskiego ryzyka, oparty na jednoznacznym, ustrukturyzowanym źródle, np. wyniku głosowania, dacie, liczbie lub dosłownym porównaniu dwóch oficjalnych dokumentów. Redakcja kontroluje losowe próbki, wyjątki, odwołania i korekty; brak dowodów zatrzymuje publikację.
+3. **Szersza automatyzacja** — po niezależnym audycie jakości i prawnym, ustalonym progu błędów, mechanizmie natychmiastowego wycofania oraz uzyskaniu wymaganych zgód X własny silnik obsługuje także bardziej złożony kontekst bez zatwierdzania pojedynczych wyników. Redakcja nadzoruje metodę, ewaluację, wyjątki i odwołania. Automatyzacja nie zmienia odpowiedzialności wydawcy za opublikowany materiał.
 
 Każda publiczna karta ma status `WSTĘPNA ANALIZA`, `ZWERYFIKOWANE PRZEZ REDAKCJĘ`, `SKORYGOWANE` albo `WYCOFANE`. Dla zarzutów dotyczących konkretnej osoby, intencji, manipulacji lub kłamstwa wymagamy dwóch akceptacji i oceny źródeł pierwotnych. Nie używamy automatycznego rankingu „najbardziej kłamiących polityków”.
 

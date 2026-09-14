@@ -36,6 +36,16 @@ W motywie ciemnym bursztynowe wypełnienie jest zarezerwowane dla głównego CTA
 
 Ilustracje pejzażu są autorskie i fikcyjne. Mają przywoływać codzienny polski krajobraz przez drogi, pola, wsie, lasy i infrastrukturę, bez używania oficjalnych symboli ani udawania konkretnego zabytku.
 
+## Role kont i reakcje
+
+W MVP występują **Ordynator** (administrator) oraz **Doktor: [specjalizacja]** (autoryzowany autor, np. dziennikarz lub ekspert). W etapie II dochodzi **Pacjent** (zwykły użytkownik). Nazwa roli, uprawnienia i dostępny opis są zawsze podane tekstowo; kolor nie może być jedynym nośnikiem znaczenia.
+
+- **Ordynator** — przygaszona śliwka z jasnym tekstem; oznacza uprawnienie administracyjne, nie ocenę jakości wypowiedzi.
+- **Doktor** — bursztynowy kontur lub drobny znacznik oraz jawna specjalizacja; nie używamy wypełnionego bursztynowego CTA jako plakietki.
+- **Pacjent** — neutralny grafit/szarość i etykieta tekstowa; status nie obniża widoczności merytorycznej treści.
+
+Reakcja na box jest opinią społeczności, nie oceną prawdziwości. Wariant dodatni używa przygaszonego złota `#B89555`, wariant ujemny zakurzonej jagody `#9B5D73`, oba na bardzo delikatnie zabarwionym tle. Zawsze towarzyszą im znak `+` albo `−`, etykieta tekstowa i liczba; interfejs pozostaje czytelny bez koloru. Koral jest zarezerwowany dla czasu i pilności, więc nie oznacza zwykłej reakcji ujemnej. Mięta i jaskrawa zieleń nie są potrzebne.
+
 ## Stały układ głównej
 
 Niezależnie od szaty zachowujemy kolejność:
