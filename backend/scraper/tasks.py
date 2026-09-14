@@ -146,6 +146,13 @@ def backfill_voting_history():
     return backfill_votings_cycle()
 
 
+@shared_task(soft_time_limit=60, time_limit=90)
+def import_uokik_sudop_pilot():
+    """Manual pilot hook; the adapter itself remains disabled unless opted in."""
+    from scraper.uokik_sudop import sudop_pilot_cycle
+    return sudop_pilot_cycle()
+
+
 @shared_task(soft_time_limit=120, time_limit=150)
 def check_data_quality():
     from scraper.quality import scan_quality
