@@ -15,11 +15,11 @@ $logColumns = @(
 
 while ($true) {
     Clear-Host
-    Write-Output "spin.clinic - local AI work - $(Get-Date -Format 'HH:mm:ss')"
-    Write-Output ''
-    & (Join-Path $PSScriptRoot 'Status-Claude-Queue.ps1')
+    Write-Output "spin.clinic - live build status - $(Get-Date -Format 'HH:mm:ss')"
     Write-Output ''
     & (Join-Path $PSScriptRoot 'Harvester-Live-Status.ps1')
+    Write-Output ''
+    & (Join-Path $PSScriptRoot 'Status-Claude-Queue.ps1')
     Write-Output ''
     Write-Output 'Important AI activity:'
     $activity = Join-Path $queue '..\activity.log'

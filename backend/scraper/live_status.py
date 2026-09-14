@@ -24,4 +24,7 @@ print(json.dumps({
     'queued_sources': one(
         "select count(distinct source_id) from news_archivejob where status in ('pending','error','running')"
     ),
+    'completed_sources': one(
+        "select count(distinct source_id) from news_archivejob where status='done'"
+    ),
 }))

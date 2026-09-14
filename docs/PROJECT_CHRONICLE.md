@@ -32,6 +32,7 @@ Nazwa i język produktu świadomie nawiązują do kliniki: Dr Spin analizuje twi
 - Trzy warianty wizualne wyeksportowano w rozdzielczości 1600 × 1050. Zachowano tekstowe logo i osadzone lokalnie fonty.
 - Podczas przygotowania materiałów przed snem okazało się, że wcześniejsze, zaakceptowane wizualizacje z ilustracyjną „polską drogą” nie zostały zachowane jako trwałe pliki. Zamiast nich powstała techniczna rekonstrukcja, która nie odpowiadała wspólnym ustaleniom. Błąd wykrył właściciel projektu; serię odtworzono, a samo zdarzenie stało się argumentem za zapisywaniem nie tylko decyzji, lecz również ich wizualnych artefaktów, wersji i pochodzenia.
 - Ustalono, że Codex i Claude mają prowadzić krótkie, zrozumiałe dla człowieka zapisy ważnych decyzji, przełomów, nieudanych prób oraz napraw. Dziennik ma pokazywać rzeczywisty proces współpracy człowieka z różnymi systemami AI, bez upiększania historii i bez sekretów.
+- Po ponownym obejrzeniu rekonstrukcji właściciel wstrzymał dalsze prace nad widokami, aby priorytetem pozostała baza. Zachowane korekty do następnego podejścia: w nagłówku wyłącznie `spin.clinic`, kropka w kolorze akcentu, na środku stonowane pole wyszukiwania z przyciskiem „Szukaj”, a nitki mają zachować wcześniej uzgodniony sposób prezentacji. Hasło „Czas na lepszą rozmowę” zostało odrzucone.
 
 ## Zasada dalszego zapisu
 
