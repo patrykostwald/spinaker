@@ -68,6 +68,18 @@ def test_approved_source_uses_hostname_transport_after_public_dns_check(resolve)
         assert pool.return_value.urlopen.call_args.args == ('GET', 'https://source.example/a')
         assert 'Host' not in pool.return_value.urlopen.call_args.kwargs['headers']
 
+
+@patch('scraper.utils.socket.getaddrinfo')
+def test_hostname_transport_still_rejects_private_redirect(resolve):
+    """hostname_transport skips IP pinning, not the per-hop public-DNS check."""
+    from scraper.utils import fetch_feed
+    resolve.side_effect = [[(2, 1, 6, '', ('8.8.8.8', 443))], [(2, 1, 6, '', ('10.0.0.1', 443))]]
+    with patch('urllib3.PoolManager') as pool:
+        pool.return_value.urlopen.return_value = MagicMock(status=302, headers={'Location': 'https://internal.example/a'})
+        with pytest.raises(ValueError, match='public'):
+            fetch_feed('https://source.example/a', hostname_transport=True)
+        assert pool.return_value.urlopen.call_count == 1
+
 @pytest.mark.django_db
 @patch('scraper.gdelt_scraper.requests.get')
 def test_scrape_gdelt(mock_get):

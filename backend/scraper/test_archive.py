@@ -150,6 +150,20 @@ def test_metadata_scope_never_stores_article_body_even_when_full_text_mode_is_on
     assert Article.objects.get().content.text == ''
 
 
+@pytest.mark.django_db
+def test_reviewed_archive_job_uses_hostname_transport(monkeypatch):
+    source = Source.objects.create(name='Reviewed', url='https://example.org')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/reviewed', kind='page')
+    calls = []
+    html = b'<title>Reviewed source</title><meta property="og:type" content="article">'
+    def fetch(url, **kwargs):
+        calls.append(kwargs.get('hostname_transport'))
+        return b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else html
+    monkeypatch.setattr('scraper.archive.fetch_feed', fetch)
+    process(job, allowed_scope='metadata')
+    assert calls == [True, True]
+
+
 def test_archive_host_gate_covers_robots_and_fetch(monkeypatch):
     from concurrent.futures import ThreadPoolExecutor
     from threading import Event

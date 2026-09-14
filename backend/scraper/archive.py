@@ -212,16 +212,18 @@ def process(job, cutoff_at=None, allowed_scope=None):
             raise SourceDelay()
         attempted = True
         try:
-            # Jobs are only admitted through the configured source catalogue;
-            # use normal hostname transport for those approved publishers.
-            policy = robots(job.url, hostname_transport=True)
+            # Only jobs carrying an access scope have passed the reviewed
+            # source gate. They may use normal hostname transport for CDNs;
+            # direct/internal callers retain pinned-IP transport.
+            hostname_transport = allowed_scope is not None
+            policy = robots(job.url, hostname_transport=hostname_transport)
             if not policy.can_fetch(USER_AGENT, job.url):
                 raise ValueError('robots_disallowed')
             delay = max(policy.crawl_delay(USER_AGENT) or 0, 3)
             request_rate = policy.request_rate(USER_AGENT)
             if request_rate and request_rate.requests:
                 delay = max(delay, request_rate.seconds / request_rate.requests)
-            raw = fetch_feed(job.url, hostname_transport=True)
+            raw = fetch_feed(job.url, hostname_transport=hostname_transport)
             _clear_host_failures(state)
         except Exception as exc:
             if _transient_error(exc):
