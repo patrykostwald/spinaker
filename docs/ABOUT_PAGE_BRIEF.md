@@ -38,6 +38,8 @@ Pionowa oś ma trzy węzły. Przy każdym węźle lewa kolumna wyjaśnia **Wyszu
 
 **Portal:** powstaje osobna przestrzeń nitek społeczności oraz **Izba przyjęć** dla nowych propozycji. Najlepsze nitki po przejściu jawnych progów jakości i moderacji mogą trafić na główną. Na głównej poza nimi pozostają wiadomości oraz autorzy zatwierdzeni przez redakcję. Profile pozwalają przypinać nitki i świadomie ujawniać wybrane reakcje oraz komentarze.
 
+**Aplikacja:** natywna aplikacja na iOS i Androida przenosi sprawdzone funkcje portalu: osobiste paski, ulubione, reakcje, komentarze i alerty push zsynchronizowane z kontem.
+
 **Technologie:** Supabase Auth, system ról, moderacja i reputacja, powiadomienia push/e-mail, wersjonowany ranking, RAG, graf wiedzy i analityka z ochroną prywatności.
 
 #### Etap III — własny silnik kontekstu

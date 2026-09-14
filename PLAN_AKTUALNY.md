@@ -114,6 +114,8 @@ Brak ustalonej podstawy nie włącza pełnego tekstu ani miniaturek. Dopuszczony
 
 UGC/Izba Przyjęć, alerty, płatne funkcje, B2B i rozbudowana obsługa zgód. Zakres dostępu płatnego nigdy nie rozszerza uprawnień do cudzej treści. Sponsor nie zmienia archiwum.
 
+W fazie II powstaje natywna aplikacja na iOS i Androida, rozwijana na podstawie sprawdzonych przepływów PWA. Obejmuje spersonalizowane paski, ulubione, komentarze, reakcje i alerty push zsynchronizowane z kontem. Publikacja w sklepach następuje po testach prywatności, uprawnień i dostarczania powiadomień.
+
 ## Etap III
 
 Własne zaplecze AI, wyszukiwanie hybrydowe, bardziej zaawansowane osie i BIP. Najpierw RAG i pomiar jakości na przykładach ocenionych przez redakcję; dopiero później decyzja o dostrajaniu modelu i sprzęcie GPU. Przyrost bazy nie jest treningiem modelu. Qdrant z PDF pozostaje kandydatem; porównać z wyszukiwaniem wektorowym w istniejącym Postgres przed dodaniem osobnej usługi.
