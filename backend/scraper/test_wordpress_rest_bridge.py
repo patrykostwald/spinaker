@@ -6,7 +6,10 @@ rows from already-fetched metadata.
 """
 import pytest
 
-from news.models import Article, ArchiveJob, ArticleContent, Source
+from django.utils import timezone
+
+from news.models import Article, ArchiveJob, ArticleContent, Source, SourceAccessInstruction
+from scraper.access_gate import AccessDenied
 from scraper.wordpress_rest_adapter import EndpointDomainMismatch, SourceNotEligible
 from scraper.wordpress_rest_bridge import enqueue_page_jobs
 
@@ -27,10 +30,28 @@ def post(number, *, date='2026-06-01T10:00:00'):
 def make_source(url='https://example.pl', **overrides):
     defaults = dict(name='Example', url=url, is_active=True, scrape_enabled=True, catalog_stage='configured')
     defaults.update(overrides)
-    return Source.objects.create(**defaults)
+    source = Source.objects.create(**defaults)
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.API,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        endpoint=ENDPOINT, terms_url='https://example.pl/terms',
+        evidence={'basis': 'test'}, reviewed_at=timezone.now(),
+        reviewed_by='test', minimum_interval_seconds=3)
+    return source
 
 
 # --- fail-closed -----------------------------------------------------------
+
+@pytest.mark.django_db
+def test_missing_api_instruction_writes_nothing():
+    source = make_source()
+    source.access_instructions.all().delete()
+
+    with pytest.raises(AccessDenied, match='no_approved_instruction'):
+        enqueue_page_jobs(source, entry(), ENDPOINT, [post(1)])
+
+    assert ArchiveJob.objects.count() == 0
 
 @pytest.mark.django_db
 @pytest.mark.parametrize('overrides', [

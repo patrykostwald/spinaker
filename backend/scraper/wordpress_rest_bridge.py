@@ -15,14 +15,16 @@ This module is not imported by any scheduler/cron entry point
 ``scraper.news_sitemaps.news_sitemap_cycle``) and issues no HTTP requests of
 its own. Nothing is activated by adding it: a caller must explicitly hold a
 catalog entry with ``archive_verification == {"status": "verified",
-"can_backfill": true, "mechanism": "wordpress_rest"}`` (enforced by
-``wordpress_rest_adapter.ensure_eligible``, re-run here) before any row is
-written.
+"can_backfill": true, "mechanism": "wordpress_rest"}`` plus a current,
+reviewed ``SourceAccessInstruction(channel='api')`` for the exact endpoint
+before any row is written.  The JSON flag is retained as technical evidence;
+it is never an authorization decision.
 """
 from django.db import transaction
 
-from news.models import ArchiveJob, Source
+from news.models import ArchiveJob, Source, SourceAccessInstruction
 from scraper.archive import same_host
+from scraper.access_gate import require_approved_instruction
 from scraper.utils import safe_url
 from scraper.wordpress_rest_adapter import ensure_eligible, ensure_same_site
 
@@ -48,6 +50,8 @@ def enqueue_page_jobs(source, catalog_entry, endpoint, posts):
       approved wordpress_rest source (see ``ensure_eligible``);
     * ``EndpointDomainMismatch`` unless ``endpoint`` still canonically
       matches both ``catalog_entry['url']`` and ``source.url``.
+    * ``AccessDenied`` unless the freshly locked Source has a current,
+      reviewed API instruction whose endpoint covers ``endpoint``.
     The Source row is re-locked and re-checked (active/enabled/configured,
     and still same-site as ``endpoint``) inside the write transaction, so a
     source disabled or repointed after the caller's own checks still blocks
@@ -86,6 +90,8 @@ def enqueue_page_jobs(source, catalog_entry, endpoint, posts):
         # Re-check host agreement against the just-locked row, not the
         # possibly-stale `source` argument the caller captured earlier.
         ensure_same_site({'url': current.url}, endpoint)
+        require_approved_instruction(
+            current, SourceAccessInstruction.Channel.API, endpoint)
         urls = [url for url in candidates if safe_url(url) and same_host(url, current.url)]
         if not urls:
             return 0
