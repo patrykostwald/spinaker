@@ -7,11 +7,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$python = "$PSScriptRoot\backend\.venv\Scripts\python.exe"
+$python = @(
+    "$PSScriptRoot\.venv\Scripts\python.exe",
+    "$PSScriptRoot\backend\.venv\Scripts\python.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
 $pidPath = "$PSScriptRoot\.runtime\harvesters-backfill.pid"
 $logPath = "$PSScriptRoot\.runtime\harvesters-backfill.log"
 $errorPath = "$PSScriptRoot\.runtime\harvesters-backfill.err.log"
-if (-not (Test-Path $python)) { throw "Missing backend virtualenv: $python" }
+if (-not $python) { throw "Missing Python virtualenv in project root or backend directory." }
 if (Test-Path $pidPath) {
     $oldPid = [int](Get-Content $pidPath)
     if (Get-Process -Id $oldPid -ErrorAction SilentlyContinue) { throw "Backfill already running with PID $oldPid" }

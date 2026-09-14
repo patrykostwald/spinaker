@@ -1,11 +1,27 @@
 import json
 from datetime import timedelta
+from types import SimpleNamespace
 from urllib.robotparser import RobotFileParser
 import pytest
 from django.utils import timezone
 from news.models import Source, ArchiveJob, ImportState
 from scraper.archive import discover, process, _HOST_STATES
 from scraper.news_sitemaps import news_sitemap_cycle
+from scraper.news_sitemaps import verified_maps
+
+
+def test_archive_map_matches_rss_source_and_requires_explicit_approval(tmp_path, monkeypatch):
+    path = tmp_path / 'catalog.json'
+    row = {'name': 'Polsat News', 'url': 'https://www.polsatnews.pl',
+        'sitemap_urls': ['https://www.polsatnews.pl/sitemap.xml'],
+        'archive_verification': {'status': 'verified', 'can_backfill': True}}
+    path.write_text(json.dumps([row]), encoding='utf-8')
+    monkeypatch.setattr('scraper.news_sitemaps.CATALOG_PATH', path)
+    source = SimpleNamespace(name='Polsat News', url='https://www.polsatnews.pl/rss/polska.xml')
+    assert verified_maps(source, require_archive_approval=True) == row['sitemap_urls']
+    row['archive_verification']['can_backfill'] = False
+    path.write_text(json.dumps([row]), encoding='utf-8')
+    assert verified_maps(source, require_archive_approval=True) == []
 
 
 @pytest.fixture

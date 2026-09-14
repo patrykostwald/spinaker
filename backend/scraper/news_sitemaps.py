@@ -12,15 +12,27 @@ CATALOG_PATH = Path(__file__).parent / 'data' / 'verified_local_sources.json'
 NEWS_PRIORITY = 10
 
 
-def verified_maps(source, field='sitemap_urls'):
+def _publisher_host(url):
+    return (urlsplit(url or '').hostname or '').casefold().removeprefix('www.')
+
+
+def verified_maps(source, field='sitemap_urls', require_archive_approval=False):
     rows = json.loads(CATALOG_PATH.read_text(encoding='utf-8'))
     result = []
     for row in rows:
-        if str(row.get('url', '')).rstrip('/') != source.url.rstrip('/'):
+        same_url = str(row.get('url', '')).rstrip('/') == source.url.rstrip('/')
+        same_host = _publisher_host(row.get('url')) == _publisher_host(source.url)
+        same_name = str(row.get('name', '')).casefold() == source.name.casefold()
+        if not (same_url or same_host or same_name):
+            continue
+        if require_archive_approval and not (
+            row.get('archive_verification', {}).get('status') == 'verified'
+            and row.get('archive_verification', {}).get('can_backfill') is True
+        ):
             continue
         for url in row.get(field, []):
             if (isinstance(url, str) and safe_url(url) and len(url) <= 1024
-                    and urlsplit(url).hostname == urlsplit(source.url).hostname):
+                    and _publisher_host(url) == _publisher_host(row.get('url'))):
                 result.append(url)
     return list(dict.fromkeys(result))
 

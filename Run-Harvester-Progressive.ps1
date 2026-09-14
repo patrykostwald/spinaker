@@ -6,8 +6,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$python = "$PSScriptRoot\backend\.venv\Scripts\python.exe"
-if (-not (Test-Path $python)) { throw "Missing backend virtualenv: $python" }
+$python = @(
+    "$PSScriptRoot\.venv\Scripts\python.exe",
+    "$PSScriptRoot\backend\.venv\Scripts\python.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $python) { throw "Missing Python virtualenv in project root or backend directory." }
 if (-not (Test-Path $BaseDatabase)) { throw "Missing base SQLite database: $BaseDatabase" }
 New-Item -ItemType Directory -Force $OutputDirectory | Out-Null
 $ids = ($SourceId | ForEach-Object { "--source-id $_" }) -join ' '

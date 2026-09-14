@@ -1,10 +1,20 @@
 from types import SimpleNamespace
 
-from scraper.management.commands.backfill_candidates import archive_candidate
+from scraper.management.commands.backfill_candidates import (
+    archive_candidate,
+    catalog_indexes,
+    catalog_row_for,
+)
 
 
 def test_short_rss_is_not_an_archive_candidate():
     result = archive_candidate(SimpleNamespace(), {'rss_url': 'https://example.org/feed'})
+    assert result['status'] == 'needs_review'
+    assert result['can_backfill'] is False
+
+
+def test_legacy_sitemap_requires_archive_reaudit():
+    result = archive_candidate(SimpleNamespace(), {'sitemap_urls': ['https://example.org/sitemap.xml']})
     assert result['status'] == 'needs_review'
     assert result['can_backfill'] is False
 
@@ -24,3 +34,9 @@ def test_unverified_catalog_row_is_not_promoted():
         'reason': 'HTTP 429'}})
     assert result['status'] == 'needs_review'
     assert result['reason'] == 'HTTP 429'
+
+
+def test_rss_source_matches_catalog_by_publisher_host():
+    row = {'name': 'Polsat News', 'url': 'https://www.polsatnews.pl'}
+    source = SimpleNamespace(name='Polsat News', url='https://www.polsatnews.pl/rss/polska.xml')
+    assert catalog_row_for(source, catalog_indexes([row])) is row

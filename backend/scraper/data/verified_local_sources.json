@@ -240,6 +240,67 @@
     ]
   },
   {
+    "name": "Polsat News",
+    "url": "https://www.polsatnews.pl/rss/polska.xml",
+    "rss_url": "https://www.polsatnews.pl/rss/polska.xml",
+    "sitemap_urls": ["https://www.polsatnews.pl/sitemap.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 15,
+    "verified_on": "2026-09-14",
+    "evidence_urls": ["https://www.polsatnews.pl/robots.txt", "https://www.polsatnews.pl/sitemap.xml"],
+    "verification_note": "Oficjalny indeks siedmiu map; sprawdzone próbki obejmują publikacje z 2016 i 2026 roku.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified",
+      "mechanism": "sitemap_index",
+      "urls": ["https://www.polsatnews.pl/sitemap.xml"],
+      "can_backfill": true,
+      "date_range": {"oldest_sample": "2016-06-06", "newest_sample": "2026-09-14"},
+      "reason": "Official sitemap index and bounded old/new samples were verified. Publication dates must still come from article metadata."
+    }
+  },
+  {
+    "name": "RMF24",
+    "url": "https://www.rmf24.pl/fakty/rss",
+    "rss_url": "https://www.rmf24.pl/fakty/feed",
+    "sitemap_urls": ["https://www.rmf24.pl/sitemap.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 15,
+    "verified_on": "2026-09-14",
+    "evidence_urls": ["https://www.rmf24.pl/robots.txt", "https://www.rmf24.pl/sitemap.xml"],
+    "verification_note": "Oficjalny indeks 278 dziennych map, z próbkami od 2006 do 2026 roku.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified",
+      "mechanism": "sitemap_index",
+      "urls": ["https://www.rmf24.pl/sitemap.xml"],
+      "can_backfill": true,
+      "date_range": {"oldest_sample": "2006-01-31", "newest_sample": "2026-09-14"},
+      "reason": "Official daily sitemap index and bounded old/new samples were verified."
+    }
+  },
+  {
+    "name": "Rzeczpospolita",
+    "url": "https://www.rp.pl/rss/1019.xml",
+    "rss_url": "https://www.rp.pl/rss_main",
+    "sitemap_urls": ["https://www.rp.pl/sitemaps/sitemap.xml"],
+    "news_sitemap_urls": ["https://www.rp.pl/sitemaps/news-sitemap.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 15,
+    "verified_on": "2026-09-14",
+    "evidence_urls": ["https://www.rp.pl/robots.txt", "https://www.rp.pl/sitemaps/sitemap.xml", "https://www.rp.pl/sitemaps/news-sitemap.xml"],
+    "verification_note": "Oficjalny indeks 237 miesięcznych map od 2007 do 2026 roku; osobna mapa wiadomości służy bieżącemu wycinkowi.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified",
+      "mechanism": "sitemap_index",
+      "urls": ["https://www.rp.pl/sitemaps/sitemap.xml"],
+      "can_backfill": true,
+      "date_range": {"oldest_sample": "2007-01", "newest_sample": "2026-09-14"},
+      "reason": "Official monthly sitemap index and bounded old/new samples were verified."
+    }
+  },
+  {
     "name": "Zero.pl",
     "url": "https://zero.pl",
     "rss_url": "",

@@ -17,7 +17,8 @@ def test_cutoff_requires_timezone():
 @pytest.mark.django_db
 def test_prepare_source_freezes_cutoff_and_does_not_rewrite_it(monkeypatch):
     source = Source.objects.create(name='Pilot', url='https://example.org')
-    monkeypatch.setattr('scraper.backfill.verified_maps', lambda current: ['https://example.org/sitemap.xml'])
+    monkeypatch.setattr('scraper.backfill.verified_maps',
+        lambda current, require_archive_approval=False: ['https://example.org/sitemap.xml'])
     first = parse_cutoff('2026-09-14T23:59:59+02:00')
     second = parse_cutoff('2026-09-13T23:59:59+02:00')
     prepare_source(source, first)

@@ -23,7 +23,7 @@ def state_name(source_id):
 
 
 def prepare_source(source, cutoff_at):
-    maps = verified_maps(source)
+    maps = verified_maps(source, require_archive_approval=True)
     if not maps:
         raise ValueError('no_verified_sitemap')
     name = state_name(source.pk)
