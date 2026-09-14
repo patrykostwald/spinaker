@@ -25,6 +25,10 @@ USER_AGENT = 'ContextBeforeContent'
 MAX_ARCHIVE_WORKERS = 64
 HOST_CIRCUIT_FAILURES = 3
 HOST_CIRCUIT_MAX_SECONDS = 900
+MAX_ARCHIVE_ATTEMPTS = 5
+TERMINAL_ERRORS = frozenset({
+    'empty_directory', 'non_article_route', 'not_a_sitemap', 'robots_disallowed',
+})
 _HOST_STATES = {}
 _HOST_STATES_LOCK = Lock()
 
@@ -260,6 +264,8 @@ def process(job, cutoff_at=None):
             metadata = extract_kprm_metadata(raw, job.url)
         except ValueError:
             pass
+    if metadata.get('page_classification') == 'non_article':
+        raise ValueError('non_article_route')
     if not metadata['title']: raise ValueError('missing_source_title')
     if cutoff_at is not None and metadata.get('published_date'):
         published = datetime.fromisoformat(metadata['published_date'].replace('Z', '+00:00'))
@@ -358,9 +364,13 @@ def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_cal
             job.status = 'pending'; job.attempts -= 1; job.available_at = timezone.now() + timedelta(minutes=1)
         except Exception as exc:
             counters['failed_jobs'] += 1
-            job.status = 'error'
-            job.last_error = str(exc) if str(exc) in {'robots_disallowed', 'missing_source_title', 'not_a_sitemap',
-                'unclassified_page', 'directory_link_limit', 'source_unavailable'} else type(exc).__name__
+            known_error = str(exc) if str(exc) in TERMINAL_ERRORS | {
+                'missing_source_title', 'unclassified_page', 'directory_link_limit',
+                'source_unavailable', 'unsupported_xml_declaration'} else type(exc).__name__
+            job.last_error = known_error
+            terminal = known_error in TERMINAL_ERRORS
+            exhausted = job.attempts >= MAX_ARCHIVE_ATTEMPTS
+            job.status = 'quarantined' if terminal or exhausted else 'error'
             delay = retry_delay(exc, job.attempts) if _transient_error(exc) else min(86400, 3600 * 2 ** min(job.attempts, 5))
             job.available_at = timezone.now() + timedelta(seconds=delay)
         job.checked_at = timezone.now()

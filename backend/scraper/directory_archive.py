@@ -136,5 +136,8 @@ def directory_links(raw, url):
     if parser.overflow:
         raise ValueError('directory_link_limit')
     if not parser.publications:
-        raise ValueError('unclassified_page')
+        # directory_spec positively identified this as a supported catalogue;
+        # an empty result is therefore a terminal technical page, not an
+        # ambiguous article whose publisher markup may have drifted.
+        raise ValueError('empty_directory')
     return tuple(parser.publications), tuple(parser.pages)

@@ -15,6 +15,10 @@ error_rows = list(db.execute(
     "select lower(coalesce(last_error,'')) error, count(*) n "
     "from news_archivejob where status='error' group by lower(coalesce(last_error,''))"
 ))
+quarantined_rows = list(db.execute(
+    "select lower(coalesce(last_error,'')) error, count(*) n "
+    "from news_archivejob where status='quarantined' group by lower(coalesce(last_error,''))"
+))
 manual_markers = ('robots_disallowed', '403', '401', 'forbidden', 'access_denied')
 adapter_markers = ('missing_source_title', 'not_a_sitemap', 'unclassified_page',
                    'wordpress_missing_title', 'unsupported')
@@ -32,6 +36,7 @@ print(json.dumps({
     'running': jobs.get('running', 0),
     'done': jobs.get('done', 0),
     'errors': jobs.get('error', 0),
+    'quarantined': jobs.get('quarantined', 0),
     'errors_retry_or_unclassified': retry_review,
     'errors_adapter_review': adapter_review,
     'errors_permission_review': manual_review,
@@ -40,6 +45,10 @@ print(json.dumps({
         "select count(distinct source_id) from news_archivejob where status in ('pending','error','running')"
     ),
     'completed_sources': one(
-        "select count(distinct source_id) from news_archivejob where status='done'"
+        "select count(distinct source_id) from news_archivejob where status in ('done','quarantined')"
     ),
+    'quarantine_terminal': sum(row['n'] for row in quarantined_rows
+        if row['error'] in ('empty_directory', 'non_article_route', 'not_a_sitemap', 'robots_disallowed')),
+    'quarantine_exhausted': sum(row['n'] for row in quarantined_rows
+        if row['error'] not in ('empty_directory', 'non_article_route', 'not_a_sitemap', 'robots_disallowed')),
 }))

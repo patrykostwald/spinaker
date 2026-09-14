@@ -62,7 +62,7 @@ def test_failed_archive_is_retained_without_article(monkeypatch):
     monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nDisallow: /')
     assert run_batch(1) == 0
     job.refresh_from_db()
-    assert job.last_error == 'robots_disallowed' and job.status == 'error'
+    assert job.last_error == 'robots_disallowed' and job.status == 'quarantined'
     assert job.available_at > timezone.now()
     assert Article.objects.count() == 0
 

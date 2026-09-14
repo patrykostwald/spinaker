@@ -69,7 +69,7 @@ def test_relative_links_work_but_sidebar_and_external_links_do_not(example):
     lambda url: 'javascript:alert(1)',
 ])
 def test_unsafe_or_unverified_link_variants_do_not_confirm_catalogue(example, transform):
-    with pytest.raises(ValueError, match='^unclassified_page$'):
+    with pytest.raises(ValueError, match='^empty_directory$'):
         directory_links(listing_html(example, url=transform(example[1])), example[0])
 
 
@@ -93,13 +93,13 @@ def test_other_routes_are_not_reinterpreted_as_catalogues(url):
 def test_empty_or_navigation_only_catalogue_remains_error(example):
     for raw in (b'<title>Empty page</title>', example[3].encode(),
                 ('<aside><a href="' + example[1] + '">Link</a></aside>').encode()):
-        with pytest.raises(ValueError, match='^unclassified_page$'):
+        with pytest.raises(ValueError, match='^empty_directory$'):
             directory_links(raw, example[0])
 
 
 @pytest.mark.parametrize('example', EXAMPLES)
 def test_catalogue_routes_never_become_publication_targets(example):
-    with pytest.raises(ValueError, match='^unclassified_page$'):
+    with pytest.raises(ValueError, match='^empty_directory$'):
         directory_links(listing_html(example, url=example[0]), example[0])
 
 
@@ -166,11 +166,11 @@ def test_successful_catalogue_counts_page_but_zero_articles(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_empty_catalogue_remains_retriable_error(monkeypatch):
+def test_empty_catalogue_is_terminal_technical_page(monkeypatch):
     _, job = setup_job(monkeypatch, body=b'<title>Empty catalogue</title>')
     assert run_batch(1) == 0
     job.refresh_from_db()
-    assert job.status == 'error' and job.last_error == 'unclassified_page'
+    assert job.status == 'quarantined' and job.last_error == 'empty_directory'
     assert ArchiveJob.objects.count() == 1 and not Article.objects.exists()
 
 

@@ -5,7 +5,7 @@ try {
     $probe = Join-Path $PSScriptRoot 'backend\scraper\live_status.py'
     $data = (& $python $probe $DatabasePath | ConvertFrom-Json)
     $rate = [math]::Round($data.archive_new_10m / 10, 1)
-    $finished = $data.done + $data.errors
+    $finished = $data.done + $data.errors + $data.quarantined
     $success = if ($finished) { [math]::Round(100 * $data.done / $finished, 1) } else { 0 }
     $total = $finished + $data.pending + $data.running
     $progress = if ($total) { [math]::Round(100 * $finished / $total, 2) } else { 0 }
@@ -18,8 +18,9 @@ try {
     Write-Output "ARCHIVE BOXES SAVED: $($data.archive_boxes)   |   ALL BOXES: $($data.boxes)"
     Write-Output "NEW: +$($data.archive_new_10m) / 10 min   |   ~$rate/min   |   ~$perHour/hour"
     Write-Output "DISCOVERED QUEUE PROCESSED: $progress%   |   ETA at current rate: $eta"
-    Write-Output "URL RESULTS: success=$($data.done)   error=$($data.errors)   waiting=$($data.pending)   active=$($data.running)"
+    Write-Output "URL RESULTS: success=$($data.done)   retry=$($data.errors)   quarantined=$($data.quarantined)   waiting=$($data.pending)   active=$($data.running)"
     Write-Output "ERROR ROUTING: retry/unclassified=$($data.errors_retry_or_unclassified)   adapter review=$($data.errors_adapter_review)   permission/contact=$($data.errors_permission_review)"
+    Write-Output "QUARANTINE: terminal=$($data.quarantine_terminal)   attempts exhausted=$($data.quarantine_exhausted)"
     Write-Output "QUALITY: successful requests=$success%   |   sources active=$($data.active_sources) / queued=$($data.queued_sources)"
     Write-Output '============================================================'
 } catch {

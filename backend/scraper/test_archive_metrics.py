@@ -64,6 +64,38 @@ def test_transient_retry_honors_retry_after_without_duplicate_job():
     assert ArchiveJob.objects.count() == 1
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize('error', ['empty_directory', 'non_article_route', 'not_a_sitemap', 'robots_disallowed'])
+def test_known_technical_errors_are_terminal(error):
+    source = Source.objects.create(name='Publisher', url='https://example.org')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/technical', kind='page')
+    with patch('scraper.archive.process', side_effect=ValueError(error)), patch('scraper.archive.time.sleep'):
+        assert run_batch(1) == 0
+    job.refresh_from_db()
+    assert (job.status, job.last_error, job.attempts) == ('quarantined', error, 1)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('error', ['missing_source_title', 'unclassified_page'])
+def test_ambiguous_parser_errors_are_not_immediately_terminal(error):
+    source = Source.objects.create(name='Publisher', url='https://example.org')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/drift', kind='page')
+    with patch('scraper.archive.process', side_effect=ValueError(error)), patch('scraper.archive.time.sleep'):
+        run_batch(1)
+    job.refresh_from_db()
+    assert (job.status, job.last_error, job.attempts) == ('error', error, 1)
+
+
+@pytest.mark.django_db
+def test_transient_error_is_quarantined_after_bounded_attempts():
+    source = Source.objects.create(name='Publisher', url='https://example.org')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/timeout', kind='page', attempts=4)
+    with patch('scraper.archive.process', side_effect=requests.Timeout()), patch('scraper.archive.time.sleep'):
+        run_batch(1)
+    job.refresh_from_db()
+    assert (job.status, job.last_error, job.attempts) == ('quarantined', 'Timeout', 5)
+
+
 def test_host_circuit_opens_after_three_transient_failures(monkeypatch):
     from types import SimpleNamespace
     from scraper.archive import HOST_CIRCUIT_FAILURES, _HOST_STATES, _record_host_failure, host_state

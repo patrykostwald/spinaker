@@ -174,6 +174,13 @@ def extract_metadata(raw, url):
         category_evidence = 'Gatunek jawnie zadeklarowany w JSON-LD wydawcy dla adresu tego materiału: ' + declared_genre + '.'
     elif matched_nodes and category == 'other':
         category = 'article'
+    explicit_type = meta.get('og:type', '').strip().lower()
+    if matched_nodes or explicit_type == 'article':
+        page_classification = 'article'
+    elif explicit_type in {'website', 'profile', 'product', 'music.song', 'music.album', 'video.other'}:
+        page_classification = 'non_article'
+    else:
+        page_classification = 'unclassified'
     return {'url': url, 'canonical_url': canonical_url, 'title': (meta.get('og:title') or parser.title).strip()[:500],
         'source_name': (meta.get('og:site_name') or urlparse(url).hostname or '')[:255],
         'description': (meta.get('og:description') or meta.get('description') or '')[:4000],
@@ -183,6 +190,7 @@ def extract_metadata(raw, url):
         'category': category, 'category_evidence': category_evidence,
         'declared_genre': declared_genre, 'tags': tags,
         'date_raw': date_raw, 'date_source': date_source, 'publisher_type': meta.get('og:type', ''),
+        'page_classification': page_classification,
         'warnings': ['Metadane deklaruje wydawca. Sprawdź je w źródle przed zapisaniem.'] +
             ([] if dt else ['Nie ustalono daty publikacji ze strefą czasu. Pole pozostaje puste.'])}
 
