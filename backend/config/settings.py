@@ -221,3 +221,8 @@ BRAVE_SEARCH_API_KEY = env('BRAVE_SEARCH_API_KEY', default='')
 EXTERNAL_SEARCH_DAILY_LIMIT = env.int('EXTERNAL_SEARCH_DAILY_LIMIT', default=100)
 EXTERNAL_SEARCH_CACHE_SECONDS = env.int('EXTERNAL_SEARCH_CACHE_SECONDS', default=0)
 EXTERNAL_SEARCH_ARCHIVE_URLS = env.bool('EXTERNAL_SEARCH_ARCHIVE_URLS', default=True)
+
+# Private evidentiary box snapshots (news.evidence_snapshot): off by default,
+# no bulk capture, no production Supabase storage. See docs/EVIDENCE_SNAPSHOT.md.
+EVIDENCE_SNAPSHOT_ENABLED = env.bool('EVIDENCE_SNAPSHOT_ENABLED', default=False)
+EVIDENCE_SNAPSHOT_STORAGE_ROOT = env('EVIDENCE_SNAPSHOT_STORAGE_ROOT', default='')

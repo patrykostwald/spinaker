@@ -382,3 +382,12 @@ class AIResearchCall(models.Model):
 
 from .account_models import SavedTopic, ArticleOpinion  # noqa: E402,F401
 from .political_models import PoliticalAccount, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
+from .evidence_snapshot import (  # noqa: E402,F401
+    EvidenceSnapshot,
+    SnapshotArtifactType,
+    SnapshotConsentStatus,
+    SnapshotRetentionPolicy,
+    EvidenceSnapshotDisabled,
+    capture_snapshot,
+    is_evidence_snapshot_enabled,
+)

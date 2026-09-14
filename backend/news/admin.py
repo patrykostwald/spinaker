@@ -203,5 +203,21 @@ class QualityIssueAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None): return False
 site.register(QualityIssue, QualityIssueAdmin)
 
+from news.models import EvidenceSnapshot
+class EvidenceSnapshotAdmin(admin.ModelAdmin):
+    # Rows are created by news.evidence_snapshot.capture_snapshot(), never here:
+    # an admin-created row would have metadata but no artifact in storage.
+    list_display = ('article', 'artifact_type', 'consent_status', 'retention_policy', 'fetched_at')
+    list_filter = ('artifact_type', 'consent_status', 'retention_policy')
+    search_fields = ('article__title', 'source_url', 'storage_key')
+    readonly_fields = ('article', 'source_url', 'fetched_at', 'content_sha256', 'artifact_type',
+        'parser_version', 'storage_key', 'created_at')
+    fields = readonly_fields + ('consent_status', 'retention_policy', 'retention_expires_at')
+
+    def has_add_permission(self, request):
+        return False
+site.register(EvidenceSnapshot, EvidenceSnapshotAdmin)
+
+
 from news.political_admin import register_political_admin
 register_political_admin(site)
