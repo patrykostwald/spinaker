@@ -9,6 +9,7 @@ export { ArticleCard } from "./components/ArticleCard";
 export { ArticleModal } from "./components/ArticleModal";
 export { HorizontalTimeline } from "./components/HorizontalTimeline";
 export { SiteHeader } from "./components/SiteHeader";
+export { ThemeSwitcher } from "./components/ThemeSwitcher";
 
 export { SearchPageContent } from "./components/SearchPageContent";
 export { ThreadCard } from "./components/ThreadCard";

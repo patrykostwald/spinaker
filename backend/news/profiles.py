@@ -29,19 +29,35 @@ def history(request, user):
 
 
 class ProfileInput(serializers.Serializer):
-    public_activity = serializers.BooleanField()
+    public_activity = serializers.BooleanField(required=False)
+    theme_preference = serializers.ChoiceField(choices=ProfilePreference.THEME_CHOICES, required=False)
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError('Podaj ustawienie do zmiany.')
+        return attrs
 
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
     def get(self, request):
-        value = ProfilePreference.objects.filter(user=request.user).values_list('public_activity', flat=True).first()
-        return Response({'username': request.user.username, 'public_activity': bool(value)})
+        value = ProfilePreference.objects.filter(user=request.user).values(
+            'public_activity', 'theme_preference').first()
+        return Response({
+            'username': request.user.username,
+            'public_activity': value['public_activity'] if value else False,
+            'theme_preference': value['theme_preference'] if value else 'auto',
+        })
     def patch(self, request):
         serializer = ProfileInput(data=request.data)
         serializer.is_valid(raise_exception=True)
-        ProfilePreference.objects.update_or_create(user=request.user, defaults=serializer.validated_data)
+        preference, _ = ProfilePreference.objects.get_or_create(user=request.user)
+        changed = []
+        for field, value in serializer.validated_data.items():
+            setattr(preference, field, value)
+            changed.append(field)
+        preference.save(update_fields=changed)
         return self.get(request)
 
 

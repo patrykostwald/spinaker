@@ -36,8 +36,15 @@ class ArticleOpinion(models.Model):
 
 
 class ProfilePreference(models.Model):
+    THEME_CHOICES = [
+        ('auto', 'Automatyczny'),
+        ('dark', 'Ciemny'),
+        ('light', 'Jasny'),
+        ('pastel', 'Pastelowy'),
+    ]
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile_preference')
     public_activity = models.BooleanField(default=False)
+    theme_preference = models.CharField(max_length=8, choices=THEME_CHOICES, default='auto')
 
 
 class ThreadFavorite(models.Model):

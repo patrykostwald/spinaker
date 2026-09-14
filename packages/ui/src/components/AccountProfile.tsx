@@ -14,6 +14,8 @@ import { PersonalizedNews } from './PersonalizedNews';
 type HistoryItem = { id: number; article_id: number; body: string; polarity: 'positive' | 'negative'; created_at: string };
 type HistoryPage = { results: HistoryItem[]; next_page: number | null };
 type FavoritePage = { results: { id: number; thread: { id: number; slug: string; title: string }; created_at: string }[]; next_page: number | null };
+type ThemePreference = 'auto' | 'dark' | 'light' | 'pastel';
+type AccountProfileData = { username: string; public_activity: boolean; theme_preference: ThemePreference };
 type Section = 'saved' | 'activity' | 'privacy' | 'settings';
 const sections: { id: Section; label: string; description: string }[] = [
   { id: 'saved', label: 'Zapisane', description: 'Ulubione nitki i własne paski' },
@@ -47,7 +49,7 @@ export function AccountProfile() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const profile = useQuery({ queryKey: ['account-profile', ownerId], queryFn: () => apiFetch<{ username: string; public_activity: boolean }>('/api/account/profile/'), enabled: Boolean(ownerId) });
+  const profile = useQuery({ queryKey: ['account-profile', ownerId], queryFn: () => apiFetch<AccountProfileData>('/api/account/profile/'), enabled: Boolean(ownerId) });
   const history = useInfiniteQuery({ queryKey: ['account-history', ownerId], initialPageParam: 1, queryFn: ({ pageParam }) => apiFetch<HistoryPage>(`/api/account/history/?page=${pageParam}`), getNextPageParam: last => last.next_page ?? undefined, enabled: Boolean(ownerId) && section === 'activity' });
   const favorites = useInfiniteQuery({ queryKey: ['account-favorites', ownerId], initialPageParam: 1, queryFn: ({ pageParam }) => apiFetch<FavoritePage>(`/api/account/favorites/?page=${pageParam}`), getNextPageParam: last => last.next_page ?? undefined, enabled: Boolean(ownerId) && section === 'saved' });
   function navigate(next: Section) { setSection(next); setError(''); setNotice(''); }
@@ -94,7 +96,7 @@ export function AccountProfile() {
           <HistoryRows rows={historyRows} />{history.hasNextPage && <button disabled={history.isFetchingNextPage} className="load-news-button" onClick={() => history.fetchNextPage()}>Wcześniejsza aktywność ↓</button>}
         </section>}
         {section === 'privacy' && <section className="profile-block profile-privacy"><h3>Widoczność historii</h3><p>Komentarze pod materiałami są publiczne. Zbiorcza historia na Twoim profilu pozostaje prywatna, dopóki jej nie udostępnisz.</p><label><input type="checkbox" checked={profile.data?.public_activity ?? false} disabled={pending || !profile.isSuccess} onChange={e => visibility(e.target.checked)} /><span>Udostępnij historię aktywności na publicznym profilu<small>Możesz wyłączyć jej widoczność w dowolnym momencie.</small></span></label>{profile.data?.public_activity && <Link href={`/profile/${encodeURIComponent(profile.data.username)}`}>Zobacz publiczny profil ↗</Link>}{profile.isError && <p role="alert">Nie udało się pobrać ustawienia prywatności. <button className="quiet-button" onClick={() => profile.refetch()}>Ponów</button></p>}<div className="profile-privacy-note"><h3>Zawsze prywatne</h3><p>Ulubione nitki i zapisane paski nie pojawiają się na publicznym profilu.</p></div></section>}
-        {section === 'settings' && <section className="profile-block"><h3>Dane konta</h3><dl className="profile-details"><div><dt>Nazwa użytkownika</dt><dd>@{user.username}</dd></div><div><dt>Rola</dt><dd>{role}</dd></div><div><dt>Tworzenie nitek</dt><dd>{user.is_staff ? 'Tworzenie i publikacja redakcyjna' : user.is_journalist ? 'Własne szkice · publikacja po zatwierdzeniu redakcji' : 'Zapisane tematy, oceny i komentarze'}</dd></div></dl><div className="profile-shortcuts"><button className="quiet-button" onClick={() => navigate('privacy')}>Ustaw prywatność</button><button className="quiet-button" onClick={() => navigate('saved')}>Zarządzaj paskami</button>{user.can_edit_threads && <Link className="quiet-button" href="/editor">Otwórz warsztat ↗</Link>}</div></section>}
+        {section === 'settings' && <section className="profile-block"><h3>Dane konta</h3><dl className="profile-details"><div><dt>Nazwa użytkownika</dt><dd>@{user.username}</dd></div><div><dt>Rola</dt><dd>{role}</dd></div><div><dt>Motyw</dt><dd>{profile.data ? ({ auto: 'Automatyczny', dark: 'Ciemny', light: 'Jasny', pastel: 'Pastelowy' } as const)[profile.data.theme_preference] : 'Ładowanie…'} · zmienisz go przełącznikiem w nagłówku</dd></div><div><dt>Tworzenie nitek</dt><dd>{user.is_staff ? 'Tworzenie i publikacja redakcyjna' : user.is_journalist ? 'Własne szkice · publikacja po zatwierdzeniu redakcji' : 'Zapisane tematy, oceny i komentarze'}</dd></div></dl><div className="profile-shortcuts"><button className="quiet-button" onClick={() => navigate('privacy')}>Ustaw prywatność</button><button className="quiet-button" onClick={() => navigate('saved')}>Zarządzaj paskami</button>{user.can_edit_threads && <Link className="quiet-button" href="/editor">Otwórz warsztat ↗</Link>}</div></section>}
       </div>
     </div>
   </div>;

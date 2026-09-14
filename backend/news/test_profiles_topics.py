@@ -28,7 +28,8 @@ def test_private_default_explicit_opt_in_and_no_email(accounts, source):
     assert client.get('/api/profiles/one/activity/').status_code == 404
     assert client.get('/api/account/history/').status_code == 403
     client.force_authenticate(owner)
-    assert client.get('/api/account/profile/').data == {'username': 'one', 'public_activity': False}
+    assert client.get('/api/account/profile/').data == {
+        'username': 'one', 'public_activity': False, 'theme_preference': 'auto'}
     assert client.get('/api/account/history/').data['results'][0]['body'] == 'Public comment'
     assert client.patch('/api/account/profile/', {'public_activity': True, 'user': other.pk, 'is_staff': True}, format='json').status_code == 200
     owner.refresh_from_db()
@@ -40,6 +41,22 @@ def test_private_default_explicit_opt_in_and_no_email(accounts, source):
     client.force_authenticate(owner)
     client.patch('/api/account/profile/', {'public_activity': False}, format='json')
     assert client.get('/api/profiles/one/activity/').status_code == 404
+
+
+def test_theme_preference_is_validated_and_does_not_reset_privacy(accounts):
+    owner, _ = accounts
+    ProfilePreference.objects.create(user=owner, public_activity=True, theme_preference='auto')
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.patch('/api/account/profile/', {'theme_preference': 'pastel'}, format='json')
+    assert response.status_code == 200
+    assert response.data['theme_preference'] == 'pastel'
+    assert response.data['public_activity'] is True
+
+    response = client.patch('/api/account/profile/', {'theme_preference': 'neon'}, format='json')
+    assert response.status_code == 400
+    assert ProfilePreference.objects.get(user=owner).theme_preference == 'pastel'
 
 
 def test_history_is_always_owner_scoped(accounts, source):
