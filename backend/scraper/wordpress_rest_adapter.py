@@ -19,7 +19,7 @@ returned -- callers own persistence of the returned checkpoint and records.
 """
 from dataclasses import dataclass
 from datetime import datetime, timezone as dt_timezone
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 DEFAULT_PER_PAGE = 100
 MAX_PER_PAGE = 100
@@ -33,6 +33,10 @@ class WordPressRestError(ValueError):
 
 class SourceNotEligible(WordPressRestError):
     """The catalog entry is not an explicitly approved wordpress_rest source."""
+
+
+class EndpointDomainMismatch(WordPressRestError):
+    """The REST endpoint does not match the source's canonical host."""
 
 
 class RateLimited(WordPressRestError):
@@ -57,6 +61,26 @@ def ensure_eligible(catalog_entry):
     if not is_eligible(catalog_entry):
         raise SourceNotEligible('wordpress_rest_source_not_verified')
     return catalog_entry
+
+
+def _canonical_host(url):
+    if not isinstance(url, str):
+        return ''
+    host = (urlsplit(url.strip()).hostname or '').lower()
+    return host.removeprefix('www.')
+
+
+def ensure_same_site(catalog_entry, endpoint):
+    """Allow only an exact host match after folding a single ``www.`` prefix.
+
+    Other subdomains remain distinct so publisher ownership is never inferred.
+    """
+    entry_url = catalog_entry.get('url') if isinstance(catalog_entry, dict) else None
+    entry_host = _canonical_host(entry_url)
+    endpoint_host = _canonical_host(endpoint)
+    if not entry_host or not endpoint_host or entry_host != endpoint_host:
+        raise EndpointDomainMismatch('wordpress_rest_endpoint_domain_mismatch')
+    return endpoint
 
 
 def page_url(endpoint, *, page, per_page=DEFAULT_PER_PAGE, fields=FIELDS):
@@ -94,7 +118,8 @@ def fetch_page(fetcher, endpoint, *, page, per_page=DEFAULT_PER_PAGE):
     """Fetch one page. ``fetcher(url)`` must return a requests.Response-like object.
 
     Raises RateLimited on 429 (carrying Retry-After) and WordPressRestError
-    on any other non-200 status or unexpected body shape.
+    on any other non-200 status or unexpected body shape. The injected
+    ``fetcher`` is responsible for enforcing a request timeout.
     """
     url = page_url(endpoint, page=page, per_page=per_page)
     response = fetcher(url)
@@ -145,6 +170,7 @@ def collect_since_cutoff(fetcher, catalog_entry, endpoint, cutoff, checkpoint=No
     fetch overlapped this run) is skipped rather than re-collected.
     """
     ensure_eligible(catalog_entry)
+    ensure_same_site(catalog_entry, endpoint)
     checkpoint = dict(checkpoint or {})
     seen_ids = set(checkpoint.get('seen_ids', []))
     page = checkpoint.get('next_page', 1)

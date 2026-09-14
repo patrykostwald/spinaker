@@ -3,7 +3,7 @@ from datetime import datetime, timezone as dt_timezone
 
 import pytest
 
-from scraper.wordpress_rest_adapter import (RateLimited, SourceNotEligible,
+from scraper.wordpress_rest_adapter import (EndpointDomainMismatch, RateLimited, SourceNotEligible,
     WordPressRestError, collect_since_cutoff, is_eligible)
 
 ENDPOINT = 'https://example.pl/wp-json/wp/v2/posts'
@@ -70,6 +70,40 @@ def test_fail_closed_for_missing_verification_block():
 
 def test_approved_entry_is_eligible():
     assert is_eligible(entry()) is True
+
+
+# --- same-site endpoint gate -------------------------------------------------
+
+@pytest.mark.parametrize('endpoint', [
+    'https://example.pl/wp-json/wp/v2/posts',
+    'https://www.example.pl/wp-json/wp/v2/posts',
+])
+def test_same_domain_endpoint_is_accepted(endpoint):
+    calls = []
+    result = collect_since_cutoff(fetcher_from_pages([[]], calls), entry(), endpoint, CUTOFF)
+    assert result.done is True and calls
+
+
+@pytest.mark.parametrize('endpoint', [
+    'https://otherdomain.pl/wp-json/wp/v2/posts',
+    'https://blog.example.pl/wp-json/wp/v2/posts',
+    'https://example.pl.evil.com/wp-json/wp/v2/posts',
+])
+def test_cross_domain_endpoint_is_rejected_before_any_fetch(endpoint):
+    calls = []
+    with pytest.raises(EndpointDomainMismatch):
+        collect_since_cutoff(fetcher_from_pages([[post(1)]], calls), entry(), endpoint, CUTOFF)
+    assert calls == []
+
+
+@pytest.mark.parametrize('bad_url', [None, '', 'not a url', '   '])
+def test_invalid_catalog_url_is_rejected_before_any_fetch(bad_url):
+    calls = []
+    broken = entry()
+    broken['url'] = bad_url
+    with pytest.raises(EndpointDomainMismatch):
+        collect_since_cutoff(fetcher_from_pages([[post(1)]], calls), broken, ENDPOINT, CUTOFF)
+    assert calls == []
 
 
 # --- pagination --------------------------------------------------------------
