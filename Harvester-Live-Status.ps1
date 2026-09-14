@@ -33,6 +33,17 @@ if (Test-Path $configPath) {
     $config = Get-Content $configPath -Raw | ConvertFrom-Json
     Write-Output "HARVESTERS: configured cap=$($config.workers), dynamic mode=$($config.dynamic_sources), one request/domain, interval >=3s"
 }
+$backfillPidPath = Join-Path $PSScriptRoot '.runtime\harvesters-backfill.pid'
+if (Test-Path $backfillPidPath) {
+    $backfillPid = [int](Get-Content $backfillPidPath)
+    if (Get-Process -Id $backfillPid -ErrorAction SilentlyContinue) {
+        Write-Output "HARVESTERS NOW: running (supervisor PID $backfillPid)"
+    } else {
+        Write-Output "HARVESTERS NOW: stopped; waiting for reviewed source access instructions"
+    }
+} else {
+    Write-Output 'HARVESTERS NOW: stopped; waiting for reviewed source access instructions'
+}
 $continuationPidPath = Join-Path $PSScriptRoot '.runtime\harvesters-continuation.pid'
 if (Test-Path $continuationPidPath) {
     $continuationPid = [int](Get-Content $continuationPidPath)
