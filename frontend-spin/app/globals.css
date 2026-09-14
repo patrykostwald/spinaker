@@ -480,6 +480,8 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .theme-option:hover, .theme-option[aria-checked="true"] { background: rgb(var(--accent-rgb) / .08); color: var(--text); }
 .theme-option[aria-checked="true"] span:last-child { color: var(--color-primary); font-size: 8px; }
 .theme-error { position: absolute; z-index: 81; top: calc(100% + 7px); right: 0; width: 190px; padding: 8px 10px; border: 1px solid var(--color-negative); background: var(--surface); color: var(--text); font-size: 11px; }
+.material-actions, .thread-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.share-x-button { border-color: rgb(var(--accent-rgb) / .2); }
 .bg-primary:not([data-category]), .site-header button[type="submit"], .profile-primary { background: var(--color-primary); color: var(--background); }
 .bg-primary:not([data-category]):hover, .site-header button[type="submit"]:hover, .profile-primary:hover { background: var(--color-primary-hover); }
 .live-dot { background: var(--color-live); }

@@ -1,5 +1,5 @@
 "use client";
-import { ThreadExport, ThreadFavoriteButton, HorizontalTimeline, getThread, ApiError } from '@spin-clinic/ui';
+import { ThreadExport, ThreadFavoriteButton, HorizontalTimeline, ShareOnX, getThread, ApiError } from '@spin-clinic/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 export default function ThreadPage({ params }: { params: { slug: string } }) {
@@ -13,7 +13,7 @@ export default function ThreadPage({ params }: { params: { slug: string } }) {
     {thread.author_name && <p className="thread-note-author text-sm" data-author-role={thread.author_role}>{thread.author_name} · {thread.author_role === 'journalist' ? 'Dziennikarz' : thread.author_role === 'editor' ? 'Redakcja' : 'Autor'}</p>}
     <p className="max-w-3xl text-lg text-slate-600">{thread.description}</p>
     <p className="text-sm text-slate-500">{thread.item_count} materiałów · {thread.views_count} wyświetleń</p>
-    <ThreadFavoriteButton thread={thread} />
+    <div className="thread-actions"><ThreadFavoriteButton thread={thread} /><ShareOnX title={thread.title} path={`/thread/${thread.slug}`} /></div>
     <HorizontalTimeline items={thread.items} anchorFirst={Boolean(thread.editorial_slot)} />
     <ThreadExport thread={thread} />
   </article>;
