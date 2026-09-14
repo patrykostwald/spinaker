@@ -26,7 +26,7 @@ Na telefonie pozostają te same kroje. Zmieniamy skalę, szerokość wiersza i o
 
 Zarejestrowany użytkownik wybiera w profilu jedną z trzech kompletnych szat. Wybór jest przypisany do konta i odtwarzany na jego urządzeniach. Niezalogowany użytkownik może zachować wybór lokalnie.
 
-1. **Ciemny / Monochrome Control** — domyślny; atramentowa czerń i grafit, złamana biel, ciepły bursztyn dla głównych akcji, koral dla stanów na żywo i pilnych alertów, a przygaszona śliwka dla stanów drugorzędnych; bez mięty i turkusu; autorski nocny pejzaż polskiej drogi.
+1. **Ciemny / Monochrome Control** — domyślny; atramentowa czerń i grafit, złamana biel, przyciemniony bursztyn `#D8892B` dla głównych akcji (`#F2A02A` wyłącznie dla hover/focus), koral dla stanów na żywo i pilnych alertów, a przygaszona śliwka dla stanów drugorzędnych; bez mięty i turkusu; autorski nocny pejzaż polskiej drogi.
 2. **Jasny** — ciepła papierowa biel, ciemny atrament, archiwalny szaroniebieski i odrobina ochry; autorski dzienny pejzaż polskiej drogi.
 3. **Pastelowy** — ciepły papier oraz jasne odcienie zachodu: maślany żółty, pomarańcz, koral i ciemna śliwka; wcześniejsza zaakceptowana ilustracja polskiej drogi pozostaje podstawą tego wariantu.
 
