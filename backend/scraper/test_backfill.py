@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 
 from news.models import ArchiveJob, ImportState, Source, SourceAccessInstruction
 from scraper.archive import ArchiveCutoff
-from scraper.backfill import approved_source_ids, parse_cutoff, prepare_source
+from scraper.backfill import approved_source_ids, parse_cutoff, prepare_source, run_backfill
 
 
 def test_cutoff_requires_timezone():
@@ -124,6 +124,13 @@ def test_dynamic_pool_fails_closed_when_invalid_approved_instruction_bypasses_cl
     SourceAccessInstruction.objects.create(source=source, status='approved', channel='sitemap',
         endpoint='https://bypassed.example/sitemap.xml', minimum_interval_seconds=3)
     assert source.pk not in approved_source_ids()
+
+
+@pytest.mark.django_db
+def test_static_backfill_cannot_bypass_access_instruction():
+    source = Source.objects.create(name='Static bypass', url='https://static.example')
+    with pytest.raises(ValueError, match='source_access_not_approved'):
+        run_backfill([source.pk], parse_cutoff('2026-09-14T23:59:59+02:00'))
 
 
 def test_loop_requires_static_ids_unless_dynamic_mode_is_explicit():

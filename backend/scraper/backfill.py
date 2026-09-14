@@ -64,9 +64,13 @@ def prepare_source(source, cutoff_at):
 
 
 def run_backfill(source_ids, cutoff_at, workers=2, per_source_limit=20):
+    requested_ids = set(source_ids)
+    allowed_ids = set(approved_source_ids())
+    if not requested_ids <= allowed_ids:
+        raise ValueError('source_access_not_approved')
     sources = list(Source.objects.filter(pk__in=source_ids, is_active=True,
         scrape_enabled=True, catalog_stage='configured').order_by('pk'))
-    if len(sources) != len(set(source_ids)):
+    if len(sources) != len(requested_ids):
         raise ValueError('source_not_active_or_configured')
     prepared = []
     for source in sources:
