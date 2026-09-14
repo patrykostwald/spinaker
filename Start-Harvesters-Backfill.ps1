@@ -1,6 +1,7 @@
 param(
     [int[]]$SourceId = @(),
     [switch]$DynamicSources,
+    [switch]$ContinuationOwned,
     [ValidateSet('2026-09-14T23:59:59+02:00')][string]$CutoffAt = '2026-09-14T23:59:59+02:00',
     [ValidateRange(1,32)][int]$Workers = 2,
     [ValidateRange(1,100)][int]$LimitPerSource = 20,
@@ -15,10 +16,14 @@ $python = @(
     "$PSScriptRoot\..\..\.venv\Scripts\python.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 $pidPath = "$PSScriptRoot\.runtime\harvesters-backfill.pid"
+$transitionPath = "$PSScriptRoot\.runtime\harvesters-transition.lock"
 $logPath = "$PSScriptRoot\.runtime\harvesters-backfill.log"
 $errorPath = "$PSScriptRoot\.runtime\harvesters-backfill.err.log"
 if (-not $python) { throw "Missing Python virtualenv in project root or backend directory." }
 if (-not $DynamicSources -and $SourceId.Count -eq 0) { throw "SourceId is required unless -DynamicSources is used." }
+if ((Test-Path -LiteralPath $transitionPath) -and -not $ContinuationOwned) {
+    throw 'An automatic backfill transition is in progress.'
+}
 if (Test-Path $pidPath) {
     $oldPid = [int](Get-Content $pidPath)
     if (Get-Process -Id $oldPid -ErrorAction SilentlyContinue) { throw "Backfill already running with PID $oldPid" }

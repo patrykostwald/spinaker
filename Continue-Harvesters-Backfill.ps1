@@ -10,6 +10,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $pidPath = "$PSScriptRoot\.runtime\harvesters-backfill.pid"
 $logPath = "$PSScriptRoot\.runtime\harvesters-continuation.log"
+$transitionPath = "$PSScriptRoot\.runtime\harvesters-transition.lock"
 
 function Write-ContinuationLog([string]$Message) {
     "$(Get-Date -Format o) $Message" | Add-Content -LiteralPath $logPath
@@ -21,7 +22,12 @@ while ($true) {
         Write-ContinuationLog 'Cancelled because the active PID file was removed.'
         exit 0
     }
-    $recordedPid = [int](Get-Content -LiteralPath $pidPath)
+    try {
+        $recordedPid = [int](Get-Content -LiteralPath $pidPath -ErrorAction Stop)
+    } catch {
+        Write-ContinuationLog 'Cancelled because the active PID file disappeared while being checked.'
+        exit 0
+    }
     if ($recordedPid -ne $ExpectedPid) {
         Write-ContinuationLog "Cancelled because active PID changed to $recordedPid."
         exit 0
@@ -30,15 +36,39 @@ while ($true) {
     Start-Sleep -Seconds $PollSeconds
 }
 
-# The PID file still points at the naturally completed process, so this watcher
-# owns the transition. A manual stop removes the file and exits above.
-Remove-Item -LiteralPath $pidPath -Force
-Write-ContinuationLog 'Starting the next bounded cycle with the dynamic approved-source pool.'
+$transition = $null
 try {
-    & "$PSScriptRoot\Start-Harvesters-Backfill.ps1" -DynamicSources -Workers $Workers `
-        -LimitPerSource $LimitPerSource -MaxHours $NextMaxHours -DatabasePath $DatabasePath |
-        Add-Content -LiteralPath $logPath
+    try {
+        $transition = [System.IO.File]::Open($transitionPath,
+            [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write,
+            [System.IO.FileShare]::None)
+    } catch [System.IO.IOException] {
+        Write-ContinuationLog 'Cancelled because another transition already owns the start lock.'
+        exit 0
+    }
+    $transition.Close()
+    $transition = $null
+
+    # Re-check under the transition lock. A manual start is rejected by the
+    # same lock, while a manual stop removes the PID file and cancels here.
+    if (-not (Test-Path -LiteralPath $pidPath)) {
+        Write-ContinuationLog 'Cancelled because the PID file was removed before transition ownership.'
+        exit 0
+    }
+    $recordedPid = [int](Get-Content -LiteralPath $pidPath -ErrorAction Stop)
+    if ($recordedPid -ne $ExpectedPid) {
+        Write-ContinuationLog "Cancelled because active PID changed to $recordedPid before transition."
+        exit 0
+    }
+    Remove-Item -LiteralPath $pidPath -Force
+    Write-ContinuationLog 'Starting the next bounded cycle with the dynamic approved-source pool.'
+    & "$PSScriptRoot\Start-Harvesters-Backfill.ps1" -DynamicSources -ContinuationOwned `
+        -Workers $Workers -LimitPerSource $LimitPerSource -MaxHours $NextMaxHours `
+        -DatabasePath $DatabasePath | Add-Content -LiteralPath $logPath
 } catch {
     Write-ContinuationLog "Continuation failed: $($_.Exception.Message)"
     throw
+} finally {
+    if ($transition) { $transition.Close() }
+    Remove-Item -LiteralPath $transitionPath -Force -ErrorAction SilentlyContinue
 }
