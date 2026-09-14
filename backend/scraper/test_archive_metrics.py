@@ -51,6 +51,26 @@ def test_parallel_capacity_rejects_outside_safety_ceiling(workers):
 
 
 @pytest.mark.django_db
+def test_stale_lease_finalize_skips_state_callback_after_job_is_reclaimed():
+    source = Source.objects.create(name='Publisher', url='https://example.org')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
+
+    def process(current_job):
+        ArchiveJob.objects.filter(pk=current_job.pk).update(
+            available_at=timezone.now() + timedelta(minutes=20))
+        return 1
+
+    callback_calls = []
+    with patch('scraper.archive.process', side_effect=process), patch('scraper.archive.time.sleep'):
+        run_batch(1, state_callback=callback_calls.append)
+
+    assert callback_calls == []
+    job.refresh_from_db()
+    assert job.status == 'running'
+    assert job.available_at >= timezone.now() + timedelta(minutes=19)
+
+
+@pytest.mark.django_db
 def test_transient_retry_honors_retry_after_without_duplicate_job():
     source = Source.objects.create(name='Publisher', url='https://example.org')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')

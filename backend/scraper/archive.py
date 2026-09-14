@@ -374,9 +374,11 @@ def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_cal
             delay = retry_delay(exc, job.attempts) if _transient_error(exc) else min(86400, 3600 * 2 ** min(job.attempts, 5))
             job.available_at = timezone.now() + timedelta(seconds=delay)
         job.checked_at = timezone.now()
-        ArchiveJob.objects.filter(pk=job.pk, status='running', available_at=lease).update(
+        updated = ArchiveJob.objects.filter(pk=job.pk, status='running', available_at=lease).update(
             status=job.status, last_error=job.last_error, available_at=job.available_at, checked_at=job.checked_at, attempts=job.attempts)
-        if state_callback is not None:
+        # A stale worker whose lease was already reclaimed must not report a
+        # completion the job row never actually recorded.
+        if state_callback is not None and updated:
             state_callback(job)
     if metrics is not None:
         metrics.update(counters)
