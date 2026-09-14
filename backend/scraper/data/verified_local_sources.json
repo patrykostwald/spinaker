@@ -240,6 +240,78 @@
     ]
   },
   {
+    "name": "OKO.press",
+    "url": "https://oko.press/feed/",
+    "rss_url": "https://oko.press/feed/",
+    "sitemap_urls": ["https://oko.press/sitemap_index.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-14",
+    "evidence_urls": ["https://oko.press/robots.txt", "https://oko.press/sitemap_index.xml", "https://oko.press/post-sitemap1.xml", "https://oko.press/post-sitemap37.xml"],
+    "verification_note": "Oficjalny indeks 37 map postów; próbki starego i aktualnego segmentu zostały odczytane.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified", "mechanism": "sitemap_index", "can_backfill": true,
+      "urls": ["https://oko.press/sitemap_index.xml"],
+      "date_range": {"oldest_sample": "2022-11-14", "newest_sample": "2026-09-13"},
+      "reason": "Official post sitemap index includes bounded old and current samples; publication dates still come from article metadata."
+    }
+  },
+  {
+    "name": "NaTemat",
+    "url": "https://natemat.pl/rss",
+    "rss_url": "https://natemat.pl/rss",
+    "sitemap_urls": ["https://natemat.pl/sitemaps/natemat/sitemap.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-14",
+    "evidence_urls": ["https://natemat.pl/robots.txt", "https://natemat.pl/sitemaps/natemat/sitemap.xml"],
+    "verification_note": "Oficjalny indeks tygodniowych map postów obejmujący próbki od 2012 do 2026 roku.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified", "mechanism": "sitemap_index", "can_backfill": true,
+      "urls": ["https://natemat.pl/sitemaps/natemat/sitemap.xml"],
+      "date_range": {"oldest_sample": "2012-03", "newest_sample": "2026-09"},
+      "reason": "Official weekly post sitemap index contains bounded old and current segments."
+    }
+  },
+  {
+    "name": "PortalSamorzadowy.pl",
+    "url": "https://portalsamorzadowy.pl/rss.xml",
+    "rss_url": "https://portalsamorzadowy.pl/rss.xml",
+    "sitemap_urls": ["https://www.portalsamorzadowy.pl/sitemapindex.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-14",
+    "evidence_urls": ["https://www.portalsamorzadowy.pl/robots.txt", "https://www.portalsamorzadowy.pl/sitemapindex.xml"],
+    "verification_note": "Oficjalny indeks 21 paczek; sprawdzono bieżącą i starszą paczkę URL.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified", "mechanism": "sitemap_index", "can_backfill": true,
+      "urls": ["https://www.portalsamorzadowy.pl/sitemapindex.xml"],
+      "date_range": {},
+      "reason": "Official sitemap index and bounded newer/older packs were parsed."
+    }
+  },
+  {
+    "name": "Infor.pl",
+    "url": "https://www.infor.pl/rss/wiadomosci.xml",
+    "rss_url": "https://www.infor.pl/rss/wiadomosci.xml",
+    "sitemap_urls": ["https://www.infor.pl/sitemap_index.xml"],
+    "source_type": "portal",
+    "scrape_frequency_minutes": 60,
+    "verified_on": "2026-09-14",
+    "evidence_urls": ["https://www.infor.pl/robots.txt", "https://www.infor.pl/sitemap_index.xml", "https://www.infor.pl/sitemap_articles.xml", "https://www.infor.pl/sitemap_articles_5.xml"],
+    "verification_note": "Oficjalny indeks map artykułów; sprawdzono bieżącą i najstarszą paczkę.",
+    "ai_bot_restrictions": [],
+    "archive_verification": {
+      "status": "verified", "mechanism": "sitemap_index", "can_backfill": true,
+      "urls": ["https://www.infor.pl/sitemap_index.xml"],
+      "date_range": {},
+      "reason": "Official article sitemap index and bounded newer/older packs were parsed."
+    }
+  },
+  {
     "name": "Interia",
     "url": "https://fakty.interia.pl/feed",
     "rss_url": "https://fakty.interia.pl/feed",
