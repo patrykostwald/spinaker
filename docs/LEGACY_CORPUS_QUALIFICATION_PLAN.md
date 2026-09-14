@@ -46,10 +46,10 @@ Snapshot historyczny pozostaje `dark_archive`: administrator może go wykorzysta
 
 ## Kolejność wdrożenia
 
-1. Dodać filtr fail-closed do wszystkich przyszłych zapytań pełnotekstowych i AI: legacy bez decyzji nie może wejść do wyniku ani promptu.
+1. Dodać filtr fail-closed do wszystkich przyszłych zapytań pełnotekstowych i AI: legacy bez decyzji nie może wejść do wyniku ani promptu. Publiczna karta bez decyzji to wyłącznie tytuł, źródło, data i link — bez opisu, tagów oraz notatki dowodowej.
 2. Dodać minimalne, wersjonowane decyzje źródłowe oraz metrykę pokrycia decyzjami.
 3. Najpierw kwalifikować źródła urzędowe i własne materiały redakcyjne na podstawie udokumentowanego statusu.
-4. Dla wydawców komercyjnych zachować co najmniej `citation_only`, dopóki dokumentacja lub zgoda nie pozwoli na węższe albo szersze użycie.
+4. Dla wydawców komercyjnych zachować co najmniej `citation_only`, dopóki dokumentacja lub zgoda nie pozwoli na węższe albo szersze użycie. Decyzja pełnotekstowa nie oznacza automatycznie zgody na trening AI; trening pozostaje osobnym, wyraźnym użyciem.
 5. Backfill embeddingów i dalszych transformacji uruchamiać dopiero po filtrowaniu kwalifikacji; każda transformacja zapisuje wersję decyzji, na której się opiera.
 
 ## Testy blokujące wdrożenie
@@ -63,3 +63,5 @@ Snapshot historyczny pozostaje `dark_archive`: administrator może go wykorzysta
 ## Co świadomie odkładamy
 
 Nie implementujemy teraz masowego backfillu milionów rekordów, OCR ani wektorów. Najpierw potrzebny jest filtr wykorzystania i mały, audytowalny model decyzji. Dzięki temu MVP może używać bezpiecznych metadanych i linków, a korpus rozwija się bez udawania zgód wstecz.
+
+Indywidualne wyjątki pozostają dodatkiem dla pojedynczych wycofań lub korekt. Nie tworzymy ich automatycznie dla całej bazy. Cofnięcie decyzji źródłowej następuje przez dopisanie nowszej wersji, nigdy przez kasowanie poprzedniej decyzji ani materiału.
