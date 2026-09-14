@@ -5,7 +5,7 @@ from urllib.robotparser import RobotFileParser
 import pytest
 from django.utils import timezone
 from news.models import Source, ArchiveJob, ImportState
-from scraper.archive import discover, process, _HOST_STATES
+from scraper.archive import discover, process, _HOST_STATES, same_host
 from scraper.news_sitemaps import news_sitemap_cycle
 from scraper.news_sitemaps import verified_maps
 
@@ -37,6 +37,29 @@ def test_archive_map_allows_only_explicit_publisher_alias_host(tmp_path, monkeyp
     row['sitemap_urls'] = ['https://attacker.example/sitemap.xml']
     path.write_text(json.dumps([row]), encoding='utf-8')
     assert verified_maps(source, require_archive_approval=True) == []
+
+
+def test_www_alias_is_same_publisher_host():
+    assert same_host('https://www.example.org/map.xml', 'https://example.org/feed')
+
+
+@pytest.mark.django_db
+def test_sitemap_index_enqueues_only_configured_article_children(setup_maps, monkeypatch):
+    source = Source.objects.create(name='A', url='https://example.org')
+    setup_maps(source)
+    from scraper import news_sitemaps
+    news_sitemaps.CATALOG_PATH.write_text(json.dumps([{
+        'name': 'A', 'url': source.url,
+        'archive_sitemap_child_patterns': [r'/post-sitemap[0-9]+\.xml$'],
+        'archive_verification': {'status': 'verified', 'can_backfill': True},
+    }]), encoding='utf-8')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/index.xml', kind='sitemap')
+    xml = '<sitemapindex><sitemap><loc>https://example.org/post-sitemap1.xml</loc></sitemap>' \
+          '<sitemap><loc>https://example.org/tag-sitemap1.xml</loc></sitemap></sitemapindex>'
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda _: xml.encode())
+    _HOST_STATES.clear(); process(job)
+    assert ArchiveJob.objects.filter(url='https://example.org/post-sitemap1.xml').exists()
+    assert not ArchiveJob.objects.filter(url='https://example.org/tag-sitemap1.xml').exists()
 
 
 @pytest.fixture

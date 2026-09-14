@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 from hashlib import sha256
 import time
 import os
+import re
 from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
 from collections import deque
@@ -53,7 +54,16 @@ def _clear_host_failures(state):
     state['circuit_until'] = 0.0
 
 def same_host(url, base):
-    return urlsplit(url).hostname == urlsplit(base).hostname
+    def normalized(value):
+        return (urlsplit(value).hostname or '').casefold().removeprefix('www.')
+    return normalized(url) == normalized(base)
+
+def archive_child_allowed(source, url):
+    """Apply optional publisher-specific allow patterns to sitemap children."""
+    from scraper.news_sitemaps import matching_catalog_row
+    row = matching_catalog_row(source, require_archive_approval=True) or {}
+    patterns = row.get('archive_sitemap_child_patterns') or []
+    return not patterns or any(re.search(pattern, url) for pattern in patterns)
 
 def robots(url):
     parsed = urlsplit(url)
@@ -209,7 +219,8 @@ def process(job, cutoff_at=None):
             location = next((child.text for child in entry if child.tag.split('}')[-1] == 'loc'), None)
             if not location: continue
             url = location.strip()
-            if safe_url(url) and same_host(url, source.url) and len(url) <= 1024:
+            if (safe_url(url) and same_host(url, source.url) and len(url) <= 1024
+                    and (kind != 'sitemapindex' or archive_child_allowed(source, url))):
                 jobs.append(ArchiveJob(source=source, url=url, kind='sitemap' if kind == 'sitemapindex' else 'page', priority=10 if job.priority == 10 else 0))
         with transaction.atomic():
             if not Source.objects.select_for_update().filter(pk=source.pk,

@@ -18,9 +18,8 @@ def _publisher_host(url):
     return (parsed.hostname or '').casefold().removeprefix('www.')
 
 
-def verified_maps(source, field='sitemap_urls', require_archive_approval=False):
+def matching_catalog_row(source, require_archive_approval=False):
     rows = json.loads(CATALOG_PATH.read_text(encoding='utf-8'))
-    result = []
     for row in rows:
         same_url = str(row.get('url', '')).rstrip('/') == source.url.rstrip('/')
         same_host = _publisher_host(row.get('url')) == _publisher_host(source.url)
@@ -32,6 +31,14 @@ def verified_maps(source, field='sitemap_urls', require_archive_approval=False):
             and row.get('archive_verification', {}).get('can_backfill') is True
         ):
             continue
+        return row
+    return None
+
+
+def verified_maps(source, field='sitemap_urls', require_archive_approval=False):
+    result = []
+    row = matching_catalog_row(source, require_archive_approval)
+    if row:
         allowed_hosts = {_publisher_host(row.get('url'))}
         allowed_hosts.update(_publisher_host(host) for host in row.get('sitemap_hosts', []))
         for url in row.get(field, []):
