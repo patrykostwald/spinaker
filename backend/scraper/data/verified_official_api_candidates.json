@@ -1,0 +1,32 @@
+[
+  {
+    "name": "GUS — Bank Danych Lokalnych",
+    "host": "bdl.stat.gov.pl",
+    "base_url": "https://bdl.stat.gov.pl/api/v1/",
+    "source_type": "institution",
+    "status": "verified_candidate",
+    "enabled": false,
+    "adapter": "gus_bdl",
+    "archive_range": {"oldest": "1995", "newest": "rolling"},
+    "rate_policy": {"pilot_interval_seconds": 3, "anonymous_limits": {"per_second": 5, "per_15_minutes": 100, "per_12_hours": 1000, "per_7_days": 10000}},
+    "reuse": {"license": "CC BY 4.0", "attribution": ["source", "resource_url", "retrieved_at", "transformation_notice"]},
+    "layers": {"metadata": true, "full_text": false, "private_snapshot": true, "rag": "attributed_facts_only", "training": false},
+    "evidence_urls": ["https://api.stat.gov.pl/Home/BdlApi/1000", "https://bdl.stat.gov.pl/BDL/pages/Home.aspx", "https://bip.stat.gov.pl/kontakt/ponowne-wykorzystywanie-informacji-sektora-publicznego/"],
+    "verification_note": "Official REST API, explicit quantitative limits, archive from 1995 and CC BY 4.0. Keep disabled until a bounded adapter pilot is reviewed."
+  },
+  {
+    "name": "UOKiK — SUDOP",
+    "host": "api-sudop.uokik.gov.pl",
+    "base_url": "https://api-sudop.uokik.gov.pl/sudop-api/",
+    "source_type": "institution",
+    "status": "verified_candidate",
+    "enabled": false,
+    "adapter": "uokik_sudop",
+    "archive_range": {"oldest": "rolling_n_minus_10_years", "newest": "daily_updates"},
+    "rate_policy": {"pilot_interval_seconds": 4, "per_minute": 15, "max_rows_per_page": 10000},
+    "reuse": {"license": "official_reuse_conditions", "attribution": ["direct_source_url", "retrieved_at", "data_may_change", "provider_responsibility", "auxiliary_status"]},
+    "layers": {"metadata": true, "full_text": false, "private_snapshot": true, "rag": "required_disclaimers", "training": false},
+    "evidence_urls": ["https://uokik.gov.pl/sudop", "https://api-sudop.uokik.gov.pl:9443/devportal/apis", "https://uokik.gov.pl/robots.txt"],
+    "verification_note": "Official API for bulk reuse, explicit 15 requests/minute and detailed attribution conditions. Named AI bots are blocked on the main service, so training stays disabled."
+  }
+]

@@ -29,3 +29,9 @@ Pełne badanie 9 września 2026 r.: 149 wierszy, 145 sprawdzonych i cztery bez a
 Autorytatywnym katalogiem jest tabela `Source` w bazie portalu, edytowana przez panel. Dotychczasowe pliki z listami służą do początkowego zasilania i dokumentowania pochodzenia propozycji. Ponowne zasilanie nie powinno zmieniać decyzji właściciela, reaktywować wykluczonych wpisów ani zastępować ręcznie ustawionej częstotliwości.
 
 Katalog jest lokalnie w `backend/db.sqlite3` i jest objęty kopiami tej bazy. Do czasu wdrożenia serwera adres `localhost` działa na tym komputerze. Po wdrożeniu pozostanie ta sama ścieżka `/editor/sources` pod domeną portalu.
+
+## Zweryfikowane źródła instytucjonalne oczekujące na adapter
+
+Audyt z 14 września 2026 potwierdził podstawę ponownego wykorzystania i techniczny punkt wejścia dla KNF, URE, NIK, NSA/CBOSA, API BZP oraz UOKiK. Wpis nie oznacza aktywnego importu. Adapter musi zachować źródłowy URL, datę pozyskania i wymagane oznaczenie przetworzenia; dla NIK nie wolno używać ścieżki `/szukaj/`, a UOKiK wymaga osobnej oceny przed jakimkolwiek użyciem treści przez boty AI. Dokładne dowody i kandydaci do pilotów są w `SOURCE_ARCHIVE_AUDIT_WAVE3_2026-09-14.md`.
+
+PKW, RCL, UODO i zasoby dane.gov.pl bez własnej jednoznacznej licencji pozostają kandydatami nieaktywnymi. Nie należy ich włączać na podstawie samej dostępności technicznej.

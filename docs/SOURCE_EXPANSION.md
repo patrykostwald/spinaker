@@ -12,4 +12,8 @@ Potwierdzono istnienie poniższych oficjalnych zasobów. Każdy nowy importer wy
 
 Do dalszego rozpoznania: BIP samorządów (uchwały, budżety, protokoły, konsultacje), wojewódzkie dzienniki urzędowe, KNF, URE, UODO, raporty spółek oraz EUR-Lex i dane instytucji UE. To kandydaci — nie potwierdzenie działających integracji.
 
+Audyt fali 3 z 14 września 2026 potwierdził jasne warunki ponownego wykorzystania dla KNF, URE, NIK, NSA/CBOSA, API BZP i stron UOKiK, z warunkami opisanymi w `SOURCE_ARCHIVE_AUDIT_WAVE3_2026-09-14.md`. PKW, RCL, UODO oraz zbiory dane.gov.pl bez własnej jednoznacznej licencji pozostają nieaktywne; zakres pytań zebrano w `SOURCE_PERMISSION_CONTACTS_2026-09-14.md`.
+
+Szybka ścieżka API potwierdziła dodatkowo dwa nieaktywne, gotowe do napisania pilota źródła na odrębnych hostach: GUS Bank Danych Lokalnych oraz UOKiK SUDOP. Limity, atrybucję i rozdział warstw zapisano w `SOURCE_OFFICIAL_FASTLANE_2026-09-14.md`, a maszynowy katalog w `backend/scraper/data/verified_official_api_candidates.json`. Nie liczyć ich jako działających workerów przed wdrożeniem i przeglądem adapterów.
+
 Zasada: agregujemy dokument i jego pochodzenie. Komunikat instytucji nie zastępuje pełnej decyzji, a informacja o zarzutach nie jest wyrokiem. Autor nitki komentuje oddzielnie. Wersje i sprostowania zachowujemy z własnymi datami; nie poprawiamy po cichu oryginału. Kontroler jakości zapisuje jedynie flagi w QualityIssue, nie zmienia Article.

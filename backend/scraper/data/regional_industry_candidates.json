@@ -1,0 +1,137 @@
+[
+  {
+    "name": "LoveKraków.pl",
+    "base_url": "https://lovekrakow.pl/",
+    "scope": "regional",
+    "region": "Kraków / Małopolska",
+    "method": "sitemap_index",
+    "entrypoint": "https://lovekrakow.pl/sitemap.xml",
+    "archive_segments_observed": 37,
+    "robots_url": "https://lovekrakow.pl/robots.txt",
+    "terms_url": "https://lovekrakow.pl/robots.txt",
+    "verified_on": "2026-09-14",
+    "technical_status": "verified_candidate",
+    "permission": {
+      "metadata_and_search": "allowed_by_content_signal",
+      "full_text": "not_granted",
+      "snapshot": "not_granted",
+      "rag": "not_granted",
+      "training": "prohibited"
+    },
+    "rate_limit": {
+      "publisher_declared": null,
+      "candidate_max_requests_per_minute": 20
+    },
+    "enabled": false,
+    "evidence_note": "robots.txt declares Content-Signal search=yes, ai-train=no, use=reference and allows the general user agent. The sitemap index exposes 37 numbered pages; observed lastmod was current on the audit date. ai-input is not declared, so RAG remains disabled."
+  },
+  {
+    "name": "Radio Lublin",
+    "base_url": "https://radio.lublin.pl/",
+    "scope": "regional",
+    "region": "Lubelskie",
+    "method": "rss_and_sitemap_index",
+    "entrypoint": "https://radio.lublin.pl/feed/",
+    "sitemap_url": "https://radio.lublin.pl/sitemap_index.xml",
+    "archive_segments_observed": 423,
+    "robots_url": "https://radio.lublin.pl/robots.txt",
+    "terms_url": "https://cdn.radio.lublin.pl/regulaminy/",
+    "verified_on": "2026-09-14",
+    "technical_status": "verified_candidate",
+    "permission": {
+      "metadata_and_search": "needs_review",
+      "full_text": "requires_permission",
+      "snapshot": "requires_permission",
+      "rag": "requires_permission",
+      "training": "requires_permission"
+    },
+    "rate_limit": {
+      "publisher_declared": null,
+      "candidate_max_requests_per_minute": 20
+    },
+    "enabled": false,
+    "evidence_note": "The official RSS returned current dated items and the official sitemap index exposed 423 entries. robots.txt did not block those endpoints. Publisher terms expressly protect PAP/AFP materials and prohibit their use beyond stated legal exceptions; no automated full-text use is approved."
+  },
+  {
+    "name": "Rzeszów News",
+    "base_url": "https://rzeszow-news.pl/",
+    "scope": "regional",
+    "region": "Rzeszów / Podkarpackie",
+    "method": "rss_and_sitemap_index",
+    "entrypoint": "https://rzeszow-news.pl/feed/",
+    "sitemap_url": "https://rzeszow-news.pl/sitemap_index.xml",
+    "news_sitemap_url": "https://rzeszow-news.pl/news-sitemap.xml",
+    "archive_segments_observed": 49,
+    "robots_url": "https://rzeszow-news.pl/robots.txt",
+    "terms_url": "https://rzeszow-news.pl/regulamin-portalu/",
+    "verified_on": "2026-09-14",
+    "technical_status": "verified_candidate",
+    "permission": {
+      "metadata_and_search": "needs_review",
+      "full_text": "prohibited_without_separate_basis",
+      "snapshot": "prohibited_without_separate_basis",
+      "rag": "prohibited_without_separate_basis",
+      "training": "prohibited_without_separate_basis"
+    },
+    "rate_limit": {
+      "publisher_declared": null,
+      "candidate_max_requests_per_minute": 20
+    },
+    "enabled": false,
+    "evidence_note": "Current RSS, a news sitemap, and a 49-entry sitemap index were observed. The portal terms say no rights are acquired and prohibit downloading all or a substantial part for reuse or processing; therefore only a separately reviewed metadata-only use can be considered."
+  },
+  {
+    "name": "CyberDefence24",
+    "base_url": "https://cyberdefence24.pl/",
+    "scope": "industry",
+    "industry": "cybersecurity and technology policy",
+    "method": "rss_and_monthly_article_sitemaps",
+    "entrypoint": "https://cyberdefence24.pl/_rss",
+    "sitemap_url": "https://cyberdefence24.pl/sitemap.xml",
+    "archive_segments_observed": 139,
+    "robots_url": "https://cyberdefence24.pl/robots.txt",
+    "terms_url": "https://cyberdefence24.pl/regulaminy/regulamin-newslettera",
+    "verified_on": "2026-09-14",
+    "technical_status": "verified_candidate",
+    "permission": {
+      "metadata_and_search": "needs_review",
+      "full_text": "requires_permission",
+      "snapshot": "requires_permission",
+      "rag": "requires_permission",
+      "training": "requires_permission"
+    },
+    "rate_limit": {
+      "publisher_declared": null,
+      "candidate_max_requests_per_minute": 20
+    },
+    "enabled": false,
+    "evidence_note": "robots.txt allows the general user agent and names the official sitemap. The RSS redirects to _rss and contains current dated items; the sitemap exposes monthly article packs. The located publisher regulation governs the newsletter, not archival reuse, so it does not grant ingestion rights."
+  },
+  {
+    "name": "Energetyka24",
+    "base_url": "https://energetyka24.com/",
+    "scope": "industry",
+    "industry": "energy and climate policy",
+    "method": "rss_and_monthly_article_sitemaps",
+    "entrypoint": "https://energetyka24.com/_rss",
+    "sitemap_url": "https://energetyka24.com/sitemap.xml",
+    "archive_segments_observed": 168,
+    "robots_url": "https://energetyka24.com/robots.txt",
+    "terms_url": "https://cyberdefence24.pl/regulaminy/regulamin-newslettera",
+    "verified_on": "2026-09-14",
+    "technical_status": "verified_candidate",
+    "permission": {
+      "metadata_and_search": "needs_review",
+      "full_text": "requires_permission",
+      "snapshot": "requires_permission",
+      "rag": "requires_permission",
+      "training": "requires_permission"
+    },
+    "rate_limit": {
+      "publisher_declared": null,
+      "candidate_max_requests_per_minute": 20
+    },
+    "enabled": false,
+    "evidence_note": "robots.txt allows the general user agent and names the official sitemap. The RSS redirects to _rss and contains current dated items; the sitemap exposes monthly article packs. The group newsletter regulation names Energetyka24 but does not license archival reuse."
+  }
+]
