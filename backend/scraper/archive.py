@@ -444,11 +444,22 @@ def archive_cycle():
     articles = Article.objects.filter(ingestion_method__in=['rss', 'manual'], content__isnull=True).exclude(url__in=ArchiveJob.objects.values('url')).exclude(category__in=['tweet', 'video']).order_by('-pk')[:20]
     for article in articles:
         ArchiveJob.objects.get_or_create(url=article.url, defaults={'source': article.source, 'kind': 'page'})
+    # The generic scheduler must obey the same legal gate as the explicit
+    # backfill command.  Import locally to avoid a module-level cycle.
+    from scraper.backfill import approved_access_instructions
+    instructions = approved_access_instructions()
+    if not instructions:
+        return {'status': 'blocked_access_review', 'completed': 0, 'workers': 0,
+            'elapsed_seconds': 0, 'failed_job_ids': [], 'active_workers': 0,
+            'eligible_sources': 0}
     started = timezone.now()
     tick = time.monotonic()
     workers = int(os.environ.get('ARCHIVE_WORKERS', '4'))
     metrics = {}
-    completed = run_parallel_batch(workers=workers, metrics=metrics)
+    completed = run_parallel_batch(workers=workers, metrics=metrics,
+        source_ids=list(instructions),
+        source_access_scopes={source_id: instruction.allowed_scope
+            for source_id, instruction in instructions.items()})
     failed = list(ArchiveJob.objects.filter(status='error', checked_at__gte=started).values_list('pk', flat=True))
     return {'status': 'partial' if failed else 'ok' if completed else 'idle', 'completed': completed,
         'workers': workers, 'elapsed_seconds': round(time.monotonic() - tick, 2), 'failed_job_ids': failed, **metrics}

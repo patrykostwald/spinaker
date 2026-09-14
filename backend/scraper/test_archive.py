@@ -16,6 +16,15 @@ from rest_framework.test import APIClient
 from news.models import Article, ArchiveJob, Source, ArticleContent
 from scraper.archive import process, run_batch, article_body
 
+
+@pytest.mark.django_db
+def test_generic_archive_scheduler_stays_blocked_without_access_instruction(monkeypatch):
+    from scraper.archive import archive_cycle
+    monkeypatch.setattr('scraper.backfill.approved_access_instructions', lambda: {})
+    with pytest.MonkeyPatch.context() as patcher:
+        patcher.setattr('scraper.archive.run_parallel_batch', lambda **_: pytest.fail('scheduler bypassed access gate'))
+        assert archive_cycle()['status'] == 'blocked_access_review'
+
 @pytest.mark.django_db
 def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):
     source = Source.objects.create(name='Test archive', url='https://example.org')
