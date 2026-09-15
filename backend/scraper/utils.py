@@ -1,4 +1,5 @@
 from datetime import datetime, timezone as dt_timezone
+from dataclasses import dataclass
 from functools import wraps
 from urllib.parse import urlparse
 from hashlib import sha256
@@ -25,6 +26,15 @@ class HostRateLimited(Exception):
     def __init__(self, retry_after_seconds):
         self.retry_after_seconds = retry_after_seconds
         super().__init__(f'host_rate_limited:{retry_after_seconds:.3f}')
+
+
+@dataclass(frozen=True)
+class SourceHTTPResponse:
+    """One completed source request, including an intentionally unfollowed 3xx."""
+
+    status_code: int
+    headers: dict
+    body: bytes
 
 def safe_url(url):
     value = str(url or '').strip()
@@ -169,7 +179,7 @@ def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error
 def _record_transport_attempt(*, source, instruction, requested_kind, url, outcome,
                               http_status=None, bytes_received=0, response_sha256='', error_code='',
                               hostname_transport=False, network_started=True, request_id=None,
-                              url_fingerprint_override=None):
+                              url_fingerprint_override=None, redirect_target_host=''):
     return FetchAttempt.objects.create(
         source=source, request_id=request_id or uuid4(), instruction=instruction, instruction_version=instruction.version,
         channel=instruction.channel, requested_kind=requested_kind,
@@ -180,7 +190,8 @@ def _record_transport_attempt(*, source, instruction, requested_kind, url, outco
         request_user_agent='ContextBeforeContent/1.0 source reader',
         decision_basis=str(instruction.evidence.get('basis') or instruction.terms_url)[:500],
         outcome=outcome, network_started=network_started, http_status=http_status,
-        bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code)
+        bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code,
+        redirect_target_host=redirect_target_host)
 
 
 def _reserve_fetch_request(*, source, instruction, requested_kind, url, hostname_transport, request_id):
@@ -195,7 +206,7 @@ def _reserve_fetch_request(*, source, instruction, requested_kind, url, hostname
 
 def _close_fetch_request(*, request_id, source, instruction, requested_kind, url, outcome,
                          hostname_transport, http_status=None, bytes_received=0,
-                         response_sha256='', error_code=''):
+                         response_sha256='', error_code='', redirect_target_host=''):
     """Append a terminal event only while its mutable control record is open."""
     with transaction.atomic():
         request = FetchRequest.objects.select_for_update().get(request_id=request_id)
@@ -205,7 +216,8 @@ def _close_fetch_request(*, request_id, source, instruction, requested_kind, url
             requested_kind=requested_kind, url=url, outcome=outcome,
             http_status=http_status, bytes_received=bytes_received,
             response_sha256=response_sha256, error_code=error_code,
-            hostname_transport=hostname_transport, request_id=request_id)
+            hostname_transport=hostname_transport, request_id=request_id,
+            redirect_target_host=redirect_target_host)
         request.state = FetchRequest.State.CLOSED
         request.closed_at = timezone.now()
         request.save(update_fields=['state', 'closed_at'])
@@ -275,8 +287,96 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
     finally:
         if gateway is not None:
             gateway.complete(host, worker_id)
+
+
+def fetch_response_once(url, *, audit_source, audit_instruction, requested_kind,
+                        hostname_transport=False, method='GET', body=None,
+                        request_headers=None):
+    """Execute one audited request and preserve a 3xx for the adapter to assess.
+
+    This is deliberately separate from ``fetch_feed``.  Callers such as SUDOP
+    can persist their finite-state cursor after a 303, then submit the next
+    URL as a new request through the access and host gates.
+    """
+    from scraper.access_gate import AccessDenied, approved_instruction
+
+    active_instruction = approved_instruction(
+        audit_source, audit_instruction.channel, url
+    )
+    if active_instruction is None:
+        _record_transport_attempt(
+            source=audit_source, instruction=audit_instruction,
+            requested_kind=requested_kind, url=url,
+            outcome=FetchAttempt.Outcome.REFUSED_SCOPE_MISMATCH,
+            error_code='access_recheck_failed', hostname_transport=hostname_transport,
+            network_started=False,
+        )
+        raise AccessDenied('no_approved_instruction')
+
+    gateway = None
+    host = (urlparse(url).hostname or '').lower()
+    worker_id = f'fetch-once:{os.getpid()}:{audit_source.pk}'
+    from scraper.host_gateway import HostGateway
+    gateway = HostGateway(minimum_interval_seconds=active_instruction.minimum_interval_seconds)
+    reservation = gateway.acquire(host, worker_id)
+    request_id = uuid4()
+    if not reservation.granted:
+        _record_transport_attempt(
+            source=audit_source, instruction=active_instruction,
+            requested_kind=requested_kind, url=url,
+            outcome=FetchAttempt.Outcome.RATE_LIMIT_PREEMPTIVE,
+            error_code=f'host_rate_limited:{reservation.retry_after_seconds:.3f}',
+            hostname_transport=hostname_transport, network_started=False,
+            request_id=request_id,
+        )
+        raise HostRateLimited(reservation.retry_after_seconds)
+    try:
+        _reserve_fetch_request(
+            source=audit_source, instruction=active_instruction,
+            requested_kind=requested_kind, url=url,
+            hostname_transport=hostname_transport, request_id=request_id,
+        )
+        try:
+            response = _fetch_feed_raw(
+                url, hostname_transport=hostname_transport, method=method,
+                body=body, request_headers=request_headers,
+                follow_redirects=False, return_response=True,
+            )
+        except Exception as exc:
+            upstream = getattr(exc, 'response', None)
+            status = getattr(upstream, 'status_code', None)
+            outcome = FetchAttempt.Outcome.HTTP_ERROR if status else FetchAttempt.Outcome.NETWORK_ERROR
+            _close_fetch_request(
+                request_id=request_id, source=audit_source, instruction=active_instruction,
+                requested_kind=requested_kind, url=url, outcome=outcome,
+                http_status=status, error_code=(f'http_{status}' if status else type(exc).__name__.lower()[:64]),
+                hostname_transport=hostname_transport,
+            )
+            if status == 429:
+                value = upstream.headers.get('Retry-After', '')
+                gateway.extend_on_429(host, worker_id, int(value) if str(value).isdigit() else 60)
+            raise
+
+        redirected = response.status_code in {301, 302, 303, 307, 308}
+        target_host = ''
+        if redirected:
+            from urllib.parse import urljoin
+            target_host = (urlparse(urljoin(url, response.headers.get('Location', ''))).hostname or '').lower()
+        receipt = _close_fetch_request(
+            request_id=request_id, source=audit_source, instruction=active_instruction,
+            requested_kind=requested_kind, url=url,
+            outcome=FetchAttempt.Outcome.REDIRECTED if redirected else FetchAttempt.Outcome.OK,
+            http_status=response.status_code, bytes_received=len(response.body),
+            response_sha256=sha256(response.body).hexdigest(),
+            hostname_transport=hostname_transport, redirect_target_host=target_host,
+        )
+        return response, receipt
+    finally:
+        gateway.complete(host, worker_id)
+
+
 def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
-                    request_headers=None):
+                    request_headers=None, follow_redirects=True, return_response=False):
     """Bounded public HTTP fetch with validation on every redirect.
 
     ``hostname_transport`` is reserved for an already approved publisher
@@ -332,6 +432,9 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
                 timeout=urllib3.Timeout(connect=5, read=30),
                 headers=headers)
             if response.status in (301, 302, 303, 307, 308):
+                if not follow_redirects:
+                    result = SourceHTTPResponse(response.status, dict(response.headers), b'')
+                    return result if return_response else result.body
                 if method != 'GET':
                     raise ValueError('Redirected non-GET request requires a separately reviewed endpoint')
                 url = urljoin(url, response.headers['Location'])
@@ -349,7 +452,9 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
                 if size > 5_000_000:
                     raise ValueError('Source response too large')
                 chunks.append(chunk)
-            return b''.join(chunks)
+            body_bytes = b''.join(chunks)
+            result = SourceHTTPResponse(response.status, dict(response.headers), body_bytes)
+            return result if return_response else result.body
         finally:
             if response is not None:
                 response.close()

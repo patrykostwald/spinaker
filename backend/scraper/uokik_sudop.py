@@ -11,17 +11,16 @@ from email.utils import parsedate_to_datetime
 from hashlib import sha256
 import json
 import os
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from uuid import uuid4
 
-import requests
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
 from news.models import Article, ArticleCategory, ImportState, Source, SourceAccessInstruction
 from scraper.access_gate import approved_instruction
-from scraper.utils import upsert_article
+from scraper.utils import fetch_response_once, upsert_article
 
 
 API = "https://api-sudop.uokik.gov.pl/sudop-api"
@@ -61,14 +60,16 @@ def _retry_seconds(response, now):
 
 def _path_id(location: str, expected_segment: str) -> str:
     parsed = urlparse(location)
+    if parsed.scheme and parsed.scheme != "https":
+        raise ValueError("SUDOP redirect changed scheme")
     if parsed.netloc and parsed.netloc != "api-sudop.uokik.gov.pl":
         raise ValueError("SUDOP redirect changed host")
-    parts = [part for part in parsed.path.split("/") if part]
-    try:
-        index = parts.index(expected_segment)
-        value = parts[index + 1]
-    except (ValueError, IndexError):
+    if parsed.query or parsed.fragment:
+        raise ValueError("SUDOP redirect carried unexpected parameters")
+    prefix = f"/sudop-api/api/{expected_segment}/"
+    if not parsed.path.startswith(prefix):
         raise ValueError("Invalid SUDOP redirect")
+    value = parsed.path.removeprefix(prefix)
     if not value or len(value) > 200 or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" for ch in value):
         raise ValueError("Invalid SUDOP redirect identifier")
     return value
@@ -136,7 +137,7 @@ def _initial_cursor(today):
             "row_offset": 0, "phase": "submit", "complete": False, "requests": 0}
 
 
-def _sudop_pilot_cycle(*, session=requests, now=None):
+def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None):
     source = Source.objects.filter(url=SOURCE_URL).first()
     if not _enabled(source):
         return {"status": "disabled", "new_records": 0}
@@ -161,21 +162,25 @@ def _sudop_pilot_cycle(*, session=requests, now=None):
     state.save(update_fields=["last_started"])
     query_params = {"dzien-udzielenia-pomocy-od": work_day.isoformat(),
         "dzien-udzielenia-pomocy-do": work_day.isoformat(), "strona": cursor.get("page", 1)}
-    query_url = requests.Request("GET", API + "/api/przypadki-pomocy", params=query_params).prepare().url
+    query_url = API + "/api/przypadki-pomocy?" + urlencode(query_params)
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, API + "/api")
+    if instruction is None:
+        return {"status": "disabled", "new_records": 0}
 
     try:
         phase = cursor.get("phase", "submit")
         if phase == "submit":
-            response = session.get(API + "/api/przypadki-pomocy", params=query_params,
-                timeout=(5, 60), allow_redirects=False,
-                headers={"User-Agent": "spin.clinic/1.0 metadata-only SUDOP pilot"})
+            response, _ = transport(query_url, hostname_transport=True,
+                audit_source=source, audit_instruction=instruction,
+                requested_kind="api_record")
         elif phase == "queue":
-            response = session.get(f"{API}/api/kolejka/{cursor['queue_id']}", timeout=(5, 60),
-                allow_redirects=False, headers={"User-Agent": "spin.clinic/1.0 metadata-only SUDOP pilot"})
+            response, _ = transport(f"{API}/api/kolejka/{cursor['queue_id']}", hostname_transport=True,
+                audit_source=source, audit_instruction=instruction,
+                requested_kind="api_record")
         elif phase == "result":
-            response = session.get(f"{API}/api/wynik/{cursor['request_id']}", params={"csv": "false"},
-                timeout=(5, 60), allow_redirects=False,
-                headers={"User-Agent": "spin.clinic/1.0 metadata-only SUDOP pilot"})
+            response, _ = transport(f"{API}/api/wynik/{cursor['request_id']}?csv=false", hostname_transport=True,
+                audit_source=source, audit_instruction=instruction,
+                requested_kind="api_record")
         else:
             raise ValueError("Invalid SUDOP cursor phase")
 
@@ -238,13 +243,13 @@ def _sudop_pilot_cycle(*, session=requests, now=None):
         return {"status": "error", "new_records": 0, "error": str(exc)[:200]}
 
 
-def sudop_pilot_cycle(*, session=requests, now=None):
+def sudop_pilot_cycle(*, transport=fetch_response_once, now=None):
     """Make at most one HTTP request and persist the next finite state."""
     token = uuid4().hex
     if not cache.add(LOCK, token, 90):
         return {"status": "already_running", "new_records": 0}
     try:
-        return _sudop_pilot_cycle(session=session, now=now)
+        return _sudop_pilot_cycle(transport=transport, now=now)
     finally:
         if cache.get(LOCK) == token:
             cache.delete(LOCK)

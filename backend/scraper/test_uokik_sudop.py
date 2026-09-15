@@ -26,9 +26,9 @@ class Session:
         self.responses = list(responses)
         self.calls = []
 
-    def get(self, url, **kwargs):
+    def __call__(self, url, **kwargs):
         self.calls.append((url, kwargs))
-        return self.responses.pop(0)
+        return self.responses.pop(0), None
 
 
 @pytest.fixture
@@ -50,7 +50,7 @@ def run_due(session):
     state = ImportState.objects.get(name=STATE_NAME)
     state.cursor["available_at"] = (NOW - timedelta(seconds=1)).isoformat()
     state.save(update_fields=["cursor"])
-    return sudop_pilot_cycle(session=session, now=NOW)
+    return sudop_pilot_cycle(transport=session, now=NOW)
 
 
 def event(**overrides):
@@ -71,7 +71,7 @@ def test_disabled_does_not_create_state_or_call_network(db, monkeypatch):
     Source.objects.create(name="SUDOP", url=API, catalog_stage="configured")
     monkeypatch.delenv("UOKIK_SUDOP_PILOT_ENABLED", raising=False)
     session = Session()
-    assert sudop_pilot_cycle(session=session, now=NOW)["status"] == "disabled"
+    assert sudop_pilot_cycle(transport=session, now=NOW)["status"] == "disabled"
     assert not session.calls and not ImportState.objects.exists()
 
 
@@ -80,7 +80,7 @@ def test_enabled_flag_without_access_card_still_cannot_call_network(db, monkeypa
     Source.objects.create(name="SUDOP", url=API, is_active=True, scrape_enabled=True)
     session = Session()
 
-    assert sudop_pilot_cycle(session=session, now=NOW)["status"] == "disabled"
+    assert sudop_pilot_cycle(transport=session, now=NOW)["status"] == "disabled"
     assert not session.calls and not ImportState.objects.exists()
 
 
@@ -90,10 +90,10 @@ def test_three_stage_protocol_frozen_cutoff_and_metadata_only(source):
         Response(303, location=API + "/api/wynik/r-1"),
         Response(200, payload={"liczba-wynikow": 2, "wyniki": [event(), {"name": "dictionary"}]}),
     )
-    first = sudop_pilot_cycle(session=session, now=NOW)
+    first = sudop_pilot_cycle(transport=session, now=NOW)
     state = ImportState.objects.get(name=STATE_NAME)
     assert first["phase"] == "queue" and state.cursor["cutoff"] == "2026-09-14"
-    assert len(session.calls) == 1 and session.calls[0][1]["allow_redirects"] is False
+    assert len(session.calls) == 1 and "audit_source" in session.calls[0][1]
     assert run_due(session)["phase"] == "result"
     result = run_due(session)
     assert result == {"status": "ok", "new_records": 1, "processed": 2, "cutoff": "2026-09-14"}
@@ -110,12 +110,12 @@ def test_replayed_result_is_idempotent(source):
         "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
     })
     payload = {"liczba-wynikow": 1, "wyniki": [row]}
-    assert sudop_pilot_cycle(session=Session(Response(200, payload=payload)), now=NOW)["new_records"] == 1
+    assert sudop_pilot_cycle(transport=Session(Response(200, payload=payload)), now=NOW)["new_records"] == 1
     state.refresh_from_db()
     state.cursor.update(next_date="2016-01-01", phase="result", request_id="two",
         row_offset=0, page=1, complete=False, available_at=(NOW - timedelta(seconds=1)).isoformat())
     state.save(update_fields=["cursor"])
-    assert sudop_pilot_cycle(session=Session(Response(200, payload=payload)), now=NOW)["new_records"] == 0
+    assert sudop_pilot_cycle(transport=Session(Response(200, payload=payload)), now=NOW)["new_records"] == 0
     assert Article.objects.count() == 1
 
 
@@ -126,7 +126,7 @@ def test_batch_is_bounded_and_cursor_resumes_same_report(source, monkeypatch):
         "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
     })
     rows = [event(**{"nip-beneficjenta": str(index).zfill(10)}) for index in range(3)]
-    result = sudop_pilot_cycle(session=Session(Response(200,
+    result = sudop_pilot_cycle(transport=Session(Response(200,
         payload={"liczba-wynikow": 3, "wyniki": rows})), now=NOW)
     state = ImportState.objects.get(name=STATE_NAME)
     assert result["processed"] == 2 and Article.objects.count() == 2
@@ -135,14 +135,14 @@ def test_batch_is_bounded_and_cursor_resumes_same_report(source, monkeypatch):
 
 def test_429_retry_after_preserves_phase_and_exact_delay(source):
     session = Session(Response(429, retry_after="120"))
-    result = sudop_pilot_cycle(session=session, now=NOW)
+    result = sudop_pilot_cycle(transport=session, now=NOW)
     state = ImportState.objects.get(name=STATE_NAME)
     assert result["retry_after"] == 120 and state.cursor["phase"] == "submit"
     assert datetime.fromisoformat(state.cursor["available_at"]) == NOW + timedelta(seconds=120)
 
 
 def test_invalid_redirect_host_and_payload_do_not_advance_cursor(source):
-    result = sudop_pilot_cycle(session=Session(Response(303,
+    result = sudop_pilot_cycle(transport=Session(Response(303,
         location="https://evil.example/api/kolejka/q")), now=NOW)
     assert result["status"] == "error"
     assert ImportState.objects.get(name=STATE_NAME).cursor["phase"] == "submit"

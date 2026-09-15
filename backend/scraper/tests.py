@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
 import pytest
 from django.core.cache import cache
-from news.models import Article, Source, SourceAccessInstruction
+from news.models import Article, FetchAttempt, Source, SourceAccessInstruction
 from scraper.catalog import RSS_SOURCES, INSTITUTIONS, TWITTER_POLITICIANS, NEWSAPI_TOPICS
 from scraper.gdelt_scraper import scrape_gdelt, _parse_gdelt_date
 from scraper.newsapi_scraper import scrape_newsapi_batch
@@ -102,6 +102,42 @@ def test_audited_transport_allows_a_bounded_post_body(resolve):
             method='POST', body=b'{"page":1}',
             request_headers={'Content-Type': 'application/json'}) == b'{}'
     assert pool.return_value.urlopen.call_args.args[:2] == ('POST', 'https://source.example/api')
+
+
+@pytest.mark.django_db
+@patch('scraper.utils._fetch_feed_raw')
+def test_one_request_transport_audits_an_unfollowed_redirect(raw):
+    """A 303 is a completed request, never an implicit second network hop."""
+    from django.utils import timezone
+    from scraper.utils import SourceHTTPResponse, fetch_response_once
+
+    source = Source.objects.create(name='Official API', url='https://example.org',
+        catalog_stage='configured', is_active=True, scrape_enabled=True)
+    instruction = SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api',
+        allowed_scope='metadata', endpoint='https://example.org/api',
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() + __import__('datetime').timedelta(days=1),
+        minimum_interval_seconds=3,
+    )
+    raw.return_value = SourceHTTPResponse(303, {'Location': '/api/kolejka/q-1'}, b'')
+
+    response, receipt = fetch_response_once(
+        'https://example.org/api/przypadki', audit_source=source,
+        audit_instruction=instruction,
+        requested_kind=FetchAttempt.RequestedKind.API_RECORD,
+        hostname_transport=True,
+    )
+
+    assert response.status_code == 303
+    assert receipt.outcome == FetchAttempt.Outcome.REDIRECTED
+    assert receipt.redirect_target_host == 'example.org'
+    assert raw.call_count == 1
+    assert raw.call_args.kwargs['follow_redirects'] is False
+    assert set(FetchAttempt.objects.filter(source=source).values_list('outcome', flat=True)) == {
+        FetchAttempt.Outcome.RESERVED, FetchAttempt.Outcome.REDIRECTED,
+    }
 
 @pytest.mark.django_db
 @patch('scraper.gdelt_scraper.requests.get')
