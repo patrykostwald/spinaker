@@ -2,10 +2,12 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
+from time import sleep
 
 from news.models import SourceAccessInstruction
 from scraper.access_gate import approved_instruction
 from scraper.official import API, fetch_json, import_voting, official_source
+from scraper.utils import HostRateLimited
 
 
 class Command(BaseCommand):
@@ -41,6 +43,15 @@ class Command(BaseCommand):
                 and (row.get('term'), row.get('sitting'), row.get('votingNumber')) == (10, sitting, vote)
                 for row in rows):
             raise CommandError('Lista posiedzenia nie potwierdziła wskazanego głosowania; szczegół nie został pobrany.')
-        created = import_voting(10, sitting, vote)
+        try:
+            created = import_voting(10, sitting, vote)
+        except HostRateLimited as exc:
+            # This is a deliberately tiny, interactive pilot command. A
+            # production worker would defer the job; here a single bounded
+            # wait proves the list → detail sequence respects HostGateway.
+            delay = min(5.0, max(0.0, exc.retry_after_seconds))
+            self.stdout.write(f'BRAMKA: oczekiwanie {delay:.2f}s przed szczegółem.')
+            sleep(delay)
+            created = import_voting(10, sitting, vote)
         self.stdout.write(self.style.SUCCESS(
             f'ZAKOŃCZONO: głosowanie 10/{sitting}/{vote}; nowy rekord: {bool(created)}.'))

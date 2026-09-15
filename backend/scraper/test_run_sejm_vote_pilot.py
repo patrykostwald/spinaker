@@ -58,3 +58,34 @@ def test_pilot_command_verifies_list_before_detail(monkeypatch):
 
     fetch.assert_called_once_with('/sejm/term10/votings/1')
     importer.assert_called_once_with(10, 1, 2)
+
+
+@pytest.mark.django_db
+def test_pilot_command_waits_for_host_gate_between_list_and_detail(monkeypatch):
+    from scraper.utils import HostRateLimited
+
+    source = Source.objects.create(name='Sejm Rzeczypospolitej Polskiej',
+        url='https://api.sejm.gov.pl/sejm', is_active=True,
+        scrape_enabled=True, catalog_stage='configured')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api',
+        allowed_scope='content', endpoint='https://api.sejm.gov.pl/sejm/term10/votings',
+        allowed_path_patterns=['/sejm/term10/votings/{int}', '/sejm/term10/votings/{int}/{int}'],
+        terms_url='https://www.sejm.gov.pl/sejm10.nsf/page.xsp/copyright',
+        evidence={'basis': 'test'}, reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() + __import__('datetime').timedelta(days=1),
+        minimum_interval_seconds=3, daily_request_cap=24,
+    )
+    monkeypatch.setattr('scraper.management.commands.run_sejm_vote_pilot.connection.vendor', 'postgresql')
+    monkeypatch.setattr('scraper.management.commands.run_sejm_vote_pilot.fetch_json', lambda path: [
+        {'term': 10, 'sitting': 1, 'votingNumber': 2},
+    ])
+    importer = pytest.importorskip('unittest.mock').Mock(side_effect=[HostRateLimited(2.5), True])
+    waiter = pytest.importorskip('unittest.mock').Mock()
+    monkeypatch.setattr('scraper.management.commands.run_sejm_vote_pilot.import_voting', importer)
+    monkeypatch.setattr('scraper.management.commands.run_sejm_vote_pilot.sleep', waiter)
+
+    call_command('run_sejm_vote_pilot', '--sitting=1', '--vote=2', '--apply', stdout=StringIO())
+
+    waiter.assert_called_once_with(2.5)
+    assert importer.call_count == 2
