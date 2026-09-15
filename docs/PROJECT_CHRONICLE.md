@@ -57,3 +57,11 @@ Kronika opisuje wydarzenia językiem zrozumiałym dla przyszłego czytelnika: co
 - Audytor źródeł otrzymał stałą checklistę dziewięciu pytań: właściciel i host, endpoint, dowód warunków, zakres danych, robots i ograniczenia, tempo, granica URL, dane zbędne lub wrażliwe oraz data ponownej oceny. Istotniejsze i niejednoznaczne źródła wymagają drugiego przeglądu.
 - Dr Spin otrzymał kierunek produktowy „Diagnoza kontekstu”. Pierwsze widoki nie będą udawały pełnego rozumienia artykułów: pokażą puls wydarzeń, kontekst zewnętrzny, ścieżkę dowodów i sieć połączeń. Odpowiedź ma rozdzielać „Ustalenia”, „Niewiadome” i „Co mogłoby zmienić diagnozę”. Ustalono, że liczba wspólnych wzmianek nie jest miarą prawdziwości ani siły relacji.
 - Odrzucono pozornie precyzyjne procenty pewności oraz założenie, że sam tytuł, publiczny URL albo dokument instytucjonalny zawsze daje pełną zgodę na dowolne użycie. W interfejsie mają pozostać zrozumiałe typy dowodu: dokument urzędowy, zatwierdzona relacja, pojedyncze źródło, współwystępowanie, konflikt i niewiadoma.
+
+## 15 września 2026 — bramka jako pojedyncze przejście
+
+- Zespół niezależnych modeli skonfrontował pierwszą wersję trwałego limitera hostów. Gemini wskazał ważną lukę: sama trzysekundowa dzierżawa nie chroni wydawcy, kiedy odpowiedź trwa dłużej niż trzy sekundy. Drugi worker mógłby wtedy rozpocząć nakładające się pobranie.
+- Poprawka zmieniła regułę z „co najmniej trzy sekundy od startu” na „najwyżej jedno aktywne pobranie, a następne dopiero trzy sekundy po zakończeniu”. Po awarii workera rezerwacja wygasa po ograniczonym czasie awaryjnym. Test symuluje wolną odpowiedź i potwierdza, że kolejny worker nie może jej wyprzedzić.
+- Przekierowanie do innego hosta zostało zatrzymane na granicy transportu. Taki adres nie dziedziczy karty dostępu pierwotnego źródła; wymaga odrębnej, udokumentowanej decyzji.
+- Kolejka archiwum rozróżnia odroczenie od awarii. Kiedy bramka odmawia z powodu tempa, zadanie wraca po wskazanym czasie bez naliczania błędu i bez fałszywego uruchamiania „lekarza źródła”.
+- Claude Code przeprowadził ograniczony rekonesans jawnych API. Wynik nie stał się automatyczną zgodą: Sejm pozostaje jedynym przygotowywanym pilotem, a NBP, GUS/SDG, ELI i wybrane europejskie interfejsy trafiają najpierw do kolejki osobnego audytu kanału, warunków i zakresu.
