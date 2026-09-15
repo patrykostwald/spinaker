@@ -7,7 +7,6 @@ from email.utils import parsedate_to_datetime
 from hashlib import sha256
 from html import unescape
 import os
-import time
 from urllib.parse import urlsplit
 from uuid import uuid4
 from xml.etree import ElementTree
@@ -16,12 +15,13 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from news.models import Article, ArticleContent, ImportState, Source
+from news.models import Article, ArticleContent, FetchAttempt, ImportState, Source, SourceAccessInstruction
 from news.signals import invalidate_search
-from scraper.archive import SourceDelay, USER_AGENT, host_state, robots
+from scraper.archive import SourceDelay, USER_AGENT, robots
 from scraper.html_archive import retry_delay
 from scraper.source_probe import public_link
-from scraper.utils import fetch_feed, upsert_article
+from scraper.utils import fetch_feed, record_fetch_refusal, upsert_article
+from scraper.access_gate import approved_instruction
 
 MAX_RECORDS = 25
 MIN_HOST_INTERVAL_SECONDS = 3
@@ -92,21 +92,22 @@ def fetch_bounded(source_id, pilot):
     source = Source.objects.get(pk=source_id)
     if not _eligible(source, pilot):
         raise MetadataPilotError('source_disabled')
-    gate = host_state(pilot.source_host)
-    if not gate['lock'].acquire(blocking=False): raise SourceDelay()
-    attempted, delay = False, MIN_HOST_INTERVAL_SECONDS
-    try:
-        if time.monotonic() < gate['next_allowed']: raise SourceDelay()
-        attempted = True
-        policy = robots(pilot.endpoint)
-        if not policy.can_fetch(USER_AGENT, pilot.endpoint): raise MetadataPilotError('robots_disallowed')
-        rate = policy.request_rate(USER_AGENT)
-        delay = max(MIN_HOST_INTERVAL_SECONDS, policy.crawl_delay(USER_AGENT) or 0,
-            rate.seconds / rate.requests if rate and rate.requests else 0)
-        return fetch_feed(pilot.endpoint)
-    finally:
-        if attempted: gate['next_allowed'] = time.monotonic() + delay
-        gate['lock'].release()
+    channel = (SourceAccessInstruction.Channel.RSS if pilot.kind == 'rss'
+        else SourceAccessInstruction.Channel.SITEMAP)
+    instruction = approved_instruction(source, channel, pilot.endpoint)
+    if instruction is None:
+        raise MetadataPilotError('no_approved_instruction')
+    policy = robots(pilot.endpoint, hostname_transport=True, audit_source=source,
+        audit_instruction=instruction)
+    if not policy.can_fetch(USER_AGENT, pilot.endpoint):
+        record_fetch_refusal(source=source, instruction=instruction, channel=instruction.channel,
+            requested_kind=FetchAttempt.RequestedKind.FEED if pilot.kind == 'rss' else FetchAttempt.RequestedKind.SITEMAP,
+            url=pilot.endpoint, outcome=FetchAttempt.Outcome.BLOCKED_ROBOTS,
+            error_code='robots_disallowed')
+        raise MetadataPilotError('robots_disallowed')
+    return fetch_feed(pilot.endpoint, hostname_transport=True, audit_source=source,
+        audit_instruction=instruction,
+        requested_kind=FetchAttempt.RequestedKind.FEED if pilot.kind == 'rss' else FetchAttempt.RequestedKind.SITEMAP)
 
 def _save(source, row, pilot, digest, retrieved_at):
     article, created = upsert_article(source=source, title=row['title'], url=row['url'],
