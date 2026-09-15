@@ -5,7 +5,7 @@ from django.db import connection
 
 from news.models import SourceAccessInstruction
 from scraper.access_gate import approved_instruction
-from scraper.official import API, import_voting, official_source
+from scraper.official import API, fetch_json, import_voting, official_source
 
 
 class Command(BaseCommand):
@@ -35,6 +35,12 @@ class Command(BaseCommand):
                 f'GOTOWY: pilotaż pobierze wyłącznie głosowanie 10/{sitting}/{vote} po użyciu --apply.'))
             return
 
+        rows = fetch_json(f'/sejm/term10/votings/{sitting}')
+        if not isinstance(rows, list) or not any(
+                isinstance(row, dict)
+                and (row.get('term'), row.get('sitting'), row.get('votingNumber')) == (10, sitting, vote)
+                for row in rows):
+            raise CommandError('Lista posiedzenia nie potwierdziła wskazanego głosowania; szczegół nie został pobrany.')
         created = import_voting(10, sitting, vote)
         self.stdout.write(self.style.SUCCESS(
             f'ZAKOŃCZONO: głosowanie 10/{sitting}/{vote}; nowy rekord: {bool(created)}.'))
