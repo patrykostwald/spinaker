@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from news.models import FetchAttempt, FetchRequest, Source, SourceAccessInstruction
 from scraper.fetch_reaper import reap_incomplete_fetches
-from scraper.utils import _reserve_fetch_request
+from scraper.utils import _close_fetch_request, _reserve_fetch_request
 
 
 def approved_instruction(source):
@@ -56,3 +56,27 @@ def test_reaper_suspends_an_instruction_after_three_incomplete_attempts():
     assert reap_incomplete_fetches(now=timezone.now()) == {'reaped': 3, 'suspended': 1}
     instruction.refresh_from_db()
     assert instruction.status == SourceAccessInstruction.Status.SUSPENDED
+
+
+@pytest.mark.django_db
+def test_worker_cannot_close_a_request_already_closed_by_reaper():
+    """The request row makes reaper-versus-worker resolution exactly one winner."""
+    source = Source.objects.create(name='Example', url='https://example.org')
+    instruction = approved_instruction(source)
+    request_id = uuid4()
+    _reserve_fetch_request(source=source, instruction=instruction,
+        requested_kind=FetchAttempt.RequestedKind.FEED, url=instruction.endpoint,
+        hostname_transport=True, request_id=request_id)
+    stale_at = timezone.now() - timedelta(minutes=6)
+    FetchRequest.objects.filter(request_id=request_id).update(reserved_at=stale_at)
+
+    assert reap_incomplete_fetches(now=timezone.now()) == {'reaped': 1, 'suspended': 0}
+    with pytest.raises(RuntimeError, match='no longer open'):
+        _close_fetch_request(request_id=request_id, source=source, instruction=instruction,
+            requested_kind=FetchAttempt.RequestedKind.FEED, url=instruction.endpoint,
+            outcome=FetchAttempt.Outcome.OK, http_status=200, bytes_received=5,
+            response_sha256='a' * 64, hostname_transport=True)
+
+    assert list(FetchAttempt.objects.filter(request_id=request_id).values_list('outcome', flat=True)) == [
+        FetchAttempt.Outcome.ABANDONED, FetchAttempt.Outcome.RESERVED,
+    ]

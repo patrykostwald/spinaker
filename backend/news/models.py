@@ -293,6 +293,17 @@ class FetchRequest(models.Model):
     reserved_at = models.DateTimeField(default=timezone.now, db_index=True)
     closed_at = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (models.Q(state='reserved') & models.Q(closed_at__isnull=True))
+                    | (~models.Q(state='reserved') & models.Q(closed_at__isnull=False))
+                ),
+                name='fetch_request_state_matches_closed_at',
+            ),
+        ]
+
 
 class HostGate(models.Model):
     """A database-backed, single-flight reservation for one remote host."""
