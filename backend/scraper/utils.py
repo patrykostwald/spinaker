@@ -148,15 +148,22 @@ def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error
     return FetchAttempt.objects.create(
         source=source, channel=channel, requested_kind=requested_kind,
         url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
+        adapter_revision='scraper.fetch_feed/v1', transport='pre_network_gate',
+        request_user_agent='ContextBeforeContent/1.0 source reader',
         outcome=outcome, network_started=False, error_code=error_code)
 
 
 def _record_transport_attempt(*, source, instruction, requested_kind, url, outcome,
-                              http_status=None, bytes_received=0, response_sha256='', error_code=''):
+                              http_status=None, bytes_received=0, response_sha256='', error_code='',
+                              hostname_transport=False):
     return FetchAttempt.objects.create(
         source=source, instruction=instruction, instruction_version=instruction.version,
         channel=instruction.channel, requested_kind=requested_kind,
         url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
+        adapter_revision='scraper.fetch_feed/v1',
+        transport=('hostname_https' if hostname_transport else 'pinned_ip_https')
+        if urlparse(url).scheme == 'https' else 'pinned_ip_http',
+        request_user_agent='ContextBeforeContent/1.0 source reader',
         outcome=outcome, network_started=True, http_status=http_status,
         bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code)
 
@@ -178,12 +185,13 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
             code = f'http_{status}' if status else type(exc).__name__.lower()[:64]
             _record_transport_attempt(source=audit_source, instruction=audit_instruction,
                 requested_kind=requested_kind, url=url, outcome=outcome,
-                http_status=status, error_code=code)
+                http_status=status, error_code=code, hostname_transport=hostname_transport)
         raise
     if audit_source is not None:
         _record_transport_attempt(source=audit_source, instruction=audit_instruction,
             requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.OK,
-            http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest())
+            http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest(),
+            hostname_transport=hostname_transport)
     return raw
 
 
