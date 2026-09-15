@@ -124,3 +124,29 @@ def test_audited_feed_transport_records_success(monkeypatch):
     assert attempt.outcome == FetchAttempt.Outcome.OK
     assert attempt.network_started is True
     assert attempt.bytes_received == len(b'<rss/>')
+
+
+@pytest.mark.django_db
+def test_official_api_uses_audited_transport(monkeypatch):
+    from scraper.official import API, fetch_json, official_source
+
+    source = official_source('sejm')
+    SourceAccessInstruction.objects.create(
+        source=source,
+        version=1,
+        status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.API,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        endpoint=API + '/sejm',
+        terms_url=API + '/sejm.html',
+        evidence={'basis': 'official API documentation'},
+        reviewed_at=timezone.now(),
+        reviewed_by='test',
+        valid_until=timezone.now() + timedelta(days=1),
+    )
+    monkeypatch.setattr('scraper.utils._fetch_feed_raw', lambda *args, **kwargs: b'{"ok": true}')
+
+    assert fetch_json('/sejm/term10/votings', offset=0) == {'ok': True}
+    attempt = FetchAttempt.objects.get()
+    assert attempt.channel == SourceAccessInstruction.Channel.API
+    assert attempt.requested_kind == FetchAttempt.RequestedKind.API_RECORD

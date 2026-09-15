@@ -1,13 +1,14 @@
 """Official records: retain the original payload and replace a roll call atomically."""
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
-import requests
+import json
+from urllib.parse import urlencode
 from django.db import transaction
 from django.utils import timezone
-from news.models import Article, ArticleCategory, Ballot, OfficialRecord, OfficialRevision, ParliamentaryVoting, SourceType
+from news.models import Article, ArticleCategory, Ballot, FetchAttempt, OfficialRecord, OfficialRevision, ParliamentaryVoting, SourceType
 from news.models import SourceAccessInstruction
 from scraper.access_gate import approved_instruction, AccessDenied
-from scraper.utils import get_or_create_source, upsert_article
+from scraper.utils import fetch_feed, get_or_create_source, upsert_article
 
 API = 'https://api.sejm.gov.pl'
 VOTE_CODES = {'YES', 'NO', 'ABSTAIN', 'NO_VOTE', 'ABSENT', 'VOTE_VALID', 'VOTE_INVALID', 'PRESENT'}
@@ -17,11 +18,14 @@ def fetch_json(path, **params):
     provider = 'eli' if path.startswith('/eli/') else 'sejm'
     source = official_source(provider)
     endpoint = API + ('/eli' if provider == 'eli' else '/sejm')
-    if approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint) is None:
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint)
+    if instruction is None:
         raise AccessDenied('no_approved_instruction')
-    response = requests.get(API + path, params=params, timeout=(5, 60), headers={'User-Agent': 'spin.clinic/1.0 official records'})
-    response.raise_for_status()
-    return response.json()
+    query = urlencode(params, doseq=True)
+    request_url = API + path + (f'?{query}' if query else '')
+    raw = fetch_feed(request_url, hostname_transport=True, audit_source=source,
+        audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD)
+    return json.loads(raw.decode('utf-8'))
 
 
 def official_source(provider):
