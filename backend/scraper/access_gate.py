@@ -22,6 +22,23 @@ def _same_endpoint_or_child(request_url, endpoint):
     return path == base or path.startswith(base.rstrip('/') + '/')
 
 
+def _matches_allowed_path(request_url, patterns):
+    """Match explicit path segments; ``{int}`` accepts one decimal segment."""
+    if not patterns:
+        return True
+    request_parts = [item for item in urlsplit(request_url).path.split('/') if item]
+    for pattern in patterns:
+        pattern_parts = [item for item in pattern.split('/') if item]
+        if len(request_parts) != len(pattern_parts):
+            continue
+        if all(
+            (expected == '{int}' and actual.isdecimal()) or expected == actual
+            for actual, expected in zip(request_parts, pattern_parts)
+        ):
+            return True
+    return False
+
+
 def approved_instruction(source, channel, request_url=None):
     """Return the current instruction, or ``None`` without performing I/O.
 
@@ -40,7 +57,8 @@ def approved_instruction(source, channel, request_url=None):
         source=source, channel=channel).order_by('-version'))
     if request_url:
         candidates = [item for item in candidates
-            if _same_endpoint_or_child(request_url, item.endpoint)]
+            if _same_endpoint_or_child(request_url, item.endpoint)
+            and _matches_allowed_path(request_url, item.allowed_path_patterns)]
         if candidates:
             specificity = max(len(urlsplit(item.endpoint).path.rstrip('/')) for item in candidates)
             candidates = [item for item in candidates

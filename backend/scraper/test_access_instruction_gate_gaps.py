@@ -201,3 +201,25 @@ def test_an_endpoint_specific_suspension_does_not_disable_another_api_endpoint()
 
     assert approved_instruction(source, 'api', 'https://example.org/api/votes/1') is not None
     assert approved_instruction(source, 'api', 'https://example.org/api/prints/1') is None
+
+
+@pytest.mark.django_db
+def test_access_card_can_allow_only_integer_voting_paths():
+    source = Source.objects.create(name='Sejm-like API', url='https://example.org',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api',
+        allowed_scope='content', endpoint='https://example.org/sejm/term10/votings',
+        allowed_path_patterns=[
+            '/sejm/term10/votings/{int}',
+            '/sejm/term10/votings/{int}/{int}',
+        ],
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() + __import__('datetime').timedelta(days=1),
+        minimum_interval_seconds=3,
+    )
+
+    assert approved_instruction(source, 'api', 'https://example.org/sejm/term10/votings/4')
+    assert approved_instruction(source, 'api', 'https://example.org/sejm/term10/votings/4/1')
+    assert approved_instruction(source, 'api', 'https://example.org/sejm/term10/votings/4/1/pdf') is None

@@ -152,6 +152,8 @@ class SourceAccessInstruction(models.Model):
     channel = models.CharField(max_length=16, choices=Channel.choices)
     allowed_scope = models.CharField(max_length=16, choices=Scope.choices, default=Scope.METADATA)
     endpoint = models.URLField(max_length=1024)
+    allowed_path_patterns = models.JSONField(default=list, blank=True,
+        help_text='Opcjonalne ścisłe wzorce ścieżek, np. /sejm/term10/votings/{int}.')
     terms_url = models.URLField(max_length=1024, blank=True)
     evidence = models.JSONField(default=dict, help_text='URL-e i krótkie fakty potwierdzające decyzję.')
     minimum_interval_seconds = models.PositiveIntegerField(default=3)
@@ -171,6 +173,9 @@ class SourceAccessInstruction(models.Model):
         errors = {}
         if self.minimum_interval_seconds < 3:
             errors['minimum_interval_seconds'] = 'Automatyczny dostęp wymaga odstępu co najmniej 3 sekund.'
+        if not isinstance(self.allowed_path_patterns, list) or any(
+                not isinstance(item, str) or not item.startswith('/') for item in self.allowed_path_patterns):
+            errors['allowed_path_patterns'] = 'Wzorce ścieżek muszą być listą ścieżek rozpoczynających się od /. '
         if self.status == self.Status.APPROVED:
             if not self.terms_url:
                 errors['terms_url'] = 'Zatwierdzona instrukcja wymaga linku do warunków lub licencji.'
