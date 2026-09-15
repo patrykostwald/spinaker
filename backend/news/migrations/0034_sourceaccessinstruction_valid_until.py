@@ -1,4 +1,5 @@
 from django.db import migrations, models
+from news.models import access_instruction_default_expiry
 
 
 class Migration(migrations.Migration):
@@ -8,6 +9,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='sourceaccessinstruction',
             name='valid_until',
-            field=models.DateTimeField(blank=True, null=True),
+            field=models.DateTimeField(blank=True, default=access_instruction_default_expiry, null=True),
         ),
     ]

@@ -31,6 +31,8 @@ access_statuses = {
     row['status']: row['n']
     for row in db.execute('select status, count(*) n from news_sourceaccessinstruction group by status')
 }
+access_columns = {row['name'] for row in db.execute("pragma table_info('news_sourceaccessinstruction')")}
+access_valid_clause = " and valid_until > datetime('now')" if 'valid_until' in access_columns else " and 0=1"
 recovery_statuses = {
     row['status']: row['n']
     for row in db.execute('select status, count(*) n from news_sourcerecoverycase group by status')
@@ -55,7 +57,7 @@ print(json.dumps({
     'completed_sources': one(
         "select count(distinct source_id) from news_archivejob where status in ('done','quarantined')"
     ),
-    'legal_archive_sources': one("select count(distinct source_id) from news_sourceaccessinstruction where status='approved' and channel='sitemap' and minimum_interval_seconds >= 3 and terms_url <> '' and reviewed_at is not null and reviewed_by <> '' and evidence <> '{}'"),
+    'legal_archive_sources': one("select count(distinct source_id) from news_sourceaccessinstruction where status='approved' and channel='sitemap' and minimum_interval_seconds >= 3 and terms_url <> '' and reviewed_at is not null and reviewed_by <> '' and evidence <> '{}'" + access_valid_clause),
     'access_instructions_approved': access_statuses.get('approved', 0),
     'access_instructions_draft': access_statuses.get('draft', 0),
     'recovery_open': sum(value for key, value in recovery_statuses.items() if key not in ('closed', 'retired')),

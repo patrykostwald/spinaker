@@ -222,7 +222,7 @@ site.register(EvidenceSnapshot, EvidenceSnapshotAdmin)
 
 class SourceAccessInstructionAdmin(admin.ModelAdmin):
     list_display = ('source', 'version', 'status', 'channel', 'allowed_scope',
-        'minimum_interval_seconds', 'reviewed_at', 'reviewed_by')
+        'minimum_interval_seconds', 'reviewed_at', 'valid_until', 'reviewed_by')
     list_filter = ('status', 'channel', 'allowed_scope')
     search_fields = ('source__name', 'endpoint', 'terms_url', 'reviewed_by')
     autocomplete_fields = ('source',)

@@ -157,7 +157,7 @@ class SourceAccessInstruction(models.Model):
     minimum_interval_seconds = models.PositiveIntegerField(default=3)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.CharField(max_length=120, blank=True)
-    valid_until = models.DateTimeField(default=access_instruction_default_expiry)
+    valid_until = models.DateTimeField(null=True, blank=True, default=access_instruction_default_expiry)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
