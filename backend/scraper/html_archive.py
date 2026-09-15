@@ -1,6 +1,5 @@
 """Explicit KPRM HTML archive links; listing dates never become publication dates."""
 import re
-import time
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from math import ceil
@@ -9,11 +8,12 @@ from urllib.parse import urljoin, urlsplit, parse_qs
 from uuid import uuid4
 from django.db import transaction
 from django.utils import timezone
-from news.models import Source, ImportState, ArchiveJob
+from news.models import Source, ImportState, ArchiveJob, SourceAccessInstruction
 from news.metadata import decode_source_html, extract_metadata
-from scraper.archive import robots, USER_AGENT, host_state, SourceDelay
+from scraper.archive import robots, USER_AGENT, SourceDelay
 from scraper.utils import retry_delay as bounded_retry_delay
-from scraper.utils import fetch_feed, safe_url
+from scraper.utils import fetch_feed, record_fetch_refusal, safe_url
+from scraper.access_gate import approved_instruction
 
 START_URL = 'https://www.gov.pl/web/premier/wydarzenia'
 VOID = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
@@ -152,23 +152,18 @@ def retry_delay(exc, failures):
     return bounded_retry_delay(exc, failures)
 
 
-def fetch_listing(url):
+def fetch_listing(source, url):
     listing_page(url)
-    gate = host_state('www.gov.pl')
-    if not gate['lock'].acquire(blocking=False): raise SourceDelay()
-    attempted, delay = False, 3
-    try:
-        if time.monotonic() < gate['next_allowed']: raise SourceDelay()
-        attempted = True
-        policy = robots(url)
-        if not policy.can_fetch(USER_AGENT,url): raise ValueError('robots_disallowed')
-        delay = max(3, policy.crawl_delay(USER_AGENT) or 0)
-        rate = policy.request_rate(USER_AGENT)
-        if rate and rate.requests: delay = max(delay,rate.seconds/rate.requests)
-        return fetch_feed(url)
-    finally:
-        if attempted: gate['next_allowed'] = time.monotonic()+delay
-        gate['lock'].release()
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.HTML, url)
+    if instruction is None:
+        raise ValueError('no_approved_instruction')
+    policy = robots(url, hostname_transport=True, audit_source=source, audit_instruction=instruction)
+    if not policy.can_fetch(USER_AGENT, url):
+        record_fetch_refusal(source=source, channel=instruction.channel,
+            requested_kind='page', url=url, outcome='blocked_robots', error_code='robots_disallowed', instruction=instruction)
+        raise ValueError('robots_disallowed')
+    return fetch_feed(url, hostname_transport=True, audit_source=source,
+        audit_instruction=instruction, requested_kind='page')
 
 
 def eligible(source):
@@ -198,7 +193,7 @@ def run_kprm_listing(source_id):
         state.cursor = cursor; state.last_started = now
         state.save(update_fields=['cursor','last_started'])
     try:
-        result = parse_listing(fetch_listing(url),url)
+        result = parse_listing(fetch_listing(source, url),url)
         with transaction.atomic():
             source = Source.objects.select_for_update().get(pk=source_id)
             state = ImportState.objects.select_for_update().get(pk=state.pk)

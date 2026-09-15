@@ -6,6 +6,7 @@ from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
+from unittest.mock import Mock
 from django.utils import timezone
 
 from news.models import Article, ArticleContent, ArchiveJob, ImportState, Source, SourceAccessInstruction
@@ -212,23 +213,22 @@ def test_bad_collection_does_not_advance(source, monkeypatch, rows, total, error
     assert not Article.objects.exists()
 
 
-def test_host_gate_defers_without_network(source, monkeypatch):
-    gate = SimpleNamespace(acquire=lambda **kwargs: False)
-    monkeypatch.setattr('scraper.wordpress_backfill.host_state', lambda hostname: {'lock': gate})
-    monkeypatch.setattr('scraper.wordpress_backfill.fetch_feed', lambda url: pytest.fail('network'))
-    with pytest.raises(SourceDelay):
-        fetch_collection(source.pk, ENDPOINT, collection_url(ENDPOINT))
+def test_collection_uses_audited_transport(source, monkeypatch):
+    monkeypatch.setattr('scraper.wordpress_backfill.robots',
+        lambda *args, **kwargs: SimpleNamespace(can_fetch=lambda *args: True))
+    fetch = Mock(return_value=envelope([], 0))
+    monkeypatch.setattr('scraper.wordpress_backfill.fetch_feed', fetch)
+    fetch_collection(source.pk, ENDPOINT, collection_url(ENDPOINT))
+    assert fetch.call_args.kwargs['audit_source'] == source
+    assert fetch.call_args.kwargs['audit_instruction'].channel == 'api'
+    assert fetch.call_args.kwargs['requested_kind'] == 'api_record'
 
 
 def test_robots_denial_prevents_api_fetch(source, monkeypatch):
-    from threading import Lock
-    gate = {'lock': Lock(), 'next_allowed': 0}
-    monkeypatch.setattr('scraper.wordpress_backfill.host_state', lambda hostname: gate)
-    monkeypatch.setattr('scraper.wordpress_backfill.robots', lambda url: SimpleNamespace(can_fetch=lambda *args: False))
-    monkeypatch.setattr('scraper.wordpress_backfill.fetch_feed', lambda url: pytest.fail('network'))
+    monkeypatch.setattr('scraper.wordpress_backfill.robots', lambda *args, **kwargs: SimpleNamespace(can_fetch=lambda *args: False))
+    monkeypatch.setattr('scraper.wordpress_backfill.fetch_feed', lambda *args, **kwargs: pytest.fail('network'))
     with pytest.raises(ValueError, match='robots_disallowed'):
         fetch_collection(source.pk, ENDPOINT, collection_url(ENDPOINT))
-    assert not gate['lock'].locked() and gate['next_allowed'] > 0
 
 
 def test_retry_after_envelope_is_preserved():

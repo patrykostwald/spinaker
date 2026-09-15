@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 from hashlib import sha256
 from html import unescape
 import json
-import time
 from urllib.parse import urlencode, urlsplit
 from uuid import uuid4
 
@@ -14,10 +13,10 @@ from django.utils.html import strip_tags
 
 from news.models import Article, ArticleContent, ArchiveJob, ImportState, Source, SourceAccessInstruction
 from news.signals import invalidate_search
-from scraper.archive import SourceDelay, USER_AGENT, host_state, robots
+from scraper.archive import SourceDelay, USER_AGENT, robots
 from scraper.html_archive import retry_delay
 from scraper.source_probe import public_link
-from scraper.utils import fetch_feed, upsert_article
+from scraper.utils import fetch_feed, record_fetch_refusal, upsert_article
 from scraper.access_gate import approved_instruction
 
 # Publisher-disclosed endpoints measured in wordpress-archive-volume-2026-09-09.json.
@@ -83,30 +82,23 @@ def collection_url(endpoint, *, offset=0, snapshot=False):
 
 
 def fetch_collection(source_id, endpoint, url):
-    """Use the same host gate and bounded, DNS-pinned public reader as archives."""
-    ensure_enabled(source_id, endpoint)
+    """Fetch one reviewed WordPress API collection through the audited transport."""
+    source = ensure_enabled(source_id, endpoint)
     if not url.startswith(endpoint + '?') or host(url) != host(endpoint):
         raise WordPressError('unverified_collection_url')
-    gate = host_state(urlsplit(endpoint).hostname)
-    if not gate['lock'].acquire(blocking=False):
-        raise SourceDelay()
-    attempted, delay = False, 3
-    try:
-        if time.monotonic() < gate['next_allowed']:
-            raise SourceDelay()
-        attempted = True
-        policy = robots(url)
-        if not policy.can_fetch(USER_AGENT, url):
-            raise WordPressError('robots_disallowed')
-        rate = policy.request_rate(USER_AGENT)
-        delay = max(3, policy.crawl_delay(USER_AGENT) or 0,
-            rate.seconds / rate.requests if rate and rate.requests else 0)
-        ensure_enabled(source_id, endpoint)
-        return fetch_feed(url)
-    finally:
-        if attempted:
-            gate['next_allowed'] = time.monotonic() + delay
-        gate['lock'].release()
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, url)
+    if instruction is None:
+        raise SourceDisabled('source_disabled')
+    policy = robots(url, hostname_transport=True, audit_source=source, audit_instruction=instruction)
+    if not policy.can_fetch(USER_AGENT, url):
+        record_fetch_refusal(source=source, channel=instruction.channel,
+            requested_kind='api_record', url=url,
+            outcome='blocked_robots', error_code='robots_disallowed', instruction=instruction)
+        raise WordPressError('robots_disallowed')
+    # fetch_feed owns the durable HostGate, pre-network reservation, response
+    # receipt and Retry-After pause.  Do not add a second in-memory gate here.
+    return fetch_feed(url, hostname_transport=True, audit_source=source,
+        audit_instruction=instruction, requested_kind='api_record')
 
 
 def decode_collection(raw):

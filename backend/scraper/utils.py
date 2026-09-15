@@ -152,10 +152,14 @@ def _fetch_fingerprint(url):
     return sha256(key + b'\0' + str(url).encode('utf-8')).hexdigest()
 
 
-def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error_code):
+def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error_code,
+                         instruction=None):
     """Record an access refusal without resolving or requesting the URL."""
+    fields = {}
+    if instruction is not None:
+        fields = {'instruction': instruction, 'instruction_version': instruction.version}
     return FetchAttempt.objects.create(
-        source=source, channel=channel, requested_kind=requested_kind,
+        source=source, channel=channel, requested_kind=requested_kind, **fields,
         url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
         adapter_revision='scraper.fetch_feed/v1', transport='pre_network_gate',
         request_user_agent='ContextBeforeContent/1.0 source reader',

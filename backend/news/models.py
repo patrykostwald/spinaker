@@ -243,6 +243,7 @@ class FetchAttempt(models.Model):
             self.Outcome.REFUSED_SUSPENDED,
             self.Outcome.REFUSED_SCOPE_MISMATCH,
             self.Outcome.RATE_LIMIT_PREEMPTIVE,
+            self.Outcome.BLOCKED_ROBOTS,
         }
         errors = {}
         if self.outcome in pre_network and self.network_started:

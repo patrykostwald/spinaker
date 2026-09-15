@@ -31,7 +31,8 @@ def test_listing_reads_publisher_links_without_inventing_dates():
 
 def test_resumes_and_only_enqueues_urls(source,monkeypatch):
     urls=[]
-    def fetch(url):
+    def fetch(*args):
+        url = args[-1]
         urls.append(url)
         return html() if len(urls)==1 else html(page=2,next_page=None,last_page=2,article='older-entry')
     monkeypatch.setattr('scraper.html_archive.fetch_listing',fetch)
@@ -49,24 +50,24 @@ def test_resumes_and_only_enqueues_urls(source,monkeypatch):
 
 def test_error_retries_same_page_and_preserves_existing_job(source,monkeypatch):
     existing=ArchiveJob.objects.create(source=source,url='https://www.gov.pl/web/premier/test-entry',status='error',attempts=5,last_error='preserve')
-    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda url:b'invalid')
+    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda *args:b'invalid')
     assert run_kprm_listing(source.pk)['status']=='error'
     assert run_kprm_listing(source.pk)['status']=='deferred'
     due(source)
-    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda url:html())
+    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda *args:html())
     assert run_kprm_listing(source.pk)['queued']==0
     existing.refresh_from_db();assert existing.attempts==5 and existing.status=='error'
 
 @pytest.mark.parametrize('field,value',[('is_active',False),('scrape_enabled',False),('catalog_stage','excluded')])
 def test_disabled_never_fetches(source,monkeypatch,field,value):
     setattr(source,field,value);source.save()
-    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda url:pytest.fail('network'))
+    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda *args:pytest.fail('network'))
     assert run_kprm_listing(source.pk)['status']=='disabled'
     assert not ImportState.objects.exists()
 
 
 def test_disabled_while_fetching_does_not_enqueue(source,monkeypatch):
-    def fetch(url):
+    def fetch(*args):
         Source.objects.filter(pk=source.pk).update(is_active=False)
         return html()
     monkeypatch.setattr('scraper.html_archive.fetch_listing',fetch)
@@ -75,7 +76,7 @@ def test_disabled_while_fetching_does_not_enqueue(source,monkeypatch):
 
 
 def test_host_delay_is_not_failure(source,monkeypatch):
-    def fetch(url): raise SourceDelay()
+    def fetch(*args): raise SourceDelay()
     monkeypatch.setattr('scraper.html_archive.fetch_listing',fetch)
     assert run_kprm_listing(source.pk)['status']=='deferred'
     state=ImportState.objects.get();assert state.cursor['failures']==0
@@ -101,7 +102,7 @@ def test_retry_after_is_honored():
 def test_completed_archive_checks_latest_hourly_without_reimporting_history(source,monkeypatch):
     from datetime import timedelta
     from django.utils import timezone
-    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda url:html())
+    monkeypatch.setattr('scraper.html_archive.fetch_listing',lambda *args:html())
     run_kprm_listing(source.pk)
     state=ImportState.objects.get()
     state.cursor={'complete':True,'pages_completed':296}
