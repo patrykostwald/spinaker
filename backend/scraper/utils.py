@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from hashlib import sha256
 from email.utils import parsedate_to_datetime
 import ipaddress, logging, os, random, socket, re
+from uuid import uuid4
 import requests
 from dateutil.parser import parse as parse_date
 from django.core.cache import cache
@@ -163,9 +164,9 @@ def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error
 
 def _record_transport_attempt(*, source, instruction, requested_kind, url, outcome,
                               http_status=None, bytes_received=0, response_sha256='', error_code='',
-                              hostname_transport=False, network_started=True):
+                              hostname_transport=False, network_started=True, request_id=None):
     return FetchAttempt.objects.create(
-        source=source, instruction=instruction, instruction_version=instruction.version,
+        source=source, request_id=request_id or uuid4(), instruction=instruction, instruction_version=instruction.version,
         channel=instruction.channel, requested_kind=requested_kind,
         url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
         adapter_revision='scraper.fetch_feed/v1',
@@ -185,6 +186,7 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
     if audit_source is not None and requested_kind is None:
         raise ValueError('Fetch audit requires a requested kind.')
     gateway = worker_id = host = None
+    request_id = uuid4()
     if audit_source is not None:
         from scraper.host_gateway import HostGateway
         host = (urlparse(url).hostname or '').lower()
@@ -197,9 +199,15 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 requested_kind=requested_kind, url=url,
                 outcome=FetchAttempt.Outcome.RATE_LIMIT_PREEMPTIVE,
                 error_code=f'host_rate_limited:{reservation.retry_after_seconds:.3f}',
-                hostname_transport=hostname_transport, network_started=False)
+                hostname_transport=hostname_transport, network_started=False, request_id=request_id)
             raise HostRateLimited(reservation.retry_after_seconds)
     try:
+        # Persisting this reservation is the last step before transport. If it
+        # fails, the raw response can never enter memory or downstream storage.
+        if audit_source is not None:
+            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.RESERVED,
+                hostname_transport=hostname_transport, network_started=False, request_id=request_id)
         try:
             raw = _fetch_feed_raw(url, hostname_transport=hostname_transport)
         except Exception as exc:
@@ -210,7 +218,8 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 code = f'http_{status}' if status else type(exc).__name__.lower()[:64]
                 _record_transport_attempt(source=audit_source, instruction=audit_instruction,
                     requested_kind=requested_kind, url=url, outcome=outcome,
-                    http_status=status, error_code=code, hostname_transport=hostname_transport)
+                    http_status=status, error_code=code, hostname_transport=hostname_transport,
+                    request_id=request_id)
                 if status == 429:
                     value = response.headers.get('Retry-After', '') if response is not None else ''
                     gateway.extend_on_429(host, worker_id, int(value) if str(value).isdigit() else 60)
@@ -220,7 +229,7 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
             receipt = _record_transport_attempt(source=audit_source, instruction=audit_instruction,
                 requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.OK,
                 http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest(),
-                hostname_transport=hostname_transport)
+                hostname_transport=hostname_transport, request_id=request_id)
         return (raw, receipt) if return_receipt else raw
     finally:
         if gateway is not None:

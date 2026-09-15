@@ -121,13 +121,16 @@ def test_audited_feed_transport_records_success(monkeypatch):
         requested_kind=FetchAttempt.RequestedKind.FEED,
     ) == b'<rss/>'
 
-    attempt = FetchAttempt.objects.get()
+    attempt = FetchAttempt.objects.get(outcome=FetchAttempt.Outcome.OK)
     assert attempt.outcome == FetchAttempt.Outcome.OK
     assert attempt.network_started is True
     assert attempt.bytes_received == len(b'<rss/>')
     assert attempt.adapter_revision == 'scraper.fetch_feed/v1'
     assert attempt.request_user_agent == 'ContextBeforeContent/1.0 source reader'
     assert attempt.decision_basis == 'test'
+    receipts = list(FetchAttempt.objects.order_by('id'))
+    assert [item.outcome for item in receipts] == [FetchAttempt.Outcome.RESERVED, FetchAttempt.Outcome.OK]
+    assert receipts[0].request_id == receipts[1].request_id
 
 
 @pytest.mark.django_db
@@ -151,7 +154,7 @@ def test_official_api_uses_audited_transport(monkeypatch):
     monkeypatch.setattr('scraper.utils._fetch_feed_raw', lambda *args, **kwargs: b'{"ok": true}')
 
     assert fetch_json('/sejm/term10/votings', offset=0) == {'ok': True}
-    attempt = FetchAttempt.objects.get()
+    attempt = FetchAttempt.objects.get(outcome=FetchAttempt.Outcome.OK)
     assert attempt.channel == SourceAccessInstruction.Channel.API
     assert attempt.requested_kind == FetchAttempt.RequestedKind.API_RECORD
 

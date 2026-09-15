@@ -187,6 +187,7 @@ class SourceAccessInstruction(models.Model):
 class FetchAttempt(models.Model):
     """Append-only receipt for a blocked or executed source fetch."""
     class Outcome(models.TextChoices):
+        RESERVED = 'reserved', 'Audyt zapisany przed siecią'
         REFUSED_NO_INSTRUCTION = 'refused_no_instruction', 'Brak instrukcji'
         REFUSED_EXPIRED = 'refused_expired', 'Instrukcja wygasła'
         REFUSED_SUSPENDED = 'refused_suspended', 'Instrukcja wstrzymana'
@@ -207,6 +208,7 @@ class FetchAttempt(models.Model):
         PROBE = 'probe', 'Próba audytowa'
 
     source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name='fetch_attempts')
+    request_id = models.UUIDField(default=uuid4, editable=False, db_index=True)
     instruction = models.ForeignKey(SourceAccessInstruction, on_delete=models.PROTECT,
         related_name='fetch_attempts', null=True, blank=True)
     instruction_version = models.PositiveIntegerField(null=True, blank=True)
@@ -233,7 +235,8 @@ class FetchAttempt(models.Model):
 
     def clean(self):
         super().clean()
-        refused = {
+        pre_network = {
+            self.Outcome.RESERVED,
             self.Outcome.REFUSED_NO_INSTRUCTION,
             self.Outcome.REFUSED_EXPIRED,
             self.Outcome.REFUSED_SUSPENDED,
@@ -241,9 +244,9 @@ class FetchAttempt(models.Model):
             self.Outcome.RATE_LIMIT_PREEMPTIVE,
         }
         errors = {}
-        if self.outcome in refused and self.network_started:
+        if self.outcome in pre_network and self.network_started:
             errors['network_started'] = 'Odmowa przed siecią nie może oznaczać rozpoczęcia sieci.'
-        if self.outcome not in refused and not self.network_started:
+        if self.outcome not in pre_network and not self.network_started:
             errors['network_started'] = 'Wynik transportu wymaga rozpoczęcia sieci.'
         if self.outcome == self.Outcome.REFUSED_NO_INSTRUCTION:
             if self.instruction_id or self.instruction_version is not None:
