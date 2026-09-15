@@ -191,6 +191,7 @@ class FetchAttempt(models.Model):
         REFUSED_EXPIRED = 'refused_expired', 'Instrukcja wygasła'
         REFUSED_SUSPENDED = 'refused_suspended', 'Instrukcja wstrzymana'
         REFUSED_SCOPE_MISMATCH = 'refused_scope_mismatch', 'Poza zakresem instrukcji'
+        RATE_LIMIT_PREEMPTIVE = 'rate_limit_preemptive', 'Limit hosta przed siecią'
         BLOCKED_ROBOTS = 'blocked_robots', 'Zablokowane przez robots'
         OK = 'ok', 'Sukces'
         HTTP_ERROR = 'http_error', 'Błąd HTTP'
@@ -237,6 +238,7 @@ class FetchAttempt(models.Model):
             self.Outcome.REFUSED_EXPIRED,
             self.Outcome.REFUSED_SUSPENDED,
             self.Outcome.REFUSED_SCOPE_MISMATCH,
+            self.Outcome.RATE_LIMIT_PREEMPTIVE,
         }
         errors = {}
         if self.outcome in refused and self.network_started:

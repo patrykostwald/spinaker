@@ -3,7 +3,7 @@ from functools import wraps
 from urllib.parse import urlparse
 from hashlib import sha256
 from email.utils import parsedate_to_datetime
-import ipaddress, logging, random, socket, re
+import ipaddress, logging, os, random, socket, re
 import requests
 from dateutil.parser import parse as parse_date
 from django.core.cache import cache
@@ -16,6 +16,14 @@ from news.models import Article, ArticleCategory, FetchAttempt, Source, SourceTy
 from news.classification import publisher_category, normalize_publisher_tags
 
 log = logging.getLogger('scraper')
+
+
+class HostRateLimited(Exception):
+    """The durable host gate declined this request before network I/O."""
+
+    def __init__(self, retry_after_seconds):
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__(f'host_rate_limited:{retry_after_seconds:.3f}')
 
 def safe_url(url):
     value = str(url or '').strip()
@@ -155,7 +163,7 @@ def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error
 
 def _record_transport_attempt(*, source, instruction, requested_kind, url, outcome,
                               http_status=None, bytes_received=0, response_sha256='', error_code='',
-                              hostname_transport=False):
+                              hostname_transport=False, network_started=True):
     return FetchAttempt.objects.create(
         source=source, instruction=instruction, instruction_version=instruction.version,
         channel=instruction.channel, requested_kind=requested_kind,
@@ -165,7 +173,7 @@ def _record_transport_attempt(*, source, instruction, requested_kind, url, outco
         if urlparse(url).scheme == 'https' else 'pinned_ip_http',
         request_user_agent='ContextBeforeContent/1.0 source reader',
         decision_basis=str(instruction.evidence.get('basis') or instruction.terms_url)[:500],
-        outcome=outcome, network_started=True, http_status=http_status,
+        outcome=outcome, network_started=network_started, http_status=http_status,
         bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code)
 
 
@@ -176,6 +184,20 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
         raise ValueError('Fetch audit requires both source and instruction.')
     if audit_source is not None and requested_kind is None:
         raise ValueError('Fetch audit requires a requested kind.')
+    gateway = worker_id = None
+    if audit_source is not None:
+        from scraper.host_gateway import HostGateway
+        host = (urlparse(url).hostname or '').lower()
+        worker_id = f'fetch:{os.getpid()}:{id(audit_source)}'
+        gateway = HostGateway(minimum_interval_seconds=audit_instruction.minimum_interval_seconds)
+        reservation = gateway.acquire(host, worker_id)
+        if not reservation.granted:
+            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                requested_kind=requested_kind, url=url,
+                outcome=FetchAttempt.Outcome.RATE_LIMIT_PREEMPTIVE,
+                error_code=f'host_rate_limited:{reservation.retry_after_seconds:.3f}',
+                hostname_transport=hostname_transport, network_started=False)
+            raise HostRateLimited(reservation.retry_after_seconds)
     try:
         raw = _fetch_feed_raw(url, hostname_transport=hostname_transport)
     except Exception as exc:
@@ -187,6 +209,10 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
             _record_transport_attempt(source=audit_source, instruction=audit_instruction,
                 requested_kind=requested_kind, url=url, outcome=outcome,
                 http_status=status, error_code=code, hostname_transport=hostname_transport)
+            if status == 429 and gateway is not None:
+                value = response.headers.get('Retry-After', '') if response is not None else ''
+                gateway.extend_on_429((urlparse(url).hostname or '').lower(), worker_id,
+                    int(value) if str(value).isdigit() else 60)
         raise
     receipt = None
     if audit_source is not None:

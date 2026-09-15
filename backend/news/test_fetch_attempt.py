@@ -186,3 +186,22 @@ def test_imported_voting_keeps_the_exact_fetch_receipt(monkeypatch):
     record = OfficialRecord.objects.get(provider='sejm', external_id='vote/10/1/2')
     assert record.fetch_attempt_id
     assert record.fetch_attempt.outcome == FetchAttempt.Outcome.OK
+
+
+@pytest.mark.django_db
+def test_host_gate_refuses_the_second_audited_request_before_transport(monkeypatch):
+    from scraper.utils import HostRateLimited, fetch_feed
+
+    source = Source.objects.create(name='Example', url='https://example.org')
+    instruction = approved_instruction(source)
+    calls = []
+    monkeypatch.setattr('scraper.utils._fetch_feed_raw', lambda *args, **kwargs: calls.append(1) or b'<rss/>')
+
+    fetch_feed(instruction.endpoint, audit_source=source, audit_instruction=instruction,
+        requested_kind=FetchAttempt.RequestedKind.FEED)
+    with pytest.raises(HostRateLimited):
+        fetch_feed(instruction.endpoint, audit_source=source, audit_instruction=instruction,
+            requested_kind=FetchAttempt.RequestedKind.FEED)
+
+    assert len(calls) == 1
+    assert FetchAttempt.objects.filter(outcome=FetchAttempt.Outcome.RATE_LIMIT_PREEMPTIVE).count() == 1
