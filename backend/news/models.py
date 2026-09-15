@@ -188,6 +188,7 @@ class FetchAttempt(models.Model):
     """Append-only receipt for a blocked or executed source fetch."""
     class Outcome(models.TextChoices):
         RESERVED = 'reserved', 'Audyt zapisany przed siecią'
+        ABANDONED = 'abandoned', 'Nieukończona próba'
         REFUSED_NO_INSTRUCTION = 'refused_no_instruction', 'Brak instrukcji'
         REFUSED_EXPIRED = 'refused_expired', 'Instrukcja wygasła'
         REFUSED_SUSPENDED = 'refused_suspended', 'Instrukcja wstrzymana'
@@ -273,6 +274,24 @@ class FetchAttempt(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError('FetchAttempt jest append-only i nie może być usuwany pojedynczo.')
+
+
+class FetchRequest(models.Model):
+    """Mutable control record paired with immutable FetchAttempt events."""
+    class State(models.TextChoices):
+        RESERVED = 'reserved', 'Zarezerwowana'
+        CLOSED = 'closed', 'Zamknięta'
+        ABANDONED = 'abandoned', 'Nieukończona'
+
+    request_id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name='fetch_requests')
+    instruction = models.ForeignKey(SourceAccessInstruction, on_delete=models.PROTECT,
+        related_name='fetch_requests')
+    url_host = models.CharField(max_length=255, db_index=True)
+    url_fingerprint = models.CharField(max_length=64, db_index=True)
+    state = models.CharField(max_length=16, choices=State.choices, default=State.RESERVED, db_index=True)
+    reserved_at = models.DateTimeField(default=timezone.now, db_index=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
 
 
 class HostGate(models.Model):

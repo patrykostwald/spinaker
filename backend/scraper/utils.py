@@ -13,7 +13,7 @@ from django.db import transaction, IntegrityError
 from django.db.models import F
 from django.utils import timezone
 from django.utils.html import strip_tags
-from news.models import Article, ArticleCategory, FetchAttempt, Source, SourceType
+from news.models import Article, ArticleCategory, FetchAttempt, FetchRequest, Source, SourceType
 from news.classification import publisher_category, normalize_publisher_tags
 
 log = logging.getLogger('scraper')
@@ -164,11 +164,12 @@ def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error
 
 def _record_transport_attempt(*, source, instruction, requested_kind, url, outcome,
                               http_status=None, bytes_received=0, response_sha256='', error_code='',
-                              hostname_transport=False, network_started=True, request_id=None):
+                              hostname_transport=False, network_started=True, request_id=None,
+                              url_fingerprint_override=None):
     return FetchAttempt.objects.create(
         source=source, request_id=request_id or uuid4(), instruction=instruction, instruction_version=instruction.version,
         channel=instruction.channel, requested_kind=requested_kind,
-        url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
+        url_fingerprint=url_fingerprint_override or _fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
         adapter_revision='scraper.fetch_feed/v1',
         transport=('hostname_https' if hostname_transport else 'pinned_ip_https')
         if urlparse(url).scheme == 'https' else 'pinned_ip_http',
@@ -176,6 +177,35 @@ def _record_transport_attempt(*, source, instruction, requested_kind, url, outco
         decision_basis=str(instruction.evidence.get('basis') or instruction.terms_url)[:500],
         outcome=outcome, network_started=network_started, http_status=http_status,
         bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code)
+
+
+def _reserve_fetch_request(*, source, instruction, requested_kind, url, hostname_transport, request_id):
+    """Atomically persist the control record and immutable pre-network event."""
+    with transaction.atomic():
+        FetchRequest.objects.create(request_id=request_id, source=source, instruction=instruction,
+            url_host=(urlparse(url).hostname or '').lower(), url_fingerprint=_fetch_fingerprint(url))
+        _record_transport_attempt(source=source, instruction=instruction,
+            requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.RESERVED,
+            hostname_transport=hostname_transport, network_started=False, request_id=request_id)
+
+
+def _close_fetch_request(*, request_id, source, instruction, requested_kind, url, outcome,
+                         hostname_transport, http_status=None, bytes_received=0,
+                         response_sha256='', error_code=''):
+    """Append a terminal event only while its mutable control record is open."""
+    with transaction.atomic():
+        request = FetchRequest.objects.select_for_update().get(request_id=request_id)
+        if request.state != FetchRequest.State.RESERVED:
+            raise RuntimeError('Fetch audit request is no longer open')
+        receipt = _record_transport_attempt(source=source, instruction=instruction,
+            requested_kind=requested_kind, url=url, outcome=outcome,
+            http_status=http_status, bytes_received=bytes_received,
+            response_sha256=response_sha256, error_code=error_code,
+            hostname_transport=hostname_transport, request_id=request_id)
+        request.state = FetchRequest.State.CLOSED
+        request.closed_at = timezone.now()
+        request.save(update_fields=['state', 'closed_at'])
+        return receipt
 
 
 def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instruction=None,
@@ -205,9 +235,9 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
         # Persisting this reservation is the last step before transport. If it
         # fails, the raw response can never enter memory or downstream storage.
         if audit_source is not None:
-            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
-                requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.RESERVED,
-                hostname_transport=hostname_transport, network_started=False, request_id=request_id)
+            _reserve_fetch_request(source=audit_source, instruction=audit_instruction,
+                requested_kind=requested_kind, url=url, hostname_transport=hostname_transport,
+                request_id=request_id)
         try:
             raw = _fetch_feed_raw(url, hostname_transport=hostname_transport)
         except Exception as exc:
@@ -216,20 +246,20 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 status = getattr(response, 'status_code', None)
                 outcome = FetchAttempt.Outcome.HTTP_ERROR if status else FetchAttempt.Outcome.NETWORK_ERROR
                 code = f'http_{status}' if status else type(exc).__name__.lower()[:64]
-                _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                _close_fetch_request(request_id=request_id, source=audit_source, instruction=audit_instruction,
                     requested_kind=requested_kind, url=url, outcome=outcome,
                     http_status=status, error_code=code, hostname_transport=hostname_transport,
-                    request_id=request_id)
+                    )
                 if status == 429:
                     value = response.headers.get('Retry-After', '') if response is not None else ''
                     gateway.extend_on_429(host, worker_id, int(value) if str(value).isdigit() else 60)
             raise
         receipt = None
         if audit_source is not None:
-            receipt = _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+            receipt = _close_fetch_request(request_id=request_id, source=audit_source, instruction=audit_instruction,
                 requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.OK,
                 http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest(),
-                hostname_transport=hostname_transport, request_id=request_id)
+                hostname_transport=hostname_transport)
         return (raw, receipt) if return_receipt else raw
     finally:
         if gateway is not None:

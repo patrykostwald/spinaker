@@ -131,6 +131,8 @@ def test_audited_feed_transport_records_success(monkeypatch):
     receipts = list(FetchAttempt.objects.order_by('id'))
     assert [item.outcome for item in receipts] == [FetchAttempt.Outcome.RESERVED, FetchAttempt.Outcome.OK]
     assert receipts[0].request_id == receipts[1].request_id
+    from news.models import FetchRequest
+    assert FetchRequest.objects.get(request_id=attempt.request_id).state == FetchRequest.State.CLOSED
 
 
 @pytest.mark.django_db
