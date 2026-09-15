@@ -29,12 +29,18 @@ class Command(BaseCommand):
         parser.add_argument('--apply', action='store_true',
             help='Zapisuje karty; bez flagi pokazuje jedynie plan.')
         parser.add_argument('--valid-days', type=int, default=30)
+        parser.add_argument('--evidence-url',
+            help='Konkretny publiczny dokument lub regulamin sprawdzony dla tego dostępu.')
+        parser.add_argument('--reviewed-by',
+            help='Imię/nazwa osoby, która ręcznie sprawdziła zakres i dokument.')
 
     def handle(self, *args, **options):
         valid_days = options['valid_days']
         if not 1 <= valid_days <= 365:
             raise ValueError('valid-days musi być w zakresie 1–365.')
         now = timezone.now()
+        if options['apply'] and (not options['evidence_url'] or not options['reviewed_by']):
+            raise ValueError('--apply wymaga --evidence-url i --reviewed-by; komenda nie może sama tworzyć podstawy dostępu.')
         for provider, endpoint, terms_url, note in OFFICIAL_APIS:
             source = official_source(provider)
             latest = SourceAccessInstruction.objects.filter(
@@ -61,14 +67,14 @@ class Command(BaseCommand):
                 endpoint=endpoint,
                 terms_url=terms_url,
                 evidence={
-                    'documentation_url': terms_url,
+                    'documentation_url': options['evidence_url'],
                     'basis': note,
                     'review_method': 'public-official-api-documentation',
                     'reviewed_on': now.date().isoformat(),
                 },
                 minimum_interval_seconds=3,
                 reviewed_at=now,
-                reviewed_by='spin.clinic documented-source review',
+                reviewed_by=options['reviewed_by'],
                 valid_until=now + timedelta(days=valid_days),
             )
             self.stdout.write(self.style.SUCCESS('ZAPISANO ' + message))

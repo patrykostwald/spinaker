@@ -18,7 +18,8 @@ def test_command_only_plans_without_apply():
 
 @pytest.mark.django_db
 def test_command_creates_one_current_official_voting_card():
-    call_command('approve_official_api_sources', '--apply', stdout=StringIO())
+    call_command('approve_official_api_sources', '--apply',
+        '--evidence-url=https://api.sejm.gov.pl/sejm.html', '--reviewed-by=Test redakcyjny', stdout=StringIO())
 
     cards = SourceAccessInstruction.objects.filter(channel='api').order_by('endpoint')
     assert cards.count() == 1
@@ -35,6 +36,13 @@ def test_command_never_overrides_a_newer_suspension():
         endpoint='https://api.sejm.gov.pl/sejm/term10/votings', evidence={'reason': 'test'},
     )
 
-    call_command('approve_official_api_sources', '--apply', stdout=StringIO())
+    call_command('approve_official_api_sources', '--apply',
+        '--evidence-url=https://api.sejm.gov.pl/sejm.html', '--reviewed-by=Test redakcyjny', stdout=StringIO())
 
     assert SourceAccessInstruction.objects.filter(source=source).count() == 1
+
+
+@pytest.mark.django_db
+def test_apply_refuses_to_invent_review_evidence():
+    with pytest.raises(ValueError, match='evidence-url'):
+        call_command('approve_official_api_sources', '--apply', stdout=StringIO())
