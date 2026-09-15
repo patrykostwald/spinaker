@@ -2,8 +2,9 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 from types import SimpleNamespace
 
 import pytest
+from django.utils import timezone
 
-from news.models import Article, ArticleContent, ImportState, OfficialRecord, Source
+from news.models import Article, ArticleContent, ImportState, OfficialRecord, Source, SourceAccessInstruction
 from scraper.uokik_sudop import API, STATE_NAME, sudop_pilot_cycle
 
 
@@ -33,8 +34,16 @@ class Session:
 @pytest.fixture
 def source(db, monkeypatch):
     monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
-    return Source.objects.create(name="UOKiK — SUDOP", url=API,
+    source = Source.objects.create(name="UOKiK — SUDOP", url=API,
         is_active=True, scrape_enabled=True, catalog_stage="configured")
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.API,
+        endpoint=API + "/api", allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        terms_url=API, evidence={"test": True}, reviewed_at=timezone.now(),
+        reviewed_by="Test redakcyjny", valid_until=timezone.now() + timedelta(days=1),
+        minimum_interval_seconds=3)
+    return source
 
 
 def run_due(session):
@@ -62,6 +71,15 @@ def test_disabled_does_not_create_state_or_call_network(db, monkeypatch):
     Source.objects.create(name="SUDOP", url=API, catalog_stage="configured")
     monkeypatch.delenv("UOKIK_SUDOP_PILOT_ENABLED", raising=False)
     session = Session()
+    assert sudop_pilot_cycle(session=session, now=NOW)["status"] == "disabled"
+    assert not session.calls and not ImportState.objects.exists()
+
+
+def test_enabled_flag_without_access_card_still_cannot_call_network(db, monkeypatch):
+    monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
+    Source.objects.create(name="SUDOP", url=API, is_active=True, scrape_enabled=True)
+    session = Session()
+
     assert sudop_pilot_cycle(session=session, now=NOW)["status"] == "disabled"
     assert not session.calls and not ImportState.objects.exists()
 

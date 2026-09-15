@@ -19,7 +19,8 @@ from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
-from news.models import Article, ArticleCategory, ImportState, Source
+from news.models import Article, ArticleCategory, ImportState, Source, SourceAccessInstruction
+from scraper.access_gate import approved_instruction
 from scraper.utils import upsert_article
 
 
@@ -41,7 +42,8 @@ ATTRIBUTION = (
 def _enabled(source: Source | None) -> bool:
     flag = os.getenv("UOKIK_SUDOP_PILOT_ENABLED", "").strip().lower()
     return bool(source and flag in {"1", "true", "yes"} and source.is_active
-                and source.scrape_enabled and source.catalog_stage == "configured")
+                and source.scrape_enabled and source.catalog_stage == "configured"
+                and approved_instruction(source, SourceAccessInstruction.Channel.API, API + "/api"))
 
 
 def _retry_seconds(response, now):
