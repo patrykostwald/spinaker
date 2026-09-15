@@ -13,7 +13,8 @@ def reset_archive_cache(monkeypatch):
     from scraper.archive import _HOST_STATES
     _HOST_STATES.clear()
 from rest_framework.test import APIClient
-from news.models import Article, ArchiveJob, Source, ArticleContent, SourceAccessInstruction
+from news.models import (Article, ArchiveJob, EvidenceSnapshot, FetchAttempt,
+    Source, ArticleContent, SourceAccessInstruction)
 from scraper.archive import process, run_batch, article_body, SourceDelay
 
 
@@ -24,7 +25,8 @@ def approve_access(source, channel, endpoint=None, scope='metadata'):
         source=source, version=version, status='approved', channel=channel,
         allowed_scope=scope, endpoint=endpoint or source.url,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3,
+        daily_request_cap=24)
 
 
 @pytest.mark.django_db
@@ -163,6 +165,35 @@ def test_metadata_scope_never_stores_article_body_even_when_full_text_mode_is_on
     monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /' if url.endswith('robots.txt') else raw)
     process(job, allowed_scope='metadata')
     assert Article.objects.get().content.text == ''
+
+
+@pytest.mark.django_db
+def test_snapshot_scope_preserves_raw_html_privately_after_a_successful_fetch(monkeypatch, settings, tmp_path):
+    settings.EVIDENCE_SNAPSHOT_ENABLED = True
+    settings.EVIDENCE_SNAPSHOT_STORAGE_ROOT = str(tmp_path / 'private-snapshots')
+    source = Source.objects.create(name='Snapshot publisher', url='https://example.org')
+    card = approve_access(source, 'html', scope='snapshot')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/snapshot-story', kind='page')
+    html = b'<title>Snapshot title</title><meta property="og:type" content="article">'
+    receipt = FetchAttempt.objects.create(
+        source=source, instruction=card, instruction_version=card.version,
+        channel='html', requested_kind='page', url_fingerprint='a' * 64,
+        url_host='example.org', outcome='ok', network_started=True, http_status=200,
+    )
+
+    def fetch(url, **kwargs):
+        if url.endswith('robots.txt'):
+            return b'User-agent: *\nAllow: /'
+        return (html, receipt) if kwargs.get('return_receipt') else html
+
+    monkeypatch.setattr('scraper.archive.fetch_feed', fetch)
+    process(job, allowed_scope='snapshot')
+
+    snapshot = EvidenceSnapshot.objects.get()
+    assert snapshot.article == Article.objects.get()
+    assert snapshot.fetch_attempt == receipt
+    assert snapshot.allowed_uses == []
+    assert snapshot.consent_status == 'allowed'
 
 
 @pytest.mark.django_db

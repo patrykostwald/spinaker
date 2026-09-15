@@ -12,6 +12,7 @@ from urllib.robotparser import RobotFileParser
 from xml.etree import ElementTree
 import requests
 from django.core.cache import cache
+from django.conf import settings
 from django.db import transaction, close_old_connections, connections
 from django.db.models import Q, Count, Max, F
 from django.utils import timezone
@@ -249,8 +250,17 @@ def process(job, cutoff_at=None, allowed_scope=None):
                 delay = max(delay, request_rate.seconds / request_rate.requests)
             requested_kind = (FetchAttempt.RequestedKind.SITEMAP if job_kind == 'sitemap'
                 else FetchAttempt.RequestedKind.PAGE)
-            raw = fetch_feed(job.url, hostname_transport=hostname_transport,
-                requested_kind=requested_kind, **audit_kwargs)
+            capture_snapshot = bool(
+                allowed_scope == SourceAccessInstruction.Scope.SNAPSHOT
+                and settings.EVIDENCE_SNAPSHOT_ENABLED
+            )
+            fetched = fetch_feed(job.url, hostname_transport=hostname_transport,
+                requested_kind=requested_kind, return_receipt=capture_snapshot,
+                **audit_kwargs)
+            if capture_snapshot:
+                raw, snapshot_fetch_attempt = fetched
+            else:
+                raw, snapshot_fetch_attempt = fetched, None
             _clear_host_failures(state)
         except HostRateLimited as exc:
             # The durable gateway stopped this job before a page request went
@@ -361,6 +371,19 @@ def process(job, cutoff_at=None, allowed_scope=None):
         'status': 'extracted_text' if body else 'metadata_only',
         'method': 'publisher_jsonld_url_matched_v2' if body else 'metadata_only_by_policy',
         'response_sha256': sha256(raw).hexdigest(), 'source_url': job.url})
+    if snapshot_fetch_attempt is not None:
+        from news.evidence_snapshot import (
+            SnapshotArtifactType, SnapshotConsentStatus, SnapshotRetentionPolicy,
+            capture_snapshot,
+        )
+        capture_snapshot(
+            article, fetch_attempt=snapshot_fetch_attempt, source_url=job.url,
+            content=raw, artifact_type=SnapshotArtifactType.HTML,
+            parser_version='archive.raw_html/v1',
+            consent_status=SnapshotConsentStatus.ALLOWED,
+            retention_policy=SnapshotRetentionPolicy.EVIDENCE_HOLD,
+            allowed_uses=[],
+        )
     return int(created)
 
 def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_callback=None,
