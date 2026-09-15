@@ -15,7 +15,7 @@ from django.core.cache import cache
 from django.db import transaction, close_old_connections, connections
 from django.db.models import Q, Count, Max, F
 from django.utils import timezone
-from news.models import ArchiveJob, Article, ArticleContent, Source, ImportState, SourceRecoveryCase, SourceAccessInstruction
+from news.models import ArchiveJob, Article, ArticleContent, FetchAttempt, Source, ImportState, SourceRecoveryCase, SourceAccessInstruction
 from news.metadata import extract_metadata, MetadataParser, decode_source_html
 from scraper.utils import fetch_feed, upsert_article, safe_url
 from scraper.utils import retry_delay
@@ -92,7 +92,7 @@ def archive_child_allowed(source, url):
     patterns = row.get('archive_sitemap_child_patterns') or []
     return not patterns or any(re.search(pattern, url) for pattern in patterns)
 
-def robots(url, *, hostname_transport=False):
+def robots(url, *, hostname_transport=False, audit_source=None, audit_instruction=None):
     parsed = urlsplit(url)
     address = f'{parsed.scheme}://{parsed.netloc}/robots.txt'
     key = 'archive-robots:' + sha256(address.encode()).hexdigest()
@@ -100,7 +100,9 @@ def robots(url, *, hostname_transport=False):
     if raw is not None:
         policy = RobotFileParser(); policy.parse(raw.splitlines()); return policy
     try:
-        raw = fetch_feed(address, hostname_transport=hostname_transport).decode('utf-8', errors='replace')
+        raw = fetch_feed(address, hostname_transport=hostname_transport,
+            audit_source=audit_source, audit_instruction=audit_instruction,
+            requested_kind=FetchAttempt.RequestedKind.ROBOTS).decode('utf-8', errors='replace')
     except Exception as exc:
         response = getattr(exc, 'response', None)
         if response is not None and response.status_code in (404, 410):
@@ -120,10 +122,12 @@ def discover(source):
         return 0
     # Discovery performs a real robots request.  It therefore needs a
     # reviewed sitemap instruction whose endpoint covers the source root.
-    if approved_instruction(source, SourceAccessInstruction.Channel.SITEMAP,
-            source.url) is None:
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.SITEMAP,
+        source.url)
+    if instruction is None:
         return 0
-    policy = robots(source.url, hostname_transport=True)
+    policy = robots(source.url, hostname_transport=True, audit_source=source,
+        audit_instruction=instruction)
     count = 0
     for url in dict.fromkeys((policy.site_maps() or []) + verified_maps(source)):
         if safe_url(url) and same_host(url, source.url) and len(url) <= 1024:
@@ -194,6 +198,7 @@ def article_body(raw, url=None):
 def process(job, cutoff_at=None, allowed_scope=None):
     from scraper.directory_archive import directory_spec, directory_links
     job_kind = getattr(job, 'kind', None)
+    source = instruction = None
     # The network boundary enforces access again.  A scheduler may narrow the
     # job pool, but it must never be the sole permission check.
     if job_kind in ('sitemap', 'page'):
@@ -229,14 +234,20 @@ def process(job, cutoff_at=None, allowed_scope=None):
             # source gate. They may use normal hostname transport for CDNs;
             # direct/internal callers retain pinned-IP transport.
             hostname_transport = allowed_scope is not None
-            policy = robots(job.url, hostname_transport=hostname_transport)
+            audit_kwargs = {}
+            if source is not None:
+                audit_kwargs = {'audit_source': source, 'audit_instruction': instruction}
+            policy = robots(job.url, hostname_transport=hostname_transport, **audit_kwargs)
             if not policy.can_fetch(USER_AGENT, job.url):
                 raise ValueError('robots_disallowed')
             delay = max(policy.crawl_delay(USER_AGENT) or 0, 3)
             request_rate = policy.request_rate(USER_AGENT)
             if request_rate and request_rate.requests:
                 delay = max(delay, request_rate.seconds / request_rate.requests)
-            raw = fetch_feed(job.url, hostname_transport=hostname_transport)
+            requested_kind = (FetchAttempt.RequestedKind.SITEMAP if job_kind == 'sitemap'
+                else FetchAttempt.RequestedKind.PAGE)
+            raw = fetch_feed(job.url, hostname_transport=hostname_transport,
+                requested_kind=requested_kind, **audit_kwargs)
             _clear_host_failures(state)
         except Exception as exc:
             if _transient_error(exc):
