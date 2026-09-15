@@ -80,3 +80,21 @@ def test_worker_cannot_close_a_request_already_closed_by_reaper():
     assert list(FetchAttempt.objects.filter(request_id=request_id).values_list('outcome', flat=True)) == [
         FetchAttempt.Outcome.ABANDONED, FetchAttempt.Outcome.RESERVED,
     ]
+
+
+@pytest.mark.django_db
+def test_reservation_rolls_back_when_pre_network_receipt_cannot_be_saved(monkeypatch):
+    """A network request can never follow a control row without its audit fact."""
+    source = Source.objects.create(name='Example', url='https://example.org')
+    instruction = approved_instruction(source)
+
+    monkeypatch.setattr('scraper.utils._record_transport_attempt',
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError('audit storage unavailable')))
+
+    with pytest.raises(RuntimeError, match='audit storage unavailable'):
+        _reserve_fetch_request(source=source, instruction=instruction,
+            requested_kind=FetchAttempt.RequestedKind.FEED, url=instruction.endpoint,
+            hostname_transport=True, request_id=uuid4())
+
+    assert FetchRequest.objects.count() == 0
+    assert FetchAttempt.objects.count() == 0
