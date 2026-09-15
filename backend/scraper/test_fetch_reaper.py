@@ -59,6 +59,22 @@ def test_reaper_suspends_an_instruction_after_three_incomplete_attempts():
 
 
 @pytest.mark.django_db
+def test_two_incomplete_attempts_do_not_suspend_an_instruction():
+    source = Source.objects.create(name='Example', url='https://example.org')
+    instruction = approved_instruction(source)
+    stale_at = timezone.now() - timedelta(minutes=6)
+    for _ in range(2):
+        _reserve_fetch_request(source=source, instruction=instruction,
+            requested_kind=FetchAttempt.RequestedKind.FEED, url=instruction.endpoint,
+            hostname_transport=True, request_id=uuid4())
+    FetchRequest.objects.update(reserved_at=stale_at)
+
+    assert reap_incomplete_fetches(now=timezone.now()) == {'reaped': 2, 'suspended': 0}
+    instruction.refresh_from_db()
+    assert instruction.status == SourceAccessInstruction.Status.APPROVED
+
+
+@pytest.mark.django_db
 def test_worker_cannot_close_a_request_already_closed_by_reaper():
     """The request row makes reaper-versus-worker resolution exactly one winner."""
     source = Source.objects.create(name='Example', url='https://example.org')
