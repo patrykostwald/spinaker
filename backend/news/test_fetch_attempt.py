@@ -103,3 +103,24 @@ def test_fetch_attempt_rejects_an_instruction_channel_mismatch():
             network_started=True,
             http_status=200,
         )
+
+
+@pytest.mark.django_db
+def test_audited_feed_transport_records_success(monkeypatch):
+    from scraper.utils import fetch_feed
+
+    source = Source.objects.create(name='Example', url='https://example.org')
+    instruction = approved_instruction(source)
+    monkeypatch.setattr('scraper.utils._fetch_feed_raw', lambda *args, **kwargs: b'<rss/>')
+
+    assert fetch_feed(
+        instruction.endpoint,
+        audit_source=source,
+        audit_instruction=instruction,
+        requested_kind=FetchAttempt.RequestedKind.FEED,
+    ) == b'<rss/>'
+
+    attempt = FetchAttempt.objects.get()
+    assert attempt.outcome == FetchAttempt.Outcome.OK
+    assert attempt.network_started is True
+    assert attempt.bytes_received == len(b'<rss/>')

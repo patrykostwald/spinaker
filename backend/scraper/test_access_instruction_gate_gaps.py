@@ -9,7 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from django.utils import timezone
-from news.models import Article, Source, SourceAccessInstruction
+from news.models import Article, FetchAttempt, Source, SourceAccessInstruction
 from scraper.official import import_voting
 from scraper.rss_scraper import scrape_rss_source
 from scraper.archive import process
@@ -43,6 +43,9 @@ def test_rss_refuses_transport_without_approved_rss_instruction(monkeypatch):
     assert scrape_rss_source(source.pk) == 0
     fetch.assert_not_called()
     assert not Article.objects.exists()
+    refusal = FetchAttempt.objects.get()
+    assert refusal.outcome == FetchAttempt.Outcome.REFUSED_NO_INSTRUCTION
+    assert refusal.network_started is False
 
 
 @pytest.mark.django_db

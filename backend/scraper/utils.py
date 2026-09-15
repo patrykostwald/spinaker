@@ -1,16 +1,18 @@
 from datetime import datetime, timezone as dt_timezone
 from functools import wraps
 from urllib.parse import urlparse
+from hashlib import sha256
 from email.utils import parsedate_to_datetime
 import ipaddress, logging, random, socket, re
 import requests
 from dateutil.parser import parse as parse_date
 from django.core.cache import cache
+from django.conf import settings
 from django.db import transaction, IntegrityError
 from django.db.models import F
 from django.utils import timezone
 from django.utils.html import strip_tags
-from news.models import Article, ArticleCategory, Source, SourceType
+from news.models import Article, ArticleCategory, FetchAttempt, Source, SourceType
 from news.classification import publisher_category, normalize_publisher_tags
 
 log = logging.getLogger('scraper')
@@ -135,7 +137,57 @@ def upsert_article(*, source, title, url, published_date, category=ArticleCatego
     except IntegrityError:
         return Article.objects.get(url=url), False
 
-def fetch_feed(url, *, hostname_transport=False):
+def _fetch_fingerprint(url):
+    """A keyed digest keeps query parameters out of the audit record."""
+    key = str(settings.SECRET_KEY).encode('utf-8')
+    return sha256(key + b'\0' + str(url).encode('utf-8')).hexdigest()
+
+
+def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error_code):
+    """Record an access refusal without resolving or requesting the URL."""
+    return FetchAttempt.objects.create(
+        source=source, channel=channel, requested_kind=requested_kind,
+        url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
+        outcome=outcome, network_started=False, error_code=error_code)
+
+
+def _record_transport_attempt(*, source, instruction, requested_kind, url, outcome,
+                              http_status=None, bytes_received=0, response_sha256='', error_code=''):
+    return FetchAttempt.objects.create(
+        source=source, instruction=instruction, instruction_version=instruction.version,
+        channel=instruction.channel, requested_kind=requested_kind,
+        url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
+        outcome=outcome, network_started=True, http_status=http_status,
+        bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code)
+
+
+def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instruction=None,
+               requested_kind=None):
+    """Bounded HTTP fetch, optionally emitting an append-only audit receipt."""
+    if (audit_source is None) != (audit_instruction is None):
+        raise ValueError('Fetch audit requires both source and instruction.')
+    if audit_source is not None and requested_kind is None:
+        raise ValueError('Fetch audit requires a requested kind.')
+    try:
+        raw = _fetch_feed_raw(url, hostname_transport=hostname_transport)
+    except Exception as exc:
+        if audit_source is not None:
+            response = getattr(exc, 'response', None)
+            status = getattr(response, 'status_code', None)
+            outcome = FetchAttempt.Outcome.HTTP_ERROR if status else FetchAttempt.Outcome.NETWORK_ERROR
+            code = f'http_{status}' if status else type(exc).__name__.lower()[:64]
+            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                requested_kind=requested_kind, url=url, outcome=outcome,
+                http_status=status, error_code=code)
+        raise
+    if audit_source is not None:
+        _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+            requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.OK,
+            http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest())
+    return raw
+
+
+def _fetch_feed_raw(url, *, hostname_transport=False):
     """Bounded public HTTP fetch with validation on every redirect.
 
     ``hostname_transport`` is reserved for an already approved publisher

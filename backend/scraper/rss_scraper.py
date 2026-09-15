@@ -4,11 +4,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 import feedparser
 from django.utils import timezone
-from news.models import Source
+from news.models import FetchAttempt, Source
 from news.models import SourceAccessInstruction
 from scraper.access_gate import approved_instruction
 from scraper.catalog import RSS_SOURCES, INSTITUTIONS
-from scraper.utils import guarded, fetch_feed, get_or_create_source, upsert_article
+from scraper.utils import guarded, fetch_feed, get_or_create_source, record_fetch_refusal, upsert_article
 
 def seed_sources():
     corrections = json.loads((Path(__file__).parent / 'data' / 'feed_corrections.json').read_text(encoding='utf-8'))
@@ -44,12 +44,17 @@ def scrape_rss_source(source_id):
     source = Source.objects.get(pk=source_id)
     if not source.is_active or not source.scrape_enabled or not source.rss_url:
         return 0
-    if approved_instruction(source, SourceAccessInstruction.Channel.RSS, source.rss_url) is None:
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.RSS, source.rss_url)
+    if instruction is None:
+        record_fetch_refusal(source=source, channel=SourceAccessInstruction.Channel.RSS,
+            requested_kind=FetchAttempt.RequestedKind.FEED, url=source.rss_url,
+            outcome=FetchAttempt.Outcome.REFUSED_NO_INSTRUCTION, error_code='no_approved_instruction')
         Source.objects.filter(pk=source.pk).update(last_error='no_approved_instruction')
         return 0
     Source.objects.filter(pk=source.pk).update(last_attempted=timezone.now())
     try:
-        feed = feedparser.parse(fetch_feed(source.rss_url))
+        feed = feedparser.parse(fetch_feed(source.rss_url, hostname_transport=True, audit_source=source,
+            audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.FEED))
     except Exception as exc:
         response = getattr(exc, 'response', None)
         error = f'HTTP {response.status_code}' if response is not None else type(exc).__name__
