@@ -164,6 +164,7 @@ def _record_transport_attempt(*, source, instruction, requested_kind, url, outco
         transport=('hostname_https' if hostname_transport else 'pinned_ip_https')
         if urlparse(url).scheme == 'https' else 'pinned_ip_http',
         request_user_agent='ContextBeforeContent/1.0 source reader',
+        decision_basis=str(instruction.evidence.get('basis') or instruction.terms_url)[:500],
         outcome=outcome, network_started=True, http_status=http_status,
         bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code)
 

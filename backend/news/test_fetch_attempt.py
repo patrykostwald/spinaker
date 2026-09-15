@@ -127,6 +127,7 @@ def test_audited_feed_transport_records_success(monkeypatch):
     assert attempt.bytes_received == len(b'<rss/>')
     assert attempt.adapter_revision == 'scraper.fetch_feed/v1'
     assert attempt.request_user_agent == 'ContextBeforeContent/1.0 source reader'
+    assert attempt.decision_basis == 'test'
 
 
 @pytest.mark.django_db

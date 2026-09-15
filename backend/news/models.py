@@ -216,6 +216,7 @@ class FetchAttempt(models.Model):
     adapter_revision = models.CharField(max_length=96, blank=True)
     transport = models.CharField(max_length=48, blank=True)
     request_user_agent = models.CharField(max_length=255, blank=True)
+    decision_basis = models.CharField(max_length=500, blank=True)
     attempted_at = models.DateTimeField(default=timezone.now, db_index=True)
     outcome = models.CharField(max_length=32, choices=Outcome.choices, db_index=True)
     network_started = models.BooleanField(default=False)
