@@ -65,3 +65,9 @@ Kronika opisuje wydarzenia językiem zrozumiałym dla przyszłego czytelnika: co
 - Przekierowanie do innego hosta zostało zatrzymane na granicy transportu. Taki adres nie dziedziczy karty dostępu pierwotnego źródła; wymaga odrębnej, udokumentowanej decyzji.
 - Kolejka archiwum rozróżnia odroczenie od awarii. Kiedy bramka odmawia z powodu tempa, zadanie wraca po wskazanym czasie bez naliczania błędu i bez fałszywego uruchamiania „lekarza źródła”.
 - Claude Code przeprowadził ograniczony rekonesans jawnych API. Wynik nie stał się automatyczną zgodą: Sejm pozostaje jedynym przygotowywanym pilotem, a NBP, GUS/SDG, ELI i wybrane europejskie interfejsy trafiają najpierw do kolejki osobnego audytu kanału, warunków i zakresu.
+
+## 15 września 2026 — dwa rodzaje prawdy o pobraniu
+
+- Niezależne porównanie analiz C1, C2 i C3 domknęło mechanizm nieukończonych pobrań. Reaper oraz worker blokują ten sam rekord sterujący, dlatego tylko jeden z nich może zapisać końcowy fakt: wynik transportu albo uczciwe „nieukończona próba”.
+- Doprecyzowano znaczenie dziennika: udany `FetchAttempt` potwierdza odbiór odpowiedzi od źródła, lecz nie udaje, że parser oraz zapis publicznego boxa zawsze już się udały. Błąd dalszego przetwarzania zatrzymuje publikację i trafia do diagnozy, zachowując prawdziwy ślad transportu.
+- Lokalne testy potwierdziły rezerwację przed siecią, atomowy zapis dziennika, próg zawieszenia po trzech nieukończonych próbach oraz brak drugiego końca po wygranej reapera. Przed uruchomieniem realnego pilota pozostają dwa testy wyścigów na osobnych połączeniach PostgreSQL: worker kontra worker oraz dwa reapery na tym samym zestawie starych rezerwacji.

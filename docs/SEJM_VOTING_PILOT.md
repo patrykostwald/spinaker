@@ -45,6 +45,12 @@ Rekord może stać się boxem dopiero po jednoczesnym spełnieniu:
 Niepełna próba audytowa nigdy nie tworzy boxa. Trafia do diagnostyki, a dane z
 pamięci procesu są odrzucane.
 
+`FetchAttempt` opisuje wyłącznie transport: że odpowiedź została odebrana albo
+że jej wynik pozostał nieznany. Nie jest on deklaracją, że odpowiedź została
+już pomyślnie sparsowana i zapisana jako box. Walidacja oraz zapis boxa są
+odrębnym krokiem; ich błąd nie zmienia historycznego faktu udanej odpowiedzi
+API, lecz zatrzymuje publikację rekordu i kieruje go do diagnostyki.
+
 ## Automatyczne zatrzymanie
 
 Cykl zatrzymuje się przy: 401/403, trzech 429 w ciągu godziny, każdym naruszeniu
