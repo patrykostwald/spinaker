@@ -69,7 +69,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-if os.environ.get("PYTEST_VERSION") or env.bool("USE_SQLITE", default=False):
+if (
+    os.environ.get("PYTEST_VERSION")
+    and not env.bool("USE_POSTGRES_FOR_TESTS", default=False)
+) or env.bool("USE_SQLITE", default=False):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",

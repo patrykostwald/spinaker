@@ -9,9 +9,12 @@ import pytest
 
 
 def _close_worker(*, request_id, source_id, instruction_id, url, outcome,
-                  barrier, results, settings_module):
+                  barrier, results, settings_module, database_url):
     """Spawn-safe worker: it opens its own Django and PostgreSQL connection."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
+    # A spawned Windows child boots Django from scratch.  Point it at the
+    # parent test database, never at the normal development database.
+    os.environ['DATABASE_URL'] = database_url
     import django
     django.setup()
 
@@ -74,12 +77,22 @@ def test_postgres_workers_close_a_fetch_request_exactly_once():
 
     context = mp.get_context('spawn')  # Same behavior on Windows and Unix.
     barrier, results = context.Barrier(2), context.Queue()
+    from urllib.parse import quote
+    database = connection.settings_dict
+    database_url = (
+        f"postgres://{quote(str(database['USER']), safe='')}:"
+        f"{quote(str(database['PASSWORD']), safe='')}@"
+        f"{database['HOST'] or '127.0.0.1'}:{database['PORT'] or '5432'}/"
+        f"{database['NAME']}"
+    )
     common = dict(request_id=str(request_id), source_id=source.pk, instruction_id=instruction.pk,
         url=instruction.endpoint, barrier=barrier, results=results,
-        settings_module=settings.SETTINGS_MODULE)
+        settings_module=settings.SETTINGS_MODULE, database_url=database_url)
     processes = [
-        context.Process(target=_close_worker, kwargs={**common, 'outcome': FetchAttempt.Outcome.OK}),
-        context.Process(target=_close_worker, kwargs={**common, 'outcome': FetchAttempt.Outcome.HTTP_ERROR}),
+        # Pass strings to spawn workers: pickling a Django TextChoices member
+        # imports the model before django.setup() in the child process.
+        context.Process(target=_close_worker, kwargs={**common, 'outcome': FetchAttempt.Outcome.OK.value}),
+        context.Process(target=_close_worker, kwargs={**common, 'outcome': FetchAttempt.Outcome.HTTP_ERROR.value}),
     ]
     for process in processes:
         process.start()
