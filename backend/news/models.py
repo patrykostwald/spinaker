@@ -184,6 +184,88 @@ class SourceAccessInstruction(models.Model):
             raise ValidationError(errors)
 
 
+class FetchAttempt(models.Model):
+    """Append-only receipt for a blocked or executed source fetch."""
+    class Outcome(models.TextChoices):
+        REFUSED_NO_INSTRUCTION = 'refused_no_instruction', 'Brak instrukcji'
+        REFUSED_EXPIRED = 'refused_expired', 'Instrukcja wygasła'
+        REFUSED_SUSPENDED = 'refused_suspended', 'Instrukcja wstrzymana'
+        REFUSED_SCOPE_MISMATCH = 'refused_scope_mismatch', 'Poza zakresem instrukcji'
+        BLOCKED_ROBOTS = 'blocked_robots', 'Zablokowane przez robots'
+        OK = 'ok', 'Sukces'
+        HTTP_ERROR = 'http_error', 'Błąd HTTP'
+        NETWORK_ERROR = 'network_error', 'Błąd sieci'
+        REDIRECTED = 'redirected', 'Przekierowanie'
+
+    class RequestedKind(models.TextChoices):
+        FEED = 'feed', 'Feed'
+        SITEMAP = 'sitemap', 'Sitemap'
+        PAGE = 'page', 'Strona'
+        API_RECORD = 'api_record', 'Rekord API'
+        ROBOTS = 'robots', 'robots.txt'
+        PROBE = 'probe', 'Próba audytowa'
+
+    source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name='fetch_attempts')
+    instruction = models.ForeignKey(SourceAccessInstruction, on_delete=models.PROTECT,
+        related_name='fetch_attempts', null=True, blank=True)
+    instruction_version = models.PositiveIntegerField(null=True, blank=True)
+    channel = models.CharField(max_length=16, choices=SourceAccessInstruction.Channel.choices)
+    requested_kind = models.CharField(max_length=16, choices=RequestedKind.choices)
+    url_fingerprint = models.CharField(max_length=64, db_index=True)
+    url_host = models.CharField(max_length=255, db_index=True)
+    attempted_at = models.DateTimeField(default=timezone.now, db_index=True)
+    outcome = models.CharField(max_length=32, choices=Outcome.choices, db_index=True)
+    network_started = models.BooleanField(default=False)
+    http_status = models.PositiveSmallIntegerField(null=True, blank=True)
+    bytes_received = models.PositiveBigIntegerField(default=0)
+    response_sha256 = models.CharField(max_length=64, blank=True)
+    redirect_target_host = models.CharField(max_length=255, blank=True)
+    error_code = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        ordering = ['-attempted_at', '-id']
+        indexes = [models.Index(fields=['source', '-attempted_at'])]
+
+    def clean(self):
+        super().clean()
+        refused = {
+            self.Outcome.REFUSED_NO_INSTRUCTION,
+            self.Outcome.REFUSED_EXPIRED,
+            self.Outcome.REFUSED_SUSPENDED,
+            self.Outcome.REFUSED_SCOPE_MISMATCH,
+        }
+        errors = {}
+        if self.outcome in refused and self.network_started:
+            errors['network_started'] = 'Odmowa przed siecią nie może oznaczać rozpoczęcia sieci.'
+        if self.outcome not in refused and not self.network_started:
+            errors['network_started'] = 'Wynik transportu wymaga rozpoczęcia sieci.'
+        if self.outcome == self.Outcome.REFUSED_NO_INSTRUCTION:
+            if self.instruction_id or self.instruction_version is not None:
+                errors['instruction'] = 'Brak instrukcji nie może wskazywać instrukcji.'
+        elif not self.instruction_id:
+            errors['instruction'] = 'Każda próba poza brakiem instrukcji wymaga instrukcji źródła.'
+        if self.instruction_id:
+            if self.instruction_version != self.instruction.version:
+                errors['instruction_version'] = 'Wersja musi odzwierciedlać wskazaną instrukcję.'
+            if self.channel != self.instruction.channel:
+                errors['channel'] = 'Kanał musi odpowiadać wskazanej instrukcji.'
+        if self.outcome in (self.Outcome.OK, self.Outcome.HTTP_ERROR) and not self.http_status:
+            errors['http_status'] = 'Wynik HTTP wymaga kodu statusu.'
+        if self.outcome == self.Outcome.OK and (not self.http_status or not 200 <= self.http_status < 300):
+            errors['http_status'] = 'Sukces wymaga statusu 2xx.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValidationError('FetchAttempt jest append-only i nie może być zmieniany.')
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError('FetchAttempt jest append-only i nie może być usuwany pojedynczo.')
+
+
 class SourceUsageDecision(models.Model):
     """Versioned decision for use of already stored material.
 

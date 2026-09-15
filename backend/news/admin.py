@@ -16,7 +16,7 @@ from django import forms
 from rest_framework.exceptions import ValidationError as APIValidationError
 
 from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
-    ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard)
+    ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, FetchAttempt)
 from scraper.tasks import (
     scrape_gdelt_task,
     scrape_newsapi_batch_task,
@@ -233,6 +233,25 @@ class SourceAccessInstructionAdmin(admin.ModelAdmin):
         return False
 
 
+class FetchAttemptAdmin(admin.ModelAdmin):
+    list_display = ('attempted_at', 'source', 'channel', 'requested_kind', 'outcome',
+        'network_started', 'http_status', 'url_host')
+    list_filter = ('outcome', 'channel', 'requested_kind', 'network_started')
+    search_fields = ('source__name', 'url_host', 'error_code', 'url_fingerprint')
+    readonly_fields = ('source', 'instruction', 'instruction_version', 'channel', 'requested_kind',
+        'url_fingerprint', 'url_host', 'attempted_at', 'outcome', 'network_started', 'http_status',
+        'bytes_received', 'response_sha256', 'redirect_target_host', 'error_code')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class SourceRecoveryCaseAdmin(admin.ModelAdmin):
     list_display = ('source', 'status', 'trigger', 'failure_fingerprint',
         'boxes_before', 'boxes_after', 'last_observed_at')
@@ -261,6 +280,7 @@ class SourceContactCardAdmin(admin.ModelAdmin):
 
 
 site.register(SourceAccessInstruction, SourceAccessInstructionAdmin)
+site.register(FetchAttempt, FetchAttemptAdmin)
 site.register(SourceRecoveryCase, SourceRecoveryCaseAdmin)
 site.register(SourceContactCard, SourceContactCardAdmin)
 
