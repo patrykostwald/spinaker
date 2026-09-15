@@ -5,7 +5,7 @@ access card.  Its output is a concrete checklist for an editor before the
 pilot is allowed to start.
 """
 from django.core.management.base import BaseCommand
-from django.db import connection
+from django.db import DatabaseError, connection
 
 from news.models import Source, SourceAccessInstruction
 from scraper.access_gate import approved_instruction
@@ -34,7 +34,11 @@ class Command(BaseCommand):
         else:
             checks.append('Źródło API Sejmu jest aktywne.')
 
-        card = approved_instruction(source, SourceAccessInstruction.Channel.API, ENDPOINT) if source else None
+        try:
+            card = approved_instruction(source, SourceAccessInstruction.Channel.API, ENDPOINT) if source else None
+        except DatabaseError:
+            card = None
+            blockers.append('Lokalna baza ma starszy schemat kart dostępu; wymaga bezpiecznej migracji przed pilotem.')
         if not card:
             blockers.append('Brak aktualnej zatwierdzonej karty API dla głosowań kadencji 10.')
         else:

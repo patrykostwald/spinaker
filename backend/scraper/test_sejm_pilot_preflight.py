@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pytest
 from django.core.management import call_command
+from django.db import DatabaseError
 from django.utils import timezone
 
 from news.models import Source, SourceAccessInstruction
@@ -38,3 +39,15 @@ def test_preflight_recognises_a_complete_sejm_card(monkeypatch):
     call_command('sejm_pilot_preflight', stdout=output)
 
     assert 'GOTOWY_DO_PILOTA' in output.getvalue()
+
+
+@pytest.mark.django_db
+def test_preflight_reports_an_outdated_database_schema(monkeypatch):
+    monkeypatch.setattr('scraper.management.commands.sejm_pilot_preflight.approved_instruction',
+        lambda *args, **kwargs: (_ for _ in ()).throw(DatabaseError('missing column')))
+    Source.objects.create(name='Sejm Rzeczypospolitej Polskiej', url='https://api.sejm.gov.pl/sejm')
+    output = StringIO()
+
+    call_command('sejm_pilot_preflight', stdout=output)
+
+    assert 'starszy schemat kart dostępu' in output.getvalue()
