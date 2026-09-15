@@ -16,7 +16,7 @@ OFFICIAL_APIS = (
     (
         'sejm',
         API + '/sejm/term10/votings',
-        API + '/sejm.html',
+        'https://www.sejm.gov.pl/sejm10.nsf/page.xsp/copyright',
         'Publiczna dokumentacja API Sejmu opisuje głosowania i stronicowanie; karta obejmuje wyłącznie ścieżkę głosowań kadencji 10.',
     ),
 )
@@ -33,11 +33,16 @@ class Command(BaseCommand):
             help='Konkretny publiczny dokument lub regulamin sprawdzony dla tego dostępu.')
         parser.add_argument('--reviewed-by',
             help='Imię/nazwa osoby, która ręcznie sprawdziła zakres i dokument.')
+        parser.add_argument('--daily-cap', type=int, default=24,
+            help='Twardy dzienny limit żądań dla tej karty (domyślnie 24).')
 
     def handle(self, *args, **options):
         valid_days = options['valid_days']
+        daily_cap = options['daily_cap']
         if not 1 <= valid_days <= 365:
             raise ValueError('valid-days musi być w zakresie 1–365.')
+        if not 1 <= daily_cap <= 1000:
+            raise ValueError('daily-cap musi być w zakresie 1–1000.')
         now = timezone.now()
         if options['apply'] and (not options['evidence_url'] or not options['reviewed_by']):
             raise ValueError('--apply wymaga --evidence-url i --reviewed-by; komenda nie może sama tworzyć podstawy dostępu.')
@@ -69,6 +74,10 @@ class Command(BaseCommand):
                 channel=SourceAccessInstruction.Channel.API,
                 allowed_scope=SourceAccessInstruction.Scope.CONTENT,
                 endpoint=endpoint,
+                allowed_path_patterns=[
+                    '/sejm/term10/votings/{int}',
+                    '/sejm/term10/votings/{int}/{int}',
+                ],
                 terms_url=terms_url,
                 evidence={
                     'documentation_url': options['evidence_url'],
@@ -77,6 +86,7 @@ class Command(BaseCommand):
                     'reviewed_on': now.date().isoformat(),
                 },
                 minimum_interval_seconds=3,
+                daily_request_cap=daily_cap,
                 reviewed_at=now,
                 reviewed_by=options['reviewed_by'],
                 valid_until=now + timedelta(days=valid_days),

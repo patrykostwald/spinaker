@@ -21,6 +21,7 @@ def approved_instruction(source):
         reviewed_at=timezone.now(),
         reviewed_by='test',
         valid_until=timezone.now() + timedelta(days=1),
+        daily_request_cap=24,
     )
 
 
@@ -152,6 +153,7 @@ def test_official_api_uses_audited_transport(monkeypatch):
         reviewed_at=timezone.now(),
         reviewed_by='test',
         valid_until=timezone.now() + timedelta(days=1),
+        daily_request_cap=24,
     )
     monkeypatch.setattr('scraper.utils._fetch_feed_raw', lambda *args, **kwargs: b'{"ok": true}')
 
@@ -172,7 +174,7 @@ def test_imported_voting_keeps_the_exact_fetch_receipt(monkeypatch):
         allowed_scope=SourceAccessInstruction.Scope.CONTENT,
         endpoint=API + '/sejm/term10/votings', terms_url=API + '/sejm.html',
         evidence={'basis': 'official API documentation'}, reviewed_at=timezone.now(),
-        reviewed_by='test', valid_until=timezone.now() + timedelta(days=1),
+        reviewed_by='test', valid_until=timezone.now() + timedelta(days=1), daily_request_cap=24,
     )
     payload = {
         'term': 10, 'sitting': 1, 'votingNumber': 2, 'title': 'Test motion',
