@@ -8,7 +8,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from news.models import SourceAccessInstruction
+from news.models import Source, SourceAccessInstruction
 from scraper.official import API, official_source
 
 
@@ -42,10 +42,14 @@ class Command(BaseCommand):
         if options['apply'] and (not options['evidence_url'] or not options['reviewed_by']):
             raise ValueError('--apply wymaga --evidence-url i --reviewed-by; komenda nie może sama tworzyć podstawy dostępu.')
         for provider, endpoint, terms_url, note in OFFICIAL_APIS:
-            source = official_source(provider)
-            latest = SourceAccessInstruction.objects.filter(
+            # Planning is an audit view, not a side effect.  In particular it
+            # must not create a catalogue Source before an editor supplies the
+            # reviewed evidence required by --apply.
+            source = official_source(provider) if options['apply'] else Source.objects.filter(
+                url=API + '/sejm').first()
+            latest = (SourceAccessInstruction.objects.filter(
                 source=source, channel=SourceAccessInstruction.Channel.API, endpoint=endpoint,
-            ).order_by('-version').first()
+            ).order_by('-version').first() if source else None)
             if latest and latest.status != SourceAccessInstruction.Status.APPROVED:
                 self.stdout.write(self.style.WARNING(
                     f'{provider}: pominięto — najnowsza karta ma status {latest.status}.'))

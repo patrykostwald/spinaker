@@ -13,6 +13,7 @@ def test_command_only_plans_without_apply():
     call_command('approve_official_api_sources', stdout=output)
 
     assert 'PLAN sejm' in output.getvalue()
+    assert not Source.objects.exists()
     assert not SourceAccessInstruction.objects.exists()
 
 
