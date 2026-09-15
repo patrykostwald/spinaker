@@ -13,6 +13,12 @@ Stan: 14 września 2026. Ten dokument nie zawiera sekretów i może zostać otwa
 
 Nie proś właściciela o wklejenie hasła bazy, klucza `service_role`, klucza API ani pliku `.env` do rozmowy. Nie umieszczaj sekretów w kodzie, odpowiedzi ani repozytorium. Asystent przeglądarkowy bez osobnej autoryzacji ma przygotowywać analizę lub patch, a nie zakładać, że ma prawo zapisywać GitHub albo Supabase.
 
+## Tryb autonomiczny właściciela
+
+Właściciel upoważnia agentów do nieprzerwanego wykonywania prac, które pchają projekt do przodu: lokalnych zmian kodu i dokumentacji, testów, audytu publicznych źródeł, przygotowania kart dostępu, kontrolowanych pobrań zgodnych z jawną dokumentacją źródła, diagnozy błędów, zadań dla Claude Code oraz porządkowania kolejki. Dotyczy to także nocnego cyklu pracy: raport ma opisywać wykonany postęp, a nie zastępować pracy.
+
+Nie czekaj na potwierdzenie przy rutynowej decyzji technicznej lub przy wypełnieniu wewnętrznej karty audytowej na podstawie jednoznacznie publicznej dokumentacji API. Zatrzymaj się wyłącznie przed działaniem nieodwracalnym albo zewnętrznym wymagającym decyzji właściciela: publikacją, wysłaniem wiadomości, wydatkiem, wdrożeniem produkcyjnym, zapisem do produkcyjnego Supabase, zakupem, użyciem sekretu lub pobieraniem mimo niejednoznacznej podstawy/warunków źródła.
+
 ## Niezmienne decyzje produktu
 
 1. Jeden Box to jeden materiał źródłowy: artykuł, reportaż, wywiad, film, podcast, post, komunikat, dokument, akt prawny, głosowanie, orzeczenie, reklama lub inny jawnie oznaczony typ.
