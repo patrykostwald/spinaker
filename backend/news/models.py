@@ -270,6 +270,13 @@ class FetchAttempt(models.Model):
         raise ValidationError('FetchAttempt jest append-only i nie może być usuwany pojedynczo.')
 
 
+class HostGate(models.Model):
+    """A short-lived, database-backed reservation for one remote host."""
+    host = models.CharField(max_length=255, unique=True)
+    locked_by = models.CharField(max_length=96)
+    expires_at = models.DateTimeField(db_index=True)
+
+
 class SourceUsageDecision(models.Model):
     """Versioned decision for use of already stored material.
 
