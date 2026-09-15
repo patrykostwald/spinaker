@@ -175,6 +175,62 @@ class SourceAccessInstruction(models.Model):
             raise ValidationError(errors)
 
 
+class SourceUsageDecision(models.Model):
+    """Versioned decision for use of already stored material.
+
+    This is deliberately separate from SourceAccessInstruction: the latter
+    permits a future fetch, while this model governs public and AI use after a
+    record already exists.  The highest version is authoritative, so a newer
+    suspension never revives an older approval.
+    """
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Szkic'
+        APPROVED = 'approved', 'Zatwierdzona'
+        SUSPENDED = 'suspended', 'Wstrzymana'
+
+    class Use(models.TextChoices):
+        PUBLIC_CARD = 'public_card', 'Karta publiczna'
+        AI_DRAFT_METADATA = 'ai_draft_metadata', 'Metadane dla szkicu AI'
+        RAG_INDEX = 'rag_index', 'Indeks RAG'
+        OCR_EXTRACTION = 'ocr_extraction', 'OCR'
+        MODEL_TRAINING = 'model_training', 'Trening modelu'
+
+    source = models.ForeignKey(Source, on_delete=models.CASCADE, related_name='usage_decisions')
+    version = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    allowed_uses = models.JSONField(default=list)
+    applies_until_acquired_at = models.DateTimeField()
+    frozen_host = models.CharField(max_length=255)
+    terms_url = models.URLField(max_length=1024, blank=True)
+    evidence = models.JSONField(default=dict)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.CharField(max_length=120, blank=True)
+    valid_until = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['source_id', '-version']
+        constraints = [
+            models.UniqueConstraint(fields=['source', 'version'], name='unique_source_usage_decision_version'),
+        ]
+
+    def clean(self):
+        super().clean()
+        valid_uses = set(self.Use.values)
+        errors = {}
+        if not isinstance(self.allowed_uses, list) or any(item not in valid_uses for item in self.allowed_uses):
+            errors['allowed_uses'] = 'Decyzja może zawierać tylko znane sposoby użycia.'
+        if self.status == self.Status.APPROVED:
+            if not self.terms_url:
+                errors['terms_url'] = 'Zatwierdzona decyzja wymaga linku do warunków lub licencji.'
+            if not self.reviewed_at or not self.reviewed_by:
+                errors['reviewed_at'] = 'Zatwierdzona decyzja wymaga daty i autora przeglądu.'
+            if not self.evidence:
+                errors['evidence'] = 'Zatwierdzona decyzja wymaga dowodu decyzji.'
+        if errors:
+            raise ValidationError(errors)
+
+
 class SourceRecoveryCase(models.Model):
     """A bounded diagnosis of one failed source instruction, never a bypass."""
     class Status(models.TextChoices):

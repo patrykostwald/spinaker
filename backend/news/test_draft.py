@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 from news.draft import EditorialDraftView
-from news.models import Article, Source, Thread
+from news.models import Article, Source, SourceUsageDecision, Thread
 
 pytestmark = pytest.mark.django_db
 
@@ -25,8 +25,14 @@ def config(monkeypatch):
 @pytest.fixture
 def records():
     source = Source.objects.create(name='Publisher', url='https://example.test')
-    return [Article.objects.create(source=source, title=f'Event {i}', url=f'https://example.test/{i}',
-            published_date=timezone.now() - timedelta(days=i) if i < 2 else None) for i in range(3)]
+    records = [Article.objects.create(source=source, title=f'Event {i}', url=f'https://example.test/{i}',
+               published_date=timezone.now() - timedelta(days=i) if i < 2 else None) for i in range(3)]
+    SourceUsageDecision.objects.create(
+        source=source, version=1, status='approved', allowed_uses=['ai_draft_metadata'],
+        applies_until_acquired_at=timezone.now() + timedelta(days=1), frozen_host='example.test',
+        terms_url='https://example.test/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test')
+    return records
 
 
 def call(records, staff=True, data=None):
@@ -49,6 +55,15 @@ def test_permissions_and_disabled_never_pay(records, monkeypatch):
     user.save()
     monkeypatch.delenv('OPENAI_API_KEY')
     assert call(records).data['status'] == 'disabled'
+    assert not responses.calls
+
+
+@responses.activate
+def test_legacy_records_without_usage_decision_never_reach_provider(records):
+    records[0].source.usage_decisions.all().delete()
+    response = call(records)
+
+    assert response.status_code == 400
     assert not responses.calls
 
 

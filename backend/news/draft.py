@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from news.models import Article, ImportState
 from news.serializers import ArticleSerializer
+from news.usage_gate import effective_uses
 from news.selection_provider import (MistralEUSelectionProvider,
                                      OpenAIResponsesSelectionProvider,
                                      SelectionProviderError)
@@ -102,6 +103,8 @@ class EditorialDraftView(APIView):
                         .prefetch_related('evidence_links'))
         if len(articles) != len(serializer.validated_data['article_ids']):
             return Response({'detail': 'Część materiałów nie istnieje lub nie może służyć do szkicu.'}, status=400)
+        if any('ai_draft_metadata' not in effective_uses(article) for article in articles):
+            return Response({'detail': 'Część materiałów nie ma zatwierdzonej decyzji użycia dla szkicu AI.'}, status=400)
         lock = 'editorial-draft-inflight'
         if not cache.add(lock, True, timeout=180):
             return Response({'detail': 'Trwa przygotowanie szkicu. Spróbuj później.'}, status=429)
