@@ -1,18 +1,25 @@
-from datetime import datetime, timezone as dt_timezone
+from datetime import date, datetime, timezone as dt_timezone
 from unittest.mock import Mock, patch
 
 import pytest
+import requests
 from django.test import override_settings
+from django.utils import timezone
 
-from news.models import Article, ArticleContent, ImportState, Source
-from scraper.bzp_backfill import (DETAIL_URL, MAX_BATCH_SIZE, SOURCE_URL,
+from news.models import Article, ArticleContent, ImportState, Source, SourceAccessInstruction
+from scraper.bzp_backfill import (DETAIL_URL, MAX_BATCH_SIZE, SEARCH_URL, SOURCE_URL,
     BZPRateLimited, bzp_backfill_cycle, fetch_page)
 
 
 @pytest.fixture
 def source(db):
-    return Source.objects.create(name='Biuletyn Zamówień Publicznych', url=SOURCE_URL,
+    source = Source.objects.create(name='Biuletyn Zamówień Publicznych', url=SOURCE_URL,
         source_type='institution')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api', allowed_scope='metadata',
+        endpoint=SEARCH_URL, terms_url='https://ezamowienia.gov.pl/', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test')
+    return source
 
 
 def row(identifier, published='2026-09-13T10:15:00+02:00'):
@@ -72,24 +79,24 @@ def test_429_retry_after_defers_without_moving_cursor_or_writing(source):
     assert not Article.objects.exists()
 
 
-@override_settings(BZP_API_SEARCH_URL='https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search',
-    BZP_API_REQUEST_INTERVAL_SECONDS=0)
-def test_fetch_uses_official_endpoint_conservative_interval_and_retry_after():
+@override_settings(BZP_API_SEARCH_URL=SEARCH_URL)
+def test_fetch_uses_official_endpoint_and_audited_post_transport(source):
     response = Mock(status_code=429, headers={'Retry-After': '321'})
-    with patch('scraper.bzp_backfill.requests.post', return_value=response) as post, \
-            patch('scraper.bzp_backfill.sleep') as sleeper, \
-            patch('scraper.bzp_backfill._last_request_at', 10.0), \
-            patch('scraper.bzp_backfill.monotonic', return_value=11.0):
+    instruction = SourceAccessInstruction.objects.get(source=source)
+    with patch('scraper.bzp_backfill.fetch_feed', side_effect=requests.HTTPError(response=response)) as fetch:
         with pytest.raises(BZPRateLimited) as raised:
-            fetch_page(date_from='2026-09-13', date_to='2026-09-13', page=1, page_size=100)
+            fetch_page(source=source, instruction=instruction, endpoint=SEARCH_URL,
+                date_from='2026-09-13', date_to='2026-09-13', page=1, page_size=100)
     assert raised.value.retry_after == 321
-    sleeper.assert_called_once_with(2.0)
-    assert post.call_args.kwargs['json']['pageSize'] == MAX_BATCH_SIZE
+    assert fetch.call_args.kwargs['method'] == 'POST'
+    assert fetch.call_args.kwargs['requested_kind'] == 'api_record'
+    assert b'"pageSize":25' in fetch.call_args.kwargs['body']
 
 
 @override_settings(BZP_API_ENABLED=True)
 def test_malformed_or_out_of_window_page_does_not_advance(source):
-    with patch('scraper.bzp_backfill.fetch_page', return_value=[row('late', '2026-09-14T01:00:00+02:00')]):
+    with patch('scraper.bzp_backfill.timezone.localdate', return_value=date(2026, 9, 14)), \
+            patch('scraper.bzp_backfill.fetch_page', return_value=[row('late', '2026-09-14T01:00:00+02:00')]):
         result = bzp_backfill_cycle()
     assert result['status'] == 'error'
     assert ImportState.objects.get().cursor['page'] == 1

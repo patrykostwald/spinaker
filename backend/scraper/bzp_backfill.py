@@ -5,26 +5,27 @@ current UZP integration instruction to be checked before a pilot.  This module
 has no scheduler hook and does not create a Source automatically.
 """
 from datetime import date, datetime, time, timedelta
-from time import monotonic, sleep
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
+import json
 
 import requests
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from news.models import ArticleCategory, ImportState, Source
-from scraper.utils import safe_url, upsert_article
+from news.models import ArticleCategory, FetchAttempt, ImportState, Source, SourceAccessInstruction
+from scraper.access_gate import approved_instruction
+from scraper.utils import fetch_feed, safe_url, upsert_article
 
 SOURCE_URL = 'https://ezamowienia.gov.pl/pl/'
 DETAIL_URL = 'https://ezamowienia.gov.pl/mo-client-board/bzp/notice-details/'
+SEARCH_URL = 'https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search'
 STATE_NAME = 'official-backfill:bzp:v1'
 MAX_BATCH_SIZE = 25
 # The audited operating ceiling is 20 requests/minute.  A setting may make the
 # client slower, but cannot weaken that floor without a code review.
 MIN_REQUEST_INTERVAL_SECONDS = 3.0
-_last_request_at = None
 
 
 class BZPRateLimited(Exception):
@@ -51,29 +52,36 @@ def _retry_after(response):
         return 60
 
 
-def fetch_page(*, date_from, date_to, page, page_size):
-    """Read one documented search page; response bodies are never persisted."""
-    endpoint = str(getattr(settings, 'BZP_API_SEARCH_URL', '')).strip()
+def reviewed_endpoint(source):
+    endpoint = str(getattr(settings, 'BZP_API_SEARCH_URL', SEARCH_URL)).strip()
     if not safe_url(endpoint) or not endpoint.startswith('https://ezamowienia.gov.pl/'):
         raise ValueError('BZP_API_SEARCH_URL must be the reviewed official HTTPS endpoint')
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint)
+    if instruction is None:
+        return endpoint, None
+    return endpoint, instruction
+
+
+def fetch_page(*, source, instruction, endpoint, date_from, date_to, page, page_size):
+    """Read one reviewed search page through the shared audited POST transport."""
     page_size = min(MAX_BATCH_SIZE, max(1, int(page_size)))
-    interval = max(MIN_REQUEST_INTERVAL_SECONDS,
-        float(getattr(settings, 'BZP_API_REQUEST_INTERVAL_SECONDS', MIN_REQUEST_INTERVAL_SECONDS)))
-    global _last_request_at
-    if _last_request_at is not None:
-        sleep(max(0, interval - (monotonic() - _last_request_at)))
-    response = requests.post(endpoint, json={
+    body = json.dumps({
         'publicationDateFrom': date_from, 'publicationDateTo': date_to,
         'pageNumber': page, 'pageSize': page_size, 'sort': 'publicationDate,desc',
-    }, timeout=(5, 60), headers={
-        'Accept': 'application/json',
-        'User-Agent': 'spin.clinic/1.0 BZP metadata importer',
-    })
-    _last_request_at = monotonic()
-    if response.status_code == 429:
-        raise BZPRateLimited(_retry_after(response))
-    response.raise_for_status()
-    payload = response.json()
+    }, separators=(',', ':')).encode('utf-8')
+    try:
+        raw = fetch_feed(endpoint, hostname_transport=True, audit_source=source,
+            audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD,
+            method='POST', body=body,
+            request_headers={'Accept': 'application/json', 'Content-Type': 'application/json'})
+    except requests.HTTPError as exc:
+        if getattr(exc.response, 'status_code', None) == 429:
+            raise BZPRateLimited(_retry_after(exc.response)) from exc
+        raise
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError('Invalid BZP search response') from exc
     rows = payload.get('items', payload.get('data')) if isinstance(payload, dict) else None
     if not isinstance(rows, list):
         raise ValueError('Invalid BZP search response')
@@ -120,6 +128,9 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
     source = _enabled_source()
     if source is None:
         return {'status': 'disabled', 'new_records': 0}
+    endpoint, instruction = reviewed_endpoint(source)
+    if instruction is None:
+        return {'status': 'blocked_access_review', 'new_records': 0}
     batch_size = min(MAX_BATCH_SIZE, max(1, int(batch_size)))
     state, _ = ImportState.objects.get_or_create(name=STATE_NAME)
     started = timezone.now()
@@ -138,7 +149,8 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
         raise ValueError('Invalid BZP newest-to-oldest cursor')
     day = date.fromisoformat(cursor['day'])
     try:
-        rows = fetch_page(date_from=day.isoformat(), date_to=day.isoformat(),
+        rows = fetch_page(source=source, instruction=instruction, endpoint=endpoint,
+            date_from=day.isoformat(), date_to=day.isoformat(),
             page=int(cursor['page']), page_size=batch_size)
         created = sum(save_metadata(source, row, day, day) for row in rows)
         next_cursor = dict(cursor)
