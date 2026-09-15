@@ -184,11 +184,12 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
         raise ValueError('Fetch audit requires both source and instruction.')
     if audit_source is not None and requested_kind is None:
         raise ValueError('Fetch audit requires a requested kind.')
-    gateway = worker_id = None
+    gateway = worker_id = host = None
     if audit_source is not None:
         from scraper.host_gateway import HostGateway
         host = (urlparse(url).hostname or '').lower()
-        worker_id = f'fetch:{os.getpid()}:{id(audit_source)}'
+        # Durable source identity, rather than a transient Python object id.
+        worker_id = f'fetch:{os.getpid()}:{audit_source.pk}'
         gateway = HostGateway(minimum_interval_seconds=audit_instruction.minimum_interval_seconds)
         reservation = gateway.acquire(host, worker_id)
         if not reservation.granted:
@@ -199,30 +200,31 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 hostname_transport=hostname_transport, network_started=False)
             raise HostRateLimited(reservation.retry_after_seconds)
     try:
-        raw = _fetch_feed_raw(url, hostname_transport=hostname_transport)
-    except Exception as exc:
+        try:
+            raw = _fetch_feed_raw(url, hostname_transport=hostname_transport)
+        except Exception as exc:
+            if audit_source is not None:
+                response = getattr(exc, 'response', None)
+                status = getattr(response, 'status_code', None)
+                outcome = FetchAttempt.Outcome.HTTP_ERROR if status else FetchAttempt.Outcome.NETWORK_ERROR
+                code = f'http_{status}' if status else type(exc).__name__.lower()[:64]
+                _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                    requested_kind=requested_kind, url=url, outcome=outcome,
+                    http_status=status, error_code=code, hostname_transport=hostname_transport)
+                if status == 429:
+                    value = response.headers.get('Retry-After', '') if response is not None else ''
+                    gateway.extend_on_429(host, worker_id, int(value) if str(value).isdigit() else 60)
+            raise
+        receipt = None
         if audit_source is not None:
-            response = getattr(exc, 'response', None)
-            status = getattr(response, 'status_code', None)
-            outcome = FetchAttempt.Outcome.HTTP_ERROR if status else FetchAttempt.Outcome.NETWORK_ERROR
-            code = f'http_{status}' if status else type(exc).__name__.lower()[:64]
-            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
-                requested_kind=requested_kind, url=url, outcome=outcome,
-                http_status=status, error_code=code, hostname_transport=hostname_transport)
-            if status == 429 and gateway is not None:
-                value = response.headers.get('Retry-After', '') if response is not None else ''
-                gateway.extend_on_429((urlparse(url).hostname or '').lower(), worker_id,
-                    int(value) if str(value).isdigit() else 60)
-        raise
-    receipt = None
-    if audit_source is not None:
-        receipt = _record_transport_attempt(source=audit_source, instruction=audit_instruction,
-            requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.OK,
-            http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest(),
-            hostname_transport=hostname_transport)
-    return (raw, receipt) if return_receipt else raw
-
-
+            receipt = _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.OK,
+                http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest(),
+                hostname_transport=hostname_transport)
+        return (raw, receipt) if return_receipt else raw
+    finally:
+        if gateway is not None:
+            gateway.complete(host, worker_id)
 def _fetch_feed_raw(url, *, hostname_transport=False):
     """Bounded public HTTP fetch with validation on every redirect.
 
@@ -234,6 +236,7 @@ def _fetch_feed_raw(url, *, hostname_transport=False):
     from urllib.parse import urljoin, urlunsplit
     import ssl
     import urllib3
+    initial_host = (urlparse(url).hostname or '').lower()
     for _ in range(4):
         if not safe_url(url):
             raise ValueError('Invalid source URL')
@@ -275,6 +278,8 @@ def _fetch_feed_raw(url, *, hostname_transport=False):
                 headers=headers)
             if response.status in (301, 302, 303, 307, 308):
                 url = urljoin(url, response.headers['Location'])
+                if (urlparse(url).hostname or '').lower() != initial_host:
+                    raise ValueError('Cross-host redirect requires a separate access instruction')
                 continue
             if response.status >= 400:
                 error_response = requests.Response()

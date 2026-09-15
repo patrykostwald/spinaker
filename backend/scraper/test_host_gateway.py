@@ -46,6 +46,7 @@ def test_only_lock_owner_can_extend_after_429():
     assert gateway.acquire('example.org', 'a').granted
     assert not gateway.extend_on_429('example.org', 'b', 60)
     assert gateway.extend_on_429('example.org', 'a', 60)
+    gateway.complete('example.org', 'a')
     clock.advance(10)
     result = gateway.acquire('example.org', 'b')
     assert not result.granted
@@ -58,5 +59,20 @@ def test_an_expired_worker_reservation_recovers_without_release():
     gateway = HostGateway(now=clock)
 
     assert gateway.acquire('example.org', 'crashed-worker').granted
-    clock.advance(3)
+    clock.advance(HostGateway.MAX_REQUEST_LEASE_SECONDS)
     assert gateway.acquire('example.org', 'replacement').granted
+
+
+@pytest.mark.django_db
+def test_active_request_cannot_be_overtaken_after_the_minimum_interval():
+    clock = Clock()
+    gateway = HostGateway(now=clock)
+
+    assert gateway.acquire('example.org', 'slow-worker').granted
+    clock.advance(10)
+    assert not gateway.acquire('example.org', 'second-worker').granted
+    gateway.complete('example.org', 'slow-worker')
+    clock.advance(2.9)
+    assert not gateway.acquire('example.org', 'second-worker').granted
+    clock.advance(0.1)
+    assert gateway.acquire('example.org', 'second-worker').granted

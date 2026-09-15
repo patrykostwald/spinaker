@@ -17,7 +17,7 @@ from django.db.models import Q, Count, Max, F
 from django.utils import timezone
 from news.models import ArchiveJob, Article, ArticleContent, FetchAttempt, Source, ImportState, SourceRecoveryCase, SourceAccessInstruction
 from news.metadata import extract_metadata, MetadataParser, decode_source_html
-from scraper.utils import fetch_feed, upsert_article, safe_url
+from scraper.utils import fetch_feed, upsert_article, safe_url, HostRateLimited
 from scraper.utils import retry_delay
 from scraper.access_gate import approved_instruction, require_approved_instruction, AccessDenied
 
@@ -39,7 +39,10 @@ def host_state(host):
             'failures': 0, 'circuit_until': 0.0})
 
 class SourceDelay(Exception):
-    pass
+    # A deliberate retry later, rather than a failed source request.
+    def __init__(self, retry_after_seconds=None):
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__('source_delay')
 
 class ArchiveCutoff(Exception):
     pass
@@ -249,6 +252,10 @@ def process(job, cutoff_at=None, allowed_scope=None):
             raw = fetch_feed(job.url, hostname_transport=hostname_transport,
                 requested_kind=requested_kind, **audit_kwargs)
             _clear_host_failures(state)
+        except HostRateLimited as exc:
+            # The durable gateway stopped this job before a page request went
+            # to the network. It is queue back-pressure, not source failure.
+            raise SourceDelay(max(3, int(exc.retry_after_seconds or 3))) from exc
         except Exception as exc:
             if _transient_error(exc):
                 _record_host_failure(state, exc)
@@ -413,9 +420,11 @@ def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_cal
             counters['skipped_cutoff'] += 1
             job.status = 'done'; job.last_error = 'after_cutoff'
             completed += 1
-        except SourceDelay:
+        except SourceDelay as exc:
             counters['deferred_jobs'] += 1
-            job.status = 'pending'; job.attempts -= 1; job.available_at = timezone.now() + timedelta(minutes=1)
+            job.status = 'pending'; job.attempts -= 1
+            retry_seconds = getattr(exc, 'retry_after_seconds', None)
+            job.available_at = timezone.now() + timedelta(seconds=retry_seconds or 60)
         except Exception as exc:
             counters['failed_jobs'] += 1
             known_error = str(exc) if str(exc) in TERMINAL_ERRORS | {

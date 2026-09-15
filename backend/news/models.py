@@ -273,10 +273,11 @@ class FetchAttempt(models.Model):
 
 
 class HostGate(models.Model):
-    """A short-lived, database-backed reservation for one remote host."""
+    """A database-backed, single-flight reservation for one remote host."""
     host = models.CharField(max_length=255, unique=True)
     locked_by = models.CharField(max_length=96)
     expires_at = models.DateTimeField(db_index=True)
+    next_allowed_at = models.DateTimeField(db_index=True)
 
 
 class SourceUsageDecision(models.Model):

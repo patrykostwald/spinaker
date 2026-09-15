@@ -21,6 +21,12 @@ class AcquireResult:
 
 
 class HostGateway:
+    # Four bounded transport attempts can each spend 30 seconds reading.  A
+    # crashed worker therefore releases automatically after 150 seconds, while
+    # a normal completion releases the single-flight slot immediately and keeps
+    # only the configured spacing after the request finishes.
+    MAX_REQUEST_LEASE_SECONDS = 150
+
     def __init__(self, *, minimum_interval_seconds=3, now=timezone.now):
         self.minimum_interval_seconds = max(3, int(minimum_interval_seconds))
         self.now = now
@@ -28,21 +34,25 @@ class HostGateway:
     def acquire(self, host, worker_id):
         """Atomically reserve one host; a declined caller must not use network."""
         now = self.now()
-        expiry = now + timedelta(seconds=self.minimum_interval_seconds)
+        expiry = now + timedelta(seconds=self.MAX_REQUEST_LEASE_SECONDS)
         with transaction.atomic():
             try:
                 # Savepoint keeps the outer transaction usable after a unique
                 # conflict raised by simultaneous first reservations.
                 with transaction.atomic():
-                    HostGate.objects.create(host=host, locked_by=worker_id, expires_at=expiry)
+                    HostGate.objects.create(host=host, locked_by=worker_id,
+                        expires_at=expiry, next_allowed_at=now)
                 return AcquireResult(True)
             except IntegrityError:
                 gate = HostGate.objects.select_for_update().get(host=host)
-                if gate.expires_at <= now:
-                    gate.locked_by, gate.expires_at = worker_id, expiry
-                    gate.save(update_fields=['locked_by', 'expires_at'])
+                if gate.expires_at <= now and (gate.next_allowed_at is None or gate.next_allowed_at <= now):
+                    gate.locked_by, gate.expires_at, gate.next_allowed_at = worker_id, expiry, now
+                    gate.save(update_fields=['locked_by', 'expires_at', 'next_allowed_at'])
                     return AcquireResult(True)
-                remaining = max(0.0, (gate.expires_at - now).total_seconds())
+                deadlines = [gate.expires_at]
+                if gate.next_allowed_at is not None:
+                    deadlines.append(gate.next_allowed_at)
+                remaining = max(0.0, (max(deadlines) - now).total_seconds())
                 return AcquireResult(False, remaining)
 
     def extend_on_429(self, host, worker_id, retry_after_seconds):
@@ -53,11 +63,24 @@ class HostGateway:
             gate = HostGate.objects.select_for_update().filter(host=host).first()
             if gate is None or gate.locked_by != worker_id:
                 return False
-            if requested > gate.expires_at:
-                gate.expires_at = requested
-                gate.save(update_fields=['expires_at'])
+            if gate.next_allowed_at is None or requested > gate.next_allowed_at:
+                gate.next_allowed_at = requested
+                gate.save(update_fields=['next_allowed_at'])
+            return True
+
+    def complete(self, host, worker_id):
+        """Release a completed request but preserve spacing from its finish."""
+        now = self.now()
+        minimum_next = now + timedelta(seconds=self.minimum_interval_seconds)
+        with transaction.atomic():
+            gate = HostGate.objects.select_for_update().filter(host=host).first()
+            if gate is None or gate.locked_by != worker_id:
+                return False
+            gate.expires_at = now
+            gate.next_allowed_at = max(gate.next_allowed_at or minimum_next, minimum_next)
+            gate.save(update_fields=['expires_at', 'next_allowed_at'])
             return True
 
     def release(self, host, worker_id):
-        """A request completion never shortens the mandatory reservation window."""
-        return None
+        """Backward-compatible name for completing a request."""
+        return self.complete(host, worker_id)

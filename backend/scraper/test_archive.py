@@ -14,7 +14,7 @@ def reset_archive_cache(monkeypatch):
     _HOST_STATES.clear()
 from rest_framework.test import APIClient
 from news.models import Article, ArchiveJob, Source, ArticleContent, SourceAccessInstruction
-from scraper.archive import process, run_batch, article_body
+from scraper.archive import process, run_batch, article_body, SourceDelay
 
 
 def approve_access(source, channel, endpoint=None, scope='metadata'):
@@ -204,6 +204,26 @@ def test_archive_host_gate_covers_robots_and_fetch(monkeypatch):
     # Even after cache eviction, error cleanup retains publisher cooldown.
     cache.clear()
     with pytest.raises(SourceDelay): process(job)
+
+
+@pytest.mark.django_db
+def test_archive_rate_limit_is_deferred_not_failed(monkeypatch):
+    from scraper.utils import HostRateLimited
+    from urllib.robotparser import RobotFileParser
+
+    source = Source.objects.create(name='Rate limited archive', url='https://example.org')
+    approve_access(source, 'html')
+    job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
+    policy = RobotFileParser()
+    policy.parse(['User-agent: *', 'Allow: /'])
+    monkeypatch.setattr('scraper.archive.robots', lambda *args, **kwargs: policy)
+    monkeypatch.setattr('scraper.archive.fetch_feed',
+        lambda *args, **kwargs: (_ for _ in ()).throw(HostRateLimited(3)))
+
+    with pytest.raises(SourceDelay) as deferred:
+        process(job, allowed_scope='metadata')
+
+    assert deferred.value.retry_after_seconds == 3
 
 @pytest.mark.django_db
 def test_archive_preserves_publisher_thumbnail_url(monkeypatch):
