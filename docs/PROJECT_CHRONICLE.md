@@ -48,3 +48,12 @@ Nazwa i język produktu świadomie nawiązują do kliniki: Dr Spin analizuje twi
 ## Zasada dalszego zapisu
 
 Kronika opisuje wydarzenia językiem zrozumiałym dla przyszłego czytelnika: co się wydarzyło, dlaczego miało znaczenie, kto lub które narzędzie uczestniczyło oraz jaki był wynik. Szczegółowe telemetrie pozostają w logach operacyjnych. Każdy wpis pomija sekrety i dane prywatne.
+
+## 15 września 2026 — od liczby URL do dowodu pobrania
+
+- Właściciel projektu zatrzymał pytanie „ile workerów uruchomić?” i przesunął środek ciężkości na pytanie „czy każdy pobrany materiał potrafimy obronić, wyjaśnić i ponownie odtworzyć?”. Ta zmiana uporządkowała kolejne prace: legalny kanał i jakość dowodu są ważniejsze niż maksymalna liczba równoległych procesów.
+- Niezależne modele — Claude, Gemini, Qwen, GLM, MiniMax i Grok — otrzymały rozdzielone zadania: projekt widoków Dr Spina, kontrakt limitera hostów, decyzje użycia danych oraz adwersarialny przegląd pętli pobierania. Ich propozycje nie były wdrażane automatycznie. Porównanie ujawniło wspólny rdzeń: wersjonowana instrukcja dostępu, osobna decyzja użycia danych, ślad każdego requestu, limit całego hosta i jawne braki dowodowe.
+- Wprowadzono datę ważności instrukcji dostępu. Wygasła albo niekompletna instrukcja jest odrzucana przez bramkę przed wyjściem do sieci. Kontrola migracji i 22 testy bramki zakończyły się powodzeniem.
+- Audytor źródeł otrzymał stałą checklistę dziewięciu pytań: właściciel i host, endpoint, dowód warunków, zakres danych, robots i ograniczenia, tempo, granica URL, dane zbędne lub wrażliwe oraz data ponownej oceny. Istotniejsze i niejednoznaczne źródła wymagają drugiego przeglądu.
+- Dr Spin otrzymał kierunek produktowy „Diagnoza kontekstu”. Pierwsze widoki nie będą udawały pełnego rozumienia artykułów: pokażą puls wydarzeń, kontekst zewnętrzny, ścieżkę dowodów i sieć połączeń. Odpowiedź ma rozdzielać „Ustalenia”, „Niewiadome” i „Co mogłoby zmienić diagnozę”. Ustalono, że liczba wspólnych wzmianek nie jest miarą prawdziwości ani siły relacji.
+- Odrzucono pozornie precyzyjne procenty pewności oraz założenie, że sam tytuł, publiczny URL albo dokument instytucjonalny zawsze daje pełną zgodę na dowolne użycie. W interfejsie mają pozostać zrozumiałe typy dowodu: dokument urzędowy, zatwierdzona relacja, pojedyncze źródło, współwystępowanie, konflikt i niewiadoma.
