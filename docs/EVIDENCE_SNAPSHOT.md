@@ -16,6 +16,7 @@ Snapshot dowodowy jest odrębny i nigdy nie jest serializowany do publicznego AP
 | Pole | Znaczenie |
 |---|---|
 | `article` | ID boxa, którego dotyczy dowód |
+| `fetch_attempt` | niezmienny identyfikator udanej próby pobrania, z której pochodzi artefakt |
 | `source_url` | adres, z którego pobrano artefakt |
 | `fetched_at` | czas pobrania |
 | `content_sha256` | hash SHA-256 treści/obrazu (nie same bajty) |
@@ -35,15 +36,16 @@ Snapshot dowodowy jest odrębny i nigdy nie jest serializowany do publicznego AP
 
 ## Zgoda i pobieranie
 
-`capture_snapshot()` (`backend/news/evidence_snapshot.py`) to jedyny sposób utworzenia rekordu:
+`capture_snapshot()` (`backend/news/evidence_snapshot.py`) to jedyny sposób utworzenia nowego rekordu:
 
 - rzuca `EvidenceSnapshotDisabled`, dopóki `settings.EVIDENCE_SNAPSHOT_ENABLED` nie jest jawnie ustawione;
 - odmawia zapisu dla `consent_status='unknown'` i `consent_status='denied'`; wywołujący musi jawnie przekazać `allowed` albo `restricted` zgodnie z decyzją dla źródła;
 - nie pobiera niczego samodzielnie — wywołujący dostarcza już pobrane `content`; brak masowego pobierania obrazów czy screenshotów w tym repozytorium.
+- wymaga udanej, audytowanej `FetchAttempt` tego samego źródła. Nie można stworzyć nowego snapshotu z materiału, którego pobrania system nie potrafi wskazać.
 
 ## Migracja
 
-`news/migrations/0028_evidencesnapshot.py` tworzy tabelę `news_evidencesnapshot` z kluczem obcym do `news_article` (`on_delete=CASCADE`) — usunięcie boxa usuwa jego dowody. Brak dodatkowych ograniczeń unikalności na `storage_key`: ta sama treść obserwowana ponownie może współdzielić klucz storage z wcześniejszym wpisem, ale każda obserwacja zostaje osobnym, datowanym wierszem.
+`news/migrations/0028_evidencesnapshot.py` utworzyła tabelę `news_evidencesnapshot`; migracja `0046` chroni teraz box i powiązaną próbę pobrania przed usunięciem, gdy istnieje snapshot. Starsze rekordy mogą nie mieć `fetch_attempt`, ale wszystkie nowe snapshoty go wymagają. Brak dodatkowych ograniczeń unikalności na `storage_key`: ta sama treść obserwowana ponownie może współdzielić klucz storage z wcześniejszym wpisem, ale każda obserwacja zostaje osobnym, datowanym wierszem.
 
 ## Panel redakcyjny
 

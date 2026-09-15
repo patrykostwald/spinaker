@@ -59,8 +59,17 @@ class EvidenceSnapshot(models.Model):
     article = models.ForeignKey(
         "news.Article",
         verbose_name="box",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="evidence_snapshots",
+    )
+    fetch_attempt = models.ForeignKey(
+        "news.FetchAttempt",
+        verbose_name="potwierdzona próba pobrania",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="evidence_snapshots",
+        help_text="Niezmienny dowód konkretnego pobrania. Starsze rekordy mogą go nie mieć.",
     )
     source_url = models.URLField("adres źródłowy", max_length=1024)
     fetched_at = models.DateTimeField("czas pobrania", default=timezone.now)
@@ -104,6 +113,7 @@ def is_evidence_snapshot_enabled() -> bool:
 def capture_snapshot(
     article,
     *,
+    fetch_attempt,
     source_url: str,
     content: bytes,
     artifact_type: str,
@@ -127,6 +137,11 @@ def capture_snapshot(
             "EVIDENCE_SNAPSHOT_ENABLED is False; snapshot capture is disabled by default.")
     if consent_status in (SnapshotConsentStatus.UNKNOWN, SnapshotConsentStatus.DENIED):
         raise ValueError("Snapshot storage requires an explicit allowed or restricted consent status.")
+    from .models import FetchAttempt
+    if fetch_attempt.source_id != article.source_id:
+        raise ValueError("Snapshot fetch attempt must belong to the box source.")
+    if fetch_attempt.outcome != FetchAttempt.Outcome.OK:
+        raise ValueError("Snapshot requires a successful, completed fetch attempt.")
     allowed_uses = list(allowed_uses or [])
     known_uses = set(SnapshotAllowedUse.values)
     if any(not isinstance(use, str) or use not in known_uses for use in allowed_uses):
@@ -138,6 +153,7 @@ def capture_snapshot(
     (storage or get_snapshot_storage()).put(key, content)
     return EvidenceSnapshot.objects.create(
         article=article,
+        fetch_attempt=fetch_attempt,
         source_url=source_url,
         fetched_at=timezone.now(),
         content_sha256=digest,
