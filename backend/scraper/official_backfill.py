@@ -30,7 +30,7 @@ def backfill_votings_cycle():
     source = Source.objects.filter(url=API + '/sejm').first()
     if not source or not _source_enabled(source.pk):
         return {'status': 'disabled', 'new_records': 0}
-    if not official_access_allowed('sejm'):
+    if not official_access_allowed('sejm', f'/sejm/term{settings.SEJM_TERM}/votings/search'):
         return {'status': 'blocked_access_review', 'new_records': 0}
     token = uuid4().hex
     if not cache.add(LOCK, token, 3600):

@@ -82,8 +82,13 @@ def import_official_task(kind):
     state.last_started = started
     state.save(update_fields=['last_started'])
     try:
+        paths = {
+            'votings': f'/sejm/term{settings.SEJM_TERM}/votings/search',
+            'prints': f'/sejm/term{settings.SEJM_TERM}/prints',
+            'eli': '/eli/changes/acts',
+        }
         provider = 'eli' if kind == 'eli' else 'sejm'
-        if not official_access_allowed(provider):
+        if not official_access_allowed(provider, paths[kind]):
             state.last_error = 'no_approved_instruction'
             state.save(update_fields=['last_error'])
             return {'status': 'blocked_access_review', 'new_records': 0}

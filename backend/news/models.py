@@ -582,6 +582,8 @@ class OfficialRecord(models.Model):
     api_url = models.URLField(max_length=1024)
     raw_data = models.JSONField()
     fetched_at = models.DateTimeField(default=timezone.now)
+    fetch_attempt = models.ForeignKey(FetchAttempt, on_delete=models.PROTECT,
+        null=True, blank=True, related_name='official_records')
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["provider", "external_id"], name="unique_official_record")]

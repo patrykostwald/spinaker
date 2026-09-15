@@ -14,6 +14,7 @@ from scraper.official import import_voting
 from scraper.rss_scraper import scrape_rss_source
 from scraper.archive import process
 from scraper.access_gate import AccessDenied
+from scraper.access_gate import approved_instruction
 
 
 RSS = (b'<rss version="2.0"><channel><title>Test</title><item>'
@@ -185,3 +186,18 @@ def test_expired_instruction_blocks_before_transport(monkeypatch):
 
     assert scrape_rss_source(source.pk) == 0
     fetch.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_an_endpoint_specific_suspension_does_not_disable_another_api_endpoint():
+    source = Source.objects.create(name='Two API endpoints', url='https://example.org')
+    common = dict(source=source, status='approved', channel='api', allowed_scope='metadata',
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+    SourceAccessInstruction.objects.create(version=1, endpoint='https://example.org/api/votes', **common)
+    SourceAccessInstruction.objects.create(version=2, status='suspended', channel='api',
+        endpoint='https://example.org/api/prints', evidence={'reason': 'test'},
+        minimum_interval_seconds=3, source=source)
+
+    assert approved_instruction(source, 'api', 'https://example.org/api/votes/1') is not None
+    assert approved_instruction(source, 'api', 'https://example.org/api/prints/1') is None

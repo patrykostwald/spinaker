@@ -1,4 +1,5 @@
 from datetime import timedelta
+import json
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -139,7 +140,7 @@ def test_official_api_uses_audited_transport(monkeypatch):
         status=SourceAccessInstruction.Status.APPROVED,
         channel=SourceAccessInstruction.Channel.API,
         allowed_scope=SourceAccessInstruction.Scope.METADATA,
-        endpoint=API + '/sejm',
+        endpoint=API + '/sejm/term10/votings',
         terms_url=API + '/sejm.html',
         evidence={'basis': 'official API documentation'},
         reviewed_at=timezone.now(),
@@ -152,3 +153,35 @@ def test_official_api_uses_audited_transport(monkeypatch):
     attempt = FetchAttempt.objects.get()
     assert attempt.channel == SourceAccessInstruction.Channel.API
     assert attempt.requested_kind == FetchAttempt.RequestedKind.API_RECORD
+
+
+@pytest.mark.django_db
+def test_imported_voting_keeps_the_exact_fetch_receipt(monkeypatch):
+    from scraper.official import API, import_voting, official_source
+
+    source = official_source('sejm')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.API,
+        allowed_scope=SourceAccessInstruction.Scope.CONTENT,
+        endpoint=API + '/sejm/term10/votings', terms_url=API + '/sejm.html',
+        evidence={'basis': 'official API documentation'}, reviewed_at=timezone.now(),
+        reviewed_by='test', valid_until=timezone.now() + timedelta(days=1),
+    )
+    payload = {
+        'term': 10, 'sitting': 1, 'votingNumber': 2, 'title': 'Test motion',
+        'description': 'Test description', 'date': '2026-09-15T12:00:00',
+        'kind': 'ELECTRONIC', 'yes': 1, 'no': 1,
+        'votes': [
+            {'MP': 1, 'firstName': 'Jan', 'lastName': 'Testowy', 'club': 'T', 'vote': 'YES'},
+            {'MP': 2, 'firstName': 'Anna', 'lastName': 'Przykladowa', 'club': 'P', 'vote': 'NO'},
+        ],
+    }
+    monkeypatch.setattr('scraper.utils._fetch_feed_raw',
+        lambda *args, **kwargs: json.dumps(payload).encode('utf-8'))
+
+    assert import_voting(10, 1, 2) is True
+    from news.models import OfficialRecord
+    record = OfficialRecord.objects.get(provider='sejm', external_id='vote/10/1/2')
+    assert record.fetch_attempt_id
+    assert record.fetch_attempt.outcome == FetchAttempt.Outcome.OK

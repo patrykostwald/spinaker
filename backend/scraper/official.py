@@ -14,18 +14,21 @@ API = 'https://api.sejm.gov.pl'
 VOTE_CODES = {'YES', 'NO', 'ABSTAIN', 'NO_VOTE', 'ABSENT', 'VOTE_VALID', 'VOTE_INVALID', 'PRESENT'}
 
 
-def fetch_json(path, **params):
+def fetch_json(path, *, return_receipt=False, **params):
     provider = 'eli' if path.startswith('/eli/') else 'sejm'
     source = official_source(provider)
-    endpoint = API + ('/eli' if provider == 'eli' else '/sejm')
-    instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint)
-    if instruction is None:
-        raise AccessDenied('no_approved_instruction')
     query = urlencode(params, doseq=True)
     request_url = API + path + (f'?{query}' if query else '')
-    raw = fetch_feed(request_url, hostname_transport=True, audit_source=source,
-        audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD)
-    return json.loads(raw.decode('utf-8'))
+    instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, request_url)
+    if instruction is None:
+        raise AccessDenied('no_approved_instruction')
+    response = fetch_feed(request_url, hostname_transport=True, audit_source=source,
+        audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD,
+        return_receipt=return_receipt)
+    if return_receipt:
+        raw, receipt = response
+        return json.loads(raw.decode('utf-8')), receipt
+    return json.loads(response.decode('utf-8'))
 
 
 def official_source(provider):
@@ -33,16 +36,17 @@ def official_source(provider):
         url=API + ('/sejm' if provider == 'sejm' else '/eli'), source_type=SourceType.INSTITUTION)
 
 
-def save_record(provider, external_id, article, api_url, data):
+def save_record(provider, external_id, article, api_url, data, fetch_attempt=None):
     record = OfficialRecord.objects.select_for_update().filter(provider=provider, external_id=external_id).first()
     if record and record.raw_data != data:
         OfficialRevision.objects.create(record=record, raw_data=record.raw_data, fetched_at=record.fetched_at)
     OfficialRecord.objects.update_or_create(provider=provider, external_id=external_id, defaults={
-        'article': article, 'api_url': api_url, 'raw_data': data, 'fetched_at': timezone.now()})
+        'article': article, 'api_url': api_url, 'raw_data': data, 'fetched_at': timezone.now(),
+        'fetch_attempt': fetch_attempt})
 
 
 @transaction.atomic
-def save_voting(data, term, sitting, number):
+def save_voting(data, term, sitting, number, *, fetch_attempt=None):
     # A partial or malformed response must never destroy previously imported ballots.
     if (data['term'], data['sitting'], data['votingNumber']) != (term, sitting, number) or not data.get('title') or not (data.get('description') or data.get('topic')):
         raise ValueError('Voting identity or motion missing')
@@ -65,7 +69,7 @@ def save_voting(data, term, sitting, number):
         published_date=dt, category=ArticleCategory.VOTING, description=motion, ingestion_method='sejm')
     # Official corrections are applied together with their complete new payload.
     Article.objects.filter(pk=article.pk).update(title=data['title'][:500], description=motion, published_date=dt, date_precision='time')
-    save_record('sejm', f'vote/{term}/{sitting}/{number}', article, API + path, data)
+    save_record('sejm', f'vote/{term}/{sitting}/{number}', article, API + path, data, fetch_attempt)
     voting, _ = ParliamentaryVoting.objects.update_or_create(term=term, sitting=sitting, number=number, defaults={
         'article': article, 'motion': motion, 'kind': data['kind'],
         'counts': {key: data[key] for key in ('yes', 'no', 'abstain', 'notParticipating', 'present', 'totalVoted', 'majorityType', 'majorityVotes') if key in data},
@@ -81,16 +85,16 @@ def save_voting(data, term, sitting, number):
 
 
 def import_voting(term, sitting, number, *, guard=None):
-    if not official_access_allowed('sejm'):
+    if not official_access_allowed('sejm', f'/sejm/term{term}/votings/{sitting}/{number}'):
         return 0
-    data = fetch_json(f'/sejm/term{term}/votings/{sitting}/{number}')
+    data, receipt = fetch_json(f'/sejm/term{term}/votings/{sitting}/{number}', return_receipt=True)
     if guard:
         guard()
-    return save_voting(data, term, sitting, number)
+    return save_voting(data, term, sitting, number, fetch_attempt=receipt)
 
 
 def _import_voting_pages(term, guard=None, **filters):
-    if not official_access_allowed('sejm'):
+    if not official_access_allowed('sejm', f'/sejm/term{term}/votings/search'):
         return 0
     # The search endpoint defaults to 50 results. An empty page is the only
     # completion signal: a server-side page cap may be smaller than our limit.
@@ -150,7 +154,7 @@ def save_document(data, provider, external_id, api_url, url, category, date_key)
 def import_eli_year(publisher, year):
     if publisher not in {'DU', 'MP'} or not 1918 <= year <= timezone.now().year:
         raise ValueError('Invalid ELI journal or year')
-    if not official_access_allowed('eli'):
+    if not official_access_allowed('eli', '/eli/acts/search'):
         return 0
     offset, count = 0, 0
     while True:
@@ -170,7 +174,7 @@ def import_eli_year(publisher, year):
 def import_print(term, number):
     if not str(number).replace('-', '').isdigit():
         raise ValueError('Invalid print number')
-    if not official_access_allowed('sejm'):
+    if not official_access_allowed('sejm', f'/sejm/term{term}/prints/{number}'):
         return 0
     path = f'/sejm/term{term}/prints/{number}'
     data = fetch_json(path)
@@ -182,7 +186,7 @@ def import_print(term, number):
 
 def import_prints(term):
     # This endpoint returns the full list and ignores limit/offset parameters.
-    if not official_access_allowed('sejm'):
+    if not official_access_allowed('sejm', f'/sejm/term{term}/prints'):
         return 0
     count = 0
     for row in fetch_json(f'/sejm/term{term}/prints'):
@@ -199,7 +203,7 @@ def import_prints(term):
 
 
 def import_eli_changes(since):
-    if not official_access_allowed('eli'):
+    if not official_access_allowed('eli', '/eli/changes/acts'):
         return 0
     count, offset, seen = 0, 0, set()
     while True:
@@ -221,7 +225,6 @@ def import_eli_changes(since):
             raise ValueError('Incomplete ELI changes pagination')
 
 
-def official_access_allowed(provider):
+def official_access_allowed(provider, path):
     source = official_source(provider)
-    endpoint = API + ('/eli' if provider == 'eli' else '/sejm')
-    return approved_instruction(source, SourceAccessInstruction.Channel.API, endpoint) is not None
+    return approved_instruction(source, SourceAccessInstruction.Channel.API, API + path) is not None

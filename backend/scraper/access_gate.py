@@ -32,11 +32,20 @@ def approved_instruction(source, channel, request_url=None):
     if (not source or not source.is_active or not source.scrape_enabled
             or source.catalog_stage != 'configured'):
         return None
-    # The newest version for this channel is authoritative.  Filtering to
-    # approved rows first would incorrectly revive version 1 after version 2
-    # has been suspended or moved to contact_required.
-    instruction = SourceAccessInstruction.objects.filter(
-        source=source, channel=channel).order_by('-version').first()
+    # A source may expose separate, independently reviewed API endpoints.
+    # The most-specific matching endpoint wins; its newest version is
+    # authoritative.  A suspension on that endpoint must not revive an older
+    # version nor silently spill into a different documented endpoint.
+    candidates = list(SourceAccessInstruction.objects.filter(
+        source=source, channel=channel).order_by('-version'))
+    if request_url:
+        candidates = [item for item in candidates
+            if _same_endpoint_or_child(request_url, item.endpoint)]
+        if candidates:
+            specificity = max(len(urlsplit(item.endpoint).path.rstrip('/')) for item in candidates)
+            candidates = [item for item in candidates
+                if len(urlsplit(item.endpoint).path.rstrip('/')) == specificity]
+    instruction = candidates[0] if candidates else None
     if instruction is None or instruction.status != SourceAccessInstruction.Status.APPROVED:
         return None
     if (instruction.minimum_interval_seconds < 3 or not instruction.terms_url

@@ -169,7 +169,7 @@ def _record_transport_attempt(*, source, instruction, requested_kind, url, outco
 
 
 def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instruction=None,
-               requested_kind=None):
+               requested_kind=None, return_receipt=False):
     """Bounded HTTP fetch, optionally emitting an append-only audit receipt."""
     if (audit_source is None) != (audit_instruction is None):
         raise ValueError('Fetch audit requires both source and instruction.')
@@ -187,12 +187,13 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 requested_kind=requested_kind, url=url, outcome=outcome,
                 http_status=status, error_code=code, hostname_transport=hostname_transport)
         raise
+    receipt = None
     if audit_source is not None:
-        _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+        receipt = _record_transport_attempt(source=audit_source, instruction=audit_instruction,
             requested_kind=requested_kind, url=url, outcome=FetchAttempt.Outcome.OK,
             http_status=200, bytes_received=len(raw), response_sha256=sha256(raw).hexdigest(),
             hostname_transport=hostname_transport)
-    return raw
+    return (raw, receipt) if return_receipt else raw
 
 
 def _fetch_feed_raw(url, *, hostname_transport=False):

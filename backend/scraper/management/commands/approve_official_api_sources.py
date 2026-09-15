@@ -1,4 +1,4 @@
-"""Record the reviewed API access cards for the Sejm's public APIs.
+"""Record the reviewed API card for the first Sejm voting pilot.
 
 The command is deliberately explicit: it never contacts either API and never
 overrides a newer suspended/contact-required decision made by an editor.
@@ -15,21 +15,15 @@ from scraper.official import API, official_source
 OFFICIAL_APIS = (
     (
         'sejm',
-        API + '/sejm',
+        API + '/sejm/term10/votings',
         API + '/sejm.html',
-        'Publiczna dokumentacja API Sejmu opisuje endpointy, dane i stronicowanie.',
-    ),
-    (
-        'eli',
-        API + '/eli',
-        API + '/eli_pl.html',
-        'Publiczna dokumentacja ELI opisuje identyfikatory aktów i endpointy API.',
+        'Publiczna dokumentacja API Sejmu opisuje głosowania i stronicowanie; karta obejmuje wyłącznie ścieżkę głosowań kadencji 10.',
     ),
 )
 
 
 class Command(BaseCommand):
-    help = 'Tworzy lokalne, wersjonowane karty dostępu dla publicznych API Sejmu i ELI.'
+    help = 'Tworzy lokalną, wersjonowaną kartę dostępu dla pilotażu głosowań Sejmu.'
 
     def add_arguments(self, parser):
         parser.add_argument('--apply', action='store_true',
@@ -44,7 +38,7 @@ class Command(BaseCommand):
         for provider, endpoint, terms_url, note in OFFICIAL_APIS:
             source = official_source(provider)
             latest = SourceAccessInstruction.objects.filter(
-                source=source, channel=SourceAccessInstruction.Channel.API,
+                source=source, channel=SourceAccessInstruction.Channel.API, endpoint=endpoint,
             ).order_by('-version').first()
             if latest and latest.status != SourceAccessInstruction.Status.APPROVED:
                 self.stdout.write(self.style.WARNING(

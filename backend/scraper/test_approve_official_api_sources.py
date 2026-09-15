@@ -17,11 +17,11 @@ def test_command_only_plans_without_apply():
 
 
 @pytest.mark.django_db
-def test_command_creates_two_current_official_api_cards():
+def test_command_creates_one_current_official_voting_card():
     call_command('approve_official_api_sources', '--apply', stdout=StringIO())
 
     cards = SourceAccessInstruction.objects.filter(channel='api').order_by('endpoint')
-    assert cards.count() == 2
+    assert cards.count() == 1
     assert all(card.status == SourceAccessInstruction.Status.APPROVED for card in cards)
     assert all(card.allowed_scope == SourceAccessInstruction.Scope.CONTENT for card in cards)
 
@@ -32,7 +32,7 @@ def test_command_never_overrides_a_newer_suspension():
     SourceAccessInstruction.objects.create(
         source=source, version=1, status=SourceAccessInstruction.Status.SUSPENDED,
         channel=SourceAccessInstruction.Channel.API,
-        endpoint='https://api.sejm.gov.pl/sejm', evidence={'reason': 'test'},
+        endpoint='https://api.sejm.gov.pl/sejm/term10/votings', evidence={'reason': 'test'},
     )
 
     call_command('approve_official_api_sources', '--apply', stdout=StringIO())
