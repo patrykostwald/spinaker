@@ -14,7 +14,8 @@ from django.db import transaction, IntegrityError
 from django.db.models import F
 from django.utils import timezone
 from django.utils.html import strip_tags
-from news.models import Article, ArticleCategory, FetchAttempt, FetchRequest, Source, SourceType
+from news.models import (Article, ArticleCategory, FetchAttempt, FetchRequest,
+    Source, SourceDailyFetchBudget, SourceType)
 from news.classification import publisher_category, normalize_publisher_tags
 
 log = logging.getLogger('scraper')
@@ -84,6 +85,36 @@ def reserve_budget(name, units, limit, seconds):
         cache.decr(key, units)
         log.error('Import budget exhausted: %s', name)
     return used <= limit
+
+
+def reserve_daily_fetch_budget(instruction):
+    """Reserve one durable daily request slot before any source network I/O.
+
+    A card with a zero cap is deliberately unusable.  The counter is tied to
+    the reviewed instruction version, so a replacement card gets a fresh,
+    explicitly reviewed budget rather than inheriting an older one.
+    """
+    cap = int(instruction.daily_request_cap or 0)
+    if cap < 1:
+        return False
+    today = timezone.localdate()
+    with transaction.atomic():
+        budget = (SourceDailyFetchBudget.objects.select_for_update()
+                  .filter(instruction=instruction, day=today).first())
+        if budget is None:
+            try:
+                with transaction.atomic():
+                    SourceDailyFetchBudget.objects.create(
+                        instruction=instruction, day=today, used=0)
+            except IntegrityError:
+                pass
+            budget = (SourceDailyFetchBudget.objects.select_for_update()
+                      .get(instruction=instruction, day=today))
+        if budget.used >= cap:
+            return False
+        budget.used += 1
+        budget.save(update_fields=['used'])
+        return True
 
 def retry_delay(exc, failures, cap=86400):
     """Return bounded exponential backoff, honoring a provider Retry-After floor."""
@@ -240,6 +271,23 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
     gateway = worker_id = host = None
     request_id = uuid4()
     if audit_source is not None:
+        from scraper.access_gate import AccessDenied, approved_instruction
+        active_instruction = approved_instruction(audit_source, audit_instruction.channel, url)
+        if active_instruction is None:
+            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                requested_kind=requested_kind, url=url,
+                outcome=FetchAttempt.Outcome.REFUSED_SCOPE_MISMATCH,
+                error_code='access_recheck_failed', hostname_transport=hostname_transport,
+                network_started=False, request_id=request_id)
+            raise AccessDenied('no_approved_instruction')
+        audit_instruction = active_instruction
+        if not reserve_daily_fetch_budget(audit_instruction):
+            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                requested_kind=requested_kind, url=url,
+                outcome=FetchAttempt.Outcome.DAILY_LIMIT_PREEMPTIVE,
+                error_code='daily_request_cap_reached', hostname_transport=hostname_transport,
+                network_started=False, request_id=request_id)
+            raise HostRateLimited(24 * 60 * 60)
         from scraper.host_gateway import HostGateway
         host = (urlparse(url).hostname or '').lower()
         # Durable source identity, rather than a transient Python object id.
@@ -312,6 +360,16 @@ def fetch_response_once(url, *, audit_source, audit_instruction, requested_kind,
             network_started=False,
         )
         raise AccessDenied('no_approved_instruction')
+
+    if not reserve_daily_fetch_budget(active_instruction):
+        _record_transport_attempt(
+            source=audit_source, instruction=active_instruction,
+            requested_kind=requested_kind, url=url,
+            outcome=FetchAttempt.Outcome.DAILY_LIMIT_PREEMPTIVE,
+            error_code='daily_request_cap_reached', hostname_transport=hostname_transport,
+            network_started=False,
+        )
+        raise HostRateLimited(24 * 60 * 60)
 
     gateway = None
     host = (urlparse(url).hostname or '').lower()

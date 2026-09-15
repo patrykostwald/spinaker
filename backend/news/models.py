@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.db import models
 from django.utils import timezone
@@ -157,6 +157,8 @@ class SourceAccessInstruction(models.Model):
     terms_url = models.URLField(max_length=1024, blank=True)
     evidence = models.JSONField(default=dict, help_text='URL-e i krótkie fakty potwierdzające decyzję.')
     minimum_interval_seconds = models.PositiveIntegerField(default=3)
+    daily_request_cap = models.PositiveIntegerField(default=0,
+        help_text='Twardy dzienny limit żądań tej karty; 0 oznacza brak dostępu automatycznego.')
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.CharField(max_length=120, blank=True)
     valid_until = models.DateTimeField(null=True, blank=True, default=access_instruction_default_expiry)
@@ -173,6 +175,8 @@ class SourceAccessInstruction(models.Model):
         errors = {}
         if self.minimum_interval_seconds < 3:
             errors['minimum_interval_seconds'] = 'Automatyczny dostęp wymaga odstępu co najmniej 3 sekund.'
+        if self.status == self.Status.APPROVED and self.daily_request_cap < 1:
+            errors['daily_request_cap'] = 'Zatwierdzona instrukcja wymaga dodatniego dziennego limitu żądań.'
         if not isinstance(self.allowed_path_patterns, list) or any(
                 not isinstance(item, str) or not item.startswith('/') for item in self.allowed_path_patterns):
             errors['allowed_path_patterns'] = 'Wzorce ścieżek muszą być listą ścieżek rozpoczynających się od /. '
@@ -199,6 +203,7 @@ class FetchAttempt(models.Model):
         REFUSED_SUSPENDED = 'refused_suspended', 'Instrukcja wstrzymana'
         REFUSED_SCOPE_MISMATCH = 'refused_scope_mismatch', 'Poza zakresem instrukcji'
         RATE_LIMIT_PREEMPTIVE = 'rate_limit_preemptive', 'Limit hosta przed siecią'
+        DAILY_LIMIT_PREEMPTIVE = 'daily_limit_preemptive', 'Dzienny limit źródła przed siecią'
         BLOCKED_ROBOTS = 'blocked_robots', 'Zablokowane przez robots'
         OK = 'ok', 'Sukces'
         HTTP_ERROR = 'http_error', 'Błąd HTTP'
@@ -248,6 +253,7 @@ class FetchAttempt(models.Model):
             self.Outcome.REFUSED_SUSPENDED,
             self.Outcome.REFUSED_SCOPE_MISMATCH,
             self.Outcome.RATE_LIMIT_PREEMPTIVE,
+            self.Outcome.DAILY_LIMIT_PREEMPTIVE,
             self.Outcome.BLOCKED_ROBOTS,
         }
         errors = {}
@@ -308,6 +314,20 @@ class FetchRequest(models.Model):
                 ),
                 name='fetch_request_state_matches_closed_at',
             ),
+        ]
+
+
+class SourceDailyFetchBudget(models.Model):
+    """Durable per-card daily reservation counter, consumed before network I/O."""
+    instruction = models.ForeignKey(SourceAccessInstruction, on_delete=models.PROTECT,
+        related_name='daily_fetch_budgets')
+    day = models.DateField(default=date.today)
+    used = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['instruction', 'day'],
+                name='unique_source_instruction_daily_fetch_budget'),
         ]
 
 

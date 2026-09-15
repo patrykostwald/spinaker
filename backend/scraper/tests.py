@@ -26,7 +26,7 @@ def approve_rss(source):
         allowed_scope='metadata', endpoint=source.rss_url,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
         reviewed_at=__import__('django.utils.timezone', fromlist=['now']).now(),
-        reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_by='test', minimum_interval_seconds=3, daily_request_cap=24)
 
 def test_catalog():
     assert len(RSS_SOURCES) == 43  # The brief labels this as 42, but lists 43.
@@ -119,7 +119,7 @@ def test_one_request_transport_audits_an_unfollowed_redirect(raw):
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
         reviewed_at=timezone.now(), reviewed_by='test',
         valid_until=timezone.now() + __import__('datetime').timedelta(days=1),
-        minimum_interval_seconds=3,
+        minimum_interval_seconds=3, daily_request_cap=24,
     )
     raw.return_value = SourceHTTPResponse(303, {'Location': '/api/kolejka/q-1'}, b'')
 

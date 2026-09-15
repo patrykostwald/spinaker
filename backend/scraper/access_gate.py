@@ -66,7 +66,7 @@ def approved_instruction(source, channel, request_url=None):
     instruction = candidates[0] if candidates else None
     if instruction is None or instruction.status != SourceAccessInstruction.Status.APPROVED:
         return None
-    if (instruction.minimum_interval_seconds < 3 or not instruction.terms_url
+    if (instruction.minimum_interval_seconds < 3 or instruction.daily_request_cap < 1 or not instruction.terms_url
             or not instruction.reviewed_at or not instruction.reviewed_by
             or not instruction.evidence or not instruction.valid_until
             or instruction.valid_until <= timezone.now()):

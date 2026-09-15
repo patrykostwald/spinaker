@@ -32,7 +32,7 @@ def test_preflight_recognises_a_complete_sejm_card(monkeypatch):
         endpoint='https://api.sejm.gov.pl/sejm/term10/votings',
         terms_url='https://api.sejm.gov.pl/sejm.html', evidence={'url': 'https://api.sejm.gov.pl/sejm.html'},
         reviewed_at=timezone.now(), reviewed_by='Test redakcyjny', valid_until=timezone.now() + timedelta(days=1),
-        minimum_interval_seconds=3)
+        minimum_interval_seconds=3, daily_request_cap=24)
     monkeypatch.setattr('scraper.management.commands.sejm_pilot_preflight.connection.vendor', 'postgresql')
     output = StringIO()
 

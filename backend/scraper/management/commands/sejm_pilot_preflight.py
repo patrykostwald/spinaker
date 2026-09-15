@@ -15,7 +15,7 @@ from scraper.official import API
 SOURCE_URL = API + '/sejm'
 ENDPOINT = API + '/sejm/term10/votings'
 PILOT_URLS = (
-    ENDPOINT + '/search',
+    ENDPOINT + '/1',
     ENDPOINT + '/1/1',
 )
 
@@ -46,6 +46,10 @@ class Command(BaseCommand):
                 blockers.append('Karta API Sejmu nie ma zakresu content.')
             else:
                 checks.append(f'Karta dostępu v{card.version} obejmuje zakres content.')
+            if card.daily_request_cap < 1:
+                blockers.append('Karta API Sejmu nie ma dodatniego dziennego limitu żądań.')
+            else:
+                checks.append(f'Karta ogranicza pilot do {card.daily_request_cap} żądań dziennie.')
             uncovered = [url for url in PILOT_URLS
                          if approved_instruction(source, SourceAccessInstruction.Channel.API, url) is None]
             if uncovered:

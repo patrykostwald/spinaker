@@ -68,7 +68,7 @@ def test_newer_suspended_rss_instruction_blocks_older_approval(monkeypatch):
         source=source, version=1, status='approved', channel='rss',
         allowed_scope='metadata', endpoint=source.rss_url,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3, daily_request_cap=24)
     SourceAccessInstruction.objects.create(
         source=source, version=2, status='suspended', channel='rss',
         allowed_scope='metadata', endpoint=source.rss_url,
@@ -115,7 +115,7 @@ def test_sitemap_instruction_never_authorizes_page_fetch(monkeypatch):
         source=source, version=1, status='approved', channel='sitemap',
         allowed_scope='content', endpoint='https://example.org/map.xml',
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3, daily_request_cap=24)
     from news.models import ArchiveJob
     job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
     fetch = Mock()
@@ -193,7 +193,7 @@ def test_an_endpoint_specific_suspension_does_not_disable_another_api_endpoint()
     source = Source.objects.create(name='Two API endpoints', url='https://example.org')
     common = dict(source=source, status='approved', channel='api', allowed_scope='metadata',
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3, daily_request_cap=24)
     SourceAccessInstruction.objects.create(version=1, endpoint='https://example.org/api/votes', **common)
     SourceAccessInstruction.objects.create(version=2, status='suspended', channel='api',
         endpoint='https://example.org/api/prints', evidence={'reason': 'test'},
@@ -217,9 +217,42 @@ def test_access_card_can_allow_only_integer_voting_paths():
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
         reviewed_at=timezone.now(), reviewed_by='test',
         valid_until=timezone.now() + __import__('datetime').timedelta(days=1),
-        minimum_interval_seconds=3,
+        minimum_interval_seconds=3, daily_request_cap=24,
     )
 
     assert approved_instruction(source, 'api', 'https://example.org/sejm/term10/votings/4')
     assert approved_instruction(source, 'api', 'https://example.org/sejm/term10/votings/4/1')
     assert approved_instruction(source, 'api', 'https://example.org/sejm/term10/votings/4/1/pdf') is None
+
+
+@pytest.mark.django_db
+def test_daily_cap_blocks_before_a_second_network_request(monkeypatch):
+    """The reviewed cap is durable and fails closed before transport."""
+    from scraper.utils import HostRateLimited, SourceHTTPResponse, fetch_response_once
+
+    source = Source.objects.create(name='Daily limited API', url='https://example.org',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    instruction = SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api',
+        allowed_scope='content', endpoint='https://example.org/api',
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() + __import__('datetime').timedelta(days=1),
+        minimum_interval_seconds=3, daily_request_cap=1,
+    )
+    raw = Mock(return_value=SourceHTTPResponse(200, {}, b'{}'))
+    monkeypatch.setattr('scraper.utils._fetch_feed_raw', raw)
+
+    fetch_response_once('https://example.org/api/1', audit_source=source,
+        audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD,
+        hostname_transport=True)
+    with pytest.raises(HostRateLimited):
+        fetch_response_once('https://example.org/api/2', audit_source=source,
+            audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD,
+            hostname_transport=True)
+
+    assert raw.call_count == 1
+    assert FetchAttempt.objects.filter(
+        outcome=FetchAttempt.Outcome.DAILY_LIMIT_PREEMPTIVE,
+        network_started=False,
+    ).count() == 1
