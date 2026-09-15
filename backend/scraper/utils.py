@@ -213,12 +213,18 @@ def _close_fetch_request(*, request_id, source, instruction, requested_kind, url
 
 
 def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instruction=None,
-               requested_kind=None, return_receipt=False):
-    """Bounded HTTP fetch, optionally emitting an append-only audit receipt."""
+               requested_kind=None, return_receipt=False, method='GET', body=None,
+               request_headers=None):
+    """Bounded, audited HTTP request; GET remains the default feed reader."""
     if (audit_source is None) != (audit_instruction is None):
         raise ValueError('Fetch audit requires both source and instruction.')
     if audit_source is not None and requested_kind is None:
         raise ValueError('Fetch audit requires a requested kind.')
+    method = str(method).upper()
+    if method not in {'GET', 'POST'}:
+        raise ValueError('Only GET and POST are supported by the source transport.')
+    if body is not None and (not isinstance(body, bytes) or len(body) > 100_000):
+        raise ValueError('Request body must be bytes up to 100 kB.')
     gateway = worker_id = host = None
     request_id = uuid4()
     if audit_source is not None:
@@ -243,7 +249,8 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 requested_kind=requested_kind, url=url, hostname_transport=hostname_transport,
                 request_id=request_id)
         try:
-            raw = _fetch_feed_raw(url, hostname_transport=hostname_transport)
+            raw = _fetch_feed_raw(url, hostname_transport=hostname_transport,
+                method=method, body=body, request_headers=request_headers)
         except Exception as exc:
             if audit_source is not None:
                 response = getattr(exc, 'response', None)
@@ -268,7 +275,8 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
     finally:
         if gateway is not None:
             gateway.complete(host, worker_id)
-def _fetch_feed_raw(url, *, hostname_transport=False):
+def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
+                    request_headers=None):
     """Bounded public HTTP fetch with validation on every redirect.
 
     ``hostname_transport`` is reserved for an already approved publisher
@@ -314,12 +322,18 @@ def _fetch_feed_raw(url, *, hostname_transport=False):
                 host_header += ':' + str(port)
             request_url = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
             headers = {'Host': host_header, 'User-Agent': 'ContextBeforeContent/1.0 source reader'}
+        extra_headers = dict(request_headers or {})
+        if any(str(key).lower() in {'host', 'user-agent'} for key in extra_headers):
+            raise ValueError('Source transport controls Host and User-Agent headers.')
+        headers.update({str(key): str(value) for key, value in extra_headers.items()})
         response = None
         try:
-            response = pool.urlopen('GET', request_url, redirect=False, preload_content=False, retries=False,
+            response = pool.urlopen(method, request_url, body=body, redirect=False, preload_content=False, retries=False,
                 timeout=urllib3.Timeout(connect=5, read=30),
                 headers=headers)
             if response.status in (301, 302, 303, 307, 308):
+                if method != 'GET':
+                    raise ValueError('Redirected non-GET request requires a separately reviewed endpoint')
                 url = urljoin(url, response.headers['Location'])
                 if (urlparse(url).hostname or '').lower() != initial_host:
                     raise ValueError('Cross-host redirect requires a separate access instruction')

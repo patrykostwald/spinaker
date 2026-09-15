@@ -57,7 +57,7 @@ def test_public_fetch_pins_ip_and_rejects_private_redirect(resolve):
     resolve.side_effect = [[(2, 1, 6, '', ('8.8.8.8', 443))], [(2, 1, 6, '', ('10.0.0.1', 443))]]
     with patch('urllib3.HTTPSConnectionPool') as pool:
         pool.return_value.urlopen.return_value = MagicMock(status=302, headers={'Location': 'https://internal.example/a'})
-        with pytest.raises(ValueError, match='public'):
+        with pytest.raises(ValueError, match='separate access instruction'):
             fetch_feed('https://source.example/a')
         assert pool.call_args.args[0] == '8.8.8.8'
         assert pool.call_args.kwargs['assert_hostname'] == 'source.example'
@@ -85,9 +85,23 @@ def test_hostname_transport_still_rejects_private_redirect(resolve):
     resolve.side_effect = [[(2, 1, 6, '', ('8.8.8.8', 443))], [(2, 1, 6, '', ('10.0.0.1', 443))]]
     with patch('urllib3.PoolManager') as pool:
         pool.return_value.urlopen.return_value = MagicMock(status=302, headers={'Location': 'https://internal.example/a'})
-        with pytest.raises(ValueError, match='public'):
+        with pytest.raises(ValueError, match='separate access instruction'):
             fetch_feed('https://source.example/a', hostname_transport=True)
         assert pool.return_value.urlopen.call_count == 1
+
+
+@patch('scraper.utils.socket.getaddrinfo')
+def test_audited_transport_allows_a_bounded_post_body(resolve):
+    from scraper.utils import fetch_feed
+    resolve.return_value = [(2, 1, 6, '', ('8.8.8.8', 443))]
+    response = MagicMock(status=200, headers={})
+    response.stream.return_value = [b'{}']
+    with patch('urllib3.PoolManager') as pool:
+        pool.return_value.urlopen.return_value = response
+        assert fetch_feed('https://source.example/api', hostname_transport=True,
+            method='POST', body=b'{"page":1}',
+            request_headers={'Content-Type': 'application/json'}) == b'{}'
+    assert pool.return_value.urlopen.call_args.args[:2] == ('POST', 'https://source.example/api')
 
 @pytest.mark.django_db
 @patch('scraper.gdelt_scraper.requests.get')
@@ -269,7 +283,7 @@ def test_html_response_never_counts_as_successful_feed(monkeypatch):
 def test_valid_empty_feed_is_successful(monkeypatch):
     source = Source.objects.create(name='Publisher', url='https://example.org', rss_url='https://example.org/feed')
     approve_rss(source)
-    monkeypatch.setattr('scraper.rss_scraper.fetch_feed', lambda url: b'<?xml version="1.0"?><rss version="2.0"><channel><title>Publisher</title><link>https://example.org</link><description>Updates</description></channel></rss>')
+    monkeypatch.setattr('scraper.rss_scraper.fetch_feed', lambda *args, **kwargs: b'<?xml version="1.0"?><rss version="2.0"><channel><title>Publisher</title><link>https://example.org</link><description>Updates</description></channel></rss>')
     assert scrape_rss_source(source.pk) == 0
     source.refresh_from_db()
     assert source.last_scraped is not None and not source.last_error
