@@ -35,11 +35,16 @@ class Command(BaseCommand):
             checks.append('Źródło API Sejmu jest aktywne.')
 
         try:
-            card = approved_instruction(source, SourceAccessInstruction.Channel.API, ENDPOINT) if source else None
+            # The card intentionally does not authorize the collection root;
+            # it authorizes only concrete list/detail URLs below it.
+            card = (SourceAccessInstruction.objects.filter(
+                source=source, channel=SourceAccessInstruction.Channel.API,
+                endpoint=ENDPOINT,
+            ).order_by('-version').first() if source else None)
         except DatabaseError:
             card = None
             blockers.append('Lokalna baza ma starszy schemat kart dostępu; wymaga bezpiecznej migracji przed pilotem.')
-        if not card:
+        if not card or card.status != SourceAccessInstruction.Status.APPROVED:
             blockers.append('Brak aktualnej zatwierdzonej karty API dla głosowań kadencji 10.')
         else:
             if card.allowed_scope != SourceAccessInstruction.Scope.CONTENT:
@@ -55,7 +60,7 @@ class Command(BaseCommand):
             if uncovered:
                 blockers.append('Karta nie obejmuje wszystkich endpointów pilota: ' + ', '.join(uncovered))
             else:
-                checks.append('Karta obejmuje wyszukiwanie i szczegóły głosowania.')
+                checks.append('Karta obejmuje listę posiedzenia i szczegóły głosowania.')
 
         if connection.vendor != 'postgresql':
             blockers.append('Testy wyścigów przed pilotem wymagają PostgreSQL; bieżąca baza to ' + connection.vendor + '.')

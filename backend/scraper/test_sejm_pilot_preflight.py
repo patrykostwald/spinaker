@@ -43,8 +43,10 @@ def test_preflight_recognises_a_complete_sejm_card(monkeypatch):
 
 @pytest.mark.django_db
 def test_preflight_reports_an_outdated_database_schema(monkeypatch):
-    monkeypatch.setattr('scraper.management.commands.sejm_pilot_preflight.approved_instruction',
-        lambda *args, **kwargs: (_ for _ in ()).throw(DatabaseError('missing column')))
+    monkeypatch.setattr(
+        'scraper.management.commands.sejm_pilot_preflight.SourceAccessInstruction.objects.filter',
+        lambda *args, **kwargs: (_ for _ in ()).throw(DatabaseError('missing column')),
+    )
     Source.objects.create(name='Sejm Rzeczypospolitej Polskiej', url='https://api.sejm.gov.pl/sejm')
     output = StringIO()
 
