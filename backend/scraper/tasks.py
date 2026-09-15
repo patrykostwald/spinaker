@@ -141,6 +141,9 @@ def discover_archives():
 
 @shared_task(soft_time_limit=480, time_limit=540)
 def audit_source_access():
+    from django.conf import settings
+    if not settings.SOURCE_ACCESS_AUTOPROBE_ENABLED:
+        return {'status': 'disabled'}
     from scraper.source_monitor import audit_due_sources
     if not cache.add('lock:source-access', True, 600):
         return {'status': 'already_running'}

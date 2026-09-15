@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 from django.db import close_old_connections, connections, transaction
 from django.db.models import Exists, F, OuterRef, Q, Subquery
+from django.conf import settings
 from django.utils import timezone
 
 from news.enrichment import fill_missing_thumbnail
@@ -336,6 +337,8 @@ class ResearchMetadataSession:
 
 def research_metadata_cycle(limit=MAX_URLS, deadline_seconds=MAX_SECONDS):
     """Run inside the existing importer process, never as an extra web crawler."""
+    if not settings.RESEARCH_METADATA_NETWORK_ENABLED:
+        return {'status': 'disabled', 'requested': 0, 'ready': 0, 'attempted': 0, 'pending': 0}
     limit = min(MAX_URLS, max(0, int(limit)))
     priority_ids = ArchiveJob.objects.filter(priority__gte=100).order_by().values('pk')
     jobs = list(ArchiveJob.objects.filter(pk__in=Subquery(priority_ids), kind='page', priority__gte=100,

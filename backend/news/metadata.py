@@ -1,6 +1,7 @@
 import json
 from html.parser import HTMLParser
 from urllib.parse import urlparse, urljoin, urlsplit
+from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -208,6 +209,8 @@ def preview_url(request):
     existing = Article.objects.filter(url=url).select_related('source', 'voting', 'official_record').first()
     if existing:
         return Response({'existing': ArticleSerializer(existing).data})
+    if not settings.EDITOR_NETWORK_PREVIEW_ENABLED:
+        return Response({'detail': 'Podgląd pobierania z nowego adresu jest wyłączony. Przepisz dane ze źródła ręcznie.'}, status=422)
     try:
         data = extract_metadata(fetch_feed(url), url)
     except Exception:

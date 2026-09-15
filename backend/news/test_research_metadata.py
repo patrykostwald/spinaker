@@ -160,7 +160,8 @@ def test_web_default_only_enqueues_without_starting_an_independent_crawler():
 
 
 @pytest.mark.django_db(transaction=True)
-def test_scheduler_cycle_selects_only_due_requested_unstored_active_pages():
+def test_scheduler_cycle_selects_only_due_requested_unstored_active_pages(settings):
+    settings.RESEARCH_METADATA_NETWORK_ENABLED = True
     source = publisher()
     disabled = publisher('disabled.example', is_active=False, scrape_enabled=False)
     future = timezone.now() + timedelta(hours=1)
