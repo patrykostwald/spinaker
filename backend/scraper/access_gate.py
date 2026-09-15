@@ -2,6 +2,8 @@
 
 from urllib.parse import urlsplit
 
+from django.utils import timezone
+
 from news.models import SourceAccessInstruction
 
 
@@ -39,7 +41,8 @@ def approved_instruction(source, channel, request_url=None):
         return None
     if (instruction.minimum_interval_seconds < 3 or not instruction.terms_url
             or not instruction.reviewed_at or not instruction.reviewed_by
-            or not instruction.evidence):
+            or not instruction.evidence or not instruction.valid_until
+            or instruction.valid_until <= timezone.now()):
         return None
     if request_url and not _same_endpoint_or_child(request_url, instruction.endpoint):
         return None
@@ -51,3 +54,5 @@ def require_approved_instruction(source, channel, request_url=None):
     if instruction is None:
         raise AccessDenied('no_approved_instruction')
     return instruction
+
+

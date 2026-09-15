@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
 from django.conf import settings
 from uuid import uuid4
-from django.utils import timezone
 from django.core.exceptions import ValidationError
 from hashlib import sha256
 
@@ -113,6 +115,10 @@ class Source(models.Model):
             raise ValidationError(errors)
 
 
+def access_instruction_default_expiry():
+    return timezone.now() + timedelta(days=30)
+
+
 class SourceAccessInstruction(models.Model):
     """Versioned, reviewable permission for one automated source channel.
 
@@ -151,6 +157,7 @@ class SourceAccessInstruction(models.Model):
     minimum_interval_seconds = models.PositiveIntegerField(default=3)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.CharField(max_length=120, blank=True)
+    valid_until = models.DateTimeField(default=access_instruction_default_expiry)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -171,6 +178,8 @@ class SourceAccessInstruction(models.Model):
                 errors['reviewed_at'] = 'Zatwierdzona instrukcja wymaga daty i autora przeglądu.'
             if not self.evidence:
                 errors['evidence'] = 'Zatwierdzona instrukcja wymaga dowodu decyzji.'
+            if not self.valid_until or self.valid_until <= timezone.now():
+                errors['valid_until'] = 'Zatwierdzona instrukcja wymaga przyszłej daty ważności.'
         if errors:
             raise ValidationError(errors)
 
@@ -658,3 +667,6 @@ from .evidence_extraction import (  # noqa: E402,F401
     EvidenceTextExtraction,
     EvidenceExtractionStatus,
 )
+
+
+

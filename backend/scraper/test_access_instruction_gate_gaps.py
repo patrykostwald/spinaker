@@ -162,3 +162,23 @@ def test_wordpress_backfill_refuses_transport_without_api_instruction(monkeypatc
             collection_url(VERIFIED_ENDPOINTS['liberte.pl']))
 
     fetch.assert_not_called()
+
+@pytest.mark.django_db
+def test_expired_instruction_blocks_before_transport(monkeypatch):
+    from datetime import timedelta
+
+    source = Source.objects.create(
+        name='Expired RSS instruction', url='https://example.org',
+        rss_url='https://example.org/feed')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='rss',
+        allowed_scope='metadata', endpoint=source.rss_url,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() - timedelta(seconds=1),
+        minimum_interval_seconds=3)
+    fetch = Mock(return_value=RSS)
+    monkeypatch.setattr('scraper.rss_scraper.fetch_feed', fetch)
+
+    assert scrape_rss_source(source.pk) == 0
+    fetch.assert_not_called()
