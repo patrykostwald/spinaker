@@ -21,9 +21,12 @@ Nowe materiały przechodzą wyłącznie przez aktualną `SourceAccessInstruction
 
 Pierwsza wersja powinna działać na poziomie źródła i zakresu czasu, a nie tworzyć od razu milionów indywidualnych wpisów.
 
-`LegacyQualificationDecision` zapisuje:
+`SourceUsageDecision` zapisuje niezależną od bramki pobrania decyzję o dalszym
+użyciu już zapisanych materiałów. Zapisuje:
 
 - źródło oraz granicę czasu, do której obejmuje materiały historyczne;
+- zamrożony, kanoniczny host źródła z chwili decyzji; rozbieżność z obecną
+  tożsamością źródła degraduje użycie do `citation_only` i wymaga przeglądu;
 - status metadanych: `quarantined` albo `citation_only`;
 - status treści: `quarantined`, `rag_snippet` albo `full_corpus`;
 - oddzielny, zawsze ostrożny status snapshotu;
@@ -31,6 +34,13 @@ Pierwsza wersja powinna działać na poziomie źródła i zakresu czasu, a nie t
 - datę ponownego przeglądu oraz wersję decyzji.
 
 Decyzja nie zmienia faktu pozyskania. Pochodzenie materiału pozostaje osobnym, niezmiennym zapisem: metoda, czas, znany adres źródła oraz — gdy istnieje — odniesienie do późniejszej instrukcji lub próby pobrania.
+
+Zakres bazuje na czasie faktycznego pozyskania (`scraped_at`, a po backfillu
+`provenance.acquired_at`), nie na deklarowanej dacie publikacji. Data publikacji
+może być tylko dodatkowym, świadomie włączonym ograniczeniem. Zmiana właściciela
+domeny oznacza nowe źródło i nową decyzję; istniejący model ma unikalny URL,
+więc taka zmiana wymaga zachowania starej tożsamości zamiast przypięcia tej samej
+domeny do dwóch rekordów naraz.
 
 ## Dopuszczalne użycie
 
@@ -65,3 +75,21 @@ Snapshot historyczny pozostaje `dark_archive`: administrator może go wykorzysta
 Nie implementujemy teraz masowego backfillu milionów rekordów, OCR ani wektorów. Najpierw potrzebny jest filtr wykorzystania i mały, audytowalny model decyzji. Dzięki temu MVP może używać bezpiecznych metadanych i linków, a korpus rozwija się bez udawania zgód wstecz.
 
 Indywidualne wyjątki pozostają dodatkiem dla pojedynczych wycofań lub korekt. Nie tworzymy ich automatycznie dla całej bazy. Cofnięcie decyzji źródłowej następuje przez dopisanie nowszej wersji, nigdy przez kasowanie poprzedniej decyzji ani materiału.
+
+Aktualną decyzją jest najwyższa ważna wersja dla źródła i zakresu. Tworzenie
+wersji odbywa się atomowo, aby równoległe decyzje nie utworzyły dwóch różnych
+„aktualnych” stanów. Historia decyzji pozostaje append-only; cofnięcie nie
+zmienia poprzedniego wiersza.
+
+## Granice wdrożenia
+
+`SourceAccessInstruction` pozostaje wyłącznie zgodą na pobranie. Nie używamy
+jej pola `allowed_scope` do egressu: pokazanie karty na własnej stronie,
+wysłanie tytułu do zewnętrznego AI, RAG, OCR i trening to różne operacje.
+
+Pierwszy wdrażany użytek to `ai_draft_metadata`. Bez zatwierdzonej decyzji
+historyczny box nie może zostać kandydatem szkicu wysyłanego do OpenAI albo
+Mistral. Ten filtr nie zmienia od razu publicznego feedu. Dopuszczenie
+`public_card` zostanie podłączone po świadomym przeniesieniu istniejących,
+udokumentowanych decyzji widoczności dla konkretnych źródeł; nie będzie
+globalnego automatycznego odblokowania starej bazy.
