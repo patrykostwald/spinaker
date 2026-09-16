@@ -2,13 +2,14 @@
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 import json
+from time import sleep
 from urllib.parse import urlencode
 from django.db import transaction
 from django.utils import timezone
 from news.models import Article, ArticleCategory, Ballot, FetchAttempt, OfficialRecord, OfficialRevision, ParliamentaryVoting, SourceType
 from news.models import SourceAccessInstruction
 from scraper.access_gate import approved_instruction, AccessDenied
-from scraper.utils import fetch_feed, get_or_create_source, upsert_article
+from scraper.utils import HostRateLimited, fetch_feed, get_or_create_source, upsert_article
 
 API = 'https://api.sejm.gov.pl'
 VOTE_CODES = {'YES', 'NO', 'ABSTAIN', 'NO_VOTE', 'ABSENT', 'VOTE_VALID', 'VOTE_INVALID', 'PRESENT'}
@@ -29,6 +30,17 @@ def fetch_json(path, *, return_receipt=False, **params):
         raw, receipt = response
         return json.loads(raw.decode('utf-8')), receipt
     return json.loads(response.decode('utf-8'))
+
+
+def fetch_json_paced(path, *, max_host_deferrals=3, **params):
+    """Retry only a local HostGateway deferral between paginated API requests."""
+    for attempt in range(max_host_deferrals + 1):
+        try:
+            return fetch_json(path, **params)
+        except HostRateLimited as exc:
+            if attempt >= max_host_deferrals:
+                raise
+            sleep(max(0.01, exc.retry_after_seconds))
 
 
 def official_source(provider):
@@ -207,7 +219,7 @@ def import_eli_changes(since):
         return 0
     count, offset, seen = 0, 0, set()
     while True:
-        payload = fetch_json('/eli/changes/acts', since=since, offset=offset)
+        payload = fetch_json_paced('/eli/changes/acts', since=since, offset=offset)
         items = payload['items']
         for row in items:
             identity = f"{row['publisher']}/{row['year']}/{row['pos']}"
