@@ -116,6 +116,7 @@ class Command(BaseCommand):
         missing_source = 0
         imported = 0
         skipped_invalid = 0
+        new_candidates_total = 0
         new_candidates_sample = []
 
         for row in legacy.execute(query):
@@ -135,13 +136,13 @@ class Command(BaseCommand):
                 missing_source += 1
                 continue
 
-            candidate = {
-                'legacy_id': row['id'], 'url': url, 'title': title,
-                'source_url': source_url, 'ingestion_method': row['ingestion_method'],
-                'published_date': row['published_date'],
-            }
+            new_candidates_total += 1
             if len(new_candidates_sample) < 25:
-                new_candidates_sample.append(candidate)
+                new_candidates_sample.append({
+                    'legacy_id': row['id'], 'url': url, 'title': title,
+                    'source_url': source_url, 'ingestion_method': row['ingestion_method'],
+                    'published_date': row['published_date'],
+                })
 
             if apply_changes:
                 if self._apply_one(row, target_source, url, title):
@@ -154,7 +155,7 @@ class Command(BaseCommand):
             'already_present_in_target': already_present,
             'skipped_invalid_url_or_title': skipped_invalid,
             'skipped_missing_target_source': missing_source,
-            'new_candidates_total': len(new_candidates_sample) if not apply_changes else imported,
+            'new_candidates_total': new_candidates_total,
             'imported': imported if apply_changes else 0,
             'new_candidates_sample': new_candidates_sample,
             'note': ('missing_target_source counts rows whose legacy Source URL has no '
