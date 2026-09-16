@@ -37,3 +37,9 @@ Thumbs.db
 # Docker
 postgres-data/
 redis-data/
+
+# Celery beat runtime state (local schedule db, not source)
+celerybeat-schedule*
+
+# Scratch / one-off local scripts and large local exports
+/tmp/
