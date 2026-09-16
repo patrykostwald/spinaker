@@ -16,7 +16,8 @@ def approve_api(provider):
         source=source, version=1, status='approved', channel='api',
         allowed_scope='metadata', endpoint=endpoint,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_at=timezone.now(), reviewed_by='test',
+        minimum_interval_seconds=3, daily_request_cap=24)
 
 # Synthetic records are test-only and never loaded into the portal database.
 @pytest.fixture

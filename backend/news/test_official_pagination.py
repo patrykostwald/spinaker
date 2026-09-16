@@ -10,7 +10,7 @@ from scraper.official import import_voting_period, import_voting_search
 @pytest.fixture(autouse=True)
 def allow_official_api_for_pure_pagination_tests(monkeypatch):
     """Network is mocked here; keep parser tests independent from Django state."""
-    monkeypatch.setattr('scraper.official.official_access_allowed', lambda provider: True)
+    monkeypatch.setattr('scraper.official.official_access_allowed', lambda provider, path: True)
 
 
 def summaries(start, stop):
@@ -61,22 +61,25 @@ def test_invalid_page_cannot_be_reported_as_success(bad_page):
 def test_interrupted_period_can_be_replayed_without_duplicate_records_or_ballots():
     fail = True
 
-    def response(path, **params):
+    def response(path, *, return_receipt=False, **params):
         if path.endswith('/search'):
             offset = params['offset']
             if offset == 0:
-                return summaries(1, 4)
-            if offset == 3:
+                result = summaries(1, 4)
+            elif offset == 3:
                 if fail:
                     raise TimeoutError('Synthetic interruption')
-                return summaries(4, 6)
-            return []
-        number = int(path.rsplit('/', 1)[-1])
-        return {'term': 10, 'sitting': 1, 'votingNumber': number,
-            'title': f'Test-only voting {number}', 'description': 'Synthetic motion',
-            'date': '2026-01-01T12:00:00', 'kind': 'ELECTRONIC',
-            'yes': 1, 'no': 0, 'totalVoted': 1, 'notParticipating': 0,
-            'votes': [{'MP': 1, 'firstName': 'Test', 'lastName': 'Fixture', 'vote': 'YES'}]}
+                result = summaries(4, 6)
+            else:
+                result = []
+        else:
+            number = int(path.rsplit('/', 1)[-1])
+            result = {'term': 10, 'sitting': 1, 'votingNumber': number,
+                'title': f'Test-only voting {number}', 'description': 'Synthetic motion',
+                'date': '2026-01-01T12:00:00', 'kind': 'ELECTRONIC',
+                'yes': 1, 'no': 0, 'totalVoted': 1, 'notParticipating': 0,
+                'votes': [{'MP': 1, 'firstName': 'Test', 'lastName': 'Fixture', 'vote': 'YES'}]}
+        return (result, None) if return_receipt else result
 
     with patch('scraper.official.fetch_json', side_effect=response):
         with pytest.raises(TimeoutError):

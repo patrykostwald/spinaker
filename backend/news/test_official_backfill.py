@@ -12,8 +12,8 @@ from scraper.official_backfill import LOCK, backfill_votings_cycle
 @pytest.fixture(autouse=True)
 def allow_official_api_for_backfill_unit_tests(monkeypatch):
     """These tests exercise the persisted cursor, not the access gate."""
-    monkeypatch.setattr('scraper.official_backfill.official_access_allowed', lambda provider: True)
-    monkeypatch.setattr('scraper.official.official_access_allowed', lambda provider: True)
+    monkeypatch.setattr('scraper.official_backfill.official_access_allowed', lambda provider, path: True)
+    monkeypatch.setattr('scraper.official.official_access_allowed', lambda provider, path: True)
 
 
 @pytest.fixture
@@ -90,11 +90,13 @@ def test_source_disabled_during_window_stops_next_item_and_keeps_cursor(source):
 
 @override_settings(SEJM_TERM=10)
 def test_source_disabled_while_detail_is_fetched_prevents_persisting_it(source):
-    def fetch(path, **params):
+    def fetch(path, *, return_receipt=False, **params):
         if path.endswith('/search'):
-            return [{'term': 10, 'sitting': 1, 'votingNumber': 1}]
-        Source.objects.filter(pk=source.pk).update(scrape_enabled=False)
-        return {'not': 'used because the source was disabled'}
+            result = [{'term': 10, 'sitting': 1, 'votingNumber': 1}]
+        else:
+            Source.objects.filter(pk=source.pk).update(scrape_enabled=False)
+            result = {'not': 'used because the source was disabled'}
+        return (result, None) if return_receipt else result
 
     with patch('scraper.official.fetch_json', side_effect=fetch), \
             patch('scraper.official.save_voting') as save:
