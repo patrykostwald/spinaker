@@ -58,6 +58,11 @@ NATIONAL_JUSTICE = (
     ("Krajowa Rada Sądownictwa", "https://krs.pl/"),
 )
 
+CANDIDATE_NOTE = (
+    "Kandydat wymiaru sprawiedliwości. Przed aktywacją ustal konkretny kanał "
+    "(RSS/API/sitemap/HTML), warunki ponownego wykorzystywania i kartę dostępu."
+)
+
 
 class Command(BaseCommand):
     help = "Dodaje nieaktywne kandydatury prokuratur i instytucji wymiaru sprawiedliwości."
@@ -81,10 +86,7 @@ class Command(BaseCommand):
                     name=name, url=url, source_type=SourceType.INSTITUTION,
                     is_active=False, scrape_enabled=False, catalog_stage="candidate",
                     scrape_frequency_minutes=240,
-                    catalog_notes=(
-                        "Kandydat wymiaru sprawiedliwości. Przed aktywacją ustal konkretny kanał "
-                        "(RSS/API/sitemap/HTML), warunki ponownego wykorzystywania i kartę dostępu."
-                    ),
+                    catalog_notes=CANDIDATE_NOTE,
                 )
                 item.full_clean()
                 item.save()
