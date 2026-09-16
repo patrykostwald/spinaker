@@ -104,6 +104,12 @@ def test_health_and_placeholder(client):
     assert client.post('/api/patronite/webhook/', {}).status_code == 501
     assert client.post('/api/admin/google-news/', {'q': 'Polska'}).status_code == 403
 
+
+def test_public_source_principles_page(client):
+    response = client.get('/zasady-zrodel/')
+    assert response.status_code == 200
+    assert 'Nie uruchamiamy pobierania' in response.content.decode()
+
 @pytest.mark.django_db
 def test_pagination_reaches_old_and_undated(client, source):
     now = timezone.now()

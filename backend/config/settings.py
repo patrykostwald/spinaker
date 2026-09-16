@@ -20,6 +20,7 @@ SEJM_TERM = env.int('SEJM_TERM', default=10)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")
 DEBUG = env.bool("DJANGO_DEBUG", default=env.bool("DEBUG", default=False))
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "backend", "testserver"]))
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -236,3 +237,17 @@ EVIDENCE_SNAPSHOT_STORAGE_ROOT = env('EVIDENCE_SNAPSHOT_STORAGE_ROOT', default='
 # There is intentionally no scheduler or public endpoint wired to this flag.
 EVIDENCE_TEXT_EXTRACTION_ENABLED = env.bool(
     'EVIDENCE_TEXT_EXTRACTION_ENABLED', default=False)
+
+# Dedicated outreach mailbox. Disabled until its private credentials are set
+# locally; incoming mail is read-only and never triggers outbound mail.
+SOURCE_MAIL_IMAP_ENABLED = env.bool('SOURCE_MAIL_IMAP_ENABLED', default=False)
+SOURCE_MAIL_IMAP_HOST = env('SOURCE_MAIL_IMAP_HOST', default='')
+SOURCE_MAIL_IMAP_PORT = env.int('SOURCE_MAIL_IMAP_PORT', default=993)
+SOURCE_MAIL_IMAP_USERNAME = env('SOURCE_MAIL_IMAP_USERNAME', default='')
+SOURCE_MAIL_IMAP_PASSWORD = env('SOURCE_MAIL_IMAP_PASSWORD', default='')
+SOURCE_MAIL_SMTP_ENABLED = env.bool('SOURCE_MAIL_SMTP_ENABLED', default=False)
+SOURCE_MAIL_SMTP_HOST = env('SOURCE_MAIL_SMTP_HOST', default='')
+SOURCE_MAIL_SMTP_PORT = env.int('SOURCE_MAIL_SMTP_PORT', default=465)
+SOURCE_MAIL_SMTP_USERNAME = env('SOURCE_MAIL_SMTP_USERNAME', default='')
+SOURCE_MAIL_SMTP_PASSWORD = env('SOURCE_MAIL_SMTP_PASSWORD', default='')
+SOURCE_MAIL_SMTP_FROM = env('SOURCE_MAIL_SMTP_FROM', default='')

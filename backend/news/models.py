@@ -469,6 +469,9 @@ class SourceContactCard(models.Model):
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
     publisher_name = models.CharField(max_length=255, blank=True)
     contact_url = models.URLField(max_length=1024, blank=True)
+    contact_email = models.EmailField(blank=True)
+    contact_evidence_url = models.URLField(max_length=1024, blank=True)
+    contact_verified_at = models.DateTimeField(null=True, blank=True)
     requested_scope = models.JSONField(default=list)
     requested_channels = models.JSONField(default=list)
     technical_findings = models.JSONField(default=dict)
@@ -493,10 +496,37 @@ class SourceContactCard(models.Model):
         errors = {}
         if self.status == self.Status.APPROVED_TO_SEND and (not self.approval_by or not self.approval_at):
             errors['approval_by'] = 'Wysyłka wymaga osoby i czasu wyraźnego zatwierdzenia.'
+        if self.status == self.Status.APPROVED_TO_SEND and not self.contact_email:
+            errors['contact_email'] = 'Wysyłka e-mail wymaga zweryfikowanego adresu odbiorcy.'
+        if self.status == self.Status.APPROVED_TO_SEND and not self.contact_evidence_url:
+            errors['contact_evidence_url'] = 'Wysyłka e-mail wymaga linku do źródła potwierdzającego adres.'
+        if self.status == self.Status.APPROVED_TO_SEND and not self.contact_verified_at:
+            errors['contact_verified_at'] = 'Wysyłka e-mail wymaga czasu weryfikacji adresu.'
         if self.status == self.Status.SENT and not self.sent_at:
             errors['sent_at'] = 'Status wysłano można zapisać tylko po ręcznej wysyłce.'
         if errors:
             raise ValidationError(errors)
+
+
+class SourceContactReply(models.Model):
+    """Inbound outreach metadata collected from the dedicated source mailbox.
+
+    The synchroniser stores only routing facts and a short subject line.  It
+    never sends mail, changes an access card, or treats an automatic reply as
+    a publisher's consent.
+    """
+    contact_card = models.ForeignKey(SourceContactCard, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='inbound_replies')
+    message_id = models.CharField(max_length=998, unique=True)
+    in_reply_to = models.CharField(max_length=998, blank=True)
+    sender = models.CharField(max_length=512)
+    subject = models.CharField(max_length=998, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+    received_at_mailbox = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-received_at_mailbox', '-pk']
 
 
 class Article(models.Model):

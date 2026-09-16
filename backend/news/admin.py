@@ -16,7 +16,7 @@ from django import forms
 from rest_framework.exceptions import ValidationError as APIValidationError
 
 from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
-    ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, FetchAttempt)
+    ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt)
 from scraper.tasks import (
     scrape_gdelt_task,
     scrape_newsapi_batch_task,
@@ -269,7 +269,7 @@ class SourceRecoveryCaseAdmin(admin.ModelAdmin):
 
 
 class SourceContactCardAdmin(admin.ModelAdmin):
-    list_display = ('source', 'publisher_name', 'status', 'approval_by', 'approval_at', 'next_review_at')
+    list_display = ('source', 'publisher_name', 'contact_email', 'status', 'approval_by', 'approval_at', 'next_review_at')
     list_filter = ('status',)
     search_fields = ('source__name', 'publisher_name', 'reason_for_contact')
     autocomplete_fields = ('source', 'recovery_case', 'granted_instruction')
@@ -283,6 +283,7 @@ site.register(SourceAccessInstruction, SourceAccessInstructionAdmin)
 site.register(FetchAttempt, FetchAttemptAdmin)
 site.register(SourceRecoveryCase, SourceRecoveryCaseAdmin)
 site.register(SourceContactCard, SourceContactCardAdmin)
+site.register(SourceContactReply)
 
 
 from news.political_admin import register_political_admin

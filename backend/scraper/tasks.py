@@ -42,6 +42,27 @@ def scrape_twitter_politicians_task():
 def scrape_rss_source(source_id):
     return import_feed(source_id)
 
+
+@shared_task(soft_time_limit=90, time_limit=120)
+def preflight_structured_metadata_source(key):
+    """Daily proof that a narrowly approved metadata API still has its contract.
+
+    This deliberately stores no provider payload as an article and never
+    expands beyond the one endpoint covered by the source card.
+    """
+    from scraper.structured_metadata import preflight
+    return preflight(key)
+
+
+@shared_task(soft_time_limit=120, time_limit=150)
+def sync_source_mailbox():
+    """Read response headers from the dedicated outreach mailbox only."""
+    from news.mailbox import SourceMailboxDisabled, sync_inbound
+    try:
+        return sync_inbound()
+    except SourceMailboxDisabled as exc:
+        return {'status': 'disabled', 'reason': str(exc)}
+
 @shared_task(soft_time_limit=60, time_limit=90)
 def scrape_google_news(keyword):
     from urllib.parse import urlencode

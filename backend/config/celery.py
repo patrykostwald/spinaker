@@ -17,9 +17,15 @@ app.conf.beat_schedule = {
     'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
     'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},
+    'dane-gov-metadata-daily': {'task': 'scraper.tasks.preflight_structured_metadata_source', 'args': ['dane_gov'], 'schedule': crontab(hour=2, minute=10)},
+    'gus-bdl-metadata-daily': {'task': 'scraper.tasks.preflight_structured_metadata_source', 'args': ['gus_bdl'], 'schedule': crontab(hour=2, minute=15)},
 }
 if os.environ.get('NEWSAPI_TIER', 'free') in ('business', 'advanced'):
     app.conf.beat_schedule['newsapi-frequent'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(minute='*/15')}
 else:
     for hour, minute in [(6, 30), (12, 30), (18, 0)]:
         app.conf.beat_schedule[f'newsapi-{hour}'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(hour=hour, minute=minute)}
+
+if os.environ.get('SOURCE_MAIL_IMAP_ENABLED', '').lower() in ('1', 'true', 'yes'):
+    app.conf.beat_schedule['source-mail-inbox-5m'] = {
+        'task': 'scraper.tasks.sync_source_mailbox', 'schedule': crontab(minute='*/5')}

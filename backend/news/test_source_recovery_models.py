@@ -36,6 +36,21 @@ def test_contact_card_needs_human_approval_before_send_status():
 
 
 @pytest.mark.django_db
+def test_contact_card_requires_verified_email_before_send_status():
+    source = Source.objects.create(name='Verified contact', url='https://verified-contact.example')
+    card = SourceContactCard(
+        source=source, status='approved_to_send', approval_by='Patryk', approval_at=timezone.now(),
+        requested_scope=['metadata'], requested_channels=['rss'], technical_findings={'verified': True},
+    )
+    with pytest.raises(ValidationError):
+        card.full_clean()
+    card.contact_email = 'redakcja@example.org'
+    card.contact_evidence_url = 'https://example.org/kontakt'
+    card.contact_verified_at = timezone.now()
+    card.full_clean()
+
+
+@pytest.mark.django_db
 def test_repeated_source_failure_creates_one_open_recovery_case():
     from scraper.archive import _record_recovery_case
     source = Source.objects.create(name='Broken', url='https://broken.example')
