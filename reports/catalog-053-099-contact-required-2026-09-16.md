@@ -1,0 +1,51 @@
+# Bezpieczne karty kontaktowe dla źródeł medialnych 53–99
+
+| Lp | Źródło | Decyzja | Uzasadnienie |
+|---:|---|:---:|---|
+| 53 | [se.pl](https://www.se.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 54 | [fakt.pl](https://www.fakt.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 55 | [medonet.pl](https://www.medonet.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 56 | [wyborcza.pl](https://www.wyborcza.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 57 | [rp.pl](https://www.rp.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 58 | [gazetaprawna.pl](https://www.gazetaprawna.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 59 | [pb.pl](https://www.pb.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 60 | [metro.waw.pl](https://www.metro.waw.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 61 | [naszdziennik.pl](https://www.naszdziennik.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 62 | [gazetapolska.pl](https://www.gazetapolska.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 63 | [gazetapolskacodziennie.pl](https://www.gazetapolskacodziennie.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 64 | [polityka.pl](https://www.polityka.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 65 | [newsweek.pl](https://www.newsweek.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 66 | [wprost.pl](https://www.wprost.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 67 | [tygodnikpowszechny.pl](https://www.tygodnikpowszechny.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 68 | [miesiecznik.znak.com.pl](https://www.miesiecznik.znak.com.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 69 | [przeglad-tygodnik.pl](https://www.przeglad-tygodnik.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 70 | [przekroj.pl](https://www.przekroj.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 71 | [wsieciprawdy.pl](https://www.wsieciprawdy.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 72 | [dorzeczy.pl](https://www.dorzeczy.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 73 | [gosc.pl](https://www.gosc.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 74 | [niedziela.pl](https://www.niedziela.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 75 | [idziemy.pl](https://www.idziemy.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 76 | [nczas.com](https://www.nczas.com) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 77 | [nowepastwo.pl](https://www.nowepastwo.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 78 | [wpolityce.pl](https://wpolityce.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 79 | [pch24.pl](https://www.pch24.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 80 | [fronda.pl](https://www.fronda.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 81 | [kresy.pl](https://www.kresy.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 82 | [niezalezna.pl](https://www.niezalezna.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 83 | [tysol.pl](https://www.tysol.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 84 | [prawy.pl](https://www.prawy.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 85 | [polskatimes.pl](https://www.polskatimes.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 86 | [wpolsce.pl](https://www.wpolsce.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 87 | [telewizjarepublika.pl](https://www.telewizjarepublika.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 88 | [radiownet.pl](https://www.radiownet.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 89 | [konserwatyzm.pl](https://www.konserwatyzm.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 90 | [solidarni2010.pl](https://www.solidarni2010.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 91 | [klubjagiellonski.pl](https://www.klubjagiellonski.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 92 | [eastbook.eu](https://www.eastbook.eu) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 93 | [polskaniepodlegla.pl](https://www.polskaniepodlegla.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 94 | [xportal.pl](https://www.xportal.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 95 | [against.media](https://www.against.media) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 96 | [maxkolbe.pl](https://www.maxkolbe.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 97 | [oko.press](https://oko.press) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 98 | [krytykapolityczna.pl](https://krytykapolityczna.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
+| 99 | [liberte.pl](https://liberte.pl) | **B** | Wymaga zgody lub weryfikacji konkretnego RSS/API przed automatycznym pobieraniem. |
