@@ -1,4 +1,5 @@
 import pytest
+from urllib.parse import urlsplit
 from django.utils import timezone
 from django.core.cache import cache
 
@@ -21,21 +22,70 @@ from scraper.archive import process, run_batch, article_body, SourceDelay
 def approve_access(source, channel, endpoint=None, scope='metadata'):
     version = (SourceAccessInstruction.objects.filter(source=source)
         .order_by('-version').values_list('version', flat=True).first() or 0) + 1
-    return SourceAccessInstruction.objects.create(
+    card = SourceAccessInstruction.objects.create(
         source=source, version=version, status='approved', channel=channel,
         allowed_scope=scope, endpoint=endpoint or source.url,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
         reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3,
         daily_request_cap=24)
+    # Production checks robots.txt as a separately authorised request.  Keep
+    # fixtures realistic unless a test is explicitly about missing coverage.
+    root = urlsplit(endpoint or source.url)
+    robots_url = f'{root.scheme}://{root.netloc}/robots.txt'
+    if not SourceAccessInstruction.objects.filter(source=source, status='approved',
+            channel='sitemap', endpoint=robots_url).exists():
+        SourceAccessInstruction.objects.create(
+            source=source, version=version + 1, status='approved', channel='sitemap',
+            allowed_scope='metadata', endpoint=robots_url,
+            allowed_path_patterns=['/robots.txt'], terms_url='https://example.org/terms',
+            evidence={'basis': 'test robots'}, reviewed_at=timezone.now(), reviewed_by='test',
+            minimum_interval_seconds=3, daily_request_cap=24)
+    return card
 
 
 @pytest.mark.django_db
 def test_generic_archive_scheduler_stays_blocked_without_access_instruction(monkeypatch):
     from scraper.archive import archive_cycle
-    monkeypatch.setattr('scraper.backfill.approved_access_instructions', lambda: {})
     with pytest.MonkeyPatch.context() as patcher:
         patcher.setattr('scraper.archive.run_parallel_batch', lambda **_: pytest.fail('scheduler bypassed access gate'))
         assert archive_cycle()['status'] == 'blocked_access_review'
+
+
+@pytest.mark.django_db
+def test_generic_archive_scheduler_accepts_an_explicitly_reviewed_html_job(monkeypatch):
+    from scraper.archive import archive_cycle
+    source = Source.objects.create(name='Reviewed HTML', url='https://example.org',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    approve_access(source, 'html', 'https://example.org', 'content')
+    ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
+    calls = []
+
+    def run(**kwargs):
+        calls.append(kwargs)
+        return 1
+
+    monkeypatch.setattr('scraper.archive.run_parallel_batch', run)
+    result = archive_cycle()
+    assert result['status'] == 'ok'
+    assert calls[0]['source_ids'] == [source.pk]
+    assert 'source_access_scopes' not in calls[0]
+
+
+@pytest.mark.django_db
+def test_parallel_archive_batch_keeps_one_host_on_one_worker(monkeypatch):
+    from scraper.archive import run_parallel_batch
+    first = Source.objects.create(name='One', url='https://same.example', is_active=True, scrape_enabled=True)
+    second = Source.objects.create(name='Two', url='https://same.example/other', is_active=True, scrape_enabled=True)
+    third = Source.objects.create(name='Three', url='https://other.example', is_active=True, scrape_enabled=True)
+    for source in (first, second, third):
+        ArchiveJob.objects.create(source=source, url=source.url + '/article', kind='page')
+    calls = []
+    monkeypatch.setattr('scraper.archive.run_batch',
+        lambda limit, source_ids, **kwargs: calls.append(set(source_ids)) or 0)
+    run_parallel_batch(workers=3, per_worker=3)
+    same_host_group = next(group for group in calls if first.pk in group)
+    assert second.pk in same_host_group
+    assert third.pk not in same_host_group
 
 @pytest.mark.django_db
 def test_archive_uses_publication_not_sitemap_lastmod(monkeypatch):

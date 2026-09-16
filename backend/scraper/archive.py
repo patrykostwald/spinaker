@@ -104,8 +104,18 @@ def robots(url, *, hostname_transport=False, audit_source=None, audit_instructio
     if raw is not None:
         policy = RobotFileParser(); policy.parse(raw.splitlines()); return policy
     try:
+        # robots.txt is its own network request.  An HTML (or sitemap) card
+        # for a publisher section must not silently authorize the host root.
+        # A narrow sitemap-channel card for this single file is therefore
+        # required whenever the caller is audited.
+        robots_instruction = audit_instruction
+        if audit_source is not None:
+            robots_instruction = approved_instruction(
+                audit_source, SourceAccessInstruction.Channel.SITEMAP, address)
+            if robots_instruction is None:
+                raise AccessDenied('robots_not_covered_by_instruction')
         raw = fetch_feed(address, hostname_transport=hostname_transport,
-            audit_source=audit_source, audit_instruction=audit_instruction,
+            audit_source=audit_source, audit_instruction=robots_instruction,
             requested_kind=FetchAttempt.RequestedKind.ROBOTS).decode('utf-8', errors='replace')
     except Exception as exc:
         response = getattr(exc, 'response', None)
@@ -325,6 +335,18 @@ def process(job, cutoff_at=None, allowed_scope=None):
         # pages_completed counts the visited listing; new_articles stays zero.
         return 0
     metadata = extract_metadata(raw, job.url)
+    if (urlsplit(job.url).hostname == 'www.gov.pl' and source is not None
+            and instruction is not None):
+        from scraper.gov_justice_archive import extract_article_metadata
+        try:
+            metadata = extract_article_metadata(
+                raw, job.url, urlsplit(instruction.endpoint).path.rstrip('/'))
+        except ValueError as exc:
+            # Keep generic behavior for non-justice gov.pl sources.  For the
+            # dedicated adapter, a malformed article shell remains a safe
+            # rejection rather than an invented record.
+            if urlsplit(instruction.endpoint).path.startswith(('/web/prokuratura-', '/web/pr-')):
+                raise exc
     if urlsplit(job.url).netloc == 'www.gov.pl' and urlsplit(job.url).path.startswith('/web/premier/'):
         from scraper.html_archive import extract_kprm_metadata
         try:
@@ -486,11 +508,20 @@ def run_parallel_batch(workers=4, per_worker=20, metrics=None, source_ids=None, 
     if metrics is not None:
         metrics.update(active_workers=min(workers, len(sources)), eligible_sources=len(sources))
     if not sources: return 0
-    groups = [[] for _ in range(min(workers, len(sources)))]
-    loads = [0] * len(groups)
+    # Sources on one host share the same HostGateway window.  Splitting them
+    # across thread workers merely creates deliberate rate-limit deferrals;
+    # keep a host on one worker and parallelise only independent hosts.
+    host_sources = {}
     for row in sources:
+        source = Source.objects.only('url').get(pk=row['source_id'])
+        host = (urlsplit(source.url or '').hostname or '').lower()
+        host_sources.setdefault(host, []).append(row)
+    groups = [[] for _ in range(min(workers, len(host_sources)))]
+    loads = [0] * len(groups)
+    for host_rows in sorted(host_sources.values(), key=lambda rows: -sum(row['queued'] for row in rows)):
         index = min(range(len(groups)), key=lambda i: loads[i])
-        groups[index].append(row['source_id']); loads[index] += row['queued']
+        groups[index].extend(row['source_id'] for row in host_rows)
+        loads[index] += sum(row['queued'] for row in host_rows)
     def consume(ids):
         close_old_connections()
         try:
@@ -521,16 +552,40 @@ def run_parallel_batch(workers=4, per_worker=20, metrics=None, source_ids=None, 
     return sum(completed for completed, _ in results)
 
 
+def approved_queued_source_ids():
+    """Return sources that have at least one currently authorised queued job.
+
+    Historical sitemap backfill has a stricter, sitemap-only allowlist.  The
+    normal archive queue also contains explicitly discovered HTML pages (for
+    example the reviewed gov.pl justice listings), so reusing that allowlist
+    made those lawful jobs permanently idle.  Each job is still checked again
+    in :func:`process` immediately before network access.
+    """
+    jobs = (ArchiveJob.objects.filter(
+        status__in=['pending', 'error', 'running'],
+        available_at__lte=timezone.now(),
+        source__is_active=True,
+        source__scrape_enabled=True,
+        source__catalog_stage='configured',
+    ).select_related('source').order_by('source_id', 'pk'))
+    approved = set()
+    for job in jobs:
+        channel = (SourceAccessInstruction.Channel.SITEMAP if job.kind == 'sitemap'
+                   else SourceAccessInstruction.Channel.HTML)
+        if approved_instruction(job.source, channel, job.url) is not None:
+            approved.add(job.source_id)
+    return sorted(approved)
+
+
 def archive_cycle():
     # Recent feed/manual records are read separately from the historical backlog.
     articles = Article.objects.filter(ingestion_method__in=['rss', 'manual'], content__isnull=True).exclude(url__in=ArchiveJob.objects.values('url')).exclude(category__in=['tweet', 'video']).order_by('-pk')[:20]
     for article in articles:
         ArchiveJob.objects.get_or_create(url=article.url, defaults={'source': article.source, 'kind': 'page'})
-    # The generic scheduler must obey the same legal gate as the explicit
-    # backfill command.  Import locally to avoid a module-level cycle.
-    from scraper.backfill import approved_access_instructions
-    instructions = approved_access_instructions()
-    if not instructions:
+    # The generic queue accepts explicitly reviewed HTML and sitemap jobs.
+    # Backfill remains deliberately stricter because it walks a whole sitemap.
+    source_ids = approved_queued_source_ids()
+    if not source_ids:
         return {'status': 'blocked_access_review', 'completed': 0, 'workers': 0,
             'elapsed_seconds': 0, 'failed_job_ids': [], 'active_workers': 0,
             'eligible_sources': 0}
@@ -539,9 +594,7 @@ def archive_cycle():
     workers = int(os.environ.get('ARCHIVE_WORKERS', '4'))
     metrics = {}
     completed = run_parallel_batch(workers=workers, metrics=metrics,
-        source_ids=list(instructions),
-        source_access_scopes={source_id: instruction.allowed_scope
-            for source_id, instruction in instructions.items()})
+        source_ids=source_ids)
     failed = list(ArchiveJob.objects.filter(status='error', checked_at__gte=started).values_list('pk', flat=True))
     return {'status': 'partial' if failed else 'ok' if completed else 'idle', 'completed': completed,
         'workers': workers, 'elapsed_seconds': round(time.monotonic() - tick, 2), 'failed_job_ids': failed, **metrics}
