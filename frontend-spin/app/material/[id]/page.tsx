@@ -6,7 +6,7 @@ import MaterialView from './view';
 
 const getMaterial = cache(async (id: string): Promise<Article> => {
   if (!/^[1-9]\d{0,11}$/.test(id)) notFound();
-  const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  const api = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
   const response = await fetch(`${api}/api/articles/${id}/`, { cache: 'no-store', headers: { Accept: 'application/json' } });
   if (response.status === 404) notFound();
   if (!response.ok) throw new Error('Nie udało się odczytać materiału.');
