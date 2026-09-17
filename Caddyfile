@@ -1,0 +1,20 @@
+spin.clinic, www.spin.clinic {
+    encode zstd gzip
+
+    # Certyfikat HTTPS (Let's Encrypt) jest wystawiany i odnawiany
+    # automatycznie przez Caddy - nie wymaga dodatkowej konfiguracji,
+    # pod warunkiem że DNS obu domen wskazuje na ten VPS, a porty
+    # 80/443 są publicznie osiągalne.
+
+    @api path /api/*
+    reverse_proxy @api backend:8000
+
+    @admin path /admin/*
+    reverse_proxy @admin backend:8000
+
+    # TYMCZASOWO: cała pozostała ścieżka trafia też do backendu,
+    # dopóki frontend nie zostanie dodany jako osobna usługa w
+    # docker-compose.yml. Gdy to nastąpi, zamienić poniższą linię na
+    # reverse_proxy frontend:3000 (lub odpowiedni port frontendu).
+    reverse_proxy backend:8000
+}

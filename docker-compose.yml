@@ -5,8 +5,8 @@ services:
       POSTGRES_USER: spin
       POSTGRES_PASSWORD: spin
       POSTGRES_DB: spin_clinic
-    ports:
-      - "5432:5432"
+    # Brak sekcji "ports": PostgreSQL jest dostępny tylko wewnątrz sieci
+    # Docker Compose (dla usług "backend"/"worker"/"beat" pod adresem db:5432).
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -17,8 +17,21 @@ services:
 
   redis:
     image: redis:7-alpine
+    # Brak sekcji "ports": Redis jest dostępny tylko wewnątrz sieci
+    # Docker Compose (pod adresem redis:6379).
+
+  caddy:
+    image: caddy:2-alpine
     ports:
-      - "6379:6379"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
 
   backend:
     build: ./backend
@@ -26,6 +39,9 @@ services:
     volumes:
       - ./backend:/app
     ports:
+      # TYMCZASOWO wystawione publicznie do bezpośrednich testów.
+      # Docelowo cały ruch ma iść przez Caddy (usługa "caddy") - usunąć
+      # ten wpis, gdy zostanie to potwierdzone na produkcji.
       - "8000:8000"
     env_file:
       - .env
@@ -69,3 +85,5 @@ services:
 
 volumes:
   postgres-data:
+  caddy-data:
+  caddy-config:
