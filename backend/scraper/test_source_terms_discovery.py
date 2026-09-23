@@ -86,3 +86,19 @@ def test_worker_records_unexpected_source_error(monkeypatch):
     assert source_id == source.pk
     assert result['status'] == 'unavailable'
     assert result['error'] == 'RuntimeError'
+
+
+@pytest.mark.django_db
+def test_command_can_retry_only_previously_unavailable_sources(tmp_path, monkeypatch):
+    unavailable = Source.objects.create(name='Unavailable', url='https://unavailable.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    ready = Source.objects.create(name='Ready', url='https://ready.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f'source-check:{unavailable.pk}', cursor={
+        'legal_terms_discovery': {'status': 'unavailable'},
+    })
+    monkeypatch.setattr('scraper.management.commands.discover_source_reuse_terms.inspect_source_terms',
+        lambda source, network: {'version': 1, 'source_url': source.url, 'status': 'no_official_terms_link_found', 'homepage': source.url, 'terms_pages': [], 'error': ''})
+    call_command('discover_source_reuse_terms', '--only-unavailable', '--apply', '--output', str(tmp_path / 'retry.md'), stdout=StringIO())
+    assert ImportState.objects.get(name=f'source-check:{unavailable.pk}').cursor['legal_terms_discovery']['status'] == 'no_official_terms_link_found'
+    assert not ImportState.objects.filter(name=f'source-check:{ready.pk}').exists()
