@@ -93,8 +93,6 @@ class Command(BaseCommand):
                 continue
             accepted.append((line, row, figures[0]))
 
-        if invalid:
-            raise CommandError('Nie zapisano niczego; błędne wiersze: ' + '; '.join(invalid[:10]))
         existing = 0
         for _, row, figure in accepted:
             if SocialHandleEvidence.objects.filter(
@@ -105,8 +103,11 @@ class Command(BaseCommand):
         if not options['apply']:
             self.stdout.write(self.style.WARNING(
                 f'PODGLĄD: potwierdzone linki {len(accepted)}; już zapisane {existing}; '
-                f'wymagające ręcznego połączenia {len(unresolved)}. Bez zapisu, bez API X.'
+                f'wymagające ręcznego połączenia {len(unresolved)}; pominięte błędne {len(invalid)}. '
+                'Bez zapisu, bez API X.'
             ))
+            for problem in invalid:
+                self.stdout.write(self.style.WARNING('POMINIĘTO: ' + problem))
             return
 
         content_type = ContentType.objects.get_for_model(PublicFigure)
@@ -127,8 +128,11 @@ class Command(BaseCommand):
                 created += int(was_created)
         self.stdout.write(self.style.SUCCESS(
             f'Zapisano dowody X: nowe {created}; już istniejące {existing}; '
-            f'wymagające ręcznego połączenia {len(unresolved)}. Nie utworzono kont X ani nie wykonano zapytania do X.'
+            f'wymagające ręcznego połączenia {len(unresolved)}; pominięte błędne {len(invalid)}. '
+            'Nie utworzono kont X ani nie wykonano zapytania do X.'
         ))
+        for problem in invalid:
+            self.stdout.write(self.style.WARNING('POMINIĘTO: ' + problem))
         for item in unresolved:
             self.stdout.write(f'NIEPOŁĄCZONE wiersz {item["line"]}: {item["name"]} @{item["handle"]} — {item["reason"]}')
 

@@ -56,3 +56,14 @@ def test_import_leaves_name_only_link_for_manual_connection(tmp_path, capsys):
 
     assert not SocialHandleEvidence.objects.exists()
     assert 'NIEPOŁĄCZONE' in capsys.readouterr().out
+
+
+def test_import_skips_bad_row_without_blocking_valid_official_evidence(tmp_path):
+    profile = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='government',
+        role_title='Ministra', official_profile_url='https://official.example/anna',
+        evidence_url='https://official.example/anna')
+    path = tmp_path / 'x.csv'; write_csv(path, [row(), row(proposed_x_handle='bad handle')])
+
+    call_command('import_public_figure_x_csv', str(path), apply=True)
+
+    assert SocialHandleEvidence.objects.get().subject == profile
