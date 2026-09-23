@@ -2,7 +2,8 @@ import pytest
 from rest_framework.test import APIClient
 
 from news.models import Article, Ballot, ParliamentaryVoting, Source
-from news.political_models import ParliamentaryRosterEntry, PublicFigure, PublicFigureOrganisationRelation, RegisteredOrganisation
+from news.political_models import (ParliamentaryRosterEntry, PoliticalAccount, PoliticalAccountCandidate,
+    PublicFigure, PublicFigureOrganisationRelation, RegisteredOrganisation, SocialHandleEvidence)
 
 
 pytestmark = pytest.mark.django_db
@@ -31,3 +32,27 @@ def test_unlinked_figure_does_not_guess_votes_or_show_pending_relation():
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert data['votes']['available'] is False
     assert data['organisations'] == []
+
+
+def test_profile_exposes_x_only_after_public_link_candidate_resolution_and_account_confirmation():
+    roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='77', full_name='Anna Publiczna', active=True)
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='parliamentary', role_title='Posłanka',
+        evidence_url='https://sejm.example/anna', parliamentary_roster_entry=roster)
+    candidate = PoliticalAccountCandidate.objects.create(handle='AnnaPubliczna', display_name='Anna Publiczna',
+        classification='independent', confirmation_url='https://sejm.example/anna', confirmation_note='Publiczny link.')
+    evidence = SocialHandleEvidence.objects.create(roster_entry=roster, handle='AnnaPubliczna',
+        evidence_url='https://sejm.example/anna', extracted_url='https://x.com/AnnaPubliczna', candidate=candidate,
+        status='candidate_created')
+    assert APIClient().get(f'/api/public-figures/{figure.pk}/').data['x_account'] is None
+
+    staff = __import__('django.contrib.auth').contrib.auth.get_user_model().objects.create_user(
+        username='staff', is_staff=True,
+    )
+    account = PoliticalAccount.objects.create(user_id='77', handle='AnnaPubliczna', display_name='Anna Publiczna',
+        camp='public', confirmation_url='https://sejm.example/anna', confirmation_note='Potwierdzone.')
+    account.confirm(staff)
+    candidate.resolved_account = account
+    candidate.save(update_fields=['resolved_account'])
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
+    assert data['x_account']['handle'] == 'AnnaPubliczna'
+    assert data['x_account']['posts_collected'] == 0

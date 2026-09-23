@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from news.models import Ballot
-from news.political_models import PublicFigure
+from news.political_models import PoliticalPost, PublicFigure, SocialHandleEvidence
 
 
 def figure_data(figure, include_detail=False):
@@ -37,7 +37,34 @@ def figure_data(figure, include_detail=False):
         'verified_at': relation.verified_at,
     } for relation in relations]
     data['votes'] = votes_data(figure)
+    data['x_account'] = verified_x_account_data(figure)
     return data
+
+
+def verified_x_account_data(figure):
+    """Return an X account only after two separate confirmations.
+
+    A public link on an official roster page alone remains editorial evidence.
+    It appears in a public profile only when its candidate was resolved through
+    the official X API and the resulting polling account was confirmed.
+    """
+    if not figure.parliamentary_roster_entry_id:
+        return None
+    evidence = SocialHandleEvidence.objects.filter(
+        roster_entry_id=figure.parliamentary_roster_entry_id,
+        platform='x',
+        status='candidate_created',
+        candidate__resolved_account__isnull=False,
+    ).select_related('candidate__resolved_account__confirmed_by').order_by('-reviewed_at', '-pk').first()
+    if not evidence or not evidence.candidate.resolved_account.is_confirmed():
+        return None
+    account = evidence.candidate.resolved_account
+    return {
+        'handle': account.handle,
+        'url': f'https://x.com/{account.handle}',
+        'evidence_url': evidence.evidence_url,
+        'posts_collected': PoliticalPost.objects.filter(account=account, available=True).count(),
+    }
 
 
 def votes_data(figure):

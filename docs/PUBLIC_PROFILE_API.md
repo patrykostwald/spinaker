@@ -20,6 +20,7 @@ Odpowiedź zawiera podstawowe dane roli i trzy pola istotne dla widoku profilu:
 - `organisations` — wyłącznie relacje potwierdzone przez redakcję, z KRS, rolą, statusem obecna/historyczna i linkiem do dowodu;
 - `votes` — maksymalnie 30 głosowań z krótkim tematem, głosem i linkiem źródłowym; dostępne tylko po ręcznym połączeniu profilu z wpisem sejmowym;
 - `votes.available=false` — brak bezpiecznego połączenia z mandatem. Interfejs powinien pokazać neutralny komunikat, nie pustą tabelę ani przypuszczenie.
+- `x_account` — konto X pojawia się wyłącznie wtedy, gdy jawny link na oficjalnym profilu przeszedł przegląd, kandydatura została potwierdzona przez oficjalne API X, a konto ma aktywne potwierdzenie redakcyjne. W innym wypadku pole ma wartość `null`.
 
 Przykładowe fragmenty odpowiedzi:
 
