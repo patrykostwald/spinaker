@@ -6,6 +6,11 @@ from scraper.utils import HostRateLimited
 
 
 OFFICIAL_GOV_LISTINGS = {
+    "klimat": {
+        "name": "Ministerstwo Klimatu i Środowiska",
+        "source_url": "https://www.gov.pl/web/klimat",
+        "listing_url": "https://www.gov.pl/web/klimat/wiadomosci",
+    },
     "map": {
         "name": "Ministerstwo Aktywów Państwowych",
         "source_url": "https://www.gov.pl/web/aktywa-panstwowe",
@@ -15,6 +20,11 @@ OFFICIAL_GOV_LISTINGS = {
         "name": "Ministerstwo Spraw Zagranicznych",
         "source_url": "https://www.gov.pl/web/dyplomacja",
         "listing_url": "https://www.gov.pl/web/dyplomacja/aktualnosci",
+    },
+    "zdrowie": {
+        "name": "Ministerstwo Zdrowia",
+        "source_url": "https://www.gov.pl/web/zdrowie",
+        "listing_url": "https://www.gov.pl/web/zdrowie/wiadomosci",
     },
 }
 

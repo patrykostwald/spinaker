@@ -19,6 +19,8 @@ app.conf.beat_schedule = {
     'ministry-finance-metadata-6h': {'task': 'scraper.tasks.discover_ministry_finance_metadata', 'schedule': crontab(minute=45, hour='*/6')},
     'map-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['map'], 'schedule': crontab(minute=5, hour='*/6')},
     'msz-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['msz'], 'schedule': crontab(minute=15, hour='*/6')},
+    'klimat-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['klimat'], 'schedule': crontab(minute=25, hour='*/6')},
+    'zdrowie-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['zdrowie'], 'schedule': crontab(minute=55, hour='*/6')},
     'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
     'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},
