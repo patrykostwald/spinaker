@@ -14,7 +14,11 @@ param(
   [ValidateRange(1, 20)] [int]$MaxBatches = 10
 )
 
-$ErrorActionPreference = "Stop"
+# A candidate may legitimately fail its own TLS or availability probe.  Docker
+# forwards that diagnostic on stderr; keep processing so Django can write the
+# completed audit record and the next batch can continue.  Command exit codes
+# are checked explicitly below.
+$ErrorActionPreference = "Continue"
 $completed = 0
 
 for ($batch = 1; $batch -le $MaxBatches; $batch++) {
@@ -26,7 +30,10 @@ for ($batch = 1; $batch -le $MaxBatches; $batch++) {
     --max-age-hours 168 `
     --output-prefix reports/source-candidate-audit-current 2>&1 | Tee-Object -Variable output
   $exitCode = $LASTEXITCODE
-  if ($exitCode -ne 0) { throw "Source audit batch $batch failed." }
+  if ($exitCode -ne 0) {
+    Write-Output "AUDIT_BATCH=$batch COMMAND_ERROR=$exitCode"
+    continue
+  }
   if (($output -join "`n") -match "Brak kandydat") { break }
   $completed++
   Write-Output "AUDIT_BATCH=$batch COMPLETE"
@@ -34,4 +41,4 @@ for ($batch = 1; $batch -le $MaxBatches; $batch++) {
 
 Write-Output "AUDYT_PACZEK=$completed"
 docker compose exec backend python manage.py harvester_preflight --approved-only
-if ($LASTEXITCODE -ne 0) { throw "Approved-source preflight failed." }
+if ($LASTEXITCODE -ne 0) { Write-Error "Approved-source preflight failed." }
