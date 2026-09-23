@@ -16,7 +16,8 @@ from django import forms
 from rest_framework.exceptions import ValidationError as APIValidationError
 
 from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
-    ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt)
+    ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt,
+    SourceThumbnailPolicy)
 from news.account_models import ArticleFavorite, CommentReport, PersonalContextThread
 from scraper.tasks import (
     scrape_gdelt_task,
@@ -234,6 +235,17 @@ class SourceAccessInstructionAdmin(admin.ModelAdmin):
         return False
 
 
+class SourceThumbnailPolicyAdmin(admin.ModelAdmin):
+    list_display = ('source', 'status', 'reviewed_at', 'reviewed_by', 'next_review_at')
+    list_filter = ('status',)
+    search_fields = ('source__name', 'terms_url', 'license_url', 'reviewed_by')
+    autocomplete_fields = ('source',)
+    readonly_fields = ('updated_at',)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class FetchAttemptAdmin(admin.ModelAdmin):
     list_display = ('attempted_at', 'source', 'channel', 'requested_kind', 'outcome',
         'network_started', 'http_status', 'url_host')
@@ -281,6 +293,7 @@ class SourceContactCardAdmin(admin.ModelAdmin):
 
 
 site.register(SourceAccessInstruction, SourceAccessInstructionAdmin)
+site.register(SourceThumbnailPolicy, SourceThumbnailPolicyAdmin)
 site.register(FetchAttempt, FetchAttemptAdmin)
 site.register(SourceRecoveryCase, SourceRecoveryCaseAdmin)
 site.register(SourceContactCard, SourceContactCardAdmin)

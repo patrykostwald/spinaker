@@ -115,6 +115,33 @@ class Source(models.Model):
             raise ValidationError(errors)
 
 
+class SourceThumbnailPolicy(models.Model):
+    """A separate, source-level decision for images and derived thumbnails."""
+    class Status(models.TextChoices):
+        REVIEW_REQUIRED = 'review_required', 'Wymaga kontroli pojedynczego obrazu'
+        ALLOWED = 'allowed', 'Dozwolona po atrybucji'
+        PROHIBITED = 'prohibited', 'Niedozwolona'
+
+    source = models.OneToOneField(Source, on_delete=models.CASCADE, related_name='thumbnail_policy')
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.REVIEW_REQUIRED)
+    terms_url = models.URLField(max_length=1024)
+    license_url = models.URLField(max_length=1024, blank=True)
+    attribution_template = models.CharField(max_length=512, blank=True)
+    evidence = models.JSONField(default=dict)
+    reviewed_at = models.DateTimeField(default=timezone.now)
+    reviewed_by = models.CharField(max_length=120)
+    next_review_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['source__name']
+
+    def clean(self):
+        super().clean()
+        if self.status == self.Status.ALLOWED and (not self.license_url or not self.attribution_template):
+            raise ValidationError('Dozwolona miniatura wymaga adresu licencji i wzoru atrybucji.')
+
+
 def access_instruction_default_expiry():
     return timezone.now() + timedelta(days=30)
 
