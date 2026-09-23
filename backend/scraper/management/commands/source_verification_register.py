@@ -55,7 +55,8 @@ class Command(BaseCommand):
             bucket = ("00_juz_aktywne_pod_innym_rekordem" if hostname(source.url) in active_hosts
                       else review_bucket(source, result))
             manual = getattr(source, 'review_decision', None)
-            if manual and not manual.is_automated:
+            is_safety_demotion = manual and manual.audit_snapshot.get('reason') == 'no_current_approved_access_card'
+            if manual and (not manual.is_automated or is_safety_demotion):
                 status, next_step = MANUAL_DECISIONS[manual.decision]
                 reason = manual.reason
             else:

@@ -50,3 +50,21 @@ def test_verification_register_uses_manual_source_decision(tmp_path):
     report = output.read_text(encoding="utf-8")
     assert "later contact list" in report
     assert "Exact RSS terms were not found." in report
+
+
+@pytest.mark.django_db
+def test_verification_register_explains_automatic_safety_demotion(tmp_path):
+    source = Source.objects.create(
+        name="Uncarded", url="https://uncarded.example", source_type=SourceType.INSTITUTION,
+        catalog_stage="candidate", is_active=False, scrape_enabled=False,
+    )
+    SourceReviewDecision.objects.create(
+        source=source, decision=SourceReviewDecision.Decision.CONTACT_REQUIRED,
+        reason="No current reviewed access card.", reviewed_by="catalog safety gate", is_automated=True,
+        audit_snapshot={"reason": "no_current_approved_access_card"},
+    )
+    output = tmp_path / "register.md"
+    call_command("source_verification_register", "--output", str(output), stdout=StringIO())
+    report = output.read_text(encoding="utf-8")
+    assert "later contact list" in report
+    assert "No current reviewed access card." in report

@@ -32,7 +32,7 @@ class Command(BaseCommand):
                 continue
             result = states.get(f"source-check:{source.pk}", {}) or {}
             manual = getattr(source, 'review_decision', None)
-            requires_contact = manual and not manual.is_automated and manual.decision == SourceReviewDecision.Decision.CONTACT_REQUIRED
+            requires_contact = manual and manual.decision == SourceReviewDecision.Decision.CONTACT_REQUIRED
             if not requires_contact and review_bucket(source, result) != "04_wydawca_lub_organizacja_wymaga_zgody":
                 continue
             rows.append({

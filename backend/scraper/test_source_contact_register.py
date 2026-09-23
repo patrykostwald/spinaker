@@ -3,7 +3,7 @@ from io import StringIO
 import pytest
 from django.core.management import call_command
 
-from news.models import ImportState, Source, SourceType
+from news.models import ImportState, Source, SourceReviewDecision, SourceType
 
 
 @pytest.mark.django_db
@@ -29,3 +29,19 @@ def test_contact_register_contains_only_unapproved_publisher_candidates(tmp_path
     assert "SOURCE_CONTACT_REGISTER: 1 sources" in stream.getvalue()
     publisher.refresh_from_db()
     assert not publisher.is_active
+
+
+@pytest.mark.django_db
+def test_contact_register_includes_automatic_safety_demotion(tmp_path):
+    source = Source.objects.create(
+        name="Uncarded", url="https://uncarded.example", source_type=SourceType.INSTITUTION,
+        catalog_stage="candidate", is_active=False, scrape_enabled=False,
+    )
+    SourceReviewDecision.objects.create(
+        source=source, decision=SourceReviewDecision.Decision.CONTACT_REQUIRED,
+        reason="No current reviewed access card.", reviewed_by="catalog safety gate", is_automated=True,
+        audit_snapshot={"reason": "no_current_approved_access_card"},
+    )
+    output = tmp_path / "contact.md"
+    call_command("source_contact_register", "--output", str(output), stdout=StringIO())
+    assert "Sources requiring later confirmation: **1**" in output.read_text(encoding="utf-8")
