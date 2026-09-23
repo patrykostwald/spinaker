@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from news.models import Article, Ballot, ParliamentaryVoting, Source
 from news.political_models import (ParliamentaryRosterEntry, PoliticalAccount, PoliticalAccountCandidate,
     PoliticalPost, PublicFigure, PublicFigureArticleReference, PublicFigureOrganisationRelation,
-    RegisteredOrganisation, SocialHandleEvidence, PublicOffice, PublicFigureRole)
+    RegisteredOrganisation, SocialHandleEvidence, OfficialVideoChannel, PublicOffice, PublicFigureRole)
 
 
 pytestmark = pytest.mark.django_db
@@ -63,6 +63,27 @@ def test_profile_exposes_durable_public_office_separately_from_current_holder():
         'label': 'Instytucja Testowa', 'url': 'https://example.org/official-roster',
     }
     assert timeline['office']['id'] == office.pk
+
+
+def test_profile_exposes_only_reviewed_official_youtube_channels():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Osoba publiczna', evidence_url='https://example.org/person')
+    channel = OfficialVideoChannel.objects.create(
+        subject=figure, channel_url='https://www.youtube.com/@AnnaPubliczna',
+        display_name='Anna Publiczna', evidence_url='https://example.org/person',
+    )
+    assert APIClient().get(f'/api/public-figures/{figure.pk}/').data['youtube_channels'] == []
+
+    staff = __import__('django.contrib.auth').contrib.auth.get_user_model().objects.create_user(
+        username='youtube-editor', is_staff=True,
+    )
+    channel.confirm(staff)
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
+    assert data['youtube_channels'] == [{
+        'name': 'Anna Publiczna', 'url': 'https://www.youtube.com/@AnnaPubliczna',
+        'channel_id': None, 'evidence_url': 'https://example.org/person',
+        'source_checked_at': channel.source_checked_at,
+    }]
 
 
 def test_unlinked_figure_does_not_guess_votes_or_show_pending_relation():

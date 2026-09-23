@@ -1,6 +1,7 @@
 """Staff-confirmed political accounts; X material is separate from Article."""
 from hashlib import sha256
 import json
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -408,6 +409,80 @@ SOCIAL_EVIDENCE_STATUSES = [
     ('candidate_created', 'Przekazano do kandydatur'),
     ('rejected', 'Odrzucono'),
 ]
+
+
+OFFICIAL_VIDEO_CHANNEL_STATUSES = [
+    ('pending_review', 'Do przeglądu'),
+    ('confirmed', 'Potwierdzony przez redakcję'),
+    ('rejected', 'Odrzucony'),
+]
+
+
+class OfficialVideoChannel(models.Model):
+    """A public, editorially reviewed link to an official YouTube channel.
+
+    It records only a channel link and the page that proves the link.  It does
+    not search YouTube, download videos or captions, and it does not make a
+    claim about a channel merely because its name resembles a public person.
+    ``channel_id`` is optional because an official page may link a handle; a
+    later, separately approved API collection can resolve that immutable ID.
+    """
+    subject_content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT,
+        related_name='+')
+    subject_object_id = models.PositiveBigIntegerField()
+    subject = GenericForeignKey('subject_content_type', 'subject_object_id')
+    channel_url = models.URLField(max_length=1024,
+        help_text='Bezpośredni link youtube.com/channel/... albo youtube.com/@...')
+    channel_id = models.CharField(max_length=64, blank=True, db_index=True,
+        help_text='Niezmienny identyfikator kanału, gdy został potwierdzony.')
+    display_name = models.CharField(max_length=255, blank=True)
+    evidence_url = models.URLField(max_length=1024,
+        help_text='Oficjalna strona podmiotu lub osoby, która linkuje ten kanał.')
+    status = models.CharField(max_length=24, choices=OFFICIAL_VIDEO_CHANNEL_STATUSES,
+        default='pending_review', db_index=True)
+    collection_enabled = models.BooleanField(default=False,
+        help_text='Włącza wyłącznie przyszłe pobieranie metadanych kanału; nie napisów.')
+    source_checked_at = models.DateTimeField(default=timezone.now)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='reviewed_official_video_channels', editable=False)
+    reviewed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['status', 'display_name', 'channel_url']
+        constraints = [models.UniqueConstraint(
+            fields=['subject_content_type', 'subject_object_id', 'channel_url'],
+            name='news_official_video_channel_subject_url_unique',
+        )]
+
+    def __str__(self):
+        return self.display_name or self.channel_url
+
+    def clean(self):
+        super().clean()
+        if self.subject_content_type.model not in {'publicfigure', 'publicoffice', 'source'}:
+            raise ValidationError('Kanał może należeć wyłącznie do osoby publicznej, funkcji publicznej albo źródła.')
+        parsed = urlparse(self.channel_url)
+        host = parsed.netloc.lower().removeprefix('www.')
+        path = parsed.path.rstrip('/')
+        if parsed.scheme != 'https' or host != 'youtube.com' or not (
+            path.startswith('/channel/UC') or path.startswith('/@')
+        ):
+            raise ValidationError('Podaj bezpośredni link HTTPS do kanału YouTube: /channel/UC… albo /@… .')
+        if self.collection_enabled and (self.status != 'confirmed' or not self.channel_id):
+            raise ValidationError('Pobieranie metadanych wymaga potwierdzonego kanału z identyfikatorem kanału.')
+        if self.status == 'confirmed' and (not self.reviewed_by_id or not self.reviewed_at):
+            raise ValidationError('Potwierdzony kanał wymaga redaktora i daty potwierdzenia.')
+
+    def confirm(self, staff):
+        if not staff.is_active or not staff.is_staff:
+            raise ValidationError('Potwierdzenie kanału wymaga aktywnego redaktora.')
+        self.reviewed_by = staff
+        self.reviewed_at = timezone.now()
+        self.status = 'confirmed'
+        self.full_clean()
+        self.save(update_fields=['reviewed_by', 'reviewed_at', 'status', 'updated_at'])
 
 
 class SocialHandleEvidence(models.Model):
