@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from news.models import Ballot
+from news.models import ArticleCategory, Ballot
 from news.political_models import PoliticalPost, PublicFigure, SocialHandleEvidence
 
 
@@ -50,7 +50,96 @@ def figure_data(figure, include_detail=False):
     data['votes'] = votes_data(figure)
     data['x_account'] = verified_x_account_data(figure)
     data['x_posts'] = verified_x_posts_data(figure)
+    data['materials'] = materials_data(figure)
     return data
+
+
+def confirmed_material_references(figure):
+    return figure.article_references.filter(
+        verification_status='confirmed', article__source__is_active=True,
+    ).select_related('article__source').order_by('-article__published_date', '-pk')
+
+
+def materials_data(figure):
+    """Expose reviewed material links only; never infer a link from a name."""
+    references = confirmed_material_references(figure)
+    by_category = {key: 0 for key, _ in ArticleCategory.choices}
+    by_reference_kind = {}
+    results = []
+    for reference in references[:100]:
+        article = reference.article
+        by_category[article.category] = by_category.get(article.category, 0) + 1
+        by_reference_kind[reference.reference_kind] = by_reference_kind.get(reference.reference_kind, 0) + 1
+        results.append({
+            'id': article.pk,
+            'title': article.title,
+            'url': article.url,
+            'source': article.source.name,
+            'published_date': article.published_date,
+            'category': article.category,
+            'reference_kind': reference.reference_kind,
+            'evidence_note': reference.evidence_note,
+        })
+    return {
+        'available': bool(results),
+        'count': references.count(),
+        'by_category': {key: count for key, count in by_category.items() if count},
+        'by_reference_kind': by_reference_kind,
+        'results': results,
+    }
+
+
+def context_graph_data(figure):
+    """A compact, evidence-first graph for the person-context view."""
+    figure_node = f'person:{figure.pk}'
+    nodes = [{'id': figure_node, 'type': 'public_figure', 'label': figure.canonical_name}]
+    edges = []
+    for role in figure.public_roles.filter(archived=False).order_by('role_title', 'pk'):
+        node_id = f'role:{role.pk}'
+        nodes.append({'id': node_id, 'type': 'role', 'label': role.role_title,
+                      'organisation': role.organisation, 'status': role.status})
+        edges.append({'from': figure_node, 'to': node_id, 'type': 'holds_role',
+                      'evidence_url': role.evidence_url, 'source_checked_at': role.source_checked_at})
+    for relation in figure.organisation_relations.filter(
+        verification_status='confirmed', organisation__archived=False,
+    ).select_related('organisation').order_by('organisation__name', 'pk'):
+        node_id = f'organisation:{relation.organisation_id}'
+        nodes.append({'id': node_id, 'type': 'organisation', 'label': relation.organisation.name,
+                      'kind': relation.organisation.kind, 'url': relation.organisation.official_register_url})
+        edges.append({'from': figure_node, 'to': node_id, 'type': 'confirmed_organisation_relation',
+                      'label': relation.public_role, 'status': relation.relation_status,
+                      'evidence_url': relation.evidence_url, 'verified_at': relation.verified_at})
+    for reference in confirmed_material_references(figure)[:100]:
+        article = reference.article
+        node_id = f'article:{article.pk}'
+        nodes.append({'id': node_id, 'type': 'article', 'label': article.title,
+                      'category': article.category, 'source': article.source.name, 'url': article.url,
+                      'published_date': article.published_date})
+        edges.append({'from': figure_node, 'to': node_id, 'type': 'confirmed_material_reference',
+                      'label': reference.reference_kind, 'evidence_note': reference.evidence_note})
+    votes = votes_data(figure)
+    for vote in votes['results']:
+        node_id = f"vote:{vote['article_url']}"
+        nodes.append({'id': node_id, 'type': 'vote', 'label': vote['topic'], 'date': vote['date'],
+                      'vote': vote['vote'], 'url': vote['article_url']})
+        edges.append({'from': figure_node, 'to': node_id, 'type': 'official_vote',
+                      'evidence_url': vote['article_url']})
+    account = verified_x_account_data(figure)
+    if account:
+        node_id = f"x:{account['handle'].lower()}"
+        nodes.append({'id': node_id, 'type': 'x_account', 'label': '@' + account['handle'], 'url': account['url']})
+        edges.append({'from': figure_node, 'to': node_id, 'type': 'confirmed_x_account',
+                      'evidence_url': account['evidence_url']})
+    gaps = []
+    if not figure.organisation_relations.filter(verification_status='confirmed').exists():
+        gaps.append('Brak potwierdzonych relacji z podmiotami w Bazie.')
+    if not votes['available']:
+        gaps.append('Brak potwierdzonego połączenia z mandatem poselskim i głosowaniami.')
+    if not confirmed_material_references(figure).exists():
+        gaps.append('Brak ręcznie potwierdzonych relacji z materiałami w Bazie.')
+    if not account:
+        gaps.append('Brak potwierdzonego konta X.')
+    return {'nodes': nodes, 'edges': edges, 'gaps': gaps}
 
 
 def verified_x_account_record(figure):
@@ -159,3 +248,15 @@ def public_figure_list(request):
 def public_figure_detail(request, figure_id):
     figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
     return Response(figure_data(figure, include_detail=True))
+
+
+@api_view(['GET'])
+def public_figure_context(request, figure_id):
+    figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
+    return Response({
+        'figure': figure_data(figure),
+        'materials': materials_data(figure),
+        'graph': context_graph_data(figure),
+        'notice': ('Krawędzie pokazują wyłącznie potwierdzone relacje i materiały. '
+                   'Wspólny temat lub wystąpienie nazwiska nie tworzy relacji.'),
+    })

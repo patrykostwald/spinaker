@@ -14,7 +14,7 @@ from news.ai_research_stream import AIResearchStreamView, AIResearchSourcesView
 from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCatalogExport
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
-from news.public_figures import public_figure_list, public_figure_detail
+from news.public_figures import public_figure_list, public_figure_detail, public_figure_context
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
 
@@ -33,6 +33,7 @@ urlpatterns = [
     path('portal/topic-of-day/', topic_of_day),
     path('public-figures/', public_figure_list),
     path('public-figures/<int:figure_id>/', public_figure_detail),
+    path('public-figures/<int:figure_id>/context/', public_figure_context),
     path('articles/<int:article_id>/context/', article_context),
     path('context/counts/', context_counts),
     path("editor/sources/", SourceCatalogList.as_view()),

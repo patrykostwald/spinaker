@@ -6,7 +6,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicFigureRole, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
+from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
 from news.political_import import create_from_preview, validate_csv
 from news.political_candidates import CandidateResolutionError, resolve_candidate
 from news.political_candidate_import import create_candidates_from_preview, validate_candidate_csv
@@ -174,6 +174,32 @@ class PublicFigureRoleAdmin(admin.ModelAdmin):
         return False
 
 
+class PublicFigureArticleReferenceAdmin(admin.ModelAdmin):
+    list_display = ['public_figure', 'article', 'reference_kind', 'verification_status', 'verified_at']
+    list_filter = ['reference_kind', 'verification_status', 'article__category']
+    search_fields = ['public_figure__canonical_name', 'article__title', 'article__url']
+    autocomplete_fields = ['public_figure', 'article']
+    readonly_fields = ['verified_by', 'verified_at', 'created_at', 'updated_at']
+    actions = ['confirm_references', 'reject_references']
+
+    @admin.action(description='Potwierdź wybrane relacje z materiałami')
+    def confirm_references(self, request, queryset):
+        for reference in queryset.filter(verification_status='pending_review'):
+            try:
+                reference.confirm(request.user)
+            except ValidationError as exc:
+                self.message_user(request, f'{reference}: {"; ".join(exc.messages)}', messages.ERROR)
+            else:
+                self.message_user(request, f'Potwierdzono: {reference}', messages.SUCCESS)
+
+    @admin.action(description='Odrzuć wybrane relacje z materiałami')
+    def reject_references(self, request, queryset):
+        queryset.filter(verification_status='pending_review').update(verification_status='rejected')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class RegisteredOrganisationAdmin(admin.ModelAdmin):
     list_display = ['name', 'krs_number', 'kind', 'source_checked_at', 'archived']
     list_filter = ['kind', 'archived']
@@ -316,6 +342,7 @@ def register_political_admin(site):
     site.register(ParliamentaryRosterEntry, ParliamentaryRosterEntryAdmin)
     site.register(PublicFigure, PublicFigureAdmin)
     site.register(PublicFigureRole, PublicFigureRoleAdmin)
+    site.register(PublicFigureArticleReference, PublicFigureArticleReferenceAdmin)
     site.register(RegisteredOrganisation, RegisteredOrganisationAdmin)
     site.register(PublicFigureOrganisationRelation, PublicFigureOrganisationRelationAdmin)
     site.register(SocialHandleEvidence, SocialHandleEvidenceAdmin)

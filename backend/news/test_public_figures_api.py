@@ -4,7 +4,8 @@ from django.contrib.contenttypes.models import ContentType
 
 from news.models import Article, Ballot, ParliamentaryVoting, Source
 from news.political_models import (ParliamentaryRosterEntry, PoliticalAccount, PoliticalAccountCandidate,
-    PoliticalPost, PublicFigure, PublicFigureOrganisationRelation, RegisteredOrganisation, SocialHandleEvidence)
+    PoliticalPost, PublicFigure, PublicFigureArticleReference, PublicFigureOrganisationRelation,
+    RegisteredOrganisation, SocialHandleEvidence)
 
 
 pytestmark = pytest.mark.django_db
@@ -138,3 +139,25 @@ def test_public_figure_list_is_paginated_and_filterable():
     assert [item['name'] for item in first['results']] == ['Osoba 0']
     assert [item['name'] for item in second['results']] == ['Osoba 1']
     assert client.get('/api/public-figures/?page=none').status_code == 400
+
+
+def test_context_exposes_only_confirmed_material_links_and_evidence_graph():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Osoba publiczna', evidence_url='https://example.org/person')
+    source = Source.objects.create(name='Oficjalne źródło', url='https://example.org')
+    article = Article.objects.create(source=source, title='Wywiad z Anną', url='https://example.org/interview',
+        category='interview', published_date='2026-09-23T10:00:00Z')
+    reference = PublicFigureArticleReference.objects.create(public_figure=figure, article=article,
+        reference_kind='interviewee', evidence_note='Osoba występuje w materiale.')
+    editor = __import__('django.contrib.auth').contrib.auth.get_user_model().objects.create_user(
+        username='research-editor', is_staff=True,
+    )
+    reference.confirm(editor)
+    pending = Article.objects.create(source=source, title='Podobne nazwisko', url='https://example.org/pending')
+    PublicFigureArticleReference.objects.create(public_figure=figure, article=pending, reference_kind='mentioned')
+
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/context/').data
+    assert data['materials']['count'] == 1
+    assert data['materials']['by_category'] == {'interview': 1}
+    assert any(edge['type'] == 'confirmed_material_reference' for edge in data['graph']['edges'])
+    assert not any(node.get('label') == 'Podobne nazwisko' for node in data['graph']['nodes'])
