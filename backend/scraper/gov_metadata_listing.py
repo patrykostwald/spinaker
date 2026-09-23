@@ -53,6 +53,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/gugik/wiadomosci",
         "terms_url": "https://www.gov.pl/web/gugik/ponowne-wykorzystanie-informacji-sektora-publicznego",
     },
+    "govtech": {
+        "name": "GovTech Polska",
+        "source_url": "https://www.gov.pl/web/govtech",
+        "listing_url": "https://www.gov.pl/web/govtech/aktualnosci",
+    },
     "infrastruktura": {
         "name": "Ministerstwo Infrastruktury",
         "source_url": "https://www.gov.pl/web/infrastruktura",
