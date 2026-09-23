@@ -20,6 +20,9 @@ import {
 import { Button, type ButtonVariant } from "./Button";
 import { useMotionTokens } from "./motion/useMotionTokens";
 import { useDismissable } from "./useDismissable";
+// R7: BottomSheet zamiast zaślepki popovera dla presentation="sheet" / "auto" ≤ 480px.
+import { BottomSheet } from "./mobile/BottomSheet";
+import { BREAKPOINTS } from "./tokens";
 
 // TODO(R1): zamienić na kit/icons po scaleniu — na razie tymczasowy inline SVG własny dla R2.
 function ChevronDownIcon() {
@@ -57,8 +60,8 @@ export type DropdownProps = {
   triggerVariant?: ButtonVariant;
   footer?: ReactNode;
   /**
-   * 'popover' — pełna implementacja poniżej. 'sheet' i 'auto' są na razie ALIASAMI popover:
-   * TODO(R7): podmienić 'sheet' (i próg 'auto' < 481px) na BottomSheet z kit/mobile, gdy będzie gotowy.
+   * 'popover' — panel rosnący z wyzwalacza. 'sheet' — zawsze BottomSheet (kit/mobile).
+   * 'auto' — BottomSheet poniżej BREAKPOINTS.phone (481px), inaczej popover. (R7)
    */
   presentation?: DropdownPresentation;
   /** Wygodne dla wystawek/dema — panel startuje otwarty, bez zmiany kontraktu innych propsów. */
@@ -81,6 +84,7 @@ export function Dropdown({
   width,
   triggerVariant = "secondary",
   footer,
+  presentation = "popover",
   defaultOpen = false,
 }: DropdownProps) {
   const m = useMotionTokens();
@@ -91,6 +95,18 @@ export function Dropdown({
   const [open, setOpen] = useState(defaultOpen);
   const [placement, setPlacement] = useState<"bottom" | "top">("bottom");
   const [triggerWidth, setTriggerWidth] = useState<number>();
+
+  // R7: presentation="auto" przełącza się na dolny arkusz poniżej progu telefonu (BREAKPOINTS.phone).
+  const [isPhoneViewport, setIsPhoneViewport] = useState(false);
+  useEffect(() => {
+    if (presentation !== "auto") return;
+    const mql = window.matchMedia(`(max-width: ${BREAKPOINTS.phone}px)`);
+    const update = () => setIsPhoneViewport(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, [presentation]);
+  const useSheet = presentation === "sheet" || (presentation === "auto" && isPhoneViewport);
 
   const enabledIndexes = useMemo(
     () => items.map((item, index) => (item.disabled ? -1 : index)).filter((index) => index >= 0),
@@ -220,6 +236,71 @@ export function Dropdown({
   const yFrom = m.reduced ? 0 : placement === "top" ? 4 : -4;
   const scaleFrom = m.reduced ? 1 : 0.96;
 
+  // R7: lista pozycji wydzielona, żeby popover i BottomSheet renderowały DOKŁADNIE tę samą
+  // klawiaturę/role/kaskadę — różni się tylko opakowanie (panel na transform-origin vs arkusz).
+  function renderItemsList() {
+    return (
+      <LayoutGroup id={instanceId}>
+        <div ref={listRef} className="sc-dropdown__list" role="presentation" onKeyDown={onListKeyDown}>
+          {items.map((item, index) => {
+            const checked = isChecked(item);
+            const isActive = index === activeIndex;
+            const role = mode === "single" ? "menuitemradio" : mode === "multi" ? "menuitemcheckbox" : "menuitem";
+            return (
+              <motion.div
+                key={item.value}
+                role={role}
+                aria-checked={mode === "menu" ? undefined : checked}
+                aria-disabled={item.disabled || undefined}
+                data-active={isActive || undefined}
+                tabIndex={isActive ? 0 : -1}
+                className={"sc-dropdown__item" + (isActive && mode !== "menu" ? " sc-dropdown__item--active" : "")}
+                onClick={() => activate(item, index)}
+                onPointerEnter={() => !item.disabled && setActiveIndex(index)}
+                initial={{ opacity: 0, y: m.rise }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={m.t("ui", { delay: Math.min(index, CASCADE_CAP - 1) * CASCADE_STEP })}
+              >
+                {isActive && mode === "menu" && (
+                  <motion.span
+                    layoutId={`sc-dropdown-highlight-${instanceId}`}
+                    className="sc-dropdown__highlight"
+                    transition={m.t("move")}
+                  />
+                )}
+                <span className="sc-dropdown__item-text">
+                  <span className="sc-t-body-s">{item.label}</span>
+                  {item.description && (
+                    <span className="sc-dropdown__item-desc sc-t-caption sc-text-3">{item.description}</span>
+                  )}
+                </span>
+                {mode === "single" && checked && (
+                  <motion.span
+                    layoutId={`sc-dropdown-check-${instanceId}`}
+                    className="sc-dropdown__check"
+                    transition={m.t("move")}
+                  >
+                    <CheckIcon />
+                  </motion.span>
+                )}
+                {mode === "multi" && (
+                  <motion.span
+                    className="sc-dropdown__check"
+                    initial={false}
+                    animate={{ scale: checked ? 1 : 0.6, opacity: checked ? 1 : 0 }}
+                    transition={m.t("expand")}
+                  >
+                    <CheckIcon />
+                  </motion.span>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </LayoutGroup>
+    );
+  }
+
   return (
     <div className="sc-dropdown">
       <Button
@@ -244,91 +325,41 @@ export function Dropdown({
         {label}
       </Button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            ref={panelRef}
-            id={panelId}
-            role="menu"
-            aria-label={ariaLabel ?? label}
-            className="sc-dropdown__panel sc-chrome"
-            data-align={align}
-            data-placement={placement}
-            style={{
-              transformOrigin: `${originX} ${originY}`,
-              width: resolvedWidth,
-              ...(align === "end" ? { right: 0 } : { left: 0 }),
-              ...(placement === "top" ? { bottom: "calc(100% + 8px)" } : { top: "calc(100% + 8px)" }),
-            }}
-            initial={{ opacity: 0, scale: scaleFrom, y: yFrom }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: scaleFrom, y: yFrom }}
-            transition={open ? m.t("ui") : m.t("collapse")}
-          >
-            <LayoutGroup id={instanceId}>
-              <div ref={listRef} className="sc-dropdown__list" role="presentation" onKeyDown={onListKeyDown}>
-                {items.map((item, index) => {
-                  const checked = isChecked(item);
-                  const isActive = index === activeIndex;
-                  const role = mode === "single" ? "menuitemradio" : mode === "multi" ? "menuitemcheckbox" : "menuitem";
-                  return (
-                    <motion.div
-                      key={item.value}
-                      role={role}
-                      aria-checked={mode === "menu" ? undefined : checked}
-                      aria-disabled={item.disabled || undefined}
-                      data-active={isActive || undefined}
-                      tabIndex={isActive ? 0 : -1}
-                      className={
-                        "sc-dropdown__item" + (isActive && mode !== "menu" ? " sc-dropdown__item--active" : "")
-                      }
-                      onClick={() => activate(item, index)}
-                      onPointerEnter={() => !item.disabled && setActiveIndex(index)}
-                      initial={{ opacity: 0, y: m.rise }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={m.t("ui", { delay: Math.min(index, CASCADE_CAP - 1) * CASCADE_STEP })}
-                    >
-                      {isActive && mode === "menu" && (
-                        <motion.span
-                          layoutId={`sc-dropdown-highlight-${instanceId}`}
-                          className="sc-dropdown__highlight"
-                          transition={m.t("move")}
-                        />
-                      )}
-                      <span className="sc-dropdown__item-text">
-                        <span className="sc-t-body-s">{item.label}</span>
-                        {item.description && (
-                          <span className="sc-dropdown__item-desc sc-t-caption sc-text-3">{item.description}</span>
-                        )}
-                      </span>
-                      {mode === "single" && checked && (
-                        <motion.span
-                          layoutId={`sc-dropdown-check-${instanceId}`}
-                          className="sc-dropdown__check"
-                          transition={m.t("move")}
-                        >
-                          <CheckIcon />
-                        </motion.span>
-                      )}
-                      {mode === "multi" && (
-                        <motion.span
-                          className="sc-dropdown__check"
-                          initial={false}
-                          animate={{ scale: checked ? 1 : 0.6, opacity: checked ? 1 : 0 }}
-                          transition={m.t("expand")}
-                        >
-                          <CheckIcon />
-                        </motion.span>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </LayoutGroup>
-            {footer && <div className="sc-dropdown__footer">{footer}</div>}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* R7: presentation="sheet" (lub "auto" ≤ BREAKPOINTS.phone) — pozycje w BottomSheet zamiast
+          popovera. Ta sama klawiatura (onListKeyDown), te same role — patrz renderItemsList() wyżej. */}
+      {useSheet ? (
+        <BottomSheet open={open} onClose={close} title={ariaLabel ?? label} id={panelId}>
+          {renderItemsList()}
+          {footer && <div className="sc-dropdown__footer">{footer}</div>}
+        </BottomSheet>
+      ) : (
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={panelRef}
+              id={panelId}
+              role="menu"
+              aria-label={ariaLabel ?? label}
+              className="sc-dropdown__panel sc-chrome"
+              data-align={align}
+              data-placement={placement}
+              style={{
+                transformOrigin: `${originX} ${originY}`,
+                width: resolvedWidth,
+                ...(align === "end" ? { right: 0 } : { left: 0 }),
+                ...(placement === "top" ? { bottom: "calc(100% + 8px)" } : { top: "calc(100% + 8px)" }),
+              }}
+              initial={{ opacity: 0, scale: scaleFrom, y: yFrom }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: scaleFrom, y: yFrom }}
+              transition={open ? m.t("ui") : m.t("collapse")}
+            >
+              {renderItemsList()}
+              {footer && <div className="sc-dropdown__footer">{footer}</div>}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 }

@@ -1316,3 +1316,145 @@ html[data-theme="pastel"],
 @media (max-width: 480px) {
   .sc-dropdown__panel { max-width: calc(100vw - var(--sc-s-8)); }
 }
+
+/* === R7 Мобильный слой ===
+   docs/UI_KIT_PLAN.md → «Mobilne rozkłady», «Rozwijanie sekcji przy przewijaniu», «Karuzela»,
+   «Dropdowny i filtry na telefonie to dolne arkusze». Tylko klasy `sc-`, tylko transform/opacity
+   (height — dozwolony wyjątek jak w RevealHeight, patrz kit.css:1 zasada 4). Zmienna wysokości
+   uszczelnionego nagłówka jest zduplikowana z CompactHeader.tsx (COMPACT_HEIGHT) celowo — jedyny
+   sposób, żeby czysty CSS (sticky top) znał wartość bez zapisu inline-style z JS na każdą sekcję. */
+.sc-root { --sc-mobile-compact-h: 48px; }
+
+/* ---------- Stoisko telefonu (witryna) ---------- */
+.sc-mobile-readouts { display: grid; gap: var(--sc-s-1); margin: var(--sc-s-4) 0 var(--sc-s-5); }
+.sc-mobile-readouts p { margin: 0; }
+.sc-mobile-stand { display: flex; justify-content: center; margin: 0 0 var(--sc-s-7); }
+.sc-mobile-frame {
+  position: relative;
+  width: 375px;
+  height: 740px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-2xl);
+  background: var(--sc-bg);
+  box-shadow: var(--sc-e-2), var(--sc-ring);
+  container-type: inline-size;
+}
+.sc-mobile-frame__band-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed var(--sc-accent);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 6;
+}
+.sc-mobile-frame__header-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); width: 100%; padding: 0 var(--sc-s-4); min-width: 0; }
+.sc-mobile-frame__header-row .sc-search { flex: 1; min-width: 0; }
+.sc-mobile-frame__search-icon { font-size: 18px; line-height: 1; flex: none; }
+.sc-mobile-frame__scroll { display: flex; flex-direction: column; gap: var(--sc-s-6); padding: var(--sc-s-4) 0 var(--sc-s-9); }
+.sc-mobile-frame__list { display: flex; flex-direction: column; gap: var(--sc-s-3); padding: 0 var(--sc-s-4); }
+.sc-mobile-frame__carousel-wrap { padding-top: var(--sc-s-3); }
+
+/* ---------- CompactHeader ---------- */
+.sc-compact-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid var(--sc-line);
+}
+.sc-compact-header__inner { display: flex; align-items: center; width: 100%; min-height: 48px; }
+
+/* ---------- FoldedSection ---------- */
+.sc-folded { display: flex; flex-direction: column; }
+.sc-folded__header {
+  position: sticky;
+  top: var(--sc-mobile-compact-h);
+  z-index: 4;
+  padding: var(--sc-s-3) var(--sc-s-4);
+  border-bottom: 1px solid var(--sc-line);
+}
+.sc-folded__preview { padding: var(--sc-s-3) var(--sc-s-4) var(--sc-s-4); }
+
+/* ---------- Carousel ---------- */
+.sc-carousel { position: relative; }
+.sc-carousel__scroller {
+  display: flex;
+  gap: var(--sc-s-3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  touch-action: pan-x;
+  scroll-padding-inline: 8%;
+  padding: var(--sc-s-2) 8% var(--sc-s-3);
+  outline: none;
+  scrollbar-width: none;
+}
+.sc-carousel__scroller::-webkit-scrollbar { display: none; }
+.sc-carousel__slide { flex: 0 0 84%; scroll-snap-align: center; }
+.sc-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--sc-r-pill);
+  border: 1px solid var(--sc-line);
+  background: var(--sc-chrome);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  color: var(--sc-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform var(--sc-dur-fast) var(--sc-ease-standard), opacity var(--sc-dur-fast) var(--sc-ease-standard);
+}
+.sc-carousel__arrow:disabled { opacity: 0.35; cursor: not-allowed; }
+.sc-carousel__arrow--prev { left: var(--sc-s-2); }
+.sc-carousel__arrow--next { right: var(--sc-s-2); }
+@media (hover: none) {
+  .sc-carousel__arrow { display: none; }
+}
+
+/* ---------- BottomSheet ----------
+   Ta sama fizyka co zamknięcie portalu (R4 useDragDismiss): 1:1 za palcem, gumowa granica
+   u góry, decyzja po znaku prędkości. z-index wyżej niż .sc-morph-surface (61, próbnik R4/R0),
+   bo arkusz musi leżeć nad wszystkim, łącznie z lepkimi nagłówkami sekcji. */
+.sc-sheet { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end; justify-content: center; }
+.sc-sheet__scrim { position: absolute; inset: 0; background: rgba(2, 3, 6, 0.55); }
+.sc-sheet__surface {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--sc-s-4) env(safe-area-inset-bottom);
+  box-shadow: var(--sc-e-menu), var(--sc-ring);
+}
+.sc-sheet__handle {
+  width: 100%;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  -webkit-touch-callout: none;
+}
+.sc-sheet__handle::after { content: ""; width: 36px; height: 4px; border-radius: var(--sc-r-pill); background: var(--sc-line-strong); }
+.sc-sheet__title { margin: 0 0 var(--sc-s-3); }
+.sc-sheet__scroller { overflow-y: auto; overscroll-behavior: contain; flex: 1; padding-bottom: var(--sc-s-4); }
+
+@media (max-width: 480px) {
+  .sc-mobile-frame { width: 100%; max-width: 375px; }
+}
