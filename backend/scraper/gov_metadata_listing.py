@@ -6,6 +6,21 @@ from scraper.utils import HostRateLimited
 
 
 OFFICIAL_GOV_LISTINGS = {
+    "infrastruktura": {
+        "name": "Ministerstwo Infrastruktury",
+        "source_url": "https://www.gov.pl/web/infrastruktura",
+        "listing_url": "https://www.gov.pl/web/infrastruktura/wiadomosci",
+    },
+    "mon": {
+        "name": "Ministerstwo Obrony Narodowej",
+        "source_url": "https://www.gov.pl/web/obrona-narodowa",
+        "listing_url": "https://www.gov.pl/web/obrona-narodowa/wiadomosci",
+    },
+    "sprawiedliwosc": {
+        "name": "Ministerstwo Sprawiedliwości",
+        "source_url": "https://www.gov.pl/web/sprawiedliwosc",
+        "listing_url": "https://www.gov.pl/web/sprawiedliwosc/wiadomosci",
+    },
     "klimat": {
         "name": "Ministerstwo Klimatu i Środowiska",
         "source_url": "https://www.gov.pl/web/klimat",
