@@ -42,9 +42,9 @@ def test_status_reports_review_progress():
 
     assert 'POSTEP_WERYFIKACJI: 1/2' in output.getvalue()
     assert 'KANDYDACI_DO_SPRAWDZENIA: 1' in output.getvalue()
-    assert 'ZRODLA_AKTYWNE_W_POBIERANIU: 2/3' in output.getvalue()
-    assert 'ZRODLA_NIEZWERYFIKOWANE: 1/3' in output.getvalue()
-    assert 'ZRODLA_DO_MAILA_LUB_ZGODY: 0/3' in output.getvalue()
+    assert 'AKTYWNE_POBIERANIE: 2/3' in output.getvalue()
+    assert 'NIEUKONCZONE_ZRODLA: 1/3' in output.getvalue()
+    assert 'POTENCJALNIE_DO_KONTAKTU_PO_DECYZJI: 0/3' in output.getvalue()
     assert 'AUDYT_KANDYDATOW_7D: 1/1' in output.getvalue()
     assert 'PROBY_AUDYTU_7D: 1/1' in output.getvalue()
     assert 'POZOSTALO_DO_AUDYTU: 0/1' in output.getvalue()

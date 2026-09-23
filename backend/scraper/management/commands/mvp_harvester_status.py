@@ -60,28 +60,31 @@ class Command(BaseCommand):
         )
         self.stdout.write(f'KANDYDACI_DO_SPRAWDZENIA: {candidate_count}')
         total_sources = Source.objects.count()
+        self.stdout.write(f'AKTYWNE_POBIERANIE: {len(approved)}/{total_sources}')
         self.stdout.write(
-            f'ZRODLA_AKTYWNE_W_POBIERANIU: {len(approved)}/{total_sources}'
-        )
-        self.stdout.write(f'ZRODLA_NIEZWERYFIKOWANE: {candidate_count}/{total_sources}')
-        self.stdout.write(
-            'ZRODLA_DO_MAILA_LUB_ZGODY: '
-            f'{review_counts["04_wydawca_lub_organizacja_wymaga_zgody"]}/{total_sources}'
+            f'NIEUKONCZONE_ZRODLA: {candidate_count}/{total_sources} '
+            '(znalezione technicznie, ale bez decyzji o uruchomieniu)'
         )
         self.stdout.write(
-            'PUBLICZNE_DO_SPRAWDZENIA_W_SIECI: '
-            f'{review_counts["02_instytucja_rss_do_warunkow"]}/{total_sources}'
+            'POTENCJALNIE_DO_KONTAKTU_PO_DECYZJI: '
+            f'{review_counts["04_wydawca_lub_organizacja_wymaga_zgody"]}/{total_sources} '
+            '(tylko lista; nic nie jest wysyłane)'
         )
         self.stdout.write(
-            'BEZ_POTWIERDZONEGO_KANALU: '
+            'JAWNE_WARUNKI_DO_ODSZUKANIA: '
+            f'{review_counts["02_instytucja_rss_do_warunkow"]}/{total_sources} '
+            '(głównie instytucje publiczne z działającym kanałem)'
+        )
+        self.stdout.write(
+            'NIEJASNY_LUB_BRAKUJACY_KANAL: '
             f'{review_counts["03_instytucja_bez_potwierdzonego_kanalu"]}/{total_sources}'
         )
         self.stdout.write(
-            'BLEDY_TECHNICZNE_DO_RECZNEGO_SPRAWDZENIA: '
+            'BLEDY_TECHNICZNE: '
             f'{review_counts["01_blad_techniczny"]}/{total_sources}'
         )
         self.stdout.write(
-            'DUPLIKATY_AKTYWNYCH_ZRODEL: '
+            'DUPLIKATY_JUZ_AKTYWNYCH: '
             f'{review_counts["00_juz_aktywne_pod_innym_rekordem"]}/{total_sources}'
         )
         self.stdout.write(
