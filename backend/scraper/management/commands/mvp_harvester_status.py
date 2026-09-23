@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count
 
 from news.models import ImportState, Source, SourceAccessInstruction
+from scraper.management.commands.audit_sources import is_fresh
 
 
 class Command(BaseCommand):
@@ -24,15 +25,27 @@ class Command(BaseCommand):
                 f'ŹRÓDŁO {source.pk}: {source.name} | kanały: {channels} | boxy: {source.box_count} | '
                 f'RSS: {source.rss_url or "—"} | ostatnie pobranie: {source.last_scraped or "—"}')
         self.stdout.write(f'ZATWIERDZONE_AKTYWNE: {len(approved)}')
-        candidates = Source.objects.filter(
+        candidates = list(Source.objects.filter(
             catalog_stage='candidate', is_active=False, scrape_enabled=False
-        ).count()
-        total_review_queue = len(approved) + candidates
+        ).order_by('pk'))
+        candidate_states = dict(ImportState.objects.filter(
+            name__in=[f'source-check:{source.pk}' for source in candidates]
+        ).values_list('name', 'cursor'))
+        audited = [source for source in candidates if is_fresh(
+            source, candidate_states.get(f'source-check:{source.pk}', {}), 168)]
+        failed = [source for source in candidates if candidate_states.get(
+            f'source-check:{source.pk}', {}).get('audit_status') == 'failed']
+        candidate_count = len(candidates)
+        total_review_queue = len(approved) + candidate_count
         self.stdout.write(
             f'POSTEP_WERYFIKACJI: {len(approved)}/{total_review_queue} '
             f'(zatwierdzone aktywne / zatwierdzone aktywne + kandydaci)'
         )
-        self.stdout.write(f'KANDYDACI_DO_SPRAWDZENIA: {candidates}')
+        self.stdout.write(f'KANDYDACI_DO_SPRAWDZENIA: {candidate_count}')
+        self.stdout.write(
+            f'AUDYT_KANDYDATOW_7D: {len(audited)}/{candidate_count} '
+            f'(aktualne audyty; bledy techniczne: {len(failed)})'
+        )
         for name in ('html-archive:kprm:660', 'official:votings', 'official:eli'):
             state = ImportState.objects.filter(name=name).first()
             if state:
