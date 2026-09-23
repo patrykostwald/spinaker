@@ -1,5 +1,6 @@
 """Public, evidence-only profile API for the future politician view."""
 from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -49,10 +50,14 @@ def verified_x_account_record(figure):
     The record is intentionally internal: public serializers expose only the
     minimal account/post fields below.
     """
-    if not figure.parliamentary_roster_entry_id:
-        return None
+    evidence_filters = Q(
+        subject_content_type=ContentType.objects.get_for_model(PublicFigure),
+        subject_object_id=figure.pk,
+    )
+    if figure.parliamentary_roster_entry_id:
+        evidence_filters |= Q(roster_entry_id=figure.parliamentary_roster_entry_id)
     evidence = SocialHandleEvidence.objects.filter(
-        roster_entry_id=figure.parliamentary_roster_entry_id,
+        evidence_filters,
         platform='x',
         status='candidate_created',
         candidate__resolved_account__isnull=False,
