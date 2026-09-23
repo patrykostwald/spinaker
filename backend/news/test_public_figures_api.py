@@ -57,6 +57,12 @@ def test_profile_exposes_durable_public_office_separately_from_current_holder():
         'official_roster_url': 'https://example.org/official-roster',
         'source_checked_at': office.source_checked_at,
     }
+    timeline = next(row for row in data['employment_timeline'] if row['office'])
+    assert timeline['position'] == 'Kierownicza funkcja testowa'
+    assert timeline['source'] == {
+        'label': 'Instytucja Testowa', 'url': 'https://example.org/official-roster',
+    }
+    assert timeline['office']['id'] == office.pk
 
 
 def test_unlinked_figure_does_not_guess_votes_or_show_pending_relation():
