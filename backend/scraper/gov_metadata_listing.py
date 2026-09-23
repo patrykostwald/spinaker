@@ -163,6 +163,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/sport/wiadomosci",
         "terms_url": "https://www.gov.pl/web/sport/uzyskaj-informacje-sektora-publicznego-do-ponownego-wykorzystania",
     },
+    "udsc": {
+        "name": "Urząd do Spraw Cudzoziemców",
+        "source_url": "https://www.gov.pl/web/udsc",
+        "listing_url": "https://www.gov.pl/web/udsc/aktualnosci-udsc",
+    },
     "zdrowie": {
         "name": "Ministerstwo Zdrowia",
         "source_url": "https://www.gov.pl/web/zdrowie",
