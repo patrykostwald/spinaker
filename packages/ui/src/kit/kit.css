@@ -395,3 +395,321 @@ html.sc-theme-transition .sc-root {
 .sc-morph-surface button { align-self: flex-start; border: 1px solid var(--sc-line); background: var(--sc-surface-2); color: var(--sc-text); border-radius: var(--sc-r-md); padding: 10px 16px; font: inherit; cursor: pointer; }
 @media (max-width: 900px) { .sc-specimen { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .sc-showcase { padding-top: var(--sc-s-4); } .sc-morph-surface { inset: 0; border-radius: 0 !important; } }
+
+/* === R1 Иконки и контролы === */
+
+/* ---------- Утилита: скрыто визуально, доступно для AT ---------- */
+.sc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Иконки: точечные ховер-эффекты из каталога ----------
+   [data-demo="true"] воспроизводит тот же эффект, что :hover — кнопка «Odtwórz animacje»
+   на витрине переключает его без реальной мыши. */
+.sc-icon {
+  display: inline-flex;
+  transition: transform var(--sc-dur-fast) var(--sc-ease-standard), color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-icon__lid {
+  transform-origin: 6px 7.5px;
+  transition: transform var(--sc-dur-fast) var(--sc-ease-standard);
+}
+@media (hover: hover) {
+  .sc-icon--close:hover { transform: rotate(90deg); }
+  .sc-icon--chevron-left:hover { transform: translateX(-2px); }
+  .sc-icon--chevron-right:hover { transform: translateX(2px); }
+  .sc-icon--arrow:hover { transform: translate(2px, -2px); }
+  .sc-icon--share:hover { transform: translateY(-1px); }
+  .sc-icon--play:hover { transform: scale(1.1); }
+  .sc-icon--trash:hover .sc-icon__lid { transform: translateY(-1px); }
+}
+/* Wersja „na przycisk”: kontener z data-sc-icon-demo="true" wymusza te same efekty co :hover,
+   żeby witryna mogła je odtworzyć bez najeżdżania myszą. */
+[data-sc-icon-demo="true"] .sc-icon--close { transform: rotate(90deg); }
+[data-sc-icon-demo="true"] .sc-icon--chevron-left { transform: translateX(-2px); }
+[data-sc-icon-demo="true"] .sc-icon--chevron-right { transform: translateX(2px); }
+[data-sc-icon-demo="true"] .sc-icon--arrow { transform: translate(2px, -2px); }
+[data-sc-icon-demo="true"] .sc-icon--share { transform: translateY(-1px); }
+[data-sc-icon-demo="true"] .sc-icon--play { transform: scale(1.1); }
+[data-sc-icon-demo="true"] .sc-icon--trash .sc-icon__lid { transform: translateY(-1px); }
+
+/* Spinner — jedyna zapętlona animacja systemu (czysty CSS, nie framer). Globalny
+   kill-switch prefers-reduced-motion powyżej w tym pliku ustawia jej
+   animation-duration:1ms i animation-iteration-count:1 — zostaje statyczny łuk. */
+@keyframes sc-icon-spin { to { transform: rotate(360deg); } }
+.sc-icon--spinner { animation: sc-icon-spin 1s linear infinite; transform-origin: 12px 12px; }
+
+/* Serce — jednorazowy „pop” + poświata przy włączeniu, ten sam jednorazowy wzorzec co .sc-sheen. */
+@keyframes sc-heart-pop { 0% { transform: scale(1); } 45% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@keyframes sc-heart-glow { from { opacity: 0.7; transform: scale(0.6); } to { opacity: 0; transform: scale(1.7); } }
+.sc-icon-heart { position: relative; display: inline-flex; isolation: isolate; }
+.sc-icon-heart svg { display: block; }
+.sc-icon-heart::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-glow);
+  opacity: 0;
+  pointer-events: none;
+}
+.sc-icon-heart[data-pop="run"] svg { animation: sc-heart-pop 0.3s var(--sc-ease-standard) 1; }
+.sc-icon-heart[data-pop="run"]::after { animation: sc-heart-glow 0.5s var(--sc-ease-standard) 1; }
+
+/* ---------- Wspólne dla kontrolek: kursor i przygaszenie zablokowanych ---------- */
+.sc-checkbox,
+.sc-radio,
+.sc-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-s-2);
+  cursor: pointer;
+  color: var(--sc-text);
+}
+.sc-checkbox[data-disabled="true"],
+.sc-radio[data-disabled="true"],
+.sc-switch[data-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---------- Flażek ---------- */
+.sc-checkbox__hit { position: relative; display: inline-flex; width: 20px; height: 20px; flex: 0 0 auto; }
+.sc-checkbox__input { position: absolute; inset: -12px; width: auto; height: auto; margin: 0; opacity: 0; cursor: pointer; }
+.sc-checkbox[data-disabled="true"] .sc-checkbox__input { cursor: not-allowed; }
+.sc-checkbox__shake { display: inline-flex; }
+.sc-checkbox__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--sc-r-xs);
+  border: 1px solid var(--sc-line-strong);
+  background: transparent;
+  color: var(--sc-on-accent);
+  transition: background-color var(--sc-dur-base) var(--sc-ease-standard), border-color var(--sc-dur-base) var(--sc-ease-standard);
+  pointer-events: none;
+}
+.sc-checkbox:hover .sc-checkbox__box { border-color: var(--sc-accent); }
+.sc-checkbox[data-state="checked"] .sc-checkbox__box,
+.sc-checkbox[data-state="indeterminate"] .sc-checkbox__box {
+  background: var(--sc-accent);
+  border-color: var(--sc-accent);
+}
+.sc-checkbox[data-error="true"] .sc-checkbox__box { border-color: var(--sc-negative); }
+.sc-checkbox__mark { display: block; }
+.sc-checkbox__label { color: var(--sc-text); }
+
+/* ---------- Radio ---------- */
+.sc-radio-group { display: flex; flex-direction: column; gap: var(--sc-s-3); }
+.sc-radio__hit { position: relative; display: inline-flex; width: 20px; height: 20px; flex: 0 0 auto; }
+.sc-radio__input { position: absolute; inset: -12px; width: auto; height: auto; margin: 0; opacity: 0; cursor: pointer; }
+.sc-radio[data-disabled="true"] .sc-radio__input { cursor: not-allowed; }
+.sc-radio__ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--sc-r-pill);
+  border: 1px solid var(--sc-line-strong);
+  background: transparent;
+  transition: border-color var(--sc-dur-base) var(--sc-ease-standard);
+  pointer-events: none;
+}
+.sc-radio:hover .sc-radio__ring { border-color: var(--sc-accent); }
+.sc-radio[data-state="checked"] .sc-radio__ring { border-color: var(--sc-accent); }
+.sc-radio[data-error="true"] .sc-radio__ring { border-color: var(--sc-negative); }
+.sc-radio__dot { width: 10px; height: 10px; border-radius: var(--sc-r-pill); background: var(--sc-accent); }
+.sc-radio__label { color: var(--sc-text); }
+
+/* ---------- Переключатель ---------- */
+.sc-switch__hit { position: relative; display: inline-flex; width: 40px; height: 24px; flex: 0 0 auto; }
+.sc-switch__input { position: absolute; inset: -10px; width: auto; height: auto; margin: 0; opacity: 0; cursor: pointer; }
+.sc-switch[data-disabled="true"] .sc-switch__input { cursor: not-allowed; }
+.sc-switch__track {
+  display: inline-flex;
+  align-items: center;
+  width: 40px;
+  height: 24px;
+  padding: 2px;
+  border-radius: var(--sc-r-pill);
+  border: 1px solid var(--sc-line-strong);
+  background: var(--sc-surface-3);
+  transition: background-color var(--sc-dur-base) var(--sc-ease-standard), border-color var(--sc-dur-base) var(--sc-ease-standard);
+  pointer-events: none;
+}
+.sc-switch:hover .sc-switch__track { border-color: var(--sc-accent); }
+.sc-switch[data-state="checked"] .sc-switch__track { background: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-switch[data-error="true"] .sc-switch__track { border-color: var(--sc-negative); }
+.sc-switch__thumb { width: 18px; height: 18px; border-radius: var(--sc-r-pill); background: var(--sc-text); box-shadow: var(--sc-e-1); }
+.sc-switch[data-state="checked"] .sc-switch__thumb { background: var(--sc-on-accent); }
+.sc-switch__label { color: var(--sc-text); }
+
+/* ---------- Segmented ---------- */
+.sc-segmented {
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-surface-2);
+}
+.sc-segmented[data-disabled="true"] { opacity: 0.5; }
+.sc-segmented__item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  min-width: 44px;
+  padding: 0 var(--sc-s-3);
+  border: 0;
+  border-radius: var(--sc-r-pill);
+  background: transparent;
+  color: var(--sc-text-2);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-segmented__item:disabled { cursor: not-allowed; }
+.sc-segmented__item[data-active="true"] { color: var(--sc-text); }
+.sc-segmented__indicator {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-surface);
+  box-shadow: var(--sc-e-1), var(--sc-ring);
+}
+.sc-segmented__label { position: relative; z-index: 1; white-space: nowrap; }
+
+/* ---------- Pole wyszukiwania ---------- */
+.sc-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-s-2);
+  width: 100%;
+  max-width: 320px;
+  height: 40px;
+  padding: 0 var(--sc-s-3);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-md);
+  background: var(--sc-surface-2);
+  transition: border-color var(--sc-dur-base) var(--sc-ease-standard), box-shadow var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-search[data-focused="true"] {
+  border-color: var(--sc-focus);
+  box-shadow: 0 0 0 3px var(--sc-accent-soft);
+}
+.sc-search[data-error="true"] { border-color: var(--sc-negative); }
+.sc-search[data-disabled="true"] { opacity: 0.5; }
+.sc-search__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--sc-text-3);
+  transition: color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-search[data-focused="true"] .sc-search__icon { color: var(--sc-accent); }
+.sc-root input.sc-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--sc-text);
+  font: inherit;
+}
+.sc-root input.sc-search__input::-webkit-search-cancel-button { display: none; }
+.sc-root input.sc-search__input::placeholder { color: var(--sc-text-3); }
+.sc-search__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--sc-r-pill);
+  background: transparent;
+  color: var(--sc-text-2);
+  cursor: pointer;
+}
+.sc-search__clear:hover { color: var(--sc-text); }
+.sc-search__count { flex: 0 0 auto; }
+
+/* ---------- Wymuszone stany do macierzy stanów na witrynie (Controls.tsx) ----------
+   Prawdziwe hover/focus działają też same z siebie (kontrolki są w pełni interaktywne);
+   te klasy tylko zamrażają stan na potrzeby statycznej komórki w siatce. */
+.sc-controls__force-hover .sc-checkbox__box,
+.sc-controls__force-hover .sc-radio__ring,
+.sc-controls__force-hover .sc-switch__track {
+  border-color: var(--sc-accent);
+}
+.sc-controls__force-focus .sc-checkbox__box,
+.sc-controls__force-focus .sc-radio__ring,
+.sc-controls__force-focus .sc-switch__track {
+  outline: 2px solid var(--sc-focus);
+  outline-offset: 3px;
+}
+.sc-controls__force-press {
+  display: inline-flex;
+  transform: scale(0.98);
+}
+
+/* ---------- Witryna: sekcja Ikony ---------- */
+.sc-icons__toolbar { display: flex; align-items: center; gap: var(--sc-s-4); flex-wrap: wrap; margin-bottom: var(--sc-s-6); }
+.sc-icons__play {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 var(--sc-s-4);
+  border: 1px solid var(--sc-accent);
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent);
+  font: inherit;
+  font-weight: var(--sc-w-meta);
+  cursor: pointer;
+  transition: background-color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-icons__play:hover { background: var(--sc-accent); color: var(--sc-on-accent); }
+.sc-icons__theme { padding: var(--sc-s-5); border-radius: var(--sc-r-xl); border: 1px solid var(--sc-line); background: var(--sc-bg); margin-bottom: var(--sc-s-5); }
+.sc-icons__theme-label { color: var(--sc-text-2); margin: 0 0 var(--sc-s-4); }
+.sc-icons__grid { display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+.sc-icons__cell { display: grid; gap: var(--sc-s-2); padding: var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface); justify-items: start; }
+.sc-icons__sizes { display: flex; align-items: center; gap: var(--sc-s-3); color: var(--sc-text); }
+.sc-icons__glyph { display: inline-flex; }
+
+/* ---------- Witryna: sekcja Kontrolki ---------- */
+.sc-controls__theme { padding: var(--sc-s-5); border-radius: var(--sc-r-xl); border: 1px solid var(--sc-line); background: var(--sc-bg); margin-bottom: var(--sc-s-6); }
+.sc-controls__theme-label { color: var(--sc-text-2); margin: 0 0 var(--sc-s-5); }
+.sc-controls__group { margin-bottom: var(--sc-s-7); }
+.sc-controls__group:last-child { margin-bottom: 0; }
+.sc-controls__group-title { margin: 0 0 var(--sc-s-3); color: var(--sc-text); }
+.sc-controls__matrix { display: grid; gap: var(--sc-s-3); grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
+.sc-controls__cell { display: grid; gap: var(--sc-s-2); padding: var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface); align-content: start; }
+.sc-controls__cell-label { color: var(--sc-text-3); }
+.sc-controls__replay {
+  min-height: 32px;
+  padding: 0 var(--sc-s-3);
+  border: 1px solid var(--sc-line-strong);
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-surface-2);
+  color: var(--sc-text);
+  font: inherit;
+  font-size: var(--sc-t-meta-size);
+  cursor: pointer;
+}
+.sc-controls__replay:hover { border-color: var(--sc-accent); color: var(--sc-accent); }
