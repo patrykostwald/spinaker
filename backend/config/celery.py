@@ -19,6 +19,9 @@ app.conf.beat_schedule = {
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},
     'dane-gov-metadata-daily': {'task': 'scraper.tasks.preflight_structured_metadata_source', 'args': ['dane_gov'], 'schedule': crontab(hour=2, minute=10)},
     'gus-bdl-metadata-daily': {'task': 'scraper.tasks.preflight_structured_metadata_source', 'args': ['gus_bdl'], 'schedule': crontab(hour=2, minute=15)},
+    # This tick is cheap: the task makes no X request unless a confirmed,
+    # enabled account is due and the explicit X polling flag is on.
+    'political-x-minute': {'task': 'news.tasks.political_poll_task', 'schedule': crontab(minute='*')},
 }
 if os.environ.get('NEWSAPI_TIER', 'free') in ('business', 'advanced'):
     app.conf.beat_schedule['newsapi-frequent'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(minute='*/15')}
