@@ -16,6 +16,7 @@ app.conf.beat_schedule = {
     'kprm-listing-minute': {'task': 'scraper.tasks.discover_kprm_html', 'schedule': crontab(minute='*')},
     # Four listing checks daily, capped again by the reviewed MSWiA source card.
     'mswia-metadata-6h': {'task': 'scraper.tasks.discover_mswia_metadata', 'schedule': crontab(minute=35, hour='*/6')},
+    'ministry-finance-metadata-6h': {'task': 'scraper.tasks.discover_ministry_finance_metadata', 'schedule': crontab(minute=45, hour='*/6')},
     'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
     'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},

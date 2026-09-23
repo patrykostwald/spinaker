@@ -162,6 +162,12 @@ def discover_mswia_metadata():
     return mswia_listing_cycle()
 
 
+@shared_task(soft_time_limit=120, time_limit=150)
+def discover_ministry_finance_metadata():
+    from scraper.ministry_finance_listing import ministry_finance_listing_cycle
+    return ministry_finance_listing_cycle()
+
+
 @shared_task(soft_time_limit=3000, time_limit=3300)
 def discover_archives():
     from scraper.archive import discovery_cycle
