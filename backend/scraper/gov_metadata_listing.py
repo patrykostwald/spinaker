@@ -167,6 +167,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/rars/wiadomosci",
         "terms_url": "https://www.gov.pl/web/rars/ponowne-wykorzystywanie-informacji-sektora-publicznego",
     },
+    "rpp": {
+        "name": "Rzecznik Praw Pacjenta",
+        "source_url": "https://www.gov.pl/web/rpp",
+        "listing_url": "https://www.gov.pl/web/rpp/aktualnosci",
+    },
     "sport": {
         "name": "Ministerstwo Sportu i Turystyki",
         "source_url": "https://www.gov.pl/web/sport",
