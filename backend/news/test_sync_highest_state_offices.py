@@ -19,7 +19,7 @@ def _senator(external_id):
 
 @pytest.mark.django_db
 def test_sync_highest_state_offices_uses_fixed_senate_roster_keys_only():
-    for external_id in ('1063', '1051', '1085', '1016', '1072'):
+    for external_id in ('1063', '1065', '1050', '984', '1072'):
         _senator(external_id)
 
     output = StringIO()

@@ -19,9 +19,9 @@ SENATE_PRESIDIUM_EVIDENCE_URL = 'https://www.senat.gov.pl/o-senacie/organy/prezy
 # rather than being derived from a spelling of a name.
 SENATE_PRESIDIUM = (
     ('1063', 'marshal', 'Marszałek Senatu'),
-    ('1051', 'deputy-marshal-biejat', 'Wicemarszałkini Senatu'),
-    ('1085', 'deputy-marshal-grupinski', 'Wicemarszałek Senatu'),
-    ('1016', 'deputy-marshal-kaminski', 'Wicemarszałek Senatu'),
+    ('1065', 'deputy-marshal-biejat', 'Wicemarszałkini Senatu'),
+    ('1050', 'deputy-marshal-grupinski', 'Wicemarszałek Senatu'),
+    ('984', 'deputy-marshal-kaminski', 'Wicemarszałek Senatu'),
     ('1072', 'deputy-marshal-zywno', 'Wicemarszałek Senatu'),
 )
 
