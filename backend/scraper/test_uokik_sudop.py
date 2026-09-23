@@ -5,6 +5,7 @@ import pytest
 from django.utils import timezone
 
 from news.models import Article, ArticleContent, ImportState, OfficialRecord, Source, SourceAccessInstruction
+from scraper.management.commands.configure_uokik_sudop_source import ALLOWED_PATHS, ENDPOINT, TERMS_URL
 from scraper.uokik_sudop import API, STATE_NAME, sudop_pilot_cycle
 
 
@@ -39,10 +40,11 @@ def source(db, monkeypatch):
     SourceAccessInstruction.objects.create(
         source=source, version=1, status=SourceAccessInstruction.Status.APPROVED,
         channel=SourceAccessInstruction.Channel.API,
-        endpoint=API + "/api", allowed_scope=SourceAccessInstruction.Scope.METADATA,
-        terms_url=API, evidence={"test": True}, reviewed_at=timezone.now(),
+        endpoint=ENDPOINT, allowed_path_patterns=ALLOWED_PATHS,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        terms_url=TERMS_URL, evidence={"test": True}, reviewed_at=timezone.now(),
         reviewed_by="Test redakcyjny", valid_until=timezone.now() + timedelta(days=1),
-        minimum_interval_seconds=3)
+        minimum_interval_seconds=4, daily_request_cap=120)
     return source
 
 

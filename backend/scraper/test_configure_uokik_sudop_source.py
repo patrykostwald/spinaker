@@ -28,3 +28,15 @@ def test_sudop_card_is_metadata_only_idempotent_and_does_not_enable_the_pilot_fl
     assert approved_instruction(source, "api", API + "/api/kolejka/q-1") == card
     assert approved_instruction(source, "api", API + "/api/wynik/r_1?csv=false") == card
     assert approved_instruction(source, "api", API + "/api/other-endpoint") is None
+
+
+def test_sudop_configuration_replaces_an_old_too_narrow_card():
+    source, old_card = configure("test-redakcja", valid_days=30, daily_cap=120)
+    old_card.allowed_path_patterns = ["/sudop-api/api"]
+    old_card.save(update_fields=["allowed_path_patterns"])
+
+    _, current_card = configure("test-redakcja", valid_days=30, daily_cap=120)
+
+    assert current_card.pk != old_card.pk
+    assert current_card.version == old_card.version + 1
+    assert current_card.allowed_path_patterns == ALLOWED_PATHS
