@@ -61,6 +61,8 @@ html[data-theme="dark"],
   /* Свечение при наведении — синее (решение владельца 23.09: янтаря в системе нет). Только свет, никогда заливка или текст. */
   --sc-glow: rgba(74, 158, 255, 0.45);
   --sc-glow-strong: rgba(74, 158, 255, 0.66);
+  /* ореол за элементом; объявлен в блоке темы, чтобы [data-sc-theme] на витрине подхватывал свой цвет */
+  --sc-glow-ring: 0 0 0 1px rgba(74, 158, 255, 0.55), 0 0 28px 6px var(--sc-glow);
   --sc-sheen: rgba(255, 255, 255, 0.22);
   /* Тени глубже, чем днём, плюс внутренняя кромка — на чёрном тень не читается. */
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.2);
@@ -108,6 +110,7 @@ html[data-theme="pastel"],
   --sc-negative: #c42b2b;
   --sc-glow: rgba(10, 98, 208, 0.28);
   --sc-glow-strong: rgba(10, 98, 208, 0.42);
+  --sc-glow-ring: 0 0 0 1px rgba(10, 98, 208, 0.4), 0 0 28px 6px var(--sc-glow);
   --sc-sheen: rgba(255, 255, 255, 0.6);
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.04);
   --sc-e-2: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.06);
@@ -261,25 +264,19 @@ html[data-theme="pastel"],
   position: relative;
   isolation: isolate;
 }
-.sc-hoverable::before {
-  content: "";
-  position: absolute;
-  inset: calc(-1 * var(--sc-glow-spread));
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--sc-glow);
-  filter: blur(var(--sc-glow-blur));
-  opacity: 0;
-  transform: scale(0.96);
-  transition: opacity var(--sc-dur-base) var(--sc-ease-standard), transform var(--sc-dur-base) var(--sc-ease-standard);
-  pointer-events: none;
-}
+/* Свечение ЗА элементом, поверхность не трогается (решение владельца 24.09).
+   Псевдослой для этого не годится: как только framer-motion ставит transform, элемент
+   становится контекстом наложения, и любой внутренний слой рисуется над его фоном.
+   Единственное, что рисуется строго под фоном и не режется overflow, — внешняя box-shadow
+   самого элемента. Компоненты включают в тень переменную --sc-ring; при наведении она
+   переключается на ореол, и свечение появляется за карточкой, кнопкой, плашкой. */
+.sc-hoverable::before { content: none; }
 @media (hover: hover) {
-  .sc-hoverable:hover::before { opacity: 1; transform: scale(1); }
+  .sc-hoverable:hover { --sc-ring: var(--sc-glow-ring); }
 }
-.sc-hoverable:focus-visible::before,
-.sc-hoverable:focus-within::before,
-.sc-hoverable[data-lit="true"]::before { opacity: 1; transform: scale(1); }
+.sc-hoverable:focus-visible,
+.sc-hoverable:focus-within,
+.sc-hoverable[data-lit="true"] { --sc-ring: var(--sc-glow-ring); }
 
 /* Однократный блик на смену состояния (контролы R1). */
 @keyframes sc-sheen {
@@ -553,30 +550,51 @@ html.sc-theme-transition .sc-root {
    Уточнение владельца 23.09: развернутая карточка не должна сдвигать сетку и содержимое.
    Блок предпросмотра вешается абсолютно под нижней кромкой карточки; размер карточки
    в потоке не меняется, сосед не двигается. Слой-портал (R5) заменит это клоном над оригиналом. */
+/* Блок предпросмотра абсолютный ВСЕГДА, а не только на ступени B: при уходе курсора стадия
+   переключается раньше, чем блок размонтируется (анимация выхода), и в потоке он на ~240 мс
+   поднимал высоту секции на 70px (замер 24.09). overflow остаётся видимым и на ступени A,
+   чтобы выход блока не обрезался. */
+.sc-card[data-stage="a"],
 .sc-card[data-stage="b"] { overflow: visible; }
-.sc-card[data-stage="b"][data-size] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-color: var(--sc-line-hover); }
-.sc-card[data-stage="b"] .sc-card__expand {
+.sc-card[data-stage="b"][data-size] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.sc-card .sc-card__expand {
   position: absolute;
-  left: -1px;
-  right: -1px;
+  left: 0;
+  right: 0;
   top: 100%;
   margin-top: 0;
   padding: var(--sc-s-3) var(--sc-s-4) var(--sc-s-4);
   background: var(--sc-surface);
-  border: 1px solid var(--sc-line-hover);
-  border-top: 0;
+  border: 0;
   border-radius: 0 0 var(--sc-r-lg) var(--sc-r-lg);
   box-shadow: var(--sc-e-3);
 }
-.sc-card[data-stage="b"][data-size="mini"] .sc-card__expand { padding-left: var(--sc-s-3); padding-right: var(--sc-s-3); }
-.sc-card[data-stage="b"][data-size="medium"] .sc-card__expand { border-radius: 0 0 var(--sc-r-xl) var(--sc-r-xl); }
-.sc-card[data-stage="b"][data-size="large"] .sc-card__expand { border-radius: 0 0 var(--sc-r-2xl) var(--sc-r-2xl); }
+.sc-card[data-size="mini"] .sc-card__expand { padding-left: var(--sc-s-3); padding-right: var(--sc-s-3); }
+.sc-card[data-size="medium"] .sc-card__expand { border-radius: 0 0 var(--sc-r-xl) var(--sc-r-xl); }
+.sc-card[data-size="large"] .sc-card__expand { border-radius: 0 0 var(--sc-r-2xl) var(--sc-r-2xl); }
 
 /* Бейджи не наезжают на текст (замечание владельца 23.09).
    large/stack: когда текста больше, чем даёт 3:2, тело начинается сверху — оставляем
    ему место под бейджем и надзаголовком. Кнопка действия в правом нижнем углу —
    мета получает отступ справа, чтобы не оказаться под ней. */
 .sc-card[data-size="large"] .sc-card__body { padding-top: var(--sc-s-9); } /* и для split ниже 900px, где он стекает в stack */
+
+/* Без обводки (замечание владельца 24.09): у карточек нет рамки и нет внутренней волосяной
+   кромки. Кромка задана переменной, поэтому глушится только для карточек — кнопки и меню
+   её сохраняют. Отделяют карточку тень и свечение. */
+.sc-card { --sc-ring: 0 0 0 0 transparent; border: 0; }
+/* Ступени A и B держат ореол независимо от :hover (клавиатура, фокальная полоса на телефоне). */
+.sc-card[data-stage="a"],
+.sc-card[data-stage="b"] { --sc-ring: var(--sc-glow-ring); }
+
+/* Медиа скругляется само (замечание владельца 24.09): на ступени B карточка перестаёт обрезать
+   содержимое, и прямоугольное медиа вылезало за скруглённую обводку. */
+.sc-card .sc-card__media { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.sc-card[data-size="large"] .sc-card__media { border-radius: inherit; }
+.sc-card[data-size="mini"] .sc-card__media { border-radius: var(--sc-r-lg); }
+@media (min-width: 900px) {
+  .sc-card[data-size="large"][data-layout="split"] .sc-card__media { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+}
 .sc-card[data-has-action] .sc-card__meta { padding-right: var(--sc-s-9); min-height: 44px; align-items: flex-end; }
 .sc-card[data-has-action][data-size="mini"] .sc-card__meta { padding-right: var(--sc-s-8); min-height: 0; }
 @media (max-width: 639px) {
