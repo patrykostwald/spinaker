@@ -67,3 +67,7 @@ a nie na błędzie kodu.
 Kolejny gotowy pilot lokalny to KPRM: `Start-ApprovedKprmMetadataPilot.ps1`.
 Obejmuje wyłącznie metadane aktualności z własnej sekcji premiera, z limitem 24
 żądań na dobę. Nie uruchamiaj go na środowisku bez działającego Compose.
+
+W pliku `deploy/.env.production.example` są także puste pola BuyCoffee,
+Patronite, X oraz NIM/Groq. Wszystkie integracje płatne i AI zaczynają jako
+wyłączone; nie wpisuj ich do frontendu ani do repozytorium.
