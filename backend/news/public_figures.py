@@ -120,14 +120,29 @@ def votes_data(figure):
 def public_figure_list(request):
     query = request.query_params.get('q', '').strip()
     role_category = request.query_params.get('role_category', '').strip()
+    status = request.query_params.get('status', '').strip()
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+        page_size = min(100, max(1, int(request.query_params.get('page_size', '50'))))
+    except ValueError:
+        return Response({'detail': 'Parametry page i page_size muszą być liczbami całkowitymi.'}, status=400)
     rows = PublicFigure.objects.filter(archived=False)
     if query:
         rows = rows.filter(Q(canonical_name__icontains=query) | Q(role_title__icontains=query) |
                            Q(organisation__icontains=query))
     if role_category:
         rows = rows.filter(role_category=role_category)
-    rows = rows.order_by('canonical_name')[:100]
-    return Response({'results': [figure_data(row) for row in rows]})
+    if status:
+        rows = rows.filter(status=status)
+    rows = rows.order_by('canonical_name', 'pk')
+    count = rows.count()
+    start = (page - 1) * page_size
+    return Response({
+        'count': count,
+        'page': page,
+        'page_size': page_size,
+        'results': [figure_data(row) for row in rows[start:start + page_size]],
+    })
 
 
 @api_view(['GET'])

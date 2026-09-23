@@ -125,3 +125,16 @@ def test_non_parliamentary_figure_exposes_only_generic_confirmed_x_evidence():
         'handle': 'MinistraPL', 'url': 'https://x.com/MinistraPL',
         'evidence_url': 'https://gov.example/ministra', 'posts_collected': 0,
     }
+
+
+def test_public_figure_list_is_paginated_and_filterable():
+    for number in range(3):
+        PublicFigure.objects.create(canonical_name=f'Osoba {number}', role_category='local', role_title='Prezydent miasta',
+            status='current' if number < 2 else 'former', evidence_url=f'https://example.org/{number}')
+    client = APIClient()
+    first = client.get('/api/public-figures/?role_category=local&status=current&page=1&page_size=1').data
+    second = client.get('/api/public-figures/?role_category=local&status=current&page=2&page_size=1').data
+    assert first['count'] == 2 and first['page_size'] == 1
+    assert [item['name'] for item in first['results']] == ['Osoba 0']
+    assert [item['name'] for item in second['results']] == ['Osoba 1']
+    assert client.get('/api/public-figures/?page=none').status_code == 400
