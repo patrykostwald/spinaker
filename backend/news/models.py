@@ -838,8 +838,11 @@ class AIResearchCall(models.Model):
         ordering = ['-started_at', '-pk']
 
 
-from .account_models import SavedTopic, ArticleOpinion  # noqa: E402,F401
-from .political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
+from .account_models import (  # noqa: E402,F401
+    SavedTopic, ArticleOpinion, ThreadOpinion, ThreadFavorite, ArticleFavorite,
+    PersonalContextThread, PersonalContextThreadItem, CommentReport,
+)
+from .political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
 from .evidence_snapshot import (  # noqa: E402,F401
     EvidenceSnapshot,
     SnapshotArtifactType,

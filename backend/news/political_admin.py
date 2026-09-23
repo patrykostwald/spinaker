@@ -6,7 +6,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
+from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
 from news.political_import import create_from_preview, validate_csv
 from news.political_candidates import CandidateResolutionError, resolve_candidate
 from news.political_candidate_import import create_candidates_from_preview, validate_candidate_csv
@@ -162,6 +162,52 @@ class PublicFigureAdmin(admin.ModelAdmin):
         return False
 
 
+class RegisteredOrganisationAdmin(admin.ModelAdmin):
+    list_display = ['name', 'krs_number', 'kind', 'source_checked_at', 'archived']
+    list_filter = ['kind', 'archived']
+    search_fields = ['name', 'krs_number']
+    readonly_fields = ['created_at', 'updated_at']
+    actions = ['archive_selected', 'restore_selected']
+
+    @admin.action(description='Archiwizuj wybrane podmioty (bez usuwania)')
+    def archive_selected(self, request, queryset):
+        queryset.update(archived=True)
+
+    @admin.action(description='Przywróć wybrane podmioty z archiwum')
+    def restore_selected(self, request, queryset):
+        queryset.update(archived=False)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class PublicFigureOrganisationRelationAdmin(admin.ModelAdmin):
+    list_display = ['public_figure', 'organisation', 'public_role', 'relation_status',
+        'verification_status', 'verified_at']
+    list_filter = ['verification_status', 'relation_status', 'organisation__kind']
+    search_fields = ['public_figure__canonical_name', 'organisation__name', 'organisation__krs_number', 'public_role']
+    autocomplete_fields = ['public_figure', 'organisation']
+    readonly_fields = ['verified_by', 'verified_at', 'created_at', 'updated_at']
+    actions = ['confirm_relations', 'reject_relations']
+
+    @admin.action(description='Potwierdź wybrane relacje w źródle publicznym')
+    def confirm_relations(self, request, queryset):
+        for relation in queryset.filter(verification_status='pending_review'):
+            try:
+                relation.confirm(request.user)
+            except ValidationError as exc:
+                self.message_user(request, f'{relation}: {"; ".join(exc.messages)}', messages.ERROR)
+            else:
+                self.message_user(request, f'Potwierdzono: {relation}', messages.SUCCESS)
+
+    @admin.action(description='Odrzuć wybrane relacje')
+    def reject_relations(self, request, queryset):
+        queryset.filter(verification_status='pending_review').update(verification_status='rejected')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class SocialHandleEvidenceAdmin(admin.ModelAdmin):
     list_display = ['handle', 'roster_entry', 'platform', 'status', 'observed_at', 'candidate']
     list_filter = ['platform', 'status', 'roster_entry__source']
@@ -257,6 +303,8 @@ def register_political_admin(site):
     site.register(PoliticalAccountCandidate, PoliticalAccountCandidateAdmin)
     site.register(ParliamentaryRosterEntry, ParliamentaryRosterEntryAdmin)
     site.register(PublicFigure, PublicFigureAdmin)
+    site.register(RegisteredOrganisation, RegisteredOrganisationAdmin)
+    site.register(PublicFigureOrganisationRelation, PublicFigureOrganisationRelationAdmin)
     site.register(SocialHandleEvidence, SocialHandleEvidenceAdmin)
     site.register(PoliticalPost, PoliticalPostAdmin)
     site.register(PoliticalDraft, PoliticalDraftAdmin)

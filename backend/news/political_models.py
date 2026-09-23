@@ -131,6 +131,19 @@ PUBLIC_FIGURE_ROLE_CATEGORIES = [
     ('political', 'Inna osoba politycznie wpływowa'),
 ]
 PUBLIC_FIGURE_STATUSES = [('current', 'Aktualna rola'), ('former', 'Była rola')]
+ORGANISATION_KINDS = [
+    ('foundation', 'Fundacja'),
+    ('association', 'Stowarzyszenie'),
+    ('company', 'Spółka'),
+    ('other', 'Inny podmiot rejestrowy'),
+]
+ORGANISATION_RELATION_STATUSES = [('current', 'Obecna'), ('former', 'Historyczna')]
+ORGANISATION_VERIFICATION_STATUSES = [
+    ('pending_review', 'Wymaga potwierdzenia redakcji'),
+    ('confirmed', 'Potwierdzona w źródle publicznym'),
+    ('rejected', 'Odrzucona'),
+]
+KRS_NUMBER_VALIDATOR = RegexValidator(r'^\d{10}$', 'Numer KRS musi zawierać dokładnie 10 cyfr.')
 
 
 class PublicFigure(models.Model):
@@ -164,6 +177,70 @@ class PublicFigure(models.Model):
 
     def __str__(self):
         return self.canonical_name
+
+
+class RegisteredOrganisation(models.Model):
+    """Minimal public record for a KRS entity, without personal registry data."""
+    name = models.CharField(max_length=512)
+    krs_number = models.CharField(max_length=10, unique=True, validators=[KRS_NUMBER_VALIDATOR])
+    kind = models.CharField(max_length=16, choices=ORGANISATION_KINDS)
+    official_register_url = models.URLField(max_length=1024,
+        help_text='Link do publicznego wpisu KRS albo urzędowego odpisu.')
+    source_checked_at = models.DateTimeField(default=timezone.now)
+    archived = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['kind', 'name']
+
+    def __str__(self):
+        return f'{self.name} (KRS {self.krs_number})'
+
+
+class PublicFigureOrganisationRelation(models.Model):
+    """A reviewable, evidence-backed public relationship; never inferred by name."""
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT,
+        related_name='organisation_relations')
+    organisation = models.ForeignKey(RegisteredOrganisation, on_delete=models.PROTECT,
+        related_name='public_figure_relations')
+    public_role = models.CharField(max_length=255,
+        help_text='Wyłącznie rola jawnie wskazana w źródle publicznym.')
+    relation_status = models.CharField(max_length=12, choices=ORGANISATION_RELATION_STATUSES,
+        default='current')
+    evidence_url = models.URLField(max_length=1024,
+        help_text='Bezpośredni publiczny dowód relacji; nie sam wynik dopasowania nazwiska.')
+    evidence_note = models.TextField(blank=True)
+    verification_status = models.CharField(max_length=20,
+        choices=ORGANISATION_VERIFICATION_STATUSES, default='pending_review', db_index=True)
+    verified_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='verified_public_figure_organisation_relations', editable=False)
+    verified_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['public_figure__canonical_name', 'organisation__kind', 'organisation__name']
+        constraints = [models.UniqueConstraint(
+            fields=['public_figure', 'organisation', 'public_role', 'relation_status'],
+            name='unique_public_figure_organisation_role_status',
+        )]
+
+    def clean(self):
+        super().clean()
+        if self.verification_status == 'confirmed' and (not self.verified_by_id or not self.verified_at):
+            raise ValidationError('Potwierdzona relacja wymaga redaktora i daty potwierdzenia.')
+
+    def confirm(self, staff):
+        if not staff.is_active or not staff.is_staff:
+            raise ValidationError('Potwierdzenie relacji wymaga aktywnego redaktora.')
+        if not self.evidence_url:
+            raise ValidationError('Dodaj bezpośredni publiczny dowód relacji.')
+        self.verified_by = staff
+        self.verified_at = timezone.now()
+        self.verification_status = 'confirmed'
+        self.full_clean()
+        self.save(update_fields=['verified_by', 'verified_at', 'verification_status', 'updated_at'])
 
 
 SOCIAL_EVIDENCE_STATUSES = [

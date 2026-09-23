@@ -17,6 +17,7 @@ from rest_framework.exceptions import ValidationError as APIValidationError
 
 from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
     ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt)
+from news.account_models import ArticleFavorite, CommentReport, PersonalContextThread
 from scraper.tasks import (
     scrape_gdelt_task,
     scrape_newsapi_batch_task,
@@ -284,6 +285,71 @@ site.register(FetchAttempt, FetchAttemptAdmin)
 site.register(SourceRecoveryCase, SourceRecoveryCaseAdmin)
 site.register(SourceContactCard, SourceContactCardAdmin)
 site.register(SourceContactReply)
+
+
+class PersonalContextThreadAdmin(admin.ModelAdmin):
+    list_display = ('title', 'owner', 'item_count', 'updated_at')
+    search_fields = ('title', 'owner__username', 'query')
+    readonly_fields = ('owner', 'created_at', 'updated_at')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(_item_count=Count('items'))
+
+    @admin.display(description='materiały', ordering='_item_count')
+    def item_count(self, obj):
+        return obj._item_count
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class ArticleFavoriteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'article', 'created_at')
+    search_fields = ('user__username', 'article__title')
+    readonly_fields = ('user', 'article', 'created_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class CommentReportAdmin(admin.ModelAdmin):
+    list_display = ('target_label', 'reason', 'status', 'reporter', 'created_at', 'reviewed_at')
+    list_filter = ('status', 'reason')
+    search_fields = ('reporter__username', 'article_opinion__body', 'thread_opinion__body')
+    readonly_fields = ('reporter', 'article_opinion', 'thread_opinion', 'reason', 'details', 'created_at')
+    actions = ('mark_reviewed', 'mark_hidden')
+
+    @admin.display(description='komentarz')
+    def target_label(self, obj):
+        return obj.article_opinion or obj.thread_opinion
+
+    @admin.action(description='Oznacz jako rozpatrzone')
+    def mark_reviewed(self, request, queryset):
+        queryset.filter(status='new').update(status='reviewed', reviewed_by=request.user, reviewed_at=timezone.now())
+
+    @admin.action(description='Oznacz jako ukryte')
+    def mark_hidden(self, request, queryset):
+        queryset.exclude(status='hidden').update(status='hidden', reviewed_by=request.user, reviewed_at=timezone.now())
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+site.register(PersonalContextThread, PersonalContextThreadAdmin)
+site.register(ArticleFavorite, ArticleFavoriteAdmin)
+site.register(CommentReport, CommentReportAdmin)
 
 
 from news.political_admin import register_political_admin
