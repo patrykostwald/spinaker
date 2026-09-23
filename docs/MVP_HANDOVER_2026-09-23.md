@@ -71,3 +71,10 @@ Obejmuje wyłącznie metadane aktualności z własnej sekcji premiera, z limitem
 W pliku `deploy/.env.production.example` są także puste pola BuyCoffee,
 Patronite, X oraz NIM/Groq. Wszystkie integracje płatne i AI zaczynają jako
 wyłączone; nie wpisuj ich do frontendu ani do repozytorium.
+
+## Kontrola po zmianach frontendowych
+
+Po jutrzejszych zmianach uruchom `powershell -ExecutionPolicy Bypass -File
+.\scripts\Test-MvpReadiness.ps1`. Skrypt nie wdraża portalu ani nie zasila
+produkcyjnej Bazy: sprawdza migracje, celowane funkcje źródeł/kont/profili oraz
+buduje frontend.
