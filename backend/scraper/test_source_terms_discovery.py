@@ -5,6 +5,7 @@ from django.core.management import call_command
 
 from news.models import ImportState, Source, SourceReviewDecision, SourceType
 from scraper.source_terms_discovery import inspect_source_terms
+from scraper.management.commands.discover_source_reuse_terms import worker
 
 
 class FakeNetwork:
@@ -51,3 +52,15 @@ def test_command_saves_evidence_without_changing_source_state(tmp_path, monkeypa
     source.refresh_from_db()
     assert state.cursor['legal_terms_discovery']['status'] == 'terms_link_found'
     assert not source.is_active and source.catalog_stage == 'candidate'
+
+
+@pytest.mark.django_db
+def test_worker_records_unexpected_source_error(monkeypatch):
+    source = Source.objects.create(name='Office', url='https://office.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    monkeypatch.setattr('scraper.management.commands.discover_source_reuse_terms.inspect_source_terms',
+        lambda source, network: (_ for _ in ()).throw(RuntimeError('bad page')))
+    source_id, result = worker(source, object())
+    assert source_id == source.pk
+    assert result['status'] == 'unavailable'
+    assert result['error'] == 'RuntimeError'

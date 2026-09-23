@@ -30,7 +30,17 @@ def is_fresh(source, cursor, max_age_days):
 def worker(source, network):
     close_old_connections()
     try:
-        result = inspect_source_terms(source, network)
+        try:
+            result = inspect_source_terms(source, network)
+        except Exception as exc:
+            result = {
+                'version': DISCOVERY_VERSION,
+                'source_url': source.url or '',
+                'status': 'unavailable',
+                'homepage': '',
+                'terms_pages': [],
+                'error': type(exc).__name__,
+            }
         result.update(checked_at=timezone.now().isoformat(), signature=source_signature(source))
         return source.pk, result
     finally:
