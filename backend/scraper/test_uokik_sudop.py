@@ -36,6 +36,10 @@ def source(db, monkeypatch):
     monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
     monkeypatch.setenv("UOKIK_SUDOP_AID_SOURCE_NUMBER", "SA.TEST")
     source, _ = configure("Test redakcyjny", valid_days=30, daily_cap=120)
+    # The access gate is tested separately. These cases exercise only the
+    # finite queue protocol, which must not depend on shared test-db source
+    # cards created by other scraper tests.
+    monkeypatch.setattr("scraper.uokik_sudop._enabled", lambda _source: True)
     return source
 
 
