@@ -23,7 +23,7 @@ def _same_endpoint_or_child(request_url, endpoint):
 
 
 def _matches_allowed_path(request_url, patterns):
-    """Match explicit path segments; ``{int}`` accepts one decimal segment."""
+    """Match explicit path segments; placeholders never span a slash."""
     if not patterns:
         return True
     request_parts = [item for item in urlsplit(request_url).path.split('/') if item]
@@ -32,7 +32,10 @@ def _matches_allowed_path(request_url, patterns):
         if len(request_parts) != len(pattern_parts):
             continue
         if all(
-            (expected == '{int}' and actual.isdecimal()) or expected == actual
+            (expected == '{int}' and actual.isdecimal())
+            or (expected == '{token}' and 1 <= len(actual) <= 200
+                and all(char.isascii() and (char.isalnum() or char in '-_') for char in actual))
+            or expected == actual
             for actual, expected in zip(request_parts, pattern_parts)
         ):
             return True

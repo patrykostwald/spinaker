@@ -1,7 +1,8 @@
 import pytest
 
 from news.models import SourceAccessInstruction
-from scraper.management.commands.configure_uokik_sudop_source import ENDPOINT, TERMS_URL, configure
+from scraper.access_gate import approved_instruction
+from scraper.management.commands.configure_uokik_sudop_source import ALLOWED_PATHS, ENDPOINT, TERMS_URL, configure
 from scraper.uokik_sudop import API
 
 
@@ -18,7 +19,12 @@ def test_sudop_card_is_metadata_only_idempotent_and_does_not_enable_the_pilot_fl
     assert source.catalog_stage == "configured"
     assert SourceAccessInstruction.objects.filter(source=source).count() == 1
     assert card.endpoint == ENDPOINT
+    assert card.allowed_path_patterns == ALLOWED_PATHS
     assert card.terms_url == TERMS_URL
     assert card.allowed_scope == SourceAccessInstruction.Scope.METADATA
     assert card.minimum_interval_seconds == 4 and card.daily_request_cap == 120
     assert "training" in card.evidence["excluded"]
+    assert approved_instruction(source, "api", API + "/api/przypadki-pomocy?strona=1") == card
+    assert approved_instruction(source, "api", API + "/api/kolejka/q-1") == card
+    assert approved_instruction(source, "api", API + "/api/wynik/r_1?csv=false") == card
+    assert approved_instruction(source, "api", API + "/api/other-endpoint") is None

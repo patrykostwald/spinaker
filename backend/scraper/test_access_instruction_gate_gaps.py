@@ -249,6 +249,25 @@ def test_access_card_can_allow_only_integer_voting_paths():
 
 
 @pytest.mark.django_db
+def test_access_card_token_never_matches_a_path_separator_or_punctuation():
+    source = Source.objects.create(name='Token API', url='https://example.org',
+        is_active=True, scrape_enabled=True, catalog_stage='configured')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='api',
+        allowed_scope='metadata', endpoint='https://example.org/api',
+        allowed_path_patterns=['/api/jobs/{token}'],
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() + __import__('datetime').timedelta(days=1),
+        minimum_interval_seconds=3, daily_request_cap=24,
+    )
+
+    assert approved_instruction(source, 'api', 'https://example.org/api/jobs/a_2-b')
+    assert approved_instruction(source, 'api', 'https://example.org/api/jobs/a.b') is None
+    assert approved_instruction(source, 'api', 'https://example.org/api/jobs/a/other') is None
+
+
+@pytest.mark.django_db
 def test_daily_cap_blocks_before_a_second_network_request(monkeypatch):
     """The reviewed cap is durable and fails closed before transport."""
     from scraper.utils import HostRateLimited, SourceHTTPResponse, fetch_response_once

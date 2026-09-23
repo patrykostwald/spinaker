@@ -11,6 +11,11 @@ from scraper.uokik_sudop import API
 
 TERMS_URL = "https://uokik.gov.pl/sudop"
 ENDPOINT = API + "/api"
+ALLOWED_PATHS = [
+    "/sudop-api/api/przypadki-pomocy",
+    "/sudop-api/api/kolejka/{token}",
+    "/sudop-api/api/wynik/{token}",
+]
 
 
 def configure(reviewer, *, valid_days=180, daily_cap=120):
@@ -39,7 +44,7 @@ def configure(reviewer, *, valid_days=180, daily_cap=120):
             terms_url=TERMS_URL,
             valid_until__gt=now,
         ).order_by("-version").first()
-        if card is None:
+        if card is None or card.allowed_path_patterns != ALLOWED_PATHS:
             card = SourceAccessInstruction.objects.create(
                 source=source,
                 version=(latest.version if latest else 0) + 1,
@@ -47,7 +52,7 @@ def configure(reviewer, *, valid_days=180, daily_cap=120):
                 channel=SourceAccessInstruction.Channel.API,
                 allowed_scope=SourceAccessInstruction.Scope.METADATA,
                 endpoint=ENDPOINT,
-                allowed_path_patterns=["/sudop-api/api"],
+                allowed_path_patterns=ALLOWED_PATHS,
                 terms_url=TERMS_URL,
                 evidence={
                     "documentation_url": "https://api-sudop.uokik.gov.pl:9443/devportal/apis",
