@@ -52,6 +52,9 @@ class Command(BaseCommand):
             f'PROBY_AUDYTU_7D: {len(attempted)}/{candidate_count} '
             f'(zakonczone lub zarejestrowany blad; nie sa ponawiane automatycznie przez 7 dni)'
         )
+        self.stdout.write(
+            f'POZOSTALO_DO_AUDYTU: {max(candidate_count - len(attempted), 0)}/{candidate_count}'
+        )
         for name in ('html-archive:kprm:660', 'official:votings', 'official:eli'):
             state = ImportState.objects.filter(name=name).first()
             if state:

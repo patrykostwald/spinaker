@@ -35,3 +35,4 @@ def test_status_reports_review_progress():
     assert 'KANDYDACI_DO_SPRAWDZENIA: 1' in output.getvalue()
     assert 'AUDYT_KANDYDATOW_7D: 1/1' in output.getvalue()
     assert 'PROBY_AUDYTU_7D: 1/1' in output.getvalue()
+    assert 'POZOSTALO_DO_AUDYTU: 0/1' in output.getvalue()
