@@ -144,9 +144,11 @@ def _initial_cursor(today, aid_source_number):
             "row_offset": 0, "phase": "submit", "complete": False, "requests": 0}
 
 
-def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None):
+def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None, enabled=None):
+    """Run one state-machine step; ``enabled`` is injectable for protocol tests."""
+    enabled = enabled or _enabled
     source = Source.objects.filter(url=SOURCE_URL).first()
-    if not _enabled(source):
+    if not enabled(source):
         return {"status": "disabled", "new_records": 0}
     aid_source_number = _aid_source_number()
     if not aid_source_number:

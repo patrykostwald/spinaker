@@ -5,7 +5,7 @@ import pytest
 
 from news.models import Article, ArticleContent, ImportState, OfficialRecord, Source
 from scraper.management.commands.configure_uokik_sudop_source import configure
-from scraper.uokik_sudop import API, STATE_NAME, sudop_pilot_cycle
+from scraper.uokik_sudop import API, STATE_NAME, _sudop_pilot_cycle, sudop_pilot_cycle
 
 
 NOW = datetime(2026, 9, 14, 8, tzinfo=dt_timezone.utc)
@@ -36,18 +36,21 @@ def source(db, monkeypatch):
     monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
     monkeypatch.setenv("UOKIK_SUDOP_AID_SOURCE_NUMBER", "SA.TEST")
     source, _ = configure("Test redakcyjny", valid_days=30, daily_cap=120)
-    # The access gate is tested separately. These cases exercise only the
-    # finite queue protocol, which must not depend on shared test-db source
-    # cards created by other scraper tests.
-    monkeypatch.setattr("scraper.uokik_sudop._enabled", lambda _source: True)
     return source
+
+
+def run_pilot(session):
+    # The access gate has dedicated tests below. Protocol tests inject an
+    # enabled predicate, so their result cannot depend on process environment
+    # or a source card that another test happened to create.
+    return _sudop_pilot_cycle(transport=session, now=NOW, enabled=lambda _source: True)
 
 
 def run_due(session):
     state = ImportState.objects.get(name=STATE_NAME)
     state.cursor["available_at"] = (NOW - timedelta(seconds=1)).isoformat()
     state.save(update_fields=["cursor"])
-    return sudop_pilot_cycle(transport=session, now=NOW)
+    return run_pilot(session)
 
 
 def event(**overrides):
@@ -85,7 +88,7 @@ def test_enabled_pilot_requires_a_saved_official_query_criterion(source, monkeyp
     monkeypatch.delenv("UOKIK_SUDOP_AID_SOURCE_NUMBER")
     session = Session()
 
-    assert sudop_pilot_cycle(transport=session, now=NOW) == {
+    assert run_pilot(session) == {
         "status": "missing_query_criterion", "new_records": 0,
     }
     assert not session.calls and not ImportState.objects.exists()
@@ -97,8 +100,7 @@ def test_failed_legacy_date_only_cursor_restarts_with_the_explicit_criterion(sou
         "row_offset": 0, "phase": "submit", "complete": False,
     }, last_error="HTTP 400")
 
-    result = sudop_pilot_cycle(transport=Session(Response(
-        303, location=API + "/api/kolejka/q-1")), now=NOW)
+    result = run_pilot(Session(Response(303, location=API + "/api/kolejka/q-1")))
 
     assert result == {"status": "deferred", "new_records": 0, "phase": "queue"}
     assert ImportState.objects.get(name=STATE_NAME).cursor["aid_source_number"] == "SA.TEST"
@@ -110,7 +112,7 @@ def test_three_stage_protocol_frozen_cutoff_and_metadata_only(source):
         Response(303, location=API + "/api/wynik/r-1"),
         Response(200, payload={"liczba-wynikow": 2, "wyniki": [event(), {"name": "dictionary"}]}),
     )
-    first = sudop_pilot_cycle(transport=session, now=NOW)
+    first = run_pilot(session)
     state = ImportState.objects.get(name=STATE_NAME)
     assert first["phase"] == "queue" and state.cursor["cutoff"] == "2026-09-14"
     assert len(session.calls) == 1 and "audit_source" in session.calls[0][1]
@@ -131,12 +133,12 @@ def test_replayed_result_is_idempotent(source):
         "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
     })
     payload = {"liczba-wynikow": 1, "wyniki": [row]}
-    assert sudop_pilot_cycle(transport=Session(Response(200, payload=payload)), now=NOW)["new_records"] == 1
+    assert run_pilot(Session(Response(200, payload=payload)))["new_records"] == 1
     state.refresh_from_db()
     state.cursor.update(next_date="2016-01-01", phase="result", request_id="two",
         row_offset=0, page=1, complete=False, available_at=(NOW - timedelta(seconds=1)).isoformat())
     state.save(update_fields=["cursor"])
-    assert sudop_pilot_cycle(transport=Session(Response(200, payload=payload)), now=NOW)["new_records"] == 0
+    assert run_pilot(Session(Response(200, payload=payload)))["new_records"] == 0
     assert Article.objects.count() == 1
 
 
@@ -148,8 +150,7 @@ def test_batch_is_bounded_and_cursor_resumes_same_report(source, monkeypatch):
         "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
     })
     rows = [event(**{"nip-beneficjenta": str(index).zfill(10)}) for index in range(3)]
-    result = sudop_pilot_cycle(transport=Session(Response(200,
-        payload={"liczba-wynikow": 3, "wyniki": rows})), now=NOW)
+    result = run_pilot(Session(Response(200, payload={"liczba-wynikow": 3, "wyniki": rows})))
     state = ImportState.objects.get(name=STATE_NAME)
     assert result["processed"] == 2 and Article.objects.count() == 2
     assert state.cursor["row_offset"] == 2 and state.cursor["phase"] == "submit"
@@ -157,14 +158,13 @@ def test_batch_is_bounded_and_cursor_resumes_same_report(source, monkeypatch):
 
 def test_429_retry_after_preserves_phase_and_exact_delay(source):
     session = Session(Response(429, retry_after="120"))
-    result = sudop_pilot_cycle(transport=session, now=NOW)
+    result = run_pilot(session)
     state = ImportState.objects.get(name=STATE_NAME)
     assert result["retry_after"] == 120 and state.cursor["phase"] == "submit"
     assert datetime.fromisoformat(state.cursor["available_at"]) == NOW + timedelta(seconds=120)
 
 
 def test_invalid_redirect_host_and_payload_do_not_advance_cursor(source):
-    result = sudop_pilot_cycle(transport=Session(Response(303,
-        location="https://evil.example/api/kolejka/q")), now=NOW)
+    result = run_pilot(Session(Response(303, location="https://evil.example/api/kolejka/q")))
     assert result["status"] == "error"
     assert ImportState.objects.get(name=STATE_NAME).cursor["phase"] == "submit"
