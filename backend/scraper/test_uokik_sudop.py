@@ -2,10 +2,9 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 from types import SimpleNamespace
 
 import pytest
-from django.utils import timezone
 
-from news.models import Article, ArticleContent, ImportState, OfficialRecord, Source, SourceAccessInstruction
-from scraper.management.commands.configure_uokik_sudop_source import ALLOWED_PATHS, ENDPOINT, TERMS_URL
+from news.models import Article, ArticleContent, ImportState, OfficialRecord, Source
+from scraper.management.commands.configure_uokik_sudop_source import configure
 from scraper.uokik_sudop import API, STATE_NAME, sudop_pilot_cycle
 
 
@@ -36,16 +35,7 @@ class Session:
 def source(db, monkeypatch):
     monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
     monkeypatch.setenv("UOKIK_SUDOP_AID_SOURCE_NUMBER", "SA.TEST")
-    source = Source.objects.create(name="UOKiK — SUDOP", url=API,
-        is_active=True, scrape_enabled=True, catalog_stage="configured")
-    SourceAccessInstruction.objects.create(
-        source=source, version=1, status=SourceAccessInstruction.Status.APPROVED,
-        channel=SourceAccessInstruction.Channel.API,
-        endpoint=ENDPOINT, allowed_path_patterns=ALLOWED_PATHS,
-        allowed_scope=SourceAccessInstruction.Scope.METADATA,
-        terms_url=TERMS_URL, evidence={"test": True}, reviewed_at=timezone.now(),
-        reviewed_by="Test redakcyjny", valid_until=timezone.now() + timedelta(days=1),
-        minimum_interval_seconds=4, daily_request_cap=120)
+    source, _ = configure("Test redakcyjny", valid_days=30, daily_cap=120)
     return source
 
 
