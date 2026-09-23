@@ -43,7 +43,7 @@ html[data-theme="dark"],
   --sc-chrome-menu: rgba(26, 29, 34, 0.82);
   --sc-line: #262a31;
   --sc-line-strong: #363b44;
-  --sc-line-hover: #5a4a2e;
+  --sc-line-hover: #3a6fb5;
   --sc-hairline: rgba(255, 255, 255, 0.08);
   --sc-text: #f5f6f7;
   --sc-text-2: #a0a6af;
@@ -58,9 +58,9 @@ html[data-theme="dark"],
   --sc-positive: #4ed18a;
   --sc-warning: #f2b441;
   --sc-negative: #ff6b6b;
-  /* Янтарное свечение при наведении — только свет, никогда заливка или текст. */
-  --sc-glow: rgba(240, 168, 48, 0.5);
-  --sc-glow-strong: rgba(240, 168, 48, 0.72);
+  /* Свечение при наведении — синее (решение владельца 23.09: янтаря в системе нет). Только свет, никогда заливка или текст. */
+  --sc-glow: rgba(74, 158, 255, 0.45);
+  --sc-glow-strong: rgba(74, 158, 255, 0.66);
   --sc-sheen: rgba(255, 255, 255, 0.22);
   /* Тени глубже, чем днём, плюс внутренняя кромка — на чёрном тень не читается. */
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.2);
@@ -91,7 +91,7 @@ html[data-theme="pastel"],
   --sc-chrome-menu: rgba(255, 255, 255, 0.86);
   --sc-line: #e3e5e9;
   --sc-line-strong: #c9cdd4;
-  --sc-line-hover: #e6c58f;
+  --sc-line-hover: #9cc0ee;
   --sc-hairline: rgba(0, 0, 0, 0.06);
   --sc-text: #0b0c0e;
   --sc-text-2: #4b5159;
@@ -106,8 +106,8 @@ html[data-theme="pastel"],
   --sc-positive: #147a4b;
   --sc-warning: #8a5a00;
   --sc-negative: #c42b2b;
-  --sc-glow: rgba(201, 133, 54, 0.34);
-  --sc-glow-strong: rgba(201, 133, 54, 0.5);
+  --sc-glow: rgba(10, 98, 208, 0.28);
+  --sc-glow-strong: rgba(10, 98, 208, 0.42);
   --sc-sheen: rgba(255, 255, 255, 0.6);
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.04);
   --sc-e-2: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.06);
@@ -571,6 +571,17 @@ html.sc-theme-transition .sc-root {
 .sc-card[data-stage="b"][data-size="mini"] .sc-card__expand { padding-left: var(--sc-s-3); padding-right: var(--sc-s-3); }
 .sc-card[data-stage="b"][data-size="medium"] .sc-card__expand { border-radius: 0 0 var(--sc-r-xl) var(--sc-r-xl); }
 .sc-card[data-stage="b"][data-size="large"] .sc-card__expand { border-radius: 0 0 var(--sc-r-2xl) var(--sc-r-2xl); }
+
+/* Бейджи не наезжают на текст (замечание владельца 23.09).
+   large/stack: когда текста больше, чем даёт 3:2, тело начинается сверху — оставляем
+   ему место под бейджем и надзаголовком. Кнопка действия в правом нижнем углу —
+   мета получает отступ справа, чтобы не оказаться под ней. */
+.sc-card[data-size="large"] .sc-card__body { padding-top: var(--sc-s-9); } /* и для split ниже 900px, где он стекает в stack */
+.sc-card[data-has-action] .sc-card__meta { padding-right: var(--sc-s-9); min-height: 44px; align-items: flex-end; }
+.sc-card[data-has-action][data-size="mini"] .sc-card__meta { padding-right: var(--sc-s-8); min-height: 0; }
+@media (max-width: 639px) {
+  .sc-card[data-size="large"] .sc-card__body { padding-top: var(--sc-s-4); }
+}
 
 
 /* === R4 Примитивы движения === */

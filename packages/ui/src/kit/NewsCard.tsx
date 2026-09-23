@@ -282,6 +282,7 @@ export function NewsCard({
       data-size={size}
       data-stage={stage}
       data-layout={size === "large" ? layout : undefined}
+      data-has-action={action ? "" : undefined}
       data-expandable={expandable || undefined}
       data-material-id={article.id}
       className={cn("sc-card sc-hoverable", className)}

@@ -70,7 +70,7 @@ export function Section() {
 
       <h3 className="sc-t-title-m sc-section__sub">Próba pierścienia fokusu i poświaty</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-4)" }}>
-        Tab na kartę: pierścień musi być <strong>niebieski</strong>, nie bursztynowy — to dowód, że kit.css wygrywa z globalnym :focus-visible. Najedź: bursztynowa poświata za kartą.
+        Tab na kartę: pierścień musi być <strong>niebieski</strong>, nie bursztynowy ze starego motywu — to dowód, że kit.css wygrywa z globalnym :focus-visible. Najedź: niebieska poświata za kartą.
       </p>
       <div className="sc-probe">
         <button type="button" className="sc-probe__card sc-hoverable" style={{ borderRadius: "var(--sc-r-xl)" }}>
