@@ -137,6 +137,12 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/zdrowie",
         "listing_url": "https://www.gov.pl/web/zdrowie/wiadomosci",
     },
+    "wug": {
+        "name": "Wyższy Urząd Górniczy",
+        "source_url": "https://www.gov.pl/web/wug",
+        "listing_url": "https://www.gov.pl/web/wug/informacje-biezace",
+        "terms_url": "https://www.gov.pl/web/wug/ponowne-wykorzystywanie-informacji-sektora-publicznego",
+    },
 }
 
 
