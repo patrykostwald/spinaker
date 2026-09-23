@@ -19,6 +19,7 @@ sprawdzenia. Samo zgodne imię i nazwisko nigdy nie łączy dwóch rekordów.
 | Rada Ministrów | Premier, wicepremierzy, ministrowie | KPRM | synchronizowane |
 | Administracja rządowa | Wojewodowie | MSWiA | synchronizowane |
 | Najwyższe funkcje państwowe | Prezydent RP i Prezydium Senatu | KPRP, Senat | synchronizowane |
+| Kancelaria Prezydenta RP | Kierownictwo KPRP | KPRP | synchronizowane |
 
 ## Kolejność następnych importerów
 
