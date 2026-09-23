@@ -1347,3 +1347,219 @@ html[data-theme="pastel"],
 @media (max-width: 480px) {
   .sc-dropdown__panel { max-width: calc(100vw - var(--sc-s-8)); }
 }
+
+/* === R6 Навигация и футер === */
+
+/* ---------- NavMenu: sentinel + szapka ----------
+   Sentinel stoi w normalnym przepływie TUŻ PRZED <nav> — gdy strona przewinie się poza
+   ten 1px blok, szapka jest już "przyklejona" i dostaje dolną kromkę. Bez nasłuchu scrolla. */
+.sc-navmenu__sentinel { height: 1px; }
+
+.sc-navmenu {
+  container-type: inline-size;
+  container-name: sc-navmenu;
+  position: relative;
+  z-index: 30;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-navmenu[data-sticky="true"] { position: sticky; top: 0; }
+.sc-navmenu[data-stuck="true"] { border-bottom: 1px solid var(--sc-hairline); }
+
+.sc-navmenu__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-s-5);
+  height: 64px;
+  padding: 0 var(--sc-gutter);
+}
+
+.sc-navmenu__brand { display: flex; align-items: center; flex: none; }
+
+.sc-navmenu__list {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+  min-width: 0;
+}
+.sc-navmenu__item { display: flex; }
+.sc-navmenu__item-wrap { position: relative; display: inline-flex; }
+
+.sc-navmenu__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 var(--sc-s-3);
+  border-radius: var(--sc-r-md);
+  color: var(--sc-text-2);
+  text-decoration: none;
+  font-family: var(--sc-font-sans);
+  font-size: var(--sc-t-body-s-size);
+  font-weight: 600;
+  letter-spacing: var(--sc-track-body-s);
+  transition: color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-navmenu__link[aria-current="page"] { color: var(--sc-text); }
+@media (hover: hover) {
+  .sc-navmenu__link:hover { color: var(--sc-text); }
+}
+.sc-navmenu__link:focus-visible { color: var(--sc-text); }
+
+/* Wyzwalacz Dropdownu wygląda jak zwykły link nawigacji — nadpisanie zakresowe,
+   nie ruszamy .sc-btn[data-variant="ghost"] nigdzie indziej. */
+.sc-navmenu__item-wrap .sc-btn[data-variant="ghost"] {
+  height: 40px;
+  padding: 0 var(--sc-s-3);
+  color: var(--sc-text-2);
+  font-size: var(--sc-t-body-s-size);
+  font-weight: 600;
+}
+.sc-navmenu__item-wrap .sc-btn[data-variant="ghost"][aria-expanded="true"],
+.sc-navmenu__item-wrap .sc-btn[data-variant="ghost"]:focus-visible {
+  color: var(--sc-text);
+}
+@media (hover: hover) {
+  .sc-navmenu__item-wrap .sc-btn[data-variant="ghost"]:hover { color: var(--sc-text); }
+}
+
+.sc-navmenu__search { flex: none; width: 280px; max-width: 32vw; }
+.sc-navmenu__cta { flex: none; }
+.sc-navmenu__toggle { display: none; flex: none; }
+
+.sc-navmenu__mobile-wrap { display: none; }
+.sc-navmenu__mobile-cta { display: none; padding: 2px var(--sc-gutter) var(--sc-s-4); }
+
+/* Kontenerowe, nie viewportowe: w produkcji szapka i tak zajmuje całą szerokość okna,
+   a na witrynie pozwala to pokazać rozkładanie w wąskiej ramce 375px bez zmiany okna.
+   Cta (np. Zaloguj + przełącznik motywu) chowa się razem z listą — zbyt wąsko na rząd —
+   i wraca w panelu mobilnym, żeby zostać osiągalne. */
+@container sc-navmenu (max-width: 767px) {
+  .sc-navmenu__list,
+  .sc-navmenu__search,
+  .sc-navmenu__cta { display: none; }
+  .sc-navmenu__toggle { display: inline-flex; }
+  .sc-navmenu__mobile-wrap { display: block; }
+  .sc-navmenu__mobile-cta { display: block; }
+}
+
+.sc-navmenu__mobile { border-top: 1px solid var(--sc-hairline); }
+.sc-navmenu__mobile-list { margin: 0; padding: var(--sc-s-3) var(--sc-gutter) var(--sc-s-5); list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.sc-navmenu__mobile-sublist { margin: 0; padding: 2px 0 6px; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.sc-navmenu__mobile-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--sc-s-3);
+  border-radius: var(--sc-r-md);
+  color: var(--sc-text);
+  text-decoration: none;
+  font-size: var(--sc-t-body-size);
+  font-weight: 600;
+  transition: background-color var(--sc-dur-fast) var(--sc-ease-standard), color var(--sc-dur-fast) var(--sc-ease-standard);
+}
+.sc-navmenu__mobile-link--sub { padding-left: var(--sc-s-6); color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); font-weight: 500; }
+.sc-navmenu__mobile-link[aria-current="page"] { color: var(--sc-accent); }
+@media (hover: hover) {
+  .sc-navmenu__mobile-link:hover { background: var(--sc-surface-2); }
+}
+.sc-navmenu__mobile-link:focus-visible { background: var(--sc-surface-2); }
+
+/* ---------- NavCategories: pasek kategorii, przewijany poziomo na telefonie ---------- */
+.sc-nav-categories { border-bottom: 1px solid var(--sc-line); }
+.sc-nav-categories__list {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-s-5);
+  margin: 0;
+  padding: 0 var(--sc-gutter);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sc-nav-categories__list::-webkit-scrollbar { display: none; }
+.sc-nav-categories__item { flex: none; }
+.sc-nav-categories__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 2px;
+  color: var(--sc-text-2);
+  text-decoration: none;
+  font-size: var(--sc-t-caption-size);
+  font-weight: var(--sc-w-caption);
+  letter-spacing: var(--sc-track-caption);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-nav-categories__link[aria-current="page"] { color: var(--sc-text); }
+@media (hover: hover) {
+  .sc-nav-categories__link:hover { color: var(--sc-text); }
+}
+.sc-nav-categories__link:focus-visible { color: var(--sc-text); }
+
+/* ---------- SiteFooter ---------- */
+.sc-footer {
+  container-type: inline-size;
+  container-name: sc-footer;
+  background: var(--sc-surface-2);
+  border-radius: var(--sc-r-2xl) var(--sc-r-2xl) 0 0;
+  box-shadow: var(--sc-ring);
+  padding: var(--sc-s-9) var(--sc-gutter) var(--sc-s-7);
+}
+
+.sc-footer__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sc-s-6);
+  padding-bottom: var(--sc-s-7);
+  border-bottom: 1px solid var(--sc-hairline);
+}
+.sc-footer__intro { max-width: var(--sc-measure); }
+.sc-footer__brand { font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+.sc-footer__note { margin: var(--sc-s-2) 0 0; }
+.sc-footer__cta { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sc-s-2); }
+
+.sc-footer__columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sc-s-6);
+  margin-top: var(--sc-s-7);
+}
+@container sc-footer (min-width: 640px) {
+  .sc-footer__columns { grid-template-columns: repeat(2, 1fr); }
+}
+@container sc-footer (min-width: 1024px) {
+  .sc-footer__columns { grid-template-columns: repeat(4, 1fr); }
+}
+
+.sc-footer__column-title { margin: 0 0 var(--sc-s-3); }
+.sc-footer__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--sc-s-1); }
+.sc-footer__link {
+  position: relative;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  color: var(--sc-text-2);
+  text-decoration: none;
+  font-size: var(--sc-t-body-s-size);
+  transition: color var(--sc-dur-base) var(--sc-ease-standard);
+}
+@media (hover: hover) {
+  .sc-footer__link:hover { color: var(--sc-text); }
+}
+.sc-footer__link:focus-visible { color: var(--sc-text); }
+
+.sc-footer__bottom {
+  margin-top: var(--sc-s-7);
+  padding-top: var(--sc-s-4);
+  border-top: 1px solid var(--sc-hairline);
+}
