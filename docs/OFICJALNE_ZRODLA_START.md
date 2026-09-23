@@ -65,3 +65,16 @@ techniczny test RSS znalazł działający kanał. Zanim kandydat zmieni status n
 skonfigurowany, system sprawdza ważną kartę RSS dopasowaną do dokładnego adresu
 feedu. Brak takiej karty kończy się raportem
 `missing_approved_access_card` i nie powoduje żadnego pobrania publikacji.
+
+## Powiększanie kolejki kandydatów bez importu
+
+Dla regularnej, małej kontroli katalogu można uruchomić:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Audit-NextSourceCandidates.ps1
+```
+
+Domyślnie sprawdza 24 nieaktywne kandydatury, maksymalnie trzema równoległymi
+połączeniami, zapisuje raport w `reports/` i kończy się lokalnym preflightem.
+Nie pobiera publikacji, nie uruchamia harvestera i nie zmienia statusu źródeł.
+Do większej paczki użyj `-BatchSize 48`; nie zwiększaj jej bez analizy raportu.
