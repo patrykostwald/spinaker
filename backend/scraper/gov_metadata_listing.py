@@ -6,10 +6,29 @@ from scraper.utils import HostRateLimited
 
 
 OFFICIAL_GOV_LISTINGS = {
+    "cyfryzacja": {
+        "name": "Ministerstwo Cyfryzacji",
+        "source_url": "https://www.gov.pl/web/cyfryzacja",
+        "listing_url": "https://www.gov.pl/web/cyfryzacja/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/cyfryzacja/ponowne-wykorzystywanie",
+    },
+    "gis": {
+        "name": "Główny Inspektorat Sanitarny",
+        "source_url": "https://www.gov.pl/web/gis",
+        "listing_url": "https://www.gov.pl/web/gis/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/gis/ponowne-wykorzystywanie2",
+    },
     "infrastruktura": {
         "name": "Ministerstwo Infrastruktury",
         "source_url": "https://www.gov.pl/web/infrastruktura",
         "listing_url": "https://www.gov.pl/web/infrastruktura/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/infrastruktura/ponowne-wykorzystanie-informacji-sektora-publicznego",
+    },
+    "kultura": {
+        "name": "Ministerstwo Kultury i Dziedzictwa Narodowego",
+        "source_url": "https://www.gov.pl/web/kultura",
+        "listing_url": "https://www.gov.pl/web/kultura/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/kultura/ponowne-wykorzystywanie-informacji-sektora-publicznego",
     },
     "mon": {
         "name": "Ministerstwo Obrony Narodowej",
@@ -20,6 +39,19 @@ OFFICIAL_GOV_LISTINGS = {
         "name": "Ministerstwo Sprawiedliwości",
         "source_url": "https://www.gov.pl/web/sprawiedliwosc",
         "listing_url": "https://www.gov.pl/web/sprawiedliwosc/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/sprawiedliwosc/ponowne-wykorzystywanie",
+    },
+    "nauka": {
+        "name": "Ministerstwo Nauki i Szkolnictwa Wyższego",
+        "source_url": "https://www.gov.pl/web/nauka",
+        "listing_url": "https://www.gov.pl/web/nauka/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/nauka/ponowne-wykorzystywanie-informacji-sektora-publicznego",
+    },
+    "rozwoj": {
+        "name": "Ministerstwo Rozwoju i Technologii",
+        "source_url": "https://www.gov.pl/web/rozwoj-technologia",
+        "listing_url": "https://www.gov.pl/web/rozwoj-technologia/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/rozwoj-technologia/uzyskaj-informacje-publiczna-do-ponownego-wykorzystania",
     },
     "klimat": {
         "name": "Ministerstwo Klimatu i Środowiska",

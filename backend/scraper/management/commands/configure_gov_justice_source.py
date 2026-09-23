@@ -37,7 +37,7 @@ def validate_base_url(base_url):
     return base_url.rstrip("/")
 
 
-def configure(source, listing_url, reviewer, valid_days=365):
+def configure(source, listing_url, reviewer, valid_days=365, terms_url=None):
     base_path = validate_listing(source, listing_url)
     now = timezone.now()
     evidence = {
@@ -50,7 +50,7 @@ def configure(source, listing_url, reviewer, valid_days=365):
     next_version = (latest.version if latest else 0) + 1
     common = {
         "status": SourceAccessInstruction.Status.APPROVED,
-        "terms_url": TERMS_URL,
+        "terms_url": terms_url or TERMS_URL,
         "evidence": evidence,
         "minimum_interval_seconds": 3,
         "daily_request_cap": 24,
