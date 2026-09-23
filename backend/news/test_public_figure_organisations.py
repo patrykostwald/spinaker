@@ -60,15 +60,15 @@ def test_krs_number_is_limited_to_the_public_identifier_only():
 
 def test_candidate_import_rejects_pesel_and_creates_review_only_relation(tmp_path):
     forbidden = tmp_path / 'forbidden.csv'
-    forbidden.write_text('person_name,pesel\nOsoba Publiczna,123\n', encoding='utf-8')
+    forbidden.write_text('public_figure_id,pesel\n1,123\n', encoding='utf-8')
     with pytest.raises(CommandError, match='niedozwolone'):
         call_command('import_public_figure_organisation_candidates', str(forbidden))
 
     public_figure = figure()
     valid = tmp_path / 'valid.csv'
     valid.write_text(
-        'person_name,organisation_name,krs_number,kind,official_register_url,public_role,relation_status,evidence_url,evidence_note\n'
-        'Osoba Publiczna,Fundacja Testowa,0000123456,foundation,https://prs.example/1,członkini zarządu,current,https://example.org/dowod,źródło\n',
+        'public_figure_id,organisation_name,krs_number,kind,official_register_url,public_role,relation_status,evidence_url,evidence_note\n'
+        f'{public_figure.pk},Fundacja Testowa,0000123456,foundation,https://prs.example/1,członkini zarządu,current,https://example.org/dowod,źródło\n',
         encoding='utf-8',
     )
     call_command('import_public_figure_organisation_candidates', str(valid), apply=True)

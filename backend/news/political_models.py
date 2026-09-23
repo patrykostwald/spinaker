@@ -155,7 +155,8 @@ class PublicFigure(models.Model):
     X intake.  Editors add each entry with public evidence; it never discovers
     or resolves social accounts on its own.
     """
-    canonical_name = models.CharField(max_length=255, unique=True)
+    canonical_name = models.CharField(max_length=255,
+        help_text='Nazwa wyświetlana; nie stanowi samodzielnego identyfikatora osoby.')
     role_category = models.CharField(max_length=16, choices=PUBLIC_FIGURE_ROLE_CATEGORIES)
     role_title = models.CharField(max_length=255)
     organisation = models.CharField(max_length=255, blank=True)

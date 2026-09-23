@@ -10,7 +10,7 @@ from news.political_models import PublicFigure, PublicFigureOrganisationRelation
 
 
 REQUIRED_HEADERS = {
-    'person_name', 'organisation_name', 'krs_number', 'kind', 'official_register_url',
+    'public_figure_id', 'organisation_name', 'krs_number', 'kind', 'official_register_url',
     'public_role', 'relation_status', 'evidence_url',
 }
 FORBIDDEN_HEADERS = {'pesel', 'date_of_birth', 'birth_date', 'data_urodzenia'}
@@ -47,7 +47,7 @@ class Command(BaseCommand):
 
         prepared, errors = [], []
         for line_number, row in enumerate(rows, start=2):
-            person_name = normalized(row, 'person_name')
+            figure_id = normalized(row, 'public_figure_id')
             krs = normalized(row, 'krs_number')
             kind = normalized(row, 'kind')
             relation_status = normalized(row, 'relation_status')
@@ -55,9 +55,9 @@ class Command(BaseCommand):
             if missing_values:
                 errors.append(f'Wiersz {line_number}: brak wartości: {", ".join(sorted(missing_values))}')
                 continue
-            figure = PublicFigure.objects.filter(canonical_name__iexact=person_name, archived=False).first()
+            figure = PublicFigure.objects.filter(pk=figure_id, archived=False).first() if figure_id.isdigit() else None
             if not figure:
-                errors.append(f'Wiersz {line_number}: brak jednoznacznej aktywnej osoby publicznej: {person_name}')
+                errors.append(f'Wiersz {line_number}: nie ma aktywnej osoby publicznej o wskazanym public_figure_id')
                 continue
             if not (len(krs) == 10 and krs.isdigit()):
                 errors.append(f'Wiersz {line_number}: KRS musi mieć 10 cyfr')

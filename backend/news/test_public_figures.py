@@ -30,6 +30,13 @@ def test_public_figure_is_separate_from_mandates_and_social_intake():
     assert record.get_role_category_display() == 'Rząd i administracja'
 
 
+def test_same_name_is_allowed_when_official_evidence_describes_different_roles():
+    first = figure(canonical_name='Jan Kowalski', evidence_url='https://example.org/one')
+    second = figure(canonical_name='Jan Kowalski', role_category='local', role_title='Burmistrz',
+        evidence_url='https://example.org/two')
+    assert first.pk != second.pk
+
+
 def test_public_figure_archives_without_deleting():
     record = figure()
     PublicFigure.objects.filter(pk=record.pk).update(archived=True)
