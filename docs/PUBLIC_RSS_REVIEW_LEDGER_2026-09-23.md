@@ -29,6 +29,10 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | BIP Częstochowy | `https://bip.czestochowa.pl/rss` | Warunki wykorzystania są opublikowane, ale świeży audyt techniczny nie potwierdził kanału. | Nie uruchamiać; ustalić przyczynę rozbieżności przed ponowną próbą. |
 | BIP Torunia | `https://bip.torun.pl/rss` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
 
+Siedem wpisów bez odnalezionych warunków przeniesiono do listy roboczej
+`PUBLIC_RSS_CONTACT_CANDIDATES_2026-09-23.md`. Nie oznacza to zgody na
+kontakt ani uruchomienia pobierania.
+
 ## Zasada decyzji
 
 Technicznie działający RSS nie jest samodzielną podstawą do uruchomienia
