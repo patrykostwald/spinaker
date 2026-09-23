@@ -168,6 +168,12 @@ def discover_ministry_finance_metadata():
     return ministry_finance_listing_cycle()
 
 
+@shared_task(soft_time_limit=120, time_limit=150)
+def discover_named_gov_metadata(source_key):
+    from scraper.gov_metadata_listing import named_listing_cycle
+    return named_listing_cycle(source_key)
+
+
 @shared_task(soft_time_limit=3000, time_limit=3300)
 def discover_archives():
     from scraper.archive import discovery_cycle
