@@ -26,11 +26,11 @@ class Command(BaseCommand):
         existing = {item.import_key: item for item in PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:')}
         created = sum(row.import_key not in existing for row in rows)
         updated = len(rows) - created
-        absent = PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:', archived=False).exclude(import_key__in=keys).count()
+        absent = PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:', archived=False, status='current').exclude(import_key__in=keys).count()
         if options['dry_run']:
             self.stdout.write(self.style.WARNING(
                 f'Podgląd cabinet: aktualnych w źródle {len(rows)}; nowe {created}; do aktualizacji {updated}; '
-                f'do archiwizacji {absent}. Bez zapisu i bez działań w X.'
+                f'do oznaczenia jako byli członkowie rządu {absent}. Bez zapisu i bez działań w X.'
             ))
             return
         now = timezone.now()
@@ -48,10 +48,10 @@ class Command(BaseCommand):
                     'source_checked_at': now,
                     'archived': False,
                 })
-            PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:', archived=False).exclude(import_key__in=keys).update(
-                archived=True, status='former', source_checked_at=now
+            PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:', archived=False, status='current').exclude(import_key__in=keys).update(
+                status='former', source_checked_at=now
             )
         self.stdout.write(self.style.SUCCESS(
             f'Zaimportowano {len(rows)} aktualnych członków rządu; nowe {created}; zaktualizowane {updated}; '
-            f'zarchiwizowane {absent}. Nie utworzono kont X ani kandydatur.'
+            f'oznaczone jako byli członkowie rządu {absent}. Nie utworzono kont X ani kandydatur.'
         ))

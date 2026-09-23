@@ -71,5 +71,5 @@ def test_command_upserts_and_archives_only_previous_import(monkeypatch):
             'Adam Alfa</p><p>minister spraw testowych 0', 'Nowa Osoba</p><p>minister spraw testowych 0'))))
     call_command('sync_public_figures', source='cabinet')
     entry.refresh_from_db(); manual.refresh_from_db()
-    assert entry.archived and entry.status == 'former'
+    assert not entry.archived and entry.status == 'former'
     assert not manual.archived
