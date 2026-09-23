@@ -1,5 +1,6 @@
 """Create the later-contact list without contacting anybody."""
 import csv
+from collections import Counter
 from pathlib import Path
 
 from django.core.management.base import BaseCommand
@@ -28,12 +29,15 @@ class Command(BaseCommand):
 
         output = Path(options["output"])
         output.parent.mkdir(parents=True, exist_ok=True)
+        by_type = Counter(source.get_source_type_display() for source in candidates)
         lines = [
             "# Source contact register", "",
             "This is a preparation list only. It does not send mail, create accounts, approve access, enable a source, or download content.",
             "", f"Sources requiring later confirmation: **{len(rows)}**.", "",
-            "| ID | Source | Host | Reason | Status |", "|---:|---|---|---|---|",
+            "## Podział według typu", "", "| Typ źródła | Liczba |", "|---|---:|",
         ]
+        lines += [f"| {source_type} | {count} |" for source_type, count in sorted(by_type.items())]
+        lines += ["", "## Lista źródeł", "", "| ID | Source | Host | Reason | Status |", "|---:|---|---|---|---|"]
         for row in rows:
             label = row["source"].replace("|", "\\|")
             linked = f"[{label}]({row['url']})" if row["url"] else label
