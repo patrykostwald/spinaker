@@ -30,6 +30,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/gios/wiadomosci",
         "terms_url": "https://www.gov.pl/web/gios/udostepnienie-informacji-o-srodowisku",
     },
+    "gugik": {
+        "name": "Główny Urząd Geodezji i Kartografii",
+        "source_url": "https://www.gov.pl/web/gugik",
+        "listing_url": "https://www.gov.pl/web/gugik/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/gugik/ponowne-wykorzystanie-informacji-sektora-publicznego",
+    },
     "infrastruktura": {
         "name": "Ministerstwo Infrastruktury",
         "source_url": "https://www.gov.pl/web/infrastruktura",
