@@ -7,7 +7,7 @@ from scraper.gov_metadata_listing import OFFICIAL_GOV_LISTINGS, named_listing_cy
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("key", ["cyfryzacja", "edukacja", "gddkia", "gdos", "gis", "gios", "gitd", "gugik", "infrastruktura", "kgpsp", "kis", "klimat", "kowr", "kultura", "map", "mon", "msz", "nauka", "ncbr", "nfosigw", "paa", "prokuratoria", "rars", "rolnictwo", "rodzina", "rozwoj", "sprawiedliwosc", "sport", "udsc", "uzp", "wug", "zdrowie"])
+@pytest.mark.parametrize("key", ["cyfryzacja", "edukacja", "gddkia", "gdos", "gis", "gios", "gitd", "gugik", "infrastruktura", "kgpsp", "kis", "klimat", "kowr", "kultura", "map", "mon", "msz", "nauka", "ncbr", "nfosigw", "paa", "prokuratoria", "rars", "rolnictwo", "rodzina", "rozwoj", "sprawiedliwosc", "sport", "udsc", "urpl", "uzp", "wug", "zdrowie"])
 def test_named_gov_cycle_requires_its_configured_source(key):
     assert named_listing_cycle(key) == {"status": "disabled", "queued": 0}
 

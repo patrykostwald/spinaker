@@ -178,6 +178,11 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/uzp",
         "listing_url": "https://www.gov.pl/web/uzp/aktualnosci",
     },
+    "urpl": {
+        "name": "Urząd Rejestracji Produktów Leczniczych, Wyrobów Medycznych i Produktów Biobójczych",
+        "source_url": "https://www.gov.pl/web/urpl",
+        "listing_url": "https://www.gov.pl/web/urpl/aktualnosci1",
+    },
     "zdrowie": {
         "name": "Ministerstwo Zdrowia",
         "source_url": "https://www.gov.pl/web/zdrowie",
