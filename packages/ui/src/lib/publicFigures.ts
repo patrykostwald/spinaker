@@ -46,11 +46,22 @@ export type PublicFigureVotes =
  * redakcyjnym. W innym wypadku `null`. Interfejs nigdy nie zgaduje handle'a.
  */
 export type VerifiedXAccount = { handle: string; url: string; evidence_url: string; posts_collected: number };
+export type PublicFigureXPost = {
+  id: number;
+  post_id: string;
+  url: string;
+  text: string;
+  published_at: string;
+  likes_count: number;
+  reposts_count: number;
+};
 
 export type PublicFigureDetail = PublicFigureSummary & {
   organisations: PublicFigureOrganisation[];
   votes: PublicFigureVotes;
   x_account?: VerifiedXAccount | null;
+  /** Wpisy wyłącznie z potwierdzonego konta X tej osoby, bez dopasowania po nazwisku. */
+  x_posts?: { available: boolean; results: PublicFigureXPost[] };
 };
 
 export const ROLE_CATEGORY_LABELS: Record<PublicFigureRoleCategory, string> = {

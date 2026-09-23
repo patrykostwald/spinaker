@@ -21,6 +21,7 @@ Odpowiedź zawiera podstawowe dane roli i trzy pola istotne dla widoku profilu:
 - `votes` — maksymalnie 30 głosowań z krótkim tematem, głosem i linkiem źródłowym; dostępne tylko po ręcznym połączeniu profilu z wpisem sejmowym;
 - `votes.available=false` — brak bezpiecznego połączenia z mandatem. Interfejs powinien pokazać neutralny komunikat, nie pustą tabelę ani przypuszczenie.
 - `x_account` — konto X pojawia się wyłącznie wtedy, gdy jawny link na oficjalnym profilu przeszedł przegląd, kandydatura została potwierdzona przez oficjalne API X, a konto ma aktywne potwierdzenie redakcyjne. W innym wypadku pole ma wartość `null`.
+- `x_posts` — najwyżej 100 zapisanych wpisów wyłącznie z tego samego, potwierdzonego konta X. Nie są wynikiem wyszukiwania po nazwisku. Gdy konto nie jest potwierdzone, odpowiedź ma `available: false` i pustą listę.
 
 Przykładowe fragmenty odpowiedzi:
 

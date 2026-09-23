@@ -3,7 +3,7 @@ from rest_framework.test import APIClient
 
 from news.models import Article, Ballot, ParliamentaryVoting, Source
 from news.political_models import (ParliamentaryRosterEntry, PoliticalAccount, PoliticalAccountCandidate,
-    PublicFigure, PublicFigureOrganisationRelation, RegisteredOrganisation, SocialHandleEvidence)
+    PoliticalPost, PublicFigure, PublicFigureOrganisationRelation, RegisteredOrganisation, SocialHandleEvidence)
 
 
 pytestmark = pytest.mark.django_db
@@ -56,3 +56,16 @@ def test_profile_exposes_x_only_after_public_link_candidate_resolution_and_accou
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert data['x_account']['handle'] == 'AnnaPubliczna'
     assert data['x_account']['posts_collected'] == 0
+    assert data['x_posts'] == {'available': True, 'results': []}
+
+    post = PoliticalPost.objects.create(
+        account=account, post_id='123', url='https://x.com/AnnaPubliczna/status/123', text='Wpis z konta',
+        published_at='2026-09-23T10:00:00Z', response_sha256='a' * 64,
+        source_data={'public_metrics': {'like_count': 7, 'retweet_count': 2}},
+    )
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
+    assert data['x_posts']['results'] == [{
+        'id': post.pk, 'post_id': '123', 'url': 'https://x.com/AnnaPubliczna/status/123',
+        'text': 'Wpis z konta', 'published_at': '2026-09-23T10:00:00Z',
+        'likes_count': 7, 'reposts_count': 2,
+    }]

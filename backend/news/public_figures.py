@@ -38,15 +38,16 @@ def figure_data(figure, include_detail=False):
     } for relation in relations]
     data['votes'] = votes_data(figure)
     data['x_account'] = verified_x_account_data(figure)
+    data['x_posts'] = verified_x_posts_data(figure)
     return data
 
 
-def verified_x_account_data(figure):
-    """Return an X account only after two separate confirmations.
+def verified_x_account_record(figure):
+    """Return the account and its public evidence only after two confirmations.
 
     A public link on an official roster page alone remains editorial evidence.
-    It appears in a public profile only when its candidate was resolved through
-    the official X API and the resulting polling account was confirmed.
+    The record is intentionally internal: public serializers expose only the
+    minimal account/post fields below.
     """
     if not figure.parliamentary_roster_entry_id:
         return None
@@ -58,13 +59,39 @@ def verified_x_account_data(figure):
     ).select_related('candidate__resolved_account__confirmed_by').order_by('-reviewed_at', '-pk').first()
     if not evidence or not evidence.candidate.resolved_account.is_confirmed():
         return None
-    account = evidence.candidate.resolved_account
+    return evidence.candidate.resolved_account, evidence
+
+
+def verified_x_account_data(figure):
+    """Public account details, never guessed from a name or handle."""
+    record = verified_x_account_record(figure)
+    if record is None:
+        return None
+    account, evidence = record
     return {
         'handle': account.handle,
         'url': f'https://x.com/{account.handle}',
         'evidence_url': evidence.evidence_url,
         'posts_collected': PoliticalPost.objects.filter(account=account, available=True).count(),
     }
+
+
+def verified_x_posts_data(figure):
+    """Stored posts from the same confirmed X account; no keyword matching."""
+    record = verified_x_account_record(figure)
+    if record is None:
+        return {'available': False, 'results': []}
+    account, _ = record
+    posts = PoliticalPost.objects.filter(account=account, available=True).order_by('-published_at', '-pk')[:100]
+    return {'available': True, 'results': [{
+        'id': post.pk,
+        'post_id': post.post_id,
+        'url': post.url,
+        'text': post.text,
+        'published_at': post.published_at,
+        'likes_count': post.source_data.get('public_metrics', {}).get('like_count', 0),
+        'reposts_count': post.source_data.get('public_metrics', {}).get('retweet_count', 0),
+    } for post in posts]}
 
 
 def votes_data(figure):
