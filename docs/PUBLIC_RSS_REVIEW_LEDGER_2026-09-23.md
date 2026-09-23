@@ -16,6 +16,7 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | NIK | `https://www.nik.gov.pl/rss/id,1.html` | nie tworzyć kolejnej karty: aktywny odpowiednik istnieje w katalogu | [warunki NIK](https://www.nik.gov.pl/kontakt/ponowne-wykorzystywanie-informacji/) |
 | URE | `https://www.ure.gov.pl/dokumenty/rss/9-rss-41.rss` | nie tworzyć kolejnej karty: aktywny odpowiednik istnieje w katalogu | [warunki URE](https://bip.ure.gov.pl/bip/informacja-publiczna/1061%2CPonowne-wykorzystywanie-informacji-sektora-publicznego.html) |
 | ABW | `https://www.abw.gov.pl/dokumenty/rss/24-rss-748.rss` | przygotowane do uruchomienia po ponownym świeżym audycie kanału, limit 24/dzień | [strona usługi RSS ABW](https://www.abw.gov.pl/pl/rss) wskazuje wprost dystrybucję aktualności i komunikatów w RSS, z tytułem, krótkim opisem i linkiem; karta pozostaje wyłącznie dla tych metadanych |
+| BIP Torunia | `https://bip.torun.pl/rss` | przygotowane do uruchomienia po ponownym świeżym audycie kanału, limit 24/dzień | [warunki BIP Torunia](https://bip.torun.pl/artykul/7/1/name) obejmują wprost informację udostępnioną w tym BIP oraz wymagają wskazania źródła, czasu i przetworzenia |
 
 ## Pozostałe publiczne kanały — nie uruchamiać do czasu znalezienia zasad dla kanału
 
@@ -27,7 +28,6 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | NIW | `https://niw.gov.pl/feed/` | Nie znaleziono opublikowanych warunków dla kanału. | Sprawdzić BIP. |
 | BIP woj. opolskiego | `https://bip.opolskie.pl/feed/` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
 | BIP Częstochowy | `https://bip.czestochowa.pl/rss` | Warunki wykorzystania są opublikowane, ale świeży audyt techniczny nie potwierdził kanału. | Nie uruchamiać; ustalić przyczynę rozbieżności przed ponowną próbą. |
-| BIP Torunia | `https://bip.torun.pl/rss` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
 
 Siedem wpisów bez odnalezionych warunków przeniesiono do listy roboczej
 `PUBLIC_RSS_CONTACT_CANDIDATES_2026-09-23.md`. Nie oznacza to zgody na

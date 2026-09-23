@@ -16,7 +16,6 @@ wyraźnego potwierdzenia od właściwego podmiotu.
 | IMGW — aktualności | `https://imgw.pl/feed/` | Regulamin danych obejmuje portal danych, a nie aktualności. | Czy aktualności RSS podlegają tym samym albo osobnym warunkom. |
 | NIW | `https://niw.gov.pl/feed/` | Nie znaleziono publicznych warunków dla kanału. | Zasady wykorzystania samych metadanych RSS. |
 | BIP woj. opolskiego | `https://bip.opolskie.pl/feed/` | Nie odnaleziono strony z warunkami dla kanału. | Zasady wykorzystania metadanych publikowanych w tym BIP. |
-| BIP Torunia | `https://bip.torun.pl/rss` | Nie odnaleziono strony z warunkami dla kanału. | Zasady wykorzystania metadanych publikowanych w tym BIP. |
 
 ## Osobna sprawa techniczna
 
