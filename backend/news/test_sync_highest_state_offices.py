@@ -33,6 +33,8 @@ def test_sync_highest_state_offices_uses_fixed_senate_roster_keys_only():
 
     president = PublicFigure.objects.get(import_key='state-office:president:current')
     assert president.canonical_name == 'Karol Nawrocki'
+    assert PublicFigure.objects.get(import_key='state-office:rpd:monika-horna-cieslak').role_title == 'Rzeczniczka Praw Dziecka'
+    assert PublicFigure.objects.get(import_key='state-office:uodo:miroslaw-wroblewski').role_title == 'Prezes Urzędu Ochrony Danych Osobowych'
     assert PublicFigureRole.objects.filter(import_key__startswith='state-office:senate-presidium:').count() == 5
     assert PublicFigureRole.objects.filter(import_key__startswith='state-office:sejm-presidium:').count() == 7
     assert PublicFigureRole.objects.get(import_key='state-office:senate-presidium:marshal').public_figure.import_key == 'parliamentary:senat:1063'
