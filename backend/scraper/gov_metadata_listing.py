@@ -168,6 +168,11 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/udsc",
         "listing_url": "https://www.gov.pl/web/udsc/aktualnosci-udsc",
     },
+    "uzp": {
+        "name": "Urząd Zamówień Publicznych",
+        "source_url": "https://www.gov.pl/web/uzp",
+        "listing_url": "https://www.gov.pl/web/uzp/aktualnosci",
+    },
     "zdrowie": {
         "name": "Ministerstwo Zdrowia",
         "source_url": "https://www.gov.pl/web/zdrowie",
