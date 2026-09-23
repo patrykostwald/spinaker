@@ -273,12 +273,13 @@ html[data-theme="pastel"],
    самого элемента. Компоненты включают в тень переменную --sc-ring; при наведении она
    переключается на ореол, и свечение появляется за карточкой, кнопкой, плашкой. */
 .sc-hoverable::before { content: none; }
-@media (hover: hover) {
-  .sc-hoverable:hover { --sc-ring: var(--sc-glow-ring); }
-}
-.sc-hoverable:focus-visible,
-.sc-hoverable:focus-within,
-.sc-hoverable[data-lit="true"] { --sc-ring: var(--sc-glow-ring); }
+/* Уточнение владельца 24.09: фоновое свечение — ТОЛЬКО у карточек при наведении (правила
+   .sc-card[data-stage] ниже, в блоке интеграции). У кнопок, ссылок, иконок и пунктов меню при
+   наведении меняется цвет текста или иконки — без ореола. Поэтому здесь ничего не переключается;
+   класс .sc-hoverable остаётся семантической меткой. */
+.sc-probe__card:hover,
+.sc-probe__card:focus-visible,
+.sc-probe__card[data-lit="true"] { --sc-ring: var(--sc-glow-ring); }
 
 /* Однократный блик на смену состояния (контролы R1). */
 @keyframes sc-sheen {
@@ -585,13 +586,18 @@ html.sc-theme-transition .sc-root {
    мета получает отступ справа, чтобы не оказаться под ней. */
 .sc-card[data-size="large"] .sc-card__body { padding-top: var(--sc-s-9); } /* и для split ниже 900px, где он стекает в stack */
 
+/* «Семя» морфинга дропдауна: невидимый слой в боксе триггера, из которого панель вырастает
+   (общий layoutId с панелью, см. Dropdown.tsx). */
+.sc-dropdown__trigger-surface { position: absolute; inset: 0; pointer-events: none; }
+
 /* Без обводки (замечание владельца 24.09): у карточек нет рамки и нет внутренней волосяной
    кромки. Кромка задана переменной, поэтому глушится только для карточек — кнопки и меню
    её сохраняют. Отделяют карточку тень и свечение. */
 .sc-card { --sc-ring: 0 0 0 0 transparent; border: 0; }
 /* Ступени A и B держат ореол независимо от :hover (клавиатура, фокальная полоса на телефоне).
    На B ореол шире и ярче — свечение растёт вместе с карточкой. */
-.sc-card[data-stage="a"] { --sc-ring: var(--sc-glow-ring); }
+.sc-card[data-stage="a"],
+.sc-card[data-lit="true"] { --sc-ring: var(--sc-glow-ring); } /* data-lit — фокальная полоса на телефоне (R7) */
 .sc-card[data-stage="b"] { --sc-ring: var(--sc-glow-ring-strong); }
 
 /* Медиа скругляется само (замечание владельца 24.09): на ступени B карточка перестаёт обрезать

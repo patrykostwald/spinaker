@@ -18,6 +18,7 @@ import {
   type Ref,
 } from "react";
 import { Button, type ButtonVariant } from "./Button";
+import { RADIUS } from "./tokens";
 import { useMotionTokens } from "./motion/useMotionTokens";
 import { useDismissable } from "./useDismissable";
 
@@ -219,8 +220,13 @@ export function Dropdown({
   const originY = placement === "top" ? "100%" : "0%";
   const yFrom = m.reduced ? 0 : placement === "top" ? 4 : -4;
   const scaleFrom = m.reduced ? 1 : 0.96;
+  // R0 «один живой элемент»: панель РАЗВОРАЧИВАЕТСЯ из бокса триггера, а не появляется рядом.
+  // Общий layoutId держит ровно один элемент за раз: «семя» в триггере, пока закрыто, и панель,
+  // пока открыто — так framer-motion морфит панель из формы кнопки и обратно при закрытии.
+  const surfaceId = `${instanceId}-surface`;
 
   return (
+    <LayoutGroup id={`${instanceId}-dd`}>
     <div className="sc-dropdown">
       <Button
         ref={triggerRef as Ref<HTMLButtonElement>}
@@ -241,6 +247,14 @@ export function Dropdown({
           </motion.span>
         }
       >
+        {m.morph && !open && (
+          <motion.span
+            aria-hidden="true"
+            className="sc-dropdown__trigger-surface"
+            layoutId={surfaceId}
+            style={{ borderRadius: RADIUS.md }}
+          />
+        )}
         {label}
       </Button>
 
@@ -254,15 +268,17 @@ export function Dropdown({
             className="sc-dropdown__panel sc-chrome"
             data-align={align}
             data-placement={placement}
+            layoutId={m.morph ? surfaceId : undefined}
             style={{
               transformOrigin: `${originX} ${originY}`,
               width: resolvedWidth,
+              borderRadius: RADIUS.xl,
               ...(align === "end" ? { right: 0 } : { left: 0 }),
               ...(placement === "top" ? { bottom: "calc(100% + 8px)" } : { top: "calc(100% + 8px)" }),
             }}
-            initial={{ opacity: 0, scale: scaleFrom, y: yFrom }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: scaleFrom, y: yFrom }}
+            initial={m.morph ? { opacity: 0 } : { opacity: 0, scale: scaleFrom, y: yFrom }}
+            animate={m.morph ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+            exit={m.morph ? { opacity: 0 } : { opacity: 0, scale: scaleFrom, y: yFrom }}
             transition={open ? m.t("ui") : m.t("collapse")}
           >
             <LayoutGroup id={instanceId}>
@@ -330,5 +346,6 @@ export function Dropdown({
         )}
       </AnimatePresence>
     </div>
+    </LayoutGroup>
   );
 }
