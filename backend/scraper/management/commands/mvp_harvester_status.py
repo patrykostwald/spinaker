@@ -1,5 +1,7 @@
 """Read-only snapshot of approved MVP harvesters and their stored material counts."""
 from django.core.management.base import BaseCommand
+from collections import defaultdict
+
 from django.db.models import Count
 from django.utils import timezone
 
@@ -17,7 +19,7 @@ class Command(BaseCommand):
         sources = (Source.objects.filter(is_active=True, scrape_enabled=True, catalog_stage='configured')
             .annotate(box_count=Count('articles')).order_by('pk'))
         approved = []
-        coverage = {'scheduled': [], 'needs_schedule_mapping': []}
+        coverage = defaultdict(list)
         for source in sources:
             cards = list(SourceAccessInstruction.objects.filter(
                 source=source, status=SourceAccessInstruction.Status.APPROVED,
@@ -38,6 +40,10 @@ class Command(BaseCommand):
             f'AKTYWNE_Z_HARMONOGRAMEM: {len(coverage["scheduled"])}/{len(approved)}')
         self.stdout.write(
             f'AKTYWNE_BEZ_MAPOWANIA_HARMONOGRAMU: {len(coverage["needs_schedule_mapping"])}/{len(approved)}')
+        self.stdout.write(
+            f'AKTYWNE_WYMAGAJACE_FLAGI_SRODOWISKOWEJ: {len(coverage["disabled_by_environment"])}/{len(approved)}')
+        self.stdout.write(
+            f'AKTYWNE_PILOTY_RECZNE: {len(coverage["manual_pilot"])}/{len(approved)}')
         for source in coverage['needs_schedule_mapping']:
             self.stdout.write(f'BRAK_MAPOWANIA {source.pk}: {source.name}')
         candidates = list(Source.objects.filter(

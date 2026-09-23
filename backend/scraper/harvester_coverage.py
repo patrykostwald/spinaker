@@ -19,6 +19,14 @@ DIRECT_SCHEDULES = {
     'https://stat.gov.pl': 'gus-bdl-metadata-daily',
 }
 
+DIRECT_NAMES = {
+    'KPRM': ('kprm-listing-minute', 'scheduled'),
+    'Biuletyn Zamówień Publicznych': (
+        'bzp-metadata-3m (wymaga BZP_API_ENABLED=true)', 'disabled_by_environment'),
+    'UOKiK — System Udostępniania Danych o Pomocy Publicznej': (
+        'pilot ręczny (wymaga UOKIK_SUDOP_PILOT_ENABLED=true)', 'manual_pilot'),
+}
+
 
 def schedule_label(source, cards):
     """Return the periodic task label or a precise reason it is not scheduled.
@@ -31,6 +39,8 @@ def schedule_label(source, cards):
         return 'rss-hourly', 'scheduled'
     if source.url in DIRECT_SCHEDULES:
         return DIRECT_SCHEDULES[source.url], 'scheduled'
+    if source.name in DIRECT_NAMES:
+        return DIRECT_NAMES[source.name]
     for key, spec in OFFICIAL_GOV_LISTINGS.items():
         if source.url == spec['source_url']:
             return f'{key}-metadata-6h', 'scheduled'
