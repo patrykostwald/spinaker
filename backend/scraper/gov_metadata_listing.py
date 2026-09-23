@@ -114,6 +114,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/ncbr/aktualnosci",
         "terms_url": "https://www.gov.pl/web/ncbr/ponowne-wykorzystywanie-informacji-sektora-publicznego",
     },
+    "nfosigw": {
+        "name": "Narodowy Fundusz Ochrony Środowiska i Gospodarki Wodnej",
+        "source_url": "https://www.gov.pl/web/nfosigw",
+        "listing_url": "https://www.gov.pl/web/nfosigw/aktualnosci",
+    },
     "rozwoj": {
         "name": "Ministerstwo Rozwoju i Technologii",
         "source_url": "https://www.gov.pl/web/rozwoj-technologia",

@@ -49,6 +49,7 @@ app.conf.beat_schedule = {
     'road-transport-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['gitd'], 'schedule': crontab(minute=36, hour='*/6')},
     'foreigners-office-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['udsc'], 'schedule': crontab(minute=40, hour='*/6')},
     'public-procurement-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['uzp'], 'schedule': crontab(minute=24, hour='*/6')},
+    'environment-fund-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['nfosigw'], 'schedule': crontab(minute=56, hour='*/6')},
     'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
     'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},
