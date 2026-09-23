@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
-from news.models import Source, SourceAccessInstruction
+from news.models import Source, SourceAccessInstruction, SourceType
 from scraper.structured_metadata import SPECS
 
 
@@ -26,7 +26,16 @@ SOURCES = {
 def configure(key, reviewer, *, valid_days=365, daily_cap=24):
     spec, evidence = SPECS[key], SOURCES[key]
     with transaction.atomic():
-        source = Source.objects.select_for_update().get(url=spec["source_url"])
+        source, _ = Source.objects.select_for_update().get_or_create(
+            url=spec["source_url"],
+            defaults={
+                "name": "dane.gov.pl" if key == "dane_gov" else "GUS Bank Danych Lokalnych",
+                "source_type": SourceType.INSTITUTION,
+                "is_active": False,
+                "scrape_enabled": False,
+                "catalog_stage": "candidate",
+            },
+        )
         latest = source.access_instructions.order_by("-version").first()
         if latest and latest.status == SourceAccessInstruction.Status.SUSPENDED:
             raise ValueError("latest_instruction_suspended")
@@ -73,8 +82,6 @@ class Command(BaseCommand):
             return
         try:
             card = configure(options["key"], options["reviewed_by"], valid_days=options["valid_days"], daily_cap=options["daily_cap"])
-        except Source.DoesNotExist as exc:
-            raise CommandError("Brak kandydata w katalogu.") from exc
         except ValueError as exc:
             raise CommandError(str(exc)) from exc
         self.stdout.write(self.style.SUCCESS(f"ZAPISANO: karta API v{card.version}, wyłącznie metadane."))

@@ -29,3 +29,11 @@ def test_eli_configuration_never_overrides_a_suspension():
     with pytest.raises(Exception):
         call_command("configure_eli_metadata_source", "--reviewed-by=test", "--apply", stdout=StringIO())
     assert SourceAccessInstruction.objects.filter(source=source).count() == 1
+
+
+@pytest.mark.django_db
+def test_eli_configuration_creates_only_its_own_official_candidate():
+    call_command("configure_eli_metadata_source", "--reviewed-by=test", "--apply", stdout=StringIO())
+    source = Source.objects.get(url="https://api.sejm.gov.pl/eli")
+    assert source.name == "ELI — Dziennik Ustaw i Monitor Polski"
+    assert source.is_active and source.scrape_enabled and source.catalog_stage == "configured"

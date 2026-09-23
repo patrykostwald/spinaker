@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
-from news.models import Source, SourceAccessInstruction
+from news.models import Source, SourceAccessInstruction, SourceType
 
 
 SOURCE_URL = "https://api.sejm.gov.pl/eli"
@@ -16,7 +16,16 @@ TERMS_URL = "https://www.sejm.gov.pl/Sejm10.nsf/page.xsp/dane_publiczne"
 
 def configure(reviewer, *, valid_days=365, daily_cap=24):
     with transaction.atomic():
-        source = Source.objects.select_for_update().get(url=SOURCE_URL)
+        source, _ = Source.objects.select_for_update().get_or_create(
+            url=SOURCE_URL,
+            defaults={
+                "name": "ELI — Dziennik Ustaw i Monitor Polski",
+                "source_type": SourceType.INSTITUTION,
+                "is_active": False,
+                "scrape_enabled": False,
+                "catalog_stage": "candidate",
+            },
+        )
         latest = SourceAccessInstruction.objects.filter(source=source).order_by("-version").first()
         if latest and latest.status == SourceAccessInstruction.Status.SUSPENDED:
             raise ValueError("latest_instruction_suspended")
@@ -63,8 +72,6 @@ class Command(BaseCommand):
         try:
             card = configure(options["reviewed_by"], valid_days=options["valid_days"],
                              daily_cap=options["daily_cap"])
-        except Source.DoesNotExist as exc:
-            raise CommandError("Brak kandydata ELI w katalogu.") from exc
         except ValueError as exc:
             raise CommandError(str(exc)) from exc
         self.stdout.write(self.style.SUCCESS(f"ZAPISANO: ELI karta API v{card.version}."))
