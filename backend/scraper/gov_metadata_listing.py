@@ -77,6 +77,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/kis/aktualnosci",
         "terms_url": "https://www.gov.pl/web/kis/ponowne-wykorzystanie-informacji-sektora-publicznego",
     },
+    "kontaktoze": {
+        "name": "Krajowy Punkt Kontaktowy ds. Odnawialnych Źródeł Energii",
+        "source_url": "https://www.gov.pl/web/kontaktoze",
+        "listing_url": "https://www.gov.pl/web/kontaktoze/aktualnosci",
+    },
     "kas": {
         "name": "Krajowa Administracja Skarbowa",
         "source_url": "https://www.gov.pl/web/kas",
@@ -99,6 +104,11 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/sprawiedliwosc",
         "listing_url": "https://www.gov.pl/web/sprawiedliwosc/wiadomosci",
         "terms_url": "https://www.gov.pl/web/sprawiedliwosc/ponowne-wykorzystywanie",
+    },
+    "sluzby_specjalne": {
+        "name": "Koordynator Służb Specjalnych",
+        "source_url": "https://www.gov.pl/web/sluzby-specjalne",
+        "listing_url": "https://www.gov.pl/web/sluzby-specjalne/aktualnosci",
     },
     "nauka": {
         "name": "Ministerstwo Nauki i Szkolnictwa Wyższego",
