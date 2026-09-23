@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.utils import timezone
 
 from news.models import ImportState, Source
-from scraper.source_probe import source_signature
+from scraper.source_probe import PROBE_VERSION, source_signature
 
 
 @pytest.mark.django_db
@@ -17,7 +17,7 @@ def test_next_candidate_audit_selects_only_stale_candidates_and_stays_read_only(
     active = Source.objects.create(name='Active', url='https://active.example', catalog_stage='configured',
         is_active=True, scrape_enabled=True)
     ImportState.objects.create(name=f'source-check:{fresh.pk}', last_success=timezone.now(), cursor={
-        'probe_version': 1, 'signature': source_signature(fresh), 'audit_status': 'completed',
+        'probe_version': PROBE_VERSION, 'signature': source_signature(fresh), 'audit_status': 'completed',
         'checked_at': timezone.now().isoformat()})
     with patch('scraper.management.commands.audit_next_source_candidates.call_command') as nested:
         call_command('audit_next_source_candidates', '--limit=1', '--output-prefix', str(tmp_path/'audit'))
