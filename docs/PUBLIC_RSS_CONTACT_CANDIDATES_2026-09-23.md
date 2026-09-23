@@ -10,7 +10,6 @@ wyraźnego potwierdzenia od właściwego podmiotu.
 
 | Źródło | Kanał | Powód wstrzymania | Co potwierdzić później |
 |---|---|---|---|
-| ABW | `https://www.abw.gov.pl/dokumenty/rss/24-rss-748.rss` | Nie znaleziono publicznych warunków dla kanału. | Czy metadane RSS mogą być automatycznie pobierane i publikowane z linkiem do oryginału. |
 | Policja | `https://www.policja.pl/dokumenty/rss/1-rss-1.rss` | Nie znaleziono publicznych warunków dla kanału. | Zasady wykorzystania samych metadanych RSS. |
 | KZGW / Wody Polskie | `https://kzgw.gov.pl/index.php/pl/?format=feed&type=rss` | Nie znaleziono publicznych warunków dla kanału. | Zasady wykorzystania samych metadanych RSS. |
 | IMGW — aktualności | `https://imgw.pl/feed/` | Regulamin danych obejmuje portal danych, a nie aktualności. | Czy aktualności RSS podlegają tym samym albo osobnym warunkom. |

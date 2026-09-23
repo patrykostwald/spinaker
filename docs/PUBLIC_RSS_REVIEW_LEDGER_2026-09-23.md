@@ -29,7 +29,7 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | BIP woj. opolskiego | `https://bip.opolskie.pl/feed/` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
 | BIP Częstochowy | `https://bip.czestochowa.pl/rss` | Warunki wykorzystania są opublikowane, ale świeży audyt techniczny nie potwierdził kanału. | Nie uruchamiać; ustalić przyczynę rozbieżności przed ponowną próbą. |
 
-Siedem wpisów bez odnalezionych warunków przeniesiono do listy roboczej
+Pięć wpisów bez odnalezionych warunków przeniesiono do listy roboczej
 `PUBLIC_RSS_CONTACT_CANDIDATES_2026-09-23.md`. Nie oznacza to zgody na
 kontakt ani uruchomienia pobierania.
 
