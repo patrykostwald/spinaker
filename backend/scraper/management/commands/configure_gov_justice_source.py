@@ -41,7 +41,7 @@ def configure(source, listing_url, reviewer, valid_days=365):
     base_path = validate_listing(source, listing_url)
     now = timezone.now()
     evidence = {
-        "purpose": "reviewed official gov.pl justice section",
+        "purpose": "official gov.pl metadata listing",
         "listing_url": listing_url,
         "reviewed_url": listing_url,
         "license": "Stopka gov.pl deklaruje CC BY-SA 4.0 dla treści tekstowych; karta nie obejmuje materiałów audiowizualnych.",
@@ -61,7 +61,7 @@ def configure(source, listing_url, reviewer, valid_days=365):
     html = SourceAccessInstruction.objects.create(
         source=source, version=next_version,
         channel=SourceAccessInstruction.Channel.HTML,
-        allowed_scope=SourceAccessInstruction.Scope.CONTENT,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
         endpoint=f"https://www.gov.pl{base_path}/",
         allowed_path_patterns=[], **common)
     robots = SourceAccessInstruction.objects.create(

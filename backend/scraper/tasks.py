@@ -156,6 +156,12 @@ def discover_kprm_html():
     return kprm_listing_cycle()
 
 
+@shared_task(soft_time_limit=120, time_limit=150)
+def discover_mswia_metadata():
+    from scraper.mswia_listing import mswia_listing_cycle
+    return mswia_listing_cycle()
+
+
 @shared_task(soft_time_limit=3000, time_limit=3300)
 def discover_archives():
     from scraper.archive import discovery_cycle

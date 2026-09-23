@@ -28,6 +28,7 @@ def test_configure_gov_justice_source_records_two_narrow_cards():
         ("html", "https://www.gov.pl/web/pr-test/", []),
         ("sitemap", "https://www.gov.pl/robots.txt", ["/robots.txt"]),
     ]
+    assert cards[0].allowed_scope == "metadata"
 
 
 @pytest.mark.django_db
