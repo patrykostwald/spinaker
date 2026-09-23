@@ -6,6 +6,7 @@ import pytest
 from django.core.management import call_command
 
 from news.models import ImportState, Source
+from scraper.management.commands.audit_sources import write_reports
 from scraper.source_probe import (ProbeError, ProbeNetwork, SourceProbe, audit_source,
     failed_result, parse_sitemap, public_link)
 
@@ -148,3 +149,11 @@ def test_parallel_audit_failure_has_the_same_reviewable_diagnostic():
     assert result['errors'][-1] == {
         'kind': 'fatal_probe', 'url': 'https://example.com/',
         'error': 'ProbeError', 'detail': 'certificate_hostname_mismatch'}
+
+
+def test_audit_markdown_makes_a_fatal_probe_diagnostic_visible(tmp_path):
+    item = source()
+    result = failed_result(item, ProbeError('certificate_hostname_mismatch'))
+    write_reports(tmp_path / 'audit', [item], {item.pk: result})
+    report = (tmp_path / 'audit.md').read_text(encoding='utf-8')
+    assert 'błąd techniczny — ProbeError: certificate_hostname_mismatch' in report
