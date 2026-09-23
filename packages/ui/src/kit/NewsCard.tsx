@@ -154,7 +154,7 @@ export function NewsCard({
   eyebrow,
   action,
   onOpen,
-  expandable = false,
+  expandable = true, // R0: ступень B — штатное поведение, не опция (замечание владельца 23.09)
   className,
 }: NewsCardProps) {
   const motionTokens = useMotionTokens();
