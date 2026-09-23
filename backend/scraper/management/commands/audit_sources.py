@@ -85,16 +85,22 @@ def write_reports(prefix, sources, results):
         'Nie zmieniono aktywności źródeł ani częstotliwości. Wykluczone i źródła bez adresu są jawnie pominięte. '
         'Brak potwierdzenia w tej ograniczonej kontroli nie dowodzi braku materiałów w internecie.', '',
         'Statystyki: `' + json.dumps(summary, ensure_ascii=False) + '`', '',
-        '| ID | Źródło | RSS | Archiwum | Zaobserwowane URL map | Wniosek / stan |',
+        '| ID | Źródło | RSS | Archiwum | Zaobserwowane URL map | Stan / wniosek |',
         '|---|---|---|---|---:|---|']
     for row in rows:
         escape = lambda value: str(value or '').replace('|', '\\|').replace('\n', ' ')
         label = escape(row['name'])
         if row['source_url']:
             label = f"[{label}]({row['source_url']})"
+        outcome = row['recommendation'] or row['audit_status']
+        if row['audit_status'] == 'failed':
+            diagnostic = ': '.join(filter(None, [row.get('fatal_error', ''), row.get('fatal_error_detail', '')]))
+            outcome = f"błąd techniczny — {diagnostic or 'bez szczegółu'}; {outcome}"
+        else:
+            outcome = f"{row['audit_status']}; {outcome}"
         lines.append('| ' + ' | '.join(map(str, [row['source_id'], label, row['rss']['status'],
             row['archive']['status'], row['archive']['page_urls_observed'],
-            escape(row['recommendation'] or row['audit_status'])])) + ' |')
+            escape(outcome)])) + ' |')
     lines += ['', 'Pełne dowody HTTP, odnośniki, próbki dat i metodę liczenia każdej mapy zawiera plik JSON. '
         'CSV zawiera wszystkie źródła bez skracania listy. Ekstrapolacje próbek w JSON są tylko arytmetyką; nie należy ich sumować jako potwierdzonej wielkości archiwum.', '']
     md_path = prefix.with_suffix('.md')
