@@ -52,3 +52,5 @@ docker compose exec backend python manage.py harvester_preflight --approved-only
 if ($LASTEXITCODE -ne 0) { Write-Error "Approved-source preflight failed." }
 docker compose exec backend python manage.py source_review_queue
 if ($LASTEXITCODE -ne 0) { Write-Error "Source review queue report failed." }
+docker compose exec backend python manage.py source_verification_register
+if ($LASTEXITCODE -ne 0) { Write-Error "Source verification register failed." }
