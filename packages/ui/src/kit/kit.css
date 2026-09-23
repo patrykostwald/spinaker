@@ -607,7 +607,7 @@ html.sc-theme-transition .sc-root {
    translate(-50%,-50%), которым он центрировался — центрируем сеткой без transform. */
 /* Специфичность 0,2,0: правило R2 (.sc-btn__spinner, top/left 50%) стоит в файле ПОЗЖЕ этого блока и
    при равной специфичности побеждало бы. */
-.sc-btn .sc-btn__spinner { position: absolute; inset: 0; display: grid; place-items: center; transform: none; }
+.sc-btn .sc-btn__spinner { position: absolute; inset: 0; margin: auto; display: grid; place-items: center; transform: none; }
 .sc-btn[aria-busy="true"] { opacity: 1; cursor: progress; }
 
 /* Мобильная панель навигации вырастает из кнопки меню (аудит 24.09, «один живой элемент»):
