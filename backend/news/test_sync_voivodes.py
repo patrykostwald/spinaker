@@ -4,7 +4,7 @@ import pytest
 from django.core.management import call_command
 
 from news.management.commands.sync_voivodes import VOIVODES
-from news.political_models import PublicFigure
+from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
 
 @pytest.mark.django_db
@@ -16,6 +16,9 @@ def test_sync_voivodes_uses_fixed_official_import_keys_and_never_social_matching
     dolnoslaskie = PublicFigure.objects.get(import_key='government:voivode:dolnoslaskie')
     assert dolnoslaskie.canonical_name == 'Anna Żabska'
     assert dolnoslaskie.evidence_url == 'https://www.gov.pl/web/mswia/urzedy-wojewodzkie'
+    public_office = PublicOffice.objects.get(import_key='public-office:voivode:dolnoslaskie')
+    assert public_office.current_holder == dolnoslaskie
+    assert PublicFigureRole.objects.get(public_office=public_office).public_figure == dolnoslaskie
     assert 'Nie utworzono kont X' in output.getvalue()
 
 
@@ -28,3 +31,22 @@ def test_sync_voivodes_marks_removed_official_key_as_former(monkeypatch):
     monkeypatch.setattr('news.management.commands.sync_voivodes.VOIVODES', VOIVODES[:1])
     call_command('sync_voivodes', stdout=StringIO())
     assert PublicFigure.objects.get(import_key='government:voivode:test').status == 'former'
+
+
+@pytest.mark.django_db
+def test_sync_voivodes_keeps_office_when_holder_changes(monkeypatch):
+    monkeypatch.setattr('news.management.commands.sync_voivodes.VOIVODES', (
+        ('dolnoslaskie', 'Pierwsza Osoba', 'Wojewoda Dolnośląski', 'Urząd testowy'),
+    ))
+    call_command('sync_voivodes', stdout=StringIO())
+    first = PublicFigure.objects.get(import_key='government:voivode:dolnoslaskie')
+    public_office = PublicOffice.objects.get(import_key='public-office:voivode:dolnoslaskie')
+
+    monkeypatch.setattr('news.management.commands.sync_voivodes.VOIVODES', (
+        ('dolnoslaskie', 'Druga Osoba', 'Wojewoda Dolnośląski', 'Urząd testowy'),
+    ))
+    call_command('sync_voivodes', stdout=StringIO())
+
+    public_office.refresh_from_db()
+    assert public_office.current_holder.canonical_name == 'Druga Osoba'
+    assert PublicFigureRole.objects.get(public_figure=first, public_office=public_office).status == 'former'

@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from news.political_models import PublicFigure
+from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
 
 EVIDENCE_URL = 'https://www.gov.pl/web/mswia/urzedy-wojewodzkie'
@@ -50,7 +50,7 @@ class Command(BaseCommand):
         now = timezone.now()
         with transaction.atomic():
             for region, name, title, office in VOIVODES:
-                PublicFigure.objects.update_or_create(
+                figure, _ = PublicFigure.objects.update_or_create(
                     import_key=f'government:voivode:{region}',
                     defaults={
                         'canonical_name': name,
@@ -63,6 +63,40 @@ class Command(BaseCommand):
                         'evidence_note': 'Oficjalna lista urzędów wojewódzkich MSWiA.',
                         'source_checked_at': now,
                         'parliamentary_roster_entry': None,
+                        'archived': False,
+                    },
+                )
+                public_office, _ = PublicOffice.objects.update_or_create(
+                    import_key=f'public-office:voivode:{region}',
+                    defaults={
+                        'title': title,
+                        'role_category': 'government',
+                        'organisation': office,
+                        'official_roster_url': EVIDENCE_URL,
+                        'evidence_note': 'Oficjalna lista urzędów wojewódzkich MSWiA.',
+                        'current_holder': figure,
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
+                # A change of holder closes the previous sourced role while the
+                # durable office remains the same registry record.
+                PublicFigureRole.objects.filter(public_office=public_office,
+                    status='current', archived=False).exclude(public_figure=figure).update(
+                        status='former', source_checked_at=now)
+                PublicFigureRole.objects.update_or_create(
+                    import_key=f'public-office:voivode:{region}:holder:{figure.import_key}',
+                    defaults={
+                        'public_figure': figure,
+                        'public_office': public_office,
+                        'role_category': 'government',
+                        'role_title': title,
+                        'organisation': office,
+                        'status': 'current',
+                        'official_profile_url': '',
+                        'evidence_url': EVIDENCE_URL,
+                        'evidence_note': 'Oficjalna lista urzędów wojewódzkich MSWiA.',
+                        'source_checked_at': now,
                         'archived': False,
                     },
                 )
