@@ -3,8 +3,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
-from news.government_roster import cabinet_rows
-from news.political_models import PublicFigure
+from news.government_roster import cabinet_office_import_key, cabinet_rows
+from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
 
 class Command(BaseCommand):
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         now = timezone.now()
         with transaction.atomic():
             for row in rows:
-                PublicFigure.objects.update_or_create(import_key=row.import_key, defaults={
+                figure, _ = PublicFigure.objects.update_or_create(import_key=row.import_key, defaults={
                     'canonical_name': row.canonical_name,
                     'role_category': 'government',
                     'role_title': row.role_title,
@@ -48,6 +48,39 @@ class Command(BaseCommand):
                     'source_checked_at': now,
                     'archived': False,
                 })
+                office_key = cabinet_office_import_key(row.role_title)
+                public_office, _ = PublicOffice.objects.update_or_create(
+                    import_key=office_key,
+                    defaults={
+                        'title': row.role_title,
+                        'role_category': 'government',
+                        'organisation': 'Rada Ministrów',
+                        'official_roster_url': row.source_url,
+                        'evidence_note': 'Aktualny skład Rady Ministrów wskazany przez KPRM.',
+                        'current_holder': figure,
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
+                PublicFigureRole.objects.filter(public_office=public_office,
+                    status='current', archived=False).exclude(public_figure=figure).update(
+                        status='former', source_checked_at=now)
+                PublicFigureRole.objects.update_or_create(
+                    import_key=f'{office_key}:holder:{figure.import_key}',
+                    defaults={
+                        'public_figure': figure,
+                        'public_office': public_office,
+                        'role_category': 'government',
+                        'role_title': row.role_title,
+                        'organisation': 'Rada Ministrów',
+                        'status': 'current',
+                        'official_profile_url': '',
+                        'evidence_url': row.source_url,
+                        'evidence_note': 'Aktualny skład Rady Ministrów wskazany przez KPRM.',
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
             PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:', archived=False, status='current').exclude(import_key__in=keys).update(
                 status='former', source_checked_at=now
             )
