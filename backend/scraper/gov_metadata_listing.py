@@ -30,6 +30,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/gddkia/aktualnosci-2026",
         "terms_url": "https://www.gov.pl/web/gddkia/ponowne-wykorzystanie-informacji-publicznej",
     },
+    "gif": {
+        "name": "Główny Inspektorat Farmaceutyczny",
+        "source_url": "https://www.gov.pl/web/gif",
+        "listing_url": "https://www.gov.pl/web/gif/wiadomosci",
+    },
     "gitd": {
         "name": "Główny Inspektorat Transportu Drogowego",
         "source_url": "https://www.gov.pl/web/gitd",
