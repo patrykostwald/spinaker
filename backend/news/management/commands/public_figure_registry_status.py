@@ -7,6 +7,7 @@ from django.db.models import Count
 from news.political_models import (
     ParliamentaryRosterEntry,
     PublicFigure,
+    PublicFigureRole,
     PublicFigureOrganisationRelation,
     SocialHandleEvidence,
 )
@@ -42,6 +43,7 @@ class Command(BaseCommand):
                                if status == 'current')
         confirmed_relations = PublicFigureOrganisationRelation.objects.filter(
             verification_status='confirmed').count()
+        public_roles = PublicFigureRole.objects.filter(archived=False).count()
         pending_relations = PublicFigureOrganisationRelation.objects.filter(
             verification_status='pending_review').count()
         confirmed_x_evidence = SocialHandleEvidence.objects.filter(status='confirmed').count()
@@ -80,6 +82,7 @@ class Command(BaseCommand):
             '## Potwierdzenia',
             '',
             f'- Profile niearchiwalne: **{active_profiles}** (aktualne: **{current_profiles}**).',
+            f'- Dodatkowe udokumentowane role przy profilach: **{public_roles}**.',
             f'- Potwierdzone relacje z podmiotami: **{confirmed_relations}**.',
             f'- Relacje oczekujące na redakcję: **{pending_relations}**.',
             f'- Potwierdzone dowody kont X: **{confirmed_x_evidence}**.',
@@ -93,6 +96,6 @@ class Command(BaseCommand):
         report_path.write_text(report, encoding='utf-8')
         self.stdout.write(self.style.SUCCESS(
             f'PUBLIC_FIGURE_REGISTRY: roster={sum(roster_counts.values())} profiles={active_profiles} '
-            f'confirmed_relations={confirmed_relations} confirmed_x_evidence={confirmed_x_evidence}; '
+            f'public_roles={public_roles} confirmed_relations={confirmed_relations} confirmed_x_evidence={confirmed_x_evidence}; '
             f'{report_path}'
         ))
