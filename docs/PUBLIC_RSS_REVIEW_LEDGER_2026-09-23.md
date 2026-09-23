@@ -11,7 +11,6 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | GIOŚ, rekord 404 | `https://www.gios.gov.pl/pl/?format=feed&type=rss` | aktywne, karta RSS v1, limit 24/dzień | [warunki GIOŚ](https://powietrze.gios.gov.pl/depoz/regulamin-i-polityka-prywatnosci/) — podanie źródła, czasu pozyskania i informacji o przetworzeniu |
 | WIOŚ Warszawa, rekord 419 | `https://wios.warszawa.pl/feed/` | gotowe do uruchomienia, karta RSS v1, limit 24/dzień | [warunki WIOŚ](https://bip.warszawa.wios.gov.pl/bip/ponowne-wykorzystywanie/291%2CPonowne-wykorzystywanie-informacji-sektora-publicznego.html) — źródło, czas wytworzenia i pozyskania oraz informacja o przetworzeniu |
 | Geoportal / GUGiK, rekord 32 | `https://www.geoportal.gov.pl/feed/` | gotowe do uruchomienia, karta RSS v1, limit 24/dzień | [warunki GUGiK](https://www.gov.pl/web/gugik/ponowne-wykorzystanie-informacji-sektora-publicznego) — Geoportal wskazuje GUGiK jako podmiot prowadzący; zachowujemy źródło, daty i informację o przetworzeniu |
-| BIP Częstochowy, rekord 571 | `https://bip.czestochowa.pl/rss` | gotowe do uruchomienia, karta RSS v1, limit 24/dzień | [warunki BIP](https://bip.czestochowa.pl/artykul/71521/1151613/ponowne-wykorzystywanie) — warunki dotyczą wprost informacji opublikowanych w BIP Urzędu Miasta Częstochowy |
 | BIP Olsztyna, rekord 575 | `https://bip.olsztyn.eu/rss.xml` | gotowe do uruchomienia, karta RSS v1, limit 24/dzień | [warunki BIP](https://bip.olsztyn.eu/37/ponowne-wykorzystywanie-informacji-sektora-publicznego.html) — warunki dotyczą wprost informacji opublikowanych w BIP Urzędu Miasta Olsztyna |
 | BIP Radomia, rekord 576 | `https://bip.radom.pl/dokumenty/rss/69-rss-o-112.rss` | gotowe do uruchomienia, karta RSS v1, limit 24/dzień | [warunki BIP](https://bip.radom.pl/ra/ponowne-wykorzystanie-informac/19412,Zasady-i-tryb-udostepniania.html) — prawo ponownego wykorzystania informacji opublikowanych w BIP Urzędu Miejskiego w Radomiu |
 | NIK | `https://www.nik.gov.pl/rss/id,1.html` | nie tworzyć kolejnej karty: aktywny odpowiednik istnieje w katalogu | [warunki NIK](https://www.nik.gov.pl/kontakt/ponowne-wykorzystywanie-informacji/) |
@@ -27,6 +26,7 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | IMGW | `https://imgw.pl/feed/` | [Regulamin danych IMGW](https://danepubliczne.imgw.pl/docs/regulamin_udostepniania_danych.pdf) dotyczy portalu danych, nie kanału aktualności. | Nie przenosić warunków danych na RSS; znaleźć zasady dla aktualności. |
 | NIW | `https://niw.gov.pl/feed/` | Nie znaleziono opublikowanych warunków dla kanału. | Sprawdzić BIP. |
 | BIP woj. opolskiego | `https://bip.opolskie.pl/feed/` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
+| BIP Częstochowy | `https://bip.czestochowa.pl/rss` | Warunki wykorzystania są opublikowane, ale świeży audyt techniczny nie potwierdził kanału. | Nie uruchamiać; ustalić przyczynę rozbieżności przed ponowną próbą. |
 | BIP Torunia | `https://bip.torun.pl/rss` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
 
 ## Zasada decyzji
