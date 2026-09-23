@@ -1,9 +1,10 @@
 """Seed the current KPRP leadership from its single official roster page."""
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils.text import slugify
 from django.utils import timezone
 
-from news.political_models import PublicFigure
+from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
 
 EVIDENCE_URL = 'https://www.prezydent.pl/kancelaria/kierownictwo-kancelarii'
@@ -32,10 +33,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         prefix = 'kprp-leadership:'
-        keys = {prefix + key for key, *_ in KPRP_LEADERSHIP}
-        existing = set(PublicFigure.objects.filter(import_key__in=keys).values_list('import_key', flat=True))
-        created, updated = len(keys - existing), len(keys & existing)
-        former = PublicFigure.objects.filter(import_key__startswith=prefix, archived=False, status='current').exclude(import_key__in=keys).count()
+        holder_keys = {f'{prefix}{key}:holder:{slugify(name)}' for key, name, _ in KPRP_LEADERSHIP}
+        existing = set(PublicFigure.objects.filter(import_key__in=holder_keys).values_list('import_key', flat=True))
+        created, updated = len(holder_keys - existing), len(holder_keys & existing)
+        former = PublicFigure.objects.filter(import_key__startswith=prefix, archived=False, status='current').exclude(import_key__in=holder_keys).count()
         if options['dry_run']:
             self.stdout.write(self.style.WARNING(
                 f'Podgląd KPRP: {len(KPRP_LEADERSHIP)} wpisów; nowe {created}; do aktualizacji {updated}; '
@@ -45,8 +46,9 @@ class Command(BaseCommand):
         now = timezone.now()
         with transaction.atomic():
             for key, name, title in KPRP_LEADERSHIP:
-                PublicFigure.objects.update_or_create(
-                    import_key=prefix + key,
+                holder_key = f'{prefix}{key}:holder:{slugify(name)}'
+                figure, _ = PublicFigure.objects.update_or_create(
+                    import_key=holder_key,
                     defaults={
                         'canonical_name': name,
                         'role_category': 'government',
@@ -61,7 +63,39 @@ class Command(BaseCommand):
                         'archived': False,
                     },
                 )
-            PublicFigure.objects.filter(import_key__startswith=prefix, archived=False, status='current').exclude(import_key__in=keys).update(
+                office, _ = PublicOffice.objects.update_or_create(
+                    import_key=f'public-office:kprp:{key}',
+                    defaults={
+                        'title': title,
+                        'role_category': 'government',
+                        'organisation': 'Kancelaria Prezydenta Rzeczypospolitej Polskiej',
+                        'official_roster_url': EVIDENCE_URL,
+                        'evidence_note': 'Funkcja kierownicza KPRP wskazana na oficjalnej stronie Kancelarii.',
+                        'current_holder': figure,
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
+                PublicFigureRole.objects.update_or_create(
+                    import_key=f'{prefix}{key}:role:{slugify(name)}',
+                    defaults={
+                        'public_figure': figure,
+                        'public_office': office,
+                        'role_category': 'government',
+                        'role_title': title,
+                        'organisation': 'Kancelaria Prezydenta Rzeczypospolitej Polskiej',
+                        'status': 'current',
+                        'official_profile_url': EVIDENCE_URL,
+                        'evidence_url': EVIDENCE_URL,
+                        'evidence_note': 'Aktualne kierownictwo KPRP wskazane na oficjalnej stronie Kancelarii.',
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
+                PublicFigureRole.objects.filter(
+                    public_office=office, status='current', archived=False,
+                ).exclude(public_figure=figure).update(status='former', source_checked_at=now)
+            PublicFigure.objects.filter(import_key__startswith=prefix, archived=False, status='current').exclude(import_key__in=holder_keys).update(
                 status='former', source_checked_at=now)
         self.stdout.write(self.style.SUCCESS(
             f'Zaimportowano {len(KPRP_LEADERSHIP)} osób z kierownictwa KPRP; nowe {created}; '

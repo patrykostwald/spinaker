@@ -6,7 +6,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
+from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead
 from news.political_import import create_from_preview, validate_csv
 from news.political_candidates import CandidateResolutionError, resolve_candidate
 from news.political_candidate_import import create_candidates_from_preview, validate_candidate_csv
@@ -185,6 +185,32 @@ class PublicOfficeAdmin(admin.ModelAdmin):
         return False
 
 
+class OfficialVideoChannelAdmin(admin.ModelAdmin):
+    """Review channel evidence before allowing it onto a public profile."""
+    list_display = ['display_name', 'channel_url', 'status', 'collection_enabled', 'source_checked_at']
+    list_filter = ['status', 'collection_enabled']
+    search_fields = ['display_name', 'channel_url', 'channel_id', 'evidence_url']
+    readonly_fields = ['reviewed_by', 'reviewed_at', 'created_at', 'updated_at']
+    actions = ['confirm_channels', 'reject_channels']
+
+    @admin.action(description='Potwierdź wybrane oficjalne kanały YouTube')
+    def confirm_channels(self, request, queryset):
+        for channel in queryset.filter(status='pending_review'):
+            try:
+                channel.confirm(request.user)
+            except ValidationError as exc:
+                self.message_user(request, f'{channel}: {"; ".join(exc.messages)}', messages.ERROR)
+            else:
+                self.message_user(request, f'Potwierdzono kanał: {channel}', messages.SUCCESS)
+
+    @admin.action(description='Odrzuć wybrane kanały YouTube')
+    def reject_channels(self, request, queryset):
+        queryset.filter(status='pending_review').update(status='rejected')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class PublicFigureArticleReferenceAdmin(admin.ModelAdmin):
     list_display = ['public_figure', 'article', 'reference_kind', 'verification_status', 'verified_at']
     list_filter = ['reference_kind', 'verification_status', 'article__category']
@@ -354,6 +380,7 @@ def register_political_admin(site):
     site.register(PublicFigure, PublicFigureAdmin)
     site.register(PublicFigureRole, PublicFigureRoleAdmin)
     site.register(PublicOffice, PublicOfficeAdmin)
+    site.register(OfficialVideoChannel, OfficialVideoChannelAdmin)
     site.register(PublicFigureArticleReference, PublicFigureArticleReferenceAdmin)
     site.register(RegisteredOrganisation, RegisteredOrganisationAdmin)
     site.register(PublicFigureOrganisationRelation, PublicFigureOrganisationRelationAdmin)

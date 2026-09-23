@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from news.models import ArticleCategory, Ballot
-from news.political_models import PoliticalPost, PublicFigure, PublicOffice, SocialHandleEvidence
+from news.political_models import OfficialVideoChannel, PoliticalPost, PublicFigure, PublicOffice, SocialHandleEvidence
 
 
 def figure_data(figure, include_detail=False):
@@ -57,8 +57,30 @@ def figure_data(figure, include_detail=False):
     data['votes'] = votes_data(figure)
     data['x_account'] = verified_x_account_data(figure)
     data['x_posts'] = verified_x_posts_data(figure)
+    data['youtube_channels'] = confirmed_youtube_channels_data(figure)
     data['materials'] = materials_data(figure)
     return data
+
+
+def confirmed_youtube_channels_data(figure):
+    """Return only editorially confirmed official channels for this person.
+
+    A channel can be shown before collection is enabled.  This deliberately
+    separates a public outgoing link from video, transcript and API handling.
+    """
+    figure_type = ContentType.objects.get_for_model(PublicFigure)
+    channels = OfficialVideoChannel.objects.filter(
+        subject_content_type=figure_type,
+        subject_object_id=figure.pk,
+        status='confirmed',
+    ).order_by('display_name', 'channel_url')
+    return [{
+        'name': channel.display_name,
+        'url': channel.channel_url,
+        'channel_id': channel.channel_id or None,
+        'evidence_url': channel.evidence_url,
+        'source_checked_at': channel.source_checked_at,
+    } for channel in channels]
 
 
 def employment_timeline_data(figure, roles):
