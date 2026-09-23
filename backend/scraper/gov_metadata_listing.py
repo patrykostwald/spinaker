@@ -36,6 +36,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/kultura/wiadomosci",
         "terms_url": "https://www.gov.pl/web/kultura/ponowne-wykorzystywanie-informacji-sektora-publicznego",
     },
+    "kowr": {
+        "name": "Krajowy Ośrodek Wsparcia Rolnictwa",
+        "source_url": "https://www.gov.pl/web/kowr",
+        "listing_url": "https://www.gov.pl/web/kowr/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/kowr/ponowne-wykorzystywanie",
+    },
     "mon": {
         "name": "Ministerstwo Obrony Narodowej",
         "source_url": "https://www.gov.pl/web/obrona-narodowa",
@@ -84,11 +90,23 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/rolnictwo",
         "listing_url": "https://www.gov.pl/web/rolnictwo/wiadomosci",
     },
+    "rodzina": {
+        "name": "Ministerstwo Rodziny, Pracy i Polityki Społecznej",
+        "source_url": "https://www.gov.pl/web/rodzina",
+        "listing_url": "https://www.gov.pl/web/rodzina/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/rodzina/bip-zasady-ponownego-wykorzystywania-informacji-sektora-publicznego",
+    },
     "rars": {
         "name": "Rządowa Agencja Rezerw Strategicznych",
         "source_url": "https://www.gov.pl/web/rars",
         "listing_url": "https://www.gov.pl/web/rars/wiadomosci",
         "terms_url": "https://www.gov.pl/web/rars/ponowne-wykorzystywanie-informacji-sektora-publicznego",
+    },
+    "sport": {
+        "name": "Ministerstwo Sportu i Turystyki",
+        "source_url": "https://www.gov.pl/web/sport",
+        "listing_url": "https://www.gov.pl/web/sport/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/sport/uzyskaj-informacje-sektora-publicznego-do-ponownego-wykorzystania",
     },
     "zdrowie": {
         "name": "Ministerstwo Zdrowia",
