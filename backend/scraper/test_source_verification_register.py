@@ -20,11 +20,13 @@ def test_verification_register_classifies_every_candidate_without_writing_source
         "audit_status": "completed", "rss": {"status": "working", "url": "https://official.example/feed"},
     })
     output = tmp_path / "register.md"
-    call_command("source_verification_register", "--output", str(output), stdout=StringIO())
+    stream = StringIO()
+    call_command("source_verification_register", "--output", str(output), stdout=stream)
     report = output.read_text(encoding="utf-8")
     assert "Candidates: **2**" in report
     assert "terms review" in report
     assert "later contact list" in report
+    assert "terms_review=1" in stream.getvalue()
     official.refresh_from_db()
     publisher.refresh_from_db()
     assert not official.is_active and not publisher.is_active

@@ -77,6 +77,10 @@ class Command(BaseCommand):
             )
         output.write_text("\n".join(lines) + "\n", encoding="utf-8")
         output.with_suffix(".json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        summary = " ".join(
+            f"{decision[0].replace(' ', '_')}={counts[decision[0]]}"
+            for decision in DECISIONS.values()
+        )
         self.stdout.write(self.style.SUCCESS(
-            f"SOURCE_VERIFICATION_REGISTER: {len(rows)} candidates; {output}"
+            f"SOURCE_VERIFICATION_REGISTER: {len(rows)} candidates; {summary}; {output}"
         ))
