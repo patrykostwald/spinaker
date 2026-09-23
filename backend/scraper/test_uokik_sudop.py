@@ -43,7 +43,8 @@ def run_pilot(session):
     # The access gate has dedicated tests below. Protocol tests inject an
     # enabled predicate, so their result cannot depend on process environment
     # or a source card that another test happened to create.
-    return _sudop_pilot_cycle(transport=session, now=NOW, enabled=lambda _source: True)
+    return _sudop_pilot_cycle(transport=session, now=NOW,
+        enabled=lambda _source: True, access_instruction=object())
 
 
 def run_due(session):

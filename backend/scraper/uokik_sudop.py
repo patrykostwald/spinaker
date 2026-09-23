@@ -144,8 +144,9 @@ def _initial_cursor(today, aid_source_number):
             "row_offset": 0, "phase": "submit", "complete": False, "requests": 0}
 
 
-def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None, enabled=None):
-    """Run one state-machine step; ``enabled`` is injectable for protocol tests."""
+def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None, enabled=None,
+                       access_instruction=None):
+    """Run one state-machine step; gates are injectable only for protocol tests."""
     enabled = enabled or _enabled
     source = Source.objects.filter(url=SOURCE_URL).first()
     if not enabled(source):
@@ -188,7 +189,8 @@ def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None, enabled=None)
         "dzien-udzielenia-pomocy-od": work_day.isoformat(),
         "dzien-udzielenia-pomocy-do": work_day.isoformat(), "strona": cursor.get("page", 1)}
     query_url = API + "/api/przypadki-pomocy?" + urlencode(query_params)
-    instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, API + "/api")
+    instruction = access_instruction or approved_instruction(
+        source, SourceAccessInstruction.Channel.API, API + "/api")
     if instruction is None:
         return {"status": "disabled", "new_records": 0}
 
