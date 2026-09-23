@@ -121,3 +121,20 @@ def test_checkpoint_command_resumes_without_rechecking_or_changing_source(tmp_pa
     assert report['sources'][0]['audit_status'] == 'skipped'
     item.refresh_from_db()
     assert not item.is_active and not item.scrape_enabled
+
+
+@pytest.mark.django_db(transaction=True)
+def test_fatal_probe_error_is_saved_with_a_bounded_diagnostic_and_does_not_activate_source():
+    item = Source.objects.create(name='TLS failure', url='https://publisher.example/',
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    with patch('scraper.source_probe.probe_source', side_effect=ProbeError('certificate_hostname_mismatch')):
+        result = audit_source(item)
+    assert result['audit_status'] == 'failed'
+    assert result['fatal_error'] == 'ProbeError'
+    assert result['fatal_error_detail'] == 'certificate_hostname_mismatch'
+    assert result['errors'][-1]['kind'] == 'fatal_probe'
+    state = ImportState.objects.get(name=f'source-check:{item.pk}')
+    assert state.last_success is None
+    assert state.last_error == 'ProbeError'
+    item.refresh_from_db()
+    assert not item.is_active and not item.scrape_enabled
