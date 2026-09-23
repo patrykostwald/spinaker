@@ -65,13 +65,21 @@ export function useHoverExpand(): ReactNode {
         if (!hoveringCloneRef.current && !hoveringOriginRef.current) api.endPreview();
       });
     }
+    // R0 (замечание владельца 24.09): клон стоит в position: fixed и при прокрутке колесом
+    // оставался на месте, пока оригинал уезжал — любая прокрутка (окна или любого предка,
+    // фаза захвата) завершает предпросмотр; наведение заново откроет его на новом месте.
+    function onScroll() {
+      api.endPreview();
+    }
     hoveringOriginRef.current = true;
     originEl.addEventListener("pointerenter", onEnter);
     originEl.addEventListener("pointerleave", onLeave);
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
     return () => {
       hoveringOriginRef.current = false;
       originEl.removeEventListener("pointerenter", onEnter);
       originEl.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("scroll", onScroll, { capture: true });
     };
   }, [previewing, originEl, api]);
 

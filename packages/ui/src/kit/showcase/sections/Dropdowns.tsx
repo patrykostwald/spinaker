@@ -64,7 +64,8 @@ function DropdownsPanel({ theme }: { theme: "dark" | "light" }) {
             onChange={(v) => setSingle(v as string)}
           />
         </div>
-        <div>
+        {/* R0: otwarty panel jest absolutny — rezerwujemy pod nim miejsce, żeby nie nachodził na kolejne demo. */}
+        <div style={{ minHeight: 380 }}>
           <p className="sc-t-caption sc-text-3" style={{ margin: "0 0 6px" }}>multi (domyślnie otwarty)</p>
           <Dropdown
             label={`Kategorie${multi.length ? ` (${multi.length})` : ""}`}

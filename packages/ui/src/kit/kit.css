@@ -358,7 +358,7 @@ html.sc-theme-transition .sc-root {
 .sc-showcase__nav { display: flex; gap: var(--sc-s-2); flex-wrap: wrap; margin: var(--sc-s-6) 0 var(--sc-s-8); }
 .sc-showcase__nav a { color: var(--sc-text-2); text-decoration: none; padding: 6px 12px; border: 1px solid var(--sc-line); border-radius: var(--sc-r-pill); font-size: var(--sc-t-meta-size); transition: color var(--sc-dur-fast) var(--sc-ease-standard), border-color var(--sc-dur-fast) var(--sc-ease-standard); }
 .sc-showcase__nav a:hover { color: var(--sc-text); border-color: var(--sc-line-strong); }
-.sc-section { margin-top: var(--sc-s-10); scroll-margin-top: 96px; }
+.sc-section { margin-top: var(--sc-s-10); scroll-margin-top: 150px; } /* липкая панель до ~110px в узком окне */
 .sc-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sc-s-4); margin-bottom: var(--sc-s-5); padding-bottom: var(--sc-s-3); border-bottom: 1px solid var(--sc-line); }
 .sc-section__head h2 { margin: 0; }
 .sc-section__head p { margin: 0; color: var(--sc-text-2); max-width: var(--sc-measure); }
@@ -559,6 +559,9 @@ html.sc-theme-transition .sc-root {
    чтобы выход блока не обрезался. */
 .sc-card[data-stage="a"],
 .sc-card[data-stage="b"] { overflow: visible; }
+/* Блок предпросмотра позиционируется от КАРТОЧКИ, а не от её текстовой колонки: у .sc-card__body
+   стоит position: relative, и у mini блок висел под колонкой текста (замечание владельца 24.09). */
+.sc-card[data-stage="b"] .sc-card__body { position: static; }
 .sc-card[data-stage="b"][data-size] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .sc-card .sc-card__expand {
   position: absolute;
@@ -589,6 +592,21 @@ html.sc-theme-transition .sc-root {
 /* «Семя» морфинга дропдауна: невидимый слой в боксе триггера, из которого панель вырастает
    (общий layoutId с панелью, см. Dropdown.tsx). */
 .sc-dropdown__trigger-surface { position: absolute; inset: 0; pointer-events: none; }
+
+/* Поле поиска: старое правило globals.css `input:not([type=checkbox]):not([type=radio]):not([type=range])`
+   имеет специфичность 0,3,1 (каждый :not() считается), а не 0,2,1 — и красило поле в --surface старой
+   темы (тёмно-синее в дневной теме). Здесь 0,4,1. */
+.sc-root input.sc-search__input.sc-input[type="search"] {
+  background: transparent;
+  background-color: transparent;
+  color: var(--sc-text);
+  border: 0;
+}
+
+/* Спиннер кнопки: framer-motion пишет inline transform: scale() на спиннер и затирал
+   translate(-50%,-50%), которым он центрировался — центрируем сеткой без transform. */
+.sc-btn__spinner { position: absolute; inset: 0; display: grid; place-items: center; transform: none; }
+.sc-btn[aria-busy="true"] { opacity: 1; cursor: progress; }
 
 /* Мобильная панель навигации вырастает из кнопки меню (аудит 24.09, «один живой элемент»):
    «семя» в обёртке кнопки, панель — оверлей под шапкой, чтобы страница ниже не сдвигалась. */
