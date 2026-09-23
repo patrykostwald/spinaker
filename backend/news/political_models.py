@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 
 
@@ -180,6 +181,12 @@ class PublicFigure(models.Model):
 
     class Meta:
         ordering = ['archived', 'canonical_name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['import_key'], condition=Q(import_key__gt=''),
+                name='news_public_figure_nonempty_import_key_unique',
+            ),
+        ]
 
     def __str__(self):
         return self.canonical_name

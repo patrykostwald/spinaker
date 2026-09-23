@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.core.management import call_command
 from django.test import RequestFactory
 
@@ -35,6 +36,12 @@ def test_same_name_is_allowed_when_official_evidence_describes_different_roles()
     second = figure(canonical_name='Jan Kowalski', role_category='local', role_title='Burmistrz',
         evidence_url='https://example.org/two')
     assert first.pk != second.pk
+
+
+def test_same_official_import_key_cannot_point_to_two_profiles():
+    figure(import_key='official:person:1')
+    with pytest.raises(IntegrityError):
+        figure(canonical_name='Inna Osoba', evidence_url='https://example.org/inne', import_key='official:person:1')
 
 
 def test_public_figure_archives_without_deleting():
