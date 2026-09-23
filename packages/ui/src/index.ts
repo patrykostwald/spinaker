@@ -32,6 +32,9 @@ export { Baza } from "./components/Baza";
 export { DrSpin } from "./components/DrSpin";
 export { BoxKontekstu } from "./components/BoxKontekstu";
 export * from "./lib/boxKontekstuDemo";
+export { PowiekszonyBox, PowiekszonyBoxDemo } from "./components/PowiekszonyBox";
+export { ProfilPolitykaBox } from "./components/ProfilPolitykaBox";
+export * from "./lib/powiekszonyBoxDemo";
 export { ThreadEditor } from "./components/ThreadEditor";
 
 export { ThreadExport } from './components/ThreadExport';
