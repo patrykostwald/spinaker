@@ -6,7 +6,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand
 
-from news.models import ImportState, Source
+from news.models import ImportState, Source, SourceReviewDecision
 from scraper.access_gate import has_current_approved_instruction
 from scraper.management.commands.source_review_queue import hostname
 
@@ -18,6 +18,12 @@ def outcome(source, cursor, active_hosts):
         return 'outside_mvp_queue'
     if hostname(source.url) in active_hosts:
         return 'covered_by_active_host'
+    decision = getattr(source, 'review_decision', None)
+    if decision:
+        if decision.decision == SourceReviewDecision.Decision.CONTACT_REQUIRED:
+            return 'contact_required'
+        if decision.decision == SourceReviewDecision.Decision.COVERED:
+            return 'covered_by_active_host'
     discovery = (cursor or {}).get('legal_terms_discovery') or {}
     classified = (cursor or {}).get('legal_terms_classification') or {}
     if not discovery.get('checked_at'):
@@ -66,7 +72,7 @@ class Command(BaseCommand):
         parser.add_argument('--output', default='reports/source-resolution-matrix-current.md')
 
     def handle(self, *args, **options):
-        sources = list(Source.objects.order_by('pk'))
+        sources = list(Source.objects.select_related('review_decision').order_by('pk'))
         states = dict(ImportState.objects.filter(name__startswith='source-check:').values_list('name', 'cursor'))
         active_hosts = {hostname(source.url) for source in sources if source.is_active and source.scrape_enabled
                         and source.catalog_stage == 'configured' and hostname(source.url)}

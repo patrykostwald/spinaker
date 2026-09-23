@@ -5,7 +5,7 @@ import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
-from news.models import ImportState, Source, SourceAccessInstruction, SourceType
+from news.models import ImportState, Source, SourceAccessInstruction, SourceReviewDecision, SourceType
 
 
 @pytest.mark.django_db
@@ -61,3 +61,15 @@ def test_matrix_routes_checked_but_unusable_channel_to_contact(tmp_path):
     output = tmp_path / 'matrix.md'
     call_command('source_resolution_matrix', '--output', str(output), stdout=StringIO())
     assert 'contact_required' in output.read_text(encoding='utf-8')
+
+
+@pytest.mark.django_db
+def test_matrix_uses_saved_contact_decision_as_the_final_state(tmp_path):
+    source = Source.objects.create(name='Checked institution', url='https://checked.example',
+        source_type=SourceType.INSTITUTION, catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f'source-check:{source.pk}', cursor={})
+    SourceReviewDecision.objects.create(source=source, decision=SourceReviewDecision.Decision.CONTACT_REQUIRED,
+        reason='No legal collection basis.', reviewed_by='test', is_automated=True)
+    output = tmp_path / 'matrix.md'
+    call_command('source_resolution_matrix', '--output', str(output), stdout=StringIO())
+    assert '| contact_required | 1 |' in output.read_text(encoding='utf-8')
