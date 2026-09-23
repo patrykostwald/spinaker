@@ -4,7 +4,7 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-    dependencies = [('news', '0055_parliamentary_roster_entry')]
+    dependencies = [('news', '0065_user_x_connection')]
 
     operations = [
         migrations.CreateModel(
