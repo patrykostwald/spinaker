@@ -18,6 +18,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/gis/wiadomosci",
         "terms_url": "https://www.gov.pl/web/gis/ponowne-wykorzystywanie2",
     },
+    "gdos": {
+        "name": "Generalna Dyrekcja Ochrony Środowiska",
+        "source_url": "https://www.gov.pl/web/gdos",
+        "listing_url": "https://www.gov.pl/web/gdos/aktualnosci",
+        "terms_url": "https://www.gov.pl/web/gdos/ponowne-wykorzytanie-informacji",
+    },
     "gios": {
         "name": "Główny Inspektorat Ochrony Środowiska",
         "source_url": "https://www.gov.pl/web/gios",
@@ -42,6 +48,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/kowr/wiadomosci",
         "terms_url": "https://www.gov.pl/web/kowr/ponowne-wykorzystywanie",
     },
+    "kis": {
+        "name": "Krajowa Informacja Skarbowa",
+        "source_url": "https://www.gov.pl/web/kis",
+        "listing_url": "https://www.gov.pl/web/kis/aktualnosci",
+        "terms_url": "https://www.gov.pl/web/kis/ponowne-wykorzystanie-informacji-sektora-publicznego",
+    },
     "mon": {
         "name": "Ministerstwo Obrony Narodowej",
         "source_url": "https://www.gov.pl/web/obrona-narodowa",
@@ -58,6 +70,12 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/nauka",
         "listing_url": "https://www.gov.pl/web/nauka/wiadomosci",
         "terms_url": "https://www.gov.pl/web/nauka/ponowne-wykorzystywanie-informacji-sektora-publicznego",
+    },
+    "ncbr": {
+        "name": "Narodowe Centrum Badań i Rozwoju",
+        "source_url": "https://www.gov.pl/web/ncbr",
+        "listing_url": "https://www.gov.pl/web/ncbr/aktualnosci",
+        "terms_url": "https://www.gov.pl/web/ncbr/ponowne-wykorzystywanie-informacji-sektora-publicznego",
     },
     "rozwoj": {
         "name": "Ministerstwo Rozwoju i Technologii",
