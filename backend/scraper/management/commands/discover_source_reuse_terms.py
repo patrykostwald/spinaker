@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from news.models import ImportState, Source, SourceReviewDecision
+from scraper.management.commands.source_review_queue import hostname, review_bucket
 from scraper.source_probe import ProbeNetwork, source_signature
 from scraper.source_terms_discovery import DISCOVERY_VERSION, inspect_source_terms
 
@@ -62,13 +63,25 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not 1 <= options['limit'] <= 48 or not 1 <= options['workers'] <= 6 or options['max_age_days'] < 1:
             raise CommandError('limit musi wynosić 1..48, workers 1..6, a max-age-days co najmniej 1.')
-        sources = list(Source.objects.filter(
+        candidates = list(Source.objects.filter(
             catalog_stage='candidate', is_active=False, scrape_enabled=False,
-            review_decision__decision=SourceReviewDecision.Decision.CONTACT_REQUIRED,
-        ).order_by('pk'))
+        ).select_related('review_decision').order_by('pk'))
         states = dict(ImportState.objects.filter(
-            name__in=[f'source-check:{source.pk}' for source in sources]
+            name__in=[f'source-check:{source.pk}' for source in candidates]
         ).values_list('name', 'cursor'))
+        active_hosts = {
+            hostname(source.url) for source in Source.objects.filter(
+                catalog_stage='configured', is_active=True, scrape_enabled=True,
+            ) if hostname(source.url)
+        }
+        sources = []
+        for source in candidates:
+            state = states.get(f'source-check:{source.pk}', {}) or {}
+            decision = getattr(source, 'review_decision', None)
+            needs_contact = decision and decision.decision == SourceReviewDecision.Decision.CONTACT_REQUIRED
+            queued_for_contact = review_bucket(source, state) == '04_wydawca_lub_organizacja_wymaga_zgody'
+            if hostname(source.url) not in active_hosts and (needs_contact or queued_for_contact):
+                sources.append(source)
         pending = [source for source in sources if options['force'] or not is_fresh(
             source, states.get(f'source-check:{source.pk}', {}), options['max_age_days'])]
         selected = pending[:options['limit']]

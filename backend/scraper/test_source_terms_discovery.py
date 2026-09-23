@@ -55,6 +55,16 @@ def test_command_saves_evidence_without_changing_source_state(tmp_path, monkeypa
 
 
 @pytest.mark.django_db
+def test_command_includes_contact_queue_source_without_explicit_contact_decision(tmp_path, monkeypatch):
+    source = Source.objects.create(name='Publisher', url='https://publisher.example', source_type=SourceType.PORTAL,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    monkeypatch.setattr('scraper.management.commands.discover_source_reuse_terms.inspect_source_terms',
+        lambda source, network: {'version': 1, 'source_url': source.url, 'status': 'terms_link_found', 'homepage': source.url, 'terms_pages': [], 'error': ''})
+    call_command('discover_source_reuse_terms', '--apply', '--output', str(tmp_path / 'discovery.md'), stdout=StringIO())
+    assert ImportState.objects.get(name=f'source-check:{source.pk}').cursor['legal_terms_discovery']['status'] == 'terms_link_found'
+
+
+@pytest.mark.django_db
 def test_worker_records_unexpected_source_error(monkeypatch):
     source = Source.objects.create(name='Office', url='https://office.example', source_type=SourceType.INSTITUTION,
         catalog_stage='candidate', is_active=False, scrape_enabled=False)
