@@ -26,6 +26,16 @@ def is_fresh(source, result, max_age_hours):
         and checked >= timezone.now() - timedelta(hours=max_age_hours))
 
 
+def is_recent_attempt(source, result, max_age_hours):
+    """A failed probe is still an attempt; do not hammer a broken host per batch."""
+    checked = parse_datetime(result.get('checked_at') or '')
+    return bool(result.get('probe_version') == PROBE_VERSION
+        and result.get('signature') == source_signature(source)
+        and result.get('audit_status') in ('completed', 'skipped', 'failed')
+        and checked and timezone.is_aware(checked)
+        and checked >= timezone.now() - timedelta(hours=max_age_hours))
+
+
 def csv_safe(value):
     text = str(value if value is not None else '')
     return "'" + text if text.lstrip().startswith(('=', '+', '-', '@')) else text

@@ -30,3 +30,19 @@ def test_next_candidate_audit_selects_only_stale_candidates_and_stays_read_only(
         source.refresh_from_db()
     assert fresh.catalog_stage == stale.catalog_stage == 'candidate'
     assert not fresh.is_active and not stale.is_active
+
+
+@pytest.mark.django_db
+def test_next_candidate_audit_skips_a_recent_failed_probe_so_later_sources_can_run(tmp_path):
+    failed = Source.objects.create(name='Broken TLS', url='https://broken.example', catalog_stage='candidate',
+        is_active=False, scrape_enabled=False)
+    waiting = Source.objects.create(name='Waiting', url='https://waiting.example', catalog_stage='candidate',
+        is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f'source-check:{failed.pk}', cursor={
+        'probe_version': PROBE_VERSION, 'signature': source_signature(failed), 'audit_status': 'failed',
+        'checked_at': timezone.now().isoformat()})
+    with patch('scraper.management.commands.audit_next_source_candidates.call_command') as nested:
+        call_command('audit_next_source_candidates', '--limit=1', '--output-prefix', str(tmp_path/'audit'))
+    args = nested.call_args.args
+    assert str(waiting.pk) in args
+    assert str(failed.pk) not in args

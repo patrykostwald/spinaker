@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count
 
 from news.models import ImportState, Source, SourceAccessInstruction
-from scraper.management.commands.audit_sources import is_fresh
+from scraper.management.commands.audit_sources import is_fresh, is_recent_attempt
 
 
 class Command(BaseCommand):
@@ -33,6 +33,8 @@ class Command(BaseCommand):
         ).values_list('name', 'cursor'))
         audited = [source for source in candidates if is_fresh(
             source, candidate_states.get(f'source-check:{source.pk}', {}), 168)]
+        attempted = [source for source in candidates if is_recent_attempt(
+            source, candidate_states.get(f'source-check:{source.pk}', {}), 168)]
         failed = [source for source in candidates if candidate_states.get(
             f'source-check:{source.pk}', {}).get('audit_status') == 'failed']
         candidate_count = len(candidates)
@@ -44,7 +46,11 @@ class Command(BaseCommand):
         self.stdout.write(f'KANDYDACI_DO_SPRAWDZENIA: {candidate_count}')
         self.stdout.write(
             f'AUDYT_KANDYDATOW_7D: {len(audited)}/{candidate_count} '
-            f'(aktualne audyty; bledy techniczne: {len(failed)})'
+            f'(zakonczone bez bledu; bledy techniczne: {len(failed)})'
+        )
+        self.stdout.write(
+            f'PROBY_AUDYTU_7D: {len(attempted)}/{candidate_count} '
+            f'(zakonczone lub zarejestrowany blad; nie sa ponawiane automatycznie przez 7 dni)'
         )
         for name in ('html-archive:kprm:660', 'official:votings', 'official:eli'):
             state = ImportState.objects.filter(name=name).first()

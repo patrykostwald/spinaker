@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from news.models import ImportState, Source
-from scraper.management.commands.audit_sources import is_fresh
+from scraper.management.commands.audit_sources import is_recent_attempt
 
 
 class Command(BaseCommand):
@@ -31,7 +31,7 @@ class Command(BaseCommand):
         states = {state.name: state.cursor for state in ImportState.objects.filter(
             name__in=[f'source-check:{source.pk}' for source in candidates])}
         if not options['force']:
-            candidates = [source for source in candidates if not is_fresh(
+            candidates = [source for source in candidates if not is_recent_attempt(
                 source, states.get(f'source-check:{source.pk}', {}), options['max_age_hours'])]
         selected = candidates[:options['limit']]
         if not selected:

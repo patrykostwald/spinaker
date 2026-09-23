@@ -34,3 +34,4 @@ def test_status_reports_review_progress():
     assert 'POSTEP_WERYFIKACJI: 1/2' in output.getvalue()
     assert 'KANDYDACI_DO_SPRAWDZENIA: 1' in output.getvalue()
     assert 'AUDYT_KANDYDATOW_7D: 1/1' in output.getvalue()
+    assert 'PROBY_AUDYTU_7D: 1/1' in output.getvalue()
