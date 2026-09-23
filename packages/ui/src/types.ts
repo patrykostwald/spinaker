@@ -3,6 +3,8 @@ export type Source = {
   name: string;
   url: string;
   source_type: string;
+  is_active?: boolean;
+  catalog_stage?: 'candidate' | 'configured' | 'excluded';
 };
 
 export type Article = {

@@ -5,19 +5,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiWrite } from "../lib/api";
 import { useAccount } from "../lib/account";
 
-export type ThemePreference = "dark" | "light" | "pastel" | "auto";
+export type ThemePreference = "dark" | "light" | "pastel";
 type ProfileSettings = { username: string; public_activity: boolean; theme_preference: ThemePreference };
 
 const themes: Array<{ value: ThemePreference; label: string }> = [
   { value: "dark", label: "Ciemny" },
   { value: "light", label: "Jasny" },
   { value: "pastel", label: "Pastelowy" },
-  { value: "auto", label: "Auto" },
 ];
 
 function resolveTheme(preference: ThemePreference) {
-  if (preference !== "auto") return preference;
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return preference;
 }
 
 function applyTheme(preference: ThemePreference) {
@@ -31,7 +29,7 @@ export function ThemeSwitcher() {
   const account = useAccount();
   const ownerId = account.data?.user?.id;
   const cache = useQueryClient();
-  const [preference, setPreference] = useState<ThemePreference>("auto");
+  const [preference, setPreference] = useState<ThemePreference>("dark");
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -44,19 +42,15 @@ export function ThemeSwitcher() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem("spin-theme");
-    const initial = themes.some(theme => theme.value === stored) ? stored as ThemePreference : "auto";
+    const initial = themes.some(theme => theme.value === stored) ? stored as ThemePreference : "dark";
     setPreference(initial);
     applyTheme(initial);
 
-    const media = window.matchMedia("(prefers-color-scheme: light)");
-    const refreshAuto = () => document.documentElement.dataset.themePreference === "auto" && applyTheme("auto");
-    media.addEventListener("change", refreshAuto);
-    return () => media.removeEventListener("change", refreshAuto);
   }, []);
 
   useEffect(() => {
     if (!profile.data) return;
-    const next = profile.data.theme_preference;
+    const next = themes.some(theme => theme.value === profile.data.theme_preference) ? profile.data.theme_preference : "dark";
     window.localStorage.setItem("spin-theme", next);
     setPreference(next);
     applyTheme(next);
@@ -107,7 +101,7 @@ export function ThemeSwitcher() {
     <button
       type="button"
       className="theme-trigger"
-      aria-label={`Motyw: ${themes.find(theme => theme.value === preference)?.label ?? "Auto"}`}
+      aria-label={`Motyw: ${themes.find(theme => theme.value === preference)?.label ?? "Ciemny"}`}
       aria-expanded={open}
       aria-haspopup="menu"
       disabled={saving}

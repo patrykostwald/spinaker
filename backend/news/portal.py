@@ -11,6 +11,7 @@ import json
 from zoneinfo import ZoneInfo
 
 from django.core.cache import cache
+from django.conf import settings
 from django.db import connection
 from django.db.models import Q, Count, Prefetch, F
 from django.shortcuts import get_object_or_404
@@ -19,7 +20,7 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from news.models import Article, ArticleCategory, Source, Thread, ThreadItem
+from news.models import Article, ArticleCategory, Source, Thread, ThreadItem, SourceContactCard
 from news.serializers import ArticleSerializer, SourceSerializer, ThreadSerializer
 
 from news.topics import TOPICS, topic_choices, topic_clause
@@ -75,6 +76,11 @@ def _filters(request, qs):
         if len(parts) > 100 or any(not part.isdigit() for part in parts):
             raise ValidationError({'sources': 'Nieprawidłowy wybór źródeł.'})
         qs = qs.filter(source_id__in=[int(part) for part in parts])
+    platforms = list(dict.fromkeys(filter(None, request.query_params.get('platforms', '').split(','))))
+    if set(platforms) - {'youtube'}:
+        raise ValidationError({'platforms': 'Nieznana platforma materiałów.'})
+    if platforms:
+        qs = qs.filter(ingestion_method__in=platforms)
     query = request.query_params.get('q', '').strip()
     if len(query) > 200:
         raise ValidationError({'q': 'Maksymalnie 200 znaków.'})
@@ -137,11 +143,19 @@ def portal_config(request):
         configured = bool(configuration())
     except PoliticalReadError:
         configured = False
+    catalog_sources = Source.objects.exclude(catalog_stage='excluded').order_by('name', 'pk')
     return Response({'categories': [{'value': value, 'label': label} for value, label in ArticleCategory.choices
         if value not in ('tweet', 'context')], 'top_sources': SourceSerializer(top_sources(), many=True).data,
-        'topics': topic_choices(), 'sources': SourceSerializer(Source.objects.filter(is_active=True).exclude(catalog_stage='excluded').order_by('name', 'pk'), many=True).data,
+        # The picker is also a public catalogue: candidates are visible, but remain
+        # inactive until their access and ingestion path have been approved.
+        'topics': topic_choices(), 'sources': SourceSerializer(catalog_sources, many=True).data,
+        'source_stats': {'catalog_total': catalog_sources.count(), 'active': catalog_sources.filter(is_active=True).count(),
+            'awaiting_response': SourceContactCard.objects.filter(status='sent').count()},
         'editorial': slots, 'x_editorial': {'configured': configured,
-            'status': 'configured' if configured else 'not_configured'}})
+            'status': 'configured' if configured else 'not_configured'},
+        'platforms': {'youtube': {'enabled': bool(settings.YOUTUBE_ENABLED and settings.YOUTUBE_API_KEY),
+                                 'publication': 'metadata_only'},
+                      'x': {'enabled': configured, 'publication': 'editorial_review_required'}}})
 
 
 def _terms(article):

@@ -1,6 +1,6 @@
 """Staff-only political intake. This API never publishes Threads or calls paid APIs."""
 from django.core.exceptions import ValidationError as ModelValidationError
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
@@ -21,6 +21,10 @@ Zaproponuj najwyżej 15 powiązanych wydarzeń na osi czasu, daty wyłącznie ze
 Nie wymyślaj tytułów, URL, cytatów ani związków przyczynowych. Wyszukuj również dowody
 przeczące początkowej tezie. Oznacz niepewność, zakres czasu, listę kont i znane braki.
 Nigdy nie deklaruj zatwierdzenia ani publikacji. Ostateczną decyzję podejmuje redaktor.'''
+
+MAX_EVIDENCE_ITEMS = 10
+MAX_EVIDENCE_LENGTH = 500
+MAX_UNCERTAINTY_LENGTH = 2000
 
 
 class StaffPagination(PageNumberPagination):
@@ -70,44 +74,101 @@ class PoliticalAccountViewSet(viewsets.ModelViewSet):
 
 
 class PoliticalPostSerializer(serializers.ModelSerializer):
+    account_handle = serializers.CharField(source='account.handle', read_only=True)
+    account_display_name = serializers.CharField(source='account.display_name', read_only=True)
+
     class Meta:
         model = PoliticalPost
-        fields = ['id', 'account', 'post_id', 'url', 'text', 'published_at', 'fetched_at',
-            'author_data', 'media', 'camp_at_collection', 'available']
+        fields = ['id', 'account', 'account_handle', 'account_display_name', 'post_id', 'url', 'text',
+            'published_at', 'fetched_at', 'author_data', 'media', 'camp_at_collection', 'available']
         read_only_fields = fields
 
 
 class PoliticalPostViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only review surface for the editorial panel. Serves only already-stored posts."""
     permission_classes = [IsAdminUser]
     serializer_class = PoliticalPostSerializer
     pagination_class = StaffPagination
-    queryset = PoliticalPost.objects.all()
+    queryset = PoliticalPost.objects.select_related('account').all()
 
     def get_queryset(self):
         rows = super().get_queryset()
-        if self.request.query_params.get('camp') in ('government', 'opposition'):
-            rows = rows.filter(camp_at_collection=self.request.query_params['camp'])
-        if self.request.query_params.get('account', '').isdigit():
-            rows = rows.filter(account_id=int(self.request.query_params['account']))
+        params = self.request.query_params
+        if params.get('camp') in ('government', 'opposition', 'public'):
+            rows = rows.filter(camp_at_collection=params['camp'])
+        if params.get('account', '').isdigit():
+            rows = rows.filter(account_id=int(params['account']))
+        if params.get('available') in ('true', 'false'):
+            rows = rows.filter(available=params['available'] == 'true')
+        query = params.get('q', '').strip()
+        if query:
+            rows = rows.filter(models.Q(text__icontains=query) | models.Q(account__handle__icontains=query)
+                | models.Q(account__display_name__icontains=query))
         return rows
+
+
+def clean_proposed_items(raw, valid_post_ids):
+    """Human-entered, per-post evidence sketch for editorial review. Never a source record,
+    never an AI output, and never a statement that a post is true or false."""
+    if raw in (None, ''):
+        return []
+    if not isinstance(raw, list) or len(raw) > 15:
+        raise serializers.ValidationError({'proposed_items': 'Nieprawidłowa lista materiałów redakcyjnych.'})
+    seen, cleaned = set(), []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            raise serializers.ValidationError({'proposed_items': 'Każda pozycja musi być obiektem.'})
+        post_id = entry.get('post')
+        if post_id not in valid_post_ids or post_id in seen:
+            raise serializers.ValidationError({'proposed_items':
+                'Każda pozycja musi wskazywać jeden z wybranych, niepowtórzonych postów.'})
+        seen.add(post_id)
+
+        def strings(key):
+            values = entry.get(key) or []
+            if not isinstance(values, list) or len(values) > MAX_EVIDENCE_ITEMS or any(
+                    not isinstance(value, str) or len(value) > MAX_EVIDENCE_LENGTH for value in values):
+                raise serializers.ValidationError({'proposed_items': f'Nieprawidłowe pole {key}.'})
+            return [value.strip() for value in values if value.strip()]
+
+        uncertainty = entry.get('uncertainty') or ''
+        if not isinstance(uncertainty, str) or len(uncertainty) > MAX_UNCERTAINTY_LENGTH:
+            raise serializers.ValidationError({'proposed_items': 'Pole niepewności jest za długie.'})
+        cleaned.append({'post': post_id, 'evidence_for': strings('evidence_for'),
+            'evidence_against': strings('evidence_against'), 'uncertainty': uncertainty.strip()})
+    return cleaned
 
 
 class PoliticalDraftSerializer(serializers.ModelSerializer):
     posts = serializers.PrimaryKeyRelatedField(queryset=PoliticalPost.objects.filter(available=True), many=True)
+    proposed_items = serializers.JSONField(required=False, help_text='Redakcyjny szkic materiałów za/przeciw '
+        'i niepewności dla wybranych postów; nie jest rekordem źródłowym ani oceną prawdziwości.')
 
     class Meta:
         model = PoliticalDraft
         fields = ['id', 'camp', 'day', 'title', 'posts', 'origin', 'proposed_items', 'notes',
             'status', 'created_by', 'reviewed_by', 'reviewed_at', 'created_at']
-        read_only_fields = ['origin', 'proposed_items', 'status', 'created_by', 'reviewed_by', 'reviewed_at', 'created_at']
+        read_only_fields = ['origin', 'status', 'created_by', 'reviewed_by', 'reviewed_at', 'created_at']
+
+    def same_camp_required(self):
+        return True
 
     def validate(self, attrs):
         posts = attrs.get('posts', [])
         if not 1 <= len(posts) <= 15 or len({post.pk for post in posts}) != len(posts):
             raise serializers.ValidationError('Wybierz od 1 do 15 różnych postów źródłowych.')
-        if any(post.camp_at_collection != attrs['camp'] for post in posts):
+        if self.same_camp_required() and any(post.camp_at_collection != attrs['camp'] for post in posts):
             raise serializers.ValidationError('Posty bazowe muszą pochodzić z wybranego obozu.')
+        attrs['proposed_items'] = clean_proposed_items(attrs.get('proposed_items', []), {post.pk for post in posts})
         return attrs
+
+
+class PoliticalCandidateDraftSerializer(PoliticalDraftSerializer):
+    """Widok 'Kandydaci Dr Spina': redaktor łączy posty z obu obozów w jedną propozycję.
+    Pole camp opisuje własną klasyfikację redaktora dla całej propozycji, a nie filtr postów źródłowych."""
+
+    def same_camp_required(self):
+        return False
 
 
 def draft_packet(draft):
@@ -117,6 +178,7 @@ def draft_packet(draft):
         raise serializers.ValidationError('Szkic zawiera niedostępne lub niepoprawne źródła.')
     return {'draft_id': draft.pk, 'camp': draft.camp, 'day': draft.day.isoformat(),
         'rules': DRAFT_RULES, 'sources': PoliticalPostSerializer(posts, many=True).data,
+        'proposed_items': draft.proposed_items,
         'ai_status': 'not_requested', 'limitation': 'Wybór redakcyjny i dane źródłowe. Nie wykonano analizy AI ani publikacji.'}
 
 
@@ -133,14 +195,34 @@ def review_draft(draft, staff, decision):
 
 
 class PoliticalDraftViewSet(viewsets.ModelViewSet):
+    """Editorial review only. Nothing here calls the X API or publishes a Thread."""
     permission_classes = [IsAdminUser]
     serializer_class = PoliticalDraftSerializer
     queryset = PoliticalDraft.objects.prefetch_related('posts').all()
     pagination_class = StaffPagination
     http_method_names = ['get', 'post', 'head', 'options']
 
+    def get_queryset(self):
+        rows = super().get_queryset()
+        params = self.request.query_params
+        if params.get('camp') in ('government', 'opposition'):
+            rows = rows.filter(camp=params['camp'])
+        if params.get('status') in ('pending_review', 'approved', 'rejected'):
+            rows = rows.filter(status=params['status'])
+        if params.get('origin') in ('editorial_selection', 'ai_proposal'):
+            rows = rows.filter(origin=params['origin'])
+        return rows
+
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    @action(detail=False, methods=['post'], url_path='candidates')
+    def candidates(self, request):
+        """Widok 'Kandydaci Dr Spina': tworzy propozycję z postów wybranych spośród obu obozów."""
+        serializer = PoliticalCandidateDraftSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        draft = serializer.save(created_by=request.user)
+        return Response(PoliticalDraftSerializer(draft).data, status=201)
 
     @action(detail=True, methods=['get'])
     def packet(self, request, pk=None):
@@ -165,4 +247,4 @@ def political_status(request):
         'accounts': PoliticalAccount.objects.count(), 'stored_posts': PoliticalPost.objects.count(),
         'budget': {key: value for key, value in (state.cursor if state else {}).items()
             if key in ('month', 'spent_upper_usd', 'day', 'daily_requests', 'daily_posts', 'blocked_until')},
-        'ai_proposals': 'not_connected', 'publishing': 'editorial_review_required'})
+        'ai_proposals': 'not_connected', 'publishing': 'editorial_review_required', 'draft_rules': DRAFT_RULES})

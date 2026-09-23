@@ -66,6 +66,7 @@ export function ThreadEditor() {
   </section>;
   return <div className="space-y-8">
     {canPublish && <Link href="/editor/sources" className="inline-block rounded-lg border px-4 py-2 text-sm text-primary">Katalog źródeł · dodawanie, edycja i eksport ↗</Link>}
+    {canPublish && <Link href="/editor/political" className="inline-block rounded-lg border px-4 py-2 text-sm text-primary">Panel redakcyjny X · propozycje z zapisanych postów ↗</Link>}
     {canPublish && <ImportStatus />}
     <div><p className="text-sm font-semibold uppercase tracking-widest text-primary">Warsztat redakcji</p><h1 className="mt-2 text-3xl font-bold">{slug ? 'Edytuj nitkę' : 'Połącz źródła w historię'}</h1><p className="mt-3 text-slate-600">Wybierz materiały, dodaj kontekst i opublikuj chronologiczną nitkę.</p></div>
     {slug && existing.isPending && <p role="status">Ładuję nitkę…</p>}

@@ -1,13 +1,43 @@
 "use client";
+import { useState, useId, type FormEvent } from 'react';
 import Link from 'next/link';
-import { SearchBar } from './SearchBar';
-import { AccountControl } from './AccountDialog';
-import { ThemeSwitcher } from './ThemeSwitcher';
+import { useRouter } from 'next/navigation';
 import type { SiteConfig } from '../types';
-export function SiteHeader({ site }: { site: SiteConfig; showSearch?: boolean }) {
-  return <header className="site-header border-b"><div className="mx-auto grid max-w-7xl items-center gap-3 px-4 py-3 md:grid-cols-[auto_minmax(0,1fr)_auto]">
-    <Link href="/" className="site-wordmark text-xl font-bold tracking-tight"><span>{site.name}</span></Link>
-    <div className="w-full md:mx-auto md:max-w-xl"><SearchBar /></div>
-    <div className="header-account"><Link href="/jak-dzialamy" className="header-motto whitespace-nowrap text-center">CONTEXT BEFORE CONTENT</Link><div className="header-account-actions"><ThemeSwitcher /><AccountControl /></div></div>
-  </div></header>;
+import { ThemeSwitcher } from './ThemeSwitcher';
+
+function HeaderSearch() {
+  const [value, setValue] = useState('');
+  const id = useId();
+  const router = useRouter();
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    router.push(value.trim() ? `/?q=${encodeURIComponent(value.trim())}#baza` : '/#baza');
+  }
+  return (
+    <form className="mvp-header-search" onSubmit={submit} role="search">
+      <label className="sr-only" htmlFor={id}>Szukaj w bazie materiałów</label>
+      <input id={id} type="search" value={value} onChange={event => setValue(event.target.value)} maxLength={200} placeholder="Szukaj w bazie…" />
+      <button type="submit">Szukaj</button>
+    </form>
+  );
+}
+
+export function SiteHeader({ site }: { site: SiteConfig }) {
+  const [first, ...rest] = site.name.split('.');
+  const second = rest.join('.');
+  return (
+    <header className="mvp-site-header">
+      <div className="mvp-site-header-inner">
+        <Link href="/" className="mvp-wordmark">
+          {second ? <>{first}<span className="mvp-wordmark-dot" aria-hidden="true">.</span>{second}</> : site.name}
+        </Link>
+        <HeaderSearch />
+        <div className="mvp-header-actions">
+          <Link href="/o-nas" className="mvp-header-link">O NAS</Link>
+          <Link href="/dostep" className="mvp-header-link">ZALOGUJ</Link>
+          <ThemeSwitcher />
+        </div>
+      </div>
+    </header>
+  );
 }

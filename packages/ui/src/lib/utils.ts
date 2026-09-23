@@ -48,3 +48,28 @@ export function categoryLabel(category: string): string {
   };
   return map[category] ?? category;
 }
+
+export function formatTimePl(iso: string | null): string {
+  if (!iso) return '';
+  return new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+}
+
+export function formatShortDatePl(iso: string | null): string {
+  if (!iso) return 'brak daty';
+  return new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", day: "2-digit", month: "2-digit", year: "2-digit" }).format(new Date(iso));
+}
+
+export const MATERIAL_TYPE_LABELS = ['ARTYKUŁ', 'WYWIAD', 'REPORTAŻ', 'ŚLEDZTWO', 'DOKUMENT URZĘDOWY', 'REKLAMA', 'FILM'] as const;
+
+export function materialTypeLabel(category: string): string {
+  const map: Record<string, string> = {
+    article: 'ARTYKUŁ', mention: 'ARTYKUŁ', context: 'ARTYKUŁ', opinion: 'ARTYKUŁ', other: 'ARTYKUŁ', tweet: 'ARTYKUŁ',
+    interview: 'WYWIAD', podcast: 'WYWIAD',
+    reportage: 'REPORTAŻ',
+    factcheck: 'ŚLEDZTWO',
+    document: 'DOKUMENT URZĘDOWY', voting: 'DOKUMENT URZĘDOWY', legislation: 'DOKUMENT URZĘDOWY', parliamentary_print: 'DOKUMENT URZĘDOWY', statement: 'DOKUMENT URZĘDOWY',
+    sponsored: 'REKLAMA', advertisement: 'REKLAMA',
+    video: 'FILM',
+  };
+  return map[category] ?? 'ARTYKUŁ';
+}

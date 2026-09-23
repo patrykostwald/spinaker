@@ -38,7 +38,7 @@ class EvidenceLinkSerializer(serializers.Serializer):
 class SourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Source
-        fields = ('id', 'name', 'url', 'source_type')
+        fields = ('id', 'name', 'url', 'source_type', 'is_active', 'catalog_stage')
 
 class ArticleSerializer(serializers.ModelSerializer):
     source = SourceSerializer(read_only=True)

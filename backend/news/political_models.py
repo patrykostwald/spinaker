@@ -3,13 +3,20 @@ from hashlib import sha256
 import json
 
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
 
-CAMPS = [('government', 'Obóz rządzący'), ('opposition', 'Opozycja')]
+EDITORIAL_CAMPS = [('government', 'Obóz rządzący'), ('opposition', 'Opozycja')]
+ACCOUNT_CAMPS = [*EDITORIAL_CAMPS, ('public', 'Instytucja publiczna')]
+ACCOUNT_CANDIDATE_CLASSIFICATIONS = [
+    ('government', 'Obóz rządzący'), ('opposition', 'Opozycja'),
+    ('public', 'Instytucja publiczna'), ('independent', 'Niezależne / do oceny'),
+]
 ID_VALIDATOR = RegexValidator(r'^[1-9][0-9]{0,18}$', 'Podaj numeryczny identyfikator X.')
 HANDLE_VALIDATOR = RegexValidator(r'^[A-Za-z0-9_]{1,15}$', 'Podaj nazwę konta X bez @.')
 
@@ -18,7 +25,7 @@ class PoliticalAccount(models.Model):
     user_id = models.CharField(max_length=19, unique=True, validators=[ID_VALIDATOR])
     handle = models.CharField(max_length=15, unique=True, validators=[HANDLE_VALIDATOR])
     display_name = models.CharField(max_length=150)
-    camp = models.CharField(max_length=12, choices=CAMPS)
+    camp = models.CharField(max_length=12, choices=ACCOUNT_CAMPS)
     confirmation_url = models.URLField(max_length=1024, blank=True,
         help_text='Publiczne źródło potwierdzające tożsamość konta i przyjętą klasyfikację.')
     confirmation_note = models.TextField(blank=True)
@@ -66,6 +73,146 @@ class PoliticalAccount(models.Model):
         self.save(update_fields=['confirmed_by', 'confirmed_at', 'confirmation_fingerprint'])
 
 
+class PoliticalAccountCandidate(models.Model):
+    """Editorial lead. It has no numeric X ID until a staff member resolves it."""
+    handle = models.CharField(max_length=15, unique=True, validators=[HANDLE_VALIDATOR])
+    display_name = models.CharField(max_length=150)
+    classification = models.CharField(max_length=12, choices=ACCOUNT_CANDIDATE_CLASSIFICATIONS)
+    proposed_camp = models.CharField(max_length=12, choices=ACCOUNT_CAMPS, blank=True,
+        help_text='Wymagane przed utworzeniem konta do pobierania.')
+    confirmation_url = models.URLField(max_length=1024, blank=True)
+    confirmation_note = models.TextField(blank=True)
+    resolution_error = models.CharField(max_length=240, blank=True, editable=False)
+    resolved_at = models.DateTimeField(null=True, blank=True, editable=False)
+    resolved_account = models.OneToOneField(PoliticalAccount, null=True, blank=True,
+        on_delete=models.PROTECT, related_name='candidate', editable=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ['classification', 'handle']
+
+    def __str__(self):
+        return f'@{self.handle} — {self.get_classification_display()}'
+
+
+PARLIAMENTARY_ROSTER_SOURCES = [
+    ('sejm', 'Sejm RP'), ('senat', 'Senat RP'), ('ep', 'Parlament Europejski'),
+]
+
+
+class ParliamentaryRosterEntry(models.Model):
+    """Official parliamentary roster staging. This does not create X account leads."""
+    source = models.CharField(max_length=12, choices=PARLIAMENTARY_ROSTER_SOURCES)
+    external_id = models.CharField(max_length=128)
+    full_name = models.CharField(max_length=255)
+    club = models.CharField(max_length=255, blank=True)
+    district = models.CharField(max_length=255, blank=True)
+    profile_url = models.URLField(max_length=1024, blank=True)
+    source_url = models.URLField(max_length=1024)
+    active = models.BooleanField(default=True, db_index=True)
+    last_seen_at = models.DateTimeField(default=timezone.now, editable=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['source', 'full_name', 'external_id']
+        constraints = [models.UniqueConstraint(fields=['source', 'external_id'], name='news_parliamentary_roster_source_id_unique')]
+
+    def __str__(self):
+        return f'{self.get_source_display()}: {self.full_name}'
+
+
+PUBLIC_FIGURE_ROLE_CATEGORIES = [
+    ('government', 'Rząd i administracja'),
+    ('party', 'Partia lub klub parlamentarny'),
+    ('parliamentary', 'Parlament krajowy'),
+    ('european', 'Parlament Europejski'),
+    ('local', 'Samorząd'),
+    ('political', 'Inna osoba politycznie wpływowa'),
+]
+PUBLIC_FIGURE_STATUSES = [('current', 'Aktualna rola'), ('former', 'Była rola')]
+
+
+class PublicFigure(models.Model):
+    """Editorial register of people with a public political role.
+
+    This registry is intentionally separate from parliamentary mandates and
+    X intake.  Editors add each entry with public evidence; it never discovers
+    or resolves social accounts on its own.
+    """
+    canonical_name = models.CharField(max_length=255, unique=True)
+    role_category = models.CharField(max_length=16, choices=PUBLIC_FIGURE_ROLE_CATEGORIES)
+    role_title = models.CharField(max_length=255)
+    organisation = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=12, choices=PUBLIC_FIGURE_STATUSES, default='current')
+    official_profile_url = models.URLField(max_length=1024, blank=True)
+    import_key = models.CharField(max_length=1024, blank=True, db_index=True,
+        help_text='Techniczny klucz oficjalnego importu; nie jest kontem społecznościowym.')
+    evidence_url = models.URLField(max_length=1024,
+        help_text='Publiczne źródło potwierdzające rolę lub status wpisu.')
+    evidence_note = models.TextField(blank=True)
+    political_alignment = models.CharField(max_length=255, blank=True,
+        help_text='Opcjonalna, ręczna notatka redakcyjna; nie jest ustalana automatycznie.')
+    source_checked_at = models.DateTimeField(default=timezone.now)
+    archived = models.BooleanField(default=False, db_index=True,
+        help_text='Wpis archiwalny pozostaje w rejestrze i nie jest usuwany.')
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['archived', 'canonical_name']
+
+    def __str__(self):
+        return self.canonical_name
+
+
+SOCIAL_EVIDENCE_STATUSES = [
+    ('pending_review', 'Do przeglądu'),
+    ('candidate_created', 'Przekazano do kandydatur'),
+    ('rejected', 'Odrzucono'),
+]
+
+
+class SocialHandleEvidence(models.Model):
+    """An explicit social link found on an official roster profile.
+
+    This is deliberately only evidence for editorial review.  It is neither an
+    X API lookup nor a polling account, and it never assigns a political camp.
+    """
+    # The roster relation supports the current import.  The generic subject
+    # makes the same evidence table reusable later for an approved
+    # PublicFigure registry without copying or reinterpreting a discovery.
+    roster_entry = models.ForeignKey(ParliamentaryRosterEntry, null=True, blank=True,
+        on_delete=models.PROTECT, related_name='social_handle_evidence')
+    subject_content_type = models.ForeignKey(ContentType, null=True, blank=True,
+        on_delete=models.PROTECT, related_name='+')
+    subject_object_id = models.PositiveBigIntegerField(null=True, blank=True)
+    subject = GenericForeignKey('subject_content_type', 'subject_object_id')
+    platform = models.CharField(max_length=16, choices=[('x', 'X')], default='x')
+    handle = models.CharField(max_length=15, validators=[HANDLE_VALIDATOR])
+    evidence_url = models.URLField(max_length=1024,
+        help_text='Oficjalny profil, na którym znaleziono link.')
+    extracted_url = models.URLField(max_length=1024,
+        help_text='Bezpośredni link X/Twitter znaleziony na oficjalnej stronie.')
+    observed_at = models.DateTimeField(default=timezone.now, editable=False)
+    status = models.CharField(max_length=24, choices=SOCIAL_EVIDENCE_STATUSES,
+        default='pending_review', db_index=True)
+    candidate = models.ForeignKey(PoliticalAccountCandidate, null=True, blank=True,
+        on_delete=models.PROTECT, related_name='social_evidence', editable=False)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='reviewed_social_handle_evidence', editable=False)
+    reviewed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ['-observed_at', 'roster_entry__full_name', 'handle']
+        constraints = [models.UniqueConstraint(fields=['roster_entry', 'platform', 'handle'],
+            name='news_social_evidence_roster_platform_handle_unique')]
+
+    def __str__(self):
+        label = self.roster_entry.full_name if self.roster_entry_id else 'profil'
+        return f'{label}: @{self.handle}'
+
 class PoliticalPost(models.Model):
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='posts')
     post_id = models.CharField(max_length=19, unique=True, validators=[ID_VALIDATOR])
@@ -77,7 +224,7 @@ class PoliticalPost(models.Model):
     author_data = models.JSONField(default=dict)
     media = models.JSONField(default=list)
     response_sha256 = models.CharField(max_length=64)
-    camp_at_collection = models.CharField(max_length=12, choices=CAMPS)
+    camp_at_collection = models.CharField(max_length=12, choices=ACCOUNT_CAMPS)
     available = models.BooleanField(default=True, db_index=True)
 
     class Meta:
@@ -89,7 +236,7 @@ class PoliticalPost(models.Model):
 
 class PoliticalDraft(models.Model):
     """Editorial intake only. Approval here never publishes a Thread."""
-    camp = models.CharField(max_length=12, choices=CAMPS)
+    camp = models.CharField(max_length=12, choices=EDITORIAL_CAMPS)
     day = models.DateField()
     title = models.CharField(max_length=250)
     posts = models.ManyToManyField(PoliticalPost, related_name='drafts')
