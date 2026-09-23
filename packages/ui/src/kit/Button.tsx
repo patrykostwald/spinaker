@@ -17,22 +17,8 @@ import {
   type Ref,
 } from "react";
 import { useMotionTokens } from "./motion/useMotionTokens";
-
-// TODO(R1): zamienić na kit/icons po scaleniu — na razie tymczasowy inline SVG własny dla R2.
-function SpinnerGlyph({ reduced }: { reduced: boolean }) {
-  if (reduced) {
-    return (
-      <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="3" fill="currentColor" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="sc-btn__spinner-svg">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="40 16" />
-    </svg>
-  );
-}
+import { SpinnerIcon } from "./icons/SpinnerIcon";
+import type { IconSize } from "./icons/types";
 
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -129,6 +115,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   const m = useMotionTokens();
   const isIconOnly = shape === "icon";
   const iconPx = ICON_PX[size];
+  // Ikona z katalogu ma trzy rozmiary (16/20/24) — bierzemy najbliższy nie większy od pudełka.
+  const spinnerSize: IconSize = iconPx >= 24 ? 24 : iconPx >= 20 ? 20 : 16;
   const isDisabled = Boolean(disabled) || loading;
 
   const hoverTransition: Transition = m.t("ui");
@@ -154,7 +142,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
           exit={{ opacity: 0, scale: m.scale(0.8) }}
           transition={m.t("fade")}
         >
-          <SpinnerGlyph reduced={m.reduced} />
+          <SpinnerIcon size={spinnerSize} className="sc-btn__spinner-svg" />
         </motion.span>
       )}
     </AnimatePresence>

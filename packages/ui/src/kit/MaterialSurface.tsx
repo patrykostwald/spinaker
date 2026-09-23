@@ -5,21 +5,11 @@
  * (docs/UI_KIT_PLAN.md → «Портал» → «Адрес»: „oba muszą renderować DOKŁADNIE ten sam
  * komponent MaterialSurface z propem mode: 'page' | 'overlay'”).
  *
- * Ciągłość „karta → pełny ekran”, DWIE ścieżki (patrz `useSharedLayout`):
- *  - Klon istnieje (zwykła ścieżka, skoro `expandable` domyślnie odsłania stopień B):
- *    powierzchnia dostaje TEN SAM `layoutId="sc-card-${id}"` co klon (useHoverExpand.tsx)
- *    i statyczne docelowe pudełko przez `style` — framer-motion SAM liczy projekcję
- *    (translate+scale+korekta promienia) od bieżącego, żywego pudełka klona. To „jeden
- *    żywy element”, o który prosi właściciel.
- *  - Klona nie było (klik zanim dojrzało 400ms/bez podglądu, albo powrót z ?podglad=):
- *    NewsCard (R3) nigdy nie niesie `layoutId` (jedyna dozwolona zmiana w jej pliku to
- *    `onPreview`), więc nie ma czego złapać — powierzchnia animuje WPROST
- *    `top/left/width/height/borderRadius` między jawnie zmierzonym `fromRect` a docelowym
- *    pudełkiem. Dla POJEDYNCZEGO elementu koszt reflow jest pomijalny (budżet wydajności
- *    w planie dotyczy siatek 200 kart, nie jednego modala).
- * Zamknięcie w OBU przypadkach wraca przez jawny `exit` (rect/radius z trzech przypadków
- * powrotu, PortalProvider.close()) — nie przez layoutId, bo po stronie oryginału znowu
- * nie ma nic, co mogłoby go „złapać”.
+ * Ciągłość „karta → pełny ekran” (R0, 24.09): jedna ścieżka — jawny FLIP. `PortalProvider.open()`
+ * mierzy `.sc-card` (rozrośniętą, jeśli trwa stopień B) i powierzchnia animuje WPROST
+ * `top/left/width/height/borderRadius` od `fromRect` do docelowego pudełka. Dla POJEDYNCZEGO
+ * elementu koszt reflow jest pomijalny. Zamknięcie wraca do celu z trzech przypadków powrotu
+ * (`PortalProvider.close()`), dostarczonego przez `custom` AnimatePresence (wariant `closed`).
  */
 
 import { motion, type Transition } from "framer-motion";
@@ -50,16 +40,6 @@ export type MaterialSurfaceProps = {
   onNavigate?: (article: Article) => void;
   surfaceRef?: Ref<HTMLDivElement>;
   scrollerRef?: RefObject<HTMLDivElement>;
-  /** Dzielony identyfikator z klonem (useHoverExpand) — patrz `useSharedLayout`. */
-  layoutId?: string;
-  /**
-   * `true`, gdy `open()` zastał żywy klon dla tego materiału: powierzchnia dostaje TEN SAM
-   * `layoutId`, a top/left/width/height/border-radius idą przez zwykły `style` (statyczne
-   * docelowe pudełko) — framer-motion SAM liczy projekcję od bieżącego pudełka klona.
-   * `false` (klik zanim dojrzało 400ms, brak podglądu) — nie ma poprzedniego elementu z tym
-   * `layoutId`, więc wracamy do ręcznej animacji `initial→animate` od `fromRect`.
-   */
-  useSharedLayout?: boolean;
   fromRect?: MaterialSurfaceRect | null;
   fromRadius?: number;
   transition?: Transition;
@@ -98,8 +78,6 @@ export function MaterialSurface({
   onNavigate,
   surfaceRef,
   scrollerRef,
-  layoutId,
-  useSharedLayout = false,
   fromRect,
   fromRadius = 0,
   transition,
@@ -123,33 +101,25 @@ export function MaterialSurface({
         boxShadow: "var(--sc-e-3), 0 0 0 1px var(--sc-glow-ring), 0 0 56px var(--sc-glow-ring-strong)",
         y: drag?.y,
         scale: drag?.surfaceScale,
-        // `useSharedLayout`: pudełko jest STATYCZNE (docelowe) — framer-motion sam liczy
-        // projekcję od bieżącego pudełka klona przez dzielony `layoutId`. Bez klona (poniżej)
-        // pudełko animuje `initial`/`animate` ręcznie, więc tu go nie ustawiamy.
-        ...(useSharedLayout ? { top: target.top, left: target.left, width: target.width, height: target.height, borderRadius: target.radius } : {}),
       }
     : undefined;
 
   const initial = isOverlay
-    ? useSharedLayout
-      ? { opacity: 1 }
-      : fromRect
-        ? { top: fromRect.top, left: fromRect.left, width: fromRect.width, height: fromRect.height, borderRadius: fromRadius, opacity: 1 }
-        : { opacity: 0 }
+    ? fromRect
+      ? { top: fromRect.top, left: fromRect.left, width: fromRect.width, height: fromRect.height, borderRadius: fromRadius, opacity: 1 }
+      : { opacity: 0 }
     : undefined;
 
   const animate = isOverlay
-    ? useSharedLayout
-      ? { opacity: 1, transition: { layout: transition } }
-      : {
-          top: target.top,
-          left: target.left,
-          width: target.width,
-          height: target.height,
-          borderRadius: target.radius,
-          opacity: 1,
-          transition: fromRect ? transition : m.t("fade"),
-        }
+    ? {
+        top: target.top,
+        left: target.left,
+        width: target.width,
+        height: target.height,
+        borderRadius: target.radius,
+        opacity: 1,
+        transition: fromRect ? transition : m.t("fade"),
+      }
     : undefined;
 
   // Wyjście jako WARIANT z `custom`: zamknięcie zawsze wraca do prostokąta oryginału (trzy przypadki
@@ -266,7 +236,6 @@ export function MaterialSurface({
   return (
     <motion.div
       ref={surfaceRef}
-      layoutId={layoutId}
       className="sc-surface"
       data-mode="overlay"
       data-stage="c"

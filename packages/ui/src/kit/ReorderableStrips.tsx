@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useMotionTokens } from "./motion/useMotionTokens";
 import { LONG_PRESS_MS } from "./tokens";
+import { GripIcon } from "./icons/GripIcon";
 
 export type ReorderableStrip = { id: string; title: string };
 
@@ -361,25 +362,11 @@ function StripRow<T extends ReorderableStrip>({
           onPointerCancel={pickup.onPointerCancel}
           onKeyDown={(event) => onKeyDown(event, strip)}
         >
-          <GripIcon />
+          <GripIcon size={20} />
         </button>
         <h3 className="sc-t-title-s sc-strip-row__title">{strip.title}</h3>
       </div>
       <div className="sc-strip-row__body">{renderStrip(strip)}</div>
     </Reorder.Item>
-  );
-}
-
-/** TODO(R0): swap for kit/icons — R1 иконки строятся параллельно, здесь временный инлайн. */
-function GripIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="9" cy="6" r="1.6" fill="currentColor" />
-      <circle cx="9" cy="12" r="1.6" fill="currentColor" />
-      <circle cx="9" cy="18" r="1.6" fill="currentColor" />
-      <circle cx="15" cy="6" r="1.6" fill="currentColor" />
-      <circle cx="15" cy="12" r="1.6" fill="currentColor" />
-      <circle cx="15" cy="18" r="1.6" fill="currentColor" />
-    </svg>
   );
 }

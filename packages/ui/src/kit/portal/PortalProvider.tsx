@@ -38,14 +38,6 @@ export type FlightOrigin = {
   rect: DOMRect;
   radius: number;
   size: CardSize;
-  /**
-   * Czy `open()` zastał żywy klon stopnia B dla TEGO materiału. Gdy `true`, klon i
-   * powierzchnia dzielą prawdziwy `layoutId="sc-card-${id}"` — framer-motion sam liczy
-   * projekcję (owner: „one living element”, «Sześcien живой»). Gdy `false` (klik zanim
-   * dojrzało 400ms, albo otwarcie bez podglądu wcale), nie ma poprzedniego elementu z tym
-   * `layoutId`, więc `MaterialSurface` używa zapasowej ręcznej animacji od `fromRect`.
-   */
-  viaClone: boolean;
 };
 
 export type PortalExit = {
@@ -155,7 +147,7 @@ export function PortalProvider({
         phase: "previewing",
         article,
         originEl,
-        flight: { rect: originEl.getBoundingClientRect(), radius: CARD_SPEC[size].radius, size, viaClone: false },
+        flight: { rect: originEl.getBoundingClientRect(), radius: CARD_SPEC[size].radius, size },
         exit: null,
       };
     });
@@ -180,7 +172,7 @@ export function PortalProvider({
         article,
         originEl: resolvedOrigin,
         flight: rectSource
-          ? { rect: rectSource.getBoundingClientRect(), radius: CARD_SPEC[size].radius, size, viaClone: false }
+          ? { rect: rectSource.getBoundingClientRect(), radius: CARD_SPEC[size].radius, size }
           : null,
         exit: null,
       };

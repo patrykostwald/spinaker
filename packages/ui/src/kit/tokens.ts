@@ -11,16 +11,17 @@ export type CardSize = (typeof CARD_SIZES)[number];
 export const RADIUS = { xs: 6, sm: 10, md: 14, lg: 18, xl: 22, "2xl": 28, pill: 999 } as const;
 
 /**
- * Внешний радиус, внутренний отступ, подъём при наведении и рост на ступени B — по размеру карточки.
+ * Внешний радиус, подъём при наведении и рост на ступени B — по размеру карточки (внутренний отступ —
+ * в kit.css из шкалы --sc-s-*, здесь его нет).
  * `grow`: ширина на ступени B = ширина покоя × scale + extra (px). У каждого размера своя форма
  * разворота при одинаковом наборе содержимого (замечание владельца 24.09): mini растёт вширь
  * (остаётся строкой), compact/medium — вниз, large — во все стороны (3:2 сохраняется).
  */
-export const CARD_SPEC: Record<CardSize, { radius: number; padding: number; lift: number; grow: { scale: number; extra: number } }> = {
-  mini: { radius: RADIUS.lg, padding: 10, lift: 2, grow: { scale: 1, extra: 120 } },
-  compact: { radius: RADIUS.lg, padding: 12, lift: 2, grow: { scale: 1.08, extra: 0 } },
-  medium: { radius: RADIUS.xl, padding: 14, lift: 3, grow: { scale: 1.12, extra: 0 } },
-  large: { radius: RADIUS["2xl"], padding: 18, lift: 4, grow: { scale: 1.12, extra: 0 } },
+export const CARD_SPEC: Record<CardSize, { radius: number; lift: number; grow: { scale: number; extra: number } }> = {
+  mini: { radius: RADIUS.lg, lift: 2, grow: { scale: 1, extra: 120 } },
+  compact: { radius: RADIUS.lg, lift: 2, grow: { scale: 1.08, extra: 0 } },
+  medium: { radius: RADIUS.xl, lift: 3, grow: { scale: 1.12, extra: 0 } },
+  large: { radius: RADIUS["2xl"], lift: 4, grow: { scale: 1.12, extra: 0 } },
 };
 
 /** Подсветка при наведении (ступень A). */

@@ -651,9 +651,7 @@ type MaterialSurfaceProps = {
   article: Article; related?: Article[];
   onClose?: () => void; onNavigate?: (article: Article) => void;
   surfaceRef?: Ref<HTMLDivElement>; scrollerRef?: RefObject<HTMLDivElement>;
-  layoutId?: string;             // делится с клоном, когда он есть
-  useSharedLayout?: boolean;     // true — есть живой клон, framer сам считает проекцию
-  fromRect?: MaterialSurfaceRect | null; fromRadius?: number;  // клона не было — ручной FLIP
+  fromRect?: MaterialSurfaceRect | null; fromRadius?: number;  // бокс карточки в момент open() — ручной FLIP
   exitRect?: MaterialSurfaceRect | null; exitRadius?: number;  // закрытие — ВСЕГДА явный rect
   transition?: Transition; exitTransition?: Transition;
   onSettled?: () => void;
@@ -778,8 +776,7 @@ function useDismissable<T extends HTMLElement>(options: {
 - закрытие идёт к `exit.rect` из трёх случаев возврата (`PortalProvider.close()`), доставленному
   через `custom` у `<AnimatePresence>` (вариант `closed` в `MaterialSurface`).
 
-`useSharedLayout`/`layoutId` в `MaterialSurface` остались как путь «есть живой элемент с тем же
-id» и сейчас не задействованы (`viaClone` всегда `false`). Правило дословно выполняется в двух
+Правило дословно выполняется в двух
 других местах: `Dropdown` (семя в кнопке ↔ панель, панель растёт из бокса кнопки, а кнопка
 становится её верхней строкой `.sc-dropdown__head`) и мобильная панель `NavMenu`.
 
@@ -869,10 +866,6 @@ id» и сейчас не задействованы (`viaClone` всегда `f
   `overflow-y` при этом вычисляется в `auto`). Ступень B живёт в самой карте, слоя-клона больше нет,
   поэтому ленте нужен запас: класс `.sc-strip-bleed` (margin/padding наизнанку по 120px) — как в
   витрине «Portal». На этапе 2 это касается `.material-strip`, карусели и «Powiązane materiały».
-- **Иконки внутри некоторых компонентов — временные инлайновые SVG.** Помечены `TODO(R1)`/`TODO(R0)`
-  в коде, ждут замены на `kit/icons` при следующей правке: спиннер и шеврон/галочка в
-  `Button.tsx`/`Dropdown.tsx` (написаны параллельно с волной иконок, до её мержа) и ручка
-  перетаскивания в `ReorderableStrips.tsx` (не переключена на уже существующий `kit/icons/GripIcon`).
 - **Старые демо-маршруты** (`/box-materialu`, `/box-kontekstu`, `/osoby-publiczne/demo`) не входят в
   этот кит и не тронуты — их роль на этапе 2 полностью берёт витрина.
 
@@ -903,11 +896,8 @@ id» и сейчас не задействованы (`viaClone` всегда `f
 6. **`packages/ui/package.json` `exports`** содержит третью запись `"./kit/kit.css"` сверх двух
    (`.`, `./kit`), приведённых в примере контракта; `layout.tsx` импортирует стили именно через этот
    подпуть (`@spin-clinic/ui/kit/kit.css"`), а не относительным путём.
-7. **`CARD_SPEC.padding`** (`tokens.ts`: `mini 10, compact 12, medium 14, large 18`) нигде не
-   читается компонентами — используются только `.radius`, `.lift`, `.previewScale`. Фактический
-   CSS-паддинг карточки берётся из шкалы отступов (`--sc-s-3`=12 для mini/compact,
-   `--sc-s-4`=16 для medium, `--sc-s-6`=24 для large) — ближайший шаг сетки 4px, а не число из
-   плана дословно.
-8. **`ReorderableStrips.tsx`** рисует ручку перетаскивания собственным инлайновым `GripIcon`
-   (помечен `TODO(R0)`), хотя `kit/icons/GripIcon` уже существует и экспортируется из `kit/index.ts`
-   — тот же паттерн временного инлайна, что у `Button`/`Dropdown`, но не отмеченный в плане отдельно.
+7. **`CARD_SPEC`** не содержит `padding` из таблицы плана — фактический CSS-паддинг карточки
+   берётся из шкалы отступов (`--sc-s-3`=12 для mini/compact, `--sc-s-4`=16 для medium,
+   `--sc-s-6`=24 для large), ближайший шаг сетки 4px. Вместо `previewScale` в `CARD_SPEC` —
+   `grow: { scale, extra }` (ширина на ступени B), потому что ступень B больше не масштабирование,
+   а смена формы (24.09).

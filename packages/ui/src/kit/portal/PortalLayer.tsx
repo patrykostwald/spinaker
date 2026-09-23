@@ -59,14 +59,14 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
   // każdej nawigacji do powiązanego materiału (inaczej powierzchnia próbowałaby ponownie
   // "wyrosnąć z karty" za każdym kliknięciem w powiązany materiał). `useLayoutEffect`, żeby
   // rozstrzygnąć PRZED malowaniem klatki — bez migotania „brak powierzchni → jest”.
-  const seedRef = useRef<{ rect: MaterialSurfaceRect; radius: number; viaClone: boolean } | null>(null);
+  const seedRef = useRef<{ rect: MaterialSurfaceRect; radius: number } | null>(null);
 
   useLayoutEffect(() => {
     const cameFromClosed = prevPhaseRef.current !== "open";
     if (engine.phase === "open" && cameFromClosed) {
       setDisplayed(engine.active);
       seedRef.current = engine.flight
-        ? { rect: toRect(engine.flight.rect)!, radius: engine.flight.radius, viaClone: engine.flight.viaClone }
+        ? { rect: toRect(engine.flight.rect)!, radius: engine.flight.radius }
         : null;
     }
     if (engine.phase !== "open") {
@@ -186,8 +186,6 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
             onNavigate={handleNavigate}
             surfaceRef={surfaceRef}
             scrollerRef={scrollerRef}
-            layoutId={`sc-card-${displayed!.id}`}
-            useSharedLayout={seedRef.current?.viaClone ?? false}
             fromRect={seedRef.current?.rect ?? null}
             fromRadius={seedRef.current?.radius ?? 0}
             transition={m.t("portalIn")}

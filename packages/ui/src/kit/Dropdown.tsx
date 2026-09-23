@@ -24,24 +24,8 @@ import { useDismissable } from "./useDismissable";
 // R7: BottomSheet zamiast zaślepki popovera dla presentation="sheet" / "auto" ≤ 480px.
 import { BottomSheet } from "./mobile/BottomSheet";
 import { BREAKPOINTS } from "./tokens";
-
-// TODO(R1): zamienić na kit/icons po scaleniu — na razie tymczasowy inline SVG własny dla R2.
-function ChevronDownIcon() {
-  return (
-    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-// TODO(R1): zamienić na kit/icons po scaleniu — na razie tymczasowy inline SVG własny dla R2.
-function CheckIcon() {
-  return (
-    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import { CheckIcon } from "./icons/CheckIcon";
+import { ChevronDownIcon } from "./icons/ChevronDownIcon";
 
 export type DropdownMode = "menu" | "single" | "multi";
 export type DropdownItem = { value: string; label: string; description?: string; disabled?: boolean };
@@ -285,7 +269,7 @@ export function Dropdown({
                     className="sc-dropdown__check"
                     transition={m.t("move")}
                   >
-                    <CheckIcon />
+                    <CheckIcon size={16} />
                   </motion.span>
                 )}
                 {mode === "multi" && (
@@ -295,7 +279,7 @@ export function Dropdown({
                     animate={{ scale: checked ? 1 : 0.6, opacity: checked ? 1 : 0 }}
                     transition={m.t("expand")}
                   >
-                    <CheckIcon />
+                    <CheckIcon size={16} />
                   </motion.span>
                 )}
               </motion.div>
@@ -312,7 +296,7 @@ export function Dropdown({
       <div className="sc-dropdown__head" role="presentation" onClick={close}>
         <span className="sc-dropdown__head-label">{label}</span>
         <span className="sc-dropdown__chevron sc-dropdown__head-chevron" aria-hidden="true">
-          <ChevronDownIcon />
+          <ChevronDownIcon size={16} />
         </span>
       </div>
     );
@@ -339,7 +323,7 @@ export function Dropdown({
             animate={{ rotate: open ? 180 : 0 }}
             transition={m.t("ui")}
           >
-            <ChevronDownIcon />
+            <ChevronDownIcon size={16} />
           </motion.span>
         }
       >
