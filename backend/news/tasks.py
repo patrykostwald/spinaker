@@ -26,7 +26,7 @@ def sync_live_public_rosters_task():
     """Refresh only rosters backed by a live, exact official source.
 
     This intentionally excludes static editorial lists such as KPRP leadership
-    and voivodes until each has its own live source adapter.  A failed source
+    until each has its own live source adapter.  A failed source
     cannot block the other rosters or silently overwrite its last good state.
     No social account is discovered, confirmed or read here.
     """
@@ -43,6 +43,7 @@ def sync_live_public_rosters_task():
         ('senat-profiles', 'sync_parliamentary_public_figures', {'source': 'senat'}),
         ('ep-roster', 'sync_parliamentary_roster', {'source': 'ep'}),
         ('ep-profiles', 'sync_parliamentary_public_figures', {'source': 'ep'}),
+        ('voivodes', 'sync_voivodes', {}),
         ('cabinet', 'sync_public_figures', {'source': 'cabinet'}),
     ]
     try:
