@@ -59,6 +59,22 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(
                     f'{provider}: pominięto — najnowsza karta ma status {latest.status}.'))
                 continue
+            # A catalogue import may already have created this official URL as
+            # a passive candidate.  Explicit approval of this exact API card
+            # is also the narrowly scoped decision to configure this source.
+            # Never revive a source excluded by a separate editorial decision.
+            if options['apply'] and source.catalog_stage != 'excluded' and (
+                    not source.is_active or not source.scrape_enabled
+                    or source.catalog_stage != 'configured'):
+                source.is_active = True
+                source.scrape_enabled = True
+                source.catalog_stage = 'configured'
+                source.save(update_fields=['is_active', 'scrape_enabled', 'catalog_stage'])
+                self.stdout.write(f'{provider}: skonfigurowano źródło dla tej jednej karty API.')
+            elif options['apply'] and source.catalog_stage == 'excluded':
+                self.stdout.write(self.style.WARNING(
+                    f'{provider}: pominięto — źródło ma status excluded.'))
+                continue
             if latest and latest.endpoint == endpoint and latest.valid_until and latest.valid_until > now:
                 self.stdout.write(f'{provider}: aktualna karta v{latest.version} już istnieje.')
                 continue

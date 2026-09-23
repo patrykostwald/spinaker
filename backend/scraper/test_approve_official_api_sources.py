@@ -29,6 +29,20 @@ def test_command_creates_one_current_official_voting_card():
 
 
 @pytest.mark.django_db
+def test_apply_configures_an_existing_official_candidate():
+    source = Source.objects.create(name='Sejm Rzeczypospolitej Polskiej',
+        url='https://api.sejm.gov.pl/sejm', catalog_stage='candidate',
+        is_active=False, scrape_enabled=False)
+
+    call_command('approve_official_api_sources', '--apply',
+        '--evidence-url=https://api.sejm.gov.pl/sejm.html', '--reviewed-by=Test redakcyjny', stdout=StringIO())
+
+    source.refresh_from_db()
+    assert source.catalog_stage == 'configured'
+    assert source.is_active and source.scrape_enabled
+
+
+@pytest.mark.django_db
 def test_command_never_overrides_a_newer_suspension():
     source = Source.objects.create(name='Sejm Rzeczypospolitej Polskiej', url='https://api.sejm.gov.pl/sejm')
     SourceAccessInstruction.objects.create(
