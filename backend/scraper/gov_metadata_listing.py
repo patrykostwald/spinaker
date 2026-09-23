@@ -18,6 +18,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/gis/wiadomosci",
         "terms_url": "https://www.gov.pl/web/gis/ponowne-wykorzystywanie2",
     },
+    "gios": {
+        "name": "Główny Inspektorat Ochrony Środowiska",
+        "source_url": "https://www.gov.pl/web/gios",
+        "listing_url": "https://www.gov.pl/web/gios/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/gios/udostepnienie-informacji-o-srodowisku",
+    },
     "infrastruktura": {
         "name": "Ministerstwo Infrastruktury",
         "source_url": "https://www.gov.pl/web/infrastruktura",
@@ -77,6 +83,12 @@ OFFICIAL_GOV_LISTINGS = {
         "name": "Ministerstwo Rolnictwa i Rozwoju Wsi",
         "source_url": "https://www.gov.pl/web/rolnictwo",
         "listing_url": "https://www.gov.pl/web/rolnictwo/wiadomosci",
+    },
+    "rars": {
+        "name": "Rządowa Agencja Rezerw Strategicznych",
+        "source_url": "https://www.gov.pl/web/rars",
+        "listing_url": "https://www.gov.pl/web/rars/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/rars/ponowne-wykorzystywanie-informacji-sektora-publicznego",
     },
     "zdrowie": {
         "name": "Ministerstwo Zdrowia",

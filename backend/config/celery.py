@@ -32,6 +32,8 @@ app.conf.beat_schedule = {
     'development-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['rozwoj'], 'schedule': crontab(minute=18, hour='*/6')},
     'science-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['nauka'], 'schedule': crontab(minute=28, hour='*/6')},
     'sanitary-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['gis'], 'schedule': crontab(minute=38, hour='*/6')},
+    'environment-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['gios'], 'schedule': crontab(minute=42, hour='*/6')},
+    'strategic-reserves-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['rars'], 'schedule': crontab(minute=48, hour='*/6')},
     'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
     'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},
