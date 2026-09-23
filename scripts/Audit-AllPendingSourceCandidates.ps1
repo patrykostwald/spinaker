@@ -11,7 +11,9 @@ through the queue instead of repeatedly checking the first records.
 param(
   [ValidateRange(1, 48)] [int]$BatchSize = 24,
   [ValidateRange(1, 6)] [int]$Workers = 3,
-  [ValidateRange(1, 20)] [int]$MaxBatches = 10
+  # 0 means: continue until no stale candidates remain.  Use a positive value
+  # only when deliberately running a limited diagnostic pass.
+  [ValidateRange(0, 1000)] [int]$MaxBatches = 0
 )
 
 # A candidate may legitimately fail its own TLS or availability probe.  Docker
@@ -21,7 +23,10 @@ param(
 $ErrorActionPreference = "Continue"
 $completed = 0
 
-for ($batch = 1; $batch -le $MaxBatches; $batch++) {
+$batch = 0
+while ($true) {
+  $batch++
+  if ($MaxBatches -gt 0 -and $batch -gt $MaxBatches) { break }
   Write-Output "AUDIT_BATCH=$batch START"
   $output = @()
   & docker compose exec backend python manage.py audit_next_source_candidates `
@@ -34,7 +39,10 @@ for ($batch = 1; $batch -le $MaxBatches; $batch++) {
     Write-Output "AUDIT_BATCH=$batch COMMAND_ERROR=$exitCode"
     continue
   }
-  if (($output -join "`n") -match "Brak kandydat") { break }
+  if (($output -join "`n") -match "Brak kandydat") {
+    Write-Output "AUDIT_QUEUE_COMPLETE"
+    break
+  }
   $completed++
   Write-Output "AUDIT_BATCH=$batch COMPLETE"
 }
@@ -42,3 +50,5 @@ for ($batch = 1; $batch -le $MaxBatches; $batch++) {
 Write-Output "AUDYT_PACZEK=$completed"
 docker compose exec backend python manage.py harvester_preflight --approved-only
 if ($LASTEXITCODE -ne 0) { Write-Error "Approved-source preflight failed." }
+docker compose exec backend python manage.py source_review_queue
+if ($LASTEXITCODE -ne 0) { Write-Error "Source review queue report failed." }
