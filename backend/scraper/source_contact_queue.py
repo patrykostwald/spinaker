@@ -10,10 +10,13 @@ def contact_reason(source, state):
         return decision.reason
     discovery = (state or {}).get('legal_terms_discovery') or {}
     classification = (state or {}).get('legal_terms_classification') or {}
+    channel = (state or {}).get('legal_channel_discovery') or {}
     if discovery.get('status') in {'no_official_terms_link_found', 'terms_link_found'}:
         return 'Automatyczny przegląd nie znalazł jednoznacznych, opublikowanych warunków ponownego wykorzystania.'
     if classification.get('status') == 'no_readable_terms_page':
         return 'Odnaleziono odsyłacz do warunków, ale nie udało się odczytać jednoznacznej podstawy ponownego wykorzystania.'
+    if channel.get('status') in {'no_explicit_channel_found', 'explicit_channel_unusable', 'unavailable'}:
+        return 'Warunki ponownego wykorzystania są opublikowane, ale po kontroli strony źródła nie ma działającego, jawnie wskazanego kanału RSS/API.'
     return 'No published terms or explicit permission recorded for automated metadata reuse.'
 
 
@@ -43,9 +46,11 @@ def contact_candidates():
         requires_contact = decision and decision.decision == SourceReviewDecision.Decision.CONTACT_REQUIRED
         discovery = result.get('legal_terms_discovery') or {}
         classification = result.get('legal_terms_classification') or {}
+        channel = result.get('legal_channel_discovery') or {}
         evidence_requires_contact = (
             discovery.get('status') in {'no_official_terms_link_found', 'terms_link_found'}
             or classification.get('status') == 'no_readable_terms_page'
+            or channel.get('status') in {'no_explicit_channel_found', 'explicit_channel_unusable', 'unavailable'}
         )
         if requires_contact or evidence_requires_contact or review_bucket(source, result) == '04_wydawca_lub_organizacja_wymaga_zgody':
             rows.append(source)

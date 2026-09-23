@@ -27,6 +27,12 @@ def outcome(source, cursor, active_hosts):
     if discovery.get('status') in {'unavailable', 'missing_source_url'}:
         return 'retry_or_contact_required'
     status = classified.get('status')
+    channel = (cursor or {}).get('legal_channel_discovery') or {}
+    if status == 'permission_wording_but_no_confirmed_channel':
+        if channel.get('status') == 'working_channel_requires_editorial_card_review':
+            return 'editorial_card_review'
+        if channel.get('status') in {'no_explicit_channel_found', 'explicit_channel_unusable', 'unavailable'}:
+            return 'contact_required'
     return {
         'proposed_metadata_card_requires_editorial_approval': 'editorial_card_review',
         'clear_denial_keep_inactive': 'contact_or_keep_inactive',

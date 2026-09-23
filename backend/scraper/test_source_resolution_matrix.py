@@ -46,3 +46,18 @@ def test_matrix_routes_missing_or_unavailable_terms_to_actionable_outcomes(tmp_p
     report = output.read_text(encoding='utf-8')
     assert 'contact_required' in report
     assert 'retry_or_contact_required' in report
+
+
+@pytest.mark.django_db
+def test_matrix_routes_checked_but_unusable_channel_to_contact(tmp_path):
+    source = Source.objects.create(name='No feed', url='https://no-feed.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f'source-check:{source.pk}', cursor={
+        'legal_terms_discovery': {'checked_at': timezone.now().isoformat(),
+            'status': 'possible_reuse_basis_requires_editorial_review'},
+        'legal_terms_classification': {'status': 'permission_wording_but_no_confirmed_channel'},
+        'legal_channel_discovery': {'status': 'no_explicit_channel_found'},
+    })
+    output = tmp_path / 'matrix.md'
+    call_command('source_resolution_matrix', '--output', str(output), stdout=StringIO())
+    assert 'contact_required' in output.read_text(encoding='utf-8')

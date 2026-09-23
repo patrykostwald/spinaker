@@ -63,3 +63,15 @@ def test_contact_register_uses_completed_terms_scan_without_changing_source(tmp_
     assert "Automatyczny przegląd nie znalazł" in report
     source.refresh_from_db()
     assert not source.is_active
+
+
+@pytest.mark.django_db
+def test_contact_register_uses_completed_channel_check_without_changing_source(tmp_path):
+    source = Source.objects.create(name="No channel", url="https://channel.example", source_type=SourceType.INSTITUTION,
+        catalog_stage="candidate", is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f"source-check:{source.pk}", cursor={
+        "legal_channel_discovery": {"status": "no_explicit_channel_found"},
+    })
+    output = tmp_path / "contact.md"
+    call_command("source_contact_register", "--output", str(output), stdout=StringIO())
+    assert "nie ma działającego" in output.read_text(encoding="utf-8")
