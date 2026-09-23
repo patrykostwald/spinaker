@@ -23,7 +23,7 @@ tekst, zrzuty i uczenie są wyłączone.
 | 5 | GUS Bank Danych Lokalnych — `bdl.stat.gov.pl` / `api.stat.gov.pl` | REST API danych statystycznych | **już zweryfikowany kandydat, nie dublować** | Jest już w `backend/scraper/data/verified_official_api_candidates.json` z CC BY 4.0 i opublikowanymi limitami. Nie tworzono drugiego wpisu. Pozostaje wyłączony do czasu ograniczonego pilotażu. [Dokumentacja BDL](https://api.stat.gov.pl/Home/BdlApi/1000) |
 | 6 | UOKiK SUDOP — `api-sudop.uokik.gov.pl` | oficjalne API pomocy publicznej | **już zweryfikowany kandydat, nie dublować** | Jest już w katalogu zweryfikowanych kandydatów z warunkiem 15 żądań/min. Wymaga adaptera z atrybucją i ograniczeniami wskazanymi przez operatora. [Informacja UOKiK](https://uokik.gov.pl/sudop) |
 | 7 | Geoportal / GUGiK — `mapy.geoportal.gov.pl` | WFS / ATOM / WMS, m.in. granice administracyjne | **warunkowy kandydat** | GUGiK publikuje endpointy usług INSPIRE i jawne limity obiektów dla wybranych WFS. To wzbogacenie geograficzne, nie źródło artykułów. Przed włączeniem potwierdzić warunki danego zestawu i używać tylko WFS/ATOM, nie obrazów WMS. [Usługi INSPIRE](https://www.geoportal.gov.pl/pl/usluga/uslugi-inspire/) |
-| 8 | Krajowy Rejestr Sądowy — `prs.ms.gov.pl` | OpenAPI KRS | **zablokowany dla projektu** | Ministerstwo informuje, że automatyczny dostęp przez API jest przeznaczony dla podmiotów publicznych oraz podmiotów realizujących zadania publiczne na podstawie decyzji Ministra. spin.clinic nie spełnia obecnie tego warunku. Nie próbować obejść dostępu; ewentualnie złożyć formalny wniosek w przyszłości. [Komunikat MS](https://www.gov.pl/web/sprawiedliwosc/uruchomienie-otwartego-api-krajowego-rejestru-sadowego) |
+| 8 | Krajowy Rejestr Sądowy — `prs.ms.gov.pl` | publiczny portal / API danych podmiotów | **wymaga osobnego, wąskiego przeglądu** | Portal opisuje publiczny dostęp do danych podmiotów, a dane osób fizycznych w tym trybie są anonimizowane. Możliwy przyszły pilot wyłącznie dla wcześniej wskazanego numeru KRS: nazwa, forma i link do wpisu. Nie wolno wyszukiwać, łączyć ani potwierdzać osób po nazwisku, PESEL-u lub dacie urodzenia. Ewentualny szerszy dostęp wymaga formalnego ustalenia podstawy z operatorem. [Portal KRS](https://prs.ms.gov.pl/krs) · [Komunikat MS](https://www.gov.pl/web/sprawiedliwosc/uruchomienie-otwartego-api-krajowego-rejestru-sadowego) |
 | 9 | GIOŚ — dane jakości powietrza | publiczne interfejsy danych środowiskowych | **wymaga odrębnego audytu** | Nie potwierdzono w tym ograniczonym audycie aktualnej oficjalnej dokumentacji, zasad automatycznego pobierania i stabilnego endpointu. Nie kwalifikować na podstawie nieoficjalnych przykładów kodu. |
 | 10 | Senat RP — dane legislacyjne i posiedzenia | potencjalne publikacje WWW/RSS | **wymaga odrębnego audytu** | Nie potwierdzono publicznego, udokumentowanego API ani warunków maszynowego pobierania. Dopóki nie będzie potwierdzenia, pozostaje poza pulą. |
 
@@ -33,7 +33,9 @@ Ta fala nie dodaje automatycznie żadnej nowej domeny do pracy harvestera.
 Wykazała trzy użyteczne kierunki do zamknięcia w kolejnym kroku: Sejm/ELI,
 NBP oraz Geoportal. Sejm i ELI są jednak jednym hostem, więc nie zwiększają
 liczby równoległych domen. GUS i UOKiK są już w katalogu kandydatów, ale nadal
-wyłączone. KRS jest wyraźnie niedostępny bez decyzji właściwego organu.
+wyłączone. KRS nie jest włączony: wymaga odrębnego przeglądu konkretnego
+publicznego endpointu i może być wyłącznie źródłem metadanych podmiotu, nigdy
+automatycznych relacji osób.
 
 ## Zalecana kolejność
 

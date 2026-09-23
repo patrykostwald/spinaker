@@ -35,9 +35,19 @@ Zbieżność imienia i nazwiska **nie wystarcza**. Relację wolno utworzyć wył
 
 W panelu administracyjnym są osobne listy podmiotów i relacji oraz działania „potwierdź” i „odrzuć”.
 
-## Import z KRS
+## Rejestry i import podmiotów
 
-Pierwszy etap jest ręczny i dotyczy małej, reprezentatywnej próbki liderów partii oraz członków rządu. Automatyczny import z oficjalnego API KRS może później uzupełniać dane podmiotów, lecz nie może automatycznie tworzyć relacji osoba → podmiot. Każda taka relacja nadal wymaga dowodu i zatwierdzenia redakcji.
+Pierwszy etap jest ręczny i dotyczy małej, reprezentatywnej próbki liderów
+partii oraz członków rządu. Możemy w przyszłości uzupełniać **znany już
+podmiot** o jego nazwę, formę i bezpośredni link do oficjalnego wpisu, jeżeli
+konkretny publiczny endpoint oraz jego zasady ponownego użycia przejdą osobny
+przegląd.
+
+Taki import nie może wyszukiwać osób po nazwisku, tworzyć relacji osoba →
+podmiot ani pobierać, zapisywać lub porównywać PESEL-i, dat urodzenia, adresów
+czy innych danych osobowych. Oficjalne dane rejestrowe mogą służyć jako link
+do podmiotu; sama relacja z politykiem zawsze wymaga niezależnego, publicznego
+dowodu oraz zatwierdzenia redakcji.
 
 ## Kontrola jakości
 

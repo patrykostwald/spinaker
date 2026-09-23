@@ -2,10 +2,12 @@
 
 ## Decyzja
 
-Kierunek jest zatwierdzony dla wąskiej warstwy redakcyjnej wpisów X: NVIDIA NIM obsługuje
-grupowanie i reranking już zebranych wpisów z potwierdzonych kont, a Groq przygotowuje ustrukturyzowane propozycje
-redakcyjne. Istniejące integracje AI pozostają bez zmian, dopóki nie przejdziemy
-przez etapy opisane niżej.
+AI jest osobną, wewnętrzną warstwą redakcyjną nad materiałami zapisanymi już w
+Bazie. NVIDIA NIM może grupować i porządkować kandydatów, a Groq przygotować
+ustrukturyzowany szkic powiązań lub nitki kontekstowej. Model nie jest źródłem
+treści widocznej w portalu, nie pobiera materiałów z internetu i nie zastępuje
+importerów ani Bazy. Istniejące integracje AI pozostają wyłączone, dopóki nie
+przejdziemy przez etapy opisane niżej.
 
 W komunikacji publicznej używamy nazwy: **„Dr Spin — asystent redakcyjny oparty
 na modelach open-weight”**. Nie deklarujemy, że jest to własny model ani że AI
@@ -13,13 +15,15 @@ samodzielnie ustala prawdę.
 
 ## Co robi system
 
-System może pomóc redakcji odnaleźć podobne wypowiedzi, materiały za i przeciw
-oraz ułożyć propozycję sprawdzenia. Każda propozycja zawiera cytat, linki,
-identyfikatory materiałów, braki danych i poziom pokrycia dowodowego.
+System może pomóc redakcji odnaleźć powiązane materiały w Bazie, pogrupować je
+wokół tematu i ułożyć szkic nitki kontekstowej. Każda propozycja zawiera
+identyfikatory materiałów, linki do oryginałów, podstawę powiązania, braki
+danych i poziom pokrycia źródłowego.
 
 System nie publikuje nitki, nie oznacza wypowiedzi jako „kłamstwo” ani „spin” i
-nie zmienia publicznej Bazy. Wynik zawsze trafia do kolejki `PoliticalDraft` lub
-odpowiednika szkicu redakcyjnego. Publikację podejmuje człowiek.
+nie zmienia publicznej Bazy. Wynik trafia wyłącznie do kolejki szkiców
+redakcyjnych. Redaktor wybiera materiały, poprawia kolejność oraz podejmuje
+decyzję o publikacji.
 
 ## Bramka danych i zgód
 
@@ -41,16 +45,18 @@ aktywność nie mogą trafić do NIM, Groq ani innego zewnętrznego dostawcy.
 
 ## Przepływ danych
 
-1. **Ekstrakcja lokalna:** HTML/OCR tworzą prywatny, wersjonowany tekst zgodnie
-   z `EVIDENCE_TEXT_EXTRACTION.md`.
-2. **Kwalifikacja:** bramka dopuszcza tylko krótki fragment wraz z URL-em,
-   datą, źródłem, kategorią i identyfikatorem materiału.
-3. **Indeks:** PostgreSQL z `pgvector` przechowuje embedding, hash wejścia,
+1. **Wybór z Bazy:** zadanie dostaje wyłącznie rekordy już zapisane w Bazie:
+   ich identyfikator, źródło, datę, kategorię, link do oryginału i dozwolony
+   fragment.
+2. **Kwalifikacja:** bramka sprawdza, czy krótki fragment może zostać użyty
+   zgodnie z zasadami danego źródła.
+3. **Indeks opcjonalny:** PostgreSQL z `pgvector` przechowuje embedding, hash wejścia,
    wersję modelu, status zgody i datę indeksacji. Jeden rekord indeksu można
    usunąć albo przebudować bez zmiany oryginału.
-4. **Wyszukiwanie:** NIM tworzy embedding zapytania; lokalny indeks zwraca
-   kandydatów; NIM reranker porządkuje ich według trafności.
-5. **Propozycja:** Groq dostaje tylko wybrane, cytowalne rekordy i zwraca JSON
+4. **Wyszukiwanie:** zwykłe wyszukiwanie po haśle pozostaje podstawą. Opcjonalnie
+   NIM tworzy embedding zapytania; lokalny indeks zwraca kandydatów, a reranker
+   porządkuje ich według trafności.
+5. **Szkic nitki:** Groq dostaje tylko wybrane, cytowalne rekordy z Bazy i zwraca JSON
    zgodny z wersjonowanym schematem. Walidator odrzuca odpowiedź bez źródeł,
    nieprawidłowymi identyfikatorami lub nieznanym polem.
 6. **Przegląd:** redaktor akceptuje, odrzuca albo poprawia propozycję. Dopiero
