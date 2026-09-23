@@ -11,6 +11,24 @@ class AccessDenied(Exception):
     """The source has no reviewed instruction for this operation."""
 
 
+def has_current_approved_instruction(source):
+    """Whether a source has at least one current, reviewed access card.
+
+    This does not authorise a request.  Importers must still call
+    ``approved_instruction`` with their exact channel and endpoint.
+    """
+    if not source:
+        return False
+    return SourceAccessInstruction.objects.filter(
+        source=source,
+        status=SourceAccessInstruction.Status.APPROVED,
+        minimum_interval_seconds__gte=3,
+        daily_request_cap__gte=1,
+        valid_until__gt=timezone.now(),
+        reviewed_at__isnull=False,
+    ).exclude(terms_url='').exclude(reviewed_by='').exclude(evidence={}).exists()
+
+
 def _same_endpoint_or_child(request_url, endpoint):
     """Keep a reviewed endpoint on its own host and path subtree."""
     request = urlsplit(request_url)
