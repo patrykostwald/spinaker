@@ -69,7 +69,10 @@ class Command(BaseCommand):
             if not entries:
                 lines.append('Brak pozycji.')
                 continue
-            lines += ['| ID | Źródło | Audyt | RSS | Następny ruch |', '|---:|---|---|---|---|']
+            lines += [
+                '| ID | Źródło | Audyt | RSS | Kanał RSS | Następny ruch |',
+                '|---:|---|---|---|---|---|',
+            ]
             for source, result in entries:
                 rss = result.get('rss') or {}
                 audit_status = result.get('audit_status', 'brak audytu')
@@ -84,9 +87,15 @@ class Command(BaseCommand):
                 name = source.name.replace('|', '\\|')
                 url = source.url or ''
                 name = f'[{name}]({url})' if url else name
-                lines.append(f'| {source.pk} | {name} | {audit_status} | {rss.get("status", "brak")} | {action} |')
+                rss_url = rss.get('url', '')
+                rss_link = f'[kanał]({rss_url})' if rss_url else '—'
+                lines.append(
+                    f'| {source.pk} | {name} | {audit_status} | {rss.get("status", "brak")} | '
+                    f'{rss_link} | {action} |'
+                )
                 payload.append({'id': source.pk, 'name': source.name, 'url': url, 'bucket': bucket,
-                                'audit_status': audit_status, 'rss_status': rss.get('status', 'brak')})
+                                'audit_status': audit_status, 'rss_status': rss.get('status', 'brak'),
+                                'rss_url': rss_url})
         output = Path(options['output'])
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text('\n'.join(lines) + '\n', encoding='utf-8')

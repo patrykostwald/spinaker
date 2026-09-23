@@ -15,7 +15,10 @@ def test_review_queue_separates_failed_official_rss_and_portal_candidates(tmp_pa
     portal = Source.objects.create(name='Portal', url='https://portal.example', source_type=SourceType.PORTAL,
         catalog_stage='candidate', is_active=False, scrape_enabled=False)
     ImportState.objects.create(name=f'source-check:{broken.pk}', cursor={'audit_status': 'failed', 'rss': {'status': 'not_found'}})
-    ImportState.objects.create(name=f'source-check:{official.pk}', cursor={'audit_status': 'completed', 'rss': {'status': 'working'}})
+    ImportState.objects.create(name=f'source-check:{official.pk}', cursor={
+        'audit_status': 'completed',
+        'rss': {'status': 'working', 'url': 'https://official.example/feed.xml'},
+    })
     output = tmp_path / 'queue.md'
     stream = StringIO()
     call_command('source_review_queue', '--output', str(output), stdout=stream)
@@ -23,6 +26,7 @@ def test_review_queue_separates_failed_official_rss_and_portal_candidates(tmp_pa
     assert 'Błędy techniczne — nie aktywować (1)' in report
     assert 'Instytucje z działającym RSS — sprawdzić warunki i kartę dostępu (1)' in report
     assert 'Wydawcy i organizacje — wymagają warunków lub zgody (1)' in report
+    assert '[kanał](https://official.example/feed.xml)' in report
     assert output.with_suffix('.json').exists()
 
 
