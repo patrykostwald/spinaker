@@ -48,7 +48,8 @@ class Command(BaseCommand):
         public_offices = PublicOffice.objects.filter(archived=False).count()
         pending_relations = PublicFigureOrganisationRelation.objects.filter(
             verification_status='pending_review').count()
-        confirmed_x_evidence = SocialHandleEvidence.objects.filter(status='confirmed').count()
+        x_evidence_pending = SocialHandleEvidence.objects.filter(status='pending_review').count()
+        x_evidence_candidates = SocialHandleEvidence.objects.filter(status='candidate_created').count()
 
         lines = [
             '# Stan rejestru osób publicznych',
@@ -88,7 +89,8 @@ class Command(BaseCommand):
             f'- Dodatkowe udokumentowane role przy profilach: **{public_roles}**.',
             f'- Potwierdzone relacje z podmiotami: **{confirmed_relations}**.',
             f'- Relacje oczekujące na redakcję: **{pending_relations}**.',
-            f'- Potwierdzone dowody kont X: **{confirmed_x_evidence}**.',
+            f'- Dowody kont X oczekujące na weryfikację redakcyjną: **{x_evidence_pending}**.',
+            f'- Dowody kont X przekazane do kandydatur: **{x_evidence_candidates}**.',
             '',
             'Brak relacji nie oznacza braku powiązań: oznacza jedynie, że portal nie ma jeszcze '
             'potwierdzonego publicznego dowodu konkretnej relacji.',
@@ -99,6 +101,7 @@ class Command(BaseCommand):
         report_path.write_text(report, encoding='utf-8')
         self.stdout.write(self.style.SUCCESS(
             f'PUBLIC_FIGURE_REGISTRY: roster={sum(roster_counts.values())} profiles={active_profiles} '
-            f'public_offices={public_offices} public_roles={public_roles} confirmed_relations={confirmed_relations} confirmed_x_evidence={confirmed_x_evidence}; '
+            f'public_offices={public_offices} public_roles={public_roles} confirmed_relations={confirmed_relations} '
+            f'x_evidence_pending={x_evidence_pending} x_evidence_candidates={x_evidence_candidates}; '
             f'{report_path}'
         ))
