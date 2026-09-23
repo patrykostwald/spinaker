@@ -11,6 +11,11 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/klimat",
         "listing_url": "https://www.gov.pl/web/klimat/wiadomosci",
     },
+    "edukacja": {
+        "name": "Ministerstwo Edukacji Narodowej",
+        "source_url": "https://www.gov.pl/web/edukacja",
+        "listing_url": "https://www.gov.pl/web/edukacja/wiadomosci",
+    },
     "map": {
         "name": "Ministerstwo Aktywów Państwowych",
         "source_url": "https://www.gov.pl/web/aktywa-panstwowe",
@@ -20,6 +25,11 @@ OFFICIAL_GOV_LISTINGS = {
         "name": "Ministerstwo Spraw Zagranicznych",
         "source_url": "https://www.gov.pl/web/dyplomacja",
         "listing_url": "https://www.gov.pl/web/dyplomacja/aktualnosci",
+    },
+    "rolnictwo": {
+        "name": "Ministerstwo Rolnictwa i Rozwoju Wsi",
+        "source_url": "https://www.gov.pl/web/rolnictwo",
+        "listing_url": "https://www.gov.pl/web/rolnictwo/wiadomosci",
     },
     "zdrowie": {
         "name": "Ministerstwo Zdrowia",
