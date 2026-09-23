@@ -32,12 +32,21 @@ export function demoImage(seed: number, ratio: "16:9" | "4:3" | "1:1" = "16:9"):
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-let counter = 0;
+/** Stabilny hash — identyfikator zapasowy musi być taki sam na serwerze i w przeglądarce (hydratacja). */
+function stableHash(input: string): number {
+  let h = 5381;
+  for (let i = 0; i < input.length; i += 1) h = ((h << 5) + h + input.charCodeAt(i)) >>> 0;
+  return h % 100000;
+}
 
-/** Pełny Article z wypełnionymi polami obowiązkowymi; nadpisz, co potrzeba. */
+/**
+ * Pełny Article z wypełnionymi polami obowiązkowymi; nadpisz, co potrzeba.
+ * Bez `id` identyfikator pochodzi z hasha nadpisań, NIE z licznika modułu: licznik rósł z każdym
+ * żądaniem SSR i rozjeżdżał się z klientem. Dwa wywołania z identycznymi nadpisaniami dadzą ten sam
+ * id — podaj `id` jawnie, gdy renderujesz listę.
+ */
 export function makeArticle(overrides: Partial<Article> = {}): Article {
-  counter += 1;
-  const id = overrides.id ?? -(1000 + counter);
+  const id = overrides.id ?? -(1000 + stableHash(JSON.stringify(overrides)));
   const source = overrides.source ?? FIXTURE_SOURCES[Math.abs(id) % FIXTURE_SOURCES.length];
   const day = 1 + (Math.abs(id) % 27);
   const hour = 6 + (Math.abs(id) % 15);

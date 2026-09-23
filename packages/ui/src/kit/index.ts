@@ -70,4 +70,9 @@ export { useScrollLock } from "./portal/useScrollLock";
 export { useModalA11y, type ModalA11y } from "./portal/useModalA11y";
 export { useDragDismiss, type DragDismiss, type DragDismissOptions } from "./portal/useDragDismiss";
 
-// Волна 2 — R5 портал, R6 навигация и футер, R7 мобильный слой (дописываются при мерже)
+// Волна 2 — R6 навигация и футер
+export { NavMenu, NavCategories, type NavItem, type NavMenuProps, type NavCategory, type NavCategoriesProps } from "./NavMenu";
+export { SiteFooter, type SiteFooterProps, type SiteFooterColumn, type SiteFooterCta } from "./SiteFooter";
+export { ThemeToggle, type ThemeToggleProps, type ThemeToggleMode } from "./ThemeToggle";
+
+// Волна 2 — R5 портал, R7 мобильный слой (дописываются при мерже)

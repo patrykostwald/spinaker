@@ -43,8 +43,9 @@ export function Section() {
 
       <h3 className="sc-t-title-m sc-section__sub">Odznaka kategorii (na medium, nad zdjęciem)</h3>
       <div style={{ display: "grid", gap: "var(--sc-s-4)", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
-        {BADGE_CATEGORIES.map((category) => (
-          <NewsCard key={category} article={makeArticle({ category })} size="medium" />
+        {BADGE_CATEGORIES.map((category, index) => (
+          // R0: явный id — иначе id брался из счётчика модуля и расходился между сервером и клиентом (гидратация).
+          <NewsCard key={category} article={makeArticle({ id: -(300 + index), category })} size="medium" />
         ))}
       </div>
 

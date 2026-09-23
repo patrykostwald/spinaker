@@ -23,10 +23,10 @@ const WORD_POOL = ["Alfa", "Beta", "Gamma", "Delta", "Epsilon", "Dzeta", "Eta", 
 
 type ListItem = { id: number; label: string };
 
-let itemSeq = 0;
-function makeItem(): ListItem {
-  itemSeq += 1;
-  return { id: itemSeq, label: `${WORD_POOL[itemSeq % WORD_POOL.length]} · #${itemSeq}` };
+// R0: чистая функция вместо модульного счётчика — тот рос на каждом SSR-запросе и при
+// двойном вызове инициализатора в StrictMode, давая расхождение гидратации (нашёл R6).
+function makeItem(id: number): ListItem {
+  return { id, label: `${WORD_POOL[id % WORD_POOL.length]} · #${id}` };
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -55,7 +55,8 @@ export function Section() {
 
 /** Живой список: добавление, удаление, перемешивание, фильтрация — уцелевшие элементы едут. */
 function ListDemo() {
-  const [items, setItems] = useState<ListItem[]>(() => [makeItem(), makeItem(), makeItem(), makeItem()]);
+  const [items, setItems] = useState<ListItem[]>(() => [1, 2, 3, 4].map(makeItem));
+  const [seq, setSeq] = useState(4);
   const [onlyEven, setOnlyEven] = useState(false);
   const visible = onlyEven ? items.filter((item) => item.id % 2 === 0) : items;
 
@@ -63,7 +64,7 @@ function ListDemo() {
     <div className="sc-motion-block">
       <h3 className="sc-t-title-s">Lista: dodawanie, usuwanie, przetasowanie, filtrowanie</h3>
       <div className="sc-motion-toolbar">
-        <button type="button" className="sc-motion-btn" onClick={() => setItems((cur) => [...cur, makeItem()])}>
+        <button type="button" className="sc-motion-btn" onClick={() => { const id = seq + 1; setSeq(id); setItems((cur) => [...cur, makeItem(id)]); }}>
           Dodaj
         </button>
         <button
