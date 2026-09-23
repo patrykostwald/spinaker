@@ -65,6 +65,12 @@ export function TematDnia() {
   const activeIndex = Math.min(selected, Math.max(0, moments.length - 1));
 
   const displayMoments = moments.slice(0, 4);
+  const contextThread = useMemo(
+    () => [...articles].filter(article => article.published_date).sort((a, b) =>
+      new Date(a.published_date!).getTime() - new Date(b.published_date!).getTime(),
+    ),
+    [articles],
+  );
 
   const ready = Boolean(query) && moments.length >= 2 && articles.length >= 3;
   const main = articles[0];
@@ -89,6 +95,7 @@ export function TematDnia() {
           </p>
         </>
       ) : (
+        <>
         <div className={`mvp-evidence-table mvp-evidence-layout-${relatedLayout}`}>
           <Link href={`/material/${main.id}`} className="mvp-evidence-featured-media">
             {main.image_url ? <img src={main.image_url} alt="" /> : <span className="material-box-type">{categoryLabel(main.category)}</span>}
@@ -125,6 +132,26 @@ export function TematDnia() {
             ))}
           </div>
         </div>
+        <section className="mvp-topic-context-thread" aria-label="Nitka powiązanych materiałów Tematu dnia">
+          <header>
+            <span>Nitka tematu</span>
+            <p>Materiały powiązane wspólnym hasłem, ułożone według czasu publikacji.</p>
+          </header>
+          <ol>
+            {contextThread.map((article, index) => (
+              <li key={article.id}>
+                <span className="mvp-topic-context-dot" aria-hidden="true" />
+                <Link href={`/material/${article.id}`}>
+                  <time dateTime={article.published_date!}>{new Intl.DateTimeFormat('pl-PL', { timeZone: 'Europe/Warsaw', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(article.published_date!))}</time>
+                  <strong>{article.title}</strong>
+                  <small>{article.source.name} · {categoryLabel(article.category)}</small>
+                </Link>
+                {index < contextThread.length - 1 && <span className="mvp-topic-context-arrow" aria-hidden="true">→</span>}
+              </li>
+            ))}
+          </ol>
+        </section>
+        </>
       )}
     </section>
   );
