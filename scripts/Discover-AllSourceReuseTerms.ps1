@@ -1,5 +1,6 @@
 <#
-Reviews every inactive contact candidate for official reuse-condition links.
+Reviews every inactive candidate not already covered by an active source for
+official reuse-condition links.
 It only saves evidence for editorial review. It never enables sources,
 downloads articles, creates access cards, or sends mail.
 #>

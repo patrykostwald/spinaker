@@ -6,7 +6,7 @@ from django.core.management import call_command
 from news.models import ImportState, Source, SourceReviewDecision, SourceType
 from scraper.source_terms_discovery import inspect_source_terms
 from scraper.management.commands.discover_source_reuse_terms import worker
-from scraper.source_contact_queue import contact_candidates
+from scraper.source_terms_queue import terms_discovery_candidates
 
 
 class FakeNetwork:
@@ -66,16 +66,14 @@ def test_command_includes_contact_queue_source_without_explicit_contact_decision
 
 
 @pytest.mark.django_db
-def test_terms_discovery_and_contact_register_share_exact_source_list(tmp_path, monkeypatch):
+def test_terms_discovery_includes_unresolved_institution_candidates(tmp_path, monkeypatch):
     Source.objects.create(name='Publisher', url='https://publisher.example', source_type=SourceType.PORTAL,
         catalog_stage='candidate', is_active=False, scrape_enabled=False)
     monkeypatch.setattr('scraper.management.commands.discover_source_reuse_terms.inspect_source_terms',
         lambda source, network: {'version': 1, 'source_url': source.url, 'status': 'terms_link_found', 'homepage': source.url, 'terms_pages': [], 'error': ''})
     call_command('discover_source_reuse_terms', '--apply', '--output', str(tmp_path / 'discovery.md'), stdout=StringIO())
-    call_command('source_contact_register', '--output', str(tmp_path / 'contacts.md'), stdout=StringIO())
-    sources, _ = contact_candidates()
-    assert f'Contact candidates: **{len(sources)}**.' in (tmp_path / 'discovery.md').read_text(encoding='utf-8')
-    assert f'Sources requiring later confirmation: **{len(sources)}**.' in (tmp_path / 'contacts.md').read_text(encoding='utf-8')
+    sources, _ = terms_discovery_candidates()
+    assert f'Inactive candidates checked for terms: **{len(sources)}**.' in (tmp_path / 'discovery.md').read_text(encoding='utf-8')
 
 
 @pytest.mark.django_db

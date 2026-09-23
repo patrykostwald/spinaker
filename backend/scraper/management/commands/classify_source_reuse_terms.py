@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from news.models import ImportState
-from scraper.source_contact_queue import contact_candidates
+from scraper.source_terms_queue import terms_discovery_candidates
 from scraper.source_probe import ProbeError, ProbeNetwork, source_signature
 from scraper.source_terms_discovery import classify_terms_page
 
@@ -79,7 +79,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not 1 <= options['limit'] <= 32 or not 1 <= options['workers'] <= 6 or options['max_age_days'] < 1:
             raise CommandError('limit musi wynosić 1..32, workers 1..6, a max-age-days co najmniej 1.')
-        sources, states = contact_candidates()
+        sources, states = terms_discovery_candidates()
         sources = [source for source in sources if (states.get(f'source-check:{source.pk}', {}) or {}).get('legal_terms_discovery', {}).get('terms_pages')]
         pending = [source for source in sources if options['force'] or not is_fresh(source, states.get(f'source-check:{source.pk}', {}), options['max_age_days'])]
         selected = pending[:options['limit']]
