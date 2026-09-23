@@ -18,13 +18,14 @@ sprawdzenia. Samo zgodne imię i nazwisko nigdy nie łączy dwóch rekordów.
 | Parlament Europejski | Polscy europosłowie | Oficjalne dane PE | synchronizowane |
 | Rada Ministrów | Premier, wicepremierzy, ministrowie | KPRM | synchronizowane |
 | Administracja rządowa | Wojewodowie | MSWiA | synchronizowane |
+| Najwyższe funkcje państwowe | Prezydent RP i Prezydium Senatu | KPRP, Senat | synchronizowane |
 
 ## Kolejność następnych importerów
 
 | Priorytet | Grupa | Wymagany dowód | Stan |
 | ---: | --- | --- | --- |
-| 1 | Prezydent RP oraz kierownictwo KPRM | Oficjalna strona Kancelarii Prezydenta/KPRM | do zbudowania adaptera |
-| 2 | Marszałkowie i wicemarszałkowie Sejmu oraz Senatu | Oficjalne strony izb | do zbudowania adaptera |
+| 1 | Marszałek i wicemarszałkowie Sejmu | Oficjalne API lub strona Sejmu | oczekuje na pełny, aktualny roster |
+| 2 | Kierownictwo KPRM | Oficjalna strona KPRM | do zbudowania adaptera |
 | 3 | Marszałkowie województw | Oficjalne BIP-y urzędów marszałkowskich | osobne rostery regionalne |
 | 4 | Prezydenci miast i burmistrzowie największych miast | Oficjalne BIP-y miast | osobne rostery samorządowe |
 | 5 | Liderzy, wiceliderzy i rzecznicy partii | Oficjalne strony władz partii | adapter dla każdej partii |
