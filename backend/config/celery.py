@@ -66,6 +66,9 @@ app.conf.beat_schedule = {
     # This tick is cheap: the task makes no X request unless a confirmed,
     # enabled account is due and the explicit X polling flag is on.
     'political-x-minute': {'task': 'news.tasks.political_poll_task', 'schedule': crontab(minute='*')},
+    # Live official rosters only; static editorial lists are deliberately not
+    # treated as self-updating sources.
+    'live-public-rosters-daily': {'task': 'news.tasks.sync_live_public_rosters_task', 'schedule': crontab(hour=4, minute=10)},
     # BZP remains inactive until BZP_API_ENABLED=true is set in the deployment environment.
     'bzp-metadata-3m': {'task': 'scraper.tasks.import_bzp_metadata', 'schedule': crontab(minute='*/3')},
 }
