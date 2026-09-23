@@ -408,7 +408,6 @@ html.sc-theme-transition .sc-root {
   flex-direction: column;
   overflow: hidden;
   background: var(--sc-surface);
-  border: 1px solid var(--sc-line);
   box-shadow: var(--sc-e-1), var(--sc-ring);
   color: var(--sc-text);
   text-decoration: none;
@@ -420,10 +419,10 @@ html.sc-theme-transition .sc-root {
 .sc-card[data-size="large"] { border-radius: var(--sc-r-2xl); box-shadow: var(--sc-e-2), var(--sc-ring); }
 
 @media (hover: hover) and (pointer: fine) {
-  .sc-card:hover { border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+  .sc-card:hover { box-shadow: var(--sc-e-2), var(--sc-ring); }
   .sc-card[data-size="large"]:hover { box-shadow: var(--sc-e-3), var(--sc-ring); }
 }
-.sc-card:focus-within { border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+.sc-card:focus-within { box-shadow: var(--sc-e-2), var(--sc-ring); }
 .sc-card[data-size="large"]:focus-within { box-shadow: var(--sc-e-3), var(--sc-ring); }
 
 /* ---------- Media ---------- */
@@ -549,6 +548,7 @@ html.sc-theme-transition .sc-root {
   }
 }
 
+/* Правки по аудиту 24.09: рамка карточки и подъём тени у кнопок убраны у источника; ореол у иконки сердца снят. */
 /* === R0 Интеграция: предпросмотр карточки (ступень B) живёт в слое, не в потоке ===
    Уточнение владельца 23.09: развернутая карточка не должна сдвигать сетку и содержимое.
    Блок предпросмотра вешается абсолютно под нижней кромкой карточки; размер карточки
@@ -589,6 +589,20 @@ html.sc-theme-transition .sc-root {
 /* «Семя» морфинга дропдауна: невидимый слой в боксе триггера, из которого панель вырастает
    (общий layoutId с панелью, см. Dropdown.tsx). */
 .sc-dropdown__trigger-surface { position: absolute; inset: 0; pointer-events: none; }
+
+/* Мобильная панель навигации вырастает из кнопки меню (аудит 24.09, «один живой элемент»):
+   «семя» в обёртке кнопки, панель — оверлей под шапкой, чтобы страница ниже не сдвигалась. */
+.sc-navmenu__toggle-wrap { position: relative; display: inline-flex; }
+.sc-navmenu__toggle-seed { position: absolute; inset: 0; pointer-events: none; }
+.sc-navmenu__mobile-wrap { position: absolute; left: var(--sc-s-3); right: var(--sc-s-3); top: calc(100% + 6px); z-index: 40; }
+.sc-navmenu__mobile {
+  border-top: 0;
+  overflow: hidden;
+  background: var(--sc-chrome-menu);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--sc-e-menu), var(--sc-ring);
+}
 
 /* Без обводки (замечание владельца 24.09): у карточек нет рамки и нет внутренней волосяной
    кромки. Кромка задана переменной, поэтому глушится только для карточек — кнопки и меню
@@ -866,21 +880,9 @@ html.sc-theme-transition .sc-root {
 
 /* Serce — jednorazowy „pop” + poświata przy włączeniu, ten sam jednorazowy wzorzec co .sc-sheen. */
 @keyframes sc-heart-pop { 0% { transform: scale(1); } 45% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@keyframes sc-heart-glow { from { opacity: 0.7; transform: scale(0.6); } to { opacity: 0; transform: scale(1.7); } }
 .sc-icon-heart { position: relative; display: inline-flex; isolation: isolate; }
 .sc-icon-heart svg { display: block; }
-.sc-icon-heart::after {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  z-index: -1;
-  border-radius: var(--sc-r-pill);
-  background: var(--sc-glow);
-  opacity: 0;
-  pointer-events: none;
-}
 .sc-icon-heart[data-pop="run"] svg { animation: sc-heart-pop 0.3s var(--sc-ease-standard) 1; }
-.sc-icon-heart[data-pop="run"]::after { animation: sc-heart-glow 0.5s var(--sc-ease-standard) 1; }
 
 /* ---------- Wspólne dla kontrolek: kursor i przygaszenie zablokowanych ---------- */
 .sc-checkbox,
@@ -1209,10 +1211,10 @@ html[data-theme="pastel"],
   border-color: var(--sc-accent);
 }
 @media (hover: hover) {
-  .sc-btn[data-variant="primary"]:hover { background: var(--sc-accent-hover); border-color: var(--sc-accent-hover); box-shadow: var(--sc-e-2); }
+  .sc-btn[data-variant="primary"]:hover { background: var(--sc-accent-hover); border-color: var(--sc-accent-hover); }
 }
 .sc-btn[data-variant="primary"]:focus-visible,
-.sc-btn[data-variant="primary"][data-lit="true"] { background: var(--sc-accent-hover); border-color: var(--sc-accent-hover); box-shadow: var(--sc-e-2); }
+.sc-btn[data-variant="primary"][data-lit="true"] { background: var(--sc-accent-hover); border-color: var(--sc-accent-hover); }
 .sc-btn[data-variant="primary"]:active { background: var(--sc-accent-press); border-color: var(--sc-accent-press); }
 
 .sc-btn[data-variant="secondary"] {
@@ -1222,10 +1224,10 @@ html[data-theme="pastel"],
   box-shadow: var(--sc-e-1), var(--sc-ring);
 }
 @media (hover: hover) {
-  .sc-btn[data-variant="secondary"]:hover { background: var(--sc-surface-3); border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+  .sc-btn[data-variant="secondary"]:hover { background: var(--sc-surface-3); border-color: var(--sc-line-hover); box-shadow: var(--sc-e-1), var(--sc-ring); }
 }
 .sc-btn[data-variant="secondary"]:focus-visible,
-.sc-btn[data-variant="secondary"][data-lit="true"] { background: var(--sc-surface-3); border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+.sc-btn[data-variant="secondary"][data-lit="true"] { background: var(--sc-surface-3); border-color: var(--sc-line-hover); box-shadow: var(--sc-e-1), var(--sc-ring); }
 
 .sc-btn[data-variant="quiet"] {
   background: transparent;
@@ -1255,10 +1257,10 @@ html[data-theme="pastel"],
   border-color: var(--sc-negative);
 }
 @media (hover: hover) {
-  .sc-btn[data-variant="danger"]:hover { background: var(--sc-btn-danger-soft); box-shadow: var(--sc-e-2); }
+  .sc-btn[data-variant="danger"]:hover { background: var(--sc-btn-danger-soft); }
 }
 .sc-btn[data-variant="danger"]:focus-visible,
-.sc-btn[data-variant="danger"][data-lit="true"] { background: var(--sc-btn-danger-soft); box-shadow: var(--sc-e-2); }
+.sc-btn[data-variant="danger"][data-lit="true"] { background: var(--sc-btn-danger-soft); }
 
 /* Przełącznik (pressed) — wspólne dla wariantów, gdzie ma to sens (quiet/ghost/secondary). */
 .sc-btn[aria-pressed="true"] {
@@ -1562,4 +1564,147 @@ html[data-theme="pastel"],
   margin-top: var(--sc-s-7);
   padding-top: var(--sc-s-4);
   border-top: 1px solid var(--sc-hairline);
+}
+
+
+/* === R7 Мобильный слой ===
+   docs/UI_KIT_PLAN.md → «Mobilne rozkłady», «Rozwijanie sekcji przy przewijaniu», «Karuzela»,
+   «Dropdowny i filtry na telefonie to dolne arkusze». Tylko klasy `sc-`, tylko transform/opacity
+   (height — dozwolony wyjątek jak w RevealHeight, patrz kit.css:1 zasada 4). Zmienna wysokości
+   uszczelnionego nagłówka jest zduplikowana z CompactHeader.tsx (COMPACT_HEIGHT) celowo — jedyny
+   sposób, żeby czysty CSS (sticky top) znał wartość bez zapisu inline-style z JS na każdą sekcję. */
+.sc-root { --sc-mobile-compact-h: 48px; }
+
+/* ---------- Stoisko telefonu (witryna) ---------- */
+.sc-mobile-readouts { display: grid; gap: var(--sc-s-1); margin: var(--sc-s-4) 0 var(--sc-s-5); }
+.sc-mobile-readouts p { margin: 0; }
+.sc-mobile-stand { display: flex; justify-content: center; margin: 0 0 var(--sc-s-7); }
+.sc-mobile-frame {
+  position: relative;
+  width: 375px;
+  height: 740px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-2xl);
+  background: var(--sc-bg);
+  box-shadow: var(--sc-e-2), var(--sc-ring);
+  container-type: inline-size;
+}
+.sc-mobile-frame__band-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed var(--sc-accent);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 6;
+}
+.sc-mobile-frame__header-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); width: 100%; padding: 0 var(--sc-s-4); min-width: 0; }
+.sc-mobile-frame__header-row .sc-search { flex: 1; min-width: 0; }
+.sc-mobile-frame__search-icon { font-size: 18px; line-height: 1; flex: none; }
+.sc-mobile-frame__scroll { display: flex; flex-direction: column; gap: var(--sc-s-6); padding: var(--sc-s-4) 0 var(--sc-s-9); }
+.sc-mobile-frame__list { display: flex; flex-direction: column; gap: var(--sc-s-3); padding: 0 var(--sc-s-4); }
+.sc-mobile-frame__carousel-wrap { padding-top: var(--sc-s-3); }
+
+/* ---------- CompactHeader ---------- */
+.sc-compact-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid var(--sc-line);
+}
+.sc-compact-header__inner { display: flex; align-items: center; width: 100%; min-height: 48px; }
+
+/* ---------- FoldedSection ---------- */
+.sc-folded { display: flex; flex-direction: column; }
+.sc-folded__header {
+  position: sticky;
+  top: var(--sc-mobile-compact-h);
+  z-index: 4;
+  padding: var(--sc-s-3) var(--sc-s-4);
+  border-bottom: 1px solid var(--sc-line);
+}
+.sc-folded__preview { padding: var(--sc-s-3) var(--sc-s-4) var(--sc-s-4); }
+
+/* ---------- Carousel ---------- */
+.sc-carousel { position: relative; }
+.sc-carousel__scroller {
+  display: flex;
+  gap: var(--sc-s-3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  touch-action: pan-x;
+  scroll-padding-inline: 8%;
+  padding: var(--sc-s-2) 8% var(--sc-s-3);
+  outline: none;
+  scrollbar-width: none;
+}
+.sc-carousel__scroller::-webkit-scrollbar { display: none; }
+.sc-carousel__slide { flex: 0 0 84%; scroll-snap-align: center; }
+.sc-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--sc-r-pill);
+  border: 1px solid var(--sc-line);
+  background: var(--sc-chrome);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  color: var(--sc-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform var(--sc-dur-fast) var(--sc-ease-standard), opacity var(--sc-dur-fast) var(--sc-ease-standard);
+}
+.sc-carousel__arrow:disabled { opacity: 0.35; cursor: not-allowed; }
+.sc-carousel__arrow--prev { left: var(--sc-s-2); }
+.sc-carousel__arrow--next { right: var(--sc-s-2); }
+@media (hover: none) {
+  .sc-carousel__arrow { display: none; }
+}
+
+/* ---------- BottomSheet ----------
+   Ta sama fizyka co zamknięcie portalu (R4 useDragDismiss): 1:1 za palcem, gumowa granica
+   u góry, decyzja po znaku prędkości. z-index wyżej niż .sc-morph-surface (61, próbnik R4/R0),
+   bo arkusz musi leżeć nad wszystkim, łącznie z lepkimi nagłówkami sekcji. */
+.sc-sheet { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end; justify-content: center; }
+.sc-sheet__scrim { position: absolute; inset: 0; background: rgba(2, 3, 6, 0.55); }
+.sc-sheet__surface {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--sc-s-4) env(safe-area-inset-bottom);
+  box-shadow: var(--sc-e-menu), var(--sc-ring);
+}
+.sc-sheet__handle {
+  width: 100%;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  -webkit-touch-callout: none;
+}
+.sc-sheet__handle::after { content: ""; width: 36px; height: 4px; border-radius: var(--sc-r-pill); background: var(--sc-line-strong); }
+.sc-sheet__title { margin: 0 0 var(--sc-s-3); }
+.sc-sheet__scroller { overflow-y: auto; overscroll-behavior: contain; flex: 1; padding-bottom: var(--sc-s-4); }
+
+@media (max-width: 480px) {
+  .sc-mobile-frame { width: 100%; max-width: 375px; }
 }

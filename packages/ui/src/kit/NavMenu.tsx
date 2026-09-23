@@ -12,15 +12,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Button } from "./Button";
 import { Dropdown, type DropdownItem } from "./Dropdown";
 import { MenuClose } from "./icons/MenuClose";
 import { MorphIndicator } from "./motion/MorphIndicator";
-import { RevealHeight } from "./motion/Reveal";
 import { useDismissable } from "./useDismissable";
 import { useMotionTokens } from "./motion/useMotionTokens";
+import { RADIUS } from "./tokens";
 
 export type NavItem = {
   label: string;
@@ -64,7 +64,6 @@ function NavLink({ item }: { item: NavItem }) {
       href={item.href}
       className="sc-navmenu__link sc-hoverable"
       aria-current={item.current ? "page" : undefined}
-      whileHover={{ y: m.reduced ? 0 : -1, transition: m.t("ui") }}
       whileTap={{ scale: m.scale(0.97), transition: m.t("press") }}
     >
       {item.label}
@@ -86,6 +85,9 @@ export function NavMenu({
   const router = useRouter();
   const instanceId = useId();
   const mobilePanelId = `sc-navmenu-mobile-${instanceId}`;
+  // R0 «один живой элемент»: панель вырастает из кнопки меню — общий layoutId с «семенем» в кнопке,
+  // ровно один держатель за раз (семя, пока закрыто; панель, пока открыто). Как в Dropdown.
+  const seedId = `${instanceId}-menu-surface`;
   const toggleRef = useRef<HTMLButtonElement | HTMLAnchorElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
@@ -167,22 +169,37 @@ export function NavMenu({
           {search && <div className="sc-navmenu__search">{search}</div>}
           {cta && <div className="sc-navmenu__cta">{cta}</div>}
 
-          <Button
-            ref={toggleRef}
-            shape="icon"
-            variant="ghost"
-            size="md"
-            className="sc-navmenu__toggle"
-            aria-label={mobileOpen ? "Zamknij menu" : "Otwórz menu"}
-            aria-expanded={mobileOpen}
-            aria-controls={mobilePanelId}
-            iconStart={<MenuClose open={mobileOpen} />}
-            onClick={() => setMobileOpen((value) => !value)}
-          />
+          <span className="sc-navmenu__toggle-wrap">
+            {m.morph && !mobileOpen && (
+              <motion.span aria-hidden="true" className="sc-navmenu__toggle-seed" layoutId={seedId} style={{ borderRadius: RADIUS.md }} />
+            )}
+            <Button
+              ref={toggleRef}
+              shape="icon"
+              variant="ghost"
+              size="md"
+              className="sc-navmenu__toggle"
+              aria-label={mobileOpen ? "Zamknij menu" : "Otwórz menu"}
+              aria-expanded={mobileOpen}
+              aria-controls={mobilePanelId}
+              iconStart={<MenuClose open={mobileOpen} />}
+              onClick={() => setMobileOpen((value) => !value)}
+            />
+          </span>
         </div>
 
         <div id={mobilePanelId} ref={dismissRef} className="sc-navmenu__mobile-wrap">
-          <RevealHeight when={mobileOpen} className="sc-navmenu__mobile">
+          <AnimatePresence>
+          {mobileOpen && (
+          <motion.div
+            className="sc-navmenu__mobile"
+            layoutId={m.morph ? seedId : undefined}
+            style={{ borderRadius: RADIUS.xl }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={m.t(mobileOpen ? "ui" : "collapse")}
+          >
             {cta && <div className="sc-navmenu__mobile-cta">{cta}</div>}
             <ul className="sc-navmenu__mobile-list" role="list">
               {items.map((item, index) => (
@@ -220,7 +237,9 @@ export function NavMenu({
                 </li>
               ))}
             </ul>
-          </RevealHeight>
+          </motion.div>
+          )}
+          </AnimatePresence>
         </div>
       </nav>
     </>
@@ -256,7 +275,6 @@ export function NavCategories({ items, ariaLabel = "Kategorie" }: NavCategoriesP
               href={item.href}
               className="sc-nav-categories__link sc-hoverable"
               aria-current={item.current ? "page" : undefined}
-              whileHover={{ y: m.reduced ? 0 : -1, transition: m.t("ui") }}
               whileTap={{ scale: m.scale(0.97), transition: m.t("press") }}
             >
               {item.label}

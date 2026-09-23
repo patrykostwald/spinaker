@@ -75,4 +75,11 @@ export { NavMenu, NavCategories, type NavItem, type NavMenuProps, type NavCatego
 export { SiteFooter, type SiteFooterProps, type SiteFooterColumn, type SiteFooterCta } from "./SiteFooter";
 export { ThemeToggle, type ThemeToggleProps, type ThemeToggleMode } from "./ThemeToggle";
 
-// Волна 2 — R5 портал, R7 мобильный слой (дописываются при мерже)
+// Волна 2 — R7 мобильный слой
+export {
+  useFocalBand, FOCAL_BAND, focalBandRootMargin,
+  FoldedSection, Carousel, BottomSheet, CompactHeader,
+} from "./mobile";
+export type * from "./mobile";
+
+// Волна 2 — R5 портал (дописывается при мерже)

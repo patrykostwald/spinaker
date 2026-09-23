@@ -46,7 +46,6 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
     <MotionLink
       href={href}
       className="sc-footer__link sc-hoverable"
-      whileHover={{ y: m.reduced ? 0 : -1, transition: m.t("ui") }}
     >
       {children}
     </MotionLink>

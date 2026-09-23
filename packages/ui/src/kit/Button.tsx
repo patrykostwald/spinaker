@@ -193,7 +193,6 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     "data-full-width": fullWidth ? "true" : undefined,
     "aria-pressed": pressed,
     "aria-busy": loading || undefined,
-    whileHover: isDisabled ? undefined : { y: m.reduced ? 0 : -1, transition: hoverTransition },
     whileTap: isDisabled ? undefined : { scale: m.scale(0.97), transition: tapTransition },
     ...rest,
   } as const;
