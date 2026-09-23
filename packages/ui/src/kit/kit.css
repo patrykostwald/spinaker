@@ -395,3 +395,156 @@ html.sc-theme-transition .sc-root {
 .sc-morph-surface button { align-self: flex-start; border: 1px solid var(--sc-line); background: var(--sc-surface-2); color: var(--sc-text); border-radius: var(--sc-r-md); padding: 10px 16px; font: inherit; cursor: pointer; }
 @media (max-width: 900px) { .sc-specimen { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .sc-showcase { padding-top: var(--sc-s-4); } .sc-morph-surface { inset: 0; border-radius: 0 !important; } }
+
+/* === R3 NewsCard ===
+   Promienie i wewnętrzne odstępy wg tabeli w «Komponenty»: mini/compact r-lg,
+   medium r-xl, large r-2xl. Cień i obwódka na czystym CSS (:hover/:focus-within),
+   bo animujemy JS-em tylko transform/opacity (lewitację i skalę) — box-shadow
+   i border-color to zwykłe przejście czasowe, nie sprężyna. */
+.sc-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-line);
+  box-shadow: var(--sc-e-1), var(--sc-ring);
+  color: var(--sc-text);
+  text-decoration: none;
+  transition: border-color var(--sc-dur-base) var(--sc-ease-standard), box-shadow var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-card[data-size="mini"] { flex-direction: row; align-items: flex-start; gap: var(--sc-s-3); padding: var(--sc-s-3); border-radius: var(--sc-r-lg); }
+.sc-card[data-size="compact"] { border-radius: var(--sc-r-lg); }
+.sc-card[data-size="medium"] { border-radius: var(--sc-r-xl); }
+.sc-card[data-size="large"] { border-radius: var(--sc-r-2xl); box-shadow: var(--sc-e-2), var(--sc-ring); }
+
+@media (hover: hover) and (pointer: fine) {
+  .sc-card:hover { border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+  .sc-card[data-size="large"]:hover { box-shadow: var(--sc-e-3), var(--sc-ring); }
+}
+.sc-card:focus-within { border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+.sc-card[data-size="large"]:focus-within { box-shadow: var(--sc-e-3), var(--sc-ring); }
+
+/* ---------- Media ---------- */
+.sc-card__media { position: relative; overflow: hidden; background: var(--sc-surface-2); flex: none; }
+.sc-card__media-inner { position: absolute; inset: 0; }
+.sc-card__image { object-fit: cover; }
+.sc-card__placeholder { position: absolute; inset: 0; display: grid; place-items: center; background: var(--sc-surface-2); color: var(--sc-text-3); }
+
+.sc-card[data-size="mini"] .sc-card__media { width: 64px; height: 64px; border-radius: var(--sc-r-lg); }
+.sc-card[data-size="mini"] .sc-card__placeholder { padding: 4px; text-align: center; line-height: 1.05; letter-spacing: 0; }
+.sc-card[data-size="compact"] .sc-card__media { aspect-ratio: 16 / 9; }
+.sc-card[data-size="medium"] .sc-card__media { aspect-ratio: 16 / 9; }
+
+/* Kategoria: odznaka na medium/large, na mini zwykły tekst (w body, patrz niżej). */
+.sc-card__badge {
+  position: absolute; top: var(--sc-s-2); left: var(--sc-s-2); z-index: 1;
+  padding: 4px 10px; border-radius: var(--sc-r-pill);
+  background: var(--sc-chrome); color: var(--sc-text);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.sc-card__category { display: block; margin: 0 0 4px; }
+
+.sc-card__eyebrow {
+  position: absolute; top: var(--sc-s-2); right: var(--sc-s-2); z-index: 2;
+  padding: 4px 10px; border-radius: var(--sc-r-pill);
+  background: var(--sc-accent-soft); color: var(--sc-accent);
+}
+
+/* ---------- Body ---------- */
+.sc-card__body { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; position: relative; }
+.sc-card[data-size="compact"] .sc-card__body { padding: var(--sc-s-3); }
+.sc-card[data-size="medium"] .sc-card__body { padding: var(--sc-s-4); }
+
+.sc-card__title { margin: 0 0 var(--sc-s-2); }
+.sc-card__link {
+  position: relative;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  font-weight: inherit;
+}
+.sc-card__link::after { content: ""; position: absolute; inset: 0; }
+.sc-card[data-size="mini"] .sc-card__link { -webkit-line-clamp: 2; }
+.sc-card[data-size="compact"] .sc-card__link,
+.sc-card[data-size="medium"] .sc-card__link,
+.sc-card[data-size="large"] .sc-card__link { -webkit-line-clamp: 3; }
+
+.sc-card__description {
+  margin: 0 0 var(--sc-s-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sc-card[data-size="medium"] .sc-card__description { -webkit-line-clamp: 2; }
+.sc-card[data-size="large"] .sc-card__description { -webkit-line-clamp: 3; }
+
+.sc-card__meta { margin: 0; margin-top: auto; padding-top: var(--sc-s-3); display: flex; flex-wrap: wrap; gap: 2px; }
+
+.sc-card__expand {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  margin-top: var(--sc-s-3);
+  padding-top: var(--sc-s-3);
+  border-top: 1px solid var(--sc-line);
+}
+.sc-card__expand-desc { margin: 0; }
+.sc-card__expand-meta { margin: 0; }
+.sc-card__expand-link { color: var(--sc-accent); text-decoration: none; }
+.sc-card__expand-link:hover { text-decoration: underline; }
+
+.sc-card__action { position: absolute; right: var(--sc-s-2); bottom: var(--sc-s-2); z-index: 3; }
+.sc-card[data-size="mini"] .sc-card__action { top: var(--sc-s-2); right: var(--sc-s-2); bottom: auto; }
+
+/* ---------- Large: bohater na obrazie, drop-shadow zamiast płaskiej szторki ----------
+   Powyżej 640px tekst leży na zdjęciu; stos drop-shadow na samym tekście podąża za
+   kształtem liter, nie prostokątem, więc zdjęcie zostaje czytelne. split (≥900px)
+   kładzie treść OBOK zdjęcia — wtedy filtr znika, bo tło jest już płaską powierzchnią. */
+.sc-card[data-size="large"] { aspect-ratio: 3 / 2; }
+.sc-card[data-size="large"] .sc-card__media { position: absolute; inset: 0; }
+.sc-card[data-size="large"] .sc-card__body { margin-top: auto; padding: var(--sc-s-6); color: #fff; }
+.sc-card[data-size="large"] .sc-card__link,
+.sc-card[data-size="large"] .sc-card__meta,
+.sc-card[data-size="large"] .sc-card__description {
+  color: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)) drop-shadow(0 10px 26px rgba(0, 0, 0, 0.5));
+}
+
+@media (min-width: 900px) {
+  .sc-card[data-size="large"][data-layout="split"] {
+    aspect-ratio: auto;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: stretch;
+  }
+  .sc-card[data-size="large"][data-layout="split"] .sc-card__media { position: relative; inset: auto; height: 100%; }
+  .sc-card[data-size="large"][data-layout="split"] .sc-card__body {
+    margin-top: 0;
+    padding: var(--sc-s-7);
+    color: var(--sc-text);
+    justify-content: center;
+  }
+  .sc-card[data-size="large"][data-layout="split"] .sc-card__link,
+  .sc-card[data-size="large"][data-layout="split"] .sc-card__meta,
+  .sc-card[data-size="large"][data-layout="split"] .sc-card__description {
+    color: inherit;
+    filter: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .sc-card[data-size="large"] { aspect-ratio: auto; }
+  .sc-card[data-size="large"] .sc-card__media { position: relative; inset: auto; aspect-ratio: 16 / 9; }
+  .sc-card[data-size="large"] .sc-card__body { margin-top: 0; padding: var(--sc-s-4); color: var(--sc-text); }
+  .sc-card[data-size="large"] .sc-card__link,
+  .sc-card[data-size="large"] .sc-card__meta,
+  .sc-card[data-size="large"] .sc-card__description {
+    color: inherit;
+    filter: none;
+  }
+}
