@@ -9,8 +9,8 @@ through the queue instead of repeatedly checking the first records.
 #>
 
 param(
-  [ValidateRange(1, 48)] [int]$BatchSize = 24,
-  [ValidateRange(1, 6)] [int]$Workers = 3,
+  [ValidateRange(1, 48)] [int]$BatchSize = 48,
+  [ValidateRange(1, 6)] [int]$Workers = 6,
   # 0 means: continue until no stale candidates remain.  Use a positive value
   # only when deliberately running a limited diagnostic pass.
   [ValidateRange(0, 1000)] [int]$MaxBatches = 0
