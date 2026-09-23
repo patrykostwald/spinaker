@@ -97,6 +97,19 @@ def test_enabled_pilot_requires_a_saved_official_query_criterion(source, monkeyp
     assert not session.calls and not ImportState.objects.exists()
 
 
+def test_failed_legacy_date_only_cursor_restarts_with_the_explicit_criterion(source):
+    ImportState.objects.create(name=STATE_NAME, cursor={
+        "next_date": "2016-01-01", "cutoff": "2026-09-14", "page": 1,
+        "row_offset": 0, "phase": "submit", "complete": False,
+    }, last_error="HTTP 400")
+
+    result = sudop_pilot_cycle(transport=Session(Response(
+        303, location=API + "/api/kolejka/q-1")), now=NOW)
+
+    assert result == {"status": "deferred", "new_records": 0, "phase": "queue"}
+    assert ImportState.objects.get(name=STATE_NAME).cursor["aid_source_number"] == "SA.TEST"
+
+
 def test_three_stage_protocol_frozen_cutoff_and_metadata_only(source):
     session = Session(
         Response(303, location=API + "/api/kolejka/q-1"),

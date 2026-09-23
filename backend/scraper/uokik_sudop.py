@@ -154,6 +154,16 @@ def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None):
     now = now or timezone.now()
     state, _ = ImportState.objects.get_or_create(name=STATE_NAME)
     cursor = dict(state.cursor) or _initial_cursor(timezone.localdate(now), aid_source_number)
+    # The first implementation attempted a date-only search, which the API
+    # correctly rejected with HTTP 400. That cursor did not import anything,
+    # so a failed pre-criterion run can safely restart with the explicit
+    # criterion. A cursor with a successful import remains fail-closed.
+    if state.cursor and not cursor.get("aid_source_number"):
+        if state.last_success is not None:
+            return {"status": "criterion_changed", "new_records": 0}
+        cursor = _initial_cursor(timezone.localdate(now), aid_source_number)
+        state.cursor, state.last_error = cursor, ""
+        state.save(update_fields=["cursor", "last_error"])
     if not state.cursor:
         # Persist the frozen boundary before the first network operation. A
         # failed first submission must resume the same historical pass.
