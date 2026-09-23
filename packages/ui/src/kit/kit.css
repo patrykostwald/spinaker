@@ -1,0 +1,397 @@
+/* =====================================================================
+   spin.clinic UI kit — токены и стили компонентов.
+   Спецификация: docs/UI_KIT_PLAN.md.
+
+   ПРАВИЛА ЭТОГО ФАЙЛА (читать перед правкой):
+   1. Только классы с префиксом `sc-` и переменные с префиксом `--sc-`.
+      Ни одной утилиты Tailwind в компонентах библиотеки: globals.css
+      (строки 27–62) перезаписывает .bg-white, .text-slate-N, .shadow-sm
+      и превратит компонент обратно в старую тему.
+      (В комментариях нельзя писать звёздочку со слэшем подряд — закрывает комментарий.)
+   2. Файл подключается ПОСЛЕ globals.css (frontend-spin/app/layout.tsx).
+      Ловушки каскада, которые нужно обходить:
+        - `*, ::before, ::after { border-color: var(--line) }` → каждая рамка
+          пишется целиком: `border: 1px solid var(--sc-line)`.
+        - `button, a, input { transition: ... }` (0,0,1) → используем
+          сокращённое `transition` со списком свойств, не `transition: all`.
+        - `:focus-visible { outline: ... var(--color-primary) }` (0,1,0) →
+          кольцо фокуса ниже имеет специфичность 0,2,1 и побеждает.
+        - `input:not([type=checkbox])..., select, textarea` (0,2,1) → поля
+          пишем как `input.sc-input`, не голым `.sc-input`.
+   3. Каждый исполнитель дописывает СВОЙ блок в конце файла, помеченный
+      комментарием вида «=== R<n> <Компонент> ===», и не правит чужие блоки.
+   4. Анимируем только transform и opacity. will-change не ставим —
+      framer-motion ставит и снимает его сам.
+   ===================================================================== */
+
+/* ---------- Шрифты ---------- */
+:root {
+  --sc-font-sans: var(--font-montserrat, "Montserrat"), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sc-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ---------- Цвет: ночь (по умолчанию) ----------
+   [data-sc-theme] — локальное принуждение темы для витрины (обе темы рядом). */
+:root,
+html[data-theme="dark"],
+[data-sc-theme="dark"] {
+  --sc-bg: #08090b;
+  --sc-surface: #111317;
+  --sc-surface-2: #1a1d22;
+  --sc-surface-3: #22262d;
+  --sc-chrome: rgba(8, 9, 11, 0.72);
+  --sc-chrome-menu: rgba(26, 29, 34, 0.82);
+  --sc-line: #262a31;
+  --sc-line-strong: #363b44;
+  --sc-line-hover: #5a4a2e;
+  --sc-hairline: rgba(255, 255, 255, 0.08);
+  --sc-text: #f5f6f7;
+  --sc-text-2: #a0a6af;
+  --sc-text-3: #868d96;
+  --sc-accent: #4a9eff;
+  --sc-accent-hover: #6fb2ff;
+  --sc-accent-press: #2e86f0;
+  --sc-accent-soft: rgba(74, 158, 255, 0.14);
+  --sc-on-accent: #04101f;
+  --sc-focus: #6fb2ff;
+  --sc-live: #ff6b6b;
+  --sc-positive: #4ed18a;
+  --sc-warning: #f2b441;
+  --sc-negative: #ff6b6b;
+  /* Янтарное свечение при наведении — только свет, никогда заливка или текст. */
+  --sc-glow: rgba(240, 168, 48, 0.5);
+  --sc-glow-strong: rgba(240, 168, 48, 0.72);
+  --sc-sheen: rgba(255, 255, 255, 0.22);
+  /* Тени глубже, чем днём, плюс внутренняя кромка — на чёрном тень не читается. */
+  --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --sc-e-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.3);
+  --sc-e-3: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --sc-e-menu: 0 12px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  /* Оптическая компенсация: светлое на тёмном читается жирнее. */
+  --sc-w-display: 600;
+  --sc-w-title: 500;
+  --sc-w-body: 400;
+  --sc-w-meta: 500;
+  --sc-w-caption: 600;
+  --sc-track-meta: 0.018em;
+  --sc-track-caption: 0.051em;
+  --sc-track-body-s: 0.01em;
+  color-scheme: dark;
+}
+
+/* ---------- Цвет: день (pastel — псевдоним, пока живёт в старом переключателе) ---------- */
+html[data-theme="light"],
+html[data-theme="pastel"],
+[data-sc-theme="light"] {
+  --sc-bg: #ffffff;
+  --sc-surface: #ffffff;
+  --sc-surface-2: #f5f6f8;
+  --sc-surface-3: #ebedf1;
+  --sc-chrome: rgba(255, 255, 255, 0.72);
+  --sc-chrome-menu: rgba(255, 255, 255, 0.86);
+  --sc-line: #e3e5e9;
+  --sc-line-strong: #c9cdd4;
+  --sc-line-hover: #e6c58f;
+  --sc-hairline: rgba(0, 0, 0, 0.06);
+  --sc-text: #0b0c0e;
+  --sc-text-2: #4b5159;
+  --sc-text-3: #656b73;
+  --sc-accent: #0a62d0;
+  --sc-accent-hover: #0850ae;
+  --sc-accent-press: #06408c;
+  --sc-accent-soft: rgba(10, 98, 208, 0.08);
+  --sc-on-accent: #ffffff;
+  --sc-focus: #0a62d0;
+  --sc-live: #c42b2b;
+  --sc-positive: #147a4b;
+  --sc-warning: #8a5a00;
+  --sc-negative: #c42b2b;
+  --sc-glow: rgba(201, 133, 54, 0.34);
+  --sc-glow-strong: rgba(201, 133, 54, 0.5);
+  --sc-sheen: rgba(255, 255, 255, 0.6);
+  --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.04);
+  --sc-e-2: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.06);
+  --sc-e-3: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --sc-e-menu: 0 12px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+  --sc-w-display: 700;
+  --sc-w-title: 600;
+  --sc-w-body: 400;
+  --sc-w-meta: 500;
+  --sc-w-caption: 600;
+  --sc-track-meta: 0.012em;
+  --sc-track-caption: 0.045em;
+  --sc-track-body-s: 0.004em;
+  color-scheme: light;
+}
+
+/* ---------- Шкалы, одинаковые в обеих темах ---------- */
+:root {
+  --sc-ring: inset 0 0 0 1px var(--sc-hairline);
+
+  /* радиусы; внутренний = внешний − отступ */
+  --sc-r-xs: 6px;
+  --sc-r-sm: 10px;
+  --sc-r-md: 14px;
+  --sc-r-lg: 18px;
+  --sc-r-xl: 22px;
+  --sc-r-2xl: 28px;
+  --sc-r-pill: 999px;
+
+  /* отступы, шаг 4 */
+  --sc-s-1: 4px;
+  --sc-s-2: 8px;
+  --sc-s-3: 12px;
+  --sc-s-4: 16px;
+  --sc-s-5: 20px;
+  --sc-s-6: 24px;
+  --sc-s-7: 32px;
+  --sc-s-8: 40px;
+  --sc-s-9: 48px;
+  --sc-s-10: 64px;
+  --sc-s-11: 80px;
+
+  /* контейнер */
+  --sc-container: 1280px;
+  --sc-gutter: max(16px, calc((100vw - var(--sc-container)) / 2));
+  --sc-measure: 65ch;
+
+  /* свечение */
+  --sc-glow-blur: 24px;
+  --sc-glow-spread: 8px;
+
+  /* CSS-переходы там, где пружина избыточна */
+  --sc-ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --sc-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --sc-dur-fast: 120ms;
+  --sc-dur-base: 220ms;
+  --sc-dur-slow: 380ms;
+
+  /* типографика: кегль / интерлиньяж / трекинг (вес и мелкий трекинг — по теме) */
+  --sc-t-display-size: clamp(34px, 3.2vw + 20px, 56px);
+  --sc-t-display-lh: 1.06;
+  --sc-t-display-track: -0.03em;
+  --sc-t-title-l-size: 26px;
+  --sc-t-title-l-lh: 1.16;
+  --sc-t-title-l-track: -0.022em;
+  --sc-t-title-m-size: 20px;
+  --sc-t-title-m-lh: 1.24;
+  --sc-t-title-m-track: -0.016em;
+  --sc-t-title-s-size: 16px;
+  --sc-t-title-s-lh: 1.3;
+  --sc-t-title-s-track: -0.01em;
+  --sc-t-title-xs-size: 14px;
+  --sc-t-title-xs-lh: 1.34;
+  --sc-t-title-xs-track: -0.006em;
+  --sc-t-body-size: 15px;
+  --sc-t-body-lh: 1.6;
+  --sc-t-body-s-size: 13px;
+  --sc-t-body-s-lh: 1.52;
+  --sc-t-meta-size: 12px;
+  --sc-t-meta-lh: 1.4;
+  --sc-t-caption-size: 11px;
+  --sc-t-caption-lh: 1.34;
+}
+
+/* ---------- Корень библиотеки ---------- */
+.sc-root {
+  font-family: var(--sc-font-sans);
+  font-size: var(--sc-t-body-size);
+  line-height: var(--sc-t-body-lh);
+  font-weight: var(--sc-w-body);
+  font-optical-sizing: auto;
+  color: var(--sc-text);
+  background: var(--sc-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.sc-root *,
+.sc-root *::before,
+.sc-root *::after {
+  box-sizing: border-box;
+}
+
+/* Кольцо фокуса. Специфичность 0,2,1 > глобальное :focus-visible (0,1,0) в globals.css.
+   Без :is()/:has() — минификатор CSS в Next 14 их не разбирает. */
+.sc-root a:focus-visible,
+.sc-root button:focus-visible,
+.sc-root input:focus-visible,
+.sc-root select:focus-visible,
+.sc-root textarea:focus-visible,
+.sc-root summary:focus-visible,
+.sc-root [tabindex]:focus-visible {
+  outline: 2px solid var(--sc-focus);
+  outline-offset: 3px;
+  border-radius: inherit;
+}
+.sc-root a:focus:not(:focus-visible),
+.sc-root button:focus:not(:focus-visible),
+.sc-root input:focus:not(:focus-visible),
+.sc-root select:focus:not(:focus-visible),
+.sc-root textarea:focus:not(:focus-visible),
+.sc-root summary:focus:not(:focus-visible),
+.sc-root [tabindex]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---------- Типографические классы ---------- */
+.sc-t-display { font-size: var(--sc-t-display-size); line-height: var(--sc-t-display-lh); letter-spacing: var(--sc-t-display-track); font-weight: var(--sc-w-display); }
+.sc-t-title-l { font-size: var(--sc-t-title-l-size); line-height: var(--sc-t-title-l-lh); letter-spacing: var(--sc-t-title-l-track); font-weight: var(--sc-w-display); }
+.sc-t-title-m { font-size: var(--sc-t-title-m-size); line-height: var(--sc-t-title-m-lh); letter-spacing: var(--sc-t-title-m-track); font-weight: var(--sc-w-title); }
+.sc-t-title-s { font-size: var(--sc-t-title-s-size); line-height: var(--sc-t-title-s-lh); letter-spacing: var(--sc-t-title-s-track); font-weight: var(--sc-w-title); }
+.sc-t-title-xs { font-size: var(--sc-t-title-xs-size); line-height: var(--sc-t-title-xs-lh); letter-spacing: var(--sc-t-title-xs-track); font-weight: var(--sc-w-title); }
+.sc-t-body { font-size: var(--sc-t-body-size); line-height: var(--sc-t-body-lh); letter-spacing: 0; font-weight: var(--sc-w-body); }
+.sc-t-body-s { font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); letter-spacing: var(--sc-track-body-s); font-weight: var(--sc-w-body); }
+.sc-t-meta { font-size: var(--sc-t-meta-size); line-height: var(--sc-t-meta-lh); letter-spacing: var(--sc-track-meta); font-weight: var(--sc-w-meta); font-variant-numeric: tabular-nums; }
+.sc-t-caption { font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); letter-spacing: var(--sc-track-caption); font-weight: var(--sc-w-caption); text-transform: uppercase; }
+.sc-t-mono { font-family: var(--sc-font-mono); font-variant-numeric: tabular-nums; }
+.sc-text-2 { color: var(--sc-text-2); }
+.sc-text-3 { color: var(--sc-text-3); }
+
+/* ---------- Полупрозрачная обвязка ---------- */
+.sc-chrome {
+  background: var(--sc-chrome);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* ---------- Свечение и левитация при наведении ----------
+   Слой ПОЗАДИ элемента; анимируются только opacity и transform.
+   Левитация (translateY) — на motion-элементе через useMotionTokens, не здесь. */
+.sc-hoverable {
+  position: relative;
+  isolation: isolate;
+}
+.sc-hoverable::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--sc-glow-spread));
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--sc-glow);
+  filter: blur(var(--sc-glow-blur));
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity var(--sc-dur-base) var(--sc-ease-standard), transform var(--sc-dur-base) var(--sc-ease-standard);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .sc-hoverable:hover::before { opacity: 1; transform: scale(1); }
+}
+.sc-hoverable:focus-visible::before,
+.sc-hoverable:focus-within::before,
+.sc-hoverable[data-lit="true"]::before { opacity: 1; transform: scale(1); }
+
+/* Однократный блик на смену состояния (контролы R1). */
+@keyframes sc-sheen {
+  from { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  20% { opacity: 1; }
+  to { transform: translateX(160%) skewX(-18deg); opacity: 0; }
+}
+.sc-sheen { position: relative; overflow: hidden; }
+.sc-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, var(--sc-sheen), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.sc-sheen[data-sheen="run"]::after { animation: sc-sheen 0.4s var(--sc-ease-standard) 1; }
+
+/* Плавный переход цвета при смене темы: только на корне, не на каждом элементе. */
+html.sc-theme-transition,
+html.sc-theme-transition .sc-root {
+  transition: background-color 250ms var(--sc-ease-standard), color 250ms var(--sc-ease-standard);
+}
+
+/* ---------- Предпочтения пользователя и их принудительные копии для витрины ---------- */
+@media (prefers-reduced-transparency: reduce) {
+  .sc-chrome { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--sc-surface); }
+}
+[data-sc-force~="reduced-transparency"] .sc-chrome { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--sc-surface); }
+
+@media (prefers-contrast: more) {
+  :root { --sc-line: var(--sc-line-strong); --sc-text-2: var(--sc-text); --sc-text-3: var(--sc-text-2); }
+  .sc-hoverable::before { display: none; }
+  html.sc-theme-transition, html.sc-theme-transition .sc-root { transition: none; }
+}
+[data-sc-force~="contrast"] { --sc-line: var(--sc-line-strong); --sc-text-2: var(--sc-text); --sc-text-3: var(--sc-text-2); }
+[data-sc-force~="contrast"] .sc-hoverable::before { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-root *, .sc-root *::before, .sc-root *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+  .sc-hoverable::before { transition: opacity 150ms linear; transform: none; }
+  .sc-sheen[data-sheen="run"]::after { animation: none; }
+  html.sc-theme-transition, html.sc-theme-transition .sc-root { transition: none; }
+}
+[data-sc-force~="reduced-motion"] *, [data-sc-force~="reduced-motion"] *::before, [data-sc-force~="reduced-motion"] *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+[data-sc-force~="reduced-motion"] .sc-sheen[data-sheen="run"]::after { animation: none; }
+
+@media (forced-colors: active) {
+  .sc-root { forced-color-adjust: auto; }
+  .sc-hoverable::before, .sc-sheen::after { display: none; }
+}
+
+/* === R0 Витрина — оболочка и разделы токенов/типографики === */
+.sc-showcase { min-height: 100vh; padding: var(--sc-s-6) var(--sc-gutter) var(--sc-s-11); }
+.sc-showcase__banner {
+  position: sticky; top: var(--sc-s-3); z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); flex-wrap: wrap;
+  padding: var(--sc-s-3) var(--sc-s-4);
+  border: 1px solid var(--sc-live); border-radius: var(--sc-r-md);
+  background: var(--sc-chrome);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+}
+.sc-showcase__banner strong { color: var(--sc-live); }
+.sc-showcase__controls { display: flex; align-items: center; gap: var(--sc-s-3); flex-wrap: wrap; }
+.sc-showcase__seg { display: inline-flex; padding: 3px; border: 1px solid var(--sc-line); border-radius: var(--sc-r-pill); background: var(--sc-surface-2); }
+.sc-showcase__seg button {
+  border: 0; background: transparent; color: var(--sc-text-2);
+  padding: 6px 12px; border-radius: var(--sc-r-pill); cursor: pointer;
+  font: inherit; font-size: var(--sc-t-meta-size); font-weight: var(--sc-w-meta);
+  transition: color var(--sc-dur-fast) var(--sc-ease-standard), background-color var(--sc-dur-fast) var(--sc-ease-standard);
+}
+.sc-showcase__seg button[aria-pressed="true"] { background: var(--sc-surface); color: var(--sc-text); box-shadow: var(--sc-e-1), var(--sc-ring); }
+.sc-showcase__check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--sc-t-meta-size); color: var(--sc-text-2); cursor: pointer; }
+.sc-showcase__check input { accent-color: var(--sc-accent); width: 16px; height: 16px; }
+.sc-showcase__nav { display: flex; gap: var(--sc-s-2); flex-wrap: wrap; margin: var(--sc-s-6) 0 var(--sc-s-8); }
+.sc-showcase__nav a { color: var(--sc-text-2); text-decoration: none; padding: 6px 12px; border: 1px solid var(--sc-line); border-radius: var(--sc-r-pill); font-size: var(--sc-t-meta-size); transition: color var(--sc-dur-fast) var(--sc-ease-standard), border-color var(--sc-dur-fast) var(--sc-ease-standard); }
+.sc-showcase__nav a:hover { color: var(--sc-text); border-color: var(--sc-line-strong); }
+.sc-section { margin-top: var(--sc-s-10); scroll-margin-top: 96px; }
+.sc-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sc-s-4); margin-bottom: var(--sc-s-5); padding-bottom: var(--sc-s-3); border-bottom: 1px solid var(--sc-line); }
+.sc-section__head h2 { margin: 0; }
+.sc-section__head p { margin: 0; color: var(--sc-text-2); max-width: var(--sc-measure); }
+.sc-section__sub { margin: var(--sc-s-6) 0 var(--sc-s-3); color: var(--sc-text-2); }
+.sc-grid { display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.sc-swatch { display: grid; gap: 6px; padding: var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: var(--sc-e-1), var(--sc-ring); }
+.sc-swatch__chip { height: 56px; border-radius: var(--sc-r-sm); border: 1px solid var(--sc-hairline); }
+.sc-swatch code { font-family: var(--sc-font-mono); font-size: 11px; color: var(--sc-text-2); }
+.sc-swatch__name { font-size: var(--sc-t-meta-size); font-weight: var(--sc-w-meta); }
+.sc-ladder { display: flex; align-items: flex-end; gap: var(--sc-s-4); flex-wrap: wrap; }
+.sc-ladder__box { width: 88px; height: 88px; background: var(--sc-surface-2); border: 1px solid var(--sc-line); display: grid; place-items: end start; padding: 8px; font-family: var(--sc-font-mono); font-size: 11px; color: var(--sc-text-2); }
+.sc-ruler { display: flex; align-items: flex-end; gap: var(--sc-s-3); flex-wrap: wrap; }
+.sc-ruler__bar { background: var(--sc-accent-soft); border: 1px solid var(--sc-accent); border-radius: 3px; height: 24px; }
+.sc-ruler__label { font-family: var(--sc-font-mono); font-size: 11px; color: var(--sc-text-2); margin-top: 4px; }
+.sc-elev { display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.sc-elev__card { padding: var(--sc-s-5); border-radius: var(--sc-r-lg); background: var(--sc-surface); font-family: var(--sc-font-mono); font-size: 11px; color: var(--sc-text-2); }
+.sc-specimen { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sc-s-5); }
+.sc-specimen__theme { padding: var(--sc-s-5); border-radius: var(--sc-r-xl); border: 1px solid var(--sc-line); background: var(--sc-bg); color: var(--sc-text); box-shadow: var(--sc-ring); }
+.sc-specimen__theme > p { margin: 0 0 var(--sc-s-4); color: var(--sc-text-2); }
+.sc-specimen__row { display: grid; gap: 2px; padding: var(--sc-s-3) 0; border-bottom: 1px solid var(--sc-line); }
+.sc-specimen__row:last-child { border-bottom: 0; }
+.sc-specimen__row code { font-family: var(--sc-font-mono); font-size: 11px; color: var(--sc-text-3); }
+.sc-specimen__row > span:first-child { overflow-wrap: anywhere; }
+.sc-narrow { max-width: 184px; padding: var(--sc-s-3); border: 1px dashed var(--sc-line-strong); border-radius: var(--sc-r-md); }
+.sc-probe { display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.sc-probe__card { padding: var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-e-2), var(--sc-ring); border: 0; text-align: left; color: var(--sc-text); font: inherit; cursor: pointer; }
+.sc-probe__card:hover { box-shadow: var(--sc-e-3), var(--sc-ring); }
+.sc-probe__note { color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-morph-strip { display: flex; gap: var(--sc-s-4); overflow-x: auto; overflow-y: hidden; padding: var(--sc-s-3) 0 var(--sc-s-4); scrollbar-width: thin; }
+.sc-morph-card { flex: 0 0 200px; height: 130px; padding: var(--sc-s-4); background: var(--sc-surface); box-shadow: var(--sc-e-1), var(--sc-ring); border: 0; color: var(--sc-text); text-align: left; font: inherit; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; }
+.sc-morph-card strong { font-size: var(--sc-t-title-s-size); font-weight: var(--sc-w-title); letter-spacing: var(--sc-t-title-s-track); }
+.sc-morph-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(8, 9, 11, 0.6); }
+.sc-morph-surface { position: fixed; z-index: 61; inset: 8vh 10vw; padding: var(--sc-s-7); background: var(--sc-surface); box-shadow: var(--sc-e-3); color: var(--sc-text); display: flex; flex-direction: column; gap: var(--sc-s-4); }
+.sc-morph-surface button { align-self: flex-start; border: 1px solid var(--sc-line); background: var(--sc-surface-2); color: var(--sc-text); border-radius: var(--sc-r-md); padding: 10px 16px; font: inherit; cursor: pointer; }
+@media (max-width: 900px) { .sc-specimen { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .sc-showcase { padding-top: var(--sc-s-4); } .sc-morph-surface { inset: 0; border-radius: 0 !important; } }

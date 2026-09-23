@@ -4,7 +4,12 @@
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "sideEffects": false,
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
+    "./kit": { "types": "./src/kit/index.ts", "default": "./src/kit/index.ts" },
+    "./kit/kit.css": "./src/kit/kit.css"
+  },
+  "sideEffects": ["*.css"],
   "devDependencies": {
     "@types/node": "^20.16.0",
     "@types/react": "^18.3.11",

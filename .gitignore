@@ -29,6 +29,7 @@ npm-debug.log*
 .env.*.local
 
 # OS / IDE
+.claude/worktrees/
 .DS_Store
 Thumbs.db
 .idea/
