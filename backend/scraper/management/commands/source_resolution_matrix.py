@@ -22,6 +22,10 @@ def outcome(source, cursor, active_hosts):
     classified = (cursor or {}).get('legal_terms_classification') or {}
     if not discovery.get('checked_at'):
         return 'terms_scan_pending'
+    if discovery.get('status') in {'no_official_terms_link_found', 'terms_link_found'}:
+        return 'contact_required'
+    if discovery.get('status') in {'unavailable', 'missing_source_url'}:
+        return 'retry_or_contact_required'
     status = classified.get('status')
     return {
         'proposed_metadata_card_requires_editorial_approval': 'editorial_card_review',

@@ -27,3 +27,22 @@ def test_matrix_uses_discovery_evidence_without_changing_source(tmp_path):
     assert 'active_harvester' in text and 'contact_or_keep_inactive' in text
     candidate.refresh_from_db()
     assert not candidate.is_active and candidate.catalog_stage == 'candidate'
+
+
+@pytest.mark.django_db
+def test_matrix_routes_missing_or_unavailable_terms_to_actionable_outcomes(tmp_path):
+    no_terms = Source.objects.create(name='No terms', url='https://no-terms.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    unavailable = Source.objects.create(name='Unavailable', url='https://unavailable.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f'source-check:{no_terms.pk}', cursor={
+        'legal_terms_discovery': {'checked_at': timezone.now().isoformat(), 'status': 'no_official_terms_link_found'},
+    })
+    ImportState.objects.create(name=f'source-check:{unavailable.pk}', cursor={
+        'legal_terms_discovery': {'checked_at': timezone.now().isoformat(), 'status': 'unavailable'},
+    })
+    output = tmp_path / 'matrix.md'
+    call_command('source_resolution_matrix', '--output', str(output), stdout=StringIO())
+    report = output.read_text(encoding='utf-8')
+    assert 'contact_required' in report
+    assert 'retry_or_contact_required' in report
