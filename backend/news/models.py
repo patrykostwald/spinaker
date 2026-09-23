@@ -422,6 +422,40 @@ class SourceUsageDecision(models.Model):
             raise ValidationError(errors)
 
 
+class SourceReviewDecision(models.Model):
+    """A durable, non-operational decision for a catalogued source.
+
+    It records why a candidate remains off.  It cannot enable a source or
+    replace the narrow access instruction required by an importer.
+    """
+    class Decision(models.TextChoices):
+        COVERED = 'covered', 'Pokryte aktywnym źródłem'
+        TECHNICAL_RECHECK = 'technical_recheck', 'Wymaga ponownej kontroli technicznej'
+        TERMS_REVIEW = 'terms_review', 'Wymaga sprawdzenia warunków'
+        CHANNEL_DISCOVERY = 'channel_discovery', 'Brak potwierdzonego kanału'
+        CONTACT_REQUIRED = 'contact_required', 'Wymaga późniejszego potwierdzenia'
+
+    source = models.OneToOneField(Source, on_delete=models.CASCADE, related_name='review_decision')
+    decision = models.CharField(max_length=32, choices=Decision.choices)
+    reason = models.TextField()
+    evidence_urls = models.JSONField(default=list, blank=True)
+    audit_snapshot = models.JSONField(default=dict, blank=True)
+    reviewed_by = models.CharField(max_length=120)
+    reviewed_at = models.DateTimeField(default=timezone.now)
+    is_automated = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['decision', 'source__name']
+
+    def clean(self):
+        super().clean()
+        if self.decision == self.Decision.COVERED and self.source.is_active:
+            raise ValidationError('Decyzja „pokryte” dotyczy wyłącznie kandydata z aktywnym odpowiednikiem.')
+        if not isinstance(self.evidence_urls, list):
+            raise ValidationError('Dowody decyzji muszą być listą adresów URL.')
+
+
 class SourceRecoveryCase(models.Model):
     """A bounded diagnosis of one failed source instruction, never a bypass."""
     class Status(models.TextChoices):

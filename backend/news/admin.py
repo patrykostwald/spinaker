@@ -17,7 +17,7 @@ from rest_framework.exceptions import ValidationError as APIValidationError
 
 from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
     ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt,
-    SourceThumbnailPolicy)
+    SourceThumbnailPolicy, SourceReviewDecision)
 from news.account_models import ArticleFavorite, CommentReport, PersonalContextThread
 from scraper.tasks import (
     scrape_gdelt_task,
@@ -292,12 +292,24 @@ class SourceContactCardAdmin(admin.ModelAdmin):
         return False
 
 
+class SourceReviewDecisionAdmin(admin.ModelAdmin):
+    list_display = ('source', 'decision', 'reviewed_by', 'reviewed_at', 'is_automated')
+    list_filter = ('decision', 'is_automated')
+    search_fields = ('source__name', 'reason', 'reviewed_by')
+    autocomplete_fields = ('source',)
+    readonly_fields = ('updated_at',)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 site.register(SourceAccessInstruction, SourceAccessInstructionAdmin)
 site.register(SourceThumbnailPolicy, SourceThumbnailPolicyAdmin)
 site.register(FetchAttempt, FetchAttemptAdmin)
 site.register(SourceRecoveryCase, SourceRecoveryCaseAdmin)
 site.register(SourceContactCard, SourceContactCardAdmin)
 site.register(SourceContactReply)
+site.register(SourceReviewDecision, SourceReviewDecisionAdmin)
 
 
 class PersonalContextThreadAdmin(admin.ModelAdmin):

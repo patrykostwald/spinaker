@@ -3,7 +3,7 @@ from io import StringIO
 import pytest
 from django.core.management import call_command
 
-from news.models import ImportState, Source, SourceType
+from news.models import ImportState, Source, SourceReviewDecision, SourceType
 
 
 @pytest.mark.django_db
@@ -30,3 +30,23 @@ def test_verification_register_classifies_every_candidate_without_writing_source
     official.refresh_from_db()
     publisher.refresh_from_db()
     assert not official.is_active and not publisher.is_active
+
+
+@pytest.mark.django_db
+def test_verification_register_uses_manual_source_decision(tmp_path):
+    source = Source.objects.create(
+        name="Official", url="https://official.example", source_type=SourceType.INSTITUTION,
+        catalog_stage="candidate", is_active=False, scrape_enabled=False,
+    )
+    ImportState.objects.create(name=f"source-check:{source.pk}", cursor={
+        "audit_status": "completed", "rss": {"status": "working", "url": "https://official.example/feed"},
+    })
+    SourceReviewDecision.objects.create(
+        source=source, decision=SourceReviewDecision.Decision.CONTACT_REQUIRED,
+        reason="Exact RSS terms were not found.", reviewed_by="editor", is_automated=False,
+    )
+    output = tmp_path / "register.md"
+    call_command("source_verification_register", "--output", str(output), stdout=StringIO())
+    report = output.read_text(encoding="utf-8")
+    assert "later contact list" in report
+    assert "Exact RSS terms were not found." in report

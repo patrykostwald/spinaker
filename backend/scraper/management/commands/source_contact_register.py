@@ -4,7 +4,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand
 
-from news.models import ImportState, Source
+from news.models import ImportState, Source, SourceReviewDecision
 from scraper.management.commands.source_review_queue import hostname, review_bucket
 
 
@@ -15,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument("--output", default="reports/source-contact-register-current.md")
 
     def handle(self, *args, **options):
-        candidates = list(Source.objects.filter(
+        candidates = list(Source.objects.select_related('review_decision').filter(
             catalog_stage="candidate", is_active=False, scrape_enabled=False,
         ).order_by("pk"))
         states = dict(ImportState.objects.filter(
@@ -31,11 +31,13 @@ class Command(BaseCommand):
             if hostname(source.url) in active_hosts:
                 continue
             result = states.get(f"source-check:{source.pk}", {}) or {}
-            if review_bucket(source, result) != "04_wydawca_lub_organizacja_wymaga_zgody":
+            manual = getattr(source, 'review_decision', None)
+            requires_contact = manual and not manual.is_automated and manual.decision == SourceReviewDecision.Decision.CONTACT_REQUIRED
+            if not requires_contact and review_bucket(source, result) != "04_wydawca_lub_organizacja_wymaga_zgody":
                 continue
             rows.append({
                 "id": source.pk, "source": source.name, "host": hostname(source.url),
-                "url": source.url or "", "reason": "No published terms or explicit permission recorded for automated metadata reuse.",
+                "url": source.url or "", "reason": (manual.reason if requires_contact else "No published terms or explicit permission recorded for automated metadata reuse."),
                 "status": "Do not contact yet; prepare for editorial review.",
             })
 
