@@ -31,6 +31,6 @@ class Command(BaseCommand):
         ).order_by("version"))
         if not cards:
             cards = list(configure(source, item["listing_url"], options["reviewed_by"], valid_days=180,
-                                   terms_url=item.get("terms_url")))
+                                   terms_url=item.get("terms_url"), license_note=item.get("license_note")))
         self.stdout.write(self.style.SUCCESS(
             f"GOTOWE: {source.pk} {source.name}; karty: " + ", ".join(str(card.version) for card in cards) + "."))

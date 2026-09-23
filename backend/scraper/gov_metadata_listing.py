@@ -71,6 +71,7 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/kgpsp",
         "listing_url": "https://www.gov.pl/web/kgpsp/aktualnosci",
         "terms_url": "https://www.gov.pl/web/kgpsp/ponowne-wykorzystanie-informacji-sektora-publicznego",
+        "license_note": "Warunki KG PSP wymagają podania źródła, czasu wytworzenia i pozyskania oraz informacji o przetworzeniu; karta obejmuje wyłącznie metadane.",
     },
     "mon": {
         "name": "Ministerstwo Obrony Narodowej",

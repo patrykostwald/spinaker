@@ -37,14 +37,14 @@ def validate_base_url(base_url):
     return base_url.rstrip("/")
 
 
-def configure(source, listing_url, reviewer, valid_days=365, terms_url=None):
+def configure(source, listing_url, reviewer, valid_days=365, terms_url=None, license_note=None):
     base_path = validate_listing(source, listing_url)
     now = timezone.now()
     evidence = {
         "purpose": "official gov.pl metadata listing",
         "listing_url": listing_url,
         "reviewed_url": listing_url,
-        "license": "Stopka gov.pl deklaruje CC BY-SA 4.0 dla treści tekstowych; karta nie obejmuje materiałów audiowizualnych.",
+        "license": license_note or "Stopka gov.pl deklaruje CC BY-SA 4.0 dla treści tekstowych; karta nie obejmuje materiałów audiowizualnych.",
     }
     latest = SourceAccessInstruction.objects.filter(source=source).order_by("-version").first()
     next_version = (latest.version if latest else 0) + 1
