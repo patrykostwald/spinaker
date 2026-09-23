@@ -136,3 +136,16 @@ KNF wskazuje, że ponowne wykorzystanie informacji z BIP i strony KNF jest
 bezpłatne przy podaniu adresu źródła. IPN opisuje RSS jako usługę dystrybucji
 tytułów, krótkich opisów i linków. Skrypt nie uruchomi źródła bez świeżego,
 poprawnego audytu RSS i zapisanej karty dostępu.
+
+## Bieżący status harvesterów
+
+Do odczytu lokalnego stanu workerów, zatwierdzonych kart oraz liczby boxów z
+każdego aktywnego źródła służy:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Get-MvpHarvesterStatus.ps1
+```
+
+Skrypt nie pobiera danych z internetu i nie zmienia bazy. Pokazuje także stan
+usług Compose, dlatego jest właściwym pierwszym krokiem, gdy harvestery mają
+pracować stale w tle.
