@@ -16,6 +16,9 @@ pytestmark = pytest.mark.django_db
 def test_audited_rss_metadata_card_requires_fresh_working_audit_and_reuses_it():
     source = Source.objects.create(name='Official', url='https://official.example', catalog_stage='candidate',
         is_active=False, scrape_enabled=False)
+    # Reload after Source.save() assigns its stable catalog identity. The audit
+    # signature must mirror the persisted source, exactly as production audits do.
+    source.refresh_from_db()
     ImportState.objects.create(name=f'source-check:{source.pk}', last_success=timezone.now(), cursor={
         'probe_version': PROBE_VERSION, 'signature': source_signature(source), 'audit_status': 'completed',
         'checked_at': timezone.now().isoformat(),
