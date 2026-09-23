@@ -320,6 +320,15 @@ class SocialHandleEvidence(models.Model):
         label = self.roster_entry.full_name if self.roster_entry_id else 'profil'
         return f'{label}: @{self.handle}'
 
+    def clean(self):
+        super().clean()
+        has_roster = bool(self.roster_entry_id)
+        has_subject = bool(self.subject_content_type_id and self.subject_object_id)
+        if has_roster == has_subject:
+            raise ValidationError('Dowód konta musi wskazywać dokładnie jeden profil: mandat albo osobę publiczną.')
+        if has_subject and self.subject_content_type.model != 'publicfigure':
+            raise ValidationError('Ręczny dowód konta może dotyczyć wyłącznie rekordu osoby publicznej.')
+
 class PoliticalPost(models.Model):
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='posts')
     post_id = models.CharField(max_length=19, unique=True, validators=[ID_VALIDATOR])
