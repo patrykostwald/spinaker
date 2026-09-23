@@ -57,3 +57,11 @@ zapisanej karty dostępu i udanego ograniczonego pilota.
 
 Taka kolejność pozwala rozszerzać Bazę szybko, a jednocześnie nie zamieniać
 katalogu linków w automat pobierający materiały bez podstawy.
+
+## Zabezpieczenie aktywacji po audycie
+
+Polecenie `apply_audited_feeds` nie włącza już źródła wyłącznie dlatego, że
+techniczny test RSS znalazł działający kanał. Zanim kandydat zmieni status na
+skonfigurowany, system sprawdza ważną kartę RSS dopasowaną do dokładnego adresu
+feedu. Brak takiej karty kończy się raportem
+`missing_approved_access_card` i nie powoduje żadnego pobrania publikacji.

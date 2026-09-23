@@ -5,8 +5,9 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
-from news.models import Source, ImportState
+from news.models import Source, ImportState, SourceAccessInstruction
 from scraper.source_probe import source_signature
+from scraper.access_gate import reviewed_instruction_for_endpoint
 
 
 class Command(BaseCommand):
@@ -29,7 +30,10 @@ class Command(BaseCommand):
                         or result.get('signature') != source_signature(source)
                         or result.get('audit_status') != 'completed' or rss.get('status') != 'working'
                         or not rss.get('url') or not rss.get('usable_entry_count')):
-                    skipped.append(pk)
+                    skipped.append({'id': pk, 'reason': 'audit_not_current_or_feed_unusable'})
+                    continue
+                if reviewed_instruction_for_endpoint(source, SourceAccessInstruction.Channel.RSS, rss['url']) is None:
+                    skipped.append({'id': pk, 'reason': 'missing_approved_access_card'})
                     continue
                 fields = ('rss_url', 'catalog_stage', 'is_active', 'scrape_enabled', 'scrape_frequency_minutes')
                 before = {field: getattr(source, field) for field in fields}

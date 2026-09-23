@@ -39,20 +39,16 @@ def _matches_allowed_path(request_url, patterns):
     return False
 
 
-def approved_instruction(source, channel, request_url=None):
-    """Return the current instruction, or ``None`` without performing I/O.
+def reviewed_instruction_for_endpoint(source, channel, request_url=None):
+    """Return a valid reviewed card without authorising a fetch.
 
-    The query repeats the critical checks from ``clean()`` because ORM bulk
-    operations do not call model validation.  A configured source alone never
-    authorizes a request.
+    This is used while configuring a candidate after a technical audit.  It
+    deliberately ignores the source operational state, because that state is
+    changed *after* the editorial card has been found.  It never performs I/O
+    and it does not itself permit an importer to run.
     """
-    if (not source or not source.is_active or not source.scrape_enabled
-            or source.catalog_stage != 'configured'):
+    if not source:
         return None
-    # A source may expose separate, independently reviewed API endpoints.
-    # The most-specific matching endpoint wins; its newest version is
-    # authoritative.  A suspension on that endpoint must not revive an older
-    # version nor silently spill into a different documented endpoint.
     candidates = list(SourceAccessInstruction.objects.filter(
         source=source, channel=channel).order_by('-version'))
     if request_url:
@@ -71,9 +67,15 @@ def approved_instruction(source, channel, request_url=None):
             or not instruction.evidence or not instruction.valid_until
             or instruction.valid_until <= timezone.now()):
         return None
-    if request_url and not _same_endpoint_or_child(request_url, instruction.endpoint):
-        return None
     return instruction
+
+
+def approved_instruction(source, channel, request_url=None):
+    """Return the current operational instruction, or ``None`` without I/O."""
+    if (not source or not source.is_active or not source.scrape_enabled
+            or source.catalog_stage != 'configured'):
+        return None
+    return reviewed_instruction_for_endpoint(source, channel, request_url)
 
 
 def require_approved_instruction(source, channel, request_url=None):
