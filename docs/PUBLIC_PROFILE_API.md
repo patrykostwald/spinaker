@@ -1,0 +1,47 @@
+# API profili osób publicznych
+
+Te endpointy są publiczne i gotowe do podłączenia przez frontend. Nie zwracają PESEL-i, dat urodzenia, danych prywatnych ani niepotwierdzonych relacji.
+
+## Lista
+
+`GET /api/public-figures/?q=&role_category=`
+
+Zwraca maksymalnie 100 aktywnych osób. Opcjonalne filtry:
+
+- `q` — fragment imienia, roli lub organizacji;
+- `role_category` — `government`, `party_leader`, `parliament`, `european_parliament` albo `political`.
+
+## Szczegóły
+
+`GET /api/public-figures/:id/`
+
+Odpowiedź zawiera podstawowe dane roli i trzy pola istotne dla widoku profilu:
+
+- `organisations` — wyłącznie relacje potwierdzone przez redakcję, z KRS, rolą, statusem obecna/historyczna i linkiem do dowodu;
+- `votes` — maksymalnie 30 głosowań z krótkim tematem, głosem i linkiem źródłowym; dostępne tylko po ręcznym połączeniu profilu z wpisem sejmowym;
+- `votes.available=false` — brak bezpiecznego połączenia z mandatem. Interfejs powinien pokazać neutralny komunikat, nie pustą tabelę ani przypuszczenie.
+
+Przykładowe fragmenty odpowiedzi:
+
+```json
+{
+  "name": "Anna Publiczna",
+  "role_title": "Ministra",
+  "organisations": [{
+    "name": "Fundacja Jawna",
+    "krs_number": "0000123456",
+    "kind": "foundation",
+    "public_role": "członkini zarządu",
+    "relation_status": "current",
+    "evidence_url": "https://…"
+  }],
+  "votes": {
+    "available": true,
+    "results": [{"topic": "Ustawa o jawności finansowania", "vote": "Za", "source": "Sejm RP"}]
+  }
+}
+```
+
+## Redakcja
+
+Przed pojawieniem się głosowań redaktor w panelu łączy `PublicFigure` z właściwym `ParliamentaryRosterEntry`. To połączenie jest ręczne i oparte na oficjalnym profilu, nie na samym podobieństwie nazw.

@@ -147,6 +147,7 @@ class PublicFigureAdmin(admin.ModelAdmin):
     list_display = ['canonical_name', 'role_category', 'role_title', 'organisation', 'status', 'archived', 'source_checked_at']
     list_filter = ['role_category', 'status', 'archived']
     search_fields = ['canonical_name', 'role_title', 'organisation', 'political_alignment']
+    autocomplete_fields = ['parliamentary_roster_entry']
     readonly_fields = ['created_at', 'updated_at']
     actions = ['archive_selected', 'restore_selected']
 

@@ -167,6 +167,9 @@ class PublicFigure(models.Model):
     political_alignment = models.CharField(max_length=255, blank=True,
         help_text='Opcjonalna, ręczna notatka redakcyjna; nie jest ustalana automatycznie.')
     source_checked_at = models.DateTimeField(default=timezone.now)
+    parliamentary_roster_entry = models.ForeignKey(ParliamentaryRosterEntry, null=True, blank=True,
+        on_delete=models.PROTECT, related_name='public_figure_profiles',
+        help_text='Opcjonalne, ręcznie sprawdzone połączenie z mandatem. Nie jest ustalane po nazwisku.')
     archived = models.BooleanField(default=False, db_index=True,
         help_text='Wpis archiwalny pozostaje w rejestrze i nie jest usuwany.')
     created_at = models.DateTimeField(default=timezone.now, editable=False)

@@ -1,0 +1,75 @@
+"""Public, evidence-only profile API for the future politician view."""
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from news.models import Ballot
+from news.political_models import PublicFigure
+
+
+def figure_data(figure, include_detail=False):
+    data = {
+        'id': figure.pk,
+        'name': figure.canonical_name,
+        'role_category': figure.role_category,
+        'role_title': figure.role_title,
+        'organisation': figure.organisation,
+        'status': figure.status,
+        'official_profile_url': figure.official_profile_url,
+        'evidence_url': figure.evidence_url,
+        'source_checked_at': figure.source_checked_at,
+    }
+    if not include_detail:
+        return data
+    relations = figure.organisation_relations.filter(
+        verification_status='confirmed', organisation__archived=False,
+    ).select_related('organisation').order_by('organisation__kind', 'organisation__name')
+    data['organisations'] = [{
+        'id': relation.organisation_id,
+        'name': relation.organisation.name,
+        'krs_number': relation.organisation.krs_number,
+        'kind': relation.organisation.kind,
+        'official_register_url': relation.organisation.official_register_url,
+        'public_role': relation.public_role,
+        'relation_status': relation.relation_status,
+        'evidence_url': relation.evidence_url,
+        'verified_at': relation.verified_at,
+    } for relation in relations]
+    data['votes'] = votes_data(figure)
+    return data
+
+
+def votes_data(figure):
+    entry = figure.parliamentary_roster_entry
+    if not entry or entry.source != 'sejm' or not str(entry.external_id).isdigit():
+        return {'available': False, 'reason': 'Brak ręcznie potwierdzonego połączenia z mandatem poselskim.', 'results': []}
+    ballots = Ballot.objects.filter(mp_id=int(entry.external_id)).select_related('voting__article').order_by(
+        '-voting__article__published_date', '-pk')[:30]
+    return {'available': True, 'source_url': entry.profile_url, 'results': [{
+        'date': ballot.voting.article.published_date,
+        'topic': ballot.voting.motion,
+        'vote': ballot.vote,
+        'article_url': ballot.voting.article.url,
+        'source': 'Sejm RP',
+    } for ballot in ballots]}
+
+
+@api_view(['GET'])
+def public_figure_list(request):
+    query = request.query_params.get('q', '').strip()
+    role_category = request.query_params.get('role_category', '').strip()
+    rows = PublicFigure.objects.filter(archived=False)
+    if query:
+        rows = rows.filter(Q(canonical_name__icontains=query) | Q(role_title__icontains=query) |
+                           Q(organisation__icontains=query))
+    if role_category:
+        rows = rows.filter(role_category=role_category)
+    rows = rows.order_by('canonical_name')[:100]
+    return Response({'results': [figure_data(row) for row in rows]})
+
+
+@api_view(['GET'])
+def public_figure_detail(request, figure_id):
+    figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
+    return Response(figure_data(figure, include_detail=True))
