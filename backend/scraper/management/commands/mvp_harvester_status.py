@@ -5,6 +5,7 @@ from django.db.models import Count
 from news.models import ImportState, Source, SourceAccessInstruction
 from scraper.access_gate import approved_instruction
 from scraper.management.commands.audit_sources import is_fresh, is_recent_attempt
+from scraper.management.commands.source_review_queue import hostname, review_bucket
 
 
 class Command(BaseCommand):
@@ -32,6 +33,19 @@ class Command(BaseCommand):
         candidate_states = dict(ImportState.objects.filter(
             name__in=[f'source-check:{source.pk}' for source in candidates]
         ).values_list('name', 'cursor'))
+        active_hosts = {hostname(source.url) for source in approved if hostname(source.url)}
+        review_counts = {
+            '00_juz_aktywne_pod_innym_rekordem': 0,
+            '01_blad_techniczny': 0,
+            '02_instytucja_rss_do_warunkow': 0,
+            '03_instytucja_bez_potwierdzonego_kanalu': 0,
+            '04_wydawca_lub_organizacja_wymaga_zgody': 0,
+        }
+        for candidate in candidates:
+            result = candidate_states.get(f'source-check:{candidate.pk}', {}) or {}
+            bucket = ('00_juz_aktywne_pod_innym_rekordem'
+                      if hostname(candidate.url) in active_hosts else review_bucket(candidate, result))
+            review_counts[bucket] += 1
         audited = [source for source in candidates if is_fresh(
             source, candidate_states.get(f'source-check:{source.pk}', {}), 168)]
         attempted = [source for source in candidates if is_recent_attempt(
@@ -45,6 +59,31 @@ class Command(BaseCommand):
             f'(zatwierdzone aktywne / zatwierdzone aktywne + kandydaci)'
         )
         self.stdout.write(f'KANDYDACI_DO_SPRAWDZENIA: {candidate_count}')
+        total_sources = Source.objects.count()
+        self.stdout.write(
+            f'ZRODLA_AKTYWNE_W_POBIERANIU: {len(approved)}/{total_sources}'
+        )
+        self.stdout.write(f'ZRODLA_NIEZWERYFIKOWANE: {candidate_count}/{total_sources}')
+        self.stdout.write(
+            'ZRODLA_DO_MAILA_LUB_ZGODY: '
+            f'{review_counts["04_wydawca_lub_organizacja_wymaga_zgody"]}/{total_sources}'
+        )
+        self.stdout.write(
+            'PUBLICZNE_DO_SPRAWDZENIA_W_SIECI: '
+            f'{review_counts["02_instytucja_rss_do_warunkow"]}/{total_sources}'
+        )
+        self.stdout.write(
+            'BEZ_POTWIERDZONEGO_KANALU: '
+            f'{review_counts["03_instytucja_bez_potwierdzonego_kanalu"]}/{total_sources}'
+        )
+        self.stdout.write(
+            'BLEDY_TECHNICZNE_DO_RECZNEGO_SPRAWDZENIA: '
+            f'{review_counts["01_blad_techniczny"]}/{total_sources}'
+        )
+        self.stdout.write(
+            'DUPLIKATY_AKTYWNYCH_ZRODEL: '
+            f'{review_counts["00_juz_aktywne_pod_innym_rekordem"]}/{total_sources}'
+        )
         self.stdout.write(
             f'AUDYT_KANDYDATOW_7D: {len(audited)}/{candidate_count} '
             f'(zakonczone bez bledu; bledy techniczne: {len(failed)})'
