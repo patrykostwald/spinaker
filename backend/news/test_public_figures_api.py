@@ -158,6 +158,20 @@ def test_public_figure_list_is_paginated_and_filterable():
     assert client.get('/api/public-figures/?page=none').status_code == 400
 
 
+def test_public_office_list_is_searchable_and_exposes_only_current_holder():
+    holder = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Prezeska', evidence_url='https://example.org/anna')
+    PublicOffice.objects.create(import_key='state-office:test:one', title='Prezeska instytucji',
+        role_category='political', organisation='Instytucja Testowa',
+        official_roster_url='https://example.org/roster', current_holder=holder)
+    PublicOffice.objects.create(import_key='state-office:test:two', title='Inna funkcja',
+        role_category='local', organisation='Miasto Testowe', official_roster_url='https://example.org/city')
+    data = APIClient().get('/api/public-offices/?q=Anna&page_size=1').data
+    assert data['count'] == 1
+    assert data['results'][0]['title'] == 'Prezeska instytucji'
+    assert data['results'][0]['current_holder']['name'] == 'Anna Publiczna'
+
+
 def test_context_exposes_only_confirmed_material_links_and_evidence_graph():
     figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
         role_title='Osoba publiczna', evidence_url='https://example.org/person')

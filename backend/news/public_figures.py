@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from news.models import ArticleCategory, Ballot
-from news.political_models import PoliticalPost, PublicFigure, SocialHandleEvidence
+from news.political_models import PoliticalPost, PublicFigure, PublicOffice, SocialHandleEvidence
 
 
 def figure_data(figure, include_detail=False):
@@ -314,6 +314,44 @@ def public_figure_list(request):
         'page': page,
         'page_size': page_size,
         'results': [figure_data(row) for row in rows[start:start + page_size]],
+    })
+
+
+def public_office_data(office):
+    return {
+        'id': office.pk,
+        'title': office.title,
+        'role_category': office.role_category,
+        'organisation': office.organisation,
+        'official_roster_url': office.official_roster_url,
+        'source_checked_at': office.source_checked_at,
+        'current_holder': (figure_data(office.current_holder) if office.current_holder_id else None),
+    }
+
+
+@api_view(['GET'])
+def public_office_list(request):
+    query = request.query_params.get('q', '').strip()
+    role_category = request.query_params.get('role_category', '').strip()
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+        page_size = min(100, max(1, int(request.query_params.get('page_size', '50'))))
+    except ValueError:
+        return Response({'detail': 'Parametry page i page_size muszą być liczbami całkowitymi.'}, status=400)
+    rows = PublicOffice.objects.filter(archived=False).select_related('current_holder')
+    if query:
+        rows = rows.filter(Q(title__icontains=query) | Q(organisation__icontains=query) |
+                           Q(current_holder__canonical_name__icontains=query))
+    if role_category:
+        rows = rows.filter(role_category=role_category)
+    rows = rows.order_by('role_category', 'organisation', 'title', 'pk')
+    count = rows.count()
+    start = (page - 1) * page_size
+    return Response({
+        'count': count,
+        'page': page,
+        'page_size': page_size,
+        'results': [public_office_data(office) for office in rows[start:start + page_size]],
     })
 
 
