@@ -548,3 +548,26 @@ html.sc-theme-transition .sc-root {
     filter: none;
   }
 }
+
+/* === R0 Интеграция: предпросмотр карточки (ступень B) живёт в слое, не в потоке ===
+   Уточнение владельца 23.09: развернутая карточка не должна сдвигать сетку и содержимое.
+   Блок предпросмотра вешается абсолютно под нижней кромкой карточки; размер карточки
+   в потоке не меняется, сосед не двигается. Слой-портал (R5) заменит это клоном над оригиналом. */
+.sc-card[data-stage="b"] { overflow: visible; }
+.sc-card[data-stage="b"][data-size] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-color: var(--sc-line-hover); }
+.sc-card[data-stage="b"] .sc-card__expand {
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: 100%;
+  margin-top: 0;
+  padding: var(--sc-s-3) var(--sc-s-4) var(--sc-s-4);
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-line-hover);
+  border-top: 0;
+  border-radius: 0 0 var(--sc-r-lg) var(--sc-r-lg);
+  box-shadow: var(--sc-e-3);
+}
+.sc-card[data-stage="b"][data-size="mini"] .sc-card__expand { padding-left: var(--sc-s-3); padding-right: var(--sc-s-3); }
+.sc-card[data-stage="b"][data-size="medium"] .sc-card__expand { border-radius: 0 0 var(--sc-r-xl) var(--sc-r-xl); }
+.sc-card[data-stage="b"][data-size="large"] .sc-card__expand { border-radius: 0 0 var(--sc-r-2xl) var(--sc-r-2xl); }

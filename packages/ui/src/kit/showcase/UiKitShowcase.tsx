@@ -5,6 +5,7 @@ import { ForcedReducedMotionContext } from "../motion/useMotionTokens";
 import * as Tokens from "./sections/Tokens";
 import * as Typography from "./sections/Typography";
 import * as MorphProbe from "./sections/MorphProbe";
+import * as Cards from "./sections/Cards";
 
 /**
  * Оболочка витрины. Владелец — R0. Исполнители поставляют файлы `sections/<Имя>.tsx`
@@ -12,7 +13,7 @@ import * as MorphProbe from "./sections/MorphProbe";
  */
 type SectionModule = { meta: { id: string; title: string; lead?: string }; Section: ComponentType };
 
-const SECTIONS: SectionModule[] = [Tokens, Typography, MorphProbe];
+const SECTIONS: SectionModule[] = [Tokens, Typography, Cards, MorphProbe];
 
 type Theme = "dark" | "light";
 

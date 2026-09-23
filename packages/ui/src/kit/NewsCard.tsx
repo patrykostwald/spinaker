@@ -285,7 +285,7 @@ export function NewsCard({
       data-expandable={expandable || undefined}
       data-material-id={article.id}
       className={cn("sc-card sc-hoverable", className)}
-      style={{ transformOrigin: origin, zIndex: stage === "b" ? 5 : undefined }}
+      style={{ transformOrigin: origin, zIndex: stage === "b" ? 30 : undefined }}
       layout="position"
       animate={{ opacity: entered ? 1 : 0, scale, y: lift }}
       transition={{ default: uiTransition, layout: motionTokens.t("move") }}
