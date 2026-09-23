@@ -1,13 +1,13 @@
 <#
 Retries only sources whose previous public terms-page check was unavailable.
-It waits seven days by default to avoid repeatedly hitting unavailable hosts.
+It waits one day by default, so a transient outage can be checked again tomorrow.
 It never enables a source, creates a card, imports content or sends mail.
 #>
 
 param(
   [ValidateRange(1, 48)] [int]$BatchSize = 24,
   [ValidateRange(1, 6)] [int]$Workers = 3,
-  [ValidateRange(1, 90)] [int]$MinAgeDays = 7
+  [ValidateRange(1, 90)] [int]$MinAgeDays = 1
 )
 
 $ErrorActionPreference = 'Stop'

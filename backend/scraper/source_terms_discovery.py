@@ -15,6 +15,7 @@ LINK_HINTS = (
     'ponowne-wykorzyst', 'ponowne%20wykorzyst', 'reuse', 're-use',
     'warunki-korzystania', 'warunki_uzytkowania', 'licencj', 'copyright', 'prawa-autorskie',
 )
+BIP_HINTS = ('bip', 'biuletyn informacji publicznej', 'informacja publiczna')
 POSITIVE_HINTS = (
     'ponowne wykorzystywanie', 'ponownie wykorzystywać', 'do ponownego wykorzystania',
     'reuse of public sector information', 'creative commons', 'cc by',
@@ -74,6 +75,24 @@ def terms_links(base_url, parser, source_url):
     return list(dict.fromkeys(links))[:3]
 
 
+def information_hubs(base_url, parser):
+    """Return explicit BIP/public-information links for one bounded second look.
+
+    Institutions often place reuse rules on a separately linked BIP site rather
+    than the editorial homepage.  The link must be visibly present on the
+    source page; we never infer a new host or manufacture a URL.
+    """
+    hubs = []
+    for item in parser.links:
+        url = public_link(urljoin(base_url, item['href']))
+        if not url:
+            continue
+        label = f"{url} {item.get('text', '')}".lower()
+        if any(hint in label for hint in BIP_HINTS):
+            hubs.append(url)
+    return list(dict.fromkeys(hubs))[:2]
+
+
 def analyse_page(raw):
     parser = PageText()
     parser.feed(decode_source_html(raw))
@@ -119,6 +138,7 @@ def inspect_source_terms(source, network):
         'source_url': source.url or '',
         'status': 'no_official_terms_link_found',
         'homepage': '',
+        'information_pages': [],
         'terms_pages': [],
         'error': '',
     }
@@ -131,6 +151,20 @@ def inspect_source_terms(source, network):
         links = PublisherLinks()
         links.feed(decode_source_html(raw))
         candidates = terms_links(homepage, links, source.url)
+        # When the source exposes an official BIP/public-information link,
+        # inspect that linked page too.  This is a bounded follow-up to the
+        # publisher's own navigation, not a broader crawl.
+        for hub in information_hubs(homepage, links):
+            try:
+                hub_raw, hub_url, _ = network.fetch(hub)
+                hub_links = PublisherLinks()
+                hub_links.feed(decode_source_html(hub_raw))
+                result['information_pages'].append({'url': hub_url, 'status': 'ok'})
+                candidates.extend(terms_links(hub_url, hub_links, hub_url))
+            except Exception as exc:
+                error = str(exc) if isinstance(exc, ProbeError) else type(exc).__name__
+                result['information_pages'].append({'url': hub, 'status': 'error', 'error': error})
+        candidates = list(dict.fromkeys(candidates))[:3]
         if not candidates:
             return result
         result['status'] = 'terms_link_found'
