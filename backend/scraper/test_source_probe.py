@@ -7,7 +7,7 @@ from django.core.management import call_command
 
 from news.models import ImportState, Source
 from scraper.source_probe import (ProbeError, ProbeNetwork, SourceProbe, audit_source,
-    parse_sitemap, public_link)
+    failed_result, parse_sitemap, public_link)
 
 
 def source(**changes):
@@ -138,3 +138,13 @@ def test_fatal_probe_error_is_saved_with_a_bounded_diagnostic_and_does_not_activ
     assert state.last_error == 'ProbeError'
     item.refresh_from_db()
     assert not item.is_active and not item.scrape_enabled
+
+
+def test_parallel_audit_failure_has_the_same_reviewable_diagnostic():
+    result = failed_result(source(), ProbeError('certificate_hostname_mismatch'))
+    assert result['audit_status'] == 'failed'
+    assert result['fatal_error'] == 'ProbeError'
+    assert result['fatal_error_detail'] == 'certificate_hostname_mismatch'
+    assert result['errors'][-1] == {
+        'kind': 'fatal_probe', 'url': 'https://example.com/',
+        'error': 'ProbeError', 'detail': 'certificate_hostname_mismatch'}

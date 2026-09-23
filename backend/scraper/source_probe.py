@@ -257,6 +257,18 @@ def empty_result(source):
         'errors': [], 'recommendation': '', 'evidence': []}
 
 
+def failed_result(source, exc):
+    """Return a JSON-safe, reviewable failure without changing source state."""
+    result = empty_result(source)
+    detail = str(exc).strip().replace('\n', ' ')[:500]
+    result.update(audit_status='failed', fatal_error=type(exc).__name__,
+                  fatal_error_detail=detail, checked_at=timezone.now().isoformat(),
+                  recommendation='Nie aktywować automatycznie. Sprawdź błąd techniczny i źródło ręcznie.')
+    result['errors'].append({'kind': 'fatal_probe', 'url': source.url or source.rss_url or '',
+                             'error': type(exc).__name__, 'detail': detail})
+    return result
+
+
 class SourceProbe:
     def __init__(self, source, network, request_limit=16):
         self.source, self.network = source, network
@@ -556,15 +568,6 @@ def audit_source(source, network=None):
     try:
         result = probe_source(source, network)
     except Exception as exc:
-        result = empty_result(source)
-        # A single publisher can have a broken certificate or a transient DNS
-        # failure. Store a bounded diagnostic with the failed audit so it can be
-        # reviewed later, while callers can safely continue with other sources.
-        detail = str(exc).strip().replace('\n', ' ')[:500]
-        result.update(audit_status='failed', fatal_error=type(exc).__name__,
-                      fatal_error_detail=detail, checked_at=timezone.now().isoformat(),
-                      recommendation='Nie aktywować automatycznie. Sprawdź błąd techniczny i źródło ręcznie.')
-        result['errors'].append({'kind': 'fatal_probe', 'url': source.url or source.rss_url or '',
-                                 'error': type(exc).__name__, 'detail': detail})
+        result = failed_result(source, exc)
     save_source_audit(source, result)
     return result

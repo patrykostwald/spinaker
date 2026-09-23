@@ -14,7 +14,7 @@ from django.utils.dateparse import parse_datetime
 
 from news.models import ImportState, Source
 from scraper.source_probe import (PROBE_VERSION, ProbeNetwork, begin_source_audit, empty_result,
-    probe_source, save_source_audit, source_signature)
+    failed_result, probe_source, save_source_audit, source_signature)
 
 
 def is_fresh(source, result, max_age_hours):
@@ -99,9 +99,7 @@ def worker(source, network):
     try:
         return probe_source(source, network)
     except Exception as exc:
-        result = empty_result(source)
-        result.update(audit_status='failed', fatal_error=type(exc).__name__, checked_at=timezone.now().isoformat())
-        return result
+        return failed_result(source, exc)
     finally:
         connections.close_all()
 
