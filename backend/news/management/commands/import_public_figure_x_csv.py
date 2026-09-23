@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
@@ -65,6 +66,13 @@ class Command(BaseCommand):
             evidence_url, x_url = cell(row, 'official_evidence_url'), cell(row, 'direct_x_url')
             if not handle or not is_https(evidence_url) or not is_x_url(x_url):
                 invalid.append(f'Wiersz {line}: niepełny albo nieprawidłowy dowód URL.')
+                continue
+            try:
+                SocialHandleEvidence(handle=handle, evidence_url=evidence_url, extracted_url=x_url).full_clean(
+                    exclude=['roster_entry', 'subject_content_type', 'subject_object_id', 'candidate', 'reviewed_by']
+                )
+            except ValidationError as exc:
+                invalid.append(f'Wiersz {line}: nieprawidłowy handle lub dowód ({"; ".join(exc.messages)}).')
                 continue
             # Direct URL identity is the only automatic connection permitted.
             figures = list(PublicFigure.objects.filter(archived=False).filter(
