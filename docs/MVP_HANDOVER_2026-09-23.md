@@ -63,3 +63,7 @@ docker compose exec backend python -m pytest scraper/test_apply_audited_feeds.py
 Pełny type-check frontendu należy uruchomić lokalnie. W tej sesji bezpośrednie
 uruchomienie TypeScript zatrzymało się na uprawnieniach do lokalnego pakietu,
 a nie na błędzie kodu.
+
+Kolejny gotowy pilot lokalny to KPRM: `Start-ApprovedKprmMetadataPilot.ps1`.
+Obejmuje wyłącznie metadane aktualności z własnej sekcji premiera, z limitem 24
+żądań na dobę. Nie uruchamiaj go na środowisku bez działającego Compose.

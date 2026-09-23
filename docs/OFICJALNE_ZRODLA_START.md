@@ -78,3 +78,17 @@ Domyślnie sprawdza 24 nieaktywne kandydatury, maksymalnie trzema równoległymi
 połączeniami, zapisuje raport w `reports/` i kończy się lokalnym preflightem.
 Nie pobiera publikacji, nie uruchamia harvestera i nie zmienia statusu źródeł.
 Do większej paczki użyj `-BatchSize 48`; nie zwiększaj jej bez analizy raportu.
+
+### KPRM
+
+Oficjalna sekcja aktualności Kancelarii Prezesa Rady Ministrów może działać jako
+wąski pilot metadanych. Karta obejmuje wyłącznie `www.gov.pl/web/premier`, ma
+limit 24 żądań na dobę i nie pozwala zachowywać pełnej treści, PDF-ów, obrazów,
+nagrań ani wideo.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedKprmMetadataPilot.ps1
+```
+
+Podstawą jest strona KPRM o ponownym wykorzystywaniu informacji sektora
+publicznego. Przy każdym boxie pozostają adres KPRM oraz czas pozyskania.
