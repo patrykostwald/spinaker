@@ -62,6 +62,18 @@ class ProfilePreference(models.Model):
     theme_preference = models.CharField(max_length=8, choices=THEME_CHOICES, default='auto')
 
 
+class UserXConnection(models.Model):
+    """A minimal, OAuth-proven X identity used only to enable share controls.
+
+    No access or refresh token is persisted: publication remains in the X
+    compose window, under the user's final control.
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='x_connection')
+    x_user_id = models.CharField(max_length=32, unique=True)
+    username = models.CharField(max_length=15)
+    connected_at = models.DateTimeField(auto_now_add=True)
+
+
 class ThreadFavorite(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='thread_favorites')
     thread = models.ForeignKey('news.Thread', on_delete=models.CASCADE, related_name='favorites')

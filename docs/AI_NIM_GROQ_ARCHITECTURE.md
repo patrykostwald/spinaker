@@ -2,8 +2,8 @@
 
 ## Decyzja
 
-Kierunek jest zatwierdzony dla nowej warstwy redakcyjnej: NVIDIA NIM obsługuje
-embeddingi i reranking, a Groq przygotowuje ustrukturyzowane propozycje
+Kierunek jest zatwierdzony dla wąskiej warstwy redakcyjnej wpisów X: NVIDIA NIM obsługuje
+grupowanie i reranking już zebranych wpisów z potwierdzonych kont, a Groq przygotowuje ustrukturyzowane propozycje
 redakcyjne. Istniejące integracje AI pozostają bez zmian, dopóki nie przejdziemy
 przez etapy opisane niżej.
 

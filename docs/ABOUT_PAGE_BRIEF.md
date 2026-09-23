@@ -22,11 +22,13 @@ Konta użytkowników pozwolą zachować ulubione materiały i prywatne nitki kon
 
 Publiczna nazwa: **„Dr Spin — asystent redakcyjny oparty na modelach open-weight”**.
 
-- NVIDIA NIM: późniejszy pilotaż wyszukiwania semantycznego i porządkowania trafności.
-- Groq: późniejszy pilotaż szkiców redakcyjnych w ścisłym formacie.
+- NVIDIA NIM: późniejszy pilotaż grupowania i porządkowania już pobranych, potwierdzonych wpisów X.
+- Groq: późniejszy pilotaż szkiców redakcyjnych w ścisłym formacie, wyłącznie na tych wpisach X.
 - Dostawcy są domyślnie wyłączeni. Do modelu trafiają wyłącznie dopuszczone, krótkie fragmenty publicznych materiałów ze źródłem i datą.
 - Model może zaproponować szkic; redaktor sprawdza go i decyduje o publikacji. Model nie ocenia osób, nie rozstrzyga prawdy i nie publikuje sam.
 - Docelowo rozważamy własną infrastrukturę dla modeli open-weight po ewaluacji jakości, licencji i kosztów. Nie nazywamy tego dziś „własnym AI”.
+
+Zakres pierwszego pilotażu AI jest celowo wąski: przygotowuje trzy niepublikowane szkice dla redaktora — przekaz dnia kont rządzących, przekaz dnia kont opozycyjnych oraz kandydat Dr Spina wskazujący najczęściej powtarzany albo najbardziej angażujący przekaz. Nie nazywa automatycznie osoby ani wpisu „głupim”, „kłamstwem” czy „spinem”; redaktor wybiera opis, sprawdza źródła i decyduje o publikacji.
 
 ## Granice, które muszą być widoczne
 

@@ -22,6 +22,13 @@ DEBUG = env.bool("DJANGO_DEBUG", default=env.bool("DEBUG", default=False))
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "backend", "testserver"]))
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# User-controlled X sharing. OAuth identity is used only to unlock compose
+# controls; the application never stores user access tokens or posts for them.
+X_USER_OAUTH_ENABLED = env.bool('X_USER_OAUTH_ENABLED', default=False)
+X_USER_OAUTH_CLIENT_ID = env('X_USER_OAUTH_CLIENT_ID', default='')
+X_USER_OAUTH_REDIRECT_URI = env('X_USER_OAUTH_REDIRECT_URI', default='')
+X_USER_OAUTH_SUCCESS_PATH = env('X_USER_OAUTH_SUCCESS_PATH', default='/konto')
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
