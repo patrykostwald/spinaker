@@ -24,6 +24,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/gdos/aktualnosci",
         "terms_url": "https://www.gov.pl/web/gdos/ponowne-wykorzytanie-informacji",
     },
+    "gddkia": {
+        "name": "Generalna Dyrekcja Dróg Krajowych i Autostrad",
+        "source_url": "https://www.gov.pl/web/gddkia",
+        "listing_url": "https://www.gov.pl/web/gddkia/aktualnosci-2026",
+        "terms_url": "https://www.gov.pl/web/gddkia/ponowne-wykorzystanie-informacji-publicznej",
+    },
     "gios": {
         "name": "Główny Inspektorat Ochrony Środowiska",
         "source_url": "https://www.gov.pl/web/gios",
@@ -59,6 +65,12 @@ OFFICIAL_GOV_LISTINGS = {
         "source_url": "https://www.gov.pl/web/kis",
         "listing_url": "https://www.gov.pl/web/kis/aktualnosci",
         "terms_url": "https://www.gov.pl/web/kis/ponowne-wykorzystanie-informacji-sektora-publicznego",
+    },
+    "kgpsp": {
+        "name": "Komenda Główna Państwowej Straży Pożarnej",
+        "source_url": "https://www.gov.pl/web/kgpsp",
+        "listing_url": "https://www.gov.pl/web/kgpsp/aktualnosci",
+        "terms_url": "https://www.gov.pl/web/kgpsp/ponowne-wykorzystanie-informacji-sektora-publicznego",
     },
     "mon": {
         "name": "Ministerstwo Obrony Narodowej",
