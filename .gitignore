@@ -43,3 +43,6 @@ celerybeat-schedule*
 
 # Scratch / one-off local scripts and large local exports
 /tmp/
+
+# Generated reports from commands running inside the backend container
+backend/reports/

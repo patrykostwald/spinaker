@@ -104,3 +104,18 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedMvpSources.ps1
 Uruchamia tylko ELI/dane.gov/GUS, NIK i KPRM. Sejm pozostaje oddzielnym
 pilotem z własną kartą oraz własnym limitem. Skrypt nie uruchamia katalogowych
 kandydatów, mediów ani KRS.
+
+
+### Trybunał Konstytucyjny
+
+Po świeżym audycie kanału RSS można uruchomić wąski pilot metadanych Trybunału
+Konstytucyjnego. Karta zapisuje oficjalne warunki ponownego wykorzystywania,
+dokładny adres kanału, limit 24 żądań na dobę i zakres: tytuł, data, link oraz
+opis udostępniony w RSS. Nie pobiera HTML artykułów, załączników ani obrazów.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedTkRss.ps1
+```
+
+Skrypt odmawia działania, jeśli audyt ma więcej niż dobę, RSS nie odpowiada lub
+nie ma pełnego zapisu kontroli.
