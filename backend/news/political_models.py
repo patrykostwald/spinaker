@@ -192,6 +192,41 @@ class PublicFigure(models.Model):
         return self.canonical_name
 
 
+class PublicFigureRole(models.Model):
+    """An additional, publicly evidenced role on one canonical person profile.
+
+    It prevents multiple visible profiles for the same exact official roster
+    entry while retaining each separately sourced public role.
+    """
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT,
+        related_name='public_roles')
+    role_category = models.CharField(max_length=16, choices=PUBLIC_FIGURE_ROLE_CATEGORIES)
+    role_title = models.CharField(max_length=255)
+    organisation = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=12, choices=PUBLIC_FIGURE_STATUSES, default='current')
+    official_profile_url = models.URLField(max_length=1024, blank=True)
+    evidence_url = models.URLField(max_length=1024)
+    evidence_note = models.TextField(blank=True)
+    import_key = models.CharField(max_length=1024, blank=True, db_index=True,
+        help_text='Techniczny klucz źródłowej roli; nie jest kontem społecznościowym.')
+    source_checked_at = models.DateTimeField(default=timezone.now)
+    archived = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['archived', 'role_category', 'organisation', 'role_title']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['import_key'], condition=Q(import_key__gt=''),
+                name='news_public_figure_role_nonempty_import_key_unique',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.public_figure}: {self.role_title}'
+
+
 class RegisteredOrganisation(models.Model):
     """Minimal public record for a KRS entity, without personal registry data."""
     name = models.CharField(max_length=512)

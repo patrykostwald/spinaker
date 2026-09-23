@@ -903,7 +903,7 @@ from .account_models import (  # noqa: E402,F401
     SavedTopic, ArticleOpinion, ThreadOpinion, ThreadFavorite, ArticleFavorite,
     PersonalContextThread, PersonalContextThreadItem, CommentReport,
 )
-from .political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
+from .political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicFigureRole, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
 from .evidence_snapshot import (  # noqa: E402,F401
     EvidenceSnapshot,
     SnapshotArtifactType,

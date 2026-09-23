@@ -6,7 +6,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
+from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicFigureRole, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
 from news.political_import import create_from_preview, validate_csv
 from news.political_candidates import CandidateResolutionError, resolve_candidate
 from news.political_candidate_import import create_candidates_from_preview, validate_candidate_csv
@@ -163,6 +163,17 @@ class PublicFigureAdmin(admin.ModelAdmin):
         return False
 
 
+class PublicFigureRoleAdmin(admin.ModelAdmin):
+    list_display = ['public_figure', 'role_category', 'role_title', 'organisation', 'status', 'archived', 'source_checked_at']
+    list_filter = ['role_category', 'status', 'archived']
+    search_fields = ['public_figure__canonical_name', 'role_title', 'organisation']
+    autocomplete_fields = ['public_figure']
+    readonly_fields = ['created_at', 'updated_at']
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class RegisteredOrganisationAdmin(admin.ModelAdmin):
     list_display = ['name', 'krs_number', 'kind', 'source_checked_at', 'archived']
     list_filter = ['kind', 'archived']
@@ -304,6 +315,7 @@ def register_political_admin(site):
     site.register(PoliticalAccountCandidate, PoliticalAccountCandidateAdmin)
     site.register(ParliamentaryRosterEntry, ParliamentaryRosterEntryAdmin)
     site.register(PublicFigure, PublicFigureAdmin)
+    site.register(PublicFigureRole, PublicFigureRoleAdmin)
     site.register(RegisteredOrganisation, RegisteredOrganisationAdmin)
     site.register(PublicFigureOrganisationRelation, PublicFigureOrganisationRelationAdmin)
     site.register(SocialHandleEvidence, SocialHandleEvidenceAdmin)

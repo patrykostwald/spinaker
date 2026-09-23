@@ -37,6 +37,16 @@ def figure_data(figure, include_detail=False):
         'evidence_url': relation.evidence_url,
         'verified_at': relation.verified_at,
     } for relation in relations]
+    data['roles'] = [{
+        'role_category': role.role_category,
+        'role_title': role.role_title,
+        'organisation': role.organisation,
+        'status': role.status,
+        'official_profile_url': role.official_profile_url,
+        'evidence_url': role.evidence_url,
+        'source_checked_at': role.source_checked_at,
+    } for role in figure.public_roles.filter(archived=False).order_by(
+        'role_category', 'organisation', 'role_title')]
     data['votes'] = votes_data(figure)
     data['x_account'] = verified_x_account_data(figure)
     data['x_posts'] = verified_x_posts_data(figure)
