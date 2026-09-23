@@ -9,6 +9,7 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | Źródło | Kanał | Stan | Podstawa |
 |---|---|---|---|
 | GIOŚ, rekord 404 | `https://www.gios.gov.pl/pl/?format=feed&type=rss` | aktywne, karta RSS v1, limit 24/dzień | [warunki GIOŚ](https://powietrze.gios.gov.pl/depoz/regulamin-i-polityka-prywatnosci/) — podanie źródła, czasu pozyskania i informacji o przetworzeniu |
+| WIOŚ Warszawa, rekord 419 | `https://wios.warszawa.pl/feed/` | gotowe do uruchomienia, karta RSS v1, limit 24/dzień | [warunki WIOŚ](https://bip.warszawa.wios.gov.pl/bip/ponowne-wykorzystywanie/291%2CPonowne-wykorzystywanie-informacji-sektora-publicznego.html) — źródło, czas wytworzenia i pozyskania oraz informacja o przetworzeniu |
 | NIK | `https://www.nik.gov.pl/rss/id,1.html` | nie tworzyć kolejnej karty: aktywny odpowiednik istnieje w katalogu | [warunki NIK](https://www.nik.gov.pl/kontakt/ponowne-wykorzystywanie-informacji/) |
 | URE | `https://www.ure.gov.pl/dokumenty/rss/9-rss-41.rss` | nie tworzyć kolejnej karty: aktywny odpowiednik istnieje w katalogu | [warunki URE](https://bip.ure.gov.pl/bip/informacja-publiczna/1061%2CPonowne-wykorzystywanie-informacji-sektora-publicznego.html) |
 
@@ -21,7 +22,6 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | Policja | `https://www.policja.pl/dokumenty/rss/1-rss-1.rss` | Nie znaleziono opublikowanych warunków dla tego kanału. | Ręczna weryfikacja BIP i regulaminu. |
 | KZGW / Wody Polskie | `https://kzgw.gov.pl/index.php/pl/?format=feed&type=rss` | Nie znaleziono opublikowanych warunków dla kanału. | Sprawdzić BIP albo wystąpić o warunki. |
 | IMGW | `https://imgw.pl/feed/` | [Regulamin danych IMGW](https://danepubliczne.imgw.pl/docs/regulamin_udostepniania_danych.pdf) dotyczy portalu danych, nie kanału aktualności. | Nie przenosić warunków danych na RSS; znaleźć zasady dla aktualności. |
-| WIOŚ Warszawa | `https://wios.warszawa.pl/feed/` | Nie znaleziono opublikowanych warunków dla kanału. | Sprawdzić BIP. |
 | NIW | `https://niw.gov.pl/feed/` | Nie znaleziono opublikowanych warunków dla kanału. | Sprawdzić BIP. |
 | BIP woj. opolskiego | `https://bip.opolskie.pl/feed/` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
 | BIP Częstochowy | `https://bip.czestochowa.pl/rss` | BIP nie zastępuje ustalenia warunków dla kanału. | Odszukać stronę o ponownym wykorzystaniu. |
