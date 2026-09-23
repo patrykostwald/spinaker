@@ -92,3 +92,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedKprmMetadataPil
 
 Podstawą jest strona KPRM o ponownym wykorzystywaniu informacji sektora
 publicznego. Przy każdym boxie pozostają adres KPRM oraz czas pozyskania.
+
+## Jeden start zatwierdzonych źródeł
+
+Gdy działają usługi Compose, jednorazowy start dostępnych już pilotów wykonuje:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedMvpSources.ps1
+```
+
+Uruchamia tylko ELI/dane.gov/GUS, NIK i KPRM. Sejm pozostaje oddzielnym
+pilotem z własną kartą oraz własnym limitem. Skrypt nie uruchamia katalogowych
+kandydatów, mediów ani KRS.
