@@ -26,6 +26,15 @@ class Command(BaseCommand):
         # keeps the report in the mounted project directory instead of /reports
         # at the container filesystem root.
         parser.add_argument('--output', default='reports/source-review-queue-current.md')
+        parser.add_argument(
+            '--bucket', choices=(
+                '01_blad_techniczny',
+                '02_instytucja_rss_do_warunkow',
+                '03_instytucja_bez_potwierdzonego_kanalu',
+                '04_wydawca_lub_organizacja_wymaga_zgody',
+            ),
+            help='Zapisuje tylko jedną grupę kolejki; raport nadal nie zmienia źródeł.',
+        )
 
     def handle(self, *args, **options):
         sources = list(Source.objects.filter(
@@ -45,13 +54,16 @@ class Command(BaseCommand):
             '03_instytucja_bez_potwierdzonego_kanalu': 'Instytucje bez potwierdzonego kanału — nie zgadywać endpointu',
             '04_wydawca_lub_organizacja_wymaga_zgody': 'Wydawcy i organizacje — wymagają warunków lub zgody',
         }
+        selected_bucket = options.get('bucket')
+        bucket_order = [selected_bucket] if selected_bucket else list(labels)
+        selected_count = sum(len(grouped[bucket]) for bucket in bucket_order)
         lines = [
             '# Kolejka przeglądu źródeł', '',
             'Raport jest tylko podsumowaniem zapisanych audytów. Nie tworzy karty dostępu, nie aktywuje źródła i nie pobiera materiałów.',
-            '', f'Kandydaci: **{len(sources)}**.',
+            '', f'Kandydaci w raporcie: **{selected_count}**. Wszystkich kandydatów: **{len(sources)}**.',
         ]
         payload = []
-        for bucket in labels:
+        for bucket in bucket_order:
             entries = grouped[bucket]
             lines += ['', f'## {labels[bucket]} ({len(entries)})', '']
             if not entries:
@@ -79,4 +91,6 @@ class Command(BaseCommand):
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text('\n'.join(lines) + '\n', encoding='utf-8')
         output.with_suffix('.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-        self.stdout.write(self.style.SUCCESS(f'RAPORT_KOLEJKI: {len(sources)} kandydatów; {output}'))
+        self.stdout.write(self.style.SUCCESS(
+            f'RAPORT_KOLEJKI: {selected_count}/{len(sources)} kandydatów; {output}'
+        ))
