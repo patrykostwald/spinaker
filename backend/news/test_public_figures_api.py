@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from news.models import Article, Ballot, ParliamentaryVoting, Source
 from news.political_models import (ParliamentaryRosterEntry, PoliticalAccount, PoliticalAccountCandidate,
     PoliticalPost, PublicFigure, PublicFigureArticleReference, PublicFigureOrganisationRelation,
-    RegisteredOrganisation, SocialHandleEvidence)
+    RegisteredOrganisation, SocialHandleEvidence, PublicOffice, PublicFigureRole)
 
 
 pytestmark = pytest.mark.django_db
@@ -40,6 +40,23 @@ def test_profile_never_mixes_votes_from_another_term():
         Ballot.objects.create(voting=voting, mp_id=17, name='Anna Publiczna', vote='Za')
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert [row['topic'] for row in data['votes']['results']] == ['Obecna kadencja']
+
+
+def test_profile_exposes_durable_public_office_separately_from_current_holder():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Osoba publiczna', evidence_url='https://example.org/person')
+    office = PublicOffice.objects.create(import_key='state-office:test:head', title='Kierownicza funkcja testowa',
+        role_category='political', organisation='Instytucja Testowa',
+        official_roster_url='https://example.org/official-roster', current_holder=figure)
+    PublicFigureRole.objects.create(public_figure=figure, public_office=office,
+        role_category='political', role_title=office.title, organisation=office.organisation,
+        evidence_url='https://example.org/official-roster')
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
+    assert data['roles'][0]['office'] == {
+        'id': office.pk, 'title': 'Kierownicza funkcja testowa',
+        'official_roster_url': 'https://example.org/official-roster',
+        'source_checked_at': office.source_checked_at,
+    }
 
 
 def test_unlinked_figure_does_not_guess_votes_or_show_pending_relation():

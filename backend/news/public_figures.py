@@ -38,6 +38,12 @@ def figure_data(figure, include_detail=False):
         'verified_at': relation.verified_at,
     } for relation in relations]
     data['roles'] = [{
+        'office': ({
+            'id': role.public_office_id,
+            'title': role.public_office.title,
+            'official_roster_url': role.public_office.official_roster_url,
+            'source_checked_at': role.public_office.source_checked_at,
+        } if role.public_office_id else None),
         'role_category': role.role_category,
         'role_title': role.role_title,
         'organisation': role.organisation,
@@ -45,7 +51,7 @@ def figure_data(figure, include_detail=False):
         'official_profile_url': role.official_profile_url,
         'evidence_url': role.evidence_url,
         'source_checked_at': role.source_checked_at,
-    } for role in figure.public_roles.filter(archived=False).order_by(
+    } for role in figure.public_roles.filter(archived=False).select_related('public_office').order_by(
         'role_category', 'organisation', 'role_title')]
     data['votes'] = votes_data(figure)
     data['x_account'] = verified_x_account_data(figure)
@@ -94,11 +100,16 @@ def context_graph_data(figure):
     figure_node = f'person:{figure.pk}'
     nodes = [{'id': figure_node, 'type': 'public_figure', 'label': figure.canonical_name}]
     edges = []
-    for role in figure.public_roles.filter(archived=False).order_by('role_title', 'pk'):
-        node_id = f'role:{role.pk}'
-        nodes.append({'id': node_id, 'type': 'role', 'label': role.role_title,
-                      'organisation': role.organisation, 'status': role.status})
-        edges.append({'from': figure_node, 'to': node_id, 'type': 'holds_role',
+    for role in figure.public_roles.filter(archived=False).select_related('public_office').order_by('role_title', 'pk'):
+        node_id = f"office:{role.public_office_id}" if role.public_office_id else f'role:{role.pk}'
+        if role.public_office_id:
+            nodes.append({'id': node_id, 'type': 'public_office', 'label': role.public_office.title,
+                          'organisation': role.public_office.organisation,
+                          'url': role.public_office.official_roster_url})
+        else:
+            nodes.append({'id': node_id, 'type': 'role', 'label': role.role_title,
+                          'organisation': role.organisation, 'status': role.status})
+        edges.append({'from': figure_node, 'to': node_id, 'type': 'holds_public_office' if role.public_office_id else 'holds_role',
                       'evidence_url': role.evidence_url, 'source_checked_at': role.source_checked_at})
     for relation in figure.organisation_relations.filter(
         verification_status='confirmed', organisation__archived=False,

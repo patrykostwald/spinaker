@@ -4,7 +4,7 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
-from news.political_models import PublicFigure, PublicFigureRole
+from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
 
 def _senator(external_id):
@@ -35,6 +35,9 @@ def test_sync_highest_state_offices_uses_fixed_senate_roster_keys_only():
     assert president.canonical_name == 'Karol Nawrocki'
     assert PublicFigure.objects.get(import_key='state-office:rpd:monika-horna-cieslak').role_title == 'Rzeczniczka Praw Dziecka'
     assert PublicFigure.objects.get(import_key='state-office:uodo:miroslaw-wroblewski').role_title == 'Prezes Urzędu Ochrony Danych Osobowych'
+    assert PublicOffice.objects.get(import_key='state-office:president').current_holder == president
+    assert PublicOffice.objects.get(import_key='state-office:sejm-presidium:marshal').current_holder.import_key == 'parliamentary:sejm:58'
+    assert PublicFigureRole.objects.get(import_key='state-office:senate-presidium:marshal').public_office.import_key == 'state-office:senate-presidium:marshal'
     assert PublicFigureRole.objects.filter(import_key__startswith='state-office:senate-presidium:').count() == 5
     assert PublicFigureRole.objects.filter(import_key__startswith='state-office:sejm-presidium:').count() == 7
     assert PublicFigureRole.objects.get(import_key='state-office:senate-presidium:marshal').public_figure.import_key == 'parliamentary:senat:1063'

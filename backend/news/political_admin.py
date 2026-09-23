@@ -6,7 +6,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
+from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, PoliticalPost, PoliticalDraft, PoliticalRead
 from news.political_import import create_from_preview, validate_csv
 from news.political_candidates import CandidateResolutionError, resolve_candidate
 from news.political_candidate_import import create_candidates_from_preview, validate_candidate_csv
@@ -167,7 +167,18 @@ class PublicFigureRoleAdmin(admin.ModelAdmin):
     list_display = ['public_figure', 'role_category', 'role_title', 'organisation', 'status', 'archived', 'source_checked_at']
     list_filter = ['role_category', 'status', 'archived']
     search_fields = ['public_figure__canonical_name', 'role_title', 'organisation']
-    autocomplete_fields = ['public_figure']
+    autocomplete_fields = ['public_figure', 'public_office']
+    readonly_fields = ['created_at', 'updated_at']
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class PublicOfficeAdmin(admin.ModelAdmin):
+    list_display = ['title', 'organisation', 'role_category', 'current_holder', 'source_checked_at', 'archived']
+    list_filter = ['role_category', 'archived']
+    search_fields = ['title', 'organisation', 'import_key']
+    autocomplete_fields = ['current_holder']
     readonly_fields = ['created_at', 'updated_at']
 
     def has_delete_permission(self, request, obj=None):
@@ -342,6 +353,7 @@ def register_political_admin(site):
     site.register(ParliamentaryRosterEntry, ParliamentaryRosterEntryAdmin)
     site.register(PublicFigure, PublicFigureAdmin)
     site.register(PublicFigureRole, PublicFigureRoleAdmin)
+    site.register(PublicOffice, PublicOfficeAdmin)
     site.register(PublicFigureArticleReference, PublicFigureArticleReferenceAdmin)
     site.register(RegisteredOrganisation, RegisteredOrganisationAdmin)
     site.register(PublicFigureOrganisationRelation, PublicFigureOrganisationRelationAdmin)

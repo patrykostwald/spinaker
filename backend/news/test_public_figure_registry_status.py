@@ -3,7 +3,7 @@ from io import StringIO
 import pytest
 from django.core.management import call_command
 
-from news.political_models import ParliamentaryRosterEntry, PublicFigure, PublicFigureRole
+from news.political_models import ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole
 
 
 @pytest.mark.django_db
@@ -22,6 +22,10 @@ def test_registry_status_reports_official_rosters_and_never_needs_private_data(t
         public_figure=figure, role_category='party', role_title='Członek władz',
         evidence_url='https://party.example/wladze', import_key='test-role:anna',
     )
+    PublicOffice.objects.create(
+        import_key='state-office:test', title='Funkcja testowa', role_category='political',
+        official_roster_url='https://example.org/funkcja', current_holder=figure,
+    )
     report_path = tmp_path / 'registry.md'
     output = StringIO()
 
@@ -32,4 +36,5 @@ def test_registry_status_reports_official_rosters_and_never_needs_private_data(t
     assert 'Parlament krajowy | 1 | 0' in report
     assert 'PESEL' in report
     assert 'Dodatkowe udokumentowane role przy profilach: **1**' in report
+    assert 'Trwałe funkcje publiczne w rejestrze: **1**' in report
     assert 'profiles=1' in output.getvalue()

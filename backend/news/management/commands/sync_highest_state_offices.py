@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from news.political_models import PublicFigure, PublicFigureRole
+from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
 
 PRESIDENT_EVIDENCE_URL = 'https://k.prezydent.pl/prezydent'
@@ -105,7 +105,7 @@ class Command(BaseCommand):
 
         now = timezone.now()
         with transaction.atomic():
-            PublicFigure.objects.update_or_create(
+            president, _ = PublicFigure.objects.update_or_create(
                 import_key=president_key,
                 defaults={
                     'canonical_name': 'Karol Nawrocki',
@@ -121,8 +121,21 @@ class Command(BaseCommand):
                     'archived': False,
                 },
             )
+            president_office, _ = PublicOffice.objects.update_or_create(
+                import_key='state-office:president',
+                defaults={
+                    'title': 'Prezydent Rzeczypospolitej Polskiej',
+                    'role_category': 'political',
+                    'organisation': 'Kancelaria Prezydenta Rzeczypospolitej Polskiej',
+                    'official_roster_url': PRESIDENT_EVIDENCE_URL,
+                    'evidence_note': 'Oficjalny profil urzędu i aktualnie pełniącego funkcję.',
+                    'current_holder': president,
+                    'source_checked_at': now,
+                    'archived': False,
+                },
+            )
             for office, person, name, title, organisation, evidence_url in CENTRAL_OFFICES:
-                PublicFigure.objects.update_or_create(
+                holder, _ = PublicFigure.objects.update_or_create(
                     import_key=f'state-office:{office}:{person}',
                     defaults={
                         'canonical_name': name,
@@ -138,16 +151,43 @@ class Command(BaseCommand):
                         'archived': False,
                     },
                 )
+                PublicOffice.objects.update_or_create(
+                    import_key=f'state-office:{office}',
+                    defaults={
+                        'title': title,
+                        'role_category': 'political',
+                        'organisation': organisation,
+                        'official_roster_url': evidence_url,
+                        'evidence_note': 'Oficjalny profil urzędu i aktualnie pełniącego funkcję.',
+                        'current_holder': holder,
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
                 PublicFigure.objects.filter(
                     import_key__startswith=f'state-office:{office}:', status='current', archived=False,
                 ).exclude(import_key=f'state-office:{office}:{person}').update(
                     status='former', source_checked_at=now,
                 )
             for external_id, suffix, title in SENATE_PRESIDIUM:
+                office, _ = PublicOffice.objects.update_or_create(
+                    import_key=f'state-office:senate-presidium:{suffix}',
+                    defaults={
+                        'title': title,
+                        'role_category': 'parliamentary',
+                        'organisation': 'Senat Rzeczypospolitej Polskiej',
+                        'official_roster_url': SENATE_PRESIDIUM_EVIDENCE_URL,
+                        'evidence_note': 'Aktualny skład Prezydium Senatu wskazany przez Senat RP.',
+                        'current_holder': figures[f'parliamentary:senat:{external_id}'],
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
                 PublicFigureRole.objects.update_or_create(
                     import_key=f'state-office:senate-presidium:{suffix}',
                     defaults={
                         'public_figure': figures[f'parliamentary:senat:{external_id}'],
+                        'public_office': office,
                         'role_category': 'parliamentary',
                         'role_title': title,
                         'organisation': 'Senat Rzeczypospolitej Polskiej',
@@ -160,10 +200,24 @@ class Command(BaseCommand):
                     },
                 )
             for external_id, suffix, title in SEJM_PRESIDIUM:
+                office, _ = PublicOffice.objects.update_or_create(
+                    import_key=f'state-office:sejm-presidium:{suffix}',
+                    defaults={
+                        'title': title,
+                        'role_category': 'parliamentary',
+                        'organisation': 'Sejm Rzeczypospolitej Polskiej',
+                        'official_roster_url': SEJM_PRESIDIUM_EVIDENCE_URL,
+                        'evidence_note': 'Aktualny skład Prezydium Sejmu wskazany przez Sejm RP.',
+                        'current_holder': figures[f'parliamentary:sejm:{external_id}'],
+                        'source_checked_at': now,
+                        'archived': False,
+                    },
+                )
                 PublicFigureRole.objects.update_or_create(
                     import_key=f'state-office:sejm-presidium:{suffix}',
                     defaults={
                         'public_figure': figures[f'parliamentary:sejm:{external_id}'],
+                        'public_office': office,
                         'role_category': 'parliamentary',
                         'role_title': title,
                         'organisation': 'Sejm Rzeczypospolitej Polskiej',

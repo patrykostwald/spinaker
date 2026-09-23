@@ -192,6 +192,33 @@ class PublicFigure(models.Model):
         return self.canonical_name
 
 
+class PublicOffice(models.Model):
+    """A durable public office, independent of whoever currently holds it.
+
+    The office is the stable unit for the public registry.  A current holder
+    can change, while the office record, its official source and role history
+    remain available for research and scheduled re-checks.
+    """
+    import_key = models.CharField(max_length=1024, unique=True)
+    title = models.CharField(max_length=255)
+    role_category = models.CharField(max_length=16, choices=PUBLIC_FIGURE_ROLE_CATEGORIES)
+    organisation = models.CharField(max_length=255, blank=True)
+    official_roster_url = models.URLField(max_length=1024)
+    evidence_note = models.TextField(blank=True)
+    current_holder = models.ForeignKey(PublicFigure, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='currently_held_public_offices')
+    source_checked_at = models.DateTimeField(default=timezone.now)
+    archived = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['archived', 'role_category', 'organisation', 'title']
+
+    def __str__(self):
+        return self.title
+
+
 class PublicFigureRole(models.Model):
     """An additional, publicly evidenced role on one canonical person profile.
 
@@ -200,6 +227,8 @@ class PublicFigureRole(models.Model):
     """
     public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT,
         related_name='public_roles')
+    public_office = models.ForeignKey(PublicOffice, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='holder_roles')
     role_category = models.CharField(max_length=16, choices=PUBLIC_FIGURE_ROLE_CATEGORIES)
     role_title = models.CharField(max_length=255)
     organisation = models.CharField(max_length=255, blank=True)
