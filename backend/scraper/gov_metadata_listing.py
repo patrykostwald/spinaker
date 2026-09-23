@@ -112,6 +112,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/paa/aktualnosci",
         "terms_url": "https://www.gov.pl/web/paa/ponowne-wykorzystanie-informacji-publicznej",
     },
+    "priorytety": {
+        "name": "Priorytety Rządu",
+        "source_url": "https://www.gov.pl/web/priorytety",
+        "listing_url": "https://www.gov.pl/web/priorytety/aktualnosci",
+    },
     "prokuratoria": {
         "name": "Prokuratoria Generalna Rzeczypospolitej Polskiej",
         "source_url": "https://www.gov.pl/web/prokuratoria",

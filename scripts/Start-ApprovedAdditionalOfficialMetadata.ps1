@@ -2,7 +2,7 @@ param([string]$ReviewedBy = "redakcja spin.clinic")
 
 $ErrorActionPreference = "Stop"
 
-foreach ($sourceKey in @("cyfryzacja", "kultura", "rozwoj", "nauka", "gis", "gios", "rars", "kowr", "rodzina", "sport", "gdos", "kis", "ncbr", "paa", "wug", "gugik", "prokuratoria", "gddkia", "kgpsp", "gitd", "udsc", "uzp", "nfosigw", "urpl", "gif", "rpp", "kas")) {
+foreach ($sourceKey in @("cyfryzacja", "kultura", "rozwoj", "nauka", "gis", "gios", "rars", "kowr", "rodzina", "sport", "gdos", "kis", "ncbr", "paa", "wug", "gugik", "prokuratoria", "gddkia", "kgpsp", "gitd", "udsc", "uzp", "nfosigw", "urpl", "gif", "rpp", "kas", "priorytety")) {
   docker compose exec backend python manage.py configure_official_gov_metadata_source --source-key $sourceKey --apply --reviewed-by $ReviewedBy
   if ($LASTEXITCODE -ne 0) { throw "Nie udało się skonfigurować źródła $sourceKey." }
   docker compose exec backend python manage.py import_official_gov_metadata --source-key $sourceKey --apply --limit 10
