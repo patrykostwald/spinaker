@@ -571,12 +571,11 @@ html.sc-theme-transition .sc-root {
 .sc-card[data-stage="b"][data-size="mini"] .sc-card__expand { padding-left: var(--sc-s-3); padding-right: var(--sc-s-3); }
 .sc-card[data-stage="b"][data-size="medium"] .sc-card__expand { border-radius: 0 0 var(--sc-r-xl) var(--sc-r-xl); }
 .sc-card[data-stage="b"][data-size="large"] .sc-card__expand { border-radius: 0 0 var(--sc-r-2xl) var(--sc-r-2xl); }
+
+
 /* === R4 Примитивы движения === */
 
 /* Утилита: видимо только для скринридера (aria-live регион ReorderableStrips и т.п.). */
-/* === R1 Иконки и контролы === */
-
-/* ---------- Утилита: скрыто визуально, доступно для AT ---------- */
 .sc-visually-hidden {
   position: absolute;
   width: 1px;
@@ -770,6 +769,23 @@ html.sc-theme-transition .sc-root {
 @media (max-width: 480px) {
   .sc-motion-track { width: 100%; }
 }
+
+
+/* === R1 Иконки и контролы === */
+
+/* ---------- Утилита: скрыто визуально, доступно для AT ---------- */
+.sc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---------- Иконки: точечные ховер-эффекты из каталога ----------
    [data-demo="true"] воспроизводит тот же эффект, что :hover — кнопка «Odtwórz animacje»
    на витрине переключает его без реальной мыши. */
@@ -1072,3 +1088,220 @@ html.sc-theme-transition .sc-root {
   cursor: pointer;
 }
 .sc-controls__replay:hover { border-color: var(--sc-accent); color: var(--sc-accent); }
+
+
+/* === R2 Кнопки и дропдаун === */
+
+/* Lokalne tokeny tylko dla danger — reszta kolorów bierze gotowe --sc-* z bloku R0.
+   Dopisane pod istniejące selektory motywu: nowa własność, nie nadpisanie cudzej. */
+:root,
+html[data-theme="dark"],
+[data-sc-theme="dark"] {
+  --sc-btn-danger-soft: rgba(255, 107, 107, 0.14);
+}
+html[data-theme="light"],
+html[data-theme="pastel"],
+[data-sc-theme="light"] {
+  --sc-btn-danger-soft: rgba(196, 43, 43, 0.1);
+}
+
+/* ---------- Button: baza ---------- */
+.sc-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sc-s-2);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: var(--sc-font-sans);
+  font-size: var(--sc-t-body-s-size);
+  line-height: 1;
+  letter-spacing: var(--sc-track-body-s);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background-color var(--sc-dur-base) var(--sc-ease-standard),
+    color var(--sc-dur-base) var(--sc-ease-standard),
+    border-color var(--sc-dur-base) var(--sc-ease-standard),
+    box-shadow var(--sc-dur-base) var(--sc-ease-standard),
+    opacity var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-btn:disabled:not([aria-busy="true"]) {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.sc-btn[aria-disabled="true"]:not([aria-busy="true"]) {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.sc-btn[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* Rozmiary: wysokość 32/40/48, odstęp poziomy 12/16/20, promień 10/14/14. */
+.sc-btn[data-size="sm"] { height: 32px; padding: 0 var(--sc-s-3); border-radius: var(--sc-r-sm); }
+.sc-btn[data-size="md"] { height: 40px; padding: 0 var(--sc-s-4); border-radius: var(--sc-r-md); }
+.sc-btn[data-size="lg"] { height: 48px; padding: 0 var(--sc-s-5); border-radius: var(--sc-r-md); }
+
+/* Kształt icon: kwadrat bez poziomego oddechu tekstu, ten sam promień co rozmiar. */
+.sc-btn[data-shape="icon"][data-size="sm"] { width: 32px; padding: 0; }
+.sc-btn[data-shape="icon"][data-size="md"] { width: 40px; padding: 0; }
+.sc-btn[data-shape="icon"][data-size="lg"] { width: 48px; padding: 0; }
+.sc-btn[data-shape="pill"] { border-radius: var(--sc-r-pill); }
+
+.sc-btn[data-full-width="true"] { display: flex; width: 100%; }
+
+/* Strefa dotyku 44px: pseudo ::after (::before jest zajęte przez poświatę .sc-hoverable). */
+.sc-btn[data-size="sm"]::after { content: ""; position: absolute; inset: -6px; }
+.sc-btn[data-size="md"]::after { content: ""; position: absolute; inset: -2px; }
+
+/* ---------- Warianty kolorystyczne ---------- */
+.sc-btn[data-variant="primary"] {
+  background: var(--sc-accent);
+  color: var(--sc-on-accent);
+  border-color: var(--sc-accent);
+}
+@media (hover: hover) {
+  .sc-btn[data-variant="primary"]:hover { background: var(--sc-accent-hover); border-color: var(--sc-accent-hover); box-shadow: var(--sc-e-2); }
+}
+.sc-btn[data-variant="primary"]:focus-visible,
+.sc-btn[data-variant="primary"][data-lit="true"] { background: var(--sc-accent-hover); border-color: var(--sc-accent-hover); box-shadow: var(--sc-e-2); }
+.sc-btn[data-variant="primary"]:active { background: var(--sc-accent-press); border-color: var(--sc-accent-press); }
+
+.sc-btn[data-variant="secondary"] {
+  background: var(--sc-surface-2);
+  color: var(--sc-text);
+  border-color: var(--sc-line);
+  box-shadow: var(--sc-e-1), var(--sc-ring);
+}
+@media (hover: hover) {
+  .sc-btn[data-variant="secondary"]:hover { background: var(--sc-surface-3); border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+}
+.sc-btn[data-variant="secondary"]:focus-visible,
+.sc-btn[data-variant="secondary"][data-lit="true"] { background: var(--sc-surface-3); border-color: var(--sc-line-hover); box-shadow: var(--sc-e-2), var(--sc-ring); }
+
+.sc-btn[data-variant="quiet"] {
+  background: transparent;
+  color: var(--sc-text-2);
+  border-color: transparent;
+}
+@media (hover: hover) {
+  .sc-btn[data-variant="quiet"]:hover { background: var(--sc-surface-2); color: var(--sc-text); border-color: var(--sc-line-hover); }
+}
+.sc-btn[data-variant="quiet"]:focus-visible,
+.sc-btn[data-variant="quiet"][data-lit="true"] { background: var(--sc-surface-2); color: var(--sc-text); border-color: var(--sc-line-hover); }
+
+.sc-btn[data-variant="ghost"] {
+  background: transparent;
+  color: var(--sc-text-2);
+  border-color: transparent;
+}
+@media (hover: hover) {
+  .sc-btn[data-variant="ghost"]:hover { color: var(--sc-text); }
+}
+.sc-btn[data-variant="ghost"]:focus-visible,
+.sc-btn[data-variant="ghost"][data-lit="true"] { color: var(--sc-text); }
+
+.sc-btn[data-variant="danger"] {
+  background: transparent;
+  color: var(--sc-negative);
+  border-color: var(--sc-negative);
+}
+@media (hover: hover) {
+  .sc-btn[data-variant="danger"]:hover { background: var(--sc-btn-danger-soft); box-shadow: var(--sc-e-2); }
+}
+.sc-btn[data-variant="danger"]:focus-visible,
+.sc-btn[data-variant="danger"][data-lit="true"] { background: var(--sc-btn-danger-soft); box-shadow: var(--sc-e-2); }
+
+/* Przełącznik (pressed) — wspólne dla wariantów, gdzie ma to sens (quiet/ghost/secondary). */
+.sc-btn[aria-pressed="true"] {
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent);
+  border-color: var(--sc-accent);
+}
+
+/* ---------- Etykieta, ikony, spinner ---------- */
+.sc-btn__icon { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.sc-btn__label { display: inline-block; }
+.sc-btn[aria-busy="true"] .sc-btn__label,
+.sc-btn[aria-busy="true"] .sc-btn__icon:not(.sc-btn__spinner) {
+  visibility: hidden;
+}
+.sc-btn__spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+}
+@keyframes sc-btn-spin { to { transform: rotate(360deg); } }
+.sc-btn__spinner-svg { animation: sc-btn-spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sc-btn__spinner-svg { animation: none; }
+}
+[data-sc-force~="reduced-motion"] .sc-btn__spinner-svg { animation: none; }
+
+/* ---------- Dropdown ---------- */
+.sc-dropdown { position: relative; display: inline-block; }
+.sc-dropdown__chevron { display: inline-flex; width: 16px; height: 16px; }
+
+.sc-dropdown__panel {
+  position: absolute;
+  z-index: 40;
+  min-width: 220px;
+  max-width: 320px;
+  margin: 0;
+  padding: var(--sc-s-2);
+  border-radius: var(--sc-r-xl);
+  box-shadow: var(--sc-e-menu), var(--sc-ring);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-s-1);
+}
+/* .sc-chrome (blok R0) daje blur; tło nadpisujemy na --sc-chrome-menu, jak wymaga specyfikacji. */
+.sc-dropdown__panel.sc-chrome { background: var(--sc-chrome-menu); }
+
+.sc-dropdown__list { display: flex; flex-direction: column; gap: 2px; outline: none; max-height: 60vh; overflow-y: auto; }
+
+.sc-dropdown__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sc-s-3);
+  min-height: 40px;
+  padding: 8px var(--sc-s-3);
+  border-radius: var(--sc-r-md);
+  cursor: pointer;
+  color: var(--sc-text);
+  outline: none;
+  transition: background-color var(--sc-dur-fast) var(--sc-ease-standard), color var(--sc-dur-fast) var(--sc-ease-standard);
+}
+@media (hover: hover) {
+  .sc-dropdown__item:hover { background: var(--sc-surface-2); }
+}
+.sc-dropdown__item--active { background: var(--sc-surface-2); }
+.sc-dropdown__item[aria-disabled="true"] { color: var(--sc-text-3); cursor: not-allowed; pointer-events: none; }
+
+.sc-dropdown__highlight {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--sc-surface-2);
+}
+
+.sc-dropdown__item-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.sc-dropdown__item-desc { overflow-wrap: anywhere; }
+
+.sc-dropdown__check { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex: none; color: var(--sc-accent); }
+
+.sc-dropdown__footer { border-top: 1px solid var(--sc-line); margin-top: 2px; padding: var(--sc-s-3) var(--sc-s-2) 2px; }
+
+@media (max-width: 480px) {
+  .sc-dropdown__panel { max-width: calc(100vw - var(--sc-s-8)); }
+}
