@@ -77,6 +77,11 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/kis/aktualnosci",
         "terms_url": "https://www.gov.pl/web/kis/ponowne-wykorzystanie-informacji-sektora-publicznego",
     },
+    "kas": {
+        "name": "Krajowa Administracja Skarbowa",
+        "source_url": "https://www.gov.pl/web/kas",
+        "listing_url": "https://www.gov.pl/web/kas/wiadomosci",
+    },
     "kgpsp": {
         "name": "Komenda Główna Państwowej Straży Pożarnej",
         "source_url": "https://www.gov.pl/web/kgpsp",
