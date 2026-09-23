@@ -153,6 +153,68 @@ def context_graph_data(figure):
     return {'nodes': nodes, 'edges': edges, 'gaps': gaps}
 
 
+def dossier_data(figure):
+    """Build the evidence-only input and display structure for Dr Spin.
+
+    This remains useful with AI disabled.  A future single model call receives
+    this bounded pack, not unrestricted database content, and may only explain
+    or order the cited records.
+    """
+    details = figure_data(figure, include_detail=True)
+    graph = context_graph_data(figure)
+    materials = details['materials']
+    timeline = [
+        {
+            'kind': 'material', 'date': row['published_date'], 'label': row['title'],
+            'url': row['url'], 'evidence_url': row['url'],
+        }
+        for row in materials['results']
+    ] + [
+        {
+            'kind': 'official_vote', 'date': row['date'], 'label': row['topic'],
+            'vote': row['vote'], 'url': row['article_url'], 'evidence_url': row['article_url'],
+        }
+        for row in details['votes']['results']
+    ]
+    timeline.sort(key=lambda row: (row['date'] is None, row['date'] or ''), reverse=True)
+    questions = []
+    if details['organisations']:
+        questions.append('Która udokumentowana rola przy podmiocie jest istotna dla badanego tematu i z jakiego okresu pochodzi?')
+    if details['votes']['available']:
+        questions.append('Które oficjalne głosowania dotyczą badanego zagadnienia, a które są tylko zbieżne tematycznie?')
+    if materials['results']:
+        questions.append('Które materiały są źródłami pierwotnymi, a które relacjami lub komentarzem?')
+    if not questions:
+        questions.append('Jakie urzędowe źródło lub materiał pierwotny byłby potrzebny, aby poszerzyć kontekst?')
+    return {
+        'status': 'evidence_pack_ready',
+        'figure': figure_data(figure),
+        'summary': {
+            'current_role': figure.role_title,
+            'public_offices': [role['office'] for role in details['roles'] if role['office']],
+            'confirmed_organisations': len(details['organisations']),
+            'confirmed_materials': materials['count'],
+            'official_votes': len(details['votes']['results']),
+            'confirmed_x_account': bool(details['x_account']),
+        },
+        'timeline': timeline[:30],
+        'materials': materials,
+        'organisations': details['organisations'],
+        'roles': details['roles'],
+        'votes': details['votes'],
+        'graph': graph,
+        'research_questions': questions,
+        'gaps': graph['gaps'],
+        'ai_output_contract': {
+            'one_call': True,
+            'sections': ['brief', 'reading_order', 'research_questions', 'known_gaps', 'what_could_change_the_picture'],
+            'rule': 'Każdy punkt musi wskazać element tego pakietu przez URL; model nie może dodawać nowych faktów ani relacji.',
+        },
+        'notice': ('To jest pakiet dowodów z Bazy, nie ocena osoby ani potwierdzenie tezy. '
+                   'AI może pomóc w kolejności lektury, ale nie może tworzyć faktów poza tym pakietem.'),
+    }
+
+
 def verified_x_account_record(figure):
     """Return the account and its public evidence only after two confirmations.
 
@@ -271,3 +333,9 @@ def public_figure_context(request, figure_id):
         'notice': ('Krawędzie pokazują wyłącznie potwierdzone relacje i materiały. '
                    'Wspólny temat lub wystąpienie nazwiska nie tworzy relacji.'),
     })
+
+
+@api_view(['GET'])
+def public_figure_dossier(request, figure_id):
+    figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
+    return Response(dossier_data(figure))

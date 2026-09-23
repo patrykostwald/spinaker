@@ -178,3 +178,14 @@ def test_context_exposes_only_confirmed_material_links_and_evidence_graph():
     assert data['materials']['by_category'] == {'interview': 1}
     assert any(edge['type'] == 'confirmed_material_reference' for edge in data['graph']['edges'])
     assert not any(node.get('label') == 'Podobne nazwisko' for node in data['graph']['nodes'])
+
+
+def test_dossier_returns_only_evidence_pack_and_explicit_ai_contract():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Osoba publiczna', evidence_url='https://example.org/person')
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/dossier/').data
+    assert data['status'] == 'evidence_pack_ready'
+    assert data['summary']['confirmed_materials'] == 0
+    assert data['research_questions']
+    assert data['ai_output_contract']['one_call'] is True
+    assert 'nie może dodawać nowych faktów' in data['ai_output_contract']['rule']
