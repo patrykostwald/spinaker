@@ -153,16 +153,13 @@ function OrganisationRow({ relation, demo }: { relation: PublicFigureOrganisatio
   return (
     <li className="mvp-pf-org">
       <div className="mvp-pf-org-main">
-        <strong>{relation.name}</strong>
+        <SourceLink href={relation.official_register_url} demo={demo}><strong>{relation.name}</strong></SourceLink>
         <span className="mvp-pf-verified"><span aria-hidden="true">✓</span> potwierdzone w źródle publicznym</span>
       </div>
       <dl>
-        <div><dt>Rodzaj</dt><dd>{ORGANISATION_KIND_LABELS[relation.kind]?.singular ?? relation.kind}</dd></div>
-        <div><dt>KRS</dt><dd>{relation.krs_number}</dd></div>
         <div><dt>Publiczna rola</dt><dd>{relation.public_role}</dd></div>
         <div><dt>Relacja</dt><dd><span className={`mvp-pf-relation is-${relation.relation_status}`}>{relation.relation_status === 'current' ? 'obecna' : 'historyczna'}</span></dd></div>
-        <div><dt>Weryfikacja</dt><dd>{relation.verified_at ? <time dateTime={relation.verified_at}>{formatDay(relation.verified_at)}</time> : '—'}</dd></div>
-        <div><dt>Źródło</dt><dd className="mvp-pf-org-links"><SourceLink href={relation.evidence_url} demo={demo}>Dowód publiczny</SourceLink><SourceLink href={relation.official_register_url} demo={demo}>Wpis w rejestrze</SourceLink></dd></div>
+        <div><dt>Źródło</dt><dd className="mvp-pf-org-links"><SourceLink href={relation.evidence_url} demo={demo}>Dowód publiczny</SourceLink></dd></div>
       </dl>
     </li>
   );
