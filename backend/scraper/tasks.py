@@ -93,6 +93,7 @@ def import_official_task(kind):
     from django.utils import timezone
     from news.models import ImportState
     from scraper.official import import_voting_period, import_prints, import_eli_changes, official_access_allowed
+    from scraper.utils import HostRateLimited
     if kind not in {'votings', 'prints', 'eli'}:
         raise ValueError('Unknown official import')
     lock = 'lock:official:' + kind
@@ -124,6 +125,17 @@ def import_official_task(kind):
         state.last_success, state.last_error, state.imported = started, '', count
         state.save(update_fields=['last_success', 'last_error', 'imported'])
         return {'status': 'ok', 'new_records': count}
+    except HostRateLimited as exc:
+        # The provider's gateway has supplied a retry window.  Never sleep
+        # inside a Celery worker: long windows otherwise consume the worker
+        # until its soft limit and turn a controlled deferral into an error.
+        state.last_error = f'host_rate_limited:{exc.retry_after_seconds:.3f}'
+        state.save(update_fields=['last_error'])
+        return {
+            'status': 'deferred',
+            'new_records': 0,
+            'retry_after_seconds': exc.retry_after_seconds,
+        }
     except Exception as exc:
         state.last_error = type(exc).__name__
         state.save(update_fields=['last_error'])
