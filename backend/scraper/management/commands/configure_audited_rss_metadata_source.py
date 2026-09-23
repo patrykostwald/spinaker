@@ -29,6 +29,23 @@ class Command(BaseCommand):
             source = Source.objects.select_for_update().filter(pk=options['source_id']).first()
             if source is None:
                 raise CommandError('Nie znaleziono źródła.')
+            now = timezone.now()
+            latest = SourceAccessInstruction.objects.filter(source=source).order_by('-version').first()
+            if latest and latest.status == SourceAccessInstruction.Status.SUSPENDED:
+                raise CommandError('Najnowsza karta jest wstrzymana; wymaga osobnej kontroli redakcyjnej.')
+            # A successful first run deliberately changes rss_url and catalog_stage,
+            # so the old candidate-audit signature must not make a repeated start
+            # fail. A still-valid exact card is the durable proof for that no-op.
+            existing = SourceAccessInstruction.objects.filter(
+                source=source, status=SourceAccessInstruction.Status.APPROVED,
+                channel=SourceAccessInstruction.Channel.RSS,
+                allowed_scope=SourceAccessInstruction.Scope.METADATA,
+                endpoint=source.rss_url, terms_url=options['terms_url'], valid_until__gt=now,
+            ).order_by('-version').first()
+            if existing and source.catalog_stage == 'configured' and source.is_active and source.scrape_enabled:
+                self.stdout.write(self.style.SUCCESS(
+                    f'GOTOWE: {source.pk} {source.name}; użyto istniejącej RSS karty v{existing.version}.'))
+                return
             state = ImportState.objects.filter(name=f'source-check:{source.pk}').first()
             result = dict(state.cursor) if state else {}
             rss = result.get('rss') or {}
@@ -45,10 +62,6 @@ class Command(BaseCommand):
             if not options['apply']:
                 self.stdout.write(f'PLAN: {source.name}; RSS {feed_url}; wyłącznie metadane.')
                 return
-            latest = SourceAccessInstruction.objects.filter(source=source).order_by('-version').first()
-            if latest and latest.status == SourceAccessInstruction.Status.SUSPENDED:
-                raise CommandError('Najnowsza karta jest wstrzymana; wymaga osobnej kontroli redakcyjnej.')
-            now = timezone.now()
             card = SourceAccessInstruction.objects.filter(
                 source=source, status=SourceAccessInstruction.Status.APPROVED,
                 channel=SourceAccessInstruction.Channel.RSS,
