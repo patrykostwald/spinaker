@@ -4,7 +4,8 @@ import pytest
 from django.core.management import call_command
 
 from news.models import Source, SourceAccessInstruction
-from scraper.management.commands.configure_kprm_metadata_source import SOURCE_URL, TERMS_URL
+from scraper.management.commands.configure_kprm_metadata_source import ROBOTS_URL, SOURCE_URL, TERMS_URL
+from scraper.access_gate import approved_instruction
 
 
 pytestmark = pytest.mark.django_db
@@ -15,10 +16,11 @@ def test_kprm_pilot_is_metadata_only_and_recovers_catalog_candidate():
         is_active=False, scrape_enabled=False)
     call_command('configure_kprm_metadata_source', '--reviewed-by=test', '--apply', stdout=StringIO())
     source.refresh_from_db()
-    card = SourceAccessInstruction.objects.get(source=source)
-    assert card.channel == 'html' and card.allowed_scope == 'metadata'
+    card = SourceAccessInstruction.objects.get(source=source, channel='html')
+    assert card.allowed_scope == 'metadata'
     assert card.endpoint == 'https://www.gov.pl/web/premier'
-    assert card.terms_url == TERMS_URL and card.daily_request_cap == 24
+    assert card.terms_url == TERMS_URL and card.daily_request_cap == 12
+    assert approved_instruction(source, 'sitemap', ROBOTS_URL)
     assert source.is_active and source.scrape_enabled and source.catalog_stage == 'configured'
 
 

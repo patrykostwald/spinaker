@@ -10,6 +10,7 @@ from news.models import Source, SourceAccessInstruction
 SOURCE_URL = 'https://www.gov.pl/web/premier/rss'
 LISTING_URL = 'https://www.gov.pl/web/premier/wydarzenia'
 TERMS_URL = 'https://www.gov.pl/web/premier/ponowne-wykorzystywanie'
+ROBOTS_URL = 'https://www.gov.pl/robots.txt'
 
 
 def configure(source, reviewer, valid_days=180):
@@ -17,21 +18,28 @@ def configure(source, reviewer, valid_days=180):
     if latest and latest.status == SourceAccessInstruction.Status.SUSPENDED:
         raise CommandError('Najnowsza karta KPRM jest wstrzymana; nie można jej automatycznie odnowić.')
     now = timezone.now()
-    card = SourceAccessInstruction.objects.create(
-        source=source, version=(latest.version if latest else 0) + 1,
-        status=SourceAccessInstruction.Status.APPROVED,
-        channel=SourceAccessInstruction.Channel.HTML,
-        allowed_scope=SourceAccessInstruction.Scope.METADATA,
-        endpoint='https://www.gov.pl/web/premier', allowed_path_patterns=[],
-        terms_url=TERMS_URL,
-        evidence={
+    common = {
+        'status': SourceAccessInstruction.Status.APPROVED,
+        'terms_url': TERMS_URL,
+        'evidence': {
             'listing_url': LISTING_URL,
             'terms_url': TERMS_URL,
             'scope': 'KPRM news listing and its direct item metadata only; no full-text storage, PDFs, images, audio or video.',
             'attribution': 'Preserve KPRM source URL and acquisition time on every box.',
         },
-        minimum_interval_seconds=3, daily_request_cap=24,
-        reviewed_at=now, reviewed_by=reviewer, valid_until=now + timedelta(days=valid_days))
+        # Separate HTML and robots cards each receive half of the 24-request source cap.
+        'minimum_interval_seconds': 3, 'daily_request_cap': 12,
+        'reviewed_at': now, 'reviewed_by': reviewer, 'valid_until': now + timedelta(days=valid_days),
+    }
+    version = (latest.version if latest else 0) + 1
+    card = SourceAccessInstruction.objects.create(
+        source=source, version=version, channel=SourceAccessInstruction.Channel.HTML,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        endpoint='https://www.gov.pl/web/premier', allowed_path_patterns=[], **common)
+    SourceAccessInstruction.objects.create(
+        source=source, version=version + 1, channel=SourceAccessInstruction.Channel.SITEMAP,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        endpoint=ROBOTS_URL, allowed_path_patterns=['/robots.txt'], **common)
     source.url = SOURCE_URL
     source.is_active = True
     source.scrape_enabled = True
