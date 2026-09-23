@@ -53,11 +53,39 @@ def figure_data(figure, include_detail=False):
         'source_checked_at': role.source_checked_at,
     } for role in figure.public_roles.filter(archived=False).select_related('public_office').order_by(
         'role_category', 'organisation', 'role_title')]
+    data['employment_timeline'] = employment_timeline_data(figure, data['roles'])
     data['votes'] = votes_data(figure)
     data['x_account'] = verified_x_account_data(figure)
     data['x_posts'] = verified_x_posts_data(figure)
     data['materials'] = materials_data(figure)
     return data
+
+
+def employment_timeline_data(figure, roles):
+    """Evidence-backed entries for the profile's vertical public-role axis.
+
+    ``checked_at`` is a source-verification date, never an invented start or
+    end of employment.  The client renders position followed by source link.
+    """
+    entries = [{
+        'position': figure.role_title,
+        'organisation': figure.organisation,
+        'status': figure.status,
+        'checked_at': figure.source_checked_at,
+        'source': {'label': figure.organisation or 'Oficjalne źródło', 'url': figure.evidence_url},
+        'office': None,
+    }]
+    for role in roles:
+        entries.append({
+            'position': role['role_title'],
+            'organisation': role['organisation'],
+            'status': role['status'],
+            'checked_at': role['source_checked_at'],
+            'source': {'label': role['organisation'] or 'Oficjalne źródło', 'url': role['evidence_url']},
+            'office': role['office'],
+        })
+    entries.sort(key=lambda entry: (entry['status'] == 'current', entry['checked_at'] or ''), reverse=True)
+    return entries
 
 
 def confirmed_material_references(figure):
