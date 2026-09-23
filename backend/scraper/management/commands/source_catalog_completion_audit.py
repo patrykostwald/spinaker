@@ -3,8 +3,8 @@ from collections import Counter
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 from news.models import Source, SourceAccessInstruction, SourceReviewDecision
-from scraper.access_gate import approved_instruction
 
 
 class Command(BaseCommand):
@@ -21,9 +21,15 @@ class Command(BaseCommand):
         active_failures, candidate_failures = [], []
         valid_active = 0
         for source in active:
-            channel = (SourceAccessInstruction.Channel.RSS if source.rss_url else SourceAccessInstruction.Channel.API)
-            endpoint = source.rss_url or source.url or ''
-            if not endpoint or not approved_instruction(source, channel, endpoint):
+            has_valid_card = SourceAccessInstruction.objects.filter(
+                source=source,
+                status=SourceAccessInstruction.Status.APPROVED,
+                minimum_interval_seconds__gte=3,
+                daily_request_cap__gte=1,
+                valid_until__gt=timezone.now(),
+                reviewed_at__isnull=False,
+            ).exclude(terms_url='').exclude(reviewed_by='').exclude(evidence={}).exists()
+            if not has_valid_card:
                 active_failures.append((source.pk, source.name, 'missing_or_expired_access_card'))
             else:
                 valid_active += 1
