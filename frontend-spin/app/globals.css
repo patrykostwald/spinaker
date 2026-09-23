@@ -1553,6 +1553,9 @@ a.mvp-pf-mat-title:hover { color: var(--color-primary); }
 .mvp-pf-mat-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; }
 .mvp-pf-mat-fav { position: absolute; top: 8px; right: 8px; }
 .mvp-pf-mat-fav .mvp-fav-dot { position: static; opacity: 1; }
+.mvp-pf-xposts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.mvp-pf-xposts > li { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--line); }
+.mvp-pf-xpost-text { font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .mvp-pf-disclaimer { padding-top: 12px; border-top: 1px solid var(--line); color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
 .mvp-pf-list > li { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 0; border-top: 1px solid rgb(var(--line-rgb) / .8); }
 .mvp-pf-list-name { color: var(--text); font-family: var(--p-serif); font-size: 17px; text-decoration: none; }
@@ -1573,6 +1576,7 @@ a.mvp-pf-mat-title:hover { color: var(--color-primary); }
 @media (max-width: 860px) {
   .mvp-pf-org dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mvp-pf-days > li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .mvp-pf-xposts { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
   .mvp-pf-page { margin-top: 6px; }

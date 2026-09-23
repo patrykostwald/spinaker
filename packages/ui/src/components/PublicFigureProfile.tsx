@@ -147,6 +147,37 @@ function VotesSection({ figure, demo }: { figure: PublicFigureDetail; demo?: boo
   );
 }
 
+/* ——— Wpisy z potwierdzonego konta X ——— */
+
+function XPostsSection({ figure, demo }: { figure: PublicFigureDetail; demo?: boolean }) {
+  const posts = figure.x_posts;
+  const shown = posts?.results.slice(0, 20) ?? [];
+  return (
+    <section id="wpisy-x" className="mvp-pf-section" aria-labelledby="pf-x-posts">
+      <header>
+        <h2 id="pf-x-posts">Wpisy z potwierdzonego konta X</h2>
+        <p>Pokazujemy wyłącznie materiały zapisane z konta potwierdzonego na oficjalnym profilu. To nie jest wyszukiwanie po nazwisku ani ocena treści.</p>
+      </header>
+      {!posts?.available ? (
+        <Neutral>Brak potwierdzonego konta X lub wpisów pobranych do Bazy.</Neutral>
+      ) : !shown.length ? (
+        <Neutral>Potwierdzone konto nie ma jeszcze dostępnych wpisów w Bazie.</Neutral>
+      ) : (
+        <ul className="mvp-pf-xposts">
+          {shown.map(post => (
+            <li key={post.id}>
+              <p className="mvp-pf-mat-meta"><span className="mvp-pf-tag">POST X</span><time dateTime={post.published_at}>{formatDay(post.published_at)} · {hourFormat.format(new Date(post.published_at))}</time></p>
+              <p className="mvp-pf-xpost-text">{post.text.length > 320 ? `${post.text.slice(0, 320).replace(/\s+\S*$/, '')}…` : post.text}</p>
+              <p className="mvp-pf-mat-links"><SourceLink href={post.url} demo={demo}>Otwórz wpis</SourceLink></p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {posts?.results && posts.results.length > shown.length && <p className="mvp-pf-hint">Pokazano 20 najnowszych wpisów z {posts.results.length} dostępnych.</p>}
+    </section>
+  );
+}
+
 /* ——— Relacje z podmiotami ——— */
 
 function OrganisationRow({ relation, demo }: { relation: PublicFigureOrganisation; demo?: boolean }) {
@@ -360,6 +391,7 @@ export function PublicFigureProfile({ figure, demo = false, titleId = 'pf-title'
       )}
       <FigureHeader figure={figure} demo={demo} titleId={titleId} materialsTotal={materialsTotal} />
       <VotesSection figure={figure} demo={demo} />
+      <XPostsSection figure={figure} demo={demo} />
       <OrganisationsSection figure={figure} demo={demo} />
       {demo ? <DemoMaterials name={figure.name} /> : <LiveMaterials name={figure.name} />}
       <p className="mvp-pf-disclaimer">
