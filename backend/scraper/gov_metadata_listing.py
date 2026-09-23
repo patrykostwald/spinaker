@@ -83,6 +83,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/paa/aktualnosci",
         "terms_url": "https://www.gov.pl/web/paa/ponowne-wykorzystanie-informacji-publicznej",
     },
+    "prokuratoria": {
+        "name": "Prokuratoria Generalna Rzeczypospolitej Polskiej",
+        "source_url": "https://www.gov.pl/web/prokuratoria",
+        "listing_url": "https://www.gov.pl/web/prokuratoria/aktualnosci",
+        "terms_url": "https://www.gov.pl/web/prokuratoria/ponowne-wykorzystywanie-informacji-publicznych",
+    },
     "ncbr": {
         "name": "Narodowe Centrum Badań i Rozwoju",
         "source_url": "https://www.gov.pl/web/ncbr",

@@ -24,6 +24,15 @@ class Command(BaseCommand):
                 f'ŹRÓDŁO {source.pk}: {source.name} | kanały: {channels} | boxy: {source.box_count} | '
                 f'RSS: {source.rss_url or "—"} | ostatnie pobranie: {source.last_scraped or "—"}')
         self.stdout.write(f'ZATWIERDZONE_AKTYWNE: {len(approved)}')
+        candidates = Source.objects.filter(
+            catalog_stage='candidate', is_active=False, scrape_enabled=False
+        ).count()
+        total_review_queue = len(approved) + candidates
+        self.stdout.write(
+            f'POSTEP_WERYFIKACJI: {len(approved)}/{total_review_queue} '
+            f'(zatwierdzone aktywne / zatwierdzone aktywne + kandydaci)'
+        )
+        self.stdout.write(f'KANDYDACI_DO_SPRAWDZENIA: {candidates}')
         for name in ('html-archive:kprm:660', 'official:votings', 'official:eli'):
             state = ImportState.objects.filter(name=name).first()
             if state:
