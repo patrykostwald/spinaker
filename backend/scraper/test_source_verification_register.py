@@ -68,3 +68,21 @@ def test_verification_register_explains_automatic_safety_demotion(tmp_path):
     report = output.read_text(encoding="utf-8")
     assert "later contact list" in report
     assert "No current reviewed access card." in report
+
+
+@pytest.mark.django_db
+def test_verification_register_uses_automatic_final_contact_decision(tmp_path):
+    source = Source.objects.create(
+        name="No channel", url="https://no-channel.example", source_type=SourceType.INSTITUTION,
+        catalog_stage="candidate", is_active=False, scrape_enabled=False,
+    )
+    SourceReviewDecision.objects.create(
+        source=source, decision=SourceReviewDecision.Decision.CONTACT_REQUIRED,
+        reason="No confirmed public RSS/API channel with a metadata reuse basis.",
+        reviewed_by="institution channel discovery", is_automated=True,
+    )
+    output = tmp_path / "register.md"
+    call_command("source_verification_register", "--output", str(output), stdout=StringIO())
+    report = output.read_text(encoding="utf-8")
+    assert "later contact list" in report
+    assert "No confirmed public RSS/API channel" in report

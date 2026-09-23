@@ -72,6 +72,15 @@ def _normalise(value: str) -> str:
     return re.sub(r'[^a-z0-9]+', '-', value.lower()).strip('-')
 
 
+def cabinet_office_import_key(role_title: str) -> str:
+    """Stable registry key for the function named on the official roster.
+
+    A holder's name is deliberately not part of this key: a cabinet reshuffle
+    changes the holder, not the historical record of the function.
+    """
+    return f'public-office:cabinet:{_normalise(role_title)}'
+
+
 def _visible_lines(html: str) -> list[str]:
     parser = _TextLines()
     parser.feed(html)

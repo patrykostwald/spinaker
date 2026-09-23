@@ -192,6 +192,129 @@ class PublicFigure(models.Model):
         return self.canonical_name
 
 
+class PublicOffice(models.Model):
+    """A durable public office, independent of whoever currently holds it.
+
+    The office is the stable unit for the public registry.  A current holder
+    can change, while the office record, its official source and role history
+    remain available for research and scheduled re-checks.
+    """
+    import_key = models.CharField(max_length=1024, unique=True)
+    title = models.CharField(max_length=255)
+    role_category = models.CharField(max_length=16, choices=PUBLIC_FIGURE_ROLE_CATEGORIES)
+    organisation = models.CharField(max_length=255, blank=True)
+    official_roster_url = models.URLField(max_length=1024)
+    evidence_note = models.TextField(blank=True)
+    current_holder = models.ForeignKey(PublicFigure, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='currently_held_public_offices')
+    source_checked_at = models.DateTimeField(default=timezone.now)
+    archived = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['archived', 'role_category', 'organisation', 'title']
+
+    def __str__(self):
+        return self.title
+
+
+class PublicFigureRole(models.Model):
+    """An additional, publicly evidenced role on one canonical person profile.
+
+    It prevents multiple visible profiles for the same exact official roster
+    entry while retaining each separately sourced public role.
+    """
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT,
+        related_name='public_roles')
+    public_office = models.ForeignKey(PublicOffice, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='holder_roles')
+    role_category = models.CharField(max_length=16, choices=PUBLIC_FIGURE_ROLE_CATEGORIES)
+    role_title = models.CharField(max_length=255)
+    organisation = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=12, choices=PUBLIC_FIGURE_STATUSES, default='current')
+    official_profile_url = models.URLField(max_length=1024, blank=True)
+    evidence_url = models.URLField(max_length=1024)
+    evidence_note = models.TextField(blank=True)
+    import_key = models.CharField(max_length=1024, blank=True, db_index=True,
+        help_text='Techniczny klucz źródłowej roli; nie jest kontem społecznościowym.')
+    source_checked_at = models.DateTimeField(default=timezone.now)
+    archived = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['archived', 'role_category', 'organisation', 'role_title']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['import_key'], condition=Q(import_key__gt=''),
+                name='news_public_figure_role_nonempty_import_key_unique',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.public_figure}: {self.role_title}'
+
+
+ARTICLE_REFERENCE_KINDS = [
+    ('subject', 'Materiał dotyczy osoby'),
+    ('speaker', 'Wypowiedź osoby'),
+    ('interviewee', 'Osoba udziela wywiadu'),
+    ('mentioned', 'Osoba jest wymieniona'),
+]
+ARTICLE_REFERENCE_VERIFICATION_STATUSES = [
+    ('pending_review', 'Do przeglądu'),
+    ('confirmed', 'Potwierdzone przez redakcję'),
+    ('rejected', 'Odrzucone'),
+]
+
+
+class PublicFigureArticleReference(models.Model):
+    """A reviewed link between a public profile and one stored material.
+
+    This is deliberately separate from text search: an identical name in a
+    title or description is not evidence that the material concerns a given
+    person.  Public API responses expose confirmed links only.
+    """
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT,
+        related_name='article_references')
+    article = models.ForeignKey('news.Article', on_delete=models.CASCADE,
+        related_name='public_figure_references')
+    reference_kind = models.CharField(max_length=16, choices=ARTICLE_REFERENCE_KINDS)
+    evidence_note = models.TextField(blank=True)
+    verification_status = models.CharField(max_length=20,
+        choices=ARTICLE_REFERENCE_VERIFICATION_STATUSES, default='pending_review', db_index=True)
+    verified_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='verified_public_figure_article_references', editable=False)
+    verified_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-article__published_date', '-pk']
+        constraints = [models.UniqueConstraint(
+            fields=['public_figure', 'article', 'reference_kind'],
+            name='unique_public_figure_article_reference_kind',
+        )]
+
+    def __str__(self):
+        return f'{self.public_figure}: {self.article} ({self.reference_kind})'
+
+    def clean(self):
+        super().clean()
+        if self.verification_status == 'confirmed' and (not self.verified_by_id or not self.verified_at):
+            raise ValidationError('Potwierdzona relacja z materiałem wymaga redaktora i daty potwierdzenia.')
+
+    def confirm(self, staff):
+        if not staff.is_active or not staff.is_staff:
+            raise ValidationError('Potwierdzenie relacji z materiałem wymaga aktywnego redaktora.')
+        self.verified_by = staff
+        self.verified_at = timezone.now()
+        self.verification_status = 'confirmed'
+        self.full_clean()
+        self.save(update_fields=['verified_by', 'verified_at', 'verification_status', 'updated_at'])
+
+
 class RegisteredOrganisation(models.Model):
     """Minimal public record for a KRS entity, without personal registry data."""
     name = models.CharField(max_length=512)

@@ -55,8 +55,12 @@ class Command(BaseCommand):
             bucket = ("00_juz_aktywne_pod_innym_rekordem" if hostname(source.url) in active_hosts
                       else review_bucket(source, result))
             manual = getattr(source, 'review_decision', None)
-            is_safety_demotion = manual and manual.audit_snapshot.get('reason') == 'no_current_approved_access_card'
-            if manual and (not manual.is_automated or is_safety_demotion):
+            # A recorded decision is the final state of this source.  Some
+            # decisions are produced by the bounded, evidence-only discovery
+            # jobs, but they are still deliberate outcomes: neither the
+            # register nor its summary should revive an earlier raw audit
+            # bucket after such a decision was saved.
+            if manual:
                 status, next_step = MANUAL_DECISIONS[manual.decision]
                 reason = manual.reason
             else:

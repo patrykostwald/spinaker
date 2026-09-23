@@ -1,9 +1,13 @@
 """Read-only snapshot of approved MVP harvesters and their stored material counts."""
 from django.core.management.base import BaseCommand
+from collections import defaultdict
+
 from django.db.models import Count
+from django.utils import timezone
 
 from news.models import ImportState, Source, SourceAccessInstruction
 from scraper.access_gate import approved_instruction
+from scraper.harvester_coverage import schedule_label
 from scraper.management.commands.audit_sources import is_fresh, is_recent_attempt
 from scraper.management.commands.source_review_queue import hostname, review_bucket
 
@@ -15,18 +19,33 @@ class Command(BaseCommand):
         sources = (Source.objects.filter(is_active=True, scrape_enabled=True, catalog_stage='configured')
             .annotate(box_count=Count('articles')).order_by('pk'))
         approved = []
+        coverage = defaultdict(list)
         for source in sources:
             cards = list(SourceAccessInstruction.objects.filter(
                 source=source, status=SourceAccessInstruction.Status.APPROVED,
-                valid_until__isnull=False).order_by('-version'))
+                valid_until__gt=timezone.now(), daily_request_cap__gte=1,
+                reviewed_at__isnull=False).exclude(terms_url='').exclude(reviewed_by='').exclude(evidence={}).order_by('-version'))
             if not cards:
                 continue
             channels = ', '.join(sorted({card.channel for card in cards}))
+            schedule, schedule_status = schedule_label(source, cards)
+            coverage[schedule_status].append(source)
             approved.append(source)
             self.stdout.write(
                 f'ŹRÓDŁO {source.pk}: {source.name} | kanały: {channels} | boxy: {source.box_count} | '
-                f'RSS: {source.rss_url or "—"} | ostatnie pobranie: {source.last_scraped or "—"}')
+                f'RSS: {source.rss_url or "—"} | harmonogram: {schedule} | '
+                f'ostatnie pobranie: {source.last_scraped or "—"}')
         self.stdout.write(f'ZATWIERDZONE_AKTYWNE: {len(approved)}')
+        self.stdout.write(
+            f'AKTYWNE_Z_HARMONOGRAMEM: {len(coverage["scheduled"])}/{len(approved)}')
+        self.stdout.write(
+            f'AKTYWNE_BEZ_MAPOWANIA_HARMONOGRAMU: {len(coverage["needs_schedule_mapping"])}/{len(approved)}')
+        self.stdout.write(
+            f'AKTYWNE_WYMAGAJACE_FLAGI_SRODOWISKOWEJ: {len(coverage["disabled_by_environment"])}/{len(approved)}')
+        self.stdout.write(
+            f'AKTYWNE_PILOTY_RECZNE: {len(coverage["manual_pilot"])}/{len(approved)}')
+        for source in coverage['needs_schedule_mapping']:
+            self.stdout.write(f'BRAK_MAPOWANIA {source.pk}: {source.name}')
         candidates = list(Source.objects.filter(
             catalog_stage='candidate', is_active=False, scrape_enabled=False
         ).order_by('pk'))

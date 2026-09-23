@@ -4,7 +4,8 @@ from django.contrib.contenttypes.models import ContentType
 
 from news.models import Article, Ballot, ParliamentaryVoting, Source
 from news.political_models import (ParliamentaryRosterEntry, PoliticalAccount, PoliticalAccountCandidate,
-    PoliticalPost, PublicFigure, PublicFigureOrganisationRelation, RegisteredOrganisation, SocialHandleEvidence)
+    PoliticalPost, PublicFigure, PublicFigureArticleReference, PublicFigureOrganisationRelation,
+    RegisteredOrganisation, SocialHandleEvidence, PublicOffice, PublicFigureRole)
 
 
 pytestmark = pytest.mark.django_db
@@ -39,6 +40,23 @@ def test_profile_never_mixes_votes_from_another_term():
         Ballot.objects.create(voting=voting, mp_id=17, name='Anna Publiczna', vote='Za')
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert [row['topic'] for row in data['votes']['results']] == ['Obecna kadencja']
+
+
+def test_profile_exposes_durable_public_office_separately_from_current_holder():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Osoba publiczna', evidence_url='https://example.org/person')
+    office = PublicOffice.objects.create(import_key='state-office:test:head', title='Kierownicza funkcja testowa',
+        role_category='political', organisation='Instytucja Testowa',
+        official_roster_url='https://example.org/official-roster', current_holder=figure)
+    PublicFigureRole.objects.create(public_figure=figure, public_office=office,
+        role_category='political', role_title=office.title, organisation=office.organisation,
+        evidence_url='https://example.org/official-roster')
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
+    assert data['roles'][0]['office'] == {
+        'id': office.pk, 'title': 'Kierownicza funkcja testowa',
+        'official_roster_url': 'https://example.org/official-roster',
+        'source_checked_at': office.source_checked_at,
+    }
 
 
 def test_unlinked_figure_does_not_guess_votes_or_show_pending_relation():
@@ -138,3 +156,50 @@ def test_public_figure_list_is_paginated_and_filterable():
     assert [item['name'] for item in first['results']] == ['Osoba 0']
     assert [item['name'] for item in second['results']] == ['Osoba 1']
     assert client.get('/api/public-figures/?page=none').status_code == 400
+
+
+def test_public_office_list_is_searchable_and_exposes_only_current_holder():
+    holder = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Prezeska', evidence_url='https://example.org/anna')
+    PublicOffice.objects.create(import_key='state-office:test:one', title='Prezeska instytucji',
+        role_category='political', organisation='Instytucja Testowa',
+        official_roster_url='https://example.org/roster', current_holder=holder)
+    PublicOffice.objects.create(import_key='state-office:test:two', title='Inna funkcja',
+        role_category='local', organisation='Miasto Testowe', official_roster_url='https://example.org/city')
+    data = APIClient().get('/api/public-offices/?q=Anna&page_size=1').data
+    assert data['count'] == 1
+    assert data['results'][0]['title'] == 'Prezeska instytucji'
+    assert data['results'][0]['current_holder']['name'] == 'Anna Publiczna'
+
+
+def test_context_exposes_only_confirmed_material_links_and_evidence_graph():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Osoba publiczna', evidence_url='https://example.org/person')
+    source = Source.objects.create(name='Oficjalne źródło', url='https://example.org')
+    article = Article.objects.create(source=source, title='Wywiad z Anną', url='https://example.org/interview',
+        category='interview', published_date='2026-09-23T10:00:00Z')
+    reference = PublicFigureArticleReference.objects.create(public_figure=figure, article=article,
+        reference_kind='interviewee', evidence_note='Osoba występuje w materiale.')
+    editor = __import__('django.contrib.auth').contrib.auth.get_user_model().objects.create_user(
+        username='research-editor', is_staff=True,
+    )
+    reference.confirm(editor)
+    pending = Article.objects.create(source=source, title='Podobne nazwisko', url='https://example.org/pending')
+    PublicFigureArticleReference.objects.create(public_figure=figure, article=pending, reference_kind='mentioned')
+
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/context/').data
+    assert data['materials']['count'] == 1
+    assert data['materials']['by_category'] == {'interview': 1}
+    assert any(edge['type'] == 'confirmed_material_reference' for edge in data['graph']['edges'])
+    assert not any(node.get('label') == 'Podobne nazwisko' for node in data['graph']['nodes'])
+
+
+def test_dossier_returns_only_evidence_pack_and_explicit_ai_contract():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='political',
+        role_title='Osoba publiczna', evidence_url='https://example.org/person')
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/dossier/').data
+    assert data['status'] == 'evidence_pack_ready'
+    assert data['summary']['confirmed_materials'] == 0
+    assert data['research_questions']
+    assert data['ai_output_contract']['one_call'] is True
+    assert 'nie może dodawać nowych faktów' in data['ai_output_contract']['rule']

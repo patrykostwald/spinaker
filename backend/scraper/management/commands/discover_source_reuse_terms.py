@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from news.models import ImportState
-from scraper.source_contact_queue import contact_candidates
+from scraper.source_terms_queue import terms_discovery_candidates
 from scraper.source_probe import ProbeNetwork, source_signature
 from scraper.source_terms_discovery import DISCOVERY_VERSION, inspect_source_terms
 
@@ -49,7 +49,7 @@ def worker(source, network):
 
 
 class Command(BaseCommand):
-    help = ('Finds official reuse-condition pages for inactive contact candidates. '
+    help = ('Finds official reuse-condition pages for all inactive candidates not already covered by an active source. '
             'Never approves access, enables a source, imports material, or sends messages.')
 
     def add_arguments(self, parser):
@@ -57,13 +57,19 @@ class Command(BaseCommand):
         parser.add_argument('--workers', type=int, default=3)
         parser.add_argument('--max-age-days', type=int, default=30)
         parser.add_argument('--force', action='store_true')
+        parser.add_argument('--only-unavailable', action='store_true',
+            help='Ponawia wyłącznie źródła, dla których poprzednie sprawdzenie warunków było niedostępne.')
         parser.add_argument('--apply', action='store_true', help='Save evidence in the source audit state.')
         parser.add_argument('--output', default='reports/source-reuse-discovery-current.md')
 
     def handle(self, *args, **options):
         if not 1 <= options['limit'] <= 48 or not 1 <= options['workers'] <= 6 or options['max_age_days'] < 1:
             raise CommandError('limit musi wynosić 1..48, workers 1..6, a max-age-days co najmniej 1.')
-        sources, states = contact_candidates()
+        sources, states = terms_discovery_candidates()
+        if options['only_unavailable']:
+            sources = [source for source in sources if (
+                (states.get(f'source-check:{source.pk}', {}) or {}).get('legal_terms_discovery', {}).get('status')
+                == 'unavailable')]
         pending = [source for source in sources if options['force'] or not is_fresh(
             source, states.get(f'source-check:{source.pk}', {}), options['max_age_days'])]
         selected = pending[:options['limit']]
@@ -118,7 +124,7 @@ class Command(BaseCommand):
         lines = [
             '# Official reuse terms discovery', '',
             'This report is evidence for editorial review only. It does not approve access, create a card, enable a source, import content, or send messages.', '',
-            f'Contact candidates: **{len(rows)}**.', '', '| Result | Count |', '|---|---:|',
+            f'Inactive candidates checked for terms: **{len(rows)}**.', '', '| Result | Count |', '|---|---:|',
         ]
         lines += [f'| {status} | {count} |' for status, count in sorted(counts.items())]
         lines += ['', '| ID | Source | RSS / API | Result | Terms pages | Positive markers | Restriction markers |', '|---:|---|---|---|---|---|---|']

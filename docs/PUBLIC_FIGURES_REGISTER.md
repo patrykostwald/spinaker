@@ -24,16 +24,22 @@ Odkrywanie działa wyłącznie dla stron z zatwierdzonych domen:
 
 System nie zgaduje handle'i z nazwiska, nie przeszukuje X po osobie i nie traktuje widocznego tekstu `@konto` jako dowodu. Zapisuje wyłącznie bezpośredni link z oficjalnej strony jako `SocialHandleEvidence` do późniejszego przeglądu redakcyjnego.
 
-## Planowane źródła rejestru
+## Następne źródła rejestru
 
 Kolejne adaptery będą dodawane pojedynczo, dopiero po sprawdzeniu oficjalnej strony, struktury danych i zasad archiwizacji:
 
-1. strony kierownictwa ministerstw — ministrowie, sekretarze i podsekretarze stanu, których nie obejmuje skład Rady Ministrów;
-2. oficjalne strony władz partii — liderzy, rzecznicy i inne osoby wskazane przez daną partię;
-3. oficjalne strony klubów parlamentarnych — przewodniczący, rzecznicy i prezydia klubów;
-4. ręcznie weryfikowane osoby bez mandatu, lecz z trwałym głosem politycznym, np. liderzy pozaparlamentarni, byli urzędnicy lub publiczni komentatorzy polityczni.
+1. Prezydent RP oraz kierownictwo KPRM;
+2. marszałkowie i wicemarszałkowie Sejmu oraz Senatu;
+3. marszałkowie województw, prezydenci miast i burmistrzowie największych miast;
+4. strony kierownictwa ministerstw — sekretarze i podsekretarze stanu, których nie obejmuje skład Rady Ministrów;
+5. oficjalne strony władz partii — liderzy, wiceliderzy, rzecznicy i inne osoby wskazane przez daną partię;
+6. oficjalne strony klubów parlamentarnych — przewodniczący, rzecznicy i prezydia klubów;
+7. szefowie najważniejszych organów państwa.
 
 Każdy przyszły wpis wymaga: kanonicznego imienia i nazwiska, kategorii roli, organizacji, statusu, URL-a potwierdzającego oraz daty sprawdzenia. Przynależność polityczna pozostaje decyzją redakcyjną, nigdy automatycznym wnioskiem systemu.
+
+Pełna kolejność pokrycia i wymagane oficjalne rostery są w
+[PUBLIC_FIGURE_COVERAGE.md](PUBLIC_FIGURE_COVERAGE.md).
 
 ## Granice automatyzacji
 

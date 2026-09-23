@@ -8,34 +8,22 @@ from news.political_models import ParliamentaryRosterEntry, PublicFigure
 
 ROWS = (
     {
-        'import_key': 'editorial-priority:mateusz-morawiecki',
         'canonical_name': 'Mateusz Morawiecki',
-        'role_category': 'parliamentary',
-        'role_title': 'Poseł na Sejm RP; przewodniczący klubu/koła',
-        'organisation': 'Klub Parlamentarny Rozwój Plus',
-        'official_profile_url': 'https://orka.sejm.gov.pl/Home.nsf/posel.xsp?SessionID=DKFQWBIOQO&id=246&type=P',
-        'evidence_url': 'https://orka.sejm.gov.pl/Home.nsf/posel.xsp?SessionID=DKFQWBIOQO&id=246&type=P',
-        'evidence_note': 'Aktualny profil poselski Sejmu RP wskazuje mandat i funkcję w klubie/kole.',
+        'link_existing_only': True,
         'roster_source': 'sejm',
-        'roster_name': 'Mateusz Morawiecki',
+        'roster_external_id': '246',
     },
     {
         'canonical_name': 'Paulina Hennig-Kloska',
         'link_existing_only': True,
         'roster_source': 'sejm',
-        'roster_name': 'Paulina Hennig-Kloska',
+        'roster_external_id': '128',
     },
     {
-        'import_key': 'editorial-priority:grzegorz-braun',
         'canonical_name': 'Grzegorz Braun',
-        'role_category': 'european',
-        'role_title': 'Poseł do Parlamentu Europejskiego',
-        'organisation': 'Konfederacja Korony Polskiej',
-        'official_profile_url': 'https://www.europarl.europa.eu/meps/pl/257067/GRZEGORZ_BRAUN/home',
-        'evidence_url': 'https://www.europarl.europa.eu/meps/pl/257067/GRZEGORZ_BRAUN/home',
-        'evidence_note': 'Oficjalny profil Parlamentu Europejskiego.',
+        'link_existing_only': True,
         'roster_source': 'ep',
-        'roster_name': 'Grzegorz Braun',
+        'roster_external_id': '257067',
     },
     {
         'import_key': 'editorial-priority:janusz-korwin-mikke',
@@ -81,16 +69,21 @@ class Command(BaseCommand):
         with transaction.atomic():
             for row in ROWS:
                 if row.get('link_existing_only'):
-                    figure = PublicFigure.objects.filter(canonical_name__iexact=row['canonical_name'], archived=False).first()
+                    roster = ParliamentaryRosterEntry.objects.filter(
+                        source=row['roster_source'], active=True,
+                        external_id=row['roster_external_id'],
+                    ).first()
+                    figure = PublicFigure.objects.filter(parliamentary_roster_entry=roster,
+                        archived=False).first() if roster else None
                     if not figure:
                         self.stdout.write(self.style.WARNING(
-                            f'Pominięto połączenie z rosterem: nie ma aktywnego wpisu osoby {row["canonical_name"]}.'
+                            f'Pominięto: nie ma profilu dla dokładnego wpisu rosteru {row["roster_source"]}:{row["roster_external_id"]}.'
                         ))
                         continue
                     was_created = False
                 else:
                     values = {key: value for key, value in row.items() if key not in {
-                        'roster_source', 'roster_name', 'link_existing_only'
+                        'roster_source', 'roster_external_id', 'link_existing_only'
                     }}
                     values.update(status='current', source_checked_at=now, archived=False)
                     figure, was_created = PublicFigure.objects.update_or_create(import_key=row['import_key'], defaults=values)
@@ -98,7 +91,7 @@ class Command(BaseCommand):
                 updated += int(not was_created)
                 if row.get('roster_source'):
                     roster = ParliamentaryRosterEntry.objects.filter(
-                        source=row['roster_source'], active=True, full_name__iexact=row['roster_name'],
+                        source=row['roster_source'], active=True, external_id=row['roster_external_id'],
                     ).first()
                     if roster and figure.parliamentary_roster_entry_id != roster.pk:
                         figure.parliamentary_roster_entry = roster
