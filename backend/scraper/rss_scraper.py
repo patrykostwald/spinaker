@@ -68,7 +68,11 @@ def scrape_rss_source(source_id):
         _, created = upsert_article(source=source, title=entry.get('title'), url=entry.get('link'),
             published_date=entry.get('published'),
             category='statement' if source.source_type == 'institution' else 'article', ingestion_method='rss',
-            description=entry.get('summary'), author=entry.get('author'), image_url=_entry_image(entry),
+            # An RSS enclosure or og:image is not a licence to copy the
+            # photograph.  Image reuse gets its own reviewed record; metadata
+            # harvesters therefore never turn a feed image into a portal
+            # thumbnail by default.
+            description=entry.get('summary'), author=entry.get('author'), image_url='',
             tags=entry.get('tags') or entry.get('keywords') or [])
         total += created
     source.last_scraped = timezone.now()

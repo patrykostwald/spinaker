@@ -21,6 +21,11 @@ RSS = (b'<rss version="2.0"><channel><title>Test</title><item>'
        b'<title>News</title><link>https://example.org/1</link>'
        b'</item></channel></rss>')
 
+RSS_WITH_IMAGE = (b'<rss xmlns:media="http://search.yahoo.com/mrss/" version="2.0"><channel><title>Test</title><item>'
+                  b'<title>News with image</title><link>https://example.org/image</link>'
+                  b'<media:content url="https://example.org/photo.jpg" type="image/jpeg" />'
+                  b'</item></channel></rss>')
+
 VOTING = {
     'term': 10, 'sitting': 1, 'votingNumber': 2, 'title': 'Test vote',
     'description': 'Test motion', 'date': '2026-09-15T12:00:00',
@@ -78,6 +83,24 @@ def test_newer_suspended_rss_instruction_blocks_older_approval(monkeypatch):
 
     assert scrape_rss_source(source.pk) == 0
     fetch.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_metadata_rss_never_persists_an_unreviewed_feed_image(monkeypatch):
+    source = Source.objects.create(
+        name='Approved metadata RSS', url='https://example.org',
+        rss_url='https://example.org/feed', is_active=True, scrape_enabled=True,
+        catalog_stage='configured')
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status='approved', channel='rss',
+        allowed_scope='metadata', endpoint=source.rss_url,
+        terms_url='https://example.org/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3,
+        daily_request_cap=24)
+    monkeypatch.setattr('scraper.rss_scraper.fetch_feed', Mock(return_value=RSS_WITH_IMAGE))
+
+    assert scrape_rss_source(source.pk) == 1
+    assert Article.objects.get().image_url == ''
 
 
 @pytest.mark.django_db
