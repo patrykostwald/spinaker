@@ -14,6 +14,10 @@ from news.models import Source, SourceAccessInstruction
 class Command(BaseCommand):
     help = 'Sprawdza lokalną gotowość aktywnych harvesterów bez żądań sieciowych.'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--approved-only', action='store_true',
+            help='Raportuje tylko piloty z zatwierdzoną najnowszą kartą; kandydatów pokazuje zbiorczo.')
+
     def handle(self, *args, **options):
         latest = SourceAccessInstruction.objects.filter(source=OuterRef('pk')).order_by('-version')
         active = Source.objects.filter(is_active=True, scrape_enabled=True).annotate(
@@ -22,7 +26,11 @@ class Command(BaseCommand):
         )
         blockers = []
         ready = []
+        skipped_unapproved = 0
         for source in active.order_by('pk'):
+            if options['approved_only'] and source.latest_card_status != SourceAccessInstruction.Status.APPROVED:
+                skipped_unapproved += 1
+                continue
             if source.catalog_stage != 'configured':
                 blockers.append((source.pk, source.name, 'nie jest skonfigurowane'))
             elif source.latest_card_status != SourceAccessInstruction.Status.APPROVED:
@@ -36,6 +44,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'GOTOWE {pk}: {name}'))
         for pk, name, reason in blockers:
             self.stdout.write(self.style.WARNING(f'BLOKER {pk}: {name} — {reason}'))
+        if options['approved_only']:
+            self.stdout.write(f'KANDYDACI_BEZ_KARTY: {skipped_unapproved}')
         self.stdout.write('WYNIK: ' + ('GOTOWE_DO_HARMONOGRAMU' if not blockers else 'NIE_GOTOWE'))
         if blockers:
             raise SystemExit(2)

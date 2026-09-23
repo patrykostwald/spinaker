@@ -14,4 +14,4 @@ $ErrorActionPreference = "Stop"
 & "$PSScriptRoot\Start-ApprovedNIKRss.ps1" -ReviewedBy $ReviewedBy
 & "$PSScriptRoot\Start-ApprovedKprmMetadataPilot.ps1" -ReviewedBy $ReviewedBy
 
-docker compose exec backend python manage.py harvester_preflight
+docker compose exec backend python manage.py harvester_preflight --approved-only

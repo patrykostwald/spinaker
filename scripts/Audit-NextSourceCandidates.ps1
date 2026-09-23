@@ -20,4 +20,4 @@ docker compose exec backend python manage.py audit_next_source_candidates `
   --max-age-hours 168 `
   --output-prefix reports/source-candidate-audit-current
 
-docker compose exec backend python manage.py harvester_preflight
+docker compose exec backend python manage.py harvester_preflight --approved-only

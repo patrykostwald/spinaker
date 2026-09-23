@@ -33,3 +33,15 @@ def test_preflight_fails_for_active_source_with_expired_card(capsys):
         call_command('harvester_preflight')
     assert error.value.code == 2
     assert 'wygasła' in capsys.readouterr().out
+
+
+@pytest.mark.django_db
+def test_approved_only_preflight_skips_unapproved_candidates_without_hiding_ready_pilot(capsys):
+    ready = Source.objects.create(name='Ready', url='https://ready.example.org', source_type='rss')
+    card(ready)
+    Source.objects.create(name='Candidate', url='https://candidate.example.org', source_type='rss')
+    call_command('harvester_preflight', '--approved-only')
+    output = capsys.readouterr().out
+    assert 'GOTOWE 1: Ready' in output
+    assert 'KANDYDACI_BEZ_KARTY: 1' in output
+    assert 'GOTOWE_DO_HARMONOGRAMU' in output
