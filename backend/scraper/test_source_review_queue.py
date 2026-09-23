@@ -47,3 +47,20 @@ def test_review_queue_can_export_only_institutional_rss_candidates(tmp_path):
     assert 'Kandydaci w raporcie: **1**. Wszystkich kandydatów: **2**.' in report
     assert 'RSS' in report
     assert other.name not in report
+
+
+@pytest.mark.django_db
+def test_review_queue_marks_candidate_with_active_domain_as_duplicate(tmp_path):
+    Source.objects.create(name='Active', url='https://www.same.example/', source_type=SourceType.INSTITUTION,
+        catalog_stage='configured', is_active=True, scrape_enabled=True)
+    candidate = Source.objects.create(name='Candidate', url='https://same.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f'source-check:{candidate.pk}', cursor={
+        'audit_status': 'completed', 'rss': {'status': 'working', 'url': 'https://same.example/feed'},
+    })
+    output = tmp_path / 'duplicates.md'
+    call_command('source_review_queue', '--bucket', '00_juz_aktywne_pod_innym_rekordem',
+        '--output', str(output), stdout=StringIO())
+    report = output.read_text(encoding='utf-8')
+    assert 'Już aktywne pod innym rekordem — nie tworzyć drugiej karty (1)' in report
+    assert 'Candidate' in report
