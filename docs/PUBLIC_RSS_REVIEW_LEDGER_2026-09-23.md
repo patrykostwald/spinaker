@@ -15,12 +15,12 @@ artykułów, obrazów, załączników ani pełnych tekstów.
 | BIP Radomia, rekord 576 | `https://bip.radom.pl/dokumenty/rss/69-rss-o-112.rss` | gotowe do uruchomienia, karta RSS v1, limit 24/dzień | [warunki BIP](https://bip.radom.pl/ra/ponowne-wykorzystanie-informac/19412,Zasady-i-tryb-udostepniania.html) — prawo ponownego wykorzystania informacji opublikowanych w BIP Urzędu Miejskiego w Radomiu |
 | NIK | `https://www.nik.gov.pl/rss/id,1.html` | nie tworzyć kolejnej karty: aktywny odpowiednik istnieje w katalogu | [warunki NIK](https://www.nik.gov.pl/kontakt/ponowne-wykorzystywanie-informacji/) |
 | URE | `https://www.ure.gov.pl/dokumenty/rss/9-rss-41.rss` | nie tworzyć kolejnej karty: aktywny odpowiednik istnieje w katalogu | [warunki URE](https://bip.ure.gov.pl/bip/informacja-publiczna/1061%2CPonowne-wykorzystywanie-informacji-sektora-publicznego.html) |
+| ABW | `https://www.abw.gov.pl/dokumenty/rss/24-rss-748.rss` | przygotowane do uruchomienia po ponownym świeżym audycie kanału, limit 24/dzień | [strona usługi RSS ABW](https://www.abw.gov.pl/pl/rss) wskazuje wprost dystrybucję aktualności i komunikatów w RSS, z tytułem, krótkim opisem i linkiem; karta pozostaje wyłącznie dla tych metadanych |
 
 ## Pozostałe publiczne kanały — nie uruchamiać do czasu znalezienia zasad dla kanału
 
 | Źródło | Kanał | Wynik przeglądu | Następny krok |
 |---|---|---|---|
-| ABW | `https://www.abw.gov.pl/dokumenty/rss/24-rss-748.rss` | Nie znaleziono opublikowanych warunków dla kanału; charakter instytucji wymaga ostrożności. | Ręczna weryfikacja w BIP lub pisemne potwierdzenie. |
 | Policja | `https://www.policja.pl/dokumenty/rss/1-rss-1.rss` | Nie znaleziono opublikowanych warunków dla tego kanału. | Ręczna weryfikacja BIP i regulaminu. |
 | KZGW / Wody Polskie | `https://kzgw.gov.pl/index.php/pl/?format=feed&type=rss` | Nie znaleziono opublikowanych warunków dla kanału. | Sprawdzić BIP albo wystąpić o warunki. |
 | IMGW | `https://imgw.pl/feed/` | [Regulamin danych IMGW](https://danepubliczne.imgw.pl/docs/regulamin_udostepniania_danych.pdf) dotyczy portalu danych, nie kanału aktualności. | Nie przenosić warunków danych na RSS; znaleźć zasady dla aktualności. |

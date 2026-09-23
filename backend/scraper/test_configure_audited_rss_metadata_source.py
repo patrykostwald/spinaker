@@ -42,3 +42,18 @@ def test_audited_rss_metadata_card_refuses_stale_audit():
         call_command('configure_audited_rss_metadata_source', '--source-id', str(source.pk),
             '--terms-url', 'https://old.example/reuse', '--evidence-note', 'test', '--apply')
     assert not source.is_active
+
+
+def test_audited_rss_metadata_card_can_select_one_inactive_source_by_host():
+    source = Source.objects.create(name='ABW', url='https://www.abw.gov.pl', catalog_stage='candidate',
+        is_active=False, scrape_enabled=False)
+    source.refresh_from_db()
+    ImportState.objects.create(name=f'source-check:{source.pk}', last_success=timezone.now(), cursor={
+        'probe_version': PROBE_VERSION, 'signature': source_signature(source), 'audit_status': 'completed',
+        'checked_at': timezone.now().isoformat(),
+        'rss': {'status': 'working', 'url': 'https://www.abw.gov.pl/rss.xml', 'usable_entry_count': 1}})
+    call_command('configure_audited_rss_metadata_source', '--source-host', 'abw.gov.pl',
+        '--terms-url', 'https://www.abw.gov.pl/pl/rss', '--evidence-note', 'Official RSS use page.',
+        '--apply', stdout=StringIO())
+    source.refresh_from_db()
+    assert source.is_active and source.rss_url == 'https://www.abw.gov.pl/rss.xml'

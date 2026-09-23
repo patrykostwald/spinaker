@@ -14,7 +14,9 @@ class Command(BaseCommand):
     help = 'Włącza wyłącznie świeżo zweryfikowany RSS po zapisaniu warunków wykorzystania.'
 
     def add_arguments(self, parser):
-        parser.add_argument('--source-id', type=int, required=True)
+        selector = parser.add_mutually_exclusive_group(required=True)
+        selector.add_argument('--source-id', type=int)
+        selector.add_argument('--source-host')
         parser.add_argument('--terms-url', required=True)
         parser.add_argument('--evidence-note', required=True)
         parser.add_argument('--reviewed-by', default='redakcja spin.clinic')
@@ -26,7 +28,19 @@ class Command(BaseCommand):
         if not 1 <= options['daily_cap'] <= 1000 or not 1 <= options['valid_days'] <= 730:
             raise CommandError('daily-cap musi wynosić 1..1000, a valid-days 1..730.')
         with transaction.atomic():
-            source = Source.objects.select_for_update().filter(pk=options['source_id']).first()
+            if options.get('source_host'):
+                host = options['source_host'].strip().lower().removeprefix('www.')
+                matches = []
+                for candidate in Source.objects.select_for_update().filter(is_active=False):
+                    candidate_host = urlsplit(candidate.url).hostname or ''
+                    if candidate_host.lower().removeprefix('www.') == host:
+                        matches.append(candidate)
+                if len(matches) != 1:
+                    raise CommandError(
+                        f'Host musi wskazywać dokładnie jedno nieaktywne źródło; znaleziono {len(matches)}.')
+                source = matches[0]
+            else:
+                source = Source.objects.select_for_update().filter(pk=options['source_id']).first()
             if source is None:
                 raise CommandError('Nie znaleziono źródła.')
             now = timezone.now()
