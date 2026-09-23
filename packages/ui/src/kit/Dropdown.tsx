@@ -306,9 +306,24 @@ export function Dropdown({
     );
   }
 
+  /** Верхняя строка панели — «та же кнопка», подсвеченная; клик сворачивает панель обратно в кнопку. */
+  function renderHead() {
+    return (
+      <div className="sc-dropdown__head" role="presentation" onClick={close}>
+        <span className="sc-dropdown__head-label">{label}</span>
+        <span className="sc-dropdown__chevron sc-dropdown__head-chevron" aria-hidden="true">
+          <ChevronDownIcon />
+        </span>
+      </div>
+    );
+  }
+
   return (
     <LayoutGroup id={`${instanceId}-dd`}>
-    <div className="sc-dropdown">
+    {/* R0 (24.09, замечание владельца): панель вырастает ИЗ бокса кнопки и кнопка становится её верхней
+        подсвеченной строкой (.sc-dropdown__head); сама кнопка на время открытия прозрачна, но остаётся
+        в DOM и фокусируемой (aria-expanded, возврат фокуса при закрытии). */}
+    <div className="sc-dropdown" data-open={open && !useSheet ? "true" : undefined}>
       <Button
         ref={triggerRef as Ref<HTMLButtonElement>}
         variant={triggerVariant}
@@ -364,15 +379,17 @@ export function Dropdown({
                 width: resolvedWidth,
                 borderRadius: RADIUS.xl,
                 ...(align === "end" ? { right: 0 } : { left: 0 }),
-                ...(placement === "top" ? { bottom: "calc(100% + 8px)" } : { top: "calc(100% + 8px)" }),
+                ...(placement === "top" ? { bottom: 0 } : { top: 0 }),
               }}
               initial={m.morph ? { opacity: 0 } : { opacity: 0, scale: scaleFrom, y: yFrom }}
               animate={m.morph ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
               exit={m.morph ? { opacity: 0 } : { opacity: 0, scale: scaleFrom, y: yFrom }}
               transition={open ? m.t("ui") : m.t("collapse")}
             >
+              {placement === "bottom" && renderHead()}
               {renderItemsList()}
               {footer && <div className="sc-dropdown__footer">{footer}</div>}
+              {placement === "top" && renderHead()}
             </motion.div>
           )}
         </AnimatePresence>

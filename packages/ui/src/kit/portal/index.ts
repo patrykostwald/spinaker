@@ -6,6 +6,7 @@ export {
   PortalProvider,
   usePortal,
   usePortalApi,
+  usePortalApiOptional,
   usePortalState,
   usePortalEngine,
   type PortalApi,
@@ -17,7 +18,6 @@ export {
 } from "./PortalProvider";
 export { PortalLayer, type PortalLayerProps } from "./PortalLayer";
 export { useHistoryPortal, type UseHistoryPortalOptions, type HistoryPortal } from "./useHistoryPortal";
-export { useHoverExpand } from "./useHoverExpand";
 export { useScrollLock } from "./useScrollLock";
 export { useModalA11y, type ModalA11y } from "./useModalA11y";
 export { useDragDismiss, type DragDismiss, type DragDismissOptions } from "./useDragDismiss";

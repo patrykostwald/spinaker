@@ -553,16 +553,8 @@ html.sc-theme-transition .sc-root {
    Уточнение владельца 23.09: развернутая карточка не должна сдвигать сетку и содержимое.
    Блок предпросмотра вешается абсолютно под нижней кромкой карточки; размер карточки
    в потоке не меняется, сосед не двигается. Слой-портал (R5) заменит это клоном над оригиналом. */
-/* Блок предпросмотра абсолютный ВСЕГДА, а не только на ступени B: при уходе курсора стадия
-   переключается раньше, чем блок размонтируется (анимация выхода), и в потоке он на ~240 мс
-   поднимал высоту секции на 70px (замер 24.09). overflow остаётся видимым и на ступени A,
-   чтобы выход блока не обрезался. */
-.sc-card[data-stage="a"],
-.sc-card[data-stage="b"] { overflow: visible; }
-/* Блок предпросмотра позиционируется от КАРТОЧКИ, а не от её текстовой колонки: у .sc-card__body
-   стоит position: relative, и у mini блок висел под колонкой текста (замечание владельца 24.09). */
-.sc-card[data-stage="b"] .sc-card__body { position: static; }
-.sc-card[data-stage="b"][data-size] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+/* Ступень B больше не вешает блок под карточкой — карточка сама меняет форму (блок «Ступень B»
+   в конце файла); правила .sc-card__expand ниже остались от прежней схемы и не используются. */
 .sc-card .sc-card__expand {
   position: absolute;
   left: 0;
@@ -1874,3 +1866,65 @@ html[data-theme="light"] .sc-portal-scrim,
 @media (max-width: 480px) {
   .sc-surface__body { padding: var(--sc-s-4); max-width: none; }
 }
+
+/* === R0 Ступень B: карточка сама меняет форму (замечание владельца 24.09) === */
+/* <article.sc-card-slot> — место в сетке, размер зафиксирован; <div.sc-card> — сама карточка,
+   на ступени B выходит из потока (absolute внутри слота, z-index над сеткой) и меняет форму
+   тем же элементом (framer layout). Слот не рисует ничего: фон, радиус и ореол — у .sc-card. */
+.sc-card-slot { position: relative; display: block; }
+.sc-card-slot[data-stage="a"], .sc-card-slot[data-stage="b"] { z-index: 30; }
+/* Фокальная полоса (мобильный слой) ставит data-lit на элемент с data-material-id — теперь это слот. */
+.sc-card-slot[data-lit="true"] .sc-card { --sc-ring: var(--sc-glow-ring); }
+.sc-card[data-stage="a"], .sc-card[data-stage="b"] { overflow: hidden; }
+/* Одинаковый набор содержимого на ступени B: медиа → заголовок → описание → источник · дата → сердце. */
+.sc-card[data-stage="b"] .sc-card__meta { padding-right: var(--sc-s-9); min-height: 40px; align-items: flex-end; }
+.sc-card[data-stage="b"] .sc-card__description { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+/* mini: остаётся строкой, растёт вширь; медиа крупнее, заголовок и описание по две-три строки. */
+.sc-card[data-size="mini"][data-stage="b"] { gap: var(--sc-s-4); padding: var(--sc-s-4); }
+.sc-card[data-size="mini"][data-stage="b"] .sc-card__media { width: 132px; height: 96px; border-radius: var(--sc-r-md); }
+.sc-card[data-size="mini"][data-stage="b"] .sc-card__link { -webkit-line-clamp: 3; }
+.sc-card[data-size="mini"][data-stage="b"] .sc-card__description { -webkit-line-clamp: 2; }
+.sc-card[data-size="mini"][data-stage="b"] .sc-card__action { top: auto; right: var(--sc-s-3); bottom: var(--sc-s-3); }
+/* compact: растёт вниз — описание под заголовком, полная дата, сердце. */
+.sc-card[data-size="compact"][data-stage="b"] .sc-card__body { padding: var(--sc-s-4); }
+.sc-card[data-size="compact"][data-stage="b"] .sc-card__description { -webkit-line-clamp: 3; }
+/* medium/large: описание уже есть — раскрывается на строку-две больше. */
+.sc-card[data-size="medium"][data-stage="b"] .sc-card__description { -webkit-line-clamp: 4; }
+.sc-card[data-size="large"][data-stage="b"] .sc-card__description { -webkit-line-clamp: 3; }
+/* large в покое — только бейдж и заголовок над фото; поле под заголовком не резервируем. */
+.sc-card[data-size="large"] .sc-card__title { margin-bottom: 0; }
+.sc-card[data-size="large"][data-stage="b"] .sc-card__title { margin-bottom: var(--sc-s-2); }
+.sc-card[data-stage="b"] .sc-card__action { right: var(--sc-s-3); bottom: var(--sc-s-3); }
+/* Сердце — только смена цвета иконки при наведении (без ореола, как у всех не-карточек). */
+.sc-card__fav {
+  display: grid; place-items: center; width: 40px; height: 40px;
+  border: 0; border-radius: var(--sc-r-pill);
+  background: var(--sc-surface-2); color: var(--sc-text); cursor: pointer;
+  transition: color var(--sc-dur-base) var(--sc-ease-standard), background-color var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-card__fav:hover, .sc-card__fav[data-on] { color: var(--sc-accent); }
+.sc-card__fav:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+/* Лента с overflow-x: auto обрезала бы разросшуюся карточку по вертикали — даём скроллеру запас
+   полями (margin/padding наизнанку): рост до 120px вверх и вниз остаётся видимым. */
+.sc-strip-bleed { margin: -120px calc(var(--sc-s-6) * -1); padding: 120px var(--sc-s-6); }
+
+/* === R0 Dropdown: кнопка становится верхней строкой панели (замечание владельца 24.09) === */
+.sc-dropdown[data-open="true"] > .sc-btn { opacity: 0; pointer-events: none; }
+.sc-dropdown__head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3);
+  min-height: 40px; padding: 0 var(--sc-s-4);
+  border-radius: var(--sc-r-md);
+  background: var(--sc-surface-2); color: var(--sc-text);
+  font-size: 14px; font-weight: 600; letter-spacing: -0.006em;
+  cursor: pointer; user-select: none;
+}
+.sc-dropdown__head:hover { color: var(--sc-accent); }
+.sc-dropdown__head-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-dropdown__head-chevron { transform: rotate(180deg); flex: none; }
+.sc-dropdown__panel[data-placement="top"] .sc-dropdown__head-chevron { transform: none; }
+
+/* === R0 Заголовки карточек жирнее (замечание владельца 24.09) === */
+/* На ступень выше общей шкалы, с той же оптической компенсацией ночи (светлое на тёмном читается жирнее). */
+:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-w-card-title: 600; }
+html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-w-card-title: 700; }
+.sc-card__link { font-weight: var(--sc-w-card-title); }

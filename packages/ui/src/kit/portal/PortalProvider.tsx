@@ -108,11 +108,6 @@ function findOriginEl(id: number): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-material-id="${id}"]`);
 }
 
-function findCloneEl(id: number): HTMLElement | null {
-  if (typeof document === "undefined") return null;
-  return document.querySelector<HTMLElement>(`[data-portal-clone="${id}"]`);
-}
-
 /**
  * `useModalA11y.restoreFocus` woła `originEl.focus()` wprost (plik R4, poza zasięgiem edycji).
  * Korzeń `NewsCard` to `<article>` — ZAWSZE wolimy fokusowalne DZIECKO (prawdziwy link
@@ -174,12 +169,10 @@ export function PortalProvider({
   // inaczej ciągłość „klik kontynuuje bieżący rozmiar” rozjechałaby się na dwa commity.
   const open = useCallback((article: Article, originEl?: HTMLElement | null) => {
     setState((prev) => {
-      const continuingSameClone = prev.phase === "previewing" && prev.article?.id === article.id;
-      const liveClone = continuingSameClone ? findCloneEl(article.id) : null;
-      // `prev.originEl` jest wiarygodny TYLKO gdy kontynuujemy TEN SAM materiał — w innym
-      // wypadku należałby do zupełnie innej karty (np. wciąż aktywny podgląd sąsiada).
-      const resolvedOrigin = originEl ?? (continuingSameClone ? prev.originEl : null) ?? findOriginEl(article.id);
-      const rectSource: Element | null = liveClone ?? resolvedOrigin;
+      const resolvedOrigin = originEl ?? findOriginEl(article.id);
+      // R0 (24.09): karta sama zmienia formę na stopniu B — mierzymy `.sc-card` (rozrośniętą, jeśli
+      // trwa B), nie slot; powierzchnia rośnie z tego, co użytkownik właśnie widzi.
+      const rectSource: Element | null = resolvedOrigin?.querySelector(".sc-card") ?? resolvedOrigin;
       const size = readSize(resolvedOrigin ?? undefined);
       if (resolvedOrigin) originRef.current = focusTarget(resolvedOrigin);
       return {
@@ -187,7 +180,7 @@ export function PortalProvider({
         article,
         originEl: resolvedOrigin,
         flight: rectSource
-          ? { rect: rectSource.getBoundingClientRect(), radius: CARD_SPEC[size].radius, size, viaClone: !!liveClone }
+          ? { rect: rectSource.getBoundingClientRect(), radius: CARD_SPEC[size].radius, size, viaClone: false }
           : null,
         exit: null,
       };
@@ -278,6 +271,15 @@ export function usePortalApi(): PortalApi {
   const ctx = useContext(PortalApiContext);
   if (!ctx) throw new Error("usePortalApi must be used within <PortalProvider>");
   return ctx;
+}
+
+/**
+ * R0 (24.09): NewsCard podpina się do portalu SAMA, gdy jakiś PortalProvider jest nad nią —
+ * bez propów `onOpen`/`onPreview` w każdym miejscu użycia. Poza providerem zwraca `null`
+ * i karta zachowuje się jak zwykły <Link> + stopień B w potoku.
+ */
+export function usePortalApiOptional(): PortalApi | null {
+  return useContext(PortalApiContext);
 }
 
 export function usePortalState(): PortalStateValue {

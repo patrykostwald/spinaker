@@ -4,8 +4,9 @@
  * PortalLayer — `createPortal` w `document.body`, `AnimatePresence` zamontowany NA STAŁE
  * (dziecko warunkowe) — patrz docs/UI_KIT_PLAN.md → «Сплошная система движения» → «Портал»:
  * warunkowo zamontowany `<AnimatePresence>` to „przyczyna numer jeden” braku animacji
- * wyjścia. Renderuje: (a) klon-przedpodgląd stopnia B (`useHoverExpand`), (b) powierzchnię
- * pełnoekranową stopnia C (`MaterialSurface`) razem z przyciemnieniem.
+ * wyjścia. Renderuje powierzchnię pełnoekranową stopnia C (`MaterialSurface`) razem z
+ * przyciemnieniem. Stopień B (R0, 24.09) żyje w samej NewsCard — karta zmienia formę tym samym
+ * elementem, klonu w tej warstwie już nie ma.
  *
  * Trzy przypadki powrotu przy zamknięciu (docs → «Три случая возврата») są policzone
  * SYNCHRONICZNIE w `PortalProvider.close()` (scrollIntoView w tym samym takcie, zanim
@@ -18,10 +19,9 @@ import { createPortal } from "react-dom";
 import type { Article } from "../../types";
 import { useMotionTokens } from "../motion/useMotionTokens";
 import { responsive, springs } from "../motion/springs";
-import { MaterialSurface, type MaterialSurfaceRect } from "../MaterialSurface";
+import { MaterialSurface, type MaterialSurfaceExit, type MaterialSurfaceRect } from "../MaterialSurface";
 import { usePortalApi, usePortalEngine, focusTargetById } from "./PortalProvider";
 import { useHistoryPortal } from "./useHistoryPortal";
-import { useHoverExpand } from "./useHoverExpand";
 import { useScrollLock } from "./useScrollLock";
 import { useModalA11y } from "./useModalA11y";
 import { useDragDismiss } from "./useDragDismiss";
@@ -44,8 +44,6 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
   const m = useMotionTokens();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  const cloneNode = useHoverExpand();
 
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -139,11 +137,20 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
     ? responsive(springs.portalOut, dismissVelocity.current)
     : m.t("portalOut");
 
+  // R0 (24.09): cel powrotu idzie przez `custom` AnimatePresence, NIE przez prop `exit` powierzchni —
+  // AnimatePresence odgrywa wyjście na elemencie z OSTATNIEGO renderu przed usunięciem, a wtedy
+  // `engine.exit` był jeszcze `null` (close() ustawia fazę i cel w jednym setState). `custom`
+  // jest jedyną wartością, którą AnimatePresence aktualizuje na już wychodzącym dziecku.
+  const exitCustom: MaterialSurfaceExit | null = engine.exit
+    ? { rect: toRect(engine.exit.rect)!, radius: engine.exit.radius, transition: exitTransition }
+    : null;
+
   if (!mounted || typeof document === "undefined") return null;
 
   return createPortal(
     <>
       <AnimatePresence
+        custom={exitCustom}
         onExitComplete={() => {
           if (engine.exit) {
             // Świeże dogranie po id (nie zapamiętana referencja DOM — mogła się zdezaktualizować
@@ -157,7 +164,6 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
           }
         }}
       >
-        {cloneNode}
         {showScrim && (
           <motion.div
             key="scrim"
@@ -184,10 +190,7 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
             useSharedLayout={seedRef.current?.viaClone ?? false}
             fromRect={seedRef.current?.rect ?? null}
             fromRadius={seedRef.current?.radius ?? 0}
-            exitRect={toRect(engine.exit?.rect)}
-            exitRadius={engine.exit?.radius ?? seedRef.current?.radius ?? 0}
             transition={m.t("portalIn")}
-            exitTransition={exitTransition}
             onSettled={handleSettled}
             dragEnabled={engine.settled}
             drag={drag}

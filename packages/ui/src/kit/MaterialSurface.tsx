@@ -37,6 +37,8 @@ import type { Article } from "../types";
 import type { DragDismiss } from "./portal/useDragDismiss";
 
 export type MaterialSurfaceRect = { top: number; left: number; width: number; height: number };
+/** Cel powrotu — przychodzi przez `custom` AnimatePresence w chwili zamknięcia (patrz PortalLayer). */
+export type MaterialSurfaceExit = { rect: MaterialSurfaceRect; radius: number; transition: Transition };
 
 export type MaterialSurfaceProps = {
   mode: "overlay" | "page";
@@ -60,10 +62,7 @@ export type MaterialSurfaceProps = {
   useSharedLayout?: boolean;
   fromRect?: MaterialSurfaceRect | null;
   fromRadius?: number;
-  exitRect?: MaterialSurfaceRect | null;
-  exitRadius?: number;
   transition?: Transition;
-  exitTransition?: Transition;
   onSettled?: () => void;
   dragEnabled?: boolean;
   drag?: DragDismiss;
@@ -103,10 +102,7 @@ export function MaterialSurface({
   useSharedLayout = false,
   fromRect,
   fromRadius = 0,
-  exitRect,
-  exitRadius = 0,
   transition,
-  exitTransition,
   onSettled,
   dragEnabled,
   drag,
@@ -156,14 +152,15 @@ export function MaterialSurface({
         }
     : undefined;
 
-  // `exit` NIE zależy od `useSharedLayout` — zamknięcie zawsze wraca do zapamiętanego
-  // prostokąta oryginału (trzy przypadki powrotu, PortalProvider.close()), niezależnie od
-  // tego, czy powierzchnia otworzyła się przez klon, czy przez zapasową ręczną animację.
-  const exit = isOverlay
-    ? exitRect
-      ? { top: exitRect.top, left: exitRect.left, width: exitRect.width, height: exitRect.height, borderRadius: exitRadius, opacity: 1, transition: exitTransition }
-      : { opacity: 0, transition: m.t("fade") }
-    : undefined;
+  // Wyjście jako WARIANT z `custom`: zamknięcie zawsze wraca do prostokąta oryginału (trzy przypadki
+  // powrotu, PortalProvider.close()), który AnimatePresence dostarcza przez `custom` już PO usunięciu
+  // dziecka — zwykły prop `exit` widziałby wartości z renderu sprzed zamknięcia (`null`).
+  const variants = {
+    closed: (custom: MaterialSurfaceExit | null) =>
+      custom
+        ? { top: custom.rect.top, left: custom.rect.left, width: custom.rect.width, height: custom.rect.height, borderRadius: custom.radius, opacity: 1, transition: custom.transition }
+        : { opacity: 0, transition: m.t("fade") },
+  };
 
   const content = (
     <>
@@ -279,7 +276,8 @@ export function MaterialSurface({
       style={overlayStyle}
       initial={initial}
       animate={animate}
-      exit={exit}
+      variants={variants}
+      exit="closed"
       onAnimationComplete={onSettled}
       {...(dragEnabled && drag ? drag.dragProps : { drag: false as const })}
     >

@@ -2,35 +2,24 @@
 
 /**
  * Portal — demonstracja R5 (docs/UI_KIT_PLAN.md → «Портал», brief roli R5).
- * `PortalProvider` jest tu LOKALNY dla sekcji (na etapie 2 przenosi się do providers.tsx).
- * Historia w trybie `query`: identyfikatory fikstur są UJEMNE, więc `path` (`/material/-2001`)
- * nie ma sensu na tej witrynie — używamy `?podglad=<id>`.
+ * R0 (24.09): PortalProvider i PortalLayer są WSPÓLNE dla całej witryny (UiKitShowcase.tsx) —
+ * ta sekcja tylko pokazuje trzy przypadki powrotu i taśmę z przycięciem.
  */
 
 import { useEffect, useState } from "react";
 import { NewsCard } from "../../NewsCard";
-import { PortalProvider, PortalLayer, usePortal } from "../../portal";
+import { usePortal } from "../../portal";
 import { FIXTURE_STRIPS, makeArticles } from "../fixtures";
-import type { Article } from "../../../types";
 
 export const meta = {
   id: "portal",
   title: "Portal",
   lead:
-    "Karta → przedpodgląd w warstwie → pełny ekran. Klon stopnia B renderuje się NAD stroną (siatka i taśma), nigdy w potoku.",
+    "Karta → stopień B (ta sama karta zmienia formę nad siatką) → pełny ekran. Trzy przypadki powrotu i taśma z overflow.",
 };
 
 const GRID_ARTICLES = makeArticles(8, 41);
 const STRIP = FIXTURE_STRIPS[0];
-const ALL = [...GRID_ARTICLES, ...STRIP.articles];
-
-function resolveArticle(id: number): Article | undefined {
-  return ALL.find((a) => a.id === id);
-}
-
-function relatedFor(article: Article): Article[] {
-  return ALL.filter((a) => a.id !== article.id && a.category === article.category).slice(0, 6);
-}
 
 function Readout() {
   const { active, previewing } = usePortal();
@@ -60,19 +49,12 @@ function Readout() {
 }
 
 export function Section() {
-  return (
-    <PortalProvider historyMode="query">
-      <Sandbox />
-      <PortalLayer resolveArticle={resolveArticle} relatedFor={relatedFor} />
-    </PortalProvider>
-  );
+  return <Sandbox />;
 }
 
 function Sandbox() {
   const [removedId, setRemovedId] = useState<number | null>(null);
   const [scrollAway, setScrollAway] = useState(false);
-  const { open, preview } = usePortal();
-
   const gridArticles = GRID_ARTICLES.filter((a) => a.id !== removedId);
 
   return (
@@ -111,15 +93,15 @@ function Sandbox() {
       <h3 className="sc-t-title-m sc-section__sub">Siatka — 8 kart medium</h3>
       <div style={{ display: "grid", gap: "var(--sc-s-4)", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
         {gridArticles.map((article) => (
-          <NewsCard key={article.id} article={article} size="medium" expandable onOpen={(a) => open(a)} onPreview={preview} />
+          <NewsCard key={article.id} article={article} size="medium" expandable />
         ))}
       </div>
 
       <h3 className="sc-t-title-m sc-section__sub">Taśma (overflow-x: auto) — 8 kart compact</h3>
-      <div className="sc-portal-strip" style={{ display: "flex", gap: "var(--sc-s-4)", overflowX: "auto", paddingBottom: "var(--sc-s-3)" }}>
+      <div className="sc-portal-strip sc-strip-bleed" style={{ display: "flex", gap: "var(--sc-s-4)", overflowX: "auto" }}>
         {STRIP.articles.map((article) => (
           <div key={article.id} style={{ flex: "0 0 240px" }}>
-            <NewsCard article={article} size="compact" expandable onOpen={(a) => open(a)} onPreview={preview} />
+            <NewsCard article={article} size="compact" expandable />
           </div>
         ))}
       </div>

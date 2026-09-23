@@ -45,12 +45,28 @@ function stableHash(input: string): number {
  * żądaniem SSR i rozjeżdżał się z klientem. Dwa wywołania z identycznymi nadpisaniami dadzą ten sam
  * id — podaj `id` jawnie, gdy renderujesz listę.
  */
+/** Rejestr wszystkich fikstur — portal witryny (wspólny PortalProvider) odnajduje po id materiał z `?podglad=` i powiązane. */
+const REGISTRY = new Map<number, Article>();
+
+export function resolveFixture(id: number): Article | undefined {
+  return REGISTRY.get(id);
+}
+
+export function relatedFixtures(article: Article): Article[] {
+  const out: Article[] = [];
+  for (const item of REGISTRY.values()) {
+    if (item.id !== article.id && item.category === article.category) out.push(item);
+    if (out.length === 6) break;
+  }
+  return out;
+}
+
 export function makeArticle(overrides: Partial<Article> = {}): Article {
   const id = overrides.id ?? -(1000 + stableHash(JSON.stringify(overrides)));
   const source = overrides.source ?? FIXTURE_SOURCES[Math.abs(id) % FIXTURE_SOURCES.length];
   const day = 1 + (Math.abs(id) % 27);
   const hour = 6 + (Math.abs(id) % 15);
-  return {
+  const article: Article = {
     id,
     title: "Tytuł testowy mieszczący się w dwóch wierszach karty",
     url: `https://${source.url.replace("https://", "")}/material/${Math.abs(id)}`,
@@ -68,6 +84,8 @@ export function makeArticle(overrides: Partial<Article> = {}): Article {
     source,
     ...overrides,
   };
+  REGISTRY.set(id, article);
+  return article;
 }
 
 /** Sześć stanów danych z planu, użyte w matrycy karty. */

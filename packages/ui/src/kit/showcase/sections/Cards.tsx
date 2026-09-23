@@ -10,15 +10,13 @@ import { FIXTURE_STATES, makeArticle, makeArticles } from "../fixtures";
 export const meta = {
   id: "karty",
   title: "Karty",
-  lead: "NewsCard — jeden komponent, cztery rozmiary, sześć stanów danych, dwa stopnie najechania (A/B) w zwykłej siatce.",
+  lead: "NewsCard — jeden komponent, cztery rozmiary, sześć stanów danych. Najechanie: stopień A, po 400 ms jeden wspólny przedpodgląd w warstwie nad stroną; klik — pełny ekran morfingiem.",
 };
 
 const BADGE_CATEGORIES = ["article", "document", "video", "voting"] as const;
 const EDGE_ARTICLES = makeArticles(12, 21);
 
 export function Section() {
-  const [opened, setOpened] = useState<string | null>(null);
-
   return (
     <div>
       <h3 className="sc-t-title-m sc-section__sub">Rozmiary × stany danych</h3>
@@ -55,9 +53,9 @@ export function Section() {
         <NewsCard article={FIXTURE_STATES[5].article} size="large" layout="split" />
       </div>
 
-      <h3 className="sc-t-title-m sc-section__sub">Eyebrow, akcja poza linkiem i onOpen</h3>
+      <h3 className="sc-t-title-m sc-section__sub">Eyebrow i akcja poza linkiem</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-3)" }}>
-        {opened ? `onOpen zostało wywołane dla: „${opened}” (nawigacja przechwycona — portal dokłada R5).` : "Kliknij tytuł karty."}
+        Klik w kartę otwiera portal (wspólny dla całej witryny); przycisk akcji leży poza linkiem i nie otwiera nic.
       </p>
       <div style={{ display: "grid", gap: "var(--sc-s-4)", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
         <NewsCard
@@ -65,7 +63,6 @@ export function Section() {
           size="medium"
           eyebrow="DEMO"
           expandable
-          onOpen={(a) => setOpened(a.title)}
           action={
             <button
               type="button"

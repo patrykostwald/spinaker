@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { ForcedReducedMotionContext } from "../motion/useMotionTokens";
+import { PortalLayer, PortalProvider } from "../portal";
+import { relatedFixtures, resolveFixture } from "./fixtures";
 import * as Tokens from "./sections/Tokens";
 import * as Typography from "./sections/Typography";
 import * as MorphProbe from "./sections/MorphProbe";
@@ -71,6 +73,10 @@ export function UiKitShowcase() {
 
   return (
     <ForcedReducedMotionContext.Provider value={forceMotion ? true : null}>
+      {/* R0 (24.09): ОДИН портал на всю витрину — каждая карточка в любом разделе разворачивается
+          в единый предпросмотр и открывается/сворачивается морфингом. Историю ведём в `query`
+          (`?podglad=<id>`): у фикстур отрицательные id, `path` тут не имеет смысла. */}
+      <PortalProvider historyMode="query">
       <div className="sc-root sc-showcase" data-sc-force={force || undefined}>
         <div className="sc-showcase__banner" role="region" aria-label="Sterowanie witryną">
           <p className="sc-t-meta" style={{ margin: 0 }}>
@@ -117,6 +123,8 @@ export function UiKitShowcase() {
           </section>
         ))}
       </div>
+      <PortalLayer resolveArticle={resolveFixture} relatedFor={relatedFixtures} />
+      </PortalProvider>
     </ForcedReducedMotionContext.Provider>
   );
 }
