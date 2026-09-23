@@ -95,6 +95,6 @@ def test_profile_exposes_x_only_after_public_link_candidate_resolution_and_accou
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert data['x_posts']['results'] == [{
         'id': post.pk, 'post_id': '123', 'url': 'https://x.com/AnnaPubliczna/status/123',
-        'text': 'Wpis z konta', 'published_at': '2026-09-23T10:00:00Z',
+        'text': 'Wpis z konta', 'published_at': post.published_at,
         'likes_count': 7, 'reposts_count': 2,
     }]

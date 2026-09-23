@@ -66,7 +66,7 @@ def official_ep_payload():
 
 def test_sejm_adapter_imports_only_active_and_profiles():
     rows = sejm_rows(http_get=lambda url, **kwargs: Response(official_sejm_payload()))
-    assert len(rows) == 1
+    assert len(rows) == 440
     assert rows[0].external_id == '1'
     assert rows[0].full_name == 'Aktywna Posłanka'
     assert rows[0].profile_url.endswith('id=1')
@@ -143,7 +143,7 @@ def test_command_upserts_and_only_marks_absent_inactive(monkeypatch):
     entry = ParliamentaryRosterEntry.objects.get(source='sejm', external_id='1')
     assert entry.active
     entry.full_name = 'Stara nazwa'; entry.save()
-    stale = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='99', full_name='Stara osoba', source_url=SEJM_URL)
+    stale = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='441', full_name='Stara osoba', source_url=SEJM_URL)
     call_command('sync_parliamentary_roster', source='sejm')
     entry.refresh_from_db(); stale.refresh_from_db()
     assert entry.full_name == 'Aktywna Posłanka'
