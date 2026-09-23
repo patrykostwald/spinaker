@@ -571,3 +571,199 @@ html.sc-theme-transition .sc-root {
 .sc-card[data-stage="b"][data-size="mini"] .sc-card__expand { padding-left: var(--sc-s-3); padding-right: var(--sc-s-3); }
 .sc-card[data-stage="b"][data-size="medium"] .sc-card__expand { border-radius: 0 0 var(--sc-r-xl) var(--sc-r-xl); }
 .sc-card[data-stage="b"][data-size="large"] .sc-card__expand { border-radius: 0 0 var(--sc-r-2xl) var(--sc-r-2xl); }
+/* === R4 Примитивы движения === */
+
+/* Утилита: видимо только для скринридера (aria-live регион ReorderableStrips и т.п.). */
+.sc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- MorphIndicator: общий layoutId для табов, пилюль, навигации ----------
+   Родитель обязан быть position: relative — индикатор позиционируется внутри него. */
+.sc-morph-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.sc-morph-indicator--pill {
+  background: var(--sc-accent-soft);
+  border: 1px solid var(--sc-accent);
+  border-radius: var(--sc-r-pill);
+}
+.sc-morph-indicator--underline {
+  top: auto;
+  height: 2px;
+  background: var(--sc-accent);
+  border-radius: var(--sc-r-pill);
+}
+
+/* ---------- SkeletonMorph: оба слоя в одной ячейке грида — раскладка не меняется ---------- */
+.sc-skeleton-morph { display: grid; }
+.sc-skeleton-morph__layer { grid-area: 1 / 1; }
+
+/* Блок-заглушка скелета. Пульсация только opacity (композитор); period ≥1.6s; глобальный
+   килсвитч prefers-reduced-motion (строка 322) сводит длительность к 1ms — статичная плашка. */
+@keyframes sc-skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.sc-skeleton {
+  border-radius: var(--sc-r-sm);
+  background: var(--sc-surface-2);
+  animation: sc-skeleton-pulse 1.8s ease-in-out infinite;
+}
+
+/* ---------- Стенд витрины «Ruch» — общая разметка блоков-демонстраций ---------- */
+.sc-motion-stand { display: grid; gap: var(--sc-s-9); }
+.sc-motion-block {
+  padding: var(--sc-s-5);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-lg);
+  background: var(--sc-surface);
+  box-shadow: var(--sc-ring);
+}
+.sc-motion-toolbar { display: flex; align-items: center; gap: var(--sc-s-3); flex-wrap: wrap; margin-bottom: var(--sc-s-4); }
+.sc-motion-btn {
+  border: 1px solid var(--sc-line);
+  background: var(--sc-surface-2);
+  color: var(--sc-text);
+  padding: 8px 16px;
+  min-height: 40px;
+  border-radius: var(--sc-r-md);
+  font: inherit;
+  font-size: var(--sc-t-meta-size);
+  font-weight: var(--sc-w-meta);
+  cursor: pointer;
+  transition: background-color var(--sc-dur-fast) var(--sc-ease-standard), border-color var(--sc-dur-fast) var(--sc-ease-standard), color var(--sc-dur-fast) var(--sc-ease-standard);
+}
+.sc-motion-btn:hover { background: var(--sc-surface-3); border-color: var(--sc-line-strong); }
+.sc-motion-btn[aria-pressed="true"] { background: var(--sc-accent-soft); border-color: var(--sc-accent); color: var(--sc-accent); }
+.sc-motion-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Список */
+.sc-motion-list { display: flex; flex-wrap: wrap; gap: var(--sc-s-3); list-style: none; margin: 0; padding: 0; }
+.sc-motion-list__item {
+  padding: 10px 16px;
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-md);
+  background: var(--sc-surface-2);
+  font-size: var(--sc-t-body-s-size);
+}
+
+/* Табы */
+.sc-motion-tabs { display: inline-flex; gap: var(--sc-s-2); padding: 4px; border: 1px solid var(--sc-line); border-radius: var(--sc-r-pill); background: var(--sc-surface-2); }
+.sc-motion-tabs__tab {
+  position: relative;
+  border: 0;
+  background: transparent;
+  color: var(--sc-text-2);
+  padding: 8px 18px;
+  min-height: 40px;
+  border-radius: var(--sc-r-pill);
+  font: inherit;
+  font-size: var(--sc-t-meta-size);
+  font-weight: var(--sc-w-meta);
+  cursor: pointer;
+}
+.sc-motion-tabs__tab[aria-selected="true"] { color: var(--sc-accent); }
+.sc-motion-tabs__label { position: relative; }
+
+/* Счётчик */
+.sc-motion-counter { display: inline-block; min-width: 4ch; text-align: center; font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+
+/* Скелет-демо: та же карточка для скелета и контента */
+.sc-motion-skeleton-card { padding: var(--sc-s-4); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface-2); min-height: 76px; }
+
+/* Аккордеон */
+.sc-motion-accordion { border-top: 1px solid var(--sc-line); margin-top: var(--sc-s-3); }
+
+/* Проверка прерываемости */
+.sc-motion-track { position: relative; height: 40px; width: 240px; border: 1px dashed var(--sc-line-strong); border-radius: var(--sc-r-pill); }
+.sc-motion-track__dot { position: absolute; top: 4px; left: 4px; width: 32px; height: 32px; border-radius: 50%; background: var(--sc-accent); }
+
+/* ---------- ReorderableStrips ---------- */
+.sc-reorder-strips__list { display: flex; flex-direction: column; gap: var(--sc-s-4); list-style: none; margin: 0; padding: 0; }
+.sc-reorder-strips__note { margin: var(--sc-s-3) 0 0; }
+
+.sc-strip-row {
+  position: relative;
+  list-style: none;
+  padding: var(--sc-s-4);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-lg);
+  background: var(--sc-surface);
+  box-shadow: var(--sc-e-1), var(--sc-ring);
+  transition: box-shadow var(--sc-dur-base) var(--sc-ease-standard);
+}
+.sc-strip-row[data-dragging="true"] { box-shadow: var(--sc-e-3), var(--sc-ring); }
+.sc-strip-row__head { display: flex; align-items: center; gap: var(--sc-s-3); margin-bottom: var(--sc-s-3); }
+.sc-strip-row__title { margin: 0; }
+.sc-strip-row__body { touch-action: pan-x; }
+
+.sc-strip-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--sc-r-md);
+  background: transparent;
+  color: var(--sc-text-2);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity var(--sc-dur-fast) var(--sc-ease-standard), color var(--sc-dur-fast) var(--sc-ease-standard);
+}
+.sc-strip-row:hover .sc-strip-handle,
+.sc-strip-handle:focus-visible,
+.sc-strip-handle[data-picked="true"] { opacity: 1; }
+.sc-strip-handle[data-picked="true"] { color: var(--sc-accent); }
+@media (hover: none) {
+  .sc-strip-handle { opacity: 1; }
+}
+
+.sc-motion-strip-tiles { display: flex; gap: var(--sc-s-3); overflow-x: auto; padding-bottom: 4px; touch-action: pan-x; }
+.sc-motion-strip-tile {
+  flex: 0 0 152px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sc-s-3);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-r-md);
+  background: var(--sc-surface-2);
+}
+
+/* ---------- Стенд useDragDismiss ---------- */
+.sc-drag-sandbox { position: relative; overflow: hidden; border-radius: var(--sc-r-xl); border: 1px solid var(--sc-line); background: var(--sc-surface-2); }
+.sc-drag-sandbox__scrim { position: absolute; inset: 0; background: rgba(8, 9, 11, 0.55); pointer-events: none; }
+.sc-drag-sandbox__surface {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: var(--sc-surface);
+  box-shadow: var(--sc-e-3);
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+}
+.sc-drag-sandbox__handle { display: flex; justify-content: center; padding: var(--sc-s-3); cursor: grab; }
+.sc-drag-sandbox__grip { width: 40px; height: 4px; border-radius: var(--sc-r-pill); background: var(--sc-line-strong); }
+.sc-drag-sandbox__scroller { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sc-s-5) var(--sc-s-5); touch-action: pan-y; }
+.sc-drag-sandbox__readout { display: flex; gap: var(--sc-s-6); flex-wrap: wrap; margin: var(--sc-s-4) 0 0; }
+.sc-drag-sandbox__readout dt { margin: 0; }
+.sc-drag-sandbox__readout dd { margin: 0; font-size: var(--sc-t-title-xs-size); }
+
+@media (max-width: 480px) {
+  .sc-motion-track { width: 100%; }
+}
