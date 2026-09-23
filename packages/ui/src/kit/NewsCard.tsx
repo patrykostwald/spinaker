@@ -53,6 +53,12 @@ export type NewsCardProps = {
   action?: ReactNode;
   /** Portal (R5) podpina się tutaj; bez tego propa link działa zwykłą nawigacją <Link>. */
   onOpen?: (article: Article) => void;
+  // R5: gdy podane, karta NIE renderuje własnego bloku stopnia B w potoku — po zamiarze
+  // (lub natychmiast po fokusie klawiatury) oddaje sterowanie warstwie-portalowi R5
+  // (`useHoverExpand`), która rysuje rosnący klon NAD stroną (uwaga właściciela «Слой выше,
+  // а не поток» — patrz docs/UI_KIT_PLAN.md → «Ступень B»). Zejście wskaźnika nie wywołuje
+  // tu niczego — o zwinięciu decyduje warstwa (śledzi klon I oryginał razem).
+  onPreview?: (article: Article, originEl: HTMLElement) => void;
   /** Włącza stopień B w zwykłej siatce. Ленты z przycięciem robi R5 przez PortalLayer. */
   expandable?: boolean;
   className?: string;
@@ -154,6 +160,7 @@ export function NewsCard({
   eyebrow,
   action,
   onOpen,
+  onPreview,
   expandable = false,
   className,
 }: NewsCardProps) {
@@ -209,7 +216,9 @@ export function NewsCard({
     setStage("a");
     clearTimer();
     if (expandable) {
-      timerRef.current = setTimeout(() => setStage("b"), PREVIEW_DELAY_MS);
+      // R5: gdy warstwa-portal przejmuje stopień B, NIE ustawiamy lokalnie "b" — oddajemy
+      // zamiar po tym samym opóźnieniu (PREVIEW_DELAY_MS), karta zostaje wizualnie na "a".
+      timerRef.current = setTimeout(() => (onPreview ? onPreview(article, el) : setStage("b")), PREVIEW_DELAY_MS);
     }
   }
 
@@ -230,7 +239,13 @@ export function NewsCard({
     setEntered(true);
     setOrigin(computeOrigin(e.currentTarget));
     clearTimer();
-    setStage(expandable ? "b" : "a");
+    // Fokus z klawiatury to już jawny zamiar — stopień B natychmiast, bez PREVIEW_DELAY_MS.
+    if (expandable && onPreview) {
+      setStage("a");
+      onPreview(article, e.currentTarget);
+    } else {
+      setStage(expandable ? "b" : "a");
+    }
   }
   function handleBlur(e: FocusEvent<HTMLElement>) {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
