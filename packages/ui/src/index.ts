@@ -35,6 +35,11 @@ export * from "./lib/boxKontekstuDemo";
 export { PowiekszonyBox, PowiekszonyBoxDemo } from "./components/PowiekszonyBox";
 export { ProfilPolitykaBox } from "./components/ProfilPolitykaBox";
 export * from "./lib/powiekszonyBoxDemo";
+export { MojeKonto, SignedOutPanel } from "./components/MojeKonto";
+export { MojaNitkaEditor } from "./components/MojaNitkaEditor";
+export { ArticleFavoriteButton } from "./components/ArticleFavoriteButton";
+export { CommentReportButton } from "./components/CommentReportButton";
+export * from "./lib/personal";
 export { ThreadEditor } from "./components/ThreadEditor";
 
 export { ThreadExport } from './components/ThreadExport';

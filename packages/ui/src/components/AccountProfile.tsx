@@ -19,15 +19,15 @@ type AccountProfileData = { username: string; public_activity: boolean; theme_pr
 type Section = 'saved' | 'activity' | 'privacy' | 'settings';
 const sections: { id: Section; label: string; description: string }[] = [
   { id: 'saved', label: 'Zapisane', description: 'Ulubione nitki i własne paski' },
-  { id: 'activity', label: 'Aktywność', description: 'Twoje oceny i komentarze' },
+  { id: 'activity', label: 'Aktywność', description: 'Twoje reakcje i komentarze' },
   { id: 'privacy', label: 'Prywatność', description: 'Widoczność Twojej historii' },
   { id: 'settings', label: 'Ustawienia', description: 'Konto i dostępne możliwości' },
 ];
 
 function HistoryRows({ rows }: { rows: HistoryItem[] }) {
   return <div className="profile-history">{rows.map(item => <article key={item.id}>
-    <div><span className={`history-polarity opinion-${item.polarity}`}>{item.polarity === 'positive' ? 'Ocena pozytywna' : 'Ocena negatywna'}</span><time dateTime={item.created_at}>{formatDateTimePl(item.created_at)}</time></div>
-    {item.body ? <p>{item.body}</p> : <p className="profile-muted">Ocena bez komentarza.</p>}
+    <div><span className={`history-polarity opinion-${item.polarity}`}>{item.polarity === 'positive' ? 'Przydatne' : 'Nieprzydatne'}</span><time dateTime={item.created_at}>{formatDateTimePl(item.created_at)}</time></div>
+    {item.body ? <p>{item.body}</p> : <p className="profile-muted">Reakcja bez komentarza.</p>}
     <Link href={`/material/${item.article_id}`}>Materiał i jego kontekst ↗</Link>
   </article>)}</div>;
 }
@@ -92,11 +92,11 @@ export function AccountProfile() {
         </>}
         {section === 'activity' && <section className="profile-block"><p className="profile-explanation">Oceny i komentarze, które zostawiasz pod materiałami. Widoczność tej zbiorczej historii zmienisz w sekcji <button onClick={() => navigate('privacy')}>Prywatność</button>.</p>
           {history.isPending && <p role="status" className="profile-empty">Ładuję historię…</p>}{history.isError && <p role="alert" className="profile-empty">Nie udało się pobrać historii. <button className="quiet-button" onClick={() => history.refetch()}>Ponów</button></p>}
-          {history.isSuccess && !historyRows.length && <div className="profile-empty"><p>Nie masz jeszcze zapisanych ocen ani komentarzy.</p><p>Otwórz materiał, poznaj jego kontekst i dodaj swoją ocenę.</p><Link href="/">Przejdź do wiadomości ↗</Link></div>}
+          {history.isSuccess && !historyRows.length && <div className="profile-empty"><p>Nie masz jeszcze zapisanych reakcji ani komentarzy.</p><p>Otwórz materiał, poznaj jego kontekst i zaznacz, czy był przydatny.</p><Link href="/">Przejdź do wiadomości ↗</Link></div>}
           <HistoryRows rows={historyRows} />{history.hasNextPage && <button disabled={history.isFetchingNextPage} className="load-news-button" onClick={() => history.fetchNextPage()}>Wcześniejsza aktywność ↓</button>}
         </section>}
         {section === 'privacy' && <section className="profile-block profile-privacy"><h3>Widoczność historii</h3><p>Komentarze pod materiałami są publiczne. Zbiorcza historia na Twoim profilu pozostaje prywatna, dopóki jej nie udostępnisz.</p><label><input type="checkbox" checked={profile.data?.public_activity ?? false} disabled={pending || !profile.isSuccess} onChange={e => visibility(e.target.checked)} /><span>Udostępnij historię aktywności na publicznym profilu<small>Możesz wyłączyć jej widoczność w dowolnym momencie.</small></span></label>{profile.data?.public_activity && <Link href={`/profile/${encodeURIComponent(profile.data.username)}`}>Zobacz publiczny profil ↗</Link>}{profile.isError && <p role="alert">Nie udało się pobrać ustawienia prywatności. <button className="quiet-button" onClick={() => profile.refetch()}>Ponów</button></p>}<div className="profile-privacy-note"><h3>Zawsze prywatne</h3><p>Ulubione nitki i zapisane paski nie pojawiają się na publicznym profilu.</p></div></section>}
-        {section === 'settings' && <section className="profile-block"><h3>Dane konta</h3><dl className="profile-details"><div><dt>Nazwa użytkownika</dt><dd>@{user.username}</dd></div><div><dt>Rola</dt><dd>{role}</dd></div><div><dt>Motyw</dt><dd>{profile.data ? ({ auto: 'Automatyczny', dark: 'Ciemny', light: 'Jasny', pastel: 'Pastelowy' } as const)[profile.data.theme_preference] : 'Ładowanie…'} · zmienisz go przełącznikiem w nagłówku</dd></div><div><dt>Tworzenie nitek</dt><dd>{user.is_staff ? 'Tworzenie i publikacja redakcyjna' : user.is_journalist ? 'Własne szkice · publikacja po zatwierdzeniu redakcji' : 'Zapisane tematy, oceny i komentarze'}</dd></div></dl><div className="profile-shortcuts"><button className="quiet-button" onClick={() => navigate('privacy')}>Ustaw prywatność</button><button className="quiet-button" onClick={() => navigate('saved')}>Zarządzaj paskami</button>{user.can_edit_threads && <Link className="quiet-button" href="/editor">Otwórz warsztat ↗</Link>}</div></section>}
+        {section === 'settings' && <section className="profile-block"><h3>Dane konta</h3><dl className="profile-details"><div><dt>Nazwa użytkownika</dt><dd>@{user.username}</dd></div><div><dt>Rola</dt><dd>{role}</dd></div><div><dt>Motyw</dt><dd>{profile.data ? ({ auto: 'Automatyczny', dark: 'Ciemny', light: 'Jasny', pastel: 'Pastelowy' } as const)[profile.data.theme_preference] : 'Ładowanie…'} · zmienisz go przełącznikiem w nagłówku</dd></div><div><dt>Tworzenie nitek</dt><dd>{user.is_staff ? 'Tworzenie i publikacja redakcyjna' : user.is_journalist ? 'Własne szkice · publikacja po zatwierdzeniu redakcji' : 'Zapisane tematy, reakcje, komentarze i prywatne nitki'}</dd></div></dl><div className="profile-shortcuts"><button className="quiet-button" onClick={() => navigate('privacy')}>Ustaw prywatność</button><button className="quiet-button" onClick={() => navigate('saved')}>Zarządzaj paskami</button>{user.can_edit_threads && <Link className="quiet-button" href="/editor">Otwórz warsztat ↗</Link>}</div></section>}
       </div>
     </div>
   </div>;

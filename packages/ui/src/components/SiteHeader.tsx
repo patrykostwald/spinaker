@@ -2,6 +2,7 @@
 import { useState, useId, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAccount } from '../lib/account';
 import type { SiteConfig } from '../types';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
@@ -25,6 +26,7 @@ function HeaderSearch() {
 export function SiteHeader({ site }: { site: SiteConfig }) {
   const [first, ...rest] = site.name.split('.');
   const second = rest.join('.');
+  const account = useAccount();
   return (
     <header className="mvp-site-header">
       <div className="mvp-site-header-inner">
@@ -34,7 +36,9 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         <HeaderSearch />
         <div className="mvp-header-actions">
           <Link href="/o-nas" className="mvp-header-link">O NAS</Link>
-          <Link href="/dostep" className="mvp-header-link">ZALOGUJ</Link>
+          {account.data?.authenticated
+            ? <Link href="/konto" className="mvp-header-link">MOJE KONTO</Link>
+            : <Link href="/konto" className="mvp-header-link">ZALOGUJ</Link>}
           <ThemeSwitcher />
         </div>
       </div>

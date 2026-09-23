@@ -23,6 +23,11 @@ export type DemoMaterial = {
   primary: boolean;
   /** Jawna podstawa automatycznego powiązania — nie ocena treści. */
   relation: string;
+  /**
+   * Identyfikator prawdziwego materiału z Bazy. Gdy jest podany, reakcje, komentarze i ulubione
+   * korzystają z API konta. Dane demonstracyjne go nie mają i niczego nie zapisują.
+   */
+  articleId?: number;
 };
 
 export type DemoComment = { id: string; author: string; createdAt: string; text: string };

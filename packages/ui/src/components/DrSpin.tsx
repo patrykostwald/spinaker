@@ -3,6 +3,7 @@ import Image from 'next/image';
 import type { ThreadDetail } from '../types';
 import { EmptyMaterialSlot, MaterialBox } from './MaterialBox';
 import { MaterialStrip } from './MaterialStrip';
+import { ThreadFavoriteButton } from './ThreadFavoriteButton';
 
 const PREVIEW_TYPES = ['WYWIAD', 'DOKUMENT URZĘDOWY', 'REPORTAŻ', 'ŚLEDZTWO', 'FILM'];
 
@@ -16,7 +17,10 @@ export function DrSpin({ thread }: { thread: ThreadDetail | null }) {
           <p className="mvp-editorial-kicker">SPIN.CLINIC · REDAKCJA</p>
           <h2>Dr Spin</h2>
         </div>
-        <p>{published ? 'Dzisiejsza nitka redakcyjna' : 'Codzienna nitka redakcyjna'}</p>
+        <div className="mvp-dr-spin-actions">
+          <p>{published ? 'Dzisiejsza nitka redakcyjna' : 'Codzienna nitka redakcyjna'}</p>
+          {published && <ThreadFavoriteButton thread={published} />}
+        </div>
       </header>
       <div className="mvp-dr-spin-track">
         {published ? (

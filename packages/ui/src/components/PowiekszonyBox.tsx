@@ -15,6 +15,8 @@ import {
   type SourceKind,
 } from '../lib/powiekszonyBoxDemo';
 import { ProfilPolitykaBox } from './ProfilPolitykaBox';
+import { ArticleFavoriteButton } from './ArticleFavoriteButton';
+import { ArticleOpinions } from './ArticleOpinions';
 
 type Period = 'all' | 'day' | 'three';
 type Reaction = 'useful' | 'notUseful';
@@ -132,6 +134,7 @@ function SelectedMaterial({ material, anchor, reaction, onReact, myComment, onCo
   const uid = useId();
   const [editing, setEditing] = useState(!myComment);
   const [draft, setDraft] = useState(myComment ?? '');
+  const [reported, setReported] = useState<string[]>([]);
   const base = DEMO_REACTIONS[material.id] ?? { useful: 0, notUseful: 0 };
   const counts = { useful: base.useful + (reaction === 'useful' ? 1 : 0), notUseful: base.notUseful + (reaction === 'notUseful' ? 1 : 0) };
   const comments = DEMO_COMMENTS[material.id] ?? [];
@@ -160,7 +163,14 @@ function SelectedMaterial({ material, anchor, reaction, onReact, myComment, onCo
           <p className="mvp-xbox-link">Oryginał: <span className="mvp-xbox-url">{material.url}</span> <small>(demo — link nieaktywny)</small></p>
         </div>
 
+        {material.articleId ? (
+          <div className="mvp-xbox-feedback mvp-xbox-live">
+            <ArticleFavoriteButton articleId={material.articleId} title={material.title} />
+            <ArticleOpinions article={{ id: material.articleId }} />
+          </div>
+        ) : (
         <div className="mvp-xbox-feedback">
+          <p className="mvp-xbox-demo-flag">Demo: reakcje i komentarze nie są nigdzie zapisywane. Przy prawdziwym materiale zapisują się na Twoim koncie — jedna reakcja i jeden komentarz na materiał.</p>
           <div className="mvp-xbox-reactions" role="group" aria-labelledby={`${uid}-reactions`}>
             <p id={`${uid}-reactions`} className="mvp-xbox-label">CZY TEN MATERIAŁ BYŁ PRZYDATNY W ZESTAWIENIU?</p>
             <div>
@@ -171,7 +181,7 @@ function SelectedMaterial({ material, anchor, reaction, onReact, myComment, onCo
                 Nieprzydatne <span className="mvp-xbox-count">{counts.notUseful}</span>
               </button>
             </div>
-            <small>Reakcja dotyczy przydatności materiału w tym zestawieniu. Nie ocenia osoby ani prawdziwości treści. Jedna reakcja na materiał — ponowne kliknięcie ją cofa.</small>
+            <small>Reakcja dotyczy przydatności materiału w tym zestawieniu. Nie ocenia osoby ani prawdziwości treści. W demo ponowne kliknięcie ją cofa.</small>
           </div>
 
           <div className="mvp-xbox-comments">
@@ -182,6 +192,9 @@ function SelectedMaterial({ material, anchor, reaction, onReact, myComment, onCo
                   <li key={comment.id}>
                     <p><strong>{comment.author}</strong> · <time dateTime={comment.createdAt}>{stampAt(comment.createdAt)}</time></p>
                     <p>{comment.text}</p>
+                    <button type="button" className="mvp-report-link" aria-pressed={reported.includes(comment.id)} onClick={() => setReported(current => current.includes(comment.id) ? current : [...current, comment.id])}>
+                      {reported.includes(comment.id) ? 'Zgłoszono (demo — nie wysłano)' : 'Zgłoś komentarz'}<span className="sr-only"> użytkownika {comment.author}</span>
+                    </button>
                   </li>
                 ))}
                 {myComment && !editing && (
@@ -217,6 +230,7 @@ function SelectedMaterial({ material, anchor, reaction, onReact, myComment, onCo
             )}
           </div>
         </div>
+        )}
       </div>
     </section>
   );

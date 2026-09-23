@@ -9,7 +9,7 @@ Te endpointy są publiczne i gotowe do podłączenia przez frontend. Nie zwracaj
 Zwraca maksymalnie 100 aktywnych osób. Opcjonalne filtry:
 
 - `q` — fragment imienia, roli lub organizacji;
-- `role_category` — `government`, `party_leader`, `parliament`, `european_parliament` albo `political`.
+- `role_category` — `government`, `party`, `parliamentary`, `european`, `local` albo `political`.
 
 ## Szczegóły
 

@@ -3,10 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { categoryLabel, formatShortDatePl, formatTimePl, materialTypeLabel } from "../lib/utils";
+import { useOwnerId } from "../lib/personal";
 import type { Article } from "../types";
+import { ArticleFavoriteButton } from "./ArticleFavoriteButton";
 
 export function MaterialBox({ article }: { article: Article }) {
-  return (
+  const { ownerId } = useOwnerId();
+  const box = (
     <Link href={`/material/${article.id}`} className="material-box">
       <span className="material-box-meta">
         <span className="material-box-source">{article.source.name} · {categoryLabel(article.category)}</span>
@@ -24,6 +27,14 @@ export function MaterialBox({ article }: { article: Article }) {
       </span>
       <span className="material-box-title">{article.title}</span>
     </Link>
+  );
+  // Niezalogowani widzą box bez zmian; zalogowani — dyskretne serce do ulubionych obok linku (nie wewnątrz niego).
+  if (!ownerId) return box;
+  return (
+    <div className="material-box-shell">
+      {box}
+      <ArticleFavoriteButton articleId={article.id} title={article.title} compact />
+    </div>
   );
 }
 

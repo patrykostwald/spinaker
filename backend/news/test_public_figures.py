@@ -1,9 +1,10 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import RequestFactory
 
 from news.political_admin import PublicFigureAdmin
-from news.political_models import PublicFigure
+from news.political_models import ParliamentaryRosterEntry, PublicFigure
 
 
 pytestmark = pytest.mark.django_db
@@ -47,3 +48,27 @@ def test_admin_disables_delete_and_only_archives_records():
     admin_view.archive_selected(request, PublicFigure.objects.filter(pk=record.pk))
     record.refresh_from_db()
     assert record.archived is True
+
+
+def test_priority_seed_uses_explicit_evidence_and_links_only_exact_roster_names():
+    ParliamentaryRosterEntry.objects.create(
+        source='sejm', external_id='246', full_name='Mateusz Morawiecki', club='Klub',
+        profile_url='https://sejm.example/morawiecki', source_url='https://sejm.example', active=True,
+    )
+    ParliamentaryRosterEntry.objects.create(
+        source='ep', external_id='257067', full_name='Grzegorz Braun', club='',
+        profile_url='https://ep.example/braun', source_url='https://ep.example', active=True,
+    )
+    cabinet = figure(canonical_name='Paulina Hennig-Kloska', import_key='kprm-cabinet:paulina')
+
+    call_command('seed_priority_public_figures')
+
+    morawiecki = PublicFigure.objects.get(import_key='editorial-priority:mateusz-morawiecki')
+    braun = PublicFigure.objects.get(import_key='editorial-priority:grzegorz-braun')
+    korwin = PublicFigure.objects.get(import_key='editorial-priority:janusz-korwin-mikke')
+    cabinet.refresh_from_db()
+    assert morawiecki.parliamentary_roster_entry.full_name == 'Mateusz Morawiecki'
+    assert braun.parliamentary_roster_entry.full_name == 'Grzegorz Braun'
+    assert cabinet.parliamentary_roster_entry is None
+    assert korwin.evidence_url == 'https://korwin.com.pl/wladze/'
+    assert PublicFigure.objects.filter(canonical_name='Paulina Hennig-Kloska').count() == 1

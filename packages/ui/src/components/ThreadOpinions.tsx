@@ -6,6 +6,7 @@ import { apiFetch, apiWrite } from "../lib/api";
 import { useAccount } from "../lib/account";
 import { formatDateTimePl } from "../lib/utils";
 import { AccountDialog } from "./AccountDialog";
+import { CommentReportButton } from "./CommentReportButton";
 
 type Polarity = "positive" | "negative";
 type Opinion = { id: number; author: { id: number; username: string }; polarity: Polarity; body: string; created_at: string };
@@ -39,13 +40,13 @@ export function ThreadOpinions({ slug }: { slug: string }) {
   }
 
   return <section className="thread-opinions">
-    <header><div><p className="profile-kicker">OCENA CZYTELNIKÓW</p><h2>Jak oceniasz tę nitkę?</h2></div>{query.data && <p><span>− {query.data.counts.negative}</span><span>+ {query.data.counts.positive}</span></p>}</header>
+    <header><div><p className="profile-kicker">REAKCJE CZYTELNIKÓW</p><h2>Czy ta nitka była przydatna?</h2></div>{query.data && <p><span>Przydatna {query.data.counts.positive}</span><span>Nieprzydatna {query.data.counts.negative}</span></p>}</header>
     {query.isError && <p role="alert">Nie udało się pobrać opinii. <button className="quiet-button" onClick={() => query.refetch()}>Ponów</button></p>}
-    {query.data && <div className="opinion-columns">{(["negative", "positive"] as const).map(side => <section className={`opinion-column opinion-${side}`} key={side}><h3>{side === "positive" ? "Pozytywne" : "Negatywne"} <span>{query.data.counts[side]}</span></h3>{query.data[side].map(item => <article className="reader-opinion" key={item.id}><div><strong>@{item.author.username}</strong><time dateTime={item.created_at}>{formatDateTimePl(item.created_at)}</time></div><p>{item.body}</p></article>)}{!query.data[side].length && <p className="opinion-empty">Brak komentarzy.</p>}</section>)}</div>}
-    {!ownerId ? <button className="quiet-button" onClick={() => setAccountOpen(true)}>Zaloguj się, aby ocenić</button> : mine?.body ? <p className="opinion-confirmation">Twoja opinia została zapisana.</p> : query.isSuccess && <form className="opinion-composer" onSubmit={submit}>
-      {mine ? <p>Ocena zapisana: {mine.polarity === "positive" ? "pozytywna" : "negatywna"}. Możesz jeszcze dodać jeden komentarz.</p> : <fieldset><legend>Wybierz reakcję</legend><div className="flex gap-3">{(["negative", "positive"] as const).map(side => <label className={`opinion-choice opinion-${side}`} key={side}><input required type="radio" checked={polarity === side} onChange={() => setPolarity(side)} />{side === "positive" ? "+ Pozytywna" : "− Negatywna"}</label>)}</div></fieldset>}
+    {query.data && <div className="opinion-columns">{(["negative", "positive"] as const).map(side => <section className={`opinion-column opinion-${side}`} key={side}><h3>{side === "positive" ? "Przydatna" : "Nieprzydatna"} <span>{query.data.counts[side]}</span></h3>{query.data[side].map(item => <article className="reader-opinion" key={item.id}><div><strong>@{item.author.username}</strong><time dateTime={item.created_at}>{formatDateTimePl(item.created_at)}</time></div><p>{item.body}</p>{item.author.id !== ownerId && <CommentReportButton kind="thread" opinionId={item.id} author={item.author.username} />}</article>)}{!query.data[side].length && <p className="opinion-empty">Brak komentarzy.</p>}</section>)}</div>}
+    {!ownerId ? <p className="opinion-invitation">Zaloguj się, aby zaznaczyć, czy nitka była przydatna, i dodać komentarz. <button className="quiet-button" onClick={() => setAccountOpen(true)}>Zaloguj się</button></p> : mine?.body ? <p className="opinion-confirmation">Twoja reakcja i komentarz są zapisane.</p> : query.isSuccess && <form className="opinion-composer" onSubmit={submit}>
+      {mine ? <p>Reakcja zapisana: {mine.polarity === "positive" ? "przydatna" : "nieprzydatna"}. Możesz jeszcze dodać jeden komentarz.</p> : <fieldset><legend>Czy ta nitka była dla Ciebie przydatna?</legend><div className="flex gap-3">{(["negative", "positive"] as const).map(side => <label className={`opinion-choice opinion-${side}`} key={side}><input required type="radio" checked={polarity === side} onChange={() => setPolarity(side)} />{side === "positive" ? "Przydatna" : "Nieprzydatna"}</label>)}</div></fieldset>}
       <label className="mt-4 block">Komentarz {mine ? "" : "(opcjonalnie)"}<textarea rows={3} maxLength={240} value={body} onChange={event => setBody(event.target.value)} className="mt-2 w-full rounded border bg-transparent p-3" /></label>
-      <div className="mt-3 flex items-center justify-between"><span>{body.length}/240</span><button className="profile-primary" disabled={pending || (!mine && !polarity) || Boolean(mine && !body.trim())}>{pending ? "Zapisuję…" : mine ? "Dodaj komentarz" : "Zapisz opinię"}</button></div>
+      <div className="mt-3 flex items-center justify-between"><span>{body.length}/240</span><button className="profile-primary" disabled={pending || (!mine && !polarity) || Boolean(mine && !body.trim())}>{pending ? "Zapisuję…" : mine ? "Dodaj komentarz" : "Zapisz reakcję"}</button></div>
     </form>}
     {error && <p role="alert" className="profile-message profile-message-error">{error}</p>}
     <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} />

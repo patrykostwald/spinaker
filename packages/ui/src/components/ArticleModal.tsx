@@ -9,6 +9,7 @@ import { VotingDetails } from './VotingDetails';
 import { ArticleContext } from './ArticleContext';
 import { ArticleOpinions } from './ArticleOpinions';
 import { ShareOnX } from './ShareOnX';
+import { ArticleFavoriteButton } from './ArticleFavoriteButton';
 export function ArticleModal({ article, onClose }: { article: Article | null; onClose: () => void }) {
   return <Dialog open={Boolean(article)} onClose={onClose} title="Materiał i kontekst" className="article-dialog">
     {article && <ArticleDetails key={article.id} initialArticle={article} />}
@@ -38,7 +39,7 @@ function ArticleDetails({ initialArticle }: { initialArticle: Article }) {
         {article.voting && <VotingDetails key={article.id} article={article} />}
         {article.official && <section className="space-y-2 rounded-lg bg-slate-50 p-4 text-sm"><h3 className="font-bold">Rekord urzędowy</h3>{article.official.status && <p>Status w rejestrze: {article.official.status}</p>}<p>Pobrano: {formatDateTimePl(article.official.fetched_at)}</p>{article.official.attachments.map(a => <a key={a.url} href={a.url} target="_blank" rel="noopener noreferrer" className="block text-primary underline">Załącznik: {a.name} ↗</a>)}</section>}
         {Boolean(article.evidence_links?.length) && <section><h3 className="font-bold">Dlaczego ten materiał pasuje do tematu?</h3>{article.evidence_links?.map(link => <div key={link.source_url + link.phrase} className="mt-3 text-sm"><p>{link.explanation}</p><a href={link.source_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">Źródło powiązania: {link.phrase} ↗</a></div>)}</section>}
-        <div className="material-actions"><a href={article.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-primary px-6 py-3 font-semibold text-white">Otwórz źródło →</a><ShareOnX title={`${article.title} — ${article.source.name}`} path={`/material/${article.id}`} /></div>
+        <div className="material-actions"><a href={article.url} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg bg-primary px-6 py-3 font-semibold text-white">Otwórz źródło →</a><ShareOnX title={`${article.title} — ${article.source.name}`} path={`/material/${article.id}`} /><ArticleFavoriteButton articleId={article.id} title={article.title} /></div>
       </div>
     </motion.div>
     <ArticleContext key={`context-${article.id}`} article={article} onSelect={navigate}>

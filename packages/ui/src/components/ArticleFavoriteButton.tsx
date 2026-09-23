@@ -1,0 +1,55 @@
+"use client";
+
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { setArticleFavorite, useArticleFavorites, useOwnerId } from '../lib/personal';
+import { AccountDialog } from './AccountDialog';
+
+/**
+ * Dyskretne wejście do ulubionych materiałów.
+ * `compact` — ikona na boxie, widoczna tylko dla zalogowanych (strona publiczna pozostaje bez zmian).
+ */
+export function ArticleFavoriteButton({ articleId, title, compact = false }: { articleId: number; title: string; compact?: boolean }) {
+  const { ownerId } = useOwnerId();
+  const favorites = useArticleFavorites();
+  const cache = useQueryClient();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const [loginOpen, setLoginOpen] = useState(false);
+  const saved = Boolean(favorites.data?.results.some(row => row.article.id === articleId));
+  const unavailable = favorites.isError;
+
+  if (compact && (!ownerId || unavailable)) return null;
+
+  async function toggle() {
+    if (!ownerId) { setLoginOpen(true); return; }
+    setPending(true); setError('');
+    try { await setArticleFavorite(cache, ownerId, articleId, !saved); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Nie udało się zmienić ulubionych.'); }
+    finally { setPending(false); }
+  }
+
+  const label = `${saved ? 'Usuń z ulubionych materiałów' : 'Dodaj do ulubionych materiałów'}: ${title}`;
+  if (compact) {
+    return (
+      <>
+        <button type="button" className="mvp-fav-dot" aria-pressed={saved} aria-label={label} title={saved ? 'W ulubionych' : 'Dodaj do ulubionych'}
+          disabled={pending || favorites.isPending} onClick={toggle}>
+          <span aria-hidden="true">{saved ? '♥' : '♡'}</span>
+        </button>
+        {error && <span role="alert" className="sr-only">{error}</span>}
+      </>
+    );
+  }
+  return (
+    <span className="mvp-fav-control">
+      <button type="button" className="quiet-button mvp-fav-button" aria-pressed={saved} aria-label={label}
+        disabled={pending || Boolean(ownerId && favorites.isPending) || unavailable} onClick={toggle}>
+        <span aria-hidden="true">{saved ? '♥' : '♡'}</span> {saved ? 'W ulubionych' : 'Zapisz materiał'}
+      </button>
+      {unavailable && <small>Ulubione materiały są w trakcie udostępniania.</small>}
+      {error && <small role="alert" className="mvp-acc-error">{error}</small>}
+      {loginOpen && <AccountDialog open={loginOpen} onClose={() => setLoginOpen(false)} />}
+    </span>
+  );
+}
