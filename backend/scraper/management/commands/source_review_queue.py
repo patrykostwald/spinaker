@@ -22,8 +22,10 @@ class Command(BaseCommand):
     help = 'Tworzy tylko-odczytowy raport kolejki decyzji dla nieaktywnych kandydatów.'
 
     def add_arguments(self, parser):
-        root = Path(__file__).resolve().parents[4]
-        parser.add_argument('--output', default=str(root / 'reports' / 'source-review-queue-current.md'))
+        # The Django container runs from the repository root.  A relative path
+        # keeps the report in the mounted project directory instead of /reports
+        # at the container filesystem root.
+        parser.add_argument('--output', default='reports/source-review-queue-current.md')
 
     def handle(self, *args, **options):
         sources = list(Source.objects.filter(
