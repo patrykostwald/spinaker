@@ -47,12 +47,16 @@ def looks_like_terms(url, text=''):
 
 
 def terms_links(base_url, parser, source_url):
-    """Return only explicit links on the source's own public host."""
-    host = normal_host(base_url)
+    """Return only explicit links whose label or URL names reuse conditions.
+
+    An institution may link its BIP on a different official host.  The fact
+    that the link is explicit is recorded; it is still evidence for review,
+    never an automatic approval.
+    """
     links = [source_url] if looks_like_terms(source_url) else []
     for item in parser.links:
         url = public_link(urljoin(base_url, item['href']))
-        if not url or normal_host(url) != host:
+        if not url:
             continue
         if looks_like_terms(url, item.get('text', '')):
             links.append(url)

@@ -28,6 +28,17 @@ def test_discovery_finds_official_reuse_terms_link():
 
 
 @pytest.mark.django_db
+def test_discovery_keeps_an_explicit_cross_host_bip_terms_link():
+    source = Source.objects.create(name='Office', url='https://office.example', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    result = inspect_source_terms(source, FakeNetwork({
+        'https://office.example': b'<a href="https://bip.office.example/ponowne-wykorzystanie">Warunki ponownego wykorzystania</a>',
+        'https://bip.office.example/ponowne-wykorzystanie': b'<p>Informacje mozna ponownie wykorzystywac.</p>',
+    }))
+    assert result['terms_pages'][0]['url'] == 'https://bip.office.example/ponowne-wykorzystanie'
+
+
+@pytest.mark.django_db
 def test_command_saves_evidence_without_changing_source_state(tmp_path, monkeypatch):
     source = Source.objects.create(name='Office', url='https://office.example', source_type=SourceType.INSTITUTION,
         catalog_stage='candidate', is_active=False, scrape_enabled=False)

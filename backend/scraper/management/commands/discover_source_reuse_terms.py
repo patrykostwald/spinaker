@@ -99,6 +99,9 @@ class Command(BaseCommand):
             rows.append({
                 'id': source.pk, 'source': source.name, 'url': source.url or '',
                 'status': result.get('status', 'pending'),
+                'rss_status': (states.get(f'source-check:{source.pk}', {}) or {}).get('rss', {}).get('status', 'unknown'),
+                'rss_url': (states.get(f'source-check:{source.pk}', {}) or {}).get('rss', {}).get('url', ''),
+                'api_status': (states.get(f'source-check:{source.pk}', {}) or {}).get('official_api', {}).get('status', 'not_found'),
                 'terms_urls': ' | '.join(page.get('url', '') for page in result.get('terms_pages', []) if page.get('url')),
                 'positive_markers': ', '.join(marker for page in result.get('terms_pages', []) for marker in page.get('positive_markers', [])),
                 'restriction_markers': ', '.join(marker for page in result.get('terms_pages', []) for marker in page.get('restriction_markers', [])),
@@ -113,13 +116,16 @@ class Command(BaseCommand):
             f'Contact candidates: **{len(rows)}**.', '', '| Result | Count |', '|---|---:|',
         ]
         lines += [f'| {status} | {count} |' for status, count in sorted(counts.items())]
-        lines += ['', '| ID | Source | Result | Terms pages | Positive markers | Restriction markers |', '|---:|---|---|---|---|---|']
+        lines += ['', '| ID | Source | RSS / API | Result | Terms pages | Positive markers | Restriction markers |', '|---:|---|---|---|---|---|---|']
         for row in rows:
             label = row['source'].replace('|', '\\|')
             source = f'[{label}]({row["url"]})' if row['url'] else label
-            lines.append(f'| {row["id"]} | {source} | {row["status"]} | {row["terms_urls"]} | {row["positive_markers"]} | {row["restriction_markers"]} |')
+            channel = f'{row["rss_status"]}: {row["rss_url"]}' if row['rss_url'] else row['rss_status']
+            if row['api_status'] != 'not_found':
+                channel += f'; API: {row["api_status"]}'
+            lines.append(f'| {row["id"]} | {source} | {channel} | {row["status"]} | {row["terms_urls"]} | {row["positive_markers"]} | {row["restriction_markers"]} |')
         output.write_text('\n'.join(lines) + '\n', encoding='utf-8')
         with output.with_suffix('.csv').open('w', newline='', encoding='utf-8') as handle:
-            writer = csv.DictWriter(handle, fieldnames=rows[0].keys() if rows else ('id', 'source', 'url', 'status', 'terms_urls', 'positive_markers', 'restriction_markers', 'checked_at'))
+            writer = csv.DictWriter(handle, fieldnames=rows[0].keys() if rows else ('id', 'source', 'url', 'status', 'rss_status', 'rss_url', 'api_status', 'terms_urls', 'positive_markers', 'restriction_markers', 'checked_at'))
             writer.writeheader(); writer.writerows(rows)
         output.with_suffix('.json').write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
