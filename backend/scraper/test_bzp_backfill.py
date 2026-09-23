@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone as dt_timezone
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -14,11 +14,13 @@ from scraper.bzp_backfill import (DETAIL_URL, MAX_BATCH_SIZE, SEARCH_URL, SOURCE
 @pytest.fixture
 def source(db):
     source = Source.objects.create(name='Biuletyn Zamówień Publicznych', url=SOURCE_URL,
-        source_type='institution')
+        source_type='institution', is_active=True, scrape_enabled=True,
+        catalog_stage='configured')
     SourceAccessInstruction.objects.create(
         source=source, version=1, status='approved', channel='api', allowed_scope='metadata',
         endpoint=SEARCH_URL, terms_url='https://ezamowienia.gov.pl/', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test')
+        reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() + timedelta(days=30))
     return source
 
 

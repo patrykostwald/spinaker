@@ -200,6 +200,9 @@ REST_FRAMEWORK["NUM_PROXIES"] = env.int("TRUSTED_PROXY_COUNT", default=0)
 NEWSAPI_TIER = env("NEWSAPI_TIER", default="free")
 RESEARCH_METADATA_NETWORK_ENABLED = env.bool("RESEARCH_METADATA_NETWORK_ENABLED", default=False)
 SOURCE_ACCESS_AUTOPROBE_ENABLED = env.bool("SOURCE_ACCESS_AUTOPROBE_ENABLED", default=False)
+# Official BZP metadata is disabled until the operator explicitly enables it
+# in the deployment environment.  The adapter never falls back to enabled.
+BZP_API_ENABLED = env.bool("BZP_API_ENABLED", default=False)
 EDITOR_NETWORK_PREVIEW_ENABLED = env.bool("EDITOR_NETWORK_PREVIEW_ENABLED", default=False)
 NEWSAPI_ENABLED = env.bool("NEWSAPI_ENABLED", default=False)
 TWITTER_ENABLED = env.bool("TWITTER_ENABLED", default=False)
