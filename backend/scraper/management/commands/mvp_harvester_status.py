@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count
 
 from news.models import ImportState, Source, SourceAccessInstruction
+from scraper.access_gate import approved_instruction
 from scraper.management.commands.audit_sources import is_fresh, is_recent_attempt
 
 
@@ -59,5 +60,15 @@ class Command(BaseCommand):
             state = ImportState.objects.filter(name=name).first()
             if state:
                 self.stdout.write(
-                    f'STAN {name}: zapisano={state.imported}; sukces={state.last_success or "—"}; '
+                    f'OSTATNI_PRZEBIEG {name}: zapisano={state.imported}; sukces={state.last_success or "—"}; '
                     f'błąd={state.last_error or "—"}')
+        gates = {
+            'official:votings': ('https://api.sejm.gov.pl/sejm',
+                                 'https://api.sejm.gov.pl/sejm/term10/votings/search'),
+            'official:eli': ('https://api.sejm.gov.pl/eli',
+                             'https://api.sejm.gov.pl/eli/changes/acts'),
+        }
+        for name, (source_url, request_url) in gates.items():
+            source = Source.objects.filter(url=source_url).first()
+            ready = approved_instruction(source, SourceAccessInstruction.Channel.API, request_url) is not None
+            self.stdout.write(f'BRAMKA {name}: {"GOTOWA" if ready else "BLOKADA"}')
