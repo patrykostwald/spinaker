@@ -25,11 +25,11 @@ for ($batch = 1; $batch -le $MaxBatches; $batch++) {
     --output-prefix reports/source-candidate-audit-current 2>&1
   $exitCode = $LASTEXITCODE
   $output | ForEach-Object { Write-Output $_ }
-  if ($exitCode -ne 0) { throw "Audyt paczki $batch zakończył się błędem." }
-  if (($output -join "`n") -match "Brak kandydatów wymagających kontroli") { break }
+  if ($exitCode -ne 0) { throw "Source audit batch $batch failed." }
+  if (($output -join "`n") -match "Brak kandydat") { break }
   $completed++
 }
 
 Write-Output "AUDYT_PACZEK=$completed"
 docker compose exec backend python manage.py harvester_preflight --approved-only
-if ($LASTEXITCODE -ne 0) { throw "Kontrola aktywnych źródeł zakończyła się błędem." }
+if ($LASTEXITCODE -ne 0) { throw "Approved-source preflight failed." }
