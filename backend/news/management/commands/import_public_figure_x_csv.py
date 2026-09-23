@@ -34,6 +34,29 @@ def is_x_url(value):
     return is_https(value) and (urlsplit(value).hostname or '').lower() in X_HOSTS
 
 
+def exact_figure_for_row(row, evidence_url):
+    """Resolve only a direct URL or a standalone official European Parliament id.
+
+    The latter is an exact primary key from the official PE open-data record.
+    Combined CSV identifiers are intentionally not used: they document an
+    editorial lead across rosters and can otherwise hide a name-based match.
+    """
+    figures = list(PublicFigure.objects.filter(archived=False).filter(
+        models_q(evidence_url)
+    ).order_by('pk'))
+    if len(figures) == 1:
+        return figures[0]
+    source = cell(row, 'official_roster_source')
+    external_id = cell(row, 'official_roster_external_id')
+    if (source == 'europarl open data (show-current, PL)'
+            and external_id.isdigit()
+            and (urlsplit(evidence_url).hostname or '').lower() == 'data.europarl.europa.eu'):
+        return PublicFigure.objects.filter(
+            import_key=f'parliamentary:ep:{external_id}', archived=False,
+        ).order_by('pk').first()
+    return None
+
+
 class Command(BaseCommand):
     help = ('Wczytuje dowody linków X z ręcznie przygotowanego CSV. Zapisuje wyłącznie dowody z bezpośrednim '
             'oficjalnym URL-em i jednym dokładnie rozpoznanym profilem; nie dopasowuje osób po nazwisku, '
@@ -72,11 +95,10 @@ class Command(BaseCommand):
             except ValidationError as exc:
                 invalid.append(f'Wiersz {line}: nieprawidłowy handle ({"; ".join(exc.messages)}).')
                 continue
-            # Direct URL identity is the only automatic connection permitted.
-            figures = list(PublicFigure.objects.filter(archived=False).filter(
-                models_q(evidence_url)
-            ).order_by('pk'))
-            if len(figures) != 1:
+            # Direct URL identity and the official PE primary key are the only
+            # automatic connections permitted.
+            figure = exact_figure_for_row(row, evidence_url)
+            if figure is None:
                 unresolved.append({
                     'line': line, 'name': cell(row, 'public_figure_name'), 'handle': handle,
                     'evidence_url': evidence_url, 'reason': 'brak_jednoznacznego_profilu_po_url',
@@ -85,13 +107,13 @@ class Command(BaseCommand):
             try:
                 SocialHandleEvidence(
                     subject_content_type=ContentType.objects.get_for_model(PublicFigure),
-                    subject_object_id=figures[0].pk, handle=handle,
+                    subject_object_id=figure.pk, handle=handle,
                     evidence_url=evidence_url, extracted_url=x_url,
                 ).full_clean()
             except ValidationError as exc:
                 invalid.append(f'Wiersz {line}: nieprawidłowy dowód ({"; ".join(exc.messages)}).')
                 continue
-            accepted.append((line, row, figures[0]))
+            accepted.append((line, row, figure))
 
         existing = 0
         for _, row, figure in accepted:

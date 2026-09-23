@@ -67,3 +67,18 @@ def test_import_skips_bad_row_without_blocking_valid_official_evidence(tmp_path)
     call_command('import_public_figure_x_csv', str(path), apply=True)
 
     assert SocialHandleEvidence.objects.get().subject == profile
+
+
+def test_import_accepts_only_standalone_official_european_parliament_id(tmp_path):
+    profile = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='european',
+        role_title='Posłanka do PE', evidence_url='https://other.example/anna',
+        import_key='parliamentary:ep:257073')
+    path = tmp_path / 'x.csv'; write_csv(path, [row(
+        official_roster_source='europarl open data (show-current, PL)',
+        official_roster_external_id='257073',
+        official_evidence_url='https://data.europarl.europa.eu/api/v2/meps/257073?format=application%2Fld%2Bjson',
+    )])
+
+    call_command('import_public_figure_x_csv', str(path), apply=True)
+
+    assert SocialHandleEvidence.objects.get().subject == profile
