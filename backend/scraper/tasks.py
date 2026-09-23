@@ -174,6 +174,12 @@ def discover_named_gov_metadata(source_key):
     return named_listing_cycle(source_key)
 
 
+@shared_task(soft_time_limit=120, time_limit=150)
+def discover_senat_metadata():
+    from scraper.senat_archive import discover_senat
+    return discover_senat()
+
+
 @shared_task(soft_time_limit=3000, time_limit=3300)
 def discover_archives():
     from scraper.archive import discovery_cycle

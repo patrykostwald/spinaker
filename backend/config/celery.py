@@ -23,6 +23,7 @@ app.conf.beat_schedule = {
     'zdrowie-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['zdrowie'], 'schedule': crontab(minute=55, hour='*/6')},
     'edukacja-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['edukacja'], 'schedule': crontab(minute=10, hour='*/6')},
     'rolnictwo-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['rolnictwo'], 'schedule': crontab(minute=20, hour='*/6')},
+    'senat-metadata-6h': {'task': 'scraper.tasks.discover_senat_metadata', 'schedule': crontab(minute=40, hour='*/6')},
     'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
     'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},

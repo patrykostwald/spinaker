@@ -355,6 +355,10 @@ def process(job, cutoff_at=None, allowed_scope=None):
             pass
     if metadata.get('page_classification') == 'non_article':
         raise ValueError('non_article_route')
+    # Senate reuse terms expressly distinguish own textual information from
+    # photographs supplied by PAP.  This source is metadata and link only.
+    if urlsplit(job.url).hostname == 'www.senat.gov.pl':
+        metadata['image_url'] = ''
     if not metadata['title']: raise ValueError('missing_source_title')
     if cutoff_at is not None and metadata.get('published_date'):
         published = datetime.fromisoformat(metadata['published_date'].replace('Z', '+00:00'))
