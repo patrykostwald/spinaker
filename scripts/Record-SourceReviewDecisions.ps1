@@ -13,3 +13,6 @@ if ($LASTEXITCODE -ne 0) { throw "Source verification register failed." }
 
 docker compose exec backend python manage.py source_contact_register
 if ($LASTEXITCODE -ne 0) { throw "Source contact preparation register failed." }
+
+docker compose exec backend python manage.py source_catalog_completion_audit
+if ($LASTEXITCODE -ne 0) { throw "Source catalog completion audit failed." }
