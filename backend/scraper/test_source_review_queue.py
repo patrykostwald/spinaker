@@ -64,3 +64,18 @@ def test_review_queue_marks_candidate_with_active_domain_as_duplicate(tmp_path):
     report = output.read_text(encoding='utf-8')
     assert 'Już aktywne pod innym rekordem — nie tworzyć drugiej karty (1)' in report
     assert 'Candidate' in report
+
+
+@pytest.mark.django_db
+def test_review_queue_does_not_treat_party_rss_as_public_institutional_permission(tmp_path):
+    party = Source.objects.create(name='Party', url='https://pis.org.pl', source_type=SourceType.INSTITUTION,
+        catalog_stage='candidate', is_active=False, scrape_enabled=False)
+    ImportState.objects.create(name=f'source-check:{party.pk}', cursor={
+        'audit_status': 'completed', 'rss': {'status': 'working', 'url': 'https://pis.org.pl/feed/'},
+    })
+    output = tmp_path / 'consent.md'
+    call_command('source_review_queue', '--bucket', '04_wydawca_lub_organizacja_wymaga_zgody',
+        '--output', str(output), stdout=StringIO())
+    report = output.read_text(encoding='utf-8')
+    assert 'Party' in report
+    assert 'wymagają warunków lub zgody (1)' in report

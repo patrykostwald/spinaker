@@ -9,9 +9,24 @@ from django.core.management.base import BaseCommand
 from news.models import ImportState, Source, SourceType
 
 
+# Some early catalog records used ``institution`` for every civic organisation.
+# A working RSS is not permission to harvest a party, company, university or NGO.
+# Keep these hosts in the consent queue until an explicit reuse basis is recorded.
+CONSENT_REQUIRED_INSTITUTION_HOSTS = {
+    'iustitia.pl', 'siecobywatelska.pl', 'pis.org.pl', 'psl.pl',
+    'konfederacja.net', 'nowoczesna.org', 'pge.pl', 'lotos.pl',
+    'solidarnosc.org.pl', 'lewiatan.org', 'zwiazekpracodawcow.pl',
+    'panoptykon.org', 'watchdog.org.pl', 'uw.edu.pl', 'amu.edu.pl',
+    'uksw.edu.pl', 'us.edu.pl', 'themis-sedziowie.eu', 'nil.org.pl',
+    'piib.org.pl', 'kif.info.pl', 'krir.pl', 'dziennikarzerp.pl',
+}
+
+
 def review_bucket(source, result):
     if result.get('audit_status') == 'failed':
         return '01_blad_techniczny'
+    if hostname(source.url) in CONSENT_REQUIRED_INSTITUTION_HOSTS:
+        return '04_wydawca_lub_organizacja_wymaga_zgody'
     if source.source_type == SourceType.INSTITUTION and (result.get('rss') or {}).get('status') == 'working':
         return '02_instytucja_rss_do_warunkow'
     if source.source_type == SourceType.INSTITUTION:
