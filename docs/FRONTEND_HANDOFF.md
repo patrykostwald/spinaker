@@ -24,8 +24,12 @@ Najważniejsze widoki:
 2. Skopiuj `.env.example` jako `.env`.
 3. Pozostaw wszystkie integracje zewnętrzne wyłączone, jeżeli nie masz
    własnych kluczy. Kluczy nigdy nie zapisuj w Git.
-4. Uruchom usługi przez Docker Compose. Backend wykonuje migracje przy starcie.
-5. Publiczny frontend jest dostępny pod `http://localhost:3100`.
+4. Uruchom backend i usługi danych przez Docker Compose. Backend wykonuje
+   migracje przy starcie.
+5. W drugim terminalu uruchom `pnpm install --frozen-lockfile`, a następnie
+   `pnpm dev:spin`. Frontend Next.js domyślnie działa pod
+   `http://localhost:3000`; lokalny port może zostać zmieniony świadomie przy
+   uruchamianiu.
 
 ## Granice pracy
 
