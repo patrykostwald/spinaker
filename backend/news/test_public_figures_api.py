@@ -105,23 +105,23 @@ def test_profile_exposes_x_only_after_public_link_candidate_resolution_and_accou
 def test_non_parliamentary_figure_exposes_only_generic_confirmed_x_evidence():
     figure = PublicFigure.objects.create(canonical_name='Ministra Publiczna', role_category='government', role_title='Ministra',
         evidence_url='https://gov.example/ministra')
-    candidate = PoliticalAccountCandidate.objects.create(handle='MinistraPubliczna', display_name='Ministra Publiczna',
+    candidate = PoliticalAccountCandidate.objects.create(handle='MinistraPL', display_name='Ministra Publiczna',
         classification='independent', confirmation_url='https://gov.example/ministra', confirmation_note='Oficjalny link.')
     SocialHandleEvidence.objects.create(
         subject_content_type=ContentType.objects.get_for_model(PublicFigure), subject_object_id=figure.pk,
-        handle='MinistraPubliczna', evidence_url='https://gov.example/ministra',
-        extracted_url='https://x.com/MinistraPubliczna', candidate=candidate, status='candidate_created',
+        handle='MinistraPL', evidence_url='https://gov.example/ministra',
+        extracted_url='https://x.com/MinistraPL', candidate=candidate, status='candidate_created',
     )
     assert APIClient().get(f'/api/public-figures/{figure.pk}/').data['x_account'] is None
 
     staff = __import__('django.contrib.auth').contrib.auth.get_user_model().objects.create_user(username='staff', is_staff=True)
-    account = PoliticalAccount.objects.create(user_id='999', handle='MinistraPubliczna', display_name='Ministra Publiczna',
+    account = PoliticalAccount.objects.create(user_id='999', handle='MinistraPL', display_name='Ministra Publiczna',
         camp='public', confirmation_url='https://gov.example/ministra', confirmation_note='Potwierdzone.')
     account.confirm(staff)
     candidate.resolved_account = account
     candidate.save(update_fields=['resolved_account'])
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert data['x_account'] == {
-        'handle': 'MinistraPubliczna', 'url': 'https://x.com/MinistraPubliczna',
+        'handle': 'MinistraPL', 'url': 'https://x.com/MinistraPL',
         'evidence_url': 'https://gov.example/ministra', 'posts_collected': 0,
     }
