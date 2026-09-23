@@ -18,16 +18,18 @@ $ErrorActionPreference = "Stop"
 $completed = 0
 
 for ($batch = 1; $batch -le $MaxBatches; $batch++) {
-  $output = & docker compose exec backend python manage.py audit_next_source_candidates `
+  Write-Output "AUDIT_BATCH=$batch START"
+  $output = @()
+  & docker compose exec backend python manage.py audit_next_source_candidates `
     --limit $BatchSize `
     --workers $Workers `
     --max-age-hours 168 `
-    --output-prefix reports/source-candidate-audit-current 2>&1
+    --output-prefix reports/source-candidate-audit-current 2>&1 | Tee-Object -Variable output
   $exitCode = $LASTEXITCODE
-  $output | ForEach-Object { Write-Output $_ }
   if ($exitCode -ne 0) { throw "Source audit batch $batch failed." }
   if (($output -join "`n") -match "Brak kandydat") { break }
   $completed++
+  Write-Output "AUDIT_BATCH=$batch COMPLETE"
 }
 
 Write-Output "AUDYT_PACZEK=$completed"
