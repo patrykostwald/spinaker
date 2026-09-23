@@ -1871,7 +1871,11 @@ html[data-theme="light"] .sc-portal-scrim,
 /* <article.sc-card-slot> — место в сетке, размер зафиксирован; <div.sc-card> — сама карточка,
    на ступени B выходит из потока (absolute внутри слота, z-index над сеткой) и меняет форму
    тем же элементом (framer layout). Слот не рисует ничего: фон, радиус и ореол — у .sc-card. */
-.sc-card-slot { position: relative; display: block; }
+/* Слот — flex-колонка: карточка в покое растягивается на высоту слота, а слот — на высоту ряда
+   сетки, поэтому все карточки ряда одной высоты (замечание владельца 24.09); мета прижата книзу
+   через margin-top: auto. */
+.sc-card-slot { position: relative; display: flex; flex-direction: column; }
+.sc-card-slot > .sc-card { flex: 1 1 auto; min-height: 0; }
 .sc-card-slot[data-stage="a"], .sc-card-slot[data-stage="b"] { z-index: 30; }
 /* Фокальная полоса (мобильный слой) ставит data-lit на элемент с data-material-id — теперь это слот. */
 .sc-card-slot[data-lit="true"] .sc-card { --sc-ring: var(--sc-glow-ring); }
@@ -1890,6 +1894,10 @@ html[data-theme="light"] .sc-portal-scrim,
 .sc-card[data-size="compact"][data-stage="b"] .sc-card__description { -webkit-line-clamp: 3; }
 /* medium/large: описание уже есть — раскрывается на строку-две больше. */
 .sc-card[data-size="medium"][data-stage="b"] .sc-card__description { -webkit-line-clamp: 4; }
+/* large на ступени B: пропорция 3:2 снимается — высота по содержимому (заголовок, описание, мета,
+   сердце), фото остаётся фоном на всю карточку (media absolute inset 0); min-height даёт JS. */
+.sc-card[data-size="large"][data-stage="b"] { aspect-ratio: auto; }
+.sc-card[data-size="large"][data-stage="b"] .sc-card__body { padding-top: var(--sc-s-9); }
 .sc-card[data-size="large"][data-stage="b"] .sc-card__description { -webkit-line-clamp: 3; }
 /* large в покое — только бейдж и заголовок над фото; поле под заголовком не резервируем. */
 .sc-card[data-size="large"] .sc-card__title { margin-bottom: 0; }
@@ -1907,6 +1915,9 @@ html[data-theme="light"] .sc-portal-scrim,
 /* Лента с overflow-x: auto обрезала бы разросшуюся карточку по вертикали — даём скроллеру запас
    полями (margin/padding наизнанку): рост до 120px вверх и вниз остаётся видимым. */
 .sc-strip-bleed { margin: -120px calc(var(--sc-s-6) * -1); padding: 120px var(--sc-s-6); }
+/* «Powiązane materiały» в поверхности портала — та же лента с overflow-x: auto (замечание владельца 24.09). */
+.sc-surface__related-track { margin: -120px calc(var(--sc-s-6) * -1) 0; padding: 120px var(--sc-s-6); }
+.sc-surface__related-title { position: relative; z-index: 1; }
 
 /* === R0 Dropdown: кнопка становится верхней строкой панели (замечание владельца 24.09) === */
 .sc-dropdown[data-open="true"] > .sc-btn { opacity: 0; pointer-events: none; }

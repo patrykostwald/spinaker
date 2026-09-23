@@ -90,6 +90,10 @@ const IMAGE_SIZES: Record<NewsCardSize, string> = {
 };
 
 const VIEWPORT_MARGIN = 16;
+/** Zwijanie ze stopnia B: czas sprężyny `collapse` (0.26s, bounce 0) i jej odpowiednik krzywą — jedyna
+ *  animacja poza `useMotionTokens().t()`, bo idzie przez Web Animations, nie przez framer (patrz leave()). */
+const COLLAPSE_MS = 260;
+const COLLAPSE_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 /**
  * Pudełko stopnia B: szerokość wg `CARD_SPEC[size].grow`, rośnie od środka, a przy krawędzi okna —
@@ -195,6 +199,7 @@ export function NewsCard({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lockRef = useRef<Lock | null>(null);
   const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const collapseAnimRef = useRef<Animation | null>(null);
   const [stage, setStage] = useState<Stage>("rest");
   // `lock` żyje od wejścia w hover do KOŃCA animacji zwijania: dopóki karta się kurczy, zostaje
   // absolutna w pudełku spoczynku (a slot ma zablokowaną wysokość) — inaczej wracałaby do potoku
@@ -233,9 +238,19 @@ export function NewsCard({
     () => () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
+      collapseAnimRef.current?.cancel();
     },
     [],
   );
+
+  // Po zwolnieniu do potoku: `commitStyles()` zostawił inline `height` (React go nie zna) — zdejmujemy.
+  useLayoutEffect(() => {
+    if (!lock && cardRef.current) {
+      cardRef.current.style.height = "";
+      cardRef.current.style.top = "";
+      cardRef.current.style.left = "";
+    }
+  }, [lock]);
 
   // Pionowe wyśrodkowanie stopnia B wymaga realnej wysokości rozrośniętej karty — mierzymy ją
   // synchronicznie po pierwszym renderze B (przed malowaniem klatki; framer trzyma migawkę „przed”
@@ -271,10 +286,7 @@ export function NewsCard({
 
   function arm(el: HTMLElement) {
     setEntered(true);
-    if (releaseTimerRef.current) {
-      clearTimeout(releaseTimerRef.current);
-      releaseTimerRef.current = null;
-    }
+    stopCollapseAnim();
     setCollapsing(false);
     if (!lockRef.current) {
       lockRef.current = computeLock(el, size);
@@ -289,11 +301,28 @@ export function NewsCard({
     if (expandable) timerRef.current = setTimeout(() => setStage("b"), PREVIEW_DELAY_MS);
   }
 
-  function release() {
+  function stopCollapseAnim() {
+    if (collapseAnimRef.current) {
+      collapseAnimRef.current.cancel();
+      collapseAnimRef.current = null;
+    }
     if (releaseTimerRef.current) {
       clearTimeout(releaseTimerRef.current);
       releaseTimerRef.current = null;
     }
+  }
+
+  function release() {
+    if (collapseAnimRef.current) {
+      // Utrwalamy końcowe pudełko inline, żeby między anulowaniem animacji a commitem Reacta nie
+      // mignęła rozrośnięta geometria ze `style`; `height` React nie zna — czyścimy w efekcie niżej.
+      try {
+        collapseAnimRef.current.commitStyles();
+      } catch {
+        /* element już odłączony */
+      }
+    }
+    stopCollapseAnim();
     lockRef.current = null;
     setLock(null);
     setCollapsing(false);
@@ -301,21 +330,29 @@ export function NewsCard({
 
   function leave() {
     clearTimer();
-    if (stage === "b") {
-      // Zwijanie: karta zostaje absolutna, ale w pudełku spoczynku — framer animuje ją tam
-      // (layout), slot nie drgnie. Zwolnienie po zakończeniu animacji (lub awaryjnie po 600 ms).
+    const el = cardRef.current;
+    const lock = lockRef.current;
+    if (stage === "b" && el && lock && !motionTokens.reduced) {
+      // Zwijanie: JAWNA animacja pudełka (top/left/width/height → spoczynek) przez Web Animations,
+      // nie `layout` framera — layout mierzy tylko w commitach Reacta, więc wysokość skakała w chwili
+      // odmontowania opisu (замечание владельца 24.09). Slot trzyma wysokość do końca; karta wraca
+      // do potoku dopiero po `finish`, w tej samej geometrii — bez skoku.
       setCollapsing(true);
-      if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
-      releaseTimerRef.current = setTimeout(release, 600);
+      stopCollapseAnim();
+      const from = { top: `${el.offsetTop}px`, left: `${el.offsetLeft}px`, width: `${el.offsetWidth}px`, height: `${el.offsetHeight}px` };
+      const to = { top: "0px", left: "0px", width: `${lock.width}px`, height: `${lock.height}px` };
+      const anim = el.animate([from, to], { duration: COLLAPSE_MS, easing: COLLAPSE_EASING, fill: "forwards" });
+      collapseAnimRef.current = anim;
+      anim.onfinish = () => {
+        if (collapseAnimRef.current === anim) release();
+      };
+      releaseTimerRef.current = setTimeout(release, COLLAPSE_MS + 200);
     } else {
       release();
     }
     setStage("rest");
   }
 
-  function handleLayoutComplete() {
-    if (collapsing && stage === "rest") release();
-  }
 
   function handlePointerEnter(e: PointerEvent<HTMLElement>) {
     if (e.pointerType !== "mouse") return;
@@ -373,6 +410,7 @@ export function NewsCard({
   const lift = stage === "rest" ? (entered ? 0 : motionTokens.rise) : motionTokens.reduced ? 0 : -spec.lift;
   const thumbScale = stage === "rest" ? 1 : motionTokens.scale(1.04);
   const grown = stage === "b" && lock !== null;
+  // Podczas zwijania geometria ze `style` zostaje rozrośnięta — nadpisuje ją animacja WAAPI.
   const held = grown || (collapsing && lock !== null);
   const stagger = (i: number) => motionTokens.t("expand", { delay: motionTokens.reduced ? 0 : 0.06 + i * 0.04 });
 
@@ -402,16 +440,13 @@ export function NewsCard({
         data-has-action={action || grown ? "" : undefined}
         data-expandable={expandable || undefined}
         className="sc-card sc-hoverable"
-        layout
+        layout={!collapsing}
         transition={expandTransition}
-        onLayoutAnimationComplete={handleLayoutComplete}
         onClick={handleCardClick}
         style={
-          grown
-            ? { borderRadius: spec.radius, position: "absolute", top: lock.top, left: lock.left, width: lock.targetWidth }
-            : held
-              ? { borderRadius: spec.radius, position: "absolute", top: 0, left: 0, width: lock!.width, height: lock!.height }
-              : { borderRadius: spec.radius }
+          held
+            ? { borderRadius: spec.radius, position: "absolute", top: lock!.top, left: lock!.left, width: lock!.targetWidth, minHeight: lock!.height }
+            : { borderRadius: spec.radius }
         }
       >
         {eyebrow ? <span className="sc-card__eyebrow sc-t-caption">{eyebrow}</span> : null}
