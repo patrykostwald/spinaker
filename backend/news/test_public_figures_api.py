@@ -47,6 +47,22 @@ def test_unlinked_figure_does_not_guess_votes_or_show_pending_relation():
     assert data['organisations'] == []
 
 
+def test_editing_confirmed_organisation_relation_requires_new_review():
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='government', role_title='Ministra',
+        evidence_url='https://gov.example/anna')
+    organisation = RegisteredOrganisation.objects.create(name='Fundacja Jawna', krs_number='0000123456', kind='foundation', official_register_url='https://prs.example/1')
+    relation = PublicFigureOrganisationRelation.objects.create(public_figure=figure, organisation=organisation,
+        public_role='członkini zarządu', evidence_url='https://example.org/evidence')
+    staff = __import__('django.contrib.auth').contrib.auth.get_user_model().objects.create_user(username='editor', is_staff=True)
+    relation.confirm(staff)
+    relation.public_role = 'członkini rady'
+    relation.save(update_fields=['public_role'])
+    relation.refresh_from_db()
+    assert relation.verification_status == 'pending_review'
+    assert relation.verified_by is None
+    assert relation.verified_at is None
+
+
 def test_profile_exposes_x_only_after_public_link_candidate_resolution_and_account_confirmation():
     roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='77', full_name='Anna Publiczna', active=True)
     figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='parliamentary', role_title='Posłanka',

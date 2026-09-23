@@ -236,6 +236,30 @@ class PublicFigureOrganisationRelation(models.Model):
         if self.verification_status == 'confirmed' and (not self.verified_by_id or not self.verified_at):
             raise ValidationError('Potwierdzona relacja wymaga redaktora i daty potwierdzenia.')
 
+    def save(self, *args, **kwargs):
+        """Return changed public evidence to the editorial review queue.
+
+        A previous confirmation is evidence for the previous assertion only.
+        This applies equally to edits made in Django admin and in commands.
+        """
+        changed_evidence_fields = ('public_figure_id', 'organisation_id', 'public_role',
+            'relation_status', 'evidence_url', 'evidence_note')
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).values(
+                'verification_status', *changed_evidence_fields,
+            ).first()
+            if previous and previous['verification_status'] == 'confirmed' and any(
+                previous[field] != getattr(self, field) for field in changed_evidence_fields
+            ):
+                self.verification_status = 'pending_review'
+                self.verified_by_id = None
+                self.verified_at = None
+                if kwargs.get('update_fields') is not None:
+                    kwargs['update_fields'] = set(kwargs['update_fields']) | {
+                        'verification_status', 'verified_by', 'verified_at', 'updated_at',
+                    }
+        super().save(*args, **kwargs)
+
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
             raise ValidationError('Potwierdzenie relacji wymaga aktywnego redaktora.')
