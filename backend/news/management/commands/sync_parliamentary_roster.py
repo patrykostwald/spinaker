@@ -37,6 +37,7 @@ class Command(BaseCommand):
                 ParliamentaryRosterEntry.objects.update_or_create(source=source, external_id=row.external_id, defaults={
                     'full_name': row.full_name, 'club': row.club, 'district': row.district,
                     'profile_url': row.profile_url, 'source_url': row.source_url, 'active': row.active,
+                    'term': row.term,
                     'last_seen_at': now,
                 })
             # Only after a non-empty, unique official roster: absent entries are retained but inactive.

@@ -96,9 +96,11 @@ def verified_x_posts_data(figure):
 
 def votes_data(figure):
     entry = figure.parliamentary_roster_entry
-    if not entry or entry.source != 'sejm' or not str(entry.external_id).isdigit():
+    if not entry or entry.source != 'sejm' or not str(entry.external_id).isdigit() or not entry.term:
         return {'available': False, 'reason': 'Brak ręcznie potwierdzonego połączenia z mandatem poselskim.', 'results': []}
-    ballots = Ballot.objects.filter(mp_id=int(entry.external_id)).select_related('voting__article').order_by(
+    ballots = Ballot.objects.filter(
+        mp_id=int(entry.external_id), voting__term=entry.term,
+    ).select_related('voting__article').order_by(
         '-voting__article__published_date', '-pk')[:30]
     return {'available': True, 'source_url': entry.profile_url, 'results': [{
         'date': ballot.voting.article.published_date,

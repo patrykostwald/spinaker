@@ -27,11 +27,14 @@ class HtmlResponse:
             raise requests.HTTPError(f'{self.status_code}')
 
 
-def official_sejm_payload():
-    return [
-        {'id': 1, 'firstLastName': 'Aktywna Posłanka', 'active': True, 'club': 'Klub A', 'districtName': 'Warszawa'},
-        {'id': 2, 'firstLastName': 'Były Poseł', 'active': False, 'club': 'Klub B'},
+def official_sejm_payload(*, current=440):
+    rows = [
+        {'id': number, 'firstLastName': f'Aktywny Poseł {number}', 'active': True,
+         'club': 'Klub A', 'districtName': 'Warszawa'}
+        for number in range(1, current + 1)
     ]
+    rows[0]['firstLastName'] = 'Aktywna Posłanka'
+    return rows + [{'id': 999, 'firstLastName': 'Były Poseł', 'active': False, 'club': 'Klub B'}]
 
 
 def official_senat_html(*, current=51, include_inactive=True, term='11'):
@@ -68,6 +71,12 @@ def test_sejm_adapter_imports_only_active_and_profiles():
     assert rows[0].full_name == 'Aktywna Posłanka'
     assert rows[0].profile_url.endswith('id=1')
     assert rows[0].source_url == SEJM_URL
+    assert rows[0].term == 10
+
+
+def test_sejm_adapter_fails_closed_on_partial_roster():
+    with pytest.raises(CommandError, match='oczekiwano'):
+        sejm_rows(http_get=lambda url, **kwargs: Response(official_sejm_payload(current=439)))
 
 
 def test_senat_adapter_stages_current_profiles_and_skips_expired_mandates():

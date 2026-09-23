@@ -109,6 +109,8 @@ class ParliamentaryRosterEntry(models.Model):
     district = models.CharField(max_length=255, blank=True)
     profile_url = models.URLField(max_length=1024, blank=True)
     source_url = models.URLField(max_length=1024)
+    term = models.PositiveSmallIntegerField(null=True, blank=True,
+        help_text='Kadencja wskazana przez oficjalny roster. Wymagana dla mandatów Sejmu.')
     active = models.BooleanField(default=True, db_index=True)
     last_seen_at = models.DateTimeField(default=timezone.now, editable=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)

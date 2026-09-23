@@ -10,7 +10,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_profile_exposes_only_confirmed_relationships_and_linked_votes():
-    roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='17', full_name='Anna Publiczna', active=True)
+    roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='17', full_name='Anna Publiczna', active=True, term=10)
     figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='government', role_title='Ministra',
         evidence_url='https://gov.example/anna', parliamentary_roster_entry=roster)
     organisation = RegisteredOrganisation.objects.create(name='Fundacja Jawna', krs_number='0000123456', kind='foundation', official_register_url='https://prs.example/1')
@@ -25,6 +25,19 @@ def test_profile_exposes_only_confirmed_relationships_and_linked_votes():
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert data['organisations'][0]['name'] == 'Fundacja Jawna'
     assert data['votes']['results'][0]['topic'] == 'Ustawa o jawności finansowania'
+
+
+def test_profile_never_mixes_votes_from_another_term():
+    roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='17', full_name='Anna Publiczna', active=True, term=10)
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='parliamentary', role_title='Posłanka',
+        evidence_url='https://sejm.example/anna', parliamentary_roster_entry=roster)
+    source = Source.objects.create(name='Sejm', url='https://sejm.example')
+    for term, motion in [(9, 'Poprzednia kadencja'), (10, 'Obecna kadencja')]:
+        article = Article.objects.create(source=source, title=motion, url=f'https://sejm.example/{term}', published_date='2026-09-20T10:00:00Z')
+        voting = ParliamentaryVoting.objects.create(article=article, term=term, sitting=1, number=term, motion=motion, kind='vote')
+        Ballot.objects.create(voting=voting, mp_id=17, name='Anna Publiczna', vote='Za')
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
+    assert [row['topic'] for row in data['votes']['results']] == ['Obecna kadencja']
 
 
 def test_unlinked_figure_does_not_guess_votes_or_show_pending_relation():

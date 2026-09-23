@@ -23,6 +23,8 @@ _SENATOR_PROFILE_RE = re.compile(
 _TAG_RE = re.compile(r'<[^>]+>')
 _INACTIVE_SENATOR_RE = re.compile(r'\b(?:mandat\s+wygasł|zmarł)\b', re.IGNORECASE)
 _SENAT_MIN_CURRENT_ROWS = 50
+_SEJM_MIN_CURRENT_ROWS = 440
+_SEJM_MAX_CURRENT_ROWS = 460
 
 
 @dataclass(frozen=True)
@@ -33,6 +35,7 @@ class RosterRow:
     district: str = ''
     profile_url: str = ''
     source_url: str = ''
+    term: int | None = None
     active: bool = True
 
 
@@ -78,7 +81,12 @@ def sejm_rows(*, http_get=requests.get) -> list[RosterRow]:
             profile = f'https://www.sejm.gov.pl/Sejm10.nsf/posel.xsp?id={external_id}'
         rows.append(RosterRow(external_id=external_id, full_name=full_name,
             club=_string(item.get('club')), district=_string(item.get('districtName') or item.get('district')),
-            profile_url=profile, source_url=SEJM_URL, active=True))
+            profile_url=profile, source_url=SEJM_URL, term=10, active=True))
+    if not _SEJM_MIN_CURRENT_ROWS <= len(rows) <= _SEJM_MAX_CURRENT_ROWS:
+        raise CommandError(
+            f'Oficjalne API Sejmu zwróciło {len(rows)} aktywnych posłów; oczekiwano '
+            f'{_SEJM_MIN_CURRENT_ROWS}–{_SEJM_MAX_CURRENT_ROWS}. Import przerwany dla bezpieczeństwa.'
+        )
     return rows
 
 
@@ -155,7 +163,7 @@ def senat_rows(*, http_get=requests.get) -> list[RosterRow]:
             raise CommandError('Oficjalna strona Senatu zwróciła profil bez identyfikatora lub imienia i nazwiska.')
         candidate = RosterRow(
             external_id=external_id, full_name=full_name, profile_url=profile_url,
-            source_url=SENAT_URL, active=True,
+            source_url=SENAT_URL, term=int(match.group('term')), active=True,
         )
         existing = rows_by_id.get(external_id)
         if existing and existing != candidate:
