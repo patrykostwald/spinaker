@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from news.political_models import PublicFigure, SocialHandleEvidence
+from news.political_models import HANDLE_VALIDATOR, PublicFigure, SocialHandleEvidence
 
 
 REQUIRED_HEADERS = {
@@ -68,11 +68,9 @@ class Command(BaseCommand):
                 invalid.append(f'Wiersz {line}: niepełny albo nieprawidłowy dowód URL.')
                 continue
             try:
-                SocialHandleEvidence(handle=handle, evidence_url=evidence_url, extracted_url=x_url).full_clean(
-                    exclude=['roster_entry', 'subject_content_type', 'subject_object_id', 'candidate', 'reviewed_by']
-                )
+                HANDLE_VALIDATOR(handle)
             except ValidationError as exc:
-                invalid.append(f'Wiersz {line}: nieprawidłowy handle lub dowód ({"; ".join(exc.messages)}).')
+                invalid.append(f'Wiersz {line}: nieprawidłowy handle ({"; ".join(exc.messages)}).')
                 continue
             # Direct URL identity is the only automatic connection permitted.
             figures = list(PublicFigure.objects.filter(archived=False).filter(
@@ -83,6 +81,15 @@ class Command(BaseCommand):
                     'line': line, 'name': cell(row, 'public_figure_name'), 'handle': handle,
                     'evidence_url': evidence_url, 'reason': 'brak_jednoznacznego_profilu_po_url',
                 })
+                continue
+            try:
+                SocialHandleEvidence(
+                    subject_content_type=ContentType.objects.get_for_model(PublicFigure),
+                    subject_object_id=figures[0].pk, handle=handle,
+                    evidence_url=evidence_url, extracted_url=x_url,
+                ).full_clean()
+            except ValidationError as exc:
+                invalid.append(f'Wiersz {line}: nieprawidłowy dowód ({"; ".join(exc.messages)}).')
                 continue
             accepted.append((line, row, figures[0]))
 
