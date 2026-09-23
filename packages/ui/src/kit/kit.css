@@ -1708,3 +1708,149 @@ html[data-theme="pastel"],
 @media (max-width: 480px) {
   .sc-mobile-frame { width: 100%; max-width: 375px; }
 }
+
+
+/* === R5 Портал ===
+   Aktualizacja właściciela (odnotowana w kit/design@5c81264, ten branch ją poprzedza —
+   lokalne zmienne poniżej to zgodny wstecznie fallback, integrator podmieni na realne
+   tokeny z tamtego kit.css przy mergu): świecenie TYLKO na kartach/klonie/powierzchni,
+   BEZ obramowania — separacja to cień + poświata. --sc-glow-ring(-strong) mapują 1:1
+   na już istniejące --sc-glow(-strong), dopóki kit.css nie dostanie realnych tokenów. */
+/* R0 при мерже: локальные :root-фолбэки R5 удалены — они переопределяли бы токены
+   --sc-glow-ring(-strong) из блоков тем голым цветом и ломали box-shadow карточек. */
+
+/* Klon stopnia B (.sc-portal-preview) ponownie używa klas .sc-card__* z bloku R3 —
+   tylko po to, żeby wyglądał identycznie jak oryginał; NIE modyfikujemy tego bloku.
+   Pozycję/rozmiar (position:fixed, top/left/width/height) i promień (border-radius)
+   ustawia inline JS (useHoverExpand.ts) — muszą zostać liczbą na TYM SAMYM elemencie,
+   inaczej promień rozjeżdża się przy skalowaniu (plan → «Сплошная система движения»).
+   Wzrost jest CZYSTYM transform:scale(), promień się nie zmienia. Bez obramowania —
+   tylko cień + poświata (owner: „glow only on cards”, żadnego bursztynu, tylko niebieski). */
+.sc-portal-preview {
+  cursor: pointer;
+  border: 0;
+  box-shadow: var(--sc-e-3), var(--sc-glow-ring-strong);
+}
+/* Zawieszony blok dodatkowy (opis/źródło/data) dziedziczy tę samą poświatę od góry —
+   clip-path obcina ją do górnej krawędzi, żeby nie dublować cienia klona pod spodem. */
+.sc-portal-preview .sc-card__expand {
+  box-shadow: var(--sc-e-3), var(--sc-glow-ring-strong);
+  clip-path: inset(0 -60px -60px -60px); /* как у карточки: ореол по бокам и снизу, сверху срезан */
+}
+
+/* Przyciemnienie stopnia C. Nieprzezroczyste tło — zapasowa ścieżka dla
+   prefers-reduced-transparency (plan → «Риски»), więc nie ma tu żadnego blur/filter. */
+.sc-portal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(4, 5, 7, 0.6);
+}
+html[data-theme="light"] .sc-portal-scrim,
+[data-sc-theme="light"] .sc-portal-scrim {
+  background: rgba(20, 22, 26, 0.45);
+}
+
+/* Powierzchnia pełnoekranowa — dzieli `layoutId` z klonem, gdy ten istniał (patrz komentarz
+   na górze MaterialSurface.tsx), inaczej top/left/width/height/border-radius animuje
+   MaterialSurface.tsx wprost liczbami. Bez obramowania — cień + poświata (jak klon). */
+.sc-surface {
+  display: flex;
+  flex-direction: column;
+  color: var(--sc-text);
+  border: 0;
+}
+.sc-surface__close {
+  position: absolute;
+  top: var(--sc-s-3);
+  right: var(--sc-s-3);
+  z-index: 2;
+  background: var(--sc-chrome);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.sc-surface__handle {
+  display: none;
+  position: absolute;
+  top: var(--sc-s-2);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-line-strong);
+  z-index: 2;
+  touch-action: none;
+}
+@media (max-width: 480px) {
+  .sc-surface__handle { display: block; }
+}
+
+.sc-surface__scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sc-surface__media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--sc-surface-2);
+  overflow: hidden;
+}
+.sc-surface__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.sc-surface__placeholder { position: absolute; inset: 0; background: var(--sc-surface-2); }
+.sc-surface__badge {
+  position: absolute;
+  top: var(--sc-s-3);
+  left: var(--sc-s-3);
+  padding: 4px 10px;
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-chrome);
+  color: var(--sc-text);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.sc-surface__body {
+  padding: var(--sc-s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-s-3);
+  max-width: 760px;
+}
+.sc-surface__title { margin: 0; }
+.sc-surface__source { margin: 0; display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
+.sc-surface__source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--sc-accent);
+  text-decoration: none;
+  transition: color var(--sc-dur-fast) var(--sc-ease-standard);
+}
+.sc-surface__source-link:hover { text-decoration: underline; }
+.sc-surface__description { margin: 0; }
+
+.sc-surface__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-s-2);
+  padding-top: var(--sc-s-2);
+}
+
+.sc-surface__related { margin-top: var(--sc-s-5); border-top: 1px solid var(--sc-line); padding-top: var(--sc-s-5); }
+.sc-surface__related-title { margin: 0 0 var(--sc-s-3); }
+.sc-surface__related-track {
+  display: flex;
+  gap: var(--sc-s-4);
+  overflow-x: auto;
+  padding-bottom: var(--sc-s-2);
+}
+.sc-surface__related-track > * { flex: 0 0 240px; }
+
+@media (max-width: 480px) {
+  .sc-surface__body { padding: var(--sc-s-4); max-width: none; }
+}

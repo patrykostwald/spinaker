@@ -82,4 +82,9 @@ export {
 } from "./mobile";
 export type * from "./mobile";
 
-// Волна 2 — R5 портал (дописывается при мерже)
+// Волна 2 — R5 портал
+export { PortalProvider, usePortal, usePortalApi, usePortalState } from "./portal/PortalProvider";
+export { PortalLayer } from "./portal/PortalLayer";
+export { useHoverExpand } from "./portal/useHoverExpand";
+export { useHistoryPortal } from "./portal/useHistoryPortal";
+export { MaterialSurface } from "./MaterialSurface";
