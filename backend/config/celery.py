@@ -22,6 +22,8 @@ app.conf.beat_schedule = {
     # This tick is cheap: the task makes no X request unless a confirmed,
     # enabled account is due and the explicit X polling flag is on.
     'political-x-minute': {'task': 'news.tasks.political_poll_task', 'schedule': crontab(minute='*')},
+    # BZP remains inactive until BZP_API_ENABLED=true is set in the deployment environment.
+    'bzp-metadata-3m': {'task': 'scraper.tasks.import_bzp_metadata', 'schedule': crontab(minute='*/3')},
 }
 if os.environ.get('NEWSAPI_TIER', 'free') in ('business', 'advanced'):
     app.conf.beat_schedule['newsapi-frequent'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(minute='*/15')}

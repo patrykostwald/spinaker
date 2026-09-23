@@ -132,6 +132,13 @@ def import_official_task(kind):
         cache.delete(lock)
 
 
+@shared_task(soft_time_limit=120, time_limit=150)
+def import_bzp_metadata():
+    """One bounded BZP API page; the environment flag remains the final on/off switch."""
+    from scraper.bzp_backfill import bzp_backfill_cycle
+    return bzp_backfill_cycle()
+
+
 @shared_task(soft_time_limit=300, time_limit=360)
 def archive_batch():
     from scraper.archive import archive_cycle

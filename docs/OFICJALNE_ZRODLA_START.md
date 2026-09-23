@@ -149,3 +149,19 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Get-MvpHarvesterStatus.ps1
 Skrypt nie pobiera danych z internetu i nie zmienia bazy. Pokazuje także stan
 usług Compose, dlatego jest właściwym pierwszym krokiem, gdy harvestery mają
 pracować stale w tle.
+
+
+### Biuletyn Zamówień Publicznych
+
+BZP korzysta z oficjalnego API e‑Zamówień. Pilot zapisuje wyłącznie numer
+ogłoszenia, tytuł, datę publikacji i link do rekordu. Nie zapisuje pełnej treści,
+załączników, obrazów ani danych uczestników postępowania. Karta ma odstęp trzech
+minut i limit 480 żądań na dobę.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedBzpMetadataPilot.ps1
+```
+
+Pierwsze uruchomienie wykonuje dokładnie jedno zapytanie. Stała praca co trzy
+minuty wymaga wpisu `BZP_API_ENABLED=true` w lokalnym `.env`, a następnie
+ponownego uruchomienia usług Compose.
