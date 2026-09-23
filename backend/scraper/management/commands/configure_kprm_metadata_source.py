@@ -18,6 +18,24 @@ def configure(source, reviewer, valid_days=180):
     if latest and latest.status == SourceAccessInstruction.Status.SUSPENDED:
         raise CommandError('Najnowsza karta KPRM jest wstrzymana; nie można jej automatycznie odnowić.')
     now = timezone.now()
+    existing_html = SourceAccessInstruction.objects.filter(
+        source=source, status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.HTML,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        endpoint='https://www.gov.pl/web/premier', terms_url=TERMS_URL,
+        valid_until__gt=now).order_by('-version').first()
+    existing_robots = SourceAccessInstruction.objects.filter(
+        source=source, status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.SITEMAP,
+        allowed_scope=SourceAccessInstruction.Scope.METADATA,
+        endpoint=ROBOTS_URL, terms_url=TERMS_URL,
+        valid_until__gt=now).order_by('-version').first()
+    if existing_html and existing_robots:
+        source.url = SOURCE_URL
+        source.is_active = source.scrape_enabled = True
+        source.catalog_stage = 'configured'
+        source.save(update_fields=['url', 'is_active', 'scrape_enabled', 'catalog_stage', 'updated_at'])
+        return existing_html, False
     common = {
         'status': SourceAccessInstruction.Status.APPROVED,
         'terms_url': TERMS_URL,
@@ -45,7 +63,7 @@ def configure(source, reviewer, valid_days=180):
     source.scrape_enabled = True
     source.catalog_stage = 'configured'
     source.save(update_fields=['url', 'is_active', 'scrape_enabled', 'catalog_stage', 'updated_at'])
-    return card
+    return card, True
 
 
 class Command(BaseCommand):
@@ -65,6 +83,7 @@ class Command(BaseCommand):
         if not options['apply']:
             self.stdout.write('PLAN: KPRM — metadane własnej sekcji, 24 żądania/dzień, bez zapisu pełnej treści.')
             return
-        card = configure(source, options['reviewed_by'], options['valid_days'])
-        self.stdout.write(self.style.SUCCESS(
-            f'ZAPISANO KPRM: karta HTML v{card.version}, zakres metadane, 24 żądania/dzień.'))
+        card, created = configure(source, options['reviewed_by'], options['valid_days'])
+        message = (f'KPRM cards created: HTML v{card.version} and robots, metadata scope, 24 requests/day.'
+                   if created else f'KPRM: using current HTML card v{card.version}.')
+        self.stdout.write(self.style.SUCCESS(message))

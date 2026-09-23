@@ -30,3 +30,11 @@ def test_nik_rss_configuration_refuses_to_revive_a_suspension():
     with pytest.raises(Exception):
         call_command("configure_nik_rss_source", "--reviewed-by=test", "--apply", stdout=StringIO())
     assert SourceAccessInstruction.objects.filter(source=source).count() == 1
+
+
+def test_nik_rss_configuration_reuses_a_current_matching_card():
+    Source.objects.create(name="NIK", url=SOURCE_URL, rss_url=SOURCE_URL,
+        is_active=False, scrape_enabled=False, catalog_stage="candidate")
+    call_command("configure_nik_rss_source", "--reviewed-by=test", "--apply", stdout=StringIO())
+    call_command("configure_nik_rss_source", "--reviewed-by=test", "--apply", stdout=StringIO())
+    assert SourceAccessInstruction.objects.filter(endpoint=SOURCE_URL, channel="rss").count() == 1

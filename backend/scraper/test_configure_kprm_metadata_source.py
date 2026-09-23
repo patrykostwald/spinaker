@@ -32,3 +32,11 @@ def test_kprm_pilot_refuses_to_override_suspended_card():
     with pytest.raises(Exception):
         call_command('configure_kprm_metadata_source', '--apply', stdout=StringIO())
     assert SourceAccessInstruction.objects.filter(source=source).count() == 1
+
+
+def test_kprm_pilot_reuses_current_cards():
+    Source.objects.create(name='KPRM', url=SOURCE_URL, catalog_stage='candidate',
+        is_active=False, scrape_enabled=False)
+    call_command('configure_kprm_metadata_source', '--reviewed-by=test', '--apply', stdout=StringIO())
+    call_command('configure_kprm_metadata_source', '--reviewed-by=test', '--apply', stdout=StringIO())
+    assert SourceAccessInstruction.objects.filter(source__url=SOURCE_URL).count() == 2
