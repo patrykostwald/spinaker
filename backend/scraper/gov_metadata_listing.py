@@ -71,6 +71,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/nauka/wiadomosci",
         "terms_url": "https://www.gov.pl/web/nauka/ponowne-wykorzystywanie-informacji-sektora-publicznego",
     },
+    "paa": {
+        "name": "Państwowa Agencja Atomistyki",
+        "source_url": "https://www.gov.pl/web/paa",
+        "listing_url": "https://www.gov.pl/web/paa/aktualnosci",
+        "terms_url": "https://www.gov.pl/web/paa/ponowne-wykorzystanie-informacji-publicznej",
+    },
     "ncbr": {
         "name": "Narodowe Centrum Badań i Rozwoju",
         "source_url": "https://www.gov.pl/web/ncbr",
