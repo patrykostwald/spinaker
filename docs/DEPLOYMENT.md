@@ -51,6 +51,8 @@ NewsAPI Free/Developer nie służy do produkcyjnego portalu. GDELT, RSS oraz urz
 
 
 ## Aktualizacja zakresu: X i archiwa
-Nadrzędne ustalenia znajdują się w OWNER_NEXT_STEPS.md. NIE włączać TWITTER_ENABLED ani kupować API X: posty są wyłącznie odnośnikami w nitkach. Poprzedni opis tokenu X jest nieaktualny dla obecnego MVP.
-Archiwa: import_archives --source-id ID --limit 10 odkrywa mapy z robots.txt. Kolejka ArchiveJob jest trwała. Celery archive_batch wykonuje partie co minutę; odkrywanie map źródeł odbywa się codziennie przez discover_archives, a archive_batch uzupełnia także kolejkę bieżących artykułów. Lokalny run_local_jobs korzysta z tych samych funkcji. Nie uruchamiać lokalnego schedulera równolegle z produkcyjnym Beat.
+
+X działa wyłącznie przez oficjalne płatne API i wyłącznie dla ręcznie potwierdzonych kont. Klucz nie włącza pobierania sam: konto musi być zatwierdzone i włączone w panelu, a limity oraz koszty wymagają regularnego przeglądu. Nie używamy nieoficjalnych scraperów ani nie obchodzimy ograniczeń platformy.
+
+Archiwa i RSS mogą być pobierane tylko dla źródeł dopuszczonych w katalogu dostępu. Sama techniczna możliwość pobrania, mapa witryny lub brak odpowiedzi wydawcy nie są zgodą. Kolejka `ArchiveJob` jest trwała; nie uruchamiaj lokalnego schedulera równolegle z produkcyjnym Beat.
 SQLite lokalnie korzysta z WAL i transakcji IMMEDIATE, żeby ograniczyć konflikty zapisów. Kopie tworzy backup_database przez SQLite backup API z integrity_check. Nie kopiować samego pliku otwartej bazy ręcznie z pominięciem WAL.
