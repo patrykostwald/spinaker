@@ -46,6 +46,7 @@ app.conf.beat_schedule = {
     'state-counsel-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['prokuratoria'], 'schedule': crontab(minute=16, hour='*/6')},
     'roads-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['gddkia'], 'schedule': crontab(minute=26, hour='*/6')},
     'fire-service-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['kgpsp'], 'schedule': crontab(minute=44, hour='*/6')},
+    'road-transport-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['gitd'], 'schedule': crontab(minute=36, hour='*/6')},
     'source-access-5m': {'task': 'scraper.tasks.audit_source_access', 'schedule': crontab(minute='*/5')},
     'voting-history-5m': {'task': 'scraper.tasks.backfill_voting_history', 'schedule': crontab(minute='2-59/5')},
     'rss-hourly': {'task': 'scraper.tasks.scrape_rss_sources_task', 'schedule': crontab(minute=0)},

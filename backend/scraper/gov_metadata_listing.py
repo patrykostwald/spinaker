@@ -30,6 +30,12 @@ OFFICIAL_GOV_LISTINGS = {
         "listing_url": "https://www.gov.pl/web/gddkia/aktualnosci-2026",
         "terms_url": "https://www.gov.pl/web/gddkia/ponowne-wykorzystanie-informacji-publicznej",
     },
+    "gitd": {
+        "name": "Główny Inspektorat Transportu Drogowego",
+        "source_url": "https://www.gov.pl/web/gitd",
+        "listing_url": "https://www.gov.pl/web/gitd/wiadomosci",
+        "terms_url": "https://www.gov.pl/web/gitd/ponowne-wykorzystanie-informacji-sektora-publicznego",
+    },
     "gios": {
         "name": "Główny Inspektorat Ochrony Środowiska",
         "source_url": "https://www.gov.pl/web/gios",
