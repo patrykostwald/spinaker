@@ -119,3 +119,20 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedTkRss.ps1
 
 Skrypt odmawia działania, jeśli audyt ma więcej niż dobę, RSS nie odpowiada lub
 nie ma pełnego zapisu kontroli.
+
+### KNF i IPN
+
+Po kontroli z 23 września 2026 r. można uruchomić dwa kolejne, ograniczone
+pilotaże RSS: Komisję Nadzoru Finansowego i Instytut Pamięci Narodowej.
+Każdy przechowuje tylko elementy udostępnione przez RSS — tytuł, datę, link i
+krótki opis — z linkiem do oryginału. Nie pobiera HTML artykułów, dokumentów,
+multimediów ani pełnych archiwów.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Start-ApprovedKnfIpnRss.ps1
+```
+
+KNF wskazuje, że ponowne wykorzystanie informacji z BIP i strony KNF jest
+bezpłatne przy podaniu adresu źródła. IPN opisuje RSS jako usługę dystrybucji
+tytułów, krótkich opisów i linków. Skrypt nie uruchomi źródła bez świeżego,
+poprawnego audytu RSS i zapisanej karty dostępu.
