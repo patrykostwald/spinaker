@@ -6,12 +6,18 @@ Rejestr pokazuje wyłącznie możliwe do sprawdzenia, publiczne relacje osoby pu
 
 ## Dane widoczne w przyszłym profilu
 
-- nazwa podmiotu i jego rodzaj,
-- numer KRS,
-- publicznie wskazana rola,
-- relacja obecna albo historyczna,
-- link do dowodu publicznego i data sprawdzenia,
-- stan: potwierdzona albo wymaga potwierdzenia redakcji.
+Domyślnie profil polityka pokazuje krótki wiersz: nazwę podmiotu, publiczną
+funkcję albo rodzaj udziału, status obecna/historyczna oraz bezpośredni link do
+źródła. Gdy publiczny dokument podaje liczbę lub procent udziałów, możemy
+pokazać wyłącznie tę wartość obok nazwy podmiotu.
+
+Numer KRS, data sprawdzenia i pozostałe metadane służą redakcji. Nie robimy z
+profilu kopii odpisu KRS; dodatkowe informacje mogą pojawić się dopiero w
+krótkim rozwinięciu, gdy są potrzebne do zrozumienia źródła. Kliknięcie nazwy
+lub odnośnika prowadzi bezpośrednio do oficjalnego wpisu albo dokumentu.
+
+Publiczny widok obejmuje tylko relacje potwierdzone. Stan "wymaga potwierdzenia
+redakcji" nie jest widoczny publicznie.
 
 Nie przechowujemy ani nie pokazujemy adresów, PESEL-i, dat urodzenia, prywatnych telefonów, prywatnych adresów e-mail ani danych osób niepublicznych.
 
