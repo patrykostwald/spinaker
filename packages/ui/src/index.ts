@@ -30,6 +30,8 @@ export { TwojePaski } from "./components/TwojePaski";
 export { PrzekazDnia } from "./components/PrzekazDnia";
 export { Baza } from "./components/Baza";
 export { DrSpin } from "./components/DrSpin";
+export { BoxKontekstu } from "./components/BoxKontekstu";
+export * from "./lib/boxKontekstuDemo";
 export { ThreadEditor } from "./components/ThreadEditor";
 
 export { ThreadExport } from './components/ThreadExport';
