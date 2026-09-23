@@ -35,6 +35,7 @@ class Session:
 @pytest.fixture
 def source(db, monkeypatch):
     monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
+    monkeypatch.setenv("UOKIK_SUDOP_AID_SOURCE_NUMBER", "SA.TEST")
     source = Source.objects.create(name="UOKiK — SUDOP", url=API,
         is_active=True, scrape_enabled=True, catalog_stage="configured")
     SourceAccessInstruction.objects.create(
@@ -86,6 +87,16 @@ def test_enabled_flag_without_access_card_still_cannot_call_network(db, monkeypa
     assert not session.calls and not ImportState.objects.exists()
 
 
+def test_enabled_pilot_requires_a_saved_official_query_criterion(source, monkeypatch):
+    monkeypatch.delenv("UOKIK_SUDOP_AID_SOURCE_NUMBER")
+    session = Session()
+
+    assert sudop_pilot_cycle(transport=session, now=NOW) == {
+        "status": "missing_query_criterion", "new_records": 0,
+    }
+    assert not session.calls and not ImportState.objects.exists()
+
+
 def test_three_stage_protocol_frozen_cutoff_and_metadata_only(source):
     session = Session(
         Response(303, location=API + "/api/kolejka/q-1"),
@@ -109,6 +120,7 @@ def test_replayed_result_is_idempotent(source):
     row = event()
     state = ImportState.objects.create(name=STATE_NAME, cursor={
         "next_date": "2016-01-01", "cutoff": "2026-09-14", "page": 1,
+        "aid_source_number": "SA.TEST",
         "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
     })
     payload = {"liczba-wynikow": 1, "wyniki": [row]}
@@ -125,6 +137,7 @@ def test_batch_is_bounded_and_cursor_resumes_same_report(source, monkeypatch):
     monkeypatch.setattr("scraper.uokik_sudop.MAX_RECORDS_PER_CYCLE", 2)
     ImportState.objects.create(name=STATE_NAME, cursor={
         "next_date": "2016-01-01", "cutoff": "2026-09-14", "page": 1,
+        "aid_source_number": "SA.TEST",
         "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
     })
     rows = [event(**{"nip-beneficjenta": str(index).zfill(10)}) for index in range(3)]

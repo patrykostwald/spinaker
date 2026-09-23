@@ -42,7 +42,13 @@ def _enabled(source: Source | None) -> bool:
     flag = os.getenv("UOKIK_SUDOP_PILOT_ENABLED", "").strip().lower()
     return bool(source and flag in {"1", "true", "yes"} and source.is_active
                 and source.scrape_enabled and source.catalog_stage == "configured"
-                and approved_instruction(source, SourceAccessInstruction.Channel.API, API + "/api"))
+                and approved_instruction(source, SourceAccessInstruction.Channel.API,
+                                         API + "/api/przypadki-pomocy"))
+
+
+def _aid_source_number() -> str:
+    """SUDOP rejects date-only searches; keep the reviewed pilot intentionally narrow."""
+    return os.getenv("UOKIK_SUDOP_AID_SOURCE_NUMBER", "").strip()
 
 
 def _retry_seconds(response, now):
@@ -131,9 +137,10 @@ def _save_event(source, row, query_url, retrieved_at):
     return created
 
 
-def _initial_cursor(today):
+def _initial_cursor(today, aid_source_number):
     start = date(today.year - 10, 1, 1)
     return {"next_date": start.isoformat(), "cutoff": today.isoformat(), "page": 1,
+            "aid_source_number": aid_source_number,
             "row_offset": 0, "phase": "submit", "complete": False, "requests": 0}
 
 
@@ -141,9 +148,12 @@ def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None):
     source = Source.objects.filter(url=SOURCE_URL).first()
     if not _enabled(source):
         return {"status": "disabled", "new_records": 0}
+    aid_source_number = _aid_source_number()
+    if not aid_source_number:
+        return {"status": "missing_query_criterion", "new_records": 0}
     now = now or timezone.now()
     state, _ = ImportState.objects.get_or_create(name=STATE_NAME)
-    cursor = dict(state.cursor) or _initial_cursor(timezone.localdate(now))
+    cursor = dict(state.cursor) or _initial_cursor(timezone.localdate(now), aid_source_number)
     if not state.cursor:
         # Persist the frozen boundary before the first network operation. A
         # failed first submission must resume the same historical pass.
@@ -155,12 +165,15 @@ def _sudop_pilot_cycle(*, transport=fetch_response_once, now=None):
     if available and datetime.fromisoformat(available) > now:
         return {"status": "deferred", "new_records": 0, "available_at": available}
 
+    if cursor.get("aid_source_number") != aid_source_number:
+        return {"status": "criterion_changed", "new_records": 0}
     work_day, cutoff = date.fromisoformat(cursor["next_date"]), date.fromisoformat(cursor["cutoff"])
     if work_day > cutoff:
         raise ValueError("Invalid SUDOP cursor range")
     state.last_started = now
     state.save(update_fields=["last_started"])
-    query_params = {"dzien-udzielenia-pomocy-od": work_day.isoformat(),
+    query_params = {"srodek-pomocowy-numer": aid_source_number,
+        "dzien-udzielenia-pomocy-od": work_day.isoformat(),
         "dzien-udzielenia-pomocy-do": work_day.isoformat(), "strona": cursor.get("page", 1)}
     query_url = API + "/api/przypadki-pomocy?" + urlencode(query_params)
     instruction = approved_instruction(source, SourceAccessInstruction.Channel.API, API + "/api")
