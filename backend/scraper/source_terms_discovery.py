@@ -23,6 +23,17 @@ RESTRICTION_HINTS = (
     'wymaga zgody', 'wymagana zgoda', 'bez zgody', 'zakazuje się', 'zakaz',
     'all rights reserved', 'wszelkie prawa zastrzeżone',
 )
+PERMISSION_PATTERNS = (
+    'ponowne wykorzystywanie informacji sektora publicznego',
+    'ponowne wykorzystywanie informacji publicznej',
+    'można ponownie wykorzystywać', 'mozna ponownie wykorzystywac',
+    'creative commons', 'cc by',
+)
+DENIAL_PATTERNS = (
+    'bez uprzedniej pisemnej zgody', 'wymaga uprzedniej zgody', 'wyłącznie za zgodą',
+    'zakazuje się', 'zakazuje sie', 'zabrania się', 'zabrania sie',
+    'all rights reserved', 'wszelkie prawa zastrzeżone', 'wszelkie prawa zastrzezone',
+)
 
 
 class PageText(HTMLParser):
@@ -74,6 +85,30 @@ def analyse_page(raw):
         'positive_markers': positive,
         'restriction_markers': restrictions,
         'excerpt': text[:800],
+    }
+
+
+def classify_terms_page(raw, has_channel):
+    """Classify explicit wording; no result itself authorises a fetch."""
+    parser = PageText()
+    parser.feed(decode_source_html(raw))
+    text = parser.value()
+    lower = text.lower()
+    permission = [item for item in PERMISSION_PATTERNS if item in lower]
+    denial = [item for item in DENIAL_PATTERNS if item in lower]
+    if denial:
+        status = 'clear_denial_keep_inactive'
+    elif permission and has_channel:
+        status = 'proposed_metadata_card_requires_editorial_approval'
+    elif permission:
+        status = 'permission_wording_but_no_confirmed_channel'
+    else:
+        status = 'wording_requires_editorial_review'
+    return {
+        'status': status,
+        'permission_markers': permission,
+        'denial_markers': denial,
+        'excerpt': text[:1200],
     }
 
 
