@@ -5,7 +5,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 
 from scraper.management.commands.source_review_queue import hostname
-from scraper.source_contact_queue import contact_candidates
+from scraper.source_contact_queue import contact_candidates, contact_reason
 
 
 class Command(BaseCommand):
@@ -15,14 +15,14 @@ class Command(BaseCommand):
         parser.add_argument("--output", default="reports/source-contact-register-current.md")
 
     def handle(self, *args, **options):
-        candidates, _ = contact_candidates()
+        candidates, states = contact_candidates()
         rows = []
         for source in candidates:
-            manual = getattr(source, 'review_decision', None)
-            requires_contact = manual and manual.decision == 'contact_required'
             rows.append({
                 "id": source.pk, "source": source.name, "host": hostname(source.url),
-                "url": source.url or "", "reason": (manual.reason if requires_contact else "No published terms or explicit permission recorded for automated metadata reuse."),
+                "url": source.url or "", "reason": contact_reason(
+                    source, states.get(f"source-check:{source.pk}", {})
+                ),
                 "status": "Do not contact yet; prepare for editorial review.",
             })
 

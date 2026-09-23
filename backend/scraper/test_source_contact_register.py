@@ -45,3 +45,21 @@ def test_contact_register_includes_automatic_safety_demotion(tmp_path):
     output = tmp_path / "contact.md"
     call_command("source_contact_register", "--output", str(output), stdout=StringIO())
     assert "Sources requiring later confirmation: **1**" in output.read_text(encoding="utf-8")
+
+
+@pytest.mark.django_db
+def test_contact_register_uses_completed_terms_scan_without_changing_source(tmp_path):
+    source = Source.objects.create(
+        name="No published terms", url="https://terms.example", source_type=SourceType.INSTITUTION,
+        catalog_stage="candidate", is_active=False, scrape_enabled=False,
+    )
+    ImportState.objects.create(name=f"source-check:{source.pk}", cursor={
+        "legal_terms_discovery": {"status": "no_official_terms_link_found"},
+    })
+    output = tmp_path / "contact.md"
+    call_command("source_contact_register", "--output", str(output), stdout=StringIO())
+    report = output.read_text(encoding="utf-8")
+    assert "Sources requiring later confirmation: **1**" in report
+    assert "Automatyczny przegląd nie znalazł" in report
+    source.refresh_from_db()
+    assert not source.is_active
