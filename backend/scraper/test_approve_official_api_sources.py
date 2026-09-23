@@ -1,7 +1,9 @@
 from io import StringIO
+from datetime import timedelta
 
 import pytest
 from django.core.management import call_command
+from django.utils import timezone
 
 from news.models import Source, SourceAccessInstruction
 
@@ -26,6 +28,29 @@ def test_command_creates_one_current_official_voting_card():
     assert cards.count() == 1
     assert all(card.status == SourceAccessInstruction.Status.APPROVED for card in cards)
     assert all(card.allowed_scope == SourceAccessInstruction.Scope.CONTENT for card in cards)
+    assert cards.get().allowed_path_patterns == [
+        '/sejm/term10/votings/search', '/sejm/term10/votings/{int}', '/sejm/term10/votings/{int}/{int}']
+
+
+@pytest.mark.django_db
+def test_command_issues_a_new_card_when_the_current_card_lacks_search_endpoint():
+    source = Source.objects.create(name='Sejm Rzeczypospolitej Polskiej',
+        url='https://api.sejm.gov.pl/sejm', catalog_stage='configured', is_active=True, scrape_enabled=True)
+    SourceAccessInstruction.objects.create(
+        source=source, version=1, status=SourceAccessInstruction.Status.APPROVED,
+        channel=SourceAccessInstruction.Channel.API, allowed_scope=SourceAccessInstruction.Scope.CONTENT,
+        endpoint='https://api.sejm.gov.pl/sejm/term10/votings',
+        allowed_path_patterns=['/sejm/term10/votings/{int}', '/sejm/term10/votings/{int}/{int}'],
+        terms_url='https://api.sejm.gov.pl/sejm.html', evidence={'reason': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', valid_until=timezone.now() + timedelta(days=1),
+        minimum_interval_seconds=3, daily_request_cap=24,
+    )
+
+    call_command('approve_official_api_sources', '--apply',
+        '--evidence-url=https://api.sejm.gov.pl/sejm.html', '--reviewed-by=Test redakcyjny', stdout=StringIO())
+
+    assert SourceAccessInstruction.objects.filter(source=source).count() == 2
+    assert SourceAccessInstruction.objects.get(source=source, version=2).allowed_path_patterns[0].endswith('/search')
 
 
 @pytest.mark.django_db

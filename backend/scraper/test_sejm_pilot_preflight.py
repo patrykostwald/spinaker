@@ -39,6 +39,7 @@ def test_preflight_recognises_a_complete_sejm_card(monkeypatch):
     call_command('sejm_pilot_preflight', stdout=output)
 
     assert 'GOTOWY_DO_PILOTA' in output.getvalue()
+    assert 'wyszukiwanie, listę posiedzenia i szczegóły głosowania' in output.getvalue()
 
 
 @pytest.mark.django_db

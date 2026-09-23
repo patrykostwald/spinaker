@@ -15,6 +15,7 @@ from scraper.official import API
 SOURCE_URL = API + '/sejm'
 ENDPOINT = API + '/sejm/term10/votings'
 PILOT_URLS = (
+    ENDPOINT + '/search',
     ENDPOINT + '/1',
     ENDPOINT + '/1/1',
 )
@@ -60,7 +61,7 @@ class Command(BaseCommand):
             if uncovered:
                 blockers.append('Karta nie obejmuje wszystkich endpointów pilota: ' + ', '.join(uncovered))
             else:
-                checks.append('Karta obejmuje listę posiedzenia i szczegóły głosowania.')
+                checks.append('Karta obejmuje wyszukiwanie, listę posiedzenia i szczegóły głosowania.')
 
         if connection.vendor != 'postgresql':
             blockers.append('Testy wyścigów przed pilotem wymagają PostgreSQL; bieżąca baza to ' + connection.vendor + '.')

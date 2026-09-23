@@ -12,12 +12,19 @@ from news.models import Source, SourceAccessInstruction
 from scraper.official import API, official_source
 
 
+VOTING_PATHS = [
+    '/sejm/term10/votings/search',
+    '/sejm/term10/votings/{int}',
+    '/sejm/term10/votings/{int}/{int}',
+]
+
+
 OFFICIAL_APIS = (
     (
         'sejm',
         API + '/sejm/term10/votings',
         'https://www.sejm.gov.pl/sejm10.nsf/page.xsp/copyright',
-        'Publiczna dokumentacja API Sejmu opisuje głosowania i stronicowanie; karta obejmuje wyłącznie ścieżkę głosowań kadencji 10.',
+        'Publiczna dokumentacja API Sejmu opisuje wyszukiwanie, głosowania i stronicowanie; karta obejmuje wyłącznie trzy ścieżki głosowań kadencji 10.',
     ),
 )
 
@@ -75,7 +82,9 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(
                     f'{provider}: pominięto — źródło ma status excluded.'))
                 continue
-            if latest and latest.endpoint == endpoint and latest.valid_until and latest.valid_until > now:
+            current_paths = set(latest.allowed_path_patterns) if latest else set()
+            if (latest and latest.endpoint == endpoint and latest.valid_until and latest.valid_until > now
+                    and set(VOTING_PATHS).issubset(current_paths)):
                 self.stdout.write(f'{provider}: aktualna karta v{latest.version} już istnieje.')
                 continue
             version = (latest.version + 1) if latest else 1
@@ -90,10 +99,7 @@ class Command(BaseCommand):
                 channel=SourceAccessInstruction.Channel.API,
                 allowed_scope=SourceAccessInstruction.Scope.CONTENT,
                 endpoint=endpoint,
-                allowed_path_patterns=[
-                    '/sejm/term10/votings/{int}',
-                    '/sejm/term10/votings/{int}/{int}',
-                ],
+                allowed_path_patterns=VOTING_PATHS,
                 terms_url=terms_url,
                 evidence={
                     'documentation_url': options['evidence_url'],
