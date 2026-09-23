@@ -3,7 +3,7 @@ from io import StringIO
 import pytest
 from django.core.management import call_command
 
-from news.management.commands.sync_voivodes import VOIVODES
+from news.management.commands.sync_voivodes import VOIVODES, holder_import_key
 from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
 
@@ -13,7 +13,7 @@ def test_sync_voivodes_uses_fixed_official_import_keys_and_never_social_matching
     call_command('sync_voivodes', stdout=output)
 
     assert PublicFigure.objects.filter(import_key__startswith='government:voivode:', status='current').count() == 16
-    dolnoslaskie = PublicFigure.objects.get(import_key='government:voivode:dolnoslaskie')
+    dolnoslaskie = PublicFigure.objects.get(import_key=holder_import_key('dolnoslaskie', 'Anna Żabska'))
     assert dolnoslaskie.canonical_name == 'Anna Żabska'
     assert dolnoslaskie.evidence_url == 'https://www.gov.pl/web/mswia/urzedy-wojewodzkie'
     public_office = PublicOffice.objects.get(import_key='public-office:voivode:dolnoslaskie')
@@ -39,7 +39,7 @@ def test_sync_voivodes_keeps_office_when_holder_changes(monkeypatch):
         ('dolnoslaskie', 'Pierwsza Osoba', 'Wojewoda Dolnośląski', 'Urząd testowy'),
     ))
     call_command('sync_voivodes', stdout=StringIO())
-    first = PublicFigure.objects.get(import_key='government:voivode:dolnoslaskie')
+    first = PublicFigure.objects.get(import_key=holder_import_key('dolnoslaskie', 'Pierwsza Osoba'))
     public_office = PublicOffice.objects.get(import_key='public-office:voivode:dolnoslaskie')
 
     monkeypatch.setattr('news.management.commands.sync_voivodes.VOIVODES', (

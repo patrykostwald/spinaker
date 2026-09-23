@@ -2,6 +2,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 from news.political_models import PublicFigure, PublicFigureRole, PublicOffice
 
@@ -27,6 +28,16 @@ VOIVODES = (
 )
 
 
+def holder_import_key(region, name):
+    """Key the sourced person/term separately from the durable office.
+
+    The regional office is stable, while a new holder must leave the prior
+    public profile and role history intact.  This is an import identity, not
+    an assertion that similarly named profiles from other rosters are equal.
+    """
+    return f'government:voivode:{region}:holder:{slugify(name)}'
+
+
 class Command(BaseCommand):
     help = ('Synchronizuje listę wojewodów z jednego oficjalnego rosteru MSWiA. '
             'Nie dopasowuje nazwisk, nie tworzy kont X i nie pobiera danych rejestrowych.')
@@ -35,7 +46,7 @@ class Command(BaseCommand):
         parser.add_argument('--dry-run', action='store_true')
 
     def handle(self, *args, **options):
-        keys = {f'government:voivode:{region}' for region, *_ in VOIVODES}
+        keys = {holder_import_key(region, name) for region, name, *_ in VOIVODES}
         existing = set(PublicFigure.objects.filter(import_key__in=keys).values_list('import_key', flat=True))
         created = len(keys - existing)
         updated = len(keys & existing)
@@ -51,7 +62,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             for region, name, title, office in VOIVODES:
                 figure, _ = PublicFigure.objects.update_or_create(
-                    import_key=f'government:voivode:{region}',
+                    import_key=holder_import_key(region, name),
                     defaults={
                         'canonical_name': name,
                         'role_category': 'government',
