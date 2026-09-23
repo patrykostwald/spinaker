@@ -63,6 +63,7 @@ html[data-theme="dark"],
   --sc-glow-strong: rgba(74, 158, 255, 0.66);
   /* ореол за элементом; объявлен в блоке темы, чтобы [data-sc-theme] на витрине подхватывал свой цвет */
   --sc-glow-ring: 0 0 0 1px rgba(74, 158, 255, 0.55), 0 0 28px 6px var(--sc-glow);
+  --sc-glow-ring-strong: 0 0 0 1px rgba(74, 158, 255, 0.7), 0 0 44px 12px var(--sc-glow-strong);
   --sc-sheen: rgba(255, 255, 255, 0.22);
   /* Тени глубже, чем днём, плюс внутренняя кромка — на чёрном тень не читается. */
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.2);
@@ -111,6 +112,7 @@ html[data-theme="pastel"],
   --sc-glow: rgba(10, 98, 208, 0.28);
   --sc-glow-strong: rgba(10, 98, 208, 0.42);
   --sc-glow-ring: 0 0 0 1px rgba(10, 98, 208, 0.4), 0 0 28px 6px var(--sc-glow);
+  --sc-glow-ring-strong: 0 0 0 1px rgba(10, 98, 208, 0.55), 0 0 44px 12px var(--sc-glow-strong);
   --sc-sheen: rgba(255, 255, 255, 0.6);
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.04);
   --sc-e-2: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.06);
@@ -567,7 +569,11 @@ html.sc-theme-transition .sc-root {
   background: var(--sc-surface);
   border: 0;
   border-radius: 0 0 var(--sc-r-lg) var(--sc-r-lg);
-  box-shadow: var(--sc-e-3);
+  /* Ореол растёт вместе с развёрнутой формой (замечание владельца 24.09): блок несёт тот же
+     --sc-ring, что и карточка. clip-path срезает его тень сверху, иначе свечение блока
+     ложилось бы полосой на тело карточки; по бокам и снизу остаётся 60px на ореол. */
+  box-shadow: var(--sc-e-3), var(--sc-ring);
+  clip-path: inset(0 -60px -60px -60px);
 }
 .sc-card[data-size="mini"] .sc-card__expand { padding-left: var(--sc-s-3); padding-right: var(--sc-s-3); }
 .sc-card[data-size="medium"] .sc-card__expand { border-radius: 0 0 var(--sc-r-xl) var(--sc-r-xl); }
@@ -583,9 +589,10 @@ html.sc-theme-transition .sc-root {
    кромки. Кромка задана переменной, поэтому глушится только для карточек — кнопки и меню
    её сохраняют. Отделяют карточку тень и свечение. */
 .sc-card { --sc-ring: 0 0 0 0 transparent; border: 0; }
-/* Ступени A и B держат ореол независимо от :hover (клавиатура, фокальная полоса на телефоне). */
-.sc-card[data-stage="a"],
-.sc-card[data-stage="b"] { --sc-ring: var(--sc-glow-ring); }
+/* Ступени A и B держат ореол независимо от :hover (клавиатура, фокальная полоса на телефоне).
+   На B ореол шире и ярче — свечение растёт вместе с карточкой. */
+.sc-card[data-stage="a"] { --sc-ring: var(--sc-glow-ring); }
+.sc-card[data-stage="b"] { --sc-ring: var(--sc-glow-ring-strong); }
 
 /* Медиа скругляется само (замечание владельца 24.09): на ступени B карточка перестаёт обрезать
    содержимое, и прямоугольное медиа вылезало за скруглённую обводку. */
