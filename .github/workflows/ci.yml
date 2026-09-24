@@ -19,7 +19,13 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - run: python -m pytest -q
+      - run: >-
+          python -m pytest -q
+          news/test_public_figures_api.py
+          news/test_sync_highest_state_offices.py
+          scraper/test_source_catalog_completion_audit.py
+          scraper/test_source_terms_discovery.py
+          scraper/test_source_resolution_matrix.py
 
   frontend:
     runs-on: ubuntu-latest
