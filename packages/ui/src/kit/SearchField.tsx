@@ -17,6 +17,7 @@ export interface SearchFieldProps {
   resultsCount?: number;
   id?: string;
   className?: string;
+  maxLength?: number;
 }
 
 /**
@@ -35,6 +36,7 @@ export function SearchField({
   resultsCount,
   id,
   className,
+  maxLength,
 }: SearchFieldProps) {
   const autoId = useId();
   const inputId = id ?? autoId;
@@ -62,6 +64,7 @@ export function SearchField({
         placeholder={placeholder}
         disabled={disabled}
         aria-invalid={error || undefined}
+        maxLength={maxLength}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={(e) => onChange(e.target.value)}
