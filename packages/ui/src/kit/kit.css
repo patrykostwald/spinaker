@@ -2373,3 +2373,16 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-daily-topic__cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-s-3); }
 @media (max-width: 900px) { .sc-daily-topic__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .sc-daily-topic__layout { grid-template-columns: 1fr; }.sc-daily-topic__cards { grid-template-columns: 1fr; } }
+
+/* === Stage 2: Dr Spin === */
+.sc-dr-spin { display: grid; gap: var(--sc-s-4); }
+.sc-dr-spin__head { display: flex; align-items: end; justify-content: space-between; gap: var(--sc-s-3); }
+.sc-dr-spin__head h2, .sc-dr-spin__head p { margin: 0; }
+.sc-dr-spin__head h2 { font: var(--sc-t-title-l); }
+.sc-dr-spin__head > div:first-child > p { color: var(--sc-accent); font: var(--sc-t-label); letter-spacing: .12em; }
+.sc-dr-spin__head > div:last-child { display: flex; align-items: center; gap: var(--sc-s-2); }
+.sc-dr-spin__head > div:last-child > p { color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-dr-spin__layout { display: grid; gap: var(--sc-s-4); }
+.sc-dr-spin__thread-label { color: var(--sc-accent); font: var(--sc-t-caption); }
+.sc-dr-spin__related { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(15rem, 20rem); gap: var(--sc-s-3); overflow-x: auto; padding: var(--sc-s-2) 0 var(--sc-s-4); }
+@media (max-width: 480px) { .sc-dr-spin__head { align-items: start; flex-direction: column; }.sc-dr-spin__head > div:last-child { align-items: start; flex-direction: column; } }
