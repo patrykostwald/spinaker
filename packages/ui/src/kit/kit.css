@@ -2154,9 +2154,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-public-figure-status.is-current, .sc-public-figure-verified { border-color: var(--sc-accent); color: var(--sc-accent); }
 .sc-public-figure-x { padding: var(--sc-s-3); background: var(--sc-surface-2); }
 .sc-public-figure-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-block: 1px solid var(--sc-line); }
-.sc-public-figure-summary a { display: grid; gap: var(--sc-s-1); padding: var(--sc-s-3); color: var(--sc-text); text-decoration: none; }
-.sc-public-figure-summary a + a { border-left: 1px solid var(--sc-line); }
-.sc-public-figure-summary a:hover { color: var(--sc-accent); }
+.sc-public-figure-summary a, .sc-public-figure-summary button { display: grid; gap: var(--sc-s-1); padding: var(--sc-s-3); border: 0; background: transparent; color: var(--sc-text); text-align: left; text-decoration: none; }
+.sc-public-figure-summary a + a, .sc-public-figure-summary button + button { border-left: 1px solid var(--sc-line); }
+.sc-public-figure-summary a:hover, .sc-public-figure-summary button:hover { color: var(--sc-accent); }
 .sc-public-figure-summary span { color: var(--sc-text-2); font: var(--sc-t-caption); }
 .sc-public-figure-summary strong { color: var(--sc-accent); font: var(--sc-t-title-s); }
 .sc-public-figure-favnote, .sc-public-figure-hint { color: var(--sc-text-2); }
@@ -2185,7 +2185,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-public-figure-days > li { display: grid; grid-template-columns: minmax(10rem, 14rem) minmax(0,1fr); gap: var(--sc-s-4); padding-block: var(--sc-s-4); border-top: 1px solid var(--sc-line); }
 .sc-public-figure-mat-title { color: var(--sc-text); font-weight: 700; text-decoration: none; }
 .sc-public-figure-mat-title:hover { color: var(--sc-accent); }
-@media (max-width: 480px) { .sc-public-figure-summary { grid-template-columns: 1fr; } .sc-public-figure-summary a + a { border-top: 1px solid var(--sc-line); border-left: 0; } .sc-public-figure-votes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .sc-public-figure-votes, .sc-public-figure-votes tbody, .sc-public-figure-votes tr, .sc-public-figure-votes th, .sc-public-figure-votes td { display: block; } .sc-public-figure-votes tr { display: grid; gap: var(--sc-s-2); padding-block: var(--sc-s-3); border-top: 1px solid var(--sc-line); } .sc-public-figure-votes th, .sc-public-figure-votes td { padding: 0; border: 0; } .sc-public-figure-org dl, .sc-public-figure-days > li { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .sc-public-figure-summary { grid-template-columns: 1fr; } .sc-public-figure-summary a + a, .sc-public-figure-summary button + button { border-top: 1px solid var(--sc-line); border-left: 0; } .sc-public-figure-votes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .sc-public-figure-votes, .sc-public-figure-votes tbody, .sc-public-figure-votes tr, .sc-public-figure-votes th, .sc-public-figure-votes td { display: block; } .sc-public-figure-votes tr { display: grid; gap: var(--sc-s-2); padding-block: var(--sc-s-3); border-top: 1px solid var(--sc-line); } .sc-public-figure-votes th, .sc-public-figure-votes td { padding: 0; border: 0; } .sc-public-figure-org dl, .sc-public-figure-days > li { grid-template-columns: 1fr; } }
 
 /* === Stage 2: strona o projekcie === */
 .sc-about { display: grid; gap: var(--sc-s-8); max-width: 75rem; margin: var(--sc-s-6) auto var(--sc-s-12); color: var(--sc-text); }

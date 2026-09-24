@@ -59,7 +59,7 @@ function Neutral({ children }: { children: ReactNode }) {
 
 /* ——— Nagłówek profilu ——— */
 
-function FigureHeader({ figure, demo, titleId, materialsTotal }: { figure: PublicFigureDetail; demo?: boolean; titleId: string; materialsTotal: number | null }) {
+function FigureHeader({ figure, demo, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; demo?: boolean; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'materials') => void }) {
   const { ownerId } = useOwnerId();
   const [loginOpen, setLoginOpen] = useState(false);
   const x = verifiedXAccount(figure);
@@ -87,9 +87,9 @@ function FigureHeader({ figure, demo, titleId, materialsTotal }: { figure: Publi
         </p>
       )}
       <nav className="sc-public-figure-summary" aria-label="Sekcje profilu">
-        <a href="#glosowania"><span>Głosowania</span><strong>{figure.votes.available ? figure.votes.results.length : '—'}</strong></a>
-        <a href="#relacje"><span>Potwierdzone relacje</span><strong>{organisations}</strong></a>
-        <a href="#materialy"><span>Materiały w Bazie</span><strong>{materialsTotal ?? '…'}</strong></a>
+        <button type="button" onClick={() => onSelect('votes')}><span>Głosowania</span><strong>{figure.votes.available ? figure.votes.results.length : '—'}</strong></button>
+        <button type="button" onClick={() => onSelect('relations')}><span>Potwierdzone relacje</span><strong>{organisations}</strong></button>
+        <button type="button" onClick={() => onSelect('materials')}><span>Materiały w Bazie</span><strong>{materialsTotal ?? '…'}</strong></button>
       </nav>
       <p className="sc-public-figure-favnote">
         {ownerId
@@ -397,7 +397,7 @@ export function PublicFigureProfile({ figure, demo = false, titleId = 'pf-title'
           <span>Osoba, podmioty, głosowania i materiały są fikcyjne. Kształt danych odpowiada odpowiedzi GET /api/public-figures/:id/. Materiały demonstracyjne są lokalne — w prawdziwym profilu pochodzą z wyszukiwania w Bazie.</span>
         </p>
       )}
-      <FigureHeader figure={figure} demo={demo} titleId={titleId} materialsTotal={materialsTotal} />
+      <FigureHeader figure={figure} demo={demo} titleId={titleId} materialsTotal={materialsTotal} onSelect={setTab} />
       <nav className="sc-public-figure-tabs" role="tablist" aria-label="Dane profilu">
         {tabs.map(item => <button key={item.id} id={`pf-tab-${item.id}`} type="button" role="tab" aria-selected={tab === item.id} aria-controls={`pf-panel-${item.id}`} onClick={() => setTab(item.id)}>{tab === item.id && <MorphIndicator id="public-figure-tabs" active variant="underline" />}{item.label}</button>)}
       </nav>
