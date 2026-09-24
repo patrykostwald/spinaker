@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getNewsFeed } from '../lib/portal';
 import type { Source } from '../types';
-import { NewsCard } from '../kit/NewsCard';
+import { Button, Checkbox, NewsCard, SearchField } from '../kit';
 
 const TOPIC_PILLS: { label: string; value: string }[] = [
   { label: 'Polityka', value: 'polityka' },
@@ -39,39 +39,35 @@ export function TopTenRedakcji({ topSources: sources }: { topSources: Source[] }
   const topicLabel = TOPIC_PILLS.find(pill => pill.value === topic)?.label;
 
   return (
-    <section className="mvp-section mvp-top10" aria-label="Wszystkie źródła">
-      <div className="mvp-top10-bar">
-        <div className="mvp-sources-dropdown">
-          <button type="button" className="mvp-top10-title" aria-expanded={sourcesOpen} onClick={() => setSourcesOpen(value => !value)}>
+    <section className="sc-top-ten" aria-label="Wszystkie źródła">
+      <div className="sc-top-ten-bar">
+        <div className="sc-top-ten-sources">
+          <Button type="button" variant="quiet" aria-expanded={sourcesOpen} onClick={() => setSourcesOpen(value => !value)}>
             WSZYSTKIE ŹRÓDŁA <span aria-hidden="true">▾</span>
-          </button>
-          {sourcesOpen && <div className="mvp-sources-menu" role="menu">
-            <p className="mvp-sources-menu-title">Filtruj źródła</p>
+          </Button>
+          {sourcesOpen && <div className="sc-top-ten-sources-menu" role="menu">
+            <p className="sc-top-ten-sources-title">Filtruj źródła</p>
             {sources.map(source => (
-              <label key={source.id}>
-                <input type="checkbox" checked={sourceIds.includes(source.id)}
-                  onChange={() => setSourceIds(current => current.includes(source.id) ? current.filter(id => id !== source.id) : [...current, source.id])} />
-                {source.name}
-              </label>
+              <Checkbox key={source.id} label={source.name} checked={sourceIds.includes(source.id)} onChange={() => setSourceIds(current => current.includes(source.id) ? current.filter(id => id !== source.id) : [...current, source.id])} />
             ))}
-            {!sources.length && <p className="filter-note">Lista źródeł nie jest jeszcze dostępna.</p>}
+            {!sources.length && <p className="sc-top-ten-empty">Lista źródeł nie jest jeszcze dostępna.</p>}
           </div>}
         </div>
-        <div className="mvp-top10-categories">
+        <div className="sc-top-ten-categories">
           {TOPIC_PILLS.map(pill => (
-            <button key={pill.value} type="button" className={`mvp-pill${topic === pill.value ? ' is-active' : ''}`}
-              aria-pressed={topic === pill.value} onClick={() => setTopic(topic === pill.value ? null : pill.value)}>{pill.label}</button>
+            <Button key={pill.value} size="sm" variant="quiet" pressed={topic === pill.value}
+              onClick={() => setTopic(topic === pill.value ? null : pill.value)}>{pill.label}</Button>
           ))}
         </div>
-          <input type="search" className="mvp-search-input" placeholder="Szukaj hasła…" value={query} onChange={event => setQuery(event.target.value)} maxLength={200} />
+        <SearchField className="sc-top-ten-search" placeholder="Szukaj hasła…" value={query} onChange={setQuery} maxLength={200} />
       </div>
-      {feed.isPending ? <p role="status" className="strip-empty">Ładuję materiały ze źródeł…</p> : null}
-      {feed.isError ? <p role="alert" className="strip-empty">Nie udało się odświeżyć materiałów. <button type="button" className="text-primary" onClick={() => feed.refetch()}>Spróbuj ponownie</button></p> : null}
-      {!feed.isPending && !feed.isError && !articles.length ? <p className="strip-empty">Nie ma jeszcze materiałów dla wybranych filtrów.</p> : null}
+      {feed.isPending ? <p role="status" className="sc-top-ten-empty">Ładuję materiały ze źródeł…</p> : null}
+      {feed.isError ? <p role="alert" className="sc-top-ten-empty">Nie udało się odświeżyć materiałów. <Button size="sm" variant="quiet" onClick={() => feed.refetch()}>Spróbuj ponownie</Button></p> : null}
+      {!feed.isPending && !feed.isError && !articles.length ? <p className="sc-top-ten-empty">Nie ma jeszcze materiałów dla wybranych filtrów.</p> : null}
       {articles.length ? <div className="news-strip-track sc-strip-bleed" tabIndex={0} aria-label="Wszystkie źródła — przewijaj poziomo">
         {articles.map(article => <div key={article.id} className="news-strip-item"><NewsCard article={article} size="medium" /></div>)}
       </div> : null}
-      <p className="mvp-strip-caption">{`Najnowsze materiały z ${sourceSummary}${topicLabel ? ` · ${topicLabel}` : ''}${query ? ` · „${query}”` : ''}`}</p>
+      <p className="sc-top-ten-caption">{`Najnowsze materiały z ${sourceSummary}${topicLabel ? ` · ${topicLabel}` : ''}${query ? ` · „${query}”` : ''}`}</p>
     </section>
   );
 }
