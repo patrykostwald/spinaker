@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "../kit/Button";
 import { Segmented } from "../kit/Segmented";
+import { ThemeIcon } from "../kit/icons/ThemeIcon";
 import { apiFetch, apiWrite } from "../lib/api";
 import { useAccount } from "../lib/account";
 
@@ -28,13 +30,18 @@ function applyTheme(mode: ThemeMode) {
   window.setTimeout(() => root.classList.remove("sc-theme-transition"), 300);
 }
 
-export function ThemeSwitcher() {
+const MODE_LABEL: Record<ThemeMode, string> = { dark: "Ciemny", light: "Jasny", auto: "Automatyczny" };
+const NEXT_MODE: Record<ThemeMode, ThemeMode> = { dark: "light", light: "auto", auto: "dark" };
+
+/** `compact` — ikona w szapce (słońce/księżyc morfują), klik przełącza Ciemny → Jasny → Automatyczny. */
+export function ThemeSwitcher({ compact = false }: { compact?: boolean } = {}) {
   const account = useAccount();
   const ownerId = account.data?.user?.id;
   const cache = useQueryClient();
   const [mode, setMode] = useState<ThemeMode>("dark");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [systemDark, setSystemDark] = useState(true);
   const profile = useQuery({
     queryKey: ["account-profile", ownerId],
     queryFn: () => apiFetch<ProfileSettings>("/api/account/profile/"),
@@ -56,6 +63,14 @@ export function ThemeSwitcher() {
     setMode(next);
     applyTheme(next);
   }, [profile.data]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const sync = () => setSystemDark(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     if (mode !== "auto") return;
@@ -85,6 +100,22 @@ export function ThemeSwitcher() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (compact) {
+    const dark = mode === "auto" ? systemDark : mode === "dark";
+    return (
+      <Button
+        shape="icon"
+        variant="ghost"
+        size="md"
+        aria-label={`Motyw: ${MODE_LABEL[mode]}. Przełącz na ${MODE_LABEL[NEXT_MODE[mode]].toLowerCase()}`}
+        title={`Motyw: ${MODE_LABEL[mode]}`}
+        disabled={saving}
+        onClick={() => choose(NEXT_MODE[mode])}
+        iconStart={<ThemeIcon mode={dark ? "moon" : "sun"} size={20} />}
+      />
+    );
   }
 
   return <div className="sc-theme-switcher">

@@ -18,11 +18,11 @@ import { Strip } from "./Strip";
 
 export type LeadRow = { article: Article; time: string };
 
-function PanelRow({ row }: { row: LeadRow }) {
+function PanelRow({ row, index }: { row: LeadRow; index: number }) {
   const m = useMotionTokens();
   const portal = usePortalApi();
   return (
-    <li>
+    <motion.li initial={{ opacity: 0, y: m.rise }} animate={{ opacity: 1, y: 0 }} transition={m.t("ui", { delay: index * m.stagger })}>
       <motion.button
         type="button"
         className="sc-home-lead__row sc-hoverable"
@@ -38,7 +38,7 @@ function PanelRow({ row }: { row: LeadRow }) {
           <span className="sc-t-title-xs sc-home-lead__row-title">{row.article.title}</span>
         </span>
       </motion.button>
-    </li>
+    </motion.li>
   );
 }
 
@@ -80,8 +80,8 @@ export function HomeLead({
           </header>
           {rows.length ? (
             <ol className="sc-home-lead__rows" role="list">
-              {rows.map((row) => (
-                <PanelRow key={row.article.id} row={row} />
+              {rows.map((row, index) => (
+                <PanelRow key={row.article.id} row={row} index={index} />
               ))}
             </ol>
           ) : (

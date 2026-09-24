@@ -2763,3 +2763,46 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-home-mosaic__search { width: 100%; }
   .sc-home-band__form { flex-direction: column; align-items: stretch; }
 }
+
+/* === Stage 2: monochrom + hover + szapka (замечания владельца 24.09) === */
+/* Синий — только акцент (текст, иконки, индикатор, фокус, ореол карточек). Все заливки — чёрно-белые:
+   «первичная» кнопка и включённые контролы инвертированы (ночью светлые, днём тёмные). */
+:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-primary-bg: #f5f6f7; --sc-primary-fg: #08090b; --sc-primary-hover: #dfe2e7; --sc-primary-press: #c9cdd4; }
+html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-primary-bg: #0b0c0e; --sc-primary-fg: #ffffff; --sc-primary-hover: #262a31; --sc-primary-press: #3a3f47; }
+.sc-btn[data-variant="primary"] { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
+.sc-btn[data-variant="primary"]:focus-visible, .sc-btn[data-variant="primary"][data-lit="true"] { background: var(--sc-primary-hover); border-color: var(--sc-primary-hover); color: var(--sc-primary-fg); }
+.sc-btn[data-variant="primary"]:active { background: var(--sc-primary-press); border-color: var(--sc-primary-press); }
+.sc-btn[aria-pressed="true"] { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
+/* Наведение на всё, кроме карточек: меняется только цвет текста/иконки — на акцентный. */
+@media (hover: hover) {
+  .sc-btn[data-variant="primary"]:hover { background: var(--sc-primary-hover); border-color: var(--sc-primary-hover); color: var(--sc-primary-fg); }
+  .sc-btn[data-variant="secondary"]:hover { background: var(--sc-surface-2); border-color: var(--sc-line); box-shadow: var(--sc-e-1), var(--sc-ring); color: var(--sc-accent); }
+  .sc-btn[data-variant="quiet"]:hover { background: transparent; border-color: transparent; color: var(--sc-accent); }
+  .sc-btn[data-variant="ghost"]:hover { color: var(--sc-accent); }
+  .sc-btn[aria-pressed="true"]:hover { background: var(--sc-primary-hover); border-color: var(--sc-primary-hover); color: var(--sc-primary-fg); }
+  .sc-navmenu__link:hover, .sc-nav-categories__link:hover, .sc-footer__link:hover,
+  .sc-navmenu__item-wrap .sc-btn[data-variant="ghost"]:hover { color: var(--sc-accent); }
+}
+.sc-btn[data-variant="secondary"]:focus-visible, .sc-btn[data-variant="secondary"][data-lit="true"] { background: var(--sc-surface-2); border-color: var(--sc-line); color: var(--sc-accent); }
+.sc-btn[data-variant="quiet"]:focus-visible, .sc-btn[data-variant="quiet"][data-lit="true"] { background: transparent; border-color: transparent; color: var(--sc-accent); }
+.sc-btn[data-variant="ghost"]:focus-visible, .sc-btn[data-variant="ghost"][data-lit="true"] { color: var(--sc-accent); }
+/* Контролы: включённое состояние — инверсия, не синяя заливка. */
+.sc-checkbox[data-state="checked"] .sc-checkbox__box, .sc-checkbox[data-state="indeterminate"] .sc-checkbox__box { background: var(--sc-primary-bg); border-color: var(--sc-primary-bg); color: var(--sc-primary-fg); }
+.sc-radio__dot { background: var(--sc-primary-bg); }
+.sc-switch[data-state="checked"] .sc-switch__track { background: var(--sc-primary-bg); border-color: var(--sc-primary-bg); }
+.sc-switch[data-state="checked"] .sc-switch__thumb { background: var(--sc-primary-fg); }
+/* Поверхности без синей подложки. */
+.sc-card__eyebrow { background: var(--sc-chrome); color: var(--sc-accent); }
+.sc-home-demo { background: var(--sc-surface-2); }
+.sc-home-band { background: var(--sc-surface); box-shadow: var(--sc-e-1); }
+.sc-account-primary, .sc-editor-button, .sc-political__primary { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
+.sc-motion-btn[aria-pressed="true"] { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
+.sc-icons__play:hover { background: transparent; color: var(--sc-accent); }
+.sc-ruler__bar { background: var(--sc-surface-3); }
+/* Шапка: вордмарк на токенах кита, широкий поиск, действия в один ряд. */
+.sc-wordmark { color: var(--sc-text); font-family: var(--sc-font-sans); letter-spacing: -0.02em; }
+.sc-navmenu__search { width: min(520px, 36vw); max-width: none; }
+.sc-nav-search { min-width: 0; }
+.sc-nav-cta { display: flex; align-items: center; gap: var(--sc-s-2); white-space: nowrap; }
+/* Полоса тем под шапкой: как пункты навигации, не капс. */
+.sc-home-catbar .sc-nav-categories__link { font-size: var(--sc-t-body-s-size); font-weight: 600; text-transform: none; letter-spacing: var(--sc-track-body-s); }

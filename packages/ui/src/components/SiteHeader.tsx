@@ -21,7 +21,6 @@ function HeaderSearch() {
   return (
     <form className="sc-nav-search" role="search" onSubmit={submit}>
       <SearchField id={id} label="Szukaj w bazie materiałów" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj w bazie…" />
-      <Button variant="primary" size="sm" type="submit">Szukaj</Button>
     </form>
   );
 }
@@ -43,7 +42,7 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
       items={items}
       brand={<Link href="/" className="sc-wordmark">{first}<span aria-hidden="true">.</span>{second}</Link>}
       search={<HeaderSearch />}
-      cta={<><Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button><ThemeSwitcher /></>}
+      cta={<div className="sc-nav-cta"><ThemeSwitcher compact /><Button href="/konto" variant="secondary" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button></div>}
     />
   );
 }

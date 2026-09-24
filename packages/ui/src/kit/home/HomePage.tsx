@@ -20,6 +20,7 @@ import { HomeHero } from "./HomeHero";
 import { HomeLead, rowTime, type LeadRow } from "./HomeLead";
 import { HomeMosaic } from "./HomeMosaic";
 import { HomePrzekazDnia } from "./HomePrzekazDnia";
+import { HomeReveal } from "./HomeReveal";
 import { HomeTicker } from "./HomeTicker";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed, useTopicOfDay } from "./data";
 
@@ -101,24 +102,34 @@ export function HomePage() {
         <DemoBanner />
         <HomeHero />
         <HomeTicker articles={latest.slice(0, 4)} />
-        <HomeLead
-          main={leadMain}
-          eyebrow={topicReady ? "Temat dnia" : "Najnowszy materiał"}
-          panelTitle={topicReady ? "Oś czasu tematu" : "Najnowsze"}
-          rows={leadRows}
-          panelHref="/#baza"
-          thread={thread}
-        />
-        <HomeMosaic sources={sources.length ? sources : topSources} topic={activeTopic} onArticles={onArticles} />
-        <HomeDrSpin thread={drSpin.data ?? null} />
+        <HomeReveal>
+          <HomeLead
+            main={leadMain}
+            eyebrow={topicReady ? "Temat dnia" : "Najnowszy materiał"}
+            panelTitle={topicReady ? "Oś czasu tematu" : "Najnowsze"}
+            rows={leadRows}
+            panelHref="/#baza"
+            thread={thread}
+          />
+        </HomeReveal>
+        <HomeReveal>
+          <HomeMosaic sources={sources.length ? sources : topSources} topic={activeTopic} onArticles={onArticles} />
+        </HomeReveal>
+        <HomeReveal>
+          <HomeDrSpin thread={drSpin.data ?? null} />
+        </HomeReveal>
         <HomePrzekazDnia government={config.data?.editorial.government ?? null} opposition={config.data?.editorial.opposition ?? null} />
-        <HomeBaza ref={bazaRef} categories={categories} sources={sources} initialQuery={q} stripDraft={stripDraft} />
-        <HomeBand
-          onCreate={(query) => {
-            setStripDraft({ query, nonce: Date.now() });
-            bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
-          }}
-        />
+        <HomeReveal>
+          <HomeBaza ref={bazaRef} categories={categories} sources={sources} initialQuery={q} stripDraft={stripDraft} />
+        </HomeReveal>
+        <HomeReveal>
+          <HomeBand
+            onCreate={(query) => {
+              setStripDraft({ query, nonce: Date.now() });
+              bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+            }}
+          />
+        </HomeReveal>
       </div>
     </>
   );
