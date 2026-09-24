@@ -2401,3 +2401,20 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-news-strip--large .sc-news-strip__track { grid-auto-columns: minmax(18rem, 24rem); }
 .sc-news-strip__item { min-width: 0; scroll-snap-align: start; }
 @media (max-width: 480px) { .sc-news-strip__head { align-items: start; flex-direction: column; }.sc-news-strip__actions { width: 100%; }.sc-news-strip__track { grid-auto-columns: minmax(15rem, 82vw); } }
+
+/* === Stage 2: personal strips === */
+.sc-personal-strips { display: grid; gap: var(--sc-s-4); }
+.sc-personal-strips__head, .sc-personal-strip > header { display: flex; align-items: end; justify-content: space-between; gap: var(--sc-s-3); }
+.sc-personal-strips__head h2, .sc-personal-strips__head p, .sc-personal-strip h3, .sc-personal-strip p { margin: 0; }
+.sc-personal-strips__head h2 { font: var(--sc-t-title-l); }
+.sc-personal-strips__head p, .sc-personal-strip > p { margin-top: var(--sc-s-1); color: var(--sc-text-2); font: var(--sc-t-body-s); }
+.sc-personal-strips__empty { padding: var(--sc-s-4); margin: 0; color: var(--sc-text-2); background: var(--sc-surface-2); }
+.sc-personal-strip { display: grid; gap: var(--sc-s-3); }
+.sc-personal-strip h3 { font: var(--sc-t-title-s); }
+.sc-personal-strip > header > div { display: flex; gap: var(--sc-s-1); }
+.sc-personal-strip__track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(15rem, 20rem); gap: var(--sc-s-3); overflow-x: auto; padding: var(--sc-s-2) 0 var(--sc-s-4); }
+.sc-personal-strip-form { display: grid; gap: var(--sc-s-3); padding: var(--sc-s-4); background: var(--sc-surface-2); }
+.sc-personal-strip-form > p { margin: 0; color: var(--sc-accent); font: var(--sc-t-label); letter-spacing: .12em; }
+.sc-personal-strip-form__choices { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
+.sc-personal-strip-form__actions { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
+@media (max-width: 480px) { .sc-personal-strips__head, .sc-personal-strip > header { align-items: start; flex-direction: column; }.sc-personal-strip-form__choices > * { width: 100%; } }
