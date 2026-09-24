@@ -2806,3 +2806,39 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-nav-cta { display: flex; align-items: center; gap: var(--sc-s-2); white-space: nowrap; }
 /* Полоса тем под шапкой: как пункты навигации, не капс. */
 .sc-home-catbar .sc-nav-categories__link { font-size: var(--sc-t-body-s-size); font-weight: 600; text-transform: none; letter-spacing: var(--sc-track-body-s); }
+
+/* === Stage 2: ThreadView — nitka w dwóch układach (замечание владельца 24.09) === */
+.sc-thread-view { display: grid; gap: var(--sc-s-4); }
+.sc-thread-view__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); flex-wrap: wrap; }
+.sc-thread-view__head p { margin: 0; }
+.sc-thread-view__date { margin: 0 0 var(--sc-s-2); color: var(--sc-accent); font-variant-numeric: tabular-nums; }
+.sc-thread-view__note { margin: var(--sc-s-2) 0 0; }
+.sc-thread-view__reference { display: grid; gap: var(--sc-s-2); padding: var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface); }
+.sc-thread-view__reference p { margin: 0; }
+.sc-thread-view__source { color: var(--sc-accent); text-decoration: none; }
+.sc-thread-view__source:hover { text-decoration: underline; }
+/* Dwie kolumny: otwierający po lewej, lista z szyną dat po prawej, przewijana w pionie. */
+.sc-thread-view__columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: var(--sc-s-5); align-items: start; }
+.sc-thread-view__anchor { min-width: 0; }
+.sc-thread-view__list-wrap { min-width: 0; }
+.sc-thread-view__list {
+  list-style: none; margin: 0 -60px; padding: 0 60px var(--sc-s-2);
+  max-height: min(72vh, 720px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+  display: flex; flex-direction: column; gap: var(--sc-s-2); outline: none;
+}
+.sc-thread-view__list:focus-visible { box-shadow: 0 0 0 2px var(--sc-focus); border-radius: var(--sc-r-md); }
+.sc-thread-view__row { position: relative; padding-left: var(--sc-s-5); }
+.sc-thread-view__row .sc-thread-view__date { margin-bottom: var(--sc-s-1); }
+.sc-thread-view__rail { position: absolute; left: 4px; top: 6px; bottom: -8px; width: 1px; background: var(--sc-line); }
+.sc-thread-view__row:last-child .sc-thread-view__rail { bottom: auto; height: 100%; }
+.sc-thread-view__rail::before { content: ""; position: absolute; top: 0; left: -4px; width: 9px; height: 9px; border-radius: 50%; background: var(--sc-accent); }
+/* Jeden rząd: taśma na całą szerokość, data nad każdą kartą z kropką na wspólnej linii. */
+.sc-thread-view__slot-inner { display: grid; gap: var(--sc-s-2); width: 100%; }
+.sc-thread-view__date--top { position: relative; padding-top: var(--sc-s-3); margin: 0; border-top: 2px solid var(--sc-line); }
+.sc-thread-view__dot { position: absolute; top: -6px; left: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-accent); }
+.sc-thread-view__slot { align-items: start; }
+.sc-specimen--stack { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+  .sc-thread-view__columns { grid-template-columns: 1fr; }
+  .sc-thread-view__list { max-height: none; overflow: visible; margin: 0; padding: 0; }
+}

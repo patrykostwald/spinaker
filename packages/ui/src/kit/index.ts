@@ -91,4 +91,5 @@ export { InfoPage } from "./InfoPage";
 
 // Этап 2 — страницы на ките
 export { HomePage } from "./home/HomePage";
+export { ThreadView, type ThreadViewProps, type ThreadLayout } from "./ThreadView";
 export { useDemoMode } from "./home/data";

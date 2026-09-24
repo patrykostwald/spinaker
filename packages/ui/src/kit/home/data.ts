@@ -15,7 +15,7 @@ import { useSyncExternalStore } from "react";
 import { ApiError, apiFetch, getThreads } from "../../lib/api";
 import { getNewsFeed, getPortalConfig, type NewsFeed, type PortalConfig } from "../../lib/portal";
 import type { ThreadDetail } from "../../types";
-import { FIXTURE_SOURCES, makeArticles } from "../showcase/fixtures";
+import { FIXTURE_SOURCES, FIXTURE_STRIPS, makeArticles } from "../showcase/fixtures";
 
 // ---------------------------------------------------------------------------
 // Tryb demonstracyjny
@@ -176,6 +176,35 @@ export function useTopicOfDay() {
   });
 }
 
+function demoThread(): ThreadDetail {
+  const articles = FIXTURE_STRIPS[2].articles;
+  return {
+    id: -9100,
+    title: "Nitka demonstracyjna — układ dwóch kolumn i jednego rzędu",
+    slug: "nitka-demonstracyjna",
+    thread_type: "context",
+    is_featured: true,
+    updated_at: articles[0]?.published_date ?? new Date().toISOString(),
+    published: true,
+    item_count: articles.length,
+    description: "Fikcyjna nitka z fikstur witryny — tylko do pracy nad układem.",
+    image_url: articles[0]?.image_url ?? "",
+    views_count: 0,
+    created_at: articles[0]?.published_date ?? new Date().toISOString(),
+    author_name: "Redakcja Przykładowa",
+    author_role: "editor",
+    editorial_slot: "",
+    items: articles.map((article, index) => ({
+      id: -(9200 + index),
+      position: index + 1,
+      editorial_note: index === 0 ? "Komentarz redakcyjny do materiału otwierającego (przykład)." : "",
+      author_name: "Redakcja Przykładowa",
+      author_role: "editor",
+      article,
+    })),
+  };
+}
+
 /** Nitka Dr Spina: pierwsza OPUBLIKOWANA wyróżniona nitka; brak → sekcja pokazuje układ-zapowiedź. */
 export function useDrSpinThread() {
   return useQuery({
@@ -183,7 +212,7 @@ export function useDrSpinThread() {
     queryFn: () =>
       withDemo(
         async () => (await getThreads(true)).results.find((thread) => thread.published) ?? null,
-        (): ThreadDetail | null => null,
+        (): ThreadDetail | null => demoThread(),
       ),
     staleTime: 300_000,
   });

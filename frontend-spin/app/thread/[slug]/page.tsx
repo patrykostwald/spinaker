@@ -1,6 +1,6 @@
 "use client";
-import { ThreadExport, ThreadFavoriteButton, ThreadOpinions, HorizontalTimeline, ShareOnX, getThread, ApiError } from '@spin-clinic/ui';
-import { Button } from '@spin-clinic/ui/kit';
+import { ThreadExport, ThreadFavoriteButton, ThreadOpinions, ShareOnX, getThread, ApiError } from '@spin-clinic/ui';
+import { Button, ThreadView } from '@spin-clinic/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 export default function ThreadPage({ params }: { params: { slug: string } }) {
   const result = useQuery({ queryKey: ['thread', params.slug], queryFn: () => getThread(params.slug), retry: false, refetchOnWindowFocus: false });
@@ -14,7 +14,7 @@ export default function ThreadPage({ params }: { params: { slug: string } }) {
     <p className="sc-t-body sc-text-2 sc-thread-page__description">{thread.description}</p>
     <p className="sc-t-meta sc-text-2">{thread.item_count} materiałów · {thread.views_count} wyświetleń</p>
     <div className="sc-thread-page__actions"><ThreadFavoriteButton thread={thread} /><ShareOnX title={thread.title} path={`/thread/${thread.slug}`} /></div>
-    <HorizontalTimeline items={thread.items} anchorFirst={Boolean(thread.editorial_slot)} />
+    <ThreadView items={thread.items} anchorFirst={Boolean(thread.editorial_slot)} />
     <ThreadOpinions slug={thread.slug} />
     <ThreadExport thread={thread} />
   </article>;
