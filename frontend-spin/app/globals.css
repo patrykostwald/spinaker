@@ -286,9 +286,6 @@ body { background: var(--background); color: var(--text); }
 .daily-topic-method p { max-width: 900px; margin-top: 6px; }
 @media (max-width: 767px) { .empty-narrative-strip { grid-template-columns: minmax(135px, 42%) minmax(0,1fr); gap: 10px; } .empty-narrative-anchor { padding-right: 10px; } .empty-narrative-item { flex-basis: 160px; padding: 0 9px; } .narrative-placeholder > span { font-size: 7px; min-height: 18px; } .narrative-placeholder p { font-size: 7px; } }
 .card-sponsorship { display: block; padding: 7px 4px; font-size: 9px; font-weight: 500; letter-spacing: .05em; color: var(--color-warning); background: rgb(var(--accent-rgb) / .08); border-bottom: 1px solid var(--line); }
-.thread-note-author[data-author-role="editor"] { color: var(--color-primary); }
-.thread-note-author[data-author-role="journalist"] { color: var(--text-secondary); }
-.thread-note-author[data-author-role="reader"] { color: var(--text-secondary); }
 .profile-page { max-width: 900px; margin: 18px auto 50px; }
 .profile-page h1 { font-size: 27px; font-weight: 500; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .profile-page > header > p { margin: 7px 0; font-size: 11px; color: var(--color-primary); }
@@ -364,9 +361,6 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .sponsored-layout .narrative-placeholder { border-top-color: var(--color-warning); }
 .sponsored-layout .narrative-placeholder::before { border-color: var(--color-warning); }
 .sponsored-layout .empty-narrative-anchor .narrative-placeholder::before { background: var(--color-warning); }
-.thread-note-author[data-author-role="editor"] { color: var(--color-primary); }
-.thread-note-author[data-author-role="journalist"] { color: var(--color-secondary); }
-.thread-note-author[data-author-role="reader"] { color: var(--text-secondary); }
 .opinion-negative { background: rgb(var(--accent-rgb) / .06); border-color: rgb(var(--accent-rgb) / .18); }
 .opinion-negative > h3 { color: var(--color-negative); }
 .opinion-positive > h3 { color: var(--color-positive); }
@@ -481,7 +475,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .theme-option:hover, .theme-option[aria-checked="true"] { background: rgb(var(--accent-rgb) / .08); color: var(--text); }
 .theme-option[aria-checked="true"] span:last-child { color: var(--color-primary); font-size: 8px; }
 .theme-error { position: absolute; z-index: 81; top: calc(100% + 7px); right: 0; width: 190px; padding: 8px 10px; border: 1px solid var(--color-negative); background: var(--surface); color: var(--text); font-size: 11px; }
-.material-actions, .thread-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.material-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .share-x-button { border-color: rgb(var(--accent-rgb) / .2); }
 .thread-opinions { margin-top: 36px; padding-top: 30px; border-top: 1px solid var(--line); }
 .thread-opinions > header { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
@@ -490,7 +484,6 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .bg-primary:not([data-category]), .site-header button[type="submit"], .profile-primary { background: var(--color-primary); color: var(--background); }
 .bg-primary:not([data-category]):hover, .site-header button[type="submit"]:hover, .profile-primary:hover { background: var(--color-primary-hover); }
 .live-dot { background: var(--color-live); }
-.thread-note-author[data-author-role="editor"] { color: var(--color-primary); }
 .sponsorship-badge, .strip-heading .sponsorship-badge, .card-sponsorship { color: var(--color-warning); background-color: rgb(var(--accent-rgb) / .08); }
 .opinion-positive { background: rgb(var(--accent-rgb) / .07); border-color: rgb(var(--accent-rgb) / .24); }
 .opinion-positive > h3 { color: var(--color-positive); }

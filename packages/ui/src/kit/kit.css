@@ -422,6 +422,9 @@ html.sc-theme-transition .sc-root {
 .sc-thread-page__kicker { margin: 0; color: var(--sc-accent); letter-spacing: .1em; text-transform: uppercase; }
 .sc-thread-page__title { max-width: 22ch; margin: 0; }
 .sc-thread-page__description { max-width: 65ch; margin: 0; }
+.sc-thread-page__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-3); }
+.sc-thread-page__author[data-author-role="editor"] { color: var(--sc-accent); }
+.sc-thread-page__author[data-author-role="journalist"], .sc-thread-page__author[data-author-role="reader"] { color: var(--sc-text-2); }
 @media (max-width: 480px) { .sc-info-page { width: min(100% - var(--sc-s-5), 65ch); margin-top: var(--sc-s-7); } }
 @media (max-width: 480px) { .sc-app-main { width: min(100% - var(--sc-s-5), var(--sc-layout-wide)); padding-top: var(--sc-s-3); } }
 .sc-grid { display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
