@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getPortalConfig } from '@spin-clinic/ui';
 import type { Source } from '@spin-clinic/ui';
 import { ArchiveProgress } from '@spin-clinic/ui';
+import { Button, SearchField } from '@spin-clinic/ui/kit';
 
 const IMPORTANT = /onet|wp|wirtualna polska|tvn|polsat|rmf|radio zet|gazeta\.pl|interia|reuters|pap|rzeczpospolita/i;
 
@@ -38,7 +39,7 @@ export default function SourcesPage() {
       <div><dt>Aktywne</dt><dd>{stats?.active ?? '—'}</dd></div>
       <div><dt>Oczekuje na odpowiedź</dt><dd>{stats?.awaiting_response ?? '—'}</dd></div>
     </dl>
-    <label className="mvp-source-directory-search">Znajdź źródło<input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder="Nazwa źródła" /></label>
+    <SearchField className="mvp-source-directory-search" label="Znajdź źródło" value={search} onChange={setSearch} placeholder="Nazwa źródła" />
     <div className="mvp-source-directory-grid">
       {([['important', 'Największe media'], ['media', 'Media'], ['public', 'Publiczne']] as const).map(([key, label]) => <section key={key}>
         <h2>{label}<span>{groups[key].length}</span></h2>
@@ -47,7 +48,7 @@ export default function SourcesPage() {
     </div>
     <section className="mvp-source-progress"><p>POSTĘP KATALOGU</p><h2>Jak rozwija się baza źródeł?</h2><ArchiveProgress /></section>
     <section className="mvp-source-suggestion"><p>ROZBUDOWA BAZY</p><h2>Zaproponuj źródło</h2><p>Podaj adres strony, którą warto sprawdzić. Każde źródło weryfikujemy przed uruchomieniem.</p>
-      <form onSubmit={suggest}><input type="url" value={suggestion} onChange={event => setSuggestion(event.target.value)} placeholder="https://…" required /><button type="submit" disabled={!contact}>Wyślij sugestię</button></form>
+      <form className="sc-search-form" onSubmit={suggest}><SearchField label="Adres proponowanego źródła" value={suggestion} onChange={setSuggestion} placeholder="https://…" inputType="url" required /><Button type="submit" variant="primary" disabled={!contact}>Wyślij sugestię</Button></form>
       {!contact && <small>Formularz połączymy ze skrzynką redakcyjną po wskazaniu adresu kontaktowego.</small>}
     </section>
   </article>;
