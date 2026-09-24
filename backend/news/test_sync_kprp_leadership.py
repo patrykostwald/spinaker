@@ -30,6 +30,9 @@ def test_sync_kprp_leadership_archives_only_the_legacy_technical_duplicate():
     key, name, _ = KPRP_LEADERSHIP[0]
     legacy = PublicFigure.objects.create(canonical_name=name, role_category='government', role_title='Dawna forma wpisu',
         evidence_url='https://kprp.example/roster', import_key=f'kprp-leadership:{key}', status='former')
+    PublicFigure.objects.create(canonical_name=name, role_category='government', role_title='Aktualna forma wpisu',
+        evidence_url='https://kprp.example/roster',
+        import_key=f'kprp-leadership:{key}:holder:zbigniew-bogucki', status='current')
     call_command('sync_kprp_leadership', stdout=StringIO())
     legacy.refresh_from_db()
     assert legacy.archived is True
