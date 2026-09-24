@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Article } from '../types';
-import { ArticleCard } from './ArticleCard';
+import { NewsCard } from '../kit/NewsCard';
 
 export function NewsStrip({ title, eyebrow, articles, onSelect, loading = false, error = false, onRetry, empty = 'Nie ma jeszcze materiałów w tym zakresie.', large = false, controls, live = false }: {
   title: string; eyebrow?: string; articles: Article[]; onSelect: (article: Article) => void;
@@ -51,7 +51,16 @@ export function NewsStrip({ title, eyebrow, articles, onSelect, loading = false,
     {error && <p role="status" className="strip-empty">Nie udało się odświeżyć materiałów. {onRetry && <button onClick={onRetry} className="text-primary">Spróbuj ponownie</button>}</p>}
     {loading && !articles.length ? <p role="status" className="strip-empty">Ładuję materiały ze źródeł…</p> : !articles.length && !error ? <p className="strip-empty">{empty}</p> : null}
     {articles.length > 0 && <div ref={scroller} className="news-strip-track" style={automatic && playing ? { scrollBehavior: 'auto', scrollSnapType: 'none' } : undefined} tabIndex={0} aria-label={`${title} — materiały, przewijaj poziomo`} onMouseEnter={() => { hovering.current = true; }} onMouseLeave={() => { hovering.current = false; }} onFocus={() => { focused.current = true; }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) focused.current = false; }} onPointerDown={() => setPlaying(false)} onWheel={() => setPlaying(false)} onKeyDown={e => { if (e.target === e.currentTarget && ['ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); move(e.key === 'ArrowLeft' ? -1 : 1); } }}>
-      {articles.map(article => <div key={article.id} className="news-strip-item"><ArticleCard article={article} onSelect={onSelect} /></div>)}
+      {articles.map(article => (
+        <div key={article.id} className="news-strip-item">
+          <NewsCard
+            article={article}
+            size={large ? "medium" : "compact"}
+            onOpen={onSelect}
+            showDescription={large}
+          />
+        </div>
+      ))}
     </div>}
   </section>;
 }
