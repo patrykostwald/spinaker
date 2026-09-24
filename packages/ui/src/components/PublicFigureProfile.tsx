@@ -23,7 +23,7 @@ import type { Article } from '../types';
 import { AccountDialog } from './AccountDialog';
 import { ArticleFavoriteButton } from './ArticleFavoriteButton';
 import { voteLabel } from './VotingDetails';
-import { Button } from '../kit';
+import { Button, MorphIndicator } from '../kit';
 
 const TIME_ZONE = 'Europe/Warsaw';
 const dayFormat = new Intl.DateTimeFormat('pl-PL', { timeZone: TIME_ZONE, weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
@@ -382,6 +382,13 @@ function useMaterialsTotal(name: string, demo?: boolean) {
 
 export function PublicFigureProfile({ figure, demo = false, titleId = 'pf-title' }: { figure: PublicFigureDetail; demo?: boolean; titleId?: string }) {
   const materialsTotal = useMaterialsTotal(figure.name, demo);
+  const [tab, setTab] = useState<'votes' | 'relations' | 'materials' | 'x'>('votes');
+  const tabs = [
+    { id: 'votes' as const, label: 'Głosowania' },
+    { id: 'relations' as const, label: 'Relacje' },
+    { id: 'materials' as const, label: 'Materiały' },
+    { id: 'x' as const, label: 'Wpisy X' },
+  ];
   return (
     <article className="sc-public-figure" aria-labelledby={titleId}>
       {demo && (
@@ -391,10 +398,15 @@ export function PublicFigureProfile({ figure, demo = false, titleId = 'pf-title'
         </p>
       )}
       <FigureHeader figure={figure} demo={demo} titleId={titleId} materialsTotal={materialsTotal} />
-      <VotesSection figure={figure} demo={demo} />
-      <XPostsSection figure={figure} demo={demo} />
-      <OrganisationsSection figure={figure} demo={demo} />
-      {demo ? <DemoMaterials name={figure.name} /> : <LiveMaterials name={figure.name} />}
+      <nav className="sc-public-figure-tabs" role="tablist" aria-label="Dane profilu">
+        {tabs.map(item => <button key={item.id} id={`pf-tab-${item.id}`} type="button" role="tab" aria-selected={tab === item.id} aria-controls={`pf-panel-${item.id}`} onClick={() => setTab(item.id)}>{tab === item.id && <MorphIndicator id="public-figure-tabs" active variant="underline" />}{item.label}</button>)}
+      </nav>
+      <div id={`pf-panel-${tab}`} role="tabpanel" aria-labelledby={`pf-tab-${tab}`} tabIndex={0}>
+        {tab === 'votes' && <VotesSection figure={figure} demo={demo} />}
+        {tab === 'x' && <XPostsSection figure={figure} demo={demo} />}
+        {tab === 'relations' && <OrganisationsSection figure={figure} demo={demo} />}
+        {tab === 'materials' && (demo ? <DemoMaterials name={figure.name} /> : <LiveMaterials name={figure.name} />)}
+      </div>
       <p className="sc-public-figure-disclaimer">
         Profil pokazuje wyłącznie dane publiczne: funkcję, oficjalne głosowania i potwierdzone relacje. Nie zawiera adresów, numerów PESEL, dat urodzenia ani danych rodzinnych. Nie wystawiamy ocen osób ani automatycznych wniosków.
       </p>

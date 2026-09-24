@@ -2292,3 +2292,10 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-account-profile-public-content h2 { margin: 0; font: var(--sc-t-title-l); }
 @media (max-width: 480px) { .sc-account-profile-page { margin-top: var(--sc-s-4); } .sc-account-profile-header { align-items: start; } .sc-account-profile-header > .sc-btn { flex: 0 0 auto; } .sc-account-profile-workspace { grid-template-columns: 1fr; gap: var(--sc-s-4); } .sc-account-profile-sidebar nav { grid-template-columns: repeat(4, minmax(0,1fr)); overflow-x: auto; } .sc-account-profile-sidebar .sc-btn { justify-content: center; padding-inline: var(--sc-s-2); } .sc-account-profile-sidebar > p { display: none; } .sc-account-profile-section-heading { display: grid; } .sc-account-profile-favorites > div, .sc-account-profile-details > div { grid-template-columns: 1fr; } .sc-account-profile-favorites > div { flex-direction: column; } .sc-account-profile-history > div > div { align-items: start; flex-wrap: wrap; } }
 
+
+/* === Stage 2: zakładki profilu osoby publicznej === */
+.sc-public-figure-tabs { display: flex; gap: var(--sc-s-1); overflow-x: auto; margin-bottom: var(--sc-s-2); border-bottom: 1px solid var(--sc-line); }
+.sc-public-figure-tabs button { position: relative; flex: 0 0 auto; min-height: 44px; padding: 0 var(--sc-s-3); border: 0; background: transparent; color: var(--sc-text-2); font: var(--sc-t-body-s); font-weight: 700; cursor: pointer; }
+.sc-public-figure-tabs button[aria-selected="true"] { color: var(--sc-text); }
+.sc-public-figure-tabs button:hover { color: var(--sc-accent); }
+.sc-public-figure-tabs button:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: -2px; }
