@@ -159,6 +159,7 @@ html[data-theme="pastel"],
   --sc-container: 1280px;
   --sc-gutter: max(16px, calc((100vw - var(--sc-container)) / 2));
   --sc-measure: 65ch;
+  --sc-layout-wide: 72rem;
 
   /* свечение */
   --sc-glow-blur: 24px;
@@ -387,6 +388,12 @@ html.sc-theme-transition .sc-root {
 .sc-wordmark span { color: var(--sc-accent); }
 .sc-nav-search { display: flex; gap: var(--sc-s-2); align-items: center; min-width: min(28rem, 40vw); }
 .sc-nav-search .sc-search { flex: 1; min-width: 0; }
+
+/* === Stage 2: strona nitki === */
+.sc-thread-page { display: grid; gap: var(--sc-s-6); width: min(100% - var(--sc-s-8), var(--sc-layout-wide)); margin: var(--sc-s-8) auto var(--sc-s-16); }
+.sc-thread-page__kicker { margin: 0; color: var(--sc-accent); letter-spacing: .1em; text-transform: uppercase; }
+.sc-thread-page__title { max-width: 22ch; margin: 0; }
+.sc-thread-page__description { max-width: 65ch; margin: 0; }
 @media (max-width: 480px) { .sc-info-page { width: min(100% - var(--sc-s-5), 65ch); margin-top: var(--sc-s-7); } }
 .sc-grid { display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 .sc-swatch { display: grid; gap: 6px; padding: var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: var(--sc-e-1), var(--sc-ring); }
