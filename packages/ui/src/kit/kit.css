@@ -359,6 +359,10 @@ html.sc-theme-transition .sc-root {
 .sc-showcase__nav { display: flex; gap: var(--sc-s-2); flex-wrap: wrap; margin: var(--sc-s-6) 0 var(--sc-s-8); }
 .sc-showcase__nav a { color: var(--sc-text-2); text-decoration: none; padding: 6px 12px; border: 1px solid var(--sc-line); border-radius: var(--sc-r-pill); font-size: var(--sc-t-meta-size); transition: color var(--sc-dur-fast) var(--sc-ease-standard), border-color var(--sc-dur-fast) var(--sc-ease-standard); }
 .sc-showcase__nav a:hover { color: var(--sc-text); border-color: var(--sc-line-strong); }
+.sc-performance-probe__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); flex-wrap: wrap; margin-bottom: var(--sc-s-4); }
+.sc-performance-probe__bar p { margin: 0; }
+.sc-performance-probe__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--sc-s-3); content-visibility: auto; contain-intrinsic-size: auto 18000px; }
+@media (max-width: 480px) { .sc-performance-probe__grid { grid-template-columns: 1fr; } }
 .sc-section { margin-top: var(--sc-s-10); scroll-margin-top: 150px; } /* липкая панель до ~110px в узком окне */
 .sc-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sc-s-4); margin-bottom: var(--sc-s-5); padding-bottom: var(--sc-s-3); border-bottom: 1px solid var(--sc-line); }
 .sc-section__head h2 { margin: 0; }
