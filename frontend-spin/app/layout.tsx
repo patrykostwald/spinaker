@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import { SiteHeader } from "@spin-clinic/ui";
+import { SiteFooter } from "@spin-clinic/ui/kit";
 
 import "./globals.css";
 // Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css — порядок каскада (docs/UI_KIT_PLAN.md).
@@ -29,6 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <SiteHeader site={site} />
           <main id="main-content" className="sc-app-main">{children}</main>
+          <SiteFooter
+            brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
+            note={<>Materiały prezentujemy w oryginalnym kontekście źródłowym.<br />Zestawienie publikacji nie jest potwierdzeniem zawartych w nich twierdzeń.</>}
+            cta={{ eyebrow: "WSPARCIE PROJEKTU", label: "Wesprzyj spin.clinic", href: "/wsparcie" }}
+            columns={[{ title: "Informacje", links: [{ label: "O nas", href: "/o-nas" }, { label: "Źródła", href: "/zrodla" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
+          />
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}
       </body>
