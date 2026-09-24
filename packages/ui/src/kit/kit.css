@@ -2501,3 +2501,15 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-article-opinion-composer__meta { display: grid; gap: var(--sc-s-1); }
 .sc-article-opinion-composer__meta [data-invalid] { color: var(--sc-danger); }
 @media (max-width: 480px) { .sc-article-opinions__columns { grid-template-columns: 1fr; } }
+
+/* === Stage 2: voting details === */
+.sc-voting-details { display: grid; gap: var(--sc-s-4); padding: var(--sc-s-5); background: var(--sc-surface-2); }
+.sc-voting-details h3, .sc-voting-details h4, .sc-voting-details p { margin: 0; }
+.sc-voting-details h3 { font: var(--sc-t-title-s); }.sc-voting-details h4 { font: var(--sc-t-body); }
+.sc-voting-details__meta { color: var(--sc-accent); font: var(--sc-t-meta); }.sc-voting-details__note { margin-top: var(--sc-s-2) !important; color: var(--sc-text-2); font: var(--sc-t-body-s); line-height: 1.5; }
+.sc-voting-details__counts { display: flex; flex-wrap: wrap; gap: var(--sc-s-3); }.sc-voting-details__counts span { font: var(--sc-t-body-s); }
+.sc-voting-details__list { display: grid; gap: var(--sc-s-2); margin: var(--sc-s-2) 0 0; padding: 0; list-style: none; }.sc-voting-details__list.is-scrollable { max-height: 20rem; overflow-y: auto; }
+.sc-voting-details__ballot { padding: var(--sc-s-3); background: var(--sc-surface); }.sc-voting-details__ballot > div { display: flex; justify-content: space-between; gap: var(--sc-s-2); }.sc-voting-details__ballot small, .sc-voting-details__ballot p { color: var(--sc-text-2); font: var(--sc-t-body-s); }.sc-voting-details__ballot p { margin-top: var(--sc-s-2); }
+.sc-voting-details__search { display: flex; align-items: end; gap: var(--sc-s-2); }.sc-voting-details__search > :first-child { flex: 1; }
+.sc-voting-details__pager { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-2); font: var(--sc-t-body-s); }.sc-voting-details__print { color: var(--sc-accent); font: var(--sc-t-body-s); }
+@media (max-width: 480px) { .sc-voting-details__search { align-items: stretch; flex-direction: column; } }
