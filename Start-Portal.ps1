@@ -5,7 +5,7 @@ $portalNext = Join-Path $portalRoot 'frontend-spin\node_modules\next\dist\bin\ne
 $portalLogs = Join-Path $portalRoot '.local'
 if (-not (Test-Path -LiteralPath $portalPython)) { throw 'Brak środowiska Python. Zobacz README.md.' }
 if (-not (Test-Path -LiteralPath $portalNext)) { throw 'Brak zależności frontendu. Uruchom pnpm install.' }
-if (-not (Test-Path -LiteralPath (Join-Path $portalRoot 'frontend-spin\.next\BUILD_ID'))) { throw 'Najpierw zbuduj frontend: pnpm build:spin.' }
+if (-not (Test-Path -LiteralPath (Join-Path $portalRoot 'frontend-spin\.next\BUILD_ID'))) { throw 'Najpierw zbuduj frontend: corepack pnpm build:spin.' }
 $portalNodeCommand = Get-Command node -ErrorAction SilentlyContinue
 $portalNode = if ($portalNodeCommand) { $portalNodeCommand.Source } else { Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' }
 if (-not (Test-Path -LiteralPath $portalNode)) { throw 'Brak Node.js. Zobacz README.md.' }
