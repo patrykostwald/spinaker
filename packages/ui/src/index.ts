@@ -7,7 +7,6 @@ export { SearchBar } from "./components/SearchBar";
 export { TimelineGrid } from "./components/TimelineGrid";
 export { DateRow } from "./components/DateRow";
 export { ArticleCard } from "./components/ArticleCard";
-export { ArticleModal } from "./components/ArticleModal";
 export { ArticleContext } from "./components/ArticleContext";
 export { ArticleOpinions } from "./components/ArticleOpinions";
 export { VotingDetails } from "./components/VotingDetails";
