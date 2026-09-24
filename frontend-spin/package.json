@@ -10,9 +10,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@fontsource/ibm-plex-mono": "^5.3.0",
-    "@fontsource/ibm-plex-sans": "^5.3.0",
-    "@fontsource/ibm-plex-serif": "^5.3.0",
     "@spin-clinic/ui": "*",
     "@tanstack/react-query": "^5.59.0",
     "framer-motion": "^11.11.0",

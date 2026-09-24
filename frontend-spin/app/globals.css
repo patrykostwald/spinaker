@@ -17,7 +17,7 @@ body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
 
-body { font-family: 'IBM Plex Sans', 'Inter', sans-serif; }
+body { font-family: var(--font-montserrat), 'Inter', sans-serif; }
 :focus-visible { outline: 3px solid var(--color-primary); outline-offset: 4px; }
 button, a, input { transition: background-color .2s, box-shadow .2s; }
 @media (prefers-reduced-motion: reduce) {
