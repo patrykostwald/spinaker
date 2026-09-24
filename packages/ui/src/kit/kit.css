@@ -1907,6 +1907,13 @@ html[data-theme="light"] .sc-portal-scrim,
   padding-bottom: var(--sc-s-2);
 }
 .sc-surface__related-track > * { flex: 0 0 240px; }
+.sc-surface__context { display: grid; gap: var(--sc-s-7); margin-top: var(--sc-s-7); padding-top: var(--sc-s-7); border-top: 1px solid var(--sc-line); }
+
+/* === Stage 2: udostępnianie na X === */
+.sc-share-x { display: grid; gap: var(--sc-s-4); }
+.sc-share-x__label { display: grid; gap: var(--sc-s-2); font-weight: 600; color: var(--sc-text); }
+.sc-share-x textarea { width: 100%; min-height: 7rem; resize: vertical; padding: var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; }
+.sc-share-x textarea:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
 
 @media (max-width: 480px) {
   .sc-surface__body { padding: var(--sc-s-4); max-width: none; }
