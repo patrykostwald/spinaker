@@ -10,6 +10,7 @@ import { AnimatePresence, motion, type Transition } from "framer-motion";
 import {
   forwardRef,
   type AriaAttributes,
+  type AriaRole,
   type CSSProperties,
   type DOMAttributes,
   type MouseEvent,
@@ -68,6 +69,7 @@ type NativeProps = Omit<DOMAttributes<HTMLElement>, "children" | MotionConflicti
     disabled?: boolean;
     className?: string;
     style?: CSSProperties;
+    role?: AriaRole;
     /** np. data-lit="true" — witryna wymusza stan naświetlenia bez realnego hover. */
     [dataAttr: `data-${string}`]: string | boolean | undefined;
   };

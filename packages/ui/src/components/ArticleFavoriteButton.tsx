@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { setArticleFavorite, useArticleFavorites, useOwnerId } from '../lib/personal';
 import { AccountDialog } from './AccountDialog';
+import { Button } from '../kit';
 
 /**
  * Dyskretne wejście do ulubionych materiałów.
@@ -33,22 +34,20 @@ export function ArticleFavoriteButton({ articleId, title, compact = false }: { a
   if (compact) {
     return (
       <>
-        <button type="button" className="mvp-fav-dot" aria-pressed={saved} aria-label={label} title={saved ? 'W ulubionych' : 'Dodaj do ulubionych'}
-          disabled={pending || favorites.isPending} onClick={toggle}>
-          <span aria-hidden="true">{saved ? '♥' : '♡'}</span>
-        </button>
+        <Button type="button" shape="icon" variant="quiet" size="sm" className="sc-favorite-dot" pressed={saved} aria-label={label} title={saved ? 'W ulubionych' : 'Dodaj do ulubionych'}
+          disabled={pending || favorites.isPending} onClick={toggle} iconStart={<span aria-hidden="true">{saved ? '♥' : '♡'}</span>} />
         {error && <span role="alert" className="sr-only">{error}</span>}
       </>
     );
   }
   return (
-    <span className="mvp-fav-control">
-      <button type="button" className="quiet-button mvp-fav-button" aria-pressed={saved} aria-label={label}
+    <span className="sc-favorite-control">
+      <Button type="button" variant="quiet" size="sm" className="sc-favorite-button" pressed={saved} aria-label={label}
         disabled={pending || Boolean(ownerId && favorites.isPending) || unavailable} onClick={toggle}>
         <span aria-hidden="true">{saved ? '♥' : '♡'}</span> {saved ? 'W ulubionych' : 'Zapisz materiał'}
-      </button>
+      </Button>
       {unavailable && <small>Ulubione materiały są w trakcie udostępniania.</small>}
-      {error && <small role="alert" className="mvp-acc-error">{error}</small>}
+      {error && <small role="alert" className="sc-account-error">{error}</small>}
       {loginOpen && <AccountDialog open={loginOpen} onClose={() => setLoginOpen(false)} />}
     </span>
   );

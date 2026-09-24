@@ -14,7 +14,7 @@ import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { ApiError, apiFetch, getThreads } from "../../lib/api";
 import { getNewsFeed, getPortalConfig, type NewsFeed, type PortalConfig } from "../../lib/portal";
-import type { Article, ThreadDetail } from "../../types";
+import type { ThreadDetail } from "../../types";
 import { FIXTURE_SOURCES, makeArticles } from "../showcase/fixtures";
 
 // ---------------------------------------------------------------------------
@@ -109,29 +109,6 @@ function demoFeed(key: string, pageSize: number, page: number): NewsFeed {
 }
 
 // ---------------------------------------------------------------------------
-// Rejestr materiałów — portal (Wstecz/Dalej, powiązane) odnajduje po id
-// ---------------------------------------------------------------------------
-
-const registry = new Map<number, Article>();
-
-export function registerArticles(articles: Article[]) {
-  for (const article of articles) registry.set(article.id, article);
-}
-
-export function resolveHomeArticle(id: number): Article | undefined {
-  return registry.get(id);
-}
-
-export function relatedHomeArticles(article: Article): Article[] {
-  const out: Article[] = [];
-  for (const item of registry.values()) {
-    if (item.id !== article.id && item.category === article.category) out.push(item);
-    if (out.length === 8) break;
-  }
-  return out;
-}
-
-// ---------------------------------------------------------------------------
 // Hooki
 // ---------------------------------------------------------------------------
 
@@ -154,7 +131,6 @@ export function useHomeFeed(key: string, params: FeedParams, options?: { enabled
         () => getNewsFeed(params),
         () => demoFeed(`${key}:${JSON.stringify(params)}`, params?.pageSize ?? 20, params?.page ?? 1),
       );
-      registerArticles(feed.results);
       return feed;
     },
     enabled: options?.enabled ?? true,
@@ -172,7 +148,6 @@ export function useHomeInfiniteFeed(key: string, params: Omit<NonNullable<FeedPa
         () => getNewsFeed({ ...params, page: pageParam }),
         () => demoFeed(`${key}:${JSON.stringify(params)}`, params.pageSize ?? 30, pageParam),
       );
-      registerArticles(feed.results);
       return feed;
     },
     getNextPageParam: (last) => last.next_page ?? undefined,

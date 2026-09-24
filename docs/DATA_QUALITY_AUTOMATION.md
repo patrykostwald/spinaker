@@ -6,6 +6,8 @@ Duplikat kanonicznego URL w obrębie jednego źródła dostaje flagę `canonical
 
 `SourceQualityState` przechowuje próbkę ostatnich 100 artykułów: udział dat, autorów, tekstów i prawidłowych URL. Pierwsza próbka staje się punktem odniesienia. Spadek dowolnej metryki o co najmniej 25 punktów procentowych przy próbce co najmniej 20 rekordów zapisuje sygnał dryfu. To alarm do sprawdzenia parsera, nie automatyczna naprawa.
 
+Od bety profilowanie działa też w ograniczonym cyklu co pięć minut. Przetwarza maksymalnie 200 rekordów, zachowuje trwały kursor i po dojściu do końca rozpoczyna kolejny obieg. Żaden materiał nie jest przy tym usuwany, scalany ani zmieniany. Stan można odczytać poleceniem `python manage.py data_quality_status`.
+
 Kolejne etapy, w tej kolejności:
 
 1. Audyt próbek: trwałe losowanie warstwowe według źródła i metody pozyskania, formularz oceny oraz osobne metryki błędów daty, autora, treści i pochodzenia.

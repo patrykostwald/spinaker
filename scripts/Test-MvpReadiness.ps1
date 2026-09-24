@@ -16,4 +16,4 @@ docker compose exec backend python -m pytest `
   news/test_public_figures_api.py `
   news/test_personal_context.py -q
 
-pnpm build:spin
+corepack pnpm build:spin

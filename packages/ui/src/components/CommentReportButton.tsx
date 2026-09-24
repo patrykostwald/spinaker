@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { COMMENT_REPORT_REASONS, reportComment, useOwnerId, type CommentReportReason } from '../lib/personal';
 import { AccountDialog } from './AccountDialog';
+import { Button } from '../kit';
 
 /** Widoczny, ale nienachalny przycisk zgłoszenia komentarza do moderacji. */
 export function CommentReportButton({ kind, opinionId, author }: { kind: 'article' | 'thread'; opinionId: number; author: string }) {
@@ -34,18 +35,18 @@ export function CommentReportButton({ kind, opinionId, author }: { kind: 'articl
     finally { setPending(false); }
   }
 
-  if (done) return <p role="status" className="mvp-report-done">Zgłoszenie trafiło do moderacji. Dziękujemy.</p>;
+  if (done) return <p role="status" className="sc-comment-report-done">Zgłoszenie trafiło do moderacji. Dziękujemy.</p>;
 
   return (
-    <div className="mvp-report">
+    <div className="sc-comment-report">
       {!open && (
-        <button ref={trigger} type="button" className="mvp-report-link" aria-expanded={false} aria-controls={`${uid}-form`}
+        <Button ref={trigger} type="button" variant="quiet" size="sm" className="sc-comment-report-link" aria-expanded={false} aria-controls={`${uid}-form`}
           onClick={() => (ownerId ? setOpen(true) : setLoginOpen(true))}>
           Zgłoś komentarz<span className="sr-only"> użytkownika @{author}</span>
-        </button>
+        </Button>
       )}
       {open && (
-        <form id={`${uid}-form`} className="mvp-report-form" onSubmit={submit} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
+        <form id={`${uid}-form`} className="sc-comment-report-form" onSubmit={submit} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
           <fieldset>
             <legend>Dlaczego zgłaszasz komentarz @{author}?</legend>
             {COMMENT_REPORT_REASONS.map((option, index) => (
@@ -56,14 +57,14 @@ export function CommentReportButton({ kind, opinionId, author }: { kind: 'articl
               </label>
             ))}
           </fieldset>
-          <label className="mvp-report-details">Szczegóły (opcjonalnie)
+          <label className="sc-comment-report-details">Szczegóły (opcjonalnie)
             <textarea rows={2} maxLength={500} value={details} onChange={event => setDetails(event.target.value)} />
           </label>
-          <p className="mvp-report-note">Zgłoszenie sprawdza moderacja. Nie oceniamy w ten sposób osób ani prawdziwości treści.</p>
-          {error && <p role="alert" className="mvp-acc-error">{error}</p>}
-          <div className="mvp-report-actions">
-            <button type="submit" className="quiet-button" disabled={pending}>{pending ? 'Wysyłam…' : 'Wyślij zgłoszenie'}</button>
-            <button type="button" className="quiet-button" onClick={close}>Anuluj</button>
+          <p className="sc-comment-report-note">Zgłoszenie sprawdza moderacja. Nie oceniamy w ten sposób osób ani prawdziwości treści.</p>
+          {error && <p role="alert" className="sc-account-error">{error}</p>}
+          <div className="sc-comment-report-actions">
+            <Button type="submit" variant="secondary" size="sm" loading={pending}>{pending ? 'Wysyłam…' : 'Wyślij zgłoszenie'}</Button>
+            <Button type="button" variant="quiet" size="sm" onClick={close}>Anuluj</Button>
           </div>
         </form>
       )}

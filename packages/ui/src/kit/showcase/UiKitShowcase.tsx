@@ -13,6 +13,7 @@ import * as Buttons from "./sections/Buttons";
 import * as Dropdowns from "./sections/Dropdowns";
 import * as Cards from "./sections/Cards";
 import * as Motion from "./sections/Motion";
+import * as Performance from "./sections/Performance";
 import * as Navigation from "./sections/Navigation";
 import * as Footer from "./sections/Footer";
 import * as Mobile from "./sections/Mobile";
@@ -24,7 +25,7 @@ import * as Portal from "./sections/Portal";
  */
 type SectionModule = { meta: { id: string; title: string; lead?: string }; Section: ComponentType };
 
-const SECTIONS: SectionModule[] = [Tokens, Typography, Icons, Controls, Buttons, Dropdowns, Cards, Portal, Navigation, Footer, Mobile, Motion, MorphProbe];
+const SECTIONS: SectionModule[] = [Tokens, Typography, Icons, Controls, Buttons, Dropdowns, Cards, Performance, Portal, Navigation, Footer, Mobile, Motion, MorphProbe];
 
 type Theme = "dark" | "light";
 

@@ -17,6 +17,10 @@ export interface SearchFieldProps {
   resultsCount?: number;
   id?: string;
   className?: string;
+  maxLength?: number;
+  inputType?: "search" | "url";
+  required?: boolean;
+  name?: string;
 }
 
 /**
@@ -35,6 +39,10 @@ export function SearchField({
   resultsCount,
   id,
   className,
+  maxLength,
+  inputType = "search",
+  required = false,
+  name,
 }: SearchFieldProps) {
   const autoId = useId();
   const inputId = id ?? autoId;
@@ -56,12 +64,15 @@ export function SearchField({
       </span>
       <input
         id={inputId}
-        type="search"
+        type={inputType}
         className="sc-input sc-search__input"
         value={value}
         placeholder={placeholder}
         disabled={disabled}
         aria-invalid={error || undefined}
+        maxLength={maxLength}
+        required={required}
+        name={name}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={(e) => onChange(e.target.value)}

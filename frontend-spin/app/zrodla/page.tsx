@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getPortalConfig } from '@spin-clinic/ui';
 import type { Source } from '@spin-clinic/ui';
 import { ArchiveProgress } from '@spin-clinic/ui';
+import { Button, SearchField } from '@spin-clinic/ui/kit';
 
 const IMPORTANT = /onet|wp|wirtualna polska|tvn|polsat|rmf|radio zet|gazeta\.pl|interia|reuters|pap|rzeczpospolita/i;
 
@@ -31,23 +32,23 @@ export default function SourcesPage() {
     window.location.href = `mailto:${contact}?subject=${encodeURIComponent('Sugestia źródła dla spin.clinic')}&body=${encodeURIComponent(`Proponowane źródło: ${suggestion.trim()}`)}`;
   }
 
-  return <article className="mvp-info-page mvp-sources-page">
-    <header className="mvp-info-hero"><p>KATALOG</p><h1>Źródła</h1><p>Pokazujemy źródła aktywne oraz kandydatury, które czekają na weryfikację kanału i zasad wykorzystania.</p></header>
-    <dl className="mvp-source-stats">
+  return <article className="sc-source-page">
+    <header className="sc-source-page__hero"><p>KATALOG</p><h1>Źródła</h1><p>Pokazujemy źródła aktywne oraz kandydatury, które czekają na weryfikację kanału i zasad wykorzystania.</p></header>
+    <dl className="sc-source-page__stats">
       <div><dt>W katalogu</dt><dd>{stats?.catalog_total ?? '—'}</dd></div>
       <div><dt>Aktywne</dt><dd>{stats?.active ?? '—'}</dd></div>
       <div><dt>Oczekuje na odpowiedź</dt><dd>{stats?.awaiting_response ?? '—'}</dd></div>
     </dl>
-    <label className="mvp-source-directory-search">Znajdź źródło<input value={search} onChange={event => setSearch(event.target.value)} type="search" placeholder="Nazwa źródła" /></label>
-    <div className="mvp-source-directory-grid">
+    <SearchField className="sc-source-page__search" label="Znajdź źródło" value={search} onChange={setSearch} placeholder="Nazwa źródła" />
+    <div className="sc-source-page__grid">
       {([['important', 'Największe media'], ['media', 'Media'], ['public', 'Publiczne']] as const).map(([key, label]) => <section key={key}>
         <h2>{label}<span>{groups[key].length}</span></h2>
         <ul>{groups[key].map(source => <li key={source.id}><span>{source.url ? <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a> : source.name}</span><small className={source.is_active ? 'is-active' : ''}>{source.is_active ? 'Aktywne' : 'Katalog · weryfikacja'}</small></li>)}</ul>
       </section>)}
     </div>
-    <section className="mvp-source-progress"><p>POSTĘP KATALOGU</p><h2>Jak rozwija się baza źródeł?</h2><ArchiveProgress /></section>
-    <section className="mvp-source-suggestion"><p>ROZBUDOWA BAZY</p><h2>Zaproponuj źródło</h2><p>Podaj adres strony, którą warto sprawdzić. Każde źródło weryfikujemy przed uruchomieniem.</p>
-      <form onSubmit={suggest}><input type="url" value={suggestion} onChange={event => setSuggestion(event.target.value)} placeholder="https://…" required /><button type="submit" disabled={!contact}>Wyślij sugestię</button></form>
+    <section className="sc-source-page__progress"><p>POSTĘP KATALOGU</p><h2>Jak rozwija się baza źródeł?</h2><ArchiveProgress /></section>
+    <section className="sc-source-page__suggestion"><p>ROZBUDOWA BAZY</p><h2>Zaproponuj źródło</h2><p>Podaj adres strony, którą warto sprawdzić. Każde źródło weryfikujemy przed uruchomieniem.</p>
+      <form className="sc-search-form" onSubmit={suggest}><SearchField label="Adres proponowanego źródła" value={suggestion} onChange={setSuggestion} placeholder="https://…" inputType="url" required /><Button type="submit" variant="primary" disabled={!contact}>Wyślij sugestię</Button></form>
       {!contact && <small>Formularz połączymy ze skrzynką redakcyjną po wskazaniu adresu kontaktowego.</small>}
     </section>
   </article>;

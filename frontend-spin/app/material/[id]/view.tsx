@@ -1,16 +1,18 @@
 "use client";
-import { useState } from 'react';
-import Link from 'next/link';
-import { ArticleCard, ArticleModal, ShareOnX, type Article } from '@spin-clinic/ui';
+
+import { useQuery } from '@tanstack/react-query';
+import type { Article } from '@spin-clinic/ui';
+import { MaterialSurface, usePortalApi } from '@spin-clinic/ui/kit';
+import { ArticleContext, ArticleOpinions, ShareOnX, VotingDetails, getRelatedArticles } from '@spin-clinic/ui';
 
 export default function MaterialView({ article }: { article: Article }) {
-  const [open, setOpen] = useState(true);
-  return <article className="mx-auto max-w-4xl space-y-5">
-    <Link href="/" className="text-sm text-primary">← Przeglądaj media</Link>
-    <h1 className="text-xl font-semibold">{article.title}</h1>
-    <p className="text-sm text-slate-500">{article.source.name} · Materiał źródłowy i jego kontekst</p>
-    <ShareOnX title={`${article.title} — ${article.source.name}`} path={`/material/${article.id}`} />
-    <div className="max-w-sm"><ArticleCard article={article} onSelect={() => setOpen(true)} /></div>
-    <ArticleModal article={open ? article : null} onClose={() => setOpen(false)} />
-  </article>;
+  const portal = usePortalApi();
+  const related = useQuery({ queryKey: ['article-related', article.id], queryFn: () => getRelatedArticles(article.id), staleTime: 60_000 });
+  return <MaterialSurface mode="page" article={article} related={related.data ?? []}
+    actionSlot={<ShareOnX title={`${article.title} — ${article.source.name}`} path={`/material/${article.id}`} label="Udostępnij na X" />}
+  >
+    <ArticleContext article={article} onSelect={(next) => portal.open(next)} />
+    {article.voting ? <VotingDetails article={article} /> : null}
+    <ArticleOpinions article={article} />
+  </MaterialSurface>;
 }

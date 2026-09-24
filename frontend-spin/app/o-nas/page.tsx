@@ -61,25 +61,25 @@ const DOES: Array<{ text: string; when: 'teraz' | 'w budowie' | 'zasada' }> = [
 ];
 
 function PhaseList({ items }: { items: string[] }) {
-  return <ul className="mvp-onas-list">{items.map(item => <li key={item}>{item}</li>)}</ul>;
+  return <ul className="sc-about-list">{items.map(item => <li key={item}>{item}</li>)}</ul>;
 }
 
 export default function AboutPage() {
   const contact = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 
   return (
-    <article className="mvp-onas">
-      <header className="mvp-onas-hero">
-        <p className="mvp-onas-kicker">O NAS</p>
+    <article className="sc-about">
+      <header className="sc-about-hero">
+        <p className="sc-about-kicker">O NAS</p>
         <h1>Kontekst przed opinią</h1>
-        <p className="mvp-onas-lead">
+        <p className="sc-about-lead">
           spin.clinic pomaga czytać materiały w kontekście źródeł, czasu i powiązanych publikacji. Nie mówimy, co jest prawdą.
           Pokazujemy, skąd pochodzi informacja i co ukazało się przed nią i po niej — tak, żeby można było ocenić to samodzielnie.
         </p>
-        <p className="mvp-onas-status">
+        <p className="sc-about-status">
           <span>Stan projektu</span> faza I — działające MVP w budowie. Opisujemy tu także plany; przy każdej fazie zaznaczamy, co już działa, a co dopiero powstanie.
         </p>
-        <nav className="mvp-onas-toc" aria-label="Na tej stronie">
+        <nav className="sc-about-toc" aria-label="Na tej stronie">
           <a href="#box">Box</a>
           <a href="#fazy">Trzy fazy</a>
           <a href="#redakcja">Człowiek i AI</a>
@@ -89,13 +89,13 @@ export default function AboutPage() {
         </nav>
       </header>
 
-      <section id="box" className="mvp-onas-section" aria-labelledby="onas-box">
-        <div className="mvp-onas-intro">
-          <p className="mvp-onas-kicker">IDEA</p>
+      <section id="box" className="sc-about-section" aria-labelledby="onas-box">
+        <div className="sc-about-intro">
+          <p className="sc-about-kicker">IDEA</p>
           <h2 id="onas-box">Jeden materiał — jeden box</h2>
         </div>
-        <div className="mvp-onas-split">
-          <div className="mvp-onas-prose">
+        <div className="sc-about-split">
+          <div className="sc-about-prose">
             <p>
               Box to karta pojedynczego materiału: artykułu, wywiadu, dokumentu, nagrania, wpisu albo komunikatu.
               Zawsze pokazuje źródło, datę, kategorię i odnośnik do oryginału. Nie zastępuje publikacji wydawcy — prowadzi do niej.
@@ -103,44 +103,44 @@ export default function AboutPage() {
             <p>
               Po otwarciu boxa widać inne materiały, które łączy z nim:
             </p>
-            <ul className="mvp-onas-chips" aria-label="Rodzaje powiązań">
+            <ul className="sc-about-chips" aria-label="Rodzaje powiązań">
               {RELATIONS.map(relation => <li key={relation}>{relation}</li>)}
             </ul>
             <p>
               Dzięki temu pojedynczy nagłówek nie jest oderwany od tego, co wydarzyło się wcześniej i później. Powiązanie oznacza wspólny element — nie dowód, że jeden materiał potwierdza drugi.
             </p>
-            <p className="mvp-onas-aside">
+            <p className="sc-about-aside">
               Dziś powiązania opierają się głównie na słowach, kategoriach i dacie. Łączenie po osobach, instytucjach i wydarzeniach rozwijamy.
             </p>
           </div>
-          <figure className="mvp-onas-sample">
-            <div className="mvp-onas-box">
-              <span className="mvp-onas-box-top"><span className="mvp-onas-tag">KOMUNIKAT</span><span>14.09 · 12:00</span></span>
-              <span className="mvp-onas-box-source">Urząd Miasta Przykładowego</span>
-              <strong>Komunikat w sprawie czasowego zamknięcia mostu</strong>
-              <span className="mvp-onas-box-meta">kategoria: samorząd · odnośnik do oryginału ↗</span>
+          <figure className="sc-about-sample">
+            <div className="sc-about-box">
+              <span className="sc-about-box-top"><span className="sc-about-tag">KOMUNIKAT</span><span>14.09 · 12:00</span></span>
+              <span className="sc-about-box-source">Nazwa źródła</span>
+              <strong>Tytuł materiału w bazie</strong>
+              <span className="sc-about-box-meta">kategoria: samorząd · odnośnik do oryginału ↗</span>
             </div>
-            <figcaption>Przykład układu boxa. Dane są fikcyjne.</figcaption>
+            <figcaption>Schemat układu boxa — bez przykładowej publikacji.</figcaption>
           </figure>
         </div>
       </section>
 
-      <section className="mvp-onas-section" aria-labelledby="onas-flow">
-        <div className="mvp-onas-intro">
-          <p className="mvp-onas-kicker">JAK CZYTAĆ</p>
+      <section className="sc-about-section" aria-labelledby="onas-flow">
+        <div className="sc-about-intro">
+          <p className="sc-about-kicker">JAK CZYTAĆ</p>
           <h2 id="onas-flow">Od boxa do nitki</h2>
         </div>
-        <ol className="mvp-onas-flow">
+        <ol className="sc-about-flow">
           <li>
-            <p className="mvp-onas-step">1 · BOX</p>
+            <p className="sc-about-step">1 · BOX</p>
             <h3>Materiał źródłowy</h3>
-            <div className="mvp-onas-mini-box" aria-hidden="true"><span className="mvp-onas-tag">KOMUNIKAT</span><span>14.09 · 12:00</span></div>
+            <div className="sc-about-mini-box" aria-hidden="true"><span className="sc-about-tag">KOMUNIKAT</span><span>14.09 · 12:00</span></div>
             <p>Jedna publikacja z pochodzeniem, datą i linkiem.</p>
           </li>
           <li>
-            <p className="mvp-onas-step">2 · OŚ CZASU</p>
+            <p className="sc-about-step">2 · OŚ CZASU</p>
             <h3>Powiązane materiały</h3>
-            <ol className="mvp-onas-mini-axis" aria-label="Przykładowa oś czasu">
+            <ol className="sc-about-mini-axis" aria-label="Przykładowa oś czasu">
               {TIMELINE.map(item => (
                 <li key={`${item.date}-${item.label}`} className={item.current ? 'is-current' : ''}>
                   <span>{item.date}</span>{item.label}
@@ -150,26 +150,26 @@ export default function AboutPage() {
             <p>Dobierane automatycznie, ułożone według daty publikacji. To mapa, nie ocena.</p>
           </li>
           <li>
-            <p className="mvp-onas-step">3 · NITKA DR SPINA</p>
+            <p className="sc-about-step">3 · NITKA DR SPINA</p>
             <h3>Kontekst ułożony przez człowieka</h3>
-            <ol className="mvp-onas-mini-thread" aria-label="Przykładowa nitka">
+            <ol className="sc-about-mini-thread" aria-label="Przykładowa nitka">
               {THREAD.map(item => <li key={item}>{item}</li>)}
             </ol>
             <p>Redaktor wybiera materiały, ustala kolejność, pisze opis i zatwierdza publikację.</p>
           </li>
         </ol>
-        <p className="mvp-onas-note">Krok 2 wykonuje program i nie wyciąga wniosków. Krok 3 jest pracą redakcji — tylko on trafia na stronę jako nitka Dr Spina.</p>
+        <p className="sc-about-note">Krok 2 wykonuje program i nie wyciąga wniosków. Krok 3 jest pracą redakcji — tylko on trafia na stronę jako nitka Dr Spina.</p>
       </section>
 
-      <section id="fazy" className="mvp-onas-section" aria-labelledby="onas-phases">
-        <div className="mvp-onas-intro">
-          <p className="mvp-onas-kicker">ROZWÓJ</p>
+      <section id="fazy" className="sc-about-section" aria-labelledby="onas-phases">
+        <div className="sc-about-intro">
+          <p className="sc-about-kicker">ROZWÓJ</p>
           <h2 id="onas-phases">Trzy fazy projektu</h2>
         </div>
-        <div className="mvp-onas-phases">
-          <section className="mvp-onas-phase is-current" aria-labelledby="onas-phase-1">
+        <div className="sc-about-phases">
+          <section className="sc-about-phase is-current" aria-labelledby="onas-phase-1">
             <header>
-              <p className="mvp-onas-phase-status">FAZA I · TERAZ</p>
+              <p className="sc-about-phase-status">FAZA I · TERAZ</p>
               <h3 id="onas-phase-1">Działające MVP</h3>
             </header>
             <p>Baza materiałów z legalnych i możliwych do sprawdzenia źródeł, pokazanych jako boxy, na osi czasu i w powiązaniach tematycznych.</p>
@@ -180,12 +180,12 @@ export default function AboutPage() {
               'Dr Spin — nitki układane ręcznie przez redakcję',
               'katalog źródeł i prosty kontekst po otwarciu boxa',
             ]} />
-            <p className="mvp-onas-phase-limit"><span>W trakcie udostępniania:</span> konta użytkowników, prywatne nitki, komentarze i reakcje. Wyszukiwanie po znaczeniu pozostaje planem pilotażu. Baza jest w trakcie uzupełniania i nie obejmuje wszystkich źródeł.</p>
+            <p className="sc-about-phase-limit"><span>W trakcie udostępniania:</span> konta użytkowników, prywatne nitki, komentarze i reakcje. Wyszukiwanie po znaczeniu pozostaje planem pilotażu. Baza jest w trakcie uzupełniania i nie obejmuje wszystkich źródeł.</p>
           </section>
 
-          <section className="mvp-onas-phase" aria-labelledby="onas-phase-2">
+          <section className="sc-about-phase" aria-labelledby="onas-phase-2">
             <header>
-              <p className="mvp-onas-phase-status">FAZA II · NASTĘPNY ETAP</p>
+              <p className="sc-about-phase-status">FAZA II · NASTĘPNY ETAP</p>
               <h3 id="onas-phase-2">Społeczność i własny kontekst</h3>
             </header>
             <p>Konto pozwoli zachować swoją pracę z materiałami i wracać do obserwowanych tematów.</p>
@@ -194,12 +194,12 @@ export default function AboutPage() {
               'własne nitki kontekstowe i własny wybór źródeł',
               'komentarze i dyskretne reakcje — o przydatności materiału, nie o ludziach',
             ]} />
-            <p className="mvp-onas-phase-limit"><span>Nadal bez:</span> automatycznej publikacji i automatycznych ocen.</p>
+            <p className="sc-about-phase-limit"><span>Nadal bez:</span> automatycznej publikacji i automatycznych ocen.</p>
           </section>
 
-          <section className="mvp-onas-phase" aria-labelledby="onas-phase-3">
+          <section className="sc-about-phase" aria-labelledby="onas-phase-3">
             <header>
-              <p className="mvp-onas-phase-status">FAZA III · PLAN</p>
+              <p className="sc-about-phase-status">FAZA III · PLAN</p>
               <h3 id="onas-phase-3">Asystent redakcyjny Dr Spin</h3>
             </header>
             <p>Asystent redakcyjny oparty na modelach open-weight. Zaczynamy od usług zewnętrznych:</p>
@@ -211,17 +211,17 @@ export default function AboutPage() {
             <p>
               Z czasem chcemy uniezależniać się od zewnętrznych dostawców i uruchamiać modele open-weight na własnej infrastrukturze — po sprawdzeniu jakości, licencji i kosztów.
             </p>
-            <p className="mvp-onas-phase-limit"><span>Stan:</span> połączenia są przygotowane i domyślnie wyłączone. Włączymy je dopiero po pilotażu na kilkudziesięciu ręcznie sprawdzonych materiałach.</p>
+            <p className="sc-about-phase-limit"><span>Stan:</span> połączenia są przygotowane i domyślnie wyłączone. Włączymy je dopiero po pilotażu na kilkudziesięciu ręcznie sprawdzonych materiałach.</p>
           </section>
         </div>
       </section>
 
-      <section id="redakcja" className="mvp-onas-section" aria-labelledby="onas-editorial">
-        <div className="mvp-onas-intro">
-          <p className="mvp-onas-kicker">REDAKCJA</p>
+      <section id="redakcja" className="sc-about-section" aria-labelledby="onas-editorial">
+        <div className="sc-about-intro">
+          <p className="sc-about-kicker">REDAKCJA</p>
           <h2 id="onas-editorial">Decyduje człowiek. AI pomaga szukać.</h2>
         </div>
-        <div className="mvp-onas-columns">
+        <div className="sc-about-columns">
           <div>
             <h3>Co robi redaktor</h3>
             <PhaseList items={[
@@ -239,7 +239,7 @@ export default function AboutPage() {
               'zaproponować szkic z cytatami, linkami i brakami danych',
             ]} />
           </div>
-          <div className="mvp-onas-limits">
+          <div className="sc-about-limits">
             <h3>Ograniczenia, o których mówimy wprost</h3>
             <PhaseList items={[
               'model może przeoczyć materiał albo źle połączyć zdarzenia',
@@ -251,12 +251,12 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section id="technologia" className="mvp-onas-section" aria-labelledby="onas-tech">
-        <div className="mvp-onas-intro">
-          <p className="mvp-onas-kicker">TECHNOLOGIA</p>
+      <section id="technologia" className="sc-about-section" aria-labelledby="onas-tech">
+        <div className="sc-about-intro">
+          <p className="sc-about-kicker">TECHNOLOGIA</p>
           <h2 id="onas-tech">Jak to działa — po ludzku</h2>
         </div>
-        <dl className="mvp-onas-tech">
+        <dl className="sc-about-tech">
           {TECH.map(item => (
             <div key={item.question}>
               <dt>{item.question}</dt>
@@ -269,24 +269,24 @@ export default function AboutPage() {
         </dl>
       </section>
 
-      <section id="granice" className="mvp-onas-section" aria-labelledby="onas-scope">
-        <div className="mvp-onas-intro">
-          <p className="mvp-onas-kicker">GRANICE</p>
+      <section id="granice" className="sc-about-section" aria-labelledby="onas-scope">
+        <div className="sc-about-intro">
+          <p className="sc-about-kicker">GRANICE</p>
           <h2 id="onas-scope">Co portal robi, a czego nie robi</h2>
         </div>
-        <div className="mvp-onas-scope">
+        <div className="sc-about-scope">
           <div>
             <h3>Robi</h3>
-            <ul className="mvp-onas-list is-yes">
+            <ul className="sc-about-list is-yes">
               {DOES.map(item => (
-                <li key={item.text}>{item.text} <span className={`mvp-onas-when is-${item.when === 'teraz' ? 'now' : 'next'}`}>{item.when}</span></li>
+                <li key={item.text}>{item.text} <span className={`sc-about-when is-${item.when === 'teraz' ? 'now' : 'next'}`}>{item.when}</span></li>
               ))}
             </ul>
-            <p className="mvp-onas-aside">„Teraz” — działa w MVP. „W budowie” — rozwijamy w fazie I. „Zasada” — obowiązuje każdą przyszłą funkcję.</p>
+            <p className="sc-about-aside">„Teraz” — działa w MVP. „W budowie” — rozwijamy w fazie I. „Zasada” — obowiązuje każdą przyszłą funkcję.</p>
           </div>
           <div>
             <h3>Nie robi</h3>
-            <ul className="mvp-onas-list is-no">
+            <ul className="sc-about-list is-no">
               <li>nie ocenia osób</li>
               <li>nie oznacza treści jako „prawda” lub „fałsz”</li>
               <li>nie publikuje niczego automatycznie</li>
@@ -298,46 +298,46 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section id="dalej" className="mvp-onas-section" aria-labelledby="onas-next">
-        <div className="mvp-onas-intro">
-          <p className="mvp-onas-kicker">DALEJ</p>
+      <section id="dalej" className="sc-about-section" aria-labelledby="onas-next">
+        <div className="sc-about-intro">
+          <p className="sc-about-kicker">DALEJ</p>
           <h2 id="onas-next">Sprawdź źródła i zasady</h2>
         </div>
-        <ul className="mvp-onas-next">
+        <ul className="sc-about-next">
           <li>
             <Link href="/zrodla">
-              <span className="mvp-onas-step">ŹRÓDŁA</span>
+              <span className="sc-about-step">ŹRÓDŁA</span>
               <strong>Jakie źródła są w katalogu</strong>
               <span>Które są aktywne, a które czekają na weryfikację kanału i zasad wykorzystania.</span>
-              <span className="mvp-onas-arrow" aria-hidden="true">→</span>
+              <span className="sc-about-arrow" aria-hidden="true">→</span>
             </Link>
           </li>
           <li>
             <Link href="/zasady-korzystania">
-              <span className="mvp-onas-step">ZASADY</span>
+              <span className="sc-about-step">ZASADY</span>
               <strong>Zasady korzystania</strong>
               <span>Jak traktujemy materiały, wpisy z platform i redakcyjne nitki.</span>
-              <span className="mvp-onas-arrow" aria-hidden="true">→</span>
+              <span className="sc-about-arrow" aria-hidden="true">→</span>
             </Link>
           </li>
           <li>
             {contact ? (
               <a href={`mailto:${contact}`}>
-                <span className="mvp-onas-step">KONTAKT</span>
+                <span className="sc-about-step">KONTAKT</span>
                 <strong>Napisz do redakcji</strong>
                 <span>Błąd w materiale, propozycja źródła albo pytanie o metodę: {contact}</span>
-                <span className="mvp-onas-arrow" aria-hidden="true">→</span>
+                <span className="sc-about-arrow" aria-hidden="true">→</span>
               </a>
             ) : (
-              <div className="mvp-onas-next-static">
-                <span className="mvp-onas-step">KONTAKT</span>
+              <div className="sc-about-next-static">
+                <span className="sc-about-step">KONTAKT</span>
                 <strong>Kontakt z redakcją</strong>
                 <span>Adres kontaktowy opublikujemy przed publicznym uruchomieniem. Źródło możesz już zaproponować na stronie <Link href="/zrodla">Źródła</Link>.</span>
               </div>
             )}
           </li>
         </ul>
-        <p className="mvp-onas-updated">
+        <p className="sc-about-updated">
           Ostatnia zmiana opisu: <time dateTime={LAST_UPDATED.iso}>{LAST_UPDATED.label}</time> · <Link href="/polityka-prywatnosci">Prywatność i cookies</Link> · <Link href="/wsparcie">Wsparcie projektu</Link>
         </p>
       </section>

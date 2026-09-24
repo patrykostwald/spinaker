@@ -5,14 +5,12 @@
  * treść — nasza: pasek górny (data · temat dnia) → szapka → pasek tematów → ilustracja autorska →
  * rząd czterech najnowszych → hero (materiał tematu dnia + oś czasu) → „Wszystkie źródła”
  * (mozaika + lista 1–5) → Dr Spin → Przekaz dnia → Baza → pas „Twój przegląd” → stopka.
- * Jeden `PortalProvider` w trybie `path`: klik w kartę otwiera materiał morfingiem i wpisuje
- * `/material/<id>` przez `pushState`; odświeżenie trafia na istniejącą stronę serwerową.
+ * Portal (`PortalProvider` w trybie `path`), szapka i stopka są globalne — `app/providers.tsx`
+ * i `app/layout.tsx`; klik w kartę otwiera materiał morfingiem i wpisuje `/material/<id>`.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { PortalLayer } from "../portal/PortalLayer";
-import { PortalProvider } from "../portal/PortalProvider";
 import type { Article } from "../../types";
 import { HomeBand } from "./HomeBand";
 import { HomeBaza, type StripDraft } from "./HomeBaza";
@@ -23,8 +21,7 @@ import { HomeLead, rowTime, type LeadRow } from "./HomeLead";
 import { HomeMosaic } from "./HomeMosaic";
 import { HomePrzekazDnia } from "./HomePrzekazDnia";
 import { HomeTicker } from "./HomeTicker";
-import { HomeFooter } from "./SiteChrome";
-import { relatedHomeArticles, resolveHomeArticle, useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed, useTopicOfDay } from "./data";
+import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed, useTopicOfDay } from "./data";
 
 function DemoBanner() {
   const demo = useDemoMode();
@@ -96,7 +93,7 @@ export function HomePage() {
   );
 
   return (
-    <PortalProvider historyMode="path">
+    <>
       <div className="sc-home">
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <TopBar topicLabel={topicReady ? topic.data?.label ?? null : null} />
@@ -123,8 +120,6 @@ export function HomePage() {
           }}
         />
       </div>
-      <HomeFooter />
-      <PortalLayer resolveArticle={resolveHomeArticle} relatedFor={relatedHomeArticles} />
-    </PortalProvider>
+    </>
   );
 }

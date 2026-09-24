@@ -1,52 +1,29 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import type { ThreadDetail } from '../types';
-import { EmptyMaterialSlot, MaterialBox } from './MaterialBox';
-import { MaterialStrip } from './MaterialStrip';
-import { ThreadFavoriteButton } from './ThreadFavoriteButton';
+"use client";
 
-const PREVIEW_TYPES = ['WYWIAD', 'DOKUMENT URZĘDOWY', 'REPORTAŻ', 'ŚLEDZTWO', 'FILM'];
+import type { ThreadDetail } from "../types";
+import { NewsCard } from "../kit";
+import { ThreadFavoriteButton } from "./ThreadFavoriteButton";
 
+/** Tylko opublikowana nitka redakcyjna pojawia się w sekcji Dr Spin. */
 export function DrSpin({ thread }: { thread: ThreadDetail | null }) {
   const published = thread?.published ? thread : null;
   const anchorArticle = published?.items[0]?.article;
+  if (!published || !anchorArticle) return null;
+
   return (
-    <section className="mvp-section mvp-dr-spin" aria-label="Dr Spin">
-      <header className="mvp-strip-heading">
+    <section className="sc-dr-spin" aria-label="Dr Spin">
+      <header className="sc-dr-spin__head">
         <div>
-          <p className="mvp-editorial-kicker">SPIN.CLINIC · REDAKCJA</p>
+          <p>SPIN.CLINIC · REDAKCJA</p>
           <h2>Dr Spin</h2>
         </div>
-        <div className="mvp-dr-spin-actions">
-          <p>{published ? 'Dzisiejsza nitka redakcyjna' : 'Codzienna nitka redakcyjna'}</p>
-          {published && <ThreadFavoriteButton thread={published} />}
-        </div>
+        <div><p>Dzisiejsza nitka redakcyjna</p><ThreadFavoriteButton thread={published} /></div>
       </header>
-      <div className="mvp-dr-spin-track">
-        {published ? (
-          <Link href={`/thread/${published.slug}`} className="mvp-dr-spin-anchor">
-            <span className="mvp-dr-spin-anchor-media">{anchorArticle?.image_url && <Image unoptimized src={anchorArticle.image_url} alt="" fill sizes="188px" className="mvp-dr-spin-anchor-image" />}</span>
-            <span className="mvp-dr-spin-anchor-copy">
-              <span>GŁÓWNY MATERIAŁ</span>
-              <strong>{anchorArticle?.title ?? published.title}</strong>
-              <small>{published.description || 'Otwórz nitkę redakcyjną →'}</small>
-            </span>
-          </Link>
-        ) : (
-          <div className="mvp-dr-spin-anchor mvp-dr-spin-anchor-placeholder" role="img" aria-label="Główny materiał Dr Spina — miejsce na post lub materiał otwierający">
-            <span className="mvp-dr-spin-anchor-media" aria-hidden="true" />
-            <span className="mvp-dr-spin-anchor-copy">
-              <span>GŁÓWNY MATERIAŁ</span>
-              <strong>POST LUB MATERIAŁ OTWIERAJĄCY</strong>
-              <small>Tu Dr Spin krótko wyjaśni, co sprawdzamy i dlaczego.</small>
-            </span>
-          </div>
-        )}
-        <MaterialStrip label="Dr Spin — materiały wyjaśniające" height="sm">
-          {published && published.items.length > 1
-            ? published.items.slice(1, 6).map((item) => <MaterialBox key={item.id} article={item.article} />)
-            : PREVIEW_TYPES.map((type, index) => <EmptyMaterialSlot key={type} index={index + 2} label={type} />)}
-        </MaterialStrip>
+      <div className="sc-dr-spin__layout">
+        <NewsCard article={anchorArticle} href={`/thread/${published.slug}`} size="large" headingLevel={3} showDescription action={<span className="sc-dr-spin__thread-label">Nitka redakcyjna</span>} />
+        {published.items.length > 1 ? <div className="sc-dr-spin__related sc-strip-bleed" aria-label="Dr Spin — materiały wyjaśniające">
+          {published.items.slice(1, 6).map(item => <NewsCard key={item.id} article={item.article} size="compact" headingLevel={3} />)}
+        </div> : null}
       </div>
     </section>
   );

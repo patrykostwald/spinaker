@@ -13,7 +13,7 @@
  */
 
 import { motion, type Transition } from "framer-motion";
-import { useEffect, useState, type Ref, type RefObject } from "react";
+import { useEffect, useState, type ReactNode, type Ref, type RefObject } from "react";
 import { ArrowUpRightIcon } from "./icons/ArrowUpRightIcon";
 import { CloseIcon } from "./icons/CloseIcon";
 import { HeartIcon } from "./icons/HeartIcon";
@@ -46,6 +46,10 @@ export type MaterialSurfaceProps = {
   onSettled?: () => void;
   dragEnabled?: boolean;
   drag?: DragDismiss;
+  /** Akcje zależne od konta aplikacji, np. udostępnienie na podłączone X. */
+  actionSlot?: ReactNode;
+  /** Dane kontekstowe strony materiału. Powierzchnia portalu może pozostać lekka. */
+  children?: ReactNode;
 };
 
 function computeTargetBox() {
@@ -84,13 +88,14 @@ export function MaterialSurface({
   onSettled,
   dragEnabled,
   drag,
+  actionSlot,
+  children,
 }: MaterialSurfaceProps) {
   const m = useMotionTokens();
   const target = useTargetBox();
   const isOverlay = mode === "overlay";
   const src = article.image_url?.trim();
   const [favourite, setFavourite] = useState(false);
-  const [shared, setShared] = useState(false);
 
   const overlayStyle = isOverlay
     ? {
@@ -195,17 +200,7 @@ export function MaterialSurface({
               onClick={() => setFavourite((v) => !v)}
               iconStart={<HeartIcon filled={favourite} />}
             />
-            <Button
-              shape="icon"
-              variant="secondary"
-              size="md"
-              aria-label={shared ? "Skopiowano odnośnik" : "Udostępnij"}
-              onClick={() => {
-                setShared(true);
-                window.setTimeout(() => setShared(false), 1600);
-              }}
-              iconStart={<ShareIcon />}
-            />
+            {actionSlot ?? <Button shape="icon" variant="secondary" size="md" aria-label="Udostępnianie wymaga podłączonego konta X" disabled iconStart={<ShareIcon />} />}
           </div>
 
           {related.length > 0 ? (
@@ -220,6 +215,7 @@ export function MaterialSurface({
               </div>
             </div>
           ) : null}
+          {children ? <div className="sc-surface__context">{children}</div> : null}
         </div>
       </div>
     </>

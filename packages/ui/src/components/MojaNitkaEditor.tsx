@@ -22,6 +22,7 @@ import {
   type PersonalContextThread,
 } from '../lib/personal';
 import type { Article } from '../types';
+import { Button } from '../kit';
 import { SignedOutPanel } from './MojeKonto';
 
 type Draft = { title: string; description: string; keywords: string[]; categories: string[]; sourceIds: number[]; articles: PersonalArticleRef[] };
@@ -46,7 +47,7 @@ const serialize = (draft: Draft) => JSON.stringify({ ...draft, articles: draft.a
 
 export function MojaNitkaEditor({ threadId }: { threadId?: number }) {
   const { account, ownerId } = useOwnerId();
-  if (account.isPending) return <p role="status" className="mvp-acc-empty">Sprawdzam, czy jesteś zalogowany…</p>;
+  if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam, czy jesteś zalogowany…</p>;
   if (!ownerId) return <SignedOutPanel title="Zaloguj się, aby ułożyć własną nitkę" />;
   return <Editor key={threadId ?? 'new'} ownerId={ownerId} threadId={threadId} />;
 }
@@ -188,14 +189,14 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Nie udało się usunąć nitki.'); setPending(false); }
   }
 
-  if (threadId && thread.isPending) return <p role="status" className="mvp-acc-empty">Ładuję nitkę…</p>;
+  if (threadId && thread.isPending) return <p role="status" className="sc-account-empty">Ładuję nitkę…</p>;
   if (threadId && thread.isError) {
     return (
-      <section className="mvp-acc">
-        <p className="mvp-acc-kicker">MOJA NITKA KONTEKSTOWA</p>
+      <section className="sc-account">
+        <p className="sc-account-kicker">MOJA NITKA KONTEKSTOWA</p>
         <h1>{isUnavailable(thread.error) ? 'Nie znaleziono nitki' : 'Nie udało się pobrać nitki'}</h1>
-        <p className="mvp-acc-empty">{isUnavailable(thread.error) ? 'Ta nitka nie istnieje, została usunięta albo prywatne nitki nie są jeszcze dostępne na tym serwerze.' : 'Spróbuj ponownie za chwilę.'}</p>
-        <Link href="/konto" className="quiet-button">← Moje konto</Link>
+        <p className="sc-account-empty">{isUnavailable(thread.error) ? 'Ta nitka nie istnieje, została usunięta albo prywatne nitki nie są jeszcze dostępne na tym serwerze.' : 'Spróbuj ponownie za chwilę.'}</p>
+        <Button href="/konto" variant="quiet" size="sm">← Moje konto</Button>
       </section>
     );
   }
@@ -203,41 +204,41 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   const selectedSources = sources.filter(source => draft.sourceIds.includes(source.id));
 
   return (
-    <form className="mvp-acc mvp-acc-editor" onSubmit={save} aria-labelledby={`${uid}-title`}>
-      <header className="mvp-acc-head">
-        <Link href="/konto#moje-nitki" className="mvp-acc-back">← Moje konto</Link>
-        <p className="mvp-acc-kicker">MOJA NITKA KONTEKSTOWA</p>
+    <form className="sc-account sc-account-editor" onSubmit={save} aria-labelledby={`${uid}-title`}>
+      <header className="sc-account-head">
+        <Link href="/konto#moje-nitki" className="sc-account-back">← Moje konto</Link>
+        <p className="sc-account-kicker">MOJA NITKA KONTEKSTOWA</p>
         <h1 id={`${uid}-title`}>{threadId ? draft.title || 'Nitka bez tytułu' : 'Nowa nitka'}</h1>
-        <p className="mvp-acc-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie jest publikowana, nie jest nitką Dr Spina i nie układa jej AI — kolejność ustalasz sam.</p>
+        <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie jest publikowana, nie jest nitką Dr Spina i nie układa jej AI — kolejność ustalasz sam.</p>
       </header>
 
-      <section className="mvp-acc-section" aria-labelledby={`${uid}-basics`}>
+      <section className="sc-account-section" aria-labelledby={`${uid}-basics`}>
         <header><h2 id={`${uid}-basics`}>Opis</h2></header>
-        <div className="mvp-acc-fields">
-          <label><span className="mvp-acc-label-row">Tytuł <span className="mvp-acc-req">(wymagany)</span></span>
+        <div className="sc-account-fields">
+          <label><span className="sc-account-label-row">Tytuł <span className="sc-account-req">(wymagany)</span></span>
             <input value={draft.title} maxLength={THREAD_LIMITS.title} required onChange={event => update({ title: event.target.value })} />
             <small>{draft.title.length}/{THREAD_LIMITS.title}</small>
           </label>
-          <label><span className="mvp-acc-label-row">Opis <span>(opcjonalnie)</span></span>
+          <label><span className="sc-account-label-row">Opis <span>(opcjonalnie)</span></span>
             <textarea rows={3} value={draft.description} maxLength={THREAD_LIMITS.description} onChange={event => update({ description: event.target.value })} />
             <small>{draft.description.length}/{THREAD_LIMITS.description} · Notatka dla Ciebie, np. co chcesz porównać.</small>
           </label>
         </div>
       </section>
 
-      <section className="mvp-acc-section" aria-labelledby={`${uid}-filters`}>
+      <section className="sc-account-section" aria-labelledby={`${uid}-filters`}>
         <header><h2 id={`${uid}-filters`}>Hasła, kategorie i źródła</h2></header>
-        <p className="mvp-acc-hint">Pomagają odnaleźć materiały w Bazie. Same nie dodają niczego do nitki.</p>
-        <div className="mvp-acc-fields">
-          <div className="mvp-acc-field">
+        <p className="sc-account-hint">Pomagają odnaleźć materiały w Bazie. Same nie dodają niczego do nitki.</p>
+        <div className="sc-account-fields">
+          <div className="sc-account-field">
             <label htmlFor={`${uid}-keyword`}>Hasła</label>
-            <div className="mvp-acc-inline">
+            <div className="sc-account-inline">
               <input id={`${uid}-keyword`} value={keywordInput} onChange={event => setKeywordInput(event.target.value)} onKeyDown={onKeywordKey} placeholder="np. most miejski" aria-describedby={`${uid}-keyword-help`} />
-              <button type="button" className="quiet-button" onClick={addKeyword} disabled={!keywordInput.trim()}>Dodaj hasło</button>
+              <Button type="button" variant="quiet" size="sm" onClick={addKeyword} disabled={!keywordInput.trim()}>Dodaj hasło</Button>
             </div>
             <small id={`${uid}-keyword-help`}>Enter lub przecinek dodaje hasło · {query.length}/{THREAD_LIMITS.query} znaków</small>
             {draft.keywords.length > 0 && (
-              <ul className="mvp-acc-chips" aria-label="Wybrane hasła">
+              <ul className="sc-account-chips" aria-label="Wybrane hasła">
                 {draft.keywords.map(keyword => (
                   <li key={keyword}>{keyword}<button type="button" aria-label={`Usuń hasło ${keyword}`} onClick={() => update({ keywords: draft.keywords.filter(item => item !== keyword) })}>×</button></li>
                 ))}
@@ -245,11 +246,11 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
             )}
           </div>
 
-          <fieldset className="mvp-acc-field">
+          <fieldset className="sc-account-field">
             <legend>Kategorie {draft.categories.length > 0 && <span>· wybrano {draft.categories.length}</span>}</legend>
-            {config.isPending && <p role="status" className="mvp-acc-hint">Ładuję kategorie…</p>}
-            {config.isError && <p className="mvp-acc-hint">Nie udało się pobrać listy kategorii.</p>}
-            <div className="mvp-acc-pills">
+            {config.isPending && <p role="status" className="sc-account-hint">Ładuję kategorie…</p>}
+            {config.isError && <p className="sc-account-hint">Nie udało się pobrać listy kategorii.</p>}
+            <div className="sc-account-pills">
               {(config.data?.categories ?? []).map(category => (
                 <label key={category.value} className={draft.categories.includes(category.value) ? 'is-on' : ''}>
                   <input type="checkbox" checked={draft.categories.includes(category.value)} onChange={() => update({ categories: toggle(draft.categories, category.value) })} />
@@ -259,53 +260,53 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
             </div>
           </fieldset>
 
-          <fieldset className="mvp-acc-field">
+          <fieldset className="sc-account-field">
             <legend>Źródła {draft.sourceIds.length > 0 && <span>· wybrano {draft.sourceIds.length}</span>}</legend>
             {selectedSources.length > 0 && (
-              <ul className="mvp-acc-chips" aria-label="Wybrane źródła">
+              <ul className="sc-account-chips" aria-label="Wybrane źródła">
                 {selectedSources.map(source => (
                   <li key={source.id}>{source.name}<button type="button" aria-label={`Usuń źródło ${source.name}`} onClick={() => update({ sourceIds: draft.sourceIds.filter(id => id !== source.id) })}>×</button></li>
                 ))}
               </ul>
             )}
-            <label className="mvp-acc-sublabel">Znajdź źródło
+            <label className="sc-account-sublabel">Znajdź źródło
               <input type="search" value={sourceFilter} onChange={event => setSourceFilter(event.target.value)} placeholder="Nazwa źródła" />
             </label>
-            <div className="mvp-acc-source-list">
+            <div className="sc-account-source-list">
               {visibleSources.map(source => (
                 <label key={source.id}>
                   <input type="checkbox" checked={draft.sourceIds.includes(source.id)} onChange={() => update({ sourceIds: toggle(draft.sourceIds, source.id) })} />
                   {source.name}
                 </label>
               ))}
-              {config.isSuccess && !visibleSources.length && <p className="mvp-acc-hint">Brak źródeł o tej nazwie.</p>}
+              {config.isSuccess && !visibleSources.length && <p className="sc-account-hint">Brak źródeł o tej nazwie.</p>}
             </div>
           </fieldset>
         </div>
       </section>
 
-      <section className="mvp-acc-section" aria-labelledby={`${uid}-materials`}>
+      <section className="sc-account-section" aria-labelledby={`${uid}-materials`}>
         <header><h2 id={`${uid}-materials`}>Materiały w nitce <span>{draft.articles.length}</span></h2></header>
         {draft.articles.length === 0 ? (
-          <p className="mvp-acc-empty">Nitka nie ma jeszcze materiałów. Znajdź je poniżej w Bazie albo dodaj z ulubionych.</p>
+          <p className="sc-account-empty">Nitka nie ma jeszcze materiałów. Znajdź je poniżej w Bazie albo dodaj z ulubionych.</p>
         ) : (
-          <ol className="mvp-acc-items" aria-label="Kolejność materiałów w nitce">
+          <ol className="sc-account-items" aria-label="Kolejność materiałów w nitce">
             {draft.articles.map((article, index) => (
               <li key={article.id}>
-                <span className="mvp-acc-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-                <div className="mvp-acc-item-copy">
-                  <p className="mvp-acc-meta">
-                    <span className="mvp-acc-tag">{categoryLabel(article.category)}</span>
+                <span className="sc-account-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                <div className="sc-account-item-copy">
+                  <p className="sc-account-meta">
+                    <span className="sc-account-tag">{categoryLabel(article.category)}</span>
                     {article.published_date ? formatDateTimePl(article.published_date) : 'data publikacji nieznana'}
                     {article.source_name && ` · ${article.source_name}`}
                   </p>
                   <strong>{article.title}</strong>
-                  <p className="mvp-acc-links">
+                  <p className="sc-account-links">
                     <a href={article.url} target="_blank" rel="noopener noreferrer">Otwórz materiał ↗<span className="sr-only"> (oryginał, nowa karta)</span></a>
                     <Link href={`/material/${article.id}`}>Kontekst materiału</Link>
                   </p>
                 </div>
-                <div className="mvp-acc-item-actions">
+                <div className="sc-account-item-actions">
                   <button type="button" ref={node => { if (node) controls.current.set(`${article.id}:-1`, node); }} aria-label={`Przesuń wcześniej: ${article.title}`} aria-disabled={index === 0} onClick={() => move(article.id, -1)}>↑</button>
                   <button type="button" ref={node => { if (node) controls.current.set(`${article.id}:1`, node); }} aria-label={`Przesuń dalej: ${article.title}`} aria-disabled={index === draft.articles.length - 1} onClick={() => move(article.id, 1)}>↓</button>
                   <button type="button" ref={node => { if (node) controls.current.set(`${article.id}:remove`, node); }} aria-label={`Usuń z nitki: ${article.title}`} onClick={() => remove(article.id)}>✕</button>
@@ -315,47 +316,47 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           </ol>
         )}
 
-        <div className="mvp-acc-finder">
-          <div className="mvp-acc-field">
+        <div className="sc-account-finder">
+          <div className="sc-account-field">
             <label htmlFor={`${uid}-search`}>Dodaj materiał z Bazy</label>
-            <div className="mvp-acc-inline">
+            <div className="sc-account-inline">
               <input id={`${uid}-search`} type="search" value={search} onChange={event => setSearch(event.target.value)}
                 onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setSearchTerm(search.trim()); } }} placeholder="Tytuł, hasło, osoba…" />
-              <button type="button" className="quiet-button" onClick={() => setSearchTerm(search.trim())} disabled={search.trim().length < 2}>Szukaj</button>
-              {draft.keywords.length > 0 && <button type="button" className="quiet-button" onClick={() => { setSearch(draft.keywords.join(' ')); setSearchTerm(draft.keywords.join(' ')); }}>Szukaj po hasłach nitki</button>}
+              <Button type="button" variant="quiet" size="sm" onClick={() => setSearchTerm(search.trim())} disabled={search.trim().length < 2}>Szukaj</Button>
+              {draft.keywords.length > 0 && <Button type="button" variant="quiet" size="sm" onClick={() => { setSearch(draft.keywords.join(' ')); setSearchTerm(draft.keywords.join(' ')); }}>Szukaj po hasłach nitki</Button>}
             </div>
           </div>
-          {results.isFetching && <p role="status" className="mvp-acc-hint">Szukam w Bazie…</p>}
-          {results.isError && <p role="alert" className="mvp-acc-hint">Nie udało się przeszukać Bazy.</p>}
-          {results.isSuccess && !results.data.results.length && <p className="mvp-acc-hint">Brak materiałów dla „{searchTerm}”.</p>}
+          {results.isFetching && <p role="status" className="sc-account-hint">Szukam w Bazie…</p>}
+          {results.isError && <p role="alert" className="sc-account-hint">Nie udało się przeszukać Bazy.</p>}
+          {results.isSuccess && !results.data.results.length && <p className="sc-account-hint">Brak materiałów dla „{searchTerm}”.</p>}
           {results.isSuccess && results.data.results.length > 0 && (
-            <ul className="mvp-acc-candidates" aria-label="Wyniki wyszukiwania">
+            <ul className="sc-account-candidates" aria-label="Wyniki wyszukiwania">
               {results.data.results.map(article => (
                 <li key={article.id}>
                   <div>
-                    <p className="mvp-acc-meta"><span className="mvp-acc-tag">{categoryLabel(article.category)}</span> {article.source?.name} · {formatDateTimePl(article.published_date, article.date_precision)}</p>
+                    <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(article.category)}</span> {article.source?.name} · {formatDateTimePl(article.published_date, article.date_precision)}</p>
                     <strong>{article.title}</strong>
                   </div>
-                  <button type="button" className="quiet-button" disabled={selectedIds.has(article.id)} onClick={() => addArticle(toRef(article))}>
+                  <Button type="button" variant="quiet" size="sm" disabled={selectedIds.has(article.id)} onClick={() => addArticle(toRef(article))}>
                     {selectedIds.has(article.id) ? 'W nitce' : 'Dodaj'}<span className="sr-only">: {article.title}</span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
           )}
           {(favorites.data?.results.length ?? 0) > 0 && (
-            <details className="mvp-acc-from-favorites">
+            <details className="sc-account-from-favorites">
               <summary>Dodaj z ulubionych materiałów ({favorites.data!.results.length})</summary>
-              <ul className="mvp-acc-candidates">
+              <ul className="sc-account-candidates">
                 {favorites.data!.results.map(row => (
                   <li key={row.id}>
                     <div>
-                      <p className="mvp-acc-meta"><span className="mvp-acc-tag">{categoryLabel(row.article.category)}</span> {row.article.published_date ? formatDateTimePl(row.article.published_date) : ''}</p>
+                      <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(row.article.category)}</span> {row.article.published_date ? formatDateTimePl(row.article.published_date) : ''}</p>
                       <strong>{row.article.title}</strong>
                     </div>
-                    <button type="button" className="quiet-button" disabled={selectedIds.has(row.article.id)} onClick={() => addArticle(row.article)}>
+                    <Button type="button" variant="quiet" size="sm" disabled={selectedIds.has(row.article.id)} onClick={() => addArticle(row.article)}>
                       {selectedIds.has(row.article.id) ? 'W nitce' : 'Dodaj'}<span className="sr-only">: {row.article.title}</span>
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -364,19 +365,19 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         </div>
       </section>
 
-      <div className="mvp-acc-savebar">
+      <div className="sc-account-savebar">
         <div role="status" aria-live="polite">
-          {error ? <p className="mvp-acc-error">{error}</p> : notice ? <p>{notice}</p> : <p>{dirty ? 'Masz niezapisane zmiany.' : threadId ? 'Wszystkie zmiany zapisane.' : 'Nowa nitka nie jest jeszcze zapisana.'}</p>}
+          {error ? <p className="sc-account-error">{error}</p> : notice ? <p>{notice}</p> : <p>{dirty ? 'Masz niezapisane zmiany.' : threadId ? 'Wszystkie zmiany zapisane.' : 'Nowa nitka nie jest jeszcze zapisana.'}</p>}
         </div>
-        <div className="mvp-acc-actions">
-          <button type="submit" className="mvp-acc-primary" disabled={pending}>{pending ? 'Zapisuję…' : 'Zapisz nitkę'}</button>
+        <div className="sc-account-actions">
+          <Button type="submit" variant="primary" disabled={pending}>{pending ? 'Zapisuję…' : 'Zapisz nitkę'}</Button>
           {threadId && (confirmDelete ? (
-            <span className="mvp-acc-confirm">
-              <button type="button" className="quiet-button" disabled={pending} onClick={removeThread}>Potwierdź usunięcie nitki</button>
-              <button type="button" className="quiet-button" onClick={() => setConfirmDelete(false)}>Anuluj</button>
+            <span className="sc-account-confirm">
+              <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={removeThread}>Potwierdź usunięcie nitki</Button>
+              <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmDelete(false)}>Anuluj</Button>
             </span>
           ) : (
-            <button type="button" className="quiet-button" onClick={() => setConfirmDelete(true)}>Usuń nitkę</button>
+            <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmDelete(true)}>Usuń nitkę</Button>
           ))}
         </div>
       </div>

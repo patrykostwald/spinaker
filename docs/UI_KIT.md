@@ -844,30 +844,23 @@ function useDismissable<T extends HTMLElement>(options: {
 роутером» (App Router не умеет анимировать выход маршрута) — см. §7 в списке известных ограничений
 про то, почему файл не в корне `app/`.
 
-## 8. Известные ограничения и предусловия этапа 2
+## 8. Znane ograniczenia po migracji etapu 2
 
-- **Дропдаун не портализован.** `Dropdown.__panel` — обычный абсолютно позиционированный потомок,
-  не рендерится в `PortalLayer`. Внутри контейнера с `overflow-x: auto` (лента карточек и т.п.) он
-  будет обрезан, если явно не передать `presentation="sheet"` (или `"auto"` ниже 480px, где он и так
-  переключится сам). Портализация дропдауна внутри лент — предусловие этапа 2.
-- **`template.tsx` только на `/ui-kit`.** Копия в корень `app/` включила бы анимацию входа на всех
-  живых страницах уже сегодня — то самое изменение живого поведения, что отложено до утверждения
-  вида (нарушило бы критерий «живые страницы выглядят в точности как раньше»). На этапе 2 файл
-  просто переезжает в корень.
-- **`pastel` жив.** В `kit.css` тема `pastel` — псевдоним дневного набора токенов
-  (`html[data-theme="pastel"]` попадает в тот же блок, что `light`), чтобы новые компоненты не
-  выглядели сломанными под старым переключателем. Сам `pastel` остаётся в живом `ThemeSwitcher.tsx`,
-  `localStorage['spin-theme']` и в перечислении бэкенда до этапа 2.
-- **Живые страницы — всё ещё IBM Plex.** `layout.tsx` подключает Montserrat только как переменную
-  шрифта (`--font-montserrat`); `body { font-family }` в `globals.css` не тронут, `@fontsource/ibm-plex-*`
-  импорты остаются рядом. Оба механизма шрифтов сосуществуют до этапа 2, когда IBM Plex перестанет
-  использоваться.
-- **Ленты с `overflow-x: auto` обрезают разросшуюся карту по вертикали** (по спецификации
-  `overflow-y` при этом вычисляется в `auto`). Ступень B живёт в самой карте, слоя-клона больше нет,
-  поэтому ленте нужен запас: класс `.sc-strip-bleed` (margin/padding наизнанку по 120px) — как в
-  витрине «Portal». На этапе 2 это касается `.material-strip`, карусели и «Powiązane materiały».
-- **Старые демо-маршруты** (`/box-materialu`, `/box-kontekstu`, `/osoby-publiczne/demo`) не входят в
-  этот кит и не тронуты — их роль на этапе 2 полностью берёт витрина.
+- **Дропдаун nie jest portalizowany.** `Dropdown.__panel` pozostaje zwykłym absolutnie
+  pozycjonowanym potomkiem, a nie elementem `PortalLayer`. W kontenerze z `overflow-x: auto` może
+  zostać obcięty; w takim miejscu przekazujemy `presentation="sheet"` albo `"auto"`.
+- **`template.tsx` działa w korzeniu aplikacji.** Wejście na każdą trasę korzysta z tej samej
+  krótkiej animacji; nie dodawaj osobnych animacji routera w stronach.
+- **`pastel` jest wyłącznie zgodnością wsteczną.** Interfejs oferuje Ciemny, Jasny i Automatyczny;
+  stara wartość zapisana lokalnie jest przy odczycie migrowana do Jasnego. Enum backendu pozostaje
+  bez zmian.
+- **Montserrat jest fontem stron żywych.** Nie dodawaj ponownie importów IBM Plex ani nie mieszaj
+  rodzin fontów w nowych komponentach.
+- **Paski z `overflow-x: auto` obcinają kartę rozwiniętą pionowo**. Stopień B żyje w samej karcie,
+  dlatego pasek dostaje zapas przez `.sc-strip-bleed` — dotyczy to wszystkich pasków wiadomości,
+  karuzel i sekcji powiązanych materiałów.
+- **Stare trasy demonstracyjne** (`/box-materialu`, `/box-kontekstu`, `/osoby-publiczne/demo`) zostały
+  usunięte. Jedynym miejscem dla fikcyjnych danych jest `/ui-kit`.
 
 ## 9. Расхождения с планом
 

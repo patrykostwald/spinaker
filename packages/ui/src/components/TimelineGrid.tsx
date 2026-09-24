@@ -1,32 +1,13 @@
 "use client";
 
-import { useState } from "react";
-
-import type { Article, TimelineResponse } from "../types";
-import { ArticleModal } from "./ArticleModal";
+import type { TimelineResponse } from "../types";
 import { DateRow } from "./DateRow";
 
-type Props = {
-  timeline: TimelineResponse["timeline"];
-  emptyLabel?: string;
-};
+type Props = { timeline: TimelineResponse["timeline"]; emptyLabel?: string };
 
+/** Wyniki są od razu kartami portalu — nie otwierają już równoległego, starego modalu. */
 export function TimelineGrid({ timeline, emptyLabel = "Brak wyników." }: Props) {
-  const [selected, setSelected] = useState<Article | null>(null);
   const days = Object.keys(timeline);
-
-  if (!days.length) {
-    return <p className="py-16 text-center text-slate-500">{emptyLabel}</p>;
-  }
-
-  return (
-    <>
-      <div className="space-y-10">
-        {days.map((date) => (
-          <DateRow key={date} date={date} articles={timeline[date]} onSelect={setSelected} />
-        ))}
-      </div>
-      <ArticleModal article={selected} onClose={() => setSelected(null)} />
-    </>
-  );
+  if (!days.length) return <p className="sc-search-empty sc-t-body sc-text-2">{emptyLabel}</p>;
+  return <div className="sc-search-timeline">{days.map((date) => <DateRow key={date} date={date} articles={timeline[date]} />)}</div>;
 }
