@@ -2428,3 +2428,22 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-illustration-strip__support { position: absolute; right: var(--sc-s-4); top: var(--sc-s-4); }
 .sc-illustration-strip__frame > p { position: absolute; right: var(--sc-s-4); bottom: var(--sc-s-4); margin: 0; color: var(--sc-text-2); font: var(--sc-t-caption); }
 @media (max-width: 480px) { .sc-illustration-strip__frame { min-height: 12rem; }.sc-illustration-strip__sign { left: var(--sc-s-3); bottom: var(--sc-s-3); }.sc-illustration-strip__support { right: var(--sc-s-3); top: var(--sc-s-3); }.sc-illustration-strip__frame > p { right: var(--sc-s-3); bottom: var(--sc-s-3); max-width: 7rem; text-align: right; } }
+
+/* === Stage 2: research progress === */
+.sc-research-progress { display: grid; gap: var(--sc-s-3); padding: var(--sc-s-4) 0; border-block: 1px solid var(--sc-line); }
+.sc-research-progress > header { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); }
+.sc-research-progress > header > p { margin: 0; color: var(--sc-text-2); font: var(--sc-t-label); letter-spacing: .12em; }
+.sc-research-progress > header > div { display: flex; gap: var(--sc-s-1); }
+.sc-research-progress__status { display: flex; align-items: start; gap: var(--sc-s-2); color: var(--sc-text-2); }
+.sc-research-progress__status > span { flex: 0 0 auto; width: .55rem; height: .55rem; margin-top: .4rem; border-radius: 50%; background: var(--sc-text-2); }
+.sc-research-progress__status > span[data-active] { background: var(--sc-accent); }
+.sc-research-progress__status p, .sc-research-progress__result p { margin: 0; }
+.sc-research-progress__note { margin: 0; color: var(--sc-text-2); font: var(--sc-t-caption); line-height: 1.5; }
+.sc-research-progress__result { display: grid; gap: var(--sc-s-3); }
+.sc-research-progress__result > div:first-child { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sc-s-2); }
+.sc-research-progress__result h2 { margin: 0; font: var(--sc-t-title-s); }
+.sc-research-progress__result > div:first-child p { color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-research-progress details { display: grid; gap: var(--sc-s-2); color: var(--sc-text-2); font: var(--sc-t-body-s); line-height: 1.55; }
+.sc-research-progress summary { cursor: pointer; color: var(--sc-text); }
+.sc-research-progress details a { color: var(--sc-accent); }
+@media (max-width: 480px) { .sc-research-progress > header { align-items: start; flex-direction: column; } }
