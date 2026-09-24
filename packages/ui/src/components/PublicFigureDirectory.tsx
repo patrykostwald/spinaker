@@ -13,6 +13,7 @@ import {
 } from '../lib/publicFigures';
 import { Dialog } from './Dialog';
 import { PublicFigureProfile } from './PublicFigureProfile';
+import { Button, Dropdown, SearchField } from '../kit';
 
 const notFound = (error: unknown) => error instanceof ApiError && (error.status === 404 || error.status === 405);
 
@@ -82,17 +83,11 @@ export function PublicFigureDirectory() {
         <h1 id={`${uid}-title`}>Osoby publiczne</h1>
         <p className="mvp-pf-lead">Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Redakcja dodaje osoby ręcznie, z linkiem do źródła funkcji.</p>
       </header>
-      <form className="mvp-pf-filters" role="search" onSubmit={submit}>
-        <label htmlFor={`${uid}-q`}>Imię, funkcja lub instytucja
-          <input id={`${uid}-q`} type="search" value={input} maxLength={120} onChange={event => setInput(event.target.value)} />
-        </label>
-        <label htmlFor={`${uid}-role`}>Rodzaj funkcji
-          <select id={`${uid}-role`} value={role} onChange={event => setRole(event.target.value as PublicFigureRoleCategory | '')}>
-            <option value="">Wszystkie</option>
-            {Object.entries(ROLE_CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-        </label>
-        <button type="submit" className="quiet-button">Szukaj</button>
+      <form className="sc-public-directory__filters" role="search" onSubmit={submit}>
+        <SearchField id={`${uid}-q`} label="Imię, funkcja lub instytucja" value={input} onChange={setInput} maxLength={120} placeholder="Imię, funkcja lub instytucja" />
+        <Dropdown label="Rodzaj funkcji" ariaLabel="Rodzaj funkcji" mode="single" presentation="auto" value={role} onChange={value => setRole(value as PublicFigureRoleCategory | '')}
+          items={[{ value: '', label: 'Wszystkie' }, ...Object.entries(ROLE_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))]} />
+        <Button type="submit" variant="primary">Szukaj</Button>
       </form>
 
       {list.isPending && <p role="status" className="mvp-pf-hint">Ładuję rejestr…</p>}
@@ -110,7 +105,7 @@ export function PublicFigureDirectory() {
                 <Link href={`/osoby-publiczne/${row.id}`} className="mvp-pf-list-name">{row.name}</Link>
                 <p className="mvp-pf-role"><span className={`mvp-pf-status is-${row.status}`}>{row.status === 'current' ? 'Aktualna' : 'Była'}</span>{row.role_title}{row.organisation && ` · ${row.organisation}`}</p>
               </div>
-              <button type="button" className="quiet-button" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></button>
+              <Button type="button" variant="quiet" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
             </li>
           ))}
         </ul>

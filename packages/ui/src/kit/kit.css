@@ -391,6 +391,11 @@ html.sc-theme-transition .sc-root {
 .sc-app-main { width: min(100% - var(--sc-s-8), var(--sc-layout-wide)); margin: 0 auto; padding: var(--sc-s-5) 0; }
 .sc-portal-home { display: grid; gap: var(--sc-s-10); }
 
+/* === Stage 2: katalog osób publicznych === */
+.sc-public-directory__filters { display: flex; flex-wrap: wrap; gap: var(--sc-s-3); align-items: end; }
+.sc-public-directory__filters .sc-search { flex: 1 1 20rem; }
+@media (max-width: 480px) { .sc-public-directory__filters { display: grid; } .sc-public-directory__filters .sc-btn { width: 100%; } }
+
 /* === Stage 2: strona nitki === */
 .sc-thread-page { display: grid; gap: var(--sc-s-6); width: min(100% - var(--sc-s-8), var(--sc-layout-wide)); margin: var(--sc-s-8) auto var(--sc-s-16); }
 .sc-thread-page__kicker { margin: 0; color: var(--sc-accent); letter-spacing: .1em; text-transform: uppercase; }
