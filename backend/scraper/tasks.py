@@ -234,3 +234,15 @@ def import_uokik_sudop_pilot():
 def check_data_quality():
     from scraper.quality import scan_quality
     return scan_quality(200)
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def enrich_data_quality():
+    """Build bounded derived quality profiles for the archive in the background."""
+    from scraper.quality_enrichment import enrich_quality_cycle
+    if not cache.add('lock:quality-enrichment', True, 600):
+        return {'status': 'already_running'}
+    try:
+        return enrich_quality_cycle(limit=200)
+    finally:
+        cache.delete('lock:quality-enrichment')

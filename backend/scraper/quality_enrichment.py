@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from news.models import (Article, ArticleQualityProfile, ArticleRelation,
-                         QualityIssue, SourceQualityState)
+                         ImportState, QualityIssue, SourceQualityState)
 
 RULES_VERSION = 'quality-v1'
 TRACKING_KEYS = {'fbclid', 'gclid', 'mc_cid', 'mc_eid', 'ref', 'source'}
@@ -116,3 +116,34 @@ def enrich_quality(*, limit=200, after_pk=0):
     drifted = sum(_refresh_source_state(source_id) for source_id in source_ids)
     return {'status': 'ok', 'checked': len(articles), 'last_pk': articles[-1].pk if articles else after_pk,
             'sources_checked': len(source_ids), 'sources_drifted': drifted, 'rules_version': RULES_VERSION}
+
+
+def enrich_quality_cycle(*, limit=200):
+    """Run one resumable enrichment batch and retain its cursor.
+
+    The profiling pass is intentionally separate from the fast metadata flagger.
+    A persistent cursor lets Beat eventually cover the whole archive instead of
+    repeatedly analysing its oldest records.  It only creates or updates
+    derived quality records; source articles are never deleted, merged or
+    rewritten.
+    """
+    state, _ = ImportState.objects.get_or_create(name='quality:enrichment')
+    cursor = dict(state.cursor or {})
+    after_pk = int(cursor.get('last_pk') or 0)
+    result = enrich_quality(limit=limit, after_pk=after_pk)
+    wrapped = False
+    if not result['checked'] and after_pk:
+        result = enrich_quality(limit=limit, after_pk=0)
+        wrapped = True
+    now = timezone.now()
+    state.cursor = {
+        'last_pk': result['last_pk'],
+        'checked': result['checked'],
+        'wrapped': wrapped,
+        'rules_version': RULES_VERSION,
+    }
+    state.last_success = now
+    state.last_error = ''
+    state.imported = result['checked']
+    state.save(update_fields=['cursor', 'last_success', 'last_error', 'imported'])
+    return {**result, 'wrapped': wrapped}

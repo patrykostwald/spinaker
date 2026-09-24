@@ -12,6 +12,7 @@ app.conf.beat_schedule = {
     'gdelt-2h': {'task': 'scraper.tasks.gdelt_daily_topics', 'schedule': crontab(minute=0, hour='*/2')},
     'archive-discovery-daily': {'task': 'scraper.tasks.discover_archives', 'schedule': crontab(hour=3, minute=30)},
     'quality-5m': {'task': 'scraper.tasks.check_data_quality', 'schedule': crontab(minute='*/5')},
+    'quality-enrichment-5m': {'task': 'scraper.tasks.enrich_data_quality', 'schedule': crontab(minute='1-59/5')},
     'archives-minute': {'task': 'scraper.tasks.archive_batch', 'schedule': crontab(minute='*')},
     'kprm-listing-minute': {'task': 'scraper.tasks.discover_kprm_html', 'schedule': crontab(minute='*')},
     # Four listing checks daily, capped again by the reviewed MSWiA source card.
