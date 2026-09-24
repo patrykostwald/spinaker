@@ -2186,3 +2186,39 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-public-figure-mat-title { color: var(--sc-text); font-weight: 700; text-decoration: none; }
 .sc-public-figure-mat-title:hover { color: var(--sc-accent); }
 @media (max-width: 480px) { .sc-public-figure-summary { grid-template-columns: 1fr; } .sc-public-figure-summary a + a { border-top: 1px solid var(--sc-line); border-left: 0; } .sc-public-figure-votes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .sc-public-figure-votes, .sc-public-figure-votes tbody, .sc-public-figure-votes tr, .sc-public-figure-votes th, .sc-public-figure-votes td { display: block; } .sc-public-figure-votes tr { display: grid; gap: var(--sc-s-2); padding-block: var(--sc-s-3); border-top: 1px solid var(--sc-line); } .sc-public-figure-votes th, .sc-public-figure-votes td { padding: 0; border: 0; } .sc-public-figure-org dl, .sc-public-figure-days > li { grid-template-columns: 1fr; } }
+
+/* === Stage 2: strona o projekcie === */
+.sc-about { display: grid; gap: var(--sc-s-8); max-width: 75rem; margin: var(--sc-s-6) auto var(--sc-s-12); color: var(--sc-text); }
+.sc-about :where(p,ul,ol,dl,dd) { margin-top: 0; }
+.sc-about-hero { display: grid; gap: var(--sc-s-4); max-width: 65ch; }
+.sc-about-hero h1 { margin: 0; font: var(--sc-t-display); }
+.sc-about-kicker, .sc-about-step, .sc-about-phase-status { color: var(--sc-accent); font: var(--sc-t-caption); letter-spacing: .12em; }
+.sc-about-lead { color: var(--sc-text-2); font: var(--sc-t-body-lg); }
+.sc-about-status, .sc-about-aside, .sc-about-note { padding: var(--sc-s-4); border-left: 3px solid var(--sc-accent); background: var(--sc-surface-2); color: var(--sc-text-2); }
+.sc-about-status span { color: var(--sc-text); font-weight: 700; }
+.sc-about-toc { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
+.sc-about-toc a { min-height: 44px; display: inline-flex; align-items: center; padding-inline: var(--sc-s-3); border: 1px solid var(--sc-line); color: var(--sc-text); text-decoration: none; }
+.sc-about-toc a:hover { color: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-about-section { display: grid; gap: var(--sc-s-5); padding-top: var(--sc-s-8); border-top: 1px solid var(--sc-line); scroll-margin-top: var(--sc-s-6); }
+.sc-about-intro { max-width: 65ch; }
+.sc-about-intro h2 { margin: var(--sc-s-2) 0 0; font: var(--sc-t-title-l); }
+.sc-about-split { display: grid; grid-template-columns: minmax(0,1fr) minmax(16rem,24rem); gap: var(--sc-s-6); }
+.sc-about-prose { display: grid; gap: var(--sc-s-4); max-width: 65ch; line-height: 1.6; }
+.sc-about-chips, .sc-about-mini-thread { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); margin: 0; padding: 0; list-style: none; }
+.sc-about-chips li, .sc-about-mini-thread li, .sc-about-tag { display: inline-flex; padding: 3px var(--sc-s-2); border: 1px solid var(--sc-line); color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-about-box, .sc-about-mini-box { display: grid; gap: var(--sc-s-3); padding: var(--sc-s-4); background: var(--sc-surface-2); }
+.sc-about-box-top, .sc-about-mini-box { display: flex; justify-content: space-between; gap: var(--sc-s-2); color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-about-box strong { font: var(--sc-t-title-s); }
+.sc-about-sample figcaption { margin-top: var(--sc-s-2); color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-about-flow, .sc-about-columns, .sc-about-scope, .sc-about-next { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--sc-s-4); margin: 0; padding: 0; list-style: none; }
+.sc-about-flow > li, .sc-about-columns > div, .sc-about-scope > div, .sc-about-next > li { display: grid; gap: var(--sc-s-3); padding: var(--sc-s-4); background: var(--sc-surface-2); }
+.sc-about-flow h3, .sc-about-columns h3, .sc-about-scope h3 { margin: 0; font: var(--sc-t-title-s); }
+.sc-about-mini-axis { display: flex; justify-content: space-between; gap: var(--sc-s-1); margin: 0; padding: 0; list-style: none; }
+.sc-about-mini-axis li { display: grid; gap: var(--sc-s-1); color: var(--sc-text-2); font: var(--sc-t-caption); text-align: center; }
+.sc-about-mini-axis li::before { width: 8px; height: 8px; margin-inline: auto; border-radius: 50%; background: var(--sc-line-strong); content: ''; }
+.sc-about-mini-axis .is-current { color: var(--sc-accent); }.sc-about-mini-axis .is-current::before { background: var(--sc-accent); }
+.sc-about-phases { display: grid; gap: var(--sc-s-4); }.sc-about-phase { display: grid; gap: var(--sc-s-3); padding: var(--sc-s-5); border-left: 3px solid var(--sc-line); background: var(--sc-surface-2); }.sc-about-phase.is-current { border-left-color: var(--sc-accent); }
+.sc-about-phase h3 { margin: 0; font: var(--sc-t-title-m); }.sc-about-list { display: grid; gap: var(--sc-s-2); margin: 0; padding: 0; list-style: none; }.sc-about-list li { padding-left: var(--sc-s-4); position: relative; }.sc-about-list li::before { position: absolute; left: 0; color: var(--sc-accent); content: '—'; }.sc-about-list.is-yes li::before { content: '+'; }.sc-about-list.is-no li::before { content: '×'; }
+.sc-about-tech { display: grid; max-width: 65ch; margin: 0; }.sc-about-tech > div { padding-block: var(--sc-s-4); border-top: 1px solid var(--sc-line); }.sc-about-tech dt { font: var(--sc-t-title-s); }.sc-about-tech dd { margin: var(--sc-s-2) 0 0; color: var(--sc-text-2); }.sc-about-tech small { color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-about-next a, .sc-about-next-static { display: grid; gap: var(--sc-s-2); height: 100%; padding: var(--sc-s-4); background: var(--sc-surface-2); color: var(--sc-text); text-decoration: none; }.sc-about-next a:hover { color: var(--sc-accent); box-shadow: var(--sc-ring); }.sc-about-next strong { font: var(--sc-t-title-s); }.sc-about-arrow { color: var(--sc-accent); }.sc-about-updated { color: var(--sc-text-2); font: var(--sc-t-caption); }
+@media (max-width: 480px) { .sc-about-split, .sc-about-flow, .sc-about-columns, .sc-about-scope, .sc-about-next { grid-template-columns: 1fr; } .sc-about { margin-top: var(--sc-s-4); } }
