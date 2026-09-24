@@ -1,10 +1,10 @@
 'use client';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiFetch, apiWrite, getMe } from '../lib/api';
 import { ThreadEditor } from './ThreadEditor';
-import { Button, SearchField } from '../kit';
+import { BottomSheet, Button, SearchField } from '../kit';
 
 type CatalogSource = {
   id: number; name: string; url: string; source_type: string; rss_url: string;
@@ -47,7 +47,6 @@ export function SourcesCatalog() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const formElement = useRef<HTMLFormElement>(null);
   const rows = catalog.data?.sources ?? [];
   const filtered = useMemo(() => {
     const phrase = query.trim().toLocaleLowerCase('pl-PL');
@@ -57,7 +56,6 @@ export function SourcesCatalog() {
   function edit(source: CatalogSource | null) {
     setEditing(source); setForm(source ? {catalog_stage: source.catalog_stage, name: source.name, url: source.url, source_type: source.source_type, rss_url: source.rss_url, catalog_notes: source.catalog_notes, scrape_frequency_minutes: source.scrape_frequency_minutes} : {...emptyForm});
     setShowForm(true); setError(''); setNotice('');
-    window.setTimeout(() => { formElement.current?.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start'}); formElement.current?.querySelector('input')?.focus({preventScroll: true}); }, 0);
   }
   async function toggle(source: CatalogSource) {
     const enable = sourceState(source) !== 'active';
@@ -86,7 +84,7 @@ export function SourcesCatalog() {
     <div className="sc-source-editor-head"><div><Link href="/editor" className="sc-source-editor__back">← Warsztat redakcji</Link><h1 className="sc-t-title-l">Katalog źródeł</h1><p className="sc-t-body sc-text-2">Jedna lista mediów i instytucji. Zapis kandydata nie uruchamia importu. Wykluczenie usuwa wpis z bieżącej listy i zatrzymuje pobieranie, zachowując historię oraz materiały.</p></div><div className="sc-source-editor-actions"><button disabled={busy} onClick={() => edit(null)} className={button}>+ Dodaj źródło</button><a href="/api/editor/sources/export/" className={button} download>Eksport całego katalogu CSV</a></div></div>
     {error && <p role="alert" className="sc-source-editor-message sc-source-editor-message-error">{error}</p>}
     {notice && <p role="status" className="sc-source-editor-message">{notice}</p>}
-    {showForm && <form ref={formElement} className="sc-source-editor-form" onSubmit={async event => {
+    {showForm && <BottomSheet open={showForm} onClose={() => setShowForm(false)} title={editing ? `Edytuj: ${editing.name}` : "Nowe źródło"} className="sc-source-editor-sheet"><form className="sc-source-editor-form" onSubmit={async event => {
       event.preventDefault(); setBusy(true); setError(''); setNotice('');
       try {
         const payload = form.catalog_stage !== 'configured' ? {...form, is_active: false, scrape_enabled: false} : form;
@@ -105,7 +103,7 @@ export function SourcesCatalog() {
       {editing && <label className="sc-source-editor-field">Etap<select value={form.catalog_stage} onChange={event => setForm({...form, catalog_stage: event.target.value as Form['catalog_stage']})} className={input} disabled={busy}><option value="candidate">Kandydat</option><option value="configured">Skonfigurowane</option><option value="excluded">Wykluczone</option></select><span className="sc-source-editor-hint">Skonfigurowane nie oznacza sprawdzonego importu. Zmiana etapu nie włącza pobierania; powrót do kandydata lub wykluczenie wyłącza pobieranie.</span></label>}
       {editing && <label className="sc-source-editor-field">Odstęp między pobraniami · minuty<input required type="number" min={1} max={10080} value={form.scrape_frequency_minutes} onChange={event => setForm({...form, scrape_frequency_minutes: Number(event.target.value)})} className={input} disabled={busy} /><span className="sc-source-editor-hint">Większa liczba oznacza rzadsze pobieranie.</span></label>}
       <div className="sc-source-editor-form-actions"><button type="submit" disabled={busy} className={button}>{busy ? 'Zapisuję…' : 'Zapisz źródło'}</button><button type="button" disabled={busy} onClick={() => setShowForm(false)} className={button}>Anuluj</button>{(!editing || editing.catalog_stage === 'candidate') && <p className="sc-source-editor__back">Kandydat wymaga sprawdzenia i konfiguracji przed uruchomieniem pobierania.</p>}</div>
-    </form>}
+    </form></BottomSheet>}
     {catalog.isPending ? <p role="status">Ładuję pełny katalog…</p> : catalog.isError ? <div role="alert"><p>Nie udało się pobrać katalogu.</p><button className={button} onClick={() => catalog.refetch()}>Spróbuj ponownie</button></div> : <>
       <div className="sc-source-editor-stats"><span>Wszystkie: <strong>{rows.length}</strong></span><span>Włączone: <strong>{rows.filter(row => sourceState(row) === 'active').length}</strong></span><span>Kandydaci: <strong>{rows.filter(row => sourceState(row) === 'candidate').length}</strong></span><span>Wyłączone: <strong>{rows.filter(row => sourceState(row) === 'disabled').length}</strong></span><span>Wykluczone: <strong>{rows.filter(row => sourceState(row) === 'excluded').length}</strong></span></div>
       <div className="sc-source-editor-filters"><label className="sc-source-editor-field">Szukaj w katalogu<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nazwa, adres lub notatka…" className={input} /></label><label className="sc-source-editor-field">Stan<select value={state} onChange={event => setState(event.target.value)} className={input}><option value="included">Bieżący katalog</option><option value="all">Wszystkie, także wykluczone</option><option value="excluded">Wykluczone</option><option value="active">Włączone</option><option value="candidate">Kandydaci</option><option value="disabled">Wyłączone</option></select></label><label className="sc-source-editor-field">Rodzaj<select value={kind} onChange={event => setKind(event.target.value)} className={input}><option value="all">Wszystkie rodzaje</option>{catalog.data?.source_types.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label></div>
