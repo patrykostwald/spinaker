@@ -1,4 +1,6 @@
 "use client";
+import { Button } from '@spin-clinic/ui/kit';
+
 export default function MaterialError({ reset }: { reset: () => void }) {
-  return <div role="alert" className="space-y-4"><h1 className="text-xl font-semibold">Materiał jest chwilowo niedostępny.</h1><p>Nie udało się połączyć z archiwum.</p><button className="quiet-button" onClick={reset}>Spróbuj ponownie</button></div>;
+  return <section role="alert" className="sc-material-error"><h1 className="sc-t-title-l">Materiał jest chwilowo niedostępny.</h1><p className="sc-t-body sc-text-2">Nie udało się połączyć z archiwum.</p><Button type="button" variant="secondary" onClick={reset}>Spróbuj ponownie</Button></section>;
 }

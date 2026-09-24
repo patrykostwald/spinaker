@@ -2551,3 +2551,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 /* === Stage 2: top ten cards === */
 .sc-top-ten__track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(18rem, 22rem); gap: var(--sc-s-3); overflow-x: auto; padding-block: var(--sc-s-2) var(--sc-s-5); scroll-snap-type: x proximity; }
 .sc-top-ten__item { min-width: 0; scroll-snap-align: start; }
+
+/* === Stage 2: material error === */
+.sc-material-error { display: grid; gap: var(--sc-s-3); max-width: 42rem; margin: var(--sc-s-8) auto; padding: var(--sc-s-5); background: var(--sc-surface-2); }
+.sc-material-error h1, .sc-material-error p { margin: 0; }
