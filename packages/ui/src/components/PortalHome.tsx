@@ -11,6 +11,7 @@ import { NajnowszeWiadomosci } from './NajnowszeWiadomosci';
 import { PrzekazDnia } from './PrzekazDnia';
 import { TematDnia } from './TematDnia';
 import { TopTenRedakcji } from './TopTenRedakcji';
+import { SiteFooter } from '../kit/SiteFooter';
 
 export function PortalHome() {
   const params = useSearchParams();
@@ -37,13 +38,12 @@ export function PortalHome() {
       <DrSpin thread={null} />
       <PrzekazDnia government={config.data?.editorial.government ?? null} opposition={config.data?.editorial.opposition ?? null} />
       <Baza ref={bazaRef} categories={categories} sources={sources} initialQuery={q} />
-      <footer className="mvp-footer">
-        <div className="mvp-footer-main">
-          <div><strong>spin<span>.</span>clinic</strong><p>Materiały prezentujemy w oryginalnym kontekście źródłowym.<br />Zestawienie publikacji nie jest potwierdzeniem zawartych w nich twierdzeń.</p></div>
-          <div className="mvp-footer-support"><p>WSPARCIE PROJEKTU</p><a href="/wsparcie">Wesprzyj spin.clinic</a></div>
-          <nav aria-label="Informacje o serwisie"><a href="/o-nas">O nas</a><a href="/zrodla">Źródła</a><a href="/zasady-korzystania">Zasady korzystania</a><a href="/polityka-prywatnosci">Prywatność i cookies</a></nav>
-        </div>
-      </footer>
+      <SiteFooter
+        brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
+        note={<>Materiały prezentujemy w oryginalnym kontekście źródłowym.<br />Zestawienie publikacji nie jest potwierdzeniem zawartych w nich twierdzeń.</>}
+        cta={{ eyebrow: "WSPARCIE PROJEKTU", label: "Wesprzyj spin.clinic", href: "/wsparcie" }}
+        columns={[{ title: "Informacje", links: [{ label: "O nas", href: "/o-nas" }, { label: "Źródła", href: "/zrodla" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
+      />
     </div>
   );
 }
