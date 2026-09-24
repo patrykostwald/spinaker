@@ -1,16 +1,8 @@
 "use client";
-import { useState } from 'react';
-import Link from 'next/link';
-import { ArticleCard, ArticleModal, ShareOnX, type Article } from '@spin-clinic/ui';
+
+import type { Article } from '@spin-clinic/ui';
+import { MaterialSurface } from '@spin-clinic/ui/kit';
 
 export default function MaterialView({ article }: { article: Article }) {
-  const [open, setOpen] = useState(true);
-  return <article className="mx-auto max-w-4xl space-y-5">
-    <Link href="/" className="text-sm text-primary">← Przeglądaj media</Link>
-    <h1 className="text-xl font-semibold">{article.title}</h1>
-    <p className="text-sm text-slate-500">{article.source.name} · Materiał źródłowy i jego kontekst</p>
-    <ShareOnX title={`${article.title} — ${article.source.name}`} path={`/material/${article.id}`} />
-    <div className="max-w-sm"><ArticleCard article={article} onSelect={() => setOpen(true)} /></div>
-    <ArticleModal article={open ? article : null} onClose={() => setOpen(false)} />
-  </article>;
+  return <MaterialSurface mode="page" article={article} />;
 }
