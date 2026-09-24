@@ -20,6 +20,7 @@ import {
   useThreadFavorites,
 } from '../lib/personal';
 import { AccountDialog } from './AccountDialog';
+import { Button } from '../kit';
 
 const SECTIONS = [
   { id: 'moje-nitki', label: 'Moje nitki kontekstowe' },
@@ -50,9 +51,9 @@ export function SignedOutPanel({ title = 'Twoje prywatne miejsce do pracy z mate
         <li>Reakcje „Przydatne / Nieprzydatne” dotyczą konkretnego materiału lub nitki — nie osób.</li>
         <li>Korzystanie z Bazy nie wymaga konta.</li>
       </ul>
-      <div className="mvp-acc-actions">
-        <button type="button" className="mvp-acc-primary" onClick={() => setOpen(true)}>Zaloguj się lub załóż konto</button>
-        <Link href="/#baza" className="quiet-button">Przeglądaj Bazę</Link>
+      <div className="sc-info-page__actions">
+        <Button type="button" variant="primary" onClick={() => setOpen(true)}>Zaloguj się lub załóż konto</Button>
+        <Button href="/search" variant="secondary">Przeglądaj Bazę</Button>
       </div>
       {open && <AccountDialog open={open} onClose={() => setOpen(false)} />}
     </section>
