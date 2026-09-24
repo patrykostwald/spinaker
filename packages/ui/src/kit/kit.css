@@ -2040,3 +2040,16 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-thread-export__label { display: grid; gap: var(--sc-s-2); font-weight: 600; color: var(--sc-text); }
 .sc-thread-export textarea { width: 100%; resize: vertical; padding: var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface); color: var(--sc-text); font: inherit; }
 .sc-thread-export textarea:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+
+/* === Stage 2: karta nitki === */
+.sc-thread-card { display: flex; flex-direction: column; min-height: 100%; overflow: hidden; background: var(--sc-surface); color: var(--sc-text); text-decoration: none; box-shadow: var(--sc-e-1); transition: color var(--sc-dur-base) var(--sc-ease-standard), box-shadow var(--sc-dur-base) var(--sc-ease-standard); }
+.sc-thread-card:hover { color: var(--sc-text); box-shadow: var(--sc-e-2), var(--sc-ring); }
+.sc-thread-card:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 3px; }
+.sc-thread-card__media { position: relative; min-height: 12rem; aspect-ratio: 16 / 9; overflow: hidden; background: var(--sc-surface-2); }
+.sc-thread-card__image { object-fit: cover; }
+.sc-thread-card__placeholder { display: grid; align-content: center; height: 100%; padding: var(--sc-s-5); color: var(--sc-accent); }
+.sc-thread-card__placeholder strong { line-height: 1; }
+.sc-thread-card__body { display: grid; flex: 1; gap: var(--sc-s-3); padding: var(--sc-s-5); }
+.sc-thread-card__body h2, .sc-thread-card__body p { margin: 0; }
+.sc-thread-card__kind { color: var(--sc-accent); }
+.sc-thread-card__meta { display: grid; gap: var(--sc-s-1); align-self: end; margin-top: auto; }
