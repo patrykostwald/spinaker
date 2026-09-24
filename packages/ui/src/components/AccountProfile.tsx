@@ -6,9 +6,8 @@ import { ApiError, apiFetch, apiWrite } from '../lib/api';
 import { useAccount } from '../lib/account';
 import { getPortalConfig } from '../lib/portal';
 import { formatDateTimePl } from '../lib/utils';
-import type { Article } from '../types';
 import { AccountDialog } from './AccountDialog';
-import { ArticleModal } from './ArticleModal';
+import { usePortalApi } from '../kit';
 import { PersonalizedNews } from './PersonalizedNews';
 
 type HistoryItem = { id: number; article_id: number; body: string; polarity: 'positive' | 'negative'; created_at: string };
@@ -34,10 +33,10 @@ function HistoryRows({ rows }: { rows: HistoryItem[] }) {
 
 function ProfileTopics() {
   const config = useQuery({ queryKey: ['portal-config'], queryFn: getPortalConfig, staleTime: 60_000 });
-  const [selected, setSelected] = useState<Article | null>(null);
+  const portal = usePortalApi();
   if (config.isPending) return <p role="status" className="profile-empty">Ładuję ustawienia tematów…</p>;
   if (config.isError) return <p role="alert" className="profile-empty">Nie udało się pobrać dostępnych filtrów. <button className="quiet-button" onClick={() => config.refetch()}>Ponów</button></p>;
-  return <><PersonalizedNews categories={config.data.categories} topics={config.data.topics ?? []} sources={config.data.sources ?? []} onSelect={setSelected} /><ArticleModal article={selected} onClose={() => setSelected(null)} /></>;
+  return <PersonalizedNews categories={config.data.categories} topics={config.data.topics ?? []} sources={config.data.sources ?? []} onSelect={portal.open} />;
 }
 
 export function AccountProfile() {
