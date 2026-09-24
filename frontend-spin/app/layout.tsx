@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
-import { SiteHeader } from "@spin-clinic/ui";
 import "@fontsource/ibm-plex-sans/400.css";
 import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/ibm-plex-sans/600.css";
@@ -12,6 +11,7 @@ import "./globals.css";
 // Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css — порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
 import { Providers } from "./providers";
+import { SiteChrome } from "./chrome";
 import { site } from "../lib/site";
 
 // Montserrat только выставляет переменную --font-montserrat; body по-прежнему на IBM Plex,
@@ -34,8 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:p-4">Przejdź do treści</a>
         <Providers>
-          <SiteHeader site={site} />
-          <main id="main-content" className="mx-auto max-w-7xl px-4 py-5">{children}</main>
+          <SiteChrome site={site}>{children}</SiteChrome>
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}
       </body>

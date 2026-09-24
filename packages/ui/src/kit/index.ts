@@ -87,3 +87,8 @@ export { PortalProvider, usePortal, usePortalApi, usePortalApiOptional, usePorta
 export { PortalLayer } from "./portal/PortalLayer";
 export { useHistoryPortal } from "./portal/useHistoryPortal";
 export { MaterialSurface } from "./MaterialSurface";
+
+// Этап 2 — страницы на ките
+export { HomePage } from "./home/HomePage";
+export { HomeHeader, HomeFooter, Wordmark } from "./home/SiteChrome";
+export { useDemoMode } from "./home/data";

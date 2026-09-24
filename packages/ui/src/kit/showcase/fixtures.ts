@@ -129,7 +129,8 @@ export function makeArticles(n: number, seed = 1): Article[] {
       title: TITLE_CYCLE[k % TITLE_CYCLE.length],
       category: CATEGORY_CYCLE[k % CATEGORY_CYCLE.length],
       image_url: k % 7 === 3 ? "" : demoImage(k),
-      published_date: k % 11 === 5 ? null : undefined,
+      // Tylko jawne `null` (co jedenasta); `undefined` w spreadzie nadpisywałoby datę z szablonu.
+      ...(k % 11 === 5 ? { published_date: null } : {}),
       source: FIXTURE_SOURCES[k % FIXTURE_SOURCES.length],
     });
   });
