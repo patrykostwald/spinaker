@@ -2,7 +2,7 @@
 
 Stan decyzji na 24 września 2026 (etap 1 UI kitu, `kit/design@7051357`). Ten dokument opisuje
 **docelową** identyfikację — kit w `packages/ui/src/kit/**` i witrynę `/ui-kit`. Zobacz sekcję
-«Stan przejściowy» na końcu: część tego, co tu opisane, **jeszcze nie działa** na żywych stronach.
+Sekcja „Historia migracji” na końcu wyjaśnia decyzje, które zostały już wdrożone na stronach żywych.
 
 ## Identyfikacja domyślna
 
@@ -164,7 +164,7 @@ zostaje zarezerwowany dla czasu/pilności (głosowania na żywo, alerty) — rea
 przechwytuje wizualnie inaczej niż wspólnym tokenem koloru z jasnym rozróżnieniem przez kontekst i
 etykietę.
 
-## Стан переходный / Stan przejściowy
+## Historia migracji
 
 To, co ten dokument opisuje, działa **na razie tylko** w `packages/ui/src/kit/**` i na witrynie
 `/ui-kit`. Żywe strony (`/`, `/search`, `/zrodla`, `/konto`, `/editor/*` i inne) pozostają **bez
@@ -187,8 +187,7 @@ zmian** do etapu 2:
 - `docs/UI_KIT.md` ma pełną listę technicznych ograniczeń etapu 1 (dropdown nieportalizowany w
   lentach, `template.tsx` tylko na `/ui-kit` itd.) — ten dokument ich nie powtarza.
 
-Etap 2 przenosi wygląd na żywe strony: usuwa `pastel`, przełącza `body` na Montserrat, przenosi
-promienie z `globals.css` do komponentów i sprząta kod, który stanie się martwy.
+Etap 2 przeniósł zestaw UI na strony żywe: przełącznik migruje stare ustawienie `pastel` do Jasnego, body używa Montserrat, a nowe powierzchnie korzystają z tokenów `--sc-*`.
 
 ## Stały układ głównej
 
