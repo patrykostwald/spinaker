@@ -9,8 +9,9 @@ import type { Article, Paginated, ThreadDetail } from '../types';
 import { measurePost } from '../lib/xText';
 import { ImportStatus } from './ImportStatus';
 import { DraftAssistant } from './DraftAssistant';
-const input = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2';
-const button = 'rounded-lg bg-primary px-5 py-3 font-semibold text-white disabled:opacity-50';
+import { Button, SearchField } from '../kit';
+const input = 'sc-editor-input';
+const button = 'sc-editor-button';
 const kinds = ['voting', 'legislation', 'parliamentary_print', 'document', 'factcheck', 'context', 'article', 'interview', 'reportage', 'statement', 'tweet', 'mention', 'sponsored', 'advertisement', 'video', 'podcast', 'opinion', 'other'];
 type Picked = { article: Article; editorial_note: string };
 
@@ -64,11 +65,11 @@ export function ThreadEditor() {
       catch (err) { setError(err instanceof Error ? err.message : 'Nie udało się zalogować.'); } finally { setBusy(false); }
     }}><label className="block text-sm font-medium">Login<input required name="username" autoComplete="username" className={input} /></label><label className="block text-sm font-medium">Hasło<input required name="password" type="password" autoComplete="current-password" className={input} /></label><button disabled={busy} className={button}>{busy ? 'Loguję…' : 'Zaloguj się'}</button></form>{error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
   </section>;
-  return <div className="space-y-8">
-    {canPublish && <Link href="/editor/sources" className="inline-block rounded-lg border px-4 py-2 text-sm text-primary">Katalog źródeł · dodawanie, edycja i eksport ↗</Link>}
-    {canPublish && <Link href="/editor/political" className="inline-block rounded-lg border px-4 py-2 text-sm text-primary">Panel redakcyjny X · propozycje z zapisanych postów ↗</Link>}
+  return <div className="sc-editor">
+    {canPublish && <Link href="/editor/sources" className="sc-editor-link">Katalog źródeł · dodawanie, edycja i eksport ↗</Link>}
+    {canPublish && <Link href="/editor/political" className="sc-editor-link">Panel redakcyjny X · propozycje z zapisanych postów ↗</Link>}
     {canPublish && <ImportStatus />}
-    <div><p className="text-sm font-semibold uppercase tracking-widest text-primary">Warsztat redakcji</p><h1 className="mt-2 text-3xl font-bold">{slug ? 'Edytuj nitkę' : 'Połącz źródła w historię'}</h1><p className="mt-3 text-slate-600">Wybierz materiały, dodaj kontekst i opublikuj chronologiczną nitkę.</p></div>
+    <header className="sc-editor__head"><p className="sc-t-caption">WARSZTAT REDAKCJI</p><h1 className="sc-t-title-l">{slug ? 'Edytuj nitkę' : 'Połącz źródła w historię'}</h1><p className="sc-t-body sc-text-2">Wybierz materiały, dodaj kontekst i opublikuj chronologiczną nitkę.</p></header>
     {slug && existing.isPending && <p role="status">Ładuję nitkę…</p>}
     {slug && existing.isError && <p role="alert" className="text-red-700">Nie udało się wczytać nitki. Wróć do listy i spróbuj ponownie.</p>}
     {!canPublish && <p className="rounded border p-4 text-sm text-slate-400">Warsztat dziennikarza. Tworzysz własne szkice; publikację zatwierdza redakcja. Zmiana opublikowanej nitki wycofa ją do ponownego zatwierdzenia.</p>}
