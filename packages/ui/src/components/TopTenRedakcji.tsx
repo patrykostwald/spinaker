@@ -4,8 +4,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getNewsFeed } from '../lib/portal';
 import type { Source } from '../types';
-import { EmptyMaterialSlot, MaterialBox } from './MaterialBox';
-import { MaterialStrip } from './MaterialStrip';
+import { NewsCard } from '../kit/NewsCard';
 
 const TOPIC_PILLS: { label: string; value: string }[] = [
   { label: 'Polityka', value: 'polityka' },
@@ -17,8 +16,6 @@ const TOPIC_PILLS: { label: string; value: string }[] = [
   { label: 'Technologie', value: 'technologie' },
   { label: 'Prawo', value: 'prawo' },
 ];
-
-const EMPTY_TYPES = ['ARTYKUŁ', 'WYWIAD', 'REPORTAŻ', 'ŚLEDZTWO', 'DOKUMENT URZĘDOWY', 'REKLAMA', 'FILM'];
 
 export function TopTenRedakcji({ topSources: sources }: { topSources: Source[] }) {
   const [topic, setTopic] = useState<string | null>(null);
@@ -33,7 +30,6 @@ export function TopTenRedakcji({ topSources: sources }: { topSources: Source[] }
     refetchInterval: 30_000, refetchIntervalInBackground: false,
   });
   const articles = useMemo(() => feed.data?.results ?? [], [feed.data]);
-  const slots = Array.from({ length: 10 }, (_, i) => articles[i] ?? null);
   const selectedSources = sources.filter(source => sourceIds.includes(source.id));
   const sourceSummary = selectedSources.length
     ? selectedSources.length <= 2
@@ -69,9 +65,12 @@ export function TopTenRedakcji({ topSources: sources }: { topSources: Source[] }
         </div>
           <input type="search" className="mvp-search-input" placeholder="Szukaj hasła…" value={query} onChange={event => setQuery(event.target.value)} maxLength={200} />
       </div>
-      <MaterialStrip label="Wszystkie źródła" height="sm">
-        {slots.map((article, index) => article ? <MaterialBox key={article.id} article={article} /> : <EmptyMaterialSlot key={`empty-${index}`} index={index + 1} label={EMPTY_TYPES[index % EMPTY_TYPES.length]} />)}
-      </MaterialStrip>
+      {feed.isPending ? <p role="status" className="strip-empty">Ładuję materiały ze źródeł…</p> : null}
+      {feed.isError ? <p role="alert" className="strip-empty">Nie udało się odświeżyć materiałów. <button type="button" className="text-primary" onClick={() => feed.refetch()}>Spróbuj ponownie</button></p> : null}
+      {!feed.isPending && !feed.isError && !articles.length ? <p className="strip-empty">Nie ma jeszcze materiałów dla wybranych filtrów.</p> : null}
+      {articles.length ? <div className="news-strip-track sc-strip-bleed" tabIndex={0} aria-label="Wszystkie źródła — przewijaj poziomo">
+        {articles.map(article => <div key={article.id} className="news-strip-item"><NewsCard article={article} size="medium" /></div>)}
+      </div> : null}
       <p className="mvp-strip-caption">{`Najnowsze materiały z ${sourceSummary}${topicLabel ? ` · ${topicLabel}` : ''}${query ? ` · „${query}”` : ''}`}</p>
     </section>
   );
