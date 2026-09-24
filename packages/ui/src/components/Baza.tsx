@@ -7,6 +7,7 @@ import type { CategoryOption } from '../lib/portal';
 import type { Source } from '../types';
 import { EmptyMaterialSlot, MaterialBox } from './MaterialBox';
 import { TwojePaski } from './TwojePaski';
+import { Button, SearchField } from '../kit';
 
 const PERIODS: { value: string; label: string; hours: number | null }[] = [
   { value: 'all', label: 'Zawsze', hours: null },
@@ -94,31 +95,31 @@ export const Baza = forwardRef<HTMLDivElement, { categories: CategoryOption[]; s
     }, [feed.fetchNextPage, feed.hasNextPage, feed.isFetchingNextPage]);
 
     return (
-      <section ref={ref} className="mvp-section mvp-baza" aria-label="Baza materiałów">
-        <header className="mvp-strip-heading"><h2>Baza</h2><p>Przeszukaj wszystkie materiały w bazie</p></header>
+      <section ref={ref} className="sc-base" aria-label="Baza materiałów">
+        <header className="sc-base-head"><h2>Baza</h2><p>Przeszukaj wszystkie materiały w bazie</p></header>
         <TwojePaski categories={categories} sources={sources} openSignal={0} />
-        <div className="mvp-baza-latest-heading">
+        <div className="sc-base-latest-heading">
           <h3>Najnowsze materiały</h3>
           <p>Wszystkie aktywne źródła · od najnowszej publikacji</p>
         </div>
-        <form className="mvp-baza-search" onSubmit={event => { event.preventDefault(); }}>
-          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Szukaj w bazie…" maxLength={200} className="mvp-search-input mvp-baza-search-input" />
+        <form className="sc-base-search" onSubmit={event => { event.preventDefault(); }}>
+          <SearchField value={query} onChange={setQuery} placeholder="Szukaj w bazie…" label="Szukaj w bazie" maxLength={200} />
         </form>
-        <button type="button" className="mvp-baza-filters-toggle" onClick={() => setFiltersOpen(value => !value)} aria-expanded={filtersOpen}>
+        <Button type="button" variant="secondary" className="sc-base-filters-toggle" onClick={() => setFiltersOpen(value => !value)} aria-expanded={filtersOpen}>
           Filtry {activeFilterCount > 0 ? `· ${activeFilterCount}` : ''} ▾
-        </button>
-        <div className="mvp-baza-layout">
-          <div className="mvp-baza-results">
-            {feed.isPending && <p role="status" className="mvp-strip-empty">Ładuję materiały…</p>}
-            {feed.isError && <p role="alert" className="mvp-strip-empty">Nie udało się odświeżyć bazy. <button className="text-primary" onClick={() => feed.refetch()}>Ponów</button></p>}
-            {feed.isSuccess && !articles.length && <p className="mvp-strip-empty">Brak materiałów pasujących do wybranych filtrów.</p>}
-            <div className="mvp-baza-grid" aria-label="Najnowsze materiały w Bazie">
+        </Button>
+        <div className="sc-base-layout">
+          <div className="sc-base-results">
+            {feed.isPending && <p role="status" className="sc-base-empty">Ładuję materiały…</p>}
+            {feed.isError && <p role="alert" className="sc-base-empty">Nie udało się odświeżyć bazy. <Button size="sm" variant="quiet" onClick={() => feed.refetch()}>Ponów</Button></p>}
+            {feed.isSuccess && !articles.length && <p className="sc-base-empty">Brak materiałów pasujących do wybranych filtrów.</p>}
+            <div className="sc-base-grid" aria-label="Najnowsze materiały w Bazie">
               {articles.map(article => <MaterialBox key={article.id} article={article} />)}
               {Array.from({ length: emptySlotCount }, (_, index) => <EmptyMaterialSlot key={`empty-${index}`} index={articles.length + index + 1} label={EMPTY_TYPES[(articles.length + index) % EMPTY_TYPES.length]} />)}
             </div>
-            {feed.hasNextPage && <div ref={loadMoreRef} className="mvp-baza-load-more" role="status">{feed.isFetchingNextPage ? 'Ładuję kolejne materiały…' : 'Przewiń niżej, aby załadować kolejne materiały.'}</div>}
+            {feed.hasNextPage && <div ref={loadMoreRef} className="sc-base-load-more" role="status">{feed.isFetchingNextPage ? 'Ładuję kolejne materiały…' : 'Przewiń niżej, aby załadować kolejne materiały.'}</div>}
           </div>
-          <aside className={`mvp-baza-filters${filtersOpen ? ' is-open' : ''}`}>
+          <aside className={`sc-base-filters${filtersOpen ? ' is-open' : ''}`}>
             <details open>
               <summary>Kategorie <span>{selectedCategories.length || 'wszystkie'}</span></summary>
               <div className="category-options">{categories.map(item => (
