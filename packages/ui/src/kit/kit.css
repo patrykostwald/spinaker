@@ -2418,3 +2418,13 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-personal-strip-form__choices { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
 .sc-personal-strip-form__actions { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
 @media (max-width: 480px) { .sc-personal-strips__head, .sc-personal-strip > header { align-items: start; flex-direction: column; }.sc-personal-strip-form__choices > * { width: 100%; } }
+
+/* === Stage 2: illustration strip === */
+.sc-illustration-strip { overflow: hidden; }
+.sc-illustration-strip__frame { position: relative; min-height: clamp(12rem, 26vw, 22rem); overflow: hidden; background: var(--sc-surface-2); }
+.sc-illustration-strip__frame > img { display: block; width: 100%; height: 100%; min-height: inherit; object-fit: cover; }
+.sc-illustration-strip__sign { position: absolute; left: var(--sc-s-4); bottom: var(--sc-s-4); display: grid; color: var(--sc-text); font: var(--sc-t-title-s); }
+.sc-illustration-strip__sign small { color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-illustration-strip__support { position: absolute; right: var(--sc-s-4); top: var(--sc-s-4); }
+.sc-illustration-strip__frame > p { position: absolute; right: var(--sc-s-4); bottom: var(--sc-s-4); margin: 0; color: var(--sc-text-2); font: var(--sc-t-caption); }
+@media (max-width: 480px) { .sc-illustration-strip__frame { min-height: 12rem; }.sc-illustration-strip__sign { left: var(--sc-s-3); bottom: var(--sc-s-3); }.sc-illustration-strip__support { right: var(--sc-s-3); top: var(--sc-s-3); }.sc-illustration-strip__frame > p { right: var(--sc-s-3); bottom: var(--sc-s-3); max-width: 7rem; text-align: right; } }
