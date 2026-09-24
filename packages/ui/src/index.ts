@@ -22,7 +22,7 @@ export { ArticleCard as ArticleBox } from "./components/ArticleCard";
 
 export { PortalHome } from "./components/PortalHome";
 export { ArchiveProgress } from "./components/ArchiveProgress";
-export { MaterialBox, EmptyMaterialSlot } from "./components/MaterialBox";
+export { MaterialBox } from "./components/MaterialBox";
 export { MaterialStrip } from "./components/MaterialStrip";
 export { IllustrationStrip } from "./components/IllustrationStrip";
 export { NajnowszeWiadomosci } from "./components/NajnowszeWiadomosci";

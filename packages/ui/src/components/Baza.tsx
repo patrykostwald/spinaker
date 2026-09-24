@@ -5,7 +5,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { getNewsFeed } from '../lib/portal';
 import type { CategoryOption } from '../lib/portal';
 import type { Source } from '../types';
-import { EmptyMaterialSlot, MaterialBox } from './MaterialBox';
+import { MaterialBox } from './MaterialBox';
 import { TwojePaski } from './TwojePaski';
 import { BottomSheet, Button, Checkbox, RadioGroup, SearchField } from '../kit';
 
@@ -46,7 +46,6 @@ function SourceTree({ groups, selectedSources, onToggle, expanded = false }: {
   </div>;
 }
 
-const EMPTY_TYPES = ['ARTYKUŁ', 'WYWIAD', 'REPORTAŻ', 'ŚLEDZTWO', 'DOKUMENT URZĘDOWY', 'REKLAMA', 'FILM', 'ARTYKUŁ'];
 const BASE_INITIAL_SLOTS = 30;
 
 export const Baza = forwardRef<HTMLDivElement, { categories: CategoryOption[]; sources: Source[]; initialQuery: string }>(
@@ -81,7 +80,6 @@ export const Baza = forwardRef<HTMLDivElement, { categories: CategoryOption[]; s
     const visibleSources = sources.filter(source => source.name.toLocaleLowerCase('pl').includes(sourceSearch.toLocaleLowerCase('pl')));
     const sourceGroups = groupSources(visibleSources);
     const activeFilterCount = selectedCategories.length + selectedSources.length + selectedPlatforms.length + (period !== 'all' ? 1 : 0);
-    const emptySlotCount = Math.max(0, BASE_INITIAL_SLOTS - articles.length);
     const toggleSource = (id: number) => setSelectedSources(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]);
 
     useEffect(() => {
@@ -115,7 +113,6 @@ export const Baza = forwardRef<HTMLDivElement, { categories: CategoryOption[]; s
             {feed.isSuccess && !articles.length && <p className="sc-base-empty">Brak materiałów pasujących do wybranych filtrów.</p>}
             <div className="sc-base-grid" aria-label="Najnowsze materiały w Bazie">
               {articles.map(article => <MaterialBox key={article.id} article={article} />)}
-              {Array.from({ length: emptySlotCount }, (_, index) => <EmptyMaterialSlot key={`empty-${index}`} index={articles.length + index + 1} label={EMPTY_TYPES[(articles.length + index) % EMPTY_TYPES.length]} />)}
             </div>
             {feed.hasNextPage && <div ref={loadMoreRef} className="sc-base-load-more" role="status">{feed.isFetchingNextPage ? 'Ładuję kolejne materiały…' : 'Przewiń niżej, aby załadować kolejne materiały.'}</div>}
           </div>
