@@ -45,21 +45,21 @@ function FigurePreview({ summary }: { summary: PublicFigureSummary }) {
   const detail = usePublicFigure(summary.id);
   const organisations = detail.data?.organisations ?? [];
   return (
-    <div className="mvp-pf-preview">
-      <p className="mvp-pf-kicker">{ROLE_CATEGORY_LABELS[summary.role_category] ?? 'Osoba publiczna'}</p>
-      <h2>{summary.name}</h2>
-      <p className="mvp-pf-role"><span className={`mvp-pf-status is-${summary.status}`}>{summary.status === 'current' ? 'Aktualna funkcja' : 'Była funkcja'}</span>{summary.role_title}{summary.organisation && ` · ${summary.organisation}`}</p>
-      {detail.isPending && <p role="status" className="mvp-pf-hint">Ładuję głosowania i relacje…</p>}
-      {detail.isError && <p className="mvp-pf-neutral">Szczegóły profilu nie są jeszcze dostępne na tym serwerze.</p>}
+    <div className="sc-public-figure-preview">
+      <p className="sc-t-caption">{ROLE_CATEGORY_LABELS[summary.role_category] ?? 'Osoba publiczna'}</p>
+      <h2 className="sc-t-title-m">{summary.name}</h2>
+      <p className="sc-t-body"><span className="sc-public-figure-status" data-status={summary.status}>{summary.status === 'current' ? 'Aktualna funkcja' : 'Była funkcja'}</span>{summary.role_title}{summary.organisation && ` · ${summary.organisation}`}</p>
+      {detail.isPending && <p role="status" className="sc-t-body sc-text-2">Ładuję głosowania i relacje…</p>}
+      {detail.isError && <p className="sc-t-body sc-text-2">Szczegóły profilu nie są jeszcze dostępne na tym serwerze.</p>}
       {detail.data && (
-        <dl className="mvp-pf-preview-facts">
+        <dl className="sc-public-figure-preview__facts">
           <div><dt>Głosowania</dt><dd>{detail.data.votes.available ? detail.data.votes.results.length : 'brak jeszcze ręcznie potwierdzonego połączenia z mandatem'}</dd></div>
           {(['foundation', 'association', 'company'] as const).map(kind => (
             <div key={kind}><dt>{ORGANISATION_KIND_LABELS[kind].plural}</dt><dd>{organisations.filter(item => item.kind === kind).length || 'brak jeszcze ręcznie potwierdzonego połączenia'}</dd></div>
           ))}
         </dl>
       )}
-      <p className="mvp-pf-links"><Link href={`/osoby-publiczne/${summary.id}`} className="mvp-pf-primary">Otwórz pełny profil →</Link></p>
+      <Link href={`/osoby-publiczne/${summary.id}`} className="sc-public-figure-preview__link">Otwórz pełny profil →</Link>
     </div>
   );
 }
@@ -77,11 +77,11 @@ export function PublicFigureDirectory() {
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setQuery(input.trim()); }
 
   return (
-    <section className="mvp-pf mvp-pf-page" aria-labelledby={`${uid}-title`}>
-      <header className="mvp-pf-head">
-        <p className="mvp-pf-kicker">REJESTR REDAKCYJNY</p>
-        <h1 id={`${uid}-title`}>Osoby publiczne</h1>
-        <p className="mvp-pf-lead">Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Redakcja dodaje osoby ręcznie, z linkiem do źródła funkcji.</p>
+    <section className="sc-public-directory" aria-labelledby={`${uid}-title`}>
+      <header className="sc-public-directory__head">
+        <p className="sc-t-caption">REJESTR REDAKCYJNY</p>
+        <h1 id={`${uid}-title`} className="sc-t-title-l">Osoby publiczne</h1>
+        <p className="sc-t-body sc-text-2">Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Redakcja dodaje osoby ręcznie, z linkiem do źródła funkcji.</p>
       </header>
       <form className="sc-public-directory__filters" role="search" onSubmit={submit}>
         <SearchField id={`${uid}-q`} label="Imię, funkcja lub instytucja" value={input} onChange={setInput} maxLength={120} placeholder="Imię, funkcja lub instytucja" />
@@ -90,27 +90,27 @@ export function PublicFigureDirectory() {
         <Button type="submit" variant="primary">Szukaj</Button>
       </form>
 
-      {list.isPending && <p role="status" className="mvp-pf-hint">Ładuję rejestr…</p>}
+      {list.isPending && <p role="status" className="sc-t-body sc-text-2">Ładuję rejestr…</p>}
       {list.isError && (
-        <p className="mvp-pf-neutral">
+        <p className="sc-t-body sc-text-2">
           {notFound(list.error) ? 'Rejestr osób publicznych nie jest jeszcze dostępny na tym serwerze.' : 'Nie udało się pobrać rejestru.'}
         </p>
       )}
-      {list.isSuccess && !rows.length && <p className="mvp-pf-neutral">Brak osób dla wybranych filtrów.</p>}
+      {list.isSuccess && !rows.length && <p className="sc-t-body sc-text-2">Brak osób dla wybranych filtrów.</p>}
       {rows.length > 0 && (
-        <ul className="mvp-pf-list">
+        <ul className="sc-public-directory__list">
           {rows.map(row => (
             <li key={row.id}>
               <div>
-                <Link href={`/osoby-publiczne/${row.id}`} className="mvp-pf-list-name">{row.name}</Link>
-                <p className="mvp-pf-role"><span className={`mvp-pf-status is-${row.status}`}>{row.status === 'current' ? 'Aktualna' : 'Była'}</span>{row.role_title}{row.organisation && ` · ${row.organisation}`}</p>
+                <Link href={`/osoby-publiczne/${row.id}`} className="sc-public-directory__name">{row.name}</Link>
+                <p className="sc-t-body"><span className="sc-public-figure-status" data-status={row.status}>{row.status === 'current' ? 'Aktualna' : 'Była'}</span>{row.role_title}{row.organisation && ` · ${row.organisation}`}</p>
               </div>
               <Button type="button" variant="quiet" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
             </li>
           ))}
         </ul>
       )}
-      <p className="mvp-pf-hint">Lista zawiera najwyżej 100 osób. Pokazujemy wyłącznie profile oparte na danych z rejestru.</p>
+      <p className="sc-t-caption sc-text-2">Lista zawiera najwyżej 100 osób. Pokazujemy wyłącznie profile oparte na danych z rejestru.</p>
       <Dialog open={preview !== null} onClose={() => setPreview(null)} title={preview ? `Podgląd profilu: ${preview.name}` : 'Podgląd profilu'} className="mvp-pf-dialog">
         {preview && <FigurePreview key={preview.id} summary={preview} />}
       </Dialog>

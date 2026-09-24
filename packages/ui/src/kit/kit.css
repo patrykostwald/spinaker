@@ -396,6 +396,27 @@ html.sc-theme-transition .sc-root {
 .sc-public-directory__filters .sc-search { flex: 1 1 20rem; }
 @media (max-width: 480px) { .sc-public-directory__filters { display: grid; } .sc-public-directory__filters .sc-btn { width: 100%; } }
 
+/* === Stage 2: rejestr osób publicznych === */
+.sc-public-directory { display: grid; gap: var(--sc-s-6); max-width: var(--sc-layout-wide); }
+.sc-public-directory__head { display: grid; gap: var(--sc-s-3); max-width: 65ch; }
+.sc-public-directory__head h1, .sc-public-directory__head p { margin: 0; }
+.sc-public-directory__list { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--sc-line); }
+.sc-public-directory__list li { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); padding: var(--sc-s-4) 0; border-bottom: 1px solid var(--sc-line); }
+.sc-public-directory__list li > div { display: grid; gap: var(--sc-s-2); min-width: 0; }
+.sc-public-directory__list p { margin: 0; }
+.sc-public-directory__name { color: var(--sc-text); font: var(--sc-t-title-s); text-decoration: none; }
+.sc-public-directory__name:hover, .sc-public-figure-preview__link:hover { color: var(--sc-accent); }
+.sc-public-figure-status { display: inline-flex; margin-right: var(--sc-s-2); padding: 2px 7px; border: 1px solid var(--sc-line); color: var(--sc-text-2); font: var(--sc-t-caption); }
+.sc-public-figure-status[data-status="current"] { color: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-public-figure-preview { display: grid; gap: var(--sc-s-4); }
+.sc-public-figure-preview h2, .sc-public-figure-preview p { margin: 0; }
+.sc-public-figure-preview__facts { display: grid; margin: 0; border-top: 1px solid var(--sc-line); }
+.sc-public-figure-preview__facts div { display: flex; justify-content: space-between; gap: var(--sc-s-3); padding: var(--sc-s-2) 0; border-bottom: 1px solid var(--sc-line); }
+.sc-public-figure-preview__facts dt { color: var(--sc-text-2); }
+.sc-public-figure-preview__facts dd { margin: 0; text-align: right; }
+.sc-public-figure-preview__link { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+@media (max-width: 480px) { .sc-public-directory__list li { align-items: flex-start; flex-direction: column; } }
+
 /* === Stage 2: strona nitki === */
 .sc-thread-page { display: grid; gap: var(--sc-s-6); width: min(100% - var(--sc-s-8), var(--sc-layout-wide)); margin: var(--sc-s-8) auto var(--sc-s-16); }
 .sc-thread-page__kicker { margin: 0; color: var(--sc-accent); letter-spacing: .1em; text-transform: uppercase; }
