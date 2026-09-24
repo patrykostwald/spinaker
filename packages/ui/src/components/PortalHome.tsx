@@ -29,7 +29,7 @@ export function PortalHome() {
   const topSources = config.data?.top_sources ?? [];
 
   return (
-    <div className="mvp-portal-home">
+    <div className="sc-portal-home">
       <h1 className="sr-only">Wiadomości i ich kontekst</h1>
       <IllustrationStrip />
       <NajnowszeWiadomosci />

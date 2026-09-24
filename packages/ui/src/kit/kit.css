@@ -389,6 +389,7 @@ html.sc-theme-transition .sc-root {
 .sc-nav-search { display: flex; gap: var(--sc-s-2); align-items: center; min-width: min(28rem, 40vw); }
 .sc-nav-search .sc-search { flex: 1; min-width: 0; }
 .sc-app-main { width: min(100% - var(--sc-s-8), var(--sc-layout-wide)); margin: 0 auto; padding: var(--sc-s-5) 0; }
+.sc-portal-home { display: grid; gap: var(--sc-s-10); }
 
 /* === Stage 2: strona nitki === */
 .sc-thread-page { display: grid; gap: var(--sc-s-6); width: min(100% - var(--sc-s-8), var(--sc-layout-wide)); margin: var(--sc-s-8) auto var(--sc-s-16); }
