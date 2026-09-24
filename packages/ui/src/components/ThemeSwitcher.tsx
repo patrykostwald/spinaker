@@ -1,39 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Segmented } from "../kit/Segmented";
 import { apiFetch, apiWrite } from "../lib/api";
 import { useAccount } from "../lib/account";
 
-export type ThemePreference = "dark" | "light" | "pastel";
-type ProfileSettings = { username: string; public_activity: boolean; theme_preference: ThemePreference };
+type StoredTheme = "dark" | "light" | "pastel";
+type ThemeMode = "dark" | "light" | "auto";
+type ProfileSettings = { username: string; public_activity: boolean; theme_preference: StoredTheme };
 
-const themes: Array<{ value: ThemePreference; label: string }> = [
-  { value: "dark", label: "Ciemny" },
-  { value: "light", label: "Jasny" },
-  { value: "pastel", label: "Pastelowy" },
-];
-
-function resolveTheme(preference: ThemePreference) {
-  return preference;
+function systemTheme(): "dark" | "light" {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyTheme(preference: ThemePreference) {
+function resolvedTheme(mode: ThemeMode): "dark" | "light" {
+  return mode === "auto" ? systemTheme() : mode;
+}
+
+function applyTheme(mode: ThemeMode) {
   const root = document.documentElement;
-  root.dataset.themePreference = preference;
-  root.dataset.theme = resolveTheme(preference);
-  root.style.colorScheme = root.dataset.theme === "dark" ? "dark" : "light";
+  const theme = resolvedTheme(mode);
+  root.classList.add("sc-theme-transition");
+  root.dataset.themePreference = mode;
+  root.dataset.theme = theme;
+  root.style.colorScheme = theme;
+  window.setTimeout(() => root.classList.remove("sc-theme-transition"), 300);
 }
 
 export function ThemeSwitcher() {
   const account = useAccount();
   const ownerId = account.data?.user?.id;
   const cache = useQueryClient();
-  const [preference, setPreference] = useState<ThemePreference>("dark");
-  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<ThemeMode>("dark");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const container = useRef<HTMLDivElement>(null);
   const profile = useQuery({
     queryKey: ["account-profile", ownerId],
     queryFn: () => apiFetch<ProfileSettings>("/api/account/profile/"),
@@ -42,54 +43,43 @@ export function ThemeSwitcher() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem("spin-theme");
-    const initial = themes.some(theme => theme.value === stored) ? stored as ThemePreference : "dark";
-    setPreference(initial);
-    applyTheme(initial);
-
+    const next: ThemeMode = stored === "auto" ? "auto" : stored === "light" || stored === "pastel" ? "light" : "dark";
+    if (stored === "pastel") window.localStorage.setItem("spin-theme", "light");
+    setMode(next);
+    applyTheme(next);
   }, []);
 
   useEffect(() => {
     if (!profile.data) return;
-    const next = themes.some(theme => theme.value === profile.data.theme_preference) ? profile.data.theme_preference : "dark";
+    const next: ThemeMode = profile.data.theme_preference === "pastel" ? "light" : profile.data.theme_preference;
     window.localStorage.setItem("spin-theme", next);
-    setPreference(next);
+    setMode(next);
     applyTheme(next);
   }, [profile.data]);
 
   useEffect(() => {
-    function close(event: PointerEvent) {
-      if (!container.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function escape(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", escape);
-    };
-  }, []);
+    if (mode !== "auto") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const refresh = () => applyTheme("auto");
+    media.addEventListener("change", refresh);
+    return () => media.removeEventListener("change", refresh);
+  }, [mode]);
 
-  async function choose(next: ThemePreference) {
-    const previous = preference;
-    window.localStorage.setItem("spin-theme", next);
-    setPreference(next);
-    applyTheme(next);
-    setOpen(false);
+  async function choose(next: string) {
+    const nextMode = next as ThemeMode;
+    const previous = mode;
+    window.localStorage.setItem("spin-theme", nextMode);
+    setMode(nextMode);
+    applyTheme(nextMode);
     setError("");
     if (!ownerId) return;
     setSaving(true);
     try {
-      const updated = await apiWrite<ProfileSettings>(
-        "/api/account/profile/",
-        { theme_preference: next },
-        "PATCH",
-      );
+      const updated = await apiWrite<ProfileSettings>("/api/account/profile/", { theme_preference: resolvedTheme(nextMode) }, "PATCH");
       cache.setQueryData(["account-profile", ownerId], updated);
     } catch {
       window.localStorage.setItem("spin-theme", previous);
-      setPreference(previous);
+      setMode(previous);
       applyTheme(previous);
       setError("Nie udało się zapisać motywu.");
     } finally {
@@ -97,33 +87,8 @@ export function ThemeSwitcher() {
     }
   }
 
-  return <div className="theme-switcher" ref={container}>
-    <button
-      type="button"
-      className="theme-trigger"
-      aria-label={`Motyw: ${themes.find(theme => theme.value === preference)?.label ?? "Ciemny"}`}
-      aria-expanded={open}
-      aria-haspopup="menu"
-      disabled={saving}
-      onClick={() => setOpen(value => !value)}
-    >
-      <span className="theme-bar theme-bar-one" />
-      <span className="theme-bar theme-bar-two" />
-      <span className="theme-bar theme-bar-three" />
-    </button>
-    {open && <div className="theme-menu" role="menu" aria-label="Wybierz motyw">
-      {themes.map(theme => <button
-        type="button"
-        role="menuitemradio"
-        aria-checked={preference === theme.value}
-        className="theme-option"
-        key={theme.value}
-        disabled={saving}
-        onClick={() => void choose(theme.value)}
-      >
-        <span>{theme.label}</span><span aria-hidden="true">{preference === theme.value ? "●" : ""}</span>
-      </button>)}
-    </div>}
-    {error && <span className="theme-error" role="alert">{error}</span>}
+  return <div className="sc-theme-switcher">
+    <Segmented name="theme" label="Motyw" value={mode} onChange={choose} disabled={saving} options={[{ value: "dark", label: "Ciemny" }, { value: "light", label: "Jasny" }, { value: "auto", label: "Automatyczny" }]} />
+    {error ? <p className="sc-t-caption sc-text-2" role="alert">{error}</p> : null}
   </div>;
 }
