@@ -23,3 +23,14 @@ def test_sync_kprp_leadership_marks_absent_key_former(monkeypatch):
     monkeypatch.setattr('news.management.commands.sync_kprp_leadership.KPRP_LEADERSHIP', KPRP_LEADERSHIP[:1])
     call_command('sync_kprp_leadership', stdout=StringIO())
     assert PublicFigure.objects.get(import_key='kprp-leadership:former:holder:byla-osoba').status == 'former'
+
+
+@pytest.mark.django_db
+def test_sync_kprp_leadership_archives_only_the_legacy_technical_duplicate():
+    key, name, _ = KPRP_LEADERSHIP[0]
+    legacy = PublicFigure.objects.create(canonical_name=name, role_category='government', role_title='Dawna forma wpisu',
+        evidence_url='https://kprp.example/roster', import_key=f'kprp-leadership:{key}', status='former')
+    call_command('sync_kprp_leadership', stdout=StringIO())
+    legacy.refresh_from_db()
+    assert legacy.archived is True
+    assert PublicOffice.objects.get(import_key=f'public-office:kprp:{key}').current_holder.archived is False
