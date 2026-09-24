@@ -13,7 +13,7 @@
  * jakikolwiek stan trafi do Reacta) — tu tylko czytamy gotowy `engine.exit`.
  */
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Article } from "../../types";
@@ -127,7 +127,6 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
   // uruchomić `exit` AnimatePresence, kiedy `close()` zeruje fazę. `isOpenSession`
   // (lokalny `displayed`) czyści się DOPIERO w `onExitComplete`, więc oparcie tych
   // dwóch flag na nim byłoby cyklem, który nigdy się nie domyka.
-  const showScrim = engine.phase === "open";
   // `displayed !== null` dodatkowo strzeże PIERWSZEGO przebiegu renderu, w którym `phase`
   // zdążył już przełączyć się na "open", a `displayed` jeszcze nie (ustawia go dopiero
   // `useLayoutEffect` wyżej) — bez tego `article={displayed!}` przekazałoby `null`.
@@ -164,18 +163,6 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
           }
         }}
       >
-        {showScrim && (
-          <motion.div
-            key="scrim"
-            className="sc-portal-scrim"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: m.t("scrim") }}
-            exit={{ opacity: 0, transition: m.t("scrim") }}
-            onPointerDown={(event) => {
-              if (event.target === event.currentTarget) requestClose();
-            }}
-          />
-        )}
         {showSurface && (
           <MaterialSurface
             key="surface"

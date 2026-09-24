@@ -30,19 +30,20 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
   const account = useAccount();
   const [first, ...rest] = site.name.split(".");
   const second = rest.join(".");
+  // Szapka minimalna (замечание владельца 24.09): w rzędzie tylko wordmark, szukanie, motyw i konto.
+  // Sekcje serwisu są w stopce; na telefonie panel menu pokazuje je razem z akcjami.
   const items = [
-    { label: "Baza", href: "/search", current: pathname === "/search" },
     { label: "Źródła", href: "/zrodla", current: pathname === "/zrodla" },
     { label: "Osoby publiczne", href: "/osoby-publiczne", current: pathname.startsWith("/osoby-publiczne") },
     { label: "O nas", href: "/o-nas", current: pathname === "/o-nas" },
-  ];
+  ].filter(() => false);
 
   return (
     <NavMenu
       items={items}
       brand={<Link href="/" className="sc-wordmark">{first}<span aria-hidden="true">.</span>{second}</Link>}
       search={<HeaderSearch />}
-      cta={<div className="sc-nav-cta"><ThemeSwitcher compact /><Button href="/konto" variant="secondary" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button></div>}
+      cta={<div className="sc-nav-cta"><ThemeSwitcher compact /><Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button></div>}
     />
   );
 }

@@ -21,7 +21,6 @@ import { ShareIcon } from "./icons/ShareIcon";
 import { Button } from "./Button";
 import { NewsCard } from "./NewsCard";
 import { useMotionTokens } from "./motion/useMotionTokens";
-import { BREAKPOINTS, RADIUS } from "./tokens";
 import { categoryLabel, formatDateTimePl } from "../lib/utils";
 import type { Article } from "../types";
 import type { DragDismiss } from "./portal/useDragDismiss";
@@ -52,14 +51,14 @@ export type MaterialSurfaceProps = {
   children?: ReactNode;
 };
 
+/**
+ * Cel morfingu: CAŁY ekran, promień 0 — karta rozwija się w nowy ekran, nie w okno modalne
+ * (замечание владельца 24.09). Adres zmienia się na /material/<id>, więc odświeżenie daje tę
+ * samą stronę serwerową.
+ */
 function computeTargetBox() {
   if (typeof window === "undefined") return { top: 0, left: 0, width: 0, height: 0, radius: 0 };
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  if (w < BREAKPOINTS.phone) return { top: 0, left: 0, width: w, height: h, radius: 0 };
-  const insetY = h * 0.06;
-  const insetX = w * 0.08;
-  return { top: insetY, left: insetX, width: w - insetX * 2, height: h - insetY * 2, radius: RADIUS["2xl"] };
+  return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight, radius: 0 };
 }
 
 function useTargetBox() {
@@ -103,7 +102,6 @@ export function MaterialSurface({
         zIndex: 91,
         overflow: "hidden" as const,
         background: "var(--sc-surface)",
-        boxShadow: "var(--sc-e-3), 0 0 0 1px var(--sc-glow-ring), 0 0 56px var(--sc-glow-ring-strong)",
         y: drag?.y,
         scale: drag?.surfaceScale,
       }

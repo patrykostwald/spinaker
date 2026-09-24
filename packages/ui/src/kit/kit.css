@@ -35,19 +35,20 @@
 :root,
 html[data-theme="dark"],
 [data-sc-theme="dark"] {
-  --sc-bg: #08090b;
-  --sc-surface: #111317;
-  --sc-surface-2: #1a1d22;
-  --sc-surface-3: #22262d;
-  --sc-chrome: rgba(8, 9, 11, 0.72);
-  --sc-chrome-menu: rgba(26, 29, 34, 0.82);
-  --sc-line: #262a31;
-  --sc-line-strong: #363b44;
-  --sc-line-hover: #3a6fb5;
+  /* Чисто чёрный фон и нейтральные серые без синего оттенка (замечание владельца 24.09). */
+  --sc-bg: #000000;
+  --sc-surface: #0f0f0f;
+  --sc-surface-2: #171717;
+  --sc-surface-3: #212121;
+  --sc-chrome: rgba(0, 0, 0, 0.72);
+  --sc-chrome-menu: rgba(23, 23, 23, 0.86);
+  --sc-line: #262626;
+  --sc-line-strong: #383838;
+  --sc-line-hover: #383838;
   --sc-hairline: rgba(255, 255, 255, 0.08);
-  --sc-text: #f5f6f7;
-  --sc-text-2: #a0a6af;
-  --sc-text-3: #868d96;
+  --sc-text: #ffffff;
+  --sc-text-2: #a6a6a6;
+  --sc-text-3: #8c8c8c;
   --sc-accent: #4a9eff;
   --sc-accent-hover: #6fb2ff;
   --sc-accent-press: #2e86f0;
@@ -86,19 +87,20 @@ html[data-theme="dark"],
 html[data-theme="light"],
 html[data-theme="pastel"],
 [data-sc-theme="light"] {
+  /* Чисто белый фон и нейтральные серые без синего оттенка (замечание владельца 24.09). */
   --sc-bg: #ffffff;
   --sc-surface: #ffffff;
-  --sc-surface-2: #f5f6f8;
-  --sc-surface-3: #ebedf1;
-  --sc-chrome: rgba(255, 255, 255, 0.72);
-  --sc-chrome-menu: rgba(255, 255, 255, 0.86);
-  --sc-line: #e3e5e9;
-  --sc-line-strong: #c9cdd4;
-  --sc-line-hover: #9cc0ee;
+  --sc-surface-2: #f4f4f4;
+  --sc-surface-3: #e8e8e8;
+  --sc-chrome: rgba(255, 255, 255, 0.78);
+  --sc-chrome-menu: rgba(255, 255, 255, 0.92);
+  --sc-line: #e3e3e3;
+  --sc-line-strong: #cfcfcf;
+  --sc-line-hover: #cfcfcf;
   --sc-hairline: rgba(0, 0, 0, 0.06);
-  --sc-text: #0b0c0e;
-  --sc-text-2: #4b5159;
-  --sc-text-3: #656b73;
+  --sc-text: #000000;
+  --sc-text-2: #4f4f4f;
+  --sc-text-3: #666666;
   --sc-accent: #0a62d0;
   --sc-accent-hover: #0850ae;
   --sc-accent-press: #06408c;
@@ -2767,8 +2769,8 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 /* === Stage 2: monochrom + hover + szapka (замечания владельца 24.09) === */
 /* Синий — только акцент (текст, иконки, индикатор, фокус, ореол карточек). Все заливки — чёрно-белые:
    «первичная» кнопка и включённые контролы инвертированы (ночью светлые, днём тёмные). */
-:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-primary-bg: #f5f6f7; --sc-primary-fg: #08090b; --sc-primary-hover: #dfe2e7; --sc-primary-press: #c9cdd4; }
-html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-primary-bg: #0b0c0e; --sc-primary-fg: #ffffff; --sc-primary-hover: #262a31; --sc-primary-press: #3a3f47; }
+:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-primary-bg: #ffffff; --sc-primary-fg: #000000; --sc-primary-hover: #e6e6e6; --sc-primary-press: #d0d0d0; }
+html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-primary-bg: #000000; --sc-primary-fg: #ffffff; --sc-primary-hover: #262626; --sc-primary-press: #3a3a3a; }
 .sc-btn[data-variant="primary"] { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
 .sc-btn[data-variant="primary"]:focus-visible, .sc-btn[data-variant="primary"][data-lit="true"] { background: var(--sc-primary-hover); border-color: var(--sc-primary-hover); color: var(--sc-primary-fg); }
 .sc-btn[data-variant="primary"]:active { background: var(--sc-primary-press); border-color: var(--sc-primary-press); }
@@ -2842,3 +2844,26 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-thread-view__columns { grid-template-columns: 1fr; }
   .sc-thread-view__list { max-height: none; overflow: visible; margin: 0; padding: 0; }
 }
+
+/* === Stage 2: czarno-białe tło całej strony (замечание владельца 24.09) === */
+/* Stare tokeny z globals.css (granatowe --background/--surface) jeszcze żyją w pojedynczych
+   komponentach — mapujemy je na kit, żeby nigdzie nie został niebieski odcień. */
+:root, html[data-theme="dark"] {
+  --background: #000000; --surface: #0f0f0f; --surface-raised: #171717; --chrome: #000000; --line: #262626;
+  --text: #ffffff; --text-secondary: #a6a6a6; --color-primary: #4a9eff; --color-primary-hover: #6fb2ff;
+  --background-rgb: 0 0 0; --surface-rgb: 15 15 15; --line-rgb: 38 38 38; --text-rgb: 255 255 255; --secondary-rgb: 166 166 166;
+}
+html[data-theme="light"], html[data-theme="pastel"] {
+  --background: #ffffff; --surface: #ffffff; --surface-raised: #f4f4f4; --chrome: #ffffff; --line: #e3e3e3;
+  --text: #000000; --text-secondary: #4f4f4f; --color-primary: #0a62d0; --color-primary-hover: #0850ae;
+  --background-rgb: 255 255 255; --surface-rgb: 255 255 255; --line-rgb: 227 227 227; --text-rgb: 0 0 0; --secondary-rgb: 79 79 79;
+}
+body { background: var(--sc-bg); color: var(--sc-text); }
+.sc-portal-scrim { background: rgba(0, 0, 0, 0.6); }
+/* Powierzchnia materiału na cały ekran: bez ramki, cienia i poświaty — to „nowy ekran”, nie okno. */
+.sc-surface[data-mode="overlay"] { box-shadow: none; }
+.sc-surface__body { margin: 0 auto; width: 100%; }
+.sc-surface__media { max-width: 1120px; margin: 0 auto; width: 100%; }
+/* Szapka minimalna: wordmark · pole szukania · motyw · konto. */
+.sc-navmenu__row { height: 60px; }
+.sc-navmenu__search { width: min(480px, 40vw); }
