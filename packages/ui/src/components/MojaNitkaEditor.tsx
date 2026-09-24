@@ -22,6 +22,7 @@ import {
   type PersonalContextThread,
 } from '../lib/personal';
 import type { Article } from '../types';
+import { Button } from '../kit';
 import { SignedOutPanel } from './MojeKonto';
 
 type Draft = { title: string; description: string; keywords: string[]; categories: string[]; sourceIds: number[]; articles: PersonalArticleRef[] };
@@ -195,7 +196,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         <p className="sc-account-kicker">MOJA NITKA KONTEKSTOWA</p>
         <h1>{isUnavailable(thread.error) ? 'Nie znaleziono nitki' : 'Nie udało się pobrać nitki'}</h1>
         <p className="sc-account-empty">{isUnavailable(thread.error) ? 'Ta nitka nie istnieje, została usunięta albo prywatne nitki nie są jeszcze dostępne na tym serwerze.' : 'Spróbuj ponownie za chwilę.'}</p>
-        <Link href="/konto" className="quiet-button">← Moje konto</Link>
+        <Button href="/konto" variant="quiet" size="sm">← Moje konto</Button>
       </section>
     );
   }
@@ -233,7 +234,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
             <label htmlFor={`${uid}-keyword`}>Hasła</label>
             <div className="sc-account-inline">
               <input id={`${uid}-keyword`} value={keywordInput} onChange={event => setKeywordInput(event.target.value)} onKeyDown={onKeywordKey} placeholder="np. most miejski" aria-describedby={`${uid}-keyword-help`} />
-              <button type="button" className="quiet-button" onClick={addKeyword} disabled={!keywordInput.trim()}>Dodaj hasło</button>
+              <Button type="button" variant="quiet" size="sm" onClick={addKeyword} disabled={!keywordInput.trim()}>Dodaj hasło</Button>
             </div>
             <small id={`${uid}-keyword-help`}>Enter lub przecinek dodaje hasło · {query.length}/{THREAD_LIMITS.query} znaków</small>
             {draft.keywords.length > 0 && (
@@ -321,8 +322,8 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
             <div className="sc-account-inline">
               <input id={`${uid}-search`} type="search" value={search} onChange={event => setSearch(event.target.value)}
                 onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setSearchTerm(search.trim()); } }} placeholder="Tytuł, hasło, osoba…" />
-              <button type="button" className="quiet-button" onClick={() => setSearchTerm(search.trim())} disabled={search.trim().length < 2}>Szukaj</button>
-              {draft.keywords.length > 0 && <button type="button" className="quiet-button" onClick={() => { setSearch(draft.keywords.join(' ')); setSearchTerm(draft.keywords.join(' ')); }}>Szukaj po hasłach nitki</button>}
+              <Button type="button" variant="quiet" size="sm" onClick={() => setSearchTerm(search.trim())} disabled={search.trim().length < 2}>Szukaj</Button>
+              {draft.keywords.length > 0 && <Button type="button" variant="quiet" size="sm" onClick={() => { setSearch(draft.keywords.join(' ')); setSearchTerm(draft.keywords.join(' ')); }}>Szukaj po hasłach nitki</Button>}
             </div>
           </div>
           {results.isFetching && <p role="status" className="sc-account-hint">Szukam w Bazie…</p>}
@@ -336,9 +337,9 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
                     <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(article.category)}</span> {article.source?.name} · {formatDateTimePl(article.published_date, article.date_precision)}</p>
                     <strong>{article.title}</strong>
                   </div>
-                  <button type="button" className="quiet-button" disabled={selectedIds.has(article.id)} onClick={() => addArticle(toRef(article))}>
+                  <Button type="button" variant="quiet" size="sm" disabled={selectedIds.has(article.id)} onClick={() => addArticle(toRef(article))}>
                     {selectedIds.has(article.id) ? 'W nitce' : 'Dodaj'}<span className="sr-only">: {article.title}</span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -353,9 +354,9 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
                       <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(row.article.category)}</span> {row.article.published_date ? formatDateTimePl(row.article.published_date) : ''}</p>
                       <strong>{row.article.title}</strong>
                     </div>
-                    <button type="button" className="quiet-button" disabled={selectedIds.has(row.article.id)} onClick={() => addArticle(row.article)}>
+                    <Button type="button" variant="quiet" size="sm" disabled={selectedIds.has(row.article.id)} onClick={() => addArticle(row.article)}>
                       {selectedIds.has(row.article.id) ? 'W nitce' : 'Dodaj'}<span className="sr-only">: {row.article.title}</span>
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -369,14 +370,14 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           {error ? <p className="sc-account-error">{error}</p> : notice ? <p>{notice}</p> : <p>{dirty ? 'Masz niezapisane zmiany.' : threadId ? 'Wszystkie zmiany zapisane.' : 'Nowa nitka nie jest jeszcze zapisana.'}</p>}
         </div>
         <div className="sc-account-actions">
-          <button type="submit" className="sc-account-primary" disabled={pending}>{pending ? 'Zapisuję…' : 'Zapisz nitkę'}</button>
+          <Button type="submit" variant="primary" disabled={pending}>{pending ? 'Zapisuję…' : 'Zapisz nitkę'}</Button>
           {threadId && (confirmDelete ? (
             <span className="sc-account-confirm">
-              <button type="button" className="quiet-button" disabled={pending} onClick={removeThread}>Potwierdź usunięcie nitki</button>
-              <button type="button" className="quiet-button" onClick={() => setConfirmDelete(false)}>Anuluj</button>
+              <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={removeThread}>Potwierdź usunięcie nitki</Button>
+              <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmDelete(false)}>Anuluj</Button>
             </span>
           ) : (
-            <button type="button" className="quiet-button" onClick={() => setConfirmDelete(true)}>Usuń nitkę</button>
+            <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmDelete(true)}>Usuń nitkę</Button>
           ))}
         </div>
       </div>

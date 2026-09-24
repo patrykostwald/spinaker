@@ -76,7 +76,7 @@ function Section({ id, title, count, action, children }: { id: string; title: st
 function QueryState({ query, unavailableText }: { query: { isPending: boolean; isError: boolean; error: unknown; refetch: () => unknown }; unavailableText: string }) {
   if (query.isPending) return <p role="status" className="sc-account-empty">Ładuję…</p>;
   if (query.isError && isUnavailable(query.error)) return <p className="sc-account-empty sc-account-unavailable">{unavailableText}</p>;
-  if (query.isError) return <p role="alert" className="sc-account-empty">Nie udało się pobrać danych. <button type="button" className="quiet-button" onClick={() => query.refetch()}>Ponów</button></p>;
+  if (query.isError) return <p role="alert" className="sc-account-empty">Nie udało się pobrać danych. <Button type="button" variant="quiet" size="sm" onClick={() => query.refetch()}>Ponów</Button></p>;
   return null;
 }
 
@@ -85,7 +85,7 @@ function ThreadsSection() {
   const rows = threads.data?.results ?? [];
   return (
     <Section id="moje-nitki" title="Moje nitki kontekstowe" count={threads.isSuccess ? rows.length : undefined}
-      action={threads.isError && isUnavailable(threads.error) ? null : <Link href="/konto/nitki/nowa" className="quiet-button sc-account-new">+ Nowa nitka</Link>}>
+      action={threads.isError && isUnavailable(threads.error) ? null : <Button href="/konto/nitki/nowa" variant="quiet" size="sm" className="sc-account-new">+ Nowa nitka</Button>}>
       <p className="sc-account-private"><span>PRYWATNE</span> Nitki widzisz tylko Ty. Nie są publikowane, nie są nitkami Dr Spina i nie układa ich AI.</p>
       <QueryState query={threads} unavailableText="Prywatne nitki są w trakcie udostępniania w interfejsie MVP. Nic nie zostało zapisane." />
       {threads.isSuccess && !rows.length && (
@@ -107,7 +107,7 @@ function ThreadsSection() {
                   {' · '}zmieniono <time dateTime={thread.updated_at}>{formatDateTimePl(thread.updated_at)}</time>
                 </p>
               </div>
-              <Link href={`/konto/nitki/${thread.id}`} className="quiet-button">Otwórz<span className="sr-only"> nitkę {thread.title}</span></Link>
+              <Button href={`/konto/nitki/${thread.id}`} variant="quiet" size="sm">Otwórz<span className="sr-only"> nitkę {thread.title}</span></Button>
             </li>
           ))}
         </ul>
@@ -147,9 +147,9 @@ function ArticleFavoritesSection() {
                   <a href={row.article.url} target="_blank" rel="noopener noreferrer">Oryginał ↗</a>
                 </p>
               </div>
-              <button type="button" className="quiet-button" disabled={pendingId === row.article.id} onClick={() => remove(row.article.id)}>
+              <Button type="button" variant="quiet" size="sm" disabled={pendingId === row.article.id} onClick={() => remove(row.article.id)}>
                 Usuń<span className="sr-only"> z ulubionych: {row.article.title}</span>
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -185,9 +185,9 @@ function ThreadFavoritesSection() {
                 <p className="sc-account-meta"><span className="sc-account-tag">DR SPIN</span> zapisano <time dateTime={row.created_at}>{formatDateTimePl(row.created_at)}</time></p>
                 <Link href={`/thread/${row.thread.slug}`} className="sc-account-title">{row.thread.title}</Link>
               </div>
-              <button type="button" className="quiet-button" disabled={pendingId === row.thread.id} onClick={() => remove(row.thread.id)}>
+              <Button type="button" variant="quiet" size="sm" disabled={pendingId === row.thread.id} onClick={() => remove(row.thread.id)}>
                 Usuń<span className="sr-only"> z ulubionych: {row.thread.title}</span>
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -213,7 +213,7 @@ function TopicsSection() {
   }
   return (
     <Section id="paski" title="Moje paski tematów" count={topics.isSuccess ? rows.length : undefined}
-      action={<Link href="/profile" className="quiet-button">Dodaj lub edytuj w profilu</Link>}>
+      action={<Button href="/profile" variant="quiet" size="sm">Dodaj lub edytuj w profilu</Button>}>
       <QueryState query={topics} unavailableText="Paski tematów na koncie są w trakcie udostępniania w interfejsie MVP." />
       {topics.isSuccess && !rows.length && <p className="sc-account-empty">Pasek to zapisany widok Bazy: hasło, kategorie lub źródła. Możesz mieć do {topics.data.max_topics} pasków.</p>}
       {error && <p role="alert" className="sc-account-error">{error}</p>}
@@ -229,11 +229,11 @@ function TopicsSection() {
               </div>
               {confirmId === topic.id ? (
                 <span className="sc-account-confirm">
-                  <button type="button" className="quiet-button" disabled={pending} onClick={() => remove(topic.id)}>Potwierdź usunięcie</button>
-                  <button type="button" className="quiet-button" onClick={() => setConfirmId(null)}>Anuluj</button>
+                  <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={() => remove(topic.id)}>Potwierdź usunięcie</Button>
+                  <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmId(null)}>Anuluj</Button>
                 </span>
               ) : (
-                <button type="button" className="quiet-button" onClick={() => setConfirmId(topic.id)}>Usuń<span className="sr-only"> pasek {topic.label}</span></button>
+                <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmId(topic.id)}>Usuń<span className="sr-only"> pasek {topic.label}</span></Button>
               )}
             </li>
           ))}
