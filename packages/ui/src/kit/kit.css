@@ -595,11 +595,9 @@ html.sc-theme-transition .sc-root {
   border: 0;
 }
 
-/* Спиннер кнопки: framer-motion пишет inline transform: scale() на спиннер и затирал
-   translate(-50%,-50%), которым он центрировался — центрируем сеткой без transform. */
-/* Специфичность 0,2,0: правило R2 (.sc-btn__spinner, top/left 50%) стоит в файле ПОЗЖЕ этого блока и
-   при равной специфичности побеждало бы. */
-.sc-btn .sc-btn__spinner { position: absolute; inset: 0; margin: auto; display: grid; place-items: center; transform: none; }
+/* Спиннер кнопки центрируется в своём правиле (блок R2: absolute + margin:auto); здесь только
+   гарантия от inline transform framer-motion. */
+.sc-btn .sc-btn__spinner { transform: none; }
 .sc-btn[aria-busy="true"] { opacity: 1; cursor: progress; }
 
 /* Мобильная панель навигации вырастает из кнопки меню (аудит 24.09, «один живой элемент»):
@@ -888,7 +886,9 @@ html.sc-theme-transition .sc-root {
    kill-switch prefers-reduced-motion powyżej w tym pliku ustawia jej
    animation-duration:1ms i animation-iteration-count:1 — zostaje statyczny łuk. */
 @keyframes sc-icon-spin { to { transform: rotate(360deg); } }
-.sc-icon--spinner { animation: sc-icon-spin 1s linear infinite; transform-origin: 12px 12px; }
+/* Центр вращения в процентах: 12px 12px верно только для size=24, при 16/20 иконка «ходила» вокруг
+   смещённой точки (замер 24.09: сдвиг центра до 3px на кадр). */
+.sc-icon--spinner { animation: sc-icon-spin 1s linear infinite; transform-origin: 50% 50%; }
 
 /* Serce — jednorazowy „pop” + poświata przy włączeniu, ten sam jednorazowy wzorzec co .sc-sheen. */
 @keyframes sc-heart-pop { 0% { transform: scale(1); } 45% { transform: scale(1.25); } 100% { transform: scale(1); } }
@@ -1288,12 +1288,17 @@ html[data-theme="pastel"],
 .sc-btn[aria-busy="true"] .sc-btn__icon:not(.sc-btn__spinner) {
   visibility: hidden;
 }
+/* Центрирование без transform: framer-motion пишет inline transform: scale() на спиннер и затирал бы
+   translate(-50%,-50%). Абсолютный бокс с явными width/height и margin:auto — центр при любом каскаде. */
 .sc-btn__spinner {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: inline-flex;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: auto;
+  display: grid;
+  place-items: center;
 }
 @keyframes sc-btn-spin { to { transform: rotate(360deg); } }
 .sc-btn__spinner-svg { animation: sc-btn-spin 1s linear infinite; }
