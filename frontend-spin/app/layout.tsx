@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main-content" className="sr-only focus:not-sr-only focus:p-4">Przejdź do treści</a>
         <Providers>
           <SiteHeader site={site} />
-          <main id="main-content" className="mx-auto max-w-7xl px-4 py-5">{children}</main>
+          <main id="main-content" className="sc-app-main">{children}</main>
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}
       </body>
