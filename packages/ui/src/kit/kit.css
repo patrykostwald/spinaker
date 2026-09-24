@@ -2097,3 +2097,14 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-search-links a { display: grid; gap: var(--sc-s-2); padding: var(--sc-s-4); background: var(--sc-surface-2); color: var(--sc-text); text-decoration: none; }
 .sc-search-links a:hover { color: var(--sc-accent); box-shadow: var(--sc-ring); }
 @media (max-width: 480px) { .sc-search-page__head { display: grid; } .sc-search-filters { align-items: stretch; } }
+
+/* === Stage 2: konto i logowanie === */
+.sc-account-form { display: grid; gap: var(--sc-s-4); }
+.sc-account-form p { margin: 0; }
+.sc-account-form label { display: grid; gap: var(--sc-s-2); color: var(--sc-text); font-size: 14px; font-weight: 600; }
+.sc-account-form input { min-height: 44px; padding: 0 var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; }
+.sc-account-form input:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+.sc-account-form__error, .sc-account-control [role="alert"] { color: var(--sc-danger); }
+.sc-account-control { display: inline-flex; align-items: center; justify-content: end; flex-wrap: wrap; gap: var(--sc-s-2); }
+.sc-account-control__name { max-width: 9rem; overflow: hidden; color: var(--sc-text-2); font: var(--sc-t-caption); text-overflow: ellipsis; text-decoration: none; white-space: nowrap; }
+.sc-account-control__name:hover { color: var(--sc-accent); }
