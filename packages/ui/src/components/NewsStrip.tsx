@@ -4,7 +4,7 @@ import type { Article } from '../types';
 import { NewsCard } from '../kit/NewsCard';
 
 export function NewsStrip({ title, eyebrow, articles, onSelect, loading = false, error = false, onRetry, empty = 'Nie ma jeszcze materiałów w tym zakresie.', large = false, controls, live = false }: {
-  title: string; eyebrow?: string; articles: Article[]; onSelect: (article: Article) => void;
+  title: string; eyebrow?: string; articles: Article[]; onSelect?: (article: Article) => void;
   loading?: boolean; error?: boolean; onRetry?: () => void; empty?: string; large?: boolean; controls?: ReactNode; live?: boolean;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
