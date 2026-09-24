@@ -42,7 +42,7 @@ const STATUS_LABELS: Record<XDraft['status'], string> = {
 };
 
 const input = 'sc-political__input';
-const textarea = input + ' font-normal';
+const textarea = input;
 const button = 'sc-political__button';
 const primaryButton = 'sc-political__primary';
 
@@ -144,9 +144,9 @@ export function PoliticalReview() {
   if (me.isError) return <div role="alert"><p>Nie udało się sprawdzić dostępu.</p>
     <button onClick={() => me.refetch()} className={button}>Spróbuj ponownie</button></div>;
   if (!me.data?.authenticated) return <ThreadEditor />;
-  if (!isReviewer) return <section className="mx-auto max-w-md rounded-xl border p-7 text-sm text-slate-400">
-    <h1 className="text-xl font-semibold text-slate-100">Panel redakcyjny X</h1>
-    <p className="mt-3">Ten panel jest dostępny wyłącznie dla administratora / redaktora. Twoje konto nie ma tych uprawnień.</p>
+  if (!isReviewer) return <section className="sc-political-access">
+    <h1 className="sc-t-title-l">Panel redakcyjny X</h1>
+    <p className="sc-political-gap">Ten panel jest dostępny wyłącznie dla administratora / redaktora. Twoje konto nie ma tych uprawnień.</p>
   </section>;
 
   const activeView = VIEWS.find(item => item.key === view)!;
@@ -154,32 +154,32 @@ export function PoliticalReview() {
   return <div className="sc-political">
     <header className="sc-political__head"><p className="sc-t-caption">PANEL REDAKCYJNY X</p>
       <h1 className="sc-t-title-l">Propozycje z już zapisanych postów X</h1>
-      <p className="mt-2 max-w-2xl text-sm text-slate-400">Panel wyłącznie przegląda materiał już pobrany i zapisany jako
+      <p className="sc-political-copy">Panel wyłącznie przegląda materiał już pobrany i zapisany jako
         PoliticalPost. Nie łączy się z płatnym API X, nie publikuje nitek, nie pisze oskarżeń i nie ocenia prawdziwości
         postów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja redakcji.</p>
     </header>
 
-    {status.data?.draft_rules && <details className="rounded-lg border p-3 text-xs text-slate-400">
-      <summary className="cursor-pointer text-sm text-slate-200">Zasady przygotowania propozycji (DRAFT_RULES)</summary>
-      <p className="mt-2 whitespace-pre-wrap">{status.data.draft_rules}</p>
+    {status.data?.draft_rules && <details className="sc-political-rules">
+      <summary className="sc-political-rules-summary">Zasady przygotowania propozycji (DRAFT_RULES)</summary>
+      <p className="sc-political-post-text">{status.data.draft_rules}</p>
     </details>}
 
-    <div className="flex flex-wrap gap-2 border-b pb-3">
+    <div className="sc-political-tabs">
       {VIEWS.map(item => <button key={item.key} type="button" disabled={busy}
         onClick={() => { setView(item.key); setSelectedIds([]); setPerPost({}); setError(''); setNotice(''); }}
         className={item.key === view ? primaryButton : button}>{item.label}</button>)}
     </div>
-    <p className="text-sm text-slate-400">{activeView.description}</p>
+    <p className="sc-political-copy">{activeView.description}</p>
 
-    {error && <p role="alert" className="rounded-lg border border-rose-400/30 p-3 text-sm text-rose-300">{error}</p>}
-    {notice && <p role="status" className="rounded-lg border p-3 text-sm">{notice}</p>}
+    {error && <p role="alert" className="sc-political-message sc-political-message-error">{error}</p>}
+    {notice && <p role="status" className="sc-political-message">{notice}</p>}
 
-    <section className="space-y-3">
-      <h2 className="text-lg font-semibold">1. Wybierz posty źródłowe</h2>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-        <label className="text-sm">Szukaj po treści lub koncie<input type="search" value={search}
+    <section className="sc-political-section">
+      <h2 className="sc-t-title-m">1. Wybierz posty źródłowe</h2>
+      <div className="sc-political-filters">
+        <label className="sc-political-field">Szukaj po treści lub koncie<input type="search" value={search}
           onChange={event => setSearch(event.target.value)} placeholder="np. nazwa konta lub fraza z posta" className={input} /></label>
-        {view === 'candidates' && <label className="text-sm">Obóz<select value={candidateCampFilter}
+        {view === 'candidates' && <label className="sc-political-field">Obóz<select value={candidateCampFilter}
           onChange={event => setCandidateCampFilter(event.target.value as Camp | 'all')} className={input}>
           <option value="all">Wszystkie grupy</option><option value="government">Obóz rządzący</option><option value="opposition">Opozycja</option><option value="public">Instytucje publiczne</option>
         </select></label>}
@@ -187,83 +187,85 @@ export function PoliticalReview() {
       {posts.isPending ? <p role="status">Ładuję zapisane posty…</p>
         : posts.isError ? <div role="alert"><p>Nie udało się pobrać postów.</p>
             <button className={button} onClick={() => posts.refetch()}>Spróbuj ponownie</button></div>
-        : <div className="space-y-0">
-            {rows.map(post => <article key={post.id} className="flex items-start gap-3 border-t py-3">
-              <input type="checkbox" className="mt-1" checked={selectedIds.includes(post.id)} onChange={() => toggleSelected(post)} />
-              <div className="min-w-0 flex-1 text-sm">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        : <div className="sc-political-list">
+            {rows.map(post => <article key={post.id} className="sc-political-post">
+              <input type="checkbox" className="sc-political-gap" checked={selectedIds.includes(post.id)} onChange={() => toggleSelected(post)} />
+              <div className="sc-political-post-body">
+                <div className="sc-political-post-meta">
                   <span>@{post.account_handle}{post.account_display_name ? ` · ${post.account_display_name}` : ''}</span>
                   <span>{post.camp_at_collection === 'government' ? 'obóz rządzący' : post.camp_at_collection === 'opposition' ? 'opozycja' : 'instytucja publiczna'}</span>
                   <span>{formatDateTimePl(post.published_at)}</span>
                 </div>
-                <p className="mt-1 whitespace-pre-wrap">{post.text || '(treść wycofana przez wydawcę)'}</p>
-                <a href={post.url} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-xs underline underline-offset-4">{post.url}</a>
+                <p className="sc-political-post-text">{post.text || '(treść wycofana przez wydawcę)'}</p>
+                <a href={post.url} target="_blank" rel="noopener noreferrer" className="sc-political-link">{post.url}</a>
               </div>
             </article>)}
-            {!rows.length && <p className="py-6 text-center text-sm text-slate-400">Brak zapisanych postów pasujących do filtrów.</p>}
+            {!rows.length && <p className="sc-political-empty">Brak zapisanych postów pasujących do filtrów.</p>}
           </div>}
     </section>
 
-    <form onSubmit={submitDraft} className="space-y-4 rounded-xl border p-5">
-      <h2 className="text-lg font-semibold">2. Przygotuj propozycję do przeglądu ({selectedPosts.length}/15 postów)</h2>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-sm">Tytuł propozycji<input required maxLength={250} value={title}
+    <form onSubmit={submitDraft} className="sc-political-form">
+      <h2 className="sc-t-title-m">2. Przygotuj propozycję do przeglądu ({selectedPosts.length}/15 postów)</h2>
+      <div className="sc-political-fields">
+        <label className="sc-political-field">Tytuł propozycji<input required maxLength={250} value={title}
           onChange={event => setTitle(event.target.value)} className={input} disabled={busy} /></label>
-        <label className="text-sm">Dzień<input required type="date" value={day}
+        <label className="sc-political-field">Dzień<input required type="date" value={day}
           onChange={event => setDay(event.target.value)} className={input} disabled={busy} /></label>
-        {view === 'candidates' && <label className="text-sm">Obóz propozycji (klasyfikacja redaktora)<select
+        {view === 'candidates' && <label className="sc-political-field">Obóz propozycji (klasyfikacja redaktora)<select
           value={candidateCamp} onChange={event => setCandidateCamp(event.target.value as Camp)} className={input} disabled={busy}>
           <option value="government">Obóz rządzący</option><option value="opposition">Opozycja</option>
         </select></label>}
-        <label className="text-sm md:col-span-2">Uwagi redakcyjne · opcjonalnie<textarea rows={2} maxLength={5000} value={notes}
+        <label className="sc-political-field sc-political-field--wide">Uwagi redakcyjne · opcjonalnie<textarea rows={2} maxLength={5000} value={notes}
           onChange={event => setNotes(event.target.value)} className={textarea} disabled={busy} /></label>
       </div>
 
-      {selectedPosts.length > 0 && <div className="space-y-4">
+      {selectedPosts.length > 0 && <div className="sc-political-stack">
         {selectedPosts.map(post => { const evidence = evidenceFor(post.id); return (
-          <div key={post.id} className="rounded-lg border p-4 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <div key={post.id} className="sc-political-evidence">
+            <div className="sc-political-evidence-head">
               <span>@{post.account_handle} · {formatDateTimePl(post.published_at)}</span>
               <button type="button" disabled={busy} className={button} onClick={() => toggleSelected(post)}>Usuń z propozycji</button>
             </div>
-            <p className="mt-2 whitespace-pre-wrap">„{post.text}”</p>
-            <a href={post.url} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-xs underline">{post.url}</a>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <label className="text-xs">Materiały za · po jednym w linii<textarea rows={3} maxLength={5000}
+            <p className="sc-political-post-text">„{post.text}”</p>
+            <a href={post.url} target="_blank" rel="noopener noreferrer" className="sc-political-link">{post.url}</a>
+            <div className="sc-political-evidence-fields">
+              <label className="sc-political-field sc-political-field--small">Materiały za · po jednym w linii<textarea rows={3} maxLength={5000}
                 value={evidence.evidenceFor} onChange={event => updateEvidence(post.id, { evidenceFor: event.target.value })}
                 className={textarea} disabled={busy} placeholder="Adres lub krótki opis materiału potwierdzającego" /></label>
-              <label className="text-xs">Materiały przeciw · po jednym w linii<textarea rows={3} maxLength={5000}
+              <label className="sc-political-field sc-political-field--small">Materiały przeciw · po jednym w linii<textarea rows={3} maxLength={5000}
                 value={evidence.evidenceAgainst} onChange={event => updateEvidence(post.id, { evidenceAgainst: event.target.value })}
                 className={textarea} disabled={busy} placeholder="Adres lub krótki opis materiału przeczącego" /></label>
-              <label className="text-xs">Niepewność / czego nie potwierdzono<textarea rows={3} maxLength={2000}
+              <label className="sc-political-field sc-political-field--small">Niepewność / czego nie potwierdzono<textarea rows={3} maxLength={2000}
                 value={evidence.uncertainty} onChange={event => updateEvidence(post.id, { uncertainty: event.target.value })}
                 className={textarea} disabled={busy} placeholder="Co pozostaje niepotwierdzone lub sporne" /></label>
             </div>
           </div>); })}
       </div>}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="sc-political-actions">
         <button type="submit" disabled={busy} className={primaryButton}>{busy ? 'Zapisuję…' : 'Zapisz jako propozycję do przeglądu'}</button>
         <button type="button" disabled={busy || !selectedPosts.length} className={button} onClick={resetForm}>Wyczyść wybór</button>
-        <p className="text-xs text-slate-400">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje nitki i nie ocenia prawdziwości postów.</p>
+        <p className="sc-political-copy">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje nitki i nie ocenia prawdziwości postów.</p>
       </div>
     </form>
 
-    <section className="space-y-3">
-      <h2 className="text-lg font-semibold">Ostatnie propozycje w tym widoku</h2>
+    <section className="sc-political-section">
+      <h2 className="sc-t-title-m">Ostatnie propozycje w tym widoku</h2>
       {drafts.isPending ? <p role="status">Ładuję listę propozycji…</p>
         : drafts.isError ? <p role="alert">Nie udało się pobrać listy propozycji.</p>
-        : <div className="space-y-0">
-            {drafts.data?.results.map(item => <article key={item.id} className="border-t py-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium">{item.title}</span>
-                <span className="text-xs text-slate-400">{STATUS_LABELS[item.status]}</span>
+        : <div className="sc-political-list">
+            {drafts.data?.results.map(item => <article key={item.id} className="sc-political-draft">
+              <div className="sc-political-draft-head">
+                <span className="sc-political-draft-title">{item.title}</span>
+                <span className="sc-political-copy">{STATUS_LABELS[item.status]}</span>
               </div>
-              <p className="mt-1 text-xs text-slate-400">{item.day} · {item.camp === 'government' ? 'obóz rządzący' : 'opozycja'} ·
+              <p className="sc-political-copy">{item.day} · {item.camp === 'government' ? 'obóz rządzący' : 'opozycja'} ·
                 {' '}{item.posts.length} {item.posts.length === 1 ? 'post' : 'postów'} · {item.origin === 'ai_proposal' ? 'propozycja AI' : 'wybór redakcyjny'}</p>
             </article>)}
-            {!drafts.data?.results.length && <p className="py-4 text-center text-sm text-slate-400">Brak propozycji w tym widoku.</p>}
+            {!drafts.data?.results.length && <p className="sc-political-empty">Brak propozycji w tym widoku.</p>}
           </div>}
     </section>
   </div>;
 }
+
+
