@@ -87,3 +87,4 @@ export { PortalProvider, usePortal, usePortalApi, usePortalApiOptional, usePorta
 export { PortalLayer } from "./portal/PortalLayer";
 export { useHistoryPortal } from "./portal/useHistoryPortal";
 export { MaterialSurface } from "./MaterialSurface";
+export { InfoPage } from "./InfoPage";

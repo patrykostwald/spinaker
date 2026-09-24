@@ -368,6 +368,20 @@ html.sc-theme-transition .sc-root {
 .sc-search-form { display: flex; width: 100%; gap: var(--sc-s-2); align-items: stretch; }
 .sc-search-form .sc-search { flex: 1; min-width: 0; }
 @media (max-width: 480px) { .sc-search-form { align-items: stretch; flex-direction: column; } .sc-search-form .sc-btn { width: 100%; } }
+
+/* === Stage 2: strony informacyjne === */
+.sc-info-page { width: min(100% - var(--sc-s-8), 65ch); margin: var(--sc-s-10) auto var(--sc-s-16); }
+.sc-info-page__hero { padding-bottom: var(--sc-s-8); border-bottom: 1px solid var(--sc-line); }
+.sc-info-page__eyebrow { margin: 0 0 var(--sc-s-3); color: var(--sc-accent); letter-spacing: .12em; }
+.sc-info-page__title { margin: 0; }
+.sc-info-page__lead { margin-top: var(--sc-s-5); max-width: 60ch; }
+.sc-info-page__body { display: grid; gap: var(--sc-s-8); margin-top: var(--sc-s-8); }
+.sc-info-page__body section { scroll-margin-top: 150px; }
+.sc-info-page__body h2 { margin: 0 0 var(--sc-s-3); }
+.sc-info-page__body p { margin: 0; }
+.sc-info-page__body a { color: var(--sc-accent); }
+.sc-info-page__actions { display: flex; flex-wrap: wrap; gap: var(--sc-s-3); }
+@media (max-width: 480px) { .sc-info-page { width: min(100% - var(--sc-s-5), 65ch); margin-top: var(--sc-s-7); } }
 .sc-grid { display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 .sc-swatch { display: grid; gap: 6px; padding: var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: var(--sc-e-1), var(--sc-ring); }
 .sc-swatch__chip { height: 56px; border-radius: var(--sc-r-sm); border: 1px solid var(--sc-hairline); }
