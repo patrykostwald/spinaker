@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <p>Import tworzy wyłącznie listę kandydatur. Nie wysyła zapytań do X, nie pobiera postów i nie włącza kont.</p>
+  <p>Kolumny CSV: <code>handle,display_name,classification,confirmation_url,confirmation_note</code>; opcjonalnie <code>proposed_camp</code>. Klasyfikacje: <code>government</code>, <code>opposition</code>, <code>public</code>, <code>independent</code>. Maksymalnie 500 wierszy.</p>
+  {% if errors %}<ul class="errorlist">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+  {% if rows %}
+    <table id="result_list"><thead><tr><th>Wiersz</th><th>Konto</th><th>Klasyfikacja</th><th>Obóz do pobierania</th><th>Stan</th></tr></thead><tbody>
+    {% for row in rows %}<tr><td>{{ row.line }}</td><td>@{{ row.handle }}<br><small>{{ row.display_name }}</small></td><td>{{ row.classification }}</td><td>{{ row.proposed_camp|default:'—' }}</td><td>{% if row.errors %}{% for error in row.errors %}<div class="errornote">{{ error }}</div>{% endfor %}{% else %}Gotowe do importu{% endif %}</td></tr>{% endfor %}
+    </tbody></table>
+    {% if can_import %}<form method="post" style="margin-top:1rem">{% csrf_token %}<input type="hidden" name="confirm_import" value="1"><input class="default" type="submit" value="Potwierdzam import {{ rows|length }} kandydatur"></form>{% endif %}
+  {% else %}<form method="post" enctype="multipart/form-data">{% csrf_token %}<p><input type="file" name="csv_file" accept=".csv,text/csv" required></p><input class="default" type="submit" value="Sprawdź plik"></form>{% endif %}
+{% endblock %}

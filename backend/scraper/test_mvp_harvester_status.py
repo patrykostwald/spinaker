@@ -1,0 +1,58 @@
+from io import StringIO
+from datetime import timedelta
+
+import pytest
+from django.core.management import call_command
+from django.utils import timezone
+
+from news.models import ImportState, Source, SourceAccessInstruction
+from scraper.source_probe import PROBE_VERSION, source_signature
+
+
+@pytest.mark.django_db
+def test_status_reports_review_progress():
+    source = Source.objects.create(
+        name='Zatwierdzone', url='https://approved.example', source_type='institution',
+        catalog_stage='configured', is_active=True, scrape_enabled=True,
+    )
+    SourceAccessInstruction.objects.create(
+        source=source, channel='html', endpoint='https://approved.example',
+        allowed_scope='metadata', status='approved', valid_until=timezone.now() + timedelta(days=1),
+        terms_url='https://approved.example/terms', evidence={'basis': 'test'},
+        reviewed_at=timezone.now(), reviewed_by='test', daily_request_cap=24,
+    )
+    candidate = Source.objects.create(
+        name='Kandydat', url='https://candidate.example', source_type='institution',
+        catalog_stage='candidate', is_active=False, scrape_enabled=False,
+    )
+    ImportState.objects.create(name=f'source-check:{candidate.pk}', last_success=timezone.now(), cursor={
+        'probe_version': PROBE_VERSION, 'signature': source_signature(candidate),
+        'audit_status': 'completed', 'checked_at': timezone.now().isoformat(),
+    })
+    sejm = Source.objects.create(name='Sejm', url='https://api.sejm.gov.pl/sejm', source_type='institution',
+        catalog_stage='configured', is_active=True, scrape_enabled=True)
+    SourceAccessInstruction.objects.create(
+        source=sejm, channel='api', allowed_scope='content', status='approved',
+        endpoint='https://api.sejm.gov.pl/sejm/term10/votings',
+        allowed_path_patterns=['/sejm/term10/votings/search'], terms_url='https://api.sejm.gov.pl/sejm.html',
+        evidence={'basis': 'test'}, reviewed_at=timezone.now(), reviewed_by='test',
+        valid_until=timezone.now() + timedelta(days=1), daily_request_cap=24,
+    )
+
+    output = StringIO()
+    call_command('mvp_harvester_status', stdout=output)
+
+    assert 'POSTEP_WERYFIKACJI: 2/3' in output.getvalue()
+    assert 'KANDYDACI_DO_SPRAWDZENIA: 1' in output.getvalue()
+    assert 'AKTYWNE_POBIERANIE: 2/3' in output.getvalue()
+    assert 'AKTYWNE_Z_HARMONOGRAMEM: 1/2' in output.getvalue()
+    assert 'AKTYWNE_BEZ_MAPOWANIA_HARMONOGRAMU: 1/2' in output.getvalue()
+    assert 'AKTYWNE_WYMAGAJACE_FLAGI_SRODOWISKOWEJ: 0/2' in output.getvalue()
+    assert 'AKTYWNE_PILOTY_RECZNE: 0/2' in output.getvalue()
+    assert 'BRAK_MAPOWANIA 1: Zatwierdzone' in output.getvalue()
+    assert 'NIEUKONCZONE_ZRODLA: 1/3' in output.getvalue()
+    assert 'POTENCJALNIE_DO_KONTAKTU_PO_DECYZJI: 0/3' in output.getvalue()
+    assert 'AUDYT_KANDYDATOW_7D: 1/1' in output.getvalue()
+    assert 'PROBY_AUDYTU_7D: 1/1' in output.getvalue()
+    assert 'POZOSTALO_DO_AUDYTU: 0/1' in output.getvalue()
+    assert 'BRAMKA official:votings: GOTOWA' in output.getvalue()

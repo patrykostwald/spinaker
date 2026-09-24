@@ -1,0 +1,28 @@
+{
+  "name": "@spin-clinic/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
+    "./kit": { "types": "./src/kit/index.ts", "default": "./src/kit/index.ts" },
+    "./kit/kit.css": "./src/kit/kit.css"
+  },
+  "sideEffects": ["*.css"],
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "framer-motion": "^11.0.0",
+    "next": "^14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "dependencies": {
+    "twitter-text": "^3.1.0"
+  }
+}

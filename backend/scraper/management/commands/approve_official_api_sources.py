@@ -1,0 +1,116 @@
+"""Record the reviewed API card for the first Sejm voting pilot.
+
+The command is deliberately explicit: it never contacts either API and never
+overrides a newer suspended/contact-required decision made by an editor.
+"""
+from datetime import timedelta
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from news.models import Source, SourceAccessInstruction
+from scraper.official import API, official_source
+
+
+VOTING_PATHS = [
+    '/sejm/term10/votings/search',
+    '/sejm/term10/votings/{int}',
+    '/sejm/term10/votings/{int}/{int}',
+]
+
+
+OFFICIAL_APIS = (
+    (
+        'sejm',
+        API + '/sejm/term10/votings',
+        'https://www.sejm.gov.pl/sejm10.nsf/page.xsp/copyright',
+        'Publiczna dokumentacja API Sejmu opisuje wyszukiwanie, głosowania i stronicowanie; karta obejmuje wyłącznie trzy ścieżki głosowań kadencji 10.',
+    ),
+)
+
+
+class Command(BaseCommand):
+    help = 'Tworzy lokalną, wersjonowaną kartę dostępu dla pilotażu głosowań Sejmu.'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--apply', action='store_true',
+            help='Zapisuje karty; bez flagi pokazuje jedynie plan.')
+        parser.add_argument('--valid-days', type=int, default=30)
+        parser.add_argument('--evidence-url',
+            help='Konkretny publiczny dokument lub regulamin sprawdzony dla tego dostępu.')
+        parser.add_argument('--reviewed-by',
+            help='Imię/nazwa osoby, która ręcznie sprawdziła zakres i dokument.')
+        parser.add_argument('--daily-cap', type=int, default=24,
+            help='Twardy dzienny limit żądań dla tej karty (domyślnie 24).')
+
+    def handle(self, *args, **options):
+        valid_days = options['valid_days']
+        daily_cap = options['daily_cap']
+        if not 1 <= valid_days <= 365:
+            raise ValueError('valid-days musi być w zakresie 1–365.')
+        if not 1 <= daily_cap <= 1000:
+            raise ValueError('daily-cap musi być w zakresie 1–1000.')
+        now = timezone.now()
+        if options['apply'] and (not options['evidence_url'] or not options['reviewed_by']):
+            raise ValueError('--apply wymaga --evidence-url i --reviewed-by; komenda nie może sama tworzyć podstawy dostępu.')
+        for provider, endpoint, terms_url, note in OFFICIAL_APIS:
+            # Planning is an audit view, not a side effect.  In particular it
+            # must not create a catalogue Source before an editor supplies the
+            # reviewed evidence required by --apply.
+            source = official_source(provider) if options['apply'] else Source.objects.filter(
+                url=API + '/sejm').first()
+            latest = (SourceAccessInstruction.objects.filter(
+                source=source, channel=SourceAccessInstruction.Channel.API, endpoint=endpoint,
+            ).order_by('-version').first() if source else None)
+            if latest and latest.status != SourceAccessInstruction.Status.APPROVED:
+                self.stdout.write(self.style.WARNING(
+                    f'{provider}: pominięto — najnowsza karta ma status {latest.status}.'))
+                continue
+            # A catalogue import may already have created this official URL as
+            # a passive candidate.  Explicit approval of this exact API card
+            # is also the narrowly scoped decision to configure this source.
+            # Never revive a source excluded by a separate editorial decision.
+            if options['apply'] and source.catalog_stage != 'excluded' and (
+                    not source.is_active or not source.scrape_enabled
+                    or source.catalog_stage != 'configured'):
+                source.is_active = True
+                source.scrape_enabled = True
+                source.catalog_stage = 'configured'
+                source.save(update_fields=['is_active', 'scrape_enabled', 'catalog_stage'])
+                self.stdout.write(f'{provider}: skonfigurowano źródło dla tej jednej karty API.')
+            elif options['apply'] and source.catalog_stage == 'excluded':
+                self.stdout.write(self.style.WARNING(
+                    f'{provider}: pominięto — źródło ma status excluded.'))
+                continue
+            current_paths = set(latest.allowed_path_patterns) if latest else set()
+            if (latest and latest.endpoint == endpoint and latest.valid_until and latest.valid_until > now
+                    and set(VOTING_PATHS).issubset(current_paths)):
+                self.stdout.write(f'{provider}: aktualna karta v{latest.version} już istnieje.')
+                continue
+            version = (latest.version + 1) if latest else 1
+            message = f'{provider}: karta API v{version}, zakres content, ważna {valid_days} dni.'
+            if not options['apply']:
+                self.stdout.write('PLAN ' + message)
+                continue
+            SourceAccessInstruction.objects.create(
+                source=source,
+                version=version,
+                status=SourceAccessInstruction.Status.APPROVED,
+                channel=SourceAccessInstruction.Channel.API,
+                allowed_scope=SourceAccessInstruction.Scope.CONTENT,
+                endpoint=endpoint,
+                allowed_path_patterns=VOTING_PATHS,
+                terms_url=terms_url,
+                evidence={
+                    'documentation_url': options['evidence_url'],
+                    'basis': note,
+                    'review_method': 'public-official-api-documentation',
+                    'reviewed_on': now.date().isoformat(),
+                },
+                minimum_interval_seconds=3,
+                daily_request_cap=daily_cap,
+                reviewed_at=now,
+                reviewed_by=options['reviewed_by'],
+                valid_until=now + timedelta(days=valid_days),
+            )
+            self.stdout.write(self.style.SUCCESS('ZAPISANO ' + message))

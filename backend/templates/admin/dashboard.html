@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>Statystyki</h1>
+<table>
+  <tr><th>Artykuły (24h)</th><td>{{ articles_last_day }}</td></tr>
+  <tr><th>Artykuły łącznie</th><td>{{ articles_total }}</td></tr>
+  <tr><th>Aktywne źródła</th><td>{{ sources_count }}</td></tr>
+  <tr><th>Wątki</th><td>{{ threads_count }}</td></tr>
+</table>
+<h2>Największe wątki</h2>
+<ul>
+  {% for thread in top_threads %}
+    <li>{{ thread.title }} â€” {{ thread.views_count }} wyświetleń</li>
+  {% empty %}
+    <li>Brak wątków</li>
+  {% endfor %}
+</ul>
+{% endblock %}

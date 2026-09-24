@@ -1,0 +1,56 @@
+[
+  {
+    "original": "https://stat.gov.pl/rss/",
+    "feed": "https://stat.gov.pl/rss/pl/5438/8.xml",
+    "evidence_url": "https://stat.gov.pl/rss/",
+    "verified_on": "2026-09-08"
+  },
+  {
+    "original": "https://www.rmf24.pl/fakty/rss",
+    "feed": "https://www.rmf24.pl/fakty/feed",
+    "evidence_url": "https://www.rmf24.pl/kanaly/rss",
+    "verified_on": "2026-09-08"
+  },
+  {
+    "original": "https://www.rp.pl/rss/1019.xml",
+    "feed": "https://www.rp.pl/rss_main",
+    "evidence_url": "https://www.rp.pl/",
+    "verified_on": "2026-09-09"
+  },
+  {
+    "original": "https://www.nik.gov.pl/rss/",
+    "feed": "https://www.nik.gov.pl/rss/id,1.html",
+    "evidence_url": "https://www.nik.gov.pl/",
+    "verified_on": "2026-09-09"
+  },
+  {
+    "original": "https://www.onet.pl/informacje/rss",
+    "feed": "https://wiadomosci.onet.pl/.feed",
+    "evidence_url": "https://wiadomosci.onet.pl/",
+    "verified_on": "2026-09-09"
+  },
+  {
+    "original": "https://www.wprost.pl/rss.xml",
+    "feed": "https://www.wprost.pl/rss/wiadomosci",
+    "evidence_url": "https://www.wprost.pl/",
+    "verified_on": "2026-09-09"
+  },
+  {
+    "original": "https://www.polityka.pl/rss.xml",
+    "feed": "https://www.polityka.pl/rss/articles.xml?list=517",
+    "evidence_url": "https://www.polityka.pl/",
+    "verified_on": "2026-09-09"
+  },
+  {
+    "original": "https://wiadomosci.dziennik.pl/rss",
+    "feed": "https://wiadomosci.dziennik.pl/.feed",
+    "evidence_url": "https://wiadomosci.dziennik.pl/",
+    "verified_on": "2026-09-09"
+  },
+  {
+    "original": "https://www.gazetaprawna.pl/rss/wiadomosci.xml",
+    "feed": "https://www.gazetaprawna.pl/.feed",
+    "evidence_url": "https://www.gazetaprawna.pl/",
+    "verified_on": "2026-09-09"
+  }
+]

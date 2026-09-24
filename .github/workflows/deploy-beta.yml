@@ -1,0 +1,32 @@
+name: Deploy beta
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beta-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: beta
+    steps:
+      - name: Deploy selected commit
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -eu
+            cd /srv/spin-clinic
+            git fetch --prune origin
+            git checkout --detach ${{ github.sha }}
+            docker compose --env-file .env.production -f deploy/docker-compose.production.yml up -d --build --remove-orphans
+            docker compose --env-file .env.production -f deploy/docker-compose.production.yml ps

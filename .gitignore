@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.sqlite3
+staticfiles/
+media/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+
+# Env / secrets
+.local/
+.runtime/
+.pnpm-store/
+.env
+.env.local
+.env.*.local
+
+# OS / IDE
+.claude/worktrees/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Docker
+postgres-data/
+redis-data/
+
+# Celery beat runtime state (local schedule db, not source)
+celerybeat-schedule*
+
+# Scratch / one-off local scripts and large local exports
+/tmp/
+
+# Generated reports from commands running inside the backend container
+backend/reports/

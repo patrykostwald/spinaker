@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.venv
+node_modules
+**/node_modules
+**/.next
+**/__pycache__
+**/.pytest_cache
+**/.pytest-tmp*
+**/*.sqlite3
+**/staticfiles
+.git

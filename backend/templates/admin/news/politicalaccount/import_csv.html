@@ -1,0 +1,20 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <p>Import nie wykonuje zapytań do X. Każde konto zostanie dodane jako <strong>wyłączone</strong> i <strong>niepotwierdzone</strong>. Po imporcie zaznacz konta na liście i użyj akcji potwierdzenia.</p>
+  <p>Wymagane kolumny CSV: <code>user_id,handle,display_name,camp,confirmation_url,confirmation_note</code>. Opcjonalna: <code>poll_interval_minutes</code>. Kodowanie UTF-8, maksymalnie 500 wierszy.</p>
+
+  {% if errors %}
+    <ul class="errorlist">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if rows %}
+    <table id="result_list"><thead><tr><th>Wiersz</th><th>Konto</th><th>Nazwa</th><th>Obóz</th><th>Stan</th></tr></thead><tbody>
+      {% for row in rows %}<tr><td>{{ row.line }}</td><td>@{{ row.handle }}<br><small>{{ row.user_id }}</small></td><td>{{ row.display_name }}</td><td>{{ row.camp }}</td><td>{% if row.errors %}<ul class="errorlist">{% for error in row.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% else %}Gotowe do importu{% endif %}</td></tr>{% endfor %}
+    </tbody></table>
+    {% if can_import %}
+      <form method="post" style="margin-top: 1rem">{% csrf_token %}<input type="hidden" name="confirm_import" value="1"><input type="submit" class="default" value="Potwierdzam import {{ rows|length }} kont"></form>
+    {% endif %}
+    <p><a href="{% url 'admin:news_politicalaccount_import_csv' %}">Wczytaj inny plik</a></p>
+  {% else %}
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}<p><input type="file" name="csv_file" accept=".csv,text/csv" required></p><input type="submit" class="default" value="Sprawdź plik"></form>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,13 @@
+---
+description: Use the lowest sufficient reasoning effort and escalate only when necessary
+alwaysApply: true
+---
+
+# Dobór effortu
+
+- Domyślnie wykonuj zadanie na najniższym poziomie effortu, który pozwala je rzetelnie ukończyć.
+- Rutynowe odczyty, małe poprawki, dokumentacja i proste testy nie wymagają podnoszenia poziomu.
+- Jeżeli bieżący poziom jest za niski, poinformuj właściciela, jaki poziom jest potrzebny i dlaczego.
+- Nie przerywaj pracy po zgodę przy zwykłym przejściu między niskimi lub średnimi poziomami, jeśli aplikacja pozwala dobrać je automatycznie.
+- Poproś właściciela o zgodę przed przejściem na jeden z najwyższych, wyraźnie kosztowniejszych poziomów.
+- Nigdy nie obniżaj jakości kontroli bezpieczeństwa, integralności danych ani weryfikacji prawnej tylko po to, by oszczędzić effort.

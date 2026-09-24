@@ -1,0 +1,8 @@
+"use client";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "../lib/api";
+import { formatDatePl } from "../lib/utils";
+import { Button } from "../kit/Button";
+type Coverage = { notice: string; sources: { id: number; name: string; url: string; records: number; oldest: string | null; newest: string | null; status: string; pending_archive_urls: number }[] };
+export function SourceCoverage() { const [open, setOpen] = useState(false); const result = useQuery({ queryKey: ["coverage"], queryFn: () => apiFetch<Coverage>("/api/sources/coverage/"), enabled: open }); return <details className="sc-source-coverage" onToggle={event => setOpen(event.currentTarget.open)}><summary>Co obejmuje nasza baza? Sprawdź źródła i znane braki</summary>{open ? <div className="sc-source-coverage__body">{result.isPending ? <p role="status">Sprawdzam zakres…</p> : result.isError ? <p role="alert">Nie udało się odczytać zakresu bazy.</p> : result.data ? <><p className="sc-t-body sc-text-2">{result.data.notice}</p><div className="sc-source-coverage__list">{result.data.sources.map(source => <article key={source.id}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.name} ↗</a><p>{source.records} materiałów · {source.oldest ? `${formatDatePl(source.oldest)} — ${formatDatePl(source.newest)}` : "Brak ustalonego zakresu dat"}</p>{source.pending_archive_urls ? <p>{source.pending_archive_urls} odkrytych adresów czeka na odczyt lub ponowną próbę.</p> : null}{source.status === "requires_attention" ? <p className="sc-source-coverage__attention">Ostatnie pobieranie wymaga sprawdzenia.</p> : null}</article>)}</div></> : null}</div> : null}</details>; }

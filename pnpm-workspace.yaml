@@ -1,0 +1,7 @@
+packages:
+  - packages/ui
+  - frontend-spin
+  - frontend-przeszlosc
+allowBuilds:
+  core-js: false
+linkWorkspacePackages: true

@@ -1,0 +1,16 @@
+{
+  "name": "spin-clinic-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/ui",
+    "frontend-spin",
+    "frontend-przeszlosc"
+  ],
+  "scripts": {
+    "dev:spin": "pnpm --filter frontend-spin dev",
+    "dev:przeszlosc": "pnpm --filter frontend-przeszlosc dev",
+    "build:spin": "pnpm --filter frontend-spin build",
+    "build:przeszlosc": "pnpm --filter frontend-przeszlosc build",
+    "build": "pnpm build:spin && pnpm build:przeszlosc"
+  }
+}

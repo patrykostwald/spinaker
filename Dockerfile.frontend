@@ -1,0 +1,20 @@
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY frontend-spin/package.json frontend-spin/package.json
+COPY packages/ui/package.json packages/ui/package.json
+RUN corepack enable && pnpm install --frozen-lockfile
+COPY packages/ui packages/ui
+COPY frontend-spin frontend-spin
+ARG NEXT_PUBLIC_DOMAIN=spin.clinic
+ARG API_INTERNAL_URL=http://backend:8000
+ENV NEXT_PUBLIC_DOMAIN=$NEXT_PUBLIC_DOMAIN API_INTERNAL_URL=$API_INTERNAL_URL NEXT_PUBLIC_API_URL=
+RUN pnpm --filter frontend-spin build
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production PORT=3000
+RUN corepack enable
+COPY --from=build /app /app
+EXPOSE 3000
+CMD ["pnpm", "--filter", "frontend-spin", "start"]

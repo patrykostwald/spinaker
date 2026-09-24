@@ -1,0 +1,171 @@
+from datetime import datetime, timedelta, timezone as dt_timezone
+from types import SimpleNamespace
+
+import pytest
+
+from news.models import Article, ArticleContent, ImportState, OfficialRecord, Source
+from scraper.management.commands.configure_uokik_sudop_source import configure
+from scraper.uokik_sudop import API, STATE_NAME, _sudop_pilot_cycle, sudop_pilot_cycle
+
+
+NOW = datetime(2026, 9, 14, 8, tzinfo=dt_timezone.utc)
+
+
+class Response:
+    def __init__(self, status, *, location="", payload=None, retry_after=""):
+        self.status_code = status
+        self.headers = {"Location": location, "Retry-After": retry_after}
+        self._payload = payload
+
+    def json(self):
+        return self._payload
+
+
+class Session:
+    def __init__(self, *responses):
+        self.responses = list(responses)
+        self.calls = []
+
+    def __call__(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        return self.responses.pop(0), None
+
+
+@pytest.fixture
+def source(db, monkeypatch):
+    monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
+    monkeypatch.setenv("UOKIK_SUDOP_AID_SOURCE_NUMBER", "SA.TEST")
+    source, _ = configure("Test redakcyjny", valid_days=30, daily_cap=120)
+    return source
+
+
+def run_pilot(session):
+    # The access gate has dedicated tests below. Protocol tests inject an
+    # enabled predicate, so their result cannot depend on process environment
+    # or a source card that another test happened to create.
+    return _sudop_pilot_cycle(transport=session, now=NOW,
+        enabled=lambda _source: True, access_instruction=object())
+
+
+def run_due(session):
+    state = ImportState.objects.get(name=STATE_NAME)
+    state.cursor["available_at"] = (NOW - timedelta(seconds=1)).isoformat()
+    state.save(update_fields=["cursor"])
+    return run_pilot(session)
+
+
+def event(**overrides):
+    row = {
+        "nip-udzielajacego-pomocy": "5261009497", "nazwa-udzielajacego-pomocy": "Urząd",
+        "srodek-pomocowy-numer": "SA.1", "srodek-pomocowy-nazwa": "Program",
+        "dzien-udzielenia-pomocy": "2016-01-01", "nip-beneficjenta": "1234567890",
+        "nazwa-beneficjenta": "Firma Test", "przeznaczenie-pomocy-kod": "b1",
+        "przeznaczenie-pomocy-nazwa": "Inwestycja", "forma-pomocy-kod": "A1",
+        "forma-pomocy-nazwa": "Dotacja", "wartosc-nominalna-pln": "1000",
+        "wartosc-brutto-pln": "900", "wartosc-brutto-eur": "200",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_disabled_does_not_create_state_or_call_network(db, monkeypatch):
+    Source.objects.create(name="SUDOP", url=API, catalog_stage="configured")
+    monkeypatch.delenv("UOKIK_SUDOP_PILOT_ENABLED", raising=False)
+    session = Session()
+    assert sudop_pilot_cycle(transport=session, now=NOW)["status"] == "disabled"
+    assert not session.calls and not ImportState.objects.exists()
+
+
+def test_enabled_flag_without_access_card_still_cannot_call_network(db, monkeypatch):
+    monkeypatch.setenv("UOKIK_SUDOP_PILOT_ENABLED", "true")
+    Source.objects.create(name="SUDOP", url=API, is_active=True, scrape_enabled=True)
+    session = Session()
+
+    assert sudop_pilot_cycle(transport=session, now=NOW)["status"] == "disabled"
+    assert not session.calls and not ImportState.objects.exists()
+
+
+def test_enabled_pilot_requires_a_saved_official_query_criterion(source, monkeypatch):
+    monkeypatch.delenv("UOKIK_SUDOP_AID_SOURCE_NUMBER")
+    session = Session()
+
+    assert run_pilot(session) == {
+        "status": "missing_query_criterion", "new_records": 0,
+    }
+    assert not session.calls and not ImportState.objects.exists()
+
+
+def test_failed_legacy_date_only_cursor_restarts_with_the_explicit_criterion(source):
+    ImportState.objects.create(name=STATE_NAME, cursor={
+        "next_date": "2016-01-01", "cutoff": "2026-09-14", "page": 1,
+        "row_offset": 0, "phase": "submit", "complete": False,
+    }, last_error="HTTP 400")
+
+    result = run_pilot(Session(Response(303, location=API + "/api/kolejka/q-1")))
+
+    assert result == {"status": "deferred", "new_records": 0, "phase": "queue"}
+    assert ImportState.objects.get(name=STATE_NAME).cursor["aid_source_number"] == "SA.TEST"
+
+
+def test_three_stage_protocol_frozen_cutoff_and_metadata_only(source):
+    session = Session(
+        Response(303, location=API + "/api/kolejka/q-1"),
+        Response(303, location=API + "/api/wynik/r-1"),
+        Response(200, payload={"liczba-wynikow": 2, "wyniki": [event(), {"name": "dictionary"}]}),
+    )
+    first = run_pilot(session)
+    state = ImportState.objects.get(name=STATE_NAME)
+    assert first["phase"] == "queue" and state.cursor["cutoff"] == "2026-09-14"
+    assert len(session.calls) == 1 and "audit_source" in session.calls[0][1]
+    assert run_due(session)["phase"] == "result"
+    result = run_due(session)
+    assert result == {"status": "ok", "new_records": 1, "processed": 2, "cutoff": "2026-09-14"}
+    article = Article.objects.get()
+    assert article.category == "document" and article.ingestion_method == "sudop"
+    assert "Dane mogą ulec zmianie" in article.description and "Pozyskano: 2026-09-14" in article.description
+    assert not ArticleContent.objects.exists() and not OfficialRecord.objects.exists()
+
+
+def test_replayed_result_is_idempotent(source):
+    row = event()
+    state = ImportState.objects.create(name=STATE_NAME, cursor={
+        "next_date": "2016-01-01", "cutoff": "2026-09-14", "page": 1,
+        "aid_source_number": "SA.TEST",
+        "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
+    })
+    payload = {"liczba-wynikow": 1, "wyniki": [row]}
+    assert run_pilot(Session(Response(200, payload=payload)))["new_records"] == 1
+    state.refresh_from_db()
+    state.cursor.update(next_date="2016-01-01", phase="result", request_id="two",
+        row_offset=0, page=1, complete=False, available_at=(NOW - timedelta(seconds=1)).isoformat())
+    state.save(update_fields=["cursor"])
+    assert run_pilot(Session(Response(200, payload=payload)))["new_records"] == 0
+    assert Article.objects.count() == 1
+
+
+def test_batch_is_bounded_and_cursor_resumes_same_report(source, monkeypatch):
+    monkeypatch.setattr("scraper.uokik_sudop.MAX_RECORDS_PER_CYCLE", 2)
+    ImportState.objects.create(name=STATE_NAME, cursor={
+        "next_date": "2016-01-01", "cutoff": "2026-09-14", "page": 1,
+        "aid_source_number": "SA.TEST",
+        "row_offset": 0, "phase": "result", "request_id": "one", "complete": False,
+    })
+    rows = [event(**{"nip-beneficjenta": str(index).zfill(10)}) for index in range(3)]
+    result = run_pilot(Session(Response(200, payload={"liczba-wynikow": 3, "wyniki": rows})))
+    state = ImportState.objects.get(name=STATE_NAME)
+    assert result["processed"] == 2 and Article.objects.count() == 2
+    assert state.cursor["row_offset"] == 2 and state.cursor["phase"] == "submit"
+
+
+def test_429_retry_after_preserves_phase_and_exact_delay(source):
+    session = Session(Response(429, retry_after="120"))
+    result = run_pilot(session)
+    state = ImportState.objects.get(name=STATE_NAME)
+    assert result["retry_after"] == 120 and state.cursor["phase"] == "submit"
+    assert datetime.fromisoformat(state.cursor["available_at"]) == NOW + timedelta(seconds=120)
+
+
+def test_invalid_redirect_host_and_payload_do_not_advance_cursor(source):
+    result = run_pilot(Session(Response(303, location="https://evil.example/api/kolejka/q")))
+    assert result["status"] == "error"
+    assert ImportState.objects.get(name=STATE_NAME).cursor["phase"] == "submit"
