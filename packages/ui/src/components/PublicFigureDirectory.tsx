@@ -98,8 +98,7 @@ export function PublicFigureDirectory() {
       {list.isPending && <p role="status" className="mvp-pf-hint">Ładuję rejestr…</p>}
       {list.isError && (
         <p className="mvp-pf-neutral">
-          {notFound(list.error) ? 'Rejestr osób publicznych nie jest jeszcze dostępny na tym serwerze.' : 'Nie udało się pobrać rejestru.'}{' '}
-          <Link href="/osoby-publiczne/demo">Zobacz profil demonstracyjny</Link>.
+          {notFound(list.error) ? 'Rejestr osób publicznych nie jest jeszcze dostępny na tym serwerze.' : 'Nie udało się pobrać rejestru.'}
         </p>
       )}
       {list.isSuccess && !rows.length && <p className="mvp-pf-neutral">Brak osób dla wybranych filtrów.</p>}
@@ -116,7 +115,7 @@ export function PublicFigureDirectory() {
           ))}
         </ul>
       )}
-      <p className="mvp-pf-hint">Lista zawiera najwyżej 100 osób. <Link href="/osoby-publiczne/demo">Profil demonstracyjny</Link> pokazuje układ na fikcyjnych danych.</p>
+      <p className="mvp-pf-hint">Lista zawiera najwyżej 100 osób. Pokazujemy wyłącznie profile oparte na danych z rejestru.</p>
       <Dialog open={preview !== null} onClose={() => setPreview(null)} title={preview ? `Podgląd profilu: ${preview.name}` : 'Podgląd profilu'} className="mvp-pf-dialog">
         {preview && <FigurePreview key={preview.id} summary={preview} />}
       </Dialog>
