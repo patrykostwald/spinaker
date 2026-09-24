@@ -21,20 +21,20 @@ const notFound = (error: unknown) => error instanceof ApiError && (error.status 
 export function PublicFigurePage({ id }: { id: number }) {
   const figure = usePublicFigure(id);
   useEffect(() => { if (figure.data) document.title = `${figure.data.name} — profil publiczny · spin.clinic`; }, [figure.data]);
-  if (figure.isPending) return <p role="status" className="mvp-pf-hint mvp-pf-page">Ładuję profil…</p>;
+  if (figure.isPending) return <p role="status" className="sc-public-figure__hint sc-public-figure-page">Ładuję profil…</p>;
   if (figure.isError) {
     return (
-      <section className="mvp-pf mvp-pf-page">
-        <p className="mvp-pf-kicker">OSOBA PUBLICZNA</p>
+      <section className="sc-public-figure sc-public-figure-page">
+        <p className="sc-public-figure-kicker">OSOBA PUBLICZNA</p>
         <h1>{notFound(figure.error) ? 'Nie znaleziono profilu' : 'Nie udało się pobrać profilu'}</h1>
-        <p className="mvp-pf-neutral">{notFound(figure.error) ? 'Profil nie istnieje, został zarchiwizowany albo rejestr osób publicznych nie jest jeszcze dostępny na tym serwerze.' : 'Spróbuj ponownie za chwilę.'}</p>
-        <p className="mvp-pf-links"><Link href="/osoby-publiczne">← Osoby publiczne</Link></p>
+        <p className="sc-public-figure-neutral">{notFound(figure.error) ? 'Profil nie istnieje, został zarchiwizowany albo rejestr osób publicznych nie jest jeszcze dostępny na tym serwerze.' : 'Spróbuj ponownie za chwilę.'}</p>
+        <p className="sc-public-figure-links"><Link href="/osoby-publiczne">← Osoby publiczne</Link></p>
       </section>
     );
   }
   return (
-    <div className="mvp-pf-page">
-      <p className="mvp-pf-back"><Link href="/osoby-publiczne">← Osoby publiczne</Link></p>
+    <div className="sc-public-figure-page">
+      <p className="sc-public-figure-back"><Link href="/osoby-publiczne">← Osoby publiczne</Link></p>
       <PublicFigureProfile figure={figure.data} />
     </div>
   );
@@ -111,7 +111,7 @@ export function PublicFigureDirectory() {
         </ul>
       )}
       <p className="sc-t-caption sc-text-2">Lista zawiera najwyżej 100 osób. Pokazujemy wyłącznie profile oparte na danych z rejestru.</p>
-      <Dialog open={preview !== null} onClose={() => setPreview(null)} title={preview ? `Podgląd profilu: ${preview.name}` : 'Podgląd profilu'} className="mvp-pf-dialog">
+      <Dialog open={preview !== null} onClose={() => setPreview(null)} title={preview ? `Podgląd profilu: ${preview.name}` : 'Podgląd profilu'} className="sc-public-figure-dialog">
         {preview && <FigurePreview key={preview.id} summary={preview} />}
       </Dialog>
     </section>
