@@ -6,6 +6,7 @@ import { apiFetch, apiWrite, getMe } from '../lib/api';
 import { formatDateTimePl } from '../lib/utils';
 import type { Paginated } from '../types';
 import { ThreadEditor } from './ThreadEditor';
+import { Button } from '../kit';
 
 type Camp = 'government' | 'opposition' | 'public';
 
@@ -40,10 +41,10 @@ const STATUS_LABELS: Record<XDraft['status'], string> = {
   pending_review: 'Do przeglądu', approved: 'Zatwierdzony szkic (bez publikacji)', rejected: 'Odrzucony',
 };
 
-const input = 'mt-1 block w-full rounded-lg border bg-transparent px-3 py-2 text-sm';
+const input = 'sc-political__input';
 const textarea = input + ' font-normal';
-const button = 'rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-white/5 disabled:opacity-40';
-const primaryButton = 'rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-40';
+const button = 'sc-political__button';
+const primaryButton = 'sc-political__primary';
 
 function splitLines(value: string): string[] {
   return value.split('\n').map(line => line.trim()).filter(Boolean);
@@ -150,13 +151,13 @@ export function PoliticalReview() {
 
   const activeView = VIEWS.find(item => item.key === view)!;
 
-  return <div className="space-y-6">
-    <div><p className="text-sm font-semibold uppercase tracking-widest text-primary">Panel redakcyjny X</p>
-      <h1 className="mt-2 text-2xl font-bold">Propozycje z już zapisanych postów X</h1>
+  return <div className="sc-political">
+    <header className="sc-political__head"><p className="sc-t-caption">PANEL REDAKCYJNY X</p>
+      <h1 className="sc-t-title-l">Propozycje z już zapisanych postów X</h1>
       <p className="mt-2 max-w-2xl text-sm text-slate-400">Panel wyłącznie przegląda materiał już pobrany i zapisany jako
         PoliticalPost. Nie łączy się z płatnym API X, nie publikuje nitek, nie pisze oskarżeń i nie ocenia prawdziwości
         postów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja redakcji.</p>
-    </div>
+    </header>
 
     {status.data?.draft_rules && <details className="rounded-lg border p-3 text-xs text-slate-400">
       <summary className="cursor-pointer text-sm text-slate-200">Zasady przygotowania propozycji (DRAFT_RULES)</summary>
