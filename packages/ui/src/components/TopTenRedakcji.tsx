@@ -64,8 +64,8 @@ export function TopTenRedakcji({ topSources: sources }: { topSources: Source[] }
       {feed.isPending ? <p role="status" className="sc-top-ten-empty">Ładuję materiały ze źródeł…</p> : null}
       {feed.isError ? <p role="alert" className="sc-top-ten-empty">Nie udało się odświeżyć materiałów. <Button size="sm" variant="quiet" onClick={() => feed.refetch()}>Spróbuj ponownie</Button></p> : null}
       {!feed.isPending && !feed.isError && !articles.length ? <p className="sc-top-ten-empty">Nie ma jeszcze materiałów dla wybranych filtrów.</p> : null}
-      {articles.length ? <div className="news-strip-track sc-strip-bleed" tabIndex={0} aria-label="Wszystkie źródła — przewijaj poziomo">
-        {articles.map(article => <div key={article.id} className="news-strip-item"><NewsCard article={article} size="medium" /></div>)}
+      {articles.length ? <div className="sc-top-ten__track sc-strip-bleed" tabIndex={0} aria-label="Wszystkie źródła — przewijaj poziomo">
+        {articles.map(article => <div key={article.id} className="sc-top-ten__item"><NewsCard article={article} size="medium" /></div>)}
       </div> : null}
       <p className="sc-top-ten-caption">{`Najnowsze materiały z ${sourceSummary}${topicLabel ? ` · ${topicLabel}` : ''}${query ? ` · „${query}”` : ''}`}</p>
     </section>

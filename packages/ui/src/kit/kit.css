@@ -2547,3 +2547,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-draft-assistant__link { color: var(--sc-text); font: var(--sc-t-body); font-weight: 700; }
 .sc-draft-assistant__link:hover, .sc-draft-assistant__link:focus-visible { color: var(--sc-accent); }
 @media (max-width: 480px) { .sc-draft-assistant__form { grid-template-columns: 1fr; } .sc-draft-assistant__item { align-items: start; flex-direction: column; } }
+
+/* === Stage 2: top ten cards === */
+.sc-top-ten__track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(18rem, 22rem); gap: var(--sc-s-3); overflow-x: auto; padding-block: var(--sc-s-2) var(--sc-s-5); scroll-snap-type: x proximity; }
+.sc-top-ten__item { min-width: 0; scroll-snap-align: start; }
