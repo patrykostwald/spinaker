@@ -166,28 +166,11 @@ etykietę.
 
 ## Historia migracji
 
-To, co ten dokument opisuje, działa **na razie tylko** w `packages/ui/src/kit/**` i na witrynie
-`/ui-kit`. Żywe strony (`/`, `/search`, `/zrodla`, `/konto`, `/editor/*` i inne) pozostają **bez
-zmian** do etapu 2:
-
-- `frontend-spin/app/globals.css` ma zero zmian — trzy stare szaty (Ciemna/Jasna/Pastelowa),
-  bursztynowo-koralowa paleta, `.material-box` bez zaokrągleń i `.shadow-sm { box-shadow: none }`
-  wciąż obowiązują na żywych stronach;
-  ​
-- `ThemeSwitcher.tsx`, `localStorage['spin-theme']` i skrypt anty-FOUC w `layout.tsx` (odczytujący
-  ten sam klucz) nie są tknięte — `pastel` jako trzecia szata żyje dalej w żywym przełączniku i w
-  wyliczeniu bazy danych po stronie backendu, mimo że w samym kicie jest już tylko aliasem szaty
-  dziennej;
-- żywe strony pozostają na superrodzinie **IBM Plex** (`@fontsource/ibm-plex-*` w `layout.tsx`);
-  Montserrat jest podłączony wyłącznie jako zmienna CSS i używany tam, gdzie kod jawnie sięga po
-  `--sc-font-sans` — czyli tylko wewnątrz kitu i na `/ui-kit`;
-- role/reakcje w tym dokumencie opisują docelowy wygląd; sam mechanizm ról i ich nazwy w backendzie
-  nie zmieniają się w tym etapie — zmienia się wyłącznie to, jakimi tokenami kolorystycznymi
-  przyszłe komponenty będą je rysować;
-- `docs/UI_KIT.md` ma pełną listę technicznych ograniczeń etapu 1 (dropdown nieportalizowany w
-  lentach, `template.tsx` tylko na `/ui-kit` itd.) — ten dokument ich nie powtarza.
-
-Etap 2 przeniósł zestaw UI na strony żywe: przełącznik migruje stare ustawienie `pastel` do Jasnego, body używa Montserrat, a nowe powierzchnie korzystają z tokenów `--sc-*`.
+Etap 2 przeniósł zestaw UI na strony żywe. `template.tsx` działa w korzeniu aplikacji, body używa
+Montserrat, a wszystkie nowe powierzchnie korzystają z tokenów `--sc-*`. Przełącznik migruje
+zapisaną dawniej wartość `pastel` do Jasnego; wartość backendowego enumu pozostaje wyłącznie dla
+zgodności z wcześniejszymi profilami. Mechanizm ról i reakcji nie zmienił się po stronie backendu —
+zmieniła się wyłącznie jego prezentacja.
 
 ## Stały układ głównej
 

@@ -846,10 +846,9 @@ function useDismissable<T extends HTMLElement>(options: {
 
 ## 8. Znane ograniczenia po migracji etapu 2
 
-- **Дропдаун не портализован.** `Dropdown.__panel` — обычный абсолютно позиционированный потомок,
-  не рендерится в `PortalLayer`. Внутри контейнера с `overflow-x: auto` (лента карточек и т.п.) он
-  будет обрезан, если явно не передать `presentation="sheet"` (или `"auto"` ниже 480px, где он и так
-  переключится сам). Портализация дропдауна внутри лент — предусловие этапа 2.
+- **Дропдаун nie jest portalizowany.** `Dropdown.__panel` pozostaje zwykłym absolutnie
+  pozycjonowanym potomkiem, a nie elementem `PortalLayer`. W kontenerze z `overflow-x: auto` może
+  zostać obcięty; w takim miejscu przekazujemy `presentation="sheet"` albo `"auto"`.
 - **`template.tsx` działa w korzeniu aplikacji.** Wejście na każdą trasę korzysta z tej samej
   krótkiej animacji; nie dodawaj osobnych animacji routera w stronach.
 - **`pastel` jest wyłącznie zgodnością wsteczną.** Interfejs oferuje Ciemny, Jasny i Automatyczny;
@@ -857,10 +856,9 @@ function useDismissable<T extends HTMLElement>(options: {
   bez zmian.
 - **Montserrat jest fontem stron żywych.** Nie dodawaj ponownie importów IBM Plex ani nie mieszaj
   rodzin fontów w nowych komponentach.
-- **Ленты с `overflow-x: auto` обрезают разросшуюся карту по вертикали** (по спецификации
-  `overflow-y` при этом вычисляется в `auto`). Ступень B живёт в самой карте, слоя-клона больше нет,
-  поэтому ленте нужен запас: класс `.sc-strip-bleed` (margin/padding наизнанку по 120px) — как в
-  витрине «Portal». На этапе 2 это касается `.material-strip`, карусели и «Powiązane materiały».
+- **Paski z `overflow-x: auto` obcinają kartę rozwiniętą pionowo**. Stopień B żyje w samej karcie,
+  dlatego pasek dostaje zapas przez `.sc-strip-bleed` — dotyczy to wszystkich pasków wiadomości,
+  karuzel i sekcji powiązanych materiałów.
 - **Stare trasy demonstracyjne** (`/box-materialu`, `/box-kontekstu`, `/osoby-publiczne/demo`) zostały
   usunięte. Jedynym miejscem dla fikcyjnych danych jest `/ui-kit`.
 
