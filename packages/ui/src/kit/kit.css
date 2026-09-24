@@ -1984,3 +1984,10 @@ html[data-theme="light"] .sc-portal-scrim,
 :root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-w-card-title: 600; }
 html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-w-card-title: 700; }
 .sc-card__link { font-weight: var(--sc-w-card-title); }
+
+/* === Stage 2: dialogi === */
+.sc-dialog-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: var(--sc-s-4); background: color-mix(in srgb, var(--sc-bg) 76%, transparent); }
+.sc-dialog { width: min(100%, 44rem); max-height: min(90vh, 52rem); overflow: auto; border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-e-3), 0 0 0 1px var(--sc-line); outline: none; }
+.sc-dialog__head { position: sticky; z-index: 1; top: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); padding: var(--sc-s-4); border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); }
+.sc-dialog__head h2 { margin: 0; }
+.sc-dialog__body { padding: var(--sc-s-4); }
