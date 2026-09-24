@@ -2867,3 +2867,30 @@ body { background: var(--sc-bg); color: var(--sc-text); }
 /* Szapka minimalna: wordmark · pole szukania · motyw · konto. */
 .sc-navmenu__row { height: 60px; }
 .sc-navmenu__search { width: min(480px, 40vw); }
+
+/* === Stage 2: poprawki po przeglądzie podglądu (24.09) === */
+/* Pole szukania poza .sc-root (szapka, strona główna): reguła globals.css `input:not(...)` (0,3,1)
+   malowała wnętrze na --surface — ciemny prostokąt wystający z pola. Tu 0,4,1. */
+.sc-search input.sc-search__input.sc-input:not([type="checkbox"]) { background: transparent; background-color: transparent; border: 0; }
+/* Telefon: lista nawigacji jest ukryta, więc nic nie dosuwało ☰ do prawej krawędzi. */
+@container sc-navmenu (max-width: 767px) {
+  .sc-navmenu__toggle-wrap { margin-left: auto; }
+}
+/* Zaślepka mediów: na mini (64px) napis się nie mieści i był ucięty, na large leżał pod tytułem;
+   kategoria i tak jest w treści karty. Na medium schodzi poniżej odznaki kategorii (dwuwierszowej). */
+.sc-card[data-size="mini"] .sc-card__placeholder,
+.sc-card[data-size="large"] .sc-card__placeholder { font-size: 0; }
+.sc-card[data-size="medium"] .sc-card__placeholder { padding: 56px var(--sc-s-3) var(--sc-s-3); text-align: center; }
+/* Katalog źródeł: dzieci siatki bez min-width:0 rozpychały stronę na telefonie (460px przy 390px). */
+.sc-source-page > *, .sc-source-page__grid > *, .sc-source-page__grid li > * { min-width: 0; }
+.sc-source-page__grid a { overflow-wrap: anywhere; }
+.sc-source-page__grid li > small { flex: none; }
+@media (max-width: 640px) {
+  /* „Wszystkie źródła”: filtr, szukanie i „Zobacz wszystko” zawijają się zamiast wychodzić poza ekran. */
+  .sc-home-section__actions { flex-wrap: wrap; width: 100%; }
+  .sc-home-section__actions .sc-home-mosaic__search { flex: 1 1 100%; max-width: none; }
+}
+@media (max-width: 480px) {
+  /* Przewijane rzędy kart wyników: spad w bok wychodził poza ekran (poziomy scroll strony). */
+  .sc-search-day__cards.sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
+}

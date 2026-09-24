@@ -7,7 +7,7 @@
  * temat przychodzi z paska tematów pod szapką.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../Button";
 import { Dropdown } from "../Dropdown";
 import { NewsCard } from "../NewsCard";
@@ -29,7 +29,7 @@ export function HomeMosaic({ sources, topic, onArticles }: { sources: Source[]; 
     { refetchInterval: 30_000 },
   );
   const articles = useMemo(() => feed.data?.results ?? [], [feed.data]);
-  useMemo(() => onArticles?.(articles), [articles, onArticles]);
+  useEffect(() => onArticles?.(articles), [articles, onArticles]);
 
   const slots = Array.from({ length: 10 }, (_, i) => articles[i] ?? null);
   const selectedSources = sources.filter((source) => numericSources.includes(source.id));
