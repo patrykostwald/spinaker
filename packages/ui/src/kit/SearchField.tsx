@@ -20,6 +20,7 @@ export interface SearchFieldProps {
   maxLength?: number;
   inputType?: "search" | "url";
   required?: boolean;
+  name?: string;
 }
 
 /**
@@ -41,6 +42,7 @@ export function SearchField({
   maxLength,
   inputType = "search",
   required = false,
+  name,
 }: SearchFieldProps) {
   const autoId = useId();
   const inputId = id ?? autoId;
@@ -70,6 +72,7 @@ export function SearchField({
         aria-invalid={error || undefined}
         maxLength={maxLength}
         required={required}
+        name={name}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={(e) => onChange(e.target.value)}
