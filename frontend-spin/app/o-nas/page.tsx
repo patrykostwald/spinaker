@@ -116,11 +116,11 @@ export default function AboutPage() {
           <figure className="sc-about-sample">
             <div className="sc-about-box">
               <span className="sc-about-box-top"><span className="sc-about-tag">KOMUNIKAT</span><span>14.09 · 12:00</span></span>
-              <span className="sc-about-box-source">Urząd Miasta Przykładowego</span>
-              <strong>Komunikat w sprawie czasowego zamknięcia mostu</strong>
+              <span className="sc-about-box-source">Nazwa źródła</span>
+              <strong>Tytuł materiału w bazie</strong>
               <span className="sc-about-box-meta">kategoria: samorząd · odnośnik do oryginału ↗</span>
             </div>
-            <figcaption>Przykład układu boxa. Dane są fikcyjne.</figcaption>
+            <figcaption>Schemat układu boxa — bez przykładowej publikacji.</figcaption>
           </figure>
         </div>
       </section>
