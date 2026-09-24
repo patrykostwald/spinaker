@@ -2108,3 +2108,19 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-account-control { display: inline-flex; align-items: center; justify-content: end; flex-wrap: wrap; gap: var(--sc-s-2); }
 .sc-account-control__name { max-width: 9rem; overflow: hidden; color: var(--sc-text-2); font: var(--sc-t-caption); text-overflow: ellipsis; text-decoration: none; white-space: nowrap; }
 .sc-account-control__name:hover { color: var(--sc-accent); }
+
+/* === Stage 2: stan importów w redakcji === */
+.sc-editor-status { padding: var(--sc-s-5); background: var(--sc-surface-2); }
+.sc-editor-status summary { cursor: pointer; color: var(--sc-text); font-weight: 700; }
+.sc-editor-status__body { display: grid; gap: var(--sc-s-4); margin-top: var(--sc-s-4); }
+.sc-editor-status__body p { margin: 0; }
+.sc-editor-status__notice { padding: var(--sc-s-3); border-left: 3px solid var(--sc-accent); background: var(--sc-surface); }
+.sc-editor-status dl { display: grid; margin: 0; border-top: 1px solid var(--sc-line); }
+.sc-editor-status dl div { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr; gap: var(--sc-s-3); padding: var(--sc-s-3) 0; border-bottom: 1px solid var(--sc-line); }
+.sc-editor-status dt { font-weight: 600; }
+.sc-editor-status dd { display: grid; gap: var(--sc-s-1); margin: 0; color: var(--sc-text-2); }
+.sc-editor-status__error { color: var(--sc-danger); }
+.sc-editor-status section { display: grid; gap: var(--sc-s-2); }
+.sc-editor-status section h3 { margin: 0; }
+.sc-editor-status ul { display: grid; gap: var(--sc-s-2); max-height: 16rem; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+@media (max-width: 480px) { .sc-editor-status dl div { grid-template-columns: 1fr; } }
