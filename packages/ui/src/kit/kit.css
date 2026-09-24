@@ -2049,7 +2049,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-thread-timeline__dots button span { width: 8px; height: 8px; border-radius: 50%; background: var(--sc-line-strong); }
 .sc-thread-timeline__dots button[aria-current="step"] span { background: var(--sc-accent); }
 .sc-thread-timeline__dots button:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
-@media (max-width: 480px) { .sc-thread-timeline__head { align-items: flex-start; flex-direction: column; } .sc-thread-timeline__track { margin-inline: calc(var(--sc-s-4) * -1); padding-inline: var(--sc-s-4); } }
+@media (max-width: 480px) { .sc-thread-timeline__head { align-items: flex-start; flex-direction: column; } .sc-thread-timeline__track { position: relative; display: grid; gap: var(--sc-s-6); overflow: visible; scroll-snap-type: none; }.sc-thread-timeline__track::before { position: absolute; top: var(--sc-s-3); bottom: var(--sc-s-3); left: 4px; width: 1px; background: var(--sc-line); content: ''; }.sc-thread-timeline__item { position: relative; flex-basis: auto; padding-left: var(--sc-s-5); }.sc-thread-timeline__date { padding-top: 0; border-top: 0; }.sc-thread-timeline__date span { top: 2px; left: calc(var(--sc-s-5) * -1 - 1px); border: 2px solid var(--sc-bg); }.sc-thread-timeline__dots { display: none; } }
 
 /* === Stage 2: działania nitki === */
 .sc-thread-favorite { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--sc-s-2); }
