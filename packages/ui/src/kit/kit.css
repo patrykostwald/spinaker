@@ -2696,6 +2696,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-home-topbar { display: flex; justify-content: space-between; gap: var(--sc-s-4); margin: 0 0 calc(var(--sc-s-9) * -1 + var(--sc-s-2)); padding: 0 0 var(--sc-s-2); color: var(--sc-text-2); border-bottom: 1px solid var(--sc-line); }
 .sc-home-topbar__date::first-letter { text-transform: uppercase; }
 .sc-home-catbar { margin: 0 0 calc(var(--sc-s-9) * -1 + var(--sc-s-3)); }
+.sc-home-catbar .sc-nav-categories__list { padding-inline: 0; }
 .sc-home-catbar__btn { border: 0; background: transparent; font: inherit; cursor: pointer; }
 .sc-home-ticker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-s-4); }
 .sc-home-ticker > .sc-strip__empty { min-height: 96px; }
