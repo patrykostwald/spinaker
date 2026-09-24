@@ -47,4 +47,3 @@ export { ThreadFavoriteButton } from './components/ThreadFavoriteButton';
 export { PublicFigureProfile } from "./components/PublicFigureProfile";
 export { PublicFigureDirectory, PublicFigurePage } from "./components/PublicFigureDirectory";
 export * from "./lib/publicFigures";
-export { DEMO_PUBLIC_FIGURE, DEMO_FIGURE_MATERIALS, DEMO_FIGURE_SOURCES, DEMO_FIGURE_TOPICS, type FigureMaterial } from "./lib/publicFigureDemo";

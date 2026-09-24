@@ -18,12 +18,17 @@ import {
   type PublicFigureOrganisation,
   type PublicFigureVote,
 } from '../lib/publicFigures';
-import { DEMO_FIGURE_MATERIALS, DEMO_FIGURE_SOURCES, DEMO_FIGURE_TOPICS, type FigureMaterial } from '../lib/publicFigureDemo';
 import type { Article } from '../types';
 import { AccountDialog } from './AccountDialog';
 import { ArticleFavoriteButton } from './ArticleFavoriteButton';
 import { voteLabel } from './VotingDetails';
 import { Button, MorphIndicator } from '../kit';
+
+type FigureMaterial = Pick<Article, 'id' | 'title' | 'url' | 'category' | 'published_date'> & {
+  source_id: number;
+  source_name: string;
+  topics: string[];
+};
 
 const TIME_ZONE = 'Europe/Warsaw';
 const dayFormat = new Intl.DateTimeFormat('pl-PL', { timeZone: TIME_ZONE, weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
@@ -46,10 +51,9 @@ function plural(count: number, one: string, few: string, many: string) {
   return many;
 }
 
-/** Link zewnętrzny tylko dla adresów http(s). W demo — tekst oznaczony jako nieaktywny. */
-function SourceLink({ href, demo, children }: { href: string | null | undefined; demo?: boolean; children: ReactNode }) {
+/** Link zewnętrzny wyłącznie dla adresów http(s). */
+function SourceLink({ href, children }: { href: string | null | undefined; children: ReactNode }) {
   if (!isHttp(href)) return null;
-  if (demo) return <span className="sc-public-figure-inactive" title="Demo — link nieaktywny">{children} <small>(demo)</small></span>;
   return <a href={href} target="_blank" rel="noopener noreferrer">{children} <span aria-hidden="true">↗</span><span className="sr-only"> (otwiera się w nowej karcie)</span></a>;
 }
 
@@ -59,7 +63,7 @@ function Neutral({ children }: { children: ReactNode }) {
 
 /* ——— Nagłówek profilu ——— */
 
-function FigureHeader({ figure, demo, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; demo?: boolean; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'materials') => void }) {
+function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'materials') => void }) {
   const { ownerId } = useOwnerId();
   const [loginOpen, setLoginOpen] = useState(false);
   const x = verifiedXAccount(figure);
@@ -73,16 +77,16 @@ function FigureHeader({ figure, demo, titleId, materialsTotal, onSelect }: { fig
         {figure.role_title}{figure.organisation && <> · {figure.organisation}</>}
       </p>
       <p className="sc-public-figure-links">
-        <SourceLink href={figure.evidence_url} demo={demo}>Źródło funkcji</SourceLink>
-        <SourceLink href={figure.official_profile_url} demo={demo}>Oficjalny profil</SourceLink>
+        <SourceLink href={figure.evidence_url}>Źródło funkcji</SourceLink>
+        <SourceLink href={figure.official_profile_url}>Oficjalny profil</SourceLink>
         {figure.source_checked_at && <span>sprawdzono <time dateTime={figure.source_checked_at}>{formatDay(figure.source_checked_at)}</time></span>}
       </p>
       {x && (
         <p className="sc-public-figure-x">
           <span className="sc-public-figure-tag">KONTO X</span>
-          <SourceLink href={x.url} demo={demo}>@{x.handle}</SourceLink>
+          <SourceLink href={x.url}>@{x.handle}</SourceLink>
           <span>potwierdzone przez redakcję i oficjalne API X</span>
-          <SourceLink href={x.evidence_url} demo={demo}>link z oficjalnego profilu</SourceLink>
+          <SourceLink href={x.evidence_url}>link z oficjalnego profilu</SourceLink>
           {x.posts_collected > 0 && <span>{x.posts_collected} {plural(x.posts_collected, 'wpis', 'wpisy', 'wpisów')} w Bazie</span>}
         </p>
       )}
@@ -113,24 +117,24 @@ function ShortTopic({ topic }: { topic: string }) {
   );
 }
 
-function VoteRow({ vote, demo }: { vote: PublicFigureVote; demo?: boolean }) {
+function VoteRow({ vote }: { vote: PublicFigureVote }) {
   return (
     <tr>
       <td data-label="Data">{vote.date ? <time dateTime={vote.date}>{formatDay(vote.date)}</time> : 'brak daty'}</td>
       <th scope="row" data-label="Temat"><ShortTopic topic={vote.topic} /></th>
       <td data-label="Głos"><span className={`sc-public-figure-vote is-${vote.vote.toLowerCase()}`}>{voteLabel(vote.vote)}</span></td>
-      <td data-label="Źródło"><SourceLink href={vote.article_url} demo={demo}>{vote.source || 'Oficjalny zapis'}</SourceLink></td>
+      <td data-label="Źródło"><SourceLink href={vote.article_url}>{vote.source || 'Oficjalny zapis'}</SourceLink></td>
     </tr>
   );
 }
 
-function VotesSection({ figure, demo }: { figure: PublicFigureDetail; demo?: boolean }) {
+function VotesSection({ figure }: { figure: PublicFigureDetail }) {
   const votes = figure.votes;
   return (
     <section id="glosowania" className="sc-public-figure-section" aria-labelledby="pf-votes">
       <header>
         <h2 id="pf-votes">Głosowania w Sejmie</h2>
-        {votes.available && <p>Ostatnie {votes.results.length} {plural(votes.results.length, 'głosowanie', 'głosowania', 'głosowań')} z oficjalnego zapisu · <SourceLink href={votes.source_url} demo={demo}>profil w Sejmie</SourceLink></p>}
+        {votes.available && <p>Ostatnie {votes.results.length} {plural(votes.results.length, 'głosowanie', 'głosowania', 'głosowań')} z oficjalnego zapisu · <SourceLink href={votes.source_url}>profil w Sejmie</SourceLink></p>}
       </header>
       {!votes.available ? (
         <Neutral>{votes.reason || 'Brak jeszcze ręcznie potwierdzonego połączenia z mandatem poselskim.'} Nie oznacza to, że głosowań nie było — redakcja łączy profil z oficjalnym wpisem ręcznie, nie po nazwisku.</Neutral>
@@ -140,7 +144,7 @@ function VotesSection({ figure, demo }: { figure: PublicFigureDetail; demo?: boo
         <table className="sc-public-figure-votes">
           <caption className="sr-only">Głosowania: data, temat, głos i oficjalne źródło</caption>
           <thead><tr><th scope="col">Data</th><th scope="col">Temat</th><th scope="col">Głos</th><th scope="col">Źródło</th></tr></thead>
-          <tbody>{votes.results.map((vote, index) => <VoteRow key={`${vote.article_url}-${index}`} vote={vote} demo={demo} />)}</tbody>
+          <tbody>{votes.results.map((vote, index) => <VoteRow key={`${vote.article_url}-${index}`} vote={vote} />)}</tbody>
         </table>
       )}
       <p className="sc-public-figure-hint">Pokazujemy głos z oficjalnego zapisu, bez komentarza i bez oceny.</p>
@@ -150,7 +154,7 @@ function VotesSection({ figure, demo }: { figure: PublicFigureDetail; demo?: boo
 
 /* ——— Wpisy z potwierdzonego konta X ——— */
 
-function XPostsSection({ figure, demo }: { figure: PublicFigureDetail; demo?: boolean }) {
+function XPostsSection({ figure }: { figure: PublicFigureDetail }) {
   const posts = figure.x_posts;
   const shown = posts?.results.slice(0, 20) ?? [];
   return (
@@ -169,7 +173,7 @@ function XPostsSection({ figure, demo }: { figure: PublicFigureDetail; demo?: bo
             <li key={post.id}>
               <p className="sc-public-figure-mat-meta"><span className="sc-public-figure-tag">POST X</span><time dateTime={post.published_at}>{formatDay(post.published_at)} · {hourFormat.format(new Date(post.published_at))}</time></p>
               <p className="sc-public-figure-xpost-text">{post.text.length > 320 ? `${post.text.slice(0, 320).replace(/\s+\S*$/, '')}…` : post.text}</p>
-              <p className="sc-public-figure-mat-links"><SourceLink href={post.url} demo={demo}>Otwórz wpis</SourceLink></p>
+              <p className="sc-public-figure-mat-links"><SourceLink href={post.url}>Otwórz wpis</SourceLink></p>
             </li>
           ))}
         </ul>
@@ -181,23 +185,23 @@ function XPostsSection({ figure, demo }: { figure: PublicFigureDetail; demo?: bo
 
 /* ——— Relacje z podmiotami ——— */
 
-function OrganisationRow({ relation, demo }: { relation: PublicFigureOrganisation; demo?: boolean }) {
+function OrganisationRow({ relation }: { relation: PublicFigureOrganisation }) {
   return (
     <li className="sc-public-figure-org">
       <div className="sc-public-figure-org-main">
-        <SourceLink href={relation.official_register_url} demo={demo}><strong>{relation.name}</strong></SourceLink>
+        <SourceLink href={relation.official_register_url}><strong>{relation.name}</strong></SourceLink>
         <span className="sc-public-figure-verified"><span aria-hidden="true">✓</span> potwierdzone w źródle publicznym</span>
       </div>
       <dl>
         <div><dt>Publiczna rola</dt><dd>{relation.public_role}</dd></div>
         <div><dt>Relacja</dt><dd><span className={`sc-public-figure-relation is-${relation.relation_status}`}>{relation.relation_status === 'current' ? 'obecna' : 'historyczna'}</span></dd></div>
-        <div><dt>Źródło</dt><dd className="sc-public-figure-org-links"><SourceLink href={relation.evidence_url} demo={demo}>Dowód publiczny</SourceLink></dd></div>
+        <div><dt>Źródło</dt><dd className="sc-public-figure-org-links"><SourceLink href={relation.evidence_url}>Dowód publiczny</SourceLink></dd></div>
       </dl>
     </li>
   );
 }
 
-function OrganisationsSection({ figure, demo }: { figure: PublicFigureDetail; demo?: boolean }) {
+function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
   const kinds = ORGANISATION_KIND_ORDER.filter(kind => kind !== 'other' || figure.organisations.some(item => item.kind === 'other'));
   return (
     <section id="relacje" className="sc-public-figure-section" aria-labelledby="pf-orgs">
@@ -211,7 +215,7 @@ function OrganisationsSection({ figure, demo }: { figure: PublicFigureDetail; de
           <section key={kind} className="sc-public-figure-group" aria-labelledby={`pf-org-${kind}`}>
             <h3 id={`pf-org-${kind}`}>{ORGANISATION_KIND_LABELS[kind].plural} <span>{rows.length}</span></h3>
             {rows.length ? (
-              <ul>{rows.map(relation => <OrganisationRow key={`${relation.id}-${relation.public_role}-${relation.relation_status}`} relation={relation} demo={demo} />)}</ul>
+              <ul>{rows.map(relation => <OrganisationRow key={`${relation.id}-${relation.public_role}-${relation.relation_status}`} relation={relation} />)}</ul>
             ) : (
               <Neutral>Brak jeszcze ręcznie potwierdzonego połączenia. Nie oznacza to braku relacji — pokazujemy tylko wpisy sprawdzone w publicznym źródle.</Neutral>
             )}
@@ -227,11 +231,11 @@ function OrganisationsSection({ figure, demo }: { figure: PublicFigureDetail; de
 type MaterialFilters = { group: MaterialGroupKey | ''; source: number | ''; topic: string; order: 'desc' | 'asc' };
 
 function toFigureMaterial(article: Article): FigureMaterial {
-  return { id: article.id, title: article.title, url: article.url, category: article.category, published_date: article.published_date, source_id: article.source.id, source_name: article.source.name, topics: article.tags };
+  return { id: article.id, title: article.title, url: article.url, category: article.category, published_date: article.published_date, source_id: article.source.id, source_name: article.source.name, topics: article.tags ?? [] };
 }
 
-function MaterialsView({ name, demo, counts, items, total, status, filters, setFilters, sources, topics, hasMore, loadMore, loadingMore }: {
-  name: string; demo?: boolean; counts: Partial<Record<MaterialGroupKey, number>>; items: FigureMaterial[]; total: number | null;
+function MaterialsView({ name, counts, items, total, status, filters, setFilters, sources, topics, hasMore, loadMore, loadingMore }: {
+  name: string; counts: Partial<Record<MaterialGroupKey, number>>; items: FigureMaterial[]; total: number | null;
   status: 'loading' | 'error' | 'unavailable' | 'ready'; filters: MaterialFilters; setFilters: (next: MaterialFilters) => void;
   sources: Array<{ id: number; name: string }>; topics: CategoryOption[]; hasMore: boolean; loadMore: () => void; loadingMore: boolean;
 }) {
@@ -308,12 +312,12 @@ function MaterialsView({ name, demo, counts, items, total, status, filters, setF
                         {item.published_date && <time dateTime={item.published_date}>{hourFormat.format(new Date(item.published_date))}</time>}
                         <span>{item.source_name}</span>
                       </p>
-                      {demo ? <strong className="sc-public-figure-mat-title">{item.title}</strong> : <Link href={`/material/${item.id}`} className="sc-public-figure-mat-title">{item.title}</Link>}
+                      <Link href={`/material/${item.id}`} className="sc-public-figure-mat-title">{item.title}</Link>
                       <p className="sc-public-figure-mat-links">
-                        {demo ? <span className="sc-public-figure-inactive">Materiał i kontekst <small>(demo)</small></span> : <Link href={`/material/${item.id}`}>Materiał i kontekst</Link>}
-                        <SourceLink href={item.url} demo={demo}>Oryginał</SourceLink>
+                        <Link href={`/material/${item.id}`}>Materiał i kontekst</Link>
+                        <SourceLink href={item.url}>Oryginał</SourceLink>
                       </p>
-                      {!demo && ownerId && <span className="sc-public-figure-mat-fav"><ArticleFavoriteButton articleId={item.id} title={item.title} compact /></span>}
+                      {ownerId && <span className="sc-public-figure-mat-fav"><ArticleFavoriteButton articleId={item.id} title={item.title} compact /></span>}
                     </li>
                   );
                 })}
@@ -355,33 +359,22 @@ function LiveMaterials({ name }: { name: string }) {
     hasMore={Boolean(feed.hasNextPage)} loadMore={() => feed.fetchNextPage()} loadingMore={feed.isFetchingNextPage} />;
 }
 
-function DemoMaterials({ name }: { name: string }) {
-  const [filters, setFilters] = useState<MaterialFilters>({ group: '', source: '', topic: '', order: 'desc' });
-  const scoped = DEMO_FIGURE_MATERIALS.filter(item => (!filters.source || item.source_id === filters.source) && (!filters.topic || item.topics?.includes(filters.topic)));
-  const counts = Object.fromEntries(MATERIAL_GROUPS.map(group => [group.key, scoped.filter(item => groupOfCategory(item.category) === group.key).length])) as Partial<Record<MaterialGroupKey, number>>;
-  const items = scoped.filter(item => !filters.group || groupOfCategory(item.category) === filters.group);
-  return <MaterialsView name={name} demo counts={counts} items={items} total={scoped.length} status="ready" filters={filters} setFilters={setFilters}
-    sources={DEMO_FIGURE_SOURCES} topics={DEMO_FIGURE_TOPICS} hasMore={false} loadMore={() => undefined} loadingMore={false} />;
-}
-
 /** Łączna liczba materiałów do nagłówka — ta sama pamięć podręczna co liczniki sekcji. */
-function useMaterialsTotal(name: string, demo?: boolean) {
+function useMaterialsTotal(name: string) {
   const queries = useQueries({
     queries: MATERIAL_GROUPS.map(group => ({
       queryKey: ['figure-material-count', name, group.key, '', ''],
       queryFn: () => getNewsFeed({ query: name, match: 'words', categories: [...group.categories], pageSize: 1 }),
       staleTime: 60_000,
-      enabled: !demo,
     })),
   });
-  if (demo) return DEMO_FIGURE_MATERIALS.length;
   return queries.every(query => query.isSuccess) ? queries.reduce((sum, query) => sum + (query.data?.total ?? 0), 0) : null;
 }
 
 /* ——— Profil ——— */
 
-export function PublicFigureProfile({ figure, demo = false, titleId = 'pf-title' }: { figure: PublicFigureDetail; demo?: boolean; titleId?: string }) {
-  const materialsTotal = useMaterialsTotal(figure.name, demo);
+export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: PublicFigureDetail; titleId?: string }) {
+  const materialsTotal = useMaterialsTotal(figure.name);
   const [tab, setTab] = useState<'votes' | 'relations' | 'materials' | 'x'>('votes');
   const tabs = [
     { id: 'votes' as const, label: 'Głosowania' },
@@ -391,21 +384,15 @@ export function PublicFigureProfile({ figure, demo = false, titleId = 'pf-title'
   ];
   return (
     <article className="sc-public-figure" aria-labelledby={titleId}>
-      {demo && (
-        <p className="sc-public-figure-demo" role="note">
-          <strong>DEMO</strong>
-          <span>Osoba, podmioty, głosowania i materiały są fikcyjne. Kształt danych odpowiada odpowiedzi GET /api/public-figures/:id/. Materiały demonstracyjne są lokalne — w prawdziwym profilu pochodzą z wyszukiwania w Bazie.</span>
-        </p>
-      )}
-      <FigureHeader figure={figure} demo={demo} titleId={titleId} materialsTotal={materialsTotal} onSelect={setTab} />
+      <FigureHeader figure={figure} titleId={titleId} materialsTotal={materialsTotal} onSelect={setTab} />
       <nav className="sc-public-figure-tabs" role="tablist" aria-label="Dane profilu">
         {tabs.map(item => <button key={item.id} id={`pf-tab-${item.id}`} type="button" role="tab" aria-selected={tab === item.id} aria-controls={`pf-panel-${item.id}`} onClick={() => setTab(item.id)}>{tab === item.id && <MorphIndicator id="public-figure-tabs" active variant="underline" />}{item.label}</button>)}
       </nav>
       <div id={`pf-panel-${tab}`} role="tabpanel" aria-labelledby={`pf-tab-${tab}`} tabIndex={0}>
-        {tab === 'votes' && <VotesSection figure={figure} demo={demo} />}
-        {tab === 'x' && <XPostsSection figure={figure} demo={demo} />}
-        {tab === 'relations' && <OrganisationsSection figure={figure} demo={demo} />}
-        {tab === 'materials' && (demo ? <DemoMaterials name={figure.name} /> : <LiveMaterials name={figure.name} />)}
+        {tab === 'votes' && <VotesSection figure={figure} />}
+        {tab === 'x' && <XPostsSection figure={figure} />}
+        {tab === 'relations' && <OrganisationsSection figure={figure} />}
+        {tab === 'materials' && <LiveMaterials name={figure.name} />}
       </div>
       <p className="sc-public-figure-disclaimer">
         Profil pokazuje wyłącznie dane publiczne: funkcję, oficjalne głosowania i potwierdzone relacje. Nie zawiera adresów, numerów PESEL, dat urodzenia ani danych rodzinnych. Nie wystawiamy ocen osób ani automatycznych wniosków.
