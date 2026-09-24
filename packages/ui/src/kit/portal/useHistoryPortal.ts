@@ -31,7 +31,7 @@ export type UseHistoryPortalOptions = {
   /** = api.close */
   onClose: () => void;
   /** Odnajduje Article po id wśród danych, którymi operuje sekcja/strona (fixtures na witrynie). */
-  resolveArticle: (id: number) => Article | null | undefined;
+  resolveArticle: (id: number) => Article | null | undefined | Promise<Article | null | undefined>;
 };
 
 export type HistoryPortal = {
@@ -79,34 +79,40 @@ export function useHistoryPortal({ mode, active, onOpen, onClose, resolveArticle
   // w chwili wywołania) i podłącz nasłuch Wstecz/Dalej.
   useEffect(() => {
     if (mode === "none") return;
+    let disposed = false;
+    let request = 0;
+    const openFromLocation = async (id: number) => {
+      const currentRequest = ++request;
+      const article = await resolveArticle(id);
+      if (disposed || currentRequest !== request || !article) return false;
+      suppressReflect.current = true;
+      lastReflectedId.current = id;
+      onOpen(article, null);
+      return true;
+    };
+
     const initialId = readIdFromLocation(mode);
-    if (initialId !== null) {
-      const article = resolveArticle(initialId);
-      if (article) {
-        suppressReflect.current = true;
-        onOpen(article, null);
-        lastReflectedId.current = initialId;
-      }
-    }
+    if (initialId !== null) void openFromLocation(initialId);
 
     function onPopState() {
       owned.current = false;
       const id = readIdFromLocation(mode);
       if (id !== null) {
-        const article = resolveArticle(id);
-        if (article) {
-          suppressReflect.current = true;
-          lastReflectedId.current = id;
-          onOpen(article, null);
-          return;
-        }
+        void openFromLocation(id).then((opened) => {
+          if (!opened && !disposed) {
+            suppressReflect.current = true;
+            lastReflectedId.current = null;
+            onClose();
+          }
+        });
+        return;
       }
       suppressReflect.current = true;
       lastReflectedId.current = null;
       onClose();
     }
     window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    return () => { disposed = true; window.removeEventListener("popstate", onPopState); };
     // Zamierzenie: tylko `mode` — onOpen/onClose/resolveArticle to referencje wywołującego,
     // które nie powinny resetować nasłuchu przy każdym renderze.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -28,7 +28,7 @@ import { useDragDismiss } from "./useDragDismiss";
 
 export type PortalLayerProps = {
   /** Potrzebne `useHistoryPortal` (wczytanie `?podglad=`, Wstecz/Dalej) i nawigacji do powiązanych. */
-  resolveArticle?: (id: number) => Article | null | undefined;
+  resolveArticle?: (id: number) => Article | null | undefined | Promise<Article | null | undefined>;
   /** Materiały «Powiązane materiały» pod aktualnie otwartym. */
   relatedFor?: (article: Article) => Article[];
 };
