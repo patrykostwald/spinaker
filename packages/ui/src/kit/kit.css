@@ -1991,3 +1991,12 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-dialog__head { position: sticky; z-index: 1; top: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); padding: var(--sc-s-4); border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); }
 .sc-dialog__head h2 { margin: 0; }
 .sc-dialog__body { padding: var(--sc-s-4); }
+
+/* === Stage 2: oś wyników wyszukiwania === */
+.sc-search-timeline { display: grid; gap: var(--sc-s-9); }
+.sc-search-empty { padding: var(--sc-s-12) 0; text-align: center; }
+.sc-search-day { display: grid; grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr); gap: var(--sc-s-5); }
+.sc-search-day__head { position: sticky; top: var(--sc-s-4); align-self: start; padding: var(--sc-s-3) 0; border-top: 1px solid var(--sc-line); }
+.sc-search-day__head h2 { margin: 0; color: var(--sc-accent); }
+.sc-search-day__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--sc-s-4); }
+@media (max-width: 480px) { .sc-search-day { display: grid; grid-template-columns: 1fr; gap: var(--sc-s-3); } .sc-search-day__head { position: static; } .sc-search-day__cards { grid-auto-flow: column; grid-template-columns: minmax(17rem, 82vw); overflow-x: auto; } }
