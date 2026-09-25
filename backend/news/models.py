@@ -829,6 +829,43 @@ class ArticleContent(models.Model):
     source_url = models.URLField(max_length=1024)
 
 
+class ArticleChangeEvent(models.Model):
+    """Private redaction queue for changes observed at an article URL."""
+
+    class ChangeType(models.TextChoices):
+        MODIFIED = "modified", "Zmieniona treść"
+        REMOVED = "removed", "Usunięty materiał"
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "Oczekuje na zatwierdzenie"
+        APPROVED = "approved", "Zatwierdzone"
+        REJECTED = "rejected", "Odrzucone"
+
+    article = models.ForeignKey(Article, on_delete=models.PROTECT, related_name="change_events")
+    change_type = models.CharField(max_length=16, choices=ChangeType.choices)
+    status = models.CharField(max_length=16, choices=ReviewStatus.choices,
+        default=ReviewStatus.PENDING, db_index=True)
+    previous_title_sha256 = models.CharField(max_length=64, blank=True)
+    current_title_sha256 = models.CharField(max_length=64, blank=True)
+    previous_content_sha256 = models.CharField(max_length=64, blank=True)
+    current_content_sha256 = models.CharField(max_length=64, blank=True)
+    source_status = models.PositiveSmallIntegerField(null=True, blank=True)
+    evidence_snapshot = models.ForeignKey(
+        "news.EvidenceSnapshot", null=True, blank=True, on_delete=models.PROTECT,
+        related_name="change_events")
+    details = models.JSONField(default=dict, blank=True)
+    detected_at = models.DateTimeField(default=timezone.now, db_index=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="reviewed_article_changes")
+
+    class Meta:
+        ordering = ["-detected_at", "-pk"]
+        constraints = [models.UniqueConstraint(
+            fields=["article", "change_type", "current_content_sha256", "current_title_sha256"],
+            name="unique_article_observed_change")]
+
+
 class QualityIssue(models.Model):
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='quality_issues')
     code = models.CharField(max_length=60)

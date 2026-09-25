@@ -221,6 +221,27 @@ class EvidenceSnapshotAdmin(admin.ModelAdmin):
         return False
 site.register(EvidenceSnapshot, EvidenceSnapshotAdmin)
 
+from news.models import ArticleChangeEvent
+class ArticleChangeEventAdmin(admin.ModelAdmin):
+    list_display = ('detected_at', 'article', 'change_type', 'status', 'source_status', 'reviewed_at')
+    list_filter = ('change_type', 'status')
+    search_fields = ('article__title', 'article__url')
+    readonly_fields = ('article', 'change_type', 'previous_title_sha256', 'current_title_sha256',
+        'previous_content_sha256', 'current_content_sha256', 'source_status', 'evidence_snapshot',
+        'details', 'detected_at', 'reviewed_at', 'reviewed_by')
+    fields = readonly_fields + ('status',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        if 'status' in form.changed_data:
+            obj.reviewed_at = timezone.now()
+            obj.reviewed_by = request.user
+        super().save_model(request, obj, form, change)
+
+site.register(ArticleChangeEvent, ArticleChangeEventAdmin)
+
 
 class SourceAccessInstructionAdmin(admin.ModelAdmin):
     list_display = ('source', 'version', 'status', 'channel', 'allowed_scope',
