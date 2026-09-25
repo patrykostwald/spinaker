@@ -43,6 +43,11 @@ export type NavMenuProps = {
   brand?: ReactNode;
   /** Slot na pole wyszukiwania (np. SearchField). Ukrywany poniżej 768px — brak miejsca w rzędzie. */
   search?: ReactNode;
+  /**
+   * `centered`: pole szukania na środku rzędu, po lewej wordmark + punkty (prowadzą do pola),
+   * po prawej cta. Domyślnie `inline` — dotychczasowy rząd od lewej.
+   */
+  layout?: "inline" | "centered";
 };
 
 const MotionLink = motion(Link);
@@ -80,6 +85,7 @@ export function NavMenu({
   overflowLabel = "Więcej",
   brand,
   search,
+  layout = "inline",
 }: NavMenuProps) {
   const m = useMotionTokens();
   const router = useRouter();
@@ -125,8 +131,11 @@ export function NavMenu({
         aria-label={ariaLabel}
         data-sticky={sticky || undefined}
         data-stuck={stuck || undefined}
+        data-layout={layout}
       >
         <div className="sc-navmenu__row">
+          {/* start/end mają `display: contents` w układzie `inline` — rząd wygląda jak dotąd. */}
+          <div className="sc-navmenu__start">
           {brand && <div className="sc-navmenu__brand">{brand}</div>}
 
           <ul className="sc-navmenu__list" role="list">
@@ -165,8 +174,11 @@ export function NavMenu({
               </li>
             )}
           </ul>
+          </div>
 
           {search && <div className="sc-navmenu__search">{search}</div>}
+
+          <div className="sc-navmenu__end">
           {cta && <div className="sc-navmenu__cta">{cta}</div>}
 
           <span className="sc-navmenu__toggle-wrap">
@@ -186,6 +198,7 @@ export function NavMenu({
               onClick={() => setMobileOpen((value) => !value)}
             />
           </span>
+          </div>
         </div>
 
         <div id={mobilePanelId} ref={dismissRef} className="sc-navmenu__mobile-wrap">

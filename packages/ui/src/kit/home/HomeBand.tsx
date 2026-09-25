@@ -2,7 +2,7 @@
 
 /**
  * Pas „Twój przegląd” (wzór: pas newslettera „Stay Updated”). Zamiast adresu e-mail — hasło,
- * z którego powstaje własny pasek Bazy (zapis lokalny, jak dotąd). Wysłanie przewija do Bazy
+ * z którego powstaje nitka użytkownika (zapis lokalny, jak dotąd). Wysłanie przewija do „Nitek użytkownika”
  * i otwiera tam formularz paska z wpisanym hasłem.
  */
 
@@ -21,7 +21,7 @@ export function HomeBand({ onCreate }: { onCreate: (query: string) => void }) {
     <section className="sc-home-band" aria-label="Twój przegląd">
       <div className="sc-home-band__copy">
         <h2 className="sc-t-title-m">Twój przegląd</h2>
-        <p className="sc-t-body-s sc-text-2">Wpisz hasło, nazwisko lub temat — zbudujemy z niego własny pasek materiałów w Bazie. Zapis na tym urządzeniu.</p>
+        <p className="sc-t-body-s sc-text-2">Wpisz hasło, nazwisko lub temat — zbudujemy z niego własną nitkę materiałów. Zapis na tym urządzeniu.</p>
       </div>
       <form className="sc-home-band__form" onSubmit={submit}>
         <SearchField value={query} onChange={setQuery} placeholder="Hasło lub nazwisko" label="Hasło własnego paska" />

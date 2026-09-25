@@ -34,7 +34,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
             note={<>Materiały prezentujemy w oryginalnym kontekście źródłowym.<br />Zestawienie publikacji nie jest potwierdzeniem zawartych w nich twierdzeń.</>}
             cta={{ eyebrow: "WSPARCIE PROJEKTU", label: "Wesprzyj spin.clinic", href: "/wsparcie" }}
-            columns={[{ title: "Informacje", links: [{ label: "O nas", href: "/o-nas" }, { label: "Źródła", href: "/zrodla" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
+            columns={[
+              // Grupy źródeł ustawiają `?zrodla=` strony głównej (zawężają „Top 10” i Bazę); katalog — /zrodla.
+              { title: "Źródła", links: [{ label: "Publiczne", href: "/?zrodla=publiczne#baza" }, { label: "Media", href: "/?zrodla=media#baza" }, { label: "Top media", href: "/?zrodla=top#baza" }, { label: "Wszystkie źródła", href: "/zrodla" }] },
+              { title: "Informacje", links: [{ label: "O nas", href: "/o-nas" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] },
+            ]}
+            sticky
           />
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}

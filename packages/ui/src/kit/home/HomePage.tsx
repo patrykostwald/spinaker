@@ -1,28 +1,31 @@
 "use client";
 
 /**
- * Strona główna na kicie (etap 2, krok 1). Struktura wg referencji właściciela (USA Today, 24.09),
- * treść — nasza: pasek górny (data · temat dnia) → szapka → pasek tematów → ilustracja autorska →
- * rząd czterech najnowszych → hero (materiał tematu dnia + oś czasu) → „Wszystkie źródła”
- * (mozaika + lista 1–5) → Dr Spin → Przekaz dnia → Baza → pas „Twój przegląd” → stopka.
+ * Strona główna na kicie. Kolejność: pasek górny (data · temat dnia) → ilustracja autorska →
+ * wiersz filtrów [grupa źródeł · tematy (wyśrodkowane) · hasło] → rząd czterech najnowszych
+ * („Top 10”, zawężany tymi filtrami) → Temat dnia → Nitki użytkownika → Dr Spin → Przekaz dnia →
+ * pas „Twój przegląd” → Baza (stała wysokość, przewijana w środku) → globalna stopka.
+ * Grupa źródeł żyje w adresie (`?zrodla=`), bo ustawiają ją też linki w stopce; zawęża „Top 10” i Bazę.
  * Portal (`PortalProvider` w trybie `path`), szapka i stopka są globalne — `app/providers.tsx`
  * i `app/layout.tsx`; klik w kartę otwiera materiał morfingiem i wpisuje `/material/<id>`.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import type { Article } from "../../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Dropdown } from "../Dropdown";
+import { SearchField } from "../SearchField";
 import { HomeBand } from "./HomeBand";
-import { HomeBaza, type StripDraft } from "./HomeBaza";
+import { HomeBaza } from "./HomeBaza";
 import { HomeCategoryBar } from "./HomeCategoryBar";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
-import { HomeLead, rowTime, type LeadRow } from "./HomeLead";
-import { HomeMosaic } from "./HomeMosaic";
+import { HomeLead } from "./HomeLead";
 import { HomePrzekazDnia } from "./HomePrzekazDnia";
 import { HomeReveal } from "./HomeReveal";
+import { HomeThreads, type StripDraft } from "./HomeThreads";
 import { HomeTicker } from "./HomeTicker";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed, useTopicOfDay } from "./data";
+import { SOURCE_GROUPS, SOURCE_GROUP_PARAM, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
 
 function DemoBanner() {
   const demo = useDemoMode();
@@ -55,14 +58,46 @@ function TopBar({ topicLabel }: { topicLabel: string | null }) {
 
 export function HomePage() {
   const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const q = params.get("q") ?? "";
+  const sourceGroup = parseSourceGroup(params.get(SOURCE_GROUP_PARAM));
+  const [keyword, setKeyword] = useState("");
+  const [topQuery, setTopQuery] = useState("");
   const config = useHomeConfig();
   const drSpin = useDrSpinThread();
   const topic = useTopicOfDay();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  const [latest, setLatest] = useState<Article[]>([]);
   const [stripDraft, setStripDraft] = useState<StripDraft | null>(null);
   const bazaRef = useRef<HTMLElement | null>(null);
+  const threadsRef = useRef<HTMLElement | null>(null);
+
+  const categories = config.data?.categories ?? [];
+  const sources = config.data?.sources ?? [];
+  const groupIds = useMemo(() => (sourceGroup ? groupSources(sources)[sourceGroup].map((source) => source.id) : []), [sources, sourceGroup]);
+  const groupEmpty = Boolean(sourceGroup) && sources.length > 0 && groupIds.length === 0;
+
+  // Hasło z wiersza filtrów trafia do zapytania po chwili bez pisania (bez zapytania na każdy znak).
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTopQuery(keyword.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [keyword]);
+
+  function setSourceGroup(next: SourceGroup | null) {
+    const search = new URLSearchParams(params.toString());
+    if (next) search.set(SOURCE_GROUP_PARAM, next);
+    else search.delete(SOURCE_GROUP_PARAM);
+    const query = search.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
+  // „Top 10”: najnowsze materiały, zawężane tematem, grupą źródeł i hasłem z wiersza filtrów.
+  const top = useHomeFeed(
+    "top10",
+    { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 10 },
+    { refetchInterval: 30_000, enabled: !groupEmpty },
+  );
+  const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
 
   const topicQuery = topic.data?.mode === "automatic" ? topic.data.query : null;
   const topicFeed = useHomeFeed("topic-of-day", { query: topicQuery ?? "", match: "words", pageSize: 40 }, { enabled: Boolean(topicQuery) });
@@ -73,24 +108,18 @@ export function HomePage() {
     if (q) bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
   }, [q]);
 
-  const onArticles = useCallback((articles: Article[]) => setLatest(articles), []);
-
-  const categories = config.data?.categories ?? [];
-  const sources = config.data?.sources ?? [];
-  const topSources = config.data?.top_sources ?? [];
-
-  // Hero: temat dnia (materiał + oś czasu godzin) albo — bez tematu — najnowsze materiały.
+  // Temat dnia: kotwica + materiały tematu w kolejności publikacji; bez tematu — najnowsze.
   const leadMain = topicReady ? topicArticles[0] : latest[0] ?? null;
-  const leadRows: LeadRow[] = (topicReady ? topicArticles.slice(1, 6) : latest.slice(1, 6)).map((article) => ({ article, time: rowTime(article) }));
-  const thread = useMemo(
+  const related = useMemo(
     () =>
       topicReady
-        ? [...topicArticles]
+        ? topicArticles
+            .slice(1)
             .filter((a) => a.published_date)
             .sort((a, b) => new Date(a.published_date!).getTime() - new Date(b.published_date!).getTime())
             .slice(0, 12)
-        : [],
-    [topicReady, topicArticles],
+        : latest.slice(1, 10),
+    [topicReady, topicArticles, latest],
   );
 
   return (
@@ -98,37 +127,58 @@ export function HomePage() {
       <div className="sc-home">
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <TopBar topicLabel={topicReady ? topic.data?.label ?? null : null} />
-        <HomeCategoryBar value={activeTopic} onChange={setActiveTopic} />
         <DemoBanner />
         <HomeHero />
-        <HomeTicker articles={latest.slice(0, 4)} />
-        <HomeReveal>
-          <HomeLead
-            main={leadMain}
-            eyebrow={topicReady ? "Temat dnia" : "Najnowszy materiał"}
-            panelTitle={topicReady ? "Oś czasu tematu" : "Najnowsze"}
-            rows={leadRows}
-            panelHref="/#baza"
-            thread={thread}
+        <div className="sc-home-top">
+          <HomeCategoryBar
+            value={activeTopic}
+            onChange={setActiveTopic}
+            start={
+              <Dropdown
+                label={sourceGroup ? `Źródła: ${sourceGroupLabel(sourceGroup)}` : "Źródła: wszystkie"}
+                ariaLabel="Grupa źródeł"
+                mode="single"
+                presentation="auto"
+                triggerVariant="quiet"
+                items={[{ value: "", label: "Wszystkie źródła" }, ...SOURCE_GROUPS]}
+                value={sourceGroup ?? ""}
+                onChange={(value) => setSourceGroup(parseSourceGroup(value as string))}
+              />
+            }
+            end={
+              <form className="sc-home-catrow__search" role="search" onSubmit={(event) => event.preventDefault()}>
+                <SearchField value={keyword} onChange={setKeyword} placeholder="Hasło…" label="Hasło w najnowszych materiałach" maxLength={200} />
+              </form>
+            }
           />
+          {groupEmpty && sourceGroup ? (
+            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”.</p>
+          ) : null}
+          {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeTopic) ? (
+            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak najnowszych materiałów dla tego wyboru.</p>
+          ) : null}
+          <HomeTicker articles={latest.slice(0, 4)} />
+        </div>
+        <HomeReveal>
+          <HomeLead main={leadMain} label={topicReady ? topic.data?.label ?? null : null} related={related} href="/#baza" />
         </HomeReveal>
         <HomeReveal>
-          <HomeMosaic sources={sources.length ? sources : topSources} topic={activeTopic} onArticles={onArticles} />
+          <HomeThreads ref={threadsRef} categories={categories} sources={sources} draft={stripDraft} />
         </HomeReveal>
         <HomeReveal>
           <HomeDrSpin thread={drSpin.data ?? null} />
         </HomeReveal>
         <HomePrzekazDnia government={config.data?.editorial.government ?? null} opposition={config.data?.editorial.opposition ?? null} />
         <HomeReveal>
-          <HomeBaza ref={bazaRef} categories={categories} sources={sources} initialQuery={q} stripDraft={stripDraft} />
-        </HomeReveal>
-        <HomeReveal>
           <HomeBand
             onCreate={(query) => {
               setStripDraft({ query, nonce: Date.now() });
-              bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+              threadsRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
             }}
           />
+        </HomeReveal>
+        <HomeReveal>
+          <HomeBaza ref={bazaRef} categories={categories} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>
       </div>
     </>
