@@ -16,7 +16,7 @@ const LAST_UPDATED = { iso: '2026-09-26', label: '26 września 2026' };
 
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic';
 const SOURCES_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'zrodla@spin.clinic';
-const OPERATOR = 'iApply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
+const OPERATOR = 'iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
 const CONTACTS: Array<{ email: string; purpose: string }> = [
   { email: 'kontakt@spin.clinic', purpose: 'pytania o projekt, współpraca, media' },
   { email: SOURCES_EMAIL, purpose: 'źródła, zgody wydawców, zakres dostępu' },
@@ -54,7 +54,7 @@ const PUBLISHER_TERMS = [
 const PARTS = [
   { href: '/', name: 'Wiadomości', status: 'działa · beta', text: 'Agregator doniesień mediów i instytucji publicznych. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — na pasku newsowym, na osi czasu i w bazie z wyszukiwarką.' },
   { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Czytamy posty polityków z X, a Dr. Spin — narzędzie AI — rozkłada każdy na czynniki pierwsze i stawia diagnozę. Rządzący i opozycja obok siebie, według tych samych zasad.' },
-  { href: '/nitki', name: 'Nitki', status: 'faza II', text: 'Miejsce dla czytelników: własne nitki kontekstowe z materiałów z naszej bazy albo dodanych samodzielnie przez link. Prywatne nitki działają już na koncie.' },
+  { href: '/nitki', name: 'Nitki', status: 'działa · beta', text: 'Miejsce dla czytelników: własne nitki kontekstowe z materiałów z naszej bazy albo dodanych przez link — prywatne albo publiczne, z reakcjami i komentarzami.' },
 ];
 
 /**
@@ -121,12 +121,12 @@ const PHASES: Phase[] = [
   },
   {
     id: 'faza-2',
-    status: 'Faza II · najbliższy etap',
+    status: 'Faza II · w toku',
     title: 'Nitki czytelników',
-    lead: 'Część społeczna: czytelnicy układają i publikują własne nitki kontekstowe.',
+    lead: 'Część społeczna: czytelnicy układają i publikują własne nitki kontekstowe. Podstawy działają już w becie.',
     features: [
-      { text: 'publiczne nitki czytelników z reakcjami i komentarzami, z moderacją', status: 'planowane' },
-      { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'planowane' },
+      { text: 'publiczne nitki czytelników z reakcjami i komentarzami, z moderacją', status: 'beta' },
+      { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'beta' },
       { text: 'w Klinice dowody jako boxy z naszej bazy zamiast samego tekstu', status: 'planowane' },
       { text: 'napisy i transkrypcje wideo z YouTube, alerty po haśle i źródle', status: 'planowane' },
     ],

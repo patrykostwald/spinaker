@@ -1,16 +1,19 @@
 "use client";
 
 /**
- * Ilustracja autorska (stary `IllustrationStrip`): ten sam obraz `/illustrations/<motyw>/<pora>.png`,
- * sam obraz z przyciskiem „Wesprzyj nas” (bez tabliczki i podpisu — decyzja właściciela 25.09).
- * `pastel` z lokalnego magazynu mapuje się na zestaw `light`.
+ * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.png`) jako niskie tło, a na niej
+ * jedno zdanie o trzech częściach serwisu, linki i „Wesprzyj nas”. Zastępuje wysoki baner, który
+ * spychał wiadomości pod linię przewijania. Czytelnik może pas ukryć — zapamiętujemy to na urządzeniu.
  */
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "../Button";
+import { CloseIcon } from "../icons";
 
 type DayPeriod = "morning" | "afternoon" | "evening";
 type ThemeName = "dark" | "light";
+const HIDDEN_KEY = "sc-home-intro";
 
 function currentPeriod(): DayPeriod {
   const hour = new Date().getHours();
@@ -24,34 +27,44 @@ function readTheme(): ThemeName {
   return theme === "light" || theme === "pastel" ? "light" : "dark";
 }
 
-const PERIOD_LABEL: Record<DayPeriod, string> = { morning: "rano", afternoon: "po południu", evening: "wieczorem" };
-
 export function HomeHero() {
   const [period, setPeriod] = useState<DayPeriod>("morning");
   const [theme, setTheme] = useState<ThemeName>("dark");
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     setPeriod(currentPeriod());
     setTheme(readTheme());
+    try { setHidden(localStorage.getItem(HIDDEN_KEY) === "hidden"); } catch {}
     const observer = new MutationObserver(() => setTheme(readTheme()));
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => observer.disconnect();
   }, []);
 
+  if (hidden) return null;
+
+  function hide() {
+    setHidden(true);
+    try { localStorage.setItem(HIDDEN_KEY, "hidden"); } catch {}
+  }
+
   return (
-    <section className="sc-home-hero" aria-label={`Ilustracja autorska · ${PERIOD_LABEL[period]}`}>
-      <div className="sc-home-hero__frame">
-        {/* eslint-disable-next-line @next/next/no-img-element -- ilustracja z /public, bez optymalizacji (images.unoptimized) */}
-        <img
-          className="sc-home-hero__art"
-          src={`/illustrations/${theme}/${period}.png`}
-          alt="Akwarelowa ilustracja polskiego krajobrazu, rysowana konturami kredek"
-        />
-        <div className="sc-home-hero__support">
-          <Button href="/wsparcie" variant="primary" size="sm">
-            Wesprzyj nas
-          </Button>
-        </div>
+    <section className="sc-home-intro" aria-label="Czym jest spin.clinic">
+      {/* eslint-disable-next-line @next/next/no-img-element -- ilustracja z /public, bez optymalizacji (images.unoptimized) */}
+      <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.png`} alt="" />
+      <div className="sc-home-intro__content">
+        <p className="sc-home-intro__title">
+          Wiadomości ze źródłami. Diagnozy spinu polityków. <span>Nitki układane przez czytelników.</span>
+        </p>
+        <p className="sc-home-intro__links">
+          <Link href="/klinika">Klinika spinu →</Link>
+          <Link href="/nitki">Nitki →</Link>
+          <Link href="/o-nas">Jak to działa</Link>
+        </p>
+      </div>
+      <div className="sc-home-intro__actions">
+        <Button href="/wsparcie" variant="primary" size="sm">Wesprzyj nas</Button>
+        <Button shape="icon" variant="ghost" size="sm" aria-label="Ukryj pas powitalny" onClick={hide} iconStart={<CloseIcon size={16} />} />
       </div>
     </section>
   );

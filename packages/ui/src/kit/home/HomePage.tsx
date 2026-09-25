@@ -17,6 +17,7 @@ import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
 import { HomeBaza } from "./HomeBaza";
 import { HomeCategoryBar } from "./HomeCategoryBar";
+import { HomeClinic } from "./HomeClinic";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
 import { HomeLead } from "./HomeLead";
@@ -190,8 +191,13 @@ export function HomePage() {
           <HomeThreads sources={sources} />
         </HomeReveal>
         <HomeReveal>
-          <HomeDrSpin thread={drSpin.data ?? null} />
+          <HomeClinic />
         </HomeReveal>
+        {drSpin.data?.published ? (
+          <HomeReveal>
+            <HomeDrSpin thread={drSpin.data} />
+          </HomeReveal>
+        ) : null}
         <HomePrzekazDnia government={config.data?.editorial.government ?? null} opposition={config.data?.editorial.opposition ?? null} />
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />

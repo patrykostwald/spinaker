@@ -4,11 +4,12 @@
  * Pozioma taśma kart (odpowiednik starego `MaterialStrip`): przewijanie kółkiem/palcem,
  * strzałki `ghost icon` po bokach (widoczne przy najechaniu na taśmę, zawsze z klawiatury),
  * strzałki przewijają sprężyną `move` przez `scrollBy` (w reduced motion — skokiem).
- * Bez spadu (`.sc-strip-bleed`): pasek przewijania leży tuż pod kartami. Karty w taśmach nie
+ * Bez stałego paska przewijania: krawędź z dalszą treścią wygasza się (`data-more-start/end`), a strzałki
+ * pokazują się tylko w stronę, w którą jest co przewijać. Karty w taśmach nie
  * rosną na najechanie (`expandable={false}` u wywołujących) — przycięłoby je `overflow-x: auto`.
  */
 
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../Button";
 import { ChevronLeftIcon } from "../icons/ChevronLeftIcon";
 import { ChevronRightIcon } from "../icons/ChevronRightIcon";
@@ -28,6 +29,23 @@ export type StripProps = {
 export function Strip({ label, children, step, className, slot = "240px" }: StripProps) {
   const scroller = useRef<HTMLDivElement | null>(null);
   const m = useMotionTokens();
+  const [edges, setEdges] = useState({ start: false, end: false });
+
+  useEffect(() => {
+    const node = scroller.current;
+    if (!node) return;
+    const update = () => {
+      const start = node.scrollLeft > 4;
+      const end = node.scrollLeft + node.clientWidth < node.scrollWidth - 4;
+      setEdges(previous => (previous.start === start && previous.end === end ? previous : { start, end }));
+    };
+    update();
+    node.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    Array.from(node.children).forEach(child => observer.observe(child));
+    return () => { node.removeEventListener("scroll", update); observer.disconnect(); };
+  }, [children]);
 
   function move(direction: -1 | 1) {
     const node = scroller.current;
@@ -36,7 +54,8 @@ export function Strip({ label, children, step, className, slot = "240px" }: Stri
   }
 
   return (
-    <div className={cn("sc-strip", className)} style={{ ["--sc-strip-slot" as string]: slot }}>
+    <div className={cn("sc-strip", className)} style={{ ["--sc-strip-slot" as string]: slot }}
+      data-more-start={edges.start ? "" : undefined} data-more-end={edges.end ? "" : undefined}>
       <div
         ref={scroller}
         className="sc-strip__scroller"
