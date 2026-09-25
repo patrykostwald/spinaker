@@ -1,5 +1,6 @@
 """Owner-scoped APIs for private context threads and comment reports."""
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +12,7 @@ from news.account_models import (
     PersonalContextThreadItem, ThreadOpinion,
 )
 from news.accounts import AccountWriteThrottle
+from news.community_models import CommunityLink
 from news.models import Article, ArticleCategory, Source
 from news.topics import TOPICS
 from news.schema import json_view
@@ -59,27 +61,74 @@ class ArticleFavoriteDetailView(APIView):
         return Response(status=204)
 
 
+class ThreadItemInput(serializers.Serializer):
+    article_id = serializers.IntegerField(min_value=1, required=False)
+    link_id = serializers.IntegerField(min_value=1, required=False)
+    note = serializers.CharField(max_length=280, required=False, allow_blank=True, default='')
+
+    def validate(self, attrs):
+        if bool(attrs.get('article_id')) == bool(attrs.get('link_id')):
+            raise serializers.ValidationError('Element nitki to materiał z Bazy albo link — dokładnie jedno z nich.')
+        return attrs
+
+
+MIN_PUBLIC_ITEMS = 2
+
+
 class PersonalContextThreadSerializer(serializers.ModelSerializer):
     source_ids = serializers.PrimaryKeyRelatedField(source='sources', many=True,
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
     article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=100, required=False)
     articles = serializers.SerializerMethodField(read_only=True)
+    items = ThreadItemInput(many=True, required=False, write_only=True)
+    elements = serializers.SerializerMethodField(read_only=True)
     categories = serializers.ListField(child=serializers.ChoiceField(choices=ArticleCategory.choices), max_length=40, required=False)
     topics = serializers.ListField(child=serializers.ChoiceField(choices=list(TOPICS)), max_length=13, required=False)
 
     class Meta:
         model = PersonalContextThread
         fields = ['id', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
-                  'articles', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'articles', 'created_at', 'updated_at']
+                  'articles', 'items', 'elements', 'is_public', 'published_at', 'hidden_at', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'articles', 'elements', 'published_at', 'hidden_at', 'created_at', 'updated_at']
 
     def get_articles(self, instance):
         return [
             {'id': item.article_id, 'title': item.article.title, 'url': item.article.url,
              'category': item.article.category, 'published_date': item.article.published_date,
              'position': item.position}
-            for item in instance.items.select_related('article').all()
+            for item in instance.items.select_related('article').filter(article__isnull=False)
         ]
+
+    def get_elements(self, instance):
+        """Wszystkie elementy w kolejności: materiały z Bazy i linki, z notatkami."""
+        from news.community import item_data
+        return [item_data(item) for item in instance.items.select_related('article__source', 'link').all()]
+
+    def validate_items(self, value):
+        if len(value) > 100:
+            raise serializers.ValidationError('Nitka może mieć najwyżej 100 elementów.')
+        articles = [row['article_id'] for row in value if row.get('article_id')]
+        links = [row['link_id'] for row in value if row.get('link_id')]
+        if len(articles) != len(set(articles)) or len(links) != len(set(links)):
+            raise serializers.ValidationError('Jeden materiał może wystąpić w nitce tylko raz.')
+        if set(Article.objects.filter(pk__in=articles, source__is_active=True).values_list('pk', flat=True)) != set(articles):
+            raise serializers.ValidationError('Co najmniej jeden materiał nie jest dostępny.')
+        if set(CommunityLink.objects.filter(pk__in=links, hidden_at__isnull=True).values_list('pk', flat=True)) != set(links):
+            raise serializers.ValidationError('Co najmniej jeden link nie jest dostępny.')
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if attrs.get('is_public'):
+            if 'items' in attrs:
+                count = len(attrs['items'])
+            elif 'article_ids' in attrs:
+                count = len(attrs['article_ids'])
+            else:
+                count = self.instance.items.count() if self.instance else 0
+            if count < MIN_PUBLIC_ITEMS:
+                raise serializers.ValidationError({'is_public': f'Opublikować można nitkę z co najmniej {MIN_PUBLIC_ITEMS} elementami.'})
+        return attrs
 
     def validate_article_ids(self, value):
         if len(value) != len(set(value)):
@@ -95,24 +144,42 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
     def validate_topics(self, value):
         return list(dict.fromkeys(value))
 
-    def _replace_items(self, instance, article_ids):
+    def _replace_items(self, instance, rows):
         PersonalContextThreadItem.objects.filter(thread=instance).delete()
         PersonalContextThreadItem.objects.bulk_create([
-            PersonalContextThreadItem(thread=instance, article_id=article_id, position=position)
-            for position, article_id in enumerate(article_ids)
+            PersonalContextThreadItem(thread=instance, article_id=row.get('article_id'), link_id=row.get('link_id'),
+                                      note=row.get('note', ''), position=position)
+            for position, row in enumerate(rows)
         ])
 
+    @staticmethod
+    def _rows(validated_data):
+        items = validated_data.pop('items', None)
+        article_ids = validated_data.pop('article_ids', None)
+        if items is not None:
+            return items
+        if article_ids is not None:
+            return [{'article_id': article_id} for article_id in article_ids]
+        return None
+
+    @staticmethod
+    def _publication(validated_data, instance=None):
+        if validated_data.get('is_public') and not (instance and instance.published_at):
+            validated_data['published_at'] = timezone.now()
+
     def create(self, validated_data):
-        article_ids = validated_data.pop('article_ids', [])
+        rows = self._rows(validated_data) or []
+        self._publication(validated_data)
         instance = PersonalContextThread.objects.create(**validated_data)
-        self._replace_items(instance, article_ids)
+        self._replace_items(instance, rows)
         return instance
 
     def update(self, instance, validated_data):
-        article_ids = validated_data.pop('article_ids', None)
+        rows = self._rows(validated_data)
+        self._publication(validated_data, instance)
         instance = super().update(instance, validated_data)
-        if article_ids is not None:
-            self._replace_items(instance, article_ids)
+        if rows is not None:
+            self._replace_items(instance, rows)
         return instance
 
 

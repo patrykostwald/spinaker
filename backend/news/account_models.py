@@ -95,7 +95,10 @@ class ArticleFavorite(models.Model):
 
 
 class PersonalContextThread(models.Model):
-    """Private, owner-scoped context thread. It is never a public editorial Thread."""
+    """Nitka kontekstowa czytelnika. Domyślnie prywatna; po publikacji widoczna w /nitki.
+
+    Nigdy nie jest redakcyjną nitką Dr. Spina (`Thread`). Zespół może ją ukryć po zgłoszeniu.
+    """
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='personal_context_threads')
     title = models.CharField(max_length=140)
@@ -104,6 +107,10 @@ class PersonalContextThread(models.Model):
     categories = models.JSONField(default=list)
     topics = models.JSONField(default=list)
     sources = models.ManyToManyField('news.Source', blank=True, related_name='personal_context_threads')
+    is_public = models.BooleanField(default=False, db_index=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(null=True, blank=True, help_text='Ukrycie przez zespół po zgłoszeniu.')
+    hidden_reason = models.CharField(max_length=240, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -112,15 +119,23 @@ class PersonalContextThread(models.Model):
 
 
 class PersonalContextThreadItem(models.Model):
+    """Element nitki: materiał z Bazy albo link spoza Bazy (CommunityLink) — dokładnie jedno z nich."""
     thread = models.ForeignKey(PersonalContextThread, on_delete=models.CASCADE, related_name='items')
-    article = models.ForeignKey('news.Article', on_delete=models.CASCADE, related_name='personal_context_thread_items')
+    article = models.ForeignKey('news.Article', null=True, blank=True, on_delete=models.CASCADE,
+                                related_name='personal_context_thread_items')
+    link = models.ForeignKey('news.CommunityLink', null=True, blank=True, on_delete=models.CASCADE,
+                             related_name='thread_items')
+    note = models.CharField(max_length=280, blank=True, default='')
     position = models.PositiveSmallIntegerField()
 
     class Meta:
         ordering = ['position', 'id']
         constraints = [
             models.UniqueConstraint(fields=['thread', 'article'], name='unique_personal_context_thread_article'),
+            models.UniqueConstraint(fields=['thread', 'link'], name='unique_personal_context_thread_link'),
             models.UniqueConstraint(fields=['thread', 'position'], name='unique_personal_context_thread_position'),
+            models.CheckConstraint(condition=models.Q(article__isnull=False, link__isnull=True) | models.Q(article__isnull=True, link__isnull=False),
+                                   name='personal_thread_item_article_xor_link'),
         ]
 
 

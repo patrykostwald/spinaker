@@ -402,3 +402,4 @@ from news.political_admin import register_political_admin
 register_political_admin(site)
 
 from news import clinic_admin  # noqa: E402,F401
+from news import community_admin  # noqa: E402,F401
