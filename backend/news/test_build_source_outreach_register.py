@@ -51,3 +51,14 @@ def test_register_is_idempotent_for_contact_source():
     call_command("build_source_outreach_register")
 
     assert SourceContactCard.objects.filter(source=source).count() == 1
+
+
+@pytest.mark.django_db
+def test_register_skips_sources_excluded_from_catalog():
+    source = Source.objects.create(name="Kulinaria", url="https://smaker.pl", is_active=False,
+                                   scrape_enabled=False, catalog_stage="excluded")
+    card(source, status="contact_required")
+
+    call_command("build_source_outreach_register")
+
+    assert not SourceContactCard.objects.filter(source=source).exists()

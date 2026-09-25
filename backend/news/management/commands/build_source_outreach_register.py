@@ -39,8 +39,13 @@ def classify(source, instruction):
 
 
 def latest_instructions():
-    """One authoritative card per source; versions are append-only."""
-    for source in Source.objects.prefetch_related("access_instructions", "recovery_cases").order_by("pk"):
+    """One authoritative card per source; versions are append-only.
+
+    Sources excluded from the catalog (e.g. outside the topical profile) are
+    never put on the contact worklist.
+    """
+    sources = Source.objects.exclude(catalog_stage="excluded")
+    for source in sources.prefetch_related("access_instructions", "recovery_cases").order_by("pk"):
         instruction = max(source.access_instructions.all(), key=lambda card: card.version, default=None)
         if instruction and instruction.status in {
             SourceAccessInstruction.Status.CONTACT_REQUIRED,
