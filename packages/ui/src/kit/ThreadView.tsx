@@ -74,9 +74,9 @@ function ReferencePost({ item }: { item: ThreadItem }) {
   );
 }
 
-function ItemCard({ item, size, headingLevel }: { item: ThreadItem; size: NewsCardSize; headingLevel: 2 | 3 | 4 }) {
+function ItemCard({ item, size, headingLevel, expandable = true }: { item: ThreadItem; size: NewsCardSize; headingLevel: 2 | 3 | 4; expandable?: boolean }) {
   if (item.article.reference_only) return <ReferencePost item={item} />;
-  return <NewsCard article={item.article} size={size} headingLevel={headingLevel} showDescription={size !== "mini"} />;
+  return <NewsCard article={item.article} size={size} headingLevel={headingLevel} showDescription={size !== "mini"} expandable={expandable} />;
 }
 
 function dateLabel(item: ThreadItem, index: number, anchorFirst: boolean): string {
@@ -172,7 +172,8 @@ export function ThreadView({
                     {dateLabel(item, index, anchorFirst)}
                   </p>
                   {item.is_sponsored ? <p className="sc-t-caption sc-text-3">{item.sponsorship_label || "Nitka sponsorowana"}</p> : null}
-                  <ItemCard item={item} size="compact" headingLevel={3} />
+                  {/* W taśmie bez spadu karta nie rośnie na najechanie — przycięłoby ją przewijanie. */}
+                  <ItemCard item={item} size="compact" headingLevel={3} expandable={false} />
                   <ItemNote item={item} />
                 </div>
               </motion.div>

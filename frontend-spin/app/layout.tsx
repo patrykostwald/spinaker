@@ -32,8 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main id="main-content" className="sc-app-main">{children}</main>
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
-            note={<>Materiały prezentujemy w oryginalnym kontekście źródłowym.<br />Zestawienie publikacji nie jest potwierdzeniem zawartych w nich twierdzeń.</>}
-            cta={{ eyebrow: "WSPARCIE PROJEKTU", label: "Wesprzyj spin.clinic", href: "/wsparcie" }}
+            cta={{ label: "Wesprzyj nas", href: "/wsparcie" }}
             columns={[
               // Grupy źródeł ustawiają `?zrodla=` strony głównej (zawężają „Top 10” i Bazę); katalog — /zrodla.
               { title: "Źródła", links: [{ label: "Publiczne", href: "/?zrodla=publiczne#baza" }, { label: "Media", href: "/?zrodla=media#baza" }, { label: "Top media", href: "/?zrodla=top#baza" }, { label: "Wszystkie źródła", href: "/zrodla" }] },

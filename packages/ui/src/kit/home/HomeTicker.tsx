@@ -3,8 +3,7 @@
 /**
  * Pasek newsowy spin.clinic („Top 10”) — pozioma taśma najnowszych materiałów, przewijana
  * w prawo/lewo (palcem, kółkiem, strzałkami) na każdej szerokości, także na telefonie.
- * Zawężają go filtry z wiersza nad nim (grupa źródeł · temat · hasło). Podpis pod taśmą
- * przedstawia ideę pasków: użytkownik może ustawić do pięciu własnych w „Nitkach użytkownika”.
+ * Zawężają go filtry z wiersza nad nim (grupa źródeł · temat · hasło).
  */
 
 import { NewsCard } from "../NewsCard";
@@ -22,7 +21,7 @@ export function HomeTicker({ articles, loading = false }: { articles: Article[];
         {items.length
           ? items.map(({ article, similar }) => (
               <div key={article.id} className="sc-strip__slot">
-                <NewsCard article={article} size="mini" headingLevel={3} similarCount={similar} />
+                <NewsCard article={article} size="mini" headingLevel={3} similarCount={similar} expandable={false} />
               </div>
             ))
           : Array.from({ length: loading ? 4 : 1 }, (_, index) => (
@@ -31,13 +30,6 @@ export function HomeTicker({ articles, loading = false }: { articles: Article[];
               </div>
             ))}
       </Strip>
-      <p className="sc-t-body-s sc-text-2 sc-home-ticker__hint">
-        To pasek newsowy spin.clinic. Możesz ustawić do pięciu własnych — po źródłach, kategorii lub haśle —{" "}
-        <a href="#nitki" className="sc-home-linkbtn">
-          w Nitkach użytkownika
-        </a>
-        .
-      </p>
     </section>
   );
 }

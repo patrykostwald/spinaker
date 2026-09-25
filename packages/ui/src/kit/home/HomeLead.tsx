@@ -10,7 +10,7 @@
  */
 
 import { motion } from "framer-motion";
-import { Button } from "../Button";
+import type { ReactNode } from "react";
 import { NewsCard } from "../NewsCard";
 import { useMotionTokens } from "../motion/useMotionTokens";
 import type { Article } from "../../types";
@@ -20,19 +20,20 @@ export function HomeLead({
   main,
   related,
   fallback,
-  note,
+  actions,
+  emptyNote,
   dateLabel,
-  href,
 }: {
   main: Article | null;
   related: Collapsed[];
   /** `true` — dziś brak doniesień z wiodących źródeł, pas pokazuje najnowsze materiały. */
   fallback: boolean;
-  /** Podpis pasa: skąd pochodzą doniesienia (wiodące media / instytucje / najnowsze). */
-  note: string;
+  /** Prawa strona nagłówka (np. wybór źródeł). */
+  actions?: ReactNode;
+  /** Komunikat zamiast treści, np. pusta grupa źródeł. */
+  emptyNote?: string | null;
   /** Np. „piątek, 25 września” — pusty do hydratacji (data liczona po stronie klienta). */
   dateLabel: string;
-  href: string;
 }) {
   const m = useMotionTokens();
   return (
@@ -45,14 +46,10 @@ export function HomeLead({
             </p>
             <h2 className="sc-t-title-l sc-home-section__title">Wiadomości dnia</h2>
           </div>
-          <div className="sc-home-section__actions">
-            <p className="sc-t-body-s sc-text-2">{note}</p>
-            <Button href={href} variant="quiet" size="sm">
-              Zobacz wszystko
-            </Button>
-          </div>
+          {actions ? <div className="sc-home-section__actions">{actions}</div> : null}
         </header>
 
+        {emptyNote ? <p className="sc-t-body-s sc-text-2">{emptyNote}</p> : null}
         <div className="sc-home-lead__grid">
           <div className="sc-home-lead__main">
             {main ? (

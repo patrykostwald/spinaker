@@ -5,7 +5,7 @@
  * wiersz filtrów [grupa źródeł · tematy (wyśrodkowane) · hasło] → pasek newsowy spin.clinic
  * (taśma „Top 10”, zawężana tymi filtrami) → Wiadomości dnia (`mode=top`) → Nitki użytkownika
  * (do 5 własnych pasków) → Dr Spin → Przekaz dnia →
- * pas „Twój przegląd” → Baza (stała wysokość, przewijana w środku) → globalna stopka.
+ * Baza (stała wysokość, przewijana w środku) → globalna stopka.
  * Grupa źródeł żyje w adresie (`?zrodla=`), bo ustawiają ją też linki w stopce; zawęża „Top 10” i Bazę.
  * Portal (`PortalProvider` w trybie `path`), szapka i stopka są globalne — `app/providers.tsx`
  * i `app/layout.tsx`; klik w kartę otwiera materiał morfingiem i wpisuje `/material/<id>`.
@@ -15,7 +15,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
-import { HomeBand } from "./HomeBand";
 import { HomeBaza } from "./HomeBaza";
 import { HomeCategoryBar } from "./HomeCategoryBar";
 import { HomeDrSpin } from "./HomeDrSpin";
@@ -23,7 +22,7 @@ import { HomeHero } from "./HomeHero";
 import { HomeLead } from "./HomeLead";
 import { HomePrzekazDnia } from "./HomePrzekazDnia";
 import { HomeReveal } from "./HomeReveal";
-import { HomeThreads, type StripDraft } from "./HomeThreads";
+import { HomeThreads } from "./HomeThreads";
 import { HomeTicker } from "./HomeTicker";
 import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
@@ -70,9 +69,9 @@ export function HomePage() {
   const config = useHomeConfig();
   const drSpin = useDrSpinThread();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  const [stripDraft, setStripDraft] = useState<StripDraft | null>(null);
+  // Grupa źródeł „Wiadomości dnia” — własny selektor w nagłówku pasa, niezależny od filtrów paska newsowego.
+  const [dayGroup, setDayGroup] = useState<SourceGroup | null>(null);
   const bazaRef = useRef<HTMLElement | null>(null);
-  const threadsRef = useRef<HTMLElement | null>(null);
 
   const categories = config.data?.categories ?? [];
   const sources = config.data?.sources ?? [];
@@ -103,12 +102,14 @@ export function HomePage() {
 
   // Wiadomości dnia: dzisiejsze doniesienia z wiodących źródeł (`mode=top`), niezależne od filtrów paska.
   const dayLabel = useTodayLabel({ weekday: "long", day: "numeric", month: "long" });
-  const day = useHomeFeed("day-top", { mode: "top", pageSize: 13 }, { refetchInterval: 120_000 });
+  const dayIds = useMemo(() => (dayGroup ? groupSources(activeSources(sources))[dayGroup].map((source) => source.id) : []), [sources, dayGroup]);
+  const dayGroupEmpty = Boolean(dayGroup) && sources.length > 0 && dayIds.length === 0;
+  const day = useHomeFeed("day-top", { mode: "top", sources: dayIds, pageSize: 13 }, { refetchInterval: 120_000, enabled: !dayGroupEmpty });
   const dayArticles = useMemo(() => day.data?.results ?? [], [day.data]);
   const dayEmpty = day.isSuccess && dayArticles.length === 0;
   // Dopóki wiodące media nie są aktywne (zgody), `mode=top` jest pusty — wtedy dzisiejsze doniesienia
   // aktywnych źródeł (instytucje publiczne), a gdy dziś jest ich mniej niż 3 — najnowsze materiały.
-  const dayFallback = useHomeFeed("day-latest", { mode: "latest", pageSize: 40 }, { enabled: dayEmpty });
+  const dayFallback = useHomeFeed("day-latest", { mode: "latest", sources: dayIds, pageSize: 40 }, { enabled: dayEmpty && !dayGroupEmpty });
   const fallbackToday = useMemo(() => {
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date());
     return (dayFallback.data?.results ?? []).filter(
@@ -116,12 +117,7 @@ export function HomePage() {
     );
   }, [dayFallback.data]);
   const fallbackIsToday = fallbackToday.length >= 3;
-  const leadArticles = dayEmpty ? (fallbackIsToday ? fallbackToday : dayFallback.data?.results ?? []).slice(0, 13) : dayArticles;
-  const leadNote = !dayEmpty
-    ? "Najważniejsze doniesienia dnia z wiodących źródeł"
-    : fallbackIsToday
-      ? "Dzisiejsze doniesienia instytucji publicznych · wiodące media dołączą po zgodach"
-      : "Dziś jeszcze bez nowych doniesień — najnowsze materiały";
+  const leadArticles = dayGroupEmpty ? [] : dayEmpty ? (fallbackIsToday ? fallbackToday : dayFallback.data?.results ?? []).slice(0, 13) : dayArticles;
 
   useEffect(() => {
     if (q) bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
@@ -170,23 +166,34 @@ export function HomePage() {
           <HomeTicker articles={latest} loading={top.isPending && !groupEmpty} />
         </div>
         <HomeReveal>
-          <HomeLead main={leadMain} related={related} fallback={dayEmpty && !fallbackIsToday} note={leadNote} dateLabel={dayLabel} href="/#baza" />
+          <HomeLead
+            main={leadMain}
+            related={related}
+            fallback={dayEmpty && !fallbackIsToday}
+            dateLabel={dayLabel}
+            emptyNote={dayGroupEmpty && dayGroup ? `Brak aktywnych źródeł w grupie „${sourceGroupLabel(dayGroup)}”. ${GROUP_EMPTY_HINT}` : null}
+            actions={
+              <Dropdown
+                label={dayGroup ? `Źródła: ${sourceGroupLabel(dayGroup)}` : "Źródła: wszystkie"}
+                ariaLabel="Źródła Wiadomości dnia"
+                mode="single"
+                presentation="auto"
+                triggerVariant="quiet"
+                align="end"
+                items={[{ value: "", label: "Wszystkie źródła" }, ...SOURCE_GROUPS]}
+                value={dayGroup ?? ""}
+                onChange={(value) => setDayGroup(parseSourceGroup(value as string))}
+              />
+            }
+          />
         </HomeReveal>
         <HomeReveal>
-          <HomeThreads ref={threadsRef} categories={categories} sources={sources} draft={stripDraft} />
+          <HomeThreads categories={categories} sources={sources} />
         </HomeReveal>
         <HomeReveal>
           <HomeDrSpin thread={drSpin.data ?? null} />
         </HomeReveal>
         <HomePrzekazDnia government={config.data?.editorial.government ?? null} opposition={config.data?.editorial.opposition ?? null} />
-        <HomeReveal>
-          <HomeBand
-            onCreate={(query) => {
-              setStripDraft({ query, nonce: Date.now() });
-              threadsRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
-            }}
-          />
-        </HomeReveal>
         <HomeReveal>
           <HomeBaza ref={bazaRef} categories={categories} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>

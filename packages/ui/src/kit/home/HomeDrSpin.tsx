@@ -67,7 +67,7 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
               {anchor
                 ? rest.map((item) => (
                     <div key={item.id} className="sc-strip__slot">
-                      <NewsCard article={item.article} size="compact" headingLevel={4} />
+                      <NewsCard article={item.article} size="compact" headingLevel={4} expandable={false} />
                     </div>
                   ))
                 : PREVIEW_TYPES.map((type, index) => (
@@ -81,15 +81,10 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
 
         {/* Zapowiedź fazy 2: własne nitki kontekstowe użytkowników. */}
         <aside className="sc-home-drspin__teaser" aria-label="Własne nitki kontekstowe — wkrótce">
-          <div>
-            <p className="sc-t-title-s">Wkrótce: Twoje własne nitki kontekstowe</p>
-            <p className="sc-t-body-s sc-text-2">
-              Dziś nitki kontekstowe układa Dr Spin. W kolejnej fazie zbierzesz boxy w jedną historię — z datami, źródłami i komentarzem — i pokażesz ją innym.
-            </p>
-          </div>
-          <Button variant="secondary" size="sm" disabled>
-            Utwórz nitkę · wkrótce
-          </Button>
+          <p className="sc-t-title-s">Wkrótce: Twoje własne nitki kontekstowe</p>
+          <p className="sc-t-body-s sc-text-2">
+            Dziś nitki kontekstowe układa Dr Spin. W kolejnej fazie zbierzesz boxy w jedną historię — z datami, źródłami i komentarzem — i pokażesz ją innym.
+          </p>
         </aside>
       </div>
     </section>

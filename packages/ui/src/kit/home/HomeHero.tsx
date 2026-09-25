@@ -2,7 +2,7 @@
 
 /**
  * Ilustracja autorska (stary `IllustrationStrip`): ten sam obraz `/illustrations/<motyw>/<pora>.png`,
- * ta sama tabliczka „przystanek spin.clinic”, podpis i „Wesprzyj” — w promieniu 28 i tokenach kitu.
+ * sam obraz z przyciskiem „Wesprzyj nas” (bez tabliczki i podpisu — decyzja właściciela 25.09).
  * `pastel` z lokalnego magazynu mapuje się na zestaw `light`.
  */
 
@@ -47,16 +47,11 @@ export function HomeHero() {
           src={`/illustrations/${theme}/${period}.png`}
           alt="Akwarelowa ilustracja polskiego krajobrazu, rysowana konturami kredek"
         />
-        <span className="sc-home-hero__sign sc-chrome">
-          <small className="sc-t-caption">przystanek</small>
-          <span className="sc-t-title-xs">spin.clinic</span>
-        </span>
         <div className="sc-home-hero__support">
           <Button href="/wsparcie" variant="primary" size="sm">
-            Wesprzyj
+            Wesprzyj nas
           </Button>
         </div>
-        <p className="sc-home-hero__caption sc-t-caption sc-chrome">Polska · ilustracja autorska</p>
       </div>
     </section>
   );

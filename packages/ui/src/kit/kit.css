@@ -2700,22 +2700,15 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 
 /* Dr Spin v2 */
 
-/* Pas „Twój przegląd” */
-.sc-home-band { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr); align-items: center; gap: var(--sc-s-5); padding: var(--sc-s-6); border-radius: var(--sc-r-2xl); background: var(--sc-accent-soft); }
-.sc-home-band__copy h2, .sc-home-band__copy p { margin: 0; }
-.sc-home-band__copy h2 { margin-bottom: var(--sc-s-1); }
-.sc-home-band__form { display: flex; gap: var(--sc-s-3); align-items: center; }
-.sc-home-band__form > :first-child { flex: 1 1 auto; }
 .sc-home-footer__bottom { display: flex; flex-wrap: wrap; gap: var(--sc-s-4); }
 .sc-home-footer__bottom a { color: inherit; text-decoration: none; }
 .sc-home-footer__bottom a:hover { color: var(--sc-accent); }
 
 @media (max-width: 900px) {
-  .sc-home-lead__grid, .sc-home-band { grid-template-columns: 1fr; }
+  .sc-home-lead__grid { grid-template-columns: 1fr; }
   .sc-home-topbar__topic { display: none; }
 }
 @media (max-width: 640px) {
-  .sc-home-band__form { flex-direction: column; align-items: stretch; }
 }
 
 /* === Stage 2: monochrom + hover + szapka (замечания владельца 24.09) === */
@@ -2748,7 +2741,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 /* Поверхности без синей подложки. */
 .sc-card__eyebrow { background: var(--sc-chrome); color: var(--sc-accent); }
 .sc-home-demo { background: var(--sc-surface-2); }
-.sc-home-band { background: var(--sc-surface); box-shadow: var(--sc-e-1); }
 .sc-account-primary, .sc-editor-button, .sc-political__primary { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
 .sc-motion-btn[aria-pressed="true"] { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
 .sc-icons__play:hover { background: transparent; color: var(--sc-accent); }
@@ -2981,28 +2973,36 @@ body { background: var(--sc-bg); color: var(--sc-text); }
   .sc-home-baza { --sc-home-baza-h: clamp(260px, calc(100vh - 440px), 600px); }
 }
 
-/* Globalna stopka `sticky`: podczas przewijania widać jej pierwszy wiersz (Źródła · Informacje),
-   całość (dysklaimer, wsparcie) — na końcu strony. Przesunięcie liczy SiteFooter (--sc-footer-offset). */
-.sc-footer[data-sticky] { position: sticky; bottom: var(--sc-footer-offset, 0px); z-index: 25; padding-top: var(--sc-s-3); box-shadow: var(--sc-ring), 0 -10px 24px rgba(0, 0, 0, 0.28); }
-.sc-footer[data-sticky] .sc-footer__columns { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 var(--sc-s-7); margin: 0 0 var(--sc-s-3); }
+/* Globalna stopka `sticky`: jeden wiersz przyklejony do dołu okna — wordmark · Źródła · Informacje · Wesprzyj nas. */
+.sc-footer[data-sticky] { position: sticky; bottom: 0; z-index: 25; padding: var(--sc-s-3) var(--sc-gutter); border-radius: 0; box-shadow: var(--sc-ring), 0 -10px 24px rgba(0, 0, 0, 0.28); }
+.sc-footer__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3) var(--sc-s-6); }
+.sc-footer[data-sticky] .sc-footer__brand { font-size: var(--sc-t-title-s-size, 18px); white-space: nowrap; }
+.sc-footer[data-sticky] .sc-footer__columns { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 var(--sc-s-7); margin: 0; min-width: 0; }
 .sc-footer[data-sticky] .sc-footer__column { display: flex; align-items: center; gap: var(--sc-s-3); min-width: 0; max-width: 100%; }
 .sc-footer[data-sticky] .sc-footer__column-title { margin: 0; white-space: nowrap; }
 .sc-footer[data-sticky] .sc-footer__list { flex-direction: row; gap: var(--sc-s-4); overflow-x: auto; scrollbar-width: none; }
 .sc-footer[data-sticky] .sc-footer__list::-webkit-scrollbar { display: none; }
 .sc-footer[data-sticky] .sc-footer__link { white-space: nowrap; }
-.sc-footer[data-sticky] .sc-footer__top { padding: var(--sc-s-5) 0 0; border-top: 1px solid var(--sc-hairline); border-bottom: 0; }
+.sc-footer__bar-cta { flex: none; }
+/* Wąsko: wordmark i „Wesprzyj nas” w pierwszej linii, linki pod nimi (przewijane w bok). */
+@container sc-footer (max-width: 1099px) {
+  .sc-footer__bar { flex-wrap: wrap; }
+  .sc-footer[data-sticky] .sc-footer__columns { order: 3; width: 100%; justify-content: flex-start; }
+}
 @container sc-footer (max-width: 639px) {
-  .sc-footer[data-sticky] .sc-footer__columns { justify-content: flex-start; }
-  .sc-footer[data-sticky] .sc-footer__column { width: 100%; }
+  /* Telefon: wszystkie linki w jednej przewijanej linii — stopka zajmuje dwa wiersze, nie trzy. */
+  .sc-footer[data-sticky] .sc-footer__columns { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 0 var(--sc-s-5); }
+  .sc-footer[data-sticky] .sc-footer__columns::-webkit-scrollbar { display: none; }
+  .sc-footer[data-sticky] .sc-footer__column { flex: none; }
+  .sc-footer[data-sticky] .sc-footer__list { overflow: visible; }
 }
 
 /* === Stage 2: Home v5 — pasek newsowy jako taśma, Wiadomości dnia, zapowiedź nitek (25.09) === */
 .sc-home-ticker { display: grid; gap: var(--sc-s-2); grid-template-columns: minmax(0, 1fr); }
 .sc-home-ticker .sc-strip__slot > .sc-strip__empty { min-height: 96px; }
 .sc-home-ticker__hint { margin: 0; }
-.sc-home-drspin__teaser { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); flex-wrap: wrap; padding: var(--sc-s-4); border-radius: var(--sc-r-xl); border: 1px dashed var(--sc-line); }
-.sc-home-drspin__teaser p { margin: 0; }
-.sc-home-drspin__teaser > div { display: grid; gap: var(--sc-s-1); max-width: 70ch; }
+.sc-home-drspin__teaser { display: grid; justify-items: center; gap: var(--sc-s-2); padding: var(--sc-s-5) var(--sc-s-4); border-radius: var(--sc-r-xl); border: 1px dashed var(--sc-line); text-align: center; }
+.sc-home-drspin__teaser p { margin: 0; max-width: 62ch; }
 /* Spad taśm (24px) był szerszy niż margines strony poniżej ~1240px (20px) — 4px poziomego scrolla. */
 @media (min-width: 481px) and (max-width: 1240px) {
   .sc-strip-bleed { margin-inline: calc(var(--sc-s-4) * -1); padding-inline: var(--sc-s-4); }
@@ -3102,3 +3102,6 @@ html[data-theme="light"] .sc-card__placeholder[data-kind] { background: linear-g
 .sc-card__kind-dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: hsl(var(--sc-kind-h, 220) calc(var(--sc-kind-s, 0%) + 25%) 62%); }
 .sc-card__category[data-kind] { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-card__similar { color: var(--sc-accent); text-transform: none; letter-spacing: 0; }
+
+/* Taśmy bez spadu: pasek przewijania kilka pikseli pod kartami. */
+.sc-strip__scroller { padding-bottom: var(--sc-s-2); }

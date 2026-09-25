@@ -7,12 +7,11 @@
  * Siatka reaguje na WŁASNĄ szerokość (container queries), nie szerokość okna — działa też
  * wewnątrz wąskiej ramki witryny.
  *
- * `sticky`: stopka przykleja się do dołu okna ujemnym przesunięciem — podczas przewijania widać
- * tylko pierwszy wiersz (kolumny linków, np. źródła), a całą stopkę (dysklaimer, cta) na końcu
- * strony. Wysokość wiersza i stopki mierzy ResizeObserver (zmienna `--sc-footer-offset`).
+ * `sticky`: jeden wiersz przyklejony do dołu okna — wordmark, kolumny linków (np. źródła, informacje)
+ * i przycisk wsparcia na jednej linii. `note` i `bottom` renderują się tylko w układzie zwykłym.
  */
 
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "./Button";
@@ -38,7 +37,7 @@ export type SiteFooterProps = {
   cta?: SiteFooterCta;
   /** Dolny wiersz — np. data wersji, prawa. */
   bottom?: ReactNode;
-  /** Wiersz kolumn zawsze widoczny u dołu okna (patrz opis modułu). */
+  /** Jednowierszowa stopka zawsze widoczna u dołu okna (patrz opis modułu). */
   sticky?: boolean;
 };
 
@@ -60,26 +59,8 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
 
 export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false }: SiteFooterProps) {
   const m = useMotionTokens();
-  const footerRef = useRef<HTMLElement | null>(null);
-  const barRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const footer = footerRef.current;
-    const bar = barRef.current;
-    if (!sticky || !footer || !bar || typeof ResizeObserver === "undefined") return;
-    const update = () => {
-      const peek = bar.offsetTop + bar.offsetHeight + parseFloat(getComputedStyle(bar).marginBottom || "0");
-      footer.style.setProperty("--sc-footer-offset", `${Math.min(0, Math.round(peek - footer.offsetHeight))}px`);
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(footer);
-    observer.observe(bar);
-    return () => observer.disconnect();
-  }, [sticky]);
-
   const columnsRow = (
-    <div ref={barRef} className="sc-footer__columns">
+    <div className="sc-footer__columns">
       {columns.map((column, index) => (
         <motion.nav
           key={column.title}
@@ -103,10 +84,24 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false }
     </div>
   );
 
-  return (
-    <footer ref={footerRef} role="contentinfo" className="sc-footer" data-sticky={sticky || undefined}>
-      {sticky ? columnsRow : null}
+  if (sticky) {
+    return (
+      <footer role="contentinfo" className="sc-footer" data-sticky>
+        <div className="sc-footer__bar">
+          <div className="sc-footer__brand">{brand}</div>
+          {columnsRow}
+          {cta ? (
+            <Button href={cta.href} variant="primary" size="sm" className="sc-footer__bar-cta">
+              {cta.label}
+            </Button>
+          ) : null}
+        </div>
+      </footer>
+    );
+  }
 
+  return (
+    <footer role="contentinfo" className="sc-footer">
       <div className="sc-footer__top">
         <div className="sc-footer__intro">
           <div className="sc-footer__brand">{brand}</div>
@@ -123,7 +118,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false }
         )}
       </div>
 
-      {sticky ? null : columnsRow}
+      {columnsRow}
 
       {bottom && <div className="sc-footer__bottom sc-t-caption sc-text-3">{bottom}</div>}
     </footer>

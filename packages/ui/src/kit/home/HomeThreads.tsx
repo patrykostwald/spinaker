@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Nitki użytkownika (dawny „Twój przegląd” z Bazy, w miejscu mozaiki „Wszystkie źródła”):
+ * Nitki użytkownika — do pięciu własnych nitek newsowych (pasków informacyjnych):
  * pasek konfiguracji (wyśrodkowany: hasło · kategoria · źródło + „+ Dodaj pasek”), a pod nim
  * do {@link MAX_PERSONAL_STRIPS} własnych nitek — każda to filtr hasło/kategoria/źródło nad
  * `/api/portal/news`, zapis lokalny, kolejność przeciągana za uchwyt (`ReorderableStrips`).
@@ -112,7 +112,7 @@ function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; 
         <Strip label={strip.label}>
           {articles.map((article) => (
             <div key={article.id} className="sc-strip__slot">
-              <NewsCard article={article} size="compact" headingLevel={4} />
+              <NewsCard article={article} size="compact" headingLevel={4} expandable={false} />
             </div>
           ))}
         </Strip>
@@ -121,10 +121,8 @@ function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; 
   );
 }
 
-export type StripDraft = { query: string; nonce: number };
-
-export const HomeThreads = forwardRef<HTMLElement, { categories: CategoryOption[]; sources: Source[]; draft: StripDraft | null }>(function HomeThreads(
-  { categories, sources, draft },
+export const HomeThreads = forwardRef<HTMLElement, { categories: CategoryOption[]; sources: Source[] }>(function HomeThreads(
+  { categories, sources },
   ref,
 ) {
   const [strips, setStrips] = useState<PersonalStrip[]>([]);
@@ -136,14 +134,6 @@ export const HomeThreads = forwardRef<HTMLElement, { categories: CategoryOption[
   }, []);
 
   const atLimit = strips.length >= MAX_PERSONAL_STRIPS;
-
-  // Pas „Twój przegląd” na dole strony: otwiera formularz z wpisanym hasłem (nonce — każde wysłanie),
-  // ale nie ponad limit — wtedy pasek konfiguracji pokazuje komunikat o limicie.
-  useEffect(() => {
-    if (!draft || loadPersonalStrips().length >= MAX_PERSONAL_STRIPS) return;
-    setAdding(true);
-    setEditingId(null);
-  }, [draft]);
 
   function startAdding() {
     if (atLimit) return;
@@ -175,8 +165,6 @@ export const HomeThreads = forwardRef<HTMLElement, { categories: CategoryOption[
       <div className="sc-home-threads__config">
         {adding && !atLimit ? (
           <StripForm
-            key={draft?.nonce ?? "new"}
-            initial={draft?.query ? { id: "", label: "", query: draft.query, category: "", sourceId: "" } : undefined}
             categories={categories}
             sources={sources}
             onSave={saveNew}
