@@ -2,6 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from news.models import Article, Source, Thread, ThreadItem, Ballot
 from news.editorial_roles import role_data
+from news.source_groups import portal_group
 
 
 def thread_author(thread, context):
@@ -36,9 +37,16 @@ class EvidenceLinkSerializer(serializers.Serializer):
     explanation = serializers.CharField()
 
 class SourceSerializer(serializers.ModelSerializer):
+    # Grupa dla czytelnika: Publiczne / Media / Top media (news.source_groups).
+    portal_group = serializers.SerializerMethodField()
+
     class Meta:
         model = Source
-        fields = ('id', 'name', 'url', 'source_type', 'is_active', 'catalog_stage')
+        fields = ('id', 'name', 'url', 'source_type', 'is_active', 'catalog_stage', 'portal_group')
+
+    @extend_schema_field(serializers.ChoiceField(choices=['top', 'publiczne', 'media']))
+    def get_portal_group(self, obj):
+        return portal_group(obj)
 
 class ArticleSerializer(serializers.ModelSerializer):
     source = SourceSerializer(read_only=True)

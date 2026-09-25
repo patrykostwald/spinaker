@@ -22,13 +22,14 @@ from rest_framework.response import Response
 
 from news.models import Article, ArticleCategory, Source, Thread, ThreadItem, SourceContactCard
 from news.serializers import ArticleSerializer, SourceSerializer, ThreadSerializer
+from news.source_groups import TOP_MEDIA
 
 from news.topics import TOPICS, topic_choices, topic_clause
 
 WARSAW = ZoneInfo('Europe/Warsaw')
 # This is an editable editorial selection, not a measured audience ranking.
-TOP_TEN = ('Onet Wiadomości', 'Wirtualna Polska', 'Interia', 'TVN24',
-           'Polsat News', 'RMF24', 'Radio ZET', 'TVP Info', 'Gazeta.pl', 'Rzeczpospolita')
+# Wiodące media (grupa „Top media”) — jedna lista w news.source_groups.
+TOP_TEN = TOP_MEDIA
 STOP = set('a aby ale albo ani aż bez będzie będą być był była było byli być co czy dla do i ich jego jej jest jeszcze już jak jako kiedy które który która którzy ma mają miał między mimo może można mu na nad nam nas nie nowa nowe nowy nowego nowym nową oraz od o on ona oni po pod przez przy przed się są tak także tam tego tej ten te to tym tu tę u w we więc więcej wszystko wszystkie wy z za ze że tylko dziś dzisiaj sprawie sprawa sprawy mówi powiedział powiedziała polska polski polskie polsce kraju kraj świat świata wiadomości polityka aktualności news informacja informacje'.split())
 
 
@@ -121,7 +122,7 @@ def feed(request):
         'checked_at': now.isoformat(), 'latest_published_at': rows[0].published_date.isoformat()
             if rows and rows[0].published_date else None,
         'top_sources': SourceSerializer(sources, many=True).data,
-        'selection_note': 'Dzisiejsze materiały z redakcyjnego wyboru dziesięciu źródeł; kolejność według daty publikacji.'
+        'selection_note': 'Dzisiejsze materiały z redakcyjnego wyboru wiodących mediów; kolejność według daty publikacji.'
             if mode == 'top' else 'Materiały dostępne w bazie, od najnowszej znanej daty publikacji. Braki danych pozostają jawne.'}
     return Response(payload)
 
