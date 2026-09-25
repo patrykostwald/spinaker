@@ -54,7 +54,7 @@ const PUBLISHER_TERMS = [
 const PARTS = [
   { href: '/', name: 'Wiadomości', status: 'działa · beta', text: 'Agregator doniesień mediów i instytucji publicznych. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — na pasku newsowym, na osi czasu i w bazie z wyszukiwarką.' },
   { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Czytamy posty polityków z X, a Dr. Spin — narzędzie AI — rozkłada każdy na czynniki pierwsze i stawia diagnozę. Rządzący i opozycja obok siebie, według tych samych zasad.' },
-  { href: '/nitki', name: 'Nitki', status: 'faza II', text: 'Miejsce dla czytelników: własne nitki kontekstowe z materiałów z naszej bazy albo dodanych samodzielnie przez link. Prywatne nitki działają już na koncie.' },
+  { href: '/nitki', name: 'Nitki', status: 'działa · beta', text: 'Miejsce dla czytelników: własne nitki kontekstowe z materiałów z naszej bazy albo dodanych przez link — prywatne albo publiczne, z reakcjami i komentarzami.' },
 ];
 
 /**
@@ -121,12 +121,12 @@ const PHASES: Phase[] = [
   },
   {
     id: 'faza-2',
-    status: 'Faza II · najbliższy etap',
+    status: 'Faza II · w toku',
     title: 'Nitki czytelników',
-    lead: 'Część społeczna: czytelnicy układają i publikują własne nitki kontekstowe.',
+    lead: 'Część społeczna: czytelnicy układają i publikują własne nitki kontekstowe. Podstawy działają już w becie.',
     features: [
-      { text: 'publiczne nitki czytelników z reakcjami i komentarzami, z moderacją', status: 'planowane' },
-      { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'planowane' },
+      { text: 'publiczne nitki czytelników z reakcjami i komentarzami, z moderacją', status: 'beta' },
+      { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'beta' },
       { text: 'w Klinice dowody jako boxy z naszej bazy zamiast samego tekstu', status: 'planowane' },
       { text: 'napisy i transkrypcje wideo z YouTube, alerty po haśle i źródle', status: 'planowane' },
     ],

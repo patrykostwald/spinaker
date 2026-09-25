@@ -54,10 +54,11 @@ export function HomeHero() {
       <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.png`} alt="" />
       <div className="sc-home-intro__content">
         <p className="sc-home-intro__title">
-          Wiadomości ze źródłami. Diagnozy spinu polityków. <span>Wkrótce — Twoje nitki.</span>
+          Wiadomości ze źródłami. Diagnozy spinu polityków. <span>Nitki układane przez czytelników.</span>
         </p>
         <p className="sc-home-intro__links">
           <Link href="/klinika">Klinika spinu →</Link>
+          <Link href="/nitki">Nitki →</Link>
           <Link href="/o-nas">Jak to działa</Link>
         </p>
       </div>
