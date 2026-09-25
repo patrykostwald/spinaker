@@ -1,6 +1,23 @@
 # Brief strony „O nas”
 
-Stan decyzji: 23 września 2026. To źródło prawdy dla treści strony `/o-nas`.
+Stan decyzji: 25 września 2026 (aktualizacja struktury; zasady z 23.09 poniżej nadal obowiązują). To źródło prawdy dla treści strony `/o-nas`.
+
+## Struktura (25.09)
+
+Strona jest adresowana do nowych czytelników i do redakcji, którym wysyłamy prośbę o zgodę — link w wiadomości prowadzi do `/o-nas` (albo `/o-nas#dla-redakcji`). Kolejność sekcji (każda ma kotwicę):
+
+1. `#spin-doctor` — definicja ze Słownika języka polskiego PWN (cytat dosłowny, z linkiem) i jedno zdanie o tym, czym jest spin.clinic.
+2. `#o-nas` — „Kontekst zamiast werdyktu”: czym jest serwis, czego nie robi, stan projektu; opis do skopiowania.
+3. `#fazy` — trzy fazy z technologią każdej fazy.
+4. `#box` — box; notka: dziś powiązania po słowach, kategoriach i dacie, w przyszłości własny otwartoźródłowy silnik AI (plan, nie stan).
+5. `#po-kliknieciu` — oś czasu 15 powiązanych, reakcje, baza powiązanych (kategorie × daty).
+6. `#nitki-newsowe` — do 5 własnych pasków po haśle, kategorii i źródle.
+7. `#nitki-kontekstowe` — box otwierający + oś kontekstu z komentarzami; dziś tylko redakcja jako Dr. Spin.
+8. `#dr-spin` — programy i modele AI szukają przekazów dnia i powtarzanych spinów, podsuwają materiały potwierdzające, podważające lub wyjaśniające; redakcja zatwierdza. Później: osie powiązań z rejestrem osób publicznych. Nie jest narzędziem „prawdy”.
+9. `#dla-redakcji` — zakres dostępu (metadane, tempo, bez pełnych tekstów i zdjęć, brak odpowiedzi ≠ zgoda, rezygnacja na wiadomość, kontakt).
+10. `#zasady` — co robimy / czego nie robimy.
+
+Forma: schematy rysowane znakami w okienkach „do skopiowania”; prosty, ludzki język bez marketingu.
 
 ## Cel
 
