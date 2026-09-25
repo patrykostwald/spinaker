@@ -16,11 +16,16 @@ const LAST_UPDATED = { iso: '2026-09-25', label: '25 września 2026' };
 
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic';
 const SOURCES_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'zrodla@spin.clinic';
+const CONTACTS: Array<{ email: string; purpose: string }> = [
+  { email: 'kontakt@spin.clinic', purpose: 'pytania o projekt, współpraca, media' },
+  { email: SOURCES_EMAIL, purpose: 'źródła, zgody wydawców, zakres dostępu' },
+  { email: 'admin@spin.clinic', purpose: 'sprawy techniczne i administracyjne, błędy serwisu' },
+];
 
 const SECTIONS = [
   { id: 'spin-doctor', label: 'Spin doctor' },
   { id: 'o-nas', label: 'O nas' },
-  { id: 'fazy', label: 'Trzy fazy projektu' },
+  { id: 'fazy', label: 'Fazy i technologia' },
   { id: 'box', label: 'Box' },
   { id: 'po-kliknieciu', label: 'Po otwarciu boxa' },
   { id: 'nitki-newsowe', label: 'Nitka newsowa' },
@@ -46,72 +51,165 @@ const PUBLISHER_TERMS = [
   `kontakt         ${SOURCES_EMAIL}`,
 ].join('\n');
 
-const PHASES: Array<{
+/**
+ * Statusy technologii i funkcji — tylko cztery, zawsze te same słowa:
+ * „działa” — obecne w kodzie i wdrożone; „beta” — dostępne, nadal rozwijane;
+ * „planowane” — w planie rozwoju; „wymaga potwierdzenia” — przygotowane lub rozważane, jeszcze nie uruchomione.
+ */
+type Status = 'działa' | 'beta' | 'planowane' | 'wymaga potwierdzenia';
+const STATUS_KEYS: Record<Status, string> = { działa: 'live', beta: 'beta', planowane: 'planned', 'wymaga potwierdzenia': 'pending' };
+const STATUS_HELP: Array<[Status, string]> = [
+  ['działa', 'obecne w kodzie i wdrożone'],
+  ['beta', 'dostępne, nadal rozwijane'],
+  ['planowane', 'w planie kolejnych etapów'],
+  ['wymaga potwierdzenia', 'przygotowane albo rozważane, jeszcze nie uruchomione'],
+];
+
+type TechItem = { name: string; note?: string; status: Status };
+type Phase = {
   id: string;
   status: string;
   title: string;
   lead: string;
-  items: string[];
-  stack: Array<[string, string]>;
+  featuresLabel: string;
+  features: Array<{ text: string; status: Status }>;
+  stack: Array<{ group: string; items: TechItem[] }>;
   note: [string, string];
   current?: boolean;
-}> = [
+};
+
+const PHASES: Phase[] = [
   {
     id: 'faza-1',
-    status: 'Faza I · teraz (beta)',
-    title: 'Baza, boxy i paski newsowe',
-    lead: 'Zbieramy materiały z legalnie dostępnych źródeł i pokazujemy je jako boxy — na pasku newsowym, na osi czasu i w bazie z wyszukiwarką.',
-    items: [
-      'baza materiałów instytucji publicznych i mediów, z wyszukiwaniem po haśle, kategorii, źródle i dacie',
-      'pasek newsowy spin.clinic i do pięciu własnych nitek newsowych',
-      'po otwarciu boxa: oś czasu 15 powiązanych materiałów i baza powiązanych w kolumnach',
-      'rejestr osób publicznych: funkcje, głosowania w Sejmie i doniesienia',
-      'nitki Dr. Spina przygotowywane przez redakcję z pomocą narzędzi AI',
+    status: 'Faza I · działa dzisiaj',
+    title: 'Baza, boxy i rejestry',
+    lead: 'To, co działa już dziś. Funkcje oznaczone jako „beta” są dostępne dla czytelników, ale wciąż je rozwijamy.',
+    featuresLabel: 'Funkcje',
+    features: [
+      { text: 'wyszukiwanie materiałów w bazie, filtrowanie po kategorii, źródle i haśle', status: 'beta' },
+      { text: 'publiczne boxy materiałów i kontekst materiału: oś czasu powiązanych i baza powiązanych', status: 'beta' },
+      { text: 'pasek newsowy i do pięciu nitek użytkownika — zapisane widoki na urządzeniu', status: 'beta' },
+      { text: 'rejestr osób publicznych i stanowisk publicznych, z historią sprawowania funkcji i osią czasu osoby', status: 'beta' },
+      { text: 'powiązania osób, organizacji, źródeł i materiałów — wyłącznie potwierdzone dowodami', status: 'beta' },
+      { text: 'Wiadomości dnia, sekcje tematyczne i temat dnia', status: 'beta' },
+      { text: 'Dr. Spin — redakcyjne narzędzie porządkowania kontekstu i dowodów', status: 'beta' },
+      { text: 'import i audyt źródeł, ręczne zatwierdzanie dowodów', status: 'beta' },
     ],
     stack: [
-      ['dane', 'Python · Django REST Framework · PostgreSQL'],
-      ['pobieranie', 'Celery · Redis — zadania według harmonogramu, w limitach każdego źródła'],
-      ['serwis', 'Next.js · React'],
-      ['źródła', 'API Sejmu i ELI · RSS · BIP · YouTube Data API · API X (oficjalne, płatne, tylko potwierdzone konta)'],
+      {
+        group: 'Frontend',
+        items: [
+          { name: 'Next.js 14 · React · TypeScript', status: 'działa' },
+          { name: 'Tailwind CSS 3.4 i wspólny pakiet komponentów', note: 'motyw jasny i ciemny, układ na telefon i komputer', status: 'działa' },
+          { name: 'TanStack Query', note: 'pobieranie i przechowywanie danych w przeglądarce', status: 'działa' },
+        ],
+      },
+      {
+        group: 'Backend',
+        items: [
+          { name: 'Python · Django 5 · Django REST Framework', note: 'materiały, źródła, konta, nitki, osoby i stanowiska publiczne, dowody, relacje, historia zmian', status: 'działa' },
+          { name: 'Django Admin', note: 'panel redakcji', status: 'działa' },
+          { name: 'OpenAPI (drf-spectacular)', note: 'publiczny opis API', status: 'działa' },
+        ],
+      },
+      {
+        group: 'Dane i zadania w tle',
+        items: [
+          { name: 'PostgreSQL 15', note: 'baza produkcyjna; SQLite wyłącznie do lokalnych testów', status: 'działa' },
+          { name: 'Redis 7 · Celery Worker · Celery Beat', note: 'pobieranie i kontrole według harmonogramu', status: 'działa' },
+          { name: 'importery źródeł fail-closed', note: 'bez zatwierdzonego kanału i zakresu dostępu źródło nie jest pobierane', status: 'działa' },
+        ],
+      },
+      {
+        group: 'Infrastruktura',
+        items: [
+          { name: 'Docker · Docker Compose · VPS z Ubuntu', note: 'na zewnątrz tylko porty HTTP i HTTPS', status: 'działa' },
+          { name: 'Caddy', note: 'reverse proxy i HTTPS z automatycznym certyfikatem', status: 'działa' },
+          { name: 'GitHub · GitHub Actions', note: 'testy i ręczne wdrożenie wybranej wersji', status: 'działa' },
+        ],
+      },
+      {
+        group: 'Źródła i rejestry',
+        items: [
+          { name: 'oficjalne API (Sejm, ELI) · RSS · BIP', status: 'działa' },
+          { name: 'oficjalne kanały YouTube', note: 'osobny, weryfikowany typ źródła', status: 'działa' },
+          { name: 'rejestr stanowisk publicznych', note: 'obecne i byłe osoby, historia zmian', status: 'działa' },
+          { name: 'dowody kont X i kolejka ręcznej weryfikacji', status: 'działa' },
+        ],
+      },
     ],
-    note: ['W trakcie', 'katalog źródeł uzupełniamy — media dołączają po zgodzie wydawców.'],
+    note: ['Zasada', 'każde źródło ma zapisane warunki wykorzystania, kanał dostępu, status techniczny i prawny oraz historię audytu. Rozdzielamy dane potwierdzone, kandydatury, źródła czekające na kontakt i źródła nieaktywne.'],
     current: true,
   },
   {
     id: 'faza-2',
-    status: 'Faza II · następny etap',
-    title: 'Konta i własny kontekst',
-    lead: 'Konto pozwoli zachować własną pracę z materiałami i dzielić się nią z innymi.',
-    items: [
-      'własne nitki kontekstowe — takie, jakie dziś układa Dr. Spin',
-      'reakcje i komentarze do boxów i nitek, z moderacją',
-      'obserwowane tematy, ulubione materiały i źródła',
-      'rozbudowa rejestru osób publicznych: historia funkcji z datami i powiązania z rejestrów publicznych (np. KRS)',
+    status: 'Faza II · najbliższy etap',
+    title: 'Szerszy kontekst, konta i powiadomienia',
+    lead: 'Wdrażamy to etapami. Część elementów jest już przygotowana w kodzie, ale nie działa jeszcze dla czytelników.',
+    featuresLabel: 'Co dochodzi',
+    features: [
+      { text: 'napisy i transkrypcje materiałów wideo z YouTube — z wyszukiwaniem w ich treści', status: 'planowane' },
+      { text: 'lepsze wykrywanie powiązań między materiałami i rozbudowane osie czasu', status: 'planowane' },
+      { text: 'alerty po haśle, źródle i temacie — w serwisie i e-mailem', status: 'planowane' },
+      { text: 'konta: własne nitki kontekstowe, reakcje i komentarze z moderacją', status: 'planowane' },
+      { text: 'kolejka redakcyjna i zatwierdzanie treści przed publikacją', status: 'planowane' },
+      { text: 'raporty jakości importu: duplikaty, błędne daty, puste materiały, błędy techniczne', status: 'planowane' },
+      { text: 'dalsze uzupełnianie rejestru stanowisk publicznych', status: 'planowane' },
     ],
     stack: [
-      ['konta', 'Django — konta, moderacja, zgłoszenia'],
-      ['rejestry', 'publiczne rejestry i API — m.in. KRS, historia kadencji z API Sejmu'],
+      {
+        group: 'Integracje',
+        items: [
+          { name: 'YouTube Data API', note: 'napisy i transkrypcje', status: 'planowane' },
+          { name: 'API X', note: 'pilotaż płatnego dostępu; konta potwierdzane wyłącznie oficjalnymi dowodami', status: 'wymaga potwierdzenia' },
+          { name: 'powiadomienia w serwisie i e-mail', status: 'planowane' },
+        ],
+      },
     ],
     note: ['Nadal bez', 'automatycznej publikacji i automatycznych ocen.'],
   },
   {
     id: 'faza-3',
-    status: 'Faza III · plan',
-    title: 'Dr. Spin i wyszukiwanie po znaczeniu',
-    lead: 'Dr. Spin rozwija się w asystenta redakcyjnego opartego na modelach AI z otwartymi wagami (open-weight).',
-    items: [
-      'wyszukiwanie po znaczeniu — materiały o tym samym, opisane innymi słowami',
-      'łączenie osób z materiałów z rejestrem osób publicznych i osie powiązań',
-      'szkice nitek z cytatami, datami i jawnie opisanymi brakami danych — zawsze do sprawdzenia przez redaktora',
+    status: 'Faza III · planowane kolejne fazy',
+    title: 'Wyszukiwanie wspomagane AI i dalszy rozwój',
+    lead: 'AI ma być narzędziem redakcji, nie autorem. Model pracuje wyłącznie na rekordach z naszej bazy i na ich dowodach.',
+    featuresLabel: 'Założenia',
+    features: [
+      { text: 'wybór ograniczonej liczby powiązanych materiałów z realnej bazy', status: 'planowane' },
+      { text: 'odpowiedzi oparte wyłącznie na istniejących rekordach — bez zmyślonych linków i dopowiadania faktów', status: 'planowane' },
+      { text: 'zapis modelu, wersji instrukcji, kosztu, pewności, danych wejściowych i decyzji redaktora — z osobnym audytem jakości', status: 'planowane' },
+      { text: 'później: aplikacja instalowana z przeglądarki (PWA) i powiadomienia push, rozbudowane mapy relacji, indeksowanie dokumentów BIP, większe archiwum, narzędzia dla redakcji', status: 'planowane' },
     ],
     stack: [
-      ['AI', 'NVIDIA NIM — wyszukiwanie po znaczeniu i porządkowanie wyników'],
-      ['', 'Groq — szkice redakcyjne w ściśle określonym formacie'],
-      ['docelowo', 'otwarte modele na własnej infrastrukturze'],
+      {
+        group: 'AI',
+        items: [
+          { name: 'wspólny adapter modeli OpenAI i Mistral', note: 'przygotowany w kodzie, domyślnie wyłączony', status: 'wymaga potwierdzenia' },
+          { name: 'NVIDIA NIM · Groq', note: 'pilotaże szkiców redakcyjnych, domyślnie wyłączone', status: 'wymaga potwierdzenia' },
+          { name: 'RAG', note: 'odpowiedzi z cytowaniem materiałów z bazy', status: 'planowane' },
+          { name: 'Qdrant', note: 'kandydat do wyszukiwania wektorowego — po porównaniu z wyszukiwaniem w PostgreSQL', status: 'wymaga potwierdzenia' },
+          { name: 'własny indeks semantyczny i model lokalny', note: 'dopiero po pomiarze sprzętu, kosztu, czasu i jakości', status: 'wymaga potwierdzenia' },
+        ],
+      },
+      {
+        group: 'Później',
+        items: [
+          { name: 'Web Push (VAPID)', note: 'powiadomienia w przeglądarce', status: 'planowane' },
+          { name: 'aplikacje mobilne', note: 'dopiero po potwierdzeniu potrzeb czytelników', status: 'wymaga potwierdzenia' },
+        ],
+      },
     ],
-    note: ['Stan', 'połączenia z dostawcami są przygotowane i domyślnie wyłączone. Włączamy je po pilotażu na ręcznie sprawdzonych materiałach.'],
+    note: ['Stan', 'żaden model AI nie publikuje dziś niczego w serwisie, a własny model nie jest warunkiem startu. Supabase rozważaliśmy we wcześniejszej architekturze — obecna wersja działa na Django i PostgreSQL.'],
   },
 ];
+
+function StatusTag({ status }: { status: Status }) {
+  return (
+    <span className="sc-onas-tag" data-status={STATUS_KEYS[status]}>
+      {status}
+    </span>
+  );
+}
 
 function Section({ id, index, kicker, title, children, level = 2 }: { id: string; index: number; kicker: string; title: string; children: ReactNode; level?: 1 | 2 }) {
   const Heading = level === 1 ? 'h1' : 'h2';
@@ -192,26 +290,65 @@ export default function AboutPage() {
             </p>
           </div>
           <CopyBlock label="O spin.clinic — tekst do skopiowania" mode="text" text={ABOUT_SNIPPET} />
+          <dl className="sc-onas-contacts" aria-label="Kontakt">
+            {CONTACTS.map((contact) => (
+              <div key={contact.email}>
+                <dt>
+                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                </dt>
+                <dd>{contact.purpose}</dd>
+              </div>
+            ))}
+          </dl>
         </Section>
 
-        <Section id="fazy" index={3} kicker="Rozwój" title="Trzy fazy projektu">
-          <p className="sc-onas-prose">Rozwijamy spin.clinic etapami. Przy każdej fazie piszemy wprost, co już działa, a co jest dopiero planem — i na jakiej technologii to budujemy.</p>
+        <Section id="fazy" index={3} kicker="Rozwój i technologia" title="Trzy fazy projektu">
+          <p className="sc-onas-prose">
+            Rozwijamy spin.clinic etapami. Przy każdej funkcji i technologii piszemy wprost, w jakim jest stanie — nie przedstawiamy planów jako czegoś, co już działa.
+          </p>
+          <dl className="sc-onas-legend" aria-label="Oznaczenia stanu">
+            {STATUS_HELP.map(([status, help]) => (
+              <div key={status}>
+                <dt>
+                  <StatusTag status={status} />
+                </dt>
+                <dd>{help}</dd>
+              </div>
+            ))}
+          </dl>
           <ol className="sc-onas-phases">
             {PHASES.map((phase) => (
               <li key={phase.id} className="sc-onas-phase" data-current={phase.current || undefined} aria-labelledby={`${phase.id}-title`}>
                 <p className="sc-onas-phase__status">{phase.status}</p>
                 <h3 id={`${phase.id}-title`}>{phase.title}</h3>
                 <p>{phase.lead}</p>
-                <ul className="sc-onas-list">
-                  {phase.items.map((item) => (
-                    <li key={item}>{item}</li>
+                <h4 className="sc-onas-phase__label">{phase.featuresLabel}</h4>
+                <ul className="sc-onas-tagged">
+                  {phase.features.map((feature) => (
+                    <li key={feature.text}>
+                      <StatusTag status={feature.status} />
+                      <span>{feature.text}</span>
+                    </li>
                   ))}
                 </ul>
-                <dl className="sc-onas-stack" aria-label="Technologia">
-                  {phase.stack.map(([key, value]) => (
-                    <div key={`${key}-${value}`}>
-                      <dt>{key}</dt>
-                      <dd>{value}</dd>
+                <h4 className="sc-onas-phase__label">Technologia</h4>
+                <dl className="sc-onas-stack">
+                  {phase.stack.map((group) => (
+                    <div key={group.group}>
+                      <dt>{group.group}</dt>
+                      <dd>
+                        <ul className="sc-onas-tagged">
+                          {group.items.map((item) => (
+                            <li key={item.name}>
+                              <StatusTag status={item.status} />
+                              <span>
+                                <strong>{item.name}</strong>
+                                {item.note ? ` — ${item.note}` : null}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -236,8 +373,8 @@ export default function AboutPage() {
           </div>
           <CopyBlock label="schemat boxa" text={BOX} caption="Układ boxa — przykład bez prawdziwej publikacji." />
           <p className="sc-onas-aside">
-            Dziś powiązania opieramy na słowach, kategoriach i dacie publikacji. W przyszłości planujemy własny, otwartoźródłowy silnik AI, który będzie wspierał
-            wyszukiwanie i dobór powiązanych materiałów.
+            Dziś powiązania opieramy na słowach, kategoriach i dacie publikacji. W kolejnych fazach planujemy wyszukiwanie wspomagane AI — wyłącznie na rekordach
+            z naszej bazy, bez dopowiadania faktów.
           </p>
         </Section>
 
@@ -289,12 +426,16 @@ export default function AboutPage() {
         <Section id="dr-spin" index={8} kicker="Dr. Spin" title="Asystent, który szuka kontekstu">
           <div className="sc-onas-prose">
             <p>
-              Dr. Spin to zestaw współpracujących programów i modeli AI. Każdego dnia wyszukuje przekazy dnia poszczególnych partii i najczęściej powtarzane spiny, a potem
-              przeszukuje naszą bazę źródeł i podsuwa materiały, które dany przekaz potwierdzają, podważają albo wyjaśniają.
+              Dr. Spin to redakcyjne narzędzie do porządkowania kontekstu i dowodów (beta). Redakcja bierze przekazy dnia poszczególnych partii i najczęściej powtarzane
+              spiny, przeszukuje naszą bazę źródeł i zestawia materiały, które dany przekaz potwierdzają, podważają albo wyjaśniają.
             </p>
             <p>
-              Nie chodzi o ogłaszanie, co jest prawdą. Chodzi o kontekst: żeby obok przekazu stało to, co mówią dokumenty, co wydarzyło się wcześniej i co ukazało się
-              później. Każdą nitkę sprawdza i zatwierdza redakcja — żaden model nie publikuje niczego sam.
+              Dr. Spin nie ogłasza, co jest prawdą, i nie zastępuje dziennikarza. Chodzi o kontekst: żeby obok przekazu stało to, co mówią dokumenty, co wydarzyło się wcześniej i co ukazało się
+              później — zawsze z linkami do źródeł. Każdą nitkę sprawdza i zatwierdza redakcja — żaden model nie publikuje niczego sam.
+            </p>
+            <p>
+              Wsparcie modeli AI — dobór powiązanych materiałów i szkice nitek — jest przygotowane w kodzie, ale dziś pozostaje wyłączone. Włączymy je dopiero po pilotażu
+              na ręcznie sprawdzonych materiałach (faza III).
             </p>
           </div>
           <CopyBlock label="jak pracuje Dr. Spin" text={DR_SPIN} />

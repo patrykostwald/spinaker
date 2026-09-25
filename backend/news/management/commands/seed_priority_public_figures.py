@@ -85,7 +85,9 @@ class Command(BaseCommand):
                     values = {key: value for key, value in row.items() if key not in {
                         'roster_source', 'roster_external_id', 'link_existing_only'
                     }}
-                    values.update(status='current', source_checked_at=now, archived=False)
+                    # Profil połączony przez redakcję z innym profilem tej samej osoby zostaje archiwalny.
+                    merged = PublicFigure.objects.filter(import_key=row['import_key'], merged_into__isnull=False).exists()
+                    values.update(status='current', source_checked_at=now, archived=merged)
                     figure, was_created = PublicFigure.objects.update_or_create(import_key=row['import_key'], defaults=values)
                 created += int(was_created)
                 updated += int(not was_created)

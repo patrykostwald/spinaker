@@ -12,12 +12,34 @@ from news.models import ArticleCategory, Ballot
 from news.political_models import OfficialVideoChannel, PoliticalPost, PublicFigure, PublicOffice, SocialHandleEvidence
 
 
+# Kolejność ważności funkcji w nagłówku profilu (np. minister, który jest też posłem).
+HEADLINE_ORDER = ('government', 'european', 'party', 'parliamentary', 'local', 'political')
+
+
+def headline(figure):
+    """Tytuł i kategoria do nagłówka: najważniejsza bieżąca funkcja, a obok tytuł profilu.
+
+    Po połączeniu profili tej samej osoby (merge_public_figure_profiles) funkcja rządowa jest rolą
+    profilu posła — nagłówek pokazuje ją pierwszą: „minister …· Poseł na Sejm RP”.
+    """
+    roles = [role for role in figure.public_roles.all() if not role.archived and role.status == 'current'
+             and role.role_title != figure.role_title]
+    rank = {category: index for index, category in enumerate(HEADLINE_ORDER)}
+    better = sorted((role for role in roles if rank.get(role.role_category, 99) < rank.get(figure.role_category, 99)),
+                    key=lambda role: (rank.get(role.role_category, 99), role.role_title))
+    if not better:
+        return figure.role_title, figure.role_category
+    titles = list(dict.fromkeys(role.role_title for role in better))
+    return ' · '.join([*titles, figure.role_title]), better[0].role_category
+
+
 def figure_data(figure, include_detail=False):
+    role_title, role_category = headline(figure)
     data = {
         'id': figure.pk,
         'name': figure.canonical_name,
-        'role_category': figure.role_category,
-        'role_title': figure.role_title,
+        'role_category': role_category,
+        'role_title': role_title,
         'organisation': figure.organisation,
         'status': figure.status,
         'official_profile_url': figure.official_profile_url,
@@ -352,12 +374,14 @@ def public_figure_list(request):
         page_size = min(100, max(1, int(request.query_params.get('page_size', '50'))))
     except ValueError:
         return Response({'detail': 'Parametry page i page_size muszą być liczbami całkowitymi.'}, status=400)
-    rows = PublicFigure.objects.filter(archived=False)
+    rows = PublicFigure.objects.filter(archived=False).prefetch_related('public_roles')
+    current_role = Q(public_roles__archived=False, public_roles__status='current')
     if query:
         rows = rows.filter(Q(canonical_name__icontains=query) | Q(role_title__icontains=query) |
-                           Q(organisation__icontains=query))
+                           Q(organisation__icontains=query) | (current_role & Q(public_roles__role_title__icontains=query))).distinct()
     if role_category:
-        rows = rows.filter(role_category=role_category)
+        # Także osoby, których funkcja tej kategorii jest rolą (np. minister połączony z profilem posła).
+        rows = rows.filter(Q(role_category=role_category) | (current_role & Q(public_roles__role_category=role_category))).distinct()
     if status:
         rows = rows.filter(status=status)
     rows = rows.order_by('canonical_name', 'pk')
