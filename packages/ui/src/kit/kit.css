@@ -3081,3 +3081,24 @@ body { background: var(--sc-bg); color: var(--sc-text); }
 .sc-pf-axis__month-label { margin: 0; color: var(--sc-accent); font-size: var(--sc-t-meta-size); text-transform: capitalize; }
 .sc-pf-axis__empty { margin: 0; color: var(--sc-text-2); }
 .sc-pf-axis__gaps { margin: var(--sc-s-5) 0 0; padding-left: var(--sc-s-5); color: var(--sc-text-3); font-size: var(--sc-t-meta-size); }
+
+/* === Stage 2: czytelniejsze boxy (25.09): rodzaj materiału, inicjały źródła, krótka etykieta === */
+/* Odcień rodzaju: urzędowe — niebieski, rozmowy — fiolet, film — czerwień, reportaż — bursztyn,
+   fact-check — morski, reklama — żółty, artykuł — neutralny (bez nasycenia). */
+[data-kind="official"] { --sc-kind-h: 212; --sc-kind-s: 55%; }
+[data-kind="talk"] { --sc-kind-h: 270; --sc-kind-s: 40%; }
+[data-kind="video"] { --sc-kind-h: 352; --sc-kind-s: 45%; }
+[data-kind="report"] { --sc-kind-h: 32; --sc-kind-s: 55%; }
+[data-kind="check"] { --sc-kind-h: 170; --sc-kind-s: 45%; }
+[data-kind="ad"] { --sc-kind-h: 48; --sc-kind-s: 60%; }
+[data-kind="article"] { --sc-kind-h: 220; --sc-kind-s: 0%; }
+.sc-card__placeholder[data-kind] { background: linear-gradient(135deg, hsl(var(--sc-kind-h) var(--sc-kind-s) 20%), hsl(var(--sc-kind-h) var(--sc-kind-s) 12%)); color: hsl(var(--sc-kind-h) calc(var(--sc-kind-s) + 20%) 78%); }
+html[data-theme="light"] .sc-card__placeholder[data-kind] { background: linear-gradient(135deg, hsl(var(--sc-kind-h) var(--sc-kind-s) 94%), hsl(var(--sc-kind-h) var(--sc-kind-s) 86%)); color: hsl(var(--sc-kind-h) calc(var(--sc-kind-s) + 10%) 30%); }
+.sc-card__mono { font-family: var(--sc-font-sans); font-weight: 700; letter-spacing: 0.04em; line-height: 1; font-size: 28px; opacity: 0.9; }
+.sc-card[data-size="mini"] .sc-card__mono { font-size: 15px; }
+.sc-card[data-size="compact"] .sc-card__mono { font-size: 30px; }
+.sc-card[data-size="large"] .sc-card__mono { font-size: 96px; opacity: 0.25; }
+/* Kropka rodzaju przy krótkiej etykiecie kategorii (badge i mini). */
+.sc-card__kind-dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: hsl(var(--sc-kind-h, 220) calc(var(--sc-kind-s, 0%) + 25%) 62%); }
+.sc-card__category[data-kind] { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-card__similar { color: var(--sc-accent); text-transform: none; letter-spacing: 0; }

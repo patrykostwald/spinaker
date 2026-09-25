@@ -25,8 +25,9 @@ import { HomePrzekazDnia } from "./HomePrzekazDnia";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads, type StripDraft } from "./HomeThreads";
 import { HomeTicker } from "./HomeTicker";
+import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
-import { SOURCE_GROUPS, SOURCE_GROUP_PARAM, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
+import { GROUP_EMPTY_HINT, SOURCE_GROUPS, SOURCE_GROUP_PARAM, activeSources, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
 
 function DemoBanner() {
   const demo = useDemoMode();
@@ -75,7 +76,7 @@ export function HomePage() {
 
   const categories = config.data?.categories ?? [];
   const sources = config.data?.sources ?? [];
-  const groupIds = useMemo(() => (sourceGroup ? groupSources(sources)[sourceGroup].map((source) => source.id) : []), [sources, sourceGroup]);
+  const groupIds = useMemo(() => (sourceGroup ? groupSources(activeSources(sources))[sourceGroup].map((source) => source.id) : []), [sources, sourceGroup]);
   const groupEmpty = Boolean(sourceGroup) && sources.length > 0 && groupIds.length === 0;
 
   // Hasło z wiersza filtrów trafia do zapytania po chwili bez pisania (bez zapytania na każdy znak).
@@ -95,7 +96,7 @@ export function HomePage() {
   // „Top 10”: najnowsze materiały, zawężane tematem, grupą źródeł i hasłem z wiersza filtrów.
   const top = useHomeFeed(
     "top10",
-    { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 10 },
+    { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 20 },
     { refetchInterval: 30_000, enabled: !groupEmpty },
   );
   const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
@@ -105,15 +106,31 @@ export function HomePage() {
   const day = useHomeFeed("day-top", { mode: "top", pageSize: 13 }, { refetchInterval: 120_000 });
   const dayArticles = useMemo(() => day.data?.results ?? [], [day.data]);
   const dayEmpty = day.isSuccess && dayArticles.length === 0;
-  const dayFallback = useHomeFeed("day-latest", { mode: "latest", pageSize: 13 }, { enabled: dayEmpty });
-  const leadArticles = dayEmpty ? dayFallback.data?.results ?? [] : dayArticles;
+  // Dopóki wiodące media nie są aktywne (zgody), `mode=top` jest pusty — wtedy dzisiejsze doniesienia
+  // aktywnych źródeł (instytucje publiczne), a gdy dziś jest ich mniej niż 3 — najnowsze materiały.
+  const dayFallback = useHomeFeed("day-latest", { mode: "latest", pageSize: 40 }, { enabled: dayEmpty });
+  const fallbackToday = useMemo(() => {
+    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date());
+    return (dayFallback.data?.results ?? []).filter(
+      (article) => article.published_date && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date(article.published_date)) === today,
+    );
+  }, [dayFallback.data]);
+  const fallbackIsToday = fallbackToday.length >= 3;
+  const leadArticles = dayEmpty ? (fallbackIsToday ? fallbackToday : dayFallback.data?.results ?? []).slice(0, 13) : dayArticles;
+  const leadNote = !dayEmpty
+    ? "Najważniejsze doniesienia dnia z wiodących źródeł"
+    : fallbackIsToday
+      ? "Dzisiejsze doniesienia instytucji publicznych · wiodące media dołączą po zgodach"
+      : "Dziś jeszcze bez nowych doniesień — najnowsze materiały";
 
   useEffect(() => {
     if (q) bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
   }, [q]);
 
-  const leadMain = leadArticles[0] ?? null;
-  const related = leadArticles.slice(1, 13);
+  // Serie niemal identycznych doniesień jednego źródła zwinięte w jeden box („+N podobnych”).
+  const leadCollapsed = useMemo(() => collapseSimilar(leadArticles), [leadArticles]);
+  const leadMain = leadCollapsed[0]?.article ?? null;
+  const related = leadCollapsed.slice(1, 13);
 
   return (
     <>
@@ -145,7 +162,7 @@ export function HomePage() {
             }
           />
           {groupEmpty && sourceGroup ? (
-            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”.</p>
+            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”. {GROUP_EMPTY_HINT}</p>
           ) : null}
           {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeTopic) ? (
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak najnowszych materiałów dla tego wyboru.</p>
@@ -153,7 +170,7 @@ export function HomePage() {
           <HomeTicker articles={latest} loading={top.isPending && !groupEmpty} />
         </div>
         <HomeReveal>
-          <HomeLead main={leadMain} related={related} fallback={dayEmpty} dateLabel={dayLabel} href="/#baza" />
+          <HomeLead main={leadMain} related={related} fallback={dayEmpty && !fallbackIsToday} note={leadNote} dateLabel={dayLabel} href="/#baza" />
         </HomeReveal>
         <HomeReveal>
           <HomeThreads ref={threadsRef} categories={categories} sources={sources} draft={stripDraft} />

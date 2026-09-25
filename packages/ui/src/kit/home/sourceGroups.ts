@@ -32,6 +32,13 @@ export function groupSources(sources: Source[]): Record<SourceGroup, Source[]> {
   return groups;
 }
 
+/** Tylko źródła, z których faktycznie pobieramy materiały — kandydaci (np. media czekające na zgodę) nie mają treści. */
+export function activeSources(sources: Source[]): Source[] {
+  return sources.filter((source) => source.is_active !== false);
+}
+
+export const GROUP_EMPTY_HINT = "Media dołączą po udzieleniu zgód przez wydawców.";
+
 export function parseSourceGroup(value: string | null | undefined): SourceGroup | null {
   return SOURCE_GROUPS.some((group) => group.value === value) ? (value as SourceGroup) : null;
 }

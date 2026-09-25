@@ -9,19 +9,20 @@
 
 import { NewsCard } from "../NewsCard";
 import type { Article } from "../../types";
+import { collapseSimilar } from "./collapseSimilar";
 import { EmptySlot, Strip } from "./Strip";
 
 const SLOTS = 10;
 
 export function HomeTicker({ articles, loading = false }: { articles: Article[]; loading?: boolean }) {
-  const items = articles.slice(0, SLOTS);
+  const items = collapseSimilar(articles).slice(0, SLOTS);
   return (
     <section className="sc-home-ticker" aria-label="Pasek newsowy spin.clinic">
       <Strip label="Pasek newsowy spin.clinic" slot="300px">
         {items.length
-          ? items.map((article) => (
+          ? items.map(({ article, similar }) => (
               <div key={article.id} className="sc-strip__slot">
-                <NewsCard article={article} size="mini" headingLevel={3} />
+                <NewsCard article={article} size="mini" headingLevel={3} similarCount={similar} />
               </div>
             ))
           : Array.from({ length: loading ? 4 : 1 }, (_, index) => (

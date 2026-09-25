@@ -14,18 +14,22 @@ import { Button } from "../Button";
 import { NewsCard } from "../NewsCard";
 import { useMotionTokens } from "../motion/useMotionTokens";
 import type { Article } from "../../types";
+import type { Collapsed } from "./collapseSimilar";
 
 export function HomeLead({
   main,
   related,
   fallback,
+  note,
   dateLabel,
   href,
 }: {
   main: Article | null;
-  related: Article[];
+  related: Collapsed[];
   /** `true` — dziś brak doniesień z wiodących źródeł, pas pokazuje najnowsze materiały. */
   fallback: boolean;
+  /** Podpis pasa: skąd pochodzą doniesienia (wiodące media / instytucje / najnowsze). */
+  note: string;
   /** Np. „piątek, 25 września” — pusty do hydratacji (data liczona po stronie klienta). */
   dateLabel: string;
   href: string;
@@ -42,7 +46,7 @@ export function HomeLead({
             <h2 className="sc-t-title-l sc-home-section__title">Wiadomości dnia</h2>
           </div>
           <div className="sc-home-section__actions">
-            <p className="sc-t-body-s sc-text-2">{fallback ? "Dziś jeszcze bez doniesień z wiodących źródeł — najnowsze materiały" : "Najważniejsze doniesienia dnia z wiodących źródeł"}</p>
+            <p className="sc-t-body-s sc-text-2">{note}</p>
             <Button href={href} variant="quiet" size="sm">
               Zobacz wszystko
             </Button>
@@ -65,9 +69,9 @@ export function HomeLead({
           <div className="sc-home-lead__side">
             <ol className="sc-home-lead__list" role="list" aria-label={fallback ? "Najnowsze materiały" : "Kolejne doniesienia dnia"} tabIndex={0}>
               {related.length
-                ? related.map((article, index) => (
+                ? related.map(({ article, similar }, index) => (
                     <motion.li key={article.id} initial={{ opacity: 0, y: m.rise }} animate={{ opacity: 1, y: 0 }} transition={m.t("ui", { delay: Math.min(index, 6) * m.stagger })}>
-                      <NewsCard article={article} size="mini" headingLevel={4} expandable={false} />
+                      <NewsCard article={article} size="mini" headingLevel={4} expandable={false} similarCount={similar} />
                     </motion.li>
                   ))
                 : [0, 1, 2, 3].map((i) => (

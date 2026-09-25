@@ -26,7 +26,7 @@ import { ChevronDownIcon } from "../icons/ChevronDownIcon";
 import type { CategoryOption } from "../../lib/portal";
 import type { Source } from "../../types";
 import { useHomeInfiniteFeed } from "./data";
-import { groupSources, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
+import { GROUP_EMPTY_HINT, activeSources, groupSources, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
 
 // ---------------------------------------------------------------------------
 // Filtry
@@ -151,7 +151,9 @@ export const HomeBaza = forwardRef<HTMLElement, { categories: CategoryOption[]; 
 
   // Grupa źródeł zawęża listę w filtrach i zakres zapytania; wybrane ręcznie źródła spoza grupy odpadają.
   const scopedSources = useMemo(() => (sourceGroup ? groupSources(sources)[sourceGroup] : sources), [sources, sourceGroup]);
-  const groupEmpty = Boolean(sourceGroup) && sources.length > 0 && scopedSources.length === 0;
+  // Zapytanie idzie tylko po aktywnych źródłach grupy; lista w filtrach pokazuje całą grupę (kandydaci z dopiskiem „katalog”).
+  const groupActiveIds = useMemo(() => activeSources(scopedSources).map((source) => source.id), [scopedSources]);
+  const groupEmpty = Boolean(sourceGroup) && sources.length > 0 && groupActiveIds.length === 0;
   useEffect(() => {
     if (!sourceGroup) return;
     const allowed = new Set(scopedSources.map((source) => source.id));
@@ -165,7 +167,7 @@ export const HomeBaza = forwardRef<HTMLElement, { categories: CategoryOption[]; 
   const feed = useHomeInfiniteFeed("baza", {
     query,
     categories: filters.categories,
-    sources: filters.sources.length ? filters.sources : sourceGroup ? scopedSources.map((source) => source.id) : [],
+    sources: filters.sources.length ? filters.sources : sourceGroup ? groupActiveIds : [],
     platforms: filters.youtube ? ["youtube"] : [],
     pageSize: PAGE_SIZE,
   }, { enabled: !groupEmpty });
@@ -233,7 +235,7 @@ export const HomeBaza = forwardRef<HTMLElement, { categories: CategoryOption[]; 
 
       <div className="sc-home-baza__layout">
         <div ref={scrollRef} className="sc-home-baza__results" tabIndex={0} aria-label="Materiały w Bazie — przewijaj w obrębie sekcji">
-          {groupEmpty && sourceGroup ? <p className="sc-t-body-s sc-text-2">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”.</p> : null}
+          {groupEmpty && sourceGroup ? <p className="sc-t-body-s sc-text-2">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”. {GROUP_EMPTY_HINT}</p> : null}
           {feed.isPending && !groupEmpty ? <p role="status" className="sc-t-body-s sc-text-2">Ładuję materiały…</p> : null}
           {feed.isError ? (
             <p role="alert" className="sc-t-body-s sc-text-2">
