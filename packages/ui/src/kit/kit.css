@@ -3059,3 +3059,25 @@ body { background: var(--sc-bg); color: var(--sc-text); }
 @media (min-width: 900px) {
   .sc-surface__context:has(> .sc-material-details) { align-self: center; width: min(1120px, calc(100vw - 96px)); }
 }
+
+/* === Stage 2: profil osoby publicznej — pionowa oś czasu (25.09) === */
+.sc-pf-axis { list-style: none; margin: var(--sc-s-4) 0 0; padding: 0; display: grid; gap: var(--sc-s-6); }
+.sc-pf-axis__group { display: grid; gap: var(--sc-s-3); }
+.sc-pf-axis__label { margin: 0; font-size: var(--sc-t-title-s-size, 18px); }
+.sc-pf-axis__items { list-style: none; margin: 0; padding: 0 0 0 var(--sc-s-5); display: grid; gap: var(--sc-s-3); border-left: 2px solid var(--sc-line); margin-left: 5px; }
+.sc-pf-axis__item { position: relative; display: grid; gap: 2px; padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface); }
+.sc-pf-axis__item p { margin: 0; }
+.sc-pf-axis__dot { position: absolute; left: calc(-1 * var(--sc-s-5) - 7px); top: var(--sc-s-4); width: 12px; height: 12px; border-radius: 50%; background: var(--sc-surface-3, var(--sc-line)); box-shadow: 0 0 0 3px var(--sc-bg); }
+.sc-pf-axis__item[data-status="current"] .sc-pf-axis__dot { background: var(--sc-accent); }
+.sc-pf-axis__when { color: var(--sc-text-2); font-size: var(--sc-t-meta-size); }
+.sc-pf-axis__title { color: var(--sc-text); font-weight: 600; }
+.sc-pf-axis__link { text-decoration: none; }
+.sc-pf-axis__link:hover { color: var(--sc-accent); }
+.sc-pf-axis__meta { color: var(--sc-text-2); }
+.sc-pf-axis__source { justify-self: start; color: var(--sc-accent); font-size: var(--sc-t-meta-size); text-decoration: none; }
+.sc-pf-axis__source:hover { text-decoration: underline; }
+.sc-pf-axis__month { display: grid; gap: var(--sc-s-2); }
+.sc-pf-axis__month + .sc-pf-axis__month { margin-top: var(--sc-s-3); }
+.sc-pf-axis__month-label { margin: 0; color: var(--sc-accent); font-size: var(--sc-t-meta-size); text-transform: capitalize; }
+.sc-pf-axis__empty { margin: 0; color: var(--sc-text-2); }
+.sc-pf-axis__gaps { margin: var(--sc-s-5) 0 0; padding-left: var(--sc-s-5); color: var(--sc-text-3); font-size: var(--sc-t-meta-size); }
