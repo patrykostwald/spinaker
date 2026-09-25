@@ -5,6 +5,7 @@
  * nitki, `large`), po prawej taśma kolejnych mniejszych boxów (`compact`), razem do pięciu materiałów.
  * Bez opublikowanej nitki — ten sam pas jako zapowiedź z dotychczasowymi napisami (żadnych zmyślonych treści).
  * Pełna nitka (oba układy `ThreadView`) zostaje na stronie `/thread/<slug>`.
+ * Na dole pasa — zapowiedź własnych nitek kontekstowych (faza 2); dziś tworzy je wyłącznie Dr Spin.
  */
 
 import { Button } from "../Button";
@@ -77,6 +78,19 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
             </Strip>
           </div>
         </div>
+
+        {/* Zapowiedź fazy 2: własne nitki kontekstowe użytkowników. */}
+        <aside className="sc-home-drspin__teaser" aria-label="Własne nitki kontekstowe — wkrótce">
+          <div>
+            <p className="sc-t-title-s">Wkrótce: Twoje własne nitki kontekstowe</p>
+            <p className="sc-t-body-s sc-text-2">
+              Dziś nitki kontekstowe układa Dr Spin. W kolejnej fazie zbierzesz boxy w jedną historię — z datami, źródłami i komentarzem — i pokażesz ją innym.
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" disabled>
+            Utwórz nitkę · wkrótce
+          </Button>
+        </aside>
       </div>
     </section>
   );

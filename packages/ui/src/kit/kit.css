@@ -2688,8 +2688,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-home-catbar { margin: 0 0 calc(var(--sc-s-9) * -1 + var(--sc-s-3)); }
 .sc-home-catbar .sc-nav-categories__list { padding-inline: 0; }
 .sc-home-catbar__btn { border: 0; background: transparent; font: inherit; cursor: pointer; }
-.sc-home-ticker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-s-4); }
-.sc-home-ticker > .sc-strip__empty { min-height: 96px; }
 .sc-home-section__title { margin: 0; }
 
 /* Hero */
@@ -2713,12 +2711,10 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-home-footer__bottom a:hover { color: var(--sc-accent); }
 
 @media (max-width: 900px) {
-  .sc-home-ticker { grid-template-columns: 1fr 1fr; }
   .sc-home-lead__grid, .sc-home-band { grid-template-columns: 1fr; }
   .sc-home-topbar__topic { display: none; }
 }
 @media (max-width: 640px) {
-  .sc-home-ticker { grid-template-columns: 1fr; }
   .sc-home-band__form { flex-direction: column; align-items: stretch; }
 }
 
@@ -2999,3 +2995,17 @@ body { background: var(--sc-bg); color: var(--sc-text); }
   .sc-footer[data-sticky] .sc-footer__columns { justify-content: flex-start; }
   .sc-footer[data-sticky] .sc-footer__column { width: 100%; }
 }
+
+/* === Stage 2: Home v5 — pasek newsowy jako taśma, Wiadomości dnia, zapowiedź nitek (25.09) === */
+.sc-home-ticker { display: grid; gap: var(--sc-s-2); grid-template-columns: minmax(0, 1fr); }
+.sc-home-ticker .sc-strip__slot > .sc-strip__empty { min-height: 96px; }
+.sc-home-ticker__hint { margin: 0; }
+.sc-home-drspin__teaser { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); flex-wrap: wrap; padding: var(--sc-s-4); border-radius: var(--sc-r-xl); border: 1px dashed var(--sc-line); }
+.sc-home-drspin__teaser p { margin: 0; }
+.sc-home-drspin__teaser > div { display: grid; gap: var(--sc-s-1); max-width: 70ch; }
+/* Spad taśm (24px) był szerszy niż margines strony poniżej ~1240px (20px) — 4px poziomego scrolla. */
+@media (min-width: 481px) and (max-width: 1240px) {
+  .sc-strip-bleed { margin-inline: calc(var(--sc-s-4) * -1); padding-inline: var(--sc-s-4); }
+}
+/* Pasek newsowy wyrównany do kolumny treści (bez spadu w bok). */
+.sc-home-ticker .sc-strip-bleed { margin-inline: 0; padding-inline: 0; }

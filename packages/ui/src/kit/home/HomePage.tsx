@@ -2,8 +2,9 @@
 
 /**
  * Strona główna na kicie. Kolejność: pasek górny (data · temat dnia) → ilustracja autorska →
- * wiersz filtrów [grupa źródeł · tematy (wyśrodkowane) · hasło] → rząd czterech najnowszych
- * („Top 10”, zawężany tymi filtrami) → Temat dnia → Nitki użytkownika → Dr Spin → Przekaz dnia →
+ * wiersz filtrów [grupa źródeł · tematy (wyśrodkowane) · hasło] → pasek newsowy spin.clinic
+ * (taśma „Top 10”, zawężana tymi filtrami) → Wiadomości dnia (`mode=top`) → Nitki użytkownika
+ * (do 5 własnych pasków) → Dr Spin → Przekaz dnia →
  * pas „Twój przegląd” → Baza (stała wysokość, przewijana w środku) → globalna stopka.
  * Grupa źródeł żyje w adresie (`?zrodla=`), bo ustawiają ją też linki w stopce; zawęża „Top 10” i Bazę.
  * Portal (`PortalProvider` w trybie `path`), szapka i stopka są globalne — `app/providers.tsx`
@@ -24,7 +25,7 @@ import { HomePrzekazDnia } from "./HomePrzekazDnia";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads, type StripDraft } from "./HomeThreads";
 import { HomeTicker } from "./HomeTicker";
-import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed, useTopicOfDay } from "./data";
+import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
 import { SOURCE_GROUPS, SOURCE_GROUP_PARAM, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
 
 function DemoBanner() {
@@ -37,21 +38,22 @@ function DemoBanner() {
   );
 }
 
-function TopBar({ topicLabel }: { topicLabel: string | null }) {
-  const [date, setDate] = useState("");
+function useTodayLabel(options: Intl.DateTimeFormatOptions) {
+  const [label, setLabel] = useState("");
+  const key = JSON.stringify(options);
   useEffect(() => {
-    setDate(new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date()));
-  }, []);
+    setLabel(new Intl.DateTimeFormat("pl-PL", JSON.parse(key)).format(new Date()));
+  }, [key]);
+  return label;
+}
+
+function TopBar() {
+  const date = useTodayLabel({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
   return (
     <div className="sc-home-topbar sc-t-meta">
       <span className="sc-home-topbar__date" suppressHydrationWarning>
         {date}
       </span>
-      {topicLabel ? (
-        <span className="sc-home-topbar__topic">
-          <span className="sc-text-3">Temat dnia:</span> {topicLabel}
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -66,7 +68,6 @@ export function HomePage() {
   const [topQuery, setTopQuery] = useState("");
   const config = useHomeConfig();
   const drSpin = useDrSpinThread();
-  const topic = useTopicOfDay();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [stripDraft, setStripDraft] = useState<StripDraft | null>(null);
   const bazaRef = useRef<HTMLElement | null>(null);
@@ -99,34 +100,26 @@ export function HomePage() {
   );
   const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
 
-  const topicQuery = topic.data?.mode === "automatic" ? topic.data.query : null;
-  const topicFeed = useHomeFeed("topic-of-day", { query: topicQuery ?? "", match: "words", pageSize: 40 }, { enabled: Boolean(topicQuery) });
-  const topicArticles = useMemo(() => topicFeed.data?.results ?? [], [topicFeed.data]);
-  const topicReady = Boolean(topicQuery) && topicArticles.length >= 3;
+  // Wiadomości dnia: dzisiejsze doniesienia z wiodących źródeł (`mode=top`), niezależne od filtrów paska.
+  const dayLabel = useTodayLabel({ weekday: "long", day: "numeric", month: "long" });
+  const day = useHomeFeed("day-top", { mode: "top", pageSize: 13 }, { refetchInterval: 120_000 });
+  const dayArticles = useMemo(() => day.data?.results ?? [], [day.data]);
+  const dayEmpty = day.isSuccess && dayArticles.length === 0;
+  const dayFallback = useHomeFeed("day-latest", { mode: "latest", pageSize: 13 }, { enabled: dayEmpty });
+  const leadArticles = dayEmpty ? dayFallback.data?.results ?? [] : dayArticles;
 
   useEffect(() => {
     if (q) bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
   }, [q]);
 
-  // Temat dnia: kotwica + materiały tematu w kolejności publikacji; bez tematu — najnowsze.
-  const leadMain = topicReady ? topicArticles[0] : latest[0] ?? null;
-  const related = useMemo(
-    () =>
-      topicReady
-        ? topicArticles
-            .slice(1)
-            .filter((a) => a.published_date)
-            .sort((a, b) => new Date(a.published_date!).getTime() - new Date(b.published_date!).getTime())
-            .slice(0, 12)
-        : latest.slice(1, 10),
-    [topicReady, topicArticles, latest],
-  );
+  const leadMain = leadArticles[0] ?? null;
+  const related = leadArticles.slice(1, 13);
 
   return (
     <>
       <div className="sc-home">
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
-        <TopBar topicLabel={topicReady ? topic.data?.label ?? null : null} />
+        <TopBar />
         <DemoBanner />
         <HomeHero />
         <div className="sc-home-top">
@@ -157,10 +150,10 @@ export function HomePage() {
           {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeTopic) ? (
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak najnowszych materiałów dla tego wyboru.</p>
           ) : null}
-          <HomeTicker articles={latest.slice(0, 4)} />
+          <HomeTicker articles={latest} loading={top.isPending && !groupEmpty} />
         </div>
         <HomeReveal>
-          <HomeLead main={leadMain} label={topicReady ? topic.data?.label ?? null : null} related={related} href="/#baza" />
+          <HomeLead main={leadMain} related={related} fallback={dayEmpty} dateLabel={dayLabel} href="/#baza" />
         </HomeReveal>
         <HomeReveal>
           <HomeThreads ref={threadsRef} categories={categories} sources={sources} draft={stripDraft} />

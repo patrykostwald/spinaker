@@ -1,33 +1,42 @@
 "use client";
 
 /**
- * Rząd czterech najnowszych materiałów (`mini`) nad heroem — wzór: pasek „ostatnie wyniki”
- * w referencji. Karty wchodzą kaskadą (`stagger` z tokenów ruchu). Na tablecie 2×2.
+ * Pasek newsowy spin.clinic („Top 10”) — pozioma taśma najnowszych materiałów, przewijana
+ * w prawo/lewo (palcem, kółkiem, strzałkami) na każdej szerokości, także na telefonie.
+ * Zawężają go filtry z wiersza nad nim (grupa źródeł · temat · hasło). Podpis pod taśmą
+ * przedstawia ideę pasków: użytkownik może ustawić do pięciu własnych w „Nitkach użytkownika”.
  */
 
-import { motion } from "framer-motion";
 import { NewsCard } from "../NewsCard";
-import { useMotionTokens } from "../motion/useMotionTokens";
 import type { Article } from "../../types";
-import { EmptySlot } from "./Strip";
+import { EmptySlot, Strip } from "./Strip";
 
-export function HomeTicker({ articles }: { articles: Article[] }) {
-  const m = useMotionTokens();
-  const slots = Array.from({ length: 4 }, (_, i) => articles[i] ?? null);
+const SLOTS = 10;
+
+export function HomeTicker({ articles, loading = false }: { articles: Article[]; loading?: boolean }) {
+  const items = articles.slice(0, SLOTS);
   return (
-    <section className="sc-home-ticker" aria-label="Najnowsze materiały">
-      {slots.map((article, index) => (
-        <motion.div
-          key={article?.id ?? `empty-${index}`}
-          className="sc-home-ticker__cell"
-          initial={{ opacity: 0, y: m.rise }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "0px 0px -8% 0px" }}
-          transition={m.t("ui", { delay: index * m.stagger })}
-        >
-          {article ? <NewsCard article={article} size="mini" headingLevel={3} /> : <EmptySlot index={index + 1} label="Najnowszy materiał" />}
-        </motion.div>
-      ))}
+    <section className="sc-home-ticker" aria-label="Pasek newsowy spin.clinic">
+      <Strip label="Pasek newsowy spin.clinic" slot="300px">
+        {items.length
+          ? items.map((article) => (
+              <div key={article.id} className="sc-strip__slot">
+                <NewsCard article={article} size="mini" headingLevel={3} />
+              </div>
+            ))
+          : Array.from({ length: loading ? 4 : 1 }, (_, index) => (
+              <div key={index} className="sc-strip__slot">
+                <EmptySlot index={index + 1} label={loading ? "Ładuję…" : "Brak materiałów"} />
+              </div>
+            ))}
+      </Strip>
+      <p className="sc-t-body-s sc-text-2 sc-home-ticker__hint">
+        To pasek newsowy spin.clinic. Możesz ustawić do pięciu własnych — po źródłach, kategorii lub haśle —{" "}
+        <a href="#nitki" className="sc-home-linkbtn">
+          w Nitkach użytkownika
+        </a>
+        .
+      </p>
     </section>
   );
 }
