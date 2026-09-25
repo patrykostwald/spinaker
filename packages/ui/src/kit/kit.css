@@ -3360,3 +3360,55 @@ html[data-theme="light"] .sc-home-person__mono { background: linear-gradient(135
 .sc-onas-terms dt { color: var(--sc-text); font-weight: 600; margin-bottom: var(--sc-s-1); }
 .sc-onas-terms dd { color: var(--sc-text-2); line-height: 1.6; }
 @media (max-width: 760px) { .sc-onas-parts, .sc-onas-terms { grid-template-columns: minmax(0, 1fr); } }
+/* === Strona główna — poprawki UX 26.09 === */
+/* Duża karta bez zdjęcia: układ tekstowy na powierzchni zamiast wielkiego pola zastępczego z białym tytułem
+   (w jasnym motywie biały tytuł na jasnym tle był nieczytelny). Pas z inicjałami źródła zostaje jako akcent. */
+.sc-card[data-size="large"][data-no-image] { aspect-ratio: auto; }
+.sc-card[data-size="large"][data-no-image] .sc-card__media { position: relative; inset: auto; height: 120px; }
+.sc-card[data-size="large"][data-no-image] .sc-card__body { margin-top: 0; padding: var(--sc-s-5) var(--sc-s-6) var(--sc-s-6); color: var(--sc-text); }
+.sc-card[data-size="large"][data-no-image] .sc-card__link,
+.sc-card[data-size="large"][data-no-image] .sc-card__meta,
+.sc-card[data-size="large"][data-no-image] .sc-card__description { color: inherit; filter: none; }
+.sc-card[data-size="large"][data-no-image] .sc-card__meta,
+.sc-card[data-size="large"][data-no-image] .sc-card__description { color: var(--sc-text-2); }
+.sc-card[data-size="large"][data-no-image] .sc-card__mono { font-size: 44px; }
+
+/* Taśmy: bez stałego paska przewijania. Przewijanie kółkiem, palcem, strzałkami po bokach (po najechaniu)
+   i klawiaturą; krawędzie wygaszają się, gdy jest dalsza treść. */
+.sc-strip__scroller { scrollbar-width: none; padding-block: 2px; }
+.sc-strip__scroller::-webkit-scrollbar { display: none; }
+.sc-strip[data-more-start] .sc-strip__scroller { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 48px); mask-image: linear-gradient(to right, transparent 0, #000 48px); }
+.sc-strip[data-more-end] .sc-strip__scroller { -webkit-mask-image: linear-gradient(to left, transparent 0, #000 48px); mask-image: linear-gradient(to left, transparent 0, #000 48px); }
+.sc-strip[data-more-start][data-more-end] .sc-strip__scroller { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 48px, #000 calc(100% - 48px), transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 48px, #000 calc(100% - 48px), transparent 100%); }
+.sc-strip__arrows { position: absolute; inset: 0; top: 0; right: auto; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 2; }
+.sc-strip__arrows > * { pointer-events: auto; background: var(--sc-surface); box-shadow: var(--sc-e-2), var(--sc-ring); border-radius: 999px; }
+.sc-strip:not([data-more-start]) .sc-strip__arrows > :first-child,
+.sc-strip:not([data-more-end]) .sc-strip__arrows > :last-child { visibility: hidden; }
+
+/* Pasek newsowy: większe boxy — szerszy slot, większy tytuł do trzech linii, większa miniatura. */
+.sc-home-ticker .sc-card[data-size="mini"] { gap: var(--sc-s-4); padding: var(--sc-s-4); min-height: 128px; }
+.sc-home-ticker .sc-card[data-size="mini"] .sc-card__media { width: 80px; height: 80px; }
+.sc-home-ticker .sc-card[data-size="mini"] .sc-card__link { -webkit-line-clamp: 3; font-size: var(--sc-t-title-s-size); line-height: 1.3; }
+/* Pas powitalny na ilustracji — niski, z tekstem po lewej na wygaszonym tle. */
+.sc-home-intro { position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); min-height: 120px; padding: var(--sc-s-5) var(--sc-s-6); border-radius: var(--sc-r-xl); overflow: hidden; isolation: isolate; box-shadow: var(--sc-ring); }
+.sc-home-intro__art { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; }
+.sc-home-intro::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, var(--sc-bg) 0%, color-mix(in srgb, var(--sc-bg) 82%, transparent) 38%, color-mix(in srgb, var(--sc-bg) 10%, transparent) 72%, transparent 100%); }
+.sc-home-intro__content { display: grid; gap: var(--sc-s-2); max-width: 36rem; }
+.sc-home-intro__title { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-m-size); line-height: 1.3; font-weight: var(--sc-w-title); }
+.sc-home-intro__title span { color: var(--sc-text-2); }
+.sc-home-intro__links { display: flex; flex-wrap: wrap; gap: var(--sc-s-4); margin: 0; font-size: var(--sc-t-body-s-size); font-weight: 600; }
+.sc-home-intro__links a { color: var(--sc-accent); text-decoration: none; }
+.sc-home-intro__links a:hover { text-decoration: underline; }
+.sc-home-intro__actions { display: flex; align-items: center; gap: var(--sc-s-2); align-self: flex-start; }
+.sc-home-intro__actions > :last-child { background: color-mix(in srgb, var(--sc-bg) 70%, transparent); }
+@media (max-width: 640px) {
+  .sc-home-intro { align-items: flex-start; padding: var(--sc-s-4); min-height: 0; }
+  .sc-home-intro::before { background: color-mix(in srgb, var(--sc-bg) 80%, transparent); }
+  .sc-home-intro__title { font-size: var(--sc-t-body-size); }
+  .sc-home-intro__actions > :first-child { display: none; }
+}
+/* Zapowiedź Kliniki na stronie głównej. */
+.sc-home-clinic__body { display: grid; gap: var(--sc-s-3); container-type: inline-size; }
+.sc-home-clinic__scale { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-home-clinic__scale strong { color: var(--sc-text); }
+.sc-home-clinic__empty { margin: 0; max-width: 65ch; }

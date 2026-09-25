@@ -457,6 +457,7 @@ export function NewsCard({
         data-stage={stage}
         data-layout={size === "large" ? layout : undefined}
         data-has-action={action || grown ? "" : undefined}
+        data-no-image={article.image_url?.trim() ? undefined : ""}
         data-expandable={expandable || undefined}
         className="sc-card sc-hoverable"
         layout={!collapsing}

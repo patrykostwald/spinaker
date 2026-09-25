@@ -17,7 +17,7 @@ export function HomeTicker({ articles, loading = false }: { articles: Article[];
   const items = collapseSimilar(articles).slice(0, SLOTS);
   return (
     <section className="sc-home-ticker" aria-label="Pasek newsowy spin.clinic">
-      <Strip label="Pasek newsowy spin.clinic" slot="300px">
+      <Strip label="Pasek newsowy spin.clinic" slot="360px">
         {items.length
           ? items.map(({ article, similar }) => (
               <div key={article.id} className="sc-strip__slot">

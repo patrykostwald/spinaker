@@ -153,9 +153,9 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
   const rows = useMemo(() => strips.map((strip) => ({ id: strip.id, title: strip.label, strip })), [strips]);
 
   return (
-    <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Nitki użytkownika">
+    <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Twoje nitki newsowe">
       <header className="sc-home-section__head">
-        <h2 className="sc-t-title-l sc-home-section__title">Nitki użytkownika</h2>
+        <h2 className="sc-t-title-l sc-home-section__title">Twoje nitki newsowe</h2>
         <p className="sc-t-meta sc-text-2" aria-live="polite">
           {strips.length} / {MAX_PERSONAL_STRIPS}
         </p>
