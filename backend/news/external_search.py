@@ -9,6 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.html import strip_tags
 from rest_framework.decorators import api_view
+from news.schema import json_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from news.models import Source, ArchiveJob, ImportState, ArticleCategory
@@ -72,6 +73,7 @@ def match_source(url, sources):
     return None
 
 
+@json_view("Wyszukiwanie zewnętrzne (redakcja)", tags=["redakcja"])
 @api_view(['GET'])
 def external_search(request):
     query = request.query_params.get('q', '').strip()

@@ -17,6 +17,7 @@ from news.models import ImportState, Article, AIResearchCall
 from news.serializers import ArticleSerializer
 from scraper.utils import safe_url
 from scraper.queue import enqueue_requested_url
+from news.schema import json_view
 
 LIMITATION = 'Analiza AI, niezatwierdzona przez redakcję. Odnośniki pochodzą z wyszukiwania; nie oznacza to odczytania całych artykułów ani potwierdzenia wszystkich twierdzeń. Wyniki mogą być niepełne lub błędne.'
 RULES = '''Jesteś dr Spin, narzędzie wyszukiwania kontekstu. Odpowiadaj po polsku, rzeczowo.
@@ -194,6 +195,7 @@ def validate_result(result, sources):
         raise ResearchError()
     return {'sections': sections, 'sources': list(references.values())}
 
+@json_view("Research AI dla redakcji", tags=["redakcja"])
 class AIResearchView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ResearchAnonThrottle, ResearchUserThrottle]

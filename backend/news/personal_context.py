@@ -13,6 +13,8 @@ from news.account_models import (
 from news.accounts import AccountWriteThrottle
 from news.models import Article, ArticleCategory, Source
 from news.topics import TOPICS
+from news.schema import json_view
+from drf_spectacular.utils import extend_schema, extend_schema_view
 
 
 def article_favorite_data(row):
@@ -29,6 +31,7 @@ class ArticleFavoriteInput(serializers.Serializer):
     article_id = serializers.IntegerField(min_value=1)
 
 
+@json_view("Ulubione materiały", tags=["konto"])
 class ArticleFavoritesView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -46,6 +49,7 @@ class ArticleFavoritesView(APIView):
         return Response(article_favorite_data(row), status=201 if created else 200)
 
 
+@json_view("Ulubiony materiał", tags=["konto"])
 class ArticleFavoriteDetailView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -112,6 +116,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         return instance
 
 
+@json_view("Prywatne nitki kontekstowe", tags=["konto"])
 class PersonalContextThreadsView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -128,6 +133,8 @@ class PersonalContextThreadsView(APIView):
         return Response(PersonalContextThreadSerializer(instance).data, status=201)
 
 
+@json_view("Prywatna nitka kontekstowa", tags=["konto"])
+@extend_schema_view(get=extend_schema(operation_id="account_context_threads_detail_retrieve"))
 class PersonalContextThreadDetailView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -163,6 +170,7 @@ class CommentReportInput(serializers.Serializer):
         return attrs
 
 
+@json_view("Zgłoszenia komentarzy", tags=["reakcje"])
 class CommentReportsView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]

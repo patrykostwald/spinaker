@@ -15,6 +15,7 @@ from news.usage_gate import effective_uses
 from news.selection_provider import (MistralEUSelectionProvider,
                                      OpenAIResponsesSelectionProvider,
                                      SelectionProviderError)
+from news.schema import json_view
 
 LIMITATION = ('Szkic AI na podstawie zapisanych metadanych. Nie jest weryfikacją twierdzeń '
               'ani dowodem związku przyczynowego. Wymaga sprawdzenia przez redakcję.')
@@ -87,6 +88,7 @@ def select_ids(topic, articles, provider):
     return provider.select(topic, candidates)
 
 
+@json_view("Szkic nitki redakcyjnej (AI)", tags=["redakcja"])
 class EditorialDraftView(APIView):
     permission_classes = [IsAdminUser]
     throttle_classes = [DraftThrottle]

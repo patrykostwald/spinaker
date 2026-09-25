@@ -6,12 +6,14 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from rest_framework.decorators import api_view
+from news.schema import json_view
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from news.models import ImportState, Source
 from news.serializers import ArticleSerializer
 from scraper.utils import upsert_article
 
+@json_view("Wyszukiwanie w YouTube (redakcja)", tags=["redakcja"])
 @api_view(['GET', 'POST'])
 def search_youtube(request):
     enabled = settings.YOUTUBE_ENABLED and bool(settings.YOUTUBE_API_KEY)

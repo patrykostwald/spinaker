@@ -25,6 +25,7 @@ from news.external_search import allowed_sources, match_source
 from news.models import AIResearchCall, ImportState
 from scraper.queue import enqueue_requested_url
 from scraper.utils import safe_url
+from news.schema import json_view
 
 
 class DuplicateRequest(APIException):
@@ -157,6 +158,7 @@ def stream_research(query, mode, sources):
     yield sse('done', {'status': 'completed' if complete else 'error'})
 
 
+@json_view("Research AI — strumień (SSE)", tags=["redakcja"])
 class AIResearchStreamView(AIResearchView):
     def reserve(self, request):
         try:
@@ -195,6 +197,7 @@ class SourcesUserThrottle(UserRateThrottle):
     rate = "480/hour"
 
 
+@json_view("Research AI — źródła", tags=["redakcja"])
 class AIResearchSourcesView(AIResearchView):
     """Read-only publisher metadata refresh. No provider or daily budget reservation."""
     throttle_classes = [SourcesAnonThrottle, SourcesUserThrottle]

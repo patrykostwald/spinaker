@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from news.accounts import AccountWriteThrottle, OpinionSerializer, OpinionReadThrottle
 from news.account_models import ProfilePreference, ThreadFavorite, ArticleOpinion
 from news.models import Thread
+from news.schema import json_view
 
 
 def paginate(request, rows, serialize):
@@ -38,6 +39,7 @@ class ProfileInput(serializers.Serializer):
         return attrs
 
 
+@json_view("Profil użytkownika", tags=["konto"])
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -61,6 +63,7 @@ class ProfileView(APIView):
         return self.get(request)
 
 
+@json_view("Historia przeglądania", tags=["konto"])
 class HistoryView(ProfileView):
     def get(self, request):
         return Response(history(request, request.user))
@@ -68,6 +71,7 @@ class HistoryView(ProfileView):
         return Response(status=405)
 
 
+@json_view("Publiczna aktywność profilu", tags=["konto"])
 class PublicActivityView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
@@ -86,6 +90,7 @@ class FavoriteInput(serializers.Serializer):
     thread_id = serializers.IntegerField(min_value=1)
 
 
+@json_view("Ulubione nitki", tags=["konto"])
 class FavoritesView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -105,6 +110,7 @@ class FavoritesView(APIView):
         return Response(favorite_data(row), status=201 if created else 200)
 
 
+@json_view("Ulubiona nitka", tags=["konto"])
 class FavoriteDetailView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]

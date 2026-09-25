@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from news.models import Source, SourceType, ArchiveJob, ImportState
+from news.schema import json_view
 
 
 def domain_key(value):
@@ -171,6 +172,7 @@ class CatalogAccess(APIView):
     authentication_classes = [SessionAuthentication]
 
 
+@json_view("Katalog źródeł (redakcja)", tags=["redakcja"])
 class SourceCatalogList(CatalogAccess):
     def get(self, request):
         data = SourceCatalogSerializer(catalog_queryset(), many=True,
@@ -189,6 +191,7 @@ class SourceCatalogList(CatalogAccess):
         return Response(serialize_source(source.pk), status=201)
 
 
+@json_view("Karta źródła (redakcja)", tags=["redakcja"])
 class SourceCatalogDetail(CatalogAccess):
     def patch(self, request, source_id):
         source = get_object_or_404(Source, pk=source_id)
@@ -217,6 +220,7 @@ def csv_cell(value):
     return "'" + value if value.lstrip().startswith(('=', '+', '-', '@')) or value.startswith(('\t', '\r')) else value
 
 
+@json_view("Eksport katalogu źródeł (redakcja)", tags=["redakcja"])
 class SourceCatalogExport(CatalogAccess):
     def get(self, request):
         buffer = io.StringIO(newline='')

@@ -30,6 +30,8 @@ from news.account_models import ArticleOpinion, ThreadOpinion, SavedTopic, UserX
 from news.models import Article, ArticleCategory, Source, Thread
 from news.topics import TOPICS
 from news.editorial_roles import role_data
+from news.schema import json_view
+from drf_spectacular.utils import extend_schema, extend_schema_view
 
 
 def user_data(user):
@@ -71,6 +73,7 @@ class RegistrationInput(serializers.Serializer):
 
 
 @method_decorator(csrf_protect, name='dispatch')
+@json_view("Rejestracja konta", tags=["konto"])
 class RegisterView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AccountIPThrottle, AccountNameThrottle]
@@ -94,6 +97,7 @@ class LoginInput(serializers.Serializer):
 
 
 @method_decorator(csrf_protect, name='dispatch')
+@json_view("Logowanie", tags=["konto"])
 class LoginView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AccountIPThrottle, AccountNameThrottle]
@@ -109,6 +113,7 @@ class LoginView(APIView):
 
 
 @method_decorator(csrf_protect, name='dispatch')
+@json_view("Wylogowanie", tags=["konto"])
 class LogoutView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -117,6 +122,7 @@ class LogoutView(APIView):
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
+@json_view("Bieżące konto", tags=["konto"])
 class AccountMeView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
@@ -125,6 +131,7 @@ class AccountMeView(APIView):
                          'csrfToken': get_token(request)})
 
 
+@json_view("Połączenie z kontem X", tags=["konto"])
 class XConnectionView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -139,6 +146,7 @@ class XConnectionView(APIView):
         return Response(status=204)
 
 
+@json_view("Rozpoczęcie łączenia z X", tags=["konto"])
 class XConnectionStartView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
@@ -153,6 +161,7 @@ class XConnectionStartView(APIView):
         return HttpResponseRedirect('https://twitter.com/i/oauth2/authorize?' + urlencode(params))
 
 
+@json_view("Powrót z autoryzacji X", tags=["konto"])
 class XConnectionCallbackView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
@@ -194,6 +203,7 @@ class AccountWriteThrottle(UserRateThrottle):
     rate = '120/hour'
 
 
+@json_view("Paski tematów użytkownika", tags=["konto"])
 class TopicsView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -216,6 +226,8 @@ class TopicsView(APIView):
         return Response(serializer.data, status=201)
 
 
+@json_view("Pasek tematu użytkownika", tags=["konto"])
+@extend_schema_view(get=extend_schema(operation_id="account_topics_detail_retrieve"), post=extend_schema(operation_id="account_topics_detail_create"))
 class TopicDetailView(TopicsView):
     def get(self, request, topic_id):
         return Response(TopicSerializer(get_object_or_404(SavedTopic, pk=topic_id, owner=request.user)).data)
@@ -270,6 +282,7 @@ class OpinionReadThrottle(AnonRateThrottle):
     rate = '300/hour'
 
 
+@json_view("Reakcje i komentarze do materiału (przydatne / nieprzydatne)", tags=["reakcje"])
 class OpinionsView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
@@ -334,6 +347,7 @@ class ThreadOpinionSerializer(serializers.ModelSerializer):
         return {'id': opinion.user_id, 'username': opinion.user.username}
 
 
+@json_view("Reakcje i komentarze do nitki kontekstowej", tags=["reakcje"])
 class ThreadOpinionsView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
