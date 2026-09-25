@@ -177,6 +177,10 @@ class PublicFigure(models.Model):
         help_text='Opcjonalne, ręcznie sprawdzone połączenie z mandatem. Nie jest ustalane po nazwisku.')
     archived = models.BooleanField(default=False, db_index=True,
         help_text='Wpis archiwalny pozostaje w rejestrze i nie jest usuwany.')
+    merged_into = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='merged_profiles',
+        help_text='Potwierdzone przez redakcję połączenie z profilem tej samej osoby. Połączony wpis '
+                  'pozostaje archiwalny także po synchronizacji rosterów; jego role trafiają do profilu docelowego.')
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 

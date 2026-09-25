@@ -36,6 +36,10 @@ class Command(BaseCommand):
         now = timezone.now()
         with transaction.atomic():
             for row in rows:
+                # Profil połączony przez redakcję z profilem tej samej osoby (merge_public_figure_profiles)
+                # zostaje archiwalny; urząd i rola trafiają do profilu docelowego.
+                merged = existing.get(row.import_key)
+                merged_target = merged.merged_into if merged is not None and merged.merged_into_id else None
                 figure, _ = PublicFigure.objects.update_or_create(import_key=row.import_key, defaults={
                     'canonical_name': row.canonical_name,
                     'role_category': 'government',
@@ -46,8 +50,9 @@ class Command(BaseCommand):
                     'evidence_url': row.source_url,
                     'evidence_note': 'Aktualny skład Rady Ministrów wskazany przez KPRM.',
                     'source_checked_at': now,
-                    'archived': False,
+                    'archived': merged_target is not None,
                 })
+                holder = merged_target or figure
                 office_key = cabinet_office_import_key(row.role_title)
                 public_office, _ = PublicOffice.objects.update_or_create(
                     import_key=office_key,
@@ -57,18 +62,18 @@ class Command(BaseCommand):
                         'organisation': 'Rada Ministrów',
                         'official_roster_url': row.source_url,
                         'evidence_note': 'Aktualny skład Rady Ministrów wskazany przez KPRM.',
-                        'current_holder': figure,
+                        'current_holder': holder,
                         'source_checked_at': now,
                         'archived': False,
                     },
                 )
                 PublicFigureRole.objects.filter(public_office=public_office,
-                    status='current', archived=False).exclude(public_figure=figure).update(
+                    status='current', archived=False).exclude(public_figure=holder).update(
                         status='former', source_checked_at=now)
                 PublicFigureRole.objects.update_or_create(
                     import_key=f'{office_key}:holder:{figure.import_key}',
                     defaults={
-                        'public_figure': figure,
+                        'public_figure': holder,
                         'public_office': public_office,
                         'role_category': 'government',
                         'role_title': row.role_title,
