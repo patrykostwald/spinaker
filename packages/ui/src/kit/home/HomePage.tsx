@@ -4,7 +4,7 @@
  * Strona główna na kicie. Kolejność: pasek górny (data · temat dnia) → ilustracja autorska →
  * wiersz filtrów [grupa źródeł · tematy (wyśrodkowane) · hasło] → pasek newsowy spin.clinic
  * (taśma „Top 10”, zawężana tymi filtrami) → Wiadomości dnia (`mode=top`) → Nitki użytkownika
- * (do 5 własnych pasków) → Dr Spin → Przekaz dnia →
+ * (do 5 własnych pasków) → Dr. Spin → Przekaz dnia →
  * Baza (stała wysokość, przewijana w środku) → globalna stopka.
  * Grupa źródeł żyje w adresie (`?zrodla=`), bo ustawiają ją też linki w stopce; zawęża „Top 10” i Bazę.
  * Portal (`PortalProvider` w trybie `path`), szapka i stopka są globalne — `app/providers.tsx`

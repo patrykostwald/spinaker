@@ -158,7 +158,7 @@ export default function AboutPage() {
             <p>Redaktor wybiera materiały, ustala kolejność, pisze opis i zatwierdza publikację.</p>
           </li>
         </ol>
-        <p className="sc-about-note">Krok 2 wykonuje program i nie wyciąga wniosków. Krok 3 jest pracą redakcji — tylko on trafia na stronę jako nitka Dr Spina.</p>
+        <p className="sc-about-note">Krok 2 wykonuje program i nie wyciąga wniosków. Krok 3 jest pracą redakcji — tylko on trafia na stronę jako nitka Dr. Spina.</p>
       </section>
 
       <section id="fazy" className="sc-about-section" aria-labelledby="onas-phases">
@@ -177,7 +177,7 @@ export default function AboutPage() {
               'źródła: oficjalne API instytucji, RSS, BIP, Sejm, ELI, opisy filmów z YouTube (bez transkrypcji) oraz wpisy z X — wyłącznie przez oficjalne płatne API, w pilotażu z ręcznie potwierdzonych kont',
               'Temat dnia — automatycznie powiązane materiały ułożone chronologicznie',
               'Baza — wyszukiwanie po haśle, źródle, kategorii i dacie',
-              'Dr Spin — nitki układane ręcznie przez redakcję',
+              'Dr. Spin — nitki układane ręcznie przez redakcję',
               'katalog źródeł i prosty kontekst po otwarciu boxa',
             ]} />
             <p className="sc-about-phase-limit"><span>W trakcie udostępniania:</span> konta użytkowników, prywatne nitki, komentarze i reakcje. Wyszukiwanie po znaczeniu pozostaje planem pilotażu. Baza jest w trakcie uzupełniania i nie obejmuje wszystkich źródeł.</p>
@@ -200,7 +200,7 @@ export default function AboutPage() {
           <section className="sc-about-phase" aria-labelledby="onas-phase-3">
             <header>
               <p className="sc-about-phase-status">FAZA III · PLAN</p>
-              <h3 id="onas-phase-3">Asystent redakcyjny Dr Spin</h3>
+              <h3 id="onas-phase-3">Asystent redakcyjny Dr. Spin</h3>
             </header>
             <p>Asystent redakcyjny oparty na modelach open-weight. Zaczynamy od usług zewnętrznych:</p>
             <PhaseList items={[

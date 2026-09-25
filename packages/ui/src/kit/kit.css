@@ -3105,3 +3105,16 @@ html[data-theme="light"] .sc-card__placeholder[data-kind] { background: linear-g
 
 /* Taśmy bez spadu: pasek przewijania kilka pikseli pod kartami. */
 .sc-strip__scroller { padding-bottom: var(--sc-s-2); }
+
+/* === Stage 2: Baza — kategoria „Osoby publiczne”, stopka z samymi linkami (25.09) === */
+.sc-home-people > li { display: flex; min-width: 0; }
+.sc-home-person { flex: 1 1 auto; display: flex; align-items: flex-start; gap: var(--sc-s-3); min-width: 0; padding: var(--sc-s-3); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: var(--sc-e-1); color: var(--sc-text); text-decoration: none; transition: box-shadow var(--sc-dur-base) var(--sc-ease-standard); }
+.sc-home-person:hover { box-shadow: var(--sc-e-1), 0 0 0 1px var(--sc-accent); }
+.sc-home-person:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+.sc-home-person__mono { flex: none; display: grid; place-items: center; width: 64px; height: 64px; border-radius: var(--sc-r-lg); background: linear-gradient(135deg, hsl(212 40% 22%), hsl(212 40% 13%)); color: hsl(212 70% 80%); font: 700 20px/1 var(--sc-font-sans); letter-spacing: 0.04em; }
+html[data-theme="light"] .sc-home-person__mono { background: linear-gradient(135deg, hsl(212 55% 93%), hsl(212 55% 85%)); color: hsl(212 60% 30%); }
+.sc-home-person__body { display: grid; gap: 2px; min-width: 0; }
+.sc-home-person__name { overflow-wrap: anywhere; }
+.sc-home-person__role { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+/* Stopka: same linki (bez nagłówków kolumn — zostają dla czytników jako etykieta nawigacji). */
+.sc-footer[data-sticky] .sc-footer__column-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

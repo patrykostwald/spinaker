@@ -26,6 +26,7 @@ import { ChevronDownIcon } from "../icons/ChevronDownIcon";
 import { CATEGORY_GROUPS, expandCategories } from "../../lib/categoryGroups";
 import type { Source } from "../../types";
 import { useHomeInfiniteFeed } from "./data";
+import { HomePeople, usePeople } from "./HomePeople";
 import { GROUP_EMPTY_HINT, activeSources, groupSources, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
 
 // ---------------------------------------------------------------------------
@@ -43,6 +44,8 @@ const GROUP_LABELS = { top: "Top media", media: "Media", publiczne: "Publiczne" 
 
 type FiltersState = {
   categories: string[];
+  /** Tryb „Osoby publiczne”: siatka profili zamiast materiałów (wyklucza kategorie materiałów). */
+  people: boolean;
   sources: number[];
   youtube: boolean;
   period: string;
@@ -84,11 +87,20 @@ function FiltersPanel({
 
   return (
     <div className="sc-home-filters">
-      <FilterGroup title="Kategorie" summary={state.categories.length ? String(state.categories.length) : "wszystkie"} defaultOpen>
-        {/* Osiem grup (alfabetycznie) zamiast 18 kategorii backendu; stan trzyma klucze grup. */}
-        {CATEGORY_GROUPS.map((group) => (
-          <Checkbox key={group.key} label={group.label} checked={state.categories.includes(group.key)} onChange={() => onChange({ ...state, categories: toggle(state.categories, group.key) })} />
-        ))}
+      <FilterGroup title="Kategorie" summary={state.people ? "osoby publiczne" : state.categories.length ? String(state.categories.length) : "wszystkie"} defaultOpen>
+        {/* Osiem grup materiałów + „Osoby publiczne” (rejestr profili), alfabetycznie; osoby wykluczają materiały. */}
+        {CATEGORY_ENTRIES.map((entry) =>
+          entry.key === PEOPLE_KEY ? (
+            <Checkbox key={entry.key} label={entry.label} checked={state.people} onChange={() => onChange({ ...state, people: !state.people, categories: [] })} />
+          ) : (
+            <Checkbox
+              key={entry.key}
+              label={entry.label}
+              checked={!state.people && state.categories.includes(entry.key)}
+              onChange={() => onChange({ ...state, people: false, categories: toggle(state.categories, entry.key) })}
+            />
+          ),
+        )}
       </FilterGroup>
 
       <FilterGroup title="Źródła" summary={state.sources.length ? String(state.sources.length) : "wszystkie"}>
@@ -116,7 +128,7 @@ function FiltersPanel({
       <FilterGroup title="Platformy" summary={state.youtube ? "YouTube" : "wszystkie"}>
         <Switch label="YouTube · materiały wideo" checked={state.youtube} onChange={(checked) => onChange({ ...state, youtube: checked })} />
         <p className="sc-t-body-s sc-text-2">
-          <strong>X</strong> · posty polityków przechodzą najpierw przez redakcyjny przegląd Dr Spina.
+          <strong>X</strong> · posty polityków przechodzą najpierw przez redakcyjny przegląd Dr. Spina.
         </p>
       </FilterGroup>
 
@@ -138,7 +150,19 @@ function FiltersPanel({
 // ---------------------------------------------------------------------------
 
 const PAGE_SIZE = 30;
-const EMPTY_FILTERS: FiltersState = { categories: [], sources: [], youtube: false, period: "all" };
+const EMPTY_FILTERS: FiltersState = { categories: [], people: false, sources: [], youtube: false, period: "all" };
+const PEOPLE_KEY = "osoby-publiczne";
+
+/** „1 osoba”, „2 osoby”, „5 osób”, „22 osoby”. */
+function peopleLabel(count: number): string {
+  if (count === 1) return "osoba";
+  const units = count % 10;
+  const tens = count % 100;
+  return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? "osoby" : "osób";
+}
+const CATEGORY_ENTRIES = [...CATEGORY_GROUPS.map((group) => ({ key: group.key, label: group.label })), { key: PEOPLE_KEY, label: "Osoby publiczne" }].sort((a, b) =>
+  a.label.localeCompare(b.label, "pl"),
+);
 
 export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuery: string; sourceGroup?: SourceGroup | null }>(
   function HomeBaza({ sources, initialQuery, sourceGroup = null }, ref) {
@@ -169,7 +193,9 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
     sources: filters.sources.length ? filters.sources : sourceGroup ? groupActiveIds : [],
     platforms: filters.youtube ? ["youtube"] : [],
     pageSize: PAGE_SIZE,
-  }, { enabled: !groupEmpty });
+  }, { enabled: !groupEmpty && !filters.people });
+  const people = usePeople(query, filters.people);
+  const peopleTotal = people.data?.pages[0]?.count ?? 0;
 
   const allArticles = useMemo(
     () => [...new Map((feed.data?.pages.flatMap((page) => page.results) ?? []).map((article) => [article.id, article])).values()],
@@ -182,7 +208,7 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
     return allArticles.filter((article) => article.published_date && new Date(article.published_date).getTime() >= cutoff);
   }, [allArticles, periodHours]);
 
-  const activeCount = filters.categories.length + filters.sources.length + (filters.youtube ? 1 : 0) + (filters.period !== "all" ? 1 : 0);
+  const activeCount = (filters.people ? 1 : 0) + filters.categories.length + filters.sources.length + (filters.youtube ? 1 : 0) + (filters.period !== "all" ? 1 : 0);
   const total = feed.data?.pages[0]?.total ?? articles.length;
   const sourcesNote = filters.sources.length
     ? `Wybrane źródła: ${filters.sources.length}`
@@ -213,19 +239,38 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
       <header className="sc-home-baza__bar">
         <div className="sc-home-baza__title">
           <h2 className="sc-t-title-l sc-home-section__title">Baza</h2>
-          <p className="sc-t-body-s sc-text-2">Przeszukaj wszystkie materiały w bazie</p>
         </div>
         <form className="sc-home-baza__search" role="search" onSubmit={(event) => event.preventDefault()}>
-          <SearchField value={query} onChange={setQuery} placeholder="Szukaj w bazie…" label="Szukaj w bazie" resultsCount={query ? total : undefined} />
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder={filters.people ? "Szukaj osoby publicznej…" : "Szukaj w bazie…"}
+            label={filters.people ? "Szukaj osoby publicznej" : "Szukaj w bazie"}
+            resultsCount={query ? (filters.people ? peopleTotal : total) : undefined}
+          />
         </form>
         <div className="sc-home-baza__latest">
-          <h3 className="sc-t-title-s">
-            Najnowsze materiały{" "}
-            <span className="sc-t-meta sc-text-2 sc-home-baza__count">
-              <MorphValue value={total} /> {total === 1 ? "materiał" : "materiałów"}
-            </span>
-          </h3>
-          <p className="sc-t-body-s sc-text-2">{sourcesNote} · od najnowszej publikacji</p>
+          {filters.people ? (
+            <>
+              <h3 className="sc-t-title-s">
+                Osoby publiczne{" "}
+                <span className="sc-t-meta sc-text-2 sc-home-baza__count">
+                  <MorphValue value={peopleTotal} /> {peopleLabel(peopleTotal)}
+                </span>
+              </h3>
+              <p className="sc-t-body-s sc-text-2">Rejestr funkcji publicznych · profil z osią czasu</p>
+            </>
+          ) : (
+            <>
+              <h3 className="sc-t-title-s">
+                Najnowsze materiały{" "}
+                <span className="sc-t-meta sc-text-2 sc-home-baza__count">
+                  <MorphValue value={total} /> {total === 1 ? "materiał" : "materiałów"}
+                </span>
+              </h3>
+              <p className="sc-t-body-s sc-text-2">{sourcesNote} · od najnowszej publikacji</p>
+            </>
+          )}
         </div>
         <Button className="sc-home-baza__filters-toggle" variant="secondary" size="sm" iconStart={<FilterIcon size={16} />} onClick={() => setSheetOpen(true)}>
           Filtry{activeCount ? ` · ${activeCount}` : ""}
@@ -234,6 +279,10 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
 
       <div className="sc-home-baza__layout">
         <div ref={scrollRef} className="sc-home-baza__results" tabIndex={0} aria-label="Materiały w Bazie — przewijaj w obrębie sekcji">
+          {filters.people ? (
+            <HomePeople query={query} scrollRoot={scrollRef} />
+          ) : (
+            <>
           {groupEmpty && sourceGroup ? <p className="sc-t-body-s sc-text-2">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”. {GROUP_EMPTY_HINT}</p> : null}
           {feed.isPending && !groupEmpty ? <p role="status" className="sc-t-body-s sc-text-2">Ładuję materiały…</p> : null}
           {feed.isError ? (
@@ -259,6 +308,8 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
               {feed.isFetchingNextPage ? "Ładuję kolejne materiały…" : "Przewiń siatkę niżej, aby załadować kolejne materiały."}
             </div>
           ) : null}
+            </>
+          )}
         </div>
         <aside className="sc-home-baza__aside" aria-label="Filtry">
           {panel}
