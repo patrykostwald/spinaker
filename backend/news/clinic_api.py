@@ -1,4 +1,5 @@
 """API Kliniki spinu: strona /klinika, diagnozy, reakcje, sugestie kont X i kolejka zatwierdzania."""
+import os
 import re
 
 from django.db import IntegrityError, transaction
@@ -186,13 +187,25 @@ def clinic_queue(request):
                  .order_by('post__published_at'))[:50]
     messages = ClinicDailyMessage.objects.filter(status='pending_review').order_by('day', 'camp')[:10]
     failed = SpinDiagnosis.objects.filter(status='failed').values('error').annotate(n=Count('id'))
+    flagged = (SpinDiagnosis.objects.filter(status='flagged').select_related('post__account')
+               .order_by('-screen_score', '-post__published_at'))[:50]
+    flagged_figures = clinic.figures_by_account({row.post.account_id for row in flagged})
     return Response({
+        'flagged': [{'id': row.pk, 'score': row.screen_score, 'reason': (row.triage or {}).get('reason', ''),
+                     'screened_by': (row.triage or {}).get('provider', ''), 'camp_label': clinic.CAMP_LABELS.get(row.post.camp_at_collection, ''),
+                     'author': clinic.author_data(row.post, flagged_figures.get(row.post.account_id)),
+                     'post': {'url': row.post.url, 'text': row.post.text, 'published_at': row.post.published_at}}
+                    for row in flagged],
         'diagnoses': [_queue_diagnosis(row) for row in diagnoses],
         'messages': [{'id': row.pk, 'day': row.day, 'camp': row.camp, 'camp_label': clinic.CAMP_LABELS[row.camp],
                       'message': row.message, 'themes': row.themes, 'posts_count': row.posts.count(),
                       'model': row.model_name} for row in messages],
         'counts': {
             'pending': SpinDiagnosis.objects.filter(status='pending_review').count(),
+            'flagged': SpinDiagnosis.objects.filter(status='flagged').count(),
+            'queued': SpinDiagnosis.objects.filter(status='queued').count(),
+            'diagnosed_today': clinic.diagnoses_today(),
+            'daily_limit': int(os.environ.get('CLINIC_DAILY_LIMIT', '20')),
             'approved': SpinDiagnosis.objects.filter(status='approved').count(),
             'rejected': SpinDiagnosis.objects.filter(status='rejected').count(),
             'not_applicable': SpinDiagnosis.objects.filter(status='not_applicable').count(),
@@ -247,3 +260,30 @@ def hide_diagnosis(request, diagnosis_id):
     diagnosis.hidden_at, diagnosis.hidden_reason = timezone.now(), serializer.validated_data['reason']
     diagnosis.save(update_fields=['hidden_at', 'hidden_reason'])
     return Response({'id': diagnosis.pk, 'hidden_at': diagnosis.hidden_at})
+
+
+class FlagInput(serializers.Serializer):
+    decision = serializers.ChoiceField(choices=['investigate', 'dismiss'])
+
+
+@extend_schema(summary='Post oznaczony przez strażnika: zbadaj (płatna diagnoza) albo pomiń', tags=['klinika'],
+               request=FlagInput, responses=OpenApiTypes.OBJECT)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def decide_flag(request, diagnosis_id):
+    row = get_object_or_404(SpinDiagnosis, pk=diagnosis_id)
+    serializer = FlagInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+        if serializer.validated_data['decision'] == 'investigate':
+            clinic.queue_for_diagnosis(row)
+            from news.tasks import clinic_diagnose_task
+            try:
+                clinic_diagnose_task.delay()
+            except Exception:
+                pass  # bez brokera diagnoza ruszy przy najbliższym cyklu harmonogramu
+        else:
+            clinic.dismiss_flag(row)
+    except ValueError:
+        return Response({'detail': 'Ten post ma już decyzję.'}, status=409)
+    return Response({'id': row.pk, 'status': row.status})

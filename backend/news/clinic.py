@@ -1,7 +1,8 @@
 """Klinika spinu: potok diagnoz, alerty do zatwierdzenia i dane strony /klinika.
 
-Przepływ: nowy post z potwierdzonego konta X (obóz rządzący albo opozycja) →
-selekcja → diagnoza AI → status „czeka na zatwierdzenie” → e-mail z alertem →
+Przepływ: nowy post z potwierdzonego konta X (obóz rządzący albo opozycja) → strażnik (darmowe
+modele, ocena 0–100) → wysoka ocena: kolejka płatnej diagnozy; średnia: oznaczenie i decyzja
+„Zbadaj”; niska: pominięcie → diagnoza AI → „czeka na zatwierdzenie” → e-mail z alertem →
 zatwierdzenie albo odrzucenie (bez edycji) → publikacja.
 """
 from __future__ import annotations
@@ -121,53 +122,104 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     }
 
 
-def eligible_posts():
+def unscreened_posts():
     since = timezone.now() - timedelta(days=int(os.environ.get('CLINIC_MAX_POST_AGE_DAYS', '3')))
     return (PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, published_at__gte=since,
                                          account__enabled=True, spin_diagnosis__isnull=True)
             .select_related('account').order_by('published_at', 'pk'))
 
 
+def thresholds() -> tuple[int, int]:
+    """(próg oznaczenia, próg automatycznej diagnozy). Poniżej pierwszego — pomijamy za darmo."""
+    flag = int(os.environ.get('CLINIC_FLAG_THRESHOLD', '40'))
+    auto = int(os.environ.get('CLINIC_AUTO_THRESHOLD', '75'))
+    return flag, max(flag, auto)
+
+
 def diagnoses_today() -> int:
     start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
-    return SpinDiagnosis.objects.filter(created_at__gte=start, provider='anthropic').count()
+    return SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic').count()
 
 
-def diagnose_post(post: PoliticalPost, figure: PublicFigure | None = None) -> SpinDiagnosis | None:
-    context = _post_context(post, figure)
-    triage = clinic_ai.triage(post.text)
-    fields = {'triage': triage or {}, 'prompt_version': clinic_ai.PROMPT_VERSION}
-    if triage is not None and not triage['analyze']:
-        fields.update(status='not_applicable', provider='groq', model_name=triage.get('model', ''))
+def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
+    """Strażnik — darmowa ocena. Tworzy wpis: pominięty, oznaczony do decyzji albo w kolejce do diagnozy."""
+    result = clinic_ai.screen(post.text)
+    flag, auto = thresholds()
+    if result is None:
+        # Żaden darmowy model nie odpowiedział: nie płacimy w ciemno — post czeka na decyzję człowieka.
+        fields = {'status': 'flagged', 'triage': {'reason': 'Strażnik niedostępny — oceń ręcznie.'}}
     else:
-        try:
-            result = clinic_ai.diagnose(context)
-        except clinic_ai.ClinicAIError as error:
-            fields.update(status='failed', error=error.code, provider='anthropic', model_name=clinic_ai.model_name())
-        else:
-            usage = result.pop('usage', {})
-            fields.update(result, status='pending_review', provider='anthropic',
-                          model_name=usage.get('model') or clinic_ai.model_name(), usage=usage)
+        score = result['score']
+        status = 'queued' if score >= auto else 'flagged' if score >= flag else 'not_applicable'
+        fields = {'status': status, 'triage': result, 'screen_score': score,
+                  'provider': result['provider'], 'model_name': result['model']}
     try:
         with transaction.atomic():
-            return SpinDiagnosis.objects.create(post=post, **fields)
+            return SpinDiagnosis.objects.create(post=post, prompt_version=clinic_ai.PROMPT_VERSION, **fields)
     except IntegrityError:
-        return None  # inny proces zdiagnozował ten post w międzyczasie
+        return None
 
 
-def run_diagnoses(limit: int = 5) -> dict:
+def run_screening(limit: int = 30) -> dict:
+    counts = {}
+    for post in unscreened_posts()[:limit]:
+        row = screen_post(post)
+        if row:
+            counts[row.status] = counts.get(row.status, 0) + 1
+    alert = send_review_alert() if counts.get('flagged') else 'nothing'
+    return {'screened': counts, 'alert': alert}
+
+
+def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiagnosis:
+    """Płatna diagnoza (Claude) jednego wpisu z kolejki."""
+    try:
+        result = clinic_ai.diagnose(_post_context(row.post, figure))
+    except clinic_ai.ClinicAIError as error:
+        row.status, row.error = 'failed', error.code
+        row.provider, row.model_name = 'anthropic', clinic_ai.model_name()
+    else:
+        usage = result.pop('usage', {})
+        for field, value in result.items():
+            setattr(row, field, value)
+        row.status, row.usage, row.error = 'pending_review', usage, ''
+        row.provider, row.model_name = 'anthropic', usage.get('model') or clinic_ai.model_name()
+    row.diagnosed_at = timezone.now()
+    row.prompt_version = clinic_ai.PROMPT_VERSION
+    row.save()
+    return row
+
+
+def queue_for_diagnosis(row: SpinDiagnosis) -> SpinDiagnosis:
+    """Decyzja człowieka „Zbadaj” dla wpisu oznaczonego przez strażnika. Nie zmienia żadnej treści."""
+    if row.status not in ('flagged', 'not_applicable', 'failed'):
+        raise ValueError('status')
+    row.status = 'queued'
+    row.save(update_fields=['status'])
+    return row
+
+
+def dismiss_flag(row: SpinDiagnosis) -> SpinDiagnosis:
+    """Decyzja „Pomiń” — post nie zostanie zbadany (i nic nie kosztuje)."""
+    if row.status != 'flagged':
+        raise ValueError('status')
+    row.status = 'not_applicable'
+    row.save(update_fields=['status'])
+    return row
+
+
+def run_diagnoses(limit: int = 3) -> dict:
     if not clinic_ai.enabled():
         return {'status': 'disabled'}
-    budget = int(os.environ.get('CLINIC_DAILY_LIMIT', '80')) - diagnoses_today()
-    posts = list(eligible_posts()[:max(0, min(limit, budget))])
-    figures = figures_by_account({post.account_id for post in posts})
+    budget = int(os.environ.get('CLINIC_DAILY_LIMIT', '20')) - diagnoses_today()
+    rows = list(SpinDiagnosis.objects.filter(status='queued').select_related('post__account')
+                .order_by('-screen_score', 'post__published_at')[:max(0, min(limit, budget))])
+    figures = figures_by_account({row.post.account_id for row in rows})
     counts = {}
-    for post in posts:
-        diagnosis = diagnose_post(post, figures.get(post.account_id))
-        if diagnosis:
-            counts[diagnosis.status] = counts.get(diagnosis.status, 0) + 1
+    for row in rows:
+        diagnose(row, figures.get(row.post.account_id))
+        counts[row.status] = counts.get(row.status, 0) + 1
     alert = send_review_alert()
-    return {'status': 'ok', 'budget_left': max(0, budget - len(posts)), 'created': counts, 'alert': alert}
+    return {'status': 'ok', 'budget_left': max(0, budget - len(rows)), 'diagnosed': counts, 'alert': alert}
 
 
 def run_daily_messages(day=None) -> dict:
@@ -212,10 +264,12 @@ def _smtp_ready() -> bool:
 
 def send_review_alert() -> str:
     """Jeden e-mail na partię nowych diagnoz. Bez skonfigurowanego SMTP kolejka czeka w /editor/klinika."""
-    diagnoses = SpinDiagnosis.objects.filter(status='pending_review', alert_sent_at__isnull=True)
+    diagnoses = SpinDiagnosis.objects.filter(status__in=['pending_review', 'flagged'], alert_sent_at__isnull=True)
     messages = ClinicDailyMessage.objects.filter(status='pending_review', alert_sent_at__isnull=True)
-    count_d, count_m = diagnoses.count(), messages.count()
-    if not count_d and not count_m:
+    count_d = diagnoses.filter(status='pending_review').count()
+    count_f = diagnoses.filter(status='flagged').count()
+    count_m = messages.count()
+    if not count_d and not count_m and not count_f:
         return 'nothing'
     recipient = os.environ.get('CLINIC_REVIEW_EMAIL', '').strip()
     status = 'queued_only'
@@ -224,9 +278,11 @@ def send_review_alert() -> str:
         email = EmailMessage()
         email['From'] = settings.SOURCE_MAIL_SMTP_FROM
         email['To'] = recipient
-        email['Subject'] = f'Klinika spinu: {count_d} diagnoz i {count_m} przekazów dnia czeka na decyzję'
+        email['Subject'] = f'Klinika spinu: {count_d} diagnoz, {count_f} postów wartych zbadania, {count_m} przekazów dnia'
         email.set_content(
-            f'Nowe diagnozy do zatwierdzenia: {count_d}\nNowe przekazy dnia: {count_m}\n\n'
+            f'Nowe diagnozy do zatwierdzenia: {count_d}\n'
+            f'Posty oznaczone przez strażnika (decyzja „Zbadaj” uruchamia płatną diagnozę): {count_f}\n'
+            f'Nowe przekazy dnia: {count_m}\n\n'
             f'Kolejka: https://{domain}/editor/klinika\n\n'
             'Możesz zatwierdzić albo odrzucić każdą pozycję. Treści diagnoz nie da się edytować.')
         try:

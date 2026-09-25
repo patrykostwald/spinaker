@@ -1,6 +1,7 @@
 """Klinika spinu: automatyczne diagnozy AI postów polityków z X.
 
-AI analizuje każdy nowy post z potwierdzonych kont obozu rządzącego i opozycji.
+Strażnik (darmowe modele: Groq, zapasowo NVIDIA NIM) ocenia każdy nowy post z potwierdzonych kont
+obozu rządzącego i opozycji. Płatna diagnoza (Claude) rusza tylko dla postów wartych sprawdzenia.
 Człowiek wyłącznie zatwierdza albo odrzuca gotową diagnozę — nigdy nie edytuje
 jej treści (model nie ma pola do edycji, a API przeglądu przyjmuje tylko decyzję).
 """
@@ -11,6 +12,8 @@ from django.utils import timezone
 from news.political_models import EDITORIAL_CAMPS, PoliticalPost, PublicFigure
 
 REVIEW_STATUSES = [
+    ('flagged', 'Strażnik: warte sprawdzenia — czeka na decyzję o badaniu'),
+    ('queued', 'W kolejce do płatnej diagnozy'),
     ('pending_review', 'Czeka na zatwierdzenie'),
     ('approved', 'Zatwierdzona'),
     ('rejected', 'Odrzucona'),
@@ -37,7 +40,10 @@ class SpinDiagnosis(models.Model):
     techniques = models.JSONField(default=list, blank=True)
     claims = models.JSONField(default=list, blank=True)
     limitations = models.TextField(blank=True)
-    triage = models.JSONField(default=dict, blank=True, help_text='Wynik wstępnej selekcji (czy post zawiera treść do oceny).')
+    triage = models.JSONField(default=dict, blank=True, help_text='Ocena strażnika: wynik 0–100, uzasadnienie, model.')
+    screen_score = models.PositiveSmallIntegerField(null=True, blank=True, db_index=True,
+                                                    help_text='Jak bardzo post jest wart sprawdzenia według strażnika (0–100).')
+    diagnosed_at = models.DateTimeField(null=True, blank=True, db_index=True, help_text='Kiedy wykonano płatną diagnozę.')
     provider = models.CharField(max_length=32, blank=True)
     model_name = models.CharField(max_length=64, blank=True)
     prompt_version = models.CharField(max_length=16, blank=True)
