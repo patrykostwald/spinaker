@@ -121,7 +121,7 @@ export function PublicFigureTimeline({ figureId, onShowMaterials, materialsTotal
                     <li key={`${event.url}-${index}`} className="sc-pf-axis__item" data-kind={event.kind}>
                       <span className="sc-pf-axis__dot" aria-hidden="true" />
                       <p className="sc-pf-axis__when">
-                        {event.date ? formatDatePl(event.date) : "Data nieustalona"} · {event.kind === "official_vote" ? `głosowanie w Sejmie${event.vote ? ` · ${voteLabel(event.vote)}` : ""}` : "materiał potwierdzony przez redakcję"}
+                        {event.date ? formatDatePl(event.date) : "Data nieustalona"} · {event.kind === "official_vote" ? `głosowanie w Sejmie${event.vote ? ` · ${voteLabel(event.vote)}` : ""}` : "materiał potwierdzony przez zespół spin.clinic"}
                       </p>
                       <a className="sc-pf-axis__title sc-pf-axis__link" href={event.url} target="_blank" rel="noopener noreferrer">
                         {event.label}

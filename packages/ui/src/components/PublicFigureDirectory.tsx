@@ -79,9 +79,9 @@ export function PublicFigureDirectory() {
   return (
     <section className="sc-public-directory" aria-labelledby={`${uid}-title`}>
       <header className="sc-public-directory__head">
-        <p className="sc-t-caption">REJESTR REDAKCYJNY</p>
+        <p className="sc-t-caption">REJESTR</p>
         <h1 id={`${uid}-title`} className="sc-t-title-l">Osoby publiczne</h1>
-        <p className="sc-t-body sc-text-2">Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Redakcja dodaje osoby ręcznie, z linkiem do źródła funkcji.</p>
+        <p className="sc-t-body sc-text-2">Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Zespół spin.clinic dodaje osoby ręcznie, z linkiem do źródła funkcji.</p>
       </header>
       <form className="sc-public-directory__filters" role="search" onSubmit={submit}>
         <SearchField id={`${uid}-q`} label="Imię, funkcja lub instytucja" value={input} onChange={setInput} maxLength={120} placeholder="Imię, funkcja lub instytucja" />

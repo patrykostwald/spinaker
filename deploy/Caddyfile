@@ -1,6 +1,11 @@
 {$SPIN_DOMAIN:spin.clinic} {
-    encode zstd gzip
-    @api path /api/*
-    reverse_proxy @api backend:8000
-    reverse_proxy frontend:3000
+	encode zstd gzip
+	@api path /api/*
+	reverse_proxy @api backend:8000
+	reverse_proxy frontend:3000
+}
+
+# Dawny adres bety — stałe przekierowanie na domenę główną (DNS wskazuje na ten serwer).
+beta.{$SPIN_DOMAIN:spin.clinic} {
+	redir https://{$SPIN_DOMAIN:spin.clinic}{uri} permanent
 }

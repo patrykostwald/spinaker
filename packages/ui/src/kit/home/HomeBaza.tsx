@@ -128,7 +128,7 @@ function FiltersPanel({
       <FilterGroup title="Platformy" summary={state.youtube ? "YouTube" : "wszystkie"}>
         <Switch label="YouTube · materiały wideo" checked={state.youtube} onChange={(checked) => onChange({ ...state, youtube: checked })} />
         <p className="sc-t-body-s sc-text-2">
-          <strong>X</strong> · posty polityków przechodzą najpierw przez redakcyjny przegląd Dr. Spina.
+          <strong>X</strong> · posty polityków przechodzą najpierw przez ręczny przegląd Dr. Spina.
         </p>
       </FilterGroup>
 

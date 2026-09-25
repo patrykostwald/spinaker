@@ -26,11 +26,11 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
       <div className="sc-home-band-surface">
         <header className="sc-home-section__head">
           <div>
-            <p className="sc-t-caption sc-text-3 sc-home-kicker">spin.clinic · Redakcja</p>
+            <p className="sc-t-caption sc-text-3 sc-home-kicker">spin.clinic · Dr. Spin</p>
             <h2 className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
           </div>
           <div className="sc-home-section__actions">
-            <p className="sc-t-body-s sc-text-2">{published ? published.title : "Codzienna nitka redakcyjna"}</p>
+            <p className="sc-t-body-s sc-text-2">{published ? published.title : "Codzienna nitka kontekstowa"}</p>
             {published ? (
               <Button href={`/thread/${published.slug}`} variant="quiet" size="sm">
                 Otwórz nitkę

@@ -86,7 +86,7 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
         <p className="sc-public-figure-x">
           <span className="sc-public-figure-tag">KONTO X</span>
           <SourceLink href={x.url}>@{x.handle}</SourceLink>
-          <span>potwierdzone przez redakcję i oficjalne API X</span>
+          <span>potwierdzone przez zespół i oficjalne API X</span>
           <SourceLink href={x.evidence_url}>link z oficjalnego profilu</SourceLink>
           {x.posts_collected > 0 && <span>{x.posts_collected} {plural(x.posts_collected, 'wpis', 'wpisy', 'wpisów')} w Bazie</span>}
         </p>
@@ -138,7 +138,7 @@ function VotesSection({ figure }: { figure: PublicFigureDetail }) {
         {votes.available && <p>Ostatnie {votes.results.length} {plural(votes.results.length, 'głosowanie', 'głosowania', 'głosowań')} z oficjalnego zapisu · <SourceLink href={votes.source_url}>profil w Sejmie</SourceLink></p>}
       </header>
       {!votes.available ? (
-        <Neutral>{votes.reason || 'Brak jeszcze ręcznie potwierdzonego połączenia z mandatem poselskim.'} Nie oznacza to, że głosowań nie było — redakcja łączy profil z oficjalnym wpisem ręcznie, nie po nazwisku.</Neutral>
+        <Neutral>{votes.reason || 'Brak jeszcze ręcznie potwierdzonego połączenia z mandatem poselskim.'} Nie oznacza to, że głosowań nie było — zespół łączy profil z oficjalnym wpisem ręcznie, nie po nazwisku.</Neutral>
       ) : votes.results.length === 0 ? (
         <Neutral>Oficjalny zapis nie zawiera jeszcze głosowań dla tego mandatu w naszej Bazie.</Neutral>
       ) : (
@@ -208,7 +208,7 @@ function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
     <section id="relacje" className="sc-public-figure-section" aria-labelledby="pf-orgs">
       <header>
         <h2 id="pf-orgs">Relacje z podmiotami</h2>
-        <p>Wyłącznie relacje potwierdzone przez redakcję w publicznym źródle. Relacja opisuje publiczną funkcję, nie ocenia osoby.</p>
+        <p>Wyłącznie relacje potwierdzone przez zespół w publicznym źródle. Relacja opisuje publiczną funkcję, nie ocenia osoby.</p>
       </header>
       {kinds.map(kind => {
         const rows = figure.organisations.filter(item => item.kind === kind);

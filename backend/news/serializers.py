@@ -7,7 +7,7 @@ from news.source_groups import portal_group
 
 def thread_author(thread, context):
     if not thread.created_by_id:
-        return {'name': 'Redakcja', 'role': 'editor'}
+        return {'name': 'Dr. Spin', 'role': 'editor'}
     authors = context.setdefault('_thread_authors', {})
     if thread.created_by_id not in authors:
         authors[thread.created_by_id] = {'name': thread.created_by.get_username(),

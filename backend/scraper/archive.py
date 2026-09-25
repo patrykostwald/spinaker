@@ -397,12 +397,18 @@ def process(job, cutoff_at=None, allowed_scope=None):
         'status': 'extracted_text' if body else 'metadata_only',
         'method': 'publisher_jsonld_url_matched_v2' if body else 'metadata_only_by_policy',
         'response_sha256': sha256(raw).hexdigest(), 'source_url': job.url})
+    change_event = None
+    if not created:
+        from news.article_changes import record_successful_change
+        change_event = record_successful_change(
+            article=article, title=metadata['title'], body=body,
+            source_status=200)
     if snapshot_fetch_attempt is not None:
         from news.evidence_snapshot import (
             SnapshotArtifactType, SnapshotConsentStatus, SnapshotRetentionPolicy,
             capture_snapshot,
         )
-        capture_snapshot(
+        captured_snapshot = capture_snapshot(
             article, fetch_attempt=snapshot_fetch_attempt, source_url=job.url,
             content=raw, artifact_type=SnapshotArtifactType.HTML,
             parser_version='archive.raw_html/v1',
@@ -410,6 +416,9 @@ def process(job, cutoff_at=None, allowed_scope=None):
             retention_policy=SnapshotRetentionPolicy.EVIDENCE_HOLD,
             allowed_uses=[],
         )
+        if change_event is not None and change_event.evidence_snapshot_id is None:
+            change_event.evidence_snapshot = captured_snapshot
+            change_event.save(update_fields=['evidence_snapshot'])
     return int(created)
 
 def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_callback=None,
@@ -476,6 +485,13 @@ def run_batch(limit=10, source_ids=None, metrics=None, cutoff_at=None, state_cal
             job.available_at = timezone.now() + timedelta(seconds=retry_seconds or 60)
         except Exception as exc:
             counters['failed_jobs'] += 1
+            response = getattr(exc, 'response', None)
+            source_status = getattr(response, 'status_code', None)
+            if source_status in (404, 410) and job.kind == 'page':
+                article = Article.objects.filter(url=job.url).first()
+                if article is not None:
+                    from news.article_changes import record_removed
+                    record_removed(article=article, source_status=source_status)
             known_error = str(exc) if str(exc) in TERMINAL_ERRORS | {
                 'missing_source_title', 'unclassified_page', 'directory_link_limit',
                 'source_unavailable', 'unsupported_xml_declaration'} else type(exc).__name__

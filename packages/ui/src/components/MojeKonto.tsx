@@ -175,7 +175,7 @@ function ThreadFavoritesSection() {
   return (
     <Section id="ulubione-nitki" title="Ulubione nitki Dr. Spina" count={favorites.isSuccess ? rows.length : undefined}>
       <QueryState query={favorites} unavailableText="Ulubione nitki są w trakcie udostępniania w interfejsie MVP." />
-      {favorites.isSuccess && !rows.length && <p className="sc-account-empty">Zapisz opublikowaną nitkę redakcyjną przyciskiem ♡ Zapisz na jej stronie.</p>}
+      {favorites.isSuccess && !rows.length && <p className="sc-account-empty">Zapisz opublikowaną nitkę kontekstową przyciskiem ♡ Zapisz na jej stronie.</p>}
       {error && <p role="alert" className="sc-account-error">{error}</p>}
       {rows.length > 0 && (
         <ul className="sc-account-rows">

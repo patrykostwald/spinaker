@@ -10,7 +10,7 @@ export default function ThreadPage({ params }: { params: { slug: string } }) {
   return <article className="sc-thread-page"><Button href="/" variant="quiet" size="sm">Wszystkie historie</Button>
     <p className="sc-t-meta sc-thread-page__kicker">{thread.is_sponsored || thread.thread_type === 'sponsored' ? thread.sponsorship_label || 'Nitka sponsorowana' : 'Kontekst wydarzenia'}</p>
     <h1 className="sc-t-display sc-thread-page__title">{thread.title}</h1>
-    {thread.author_name && <p className="sc-t-meta sc-thread-page__author" data-author-role={thread.author_role}>{thread.author_name} · {thread.author_role === 'journalist' ? 'Dziennikarz' : thread.author_role === 'editor' ? 'Redakcja' : 'Autor'}</p>}
+    {thread.author_name && <p className="sc-t-meta sc-thread-page__author" data-author-role={thread.author_role}>{thread.author_name} · {thread.author_role === 'journalist' ? 'Dziennikarz' : thread.author_role === 'editor' ? 'Zespół spin.clinic' : 'Autor'}</p>}
     <p className="sc-t-body sc-text-2 sc-thread-page__description">{thread.description}</p>
     <p className="sc-t-meta sc-text-2">{thread.item_count} materiałów · {thread.views_count} wyświetleń</p>
     <div className="sc-thread-page__actions"><ThreadFavoriteButton thread={thread} /><ShareOnX title={thread.title} path={`/thread/${thread.slug}`} /></div>

@@ -132,7 +132,7 @@ export function PoliticalReview() {
       const created = await apiWrite<XDraft>(path,
         { camp, day, title: title.trim(), posts: selectedPosts.map(post => post.id), notes, proposed_items });
       setNotice(`Zapisano propozycję „${created.title}” — status: ${STATUS_LABELS[created.status]}. `
-        + 'To wyłącznie materiał do przeglądu redakcji; nic nie zostało opublikowane.');
+        + 'To wyłącznie materiał do przeglądu zespołu; nic nie zostało opublikowane.');
       resetForm();
       await cache.invalidateQueries({ queryKey: ['political-drafts', view] });
     } catch (err) {
@@ -145,18 +145,18 @@ export function PoliticalReview() {
     <button onClick={() => me.refetch()} className={button}>Spróbuj ponownie</button></div>;
   if (!me.data?.authenticated) return <ThreadEditor />;
   if (!isReviewer) return <section className="sc-political-access">
-    <h1 className="sc-t-title-l">Panel redakcyjny X</h1>
+    <h1 className="sc-t-title-l">Panel przeglądu X</h1>
     <p className="sc-political-gap">Ten panel jest dostępny wyłącznie dla administratora / redaktora. Twoje konto nie ma tych uprawnień.</p>
   </section>;
 
   const activeView = VIEWS.find(item => item.key === view)!;
 
   return <div className="sc-political">
-    <header className="sc-political__head"><p className="sc-t-caption">PANEL REDAKCYJNY X</p>
+    <header className="sc-political__head"><p className="sc-t-caption">PANEL PRZEGLĄDU X</p>
       <h1 className="sc-t-title-l">Propozycje z już zapisanych postów X</h1>
       <p className="sc-political-copy">Panel wyłącznie przegląda materiał już pobrany i zapisany jako
         PoliticalPost. Nie łączy się z płatnym API X, nie publikuje nitek, nie pisze oskarżeń i nie ocenia prawdziwości
-        postów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja redakcji.</p>
+        postów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja zespołu.</p>
     </header>
 
     {status.data?.draft_rules && <details className="sc-political-rules">
@@ -215,7 +215,7 @@ export function PoliticalReview() {
           value={candidateCamp} onChange={event => setCandidateCamp(event.target.value as Camp)} className={input} disabled={busy}>
           <option value="government">Obóz rządzący</option><option value="opposition">Opozycja</option>
         </select></label>}
-        <label className="sc-political-field sc-political-field--wide">Uwagi redakcyjne · opcjonalnie<textarea rows={2} maxLength={5000} value={notes}
+        <label className="sc-political-field sc-political-field--wide">Uwagi · opcjonalnie<textarea rows={2} maxLength={5000} value={notes}
           onChange={event => setNotes(event.target.value)} className={textarea} disabled={busy} /></label>
       </div>
 
@@ -260,7 +260,7 @@ export function PoliticalReview() {
                 <span className="sc-political-copy">{STATUS_LABELS[item.status]}</span>
               </div>
               <p className="sc-political-copy">{item.day} · {item.camp === 'government' ? 'obóz rządzący' : 'opozycja'} ·
-                {' '}{item.posts.length} {item.posts.length === 1 ? 'post' : 'postów'} · {item.origin === 'ai_proposal' ? 'propozycja AI' : 'wybór redakcyjny'}</p>
+                {' '}{item.posts.length} {item.posts.length === 1 ? 'post' : 'postów'} · {item.origin === 'ai_proposal' ? 'propozycja AI' : 'wybór zespołu'}</p>
             </article>)}
             {!drafts.data?.results.length && <p className="sc-political-empty">Brak propozycji w tym widoku.</p>}
           </div>}

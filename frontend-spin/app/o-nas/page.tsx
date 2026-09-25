@@ -92,7 +92,7 @@ const PHASES: Phase[] = [
       { text: 'rejestr osób publicznych i stanowisk publicznych, z historią sprawowania funkcji i osią czasu osoby', status: 'beta' },
       { text: 'powiązania osób, organizacji, źródeł i materiałów — wyłącznie potwierdzone dowodami', status: 'beta' },
       { text: 'Wiadomości dnia, sekcje tematyczne i temat dnia', status: 'beta' },
-      { text: 'Dr. Spin — redakcyjne narzędzie porządkowania kontekstu i dowodów', status: 'beta' },
+      { text: 'Dr. Spin — narzędzie zespołu do porządkowania kontekstu i dowodów', status: 'beta' },
       { text: 'import i audyt źródeł, ręczne zatwierdzanie dowodów', status: 'beta' },
     ],
     stack: [
@@ -108,7 +108,7 @@ const PHASES: Phase[] = [
         group: 'Backend',
         items: [
           { name: 'Python · Django 5 · Django REST Framework', note: 'materiały, źródła, konta, nitki, osoby i stanowiska publiczne, dowody, relacje, historia zmian', status: 'działa' },
-          { name: 'Django Admin', note: 'panel redakcji', status: 'działa' },
+          { name: 'Django Admin', note: 'panel administracyjny', status: 'działa' },
           { name: 'OpenAPI (drf-spectacular)', note: 'publiczny opis API', status: 'działa' },
         ],
       },
@@ -152,7 +152,7 @@ const PHASES: Phase[] = [
       { text: 'lepsze wykrywanie powiązań między materiałami i rozbudowane osie czasu', status: 'planowane' },
       { text: 'alerty po haśle, źródle i temacie — w serwisie i e-mailem', status: 'planowane' },
       { text: 'konta: własne nitki kontekstowe, reakcje i komentarze z moderacją', status: 'planowane' },
-      { text: 'kolejka redakcyjna i zatwierdzanie treści przed publikacją', status: 'planowane' },
+      { text: 'kolejka moderacji i zatwierdzanie treści przed publikacją', status: 'planowane' },
       { text: 'raporty jakości importu: duplikaty, błędne daty, puste materiały, błędy techniczne', status: 'planowane' },
       { text: 'dalsze uzupełnianie rejestru stanowisk publicznych', status: 'planowane' },
     ],
@@ -172,20 +172,20 @@ const PHASES: Phase[] = [
     id: 'faza-3',
     status: 'Faza III · planowane kolejne fazy',
     title: 'Wyszukiwanie wspomagane AI i dalszy rozwój',
-    lead: 'AI ma być narzędziem redakcji, nie autorem. Model pracuje wyłącznie na rekordach z naszej bazy i na ich dowodach.',
+    lead: 'AI ma być narzędziem zespołu, nie autorem. Model pracuje wyłącznie na rekordach z naszej bazy i na ich dowodach.',
     featuresLabel: 'Założenia',
     features: [
       { text: 'wybór ograniczonej liczby powiązanych materiałów z realnej bazy', status: 'planowane' },
       { text: 'odpowiedzi oparte wyłącznie na istniejących rekordach — bez zmyślonych linków i dopowiadania faktów', status: 'planowane' },
       { text: 'zapis modelu, wersji instrukcji, kosztu, pewności, danych wejściowych i decyzji redaktora — z osobnym audytem jakości', status: 'planowane' },
-      { text: 'później: aplikacja instalowana z przeglądarki (PWA) i powiadomienia push, rozbudowane mapy relacji, indeksowanie dokumentów BIP, większe archiwum, narzędzia dla redakcji', status: 'planowane' },
+      { text: 'później: aplikacja instalowana z przeglądarki (PWA) i powiadomienia push, rozbudowane mapy relacji, indeksowanie dokumentów BIP, większe archiwum, narzędzia do moderacji', status: 'planowane' },
     ],
     stack: [
       {
         group: 'AI',
         items: [
           { name: 'wspólny adapter modeli OpenAI i Mistral', note: 'przygotowany w kodzie, domyślnie wyłączony', status: 'wymaga potwierdzenia' },
-          { name: 'NVIDIA NIM · Groq', note: 'pilotaże szkiców redakcyjnych, domyślnie wyłączone', status: 'wymaga potwierdzenia' },
+          { name: 'NVIDIA NIM · Groq', note: 'pilotaże szkiców nitek, domyślnie wyłączone', status: 'wymaga potwierdzenia' },
           { name: 'RAG', note: 'odpowiedzi z cytowaniem materiałów z bazy', status: 'planowane' },
           { name: 'Qdrant', note: 'kandydat do wyszukiwania wektorowego — po porównaniu z wyszukiwaniem w PostgreSQL', status: 'wymaga potwierdzenia' },
           { name: 'własny indeks semantyczny i model lokalny', note: 'dopiero po pomiarze sprzętu, kosztu, czasu i jakości', status: 'wymaga potwierdzenia' },
@@ -300,6 +300,7 @@ export default function AboutPage() {
               </div>
             ))}
           </dl>
+          <p className="sc-onas-operator">Operator serwisu: iApply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.</p>
         </Section>
 
         <Section id="fazy" index={3} kicker="Rozwój i technologia" title="Trzy fazy projektu">
@@ -418,7 +419,7 @@ export default function AboutPage() {
               Nitka kontekstowa zaczyna się od jednego boxa — materiału, który chcemy pokazać, wyjaśnić albo wypromować. Za nim, na osi kontekstu, w kolejności publikacji
               idą materiały, które go dopełniają: dokumenty, komunikaty, wywiady, artykuły. Przy każdym może stać krótki komentarz.
             </p>
-            <p>Dziś nitki kontekstowe tworzy wyłącznie redakcja — jako Dr. Spin. W fazie II tę samą możliwość dostaną użytkownicy.</p>
+            <p>Dziś nitki kontekstowe tworzy wyłącznie zespół spin.clinic — jako Dr. Spin. W fazie II tę samą możliwość dostaną użytkownicy.</p>
           </div>
           <CopyBlock label="schemat nitki kontekstowej" text={CONTEXT_THREAD} />
         </Section>
@@ -426,12 +427,12 @@ export default function AboutPage() {
         <Section id="dr-spin" index={8} kicker="Dr. Spin" title="Asystent, który szuka kontekstu">
           <div className="sc-onas-prose">
             <p>
-              Dr. Spin to redakcyjne narzędzie do porządkowania kontekstu i dowodów (beta). Redakcja bierze przekazy dnia poszczególnych partii i najczęściej powtarzane
+              Dr. Spin to narzędzie zespołu spin.clinic do porządkowania kontekstu i dowodów (beta). Zespół bierze przekazy dnia poszczególnych partii i najczęściej powtarzane
               spiny, przeszukuje naszą bazę źródeł i zestawia materiały, które dany przekaz potwierdzają, podważają albo wyjaśniają.
             </p>
             <p>
               Dr. Spin nie ogłasza, co jest prawdą, i nie zastępuje dziennikarza. Chodzi o kontekst: żeby obok przekazu stało to, co mówią dokumenty, co wydarzyło się wcześniej i co ukazało się
-              później — zawsze z linkami do źródeł. Każdą nitkę sprawdza i zatwierdza redakcja — żaden model nie publikuje niczego sam.
+              później — zawsze z linkami do źródeł. Każdą nitkę sprawdza i zatwierdza zespół — żaden model nie publikuje niczego sam.
             </p>
             <p>
               Wsparcie modeli AI — dobór powiązanych materiałów i szkice nitek — jest przygotowane w kodzie, ale dziś pozostaje wyłączone. Włączymy je dopiero po pilotażu

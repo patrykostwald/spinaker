@@ -49,7 +49,7 @@ export default function SourcesPage() {
     <section className="sc-source-page__progress"><p>POSTĘP KATALOGU</p><h2>Jak rozwija się baza źródeł?</h2><ArchiveProgress /></section>
     <section className="sc-source-page__suggestion"><p>ROZBUDOWA BAZY</p><h2>Zaproponuj źródło</h2><p>Podaj adres strony, którą warto sprawdzić. Każde źródło weryfikujemy przed uruchomieniem.</p>
       <form className="sc-search-form" onSubmit={suggest}><SearchField label="Adres proponowanego źródła" value={suggestion} onChange={setSuggestion} placeholder="https://…" inputType="url" required /><Button type="submit" variant="primary" disabled={!contact}>Wyślij sugestię</Button></form>
-      {!contact && <small>Formularz połączymy ze skrzynką redakcyjną po wskazaniu adresu kontaktowego.</small>}
+      {!contact && <small>Formularz połączymy ze skrzynką kontaktową po wskazaniu adresu kontaktowego.</small>}
     </section>
   </article>;
 }
