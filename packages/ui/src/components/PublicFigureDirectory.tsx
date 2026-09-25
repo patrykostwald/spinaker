@@ -1,5 +1,6 @@
 "use client";
 
+import { XAccountSuggest } from "./clinic/XAccountSuggest";
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { ApiError } from '../lib/api';
@@ -104,6 +105,7 @@ export function PublicFigureDirectory() {
               <div>
                 <Link href={`/osoby-publiczne/${row.id}`} className="sc-public-directory__name">{row.name}</Link>
                 <p className="sc-t-body"><span className="sc-public-figure-status" data-status={row.status}>{row.status === 'current' ? 'Aktualna' : 'Była'}</span>{row.role_title}{row.organisation && ` · ${row.organisation}`}</p>
+                <p className="sc-public-directory__x">{row.has_x_account ? <span className="sc-x-badge" title="Konto X potwierdzone oficjalnym dowodem — czytamy je w Klinice">X · czytamy</span> : <><span className="sc-x-badge sc-x-badge--none">X · brak konta</span><XAccountSuggest figureId={row.id} name={row.name} /></>}</p>
               </div>
               <Button type="button" variant="quiet" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
             </li>
