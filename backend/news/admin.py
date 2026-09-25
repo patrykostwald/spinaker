@@ -400,3 +400,5 @@ site.register(CommentReport, CommentReportAdmin)
 
 from news.political_admin import register_political_admin
 register_political_admin(site)
+
+from news import clinic_admin  # noqa: E402,F401

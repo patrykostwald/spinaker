@@ -51,3 +51,8 @@ export { ThreadFavoriteButton } from './components/ThreadFavoriteButton';
 export { PublicFigureProfile } from "./components/PublicFigureProfile";
 export { PublicFigureDirectory, PublicFigurePage } from "./components/PublicFigureDirectory";
 export * from "./lib/publicFigures";
+export { ClinicPage } from "./components/clinic/ClinicPage";
+export { SpinDetail } from "./components/clinic/SpinDetail";
+export { ClinicQueue } from "./components/clinic/ClinicQueue";
+export { OpinionsPanel } from "./components/OpinionsPanel";
+export * from "./lib/clinic";

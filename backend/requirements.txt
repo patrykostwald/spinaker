@@ -18,3 +18,4 @@ pytest-django>=4.8
 responses>=0.25
 freezegun>=1.4
 sentry-sdk>=2.0,<3
+anthropic>=1.8,<2

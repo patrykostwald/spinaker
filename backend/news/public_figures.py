@@ -314,6 +314,29 @@ def verified_x_account_record(figure):
     return evidence.candidate.resolved_account, evidence
 
 
+def figures_with_verified_x(figures):
+    """Zbiór id osób z potwierdzonym kontem X — ta sama reguła co verified_x_account_record, hurtowo."""
+    figures = list(figures)
+    if not figures:
+        return set()
+    figure_type = ContentType.objects.get_for_model(PublicFigure)
+    by_roster = {figure.parliamentary_roster_entry_id: figure.pk for figure in figures if figure.parliamentary_roster_entry_id}
+    evidence = SocialHandleEvidence.objects.filter(
+        Q(subject_content_type=figure_type, subject_object_id__in=[figure.pk for figure in figures])
+        | Q(roster_entry_id__in=by_roster.keys()),
+        platform='x', status='candidate_created', candidate__resolved_account__isnull=False,
+    ).select_related('candidate__resolved_account__confirmed_by')
+    result = set()
+    for row in evidence:
+        if not row.candidate.resolved_account.is_confirmed():
+            continue
+        if row.subject_content_type_id == figure_type.id and row.subject_object_id:
+            result.add(row.subject_object_id)
+        if row.roster_entry_id in by_roster:
+            result.add(by_roster[row.roster_entry_id])
+    return result
+
+
 def verified_x_account_data(figure):
     """Public account details, never guessed from a name or handle."""
     record = verified_x_account_record(figure)
@@ -387,11 +410,13 @@ def public_figure_list(request):
     rows = rows.order_by('canonical_name', 'pk')
     count = rows.count()
     start = (page - 1) * page_size
+    page_rows = list(rows[start:start + page_size])
+    with_x = figures_with_verified_x(page_rows)
     return Response({
         'count': count,
         'page': page,
         'page_size': page_size,
-        'results': [figure_data(row) for row in rows[start:start + page_size]],
+        'results': [{**figure_data(row), 'has_x_account': row.pk in with_x} for row in page_rows],
     })
 
 

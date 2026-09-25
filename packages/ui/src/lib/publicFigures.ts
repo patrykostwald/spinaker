@@ -20,6 +20,8 @@ export type PublicFigureSummary = {
   official_profile_url: string;
   evidence_url: string;
   source_checked_at: string | null;
+  /** Tylko na liście: czy osoba ma konto X potwierdzone oficjalnym dowodem. */
+  has_x_account?: boolean;
 };
 
 export type PublicFigureOrganisation = {

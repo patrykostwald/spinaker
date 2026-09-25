@@ -25,18 +25,28 @@ function HeaderSearch() {
   );
 }
 
+/** Trzy części serwisu: agregator wiadomości, diagnozy spinu i (w fazie II) nitki czytelników. */
+const SECTIONS = [
+  { label: "Wiadomości", href: "/" },
+  { label: "Klinika", href: "/klinika" },
+  { label: "Nitki", href: "/nitki" },
+];
+
 export function SiteHeader({ site }: { site: SiteConfig }) {
   const pathname = usePathname();
   const account = useAccount();
   const [first, ...rest] = site.name.split(".");
   const second = rest.join(".");
-  // Szapka: po lewej wordmark z dopiskiem BETA, pole szukania na środku całej szapki, po prawej
+  // Szapka: po lewej wordmark z dopiskiem BETA i trzy części serwisu, pole szukania na środku, po prawej
   // „O nas” · motyw · konto (te same odstępy). Źródła są w globalnej stopce, nie w szapce.
 
   return (
     <NavMenu
       layout="centered"
-      items={[]}
+      items={SECTIONS.map(section => ({
+        ...section,
+        current: section.href === "/" ? pathname === "/" : pathname.startsWith(section.href),
+      }))}
       brand={
         <div className="sc-nav-brand">
           <Link href="/" className="sc-wordmark">{first}<span aria-hidden="true">.</span>{second}</Link>

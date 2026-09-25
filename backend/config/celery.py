@@ -6,6 +6,8 @@ app = Celery('spin_clinic')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
+    'clinic-diagnoses-10m': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='*/10')},
+    'clinic-daily-messages-20h': {'task': 'news.tasks.clinic_daily_messages_task', 'schedule': crontab(hour=20, minute=30)},
     'sejm-votes-15m': {'task': 'scraper.tasks.import_official_task', 'args': ['votings'], 'schedule': crontab(minute='*/15')},
     'sejm-prints-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['prints'], 'schedule': crontab(minute=10)},
     'eli-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['eli'], 'schedule': crontab(minute=20)},

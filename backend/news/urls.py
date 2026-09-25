@@ -14,6 +14,8 @@ from news.ai_research_stream import AIResearchStreamView, AIResearchSourcesView
 from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCatalogExport
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
+from news.clinic_api import (clinic_page, clinic_spins, clinic_spin_detail, clinic_accounts, SpinOpinionsView,
+                             suggest_x_account, clinic_queue, review_diagnosis, review_message, hide_diagnosis)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
@@ -34,6 +36,16 @@ urlpatterns = [
     path('public-figures/', public_figure_list),
     path('public-offices/', public_office_list),
     path('public-figures/<int:figure_id>/', public_figure_detail),
+    path('public-figures/<int:figure_id>/x-suggestions/', suggest_x_account),
+    path('clinic/', clinic_page),
+    path('clinic/spins/', clinic_spins),
+    path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
+    path('clinic/spins/<int:diagnosis_id>/opinions/', SpinOpinionsView.as_view()),
+    path('clinic/accounts/', clinic_accounts),
+    path('staff/clinic/queue/', clinic_queue),
+    path('staff/clinic/diagnoses/<int:diagnosis_id>/review/', review_diagnosis),
+    path('staff/clinic/diagnoses/<int:diagnosis_id>/hide/', hide_diagnosis),
+    path('staff/clinic/messages/<int:message_id>/review/', review_message),
     path('public-figures/<int:figure_id>/context/', public_figure_context),
     path('public-figures/<int:figure_id>/dossier/', public_figure_dossier),
     path('articles/<int:article_id>/context/', article_context),

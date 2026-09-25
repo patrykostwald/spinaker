@@ -9,6 +9,24 @@ from django.utils import timezone
 from news.models import ImportState
 
 
+@shared_task(name="news.tasks.clinic_diagnose_task", soft_time_limit=1500, time_limit=1600)
+def clinic_diagnose_task():
+    """Diagnozy nowych postów polityków (Klinika spinu). Wyłączone bez CLINIC_AI_ENABLED i klucza."""
+    if not cache.add("clinic-diagnose-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news.clinic import run_diagnoses
+        return run_diagnoses(limit=5)
+    finally:
+        cache.delete("clinic-diagnose-lock")
+
+
+@shared_task(name="news.tasks.clinic_daily_messages_task", soft_time_limit=600, time_limit=660)
+def clinic_daily_messages_task():
+    from news.clinic import run_daily_messages
+    return run_daily_messages()
+
+
 @shared_task(name="news.tasks.political_poll_task", soft_time_limit=45, time_limit=60)
 def political_poll_task():
     """Run at most one due, confirmed political X account.

@@ -1,5 +1,6 @@
 "use client";
 
+import { XAccountSuggest } from "./clinic/XAccountSuggest";
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query';
@@ -89,6 +90,13 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
           <span>potwierdzone przez zespół i oficjalne API X</span>
           <SourceLink href={x.evidence_url}>link z oficjalnego profilu</SourceLink>
           {x.posts_collected > 0 && <span>{x.posts_collected} {plural(x.posts_collected, 'wpis', 'wpisy', 'wpisów')} w Bazie</span>}
+        </p>
+      )}
+      {!x && (
+        <p className="sc-public-figure-x">
+          <span className="sc-public-figure-tag">KONTO X</span>
+          <span>Brak potwierdzonego konta — nie czytamy jeszcze postów tej osoby.</span>
+          <XAccountSuggest figureId={figure.id} name={figure.name} />
         </p>
       )}
       <nav className="sc-public-figure-summary" aria-label="Sekcje profilu">
