@@ -5,6 +5,8 @@ export type Source = {
   source_type: string;
   is_active?: boolean;
   catalog_stage?: 'candidate' | 'configured' | 'excluded';
+  /** Grupa dla czytelnika wyznaczona przez backend (news.source_groups): Top media / Publiczne / Media. */
+  portal_group?: 'top' | 'publiczne' | 'media';
 };
 
 export type Article = {

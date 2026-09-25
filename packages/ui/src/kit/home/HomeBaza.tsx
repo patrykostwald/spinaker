@@ -23,7 +23,7 @@ import { MorphValue } from "../motion/MorphValue";
 import { Reveal, RevealHeight } from "../motion/Reveal";
 import { FilterIcon } from "../icons/FilterIcon";
 import { ChevronDownIcon } from "../icons/ChevronDownIcon";
-import type { CategoryOption } from "../../lib/portal";
+import { CATEGORY_GROUPS, expandCategories } from "../../lib/categoryGroups";
 import type { Source } from "../../types";
 import { useHomeInfiniteFeed } from "./data";
 import { GROUP_EMPTY_HINT, activeSources, groupSources, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
@@ -65,14 +65,12 @@ function FilterGroup({ title, summary, defaultOpen = false, children }: { title:
 }
 
 function FiltersPanel({
-  categories,
   sources,
   state,
   onChange,
   onReset,
   activeCount,
 }: {
-  categories: CategoryOption[];
   sources: Source[];
   state: FiltersState;
   onChange: (next: FiltersState) => void;
@@ -87,8 +85,9 @@ function FiltersPanel({
   return (
     <div className="sc-home-filters">
       <FilterGroup title="Kategorie" summary={state.categories.length ? String(state.categories.length) : "wszystkie"} defaultOpen>
-        {categories.map((item) => (
-          <Checkbox key={item.value} label={item.label} checked={state.categories.includes(item.value)} onChange={() => onChange({ ...state, categories: toggle(state.categories, item.value) })} />
+        {/* Osiem grup (alfabetycznie) zamiast 18 kategorii backendu; stan trzyma klucze grup. */}
+        {CATEGORY_GROUPS.map((group) => (
+          <Checkbox key={group.key} label={group.label} checked={state.categories.includes(group.key)} onChange={() => onChange({ ...state, categories: toggle(state.categories, group.key) })} />
         ))}
       </FilterGroup>
 
@@ -141,8 +140,8 @@ function FiltersPanel({
 const PAGE_SIZE = 30;
 const EMPTY_FILTERS: FiltersState = { categories: [], sources: [], youtube: false, period: "all" };
 
-export const HomeBaza = forwardRef<HTMLElement, { categories: CategoryOption[]; sources: Source[]; initialQuery: string; sourceGroup?: SourceGroup | null }>(
-  function HomeBaza({ categories, sources, initialQuery, sourceGroup = null }, ref) {
+export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuery: string; sourceGroup?: SourceGroup | null }>(
+  function HomeBaza({ sources, initialQuery, sourceGroup = null }, ref) {
   const [query, setQuery] = useState(initialQuery);
   const [filters, setFilters] = useState<FiltersState>(EMPTY_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -166,7 +165,7 @@ export const HomeBaza = forwardRef<HTMLElement, { categories: CategoryOption[]; 
 
   const feed = useHomeInfiniteFeed("baza", {
     query,
-    categories: filters.categories,
+    categories: expandCategories(filters.categories),
     sources: filters.sources.length ? filters.sources : sourceGroup ? groupActiveIds : [],
     platforms: filters.youtube ? ["youtube"] : [],
     pageSize: PAGE_SIZE,
@@ -206,7 +205,7 @@ export const HomeBaza = forwardRef<HTMLElement, { categories: CategoryOption[]; 
   }, [feed.fetchNextPage, feed.hasNextPage, feed.isFetchingNextPage, feed]);
 
   const panel = (
-    <FiltersPanel categories={categories} sources={scopedSources} state={filters} onChange={setFilters} onReset={() => setFilters(EMPTY_FILTERS)} activeCount={activeCount} />
+    <FiltersPanel sources={scopedSources} state={filters} onChange={setFilters} onReset={() => setFilters(EMPTY_FILTERS)} activeCount={activeCount} />
   );
 
   return (

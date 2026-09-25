@@ -3,7 +3,7 @@
 /**
  * „Wodospad” powiększonego boxa: baza powiązanych doniesień. Po otwarciu boxa przeszukujemy bazę
  * (`/api/articles/<id>/context/?page=N`, po 30 materiałów) i wyniki „spływają” z miniatury głównego
- * materiału do kolumn-kategorii (artykuł, dokument urzędowy, film…); każdy wiersz to inna data,
+ * materiału do kolumn — ośmiu grup kategorii portalu (Artykuł, Film, Publiczne, Reklama…, alfabetycznie); każdy wiersz to inna data,
  * wiersze dochodzą w miarę zapełniania. Kilka pierwszych stron dociąga się samo, z krótką przerwą —
  * widać postęp szukania; dalej przycisk „Szukaj dalej”.
  */
@@ -13,13 +13,12 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, NewsCard, useMotionTokens } from "../kit";
 import type { ArticleContext as ArticleContextData } from "../lib/portal";
+import { CATEGORY_GROUPS, categoryGroupOf } from "../lib/categoryGroups";
 import { categoryLabel, formatDatePl } from "../lib/utils";
 import type { Article } from "../types";
 import { articleContextPage } from "./MaterialTimeline";
 
 const AUTO_PAGES = 4;
-const MAX_COLUMNS = 6;
-const OTHER = "__inne";
 
 type Found = { article: Article; date: string; order: number };
 
@@ -85,19 +84,14 @@ export function MaterialWaterfall({ article, onSelect }: { article: Article; onS
     return out;
   }, [pages, article.id]);
 
-  // Kolumny: kategorie z liczników kontekstu (malejąco); ponad MAX_COLUMNS — reszta w „Inne”.
+  // Kolumny: grupy kategorii portalu (alfabetycznie), tylko te, w których są wyniki (także z liczników kontekstu).
   const columns = useMemo(() => {
-    const counted = (summary?.counts ?? []).filter((item) => item.count > 0).sort((a, b) => b.count - a.count);
-    const present = new Set(found.map((item) => item.article.category));
-    const base = counted.length ? counted.map((item) => ({ key: item.category, label: item.label, count: item.count })) : [...present].map((key) => ({ key, label: categoryLabel(key), count: 0 }));
-    for (const key of present) if (!base.some((item) => item.key === key)) base.push({ key, label: categoryLabel(key), count: 0 });
-    if (base.length <= MAX_COLUMNS) return base;
-    const head = base.slice(0, MAX_COLUMNS - 1);
-    const rest = base.slice(MAX_COLUMNS - 1);
-    return [...head, { key: OTHER, label: "Inne", count: rest.reduce((sum, item) => sum + item.count, 0) }];
+    const present = new Set(found.map((item) => categoryGroupOf(item.article.category).key));
+    for (const item of summary?.counts ?? []) if (item.count > 0) present.add(categoryGroupOf(item.category).key);
+    return CATEGORY_GROUPS.filter((group) => present.has(group.key)).map((group) => ({ key: group.key, label: group.label }));
   }, [summary, found]);
 
-  const columnOf = (category: string) => (columns.some((column) => column.key === category) ? category : OTHER);
+  const columnOf = (category: string) => categoryGroupOf(category).key;
   const dates = useMemo(() => {
     const keys = [...new Set(found.map((item) => item.date))];
     return keys.sort((a, b) => (a === "unknown" ? 1 : b === "unknown" ? -1 : b.localeCompare(a)));
@@ -162,7 +156,7 @@ export function MaterialWaterfall({ article, onSelect }: { article: Article; onS
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           transition={m.t("ui", { delay: m.reduced ? 0 : Math.min(item.order % 30, 14) * 0.045 })}
                         >
-                          <NewsCard article={item.article} size="mini" headingLevel={4} expandable={false} showCategory={false} onOpen={onSelect} />
+                          <NewsCard article={item.article} size="mini" headingLevel={4} expandable={false} onOpen={onSelect} />
                         </motion.div>
                       ))}
                   </div>

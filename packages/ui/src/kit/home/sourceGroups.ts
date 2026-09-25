@@ -2,7 +2,8 @@
  * Grupy źródeł (Publiczne · Media · Top media) — jedna definicja dla selektora w pasku kategorii,
  * filtrów Bazy i linków w globalnej stopce. Grupa to parametr adresu `?zrodla=`, więc stopka
  * (w layoucie, poza stroną główną) może ją ustawić zwykłym linkiem.
- * Podział na podstawie nazwy i `source_type` — ta sama heurystyka, której Baza używała dotąd.
+ * Podział wyznacza backend (`portal_group`: lista wiodących mediów + instytucje publiczne); heurystyka
+ * po nazwie zostaje tylko jako zapas dla danych bez tego pola (np. tryb demonstracyjny).
  */
 
 import type { Source } from "../../types";
@@ -21,6 +22,7 @@ const IMPORTANT_SOURCE_NAMES = /pap|reuters|tvn|polsat|wyborcza|oko\.press|rp\.p
 const PUBLIC_SOURCE_TYPES = /public|official|government|parliament|sejm|institution|minister|urzad/i;
 
 export function sourceGroupOf(source: Source): SourceGroup {
+  if (source.portal_group) return source.portal_group;
   if (IMPORTANT_SOURCE_NAMES.test(source.name) || /top|major|featured/i.test(source.source_type)) return "top";
   if (PUBLIC_SOURCE_TYPES.test(source.source_type) || /sejm|minister|urz[ąa]d|gov\.pl|główny urząd/i.test(source.name)) return "publiczne";
   return "media";

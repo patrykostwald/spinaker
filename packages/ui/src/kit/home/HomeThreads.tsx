@@ -15,7 +15,7 @@ import { Dropdown } from "../Dropdown";
 import { NewsCard } from "../NewsCard";
 import { ReorderableStrips } from "../ReorderableStrips";
 import { SearchField } from "../SearchField";
-import type { CategoryOption } from "../../lib/portal";
+import { CATEGORY_GROUPS, categoryGroupByKey, categoryGroupOf, expandCategories } from "../../lib/categoryGroups";
 import {
   MAX_PERSONAL_STRIPS,
   loadPersonalStrips,
@@ -30,25 +30,24 @@ import { Strip } from "./Strip";
 
 function StripForm({
   initial,
-  categories,
   sources,
   onSave,
   onCancel,
 }: {
   initial?: PersonalStrip;
-  categories: CategoryOption[];
   sources: Source[];
   onSave: (strip: PersonalStrip) => void;
   onCancel: () => void;
 }) {
   const [query, setQuery] = useState(initial?.query ?? "");
-  const [category, setCategory] = useState(initial?.category ?? "");
+  // Starsze nitki mogą mieć zapisaną pojedynczą kategorię backendu — pokazujemy jej grupę.
+  const [category, setCategory] = useState(initial?.category ? (categoryGroupByKey(initial.category)?.key ?? categoryGroupOf(initial.category).key) : "");
   const [sourceId, setSourceId] = useState<string>(initial?.sourceId ? String(initial.sourceId) : "");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const source = sources.find((item) => String(item.id) === sourceId);
-    const label = query.trim() || categories.find((item) => item.value === category)?.label || source?.name || "Moja nitka";
+    const label = query.trim() || categoryGroupByKey(category)?.label || source?.name || "Moja nitka";
     onSave({ id: initial?.id || `${Date.now()}`, label, query: query.trim(), category, sourceId: sourceId ? Number(sourceId) : "" });
   }
 
@@ -58,11 +57,11 @@ function StripForm({
       <div className="sc-home-stripform__row">
         <SearchField value={query} onChange={setQuery} placeholder="Hasło lub nazwisko" label="Hasło lub nazwisko" />
         <Dropdown
-          label={categories.find((item) => item.value === category)?.label ?? "Kategoria: wszystkie"}
+          label={categoryGroupByKey(category)?.label ?? "Kategoria: wszystkie"}
           ariaLabel="Kategoria"
           mode="single"
           presentation="auto"
-          items={[{ value: "", label: "Wszystkie" }, ...categories]}
+          items={[{ value: "", label: "Wszystkie" }, ...CATEGORY_GROUPS.map((group) => ({ value: group.key, label: group.label }))]}
           value={category}
           onChange={(value) => setCategory(value as string)}
         />
@@ -91,7 +90,7 @@ function StripForm({
 function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; onEdit: () => void; onRemove: () => void }) {
   const feed = useHomeFeed(`personal-${strip.id}`, {
     query: strip.query,
-    categories: strip.category ? [strip.category] : [],
+    categories: strip.category ? expandCategories([strip.category]) : [],
     sources: strip.sourceId ? [strip.sourceId] : [],
     pageSize: 20,
   });
@@ -121,8 +120,8 @@ function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; 
   );
 }
 
-export const HomeThreads = forwardRef<HTMLElement, { categories: CategoryOption[]; sources: Source[] }>(function HomeThreads(
-  { categories, sources },
+export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(function HomeThreads(
+  { sources },
   ref,
 ) {
   const [strips, setStrips] = useState<PersonalStrip[]>([]);
@@ -165,7 +164,6 @@ export const HomeThreads = forwardRef<HTMLElement, { categories: CategoryOption[
       <div className="sc-home-threads__config">
         {adding && !atLimit ? (
           <StripForm
-            categories={categories}
             sources={sources}
             onSave={saveNew}
             onCancel={() => setAdding(false)}
@@ -198,7 +196,6 @@ export const HomeThreads = forwardRef<HTMLElement, { categories: CategoryOption[
             editingId === row.id ? (
               <StripForm
                 initial={row.strip}
-                categories={categories}
                 sources={sources}
                 onSave={(strip) => { setStrips(updatePersonalStrip(strip)); setEditingId(null); }}
                 onCancel={() => setEditingId(null)}

@@ -73,7 +73,6 @@ export function HomePage() {
   const [dayGroup, setDayGroup] = useState<SourceGroup | null>(null);
   const bazaRef = useRef<HTMLElement | null>(null);
 
-  const categories = config.data?.categories ?? [];
   const sources = config.data?.sources ?? [];
   const groupIds = useMemo(() => (sourceGroup ? groupSources(activeSources(sources))[sourceGroup].map((source) => source.id) : []), [sources, sourceGroup]);
   const groupEmpty = Boolean(sourceGroup) && sources.length > 0 && groupIds.length === 0;
@@ -188,14 +187,14 @@ export function HomePage() {
           />
         </HomeReveal>
         <HomeReveal>
-          <HomeThreads categories={categories} sources={sources} />
+          <HomeThreads sources={sources} />
         </HomeReveal>
         <HomeReveal>
           <HomeDrSpin thread={drSpin.data ?? null} />
         </HomeReveal>
         <HomePrzekazDnia government={config.data?.editorial.government ?? null} opposition={config.data?.editorial.opposition ?? null} />
         <HomeReveal>
-          <HomeBaza ref={bazaRef} categories={categories} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
+          <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>
       </div>
     </>
