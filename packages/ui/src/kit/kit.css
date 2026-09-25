@@ -3009,3 +3009,53 @@ body { background: var(--sc-bg); color: var(--sc-text); }
 }
 /* Pasek newsowy wyrównany do kolumny treści (bez spadu w bok). */
 .sc-home-ticker .sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
+
+/* === Stage 2: powiększony box — oś czasu 15, reakcje, baza powiązanych (25.09) === */
+.sc-material-details { display: grid; gap: var(--sc-s-7); margin-top: var(--sc-s-6); min-width: 0; }
+.sc-material-details > * { min-width: 0; }
+/* Oś czasu: data nad każdym boxem, kropki na wspólnej linii; otwarty box podświetlony akcentem. */
+.sc-material-timeline { display: grid; gap: var(--sc-s-3); }
+.sc-material-timeline__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sc-s-3); flex-wrap: wrap; }
+.sc-material-timeline__head h3, .sc-material-timeline__head p { margin: 0; }
+.sc-material-timeline .sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
+.sc-material-timeline__inner { display: grid; gap: var(--sc-s-2); width: 100%; align-content: start; }
+.sc-material-timeline__date { position: relative; margin: 0; padding-top: var(--sc-s-3); border-top: 2px solid var(--sc-line); color: var(--sc-text-2); font-variant-numeric: tabular-nums; }
+.sc-material-timeline__dot { position: absolute; top: -6px; left: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-line); }
+.sc-material-timeline__slot[data-current] .sc-material-timeline__date { border-top-color: var(--sc-accent); color: var(--sc-text); }
+.sc-material-timeline__slot[data-current] .sc-material-timeline__dot { background: var(--sc-accent); box-shadow: 0 0 0 4px var(--sc-accent-soft); }
+.sc-material-timeline__slot[data-current] .sc-card { box-shadow: 0 0 0 2px var(--sc-accent); }
+.sc-material-timeline__here { color: var(--sc-accent); }
+/* Reakcje: pasek z licznikami, pod nim komentarze w ograniczonym, przewijanym obszarze. */
+.sc-material-reactions { display: grid; gap: var(--sc-s-3); }
+.sc-material-reactions__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2) var(--sc-s-5); padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-xl); background: var(--sc-surface-2); }
+.sc-material-reactions__stat { display: inline-flex; align-items: baseline; gap: 6px; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-material-reactions__stat strong { color: var(--sc-text); font-variant-numeric: tabular-nums; }
+.sc-material-reactions__stat.is-positive > span { color: var(--sc-positive); }
+.sc-material-reactions__stat.is-negative > span { color: var(--sc-negative); }
+.sc-material-reactions__jump { margin-left: auto; }
+.sc-material-reactions__body { max-height: min(70vh, 640px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 2px var(--sc-s-1); border-radius: var(--sc-r-xl); outline: none; scroll-margin-top: var(--sc-s-8); }
+.sc-material-reactions__body:focus-visible { box-shadow: 0 0 0 2px var(--sc-focus); }
+/* Wodospad: miniatura źródła → kolumny kategorii, wiersze dat; kolumny przewijane w bok. */
+.sc-material-waterfall { display: grid; gap: var(--sc-s-4); }
+.sc-material-waterfall__head { display: flex; align-items: center; gap: var(--sc-s-4); }
+.sc-material-waterfall__head h3, .sc-material-waterfall__head p { margin: 0; }
+.sc-material-waterfall__source { flex: none; display: grid; place-items: center; width: 72px; height: 72px; overflow: hidden; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); box-shadow: 0 0 0 2px var(--sc-accent-soft); }
+.sc-material-waterfall__source img { width: 100%; height: 100%; object-fit: cover; }
+.sc-material-waterfall__source-empty { padding: 4px; text-align: center; color: var(--sc-text-3); font-size: 9px; letter-spacing: 0; }
+.sc-material-waterfall__scroll { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding-bottom: var(--sc-s-2); outline: none; }
+.sc-material-waterfall__scroll:focus-visible { box-shadow: 0 0 0 2px var(--sc-focus); border-radius: var(--sc-r-md); }
+.sc-material-waterfall__grid { display: grid; grid-template-columns: repeat(var(--sc-wf-cols, 4), minmax(240px, 340px)); gap: var(--sc-s-3); align-items: start; }
+.sc-material-waterfall__col-head { margin: 0; padding: var(--sc-s-2) var(--sc-s-3); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); }
+.sc-material-waterfall__row { display: contents; }
+.sc-material-waterfall__date { grid-column: 1 / -1; position: sticky; left: 0; justify-self: start; margin: var(--sc-s-2) 0 0; color: var(--sc-accent); font-variant-numeric: tabular-nums; }
+.sc-material-waterfall__cell { display: grid; gap: var(--sc-s-2); align-content: start; min-width: 0; }
+.sc-material-waterfall__more { display: flex; justify-content: center; }
+@media (max-width: 640px) {
+  .sc-material-waterfall__grid { grid-template-columns: repeat(var(--sc-wf-cols, 4), minmax(78vw, 1fr)); }
+  .sc-material-reactions__jump { margin-left: 0; }
+}
+/* Oś czasu i baza powiązanych potrzebują szerokości: blok szczegółów wychodzi poza kolumnę tekstu (760px)
+   do 1120px, wyśrodkowany; tytuł i opis zostają w wygodnej szerokości czytania. */
+@media (min-width: 900px) {
+  .sc-surface__context:has(> .sc-material-details) { align-self: center; width: min(1120px, calc(100vw - 96px)); }
+}

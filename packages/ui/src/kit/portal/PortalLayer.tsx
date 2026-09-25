@@ -14,7 +14,7 @@
  */
 
 import { AnimatePresence } from "framer-motion";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { Article } from "../../types";
 import { useMotionTokens } from "../motion/useMotionTokens";
@@ -31,6 +31,8 @@ export type PortalLayerProps = {
   resolveArticle?: (id: number) => Article | null | undefined | Promise<Article | null | undefined>;
   /** Materiały «Powiązane materiały» pod aktualnie otwartym. */
   relatedFor?: (article: Article) => Article[];
+  /** Treść pod nagłówkiem materiału (np. oś czasu, reakcje, baza powiązanych); `navigate` — przejście do innego boxa. */
+  renderDetails?: (article: Article, navigate: (next: Article) => void) => ReactNode;
 };
 
 function toRect(rect: DOMRect | null | undefined): MaterialSurfaceRect | null {
@@ -38,7 +40,7 @@ function toRect(rect: DOMRect | null | undefined): MaterialSurfaceRect | null {
   return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
 }
 
-export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
+export function PortalLayer({ resolveArticle, relatedFor, renderDetails }: PortalLayerProps) {
   const engine = usePortalEngine();
   const api = usePortalApi();
   const m = useMotionTokens();
@@ -179,7 +181,9 @@ export function PortalLayer({ resolveArticle, relatedFor }: PortalLayerProps) {
             onSettled={handleSettled}
             dragEnabled={engine.settled}
             drag={drag}
-          />
+          >
+            {renderDetails ? renderDetails(displayed!, handleNavigate) : null}
+          </MaterialSurface>
         )}
       </AnimatePresence>
     </>,
