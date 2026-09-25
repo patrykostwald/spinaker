@@ -2,42 +2,42 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { CopyBlock } from './CopyBlock';
-import { BOX, CONTEXT_THREAD, DR_SPIN, DR_SPIN_LATER, EXPANDED, NEWS_THREAD } from './diagrams';
+import { BOX, CLINIC } from './diagrams';
 
 export const metadata: Metadata = {
   title: 'O nas — spin.clinic',
   description:
-    'spin.clinic pokazuje doniesienia mediów i materiały instytucji publicznych w kontekście: ze źródłem, datą i linkiem do oryginału, na osi czasu. Czym są boxy, nitki newsowe i kontekstowe, Dr. Spin i trzy fazy projektu.',
+    'spin.clinic to agregator wiadomości ze źródłami, Klinika spinu z automatyczną diagnozą postów polityków i — w kolejnej fazie — nitki kontekstowe czytelników. Jak działa, na czym jest zbudowany i co planujemy.',
   alternates: { canonical: '/o-nas' },
 };
 
 /** Data ostatniej zmiany opisu — aktualizować przy każdej zmianie treści tej strony. */
-const LAST_UPDATED = { iso: '2026-09-25', label: '25 września 2026' };
+const LAST_UPDATED = { iso: '2026-09-26', label: '26 września 2026' };
 
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic';
 const SOURCES_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'zrodla@spin.clinic';
+const OPERATOR = 'iApply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
 const CONTACTS: Array<{ email: string; purpose: string }> = [
   { email: 'kontakt@spin.clinic', purpose: 'pytania o projekt, współpraca, media' },
   { email: SOURCES_EMAIL, purpose: 'źródła, zgody wydawców, zakres dostępu' },
-  { email: 'admin@spin.clinic', purpose: 'sprawy techniczne i administracyjne, błędy serwisu' },
+  { email: 'admin@spin.clinic', purpose: 'sprawy techniczne, prywatność, zgłoszenia dotyczące diagnoz' },
 ];
 
 const SECTIONS = [
   { id: 'spin-doctor', label: 'Spin doctor' },
   { id: 'o-nas', label: 'O nas' },
+  { id: 'pojecia', label: 'Box i nitki' },
+  { id: 'klinika', label: 'Klinika spinu' },
   { id: 'fazy', label: 'Fazy i technologia' },
-  { id: 'box', label: 'Box' },
-  { id: 'po-kliknieciu', label: 'Po otwarciu boxa' },
-  { id: 'nitki-newsowe', label: 'Nitka newsowa' },
-  { id: 'nitki-kontekstowe', label: 'Nitka kontekstowa' },
-  { id: 'dr-spin', label: 'Dr. Spin' },
+  { id: 'wsparcie', label: 'Utrzymanie' },
   { id: 'dla-redakcji', label: 'Dla redakcji i wydawców' },
-  { id: 'zasady', label: 'Czego nie robimy' },
+  { id: 'zasady', label: 'Zasady' },
 ];
 
 const ABOUT_SNIPPET =
-  `spin.clinic to serwis, który pokazuje doniesienia mediów i materiały instytucji publicznych w kontekście: zawsze ze źródłem, datą i linkiem do oryginału, na osi czasu obok tego, co ukazało się wcześniej i później. ` +
-  `Nie piszemy własnych newsów i nie rozstrzygamy, co jest prawdą — dajemy pełniejszy obraz, żeby każdy mógł ocenić sam. Więcej: https://${DOMAIN}/o-nas`;
+  `spin.clinic zbiera doniesienia mediów i materiały instytucji publicznych — zawsze ze źródłem, datą i linkiem do oryginału — ` +
+  `i sprawdza przekazy polityków: każdy nowy post z ich kont na X dostaje automatyczną diagnozę spinu według tych samych zasad dla każdej strony. ` +
+  `Nie piszemy własnych newsów i nie oceniamy ludzi — pokazujemy kontekst, żeby każdy mógł ocenić sam. Więcej: https://${DOMAIN}/o-nas`;
 
 const PUBLISHER_TERMS = [
   'co pobieramy    tytuł, autor, data publikacji, link, nazwa źródła',
@@ -50,6 +50,12 @@ const PUBLISHER_TERMS = [
   'rezygnacja      wystarczy wiadomość, a wyłączymy źródło',
   `kontakt         ${SOURCES_EMAIL}`,
 ].join('\n');
+
+const PARTS = [
+  { href: '/', name: 'Wiadomości', status: 'działa · beta', text: 'Agregator doniesień mediów i instytucji publicznych. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — na pasku newsowym, na osi czasu i w bazie z wyszukiwarką.' },
+  { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Czytamy posty polityków z X, a Dr. Spin — narzędzie AI — rozkłada każdy na czynniki pierwsze i stawia diagnozę. Rządzący i opozycja obok siebie, według tych samych zasad.' },
+  { href: '/nitki', name: 'Nitki', status: 'faza II', text: 'Miejsce dla czytelników: własne nitki kontekstowe z materiałów z naszej bazy albo dodanych samodzielnie przez link. Prywatne nitki działają już na koncie.' },
+];
 
 /**
  * Statusy technologii i funkcji — tylko cztery, zawsze te same słowa:
@@ -71,10 +77,8 @@ type Phase = {
   status: string;
   title: string;
   lead: string;
-  featuresLabel: string;
   features: Array<{ text: string; status: Status }>;
   stack: Array<{ group: string; items: TechItem[] }>;
-  note: [string, string];
   current?: boolean;
 };
 
@@ -82,124 +86,74 @@ const PHASES: Phase[] = [
   {
     id: 'faza-1',
     status: 'Faza I · działa dzisiaj',
-    title: 'Baza, boxy i rejestry',
-    lead: 'To, co działa już dziś. Funkcje oznaczone jako „beta” są dostępne dla czytelników, ale wciąż je rozwijamy.',
-    featuresLabel: 'Funkcje',
+    title: 'Wiadomości i Klinika',
+    lead: 'To, co działa już dziś. Funkcje oznaczone jako „beta” są dostępne, ale wciąż je rozwijamy.',
     features: [
-      { text: 'wyszukiwanie materiałów w bazie, filtrowanie po kategorii, źródle i haśle', status: 'beta' },
-      { text: 'publiczne boxy materiałów i kontekst materiału: oś czasu powiązanych i baza powiązanych', status: 'beta' },
-      { text: 'pasek newsowy i do pięciu nitek użytkownika — zapisane widoki na urządzeniu', status: 'beta' },
-      { text: 'rejestr osób publicznych i stanowisk publicznych, z historią sprawowania funkcji i osią czasu osoby', status: 'beta' },
-      { text: 'powiązania osób, organizacji, źródeł i materiałów — wyłącznie potwierdzone dowodami', status: 'beta' },
-      { text: 'Wiadomości dnia, sekcje tematyczne i temat dnia', status: 'beta' },
-      { text: 'Dr. Spin — narzędzie zespołu do porządkowania kontekstu i dowodów', status: 'beta' },
-      { text: 'import i audyt źródeł, ręczne zatwierdzanie dowodów', status: 'beta' },
+      { text: 'baza materiałów z wyszukiwarką, paski newsowe i do pięciu własnych nitek newsowych', status: 'beta' },
+      { text: 'box materiału z osią czasu i bazą powiązanych materiałów', status: 'beta' },
+      { text: 'Klinika spinu: diagnozy postów polityków, waga spinu, przekazy dnia, spin dnia, reakcje i komentarze', status: 'beta' },
+      { text: 'rejestr osób i stanowisk publicznych z historią funkcji i kontami X potwierdzonymi dowodem', status: 'beta' },
+      { text: 'prywatne nitki kontekstowe na koncie — z materiałów z naszej bazy', status: 'beta' },
     ],
     stack: [
-      {
-        group: 'Frontend',
-        items: [
-          { name: 'Next.js 14 · React · TypeScript', status: 'działa' },
-          { name: 'Tailwind CSS 3.4 i wspólny pakiet komponentów', note: 'motyw jasny i ciemny, układ na telefon i komputer', status: 'działa' },
-          { name: 'TanStack Query', note: 'pobieranie i przechowywanie danych w przeglądarce', status: 'działa' },
-        ],
-      },
-      {
-        group: 'Backend',
-        items: [
-          { name: 'Python · Django 5 · Django REST Framework', note: 'materiały, źródła, konta, nitki, osoby i stanowiska publiczne, dowody, relacje, historia zmian', status: 'działa' },
-          { name: 'Django Admin', note: 'panel administracyjny', status: 'działa' },
-          { name: 'OpenAPI (drf-spectacular)', note: 'publiczny opis API', status: 'działa' },
-        ],
-      },
-      {
-        group: 'Dane i zadania w tle',
-        items: [
-          { name: 'PostgreSQL 15', note: 'baza produkcyjna; SQLite wyłącznie do lokalnych testów', status: 'działa' },
-          { name: 'Redis 7 · Celery Worker · Celery Beat', note: 'pobieranie i kontrole według harmonogramu', status: 'działa' },
-          { name: 'importery źródeł fail-closed', note: 'bez zatwierdzonego kanału i zakresu dostępu źródło nie jest pobierane', status: 'działa' },
-        ],
-      },
-      {
-        group: 'Infrastruktura',
-        items: [
-          { name: 'Docker · Docker Compose · VPS z Ubuntu', note: 'na zewnątrz tylko porty HTTP i HTTPS', status: 'działa' },
-          { name: 'Caddy', note: 'reverse proxy i HTTPS z automatycznym certyfikatem', status: 'działa' },
-          { name: 'GitHub · GitHub Actions', note: 'testy i ręczne wdrożenie wybranej wersji', status: 'działa' },
-        ],
-      },
-      {
-        group: 'Źródła i rejestry',
-        items: [
-          { name: 'oficjalne API (Sejm, ELI) · RSS · BIP', status: 'działa' },
-          { name: 'oficjalne kanały YouTube', note: 'osobny, weryfikowany typ źródła', status: 'działa' },
-          { name: 'rejestr stanowisk publicznych', note: 'obecne i byłe osoby, historia zmian', status: 'działa' },
-          { name: 'dowody kont X i kolejka ręcznej weryfikacji', status: 'działa' },
-        ],
-      },
+      { group: 'Serwis', items: [
+        { name: 'Next.js 14 · React · TypeScript · Tailwind CSS', note: 'motyw jasny i ciemny, telefon i komputer', status: 'działa' },
+        { name: 'Python · Django 5 · Django REST Framework', note: 'dane, konta, rejestry, publiczne API z opisem OpenAPI', status: 'działa' },
+      ] },
+      { group: 'Dane', items: [
+        { name: 'PostgreSQL 15 · Redis 7 · Celery', note: 'baza i zadania w tle według harmonogramu', status: 'działa' },
+        { name: 'importery źródeł fail-closed', note: 'bez zatwierdzonego kanału i zakresu dostępu źródło nie jest pobierane', status: 'działa' },
+      ] },
+      { group: 'Źródła', items: [
+        { name: 'oficjalne API Sejmu i ELI · RSS · BIP', status: 'działa' },
+        { name: 'API X (oficjalne, płatne)', note: 'posty z kont potwierdzonych dowodem', status: 'działa' },
+        { name: 'YouTube Data API', note: 'oficjalne kanały jako osobny typ źródła', status: 'działa' },
+      ] },
+      { group: 'AI w Klinice', items: [
+        { name: 'Claude (Anthropic) z wyszukiwaniem w sieci', note: 'diagnoza: techniki z cytatami, twierdzenia ze źródłami', status: 'beta' },
+        { name: 'Groq — otwarty model językowy', note: 'wstępna selekcja: czy post zawiera tezę do oceny', status: 'beta' },
+      ] },
+      { group: 'Infrastruktura', items: [
+        { name: 'Docker · Caddy (HTTPS) · serwer VPS · GitHub Actions', status: 'działa' },
+      ] },
     ],
-    note: ['Zasada', 'każde źródło ma zapisane warunki wykorzystania, kanał dostępu, status techniczny i prawny oraz historię audytu. Rozdzielamy dane potwierdzone, kandydatury, źródła czekające na kontakt i źródła nieaktywne.'],
     current: true,
   },
   {
     id: 'faza-2',
     status: 'Faza II · najbliższy etap',
-    title: 'Szerszy kontekst, konta i powiadomienia',
-    lead: 'Wdrażamy to etapami. Część elementów jest już przygotowana w kodzie, ale nie działa jeszcze dla czytelników.',
-    featuresLabel: 'Co dochodzi',
+    title: 'Nitki czytelników',
+    lead: 'Część społeczna: czytelnicy układają i publikują własne nitki kontekstowe.',
     features: [
-      { text: 'napisy i transkrypcje materiałów wideo z YouTube — z wyszukiwaniem w ich treści', status: 'planowane' },
-      { text: 'lepsze wykrywanie powiązań między materiałami i rozbudowane osie czasu', status: 'planowane' },
-      { text: 'alerty po haśle, źródle i temacie — w serwisie i e-mailem', status: 'planowane' },
-      { text: 'konta: własne nitki kontekstowe, reakcje i komentarze z moderacją', status: 'planowane' },
-      { text: 'kolejka moderacji i zatwierdzanie treści przed publikacją', status: 'planowane' },
-      { text: 'raporty jakości importu: duplikaty, błędne daty, puste materiały, błędy techniczne', status: 'planowane' },
-      { text: 'dalsze uzupełnianie rejestru stanowisk publicznych', status: 'planowane' },
+      { text: 'publiczne nitki czytelników z reakcjami i komentarzami, z moderacją', status: 'planowane' },
+      { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'planowane' },
+      { text: 'w Klinice dowody jako boxy z naszej bazy zamiast samego tekstu', status: 'planowane' },
+      { text: 'napisy i transkrypcje wideo z YouTube, alerty po haśle i źródle', status: 'planowane' },
     ],
     stack: [
-      {
-        group: 'Integracje',
-        items: [
-          { name: 'YouTube Data API', note: 'napisy i transkrypcje', status: 'planowane' },
-          { name: 'API X', note: 'pilotaż płatnego dostępu; konta potwierdzane wyłącznie oficjalnymi dowodami', status: 'wymaga potwierdzenia' },
-          { name: 'powiadomienia w serwisie i e-mail', status: 'planowane' },
-        ],
-      },
+      { group: 'Technologia', items: [
+        { name: 'NVIDIA NIM', note: 'wyszukiwanie po znaczeniu w bazie; przygotowane, wyłączone', status: 'wymaga potwierdzenia' },
+        { name: 'powiadomienia e-mail i w serwisie', status: 'planowane' },
+      ] },
     ],
-    note: ['Nadal bez', 'automatycznej publikacji i automatycznych ocen.'],
   },
   {
     id: 'faza-3',
-    status: 'Faza III · planowane kolejne fazy',
-    title: 'Wyszukiwanie wspomagane AI i dalszy rozwój',
-    lead: 'AI ma być narzędziem zespołu, nie autorem. Model pracuje wyłącznie na rekordach z naszej bazy i na ich dowodach.',
-    featuresLabel: 'Założenia',
+    status: 'Faza III · kolejne fazy',
+    title: 'Własna maszyna i otwarte modele',
+    lead: 'Zamiast zestawu zewnętrznych usług — własny serwer i otwarty model, który czyta posty i stawia diagnozy.',
     features: [
-      { text: 'wybór ograniczonej liczby powiązanych materiałów z realnej bazy', status: 'planowane' },
-      { text: 'odpowiedzi oparte wyłącznie na istniejących rekordach — bez zmyślonych linków i dopowiadania faktów', status: 'planowane' },
-      { text: 'zapis modelu, wersji instrukcji, kosztu, pewności, danych wejściowych i decyzji redaktora — z osobnym audytem jakości', status: 'planowane' },
-      { text: 'później: aplikacja instalowana z przeglądarki (PWA) i powiadomienia push, rozbudowane mapy relacji, indeksowanie dokumentów BIP, większe archiwum, narzędzia do moderacji', status: 'planowane' },
+      { text: 'diagnozy na własnym serwerze GPU, na otwartych modelach — z pełną kontrolą i jawną konfiguracją', status: 'planowane' },
+      { text: 'odpowiedzi oparte na naszej bazie (RAG) — każde ustalenie z boxem źródłowym', status: 'planowane' },
+      { text: 'aplikacja instalowana z przeglądarki, powiadomienia push, mapy powiązań', status: 'planowane' },
     ],
     stack: [
-      {
-        group: 'AI',
-        items: [
-          { name: 'wspólny adapter modeli OpenAI i Mistral', note: 'przygotowany w kodzie, domyślnie wyłączony', status: 'wymaga potwierdzenia' },
-          { name: 'NVIDIA NIM · Groq', note: 'pilotaże szkiców nitek, domyślnie wyłączone', status: 'wymaga potwierdzenia' },
-          { name: 'RAG', note: 'odpowiedzi z cytowaniem materiałów z bazy', status: 'planowane' },
-          { name: 'Qdrant', note: 'kandydat do wyszukiwania wektorowego — po porównaniu z wyszukiwaniem w PostgreSQL', status: 'wymaga potwierdzenia' },
-          { name: 'własny indeks semantyczny i model lokalny', note: 'dopiero po pomiarze sprzętu, kosztu, czasu i jakości', status: 'wymaga potwierdzenia' },
-        ],
-      },
-      {
-        group: 'Później',
-        items: [
-          { name: 'Web Push (VAPID)', note: 'powiadomienia w przeglądarce', status: 'planowane' },
-          { name: 'aplikacje mobilne', note: 'dopiero po potwierdzeniu potrzeb czytelników', status: 'wymaga potwierdzenia' },
-        ],
-      },
+      { group: 'Technologia', items: [
+        { name: 'otwarte modele, m.in. polskie Bielik i PLLuM', note: 'wybór po porównaniu jakości z obecnymi diagnozami', status: 'wymaga potwierdzenia' },
+        { name: 'Qdrant', note: 'kandydat do wyszukiwania wektorowego, po porównaniu z PostgreSQL', status: 'wymaga potwierdzenia' },
+        { name: 'Web Push · PWA', status: 'planowane' },
+      ] },
     ],
-    note: ['Stan', 'żaden model AI nie publikuje dziś niczego w serwisie, a własny model nie jest warunkiem startu. Supabase rozważaliśmy we wcześniejszej architekturze — obecna wersja działa na Django i PostgreSQL.'],
   },
 ];
 
@@ -249,7 +203,6 @@ export default function AboutPage() {
       </nav>
 
       <article className="sc-onas-main">
-        {/* 01 — definicja na samej górze */}
         <section id="spin-doctor" className="sc-onas-section sc-onas-hero" aria-labelledby="spin-doctor-title">
           <p className="sc-onas-kicker">
             <span className="sc-onas-num">01</span> Słownik
@@ -270,23 +223,30 @@ export default function AboutPage() {
           </figure>
           <p className="sc-onas-hero__after">
             Spin to efekt tej pracy — informacja podana tak, żeby działała na korzyść nadawcy. <strong>spin.clinic</strong> jest miejscem, w którym spin traci przewagę:
-            każdą informację widać ze źródłem, datą i tym, co ukazało się przed nią i po niej.
+            każdą informację widać ze źródłem, datą i kontekstem.
           </p>
         </section>
 
-        <Section id="o-nas" index={2} kicker="O nas" title="Kontekst zamiast werdyktu" level={1}>
+        <Section id="o-nas" index={2} kicker="O nas" title="Wiadomości, Klinika, Nitki" level={1}>
           <div className="sc-onas-prose">
             <p className="sc-onas-lead">
-              spin.clinic porządkuje doniesienia mediów i materiały instytucji publicznych tak, żeby od razu było widać, skąd pochodzi informacja, kiedy się pojawiła i co jej
-              towarzyszyło. Każdy materiał ma u nas źródło, datę i link do oryginału.
+              spin.clinic to trzy części jednego serwisu: agregator wiadomości ze źródłami, weryfikator spinów polityków i — w kolejnej fazie — miejsce, w którym czytelnicy
+              układają własne nitki kontekstowe.
             </p>
+          </div>
+          <ul className="sc-onas-parts">
+            {PARTS.map((part) => (
+              <li key={part.href}>
+                <p className="sc-onas-parts__status">{part.status}</p>
+                <h3><Link href={part.href}>{part.name}</Link></h3>
+                <p>{part.text}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="sc-onas-prose">
             <p>
-              Nie piszemy własnych newsów i nie ogłaszamy, co jest prawdą. Zestawiamy materiały na osi czasu — dokument, komunikat, wywiad, artykuł — tak, żeby czytelnik sam
-              zobaczył, jak rozwijała się sprawa i kto co powiedział pierwszy.
-            </p>
-            <p>Robimy to, bo w zalewie przekazów najłatwiej zgubić właśnie kontekst. A bez kontekstu nawet prawdziwe zdanie potrafi wprowadzić w błąd.</p>
-            <p className="sc-onas-status">
-              <span>Stan projektu</span> wersja beta (faza I). Katalog źródeł rośnie z każdym tygodniem — media dołączają po zgodzie wydawców.
+              Nie piszemy własnych newsów, nie oceniamy ludzi i nie zastępujemy dziennikarzy. Pokazujemy, skąd pochodzi informacja, kiedy się pojawiła i co jej towarzyszyło
+              — bo bez kontekstu nawet prawdziwe zdanie potrafi wprowadzić w błąd.
             </p>
           </div>
           <CopyBlock label="O spin.clinic — tekst do skopiowania" mode="text" text={ABOUT_SNIPPET} />
@@ -300,13 +260,71 @@ export default function AboutPage() {
               </div>
             ))}
           </dl>
-          <p className="sc-onas-operator">Operator serwisu: iApply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.</p>
+          <p className="sc-onas-operator">Operator serwisu: {OPERATOR}.</p>
         </Section>
 
-        <Section id="fazy" index={3} kicker="Rozwój i technologia" title="Trzy fazy projektu">
-          <p className="sc-onas-prose">
-            Rozwijamy spin.clinic etapami. Przy każdej funkcji i technologii piszemy wprost, w jakim jest stanie — nie przedstawiamy planów jako czegoś, co już działa.
+        <Section id="pojecia" index={3} kicker="Pojęcia" title="Box, nitka newsowa, nitka kontekstowa">
+          <dl className="sc-onas-terms">
+            <div>
+              <dt>Box</dt>
+              <dd>
+                Karta jednego materiału — artykułu, dokumentu, wywiadu, nagrania, wpisu. Zawsze ze źródłem, datą i linkiem do oryginału. Po otwarciu pokazuje oś czasu
+                powiązanych materiałów i reakcje czytelników.
+              </dd>
+            </div>
+            <div>
+              <dt>Nitka newsowa</dt>
+              <dd>
+                Pasek boxów, który przewijasz w bok — najnowsze materiały według Twojego hasła, kategorii albo źródła. Możesz mieć do pięciu, bez zakładania konta.
+              </dd>
+            </div>
+            <div>
+              <dt>Nitka kontekstowa</dt>
+              <dd>
+                Jeden box na początku, a za nim — w kolejności publikacji — materiały, które go dopełniają, potwierdzają albo podważają. Tak pokazujemy sprawę od początku do
+                końca.
+              </dd>
+            </div>
+            <div>
+              <dt>Diagnoza spinu</dt>
+              <dd>
+                To też nitka kontekstowa: post polityka i to, co go wyjaśnia. Dziś ma postać tekstu ze źródłami z wyszukiwania; w miarę rozbudowy bazy dowodami będą boxy z
+                materiałami źródłowymi.
+              </dd>
+            </div>
+          </dl>
+          <CopyBlock label="schemat boxa" text={BOX} caption="Układ boxa — przykład bez prawdziwej publikacji." />
+        </Section>
+
+        <Section id="klinika" index={4} kicker="Klinika spinu" title="Jak powstaje diagnoza">
+          <div className="sc-onas-prose">
+            <p>
+              Czytamy konta X polityków, które zespół potwierdził oficjalnym dowodem — listę publikujemy w Klinice. Każdy nowy post trafia do Dr. Spina: najpierw prosty
+              model sprawdza, czy jest w nim teza do oceny, a potem Claude rozkłada go na techniki perswazji i twierdzenia.
+            </p>
+          </div>
+          <CopyBlock label="droga posta do diagnozy" text={CLINIC} />
+          <ul className="sc-onas-list">
+            <li>Te same zasady dla każdej strony. Oceniamy komunikat, nie człowieka ani jego poglądy.</li>
+            <li>Każda wskazana technika ma dosłowny cytat z posta. Cytatów, których nie ma w poście, system nie publikuje.</li>
+            <li>Twierdzenia o faktach model sprawdza w wyszukiwarce. Bez źródła twierdzenie zostaje oznaczone jako „nie do sprawdzenia”.</li>
+            <li>
+              Człowiek może diagnozę tylko zatwierdzić albo odrzucić — nie zmienia jej treści. Każda diagnoza jest oznaczona jako przygotowana przez AI, z nazwą modelu i
+              wersją instrukcji.
+            </li>
+            <li>Waga spinu porównuje udział postów ze spinem po każdej stronie, nie ich liczbę — strony mają różną liczbę kont.</li>
+            <li>Czytelnicy oceniają diagnozę jako trafną albo nietrafną i mogą dodać komentarz — zawsze razem z oceną.</li>
+          </ul>
+          <p className="sc-onas-callout">
+            Dr. Spin nie ogłasza prawdy i nie zastępuje dziennikarza. Pokazuje, jak zbudowany jest przekaz i co mówią źródła — ocena należy do Ciebie.
           </p>
+          <p className="sc-onas-aside">
+            Diagnozę można zgłosić na <a href="mailto:admin@spin.clinic">admin@spin.clinic</a>. Po zgłoszeniu prawnym możemy ją ukryć — nigdy poprawić.
+          </p>
+        </Section>
+
+        <Section id="fazy" index={5} kicker="Rozwój i technologia" title="Trzy fazy projektu">
+          <p className="sc-onas-prose">Przy każdej funkcji i technologii piszemy wprost, w jakim jest stanie — nie przedstawiamy planów jako czegoś, co już działa.</p>
           <dl className="sc-onas-legend" aria-label="Oznaczenia stanu">
             {STATUS_HELP.map(([status, help]) => (
               <div key={status}>
@@ -323,7 +341,6 @@ export default function AboutPage() {
                 <p className="sc-onas-phase__status">{phase.status}</p>
                 <h3 id={`${phase.id}-title`}>{phase.title}</h3>
                 <p>{phase.lead}</p>
-                <h4 className="sc-onas-phase__label">{phase.featuresLabel}</h4>
                 <ul className="sc-onas-tagged">
                   {phase.features.map((feature) => (
                     <li key={feature.text}>
@@ -332,7 +349,6 @@ export default function AboutPage() {
                     </li>
                   ))}
                 </ul>
-                <h4 className="sc-onas-phase__label">Technologia</h4>
                 <dl className="sc-onas-stack">
                   {phase.stack.map((group) => (
                     <div key={group.group}>
@@ -353,106 +369,26 @@ export default function AboutPage() {
                     </div>
                   ))}
                 </dl>
-                <p className="sc-onas-phase__note">
-                  <span>{phase.note[0]}:</span> {phase.note[1]}
-                </p>
               </li>
             ))}
           </ol>
+          <p className="sc-onas-aside">Supabase rozważaliśmy we wcześniejszej architekturze — obecna wersja działa na Django i PostgreSQL.</p>
         </Section>
 
-        <Section id="box" index={4} kicker="Idea" title="Jeden materiał — jeden box">
+        <Section id="wsparcie" index={6} kicker="Utrzymanie" title="Utrzymujemy to sami">
           <div className="sc-onas-prose">
             <p>
-              Box to karta jednego materiału: artykułu, wywiadu, dokumentu, nagrania, wpisu albo komunikatu. Zawsze ma źródło, datę, kategorię i link do oryginału. Nie
-              zastępuje publikacji wydawcy — prowadzi do niej.
+              spin.clinic korzysta z płatnych usług: oficjalnego API X, modeli AI, które stawiają diagnozy, i serwera, na którym działa baza. Na razie pokrywamy te koszty
+              sami, bez reklam i bez sponsorów, którzy mogliby wpływać na treść.
             </p>
+            <p>Jeśli Klinika i Wiadomości są dla Ciebie przydatne, wesprzyj projekt — każda wpłata to kolejne sprawdzone posty i źródła.</p>
             <p>
-              Boxy łączą się ze sobą wspólnymi elementami: hasłem, osobą, instytucją, kategorią i czasem publikacji. Powiązanie to wspólny punkt, a nie dowód, że jeden
-              materiał potwierdza drugi.
+              <Link className="sc-onas-mail" href="/wsparcie">Wesprzyj spin.clinic</Link>
             </p>
           </div>
-          <CopyBlock label="schemat boxa" text={BOX} caption="Układ boxa — przykład bez prawdziwej publikacji." />
-          <p className="sc-onas-aside">
-            Dziś powiązania opieramy na słowach, kategoriach i dacie publikacji. W kolejnych fazach planujemy wyszukiwanie wspomagane AI — wyłącznie na rekordach
-            z naszej bazy, bez dopowiadania faktów.
-          </p>
         </Section>
 
-        <Section id="po-kliknieciu" index={5} kicker="Po kliknięciu" title="Co widać po otwarciu boxa">
-          <div className="sc-onas-prose">
-            <p>Kliknięcie otwiera box na cały ekran. Pod tytułem, źródłem i opisem są trzy warstwy kontekstu:</p>
-            <ol className="sc-onas-steps">
-              <li>
-                <strong>Oś czasu.</strong> 15 najważniejszych materiałów powiązanych z boxem — od najnowszego po lewej do coraz starszych. Otwarty box stoi na swoim miejscu
-                na osi, więc od razu widać, co było przed nim, a co po nim.
-              </li>
-              <li>
-                <strong>Reakcje.</strong> Czytelnicy zaznaczają, czy materiał był przydatny, i mogą dodać komentarz. Reakcja dotyczy materiału, nie osób.
-              </li>
-              <li>
-                <strong>Baza powiązanych.</strong> Wszystkie znalezione materiały w kolumnach według kategorii — artykuł, film, materiały publiczne, reportaż — i w wierszach
-                według dat. Wyniki dochodzą na bieżąco, w miarę przeszukiwania bazy.
-              </li>
-            </ol>
-          </div>
-          <CopyBlock label="schemat widoku po otwarciu" text={EXPANDED} />
-        </Section>
-
-        <Section id="nitki-newsowe" index={6} kicker="Nitka newsowa" title="Twój pasek wiadomości">
-          <div className="sc-onas-prose">
-            <p>
-              Na górze strony głównej jest pasek newsowy spin.clinic: najnowsze materiały, które przewijasz w bok. Takich pasków — nitek newsowych — możesz ustawić sobie do
-              pięciu.
-            </p>
-            <p>
-              Każdą dopasowujesz do siebie: po haśle, po kategorii, po źródle albo po wszystkim naraz. Na przykład: hasło „Sejm”, tylko materiały publiczne, ze wszystkich
-              źródeł. Kolejność nitek zmieniasz przeciągnięciem, a ustawienia zostają na Twoim urządzeniu — bez zakładania konta.
-            </p>
-          </div>
-          <CopyBlock label="schemat nitki newsowej" text={NEWS_THREAD} />
-        </Section>
-
-        <Section id="nitki-kontekstowe" index={7} kicker="Nitka kontekstowa" title="Sprawa od początku do końca">
-          <div className="sc-onas-prose">
-            <p>
-              Nitka kontekstowa zaczyna się od jednego boxa — materiału, który chcemy pokazać, wyjaśnić albo wypromować. Za nim, na osi kontekstu, w kolejności publikacji
-              idą materiały, które go dopełniają: dokumenty, komunikaty, wywiady, artykuły. Przy każdym może stać krótki komentarz.
-            </p>
-            <p>Dziś nitki kontekstowe tworzy wyłącznie zespół spin.clinic — jako Dr. Spin. W fazie II tę samą możliwość dostaną użytkownicy.</p>
-          </div>
-          <CopyBlock label="schemat nitki kontekstowej" text={CONTEXT_THREAD} />
-        </Section>
-
-        <Section id="dr-spin" index={8} kicker="Dr. Spin" title="Asystent, który szuka kontekstu">
-          <div className="sc-onas-prose">
-            <p>
-              Dr. Spin to narzędzie zespołu spin.clinic do porządkowania kontekstu i dowodów (beta). Zespół bierze przekazy dnia poszczególnych partii i najczęściej powtarzane
-              spiny, przeszukuje naszą bazę źródeł i zestawia materiały, które dany przekaz potwierdzają, podważają albo wyjaśniają.
-            </p>
-            <p>
-              Dr. Spin nie ogłasza, co jest prawdą, i nie zastępuje dziennikarza. Chodzi o kontekst: żeby obok przekazu stało to, co mówią dokumenty, co wydarzyło się wcześniej i co ukazało się
-              później — zawsze z linkami do źródeł. Każdą nitkę sprawdza i zatwierdza zespół — żaden model nie publikuje niczego sam.
-            </p>
-            <p>
-              Wsparcie modeli AI — dobór powiązanych materiałów i szkice nitek — jest przygotowane w kodzie, ale dziś pozostaje wyłączone. Włączymy je dopiero po pilotażu
-              na ręcznie sprawdzonych materiałach (faza III).
-            </p>
-          </div>
-          <CopyBlock label="jak pracuje Dr. Spin" text={DR_SPIN} />
-          <h3 className="sc-onas-h3">W kolejnych fazach</h3>
-          <p className="sc-onas-prose">
-            Dr. Spin będzie łączył osoby wymienione w materiale z rejestrem osób publicznych: z ich funkcjami i stanowiskami, ze spółkami i fundacjami, w których działają,
-            i z osobami, z którymi są powiązane. Z tego powstaną osie powiązań — każde połączenie z odnośnikiem do źródła.
-          </p>
-          <CopyBlock label="osie powiązań — plan" text={DR_SPIN_LATER} />
-          <p className="sc-onas-callout">
-            To nie jest narzędzie, które mówi, co jest prawdą. To narzędzie, które pozwala zobaczyć temat na pełnej osi powiązań, kontekstu i danych dostępnych publicznie
-            — i ocenić go samodzielnie.
-          </p>
-        </Section>
-
-        <Section id="dla-redakcji" index={9} kicker="Współpraca" title="Dla redakcji i wydawców">
+        <Section id="dla-redakcji" index={7} kicker="Współpraca" title="Dla redakcji i wydawców">
           <div className="sc-onas-prose">
             <p>
               Jeśli trafili Państwo tutaj z naszej wiadomości — dziękujemy za poświęcony czas. Materiały mediów pobieramy wyłącznie za zgodą wydawcy. Poniżej krótko, co to
@@ -461,10 +397,7 @@ export default function AboutPage() {
           </div>
           <CopyBlock label="zakres dostępu — do skopiowania" text={PUBLISHER_TERMS} />
           <div className="sc-onas-prose">
-            <p>
-              Chętnie uwzględnimy wymagany sposób oznaczania źródła i limity techniczne. Zapraszamy też do współpracy przy nitkach: jeśli macie materiał, który zasługuje
-              na szerszy kontekst — napiszcie.
-            </p>
+            <p>Chętnie uwzględnimy wymagany sposób oznaczania źródła i limity techniczne.</p>
             <p>
               <a className="sc-onas-mail" href={`mailto:${SOURCES_EMAIL}`}>
                 Napisz do nas: {SOURCES_EMAIL}
@@ -473,25 +406,24 @@ export default function AboutPage() {
           </div>
         </Section>
 
-        <Section id="zasady" index={10} kicker="Zasady" title="Co robimy, a czego nie">
+        <Section id="zasady" index={8} kicker="Zasady" title="Co robimy, a czego nie">
           <div className="sc-onas-rules">
             <div>
               <h3>Robimy</h3>
               <ul className="sc-onas-list is-yes">
                 <li>pokazujemy źródło, datę i link do oryginału przy każdym materiale</li>
-                <li>układamy materiały w kolejności publikacji</li>
+                <li>oceniamy przekazy wszystkich stron według tych samych zasad</li>
+                <li>oznaczamy każdą treść przygotowaną przez AI</li>
                 <li>pokazujemy braki danych jako braki, bez zgadywania</li>
-                <li>wyraźnie oznaczamy materiały reklamowe i sponsorowane</li>
               </ul>
             </div>
             <div>
               <h3>Nie robimy</h3>
               <ul className="sc-onas-list is-no">
-                <li>nie oceniamy osób</li>
-                <li>nie oznaczamy treści jako „prawda” albo „fałsz”</li>
-                <li>nie publikujemy niczego automatycznie</li>
-                <li>nie piszemy własnych newsów i nie zastępujemy wydawców</li>
-                <li>nie kopiujemy pełnych tekstów bez zgody wydawcy</li>
+                <li>nie oceniamy osób ani ich poglądów</li>
+                <li>nie uznajemy twierdzeń za fałszywe bez źródła</li>
+                <li>nie poprawiamy diagnoz AI — można je tylko zatwierdzić albo odrzucić</li>
+                <li>nie piszemy własnych newsów i nie kopiujemy pełnych tekstów bez zgody wydawcy</li>
                 <li>nie obchodzimy blokad, limitów ani płatnych dostępów</li>
               </ul>
             </div>
