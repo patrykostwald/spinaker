@@ -24,9 +24,16 @@ export type PersonalContextThread = {
   topics: string[];
   source_ids: number[];
   articles: PersonalArticleRef[];
+  /** Wszystkie elementy (materiały z Bazy i linki) z notatkami, w kolejności. */
+  elements?: import('./community').ThreadElement[];
+  is_public?: boolean;
+  published_at?: string | null;
+  hidden_at?: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export type PersonalThreadItemInput = { article_id?: number; link_id?: number; note?: string };
 
 export type PersonalContextThreadInput = {
   title: string;
@@ -34,7 +41,9 @@ export type PersonalContextThreadInput = {
   query: string;
   categories: string[];
   source_ids: number[];
-  article_ids: number[];
+  article_ids?: number[];
+  items?: PersonalThreadItemInput[];
+  is_public?: boolean;
 };
 
 export type ArticleFavoriteRow = { id: number; article: PersonalArticleRef; created_at: string };

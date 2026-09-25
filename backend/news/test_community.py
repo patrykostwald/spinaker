@@ -108,3 +108,17 @@ def test_legacy_article_ids_still_work():
     response = client.post('/api/account/context-threads/', {'title': 'Stara', 'article_ids': [base.pk]}, format='json')
     assert response.status_code == 201
     assert [row['id'] for row in response.json()['articles']] == [base.pk]
+
+
+@pytest.mark.django_db
+def test_my_reactions_collects_every_part_of_the_site():
+    from news.account_models import ArticleOpinion
+    reader = user('czytelniczka')
+    base = article()
+    ArticleOpinion.objects.create(user=reader, article=base, polarity='positive', body='Dobre źródło')
+    client = APIClient()
+    assert client.get('/api/account/reactions/').status_code in (401, 403)
+    client.force_authenticate(reader)
+    data = client.get('/api/account/reactions/').json()
+    assert data['counts']['material'] == 1 and data['comments'] == 1
+    assert data['results'][0]['target'] == {'title': 'Komunikat KPRM', 'href': f'/material/{base.pk}'}

@@ -5,11 +5,13 @@ from news.accounts import (RegisterView, LoginView, LogoutView, AccountMeView,
 from news.profiles import ProfileView, HistoryView, PublicActivityView, FavoritesView, FavoriteDetailView
 from news.personal_context import (ArticleFavoritesView, ArticleFavoriteDetailView, CommentReportsView,
     PersonalContextThreadsView, PersonalContextThreadDetailView)
+from news.account_activity import MyReactionsView
 from news.accounts import XConnectionView, XConnectionStartView, XConnectionCallbackView
 
 urlpatterns = [
     path('account/profile/', ProfileView.as_view()),
     path('account/history/', HistoryView.as_view()),
+    path('account/reactions/', MyReactionsView.as_view()),
     path('account/favorites/', FavoritesView.as_view()),
     path('account/favorites/<int:thread_id>/', FavoriteDetailView.as_view()),
     path('account/article-favorites/', ArticleFavoritesView.as_view()),

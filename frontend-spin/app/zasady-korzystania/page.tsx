@@ -10,7 +10,7 @@ export default function TermsPage() {
     <section><h2>Źródła i prawa wydawców</h2><p>Szanujemy zasady dostępu do źródeł. Nie obchodzimy blokad, limitów ani płatnych dostępów. Pokazujemy konieczny opis i link do materiału; pełne teksty oraz inne utwory pozostają po stronie wydawcy, chyba że zakres wykorzystania jest wyraźnie dozwolony.</p></section>
     <section><h2>Materiały z platform</h2><p>Wpisy z X mogą służyć jako materiał źródłowy po ręcznym potwierdzeniu konta i przez oficjalne API. W przypadku YouTube wykorzystujemy dozwolone metadane oraz opis filmu, bez automatycznego pobierania transkrypcji.</p></section>
     <section><h2>Konta, komentarze i moderacja</h2><p>Po udostępnieniu funkcji społecznościowych użytkownik odpowiada za własny komentarz i nie może publikować treści bezprawnych, danych prywatnych, spamu ani nękania. Reakcje opisują przydatność materiału w zestawieniu, nie osobę ani prawdziwość twierdzenia. Administrator może ograniczyć widoczność lub usunąć wpis po zgłoszeniu i sprawdzeniu.</p></section>
-    <section><h2>Operator serwisu</h2><p>Serwis spin.clinic prowadzi iApply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>.</p></section>
+    <section><h2>Operator serwisu</h2><p>Serwis spin.clinic prowadzi iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>.</p></section>
     <section><h2>Wersja beta</h2><p>Funkcje i zasady są rozwijane etapami. Przed zakończeniem bety opublikujemy wersję końcową wraz z datą wejścia w życie.</p></section>
   </InfoPage>;
 }

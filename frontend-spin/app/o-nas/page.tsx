@@ -16,7 +16,7 @@ const LAST_UPDATED = { iso: '2026-09-26', label: '26 września 2026' };
 
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic';
 const SOURCES_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'zrodla@spin.clinic';
-const OPERATOR = 'iApply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
+const OPERATOR = 'iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
 const CONTACTS: Array<{ email: string; purpose: string }> = [
   { email: 'kontakt@spin.clinic', purpose: 'pytania o projekt, współpraca, media' },
   { email: SOURCES_EMAIL, purpose: 'źródła, zgody wydawców, zakres dostępu' },
