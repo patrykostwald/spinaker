@@ -1,29 +1,67 @@
-# API MVP
+# API spin.clinic
 
-Interaktywna dokumentacja: `/api/docs/`. Schemat: `/api/schema/` i `openapi.yaml`.
+Interaktywna dokumentacja: `/api/docs/`. Schemat: `/api/schema/` oraz [`openapi.yaml`](openapi.yaml) — generowany poleceniem
+`python manage.py spectacular --file docs/openapi.yaml --validate --fail-on-warn` (bez ostrzeżeń).
 
-## Odczyt publiczny
+Każdy materiał ma źródło, datę publikacji (albo jawny brak daty) i odnośnik do oryginału. API nie ocenia prawdziwości treści.
 
-- `GET /api/search/?q=krypto+Gosek` — słowa zapytania, opcjonalnie `categories=voting,legislation`, `from_date=YYYY-MM-DD`, `to_date=YYYY-MM-DD`. Wynik: `total`, `returned`, `truncated`, `timeline` pogrupowane datami malejąco; `undated` na końcu.
-- `GET /api/articles/{id}/` — materiał, źródło, pochodzenie, ewentualne urzędowe metadane i głosowanie.
-- `GET /api/articles/{id}/ballots/?q=Mariusz+Gosek&page=1` — stronicowane głosy konkretnego głosowania, pełne nazwiska i oryginalne kody. Samo nazwisko może pasować do kilku osób.
-- `GET /api/articles/{id}/official/` — zachowany oryginalny rekord API i czas pobrania.
-- `GET /api/articles/{id}/related/` — heurystyczne podobieństwo słów w tytule w zakresie ±7 dni, nie dowód związku wydarzeń.
-- `GET /api/threads/?page=1&featured=true` — opublikowane nitki z materiałami; wyróżnione pierwsze.
-- `GET /api/threads/{slug}/` — nitka. Licznik to liczba pobrań szczegółu, nie liczba unikalnych czytelników.
-- `GET /api/me/`, `GET /api/health/`.
+## Portal (odczyt publiczny)
 
-Limit odczytu: 100 zapytań/minutę na identyfikator klienta. Wyniki wyszukiwania mają cache 5 minut z unieważnieniem przy zmianach materiałów i powiązań. PostgreSQL i Redis są konfiguracją docelową; SQLite używa pamięci procesu do lokalnych limitów/cache.
+- `GET /api/feed/` — pasek materiałów. `mode=latest` (wszystkie aktywne źródła) albo `mode=top` (dzisiejsze materiały wiodących mediów). Filtry: `q`, `match=words`, `categories`, `topics`, `sources`, `platforms=youtube`, `page`, `page_size` (1–40). Wynik: `results`, `total`, `next_page`, `top_sources`, `selection_note`.
+- `GET /api/portal/config/` — kategorie, tematy, katalog źródeł (bez wykluczonych), liczniki katalogu, nitki „Przekaz dnia”.
+- `GET /api/portal/topic-of-day/` — automatyczny temat dnia (hasło, liczba źródeł i materiałów) albo `mode=unavailable`.
+- `GET /api/articles/{id}/context/?page=N` — materiały powiązane z boxem po słowach kluczowych, pogrupowane według dat, z licznikami kategorii.
+- `GET /api/context/counts/?ids=1,2` — liczniki powiązanych materiałów dla 1–4 boxów.
 
-## Sesja redakcji
+### Grupy źródeł
 
-`GET /api/auth/csrf/` ustawia cookie i zwraca `csrfToken`. `POST /api/auth/login/` przyjmuje JSON `username`, `password` i nagłówek `X-CSRFToken`. Wysyłaj cookies wraz z zapytaniem. Po logowaniu token się zmienia; pobierz nowy przed kolejnym zapisem. `POST /api/auth/logout/` również wymaga CSRF. Login jest ograniczony do 10 prób/5 minut na adres połączenia. Konta bez uprawnień redakcji nie mogą się zalogować tym formularzem.
+Każde źródło w odpowiedziach ma pole `portal_group`:
 
-## Zapisy administratora
+| wartość | znaczenie |
+|---|---|
+| `top` | wiodące media — lista redakcyjna w `backend/news/source_groups.py` (`TOP_MEDIA`, 12 marek) |
+| `publiczne` | instytucje publiczne (`source_type = institution`) |
+| `media` | pozostali wydawcy |
 
-- `POST /api/editor/preview-url/` z `url` — metadane do przeglądu albo `existing` z materiałem, który już jest w bazie. Nie zapisuje nowego materiału. Żądania do prywatnych adresów i przekierowania do nich są blokowane; pobranie ma limity czasu, rozmiaru i przekierowań.
-- `POST /api/editor/articles/` — `title`, `url`, `source_name`, `category`; opcjonalne `published_date` (null gdy nieznana), `author`, `description`, `evidence_note`. Data wysyłana z offsetem strefy czasu. Zwraca materiał.
-- `GET/POST /api/editor/threads/`, `GET/PATCH/PUT /api/editor/threads/{slug}/`. Zapis: `title`, `description`, `published`, `is_featured`, `items` (1–100 różnych `article_id`, każde z opcjonalnym `editorial_note`). Kolejność ustala chronologia publikacji, nie kolejność kliknięć.
-- `POST /api/admin/google-news/` z `q` — zleca pobranie RSS Google News na żądanie; wymaga aktywnego worker i Redis.
+## Materiały, wyszukiwanie, nitki
 
-Nie ma publicznego endpointu głosowania na nitki, rejestracji użytkowników ani oceny AI. `/api/patronite/webhook/` zwraca 501 i nie obsługuje płatności. Zwykłe linki wsparcia nie wymagają webhooka.
+- `GET /api/search/?q=…` — opcjonalnie `categories`, `from_date`, `to_date` (YYYY-MM-DD). Wynik: `total`, `returned`, `truncated`, `timeline` pogrupowane datami malejąco; `undated` na końcu.
+- `GET /api/articles/{id}/` — materiał, źródło (z `portal_group`), pochodzenie, urzędowe metadane i głosowanie.
+- `GET /api/articles/{id}/related/` — do 10 materiałów o podobnym tytule w zakresie ±7 dni (heurystyka, nie dowód związku).
+- `GET /api/articles/{id}/ballots/?q=…`, `GET /api/articles/{id}/official/` — głosy imienne i oryginalny rekord urzędowy.
+- `GET /api/threads/?featured=true`, `GET /api/threads/{slug}/` — opublikowane nitki kontekstowe.
+
+## Reakcje i komentarze
+
+- `GET /api/articles/{id}/opinions/` — liczniki `positive` / `negative`, komentarze (stronicowane osobno dla obu stron), własna reakcja zalogowanego użytkownika.
+- `POST` tamże — jedna reakcja (`polarity`: `positive` | `negative`) z opcjonalnym komentarzem (`body`); `PATCH` pozwala raz dopisać komentarz. Wymaga zalogowania.
+- `GET/POST/PATCH /api/threads/{slug}/opinions/` — to samo dla nitek kontekstowych.
+- `POST /api/comments/reports/` — zgłoszenie komentarza.
+
+## Osoby publiczne
+
+- `GET /api/public-figures/?q=&role_category=&status=&page=&page_size=` — rejestr (do 100 na stronę).
+- `GET /api/public-figures/{id}/` — profil: funkcja, potwierdzone relacje z podmiotami, głosowania.
+- `GET /api/public-figures/{id}/dossier/` — oś czasu, relacje, luki w danych; wyłącznie rekordy z publicznym dowodem.
+- `GET /api/public-figures/{id}/context/`, `GET /api/public-offices/`.
+
+## Konto
+
+`/api/account/register/`, `/api/account/login/`, `/api/account/logout/`, `/api/account/me/`, `/api/account/profile/`, ulubione (`favorites`, `article-favorites`), prywatne nitki kontekstowe (`context-threads`), paski tematów (`topics`), historia. Szczegóły pól — w `openapi.yaml`.
+
+## Sesja redakcji i zapisy
+
+`GET /api/auth/csrf/` ustawia cookie i zwraca `csrfToken`; `POST /api/auth/login/` (JSON `username`, `password`, nagłówek `X-CSRFToken`). Po logowaniu pobierz nowy token przed kolejnym zapisem. Logowanie redakcji: 10 prób / 5 minut na adres.
+
+- `POST /api/editor/preview-url/` — metadane adresu do przeglądu (blokada adresów prywatnych, limity czasu i rozmiaru).
+- `POST /api/editor/articles/`, `GET/POST /api/editor/threads/`, `GET/PATCH/PUT /api/editor/threads/{slug}/` — materiały i nitki redakcyjne (1–100 materiałów, kolejność według chronologii publikacji).
+- `/api/editor/sources/…` — katalog źródeł redakcji; `/api/ai/research/…`, `/api/editor/draft-thread/` — szkice AI dla redakcji (zawsze do sprawdzenia przez człowieka).
+
+## Katalog źródeł — polecenia serwisowe
+
+Wszystkie bez `--apply` tylko pokazują plan; `--restore --apply` cofa zmianę. Nigdy nie ruszają źródeł aktywnych ani skonfigurowanych.
+
+- `python manage.py exclude_off_profile_sources --apply` — wyklucza kandydatury spoza profilu tematycznego (kulinaria, plotki, sport, motoryzacja…).
+- `python manage.py dedupe_source_catalog --apply` — zostawia jedną kartę na wydawcę (duplikaty host / kanał RSS).
+
+Limity: 100 zapytań odczytu na minutę na klienta. `/api/patronite/webhook/` zwraca 501 (brak obsługi płatności).

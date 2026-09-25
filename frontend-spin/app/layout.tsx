@@ -33,11 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
             cta={{ label: "Wesprzyj nas", href: "/wsparcie" }}
-            columns={[
-              // Grupy źródeł ustawiają `?zrodla=` strony głównej (zawężają „Top 10” i Bazę); katalog — /zrodla.
-              { title: "Źródła", links: [{ label: "Publiczne", href: "/?zrodla=publiczne#baza" }, { label: "Media", href: "/?zrodla=media#baza" }, { label: "Top media", href: "/?zrodla=top#baza" }, { label: "Wszystkie źródła", href: "/zrodla" }] },
-              { title: "Informacje", links: [{ label: "O nas", href: "/o-nas" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] },
-            ]}
+            columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "O nas", href: "/o-nas" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
             sticky
           />
         </Providers>

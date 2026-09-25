@@ -209,7 +209,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         <Link href="/konto#moje-nitki" className="sc-account-back">← Moje konto</Link>
         <p className="sc-account-kicker">MOJA NITKA KONTEKSTOWA</p>
         <h1 id={`${uid}-title`}>{threadId ? draft.title || 'Nitka bez tytułu' : 'Nowa nitka'}</h1>
-        <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie jest publikowana, nie jest nitką Dr Spina i nie układa jej AI — kolejność ustalasz sam.</p>
+        <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie jest publikowana, nie jest nitką Dr. Spina i nie układa jej AI — kolejność ustalasz sam.</p>
       </header>
 
       <section className="sc-account-section" aria-labelledby={`${uid}-basics`}>

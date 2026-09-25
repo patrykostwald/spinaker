@@ -159,11 +159,18 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Polish News Aggregator API",
-    "DESCRIPTION": "REST API dla spin.clinic i przeszlosc.today — wyszukiwanie timeline, wątki i artykuły.",
+    "TITLE": "spin.clinic API",
+    "DESCRIPTION": "REST API spin.clinic: pasek materiałów i konfiguracja portalu, materiały i ich kontekst, "
+                   "nitki, reakcje, rejestr osób publicznych oraz narzędzia redakcji. "
+                   "Każdy materiał ma źródło, datę i odnośnik do oryginału.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+    # Dwa zestawy wyborów dla pól „camp” (konta polityczne / nitki redakcyjne) — jawne nazwy w schemacie.
+    "ENUM_NAME_OVERRIDES": {
+        "AccountCampEnum": "news.political_models.ACCOUNT_CAMPS",
+        "EditorialCampEnum": "news.political_models.EDITORIAL_CAMPS",
+    },
 }
 
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")

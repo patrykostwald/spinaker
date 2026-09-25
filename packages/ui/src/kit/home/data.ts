@@ -206,7 +206,7 @@ function demoThread(): ThreadDetail {
   };
 }
 
-/** Nitka Dr Spina: pierwsza OPUBLIKOWANA wyróżniona nitka; brak → sekcja pokazuje układ-zapowiedź. */
+/** Nitka Dr. Spina: pierwsza OPUBLIKOWANA wyróżniona nitka; brak → sekcja pokazuje układ-zapowiedź. */
 export function useDrSpinThread() {
   return useQuery({
     queryKey: ["home-dr-spin"],

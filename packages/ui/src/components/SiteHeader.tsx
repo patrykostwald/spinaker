@@ -30,8 +30,8 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
   const account = useAccount();
   const [first, ...rest] = site.name.split(".");
   const second = rest.join(".");
-  // Szapka: po lewej wordmark z dopiskiem BETA i „O nas”, pole szukania na środku całej szapki,
-  // po prawej motyw i konto. Źródła są w globalnej stopce, nie w szapce.
+  // Szapka: po lewej wordmark z dopiskiem BETA, pole szukania na środku całej szapki, po prawej
+  // „O nas” · motyw · konto (te same odstępy). Źródła są w globalnej stopce, nie w szapce.
 
   return (
     <NavMenu
@@ -41,11 +41,10 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         <div className="sc-nav-brand">
           <Link href="/" className="sc-wordmark">{first}<span aria-hidden="true">.</span>{second}</Link>
           <span className="sc-beta">BETA</span>
-          <Link href="/o-nas" className="sc-navmenu__link sc-hoverable sc-nav-brand__about" aria-current={pathname === "/o-nas" ? "page" : undefined}>O nas</Link>
         </div>
       }
       search={<HeaderSearch />}
-      cta={<div className="sc-nav-cta"><ThemeSwitcher compact /><Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button></div>}
+      cta={<div className="sc-nav-cta"><Button href="/o-nas" variant="quiet" size="sm" aria-current={pathname === "/o-nas" ? "page" : undefined}>O nas</Button><ThemeSwitcher compact /><Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button></div>}
     />
   );
 }

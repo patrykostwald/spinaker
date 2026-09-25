@@ -6,6 +6,8 @@ import unicodedata
 from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from news.schema import TopicOfDayResponse
 from rest_framework.response import Response
 from news.portal import visible_articles, top_sources, TOP_TEN, STOP
 from news.topics import TOPICS
@@ -98,6 +100,7 @@ def rank_topics(rows, now):
     return ranked[0][2] if ranked else None
 
 
+@extend_schema(summary="Automatyczny temat dnia (hasło i liczba źródeł)", tags=["portal"], responses=TopicOfDayResponse)
 @api_view(['GET'])
 def topic_of_day(request):
     sources = top_sources()

@@ -3,6 +3,9 @@ from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+from news.schema import PUBLIC_FIGURE_LIST_PARAMETERS, PublicFigureListResponse
 from rest_framework.response import Response
 
 from news.models import ArticleCategory, Ballot
@@ -338,6 +341,7 @@ def votes_data(figure):
     } for ballot in ballots]}
 
 
+@extend_schema(summary="Rejestr osób publicznych", tags=["osoby publiczne"], operation_id="public_figures_list", parameters=PUBLIC_FIGURE_LIST_PARAMETERS, responses=PublicFigureListResponse)
 @api_view(['GET'])
 def public_figure_list(request):
     query = request.query_params.get('q', '').strip()
@@ -379,6 +383,7 @@ def public_office_data(office):
     }
 
 
+@extend_schema(summary="Urzędy publiczne i ich obecni piastujący", tags=["osoby publiczne"], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def public_office_list(request):
     query = request.query_params.get('q', '').strip()
@@ -405,12 +410,14 @@ def public_office_list(request):
     })
 
 
+@extend_schema(summary="Profil osoby publicznej: funkcje, relacje, głosowania", tags=["osoby publiczne"], operation_id="public_figures_detail", responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def public_figure_detail(request, figure_id):
     figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
     return Response(figure_data(figure, include_detail=True))
 
 
+@extend_schema(summary="Kontekst osoby publicznej", tags=["osoby publiczne"], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def public_figure_context(request, figure_id):
     figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
@@ -423,6 +430,7 @@ def public_figure_context(request, figure_id):
     })
 
 
+@extend_schema(summary="Dossier: oś czasu, relacje i luki w danych (tylko rekordy z dowodem)", tags=["osoby publiczne"], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def public_figure_dossier(request, figure_id):
     figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)

@@ -25,7 +25,7 @@ import { Button } from '../kit';
 const SECTIONS = [
   { id: 'moje-nitki', label: 'Moje nitki kontekstowe' },
   { id: 'ulubione-materialy', label: 'Ulubione materiały' },
-  { id: 'ulubione-nitki', label: 'Ulubione nitki Dr Spina' },
+  { id: 'ulubione-nitki', label: 'Ulubione nitki Dr. Spina' },
   { id: 'paski', label: 'Moje paski tematów' },
   { id: 'aktywnosc', label: 'Ostatnia aktywność' },
 ];
@@ -45,9 +45,9 @@ export function SignedOutPanel({ title = 'Twoje prywatne miejsce do pracy z mate
     <section className="sc-account sc-account-signed-out" aria-labelledby="acc-signed-out">
       <p className="sc-account-kicker">MOJE KONTO</p>
       <h1 id="acc-signed-out">{title}</h1>
-      <p>Po zalogowaniu możesz układać własne nitki kontekstowe, zapisywać materiały i nitki Dr Spina oraz wracać do swoich pasków tematów.</p>
+      <p>Po zalogowaniu możesz układać własne nitki kontekstowe, zapisywać materiały i nitki Dr. Spina oraz wracać do swoich pasków tematów.</p>
       <ul className="sc-account-points">
-        <li>Twoje nitki widzisz tylko Ty. Nie są publikowane i nie są nitkami Dr Spina.</li>
+        <li>Twoje nitki widzisz tylko Ty. Nie są publikowane i nie są nitkami Dr. Spina.</li>
         <li>Reakcje „Przydatne / Nieprzydatne” dotyczą konkretnego materiału lub nitki — nie osób.</li>
         <li>Korzystanie z Bazy nie wymaga konta.</li>
       </ul>
@@ -86,7 +86,7 @@ function ThreadsSection() {
   return (
     <Section id="moje-nitki" title="Moje nitki kontekstowe" count={threads.isSuccess ? rows.length : undefined}
       action={threads.isError && isUnavailable(threads.error) ? null : <Button href="/konto/nitki/nowa" variant="quiet" size="sm" className="sc-account-new">+ Nowa nitka</Button>}>
-      <p className="sc-account-private"><span>PRYWATNE</span> Nitki widzisz tylko Ty. Nie są publikowane, nie są nitkami Dr Spina i nie układa ich AI.</p>
+      <p className="sc-account-private"><span>PRYWATNE</span> Nitki widzisz tylko Ty. Nie są publikowane, nie są nitkami Dr. Spina i nie układa ich AI.</p>
       <QueryState query={threads} unavailableText="Prywatne nitki są w trakcie udostępniania w interfejsie MVP. Nic nie zostało zapisane." />
       {threads.isSuccess && !rows.length && (
         <div className="sc-account-empty">
@@ -173,7 +173,7 @@ function ThreadFavoritesSection() {
     finally { setPendingId(null); }
   }
   return (
-    <Section id="ulubione-nitki" title="Ulubione nitki Dr Spina" count={favorites.isSuccess ? rows.length : undefined}>
+    <Section id="ulubione-nitki" title="Ulubione nitki Dr. Spina" count={favorites.isSuccess ? rows.length : undefined}>
       <QueryState query={favorites} unavailableText="Ulubione nitki są w trakcie udostępniania w interfejsie MVP." />
       {favorites.isSuccess && !rows.length && <p className="sc-account-empty">Zapisz opublikowaną nitkę redakcyjną przyciskiem ♡ Zapisz na jej stronie.</p>}
       {error && <p role="alert" className="sc-account-error">{error}</p>}
@@ -265,7 +265,7 @@ function ActivitySection() {
     })),
     ...(threadFavorites.data?.results ?? []).map(row => ({
       key: `f-${row.id}`, at: row.created_at, kind: 'ULUBIONE',
-      text: <>Zapisano nitkę Dr Spina <Link href={`/thread/${row.thread.slug}`}>{row.thread.title}</Link></>,
+      text: <>Zapisano nitkę Dr. Spina <Link href={`/thread/${row.thread.slug}`}>{row.thread.title}</Link></>,
     })),
   ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 10);
   const loading = [history, threads, articleFavorites, threadFavorites].some(query => query.isPending);

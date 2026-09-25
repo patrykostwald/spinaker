@@ -32,7 +32,7 @@ const VIEWS = [
     description: 'Posty z kont potwierdzonych jako obóz rządzący. Widok pokazuje wyłącznie już zapisane posty.' },
   { key: 'opposition' as const, label: 'Przekaz opozycji',
     description: 'Posty z kont potwierdzonych jako opozycja. Widok pokazuje wyłącznie już zapisane posty.' },
-  { key: 'candidates' as const, label: 'Kandydaci Dr Spina',
+  { key: 'candidates' as const, label: 'Kandydaci Dr. Spina',
     description: 'Redaktor samodzielnie wskazuje posty z dowolnego obozu do jednej propozycji.' },
 ];
 type ViewKey = typeof VIEWS[number]['key'];

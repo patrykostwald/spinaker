@@ -1,10 +1,693 @@
 openapi: 3.0.3
 info:
-  title: Polish News Aggregator API
+  title: spin.clinic API
   version: 1.0.0
-  description: REST API dla spin.clinic i przeszlosc.today — wyszukiwanie timeline,
-    wątki i artykuły.
+  description: 'REST API spin.clinic: pasek materiałów i konfiguracja portalu, materiały
+    i ich kontekst, nitki, reakcje, rejestr osób publicznych oraz narzędzia redakcji.
+    Każdy materiał ma źródło, datę i odnośnik do oryginału.'
 paths:
+  /api/account/article-favorites/:
+    get:
+      operationId: account_article_favorites_retrieve
+      summary: Ulubione materiały
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: account_article_favorites_create
+      summary: Ulubione materiały
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/article-favorites/{article_id}/:
+    delete:
+      operationId: account_article_favorites_destroy
+      summary: Ulubiony materiał
+      parameters:
+      - in: path
+        name: article_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/account/context-threads/:
+    get:
+      operationId: account_context_threads_retrieve
+      summary: Prywatne nitki kontekstowe
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: account_context_threads_create
+      summary: Prywatne nitki kontekstowe
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/context-threads/{thread_id}/:
+    get:
+      operationId: account_context_threads_detail_retrieve
+      summary: Prywatna nitka kontekstowa
+      parameters:
+      - in: path
+        name: thread_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: account_context_threads_partial_update
+      summary: Prywatna nitka kontekstowa
+      parameters:
+      - in: path
+        name: thread_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    delete:
+      operationId: account_context_threads_destroy
+      summary: Prywatna nitka kontekstowa
+      parameters:
+      - in: path
+        name: thread_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/account/favorites/:
+    get:
+      operationId: account_favorites_retrieve
+      summary: Ulubione nitki
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: account_favorites_create
+      summary: Ulubione nitki
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/favorites/{thread_id}/:
+    delete:
+      operationId: account_favorites_destroy
+      summary: Ulubiona nitka
+      parameters:
+      - in: path
+        name: thread_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/account/history/:
+    get:
+      operationId: account_history_retrieve
+      summary: Historia przeglądania
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: account_history_partial_update
+      summary: Historia przeglądania
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/login/:
+    post:
+      operationId: account_login_create
+      summary: Logowanie
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/logout/:
+    post:
+      operationId: account_logout_create
+      summary: Wylogowanie
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/me/:
+    get:
+      operationId: account_me_retrieve
+      summary: Bieżące konto
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/profile/:
+    get:
+      operationId: account_profile_retrieve
+      summary: Profil użytkownika
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: account_profile_partial_update
+      summary: Profil użytkownika
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/register/:
+    post:
+      operationId: account_register_create
+      summary: Rejestracja konta
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/topics/:
+    get:
+      operationId: account_topics_retrieve
+      summary: Paski tematów użytkownika
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: account_topics_create
+      summary: Paski tematów użytkownika
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/topics/{topic_id}/:
+    get:
+      operationId: account_topics_detail_retrieve
+      summary: Pasek tematu użytkownika
+      parameters:
+      - in: path
+        name: topic_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: account_topics_detail_create
+      summary: Pasek tematu użytkownika
+      parameters:
+      - in: path
+        name: topic_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: account_topics_partial_update
+      summary: Pasek tematu użytkownika
+      parameters:
+      - in: path
+        name: topic_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    delete:
+      operationId: account_topics_destroy
+      summary: Pasek tematu użytkownika
+      parameters:
+      - in: path
+        name: topic_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/account/x-connection/:
+    get:
+      operationId: account_x_connection_retrieve
+      summary: Połączenie z kontem X
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    delete:
+      operationId: account_x_connection_destroy
+      summary: Połączenie z kontem X
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/account/x-connection/callback/:
+    get:
+      operationId: account_x_connection_callback_retrieve
+      summary: Powrót z autoryzacji X
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/account/x-connection/start/:
+    get:
+      operationId: account_x_connection_start_retrieve
+      summary: Rozpoczęcie łączenia z X
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/admin/google-news/:
     post:
       operationId: admin_google_news_create
@@ -27,6 +710,299 @@ paths:
       - basicAuth: []
       responses:
         '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/research/:
+    get:
+      operationId: ai_research_retrieve
+      summary: Research AI dla redakcji
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: ai_research_create
+      summary: Research AI dla redakcji
+      tags:
+      - redakcja
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/research/sources/:
+    get:
+      operationId: ai_research_sources_retrieve
+      description: Read-only publisher metadata refresh. No provider or daily budget
+        reservation.
+      summary: Research AI — źródła
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: ai_research_sources_create
+      description: Read-only publisher metadata refresh. No provider or daily budget
+        reservation.
+      summary: Research AI — źródła
+      tags:
+      - redakcja
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/research/stream/:
+    get:
+      operationId: ai_research_stream_retrieve
+      summary: Research AI — strumień (SSE)
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: ai_research_stream_create
+      summary: Research AI — strumień (SSE)
+      tags:
+      - redakcja
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/archive/status/:
+    get:
+      operationId: archive_status_retrieve
+      description: Small public progress snapshot; no internal errors, jobs or credentials.
+      summary: Stan archiwum
+      tags:
+      - status
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/articles/{article_id}/context/:
+    get:
+      operationId: articles_context_retrieve
+      summary: Materiały powiązane z boxem, pogrupowane według dat
+      parameters:
+      - in: path
+        name: article_id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: page
+        schema:
+          type: integer
+      tags:
+      - portal
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleContextResponse'
+          description: ''
+  /api/articles/{article_id}/opinions/:
+    get:
+      operationId: articles_opinions_retrieve
+      summary: Reakcje i komentarze do materiału (przydatne / nieprzydatne)
+      parameters:
+      - in: path
+        name: article_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - reakcje
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: articles_opinions_create
+      summary: Reakcje i komentarze do materiału (przydatne / nieprzydatne)
+      parameters:
+      - in: path
+        name: article_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - reakcje
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: articles_opinions_partial_update
+      summary: Reakcje i komentarze do materiału (przydatne / nieprzydatne)
+      parameters:
+      - in: path
+        name: article_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - reakcje
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
           content:
             application/json:
               schema:
@@ -136,6 +1112,61 @@ paths:
               schema:
                 $ref: '#/components/schemas/RelatedArticles'
           description: ''
+  /api/comments/reports/:
+    post:
+      operationId: comments_reports_create
+      summary: Zgłoszenia komentarzy
+      tags:
+      - reakcje
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/context/counts/:
+    get:
+      operationId: context_counts_retrieve
+      summary: Liczniki powiązanych materiałów dla 1–4 boxów
+      parameters:
+      - in: query
+        name: ids
+        schema:
+          type: string
+        description: 1–4 identyfikatory materiałów, rozdzielone przecinkami.
+        required: true
+      tags:
+      - portal
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextCountsResponse'
+          description: ''
   /api/editor/articles/:
     post:
       operationId: editor_articles_create
@@ -162,6 +1193,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WriteArticle'
+          description: ''
+  /api/editor/draft-thread/:
+    post:
+      operationId: editor_draft_thread_create
+      summary: Szkic nitki redakcyjnej (AI)
+      tags:
+      - redakcja
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/editor/preview-url/:
     post:
@@ -192,6 +1254,103 @@ paths:
                 additionalProperties: {}
           description: ''
         '422':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/editor/sources/:
+    get:
+      operationId: editor_sources_retrieve
+      summary: Katalog źródeł (redakcja)
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: editor_sources_create
+      summary: Katalog źródeł (redakcja)
+      tags:
+      - redakcja
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/editor/sources/{source_id}/:
+    patch:
+      operationId: editor_sources_partial_update
+      summary: Karta źródła (redakcja)
+      parameters:
+      - in: path
+        name: source_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - redakcja
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/editor/sources/export/:
+    get:
+      operationId: editor_sources_export_retrieve
+      summary: Eksport katalogu źródeł (redakcja)
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
           content:
             application/json:
               schema:
@@ -346,6 +1505,78 @@ paths:
               schema:
                 $ref: '#/components/schemas/WriteThread'
           description: ''
+  /api/feed/:
+    get:
+      operationId: feed_retrieve
+      summary: 'Pasek materiałów: najnowsze albo dzisiejsze wiodących mediów'
+      parameters:
+      - in: query
+        name: categories
+        schema:
+          type: string
+        description: Kategorie `ArticleCategory`, rozdzielone przecinkami.
+      - in: query
+        name: match
+        schema:
+          type: string
+          enum:
+          - substring
+          - words
+        description: '`words` — dopasowanie całych słów.'
+      - in: query
+        name: mode
+        schema:
+          type: string
+          enum:
+          - latest
+          - top
+        description: '`latest` — wszystkie źródła; `top` — dzisiejsze materiały wiodących
+          mediów.'
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Numer strony (od 1).
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Rozmiar strony (1–40, domyślnie 20).
+      - in: query
+        name: platforms
+        schema:
+          type: string
+          enum:
+          - youtube
+        description: Ograniczenie do platformy.
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Hasło (dopasowanie w tytule i opisie).
+      - in: query
+        name: sources
+        schema:
+          type: string
+        description: Identyfikatory źródeł, rozdzielone przecinkami.
+      - in: query
+        name: topics
+        schema:
+          type: string
+        description: Tematy portalu (np. `polityka,swiat`), rozdzielone przecinkami.
+      tags:
+      - portal
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+          description: ''
   /api/health/:
     get:
       operationId: health_retrieve
@@ -395,6 +1626,196 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/portal/config/:
+    get:
+      operationId: portal_config_retrieve
+      summary: 'Konfiguracja portalu: kategorie, tematy, katalog źródeł z grupami'
+      tags:
+      - portal
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalConfigResponse'
+          description: ''
+  /api/portal/topic-of-day/:
+    get:
+      operationId: portal_topic_of_day_retrieve
+      summary: Automatyczny temat dnia (hasło i liczba źródeł)
+      tags:
+      - portal
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicOfDayResponse'
+          description: ''
+  /api/profiles/{username}/activity/:
+    get:
+      operationId: profiles_activity_retrieve
+      summary: Publiczna aktywność profilu
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+        required: true
+      tags:
+      - konto
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/public-figures/:
+    get:
+      operationId: public_figures_list
+      summary: Rejestr osób publicznych
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: 1–100, domyślnie 50.
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Imię, nazwisko, funkcja lub instytucja.
+      - in: query
+        name: role_category
+        schema:
+          type: string
+        description: government / party / parliamentary / european / local / political.
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: current / former.
+      tags:
+      - osoby publiczne
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicFigureListResponse'
+          description: ''
+  /api/public-figures/{figure_id}/:
+    get:
+      operationId: public_figures_detail
+      summary: 'Profil osoby publicznej: funkcje, relacje, głosowania'
+      parameters:
+      - in: path
+        name: figure_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - osoby publiczne
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/public-figures/{figure_id}/context/:
+    get:
+      operationId: public_figures_context_retrieve
+      summary: Kontekst osoby publicznej
+      parameters:
+      - in: path
+        name: figure_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - osoby publiczne
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/public-figures/{figure_id}/dossier/:
+    get:
+      operationId: public_figures_dossier_retrieve
+      summary: 'Dossier: oś czasu, relacje i luki w danych (tylko rekordy z dowodem)'
+      parameters:
+      - in: path
+        name: figure_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - osoby publiczne
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/public-offices/:
+    get:
+      operationId: public_offices_retrieve
+      summary: Urzędy publiczne i ich obecni piastujący
+      tags:
+      - osoby publiczne
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/search/:
     get:
       operationId: search_list
@@ -432,6 +1853,408 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SearchTimeline'
+          description: ''
+  /api/search/external/:
+    get:
+      operationId: search_external_retrieve
+      summary: Wyszukiwanie zewnętrzne (redakcja)
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/sources/coverage/:
+    get:
+      operationId: sources_coverage_retrieve
+      summary: Pokrycie źródeł
+      tags:
+      - status
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/staff/political/accounts/:
+    get:
+      operationId: staff_political_accounts_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPoliticalAccountList'
+          description: ''
+    post:
+      operationId: staff_political_accounts_create
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoliticalAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PoliticalAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PoliticalAccountRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalAccount'
+          description: ''
+  /api/staff/political/accounts/{id}/:
+    get:
+      operationId: staff_political_accounts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this political account.
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalAccount'
+          description: ''
+    patch:
+      operationId: staff_political_accounts_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this political account.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPoliticalAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPoliticalAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPoliticalAccountRequest'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalAccount'
+          description: ''
+  /api/staff/political/accounts/{id}/confirm/:
+    post:
+      operationId: staff_political_accounts_confirm_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this political account.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoliticalAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PoliticalAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PoliticalAccountRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalAccount'
+          description: ''
+  /api/staff/political/drafts/:
+    get:
+      operationId: staff_political_drafts_list
+      description: Editorial review only. Nothing here calls the X API or publishes
+        a Thread.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPoliticalDraftList'
+          description: ''
+    post:
+      operationId: staff_political_drafts_create
+      description: Editorial review only. Nothing here calls the X API or publishes
+        a Thread.
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalDraft'
+          description: ''
+  /api/staff/political/drafts/{id}/:
+    get:
+      operationId: staff_political_drafts_retrieve
+      description: Editorial review only. Nothing here calls the X API or publishes
+        a Thread.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this political draft.
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalDraft'
+          description: ''
+  /api/staff/political/drafts/{id}/packet/:
+    get:
+      operationId: staff_political_drafts_packet_retrieve
+      description: Editorial review only. Nothing here calls the X API or publishes
+        a Thread.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this political draft.
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalDraft'
+          description: ''
+  /api/staff/political/drafts/{id}/review/:
+    post:
+      operationId: staff_political_drafts_review_create
+      description: Editorial review only. Nothing here calls the X API or publishes
+        a Thread.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this political draft.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalDraft'
+          description: ''
+  /api/staff/political/drafts/candidates/:
+    post:
+      operationId: staff_political_drafts_candidates_create
+      description: 'Widok ''Kandydaci Dr Spina'': tworzy propozycję z postów wybranych
+        spośród obu obozów.'
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PoliticalDraftRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalDraft'
+          description: ''
+  /api/staff/political/posts/:
+    get:
+      operationId: staff_political_posts_list
+      description: Read-only review surface for the editorial panel. Serves only already-stored
+        posts.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPoliticalPostList'
+          description: ''
+  /api/staff/political/posts/{id}/:
+    get:
+      operationId: staff_political_posts_retrieve
+      description: Read-only review surface for the editorial panel. Serves only already-stored
+        posts.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this political post.
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoliticalPost'
+          description: ''
+  /api/staff/political/status/:
+    get:
+      operationId: staff_political_status_retrieve
+      summary: Stan pobierania kont politycznych (redakcja)
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/threads/:
     get:
@@ -478,8 +2301,163 @@ paths:
               schema:
                 $ref: '#/components/schemas/Thread'
           description: ''
+  /api/threads/{slug}/opinions/:
+    get:
+      operationId: threads_opinions_retrieve
+      summary: Reakcje i komentarze do nitki kontekstowej
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - reakcje
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: threads_opinions_create
+      summary: Reakcje i komentarze do nitki kontekstowej
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - reakcje
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    patch:
+      operationId: threads_opinions_partial_update
+      summary: Reakcje i komentarze do nitki kontekstowej
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - reakcje
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/youtube/search/:
+    get:
+      operationId: youtube_search_retrieve
+      summary: Wyszukiwanie w YouTube (redakcja)
+      tags:
+      - redakcja
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: youtube_search_create
+      summary: Wyszukiwanie w YouTube (redakcja)
+      tags:
+      - redakcja
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
 components:
   schemas:
+    AccountCampEnum:
+      enum:
+      - government
+      - opposition
+      - public
+      type: string
+      description: |-
+        * `government` - Obóz rządzący
+        * `opposition` - Opozycja
+        * `public` - Instytucja publiczna
     Article:
       type: object
       properties:
@@ -506,6 +2484,8 @@ components:
           allOf:
           - $ref: '#/components/schemas/CategoryEnum'
           title: Kategoria
+        tags:
+          description: Hasła jawnie podane przez wydawcę; nie są oceną treści.
         image_url:
           title: Obraz
           oneOf:
@@ -528,14 +2508,12 @@ components:
           maxLength: 64
         likes_count:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         retweets_count:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         discovered_at:
           type: string
           format: date-time
@@ -560,7 +2538,11 @@ components:
         official:
           nullable: true
           readOnly: true
+        content_status:
+          type: string
+          readOnly: true
       required:
+      - content_status
       - evidence_links
       - id
       - official
@@ -568,14 +2550,53 @@ components:
       - title
       - url
       - voting
+    ArticleContextResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        match_basis:
+          type: string
+        counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContextCategoryCount'
+        total:
+          type: integer
+        timeline:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/Article'
+          description: Materiały powiązane pogrupowane według daty publikacji (YYYY-MM-DD
+            lub `unknown`).
+        next_page:
+          type: integer
+          nullable: true
+        checked_at:
+          type: string
+          format: date-time
+      required:
+      - checked_at
+      - counts
+      - keywords
+      - match_basis
+      - next_page
+      - query
+      - timeline
+      - total
     Ballot:
       type: object
       properties:
         mp_id:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         name:
           type: string
           maxLength: 255
@@ -590,12 +2611,28 @@ components:
       - mp_id
       - name
       - vote
+    BlankEnum:
+      enum:
+      - ''
+    CatalogStageEnum:
+      enum:
+      - candidate
+      - configured
+      - excluded
+      type: string
+      description: |-
+        * `candidate` - Kandydat
+        * `configured` - Skonfigurowane
+        * `excluded` - Wykluczone
     CategoryEnum:
       enum:
       - voting
       - legislation
       - parliamentary_print
       - reportage
+      - interview
+      - podcast
+      - document
       - advertisement
       - other
       - statement
@@ -613,17 +2650,45 @@ components:
         * `legislation` - Akt prawny / obwieszczenie
         * `parliamentary_print` - Druk sejmowy
         * `reportage` - Reportaż
+        * `interview` - Wywiad
+        * `podcast` - Podcast
+        * `document` - Dokument urzędowy
         * `advertisement` - Reklama
         * `other` - Inne / nieustalona kategoria
-        * `statement` - Oświadczenie
+        * `statement` - Komunikat / oświadczenie
         * `mention` - Wzmianka
-        * `video` - Wideo
+        * `video` - Film
         * `sponsored` - Sponsorowane
         * `article` - Artykuł
         * `tweet` - Tweet
         * `factcheck` - Fact-check
         * `context` - Kontekst
         * `opinion` - Opinia
+    ContextCategoryCount:
+      type: object
+      properties:
+        category:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+      required:
+      - category
+      - count
+      - label
+    ContextCountsResponse:
+      type: object
+      properties:
+        counts:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: {}
+          description: 'Klucz: id materiału; wartość: total, categories, checked_at,
+            complete.'
+      required:
+      - counts
     CurrentUser:
       type: object
       properties:
@@ -631,6 +2696,18 @@ components:
           type: boolean
         is_editor:
           type: boolean
+        is_journalist:
+          type: boolean
+        can_edit_threads:
+          type: boolean
+        can_create_threads:
+          type: boolean
+        can_publish:
+          type: boolean
+        can_manage_sponsorship:
+          type: boolean
+        role:
+          type: string
         username:
           type: string
         patronite_url:
@@ -640,8 +2717,14 @@ components:
       required:
       - authenticated
       - buycoffee_url
+      - can_create_threads
+      - can_edit_threads
+      - can_manage_sponsorship
+      - can_publish
       - is_editor
+      - is_journalist
       - patronite_url
+      - role
       - username
     DatePrecisionEnum:
       enum:
@@ -651,6 +2734,23 @@ components:
       description: |-
         * `time` - Data i czas
         * `day` - Tylko dzień
+    EditorialCampEnum:
+      enum:
+      - government
+      - opposition
+      type: string
+      description: |-
+        * `government` - Obóz rządzący
+        * `opposition` - Opozycja
+    EditorialSlotEnum:
+      enum:
+      - government
+      - opposition
+      type: string
+      description: |-
+        * `` - Pozostałe nitki
+        * `government` - Przekaz dnia obozu rządzącego
+        * `opposition` - Przekaz dnia opozycji
     EvidenceLink:
       type: object
       properties:
@@ -665,6 +2765,50 @@ components:
       - explanation
       - phrase
       - source_url
+    FeedResponse:
+      type: object
+      properties:
+        mode:
+          $ref: '#/components/schemas/FeedResponseModeEnum'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Article'
+        total:
+          type: integer
+        next_page:
+          type: integer
+          nullable: true
+        checked_at:
+          type: string
+          format: date-time
+        latest_published_at:
+          type: string
+          format: date-time
+          nullable: true
+        top_sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        selection_note:
+          type: string
+      required:
+      - checked_at
+      - latest_published_at
+      - mode
+      - next_page
+      - results
+      - selection_note
+      - top_sources
+      - total
+    FeedResponseModeEnum:
+      enum:
+      - latest
+      - top
+      type: string
+      description: |-
+        * `latest` - latest
+        * `top` - top
     GoogleNewsQueryRequest:
       type: object
       properties:
@@ -690,6 +2834,8 @@ components:
       - x
       - sejm
       - eli
+      - archive
+      - youtube
       type: string
       description: |-
         * `manual` - Redakcja
@@ -699,6 +2845,16 @@ components:
         * `x` - X
         * `sejm` - API Sejmu
         * `eli` - ELI
+        * `archive` - Archiwum wydawcy
+        * `youtube` - YouTube
+    OriginEnum:
+      enum:
+      - editorial_selection
+      - ai_proposal
+      type: string
+      description: |-
+        * `editorial_selection` - Wybór redakcji
+        * `ai_proposal` - Propozycja AI
     PaginatedBallotList:
       type: object
       required:
@@ -722,6 +2878,75 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Ballot'
+    PaginatedPoliticalAccountList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PoliticalAccount'
+    PaginatedPoliticalDraftList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PoliticalDraft'
+    PaginatedPoliticalPostList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PoliticalPost'
     PaginatedThreadList:
       type: object
       required:
@@ -768,6 +2993,42 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ThreadList'
+    PatchedPoliticalAccountRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          minLength: 1
+          pattern: ^[1-9][0-9]{0,18}$
+          maxLength: 19
+        handle:
+          type: string
+          minLength: 1
+          pattern: ^[A-Za-z0-9_]{1,15}$
+          maxLength: 15
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        camp:
+          $ref: '#/components/schemas/AccountCampEnum'
+        confirmation_url:
+          description: Publiczne źródło potwierdzające tożsamość konta i przyjętą
+            klasyfikację.
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 1024
+          - type: string
+            maxLength: 0
+        confirmation_note:
+          type: string
+        enabled:
+          type: boolean
+        poll_interval_minutes:
+          type: integer
+          maximum: 1440
+          minimum: 1
     PatchedWriteThreadRequest:
       type: object
       properties:
@@ -784,10 +3045,342 @@ components:
         is_featured:
           type: boolean
           title: Wyróżniony
+        editorial_slot:
+          oneOf:
+          - $ref: '#/components/schemas/EditorialSlotEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        is_sponsored:
+          type: boolean
+          title: Materiał sponsorowany
+        sponsor_name:
+          type: string
+          title: Nazwa sponsora
+          maxLength: 200
         items:
           type: array
           items:
             $ref: '#/components/schemas/WriteItemRequest'
+    PoliticalAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          maxLength: 19
+        handle:
+          type: string
+          pattern: ^[A-Za-z0-9_]{1,15}$
+          maxLength: 15
+        display_name:
+          type: string
+          maxLength: 150
+        camp:
+          $ref: '#/components/schemas/AccountCampEnum'
+        confirmation_url:
+          description: Publiczne źródło potwierdzające tożsamość konta i przyjętą
+            klasyfikację.
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 1024
+          - type: string
+            maxLength: 0
+        confirmation_note:
+          type: string
+        enabled:
+          type: boolean
+        poll_interval_minutes:
+          type: integer
+          maximum: 1440
+          minimum: 1
+        confirmed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        effectively_confirmed:
+          type: boolean
+          readOnly: true
+        next_poll_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_polled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_error:
+          type: string
+          readOnly: true
+      required:
+      - camp
+      - confirmed_at
+      - confirmed_by
+      - display_name
+      - effectively_confirmed
+      - handle
+      - id
+      - last_error
+      - last_polled_at
+      - next_poll_at
+      - user_id
+    PoliticalAccountRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          minLength: 1
+          pattern: ^[1-9][0-9]{0,18}$
+          maxLength: 19
+        handle:
+          type: string
+          minLength: 1
+          pattern: ^[A-Za-z0-9_]{1,15}$
+          maxLength: 15
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        camp:
+          $ref: '#/components/schemas/AccountCampEnum'
+        confirmation_url:
+          description: Publiczne źródło potwierdzające tożsamość konta i przyjętą
+            klasyfikację.
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 1024
+          - type: string
+            maxLength: 0
+        confirmation_note:
+          type: string
+        enabled:
+          type: boolean
+        poll_interval_minutes:
+          type: integer
+          maximum: 1440
+          minimum: 1
+      required:
+      - camp
+      - display_name
+      - handle
+      - user_id
+    PoliticalDraft:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        camp:
+          $ref: '#/components/schemas/EditorialCampEnum'
+        day:
+          type: string
+          format: date
+        title:
+          type: string
+          maxLength: 250
+        posts:
+          type: array
+          items:
+            type: integer
+        origin:
+          allOf:
+          - $ref: '#/components/schemas/OriginEnum'
+          readOnly: true
+        proposed_items:
+          description: Redakcyjny szkic materiałów za/przeciw i niepewności dla wybranych
+            postów; nie jest rekordem źródłowym ani oceną prawdziwości.
+        notes:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - camp
+      - created_at
+      - created_by
+      - day
+      - id
+      - origin
+      - posts
+      - reviewed_at
+      - reviewed_by
+      - status
+      - title
+    PoliticalDraftRequest:
+      type: object
+      properties:
+        camp:
+          $ref: '#/components/schemas/EditorialCampEnum'
+        day:
+          type: string
+          format: date
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+        posts:
+          type: array
+          items:
+            type: integer
+        proposed_items:
+          description: Redakcyjny szkic materiałów za/przeciw i niepewności dla wybranych
+            postów; nie jest rekordem źródłowym ani oceną prawdziwości.
+        notes:
+          type: string
+      required:
+      - camp
+      - day
+      - posts
+      - title
+    PoliticalPost:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        account:
+          type: integer
+          readOnly: true
+        account_handle:
+          type: string
+          readOnly: true
+        account_display_name:
+          type: string
+          readOnly: true
+        post_id:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+        fetched_at:
+          type: string
+          format: date-time
+          readOnly: true
+        author_data:
+          readOnly: true
+        media:
+          readOnly: true
+        camp_at_collection:
+          allOf:
+          - $ref: '#/components/schemas/AccountCampEnum'
+          readOnly: true
+        available:
+          type: boolean
+          readOnly: true
+      required:
+      - account
+      - account_display_name
+      - account_handle
+      - author_data
+      - available
+      - camp_at_collection
+      - fetched_at
+      - id
+      - media
+      - post_id
+      - published_at
+      - text
+      - url
+    PortalChoice:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+      required:
+      - label
+      - value
+    PortalConfigResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortalChoice'
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortalChoice'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+          description: 'Katalog źródeł (bez wykluczonych); `portal_group`: top / publiczne
+            / media.'
+        top_sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        source_stats:
+          type: object
+          additionalProperties:
+            type: integer
+        editorial:
+          type: object
+          additionalProperties: {}
+          description: Nitki redakcyjne „Przekaz dnia” (rząd / opozycja) albo null.
+        x_editorial:
+          type: object
+          additionalProperties: {}
+        platforms:
+          type: object
+          additionalProperties: {}
+      required:
+      - categories
+      - editorial
+      - platforms
+      - source_stats
+      - sources
+      - top_sources
+      - topics
+      - x_editorial
+    PortalGroupEnum:
+      enum:
+      - top
+      - publiczne
+      - media
+      type: string
+      description: |-
+        * `top` - top
+        * `publiczne` - publiczne
+        * `media` - media
     PreviewURLRequest:
       type: object
       properties:
@@ -797,6 +3390,27 @@ components:
           minLength: 1
       required:
       - url
+    PublicFigureListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: 'Profil: id, name, role_category, role_title, organisation,
+            status, official_profile_url, evidence_url, source_checked_at.'
+      required:
+      - count
+      - page
+      - page_size
+      - results
     RelatedArticles:
       type: object
       properties:
@@ -815,6 +3429,11 @@ components:
           type: integer
         truncated:
           type: boolean
+        page:
+          type: integer
+        next_page:
+          type: integer
+          nullable: true
         timeline:
           type: object
           additionalProperties:
@@ -822,6 +3441,8 @@ components:
             items:
               $ref: '#/components/schemas/Article'
       required:
+      - next_page
+      - page
       - returned
       - timeline
       - total
@@ -837,18 +3458,39 @@ components:
           title: Nazwa
           maxLength: 255
         url:
-          type: string
-          format: uri
+          nullable: true
           title: Adres URL
-          maxLength: 4096
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 4096
+          - type: string
+            maxLength: 0
         source_type:
           allOf:
           - $ref: '#/components/schemas/SourceTypeEnum'
           title: Typ źródła
+        is_active:
+          type: boolean
+          title: Aktywne
+        catalog_stage:
+          allOf:
+          - $ref: '#/components/schemas/CatalogStageEnum'
+          title: Etap katalogowy
+          description: |-
+            Skonfigurowane nie oznacza zweryfikowanego kanału ani kompletnego archiwum.
+
+            * `candidate` - Kandydat
+            * `configured` - Skonfigurowane
+            * `excluded` - Wykluczone
+        portal_group:
+          allOf:
+          - $ref: '#/components/schemas/PortalGroupEnum'
+          readOnly: true
       required:
       - id
       - name
-      - url
+      - portal_group
     SourceTypeEnum:
       enum:
       - portal
@@ -871,6 +3513,16 @@ components:
         * `newsapi` - NewsAPI
         * `gdelt` - GDELT
         * `editorial` - Redakcja
+    StatusEnum:
+      enum:
+      - pending_review
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending_review` - Do przeglądu
+        * `approved` - Zatwierdzony szkic
+        * `rejected` - Odrzucony
     Thread:
       type: object
       properties:
@@ -889,6 +3541,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ThreadTypeEnum'
           title: Typ wątku
+        editorial_slot:
+          oneOf:
+          - $ref: '#/components/schemas/EditorialSlotEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_featured:
           type: boolean
           title: Wyróżniony
@@ -901,9 +3557,8 @@ components:
           type: boolean
         views_count:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         created_at:
           type: string
           format: date-time
@@ -923,14 +3578,34 @@ components:
           items:
             $ref: '#/components/schemas/ThreadItem'
           readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        author_role:
+          type: string
+          readOnly: true
+        is_sponsored:
+          type: boolean
+          readOnly: true
+        sponsor_name:
+          type: string
+          title: Nazwa sponsora
+          maxLength: 200
+        sponsorship_label:
+          type: string
+          readOnly: true
       required:
+      - author_name
+      - author_role
       - created_at
       - featured
       - id
       - image_url
+      - is_sponsored
       - item_count
       - items
       - slug
+      - sponsorship_label
       - title
       - updated_at
     ThreadItem:
@@ -941,20 +3616,37 @@ components:
           readOnly: true
         position:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
           title: Pozycja
         editorial_note:
           type: string
           title: Notatka redakcyjna
         article:
-          allOf:
-          - $ref: '#/components/schemas/Article'
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        author_role:
+          type: string
+          readOnly: true
+        is_sponsored:
+          type: boolean
+          readOnly: true
+        sponsor_name:
+          type: string
+          readOnly: true
+        sponsorship_label:
+          type: string
           readOnly: true
       required:
       - article
+      - author_name
+      - author_role
       - id
+      - is_sponsored
+      - sponsor_name
+      - sponsorship_label
     ThreadList:
       type: object
       properties:
@@ -973,6 +3665,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ThreadTypeEnum'
           title: Typ wątku
+        editorial_slot:
+          oneOf:
+          - $ref: '#/components/schemas/EditorialSlotEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_featured:
           type: boolean
           title: Wyróżniony
@@ -985,9 +3681,8 @@ components:
           type: boolean
         views_count:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
         created_at:
           type: string
           format: date-time
@@ -1007,14 +3702,34 @@ components:
           items:
             $ref: '#/components/schemas/ThreadItem'
           readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        author_role:
+          type: string
+          readOnly: true
+        is_sponsored:
+          type: boolean
+          readOnly: true
+        sponsor_name:
+          type: string
+          title: Nazwa sponsora
+          maxLength: 200
+        sponsorship_label:
+          type: string
+          readOnly: true
       required:
+      - author_name
+      - author_role
       - created_at
       - featured
       - id
       - image_url
+      - is_sponsored
       - item_count
       - items
       - slug
+      - sponsorship_label
       - title
       - updated_at
     ThreadTypeEnum:
@@ -1027,6 +3742,35 @@ components:
         * `sponsored` - Sponsorowane
         * `factcheck` - Fact-check
         * `context` - Kontekst
+    TopicOfDayResponse:
+      type: object
+      properties:
+        query:
+          type: string
+          nullable: true
+        label:
+          type: string
+          nullable: true
+        mode:
+          $ref: '#/components/schemas/TopicOfDayResponseModeEnum'
+        source_count:
+          type: integer
+        article_count:
+          type: integer
+      required:
+      - article_count
+      - label
+      - mode
+      - query
+      - source_count
+    TopicOfDayResponseModeEnum:
+      enum:
+      - automatic
+      - unavailable
+      type: string
+      description: |-
+        * `automatic` - automatic
+        * `unavailable` - unavailable
     VotingSummary:
       type: object
       properties:
@@ -1140,21 +3884,24 @@ components:
       properties:
         article_id:
           type: integer
+        external_url:
+          type: string
+          format: uri
         editorial_note:
           type: string
           maxLength: 5000
-      required:
-      - article_id
     WriteItemRequest:
       type: object
       properties:
         article_id:
           type: integer
+        external_url:
+          type: string
+          format: uri
+          minLength: 1
         editorial_note:
           type: string
           maxLength: 5000
-      required:
-      - article_id
     WriteThread:
       type: object
       properties:
@@ -1170,6 +3917,17 @@ components:
         is_featured:
           type: boolean
           title: Wyróżniony
+        editorial_slot:
+          oneOf:
+          - $ref: '#/components/schemas/EditorialSlotEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        is_sponsored:
+          type: boolean
+          title: Materiał sponsorowany
+        sponsor_name:
+          type: string
+          title: Nazwa sponsora
+          maxLength: 200
         items:
           type: array
           items:
@@ -1193,6 +3951,17 @@ components:
         is_featured:
           type: boolean
           title: Wyróżniony
+        editorial_slot:
+          oneOf:
+          - $ref: '#/components/schemas/EditorialSlotEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        is_sponsored:
+          type: boolean
+          title: Materiał sponsorowany
+        sponsor_name:
+          type: string
+          title: Nazwa sponsora
+          maxLength: 200
         items:
           type: array
           items:

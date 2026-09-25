@@ -102,6 +102,9 @@ class EditorialThreadViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
     http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
     def get_queryset(self):
+        # Generowanie schematu OpenAPI nie ma zalogowanego użytkownika — pusty queryset tylko dla typu modelu.
+        if getattr(self, 'swagger_fake_view', False):
+            return Thread.objects.none()
         qs = Thread.objects.all()
         if not self.request.user.is_staff:
             qs = qs.filter(created_by=self.request.user)

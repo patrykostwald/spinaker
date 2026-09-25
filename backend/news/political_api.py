@@ -4,6 +4,7 @@ from django.db import models, transaction
 from django.utils import timezone
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
+from news.schema import json_view
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -42,7 +43,7 @@ class PoliticalAccountSerializer(serializers.ModelSerializer):
             'next_poll_at', 'last_polled_at', 'last_error']
         read_only_fields = ['confirmed_by', 'confirmed_at', 'next_poll_at', 'last_polled_at', 'last_error']
 
-    def get_effectively_confirmed(self, obj):
+    def get_effectively_confirmed(self, obj) -> bool:
         return obj.is_confirmed()
 
     def validate(self, attrs):
@@ -234,6 +235,7 @@ class PoliticalDraftViewSet(viewsets.ModelViewSet):
         return Response({'draft': self.get_serializer(result).data, 'published_threads': 0})
 
 
+@json_view("Stan pobierania kont politycznych (redakcja)", tags=["redakcja"])
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def political_status(request):

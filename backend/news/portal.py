@@ -17,6 +17,8 @@ from django.db.models import Q, Count, Prefetch, F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from news.schema import ArticleContextResponse, ContextCountsResponse, FEED_PARAMETERS, FeedResponse, PortalConfigResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
@@ -96,6 +98,7 @@ def _filters(request, qs):
     return qs
 
 
+@extend_schema(summary="Pasek materiałów: najnowsze albo dzisiejsze wiodących mediów", tags=["portal"], parameters=FEED_PARAMETERS, responses=FeedResponse)
 @api_view(['GET'])
 def feed(request):
     mode = request.query_params.get('mode', 'latest')
@@ -127,6 +130,7 @@ def feed(request):
     return Response(payload)
 
 
+@extend_schema(summary="Konfiguracja portalu: kategorie, tematy, katalog źródeł z grupami", tags=["portal"], responses=PortalConfigResponse)
 @api_view(['GET'])
 def portal_config(request):
     visible = ThreadItem.objects.select_related('thread__created_by', 'article__source',
@@ -235,6 +239,7 @@ def context_summary(article):
     return result
 
 
+@extend_schema(summary="Materiały powiązane z boxem, pogrupowane według dat", tags=["portal"], parameters=[OpenApiParameter("page", int)], responses=ArticleContextResponse)
 @api_view(['GET'])
 def article_context(request, article_id):
     article = get_object_or_404(visible_articles(), pk=article_id)
@@ -253,6 +258,7 @@ def article_context(request, article_id):
         'next_page': page + 1 if page * 30 < summary['total'] else None})
 
 
+@extend_schema(summary="Liczniki powiązanych materiałów dla 1–4 boxów", tags=["portal"], parameters=[OpenApiParameter("ids", str, required=True, description="1–4 identyfikatory materiałów, rozdzielone przecinkami.")], responses=ContextCountsResponse)
 @api_view(['GET'])
 def context_counts(request):
     raw = request.query_params.get('ids', '').split(',')

@@ -239,6 +239,7 @@ def patronite_webhook(request):
     return Response({'detail': 'Integracja webhook nie jest jeszcze aktywna.'}, status=501)
 
 
+@extend_schema(summary="Pokrycie źródeł", tags=["status"], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def source_coverage(request):
     from django.db.models import Count, Min, Max
@@ -253,6 +254,7 @@ def source_coverage(request):
             'pending_archive_urls': queue.get(row.pk, 0)} for row in sources]})
 
 
+@extend_schema(summary="Stan archiwum", tags=["status"], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def archive_status(request):
     """Small public progress snapshot; no internal errors, jobs or credentials."""
