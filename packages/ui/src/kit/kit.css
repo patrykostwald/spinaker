@@ -3188,3 +3188,4 @@ html[data-theme="light"] .sc-home-person__mono { background: linear-gradient(135
 .sc-onas-legend { display: flex; flex-wrap: wrap; gap: var(--sc-s-2) var(--sc-s-5); color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); }
 .sc-onas-legend > div { display: flex; align-items: center; gap: var(--sc-s-2); }
 @media (max-width: 640px) { .sc-onas-tagged li { flex-direction: column; gap: 2px; } }
+.sc-onas .sc-onas-operator { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); }

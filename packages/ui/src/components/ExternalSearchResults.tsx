@@ -47,7 +47,7 @@ export function ExternalSearchResults({ query, categories, fromDate, toDate, onR
           <h3><a href={row.url} target="_blank" rel="noopener noreferrer">{row.title || row.url} ↗</a></h3>
           <small>ŹRÓDŁO · {row.source_name || new URL(row.url).hostname}</small>
           <small>DATA · wymaga potwierdzenia</small>
-          <Link href={`/editor?source_url=${encodeURIComponent(row.url)}`}>Dodaj przez warsztat redakcji</Link>
+          <Link href={`/editor?source_url=${encodeURIComponent(row.url)}`}>Dodaj przez warsztat</Link>
         </article>)}
       </div>
       {visible < rows.length ? <Button type="button" variant="secondary" onClick={() => setVisible(count => count + 5)}>Pokaż kolejne odnośniki</Button> : null}

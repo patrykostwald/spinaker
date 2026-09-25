@@ -58,7 +58,7 @@ export function ThreadEditor() {
   if (me.isPending) return <p role="status">Sprawdzam dostęp…</p>;
   if (me.isError) return <div role="alert"><p>Nie udało się połączyć z serwisem.</p><button onClick={() => me.refetch()} className={button}>Spróbuj ponownie</button></div>;
   if (!canEdit) return <section className="sc-editor-login">
-    <h1 className="sc-t-title-l">Warsztat redakcji</h1><p className="sc-editor-copy">W wersji beta nitki publikuje redakcja. Czytanie i przeszukiwanie całej bazy jest dostępne bez konta.</p>
+    <h1 className="sc-t-title-l">Warsztat</h1><p className="sc-editor-copy">W wersji beta nitki publikuje zespół spin.clinic. Czytanie i przeszukiwanie całej bazy jest dostępne bez konta.</p>
     <form className="sc-editor-stack" onSubmit={async e => {
       e.preventDefault(); const data = new FormData(e.currentTarget); setBusy(true); setError('');
       try { await apiWrite('/api/auth/login/', { username: data.get('username'), password: data.get('password') }); await Promise.all([cache.invalidateQueries({ queryKey: ['me'] }), cache.invalidateQueries({ queryKey: ['account'] })]); }
@@ -67,17 +67,17 @@ export function ThreadEditor() {
   </section>;
   return <div className="sc-editor">
     {canPublish && <Link href="/editor/sources" className="sc-editor-link">Katalog źródeł · dodawanie, edycja i eksport ↗</Link>}
-    {canPublish && <Link href="/editor/political" className="sc-editor-link">Panel redakcyjny X · propozycje z zapisanych postów ↗</Link>}
+    {canPublish && <Link href="/editor/political" className="sc-editor-link">Panel przeglądu X · propozycje z zapisanych postów ↗</Link>}
     {canPublish && <ImportStatus />}
-    <header className="sc-editor__head"><p className="sc-t-caption">WARSZTAT REDAKCJI</p><h1 className="sc-t-title-l">{slug ? 'Edytuj nitkę' : 'Połącz źródła w historię'}</h1><p className="sc-t-body sc-text-2">Wybierz materiały, dodaj kontekst i opublikuj chronologiczną nitkę.</p></header>
+    <header className="sc-editor__head"><p className="sc-t-caption">WARSZTAT</p><h1 className="sc-t-title-l">{slug ? 'Edytuj nitkę' : 'Połącz źródła w historię'}</h1><p className="sc-t-body sc-text-2">Wybierz materiały, dodaj kontekst i opublikuj chronologiczną nitkę.</p></header>
     {slug && existing.isPending && <p role="status">Ładuję nitkę…</p>}
     {slug && existing.isError && <p role="alert" className="sc-editor-error">Nie udało się wczytać nitki. Wróć do listy i spróbuj ponownie.</p>}
-    {!canPublish && <p className="sc-editor-notice">Warsztat dziennikarza. Tworzysz własne szkice; publikację zatwierdza redakcja. Zmiana opublikowanej nitki wycofa ją do ponownego zatwierdzenia.</p>}
+    {!canPublish && <p className="sc-editor-notice">Warsztat dziennikarza. Tworzysz własne szkice; publikację zatwierdza zespół spin.clinic. Zmiana opublikowanej nitki wycofa ją do ponownego zatwierdzenia.</p>}
     {canPublish && <DraftAssistant key={slug ?? 'new'} articles={picked.map(item => item.article)} onAdd={add} />}
     <section className="sc-editor-form">
       <label className="sc-editor-field">Tytuł nitki<input required maxLength={255} value={title} onChange={e => setTitle(e.target.value)} className={input} placeholder="Jak rozwijał się ten temat?" /></label>
       <label className="sc-editor-field">Wprowadzenie<textarea maxLength={5000} value={description} onChange={e => setDescription(e.target.value)} className={input} rows={3} placeholder="Wyjaśnij, co łączy wybrane źródła." /></label>
-      {canPublish && <label className="sc-editor-field">Sekcja redakcyjna<select value={editorialSlot} onChange={e => setEditorialSlot(e.target.value as typeof editorialSlot)} className={input}><option value="">Zwykła nitka</option><option value="government">Przekaz dnia obozu rządzącego</option><option value="opposition">Przekaz dnia opozycji</option></select></label>}
+      {canPublish && <label className="sc-editor-field">Sekcja na stronie<select value={editorialSlot} onChange={e => setEditorialSlot(e.target.value as typeof editorialSlot)} className={input}><option value="">Zwykła nitka</option><option value="government">Przekaz dnia obozu rządzącego</option><option value="opposition">Przekaz dnia opozycji</option></select></label>}
       {canPublish && <div className="sc-editor-stack"><label className="sc-editor-check"><input type="checkbox" checked={sponsored} onChange={e => setSponsored(e.target.checked)} />Nitka sponsorowana</label>{sponsored && <label className="sc-editor-field">Nazwa sponsora<input value={sponsorName} onChange={e => setSponsorName(e.target.value)} maxLength={200} required className={input} /><span className="sc-editor-hint">Oznaczenie będzie widoczne w nitce, boxach i eksporcie. Nie zmienia danych źródłowych.</span></label>}</div>}
     </section>
     <section className="sc-editor-stack"><div className="sc-editor-section-head"><h2 className="sc-t-title-m">1. Wybierz materiały z bazy</h2><button className="sc-editor-action" onClick={() => setManual(v => !v)}>{manual ? 'Zamknij formularz źródła' : '+ Dodaj materiał źródłowy'}</button></div>
@@ -90,7 +90,7 @@ export function ThreadEditor() {
           add({ reference_only: true, id: -Date.now(), title: 'Post X wskazany przez autora', url: normalized, category: 'tweet', source: { id: 0, name: 'X', url: 'https://x.com', source_type: 'social' }, published_date: null, date_precision: 'time', image_url: '', description: '', author: '', evidence_note: '', ingestion_method: 'reference_only', category_reviewed: false, discovered_at: null });
           setManual(false); setExternalUrl('');
         } catch (err) { setError(err instanceof Error ? err.message : 'Sprawdź adres posta.'); }
-      }}><p className="sc-editor-hint">Do szkicu możesz dołączyć odnośnik do konkretnego posta X. Jego treści nie pobieramy. Inne materiały wybierz z bazy; nowe źródło może dodać redakcja.</p><label className="sc-editor-field">Adres posta X<input type="url" required value={externalUrl} onChange={e => setExternalUrl(e.target.value)} className={input} /></label><button className={button}>Dodaj odnośnik do szkicu</button></form>}
+      }}><p className="sc-editor-hint">Do szkicu możesz dołączyć odnośnik do konkretnego posta X. Jego treści nie pobieramy. Inne materiały wybierz z bazy; nowe źródło może dodać zespół spin.clinic.</p><label className="sc-editor-field">Adres posta X<input type="url" required value={externalUrl} onChange={e => setExternalUrl(e.target.value)} className={input} /></label><button className={button}>Dodaj odnośnik do szkicu</button></form>}
       {manual && canPublish && <form ref={manualForm} className="sc-editor-form sc-editor-form--wide" onSubmit={async e => {
         e.preventDefault(); const form = e.currentTarget; const values = Object.fromEntries(new FormData(form)); setBusy(true); setError('');
         try {
@@ -127,7 +127,7 @@ export function ThreadEditor() {
         <label className="sc-editor-field">Data i godzina publikacji (Twoja strefa czasu)<input name="published_date" type="datetime-local" className={input} /></label>
         <label className="sc-editor-field">Autor<input name="author" maxLength={200} className={input} /></label>
         <label className="sc-editor-field">Opis / fragment<textarea name="description" maxLength={4000} rows={3} className={input} /></label>
-        <label className="sc-editor-field">Uwagi redakcji o źródle<textarea name="evidence_note" maxLength={4000} rows={3} className={input} /></label>
+        <label className="sc-editor-field">Uwagi o źródle<textarea name="evidence_note" maxLength={4000} rows={3} className={input} /></label>
         <button disabled={busy} className={button}>Zapisz materiał i dodaj do nitki</button>
       </form>}
       <form className="sc-editor-search" onSubmit={e => { e.preventDefault(); setQ(search.trim()); }}><label className="sr-only" htmlFor="source-search">Szukaj źródeł</label><input id="source-search" value={search} required maxLength={200} onChange={e => setSearch(e.target.value)} placeholder="Szukaj tematu w bazie…" className="sc-editor-input" /><button className={button}>Szukaj</button></form>
@@ -144,7 +144,7 @@ export function ThreadEditor() {
         try {
           const result = await apiWrite<{ slug: string; published: boolean }>(slug ? `/api/editor/threads/${encodeURIComponent(slug)}/` : '/api/editor/threads/', { title, description, ...(canPublish ? { published, is_featured: featured, editorial_slot: editorialSlot, is_sponsored: sponsored, sponsor_name: sponsored ? sponsorName : '' } : {}), items: ordered.map(i => ({ ...(i.article.reference_only ? { external_url: i.article.url } : { article_id: i.article.id }), editorial_note: i.editorial_note })) }, slug ? 'PATCH' : 'POST');
           await cache.invalidateQueries({ queryKey: ['editor-threads'] }); await cache.invalidateQueries({ queryKey: ['portal-threads'] }); await cache.invalidateQueries({ queryKey: ['portal-config'] });
-          setPublished(result.published); setSaved(result.published ? 'Nitka została opublikowana.' : canPublish ? 'Szkic został zapisany.' : 'Szkic został zapisany. Publikację zatwierdza redakcja.'); router.replace(`/editor?slug=${result.slug}`);
+          setPublished(result.published); setSaved(result.published ? 'Nitka została opublikowana.' : canPublish ? 'Szkic został zapisany.' : 'Szkic został zapisany. Publikację zatwierdza zespół spin.clinic.'); router.replace(`/editor?slug=${result.slug}`);
         } catch (err) { setError(err instanceof Error ? err.message : 'Nie udało się zapisać nitki.'); } finally { setBusy(false); }
       }}>{busy ? 'Zapisuję…' : canPublish && published ? 'Zapisz i opublikuj' : 'Zapisz szkic'}</button>
       {slug && published && <Link href={`/thread/${slug}`} className="sc-editor-link-inline">Zobacz nitkę ↗</Link>}
