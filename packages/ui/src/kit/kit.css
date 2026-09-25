@@ -2608,8 +2608,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 @media (hover: none) { .sc-strip__arrows { display: none; } }
 
 /* Wszystkie źródła */
-.sc-home-top10__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-3); margin-bottom: var(--sc-s-5); }
-.sc-home-top10__search { flex: 1 1 220px; min-width: 200px; max-width: 360px; margin-left: auto; }
 
 /* Temat dnia */
 .sc-home-topic__grid { display: grid; grid-template-columns: 2fr 3fr; gap: var(--sc-s-5); align-items: start; }
@@ -2632,7 +2630,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-home-topic__thread { margin-top: var(--sc-s-6); }
 
 /* Dr Spin */
-.sc-home-drspin__track { display: grid; grid-template-columns: 2fr 3fr; gap: var(--sc-s-5); align-items: start; }
 .sc-home-drspin__anchor, .sc-home-drspin__strip { min-width: 0; }
 .sc-home-anchor-placeholder { display: grid; gap: var(--sc-s-2); padding: var(--sc-s-5); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-e-1); }
 .sc-home-anchor-placeholder__media { aspect-ratio: 16 / 9; border-radius: var(--sc-r-lg); margin-bottom: var(--sc-s-2); }
@@ -2647,17 +2644,12 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-home-personal { margin-bottom: var(--sc-s-7); }
 .sc-home-personal__strip { display: grid; gap: var(--sc-s-3); }
 .sc-home-personal__actions { display: flex; justify-content: flex-end; gap: var(--sc-s-2); }
-.sc-home-personal__example { padding: var(--sc-s-4); border-radius: var(--sc-r-xl); background: var(--sc-surface); display: grid; gap: var(--sc-s-3); }
-.sc-home-personal__example p { margin: 0; }
 .sc-home-stripform { padding: var(--sc-s-4); border-radius: var(--sc-r-xl); background: var(--sc-surface); display: grid; gap: var(--sc-s-3); }
 .sc-home-stripform p { margin: 0; }
 .sc-home-stripform__row { display: flex; flex-wrap: wrap; gap: var(--sc-s-3); align-items: center; }
 .sc-home-stripform__row > :first-child { flex: 1 1 220px; }
 .sc-home-stripform__actions { display: flex; gap: var(--sc-s-2); margin-left: auto; }
-.sc-home-baza__latest { margin-top: var(--sc-s-4); }
 .sc-home-baza__count { margin-left: var(--sc-s-2); }
-.sc-home-baza__filters-toggle { display: none; }
-.sc-home-baza__search { margin: var(--sc-s-3) 0 var(--sc-s-5); max-width: 640px; }
 .sc-home-baza__layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: var(--sc-s-6); align-items: start; }
 .sc-home-baza__results p { margin: 0 0 var(--sc-s-3); }
 .sc-home-baza__grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-s-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
@@ -2677,14 +2669,12 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 
 @media (max-width: 900px) {
   .sc-home { gap: var(--sc-s-7); }
-  .sc-home-topic__grid, .sc-home-drspin__track { grid-template-columns: 1fr; }
+  .sc-home-topic__grid { grid-template-columns: 1fr; }
   .sc-home-baza__layout { grid-template-columns: 1fr; }
   .sc-home-baza__aside { display: none; }
-  .sc-home-baza__filters-toggle { display: inline-flex; }
 }
 @media (max-width: 640px) {
   .sc-home-przekaz__grid { grid-template-columns: 1fr; }
-  .sc-home-top10__search { max-width: none; margin-left: 0; }
 }
 @media (max-width: 480px) {
   .sc-home-hero__frame { height: 140px; }
@@ -2698,8 +2688,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-home-catbar { margin: 0 0 calc(var(--sc-s-9) * -1 + var(--sc-s-3)); }
 .sc-home-catbar .sc-nav-categories__list { padding-inline: 0; }
 .sc-home-catbar__btn { border: 0; background: transparent; font: inherit; cursor: pointer; }
-.sc-home-ticker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-s-4); }
-.sc-home-ticker > .sc-strip__empty { min-height: 96px; }
 .sc-home-section__title { margin: 0; }
 
 /* Hero */
@@ -2707,64 +2695,20 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-home-lead__main { min-width: 0; display: flex; }
 .sc-home-lead__main > .sc-card-slot { flex: 1 1 auto; }
 .sc-home-lead__placeholder { flex: 1 1 auto; }
-.sc-home-lead__panel { display: flex; flex-direction: column; min-width: 0; padding: var(--sc-s-4); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-e-1); }
-.sc-home-lead__panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); margin-bottom: var(--sc-s-3); }
-.sc-home-lead__panel-head h2, .sc-home-lead__panel-head h3 { margin: 0; }
-.sc-home-lead__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
-.sc-home-lead__rows > li { display: flex; }
-.sc-home-lead__row { flex: 1 1 auto; display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: var(--sc-s-3); padding: var(--sc-s-3); border: 0; border-radius: var(--sc-r-md); background: transparent; color: var(--sc-text); text-align: left; font: inherit; cursor: pointer; transition: color var(--sc-dur-base) var(--sc-ease-standard); }
-.sc-home-lead__row:hover { color: var(--sc-accent); }
-.sc-home-lead__row:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
-.sc-home-lead__row + .sc-home-lead__row, .sc-home-lead__rows > li + li { border-top: 1px solid var(--sc-hairline); }
-.sc-home-lead__row-time { font-variant-numeric: tabular-nums; color: var(--sc-text-2); }
-.sc-home-lead__row-body { display: grid; gap: 2px; min-width: 0; }
-.sc-home-lead__row-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.sc-home-lead__row--skeleton { cursor: default; }
-.sc-home-lead__row-skeleton { height: 34px; border-radius: var(--sc-r-sm); }
-.sc-home-lead__thread { margin-top: var(--sc-s-6); }
 
 /* Mozaika */
-.sc-home-mosaic__search { width: 220px; }
-.sc-home-mosaic__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(260px, 0.8fr); grid-template-areas: "hero tiles list"; gap: var(--sc-s-5); align-items: start; }
-.sc-home-mosaic__hero { grid-area: hero; display: flex; min-width: 0; }
-.sc-home-mosaic__hero > .sc-card-slot, .sc-home-mosaic__hero > .sc-strip__empty { flex: 1 1 auto; }
-.sc-home-mosaic__tiles { grid-area: tiles; display: grid; grid-template-columns: 1fr 1fr; gap: var(--sc-s-4); min-width: 0; }
-.sc-home-mosaic__list { grid-area: list; min-width: 0; padding: var(--sc-s-4); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-e-1); }
-.sc-home-ranked { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.sc-home-ranked__item { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: var(--sc-s-3); padding: var(--sc-s-2) 0; }
-.sc-home-ranked__item + .sc-home-ranked__item { border-top: 1px solid var(--sc-hairline); }
-.sc-home-ranked__num { color: var(--sc-accent); font-variant-numeric: tabular-nums; text-align: center; }
-.sc-home-ranked__item .sc-card[data-size="mini"] { padding: var(--sc-s-2) 0; background: transparent; box-shadow: none; }
-.sc-home-ranked__item .sc-card-slot[data-stage="rest"] .sc-card { box-shadow: none; }
 
 /* Dr Spin v2 */
-.sc-home-drspin__grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--sc-s-5); align-items: start; }
-.sc-home-drspin__column { display: grid; gap: var(--sc-s-3); min-width: 0; }
 
-/* Pas „Twój przegląd” */
-.sc-home-band { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr); align-items: center; gap: var(--sc-s-5); padding: var(--sc-s-6); border-radius: var(--sc-r-2xl); background: var(--sc-accent-soft); }
-.sc-home-band__copy h2, .sc-home-band__copy p { margin: 0; }
-.sc-home-band__copy h2 { margin-bottom: var(--sc-s-1); }
-.sc-home-band__form { display: flex; gap: var(--sc-s-3); align-items: center; }
-.sc-home-band__form > :first-child { flex: 1 1 auto; }
 .sc-home-footer__bottom { display: flex; flex-wrap: wrap; gap: var(--sc-s-4); }
 .sc-home-footer__bottom a { color: inherit; text-decoration: none; }
 .sc-home-footer__bottom a:hover { color: var(--sc-accent); }
 
-@media (max-width: 1100px) {
-  .sc-home-mosaic__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "hero tiles" "list list"; }
-}
 @media (max-width: 900px) {
-  .sc-home-ticker { grid-template-columns: 1fr 1fr; }
-  .sc-home-lead__grid, .sc-home-drspin__grid, .sc-home-band { grid-template-columns: 1fr; }
-  .sc-home-mosaic__grid { grid-template-columns: 1fr; grid-template-areas: "hero" "tiles" "list"; }
+  .sc-home-lead__grid { grid-template-columns: 1fr; }
   .sc-home-topbar__topic { display: none; }
 }
 @media (max-width: 640px) {
-  .sc-home-ticker { grid-template-columns: 1fr; }
-  .sc-home-mosaic__tiles { grid-template-columns: 1fr; }
-  .sc-home-mosaic__search { width: 100%; }
-  .sc-home-band__form { flex-direction: column; align-items: stretch; }
 }
 
 /* === Stage 2: monochrom + hover + szapka (замечания владельца 24.09) === */
@@ -2797,7 +2741,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 /* Поверхности без синей подложки. */
 .sc-card__eyebrow { background: var(--sc-chrome); color: var(--sc-accent); }
 .sc-home-demo { background: var(--sc-surface-2); }
-.sc-home-band { background: var(--sc-surface); box-shadow: var(--sc-e-1); }
 .sc-account-primary, .sc-editor-button, .sc-political__primary { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
 .sc-motion-btn[aria-pressed="true"] { background: var(--sc-primary-bg); color: var(--sc-primary-fg); border-color: var(--sc-primary-bg); }
 .sc-icons__play:hover { background: transparent; color: var(--sc-accent); }
@@ -2872,7 +2815,7 @@ body { background: var(--sc-bg); color: var(--sc-text); }
 /* === Stage 2: poprawki po przeglądzie podglądu (24.09) === */
 /* Pole szukania poza .sc-root (szapka, strona główna): reguła globals.css `input:not(...)` (0,3,1)
    malowała wnętrze na --surface — ciemny prostokąt wystający z pola. Tu 0,4,1. */
-.sc-search input.sc-search__input.sc-input:not([type="checkbox"]) { background: transparent; background-color: transparent; border: 0; }
+.sc-search input.sc-search__input.sc-input:not([type="checkbox"]) { background: transparent; background-color: transparent; border: 0; flex: 1 1 auto; min-width: 0; width: 100%; }
 /* Telefon: lista nawigacji jest ukryta, więc nic nie dosuwało ☰ do prawej krawędzi. */
 @container sc-navmenu (max-width: 767px) {
   .sc-navmenu__toggle-wrap { margin-left: auto; }
@@ -2889,9 +2832,276 @@ body { background: var(--sc-bg); color: var(--sc-text); }
 @media (max-width: 640px) {
   /* „Wszystkie źródła”: filtr, szukanie i „Zobacz wszystko” zawijają się zamiast wychodzić poza ekran. */
   .sc-home-section__actions { flex-wrap: wrap; width: 100%; }
-  .sc-home-section__actions .sc-home-mosaic__search { flex: 1 1 100%; max-width: none; }
 }
 @media (max-width: 480px) {
   /* Przewijane rzędy kart wyników: spad w bok wychodził poza ekran (poziomy scroll strony). */
   .sc-search-day__cards.sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
 }
+
+/* === Stage 2: Home v3 — szapka z polem na środku, pasy, nitki użytkownika, pasek Bazy (25.09) === */
+/* Szapka `centered`: [wordmark · BETA · O nas … Źródła] [pole szukania] [motyw · konto].
+   start/end to `display: contents` w układzie `inline`, więc pozostałe użycia NavMenu się nie zmieniają. */
+.sc-navmenu__start, .sc-navmenu__end { display: contents; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--sc-s-5); }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__start { display: flex; align-items: center; gap: var(--sc-s-4); min-width: 0; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__list { justify-content: flex-end; }
+/* Pole zawsze na środku całej szapki: boczne kolumny są równe (1fr), a szerokość pola to to, co zostaje
+   po zarezerwowaniu ~256px na każdą stronę (wordmark · BETA · O nas | motyw · konto), 200–480px. */
+.sc-navmenu[data-layout="centered"] .sc-navmenu__search { width: clamp(200px, calc(100cqw - 2 * var(--sc-gutter) - 2 * 256px), 480px); max-width: none; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__end { display: flex; align-items: center; justify-content: flex-end; gap: var(--sc-s-3); min-width: 0; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__list:empty { display: none; }
+@container sc-navmenu (max-width: 767px) {
+  .sc-navmenu[data-layout="centered"] .sc-navmenu__row { display: flex; }
+  .sc-navmenu[data-layout="centered"] .sc-navmenu__start { flex: 1 1 auto; }
+}
+.sc-nav-brand { display: flex; align-items: center; gap: var(--sc-s-3); min-width: 0; }
+.sc-beta { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border: 1px solid var(--sc-accent); border-radius: var(--sc-r-sm); color: var(--sc-accent); font: 700 10px/1 var(--sc-font-sans); letter-spacing: 0.08em; white-space: nowrap; }
+.sc-nav-brand__about { height: 36px; white-space: nowrap; }
+
+/* Pasek tematów tuż nad rzędem „Top 10”, wyśrodkowany w kolumnie treści. Auto-marginesy
+   skrajnych punktów centrują listę, a przy przepełnieniu (telefon) nie ucinają jej początku. */
+/* Pasek daty stoi teraz nad ilustracją (nie nad paskiem tematów) — zwykły odstęp zamiast sklejenia. */
+.sc-home-topbar { margin-bottom: calc(var(--sc-s-9) * -1 + var(--sc-s-4)); }
+.sc-home-top { display: grid; gap: var(--sc-s-4); min-width: 0; }
+.sc-home-top .sc-home-catbar { margin: 0; min-width: 0; max-width: 100%; }
+.sc-home-catbar .sc-nav-categories__item:first-child { margin-left: auto; }
+.sc-home-catbar .sc-nav-categories__item:last-child { margin-right: auto; }
+
+/* Wspólna powierzchnia pasa (Temat dnia, Dr Spin): nagłówek i wszystkie boxy w jednym bloku. */
+.sc-home-band-surface { display: grid; gap: var(--sc-s-4); min-width: 0; padding: var(--sc-s-5); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-e-1); }
+.sc-home-band-surface > .sc-home-section__head { margin-bottom: 0; }
+.sc-home-band-surface .sc-card:not([data-size="large"]), .sc-home-band-surface .sc-strip__empty, .sc-home-band-surface .sc-home-anchor-placeholder { background: var(--sc-surface-2); box-shadow: none; }
+
+/* Temat dnia: kotwica + pionowy pasek powiązanych (przewijany w obrębie wysokości kotwicy). */
+.sc-home-lead__side { position: relative; min-width: 0; }
+.sc-home-lead__list { position: absolute; inset: 0; list-style: none; margin: 0; padding: 0 var(--sc-s-1) 0 0; display: flex; flex-direction: column; gap: var(--sc-s-2); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; outline: none; }
+.sc-home-lead__list:focus-visible { box-shadow: 0 0 0 2px var(--sc-focus); border-radius: var(--sc-r-md); }
+.sc-home-lead__list > li { display: flex; flex: none; }
+.sc-home-lead__list > li > .sc-card-slot { flex: 1 1 auto; min-width: 0; }
+.sc-home-lead__skeleton { display: block; width: 100%; height: 88px; border-radius: var(--sc-r-lg); }
+
+/* Dr Spin: główny box po lewej, taśma mniejszych po prawej — jeden pas. */
+.sc-home-drspin__band { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sc-s-5); align-items: start; }
+.sc-home-drspin__anchor { display: grid; gap: var(--sc-s-3); min-width: 0; }
+.sc-home-drspin__note { margin: 0; }
+.sc-home-drspin__strip { min-width: 0; }
+/* Wiersz podpisu nad taśmą: jego prawą część zajmują strzałki taśmy (top: -44px), więc nie wchodzą na nagłówek pasa. */
+.sc-home-drspin__strip-head { display: flex; align-items: center; min-height: 32px; margin: 0 0 var(--sc-s-3); padding-right: 96px; }
+/* Bez spadu w bok: taśma kończy się na krawędzi swojej kolumny/ramki nitki, nie wjeżdża pod główny box
+   ani poza zaokrągloną ramkę wiersza nitki. */
+.sc-home-drspin__strip .sc-strip-bleed, .sc-home-threads .sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
+.sc-home-drspin__strip .sc-strip__slot > .sc-strip__empty { min-height: 236px; }
+
+/* Nitki użytkownika: pasek konfiguracji (wyśrodkowany) nad listą nitek. */
+.sc-home-threads { display: grid; gap: var(--sc-s-4); }
+/* Dzieci siatek bez min-width:0 rosną do szerokości taśmy (tysiące px) i taśma przestaje się przewijać. */
+.sc-home-threads > *, .sc-home-band-surface > *, .sc-home-top > *, .sc-home-personal__strip > * { min-width: 0; }
+.sc-home-threads > .sc-home-section__head { margin-bottom: 0; align-items: baseline; }
+.sc-home-threads > .sc-home-section__head p { margin: 0; font-variant-numeric: tabular-nums; }
+.sc-home-threads__bar { display: grid; justify-items: center; gap: var(--sc-s-3); padding: var(--sc-s-4) var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); text-align: center; }
+.sc-home-threads__bar p { margin: 0; }
+.sc-home-threads__bar .sc-home-pills { justify-content: center; align-items: center; }
+/* Spad taśmy (-120px w pionie, żeby rozrośnięta karta nie była obcinana) jest przezroczysty, ale łapał
+   kliknięcia — przykrywał „Edytuj”/„Usuń pasek” nad taśmą i tytuł następnej nitki pod nią. Klikalne zostają
+   tylko karty; przewijanie kółkiem/palcem nad kartami działa jak dotąd. */
+.sc-strip__scroller.sc-strip-bleed { pointer-events: none; }
+.sc-strip__scroller.sc-strip-bleed > * { pointer-events: auto; }
+/* Akcje nitki zostawiają miejsce na strzałki taśmy (pokazują się nad nią, przy prawej krawędzi). */
+.sc-home-personal__actions { padding-right: 96px; }
+
+
+@media (max-width: 900px) {
+  .sc-home-lead__list { position: static; overflow: visible; padding: 0; }
+  .sc-home-lead__list > li:nth-child(n + 6) { display: none; }
+  .sc-home-drspin__band { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .sc-home-band-surface { padding: var(--sc-s-4); }
+  .sc-home-personal__actions { justify-content: flex-start; padding-right: 0; }
+}
+@media (max-width: 480px) {
+  /* Spad taśm w bok wychodził poza ekran (poziomy scroll strony). */
+  .sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
+}
+
+/* === Stage 2: Home v4 — wiersz filtrów, Baza o stałej wysokości, stopka zawsze w oknie (25.09) === */
+/* Wiersz: [grupa źródeł] [tematy] [hasło]. Boczne kolumny równe (1fr) — tematy zostają na środku strony,
+   niezależnie od szerokości selektora i pola. Poniżej 1200px sloty schodzą do drugiego wiersza. */
+.sc-home-catrow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "start cats end"; align-items: center; gap: var(--sc-s-4); min-width: 0; border-block: 1px solid var(--sc-line); }
+.sc-home-catrow > .sc-home-catbar { grid-area: cats; border: 0; min-width: 0; }
+.sc-home-catrow__start { grid-area: start; justify-self: start; min-width: 0; }
+.sc-home-catrow__end { grid-area: end; justify-self: end; min-width: 0; }
+.sc-home-catrow .sc-nav-categories__list { gap: var(--sc-s-4); }
+.sc-home-catrow__search .sc-search { width: 180px; max-width: 100%; height: 36px; }
+.sc-home-top__note { margin: 0; text-align: center; }
+@media (max-width: 1200px) {
+  .sc-home-catrow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "cats cats" "start end"; row-gap: 0; padding-bottom: var(--sc-s-2); }
+}
+@media (max-width: 480px) {
+  .sc-home-catrow__end, .sc-home-catrow__search, .sc-home-catrow__search .sc-search { width: 100%; }
+}
+
+/* Baza: pasek (tytuł | pole | liczba, ≤900px + „Filtry”) i obszar o stałej wysokości — siatka `mini`
+   3 kolumny × ~5 rzędów przewija się w środku, filtry obok mają tę samą wysokość i własny scroll. */
+.sc-home-baza { --sc-home-baza-h: clamp(320px, calc(100vh - 290px), 760px); }
+.sc-home-baza__bar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 440px) minmax(0, 1fr); grid-template-areas: "title search latest"; align-items: center; gap: var(--sc-s-3) var(--sc-s-5); margin-bottom: var(--sc-s-4); padding: var(--sc-s-4) var(--sc-s-5); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-e-1); }
+.sc-home-baza__title { grid-area: title; }
+.sc-home-baza__search { grid-area: search; min-width: 0; }
+.sc-home-baza__search .sc-search { max-width: none; }
+.sc-home-baza__latest { grid-area: latest; text-align: right; }
+.sc-home-baza__title, .sc-home-baza__latest { display: grid; gap: 2px; min-width: 0; }
+.sc-home-baza__title h2, .sc-home-baza__title p, .sc-home-baza__latest h3, .sc-home-baza__latest p { margin: 0; }
+.sc-home-baza__filters-toggle { grid-area: toggle; display: none; justify-self: end; }
+.sc-home-baza__layout { align-items: stretch; }
+.sc-home-baza__results { height: var(--sc-home-baza-h); min-width: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 2px var(--sc-s-2) 2px 2px; outline: none; border-radius: var(--sc-r-lg); }
+.sc-home-baza__results:focus-visible { box-shadow: 0 0 0 2px var(--sc-focus); }
+.sc-home-baza__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sc-s-3); }
+.sc-home-baza__aside { position: static; top: auto; max-height: var(--sc-home-baza-h); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; align-content: start; }
+@media (max-width: 1100px) {
+  .sc-home-baza__bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title latest" "search search"; }
+  .sc-home-baza__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .sc-home-baza__bar { grid-template-areas: "title toggle" "search search" "latest latest"; }
+  .sc-home-baza__latest { text-align: left; }
+  .sc-home-baza__filters-toggle { display: inline-flex; }
+  .sc-home-baza { --sc-home-baza-h: clamp(280px, calc(100vh - 400px), 600px); }
+}
+@media (max-width: 640px) {
+  .sc-home-baza__bar { padding: var(--sc-s-4); }
+  .sc-home-baza__grid { grid-template-columns: 1fr; }
+  .sc-home-baza { --sc-home-baza-h: clamp(260px, calc(100vh - 440px), 600px); }
+}
+
+/* Globalna stopka `sticky`: jeden wiersz przyklejony do dołu okna — wordmark · Źródła · Informacje · Wesprzyj nas. */
+.sc-footer[data-sticky] { position: sticky; bottom: 0; z-index: 25; padding: var(--sc-s-3) var(--sc-gutter); border-radius: 0; box-shadow: var(--sc-ring), 0 -10px 24px rgba(0, 0, 0, 0.28); }
+.sc-footer__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3) var(--sc-s-6); }
+.sc-footer[data-sticky] .sc-footer__brand { font-size: var(--sc-t-title-s-size, 18px); white-space: nowrap; }
+.sc-footer[data-sticky] .sc-footer__columns { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 var(--sc-s-7); margin: 0; min-width: 0; }
+.sc-footer[data-sticky] .sc-footer__column { display: flex; align-items: center; gap: var(--sc-s-3); min-width: 0; max-width: 100%; }
+.sc-footer[data-sticky] .sc-footer__column-title { margin: 0; white-space: nowrap; }
+.sc-footer[data-sticky] .sc-footer__list { flex-direction: row; gap: var(--sc-s-4); overflow-x: auto; scrollbar-width: none; }
+.sc-footer[data-sticky] .sc-footer__list::-webkit-scrollbar { display: none; }
+.sc-footer[data-sticky] .sc-footer__link { white-space: nowrap; }
+.sc-footer__bar-cta { flex: none; }
+/* Wąsko: wordmark i „Wesprzyj nas” w pierwszej linii, linki pod nimi (przewijane w bok). */
+@container sc-footer (max-width: 1099px) {
+  .sc-footer__bar { flex-wrap: wrap; }
+  .sc-footer[data-sticky] .sc-footer__columns { order: 3; width: 100%; justify-content: flex-start; }
+}
+@container sc-footer (max-width: 639px) {
+  /* Telefon: wszystkie linki w jednej przewijanej linii — stopka zajmuje dwa wiersze, nie trzy. */
+  .sc-footer[data-sticky] .sc-footer__columns { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 0 var(--sc-s-5); }
+  .sc-footer[data-sticky] .sc-footer__columns::-webkit-scrollbar { display: none; }
+  .sc-footer[data-sticky] .sc-footer__column { flex: none; }
+  .sc-footer[data-sticky] .sc-footer__list { overflow: visible; }
+}
+
+/* === Stage 2: Home v5 — pasek newsowy jako taśma, Wiadomości dnia, zapowiedź nitek (25.09) === */
+.sc-home-ticker { display: grid; gap: var(--sc-s-2); grid-template-columns: minmax(0, 1fr); }
+.sc-home-ticker .sc-strip__slot > .sc-strip__empty { min-height: 96px; }
+.sc-home-ticker__hint { margin: 0; }
+.sc-home-drspin__teaser { display: grid; justify-items: center; gap: var(--sc-s-2); padding: var(--sc-s-5) var(--sc-s-4); border-radius: var(--sc-r-xl); border: 1px dashed var(--sc-line); text-align: center; }
+.sc-home-drspin__teaser p { margin: 0; max-width: 62ch; }
+/* Spad taśm (24px) był szerszy niż margines strony poniżej ~1240px (20px) — 4px poziomego scrolla. */
+@media (min-width: 481px) and (max-width: 1240px) {
+  .sc-strip-bleed { margin-inline: calc(var(--sc-s-4) * -1); padding-inline: var(--sc-s-4); }
+}
+/* Pasek newsowy wyrównany do kolumny treści (bez spadu w bok). */
+.sc-home-ticker .sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
+
+/* === Stage 2: powiększony box — oś czasu 15, reakcje, baza powiązanych (25.09) === */
+.sc-material-details { display: grid; gap: var(--sc-s-7); margin-top: var(--sc-s-6); min-width: 0; }
+.sc-material-details > * { min-width: 0; }
+/* Oś czasu: data nad każdym boxem, kropki na wspólnej linii; otwarty box podświetlony akcentem. */
+.sc-material-timeline { display: grid; gap: var(--sc-s-3); }
+.sc-material-timeline__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sc-s-3); flex-wrap: wrap; }
+.sc-material-timeline__head h3, .sc-material-timeline__head p { margin: 0; }
+.sc-material-timeline .sc-strip-bleed { margin-inline: 0; padding-inline: 0; }
+.sc-material-timeline__inner { display: grid; gap: var(--sc-s-2); width: 100%; align-content: start; }
+.sc-material-timeline__date { position: relative; margin: 0; padding-top: var(--sc-s-3); border-top: 2px solid var(--sc-line); color: var(--sc-text-2); font-variant-numeric: tabular-nums; }
+.sc-material-timeline__dot { position: absolute; top: -6px; left: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-line); }
+.sc-material-timeline__slot[data-current] .sc-material-timeline__date { border-top-color: var(--sc-accent); color: var(--sc-text); }
+.sc-material-timeline__slot[data-current] .sc-material-timeline__dot { background: var(--sc-accent); box-shadow: 0 0 0 4px var(--sc-accent-soft); }
+.sc-material-timeline__slot[data-current] .sc-card { box-shadow: 0 0 0 2px var(--sc-accent); }
+.sc-material-timeline__here { color: var(--sc-accent); }
+/* Reakcje: pasek z licznikami, pod nim komentarze w ograniczonym, przewijanym obszarze. */
+.sc-material-reactions { display: grid; gap: var(--sc-s-3); }
+.sc-material-reactions__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2) var(--sc-s-5); padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-xl); background: var(--sc-surface-2); }
+.sc-material-reactions__stat { display: inline-flex; align-items: baseline; gap: 6px; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-material-reactions__stat strong { color: var(--sc-text); font-variant-numeric: tabular-nums; }
+.sc-material-reactions__stat.is-positive > span { color: var(--sc-positive); }
+.sc-material-reactions__stat.is-negative > span { color: var(--sc-negative); }
+.sc-material-reactions__jump { margin-left: auto; }
+.sc-material-reactions__body { max-height: min(70vh, 640px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 2px var(--sc-s-1); border-radius: var(--sc-r-xl); outline: none; scroll-margin-top: var(--sc-s-8); }
+.sc-material-reactions__body:focus-visible { box-shadow: 0 0 0 2px var(--sc-focus); }
+/* Wodospad: miniatura źródła → kolumny kategorii, wiersze dat; kolumny przewijane w bok. */
+.sc-material-waterfall { display: grid; gap: var(--sc-s-4); }
+.sc-material-waterfall__head { display: flex; align-items: center; gap: var(--sc-s-4); }
+.sc-material-waterfall__head h3, .sc-material-waterfall__head p { margin: 0; }
+.sc-material-waterfall__source { flex: none; display: grid; place-items: center; width: 72px; height: 72px; overflow: hidden; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); box-shadow: 0 0 0 2px var(--sc-accent-soft); }
+.sc-material-waterfall__source img { width: 100%; height: 100%; object-fit: cover; }
+.sc-material-waterfall__source-empty { padding: 4px; text-align: center; color: var(--sc-text-3); font-size: 9px; letter-spacing: 0; }
+.sc-material-waterfall__scroll { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding-bottom: var(--sc-s-2); outline: none; }
+.sc-material-waterfall__scroll:focus-visible { box-shadow: 0 0 0 2px var(--sc-focus); border-radius: var(--sc-r-md); }
+.sc-material-waterfall__grid { display: grid; grid-template-columns: repeat(var(--sc-wf-cols, 4), minmax(240px, 340px)); gap: var(--sc-s-3); align-items: start; }
+.sc-material-waterfall__col-head { margin: 0; padding: var(--sc-s-2) var(--sc-s-3); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); }
+.sc-material-waterfall__row { display: contents; }
+.sc-material-waterfall__date { grid-column: 1 / -1; position: sticky; left: 0; justify-self: start; margin: var(--sc-s-2) 0 0; color: var(--sc-accent); font-variant-numeric: tabular-nums; }
+.sc-material-waterfall__cell { display: grid; gap: var(--sc-s-2); align-content: start; min-width: 0; }
+.sc-material-waterfall__more { display: flex; justify-content: center; }
+@media (max-width: 640px) {
+  .sc-material-waterfall__grid { grid-template-columns: repeat(var(--sc-wf-cols, 4), minmax(78vw, 1fr)); }
+  .sc-material-reactions__jump { margin-left: 0; }
+}
+/* Oś czasu i baza powiązanych potrzebują szerokości: blok szczegółów wychodzi poza kolumnę tekstu (760px)
+   do 1120px, wyśrodkowany; tytuł i opis zostają w wygodnej szerokości czytania. */
+@media (min-width: 900px) {
+  .sc-surface__context:has(> .sc-material-details) { align-self: center; width: min(1120px, calc(100vw - 96px)); }
+}
+
+/* === Stage 2: profil osoby publicznej — pionowa oś czasu (25.09) === */
+.sc-pf-axis { list-style: none; margin: var(--sc-s-4) 0 0; padding: 0; display: grid; gap: var(--sc-s-6); }
+.sc-pf-axis__group { display: grid; gap: var(--sc-s-3); }
+.sc-pf-axis__label { margin: 0; font-size: var(--sc-t-title-s-size, 18px); }
+.sc-pf-axis__items { list-style: none; margin: 0; padding: 0 0 0 var(--sc-s-5); display: grid; gap: var(--sc-s-3); border-left: 2px solid var(--sc-line); margin-left: 5px; }
+.sc-pf-axis__item { position: relative; display: grid; gap: 2px; padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface); }
+.sc-pf-axis__item p { margin: 0; }
+.sc-pf-axis__dot { position: absolute; left: calc(-1 * var(--sc-s-5) - 7px); top: var(--sc-s-4); width: 12px; height: 12px; border-radius: 50%; background: var(--sc-surface-3, var(--sc-line)); box-shadow: 0 0 0 3px var(--sc-bg); }
+.sc-pf-axis__item[data-status="current"] .sc-pf-axis__dot { background: var(--sc-accent); }
+.sc-pf-axis__when { color: var(--sc-text-2); font-size: var(--sc-t-meta-size); }
+.sc-pf-axis__title { color: var(--sc-text); font-weight: 600; }
+.sc-pf-axis__link { text-decoration: none; }
+.sc-pf-axis__link:hover { color: var(--sc-accent); }
+.sc-pf-axis__meta { color: var(--sc-text-2); }
+.sc-pf-axis__source { justify-self: start; color: var(--sc-accent); font-size: var(--sc-t-meta-size); text-decoration: none; }
+.sc-pf-axis__source:hover { text-decoration: underline; }
+.sc-pf-axis__month { display: grid; gap: var(--sc-s-2); }
+.sc-pf-axis__month + .sc-pf-axis__month { margin-top: var(--sc-s-3); }
+.sc-pf-axis__month-label { margin: 0; color: var(--sc-accent); font-size: var(--sc-t-meta-size); text-transform: capitalize; }
+.sc-pf-axis__empty { margin: 0; color: var(--sc-text-2); }
+.sc-pf-axis__gaps { margin: var(--sc-s-5) 0 0; padding-left: var(--sc-s-5); color: var(--sc-text-3); font-size: var(--sc-t-meta-size); }
+
+/* === Stage 2: czytelniejsze boxy (25.09): rodzaj materiału, inicjały źródła, krótka etykieta === */
+/* Odcień rodzaju: urzędowe — niebieski, rozmowy — fiolet, film — czerwień, reportaż — bursztyn,
+   fact-check — morski, reklama — żółty, artykuł — neutralny (bez nasycenia). */
+[data-kind="official"] { --sc-kind-h: 212; --sc-kind-s: 55%; }
+[data-kind="talk"] { --sc-kind-h: 270; --sc-kind-s: 40%; }
+[data-kind="video"] { --sc-kind-h: 352; --sc-kind-s: 45%; }
+[data-kind="report"] { --sc-kind-h: 32; --sc-kind-s: 55%; }
+[data-kind="check"] { --sc-kind-h: 170; --sc-kind-s: 45%; }
+[data-kind="ad"] { --sc-kind-h: 48; --sc-kind-s: 60%; }
+[data-kind="article"] { --sc-kind-h: 220; --sc-kind-s: 0%; }
+.sc-card__placeholder[data-kind] { background: linear-gradient(135deg, hsl(var(--sc-kind-h) var(--sc-kind-s) 20%), hsl(var(--sc-kind-h) var(--sc-kind-s) 12%)); color: hsl(var(--sc-kind-h) calc(var(--sc-kind-s) + 20%) 78%); }
+html[data-theme="light"] .sc-card__placeholder[data-kind] { background: linear-gradient(135deg, hsl(var(--sc-kind-h) var(--sc-kind-s) 94%), hsl(var(--sc-kind-h) var(--sc-kind-s) 86%)); color: hsl(var(--sc-kind-h) calc(var(--sc-kind-s) + 10%) 30%); }
+.sc-card__mono { font-family: var(--sc-font-sans); font-weight: 700; letter-spacing: 0.04em; line-height: 1; font-size: 28px; opacity: 0.9; }
+.sc-card[data-size="mini"] .sc-card__mono { font-size: 15px; }
+.sc-card[data-size="compact"] .sc-card__mono { font-size: 30px; }
+.sc-card[data-size="large"] .sc-card__mono { font-size: 96px; opacity: 0.25; }
+/* Kropka rodzaju przy krótkiej etykiecie kategorii (badge i mini). */
+.sc-card__kind-dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: hsl(var(--sc-kind-h, 220) calc(var(--sc-kind-s, 0%) + 25%) 62%); }
+.sc-card__category[data-kind] { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-card__similar { color: var(--sc-accent); text-transform: none; letter-spacing: 0; }
+
+/* Taśmy bez spadu: pasek przewijania kilka pikseli pod kartami. */
+.sc-strip__scroller { padding-bottom: var(--sc-s-2); }

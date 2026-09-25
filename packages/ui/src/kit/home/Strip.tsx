@@ -4,7 +4,8 @@
  * Pozioma taśma kart (odpowiednik starego `MaterialStrip`): przewijanie kółkiem/palcem,
  * strzałki `ghost icon` po bokach (widoczne przy najechaniu na taśmę, zawsze z klawiatury),
  * strzałki przewijają sprężyną `move` przez `scrollBy` (w reduced motion — skokiem).
- * `.sc-strip-bleed`: rozrośnięta karta (stopień B) nie jest obcinana przez `overflow-x: auto`.
+ * Bez spadu (`.sc-strip-bleed`): pasek przewijania leży tuż pod kartami. Karty w taśmach nie
+ * rosną na najechanie (`expandable={false}` u wywołujących) — przycięłoby je `overflow-x: auto`.
  */
 
 import { useRef, type ReactNode } from "react";
@@ -38,7 +39,7 @@ export function Strip({ label, children, step, className, slot = "240px" }: Stri
     <div className={cn("sc-strip", className)} style={{ ["--sc-strip-slot" as string]: slot }}>
       <div
         ref={scroller}
-        className="sc-strip__scroller sc-strip-bleed"
+        className="sc-strip__scroller"
         tabIndex={0}
         aria-label={`${label} — przewijaj poziomo`}
         onKeyDown={(event) => {

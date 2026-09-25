@@ -6,6 +6,9 @@
  * `PortalHome.tsx` ma jeden nieoznaczony `<nav>` z gołymi `<a>`, tego tu nie powielamy.
  * Siatka reaguje na WŁASNĄ szerokość (container queries), nie szerokość okna — działa też
  * wewnątrz wąskiej ramki witryny.
+ *
+ * `sticky`: jeden wiersz przyklejony do dołu okna — wordmark, kolumny linków (np. źródła, informacje)
+ * i przycisk wsparcia na jednej linii. `note` i `bottom` renderują się tylko w układzie zwykłym.
  */
 
 import type { ReactNode } from "react";
@@ -34,6 +37,8 @@ export type SiteFooterProps = {
   cta?: SiteFooterCta;
   /** Dolny wiersz — np. data wersji, prawa. */
   bottom?: ReactNode;
+  /** Jednowierszowa stopka zawsze widoczna u dołu okna (patrz opis modułu). */
+  sticky?: boolean;
 };
 
 const MotionLink = motion(Link);
@@ -52,8 +57,49 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-export function SiteFooter({ brand, note, columns, cta, bottom }: SiteFooterProps) {
+export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false }: SiteFooterProps) {
   const m = useMotionTokens();
+  const columnsRow = (
+    <div className="sc-footer__columns">
+      {columns.map((column, index) => (
+        <motion.nav
+          key={column.title}
+          aria-label={column.title}
+          className="sc-footer__column"
+          initial={{ opacity: 0, y: m.rise }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={m.t("ui", { delay: Math.min(index, COLUMN_CASCADE_CAP) * COLUMN_CASCADE_STEP })}
+        >
+          <p className="sc-footer__column-title sc-t-caption sc-text-3">{column.title}</p>
+          <ul className="sc-footer__list" role="list">
+            {column.links.map((link) => (
+              <li key={link.href}>
+                <FooterLink href={link.href}>{link.label}</FooterLink>
+              </li>
+            ))}
+          </ul>
+        </motion.nav>
+      ))}
+    </div>
+  );
+
+  if (sticky) {
+    return (
+      <footer role="contentinfo" className="sc-footer" data-sticky>
+        <div className="sc-footer__bar">
+          <div className="sc-footer__brand">{brand}</div>
+          {columnsRow}
+          {cta ? (
+            <Button href={cta.href} variant="primary" size="sm" className="sc-footer__bar-cta">
+              {cta.label}
+            </Button>
+          ) : null}
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer role="contentinfo" className="sc-footer">
       <div className="sc-footer__top">
@@ -72,28 +118,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom }: SiteFooterProp
         )}
       </div>
 
-      <div className="sc-footer__columns">
-        {columns.map((column, index) => (
-          <motion.nav
-            key={column.title}
-            aria-label={column.title}
-            className="sc-footer__column"
-            initial={{ opacity: 0, y: m.rise }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={m.t("ui", { delay: Math.min(index, COLUMN_CASCADE_CAP) * COLUMN_CASCADE_STEP })}
-          >
-            <p className="sc-footer__column-title sc-t-caption sc-text-3">{column.title}</p>
-            <ul className="sc-footer__list" role="list">
-              {column.links.map((link) => (
-                <li key={link.href}>
-                  <FooterLink href={link.href}>{link.label}</FooterLink>
-                </li>
-              ))}
-            </ul>
-          </motion.nav>
-        ))}
-      </div>
+      {columnsRow}
 
       {bottom && <div className="sc-footer__bottom sc-t-caption sc-text-3">{bottom}</div>}
     </footer>

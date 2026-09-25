@@ -42,7 +42,7 @@ import { HeartIcon } from "./icons/HeartIcon";
 import { useMotionTokens } from "./motion/useMotionTokens";
 import { usePortalApiOptional } from "./portal/PortalProvider";
 import { CARD_SPEC, HOVER_SCALE, PREVIEW_DELAY_MS, type CardSize } from "./tokens";
-import { categoryLabel, cn, formatDateTimePl, formatShortDatePl, formatTimePl, materialTypeLabel } from "../lib/utils";
+import { categoryLabel, cn, formatDateTimePl, formatShortDatePl, formatTimePl, materialKind, relativeTimePl, shortCategoryLabel, sourceDisplayName, sourceInitials } from "../lib/utils";
 import type { Article } from "../types";
 
 export type NewsCardSize = CardSize;
@@ -67,6 +67,8 @@ export type NewsCardProps = {
   onOpen?: (article: Article) => void;
   /** Włącza stopień B. @default true */
   expandable?: boolean;
+  /** Liczba zwiniętych, niemal identycznych materiałów tego samego źródła (np. seria wniosków z sesji). */
+  similarCount?: number;
   className?: string;
 };
 
@@ -116,18 +118,33 @@ function renderDate(article: Article, size: NewsCardSize | "full") {
   const iso = article.published_date;
   const real = !!iso && iso !== "undated" && iso !== "unknown";
   if (real) {
-    if (size === "mini") return <time dateTime={iso}>{formatTimePl(iso)}</time>;
-    if (size === "compact") return <time dateTime={iso}>{formatShortDatePl(iso)}</time>;
+    // Mini/compact: czas względny („3 godz. temu”), pełna data w podpowiedzi. Zależy od „teraz”, stąd suppressHydrationWarning.
+    if (size === "mini" || size === "compact") {
+      return (
+        <time dateTime={iso} title={formatDateTimePl(iso, article.date_precision)} suppressHydrationWarning>
+          {relativeTimePl(iso) || (size === "mini" ? formatTimePl(iso) : formatShortDatePl(iso))}
+        </time>
+      );
+    }
     return <time dateTime={iso}>{formatDateTimePl(iso, article.date_precision)}</time>;
   }
   const label = size === "mini" || size === "compact" ? "Data nieustalona" : "Data publikacji nieustalona";
   return <span>{label}</span>;
 }
 
+/** „+1 podobny”, „+3 podobne”, „+5 podobnych”, „+22 podobne”. */
+function similarLabel(count: number): string {
+  if (count === 1) return "podobny";
+  const tens = count % 100;
+  const units = count % 10;
+  return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? "podobne" : "podobnych";
+}
+
 function CardBadge({ category, transition }: { category: string; transition: Transition }) {
   return (
-    <motion.span className="sc-card__badge sc-t-caption" layout="position" transition={transition}>
-      {categoryLabel(category)}
+    <motion.span className="sc-card__badge sc-t-caption" data-kind={materialKind(category)} title={categoryLabel(category)} layout="position" transition={transition}>
+      <span className="sc-card__kind-dot" aria-hidden="true" />
+      {shortCategoryLabel(category)}
     </motion.span>
   );
 }
@@ -157,8 +174,9 @@ function CardMedia({
           <Image src={src} alt="" fill unoptimized priority={priority} sizes={IMAGE_SIZES[size]} className="sc-card__image" />
         </motion.div>
       ) : (
-        <span className="sc-card__placeholder sc-t-caption" aria-hidden="true">
-          {materialTypeLabel(article.category)}
+        // Bez zdjęcia: tło w kolorze rodzaju materiału i inicjały źródła zamiast pustego szarego pola.
+        <span className="sc-card__placeholder" data-kind={materialKind(article.category)} aria-hidden="true">
+          <span className="sc-card__mono">{sourceInitials(sourceDisplayName(article.source.name))}</span>
         </span>
       )}
       {size !== "mini" && showCategory ? <CardBadge category={article.category} transition={layoutTransition} /> : null}
@@ -169,7 +187,7 @@ function CardMedia({
 function CardMeta({ article, size, full, transition }: { article: Article; size: NewsCardSize; full: boolean; transition: Transition }) {
   return (
     <motion.p className="sc-card__meta sc-t-meta sc-text-2" layout="position" transition={transition}>
-      <span className="sc-card__meta-source">{article.source.name}</span>
+      <span className="sc-card__meta-source" title={article.source.name}>{sourceDisplayName(article.source.name)}</span>
       {(size === "large" || full) && article.author ? <span> · {article.author}</span> : null}
       <span> · </span>
       {renderDate(article, full ? "full" : size)}
@@ -190,6 +208,7 @@ export function NewsCard({
   action,
   onOpen: onOpenProp,
   expandable = true, // R0: ступень B — штатное поведение, не опция (замечание владельца 23.09)
+  similarCount,
   className,
 }: NewsCardProps) {
   const motionTokens = useMotionTokens();
@@ -463,8 +482,10 @@ export function NewsCard({
 
         <div className="sc-card__body">
           {size === "mini" && showCategory ? (
-            <motion.span className="sc-card__category sc-t-caption sc-text-3" layout="position" transition={expandTransition}>
-              {categoryLabel(article.category)}
+            <motion.span className="sc-card__category sc-t-caption sc-text-3" data-kind={materialKind(article.category)} title={categoryLabel(article.category)} layout="position" transition={expandTransition}>
+              <span className="sc-card__kind-dot" aria-hidden="true" />
+              {shortCategoryLabel(article.category)}
+              {similarCount ? <span className="sc-card__similar"> · +{similarCount} {similarLabel(similarCount)}</span> : null}
             </motion.span>
           ) : null}
 

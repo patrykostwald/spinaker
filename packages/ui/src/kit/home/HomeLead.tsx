@@ -1,123 +1,85 @@
 "use client";
 
 /**
- * Hero (wzór: duży materiał + panel „wyniki” po prawej). Po lewej materiał kotwiczący Tematu dnia
- * (`large`, tekst nad zdjęciem); po prawej panel z osią czasu tematu — godzina · źródło · tytuł;
- * każdy wiersz otwiera materiał w portalu. Bez tematu dnia: najnowszy materiał + lista najnowszych.
- * Pod heroem (gdy temat jest) — „Nitka tematu”: taśma materiałów od najstarszej publikacji.
+ * Wiadomości dnia — podsumowanie jednego, bieżącego dnia (nie jeden wybrany temat): jeden wspólny
+ * pas, po lewej największy box (najnowsze doniesienie dnia z wiodących źródeł), po prawej oś
+ * kolejnych doniesień tego dnia (`mini`, przewijana w pionie w obrębie pasa; na telefonie lista).
+ * Dane: `/api/feed/?mode=top` — dzisiejsze materiały z redakcyjnego wyboru dziesięciu źródeł.
+ * Gdy dziś jeszcze nic nie ma — najnowsze materiały, a nagłówek mówi to wprost.
+ * (Osobny, redakcyjny „Temat dnia” w lustrzanym układzie — oś po lewej, box po prawej — jest planowany.)
  */
 
 import { motion } from "framer-motion";
-import { Button } from "../Button";
+import type { ReactNode } from "react";
 import { NewsCard } from "../NewsCard";
 import { useMotionTokens } from "../motion/useMotionTokens";
-import { usePortalApi } from "../portal/PortalProvider";
-import { categoryLabel, formatTimePl } from "../../lib/utils";
 import type { Article } from "../../types";
-import { Strip } from "./Strip";
-
-export type LeadRow = { article: Article; time: string };
-
-function PanelRow({ row, index }: { row: LeadRow; index: number }) {
-  const m = useMotionTokens();
-  const portal = usePortalApi();
-  return (
-    <motion.li initial={{ opacity: 0, y: m.rise }} animate={{ opacity: 1, y: 0 }} transition={m.t("ui", { delay: index * m.stagger })}>
-      <motion.button
-        type="button"
-        className="sc-home-lead__row sc-hoverable"
-        onClick={(event) => portal.open(row.article, event.currentTarget)}
-        whileTap={{ scale: m.scale(0.98), transition: m.t("press") }}
-        data-material-id={row.article.id}
-      >
-        <span className="sc-home-lead__row-time sc-t-meta">{row.time}</span>
-        <span className="sc-home-lead__row-body">
-          <span className="sc-t-caption sc-text-3">
-            {row.article.source.name} · {categoryLabel(row.article.category)}
-          </span>
-          <span className="sc-t-title-xs sc-home-lead__row-title">{row.article.title}</span>
-        </span>
-      </motion.button>
-    </motion.li>
-  );
-}
+import type { Collapsed } from "./collapseSimilar";
 
 export function HomeLead({
   main,
-  eyebrow,
-  panelTitle,
-  rows,
-  panelHref,
-  thread,
+  related,
+  fallback,
+  actions,
+  emptyNote,
+  dateLabel,
 }: {
   main: Article | null;
-  eyebrow: string;
-  panelTitle: string;
-  rows: LeadRow[];
-  panelHref: string;
-  thread?: Article[];
+  related: Collapsed[];
+  /** `true` — dziś brak doniesień z wiodących źródeł, pas pokazuje najnowsze materiały. */
+  fallback: boolean;
+  /** Prawa strona nagłówka (np. wybór źródeł). */
+  actions?: ReactNode;
+  /** Komunikat zamiast treści, np. pusta grupa źródeł. */
+  emptyNote?: string | null;
+  /** Np. „piątek, 25 września” — pusty do hydratacji (data liczona po stronie klienta). */
+  dateLabel: string;
 }) {
+  const m = useMotionTokens();
   return (
-    <section className="sc-home-lead" aria-label="Materiał dnia">
-      <div className="sc-home-lead__grid">
-        <div className="sc-home-lead__main">
-          {main ? (
-            <NewsCard article={main} size="large" headingLevel={2} eyebrow={eyebrow} priority />
-          ) : (
-            <div className="sc-home-anchor-placeholder sc-home-lead__placeholder">
-              <div className="sc-skeleton sc-home-anchor-placeholder__media" />
-              <span className="sc-t-caption sc-text-3">{eyebrow}</span>
-              <strong className="sc-t-title-m">Materiał dnia pojawi się, gdy źródła opiszą wspólne wydarzenie.</strong>
-            </div>
-          )}
-        </div>
-        <aside className="sc-home-lead__panel" aria-label={panelTitle}>
-          <header className="sc-home-lead__panel-head">
-            <h2 className="sc-t-title-s">{panelTitle}</h2>
-            <Button href={panelHref} variant="quiet" size="sm">
-              Zobacz wszystko
-            </Button>
-          </header>
-          {rows.length ? (
-            <ol className="sc-home-lead__rows" role="list">
-              {rows.map((row, index) => (
-                <PanelRow key={row.article.id} row={row} index={index} />
-              ))}
-            </ol>
-          ) : (
-            <ol className="sc-home-lead__rows" aria-hidden="true">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <li key={i} className="sc-home-lead__row sc-home-lead__row--skeleton">
-                  <span className="sc-t-meta sc-text-3">XX:XX</span>
-                  <span className="sc-skeleton sc-home-lead__row-skeleton" />
-                </li>
-              ))}
-            </ol>
-          )}
-        </aside>
-      </div>
+    <section className="sc-home-section sc-home-lead" aria-label="Wiadomości dnia">
+      <div className="sc-home-band-surface">
+        <header className="sc-home-section__head sc-home-lead__head">
+          <div>
+            <p className="sc-t-caption sc-text-3 sc-home-kicker" suppressHydrationWarning>
+              {dateLabel ? `Podsumowanie dnia · ${dateLabel}` : "Podsumowanie dnia"}
+            </p>
+            <h2 className="sc-t-title-l sc-home-section__title">Wiadomości dnia</h2>
+          </div>
+          {actions ? <div className="sc-home-section__actions">{actions}</div> : null}
+        </header>
 
-      {thread && thread.length > 0 ? (
-        <div className="sc-home-lead__thread">
-          <header className="sc-home-subhead">
-            <span className="sc-t-caption sc-text-3">Nitka tematu</span>
-            <p className="sc-t-body-s sc-text-2">Materiały powiązane wspólnym hasłem, ułożone według czasu publikacji.</p>
-          </header>
-          <Strip label="Nitka tematu dnia">
-            {thread.map((article) => (
-              <div key={article.id} className="sc-strip__slot">
-                <NewsCard article={article} size="compact" headingLevel={3} />
+        {emptyNote ? <p className="sc-t-body-s sc-text-2">{emptyNote}</p> : null}
+        <div className="sc-home-lead__grid">
+          <div className="sc-home-lead__main">
+            {main ? (
+              <NewsCard article={main} size="large" headingLevel={3} eyebrow={fallback ? "Najnowszy materiał" : "Wiadomość dnia"} priority />
+            ) : (
+              <div className="sc-home-anchor-placeholder sc-home-lead__placeholder">
+                <div className="sc-skeleton sc-home-anchor-placeholder__media" />
+                <span className="sc-t-caption sc-text-3">Wiadomości dnia</span>
+                <strong className="sc-t-title-m">Ładuję dzisiejsze doniesienia…</strong>
               </div>
-            ))}
-          </Strip>
+            )}
+          </div>
+
+          <div className="sc-home-lead__side">
+            <ol className="sc-home-lead__list" role="list" aria-label={fallback ? "Najnowsze materiały" : "Kolejne doniesienia dnia"} tabIndex={0}>
+              {related.length
+                ? related.map(({ article, similar }, index) => (
+                    <motion.li key={article.id} initial={{ opacity: 0, y: m.rise }} animate={{ opacity: 1, y: 0 }} transition={m.t("ui", { delay: Math.min(index, 6) * m.stagger })}>
+                      <NewsCard article={article} size="mini" headingLevel={4} expandable={false} similarCount={similar} />
+                    </motion.li>
+                  ))
+                : [0, 1, 2, 3].map((i) => (
+                    <li key={i} aria-hidden="true">
+                      <span className="sc-skeleton sc-home-lead__skeleton" />
+                    </li>
+                  ))}
+            </ol>
+          </div>
         </div>
-      ) : null}
+      </div>
     </section>
   );
-}
-
-/** Godzina publikacji do panelu — `--:--` gdy daty nie ma. */
-export function rowTime(article: Article): string {
-  const iso = article.published_date;
-  return iso && iso !== "undated" && iso !== "unknown" ? formatTimePl(iso) : "--:--";
 }

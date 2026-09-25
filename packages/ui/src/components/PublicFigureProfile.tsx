@@ -22,6 +22,7 @@ import type { Article } from '../types';
 import { AccountDialog } from './AccountDialog';
 import { ArticleFavoriteButton } from './ArticleFavoriteButton';
 import { voteLabel } from './VotingDetails';
+import { PublicFigureTimeline } from './PublicFigureTimeline';
 import { Button, MorphIndicator } from '../kit';
 
 type FigureMaterial = Pick<Article, 'id' | 'title' | 'url' | 'category' | 'published_date'> & {
@@ -375,8 +376,9 @@ function useMaterialsTotal(name: string) {
 
 export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: PublicFigureDetail; titleId?: string }) {
   const materialsTotal = useMaterialsTotal(figure.name);
-  const [tab, setTab] = useState<'votes' | 'relations' | 'materials' | 'x'>('votes');
+  const [tab, setTab] = useState<'timeline' | 'votes' | 'relations' | 'materials' | 'x'>('timeline');
   const tabs = [
+    { id: 'timeline' as const, label: 'Oś czasu' },
     { id: 'votes' as const, label: 'Głosowania' },
     { id: 'relations' as const, label: 'Relacje' },
     { id: 'materials' as const, label: 'Materiały' },
@@ -389,6 +391,7 @@ export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: 
         {tabs.map(item => <button key={item.id} id={`pf-tab-${item.id}`} type="button" role="tab" aria-selected={tab === item.id} aria-controls={`pf-panel-${item.id}`} onClick={() => setTab(item.id)}>{tab === item.id && <MorphIndicator id="public-figure-tabs" active variant="underline" />}{item.label}</button>)}
       </nav>
       <div id={`pf-panel-${tab}`} role="tabpanel" aria-labelledby={`pf-tab-${tab}`} tabIndex={0}>
+        {tab === 'timeline' && <PublicFigureTimeline figureId={figure.id} materialsTotal={materialsTotal} onShowMaterials={() => setTab('materials')} />}
         {tab === 'votes' && <VotesSection figure={figure} />}
         {tab === 'x' && <XPostsSection figure={figure} />}
         {tab === 'relations' && <OrganisationsSection figure={figure} />}

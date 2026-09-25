@@ -139,8 +139,9 @@ export function useHomeFeed(key: string, params: FeedParams, options?: { enabled
   });
 }
 
-export function useHomeInfiniteFeed(key: string, params: Omit<NonNullable<FeedParams>, "page">) {
+export function useHomeInfiniteFeed(key: string, params: Omit<NonNullable<FeedParams>, "page">, options?: { enabled?: boolean }) {
   return useInfiniteQuery({
+    enabled: options?.enabled ?? true,
     queryKey: ["home-feed-infinite", key, JSON.stringify(params)],
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
