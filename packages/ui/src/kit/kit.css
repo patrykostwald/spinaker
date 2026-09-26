@@ -3899,3 +3899,9 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-interview__summary { -webkit-line-clamp: 2; }
 .sc-interview__text { -webkit-line-clamp: 3; }
 @media (max-width: 760px) { .sc-interview__top { grid-template-columns: minmax(0, 1fr); } }
+
+/* Główna: sekcja „Dr. Spin” z tym samym elementem co w Klinice (przełącznik + post obok diagnozy). */
+.sc-home-spin__header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--sc-s-2) var(--sc-s-4); }
+.sc-home-spin__header .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-home-spin__header h2 { margin: 0; }
+.sc-home-spin__sotd { padding: var(--sc-s-4) 0 0; background: none; box-shadow: none; }

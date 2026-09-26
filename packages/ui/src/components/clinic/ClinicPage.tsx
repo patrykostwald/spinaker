@@ -15,7 +15,7 @@ export { MessageBox } from "./ClinicExtras";
 const CONTACT = "kontakt@spin.clinic";
 
 /** Spin dnia jako nitka: box główny (post + diagnoza), a za nim boxy kontekstu — źródła twierdzeń. */
-function SpinOfDay({ spin }: { spin: SpinDetailData }) {
+export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
   // Pełna odpowiedź Dr. Spina obok posta: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
   const [expanded, setExpanded] = useState(false);
   const sources = spin.claims.flatMap(claim => claim.sources.map(source => ({ ...source, label: claim.assessment_label, claim: claim.claim })));

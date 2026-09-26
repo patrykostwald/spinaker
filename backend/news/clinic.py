@@ -570,21 +570,26 @@ def spin_of_day():
     return None
 
 
-def latest_spin():
-    latest = published_diagnoses().filter(verdict__in=['spin', 'partial']).order_by('-diagnosed_at', '-pk').first()
+def latest_spin(exclude_id: int | None = None):
+    """Najnowszy spin — inny niż spin dnia, żeby przełącznik zawsze pokazywał drugi wpis."""
+    rows = published_diagnoses().filter(verdict__in=['spin', 'partial'])
+    if exclude_id:
+        rows = rows.exclude(pk=exclude_id)
+    latest = rows.order_by('-diagnosed_at', '-pk').first()
     return detail_data(latest) if latest else None
 
 
 def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
     from news.clinic_interview import latest_interview_data
+    sotd = spin_of_day()
     columns = {camp: cards(published_diagnoses().filter(post__camp_at_collection=camp)
                            .order_by('-post__published_at', '-pk')[:per_camp]) for camp in CAMPS}
     return {
         'notice': NOTICE_AUTO if auto_publish() else NOTICE_REVIEW,
         'scale': scale_data(window_days),
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
-        'spin_of_day': spin_of_day(),
-        'latest_spin': latest_spin(),
+        'spin_of_day': sotd,
+        'latest_spin': latest_spin(sotd['id'] if sotd else None),
         'interview': latest_interview_data(),
         'message_history': message_history(),
         'columns': columns,
