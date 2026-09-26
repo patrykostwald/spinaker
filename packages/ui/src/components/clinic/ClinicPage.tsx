@@ -108,14 +108,19 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         <SpinScale scale={data.scale} />
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
-          <header className="sc-clinic-latest__head">
-            <h3 id="clinic-latest-title">Najnowsze diagnozy</h3>
-            <p>Rządzący i opozycja obok siebie — według tych samych zasad. Każdą diagnozę udostępnisz jako wątek na X.</p>
+          {/* Jedna linia: „Rządzący” przy lewej krawędzi, tytuł na środku, „Opozycja” przy prawej. */}
+          <header className="sc-clinic-latest__head sc-clinic-latest__bar">
+            <span className="sc-clinic-latest__camp" aria-hidden="true">{CAMP_LABELS.government}</span>
+            <div>
+              <h3 id="clinic-latest-title">Najnowsze diagnozy</h3>
+              <p>Rządzący i opozycja obok siebie — według tych samych zasad. Każdą diagnozę udostępnisz jako wątek na X.</p>
+            </div>
+            <span className="sc-clinic-latest__camp" aria-hidden="true">{CAMP_LABELS.opposition}</span>
           </header>
           <div className="sc-clinic-columns">
             {CAMPS.map(camp => (
               <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>
-                <h4 id={`clinic-col-${camp}`} className="sc-clinic-column__title">{CAMP_LABELS[camp]}</h4>
+                <h4 id={`clinic-col-${camp}`} className="sc-sr-only">{CAMP_LABELS[camp]}</h4>
                 {data.columns[camp].length ? (
                   <div className="sc-clinic-column__list" tabIndex={0} aria-label={`Diagnozy: ${CAMP_LABELS[camp]} — przewijaj`}>
                     {data.columns[camp].map(spin => <SpinRow key={spin.id} spin={spin} />)}
