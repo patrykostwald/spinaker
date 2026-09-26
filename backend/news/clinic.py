@@ -44,9 +44,10 @@ VERDICT_LABELS = {'spin': 'Spin', 'partial': 'Częściowy spin', 'no_spin': 'Bez
 ASSESSMENT_LABELS = {'supported': 'potwierdzone', 'contradicted': 'sprzeczne ze źródłami',
                      'misleading': 'wprowadza w błąd', 'unverified': 'nie do sprawdzenia'}
 SCALE_MIN_SAMPLE = 10
-NOTICE = ('Diagnozy przygotowuje AI automatycznie. Człowiek może je tylko zatwierdzić albo odrzucić — '
-          'nie zmienia ich treści. Na razie diagnoza to tekst; w miarę rozbudowy bazy dowodami będą boxy '
-          'z materiałami źródłowymi.')
+NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera posty warte sprawdzenia, Claude stawia diagnozę ze źródłami, '
+               'a publikacja jest automatyczna — nikt nie poprawia treści diagnoz.')
+NOTICE_REVIEW = ('Diagnozy przygotowuje AI. Człowiek może je tylko zatwierdzić albo odrzucić — nie zmienia ich treści.')
+NOTICE = NOTICE_AUTO
 
 
 # --- osoby i partie -------------------------------------------------------------------------
@@ -450,7 +451,7 @@ def clinic_page_data(window_days: int = 7, per_camp: int = 12) -> dict:
     columns = {camp: cards(published_diagnoses().filter(post__camp_at_collection=camp)
                            .order_by('-post__published_at', '-pk')[:per_camp]) for camp in CAMPS}
     return {
-        'notice': NOTICE,
+        'notice': NOTICE_AUTO if auto_publish() else NOTICE_REVIEW,
         'scale': scale_data(window_days),
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
         'spin_of_day': spin_of_day(),

@@ -197,6 +197,7 @@ def clinic_queue(request):
                      'post': {'url': row.post.url, 'text': row.post.text, 'published_at': row.post.published_at}}
                     for row in flagged],
         'diagnoses': [_queue_diagnosis(row) for row in diagnoses],
+        'recent': clinic.cards(clinic.published_diagnoses().order_by('-diagnosed_at', '-pk')[:20]),
         'messages': [{'id': row.pk, 'day': row.day, 'camp': row.camp, 'camp_label': clinic.CAMP_LABELS[row.camp],
                       'message': row.message, 'themes': row.themes, 'posts_count': row.posts.count(),
                       'model': row.model_name} for row in messages],

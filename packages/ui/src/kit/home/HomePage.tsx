@@ -17,7 +17,7 @@ import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
 import { HomeBaza } from "./HomeBaza";
 import { HomeCategoryBar } from "./HomeCategoryBar";
-import { HomeClinic } from "./HomeClinic";
+import { ClinicPage } from "../../components/clinic/ClinicPage";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
 import { HomeLead } from "./HomeLead";
@@ -178,9 +178,7 @@ export function HomePage() {
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
-        <HomeReveal>
-          <HomeClinic />
-        </HomeReveal>
+        <ClinicPage embedded />
         {drSpin.data?.published ? (
           <HomeReveal>
             <HomeDrSpin thread={drSpin.data} />

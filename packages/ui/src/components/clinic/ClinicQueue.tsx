@@ -8,6 +8,7 @@ import { decideFlag, getClinicQueue, reviewDailyMessage, reviewSpin } from "../.
 import { useAccount } from "../../lib/account";
 import { SpinDiagnosisBody } from "./SpinDetail";
 import { SpinAuthorRow } from "./SpinParts";
+import { ShareSpinOnX } from "./ShareSpinOnX";
 
 /** Kolejka zatwierdzania. Tylko dwie decyzje — treści nie da się tu zmienić. */
 export function ClinicQueue() {
@@ -51,8 +52,8 @@ export function ClinicQueue() {
     <div className="sc-clinic sc-clinic-queue">
       <header className="sc-clinic-head">
         <p className="sc-clinic-kicker">Klinika · kolejka</p>
-        <h1>Do zatwierdzenia</h1>
-        <p className="sc-clinic-lead">Zatwierdzasz albo odrzucasz — treści diagnozy nie da się zmienić. Odrzucona diagnoza nie jest publikowana.</p>
+        <h1>Panel Kliniki</h1>
+        <p className="sc-clinic-lead">Tryb automatyczny publikuje diagnozy sam (CLINIC_AUTO_PUBLISH). Tu widzisz, co wybrał strażnik, co czeka na decyzję i co udostępnić na X. Treści diagnozy nie da się zmienić.</p>
         {data && <p className="sc-clinic-notice">Płatne diagnozy dziś: {data.counts.diagnosed_today}/{data.counts.daily_limit} · w kolejce {data.counts.queued} · strażnik oznaczył {data.counts.flagged} · czeka na zatwierdzenie {data.counts.pending} · zatwierdzone {data.counts.approved} · odrzucone {data.counts.rejected} · bez treści do oceny {data.counts.not_applicable}
           {Object.keys(data.counts.failed).length > 0 && ` · błędy: ${Object.entries(data.counts.failed).map(([code, n]) => `${code} ${n}`).join(", ")}`}
           {data.counts.suggestions > 0 && <> · <a href="/admin/news/xaccountsuggestion/">sugestie kont X: {data.counts.suggestions}</a></>}</p>}
@@ -97,7 +98,22 @@ export function ClinicQueue() {
           <div className="sc-spin-detail__diagnosis"><SpinDiagnosisBody spin={spin} />{buttons("spin", spin.id)}</div>
         </article>
       ))}
-      {data && !data.diagnoses.length && !data.messages.length && !data.flagged.length && <p className="sc-clinic-empty">Kolejka jest pusta.</p>}
+      {data && data.recent.length > 0 && (
+        <section className="sc-clinic-queue__flagged" aria-labelledby="recent-title">
+          <h2 id="recent-title">Opublikowane — udostępnij na X</h2>
+          <ul>{data.recent.map(item => (
+            <li key={item.id} className="sc-clinic-queue__flag">
+              <span className="sc-clinic-queue__score" title="Siła spinu">{item.intensity}</span>
+              <div>
+                <SpinAuthorRow author={item.author} publishedAt={item.post.published_at} />
+                <p><strong>{item.verdict_label}:</strong> <Link href={`/klinika/${item.id}`}>{item.headline}</Link></p>
+              </div>
+              <div className="sc-clinic-queue__actions"><ShareSpinOnX id={item.id} /></div>
+            </li>
+          ))}</ul>
+        </section>
+      )}
+      {data && !data.diagnoses.length && !data.messages.length && !data.flagged.length && !data.recent.length && <p className="sc-clinic-empty">Kolejka jest pusta.</p>}
     </div>
   );
 }

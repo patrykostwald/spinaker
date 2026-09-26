@@ -8,6 +8,7 @@ import { formatDateTimePl } from "../lib/utils";
 import { AccountDialog } from "./AccountDialog";
 import { CommentReportButton } from "./CommentReportButton";
 import { Button, RadioGroup, Reveal } from "../kit";
+import { ACCOUNTS_ENABLED } from "../lib/features";
 
 type Polarity = "positive" | "negative";
 type Opinion = { id: number; author: { id: number; username: string }; polarity: Polarity; body: string; created_at: string };
@@ -25,7 +26,7 @@ export type OpinionLabels = {
  * Reakcje czytelników w dwóch kolumnach. Najpierw reakcja (za / przeciw), komentarz opcjonalnie —
  * sam komentarz bez reakcji nie jest możliwy; komentarz trafia do kolumny swojej reakcji.
  */
-export function OpinionsPanel({ endpoint, labels, reportKind }: { endpoint: string; labels: OpinionLabels; reportKind?: "thread" }) {
+function OpinionsPanelInner({ endpoint, labels, reportKind }: { endpoint: string; labels: OpinionLabels; reportKind?: "thread" }) {
   const account = useAccount();
   const ownerId = account.data?.user?.id;
   const key = ["opinions", endpoint, ownerId];
@@ -65,4 +66,9 @@ export function OpinionsPanel({ endpoint, labels, reportKind }: { endpoint: stri
     <Reveal when={Boolean(error)} className="sc-thread-opinions-message sc-thread-opinions-message-error"><p role="alert">{error}</p></Reveal>
     <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} />
   </section>;
+}
+
+/** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
+export function OpinionsPanel(props: Parameters<typeof OpinionsPanelInner>[0]) {
+  return ACCOUNTS_ENABLED ? <OpinionsPanelInner {...props} /> : null;
 }

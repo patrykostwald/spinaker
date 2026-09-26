@@ -56,6 +56,7 @@ export type SpinDetailData = SpinCardData & {
   prompt_version: string;
   created_at: string;
   reviewed_at: string | null;
+  auto_published?: boolean;
   notice: string;
 };
 
@@ -99,6 +100,7 @@ export type FlaggedPost = { id: number; score: number | null; reason: string; sc
 
 export type ClinicQueue = {
   flagged: FlaggedPost[];
+  recent: SpinCardData[];
   diagnoses: Array<SpinDetailData & { status: string; triage: Record<string, unknown>; usage: Record<string, unknown> }>;
   messages: Array<{ id: number; day: string; camp: Camp; camp_label: string; message: string; themes: string[]; posts_count: number; model: string }>;
   counts: { pending: number; flagged: number; queued: number; diagnosed_today: number; daily_limit: number; approved: number; rejected: number; not_applicable: number; failed: Record<string, number>; suggestions: number };

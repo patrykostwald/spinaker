@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
 import type { Article } from "../types";
 import { ArticleOpinions } from "./ArticleOpinions";
+import { ACCOUNTS_ENABLED } from "../lib/features";
 
 type OpinionSide = { results: unknown[]; next_page: number | null };
 type OpinionSummary = { counts: { positive: number; negative: number }; positive: OpinionSide; negative: OpinionSide };
@@ -20,7 +21,7 @@ function commentsLabel(data: OpinionSummary): string {
   return `${shown}${more ? "+" : ""}`;
 }
 
-export function MaterialReactions({ article }: { article: Pick<Article, "id"> }) {
+function MaterialReactionsInner({ article }: { article: Pick<Article, "id"> }) {
   const summary = useQuery({
     queryKey: ["article-opinions-summary", article.id],
     queryFn: () => apiFetch<OpinionSummary>(`/api/articles/${article.id}/opinions/`),
@@ -53,4 +54,9 @@ export function MaterialReactions({ article }: { article: Pick<Article, "id"> })
       </div>
     </section>
   );
+}
+
+/** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
+export function MaterialReactions(props: Parameters<typeof MaterialReactionsInner>[0]) {
+  return ACCOUNTS_ENABLED ? <MaterialReactionsInner {...props} /> : null;
 }

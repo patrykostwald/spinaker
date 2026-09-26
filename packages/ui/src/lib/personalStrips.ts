@@ -3,11 +3,22 @@ export type PersonalStrip = { id: string; label: string; query: string; category
 const STORAGE_KEY = 'spinclinic-mvp-strips';
 const MAX_STRIPS = 5;
 
+/** Trzy paski na start — przy pierwszej wizycie. Czytelnik może je zmienić albo usunąć; zapis zostaje na urządzeniu. */
+export const DEFAULT_STRIPS: PersonalStrip[] = [
+  { id: 'preset-publiczne', label: 'Instytucje publiczne', query: '', category: 'publiczne', sourceId: '' },
+  { id: 'preset-artykuly', label: 'Media — artykuły', query: '', category: 'artykul', sourceId: '' },
+  { id: 'preset-sejm', label: 'Sejm', query: 'Sejm', category: '', sourceId: '' },
+];
+
 function read(): PersonalStrip[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (raw === null) {
+      write(DEFAULT_STRIPS);
+      return DEFAULT_STRIPS;
+    }
+    return JSON.parse(raw);
   } catch {
     return [];
   }

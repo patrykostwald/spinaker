@@ -5,12 +5,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { setArticleFavorite, useArticleFavorites, useOwnerId } from '../lib/personal';
 import { AccountDialog } from './AccountDialog';
 import { Button } from '../kit';
+import { ACCOUNTS_ENABLED } from "../lib/features";
 
 /**
  * Dyskretne wejście do ulubionych materiałów.
  * `compact` — ikona na boxie, widoczna tylko dla zalogowanych (strona publiczna pozostaje bez zmian).
  */
-export function ArticleFavoriteButton({ articleId, title, compact = false }: { articleId: number; title: string; compact?: boolean }) {
+function ArticleFavoriteButtonInner({ articleId, title, compact = false }: { articleId: number; title: string; compact?: boolean }) {
   const { ownerId } = useOwnerId();
   const favorites = useArticleFavorites();
   const cache = useQueryClient();
@@ -51,4 +52,9 @@ export function ArticleFavoriteButton({ articleId, title, compact = false }: { a
       {loginOpen && <AccountDialog open={loginOpen} onClose={() => setLoginOpen(false)} />}
     </span>
   );
+}
+
+/** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
+export function ArticleFavoriteButton(props: Parameters<typeof ArticleFavoriteButtonInner>[0]) {
+  return ACCOUNTS_ENABLED ? <ArticleFavoriteButtonInner {...props} /> : null;
 }
