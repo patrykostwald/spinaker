@@ -4039,3 +4039,16 @@ html, body { overflow-x: clip; }
   .sc-interview-archive__row time { grid-column: 1 / -1; }
   .sc-interview-archive__headline { grid-column: 1 / -1; white-space: normal; }
 }
+
+/* Dr. Spin na głównej: pierwsza linia — „Klinika spinu AI”, zakładki i „Otwórz Klinikę” na jednej wysokości;
+   tytuł „Dr. Spin” pod napisem, post polityka tuż niżej. Kolumna z diagnozą bez zmian. */
+@media (min-width: 761px) {
+  .sc-spin-switch__bar { grid-template-areas: "kicker tabs right" "title . ."; align-items: center; row-gap: 2px; }
+  .sc-spin-switch__bar > div:first-child, .sc-spin-switch__bar > div:first-child > header { display: contents; }
+  .sc-spin-switch__bar .sc-home-kicker { grid-area: kicker; }
+  .sc-spin-switch__bar h2 { grid-area: title; }
+  .sc-spin-switch__bar .sc-spin-switch__tabs { grid-area: tabs; padding-bottom: 0; }
+  .sc-spin-switch__bar .sc-spin-switch__right { grid-area: right; align-self: center; }
+  .sc-spin-switch__right .sc-home-spin__meta { padding-bottom: 0; }
+  .sc-home-spin__sotd .sc-clinic-sotd__post { padding-top: var(--sc-s-2); }
+}
