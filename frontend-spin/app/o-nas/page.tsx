@@ -6,7 +6,7 @@ import { CopyBlock } from './CopyBlock';
 export const metadata: Metadata = {
   title: 'O nas — spin.clinic',
   description:
-    'spin.clinic to agregator wiadomości ze źródłami i Klinika spinu z automatyczną diagnozą postów polityków. W kolejnej fazie — nitki kontekstowe czytelników. Jak działa, na czym jest zbudowany i co planujemy.',
+    'spin.clinic: wiadomości ze źródłami i Klinika spinu — diagnozy AI wypowiedzi polityków obu stron, według tych samych zasad. Jak działa, na czym jest zbudowany i co planujemy.',
   alternates: { canonical: '/o-nas' },
 };
 
@@ -15,7 +15,6 @@ const LAST_UPDATED = { iso: '2026-09-27', label: '27 września 2026' };
 /** Zmierzony koszt jednej diagnozy (Claude z wyszukiwaniem) — ten sam na stronie Wsparcie. */
 const DIAGNOSIS_COST = 'ok. 0,35 USD (ok. 1,30 zł)';
 
-const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic';
 const SOURCES_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'zrodla@spin.clinic';
 const OPERATOR = 'iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
 const CONTACTS: Array<{ email: string; purpose: string }> = [
@@ -27,18 +26,13 @@ const CONTACTS: Array<{ email: string; purpose: string }> = [
 const SECTIONS = [
   { id: 'spin-doctor', label: 'Spin doctor' },
   { id: 'o-nas', label: 'O nas' },
-  { id: 'pojecia', label: 'Box i nitki' },
+  { id: 'pojecia', label: 'Pojęcia' },
   { id: 'klinika', label: 'Klinika spinu' },
   { id: 'fazy', label: 'Fazy i technologia' },
   { id: 'wsparcie', label: 'Utrzymanie' },
   { id: 'dla-redakcji', label: 'Dla redakcji i wydawców' },
   { id: 'zasady', label: 'Zasady' },
 ];
-
-const ABOUT_SNIPPET =
-  `spin.clinic zbiera doniesienia mediów i materiały instytucji publicznych — zawsze ze źródłem, datą i linkiem do oryginału — ` +
-  `i sprawdza przekazy polityków: każdy nowy post z ich kont na X dostaje automatyczną diagnozę spinu według tych samych zasad dla każdej strony. ` +
-  `Nie piszemy własnych newsów i nie oceniamy ludzi — pokazujemy kontekst, żeby każdy mógł ocenić sam. Więcej: https://${DOMAIN}/o-nas`;
 
 const PUBLISHER_TERMS = [
   'co pobieramy    tytuł, autor, data publikacji, link, nazwa źródła',
@@ -54,7 +48,7 @@ const PUBLISHER_TERMS = [
 
 const PARTS = [
   { href: '/', name: 'Źródła', status: 'działa · beta', text: 'Wiadomości mediów i instytucji publicznych. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — w Wiadomościach dnia, na paskach newsowych i w Bazie z wyszukiwarką.' },
-  { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Czytamy posty polityków z X, a Dr. Spin rozkłada je na czynniki pierwsze i stawia diagnozę. Rządzący i opozycja obok siebie, według tych samych zasad.' },
+  { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Dr. Spin (AI) ocenia posty polityków z X i najważniejszy wywiad dnia: techniki perswazji z cytatami, twierdzenia ze źródłami. Rządzący i opozycja według tych samych zasad.' },
   { href: '#fazy', name: 'Nitki', status: 'faza II', text: 'Miejsce dla czytelników: wyjaśniasz spin sam — układasz nitkę kontekstową z materiałów z naszej Bazy albo dodanych przez link, z reakcjami i komentarzami.' },
 ];
 
@@ -98,13 +92,12 @@ const PHASES: Phase[] = [
     title: 'Wiadomości i Klinika',
     lead: 'To, co działa już dziś. Funkcje oznaczone jako „beta” są dostępne, ale wciąż je rozwijamy.',
     features: [
-      { text: 'baza materiałów z wyszukiwarką, paski newsowe i do pięciu własnych pasków w sekcji „Twoje wiadomości”', status: 'beta' },
-      { text: 'box materiału z osią czasu i bazą powiązanych materiałów', status: 'beta' },
-      { text: 'Klinika spinu: strażnik postów, automatyczne diagnozy z etykietą AI, waga spinu, przekazy dnia obu obozów z archiwum, spin dnia i najnowszy spin, liczniki postów i spinów przy każdym polityku', status: 'beta' },
-      { text: 'wywiad dnia: najważniejszy wywiad z politykiem z poprzedniego dnia (publiczny film z YouTube) — Dr. Spin ocenia osobno gościa i prowadzącego, z cytatami i minutą nagrania', status: 'beta' },
-      { text: 'udostępnianie diagnozy jako wątku na X (1/N), także w odpowiedzi pod wpisem polityka', status: 'beta' },
-      { text: 'rejestr osób i stanowisk publicznych z historią funkcji i oficjalnymi kontami X', status: 'beta' },
-      { text: 'paski newsowe zapisane na urządzeniu — bez zakładania konta', status: 'beta' },
+      { text: 'Źródła: Wiadomości dnia, Baza z wyszukiwarką i filtrami, do pięciu własnych pasków „Twoje wiadomości” zapisanych na urządzeniu', status: 'beta' },
+      { text: 'box materiału z osią czasu i powiązanymi materiałami', status: 'beta' },
+      { text: 'Klinika spinu: strażnik postów, diagnozy AI, spin dnia i najnowszy spin, waga spinu, liczniki przy każdym polityku', status: 'beta' },
+      { text: 'przekaz dnia obu obozów z pełną analizą, postami źródłowymi i archiwum', status: 'beta' },
+      { text: 'wywiad dnia wybierany automatycznie — ocena gościa i prowadzącego, z cytatami i minutą nagrania', status: 'beta' },
+      { text: 'udostępnianie diagnozy jako wątku na X; rejestr osób publicznych z oficjalnymi kontami X', status: 'beta' },
       { text: 'instalacja na telefonie z przeglądarki (aplikacja PWA)', status: 'beta' },
     ],
     stack: [
@@ -119,7 +112,7 @@ const PHASES: Phase[] = [
       { group: 'Źródła', items: [
         { name: 'oficjalne API Sejmu i ELI · RSS · BIP', status: 'działa' },
         { name: 'API X (oficjalne, płatne)', note: 'posty z kont potwierdzonych dowodem', status: 'działa' },
-        { name: 'YouTube Data API', note: 'oficjalne kanały jako osobny typ źródła', status: 'działa' },
+        { name: 'YouTube Data API', note: 'oficjalne kanały jako źródło i automatyczny wybór wywiadu dnia', status: 'działa' },
       ] },
       { group: 'AI w Klinice', items: [
         { name: 'Groq', note: 'strażnik: otwarty model ocenia każdy post 0–100 i pisze przekazy dnia, bez kosztów', status: 'beta' },
@@ -145,7 +138,7 @@ const PHASES: Phase[] = [
       { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'planowane' },
       { text: 'w Klinice dowody jako boxy z naszej bazy zamiast samego tekstu', status: 'planowane' },
       { text: 'strażnica zmian: pokazujemy, gdy źródło po publikacji zmieni albo usunie materiał — z datą i wersją sprzed zmiany', status: 'planowane' },
-      { text: 'napisy i transkrypcje wideo z YouTube, alerty po haśle i źródle', status: 'planowane' },
+      { text: 'diagnozy kolejnych nagrań wideo (poza wywiadem dnia) i alerty po haśle albo źródle', status: 'planowane' },
     ],
     stack: [
       { group: 'Technologia', items: [
@@ -267,7 +260,6 @@ export default function AboutPage() {
               — bo bez kontekstu nawet prawdziwe zdanie potrafi wprowadzić w błąd.
             </p>
           </div>
-          <CopyBlock label="O spin.clinic — tekst do skopiowania" mode="text" text={ABOUT_SNIPPET} />
           <dl className="sc-onas-contacts" aria-label="Kontakt">
             {CONTACTS.map((contact) => (
               <div key={contact.email}>
@@ -306,8 +298,8 @@ export default function AboutPage() {
             <div>
               <dt>Diagnoza spinu</dt>
               <dd>
-                To też nitka kontekstowa: post polityka i to, co go wyjaśnia. Dziś ma postać tekstu ze źródłami z wyszukiwania; w miarę rozbudowy bazy dowodami będą boxy z
-                materiałami źródłowymi.
+                Ocena Dr. Spina: werdykt (spin, częściowy spin, bez spinu, nie da się ocenić), siła 0–100, techniki z dosłownymi cytatami i twierdzenia
+                porównane ze źródłami. Z czasem dowodami będą boxy z naszej Bazy.
               </dd>
             </div>
           </dl>
@@ -333,21 +325,21 @@ export default function AboutPage() {
           </ol>
           <ul className="sc-onas-list">
             <li>Te same zasady dla każdej strony. Oceniamy komunikat, nie człowieka ani jego poglądy.</li>
-            <li>Każda wskazana technika ma dosłowny cytat z posta. Cytatów, których nie ma w poście, system nie publikuje.</li>
-            <li>Twierdzenia o faktach model sprawdza w wyszukiwarce. Bez źródła twierdzenie zostaje oznaczone jako „nie do sprawdzenia”.</li>
+            <li>Każda technika ma dosłowny cytat. Twierdzenia o faktach model sprawdza w wyszukiwarce — bez źródła są oznaczone jako „nie do sprawdzenia”.</li>
             <li>
-              Diagnozy publikują się automatycznie i są oznaczone jako wygenerowane przez AI, z nazwą modelu i wersją instrukcji. Nikt nie poprawia ich treści.
+              Publikacja jest automatyczna, z etykietą AI, nazwą modelu i wersją instrukcji. Nikt nie poprawia treści diagnoz; możemy je tylko ukryć w całości
+              po uzasadnionym zgłoszeniu prawnym na admin@spin.clinic.
+            </li>
+            <li>Spin dnia to diagnoza z najwyższą siłą z dzisiaj. Waga porównuje udział postów ze spinem po każdej stronie, nie ich liczbę.</li>
+            <li>
+              Przekaz dnia: darmowe modele streszczają posty obozu (co najmniej trzech kont) pięć razy dziennie. Po kliknięciu — pełna analiza, lista postów źródłowych
+              i archiwum.
             </li>
             <li>
-              Diagnozę możemy tylko ukryć w całości — po uzasadnionym zgłoszeniu naruszenia prawa na admin@spin.clinic. Nie zmieniamy jej werdyktu ani słów.
+              Wywiad dnia: co rano automat wybiera najgłośniejszy wywiad z politykiem z poprzedniego dnia na kanałach różnych stron i sprawdza, czy to rozmowa,
+              a nie komentarz. Gemini przygotowuje transkrypcję z minutami, Dr. Spin ocenia osobno gościa i prowadzącego.
             </li>
-            <li>Waga spinu porównuje udział postów ze spinem po każdej stronie, nie ich liczbę — strony mają różną liczbę kont.</li>
-            <li>
-              Wywiad dnia: zespół wybiera tylko materiał — najważniejszy wywiad z politykiem z poprzedniego dnia. Transkrypcję z minutami przygotowuje Gemini,
-              a Dr. Spin ocenia osobno gościa (techniki, twierdzenia ze źródłami) i prowadzącego (czy dopytywał, czy pozwalał omijać pytania). Cytujemy krótko,
-              z linkiem do konkretnej minuty oryginału.
-            </li>
-            <li>Każdą diagnozę udostępnisz na X jako wątek — pierwszy wpis mieści się w limicie znaków i prowadzi do pełnej diagnozy.</li>
+            <li>Każdą diagnozę udostępnisz na X jako wątek — pierwszy wpis prowadzi do pełnej diagnozy.</li>
           </ul>
           <p className="sc-onas-callout">
             Dr. Spin nie ogłasza prawdy i nie zastępuje dziennikarza. Pokazuje, jak zbudowany jest przekaz i co mówią źródła — ocena należy do Ciebie.

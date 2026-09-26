@@ -3965,3 +3965,8 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 }
 /* Główna: element spinu dnia wewnątrz panelu „Dr. Spin” — bez drugiej ramki. */
 .sc-home-spin .sc-home-spin__sotd { padding: 0; margin-top: 0; box-shadow: none; background: none; border-radius: 0; }
+/* O nas: ten sam styl paneli co reszta — bez niebieskiej poświaty; kroki Kliniki w dwóch kolumnach (czytelniej w wąskiej kolumnie tekstu). */
+.sc-onas-phase, .sc-onas-phase[data-current] { border: 0; border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-onas-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sc-onas-flow li:not(:last-child)::after { display: none; }
+@media (max-width: 640px) { .sc-onas-flow { grid-template-columns: minmax(0, 1fr); } }
