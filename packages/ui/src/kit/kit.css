@@ -3778,3 +3778,8 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
   .sc-home-spin__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head open" "card card"; gap: var(--sc-s-3); }
   .sc-home-spin__head { grid-area: head; } .sc-home-spin__open { grid-area: open; } .sc-home-spin__card, .sc-home-spin__empty { grid-area: card; }
 }
+/* Przekazy dnia pod spinem dnia — niskie pudełka; pusty stan w jednej linii. */
+.sc-home-spin__messages { gap: var(--sc-s-4); }
+.sc-home-spin__messages .sc-clinic-message { gap: var(--sc-s-2); padding: var(--sc-s-3) var(--sc-s-4); }
+.sc-home-spin__messages .sc-clinic-empty { margin: 0; font-size: var(--sc-t-body-s-size); }
+.sc-home-spin__messages::before { display: none; }

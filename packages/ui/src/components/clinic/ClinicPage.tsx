@@ -12,7 +12,7 @@ import { ShareSpinOnX } from "./ShareSpinOnX";
 
 const CONTACT = "kontakt@spin.clinic";
 
-export function MessageBox({ camp, message }: { camp: Camp; message: DailyMessage | null }) {
+export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: DailyMessage | null; emptyText?: string }) {
   return (
     <article className="sc-clinic-message" data-camp={camp}>
       <p className="sc-clinic-kicker">{CAMP_LABELS[camp]} · przekaz dnia <AiTag /></p>
@@ -20,7 +20,7 @@ export function MessageBox({ camp, message }: { camp: Camp; message: DailyMessag
         <p className="sc-clinic-message__text">{message.message}</p>
         {message.themes.length > 0 && <ul className="sc-spin-techniques" aria-label="Główne hasła">{message.themes.map(theme => <li key={theme}>{theme}</li>)}</ul>}
         <p className="sc-clinic-message__meta">{formatDatePl(message.day)} · z {message.posts_count} postów</p>
-      </> : <p className="sc-clinic-empty">Przekaz dnia pojawi się, gdy posty opublikują co najmniej trzy konta tego obozu.</p>}
+      </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy posty opublikują co najmniej trzy konta tego obozu."}</p>}
     </article>
   );
 }

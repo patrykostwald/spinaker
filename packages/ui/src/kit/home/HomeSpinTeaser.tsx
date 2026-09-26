@@ -6,10 +6,20 @@
  */
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CAMPS, getClinicPage, sharePercent } from "../../lib/clinic";
 import { AiTag, SpinRow } from "../../components/clinic/SpinParts";
 import { MessageBox } from "../../components/clinic/ClinicPage";
+
+/** Godziny generowania przekazu dnia (jak w harmonogramie serwera). */
+const MESSAGE_SLOTS: Array<[number, number]> = [[9, 0], [12, 0], [15, 0], [18, 0], [21, 30]];
+
+function nextMessageSlot(now: Date): string {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const next = MESSAGE_SLOTS.find(([hour, minute]) => hour * 60 + minute > minutes) ?? MESSAGE_SLOTS[0];
+  return `${next[0]}:${String(next[1]).padStart(2, "0")}`;
+}
 
 export function HomeSpinTeaser() {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
@@ -17,15 +27,11 @@ export function HomeSpinTeaser() {
   const spin = data?.spin_of_day ?? null;
   const left = data ? sharePercent(data.scale.government) : null;
   const right = data ? sharePercent(data.scale.opposition) : null;
-  const hasMessages = Boolean(data && (data.messages.government || data.messages.opposition));
+  const [slot, setSlot] = useState<string | null>(null);
+  useEffect(() => setSlot(nextMessageSlot(new Date())), []);
+  const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
   return (
     <section className="sc-home-spin" aria-labelledby="home-spin-title">
-      {data && hasMessages ? (
-        // Przekazy dnia obu obozów (jak w Klinice) — skrócone; całość na /klinika.
-        <div className="sc-clinic-split sc-home-spin__messages" aria-label="Przekazy dnia">
-          {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
-        </div>
-      ) : null}
       {/* Jeden niski rząd: po lewej „Klinika spinu · Spin dnia”, na środku wiersz spinu, po prawej link do Kliniki. */}
       <div className="sc-home-spin__row">
         <header className="sc-home-spin__head">
@@ -41,6 +47,12 @@ export function HomeSpinTeaser() {
         )}
         <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
       </div>
+      {/* Przekazy dnia obu obozów pod spinem dnia: najpierw jeden konkretny post, potem szerszy obraz dnia. */}
+      {data ? (
+        <div className="sc-clinic-split sc-home-spin__messages" aria-label="Przekazy dnia">
+          {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} emptyText={emptyMessage} />)}
+        </div>
+      ) : null}
     </section>
   );
 }
