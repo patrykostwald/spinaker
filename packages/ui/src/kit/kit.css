@@ -3783,3 +3783,14 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-spin__messages .sc-clinic-message { gap: var(--sc-s-2); padding: var(--sc-s-3) var(--sc-s-4); }
 .sc-home-spin__messages .sc-clinic-empty { margin: 0; font-size: var(--sc-t-body-s-size); }
 .sc-home-spin__messages::before { display: none; }
+/* Pas „Spin dnia” na głównej: wyższy wiersz spinu (większa miniatura, podtytuł do 2 linii) — rząd spinu i rząd przekazów mniej więcej równe. */
+.sc-home-spin__row { grid-template-columns: minmax(0, 1fr) minmax(0, 760px) minmax(0, 1fr); }
+.sc-home-spin__card .sc-spin-row { padding: var(--sc-s-3); grid-template-columns: 132px minmax(0, 1fr); }
+.sc-home-spin__card .sc-spin-row__thumb { width: 132px; height: 132px; }
+.sc-spin-row__summary { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 520px) { .sc-home-spin__card .sc-spin-row { grid-template-columns: 84px minmax(0, 1fr); } .sc-home-spin__card .sc-spin-row__thumb { width: 84px; height: 84px; } }
+/* Pod paskami: „Kolejność zapisana na tym urządzeniu” na środku. */
+.sc-reorder-strips__note { text-align: center; }
+/* „Wesprzyj nas” w pasie powitalnym: zawsze biały, pełne krycie, nad ilustracją — w obu motywach. */
+.sc-home-intro__actions { position: relative; z-index: 2; }
+.sc-home-intro__actions .sc-btn, .sc-home-intro__actions .sc-btn:hover { background: #fff !important; color: #0b0b0b !important; opacity: 1 !important; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); border-color: transparent; }

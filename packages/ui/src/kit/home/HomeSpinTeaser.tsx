@@ -40,7 +40,7 @@ export function HomeSpinTeaser() {
           {data?.scale.enough_data && left !== null && right !== null
             ? <p className="sc-home-spin__meta">Waga {data.scale.window_days} dni: rządzący {left}% · opozycja {right}%</p> : null}
         </header>
-        {spin ? <div className="sc-home-spin__card"><SpinRow spin={spin} /></div> : (
+        {spin ? <div className="sc-home-spin__card"><SpinRow spin={spin} withSummary /></div> : (
           <p className="sc-t-body-s sc-text-2 sc-home-spin__empty">
             Strażnik przegląda każdy nowy post polityków z oficjalnych kont, a te warte sprawdzenia bada Dr. Spin — rządzący i opozycja według tych samych zasad.
           </p>
