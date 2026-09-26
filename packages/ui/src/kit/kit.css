@@ -3886,3 +3886,9 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-lead__list, .sc-home-baza__results { overflow-x: hidden; }
 /* Strona główna: przełącznik „Spin dnia | Najnowszy” mniejszy, w jednej linii. */
 .sc-home-spin__head .sc-spin-switch__tabs { flex-wrap: nowrap; font-size: var(--sc-t-title-m-size); white-space: nowrap; }
+
+/* Główna: sekcja „Dr. Spin” — tytuł i link po lewej, spin dnia z metką na środku. */
+.sc-home-spin__head .sc-home-spin__open { justify-self: start; margin-top: 2px; }
+.sc-spin-row__badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--sc-accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.sc-home-spin__row { align-items: start; }
+.sc-home-spin__card { align-self: center; }

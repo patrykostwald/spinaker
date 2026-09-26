@@ -24,9 +24,8 @@ function nextMessageSlot(now: Date): string {
 export function HomeSpinTeaser() {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
   const data = query.data;
-  // Spin dnia = najwyższa siła spinu z dzisiaj; przełącznik pokazuje też najnowszy spin.
-  const [mode, setMode] = useState<"day" | "latest">("day");
-  const spin = (mode === "day" ? data?.spin_of_day : data?.latest_spin) ?? null;
+  // Na głównej tylko spin dnia: najwyższa siła spinu z dzisiaj.
+  const spin = data?.spin_of_day ?? null;
   const left = data ? sharePercent(data.scale.government) : null;
   const right = data ? sharePercent(data.scale.opposition) : null;
   const [slot, setSlot] = useState<string | null>(null);
@@ -37,24 +36,20 @@ export function HomeSpinTeaser() {
     {/* Wywiad dnia (najważniejszy wywiad z poprzedniego dnia) — nad spinem dnia, w tym samym stylu boxa. */}
     {data?.interview ? <div className="sc-home-spin sc-home-interview"><InterviewBox interview={data.interview} /></div> : null}
     <section className="sc-home-spin" aria-labelledby="home-spin-title">
-      {/* Jeden niski rząd: po lewej „Klinika spinu · Spin dnia”, na środku wiersz spinu, po prawej link do Kliniki. */}
+      {/* Sekcja „Dr. Spin”: tytuł jak w innych sekcjach, pod nim link do Kliniki; na środku spin dnia z metką. */}
       <div className="sc-home-spin__row">
         <header className="sc-home-spin__head">
           <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-          <h2 id="home-spin-title" className="sc-t-title-l sc-home-section__title sc-spin-switch__tabs" role="tablist" aria-label="Który spin pokazać">
-            <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Spin dnia</button>
-            <span aria-hidden="true">|</span>
-            <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowszy</button>
-          </h2>
+          <h2 id="home-spin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+          <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
           {data?.scale.enough_data && left !== null && right !== null
             ? <p className="sc-home-spin__meta">Waga {data.scale.window_days} dni: rządzący {left}% · opozycja {right}%</p> : null}
         </header>
-        {spin ? <div className="sc-home-spin__card"><SpinRow spin={spin} withSummary /></div> : (
+        {spin ? <div className="sc-home-spin__card"><SpinRow spin={spin} withSummary badge="Spin dnia" /></div> : (
           <p className="sc-t-body-s sc-text-2 sc-home-spin__empty">
             Strażnik przegląda każdy nowy post polityków z oficjalnych kont, a te warte sprawdzenia bada Dr. Spin — rządzący i opozycja według tych samych zasad.
           </p>
         )}
-        <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
       </div>
       {/* Przekazy dnia obu obozów pod spinem dnia: najpierw jeden konkretny post, potem szerszy obraz dnia. */}
       {data ? (

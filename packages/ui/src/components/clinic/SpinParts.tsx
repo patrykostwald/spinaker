@@ -64,7 +64,7 @@ export function AiTag() {
  * Zwarty wiersz diagnozy — rozmiar boxa z pasków: po lewej miniatura (zdjęcie z posta albo awatar autora),
  * po prawej obóz, werdykt, nagłówek diagnozy i autor. Cały wiersz prowadzi do pełnej diagnozy.
  */
-export function SpinRow({ spin, withSummary = false }: { spin: SpinCardData; withSummary?: boolean }) {
+export function SpinRow({ spin, withSummary = false, badge }: { spin: SpinCardData; withSummary?: boolean; badge?: string }) {
   const image = spin.post.media.find(item => item.url);
   return (
     <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`}>
@@ -76,7 +76,7 @@ export function SpinRow({ spin, withSummary = false }: { spin: SpinCardData; wit
         <PartyBadge party={spin.author.party} />
       </span>
       <div className="sc-spin-row__body">
-        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
+        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
         <p className="sc-spin-row__author">{spin.author.name} · @{spin.author.handle} · <time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
