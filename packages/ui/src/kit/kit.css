@@ -3762,3 +3762,19 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 /* Strona główna: ciaśniejsze odstępy między sekcjami (pasek u góry → Wiadomości dnia → … → Baza). */
 .sc-home { gap: var(--sc-s-6); }
 @media (max-width: 899px) { .sc-home { gap: var(--sc-s-5); } }
+/* Pas „Spin dnia” (ostatecznie): niski, jeden rząd — tytuł po lewej, wiersz spinu na środku, link po prawej. */
+.sc-home-spin { gap: var(--sc-s-3); padding: var(--sc-s-4) var(--sc-s-5); }
+.sc-home-spin__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 680px) minmax(0, 1fr); align-items: center; gap: var(--sc-s-5); }
+.sc-home-spin__head { display: grid; gap: 2px; justify-items: start; text-align: left; }
+.sc-home-spin__head .sc-home-kicker { justify-content: flex-start; margin: 0; }
+.sc-home-spin__head .sc-home-spin__meta { margin: 2px 0 0; font-size: var(--sc-t-caption-size); color: var(--sc-text-3); }
+.sc-home-spin__card { max-width: none; margin: 0; }
+.sc-home-spin__card .sc-spin-row { padding: var(--sc-s-2); grid-template-columns: 72px minmax(0, 1fr); }
+.sc-home-spin__card .sc-spin-row__thumb { width: 72px; height: 72px; }
+.sc-home-spin__empty { margin: 0; text-align: center; }
+.sc-home-spin__open { justify-self: end; color: var(--sc-accent); font-size: var(--sc-t-body-s-size); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sc-home-spin__open:hover { text-decoration: underline; }
+@media (max-width: 1000px) {
+  .sc-home-spin__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head open" "card card"; gap: var(--sc-s-3); }
+  .sc-home-spin__head { grid-area: head; } .sc-home-spin__open { grid-area: open; } .sc-home-spin__card, .sc-home-spin__empty { grid-area: card; }
+}
