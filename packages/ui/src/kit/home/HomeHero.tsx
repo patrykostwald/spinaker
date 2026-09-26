@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.png`) jako niskie tło, a na niej
+ * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.webp`) jako niskie tło, a na niej
  * jedno zdanie o trzech częściach serwisu, linki i „Wesprzyj nas”. Zastępuje wysoki baner, który
  * spychał wiadomości pod linię przewijania. Pas jest stały — nie da się go ukryć.
  */
@@ -27,8 +27,9 @@ function readTheme(): ThemeName {
 }
 
 export function HomeHero() {
-  const [period, setPeriod] = useState<DayPeriod>("morning");
-  const [theme, setTheme] = useState<ThemeName>("dark");
+  // Pora dnia i motyw znamy dopiero w przeglądarce — do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
+  const [period, setPeriod] = useState<DayPeriod | null>(null);
+  const [theme, setTheme] = useState<ThemeName | null>(null);
 
   useEffect(() => {
     setPeriod(currentPeriod());
@@ -43,7 +44,7 @@ export function HomeHero() {
   return (
     <section className="sc-home-intro" aria-label="Czym jest spin.clinic">
       {/* eslint-disable-next-line @next/next/no-img-element -- ilustracja z /public, bez optymalizacji (images.unoptimized) */}
-      <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.png`} alt="" />
+      {theme && period ? <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.webp`} alt="" decoding="async" /> : null}
       <div className="sc-home-intro__content">
         <p className="sc-home-intro__title">
           Wiadomości ze źródłami. <span>Diagnozy spinu polityków.</span>

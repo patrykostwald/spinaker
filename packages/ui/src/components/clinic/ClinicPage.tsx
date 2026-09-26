@@ -93,6 +93,8 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
+      {/* Kolejność nagłówków (a11y): pod h1 strony sekcje mają h3 — ukryty h2 domyka poziom. */}
+      {!embedded && <h2 className="sc-sr-only">Diagnozy Dr. Spina</h2>}
       {data && <>
         <section className="sc-clinic-sotd" aria-labelledby="sotd-title">
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}

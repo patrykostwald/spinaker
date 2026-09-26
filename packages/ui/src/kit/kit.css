@@ -3630,7 +3630,7 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-personal__actions { position: absolute; top: var(--sc-s-3); right: var(--sc-s-4); display: flex; gap: var(--sc-s-1); margin: 0; }
 /* Szapka: „O nas” zaraz przy logo, BETA mniejsze i wyżej (jak indeks górny). */
 .sc-nav-brand { gap: var(--sc-s-2); }
-.sc-beta { height: 15px; padding: 0 4px; font-size: 8.5px; align-self: flex-start; margin-top: 2px; }
+.sc-beta { height: 17px; padding: 0 5px; font-size: 10.5px; align-self: flex-start; margin-top: 2px; }
 .sc-nav-about { margin-left: var(--sc-s-4); color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); font-weight: 600; text-decoration: none; text-transform: none; letter-spacing: 0; }
 .sc-nav-about:hover, .sc-nav-about[aria-current="page"] { color: var(--sc-text); }
 /* Pas powitalny: „Wesprzyj nas” na środku wysokości. */
@@ -3987,3 +3987,8 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-spin-author__party .sc-party--none { display: none; }
 .sc-spin-author__text { min-width: 0; }
 .sc-spin-author { width: 100%; }
+
+/* Dostępność (audyt 27.09): cele dotyku co najmniej 24 px (WCAG 2.2), zakładki spinu wyższe. */
+.sc-btn[data-size="sm"] { min-height: 28px; }
+.sc-spin-switch__tabs button { min-height: 32px; padding-inline: var(--sc-s-2); }
+.sc-site-header nav a { min-height: 32px; display: inline-flex; align-items: center; }

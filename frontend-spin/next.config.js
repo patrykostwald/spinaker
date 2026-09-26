@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
   skipTrailingSlashRedirect: true,
+  poweredByHeader: false,
   experimental: { proxyTimeout: 130000 },
   transpilePackages: ['@spin-clinic/ui'],
   env: { NEXT_PUBLIC_DOMAIN: process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic' },

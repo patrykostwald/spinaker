@@ -18,8 +18,9 @@ function readTheme(): ThemeName {
 }
 
 export function IllustrationStrip() {
-  const [period, setPeriod] = useState<DayPeriod>("morning");
-  const [theme, setTheme] = useState<ThemeName>("dark");
+  // Pora dnia i motyw znamy dopiero w przeglądarce — do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
+  const [period, setPeriod] = useState<DayPeriod | null>(null);
+  const [theme, setTheme] = useState<ThemeName | null>(null);
 
   useEffect(() => {
     setPeriod(currentPeriod());
@@ -29,9 +30,9 @@ export function IllustrationStrip() {
     return () => observer.disconnect();
   }, []);
 
-  return <section className="sc-illustration-strip" aria-label={`Ilustracja autorska · ${period} · motyw ${theme}`}>
+  return <section className="sc-illustration-strip" aria-label="Ilustracja autorska">
     <div className="sc-illustration-strip__frame">
-      <img src={`/illustrations/${theme}/${period}.png`} alt="Akwarelowa ilustracja polskiego krajobrazu, rysowana konturami kredek" />
+      {theme && period ? <img src={`/illustrations/${theme}/${period}.webp`} alt="Akwarelowa ilustracja polskiego krajobrazu, rysowana konturami kredek" decoding="async" /> : null}
       <span className="sc-illustration-strip__sign"><small>przystanek</small>spin.clinic</span>
       <Button href="/wsparcie" variant="secondary" size="sm" className="sc-illustration-strip__support">Wesprzyj</Button>
       <p>Polska · ilustracja autorska</p>
