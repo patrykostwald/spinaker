@@ -15,8 +15,11 @@ def clinic_diagnose_task():
     if not cache.add("clinic-diagnose-lock", "1", timeout=1700):
         return {"status": "locked"}
     try:
-        from news.clinic import run_diagnoses
-        return run_diagnoses(limit=2)
+        from news.clinic import fill_x_threads, run_diagnoses
+        result = run_diagnoses(limit=2)
+        # Syntezy do wątków na X dla starszych diagnoz (darmowy model, po kilka na raz).
+        result['x_threads'] = fill_x_threads(limit=3)
+        return result
     finally:
         cache.delete("clinic-diagnose-lock")
 

@@ -118,11 +118,15 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
   return (
     <section className="sc-interview" aria-labelledby={`interview-${interview.id}`}>
       <div className="sc-interview__top">
+        <div className="sc-interview__media">
         <a className="sc-interview__thumb" href={interview.url} target="_blank" rel="noopener noreferrer" aria-label={`Film: ${interview.title}`}>
           {/* eslint-disable-next-line @next/next/no-img-element -- miniatura z YouTube */}
           <img src={interview.thumbnail_url} alt="" loading="lazy" referrerPolicy="no-referrer" />
           <span aria-hidden="true">▶</span>
         </a>
+        {/* „Pełna analiza” tuż pod miniaturą, przy lewej krawędzi — bez osobnej linii na dole boxu. */}
+        {hideMore ? null : <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>}
+        </div>
         <div className="sc-interview__head">
           <p className="sc-clinic-kicker">Wywiad dnia <AiTag /><span className="sc-clinic-message__meta">{interview.channel} · {formatDatePl(interview.day)}</span></p>
           <h3 id={`interview-${interview.id}`}><button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog">{interview.headline || interview.title}</button></h3>
@@ -141,7 +145,6 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
-      {hideMore ? null : <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>}
       <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad dnia · ${interview.title}`}>
         <p className="sc-clinic-dialog__lead">{interview.headline}</p>
         <p>{interview.overall}</p>

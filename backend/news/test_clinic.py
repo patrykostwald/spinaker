@@ -45,7 +45,15 @@ def ai_on(monkeypatch):
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 90, 'reason': 'konkretne twierdzenie', 'provider': 'groq', 'model': 'm'})
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    monkeypatch.setattr(clinic_ai, 'x_thread', x_thread_unavailable)
     at_hour(monkeypatch, 12)
+
+
+def x_thread_unavailable(diagnosis):
+    raise clinic_ai.ClinicAIError('free_models_unavailable')
+
+
+ORIGINAL_X_THREAD = clinic_ai.x_thread
 
 
 def pipeline():
@@ -483,3 +491,21 @@ def test_interview_is_processed_only_once(monkeypatch):
     assert clinic_interview.claim(interview) is False
     assert clinic_interview.queue_interview('https://youtu.be/abcdefghijk').status == clinic_interview.IN_PROGRESS
 
+
+
+@pytest.mark.django_db
+def test_x_thread_synthesis_is_saved_once_and_rejects_english(ai_on, monkeypatch):
+    post(account())
+    pipeline()
+    diagnosis = SpinDiagnosis.objects.get()
+    assert diagnosis.x_thread == []  # darmowy model niedostępny — diagnoza i tak zapisana
+    answers = [{'lead': 'The post blames the government.', 'points': ['One point here.', 'Another point here.']},
+               {'lead': 'Wpis przypisuje rządowi intencje bez dowodu.',
+                'points': ['Technika: fałszywa alternatywa — „Tylko my obronimy Polaków!”.', 'Twierdzenie o podatkach nie ma źródła w diagnozie.']}]
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: (answers.pop(0), 'm'))
+    monkeypatch.setattr(clinic_ai, 'x_thread', ORIGINAL_X_THREAD)
+    assert clinic.ensure_x_thread(diagnosis) is True
+    diagnosis.refresh_from_db()
+    assert diagnosis.x_thread[0] == 'Wpis przypisuje rządowi intencje bez dowodu.' and len(diagnosis.x_thread) == 3
+    assert diagnosis.verdict == 'spin' and diagnosis.intensity == 70  # synteza nie zmienia diagnozy
+    assert clinic.ensure_x_thread(diagnosis) is False  # tylko raz

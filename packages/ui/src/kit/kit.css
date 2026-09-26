@@ -4002,3 +4002,7 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-spin-switch__tabs button[aria-selected="true"] { color: var(--sc-accent); }
 .sc-spin-switch__tabs button[aria-selected="false"]:hover { color: var(--sc-accent); }
 .sc-spin-switch__tabs > span { color: var(--sc-text-3); }
+
+/* Wywiad dnia w Klinice: „Pełna analiza ze źródłami” pod miniaturą, do lewej. */
+.sc-interview__media { display: grid; gap: var(--sc-s-3); align-content: start; }
+.sc-interview__media .sc-interview__more { text-align: left; }

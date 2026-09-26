@@ -52,6 +52,8 @@ export type SpinDetailData = SpinCardData & {
   techniques: Array<{ name: string; quote: string; explanation: string }>;
   claims: SpinClaim[];
   limitations: string;
+  /** Synteza diagnozy do wątku na X (pusta, dopóki darmowy model jej nie przygotuje). */
+  x_thread?: string[];
   model: string;
   prompt_version: string;
   created_at: string;

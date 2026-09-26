@@ -214,7 +214,35 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
     row.save()
+    if row.status in ('approved', 'pending_review'):
+        ensure_x_thread(row)
     return row
+
+
+def ensure_x_thread(row: SpinDiagnosis) -> bool:
+    """Synteza diagnozy do wątku na X — raz na diagnozę, darmowym modelem. Treści diagnozy nie zmienia."""
+    if row.x_thread or not row.verdict:
+        return False
+    figure = figures_by_account([row.post.account_id]).get(row.post.account_id)
+    try:
+        result = clinic_ai.x_thread({
+            'author': figure.canonical_name if figure else row.post.account.display_name,
+            'verdict_label': VERDICT_LABELS.get(row.verdict, ''), 'intensity': row.intensity,
+            'headline': row.headline, 'summary': row.summary, 'techniques': row.techniques,
+            'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')} for claim in row.claims],
+        })
+    except clinic_ai.ClinicAIError:
+        return False
+    row.x_thread = result['posts']
+    row.save(update_fields=['x_thread'])
+    return True
+
+
+def fill_x_threads(limit: int = 5) -> int:
+    """Uzupełnia syntezy dla opublikowanych diagnoz, które jeszcze jej nie mają (najnowsze najpierw)."""
+    rows = (SpinDiagnosis.objects.filter(status='approved', hidden_at__isnull=True, x_thread=[])
+            .exclude(verdict='').select_related('post__account').order_by('-diagnosed_at')[:limit])
+    return sum(ensure_x_thread(row) for row in rows)
 
 
 def queue_for_diagnosis(row: SpinDiagnosis) -> SpinDiagnosis:
@@ -481,6 +509,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'techniques': diagnosis.techniques,
         'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')} for claim in diagnosis.claims],
         'limitations': diagnosis.limitations,
+        'x_thread': diagnosis.x_thread,
         'model': diagnosis.model_name,
         'prompt_version': diagnosis.prompt_version,
         'created_at': diagnosis.created_at,
