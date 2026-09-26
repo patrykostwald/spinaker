@@ -372,3 +372,14 @@ def test_daily_message_input_fits_the_free_model_limit():
     text = clinic_ai._daily_input('opozycja', '2026-09-26', posts)
     assert len(text) <= clinic_ai.DAILY_INPUT_CHARS
     assert 'Poseł 29' in text  # każdy autor trafia do wejścia, zanim ktokolwiek dostanie drugi wpis
+
+
+def test_daily_message_in_english_is_retried_and_then_rejected(monkeypatch):
+    answers = iter([({'message': 'Opposition stresses high fuel prices and the budget deficit.', 'themes': ['Fuel prices']}, 'm'),
+                    ({'message': 'Opozycja podkreśla wysokie ceny paliw i deficyt budżetowy.', 'themes': ['ceny paliw']}, 'm')])
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: next(answers))
+    result = clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': 'x'}])
+    assert result['message'].startswith('Opozycja')
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: ({'message': 'Only English here.', 'themes': []}, 'm'))
+    with pytest.raises(clinic_ai.ClinicAIError):
+        clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': 'x'}])
