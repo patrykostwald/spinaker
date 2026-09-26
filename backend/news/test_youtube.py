@@ -86,3 +86,32 @@ def test_official_channel_collection_and_leftover_quota(monkeypatch, settings):
     assert youtube_collect.units_used() == 4
     source = Source.objects.get(url='https://www.youtube.com/channel/UCofficial')
     assert source.is_active and source.catalog_stage == 'configured'
+
+
+@pytest.mark.django_db
+def test_seed_official_channels_confirms_with_evidence_and_staff(monkeypatch, settings):
+    from news.management.commands import seed_official_youtube_channels as seed
+    from news.political_models import OfficialVideoChannel
+    settings.YOUTUBE_ENABLED = True; settings.YOUTUBE_API_KEY = 'test-only'
+    get_user_model().objects.create_user('zespol', password='x', is_staff=True)
+    monkeypatch.setattr(seed, 'CHANNELS', [('Senat RP', 'https://www.youtube.com/channel/UCsenat', 'https://www.senat.gov.pl/', True),
+                                           ('Sejm RP', 'https://www.youtube.com/@SejmRP_PL', 'https://www.sejm.gov.pl/', False)])
+    monkeypatch.setattr(seed, 'resolve', lambda url: ('UCsenat', 'Senat') if 'senat' in url else ('UCsejm', 'Sejm'))
+    call_command('seed_official_youtube_channels', '--staff', 'zespol')
+    assert OfficialVideoChannel.objects.count() == 0  # podgląd niczego nie zapisuje
+    call_command('seed_official_youtube_channels', '--staff', 'zespol', '--apply')
+    senat, sejm = OfficialVideoChannel.objects.get(channel_id='UCsenat'), OfficialVideoChannel.objects.get(channel_id='UCsejm')
+    assert senat.status == 'confirmed' and senat.collection_enabled and senat.reviewed_by.username == 'zespol'
+    assert sejm.status == 'pending_review' and not sejm.collection_enabled
+    assert Source.objects.get(url='https://www.youtube.com/channel/UCsenat').is_active
+    assert not Source.objects.get(url='https://www.youtube.com/channel/UCsejm').is_active
+    call_command('seed_official_youtube_channels', '--staff', 'zespol', '--apply')  # ponownie: bez duplikatów
+    assert OfficialVideoChannel.objects.count() == 2
+
+
+def test_channel_link_lookups():
+    from news.management.commands.seed_official_youtube_channels import lookups
+    assert lookups('https://www.youtube.com/channel/UCabc') == [{'id': 'UCabc'}]
+    assert lookups('https://www.youtube.com/@KObywatelska') == [{'forHandle': '@KObywatelska'}]
+    assert lookups('https://www.youtube.com/user/pisorgpl')[0] == {'forUsername': 'pisorgpl'}
+    assert lookups('https://www.youtube.com/premierRP')[0] == {'forHandle': '@premierRP'}

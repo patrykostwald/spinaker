@@ -297,7 +297,6 @@ export function ReorderableStrips<T extends ReorderableStrip>({
         ))}
       </Reorder.Group>
 
-      <p className="sc-t-caption sc-text-2 sc-reorder-strips__note">Kolejność zapisana na tym urządzeniu.</p>
       <div aria-live="polite" className="sc-visually-hidden">
         {announcement}
       </div>
