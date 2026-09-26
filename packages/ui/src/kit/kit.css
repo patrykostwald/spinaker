@@ -3932,3 +3932,36 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 
 .sc-home-interview__head .sc-home-spin__open { justify-self: start; margin-top: var(--sc-s-2); }
 .sc-home-interview__head .sc-home-spin__meta { margin: 2px 0 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+
+/* ==========================================================================================
+   Spójny styl (27.09): jeden panel dla wszystkich sekcji, akcent tylko na drobnych elementach.
+   Panel = tło powierzchni, cienka neutralna ramka, promień 2xl, te same odstępy.
+   Niebieski zostaje dla napisów nad tytułami, aktywnych zakładek, metek i linków — bez poświaty ramek.
+   ========================================================================================== */
+:root { --sc-panel-ring: 0 0 0 1px var(--sc-line); --sc-panel-pad: var(--sc-s-5) var(--sc-s-6); }
+.sc-home-band-surface, .sc-home-spin, .sc-home-interview, .sc-home-threads__bar, .sc-home-threads .sc-strip-row,
+.sc-home-baza__bar, .sc-clinic-sotd, .sc-clinic > .sc-interview, .sc-scale, .sc-clinic-journalists,
+.sc-politicians, .sc-message-history {
+  border: 0; border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring);
+}
+.sc-home-band-surface, .sc-home-spin, .sc-home-interview, .sc-clinic-sotd, .sc-clinic > .sc-interview, .sc-scale,
+.sc-clinic-journalists, .sc-politicians, .sc-message-history { padding: var(--sc-panel-pad); }
+.sc-clinic-journalists { background: linear-gradient(135deg, var(--sc-accent-soft), var(--sc-surface) 70%); }
+/* Karty wewnątrz paneli: ta sama cienka ramka, mniejszy promień, bez własnego cienia. */
+.sc-clinic-message, .sc-interview__cols article, .sc-clinic-source { border-radius: var(--sc-r-lg); box-shadow: var(--sc-panel-ring); }
+.sc-home-spin__messages .sc-clinic-message, .sc-clinic-split .sc-clinic-message { background: transparent; }
+.sc-clinic-split::before, .sc-home-spin__messages::before { display: none; }
+.sc-clinic-split { gap: var(--sc-s-4); }
+/* Rytm pionowy: te same odstępy między sekcjami na głównej i w Klinice. */
+.sc-clinic { gap: var(--sc-s-6); }
+.sc-home-spin, .sc-home-interview { gap: var(--sc-s-4); }
+/* Post w spinie dnia: najwyżej ~16 wierszy, reszta po najechaniu (przewijanie) — panel nie rośnie bez końca. */
+.sc-clinic-sotd__post blockquote { max-height: 26rem; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); }
+.sc-clinic-sotd__post blockquote:hover { overflow-y: auto; -webkit-mask-image: none; mask-image: none; scrollbar-width: thin; }
+/* Nagłówki sekcji: jeden wzór — mały napis nad tytułem, tytuł, meta po prawej. */
+.sc-politicians__head h2, .sc-message-history h2, .sc-scale__title { font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+@media (max-width: 760px) {
+  :root { --sc-panel-pad: var(--sc-s-4); }
+}
+/* Główna: element spinu dnia wewnątrz panelu „Dr. Spin” — bez drugiej ramki. */
+.sc-home-spin .sc-home-spin__sotd { padding: 0; margin-top: 0; box-shadow: none; background: none; border-radius: 0; }
