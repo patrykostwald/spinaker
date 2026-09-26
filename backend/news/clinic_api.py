@@ -288,3 +288,29 @@ def decide_flag(request, diagnosis_id):
     except ValueError:
         return Response({'detail': 'Ten post ma już decyzję.'}, status=409)
     return Response({'id': row.pk, 'status': row.status})
+
+
+
+@extend_schema(summary='Zespół: dodaj wywiad dnia (link do publicznego filmu z YouTube)', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET', 'POST'])
+@permission_classes([IsAdminUser])
+def staff_interviews(request):
+    from datetime import date
+    from news import clinic_interview
+    from news.clinic_models import ClinicInterview
+    if request.method == 'POST':
+        day = None
+        if request.data.get('day'):
+            try:
+                day = date.fromisoformat(str(request.data['day']))
+            except ValueError:
+                return Response({'detail': 'Data w formacie RRRR-MM-DD.'}, status=400)
+        try:
+            interview = clinic_interview.queue_interview(str(request.data.get('url', '')), day, request.user)
+        except ValueError:
+            return Response({'detail': 'To nie jest link do filmu na YouTube.'}, status=400)
+        return Response({'id': interview.pk, 'status': interview.status}, status=201)
+    rows = ClinicInterview.objects.order_by('-created_at')[:20]
+    return Response({'enabled': clinic_interview.enabled(), 'results': [
+        {'id': row.pk, 'day': row.day, 'url': row.url, 'title': row.title, 'status': row.status, 'error': row.error}
+        for row in rows]})

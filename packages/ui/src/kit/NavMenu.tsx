@@ -27,8 +27,6 @@ export type NavItem = {
   href: string;
   current?: boolean;
   items?: NavItem[];
-  /** Tylko w panelu mobilnym — na szerokim ekranie punkt siedzi w innym slocie (np. w cta). */
-  mobileOnly?: boolean;
 };
 
 export type NavMenuProps = {
@@ -116,9 +114,8 @@ export function NavMenu({
     triggerRef: toggleRef as RefObject<HTMLElement>,
   });
 
-  const desktopItems = items.filter((item) => !item.mobileOnly);
-  const visible = desktopItems.slice(0, MAX_VISIBLE_ITEMS);
-  const overflow = desktopItems.slice(MAX_VISIBLE_ITEMS);
+  const visible = items.slice(0, MAX_VISIBLE_ITEMS);
+  const overflow = items.slice(MAX_VISIBLE_ITEMS);
   const overflowItems: DropdownItem[] = overflow.map((item) => ({ value: item.href, label: item.label }));
   const overflowActive = overflow.some((item) => item.current);
 

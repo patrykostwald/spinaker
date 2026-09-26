@@ -60,7 +60,7 @@ def fetch_x_timeline(account, window, config):
     params = {'max_results': window['page_size'], 'exclude': 'retweets',
         'post.fields': 'id,text,created_at,entities,attachments,note_post,public_metrics,possibly_sensitive,withheld',
         'expansions': 'author_id,attachments.media_keys',
-        'user.fields': 'id,name,username,profile_image_url,protected',
+        'user.fields': 'id,name,username,profile_image_url,protected,public_metrics',
         'media.fields': 'media_key,type,url,preview_image_url,alt_text', 'end_time': window['end_time']}
     if window.get('since_id'):
         params['since_id'] = window['since_id']

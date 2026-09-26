@@ -28,7 +28,6 @@ export function SpinAvatar({ author, size = "md" }: { author: SpinAuthor; size?:
 export function SpinAuthorRow({ author, publishedAt, size = "md" }: { author: SpinAuthor; publishedAt: string; size?: "md" | "lg" }) {
   return (
     <header className="sc-spin-author">
-      <PartyBadge party={author.party} />
       <SpinAvatar author={author} size={size} />
       <div className="sc-spin-author__text">
         <p className="sc-spin-author__name">
@@ -39,6 +38,7 @@ export function SpinAuthorRow({ author, publishedAt, size = "md" }: { author: Sp
           {" · "}<time dateTime={publishedAt}>{formatDateTimePl(publishedAt)}</time>
         </p>
       </div>
+      <span className="sc-spin-author__party"><PartyBadge party={author.party} /></span>
     </header>
   );
 }
@@ -58,6 +58,31 @@ export function IntensityMeter({ value }: { value: number }) {
 
 export function AiTag() {
   return <span className="sc-ai-tag" title="Treść przygotowana automatycznie przez AI, zatwierdzona bez edycji">AI</span>;
+}
+
+/**
+ * Zwarty wiersz diagnozy — rozmiar boxa z pasków: po lewej miniatura (zdjęcie z posta albo awatar autora),
+ * po prawej obóz, werdykt, nagłówek diagnozy i autor. Cały wiersz prowadzi do pełnej diagnozy.
+ */
+export function SpinRow({ spin, withSummary = false, badge }: { spin: SpinCardData; withSummary?: boolean; badge?: string }) {
+  const image = spin.post.media.find(item => item.url);
+  return (
+    <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`}>
+      <span className="sc-spin-row__thumb">
+        {image
+          // eslint-disable-next-line @next/next/no-img-element -- miniatura z oficjalnego API X
+          ? <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" />
+          : <SpinAvatar author={spin.author} size="lg" />}
+        <PartyBadge party={spin.author.party} />
+      </span>
+      <div className="sc-spin-row__body">
+        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
+        <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
+        {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
+        <p className="sc-spin-row__author">{spin.author.name} · @{spin.author.handle} · <time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
+      </div>
+    </article>
+  );
 }
 
 /** Karta: po lewej post (autor, treść, zdjęcie), po prawej diagnoza. */

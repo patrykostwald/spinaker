@@ -3630,7 +3630,7 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-personal__actions { position: absolute; top: var(--sc-s-3); right: var(--sc-s-4); display: flex; gap: var(--sc-s-1); margin: 0; }
 /* Szapka: „O nas” zaraz przy logo, BETA mniejsze i wyżej (jak indeks górny). */
 .sc-nav-brand { gap: var(--sc-s-2); }
-.sc-beta { height: 15px; padding: 0 4px; font-size: 8.5px; align-self: flex-start; margin-top: 2px; }
+.sc-beta { height: 17px; padding: 0 5px; font-size: 10.5px; align-self: flex-start; margin-top: 2px; }
 .sc-nav-about { margin-left: var(--sc-s-4); color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); font-weight: 600; text-decoration: none; text-transform: none; letter-spacing: 0; }
 .sc-nav-about:hover, .sc-nav-about[aria-current="page"] { color: var(--sc-text); }
 /* Pas powitalny: „Wesprzyj nas” na środku wysokości. */
@@ -3682,7 +3682,6 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 @media (max-width: 860px) { .sc-clinic-journalists { flex-direction: column; align-items: flex-start; } .sc-clinic-journalists__cta { margin-right: 0; } }
 /* Szapka: Źródła · Klinika · O nas tym samym krojem; w panelu mobilnym linki są na liście. */
 .sc-nav-cta { gap: var(--sc-s-3); }
-.sc-navmenu__mobile-cta .sc-nav-cta__link { display: none; }
 /* Paski czytelnika: tytuł jak „Baza”, uchwyt poza linią tytułu; Edytuj | Usuń po prawej. */
 .sc-home-threads .sc-strip-row { padding: var(--sc-s-4) var(--sc-s-5) var(--sc-s-5); }
 .sc-home-threads .sc-strip-row__head { min-height: 40px; margin-bottom: var(--sc-s-3); padding-right: 10rem; }
@@ -3692,10 +3691,333 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-personal__actions button { padding: 4px 2px; border: 0; background: none; color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
 .sc-home-personal__actions button:hover, .sc-home-personal__actions button:focus-visible { color: var(--sc-text); }
 @media (max-width: 860px) { .sc-home-threads .sc-strip-row__head { padding-right: 0; } }
-/* Szapka: „Źródła” tuż po lewej od pola szukania, „Klinika” tuż po prawej; godzina · motyw · O nas przy prawej krawędzi. Zwykłe litery. */
+/* Szapka (ostatecznie): marka + Źródła · Klinika · O nas po lewej, szukanie na środku, godzina i motyw po prawej.
+   Linki zwykłymi literami, jednym krojem; aktywna strona — biały tekst i niebieska kreska pod spodem. */
 .sc-navmenu__link, .sc-nav-cta .sc-btn { text-transform: none; letter-spacing: 0; font-size: var(--sc-t-body-s-size); }
-.sc-navmenu[data-layout="centered"] .sc-navmenu__start { justify-content: space-between; }
-.sc-navmenu[data-layout="centered"] .sc-navmenu__list { flex: 1 1 auto; justify-content: flex-end; }
-.sc-navmenu[data-layout="centered"] .sc-navmenu__end { justify-content: stretch; }
-.sc-navmenu[data-layout="centered"] .sc-navmenu__cta { flex: 1 1 auto; }
-.sc-nav-cta .sc-nav-cta__link:first-child { margin-right: auto; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__start { gap: var(--sc-s-5); }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__list { gap: var(--sc-s-1); }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__link { padding: 0 var(--sc-s-3); }
+.sc-nav-cta { gap: var(--sc-s-3); }
+/* Wsparcie: koszty i cele jako lista nazwa — opis. */
+.sc-support-costs { display: grid; gap: var(--sc-s-2); margin: 0 0 var(--sc-s-3); }
+.sc-support-costs > div { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); gap: var(--sc-s-4); padding: var(--sc-s-3) 0; border-bottom: 1px solid var(--sc-line); }
+.sc-support-costs dt { color: var(--sc-text); font-weight: 600; }
+.sc-support-costs dd { margin: 0; color: var(--sc-text-2); }
+.sc-support-note { color: var(--sc-text-2); }
+@media (max-width: 640px) { .sc-support-costs > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+/* Między tabletem a laptopem nie ma miejsca na pole szukania w szapce — na stronie głównej szuka się w Bazie, a /search działa dalej. */
+@container sc-navmenu (max-width: 1023px) { .sc-navmenu[data-layout="centered"] .sc-navmenu__search { display: none; } .sc-navmenu[data-layout="centered"] .sc-navmenu__row { grid-template-columns: minmax(0, 1fr) auto; } }
+/* Panel mobilny: pełne tło (bez prześwitu treści), linki na górze, motyw pod kreską na dole. */
+.sc-navmenu__mobile { display: flex; flex-direction: column; background: var(--sc-surface); }
+.sc-navmenu__mobile-cta { order: 2; padding: var(--sc-s-3) var(--sc-gutter); border-top: 1px solid var(--sc-hairline); }
+.sc-navmenu__mobile-list { padding-bottom: var(--sc-s-3); }
+/* Zwarty wiersz diagnozy (kolumny Kliniki, spin dnia na stronie głównej) — wielkość boxa z pasków; klik otwiera diagnozę. */
+.sc-spin-row { position: relative; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--sc-s-4); align-items: center; padding: var(--sc-s-3); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: var(--sc-e-1); transition: box-shadow var(--sc-dur-base) var(--sc-ease-standard), transform var(--sc-dur-base) var(--sc-ease-standard); }
+@media (hover: hover) { .sc-spin-row:hover { box-shadow: var(--sc-e-2), 0 0 0 1px var(--sc-accent); } }
+.sc-spin-row:focus-within { box-shadow: var(--sc-e-2), 0 0 0 2px var(--sc-focus); }
+.sc-spin-row__thumb { position: relative; width: 96px; height: 96px; border-radius: var(--sc-r-md); overflow: hidden; background: var(--sc-surface-2); display: grid; place-items: center; }
+.sc-spin-row__thumb > img { width: 100%; height: 100%; object-fit: cover; }
+.sc-spin-row__thumb .sc-party { position: absolute; left: 4px; bottom: 4px; }
+.sc-spin-row__body { display: grid; gap: 6px; min-width: 0; }
+.sc-spin-row__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-spin-row__title { margin: 0; font-size: var(--sc-t-body-size); line-height: 1.35; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-spin-row__title a { color: var(--sc-text); text-decoration: none; }
+.sc-spin-row__title a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.sc-spin-row__author { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-clinic-column__list { gap: var(--sc-s-2); max-height: 760px; }
+.sc-home-spin__card { max-width: 760px; }
+@media (max-width: 520px) { .sc-spin-row { grid-template-columns: 72px minmax(0, 1fr); } .sc-spin-row__thumb { width: 72px; height: 72px; } }
+/* Spin dnia: odpowiedź Dr. Spina tej samej wysokości co post — przewijana po najechaniu, „Rozwiń” pokazuje całość. */
+.sc-clinic-sotd__main { align-items: stretch; }
+.sc-clinic-sotd__diagnosis { display: flex; flex-direction: column; gap: var(--sc-s-3); min-height: 0; }
+.sc-clinic-sotd__reading { position: relative; flex: 1 1 0; min-height: 220px; overflow: hidden; display: grid; align-content: start; gap: var(--sc-s-3); padding-right: var(--sc-s-2); outline: none; scrollbar-width: thin; overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 64px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 64px), transparent); }
+.sc-clinic-sotd__reading:hover, .sc-clinic-sotd__reading:focus-visible { overflow-y: auto; }
+.sc-clinic-sotd__reading[data-expanded] { flex: none; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+.sc-clinic-sotd__reading p, .sc-clinic-sotd__reading ul { margin: 0; }
+.sc-clinic-sotd__reading h4 { margin: var(--sc-s-2) 0 0; color: var(--sc-text); font-size: var(--sc-t-body-s-size); text-transform: uppercase; letter-spacing: .08em; }
+.sc-clinic-sotd__list { display: grid; gap: var(--sc-s-2); padding-left: 1.1em; }
+.sc-clinic-sotd__list strong { color: var(--sc-text); }
+.sc-clinic-sotd__list .sc-verdict { margin-right: 4px; }
+.sc-clinic-sotd__limits { color: var(--sc-text-3); font-size: var(--sc-t-body-s-size); }
+.sc-clinic-sotd__toggle { border: 0; background: none; padding: 0; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
+@media (max-width: 900px) { .sc-clinic-sotd__reading:not([data-expanded]) { flex: none; max-height: 360px; } }
+/* Strona główna: przekazy dnia nad spinem dnia — krótko (4 linie), pełny tekst w Klinice. */
+.sc-home-spin__messages .sc-clinic-message { padding: var(--sc-s-4); }
+.sc-home-spin__messages .sc-clinic-message__text { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--sc-t-body-s-size); line-height: 1.55; }
+@media (max-width: 860px) { .sc-home-spin__messages { grid-template-columns: minmax(0, 1fr); } .sc-home-spin__messages::before { display: none; } }
+/* Pas „Spin dnia” na głównej: wszystko na osi środka — nagłówek, link do Kliniki i wiersz spinu. */
+.sc-home-spin__head { flex-direction: column; align-items: center; text-align: center; gap: var(--sc-s-1); }
+.sc-home-spin__head .sc-home-kicker { justify-content: center; }
+.sc-home-spin__card { width: 100%; max-width: 760px; margin-inline: auto; }
+.sc-home-spin__empty { margin-inline: auto; text-align: center; }
+/* „Twoje wiadomości”: tytuł, podpowiedź i przyciski w jednym pasku; Edytuj | Usuń równo pod „+ Dodaj pasek”. */
+.sc-home-threads__config { display: grid; gap: var(--sc-s-3); }
+.sc-home-threads__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2) var(--sc-s-5); padding: var(--sc-s-3) var(--sc-s-5); }
+.sc-home-threads__bar h2 { margin: 0; white-space: nowrap; }
+.sc-home-threads__hint { flex: 1 1 16rem; margin: 0; }
+.sc-home-threads__count { margin-left: var(--sc-s-2); color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
+.sc-home-threads__bar .sc-home-pills { margin-left: auto; }
+.sc-home-personal__actions { left: auto; width: auto; justify-content: flex-end; padding-right: 0; }
+/* Strona główna: ciaśniejsze odstępy między sekcjami (pasek u góry → Wiadomości dnia → … → Baza). */
+.sc-home { gap: var(--sc-s-6); }
+@media (max-width: 899px) { .sc-home { gap: var(--sc-s-5); } }
+/* Pas „Spin dnia” (ostatecznie): niski, jeden rząd — tytuł po lewej, wiersz spinu na środku, link po prawej. */
+.sc-home-spin { gap: var(--sc-s-3); padding: var(--sc-s-4) var(--sc-s-5); }
+.sc-home-spin__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 680px) minmax(0, 1fr); align-items: center; gap: var(--sc-s-5); }
+.sc-home-spin__head { display: grid; gap: 2px; justify-items: start; text-align: left; }
+.sc-home-spin__head .sc-home-kicker { justify-content: flex-start; margin: 0; }
+.sc-home-spin__head .sc-home-spin__meta { margin: 2px 0 0; font-size: var(--sc-t-caption-size); color: var(--sc-text-3); }
+.sc-home-spin__card { max-width: none; margin: 0; }
+.sc-home-spin__card .sc-spin-row { padding: var(--sc-s-2); grid-template-columns: 72px minmax(0, 1fr); }
+.sc-home-spin__card .sc-spin-row__thumb { width: 72px; height: 72px; }
+.sc-home-spin__empty { margin: 0; text-align: center; }
+.sc-home-spin__open { justify-self: end; color: var(--sc-accent); font-size: var(--sc-t-body-s-size); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sc-home-spin__open:hover { text-decoration: underline; }
+@media (max-width: 1000px) {
+  .sc-home-spin__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head open" "card card"; gap: var(--sc-s-3); }
+  .sc-home-spin__head { grid-area: head; } .sc-home-spin__open { grid-area: open; } .sc-home-spin__card, .sc-home-spin__empty { grid-area: card; }
+}
+/* Przekazy dnia pod spinem dnia — niskie pudełka; pusty stan w jednej linii. */
+.sc-home-spin__messages { gap: var(--sc-s-4); }
+.sc-home-spin__messages .sc-clinic-message { gap: var(--sc-s-2); padding: var(--sc-s-3) var(--sc-s-4); }
+.sc-home-spin__messages .sc-clinic-empty { margin: 0; font-size: var(--sc-t-body-s-size); }
+.sc-home-spin__messages::before { display: none; }
+/* Pas „Spin dnia” na głównej: wyższy wiersz spinu (większa miniatura, podtytuł do 2 linii) — rząd spinu i rząd przekazów mniej więcej równe. */
+.sc-home-spin__row { grid-template-columns: minmax(0, 1fr) minmax(0, 760px) minmax(0, 1fr); }
+.sc-home-spin__card .sc-spin-row { padding: var(--sc-s-3); grid-template-columns: 132px minmax(0, 1fr); }
+.sc-home-spin__card .sc-spin-row__thumb { width: 132px; height: 132px; }
+.sc-spin-row__summary { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 520px) { .sc-home-spin__card .sc-spin-row { grid-template-columns: 84px minmax(0, 1fr); } .sc-home-spin__card .sc-spin-row__thumb { width: 84px; height: 84px; } }
+/* Pod paskami: „Kolejność zapisana na tym urządzeniu” na środku. */
+.sc-reorder-strips__note { text-align: center; }
+/* „Wesprzyj nas” w pasie powitalnym: zawsze biały, pełne krycie, nad ilustracją — w obu motywach. */
+.sc-home-intro__actions { position: relative; z-index: 2; }
+.sc-home-intro__actions .sc-btn, .sc-home-intro__actions .sc-btn:hover { background: #fff !important; color: #0b0b0b !important; opacity: 1 !important; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); border-color: transparent; }
+.sc-clinic-column__title { text-align: center; }
+/* Baza: licznik obok tytułu; „Najnowsze materiały” w kolumnie nad filtrami (ta sama lewa krawędź). */
+.sc-home-baza__title { display: flex; align-items: baseline; gap: var(--sc-s-3); }
+.sc-home-baza__title .sc-home-baza__count { margin: 0; white-space: nowrap; }
+@media (min-width: 1100px) {
+  .sc-home-baza__bar { grid-template-columns: minmax(0, 1fr) minmax(260px, 440px) minmax(0, 1fr) var(--sc-home-baza-latest-w, 260px); grid-template-areas: "title search . latest"; padding-right: 0; }
+  .sc-home-baza__latest { justify-items: start; text-align: left; padding-left: var(--sc-s-4); }
+}
+/* Przekaz dnia: data i liczba postów w nagłówku, zaraz po znaczku AI. */
+.sc-clinic-kicker .sc-clinic-message__meta { margin-left: var(--sc-s-1); text-transform: none; letter-spacing: 0; font-weight: 500; }
+/* Baza (poprawka): szukanie od tytułu do prawej krawędzi listy materiałów; „Najnowsze materiały” przy prawej ściance paska. */
+@media (min-width: 1100px) {
+  .sc-home-baza__bar { grid-template-columns: auto minmax(0, 1fr) 260px; grid-template-areas: "title search latest"; column-gap: var(--sc-s-6); padding-right: var(--sc-s-5); }
+  .sc-home-baza__search { width: 100%; max-width: none; justify-self: stretch; }
+  .sc-home-baza__search > * { max-width: none; }
+  .sc-home-baza__latest { justify-items: end; text-align: right; padding-left: 0; }
+}
+/* Przekaz dnia: data przy prawej krawędzi nagłówka. */
+.sc-clinic-message > .sc-clinic-kicker { display: flex; align-items: center; gap: var(--sc-s-2); width: 100%; }
+.sc-clinic-message > .sc-clinic-kicker .sc-clinic-message__meta { margin-left: auto; white-space: nowrap; }
+/* === Klinika 27.09: przełącznik spinu, powiększenia, wywiad dnia, politycy z licznikami, archiwum przekazów === */
+.sc-spin-switch { display: grid; gap: var(--sc-s-4); }
+.sc-spin-switch__tabs { display: flex; align-items: center; justify-content: center; gap: var(--sc-s-2); margin: 0; color: var(--sc-text-3); }
+.sc-spin-switch__tabs button { border: 0; background: none; padding: 2px 4px; color: var(--sc-text-3); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; border-bottom: 2px solid transparent; }
+.sc-spin-switch__tabs button[aria-selected="true"] { color: var(--sc-text); border-bottom-color: var(--sc-accent); }
+.sc-clinic-sotd .sc-spin-switch__tabs { color: var(--sc-accent); font-size: var(--sc-t-body-s-size); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; }
+.sc-home-spin__head .sc-spin-switch__tabs { justify-content: flex-start; flex-wrap: wrap; }
+.sc-clinic-message__open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sc-clinic-message__open:hover .sc-clinic-message__text { color: var(--sc-text); text-decoration: underline; text-decoration-color: var(--sc-line); }
+.sc-clinic-dialog { width: min(760px, calc(100vw - 32px)); max-height: min(86vh, 900px); padding: 0; border: 0; border-radius: var(--sc-r-xl); background: var(--sc-surface); color: var(--sc-text); box-shadow: var(--sc-e-3), 0 0 0 1px var(--sc-line); }
+.sc-clinic-dialog::backdrop { background: rgba(0, 0, 0, .6); }
+.sc-clinic-dialog__body { display: grid; gap: var(--sc-s-3); padding: 0 var(--sc-s-6) var(--sc-s-6); max-height: inherit; overflow-y: auto; line-height: 1.6; color: var(--sc-text-2); }
+.sc-clinic-dialog__body p, .sc-clinic-dialog__body ul, .sc-clinic-dialog__body ol { margin: 0; }
+.sc-clinic-dialog__body h3, .sc-clinic-dialog__body h4 { margin: var(--sc-s-3) 0 0; color: var(--sc-text); font-size: var(--sc-t-body-size); }
+.sc-clinic-dialog__head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sc-s-4); padding: var(--sc-s-5) 0 var(--sc-s-2); background: var(--sc-surface); }
+.sc-clinic-dialog__head h2 { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-m-size); line-height: 1.3; }
+.sc-clinic-dialog__close { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--sc-surface-2); color: var(--sc-text); font-size: 22px; line-height: 1; cursor: pointer; }
+.sc-clinic-dialog__lead { color: var(--sc-text); font-size: var(--sc-t-body-size); font-weight: 600; }
+.sc-clinic-dialog__posts { display: grid; gap: var(--sc-s-2); padding: 0; list-style: none; }
+.sc-clinic-dialog__posts li { padding: var(--sc-s-3); border-radius: var(--sc-r-md); background: var(--sc-surface-2); font-size: var(--sc-t-body-s-size); }
+.sc-clinic-dialog__posts a { color: var(--sc-accent); text-decoration: none; }
+.sc-clinic-dialog__note { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-clinic-dialog__note a { color: var(--sc-accent); }
+.sc-interview { display: grid; gap: var(--sc-s-4); padding: var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-accent); }
+.sc-home-interview { padding: 0; box-shadow: none; background: none; }
+.sc-home-interview .sc-interview { padding: var(--sc-s-4) var(--sc-s-5); }
+.sc-interview__top { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sc-s-5); align-items: center; }
+.sc-interview__thumb { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: var(--sc-r-md); overflow: hidden; background: var(--sc-surface-2); }
+.sc-interview__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.sc-interview__thumb span { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 28px; text-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
+.sc-interview__head { display: grid; gap: 6px; min-width: 0; }
+.sc-interview__head .sc-clinic-kicker { display: flex; width: 100%; }
+.sc-interview__head .sc-clinic-message__meta { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--sc-text-3); }
+.sc-interview__head h3 { margin: 0; font-size: var(--sc-t-title-m-size); line-height: 1.3; }
+.sc-interview__head h3 button { padding: 0; border: 0; background: none; color: var(--sc-text); font: inherit; text-align: left; cursor: pointer; }
+.sc-interview__head h3 button:hover { text-decoration: underline; }
+.sc-interview__summary { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-interview__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s-4); }
+.sc-interview__cols article { display: grid; gap: 6px; align-content: start; padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-lg); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-interview__who { margin: 0; color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; }
+.sc-interview__text { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-interview__overall { margin: 0; color: var(--sc-text); font-size: var(--sc-t-body-s-size); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-interview__more { margin: 0; text-align: right; }
+.sc-interview__more button { border: 0; background: none; padding: 0; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
+.sc-interview__sources { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); margin-top: 4px; }
+.sc-interview__sources a { color: var(--sc-accent); font-size: var(--sc-t-caption-size); }
+.sc-politicians, .sc-message-history { display: grid; gap: var(--sc-s-3); }
+.sc-politicians__head h2, .sc-message-history h2 { margin: 0; font-size: var(--sc-t-title-m-size); }
+.sc-politicians__head h2 span, .sc-politicians h3 span { margin-left: var(--sc-s-2); color: var(--sc-accent); }
+.sc-politicians__head p { margin: 4px 0 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-politicians__cols, .sc-message-history__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s-5); }
+.sc-politicians h3, .sc-message-history h3 { margin: 0 0 var(--sc-s-2); padding-bottom: var(--sc-s-2); border-bottom: 1px solid var(--sc-line); font-size: var(--sc-t-body-size); text-align: center; }
+.sc-politicians table { width: 100%; border-collapse: collapse; font-size: var(--sc-t-body-s-size); }
+.sc-politicians th { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-weight: 600; text-align: right; padding: 4px 6px; }
+.sc-politicians th:first-child, .sc-politicians td:first-child { text-align: left; }
+.sc-politicians td { padding: 6px; border-top: 1px solid var(--sc-hairline); text-align: right; font-variant-numeric: tabular-nums; }
+.sc-politicians td:first-child a:last-child { margin-left: 4px; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-politicians td a { color: var(--sc-text); text-decoration: none; }
+.sc-politicians__more { margin: 0; text-align: center; }
+.sc-politicians__more button { border: 0; background: none; color: var(--sc-accent); font: inherit; font-weight: 600; cursor: pointer; }
+.sc-message-history ol { display: grid; gap: var(--sc-s-2); max-height: 420px; overflow-y: auto; margin: 0; padding: 0 var(--sc-s-1) 0 0; list-style: none; scrollbar-width: thin; }
+.sc-message-history li button { display: grid; gap: 2px; width: 100%; padding: var(--sc-s-3); border: 0; border-radius: var(--sc-r-md); background: var(--sc-surface); color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); text-align: left; cursor: pointer; }
+.sc-message-history li button:hover { color: var(--sc-text); }
+.sc-message-history time { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-message-history li span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 760px) {
+  .sc-interview__top, .sc-interview__cols, .sc-politicians__cols, .sc-message-history__cols { grid-template-columns: minmax(0, 1fr); }
+}
+/* Bez poziomych pasków przewijania pod listą Wiadomości dnia i w Bazie. */
+.sc-home-lead__list, .sc-home-baza__results { overflow-x: hidden; }
+/* Strona główna: przełącznik „Spin dnia | Najnowszy” mniejszy, w jednej linii. */
+.sc-home-spin__head .sc-spin-switch__tabs { flex-wrap: nowrap; font-size: var(--sc-t-title-m-size); white-space: nowrap; }
+
+/* Główna: sekcja „Dr. Spin” — tytuł i link po lewej, spin dnia z metką na środku. */
+.sc-home-spin__head .sc-home-spin__open { justify-self: start; margin-top: 2px; }
+.sc-spin-row__badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--sc-accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.sc-home-spin__row { align-items: start; }
+.sc-home-spin__card { align-self: center; }
+
+/* Wywiad dnia (poprawka): większa miniatura, tytuł i podtytuł po dwa wiersze; podsumowanie tylko po powiększeniu. */
+.sc-interview__top { grid-template-columns: 320px minmax(0, 1fr); align-items: start; }
+.sc-interview__head h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--sc-t-title-m-size); }
+.sc-interview__summary { -webkit-line-clamp: 2; }
+.sc-interview__text { -webkit-line-clamp: 3; }
+@media (max-width: 760px) { .sc-interview__top { grid-template-columns: minmax(0, 1fr); } }
+
+/* Główna: sekcja „Dr. Spin” z tym samym elementem co w Klinice (przełącznik + post obok diagnozy). */
+.sc-home-spin__header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--sc-s-2) var(--sc-s-4); }
+.sc-home-spin__header .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-home-spin__header h2 { margin: 0; }
+.sc-home-spin__sotd { padding: var(--sc-s-4) 0 0; background: none; box-shadow: none; }
+
+/* Najnowsze diagnozy: „Rządzący” | tytuł | „Opozycja” w jednej linii nad kolumnami. */
+.sc-clinic-latest__bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: var(--sc-s-4); padding-bottom: var(--sc-s-3); border-bottom: 1px solid var(--sc-line); }
+.sc-clinic-latest__camp { font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); color: var(--sc-text); }
+.sc-clinic-latest__camp:last-child { text-align: right; }
+@media (max-width: 860px) { .sc-clinic-latest__bar { grid-template-columns: minmax(0, 1fr); } .sc-clinic-latest__camp { display: none; } .sc-clinic-column .sc-sr-only { position: static; width: auto; height: auto; clip: auto; margin: 0; font-size: var(--sc-t-title-m-size); } }
+.sc-clinic-latest__camp:first-child { justify-self: start; text-align: left; }
+.sc-clinic-latest__camp:last-child { justify-self: end; }
+
+/* Wywiad dnia: obok miniatury także krótkie podsumowanie rozmowy (do 4 wierszy). */
+.sc-interview__lede { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-interview__summary { color: var(--sc-text); }
+
+/* Główna: sekcja „Wywiad dnia” — tytuł po lewej, box z miniaturą obok (przesunięty w prawo). */
+.sc-home-interview { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sc-s-5); align-items: start; padding: var(--sc-s-4) var(--sc-s-5); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-accent); }
+.sc-home-interview__head { display: grid; gap: 2px; justify-items: start; padding-top: var(--sc-s-2); }
+.sc-home-interview__head .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-home-interview__head h2 { margin: 0; }
+.sc-home-interview .sc-interview { padding: 0; box-shadow: none; background: none; }
+.sc-home-interview .sc-interview__head > .sc-clinic-kicker { display: none; }
+@media (max-width: 900px) { .sc-home-interview { grid-template-columns: minmax(0, 1fr); } }
+/* „Dr. Spin”: mniejszy odstęp między tytułem a przełącznikiem SPIN DNIA | NAJNOWSZY SPIN. */
+.sc-home-spin__sotd { padding-top: 0; margin-top: calc(var(--sc-s-3) * -1); }
+.sc-home-spin__sotd .sc-spin-switch { gap: var(--sc-s-3); }
+
+.sc-home-interview__head .sc-home-spin__open { justify-self: start; margin-top: var(--sc-s-2); }
+.sc-home-interview__head .sc-home-spin__meta { margin: 2px 0 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+
+/* ==========================================================================================
+   Spójny styl (27.09): jeden panel dla wszystkich sekcji, akcent tylko na drobnych elementach.
+   Panel = tło powierzchni, cienka neutralna ramka, promień 2xl, te same odstępy.
+   Niebieski zostaje dla napisów nad tytułami, aktywnych zakładek, metek i linków — bez poświaty ramek.
+   ========================================================================================== */
+:root { --sc-panel-ring: 0 0 0 1px var(--sc-line); --sc-panel-pad: var(--sc-s-5) var(--sc-s-6); }
+.sc-home-band-surface, .sc-home-spin, .sc-home-interview, .sc-home-threads__bar, .sc-home-threads .sc-strip-row,
+.sc-home-baza__bar, .sc-clinic-sotd, .sc-clinic > .sc-interview, .sc-scale, .sc-clinic-journalists,
+.sc-politicians, .sc-message-history {
+  border: 0; border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring);
+}
+.sc-home-band-surface, .sc-home-spin, .sc-home-interview, .sc-clinic-sotd, .sc-clinic > .sc-interview, .sc-scale,
+.sc-clinic-journalists, .sc-politicians, .sc-message-history { padding: var(--sc-panel-pad); }
+.sc-clinic-journalists { background: linear-gradient(135deg, var(--sc-accent-soft), var(--sc-surface) 70%); }
+/* Karty wewnątrz paneli: ta sama cienka ramka, mniejszy promień, bez własnego cienia. */
+.sc-clinic-message, .sc-interview__cols article, .sc-clinic-source { border-radius: var(--sc-r-lg); box-shadow: var(--sc-panel-ring); }
+.sc-home-spin__messages .sc-clinic-message, .sc-clinic-split .sc-clinic-message { background: transparent; }
+.sc-clinic-split::before, .sc-home-spin__messages::before { display: none; }
+.sc-clinic-split { gap: var(--sc-s-4); }
+/* Rytm pionowy: te same odstępy między sekcjami na głównej i w Klinice. */
+.sc-clinic { gap: var(--sc-s-6); }
+.sc-home-spin, .sc-home-interview { gap: var(--sc-s-4); }
+/* Post w spinie dnia: najwyżej ~16 wierszy, reszta po najechaniu (przewijanie) — panel nie rośnie bez końca. */
+.sc-clinic-sotd__post blockquote { max-height: 26rem; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent); }
+.sc-clinic-sotd__post blockquote:hover { overflow-y: auto; -webkit-mask-image: none; mask-image: none; scrollbar-width: thin; }
+/* Nagłówki sekcji: jeden wzór — mały napis nad tytułem, tytuł, meta po prawej. */
+.sc-politicians__head h2, .sc-message-history h2, .sc-scale__title { font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+@media (max-width: 760px) {
+  :root { --sc-panel-pad: var(--sc-s-4); }
+}
+/* Główna: element spinu dnia wewnątrz panelu „Dr. Spin” — bez drugiej ramki. */
+.sc-home-spin .sc-home-spin__sotd { padding: 0; margin-top: 0; box-shadow: none; background: none; border-radius: 0; }
+/* O nas: ten sam styl paneli co reszta — bez niebieskiej poświaty; kroki Kliniki w dwóch kolumnach (czytelniej w wąskiej kolumnie tekstu). */
+.sc-onas-phase, .sc-onas-phase[data-current] { border: 0; border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-onas-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sc-onas-flow li:not(:last-child)::after { display: none; }
+@media (max-width: 640px) { .sc-onas-flow { grid-template-columns: minmax(0, 1fr); } }
+
+/* Dr. Spin na głównej: tytuł, zakładki i link w jednej linii; post zaraz pod nią. */
+.sc-spin-switch__bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: var(--sc-s-4); }
+.sc-spin-switch__bar .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-spin-switch__bar h2 { margin: 0; }
+.sc-spin-switch__bar .sc-spin-switch__tabs { padding-bottom: 4px; }
+.sc-spin-switch__right { display: flex; justify-content: flex-end; }
+.sc-spin-switch__right .sc-home-spin__meta { margin: 0; padding-bottom: 6px; text-align: right; }
+.sc-home-spin__sotd .sc-spin-switch { gap: var(--sc-s-3); }
+@media (max-width: 760px) { .sc-spin-switch__bar { grid-template-columns: minmax(0, 1fr); align-items: start; } .sc-spin-switch__right { justify-content: flex-start; } }
+.sc-message-history > h2 { text-align: center; }
+/* Autor posta: zdjęcie i nazwa po lewej, metka partii większa w prawym rogu tego samego paska. */
+.sc-spin-author__party { margin-left: auto; flex: none; }
+.sc-spin-author__party .sc-party { height: 30px; min-width: 3.4rem; padding: 0 10px; border-radius: 8px; font-size: 13px; }
+.sc-spin-author__party .sc-party--none { display: none; }
+.sc-spin-author__text { min-width: 0; }
+.sc-spin-author { width: 100%; }
+
+/* Dostępność (audyt 27.09): cele dotyku co najmniej 24 px (WCAG 2.2), zakładki spinu wyższe. */
+.sc-btn[data-size="sm"] { min-height: 28px; }
+.sc-spin-switch__tabs button { min-height: 32px; padding-inline: var(--sc-s-2); }
+.sc-site-header nav a { min-height: 32px; display: inline-flex; align-items: center; }
+
+/* Wywiad dnia na głównej: „Pełna analiza ze źródłami” w nagłówku zamiast linku do Kliniki; box bez dolnej linii. */
+.sc-home-interview__more { border: 0; background: none; padding: 0; font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; color: var(--sc-accent); cursor: pointer; text-align: left; }
+.sc-home-interview .sc-interview { gap: var(--sc-s-3); }
+
+/* Spin dnia | Najnowszy spin: aktywna zakładka niebieska, nieaktywna w kolorze tekstu — bez podkreślenia. */
+.sc-spin-switch__tabs button { border-bottom: 0; color: var(--sc-text); transition: color .15s; }
+.sc-spin-switch__tabs button[aria-selected="true"] { color: var(--sc-accent); }
+.sc-spin-switch__tabs button[aria-selected="false"]:hover { color: var(--sc-accent); }
+.sc-spin-switch__tabs > span { color: var(--sc-text-3); }
+
+/* Wywiad dnia w Klinice: „Pełna analiza ze źródłami” pod miniaturą, do lewej. */
+.sc-interview__media { display: grid; gap: var(--sc-s-3); align-content: start; }
+.sc-interview__media .sc-interview__more { text-align: left; }
+
+/* Telefon: paski przewijają się wyłącznie w poziomie. Pionowy ruch palca przewija stronę, a nie pasek,
+   i sama strona nigdy nie przesuwa się na boki. */
+html, body { overflow-x: clip; }
+.sc-strip__scroller, .sc-news-strip__track, .sc-personal-strip__track, .sc-top-ten__track, .sc-surface__related-track,
+.sc-dr-spin__related, .sc-external-results__cards, .sc-search-links > div, .sc-morph-strip, .sc-material-waterfall__scroll,
+.sc-editor-timeline, .sc-motion-strip-tiles, .sc-carousel__scroller {
+  overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y;
+}
+@media (max-width: 760px) {
+  .sc-strip__scroller, .sc-news-strip__track, .sc-personal-strip__track, .sc-top-ten__track, .sc-surface__related-track,
+  .sc-dr-spin__related, .sc-external-results__cards, .sc-search-links > div { scroll-snap-type: x mandatory; }
+}
+/* Na dotyku bez przeciągania pasków (uchwyt łapał każdy ruch palca) — kolejność zmienia się na komputerze. */
+@media (pointer: coarse), (max-width: 760px) { .sc-strip-handle { display: none; } }

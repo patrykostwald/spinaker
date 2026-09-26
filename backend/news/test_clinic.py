@@ -13,6 +13,13 @@ from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure
 POST_TEXT = 'Rząd podniósł podatki o 50 procent. Tylko my obronimy Polaków!'
 
 
+def at_hour(monkeypatch, hour, minute=0):
+    """Ustala porę dnia dla Kliniki (diagnozy tylko w dzień, tempo zależy od godziny)."""
+    moment = timezone.localtime().replace(hour=hour, minute=minute, second=0, microsecond=0)
+    monkeypatch.setattr(clinic, 'local_now', lambda: moment)
+    return moment
+
+
 def account(camp='opposition', handle='posel_test', user_id='101'):
     return PoliticalAccount.objects.create(user_id=user_id, handle=handle, display_name='Poseł Test', camp=camp, enabled=True)
 
@@ -38,6 +45,15 @@ def ai_on(monkeypatch):
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 90, 'reason': 'konkretne twierdzenie', 'provider': 'groq', 'model': 'm'})
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    monkeypatch.setattr(clinic_ai, 'x_thread', x_thread_unavailable)
+    at_hour(monkeypatch, 12)
+
+
+def x_thread_unavailable(diagnosis):
+    raise clinic_ai.ClinicAIError('free_models_unavailable')
+
+
+ORIGINAL_X_THREAD = clinic_ai.x_thread
 
 
 def pipeline():
@@ -285,6 +301,7 @@ def test_auto_mode_publishes_and_fills_the_daily_quota_from_flagged(monkeypatch)
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
     monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    at_hour(monkeypatch, 12)
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 55, 'reason': 'teza', 'provider': 'groq', 'model': 'm'})
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
     post(account())
@@ -294,3 +311,207 @@ def test_auto_mode_publishes_and_fills_the_daily_quota_from_flagged(monkeypatch)
     row = SpinDiagnosis.objects.get()
     assert row.status == 'approved' and row.reviewed_by_id is None
     assert APIClient().get(f'/api/clinic/spins/{row.pk}/').json()['auto_published'] is True
+
+
+@pytest.mark.django_db
+def test_failures_do_not_use_the_daily_quota_but_a_series_of_them_stops_spending(ai_on, monkeypatch):
+    def broken(context):
+        raise clinic_ai.ClinicAIError('api_404: model not found')
+    monkeypatch.setattr(clinic_ai, 'diagnose', broken)
+    monkeypatch.setenv('CLINIC_DAILY_FAILURE_LIMIT', '2')
+    acc = account()
+    for index in range(4):
+        post(acc, post_id=str(9100 + index))
+    clinic.run_screening()
+    clinic.run_diagnoses(limit=2)
+    assert clinic.failures_today() == 2 and clinic.diagnoses_today() == 0
+    assert SpinDiagnosis.objects.filter(status='failed').first().error.startswith('api_404: model not found')
+    assert clinic.run_diagnoses(limit=2) == {'status': 'too_many_failures', 'failed_today': 2}
+    assert SpinDiagnosis.objects.filter(status='queued').count() == 2
+
+
+@pytest.mark.django_db
+def test_no_diagnoses_at_night_and_the_quota_is_spread_over_the_day(ai_on, monkeypatch):
+    acc = account()
+    for index in range(10):
+        post(acc, post_id=str(9200 + index))
+    clinic.run_screening()
+    at_hour(monkeypatch, 3)
+    assert clinic.run_diagnoses() == {'status': 'night'}
+    at_hour(monkeypatch, 8)
+    clinic.run_diagnoses()
+    clinic.run_diagnoses()
+    # O 8:00 minęła 1/16 dnia: z 19 zwykłych diagnoz należą się 2 — nie cały limit naraz.
+    assert clinic.diagnoses_today() == 2
+
+
+@pytest.mark.django_db
+def test_evening_slot_goes_to_the_most_popular_post_and_it_becomes_spin_of_the_day(ai_on, monkeypatch):
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
+    small, big = account(handle='maly', user_id='201'), account(handle='duzy', user_id='202', camp='government')
+    quiet = post(small, post_id='9301', hours_ago=2)
+    loud = post(big, post_id='9302', hours_ago=2)
+    PoliticalPost.objects.filter(pk=loud.pk).update(author_data={'public_metrics': {'followers_count': 900000}},
+                                                    source_data={'public_metrics': {'like_count': 500}})
+    PoliticalPost.objects.filter(pk=quiet.pk).update(author_data={'public_metrics': {'followers_count': 800}})
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 50, 'reason': 'r', 'provider': 'groq', 'model': 'm'})
+    clinic.run_screening()
+    evening = at_hour(monkeypatch, 18, 5)
+    # Posty z tego samego dnia co „teraz” testu — niezależnie od godziny uruchomienia (też tuż po północy).
+    PoliticalPost.objects.update(published_at=evening - timedelta(hours=2))
+    monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis(intensity=30))
+    clinic.run_diagnoses(limit=0)
+    featured = clinic.featured_today()
+    assert featured.post_id == loud.pk and featured.status == 'approved'
+    assert clinic.spin_of_day()['id'] == featured.pk
+
+
+@pytest.mark.django_db
+def test_only_fresh_posts_are_diagnosed(ai_on):
+    acc = account()
+    old = post(acc, post_id='9401', hours_ago=40)
+    new = post(acc, post_id='9402', hours_ago=2)
+    clinic.run_screening()
+    clinic.run_diagnoses()
+    assert SpinDiagnosis.objects.get(post=new).status == 'pending_review'
+    assert SpinDiagnosis.objects.get(post=old).status == 'queued'
+
+
+def test_daily_message_input_fits_the_free_model_limit():
+    posts = [{'author': f'Poseł {i % 30}', 'text': 'Bardzo długi wpis o podatkach. ' * 40} for i in range(60)]
+    text = clinic_ai._daily_input('opozycja', '2026-09-26', posts)
+    assert len(text) <= clinic_ai.DAILY_INPUT_CHARS
+    assert 'Poseł 29' in text  # każdy autor trafia do wejścia, zanim ktokolwiek dostanie drugi wpis
+
+
+def test_daily_message_in_english_is_retried_and_then_rejected(monkeypatch):
+    answers = iter([({'message': 'Opposition stresses high fuel prices and the budget deficit.', 'themes': ['Fuel prices']}, 'm'),
+                    ({'message': 'Opozycja podkreśla wysokie ceny paliw i deficyt budżetowy.', 'themes': ['ceny paliw']}, 'm')])
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: next(answers))
+    result = clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': 'x'}])
+    assert result['message'].startswith('Opozycja')
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: ({'message': 'Only English here.', 'themes': []}, 'm'))
+    with pytest.raises(clinic_ai.ClinicAIError):
+        clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': 'x'}])
+
+
+@pytest.mark.django_db
+def test_interview_pipeline_keeps_only_quotes_from_the_transcript(monkeypatch):
+    from news import clinic_interview
+    from news.clinic_models import ClinicInterview
+    monkeypatch.setattr(clinic_interview, '_oembed', lambda url: {'title': 'Kropka nad i', 'author_name': 'TVN24', 'thumbnail_url': 'https://i.ytimg.com/x.jpg'})
+    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url: ({'guest_name': 'Jan Kowalski', 'host_name': 'Anna Nowak', 'segments': [
+        {'time': '01:05', 'speaker': 'guest', 'text': 'Podatki spadły o połowę, to nasz sukces.'},
+        {'time': '02:10', 'speaker': 'host', 'text': 'Ale dane GUS mówią co innego.'}]
+        + [{'time': f'1{i}:00', 'speaker': who, 'text': 'Dalsza część rozmowy o budżecie.'} for i in range(6) for who in ('host', 'guest')]},
+        {'model': 'gemini'}))
+
+    def fake_call(system, user, schema, **kwargs):
+        return SimpleNamespace(content=[], stop_reason='end_turn', usage=None, model='claude-opus-5')
+    monkeypatch.setattr(clinic_ai, '_call', fake_call)
+    monkeypatch.setattr(clinic_ai, '_json_from_text', lambda blocks: {
+        'headline': 'H', 'summary': 'S', 'overall': 'O', 'limitations': '',
+        'guest': {'verdict': 'spin', 'intensity': 70, 'summary': 'g', 'claims': [],
+                  'techniques': [{'name': 'wybiórczość', 'quote': 'Podatki spadły o połowę', 'time': '01:05', 'explanation': 'e'},
+                                 {'name': 'zmyślony', 'quote': 'Tego nie powiedział', 'time': '03:00', 'explanation': 'e'}]},
+        'host': {'summary': 'h', 'notes': [{'name': 'dopytanie', 'quote': 'dane GUS mówią co innego', 'time': '02:10', 'explanation': 'e'}]}})
+    interview = clinic_interview.process(clinic_interview.queue_interview('https://youtu.be/abcdefghijk'))
+    assert interview.status == 'approved' and interview.title == 'Kropka nad i'
+    assert [t['quote'] for t in interview.guest_analysis['techniques']] == ['Podatki spadły o połowę']
+    assert interview.guest_analysis['techniques'][0]['seconds'] == 65
+    data = clinic.clinic_page_data()
+    assert data['interview']['host']['notes'][0]['time'] == '02:10'
+    assert ClinicInterview.objects.count() == 1
+    with pytest.raises(ValueError):
+        clinic_interview.queue_interview('https://example.com/video')
+
+
+@pytest.mark.django_db
+def test_spin_of_day_is_the_strongest_today_and_latest_is_the_newest(ai_on, monkeypatch):
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
+    acc = account()
+    strong, newer = post(acc, post_id='9501', hours_ago=3), post(acc, post_id='9502', hours_ago=1)
+    # Oba posty z „dzisiaj” w czasie testu (12:00) — wynik nie zależy od godziny uruchomienia.
+    noon = clinic.local_now()
+    PoliticalPost.objects.filter(pk=strong.pk).update(published_at=noon - timedelta(hours=3))
+    PoliticalPost.objects.filter(pk=newer.pk).update(published_at=noon - timedelta(hours=1))
+    clinic.run_screening()
+    intensities = iter([90, 40])
+    monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis(intensity=next(intensities)))
+    for row in SpinDiagnosis.objects.order_by('post__published_at'):
+        clinic.diagnose(row)
+    assert clinic.spin_of_day()['intensity'] == 90
+    assert clinic.latest_spin()['post']['id'] == newer.post_id
+
+
+
+@pytest.mark.django_db
+def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
+    from news import clinic_interview
+    monkeypatch.setenv('CLINIC_INTERVIEW_ENABLED', 'true')
+    monkeypatch.setenv('GEMINI_API_KEY', 'g')
+    monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'k')
+    monkeypatch.setenv('CLINIC_INTERVIEW_CHANNELS', '@kanal')
+    videos = {
+        'aaaaaaaaaaa': ('Wywiad: premier Tusk o budżecie', 'PT45M', 90000),        # najważniejszy polityk: 90k × 3
+        'bbbbbbbbbbb': ('Rozmowa z posłem Nowakiem', 'PT30M', 100000),             # mniej znany i za cichy — odpada
+        'ccccccccccc': ('Zapowiedź: Tusk w rozmowie już dziś', 'PT1M', 900000),    # zapowiedź — za krótka
+        'ddddddddddd': ('Żurek broni Wałęsy — komentarz Mazurka', 'PT20M', 500000),  # klasyfikator: monolog
+    }
+
+    def fake_yt(path, **params):
+        if path == 'channels':
+            return {'items': [{'id': 'UC1'}]}
+        if path == 'search':
+            return {'items': [{'id': {'videoId': vid}, 'snippet': {'title': title, 'description': 'rozmowa', 'channelTitle': 'Kanał'}}
+                              for vid, (title, _, _) in videos.items()]}
+        return {'items': [{'id': vid, 'contentDetails': {'duration': duration}, 'statistics': {'viewCount': str(views)}}
+                          for vid, (_, duration, views) in videos.items() if vid in params['id']]}
+    monkeypatch.setattr(clinic_interview, '_yt', fake_yt)
+    monkeypatch.setattr(clinic_interview, 'looks_like_interview', lambda title, description, channel: ('Mazurka' not in title, ''))
+    result = clinic_interview.pick_yesterday()
+    assert result['status'] == 'queued' and 'Tusk' in result['title'] and result['top_politician']
+    assert clinic_interview.pick_yesterday()['status'] == 'already_chosen'
+
+
+@pytest.mark.django_db
+def test_monologue_is_rejected_before_paying_for_the_diagnosis(monkeypatch):
+    from news import clinic_interview
+    monkeypatch.setattr(clinic_interview, '_oembed', lambda url: {})
+    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url: ({'guest_name': 'Lech Wałęsa', 'host_name': 'Robert Mazurek', 'segments':
+        [{'time': f'0{i}:00', 'speaker': 'host', 'text': 'Długi komentarz prowadzącego. ' * 20} for i in range(9)]
+        + [{'time': '09:30', 'speaker': 'guest', 'text': 'Krótki cytat.'}]}, {'model': 'gemini'}))
+    paid = []
+    monkeypatch.setattr(clinic_interview, 'diagnose_transcript', lambda meta, transcript: paid.append(1))
+    interview = clinic_interview.process(clinic_interview.queue_interview('https://youtu.be/abcdefghijk'))
+    assert interview.status == 'not_applicable' and interview.error.startswith('nie_wywiad') and not paid
+
+
+
+@pytest.mark.django_db
+def test_interview_is_processed_only_once(monkeypatch):
+    from news import clinic_interview
+    interview = clinic_interview.queue_interview('https://youtu.be/abcdefghijk')
+    assert clinic_interview.claim(interview) is True
+    assert clinic_interview.claim(interview) is False
+    assert clinic_interview.queue_interview('https://youtu.be/abcdefghijk').status == clinic_interview.IN_PROGRESS
+
+
+
+@pytest.mark.django_db
+def test_x_thread_synthesis_is_saved_once_and_rejects_english(ai_on, monkeypatch):
+    post(account())
+    pipeline()
+    diagnosis = SpinDiagnosis.objects.get()
+    assert diagnosis.x_thread == []  # darmowy model niedostępny — diagnoza i tak zapisana
+    answers = [{'lead': 'The post blames the government.', 'points': ['One point here.', 'Another point here.']},
+               {'lead': 'Wpis przypisuje rządowi intencje bez dowodu.',
+                'points': ['Technika: fałszywa alternatywa — „Tylko my obronimy Polaków!”.', 'Twierdzenie o podatkach nie ma źródła w diagnozie.']}]
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: (answers.pop(0), 'm'))
+    monkeypatch.setattr(clinic_ai, 'x_thread', ORIGINAL_X_THREAD)
+    assert clinic.ensure_x_thread(diagnosis) is True
+    diagnosis.refresh_from_db()
+    assert diagnosis.x_thread[0] == 'Wpis przypisuje rządowi intencje bez dowodu.' and len(diagnosis.x_thread) == 3
+    assert diagnosis.verdict == 'spin' and diagnosis.intensity == 70  # synteza nie zmienia diagnozy
+    assert clinic.ensure_x_thread(diagnosis) is False  # tylko raz

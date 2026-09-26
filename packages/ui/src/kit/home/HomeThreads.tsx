@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Nitki użytkownika — do pięciu własnych nitek newsowych (pasków informacyjnych):
+ * Nitki użytkownika — do pięciu własnych pasków „Twoje wiadomości”:
  * pasek konfiguracji (wyśrodkowany: hasło · kategoria · źródło + „+ Dodaj pasek”), a pod nim
  * do {@link MAX_PERSONAL_STRIPS} własnych nitek — każda to filtr hasło/kategoria/źródło nad
  * `/api/portal/news`, zapis lokalny, kolejność przeciągana za uchwyt (`ReorderableStrips`).
@@ -150,27 +150,16 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
   const rows = useMemo(() => strips.map((strip) => ({ id: strip.id, title: strip.label, strip })), [strips]);
 
   return (
-    <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Twoje nitki newsowe">
-      <header className="sc-home-section__head">
-        <h2 className="sc-t-title-l sc-home-section__title">Twoje nitki newsowe</h2>
-        <p className="sc-t-meta sc-text-2" aria-live="polite">
-          {strips.length} / {MAX_PERSONAL_STRIPS}
-        </p>
-      </header>
-
+    <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Twoje wiadomości">
+      {/* Jeden pasek: tytuł · podpowiedź z licznikiem · przyciski. Formularz nowego paska pojawia się pod nim. */}
       <div className="sc-home-threads__config">
-        {adding && !atLimit ? (
-          <StripForm
-            sources={sources}
-            onSave={saveNew}
-            onCancel={() => setAdding(false)}
-          />
-        ) : (
-          <div className="sc-home-threads__bar">
-            <p className="sc-t-body-s sc-text-2">
-              {atLimit ? `Masz już ${MAX_PERSONAL_STRIPS} nitek — usuń jedną, aby dodać kolejną.` : "Dopasuj własny pasek: hasło, kategoria lub źródło."}
-            </p>
-            <div className="sc-home-pills">
+        <header className="sc-home-threads__bar">
+          <h2 className="sc-t-title-l sc-home-section__title">Twoje wiadomości</h2>
+          <p className="sc-t-body-s sc-text-2 sc-home-threads__hint" aria-live="polite">
+            {atLimit ? `Masz już ${MAX_PERSONAL_STRIPS} paski — usuń jeden, aby dodać kolejny.` : "Dopasuj własny pasek: hasło, kategoria lub źródło."}
+            <span className="sc-home-threads__count">{strips.length} / {MAX_PERSONAL_STRIPS}</span>
+          </p>
+          <div className="sc-home-pills">
               {["Hasło", "Kategoria", "Źródło"].map((label) => (
                 <Button key={label} variant="quiet" shape="pill" size="sm" disabled={atLimit} onClick={startAdding}>
                   {label}
@@ -179,9 +168,15 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
               <Button variant="secondary" size="sm" disabled={atLimit} onClick={startAdding}>
                 + Dodaj pasek
               </Button>
-            </div>
           </div>
-        )}
+        </header>
+        {adding && !atLimit ? (
+          <StripForm
+            sources={sources}
+            onSave={saveNew}
+            onCancel={() => setAdding(false)}
+          />
+        ) : null}
       </div>
 
       {rows.length > 0 ? (

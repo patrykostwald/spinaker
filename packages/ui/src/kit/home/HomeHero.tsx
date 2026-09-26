@@ -1,20 +1,18 @@
 "use client";
 
 /**
- * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.png`) jako niskie tło, a na niej
+ * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.webp`) jako niskie tło, a na niej
  * jedno zdanie o trzech częściach serwisu, linki i „Wesprzyj nas”. Zastępuje wysoki baner, który
- * spychał wiadomości pod linię przewijania. Czytelnik może pas ukryć — zapamiętujemy to na urządzeniu.
+ * spychał wiadomości pod linię przewijania. Pas jest stały — nie da się go ukryć.
  */
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "../Button";
-import { CloseIcon } from "../icons";
 import { THREADS_ENABLED } from "../../lib/features";
 
 type DayPeriod = "morning" | "afternoon" | "evening";
 type ThemeName = "dark" | "light";
-const HIDDEN_KEY = "sc-home-intro";
 
 function currentPeriod(): DayPeriod {
   const hour = new Date().getHours();
@@ -29,30 +27,24 @@ function readTheme(): ThemeName {
 }
 
 export function HomeHero() {
-  const [period, setPeriod] = useState<DayPeriod>("morning");
-  const [theme, setTheme] = useState<ThemeName>("dark");
-  const [hidden, setHidden] = useState(false);
+  // Pora dnia i motyw znamy dopiero w przeglądarce — do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
+  const [period, setPeriod] = useState<DayPeriod | null>(null);
+  const [theme, setTheme] = useState<ThemeName | null>(null);
 
   useEffect(() => {
     setPeriod(currentPeriod());
     setTheme(readTheme());
-    try { setHidden(localStorage.getItem(HIDDEN_KEY) === "hidden"); } catch {}
+    // Dawny przycisk „ukryj” zapisywał to na urządzeniu — sprzątamy, pas wraca u wszystkich.
+    try { localStorage.removeItem("sc-home-intro"); } catch {}
     const observer = new MutationObserver(() => setTheme(readTheme()));
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => observer.disconnect();
   }, []);
 
-  if (hidden) return null;
-
-  function hide() {
-    setHidden(true);
-    try { localStorage.setItem(HIDDEN_KEY, "hidden"); } catch {}
-  }
-
   return (
     <section className="sc-home-intro" aria-label="Czym jest spin.clinic">
       {/* eslint-disable-next-line @next/next/no-img-element -- ilustracja z /public, bez optymalizacji (images.unoptimized) */}
-      <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.png`} alt="" />
+      {theme && period ? <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.webp`} alt="" decoding="async" /> : null}
       <div className="sc-home-intro__content">
         <p className="sc-home-intro__title">
           Wiadomości ze źródłami. <span>Diagnozy spinu polityków.</span>
@@ -65,7 +57,6 @@ export function HomeHero() {
       </div>
       <div className="sc-home-intro__actions">
         <Button href="/wsparcie" variant="primary" size="sm">Wesprzyj nas</Button>
-        <Button shape="icon" variant="ghost" size="sm" aria-label="Ukryj pas powitalny" onClick={hide} iconStart={<CloseIcon size={16} />} />
       </div>
     </section>
   );
