@@ -116,7 +116,7 @@ def _oembed(url: str) -> dict:
 
 def transcribe(url: str) -> tuple[dict, dict]:
     """Gemini czyta publiczny film po linku i zwraca transkrypcję (JSON) oraz zużycie."""
-    model = os.environ.get('CLINIC_INTERVIEW_MODEL', '').strip() or 'gemini-2.5-flash'
+    model = os.environ.get('CLINIC_INTERVIEW_MODEL', '').strip() or 'gemini-3.8-flash'
     body = {
         'contents': [{'parts': [{'file_data': {'file_uri': url}}, {'text': TRANSCRIPT_PROMPT}]}],
         'generationConfig': {'responseMimeType': 'application/json', 'responseSchema': TRANSCRIPT_SCHEMA,
