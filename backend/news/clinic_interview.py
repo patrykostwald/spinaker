@@ -24,9 +24,10 @@ logger = logging.getLogger(__name__)
 
 YOUTUBE_ID = re.compile(r'(?:youtube\.com/(?:watch\?(?:.*&)?v=|live/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{11})')
 TRANSCRIPT_CHARS = 120_000
+IN_PROGRESS = 'pending_review'  # dla wywiadów: „w trakcie opracowania” (transkrypcja + diagnoza)
 
 TRANSCRIPT_PROMPT = """Przygotuj wierną transkrypcję tej rozmowy po polsku. Rozpoznaj prowadzącego (dziennikarza)
-i gościa (polityka). Każdy fragment: czas od początku filmu (MM:SS albo H:MM:SS), kto mówi („guest” albo „host”)
+i gościa (polityka); guest_role to jedna krótka, obecna funkcja (np. „europoseł KO”, do 40 znaków). Każdy fragment: czas od początku filmu (MM:SS albo H:MM:SS), kto mówi („guest” albo „host”)
 i dosłowna treść. Nie streszczaj i nie oceniaj — tylko transkrypcja. Pomiń reklamy i czołówkę."""
 
 TRANSCRIPT_SCHEMA = {
@@ -231,6 +232,9 @@ def queue_interview(url: str, day=None, user=None) -> ClinicInterview:
     if not vid:
         raise ValueError('not_youtube')
     day = day or (timezone.localdate() - timedelta(days=1))
+    existing = ClinicInterview.objects.filter(video_id=vid).first()
+    if existing and existing.status == IN_PROGRESS:
+        return existing  # właśnie się opracowuje — nie zaczynamy drugi raz
     interview, _ = ClinicInterview.objects.update_or_create(video_id=vid, defaults={
         'url': f'https://www.youtube.com/watch?v={vid}', 'day': day, 'status': 'queued', 'error': '', 'created_by': user})
     return interview
@@ -244,7 +248,7 @@ def process(interview: ClinicInterview) -> ClinicInterview:
     try:
         transcript_data, gemini_usage = transcribe(interview.url)
         interview.guest_name = str(transcript_data.get('guest_name', ''))[:200]
-        interview.guest_role = str(transcript_data.get('guest_role', ''))[:200]
+        interview.guest_role = str(transcript_data.get('guest_role', '')).split(',')[0].strip()[:60]
         interview.host_name = str(transcript_data.get('host_name', ''))[:200]
         interview.transcript = transcript_text(transcript_data)
         dialogue, why = is_dialogue(transcript_data)
@@ -287,11 +291,22 @@ def rediagnose(interview: ClinicInterview) -> ClinicInterview:
     return interview
 
 
+def claim(interview: ClinicInterview) -> bool:
+    """Zajmuje wywiad do opracowania (queued → w trakcie). Tylko jeden proces może go przetwarzać —
+    inaczej ręczne --now i automat co 10 minut zapłaciłyby dwa razy i nadpisały sobie wyniki."""
+    taken = ClinicInterview.objects.filter(pk=interview.pk, status='queued').update(status=IN_PROGRESS)
+    if taken:
+        interview.status = IN_PROGRESS
+    return bool(taken)
+
+
 def run_interviews(limit: int = 1) -> dict:
     if not enabled():
         return {'status': 'disabled'}
     done = {}
     for interview in ClinicInterview.objects.filter(status='queued').order_by('created_at')[:limit]:
+        if not claim(interview):
+            continue
         process(interview)
         done[interview.pk] = interview.status
         if interview.status == 'not_applicable' and interview.day == timezone.localdate() - timedelta(days=1):

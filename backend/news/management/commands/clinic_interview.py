@@ -40,6 +40,8 @@ class Command(BaseCommand):
         if now:
             if not clinic_interview.enabled():
                 raise CommandError('Wyłączone: ustaw CLINIC_INTERVIEW_ENABLED=true, GEMINI_API_KEY, CLINIC_AI_ENABLED i ANTHROPIC_API_KEY.')
+            if not clinic_interview.claim(interview):
+                raise CommandError('Ten wywiad właśnie się opracowuje (automat albo inne okno) — poczekaj kilka minut.')
             interview = clinic_interview.process(interview)
             self.stdout.write(f'Status: {interview.status} {interview.error}'.strip())
             if interview.status == 'approved':

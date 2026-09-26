@@ -472,3 +472,14 @@ def test_monologue_is_rejected_before_paying_for_the_diagnosis(monkeypatch):
     monkeypatch.setattr(clinic_interview, 'diagnose_transcript', lambda meta, transcript: paid.append(1))
     interview = clinic_interview.process(clinic_interview.queue_interview('https://youtu.be/abcdefghijk'))
     assert interview.status == 'not_applicable' and interview.error.startswith('nie_wywiad') and not paid
+
+
+
+@pytest.mark.django_db
+def test_interview_is_processed_only_once(monkeypatch):
+    from news import clinic_interview
+    interview = clinic_interview.queue_interview('https://youtu.be/abcdefghijk')
+    assert clinic_interview.claim(interview) is True
+    assert clinic_interview.claim(interview) is False
+    assert clinic_interview.queue_interview('https://youtu.be/abcdefghijk').status == clinic_interview.IN_PROGRESS
+
