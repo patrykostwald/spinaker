@@ -47,7 +47,7 @@ const PUBLISHER_TERMS = [
 ].join('\n');
 
 const PARTS = [
-  { href: '/', name: 'Źródła', status: 'działa · beta', text: 'Wiadomości mediów i instytucji publicznych. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — w Wiadomościach dnia, na paskach newsowych i w Bazie z wyszukiwarką.' },
+  { href: '/', name: 'Wiadomości', status: 'działa · beta', text: 'Wiadomości mediów i instytucji publicznych. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — w Wiadomościach dnia, na paskach newsowych i w Bazie z wyszukiwarką.' },
   { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Dr. Spin (AI) ocenia posty polityków z X i najważniejszy wywiad dnia: techniki perswazji z cytatami, twierdzenia ze źródłami. Rządzący i opozycja według tych samych zasad.' },
   { href: '#fazy', name: 'Nitki', status: 'faza II', text: 'Miejsce dla czytelników: wyjaśniasz spin sam — układasz nitkę kontekstową z materiałów z naszej Bazy albo dodanych przez link, z reakcjami i komentarzami.' },
 ];
@@ -92,7 +92,7 @@ const PHASES: Phase[] = [
     title: 'Wiadomości i Klinika',
     lead: 'To, co działa już dziś. Funkcje oznaczone jako „beta” są dostępne, ale wciąż je rozwijamy.',
     features: [
-      { text: 'Źródła: Wiadomości dnia, Baza z wyszukiwarką i filtrami, do pięciu własnych pasków „Twoje wiadomości” zapisanych na urządzeniu', status: 'beta' },
+      { text: 'Wiadomości: Wiadomości dnia, Baza z wyszukiwarką i filtrami, do pięciu własnych pasków „Twoje wiadomości” zapisanych na urządzeniu', status: 'beta' },
       { text: 'box materiału z osią czasu i powiązanymi materiałami', status: 'beta' },
       { text: 'Klinika spinu: strażnik postów, diagnozy AI, spin dnia i najnowszy spin, waga spinu, liczniki przy każdym polityku', status: 'beta' },
       { text: 'przekaz dnia obu obozów z pełną analizą, postami źródłowymi i archiwum', status: 'beta' },
@@ -238,7 +238,7 @@ export default function AboutPage() {
           </p>
         </section>
 
-        <Section id="o-nas" index={2} kicker="O nas" title="Źródła i Klinika" level={1}>
+        <Section id="o-nas" index={2} kicker="O nas" title="Wiadomości i Klinika" level={1}>
           <div className="sc-onas-prose">
             <p className="sc-onas-lead">
               spin.clinic to agregator wiadomości ze źródłami i weryfikator spinów polityków. W kolejnej fazie dołączy trzecia część — miejsce, w którym czytelnicy

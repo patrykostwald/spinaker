@@ -41,12 +41,12 @@ function HeaderClock() {
 }
 
 /**
- * Szapka: po lewej marka i nawigacja (Źródła · Klinika · O nas — jeden krój, wspólny wskaźnik
+ * Szapka: po lewej marka i nawigacja (Główna · Klinika · O nas — jeden krój, wspólny wskaźnik
  * aktywnej strony), na środku pole szukania, po prawej narzędzia (godzina, motyw, konto).
  * Nitki wrócą w fazie II (THREADS_ENABLED).
  */
 const SECTIONS: Array<{ label: string; href: string }> = [
-  { label: "Źródła", href: "/" },
+  { label: "Główna", href: "/" },
   { label: "Klinika", href: "/klinika" },
   ...(THREADS_ENABLED ? [{ label: "Nitki", href: "/nitki" }] : []),
   { label: "O nas", href: "/o-nas" },
