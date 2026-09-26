@@ -342,7 +342,7 @@ MIN_MESSAGE_ACCOUNTS = 3
 def run_daily_messages(day=None) -> dict:
     """Przekaz dnia każdego obozu — darmowe modele (Groq, zapasowo NIM), z postów co najmniej trzech kont.
 
-    W ciągu dnia przekaz jest odświeżany (np. 12:00, 17:00, 21:00), dopóki nikt go ręcznie nie zatwierdził.
+    W ciągu dnia przekaz jest odświeżany (9:00, 12:00, 15:00, 18:00, 21:30), dopóki nikt go ręcznie nie zatwierdził.
     """
     day = day or timezone.localdate()
     start = timezone.make_aware(datetime.combine(day, time.min))
