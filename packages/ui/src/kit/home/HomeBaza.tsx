@@ -239,6 +239,11 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
       <header className="sc-home-baza__bar">
         <div className="sc-home-baza__title">
           <h2 className="sc-t-title-l sc-home-section__title">Baza</h2>
+          <span className="sc-t-meta sc-text-2 sc-home-baza__count">
+            {filters.people
+              ? <><MorphValue value={peopleTotal} /> {peopleLabel(peopleTotal)}</>
+              : <><MorphValue value={total} /> {total === 1 ? "materiał" : "materiałów"}</>}
+          </span>
         </div>
         <form className="sc-home-baza__search" role="search" onSubmit={(event) => event.preventDefault()}>
           <SearchField
@@ -249,26 +254,11 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
             resultsCount={query ? (filters.people ? peopleTotal : total) : undefined}
           />
         </form>
+        {/* Nagłówek nad kolumną filtrów (Kategorie · Źródła · Platformy · Okres) — ta sama szerokość i krawędź. */}
         <div className="sc-home-baza__latest">
-          {filters.people ? (
-            <>
-              <h3 className="sc-t-title-s">
-                Osoby publiczne{" "}
-                <span className="sc-t-meta sc-text-2 sc-home-baza__count">
-                  <MorphValue value={peopleTotal} /> {peopleLabel(peopleTotal)}
-                </span>
-              </h3>
-            </>
-          ) : (
-            <>
-              <h3 className="sc-t-title-s" title={`${sourcesNote} · od najnowszej publikacji`}>
-                Najnowsze materiały{" "}
-                <span className="sc-t-meta sc-text-2 sc-home-baza__count">
-                  <MorphValue value={total} /> {total === 1 ? "materiał" : "materiałów"}
-                </span>
-              </h3>
-            </>
-          )}
+          <h3 className="sc-t-title-s" title={filters.people ? undefined : `${sourcesNote} · od najnowszej publikacji`}>
+            {filters.people ? "Osoby publiczne" : "Najnowsze materiały"}
+          </h3>
         </div>
         <Button className="sc-home-baza__filters-toggle" variant="secondary" size="sm" iconStart={<FilterIcon size={16} />} onClick={() => setSheetOpen(true)}>
           Filtry{activeCount ? ` · ${activeCount}` : ""}
