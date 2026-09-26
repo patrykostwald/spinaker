@@ -1,6 +1,8 @@
 import { Button, InfoPage } from '@spin-clinic/ui/kit';
 
 export const metadata = { title: 'Wsparcie · spin.clinic' };
+// Linki BUYCOFFEE_URL i PATRONITE_URL czytamy z .env.production przy każdym wejściu, nie przy budowaniu obrazu.
+export const dynamic = 'force-dynamic';
 
 function publicSupportUrl(value: string | undefined) {
   try {
