@@ -4052,3 +4052,17 @@ html, body { overflow-x: clip; }
   .sc-spin-switch__right .sc-home-spin__meta { padding-bottom: 0; }
   .sc-home-spin__sotd .sc-clinic-sotd__post { padding-top: var(--sc-s-2); }
 }
+
+/* Jeden wzór nagłówka sekcji na głównej (Wywiad dnia i Dr. Spin): napis „Klinika spinu AI” w tej samej odległości
+   od górnej krawędzi panelu i od tytułu. W Dr. Spin zakładki i „Otwórz Klinikę” stoją w linii tytułu,
+   więc nagłówek nie zajmuje dodatkowego wiersza, a panel jest niższy. */
+.sc-home-interview__head { padding-top: 0; }
+.sc-home-interview__head, .sc-spin-switch__bar { row-gap: 2px; }
+@media (min-width: 761px) {
+  .sc-spin-switch__bar { grid-template-areas: "kicker . ." "title tabs right"; align-items: end; }
+  .sc-spin-switch__bar .sc-spin-switch__tabs { align-self: end; padding-bottom: 4px; }
+  .sc-spin-switch__bar .sc-spin-switch__tabs button { min-height: 0; padding-block: 2px; }
+  .sc-spin-switch__bar .sc-spin-switch__right { align-self: end; }
+  .sc-spin-switch__right .sc-home-spin__meta { padding-bottom: 6px; }
+  .sc-home-spin__sotd .sc-clinic-sotd__post { padding-top: 0; }
+}
