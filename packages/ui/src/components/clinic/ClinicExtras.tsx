@@ -116,6 +116,7 @@ export function InterviewBox({ interview }: { interview: Interview }) {
           <p className="sc-clinic-kicker">Wywiad dnia <AiTag /><span className="sc-clinic-message__meta">{interview.channel} · {formatDatePl(interview.day)}</span></p>
           <h3 id={`interview-${interview.id}`}><button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog">{interview.headline || interview.title}</button></h3>
           <p className="sc-interview__summary">{interview.summary}</p>
+          {interview.overall ? <p className="sc-interview__lede">{interview.overall}</p> : null}
         </div>
       </div>
       <div className="sc-interview__cols">
