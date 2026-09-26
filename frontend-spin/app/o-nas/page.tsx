@@ -98,7 +98,7 @@ const PHASES: Phase[] = [
     title: 'Wiadomości i Klinika',
     lead: 'To, co działa już dziś. Funkcje oznaczone jako „beta” są dostępne, ale wciąż je rozwijamy.',
     features: [
-      { text: 'baza materiałów z wyszukiwarką, paski newsowe i do pięciu własnych nitek newsowych', status: 'beta' },
+      { text: 'baza materiałów z wyszukiwarką, paski newsowe i do pięciu własnych pasków w sekcji „Twoje wiadomości”', status: 'beta' },
       { text: 'box materiału z osią czasu i bazą powiązanych materiałów', status: 'beta' },
       { text: 'Klinika spinu: strażnik postów, automatyczne diagnozy z etykietą AI, waga spinu, przekazy dnia obu obozów, spin dnia (także na stronie głównej)', status: 'beta' },
       { text: 'udostępnianie diagnozy jako wątku na X (1/N), także w odpowiedzi pod wpisem polityka', status: 'beta' },
@@ -279,7 +279,7 @@ export default function AboutPage() {
           <p className="sc-onas-operator">Operator serwisu: {OPERATOR}.</p>
         </Section>
 
-        <Section id="pojecia" index={3} kicker="Pojęcia" title="Box, nitka newsowa, nitka kontekstowa">
+        <Section id="pojecia" index={3} kicker="Pojęcia" title="Box, Twoje wiadomości, nitka kontekstowa">
           <dl className="sc-onas-terms">
             <div>
               <dt>Box</dt>
@@ -289,9 +289,9 @@ export default function AboutPage() {
               </dd>
             </div>
             <div>
-              <dt>Nitka newsowa</dt>
+              <dt>Twoje wiadomości</dt>
               <dd>
-                Pasek boxów, który przewijasz w bok — najnowsze materiały według Twojego hasła, kategorii albo źródła. Możesz mieć do pięciu, bez zakładania konta.
+                Własne paski boxów na stronie głównej, przewijane w bok — najnowsze materiały według Twojego hasła, kategorii albo źródła. Możesz mieć do pięciu, bez zakładania konta.
               </dd>
             </div>
             <div>

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Nitki użytkownika — do pięciu własnych nitek newsowych (pasków informacyjnych):
+ * Nitki użytkownika — do pięciu własnych pasków „Twoje wiadomości”:
  * pasek konfiguracji (wyśrodkowany: hasło · kategoria · źródło + „+ Dodaj pasek”), a pod nim
  * do {@link MAX_PERSONAL_STRIPS} własnych nitek — każda to filtr hasło/kategoria/źródło nad
  * `/api/portal/news`, zapis lokalny, kolejność przeciągana za uchwyt (`ReorderableStrips`).
@@ -150,9 +150,9 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
   const rows = useMemo(() => strips.map((strip) => ({ id: strip.id, title: strip.label, strip })), [strips]);
 
   return (
-    <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Twoje nitki newsowe">
+    <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Twoje wiadomości">
       <header className="sc-home-section__head">
-        <h2 className="sc-t-title-l sc-home-section__title">Twoje nitki newsowe</h2>
+        <h2 className="sc-t-title-l sc-home-section__title">Twoje wiadomości</h2>
         <p className="sc-t-meta sc-text-2" aria-live="polite">
           {strips.length} / {MAX_PERSONAL_STRIPS}
         </p>
