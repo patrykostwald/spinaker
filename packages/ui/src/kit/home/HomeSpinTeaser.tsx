@@ -49,19 +49,18 @@ export function HomeSpinTeaser() {
     <section className="sc-home-spin" aria-labelledby="home-spin-title">
       {/* Sekcja „Dr. Spin”: nagłówek jak w innych sekcjach, pod nim ten sam element co w Klinice —
           przełącznik „Spin dnia | Najnowszy spin” i post obok pełnej odpowiedzi Dr. Spina. */}
-      <header className="sc-home-spin__header">
-        <div>
-          <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-          <h2 id="home-spin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
-        </div>
-        <p className="sc-home-spin__meta">
-          {data?.scale.enough_data && left !== null && right !== null ? <>Waga {data.scale.window_days} dni: rządzący {left}% · opozycja {right}% · </> : null}
-          <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
-        </p>
-      </header>
       {data ? (
         <div className="sc-clinic-sotd sc-home-spin__sotd">
+          {/* Jedna linia: „Dr. Spin” po lewej, zakładki na środku, link do Kliniki po prawej. */}
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={item => <SpinOfDay key={item.id} spin={item} />}
+            left={<header>
+              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
+              <h2 id="home-spin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+            </header>}
+            right={<p className="sc-home-spin__meta">
+              {data.scale.enough_data && left !== null && right !== null ? <>Waga {data.scale.window_days} dni: rządzący {left}% · opozycja {right}% · </> : null}
+              <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
+            </p>}
             empty={<p className="sc-t-body-s sc-text-2 sc-home-spin__empty">
               Strażnik przegląda każdy nowy post polityków z oficjalnych kont, a te warte sprawdzenia bada Dr. Spin — rządzący i opozycja według tych samych zasad.
             </p>} />

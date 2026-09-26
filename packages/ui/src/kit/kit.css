@@ -3970,3 +3970,14 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-onas-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .sc-onas-flow li:not(:last-child)::after { display: none; }
 @media (max-width: 640px) { .sc-onas-flow { grid-template-columns: minmax(0, 1fr); } }
+
+/* Dr. Spin na głównej: tytuł, zakładki i link w jednej linii; post zaraz pod nią. */
+.sc-spin-switch__bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: var(--sc-s-4); }
+.sc-spin-switch__bar .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-spin-switch__bar h2 { margin: 0; }
+.sc-spin-switch__bar .sc-spin-switch__tabs { padding-bottom: 4px; }
+.sc-spin-switch__right { display: flex; justify-content: flex-end; }
+.sc-spin-switch__right .sc-home-spin__meta { margin: 0; padding-bottom: 6px; text-align: right; }
+.sc-home-spin__sotd .sc-spin-switch { gap: var(--sc-s-3); }
+@media (max-width: 760px) { .sc-spin-switch__bar { grid-template-columns: minmax(0, 1fr); align-items: start; } .sc-spin-switch__right { justify-content: flex-start; } }
+.sc-message-history > h2 { text-align: center; }

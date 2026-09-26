@@ -70,18 +70,23 @@ export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: 
 }
 
 /** Przełącznik widoku: spin dnia (najwyższa siła z dzisiaj) albo najnowszy spin. */
-export function SpinSwitch({ spinOfDay, latest, render, empty }: {
+export function SpinSwitch({ spinOfDay, latest, render, empty, left, right }: {
   spinOfDay: SpinDetailData | null; latest: SpinDetailData | null; render: (spin: SpinDetailData) => ReactNode; empty: ReactNode;
+  /** Opcjonalnie: tytuł po lewej i link po prawej — w jednej linii z zakładkami. */
+  left?: ReactNode; right?: ReactNode;
 }) {
   const [mode, setMode] = useState<"day" | "latest">("day");
   const spin = mode === "day" ? spinOfDay : latest;
+  const tabs = (
+    <div className="sc-spin-switch__tabs" role="tablist" aria-label="Który spin pokazać">
+      <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Spin dnia</button>
+      <span aria-hidden="true">|</span>
+      <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowszy spin</button>
+    </div>
+  );
   return (
     <div className="sc-spin-switch">
-      <div className="sc-spin-switch__tabs" role="tablist" aria-label="Który spin pokazać">
-        <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Spin dnia</button>
-        <span aria-hidden="true">|</span>
-        <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowszy spin</button>
-      </div>
+      {left || right ? <div className="sc-spin-switch__bar"><div>{left}</div>{tabs}<div className="sc-spin-switch__right">{right}</div></div> : tabs}
       {spin ? render(spin) : empty}
     </div>
   );
