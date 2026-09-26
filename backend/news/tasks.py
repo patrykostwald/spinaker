@@ -112,6 +112,25 @@ def clinic_interview_task():
 
 
 
+@shared_task(name="news.tasks.youtube_official_task", soft_time_limit=600, time_limit=660)
+def youtube_official_task():
+    """Najnowsze filmy z potwierdzonych oficjalnych kanałów YouTube (1 jednostka limitu na kanał)."""
+    from news.youtube_collect import collect_latest
+    return collect_latest()
+
+
+@shared_task(name="news.tasks.youtube_leftover_task", soft_time_limit=1500, time_limit=1600)
+def youtube_leftover_task():
+    """Przed resetem darmowego limitu (ok. 9:00): reszta jednostek na archiwum oficjalnych kanałów."""
+    if not cache.add("youtube-leftover-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news.youtube_collect import backfill_leftover
+        return backfill_leftover()
+    finally:
+        cache.delete("youtube-leftover-lock")
+
+
 @shared_task(name="news.tasks.clinic_interview_pick_task", soft_time_limit=600, time_limit=660)
 def clinic_interview_pick_task():
     """Rano: najgłośniejszy wywiad z politykiem z poprzedniego dnia trafia do kolejki wywiadu dnia."""

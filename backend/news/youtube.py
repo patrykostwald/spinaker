@@ -5,17 +5,19 @@ import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
 from news.schema import json_view
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from news.models import ImportState, Source
-from news.serializers import ArticleSerializer
-from scraper.utils import upsert_article
+from news.models import ImportState
 
-@json_view("Wyszukiwanie w YouTube (redakcja)", tags=["redakcja"])
+@json_view("Wyszukiwanie w YouTube (zespół)", tags=["redakcja"])
 @api_view(['GET', 'POST'])
+@permission_classes([IsAdminUser])
 def search_youtube(request):
+    """Podgląd wyników YouTube dla zespołu. Niczego nie zapisuje: wynik wyszukiwania z dowolnego kanału
+    nie może stać się źródłem ani materiałem w bazie (filmy trafiają tu tylko z potwierdzonych kanałów)."""
     enabled = settings.YOUTUBE_ENABLED and bool(settings.YOUTUBE_API_KEY)
     if request.method == 'GET' or not enabled:
         return Response({'enabled': enabled, 'status': 'ready' if enabled else 'not_configured', 'articles': [], 'next_token': None})
@@ -34,6 +36,11 @@ def search_youtube(request):
         if state.imported >= settings.YOUTUBE_DAILY_REQUEST_LIMIT:
             return Response({'enabled': True, 'status': 'daily_limit', 'articles': [], 'next_token': None}, status=429)
         state.imported += 1; state.save(update_fields=['imported'])
+    from news.youtube_collect import QuotaExhausted, spend
+    try:
+        spend('search')
+    except QuotaExhausted:
+        return Response({'enabled': True, 'status': 'daily_limit', 'articles': [], 'next_token': None}, status=429)
     try:
         response = requests.get('https://www.googleapis.com/youtube/v3/search', params={
             'key': settings.YOUTUBE_API_KEY, 'part': 'snippet', 'type': 'video', 'q': query,
@@ -48,13 +55,11 @@ def search_youtube(request):
         channel = snippet.get('channelId', '')
         if not re.fullmatch(r'[A-Za-z0-9_-]{11}', video) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}', channel): continue
         if not snippet.get('title') or not snippet.get('channelTitle'): continue
-        source, _ = Source.objects.get_or_create(url='https://www.youtube.com/channel/' + channel, defaults={
-            'name': snippet['channelTitle'][:255], 'source_type': 'portal', 'scrape_enabled': False})
-        article, _ = upsert_article(source=source, title=snippet['title'], url='https://www.youtube.com/watch?v=' + video,
-            published_date=snippet.get('publishedAt'), category='video', description=snippet.get('description', ''),
-            author=snippet['channelTitle'], ingestion_method='youtube', image_url=snippet.get('thumbnails', {}).get('medium', {}).get('url', ''))
-        if article: articles.append(ArticleSerializer(article).data)
+        articles.append({'title': snippet['title'], 'url': 'https://www.youtube.com/watch?v=' + video,
+            'published_date': snippet.get('publishedAt'), 'channel': snippet['channelTitle'],
+            'channel_url': 'https://www.youtube.com/channel/' + channel,
+            'image_url': snippet.get('thumbnails', {}).get('medium', {}).get('url', '')})
     payload = {'enabled': True, 'status': 'ok', 'articles': articles, 'next_token': data.get('nextPageToken'),
-        'notice': 'Wyniki indeksu YouTube. Zapisano metadane, bez treści filmu i transkrypcji.'}
+        'notice': 'Podgląd wyników YouTube. Nic nie zapisano w bazie.'}
     cache.set(key, payload, 3600)
     return Response(payload)

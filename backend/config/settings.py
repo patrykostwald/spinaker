@@ -238,6 +238,8 @@ BUYCOFFEE_URL = env("BUYCOFFEE_URL", default="")
 YOUTUBE_API_KEY = env('YOUTUBE_API_KEY', default='')
 YOUTUBE_ENABLED = env.bool('YOUTUBE_ENABLED', default=False)
 YOUTUBE_DAILY_REQUEST_LIMIT = env.int('YOUTUBE_DAILY_REQUEST_LIMIT', default=50)
+# Darmowy dzienny limit YouTube Data API w jednostkach (search = 100, pozostałe = 1); reset o północy czasu pacyficznego.
+YOUTUBE_DAILY_UNITS = env.int('YOUTUBE_DAILY_UNITS', default=10000)
 
 # Paid providers remain disabled until owner supplies credentials and limits.
 EXTERNAL_SEARCH_ENABLED = env.bool('EXTERNAL_SEARCH_ENABLED', default=False)

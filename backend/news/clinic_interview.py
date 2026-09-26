@@ -367,6 +367,11 @@ def _yt(path: str, **params) -> dict:
     key = (getattr(settings, 'YOUTUBE_API_KEY', '') or os.environ.get('YOUTUBE_API_KEY', '')).strip()
     if not key:
         raise clinic_ai.ClinicAIError('youtube_key_missing')
+    from news.youtube_collect import QuotaExhausted, spend
+    try:
+        spend(path)  # wspólny licznik darmowego limitu z filmami oficjalnych kanałów
+    except QuotaExhausted:
+        raise clinic_ai.ClinicAIError('youtube_quota')
     try:
         response = requests.get(f'https://www.googleapis.com/youtube/v3/{path}', params={**params, 'key': key}, timeout=(5, 20))
         response.raise_for_status()
