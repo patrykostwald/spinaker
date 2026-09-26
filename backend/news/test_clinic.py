@@ -426,3 +426,34 @@ def test_spin_of_day_is_the_strongest_today_and_latest_is_the_newest(ai_on, monk
         clinic.diagnose(row)
     assert clinic.spin_of_day()['intensity'] == 90
     assert clinic.latest_spin()['post']['id'] == newer.post_id
+
+
+
+@pytest.mark.django_db
+def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
+    from news import clinic_interview
+    monkeypatch.setenv('CLINIC_INTERVIEW_ENABLED', 'true')
+    monkeypatch.setenv('GEMINI_API_KEY', 'g')
+    monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'k')
+    monkeypatch.setenv('CLINIC_INTERVIEW_CHANNELS', '@kanal')
+    videos = {
+        'aaaaaaaaaaa': ('Wywiad z premierem o budżecie', 'PT45M', 90000),
+        'bbbbbbbbbbb': ('Rozmowa z ministrem finansów', 'PT30M', 200000),
+        'ccccccccccc': ('Zapowiedź: minister już dziś w rozmowie', 'PT1M', 900000),
+        'ddddddddddd': ('Mecz reprezentacji — skrót', 'PT20M', 5000000),
+    }
+
+    def fake_yt(path, **params):
+        if path == 'channels':
+            return {'items': [{'id': 'UC1'}]}
+        if path == 'search':
+            return {'items': [{'id': {'videoId': vid}, 'snippet': {'title': title, 'description': '', 'channelTitle': 'Kanał'}}
+                              for vid, (title, _, _) in videos.items()]}
+        return {'items': [{'id': vid, 'contentDetails': {'duration': duration}, 'statistics': {'viewCount': str(views)}}
+                          for vid, (_, duration, views) in videos.items() if vid in params['id']]}
+    monkeypatch.setattr(clinic_interview, '_yt', fake_yt)
+    result = clinic_interview.pick_yesterday()
+    assert result['status'] == 'queued' and 'ministrem' in result['title']
+    assert clinic_interview.pick_yesterday()['status'] == 'already_chosen'
+

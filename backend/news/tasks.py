@@ -106,3 +106,12 @@ def clinic_interview_task():
         return run_interviews(limit=1)
     finally:
         cache.delete("clinic-interview-lock")
+
+
+
+@shared_task(name="news.tasks.clinic_interview_pick_task", soft_time_limit=600, time_limit=660)
+def clinic_interview_pick_task():
+    """Rano: najgłośniejszy wywiad z politykiem z poprzedniego dnia trafia do kolejki wywiadu dnia."""
+    from news.clinic_interview import pick_yesterday
+    return pick_yesterday()
+

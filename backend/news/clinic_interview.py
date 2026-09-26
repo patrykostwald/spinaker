@@ -273,3 +273,129 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
 def latest_interview_data() -> dict | None:
     return interview_data(ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True)
                           .order_by('-day', '-diagnosed_at').first())
+
+
+# --- automatyczny wybór: najgłośniejszy wywiad z politykiem z poprzedniego dnia --------------------------
+
+# Kanały informacyjne i publicystyczne różnych stron (uchwyt @… albo identyfikator UC…, sprawdzone 27.09.2026).
+# Nadpisz w CLINIC_INTERVIEW_CHANNELS (po przecinku).
+DEFAULT_CHANNELS = ('@KanalZeroPL', '@tvn24', 'UCb7O4-iI4pEO5UZPlOBr0Ug', '@tvpinfo', 'UCkC9YgH_FlqOhOIoTDFt4CA',
+                    'UCvHFbkohgX29NhaUtmkzLmg', 'UCPiu4CZlknkTworskK79CPg', '@TVRepublika', 'UC-wh71MEZ4KAx94aZyoG_qg',
+                    '@onet', '@RadioWnet')
+MIN_NAMED_SECONDS = 15 * 60  # film z nazwiskiem polityka w tytule, ale bez słowa „wywiad” — musi być dłuższą rozmową
+# Rdzenie, żeby łapać odmianę: „ministrem”, „posłanką”, „marszałkiem”.
+POLITICS_WORDS = ('premier', 'prezydent', 'minist', 'marszał', 'poseł', 'posł', 'europos', 'senator',
+                  'rzecznik rządu', 'wicepremier', 'lider', 'przewodnicząc', 'prezes pis', 'szef mon', 'szef msz')
+INTERVIEW_WORDS = ('wywiad', 'rozmowa', 'rozmawia', 'gość', 'gośćmi', 'pytania', 'kropka nad i', 'godzina zero',
+                   'graffiti', 'rozmowa piaseckiego', 'jeden na jeden', 'fakty po faktach', 'kawa na ławę', 'sedno sprawy')
+MIN_SECONDS = 8 * 60
+
+
+def _yt(path: str, **params) -> dict:
+    from django.conf import settings
+    key = (getattr(settings, 'YOUTUBE_API_KEY', '') or os.environ.get('YOUTUBE_API_KEY', '')).strip()
+    if not key:
+        raise clinic_ai.ClinicAIError('youtube_key_missing')
+    try:
+        response = requests.get(f'https://www.googleapis.com/youtube/v3/{path}', params={**params, 'key': key}, timeout=(5, 20))
+        response.raise_for_status()
+        return response.json()
+    except (requests.RequestException, ValueError) as error:
+        raise clinic_ai.ClinicAIError(f'youtube_error: {str(error)[:120]}')
+
+
+def _duration_seconds(iso: str) -> int:
+    match = re.fullmatch(r'P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', iso or '')
+    if not match:
+        return 0
+    days, hours, minutes, secs = (int(part or 0) for part in match.groups())
+    return ((days * 24 + hours) * 60 + minutes) * 60 + secs
+
+
+def _politician_names() -> list[str]:
+    """Nazwiska polityków z oficjalnych kont czytanych w Klinice — do rozpoznania, że film jest z politykiem."""
+    from news.clinic import figures_by_account, reading_accounts
+    accounts = list(reading_accounts())
+    figures = figures_by_account([account.pk for account in accounts])
+    names = {(figures[account.pk].canonical_name if account.pk in figures else account.display_name) for account in accounts}
+    party_words = ('partia', 'prawo', 'platforma', 'polska', 'polski', 'konfederacja', 'lewica', 'stronnictwo',
+                   'obywatelsk', 'ruch', 'korona', 'klub', 'koalicja', 'razem', 'republika')
+    surnames = set()
+    for name in names:
+        lowered = (name or '').lower()
+        if any(word in lowered for word in party_words) or any(char.isdigit() for char in lowered):
+            continue  # konta partii i klubów — to nie nazwiska
+        parts = [part for part in re.split(r'[\s-]+', lowered) if len(part) >= 4]
+        if len(parts) >= 2:
+            surname = parts[-1]
+            surnames.add(surname[:max(len(surname) - 2, min(len(surname), 5))])  # rdzeń: „Tuska”, „Hernikiem”
+    return sorted(surnames)
+
+
+def _interview_kind(title: str, description: str, surnames: list[str]) -> str | None:
+    """'interview' — słowo „wywiad/rozmowa” i polityk; 'named' — nazwisko polityka w samym tytule (wymaga dłuższego filmu)."""
+    title_l, text_l = title.lower(), f'{title} {description}'.lower()
+    named = any(name in title_l for name in surnames)
+    about_politician = named or any(word in text_l for word in POLITICS_WORDS)
+    if about_politician and any(word in text_l for word in INTERVIEW_WORDS):
+        return 'interview'
+    return 'named' if named else None
+
+
+def find_loudest_interview(day) -> dict | None:
+    """Najgłośniejszy (najwięcej wyświetleń) wywiad z politykiem opublikowany danego dnia na kanałach z listy."""
+    from datetime import datetime, time as dtime
+    start = timezone.make_aware(datetime.combine(day, dtime.min))
+    end = start + timedelta(days=1, hours=6)  # nocne programy publikowane po północy też liczą się do dnia emisji
+    handles = [h.strip() for h in (os.environ.get('CLINIC_INTERVIEW_CHANNELS', '') or ','.join(DEFAULT_CHANNELS)).split(',') if h.strip()]
+    surnames = _politician_names()
+    candidates = {}
+    for handle in handles:
+        try:
+            if handle.startswith('UC'):
+                channel_id = handle
+            else:
+                channel = _yt('channels', part='id', forHandle=handle).get('items') or []
+                if not channel:
+                    continue
+                channel_id = channel[0]['id']
+            found = _yt('search', part='snippet', channelId=channel_id, type='video', order='viewCount', maxResults=15,
+                        publishedAfter=start.isoformat(), publishedBefore=end.isoformat())
+        except clinic_ai.ClinicAIError as error:
+            logger.warning('interview pick: %s %s', handle, error.code)
+            continue
+        for item in found.get('items') or []:
+            snippet = item.get('snippet') or {}
+            kind = _interview_kind(snippet.get('title', ''), snippet.get('description', ''), surnames)
+            if kind:
+                candidates[item['id']['videoId']] = {**snippet, 'kind': kind}
+    if not candidates:
+        return None
+    details = _yt('videos', part='statistics,contentDetails', id=','.join(list(candidates)[:50]))
+    best = None
+    for item in details.get('items') or []:
+        seconds_long = _duration_seconds((item.get('contentDetails') or {}).get('duration', ''))
+        minimum = MIN_SECONDS if candidates[item['id']]['kind'] == 'interview' else MIN_NAMED_SECONDS
+        if seconds_long < minimum:
+            continue  # zapowiedzi i krótkie wycinki odpadają
+        stats = item.get('statistics') or {}
+        loudness = int(stats.get('viewCount', 0)) + 20 * int(stats.get('commentCount', 0)) + 5 * int(stats.get('likeCount', 0))
+        if best is None or loudness > best['loudness']:
+            best = {'video_id': item['id'], 'loudness': loudness, 'title': candidates[item['id']].get('title', ''),
+                    'channel': candidates[item['id']].get('channelTitle', '')}
+    return best
+
+
+def pick_yesterday() -> dict:
+    """Codziennie rano: jeśli zespół nie wskazał wywiadu na wczoraj, wybieramy najgłośniejszy sami."""
+    if not enabled():
+        return {'status': 'disabled'}
+    day = timezone.localdate() - timedelta(days=1)
+    if ClinicInterview.objects.filter(day=day).exists():
+        return {'status': 'already_chosen', 'day': str(day)}
+    best = find_loudest_interview(day)
+    if not best:
+        return {'status': 'none_found', 'day': str(day)}
+    interview = queue_interview(f"https://www.youtube.com/watch?v={best['video_id']}", day)
+    return {'status': 'queued', 'day': str(day), 'id': interview.pk, 'title': best['title'], 'channel': best['channel'],
+            'loudness': best['loudness']}

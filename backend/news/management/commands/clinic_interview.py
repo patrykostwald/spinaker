@@ -10,11 +10,19 @@ class Command(BaseCommand):
     help = 'Dodaje wywiad dnia (publiczny film z YouTube) do kolejki; --now od razu robi transkrypcję i diagnozę.'
 
     def add_arguments(self, parser):
-        parser.add_argument('url')
+        parser.add_argument('url', nargs='?', default='', help='Link do filmu; pomiń przy --auto.')
+        parser.add_argument('--auto', action='store_true', help='Wybierz sam najgłośniejszy wywiad z wczoraj.')
         parser.add_argument('--day', default='', help='Dzień emisji (domyślnie wczoraj).')
         parser.add_argument('--now', action='store_true', help='Nie czekaj na harmonogram — przetwórz od razu.')
 
-    def handle(self, *args, url, day, now, **options):
+    def handle(self, *args, url, day, now, auto, **options):
+        if auto:
+            result = clinic_interview.pick_yesterday()
+            self.stdout.write(str(result))
+            if result.get('status') != 'queued':
+                return
+            from news.clinic_models import ClinicInterview
+            url = ClinicInterview.objects.get(pk=result['id']).url
         try:
             interview = clinic_interview.queue_interview(url, date.fromisoformat(day) if day else None)
         except ValueError:
