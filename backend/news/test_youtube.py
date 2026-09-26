@@ -115,3 +115,33 @@ def test_channel_link_lookups():
     assert lookups('https://www.youtube.com/@KObywatelska') == [{'forHandle': '@KObywatelska'}]
     assert lookups('https://www.youtube.com/user/pisorgpl')[0] == {'forUsername': 'pisorgpl'}
     assert lookups('https://www.youtube.com/premierRP')[0] == {'forHandle': '@premierRP'}
+
+
+def test_social_links_from_a_source_homepage():
+    from news.source_social import links_on_page
+    html = b'''<a href="https://www.youtube.com/@RadioZET">YT</a><a href="https://www.youtube.com/watch?v=abc">film</a>
+    <a href="https://twitter.com/RadioZET_NEWS">X</a><a href="https://x.com/intent/tweet?text=a">share</a>
+    <a href="https://x.com/radiozet_news/status/1">post</a>'''
+    assert links_on_page(html, 'https://radiozet.pl/') == {'youtube': ['https://www.youtube.com/@RadioZET'], 'x': ['RadioZET_NEWS']}
+
+
+@pytest.mark.django_db
+def test_source_channels_are_queued_then_confirmed_by_staff(monkeypatch, settings):
+    from news import source_social
+    from news.management.commands import discover_source_social_links as discover_cmd
+    from news.political_models import OfficialVideoChannel
+    settings.YOUTUBE_ENABLED = True; settings.YOUTUBE_API_KEY = 'test-only'
+    get_user_model().objects.create_user('zespol', password='x', is_staff=True)
+    radio = Source.objects.create(name='Radio ZET', url='https://radiozet.pl/')
+    monkeypatch.setattr(source_social, 'discover', lambda source, network: {'status': 'ok', 'evidence_url': source.url,
+        'youtube': ['https://www.youtube.com/@RadioZET'], 'x': ['RadioZET_NEWS'], 'checked_at': '2026-09-27T10:00:00+00:00'})
+    monkeypatch.setattr(discover_cmd, 'resolve', lambda link: ('UCradiozet', 'Radio ZET'))
+    call_command('discover_source_social_links')
+    assert OfficialVideoChannel.objects.count() == 0  # bez --apply tylko dowody
+    call_command('discover_source_social_links', '--apply', '--force')
+    row = OfficialVideoChannel.objects.get()
+    assert row.status == 'pending_review' and row.subject_object_id == radio.pk and not row.collection_enabled
+    call_command('confirm_source_youtube_channels', '--staff', 'zespol', '--apply')
+    row.refresh_from_db()
+    assert row.status == 'confirmed' and row.collection_enabled
+    assert Source.objects.get(url='https://www.youtube.com/channel/UCradiozet').is_active
