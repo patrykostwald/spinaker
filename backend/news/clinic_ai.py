@@ -327,12 +327,34 @@ def _free_chat(system: str, user: str, schema: dict, max_tokens: int = 1200) -> 
     raise ClinicAIError('free_models_unavailable')
 
 
+DAILY_INPUT_CHARS = 9000  # mieści się w darmowym limicie Groq (tokeny na minutę) razem z odpowiedzią
+DAILY_POST_CHARS = 260
+DAILY_POSTS_PER_AUTHOR = 2
+
+
+def _daily_input(camp_label: str, day: str, posts: list[dict]) -> str:
+    """Zwięzłe wejście do przekazu dnia: po kolei autorzy (najwyżej 2 posty każdego), teksty skrócone,
+    całość w limicie znaków — duży obóz nie może przekroczyć limitu darmowego modelu."""
+    by_author: dict[str, list[str]] = {}
+    for post in posts:
+        by_author.setdefault(post['author'], []).append(' '.join(post['text'].split())[:DAILY_POST_CHARS])
+    picked = []
+    for round_ in range(DAILY_POSTS_PER_AUTHOR):
+        picked += [(author, texts[round_]) for author, texts in by_author.items() if len(texts) > round_]
+    lines = [f'Obóz: {camp_label}', f'Dzień: {day}', f'Autorów: {len(by_author)}', '']
+    size = sum(len(line) + 1 for line in lines)
+    for index, (author, text) in enumerate(picked, 1):
+        line = f'[{index}] {author}: <<<{text}>>>'
+        if size + len(line) + 1 > DAILY_INPUT_CHARS:
+            break
+        lines.append(line)
+        size += len(line) + 1
+    return '\n'.join(lines)
+
+
 def daily_message(camp_label: str, day: str, posts: list[dict]) -> dict:
     """Przekaz dnia z darmowych modeli — bez kosztów po naszej stronie."""
-    lines = [f'Obóz: {camp_label}', f'Dzień: {day}', '']
-    for index, post in enumerate(posts, 1):
-        lines += [f"[{index}] {post['author']}: <<<{post['text']}>>>"]
-    data, model = _free_chat(DAILY_SYSTEM, '\n'.join(lines), DAILY_SCHEMA)
+    data, model = _free_chat(DAILY_SYSTEM, _daily_input(camp_label, day, posts), DAILY_SCHEMA)
     message = str(data.get('message', '')).strip()
     if not message:
         raise ClinicAIError('empty_message')

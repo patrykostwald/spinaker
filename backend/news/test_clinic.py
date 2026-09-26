@@ -365,3 +365,10 @@ def test_only_fresh_posts_are_diagnosed(ai_on):
     clinic.run_diagnoses()
     assert SpinDiagnosis.objects.get(post=new).status == 'pending_review'
     assert SpinDiagnosis.objects.get(post=old).status == 'queued'
+
+
+def test_daily_message_input_fits_the_free_model_limit():
+    posts = [{'author': f'Poseł {i % 30}', 'text': 'Bardzo długi wpis o podatkach. ' * 40} for i in range(60)]
+    text = clinic_ai._daily_input('opozycja', '2026-09-26', posts)
+    assert len(text) <= clinic_ai.DAILY_INPUT_CHARS
+    assert 'Poseł 29' in text  # każdy autor trafia do wejścia, zanim ktokolwiek dostanie drugi wpis
