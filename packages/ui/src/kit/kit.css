@@ -3742,3 +3742,7 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-clinic-sotd__limits { color: var(--sc-text-3); font-size: var(--sc-t-body-s-size); }
 .sc-clinic-sotd__toggle { border: 0; background: none; padding: 0; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
 @media (max-width: 900px) { .sc-clinic-sotd__reading:not([data-expanded]) { flex: none; max-height: 360px; } }
+/* Strona główna: przekazy dnia nad spinem dnia — krótko (4 linie), pełny tekst w Klinice. */
+.sc-home-spin__messages .sc-clinic-message { padding: var(--sc-s-4); }
+.sc-home-spin__messages .sc-clinic-message__text { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--sc-t-body-s-size); line-height: 1.55; }
+@media (max-width: 860px) { .sc-home-spin__messages { grid-template-columns: minmax(0, 1fr); } .sc-home-spin__messages::before { display: none; } }

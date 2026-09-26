@@ -12,7 +12,7 @@ import { ShareSpinOnX } from "./ShareSpinOnX";
 
 const CONTACT = "kontakt@spin.clinic";
 
-function MessageBox({ camp, message }: { camp: Camp; message: DailyMessage | null }) {
+export function MessageBox({ camp, message }: { camp: Camp; message: DailyMessage | null }) {
   return (
     <article className="sc-clinic-message" data-camp={camp}>
       <p className="sc-clinic-kicker">{CAMP_LABELS[camp]} · przekaz dnia <AiTag /></p>
