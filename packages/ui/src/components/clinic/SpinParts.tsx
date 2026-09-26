@@ -28,7 +28,6 @@ export function SpinAvatar({ author, size = "md" }: { author: SpinAuthor; size?:
 export function SpinAuthorRow({ author, publishedAt, size = "md" }: { author: SpinAuthor; publishedAt: string; size?: "md" | "lg" }) {
   return (
     <header className="sc-spin-author">
-      <PartyBadge party={author.party} />
       <SpinAvatar author={author} size={size} />
       <div className="sc-spin-author__text">
         <p className="sc-spin-author__name">
@@ -39,6 +38,7 @@ export function SpinAuthorRow({ author, publishedAt, size = "md" }: { author: Sp
           {" · "}<time dateTime={publishedAt}>{formatDateTimePl(publishedAt)}</time>
         </p>
       </div>
+      <span className="sc-spin-author__party"><PartyBadge party={author.party} /></span>
     </header>
   );
 }

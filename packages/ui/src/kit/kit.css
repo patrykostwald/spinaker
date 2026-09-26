@@ -3981,3 +3981,9 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-spin__sotd .sc-spin-switch { gap: var(--sc-s-3); }
 @media (max-width: 760px) { .sc-spin-switch__bar { grid-template-columns: minmax(0, 1fr); align-items: start; } .sc-spin-switch__right { justify-content: flex-start; } }
 .sc-message-history > h2 { text-align: center; }
+/* Autor posta: zdjęcie i nazwa po lewej, metka partii większa w prawym rogu tego samego paska. */
+.sc-spin-author__party { margin-left: auto; flex: none; }
+.sc-spin-author__party .sc-party { height: 30px; min-width: 3.4rem; padding: 0 10px; border-radius: 8px; font-size: 13px; }
+.sc-spin-author__party .sc-party--none { display: none; }
+.sc-spin-author__text { min-width: 0; }
+.sc-spin-author { width: 100%; }
