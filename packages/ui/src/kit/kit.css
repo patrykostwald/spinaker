@@ -3802,3 +3802,5 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
   .sc-home-baza__bar { grid-template-columns: minmax(0, 1fr) minmax(260px, 440px) minmax(0, 1fr) var(--sc-home-baza-latest-w, 260px); grid-template-areas: "title search . latest"; padding-right: 0; }
   .sc-home-baza__latest { justify-items: start; text-align: left; padding-left: var(--sc-s-4); }
 }
+/* Przekaz dnia: data i liczba postów w nagłówku, zaraz po znaczku AI. */
+.sc-clinic-kicker .sc-clinic-message__meta { margin-left: var(--sc-s-1); text-transform: none; letter-spacing: 0; font-weight: 500; }
