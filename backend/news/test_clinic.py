@@ -392,7 +392,9 @@ def test_interview_pipeline_keeps_only_quotes_from_the_transcript(monkeypatch):
     monkeypatch.setattr(clinic_interview, '_oembed', lambda url: {'title': 'Kropka nad i', 'author_name': 'TVN24', 'thumbnail_url': 'https://i.ytimg.com/x.jpg'})
     monkeypatch.setattr(clinic_interview, 'transcribe', lambda url: ({'guest_name': 'Jan Kowalski', 'host_name': 'Anna Nowak', 'segments': [
         {'time': '01:05', 'speaker': 'guest', 'text': 'Podatki spadły o połowę, to nasz sukces.'},
-        {'time': '02:10', 'speaker': 'host', 'text': 'Ale dane GUS mówią co innego.'}]}, {'model': 'gemini'}))
+        {'time': '02:10', 'speaker': 'host', 'text': 'Ale dane GUS mówią co innego.'}]
+        + [{'time': f'1{i}:00', 'speaker': who, 'text': 'Dalsza część rozmowy o budżecie.'} for i in range(6) for who in ('host', 'guest')]},
+        {'model': 'gemini'}))
 
     def fake_call(system, user, schema, **kwargs):
         return SimpleNamespace(content=[], stop_reason='end_turn', usage=None, model='claude-opus-5')
@@ -438,22 +440,35 @@ def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'k')
     monkeypatch.setenv('CLINIC_INTERVIEW_CHANNELS', '@kanal')
     videos = {
-        'aaaaaaaaaaa': ('Wywiad z premierem o budżecie', 'PT45M', 90000),
-        'bbbbbbbbbbb': ('Rozmowa z ministrem finansów', 'PT30M', 200000),
-        'ccccccccccc': ('Zapowiedź: minister już dziś w rozmowie', 'PT1M', 900000),
-        'ddddddddddd': ('Mecz reprezentacji — skrót', 'PT20M', 5000000),
+        'aaaaaaaaaaa': ('Wywiad: premier Tusk o budżecie', 'PT45M', 90000),        # najważniejszy polityk: 90k × 3
+        'bbbbbbbbbbb': ('Rozmowa z posłem Nowakiem', 'PT30M', 100000),             # mniej znany i za cichy — odpada
+        'ccccccccccc': ('Zapowiedź: Tusk w rozmowie już dziś', 'PT1M', 900000),    # zapowiedź — za krótka
+        'ddddddddddd': ('Żurek broni Wałęsy — komentarz Mazurka', 'PT20M', 500000),  # klasyfikator: monolog
     }
 
     def fake_yt(path, **params):
         if path == 'channels':
             return {'items': [{'id': 'UC1'}]}
         if path == 'search':
-            return {'items': [{'id': {'videoId': vid}, 'snippet': {'title': title, 'description': '', 'channelTitle': 'Kanał'}}
+            return {'items': [{'id': {'videoId': vid}, 'snippet': {'title': title, 'description': 'rozmowa', 'channelTitle': 'Kanał'}}
                               for vid, (title, _, _) in videos.items()]}
         return {'items': [{'id': vid, 'contentDetails': {'duration': duration}, 'statistics': {'viewCount': str(views)}}
                           for vid, (_, duration, views) in videos.items() if vid in params['id']]}
     monkeypatch.setattr(clinic_interview, '_yt', fake_yt)
+    monkeypatch.setattr(clinic_interview, 'looks_like_interview', lambda title, description, channel: ('Mazurka' not in title, ''))
     result = clinic_interview.pick_yesterday()
-    assert result['status'] == 'queued' and 'ministrem' in result['title']
+    assert result['status'] == 'queued' and 'Tusk' in result['title'] and result['top_politician']
     assert clinic_interview.pick_yesterday()['status'] == 'already_chosen'
 
+
+@pytest.mark.django_db
+def test_monologue_is_rejected_before_paying_for_the_diagnosis(monkeypatch):
+    from news import clinic_interview
+    monkeypatch.setattr(clinic_interview, '_oembed', lambda url: {})
+    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url: ({'guest_name': 'Lech Wałęsa', 'host_name': 'Robert Mazurek', 'segments':
+        [{'time': f'0{i}:00', 'speaker': 'host', 'text': 'Długi komentarz prowadzącego. ' * 20} for i in range(9)]
+        + [{'time': '09:30', 'speaker': 'guest', 'text': 'Krótki cytat.'}]}, {'model': 'gemini'}))
+    paid = []
+    monkeypatch.setattr(clinic_interview, 'diagnose_transcript', lambda meta, transcript: paid.append(1))
+    interview = clinic_interview.process(clinic_interview.queue_interview('https://youtu.be/abcdefghijk'))
+    assert interview.status == 'not_applicable' and interview.error.startswith('nie_wywiad') and not paid

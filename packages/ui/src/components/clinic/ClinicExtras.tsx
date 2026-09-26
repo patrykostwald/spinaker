@@ -129,7 +129,6 @@ export function InterviewBox({ interview }: { interview: Interview }) {
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
-      <p className="sc-interview__overall">{interview.overall}</p>
       <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>
       <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad dnia · ${interview.title}`}>
         <p className="sc-clinic-dialog__lead">{interview.headline}</p>
