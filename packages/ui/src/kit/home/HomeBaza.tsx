@@ -258,17 +258,15 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
                   <MorphValue value={peopleTotal} /> {peopleLabel(peopleTotal)}
                 </span>
               </h3>
-              <p className="sc-t-body-s sc-text-2">Rejestr funkcji publicznych · profil z osią czasu</p>
             </>
           ) : (
             <>
-              <h3 className="sc-t-title-s">
+              <h3 className="sc-t-title-s" title={`${sourcesNote} · od najnowszej publikacji`}>
                 Najnowsze materiały{" "}
                 <span className="sc-t-meta sc-text-2 sc-home-baza__count">
                   <MorphValue value={total} /> {total === 1 ? "materiał" : "materiałów"}
                 </span>
               </h3>
-              <p className="sc-t-body-s sc-text-2">{sourcesNote} · od najnowszej publikacji</p>
             </>
           )}
         </div>

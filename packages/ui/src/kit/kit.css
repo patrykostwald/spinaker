@@ -3660,3 +3660,35 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-spin__empty { margin: 0; max-width: 70ch; }
 .sc-home-spin__card .sc-spin-card__text { -webkit-line-clamp: 4; }
 .sc-navmenu__link, .sc-nav-about { white-space: nowrap; }
+
+/* === Poprawki 26.09 (wieczór) === */
+/* Karta dnia bez zdjęcia: grafika wypełnia ~75% wysokości, tekst tylko w dolnym pasie (~25%). */
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__media { flex: 1 1 auto; height: auto; min-height: 160px; }
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__body { flex: none; padding: var(--sc-s-4) var(--sc-s-6) var(--sc-s-5); }
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image][data-stage="b"] .sc-card__body { padding-top: var(--sc-s-4); }
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__mono { font-size: 96px; }
+@media (max-width: 899px) { .sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__media { flex: none; height: 180px; min-height: 0; } }
+/* Baza: tytuł · szukaj · „Najnowsze materiały N” — jeden rząd, bez dopisku pod spodem. */
+.sc-home-baza__latest { justify-items: end; text-align: right; }
+.sc-home-baza__latest h3 { white-space: nowrap; }
+/* Klinika: informacja o AI jako podtytuł (bez szarego tła). */
+.sc-clinic-subtitle { display: block; margin: 0; max-width: 65rem; color: var(--sc-text-2); font-size: var(--sc-t-body-size); line-height: 1.55; }
+.sc-clinic-subtitle > :first-child { margin-right: 6px; vertical-align: 1px; }
+.sc-clinic-subtitle a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+.sc-clinic-latest__head { text-align: center; }
+/* Dla dziennikarzy: przycisk po prawej, na środku wysokości; box niższy. */
+.sc-clinic-journalists { flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: var(--sc-s-6); padding: var(--sc-s-5) var(--sc-s-6); }
+.sc-clinic-journalists__cta { flex: none; margin-right: var(--sc-s-6); }
+@media (max-width: 860px) { .sc-clinic-journalists { flex-direction: column; align-items: flex-start; } .sc-clinic-journalists__cta { margin-right: 0; } }
+/* Szapka: Źródła · Klinika · O nas tym samym krojem; w panelu mobilnym linki są na liście. */
+.sc-nav-cta { gap: var(--sc-s-3); }
+.sc-navmenu__mobile-cta .sc-nav-cta__link { display: none; }
+/* Paski czytelnika: tytuł jak „Baza”, uchwyt poza linią tytułu; Edytuj | Usuń po prawej. */
+.sc-home-threads .sc-strip-row { padding: var(--sc-s-4) var(--sc-s-5) var(--sc-s-5); }
+.sc-home-threads .sc-strip-row__head { min-height: 40px; margin-bottom: var(--sc-s-3); padding-right: 10rem; }
+.sc-home-threads .sc-strip-handle { position: absolute; left: 0; top: calc(var(--sc-s-4) + 8px); }
+.sc-home-threads .sc-strip-row__title { font-size: var(--sc-t-title-l-size); line-height: var(--sc-t-title-l-lh); letter-spacing: var(--sc-t-title-l-track); font-weight: var(--sc-w-display); }
+.sc-home-personal__actions { top: var(--sc-s-4); right: var(--sc-s-5); height: 40px; align-items: center; gap: var(--sc-s-2); color: var(--sc-text-3); }
+.sc-home-personal__actions button { padding: 4px 2px; border: 0; background: none; color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
+.sc-home-personal__actions button:hover, .sc-home-personal__actions button:focus-visible { color: var(--sc-text); }
+@media (max-width: 860px) { .sc-home-threads .sc-strip-row__head { padding-right: 0; } }
