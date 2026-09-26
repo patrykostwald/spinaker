@@ -63,13 +63,30 @@ export type SpinDetailData = SpinCardData & {
 export type ScaleSide = { spin: number; partial: number; no_spin: number; unclear: number; assessed: number; share: number | null };
 export type SpinScale = { window_days: number; min_sample: number; enough_data: boolean; government: ScaleSide; opposition: ScaleSide };
 
-export type DailyMessage = { day: string; message: string; themes: string[]; posts_count: number; model: string };
+export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string };
+export type DailyMessage = {
+  id?: number; day: string; camp?: Camp; message: string; analysis?: string; themes: string[]; posts_count: number; model: string;
+  posts?: MessagePost[];
+};
+
+export type InterviewQuote = { name: string; quote: string; time: string; seconds: number | null; explanation: string };
+export type InterviewClaim = SpinClaim & { time: string; seconds: number | null };
+export type Interview = {
+  id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
+  guest_name: string; guest_role: string; host_name: string; headline: string; summary: string; overall: string;
+  guest: { verdict: Verdict; verdict_label: string; intensity: number; summary: string; techniques: InterviewQuote[]; claims: InterviewClaim[] };
+  host: { summary: string; notes: InterviewQuote[] };
+  limitations: string; model: string; diagnosed_at: string | null;
+};
 
 export type ClinicPageData = {
   notice: string;
   scale: SpinScale;
   messages: Record<Camp, DailyMessage | null>;
   spin_of_day: SpinDetailData | null;
+  latest_spin: SpinDetailData | null;
+  interview: Interview | null;
+  message_history: Record<Camp, DailyMessage[]>;
   columns: Record<Camp, SpinCardData[]>;
   accounts_count: number;
 };
@@ -84,6 +101,9 @@ export type ClinicAccount = {
   figure_name: string;
   party: Party | null;
   posts_collected: number;
+  posts_screened: number;
+  partial_spins: number;
+  spins: number;
   last_polled_at: string | null;
 };
 

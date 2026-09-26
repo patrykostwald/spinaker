@@ -3814,3 +3814,75 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 /* Przekaz dnia: data przy prawej krawędzi nagłówka. */
 .sc-clinic-message > .sc-clinic-kicker { display: flex; align-items: center; gap: var(--sc-s-2); width: 100%; }
 .sc-clinic-message > .sc-clinic-kicker .sc-clinic-message__meta { margin-left: auto; white-space: nowrap; }
+/* === Klinika 27.09: przełącznik spinu, powiększenia, wywiad dnia, politycy z licznikami, archiwum przekazów === */
+.sc-spin-switch { display: grid; gap: var(--sc-s-4); }
+.sc-spin-switch__tabs { display: flex; align-items: center; justify-content: center; gap: var(--sc-s-2); margin: 0; color: var(--sc-text-3); }
+.sc-spin-switch__tabs button { border: 0; background: none; padding: 2px 4px; color: var(--sc-text-3); font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; border-bottom: 2px solid transparent; }
+.sc-spin-switch__tabs button[aria-selected="true"] { color: var(--sc-text); border-bottom-color: var(--sc-accent); }
+.sc-clinic-sotd .sc-spin-switch__tabs { color: var(--sc-accent); font-size: var(--sc-t-body-s-size); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; }
+.sc-home-spin__head .sc-spin-switch__tabs { justify-content: flex-start; flex-wrap: wrap; }
+.sc-clinic-message__open { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sc-clinic-message__open:hover .sc-clinic-message__text { color: var(--sc-text); text-decoration: underline; text-decoration-color: var(--sc-line); }
+.sc-clinic-dialog { width: min(760px, calc(100vw - 32px)); max-height: min(86vh, 900px); padding: 0; border: 0; border-radius: var(--sc-r-xl); background: var(--sc-surface); color: var(--sc-text); box-shadow: var(--sc-e-3), 0 0 0 1px var(--sc-line); }
+.sc-clinic-dialog::backdrop { background: rgba(0, 0, 0, .6); }
+.sc-clinic-dialog__body { display: grid; gap: var(--sc-s-3); padding: 0 var(--sc-s-6) var(--sc-s-6); max-height: inherit; overflow-y: auto; line-height: 1.6; color: var(--sc-text-2); }
+.sc-clinic-dialog__body p, .sc-clinic-dialog__body ul, .sc-clinic-dialog__body ol { margin: 0; }
+.sc-clinic-dialog__body h3, .sc-clinic-dialog__body h4 { margin: var(--sc-s-3) 0 0; color: var(--sc-text); font-size: var(--sc-t-body-size); }
+.sc-clinic-dialog__head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sc-s-4); padding: var(--sc-s-5) 0 var(--sc-s-2); background: var(--sc-surface); }
+.sc-clinic-dialog__head h2 { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-m-size); line-height: 1.3; }
+.sc-clinic-dialog__close { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--sc-surface-2); color: var(--sc-text); font-size: 22px; line-height: 1; cursor: pointer; }
+.sc-clinic-dialog__lead { color: var(--sc-text); font-size: var(--sc-t-body-size); font-weight: 600; }
+.sc-clinic-dialog__posts { display: grid; gap: var(--sc-s-2); padding: 0; list-style: none; }
+.sc-clinic-dialog__posts li { padding: var(--sc-s-3); border-radius: var(--sc-r-md); background: var(--sc-surface-2); font-size: var(--sc-t-body-s-size); }
+.sc-clinic-dialog__posts a { color: var(--sc-accent); text-decoration: none; }
+.sc-clinic-dialog__note { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-clinic-dialog__note a { color: var(--sc-accent); }
+.sc-interview { display: grid; gap: var(--sc-s-4); padding: var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-accent); }
+.sc-home-interview { padding: 0; box-shadow: none; background: none; }
+.sc-home-interview .sc-interview { padding: var(--sc-s-4) var(--sc-s-5); }
+.sc-interview__top { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sc-s-5); align-items: center; }
+.sc-interview__thumb { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: var(--sc-r-md); overflow: hidden; background: var(--sc-surface-2); }
+.sc-interview__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.sc-interview__thumb span { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 28px; text-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
+.sc-interview__head { display: grid; gap: 6px; min-width: 0; }
+.sc-interview__head .sc-clinic-kicker { display: flex; width: 100%; }
+.sc-interview__head .sc-clinic-message__meta { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--sc-text-3); }
+.sc-interview__head h3 { margin: 0; font-size: var(--sc-t-title-m-size); line-height: 1.3; }
+.sc-interview__head h3 button { padding: 0; border: 0; background: none; color: var(--sc-text); font: inherit; text-align: left; cursor: pointer; }
+.sc-interview__head h3 button:hover { text-decoration: underline; }
+.sc-interview__summary { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-interview__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s-4); }
+.sc-interview__cols article { display: grid; gap: 6px; align-content: start; padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-lg); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-interview__who { margin: 0; color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; }
+.sc-interview__text { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-interview__overall { margin: 0; color: var(--sc-text); font-size: var(--sc-t-body-s-size); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-interview__more { margin: 0; text-align: right; }
+.sc-interview__more button { border: 0; background: none; padding: 0; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
+.sc-interview__sources { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); margin-top: 4px; }
+.sc-interview__sources a { color: var(--sc-accent); font-size: var(--sc-t-caption-size); }
+.sc-politicians, .sc-message-history { display: grid; gap: var(--sc-s-3); }
+.sc-politicians__head h2, .sc-message-history h2 { margin: 0; font-size: var(--sc-t-title-m-size); }
+.sc-politicians__head h2 span, .sc-politicians h3 span { margin-left: var(--sc-s-2); color: var(--sc-accent); }
+.sc-politicians__head p { margin: 4px 0 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-politicians__cols, .sc-message-history__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s-5); }
+.sc-politicians h3, .sc-message-history h3 { margin: 0 0 var(--sc-s-2); padding-bottom: var(--sc-s-2); border-bottom: 1px solid var(--sc-line); font-size: var(--sc-t-body-size); text-align: center; }
+.sc-politicians table { width: 100%; border-collapse: collapse; font-size: var(--sc-t-body-s-size); }
+.sc-politicians th { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-weight: 600; text-align: right; padding: 4px 6px; }
+.sc-politicians th:first-child, .sc-politicians td:first-child { text-align: left; }
+.sc-politicians td { padding: 6px; border-top: 1px solid var(--sc-hairline); text-align: right; font-variant-numeric: tabular-nums; }
+.sc-politicians td:first-child a:last-child { margin-left: 4px; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-politicians td a { color: var(--sc-text); text-decoration: none; }
+.sc-politicians__more { margin: 0; text-align: center; }
+.sc-politicians__more button { border: 0; background: none; color: var(--sc-accent); font: inherit; font-weight: 600; cursor: pointer; }
+.sc-message-history ol { display: grid; gap: var(--sc-s-2); max-height: 420px; overflow-y: auto; margin: 0; padding: 0 var(--sc-s-1) 0 0; list-style: none; scrollbar-width: thin; }
+.sc-message-history li button { display: grid; gap: 2px; width: 100%; padding: var(--sc-s-3); border: 0; border-radius: var(--sc-r-md); background: var(--sc-surface); color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); text-align: left; cursor: pointer; }
+.sc-message-history li button:hover { color: var(--sc-text); }
+.sc-message-history time { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-message-history li span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 760px) {
+  .sc-interview__top, .sc-interview__cols, .sc-politicians__cols, .sc-message-history__cols { grid-template-columns: minmax(0, 1fr); }
+}
+/* Bez poziomych pasków przewijania pod listą Wiadomości dnia i w Bazie. */
+.sc-home-lead__list, .sc-home-baza__results { overflow-x: hidden; }
+/* Strona główna: przełącznik „Spin dnia | Najnowszy” mniejszy, w jednej linii. */
+.sc-home-spin__head .sc-spin-switch__tabs { flex-wrap: nowrap; font-size: var(--sc-t-title-m-size); white-space: nowrap; }

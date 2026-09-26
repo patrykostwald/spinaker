@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CAMPS, getClinicPage, sharePercent } from "../../lib/clinic";
 import { AiTag, SpinRow } from "../../components/clinic/SpinParts";
-import { MessageBox } from "../../components/clinic/ClinicPage";
+import { InterviewBox, MessageBox } from "../../components/clinic/ClinicExtras";
 
 /** Godziny generowania przekazu dnia (jak w harmonogramie serwera). */
 const MESSAGE_SLOTS: Array<[number, number]> = [[9, 0], [12, 0], [15, 0], [18, 0], [21, 30]];
@@ -24,19 +24,28 @@ function nextMessageSlot(now: Date): string {
 export function HomeSpinTeaser() {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
   const data = query.data;
-  const spin = data?.spin_of_day ?? null;
+  // Spin dnia = najwyższa siła spinu z dzisiaj; przełącznik pokazuje też najnowszy spin.
+  const [mode, setMode] = useState<"day" | "latest">("day");
+  const spin = (mode === "day" ? data?.spin_of_day : data?.latest_spin) ?? null;
   const left = data ? sharePercent(data.scale.government) : null;
   const right = data ? sharePercent(data.scale.opposition) : null;
   const [slot, setSlot] = useState<string | null>(null);
   useEffect(() => setSlot(nextMessageSlot(new Date())), []);
   const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
   return (
+    <>
+    {/* Wywiad dnia (najważniejszy wywiad z poprzedniego dnia) — nad spinem dnia, w tym samym stylu boxa. */}
+    {data?.interview ? <div className="sc-home-spin sc-home-interview"><InterviewBox interview={data.interview} /></div> : null}
     <section className="sc-home-spin" aria-labelledby="home-spin-title">
       {/* Jeden niski rząd: po lewej „Klinika spinu · Spin dnia”, na środku wiersz spinu, po prawej link do Kliniki. */}
       <div className="sc-home-spin__row">
         <header className="sc-home-spin__head">
           <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-          <h2 id="home-spin-title" className="sc-t-title-l sc-home-section__title">{spin ? "Spin dnia" : "Klinika spinu"}</h2>
+          <h2 id="home-spin-title" className="sc-t-title-l sc-home-section__title sc-spin-switch__tabs" role="tablist" aria-label="Który spin pokazać">
+            <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Spin dnia</button>
+            <span aria-hidden="true">|</span>
+            <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowszy</button>
+          </h2>
           {data?.scale.enough_data && left !== null && right !== null
             ? <p className="sc-home-spin__meta">Waga {data.scale.window_days} dni: rządzący {left}% · opozycja {right}%</p> : null}
         </header>
@@ -54,5 +63,6 @@ export function HomeSpinTeaser() {
         </div>
       ) : null}
     </section>
+    </>
   );
 }

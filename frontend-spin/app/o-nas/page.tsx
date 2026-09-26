@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 /** Data ostatniej zmiany opisu — aktualizować przy każdej zmianie treści tej strony. */
-const LAST_UPDATED = { iso: '2026-09-26', label: '26 września 2026' };
+const LAST_UPDATED = { iso: '2026-09-27', label: '27 września 2026' };
 /** Zmierzony koszt jednej diagnozy (Claude z wyszukiwaniem) — ten sam na stronie Wsparcie. */
 const DIAGNOSIS_COST = 'ok. 0,35 USD (ok. 1,30 zł)';
 
@@ -100,7 +100,8 @@ const PHASES: Phase[] = [
     features: [
       { text: 'baza materiałów z wyszukiwarką, paski newsowe i do pięciu własnych pasków w sekcji „Twoje wiadomości”', status: 'beta' },
       { text: 'box materiału z osią czasu i bazą powiązanych materiałów', status: 'beta' },
-      { text: 'Klinika spinu: strażnik postów, automatyczne diagnozy z etykietą AI, waga spinu, przekazy dnia obu obozów, spin dnia (także na stronie głównej)', status: 'beta' },
+      { text: 'Klinika spinu: strażnik postów, automatyczne diagnozy z etykietą AI, waga spinu, przekazy dnia obu obozów z archiwum, spin dnia i najnowszy spin, liczniki postów i spinów przy każdym polityku', status: 'beta' },
+      { text: 'wywiad dnia: najważniejszy wywiad z politykiem z poprzedniego dnia (publiczny film z YouTube) — Dr. Spin ocenia osobno gościa i prowadzącego, z cytatami i minutą nagrania', status: 'beta' },
       { text: 'udostępnianie diagnozy jako wątku na X (1/N), także w odpowiedzi pod wpisem polityka', status: 'beta' },
       { text: 'rejestr osób i stanowisk publicznych z historią funkcji i oficjalnymi kontami X', status: 'beta' },
       { text: 'paski newsowe zapisane na urządzeniu — bez zakładania konta', status: 'beta' },
@@ -124,6 +125,7 @@ const PHASES: Phase[] = [
         { name: 'Groq', note: 'strażnik: otwarty model ocenia każdy post 0–100 i pisze przekazy dnia, bez kosztów', status: 'beta' },
         { name: 'NVIDIA NIM', note: 'zapasowy model, gdy Groq nie odpowiada', status: 'beta' },
         { name: 'Claude (Anthropic) z wyszukiwaniem w sieci', note: `diagnoza: techniki z cytatami, twierdzenia ze źródłami; ${DIAGNOSIS_COST} za diagnozę`, status: 'beta' },
+        { name: 'Gemini (Google)', note: 'wywiad dnia: transkrypcja publicznego filmu z YouTube po samym linku, z minutami — bez pobierania nagrania', status: 'beta' },
       ] },
       { group: 'Infrastruktura', items: [
         { name: 'Docker · Caddy (HTTPS) · serwer VPS · GitHub Actions', status: 'działa' },
@@ -340,6 +342,11 @@ export default function AboutPage() {
               Diagnozę możemy tylko ukryć w całości — po uzasadnionym zgłoszeniu naruszenia prawa na admin@spin.clinic. Nie zmieniamy jej werdyktu ani słów.
             </li>
             <li>Waga spinu porównuje udział postów ze spinem po każdej stronie, nie ich liczbę — strony mają różną liczbę kont.</li>
+            <li>
+              Wywiad dnia: zespół wybiera tylko materiał — najważniejszy wywiad z politykiem z poprzedniego dnia. Transkrypcję z minutami przygotowuje Gemini,
+              a Dr. Spin ocenia osobno gościa (techniki, twierdzenia ze źródłami) i prowadzącego (czy dopytywał, czy pozwalał omijać pytania). Cytujemy krótko,
+              z linkiem do konkretnej minuty oryginału.
+            </li>
             <li>Każdą diagnozę udostępnisz na X jako wątek — pierwszy wpis mieści się w limicie znaków i prowadzi do pełnej diagnozy.</li>
           </ul>
           <p className="sc-onas-callout">

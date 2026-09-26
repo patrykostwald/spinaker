@@ -5,24 +5,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
-import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicPage, type Camp, type DailyMessage, type SpinDetailData } from "../../lib/clinic";
-import { formatDatePl } from "../../lib/utils";
-import { AiTag, IntensityMeter, PartyBadge, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
+import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicPage, type SpinDetailData } from "../../lib/clinic";
+import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
+import { InterviewBox, MessageBox, MessageHistory, PoliticiansTable, SpinSwitch } from "./ClinicExtras";
+
+export { MessageBox } from "./ClinicExtras";
 
 const CONTACT = "kontakt@spin.clinic";
-
-export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: DailyMessage | null; emptyText?: string }) {
-  return (
-    <article className="sc-clinic-message" data-camp={camp}>
-      <p className="sc-clinic-kicker">Przekaz dnia · {CAMP_LABELS[camp]} <AiTag />{message ? <span className="sc-clinic-message__meta">z {message.posts_count} postów · {formatDatePl(message.day)}</span> : null}</p>
-      {message ? <>
-        <p className="sc-clinic-message__text">{message.message}</p>
-        {message.themes.length > 0 && <ul className="sc-spin-techniques" aria-label="Główne hasła">{message.themes.map(theme => <li key={theme}>{theme}</li>)}</ul>}
-      </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy posty opublikują co najmniej trzy konta tego obozu."}</p>}
-    </article>
-  );
-}
 
 /** Spin dnia jako nitka: box główny (post + diagnoza), a za nim boxy kontekstu — źródła twierdzeń. */
 function SpinOfDay({ spin }: { spin: SpinDetailData }) {
@@ -79,40 +69,15 @@ function SpinOfDay({ spin }: { spin: SpinDetailData }) {
   );
 }
 
-function AccountsList({ collapsed }: { collapsed: boolean }) {
+function Politicians() {
   const query = useQuery({ queryKey: ["clinic-accounts"], queryFn: getClinicAccounts, staleTime: 10 * 60_000 });
-  const count = query.data?.results.length;
-  const list = query.data && (
-    <div className="sc-clinic-accounts__grid">{CAMPS.map(camp => (
-      <section key={camp}>
-        <h3>{CAMP_LABELS[camp]}</h3>
-        <ul>{query.data.results.filter(item => item.camp === camp).map(item => (
-          <li key={item.handle}>
-            <PartyBadge party={item.party} />
-            <span className="sc-clinic-accounts__who">
-              {item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}
-              <a href={item.url} target="_blank" rel="noopener noreferrer">@{item.handle}</a>
-            </span>
-          </li>
-        ))}</ul>
-      </section>
-    ))}</div>
-  );
-  const intro = <p>Tylko oficjalne konta polityków i partii: potwierdzone oficjalnym profilem albo otwartymi danymi i sprawdzone w X (nazwa zgodna z osobą, bez kont fanowskich i parodii). Obóz wynika z klubu lub frakcji.</p>;
-  return collapsed ? (
-    <details className="sc-clinic-accounts" id="konta">
-      <summary>Z jakich kont czytamy{count ? ` — ${count} oficjalnych kont` : ""}</summary>
-      {intro}{list}
-    </details>
-  ) : (
-    <section className="sc-clinic-accounts" id="konta" aria-labelledby="clinic-accounts-title">
-      <h2 id="clinic-accounts-title">Z jakich kont czytamy {count ? <span>{count}</span> : null}</h2>
-      {intro}{list}
-    </section>
-  );
+  return query.data ? <PoliticiansTable accounts={query.data.results} /> : null;
 }
 
-/** Klinika spinu. `embedded` — sekcja strony głównej (nagłówek h2, lista kont zwinięta). */
+/**
+ * Klinika spinu — kolejność: spin dnia / najnowszy spin, przekazy dnia, wywiad dnia, waga spinu,
+ * najnowsze diagnozy w dwóch kolumnach, politycy z licznikami, archiwum przekazów, zaproszenie dla dziennikarzy.
+ */
 export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
   const data = query.data;
@@ -121,7 +86,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
     <section className="sc-clinic" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
       <header className="sc-clinic-head">
         <p className="sc-clinic-kicker">Klinika spinu</p>
-        <Title id="clinic-title">Diagnozy przekazów polityków</Title>
+        <Title id="clinic-title">Politycy pod lupą Dr. Spina</Title>
         <p className="sc-clinic-subtitle"><AiTag /> Treści w tej sekcji generuje AI. {data?.notice ?? ""} <Link href="/o-nas#klinika">Jak to działa</Link></p>
       </header>
 
@@ -129,18 +94,18 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
       {data && <>
-        <div className="sc-clinic-top">
-          <SpinScale scale={data.scale} />
-          <div className="sc-clinic-split" aria-label="Przekazy dnia">
-            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
-          </div>
+        <section className="sc-clinic-sotd" aria-labelledby="sotd-title">
+          <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}
+            empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
+        </section>
+
+        <div className="sc-clinic-split" aria-label="Przekazy dnia">
+          {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
         </div>
 
-        <section className="sc-clinic-sotd" aria-labelledby="sotd-title">
-          <p className="sc-clinic-kicker">Spin dnia</p>
-          {data.spin_of_day ? <SpinOfDay spin={data.spin_of_day} />
-            : <p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z ostatniej doby. Pojawi się po pierwszych diagnozach.</p>}
-        </section>
+        {data.interview ? <InterviewBox interview={data.interview} /> : null}
+
+        <SpinScale scale={data.scale} />
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
           <header className="sc-clinic-latest__head">
@@ -161,6 +126,9 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           </div>
         </section>
 
+        <Politicians />
+        <MessageHistory history={data.message_history} />
+
         <aside className="sc-clinic-journalists" aria-labelledby="journalists-title">
           <div>
             <p className="sc-clinic-kicker">Dla dziennikarzy</p>
@@ -172,11 +140,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           </div>
           <a className="sc-onas-mail sc-clinic-journalists__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`}>Napisz: {CONTACT}</a>
         </aside>
-
-        <p className="sc-clinic-roadmap">
-          Dziś diagnoza to tekst ze źródłami z wyszukiwania. W miarę rozbudowy naszej bazy dowodami będą boxy z materiałami źródłowymi.
-        </p>
-        <AccountsList collapsed={embedded} />
       </>}
     </section>
   );
