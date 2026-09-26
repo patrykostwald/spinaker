@@ -17,11 +17,10 @@ import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
 import { HomeBaza } from "./HomeBaza";
 import { HomeCategoryBar } from "./HomeCategoryBar";
-import { ClinicPage } from "../../components/clinic/ClinicPage";
+import { HomeSpinTeaser } from "./HomeSpinTeaser";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
 import { HomeLead } from "./HomeLead";
-import { HomePrzekazDnia } from "./HomePrzekazDnia";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads } from "./HomeThreads";
 import { HomeTicker } from "./HomeTicker";
@@ -175,16 +174,15 @@ export function HomePage() {
             }
           />
         </HomeReveal>
+        <HomeSpinTeaser />
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
-        <ClinicPage embedded />
         {drSpin.data?.published ? (
           <HomeReveal>
             <HomeDrSpin thread={drSpin.data} />
           </HomeReveal>
         ) : null}
-        <HomePrzekazDnia government={config.data?.editorial.government ?? null} opposition={config.data?.editorial.opposition ?? null} />
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>

@@ -41,9 +41,12 @@ function HeaderClock() {
 }
 
 /** Trzy części serwisu: agregator wiadomości, diagnozy spinu i (w fazie II) nitki czytelników. */
-// Na razie jedna strona (Wiadomości → Spin → Baza), więc w szapce zostaje tylko „O nas”.
-// Po rozdzieleniu na podstrony wrócą tu sekcje (Nitki — z THREADS_ENABLED).
-const SECTIONS: Array<{ label: string; href: string }> = THREADS_ENABLED ? [{ label: "Nitki", href: "/nitki" }] : [];
+/** Dwie strony: Wiadomości (z Bazą) i Klinika spinu; Nitki wrócą w fazie II (THREADS_ENABLED). */
+const SECTIONS: Array<{ label: string; href: string }> = [
+  { label: "Wiadomości", href: "/" },
+  { label: "Klinika", href: "/klinika" },
+  ...(THREADS_ENABLED ? [{ label: "Nitki", href: "/nitki" }] : []),
+];
 
 export function SiteHeader({ site }: { site: SiteConfig }) {
   const pathname = usePathname();
