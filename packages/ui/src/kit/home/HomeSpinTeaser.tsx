@@ -29,6 +29,7 @@ export function HomeSpinTeaser() {
   const left = data ? sharePercent(data.scale.government) : null;
   const right = data ? sharePercent(data.scale.opposition) : null;
   const [slot, setSlot] = useState<string | null>(null);
+  const [interviewOpen, setInterviewOpen] = useState(false);
   useEffect(() => setSlot(nextMessageSlot(new Date())), []);
   const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
   return (
@@ -41,9 +42,9 @@ export function HomeSpinTeaser() {
           <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
           <h2 id="home-interview-title" className="sc-t-title-l sc-home-section__title">Wywiad dnia</h2>
           <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
-          <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
+          <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
         </header>
-        <InterviewBox interview={data.interview} />
+        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore />
       </section>
     ) : null}
     <section className="sc-home-spin" aria-labelledby="home-spin-title">

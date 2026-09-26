@@ -107,8 +107,14 @@ function QuoteList({ interview, items }: { interview: Interview; items: Intervie
 }
 
 /** Wywiad dnia: pasek z miniaturą i tytułem, pod nim Dr. Spin o gościu i o prowadzącym, na dole podsumowanie. */
-export function InterviewBox({ interview }: { interview: Interview }) {
-  const [open, setOpen] = useState(false);
+export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore }: {
+  interview: Interview;
+  /** Opcjonalnie: okno analizy sterowane z zewnątrz (np. link w nagłówku sekcji na głównej). */
+  open?: boolean; onOpenChange?: (open: boolean) => void; hideMore?: boolean;
+}) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
   return (
     <section className="sc-interview" aria-labelledby={`interview-${interview.id}`}>
       <div className="sc-interview__top">
@@ -135,7 +141,7 @@ export function InterviewBox({ interview }: { interview: Interview }) {
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
-      <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>
+      {hideMore ? null : <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>}
       <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad dnia · ${interview.title}`}>
         <p className="sc-clinic-dialog__lead">{interview.headline}</p>
         <p>{interview.overall}</p>
