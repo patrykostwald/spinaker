@@ -3751,3 +3751,14 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-spin__head .sc-home-kicker { justify-content: center; }
 .sc-home-spin__card { width: 100%; max-width: 760px; margin-inline: auto; }
 .sc-home-spin__empty { margin-inline: auto; text-align: center; }
+/* „Twoje wiadomości”: tytuł, podpowiedź i przyciski w jednym pasku; Edytuj | Usuń równo pod „+ Dodaj pasek”. */
+.sc-home-threads__config { display: grid; gap: var(--sc-s-3); }
+.sc-home-threads__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2) var(--sc-s-5); padding: var(--sc-s-3) var(--sc-s-5); }
+.sc-home-threads__bar h2 { margin: 0; white-space: nowrap; }
+.sc-home-threads__hint { flex: 1 1 16rem; margin: 0; }
+.sc-home-threads__count { margin-left: var(--sc-s-2); color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
+.sc-home-threads__bar .sc-home-pills { margin-left: auto; }
+.sc-home-personal__actions { left: auto; width: auto; justify-content: flex-end; padding-right: 0; }
+/* Strona główna: ciaśniejsze odstępy między sekcjami (pasek u góry → Wiadomości dnia → … → Baza). */
+.sc-home { gap: var(--sc-s-6); }
+@media (max-width: 899px) { .sc-home { gap: var(--sc-s-5); } }
