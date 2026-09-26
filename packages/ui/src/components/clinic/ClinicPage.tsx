@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
@@ -26,6 +27,8 @@ function MessageBox({ camp, message }: { camp: Camp; message: DailyMessage | nul
 
 /** Spin dnia jako nitka: box główny (post + diagnoza), a za nim boxy kontekstu — źródła twierdzeń. */
 function SpinOfDay({ spin }: { spin: SpinDetailData }) {
+  // Pełna odpowiedź Dr. Spina obok posta: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
+  const [expanded, setExpanded] = useState(false);
   const sources = spin.claims.flatMap(claim => claim.sources.map(source => ({ ...source, label: claim.assessment_label, claim: claim.claim })));
   return (
     <div className="sc-clinic-sotd__body">
@@ -39,8 +42,25 @@ function SpinOfDay({ spin }: { spin: SpinDetailData }) {
         <div className="sc-clinic-sotd__diagnosis">
           <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
           <h3 id="sotd-title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
-          <p>{spin.summary}</p>
-          <p className="sc-clinic-sotd__actions"><ShareSpinOnX id={spin.id} spin={spin} /><Link href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></p>
+          <div className="sc-clinic-sotd__reading" data-expanded={expanded || undefined} tabIndex={0} aria-label="Diagnoza Dr. Spina — przewijaj">
+            <p>{spin.summary}</p>
+            {spin.analysis && spin.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>)}
+            {spin.techniques.length > 0 && <>
+              <h4>Techniki</h4>
+              <ul className="sc-clinic-sotd__list">{spin.techniques.map(item => (
+                <li key={item.name + item.quote}><strong>{item.name}</strong> — „{item.quote}”. {item.explanation}</li>
+              ))}</ul>
+            </>}
+            {spin.claims.length > 0 && <>
+              <h4>Twierdzenia</h4>
+              <ul className="sc-clinic-sotd__list">{spin.claims.map(item => (
+                <li key={item.claim}><span className="sc-verdict">{item.assessment_label}</span> <strong>{item.claim}</strong> {item.explanation}</li>
+              ))}</ul>
+            </>}
+            {spin.limitations && <p className="sc-clinic-sotd__limits">Ograniczenia: {spin.limitations}</p>}
+          </div>
+          <p className="sc-clinic-sotd__actions">
+            <button type="button" className="sc-clinic-sotd__toggle" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? "Zwiń diagnozę ↑" : "Rozwiń całą diagnozę ↓"}</button><ShareSpinOnX id={spin.id} spin={spin} /><Link href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></p>
         </div>
       </div>
       {sources.length > 0 && (
