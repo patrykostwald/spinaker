@@ -76,6 +76,7 @@ class ClinicDailyMessage(models.Model):
     day = models.DateField()
     camp = models.CharField(max_length=12, choices=EDITORIAL_CAMPS)
     message = models.TextField()
+    analysis = models.TextField(blank=True, help_text='Dłuższa analiza przekazu (widok po kliknięciu).')
     themes = models.JSONField(default=list, blank=True)
     posts = models.ManyToManyField(PoliticalPost, related_name='clinic_daily_messages', blank=True)
     status = models.CharField(max_length=16, choices=REVIEW_STATUSES, default='pending_review', db_index=True)
@@ -134,3 +135,43 @@ class XAccountSuggestion(models.Model):
 
     def __str__(self):
         return f'@{self.handle} → {self.public_figure}'
+
+
+class ClinicInterview(models.Model):
+    """Wywiad dnia: publiczny film z YouTube z politykiem — transkrypcja (Gemini) i diagnoza Dr. Spina (Claude).
+
+    Człowiek wybiera tylko materiał (link); treści diagnozy nikt nie poprawia. Ukrycie wyłącznie po zgłoszeniu prawnym.
+    """
+    day = models.DateField(db_index=True, help_text='Dzień emisji materiału (zwykle poprzedni dzień).')
+    url = models.URLField(max_length=300)
+    video_id = models.CharField(max_length=11, unique=True)
+    title = models.CharField(max_length=300, blank=True)
+    channel = models.CharField(max_length=200, blank=True)
+    thumbnail_url = models.URLField(max_length=500, blank=True)
+    guest_name = models.CharField(max_length=200, blank=True)
+    guest_role = models.CharField(max_length=200, blank=True)
+    host_name = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=16, choices=REVIEW_STATUSES, default='queued', db_index=True)
+    headline = models.CharField(max_length=200, blank=True)
+    summary = models.TextField(blank=True)
+    overall = models.TextField(blank=True)
+    guest_analysis = models.JSONField(default=dict, blank=True)
+    host_analysis = models.JSONField(default=dict, blank=True)
+    limitations = models.TextField(blank=True)
+    transcript = models.TextField(blank=True)
+    model_name = models.CharField(max_length=64, blank=True)
+    usage = models.JSONField(default=dict, blank=True)
+    error = models.CharField(max_length=240, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    created_at = models.DateTimeField(default=timezone.now)
+    diagnosed_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(null=True, blank=True)
+    hidden_reason = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        ordering = ['-day', '-created_at']
+        verbose_name = 'wywiad dnia'
+        verbose_name_plural = 'wywiady dnia'
+
+    def __str__(self):
+        return f'{self.day} · {self.title or self.video_id}'

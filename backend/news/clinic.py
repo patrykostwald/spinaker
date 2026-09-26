@@ -368,7 +368,8 @@ def run_daily_messages(day=None) -> dict:
             continue
         status = 'approved' if auto_publish() else 'pending_review'
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
-            'message': result['message'], 'themes': result['themes'], 'usage': result['usage'], 'status': status,
+            'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
+            'usage': result['usage'], 'status': status,
             'model_name': result['usage'].get('model', ''), 'prompt_version': clinic_ai.PROMPT_VERSION,
             'reviewed_at': timezone.now() if status == 'approved' else None})
         message.posts.set(posts)
@@ -528,22 +529,40 @@ def scale_data(window_days: int = 7) -> dict:
     return result
 
 
+def _message_data(message: ClinicDailyMessage, with_posts: bool = False) -> dict:
+    data = {'id': message.pk, 'day': message.day, 'camp': message.camp, 'message': message.message,
+            'analysis': message.analysis, 'themes': message.themes, 'posts_count': message.posts.count(),
+            'model': message.model_name}
+    if with_posts:
+        # Źródła przekazu: posty, z których powstał (autor, link do X, fragment treści).
+        posts = list(message.posts.select_related('account').order_by('-published_at')[:60])
+        figures = figures_by_account({post.account_id for post in posts})
+        data['posts'] = [{'url': post.url, 'text': post.text[:280], 'published_at': post.published_at,
+                          'author': (figures[post.account_id].canonical_name if post.account_id in figures
+                                     else post.account.display_name), 'handle': post.account.handle} for post in posts]
+    return data
+
+
 def daily_message_data(camp: str):
     message = ClinicDailyMessage.objects.filter(camp=camp, status='approved').order_by('-day').first()
-    if not message:
-        return None
-    return {'day': message.day, 'message': message.message, 'themes': message.themes,
-            'posts_count': message.posts.count(), 'model': message.model_name}
+    return _message_data(message, with_posts=True) if message else None
+
+
+def message_history(days: int = 30) -> dict:
+    """Wcześniejsze przekazy dnia każdego obozu — od najnowszych."""
+    return {camp: [_message_data(message) for message in
+                   ClinicDailyMessage.objects.filter(camp=camp, status='approved').order_by('-day')[:days]]
+            for camp in CAMPS}
 
 
 def spin_of_day():
-    """Najpierw diagnoza najpopularniejszego posta dnia (zarezerwowane miejsce), o ile wykazała spin;
-    inaczej — najsilniejszy spin z ostatniej doby."""
+    """Spin dnia: diagnoza z najwyższą siłą spinu wśród postów z dzisiaj; gdy dziś jeszcze nic — z ostatniej doby."""
     base = published_diagnoses().filter(verdict__in=['spin', 'partial'])
     now = timezone.now()
-    featured = base.filter(triage__has_key='featured_day', diagnosed_at__gte=now - timedelta(hours=26)).order_by('-diagnosed_at').first()
-    if featured:
-        return detail_data(featured)
+    today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    best = base.filter(post__published_at__gte=today).order_by('-intensity', '-post__published_at').first()
+    if best:
+        return detail_data(best)
     for hours in (24, 72):
         best = base.filter(post__published_at__gte=now - timedelta(hours=hours)).order_by('-intensity', '-post__published_at').first()
         if best:
@@ -551,7 +570,13 @@ def spin_of_day():
     return None
 
 
+def latest_spin():
+    latest = published_diagnoses().filter(verdict__in=['spin', 'partial']).order_by('-diagnosed_at', '-pk').first()
+    return detail_data(latest) if latest else None
+
+
 def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
+    from news.clinic_interview import latest_interview_data
     columns = {camp: cards(published_diagnoses().filter(post__camp_at_collection=camp)
                            .order_by('-post__published_at', '-pk')[:per_camp]) for camp in CAMPS}
     return {
@@ -559,6 +584,9 @@ def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
         'scale': scale_data(window_days),
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
         'spin_of_day': spin_of_day(),
+        'latest_spin': latest_spin(),
+        'interview': latest_interview_data(),
+        'message_history': message_history(),
         'columns': columns,
         'accounts_count': reading_accounts().count(),
     }
@@ -573,6 +601,12 @@ def accounts_data() -> list[dict]:
                 if account.is_confirmed()]
     figures = figures_by_account([account.pk for account in accounts])
     posts = dict(PoliticalPost.objects.filter(account__in=accounts, available=True).values_list('account_id').annotate(n=Count('id')))
+    # Licznik na polityka: posty sprawdzone przez strażnika, częściowe spiny i spiny (opublikowane diagnozy).
+    screened = dict(SpinDiagnosis.objects.filter(post__account__in=accounts).values_list('post__account_id').annotate(n=Count('id')))
+    verdicts = {}
+    for account_id, verdict, n in (published_diagnoses().filter(post__account__in=accounts, verdict__in=['spin', 'partial'])
+                                   .values_list('post__account_id', 'verdict').annotate(n=Count('id'))):
+        verdicts.setdefault(account_id, {})[verdict] = n
     return [{
         'handle': account.handle,
         'url': f'https://x.com/{account.handle}',
@@ -583,5 +617,8 @@ def accounts_data() -> list[dict]:
         'figure_name': figures[account.pk].canonical_name if account.pk in figures else '',
         'party': party_data(figures.get(account.pk)),
         'posts_collected': posts.get(account.pk, 0),
+        'posts_screened': screened.get(account.pk, 0),
+        'partial_spins': verdicts.get(account.pk, {}).get('partial', 0),
+        'spins': verdicts.get(account.pk, {}).get('spin', 0),
         'last_polled_at': account.last_polled_at,
     } for account in accounts]

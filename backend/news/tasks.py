@@ -93,3 +93,16 @@ def sync_live_public_rosters_task():
         return {'status': status, 'completed': completed, 'failed': failed}
     finally:
         cache.delete('lock:live-public-rosters')
+
+
+
+@shared_task(name="news.tasks.clinic_interview_task", soft_time_limit=1700, time_limit=1800)
+def clinic_interview_task():
+    """Wywiad dnia: transkrypcja (Gemini) i diagnoza Dr. Spina dla wklejonego linku. Wyłączone bez kluczy."""
+    if not cache.add("clinic-interview-lock", "1", timeout=1790):
+        return {"status": "locked"}
+    try:
+        from news.clinic_interview import run_interviews
+        return run_interviews(limit=1)
+    finally:
+        cache.delete("clinic-interview-lock")

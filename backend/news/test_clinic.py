@@ -383,3 +383,46 @@ def test_daily_message_in_english_is_retried_and_then_rejected(monkeypatch):
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: ({'message': 'Only English here.', 'themes': []}, 'm'))
     with pytest.raises(clinic_ai.ClinicAIError):
         clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': 'x'}])
+
+
+@pytest.mark.django_db
+def test_interview_pipeline_keeps_only_quotes_from_the_transcript(monkeypatch):
+    from news import clinic_interview
+    from news.clinic_models import ClinicInterview
+    monkeypatch.setattr(clinic_interview, '_oembed', lambda url: {'title': 'Kropka nad i', 'author_name': 'TVN24', 'thumbnail_url': 'https://i.ytimg.com/x.jpg'})
+    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url: ({'guest_name': 'Jan Kowalski', 'host_name': 'Anna Nowak', 'segments': [
+        {'time': '01:05', 'speaker': 'guest', 'text': 'Podatki spadły o połowę, to nasz sukces.'},
+        {'time': '02:10', 'speaker': 'host', 'text': 'Ale dane GUS mówią co innego.'}]}, {'model': 'gemini'}))
+
+    def fake_call(system, user, schema, **kwargs):
+        return SimpleNamespace(content=[], stop_reason='end_turn', usage=None, model='claude-opus-5')
+    monkeypatch.setattr(clinic_ai, '_call', fake_call)
+    monkeypatch.setattr(clinic_ai, '_json_from_text', lambda blocks: {
+        'headline': 'H', 'summary': 'S', 'overall': 'O', 'limitations': '',
+        'guest': {'verdict': 'spin', 'intensity': 70, 'summary': 'g', 'claims': [],
+                  'techniques': [{'name': 'wybiórczość', 'quote': 'Podatki spadły o połowę', 'time': '01:05', 'explanation': 'e'},
+                                 {'name': 'zmyślony', 'quote': 'Tego nie powiedział', 'time': '03:00', 'explanation': 'e'}]},
+        'host': {'summary': 'h', 'notes': [{'name': 'dopytanie', 'quote': 'dane GUS mówią co innego', 'time': '02:10', 'explanation': 'e'}]}})
+    interview = clinic_interview.process(clinic_interview.queue_interview('https://youtu.be/abcdefghijk'))
+    assert interview.status == 'approved' and interview.title == 'Kropka nad i'
+    assert [t['quote'] for t in interview.guest_analysis['techniques']] == ['Podatki spadły o połowę']
+    assert interview.guest_analysis['techniques'][0]['seconds'] == 65
+    data = clinic.clinic_page_data()
+    assert data['interview']['host']['notes'][0]['time'] == '02:10'
+    assert ClinicInterview.objects.count() == 1
+    with pytest.raises(ValueError):
+        clinic_interview.queue_interview('https://example.com/video')
+
+
+@pytest.mark.django_db
+def test_spin_of_day_is_the_strongest_today_and_latest_is_the_newest(ai_on, monkeypatch):
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
+    acc = account()
+    strong, newer = post(acc, post_id='9501', hours_ago=3), post(acc, post_id='9502', hours_ago=1)
+    clinic.run_screening()
+    intensities = iter([90, 40])
+    monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis(intensity=next(intensities)))
+    for row in SpinDiagnosis.objects.order_by('post__published_at'):
+        clinic.diagnose(row)
+    assert clinic.spin_of_day()['intensity'] == 90
+    assert clinic.latest_spin()['post']['id'] == newer.post_id

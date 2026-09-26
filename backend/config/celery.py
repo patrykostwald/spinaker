@@ -7,6 +7,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'clinic-screen-5m': {'task': 'news.tasks.clinic_screen_task', 'schedule': crontab(minute='*/5')},
+    'clinic-interview-10m': {'task': 'news.tasks.clinic_interview_task', 'schedule': crontab(minute='*/10')},
     # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
     'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
     # Przekaz dnia obu obozów (darmowe modele): 9:00, 12:00, 15:00, 18:00 i 21:30.
