@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../kit";
-import { getClinicQueue, reviewDailyMessage, reviewSpin } from "../../lib/clinic";
+import { decideFlag, getClinicQueue, reviewDailyMessage, reviewSpin } from "../../lib/clinic";
 import { useAccount } from "../../lib/account";
 import { SpinDiagnosisBody } from "./SpinDetail";
 import { SpinAuthorRow } from "./SpinParts";
@@ -17,6 +17,16 @@ export function ClinicQueue() {
   const query = useQuery({ queryKey: ["clinic-queue"], queryFn: getClinicQueue, enabled: isStaff, refetchInterval: 60_000 });
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState("");
+
+  async function flag(id: number, decision: "investigate" | "dismiss") {
+    setBusy(`flag-${id}`); setError("");
+    try {
+      await decideFlag(id, decision);
+      await cache.invalidateQueries({ queryKey: ["clinic-queue"] });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Nie udało się zapisać decyzji.");
+    } finally { setBusy(""); }
+  }
 
   async function decide(kind: "spin" | "message", id: number, decision: "approve" | "reject") {
     setBusy(`${kind}-${id}`); setError("");
@@ -43,11 +53,31 @@ export function ClinicQueue() {
         <p className="sc-clinic-kicker">Klinika · kolejka</p>
         <h1>Do zatwierdzenia</h1>
         <p className="sc-clinic-lead">Zatwierdzasz albo odrzucasz — treści diagnozy nie da się zmienić. Odrzucona diagnoza nie jest publikowana.</p>
-        {data && <p className="sc-clinic-notice">Czeka {data.counts.pending} · zatwierdzone {data.counts.approved} · odrzucone {data.counts.rejected} · bez treści do oceny {data.counts.not_applicable}
+        {data && <p className="sc-clinic-notice">Płatne diagnozy dziś: {data.counts.diagnosed_today}/{data.counts.daily_limit} · w kolejce {data.counts.queued} · strażnik oznaczył {data.counts.flagged} · czeka na zatwierdzenie {data.counts.pending} · zatwierdzone {data.counts.approved} · odrzucone {data.counts.rejected} · bez treści do oceny {data.counts.not_applicable}
           {Object.keys(data.counts.failed).length > 0 && ` · błędy: ${Object.entries(data.counts.failed).map(([code, n]) => `${code} ${n}`).join(", ")}`}
           {data.counts.suggestions > 0 && <> · <a href="/admin/news/xaccountsuggestion/">sugestie kont X: {data.counts.suggestions}</a></>}</p>}
       </header>
       {error && <p role="alert" className="sc-clinic-empty">{error}</p>}
+      {data && data.flagged.length > 0 && (
+        <section className="sc-clinic-queue__flagged" aria-labelledby="flagged-title">
+          <h2 id="flagged-title">Strażnik: warte sprawdzenia <span>{data.counts.flagged}</span></h2>
+          <p className="sc-clinic-empty">Darmowa ocena strażnika. „Zbadaj” uruchamia płatną diagnozę (Claude), „Pomiń” — nic nie kosztuje.</p>
+          <ul>{data.flagged.map(item => (
+            <li key={item.id} className="sc-clinic-queue__flag">
+              <span className="sc-clinic-queue__score" title={`Ocena strażnika (${item.screened_by || "brak"})`}>{item.score ?? "?"}</span>
+              <div>
+                <SpinAuthorRow author={item.author} publishedAt={item.post.published_at} />
+                <p className="sc-spin-card__text">{item.post.text}</p>
+                <p className="sc-clinic-queue__reason">{item.camp_label} · {item.reason}</p>
+              </div>
+              <div className="sc-clinic-queue__actions">
+                <Button variant="primary" size="sm" loading={busy === `flag-${item.id}`} disabled={Boolean(busy)} onClick={() => flag(item.id, "investigate")}>Zbadaj</Button>
+                <Button variant="quiet" size="sm" disabled={Boolean(busy)} onClick={() => flag(item.id, "dismiss")}>Pomiń</Button>
+              </div>
+            </li>
+          ))}</ul>
+        </section>
+      )}
       {data?.messages.map(message => (
         <article key={`m-${message.id}`} className="sc-clinic-queue__item">
           <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {message.posts_count} postów</p>
@@ -67,7 +97,7 @@ export function ClinicQueue() {
           <div className="sc-spin-detail__diagnosis"><SpinDiagnosisBody spin={spin} />{buttons("spin", spin.id)}</div>
         </article>
       ))}
-      {data && !data.diagnoses.length && !data.messages.length && <p className="sc-clinic-empty">Kolejka jest pusta.</p>}
+      {data && !data.diagnoses.length && !data.messages.length && !data.flagged.length && <p className="sc-clinic-empty">Kolejka jest pusta.</p>}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Button, Segmented } from "../../kit";
 import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicPage, getClinicSpins, type Camp, type DailyMessage } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
-import { AiTag, IntensityMeter, SpinAuthorRow, SpinCard, SpinScale, VerdictTag } from "./SpinParts";
+import { AiTag, IntensityMeter, PartyBadge, SpinAuthorRow, SpinCard, SpinScale, VerdictTag } from "./SpinParts";
 
 function MessageBox({ camp, message }: { camp: Camp; message: DailyMessage | null }) {
   return (
@@ -43,26 +43,27 @@ function CampColumn({ camp, initial }: { camp: Camp; initial: import("../../lib/
 }
 
 function AccountsList() {
-  const [open, setOpen] = useState(false);
-  const query = useQuery({ queryKey: ["clinic-accounts"], queryFn: getClinicAccounts, enabled: open });
+  const query = useQuery({ queryKey: ["clinic-accounts"], queryFn: getClinicAccounts, staleTime: 10 * 60_000 });
   return (
-    <details className="sc-clinic-accounts" onToggle={event => setOpen((event.target as HTMLDetailsElement).open)}>
-      <summary>Z jakich kont czytamy</summary>
-      <p>Czytamy wyłącznie konta, które zespół potwierdził oficjalnym dowodem (strona instytucji, profil w Sejmie). Podział na rządzących i opozycję wynika z przynależności klubowej.</p>
+    <section className="sc-clinic-accounts" aria-labelledby="clinic-accounts-title">
+      <h2 id="clinic-accounts-title">Z jakich kont czytamy {query.data ? <span>{query.data.results.length}</span> : null}</h2>
+      <p>Czytamy konta X polityków potwierdzone dowodem — oficjalnym profilem albo otwartymi danymi (Wikidane) sprawdzonymi przez zespół. Podział na rządzących i opozycję wynika z klubu parlamentarnego lub frakcji w Parlamencie Europejskim.</p>
       {query.isLoading && <p>Ładowanie…</p>}
       {query.data && <div className="sc-clinic-accounts__grid">{CAMPS.map(camp => (
         <section key={camp}>
           <h3>{CAMP_LABELS[camp]}</h3>
           <ul>{query.data.results.filter(item => item.camp === camp).map(item => (
             <li key={item.handle}>
-              <a href={item.url} target="_blank" rel="noopener noreferrer">@{item.handle}</a>
-              {" — "}{item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}
-              {item.party ? ` · ${item.party.short}` : ""}
+              <PartyBadge party={item.party} />
+              <span className="sc-clinic-accounts__who">
+                {item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}
+                <a href={item.url} target="_blank" rel="noopener noreferrer">@{item.handle}</a>
+              </span>
             </li>
           ))}</ul>
         </section>
       ))}</div>}
-    </details>
+    </section>
   );
 }
 
@@ -76,8 +77,8 @@ export function ClinicPage() {
         <p className="sc-clinic-kicker">Klinika spinu</p>
         <h1>Diagnozy przekazów polityków</h1>
         <p className="sc-clinic-lead">
-          Każdy nowy post z kont, które czytamy, trafia do Dr. Spina. AI rozkłada go na czynniki pierwsze i stawia diagnozę —
-          według tych samych zasad dla każdej strony. Oceniamy komunikat, nie człowieka.
+          Każdy nowy post z kont, które czytamy, przegląda strażnik. Te, w których jest coś do sprawdzenia, bada Dr. Spin: rozkłada je na czynniki
+          pierwsze i stawia diagnozę — według tych samych zasad dla każdej strony. Oceniamy komunikat, nie człowieka.
         </p>
         <p className="sc-clinic-notice"><AiTag /> {data?.notice ?? "Diagnozy przygotowuje AI automatycznie. Człowiek może je tylko zatwierdzić albo odrzucić — nie zmienia ich treści."} <Link href="/o-nas#klinika">Jak to działa</Link></p>
       </header>

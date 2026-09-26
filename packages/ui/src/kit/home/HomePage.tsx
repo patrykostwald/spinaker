@@ -48,17 +48,6 @@ function useTodayLabel(options: Intl.DateTimeFormatOptions) {
   return label;
 }
 
-function TopBar() {
-  const date = useTodayLabel({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  return (
-    <div className="sc-home-topbar sc-t-meta">
-      <span className="sc-home-topbar__date" suppressHydrationWarning>
-        {date}
-      </span>
-    </div>
-  );
-}
-
 export function HomePage() {
   const params = useSearchParams();
   const router = useRouter();
@@ -132,7 +121,6 @@ export function HomePage() {
     <>
       <div className="sc-home">
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
-        <TopBar />
         <DemoBanner />
         <HomeHero />
         <div className="sc-home-top">

@@ -3525,3 +3525,42 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
   .sc-account-activity > li > p { grid-column: 1 / -1; }
 }
 @media (max-width: 480px) { .sc-account-items > li { grid-template-columns: minmax(0, 1fr); } .sc-account-index { display: none; } }
+/* „O nas”: okienka bez przycisku kopiowania i droga posta do diagnozy w czterech krokach. */
+.sc-onas-copy__bar { padding: var(--sc-s-2) var(--sc-s-4); }
+.sc-onas-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-s-3); padding: 0; list-style: none; counter-reset: flow; }
+.sc-onas-flow li { position: relative; display: grid; gap: var(--sc-s-2); align-content: start; padding: var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-line); color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.55; }
+.sc-onas-flow li:not(:last-child)::after { content: "→"; position: absolute; right: calc(var(--sc-s-3) * -1 + 2px); top: 50%; transform: translate(50%, -50%); z-index: 1; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--sc-bg); color: var(--sc-accent); font-size: 13px; }
+.sc-onas-flow h3 { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-s-size); line-height: var(--sc-t-title-s-lh); font-weight: var(--sc-w-title); }
+.sc-onas-flow p { margin: 0; }
+.sc-onas-flow__num { color: var(--sc-accent); font: 600 12px/1 var(--sc-font-mono); }
+.sc-onas-flow__tech { color: var(--sc-accent) !important; font: 600 11.5px/1.4 var(--sc-font-mono); }
+@media (max-width: 900px) {
+  .sc-onas-flow { grid-template-columns: minmax(0, 1fr); }
+  .sc-onas-flow li:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: calc(var(--sc-s-3) * -1 + 2px); transform: translate(50%, 50%); }
+}
+/* Data i godzina w szapce (z prawej od wyszukiwarki) — tylko gdy jest miejsce. */
+.sc-nav-clock { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-variant-numeric: tabular-nums; white-space: nowrap; margin-right: var(--sc-s-2); }
+.sc-nav-clock span::first-letter { text-transform: uppercase; }
+@container sc-navmenu (max-width: 1279px) { .sc-nav-clock { display: none; } }
+/* „Wiadomości dnia”: główna karta dwa razy wyższa — obok mieści się też dwa razy więcej materiałów. */
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image] { min-height: 440px; }
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__media { height: 240px; }
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__mono { font-size: 72px; }
+@media (max-width: 899px) { .sc-home-lead__main .sc-card[data-size="large"][data-no-image] { min-height: 0; } .sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__media { height: 140px; } }
+/* Klinika: lista czytanych kont (zawsze widoczna) i posty oznaczone przez strażnika w kolejce. */
+.sc-clinic-accounts h2 { margin: 0 0 var(--sc-s-2); color: var(--sc-text); font-size: var(--sc-t-title-m-size); line-height: var(--sc-t-title-m-lh); font-weight: var(--sc-w-title); }
+.sc-clinic-accounts h2 span { margin-left: var(--sc-s-2); color: var(--sc-accent); }
+.sc-clinic-accounts ul { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--sc-s-2) var(--sc-s-4); }
+.sc-clinic-accounts li { display: flex; align-items: center; gap: var(--sc-s-2); min-width: 0; }
+.sc-clinic-accounts__who { display: grid; min-width: 0; line-height: 1.3; }
+.sc-clinic-accounts__who > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-clinic-accounts__who > a:last-child { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-clinic-accounts__grid { grid-template-columns: minmax(0, 1fr); }
+.sc-clinic-queue__flagged { display: grid; gap: var(--sc-s-3); }
+.sc-clinic-queue__flagged h2 { margin: 0; font-size: var(--sc-t-title-m-size); }
+.sc-clinic-queue__flagged h2 span { color: var(--sc-accent); margin-left: var(--sc-s-2); }
+.sc-clinic-queue__flagged ul { display: grid; gap: var(--sc-s-3); padding: 0; list-style: none; }
+.sc-clinic-queue__flag { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: var(--sc-s-4); align-items: start; padding: var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-clinic-queue__score { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 999px; box-shadow: inset 0 0 0 2px var(--sc-accent); color: var(--sc-accent); font: 700 16px/1 var(--sc-font-mono); }
+.sc-clinic-queue__reason { margin: var(--sc-s-1) 0 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+@media (max-width: 700px) { .sc-clinic-queue__flag { grid-template-columns: minmax(0, 1fr); } }

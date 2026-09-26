@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "../Button";
 import { CloseIcon } from "../icons";
+import { THREADS_ENABLED } from "../../lib/features";
 
 type DayPeriod = "morning" | "afternoon" | "evening";
 type ThemeName = "dark" | "light";
@@ -54,11 +55,11 @@ export function HomeHero() {
       <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.png`} alt="" />
       <div className="sc-home-intro__content">
         <p className="sc-home-intro__title">
-          Wiadomości ze źródłami. Diagnozy spinu polityków. <span>Nitki układane przez czytelników.</span>
+          Wiadomości ze źródłami. <span>Diagnozy spinu polityków.</span>
         </p>
         <p className="sc-home-intro__links">
           <Link href="/klinika">Klinika spinu →</Link>
-          <Link href="/nitki">Nitki →</Link>
+          {THREADS_ENABLED && <Link href="/nitki">Nitki →</Link>}
           <Link href="/o-nas">Jak to działa</Link>
         </p>
       </div>

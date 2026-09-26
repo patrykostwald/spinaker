@@ -95,14 +95,19 @@ export const getClinicSpins = (camp: Camp, page: number) =>
 export const getSpin = (id: number | string) => apiFetch<SpinDetailData>(`/api/clinic/spins/${id}/`);
 export const getClinicAccounts = () => apiFetch<{ results: ClinicAccount[] }>("/api/clinic/accounts/");
 
+export type FlaggedPost = { id: number; score: number | null; reason: string; screened_by: string; camp_label: string; author: SpinAuthor; post: { url: string; text: string; published_at: string } };
+
 export type ClinicQueue = {
+  flagged: FlaggedPost[];
   diagnoses: Array<SpinDetailData & { status: string; triage: Record<string, unknown>; usage: Record<string, unknown> }>;
   messages: Array<{ id: number; day: string; camp: Camp; camp_label: string; message: string; themes: string[]; posts_count: number; model: string }>;
-  counts: { pending: number; approved: number; rejected: number; not_applicable: number; failed: Record<string, number>; suggestions: number };
+  counts: { pending: number; flagged: number; queued: number; diagnosed_today: number; daily_limit: number; approved: number; rejected: number; not_applicable: number; failed: Record<string, number>; suggestions: number };
 };
 export const getClinicQueue = () => apiFetch<ClinicQueue>("/api/staff/clinic/queue/");
 export const reviewSpin = (id: number, decision: "approve" | "reject") =>
   apiWrite(`/api/staff/clinic/diagnoses/${id}/review/`, { decision });
+export const decideFlag = (id: number, decision: "investigate" | "dismiss") =>
+  apiWrite(`/api/staff/clinic/diagnoses/${id}/flag/`, { decision });
 export const reviewDailyMessage = (id: number, decision: "approve" | "reject") =>
   apiWrite(`/api/staff/clinic/messages/${id}/review/`, { decision });
 
