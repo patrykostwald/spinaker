@@ -4006,3 +4006,18 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 /* Wywiad dnia w Klinice: „Pełna analiza ze źródłami” pod miniaturą, do lewej. */
 .sc-interview__media { display: grid; gap: var(--sc-s-3); align-content: start; }
 .sc-interview__media .sc-interview__more { text-align: left; }
+
+/* Telefon: paski przewijają się wyłącznie w poziomie. Pionowy ruch palca przewija stronę, a nie pasek,
+   i sama strona nigdy nie przesuwa się na boki. */
+html, body { overflow-x: clip; }
+.sc-strip__scroller, .sc-news-strip__track, .sc-personal-strip__track, .sc-top-ten__track, .sc-surface__related-track,
+.sc-dr-spin__related, .sc-external-results__cards, .sc-search-links > div, .sc-morph-strip, .sc-material-waterfall__scroll,
+.sc-editor-timeline, .sc-motion-strip-tiles, .sc-carousel__scroller {
+  overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y;
+}
+@media (max-width: 760px) {
+  .sc-strip__scroller, .sc-news-strip__track, .sc-personal-strip__track, .sc-top-ten__track, .sc-surface__related-track,
+  .sc-dr-spin__related, .sc-external-results__cards, .sc-search-links > div { scroll-snap-type: x mandatory; }
+}
+/* Na dotyku bez przeciągania pasków (uchwyt łapał każdy ruch palca) — kolejność zmienia się na komputerze. */
+@media (pointer: coarse), (max-width: 760px) { .sc-strip-handle { display: none; } }
