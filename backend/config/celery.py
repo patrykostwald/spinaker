@@ -7,7 +7,8 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'clinic-screen-5m': {'task': 'news.tasks.clinic_screen_task', 'schedule': crontab(minute='*/5')},
-    'clinic-diagnoses-10m': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='*/10')},
+    # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
+    'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
     'clinic-daily-messages-20h': {'task': 'news.tasks.clinic_daily_messages_task', 'schedule': crontab(hour='12,17,21', minute=30)},
     'sejm-votes-15m': {'task': 'scraper.tasks.import_official_task', 'args': ['votings'], 'schedule': crontab(minute='*/15')},
     'sejm-prints-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['prints'], 'schedule': crontab(minute=10)},

@@ -13,6 +13,13 @@ from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure
 POST_TEXT = 'Rząd podniósł podatki o 50 procent. Tylko my obronimy Polaków!'
 
 
+def at_hour(monkeypatch, hour, minute=0):
+    """Ustala porę dnia dla Kliniki (diagnozy tylko w dzień, tempo zależy od godziny)."""
+    moment = timezone.localtime().replace(hour=hour, minute=minute, second=0, microsecond=0)
+    monkeypatch.setattr(clinic, 'local_now', lambda: moment)
+    return moment
+
+
 def account(camp='opposition', handle='posel_test', user_id='101'):
     return PoliticalAccount.objects.create(user_id=user_id, handle=handle, display_name='Poseł Test', camp=camp, enabled=True)
 
@@ -38,6 +45,7 @@ def ai_on(monkeypatch):
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 90, 'reason': 'konkretne twierdzenie', 'provider': 'groq', 'model': 'm'})
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    at_hour(monkeypatch, 12)
 
 
 def pipeline():
@@ -285,6 +293,7 @@ def test_auto_mode_publishes_and_fills_the_daily_quota_from_flagged(monkeypatch)
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
     monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    at_hour(monkeypatch, 12)
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 55, 'reason': 'teza', 'provider': 'groq', 'model': 'm'})
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
     post(account())
@@ -311,3 +320,37 @@ def test_failures_do_not_use_the_daily_quota_but_a_series_of_them_stops_spending
     assert SpinDiagnosis.objects.filter(status='failed').first().error.startswith('api_404: model not found')
     assert clinic.run_diagnoses(limit=2) == {'status': 'too_many_failures', 'failed_today': 2}
     assert SpinDiagnosis.objects.filter(status='queued').count() == 2
+
+
+@pytest.mark.django_db
+def test_no_diagnoses_at_night_and_the_quota_is_spread_over_the_day(ai_on, monkeypatch):
+    acc = account()
+    for index in range(10):
+        post(acc, post_id=str(9200 + index))
+    clinic.run_screening()
+    at_hour(monkeypatch, 3)
+    assert clinic.run_diagnoses() == {'status': 'night'}
+    at_hour(monkeypatch, 8)
+    clinic.run_diagnoses()
+    clinic.run_diagnoses()
+    # O 8:00 minęła 1/16 dnia: z 19 zwykłych diagnoz należą się 2 — nie cały limit naraz.
+    assert clinic.diagnoses_today() == 2
+
+
+@pytest.mark.django_db
+def test_evening_slot_goes_to_the_most_popular_post_and_it_becomes_spin_of_the_day(ai_on, monkeypatch):
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
+    small, big = account(handle='maly', user_id='201'), account(handle='duzy', user_id='202', camp='government')
+    quiet = post(small, post_id='9301', hours_ago=2)
+    loud = post(big, post_id='9302', hours_ago=2)
+    PoliticalPost.objects.filter(pk=loud.pk).update(author_data={'public_metrics': {'followers_count': 900000}},
+                                                    source_data={'public_metrics': {'like_count': 500}})
+    PoliticalPost.objects.filter(pk=quiet.pk).update(author_data={'public_metrics': {'followers_count': 800}})
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 50, 'reason': 'r', 'provider': 'groq', 'model': 'm'})
+    clinic.run_screening()
+    at_hour(monkeypatch, 18, 5)
+    monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis(intensity=30))
+    clinic.run_diagnoses(limit=0)
+    featured = clinic.featured_today()
+    assert featured.post_id == loud.pk and featured.status == 'approved'
+    assert clinic.spin_of_day()['id'] == featured.pk

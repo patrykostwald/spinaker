@@ -16,7 +16,7 @@ def clinic_diagnose_task():
         return {"status": "locked"}
     try:
         from news.clinic import run_diagnoses
-        return run_diagnoses(limit=3)
+        return run_diagnoses(limit=2)
     finally:
         cache.delete("clinic-diagnose-lock")
 
