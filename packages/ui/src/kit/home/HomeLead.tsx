@@ -53,7 +53,8 @@ export function HomeLead({
         <div className="sc-home-lead__grid">
           <div className="sc-home-lead__main">
             {main ? (
-              <NewsCard article={main} size="large" headingLevel={3} eyebrow={fallback ? "Najnowszy materiał" : "Wiadomość dnia"} priority />
+              <NewsCard article={main} size="large" headingLevel={3} eyebrow={fallback ? "Najnowszy materiał" : "Wiadomość dnia"} priority
+                expandable={(main.description ?? "").length > 180} />
             ) : (
               <div className="sc-home-anchor-placeholder sc-home-lead__placeholder">
                 <div className="sc-skeleton sc-home-anchor-placeholder__media" />

@@ -64,10 +64,11 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         <div className="sc-nav-brand">
           <Link href="/" className="sc-wordmark">{first}<span aria-hidden="true">.</span>{second}</Link>
           <span className="sc-beta">BETA</span>
+          <Link href="/o-nas" className="sc-nav-about" aria-current={pathname === "/o-nas" ? "page" : undefined}>O nas</Link>
         </div>
       }
       search={<HeaderSearch />}
-      cta={<div className="sc-nav-cta"><HeaderClock /><Button href="/o-nas" variant="quiet" size="sm" aria-current={pathname === "/o-nas" ? "page" : undefined}>O nas</Button><ThemeSwitcher compact />{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
+      cta={<div className="sc-nav-cta"><HeaderClock /><ThemeSwitcher compact />{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
     />
   );
 }
