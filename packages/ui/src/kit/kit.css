@@ -3618,3 +3618,45 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
   .sc-scale__row { grid-template-columns: 5.5rem minmax(0, 1fr) 3rem; }
   .sc-scale__row .sc-scale__n { display: none; }
 }
+/* === Poprawki 26.09 (noc): karta dnia, paski, szapka, Klinika w kolumnach === */
+/* Duża karta bez zdjęcia: pas z inicjałami tylko ~25% wysokości; rośnie po najechaniu tylko przy długim opisie. */
+.sc-home-lead__main .sc-card[data-size="large"][data-no-image] .sc-card__media { height: 110px; }
+/* Paski czytelnika: ciaśniej, nazwa · Edytuj · Usuń w jednej linii. */
+.sc-home-threads { gap: var(--sc-s-3); }
+.sc-home-threads__bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sc-s-2) var(--sc-s-4); padding: var(--sc-s-2) var(--sc-s-4); text-align: left; justify-items: initial; }
+.sc-home-threads__bar .sc-home-pills { justify-content: flex-end; }
+.sc-home-threads .sc-strip-row { padding: var(--sc-s-3) var(--sc-s-4) var(--sc-s-4); }
+.sc-home-threads .sc-strip-row__head { margin-bottom: var(--sc-s-2); min-height: 32px; padding-right: 12rem; }
+.sc-home-personal__actions { position: absolute; top: var(--sc-s-3); right: var(--sc-s-4); display: flex; gap: var(--sc-s-1); margin: 0; }
+/* Szapka: „O nas” zaraz przy logo, BETA mniejsze i wyżej (jak indeks górny). */
+.sc-nav-brand { gap: var(--sc-s-2); }
+.sc-beta { height: 15px; padding: 0 4px; font-size: 8.5px; align-self: flex-start; margin-top: 2px; }
+.sc-nav-about { margin-left: var(--sc-s-4); color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); font-weight: 600; text-decoration: none; text-transform: none; letter-spacing: 0; }
+.sc-nav-about:hover, .sc-nav-about[aria-current="page"] { color: var(--sc-text); }
+/* Pas powitalny: „Wesprzyj nas” na środku wysokości. */
+.sc-home-intro__actions { align-self: center; }
+/* Klinika: waga u góry na całą szerokość, przekazy dnia w dwóch kolumnach, na dole kolumny z przewijaniem. */
+.sc-clinic-top { grid-template-columns: minmax(0, 1fr); }
+.sc-clinic-top .sc-clinic-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sc-clinic-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s-5); }
+.sc-clinic-column { container-type: inline-size; display: grid; gap: var(--sc-s-3); align-content: start; }
+.sc-clinic-column__title { position: static; margin: 0; padding: 0 0 var(--sc-s-2); border-bottom: 1px solid var(--sc-line); font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+.sc-clinic-column__list { display: grid; gap: var(--sc-s-3); max-height: 1080px; overflow-y: auto; overscroll-behavior: contain; padding-right: var(--sc-s-1); scrollbar-width: thin; }
+.sc-clinic-column__list .sc-spin-card { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* Dla dziennikarzy: przycisk pod tekstem, z tym samym odstępem od krawędzi co tekst. */
+.sc-clinic-journalists { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: var(--sc-s-4); }
+@media (max-width: 860px) {
+  .sc-clinic-top .sc-clinic-split, .sc-clinic-columns { grid-template-columns: minmax(0, 1fr); }
+  .sc-home-threads .sc-strip-row__head { padding-right: 0; }
+  .sc-home-personal__actions { position: static; }
+}
+/* Strona główna: niski pas „Spin dnia” z przejściem do Kliniki. */
+.sc-home-spin { display: grid; gap: var(--sc-s-3); padding: var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-accent); container-type: inline-size; }
+.sc-home-spin__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--sc-s-2) var(--sc-s-4); }
+.sc-home-spin__head .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-home-spin__head h2 { margin: 0; }
+.sc-home-spin__meta { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-home-spin__meta a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+.sc-home-spin__empty { margin: 0; max-width: 70ch; }
+.sc-home-spin__card .sc-spin-card__text { -webkit-line-clamp: 4; }
+.sc-navmenu__link, .sc-nav-about { white-space: nowrap; }

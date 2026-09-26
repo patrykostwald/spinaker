@@ -447,7 +447,7 @@ def spin_of_day():
     return None
 
 
-def clinic_page_data(window_days: int = 7, per_camp: int = 12) -> dict:
+def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
     columns = {camp: cards(published_diagnoses().filter(post__camp_at_collection=camp)
                            .order_by('-post__published_at', '-pk')[:per_camp]) for camp in CAMPS}
     return {

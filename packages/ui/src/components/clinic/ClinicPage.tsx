@@ -98,8 +98,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
   const data = query.data;
   const Title = embedded ? "h2" : "h1";
-  const latest = data ? [...data.columns.government, ...data.columns.opposition]
-    .sort((a, b) => b.post.published_at.localeCompare(a.post.published_at)) : [];
   return (
     <section className="sc-clinic" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
       <header className="sc-clinic-head">
@@ -128,13 +126,20 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
           <header className="sc-clinic-latest__head">
             <h3 id="clinic-latest-title">Najnowsze diagnozy</h3>
-            <p>Rządzący i opozycja w jednym pasie — według tych samych zasad. Każdą diagnozę udostępnisz jako wątek na X.</p>
+            <p>Rządzący i opozycja obok siebie — według tych samych zasad. Każdą diagnozę udostępnisz jako wątek na X.</p>
           </header>
-          {latest.length ? (
-            <Strip label="Najnowsze diagnozy" slot="420px">
-              {latest.map(spin => <div key={spin.id} className="sc-strip__slot"><SpinCard spin={spin} /></div>)}
-            </Strip>
-          ) : <p className="sc-clinic-empty">Pierwsze diagnozy pojawią się, gdy strażnik znajdzie posty warte sprawdzenia.</p>}
+          <div className="sc-clinic-columns">
+            {CAMPS.map(camp => (
+              <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>
+                <h4 id={`clinic-col-${camp}`} className="sc-clinic-column__title">{CAMP_LABELS[camp]}</h4>
+                {data.columns[camp].length ? (
+                  <div className="sc-clinic-column__list" tabIndex={0} aria-label={`Diagnozy: ${CAMP_LABELS[camp]} — przewijaj`}>
+                    {data.columns[camp].map(spin => <SpinCard key={spin.id} spin={spin} />)}
+                  </div>
+                ) : <p className="sc-clinic-empty">Pierwsze diagnozy pojawią się, gdy strażnik znajdzie posty warte sprawdzenia.</p>}
+              </section>
+            ))}
+          </div>
         </section>
 
         <aside className="sc-clinic-journalists" aria-labelledby="journalists-title">
