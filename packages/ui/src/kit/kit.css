@@ -3692,3 +3692,10 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-home-personal__actions button { padding: 4px 2px; border: 0; background: none; color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
 .sc-home-personal__actions button:hover, .sc-home-personal__actions button:focus-visible { color: var(--sc-text); }
 @media (max-width: 860px) { .sc-home-threads .sc-strip-row__head { padding-right: 0; } }
+/* Szapka: „Źródła” tuż po lewej od pola szukania, „Klinika” tuż po prawej; godzina · motyw · O nas przy prawej krawędzi. Zwykłe litery. */
+.sc-navmenu__link, .sc-nav-cta .sc-btn { text-transform: none; letter-spacing: 0; font-size: var(--sc-t-body-s-size); }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__start { justify-content: space-between; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__list { flex: 1 1 auto; justify-content: flex-end; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__end { justify-content: stretch; }
+.sc-navmenu[data-layout="centered"] .sc-navmenu__cta { flex: 1 1 auto; }
+.sc-nav-cta .sc-nav-cta__link:first-child { margin-right: auto; }
