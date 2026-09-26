@@ -3811,3 +3811,6 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
   .sc-home-baza__search > * { max-width: none; }
   .sc-home-baza__latest { justify-items: end; text-align: right; padding-left: 0; }
 }
+/* Przekaz dnia: data przy prawej krawędzi nagłówka. */
+.sc-clinic-message > .sc-clinic-kicker { display: flex; align-items: center; gap: var(--sc-s-2); width: 100%; }
+.sc-clinic-message > .sc-clinic-kicker .sc-clinic-message__meta { margin-left: auto; white-space: nowrap; }
