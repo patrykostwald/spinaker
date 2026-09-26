@@ -448,6 +448,7 @@ export default function AboutPage() {
                 <li>nie poprawiamy diagnoz AI — publikujemy je z etykietą AI albo wcale</li>
                 <li>nie piszemy własnych newsów i nie kopiujemy pełnych tekstów bez zgody wydawcy</li>
                 <li>nie obchodzimy blokad, limitów ani płatnych dostępów</li>
+                <li>nie przyjmujemy wpłat od partii, polityków ani ich fundacji</li>
               </ul>
             </div>
           </div>
