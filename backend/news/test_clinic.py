@@ -34,9 +34,15 @@ def fake_diagnosis(verdict='spin', intensity=70):
 def ai_on(monkeypatch):
     monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
-    monkeypatch.setattr(clinic_ai, 'triage', lambda text: None)
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'false')
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 90, 'reason': 'konkretne twierdzenie', 'provider': 'groq', 'model': 'm'})
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+
+
+def pipeline():
+    clinic.run_screening()
+    return clinic.run_diagnoses()
 
 
 def staff():
@@ -46,8 +52,8 @@ def staff():
 @pytest.mark.django_db
 def test_new_post_waits_for_review_and_is_published_only_after_approval(ai_on):
     post(account())
-    result = clinic.run_diagnoses(limit=5)
-    assert result['created'] == {'pending_review': 1}
+    result = pipeline()
+    assert result['diagnosed'] == {'pending_review': 1}
     diagnosis = SpinDiagnosis.objects.get()
     client = APIClient()
     assert client.get('/api/clinic/').json()['columns']['opposition'] == []
@@ -64,7 +70,7 @@ def test_new_post_waits_for_review_and_is_published_only_after_approval(ai_on):
 @pytest.mark.django_db
 def test_review_accepts_only_a_decision_and_only_from_staff(ai_on):
     post(account())
-    clinic.run_diagnoses()
+    pipeline()
     diagnosis = SpinDiagnosis.objects.get()
     client = APIClient()
     assert client.post(f'/api/staff/clinic/diagnoses/{diagnosis.pk}/review/', {'decision': 'approve'}, format='json').status_code in (401, 403)
@@ -75,19 +81,90 @@ def test_review_accepts_only_a_decision_and_only_from_staff(ai_on):
 
 
 @pytest.mark.django_db
-def test_triage_skips_posts_without_content_to_assess(ai_on, monkeypatch):
-    monkeypatch.setattr(clinic_ai, 'triage', lambda text: {'analyze': False, 'reason': 'życzenia', 'model': 'groq'})
+def test_watcher_skips_low_scores_for_free(ai_on, monkeypatch):
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 10, 'reason': 'życzenia', 'provider': 'groq', 'model': 'm'})
+    called = []
+    monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: called.append(1) or fake_diagnosis())
     post(account(), text='Wesołych Świąt!')
+    pipeline()
+    assert SpinDiagnosis.objects.get().status == 'not_applicable' and not called
+
+
+@pytest.mark.django_db
+def test_medium_score_waits_for_investigate_decision(ai_on, monkeypatch):
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 55, 'reason': 'teza bez liczb', 'provider': 'groq', 'model': 'm'})
+    post(account())
+    pipeline()
+    row = SpinDiagnosis.objects.get()
+    assert row.status == 'flagged' and row.screen_score == 55
+    client = APIClient()
+    client.force_authenticate(staff())
+    queue = client.get('/api/staff/clinic/queue/').json()
+    assert [item['id'] for item in queue['flagged']] == [row.pk] and queue['flagged'][0]['reason'] == 'teza bez liczb'
+    assert client.post(f'/api/staff/clinic/diagnoses/{row.pk}/flag/', {'decision': 'investigate'}, format='json').status_code == 200
     clinic.run_diagnoses()
-    assert SpinDiagnosis.objects.get().status == 'not_applicable'
+    row.refresh_from_db()
+    assert row.status == 'pending_review' and row.diagnosed_at is not None
+
+
+@pytest.mark.django_db
+def test_dismissed_flag_is_never_paid_for(ai_on, monkeypatch):
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 50, 'reason': 'r', 'provider': 'groq', 'model': 'm'})
+    post(account())
+    clinic.run_screening()
+    row = SpinDiagnosis.objects.get()
+    client = APIClient()
+    client.force_authenticate(staff())
+    assert client.post(f'/api/staff/clinic/diagnoses/{row.pk}/flag/', {'decision': 'dismiss'}, format='json').status_code == 200
+    clinic.run_diagnoses()
+    row.refresh_from_db()
+    assert row.status == 'not_applicable' and row.diagnosed_at is None
+
+
+@pytest.mark.django_db
+def test_no_watcher_means_manual_decision_not_blind_spending(ai_on, monkeypatch):
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: None)
+    post(account())
+    pipeline()
+    assert SpinDiagnosis.objects.get().status == 'flagged'
+
+
+def test_screen_falls_back_to_nim_when_groq_fails(monkeypatch):
+    import requests as http
+    monkeypatch.setenv('GROQ_API_KEY', 'g')
+    monkeypatch.setenv('GROQ_EDITORIAL_MODEL', 'openai/gpt-oss-20b')
+    monkeypatch.setenv('NIM_API_KEY', 'n')
+    calls = []
+
+    class Reply:
+        def __init__(self, status, content=''):
+            self.status_code, self.content = status, content
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise http.HTTPError(str(self.status_code))
+        def json(self):
+            return {'choices': [{'message': {'content': self.content}}]}
+
+    def fake_post(url, **kwargs):
+        calls.append(url)
+        if 'groq' in url:
+            return Reply(429)
+        return Reply(200, 'Oto ocena: {"score": 83, "reason": "zarzut z liczbami"}')
+
+    monkeypatch.setattr(clinic_ai.requests, 'post', fake_post)
+    result = clinic_ai.screen('Rząd podniósł podatki o 50 procent.')
+    assert result == {'score': 83, 'reason': 'zarzut z liczbami', 'provider': 'nim', 'model': 'deepseek-ai/deepseek-v4.1-flash'}
+    assert 'groq' in calls[0] and 'nvidia' in calls[1]
 
 
 @pytest.mark.django_db
 def test_disabled_without_key(monkeypatch):
     monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 90, 'reason': 'r', 'provider': 'groq', 'model': 'm'})
     post(account())
+    clinic.run_screening()
     assert clinic.run_diagnoses() == {'status': 'disabled'}
-    assert not SpinDiagnosis.objects.exists()
+    assert SpinDiagnosis.objects.get().status == 'queued'
 
 
 def test_cleaning_drops_invented_quotes_and_unsourced_fact_checks():
@@ -116,7 +193,7 @@ def test_json_is_read_from_the_last_text_block():
 @pytest.mark.django_db
 def test_reaction_is_required_and_comment_is_optional(ai_on):
     post(account())
-    clinic.run_diagnoses()
+    pipeline()
     diagnosis = SpinDiagnosis.objects.get()
     clinic.review(diagnosis, staff(), 'approve')
     url = f'/api/clinic/spins/{diagnosis.pk}/opinions/'
@@ -152,7 +229,7 @@ def test_scale_compares_shares_not_counts():
 @pytest.mark.django_db
 def test_hidden_diagnosis_disappears_but_keeps_its_text(ai_on):
     post(account())
-    clinic.run_diagnoses()
+    pipeline()
     diagnosis = SpinDiagnosis.objects.get()
     clinic.review(diagnosis, staff(), 'approve')
     client = APIClient()
@@ -168,14 +245,20 @@ def test_daily_message_needs_three_posts_and_review(monkeypatch):
     monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'false')
     monkeypatch.setattr(clinic_ai, 'daily_message', lambda label, day, posts: {'message': f'{len(posts)} postów', 'themes': ['podatki'], 'usage': {}})
-    acc = account('government', 'min_c', '301')
     now = timezone.localtime()
     for number in range(3):
+        acc = account('government', f'min_{number}', str(301 + number))
         PoliticalPost.objects.create(account=acc, post_id=str(700 + number), url='https://x.com/min_c/status/1', text='t',
                                      published_at=now.replace(hour=12, minute=number), camp_at_collection='government')
+    one = account('opposition', 'solo', '399')
+    for number in range(5):
+        PoliticalPost.objects.create(account=one, post_id=str(800 + number), url='https://x.com/solo/status/1', text='t',
+                                     published_at=now.replace(hour=12, minute=number), camp_at_collection='opposition')
     clinic.run_daily_messages(now.date())
-    message = ClinicDailyMessage.objects.get()
+    assert not ClinicDailyMessage.objects.filter(camp='opposition').exists()  # jedno konto to za mało
+    message = ClinicDailyMessage.objects.get(camp='government')
     assert message.status == 'pending_review' and message.message == '3 postów'
     assert clinic.daily_message_data('government') is None
     clinic.review(message, staff(), 'approve')
@@ -194,3 +277,20 @@ def test_x_account_suggestion_from_a_profile_link():
     assert XAccountSuggestion.objects.get().url == 'https://x.com/Anna_Test'
     listed = client.get('/api/public-figures/?q=Anna').json()['results'][0]
     assert listed['has_x_account'] is False
+
+
+@pytest.mark.django_db
+def test_auto_mode_publishes_and_fills_the_daily_quota_from_flagged(monkeypatch):
+    monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
+    monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 55, 'reason': 'teza', 'provider': 'groq', 'model': 'm'})
+    monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
+    post(account())
+    clinic.run_screening()
+    assert SpinDiagnosis.objects.get().status == 'flagged'
+    clinic.run_diagnoses()
+    row = SpinDiagnosis.objects.get()
+    assert row.status == 'approved' and row.reviewed_by_id is None
+    assert APIClient().get(f'/api/clinic/spins/{row.pk}/').json()['auto_published'] is True

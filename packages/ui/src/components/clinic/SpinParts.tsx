@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { Party, SpinAuthor, SpinCardData, SpinScale as SpinScaleData, Verdict } from "../../lib/clinic";
 import { sharePercent } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
+import { ShareSpinOnX } from "./ShareSpinOnX";
+import { ACCOUNTS_ENABLED } from "../../lib/features";
 
 /** Plakietka partii po lewej od awatara. Skrót tekstowy zamiast logo — neutralnie i bez praw do znaków. */
 export function PartyBadge({ party }: { party: Party | null }) {
@@ -73,73 +75,50 @@ export function SpinCard({ spin }: { spin: SpinCardData }) {
         <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
       </div>
       <div className="sc-spin-card__diagnosis">
-        <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
+        <p className="sc-spin-card__verdict"><span className="sc-spin-card__camp">{spin.camp_label}</span><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
         <h3 id={`spin-${spin.id}-title`} className="sc-spin-card__headline"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
         <p className="sc-spin-card__summary">{spin.summary}</p>
         {spin.technique_names.length > 0 && (
           <ul className="sc-spin-techniques" aria-label="Techniki">{spin.technique_names.map(name => <li key={name}>{name}</li>)}</ul>
         )}
         <footer className="sc-spin-card__foot">
-          <span aria-label={`Trafna diagnoza: ${spin.opinions.positive}, nietrafna: ${spin.opinions.negative}`}>
+          {ACCOUNTS_ENABLED ? <span aria-label={`Trafna diagnoza: ${spin.opinions.positive}, nietrafna: ${spin.opinions.negative}`}>
             <span aria-hidden="true">▲ {spin.opinions.positive} · ▼ {spin.opinions.negative}</span>
-          </span>
-          <Link href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link>
+          </span> : <AiTag />}
+          <span className="sc-spin-card__links"><ShareSpinOnX id={spin.id} /><Link href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></span>
         </footer>
       </div>
     </article>
   );
 }
 
-/** Waga: udział postów ze spinem po każdej stronie — słupki od środka na zewnątrz, jeden neutralny kolor. */
+/** Waga — dwie liczby i dwa paski: udział postów ze spinem po każdej stronie (jeden neutralny kolor). */
 export function SpinScale({ scale }: { scale: SpinScaleData }) {
   const left = sharePercent(scale.government);
   const right = sharePercent(scale.opposition);
   const diff = left !== null && right !== null ? left - right : null;
-  const tilt = !scale.enough_data || diff === null ? 0 : Math.max(-12, Math.min(12, diff / 2));
   const verdict = !scale.enough_data
-    ? `Za mało danych — waga pokaże wynik, gdy każda strona będzie miała co najmniej ${scale.min_sample} ocenionych postów.`
+    ? `Za mało danych — wynik pokażemy, gdy każda strona będzie miała co najmniej ${scale.min_sample} ocenionych postów.`
     : diff === 0 ? "Obie strony mają taki sam udział spinu."
     : `Więcej spinu: ${diff! > 0 ? "rządzący" : "opozycja"} (o ${Math.abs(diff!)} p.p.).`;
-  const side = (camp: "government" | "opposition", share: number | null) => {
-    const data = scale[camp];
-    return (
-      <div className={`sc-scale__side sc-scale__side--${camp}`}>
-        <p className="sc-scale__label">{camp === "government" ? "Rządzący" : "Opozycja"}</p>
-        <p className="sc-scale__value">{share === null ? "—" : `${share}%`}</p>
-        <div className="sc-scale__track" title={`${data.spin} spin, ${data.partial} częściowy, ${data.no_spin} bez spinu`}>
-          <span style={{ width: `${share ?? 0}%` }} />
-        </div>
-        <p className="sc-scale__n">{data.spin + data.partial} ze spinem · {data.assessed} ocenionych</p>
-      </div>
-    );
-  };
   return (
     <section className="sc-scale" aria-labelledby="sc-scale-title">
-      <header className="sc-scale__head">
-        <h2 id="sc-scale-title">Waga spinu</h2>
-        <p>Udział postów ze spinem wśród zatwierdzonych diagnoz z ostatnich {scale.window_days} dni. Porównujemy udział, nie liczbę — strony mają różną liczbę kont.</p>
-      </header>
-      <div className="sc-scale__body">
-        {side("government", left)}
-        <svg className="sc-scale__beam" viewBox="0 0 120 64" aria-hidden="true">
-          <g style={{ transform: `rotate(${-tilt}deg)`, transformOrigin: "60px 22px" }}>
-            <line x1="10" y1="22" x2="110" y2="22" />
-            <circle cx="10" cy="22" r="5" /><circle cx="110" cy="22" r="5" />
-          </g>
-          <path d="M60 22 L48 58 L72 58 Z" />
-        </svg>
-        {side("opposition", right)}
+      <h2 id="sc-scale-title" className="sc-scale__title">Waga spinu · {scale.window_days} dni</h2>
+      <div className="sc-scale__rows">
+        {(["government", "opposition"] as const).map(camp => {
+          const share = camp === "government" ? left : right;
+          const data = scale[camp];
+          return (
+            <div key={camp} className="sc-scale__row">
+              <span className="sc-scale__label">{camp === "government" ? "Rządzący" : "Opozycja"}</span>
+              <span className="sc-scale__track"><span style={{ width: `${share ?? 0}%` }} /></span>
+              <strong className="sc-scale__value">{share === null ? "—" : `${share}%`}</strong>
+              <span className="sc-scale__n">{data.spin + data.partial}/{data.assessed}</span>
+            </div>
+          );
+        })}
       </div>
-      <p className="sc-scale__verdict">{verdict}</p>
-      <table className="sr-only">
-        <caption>Waga spinu — dane</caption>
-        <thead><tr><th>Strona</th><th>Spin</th><th>Częściowy</th><th>Bez spinu</th><th>Udział</th></tr></thead>
-        <tbody>
-          {(["government", "opposition"] as const).map(camp => (
-            <tr key={camp}><td>{camp === "government" ? "Rządzący" : "Opozycja"}</td><td>{scale[camp].spin}</td><td>{scale[camp].partial}</td><td>{scale[camp].no_spin}</td><td>{sharePercent(scale[camp]) ?? "brak"}%</td></tr>
-          ))}
-        </tbody>
-      </table>
+      <p className="sc-scale__verdict">{verdict} Porównujemy udział postów ze spinem, nie ich liczbę.</p>
     </section>
   );
 }

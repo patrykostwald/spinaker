@@ -10,6 +10,7 @@ import { formatDateTimePl } from "../lib/utils";
 import { AccountDialog } from "./AccountDialog";
 import { CommentReportButton } from "./CommentReportButton";
 import { Button, RadioGroup, Reveal } from "../kit";
+import { ACCOUNTS_ENABLED } from "../lib/features";
 
 type Polarity = "positive" | "negative";
 type Opinion = { id: number; author: { id: number; username: string }; polarity: Polarity; body: string; created_at: string };
@@ -84,7 +85,12 @@ function OpinionContent({ article, ownerId }: { article: Pick<Article, "id">; ow
   </section>;
 }
 
-export function ArticleOpinions({ article }: { article: Pick<Article, "id"> }) {
+function ArticleOpinionsInner({ article }: { article: Pick<Article, "id"> }) {
   const account = useAccount();
   return <OpinionContent key={`${article.id}:${account.data?.user?.id ?? "guest"}`} article={article} ownerId={account.data?.user?.id} />;
+}
+
+/** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
+export function ArticleOpinions(props: Parameters<typeof ArticleOpinionsInner>[0]) {
+  return ACCOUNTS_ENABLED ? <ArticleOpinionsInner {...props} /> : null;
 }

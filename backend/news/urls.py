@@ -16,7 +16,7 @@ from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
 from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
 from news.clinic_api import (clinic_page, clinic_spins, clinic_spin_detail, clinic_accounts, SpinOpinionsView,
-                             suggest_x_account, clinic_queue, review_diagnosis, review_message, hide_diagnosis)
+                             suggest_x_account, clinic_queue, review_diagnosis, review_message, hide_diagnosis, decide_flag)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
@@ -52,6 +52,7 @@ urlpatterns = [
     path('staff/clinic/diagnoses/<int:diagnosis_id>/review/', review_diagnosis),
     path('staff/clinic/diagnoses/<int:diagnosis_id>/hide/', hide_diagnosis),
     path('staff/clinic/messages/<int:message_id>/review/', review_message),
+    path('staff/clinic/diagnoses/<int:diagnosis_id>/flag/', decide_flag),
     path('public-figures/<int:figure_id>/context/', public_figure_context),
     path('public-figures/<int:figure_id>/dossier/', public_figure_dossier),
     path('articles/<int:article_id>/context/', article_context),

@@ -16,9 +16,21 @@ def clinic_diagnose_task():
         return {"status": "locked"}
     try:
         from news.clinic import run_diagnoses
-        return run_diagnoses(limit=5)
+        return run_diagnoses(limit=3)
     finally:
         cache.delete("clinic-diagnose-lock")
+
+
+@shared_task(name="news.tasks.clinic_screen_task", soft_time_limit=600, time_limit=660)
+def clinic_screen_task():
+    """Strażnik Kliniki: darmowa ocena nowych postów (Groq, zapasowo NVIDIA NIM)."""
+    if not cache.add("clinic-screen-lock", "1", timeout=700):
+        return {"status": "locked"}
+    try:
+        from news.clinic import run_screening
+        return run_screening(limit=30)
+    finally:
+        cache.delete("clinic-screen-lock")
 
 
 @shared_task(name="news.tasks.clinic_daily_messages_task", soft_time_limit=600, time_limit=660)

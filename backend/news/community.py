@@ -24,6 +24,15 @@ TRACKING_PARAMS = ('utm_', 'fbclid', 'gclid', 'mc_', 'igshid', 'ref_src', 'dclid
 MIN_PUBLIC_ITEMS = 2
 
 
+def threads_enabled() -> bool:
+    """Nitki czytelników czekają na fazę II — publiczne API działa dopiero z THREADS_ENABLED=true."""
+    return os.environ.get('THREADS_ENABLED', '').lower() == 'true'
+
+
+def _disabled():
+    return Response({'detail': 'Nitki czytelników będą dostępne w fazie II.'}, status=404)
+
+
 def canonical_url(value: str) -> str:
     """Jeden adres = jeden box: bez śledzących parametrów, fragmentu, „www.” i końcowego ukośnika."""
     parts = urlsplit(value.strip())
@@ -85,6 +94,8 @@ class LinkThrottle(UserRateThrottle):
 @permission_classes([IsAuthenticated])
 @throttle_classes([LinkThrottle])
 def resolve_link(request):
+    if not threads_enabled():
+        return _disabled()
     serializer = LinkInput(data=request.data)
     serializer.is_valid(raise_exception=True)
     url = serializer.validated_data['url'].strip()
@@ -149,6 +160,8 @@ def thread_summary(thread, counts):
 @extend_schema(summary='Publiczne nitki kontekstowe czytelników', tags=['nitki'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def community_threads(request):
+    if not threads_enabled():
+        return _disabled()
     try:
         page = max(1, int(request.query_params.get('page', '1')))
     except ValueError:
@@ -170,6 +183,8 @@ def community_threads(request):
 @extend_schema(summary='Publiczna nitka czytelnika', tags=['nitki'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def community_thread_detail(request, thread_id):
+    if not threads_enabled():
+        return _disabled()
     thread = get_object_or_404(public_threads().select_related('owner'), pk=thread_id)
     items = [item for item in thread.items.select_related('article__source', 'link') if not (item.link_id and item.link.hidden_at)]
     data = thread_summary(thread, _counts([thread.pk]))
@@ -198,6 +213,9 @@ class CommunityOpinionsView(APIView):
         return [IsAuthenticated()] if self.request.method in ('POST', 'PATCH') else super().get_permissions()
 
     def _thread(self, thread_id):
+        if not threads_enabled():
+            from django.http import Http404
+            raise Http404
         return get_object_or_404(public_threads(), pk=thread_id)
 
     def get(self, request, thread_id):
@@ -251,6 +269,8 @@ class ReportInput(serializers.Serializer):
 @permission_classes([IsAuthenticated])
 @throttle_classes([AccountWriteThrottle])
 def report_thread(request, thread_id):
+    if not threads_enabled():
+        return _disabled()
     thread = get_object_or_404(public_threads(), pk=thread_id)
     serializer = ReportInput(data=request.data)
     serializer.is_valid(raise_exception=True)

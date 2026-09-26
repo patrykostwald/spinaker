@@ -6,6 +6,7 @@ import { getSpin, type SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { OpinionsPanel } from "../OpinionsPanel";
 import { AiTag, IntensityMeter, SpinAuthorRow, VerdictTag } from "./SpinParts";
+import { ShareSpinOnX } from "./ShareSpinOnX";
 
 export function SpinDiagnosisBody({ spin }: { spin: SpinDetailData }) {
   return <>
@@ -35,7 +36,8 @@ export function SpinDiagnosisBody({ spin }: { spin: SpinDetailData }) {
     </section>}
 
     {spin.limitations && <p className="sc-spin-detail__limits"><strong>Ograniczenia diagnozy:</strong> {spin.limitations}</p>}
-    <p className="sc-spin-detail__meta"><AiTag /> Model {spin.model} · instrukcja {spin.prompt_version} · diagnoza {formatDateTimePl(spin.created_at)}{spin.reviewed_at ? ` · zatwierdzona bez zmian ${formatDateTimePl(spin.reviewed_at)}` : ""}</p>
+    <p className="sc-spin-detail__meta"><AiTag /> Model {spin.model} · instrukcja {spin.prompt_version} · diagnoza {formatDateTimePl(spin.created_at)}{spin.auto_published ? " · opublikowana automatycznie, bez redakcji człowieka" : spin.reviewed_at ? ` · zatwierdzona bez zmian ${formatDateTimePl(spin.reviewed_at)}` : ""}</p>
+    <p className="sc-spin-detail__share"><ShareSpinOnX id={spin.id} spin={spin} /></p>
   </>;
 }
 

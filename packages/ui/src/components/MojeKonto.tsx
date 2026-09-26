@@ -17,6 +17,7 @@ import {
   useThreadFavorites,
 } from '../lib/personal';
 import { AccountDialog } from './AccountDialog';
+import { THREADS_ENABLED } from '../lib/features';
 import { Button } from '../kit';
 
 function plural(count: number, one: string, few: string, many: string) {
@@ -34,9 +35,9 @@ export function SignedOutPanel({ title = 'Twoje prywatne miejsce do pracy z mate
     <section className="sc-account sc-account-signed-out" aria-labelledby="acc-signed-out">
       <p className="sc-account-kicker">MOJE KONTO</p>
       <h1 id="acc-signed-out">{title}</h1>
-      <p>Po zalogowaniu możesz układać i publikować nitki kontekstowe, zapisywać materiały, oceniać diagnozy w Klinice i wracać do swoich pasków.</p>
+      <p>Po zalogowaniu możesz zapisywać materiały, oceniać diagnozy w Klinice, komentować i wracać do swoich pasków.</p>
       <ul className="sc-account-points">
-        <li>Nitki możesz zostawić prywatne albo opublikować w sekcji Nitki — decydujesz przy każdej.</li>
+        {THREADS_ENABLED && <li>Nitki możesz zostawić prywatne albo opublikować w sekcji Nitki — decydujesz przy każdej.</li>}
         <li>Reakcje dotyczą materiału, diagnozy albo nitki — nie osób. Komentarz zawsze idzie z reakcją.</li>
         <li>Korzystanie z Bazy nie wymaga konta.</li>
       </ul>
@@ -332,7 +333,7 @@ function Overview() {
   const reactions = useMyReactions();
   const threadRows = threads.data?.results ?? [];
   const tiles = [
-    { href: '#moje-nitki', label: 'Moje nitki', value: threads.isSuccess ? threadRows.length : null, note: threads.isSuccess ? (() => { const n = threadRows.filter(row => row.is_public && !row.hidden_at).length; return `${n} ${plural(n, 'publiczna', 'publiczne', 'publicznych')}`; })() : '' },
+    ...(!THREADS_ENABLED ? [] : [{ href: '#moje-nitki', label: 'Moje nitki', value: threads.isSuccess ? threadRows.length : null, note: threads.isSuccess ? (() => { const n = threadRows.filter(row => row.is_public && !row.hidden_at).length; return `${n} ${plural(n, 'publiczna', 'publiczne', 'publicznych')}`; })() : '' }]),
     { href: '#ulubione', label: 'Ulubione', value: articles.isSuccess && drspin.isSuccess ? (articles.data.results.length + drspin.data.results.length) : null, note: 'materiały i nitki Dr. Spina' },
     { href: '#reakcje', label: 'Reakcje', value: reactions.isSuccess ? reactions.data.results.length : null, note: reactions.isSuccess ? `${reactions.data.comments} z komentarzem` : '' },
   ];
@@ -347,9 +348,9 @@ function Overview() {
       ))}
       <div className="sc-account-tile sc-account-tile--actions">
         <span className="sc-account-tile__label">Na skróty</span>
-        <Link href="/konto/nitki/nowa">+ Nowa nitka</Link>
+        {THREADS_ENABLED && <Link href="/konto/nitki/nowa">+ Nowa nitka</Link>}
         <Link href="/klinika">Klinika spinu</Link>
-        <Link href="/nitki">Nitki czytelników</Link>
+        {THREADS_ENABLED ? <Link href="/nitki">Nitki czytelników</Link> : <Link href="/">Wiadomości</Link>}
       </div>
     </section>
   );
@@ -372,16 +373,16 @@ export function MojeKonto() {
       <header className="sc-account-head">
         <p className="sc-account-kicker">MOJE KONTO</p>
         <h1>@{user.username}</h1>
-        <p>Twoje nitki, ulubione, paski, reakcje i komentarze — w jednym miejscu.</p>
+        <p>{THREADS_ENABLED ? 'Twoje nitki, ulubione, paski, reakcje i komentarze — w jednym miejscu.' : 'Twoje ulubione, paski, reakcje i komentarze — w jednym miejscu.'}</p>
       </header>
       <Overview />
       <div className="sc-account-layout">
         <nav className="sc-account-sidenav" aria-label="Sekcje konta">
-          {NAV.map(item => <a key={item.id} href={`#${item.id}`}>{item.label}</a>)}
+          {NAV.filter(item => THREADS_ENABLED || item.id !== 'moje-nitki').map(item => <a key={item.id} href={`#${item.id}`}>{item.label}</a>)}
           <Link href="/profile">Ustawienia i prywatność</Link>
         </nav>
         <div className="sc-account-content">
-          <ThreadsSection />
+          {THREADS_ENABLED && <ThreadsSection />}
           <section id="ulubione" className="sc-account-section" aria-labelledby="ulubione-title">
             <header><h2 id="ulubione-title">Ulubione</h2></header>
             <div className="sc-account-duo">

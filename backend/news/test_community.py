@@ -8,6 +8,11 @@ from news.community_models import CommunityLink
 from news.models import Article, Source
 
 
+@pytest.fixture(autouse=True)
+def threads_on(monkeypatch):
+    monkeypatch.setenv('THREADS_ENABLED', 'true')
+
+
 def user(name='czytelnik'):
     return get_user_model().objects.create_user(name, password='x')
 
@@ -122,3 +127,9 @@ def test_my_reactions_collects_every_part_of_the_site():
     data = client.get('/api/account/reactions/').json()
     assert data['counts']['material'] == 1 and data['comments'] == 1
     assert data['results'][0]['target'] == {'title': 'Komunikat KPRM', 'href': f'/material/{base.pk}'}
+
+
+@pytest.mark.django_db
+def test_public_threads_api_is_off_until_phase_two(monkeypatch):
+    monkeypatch.delenv('THREADS_ENABLED')
+    assert APIClient().get('/api/community/threads/').status_code == 404

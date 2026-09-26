@@ -1,12 +1,13 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button, NavMenu, SearchField } from "../kit";
 import { useAccount } from "../lib/account";
 import type { SiteConfig } from "../types";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { ACCOUNTS_ENABLED, THREADS_ENABLED } from "../lib/features";
 
 function HeaderSearch() {
   const [value, setValue] = useState("");
@@ -25,12 +26,24 @@ function HeaderSearch() {
   );
 }
 
+/** Data i godzina obok wyszukiwarki (zastępuje osobny wiersz z datą nad stroną główną). */
+function HeaderClock() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  if (!now) return <span className="sc-nav-clock" aria-hidden="true" />;
+  const day = now.toLocaleDateString("pl-PL", { weekday: "short", day: "numeric", month: "short" });
+  const time = now.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+  return <time className="sc-nav-clock" dateTime={now.toISOString()}><span>{day}</span> {time}</time>;
+}
+
 /** Trzy części serwisu: agregator wiadomości, diagnozy spinu i (w fazie II) nitki czytelników. */
-const SECTIONS = [
-  { label: "Wiadomości", href: "/" },
-  { label: "Klinika", href: "/klinika" },
-  { label: "Nitki", href: "/nitki" },
-];
+// Na razie jedna strona (Wiadomości → Spin → Baza), więc w szapce zostaje tylko „O nas”.
+// Po rozdzieleniu na podstrony wrócą tu sekcje (Nitki — z THREADS_ENABLED).
+const SECTIONS: Array<{ label: string; href: string }> = THREADS_ENABLED ? [{ label: "Nitki", href: "/nitki" }] : [];
 
 export function SiteHeader({ site }: { site: SiteConfig }) {
   const pathname = usePathname();
@@ -54,7 +67,7 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         </div>
       }
       search={<HeaderSearch />}
-      cta={<div className="sc-nav-cta"><Button href="/o-nas" variant="quiet" size="sm" aria-current={pathname === "/o-nas" ? "page" : undefined}>O nas</Button><ThemeSwitcher compact /><Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button></div>}
+      cta={<div className="sc-nav-cta"><HeaderClock /><Button href="/o-nas" variant="quiet" size="sm" aria-current={pathname === "/o-nas" ? "page" : undefined}>O nas</Button><ThemeSwitcher compact />{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
     />
   );
 }

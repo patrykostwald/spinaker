@@ -2,12 +2,11 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { CopyBlock } from './CopyBlock';
-import { BOX, CLINIC } from './diagrams';
 
 export const metadata: Metadata = {
   title: 'O nas — spin.clinic',
   description:
-    'spin.clinic to agregator wiadomości ze źródłami, Klinika spinu z automatyczną diagnozą postów polityków i — w kolejnej fazie — nitki kontekstowe czytelników. Jak działa, na czym jest zbudowany i co planujemy.',
+    'spin.clinic to agregator wiadomości ze źródłami i Klinika spinu z automatyczną diagnozą postów polityków. W kolejnej fazie — nitki kontekstowe czytelników. Jak działa, na czym jest zbudowany i co planujemy.',
   alternates: { canonical: '/o-nas' },
 };
 
@@ -53,8 +52,16 @@ const PUBLISHER_TERMS = [
 
 const PARTS = [
   { href: '/', name: 'Wiadomości', status: 'działa · beta', text: 'Agregator doniesień mediów i instytucji publicznych. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — na pasku newsowym, na osi czasu i w bazie z wyszukiwarką.' },
-  { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Czytamy posty polityków z X, a Dr. Spin — narzędzie AI — rozkłada każdy na czynniki pierwsze i stawia diagnozę. Rządzący i opozycja obok siebie, według tych samych zasad.' },
-  { href: '/nitki', name: 'Nitki', status: 'działa · beta', text: 'Miejsce dla czytelników: własne nitki kontekstowe z materiałów z naszej bazy albo dodanych przez link — prywatne albo publiczne, z reakcjami i komentarzami.' },
+  { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Weryfikator spinów. Czytamy posty polityków z X, a Dr. Spin rozkłada je na czynniki pierwsze i stawia diagnozę. Rządzący i opozycja obok siebie, według tych samych zasad.' },
+  { href: '#fazy', name: 'Nitki', status: 'faza II', text: 'Miejsce dla czytelników: własne nitki kontekstowe z materiałów z naszej bazy albo dodanych przez link — z reakcjami i komentarzami.' },
+];
+
+/** Droga posta do diagnozy — cztery kroki zamiast schematu rysowanego znakami. */
+const CLINIC_STEPS = [
+  { title: 'Strażnik', tech: 'Groq · NVIDIA NIM', text: 'Darmowe, otwarte modele czytają każdy nowy post i oceniają w skali 0–100, czy jest w nim coś do sprawdzenia. Życzenia i zapowiedzi odpadają od razu.' },
+  { title: 'Diagnoza', tech: 'Claude (Anthropic) · wyszukiwanie w sieci', text: 'Posty warte sprawdzenia trafiają do Dr. Spina: techniki perswazji z dosłownymi cytatami, twierdzenia porównane ze źródłami.' },
+  { title: 'Publikacja', tech: 'automatycznie · etykieta AI', text: 'Diagnoza trafia na stronę sama, oznaczona jako wygenerowana przez AI. Nikt nie poprawia jej treści — ocena należy do modelu i źródeł.' },
+  { title: 'Wątek na X', tech: 'udostępnianie', text: 'Każdą diagnozę można wkleić na X jako wątek 1/N: podsumowanie z linkiem, techniki i źródła — także jako odpowiedź pod wpisem polityka.' },
 ];
 
 /**
@@ -91,9 +98,11 @@ const PHASES: Phase[] = [
     features: [
       { text: 'baza materiałów z wyszukiwarką, paski newsowe i do pięciu własnych nitek newsowych', status: 'beta' },
       { text: 'box materiału z osią czasu i bazą powiązanych materiałów', status: 'beta' },
-      { text: 'Klinika spinu: diagnozy postów polityków, waga spinu, przekazy dnia, spin dnia, reakcje i komentarze', status: 'beta' },
-      { text: 'rejestr osób i stanowisk publicznych z historią funkcji i kontami X potwierdzonymi dowodem', status: 'beta' },
-      { text: 'prywatne nitki kontekstowe na koncie — z materiałów z naszej bazy', status: 'beta' },
+      { text: 'Klinika spinu: strażnik postów, automatyczne diagnozy z etykietą AI, waga spinu, przekazy dnia, spin dnia', status: 'beta' },
+      { text: 'udostępnianie diagnozy jako wątku na X (1/N), także w odpowiedzi pod wpisem polityka', status: 'beta' },
+      { text: 'rejestr osób i stanowisk publicznych z historią funkcji i oficjalnymi kontami X', status: 'beta' },
+      { text: 'paski newsowe zapisane na urządzeniu — bez zakładania konta', status: 'beta' },
+      { text: 'instalacja na telefonie z przeglądarki (aplikacja PWA)', status: 'beta' },
     ],
     stack: [
       { group: 'Serwis', items: [
@@ -110,8 +119,9 @@ const PHASES: Phase[] = [
         { name: 'YouTube Data API', note: 'oficjalne kanały jako osobny typ źródła', status: 'działa' },
       ] },
       { group: 'AI w Klinice', items: [
+        { name: 'Groq', note: 'strażnik: otwarty model ocenia każdy post 0–100, bez kosztów', status: 'beta' },
+        { name: 'NVIDIA NIM', note: 'zapasowy strażnik, gdy Groq nie odpowiada', status: 'beta' },
         { name: 'Claude (Anthropic) z wyszukiwaniem w sieci', note: 'diagnoza: techniki z cytatami, twierdzenia ze źródłami', status: 'beta' },
-        { name: 'Groq — otwarty model językowy', note: 'wstępna selekcja: czy post zawiera tezę do oceny', status: 'beta' },
       ] },
       { group: 'Infrastruktura', items: [
         { name: 'Docker · Caddy (HTTPS) · serwer VPS · GitHub Actions', status: 'działa' },
@@ -121,19 +131,21 @@ const PHASES: Phase[] = [
   },
   {
     id: 'faza-2',
-    status: 'Faza II · w toku',
+    status: 'Faza II · najbliższy etap',
     title: 'Nitki czytelników',
-    lead: 'Część społeczna: czytelnicy układają i publikują własne nitki kontekstowe. Podstawy działają już w becie.',
+    lead: 'Trzecia część serwisu: czytelnicy układają i publikują własne nitki kontekstowe.',
     features: [
-      { text: 'publiczne nitki czytelników z reakcjami i komentarzami, z moderacją', status: 'beta' },
-      { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'beta' },
+      { text: 'konta czytelników: reakcje „trafna / nietrafna”, komentarze z moderacją, ulubione i panel użytkownika', status: 'planowane' },
+      { text: 'tworzenie nitek kontekstowych przez czytelników — prywatnych i publicznych', status: 'planowane' },
+      { text: 'autoryzowane nitki dziennikarzy — prowadzone pod nazwiskiem, z linkiem do redakcji', status: 'planowane' },
+      { text: 'dodawanie materiału przez link — zapisujemy tytuł, adres i źródło, bez treści i zdjęć; ten sam link to jeden box, bez duplikatów', status: 'planowane' },
       { text: 'w Klinice dowody jako boxy z naszej bazy zamiast samego tekstu', status: 'planowane' },
       { text: 'napisy i transkrypcje wideo z YouTube, alerty po haśle i źródle', status: 'planowane' },
     ],
     stack: [
       { group: 'Technologia', items: [
-        { name: 'NVIDIA NIM', note: 'wyszukiwanie po znaczeniu w bazie; przygotowane, wyłączone', status: 'wymaga potwierdzenia' },
-        { name: 'powiadomienia e-mail i w serwisie', status: 'planowane' },
+        { name: 'NVIDIA NIM — wyszukiwanie po znaczeniu', note: 'dobór powiązanych materiałów w bazie; przygotowane, wyłączone', status: 'wymaga potwierdzenia' },
+        { name: 'powiadomienia e-mail, w serwisie i push (PWA)', status: 'planowane' },
       ] },
     ],
   },
@@ -145,13 +157,14 @@ const PHASES: Phase[] = [
     features: [
       { text: 'diagnozy na własnym serwerze GPU, na otwartych modelach — z pełną kontrolą i jawną konfiguracją', status: 'planowane' },
       { text: 'odpowiedzi oparte na naszej bazie (RAG) — każde ustalenie z boxem źródłowym', status: 'planowane' },
-      { text: 'aplikacja instalowana z przeglądarki, powiadomienia push, mapy powiązań', status: 'planowane' },
+      { text: 'aplikacje mobilne w App Store i Google Play — ta sama baza i Klinika, powiadomienia o nowych spinach', status: 'planowane' },
+      { text: 'mapy powiązań osób, instytucji i materiałów', status: 'planowane' },
     ],
     stack: [
       { group: 'Technologia', items: [
         { name: 'otwarte modele, m.in. polskie Bielik i PLLuM', note: 'wybór po porównaniu jakości z obecnymi diagnozami', status: 'wymaga potwierdzenia' },
         { name: 'Qdrant', note: 'kandydat do wyszukiwania wektorowego, po porównaniu z PostgreSQL', status: 'wymaga potwierdzenia' },
-        { name: 'Web Push · PWA', status: 'planowane' },
+        { name: 'Capacitor albo React Native', note: 'aplikacje na iOS i Android zbudowane na obecnym serwisie', status: 'wymaga potwierdzenia' },
       ] },
     ],
   },
@@ -227,10 +240,10 @@ export default function AboutPage() {
           </p>
         </section>
 
-        <Section id="o-nas" index={2} kicker="O nas" title="Wiadomości, Klinika, Nitki" level={1}>
+        <Section id="o-nas" index={2} kicker="O nas" title="Wiadomości i Klinika" level={1}>
           <div className="sc-onas-prose">
             <p className="sc-onas-lead">
-              spin.clinic to trzy części jednego serwisu: agregator wiadomości ze źródłami, weryfikator spinów polityków i — w kolejnej fazie — miejsce, w którym czytelnicy
+              spin.clinic to agregator wiadomości ze źródłami i weryfikator spinów polityków. W kolejnej fazie dołączy trzecia część — miejsce, w którym czytelnicy
               układają własne nitki kontekstowe.
             </p>
           </div>
@@ -238,7 +251,7 @@ export default function AboutPage() {
             {PARTS.map((part) => (
               <li key={part.href}>
                 <p className="sc-onas-parts__status">{part.status}</p>
-                <h3><Link href={part.href}>{part.name}</Link></h3>
+                <h3>{part.href.startsWith('#') ? part.name : <Link href={part.href}>{part.name}</Link>}</h3>
                 <p>{part.text}</p>
               </li>
             ))}
@@ -281,8 +294,8 @@ export default function AboutPage() {
             <div>
               <dt>Nitka kontekstowa</dt>
               <dd>
-                Jeden box na początku, a za nim — w kolejności publikacji — materiały, które go dopełniają, potwierdzają albo podważają. Tak pokazujemy sprawę od początku do
-                końca.
+                Jeden box na początku, a za nim — w kolejności publikacji — materiały, które go dopełniają, potwierdzają albo podważają. Dziś układa je zespół jako Dr. Spin;
+                w fazie II dostaną to czytelnicy.
               </dd>
             </div>
             <div>
@@ -293,33 +306,37 @@ export default function AboutPage() {
               </dd>
             </div>
           </dl>
-          <CopyBlock label="schemat boxa" text={BOX} caption="Układ boxa — przykład bez prawdziwej publikacji." />
         </Section>
 
         <Section id="klinika" index={4} kicker="Klinika spinu" title="Jak powstaje diagnoza">
           <div className="sc-onas-prose">
             <p>
-              Czytamy konta X polityków, które zespół potwierdził oficjalnym dowodem — listę publikujemy w Klinice. Każdy nowy post trafia do Dr. Spina: najpierw prosty
-              model sprawdza, czy jest w nim teza do oceny, a potem Claude rozkłada go na techniki perswazji i twierdzenia.
+              Czytamy konta X polityków potwierdzone dowodem — pełną listę publikujemy na dole Kliniki. Każdy nowy post przechodzi cztery kroki, a płacimy tylko
+              za te, które naprawdę warto sprawdzić.
             </p>
           </div>
-          <CopyBlock label="droga posta do diagnozy" text={CLINIC} />
+          <ol className="sc-onas-flow" aria-label="Droga posta do diagnozy">
+            {CLINIC_STEPS.map((step, index) => (
+              <li key={step.title}>
+                <span className="sc-onas-flow__num">{String(index + 1).padStart(2, '0')}</span>
+                <h3>{step.title}</h3>
+                <p className="sc-onas-flow__tech">{step.tech}</p>
+                <p>{step.text}</p>
+              </li>
+            ))}
+          </ol>
           <ul className="sc-onas-list">
             <li>Te same zasady dla każdej strony. Oceniamy komunikat, nie człowieka ani jego poglądy.</li>
             <li>Każda wskazana technika ma dosłowny cytat z posta. Cytatów, których nie ma w poście, system nie publikuje.</li>
             <li>Twierdzenia o faktach model sprawdza w wyszukiwarce. Bez źródła twierdzenie zostaje oznaczone jako „nie do sprawdzenia”.</li>
             <li>
-              Człowiek może diagnozę tylko zatwierdzić albo odrzucić — nie zmienia jej treści. Każda diagnoza jest oznaczona jako przygotowana przez AI, z nazwą modelu i
-              wersją instrukcji.
+              Diagnozy publikują się automatycznie i są oznaczone jako wygenerowane przez AI, z nazwą modelu i wersją instrukcji. Nikt nie poprawia ich treści.
             </li>
             <li>Waga spinu porównuje udział postów ze spinem po każdej stronie, nie ich liczbę — strony mają różną liczbę kont.</li>
-            <li>Czytelnicy oceniają diagnozę jako trafną albo nietrafną i mogą dodać komentarz — zawsze razem z oceną.</li>
+            <li>Każdą diagnozę udostępnisz na X jako wątek — pierwszy wpis mieści się w limicie znaków i prowadzi do pełnej diagnozy.</li>
           </ul>
           <p className="sc-onas-callout">
             Dr. Spin nie ogłasza prawdy i nie zastępuje dziennikarza. Pokazuje, jak zbudowany jest przekaz i co mówią źródła — ocena należy do Ciebie.
-          </p>
-          <p className="sc-onas-aside">
-            Diagnozę można zgłosić na <a href="mailto:admin@spin.clinic">admin@spin.clinic</a>. Po zgłoszeniu prawnym możemy ją ukryć — nigdy poprawić.
           </p>
         </Section>
 
@@ -422,7 +439,7 @@ export default function AboutPage() {
               <ul className="sc-onas-list is-no">
                 <li>nie oceniamy osób ani ich poglądów</li>
                 <li>nie uznajemy twierdzeń za fałszywe bez źródła</li>
-                <li>nie poprawiamy diagnoz AI — można je tylko zatwierdzić albo odrzucić</li>
+                <li>nie poprawiamy diagnoz AI — publikujemy je z etykietą AI albo wcale</li>
                 <li>nie piszemy własnych newsów i nie kopiujemy pełnych tekstów bez zgody wydawcy</li>
                 <li>nie obchodzimy blokad, limitów ani płatnych dostępów</li>
               </ul>

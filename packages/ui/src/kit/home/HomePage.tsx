@@ -17,7 +17,7 @@ import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
 import { HomeBaza } from "./HomeBaza";
 import { HomeCategoryBar } from "./HomeCategoryBar";
-import { HomeClinic } from "./HomeClinic";
+import { ClinicPage } from "../../components/clinic/ClinicPage";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
 import { HomeLead } from "./HomeLead";
@@ -46,17 +46,6 @@ function useTodayLabel(options: Intl.DateTimeFormatOptions) {
     setLabel(new Intl.DateTimeFormat("pl-PL", JSON.parse(key)).format(new Date()));
   }, [key]);
   return label;
-}
-
-function TopBar() {
-  const date = useTodayLabel({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  return (
-    <div className="sc-home-topbar sc-t-meta">
-      <span className="sc-home-topbar__date" suppressHydrationWarning>
-        {date}
-      </span>
-    </div>
-  );
 }
 
 export function HomePage() {
@@ -132,7 +121,6 @@ export function HomePage() {
     <>
       <div className="sc-home">
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
-        <TopBar />
         <DemoBanner />
         <HomeHero />
         <div className="sc-home-top">
@@ -190,9 +178,7 @@ export function HomePage() {
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
-        <HomeReveal>
-          <HomeClinic />
-        </HomeReveal>
+        <ClinicPage embedded />
         {drSpin.data?.published ? (
           <HomeReveal>
             <HomeDrSpin thread={drSpin.data} />
