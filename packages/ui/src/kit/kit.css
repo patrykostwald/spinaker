@@ -3804,3 +3804,10 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 }
 /* Przekaz dnia: data i liczba postów w nagłówku, zaraz po znaczku AI. */
 .sc-clinic-kicker .sc-clinic-message__meta { margin-left: var(--sc-s-1); text-transform: none; letter-spacing: 0; font-weight: 500; }
+/* Baza (poprawka): szukanie od tytułu do prawej krawędzi listy materiałów; „Najnowsze materiały” przy prawej ściance paska. */
+@media (min-width: 1100px) {
+  .sc-home-baza__bar { grid-template-columns: auto minmax(0, 1fr) 260px; grid-template-areas: "title search latest"; column-gap: var(--sc-s-6); padding-right: var(--sc-s-5); }
+  .sc-home-baza__search { width: 100%; max-width: none; justify-self: stretch; }
+  .sc-home-baza__search > * { max-width: none; }
+  .sc-home-baza__latest { justify-items: end; text-align: right; padding-left: 0; }
+}
