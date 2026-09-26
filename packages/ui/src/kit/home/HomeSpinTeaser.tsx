@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CAMPS, getClinicPage, sharePercent } from "../../lib/clinic";
+import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "../../components/clinic/SpinParts";
 import { InterviewBox, MessageBox, SpinSwitch } from "../../components/clinic/ClinicExtras";
 import { SpinOfDay } from "../../components/clinic/ClinicPage";
@@ -33,7 +34,18 @@ export function HomeSpinTeaser() {
   return (
     <>
     {/* Wywiad dnia (najważniejszy wywiad z poprzedniego dnia) — nad spinem dnia, w tym samym stylu boxa. */}
-    {data?.interview ? <div className="sc-home-spin sc-home-interview"><InterviewBox interview={data.interview} /></div> : null}
+    {data?.interview ? (
+      <section className="sc-home-spin sc-home-interview" aria-labelledby="home-interview-title">
+        {/* Tytuł sekcji po lewej (jak „Dr. Spin”), box wywiadu przesunięty w prawo. */}
+        <header className="sc-home-interview__head">
+          <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
+          <h2 id="home-interview-title" className="sc-t-title-l sc-home-section__title">Wywiad dnia</h2>
+          <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
+          <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
+        </header>
+        <InterviewBox interview={data.interview} />
+      </section>
+    ) : null}
     <section className="sc-home-spin" aria-labelledby="home-spin-title">
       {/* Sekcja „Dr. Spin”: nagłówek jak w innych sekcjach, pod nim ten sam element co w Klinice —
           przełącznik „Spin dnia | Najnowszy spin” i post obok pełnej odpowiedzi Dr. Spina. */}

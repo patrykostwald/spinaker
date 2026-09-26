@@ -3917,3 +3917,18 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 /* Wywiad dnia: obok miniatury także krótkie podsumowanie rozmowy (do 4 wierszy). */
 .sc-interview__lede { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .sc-interview__summary { color: var(--sc-text); }
+
+/* Główna: sekcja „Wywiad dnia” — tytuł po lewej, box z miniaturą obok (przesunięty w prawo). */
+.sc-home-interview { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sc-s-5); align-items: start; padding: var(--sc-s-4) var(--sc-s-5); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-accent); }
+.sc-home-interview__head { display: grid; gap: 2px; justify-items: start; padding-top: var(--sc-s-2); }
+.sc-home-interview__head .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-home-interview__head h2 { margin: 0; }
+.sc-home-interview .sc-interview { padding: 0; box-shadow: none; background: none; }
+.sc-home-interview .sc-interview__head > .sc-clinic-kicker { display: none; }
+@media (max-width: 900px) { .sc-home-interview { grid-template-columns: minmax(0, 1fr); } }
+/* „Dr. Spin”: mniejszy odstęp między tytułem a przełącznikiem SPIN DNIA | NAJNOWSZY SPIN. */
+.sc-home-spin__sotd { padding-top: 0; margin-top: calc(var(--sc-s-3) * -1); }
+.sc-home-spin__sotd .sc-spin-switch { gap: var(--sc-s-3); }
+
+.sc-home-interview__head .sc-home-spin__open { justify-self: start; margin-top: var(--sc-s-2); }
+.sc-home-interview__head .sc-home-spin__meta { margin: 2px 0 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
