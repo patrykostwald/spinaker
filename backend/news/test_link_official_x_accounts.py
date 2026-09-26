@@ -84,3 +84,25 @@ def test_official_identity_requires_surname_and_rejects_parody(monkeypatch):
     assert command.official_identity('real', 'Jan Kowalski') == (True, '')
     assert command.official_identity('fake', 'Jan Kowalski')[0] is False
     assert command.official_identity('parody', 'Jan Kowalski')[0] is False
+
+
+@pytest.mark.django_db
+def test_missing_token_stops_without_rejecting_evidence(monkeypatch):
+    from django.core.management.base import CommandError
+    get_user_model().objects.create_user('ordynator', password='x', is_staff=True)
+    mp('Jan Kowalski', 'KO', '1')
+    monkeypatch.delenv('X_POLITICAL_BEARER_TOKEN', raising=False)
+    monkeypatch.setattr(command.requests, 'get', lambda *args, **kwargs: wikidata([('Jan Kowalski', 'jankowalski')]))
+    with pytest.raises(CommandError):
+        call_command('link_official_x_accounts', '--skip-discovery', '--wikidata', '--apply', '--confirmed-by', 'ordynator',
+                     stdout=StringIO())
+    assert SocialHandleEvidence.objects.get().status == 'pending_review'
+
+
+@pytest.mark.django_db
+def test_reopen_rejected_restores_technical_rejections():
+    entry = mp('Jan Kowalski', 'KO', '1')
+    SocialHandleEvidence.objects.create(roster_entry=entry, platform='x', handle='jankowalski', status='rejected',
+                                        evidence_url='https://www.wikidata.org/wiki/Q1', extracted_url='https://x.com/jankowalski')
+    call_command('link_official_x_accounts', '--skip-discovery', '--reopen-rejected', stdout=StringIO())
+    assert SocialHandleEvidence.objects.get().status == 'pending_review'
