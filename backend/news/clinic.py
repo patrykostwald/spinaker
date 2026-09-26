@@ -129,6 +129,11 @@ def unscreened_posts():
             .select_related('account').order_by('published_at', 'pk'))
 
 
+def auto_publish() -> bool:
+    """Tryb w pełni automatyczny (domyślny): diagnoza publikuje się sama, oznaczona jako wygenerowana przez AI."""
+    return os.environ.get('CLINIC_AUTO_PUBLISH', 'true').lower() == 'true'
+
+
 def thresholds() -> tuple[int, int]:
     """(próg oznaczenia, próg automatycznej diagnozy). Poniżej pierwszego — pomijamy za darmo."""
     flag = int(os.environ.get('CLINIC_FLAG_THRESHOLD', '40'))
@@ -181,7 +186,9 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         usage = result.pop('usage', {})
         for field, value in result.items():
             setattr(row, field, value)
-        row.status, row.usage, row.error = 'pending_review', usage, ''
+        row.status, row.usage, row.error = ('approved' if auto_publish() else 'pending_review'), usage, ''
+        if row.status == 'approved':
+            row.reviewed_at = timezone.now()
         row.provider, row.model_name = 'anthropic', usage.get('model') or clinic_ai.model_name()
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
@@ -211,8 +218,16 @@ def run_diagnoses(limit: int = 3) -> dict:
     if not clinic_ai.enabled():
         return {'status': 'disabled'}
     budget = int(os.environ.get('CLINIC_DAILY_LIMIT', '20')) - diagnoses_today()
+    take = max(0, min(limit, budget))
     rows = list(SpinDiagnosis.objects.filter(status='queued').select_related('post__account')
-                .order_by('-screen_score', 'post__published_at')[:max(0, min(limit, budget))])
+                .order_by('-screen_score', 'post__published_at')[:take])
+    if auto_publish() and len(rows) < take:
+        # Żeby spiny wpadały codziennie: gdy wysoko ocenionych postów brakuje, bierzemy najwyżej ocenione
+        # z oznaczonych przez strażnika (z ostatniej doby), aż do dziennego limitu.
+        since = timezone.now() - timedelta(hours=36)
+        extra = (SpinDiagnosis.objects.filter(status='flagged', screen_score__isnull=False, post__published_at__gte=since)
+                 .select_related('post__account').order_by('-screen_score', '-post__published_at')[:take - len(rows)])
+        rows += list(extra)
     figures = figures_by_account({row.post.account_id for row in rows})
     counts = {}
     for row in rows:
@@ -222,20 +237,26 @@ def run_diagnoses(limit: int = 3) -> dict:
     return {'status': 'ok', 'budget_left': max(0, budget - len(rows)), 'diagnosed': counts, 'alert': alert}
 
 
+MIN_MESSAGE_ACCOUNTS = 3
+
+
 def run_daily_messages(day=None) -> dict:
-    if not clinic_ai.enabled():
-        return {'status': 'disabled'}
+    """Przekaz dnia każdego obozu — darmowe modele (Groq, zapasowo NIM), z postów co najmniej trzech kont.
+
+    W ciągu dnia przekaz jest odświeżany (np. 12:00, 17:00, 21:00), dopóki nikt go ręcznie nie zatwierdził.
+    """
     day = day or timezone.localdate()
     start = timezone.make_aware(datetime.combine(day, time.min))
     created = {}
     for camp in CAMPS:
-        if ClinicDailyMessage.objects.filter(day=day, camp=camp).exclude(status='failed').exists():
-            continue
+        existing = ClinicDailyMessage.objects.filter(day=day, camp=camp).first()
+        if existing and existing.reviewed_by_id:
+            continue  # zatwierdzony ręcznie — nie nadpisujemy
         posts = list(PoliticalPost.objects.filter(
             available=True, camp_at_collection=camp, account__enabled=True,
             published_at__gte=start, published_at__lt=start + timedelta(days=1),
         ).select_related('account').order_by('-published_at')[:60])
-        if len(posts) < 3:
+        if len({post.account_id for post in posts}) < MIN_MESSAGE_ACCOUNTS:
             continue
         figures = figures_by_account({post.account_id for post in posts})
         rows = [{'author': (figures[p.account_id].canonical_name if p.account_id in figures else p.account.display_name),
@@ -245,10 +266,11 @@ def run_daily_messages(day=None) -> dict:
         except clinic_ai.ClinicAIError as error:
             logger.warning('clinic daily message failed: %s', error.code)
             continue
-        ClinicDailyMessage.objects.filter(day=day, camp=camp, status='failed').delete()
-        message = ClinicDailyMessage.objects.create(
-            day=day, camp=camp, message=result['message'], themes=result['themes'], usage=result['usage'],
-            model_name=result['usage'].get('model') or clinic_ai.model_name(), prompt_version=clinic_ai.PROMPT_VERSION)
+        status = 'approved' if auto_publish() else 'pending_review'
+        message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
+            'message': result['message'], 'themes': result['themes'], 'usage': result['usage'], 'status': status,
+            'model_name': result['usage'].get('model', ''), 'prompt_version': clinic_ai.PROMPT_VERSION,
+            'reviewed_at': timezone.now() if status == 'approved' else None})
         message.posts.set(posts)
         created[camp] = message.pk
     alert = send_review_alert()
@@ -362,6 +384,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'prompt_version': diagnosis.prompt_version,
         'created_at': diagnosis.created_at,
         'reviewed_at': diagnosis.reviewed_at,
+        'auto_published': diagnosis.status == 'approved' and not diagnosis.reviewed_by_id,
         'notice': NOTICE,
     })
     return data

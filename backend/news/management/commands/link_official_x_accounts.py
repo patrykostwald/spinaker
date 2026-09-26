@@ -63,6 +63,39 @@ def senate_club(entry):
     return ''
 
 
+def _fold(value):
+    import unicodedata
+    return ''.join(c for c in unicodedata.normalize('NFKD', value or '') if not unicodedata.combining(c)).casefold().replace('ł', 'l')
+
+
+def official_identity(handle, full_name):
+    """Tylko oficjalne konta: nazwa lub handle w X musi zawierać nazwisko osoby; konta chronione, parodie
+    i fanowskie pomijamy. Zwraca (ok, powód)."""
+    import os
+    token = os.environ.get('X_POLITICAL_BEARER_TOKEN', '').strip()
+    if not token:
+        return False, 'brak tokenu X'
+    try:
+        response = requests.get(f'https://api.x.com/2/users/by/username/{handle}', timeout=(5, 15), allow_redirects=False,
+                                params={'user.fields': 'name,username,description,protected'},
+                                headers={'Authorization': f'Bearer {token}'})
+        data = response.json().get('data') if response.status_code == 200 else None
+    except (requests.RequestException, ValueError):
+        return False, 'X nie odpowiedział'
+    if not data:
+        return False, 'konto nie istnieje w X'
+    if data.get('protected'):
+        return False, 'konto chronione'
+    text = _fold(f"{data.get('name', '')} {data.get('username', '')}")
+    bio = _fold(data.get('description', ''))
+    if any(word in bio for word in ('parod', 'fan ', 'fanpage', 'nieoficjaln', 'parody', 'not affiliated')):
+        return False, 'opis wskazuje parodię lub konto nieoficjalne'
+    surname = [part for part in _fold(full_name).replace('-', ' ').split() if len(part) > 2]
+    if not surname or not any(part in text for part in surname[-2:]):
+        return False, f'nazwa w X („{data.get("name", "")}”) nie zawiera nazwiska'
+    return True, ''
+
+
 def evidence_entry(evidence, figures_type):
     if evidence.roster_entry_id:
         return evidence.roster_entry, None
@@ -112,6 +145,13 @@ class Command(BaseCommand):
             if not apply:
                 self.stdout.write(f'POŁĄCZ  @{evidence.handle} → {name} · {club} · {camp}')
                 continue
+            ok, reason = official_identity(evidence.handle, name)
+            if not ok:
+                skipped += 1
+                evidence.status, evidence.reviewed_by, evidence.reviewed_at = 'rejected', staff, timezone.now()
+                evidence.save(update_fields=['status', 'reviewed_by', 'reviewed_at'])
+                self.stdout.write(f'POMIŃ   @{evidence.handle} ({name}): {reason}')
+                continue
             candidate, _ = PoliticalAccountCandidate.objects.get_or_create(handle=evidence.handle, defaults={
                 'display_name': name[:150], 'classification': camp, 'proposed_camp': camp,
                 'confirmation_url': evidence.evidence_url,
@@ -135,7 +175,7 @@ class Command(BaseCommand):
         mode = 'ZAPISANO' if apply else 'PLAN (bez --apply nic nie zapisano i nie pytano X)'
         self.stdout.write(self.style.SUCCESS(
             f'{mode}: do połączenia {planned}, połączono {linked}, błędy {errors}, pominięte bez obozu {skipped}. '
-            f'Koszt sprawdzeń w X ok. {planned * LOOKUP_USD:.2f} USD.'))
+            f'Koszt sprawdzeń w X ok. {planned * LOOKUP_USD * 2:.2f} USD (weryfikacja nazwy + utworzenie konta).'))
 
     def _senate_discovery(self, apply, limit):
         """Jawne linki X z profili senatorów. Konta z nagłówka i stopki strony (np. @PolskiSenat) odrzucamy:

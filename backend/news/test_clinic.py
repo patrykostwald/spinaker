@@ -34,6 +34,7 @@ def fake_diagnosis(verdict='spin', intensity=70):
 def ai_on(monkeypatch):
     monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'false')
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 90, 'reason': 'konkretne twierdzenie', 'provider': 'groq', 'model': 'm'})
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
@@ -244,14 +245,20 @@ def test_daily_message_needs_three_posts_and_review(monkeypatch):
     monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
     monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'false')
     monkeypatch.setattr(clinic_ai, 'daily_message', lambda label, day, posts: {'message': f'{len(posts)} postów', 'themes': ['podatki'], 'usage': {}})
-    acc = account('government', 'min_c', '301')
     now = timezone.localtime()
     for number in range(3):
+        acc = account('government', f'min_{number}', str(301 + number))
         PoliticalPost.objects.create(account=acc, post_id=str(700 + number), url='https://x.com/min_c/status/1', text='t',
                                      published_at=now.replace(hour=12, minute=number), camp_at_collection='government')
+    one = account('opposition', 'solo', '399')
+    for number in range(5):
+        PoliticalPost.objects.create(account=one, post_id=str(800 + number), url='https://x.com/solo/status/1', text='t',
+                                     published_at=now.replace(hour=12, minute=number), camp_at_collection='opposition')
     clinic.run_daily_messages(now.date())
-    message = ClinicDailyMessage.objects.get()
+    assert not ClinicDailyMessage.objects.filter(camp='opposition').exists()  # jedno konto to za mało
+    message = ClinicDailyMessage.objects.get(camp='government')
     assert message.status == 'pending_review' and message.message == '3 postów'
     assert clinic.daily_message_data('government') is None
     clinic.review(message, staff(), 'approve')
@@ -270,3 +277,20 @@ def test_x_account_suggestion_from_a_profile_link():
     assert XAccountSuggestion.objects.get().url == 'https://x.com/Anna_Test'
     listed = client.get('/api/public-figures/?q=Anna').json()['results'][0]
     assert listed['has_x_account'] is False
+
+
+@pytest.mark.django_db
+def test_auto_mode_publishes_and_fills_the_daily_quota_from_flagged(monkeypatch):
+    monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-key')
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
+    monkeypatch.setattr(clinic, 'send_review_alert', lambda: 'queued_only')
+    monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 55, 'reason': 'teza', 'provider': 'groq', 'model': 'm'})
+    monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis())
+    post(account())
+    clinic.run_screening()
+    assert SpinDiagnosis.objects.get().status == 'flagged'
+    clinic.run_diagnoses()
+    row = SpinDiagnosis.objects.get()
+    assert row.status == 'approved' and row.reviewed_by_id is None
+    assert APIClient().get(f'/api/clinic/spins/{row.pk}/').json()['auto_published'] is True

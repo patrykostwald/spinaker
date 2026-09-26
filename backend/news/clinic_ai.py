@@ -286,17 +286,50 @@ def diagnose(context: dict) -> dict:
     return result
 
 
+def _free_chat(system: str, user: str, schema: dict, max_tokens: int = 1200) -> tuple[dict, str]:
+    """Darmowe modele: Groq (JSON schema), a przy błędzie — NVIDIA NIM. Zwraca (dane, model)."""
+    groq_key = os.environ.get('GROQ_API_KEY', '').strip()
+    groq_model = os.environ.get('CLINIC_TRIAGE_MODEL', '').strip() or os.environ.get('GROQ_EDITORIAL_MODEL', '').strip()
+    if groq_key and groq_model:
+        try:
+            response = requests.post('https://api.groq.com/openai/v1/chat/completions', timeout=(5, 60), json={
+                'model': groq_model, 'temperature': 0, 'max_tokens': max_tokens,
+                'response_format': {'type': 'json_schema', 'json_schema': {'name': 'result', 'strict': True, 'schema': schema}},
+                'messages': [{'role': 'system', 'content': system}, {'role': 'user', 'content': user[:24000]}],
+            }, headers={'Authorization': f'Bearer {groq_key}'})
+            response.raise_for_status()
+            return json.loads(response.json()['choices'][0]['message']['content']), groq_model
+        except (requests.RequestException, KeyError, IndexError, ValueError, TypeError):
+            pass
+    nim_key = os.environ.get('NIM_API_KEY', '').strip()
+    if nim_key:
+        model = os.environ.get('CLINIC_NIM_MODEL', '').strip() or 'deepseek-ai/deepseek-v4.1-flash'
+        url = os.environ.get('CLINIC_NIM_URL', '').strip() or 'https://integrate.api.nvidia.com/v1/chat/completions'
+        try:
+            response = requests.post(url, timeout=(5, 90), json={
+                'model': model, 'temperature': 0, 'max_tokens': max_tokens + 800,
+                'messages': [{'role': 'system', 'content': system + ' Odpowiedz wyłącznie obiektem JSON.'},
+                             {'role': 'user', 'content': user[:24000]}],
+            }, headers={'Authorization': f'Bearer {nim_key}', 'Accept': 'application/json'})
+            response.raise_for_status()
+            content = response.json()['choices'][0]['message']['content']
+            return json.loads(content[content.find('{'):content.rfind('}') + 1]), model
+        except (requests.RequestException, KeyError, IndexError, ValueError, TypeError):
+            pass
+    raise ClinicAIError('free_models_unavailable')
+
+
 def daily_message(camp_label: str, day: str, posts: list[dict]) -> dict:
+    """Przekaz dnia z darmowych modeli — bez kosztów po naszej stronie."""
     lines = [f'Obóz: {camp_label}', f'Dzień: {day}', '']
     for index, post in enumerate(posts, 1):
         lines += [f"[{index}] {post['author']}: <<<{post['text']}>>>"]
-    response = _call(DAILY_SYSTEM, '\n'.join(lines), DAILY_SCHEMA, web_search=False, max_tokens=4000)
-    data = _json_from_text(response.content)
+    data, model = _free_chat(DAILY_SYSTEM, '\n'.join(lines), DAILY_SCHEMA)
     message = str(data.get('message', '')).strip()
     if not message:
         raise ClinicAIError('empty_message')
     return {'message': message[:2000], 'themes': [str(t)[:80] for t in data.get('themes') or []][:5],
-            'usage': _usage(response)}
+            'usage': {'model': model}}
 
 
 def _screen_result(content: str, provider: str, model: str) -> dict:

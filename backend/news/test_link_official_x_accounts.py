@@ -55,6 +55,7 @@ def test_apply_creates_confirmed_accounts_with_camp(monkeypatch):
         candidate.save(update_fields=['resolved_account'])
         return account
     monkeypatch.setattr(command, 'resolve_candidate', fake_resolve)
+    monkeypatch.setattr(command, 'official_identity', lambda handle, name: (True, ''))
     call_command('link_official_x_accounts', '--skip-discovery', '--wikidata', '--apply', '--enable',
                  '--confirmed-by', 'ordynator', stdout=StringIO())
     account = PoliticalAccount.objects.get()
@@ -65,3 +66,21 @@ def test_apply_creates_confirmed_accounts_with_camp(monkeypatch):
 
 def test_senate_footer_accounts_are_never_personal():
     assert 'polskisenat' in command.INSTITUTIONAL_HANDLES
+
+
+def test_official_identity_requires_surname_and_rejects_parody(monkeypatch):
+    monkeypatch.setenv('X_POLITICAL_BEARER_TOKEN', 't')
+
+    class XReply:
+        status_code = 200
+        def __init__(self, data):
+            self.data = data
+        def json(self):
+            return {'data': self.data}
+    replies = {'real': {'name': 'Jan Kowalski', 'username': 'real', 'description': 'Poseł na Sejm RP'},
+               'fake': {'name': 'Prawdziwy Patriota', 'username': 'fake', 'description': ''},
+               'parody': {'name': 'Jan Kowalski', 'username': 'parody', 'description': 'Konto parodystyczne'}}
+    monkeypatch.setattr(command.requests, 'get', lambda url, **kwargs: XReply(replies[url.rsplit('/', 1)[1]]))
+    assert command.official_identity('real', 'Jan Kowalski') == (True, '')
+    assert command.official_identity('fake', 'Jan Kowalski')[0] is False
+    assert command.official_identity('parody', 'Jan Kowalski')[0] is False
