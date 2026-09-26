@@ -33,7 +33,7 @@ SENATE_CLUBS = [
 # Kod klubu Sejmu/Senatu albo frakcji PE → obóz. Brak na liście = obóz nieustalony (pomijamy).
 CLUB_CAMPS = {
     'KO': 'government', 'PSL-TD': 'government', 'Polska2050': 'government', 'Lewica': 'government',
-    'PiS': 'opposition', 'Konfederacja': 'opposition', 'Konfederacja_KP': 'opposition', 'Razem': 'opposition',
+    'PiS': 'opposition', 'RozwojPlus': 'opposition', 'Konfederacja': 'opposition', 'Konfederacja_KP': 'opposition', 'Razem': 'opposition',
     # Frakcje PE: polscy europosłowie EPL to KO i PSL, S&D — Lewica, Renew — Polska 2050;
     # EKR (PiS), PfE i ESN (Konfederacja) — opozycja.
     'PPE': 'government', 'S&D': 'government', 'Renew': 'government',
@@ -68,20 +68,26 @@ def _fold(value):
     return ''.join(c for c in unicodedata.normalize('NFKD', value or '') if not unicodedata.combining(c)).casefold().replace('ł', 'l')
 
 
+class TechnicalError(Exception):
+    """Błąd konfiguracji albo połączenia — dowodu nie odrzucamy, można ponowić."""
+
+
 def official_identity(handle, full_name):
     """Tylko oficjalne konta: nazwa lub handle w X musi zawierać nazwisko osoby; konta chronione, parodie
     i fanowskie pomijamy. Zwraca (ok, powód)."""
     import os
     token = os.environ.get('X_POLITICAL_BEARER_TOKEN', '').strip()
     if not token:
-        return False, 'brak tokenu X'
+        raise TechnicalError('brak tokenu X (X_POLITICAL_BEARER_TOKEN) w konfiguracji serwera')
     try:
         response = requests.get(f'https://api.x.com/2/users/by/username/{handle}', timeout=(5, 15), allow_redirects=False,
                                 params={'user.fields': 'name,username,description,protected'},
                                 headers={'Authorization': f'Bearer {token}'})
         data = response.json().get('data') if response.status_code == 200 else None
     except (requests.RequestException, ValueError):
-        return False, 'X nie odpowiedział'
+        raise TechnicalError('X nie odpowiedział')
+    if response.status_code in (401, 403, 429) or response.status_code >= 500:
+        raise TechnicalError(f'X odrzucił zapytanie (HTTP {response.status_code})')
     if not data:
         return False, 'konto nie istnieje w X'
     if data.get('protected'):
@@ -115,6 +121,8 @@ class Command(BaseCommand):
         parser.add_argument('--confirmed-by', default='', help='Nazwa użytkownika członka zespołu, który potwierdza konta.')
         parser.add_argument('--enable', action='store_true', help='Włącz czytanie postów z nowych kont.')
         parser.add_argument('--apply', action='store_true', help='Zapisz i sprawdź konta w X (płatne). Domyślnie tylko plan.')
+        parser.add_argument('--reopen-rejected', action='store_true',
+                            help='Przywróć do sprawdzenia dowody odrzucone bez kandydatury (np. po braku tokenu X).')
 
     def handle(self, *args, **options):
         apply = options['apply']
@@ -124,6 +132,10 @@ class Command(BaseCommand):
             if not staff:
                 raise CommandError('Podaj --confirmed-by z nazwą aktywnego członka zespołu (is_staff).')
 
+        if options['reopen_rejected']:
+            reopened = SocialHandleEvidence.objects.filter(platform='x', status='rejected', candidate__isnull=True).update(
+                status='pending_review', reviewed_by=None, reviewed_at=None)
+            self.stdout.write(f'Przywrócono do sprawdzenia {reopened} dowodów.')
         if not options['skip_discovery']:
             self._senate_discovery(apply, options['limit'])
         if options['wikidata']:
@@ -131,7 +143,7 @@ class Command(BaseCommand):
 
         figures_type = ContentType.objects.get_for_model(PublicFigure)
         evidence_rows = SocialHandleEvidence.objects.filter(platform='x', status='pending_review').select_related('roster_entry')
-        planned = skipped = linked = errors = 0
+        planned = skipped = linked = errors = rejected = 0
         for evidence in evidence_rows[:options['limit']]:
             entry, figure = evidence_entry(evidence, figures_type)
             club = (entry.club if entry else '') or getattr(self, '_clubs', {}).get(entry.pk if entry else None, '')
@@ -145,9 +157,12 @@ class Command(BaseCommand):
             if not apply:
                 self.stdout.write(f'POŁĄCZ  @{evidence.handle} → {name} · {club} · {camp}')
                 continue
-            ok, reason = official_identity(evidence.handle, name)
+            try:
+                ok, reason = official_identity(evidence.handle, name)
+            except TechnicalError as error:
+                raise CommandError(f'{error}. Nic nie odrzucono — popraw konfigurację i uruchom ponownie.')
             if not ok:
-                skipped += 1
+                rejected += 1
                 evidence.status, evidence.reviewed_by, evidence.reviewed_at = 'rejected', staff, timezone.now()
                 evidence.save(update_fields=['status', 'reviewed_by', 'reviewed_at'])
                 self.stdout.write(f'POMIŃ   @{evidence.handle} ({name}): {reason}')
@@ -174,7 +189,8 @@ class Command(BaseCommand):
         planned += getattr(self, '_senate_plan', 0)
         mode = 'ZAPISANO' if apply else 'PLAN (bez --apply nic nie zapisano i nie pytano X)'
         self.stdout.write(self.style.SUCCESS(
-            f'{mode}: do połączenia {planned}, połączono {linked}, błędy {errors}, pominięte bez obozu {skipped}. '
+            f'{mode}: do połączenia {planned}, połączono {linked}, odrzucone (nie oficjalne) {rejected}, błędy {errors}, '
+            f'pominięte bez obozu {skipped}. '
             f'Koszt sprawdzeń w X ok. {planned * LOOKUP_USD * 2:.2f} USD (weryfikacja nazwy + utworzenie konta).'))
 
     def _senate_discovery(self, apply, limit):
