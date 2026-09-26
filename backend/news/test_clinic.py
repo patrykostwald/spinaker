@@ -354,3 +354,14 @@ def test_evening_slot_goes_to_the_most_popular_post_and_it_becomes_spin_of_the_d
     featured = clinic.featured_today()
     assert featured.post_id == loud.pk and featured.status == 'approved'
     assert clinic.spin_of_day()['id'] == featured.pk
+
+
+@pytest.mark.django_db
+def test_only_fresh_posts_are_diagnosed(ai_on):
+    acc = account()
+    old = post(acc, post_id='9401', hours_ago=40)
+    new = post(acc, post_id='9402', hours_ago=2)
+    clinic.run_screening()
+    clinic.run_diagnoses()
+    assert SpinDiagnosis.objects.get(post=new).status == 'pending_review'
+    assert SpinDiagnosis.objects.get(post=old).status == 'queued'

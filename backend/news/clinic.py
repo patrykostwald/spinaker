@@ -128,7 +128,7 @@ def unscreened_posts():
     since = timezone.now() - timedelta(days=int(os.environ.get('CLINIC_MAX_POST_AGE_DAYS', '3')))
     return (PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, published_at__gte=since,
                                          account__enabled=True, spin_diagnosis__isnull=True)
-            .select_related('account').order_by('published_at', 'pk'))
+            .select_related('account').order_by('-published_at', '-pk'))  # najpierw najnowsze
 
 
 def auto_publish() -> bool:
@@ -319,13 +319,14 @@ def run_diagnoses(limit: int = 2) -> dict:
             counts[f'featured_{row.status}'] = 1
     regular_done = diagnoses_today() - (1 if featured_today() else 0)
     take = max(0, min(limit, paced_target(now, daily - reserve) - regular_done))
-    rows = list(SpinDiagnosis.objects.filter(status='queued').select_related('post__account')
-                .order_by('-screen_score', 'post__published_at')[:take])
+    # Tylko świeże posty (domyślnie z ostatnich 24 h) — Klinika komentuje bieżące przekazy, nie archiwum.
+    fresh = timezone.now() - timedelta(hours=_env_int('CLINIC_FRESH_HOURS', 24))
+    rows = list(SpinDiagnosis.objects.filter(status='queued', post__published_at__gte=fresh).select_related('post__account')
+                .order_by('-screen_score', '-post__published_at')[:take])
     if auto_publish() and len(rows) < take:
         # Żeby spiny wpadały codziennie: gdy wysoko ocenionych postów brakuje, bierzemy najwyżej ocenione
         # z oznaczonych przez strażnika (z ostatniej doby), aż do dziennego limitu.
-        since = timezone.now() - timedelta(hours=36)
-        extra = (SpinDiagnosis.objects.filter(status='flagged', screen_score__isnull=False, post__published_at__gte=since)
+        extra = (SpinDiagnosis.objects.filter(status='flagged', screen_score__isnull=False, post__published_at__gte=fresh)
                  .select_related('post__account').order_by('-screen_score', '-post__published_at')[:take - len(rows)])
         rows += list(extra)
     figures = figures_by_account({row.post.account_id for row in rows})
