@@ -4061,7 +4061,7 @@ html, body { overflow-x: clip; }
 @media (min-width: 761px) {
   .sc-spin-switch__bar { grid-template-areas: "kicker . ." "title tabs right"; align-items: end; }
   .sc-spin-switch__bar .sc-spin-switch__tabs { align-self: end; padding-bottom: 4px; }
-  .sc-spin-switch__bar .sc-spin-switch__tabs button { min-height: 0; padding-block: 2px; }
+  .sc-spin-switch__bar .sc-spin-switch__tabs button { min-height: 24px; padding-block: 0; }
   .sc-spin-switch__bar .sc-spin-switch__right { align-self: end; }
   .sc-spin-switch__right .sc-home-spin__meta { padding-bottom: 6px; }
   .sc-home-spin__sotd .sc-clinic-sotd__post { padding-top: 0; }
