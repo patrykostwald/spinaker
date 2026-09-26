@@ -41,15 +41,15 @@ function HeaderClock() {
 }
 
 /**
- * Rząd szapki: spin.clinic BETA · Źródła · [szukaj] · Klinika · godzina · motyw · O nas.
- * Źródła (strona główna z Bazą) stoją w liście po lewej; Klinika i O nas w prawym slocie — w panelu
- * mobilnym wszystkie są na liście (mobileOnly). Nitki wrócą w fazie II (THREADS_ENABLED).
+ * Szapka: po lewej marka i nawigacja (Źródła · Klinika · O nas — jeden krój, wspólny wskaźnik
+ * aktywnej strony), na środku pole szukania, po prawej narzędzia (godzina, motyw, konto).
+ * Nitki wrócą w fazie II (THREADS_ENABLED).
  */
-const SECTIONS: Array<{ label: string; href: string; mobileOnly?: boolean }> = [
+const SECTIONS: Array<{ label: string; href: string }> = [
   { label: "Źródła", href: "/" },
-  { label: "Klinika", href: "/klinika", mobileOnly: true },
+  { label: "Klinika", href: "/klinika" },
   ...(THREADS_ENABLED ? [{ label: "Nitki", href: "/nitki" }] : []),
-  { label: "O nas", href: "/o-nas", mobileOnly: true },
+  { label: "O nas", href: "/o-nas" },
 ];
 
 export function SiteHeader({ site }: { site: SiteConfig }) {
@@ -74,11 +74,7 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         </div>
       }
       search={<HeaderSearch />}
-      cta={<div className="sc-nav-cta">
-        <Link href="/klinika" className="sc-navmenu__link sc-nav-cta__link" aria-current={pathname.startsWith("/klinika") ? "page" : undefined}>Klinika</Link>
-        <HeaderClock /><ThemeSwitcher compact />
-        <Link href="/o-nas" className="sc-navmenu__link sc-nav-cta__link" aria-current={pathname === "/o-nas" ? "page" : undefined}>O nas</Link>
-        {ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
+      cta={<div className="sc-nav-cta"><HeaderClock /><ThemeSwitcher compact />{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
     />
   );
 }
