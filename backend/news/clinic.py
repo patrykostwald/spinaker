@@ -143,8 +143,17 @@ def thresholds() -> tuple[int, int]:
 
 
 def diagnoses_today() -> int:
+    """Udane diagnozy od północy — tylko one zużywają dzienny limit."""
+    return _anthropic_today().exclude(status='failed').count()
+
+
+def failures_today() -> int:
+    return _anthropic_today().filter(status='failed').count()
+
+
+def _anthropic_today():
     start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
-    return SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic').count()
+    return SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic')
 
 
 def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
@@ -219,6 +228,9 @@ def run_diagnoses(limit: int = 3) -> dict:
     if not clinic_ai.enabled():
         return {'status': 'disabled'}
     budget = int(os.environ.get('CLINIC_DAILY_LIMIT', '20')) - diagnoses_today()
+    if failures_today() >= int(os.environ.get('CLINIC_DAILY_FAILURE_LIMIT', '5')):
+        # Seria błędów (klucz, model, limit konta) — nie palimy pieniędzy do jutra albo do naprawy.
+        return {'status': 'too_many_failures', 'failed_today': failures_today()}
     take = max(0, min(limit, budget))
     rows = list(SpinDiagnosis.objects.filter(status='queued').select_related('post__account')
                 .order_by('-screen_score', 'post__published_at')[:take])

@@ -167,6 +167,14 @@ def _usage(response) -> dict:
     }
 
 
+def _error_message(error) -> str:
+    """Treść błędu API do pola `error` (bez nagłówków i klucza) — żeby przyczynę było widać w panelu."""
+    body = getattr(error, 'body', None)
+    if isinstance(body, dict):
+        return str((body.get('error') or {}).get('message') or body)[:200]
+    return str(getattr(error, 'message', '') or error)[:200]
+
+
 def _call(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
     """Jedno zapytanie do Claude z obsługą pause_turn, odmowy i trybu awaryjnego JSON."""
     import anthropic
@@ -189,9 +197,9 @@ def _call(system: str, user: str, schema: dict, *, web_search: bool, max_tokens:
             kwargs['tools'] = tools
         try:
             response = client.beta.messages.create(**kwargs)
-        except anthropic.BadRequestError:
+        except anthropic.BadRequestError as error:
             if not structured:
-                raise ClinicAIError('bad_request')
+                raise ClinicAIError(f'bad_request: {_error_message(error)}'[:240])
             # Tryb awaryjny: bez wymuszonego formatu, JSON opisany w instrukcji.
             structured = False
             messages = [{'role': 'user', 'content': user + '\n\nOdpowiedz wyłącznie obiektem JSON zgodnym z tym schematem:\n'
@@ -200,7 +208,7 @@ def _call(system: str, user: str, schema: dict, *, web_search: bool, max_tokens:
         except anthropic.RateLimitError:
             raise ClinicAIError('rate_limited')
         except anthropic.APIStatusError as error:
-            raise ClinicAIError(f'api_{error.status_code}')
+            raise ClinicAIError(f'api_{error.status_code}: {_error_message(error)}'[:240])
         except anthropic.APIConnectionError:
             raise ClinicAIError('connection')
         if response.stop_reason == 'pause_turn':

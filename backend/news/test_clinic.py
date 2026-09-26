@@ -294,3 +294,20 @@ def test_auto_mode_publishes_and_fills_the_daily_quota_from_flagged(monkeypatch)
     row = SpinDiagnosis.objects.get()
     assert row.status == 'approved' and row.reviewed_by_id is None
     assert APIClient().get(f'/api/clinic/spins/{row.pk}/').json()['auto_published'] is True
+
+
+@pytest.mark.django_db
+def test_failures_do_not_use_the_daily_quota_but_a_series_of_them_stops_spending(ai_on, monkeypatch):
+    def broken(context):
+        raise clinic_ai.ClinicAIError('api_404: model not found')
+    monkeypatch.setattr(clinic_ai, 'diagnose', broken)
+    monkeypatch.setenv('CLINIC_DAILY_FAILURE_LIMIT', '2')
+    acc = account()
+    for index in range(4):
+        post(acc, post_id=str(9100 + index))
+    clinic.run_screening()
+    clinic.run_diagnoses(limit=2)
+    assert clinic.failures_today() == 2 and clinic.diagnoses_today() == 0
+    assert SpinDiagnosis.objects.filter(status='failed').first().error.startswith('api_404: model not found')
+    assert clinic.run_diagnoses(limit=2) == {'status': 'too_many_failures', 'failed_today': 2}
+    assert SpinDiagnosis.objects.filter(status='queued').count() == 2
