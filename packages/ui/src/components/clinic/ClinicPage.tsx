@@ -103,7 +103,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       <header className="sc-clinic-head">
         <p className="sc-clinic-kicker">Klinika spinu</p>
         <Title id="clinic-title">Diagnozy przekazów polityków</Title>
-        <p className="sc-clinic-notice"><AiTag /> <strong>Treści w tej sekcji generuje AI.</strong> {data?.notice ?? ""} <Link href="/o-nas#klinika">Jak to działa</Link></p>
+        <p className="sc-clinic-subtitle"><AiTag /> Treści w tej sekcji generuje AI. {data?.notice ?? ""} <Link href="/o-nas#klinika">Jak to działa</Link></p>
       </header>
 
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
@@ -151,7 +151,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
               kontekstowych pod własnym nazwiskiem: materiał otwierający, a za nim dokumenty, wypowiedzi i źródła — z Twoim podpisem i linkiem do redakcji.
             </p>
           </div>
-          <a className="sc-onas-mail" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`}>Napisz: {CONTACT}</a>
+          <a className="sc-onas-mail sc-clinic-journalists__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`}>Napisz: {CONTACT}</a>
         </aside>
 
         <p className="sc-clinic-roadmap">

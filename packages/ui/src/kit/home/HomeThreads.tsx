@@ -98,12 +98,9 @@ function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; 
   return (
     <div className="sc-home-personal__strip">
       <div className="sc-home-personal__actions">
-        <Button variant="quiet" size="sm" onClick={onEdit}>
-          Edytuj
-        </Button>
-        <Button variant="quiet" size="sm" onClick={onRemove}>
-          Usuń pasek
-        </Button>
+        <button type="button" onClick={onEdit}>Edytuj</button>
+        <span aria-hidden="true">|</span>
+        <button type="button" onClick={onRemove} aria-label={`Usuń pasek: ${strip.label}`}>Usuń</button>
       </div>
       {feed.isPending ? <p role="status" className="sc-t-body-s sc-text-2">Ładuję materiały…</p> : null}
       {feed.isSuccess && !articles.length ? <p className="sc-t-body-s sc-text-2">Nie znaleźliśmy jeszcze materiałów pasujących do tego wyboru.</p> : null}
