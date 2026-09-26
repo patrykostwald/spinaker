@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getClinicPage, sharePercent } from "../../lib/clinic";
-import { AiTag, SpinCard } from "../../components/clinic/SpinParts";
+import { AiTag, SpinRow } from "../../components/clinic/SpinParts";
 
 export function HomeSpinTeaser() {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
@@ -28,7 +28,7 @@ export function HomeSpinTeaser() {
           <Link href="/klinika">Otwórz Klinikę spinu →</Link>
         </p>
       </header>
-      {spin ? <div className="sc-home-spin__card"><SpinCard spin={spin} /></div> : (
+      {spin ? <div className="sc-home-spin__card"><SpinRow spin={spin} /></div> : (
         <p className="sc-t-body-s sc-text-2 sc-home-spin__empty">
           Każdy nowy post polityków z oficjalnych kont przegląda strażnik, a te warte sprawdzenia bada Dr. Spin — techniki perswazji z cytatami
           i twierdzenia porównane ze źródłami. Rządzący i opozycja według tych samych zasad.

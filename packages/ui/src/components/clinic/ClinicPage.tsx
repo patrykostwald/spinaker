@@ -6,7 +6,7 @@ import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
 import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicPage, type Camp, type DailyMessage, type SpinDetailData } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
-import { AiTag, IntensityMeter, PartyBadge, SpinAuthorRow, SpinCard, SpinScale, VerdictTag } from "./SpinParts";
+import { AiTag, IntensityMeter, PartyBadge, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 
 const CONTACT = "kontakt@spin.clinic";
@@ -134,7 +134,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
                 <h4 id={`clinic-col-${camp}`} className="sc-clinic-column__title">{CAMP_LABELS[camp]}</h4>
                 {data.columns[camp].length ? (
                   <div className="sc-clinic-column__list" tabIndex={0} aria-label={`Diagnozy: ${CAMP_LABELS[camp]} — przewijaj`}>
-                    {data.columns[camp].map(spin => <SpinCard key={spin.id} spin={spin} />)}
+                    {data.columns[camp].map(spin => <SpinRow key={spin.id} spin={spin} />)}
                   </div>
                 ) : <p className="sc-clinic-empty">Pierwsze diagnozy pojawią się, gdy strażnik znajdzie posty warte sprawdzenia.</p>}
               </section>
