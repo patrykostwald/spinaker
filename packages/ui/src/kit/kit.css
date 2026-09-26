@@ -3699,3 +3699,10 @@ a.sc-account-tile:hover { box-shadow: 0 0 0 1px var(--sc-accent); }
 .sc-navmenu[data-layout="centered"] .sc-navmenu__end { justify-content: stretch; }
 .sc-navmenu[data-layout="centered"] .sc-navmenu__cta { flex: 1 1 auto; }
 .sc-nav-cta .sc-nav-cta__link:first-child { margin-right: auto; }
+/* Wsparcie: koszty i cele jako lista nazwa — opis. */
+.sc-support-costs { display: grid; gap: var(--sc-s-2); margin: 0 0 var(--sc-s-3); }
+.sc-support-costs > div { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); gap: var(--sc-s-4); padding: var(--sc-s-3) 0; border-bottom: 1px solid var(--sc-line); }
+.sc-support-costs dt { color: var(--sc-text); font-weight: 600; }
+.sc-support-costs dd { margin: 0; color: var(--sc-text-2); }
+.sc-support-note { color: var(--sc-text-2); }
+@media (max-width: 640px) { .sc-support-costs > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
