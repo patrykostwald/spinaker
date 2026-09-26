@@ -88,6 +88,8 @@ export type ClinicPageData = {
   spin_of_day: SpinDetailData | null;
   latest_spin: SpinDetailData | null;
   interview: Interview | null;
+  /** Wcześniejsze wywiady dnia (bez aktualnego), najnowsze najpierw. */
+  interview_archive?: Interview[];
   message_history: Record<Camp, DailyMessage[]>;
   columns: Record<Camp, SpinCardData[]>;
   accounts_count: number;

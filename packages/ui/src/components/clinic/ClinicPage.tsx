@@ -105,7 +105,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
         </div>
 
-        {data.interview ? <InterviewBox interview={data.interview} /> : null}
+        {data.interview ? <InterviewBox interview={data.interview} archive={data.interview_archive} /> : null}
 
         <SpinScale scale={data.scale} />
 

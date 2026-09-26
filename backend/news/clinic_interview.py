@@ -333,9 +333,17 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
     }
 
 
+def _published_interviews():
+    return ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True).order_by('-day', '-diagnosed_at')
+
+
 def latest_interview_data() -> dict | None:
-    return interview_data(ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True)
-                          .order_by('-day', '-diagnosed_at').first())
+    return interview_data(_published_interviews().first())
+
+
+def interview_archive(limit: int = 10) -> list[dict]:
+    """Wcześniejsze wywiady dnia (bez najnowszego) — paski archiwum pod aktualnym wywiadem."""
+    return [interview_data(row) for row in _published_interviews()[1:limit + 1]]
 
 
 # --- automatyczny wybór: najgłośniejszy wywiad z politykiem z poprzedniego dnia --------------------------

@@ -107,8 +107,10 @@ function QuoteList({ interview, items }: { interview: Interview; items: Intervie
 }
 
 /** Wywiad dnia: pasek z miniaturą i tytułem, pod nim Dr. Spin o gościu i o prowadzącym, na dole podsumowanie. */
-export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore }: {
+export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore, archive = [] }: {
   interview: Interview;
+  /** Wcześniejsze wywiady — paski z datą po lewej, pod aktualnym wywiadem (ten sam panel). */
+  archive?: Interview[];
   /** Opcjonalnie: okno analizy sterowane z zewnątrz (np. link w nagłówku sekcji na głównej). */
   open?: boolean; onOpenChange?: (open: boolean) => void; hideMore?: boolean;
 }) {
@@ -145,7 +147,42 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
+      {archive.length ? <InterviewArchive items={archive} /> : null}
       <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad dnia · ${interview.title}`}>
+        <InterviewAnalysis interview={interview} />
+      </ClinicDialog>
+    </section>
+  );
+}
+
+/** Archiwum wywiadów dnia: jeden pasek na dzień — data po lewej, gość, nagłówek, werdykt; klik otwiera analizę. */
+function InterviewArchive({ items }: { items: Interview[] }) {
+  const [openId, setOpenId] = useState<number | null>(null);
+  const current = items.find(item => item.id === openId) ?? null;
+  return (
+    <div className="sc-interview-archive">
+      <h4 className="sc-interview-archive__title">Wcześniejsze wywiady</h4>
+      <ul>{items.map(item => (
+        <li key={item.id}>
+          <button type="button" className="sc-interview-archive__row" onClick={() => setOpenId(item.id)} aria-haspopup="dialog">
+            <time dateTime={item.day}>{formatDatePl(item.day)}</time>
+            <span className="sc-interview-archive__who">{item.guest_name}<small>{item.channel}</small></span>
+            <span className="sc-interview-archive__headline">{item.headline || item.title}</span>
+            <VerdictTag verdict={item.guest.verdict} label={item.guest.verdict_label} />
+          </button>
+        </li>
+      ))}</ul>
+      <ClinicDialog open={current !== null} onClose={() => setOpenId(null)} title={current ? `Wywiad dnia · ${current.title}` : ""}>
+        {current ? <InterviewAnalysis interview={current} /> : null}
+      </ClinicDialog>
+    </div>
+  );
+}
+
+/** Pełna analiza wywiadu (okno): gość z technikami i twierdzeniami, prowadzący, ograniczenia. */
+function InterviewAnalysis({ interview }: { interview: Interview }) {
+  return (
+    <>
         <p className="sc-clinic-dialog__lead">{interview.headline}</p>
         <p>{interview.overall}</p>
         <h3>Gość · {interview.guest_name}</h3>
@@ -167,8 +204,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
         <QuoteList interview={interview} items={interview.host.notes} />
         {interview.limitations ? <p className="sc-clinic-sotd__limits">Ograniczenia: {interview.limitations}</p> : null}
         <p className="sc-clinic-dialog__note"><AiTag /> Transkrypcja: Gemini (Google), diagnoza: {interview.model}. Cytaty tylko z transkrypcji, źródła tylko z wyszukiwania. <a href={interview.url} target="_blank" rel="noopener noreferrer">Obejrzyj oryginał ↗</a></p>
-      </ClinicDialog>
-    </section>
+    </>
   );
 }
 
