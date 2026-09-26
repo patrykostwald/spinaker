@@ -356,7 +356,9 @@ def test_evening_slot_goes_to_the_most_popular_post_and_it_becomes_spin_of_the_d
     PoliticalPost.objects.filter(pk=quiet.pk).update(author_data={'public_metrics': {'followers_count': 800}})
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 50, 'reason': 'r', 'provider': 'groq', 'model': 'm'})
     clinic.run_screening()
-    at_hour(monkeypatch, 18, 5)
+    evening = at_hour(monkeypatch, 18, 5)
+    # Posty z tego samego dnia co „teraz” testu — niezależnie od godziny uruchomienia (też tuż po północy).
+    PoliticalPost.objects.update(published_at=evening - timedelta(hours=2))
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis(intensity=30))
     clinic.run_diagnoses(limit=0)
     featured = clinic.featured_today()
@@ -429,6 +431,10 @@ def test_spin_of_day_is_the_strongest_today_and_latest_is_the_newest(ai_on, monk
     monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
     acc = account()
     strong, newer = post(acc, post_id='9501', hours_ago=3), post(acc, post_id='9502', hours_ago=1)
+    # Oba posty z „dzisiaj” w czasie testu (12:00) — wynik nie zależy od godziny uruchomienia.
+    noon = clinic.local_now()
+    PoliticalPost.objects.filter(pk=strong.pk).update(published_at=noon - timedelta(hours=3))
+    PoliticalPost.objects.filter(pk=newer.pk).update(published_at=noon - timedelta(hours=1))
     clinic.run_screening()
     intensities = iter([90, 40])
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: fake_diagnosis(intensity=next(intensities)))
