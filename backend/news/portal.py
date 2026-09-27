@@ -22,7 +22,7 @@ from news.schema import ArticleContextResponse, ContextCountsResponse, FEED_PARA
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from news.models import Article, ArticleCategory, Source, Thread, ThreadItem, SourceContactCard
+from news.models import Article, ArticleCategory, Source, SourceAccessInstruction, Thread, ThreadItem, SourceContactCard
 from news.serializers import ArticleSerializer, SourceSerializer, ThreadSerializer
 from news.source_groups import TOP_MEDIA
 
@@ -183,7 +183,8 @@ def portal_config(request):
         if value not in ('tweet', 'context')], 'top_sources': SourceSerializer(top_sources(), many=True).data,
         # The picker is also a public catalogue: candidates are visible, but remain
         # inactive until their access and ingestion path have been approved.
-        'topics': topic_choices(), 'sources': SourceSerializer(catalog_sources, many=True).data,
+        'topics': topic_choices(), 'sources': SourceSerializer(catalog_sources, many=True, context={'approved_ids': set(
+            SourceAccessInstruction.objects.filter(status='approved', daily_request_cap__gt=0).values_list('source_id', flat=True))}).data,
         'source_stats': {'catalog_total': catalog_sources.count(), 'active': catalog_sources.filter(is_active=True).count(),
             'awaiting_response': SourceContactCard.objects.filter(status='sent').count()},
         'editorial': slots, 'x_editorial': {'configured': configured,

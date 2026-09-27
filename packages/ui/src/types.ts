@@ -10,6 +10,8 @@ export type Source = {
   /** Konto X i kanał YouTube źródła (z jego strony głównej / potwierdzony kanał). */
   x_handle?: string;
   youtube_url?: string;
+  /** Zgoda wydawcy albo dane publiczne na jawnych zasadach (tylko w katalogu źródeł). */
+  access?: 'approved' | 'pending' | null;
 };
 
 export type Article = {

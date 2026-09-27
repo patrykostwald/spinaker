@@ -42,7 +42,16 @@ class SourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Source
-        fields = ('id', 'name', 'url', 'source_type', 'is_active', 'catalog_stage', 'portal_group', 'x_handle', 'youtube_url')
+        fields = ('id', 'name', 'url', 'source_type', 'is_active', 'catalog_stage', 'portal_group', 'x_handle', 'youtube_url', 'access')
+
+    access = serializers.SerializerMethodField()
+
+    def get_access(self, obj):
+        """Zgoda albo dane publiczne na jawnych zasadach (zatwierdzona karta dostępu) — tylko w katalogu źródeł."""
+        approved = self.context.get('approved_ids')
+        if approved is None:
+            return None
+        return 'approved' if obj.pk in approved else 'pending'
 
     @extend_schema_field(serializers.ChoiceField(choices=['top', 'publiczne', 'media']))
     def get_portal_group(self, obj):
