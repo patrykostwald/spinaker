@@ -4113,3 +4113,6 @@ html, body { overflow-x: clip; }
   .sc-clinic-sotd__reading:not([data-expanded]) { contain: size; min-height: 220px; flex: none; }
   .sc-home-spin__sotd .sc-clinic-sotd__post { padding-top: 0; }
 }
+
+/* „Opozycja” / „Rządzący” nad metką partii (prawy róg), nie pod zdjęciem. */
+.sc-clinic-sotd__post > .sc-clinic-sotd__camp { order: -1; justify-self: end; text-align: right; margin: 0; }
