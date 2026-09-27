@@ -469,14 +469,29 @@ def _top_politicians() -> tuple[str, ...]:
     return tuple(name.strip().lower() for name in custom.split(',') if name.strip()) or TOP_POLITICIANS
 
 
-def looks_like_interview(title: str, description: str, channel: str) -> tuple[bool, str]:
-    """Darmowy model (Groq, zapasowo NIM) czyta tytuł i opis: czy to rozmowa dziennikarza z politykiem."""
+CLASSIFY_RETRIES = (0, 8, 20)  # sekundy przed kolejną próbą — darmowy model ma limit zapytań na minutę
+
+
+def looks_like_interview(title: str, description: str, channel: str) -> tuple[bool | None, str]:
+    """Darmowy model (Groq, zapasowo NIM) czyta tytuł i opis: czy to rozmowa dziennikarza z politykiem.
+    None = klasyfikator nie odpowiedział (to nie jest odrzucenie)."""
+    import time
     user = f'Kanał: {channel}\nTytuł: {title}\nOpis: {description[:1200]}'
-    try:
-        data, _ = clinic_ai._free_chat(CLASSIFY_SYSTEM, user, CLASSIFY_SCHEMA, max_tokens=300)
-    except clinic_ai.ClinicAIError:
-        return False, 'klasyfikator niedostępny'
-    return bool(data.get('interview')), str(data.get('reason', ''))[:200]
+    for pause in CLASSIFY_RETRIES:
+        time.sleep(pause)
+        try:
+            data, _ = clinic_ai._free_chat(CLASSIFY_SYSTEM, user, CLASSIFY_SCHEMA, max_tokens=300)
+        except clinic_ai.ClinicAIError:
+            continue
+        return bool(data.get('interview')), str(data.get('reason', ''))[:200]
+    return None, 'klasyfikator niedostępny'
+
+
+def talk_signal(title: str, description: str) -> bool:
+    """Wyraźny znak rozmowy w tytule lub opisie (gdy klasyfikator milczy). Monologi i tak odpadną na transkrypcji
+    (is_dialogue) — przed płatną diagnozą."""
+    text = f'{title} {description}'.lower()
+    return bool(QUOTE_TITLE.match(title)) or any(word in text for word in INTERVIEW_WORDS + ('poranna rozmowa', 'gość dzisiaj'))
 
 
 def _uploads_between(channel_id: str, start, end, max_pages: int = 4) -> list[tuple[str, dict]]:
@@ -601,10 +616,15 @@ def find_loudest_interview(day, exclude=()) -> dict | None:
     for candidate in rank_interviews(day)[:8]:
         if candidate['video_id'] in exclude:
             continue
+        import time
         ok, reason = looks_like_interview(candidate['title'], candidate['description'], candidate['channel'])
+        if ok is None:
+            ok = talk_signal(candidate['title'], candidate['description'])
+            reason = f'{reason}; znak rozmowy w tytule/opisie: {"tak" if ok else "nie"}'
         logger.info('interview pick %s %s: %s', candidate['video_id'], ok, reason)
         if ok:
             return candidate
+        time.sleep(2)  # odstęp między pytaniami do darmowego modelu
     return None
 
 

@@ -541,3 +541,14 @@ def test_x_thread_synthesis_is_saved_once_and_rejects_english(ai_on, monkeypatch
     assert diagnosis.x_thread[0] == 'Wpis przypisuje rządowi intencje bez dowodu.' and len(diagnosis.x_thread) == 3
     assert diagnosis.verdict == 'spin' and diagnosis.intensity == 70  # synteza nie zmienia diagnozy
     assert clinic.ensure_x_thread(diagnosis) is False  # tylko raz
+
+
+def test_silent_classifier_is_not_a_rejection(monkeypatch):
+    from news import clinic_interview
+    monkeypatch.setattr(clinic_interview, 'CLASSIFY_RETRIES', (0, 0))
+    calls = []
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **k: calls.append(1) or (_ for _ in ()).throw(clinic_ai.ClinicAIError('rate')))
+    ok, reason = clinic_interview.looks_like_interview('Błaszczak: Tusk łata dziurę | Gość Dzisiaj', '', 'Republika')
+    assert ok is None and len(calls) == 2  # ponowiona próba, potem „nie wiem”, a nie „nie”
+    assert clinic_interview.talk_signal('Błaszczak: Tusk łata dziurę | Gość Dzisiaj', '')
+    assert not clinic_interview.talk_signal('Dzisiaj Informacje 26.09.2026', 'serwis informacyjny')
