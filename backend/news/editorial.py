@@ -4,6 +4,7 @@ from django.db.models import F, Prefetch
 from rest_framework import serializers, viewsets
 from rest_framework.permissions import BasePermission, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from news.models import Article, Source, Thread, ThreadItem, ThreadType
 from news.serializers import ArticleSerializer, ThreadSerializer
 from news.editorial_roles import can_author_threads
@@ -15,6 +16,26 @@ class IsThreadAuthor(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return can_author_threads(request.user) and (request.user.is_staff or obj.created_by_id == request.user.pk)
+
+# Autoryzowana nitka dziennikarza: box otwierający + do 14 boxów kontekstu; tytuł z opisem mieści się w jednym
+# wpisie na X (zostawiamy ok. 30 znaków na link do nitki i odstępy).
+JOURNALIST_MAX_ITEMS = 15
+JOURNALIST_POST_CHARS = 250
+
+
+class JournalistWriteThrottle(UserRateThrottle):
+    scope = 'journalist_write'
+    rate = '60/hour'
+
+    def allow_request(self, request, view):
+        return True if request.user.is_staff else super().allow_request(request, view)
+
+
+class IsThreadAuthorWriter(BasePermission):
+    """Zespół i dziennikarze: podgląd adresu i nowy box w Bazie (dziennikarz — z limitem zapytań)."""
+    def has_permission(self, request, view):
+        return can_author_threads(request.user)
+
 
 class WriteItemSerializer(serializers.Serializer):
     article_id = serializers.PrimaryKeyRelatedField(queryset=Article.objects.exclude(category='tweet'), required=False)
@@ -37,6 +58,8 @@ class WriteThreadSerializer(serializers.ModelSerializer):
     def validate_items(self, items):
         if not 1 <= len(items) <= 100:
             raise serializers.ValidationError('Dodaj od 1 do 100 materiałów.')
+        if not self.context['request'].user.is_staff and len(items) > JOURNALIST_MAX_ITEMS:
+            raise serializers.ValidationError('Nitka ma najwyżej 15 boxów: box otwierający i do 14 boxów kontekstu.')
         ids = [('article', i['article_id'].pk) if i.get('article_id') else ('url', i['external_url']) for i in items]
         if len(ids) != len(set(ids)):
             raise serializers.ValidationError('Ten sam materiał nie może występować dwukrotnie.')
@@ -50,6 +73,10 @@ class WriteThreadSerializer(serializers.ModelSerializer):
             # Content edits of an approved story must be reviewed again.
             attrs['published'] = False
             attrs['is_featured'] = False
+            title = attrs.get('title', getattr(self.instance, 'title', ''))
+            description = attrs.get('description', getattr(self.instance, 'description', ''))
+            if len(title) + len(description) > JOURNALIST_POST_CHARS:
+                raise serializers.ValidationError({'description': 'Tytuł i opis muszą zmieścić się w jednym wpisie na X — razem najwyżej 250 znaków.'})
         effective = lambda field, default: attrs.get(field, getattr(self.instance, field, default))
         if effective('is_featured', False) and not effective('published', False):
             raise serializers.ValidationError('Wyróżnić można wyłącznie opublikowaną nitkę.')
@@ -87,6 +114,11 @@ class WriteThreadSerializer(serializers.ModelSerializer):
             self.save_items(instance, items)
         return instance
     def save_items(self, thread, items):
+        # Dziennikarz sam ustala kolejność: pierwszy box to box otwierający (materiał do wypromowania).
+        if not self.context['request'].user.is_staff:
+            ThreadItem.objects.bulk_create([ThreadItem(thread=thread, article=item.get('article_id'), external_url=item.get('external_url', ''),
+                position=index, editorial_note=item.get('editorial_note', '')) for index, item in enumerate(items)])
+            return
         # Timeline order follows source publication dates; undated items stay last.
         def publication(item):
             article = item.get('article_id')
@@ -128,7 +160,11 @@ class WriteArticleSerializer(serializers.ModelSerializer):
     evidence_note = serializers.CharField(required=False, allow_blank=True, max_length=4000)
     class Meta:
         model = Article
-        fields = ('title', 'url', 'published_date', 'category', 'author', 'description', 'source_name', 'evidence_note')
+        fields = ('title', 'url', 'published_date', 'category', 'author', 'description', 'source_name', 'evidence_note', 'image_url')
+    def validate_image_url(self, value):
+        if value and urlparse(value).scheme != 'https':
+            raise serializers.ValidationError('Podaj adres zdjęcia zaczynający się od https://.')
+        return value
     def validate_url(self, value):
         parsed = urlparse(value)
         if parsed.hostname in {'x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'}:
@@ -146,8 +182,11 @@ class WriteArticleSerializer(serializers.ModelSerializer):
         return article
 
 class EditorialArticleViewSet(viewsets.GenericViewSet):
-    permission_classes = [IsAdminUser]
+    """Nowy box w Bazie po adresie URL — zespół i dziennikarze (box z nitki dziennikarza trafia do Bazy)."""
+    permission_classes = [IsThreadAuthorWriter]
     serializer_class = WriteArticleSerializer
+
+    throttle_classes = [JournalistWriteThrottle]
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

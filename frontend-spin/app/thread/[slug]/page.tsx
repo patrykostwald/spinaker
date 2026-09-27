@@ -1,5 +1,5 @@
 "use client";
-import { ThreadExport, ThreadFavoriteButton, ThreadOpinions, ShareOnX, getThread, ApiError } from '@spin-clinic/ui';
+import { ThreadExport, ThreadFavoriteButton, ThreadOpinions, ShareThreadOnX, getThread, ApiError } from '@spin-clinic/ui';
 import { Button, ThreadView } from '@spin-clinic/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 export default function ThreadPage({ params }: { params: { slug: string } }) {
@@ -13,8 +13,8 @@ export default function ThreadPage({ params }: { params: { slug: string } }) {
     {thread.author_name && <p className="sc-t-meta sc-thread-page__author" data-author-role={thread.author_role}>{thread.author_name} · {thread.author_role === 'journalist' ? 'Dziennikarz' : thread.author_role === 'editor' ? 'Zespół spin.clinic' : 'Autor'}</p>}
     <p className="sc-t-body sc-text-2 sc-thread-page__description">{thread.description}</p>
     <p className="sc-t-meta sc-text-2">{thread.item_count} materiałów · {thread.views_count} wyświetleń</p>
-    <div className="sc-thread-page__actions"><ThreadFavoriteButton thread={thread} /><ShareOnX title={thread.title} path={`/thread/${thread.slug}`} /></div>
-    <ThreadView items={thread.items} anchorFirst={Boolean(thread.editorial_slot)} />
+    <div className="sc-thread-page__actions"><ThreadFavoriteButton thread={thread} /><ShareThreadOnX thread={thread} /></div>
+    <ThreadView items={thread.items} anchorFirst={Boolean(thread.editorial_slot) || thread.author_role === 'journalist'} />
     <ThreadOpinions slug={thread.slug} />
     <ThreadExport thread={thread} />
   </article>;

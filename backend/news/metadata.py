@@ -2,13 +2,14 @@ import json
 from html.parser import HTMLParser
 from urllib.parse import urlparse, urljoin, urlsplit
 from django.conf import settings
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework import serializers
 from news.models import Article
 from news.classification import publisher_category, normalize_publisher_tags, declared_category
 from news.serializers import ArticleSerializer
+from news.editorial import IsThreadAuthorWriter, JournalistWriteThrottle
 from scraper.utils import fetch_feed, parse_published, safe_url
 from drf_spectacular.utils import extend_schema, inline_serializer
 from drf_spectacular.types import OpenApiTypes
@@ -198,7 +199,8 @@ def extract_metadata(raw, url):
 
 @extend_schema(request=inline_serializer(name='PreviewURL', fields={'url': serializers.URLField()}), responses={200: OpenApiTypes.OBJECT, 422: OpenApiTypes.OBJECT})
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsThreadAuthorWriter])
+@throttle_classes([JournalistWriteThrottle])
 def preview_url(request):
     url = str(request.data.get('url', '')).strip()
     if not safe_url(url) or len(url) > 1024:

@@ -13,7 +13,7 @@ const RESERVE = 6; // „5/5 ” z zapasem
 const fits = (text: string) => measurePost(text).weightedLength <= LIMIT;
 
 /** Skraca do limitu całymi słowami (a jeśli się da — całymi zdaniami). */
-function shorten(text: string, budget: number): string {
+export function shorten(text: string, budget: number): string {
   if (measurePost(text).weightedLength <= budget) return text;
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];
   let bySentence = "";
