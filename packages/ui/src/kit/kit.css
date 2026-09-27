@@ -4169,3 +4169,12 @@ html, body { overflow-x: clip; }
 /* Klinika: „Waga spinu” wyśrodkowana; miniatury diagnoz równo z lewą krawędzią kolumny (pod „Rządzący”). */
 .sc-clinic-group > .sc-scale .sc-scale__title { text-align: center; }
 .sc-clinic-group .sc-clinic-column__list .sc-spin-row { padding-left: 0; }
+
+/* O nas: technologia w zwijanej sekcji „dla dociekliwych”; pozycje planowane w zasadach z etykietą stanu. */
+.sc-onas-tech { margin-top: var(--sc-s-3); }
+.sc-onas-tech > summary { cursor: pointer; color: var(--sc-accent); font-size: var(--sc-t-body-s-size); font-weight: 600; list-style: none; }
+.sc-onas-tech > summary::-webkit-details-marker { display: none; }
+.sc-onas-tech > summary::after { content: " ↓"; }
+.sc-onas-tech[open] > summary::after { content: " ↑"; }
+.sc-onas-tech > .sc-onas-stack { margin-top: var(--sc-s-3); }
+.sc-onas-planned .sc-onas-tag { margin-right: var(--sc-s-1); vertical-align: middle; }
