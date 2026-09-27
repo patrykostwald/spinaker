@@ -18,7 +18,11 @@
 	reverse_proxy frontend:3000
 }
 
-# Dawny adres bety — stałe przekierowanie na domenę główną (DNS wskazuje na ten serwer).
+# www i dawny adres bety — stałe przekierowanie na domenę główną (DNS obu wskazuje na ten serwer).
+www.{$SPIN_DOMAIN:spin.clinic} {
+	redir https://{$SPIN_DOMAIN:spin.clinic}{uri} permanent
+}
+
 beta.{$SPIN_DOMAIN:spin.clinic} {
 	redir https://{$SPIN_DOMAIN:spin.clinic}{uri} permanent
 }
