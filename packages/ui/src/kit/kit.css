@@ -4334,3 +4334,34 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 
 .sc-clinic-journalists p a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
 .sc-clinic-journalists p a:hover { text-decoration: underline; }
+
+/* Profil osoby — „Występuje w podmiotach” (KRS) i drzewko kariery publicznej */
+.sc-public-figure-entities { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--sc-s-2); margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-public-figure-entities small { color: var(--sc-text-3); }
+.sc-entities { display: grid; gap: 2px; border-radius: var(--sc-r-lg); overflow: hidden; box-shadow: var(--sc-panel-ring); }
+.sc-entities__row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) minmax(0, 1.2fr) 7rem minmax(0, 1.3fr); gap: var(--sc-s-3); align-items: center; padding: var(--sc-s-3) var(--sc-s-4); background: var(--sc-surface-2); font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-entities__head { background: var(--sc-surface); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); text-transform: uppercase; letter-spacing: .05em; }
+.sc-entities__row[data-status="former"] { opacity: .78; }
+.sc-entities__name { display: grid; gap: 2px; }
+.sc-entities__name strong { color: var(--sc-text); }
+.sc-entities__name small, .sc-entities__row small { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-entities__period { font-variant-numeric: tabular-nums; color: var(--sc-text); }
+.sc-entities__proof { display: grid; gap: 2px; font-size: var(--sc-t-caption-size); }
+@media (max-width: 860px) {
+  .sc-entities__head { display: none; }
+  .sc-entities__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .sc-entities__name, .sc-entities__proof { grid-column: 1 / -1; }
+}
+.sc-career { display: grid; gap: var(--sc-s-2); margin-top: var(--sc-s-6); }
+.sc-career h3 { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-s-size); font-weight: var(--sc-w-title); }
+.sc-career__lead { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-career__tree { position: relative; display: grid; gap: var(--sc-s-3); margin: var(--sc-s-2) 0 0; padding: 0 0 0 26px; list-style: none; }
+.sc-career__tree::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--sc-border, rgba(255,255,255,.14)); }
+.sc-career__tree > li { position: relative; display: grid; gap: 2px; padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface-2); font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-career__tree > li::before { content: ""; position: absolute; left: -24px; top: 16px; width: 12px; height: 12px; border-radius: 50%; background: var(--sc-surface); border: 2px solid var(--sc-text-3); }
+.sc-career__tree > li[data-status="current"]::before { background: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-career__tree > li[data-sector="state"]::before, .sc-career__tree > li[data-sector="municipal"]::before { border-color: #ff9f43; }
+.sc-career__tree > li[data-sector="state"][data-status="current"]::before, .sc-career__tree > li[data-sector="municipal"][data-status="current"]::before { background: #ff9f43; }
+.sc-career__tree strong { color: var(--sc-text); }
+.sc-career__period { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-variant-numeric: tabular-nums; }
+.sc-career__org small { color: #ff9f43; font-weight: 600; }

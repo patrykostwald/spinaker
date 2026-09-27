@@ -176,3 +176,15 @@ def newsletter_confirmation_task(subscriber_id):
     """Mail z linkiem potwierdzającym zapis na newsletter."""
     from news.newsletter import send_confirmation
     return send_confirmation(subscriber_id)
+
+
+@shared_task(name="news.tasks.krs_agent_task", soft_time_limit=1500, time_limit=1600)
+def krs_agent_task():
+    """Codziennie kilka kolejnych osób publicznych: podmioty z KRS (KRS_AGENT_ENABLED, KRS_AGENT_DAILY, KRS_DAILY_BUDGET_USD)."""
+    if not cache.add("krs-agent-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news.krs_agent import run
+        return run()
+    finally:
+        cache.delete("krs-agent-lock")

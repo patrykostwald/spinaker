@@ -147,6 +147,19 @@ ORGANISATION_VERIFICATION_STATUSES = [
     ('confirmed', 'Potwierdzona w źródle publicznym'),
     ('rejected', 'Odrzucona'),
 ]
+ORGANISATION_SECTORS = [
+    ('state', 'Spółka Skarbu Państwa lub państwowa'),
+    ('municipal', 'Spółka komunalna lub samorządowa'),
+    ('public', 'Inny podmiot publiczny'),
+    ('private', 'Podmiot prywatny'),
+    ('ngo', 'Organizacja pozarządowa'),
+    ('unknown', 'Nieustalone'),
+]
+ORGANISATION_VERIFICATION_METHODS = [
+    ('editor', 'Potwierdzone przez zespół'),
+    ('krs_register', 'Potwierdzone w KRS (organ, funkcja i inicjały zgodne)'),
+    ('public_sources', 'Potwierdzone w co najmniej dwóch niezależnych źródłach'),
+]
 KRS_NUMBER_VALIDATOR = RegexValidator(r'^\d{10}$', 'Numer KRS musi zawierać dokładnie 10 cyfr.')
 
 
@@ -171,6 +184,8 @@ class PublicFigure(models.Model):
     evidence_note = models.TextField(blank=True)
     political_alignment = models.CharField(max_length=255, blank=True,
         help_text='Opcjonalna, ręczna notatka redakcyjna; nie jest ustalana automatycznie.')
+    organisations_checked_at = models.DateTimeField(null=True, blank=True, db_index=True,
+        help_text='Kiedy agent KRS ostatnio szukał podmiotów tej osoby.')
     source_checked_at = models.DateTimeField(default=timezone.now)
     parliamentary_roster_entry = models.ForeignKey(ParliamentaryRosterEntry, null=True, blank=True,
         on_delete=models.PROTECT, related_name='public_figure_profiles',
@@ -327,6 +342,10 @@ class RegisteredOrganisation(models.Model):
     kind = models.CharField(max_length=16, choices=ORGANISATION_KINDS)
     official_register_url = models.URLField(max_length=1024,
         help_text='Link do publicznego wpisu KRS albo urzędowego odpisu.')
+    legal_form = models.CharField(max_length=128, blank=True, help_text='Forma prawna z KRS.')
+    register = models.CharField(max_length=1, blank=True, help_text='Rejestr KRS: P — przedsiębiorców, S — stowarzyszeń i fundacji.')
+    sector = models.CharField(max_length=12, choices=ORGANISATION_SECTORS, default='unknown', db_index=True)
+    sector_note = models.TextField(blank=True, help_text='Skąd wiemy, że podmiot jest państwowy lub komunalny.')
     source_checked_at = models.DateTimeField(default=timezone.now)
     archived = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
@@ -357,6 +376,11 @@ class PublicFigureOrganisationRelation(models.Model):
     verified_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
         on_delete=models.SET_NULL, related_name='verified_public_figure_organisation_relations', editable=False)
     verified_at = models.DateTimeField(null=True, blank=True, editable=False)
+    verification_method = models.CharField(max_length=16, choices=ORGANISATION_VERIFICATION_METHODS, default='editor')
+    organ = models.CharField(max_length=255, blank=True, help_text='Organ z KRS, np. zarząd, rada nadzorcza.')
+    since = models.DateField(null=True, blank=True, help_text='Data wpisu do KRS (albo ze źródeł).')
+    until = models.DateField(null=True, blank=True, help_text='Data wykreślenia z KRS (albo ze źródeł).')
+    sources = models.JSONField(default=list, blank=True, help_text='Publiczne źródła relacji: [{url, title}].')
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -369,7 +393,7 @@ class PublicFigureOrganisationRelation(models.Model):
 
     def clean(self):
         super().clean()
-        if self.verification_status == 'confirmed' and (not self.verified_by_id or not self.verified_at):
+        if self.verification_status == 'confirmed' and self.verification_method == 'editor' and (not self.verified_by_id or not self.verified_at):
             raise ValidationError('Potwierdzona relacja wymaga redaktora i daty potwierdzenia.')
 
     def save(self, *args, **kwargs):
@@ -395,6 +419,13 @@ class PublicFigureOrganisationRelation(models.Model):
                         'verification_status', 'verified_by', 'verified_at', 'updated_at',
                     }
         super().save(*args, **kwargs)
+
+    def confirm_automatically(self, method: str):
+        """Potwierdzenie bez udziału człowieka: rejestr KRS albo niezależne źródła publiczne (metoda zapisana przy relacji)."""
+        if method not in ('krs_register', 'public_sources'):
+            raise ValidationError('Nieznana metoda automatycznego potwierdzenia.')
+        self.verification_method, self.verification_status = method, 'confirmed'
+        self.verified_by, self.verified_at = None, timezone.now()
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:

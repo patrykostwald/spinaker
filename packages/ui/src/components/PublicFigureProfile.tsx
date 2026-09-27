@@ -11,6 +11,9 @@ import {
   MATERIAL_GROUPS,
   ORGANISATION_KIND_LABELS,
   ORGANISATION_KIND_ORDER,
+  SECTOR_LABELS,
+  VERIFICATION_LABELS,
+  type EmploymentEntry,
   ROLE_CATEGORY_LABELS,
   groupOfCategory,
   verifiedXAccount,
@@ -65,7 +68,7 @@ function Neutral({ children }: { children: ReactNode }) {
 
 /* ——— Nagłówek profilu ——— */
 
-function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'materials') => void }) {
+function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'career' | 'materials') => void }) {
   const { ownerId } = useOwnerId();
   const [loginOpen, setLoginOpen] = useState(false);
   const x = verifiedXAccount(figure);
@@ -101,9 +104,21 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
       )}
       <nav className="sc-public-figure-summary" aria-label="Sekcje profilu">
         <button type="button" onClick={() => onSelect('votes')}><span>Głosowania</span><strong>{figure.votes.available ? figure.votes.results.length : '—'}</strong></button>
-        <button type="button" onClick={() => onSelect('relations')}><span>Potwierdzone relacje</span><strong>{organisations}</strong></button>
+        <button type="button" onClick={() => onSelect('relations')}><span>Występuje w podmiotach</span><strong>{organisations}</strong></button>
         <button type="button" onClick={() => onSelect('materials')}><span>Materiały w Bazie</span><strong>{materialsTotal ?? '…'}</strong></button>
       </nav>
+      {organisations > 0 && (
+        <p className="sc-public-figure-entities">
+          <span className="sc-public-figure-tag">WYSTĘPUJE W PODMIOTACH</span>
+          {orderedOrganisations(figure.organisations).slice(0, 4).map((relation, index) => (
+            <span key={`${relation.id}-${relation.public_role}`}>{index ? ' · ' : ''}
+              <button type="button" className="sc-public-figure-textbutton" onClick={() => onSelect('relations')}>{relation.name}</button>
+              <small> ({ORGANISATION_KIND_LABELS[relation.kind].singular}{relation.relation_status === 'former' ? ', dawniej' : ''})</small>
+            </span>
+          ))}
+          {organisations > 4 && <> · <button type="button" className="sc-public-figure-textbutton" onClick={() => onSelect('relations')}>i {organisations - 4} więcej</button></>}
+        </p>
+      )}
       <p className="sc-public-figure-favnote">
         {ownerId
           ? 'Zapisywanie profili do ulubionych jest w trakcie udostępniania. Materiały z tego profilu możesz już zapisywać znakiem ♡.'
@@ -192,45 +207,86 @@ function XPostsSection({ figure }: { figure: PublicFigureDetail }) {
   );
 }
 
-/* ——— Relacje z podmiotami ——— */
+/* ——— Występuje w podmiotach (KRS) ——— */
 
-function OrganisationRow({ relation }: { relation: PublicFigureOrganisation }) {
-  return (
-    <li className="sc-public-figure-org">
-      <div className="sc-public-figure-org-main">
-        <SourceLink href={relation.official_register_url}><strong>{relation.name}</strong></SourceLink>
-        <span className="sc-public-figure-verified"><span aria-hidden="true">✓</span> potwierdzone w źródle publicznym</span>
-      </div>
-      <dl>
-        <div><dt>Publiczna rola</dt><dd>{relation.public_role}</dd></div>
-        <div><dt>Relacja</dt><dd><span className={`sc-public-figure-relation is-${relation.relation_status}`}>{relation.relation_status === 'current' ? 'obecna' : 'historyczna'}</span></dd></div>
-        <div><dt>Źródło</dt><dd className="sc-public-figure-org-links"><SourceLink href={relation.evidence_url}>Dowód publiczny</SourceLink></dd></div>
-      </dl>
-    </li>
-  );
+/** Fundacje najpierw, potem stowarzyszenia, spółki i inne; w obrębie typu — obecne przed dawnymi. */
+function orderedOrganisations(rows: PublicFigureOrganisation[]) {
+  return [...rows].sort((a, b) => ORGANISATION_KIND_ORDER.indexOf(a.kind) - ORGANISATION_KIND_ORDER.indexOf(b.kind)
+    || Number(a.relation_status === 'former') - Number(b.relation_status === 'former') || a.name.localeCompare(b.name, 'pl'));
+}
+
+function period(since?: string | null, until?: string | null, status?: 'current' | 'former') {
+  const year = (value?: string | null) => (value ? value.slice(0, 4) : '');
+  if (since || until) return `${year(since) || '?'}–${until ? year(until) : 'obecnie'}`;
+  return status === 'current' ? 'obecnie' : 'dawniej';
 }
 
 function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
-  const kinds = ORGANISATION_KIND_ORDER.filter(kind => kind !== 'other' || figure.organisations.some(item => item.kind === 'other'));
+  const rows = orderedOrganisations(figure.organisations);
   return (
     <section id="relacje" className="sc-public-figure-section" aria-labelledby="pf-orgs">
       <header>
-        <h2 id="pf-orgs">Relacje z podmiotami</h2>
-        <p>Wyłącznie relacje potwierdzone przez zespół w publicznym źródle. Relacja opisuje publiczną funkcję, nie ocenia osoby.</p>
+        <h2 id="pf-orgs">Występuje w podmiotach</h2>
+        <p>
+          Fundacje, stowarzyszenia i spółki z Krajowego Rejestru Sądowego, w których ta osoba pełni albo pełniła funkcję. Każdy wpis potwierdza
+          oficjalny KRS (organ, funkcja i daty) albo co najmniej dwa niezależne źródła. Nie pokazujemy danych prywatnych — tylko jawne funkcje.
+        </p>
       </header>
-      {kinds.map(kind => {
-        const rows = figure.organisations.filter(item => item.kind === kind);
-        return (
-          <section key={kind} className="sc-public-figure-group" aria-labelledby={`pf-org-${kind}`}>
-            <h3 id={`pf-org-${kind}`}>{ORGANISATION_KIND_LABELS[kind].plural} <span>{rows.length}</span></h3>
-            {rows.length ? (
-              <ul>{rows.map(relation => <OrganisationRow key={`${relation.id}-${relation.public_role}-${relation.relation_status}`} relation={relation} />)}</ul>
-            ) : (
-              <Neutral>Brak jeszcze ręcznie potwierdzonego połączenia. Nie oznacza to braku relacji — pokazujemy tylko wpisy sprawdzone w publicznym źródle.</Neutral>
-            )}
-          </section>
-        );
-      })}
+      {rows.length ? (
+        <div className="sc-entities" role="table" aria-label="Podmioty">
+          <div className="sc-entities__row sc-entities__head" role="row">
+            <span role="columnheader">Nazwa</span><span role="columnheader">Typ</span><span role="columnheader">Funkcja</span>
+            <span role="columnheader">Okres</span><span role="columnheader">Potwierdzenie</span>
+          </div>
+          {rows.map(relation => (
+            <div key={`${relation.id}-${relation.public_role}-${relation.relation_status}`} className="sc-entities__row" role="row" data-status={relation.relation_status}>
+              <span role="cell" className="sc-entities__name">
+                <strong>{relation.name}</strong>
+                {relation.sector && SECTOR_LABELS[relation.sector] ? <small>{SECTOR_LABELS[relation.sector]}</small> : null}
+              </span>
+              <span role="cell">
+                <SourceLink href={relation.official_register_url}>{ORGANISATION_KIND_LABELS[relation.kind].singular} · KRS {relation.krs_number}</SourceLink>
+              </span>
+              <span role="cell">{relation.public_role}{relation.organ && !relation.public_role.includes(relation.organ) ? <small> ({relation.organ})</small> : null}</span>
+              <span role="cell" className="sc-entities__period">{period(relation.since, relation.until, relation.relation_status)}</span>
+              <span role="cell" className="sc-entities__proof">
+                <span className="sc-public-figure-verified"><span aria-hidden="true">✓</span> {VERIFICATION_LABELS[relation.verification_method ?? 'editor']}</span>
+                {(relation.sources ?? []).slice(0, 2).map(source => <SourceLink key={source.url} href={source.url}>{source.title || 'źródło'}</SourceLink>)}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <Neutral>
+          Nie znaleźliśmy jeszcze potwierdzonych podmiotów. Agent sprawdza kolejne osoby co noc — brak wpisu nie oznacza braku funkcji, tylko że
+          nie potwierdziliśmy jej w KRS ani w dwóch niezależnych źródłach.
+        </Neutral>
+      )}
+      <CareerTree entries={figure.employment_timeline ?? []} />
+    </section>
+  );
+}
+
+/** Drzewko kariery: funkcje publiczne oraz zarządy i rady spółek Skarbu Państwa, komunalnych i innych publicznych. */
+function CareerTree({ entries }: { entries: EmploymentEntry[] }) {
+  if (!entries.length) return null;
+  return (
+    <section className="sc-career" aria-labelledby="pf-career">
+      <h3 id="pf-career">Kariera publiczna</h3>
+      <p className="sc-career__lead">Stanowiska publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych — bez podmiotów prywatnych.</p>
+      <ol className="sc-career__tree">
+        {entries.map((entry, index) => (
+          <li key={`${entry.position}-${entry.organisation}-${index}`} data-status={entry.status} data-sector={entry.sector || undefined}>
+            <span className="sc-career__period">{period(entry.since, entry.until, entry.status)}</span>
+            <strong>{entry.position}</strong>
+            <span className="sc-career__org">
+              {entry.organisation}
+              {entry.sector && SECTOR_LABELS[entry.sector] ? <small> · {SECTOR_LABELS[entry.sector]}</small> : null}
+            </span>
+            {entry.source.url ? <SourceLink href={entry.source.url}>{entry.source.label}</SourceLink> : null}
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }
@@ -385,16 +441,17 @@ function useMaterialsTotal(name: string) {
 export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: PublicFigureDetail; titleId?: string }) {
   const materialsTotal = useMaterialsTotal(figure.name);
   const [tab, setTab] = useState<'timeline' | 'votes' | 'relations' | 'materials' | 'x'>('timeline');
+  const select = (next: 'votes' | 'relations' | 'career' | 'materials') => setTab(next === 'career' ? 'relations' : next);
   const tabs = [
     { id: 'timeline' as const, label: 'Oś czasu' },
     { id: 'votes' as const, label: 'Głosowania' },
-    { id: 'relations' as const, label: 'Relacje' },
+    { id: 'relations' as const, label: 'Podmioty i kariera' },
     { id: 'materials' as const, label: 'Materiały' },
     { id: 'x' as const, label: 'Wpisy X' },
   ];
   return (
     <article className="sc-public-figure" aria-labelledby={titleId}>
-      <FigureHeader figure={figure} titleId={titleId} materialsTotal={materialsTotal} onSelect={setTab} />
+      <FigureHeader figure={figure} titleId={titleId} materialsTotal={materialsTotal} onSelect={select} />
       <nav className="sc-public-figure-tabs" role="tablist" aria-label="Dane profilu">
         {tabs.map(item => <button key={item.id} id={`pf-tab-${item.id}`} type="button" role="tab" aria-selected={tab === item.id} aria-controls={`pf-panel-${item.id}`} onClick={() => setTab(item.id)}>{tab === item.id && <MorphIndicator id="public-figure-tabs" active variant="underline" />}{item.label}</button>)}
       </nav>
@@ -406,7 +463,7 @@ export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: 
         {tab === 'materials' && <LiveMaterials name={figure.name} />}
       </div>
       <p className="sc-public-figure-disclaimer">
-        Profil pokazuje wyłącznie dane publiczne: funkcję, oficjalne głosowania i potwierdzone relacje. Nie zawiera adresów, numerów PESEL, dat urodzenia ani danych rodzinnych. Nie wystawiamy ocen osób ani automatycznych wniosków.
+        Profil pokazuje wyłącznie dane publiczne: funkcję, oficjalne głosowania i potwierdzone funkcje w podmiotach z KRS. Nie zawiera adresów, numerów PESEL, dat urodzenia ani danych rodzinnych. Nie wystawiamy ocen osób ani automatycznych wniosków.
       </p>
     </article>
   );

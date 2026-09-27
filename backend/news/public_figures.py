@@ -48,17 +48,24 @@ def figure_data(figure, include_detail=False):
     }
     if not include_detail:
         return data
-    relations = figure.organisation_relations.filter(
+    relations = list(figure.organisation_relations.filter(
         verification_status='confirmed', organisation__archived=False,
-    ).select_related('organisation').order_by('organisation__kind', 'organisation__name')
+    ).select_related('organisation').order_by('organisation__kind', 'organisation__name'))
     data['organisations'] = [{
         'id': relation.organisation_id,
         'name': relation.organisation.name,
         'krs_number': relation.organisation.krs_number,
         'kind': relation.organisation.kind,
+        'legal_form': relation.organisation.legal_form,
+        'sector': relation.organisation.sector,
         'official_register_url': relation.organisation.official_register_url,
         'public_role': relation.public_role,
+        'organ': relation.organ,
         'relation_status': relation.relation_status,
+        'since': relation.since,
+        'until': relation.until,
+        'verification_method': relation.verification_method,
+        'sources': relation.sources or [],
         'evidence_url': relation.evidence_url,
         'verified_at': relation.verified_at,
     } for relation in relations]
@@ -78,7 +85,7 @@ def figure_data(figure, include_detail=False):
         'source_checked_at': role.source_checked_at,
     } for role in figure.public_roles.filter(archived=False).select_related('public_office').order_by(
         'role_category', 'organisation', 'role_title')]
-    data['employment_timeline'] = employment_timeline_data(figure, data['roles'])
+    data['employment_timeline'] = employment_timeline_data(figure, data['roles'], relations)
     data['votes'] = votes_data(figure)
     data['x_account'] = verified_x_account_data(figure)
     data['x_posts'] = verified_x_posts_data(figure)
@@ -108,11 +115,16 @@ def confirmed_youtube_channels_data(figure):
     } for channel in channels]
 
 
-def employment_timeline_data(figure, roles):
+PUBLIC_SECTORS = ('state', 'municipal', 'public')
+
+
+def employment_timeline_data(figure, roles, relations=()):
     """Evidence-backed entries for the profile's vertical public-role axis.
 
     ``checked_at`` is a source-verification date, never an invented start or
     end of employment.  The client renders position followed by source link.
+    Functions in State Treasury, municipal and other public companies (from KRS)
+    join the axis with register dates (``since``/``until``); private entities do not.
     """
     entries = [{
         'position': figure.role_title,
@@ -131,7 +143,35 @@ def employment_timeline_data(figure, roles):
             'source': {'label': role['organisation'] or 'Oficjalne źródło', 'url': role['evidence_url']},
             'office': role['office'],
         })
-    entries.sort(key=lambda entry: (entry['status'] == 'current', entry['checked_at'] or ''), reverse=True)
+    for relation in relations:
+        if relation.organisation.sector not in PUBLIC_SECTORS:
+            continue
+        entries.append({
+            'position': relation.public_role,
+            'organisation': relation.organisation.name,
+            'status': relation.relation_status,
+            'checked_at': relation.verified_at,
+            'since': relation.since,
+            'until': relation.until,
+            'sector': relation.organisation.sector,
+            'source': {'label': f'KRS {relation.organisation.krs_number}', 'url': relation.organisation.official_register_url},
+            'office': None,
+        })
+
+    # Ta sama funkcja z nagłówka profilu i z listy ról — jeden wpis.
+    seen, unique = set(), []
+    for entry in entries:
+        key = (entry['position'].strip().lower(), (entry['organisation'] or '').strip().lower(), entry['status'])
+        if key not in seen:
+            seen.add(key)
+            unique.append(entry)
+    entries = unique
+
+    def order(entry):
+        # Najpierw aktualne, potem według daty rozpoczęcia (z KRS), a bez daty — według daty sprawdzenia.
+        start = entry.get('since') or entry.get('checked_at')
+        return (entry['status'] == 'current', str(start or ''))
+    entries.sort(key=order, reverse=True)
     return entries
 
 

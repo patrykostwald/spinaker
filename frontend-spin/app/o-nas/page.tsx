@@ -113,6 +113,7 @@ const PHASES: Phase[] = [
       { text: 'filmy z oficjalnych kanałów YouTube instytucji, partii i mediów — z doborem materiałów z różnych źródeł (pluralizm)', status: 'beta' },
       { text: 'konsylium Dr. Spina: kilka niezależnych modeli AI różnych firm, wspólna ocena, recenzja językowa i merytoryczna', status: 'beta' },
       { text: 'strażnica usuniętych postów polityków i tygodniowy raport Dr. Spina z wątkiem na X', status: 'beta' },
+      { text: 'profile osób publicznych: „Występuje w podmiotach” — fundacje, stowarzyszenia i spółki potwierdzone w KRS — oraz drzewko kariery w spółkach Skarbu Państwa', status: 'beta' },
       { text: 'udostępnianie diagnozy jako wątku na X; rejestr osób publicznych z oficjalnymi kontami X', status: 'beta' },
       { text: 'instalacja na telefonie z przeglądarki (aplikacja PWA)', status: 'beta' },
     ],
