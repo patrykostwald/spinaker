@@ -107,7 +107,10 @@ def _filters(request, qs):
 DIVERSE_WINDOW = 600  # ile najnowszych materiałów przeglądamy, żeby ułożyć stronę z różnych źródeł
 
 
-def diverse_rows(qs, size: int) -> list:
+DIVERSE_PER_SOURCE = 2  # jedno źródło najwyżej dwa razy na stronie — nawet gdy inne dziś jeszcze nic nie dały
+
+
+def diverse_rows(qs, size: int, per_source: int = DIVERSE_PER_SOURCE) -> list:
     """Pluralizm na pierwszej stronie: najpierw najnowszy materiał każdego źródła, potem drugi z każdego itd.
     Źródło, które publikuje najwięcej (np. kanał wideo z dziesiątkami filmów dziennie), nie zajmuje całej strony.
     Kolejność w obrębie „rundy” — od najnowszego."""
@@ -115,7 +118,7 @@ def diverse_rows(qs, size: int) -> list:
     for row in qs[:DIVERSE_WINDOW]:
         by_source.setdefault(row.source_id, []).append(row)
     picked, depth = [], 0
-    while len(picked) < size and any(len(rows) > depth for rows in by_source.values()):
+    while len(picked) < size and depth < per_source and any(len(rows) > depth for rows in by_source.values()):
         picked += [rows[depth] for rows in by_source.values() if len(rows) > depth]
         depth += 1
     return picked[:size]
@@ -134,7 +137,8 @@ def feed(request):
     qs = visible_articles().filter(Q(published_date__lte=now) | Q(published_date__isnull=True))
     if mode == 'top':
         day = now.astimezone(WARSAW).date()
-        start = datetime.combine(day, time.min, tzinfo=WARSAW)
+        # Rano (np. o 5:00) od północy prawie nic nie ma — wtedy „dziś” obejmuje ostatnie 18 godzin (wieczór i noc).
+        start = min(datetime.combine(day, time.min, tzinfo=WARSAW), now - timedelta(hours=18))
         end = datetime.combine(day + timedelta(days=1), time.min, tzinfo=WARSAW)
         qs = qs.filter(source_id__in=[source.pk for source in sources],
                        published_date__gte=start, published_date__lt=end)

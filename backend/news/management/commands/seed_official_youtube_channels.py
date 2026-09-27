@@ -75,6 +75,9 @@ CHANNELS = [
     ('Kanał Otwarty (Igor Janke)', 'https://www.youtube.com/channel/UCuAOJnMr905iKjURUsffDgA', 'https://ukladotwarty.pl/', True),
     ('Rafał Ziemkiewicz', 'https://www.youtube.com/channel/UCqXzykyeNdMNwiXTvfUOSNQ', 'https://www.youtube.com/@R_A_Ziemkiewicz', True),
     ('Jan Piński', 'https://www.youtube.com/channel/UCaTcgqhFqYzhrLQzaibPyeA', 'https://wiesci24.pl/', True),
+    ('Żurnalista', 'https://www.youtube.com/channel/UC9zRB_xpaSpJxofUrltx1xQ', 'https://www.youtube.com/@zurnalistapl', True),
+    ('Wywiadowcy Podcast', 'https://www.youtube.com/channel/UChgp0bnprzgBQLWAc-PEgvg', 'https://www.youtube.com/@wywiadowcypodcast', True),
+    ('Poranek Siódma9', 'https://www.youtube.com/channel/UCl5Oqbu_DQMylH15jjiTBCg', 'https://www.youtube.com/@poraneksiodma9', True),
     # Media dodane decyzją zespołu (27.09.2026); strony Onetu blokują automatyczne sprawdzanie.
     ('Onet', 'https://www.youtube.com/@onet', 'https://www.onet.pl/', True),
     ('Stan Wyjątkowy (Onet i „Newsweek”)', 'https://www.youtube.com/@stan_wyjatkowy',

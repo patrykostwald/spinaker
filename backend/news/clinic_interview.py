@@ -385,6 +385,9 @@ DEFAULT_CHANNELS = (
     'UCuAOJnMr905iKjURUsffDgA',  # Kanał Otwarty (Igor Janke)
     'UCqXzykyeNdMNwiXTvfUOSNQ',  # Rafał Ziemkiewicz
     'UCaTcgqhFqYzhrLQzaibPyeA',  # Jan Piński
+    'UC9zRB_xpaSpJxofUrltx1xQ',  # Żurnalista
+    'UChgp0bnprzgBQLWAc-PEgvg',  # Wywiadowcy Podcast
+    'UCl5Oqbu_DQMylH15jjiTBCg',  # Poranek Siódma9 (Marcin Fijołek)
 )
 MIN_NAMED_SECONDS = 15 * 60  # film z nazwiskiem polityka w tytule, ale bez słowa „wywiad” — musi być dłuższą rozmową
 # Rdzenie, żeby łapać odmianę: „ministrem”, „posłanką”, „marszałkiem”.

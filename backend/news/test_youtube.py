@@ -178,6 +178,9 @@ def test_feed_first_page_is_diverse_across_sources():
     assert [row['title'] for row in plain] == ['A0', 'A1', 'A2']
     mixed = APIClient().get('/api/feed/?page_size=3&diverse=1').json()['results']
     assert [row['title'] for row in mixed] == ['A0', 'B0', 'C0']
+    # Jedno źródło najwyżej dwa razy, nawet gdy inne mają mniej materiałów (nie zapychamy strony jednym kanałem).
+    capped = APIClient().get('/api/feed/?page_size=8&diverse=1').json()['results']
+    assert [row['title'] for row in capped] == ['A0', 'B0', 'C0', 'A1']
 
 
 def test_source_x_handle_only_when_unambiguous():
