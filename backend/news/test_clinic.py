@@ -552,3 +552,6 @@ def test_silent_classifier_is_not_a_rejection(monkeypatch):
     assert ok is None and len(calls) == 2  # ponowiona próba, potem „nie wiem”, a nie „nie”
     assert clinic_interview.talk_signal('Błaszczak: Tusk łata dziurę | Gość Dzisiaj', '')
     assert not clinic_interview.talk_signal('Dzisiaj Informacje 26.09.2026', 'serwis informacyjny')
+    assert clinic_interview.talk_signal('Szydło: Nie mieści mi się w głowie, że służby do tego dopuściły', '')
+    # „Major wywiadu” (służby), rozmowa z ekspertem — bez polityka w tytule i bez słowa „wywiad” jako całego wyrazu.
+    assert not clinic_interview.talk_signal('Fortu Trump nie będzie. Major wywiadu Robert Cheda i Jan Piński', 'rozmowa')

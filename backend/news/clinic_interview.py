@@ -151,7 +151,8 @@ def transcribe(url: str) -> tuple[dict, dict]:
         text = payload['candidates'][0]['content']['parts'][0]['text']
         data = json.loads(text[text.find('{'):text.rfind('}') + 1])
     except (KeyError, IndexError, ValueError):
-        raise clinic_ai.ClinicAIError('gemini_invalid_json')
+        reason = ((payload.get('candidates') or [{}])[0] or {}).get('finishReason', '')
+        raise clinic_ai.ClinicAIError(f'gemini_invalid_json {reason}'.strip())
     if not data.get('segments'):
         raise clinic_ai.ClinicAIError('gemini_empty_transcript')
     usage = payload.get('usageMetadata', {})
@@ -397,6 +398,7 @@ POLITICS_WORDS = ('premier', 'prezydent', 'minist', 'marszał', 'poseł', 'posł
 INTERVIEW_WORDS = ('wywiad', 'rozmowa', 'rozmawia', 'gość', 'gośćmi', 'pytania', 'kropka nad i', 'godzina zero',
                    'graffiti', 'rozmowa piaseckiego', 'jeden na jeden', 'fakty po faktach', 'kawa na ławę', 'sedno sprawy')
 MIN_SECONDS = 8 * 60
+MAX_SECONDS = 95 * 60  # dłuższe to zwykle transmisje i maratony — transkrypcja nie mieści się w odpowiedzi Gemini
 
 
 def _yt(path: str, **params) -> dict:
@@ -450,7 +452,8 @@ TOP_POLITICIANS = ('tusk', 'nawrock', 'kaczyńsk', 'morawieck', 'mentzen', 'bosa
                    'sikorsk', 'trzaskowsk', 'siemoniak', 'kierwińsk', 'domańsk', 'żurek', 'żurk', 'gawkowsk', 'zandberg',
                    'braun', 'błaszczak', 'hennig', 'szłapk', 'kobosk', 'ziobr', 'przydacz', 'bocheńsk', 'czarnek',
                    'biejat', 'kidaw', 'pełczyńsk', 'bodnar', 'sobierańsk', 'klimczak', 'nowack', 'kwaśniewsk',
-                   'duda', 'dudy', 'wałęs', 'petru', 'budka', 'budki', 'lewandowsk', 'mastalerek', 'bosak')
+                   'duda', 'dudy', 'wałęs', 'petru', 'budka', 'budki', 'lewandowsk', 'mastalerek', 'bosak',
+                   'szydł', 'macierewicz')
 HOT_LOUDNESS = 150_000  # mniej znany polityk wchodzi tylko, gdy rozmowa jest naprawdę „gorąca”
 # Tytuł w stylu „Joński: w moim przekonaniu…” — typowy zapis rozmowy z politykiem w mediach.
 QUOTE_TITLE = re.compile(r'^\W*[A-ZŁŚŻŹĆ][a-ząćęłńóśźż-]{3,}(?: [A-ZŁŚŻŹĆ][a-ząćęłńóśźż-]{3,})?\s*:')
@@ -487,11 +490,16 @@ def looks_like_interview(title: str, description: str, channel: str) -> tuple[bo
     return None, 'klasyfikator niedostępny'
 
 
-def talk_signal(title: str, description: str) -> bool:
-    """Wyraźny znak rozmowy w tytule lub opisie (gdy klasyfikator milczy). Monologi i tak odpadną na transkrypcji
-    (is_dialogue) — przed płatną diagnozą."""
+def talk_signal(title: str, description: str, names=None) -> bool:
+    """Gdy klasyfikator milczy: w TYTULE nazwisko polityka i wyraźny znak rozmowy (całe słowa — „wywiadu” to służby,
+    nie wywiad). Monologi i tak odpadną na transkrypcji (is_dialogue) — przed płatną diagnozą."""
+    lowered = title.lower()
+    names = names if names is not None else set(_top_politicians())
+    if not any(name in lowered for name in names):
+        return False
     text = f'{title} {description}'.lower()
-    return bool(QUOTE_TITLE.match(title)) or any(word in text for word in INTERVIEW_WORDS + ('poranna rozmowa', 'gość dzisiaj'))
+    words = INTERVIEW_WORDS + ('poranna rozmowa', 'gość dzisiaj')
+    return bool(QUOTE_TITLE.match(title)) or any(re.search(rf'(?<!\w){re.escape(word)}(?!\w)', text) for word in words)
 
 
 def _uploads_between(channel_id: str, start, end, max_pages: int = 4) -> list[tuple[str, dict]]:
@@ -598,8 +606,8 @@ def rank_interviews(day) -> list[dict]:
         items += _yt('videos', part='statistics,contentDetails', id=','.join(ids[offset:offset + 50])).get('items') or []
     ranked = []
     for item in items:
-        if _duration_seconds((item.get('contentDetails') or {}).get('duration', '')) < MIN_SECONDS:
-            continue  # zapowiedzi, wycinki i krótkie komentarze odpadają
+        if not MIN_SECONDS <= _duration_seconds((item.get('contentDetails') or {}).get('duration', '')) <= MAX_SECONDS:
+            continue  # zapowiedzi, wycinki i krótkie komentarze odpadają; kilkugodzinne transmisje też
         snippet = candidates[item['id']]
         stats = item.get('statistics') or {}
         loudness = int(stats.get('viewCount', 0)) + 20 * int(stats.get('commentCount', 0)) + 5 * int(stats.get('likeCount', 0))
@@ -613,13 +621,14 @@ def rank_interviews(day) -> list[dict]:
 
 def find_loudest_interview(day, exclude=()) -> dict | None:
     """Pierwszy z rankingu, który darmowy klasyfikator uznał za wywiad (tytuł i opis) — dopiero on idzie do płatnej analizy."""
+    names = set(_politician_names()) | set(_top_politicians())
     for candidate in rank_interviews(day)[:8]:
         if candidate['video_id'] in exclude:
             continue
         import time
         ok, reason = looks_like_interview(candidate['title'], candidate['description'], candidate['channel'])
         if ok is None:
-            ok = talk_signal(candidate['title'], candidate['description'])
+            ok = talk_signal(candidate['title'], candidate['description'], names)
             reason = f'{reason}; znak rozmowy w tytule/opisie: {"tak" if ok else "nie"}'
         logger.info('interview pick %s %s: %s', candidate['video_id'], ok, reason)
         if ok:
