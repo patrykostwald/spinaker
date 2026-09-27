@@ -471,8 +471,8 @@ export default function AboutPage() {
         <Section id="dla-redakcji" index={8} kicker="Współpraca" title="Dla dziennikarzy i redakcji">
           <div className="sc-onas-prose">
             <p>
-              Jeśli trafili Państwo tutaj z naszej wiadomości — dziękujemy za poświęcony czas. Zapraszamy do prowadzenia autoryzowanych nitek, a materiały mediów
-              pobieramy wyłącznie za zgodą wydawcy.
+              Jeśli trafili Państwo tutaj z naszej wiadomości — dziękujemy za poświęcony czas. Zapraszamy redakcje i poszczególnych dziennikarzy do prowadzenia
+              autoryzowanych nitek. Wszelkie materiały mediów pobieramy wyłącznie za zgodą wydawcy.
             </p>
           </div>
           <ContextThreadExample />
