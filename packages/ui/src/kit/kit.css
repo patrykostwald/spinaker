@@ -4087,3 +4087,6 @@ html, body { overflow-x: clip; }
 .sc-clinic-sotd__reading::-webkit-scrollbar-thumb, .sc-clinic-sotd__post blockquote::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
 .sc-clinic-sotd__reading:hover::-webkit-scrollbar-thumb, .sc-clinic-sotd__post blockquote:hover::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--sc-text) 35%, transparent); }
+
+/* Ciemny motyw: panele wyraźniej oddzielone cienką ramką (uwaga z testu na telefonie) — nadal bez poświaty. */
+:root { --sc-panel-ring: 0 0 0 1px color-mix(in srgb, var(--sc-text) 13%, transparent); }

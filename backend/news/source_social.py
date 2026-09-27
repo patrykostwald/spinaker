@@ -37,7 +37,9 @@ def x_handle(href: str) -> str:
     if (parts.hostname or '').lower() not in X_HOSTS:
         return ''
     segments = [segment for segment in parts.path.split('/') if segment]
-    if not segments or segments[0].lower() in X_SKIP or not HANDLE.match(segments[0]):
+    # Tylko link do profilu (x.com/konto). Link do wpisu (x.com/konto/status/…) to cytowany post, np. polityka
+    # w artykule — jego autor nie jest kontem źródła.
+    if len(segments) != 1 or segments[0].lower() in X_SKIP or not HANDLE.match(segments[0]):
         return ''
     return segments[0]
 

@@ -121,7 +121,7 @@ def test_social_links_from_a_source_homepage():
     from news.source_social import links_on_page
     html = b'''<a href="https://www.youtube.com/@RadioZET">YT</a><a href="https://www.youtube.com/watch?v=abc">film</a>
     <a href="https://twitter.com/RadioZET_NEWS">X</a><a href="https://x.com/intent/tweet?text=a">share</a>
-    <a href="https://x.com/radiozet_news/status/1">post</a>'''
+    <a href="https://x.com/radiozet_news/status/1">post</a><a href="https://x.com/NawrockiKn/status/2">cytat</a>'''
     assert links_on_page(html, 'https://radiozet.pl/') == {'youtube': ['https://www.youtube.com/@RadioZET'], 'x': ['RadioZET_NEWS']}
 
 
@@ -133,8 +133,13 @@ def test_source_channels_are_queued_then_confirmed_by_staff(monkeypatch, setting
     settings.YOUTUBE_ENABLED = True; settings.YOUTUBE_API_KEY = 'test-only'
     get_user_model().objects.create_user('zespol', password='x', is_staff=True)
     radio = Source.objects.create(name='Radio ZET', url='https://radiozet.pl/')
-    monkeypatch.setattr(source_social, 'discover', lambda source, network: {'status': 'ok', 'evidence_url': source.url,
-        'youtube': ['https://www.youtube.com/@RadioZET'], 'x': ['RadioZET_NEWS'], 'checked_at': '2026-09-27T10:00:00+00:00'})
+    from news.models import ImportState
+    def fake_discover(source, network):
+        result = {'status': 'ok', 'evidence_url': source.url, 'youtube': ['https://www.youtube.com/@RadioZET'],
+                  'x': ['RadioZET_NEWS'], 'checked_at': '2026-09-27T10:00:00+00:00'}
+        ImportState.objects.update_or_create(name=f'source-social:{source.pk}', defaults={'cursor': result})
+        return result
+    monkeypatch.setattr(source_social, 'discover', fake_discover)
     monkeypatch.setattr(discover_cmd, 'resolve', lambda link: ('UCradiozet', 'Radio ZET'))
     call_command('discover_source_social_links')
     assert OfficialVideoChannel.objects.count() == 0  # bez --apply tylko dowody
@@ -145,3 +150,13 @@ def test_source_channels_are_queued_then_confirmed_by_staff(monkeypatch, setting
     row.refresh_from_db()
     assert row.status == 'confirmed' and row.collection_enabled
     assert Source.objects.get(url='https://www.youtube.com/channel/UCradiozet').is_active
+    call_command('confirm_source_youtube_channels', '--staff', 'zespol', '--revert', 'UCradiozet', '--apply')
+    row.refresh_from_db()
+    assert row.status == 'pending_review' and not row.collection_enabled
+    # Kanał dodany ręcznie (bez dowodu ze strony źródła) nie jest potwierdzany automatycznie.
+    manual = Source.objects.create(name='Sejm RP', url='https://www.youtube.com/channel/UCsejm', is_active=False)
+    OfficialVideoChannel.objects.create(subject_content_type=row.subject_content_type, subject_object_id=manual.pk,
+        channel_url='https://www.youtube.com/channel/UCsejm', channel_id='UCsejm', display_name='Sejm RP',
+        evidence_url='https://www.sejm.gov.pl/', status='pending_review')
+    call_command('confirm_source_youtube_channels', '--staff', 'zespol', '--apply')
+    assert OfficialVideoChannel.objects.get(channel_id='UCsejm').status == 'pending_review'

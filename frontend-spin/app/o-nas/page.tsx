@@ -242,7 +242,8 @@ export default function AboutPage() {
           <div className="sc-onas-prose">
             <p className="sc-onas-lead">
               spin.clinic to agregator wiadomości ze źródłami i weryfikator spinów polityków. W kolejnej fazie dołączy trzecia część — miejsce, w którym czytelnicy
-              sami wyjaśniają spin, układając nitki kontekstowe z materiałów z naszej Bazy.
+              sami wyjaśniają spin, układając nitki kontekstowe z materiałów z naszej Bazy albo dodając własne — link, zdjęcie
+              lub inny materiał, który chcą pokazać.
             </p>
           </div>
           <ul className="sc-onas-parts">
