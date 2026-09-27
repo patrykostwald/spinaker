@@ -4223,3 +4223,9 @@ html, body { overflow-x: clip; }
 /* O nas: „Czym nie jesteśmy” — trzy punkty w trzech równych kolumnach (na telefonie jeden pod drugim). */
 .sc-onas-terms--three { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
 @media (max-width: 900px) { .sc-onas-terms--three { grid-template-columns: minmax(0, 1fr); } }
+
+/* O nas: tekst ciągły wyjustowany z polskim dzieleniem wyrazów (bez „dziur” między słowami); tytuły bez zmian.
+   Na telefonie wąska kolumna — zostaje wyrównanie do lewej. */
+@media (min-width: 761px) {
+  .sc-onas-prose p, .sc-onas-hero__after { text-align: justify; hyphens: auto; -webkit-hyphens: auto; hyphenate-limit-chars: 7 3 3; }
+}
