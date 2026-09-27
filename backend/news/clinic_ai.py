@@ -22,7 +22,7 @@ import unicodedata
 import requests
 
 PROMPT_VERSION = 'clinic-1'
-DEFAULT_MODEL = 'claude-opus-5'
+DEFAULT_MODEL = 'claude-sonnet-5'  # Sonnet: kilkukrotnie taniej niż Opus przy dobrej jakości diagnoz (27.09.2026)
 VERDICTS = ('spin', 'partial', 'no_spin', 'unclear')
 ASSESSMENTS = ('supported', 'contradicted', 'misleading', 'unverified')
 
@@ -170,6 +170,23 @@ def _json_from_text(blocks) -> dict:
     raise ClinicAIError('invalid_json')
 
 
+# Koszt w USD za milion tokenów (wejście, wyjście) — ostrożnie, raczej zawyżony; nadpisz w CLINIC_PRICE_IN/OUT.
+PRICES = {'haiku': (1.0, 5.0), 'sonnet': (3.0, 15.0), 'opus': (15.0, 75.0)}
+WEB_SEARCH_USD = 0.01  # za jedno wyszukiwanie
+
+
+def cost_usd(usage: dict) -> float:
+    """Szacowany koszt jednego wywołania Claude'a z zapisanego zużycia (tokeny i wyszukiwania)."""
+    if not usage:
+        return 0.0
+    model = str(usage.get('model') or model_name()).lower()
+    family = next((name for name in PRICES if name in model), 'opus')
+    price_in = float(os.environ.get('CLINIC_PRICE_IN', '') or PRICES[family][0])
+    price_out = float(os.environ.get('CLINIC_PRICE_OUT', '') or PRICES[family][1])
+    return (int(usage.get('input_tokens') or 0) * price_in + int(usage.get('output_tokens') or 0) * price_out) / 1_000_000 \
+        + int(usage.get('web_search_requests') or 0) * WEB_SEARCH_USD
+
+
 def _usage(response) -> dict:
     usage = getattr(response, 'usage', None)
     if usage is None:
@@ -196,7 +213,7 @@ def _call(system: str, user: str, schema: dict, *, web_search: bool, max_tokens:
     import anthropic
     client = _client()
     tools = [{'type': 'web_search_20260209', 'name': 'web_search',
-              'max_uses': int(os.environ.get('CLINIC_WEB_SEARCH_MAX_USES', '5'))}] if web_search else []
+              'max_uses': int(os.environ.get('CLINIC_WEB_SEARCH_MAX_USES', '3'))}] if web_search else []
     effort = os.environ.get('CLINIC_EFFORT', 'high')
     structured = True
     messages = [{'role': 'user', 'content': user}]

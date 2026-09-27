@@ -252,7 +252,16 @@ def queue_interview(url: str, day=None, user=None) -> ClinicInterview:
     return interview
 
 
+INTERVIEW_RESERVE_USD = 0.6  # wywiad to długa transkrypcja — bez tego zapasu w budżecie nie zaczynamy (ani Gemini)
+
+
 def process(interview: ClinicInterview) -> ClinicInterview:
+    from news.clinic import budget_left
+    if budget_left() < INTERVIEW_RESERVE_USD:
+        # Dzienny budżet wyczerpany: wywiad czeka w kolejce do jutra — bez transkrypcji i bez diagnozy.
+        interview.status, interview.error = 'queued', 'budżet dzienny wyczerpany — spróbujemy jutro'
+        interview.save(update_fields=['status', 'error'])
+        return interview
     meta = _oembed(interview.url)
     interview.title = str(meta.get('title', interview.title))[:300]
     interview.channel = str(meta.get('author_name', interview.channel))[:200]
@@ -290,6 +299,9 @@ def rediagnose(interview: ClinicInterview) -> ClinicInterview:
     """Nowa diagnoza Dr. Spina z zapisanej transkrypcji — bez ponownej transkrypcji (Gemini)."""
     if not interview.transcript:
         raise clinic_ai.ClinicAIError('no_transcript')
+    from news.clinic import budget_left
+    if budget_left() < INTERVIEW_RESERVE_USD:
+        raise clinic_ai.ClinicAIError('daily_budget')
     meta = {'title': interview.title, 'channel': interview.channel, 'url': interview.url, 'guest_name': interview.guest_name,
             'guest_role': interview.guest_role, 'host_name': interview.host_name}
     result = diagnose_transcript(meta, interview.transcript)
