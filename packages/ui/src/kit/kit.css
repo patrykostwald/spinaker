@@ -4178,3 +4178,10 @@ html, body { overflow-x: clip; }
 .sc-onas-tech[open] > summary::after { content: " ↑"; }
 .sc-onas-tech > .sc-onas-stack { margin-top: var(--sc-s-3); }
 .sc-onas-planned .sc-onas-tag { margin-right: var(--sc-s-1); vertical-align: middle; }
+
+/* Wsparcie: jawny cel miesięczny z paskiem postępu. */
+.sc-support-goal { display: grid; gap: var(--sc-s-2); }
+.sc-support-goal__bar { height: 12px; border-radius: 999px; background: var(--sc-surface-2); box-shadow: var(--sc-panel-ring); overflow: hidden; }
+.sc-support-goal__bar > span { display: block; height: 100%; border-radius: inherit; background: var(--sc-accent); }
+.sc-support-goal p { margin: 0; color: var(--sc-text-2); font-variant-numeric: tabular-nums; }
+.sc-support-goal strong { color: var(--sc-text); }

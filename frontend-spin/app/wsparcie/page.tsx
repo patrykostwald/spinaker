@@ -14,13 +14,22 @@ function publicSupportUrl(value: string | undefined) {
   }
 }
 
-/** Koszty z pomiarów (diagnoza) i z konfiguracji (limit dzienny) — bez kwot, których nie znamy z faktur. */
+/** Koszty z konfiguracji (twardy budżet AI) i rodzaje opłat — bez kwot, których nie znamy z faktur. */
 const COSTS: Array<[string, string]> = [
-  ['Diagnoza Dr. Spina', 'ok. 0,35 USD (ok. 1,30 zł) za jedną — model Claude z wyszukiwaniem w sieci. Przy 20 diagnozach dziennie to ok. 800 zł miesięcznie.'],
+  ['Diagnozy Dr. Spina', 'model Claude z wyszukiwaniem w sieci, z twardym budżetem: najwyżej 2 USD dziennie — do ok. 250 zł miesięcznie.'],
   ['Posty polityków', 'oficjalne, płatne API X — płacimy za każde pobranie.'],
-  ['Strażnik i przekazy dnia', '0 zł — darmowe limity Groq i NVIDIA NIM.'],
+  ['Wywiad dnia', 'transkrypcja nagrania (Gemini) — płatna za zużycie, drobne kwoty dziennie.'],
+  ['Strażnik, przekazy dnia, filmy', '0 zł — robimy je na darmowych limitach (Groq, NVIDIA NIM, YouTube) i wykorzystujemy je do końca każdego dnia.'],
   ['Serwer, baza, kopie zapasowe, domena', 'stały koszt miesięczny.'],
 ];
+
+/** Jawny cel miesięczny i zebrana kwota — ustawiane w .env.production (SUPPORT_MONTHLY_GOAL_PLN, SUPPORT_MONTHLY_RAISED_PLN). */
+function supportProgress() {
+  const goal = Number(process.env.SUPPORT_MONTHLY_GOAL_PLN || 0);
+  const raised = Math.max(0, Number(process.env.SUPPORT_MONTHLY_RAISED_PLN || 0));
+  if (!Number.isFinite(goal) || goal <= 0) return null;
+  return { goal, raised, percent: Math.min(100, Math.round((raised / goal) * 100)) };
+}
 
 const GOALS: Array<[string, string]> = [
   ['Utrzymanie', 'Pełny miesiąc Kliniki: diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej — sprawdzamy więcej wypowiedzi.'],
@@ -31,6 +40,7 @@ const GOALS: Array<[string, string]> = [
 export default function SupportPage() {
   const buycoffee = publicSupportUrl(process.env.BUYCOFFEE_URL);
   const patronite = publicSupportUrl(process.env.PATRONITE_URL);
+  const progress = supportProgress();
   const links = [
     buycoffee && { label: 'Postaw kawę na BuyCoffee', href: buycoffee },
     patronite && { label: 'Wspieraj co miesiąc na Patronite', href: patronite },
@@ -40,8 +50,15 @@ export default function SupportPage() {
     <section><h2>Kto za tym stoi</h2><p>Projekt buduje jedna osoba, która nie jest i nigdy nie była członkiem żadnej partii politycznej, redakcji ani organizacji politycznej. Nie reprezentuje żadnego obozu. Cały serwis powstaje przy wsparciu narzędzi sztucznej inteligencji — od kodu po analizę przekazów — i jest odpowiedzią na prostą nierówność: politycy mają zespoły od wizerunku, a obywatele zwykle nie mają nikogo. Operatorem serwisu jest iapply sp. z o.o. z Poznania.</p></section>
     <section><h2>Na co idą pieniądze</h2>
       <dl className="sc-support-costs">{COSTS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>
-      <p className="sc-support-note">Dziś pokrywamy te koszty sami. Jedna kawa za 10 zł to około 7 kolejnych diagnoz.</p>
+      <p className="sc-support-note">Dziś pokrywamy te koszty sami. Jedna kawa za 10 zł to kilka kolejnych diagnoz albo kilka dni pracy strażnika z serwerem.</p>
     </section>
+    {progress ? <section aria-labelledby="support-goal-title"><h2 id="support-goal-title">Cel na ten miesiąc</h2>
+      <div className="sc-support-goal" role="img" aria-label={`Zebrano ${progress.raised} z ${progress.goal} zł (${progress.percent}%)`}>
+        <div className="sc-support-goal__bar"><span style={{ width: `${progress.percent}%` }} /></div>
+        <p><strong>{progress.raised.toLocaleString('pl-PL')} zł</strong> z {progress.goal.toLocaleString('pl-PL')} zł · {progress.percent}%</p>
+      </div>
+      <p className="sc-support-note">Cel pokrywa pełny miesiąc: diagnozy Dr. Spina, API X, transkrypcje i serwer. Kwotę aktualizujemy ręcznie po wpłatach.</p>
+    </section> : null}
     <section><h2>Na co zbieramy</h2>
       <dl className="sc-support-costs">{GOALS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>
       <p className="sc-support-note">Co dokładnie jest w każdej fazie, opisujemy w <Link href="/o-nas#fazy">O nas → Trzy fazy projektu</Link>.</p>
