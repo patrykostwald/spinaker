@@ -25,7 +25,19 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
       <div className="sc-clinic-sotd__main">
         <div className="sc-clinic-sotd__post">
           <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" caption={spin.camp_label} />
-          <blockquote>{spin.post.text}</blockquote>
+          <div className="sc-clinic-sotd__quote">
+            <blockquote>{spin.post.text}</blockquote>
+            {/* Zdjęcia z posta — część przekazu (np. twarz, grafika z hasłem); klik otwiera post na X. */}
+            {spin.post.media?.length ? (
+              <a className="sc-clinic-sotd__media" data-count={Math.min(spin.post.media.length, 2)} href={spin.post.url} target="_blank" rel="noopener noreferrer"
+                aria-label="Zdjęcia z posta — otwórz na X">
+                {spin.post.media.slice(0, 2).map(item => (
+                  // eslint-disable-next-line @next/next/no-img-element -- miniatury z X
+                  <img key={item.url} src={item.url} alt={item.alt || "Zdjęcie dołączone do posta"} loading="lazy" referrerPolicy="no-referrer" />
+                ))}
+              </a>
+            ) : null}
+          </div>
           <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
         </div>
         <div className="sc-clinic-sotd__diagnosis">
