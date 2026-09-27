@@ -12,8 +12,6 @@ export const metadata: Metadata = {
 
 /** Data ostatniej zmiany opisu — aktualizować przy każdej zmianie treści tej strony. */
 const LAST_UPDATED = { iso: '2026-09-27', label: '27 września 2026' };
-/** Koszt diagnoz: model Claude Sonnet z wyszukiwaniem, twardy budżet dzienny (CLINIC_DAILY_BUDGET_USD). */
-const DIAGNOSIS_BUDGET = 'najwyżej 2 USD (ok. 8 zł) dziennie';
 
 const SOURCES_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'zrodla@spin.clinic';
 const OPERATOR = 'iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
@@ -119,7 +117,7 @@ const PHASES: Phase[] = [
       { group: 'AI w Klinice', items: [
         { name: 'Groq', note: 'strażnik: otwarty model ocenia każdy post 0–100 i pisze przekazy dnia, bez kosztów', status: 'beta' },
         { name: 'NVIDIA NIM', note: 'zapasowy model, gdy Groq nie odpowiada', status: 'beta' },
-        { name: 'Claude Sonnet (Anthropic) z wyszukiwaniem w sieci', note: `diagnoza: techniki z cytatami, twierdzenia ze źródłami; ${DIAGNOSIS_BUDGET}`, status: 'beta' },
+        { name: 'Claude Sonnet (Anthropic) z wyszukiwaniem w sieci', note: 'diagnoza: techniki z cytatami, twierdzenia ze źródłami', status: 'beta' },
         { name: 'Gemini (Google)', note: 'wywiad dnia: transkrypcja publicznego filmu z YouTube po samym linku, z minutami — bez pobierania nagrania', status: 'beta' },
       ] },
       { group: 'Infrastruktura', items: [
@@ -283,7 +281,7 @@ export default function AboutPage() {
             <p>
               Czytamy wyłącznie oficjalne konta X polityków i partii, potwierdzone dowodem (np. rejestry Sejmu, Senatu i Parlamentu Europejskiego, Wikidata,
               zgodność nazwiska) — pełną listę publikujemy na dole Kliniki, a brakujące konto można zgłosić. Każdy nowy post przechodzi cztery kroki. Płacimy tylko
-              za diagnozy postów, które naprawdę warto sprawdzić — z twardym budżetem: {DIAGNOSIS_BUDGET}.
+              za diagnozy postów, które naprawdę warto sprawdzić.
             </p>
           </div>
           <ol className="sc-onas-flow" aria-label="Droga posta do diagnozy">
@@ -477,7 +475,7 @@ export default function AboutPage() {
         <Section id="wsparcie" index={8} kicker="Utrzymanie" title="Niezależni — utrzymują nas czytelnicy">
           <div className="sc-onas-prose">
             <p>
-              spin.clinic korzysta z płatnych usług: oficjalnego API X, modelu AI, który stawia diagnozy ({DIAGNOSIS_BUDGET}), i serwera, na którym działa baza.
+              spin.clinic korzysta z płatnych usług: oficjalnego API X, modelu AI, który stawia diagnozy, i serwera, na którym działa baza.
               Wszystko, co da się zrobić na darmowych limitach, robimy na nich. Nie mamy reklam ani sponsorów, którzy mogliby wpływać na treść, i nie przyjmujemy
               wpłat od partii, polityków ani ich fundacji. Wsparcie nigdy nie daje wpływu na diagnozy.
             </p>

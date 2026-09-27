@@ -16,7 +16,7 @@ function publicSupportUrl(value: string | undefined) {
 
 /** Koszty z konfiguracji (twardy budżet AI) i rodzaje opłat — bez kwot, których nie znamy z faktur. */
 const COSTS: Array<[string, string]> = [
-  ['Diagnozy Dr. Spina', 'model Claude z wyszukiwaniem w sieci, z twardym budżetem: najwyżej 2 USD dziennie — do ok. 250 zł miesięcznie.'],
+  ['Diagnozy Dr. Spina', 'model Claude z wyszukiwaniem w sieci — płacimy za każdą diagnozę postu i wywiadu dnia.'],
   ['Posty polityków', 'oficjalne, płatne API X — płacimy za każde pobranie.'],
   ['Wywiad dnia', 'transkrypcja nagrania (Gemini) — płatna za zużycie, drobne kwoty dziennie.'],
   ['Strażnik, przekazy dnia, filmy', '0 zł — robimy je na darmowych limitach (Groq, NVIDIA NIM, YouTube) i wykorzystujemy je do końca każdego dnia.'],
