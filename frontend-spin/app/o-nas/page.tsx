@@ -259,8 +259,9 @@ export default function AboutPage() {
             </figcaption>
           </figure>
           <p className="sc-onas-hero__after">
-            Spin to owoc tej pracy: informacja podana tak, by służyła nadawcy. W <strong>spin.clinic</strong> spin traci przewagę — każdą informację widać razem
-            ze źródłem, datą i kontekstem.
+            Spin to owoc tej pracy: informacja podana tak, by służyła nadawcy.
+            <br />
+            Tu spin traci przewagę — każdą informację widać razem ze źródłem, datą i kontekstem.
           </p>
         </section>
 
