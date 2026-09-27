@@ -360,20 +360,19 @@ export default function AboutPage() {
         </Section>
 
         <Section id="czym-nie-jestesmy" index={5} kicker="Czym nie jesteśmy" title="Nie fact-check, nie czat z AI">
-          <dl className="sc-onas-terms">
+          <dl className="sc-onas-terms sc-onas-terms--three">
             <div>
-              <dt>Nie fact-checking „prawda — fałsz”</dt>
+              <dt>Nie fact-checking</dt>
               <dd>
-                Nie wydajemy wyroków. Prawdziwe zdanie też może być spinem — podanym wybiórczo, bez punktu odniesienia albo z przypisaną intencją. Pokazujemy, jak
-                zbudowany jest przekaz.
+                Nie wydajemy wyroków „prawda — fałsz”. Prawdziwe zdanie też może być spinem — podanym wybiórczo, bez punktu odniesienia albo z przypisaną
+                intencją. Pokazujemy, jak zbudowany jest przekaz.
               </dd>
             </div>
             <div>
               <dt>Nie czat z AI</dt>
               <dd>
-                Czat odpowiada, gdy ktoś sam zapyta — o jeden wpis, bez pamięci i nie zawsze z prawdziwym źródłem. Dr. Spin pracuje z urzędu, codziennie, na
-                instrukcjach dopracowanych do tej jednej pracy: najpierw szuka w naszej bazie mediów i instytucji, potem w sieci. Diagnozy zostają w archiwum, więc
-                widać porównanie stron i historię każdego polityka.
+                Czat odpowiada, gdy ktoś zapyta — o jeden wpis, bez pamięci, nie zawsze z prawdziwym źródłem. Dr. Spin pracuje codziennie, z urzędu: najpierw
+                szuka w naszej bazie, potem w sieci, a diagnozy zostają w archiwum.
               </dd>
             </div>
             <div>

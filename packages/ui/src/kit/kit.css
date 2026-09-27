@@ -4219,3 +4219,7 @@ html, body { overflow-x: clip; }
 .sc-report__archive ul { display: flex; flex-wrap: wrap; gap: var(--sc-s-2) var(--sc-s-4); margin: var(--sc-s-2) 0 0; padding: 0; list-style: none; }
 .sc-report__archive a[aria-current="page"] { color: var(--sc-text); font-weight: 600; }
 @media (max-width: 760px) { .sc-report__cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* O nas: „Czym nie jesteśmy” — trzy punkty w trzech równych kolumnach (na telefonie jeden pod drugim). */
+.sc-onas-terms--three { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
+@media (max-width: 900px) { .sc-onas-terms--three { grid-template-columns: minmax(0, 1fr); } }
