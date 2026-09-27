@@ -360,11 +360,26 @@ def interview_archive(limit: int = 10) -> list[dict]:
 
 # --- automatyczny wybór: najgłośniejszy wywiad z politykiem z poprzedniego dnia --------------------------
 
-# Kanały informacyjne i publicystyczne różnych stron (uchwyt @… albo identyfikator UC…, sprawdzone 27.09.2026).
-# Nadpisz w CLINIC_INTERVIEW_CHANNELS (po przecinku).
-DEFAULT_CHANNELS = ('@KanalZeroPL', '@tvn24', 'UCb7O4-iI4pEO5UZPlOBr0Ug', '@tvpinfo', 'UCkC9YgH_FlqOhOIoTDFt4CA',
-                    'UCvHFbkohgX29NhaUtmkzLmg', 'UCPiu4CZlknkTworskK79CPg', '@TVRepublika', 'UC-wh71MEZ4KAx94aZyoG_qg',
-                    '@onet', '@RadioWnet')
+# Kanały informacyjne i publicystyczne różnych stron — wyłącznie identyfikatory UC… sprawdzone w API (27.09.2026).
+# Uchwyty @… bywają zajęte przez podróbki (np. „@TVRepublika” to mały, obcy kanał). Nadpisz w CLINIC_INTERVIEW_CHANNELS.
+DEFAULT_CHANNELS = (
+    'UClhEl4bMD8_escGCCTmRAYg',  # Kanał Zero
+    'UC3R8278fJUWn2ysrOCJrmAQ',  # TVN24
+    'UCb7O4-iI4pEO5UZPlOBr0Ug',  # Polsat News
+    'UCzQZbOb86WvhOPoR7jgAfsA',  # TVP Info
+    'UCkC9YgH_FlqOhOIoTDFt4CA',  # RMF24
+    'UCvHFbkohgX29NhaUtmkzLmg',  # Radio ZET
+    'UCPiu4CZlknkTworskK79CPg',  # wPolsce24
+    'UCc282c_TN8xIba_Z6GaDnQw',  # Telewizja Republika
+    'UC-wh71MEZ4KAx94aZyoG_qg',  # Wirtualna Polska News
+    'UC_vMDcmkuEvw0N-gaP35wTA',  # Onet
+    'UCjkNubkfecaFLZbHnnsz6pw',  # Onet Rano
+    'UCr8b33W30PoW4NhKI-ySRbg',  # Interia Rozmowy
+    'UCpchzx2u5Ab8YASeJsR1WIw',  # Rzeczpospolita
+    'UC4uWtFsAryV2p_UDvu0rraA',  # Rymanowski Live
+    'UCUlZzs-r5LDqARiq1xPkQlw',  # Radio TOK FM
+    'UCbG7jYj1nN32cnvhgbOMcZA',  # Tygodnik Do Rzeczy
+)
 MIN_NAMED_SECONDS = 15 * 60  # film z nazwiskiem polityka w tytule, ale bez słowa „wywiad” — musi być dłuższą rozmową
 # Rdzenie, żeby łapać odmianę: „ministrem”, „posłanką”, „marszałkiem”.
 POLITICS_WORDS = ('premier', 'prezydent', 'minist', 'marszał', 'poseł', 'posł', 'europos', 'senator',
@@ -454,6 +469,31 @@ def looks_like_interview(title: str, description: str, channel: str) -> tuple[bo
     return bool(data.get('interview')), str(data.get('reason', ''))[:200]
 
 
+def _uploads_between(channel_id: str, start, end, max_pages: int = 4) -> list[tuple[str, dict]]:
+    """Filmy kanału opublikowane w oknie [start, end) — z listy „uploads” (1 jednostka na 50 filmów, bez limitu
+    wyszukiwań YouTube, który jest osobny i mały). Strony czytamy, dopóki najstarszy film jest jeszcze w oknie."""
+    from django.utils.dateparse import parse_datetime
+    found, token = [], ''
+    for _ in range(max_pages):
+        params = {'part': 'snippet,contentDetails', 'playlistId': 'UU' + channel_id[2:], 'maxResults': 50}
+        if token:
+            params['pageToken'] = token
+        data = _yt('playlistItems', **params)
+        oldest = None
+        for item in data.get('items') or []:
+            details, snippet = item.get('contentDetails') or {}, item.get('snippet') or {}
+            published = parse_datetime(details.get('videoPublishedAt') or snippet.get('publishedAt') or '')
+            if not published:
+                continue
+            oldest = published if oldest is None else min(oldest, published)
+            if start <= published < end and details.get('videoId'):
+                found.append((details['videoId'], snippet))
+        token = data.get('nextPageToken', '')
+        if not token or (oldest and oldest < start):
+            break
+    return found
+
+
 def rank_interviews(day) -> list[dict]:
     """Kandydaci z wczoraj: tylko rozmowy z politykiem (nazwisko w tytule lub opisie + znak rozmowy),
     ranking: głośność × 3 dla najważniejszych polityków. Mniej znany polityk — tylko przy dużej głośności."""
@@ -473,20 +513,18 @@ def rank_interviews(day) -> list[dict]:
                 if not channel:
                     continue
                 channel_id = channel[0]['id']
-            found = _yt('search', part='snippet', channelId=channel_id, type='video', order='viewCount', maxResults=15,
-                        publishedAfter=start.isoformat(), publishedBefore=end.isoformat())
+            uploads = _uploads_between(channel_id, start, end)
         except clinic_ai.ClinicAIError as error:
             logger.warning('interview pick: %s %s', handle, error.code)
             continue
-        for item in found.get('items') or []:
-            snippet = item.get('snippet') or {}
+        for video_id, snippet in uploads:
             import html
             title = html.unescape(snippet.get('title', ''))
             text = f"{title} {snippet.get('description', '')}".lower()
             quoted = bool(QUOTE_TITLE.match(title))
             named = quoted or any(name in text for name in names) or any(word in text for word in POLITICS_WORDS)
             if named and (quoted or any(word in text for word in INTERVIEW_WORDS)):
-                candidates[item['id']['videoId']] = {**snippet, 'title': title, 'top': any(name in text for name in top)}
+                candidates[video_id] = {**snippet, 'title': title, 'top': any(name in text for name in top)}
     if not candidates:
         return []
     details = _yt('videos', part='statistics,contentDetails', id=','.join(list(candidates)[:50]))

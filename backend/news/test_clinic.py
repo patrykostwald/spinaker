@@ -467,9 +467,15 @@ def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
     def fake_yt(path, **params):
         if path == 'channels':
             return {'items': [{'id': 'UC1'}]}
-        if path == 'search':
-            return {'items': [{'id': {'videoId': vid}, 'snippet': {'title': title, 'description': 'rozmowa', 'channelTitle': 'Kanał'}}
-                              for vid, (title, _, _) in videos.items()]}
+        assert path != 'search', 'wybór wywiadu nie może zużywać osobnego, małego limitu wyszukiwań YouTube'
+        if path == 'playlistItems':
+            yesterday = (timezone.localtime() - timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
+            old = yesterday - timedelta(days=3)
+            return {'items': [{'contentDetails': {'videoId': vid, 'videoPublishedAt': yesterday.isoformat()},
+                               'snippet': {'title': title, 'description': 'rozmowa', 'channelTitle': 'Kanał'}}
+                              for vid, (title, _, _) in videos.items()]
+                             + [{'contentDetails': {'videoId': 'zzzzzzzzzzz', 'videoPublishedAt': old.isoformat()},
+                                 'snippet': {'title': 'Stary wywiad: premier Tusk', 'description': 'rozmowa', 'channelTitle': 'Kanał'}}]}
         return {'items': [{'id': vid, 'contentDetails': {'duration': duration}, 'statistics': {'viewCount': str(views)}}
                           for vid, (_, duration, views) in videos.items() if vid in params['id']]}
     monkeypatch.setattr(clinic_interview, '_yt', fake_yt)
