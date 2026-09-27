@@ -93,6 +93,8 @@ function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; 
     categories: strip.category ? expandCategories([strip.category]) : [],
     sources: strip.sourceId ? [strip.sourceId] : [],
     pageSize: 20,
+    // Pluralizm: po jednym najnowszym z każdego źródła, zanim drugi z tego samego.
+    diverse: true,
   });
   const articles = feed.data?.results ?? [];
   return (

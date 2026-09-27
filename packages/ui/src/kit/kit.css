@@ -4124,3 +4124,11 @@ html, body { overflow-x: clip; }
 .sc-clinic-group > .sc-message-history { padding-top: var(--sc-s-5); border-top: 1px solid var(--sc-line); }
 .sc-clinic-group > .sc-clinic-latest { padding-top: var(--sc-s-5); border-top: 1px solid var(--sc-line); }
 .sc-clinic-group .sc-clinic-message { background: var(--sc-bg); }
+
+/* Twoje wiadomości: jeden panel — nagłówek z „+ Dodaj pasek”, pod nim paski oddzielone cienką linią. */
+.sc-home-threads { gap: 0; padding: var(--sc-panel-pad); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-home-threads .sc-home-threads__bar, .sc-home-threads .sc-strip-row { border-radius: 0; background: none; box-shadow: none; }
+.sc-home-threads .sc-home-threads__bar { padding: 0 0 var(--sc-s-4); }
+.sc-home-threads .sc-reorder-strips__list { gap: 0; }
+.sc-home-threads .sc-strip-row { padding: var(--sc-s-4) 0; border-top: 1px solid var(--sc-line); }
+.sc-home-threads .sc-strip-row:last-child { padding-bottom: 0; }
