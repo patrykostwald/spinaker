@@ -84,7 +84,7 @@ export function SpinDetail({ id }: { id: string }) {
 const VERDICT_SHORT: Record<string, string> = { spin: "spin", partial: "częściowy spin", no_spin: "bez spinu", unclear: "nie da się ocenić" };
 const short = (model: string) => model.split("/").pop() ?? model;
 
-/** Konsylium Dr. Spina: kto oceniał, jak zagłosował, kto napisał, poprawił język i zrecenzował diagnozę. */
+/** Konsylium Dr. Spina: kto oceniał, jak zagłosował, lekarz prowadzący, redaktor i ordynator. */
 function CouncilNote({ council }: { council: NonNullable<SpinDetailData["council"]> }) {
   return (
     <section className="sc-council" aria-label="Konsylium Dr. Spina">
@@ -92,8 +92,8 @@ function CouncilNote({ council }: { council: NonNullable<SpinDetailData["council
       <ul>{council.members.map(member => (
         <li key={member.model}><strong>{short(member.model)}</strong> — {VERDICT_SHORT[member.verdict] ?? member.verdict}, siła {member.intensity}/100</li>
       ))}</ul>
-      <p className="sc-council__roles">Przewodniczący: {short(council.chair)}{council.linguist ? ` · językoznawca: ${short(council.linguist)}` : ""}
-        {council.review.model ? ` · recenzent: ${short(council.review.model)} — ${council.review.ok ? "bez zastrzeżeń" : council.review.ok === false ? `uwagi${council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}</p>
+      <p className="sc-council__roles">Lekarz prowadzący: {short(council.chair)}{council.linguist ? ` · redaktor: ${short(council.linguist)}` : ""}
+        {council.review.model ? ` · ordynator: ${short(council.review.model)} — ${council.review.ok ? "bez zastrzeżeń" : council.review.ok === false ? `uwagi${council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}</p>
     </section>
   );
 }
