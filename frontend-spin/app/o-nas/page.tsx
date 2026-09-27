@@ -54,7 +54,8 @@ const PARTS = [
 /** Droga posta do diagnozy — cztery kroki zamiast schematu rysowanego znakami. */
 const CLINIC_STEPS = [
   { title: 'Strażnik', tech: 'Groq · NVIDIA NIM', text: 'Darmowe, otwarte modele czytają każdy nowy post i oceniają w skali 0–100, czy jest w nim coś do sprawdzenia. Życzenia i zapowiedzi odpadają od razu.' },
-  { title: 'Diagnoza', tech: 'Claude (Anthropic) · wyszukiwanie w sieci', text: 'Posty warte sprawdzenia — najwyżej ocenione, w dziennym budżecie — trafiają do Dr. Spina: techniki perswazji z dosłownymi cytatami, twierdzenia porównane ze źródłami.' },
+  { title: 'Konsylium', tech: 'modele OpenAI · Alibaba · NVIDIA · Google', text: 'Post warty sprawdzenia — tekst, zdjęcia i linki — oceniają osobno modele różnych firm. Według stałych zasad powstaje jedna ocena: werdykt, siła i techniki wskazane przez co najmniej dwóch „lekarzy”, zawsze z dosłownym cytatem.' },
+  { title: 'Fakty i recenzja', tech: 'wyszukiwarka Google · Claude przy sporach', text: 'Fakty sprawdzamy w wyszukiwarce — źródło zostaje tylko, gdy je znaleziono; przy sporze dociska Claude. Przewodniczący pisze diagnozę, językoznawca poprawia polszczyznę, recenzent sprawdza, czy nic nie dodano.' },
   { title: 'Publikacja', tech: 'automatycznie · etykieta AI', text: 'Diagnoza trafia na stronę sama, oznaczona jako wygenerowana przez AI. Nikt nie poprawia jej treści — ocena należy do modelu i źródeł.' },
   { title: 'Wątek na X', tech: 'udostępnianie', text: 'Każdą diagnozę można wkleić na X jako wątek 1/N: podsumowanie z linkiem, techniki i źródła — także jako odpowiedź pod wpisem polityka.' },
 ];
@@ -97,6 +98,8 @@ const PHASES: Phase[] = [
       { text: 'przekaz dnia obu obozów z pełną analizą, postami źródłowymi i archiwum', status: 'beta' },
       { text: 'wywiad dnia wybierany automatycznie z kilkudziesięciu kanałów i całego YouTube — ocena gościa i warsztatu prowadzącego, z cytatami i minutą nagrania', status: 'beta' },
       { text: 'filmy z oficjalnych kanałów YouTube instytucji, partii i mediów — z doborem materiałów z różnych źródeł (pluralizm)', status: 'beta' },
+      { text: 'konsylium Dr. Spina: kilka niezależnych modeli AI różnych firm, wspólna ocena, recenzja językowa i merytoryczna', status: 'beta' },
+      { text: 'strażnica usuniętych postów polityków i tygodniowy raport Dr. Spina z wątkiem na X', status: 'beta' },
       { text: 'udostępnianie diagnozy jako wątku na X; rejestr osób publicznych z oficjalnymi kontami X', status: 'beta' },
       { text: 'instalacja na telefonie z przeglądarki (aplikacja PWA)', status: 'beta' },
     ],
@@ -115,10 +118,9 @@ const PHASES: Phase[] = [
         { name: 'YouTube Data API', note: 'oficjalne kanały instytucji, partii i mediów (z dowodem na stronie źródła) oraz automatyczny wybór wywiadu dnia', status: 'działa' },
       ] },
       { group: 'AI w Klinice', items: [
-        { name: 'Groq', note: 'strażnik: otwarty model ocenia każdy post 0–100 i pisze przekazy dnia, bez kosztów', status: 'beta' },
-        { name: 'NVIDIA NIM', note: 'zapasowy model, gdy Groq nie odpowiada', status: 'beta' },
-        { name: 'Claude Sonnet (Anthropic) z wyszukiwaniem w sieci', note: 'diagnoza: techniki z cytatami, twierdzenia ze źródłami', status: 'beta' },
-        { name: 'Gemini (Google)', note: 'wywiad dnia: transkrypcja publicznego filmu z YouTube po samym linku, z minutami — bez pobierania nagrania', status: 'beta' },
+        { name: 'Groq · NVIDIA NIM', note: 'strażnik postów, przekazy dnia i konsylium: gpt-oss (OpenAI), Qwen (Alibaba), Nemotron (NVIDIA) — bez kosztów', status: 'beta' },
+        { name: 'Gemini (Google)', note: 'członek konsylium, sprawdzanie faktów w wyszukiwarce Google, opis zdjęć z postów, transkrypcja wywiadu dnia', status: 'beta' },
+        { name: 'Claude (Anthropic) z wyszukiwaniem w sieci', note: 'docisk przy spornych i mocnych spinach oraz ocena wywiadu dnia', status: 'beta' },
       ] },
       { group: 'Infrastruktura', items: [
         { name: 'Docker · Caddy (HTTPS) · serwer VPS · GitHub Actions', status: 'działa' },
@@ -249,6 +251,7 @@ export default function AboutPage() {
             <p>
               Dlatego Dr. Spin nie ogłasza, kto ma rację. Rozkłada wypowiedzi polityków i przekazy mediów na czynniki pierwsze: techniki z dosłownymi cytatami,
               twierdzenia ze źródłami — rządzących i opozycję obok siebie, tą samą miarą. Nie musisz zmieniać poglądów. Wystarczy, że zaczniesz widzieć chwyty.
+              Dr. Spin to konsylium: kilka niezależnych modeli AI różnych firm ocenia każdy post osobno, a diagnoza powstaje z ich wspólnej oceny.
             </p>
             <p>
               Wszystko dzieje się automatycznie. Diagnoz nie pisze ani nie poprawia człowiek — ocenia AI według jawnych zasad, bez sympatii i antypatii.
@@ -280,7 +283,7 @@ export default function AboutPage() {
           <div className="sc-onas-prose">
             <p>
               Czytamy wyłącznie oficjalne konta X polityków i partii, potwierdzone dowodem (np. rejestry Sejmu, Senatu i Parlamentu Europejskiego, Wikidata,
-              zgodność nazwiska) — pełną listę publikujemy na dole Kliniki, a brakujące konto można zgłosić. Każdy nowy post przechodzi cztery kroki. Płacimy tylko
+              zgodność nazwiska) — pełną listę publikujemy na dole Kliniki, a brakujące konto można zgłosić. Każdy nowy post przechodzi pięć kroków. Płacimy tylko
               za diagnozy postów, które naprawdę warto sprawdzić.
             </p>
           </div>
@@ -301,7 +304,16 @@ export default function AboutPage() {
               Publikacja jest automatyczna, z etykietą AI, nazwą modelu i wersją instrukcji. Nikt nie poprawia treści diagnoz; możemy je tylko ukryć w całości
               po uzasadnionym zgłoszeniu prawnym na admin@spin.clinic.
             </li>
+            <li>Oceniamy cały post: tekst, zdjęcia i grafiki (także tekst na nich) oraz strony, do których prowadzą linki.</li>
+            <li>
+              Konsylium: każdy model ocenia osobno, a przy diagnozie pokazujemy, kto jak zagłosował i jaka była zgodność. Jeden model nie przesądza
+              o werdykcie — decyduje wspólna ocena według stałych zasad.
+            </li>
             <li>Spin dnia to diagnoza z najwyższą siłą z dzisiaj. Waga porównuje udział postów ze spinem po każdej stronie, nie ich liczbę.</li>
+            <li>
+              Strażnica: sprawdzamy, czy politycy usuwają posty po publikacji. Zgodnie z zasadami X nie pokazujemy treści usuniętego wpisu — tylko fakt.
+              W niedzielę wieczorem — raport tygodnia.
+            </li>
             <li>
               Przekaz dnia: darmowe modele streszczają posty obozu (co najmniej trzech kont) pięć razy dziennie. Po kliknięciu — pełna analiza, lista postów źródłowych
               i archiwum.
