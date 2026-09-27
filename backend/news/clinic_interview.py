@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import html
 import os
 import re
 from datetime import timedelta
@@ -503,6 +504,41 @@ def _uploads_between(channel_id: str, start, end, max_pages: int = 4) -> list[tu
     return found
 
 
+# Poza listą kanałów: dwa zapytania dziennie po całym YouTube (wyszukiwarka ma osobny, mały limit dzienny).
+BROAD_QUERIES = (
+    'Tusk|Nawrocki|Kaczyński|Mentzen|Bosak|Sikorski|Trzaskowski|Kosiniak-Kamysz|Hołownia|Czarzasty|Morawiecki|Braun|Zandberg|Błaszczak|Żurek',
+    'wywiad polityk|rozmowa z ministrem|rozmowa z posłem|gość programu polityka',
+)
+BROAD_MIN_SUBSCRIBERS = 50_000  # kanały spoza listy: tylko duże — bez przeróbek, wycinków i kopii cudzych wywiadów
+
+
+def _broad_search(start, end, known_channels: set[str]) -> list[tuple[str, dict]]:
+    """Najczęściej oglądane filmy z danego okna po całym YouTube (PL), tylko z dużych kanałów spoza listy."""
+    found = {}
+    for query in BROAD_QUERIES:
+        try:
+            data = _yt('search', part='snippet', q=query, type='video', order='viewCount', maxResults=25,
+                       regionCode='PL', relevanceLanguage='pl', publishedAfter=start.isoformat(), publishedBefore=end.isoformat())
+        except clinic_ai.ClinicAIError as error:
+            logger.warning('interview broad search: %s', error.code)
+            continue
+        for item in data.get('items') or []:
+            snippet = item.get('snippet') or {}
+            video_id = (item.get('id') or {}).get('videoId')
+            if video_id and snippet.get('channelId') not in known_channels:
+                found[video_id] = snippet
+    channel_ids = list({snippet.get('channelId') for snippet in found.values() if snippet.get('channelId')})[:50]
+    if not channel_ids:
+        return []
+    try:
+        channels = _yt('channels', part='statistics', id=','.join(channel_ids))
+    except clinic_ai.ClinicAIError:
+        return []
+    big = {item['id'] for item in channels.get('items') or []
+           if int((item.get('statistics') or {}).get('subscriberCount', 0)) >= BROAD_MIN_SUBSCRIBERS}
+    return [(video_id, snippet) for video_id, snippet in found.items() if snippet.get('channelId') in big]
+
+
 def rank_interviews(day) -> list[dict]:
     """Kandydaci z wczoraj: tylko rozmowy z politykiem (nazwisko w tytule lub opisie + znak rozmowy),
     ranking: głośność × 3 dla najważniejszych polityków. Mniej znany polityk — tylko przy dużej głośności."""
@@ -513,6 +549,7 @@ def rank_interviews(day) -> list[dict]:
     top = _top_politicians()
     names = set(_politician_names()) | set(top)
     candidates = {}
+    pool, known = [], set()
     for handle in handles:
         try:
             if handle.startswith('UC'):
@@ -522,23 +559,30 @@ def rank_interviews(day) -> list[dict]:
                 if not channel:
                     continue
                 channel_id = channel[0]['id']
-            uploads = _uploads_between(channel_id, start, end)
+            known.add(channel_id)
+            pool += _uploads_between(channel_id, start, end)
         except clinic_ai.ClinicAIError as error:
             logger.warning('interview pick: %s %s', handle, error.code)
             continue
-        for video_id, snippet in uploads:
-            import html
-            title = html.unescape(snippet.get('title', ''))
-            text = f"{title} {snippet.get('description', '')}".lower()
-            quoted = bool(QUOTE_TITLE.match(title))
-            named = quoted or any(name in text for name in names) or any(word in text for word in POLITICS_WORDS)
-            if named and (quoted or any(word in text for word in INTERVIEW_WORDS)):
-                candidates[video_id] = {**snippet, 'title': title, 'top': any(name in text for name in top)}
+    # Głośne rozmowy z dużych kanałów spoza listy (dwa zapytania po całym YouTube).
+    pool += _broad_search(start, end, known)
+    for video_id, snippet in pool:
+        if video_id in candidates:
+            continue
+        title = html.unescape(snippet.get('title', ''))
+        text = f"{title} {snippet.get('description', '')}".lower()
+        quoted = bool(QUOTE_TITLE.match(title))
+        named = quoted or any(name in text for name in names) or any(word in text for word in POLITICS_WORDS)
+        if named and (quoted or any(word in text for word in INTERVIEW_WORDS)):
+            candidates[video_id] = {**snippet, 'title': title, 'top': any(name in text for name in top)}
     if not candidates:
         return []
-    details = _yt('videos', part='statistics,contentDetails', id=','.join(list(candidates)[:50]))
+    ids = list(candidates)
+    items = []
+    for offset in range(0, min(len(ids), 150), 50):  # po 50 filmów na zapytanie (1 jednostka)
+        items += _yt('videos', part='statistics,contentDetails', id=','.join(ids[offset:offset + 50])).get('items') or []
     ranked = []
-    for item in details.get('items') or []:
+    for item in items:
         if _duration_seconds((item.get('contentDetails') or {}).get('duration', '')) < MIN_SECONDS:
             continue  # zapowiedzi, wycinki i krótkie komentarze odpadają
         snippet = candidates[item['id']]

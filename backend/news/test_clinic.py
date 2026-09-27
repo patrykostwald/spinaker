@@ -464,10 +464,21 @@ def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
         'ddddddddddd': ('Żurek broni Wałęsy — komentarz Mazurka', 'PT20M', 500000),  # klasyfikator: monolog
     }
 
+    searches = []
+
     def fake_yt(path, **params):
-        if path == 'channels':
+        if path == 'channels' and 'forHandle' in params:
             return {'items': [{'id': 'UC1'}]}
-        assert path != 'search', 'wybór wywiadu nie może zużywać osobnego, małego limitu wyszukiwań YouTube'
+        if path == 'channels':  # liczby subskrypcji kanałów spoza listy
+            return {'items': [{'id': 'UCbig', 'statistics': {'subscriberCount': '900000'}},
+                              {'id': 'UCsmall', 'statistics': {'subscriberCount': '800'}}]}
+        if path == 'search':  # dwa zapytania po całym YouTube — nie więcej (osobny, mały limit dzienny)
+            searches.append(params['q'])
+            return {'items': [
+                {'id': {'videoId': 'eeeeeeeeeee'}, 'snippet': {'title': 'Wywiad: Kaczyński o wyborach', 'description': 'rozmowa',
+                                                               'channelTitle': 'Duży podcast', 'channelId': 'UCbig'}},
+                {'id': {'videoId': 'fffffffffff'}, 'snippet': {'title': 'Wywiad: Tusk PRZERÓBKA', 'description': 'rozmowa',
+                                                               'channelTitle': 'Mały kanał', 'channelId': 'UCsmall'}}]}
         if path == 'playlistItems':
             yesterday = (timezone.localtime() - timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
             old = yesterday - timedelta(days=3)
@@ -476,12 +487,17 @@ def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
                               for vid, (title, _, _) in videos.items()]
                              + [{'contentDetails': {'videoId': 'zzzzzzzzzzz', 'videoPublishedAt': old.isoformat()},
                                  'snippet': {'title': 'Stary wywiad: premier Tusk', 'description': 'rozmowa', 'channelTitle': 'Kanał'}}]}
+        catalog = {**videos, 'eeeeeeeeeee': ('Wywiad: Kaczyński o wyborach', 'PT40M', 50000),
+                   'fffffffffff': ('Wywiad: Tusk PRZERÓBKA', 'PT40M', 5000000)}
         return {'items': [{'id': vid, 'contentDetails': {'duration': duration}, 'statistics': {'viewCount': str(views)}}
-                          for vid, (_, duration, views) in videos.items() if vid in params['id']]}
+                          for vid, (_, duration, views) in catalog.items() if vid in params['id']]}
     monkeypatch.setattr(clinic_interview, '_yt', fake_yt)
     monkeypatch.setattr(clinic_interview, 'looks_like_interview', lambda title, description, channel: ('Mazurka' not in title, ''))
     result = clinic_interview.pick_yesterday()
     assert result['status'] == 'queued' and 'Tusk' in result['title'] and result['top_politician']
+    assert 'PRZERÓBKA' not in result['title'] and len(searches) == 2  # mały kanał spoza listy odpada mimo wyświetleń
+    ranked_ids = [row['video_id'] for row in clinic_interview.rank_interviews(timezone.localdate() - timedelta(days=1))]
+    assert 'eeeeeeeeeee' in ranked_ids and 'fffffffffff' not in ranked_ids
     assert clinic_interview.pick_yesterday()['status'] == 'already_chosen'
 
 
