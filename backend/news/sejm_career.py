@@ -136,10 +136,24 @@ def save(figure: PublicFigure, found: list[dict]) -> int:
     return saved
 
 
+def current_term_fallback(figures) -> int:
+    """Bez list posłów z API: poseł z rejestru bieżącej kadencji dostaje jej datę początku i klub z rejestru."""
+    current = next(term for term in KNOWN_TERMS if term.get('current'))
+    updated = 0
+    for figure in figures:
+        if not SEJM_KEY.match(figure.import_key or ''):
+            continue
+        club = figure.parliamentary_roster_entry.club if figure.parliamentary_roster_entry_id else ''
+        roles = figure.public_roles.filter(role_title='Poseł na Sejm RP', status='current', since__isnull=True)
+        updated += roles.update(since=_day(current['from']), party=club[:64], source_checked_at=timezone.now())
+    return updated
+
+
 def run(figures=None) -> dict:
     terms, members = load()
     if not members:
-        return {'status': 'api_unavailable'}
+        figures = PublicFigure.objects.filter(archived=False).select_related('parliamentary_roster_entry')
+        return {'status': 'api_unavailable', 'current_term_fallback': current_term_fallback(figures)}
     figures = list(figures if figures is not None else PublicFigure.objects.filter(archived=False))
     # Najpierw profile powiązane z rejestrem Sejmu; duplikat bez powiązania nie przejmuje ich mandatów.
     figures.sort(key=lambda figure: not SEJM_KEY.match(figure.import_key or ''))

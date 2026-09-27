@@ -4415,3 +4415,11 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 .sc-career__roles > li[data-status="current"]::before { background: var(--sc-accent); border-color: var(--sc-accent); }
 .sc-career__when { color: var(--sc-text); font-weight: 600; }
 .sc-career__when small { color: var(--sc-text-3); font-weight: 400; }
+
+/* Wyszukiwarka — karta profilu, gdy hasło to osoba z rejestru; dni jako paski miniatur */
+.sc-figure-match { display: grid; gap: 2px; margin: 0 0 var(--sc-s-4); padding: var(--sc-s-4) var(--sc-s-5); border-radius: var(--sc-r-xl); background: linear-gradient(135deg, var(--sc-accent-soft), var(--sc-surface) 70%); box-shadow: 0 0 0 1.5px var(--sc-accent); color: var(--sc-text-2); text-decoration: none; }
+.sc-figure-match strong { color: var(--sc-text); font-size: var(--sc-t-title-m-size); }
+.sc-figure-match__kicker { color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.sc-figure-match__cta { margin-top: 4px; color: var(--sc-accent); font-weight: 600; }
+.sc-search-day { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sc-s-2); margin-bottom: var(--sc-s-4); min-width: 0; }
+.sc-search-day__head { position: static; }
