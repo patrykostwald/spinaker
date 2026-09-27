@@ -16,8 +16,9 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--figure', type=int)
         parser.add_argument('--limit', type=int, default=5)
+        parser.add_argument('--debug', action='store_true', help='Pokaż wyszukiwania, znalezione strony i propozycje modelu.')
 
-    def handle(self, *args, figure, limit, **options):
+    def handle(self, *args, figure, limit, debug, **options):
         if not krs_agent.clinic_ai._gemini_ready():
             raise CommandError('Brak GEMINI_API_KEY — agent korzysta z wyszukiwarki Gemini.')
         people = [PublicFigure.objects.get(pk=figure)] if figure else list(krs_agent.queue(limit))
@@ -25,9 +26,16 @@ class Command(BaseCommand):
             if krs_agent.budget_left() <= 0:
                 self.stdout.write('Dzienny limit KRS_DAILY_BUDGET_USD wyczerpany — reszta jutro.')
                 break
-            result = krs_agent.check_figure(person)
+            result = krs_agent.check_figure(person, debug=debug)
             self.stdout.write(f"{person.canonical_name}: kandydaci {result.get('candidates', 0)}, potwierdzone {result.get('confirmed', 0)}"
                               + (f" — błąd {result['error']}" if result.get('error') else ''))
+            info = result.get('debug') or {}
+            if debug and info:
+                self.stdout.write(f"   wyszukiwań: {info['searches']}, stron w wynikach: {info['pages_found']}")
+                for line in info['proposed']:
+                    self.stdout.write(f'   propozycja: {line}')
+                for url in info['found_sample']:
+                    self.stdout.write(f'   strona: {url}')
             for relation in person.organisation_relations.filter(verification_status='confirmed').select_related('organisation'):
                 org = relation.organisation
                 self.stdout.write(f"   · {org.name} ({org.get_kind_display()}, KRS {org.krs_number}, {org.get_sector_display()}) — "

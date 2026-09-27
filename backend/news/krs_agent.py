@@ -44,6 +44,7 @@ SYSTEM = """Jesteś researcherem OSINT serwisu spin.clinic. Wyszukaj w sieci pod
 wskazana osoba publiczna zasiada lub zasiadała: zarząd, rada nadzorcza, rada fundacji, komisja rewizyjna, prokura,
 fundator lub założyciel. Priorytet: fundacje i stowarzyszenia, spółki Skarbu Państwa i komunalne (np. Orlen, PZU, KGHM,
 spółki miejskie), potem pozostałe spółki.
+Zawsze korzystaj z wyszukiwarki Google — wykonaj wszystkie podane zapytania; nie odpowiadaj z pamięci.
 Zasady:
 - tylko gdy źródło jednoznacznie dotyczy TEJ osoby (funkcja publiczna, partia, region) — uważaj na osoby o tym samym nazwisku;
 - numer KRS (10 cyfr) podaj tylko, jeśli znalazłeś go w źródle; bez numeru zostaw puste;
@@ -81,13 +82,26 @@ def _spend(usage: dict) -> None:
     cache.set(_budget_key(), float(cache.get(_budget_key(), 0.0)) + cost, 60 * 60 * 30)
 
 
-def discover(figure: PublicFigure) -> list[dict]:
+def _queries(name: str) -> list[str]:
+    return [f'"{name}" fundacja', f'"{name}" rada nadzorcza', f'"{name}" prezes zarządu', f'"{name}" KRS',
+            f'"{name}" stowarzyszenie prezes', f'"{name}" spółka Skarbu Państwa']
+
+
+def discover(figure: PublicFigure, debug: dict | None = None) -> list[dict]:
     """Kandydaci z wyszukiwarki: podmiot, KRS, funkcja, źródła (tylko te z wyników wyszukiwania)."""
     who = f'{figure.canonical_name} — {figure.role_title}' + (f', {figure.organisation}' if figure.organisation else '')
-    response = clinic_ai._call_gemini(SYSTEM, f'Osoba: {who}', SCHEMA, web_search=True, max_tokens=16000)
-    _spend(clinic_ai._usage(response))
+    queries = '\n'.join(f'- {query}' for query in _queries(_display_name(figure.canonical_name)))
+    prompt = f'Osoba: {who}\n\nWyszukaj w Google co najmniej:\n{queries}'
+    response = clinic_ai._call_gemini(SYSTEM, prompt, SCHEMA, web_search=True, max_tokens=16000)
+    usage = clinic_ai._usage(response)
+    _spend(usage)
     found = clinic_ai._search_results(response.content)
     data = clinic_ai._json_from_text(response.content)
+    if debug is not None:
+        debug.update({'searches': usage.get('web_search_requests', 0), 'pages_found': len(found),
+                      'proposed': [f"{item.get('name')} (KRS {item.get('krs') or '—'}, {item.get('role')}, źródeł {len(item.get('sources') or [])})"
+                                   for item in data.get('organisations') or [] if isinstance(item, dict)],
+                      'found_sample': list(found)[:5]})
     candidates = []
     for item in data.get('organisations') or []:
         if not isinstance(item, dict):
@@ -101,6 +115,11 @@ def discover(figure: PublicFigure) -> list[dict]:
                            'current': bool(item.get('current')), 'sector': item.get('sector') if item.get('sector') in SECTORS else '',
                            'sources': sources[:4]})
     return candidates
+
+
+def _display_name(name: str) -> str:
+    """„Adam BIELAN” → „Adam Bielan” (w rejestrach PE nazwiska są wielkimi literami)."""
+    return ' '.join(part.capitalize() if part.isupper() and len(part) > 1 else part for part in name.split())
 
 
 def _domains(sources: list[dict]) -> set[str]:
@@ -165,15 +184,16 @@ def verify(figure: PublicFigure, candidate: dict) -> PublicFigureOrganisationRel
     return None
 
 
-def check_figure(figure: PublicFigure) -> dict:
+def check_figure(figure: PublicFigure, debug: bool = False) -> dict:
+    info: dict = {}
     try:
-        candidates = discover(figure)
+        candidates = discover(figure, info if debug else None)
     except clinic_ai.ClinicAIError as error:
         logger.warning('KRS agent %s: %s', figure.pk, error.code)
         return {'figure': figure.pk, 'error': error.code}
     saved = [relation.pk for candidate in candidates if (relation := verify(figure, candidate))]
     PublicFigure.objects.filter(pk=figure.pk).update(organisations_checked_at=timezone.now())
-    return {'figure': figure.pk, 'candidates': len(candidates), 'confirmed': len(saved)}
+    return {'figure': figure.pk, 'candidates': len(candidates), 'confirmed': len(saved), 'debug': info}
 
 
 def queue(limit: int):
