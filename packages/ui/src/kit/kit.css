@@ -4446,3 +4446,9 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 .sc-onas-scope dt { color: var(--sc-text); font-weight: 600; }
 .sc-onas-scope dd { margin: 0; color: var(--sc-text-2); }
 @media (max-width: 640px) { .sc-onas-scope div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+/* Zaproszenie — mały przycisk w linii z tytułem */
+.sc-invite__head { align-items: flex-start; flex-wrap: nowrap; }
+.sc-invite__cta { flex: none; display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; margin-top: 18px; border-radius: 999px; background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); font-size: var(--sc-t-body-s-size); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sc-invite__cta:hover { background: var(--sc-primary-hover, var(--sc-accent-hover)); }
+@media (max-width: 760px) { .sc-invite__head { flex-wrap: wrap; } .sc-invite__cta { margin-top: 0; } }
+.sc-invite__head a.sc-invite__cta { color: var(--sc-primary-fg, #0b0b0b); font-weight: 600; }

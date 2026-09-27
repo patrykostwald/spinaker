@@ -26,7 +26,7 @@ export function JournalistInvite() {
             <Link href="/o-nas#nitka-kontekstowa">Więcej o nitkach</Link>
           </p>
         </div>
-        <a className="sc-onas-mail sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`}>Napisz: {CONTACT}</a>
+        <a className="sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`} title={CONTACT}>Napisz do nas</a>
       </header>
       <ContextThreadStrip />
       <ol className="sc-invite__steps">
