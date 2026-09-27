@@ -69,6 +69,12 @@ CHANNELS = [
     ('Business Insider Polska', 'https://www.youtube.com/channel/UCMrYJLhVrZAPZj8pxotN5aA', 'https://businessinsider.com.pl/', True),
     ('Bankier.pl', 'https://www.youtube.com/channel/UCeCGxJV5ECqBQEydmeLmY4w', 'https://www.bankier.pl/', True),
     ('Polskie Radio', 'https://www.youtube.com/channel/UC_jYNCh6rV-wl8KNR3uVooA', 'https://www.polskieradio.pl/', True),
+    ('TVP Info Publicystyka', 'https://www.youtube.com/channel/UC4QyTpuQKpBFWbA5mKqLUPA', 'https://www.tvp.info/', True),
+    # Autorskie kanały dziennikarzy (decyzja zespołu 27.09.2026).
+    ('SEKIELSKI', 'https://www.youtube.com/channel/UCmuaurR3Fl5ugr6Bi066tHA', 'https://www.youtube.com/@sekielski', True),
+    ('Kanał Otwarty (Igor Janke)', 'https://www.youtube.com/channel/UCuAOJnMr905iKjURUsffDgA', 'https://ukladotwarty.pl/', True),
+    ('Rafał Ziemkiewicz', 'https://www.youtube.com/channel/UCqXzykyeNdMNwiXTvfUOSNQ', 'https://www.youtube.com/@R_A_Ziemkiewicz', True),
+    ('Jan Piński', 'https://www.youtube.com/channel/UCaTcgqhFqYzhrLQzaibPyeA', 'https://wiesci24.pl/', True),
     # Media dodane decyzją zespołu (27.09.2026); strony Onetu blokują automatyczne sprawdzanie.
     ('Onet', 'https://www.youtube.com/@onet', 'https://www.onet.pl/', True),
     ('Stan Wyjątkowy (Onet i „Newsweek”)', 'https://www.youtube.com/@stan_wyjatkowy',

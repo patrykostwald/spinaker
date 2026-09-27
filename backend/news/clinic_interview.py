@@ -379,6 +379,12 @@ DEFAULT_CHANNELS = (
     'UC4uWtFsAryV2p_UDvu0rraA',  # Rymanowski Live
     'UCUlZzs-r5LDqARiq1xPkQlw',  # Radio TOK FM
     'UCbG7jYj1nN32cnvhgbOMcZA',  # Tygodnik Do Rzeczy
+    'UC4QyTpuQKpBFWbA5mKqLUPA',  # TVP Info Publicystyka
+    # Autorskie kanały dziennikarzy z rozmowami (Gozdyra — Polsat News, Piasecki i „Kropka nad i” — TVN24: już wyżej).
+    'UCmuaurR3Fl5ugr6Bi066tHA',  # SEKIELSKI
+    'UCuAOJnMr905iKjURUsffDgA',  # Kanał Otwarty (Igor Janke)
+    'UCqXzykyeNdMNwiXTvfUOSNQ',  # Rafał Ziemkiewicz
+    'UCaTcgqhFqYzhrLQzaibPyeA',  # Jan Piński
 )
 MIN_NAMED_SECONDS = 15 * 60  # film z nazwiskiem polityka w tytule, ale bez słowa „wywiad” — musi być dłuższą rozmową
 # Rdzenie, żeby łapać odmianę: „ministrem”, „posłanką”, „marszałkiem”.
