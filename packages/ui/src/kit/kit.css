@@ -4090,3 +4090,8 @@ html, body { overflow-x: clip; }
 
 /* Ciemny motyw: panele wyraźniej oddzielone cienką ramką (uwaga z testu na telefonie) — nadal bez poświaty. */
 :root { --sc-panel-ring: 0 0 0 1px color-mix(in srgb, var(--sc-text) 13%, transparent); }
+
+/* Klinika: „Rządzący” i „Opozycja” na wysokości tytułu „Najnowsze diagnozy”, nie opisu pod nim. */
+.sc-clinic-latest__bar { align-items: start; }
+.sc-clinic-latest__bar h3 { line-height: var(--sc-t-title-m-lh); }
+.sc-clinic-latest__camp { line-height: var(--sc-t-title-m-lh); }
