@@ -99,11 +99,15 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
-      {/* Kolejność nagłówków (a11y): pod h1 strony sekcje mają h3 — ukryty h2 domyka poziom. */}
-      {!embedded && <h2 className="sc-sr-only">Diagnozy Dr. Spina</h2>}
       {data && <>
-        <section className="sc-clinic-sotd" aria-labelledby="sotd-title">
+        <section className="sc-clinic-sotd" aria-labelledby="clinic-drspin-title">
+          {/* Nagłówek jak na głównej: „Klinika spinu AI” + „Dr. Spin”, zakładki na środku, link po prawej. */}
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}
+            left={<header>
+              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
+              <h2 id="clinic-drspin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+            </header>}
+            right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/o-nas#klinika">Jak działa Dr. Spin →</Link></p>}
             empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
         </section>
 

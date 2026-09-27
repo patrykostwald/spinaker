@@ -4161,3 +4161,7 @@ html, body { overflow-x: clip; }
 /* Źródła: linki do konta X i kanału YouTube przy nazwie źródła. */
 .sc-source-page__social { margin-left: var(--sc-s-2); padding: 1px 6px; border-radius: var(--sc-r-sm); box-shadow: var(--sc-panel-ring); color: var(--sc-text-2); font-size: var(--sc-t-caption-size); font-weight: 600; text-decoration: none; }
 .sc-source-page__social:hover { color: var(--sc-accent); }
+
+/* Klinika: panel spinu dnia z nagłówkiem jak na głównej — mniejszy odstęp od górnej krawędzi. */
+@media (min-width: 761px) { .sc-clinic > .sc-clinic-sotd:has(.sc-spin-switch__bar) { padding-top: var(--sc-s-4); } }
+.sc-clinic-sotd .sc-spin-switch__bar .sc-home-section__title { margin: 0; }
