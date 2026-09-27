@@ -56,7 +56,7 @@ export function HomeSpinTeaser() {
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={item => <SpinOfDay key={item.id} spin={item} />}
             left={<header>
               <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <h2 id="home-spin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+              <h2 id="home-spin-title" className="sc-sr-only">Dr. Spin</h2>
             </header>}
             right={<p className="sc-home-spin__meta">
               {data.scale.enough_data && left !== null && right !== null ? <>Waga {data.scale.window_days} dni: rządzący {left}% · opozycja {right}% · </> : null}

@@ -97,7 +97,7 @@ function visibleFor(hours: number) {
 
 const STAT_LABELS: Array<[keyof NonNullable<ClinicPageData["stats"]>, string, string]> = [
   ["read", "przeczytanych postów", "wszystkie nowe posty z oficjalnych kont"],
-  ["screened", "ocenionych przez strażnika", "czy jest w nich coś do sprawdzenia"],
+  ["screened", "ocenionych na izbie przyjęć", "czy jest w nich coś do zbadania"],
   ["rejected", "odrzuconych", "bez tezy do sprawdzenia: życzenia, zapowiedzi, informacje"],
   ["diagnosed", "diagnoz Dr. Spina", "opublikowane oceny konsylium"],
   ["spins", "spinów", "diagnozy z werdyktem spin albo częściowy spin"],
@@ -110,9 +110,9 @@ function ClinicStats({ stats }: { stats: NonNullable<ClinicPageData["stats"]> })
     <section className="sc-clinic-stats" aria-label="Liczniki Kliniki">
       <ul>{STAT_LABELS.map(([key, label, hint]) => (
         <li key={key} title={hint}>
+          <small title="dziś">+{format(stats[key].today)}</small>
           <strong>{format(stats[key].total)}</strong>
           <span>{label}</span>
-          <small>dziś +{format(stats[key].today)}</small>
         </li>
       ))}</ul>
     </section>
@@ -187,7 +187,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}
             left={<header>
               <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <h2 id="clinic-drspin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+              <h2 id="clinic-drspin-title" className="sc-sr-only">Dr. Spin</h2>
             </header>}
             right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/raport">Raport tygodnia →</Link></p>}
             empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
