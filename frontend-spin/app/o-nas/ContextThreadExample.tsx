@@ -1,63 +1,51 @@
 /**
- * Ilustracja dla redakcji: czym nitka kontekstowa różni się od nitki newsowej.
+ * Ilustracja dla redakcji: autoryzowana nitka kontekstowa to poziomy pasek boxów.
+ * Box otwierający (materiał, który redakcja chce wypromować) → 1–14 boxów kontekstu, najwyżej 15 razem.
  * Przykład jest wymyślony — pokazuje zasadę, nie prawdziwą sprawę.
  */
-const NEWS = [
-  { time: '09:00', title: 'Sejm przyjął ustawę' },
-  { time: '11:30', title: 'Opozycja krytykuje ustawę' },
-  { time: '14:00', title: 'Prezydent zapowiada decyzję' },
+const BOXES = [
+  { kind: 'Wywiad', source: 'Państwa redakcja', title: 'Rozmowa z byłym dyrektorem spółki: „Ostrzegałem zarząd pół roku wcześniej”', date: '12.09', opening: true },
+  { kind: 'Komunikat', source: 'Prokuratura Krajowa', title: 'Zatrzymanie trzech osób w sprawie przetargu', date: '14.09' },
+  { kind: 'Artykuł', source: 'inna redakcja', title: 'Kim są zatrzymani i co łączy ich ze spółką', date: '15.09' },
+  { kind: 'Film', source: 'kanał YouTube', title: 'Nagranie z posiedzenia rady nadzorczej', date: '16.09' },
+  { kind: 'Śledztwo', source: 'Państwa redakcja', title: 'Jak rozpisano przetarg — dokumenty krok po kroku', date: '18.09' },
 ];
 
-const CONTEXT = [
-  { kind: 'confirms', label: 'Potwierdza', source: 'Dane GUS', note: 'Stopa bezrobocia rzeczywiście spadła z 10% do 5%.' },
-  { kind: 'completes', label: 'Dopełnia', source: 'Artykuł Państwa redakcji', note: 'Spadek zaczął się dwa lata przed zmianą rządu.' },
-  { kind: 'challenges', label: 'Podważa', source: 'Raport Eurostatu', note: 'W tym samym czasie bezrobocie spadało w całej Unii.' },
-] as const;
-
 const RECIPE = [
-  ['Punkt wyjścia', 'jedna konkretna wypowiedź, teza albo liczba — z wpisu, wywiadu, konferencji.'],
-  ['3–10 materiałów', 'Państwa artykuły, ale też dokumenty, dane i materiały innych redakcji — każdy z linkiem do oryginału.'],
-  ['Jedno zdanie przy każdym', 'co ten materiał wnosi: potwierdza, dopełnia albo podważa punkt wyjścia.'],
-  ['Kolejność', 'według daty publikacji — czytelnik widzi, co było wcześniej, a co później.'],
-  ['Bez wyroku', 'nitka pokazuje kontekst; ocenę zostawia czytelnikowi.'],
+  ['Box otwierający', 'Państwa materiał, który chcą Państwo wypromować: artykuł, wywiad, film, śledztwo.'],
+  ['Do 14 boxów kontekstu', 'razem najwyżej 15. Dowolne materiały: komunikaty, dokumenty, artykuły innych redakcji, filmy.'],
+  ['Z Bazy albo po linku', 'box wybierają Państwo z naszej Bazy albo tworzą sami — link, tytuł, zdjęcie; nowy box trafia do Bazy.'],
+  ['Kolejność', 'ustala autor — tak, by czytelnik przeszedł całą historię od materiału otwierającego.'],
+  ['Każdy box ze źródłem', 'nazwa źródła, data i link do oryginału — czytelnik trafia do Państwa strony.'],
   ['Podpis', 'autor i redakcja przy nitce — nitka jest Państwa.'],
 ];
 
 export function ContextThreadExample() {
   return (
     <div id="nitka-kontekstowa" className="sc-ctx">
-      <h3 className="sc-onas-subtitle">Autoryzowana nitka kontekstowa — jak ją zbudować</h3>
-      <div className="sc-ctx__compare">
-        <figure className="sc-ctx__card sc-ctx__card--news">
-          <figcaption><strong>Nitka newsowa</strong><span>tego nie potrzebujemy</span></figcaption>
-          <ol className="sc-ctx__news">
-            {NEWS.map(item => <li key={item.time}><time>{item.time}</time> {item.title}</li>)}
-          </ol>
-          <p className="sc-ctx__caption">Kolejne wiadomości o tym samym. To robią już nasze paski — automatycznie.</p>
-        </figure>
-
-        <figure className="sc-ctx__card sc-ctx__card--context">
-          <figcaption><strong>Nitka kontekstowa</strong><span>o to prosimy</span></figcaption>
-          <ol className="sc-ctx__chain">
-            <li className="sc-ctx__start">
-              <span className="sc-ctx__step">Punkt wyjścia</span>
-              <q>Za naszych rządów bezrobocie spadło o połowę.</q>
-              <small>wpis polityka</small>
+      <h3 className="sc-onas-subtitle">Autoryzowana nitka kontekstowa — jak wygląda</h3>
+      <p className="sc-ctx__lead">
+        Poziomy pasek boxów. Pierwszy to materiał, który chcą Państwo wypromować; za nim — boxy, które dają mu kontekst. Czytelnik przewija w bok
+        i w kilka sekund widzi całą historię, a każdy box prowadzi do oryginału.
+      </p>
+      <figure className="sc-ctx__strip-wrap">
+        <ol className="sc-ctx__strip" aria-label="Przykładowa nitka kontekstowa">
+          {BOXES.map((box, index) => (
+            <li key={box.title} className="sc-ctx__box" data-opening={box.opening || undefined}>
+              {box.opening ? <span className="sc-ctx__badge">Box otwierający</span> : <span className="sc-ctx__num">{index + 1}</span>}
+              <span className="sc-ctx__thumb" aria-hidden="true" />
+              <span className="sc-ctx__kind">{box.kind}</span>
+              <strong>{box.title}</strong>
+              <small>{box.source} · {box.date}</small>
             </li>
-            {CONTEXT.map(item => (
-              <li key={item.kind} className="sc-ctx__item" data-kind={item.kind}>
-                <span className="sc-ctx__tag">{item.label}</span>
-                <strong>{item.source}</strong>
-                <span>{item.note}</span>
-              </li>
-            ))}
-            <li className="sc-ctx__end">
-              Czytelnik sam widzi: liczba jest prawdziwa, ale zasługa — przypisana. To jest kontekst, którego brakuje w samym wpisie.
-            </li>
-          </ol>
-          <p className="sc-ctx__caption">Przykład wymyślony — pokazuje zasadę, nie prawdziwą sprawę.</p>
-        </figure>
-      </div>
+          ))}
+          <li className="sc-ctx__more" aria-label="Można dodać więcej boxów">+ do 15 boxów</li>
+        </ol>
+        <figcaption className="sc-ctx__caption">
+          Przykład wymyślony — pokazuje zasadę, nie prawdziwą sprawę. To nie jest nitka newsowa (kolejne wiadomości o tym samym) — takie paski
+          układamy automatycznie.
+        </figcaption>
+      </figure>
       <dl className="sc-ctx__recipe">
         {RECIPE.map(([term, text]) => <div key={term}><dt>{term}</dt><dd>{text}</dd></div>)}
       </dl>

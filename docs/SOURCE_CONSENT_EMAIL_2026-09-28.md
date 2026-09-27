@@ -33,25 +33,19 @@ Więcej: https://spin.clinic/o-nas#dla-redakcji
 Chętnie zaprosimy też dziennikarzy {WYDAWCA} do prowadzenia w serwisie
 autoryzowanych nitek kontekstowych — podpisanych, z linkami do Państwa materiałów.
 
-Nitka kontekstowa to nie jest ciąg kolejnych wiadomości o tym samym
-(„Sejm przyjął ustawę” → „opozycja krytykuje” → „prezydent zapowiada decyzję”).
-Takie ciągi nasz serwis układa sam. Nitka kontekstowa zaczyna się od jednej
-wypowiedzi i pokazuje, czego w niej brakuje. Przykład (wymyślony):
+Nitka kontekstowa to poziomy pasek boxów. Pierwszy — box otwierający — to
+materiał, który chcą Państwo wypromować: artykuł, wywiad, film, śledztwo. Za nim
+dodają Państwo od 1 do 14 boxów, które dają mu kontekst (razem najwyżej 15).
+Przykład (wymyślony):
 
-  PUNKT WYJŚCIA: polityk pisze „Za naszych rządów bezrobocie spadło o połowę”.
-    ↓
-  POTWIERDZA — dane GUS: stopa bezrobocia rzeczywiście spadła z 10% do 5%.
-    ↓
-  DOPEŁNIA — artykuł Państwa redakcji: spadek zaczął się dwa lata przed zmianą rządu.
-    ↓
-  PODWAŻA — raport Eurostatu: w tym czasie bezrobocie spadało w całej Unii.
-    ↓
-  CZYTELNIK SAM WIDZI: liczba jest prawdziwa, ale zasługa — przypisana.
+  [WYWIAD — Państwa redakcja] → [komunikat prokuratury o zatrzymaniu]
+  → [artykuł innej redakcji] → [film] → [Państwa śledztwo]
 
-Czyli: jedna teza na początku, potem 3–10 materiałów (Państwa artykuły, ale też
-dokumenty, dane, materiały innych redakcji) w kolejności publikacji, przy każdym
-jedno zdanie, co wnosi — potwierdza, dopełnia albo podważa. Bez wyroku: nitka
-pokazuje kontekst, ocenę zostawia czytelnikowi. Podpisuje ją autor i redakcja.
+Boxy wybierają Państwo z naszej Bazy albo tworzą sami — wystarczy link, tytuł
+i zdjęcie; nowy box trafia wtedy do Bazy. Kolejność ustala autor. Każdy box ma
+źródło, datę i link do oryginału, więc czytelnik trafia na Państwa stronę.
+Nitkę podpisuje autor i redakcja. To nie jest ciąg kolejnych wiadomości o tym
+samym — takie paski nasz serwis układa sam.
 Ilustracja: https://spin.clinic/o-nas#nitka-kontekstowa
 
 Prosimy o odpowiedź na trzy pytania:
