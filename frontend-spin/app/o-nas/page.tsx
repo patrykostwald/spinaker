@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { NewsletterSignup } from '@spin-clinic/ui';
 import { CopyBlock } from './CopyBlock';
+import { ContextThreadExample } from './ContextThreadExample';
 
 export const metadata: Metadata = {
   title: 'O nas — spin.clinic',
@@ -560,6 +561,9 @@ export default function AboutPage() {
           <CopyBlock label="zakres dostępu — do skopiowania" text={PUBLISHER_TERMS} />
           <div className="sc-onas-prose">
             <p>Chętnie uwzględnimy wymagany sposób oznaczania źródła i limity techniczne.</p>
+          </div>
+          <ContextThreadExample />
+          <div className="sc-onas-prose">
             <p>
               <a className="sc-onas-mail" href={`mailto:${SOURCES_EMAIL}`}>
                 Napisz do nas: {SOURCES_EMAIL}
