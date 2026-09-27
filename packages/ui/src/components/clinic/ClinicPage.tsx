@@ -237,18 +237,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         <Politicians />
 
         <NewsletterSignup source="klinika" />
-
-        <aside className="sc-clinic-journalists" aria-labelledby="journalists-title">
-          <div>
-            <p className="sc-clinic-kicker">Dla dziennikarzy</p>
-            <h3 id="journalists-title">Prowadzisz temat? Poprowadź tu autoryzowaną nitkę.</h3>
-            <p>
-              Dr. Spin pokazuje, jak zbudowany jest przekaz. Ty wiesz, co wydarzyło się naprawdę. Zapraszamy dziennikarzy do prowadzenia nitek
-              kontekstowych pod własnym nazwiskiem: materiał otwierający, a za nim dokumenty, wypowiedzi i źródła — z Twoim podpisem i linkiem do redakcji.
-            </p>
-          </div>
-          <a className="sc-onas-mail sc-clinic-journalists__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`}>Napisz: {CONTACT}</a>
-        </aside>
       </>}
     </section>
   );

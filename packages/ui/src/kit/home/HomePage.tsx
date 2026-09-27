@@ -25,6 +25,7 @@ import { HomeReveal } from "./HomeReveal";
 import { HomeThreads } from "./HomeThreads";
 import { HomeTicker } from "./HomeTicker";
 import { NewsletterSignup } from "../../components/NewsletterSignup";
+import { JournalistInvite } from "../../components/JournalistInvite";
 import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
 import { GROUP_EMPTY_HINT, SOURCE_GROUPS, SOURCE_GROUP_PARAM, activeSources, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
@@ -179,6 +180,7 @@ export function HomePage() {
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
+        <JournalistInvite />
         {drSpin.data?.published ? (
           <HomeReveal>
             <HomeDrSpin thread={drSpin.data} />
