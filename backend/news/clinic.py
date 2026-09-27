@@ -210,7 +210,8 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         row.status, row.usage, row.error = ('approved' if auto_publish() else 'pending_review'), usage, ''
         if row.status == 'approved':
             row.reviewed_at = timezone.now()
-        row.provider, row.model_name = 'anthropic', usage.get('model') or clinic_ai.model_name()
+        row.provider = 'anthropic'  # płatna diagnoza (Claude albo Gemini) — to pole odróżnia ją od strażnika
+        row.model_name = usage.get('model') or clinic_ai.model_name()
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
     row.save()

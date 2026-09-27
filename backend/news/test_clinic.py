@@ -586,3 +586,24 @@ def test_weekly_report_collects_the_week_without_paid_models(ai_on, monkeypatch)
     data = APIClient().get('/api/clinic/report/').json()
     assert data['report']['week_end'] == str(report.week_end) and data['archive'][0]['week_end'] == str(report.week_end)
     assert APIClient().get('/api/clinic/report/nie-data/').status_code == 404
+
+
+def test_gemini_diagnosis_keeps_only_sources_found_by_google(monkeypatch):
+    import json as _json
+    monkeypatch.setenv('CLINIC_PROVIDER', 'gemini')
+    monkeypatch.setenv('GEMINI_API_KEY', 'g')
+    answer = {'verdict': 'spin', 'intensity': 60, 'headline': 'H', 'summary': 'S', 'analysis': 'A', 'limitations': '',
+              'techniques': [{'name': 'fałszywa alternatywa', 'quote': 'Tylko my obronimy Polaków!', 'explanation': 'e'}],
+              'claims': [{'claim': 'Podatki wzrosły o 50%', 'assessment': 'contradicted', 'explanation': 'e',
+                          'sources': [{'url': 'https://www.gus.gov.pl/inny-adres', 'title': 'GUS'},
+                                      {'url': 'https://zmyslone.example/x', 'title': 'X'}]}]}
+    payload = {'candidates': [{'content': {'parts': [{'text': '```json\n' + _json.dumps(answer) + '\n```'}]}, 'finishReason': 'STOP',
+                               'groundingMetadata': {'webSearchQueries': ['podatki 2026'],
+                                                     'groundingChunks': [{'web': {'uri': 'https://redirect.example/abc', 'title': 'gus.gov.pl'}}]}}],
+               'usageMetadata': {'promptTokenCount': 1000, 'candidatesTokenCount': 500}}
+    monkeypatch.setattr(clinic_ai.requests, 'post', lambda *a, **k: SimpleNamespace(status_code=200, json=lambda: payload, text=''))
+    monkeypatch.setattr(clinic_ai.requests, 'head', lambda *a, **k: SimpleNamespace(headers={'Location': 'https://gus.gov.pl/dane'}))
+    result = clinic_ai.diagnose({'author': 'A', 'camp_label': 'Opozycja', 'published_at': '2026-09-27', 'url': 'u', 'text': POST_TEXT})
+    sources = [s['url'] for s in result['claims'][0]['sources']]
+    assert sources == ['https://gus.gov.pl/dane']  # ta sama domena → adres z wyników; zmyślona strona odpada
+    assert result['usage']['model'].startswith('gemini') and 0 < clinic_ai.cost_usd(result['usage']) < 0.1

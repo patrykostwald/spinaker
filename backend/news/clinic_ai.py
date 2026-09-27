@@ -136,8 +136,21 @@ class ClinicAIError(Exception):
         super().__init__(code)
 
 
+def provider() -> str:
+    """Dostawca płatnych diagnoz: anthropic (Claude, domyślnie) albo gemini (Google, z wyszukiwaniem Google)."""
+    return 'gemini' if os.environ.get('CLINIC_PROVIDER', '').strip().lower() == 'gemini' else 'anthropic'
+
+
+def _gemini_ready() -> bool:
+    return bool(os.environ.get('GEMINI_API_KEY', '').strip())
+
+
 def enabled() -> bool:
-    return os.environ.get('CLINIC_AI_ENABLED', '').lower() == 'true' and bool(os.environ.get('ANTHROPIC_API_KEY', '').strip())
+    if os.environ.get('CLINIC_AI_ENABLED', '').lower() != 'true':
+        return False
+    if provider() == 'gemini':
+        return _gemini_ready()
+    return bool(os.environ.get('ANTHROPIC_API_KEY', '').strip())
 
 
 def model_name() -> str:
@@ -171,8 +184,9 @@ def _json_from_text(blocks) -> dict:
 
 
 # Koszt w USD za milion tokenów (wejście, wyjście) — ostrożnie, raczej zawyżony; nadpisz w CLINIC_PRICE_IN/OUT.
-PRICES = {'haiku': (1.0, 5.0), 'sonnet': (3.0, 15.0), 'opus': (15.0, 75.0)}
-WEB_SEARCH_USD = 0.01  # za jedno wyszukiwanie
+PRICES = {'haiku': (1.0, 5.0), 'sonnet': (3.0, 15.0), 'opus': (15.0, 75.0), 'gemini': (0.5, 3.0)}
+WEB_SEARCH_USD = 0.01  # za jedno wyszukiwanie (Claude)
+GEMINI_SEARCH_USD = 0.035  # za jedno zapytanie z wyszukiwaniem Google (Gemini) — ostrożnie
 
 
 def cost_usd(usage: dict) -> float:
@@ -183,8 +197,9 @@ def cost_usd(usage: dict) -> float:
     family = next((name for name in PRICES if name in model), 'opus')
     price_in = float(os.environ.get('CLINIC_PRICE_IN', '') or PRICES[family][0])
     price_out = float(os.environ.get('CLINIC_PRICE_OUT', '') or PRICES[family][1])
+    search = GEMINI_SEARCH_USD if family == 'gemini' else WEB_SEARCH_USD
     return (int(usage.get('input_tokens') or 0) * price_in + int(usage.get('output_tokens') or 0) * price_out) / 1_000_000 \
-        + int(usage.get('web_search_requests') or 0) * WEB_SEARCH_USD
+        + int(usage.get('web_search_requests') or 0) * search
 
 
 def _usage(response) -> dict:
@@ -209,6 +224,95 @@ def _error_message(error) -> str:
 
 
 def _call(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
+    """Płatna diagnoza: Claude, a gdy wybrano Gemini albo na koncie Anthropic skończyły się środki — Gemini."""
+    if provider() == 'gemini':
+        return _call_gemini(system, user, schema, web_search=web_search, max_tokens=max_tokens)
+    try:
+        return _call_claude(system, user, schema, web_search=web_search, max_tokens=max_tokens)
+    except ClinicAIError as error:
+        if 'credit balance' in error.code.lower() and _gemini_ready():
+            return _call_gemini(system, user, schema, web_search=web_search, max_tokens=max_tokens)
+        raise
+
+
+def _resolve_redirect(url: str) -> str:
+    """Linki źródeł Gemini to przekierowania Google — zapisujemy adres docelowy strony."""
+    try:
+        response = requests.head(url, allow_redirects=False, timeout=(3, 5))
+        return response.headers.get('Location') or url
+    except requests.RequestException:
+        return url
+
+
+def _align_sources(data, found: dict[str, str]):
+    """Źródło w odpowiedzi modelu zostaje tylko, gdy wskazuje stronę z wyników wyszukiwania (ta sama domena → adres z wyników)."""
+    from urllib.parse import urlsplit
+    by_host = {}
+    for url in found:
+        by_host.setdefault((urlsplit(url).hostname or '').removeprefix('www.'), url)
+    def fix(node):
+        if isinstance(node, dict):
+            if 'url' in node and isinstance(node['url'], str) and node['url'] not in found:
+                host = (urlsplit(node['url']).hostname or '').removeprefix('www.')
+                if host in by_host:
+                    node['url'] = by_host[host]
+            for value in node.values():
+                fix(value)
+        elif isinstance(node, list):
+            for value in node:
+                fix(value)
+    fix(data)
+    return data
+
+
+def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
+    """Gemini z wyszukiwaniem Google. Zwraca obiekt w kształcie odpowiedzi Claude'a (bloki tekstu i wyników wyszukiwania),
+    żeby reszta ścieżki (walidacja cytatów i źródeł, zapis, budżet) działała bez zmian."""
+    from types import SimpleNamespace
+    model = os.environ.get('CLINIC_GEMINI_MODEL', '').strip() or os.environ.get('CLINIC_INTERVIEW_MODEL', '').strip() or 'gemini-3.8-flash'
+    body = {
+        'systemInstruction': {'parts': [{'text': system}]},
+        'contents': [{'role': 'user', 'parts': [{'text': user + '\n\nOdpowiedz wyłącznie obiektem JSON zgodnym z tym schematem '
+                                                   '(w polach sources podawaj adresy stron znalezionych w wyszukiwarce):\n'
+                                                   + json.dumps(schema, ensure_ascii=False)}]}],
+        'generationConfig': {'temperature': 0.2, 'maxOutputTokens': min(max_tokens, 32000)},
+    }
+    if web_search:
+        body['tools'] = [{'google_search': {}}]
+    try:
+        response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+                                 json=body, timeout=(10, 600), headers={'x-goog-api-key': os.environ['GEMINI_API_KEY'].strip()})
+    except requests.RequestException:
+        raise ClinicAIError('gemini_connection')
+    if response.status_code != 200:
+        raise ClinicAIError(f'gemini_{response.status_code}: {response.text[:180]}'[:240])
+    payload = response.json()
+    candidate = (payload.get('candidates') or [{}])[0] or {}
+    text = ''.join(part.get('text', '') for part in (candidate.get('content') or {}).get('parts', []))
+    if candidate.get('finishReason') == 'MAX_TOKENS':
+        raise ClinicAIError('max_tokens')
+    grounding = candidate.get('groundingMetadata') or {}
+    found = {}
+    for chunk in grounding.get('groundingChunks') or []:
+        web = chunk.get('web') or {}
+        if web.get('uri'):
+            found[_resolve_redirect(web['uri'])] = web.get('title') or ''
+    try:
+        data = _json_from_text([SimpleNamespace(type='text', text=text)])
+    except ClinicAIError:
+        raise ClinicAIError('gemini_invalid_json')
+    text = json.dumps(_align_sources(data, found), ensure_ascii=False)
+    usage = payload.get('usageMetadata') or {}
+    return SimpleNamespace(
+        content=[SimpleNamespace(type='text', text=text),
+                 SimpleNamespace(type='web_search_tool_result',
+                                 content=[SimpleNamespace(url=url, title=title or url) for url, title in found.items()])],
+        usage=SimpleNamespace(input_tokens=usage.get('promptTokenCount', 0), output_tokens=usage.get('candidatesTokenCount', 0),
+                              server_tool_use=SimpleNamespace(web_search_requests=len(grounding.get('webSearchQueries') or []))),
+        model=model, stop_reason='end_turn')
+
+
+def _call_claude(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
     """Jedno zapytanie do Claude z obsługą pause_turn, odmowy i trybu awaryjnego JSON."""
     import anthropic
     client = _client()
