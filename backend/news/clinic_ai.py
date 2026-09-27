@@ -318,6 +318,8 @@ def _free_chat(system: str, user: str, schema: dict, max_tokens: int = 1200, mod
         try:
             response = requests.post('https://api.groq.com/openai/v1/chat/completions', timeout=(5, 60), json={
                 'model': groq_model, 'temperature': 0, 'max_tokens': max_tokens,
+                # gpt-oss najpierw „myśli” — przy małym limicie myślenie zjadało całą odpowiedź (pusta treść).
+                **({'reasoning_effort': 'low'} if 'gpt-oss' in groq_model else {}),
                 'response_format': {'type': 'json_schema', 'json_schema': {'name': 'result', 'strict': True, 'schema': schema}},
                 'messages': [{'role': 'system', 'content': system}, {'role': 'user', 'content': user[:24000]}],
             }, headers={'Authorization': f'Bearer {groq_key}'})
@@ -401,7 +403,8 @@ def _screen_groq(text: str) -> dict | None:
     if not key or not model:
         return None
     response = requests.post('https://api.groq.com/openai/v1/chat/completions', timeout=(5, 30), json={
-        'model': model, 'temperature': 0, 'max_tokens': 400,
+        'model': model, 'temperature': 0, 'max_tokens': 1500,
+        **({'reasoning_effort': 'low'} if 'gpt-oss' in model else {}),
         'response_format': {'type': 'json_schema', 'json_schema': {'name': 'screen', 'strict': True, 'schema': SCREEN_SCHEMA}},
         'messages': [{'role': 'system', 'content': SCREEN_SYSTEM}, {'role': 'user', 'content': text[:4000]}],
     }, headers={'Authorization': f'Bearer {key}'})

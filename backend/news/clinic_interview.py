@@ -483,7 +483,7 @@ def looks_like_interview(title: str, description: str, channel: str) -> tuple[bo
     for pause in CLASSIFY_RETRIES:
         time.sleep(pause)
         try:
-            data, _ = clinic_ai._free_chat(CLASSIFY_SYSTEM, user, CLASSIFY_SCHEMA, max_tokens=300)
+            data, _ = clinic_ai._free_chat(CLASSIFY_SYSTEM, user, CLASSIFY_SCHEMA, max_tokens=1500)
         except clinic_ai.ClinicAIError:
             continue
         return bool(data.get('interview')), str(data.get('reason', ''))[:200]
