@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { NewsletterSignup } from '@spin-clinic/ui';
 import { CopyBlock } from './CopyBlock';
 
 export const metadata: Metadata = {
@@ -537,7 +538,7 @@ export default function AboutPage() {
         <Section id="wsparcie" index={9} kicker="Utrzymanie" title="Niezależni — utrzymują nas czytelnicy">
           <div className="sc-onas-prose">
             <p>
-              spin.clinic korzysta z płatnych usług: oficjalnego API X, modelu AI, który stawia diagnozy, i serwera, na którym działa baza.
+              spin.clinic korzysta z płatnych usług: oficjalnego API X, modeli AI, które sprawdzają fakty i dociskają sporne diagnozy, i serwera, na którym działa baza.
               Wszystko, co da się zrobić na darmowych limitach, robimy na nich. Nie mamy reklam ani sponsorów, którzy mogliby wpływać na treść, i nie przyjmujemy
               wpłat od partii, polityków ani ich fundacji. Wsparcie nigdy nie daje wpływu na diagnozy.
             </p>
@@ -546,6 +547,7 @@ export default function AboutPage() {
               <Link className="sc-onas-mail" href="/wsparcie">Wesprzyj spin.clinic</Link>
             </p>
           </div>
+          <NewsletterSignup source="o-nas" />
         </Section>
 
         <Section id="dla-redakcji" index={10} kicker="Współpraca" title="Dla redakcji i wydawców">

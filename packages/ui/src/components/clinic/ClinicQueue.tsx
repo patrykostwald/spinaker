@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../kit";
-import { decideFlag, getClinicQueue, reviewDailyMessage, reviewSpin } from "../../lib/clinic";
+import { decideFlag, getClinicQueue, getNewsletterStats, reviewDailyMessage, reviewSpin } from "../../lib/clinic";
 import { useAccount } from "../../lib/account";
 import { SpinDiagnosisBody } from "./SpinDetail";
 import { SpinAuthorRow } from "./SpinParts";
@@ -16,6 +16,7 @@ export function ClinicQueue() {
   const isStaff = Boolean(account.data?.user?.is_staff);
   const cache = useQueryClient();
   const query = useQuery({ queryKey: ["clinic-queue"], queryFn: getClinicQueue, enabled: isStaff, refetchInterval: 60_000 });
+  const newsletter = useQuery({ queryKey: ["newsletter-stats"], queryFn: getNewsletterStats, enabled: isStaff, refetchInterval: 5 * 60_000 });
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState("");
 
@@ -57,6 +58,9 @@ export function ClinicQueue() {
         {data && <p className="sc-clinic-notice">Płatne diagnozy dziś: {data.counts.diagnosed_today}/{data.counts.daily_limit} · w kolejce {data.counts.queued} · strażnik oznaczył {data.counts.flagged} · czeka na zatwierdzenie {data.counts.pending} · zatwierdzone {data.counts.approved} · odrzucone {data.counts.rejected} · bez treści do oceny {data.counts.not_applicable}
           {Object.keys(data.counts.failed).length > 0 && ` · błędy: ${Object.entries(data.counts.failed).map(([code, n]) => `${code} ${n}`).join(", ")}`}
           {data.counts.suggestions > 0 && <> · <a href="/admin/news/xaccountsuggestion/">sugestie kont X: {data.counts.suggestions}</a></>}</p>}
+        {newsletter.data && <p className="sc-clinic-notice">
+          <strong>Newsletter:</strong> potwierdzeni {newsletter.data.confirmed} · czekają na potwierdzenie {newsletter.data.pending} · wypisani {newsletter.data.unsubscribed} · nowi w 7 dni +{newsletter.data.confirmed_last_7_days}
+          {!newsletter.data.smtp_ready && " · UWAGA: poczta (SMTP) nieskonfigurowana — maile potwierdzające nie wychodzą"}</p>}
       </header>
       {error && <p role="alert" className="sc-clinic-empty">{error}</p>}
       {data && data.flagged.length > 0 && (

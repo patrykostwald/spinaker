@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button, InfoPage } from '@spin-clinic/ui/kit';
+import { NewsletterSignup } from '@spin-clinic/ui';
 
 export const metadata = { title: 'Wsparcie · spin.clinic' };
 // Linki BUYCOFFEE_URL i PATRONITE_URL czytamy z .env.production przy każdym wejściu, nie przy budowaniu obrazu.
@@ -16,7 +17,7 @@ function publicSupportUrl(value: string | undefined) {
 
 /** Koszty z konfiguracji (twardy budżet AI) i rodzaje opłat — bez kwot, których nie znamy z faktur. */
 const COSTS: Array<[string, string]> = [
-  ['Diagnozy Dr. Spina', 'model Claude z wyszukiwaniem w sieci — płacimy za każdą diagnozę postu i wywiadu dnia.'],
+  ['Diagnozy Dr. Spina', 'konsylium działa na darmowych modelach; płacimy za sprawdzanie faktów w wyszukiwarce Google (Gemini), za docisk Claude przy spornych i mocnych spinach oraz za ocenę wywiadu dnia.'],
   ['Posty polityków', 'oficjalne, płatne API X — płacimy za każde pobranie.'],
   ['Wywiad dnia', 'transkrypcja nagrania (Gemini) — płatna za zużycie, drobne kwoty dziennie.'],
   ['Strażnik, przekazy dnia, filmy', '0 zł — robimy je na darmowych limitach (Groq, NVIDIA NIM, YouTube) i wykorzystujemy je do końca każdego dnia.'],
@@ -66,5 +67,6 @@ export default function SupportPage() {
     <section><h2>Wsparcie nie kupuje wpływu</h2><p>Żadna wpłata nie daje wpływu na diagnozy, na wybór czytanych kont ani na treść serwisu. Dr. Spin ocenia rządzących i opozycję według tych samych zasad, a jego diagnoz nikt nie poprawia. Nie przyjmujemy wpłat od partii, polityków ani ich fundacji.</p></section>
     <section><h2>Wybierz sposób wsparcia</h2>{links.length ? <><p>Jednorazowo — BuyCoffee, co miesiąc — Patronite. Wpłaty obsługują te serwisy; spin.clinic nie przetwarza danych płatniczych.</p><div className="sc-info-page__actions">{links.map(link => <Button key={link.href} href={link.href} variant="primary">{link.label}</Button>)}</div></> : <p>Linki do BuyCoffee i Patronite pojawią się tutaj wkrótce. Nie pobieramy płatności bezpośrednio w serwisie.</p>}</section>
     <section><h2>Dziękujemy</h2><p>Jeśli nie możesz wesprzeć finansowo, udostępnij diagnozę z <Link href="/klinika">Kliniki</Link> na X — to też bardzo pomaga.</p></section>
+    <NewsletterSignup source="wsparcie" />
   </InfoPage>;
 }

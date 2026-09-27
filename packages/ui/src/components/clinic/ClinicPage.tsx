@@ -5,7 +5,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
-import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicDeleted, getClinicPage, type SpinDetailData } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicDeleted, getClinicPage, type ClinicPageData, type SpinDetailData } from "../../lib/clinic";
+import { NewsletterSignup } from "../NewsletterSignup";
 import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { formatDateTimePl } from "../../lib/utils";
@@ -94,6 +95,30 @@ function visibleFor(hours: number) {
   return `w ciągu ${Math.ceil(hours / 24)} dni`;
 }
 
+const STAT_LABELS: Array<[keyof NonNullable<ClinicPageData["stats"]>, string, string]> = [
+  ["read", "przeczytanych postów", "wszystkie nowe posty z oficjalnych kont"],
+  ["screened", "ocenionych przez strażnika", "czy jest w nich coś do sprawdzenia"],
+  ["rejected", "odrzuconych", "bez tezy do sprawdzenia: życzenia, zapowiedzi, informacje"],
+  ["diagnosed", "diagnoz Dr. Spina", "opublikowane oceny konsylium"],
+  ["spins", "spinów", "diagnozy z werdyktem spin albo częściowy spin"],
+];
+
+/** Liczniki pracy Kliniki — ile postów przeczytaliśmy, ile odsiał strażnik, ile zdiagnozował Dr. Spin. */
+function ClinicStats({ stats }: { stats: NonNullable<ClinicPageData["stats"]> }) {
+  const format = (value: number) => value.toLocaleString("pl-PL");
+  return (
+    <section className="sc-clinic-stats" aria-label="Liczniki Kliniki">
+      <ul>{STAT_LABELS.map(([key, label, hint]) => (
+        <li key={key} title={hint}>
+          <strong>{format(stats[key].total)}</strong>
+          <span>{label}</span>
+          <small>dziś +{format(stats[key].today)}</small>
+        </li>
+      ))}</ul>
+    </section>
+  );
+}
+
 /** Strażnica usuniętych postów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
 function DeletedPosts() {
   const query = useQuery({ queryKey: ["clinic-deleted"], queryFn: getClinicDeleted, staleTime: 10 * 60_000 });
@@ -180,6 +205,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
 
         {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
         <div className="sc-clinic-group">
+        {data.stats ? <ClinicStats stats={data.stats} /> : null}
         <SpinScale scale={data.scale} />
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
@@ -209,6 +235,8 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
 
         <DeletedPosts />
         <Politicians />
+
+        <NewsletterSignup source="klinika" />
 
         <aside className="sc-clinic-journalists" aria-labelledby="journalists-title">
           <div>

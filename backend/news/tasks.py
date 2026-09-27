@@ -170,3 +170,9 @@ def clinic_interview_pick_task():
     from news.clinic_interview import pick_yesterday
     return pick_yesterday()
 
+
+@shared_task(name="news.tasks.newsletter_confirmation_task", soft_time_limit=60, time_limit=90)
+def newsletter_confirmation_task(subscriber_id):
+    """Mail z linkiem potwierdzającym zapis na newsletter."""
+    from news.newsletter import send_confirmation
+    return send_confirmation(subscriber_id)

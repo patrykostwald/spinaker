@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
             cta={{ label: "Wesprzyj nas", href: "/wsparcie" }}
-            columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "O nas", href: "/o-nas" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
+            columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "O nas", href: "/o-nas" }, { label: "Newsletter", href: "/newsletter" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
             sticky
           />
         </Providers>

@@ -100,6 +100,8 @@ export type ClinicPageData = {
   message_history: Record<Camp, DailyMessage[]>;
   columns: Record<Camp, SpinCardData[]>;
   accounts_count: number;
+  /** Liczniki pracy Kliniki: łącznie i dziś. */
+  stats?: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", { total: number; today: number }>;
 };
 
 export type ClinicAccount = {
@@ -153,6 +155,9 @@ export type ClinicQueue = {
   counts: { pending: number; flagged: number; queued: number; diagnosed_today: number; daily_limit: number; approved: number; rejected: number; not_applicable: number; failed: Record<string, number>; suggestions: number };
 };
 export const getClinicQueue = () => apiFetch<ClinicQueue>("/api/staff/clinic/queue/");
+/** Newsletter: liczba zapisów (tylko dla zespołu). */
+export type NewsletterStats = { confirmed: number; pending: number; unsubscribed: number; confirmed_last_7_days: number; smtp_ready: boolean; daily: Array<{ day: string; confirmed: number }> };
+export const getNewsletterStats = () => apiFetch<NewsletterStats>("/api/staff/newsletter/");
 export const reviewSpin = (id: number, decision: "approve" | "reject") =>
   apiWrite(`/api/staff/clinic/diagnoses/${id}/review/`, { decision });
 export const decideFlag = (id: number, decision: "investigate" | "dismiss") =>

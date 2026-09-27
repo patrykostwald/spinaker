@@ -641,6 +641,34 @@ def latest_spin(exclude_id: int | None = None):
     return detail_data(latest) if latest else None
 
 
+def clinic_stats() -> dict:
+    """Liczniki pracy Kliniki: przeczytane posty, ocenione i odrzucone przez strażnika, opublikowane diagnozy i spiny.
+
+    Każda liczba: łącznie od startu i dziś (od północy czasu polskiego). Pięć minut w pamięci podręcznej.
+    """
+    from django.core.cache import cache
+    cached = cache.get('clinic-stats:v1')
+    if cached is not None:
+        return cached
+    today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    screened = SpinDiagnosis.objects.all()
+    published = published_diagnoses()
+    spins = published.filter(verdict__in=['spin', 'partial'])
+
+    def pair(total_qs, today_qs):
+        return {'total': total_qs.count(), 'today': today_qs.count()}
+
+    result = {
+        'read': pair(PoliticalPost.objects.all(), PoliticalPost.objects.filter(fetched_at__gte=today)),
+        'screened': pair(screened, screened.filter(created_at__gte=today)),
+        'rejected': pair(screened.filter(status='not_applicable'), screened.filter(status='not_applicable', created_at__gte=today)),
+        'diagnosed': pair(published, published.filter(diagnosed_at__gte=today)),
+        'spins': pair(spins, spins.filter(diagnosed_at__gte=today)),
+    }
+    cache.set('clinic-stats:v1', result, 300)
+    return result
+
+
 def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
     from news.clinic_interview import interview_archive, latest_interview_data
     sotd = spin_of_day()
@@ -649,6 +677,7 @@ def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
     return {
         'notice': NOTICE_AUTO if auto_publish() else NOTICE_REVIEW,
         'scale': scale_data(window_days),
+        'stats': clinic_stats(),
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
         'spin_of_day': sotd,
         'latest_spin': latest_spin(sotd['id'] if sotd else None),

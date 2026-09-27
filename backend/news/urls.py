@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
+from news import newsletter
 from news.views import source_coverage, archive_status, health, me, google_news, patronite_webhook, editorial_status
 from news.auth_views import csrf, sign_in, sign_out
 from news.editorial import EditorialThreadViewSet, EditorialArticleViewSet
@@ -43,6 +44,10 @@ urlpatterns = [
     path('community/threads/<int:thread_id>/', community_thread_detail),
     path('community/threads/<int:thread_id>/opinions/', CommunityOpinionsView.as_view()),
     path('community/threads/<int:thread_id>/report/', report_thread),
+    path('newsletter/subscribe/', newsletter.subscribe),
+    path('newsletter/confirm/', newsletter.confirm),
+    path('newsletter/unsubscribe/', newsletter.unsubscribe),
+    path('staff/newsletter/', newsletter.staff_stats),
     path('clinic/', clinic_page),
     path('clinic/spins/', clinic_spins),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),

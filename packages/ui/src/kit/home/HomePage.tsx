@@ -24,6 +24,7 @@ import { HomeLead } from "./HomeLead";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads } from "./HomeThreads";
 import { HomeTicker } from "./HomeTicker";
+import { NewsletterSignup } from "../../components/NewsletterSignup";
 import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
 import { GROUP_EMPTY_HINT, SOURCE_GROUPS, SOURCE_GROUP_PARAM, activeSources, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
@@ -186,6 +187,7 @@ export function HomePage() {
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>
+        <NewsletterSignup source="home" />
       </div>
     </>
   );
