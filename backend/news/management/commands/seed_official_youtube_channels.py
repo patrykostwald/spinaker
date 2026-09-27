@@ -21,7 +21,8 @@ CHANNELS = [
     ('Kancelaria Premiera', 'https://www.youtube.com/premierRP', 'https://www.gov.pl/web/premier', True),
     ('Kancelaria Prezydenta RP', 'https://www.youtube.com/user/wwwprezydentpl', 'https://www.prezydent.pl/', True),
     ('Senat RP', 'https://www.youtube.com/channel/UCQN_0-_3vSySNyF4uDa4Zbw', 'https://www.senat.gov.pl/', True),
-    ('Sejm RP', 'https://www.youtube.com/@SejmRP_PL', 'https://www.sejm.gov.pl/', False),
+    # Sejm: stopka sejm.gov.pl sprawdzona ręcznie przez zespół 27.09.2026 (automat widzi CAPTCHA).
+    ('Sejm RP', 'https://www.youtube.com/@SejmRP_PL', 'https://www.sejm.gov.pl/', True),
     ('Ministerstwo Obrony Narodowej', 'https://www.youtube.com/user/dpimon', 'https://www.gov.pl/web/obrona-narodowa', True),
     ('Ministerstwo Spraw Zagranicznych', 'https://www.youtube.com/@MinSprawZagranicznych', 'https://www.gov.pl/web/dyplomacja', True),
     ('Ministerstwo Finansów', 'https://www.youtube.com/user/MinisterstwoFinansow', 'https://www.gov.pl/web/finanse', True),
