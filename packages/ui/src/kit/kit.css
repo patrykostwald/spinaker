@@ -4064,3 +4064,15 @@ html, body { overflow-x: clip; }
   .sc-spin-switch__right .sc-home-spin__meta { padding-bottom: 6px; }
   .sc-home-spin__sotd .sc-clinic-sotd__post { padding-top: 0; }
 }
+
+/* Pod diagnozą: „Rozwiń” przy lewej, „Udostępnij na X” na środku, „Pełna diagnoza” przy prawej — ten sam krój i rozmiar. */
+.sc-clinic-sotd__actions { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--sc-s-3); }
+.sc-clinic-sotd__share { justify-self: center; }
+.sc-clinic-sotd__full { justify-self: end; }
+.sc-clinic-sotd__toggle { justify-self: start; }
+.sc-clinic-sotd__actions .sc-clinic-sotd__toggle, .sc-clinic-sotd__actions .sc-clinic-sotd__full, .sc-clinic-sotd__share .sc-btn {
+  font-family: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; letter-spacing: 0; line-height: 1.4; }
+.sc-clinic-sotd__full { color: var(--sc-accent); text-decoration: none; white-space: nowrap; }
+.sc-clinic-sotd__full:hover { text-decoration: underline; }
+.sc-clinic-sotd__diagnosis { scroll-margin-top: 88px; }
+@media (max-width: 520px) { .sc-clinic-sotd__actions { display: flex; flex-wrap: wrap; justify-content: space-between; } }

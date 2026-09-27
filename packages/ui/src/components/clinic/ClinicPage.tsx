@@ -49,7 +49,14 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
             {spin.limitations && <p className="sc-clinic-sotd__limits">Ograniczenia: {spin.limitations}</p>}
           </div>
           <p className="sc-clinic-sotd__actions">
-            <button type="button" className="sc-clinic-sotd__toggle" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? "Zwiń diagnozę ↑" : "Rozwiń całą diagnozę ↓"}</button><ShareSpinOnX id={spin.id} spin={spin} /><Link href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></p>
+            <button type="button" className="sc-clinic-sotd__toggle" aria-expanded={expanded} onClick={event => {
+              // Po zwinięciu wracamy do początku diagnozy — czytelnik nie zostaje na dole strony.
+              const box = event.currentTarget.closest(".sc-clinic-sotd__diagnosis");
+              setExpanded(value => !value);
+              if (expanded && box) requestAnimationFrame(() => { if (box.getBoundingClientRect().top < 0) box.scrollIntoView({ block: "start", behavior: "smooth" }); });
+            }}>{expanded ? "Zwiń diagnozę ↑" : "Rozwiń diagnozę ↓"}</button>
+            <span className="sc-clinic-sotd__share"><ShareSpinOnX id={spin.id} spin={spin} /></span>
+            <Link className="sc-clinic-sotd__full" href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></p>
         </div>
       </div>
       {sources.length > 0 && (
@@ -104,6 +111,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         <div className="sc-clinic-split" aria-label="Przekazy dnia">
           {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
         </div>
+        <MessageHistory history={data.message_history} />
 
         {data.interview ? <InterviewBox interview={data.interview} archive={data.interview_archive} /> : null}
 
@@ -134,7 +142,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         </section>
 
         <Politicians />
-        <MessageHistory history={data.message_history} />
 
         <aside className="sc-clinic-journalists" aria-labelledby="journalists-title">
           <div>
