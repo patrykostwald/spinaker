@@ -135,7 +135,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
               <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
               <h2 id="clinic-drspin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
             </header>}
-            right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/o-nas#klinika">Jak działa Dr. Spin →</Link></p>}
+            right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/raport">Raport tygodnia →</Link></p>}
             empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
         </section>
 

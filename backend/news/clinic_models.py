@@ -177,3 +177,18 @@ class ClinicInterview(models.Model):
 
     def __str__(self):
         return f'{self.day} · {self.title or self.video_id}'
+
+
+class WeeklyReport(models.Model):
+    """Raport tygodnia Dr. Spina — zestawienie danych z 7 dni i krótkie podsumowanie darmowego modelu."""
+    week_start = models.DateField()
+    week_end = models.DateField(unique=True)
+    data = models.JSONField(default=dict)
+    summary = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-week_end']
+
+    def __str__(self):
+        return f'Raport {self.week_start} – {self.week_end}'

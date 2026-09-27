@@ -69,6 +69,27 @@ def clinic_accounts(request):
     return Response({'results': clinic.accounts_data()})
 
 
+@extend_schema(summary='Raport tygodnia Dr. Spina (najnowszy albo z tygodnia kończącego się w danym dniu)', tags=['klinika'],
+               responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+def clinic_report(request, week_end=None):
+    from news.clinic_models import WeeklyReport
+    from news.weekly_report import report_data
+    from datetime import date
+    from django.http import Http404
+    rows = WeeklyReport.objects.all()
+    if week_end:
+        try:
+            week_end = date.fromisoformat(week_end)
+        except ValueError:
+            raise Http404
+    report = get_object_or_404(rows, week_end=week_end) if week_end else rows.first()
+    if report is None:
+        return Response({'report': None, 'archive': []})
+    archive = list(rows.values('week_start', 'week_end')[:26])
+    return Response({'report': report_data(report), 'archive': archive})
+
+
 @extend_schema(summary='Usunięte posty polityków (bez treści)', tags=['klinika'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def clinic_deleted(request):

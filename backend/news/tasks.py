@@ -119,6 +119,14 @@ def youtube_official_task():
     return collect_latest()
 
 
+@shared_task(name="news.tasks.weekly_report_task", soft_time_limit=600, time_limit=660)
+def weekly_report_task():
+    """Niedziela wieczorem: raport tygodnia Dr. Spina (dane + podsumowanie darmowym modelem)."""
+    from news.weekly_report import generate
+    report = generate()
+    return {"status": "ok", "week_end": str(report.week_end), "summary": bool(report.summary)}
+
+
 @shared_task(name="news.tasks.deleted_posts_task", soft_time_limit=600, time_limit=660)
 def deleted_posts_task():
     """Strażnica usuniętych postów polityków — darmowy oEmbed X, do 60 wpisów na przebieg."""
