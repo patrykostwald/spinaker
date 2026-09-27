@@ -4116,3 +4116,11 @@ html, body { overflow-x: clip; }
 
 /* „Opozycja” / „Rządzący” nad metką partii (prawy róg), nie pod zdjęciem. */
 .sc-clinic-sotd__post > .sc-clinic-sotd__camp { order: -1; justify-self: end; text-align: right; margin: 0; }
+
+/* Klinika: panele tematyczne — przekazy dnia z archiwum oraz waga spinu z najnowszymi diagnozami w jednym boxie.
+   Elementy w środku tracą własne obramowanie; części oddziela cienka linia. */
+.sc-clinic-group { display: grid; gap: var(--sc-s-5); padding: var(--sc-panel-pad); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-clinic-group > .sc-scale, .sc-clinic-group > .sc-message-history { padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.sc-clinic-group > .sc-message-history { padding-top: var(--sc-s-5); border-top: 1px solid var(--sc-line); }
+.sc-clinic-group > .sc-clinic-latest { padding-top: var(--sc-s-5); border-top: 1px solid var(--sc-line); }
+.sc-clinic-group .sc-clinic-message { background: var(--sc-bg); }

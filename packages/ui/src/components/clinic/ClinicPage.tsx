@@ -108,13 +108,18 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
             empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
         </section>
 
-        <div className="sc-clinic-split" aria-label="Przekazy dnia">
-          {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
+        {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
+        <div className="sc-clinic-group">
+          <div className="sc-clinic-split" aria-label="Przekazy dnia">
+            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
+          </div>
+          <MessageHistory history={data.message_history} />
         </div>
-        <MessageHistory history={data.message_history} />
 
         {data.interview ? <InterviewBox interview={data.interview} archive={data.interview_archive} /> : null}
 
+        {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
+        <div className="sc-clinic-group">
         <SpinScale scale={data.scale} />
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
@@ -140,6 +145,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
             ))}
           </div>
         </section>
+        </div>
 
         <Politicians />
 
