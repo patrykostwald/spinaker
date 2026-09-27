@@ -42,6 +42,8 @@ def test_agent_confirms_only_with_register_match_or_two_sources(monkeypatch):
                                          evidence_url='https://sejm.gov.pl/x', import_key='test:jk')
     extract = krs.parse('0000012345', 'S', ODPIS)
     monkeypatch.setattr(krs, 'fetch', lambda number: extract if number == '0000012345' else None)
+    # Strony źródeł „pobieramy” — tylko inny.pl i example.org wymieniają osobę i podmiot.
+    monkeypatch.setattr(krs_agent, 'page_mentions', lambda url, surname, entity: 'nic.pl' not in url)
     source = {'url': 'https://example.org/a', 'title': 'Artykuł'}
     candidate = {'name': 'Fundacja Testowa Pomocy', 'krs': '0000012345', 'role': 'prezes zarządu', 'period': '',
                  'current': True, 'sector': 'ngo', 'sources': [source]}
@@ -56,6 +58,10 @@ def test_agent_confirms_only_with_register_match_or_two_sources(monkeypatch):
     # Dwa niezależne serwisy — zapisujemy jako „potwierdzone w źródłach”.
     two = {**lonely, 'sources': [source, {'url': 'https://inny.pl/b', 'title': 'Inny'}]}
     assert krs_agent.verify(figure, two).verification_method == 'public_sources'
+    # Dwa źródła, ale jedno nie wymienia osoby — nie wystarcza.
+    reasons = []
+    fake = {**lonely, 'sources': [source, {'url': 'https://nic.pl/c', 'title': 'Nic'}]}
+    assert krs_agent.verify(figure, fake, reasons) is None and 'sprawdzonych źródeł: 1' in reasons[0]
     # Zły numer KRS albo nazwa niezgodna z rejestrem — nic.
     assert krs_agent.verify(figure, {**candidate, 'krs': '0000099999'}) is None
     assert krs_agent.verify(figure, {**candidate, 'name': 'Zupełnie Inny Podmiot'}) is None

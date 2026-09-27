@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from datetime import date, timedelta
 from urllib.parse import urlsplit
+
+import requests
 
 from django.core.cache import cache
 from django.db import transaction
@@ -106,15 +109,46 @@ def discover(figure: PublicFigure, debug: dict | None = None) -> list[dict]:
     for item in data.get('organisations') or []:
         if not isinstance(item, dict):
             continue
-        sources = [{'url': s['url'], 'title': str(s.get('title') or found[s['url']])[:300]}
-                   for s in item.get('sources') or [] if isinstance(s, dict) and s.get('url') in found]
-        if not sources:
-            continue  # bez źródła z wyszukiwarki nic nie wiemy na pewno
+        # Propozycja modelu to tylko wskazówka — każde źródło sprawdzamy sami (verify), a KRS rozstrzyga.
+        sources = [{'url': s['url'], 'title': str(s.get('title') or found.get(s['url']) or '')[:300], 'grounded': s['url'] in found}
+                   for s in item.get('sources') or [] if isinstance(s, dict) and str(s.get('url', '')).startswith('http')]
         candidates.append({'name': str(item.get('name', ''))[:300], 'krs': krs.normalize_krs(item.get('krs')),
                            'role': str(item.get('role', ''))[:200], 'period': str(item.get('period', ''))[:100],
                            'current': bool(item.get('current')), 'sector': item.get('sector') if item.get('sector') in SECTORS else '',
-                           'sources': sources[:4]})
+                           'sources': sources[:5]})
     return candidates
+
+
+PAGE_HEADERS = {'User-Agent': 'Mozilla/5.0 (compatible; spin.clinic source check; +https://spin.clinic/o-nas)'}
+
+
+def _stem(word: str) -> str:
+    """Rdzeń do wyszukania odmienionej formy: „Dziedzic” → „dziedz” (Dziedzica, Dziedzicem)."""
+    word = word.lower()
+    return word[:max(4, len(word) - 2)] if len(word) > 4 else word
+
+
+def page_mentions(url: str, surname: str, entity: str) -> bool:
+    """Czy strona naprawdę wymienia nazwisko i podmiot (rdzenie słów, bez znaczników HTML)."""
+    try:
+        with requests.get(url, headers=PAGE_HEADERS, timeout=(4, 10), stream=True, allow_redirects=True) as response:
+            if response.status_code != 200:
+                return False
+            raw = response.raw.read(800_000, decode_content=True)
+            text = raw.decode(response.encoding or 'utf-8', errors='replace')
+    except requests.RequestException:
+        return False
+    text = re.sub(r'<[^>]+>', ' ', text).lower()
+    tokens = [token for token in krs._tokens(entity) if len(token) >= 4]
+    return _stem(surname) in text and (not tokens or any(_stem(token) in text for token in tokens))
+
+
+def _checked_sources(sources: list[dict], surname: str, entity: str) -> list[dict]:
+    kept = []
+    for source in sources[:5]:
+        if source.get('grounded') or page_mentions(source['url'], surname, entity):
+            kept.append({'url': source['url'], 'title': source.get('title') or (urlsplit(source['url']).hostname or '')})
+    return kept
 
 
 def _display_name(name: str) -> str:
@@ -127,12 +161,23 @@ def _domains(sources: list[dict]) -> set[str]:
 
 
 def _pretty(name: str) -> str:
-    """„FUNDACJA ORLEN” → „Fundacja Orlen” (skróty do 4 liter zostają wielkimi)."""
+    """„FUNDACJA TRADYCJA I NOWOCZESNOŚĆ - TRINO” → „Fundacja Tradycja i Nowoczesność - TRINO”.
+
+    Spójniki i przyimki małymi literami, skróty (do 5 liter, bez samogłoskowych słów) zostają wielkimi,
+    wielka litera po cudzysłowie otwierającym."""
+    small = {'I', 'W', 'Z', 'NA', 'DO', 'OD', 'ORAZ', 'DLA', 'PO', 'PRZY', 'IM.', 'IMIENIA', 'ZE', 'WE', 'O'}
     words = []
-    for word in name.split():
-        core = word.strip('"„”()')
-        words.append(word if (len(core) <= 4 and core.isupper() and core.isalpha() and core not in ('SPÓŁKA', 'Z', 'W', 'I')) else word.capitalize())
-    return ' '.join(words).replace('Spółka Akcyjna', 'S.A.').replace('Spółka Z Ograniczoną Odpowiedzialnością', 'sp. z o.o.')
+    for index, word in enumerate(name.split()):
+        lead = word[:len(word) - len(word.lstrip('"„”(\''))]
+        core = word[len(lead):]
+        bare = core.strip('"„”()\',.')
+        if index and core.upper() in small:
+            words.append(lead + core.lower())
+        elif bare.isalpha() and bare.isupper() and len(bare) <= 5 and not re.search(r'[AEIOUYĄĘÓ]{1}[^AEIOUYĄĘÓ]*[AEIOUYĄĘÓ]', bare):
+            words.append(word)  # skrót: PKN, KGHM, PZU
+        else:
+            words.append(lead + core[:1].upper() + core[1:].lower())
+    return ' '.join(words).replace('Spółka Akcyjna', 'S.A.').replace('Spółka z Ograniczoną Odpowiedzialnością', 'sp. z o.o.')
 
 
 def _sector(extract: krs.Extract, claimed: str) -> tuple[str, str]:
@@ -156,23 +201,35 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
         'source_checked_at': timezone.now()})
     role = (person.function.lower() if person and person.function else candidate['role']) or 'funkcja w organie'
     status = ('former' if person.until else 'current') if person else ('current' if candidate['current'] else 'former')
+    sources = candidate['sources']
     relation, _ = PublicFigureOrganisationRelation.objects.update_or_create(
         public_figure=figure, organisation=organisation, public_role=role[:255], relation_status=status,
         defaults={'organ': (person.organ if person else '')[:255], 'since': person.since if person else None,
-                  'until': person.until if person else None, 'sources': candidate['sources'],
-                  'evidence_url': extract.official_url if person else candidate['sources'][0]['url'],
-                  'evidence_note': f"Źródło: {candidate['sources'][0]['title']}"[:1000]})
+                  'until': person.until if person else None, 'sources': sources,
+                  'evidence_url': extract.official_url if person else sources[0]['url'],
+                  'evidence_note': (f"Źródło: {sources[0]['title']}" if sources else 'Oficjalny odpis KRS')[:1000]})
     relation.confirm_automatically(method)
     relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
     return relation
 
 
-def verify(figure: PublicFigure, candidate: dict) -> PublicFigureOrganisationRelation | None:
-    if not candidate['krs']:
-        return None  # bez numeru KRS nie podlinkujemy podmiotu — pomijamy
-    extract = krs.fetch(candidate['krs'])
-    if extract is None or not krs.names_match(candidate['name'], extract.name):
+def verify(figure: PublicFigure, candidate: dict, reasons: list | None = None) -> PublicFigureOrganisationRelation | None:
+    """KRS rozstrzyga: podmiot pod numerem, zgodna nazwa, osoba o zgodnych inicjałach w tym samym rodzaju organu.
+    Bez tego — co najmniej dwa niezależne źródła, które sami pobraliśmy i które wymieniają osobę i podmiot."""
+    def reject(reason):
+        if reasons is not None:
+            reasons.append(f"{candidate['name']} — {reason}")
         return None
+
+    if not candidate['krs']:
+        return reject('brak numeru KRS')
+    extract = krs.fetch(candidate['krs'])
+    if extract is None:
+        return reject(f"KRS {candidate['krs']} nie istnieje albo API nie odpowiada")
+    if not krs.names_match(candidate['name'], extract.name):
+        return reject(f'nazwa w KRS inna: {extract.name}')
+    surname = krs.split_name(_display_name(figure.canonical_name))[1]
+    candidate = {**candidate, 'sources': _checked_sources(candidate['sources'], surname, extract.name)}
     people = [person for person in krs.matching_persons(extract, figure.canonical_name)
               if krs.same_organ(candidate['role'], person.organ, person.function)]
     if people:
@@ -181,7 +238,7 @@ def verify(figure: PublicFigure, candidate: dict) -> PublicFigureOrganisationRel
         return _save(figure, extract, candidate, 'krs_register', person)
     if len(_domains(candidate['sources'])) >= 2:
         return _save(figure, extract, candidate, 'public_sources', None)
-    return None
+    return reject(f"w KRS brak osoby o zgodnych inicjałach w organie „{candidate['role']}”; sprawdzonych źródeł: {len(candidate['sources'])}")
 
 
 def check_figure(figure: PublicFigure, debug: bool = False) -> dict:
@@ -191,7 +248,9 @@ def check_figure(figure: PublicFigure, debug: bool = False) -> dict:
     except clinic_ai.ClinicAIError as error:
         logger.warning('KRS agent %s: %s', figure.pk, error.code)
         return {'figure': figure.pk, 'error': error.code}
-    saved = [relation.pk for candidate in candidates if (relation := verify(figure, candidate))]
+    reasons: list[str] = []
+    saved = [relation.pk for candidate in candidates if (relation := verify(figure, candidate, reasons))]
+    info['rejected'] = reasons
     PublicFigure.objects.filter(pk=figure.pk).update(organisations_checked_at=timezone.now())
     return {'figure': figure.pk, 'candidates': len(candidates), 'confirmed': len(saved), 'debug': info}
 
