@@ -4248,3 +4248,8 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 .sc-council ul { display: flex; flex-wrap: wrap; gap: var(--sc-s-1) var(--sc-s-4); margin: 0; padding: 0; list-style: none; }
 .sc-council strong { color: var(--sc-text); font-weight: 600; }
 .sc-council__roles { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+
+/* Archiwum wywiadów: licznik siły (i etykieta od progu) po lewej stronie nagłówka. */
+.sc-interview-archive__row { grid-template-columns: 9.5rem minmax(9rem, 13rem) auto minmax(0, 1fr); }
+.sc-interview-archive__score { display: inline-flex; align-items: center; gap: var(--sc-s-2); white-space: nowrap; }
+@media (max-width: 760px) { .sc-interview-archive__row { grid-template-columns: minmax(0, 1fr) auto; } .sc-interview-archive__score { justify-self: end; } }
