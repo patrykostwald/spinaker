@@ -4165,3 +4165,7 @@ html, body { overflow-x: clip; }
 /* Klinika: panel spinu dnia z nagłówkiem jak na głównej — mniejszy odstęp od górnej krawędzi. */
 @media (min-width: 761px) { .sc-clinic > .sc-clinic-sotd:has(.sc-spin-switch__bar) { padding-top: var(--sc-s-4); } }
 .sc-clinic-sotd .sc-spin-switch__bar .sc-home-section__title { margin: 0; }
+
+/* Klinika: „Waga spinu” wyśrodkowana; miniatury diagnoz równo z lewą krawędzią kolumny (pod „Rządzący”). */
+.sc-clinic-group > .sc-scale .sc-scale__title { text-align: center; }
+.sc-clinic-group .sc-clinic-column__list .sc-spin-row { padding-left: 0; }
