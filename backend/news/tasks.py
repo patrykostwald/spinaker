@@ -195,3 +195,15 @@ def sejm_career_task():
     """Kariera sejmowa (kadencje, daty mandatu, klub) z oficjalnego API Sejmu — raz w tygodniu."""
     from news.sejm_career import run
     return run()
+
+
+@shared_task(name="news.tasks.x_publish_task", soft_time_limit=300, time_limit=360)
+def x_publish_task():
+    """Wątki silnych spinów z konta spin.clinic (X_POST_ENABLED i klucze z uprawnieniem zapisu)."""
+    if not cache.add("x-publish-lock", "1", timeout=400):
+        return {"status": "locked"}
+    try:
+        from news.x_publish import run
+        return run()
+    finally:
+        cache.delete("x-publish-lock")

@@ -48,6 +48,8 @@ export type SpinClaim = {
 };
 
 export type SpinDetailData = SpinCardData & {
+  /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
+  x_share?: string[];
   analysis: string;
   techniques: Array<{ name: string; quote: string; explanation: string }>;
   claims: SpinClaim[];

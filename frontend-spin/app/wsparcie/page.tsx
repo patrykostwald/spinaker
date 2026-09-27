@@ -48,7 +48,7 @@ export default function SupportPage() {
   ].filter(Boolean) as { label: string; href: string }[];
 
   return <InfoPage eyebrow="WSPARCIE" title="Politycy mają spin doktorów. My mamy spin.clinic." lead="spin.clinic to niezależny projekt, który pokazuje wiadomości ze źródłami i rozkłada przekazy polityków na czynniki pierwsze. Utrzymują go wyłącznie czytelnicy — bez reklam, sponsorów i partyjnych pieniędzy.">
-    <section><h2>Kto za tym stoi</h2><p>Projekt buduje jedna osoba, która nie jest i nigdy nie była członkiem żadnej partii politycznej, redakcji ani organizacji politycznej. Nie reprezentuje żadnego obozu. Cały serwis powstaje przy wsparciu narzędzi sztucznej inteligencji — od kodu po analizę przekazów — i jest odpowiedzią na prostą nierówność: politycy mają zespoły od wizerunku, a obywatele zwykle nie mają nikogo. Operatorem serwisu jest iapply sp. z o.o. z Poznania.</p></section>
+    <section><h2>Kto za tym stoi</h2><p>Projekt buduje jedna osoba, która nie jest i nigdy nie była członkiem żadnej partii politycznej, redakcji ani organizacji politycznej. Cały serwis powstaje przy wsparciu narzędzi sztucznej inteligencji — od kodu po analizę przekazów — i jest odpowiedzią na prostą nierówność: politycy mają zespoły od wizerunku, a obywatele zwykle nie mają nikogo.</p></section>
     <section><h2>Na co idą pieniądze</h2>
       <dl className="sc-support-costs">{COSTS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>
       <p className="sc-support-note">Dziś pokrywamy te koszty sami. Jedna kawa za 10 zł to kilka kolejnych diagnoz albo kilka dni pracy strażnika z serwerem.</p>

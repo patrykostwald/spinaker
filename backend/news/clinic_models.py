@@ -42,6 +42,8 @@ class SpinDiagnosis(models.Model):
     limitations = models.TextField(blank=True)
     x_thread = models.JSONField(default=list, blank=True,
                                 help_text='Synteza diagnozy do wątku na X (darmowy model): wpis otwierający i 2–3 kolejne.')
+    x_posted_ids = models.JSONField(default=list, blank=True, help_text='Identyfikatory wpisów wątku opublikowanego z konta spin.clinic.')
+    x_posted_at = models.DateTimeField(null=True, blank=True, db_index=True, help_text='Kiedy konto spin.clinic opublikowało wątek diagnozy.')
     triage = models.JSONField(default=dict, blank=True, help_text='Ocena strażnika: wynik 0–100, uzasadnienie, model.')
     screen_score = models.PositiveSmallIntegerField(null=True, blank=True, db_index=True,
                                                     help_text='Jak bardzo post jest wart sprawdzenia według strażnika (0–100).')

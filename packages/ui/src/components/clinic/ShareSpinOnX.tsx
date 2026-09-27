@@ -15,7 +15,7 @@ function ThreadPosts({ spin }: { spin: SpinDetailData }) {
   }
   return (
     <div className="sc-xshare">
-      <p className="sc-xshare__hint">Wątek z {posts.length} wpisów. Pierwszy mieści się w limicie X i ma link do diagnozy — X pokaże jej kartę. Kolejne wklej jako odpowiedzi.</p>
+      <p className="sc-xshare__hint">Wątek z {posts.length} wpisów: synteza diagnozy z cytowanym wpisem polityka, diagnoza i terapia — źródła z linkami. Opublikuj pierwszy, kolejne wklej jako odpowiedzi.</p>
       <div className="sc-xshare__actions">
         <a className="sc-xshare__link is-primary" href={xIntentUrl(posts[0])} target="_blank" rel="noopener noreferrer">Opublikuj 1/{posts.length} na X</a>
         <a className="sc-xshare__link" href={xIntentUrl(posts[0], spin.post.id)} target="_blank" rel="noopener noreferrer">Odpowiedz pod wpisem @{spin.author.handle}</a>

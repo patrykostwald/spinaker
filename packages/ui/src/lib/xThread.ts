@@ -38,6 +38,7 @@ export function diagnosisUrl(spin: { id: number }): string {
 }
 
 export function buildXThread(spin: SpinDetailData): string[] {
+  if (spin.x_share?.length) return spin.x_share;
   const url = diagnosisUrl(spin);
   const head = `Dr. Spin (AI) o wpisie @${spin.author.handle}: ${spin.verdict_label.toLowerCase()}, siła ${spin.intensity}/100.`;
   const leadBudget = LIMIT - RESERVE - measurePost(`${head}  ${url}`).weightedLength;

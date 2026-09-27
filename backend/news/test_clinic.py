@@ -647,3 +647,38 @@ def test_council_diagnosis_end_to_end_with_review_and_linguist(monkeypatch):
     assert result['claims'][0]['assessment'] == 'unverified'  # bez Gemini — bez udawanych źródeł
     assert result['usage']['council']['agreement'] == '3/3' and result['usage']['council']['review']['ok'] is True
     assert result['usage']['model'].startswith('konsylium')
+
+
+@pytest.mark.django_db
+def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
+    from types import SimpleNamespace
+    from news import x_publish
+    from news.x_share import weight
+    acc = account()
+    row = SpinDiagnosis.objects.create(post=post(acc), status='approved', verdict='spin', intensity=82, headline='Teza bez dowodu',
+                                       summary='Krótko.', techniques=[{'name': 'Fałszywa alternatywa', 'quote': 'Tylko my', 'explanation': '…'}],
+                                       claims=[{'claim': 'Bezrobocie spadło', 'assessment': 'misleading', 'explanation': 'Spadało wcześniej.',
+                                                'sources': [{'url': 'https://stat.gov.pl/a', 'title': 'GUS'}]}],
+                                       diagnosed_at=timezone.now())
+    thread = clinic.detail_data(row)['x_share']
+    assert 2 <= len(thread) <= 3 and all(weight(p) <= 280 for p in thread)
+    assert thread[0].startswith('1/3 Dr. Spin (AI) o wpisie @posel_test') and 'https://stat.gov.pl/a' in thread[-1]
+
+    assert x_publish.run() == {'status': 'disabled'}  # bez kluczy i przełącznika — nic nie wysyłamy
+    for key in x_publish.KEYS:
+        monkeypatch.setenv(key, 'test')
+    monkeypatch.setenv('X_POST_ENABLED', 'true')
+    sent = []
+
+    def fake_post(url, json, headers, timeout):
+        assert headers['Authorization'].startswith('OAuth ') and 'oauth_signature=' in headers['Authorization']
+        sent.append(json)
+        return SimpleNamespace(status_code=201, json=lambda: {'data': {'id': str(len(sent))}}, text='')
+
+    monkeypatch.setattr(x_publish.requests, 'post', fake_post)
+    result = x_publish.run()
+    assert result['results'] == [{'id': row.pk, 'posted': 3, 'of': 3}]
+    assert 'reply' not in sent[0] and sent[1]['reply'] == {'in_reply_to_tweet_id': '1'} and sent[2]['reply'] == {'in_reply_to_tweet_id': '2'}
+    row.refresh_from_db()
+    assert row.x_posted_ids == ['1', '2', '3'] and row.x_posted_at
+    assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz

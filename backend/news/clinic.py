@@ -550,6 +550,8 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'auto_published': diagnosis.status == 'approved' and not diagnosis.reviewed_by_id,
         'notice': NOTICE,
     })
+    from news.x_share import build
+    data['x_share'] = build(data)
     return data
 
 
