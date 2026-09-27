@@ -4095,3 +4095,21 @@ html, body { overflow-x: clip; }
 .sc-clinic-latest__bar { align-items: start; }
 .sc-clinic-latest__bar h3 { line-height: var(--sc-t-title-m-lh); }
 .sc-clinic-latest__camp { line-height: var(--sc-t-title-m-lh); }
+
+/* Spin dnia: wspólna siatka obu kolumn (subgrid) — wiersze równe niezależnie od długości tytułu:
+   1) „Opozycja” | werdykt i siła, 2) autor posta | tytuł diagnozy, 3) treść posta | tekst diagnozy,
+   4) „Post na X” | przyciski. Tekst diagnozy nie rozpycha wiersza — dopasowuje się do posta (min. 220 px). */
+@media (min-width: 901px) {
+  .sc-clinic-sotd__main { grid-template-rows: auto auto 1fr auto; row-gap: var(--sc-s-3); align-items: stretch; }
+  .sc-clinic-sotd__post, .sc-clinic-sotd__diagnosis { display: grid; grid-row: span 4; grid-template-rows: subgrid; gap: inherit; min-height: 0; }
+  .sc-clinic-sotd__post > .sc-clinic-sotd__camp { grid-row: 1; align-self: center; margin: 0; }
+  .sc-clinic-sotd__post > :first-child { grid-row: 2; align-self: start; }
+  .sc-clinic-sotd__post > blockquote { grid-row: 3; align-self: start; margin: 0; }
+  .sc-clinic-sotd__post > a:last-child { grid-row: 4; align-self: center; }
+  .sc-clinic-sotd__diagnosis > .sc-spin-card__verdict { grid-row: 1; align-self: center; margin: 0; }
+  .sc-clinic-sotd__diagnosis > h3 { grid-row: 2; align-self: start; }
+  .sc-clinic-sotd__diagnosis > .sc-clinic-sotd__reading { grid-row: 3; }
+  .sc-clinic-sotd__diagnosis > .sc-clinic-sotd__actions { grid-row: 4; align-self: center; margin: 0; }
+  .sc-clinic-sotd__reading:not([data-expanded]) { contain: size; min-height: 220px; flex: none; }
+  .sc-home-spin__sotd .sc-clinic-sotd__post { padding-top: 0; }
+}

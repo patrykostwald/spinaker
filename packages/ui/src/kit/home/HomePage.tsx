@@ -83,7 +83,7 @@ export function HomePage() {
   // „Top 10”: najnowsze materiały, zawężane tematem, grupą źródeł i hasłem z wiersza filtrów.
   const top = useHomeFeed(
     "top10",
-    { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 20 },
+    { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 20, diverse: true },
     { refetchInterval: 30_000, enabled: !groupEmpty },
   );
   const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
@@ -92,12 +92,12 @@ export function HomePage() {
   const dayLabel = useTodayLabel({ weekday: "long", day: "numeric", month: "long" });
   const dayIds = useMemo(() => (dayGroup ? groupSources(activeSources(sources))[dayGroup].map((source) => source.id) : []), [sources, dayGroup]);
   const dayGroupEmpty = Boolean(dayGroup) && sources.length > 0 && dayIds.length === 0;
-  const day = useHomeFeed("day-top", { mode: "top", sources: dayIds, pageSize: 13 }, { refetchInterval: 120_000, enabled: !dayGroupEmpty });
+  const day = useHomeFeed("day-top", { mode: "top", sources: dayIds, pageSize: 13, diverse: true }, { refetchInterval: 120_000, enabled: !dayGroupEmpty });
   const dayArticles = useMemo(() => day.data?.results ?? [], [day.data]);
   const dayEmpty = day.isSuccess && dayArticles.length === 0;
   // Dopóki wiodące media nie są aktywne (zgody), `mode=top` jest pusty — wtedy dzisiejsze doniesienia
   // aktywnych źródeł (instytucje publiczne), a gdy dziś jest ich mniej niż 3 — najnowsze materiały.
-  const dayFallback = useHomeFeed("day-latest", { mode: "latest", sources: dayIds, pageSize: 40 }, { enabled: dayEmpty && !dayGroupEmpty });
+  const dayFallback = useHomeFeed("day-latest", { mode: "latest", sources: dayIds, pageSize: 40, diverse: true }, { enabled: dayEmpty && !dayGroupEmpty });
   const fallbackToday = useMemo(() => {
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date());
     return (dayFallback.data?.results ?? []).filter(

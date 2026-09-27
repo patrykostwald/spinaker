@@ -160,3 +160,21 @@ def test_source_channels_are_queued_then_confirmed_by_staff(monkeypatch, setting
         evidence_url='https://www.sejm.gov.pl/', status='pending_review')
     call_command('confirm_source_youtube_channels', '--staff', 'zespol', '--apply')
     assert OfficialVideoChannel.objects.get(channel_id='UCsejm').status == 'pending_review'
+
+
+@pytest.mark.django_db
+def test_feed_first_page_is_diverse_across_sources():
+    from datetime import timedelta
+    from django.utils import timezone
+    loud = Source.objects.create(name='Kanał A', url='https://a.example/')
+    quiet = Source.objects.create(name='Radio B', url='https://b.example/')
+    other = Source.objects.create(name='Gazeta C', url='https://c.example/')
+    now = timezone.now()
+    for index in range(10):  # jedno źródło publikuje dużo i najnowsze
+        Article.objects.create(source=loud, title=f'A{index}', url=f'https://a.example/{index}', published_date=now - timedelta(minutes=index))
+    Article.objects.create(source=quiet, title='B0', url='https://b.example/0', published_date=now - timedelta(hours=2))
+    Article.objects.create(source=other, title='C0', url='https://c.example/0', published_date=now - timedelta(hours=3))
+    plain = APIClient().get('/api/feed/?page_size=3').json()['results']
+    assert [row['title'] for row in plain] == ['A0', 'A1', 'A2']
+    mixed = APIClient().get('/api/feed/?page_size=3&diverse=1').json()['results']
+    assert [row['title'] for row in mixed] == ['A0', 'B0', 'C0']
