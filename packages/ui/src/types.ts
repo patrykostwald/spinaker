@@ -7,6 +7,9 @@ export type Source = {
   catalog_stage?: 'candidate' | 'configured' | 'excluded';
   /** Grupa dla czytelnika wyznaczona przez backend (news.source_groups): Top media / Publiczne / Media. */
   portal_group?: 'top' | 'publiczne' | 'media';
+  /** Konto X i kanał YouTube źródła (z jego strony głównej / potwierdzony kanał). */
+  x_handle?: string;
+  youtube_url?: string;
 };
 
 export type Article = {

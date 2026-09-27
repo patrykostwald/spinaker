@@ -609,7 +609,7 @@ def latest_spin(exclude_id: int | None = None):
 
 
 def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
-    from news.clinic_interview import latest_interview_data
+    from news.clinic_interview import interview_archive, latest_interview_data
     sotd = spin_of_day()
     columns = {camp: cards(published_diagnoses().filter(post__camp_at_collection=camp)
                            .order_by('-post__published_at', '-pk')[:per_camp]) for camp in CAMPS}
@@ -620,6 +620,7 @@ def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
         'spin_of_day': sotd,
         'latest_spin': latest_spin(sotd['id'] if sotd else None),
         'interview': latest_interview_data(),
+        'interview_archive': interview_archive(),
         'message_history': message_history(),
         'columns': columns,
         'accounts_count': reading_accounts().count(),

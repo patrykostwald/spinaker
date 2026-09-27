@@ -7,8 +7,10 @@ export type NewsFeed = { results: Article[]; total: number; next_page: number | 
 export type ContextCount = { category: string; label: string; count: number };
 export type ArticleContext = { query: string; keywords: string[]; match_basis: string; counts: ContextCount[]; total: number; timeline: Record<string, Article[]>; next_page: number | null; complete: boolean; checked_at: string };
 export function getPortalConfig() { return apiFetch<PortalConfig>('/api/portal/config/'); }
-export function getNewsFeed({ mode = 'latest', query = '', categories = [], topics = [], sources = [], platforms = [], page = 1, pageSize = 20, match = 'substring' }: { mode?: string; query?: string; categories?: string[]; topics?: string[]; sources?: number[]; platforms?: ('youtube')[]; page?: number; pageSize?: number; match?: 'substring' | 'words' } = {}) {
+export function getNewsFeed({ mode = 'latest', query = '', categories = [], topics = [], sources = [], platforms = [], page = 1, pageSize = 20, match = 'substring', diverse = false }: { mode?: string; query?: string; categories?: string[]; topics?: string[]; sources?: number[]; platforms?: ('youtube')[]; page?: number; pageSize?: number; match?: 'substring' | 'words'; diverse?: boolean } = {}) {
   const params = new URLSearchParams({ mode, page: String(page), page_size: String(pageSize) });
+  // Pierwsza strona z różnych źródeł (po jednym najnowszym z każdego, potem kolejne) — pluralizm na głównej.
+  if (diverse) params.set('diverse', '1');
   if (query) params.set('q', query);
   if (match === 'words') params.set('match', match);
   if (categories.length) params.set('categories', categories.join(','));

@@ -23,8 +23,7 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
     <div className="sc-clinic-sotd__body">
       <div className="sc-clinic-sotd__main">
         <div className="sc-clinic-sotd__post">
-          <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" />
-          <p className="sc-clinic-sotd__camp">{spin.camp_label}</p>
+          <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" caption={spin.camp_label} />
           <blockquote>{spin.post.text}</blockquote>
           <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
         </div>
@@ -49,7 +48,14 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
             {spin.limitations && <p className="sc-clinic-sotd__limits">Ograniczenia: {spin.limitations}</p>}
           </div>
           <p className="sc-clinic-sotd__actions">
-            <button type="button" className="sc-clinic-sotd__toggle" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? "Zwiń diagnozę ↑" : "Rozwiń całą diagnozę ↓"}</button><ShareSpinOnX id={spin.id} spin={spin} /><Link href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></p>
+            <button type="button" className="sc-clinic-sotd__toggle" aria-expanded={expanded} onClick={event => {
+              // Po zwinięciu wracamy do początku diagnozy — czytelnik nie zostaje na dole strony.
+              const box = event.currentTarget.closest(".sc-clinic-sotd__diagnosis");
+              setExpanded(value => !value);
+              if (expanded && box) requestAnimationFrame(() => { if (box.getBoundingClientRect().top < 0) box.scrollIntoView({ block: "start", behavior: "smooth" }); });
+            }}>{expanded ? "Zwiń diagnozę ↑" : "Rozwiń diagnozę ↓"}</button>
+            <span className="sc-clinic-sotd__share"><ShareSpinOnX id={spin.id} spin={spin} /></span>
+            <Link className="sc-clinic-sotd__full" href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></p>
         </div>
       </div>
       {sources.length > 0 && (
@@ -93,20 +99,30 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
-      {/* Kolejność nagłówków (a11y): pod h1 strony sekcje mają h3 — ukryty h2 domyka poziom. */}
-      {!embedded && <h2 className="sc-sr-only">Diagnozy Dr. Spina</h2>}
       {data && <>
-        <section className="sc-clinic-sotd" aria-labelledby="sotd-title">
+        <section className="sc-clinic-sotd" aria-labelledby="clinic-drspin-title">
+          {/* Nagłówek jak na głównej: „Klinika spinu AI” + „Dr. Spin”, zakładki na środku, link po prawej. */}
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}
+            left={<header>
+              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
+              <h2 id="clinic-drspin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+            </header>}
+            right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/o-nas#klinika">Jak działa Dr. Spin →</Link></p>}
             empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
         </section>
 
-        <div className="sc-clinic-split" aria-label="Przekazy dnia">
-          {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
+        {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
+        <div className="sc-clinic-group">
+          <div className="sc-clinic-split" aria-label="Przekazy dnia">
+            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
+          </div>
+          <MessageHistory history={data.message_history} />
         </div>
 
-        {data.interview ? <InterviewBox interview={data.interview} /> : null}
+        {data.interview ? <InterviewBox interview={data.interview} archive={data.interview_archive} /> : null}
 
+        {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
+        <div className="sc-clinic-group">
         <SpinScale scale={data.scale} />
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
@@ -132,9 +148,9 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
             ))}
           </div>
         </section>
+        </div>
 
         <Politicians />
-        <MessageHistory history={data.message_history} />
 
         <aside className="sc-clinic-journalists" aria-labelledby="journalists-title">
           <div>

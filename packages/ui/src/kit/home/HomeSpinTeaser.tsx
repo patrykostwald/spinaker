@@ -44,7 +44,7 @@ export function HomeSpinTeaser() {
           <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
           <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
         </header>
-        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore />
+        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore archive={data.interview_archive?.slice(0, 3)} />
       </section>
     ) : null}
     <section className="sc-home-spin" aria-labelledby="home-spin-title">

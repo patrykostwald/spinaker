@@ -98,6 +98,23 @@ def _filters(request, qs):
     return qs
 
 
+DIVERSE_WINDOW = 600  # ile najnowszych materiałów przeglądamy, żeby ułożyć stronę z różnych źródeł
+
+
+def diverse_rows(qs, size: int) -> list:
+    """Pluralizm na pierwszej stronie: najpierw najnowszy materiał każdego źródła, potem drugi z każdego itd.
+    Źródło, które publikuje najwięcej (np. kanał wideo z dziesiątkami filmów dziennie), nie zajmuje całej strony.
+    Kolejność w obrębie „rundy” — od najnowszego."""
+    by_source: dict[int, list] = {}
+    for row in qs[:DIVERSE_WINDOW]:
+        by_source.setdefault(row.source_id, []).append(row)
+    picked, depth = [], 0
+    while len(picked) < size and any(len(rows) > depth for rows in by_source.values()):
+        picked += [rows[depth] for rows in by_source.values() if len(rows) > depth]
+        depth += 1
+    return picked[:size]
+
+
 @extend_schema(summary="Pasek materiałów: najnowsze albo dzisiejsze wiodących mediów", tags=["portal"], parameters=FEED_PARAMETERS, responses=FeedResponse)
 @api_view(['GET'])
 def feed(request):
@@ -119,7 +136,10 @@ def feed(request):
     # Null publication dates stay last; import time never impersonates publication.
     qs = qs.order_by(F('published_date').desc(nulls_last=True), '-pk')
     total = qs.count()
-    rows = list(hydrated(qs)[(page - 1) * size:page * size])
+    if request.query_params.get('diverse') == '1' and page == 1:
+        rows = diverse_rows(hydrated(qs), size)
+    else:
+        rows = list(hydrated(qs)[(page - 1) * size:page * size])
     payload = {'mode': mode, 'results': ArticleSerializer(rows, many=True).data,
         'total': total, 'next_page': page + 1 if page * size < total else None,
         'checked_at': now.isoformat(), 'latest_published_at': rows[0].published_date.isoformat()

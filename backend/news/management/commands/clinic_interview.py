@@ -14,12 +14,15 @@ class Command(BaseCommand):
         parser.add_argument('--auto', action='store_true', help='Wybierz sam najgłośniejszy wywiad z wczoraj.')
         parser.add_argument('--day', default='', help='Dzień emisji (domyślnie wczoraj).')
         parser.add_argument('--now', action='store_true', help='Nie czekaj na harmonogram — przetwórz od razu.')
-        parser.add_argument('--rediagnose', action='store_true', help='Nowa diagnoza z zapisanej transkrypcji (bez Gemini).')
+        parser.add_argument('--rediagnose', action='store_true', help="Nowa diagnoza z zapisanej transkrypcji (bez Gemini); bez linku — najnowszy wywiad.")
 
     def handle(self, *args, url, day, now, auto, rediagnose, **options):
         if rediagnose:
             from news.clinic_models import ClinicInterview
-            interview = ClinicInterview.objects.filter(video_id=clinic_interview.video_id(url) or '').first()
+            # Bez linku — najnowszy wywiad z zapisaną transkrypcją.
+            rows = ClinicInterview.objects.exclude(transcript='')
+            interview = (rows.filter(video_id=clinic_interview.video_id(url) or '').first() if url
+                         else rows.order_by('-day', '-created_at').first())
             if not interview:
                 raise CommandError('Nie ma takiego wywiadu w bazie.')
             interview = clinic_interview.rediagnose(interview)

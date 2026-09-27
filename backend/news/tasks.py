@@ -112,6 +112,38 @@ def clinic_interview_task():
 
 
 
+@shared_task(name="news.tasks.youtube_official_task", soft_time_limit=600, time_limit=660)
+def youtube_official_task():
+    """Najnowsze filmy z potwierdzonych oficjalnych kanałów YouTube (1 jednostka limitu na kanał)."""
+    from news.youtube_collect import collect_latest
+    return collect_latest()
+
+
+@shared_task(name="news.tasks.source_social_task", soft_time_limit=1500, time_limit=1600)
+def source_social_task():
+    """W nocy: linki YouTube i X na stronach źródeł — sprawdzenia starsze niż 30 dni albo ze starszej wersji."""
+    if not cache.add("source-social-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        out = StringIO()
+        call_command("discover_source_social_links", "--limit", "80", "--apply", stdout=out)
+        return {"status": "ok", "summary": out.getvalue().strip().splitlines()[-1:]}
+    finally:
+        cache.delete("source-social-lock")
+
+
+@shared_task(name="news.tasks.youtube_leftover_task", soft_time_limit=1500, time_limit=1600)
+def youtube_leftover_task():
+    """Przed resetem darmowego limitu (ok. 9:00): reszta jednostek na archiwum oficjalnych kanałów."""
+    if not cache.add("youtube-leftover-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news.youtube_collect import backfill_leftover
+        return backfill_leftover()
+    finally:
+        cache.delete("youtube-leftover-lock")
+
+
 @shared_task(name="news.tasks.clinic_interview_pick_task", soft_time_limit=600, time_limit=660)
 def clinic_interview_pick_task():
     """Rano: najgłośniejszy wywiad z politykiem z poprzedniego dnia trafia do kolejki wywiadu dnia."""

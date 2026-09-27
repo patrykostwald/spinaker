@@ -52,6 +52,11 @@ zmiana tematu, straszenie, przypisywanie intencji) i twierdzenia o faktach. Każ
 z transkrypcji i czas. Twierdzenia o faktach sprawdź w wyszukiwarce; bez źródła oceniasz je jako „unverified”.
 PROWADZĄCY (dziennikarz): jak prowadził rozmowę — czy dopytywał o konkrety, czy przerywał, czy zadawał pytania
 sugerujące albo tezy, czy pozwalał omijać pytania, czy prostował nieprawdę. Uwagi też z cytatem i czasem.
+Prowadzący dostaje werdykt w tej samej skali co gość (spin, częściowy spin, bez spinu, nie da się ocenić) i siłę 0–100.
+Spin prowadzącego to praca dziennikarska, która przechyla rozmowę: pytania sugerujące odpowiedź lub z gotową tezą,
+tendencyjne ramowanie tematu, dopytywanie tylko w jedną stronę, przyjmowanie nieprawdziwych lub niesprawdzonych
+twierdzeń gościa bez reakcji, przerywanie zamiast słuchania. „Bez spinu” — rzetelne, rzeczowe dopytywanie,
+prostowanie nieścisłości i równa miara. Oceniasz warsztat w tej rozmowie, nie poglądy dziennikarza ani redakcję.
 
 STYL: rejestr raportu analitycznego (jak ośrodek badań komunikacji albo rzetelny fact-checking), zero sympatii
 politycznych, identyczna miara dla każdej strony. Pełne, poprawne zdania w stronie czynnej; precyzyjne pojęcia
@@ -85,8 +90,9 @@ INTERVIEW_SCHEMA = {
             'claims': {'type': 'array', 'items': _CLAIM}},
             'required': ['verdict', 'intensity', 'summary', 'techniques', 'claims'], 'additionalProperties': False},
         'host': {'type': 'object', 'properties': {
+            'verdict': {'type': 'string', 'enum': list(clinic_ai.VERDICTS)}, 'intensity': {'type': 'integer'},
             'summary': {'type': 'string'}, 'notes': {'type': 'array', 'items': _TECHNIQUE}},
-            'required': ['summary', 'notes'], 'additionalProperties': False},
+            'required': ['verdict', 'intensity', 'summary', 'notes'], 'additionalProperties': False},
         'limitations': {'type': 'string'},
     },
     'required': ['headline', 'summary', 'overall', 'guest', 'host', 'limitations'], 'additionalProperties': False,
@@ -187,17 +193,21 @@ def clean_interview(data: dict, transcript: str, search_urls: dict[str, str]) ->
         claims.append({'claim': str(item.get('claim', ''))[:600], 'time': str(item.get('time', ''))[:10],
                        'seconds': seconds(item.get('time')), 'assessment': assessment,
                        'explanation': str(item.get('explanation', ''))[:1200], 'sources': sources[:5]})
-    try:
-        intensity = max(0, min(100, int(guest.get('intensity', 0))))
-    except (TypeError, ValueError):
-        intensity = 0
+    def strength(value) -> int:
+        try:
+            return max(0, min(100, int(value)))
+        except (TypeError, ValueError):
+            return 0
+    intensity = strength(guest.get('intensity', 0))
+    host_verdict = host.get('verdict') if host.get('verdict') in clinic_ai.VERDICTS else 'unclear'
     return {
         'headline': str(data.get('headline', ''))[:200],
         'summary': str(data.get('summary', ''))[:600],
         'overall': str(data.get('overall', ''))[:2000],
         'guest_analysis': {'verdict': guest['verdict'], 'intensity': intensity, 'summary': str(guest.get('summary', ''))[:2000],
                            'techniques': _quoted(guest.get('techniques'), text, 8), 'claims': claims[:10]},
-        'host_analysis': {'summary': str(host.get('summary', ''))[:2000], 'notes': _quoted(host.get('notes'), text, 8)},
+        'host_analysis': {'verdict': host_verdict, 'intensity': strength(host.get('intensity', 0)),
+                          'summary': str(host.get('summary', ''))[:2000], 'notes': _quoted(host.get('notes'), text, 8)},
         'limitations': str(data.get('limitations', ''))[:1500],
     }
 
@@ -328,14 +338,24 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
         'guest': {**guest, 'verdict_label': dict(VERDICTS).get(guest.get('verdict'), ''),
                   'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')}
                              for claim in guest.get('claims') or []]},
-        'host': interview.host_analysis, 'limitations': interview.limitations,
+        'host': {**(interview.host_analysis or {}),
+                 'verdict_label': dict(VERDICTS).get((interview.host_analysis or {}).get('verdict'), '')},
+        'limitations': interview.limitations,
         'model': interview.model_name, 'diagnosed_at': interview.diagnosed_at,
     }
 
 
+def _published_interviews():
+    return ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True).order_by('-day', '-diagnosed_at')
+
+
 def latest_interview_data() -> dict | None:
-    return interview_data(ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True)
-                          .order_by('-day', '-diagnosed_at').first())
+    return interview_data(_published_interviews().first())
+
+
+def interview_archive(limit: int = 10) -> list[dict]:
+    """Wcześniejsze wywiady dnia (bez najnowszego) — paski archiwum pod aktualnym wywiadem."""
+    return [interview_data(row) for row in _published_interviews()[1:limit + 1]]
 
 
 # --- automatyczny wybór: najgłośniejszy wywiad z politykiem z poprzedniego dnia --------------------------
@@ -359,6 +379,11 @@ def _yt(path: str, **params) -> dict:
     key = (getattr(settings, 'YOUTUBE_API_KEY', '') or os.environ.get('YOUTUBE_API_KEY', '')).strip()
     if not key:
         raise clinic_ai.ClinicAIError('youtube_key_missing')
+    from news.youtube_collect import QuotaExhausted, spend
+    try:
+        spend(path)  # wspólny licznik darmowego limitu z filmami oficjalnych kanałów
+    except QuotaExhausted:
+        raise clinic_ai.ClinicAIError('youtube_quota')
     try:
         response = requests.get(f'https://www.googleapis.com/youtube/v3/{path}', params={**params, 'key': key}, timeout=(5, 20))
         response.raise_for_status()
