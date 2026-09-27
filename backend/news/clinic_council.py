@@ -265,7 +265,13 @@ def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
         return [], {}
     if not os.environ.get('GEMINI_API_KEY', '').strip():
         return [{'claim': c, 'assessment': 'unverified', 'explanation': 'Nie sprawdzono w wyszukiwarce.', 'sources': []} for c in claims], {}
-    response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=4000)
+    try:
+        # Limit z zapasem: Gemini myśli i wyszukuje w ramach tych samych tokenów (płaci się tylko za zużyte).
+        response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=16000)
+    except ClinicAIError as error:
+        logger.warning('council fact check failed: %s', error.code)
+        return [{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.', 'sources': []}
+                for c in claims], {}
     return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
 
 
@@ -339,8 +345,9 @@ def escalate_claims(claims: list[str]) -> tuple[list[dict], dict] | None:
     if budget_left() < BUDGET_RESERVE_USD:
         return None
     try:
-        response = clinic_ai._call_claude(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=6000)
-    except ClinicAIError:
+        response = clinic_ai._call_claude(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=16000)
+    except ClinicAIError as error:
+        logger.warning('council escalation (Claude) failed: %s', error.code)
         return None
     return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
 

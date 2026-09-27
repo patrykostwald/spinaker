@@ -127,6 +127,16 @@ def diverse_rows(qs, size: int, per_source: int = DIVERSE_PER_SOURCE) -> list:
 @extend_schema(summary="Pasek materiałów: najnowsze albo dzisiejsze wiodących mediów", tags=["portal"], parameters=FEED_PARAMETERS, responses=FeedResponse)
 @api_view(['GET'])
 def feed(request):
+    # Paski strony głównej to te same zapytania u każdego czytelnika — minuta w Redis zamiast 1–2 s liczenia za każdym razem.
+    key = 'feed:v1:' + sha256(repr(sorted(request.query_params.lists())).encode()).hexdigest()
+    payload = cache.get(key)
+    if payload is None:
+        payload = _feed_payload(request)
+        cache.set(key, payload, 60)
+    return Response(payload)
+
+
+def _feed_payload(request) -> dict:
     mode = request.query_params.get('mode', 'latest')
     if mode not in ('latest', 'top'):
         raise ValidationError({'mode': 'Nieznany rodzaj paska.'})
@@ -157,13 +167,21 @@ def feed(request):
         'top_sources': SourceSerializer(sources, many=True).data,
         'selection_note': 'Dzisiejsze materiały z redakcyjnego wyboru wiodących mediów; kolejność według daty publikacji.'
             if mode == 'top' else 'Materiały dostępne w bazie, od najnowszej znanej daty publikacji. Braki danych pozostają jawne.'}
-    return Response(payload)
+    return payload
 
 
 @extend_schema(summary="Konfiguracja portalu: kategorie, tematy, katalog źródeł z grupami", tags=["portal"], responses=PortalConfigResponse)
 @api_view(['GET'])
 def portal_config(request):
-    visible = ThreadItem.objects.select_related('thread__created_by', 'article__source',
+    payload = cache.get('portal-config:v1')
+    if payload is None:
+        payload = _portal_config_payload()
+        cache.set('portal-config:v1', payload, 120)
+    return Response(payload)
+
+
+def _portal_config_payload() -> dict:
+    visible =ThreadItem.objects.select_related('thread__created_by', 'article__source',
         'article__voting', 'article__official_record', 'article__content').prefetch_related(
         'article__evidence_links').order_by('position', 'id')
     editions = Thread.objects.filter(published=True, editorial_slot__in=('government', 'opposition')).prefetch_related(
@@ -179,7 +197,7 @@ def portal_config(request):
     except PoliticalReadError:
         configured = False
     catalog_sources = Source.objects.exclude(catalog_stage='excluded').order_by('name', 'pk')
-    return Response({'categories': [{'value': value, 'label': label} for value, label in ArticleCategory.choices
+    return ({'categories': [{'value': value, 'label': label} for value, label in ArticleCategory.choices
         if value not in ('tweet', 'context')], 'top_sources': SourceSerializer(top_sources(), many=True).data,
         # The picker is also a public catalogue: candidates are visible, but remain
         # inactive until their access and ingestion path have been approved.

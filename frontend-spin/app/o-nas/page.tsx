@@ -25,6 +25,7 @@ const SECTIONS = [
   { id: 'spin-doctor', label: 'Spin doctor' },
   { id: 'o-nas', label: 'Dlaczego' },
   { id: 'klinika', label: 'Jak działa Dr. Spin' },
+  { id: 'konsylium', label: 'Konsylium AI' },
   { id: 'zasady', label: 'Zasady' },
   { id: 'czym-nie-jestesmy', label: 'Czym nie jesteśmy' },
   { id: 'pojecia', label: 'Pojęcia' },
@@ -49,6 +50,16 @@ const PARTS = [
   { href: '/', name: 'Wiadomości', status: 'działa · beta', text: 'Wiadomości mediów, instytucji publicznych i oficjalnych kanałów wideo. Każdy materiał to box ze źródłem, datą i linkiem do oryginału — w Najnowszych, na paskach i w Bazie z wyszukiwarką.' },
   { href: '/klinika', name: 'Klinika', status: 'działa · beta', text: 'Dr. Spin (AI) ocenia posty polityków z X i najgłośniejszy wywiad dnia — także warsztat prowadzącego. Techniki perswazji z cytatami, twierdzenia ze źródłami. Rządzący i opozycja tą samą miarą.' },
   { href: '#fazy', name: 'Nitki', status: 'faza II', text: 'Miejsce dla czytelników: wyjaśniasz spin sam — układasz nitkę kontekstową z materiałów z naszej Bazy albo dodanych przez link, z reakcjami i komentarzami.' },
+];
+
+/** Konsylium: kto w nim zasiada i co robi. Skład może się zmieniać — aktualny zawsze pod diagnozą. */
+const COUNCIL_ROLES = [
+  { role: 'Lekarze', who: 'gpt-oss (OpenAI) · Qwen (Alibaba) · Nemotron (NVIDIA) · Gemini (Google)', text: 'Każdy osobno i niezależnie ocenia cały post: werdykt, siłę 0–100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia. Żaden nie widzi odpowiedzi pozostałych.' },
+  { role: 'Sprawdzający fakty', who: 'Gemini z wyszukiwarką Google', text: 'Każde twierdzenie o faktach szuka w sieci. Źródło trafia do diagnozy tylko wtedy, gdy naprawdę znalazło się w wynikach wyszukiwania.' },
+  { role: 'Docisk', who: 'Claude (Anthropic) — płatny', text: 'Mocniejszy model z wyszukiwaniem wchodzi, gdy lekarze się nie zgadzają (mniej niż dwie trzecie zgodnych głosów) albo gdy spin jest mocny (70/100 i więcej) — czyli tam, gdzie pomyłka kosztowałaby najwięcej.' },
+  { role: 'Przewodniczący', who: 'Gemini (w zapasie: Nemotron, gpt-oss)', text: 'Pisze diagnozę wyłącznie z ustaleń konsylium i sprawdzenia faktów. Nie może zmienić werdyktu ani siły ani dodać techniki, której nie wskazali lekarze.' },
+  { role: 'Recenzent', who: 'Nemotron (NVIDIA)', text: 'Niezależnie sprawdza, czy diagnoza zgadza się z ocenami i źródłami. Gdy znajdzie błąd, przewodniczący poprawia tekst — raz, a recenzja zostaje jawna.' },
+  { role: 'Językoznawca', who: 'Qwen (Alibaba)', text: 'Poprawia wyłącznie polszczyznę. Gdy jego wersja odbiega od treści, zostaje tekst przewodniczącego.' },
 ];
 
 /** Droga posta do diagnozy — cztery kroki zamiast schematu rysowanego znakami. */
@@ -306,8 +317,8 @@ export default function AboutPage() {
             </li>
             <li>Oceniamy cały post: tekst, zdjęcia i grafiki (także tekst na nich) oraz strony, do których prowadzą linki.</li>
             <li>
-              Konsylium: każdy model ocenia osobno, a przy diagnozie pokazujemy, kto jak zagłosował i jaka była zgodność. Jeden model nie przesądza
-              o werdykcie — decyduje wspólna ocena według stałych zasad.
+              Konsylium: każdy model ocenia osobno, a przy diagnozie pokazujemy, kto jak zagłosował — szczegóły w sekcji{' '}
+              <a href="#konsylium">Konsylium AI</a>.
             </li>
             <li>Spin dnia to diagnoza z najwyższą siłą z dzisiaj. Waga porównuje udział postów ze spinem po każdej stronie, nie ich liczbę.</li>
             <li>
@@ -330,7 +341,47 @@ export default function AboutPage() {
           </p>
         </Section>
 
-        <Section id="zasady" index={4} kicker="Zasady" title="AI ocenia, człowiek nie poprawia">
+        <Section id="konsylium" index={4} kicker="Konsylium AI" title="Rada modeli AI zamiast jednego">
+          <div className="sc-onas-prose">
+            <p className="sc-onas-lead">
+              Każdy model AI ma swoje skrzywienia — wynikające z danych, na których go uczono, i z zasad firmy, która go zbudowała. Jeden model to jedno zdanie.
+              Dlatego Dr. Spin nie jest jednym modelem, tylko konsylium: kilka modeli różnych firm ocenia ten sam post niezależnie od siebie, a diagnoza powstaje
+              z ich wspólnej oceny według stałych, jawnych zasad.
+            </p>
+            <p>
+              Korzystamy z modeli, które najlepiej nadają się do danego zadania — otwartych i darmowych tam, gdzie wystarczą, płatnych tam, gdzie potrzebna jest
+              mocniejsza weryfikacja. Pieniądze wydajemy więc tylko na trudne przypadki.
+            </p>
+          </div>
+          <dl className="sc-onas-terms sc-onas-terms--three">
+            {COUNCIL_ROLES.map(item => (
+              <div key={item.role}>
+                <dt>{item.role}</dt>
+                <dd>
+                  <span className="sc-onas-flow__tech">{item.who}</span>
+                  <br />
+                  {item.text}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <h3 className="sc-onas-subtitle">Jak konsylium łączy głosy</h3>
+          <ul className="sc-onas-list">
+            <li><strong>Werdykt i siła</strong> — mediana głosów, czyli ocena środkowa: jeden skrajny model nie przesądza. Przy remisie wygrywa łagodniejsza ocena.</li>
+            <li><strong>Techniki</strong> — do diagnozy trafia tylko technika wskazana przez co najmniej dwóch lekarzy, zawsze z dosłownym cytatem z posta.</li>
+            <li><strong>Kworum</strong> — diagnoza powstaje, gdy odpowie co najmniej trzech lekarzy. Inaczej diagnoza się nie ukazuje — nie publikujemy oceny jednego czy dwóch modeli.</li>
+            <li><strong>Cały post</strong> — lekarze dostają tekst, opisy zdjęć i grafik (także tekst na nich) oraz tytuły i opisy stron, do których prowadzą linki.</li>
+            <li>
+              <strong>Jawność</strong> — pod każdą diagnozą pokazujemy skład konsylium, głos każdego lekarza, zgodność, wynik recenzji i to, czy był docisk
+              płatnym modelem.
+            </li>
+          </ul>
+          <p className="sc-onas-callout">
+            Nie znamy innego serwisu, który ocenia wypowiedzi polityków radą niezależnych modeli AI różnych firm i pokazuje, jak każdy z nich zagłosował.
+          </p>
+        </Section>
+
+        <Section id="zasady" index={5} kicker="Zasady" title="AI ocenia, człowiek nie poprawia">
           <ul className="sc-onas-list">
             <li>
               <strong>Automatycznie.</strong> Wybór postów, wywiadu dnia i treść diagnoz należą do AI. Zespół nie poprawia ani nie wybiera diagnoz — może je tylko
@@ -371,7 +422,7 @@ export default function AboutPage() {
           </div>
         </Section>
 
-        <Section id="czym-nie-jestesmy" index={5} kicker="Czym nie jesteśmy" title="Nie fact-check, nie czat z AI">
+        <Section id="czym-nie-jestesmy" index={6} kicker="Czym nie jesteśmy" title="Nie fact-check, nie czat z AI">
           <dl className="sc-onas-terms sc-onas-terms--three">
             <div>
               <dt>Nie fact-checking</dt>
@@ -397,7 +448,7 @@ export default function AboutPage() {
           </dl>
         </Section>
 
-        <Section id="pojecia" index={6} kicker="Pojęcia" title="Box, Twoje wiadomości, nitka kontekstowa">
+        <Section id="pojecia" index={7} kicker="Pojęcia" title="Box, Twoje wiadomości, nitka kontekstowa">
           <dl className="sc-onas-terms">
             <div>
               <dt>Box</dt>
@@ -429,7 +480,7 @@ export default function AboutPage() {
           </dl>
         </Section>
 
-        <Section id="fazy" index={7} kicker="Rozwój" title="Trzy fazy projektu">
+        <Section id="fazy" index={8} kicker="Rozwój" title="Trzy fazy projektu">
           <p className="sc-onas-prose">Przy każdej funkcji i technologii piszemy wprost, w jakim jest stanie — nie przedstawiamy planów jako czegoś, co już działa.</p>
           <dl className="sc-onas-legend" aria-label="Oznaczenia stanu">
             {STATUS_HELP.map(([status, help]) => (
@@ -483,7 +534,7 @@ export default function AboutPage() {
           </ol>
         </Section>
 
-        <Section id="wsparcie" index={8} kicker="Utrzymanie" title="Niezależni — utrzymują nas czytelnicy">
+        <Section id="wsparcie" index={9} kicker="Utrzymanie" title="Niezależni — utrzymują nas czytelnicy">
           <div className="sc-onas-prose">
             <p>
               spin.clinic korzysta z płatnych usług: oficjalnego API X, modelu AI, który stawia diagnozy, i serwera, na którym działa baza.
@@ -497,7 +548,7 @@ export default function AboutPage() {
           </div>
         </Section>
 
-        <Section id="dla-redakcji" index={9} kicker="Współpraca" title="Dla redakcji i wydawców">
+        <Section id="dla-redakcji" index={10} kicker="Współpraca" title="Dla redakcji i wydawców">
           <div className="sc-onas-prose">
             <p>
               Jeśli trafili Państwo tutaj z naszej wiadomości — dziękujemy za poświęcony czas. Materiały mediów pobieramy wyłącznie za zgodą wydawcy. Poniżej krótko, co to

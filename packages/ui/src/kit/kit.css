@@ -4267,3 +4267,6 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 
 /* O nas: pięć kroków diagnozy (strażnik → konsylium → fakty i recenzja → publikacja → wątek na X). */
 @media (min-width: 761px) { .sc-onas-flow { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); } }
+
+/* O nas — śródtytuł w sekcji (np. „Jak konsylium łączy głosy”) */
+.sc-onas-subtitle { margin: var(--sc-s-5) 0 var(--sc-s-2); color: var(--sc-text); font-size: var(--sc-t-title-s-size); line-height: var(--sc-t-title-s-lh); font-weight: var(--sc-w-title); }

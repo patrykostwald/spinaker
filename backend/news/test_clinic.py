@@ -564,9 +564,11 @@ def test_deleted_posts_keep_the_fact_but_not_the_text(ai_on, monkeypatch):
     kept, gone = post(acc, post_id='9601'), post(acc, post_id='9602')
     status = {kept.url: 200, gone.url: 404}
     monkeypatch.setattr(deleted_posts.requests, 'get', lambda url, params, timeout, headers: SimpleNamespace(status_code=status[params['url']]))
-    assert deleted_posts.check_batch(pause=0) == {'checked': 2, 'deleted': 1}
+    monkeypatch.setattr(deleted_posts, 'find_archive', lambda url, before: 'https://web.archive.org/web/20260920/' + url)
+    assert deleted_posts.check_batch(pause=0) == {'checked': 2, 'deleted': 1, 'archived': 0}
     gone.refresh_from_db(); kept.refresh_from_db()
     assert not gone.available and gone.text == '' and gone.unavailable_at  # zasady X: treść usuniętego wpisu znika
+    assert gone.archive_url.startswith('https://web.archive.org/')  # zostaje tylko link do publicznej kopii
     assert kept.available and kept.availability_checked_at
     data = APIClient().get('/api/clinic/deleted/').json()
     assert len(data['items']) == 1 and data['items'][0]['author']['handle'] == acc.handle and 'text' not in data['items'][0]
@@ -621,7 +623,7 @@ def test_council_combines_independent_opinions_by_fixed_rules():
     ]
     combined = c.combine(opinions)
     assert combined['verdict'] == 'spin' and combined['intensity'] == 70 and combined['agreement'] == '2/3'
-    assert [t['name'] for t in combined['techniques']] == ['przypisywanie intencji']  # straszenie: tylko jeden głos — odpada
+    assert [t['name'] for t in combined['techniques']] == ['Przypisywanie intencji']  # straszenie: tylko jeden głos — odpada
 
 
 @pytest.mark.django_db
@@ -641,7 +643,7 @@ def test_council_diagnosis_end_to_end_with_review_and_linguist(monkeypatch):
                 'analysis': 'Autor przedstawia wybór między swoją partią a zagrożeniem, co zawęża możliwości do dwóch.', 'limitations': 'Brak źródeł do liczby.'}
     monkeypatch.setattr(c, 'ask', fake_ask)
     result = c.diagnose({'text': POST_TEXT}, POST_TEXT)
-    assert result['verdict'] == 'spin' and result['techniques'][0]['name'] == 'fałszywa alternatywa'
+    assert result['verdict'] == 'spin' and result['techniques'][0]['name'] == 'Fałszywa alternatywa'
     assert result['claims'][0]['assessment'] == 'unverified'  # bez Gemini — bez udawanych źródeł
     assert result['usage']['council']['agreement'] == '3/3' and result['usage']['council']['review']['ok'] is True
     assert result['usage']['model'].startswith('konsylium')

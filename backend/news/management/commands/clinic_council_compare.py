@@ -36,5 +36,5 @@ class Command(BaseCommand):
             self.stdout.write(f'KONSYLIUM ({council["agreement"]}): {result["verdict"]} {result["intensity"]}/100 — {result["headline"]}')
             self.stdout.write('   techniki: ' + ', '.join(t['name'] for t in result['techniques']))
             self.stdout.write('   głosy: ' + '; '.join(f"{m['model'].split('/')[-1]} {m['verdict']} {m['intensity']}" for m in council['members']))
-            self.stdout.write(f'   recenzja: {council["review"]}')
+            self.stdout.write(f'   recenzja: {council["review"]} · docisk Claude: {"tak" if council["escalated"] else "nie"}')
             self.stdout.write('   ' + result['summary'])
