@@ -144,6 +144,10 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
         </article>
         <article>
           <p className="sc-interview__who">Prowadzący · {interview.host_name}</p>
+          {/* Werdykt prowadzącego w tym samym wierszu co gościa — teksty obu kart zaczynają się na jednej wysokości. */}
+          <p className="sc-spin-card__verdict">{interview.host.verdict
+            ? <><VerdictTag verdict={interview.host.verdict} label={interview.host.verdict_label ?? ""} /><IntensityMeter value={interview.host.intensity ?? 0} /></>
+            : <span className="sc-interview__noverdict">ocena warsztatu od kolejnych wywiadów</span>}</p>
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
@@ -200,6 +204,7 @@ function InterviewAnalysis({ interview }: { interview: Interview }) {
           ))}</ul>
         </> : null}
         <h3>Prowadzący · {interview.host_name}</h3>
+        {interview.host.verdict ? <p className="sc-spin-card__verdict"><VerdictTag verdict={interview.host.verdict} label={interview.host.verdict_label ?? ""} /><IntensityMeter value={interview.host.intensity ?? 0} /></p> : null}
         <p>{interview.host.summary}</p>
         <QuoteList interview={interview} items={interview.host.notes} />
         {interview.limitations ? <p className="sc-clinic-sotd__limits">Ograniczenia: {interview.limitations}</p> : null}

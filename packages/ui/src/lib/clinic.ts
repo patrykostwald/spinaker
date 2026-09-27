@@ -77,7 +77,8 @@ export type Interview = {
   id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
   guest_name: string; guest_role: string; host_name: string; headline: string; summary: string; overall: string;
   guest: { verdict: Verdict; verdict_label: string; intensity: number; summary: string; techniques: InterviewQuote[]; claims: InterviewClaim[] };
-  host: { summary: string; notes: InterviewQuote[] };
+  /** Werdykt i siła prowadzącego — w wywiadach ocenionych od 27.09.2026 (wcześniejsze: puste). */
+  host: { summary: string; notes: InterviewQuote[]; verdict?: Verdict; verdict_label?: string; intensity?: number };
   limitations: string; model: string; diagnosed_at: string | null;
 };
 

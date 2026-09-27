@@ -414,13 +414,17 @@ def test_interview_pipeline_keeps_only_quotes_from_the_transcript(monkeypatch):
         'guest': {'verdict': 'spin', 'intensity': 70, 'summary': 'g', 'claims': [],
                   'techniques': [{'name': 'wybiórczość', 'quote': 'Podatki spadły o połowę', 'time': '01:05', 'explanation': 'e'},
                                  {'name': 'zmyślony', 'quote': 'Tego nie powiedział', 'time': '03:00', 'explanation': 'e'}]},
-        'host': {'summary': 'h', 'notes': [{'name': 'dopytanie', 'quote': 'dane GUS mówią co innego', 'time': '02:10', 'explanation': 'e'}]}})
+        'host': {'verdict': 'no_spin', 'intensity': 150, 'summary': 'h',
+                 'notes': [{'name': 'dopytanie', 'quote': 'dane GUS mówią co innego', 'time': '02:10', 'explanation': 'e'}]}})
     interview = clinic_interview.process(clinic_interview.queue_interview('https://youtu.be/abcdefghijk'))
     assert interview.status == 'approved' and interview.title == 'Kropka nad i'
     assert [t['quote'] for t in interview.guest_analysis['techniques']] == ['Podatki spadły o połowę']
     assert interview.guest_analysis['techniques'][0]['seconds'] == 65
     data = clinic.clinic_page_data()
     assert data['interview']['host']['notes'][0]['time'] == '02:10'
+    # Prowadzący ma werdykt w tej samej skali co gość; siła przycięta do 0–100.
+    assert data['interview']['host']['verdict'] == 'no_spin' and data['interview']['host']['intensity'] == 100
+    assert data['interview']['host']['verdict_label'] == 'Bez spinu'
     assert ClinicInterview.objects.count() == 1
     with pytest.raises(ValueError):
         clinic_interview.queue_interview('https://example.com/video')

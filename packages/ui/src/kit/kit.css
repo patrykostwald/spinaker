@@ -4150,3 +4150,10 @@ html, body { overflow-x: clip; }
   .sc-spin-switch__right .sc-home-spin__meta { padding-bottom: 0; }
   .sc-home-spin:has(.sc-spin-switch__bar) { padding-top: var(--sc-s-4); }
 }
+
+/* Wywiad dnia: karty gościa i prowadzącego — te same wiersze (kto, werdykt, tekst), teksty na jednej wysokości. */
+.sc-interview__cols { grid-template-rows: auto auto 1fr; }
+.sc-interview__cols > article { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-content: start; }
+.sc-interview__cols .sc-spin-card__verdict { min-height: 26px; margin: 0; align-items: center; }
+.sc-interview__noverdict { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+@media (max-width: 760px) { .sc-interview__cols > article { grid-row: auto; grid-template-rows: none; } }
