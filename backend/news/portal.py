@@ -45,9 +45,15 @@ def hydrated(qs):
 
 
 def top_sources():
+    from news.source_groups import TOP_MEDIA_CHANNELS, YOUTUBE_CHANNEL
     rows = {source.name: source for source in Source.objects.filter(name__in=TOP_TEN,
         is_active=True).exclude(catalog_stage='excluded').exclude(url__contains='youtube.com')}
-    return [rows[name] for name in TOP_TEN if name in rows]
+    channels = list(Source.objects.filter(url__in=[YOUTUBE_CHANNEL + cid for cid in TOP_MEDIA_CHANNELS],
+        is_active=True).exclude(catalog_stage='excluded'))
+    order = {name: index for index, name in enumerate(TOP_TEN)}
+    channels.sort(key=lambda source: order.get(TOP_MEDIA_CHANNELS[source.url[len(YOUTUBE_CHANNEL):].strip('/')], 99))
+    # Strony wydawców (gdy dostaniemy zgodę) i ich oficjalne kanały YouTube.
+    return [rows[name] for name in TOP_TEN if name in rows] + channels
 
 
 def _integer(value, label, default, maximum):

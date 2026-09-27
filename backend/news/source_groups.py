@@ -27,9 +27,34 @@ TOP_MEDIA = (
 )
 
 
+# Oficjalne kanały YouTube wiodących mediów (identyfikator → nazwa z TOP_MEDIA), sprawdzone 27.09.2026.
+# Kanał należy do „top” tylko przez ten wpis — nigdy przez podobną nazwę (kanał „TV Republika” bez wpisu nie przejmie sekcji).
+TOP_MEDIA_CHANNELS = {
+    'UC_vMDcmkuEvw0N-gaP35wTA': 'Onet Wiadomości',   # Onet
+    'UC-wh71MEZ4KAx94aZyoG_qg': 'Wirtualna Polska',  # Wirtualna Polska News
+    'UC0DpwRtGw4K9tNLnUJqx9qA': 'Interia',           # INTERIA
+    'UCU8ueU3NrJdum0m94TJSdkw': 'Gazeta.pl',
+    'UC3R8278fJUWn2ysrOCJrmAQ': 'TVN24',
+    'UCb7O4-iI4pEO5UZPlOBr0Ug': 'Polsat News',       # polsatnews.pl
+    'UCzQZbOb86WvhOPoR7jgAfsA': 'TVP Info',
+    'UCc282c_TN8xIba_Z6GaDnQw': 'TV Republika',      # Telewizja Republika
+    'UCkC9YgH_FlqOhOIoTDFt4CA': 'RMF24',
+    'UCvHFbkohgX29NhaUtmkzLmg': 'Radio ZET',
+    'UClnMSAg4RVYdSLx6098RI-Q': 'pap.pl',            # Polska Agencja Prasowa
+    'UCpchzx2u5Ab8YASeJsR1WIw': 'Rzeczpospolita',
+}
+YOUTUBE_CHANNEL = 'https://www.youtube.com/channel/'
+
+
+def top_channel_id(source) -> str:
+    url = source.url or ''
+    return url[len(YOUTUBE_CHANNEL):].strip('/') if url.startswith(YOUTUBE_CHANNEL) else ''
+
+
 def portal_group(source):
-    # Kanał YouTube o nazwie redakcji (np. „TV Republika”) to nie serwis wiodącego medium — lista top dotyczy
-    # stron wydawców, na które czekamy ze zgodą.
+    if top_channel_id(source) in TOP_MEDIA_CHANNELS:
+        return 'top'
+    # Strona wydawcy z listy top (kanał YouTube — tylko przez TOP_MEDIA_CHANNELS, nie po nazwie).
     if source.name in TOP_MEDIA and 'youtube.com' not in (source.url or ''):
         return 'top'
     if source.source_type == SourceType.INSTITUTION:

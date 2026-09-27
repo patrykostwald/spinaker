@@ -67,6 +67,37 @@ def api(path: str, **params) -> dict:
     return response.json()
 
 
+# Kanały z mieszaną treścią (muzyka, rozrywka, sport, tabloid): tylko materiały o polityce i sprawach publicznych.
+TOPIC_FILTERED = {
+    'UCkNOjcTcgLaNL0-XNoe4gtw',  # Polsat
+    'UCoiRZbfYK3ztTX4LWuaA3fQ',  # RMF FM
+    'UCvHFbkohgX29NhaUtmkzLmg',  # Radio ZET
+    'UClhEl4bMD8_escGCCTmRAYg',  # Kanał Zero
+    'UCJ33TxiuEEYWLZ4ahILb0zQ',  # Super Express
+    'UCR06R8uZqcwfBOlWf-3OWoA',  # Fakt
+    'UCU8ueU3NrJdum0m94TJSdkw',  # Gazeta.pl
+    'UC0DpwRtGw4K9tNLnUJqx9qA',  # Interia
+    'UCjkNubkfecaFLZbHnnsz6pw',  # Onet Rano
+    'UC_jYNCh6rV-wl8KNR3uVooA',  # Polskie Radio
+    'UCPLkBO2r54diEmw0wpJLmiw',  # Radio 357
+    'UCNbblJZzeZUe4sL3tXeN0gQ',  # Radio Nowy Świat
+    'UCBjUPsHj7bXt24SUWNoZ0zA',  # TVP World
+}
+PUBLIC_AFFAIRS = ('sejm', 'senat', 'rząd', 'rzad', 'wybor', 'pis', 'koalicj', 'opozycj', 'ustaw', 'trybunał',
+                  'prokurat', 'wojn', 'ukrain', 'rosj', 'putin', 'nato', 'unii', 'unia europ', 'budżet', 'podat',
+                  'inflacj', 'gospodar', 'polityk', 'debat', 'protest', 'granic', 'armi', 'wojsk', 'sąd', 'afer',
+                  'komisj', 'referend', 'konstytuc', 'kpo', 'nbp', 'stopy procent', 'ceny', 'paliw', 'emerytur',
+                  'zdrowi', 'szpital', 'imigr', 'migrac', 'bezpieczeńst', 'wywiad', 'rozmowa', 'gość', 'kropka nad i',
+                  'graffiti', 'poranna rozmowa', 'wydarzenia', 'fakty', 'wiadomości', 'serwis informacyjny', 'news')
+
+
+def public_affairs(title: str) -> bool:
+    """Czy tytuł dotyczy polityki lub spraw publicznych (dla kanałów z mieszaną treścią)."""
+    from news.clinic_interview import POLITICS_WORDS, TOP_POLITICIANS
+    text = f' {title.lower()} '
+    return any(word in text for word in (*PUBLIC_AFFAIRS, *POLITICS_WORDS, *TOP_POLITICIANS))
+
+
 def official_channels():
     from news.political_models import OfficialVideoChannel
     return (OfficialVideoChannel.objects.filter(status='confirmed', collection_enabled=True)
@@ -99,6 +130,8 @@ def collect_page(channel, token: str = '') -> tuple[int, str]:
         video = details.get('videoId') or snippet.get('resourceId', {}).get('videoId', '')
         title = snippet.get('title', '')
         if not video or title in ('Private video', 'Deleted video'):
+            continue
+        if channel.channel_id in TOPIC_FILTERED and not public_affairs(title):
             continue
         article, _ = upsert_article(source=source, title=title, url=f'https://www.youtube.com/watch?v={video}',
             published_date=details.get('videoPublishedAt') or snippet.get('publishedAt'), category='video',
