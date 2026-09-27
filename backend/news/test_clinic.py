@@ -666,7 +666,7 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
 
     assert x_publish.run() == {'status': 'disabled'}  # bez kluczy i przełącznika — nic nie wysyłamy
     for key in x_publish.KEYS:
-        monkeypatch.setenv(key, 'test')
+        monkeypatch.setenv(key, 'test-key-0123456789')
     monkeypatch.setenv('X_POST_ENABLED', 'true')
     sent = []
 
