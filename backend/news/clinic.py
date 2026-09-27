@@ -121,6 +121,7 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
         'url': post.url,
         'text': post.text,
         'media_notes': ', '.join(media),
+        'media': [item for item in post.media or [] if isinstance(item, dict)],
     }
 
 
@@ -541,6 +542,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')} for claim in diagnosis.claims],
         'limitations': diagnosis.limitations,
         'x_thread': diagnosis.x_thread,
+        'council': (diagnosis.usage or {}).get('council'),
         'model': diagnosis.model_name,
         'prompt_version': diagnosis.prompt_version,
         'created_at': diagnosis.created_at,

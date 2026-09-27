@@ -137,8 +137,10 @@ class ClinicAIError(Exception):
 
 
 def provider() -> str:
-    """Dostawca płatnych diagnoz: anthropic (Claude, domyślnie) albo gemini (Google, z wyszukiwaniem Google)."""
-    return 'gemini' if os.environ.get('CLINIC_PROVIDER', '').strip().lower() == 'gemini' else 'anthropic'
+    """Kto stawia diagnozy: anthropic (Claude, domyślnie), gemini (Google z wyszukiwaniem) albo council (konsylium darmowych
+    modeli różnych firm + Gemini do faktów; długie wywiady dnia idą wtedy do Gemini)."""
+    value = os.environ.get('CLINIC_PROVIDER', '').strip().lower()
+    return value if value in ('gemini', 'council') else 'anthropic'
 
 
 def _gemini_ready() -> bool:
@@ -150,6 +152,9 @@ def enabled() -> bool:
         return False
     if provider() == 'gemini':
         return _gemini_ready()
+    if provider() == 'council':
+        from news.clinic_council import enabled as council_enabled
+        return council_enabled()
     return bool(os.environ.get('ANTHROPIC_API_KEY', '').strip())
 
 
@@ -225,7 +230,7 @@ def _error_message(error) -> str:
 
 def _call(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
     """Płatna diagnoza: Claude, a gdy wybrano Gemini albo na koncie Anthropic skończyły się środki — Gemini."""
-    if provider() == 'gemini':
+    if provider() in ('gemini', 'council'):
         return _call_gemini(system, user, schema, web_search=web_search, max_tokens=max_tokens)
     try:
         return _call_claude(system, user, schema, web_search=web_search, max_tokens=max_tokens)
@@ -424,6 +429,14 @@ def diagnose(context: dict) -> dict:
         f"Załączniki: {context.get('media_notes') or 'brak'}",
         '', 'Treść posta:', '<<<', context['text'], '>>>',
     ])
+    # Cały post, nie sam tekst: co jest na zdjęciach i dokąd prowadzą linki (opis zdjęcia — Gemini, link — tytuł i opis strony).
+    from news.post_attachments import describe
+    attachments = describe(context['text'], context.get('media') or [])
+    if attachments:
+        user += '\n\nZałączniki posta (opis automatyczny):\n' + attachments
+    if provider() == 'council':
+        from news import clinic_council
+        return clinic_council.diagnose(context, user)
     response = _call(DIAGNOSIS_SYSTEM, user, DIAGNOSIS_SCHEMA, web_search=True)
     data = _json_from_text(response.content)
     result = clean_diagnosis(data, context['text'], _search_results(response.content))

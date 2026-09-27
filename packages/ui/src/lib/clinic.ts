@@ -54,6 +54,12 @@ export type SpinDetailData = SpinCardData & {
   limitations: string;
   /** Synteza diagnozy do wątku na X (pusta, dopóki darmowy model jej nie przygotuje). */
   x_thread?: string[];
+  /** Konsylium Dr. Spina: członkowie (model, werdykt, siła), zgodność, przewodniczący, językoznawca, recenzja, docisk. */
+  council?: {
+    agreement: string; chair: string; linguist: string; escalated: boolean;
+    review: { ok: boolean | null; issues: string[]; model: string; revised?: boolean };
+    members: Array<{ model: string; verdict: string; intensity: number }>;
+  } | null;
   model: string;
   prompt_version: string;
   created_at: string;

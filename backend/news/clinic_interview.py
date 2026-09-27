@@ -232,7 +232,17 @@ def diagnose_transcript(meta: dict, transcript: str) -> dict:
     user = '\n'.join([f"Program: {meta.get('program') or meta.get('title', '')}", f"Kanał: {meta.get('channel', '')}",
                       f"Gość: {meta.get('guest_name', '')} ({meta.get('guest_role', '')})", f"Prowadzący: {meta.get('host_name', '')}",
                       f"Link: {meta.get('url', '')}", '', 'Transkrypcja:', '<<<', transcript, '>>>'])
-    response = clinic_ai._call(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+    # Wywiad dnia to jedna, najważniejsza diagnoza dnia — Claude, gdy wskazano go w CLINIC_INTERVIEW_PROVIDER (i są środki);
+    # inaczej zwykła ścieżka (Claude albo Gemini). Przy braku środków na koncie Anthropic — Gemini.
+    if os.environ.get('CLINIC_INTERVIEW_PROVIDER', '').strip().lower() == 'anthropic' and os.environ.get('ANTHROPIC_API_KEY', '').strip():
+        try:
+            response = clinic_ai._call_claude(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+        except clinic_ai.ClinicAIError as error:
+            if 'credit balance' not in error.code.lower():
+                raise
+            response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+    else:
+        response = clinic_ai._call(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
     data = clinic_ai._json_from_text(response.content)
     result = clean_interview(data, transcript, clinic_ai._search_results(response.content))
     result['usage'] = clinic_ai._usage(response)

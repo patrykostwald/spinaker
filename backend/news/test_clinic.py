@@ -607,3 +607,41 @@ def test_gemini_diagnosis_keeps_only_sources_found_by_google(monkeypatch):
     sources = [s['url'] for s in result['claims'][0]['sources']]
     assert sources == ['https://gus.gov.pl/dane']  # ta sama domena → adres z wyników; zmyślona strona odpada
     assert result['usage']['model'].startswith('gemini') and 0 < clinic_ai.cost_usd(result['usage']) < 0.1
+
+
+def test_council_combines_independent_opinions_by_fixed_rules():
+    from news import clinic_council as c
+    text = 'Rząd nie jest zainteresowany obniżką cen paliw, bo zarabia na wysokich cenach.'
+    quote = 'Rząd nie jest zainteresowany obniżką cen paliw'
+    opinions = [
+        {'model': 'a', 'verdict': 'spin', 'intensity': 70, 'techniques': [{'id': 'przypisywanie_intencji', 'quote': quote, 'explanation': 'e'}], 'claims': []},
+        {'model': 'b', 'verdict': 'spin', 'intensity': 85, 'techniques': [{'id': 'przypisywanie_intencji', 'quote': quote, 'explanation': 'e'},
+                                                                           {'id': 'straszenie', 'quote': quote, 'explanation': 'e'}], 'claims': []},
+        {'model': 'c', 'verdict': 'partial', 'intensity': 60, 'techniques': [], 'claims': []},
+    ]
+    combined = c.combine(opinions)
+    assert combined['verdict'] == 'spin' and combined['intensity'] == 70 and combined['agreement'] == '2/3'
+    assert [t['name'] for t in combined['techniques']] == ['przypisywanie intencji']  # straszenie: tylko jeden głos — odpada
+
+
+@pytest.mark.django_db
+def test_council_diagnosis_end_to_end_with_review_and_linguist(monkeypatch):
+    from news import clinic_council as c
+    monkeypatch.setenv('GROQ_API_KEY', 'g'); monkeypatch.setenv('NIM_API_KEY', 'n'); monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    monkeypatch.setenv('CLINIC_COUNCIL', 'groq:m1,groq:m2,nim:m3')
+    quote = 'Tylko my obronimy Polaków!'
+    member = {'verdict': 'spin', 'intensity': 60, 'techniques': [{'id': 'falszywa_alternatywa', 'quote': quote, 'explanation': 'e'}],
+              'claims': ['Podatki wzrosły o 50 procent']}
+    def fake_ask(m, system, user, schema, max_tokens=3000):
+        if system == c.MEMBER_SYSTEM:
+            return member
+        if system == c.REVIEW_SYSTEM:
+            return {'ok': True, 'issues': []}
+        return {'headline': 'Wpis zestawia jedną partię z obroną Polaków', 'summary': 'Post buduje fałszywą alternatywę i nie podaje źródła liczby.',
+                'analysis': 'Autor przedstawia wybór między swoją partią a zagrożeniem, co zawęża możliwości do dwóch.', 'limitations': 'Brak źródeł do liczby.'}
+    monkeypatch.setattr(c, 'ask', fake_ask)
+    result = c.diagnose({'text': POST_TEXT}, POST_TEXT)
+    assert result['verdict'] == 'spin' and result['techniques'][0]['name'] == 'fałszywa alternatywa'
+    assert result['claims'][0]['assessment'] == 'unverified'  # bez Gemini — bez udawanych źródeł
+    assert result['usage']['council']['agreement'] == '3/3' and result['usage']['council']['review']['ok'] is True
+    assert result['usage']['model'].startswith('konsylium')
