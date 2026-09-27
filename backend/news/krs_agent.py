@@ -177,23 +177,38 @@ def check_figure(figure: PublicFigure) -> dict:
 
 
 def queue(limit: int):
-    """Najpierw nigdy niesprawdzeni, potem najdawniej sprawdzeni; w obrębie — rząd, parlament, europarlament, partie."""
+    """Najpierw nigdy niesprawdzeni, potem najdawniej sprawdzeni. W obrębie (decyzja właściciela 28.09):
+    aktualni posłowie i europosłowie → aktualny rząd → senatorowie → pozostali."""
     stale = timezone.now() - timedelta(days=int(os.environ.get('KRS_RECHECK_DAYS', '60')))
-    priority = Case(*[When(role_category=category, then=Value(rank)) for rank, category in
-                      enumerate(('government', 'parliamentary', 'european', 'party', 'political', 'local'))],
-                    default=Value(9), output_field=IntegerField())
+    current = Q(status='current')
+    priority = Case(
+        When(current & Q(role_category__in=['parliamentary', 'european']) & Q(role_title__istartswith='pos'), then=Value(0)),
+        When(current & Q(role_category='european'), then=Value(0)),
+        When(current & Q(role_category='government'), then=Value(1)),
+        When(current & Q(role_category='parliamentary'), then=Value(2)),
+        default=Value(9), output_field=IntegerField())
     return (PublicFigure.objects.filter(Q(organisations_checked_at__isnull=True) | Q(organisations_checked_at__lt=stale))
             .annotate(priority=priority)
             .order_by(F('organisations_checked_at').asc(nulls_first=True), 'priority', 'canonical_name')[:limit])
 
 
+def _done_key() -> str:
+    return f'krs-agent-done:{timezone.localdate().isoformat()}'
+
+
 def run(limit: int | None = None) -> dict:
+    """Jedna partia nocna (KRS_AGENT_BATCH, domyślnie 10 osób), aż do dziennego limitu osób (KRS_AGENT_DAILY) i kwoty."""
     if not enabled():
         return {'status': 'disabled'}
-    limit = limit or int(os.environ.get('KRS_AGENT_DAILY', '10'))
+    daily = int(os.environ.get('KRS_AGENT_DAILY', '10'))
+    done = int(cache.get(_done_key(), 0))
+    take = limit or min(int(os.environ.get('KRS_AGENT_BATCH', '10')), daily - done)
+    if take <= 0:
+        return {'status': 'daily_limit', 'done_today': done}
     results = []
-    for figure in queue(limit):
+    for figure in queue(take):
         if budget_left() <= 0:
             return {'status': 'budget', 'results': results}
         results.append(check_figure(figure))
+        cache.set(_done_key(), int(cache.get(_done_key(), 0)) + 1, 60 * 60 * 30)
     return {'status': 'ok', 'results': results}

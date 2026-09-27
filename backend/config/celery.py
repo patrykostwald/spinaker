@@ -14,8 +14,8 @@ app.conf.beat_schedule = {
     'youtube-leftover': {'task': 'news.tasks.youtube_leftover_task', 'schedule': crontab(hour=8, minute=35)},
     'source-social-night': {'task': 'news.tasks.source_social_task', 'schedule': crontab(hour=3, minute=40)},
     'deleted-posts-3h': {'task': 'news.tasks.deleted_posts_task', 'schedule': crontab(minute=50, hour='*/3')},
-    # Agent KRS (Gemini + oficjalny KRS): kilka osób publicznych dziennie, nocą — KRS_AGENT_ENABLED=true.
-    'krs-agent-night': {'task': 'news.tasks.krs_agent_task', 'schedule': crontab(hour=4, minute=10)},
+    # Agent KRS (Gemini + oficjalny KRS): nocą co godzinę partia osób, aż do KRS_AGENT_DAILY — KRS_AGENT_ENABLED=true.
+    'krs-agent-night': {'task': 'news.tasks.krs_agent_task', 'schedule': crontab(hour='0-6', minute=10)},
     'weekly-report-sunday': {'task': 'news.tasks.weekly_report_task', 'schedule': crontab(day_of_week='sun', hour=20, minute=0)},
     # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
     'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
