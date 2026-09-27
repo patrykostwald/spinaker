@@ -26,8 +26,14 @@ TWEETS = 'https://api.x.com/2/tweets'
 KEYS = ('X_POST_API_KEY', 'X_POST_API_SECRET', 'X_POST_ACCESS_TOKEN', 'X_POST_ACCESS_SECRET')
 
 
+def _real(value: str) -> bool:
+    """Prawdziwy klucz, nie zastępcze „...”, „xxx” ani „TODO” z szablonu."""
+    value = (value or '').strip()
+    return len(value) >= 10 and value.strip('.x*') != '' and value.upper() not in ('TODO', 'CHANGEME')
+
+
 def enabled() -> bool:
-    return os.environ.get('X_POST_ENABLED', '').strip().lower() == 'true' and all(os.environ.get(k, '').strip() for k in KEYS)
+    return os.environ.get('X_POST_ENABLED', '').strip().lower() == 'true' and all(_real(os.environ.get(k, '')) for k in KEYS)
 
 
 def _q(value: str) -> str:
