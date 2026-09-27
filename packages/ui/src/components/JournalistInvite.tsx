@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ContextThreadStrip, ContextThreadXPreview } from "./ContextThreadStrip";
+import { ContextThreadStrip } from "./ContextThreadStrip";
 
 const CONTACT = "kontakt@spin.clinic";
 
@@ -11,7 +11,7 @@ const STEPS = [
 
 /**
  * Zaproszenie dla dziennikarzy (strona główna, między Twoimi wiadomościami a Bazą):
- * przykładowa nitka jako pasek boxów i ta sama nitka jako wątek na X.
+ * przykładowa nitka jako pasek boxów i trzy kroki w jednej linii.
  */
 export function JournalistInvite() {
   return (
@@ -29,17 +29,11 @@ export function JournalistInvite() {
         <a className="sc-onas-mail sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`}>Napisz: {CONTACT}</a>
       </header>
       <ContextThreadStrip />
-      <div className="sc-invite__below">
-        <ol className="sc-invite__steps">
-          {STEPS.map(([title, text], index) => (
-            <li key={title}><span>{index + 1}</span><div><strong>{title}</strong><p>{text}</p></div></li>
-          ))}
-        </ol>
-        <div className="sc-invite__x">
-          <p className="sc-invite__xlabel">Ta sama nitka na X</p>
-          <ContextThreadXPreview />
-        </div>
-      </div>
+      <ol className="sc-invite__steps">
+        {STEPS.map(([title, text], index) => (
+          <li key={title}><span>{index + 1}</span><div><strong>{title}</strong><p>{text}</p></div></li>
+        ))}
+      </ol>
     </aside>
   );
 }

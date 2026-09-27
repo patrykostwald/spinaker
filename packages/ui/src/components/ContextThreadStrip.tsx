@@ -33,26 +33,3 @@ export function ContextThreadStrip() {
     </figure>
   );
 }
-
-/** Ta sama nitka jako wątek na X: 1/N — tytuł i opis z linkiem do nitki; dalej po jednym wpisie na box z kartą oryginału. */
-export function ContextThreadXPreview({ limit = 3 }: { limit?: number }) {
-  const total = EXAMPLE_THREAD.boxes.length + 1;
-  return (
-    <ol className="sc-xmock" aria-label="Ta sama nitka jako wątek na X">
-      <li>
-        <span className="sc-xmock__n">1/{total}</span>
-        <p><strong>{EXAMPLE_THREAD.title}</strong></p>
-        <p>{EXAMPLE_THREAD.description}</p>
-        <span className="sc-xmock__card">spin.clinic · nitka kontekstowa</span>
-      </li>
-      {EXAMPLE_THREAD.boxes.slice(0, limit).map((box, index) => (
-        <li key={box.title}>
-          <span className="sc-xmock__n">{index + 2}/{total}</span>
-          <p><strong>{box.kind} · {box.source}</strong> — {box.title}</p>
-          <span className="sc-xmock__card">karta ze zdjęciem · strona źródła</span>
-        </li>
-      ))}
-      {EXAMPLE_THREAD.boxes.length > limit && <li className="sc-xmock__more">… i kolejne boxy jako odpowiedzi</li>}
-    </ol>
-  );
-}

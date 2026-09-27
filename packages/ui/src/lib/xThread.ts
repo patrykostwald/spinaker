@@ -54,8 +54,14 @@ export function buildXThread(spin: SpinDetailData): string[] {
     if (summary) body.push(`Twierdzenia we wpisie — ${summary}. Każde ze źródłami w pełnej diagnozie.`);
   }
   const first = `${head} ${shorten(lead, Math.max(60, leadBudget))} ${url}`;
-  const last = `Pełna diagnoza: techniki z cytatami, twierdzenia ze źródłami i ograniczenia analizy — ${url} · Diagnozę przygotowało AI.`;
-  const posts = [first, ...body.map(post => shorten(post, LIMIT - RESERVE)), last];
+  // Terapia: po jednym źródle na wpis — twierdzenie, ocena, krótkie wyjaśnienie i link (X liczy link jako 23 znaki).
+  const therapy = spin.claims.filter(claim => claim.sources.length).slice(0, 3).map((claim, index) => {
+    const intro = index === 0 ? "W ramach terapii Dr. Spin zaleca: " : "";
+    const text = `${intro}„${claim.claim}” — ${claim.assessment_label.toLowerCase()}. ${claim.explanation}`;
+    return `${shorten(text, LIMIT - RESERVE - 25)} ${claim.sources[0].url}`;
+  });
+  const last = `Pełna diagnoza i terapia: techniki z cytatami, twierdzenia ze źródłami i ograniczenia analizy — ${url} · Diagnozę przygotowało AI.`;
+  const posts = [first, ...body.filter(post => !/^Twierdzenia we wpisie/.test(post) || !therapy.length).map(post => shorten(post, LIMIT - RESERVE)), ...therapy, last];
   const total = posts.length;
   return posts.map((post, index) => {
     const numbered = `${index + 1}/${total} ${post}`;
