@@ -128,6 +128,20 @@ def _club_short(code: str) -> str:
     return CLUBS.get(code, (code, code))[0] if code else ''
 
 
+# Początek bieżącej kadencji — dla posłów i europosłów z oficjalnego rejestru bieżącej kadencji (bez odpytywania API).
+CURRENT_TERMS = {'parliamentary:sejm:': '2023-11-13', 'parliamentary:ep:': '2024-07-16'}
+
+
+def _current_term_start(figure):
+    if figure.status != 'current':
+        return None, ''
+    for prefix, start in CURRENT_TERMS.items():
+        if (figure.import_key or '').startswith(prefix):
+            club = figure.parliamentary_roster_entry.club if figure.parliamentary_roster_entry_id else ''
+            return start, _club_short(club)
+    return None, ''
+
+
 def employment_timeline_data(figure, roles, relations=()):
     """Evidence-backed entries for the profile's vertical public-role axis.
 
@@ -136,11 +150,15 @@ def employment_timeline_data(figure, roles, relations=()):
     Functions in State Treasury, municipal and other public companies (from KRS)
     join the axis with register dates (``since``/``until``); private entities do not.
     """
+    since, party = _current_term_start(figure)
     entries = [{
         'position': figure.role_title,
         'organisation': figure.organisation,
         'status': figure.status,
         'checked_at': figure.source_checked_at,
+        'since': since,
+        'party': party,
+        'headline': True,
         'source': {'label': figure.organisation or 'Oficjalne źródło', 'url': figure.evidence_url},
         'office': None,
     }]
@@ -178,6 +196,10 @@ def employment_timeline_data(figure, roles, relations=()):
         if key not in unique or (entry.get('since') and not unique[key].get('since')):
             unique[key] = entry
     entries = list(unique.values())
+    # Funkcja z nagłówka profilu ustępuje tej samej funkcji z listy ról (tam są kadencja, daty i źródło).
+    headline_key = (figure.role_title.strip().lower(), figure.status)
+    if sum(1 for e in entries if (e['position'].strip().lower(), e['status']) == headline_key) > 1:
+        entries = [e for e in entries if not (e.get('headline') and (e['position'].strip().lower(), e['status']) == headline_key)]
     # Wpis z nagłówka („Poseł na Sejm RP”, bez dat) jest zbędny, gdy ta sama funkcja ma już wpis z datami z kadencji.
     dated = {(e['position'].strip().lower(), e['status']) for e in entries if e.get('since')}
     entries = [e for e in entries if e.get('since') or (e['position'].strip().lower(), e['status']) not in dated]

@@ -6,10 +6,12 @@ Zapisujemy: kadencję, daty mandatu (ślubowanie — wygaśnięcie albo koniec k
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
 import unicodedata
 from datetime import date
+from pathlib import Path
 
 import requests
 from django.db import transaction
@@ -149,11 +151,46 @@ def current_term_fallback(figures) -> int:
     return updated
 
 
+BUNDLE = Path(__file__).resolve().parent / 'data' / 'sejm_career.json'
+
+
+def export_bundle() -> int:
+    """Zapisuje mandaty (kadencja, daty, klub — bez dat urodzenia) do pliku w repozytorium, na wypadek gdy serwer nie ma dostępu do API."""
+    rows = []
+    for role in PublicFigureRole.objects.filter(import_key__startswith='sejm-term:').select_related('public_figure'):
+        rows.append({'figure_key': role.public_figure.import_key, 'figure_name': role.public_figure.canonical_name,
+                     'key': role.import_key, 'organisation': role.organisation, 'status': role.status,
+                     'since': role.since.isoformat() if role.since else None, 'until': role.until.isoformat() if role.until else None,
+                     'party': role.party, 'evidence_url': role.evidence_url})
+    BUNDLE.parent.mkdir(parents=True, exist_ok=True)
+    BUNDLE.write_text(json.dumps(rows, ensure_ascii=False, indent=0), encoding='utf-8')
+    return len(rows)
+
+
+@transaction.atomic
+def import_bundle() -> int:
+    """Mandaty z pliku (gdy API Sejmu jest niedostępne z serwera). Profil szukamy po kluczu rejestru, potem po nazwisku."""
+    if not BUNDLE.exists():
+        return 0
+    saved = 0
+    for row in json.loads(BUNDLE.read_text(encoding='utf-8')):
+        figure = (PublicFigure.objects.filter(import_key=row['figure_key']).first() if row['figure_key'] else None) \
+            or PublicFigure.objects.filter(canonical_name=row['figure_name'], archived=False).first()
+        if not figure:
+            continue
+        PublicFigureRole.objects.update_or_create(import_key=row['key'], defaults={
+            'public_figure': figure, 'role_category': 'parliamentary', 'role_title': 'Poseł na Sejm RP',
+            'organisation': row['organisation'], 'status': row['status'], 'since': _day(row['since']), 'until': _day(row['until']),
+            'party': row['party'], 'evidence_url': row['evidence_url'], 'official_profile_url': '', 'source_checked_at': timezone.now()})
+        saved += 1
+    return saved
+
+
 def run(figures=None) -> dict:
     terms, members = load()
     if not members:
         figures = PublicFigure.objects.filter(archived=False).select_related('parliamentary_roster_entry')
-        return {'status': 'api_unavailable', 'current_term_fallback': current_term_fallback(figures)}
+        return {'status': 'api_unavailable', 'from_bundle': import_bundle(), 'current_term_fallback': current_term_fallback(figures)}
     figures = list(figures if figures is not None else PublicFigure.objects.filter(archived=False))
     # Najpierw profile powiązane z rejestrem Sejmu; duplikat bez powiązania nie przejmuje ich mandatów.
     figures.sort(key=lambda figure: not SEJM_KEY.match(figure.import_key or ''))
