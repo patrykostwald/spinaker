@@ -18,6 +18,25 @@ YOUTUBE_SKIP = {'watch', 'embed', 'playlist', 'shorts', 'results', 'feed', 'redi
 X_SKIP = {'share', 'intent', 'home', 'i', 'search', 'hashtag', 'login', 'privacy', 'tos', 'explore', 'settings', 'messages'}
 HANDLE = re.compile(r'^[A-Za-z0-9_]{1,15}$')
 STATE = 'source-social:{}'
+VERSION = 2  # 2: tylko linki do profilu X (bez cytowanych wpisów)
+
+
+def _key(text: str) -> str:
+    return re.sub(r'[^a-z0-9]', '', text.lower())
+
+
+def source_x_handle(source: Source, handles: list[str]) -> str:
+    """Konto X źródła: jedyne konto na stronie albo konto, którego nazwa pasuje do nazwy lub domeny źródła.
+    Strony partii i instytucji linkują też konta ludzi — wtedy bez pewnego dopasowania nic nie przypisujemy."""
+    if len(handles) == 1:
+        return handles[0]
+    host = (urlsplit(source.url or '').hostname or '').removeprefix('www.').split('.')[0]
+    names = {_key(source.name), _key(host)}
+    for handle in handles:
+        key = _key(handle)
+        if len(key) >= 3 and any(key in name or name in key for name in names if len(name) >= 3):
+            return handle
+    return ''
 
 
 def youtube_link(href: str) -> str:
@@ -62,7 +81,7 @@ def links_on_page(raw: bytes, base: str) -> dict:
 def discover(source: Source, network) -> dict:
     """Czyta stronę główną źródła i zapisuje znalezione linki jako dowód (ImportState)."""
     from scraper.source_probe import ProbeError
-    result = {'checked_at': timezone.now().isoformat(), 'evidence_url': source.url, 'youtube': [], 'x': []}
+    result = {'checked_at': timezone.now().isoformat(), 'evidence_url': source.url, 'youtube': [], 'x': [], 'version': VERSION}
     try:
         raw, final_url, _ = network.fetch(source.url)
         result.update(links_on_page(raw, final_url), evidence_url=final_url, status='ok')
@@ -73,6 +92,11 @@ def discover(source: Source, network) -> dict:
     state, _ = ImportState.objects.get_or_create(name=STATE.format(source.pk))
     state.cursor = result
     state.save(update_fields=['cursor'])
+    if result.get('status') == 'ok':
+        handle = source_x_handle(source, result['x'])
+        if handle != source.x_handle:
+            source.x_handle = handle
+            source.save(update_fields=['x_handle'])
     return result
 
 

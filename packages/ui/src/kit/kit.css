@@ -4157,3 +4157,7 @@ html, body { overflow-x: clip; }
 .sc-interview__cols .sc-spin-card__verdict { min-height: 26px; margin: 0; align-items: center; }
 .sc-interview__noverdict { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
 @media (max-width: 760px) { .sc-interview__cols > article { grid-row: auto; grid-template-rows: none; } }
+
+/* Źródła: linki do konta X i kanału YouTube przy nazwie źródła. */
+.sc-source-page__social { margin-left: var(--sc-s-2); padding: 1px 6px; border-radius: var(--sc-r-sm); box-shadow: var(--sc-panel-ring); color: var(--sc-text-2); font-size: var(--sc-t-caption-size); font-weight: 600; text-decoration: none; }
+.sc-source-page__social:hover { color: var(--sc-accent); }

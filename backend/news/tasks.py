@@ -119,6 +119,19 @@ def youtube_official_task():
     return collect_latest()
 
 
+@shared_task(name="news.tasks.source_social_task", soft_time_limit=1500, time_limit=1600)
+def source_social_task():
+    """W nocy: linki YouTube i X na stronach źródeł — sprawdzenia starsze niż 30 dni albo ze starszej wersji."""
+    if not cache.add("source-social-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        out = StringIO()
+        call_command("discover_source_social_links", "--limit", "80", "--apply", stdout=out)
+        return {"status": "ok", "summary": out.getvalue().strip().splitlines()[-1:]}
+    finally:
+        cache.delete("source-social-lock")
+
+
 @shared_task(name="news.tasks.youtube_leftover_task", soft_time_limit=1500, time_limit=1600)
 def youtube_leftover_task():
     """Przed resetem darmowego limitu (ok. 9:00): reszta jednostek na archiwum oficjalnych kanałów."""

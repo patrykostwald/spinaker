@@ -42,7 +42,7 @@ class SourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Source
-        fields = ('id', 'name', 'url', 'source_type', 'is_active', 'catalog_stage', 'portal_group')
+        fields = ('id', 'name', 'url', 'source_type', 'is_active', 'catalog_stage', 'portal_group', 'x_handle', 'youtube_url')
 
     @extend_schema_field(serializers.ChoiceField(choices=['top', 'publiczne', 'media']))
     def get_portal_group(self, obj):

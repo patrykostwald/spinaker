@@ -43,7 +43,9 @@ export default function SourcesPage() {
     <div className="sc-source-page__grid">
       {([['important', 'Największe media'], ['media', 'Media'], ['public', 'Publiczne']] as const).map(([key, label]) => <section key={key}>
         <h2>{label}<span>{groups[key].length}</span></h2>
-        <ul>{groups[key].map(source => <li key={source.id}><span>{source.url ? <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a> : source.name}</span><small className={source.is_active ? 'is-active' : ''}>{source.is_active ? 'Aktywne' : 'Katalog · weryfikacja'}</small></li>)}</ul>
+        <ul>{groups[key].map(source => <li key={source.id}><span>{source.url ? <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a> : source.name}
+          {source.x_handle ? <a className="sc-source-page__social" href={`https://x.com/${source.x_handle}`} target="_blank" rel="noopener noreferrer" aria-label={`${source.name} na X (@${source.x_handle})`}>X</a> : null}
+          {source.youtube_url ? <a className="sc-source-page__social" href={source.youtube_url} target="_blank" rel="noopener noreferrer" aria-label={`${source.name} na YouTube`}>YouTube</a> : null}</span><small className={source.is_active ? 'is-active' : ''}>{source.is_active ? 'Aktywne' : 'Katalog · weryfikacja'}</small></li>)}</ul>
       </section>)}
     </div>
     <section className="sc-source-page__progress"><p>POSTĘP KATALOGU</p><h2>Jak rozwija się baza źródeł?</h2><ArchiveProgress /></section>

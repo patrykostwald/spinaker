@@ -178,3 +178,34 @@ def test_feed_first_page_is_diverse_across_sources():
     assert [row['title'] for row in plain] == ['A0', 'A1', 'A2']
     mixed = APIClient().get('/api/feed/?page_size=3&diverse=1').json()['results']
     assert [row['title'] for row in mixed] == ['A0', 'B0', 'C0']
+
+
+def test_source_x_handle_only_when_unambiguous():
+    from news.source_social import source_x_handle
+    radio = Source(name='radiozet.pl', url='https://www.radiozet.pl/')
+    assert source_x_handle(radio, ['RadioZET_NEWS']) == 'RadioZET_NEWS'  # jedyne konto na stronie
+    party = Source(name='polska2050.pl', url='https://polska2050.pl/')
+    assert source_x_handle(party, ['boholownia', 'kamilwnuk22']) == ''  # konta ludzi — bez pewności nic
+    lewica = Source(name='lewica.org.pl', url='https://lewica.org.pl/')
+    assert source_x_handle(lewica, ['wlodekczarzasty', '__Lewica']) == '__Lewica'
+
+
+@pytest.mark.django_db
+def test_stale_videos_are_refreshed_or_removed(monkeypatch, settings):
+    from datetime import timedelta
+    from django.utils import timezone
+    from news import youtube_collect
+    settings.YOUTUBE_ENABLED = True; settings.YOUTUBE_API_KEY = 'test-only'
+    channel = Source.objects.create(name='Kanał', url='https://www.youtube.com/channel/UCx')
+    kept = Article.objects.create(source=channel, title='Stary tytuł', url='https://www.youtube.com/watch?v=aaaaaaaaaaa', ingestion_method='youtube', category='video')
+    gone = Article.objects.create(source=channel, title='Usunięty', url='https://www.youtube.com/watch?v=bbbbbbbbbbb', ingestion_method='youtube', category='video')
+    fresh = Article.objects.create(source=channel, title='Świeży', url='https://www.youtube.com/watch?v=ccccccccccc', ingestion_method='youtube', category='video')
+    Article.objects.filter(pk__in=[kept.pk, gone.pk]).update(updated_at=timezone.now() - timedelta(days=40))
+    class Result:
+        def raise_for_status(self): pass
+        def json(self): return {'items': [{'id': 'aaaaaaaaaaa', 'snippet': {'title': 'Nowy tytuł', 'thumbnails': {}}}]}
+    monkeypatch.setattr('news.youtube_collect.requests.get', lambda url, params, timeout: Result())
+    assert youtube_collect.refresh_stale(reserve=0) == {'refreshed': 1, 'removed': 1}
+    kept.refresh_from_db()
+    assert kept.title == 'Nowy tytuł' and not Article.objects.filter(pk=gone.pk).exists()
+    assert Article.objects.get(pk=fresh.pk).title == 'Świeży'

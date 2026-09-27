@@ -37,7 +37,8 @@ class Command(BaseCommand):
                 break
             previous = source_social.stored(source)
             when = parse_datetime(previous.get('checked_at') or '')
-            if not force and when and when >= timezone.now() - timedelta(days=30):
+            if (not force and when and when >= timezone.now() - timedelta(days=30)
+                    and previous.get('version') == source_social.VERSION):
                 result = previous
             else:
                 result = source_social.discover(source, network)

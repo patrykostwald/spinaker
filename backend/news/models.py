@@ -60,6 +60,10 @@ class Source(models.Model):
         default=SourceType.RSS,
     )
     rss_url = models.URLField("adres RSS", blank=True, max_length=4096)
+    x_handle = models.CharField("konto X", max_length=15, blank=True,
+        help_text="Konto X podlinkowane na stronie głównej źródła (dowód w ImportState source-social).")
+    youtube_url = models.URLField("kanał YouTube", max_length=300, blank=True,
+        help_text="Potwierdzony kanał YouTube źródła (OfficialVideoChannel).")
     twitter_user_id = models.CharField("Twitter user ID", max_length=64, blank=True)
     is_active = models.BooleanField("aktywne", default=True)
     scrape_enabled = models.BooleanField(default=True)

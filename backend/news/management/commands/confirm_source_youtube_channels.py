@@ -53,5 +53,8 @@ class Command(BaseCommand):
                 row.full_clean()
                 row.save()
                 youtube_collect.channel_source(row)
+                if subject and subject.youtube_url != row.channel_url:
+                    subject.youtube_url = row.channel_url
+                    subject.save(update_fields=['youtube_url'])
             confirmed += 1
         self.stdout.write(f'{"Potwierdzono" if apply else "Do potwierdzenia"}: {confirmed}' + ('' if apply else ' — uruchom z --apply.'))

@@ -123,10 +123,47 @@ def collect_latest() -> dict:
     return {'status': 'ok', 'saved': saved, 'units_left': units_left()}
 
 
+REFRESH_AFTER_DAYS = 25  # zasady YouTube API: dane odświeżone albo usunięte najpóźniej po 30 dniach
+
+
+def refresh_stale(reserve: int = LEFTOVER_RESERVE) -> dict:
+    """Odświeża tytuły i miniatury filmów starszych niż 25 dni (50 filmów = 1 jednostka).
+    Film usunięty albo ukryty przez autora znika z bazy — nie trzymamy danych, których YouTube już nie podaje."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from news.models import Article
+    refreshed = removed = 0
+    stale = Article.objects.filter(ingestion_method='youtube', updated_at__lt=timezone.now() - timedelta(days=REFRESH_AFTER_DAYS))
+    while units_left() > reserve:
+        batch = list(stale.order_by('updated_at')[:50])
+        if not batch:
+            break
+        ids = {row.url.rsplit('v=', 1)[-1][:11]: row for row in batch}
+        try:
+            data = api('videos', part='snippet', id=','.join(ids), maxResults=50)
+        except QuotaExhausted:
+            break
+        except requests.RequestException:
+            break
+        found = {item['id']: item.get('snippet', {}) for item in data.get('items', [])}
+        for video, row in ids.items():
+            snippet = found.get(video)
+            if snippet is None:
+                row.delete()
+                removed += 1
+                continue
+            row.title = (snippet.get('title') or row.title)[:500]
+            row.image_url = snippet.get('thumbnails', {}).get('medium', {}).get('url', row.image_url)
+            row.save(update_fields=['title', 'image_url', 'updated_at'])
+            refreshed += 1
+    return {'refreshed': refreshed, 'removed': removed}
+
+
 def backfill_leftover(reserve: int = LEFTOVER_RESERVE) -> dict:
-    """Przed resetem limitu: reszta darmowych jednostek na głębsze archiwum oficjalnych kanałów."""
+    """Przed resetem limitu: najpierw odświeżenie starszych filmów, potem reszta jednostek na archiwa kanałów."""
     if not enabled():
         return {'status': 'disabled'}
+    refresh = refresh_stale(reserve)
     channels = list(official_channels())
     saved = pages = 0
     active = True
@@ -148,4 +185,4 @@ def backfill_leftover(reserve: int = LEFTOVER_RESERVE) -> dict:
             saved, pages, active = saved + count, pages + 1, True
             state.cursor = {'token': token, 'done': not token}
             state.save(update_fields=['cursor'])
-    return {'status': 'ok', 'saved': saved, 'pages': pages, 'units_left': units_left()}
+    return {'status': 'ok', 'saved': saved, 'pages': pages, 'units_left': units_left(), **refresh}
