@@ -188,3 +188,10 @@ def krs_agent_task():
         return run()
     finally:
         cache.delete("krs-agent-lock")
+
+
+@shared_task(name="news.tasks.sejm_career_task", soft_time_limit=900, time_limit=960)
+def sejm_career_task():
+    """Kariera sejmowa (kadencje, daty mandatu, klub) z oficjalnego API Sejmu — raz w tygodniu."""
+    from news.sejm_career import run
+    return run()

@@ -206,7 +206,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
         <div className="sc-clinic-group">
         {data.stats ? <ClinicStats stats={data.stats} /> : null}
-        <SpinScale scale={data.scale} />
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
           {/* Jedna linia: „Rządzący” przy lewej krawędzi, tytuł na środku, „Opozycja” przy prawej. */}

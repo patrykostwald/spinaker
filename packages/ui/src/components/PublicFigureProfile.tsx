@@ -76,7 +76,7 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
   return (
     <header className="sc-public-figure-head">
       <p className="sc-public-figure-kicker">OSOBA PUBLICZNA · {ROLE_CATEGORY_LABELS[figure.role_category] ?? 'rola publiczna'}</p>
-      <h1 id={titleId} tabIndex={-1}>{figure.name}</h1>
+      <h1 id={titleId} tabIndex={-1}>{figure.name}{figure.party ? <span className="sc-party-tag" title={figure.party.name}>{figure.party.short}</span> : null}</h1>
       <p className="sc-public-figure-role">
         <span className={`sc-public-figure-status is-${figure.status}`}>{figure.status === 'current' ? 'Aktualna funkcja' : 'Była funkcja'}</span>
         {figure.role_title}{figure.organisation && <> · {figure.organisation}</>}
@@ -192,12 +192,23 @@ function XPostsSection({ figure }: { figure: PublicFigureDetail }) {
       ) : !shown.length ? (
         <Neutral>Potwierdzone konto nie ma jeszcze dostępnych wpisów w Bazie.</Neutral>
       ) : (
-        <ul className="sc-public-figure-xposts">
+        <ul className="sc-xrows">
           {shown.map(post => (
             <li key={post.id}>
-              <p className="sc-public-figure-mat-meta"><span className="sc-public-figure-tag">POST X</span><time dateTime={post.published_at}>{formatDay(post.published_at)} · {hourFormat.format(new Date(post.published_at))}</time></p>
-              <p className="sc-public-figure-xpost-text">{post.text.length > 320 ? `${post.text.slice(0, 320).replace(/\s+\S*$/, '')}…` : post.text}</p>
-              <p className="sc-public-figure-mat-links"><SourceLink href={post.url}>Otwórz wpis</SourceLink></p>
+              <a href={post.url} target="_blank" rel="noopener noreferrer" className="sc-xrow">
+                <span className="sc-xrow__avatar" aria-hidden="true">
+                  {figure.name.split(/\s+/).map(part => part[0]).slice(0, 2).join('')}
+                  {figure.party ? <small>{figure.party.short}</small> : null}
+                </span>
+                <span className="sc-xrow__body">
+                  <span className="sc-xrow__text">{post.text}</span>
+                  <span className="sc-xrow__meta">
+                    {figure.name} · @{figure.x_account?.handle} · <time dateTime={post.published_at}>{formatDay(post.published_at)}, {hourFormat.format(new Date(post.published_at))}</time>
+                    {post.likes_count ? ` · ♥ ${post.likes_count}` : ''}{post.reposts_count ? ` · ↻ ${post.reposts_count}` : ''}
+                  </span>
+                </span>
+                <span className="sc-xrow__open" aria-hidden="true">↗</span>
+              </a>
             </li>
           ))}
         </ul>
@@ -267,25 +278,76 @@ function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
   );
 }
 
+const monthYear = new Intl.DateTimeFormat('pl-PL', { month: 'short', year: 'numeric' });
+
+function span(since?: string | null, until?: string | null) {
+  if (!since) return '';
+  const start = new Date(since);
+  const end = until ? new Date(until) : new Date();
+  const months = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth());
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const y = years ? `${years} ${years === 1 ? 'rok' : years % 10 >= 2 && years % 10 <= 4 && (years < 10 || years > 20) ? 'lata' : 'lat'}` : '';
+  const m = rest ? `${rest} mies.` : '';
+  return [y, m].filter(Boolean).join(' ');
+}
+
+function dates(entry: EmploymentEntry) {
+  if (!entry.since) return entry.status === 'current' ? 'obecnie' : 'dawniej';
+  return `${monthYear.format(new Date(entry.since))} – ${entry.until ? monthYear.format(new Date(entry.until)) : 'obecnie'}`;
+}
+
+type CareerGroup = { position: string; place: string; entries: EmploymentEntry[] };
+
+/** Kolejne kadencje tej samej funkcji (np. „Poseł na Sejm RP”) łączymy w jedną grupę — jak kolejne stanowiska w jednej firmie. */
+function groupCareer(entries: EmploymentEntry[]): CareerGroup[] {
+  const groups: CareerGroup[] = [];
+  for (const entry of entries) {
+    const place = entry.organisation.split(' · ')[0];
+    const last = groups[groups.length - 1];
+    if (last && last.position === entry.position && last.place === place) last.entries.push(entry);
+    else groups.push({ position: entry.position, place, entries: [entry] });
+  }
+  return groups;
+}
+
 /** Drzewko kariery: funkcje publiczne oraz zarządy i rady spółek Skarbu Państwa, komunalnych i innych publicznych. */
 function CareerTree({ entries }: { entries: EmploymentEntry[] }) {
   if (!entries.length) return null;
+  const groups = groupCareer(entries);
   return (
     <section className="sc-career" aria-labelledby="pf-career">
       <h3 id="pf-career">Kariera publiczna</h3>
-      <p className="sc-career__lead">Stanowiska publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych — bez podmiotów prywatnych.</p>
-      <ol className="sc-career__tree">
-        {entries.map((entry, index) => (
-          <li key={`${entry.position}-${entry.organisation}-${index}`} data-status={entry.status} data-sector={entry.sector || undefined}>
-            <span className="sc-career__period">{period(entry.since, entry.until, entry.status)}</span>
-            <strong>{entry.position}</strong>
-            <span className="sc-career__org">
-              {entry.organisation}
-              {entry.sector && SECTOR_LABELS[entry.sector] ? <small> · {SECTOR_LABELS[entry.sector]}</small> : null}
-            </span>
-            {entry.source.url ? <SourceLink href={entry.source.url}>{entry.source.label}</SourceLink> : null}
-          </li>
-        ))}
+      <p className="sc-career__lead">Stanowiska publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych — z datami z oficjalnych rejestrów (Sejm, KRS).</p>
+      <ol className="sc-career__groups">
+        {groups.map((group, index) => {
+          const first = group.entries[group.entries.length - 1];
+          const lastEntry = group.entries[0];
+          const current = group.entries.some(entry => entry.status === 'current');
+          const sector = group.entries[0].sector;
+          return (
+            <li key={`${group.position}-${group.place}-${index}`} className="sc-career__group" data-status={current ? 'current' : 'former'} data-sector={sector || undefined}>
+              <span className="sc-career__logo" aria-hidden="true">{group.place.replace(/[^A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż ]/g, '').split(/\s+/).filter(Boolean).map(word => word[0]).slice(0, 2).join('').toUpperCase()}</span>
+              <div className="sc-career__main">
+                <strong>{group.position}</strong>
+                <span className="sc-career__org">{group.place}{sector && SECTOR_LABELS[sector] ? <small> · {SECTOR_LABELS[sector]}</small> : null}</span>
+                {first.since ? <span className="sc-career__span">{monthYear.format(new Date(first.since))} – {current ? 'obecnie' : lastEntry.until ? monthYear.format(new Date(lastEntry.until)) : '—'} · {span(first.since, current ? null : lastEntry.until)}{group.entries.length > 1 ? ` · ${group.entries.length} kadencje` : ''}</span> : null}
+                <ol className="sc-career__roles">
+                  {group.entries.map((entry, roleIndex) => (
+                    <li key={`${entry.organisation}-${roleIndex}`} data-status={entry.status}>
+                      <span className="sc-career__when">{dates(entry)}{entry.since ? <small> · {span(entry.since, entry.until)}</small> : null}</span>
+                      <span className="sc-career__what">
+                        {entry.organisation.includes(' · ') ? entry.organisation.split(' · ').slice(1).join(' · ') : entry.organisation}
+                        {entry.party ? <span className="sc-party-tag sc-party-tag--small">{entry.party}</span> : null}
+                        {entry.source.url ? <> · <SourceLink href={entry.source.url}>źródło</SourceLink></> : null}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
@@ -327,6 +389,7 @@ function MaterialsView({ name, counts, items, total, status, filters, setFilters
         <p>Wyniki wyszukiwania hasła „{name}” w Bazie. To wyszukiwanie tekstowe, nie potwierdzone powiązanie — materiał może dotyczyć innej osoby o tym samym nazwisku.</p>
       </header>
 
+      <div className="sc-pf-bar">
       <div className="sc-public-figure-types" role="group" aria-label="Typ materiału — kliknij, aby filtrować">
         <button type="button" aria-pressed={filters.group === ''} onClick={() => set({ group: '' })}><span>Wszystkie</span><strong>{total ?? '…'}</strong></button>
         {MATERIAL_GROUPS.map(group => (
@@ -336,25 +399,26 @@ function MaterialsView({ name, counts, items, total, status, filters, setFilters
         ))}
       </div>
 
-      <div className="sc-public-figure-filters">
-        <label htmlFor={`${uid}-source`}>Źródło
+      <div className="sc-pf-bar__selects">
+        <label htmlFor={`${uid}-source`}><span className="sc-sr-only">Źródło</span>
           <select id={`${uid}-source`} value={filters.source} onChange={event => set({ source: event.target.value ? Number(event.target.value) : '' })}>
             <option value="">Wszystkie źródła</option>
             {sources.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}
           </select>
         </label>
-        <label htmlFor={`${uid}-topic`}>Kategoria
+        <label htmlFor={`${uid}-topic`}><span className="sc-sr-only">Kategoria</span>
           <select id={`${uid}-topic`} value={filters.topic} onChange={event => set({ topic: event.target.value })}>
             <option value="">Wszystkie kategorie</option>
             {topics.map(topic => <option key={topic.value} value={topic.value}>{topic.label}</option>)}
           </select>
         </label>
-        <label htmlFor={`${uid}-order`}>Kolejność
+        <label htmlFor={`${uid}-order`}><span className="sc-sr-only">Kolejność</span>
           <select id={`${uid}-order`} value={filters.order} onChange={event => set({ order: event.target.value as MaterialFilters['order'] })}>
             <option value="desc">Od najnowszych</option>
             <option value="asc">Od najstarszych</option>
           </select>
         </label>
+      </div>
       </div>
 
       {status === 'loading' && <p role="status" className="sc-public-figure-hint">Szukam materiałów w Bazie…</p>}

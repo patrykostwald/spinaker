@@ -48,6 +48,8 @@ def figure_data(figure, include_detail=False):
     }
     if not include_detail:
         return data
+    from news.clinic import party_data
+    data['party'] = party_data(figure)
     relations = list(figure.organisation_relations.filter(
         verification_status='confirmed', organisation__archived=False,
     ).select_related('organisation').order_by('organisation__kind', 'organisation__name'))
@@ -83,6 +85,9 @@ def figure_data(figure, include_detail=False):
         'official_profile_url': role.official_profile_url,
         'evidence_url': role.evidence_url,
         'source_checked_at': role.source_checked_at,
+        'since': role.since,
+        'until': role.until,
+        'party': _club_short(role.party),
     } for role in figure.public_roles.filter(archived=False).select_related('public_office').order_by(
         'role_category', 'organisation', 'role_title')]
     data['employment_timeline'] = employment_timeline_data(figure, data['roles'], relations)
@@ -118,6 +123,11 @@ def confirmed_youtube_channels_data(figure):
 PUBLIC_SECTORS = ('state', 'municipal', 'public')
 
 
+def _club_short(code: str) -> str:
+    from news.clinic import CLUBS
+    return CLUBS.get(code, (code, code))[0] if code else ''
+
+
 def employment_timeline_data(figure, roles, relations=()):
     """Evidence-backed entries for the profile's vertical public-role axis.
 
@@ -142,6 +152,9 @@ def employment_timeline_data(figure, roles, relations=()):
             'checked_at': role['source_checked_at'],
             'source': {'label': role['organisation'] or 'Oficjalne źródło', 'url': role['evidence_url']},
             'office': role['office'],
+            'since': role.get('since'),
+            'until': role.get('until'),
+            'party': role.get('party', ''),
         })
     for relation in relations:
         if relation.organisation.sector not in PUBLIC_SECTORS:
@@ -158,14 +171,16 @@ def employment_timeline_data(figure, roles, relations=()):
             'office': None,
         })
 
-    # Ta sama funkcja z nagłówka profilu i z listy ról — jeden wpis.
-    seen, unique = set(), []
+    # Ta sama funkcja z nagłówka profilu i z listy ról — jeden wpis (zostaje ten z datami).
+    unique: dict = {}
     for entry in entries:
         key = (entry['position'].strip().lower(), (entry['organisation'] or '').strip().lower(), entry['status'])
-        if key not in seen:
-            seen.add(key)
-            unique.append(entry)
-    entries = unique
+        if key not in unique or (entry.get('since') and not unique[key].get('since')):
+            unique[key] = entry
+    entries = list(unique.values())
+    # Wpis z nagłówka („Poseł na Sejm RP”, bez dat) jest zbędny, gdy ta sama funkcja ma już wpis z datami z kadencji.
+    dated = {(e['position'].strip().lower(), e['status']) for e in entries if e.get('since')}
+    entries = [e for e in entries if e.get('since') or (e['position'].strip().lower(), e['status']) not in dated]
 
     def order(entry):
         # Najpierw aktualne, potem według daty rozpoczęcia (z KRS), a bez daty — według daty sprawdzenia.

@@ -4381,3 +4381,37 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 .sc-xmock__card { justify-self: start; padding: 4px 10px; border-radius: var(--sc-r-md, 8px); border: 1px solid var(--sc-border, rgba(255,255,255,.14)); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
 .sc-xmock__more { background: transparent !important; box-shadow: none !important; color: var(--sc-text-3) !important; }
 @media (max-width: 860px) { .sc-invite { padding: var(--sc-s-5); } .sc-invite__below { grid-template-columns: minmax(0, 1fr); } }
+
+/* Profil osoby — metka partii, jeden pasek filtrów, wpisy X jako wiersze, kariera jak na LinkedIn */
+.sc-party-tag { display: inline-flex; align-items: center; margin-left: .45em; padding: .08em .5em; border-radius: 999px; background: var(--sc-accent-soft); color: var(--sc-accent); font-size: .38em; font-weight: 700; vertical-align: middle; }
+.sc-party-tag--small { margin-left: 6px; font-size: var(--sc-t-caption-size); padding: 0 7px; }
+.sc-pf-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px; border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-pf-bar .sc-public-figure-types { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; border: 0; background: transparent; }
+.sc-pf-bar .sc-public-figure-types button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); cursor: pointer; box-shadow: none; }
+.sc-pf-bar .sc-public-figure-types button strong { color: var(--sc-text-3); font-weight: 600; }
+.sc-pf-bar .sc-public-figure-types button[aria-pressed="true"], .sc-pf-bar .sc-public-figure-types button[aria-pressed="true"] strong { background: var(--sc-accent-soft); color: var(--sc-accent); }
+.sc-pf-bar__selects { display: flex; flex-wrap: wrap; gap: 6px; }
+.sc-pf-bar__selects select { min-height: 34px; max-width: 14rem; padding: 0 12px; border: 1px solid var(--sc-line, rgba(255,255,255,.12)); border-radius: 999px; background: var(--sc-surface-2); color: var(--sc-text); font: inherit; font-size: var(--sc-t-body-s-size); }
+.sc-xrows { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sc-xrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px; border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); color: inherit; text-decoration: none; }
+.sc-xrow:hover { box-shadow: 0 0 0 1.5px var(--sc-accent); }
+.sc-xrow__avatar { position: relative; width: 56px; height: 56px; display: grid; place-items: center; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); color: var(--sc-text-2); font-weight: 700; }
+.sc-xrow__avatar small { position: absolute; left: 4px; bottom: 4px; padding: 0 5px; border-radius: 6px; background: rgba(0,0,0,.7); color: #fff; font-size: 10px; }
+.sc-xrow__body { display: grid; gap: 4px; min-width: 0; }
+.sc-xrow__text { color: var(--sc-text); font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-xrow__meta, .sc-xrow__open { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-career__groups { display: grid; gap: 12px; margin: 8px 0 0; padding: 0; list-style: none; }
+.sc-career__group { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; padding: 16px; border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-career__logo { width: 48px; height: 48px; display: grid; place-items: center; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); color: var(--sc-text-2); font-weight: 800; }
+.sc-career__group[data-status="current"] .sc-career__logo { background: var(--sc-accent-soft); color: var(--sc-accent); }
+.sc-career__group[data-sector="state"] .sc-career__logo { background: rgba(255,159,67,.16); color: #ff9f43; }
+.sc-career__main { display: grid; gap: 2px; min-width: 0; }
+.sc-career__main > strong { color: var(--sc-text); }
+.sc-career__org, .sc-career__span { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-career__roles { position: relative; display: grid; gap: 8px; margin: 8px 0 0; padding: 0 0 0 18px; list-style: none; }
+.sc-career__roles::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; background: var(--sc-line, rgba(255,255,255,.12)); }
+.sc-career__roles > li { position: relative; display: grid; gap: 1px; font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-career__roles > li::before { content: ""; position: absolute; left: -18px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-surface); border: 2px solid var(--sc-text-3); }
+.sc-career__roles > li[data-status="current"]::before { background: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-career__when { color: var(--sc-text); font-weight: 600; }
+.sc-career__when small { color: var(--sc-text-3); font-weight: 400; }

@@ -57,6 +57,8 @@ export type EmploymentEntry = {
   since?: string | null;
   until?: string | null;
   sector?: OrganisationSector;
+  /** Klub albo partia w czasie tej funkcji (np. klub w danej kadencji Sejmu). */
+  party?: string;
   source: { label: string; url: string };
 };
 
@@ -100,6 +102,8 @@ export type PublicFigureXPost = {
 export type PublicFigureDetail = PublicFigureSummary & {
   organisations: PublicFigureOrganisation[];
   employment_timeline?: EmploymentEntry[];
+  /** Obecny klub lub partia (z rejestru Sejmu albo notatki). */
+  party?: { code: string; short: string; name: string } | null;
   votes: PublicFigureVotes;
   x_account?: VerifiedXAccount | null;
   /** Wpisy wyłącznie z potwierdzonego konta X tej osoby, bez dopasowania po nazwisku. */

@@ -97,7 +97,6 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
       </header>
 
       <section className="sc-report__panel" aria-label="Waga spinu">
-        <SpinScale scale={report.scale} />
       </section>
 
       {report.spin_of_week ? (

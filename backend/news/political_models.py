@@ -256,6 +256,9 @@ class PublicFigureRole(models.Model):
     official_profile_url = models.URLField(max_length=1024, blank=True)
     evidence_url = models.URLField(max_length=1024)
     evidence_note = models.TextField(blank=True)
+    since = models.DateField(null=True, blank=True, help_text='Początek funkcji z oficjalnego źródła (np. ślubowanie posła).')
+    until = models.DateField(null=True, blank=True, help_text='Koniec funkcji z oficjalnego źródła (np. wygaśnięcie mandatu, koniec kadencji).')
+    party = models.CharField(max_length=64, blank=True, help_text='Klub albo partia w czasie tej funkcji (np. klub w danej kadencji Sejmu).')
     import_key = models.CharField(max_length=1024, blank=True, db_index=True,
         help_text='Techniczny klucz źródłowej roli; nie jest kontem społecznościowym.')
     source_checked_at = models.DateTimeField(default=timezone.now)

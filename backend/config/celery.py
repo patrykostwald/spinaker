@@ -16,6 +16,7 @@ app.conf.beat_schedule = {
     'deleted-posts-3h': {'task': 'news.tasks.deleted_posts_task', 'schedule': crontab(minute=50, hour='*/3')},
     # Agent KRS (Gemini + oficjalny KRS): nocą co godzinę partia osób, aż do KRS_AGENT_DAILY — KRS_AGENT_ENABLED=true.
     'krs-agent-night': {'task': 'news.tasks.krs_agent_task', 'schedule': crontab(hour='0-6', minute=10)},
+    'sejm-career-weekly': {'task': 'news.tasks.sejm_career_task', 'schedule': crontab(day_of_week='mon', hour=5, minute=20)},
     'weekly-report-sunday': {'task': 'news.tasks.weekly_report_task', 'schedule': crontab(day_of_week='sun', hour=20, minute=0)},
     # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
     'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
