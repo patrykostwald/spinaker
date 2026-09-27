@@ -46,7 +46,7 @@ def hydrated(qs):
 
 def top_sources():
     rows = {source.name: source for source in Source.objects.filter(name__in=TOP_TEN,
-        is_active=True).exclude(catalog_stage='excluded')}
+        is_active=True).exclude(catalog_stage='excluded').exclude(url__contains='youtube.com')}
     return [rows[name] for name in TOP_TEN if name in rows]
 
 

@@ -209,3 +209,12 @@ def test_stale_videos_are_refreshed_or_removed(monkeypatch, settings):
     kept.refresh_from_db()
     assert kept.title == 'Nowy tytuł' and not Article.objects.filter(pk=gone.pk).exists()
     assert Article.objects.get(pk=fresh.pk).title == 'Świeży'
+
+
+@pytest.mark.django_db
+def test_youtube_channel_named_like_top_media_is_not_top_media():
+    from news.portal import top_sources
+    from news.source_groups import TOP_MEDIA, portal_group
+    name = sorted(TOP_MEDIA)[0]
+    channel = Source.objects.create(name=name, url='https://www.youtube.com/channel/UCtop', is_active=True)
+    assert channel not in top_sources() and portal_group(channel) == 'media'

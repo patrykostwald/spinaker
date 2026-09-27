@@ -28,7 +28,9 @@ TOP_MEDIA = (
 
 
 def portal_group(source):
-    if source.name in TOP_MEDIA:
+    # Kanał YouTube o nazwie redakcji (np. „TV Republika”) to nie serwis wiodącego medium — lista top dotyczy
+    # stron wydawców, na które czekamy ze zgodą.
+    if source.name in TOP_MEDIA and 'youtube.com' not in (source.url or ''):
         return 'top'
     if source.source_type == SourceType.INSTITUTION:
         return 'publiczne'
