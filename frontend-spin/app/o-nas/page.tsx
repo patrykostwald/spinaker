@@ -268,13 +268,13 @@ export default function AboutPage() {
         <Section id="o-nas" index={2} kicker="Dlaczego" title="Pokazujemy chwyty, nie werdykty" level={1}>
           <div className="sc-onas-prose">
             <p className="sc-onas-lead">
-              Samo prostowanie faktów rzadko zmienia czyjeś zdanie, a często tylko je utwierdza. Skuteczniej działa pokazanie, jak zbudowano przekaz: fałszywa
-              alternatywa, przypisywanie intencji, dobór wygodnych danych. Nikt nie lubi być manipulowany — także przez swoich.
+              Każdy przekaz polityczny ma swój cel — i swoje sposoby, by go osiągnąć. Te sposoby pokazujemy: fałszywą alternatywę, przypisywanie intencji,
+              dobór wygodnych danych. Wnioski należą do Ciebie.
             </p>
             <p>
               Dlatego Dr. Spin nie rozstrzyga, kto ma rację. Rozkłada wypowiedzi polityków i przekazy mediów na czynniki pierwsze: stawia diagnozę — wskazuje
-              techniki z dosłownymi cytatami — i zaleca terapię: zestawia twierdzenia ze źródłami. Rządzących i opozycję obok siebie, tą samą miarą. Nie musisz
-              zmieniać poglądów; wystarczy, że zaczniesz dostrzegać chwyty. Dr. Spin to konsylium: kilka niezależnych modeli AI różnych firm ocenia każdy wpis
+              techniki z dosłownymi cytatami — i zaleca terapię: zestawia twierdzenia ze źródłami. Rządzących i opozycję obok siebie, tą samą miarą.
+              Dr. Spin to konsylium: kilka niezależnych modeli AI różnych firm ocenia każdy wpis
               osobno, a diagnoza powstaje z ich wspólnej oceny.
             </p>
             <p>
