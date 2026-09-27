@@ -43,8 +43,34 @@ def _norm(value: str) -> str:
     return re.sub(r'\s+', ' ', value)
 
 
+# Daty kadencji z api.sejm.gov.pl/sejm/term (stan z 27.09.2026) — zapas, gdy lista kadencji jest chwilowo niedostępna.
+KNOWN_TERMS = [
+    {'num': 1, 'from': '1991-11-25', 'to': '1993-05-31'}, {'num': 2, 'from': '1993-10-14', 'to': '1997-10-19'},
+    {'num': 3, 'from': '1997-10-20', 'to': '2001-10-18'}, {'num': 4, 'from': '2001-10-19', 'to': '2005-10-18'},
+    {'num': 5, 'from': '2005-10-19', 'to': '2007-11-04'}, {'num': 6, 'from': '2007-11-05', 'to': '2011-11-07'},
+    {'num': 7, 'from': '2011-11-08', 'to': '2015-11-11'}, {'num': 8, 'from': '2015-11-12', 'to': '2019-11-11'},
+    {'num': 9, 'from': '2019-11-12', 'to': '2023-11-12'}, {'num': 10, 'from': '2023-11-13', 'to': None, 'current': True},
+]
+
+
+def _terms() -> list[dict]:
+    """Lista kadencji: najpierw zbiorczo, potem po jednej, a na końcu stałe daty z KNOWN_TERMS."""
+    try:
+        return [term for term in _get('term') if isinstance(term, dict) and term.get('num')]
+    except (requests.RequestException, ValueError) as error:
+        logger.warning('Sejm term list: %s — pobieram kadencje po kolei', type(error).__name__)
+    terms = []
+    for known in KNOWN_TERMS:
+        try:
+            term = _get(f"term{known['num']}")
+            terms.append(term if isinstance(term, dict) and term.get('num') else known)
+        except (requests.RequestException, ValueError):
+            terms.append(known)
+    return terms
+
+
 def load() -> tuple[list[dict], dict[int, list[dict]]]:
-    terms = [term for term in _get('term') if isinstance(term, dict) and term.get('num')]
+    terms = _terms()
     members = {}
     for term in terms:
         try:
