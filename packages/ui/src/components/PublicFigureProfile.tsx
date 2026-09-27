@@ -23,7 +23,6 @@ import {
   type PublicFigureVote,
 } from '../lib/publicFigures';
 import type { Article } from '../types';
-import { AccountDialog } from './AccountDialog';
 import { ArticleFavoriteButton } from './ArticleFavoriteButton';
 import { voteLabel } from './VotingDetails';
 import { PublicFigureTimeline } from './PublicFigureTimeline';
@@ -69,8 +68,6 @@ function Neutral({ children }: { children: ReactNode }) {
 /* ——— Nagłówek profilu ——— */
 
 function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'career' | 'materials') => void }) {
-  const { ownerId } = useOwnerId();
-  const [loginOpen, setLoginOpen] = useState(false);
   const x = verifiedXAccount(figure);
   const organisations = figure.organisations.length;
   return (
@@ -119,12 +116,6 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
           {organisations > 4 && <> · <button type="button" className="sc-public-figure-textbutton" onClick={() => onSelect('relations')}>i {organisations - 4} więcej</button></>}
         </p>
       )}
-      <p className="sc-public-figure-favnote">
-        {ownerId
-          ? 'Zapisywanie profili do ulubionych jest w trakcie udostępniania. Materiały z tego profilu możesz już zapisywać znakiem ♡.'
-          : <>Zapisywanie materiałów do ulubionych wymaga konta. <button type="button" className="sc-public-figure-textbutton" onClick={() => setLoginOpen(true)}>Zaloguj się</button></>}
-      </p>
-      {loginOpen && <AccountDialog open={loginOpen} onClose={() => setLoginOpen(false)} />}
     </header>
   );
 }
