@@ -555,6 +555,10 @@ class PoliticalPost(models.Model):
         help_text='Kiedy zauważyliśmy, że wpis usunięto albo stał się niedostępny (treść wtedy usuwamy).')
     availability_checked_at = models.DateTimeField(null=True, blank=True,
         help_text='Ostatnie sprawdzenie, czy wpis nadal istnieje na X (darmowy oEmbed).')
+    archive_url = models.URLField(max_length=500, blank=True, default='',
+        help_text='Kopia usuniętego wpisu w publicznym archiwum (Wayback Machine) — tylko link, treści nie przechowujemy.')
+    archive_checked_at = models.DateTimeField(null=True, blank=True,
+        help_text='Ostatnie szukanie kopii usuniętego wpisu w archiwum.')
 
     class Meta:
         ordering = ['-published_at', '-pk']

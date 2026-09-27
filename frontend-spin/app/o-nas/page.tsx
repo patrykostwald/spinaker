@@ -311,8 +311,8 @@ export default function AboutPage() {
             </li>
             <li>Spin dnia to diagnoza z najwyższą siłą z dzisiaj. Waga porównuje udział postów ze spinem po każdej stronie, nie ich liczbę.</li>
             <li>
-              Strażnica: sprawdzamy, czy politycy usuwają posty po publikacji. Zgodnie z zasadami X nie pokazujemy treści usuniętego wpisu — tylko fakt.
-              W niedzielę wieczorem — raport tygodnia.
+              Strażnica: sprawdzamy, czy politycy usuwają posty po publikacji. Zgodnie z zasadami X nie pokazujemy treści usuniętego wpisu — pokazujemy fakt,
+              czas, po jakim zniknął, i link do kopii, jeśli ktoś niezależny zachował ją w publicznym archiwum internetu. W niedzielę wieczorem — raport tygodnia.
             </li>
             <li>
               Przekaz dnia: darmowe modele streszczają posty obozu (co najmniej trzech kont) pięć razy dziennie. Po kliknięciu — pełna analiza, lista postów źródłowych

@@ -53,6 +53,11 @@ TECHNIQUES = {
     'ukryte_zalozenie': ('ukryte założenie', 'teza przemycona jako oczywistość'),
     'autorytet_bez_zrodla': ('autorytet bez źródła', '„eksperci mówią”, „wszyscy wiedzą” bez wskazania kto'),
     'sukces_bez_kontekstu': ('sukces bez kontekstu', 'przypisanie sobie zasługi bez pełnego obrazu'),
+    'wniosek_ponad_przeslanki': ('wniosek mocniejszy niż przesłanki', 'z prawdziwego faktu wyciągnięty dalej idący wniosek, niż on uzasadnia'),
+    'insynuacja': ('insynuacja', 'zarzut zasugerowany niedopowiedzeniem, bez postawienia go wprost'),
+    'dowod_niepokazany': ('dowód, którego nie pokazano', 'powoływanie się na dane, dokumenty lub „analizy”, których nie ujawniono'),
+    'pominiecie_kontekstu': ('pominięcie kontekstu', 'fakt podany bez okoliczności, które zmieniają jego wymowę'),
+    'przeinaczenie': ('przeinaczenie faktu', 'prawdziwe zdarzenie opisane ze zniekształconym szczegółem'),
 }
 VERDICT_SCORE = {'no_spin': 0, 'partial': 1, 'spin': 2}
 SCORE_VERDICT = {0: 'no_spin', 1: 'partial', 2: 'spin'}
@@ -60,7 +65,10 @@ SCORE_VERDICT = {0: 'no_spin', 1: 'partial', 2: 'spin'}
 MEMBER_SYSTEM = f"""Jesteś członkiem konsylium Dr. Spina (spin.clinic). Oceniasz komunikat polityka, nie człowieka ani jego poglądy —
 ta sama miara dla każdej strony. Spin to przekaz zbudowany tak, by działał na korzyść nadawcy kosztem rzetelności.
 verdict: spin, partial (częściowy spin), no_spin (bez spinu), unclear (nie da się ocenić — za mało treści).
-intensity: 0–100 (0 — rzetelny komunikat, 100 — przekaz niemal wyłącznie manipulacyjny).
+intensity: 0–100 — trzymaj się skali, nie zawyżaj:
+0–20 rzetelny komunikat; 20–40 drobne uproszczenia; 40–60 wyraźne techniki, ale przekaz opiera się na prawdziwym fakcie;
+60–80 przekaz zbudowany głównie na technikach; 80–100 tylko gdy kluczowe twierdzenia są fałszywe albo manipulacja wypełnia niemal cały post.
+Prawdziwy fakt z przesadzonym wnioskiem to zwykle partial, nie spin. Ostry ton ani krytyka przeciwnika same w sobie nie są spinem.
 techniques: tylko z tej listy (pole id), każda z DOSŁOWNYM cytatem z posta (skopiuj fragment) i jednym zdaniem wyjaśnienia:
 {chr(10).join(f'- {key}: {name} — {hint}' for key, (name, hint) in TECHNIQUES.items())}
 claims: twierdzenia o faktach, które da się sprawdzić (liczby, zdarzenia, decyzje) — krótko, bez oceny.
@@ -91,9 +99,10 @@ CHECK_SCHEMA = {'type': 'object', 'properties': {'claims': {'type': 'array', 'it
 WRITER_SYSTEM = """Jesteś Dr. Spinem (spin.clinic). Dostajesz wspólną ocenę konsylium kilku modeli AI i sprawdzenie faktów.
 Napisz diagnozę WYŁĄCZNIE na tej podstawie — nie zmieniaj werdyktu ani siły, nie dodawaj faktów.
 Techniki: wyłącznie te z listy ocena_konsylium.techniques — żadnych innych, nawet jeśli wskazał je pojedynczy członek.
-Piszesz o POŚCIE, nie o procesie: nie wspominaj o modelach, członkach, głosowaniu ani ich liczbowych ocenach
+Piszesz o POŚCIE, nie o procesie: nie wspominaj o konsylium, modelach, członkach, głosowaniu, werdykcie ani liczbowych ocenach
 (wyjątek: limitations może wspomnieć rozbieżność ocen).
-headline: rzeczowy tytuł, do 110 znaków — kto/co i główne ustalenie, bez słowa „spin” w tytule. summary: 1–2 zdania — sedno. analysis: 2–3 krótkie akapity — jak zbudowany jest przekaz,
+headline: rzeczowy tytuł, do 110 znaków, który mówi, JAK zbudowano przekaz — główne ustalenie, nie sam temat
+(dobrze: „Prawdziwa liczba głosów, ale wniosek o sabotażu mocniejszy niż jedno głosowanie”; źle: „Wpis X o sprawie Y”). Bez słowa „spin” w tytule. summary: 1–2 zdania — sedno. analysis: 2–3 krótkie akapity — jak zbudowany jest przekaz,
 co mówią źródła. limitations: jedno zdanie o ograniczeniach oceny (np. rozbieżność w konsylium, brak źródeł).
 Styl raportu analitycznego: bez emocji, ironii i ocen osoby. WYŁĄCZNIE po polsku."""
 WRITER_SCHEMA = {'type': 'object', 'properties': {'headline': {'type': 'string'}, 'summary': {'type': 'string'},
@@ -243,7 +252,7 @@ def combine(opinions: list[dict]) -> dict:
     for op in judged:
         for item in {t['id']: t for t in op['techniques']}.values():
             votes.setdefault(item['id'], []).append(item)
-    techniques = [{'name': TECHNIQUES[key][0], 'quote': items[0]['quote'], 'explanation': str(items[0]['explanation'])[:600],
+    techniques = [{'name': TECHNIQUES[key][0][:1].upper() + TECHNIQUES[key][0][1:], 'quote': items[0]['quote'], 'explanation': str(items[0]['explanation'])[:600],
                    'votes': len(items)} for key, items in sorted(votes.items(), key=lambda kv: -len(kv[1])) if len(items) >= need]
     agree = sum(1 for op in judged if op['verdict'] == verdict)
     return {'verdict': verdict, 'intensity': intensity if verdict != 'no_spin' else min(intensity, 20),

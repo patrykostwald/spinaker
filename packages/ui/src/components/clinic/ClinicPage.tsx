@@ -88,6 +88,12 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
   );
 }
 
+function visibleFor(hours: number) {
+  if (hours < 1) return "w ciągu godziny";
+  if (hours < 48) return `w ciągu ${Math.ceil(hours)} godz.`;
+  return `w ciągu ${Math.ceil(hours / 24)} dni`;
+}
+
 /** Strażnica usuniętych postów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
 function DeletedPosts() {
   const query = useQuery({ queryKey: ["clinic-deleted"], queryFn: getClinicDeleted, staleTime: 10 * 60_000 });
@@ -99,14 +105,25 @@ function DeletedPosts() {
       <header className="sc-deleted__head">
         <p className="sc-clinic-kicker">Strażnica</p>
         <h2 id="deleted-title">Usunięte posty</h2>
-        <p>Wpisy, które politycy usunęli po publikacji (albo stały się niedostępne). Zgodnie z zasadami X nie pokazujemy ich treści — tylko fakt. Ostatnie 7 dni: {week}.</p>
+        <p>
+          Wpisy, które politycy usunęli po publikacji (albo stały się niedostępne). Zasady X nie pozwalają nam pokazać treści usuniętego wpisu —
+          ale jeśli ktoś zachował go w publicznym archiwum internetu, linkujemy do tej kopii. Ostatnie 7 dni: {week}.
+        </p>
+        {data.top_deleters.length ? (
+          <p className="sc-deleted__top">Najczęściej usuwający (30 dni): {data.top_deleters.map((row, index) => (
+            <span key={row.author.handle}>{index ? " · " : ""}<a href={row.author.account_url} target="_blank" rel="noopener noreferrer">{row.author.name}</a> {row.count}</span>
+          ))}</p>
+        ) : null}
       </header>
       {data.items.length ? (
         <ul className="sc-deleted__list">{data.items.map(item => (
           <li key={`${item.author.handle}-${item.published_at}`}>
             <span className="sc-deleted__who"><a href={item.author.account_url} target="_blank" rel="noopener noreferrer">{item.author.name}</a>
               <small>@{item.author.handle}{item.author.party ? ` · ${item.author.party.short}` : ""} · {item.camp_label}</small></span>
-            <span className="sc-deleted__when">opublikowany {formatDateTimePl(item.published_at)}<br />zniknął {formatDateTimePl(item.unavailable_at)}</span>
+            <span className="sc-deleted__when">opublikowany {formatDateTimePl(item.published_at)}<br />zniknął {visibleFor(item.hours_visible)} od publikacji</span>
+            <span className="sc-deleted__archive">{item.archive_url
+              ? <a href={item.archive_url} target="_blank" rel="noopener noreferrer">kopia w archiwum ↗</a>
+              : <a className="sc-deleted__search" href={item.archive_search_url} target="_blank" rel="noopener noreferrer">szukaj w archive.today ↗</a>}</span>
             <span>{item.verdict ? <VerdictTag verdict={item.verdict} label={item.verdict_label} /> : <span className="sc-deleted__none">bez diagnozy</span>}</span>
           </li>
         ))}</ul>

@@ -131,9 +131,17 @@ export const getClinicAccounts = () => apiFetch<{ results: ClinicAccount[] }>("/
 export type DeletedPost = {
   author: SpinAuthor; camp: Camp; camp_label: string; published_at: string; unavailable_at: string;
   verdict: Verdict | ""; verdict_label: string;
+  /** Godziny od publikacji do wykrycia usunięcia (górna granica — sprawdzamy co 3 godziny). */
+  hours_visible: number;
+  /** Kopia w Wayback Machine sprzed usunięcia (tylko link) albo "". */
+  archive_url: string;
+  archive_search_url: string;
 };
 export const getClinicDeleted = () =>
-  apiFetch<{ days: number; items: DeletedPost[]; week_by_camp: Partial<Record<Camp, number>> }>("/api/clinic/deleted/");
+  apiFetch<{
+    days: number; items: DeletedPost[]; week_by_camp: Partial<Record<Camp, number>>;
+    top_deleters: Array<{ author: SpinAuthor; count: number }>;
+  }>("/api/clinic/deleted/");
 
 export type FlaggedPost = { id: number; score: number | null; reason: string; screened_by: string; camp_label: string; author: SpinAuthor; post: { url: string; text: string; published_at: string } };
 
