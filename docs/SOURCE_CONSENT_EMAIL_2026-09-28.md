@@ -44,7 +44,8 @@ Przykład (wymyślony):
 Boxy wybierają Państwo z naszej Bazy albo tworzą sami — wystarczy link, tytuł
 i zdjęcie; nowy box trafia wtedy do Bazy. Kolejność ustala autor. Każdy box ma
 źródło, datę i link do oryginału, więc czytelnik trafia na Państwa stronę.
-Nitkę podpisuje autor i redakcja. To nie jest ciąg kolejnych wiadomości o tym
+Opis całej nitki mieści się w jednym wpisie na X (do 280 znaków), więc łatwo ją
+udostępnić. Nitkę podpisuje autor i redakcja. To nie jest ciąg kolejnych wiadomości o tym
 samym — takie paski nasz serwis układa sam.
 Ilustracja: https://spin.clinic/o-nas#nitka-kontekstowa
 

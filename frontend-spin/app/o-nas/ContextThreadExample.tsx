@@ -17,7 +17,7 @@ const RECIPE = [
   ['Z Bazy albo po linku', 'box wybierają Państwo z naszej Bazy albo tworzą sami — link, tytuł, zdjęcie; nowy box trafia do Bazy.'],
   ['Kolejność', 'ustala autor — tak, by czytelnik przeszedł całą historię od materiału otwierającego.'],
   ['Każdy box ze źródłem', 'nazwa źródła, data i link do oryginału — czytelnik trafia do Państwa strony.'],
-  ['Podpis', 'autor i redakcja przy nitce — nitka jest Państwa.'],
+  ['Opis jak wpis na X', 'cały opis nitki mieści się w jednym wpisie na X (do 280 znaków) — łatwo ją udostępnić. Podpisuje autor i redakcja.'],
 ];
 
 export function ContextThreadExample() {
