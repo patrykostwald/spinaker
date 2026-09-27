@@ -162,7 +162,7 @@ export function HomePage() {
             actions={
               <Dropdown
                 label={dayGroup ? `Źródła: ${sourceGroupLabel(dayGroup)}` : "Źródła: wszystkie"}
-                ariaLabel="Źródła Wiadomości dnia"
+                ariaLabel="Źródła sekcji Najnowsze"
                 mode="single"
                 presentation="auto"
                 triggerVariant="quiet"
