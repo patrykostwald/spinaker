@@ -4076,3 +4076,14 @@ html, body { overflow-x: clip; }
 .sc-clinic-sotd__full:hover { text-decoration: underline; }
 .sc-clinic-sotd__diagnosis { scroll-margin-top: 88px; }
 @media (max-width: 520px) { .sc-clinic-sotd__actions { display: flex; flex-wrap: wrap; justify-content: space-between; } }
+
+/* Przewijany tekst diagnozy i posta: szerokość stała (miejsce na pasek zarezerwowane zawsze), pasek niewidoczny,
+   pojawia się dopiero po najechaniu — tekst nie przeskakuje. */
+.sc-clinic-sotd__reading:not([data-expanded]), .sc-clinic-sotd__post blockquote {
+  overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.sc-clinic-sotd__reading:not([data-expanded]):hover, .sc-clinic-sotd__reading:not([data-expanded]):focus-visible,
+.sc-clinic-sotd__post blockquote:hover { scrollbar-color: color-mix(in srgb, var(--sc-text) 35%, transparent) transparent; }
+.sc-clinic-sotd__reading::-webkit-scrollbar, .sc-clinic-sotd__post blockquote::-webkit-scrollbar { width: 6px; }
+.sc-clinic-sotd__reading::-webkit-scrollbar-thumb, .sc-clinic-sotd__post blockquote::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+.sc-clinic-sotd__reading:hover::-webkit-scrollbar-thumb, .sc-clinic-sotd__post blockquote:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--sc-text) 35%, transparent); }
