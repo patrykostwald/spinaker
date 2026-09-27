@@ -34,6 +34,10 @@ CHANNELS = [
     ('Lewica', 'https://www.youtube.com/user/TVSLD', 'https://lewica.org.pl/', True),
     ('Polska 2050', 'https://www.youtube.com/@Polska2050Oficjalny', 'https://polska2050.pl/', True),
     ('Konfederacja', 'https://www.youtube.com/c/Konfederacja_Oficjalny', 'https://konfederacja.pl/kontakt/', True),
+    # Media dodane decyzją zespołu (27.09.2026); strony Onetu blokują automatyczne sprawdzanie.
+    ('Onet', 'https://www.youtube.com/@onet', 'https://www.onet.pl/', True),
+    ('Stan Wyjątkowy (Onet i „Newsweek”)', 'https://www.youtube.com/@stan_wyjatkowy',
+     'https://www.press.pl/tresc/86433,podcast-onetu-i-_newsweeka_-_stan-wyjatkowy_-dwa-razy-w-tygodniu_-_w-kampanii-dzieje-sie-tak-duzo_', True),
 ]
 
 
