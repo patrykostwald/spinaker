@@ -555,3 +555,19 @@ def test_silent_classifier_is_not_a_rejection(monkeypatch):
     assert clinic_interview.talk_signal('Szydło: Nie mieści mi się w głowie, że służby do tego dopuściły', '')
     # „Major wywiadu” (służby), rozmowa z ekspertem — bez polityka w tytule i bez słowa „wywiad” jako całego wyrazu.
     assert not clinic_interview.talk_signal('Fortu Trump nie będzie. Major wywiadu Robert Cheda i Jan Piński', 'rozmowa')
+
+
+@pytest.mark.django_db
+def test_deleted_posts_keep_the_fact_but_not_the_text(ai_on, monkeypatch):
+    from news import deleted_posts
+    acc = account()
+    kept, gone = post(acc, post_id='9601'), post(acc, post_id='9602')
+    status = {kept.url: 200, gone.url: 404}
+    monkeypatch.setattr(deleted_posts.requests, 'get', lambda url, params, timeout, headers: SimpleNamespace(status_code=status[params['url']]))
+    assert deleted_posts.check_batch(pause=0) == {'checked': 2, 'deleted': 1}
+    gone.refresh_from_db(); kept.refresh_from_db()
+    assert not gone.available and gone.text == '' and gone.unavailable_at  # zasady X: treść usuniętego wpisu znika
+    assert kept.available and kept.availability_checked_at
+    data = APIClient().get('/api/clinic/deleted/').json()
+    assert len(data['items']) == 1 and data['items'][0]['author']['handle'] == acc.handle and 'text' not in data['items'][0]
+    assert data['week_by_camp'] == {'opposition': 1}

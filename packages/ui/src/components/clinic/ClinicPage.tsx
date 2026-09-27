@@ -5,9 +5,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
-import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicPage, type SpinDetailData } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicDeleted, getClinicPage, type SpinDetailData } from "../../lib/clinic";
 import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
+import { formatDateTimePl } from "../../lib/utils";
 import { InterviewBox, MessageBox, MessageHistory, PoliticiansTable, SpinSwitch } from "./ClinicExtras";
 
 export { MessageBox } from "./ClinicExtras";
@@ -72,6 +73,33 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
         </Strip>
       )}
     </div>
+  );
+}
+
+/** Strażnica usuniętych postów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
+function DeletedPosts() {
+  const query = useQuery({ queryKey: ["clinic-deleted"], queryFn: getClinicDeleted, staleTime: 10 * 60_000 });
+  const data = query.data;
+  if (!data) return null;
+  const week = CAMPS.map(camp => `${CAMP_LABELS[camp].toLowerCase()} ${data.week_by_camp[camp] ?? 0}`).join(" · ");
+  return (
+    <section className="sc-deleted" aria-labelledby="deleted-title">
+      <header className="sc-deleted__head">
+        <p className="sc-clinic-kicker">Strażnica</p>
+        <h2 id="deleted-title">Usunięte posty</h2>
+        <p>Wpisy, które politycy usunęli po publikacji (albo stały się niedostępne). Zgodnie z zasadami X nie pokazujemy ich treści — tylko fakt. Ostatnie 7 dni: {week}.</p>
+      </header>
+      {data.items.length ? (
+        <ul className="sc-deleted__list">{data.items.map(item => (
+          <li key={`${item.author.handle}-${item.published_at}`}>
+            <span className="sc-deleted__who"><a href={item.author.account_url} target="_blank" rel="noopener noreferrer">{item.author.name}</a>
+              <small>@{item.author.handle}{item.author.party ? ` · ${item.author.party.short}` : ""} · {item.camp_label}</small></span>
+            <span className="sc-deleted__when">opublikowany {formatDateTimePl(item.published_at)}<br />zniknął {formatDateTimePl(item.unavailable_at)}</span>
+            <span>{item.verdict ? <VerdictTag verdict={item.verdict} label={item.verdict_label} /> : <span className="sc-deleted__none">bez diagnozy</span>}</span>
+          </li>
+        ))}</ul>
+      ) : <p className="sc-clinic-empty">W ostatnich {data.days} dniach nie zauważyliśmy usuniętych postów. Sprawdzamy co 3 godziny wpisy z ostatnich dwóch tygodni.</p>}
+    </section>
   );
 }
 
@@ -150,6 +178,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         </section>
         </div>
 
+        <DeletedPosts />
         <Politicians />
 
         <aside className="sc-clinic-journalists" aria-labelledby="journalists-title">

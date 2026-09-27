@@ -15,7 +15,7 @@ from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCa
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
 from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
-from news.clinic_api import (clinic_page, clinic_spins, clinic_spin_detail, clinic_accounts, SpinOpinionsView,
+from news.clinic_api import (clinic_page, clinic_spins, clinic_spin_detail, clinic_accounts, clinic_deleted, SpinOpinionsView,
                              suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
@@ -48,6 +48,7 @@ urlpatterns = [
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
     path('clinic/spins/<int:diagnosis_id>/opinions/', SpinOpinionsView.as_view()),
     path('clinic/accounts/', clinic_accounts),
+    path('clinic/deleted/', clinic_deleted),
     path('staff/clinic/queue/', clinic_queue),
     path('staff/clinic/interviews/', staff_interviews),
     path('staff/clinic/diagnoses/<int:diagnosis_id>/review/', review_diagnosis),

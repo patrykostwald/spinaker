@@ -119,6 +119,18 @@ def youtube_official_task():
     return collect_latest()
 
 
+@shared_task(name="news.tasks.deleted_posts_task", soft_time_limit=600, time_limit=660)
+def deleted_posts_task():
+    """Strażnica usuniętych postów polityków — darmowy oEmbed X, do 60 wpisów na przebieg."""
+    if not cache.add("deleted-posts-lock", "1", timeout=700):
+        return {"status": "locked"}
+    try:
+        from news.deleted_posts import check_batch
+        return check_batch()
+    finally:
+        cache.delete("deleted-posts-lock")
+
+
 @shared_task(name="news.tasks.source_social_task", soft_time_limit=1500, time_limit=1600)
 def source_social_task():
     """W nocy: linki YouTube i X na stronach źródeł — sprawdzenia starsze niż 30 dni albo ze starszej wersji."""

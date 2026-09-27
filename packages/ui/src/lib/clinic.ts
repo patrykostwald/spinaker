@@ -121,6 +121,14 @@ export const getClinicSpins = (camp: Camp, page: number) =>
 export const getSpin = (id: number | string) => apiFetch<SpinDetailData>(`/api/clinic/spins/${id}/`);
 export const getClinicAccounts = () => apiFetch<{ results: ClinicAccount[] }>("/api/clinic/accounts/");
 
+/** Usunięte posty polityków — sam fakt (kto, kiedy, czy był spinem), bez treści (zasady X). */
+export type DeletedPost = {
+  author: SpinAuthor; camp: Camp; camp_label: string; published_at: string; unavailable_at: string;
+  verdict: Verdict | ""; verdict_label: string;
+};
+export const getClinicDeleted = () =>
+  apiFetch<{ days: number; items: DeletedPost[]; week_by_camp: Partial<Record<Camp, number>> }>("/api/clinic/deleted/");
+
 export type FlaggedPost = { id: number; score: number | null; reason: string; screened_by: string; camp_label: string; author: SpinAuthor; post: { url: string; text: string; published_at: string } };
 
 export type ClinicQueue = {

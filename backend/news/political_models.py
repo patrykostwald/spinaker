@@ -551,6 +551,10 @@ class PoliticalPost(models.Model):
     response_sha256 = models.CharField(max_length=64)
     camp_at_collection = models.CharField(max_length=12, choices=ACCOUNT_CAMPS)
     available = models.BooleanField(default=True, db_index=True)
+    unavailable_at = models.DateTimeField(null=True, blank=True, db_index=True,
+        help_text='Kiedy zauważyliśmy, że wpis usunięto albo stał się niedostępny (treść wtedy usuwamy).')
+    availability_checked_at = models.DateTimeField(null=True, blank=True,
+        help_text='Ostatnie sprawdzenie, czy wpis nadal istnieje na X (darmowy oEmbed).')
 
     class Meta:
         ordering = ['-published_at', '-pk']

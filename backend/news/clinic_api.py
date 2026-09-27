@@ -69,6 +69,13 @@ def clinic_accounts(request):
     return Response({'results': clinic.accounts_data()})
 
 
+@extend_schema(summary='Usunięte posty polityków (bez treści)', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+def clinic_deleted(request):
+    from news.deleted_posts import deleted_data
+    return Response(deleted_data())
+
+
 class SpinOpinionSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
 
