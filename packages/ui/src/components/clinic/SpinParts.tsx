@@ -25,7 +25,11 @@ export function SpinAvatar({ author, size = "md" }: { author: SpinAuthor; size?:
   );
 }
 
-export function SpinAuthorRow({ author, publishedAt, size = "md" }: { author: SpinAuthor; publishedAt: string; size?: "md" | "lg" }) {
+export function SpinAuthorRow({ author, publishedAt, size = "md", caption }: {
+  author: SpinAuthor; publishedAt: string; size?: "md" | "lg";
+  /** Opcjonalny napis nad metką partii w prawym rogu (np. „Opozycja”). */
+  caption?: string;
+}) {
   return (
     <header className="sc-spin-author">
       <SpinAvatar author={author} size={size} />
@@ -38,7 +42,7 @@ export function SpinAuthorRow({ author, publishedAt, size = "md" }: { author: Sp
           {" · "}<time dateTime={publishedAt}>{formatDateTimePl(publishedAt)}</time>
         </p>
       </div>
-      <span className="sc-spin-author__party"><PartyBadge party={author.party} /></span>
+      <span className="sc-spin-author__party">{caption ? <span className="sc-spin-author__caption">{caption}</span> : null}<PartyBadge party={author.party} /></span>
     </header>
   );
 }

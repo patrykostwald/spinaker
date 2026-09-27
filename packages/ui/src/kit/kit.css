@@ -4132,3 +4132,9 @@ html, body { overflow-x: clip; }
 .sc-home-threads .sc-reorder-strips__list { gap: 0; }
 .sc-home-threads .sc-strip-row { padding: var(--sc-s-4) 0; border-top: 1px solid var(--sc-line); }
 .sc-home-threads .sc-strip-row:last-child { padding-bottom: 0; }
+
+/* Spin dnia: „Opozycja”/„Rządzący” w prawym rogu wiersza autora (na wysokości tytułu diagnozy), metka partii pod
+   napisem; zdjęcie i nazwisko wyśrodkowane w pionie względem tej pary. */
+.sc-spin-author__party:has(.sc-spin-author__caption) { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; align-self: stretch; justify-content: flex-start; }
+.sc-spin-author__caption { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; line-height: 1.2; white-space: nowrap; }
+.sc-clinic-sotd__post .sc-spin-author { align-items: center; }

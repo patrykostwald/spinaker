@@ -23,8 +23,7 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
     <div className="sc-clinic-sotd__body">
       <div className="sc-clinic-sotd__main">
         <div className="sc-clinic-sotd__post">
-          <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" />
-          <p className="sc-clinic-sotd__camp">{spin.camp_label}</p>
+          <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" caption={spin.camp_label} />
           <blockquote>{spin.post.text}</blockquote>
           <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
         </div>
