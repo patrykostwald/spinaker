@@ -4581,3 +4581,8 @@ html[data-touch-scroll="guard"] [data-scroll-active] {
 .sc-home-threads__line { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); min-width: 0; }
 .sc-home-threads__line .sc-home-threads__hint { margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-home-threads__line > :last-child { flex: none; }
+
+/* Drugi wywiad dnia na głównej: nagłówek jak przy pierwszym (h3), oddzielony od pierwszego boxu linią. */
+.sc-home-interview__head:not(:first-child) { border-top: 1px solid var(--sc-hairline); padding-top: var(--sc-s-4); }
+.sc-home-interview__head:not(:first-child) + .sc-interview { border-top: 1px solid var(--sc-hairline); padding-top: var(--sc-s-4); }
+@media (max-width: 900px) { .sc-home-interview__head:not(:first-child) + .sc-interview { border-top: 0; padding-top: 0; } }

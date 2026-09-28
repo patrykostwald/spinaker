@@ -370,13 +370,33 @@ def _published_interviews():
     return ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True).order_by('-day', '-diagnosed_at')
 
 
+def _edition(limit: int = 12):
+    """Bieżące „wydanie”: wywiady ocenione tego samego dnia co najnowszy — najwyżej dwa, w kolejności oceny
+    (najpierw wywiad dnia z automatu, potem wywiad dodany ręcznie jako drugi). Reszta idzie do archiwum."""
+    rows = list(_published_interviews()[:limit + 2])
+    if not rows:
+        return [], []
+    stamp = lambda row: row.diagnosed_at or row.created_at
+    day = timezone.localdate(stamp(rows[0]))
+    current = sorted([row for row in rows if timezone.localdate(stamp(row)) == day], key=stamp)[:2]
+    return current, [row for row in rows if row not in current]
+
+
 def latest_interview_data() -> dict | None:
-    return interview_data(_published_interviews().first())
+    current, _ = _edition()
+    return interview_data(current[0]) if current else None
+
+
+def second_interview_data() -> dict | None:
+    """Drugi wywiad dnia (dodany ręcznie tego samego dnia), jeśli jest."""
+    current, _ = _edition()
+    return interview_data(current[1]) if len(current) > 1 else None
 
 
 def interview_archive(limit: int = 10) -> list[dict]:
-    """Wcześniejsze wywiady dnia (bez najnowszego) — paski archiwum pod aktualnym wywiadem."""
-    return [interview_data(row) for row in _published_interviews()[1:limit + 1]]
+    """Wcześniejsze wywiady dnia (bez bieżącego wydania) — paski archiwum pod aktualnym wywiadem."""
+    _, rest = _edition(limit)
+    return [interview_data(row) for row in rest[:limit]]
 
 
 # --- automatyczny wybór: najgłośniejszy wywiad z politykiem z poprzedniego dnia --------------------------

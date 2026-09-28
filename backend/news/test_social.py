@@ -76,3 +76,24 @@ def test_bluesky_post_once_and_removed_when_author_deletes(monkeypatch):
     deleted_posts.mark_deleted(row.post)
     item.refresh_from_db()
     assert calls[-1].endswith('deleteRecord') and item.deleted_at is not None
+
+
+@pytest.mark.django_db
+def test_second_interview_of_the_day_sits_under_the_automatic_one():
+    from datetime import timedelta
+    from news import clinic_interview
+    from news.clinic_models import ClinicInterview
+    now = timezone.now()
+
+    def make(vid, day, hours_ago):
+        return ClinicInterview.objects.create(video_id=vid, url=f'https://www.youtube.com/watch?v={vid}', day=day,
+                                              status='approved', headline=vid, diagnosed_at=now - timedelta(hours=hours_ago))
+    today = timezone.localdate()
+    old = make('AAAAAAAAAA1', today - timedelta(days=2), 30)       # wczorajsze wydanie → archiwum
+    auto = make('AAAAAAAAAA2', today - timedelta(days=1), 2)       # automat rano: rozmowa z wczoraj
+    manual = make('AAAAAAAAAA3', today, 0)                          # dodany ręcznie: dzisiejsza rozmowa
+    if timezone.localdate(auto.diagnosed_at) != timezone.localdate(manual.diagnosed_at):
+        pytest.skip('test uruchomiony tuż po północy')
+    assert clinic_interview.latest_interview_data()['id'] == auto.pk
+    assert clinic_interview.second_interview_data()['id'] == manual.pk
+    assert [row['id'] for row in clinic_interview.interview_archive()] == [old.pk]

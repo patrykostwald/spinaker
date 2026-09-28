@@ -107,8 +107,10 @@ function QuoteList({ interview, items }: { interview: Interview; items: Intervie
 }
 
 /** Wywiad dnia: pasek z miniaturą i tytułem, pod nim Dr. Spin o gościu i o prowadzącym, na dole podsumowanie. */
-export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore, archive = [] }: {
+export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore, archive = [], kicker = "Wywiad dnia" }: {
   interview: Interview;
+  /** Napis nad tytułem — „Wywiad dnia” albo „Drugi wywiad dnia”. */
+  kicker?: string;
   /** Wcześniejsze wywiady — paski z datą po lewej, pod aktualnym wywiadem (ten sam panel). */
   archive?: Interview[];
   /** Opcjonalnie: okno analizy sterowane z zewnątrz (np. link w nagłówku sekcji na głównej). */
@@ -130,7 +132,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
         {hideMore ? null : <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>}
         </div>
         <div className="sc-interview__head">
-          <p className="sc-clinic-kicker">Wywiad dnia <AiTag /><span className="sc-clinic-message__meta">{interview.channel} · {formatDatePl(interview.day)}</span></p>
+          <p className="sc-clinic-kicker">{kicker} <AiTag /><span className="sc-clinic-message__meta">{interview.channel} · {formatDatePl(interview.day)}</span></p>
           <h3 id={`interview-${interview.id}`}><button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog">{interview.headline || interview.title}</button></h3>
           <p className="sc-interview__summary">{interview.summary}</p>
           {interview.overall ? <p className="sc-interview__lede">{interview.overall}</p> : null}

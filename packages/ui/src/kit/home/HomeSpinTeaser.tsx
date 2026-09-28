@@ -30,6 +30,7 @@ export function HomeSpinTeaser() {
   const right = data ? sharePercent(data.scale.opposition) : null;
   const [slot, setSlot] = useState<string | null>(null);
   const [interviewOpen, setInterviewOpen] = useState(false);
+  const [secondOpen, setSecondOpen] = useState(false);
   useEffect(() => setSlot(nextMessageSlot(new Date())), []);
   const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
   return (
@@ -45,6 +46,18 @@ export function HomeSpinTeaser() {
           <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
         </header>
         <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore />
+        {/* Drugi wywiad dnia (dodany ręcznie) — ten sam układ: nagłówek po lewej, box po prawej. */}
+        {data.interview_second ? (
+          <>
+            <header className="sc-home-interview__head">
+              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
+              <h3 className="sc-t-title-l sc-home-section__title">Drugi wywiad dnia</h3>
+              <p className="sc-home-spin__meta">{data.interview_second.channel} · {formatDatePl(data.interview_second.day)}</p>
+              <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setSecondOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
+            </header>
+            <InterviewBox interview={data.interview_second} open={secondOpen} onOpenChange={setSecondOpen} hideMore kicker="Drugi wywiad dnia" />
+          </>
+        ) : null}
         {/* Wcześniejsze wywiady na pełną szerokość sekcji — od lewej krawędzi, jak tytuł „Wywiad dnia”. */}
         {data.interview_archive?.length ? <div className="sc-home-interview__archive"><InterviewArchive items={data.interview_archive.slice(0, 3)} /></div> : null}
       </section>

@@ -97,6 +97,8 @@ export type ClinicPageData = {
   spin_of_day: SpinDetailData | null;
   latest_spin: SpinDetailData | null;
   interview: Interview | null;
+  /** Drugi wywiad dnia — dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */
+  interview_second?: Interview | null;
   /** Wcześniejsze wywiady dnia (bez aktualnego), najnowsze najpierw. */
   interview_archive?: Interview[];
   message_history: Record<Camp, DailyMessage[]>;
