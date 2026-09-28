@@ -130,11 +130,39 @@ def _oembed(url: str) -> dict:
         return {}
 
 
-def transcribe(url: str) -> tuple[dict, dict]:
-    """Gemini czyta publiczny film po linku i zwraca transkrypcję (JSON) oraz zużycie."""
+CHUNK_SECONDS = 600       # długie nagrania transkrybujemy w kawałkach po 10 minut (limit długości odpowiedzi Gemini)
+MIN_CHUNK_SECONDS = 120   # kawałek, który i tak się nie mieści, dzielimy na pół — najwyżej do 2 minut
+
+
+def _fmt_time(total: int) -> str:
+    hours, rest = divmod(max(0, int(total)), 3600)
+    minutes, secs = divmod(rest, 60)
+    return f'{hours}:{minutes:02d}:{secs:02d}' if hours else f'{minutes:02d}:{secs:02d}'
+
+
+def video_seconds(url: str) -> int:
+    """Długość filmu z YouTube Data API (1 jednostka limitu); 0, gdy nie wiadomo — wtedy jeden kawałek."""
+    vid = video_id(url)
+    if not vid:
+        return 0
+    try:
+        items = _yt('videos', part='contentDetails', id=vid).get('items') or []
+    except clinic_ai.ClinicAIError:
+        return 0
+    return _duration_seconds(items[0]['contentDetails'].get('duration', '')) if items else 0
+
+
+def _transcribe_part(url: str, start: int | None = None, end: int | None = None) -> tuple[dict, dict]:
+    """Jedno zapytanie do Gemini: cały film albo fragment start–end (videoMetadata)."""
     model = os.environ.get('CLINIC_INTERVIEW_MODEL', '').strip() or 'gemini-3.8-flash'
+    part = {'file_data': {'file_uri': url}}
+    prompt = TRANSCRIPT_PROMPT
+    if start is not None and end is not None:
+        part['video_metadata'] = {'start_offset': f'{start}s', 'end_offset': f'{end}s'}
+        prompt += (f'\n\nTo fragment filmu od {_fmt_time(start)} do {_fmt_time(end)}. Transkrybuj tylko ten fragment; '
+                   'czas każdej wypowiedzi podawaj od początku CAŁEGO filmu.')
     body = {
-        'contents': [{'parts': [{'file_data': {'file_uri': url}}, {'text': TRANSCRIPT_PROMPT}]}],
+        'contents': [{'parts': [part, {'text': prompt}]}],
         'generationConfig': {'responseMimeType': 'application/json', 'responseSchema': TRANSCRIPT_SCHEMA,
                              'mediaResolution': 'MEDIA_RESOLUTION_LOW', 'maxOutputTokens': 60000, 'temperature': 0},
     }
@@ -153,11 +181,60 @@ def transcribe(url: str) -> tuple[dict, dict]:
     except (KeyError, IndexError, ValueError):
         reason = ((payload.get('candidates') or [{}])[0] or {}).get('finishReason', '')
         raise clinic_ai.ClinicAIError(f'gemini_invalid_json {reason}'.strip())
-    if not data.get('segments'):
-        raise clinic_ai.ClinicAIError('gemini_empty_transcript')
     usage = payload.get('usageMetadata', {})
     return data, {'model': model, 'input_tokens': usage.get('promptTokenCount', 0),
                   'output_tokens': usage.get('candidatesTokenCount', 0)}
+
+
+def _chunk(url: str, start: int, end: int) -> tuple[list[dict], dict, dict]:
+    """Fragment filmu; gdy odpowiedź się nie mieści (urwany JSON), dzielimy fragment na pół."""
+    try:
+        data, usage = _transcribe_part(url, start, end)
+    except clinic_ai.ClinicAIError as error:
+        if error.code.startswith('gemini_invalid_json') and end - start > MIN_CHUNK_SECONDS:
+            middle = start + (end - start) // 2
+            left, meta, usage_a = _chunk(url, start, middle)
+            right, meta_b, usage_b = _chunk(url, middle, end)
+            return left + right, {**meta_b, **{k: v for k, v in meta.items() if v}}, _add_usage(usage_a, usage_b)
+        raise
+    segments = [row for row in data.get('segments') or [] if str(row.get('text', '')).strip()]
+    # Część modeli liczy czas od początku fragmentu, nie filmu — wtedy przesuwamy o początek fragmentu.
+    first = seconds(segments[0].get('time')) if segments else None
+    if start and first is not None and first < start - 60:
+        for row in segments:
+            value = seconds(row.get('time'))
+            if value is not None:
+                row['time'] = _fmt_time(value + start)
+    meta = {key: data.get(key, '') for key in ('program', 'guest_name', 'guest_role', 'host_name')}
+    return segments, meta, usage
+
+
+def _add_usage(a: dict, b: dict) -> dict:
+    return {'model': a.get('model') or b.get('model', ''),
+            'input_tokens': int(a.get('input_tokens') or 0) + int(b.get('input_tokens') or 0),
+            'output_tokens': int(a.get('output_tokens') or 0) + int(b.get('output_tokens') or 0)}
+
+
+def transcribe(url: str) -> tuple[dict, dict]:
+    """Gemini czyta publiczny film po linku i zwraca transkrypcję (JSON) oraz zużycie.
+
+    Filmy dłuższe niż CHUNK_SECONDS idą kawałkami (videoMetadata) — jedna odpowiedź na 30+ minut rozmowy
+    przekracza limit długości i urywa JSON w połowie."""
+    total = video_seconds(url)
+    if total <= CHUNK_SECONDS + 60:
+        data, usage = _transcribe_part(url)
+        if not data.get('segments'):
+            raise clinic_ai.ClinicAIError('gemini_empty_transcript')
+        return data, usage
+    segments, meta, usage = [], {}, {}
+    for start in range(0, total, CHUNK_SECONDS):
+        part, part_meta, part_usage = _chunk(url, start, min(total, start + CHUNK_SECONDS))
+        segments += part
+        meta = {**part_meta, **{k: v for k, v in meta.items() if v}}  # dane z pierwszego fragmentu mają pierwszeństwo
+        usage = _add_usage(usage, part_usage)
+    if not segments:
+        raise clinic_ai.ClinicAIError('gemini_empty_transcript')
+    return {**meta, 'segments': segments}, usage
 
 
 def transcript_text(data: dict) -> str:
