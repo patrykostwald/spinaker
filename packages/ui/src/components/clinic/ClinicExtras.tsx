@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CAMPS, CAMP_LABELS, type Camp, type ClinicAccount, type DailyMessage, type Interview, type InterviewQuote, type SpinDetailData } from "../../lib/clinic";
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
-import { AiTag, IntensityMeter, PartyBadge, VerdictTag } from "./SpinParts";
+import { AiTag, IntensityMeter, VerdictTag } from "./SpinParts";
 
 export function ClinicDialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -244,7 +244,7 @@ export function PoliticiansTable({ accounts }: { accounts: ClinicAccount[] }) {
                 <thead><tr><th scope="col">Polityk</th><th scope="col" title="Posty sprawdzone przez strażnika">Posty</th><th scope="col">Częściowe</th><th scope="col">Spiny</th></tr></thead>
                 <tbody>{(expanded ? rows : rows.slice(0, VISIBLE_ROWS)).map(item => (
                   <tr key={item.handle}>
-                    <td><PartyBadge party={item.party} /> {item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}
+                    <td>{item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}{item.party?.short ? `, ${item.party.short}` : ""}
                       {" "}<a href={item.url} target="_blank" rel="noopener noreferrer">@{item.handle}</a></td>
                     <td>{item.posts_screened}</td><td>{item.partial_spins}</td><td>{item.spins}</td>
                   </tr>

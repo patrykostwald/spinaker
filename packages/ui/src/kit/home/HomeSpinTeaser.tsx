@@ -41,21 +41,25 @@ function minutesAgo(iso: string | null | undefined): string {
 function SpinPreview({ camp, spin, active }: { camp: Camp; spin: (SpinDetailData & { window: string }) | null; active: boolean }) {
   if (!spin) {
     return (
-      <article className="sc-spin-preview" data-camp={camp} data-active={active || undefined}>
+      <div className="sc-spin-preview-col" data-camp={camp} data-active={active || undefined}>
         <p className="sc-spin-preview__camp">{CAMP_LABELS[camp]}</p>
-        <p className="sc-t-body-s sc-text-2">Jeszcze bez diagnozy tej strony. Strażnik przegląda każdy nowy wpis z oficjalnych kont, a te warte sprawdzenia bada Dr. Spin — według tych samych zasad dla obu stron.</p>
-      </article>
+        <article className="sc-spin-preview">
+          <p className="sc-t-body-s sc-text-2">Jeszcze bez diagnozy tej strony. Strażnik przegląda każdy nowy wpis z oficjalnych kont, a te warte sprawdzenia bada Dr. Spin — według tych samych zasad dla obu stron.</p>
+        </article>
+      </div>
     );
   }
   const techniques = (spin.techniques ?? []).filter((item) => item.name).slice(0, 2);
   return (
-    <article className="sc-spin-preview" data-camp={camp} data-active={active || undefined} aria-labelledby={`spin-preview-${spin.id}`}>
-      <p className="sc-spin-preview__camp">
-        {CAMP_LABELS[camp]} · <span>{WINDOW_NOTE[spin.window] ?? "Spin dnia"}{spin.window === "latest" && spin.post.published_at ? `, ${formatDatePl(spin.post.published_at)}` : ""}</span>
-      </p>
+    <div className="sc-spin-preview-col" data-camp={camp} data-active={active || undefined}>
+    <p className="sc-spin-preview__camp">
+      {CAMP_LABELS[camp]} · <span>{WINDOW_NOTE[spin.window] ?? "Spin dnia"}{spin.window === "latest" && spin.post.published_at ? `, ${formatDatePl(spin.post.published_at)}` : ""}</span>
+    </p>
+    <article className="sc-spin-preview" aria-labelledby={`spin-preview-${spin.id}`}>
       <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
       <blockquote className="sc-spin-preview__quote">{spin.post.text}</blockquote>
-      <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
+      {/* Siła, a na prawym brzegu metka („Spin” / „Częściowy spin”). */}
+      <p className="sc-spin-card__verdict sc-spin-preview__verdict"><IntensityMeter value={spin.intensity} /><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /></p>
       <h3 id={`spin-preview-${spin.id}`} className="sc-spin-preview__headline">{spin.headline}</h3>
       {spin.summary ? <p className="sc-spin-preview__summary">{spin.summary}</p> : null}
       {techniques.length ? (
@@ -73,6 +77,7 @@ function SpinPreview({ camp, spin, active }: { camp: Camp; spin: (SpinDetailData
         <a href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie ${spin.id}`)}`}>Zgłoś błąd</a>
       </p>
     </article>
+    </div>
   );
 }
 
@@ -96,11 +101,13 @@ export function HomeSpinTeaser() {
       <header className="sc-home-doctor__head">
         <div>
           <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-          <h2 id="home-drspin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+          <p className="sc-home-doctor__title">
+            <span id="home-drspin-title" className="sc-t-title-l sc-home-section__title" role="heading" aria-level={2}>Dr. Spin</span>
+            <Link className="sc-home-doctor__how" href="/o-nas#klinika">Jak wybieramy i liczymy?</Link>
+          </p>
         </div>
         <p className="sc-home-doctor__links">
           {now && lastDiagnosis ? <span className="sc-home-doctor__sync">Ostatnia diagnoza: {minutesAgo(lastDiagnosis)}</span> : null}
-          <Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link>
           <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
         </p>
       </header>

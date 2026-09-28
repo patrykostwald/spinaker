@@ -36,13 +36,15 @@ export function SpinAuthorRow({ author, publishedAt, size = "md", caption }: {
       <div className="sc-spin-author__text">
         <p className="sc-spin-author__name">
           {author.figure_id ? <Link href={`/osoby-publiczne/${author.figure_id}`}>{author.name}</Link> : author.name}
+          {/* Partia zwykłym tekstem przy nazwisku („Mariusz Błaszczak, PiS”) — decyzja właściciela 29.09. */}
+          {author.party?.short ? <span className="sc-spin-author__party-text">, {author.party.short}</span> : null}
         </p>
         <p className="sc-spin-author__meta">
           <a href={author.account_url} target="_blank" rel="noopener noreferrer">@{author.handle}</a>
           {" · "}<time dateTime={publishedAt}>{formatDateTimePl(publishedAt)}</time>
         </p>
       </div>
-      <span className="sc-spin-author__party">{caption ? <span className="sc-spin-author__caption">{caption}</span> : null}<PartyBadge party={author.party} /></span>
+      {caption ? <span className="sc-spin-author__party"><span className="sc-spin-author__caption">{caption}</span></span> : null}
     </header>
   );
 }
@@ -77,13 +79,12 @@ export function SpinRow({ spin, withSummary = false, badge }: { spin: SpinCardDa
           // eslint-disable-next-line @next/next/no-img-element -- miniatura z oficjalnego API X
           ? <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" />
           : <SpinAvatar author={spin.author} size="lg" />}
-        <PartyBadge party={spin.author.party} />
       </span>
       <div className="sc-spin-row__body">
         <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
-        <p className="sc-spin-row__author">{spin.author.name} · @{spin.author.handle} · <time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
+        <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle} · <time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
       </div>
     </article>
   );
