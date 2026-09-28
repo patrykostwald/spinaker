@@ -1,0 +1,33 @@
+Temat: {NAZWA} w spin.clinic — prośba o zgodę na tytuły i linki
+
+Dzień dobry,
+
+{POWÓD}
+
+spin.clinic to niezależny serwis, który zestawia wiadomości dnia ze źródłami — każda prowadzi do oryginału. W Klinice spinu Dr. Spin (AI) pokazuje, jak zbudowane są wpisy polityków: rządzących i opozycji, tą samą miarą. Nie przyjmujemy pieniędzy od partii ani polityków.
+
+Chcielibyśmy pokazywać materiały {NAZWY}, ale tylko za Państwa zgodą. Pobieramy wyłącznie tytuł, datę, autora i link — bez pełnych tekstów, zdjęć i nagrań; nie trenujemy na nich modeli AI. Czytelnik zawsze trafia na Państwa stronę.
+
+Która droga będzie dla Państwa najwygodniejsza?
+
+• API, jeśli je Państwo udostępniają,
+• kanał RSS,
+• strona z listą publikacji (z przerwą między zapytaniami i w limicie, który Państwo wskażą).
+
+Wystarczy krótka odpowiedź, na przykład:
+„Zgoda — RSS, najwyżej 24 odczyty na dobę”
+„Zgoda — API, dokumentacja w załączniku”
+„Nie”
+
+Zaproszenie dla Państwa dziennikarzy — autoryzowana nitka. Państwa materiał otwiera pasek, a za nim idą źródła, które dają mu kontekst:
+
+[Państwa wywiad] → [komunikat prokuratury] → [dokument] → [film] → [Państwa śledztwo]
+
+Do 15 boxów, pod nazwiskiem autora, z linkami do oryginałów; całą nitkę udostępnia się na X jednym kliknięciem. Jak to wygląda: https://spin.clinic/o-nas#nitka-kontekstowa
+
+Jeśli chcą Państwo poprowadzić własną nitkę, wystarczy napisać na kontakt@spin.clinic.
+
+Z poważaniem
+Zespół spin.clinic
+zrodla@spin.clinic · https://spin.clinic
+Operator serwisu: iapply sp. z o.o.

@@ -1,0 +1,25 @@
+Temat: Komunikaty {NAZWY} w spin.clinic — prośba o zgodę na tytuły i linki
+
+Dzień dobry,
+
+{POWÓD}
+
+spin.clinic to niezależny serwis, który zestawia wypowiedzi polityków i wiadomości mediów z dokumentami źródłowymi: komunikatami, danymi i aktami prawnymi. W Klinice spinu Dr. Spin (AI) przy każdej diagnozie odsyła czytelnika do źródeł — rządzących i opozycję ocenia tą samą miarą. Nie przyjmujemy pieniędzy od partii ani polityków.
+
+Chcielibyśmy pokazywać komunikaty i publikacje {NAZWY} obok wiadomości, których dotyczą. Pobieramy wyłącznie tytuł, datę i link — treści nie zmieniamy ani nie kopiujemy w całości, a czytelnik zawsze trafia na Państwa stronę.
+
+Która droga będzie dla Państwa najwygodniejsza?
+
+• API albo zbiór w portalu otwartych danych (dane.gov.pl),
+• kanał RSS,
+• strona albo BIP z listą publikacji (z przerwą między zapytaniami i w limicie, który Państwo wskażą).
+
+Wystarczy krótka odpowiedź, na przykład:
+„Zgoda — RSS, najwyżej 24 odczyty na dobę”
+„Zgoda — API: adres dokumentacji”
+„Nie”
+
+Z poważaniem
+Zespół spin.clinic
+zrodla@spin.clinic · https://spin.clinic
+Operator serwisu: iapply sp. z o.o.
