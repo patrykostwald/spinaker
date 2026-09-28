@@ -4595,3 +4595,18 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 
 /* Pas powitalny: jedno zdanie „co to jest” pod tytułem. */
 .sc-home-intro__lead { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.45; max-width: 34rem; }
+
+/* Twoje wiadomości (komputer): tytuł · podpowiedź na środku · „Dodaj pasek” — jedna linia, wyrównana w pionie. */
+@media (min-width: 761px) {
+  .sc-home-threads__head { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: var(--sc-s-5); }
+  .sc-home-threads__line { display: contents; }
+  .sc-home-threads__line .sc-home-threads__hint { text-align: center; }
+  .sc-home-threads__head .sc-home-section__title { margin: 0; }
+}
+
+/* Zaproszenie dla dziennikarzy: „Napisz do nas” w połowie między górną krawędzią boxu a przykładem nitki
+   (środek nagłówka, skorygowany o różnicę między górnym odstępem boxu a odstępem do nitki). */
+@media (min-width: 761px) {
+  .sc-invite__head { align-items: center; }
+  .sc-invite__cta { align-self: center; margin-top: calc(var(--sc-s-4) - var(--sc-s-5)); }
+}
