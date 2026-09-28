@@ -20,14 +20,40 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
   const published = thread?.published ? thread : null;
   const items = published ? [...published.items].sort((a, b) => a.position - b.position).slice(0, MAX_ITEMS) : [];
   const [anchor, ...rest] = items;
+  const byDrSpin = !published?.author_name || published.author_name === "Dr. Spin";
+
+  // Bez opublikowanej nitki nie pokazujemy makiety — tylko pasek dla dziennikarzy i jedno zdanie (29.09).
+  if (!published) {
+    return (
+      <section className="sc-home-section sc-home-drspin" aria-label="Nitki kontekstowe">
+        <aside className="sc-home-drspin__invite sc-home-drspin__invite--solo" aria-label="Dla dziennikarzy i redakcji">
+          <p>
+            <strong>Nitki kontekstowe:</strong> gdy Dr. Spin znajdzie w Bazie trafny kontekst do spinu dnia, pokaże tu nitkę — materiał i źródła wokół niego.
+            <span> Dziennikarze i redakcje mogą prowadzić własne, autoryzowane nitki.</span>
+          </p>
+          <Button href="/o-nas#dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
+        </aside>
+      </section>
+    );
+  }
 
   return (
     <section className="sc-home-section sc-home-drspin" aria-label="Dr. Spin">
       <div className="sc-home-band-surface">
         <header className="sc-home-section__head">
           <div>
-            <p className="sc-t-caption sc-text-3 sc-home-kicker">Nitka kontekstowa · przygotowana automatycznie przez AI</p>
-            <h2 className="sc-t-title-l sc-home-section__title">Nitka Dr. Spina</h2>
+            {/* Tytuł według autora: nitka Dr. Spina (AI) albo wyróżniona nitka dziennikarza — nigdy nie mylimy autorstwa. */}
+            {byDrSpin ? (
+              <>
+                <p className="sc-t-caption sc-text-3 sc-home-kicker">Nitka kontekstowa · przygotowana automatycznie przez AI</p>
+                <h2 className="sc-t-title-l sc-home-section__title">Nitka Dr. Spina</h2>
+              </>
+            ) : (
+              <>
+                <p className="sc-t-caption sc-text-3 sc-home-kicker">Nitka kontekstowa · autor: {published?.author_name}</p>
+                <h2 className="sc-t-title-l sc-home-section__title">Nitka kontekstowa</h2>
+              </>
+            )}
           </div>
           <div className="sc-home-section__actions">
             <p className="sc-t-body-s sc-text-2">{published ? published.title : "Codzienna nitka kontekstowa"}</p>

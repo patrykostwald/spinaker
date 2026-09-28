@@ -4791,3 +4791,15 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 .sc-home-baza__quick button { min-height: 44px; padding: var(--sc-s-2) var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface-2); color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); cursor: pointer; }
 .sc-home-baza__quick button[aria-pressed="true"] { background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); border-color: var(--sc-accent); }
 .sc-home-baza__quick button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.sc-home-drspin__invite--solo { margin-top: 0; padding: var(--sc-panel-pad); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+/* Podgląd Dr. Spina: autor i ocena w jednej linii; siła jako liczba w kolorze skali (bez paska). */
+.sc-spin-preview__top { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); min-width: 0; }
+.sc-spin-preview__top .sc-spin-author { flex: 1 1 auto; min-width: 0; }
+.sc-spin-preview__verdict { flex: none; display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-spin-preview__strength { font-size: var(--sc-t-caption-size); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--sc-text-2); white-space: nowrap; }
+.sc-spin-preview__strength[data-level="low"] { color: #3ecf8e; }
+.sc-spin-preview__strength[data-level="mid"] { color: #f5b041; }
+.sc-spin-preview__strength[data-level="high"] { color: #ff4b4b; }
+/* Telefon: wynik jest w kafelkach nad kartą — w karcie sama metka, w jednej linii z autorem. */
+@media (max-width: 760px) { .sc-spin-preview__strength { display: none; } }
+.sc-spin-preview__top .sc-spin-author__name { white-space: normal; overflow: visible; text-overflow: clip; display: block; -webkit-line-clamp: unset; }

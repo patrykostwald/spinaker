@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicPage, type Camp, type SpinDetailData } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
-import { AiTag, IntensityMeter, SpinAuthorRow, VerdictTag } from "../../components/clinic/SpinParts";
+import { AiTag, SpinAuthorRow, VerdictTag } from "../../components/clinic/SpinParts";
 import { MessageBox } from "../../components/clinic/ClinicExtras";
 
 /** Godziny generowania przekazu dnia (jak w harmonogramie serwera). */
@@ -56,10 +56,16 @@ function SpinPreview({ camp, spin, active }: { camp: Camp; spin: (SpinDetailData
       {CAMP_LABELS[camp]} · <span>{WINDOW_NOTE[spin.window] ?? "Spin dnia"}{spin.window === "latest" && spin.post.published_at ? `, ${formatDatePl(spin.post.published_at)}` : ""}</span>
     </p>
     <article className="sc-spin-preview" aria-labelledby={`spin-preview-${spin.id}`}>
-      <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
+      {/* Jedna linia: autor po lewej, siła i metka („Spin” / „Częściowy spin”) po prawej — bez paska (29.09). */}
+      <div className="sc-spin-preview__top">
+        <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
+        <p className="sc-spin-preview__verdict">
+          <span className="sc-spin-preview__strength" data-level={spin.intensity >= 70 ? "high" : spin.intensity >= 30 ? "mid" : "low"}
+            title="Siła spinu 0–100: jak mocno wpis opiera się na technikach perswazji">siła {spin.intensity}/100</span>
+          <VerdictTag verdict={spin.verdict} label={spin.verdict_label} />
+        </p>
+      </div>
       <blockquote className="sc-spin-preview__quote">{spin.post.text}</blockquote>
-      {/* Siła, a na prawym brzegu metka („Spin” / „Częściowy spin”). */}
-      <p className="sc-spin-card__verdict sc-spin-preview__verdict"><IntensityMeter value={spin.intensity} /><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /></p>
       <h3 id={`spin-preview-${spin.id}`} className="sc-spin-preview__headline">{spin.headline}</h3>
       {spin.summary ? <p className="sc-spin-preview__summary">{spin.summary}</p> : null}
       {techniques.length ? (
