@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
             cta={{ label: "Wspomóż projekt", href: "/wsparcie" }}
-            columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "Newsletter", href: "/newsletter" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }, { label: "X @spinclinic", href: "https://x.com/spinclinic" }] }]}
+            columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "Dla redakcji", href: "/o-nas#dla-redakcji" }, { label: "Newsletter", href: "/newsletter" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }, { label: "X @spinclinic", href: "https://x.com/spinclinic" }] }]}
             above={<SupportBar />}
             sticky
           />

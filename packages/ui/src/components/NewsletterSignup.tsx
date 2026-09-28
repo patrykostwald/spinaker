@@ -39,7 +39,7 @@ export function NewsletterSignup({ source, compact = false }: { source: string; 
     <section className="sc-newsletter" data-compact={compact || undefined} aria-labelledby={`newsletter-${source}`}>
       <div className="sc-newsletter__text">
         <p className="sc-clinic-kicker">Newsletter</p>
-        <h2 id={`newsletter-${source}`}>Powiadomimy Cię o starcie</h2>
+        <h2 id={`newsletter-${source}`}>Powiadomimy Cię o starcie pełnej wersji</h2>
         <p>
           spin.clinic działa w wersji beta. Zostaw e-mail — napiszemy, gdy wystartuje pełna wersja, i od czasu do czasu o najważniejszych nowościach.
           Bez spamu, bez przekazywania adresu dalej.

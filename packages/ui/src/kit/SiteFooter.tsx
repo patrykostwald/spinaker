@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 /**
  * SiteFooter (docs/UI_KIT_PLAN.md → «Компоненты» SiteFooter, «Оживление каждого элемента → Футер»).
  * Każda kolumna to WŁASNY `<nav aria-label>` z prawdziwym `<ul>` — obecny footer w
@@ -86,6 +88,8 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
     </div>
   );
 
+  // Przewijanie w dół chowa przyklejony dół (pasek wsparcia + stopka), w górę — pokazuje (audyt UX 28.09).
+  const dockRef = useHideOnScroll();
   if (sticky) {
     const bar = (
       <footer role="contentinfo" className="sc-footer" data-sticky>
@@ -102,7 +106,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
     );
     // Pasek nad stopką (np. wsparcie) to osobny pasek na całą szerokość — przyklejony razem ze stopką.
     return above ? (
-      <div className="sc-footer-dock">
+      <div className="sc-footer-dock" ref={dockRef}>
         <div className="sc-footer-dock__above">{above}</div>
         {bar}
       </div>
@@ -132,4 +136,31 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
       {bottom && <div className="sc-footer__bottom sc-t-caption sc-text-3">{bottom}</div>}
     </footer>
   );
+}
+
+
+function useHideOnScroll() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    let last = window.scrollY;
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const node = ref.current;
+        if (node) {
+          const nearBottom = window.innerHeight + y >= document.documentElement.scrollHeight - 80;
+          if (y > last + 6 && y > 120 && !nearBottom) node.dataset.hidden = "true";
+          else if (y < last - 6 || nearBottom || y <= 120) delete node.dataset.hidden;
+        }
+        last = y;
+        ticking = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return ref;
 }

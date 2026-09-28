@@ -47,15 +47,16 @@ export function HomeHero() {
       {theme && period ? <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.webp`} alt="" decoding="async" /> : null}
       <div className="sc-home-intro__content">
         <p className="sc-home-intro__title">
-          Wiadomości ze źródłami. <span>Diagnozy spinu polityków.</span>
+          Dr. Spin analizuje język polityków. <span>Ty układasz własne wiadomości.</span>
         </p>
         {/* Jedno zdanie „co to jest” dla kogoś, kto trafia tu pierwszy raz (28.09 — ludzie gubili się w opisie). */}
         <p className="sc-home-intro__lead">
-          Codziennie bierzemy wpisy i wywiady polityków i w pół minuty pokazujemy, jak zbudowany jest przekaz —
-          z cytatem, źródłem i tą samą miarą dla rządu i opozycji.
+          Codzienne analizy AI wpisów i wywiadów — z cytatami, źródłami i tymi samymi zasadami dla rządu i opozycji.
+          Do tego wiadomości dopasowane do Twoich tematów i źródeł.
         </p>
         <p className="sc-home-intro__links">
-          <Link href="/klinika">Klinika spinu →</Link>
+          <a className="sc-home-intro__cta" href="#dr-spin">Zobacz analizę</a>
+          <a className="sc-home-intro__cta" href="#nitki">Ustaw swoje wiadomości</a>
           {THREADS_ENABLED && <Link href="/nitki">Nitki →</Link>}
           <Link href="/o-nas">Jak to działa</Link>
         </p>

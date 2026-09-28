@@ -159,10 +159,10 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
           <h2 className="sc-t-title-l sc-home-section__title">Twoje wiadomości</h2>
           <div className="sc-home-threads__line">
             <p className="sc-t-body-s sc-text-2 sc-home-threads__hint" aria-live="polite">
-              {strips.length}/{MAX_PERSONAL_STRIPS} · {atLimit ? "usuń pasek, by dodać nowy" : "hasło, kategoria lub źródło"}
+              {strips.length}/{MAX_PERSONAL_STRIPS} · {atLimit ? "usuń pasek, by dodać nowy" : "np. Zdrowie, Moje miasto, wybrane media"}
             </p>
             <Button variant="secondary" size="sm" disabled={atLimit} onClick={startAdding}>
-              + Dodaj pasek
+              + Obserwuj temat lub źródło
             </Button>
           </div>
         </header>

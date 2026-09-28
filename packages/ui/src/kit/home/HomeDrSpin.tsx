@@ -87,7 +87,7 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
             <strong>Dla dziennikarzy i redakcji:</strong> poprowadź autoryzowaną nitkę — Twój materiał i jego kontekst, pod Twoim nazwiskiem.
             <span> Wkrótce własne nitki ułożą też czytelnicy.</span>
           </p>
-          <Button href="/o-nas#dla-redakcji" variant="primary" size="sm">Dowiedz się więcej →</Button>
+          <Button href="/o-nas#dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
         </aside>
       </div>
     </section>

@@ -4704,3 +4704,36 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 .sc-home-drspin__invite p { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); flex: 1 1 22rem; }
 .sc-home-drspin__invite strong { color: var(--sc-text); }
 .sc-home-drspin__invite span { color: var(--sc-text-3); }
+
+/* ===== Audyt UX 28.09 ===== */
+/* Pas powitalny: dwa przyciski — „Zobacz analizę” i „Ustaw swoje wiadomości”. */
+.sc-home-intro__cta { display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border-radius: 999px; background: var(--sc-surface-2); color: var(--sc-text) !important; font-weight: 700; text-decoration: none; box-shadow: var(--sc-ring); }
+.sc-home-intro__cta:first-child { background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff) !important; box-shadow: none; }
+.sc-home-intro__links { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2) var(--sc-s-3); }
+/* Dr. Spin: obie strony obok siebie, w skrócie. */
+.sc-home-doctor__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sc-s-3); flex-wrap: wrap; }
+.sc-home-doctor__head .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-home-doctor__head h2 { margin: 0; }
+.sc-home-doctor__links { display: flex; gap: var(--sc-s-4); margin: 0; font-size: var(--sc-t-body-s-size); }
+.sc-home-doctor__links a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+.sc-home-doctor__links a:first-child { color: var(--sc-text-2); font-weight: 500; }
+.sc-home-doctor__pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sc-s-4); }
+.sc-spin-preview { display: grid; gap: var(--sc-s-2); align-content: start; padding: var(--sc-s-4); border-radius: var(--sc-r-xl); background: var(--sc-surface-2); min-width: 0; }
+.sc-spin-preview__camp { margin: 0; color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.sc-spin-preview__camp span { color: var(--sc-text-3); font-weight: 600; letter-spacing: .04em; text-transform: none; }
+.sc-spin-preview__quote { margin: 0; padding-left: var(--sc-s-3); border-left: 3px solid var(--sc-line-strong, var(--sc-line)); color: var(--sc-text-2); white-space: pre-line; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.sc-spin-preview__headline { margin: var(--sc-s-1) 0 0; color: var(--sc-text); font-size: var(--sc-t-title-s-size, 18px); line-height: 1.3; }
+.sc-spin-preview__summary { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.sc-spin-preview__techniques { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: var(--sc-t-body-s-size); }
+.sc-spin-preview__techniques li { color: var(--sc-text-2); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.sc-spin-preview__techniques strong { color: var(--sc-text); }
+.sc-spin-preview__actions { display: flex; justify-content: space-between; gap: var(--sc-s-3); margin: var(--sc-s-1) 0 0; font-size: var(--sc-t-body-s-size); }
+.sc-spin-preview__actions a { color: var(--sc-accent); font-weight: 700; text-decoration: none; }
+.sc-spin-preview__actions a + a { color: var(--sc-text-3); font-weight: 500; }
+.sc-home-doctor__scale { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); line-height: 1.5; }
+.sc-home-doctor__scale strong { color: var(--sc-text-2); }
+@media (max-width: 760px) { .sc-home-doctor__pair { grid-template-columns: minmax(0, 1fr); } .sc-home-doctor__links { flex-direction: column; gap: 4px; } }
+/* Przyklejony dół chowa się przy przewijaniu w dół. */
+.sc-footer-dock { transition: transform .25s ease; will-change: transform; }
+.sc-footer-dock[data-hidden="true"] { transform: translateY(110%); }
+@media (prefers-reduced-motion: reduce) { .sc-footer-dock { transition: none; } }
