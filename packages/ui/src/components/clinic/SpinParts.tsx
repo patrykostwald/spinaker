@@ -53,7 +53,7 @@ export function VerdictTag({ verdict, label }: { verdict: Verdict; label: string
 
 export function IntensityMeter({ value }: { value: number }) {
   return (
-    <span className="sc-intensity" title="Siła spinu według diagnozy (0–100)">
+    <span className="sc-intensity" data-level={value >= 70 ? "high" : value >= 30 ? "mid" : "low"} title="Siła spinu według diagnozy (0–100): jak mocno wpis opiera się na technikach perswazji">
       <span className="sc-intensity__track" aria-hidden="true"><span style={{ width: `${Math.max(2, value)}%` }} /></span>
       <span className="sc-intensity__value">siła {value}/100</span>
     </span>

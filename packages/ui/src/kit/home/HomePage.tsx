@@ -16,6 +16,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
 import { HomeBaza } from "./HomeBaza";
+import { HomeSupport } from "./HomeSupport";
 import { NewsCard } from "../NewsCard";
 import { EmptySlot } from "./Strip";
 import { HomeCategoryBar } from "./HomeCategoryBar";
@@ -146,6 +147,7 @@ export function HomePage() {
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>
+        <HomeSupport />
         <NewsletterSignup source="home" />
       </div>
     </>

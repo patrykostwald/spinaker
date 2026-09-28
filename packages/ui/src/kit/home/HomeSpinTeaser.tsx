@@ -30,10 +30,18 @@ const WINDOW_NOTE: Record<string, string> = {
   latest: "Najnowszy spin tej strony",
 };
 
-function SpinPreview({ camp, spin }: { camp: Camp; spin: (SpinDetailData & { window: string }) | null }) {
+function minutesAgo(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (minutes < 60) return `${minutes} min temu`;
+  const hours = Math.round(minutes / 60);
+  return hours < 24 ? `${hours} godz. temu` : formatDatePl(iso);
+}
+
+function SpinPreview({ camp, spin, active }: { camp: Camp; spin: (SpinDetailData & { window: string }) | null; active: boolean }) {
   if (!spin) {
     return (
-      <article className="sc-spin-preview" data-camp={camp}>
+      <article className="sc-spin-preview" data-camp={camp} data-active={active || undefined}>
         <p className="sc-spin-preview__camp">{CAMP_LABELS[camp]}</p>
         <p className="sc-t-body-s sc-text-2">Jeszcze bez diagnozy tej strony. Strażnik przegląda każdy nowy wpis z oficjalnych kont, a te warte sprawdzenia bada Dr. Spin — według tych samych zasad dla obu stron.</p>
       </article>
@@ -41,7 +49,7 @@ function SpinPreview({ camp, spin }: { camp: Camp; spin: (SpinDetailData & { win
   }
   const techniques = (spin.techniques ?? []).filter((item) => item.name).slice(0, 2);
   return (
-    <article className="sc-spin-preview" data-camp={camp} aria-labelledby={`spin-preview-${spin.id}`}>
+    <article className="sc-spin-preview" data-camp={camp} data-active={active || undefined} aria-labelledby={`spin-preview-${spin.id}`}>
       <p className="sc-spin-preview__camp">
         {CAMP_LABELS[camp]} · <span>{WINDOW_NOTE[spin.window] ?? "Spin dnia"}{spin.window === "latest" && spin.post.published_at ? `, ${formatDatePl(spin.post.published_at)}` : ""}</span>
       </p>
@@ -57,6 +65,9 @@ function SpinPreview({ camp, spin }: { camp: Camp; spin: (SpinDetailData & { win
           ))}
         </ul>
       ) : null}
+      <p className="sc-spin-preview__audit" title="Numer diagnozy — pod nim w Klinice pełna analiza, źródła i wersja modelu">
+        #SPIN-{spin.id}{spin.created_at ? ` · diagnoza ${formatDatePl(spin.created_at)}` : ""}
+      </p>
       <p className="sc-spin-preview__actions">
         <Link href={`/klinika/${spin.id}`}>Przeczytaj pełną analizę →</Link>
         <a href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie ${spin.id}`)}`}>Zgłoś błąd</a>
@@ -69,11 +80,16 @@ export function HomeSpinTeaser() {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
   const data = query.data;
   const [slot, setSlot] = useState<string | null>(null);
-  useEffect(() => setSlot(nextMessageSlot(new Date())), []);
+  const [mobileCamp, setMobileCamp] = useState<Camp | null>(null);
+  const [now, setNow] = useState(false);
+  useEffect(() => { setSlot(nextMessageSlot(new Date())); setNow(true); }, []);
   if (!data) return null;
 
   const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
   const spins = data.spin_by_camp?.spins;
+  const order = data.spin_by_camp?.order ?? CAMPS;
+  const shown: Camp = mobileCamp ?? order[0];
+  const lastDiagnosis = data.latest_spin?.created_at;
 
   return (
     <section id="dr-spin" className="sc-home-section sc-home-doctor" aria-labelledby="home-drspin-title">
@@ -83,12 +99,23 @@ export function HomeSpinTeaser() {
           <h2 id="home-drspin-title" className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
         </div>
         <p className="sc-home-doctor__links">
+          {now && lastDiagnosis ? <span className="sc-home-doctor__sync">Ostatnia diagnoza: {minutesAgo(lastDiagnosis)}</span> : null}
           <Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link>
           <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
         </p>
       </header>
+      {/* Telefon: kafelki obu stron z wynikiem (symetria widoczna od razu), pod nimi jedna karta. Komputer: dwie karty. */}
+      <div className="sc-home-doctor__tiles" role="tablist" aria-label="Spin dnia której strony pokazać">
+        {order.map((camp) => (
+          <button key={camp} type="button" role="tab" aria-selected={camp === shown} className="sc-home-doctor__tile" data-camp={camp}
+            onClick={() => setMobileCamp(camp)}>
+            <span>{CAMP_LABELS[camp]}</span>
+            <strong>{spins?.[camp] ? `${spins[camp]!.intensity}/100` : "—"}</strong>
+          </button>
+        ))}
+      </div>
       <div className="sc-home-doctor__pair">
-        {CAMPS.map((camp) => <SpinPreview key={camp} camp={camp} spin={spins?.[camp] ?? null} />)}
+        {CAMPS.map((camp) => <SpinPreview key={camp} camp={camp} spin={spins?.[camp] ?? null} active={camp === shown} />)}
       </div>
       <p className="sc-home-doctor__scale">
         <strong>Siła spinu 0–100</strong> — jak mocno wpis opiera się na technikach perswazji. To nie jest ocena prawdziwości ani osoby;
