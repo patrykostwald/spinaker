@@ -2,6 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from news.models import Article, Source, Thread, ThreadItem, Ballot
 from news.editorial_roles import role_data
+from news.descriptions import clean_description
 from news.source_groups import portal_group
 
 
@@ -75,6 +76,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         if not article_media_allowed(instance):
             data['image_url'] = ''
             data['description'] = ''
+        data['description'] = clean_description(data.get('description') or '')
         return data
 
     @extend_schema_field(serializers.JSONField(allow_null=True))
