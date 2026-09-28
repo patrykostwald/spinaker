@@ -9,6 +9,8 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from news.techniques import categorize_techniques
+
 from news.political_models import EDITORIAL_CAMPS, PoliticalPost, PublicFigure
 
 REVIEW_STATUSES = [
@@ -61,6 +63,11 @@ class SpinDiagnosis(models.Model):
     hidden_at = models.DateTimeField(null=True, blank=True,
                                      help_text='Ukrycie po zgłoszeniu prawnym. Treść diagnozy pozostaje bez zmian.')
     hidden_reason = models.CharField(max_length=240, blank=True)
+
+    def save(self, *args, **kwargs):
+        if kwargs.get('update_fields') is None or 'techniques' in kwargs['update_fields']:
+            self.techniques = categorize_techniques(self.techniques)
+        return super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-post__published_at', '-pk']
@@ -171,6 +178,14 @@ class ClinicInterview(models.Model):
     diagnosed_at = models.DateTimeField(null=True, blank=True)
     hidden_at = models.DateTimeField(null=True, blank=True)
     hidden_reason = models.CharField(max_length=240, blank=True)
+
+    def save(self, *args, **kwargs):
+        for field, key in (('guest_analysis', 'techniques'), ('host_analysis', 'notes')):
+            if kwargs.get('update_fields') is None or field in kwargs['update_fields']:
+                analysis = getattr(self, field)
+                if isinstance(analysis, dict) and key in analysis:
+                    setattr(self, field, {**analysis, key: categorize_techniques(analysis[key])})
+        return super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-day', '-created_at']

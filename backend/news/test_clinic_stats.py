@@ -47,6 +47,94 @@ def test_all_canonical_names():
         assert canonical_technique(name) == name
 
 
+def test_category_prompts_and_schemas():
+    from news import clinic_ai, clinic_council, clinic_interview
+    from news.techniques import DEFINITIONS
+
+    assert set(DEFINITIONS) == set(CANONICAL_TECHNIQUES)
+    for prompt, schema in (
+        (clinic_ai.DIAGNOSIS_SYSTEM, clinic_ai.DIAGNOSIS_SCHEMA['properties']['techniques']['items']),
+        (clinic_council.MEMBER_SYSTEM, clinic_council.MEMBER_SCHEMA['properties']['techniques']['items']),
+        (clinic_interview.INTERVIEW_SYSTEM, clinic_interview._TECHNIQUE),
+    ):
+        assert schema['properties']['category']['enum'] == list(CANONICAL_TECHNIQUES)
+        assert 'category' in schema['required'] and 'name' in schema['required']
+        for category in CANONICAL_TECHNIQUES:
+            assert f'{category}: {DEFINITIONS[category]}' in prompt
+
+
+@pytest.mark.parametrize('category', [None, '', 'Nieznana', [], {}])
+def test_category_fallback(category):
+    from news.clinic_ai import clean_diagnosis
+    from news.clinic_interview import clean_interview
+    item = {'name': 'Amalgamat kategorii', 'category': category, 'quote': 'tekst'}
+    expected = 'Fałszywa analogia i skojarzenie'
+    result = clean_diagnosis({'verdict': 'spin', 'techniques': [item]}, 'tekst', {})
+    assert result['techniques'][0]['category'] == expected
+    result = clean_interview({'guest': {'verdict': 'spin', 'techniques': [item]},
+                              'host': {'notes': [item]}}, 'tekst', {})
+    assert result['guest_analysis']['techniques'][0]['category'] == expected
+    assert result['host_analysis']['notes'][0]['category'] == expected
+
+
+def test_technique_groups_prefer_category():
+    from news.techniques import technique_groups
+    assert technique_groups([
+        {'name': 'Straszenie', 'category': 'Przesada'},
+        {'name': 'Straszenie', 'category': 'Inne'},
+        {'name': 'Straszenie', 'category': 'Nieznana'},
+        {'name': 'Straszenie'}, None,
+    ]) == ['Przesada', 'Inne', 'Straszenie']
+
+
+@pytest.mark.parametrize('category,expected', [('Przesada', 'Przesada'), ('Nieznana', 'Straszenie'), (None, 'Straszenie')])
+def test_council_preserves_category_and_descriptive_name(category, expected):
+    from news.clinic_council import combine
+    item = {'id': 'straszenie', 'name': 'Straszenie katastrofą', 'quote': 'cytat', 'explanation': 'opis'}
+    if category is not None:
+        item['category'] = category
+    result = combine([{'verdict': 'spin', 'intensity': 70, 'techniques': [item]}])
+    assert result['techniques'][0]['category'] == expected
+    assert result['techniques'][0]['name'] == item['name']
+
+
+@pytest.mark.django_db
+def test_category_save_and_backfill():
+    from io import StringIO
+    from django.core.management import call_command
+    from news.clinic_models import ClinicInterview
+
+    items = [{'name': 'Straszenie', 'category': 'Nieznana', 'quote': 'cytat', 'extra': 7},
+             {'name': 'Nowa technika'}, {'name': 'Straszenie', 'category': 'Przesada'}]
+    row = diagnosis(account(), 999, techniques=items)
+    row.refresh_from_db()
+    assert [item['category'] for item in row.techniques] == ['Straszenie', 'Inne', 'Przesada']
+    interview = ClinicInterview.objects.create(day=timezone.localdate(), video_id='abcdefghijk',
+                                               guest_analysis={'techniques': items}, host_analysis={'notes': items})
+    interview.refresh_from_db()
+    assert interview.guest_analysis['techniques'][0]['category'] == 'Straszenie'
+    assert interview.host_analysis['notes'][0]['category'] == 'Straszenie'
+    # QuerySet.update odtwarza stare dane z pominięciem walidacji modelu.
+    SpinDiagnosis.objects.filter(pk=row.pk).update(techniques=items)
+    ClinicInterview.objects.filter(pk=interview.pk).update(guest_analysis={'techniques': items, 'summary': 'opis'})
+    before = SpinDiagnosis.objects.values().get(pk=row.pk)
+    interview_before = ClinicInterview.objects.values().get(pk=interview.pk)
+    output = StringIO()
+    call_command('backfill_technique_categories', dry_run=True, stdout=output)
+    assert SpinDiagnosis.objects.values().get(pk=row.pk) == before
+    assert ClinicInterview.objects.values().get(pk=interview.pk) == interview_before
+    assert 'Nowa technika' in output.getvalue() and 'DRY RUN' in output.getvalue()
+    call_command('backfill_technique_categories', stdout=StringIO())
+    after = SpinDiagnosis.objects.values().get(pk=row.pk)
+    expected = [{**item, 'category': category} for item, category in zip(items, ['Straszenie', 'Inne', 'Przesada'])]
+    assert after == {**before, 'techniques': expected}
+    assert ClinicInterview.objects.values().get(pk=interview.pk) == {
+        **interview_before, 'guest_analysis': {'techniques': expected, 'summary': 'opis'}}
+    output = StringIO()
+    call_command('backfill_technique_categories', stdout=output)
+    assert '0 diagnoz' in output.getvalue()
+
+
 @pytest.mark.django_db
 def test_domestic_party():
     figure = PublicFigure.objects.create(canonical_name='Anna Test', role_category='european',
