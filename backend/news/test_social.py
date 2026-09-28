@@ -97,3 +97,22 @@ def test_second_interview_of_the_day_sits_under_the_automatic_one():
     assert clinic_interview.latest_interview_data()['id'] == auto.pk
     assert clinic_interview.second_interview_data()['id'] == manual.pk
     assert [row['id'] for row in clinic_interview.interview_archive()] == [old.pk]
+
+
+@pytest.mark.django_db
+def test_spin_of_day_per_camp_puts_stronger_fresh_spin_first():
+    from datetime import timedelta
+    from news import clinic
+    gov, opp = account(camp='government', handle='rzad_test', user_id='301'), account(camp='opposition', handle='opoz_test', user_id='302')
+    make = lambda acc, pid, intensity, hours: SpinDiagnosis.objects.create(
+        post=post(acc, post_id=pid, hours_ago=hours), status='approved', verdict='spin', intensity=intensity,
+        headline=f'h{pid}', summary='s', diagnosed_at=timezone.now())
+    make(gov, '7001', 60, 1)
+    make(opp, '7002', 85, 1)
+    make(opp, '7003', 95, 200)  # mocniejszy, ale sprzed ponad trzech dni — nie wygrywa ze świeżym
+    data = clinic.spin_of_day_by_camp()
+    assert data['order'] == ['opposition', 'government']
+    assert data['spins']['opposition']['intensity'] == 85 and data['spins']['government']['intensity'] == 60
+    SpinDiagnosis.objects.filter(post__post_id='7002').delete()
+    data = clinic.spin_of_day_by_camp()
+    assert data['spins']['opposition']['window'] == 'latest' and data['order'][0] == 'government'

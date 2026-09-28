@@ -1,5 +1,6 @@
 "use client";
 
+import { useLongPress } from "../../lib/useLongPress";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -22,13 +23,14 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
   const [expanded, setExpanded] = useState(false);
   // Telefon: wpis przycięty do kilku linii (CSS), żeby licznik i wywiad nie zjeżdżały daleko w dół.
   const [postOpen, setPostOpen] = useState(false);
+  const pressPost = useLongPress(() => setPostOpen(true));
   const sources = spin.claims.flatMap(claim => claim.sources.map(source => ({ ...source, label: claim.assessment_label, claim: claim.claim })));
   return (
     <div className="sc-clinic-sotd__body">
       <div className="sc-clinic-sotd__main">
         <div className="sc-clinic-sotd__post">
           <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" caption={spin.camp_label} />
-          <div className="sc-clinic-sotd__quote" data-open={postOpen || undefined}>
+          <div className="sc-clinic-sotd__quote" data-open={postOpen || undefined} {...(postOpen ? {} : pressPost)}>
             <blockquote>{spin.post.text}</blockquote>
             {postOpen ? null : <button type="button" className="sc-clinic-sotd__more-post" onClick={() => setPostOpen(true)}>Rozwiń wpis ↓</button>}
             {/* Zdjęcia z posta — część przekazu (np. twarz, grafika z hasłem); klik otwiera post na X. */}

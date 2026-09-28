@@ -127,8 +127,9 @@ export function HomePage() {
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <DemoBanner />
         <HomeHero />
-        {/* Spin dnia (z przekazami dnia) → licznik obu stron → Wywiady (decyzja 28.09). */}
+        {/* Dr. Spin: spin dnia obu stron → przekaz dnia i liczby → wywiady; pod nim zaproszenie dla dziennikarzy (28.09). */}
         <HomeSpinTeaser />
+        <JournalistInvite />
         {/* „Najnowsze”, kategorie i taśma najnowszych — na razie wyłączone (28.09: dopóki media nie dadzą zgód,
             to głównie BIP-y); zostają paski czytelnika. Włączenie: SHOW_LATEST = true. */}
         {SHOW_LATEST ? (
@@ -195,8 +196,6 @@ export function HomePage() {
             <HomeDrSpin thread={drSpin.data} />
           </HomeReveal>
         ) : null}
-        {/* Zaproszenie dla dziennikarzy tuż nad Bazą. */}
-        <JournalistInvite />
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>

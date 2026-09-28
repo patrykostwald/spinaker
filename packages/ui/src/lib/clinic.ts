@@ -95,6 +95,8 @@ export type ClinicPageData = {
   scale: SpinScale;
   messages: Record<Camp, DailyMessage | null>;
   spin_of_day: SpinDetailData | null;
+  /** Spin dnia każdej strony; `order` — najpierw strona z mocniejszym (świeższym) spinem. `window`: today | 24h | 72h | latest. */
+  spin_by_camp?: { spins: Record<Camp, (SpinDetailData & { window: string }) | null>; order: Camp[] };
   latest_spin: SpinDetailData | null;
   interview: Interview | null;
   /** Drugi wywiad dnia — dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */

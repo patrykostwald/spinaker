@@ -653,6 +653,31 @@ def spin_of_day():
     return None
 
 
+def spin_of_day_by_camp() -> dict:
+    """Spin dnia każdej strony — ta sama reguła co spin_of_day (najwyższa siła spinu wśród dzisiejszych postów,
+    potem z ostatniej doby i trzech dni), a gdy strona nie ma świeżego spinu — jej najnowszy spin z datą.
+    Kolejność zakładek: strona z mocniejszym spinem pierwsza (decyzja właściciela 28.09 — ocenia się wpis, nie stronę)."""
+    base = published_diagnoses().filter(verdict__in=['spin', 'partial'])
+    now = timezone.now()
+    today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    picks = {}
+    for camp in CAMPS:
+        rows = base.filter(post__camp_at_collection=camp)
+        best, window = None, ''
+        for label, since in (('today', today), ('24h', now - timedelta(hours=24)), ('72h', now - timedelta(hours=72))):
+            best = rows.filter(post__published_at__gte=since).order_by('-intensity', '-post__published_at').first()
+            if best:
+                window = label
+                break
+        if best is None:
+            best, window = rows.order_by('-diagnosed_at', '-pk').first(), 'latest'
+        picks[camp] = {**detail_data(best), 'window': window} if best else None
+    fresh = {'today': 3, '24h': 2, '72h': 1, 'latest': 0}
+    order = sorted(CAMPS, key=lambda camp: (-(fresh[picks[camp]['window']] if picks[camp] else -1),
+                                             -(picks[camp]['intensity'] if picks[camp] else -1)))
+    return {'spins': picks, 'order': order}
+
+
 def latest_spin(exclude_id: int | None = None):
     """Najnowszy spin — inny niż spin dnia, żeby przełącznik zawsze pokazywał drugi wpis."""
     rows = published_diagnoses().filter(verdict__in=['spin', 'partial'])
@@ -708,6 +733,7 @@ def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
         'stats': clinic_stats(),
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
         'spin_of_day': sotd,
+        'spin_by_camp': spin_of_day_by_camp(),
         'latest_spin': latest_spin(sotd['id'] if sotd else None),
         'interview': latest_interview_data(),
         'interview_second': second_interview_data(),

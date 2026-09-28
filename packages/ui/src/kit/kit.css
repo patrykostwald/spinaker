@@ -4629,3 +4629,43 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
   .sc-clinic-sotd__quote:not([data-open]) .sc-clinic-sotd__media { display: none; }
   .sc-clinic-sotd__more-post { display: inline-flex; margin-top: var(--sc-s-2); padding: 0; border: 0; background: none; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
 }
+
+/* ===== Element „Dr. Spin” na głównej: jedna całość, trzy oznaczone części ===== */
+.sc-drspin { display: grid; gap: 0; padding: var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-accent); container-type: inline-size; min-width: 0; }
+.sc-drspin__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sc-s-3); flex-wrap: wrap; padding-bottom: var(--sc-s-3); }
+.sc-drspin__head .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-drspin__head h2 { margin: 0; }
+.sc-drspin__part { display: grid; gap: var(--sc-s-3); padding-top: var(--sc-s-4); margin-top: var(--sc-s-4); border-top: 1px solid var(--sc-hairline); min-width: 0; }
+.sc-drspin__part:first-of-type { margin-top: 0; }
+.sc-drspin__part-head { display: flex; align-items: baseline; gap: var(--sc-s-3); flex-wrap: wrap; }
+.sc-drspin__part-label { margin: 0; display: inline-flex; align-items: center; gap: var(--sc-s-2); color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.sc-drspin__part-label span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sc-accent); color: #fff; letter-spacing: 0; font-size: 12px; }
+.sc-drspin__part-hint { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-drspin__tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--sc-surface-2); justify-self: start; }
+.sc-drspin__tab { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: none; color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 700; cursor: pointer; }
+.sc-drspin__tab small { color: var(--sc-text-3); font-weight: 600; }
+.sc-drspin__tab[aria-selected="true"] { background: var(--sc-surface); color: var(--sc-text); box-shadow: var(--sc-ring); }
+.sc-drspin__tab[aria-selected="true"] small { color: var(--sc-accent); }
+.sc-drspin__window { margin: 0 0 var(--sc-s-2); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-drspin__side { display: grid; gap: var(--sc-s-2); align-content: start; min-width: 0; }
+.sc-drspin__numbers { margin: 0; padding: 0 var(--sc-s-2); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-drspin__numbers strong { color: var(--sc-text); }
+.sc-drspin__total { margin: 0; text-align: center; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-drspin__total strong { color: var(--sc-text); }
+.sc-drspin__total a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+.sc-drspin__meta { margin: 0 0 var(--sc-s-2); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-drspin .sc-home-spin__sotd { padding: 0; box-shadow: none; background: none; }
+.sc-drspin .sc-interview { padding: 0; box-shadow: none; background: none; }
+.sc-drspin .sc-interview + .sc-drspin__meta { margin-top: var(--sc-s-4); padding-top: var(--sc-s-3); border-top: 1px dashed var(--sc-hairline); }
+.sc-drspin .sc-interview__head > .sc-clinic-kicker { display: none; }
+/* Telefon: przycinanie długich części (rozwija „Rozwiń” albo przytrzymanie palcem). */
+.sc-mclamp__more { display: none; }
+@media (max-width: 760px) {
+  .sc-drspin { padding: var(--sc-s-4); }
+  .sc-drspin__tabs { justify-self: stretch; }
+  .sc-drspin__tab { flex: 1; justify-content: center; }
+  .sc-mclamp:not([data-open]) { position: relative; max-height: 34rem; overflow: hidden; }
+  .sc-mclamp:not([data-open])::after { content: ""; position: absolute; inset: auto 0 0 0; height: 6rem; background: linear-gradient(transparent, var(--sc-surface)); pointer-events: none; }
+  .sc-mclamp:not([data-open]) .sc-interview__lede { display: none; }
+  .sc-mclamp__more { position: absolute; z-index: 1; left: 50%; bottom: var(--sc-s-2); transform: translateX(-50%); display: inline-flex; min-height: 36px; align-items: center; padding: 0 16px; border: 0; border-radius: 999px; background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 700; }
+}
