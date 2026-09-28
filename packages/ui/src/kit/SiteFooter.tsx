@@ -39,6 +39,8 @@ export type SiteFooterProps = {
   bottom?: ReactNode;
   /** Jednowierszowa stopka zawsze widoczna u dołu okna (patrz opis modułu). */
   sticky?: boolean;
+  /** Wiersz nad paskiem stopki `sticky` (np. pasek wsparcia z licznikiem). */
+  above?: ReactNode;
 };
 
 const MotionLink = motion(Link);
@@ -57,7 +59,7 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false }: SiteFooterProps) {
+export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, above }: SiteFooterProps) {
   const m = useMotionTokens();
   const columnsRow = (
     <div className="sc-footer__columns">
@@ -87,6 +89,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false }
   if (sticky) {
     return (
       <footer role="contentinfo" className="sc-footer" data-sticky>
+        {above}
         <div className="sc-footer__bar">
           <div className="sc-footer__brand">{brand}</div>
           {columnsRow}

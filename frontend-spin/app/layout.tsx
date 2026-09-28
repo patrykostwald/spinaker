@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
-import { SiteHeader, TouchScrollGuard } from "@spin-clinic/ui";
+import { SiteHeader, SupportBar, TouchScrollGuard } from "@spin-clinic/ui";
 import { SiteFooter } from "@spin-clinic/ui/kit";
 
 import "./globals.css";
@@ -40,7 +40,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
             cta={{ label: "Wspomóż projekt", href: "/wsparcie" }}
-            columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "O nas", href: "/o-nas" }, { label: "Newsletter", href: "/newsletter" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
+            columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "Newsletter", href: "/newsletter" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }, { label: "X @spinclinic", href: "https://x.com/spinclinic" }] }]}
+            above={<SupportBar />}
             sticky
           />
         </Providers>

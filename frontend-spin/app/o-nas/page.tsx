@@ -64,9 +64,9 @@ const PARTS = [
 
 /** Konsylium: kto w nim zasiada i co robi. Skład może się zmieniać — aktualny zawsze pod diagnozą. */
 const COUNCIL_ROLES = [
-  { role: 'Lekarze konsylium', who: 'gpt-oss (OpenAI) · Qwen (Alibaba) · Nemotron (NVIDIA) · Gemini (Google)', text: 'Każdy osobno i niezależnie ocenia cały wpis: werdykt, siłę 0–100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia. Żaden nie widzi odpowiedzi pozostałych.' },
+  { role: 'Specjaliści konsylium', who: 'gpt-oss (OpenAI) · Qwen (Alibaba) · Nemotron (NVIDIA) · Gemini (Google)', text: 'Każdy osobno i niezależnie ocenia cały wpis: werdykt, siłę 0–100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia. Żaden nie widzi odpowiedzi pozostałych.' },
   { role: 'Laboratorium', who: 'Gemini z wyszukiwarką Google', text: 'Bada w wyszukiwarce każde twierdzenie o faktach. Źródło trafia do diagnozy tylko wtedy, gdy rzeczywiście pojawiło się w wynikach.' },
-  { role: 'Konsultant', who: 'Claude (Anthropic) — płatny', text: 'Mocniejszy model z wyszukiwaniem wzywamy, gdy lekarze się nie zgadzają (mniej niż dwie trzecie zgodnych głosów) albo spin jest silny (70/100 i więcej) — tam, gdzie pomyłka kosztowałaby najwięcej.' },
+  { role: 'Konsultant', who: 'Claude (Anthropic) — płatny', text: 'Mocniejszy model z wyszukiwaniem wzywamy, gdy specjaliści się nie zgadzają (mniej niż dwie trzecie zgodnych głosów) albo spin jest silny (70/100 i więcej) — tam, gdzie pomyłka kosztowałaby najwięcej.' },
   { role: 'Lekarz prowadzący', who: 'Gemini (w zapasie: Nemotron, gpt-oss)', text: 'Pisze diagnozę wyłącznie na podstawie ustaleń konsylium i laboratorium. Nie może zmienić werdyktu ani siły, nie może też dodać techniki, której nie wskazali lekarze.' },
   { role: 'Ordynator', who: 'Nemotron (NVIDIA)', text: 'Niezależnie sprawdza, czy diagnoza zgadza się z ocenami i źródłami. Jeśli znajdzie błąd, lekarz prowadzący raz poprawia tekst, a uwagi ordynatora pozostają jawne.' },
   { role: 'Redaktor', who: 'Qwen (Alibaba)', text: 'Poprawia wyłącznie polszczyznę. Jeśli jego wersja zmienia sens, zostaje tekst lekarza prowadzącego.' },
@@ -74,11 +74,11 @@ const COUNCIL_ROLES = [
 
 /** Droga wpisu do diagnozy — pięć kroków zamiast schematu rysowanego znakami. */
 const CLINIC_STEPS = [
-  { title: 'Izba przyjęć', tech: 'Groq · NVIDIA NIM', text: 'Darmowe, otwarte modele czytają każdy nowy wpis i oceniają w skali 0–100, czy jest w nim coś do zbadania. Życzenia i zapowiedzi odpadają od razu.' },
-  { title: 'Konsylium', tech: 'modele OpenAI · Alibaba · NVIDIA · Google', text: 'Wpis wart zbadania — tekst, zdjęcia i linki — niezależnie oceniają modele różnych firm. Według stałych zasad powstaje jedna ocena: werdykt, siła i techniki wskazane przez co najmniej dwóch lekarzy, zawsze z dosłownym cytatem.' },
-  { title: 'Badania i konsultacja', tech: 'wyszukiwarka Google · Claude przy sporach', text: 'Twierdzenia badamy w wyszukiwarce — źródło zostaje tylko wtedy, gdy rzeczywiście je znaleziono. Przy sporze albo silnym spinie wzywamy konsultanta. Lekarz prowadzący pisze diagnozę, ordynator ją kontroluje, redaktor dba o polszczyznę.' },
-  { title: 'Diagnoza i terapia', tech: 'automatycznie · etykieta AI', text: 'Na stronę trafiają diagnoza (techniki perswazji z cytatami) i terapia (co mówią źródła), oznaczone jako wygenerowane przez AI. Nikt nie poprawia ich treści.' },
-  { title: 'Na X', tech: '@spinclinic · udostępnianie', text: 'Silne spiny (od 70/100) konto @spinclinic publikuje samo: ocena, techniki i zalecana terapia — źródła, w jednym wpisie. Każdą diagnozę możesz też udostępnić sam.' },
+  { title: 'Izba przyjęć', caption: 'czy we wpisie jest coś do zbadania' },
+  { title: 'Konsylium', caption: 'niezależne oceny kilku specjalistów AI' },
+  { title: 'Badania', caption: 'twierdzenia sprawdzone w źródłach' },
+  { title: 'Diagnoza i terapia', caption: 'techniki z cytatami i co mówią źródła' },
+  { title: 'Na X', caption: 'silne spiny publikujemy na @spinclinic' },
 ];
 
 /**
@@ -358,16 +358,16 @@ export default function AboutPage() {
               tylko za te, które naprawdę warto zbadać.
             </p>
           </div>
-          <ol className="sc-onas-flow" aria-label="Droga wpisu do diagnozy">
+          <ol className="sc-flow" aria-label="Droga wpisu do diagnozy">
             {CLINIC_STEPS.map((step, index) => (
-              <li key={step.title}>
-                <span className="sc-onas-flow__num">{String(index + 1).padStart(2, '0')}</span>
-                <h3>{step.title}</h3>
-                <p className="sc-onas-flow__tech">{step.tech}</p>
-                <p>{step.text}</p>
+              <li key={step.title} className="sc-flow__step">
+                <span className="sc-flow__num">{index + 1}</span>
+                <strong>{step.title}</strong>
+                <span className="sc-flow__caption">{step.caption}</span>
               </li>
             ))}
           </ol>
+          <p className="sc-flow__more"><a href="#konsylium">Kto zasiada w konsylium i jakich modeli AI używamy →</a></p>
           <h3 className="sc-onas-subtitle">Co jeszcze robi Klinika</h3>
           <dl className="sc-onas-terms sc-onas-terms--three">
             {CLINIC_FEATURES.map(([term, text]) => (
@@ -409,11 +409,11 @@ export default function AboutPage() {
           <h3 className="sc-onas-subtitle">Jak konsylium łączy głosy</h3>
           <ul className="sc-onas-list">
             <li><strong>Werdykt i siła</strong> — mediana głosów, czyli ocena środkowa: jeden skrajny model nie przesądza. Przy remisie wygrywa łagodniejsza ocena.</li>
-            <li><strong>Techniki</strong> — do diagnozy trafia tylko technika wskazana przez co najmniej dwóch lekarzy, zawsze z dosłownym cytatem z wpisu.</li>
-            <li><strong>Kworum</strong> — diagnoza powstaje tylko wtedy, gdy wypowie się co najmniej trzech lekarzy; oceny jednego czy dwóch modeli nie publikujemy.</li>
-            <li><strong>Cały wpis</strong> — lekarze dostają tekst, opisy zdjęć i grafik (także tekst na nich) oraz tytuły i opisy stron, do których prowadzą linki.</li>
+            <li><strong>Techniki</strong> — do diagnozy trafia tylko technika wskazana przez co najmniej dwóch specjalistów, zawsze z dosłownym cytatem z wpisu.</li>
+            <li><strong>Kworum</strong> — diagnoza powstaje tylko wtedy, gdy wypowie się co najmniej trzech specjalistów; oceny jednego czy dwóch modeli nie publikujemy.</li>
+            <li><strong>Cały wpis</strong> — specjaliści dostają tekst, opisy zdjęć i grafik (także tekst na nich) oraz tytuły i opisy stron, do których prowadzą linki.</li>
             <li>
-              <strong>Jawność</strong> — pod każdą diagnozą pokazujemy skład konsylium, głos każdego lekarza, zgodność, uwagi ordynatora i to, czy wzywano
+              <strong>Jawność</strong> — pod każdą diagnozą pokazujemy skład konsylium, głos każdego specjalisty, zgodność, uwagi ordynatora i to, czy wzywano
               płatnego konsultanta.
             </li>
           </ul>

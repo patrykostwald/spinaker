@@ -27,7 +27,7 @@ export function ContextThreadStrip() {
             <small>{box.source} · {box.date}</small>
           </li>
         ))}
-        <li className="sc-ctx__more" aria-label="Można dodać więcej boxów">+ do 15 boxów</li>
+        <li className="sc-ctx__more" aria-label="5 z 15 możliwych boxów">5/15</li>
       </ol>
       <figcaption className="sc-ctx__caption">Przykład wymyślony — pokazuje zasadę, nie prawdziwą sprawę.</figcaption>
     </figure>

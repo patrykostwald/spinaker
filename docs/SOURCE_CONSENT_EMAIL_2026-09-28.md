@@ -47,7 +47,7 @@ Jeśli chcą Państwo poprowadzić własną nitkę, wystarczy napisać na kontak
 
 Z poważaniem
 Zespół spin.clinic
-zrodla@spin.clinic · https://spin.clinic
+zrodla@spin.clinic · https://spin.clinic · X: https://x.com/spinclinic
 Operator serwisu: iapply sp. z o.o.
 
 ---
@@ -79,7 +79,7 @@ Wystarczy krótka odpowiedź, na przykład:
 
 Z poważaniem
 Zespół spin.clinic
-zrodla@spin.clinic · https://spin.clinic
+zrodla@spin.clinic · https://spin.clinic · X: https://x.com/spinclinic
 Operator serwisu: iapply sp. z o.o.
 
 ---
