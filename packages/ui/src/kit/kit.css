@@ -4610,32 +4610,3 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
   .sc-invite__head { align-items: center; }
   .sc-invite__cta { align-self: center; margin-top: calc(var(--sc-s-4) - var(--sc-s-5)); }
 }
-
-/* ===== Podgląd uproszczonej głównej (/nowa-glowna) ===== */
-.sc-simple-preview { margin: 0; padding: 8px 14px; border-radius: var(--sc-r-md); background: var(--sc-accent-soft); color: var(--sc-text-2); font-size: var(--sc-t-caption-size); }
-.sc-simple-preview a { color: var(--sc-accent); font-weight: 600; }
-.sc-simple-spin { display: grid; gap: var(--sc-s-4); padding: var(--sc-s-5) var(--sc-s-6); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-accent); }
-.sc-simple-spin__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); flex-wrap: wrap; }
-.sc-simple-spin__head .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
-.sc-simple-spin__all, .sc-simple-spin__cta { color: var(--sc-accent); font-weight: 600; text-decoration: none; font-size: var(--sc-t-body-s-size); }
-.sc-simple-spin__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--sc-s-6); align-items: start; }
-.sc-simple-spin__post { margin: 0; padding: var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface-2); display: grid; gap: var(--sc-s-2); }
-.sc-simple-spin__post figcaption { display: grid; gap: 2px; }
-.sc-simple-spin__post figcaption strong { color: var(--sc-text); }
-.sc-simple-spin__post figcaption span { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
-.sc-simple-spin__post blockquote { margin: 0; color: var(--sc-text); line-height: 1.5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 7; overflow: hidden; white-space: pre-line; }
-.sc-simple-spin__diagnosis { display: grid; gap: var(--sc-s-3); align-content: start; }
-.sc-simple-spin__diagnosis h2 { margin: 0; color: var(--sc-text); }
-.sc-simple-spin__techniques { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sc-s-2); }
-.sc-simple-spin__techniques li { display: grid; gap: 2px; padding-left: var(--sc-s-3); border-left: 3px solid var(--sc-accent); }
-.sc-simple-spin__techniques strong { color: var(--sc-text); font-size: var(--sc-t-body-s-size); }
-.sc-simple-spin__techniques span { color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
-.sc-simple-interviews { display: grid; gap: var(--sc-s-4); }
-.sc-simple-interviews .sc-interview__lede { display: none; }
-.sc-simple-links { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sc-s-2) var(--sc-s-6); margin: 0; }
-.sc-simple-links a { color: var(--sc-accent); font-weight: 600; text-decoration: none; font-size: var(--sc-t-body-s-size); }
-@media (max-width: 760px) {
-  .sc-simple-spin { padding: var(--sc-s-4); }
-  .sc-simple-spin__grid { grid-template-columns: minmax(0, 1fr); gap: var(--sc-s-4); }
-  .sc-simple-links { flex-direction: column; align-items: flex-start; }
-}
