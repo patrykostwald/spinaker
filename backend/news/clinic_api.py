@@ -4,7 +4,7 @@ import re
 from datetime import date, datetime, time, timedelta
 
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
@@ -26,6 +26,55 @@ from news.techniques import CANONICAL_TECHNIQUES, normalized, technique_groups
 
 X_PROFILE = re.compile(r'^https?://(?:www\.|mobile\.)?(?:x|twitter)\.com/([A-Za-z0-9_]{1,15})/?(?:[?#].*)?$')
 RESERVED_PATHS = {'home', 'search', 'explore', 'i', 'intent', 'share', 'settings', 'messages', 'notifications', 'login', 'signup', 'tos', 'privacy'}
+
+
+@extend_schema(summary='Archiwum opublikowanych wywiadów', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_interviews(request):
+    from news.clinic_interview import _published_interviews, interview_data
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+    except ValueError:
+        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+    rows = _published_interviews().order_by('-day', '-diagnosed_at', '-pk')
+    channels = list(rows.exclude(channel='').order_by('channel').values_list('channel', flat=True).distinct())
+    channel, query = (request.query_params.get(key, '').strip() for key in ('channel', 'q'))
+    if channel:
+        rows = rows.filter(channel=channel)
+    if query:
+        rows = rows.filter(Q(guest_name__icontains=query) | Q(host_name__icontains=query) | Q(title__icontains=query))
+    count = rows.count()
+    batch = list(rows[(page - 1) * 20:page * 20 + 1])
+    return Response({'results': [interview_data(row) for row in batch[:20]],
+                     'next_page': page + 1 if len(batch) > 20 else None, 'count': count, 'channels': channels})
+
+
+@extend_schema(summary='Pełna analiza opublikowanego wywiadu', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_interview_detail(request, interview_id):
+    from news.clinic_interview import _published_interviews, interview_data
+    return Response(interview_data(get_object_or_404(_published_interviews(), pk=interview_id)))
+
+
+@extend_schema(summary='Przekazy obu stron według dni', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_messages(request):
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+    except ValueError:
+        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+    rows = ClinicDailyMessage.objects.filter(status='approved', camp__in=clinic.CAMPS)
+    days = rows.order_by('-day').values_list('day', flat=True).distinct()
+    count = days.count()
+    batch = list(days[(page - 1) * 14:page * 14 + 1])
+    grouped = {day: {'day': day, 'government': None, 'opposition': None} for day in batch[:14]}
+    for row in rows.filter(day__in=batch[:14]).prefetch_related('posts'):
+        grouped[row.day][row.camp] = clinic._message_data(row)
+    return Response({'results': list(grouped.values()), 'next_page': page + 1 if len(batch) > 14 else None,
+                     'count': count})
 
 
 @extend_schema(summary='Klinika spinu: waga, przekazy dnia, spin dnia i diagnozy obu stron', tags=['klinika'],

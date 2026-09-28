@@ -153,6 +153,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
+      <p className="sc-interview__more"><Link href={`/klinika/wywiady/${interview.id}`}>Otwórz stronę wywiadu →</Link>{" · "}<Link href="/klinika/wywiady">Archiwum wywiadów →</Link></p>
       {archive.length ? <InterviewArchive items={archive} /> : null}
       <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad · ${interview.title}`}>
         <InterviewAnalysis interview={interview} />
@@ -193,7 +194,7 @@ export function InterviewArchive({ items }: { items: Interview[] }) {
 }
 
 /** Pełna analiza wywiadu (okno): gość z technikami i twierdzeniami, prowadzący, ograniczenia. */
-function InterviewAnalysis({ interview }: { interview: Interview }) {
+export function InterviewAnalysis({ interview }: { interview: Interview }) {
   return (
     <>
         <p className="sc-clinic-dialog__lead">{interview.headline}</p>

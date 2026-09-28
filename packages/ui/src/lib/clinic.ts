@@ -135,6 +135,18 @@ export const CAMP_LABELS: Record<Camp, string> = { government: "Rządzący", opp
 export const CAMPS: Camp[] = ["government", "opposition"];
 
 export const getClinicPage = () => apiFetch<ClinicPageData>("/api/clinic/");
+export type ArchivePage<T> = { results: T[]; next_page: number | null; count: number };
+export type InterviewSearchParams = { page?: number; q?: string; channel?: string };
+export type MessageDay = { day: string; government: DailyMessage | null; opposition: DailyMessage | null };
+export const getClinicInterviews = (params: InterviewSearchParams = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  });
+  return apiFetch<ArchivePage<Interview> & { channels: string[] }>(`/api/clinic/interviews/?${query}`);
+};
+export const getClinicInterview = (id: number | string) => apiFetch<Interview>(`/api/clinic/interviews/${encodeURIComponent(id)}/`);
+export const getClinicMessages = (page = 1) => apiFetch<ArchivePage<MessageDay>>(`/api/clinic/messages/?page=${page}`);
 export type ClinicSearchParams = {
   page?: number;
   q?: string;

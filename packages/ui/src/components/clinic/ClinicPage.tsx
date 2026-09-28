@@ -185,6 +185,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
             {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
           </div>
           <MessageHistory history={data.message_history} />
+          <p><Link href="/klinika/przekazy">Archiwum przekazów →</Link></p>
         </div>
 
         {data.interview ? <InterviewBox interview={data.interview} archive={data.interview_second ? [] : data.interview_archive} /> : null}

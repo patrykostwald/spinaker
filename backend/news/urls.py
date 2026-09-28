@@ -17,7 +17,7 @@ from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCa
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
 from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
-from news.clinic_api import (clinic_page, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_accounts, clinic_deleted, clinic_report, SpinOpinionsView,
+from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_accounts, clinic_deleted, clinic_report, SpinOpinionsView,
                              suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
@@ -51,6 +51,9 @@ urlpatterns = [
     path('staff/newsletter/', newsletter.staff_stats),
     path('social/video/<str:name>', serve_video),
     path('clinic/', clinic_page),
+    path('clinic/interviews/', clinic_interviews),
+    path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
+    path('clinic/messages/', clinic_messages),
     path('clinic/spins/', clinic_spins),
     path('clinic/stats/', clinic_statistics),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
