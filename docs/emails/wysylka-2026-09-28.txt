@@ -1,104 +1,104 @@
 WYSYŁKA 28.09.2026 — 20 maili (wersja A, redakcja), 31 źródeł
 Do każdego maila: w temacie wstaw NAZWA, w treści NAZWY (dopełniacz) i zdanie POWÓD zamiast {POWÓD}.
-Adresy oznaczone „sprawdź” potwierdź na stronie kontaktowej redakcji przed wysyłką.
+Adresy sprawdzone 28.09 na stronach kontaktowych (Onet — tylko formularz; Polsat News — adres z wyszukiwarki).
 
 ---------------------------------------------------------------------------------------------------
-1. Grupa Wirtualna Polska (WP, O2.pl, Money.pl) — sekretariat@grupawp.pl (sprawdź)
+1. Grupa Wirtualna Polska (WP, O2.pl, Money.pl) — sekretariat@grupawp.pl
 NAZWA: Wirtualna Polska
 NAZWY: Wirtualnej Polski (WP, O2.pl i Money.pl)
 POWÓD: Rozmowy z politykami z kanałów Wirtualnej Polski są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy, by obok nich czytelnicy widzieli też Państwa artykuły z WP, O2.pl i Money.pl, zawsze z linkiem do oryginału.
 
-2. Onet — adres ze strony https://www.onet.pl/kontakt
+2. Onet — BRAK POTWIERDZONEGO ADRESU — wyślij formularzem ze strony https://www.onet.pl/kontakt (Onet blokuje automatyczne sprawdzanie)
 NAZWA: Onet
 NAZWY: Onetu
 POWÓD: Rozmowy z kanałów Onetu, w tym z „Onet Rano”, należą do źródeł naszego „wywiadu dnia” — chcielibyśmy pokazywać obok nich także Państwa artykuły, zawsze z linkiem do Onetu.
 
-3. Interia — wydarzenia@firma.interia.pl (sprawdź)
+3. Interia — wydarzenia@firma.interia.pl
 NAZWA: Interia
 NAZWY: Interii
 POWÓD: Rozmowy Interii z politykami są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy, by czytelnicy widzieli obok nich również Państwa wiadomości, z linkiem do Interii.
 
-4. Polsat News — news@polsat.com.pl (sprawdź)
+4. Polsat News — news@polsat.com.pl
 NAZWA: Polsat News
 NAZWY: Polsat News
 POWÓD: Programy publicystyczne Polsat News są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy prowadzić czytelników prosto do Państwa materiałów.
 
-5. TVN (TVN24, Konkret24) — adres wydawcy ze strony https://tvn24.pl/kontakt
+5. TVN (TVN24, Konkret24) — kontakt24@tvn.pl
 NAZWA: TVN24 i Konkret24
 NAZWY: TVN24 i Konkret24
 POWÓD: Wywiady TVN24 są jednym ze źródeł naszego „wywiadu dnia”, a Konkret24 sprawdza fakty w tych samych wypowiedziach, w których my pokazujemy techniki perswazji — oba serwisy dobrze się uzupełniają.
 
-6. TVP Info — adres ze strony https://www.tvp.info/kontakt
+6. TVP Info — rzecznik@tvp.pl
 NAZWA: TVP Info
 NAZWY: TVP Info
 POWÓD: Rozmowy z politykami na antenie TVP Info są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy, by czytelnicy mogli trafiać prosto do Państwa materiałów.
 
-7. RMF24 — adres inny niż gorąca linia, ze strony https://www.rmf24.pl/kontakt
+7. RMF24 — internet@rmf.fm
 NAZWA: RMF24
 NAZWY: RMF24
 POWÓD: Poranne rozmowy RMF FM i RMF24 z politykami są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy pokazywać obok nich także Państwa wiadomości, z linkiem do RMF24.
 
-8. Radio ZET — radiozet@radiozet.pl (sprawdź)
+8. Radio ZET — online@radiozet.pl
 NAZWA: Radio ZET
 NAZWY: Radia ZET
 POWÓD: Rozmowy Radia ZET z politykami są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy, by czytelnicy widzieli obok nich również Państwa wiadomości.
 
-9. Rzeczpospolita — adres ze strony https://www.rp.pl (stopka → Kontakt)
+9. Rzeczpospolita — redakcja@rp.pl
 NAZWA: Rzeczpospolita
 NAZWY: „Rzeczpospolitej”
 POWÓD: Rozmowy z kanału wideo „Rzeczpospolitej” należą do źródeł naszego „wywiadu dnia” — chcielibyśmy pokazywać czytelnikom także Państwa artykuły, zawsze z linkiem do rp.pl.
 
-10. Infor (Dziennik Gazeta Prawna, Dziennik.pl, Infor.pl) — adres wydawcy ze strony https://www.gazetaprawna.pl/kontakt
+10. Infor (Dziennik Gazeta Prawna, Dziennik.pl, Infor.pl) — newsroom.online@dziennik.pl
 NAZWA: Dziennik Gazeta Prawna, Dziennik.pl i Infor.pl
 NAZWY: Dziennika Gazety Prawnej, Dziennik.pl i Infor.pl
 POWÓD: Gdy politycy mówią o podatkach, prawie pracy albo nowych przepisach, czytelnicy potrzebują rzetelnego źródła prawnego — a tym są dla nich Państwa serwisy.
 
-11. Polska Press (Gazeta Krakowska, Gazeta Wrocławska, Głos Wielkopolski, Dziennik Bałtycki, Dziennik Zachodni) — adres wydawcy
+11. Polska Press (Gazeta Krakowska, Gazeta Wrocławska, Głos Wielkopolski, Dziennik Bałtycki, Dziennik Zachodni) — sekretariat@polskapress.pl
 NAZWA: dzienniki regionalne Polska Press
 NAZWY: dzienników regionalnych Polska Press
 POWÓD: Wiele wypowiedzi polityków dotyczy spraw lokalnych — Państwa dzienniki pozwoliłyby czytelnikom zobaczyć, jak dany temat wygląda w Krakowie, Wrocławiu, Poznaniu, Gdańsku i na Śląsku.
 
-12. Gazeta.pl — adres ze strony https://www.gazeta.pl (stopka → Kontakt)
+12. Gazeta.pl — redakcja_portalu@agora.pl
 NAZWA: Gazeta.pl
 NAZWY: Gazeta.pl
 POWÓD: Gazeta.pl to jedno z najczęściej czytanych źródeł wiadomości w polskim internecie — chcielibyśmy, by czytelnicy mogli trafiać do Państwa materiałów prosto z naszego zestawienia.
 
-13. Fakt — redakcja@fakt.pl (sprawdź)
+13. Fakt — kontakt@fakt.pl
 NAZWA: Fakt
 NAZWY: „Faktu”
 POWÓD: „Fakt” dociera do czytelników, do których rzadko trafiają analizy wypowiedzi polityków — chcielibyśmy pokazywać Państwa materiały obok innych źródeł, zawsze z linkiem do oryginału.
 
-14. Bankier.pl — redakcja@bankier.pl (sprawdź)
+14. Bankier.pl — redakcja@bankier.pl
 NAZWA: Bankier.pl
 NAZWY: Bankier.pl
 POWÓD: Gdy politycy mówią o inflacji, podatkach czy kursie złotego, nasi czytelnicy potrzebują rzetelnego źródła gospodarczego — a Bankier.pl jest nim na co dzień.
 
-15. OKO.press — adres ze strony https://oko.press/kontakt
+15. OKO.press — redakcja@oko.press
 NAZWA: OKO.press
 NAZWY: OKO.press
 POWÓD: Państwa teksty oparte na danych publicznych to dokładnie ten rodzaj źródeł, do których Dr. Spin odsyła czytelników, gdy polityk podaje liczby bez kontekstu.
 
-16. Demagog — adres ze strony https://demagog.org.pl/kontakt/
+16. Demagog — kontakt@demagog.org.pl
 NAZWA: Demagog
 NAZWY: Demagogu
 POWÓD: Sprawdzają Państwo, czy wypowiedzi polityków są prawdziwe — my pokazujemy, jak je zbudowano. Oba podejścia się uzupełniają, a Państwa analizy są naturalnym źródłem dla naszej Kliniki.
 
-17. wPolityce.pl — adres ze strony https://wpolityce.pl (stopka → Kontakt)
+17. wPolityce.pl — wpolityce@fratria.pl
 NAZWA: wPolityce.pl
 NAZWY: wPolityce.pl
 POWÓD: Rozmowy telewizji wPolsce24 są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy, by obok nich czytelnicy widzieli też Państwa teksty z wPolityce.pl, zawsze z linkiem do oryginału.
 
-18. Do Rzeczy — adres ze strony https://dorzeczy.pl (stopka → Kontakt)
+18. Do Rzeczy — listy@dorzeczy.pl
 NAZWA: Do Rzeczy
 NAZWY: „Do Rzeczy”
 POWÓD: Rozmowy z kanału „Do Rzeczy” należą do źródeł naszego „wywiadu dnia” — chcielibyśmy pokazywać czytelnikom także teksty tygodnika, z linkiem do Państwa strony.
 
-19. Polityka — adres ze strony https://www.polityka.pl (stopka → Kontakt)
+19. Polityka — przedruki@polityka.pl   (DW: polityka@polityka.pl)
 NAZWA: Polityka
 NAZWY: „Polityki”
 POWÓD: Analizy „Polityki” pomagają zrozumieć kontekst decyzji, o których politycy mówią w jednym zdaniu — chcielibyśmy, by czytelnicy mogli do nich trafiać prosto z naszego zestawienia.
 
-20. Newsweek Polska — adres ze strony https://www.newsweek.pl (stopka → Kontakt)
+20. Newsweek Polska — redakcja@newsweek.pl
 NAZWA: Newsweek Polska
 NAZWY: „Newsweeka”
 POWÓD: Publicystyka „Newsweeka” komentuje te same wydarzenia, o których mówią politycy w analizowanych przez nas wpisach — chcielibyśmy pokazywać ją czytelnikom obok nich, z linkiem do Państwa strony.
