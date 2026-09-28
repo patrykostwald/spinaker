@@ -41,7 +41,7 @@ def fake_selection(monkeypatch, rows, extra=None):
         assert len(payload['candidates']) <= 20
         assert all(set(row) == {'id', 'title', 'source', 'date'} for row in payload['candidates'])
         return {'title': 'Podatki w kontekście', 'items': (extra or []) + [
-            {'id': row.pk, 'why': 'Materiał opisuje kontekst budżetu.'} for row in rows]}, {}
+            {'id': row.pk, 'relevance': 3, 'why': 'Podatki i budżet.'} for row in rows]}, {}
     monkeypatch.setattr(clinic_ai, '_free_chat', chat)
 
 
@@ -73,18 +73,22 @@ def test_fallback_without_ai(context):
 def test_invalid_and_duplicate_ids_are_rejected(context, monkeypatch):
     _, rows = context
     fake_selection(monkeypatch, rows[:3], [
-        {'id': 999999, 'why': 'Spoza listy.'}, {'id': str(rows[3].pk), 'why': 'Zły typ.'},
-        {'id': True, 'why': 'Zły typ.'}, {'id': rows[0].pk, 'why': 'Poprawny.'}])
+        {'id': 999999, 'relevance': 3, 'why': 'Spoza listy.'},
+        {'id': str(rows[3].pk), 'relevance': 3, 'why': 'Zły typ.'},
+        {'id': True, 'relevance': 3, 'why': 'Zły typ.'},
+        {'id': rows[0].pk, 'relevance': 3, 'why': 'Podatki i budżet.'}])
     result = threads.build_daily_thread()
     assert not result['fallback']
     assert [item['id'] for item in result['items']] == [row.pk for row in rows[:3]]
 
 
-@pytest.mark.parametrize('data', [None, [], {'items': None}, {'items': [{'id': 999999, 'why': 'Obcy.'}]}])
-def test_malformed_or_too_short_selection_uses_fallback(context, monkeypatch, data):
+@pytest.mark.parametrize('data', [None, [], {'items': None}, {'items': []},
+                                {'items': [{'id': 999999, 'why': 'Obcy.'}]}])
+def test_malformed_or_too_short_selection_does_not_publish(context, monkeypatch, data):
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: (data, {}))
     result = threads.build_daily_thread()
-    assert result['fallback'] and len(result['items']) == 5
+    assert result['status'] == 'insufficient_context'
+    assert not Thread.objects.exists() and not ThreadItem.objects.exists()
 
 
 def test_once_per_day_and_history(context, monkeypatch):
@@ -125,7 +129,7 @@ def test_insufficient_context_and_missing_spin(context, monkeypatch):
     assert not Thread.objects.exists()
 
 
-def test_search_uses_local_content_and_links_and_filters_dates(context):
+def test_search_requires_two_metadata_roots_and_filters_dates(context):
     diagnosis, rows = context
     Article.objects.all().delete()
     source = Source.objects.get()
@@ -133,14 +137,16 @@ def test_search_uses_local_content_and_links_and_filters_dates(context):
         return Article.objects.create(source=source, title='Dokument', url=f'https://example.org/{index}',
                                       published_date=timezone.now() - timedelta(days=kwargs.pop('days', 1)), **kwargs)
     content = make(1)
-    ArticleContent.objects.create(article=content, text='Podatki')
+    ArticleContent.objects.create(article=content, text='Podatki i budżet')
     linked = make(2)
     EvidenceLink.objects.create(article=linked, phrase='budżet', source_url='https://www.gov.pl/dowod')
-    make(3, days=61, description='Podatki')
-    make(4, days=-1, description='Podatki')
-    make(5, category='tweet', description='Podatki')
+    eligible = make(6, description='Podatki i budżet')
+    make(7, description='Podatki podatki')
+    make(3, days=61, description='Podatki i budżet')
+    make(4, days=-1, description='Podatki i budżet')
+    make(5, category='tweet', description='Podatki i budżet')
     spin = threads.clinic.spin_of_day_by_camp()['spins']['opposition']
-    assert {row.pk for row in threads._candidates(spin)} == {content.pk, linked.pk}
+    assert {row.pk for row in threads._candidates(spin)} == {eligible.pk}
 
 
 def test_limit_and_official_preference(context):
@@ -194,3 +200,87 @@ def test_selection_limits(context, monkeypatch):
     result = threads.build_daily_thread()
     assert len(result['items']) == 6
     assert ThreadItem.objects.count() == 7
+
+
+def army_spin():
+    return {'id': 123, 'headline': 'Diagnoza wypowiedzi',
+            'post': {'url': 'https://example.org/post',
+                     'text': 'Błaszczak: program wyposażenia armii. Zakupy czołgów dla wojska.'},
+            'author': {'name': 'Mariusz Błaszczak'}, 'claims': []}
+
+
+def set_army_context(monkeypatch):
+    spin = army_spin()
+    monkeypatch.setattr(threads.clinic, 'spin_of_day_by_camp',
+                        lambda: {'order': ['opposition'], 'spins': {'opposition': spin}})
+    return spin
+
+
+def test_production_unrelated_materials_never_create_thread(context, monkeypatch):
+    Article.objects.all().delete()
+    spin = set_army_context(monkeypatch)
+    titles = ['To się Opłaca - Smart Village czyli Inteligentna Wieś',
+              'TAJEMNICA I OKOLICZNOŚCI ŚMIERCI RTM. JERZEGO SOSNOWSKIEGO – cykl Kulisy historii',
+              'Raport SGH — podatek cyfrowy']
+    for index, title in enumerate(titles):
+        article = Article.objects.create(source=Source.objects.get(), title=title,
+            url=f'https://example.org/unrelated/{index}', published_date=timezone.now())
+        ArticleContent.objects.create(article=article, text=spin['post']['text'])
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **kw: pytest.fail('Nietrafni kandydaci trafili do AI'))
+    assert threads.build_daily_thread()['status'] == 'insufficient_context'
+    assert not Thread.objects.exists() and not ThreadItem.objects.exists()
+
+
+@pytest.mark.parametrize('relevance', [2, 3])
+def test_same_army_subject_creates_thread(context, monkeypatch, relevance):
+    _, rows = context
+    set_army_context(monkeypatch)
+    titles = ['Wyposażenie armii: zakupy czołgów', 'Wyposażenia armia potrzebuje',
+              'Wyposażenie i zakupy: wspieramy armię']
+    for row, title in zip(rows[:3], titles):
+        row.title = title
+        row.save(update_fields=['title'])
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **kw: ({'title': 'Wyposażenie armii',
+        'items': [{'id': row.pk, 'relevance': relevance, 'why': row.title} for row in rows[:3]]}, {}))
+    result = threads.build_daily_thread()
+    assert result['status'] == 'created' and not result['fallback']
+    assert len(result['items']) == 3
+
+
+@pytest.mark.parametrize('relevance', [0, 1, None, True, '3', 4])
+def test_low_or_invalid_relevance_is_rejected(context, monkeypatch, relevance):
+    _, rows = context
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **kw: ({'items': [
+        {'id': row.pk, 'relevance': relevance if index == 0 else 3, 'why': 'Podatki i budżet.'}
+        for index, row in enumerate(rows[:3])]}, {}))
+    result = threads.build_daily_thread()
+    assert result['status'] == 'insufficient_context' and result['selected_count'] == 2
+    assert not Thread.objects.exists() and not ThreadItem.objects.exists()
+
+
+def test_invented_why_is_rejected(context, monkeypatch):
+    _, rows = context
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **kw: ({'items': [
+        {'id': row.pk, 'relevance': 3, 'why':
+         'Finansowanie infrastruktury wojskowej i wyposażenia armii.' if index == 0 else 'Podatki i budżet.'}
+        for index, row in enumerate(rows[:3])]}, {}))
+    result = threads.build_daily_thread()
+    assert result['status'] == 'insufficient_context' and result['selected_count'] == 2
+    assert not Thread.objects.exists() and not ThreadItem.objects.exists()
+
+
+def test_technical_failure_does_not_fallback_on_description_only(context):
+    Article.objects.update(title='Dokument', description='Podatki i budżet')
+    assert threads.build_daily_thread()['status'] == 'insufficient_context'
+    assert not Thread.objects.exists() and not ThreadItem.objects.exists()
+
+
+def test_keywords_include_post_claims_and_ignore_general_words():
+    spin = army_spin()
+    spin['headline'] = 'Rząd Polski: nowy program ministra'
+    spin['claims'] = [{'claim': 'Dostawy amunicji'}]
+    keywords = threads._keywords(spin)
+    assert threads._hits('Wyposażenie armia armię armii', keywords) == 2
+    assert threads._hits('Błaszczak Błaszczaka Błaszczak', keywords) == 1
+    assert threads._hits('Rządu Polsce program programu ministra nowy', keywords) == 0
+    assert threads._hits('Dostawy amunicji', keywords) == 2
