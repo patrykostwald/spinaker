@@ -49,6 +49,11 @@ export function HomeHero() {
         <p className="sc-home-intro__title">
           Wiadomości ze źródłami. <span>Diagnozy spinu polityków.</span>
         </p>
+        {/* Jedno zdanie „co to jest” dla kogoś, kto trafia tu pierwszy raz (28.09 — ludzie gubili się w opisie). */}
+        <p className="sc-home-intro__lead">
+          Codziennie bierzemy wpisy i wywiady polityków i w pół minuty pokazujemy, jak zbudowany jest przekaz —
+          z cytatem, źródłem i tą samą miarą dla rządu i opozycji.
+        </p>
         <p className="sc-home-intro__links">
           <Link href="/klinika">Klinika spinu →</Link>
           {THREADS_ENABLED && <Link href="/nitki">Nitki →</Link>}
