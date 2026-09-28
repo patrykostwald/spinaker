@@ -541,7 +541,7 @@ def test_x_thread_synthesis_is_saved_once_and_rejects_english(ai_on, monkeypatch
     assert diagnosis.x_thread == []  # darmowy model niedostępny — diagnoza i tak zapisana
     answers = [{'lead': 'The post blames the government.', 'points': ['One point here.', 'Another point here.']},
                {'lead': 'Wpis przypisuje rządowi intencje bez dowodu.',
-                'points': ['Technika: fałszywa alternatywa — „Tylko my obronimy Polaków!”.', 'Twierdzenie o podatkach nie ma źródła w diagnozie.']}]
+                'points': ['Fałszywa alternatywa ogranicza wybór do dwóch opcji.', 'Wpis przedstawia autora jako jedynego obrońcę odbiorców.']}]
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: (answers.pop(0), 'm'))
     monkeypatch.setattr(clinic_ai, 'x_thread', ORIGINAL_X_THREAD)
     assert clinic.ensure_x_thread(diagnosis) is True
@@ -668,10 +668,12 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
                                        claims=[{'claim': 'Bezrobocie spadło', 'assessment': 'misleading', 'explanation': 'Spadało wcześniej.',
                                                 'sources': [{'url': 'https://stat.gov.pl/a', 'title': 'GUS'}]}],
                                        diagnosed_at=timezone.now())
+    row.x_thread = ['Wpis pomija kontekst danych.', 'Dane GUS pokazują wcześniejszy spadek.']
+    row.save(update_fields=['x_thread'])
     thread = clinic.detail_data(row)['x_share']
     assert len(thread) == 1 and weight(thread[0]) <= 280  # jeden wpis
-    assert thread[0].startswith('Dr. Spin (AI) ocenia wpis @posel_test na 82/100') and 'fałszywa alternatywa' in thread[0]
-    assert 'https://stat.gov.pl/a' in thread[0] and thread[0].endswith(row.post.url)  # źródło i cytowany wpis
+    assert thread[0].startswith('Dr. Spin (AI) · Poseł Test') and 'fałszywa alternatywa' in thread[0]
+    assert f'/klinika/{row.pk}' in thread[0] and '…' not in thread[0]
 
     assert x_publish.run() == {'status': 'disabled'}  # bez kluczy i przełącznika — nic nie wysyłamy
     for key in x_publish.KEYS:
@@ -693,10 +695,11 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
     assert result['results'] == [{'id': row.pk, 'posted': True}]
     assert uploads == [bytes([0x89]) + b'PNG' + bytes([13, 10, 26, 10])]  # obrazek PNG z wpisem polityka
     body = sent[0]
-    assert len(sent) == 1 and body['media'] == {'media_ids': ['m1']} and weight(body['text']) <= 280
+    assert len(sent) == 2 and body['media'] == {'media_ids': ['m1']} and weight(body['text']) <= 280
     assert '@posel_test' not in body['text'] and 'x.com/' not in body['text']  # bez oznaczenia i bez linku do polityka
     row.refresh_from_db()
-    assert row.x_posted_ids == ['1'] and row.x_posted_at
+    assert sent[1]['reply'] == {'in_reply_to_tweet_id': '1'}
+    assert row.x_posted_ids == ['1', '2'] and row.x_posted_at
     assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz
 
     # Autor usuwa wpis — usuwamy też nasz (zasady X).
@@ -705,7 +708,7 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
     from news import deleted_posts
     deleted_posts.mark_deleted(row.post)
     row.refresh_from_db()
-    assert deleted == [f'{x_publish.TWEETS}/1'] and row.x_posted_ids == []
+    assert deleted == [f'{x_publish.TWEETS}/1', f'{x_publish.TWEETS}/2'] and row.x_posted_ids == []
 
 
 @pytest.mark.django_db
@@ -716,7 +719,7 @@ def test_x_publish_failure_sends_one_alert(monkeypatch):
     cache.delete('x-publish-alert')
     acc = account()
     row = SpinDiagnosis.objects.create(post=post(acc), status='approved', verdict='spin', intensity=90, headline='Teza',
-                                       summary='Krótko.', diagnosed_at=timezone.now())
+                                       summary='Krótko.', x_thread=['Wpis pomija kontekst.', 'Autor stosuje uproszczenie.'], diagnosed_at=timezone.now())
     for key in x_publish.KEYS:
         monkeypatch.setenv(key, 'test-key-0123456789')
     monkeypatch.setenv('X_POST_ENABLED', 'true')

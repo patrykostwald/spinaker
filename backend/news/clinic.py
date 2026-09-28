@@ -22,6 +22,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 
 from news import clinic_ai
+from news.names import display_name
 from news.clinic_models import ClinicDailyMessage, SpinDiagnosis
 from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure, SocialHandleEvidence
 from news.techniques import technique_groups, normalized
@@ -135,7 +136,7 @@ def author_data(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     avatar = author.get('profile_image_url') or ''
     affiliation = party_affiliation(figure)
     return {
-        'name': clean_account_name(figure.canonical_name if figure else (author.get('name') or post.account.display_name)),
+        'name': display_name(clean_account_name(figure.canonical_name if figure else (author.get('name') or post.account.display_name))),
         'handle': post.account.handle,
         'account_url': f'https://x.com/{post.account.handle}',
         'avatar_url': avatar.replace('_normal.', '_bigger.') if avatar else '',
@@ -261,7 +262,7 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
     return row
 
 
-def ensure_x_thread(row: SpinDiagnosis) -> bool:
+def ensure_x_thread(row: SpinDiagnosis, save: bool = True) -> bool:
     """Synteza diagnozy do wątku na X — raz na diagnozę, darmowym modelem. Treści diagnozy nie zmienia."""
     if row.x_thread or not row.verdict:
         return False
@@ -276,7 +277,8 @@ def ensure_x_thread(row: SpinDiagnosis) -> bool:
     except clinic_ai.ClinicAIError:
         return False
     row.x_thread = result['posts']
-    row.save(update_fields=['x_thread'])
+    if save:
+        row.save(update_fields=['x_thread'])
     return True
 
 

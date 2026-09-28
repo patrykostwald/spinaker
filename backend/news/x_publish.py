@@ -1,12 +1,4 @@
-"""Automatyczne wpisy konta spin.clinic na X: silny spin (domyślnie od 70/100) = JEDEN wpis na profilu, z cytowanym wpisem
-polityka jako obrazkiem — bez @ i bez linku do niego, żeby nie wysyłać mu powiadomień (blokady). Bez wątku i komentarzy.
-Nieudany wpis = alarm mailem. Gdy autor usunie wpis, usuwamy też nasz (zasady X: treść usuniętych wpisów znika).
-
-Wątek to ten sam 2–3-wpisowy skrót co przycisk „Udostępnij” (news/x_share.py). Wyłączone domyślnie — działa dopiero
-z kluczami konta z uprawnieniem zapisu (OAuth 1.0a: X_POST_API_KEY, X_POST_API_SECRET, X_POST_ACCESS_TOKEN,
-X_POST_ACCESS_SECRET) i X_POST_ENABLED=true. Token odczytu (X_POLITICAL_BEARER_TOKEN) nie pozwala publikować.
-Limit dzienny: X_POST_DAILY_LIMIT (domyślnie 3). Wpisów usuniętych przez autora nie publikujemy.
-"""
+"""Publikacja dwuwpisowych syntez oraz usuwanie całego wątku po usunięciu oryginału."""
 from __future__ import annotations
 
 import base64
@@ -14,9 +6,9 @@ import hashlib
 import hmac
 import logging
 import os
+import re
 import secrets
 import time
-from datetime import timedelta
 from urllib.parse import quote
 
 import requests
@@ -86,8 +78,11 @@ def polish(text: str) -> str:
         data, _ = clinic_ai._free_chat(LINGUIST_SYSTEM, text, LINGUIST_SCHEMA, max_tokens=800)
     except clinic_ai.ClinicAIError:
         return text
-    fixed = ' '.join(str(data.get('text', '')).split())
+    fixed = '\n'.join(' '.join(line.split()) for line in str(data.get('text', '')).strip().splitlines())
     ok = (fixed and URL.findall(fixed) == URL.findall(text) and weight(fixed) <= LIMIT
+          and fixed.count('\n') == text.count('\n') and '…' not in fixed and '...' not in fixed
+          and re.findall(r'\d+', fixed) == re.findall(r'\d+', text)
+          and not re.search(r'[!?@#]', URL.sub('', fixed))
           and 0.85 <= len(fixed) / max(1, len(text)) <= 1.15 and clinic_ai.looks_polish(fixed))
     return fixed if ok else text
 
@@ -148,18 +143,24 @@ def alert(diagnosis_id: int, error: str) -> str:
 
 def candidates(limit: int):
     from news.clinic import published_diagnoses
-    minimum = int(os.environ.get('X_POST_MIN_INTENSITY', '70'))
-    fresh = timezone.now() - timedelta(hours=int(os.environ.get('X_POST_FRESH_HOURS', '24')))
-    return list(published_diagnoses().filter(verdict='spin', intensity__gte=minimum, x_posted_at__isnull=True,
-                                             diagnosed_at__gte=fresh).order_by('-intensity', '-diagnosed_at')[:limit])
+    from news.clinic_models import SpinDiagnosis
+    from news.social_selection import day_start, select
+    minimum = int(os.environ.get('X_POST_MIN_INTENSITY', '55'))
+    rows = published_diagnoses().filter(
+        verdict='spin', intensity__gte=minimum, x_posted_at__isnull=True,
+        diagnosed_at__gte=day_start(), post__available=True).order_by('-intensity', '-diagnosed_at', '-pk')
+    history = list(SpinDiagnosis.objects.filter(x_posted_at__isnull=False).order_by('-x_posted_at')
+                   .values_list('post__camp_at_collection', 'x_posted_at'))
+    return select(rows, history, limit)
 
 
 def run(dry_run: bool = False) -> dict:
-    from news.clinic import detail_data
+    from news.social_content import prepare
+    from news.social_selection import day_start
     from news.clinic_models import SpinDiagnosis
     if not dry_run and not enabled():
         return {'status': 'disabled'}
-    start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    start = day_start()
     posted_today = SpinDiagnosis.objects.filter(x_posted_at__gte=start).count()
     room = max(0, int(os.environ.get('X_POST_DAILY_LIMIT', '3')) - posted_today)
     done = []
@@ -168,19 +169,28 @@ def run(dry_run: bool = False) -> dict:
     for diagnosis in candidates(room if not dry_run else 3):
         if not diagnosis.post.available:
             continue  # autor usunął wpis — nie publikujemy jego treści
-        text = polish(build(detail_data(diagnosis), account=True)[0])
+        texts = [polish(text) for text in build(prepare(diagnosis, save=not dry_run), account=True)]
+        if not texts:
+            done.append({'id': diagnosis.pk, 'posted': False, 'error': 'synthesis_unavailable'})
+            continue
         if dry_run:
-            done.append({'id': diagnosis.pk, 'posts': [text]})
+            done.append({'id': diagnosis.pk, 'posts': texts})
             continue
         try:
-            # jeden wpis na profilu spin.clinic: tekst + obrazek z wpisem polityka (bez oznaczania go i bez linku)
-            post_id = post(text, media_id=upload_image(for_diagnosis(diagnosis)))
+            ids = list(diagnosis.x_posted_ids or [])
+            for index in range(len(ids), len(texts)):
+                post_id = post(texts[index], reply_to=ids[0] if ids else None,
+                               media_id=upload_image(for_diagnosis(diagnosis)) if not ids else None)
+                ids.append(post_id)
+                # Zapis po każdym wpisie pozwala wznowić odpowiedź i usunąć częściowy wątek.
+                diagnosis.x_posted_ids = ids
+                diagnosis.save(update_fields=['x_posted_ids'])
         except (requests.RequestException, RuntimeError, KeyError, ValueError) as error:
             logger.warning('x publish %s: %s', diagnosis.pk, error)
             alert(diagnosis.pk, str(error))
             done.append({'id': diagnosis.pk, 'posted': False, 'error': str(error)[:200]})
             break  # klucze, uprawnienia albo limit — nie próbujemy kolejnych w tym przebiegu
-        diagnosis.x_posted_ids, diagnosis.x_posted_at = [post_id], timezone.now()
+        diagnosis.x_posted_ids, diagnosis.x_posted_at = ids, timezone.now()
         diagnosis.save(update_fields=['x_posted_ids', 'x_posted_at'])
         done.append({'id': diagnosis.pk, 'posted': True})
     return {'status': 'dry_run' if dry_run else 'ok', 'results': done}

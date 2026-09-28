@@ -77,7 +77,17 @@ def _text_block(lines: list[str], size: int, weight: int, color, line_height: in
 def _wrapped(text: str, size: int, weight: int, color, max_lines: int, line_height: int | None = None,
              width: int = X1 - X0) -> Image.Image:
     probe = ImageDraw.Draw(Image.new('RGB', (1, 1)))
-    lines = _wrap(probe, _clean(text), _font(size, weight), width, max_lines)
+    from news.x_share import shorten
+    clean = _clean(text)
+    lines = _wrap(probe, clean, _font(size, weight), width, max_lines)
+    if lines and lines[-1].endswith('…'):
+        budget = len(' '.join(lines)) - 1
+        clean = shorten(clean, budget)
+        lines = _wrap(probe, clean, _font(size, weight), width, max_lines)
+        while lines and lines[-1].endswith('…') and budget > 0:
+            budget -= 10
+            clean = shorten(clean, budget)
+            lines = _wrap(probe, clean, _font(size, weight), width, max_lines)
     return _text_block(lines, size, weight, color, line_height or int(size * 1.32), width)
 
 
@@ -138,7 +148,8 @@ def _intensity_bar(value: int) -> Image.Image:
 def _post_card(post: dict) -> Image.Image:
     """Wpis polityka w pionie, dużą czcionką (nasza grafika, nie zrzut z X): autor, konto · partia · data, treść."""
     inner = X1 - X0 - 88
-    name = post.get('name', '')
+    from news.names import display_name
+    name = display_name(post.get('name', ''))
     initials = ''.join(part[0] for part in name.split()[:2]).upper()
     head = Image.new('RGBA', (inner, 104), (0, 0, 0, 0))
     draw = ImageDraw.Draw(head)
@@ -160,11 +171,23 @@ def build_scenes(data: dict, post: dict) -> list[Scene]:
     content = X1 - X0
     inner = content - 72
 
-    # 1. Wpis (hak)
+    from news.names import display_name
+    from news.social_content import checked_claims
+    s = Scene(2.0)
+    _chrome(s, 'Diagnoza AI')
+    s.add(-FADE, _wrapped(f"{data.get('verdict_label') or 'Spin'} {data.get('intensity', 0)}/100",
+                          88, 800, SPIN, 2, 110), X0, TOP)
+    s.add(-FADE, _wrapped(display_name(post.get('name', '')), 56, 800, TEXT, 2), X0, TOP + 250)
+    if post.get('party'):
+        s.add(-FADE, _wrapped(post['party'], 44, 600, MUTED, 2), X0, TOP + 420)
+    s.center()
+    scenes.append(s)
+
+    # 1. Wpis polityka
     s = Scene(5.0)
     _chrome(s, 'Klinika spinu')
     s.add(0.0, _label('Wpis polityka z X'), X0, TOP)
-    title = _wrapped('Co naprawdę mówi ten wpis?', 72, 800, TEXT, 3, 88)
+    title = _wrapped('Analizowany wpis', 72, 800, TEXT, 3, 88)
     s.add(0.15, title, X0, TOP + 64)
     s.add(0.7, _post_card(post), X0, TOP + 110 + title.height)
     s.center()
@@ -176,9 +199,11 @@ def build_scenes(data: dict, post: dict) -> list[Scene]:
     s.add(0.0, _label('Diagnoza Dr. Spina'), X0, TOP)
     s.add(0.3, _pill(f"{data.get('verdict_label') or 'Diagnoza'} · {int(data.get('intensity') or 0)}/100", SPIN), X0, TOP + 70)
     s.add(0.6, _intensity_bar(int(data.get('intensity') or 0)), X0, TOP + 180)
-    headline = _wrapped(data.get('headline', ''), 64, 800, TEXT, 6, 82)
+    safe_summary = len(checked_claims(data.get('claims'))) == len(data.get('claims') or [])
+    synthesis = (data.get('x_thread') or []) if safe_summary else []
+    headline = _wrapped(synthesis[0] if synthesis else data.get('headline', '') if safe_summary else '', 64, 800, TEXT, 6, 82)
     s.add(1.0, headline, X0, TOP + 256)
-    s.add(1.8, _wrapped(data.get('summary', ''), 44, 500, MUTED, 8, 60), X0, TOP + 300 + headline.height)
+    s.add(1.8, _wrapped(' '.join(synthesis[1:2]) if synthesis else data.get('summary', '') if safe_summary else '', 44, 500, MUTED, 8, 60), X0, TOP + 300 + headline.height)
     s.center()
     scenes.append(s)
 
@@ -204,7 +229,7 @@ def build_scenes(data: dict, post: dict) -> list[Scene]:
         scenes.append(s)
 
     # 4. Terapia — co mówią źródła o twierdzeniach
-    claims = [c for c in (data.get('claims') or []) if c.get('claim')][:2]
+    claims = [c for c in checked_claims(data.get('claims')) if c.get('claim')][:2]
     if claims:
         s = Scene(2.6 + 3.2 * len(claims))
         _chrome(s, '3 · Terapia')
@@ -227,7 +252,7 @@ def build_scenes(data: dict, post: dict) -> list[Scene]:
 
         # 5. Źródła
         sources, seen = [], set()
-        for claim in data.get('claims') or []:
+        for claim in claims:
             for source in claim.get('sources') or []:
                 host = urlparse(source.get('url', '')).netloc.removeprefix('www.')
                 if host and host not in seen:

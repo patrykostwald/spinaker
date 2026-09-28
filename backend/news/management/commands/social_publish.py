@@ -31,6 +31,8 @@ class Command(BaseCommand):
                 raise CommandError('Nie ma takiej diagnozy.')
             path = social_publish.ensure_video(diagnosis)
             text = social_publish.texts(diagnosis)
+            if not text:
+                raise CommandError('Brak poprawnej syntezy — materiał nie zostanie wysłany.')
             sent = social_publish._mail(social_publish._video_email(), f'spin.clinic: podgląd filmu diagnozy {preview}',
                                         f"Podgląd — nic nie zostało opublikowane.\n\nOpis na Facebooka:\n\n{text['facebook']}"
                                         f"\n\nOpis na Instagram:\n\n{text['instagram']}\n\nBluesky:\n\n{text['bluesky']}", path)

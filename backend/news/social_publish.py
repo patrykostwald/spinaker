@@ -20,7 +20,7 @@ import logging
 import os
 import re
 import time
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
 
 import requests
@@ -76,7 +76,7 @@ def video_dir() -> Path:
 
 def video_name(diagnosis_id: int) -> str:
     """Nazwa nie do zgadnięcia (HMAC z SECRET_KEY) — film jest publiczny tylko dla tego, kto dostał adres."""
-    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
+    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-v2-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
     return f'{diagnosis_id}-{digest[:20]}.mp4'
 
 
@@ -105,28 +105,44 @@ def serve_video(request, name: str):
 
 # --- teksty ---------------------------------------------------------------------------------
 
-def texts(diagnosis) -> dict:
-    """Opisy dla kanałów — z tego samego skrótu co wpis na X (sprawdzony przez redaktora polszczyzny)."""
-    from news.clinic import detail_data
-    from news.x_publish import polish
-    from news.x_share import URL, build
-    base = polish(build(detail_data(diagnosis), account=True)[0])
-    link = f"https://{_env('SPIN_DOMAIN') or 'spin.clinic'}/klinika/{diagnosis.pk}"
-    without_link = URL.sub('', base).strip()
+def texts(diagnosis, save=True) -> dict:
+    from news.social_content import prepare
+    return texts_from_data(prepare(diagnosis, save=save))
+
+
+def texts_from_data(data: dict) -> dict:
+    from news.x_share import build, diagnosis_url, heading
+    posts = build(data, account=True)
+    if not posts:
+        return {}
+    link = diagnosis_url(data['id'])
+    from news.x_share import shorten
+    synthesis = data['x_thread']
+    if any(shorten(text, len(text)) != text for text in synthesis):
+        return {}
+    full = '\n\n'.join([heading(data), *synthesis])
     return {
-        'facebook': f'{without_link}\n\nPełna diagnoza ze źródłami: {link}\n\n{FOOTER}',
-        'instagram': f'{without_link}\n\nPełna diagnoza ze źródłami: spin.clinic (link w bio)\n\n{FOOTER}\n\n{HASHTAGS}',
-        'bluesky': _bluesky_text(without_link, link),
+        'facebook': f'{full}\n\nPełna diagnoza ze źródłami: {link}\n\n{FOOTER}',
+        'instagram': f'{posts[0]}\n\nPełna diagnoza ze źródłami: spin.clinic (link w bio)\n\n{FOOTER}\n\n{HASHTAGS}',
+        'bluesky': _bluesky_text(posts[0], link),
         'link': link,
     }
 
 
 def _bluesky_text(body: str, link: str) -> str:
-    """Bluesky: najwyżej 300 znaków razem z linkiem na końcu."""
+    """Usuwa całe zdania lub wiersze, nigdy fragment zdania."""
+    from news.x_share import shorten
     room = 300 - len(link) - 2
-    if len(body) > room:
-        body = body[:room - 1].rsplit(' ', 1)[0].rstrip(',;:—-') + '…'
-    return f'{body}\n\n{link}'
+    lines = body.splitlines()
+    while len('\n'.join(lines)) > room and len(lines) > 2:
+        lines.pop()
+    if len('\n'.join(lines)) > room:
+        if len(lines) == 2:
+            lines[1] = shorten(lines[1], room - len(lines[0]) - 1)
+        else:
+            lines = [shorten(body, room)]
+    body = '\n'.join(line for line in lines if line)
+    return f'{body}\n\n{link}' if len(body) <= room else link
 
 
 # --- Facebook i Instagram -------------------------------------------------------------------
@@ -282,18 +298,15 @@ def alert(subject: str, body: str) -> None:
 
 def candidates(limit: int, ready: list[str]):
     from news.clinic import published_diagnoses
-    minimum = int(_env('SOCIAL_MIN_INTENSITY') or _env('X_POST_MIN_INTENSITY') or 70)
-    fresh = timezone.now() - timedelta(hours=int(_env('SOCIAL_FRESH_HOURS') or 24))
-    rows = (published_diagnoses().filter(verdict='spin', intensity__gte=minimum, diagnosed_at__gte=fresh)
-            .prefetch_related('social_posts').order_by('-intensity', '-diagnosed_at')[:50])
-    picked = []
-    for row in rows:
-        if {item.platform for item in row.social_posts.all()} >= set(ready):
-            continue
-        picked.append(row)
-        if len(picked) >= limit:
-            break
-    return picked
+    from news.clinic_models import SocialPost
+    from news.social_selection import day_start, select
+    minimum = int(_env('SOCIAL_MIN_INTENSITY') or _env('X_POST_MIN_INTENSITY') or 55)
+    rows = published_diagnoses().filter(verdict='spin', intensity__gte=minimum, diagnosed_at__gte=day_start(),
+                                       post__available=True).prefetch_related('social_posts').order_by('-intensity', '-diagnosed_at', '-pk')
+    rows = [row for row in rows if not {item.platform for item in row.social_posts.all()} >= set(ready)]
+    history = list(SocialPost.objects.filter(platform__in=ready).order_by('-posted_at')
+                   .values_list('diagnosis__post__camp_at_collection', 'posted_at'))
+    return select(rows, history, limit)
 
 
 def run(dry_run: bool = False) -> dict:
@@ -302,7 +315,8 @@ def run(dry_run: bool = False) -> dict:
     ready = channels()
     if not ready and not dry_run:
         return {'status': 'disabled'}
-    start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    from news.social_selection import day_start
+    start = day_start()
     limit = int(_env('SOCIAL_DAILY_LIMIT') or 2)
     posted_today = SocialPost.objects.filter(posted_at__gte=start).values('diagnosis').distinct().count()
     room = max(0, limit - posted_today) if not dry_run else 1
@@ -311,7 +325,10 @@ def run(dry_run: bool = False) -> dict:
     for diagnosis in candidates(room, ready or ['facebook']):
         if not diagnosis.post.available:
             continue
-        text = texts(diagnosis)
+        text = texts(diagnosis, save=not dry_run)
+        if not text:
+            results.append({'id': diagnosis.pk, 'posted': False, 'error': 'synthesis_unavailable'})
+            continue
         if dry_run:
             results.append({'id': diagnosis.pk, 'texts': text})
             continue

@@ -38,7 +38,7 @@ def test_video_name_is_not_guessable(settings):
 def test_bluesky_post_once_and_removed_when_author_deletes(monkeypatch):
     acc = account()
     row = SpinDiagnosis.objects.create(post=post(acc), status='approved', verdict='spin', intensity=85, headline='Teza bez dowodu',
-                                       summary='Krótko.', techniques=[{'name': 'Fałszywa alternatywa', 'quote': 'Tylko my', 'explanation': '…'}],
+                                       summary='Krótko.', x_thread=['Wpis pomija kontekst.', 'Autor stosuje fałszywą alternatywę.'], techniques=[{'name': 'Fałszywa alternatywa', 'quote': 'Tylko my', 'explanation': '…'}],
                                        diagnosed_at=timezone.now())
     monkeypatch.setenv('SOCIAL_POST_ENABLED', 'true')
     monkeypatch.setenv('BLUESKY_HANDLE', 'spinclinic.bsky.social')

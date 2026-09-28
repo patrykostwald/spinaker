@@ -89,7 +89,8 @@ def fields(diagnosis) -> dict:
     figure = figures_by_account([post.account_id]).get(post.account_id)
     party = (party_data(figure) or {}).get('short', '') if figure else ''
     name = figure.canonical_name if figure else (post.author_data or {}).get('name') or post.account.display_name
-    name = ' '.join(part.capitalize() if part.isupper() and len(part) > 1 else part for part in name.split())
+    from news.names import display_name
+    name = display_name(name)
     published = post.published_at.strftime('%d.%m.%Y, %H:%M') if post.published_at else ''
     return {'name': name, 'handle': post.account.handle, 'party': party or CAMP_LABELS.get(post.camp_at_collection, ''),
             'published': published, 'text': post.text, 'intensity': diagnosis.intensity,
