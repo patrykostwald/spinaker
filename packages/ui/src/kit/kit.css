@@ -4695,3 +4695,12 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
   .sc-home-news__grid > li { flex: 0 0 82%; scroll-snap-align: start; }
 }
 .sc-home-news .sc-home-catbar { margin: 0; min-width: 0; max-width: 100%; }
+
+/* Nitka Dr. Spina na głównej: „dlaczego tu jest” pod boxem, zastrzeżenie i pasek dla dziennikarzy. */
+.sc-home-drspin__why { margin: var(--sc-s-2) 0 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); line-height: 1.4; }
+.sc-home-drspin .sc-strip__slot { flex-direction: column; }
+.sc-home-drspin__disclaimer { margin: var(--sc-s-3) 0 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-home-drspin__invite { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3) var(--sc-s-5); flex-wrap: wrap; margin-top: var(--sc-s-4); padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-xl); background: var(--sc-surface-2); }
+.sc-home-drspin__invite p { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); flex: 1 1 22rem; }
+.sc-home-drspin__invite strong { color: var(--sc-text); }
+.sc-home-drspin__invite span { color: var(--sc-text-3); }

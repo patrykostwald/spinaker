@@ -139,12 +139,10 @@ export function HomePage() {
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
-        <JournalistInvite />
-        {drSpin.data?.published ? (
-          <HomeReveal>
-            <HomeDrSpin thread={drSpin.data} />
-          </HomeReveal>
-        ) : null}
+        {/* Nitka Dr. Spina — pokazuje, czym są nitki kontekstowe; z paskiem dla dziennikarzy (28.09). */}
+        <HomeReveal>
+          <HomeDrSpin thread={drSpin.data ?? null} />
+        </HomeReveal>
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>

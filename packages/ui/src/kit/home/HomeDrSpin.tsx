@@ -26,8 +26,8 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
       <div className="sc-home-band-surface">
         <header className="sc-home-section__head">
           <div>
-            <p className="sc-t-caption sc-text-3 sc-home-kicker">spin.clinic · Dr. Spin</p>
-            <h2 className="sc-t-title-l sc-home-section__title">Dr. Spin</h2>
+            <p className="sc-t-caption sc-text-3 sc-home-kicker">Nitka kontekstowa · przygotowana automatycznie przez AI</p>
+            <h2 className="sc-t-title-l sc-home-section__title">Nitka Dr. Spina</h2>
           </div>
           <div className="sc-home-section__actions">
             <p className="sc-t-body-s sc-text-2">{published ? published.title : "Codzienna nitka kontekstowa"}</p>
@@ -43,10 +43,10 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
           <div className="sc-home-drspin__anchor">
             {anchor ? (
               <>
-                <NewsCard article={anchor.article} size="large" headingLevel={3} eyebrow="Materiał otwierający" />
+                <NewsCard article={anchor.article} size="medium" headingLevel={3} eyebrow="Materiał otwierający" />
                 {anchor.editorial_note ? (
                   <p className="sc-t-body-s sc-text-2 sc-home-drspin__note">
-                    <strong>Komentarz autora: </strong>
+                    <strong>Dr. Spin: </strong>
                     {anchor.editorial_note}
                   </p>
                 ) : null}
@@ -68,6 +68,7 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
                 ? rest.map((item) => (
                     <div key={item.id} className="sc-strip__slot">
                       <NewsCard article={item.article} size="compact" headingLevel={4} expandable={false} />
+                      {item.editorial_note ? <p className="sc-home-drspin__why">{item.editorial_note}</p> : null}
                     </div>
                   ))
                 : PREVIEW_TYPES.map((type, index) => (
@@ -79,12 +80,14 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
           </div>
         </div>
 
-        {/* Zapowiedź fazy 2: własne nitki kontekstowe użytkowników. */}
-        <aside className="sc-home-drspin__teaser" aria-label="Własne nitki kontekstowe — wkrótce">
-          <p className="sc-t-title-s">Wkrótce: Twoje własne nitki kontekstowe</p>
-          <p className="sc-t-body-s sc-text-2">
-            Dziś nitki kontekstowe układa Dr. Spin. W kolejnej fazie zbierzesz boxy w jedną historię — z datami, źródłami i komentarzem — i pokażesz ją innym.
+        <p className="sc-home-drspin__disclaimer">Obecność materiału w nitce nie potwierdza niczyich twierdzeń — każdy box prowadzi do oryginału.</p>
+        {/* Zamiast dużego zaproszenia: jeden pasek dla dziennikarzy i zapowiedź własnych nitek (28.09). */}
+        <aside className="sc-home-drspin__invite" aria-label="Dla dziennikarzy i redakcji">
+          <p>
+            <strong>Dla dziennikarzy i redakcji:</strong> poprowadź autoryzowaną nitkę — Twój materiał i jego kontekst, pod Twoim nazwiskiem.
+            <span> Wkrótce własne nitki ułożą też czytelnicy.</span>
           </p>
+          <Button href="/o-nas#dla-redakcji" variant="primary" size="sm">Dowiedz się więcej →</Button>
         </aside>
       </div>
     </section>
