@@ -153,23 +153,17 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
 
   return (
     <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Twoje wiadomości">
-      {/* Jeden pasek: tytuł · podpowiedź z licznikiem · przyciski. Formularz nowego paska pojawia się pod nim. */}
+      {/* Tytuł, a pod nim jedna linia: podpowiedź z licznikiem i „Dodaj pasek” (rodzaj paska wybiera się w formularzu). */}
       <div className="sc-home-threads__config">
-        <header className="sc-home-threads__bar">
+        <header className="sc-home-threads__head">
           <h2 className="sc-t-title-l sc-home-section__title">Twoje wiadomości</h2>
-          <p className="sc-t-body-s sc-text-2 sc-home-threads__hint" aria-live="polite">
-            {atLimit ? `Masz już ${MAX_PERSONAL_STRIPS} paski — usuń jeden, aby dodać kolejny.` : "Dopasuj własny pasek: hasło, kategoria lub źródło."}
-            <span className="sc-home-threads__count">{strips.length} / {MAX_PERSONAL_STRIPS}</span>
-          </p>
-          <div className="sc-home-pills">
-              {["Hasło", "Kategoria", "Źródło"].map((label) => (
-                <Button key={label} variant="quiet" shape="pill" size="sm" disabled={atLimit} onClick={startAdding}>
-                  {label}
-                </Button>
-              ))}
-              <Button variant="secondary" size="sm" disabled={atLimit} onClick={startAdding}>
-                + Dodaj pasek
-              </Button>
+          <div className="sc-home-threads__line">
+            <p className="sc-t-body-s sc-text-2 sc-home-threads__hint" aria-live="polite">
+              {strips.length}/{MAX_PERSONAL_STRIPS} · {atLimit ? "usuń pasek, by dodać nowy" : "hasło, kategoria lub źródło"}
+            </p>
+            <Button variant="secondary" size="sm" disabled={atLimit} onClick={startAdding}>
+              + Dodaj pasek
+            </Button>
           </div>
         </header>
         {adding && !atLimit ? (
