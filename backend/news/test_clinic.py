@@ -678,8 +678,13 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
 
     monkeypatch.setattr(x_publish.requests, 'post', fake_post)
     result = x_publish.run()
-    assert result['results'] == [{'id': row.pk, 'posted': 1, 'of': 1}]
-    assert 'reply' not in sent[0] and len(sent) == 1
+    item = result['results'][0]
+    assert item['id'] == row.pk and 3 <= item['thread'] <= 5 and item['reply_to_author'] is True
+    assert 'reply' not in sent[0]  # własny wpis na profilu (z cytowanym wpisem polityka)
+    for index in range(1, item['thread'] + 1):  # 3–5 odpowiedzi pod własnym wpisem, jedna pod drugą
+        assert sent[index]['reply'] == {'in_reply_to_tweet_id': str(index)}
+    assert sent[-1]['reply'] == {'in_reply_to_tweet_id': row.post.post_id}  # komentarz pod wpisem polityka
+    assert all(weight(body['text']) <= 280 for body in sent)
     row.refresh_from_db()
-    assert row.x_posted_ids == ['1'] and row.x_posted_at
+    assert len(row.x_posted_ids) == item['thread'] + 2 and row.x_posted_at
     assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz

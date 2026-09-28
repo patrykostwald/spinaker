@@ -1,4 +1,5 @@
-"""Automatyczne wpisy konta spin.clinic na X: silne spiny (domyślnie od 70/100) jako wpis + diagnoza w odpowiedziach.
+"""Automatyczne wpisy konta spin.clinic na X: silne spiny (domyślnie od 70/100) — własny wpis z cytowanym wpisem polityka,
+pod nim 3–5 odpowiedzi z diagnozą i terapią, oraz (jeśli X pozwoli) krótki komentarz pod wpisem polityka.
 
 Wątek to ten sam 2–3-wpisowy skrót co przycisk „Udostępnij” (news/x_share.py). Wyłączone domyślnie — działa dopiero
 z kluczami konta z uprawnieniem zapisu (OAuth 1.0a: X_POST_API_KEY, X_POST_API_SECRET, X_POST_ACCESS_TOKEN,
@@ -80,20 +81,31 @@ def run(dry_run: bool = False) -> dict:
     posted_today = SpinDiagnosis.objects.filter(x_posted_at__gte=start).count()
     room = max(0, int(os.environ.get('X_POST_DAILY_LIMIT', '3')) - posted_today)
     done = []
+    from news.x_share import build_author_reply, build_thread
+    reply_to_author = os.environ.get('X_POST_REPLY_TO_AUTHOR', 'true').strip().lower() == 'true'
     for diagnosis in candidates(room if not dry_run else 3):
-        thread = detail_data(diagnosis)['x_share']
+        data = detail_data(diagnosis)
+        main, thread, author_reply = data['x_share'][0], build_thread(data), build_author_reply(data)
         if dry_run:
-            done.append({'id': diagnosis.pk, 'posts': thread})
+            done.append({'id': diagnosis.pk, 'posts': [main, *thread], 'author_reply': author_reply if reply_to_author else ''})
             continue
         ids = []
         try:
-            for text in thread:
-                ids.append(post(text, ids[-1] if ids else None))
+            ids.append(post(main))                       # własny wpis z cytowanym wpisem polityka
+            for text in thread:                          # 3–5 odpowiedzi pod własnym wpisem
+                ids.append(post(text, ids[-1]))
         except (requests.RequestException, RuntimeError, KeyError, ValueError) as error:
             logger.warning('x publish %s: %s', diagnosis.pk, error)
             if not ids:
                 break  # nie udało się nawet pierwszego wpisu — klucze albo limit; spróbujemy przy następnym przebiegu
+        replied = False
+        if ids and reply_to_author:
+            try:                                          # komentarz pod wpisem polityka — X może na to nie pozwolić
+                ids.append(post(author_reply, diagnosis.post.post_id))
+                replied = True
+            except (requests.RequestException, RuntimeError, KeyError, ValueError) as error:
+                logger.info('x reply to author %s skipped: %s', diagnosis.pk, error)
         diagnosis.x_posted_ids, diagnosis.x_posted_at = ids, timezone.now()
         diagnosis.save(update_fields=['x_posted_ids', 'x_posted_at'])
-        done.append({'id': diagnosis.pk, 'posted': len(ids), 'of': len(thread)})
+        done.append({'id': diagnosis.pk, 'posted': len(ids), 'thread': len(thread), 'reply_to_author': replied})
     return {'status': 'dry_run' if dry_run else 'ok', 'results': done}
