@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button, InfoPage } from '@spin-clinic/ui/kit';
-import { NewsletterSignup } from '@spin-clinic/ui';
+import { NewsletterSignup, SUPPORT_LINKS } from '@spin-clinic/ui';
 
 export const metadata = { title: 'Wsparcie · spin.clinic' };
 // Linki BUYCOFFEE_URL i PATRONITE_URL czytamy z .env.production przy każdym wejściu, nie przy budowaniu obrazu.
@@ -43,6 +43,7 @@ export default function SupportPage() {
   const patronite = publicSupportUrl(process.env.PATRONITE_URL);
   const progress = supportProgress();
   const links = [
+    { label: 'Wspieraj co miesiąc na zrzutka.pl', href: SUPPORT_LINKS.monthly },
     buycoffee && { label: 'Postaw kawę na BuyCoffee', href: buycoffee },
     patronite && { label: 'Wspieraj co miesiąc na Patronite', href: patronite },
   ].filter(Boolean) as { label: string; href: string }[];
@@ -59,13 +60,15 @@ export default function SupportPage() {
         <p><strong>{progress.raised.toLocaleString('pl-PL')} zł</strong> z {progress.goal.toLocaleString('pl-PL')} zł · {progress.percent}%</p>
       </div>
       <p className="sc-support-note">Cel pokrywa pełny miesiąc: diagnozy Dr. Spina, API X, transkrypcje i serwer. Kwotę aktualizujemy ręcznie po wpłatach.</p>
+      <div className="sc-info-page__actions"><Button href={SUPPORT_LINKS.monthly} variant="primary">Wpłać na zbiórkę miesięczną (zrzutka.pl)</Button></div>
     </section> : null}
     <section><h2>Na co zbieramy</h2>
       <dl className="sc-support-costs">{GOALS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>
+      <div className="sc-info-page__actions"><Button href={SUPPORT_LINKS.phase3} variant="secondary">Faza III: własna maszyna AI — zbiórka 30 000 zł (zrzutka.pl)</Button></div>
       <p className="sc-support-note">Co dokładnie jest w każdej fazie, opisujemy w <Link href="/o-nas#fazy">O nas → Trzy fazy projektu</Link>.</p>
     </section>
     <section><h2>Wsparcie nie kupuje wpływu</h2><p>Żadna wpłata nie daje wpływu na diagnozy, na wybór czytanych kont ani na treść serwisu. Dr. Spin ocenia rządzących i opozycję według tych samych zasad, a jego diagnoz nikt nie poprawia. Nie przyjmujemy wpłat od partii, polityków ani ich fundacji.</p></section>
-    <section><h2>Wybierz sposób wsparcia</h2>{links.length ? <><p>Jednorazowo — BuyCoffee, co miesiąc — Patronite. Wpłaty obsługują te serwisy; spin.clinic nie przetwarza danych płatniczych.</p><div className="sc-info-page__actions">{links.map(link => <Button key={link.href} href={link.href} variant="primary">{link.label}</Button>)}</div></> : <p>Linki do BuyCoffee i Patronite pojawią się tutaj wkrótce. Nie pobieramy płatności bezpośrednio w serwisie.</p>}</section>
+    <section><h2>Wybierz sposób wsparcia</h2>{links.length ? <><p>Co miesiąc — zrzutka.pl, jednorazowo — BuyCoffee. Wpłaty obsługują te serwisy; spin.clinic nie przetwarza danych płatniczych.</p><div className="sc-info-page__actions">{links.map(link => <Button key={link.href} href={link.href} variant="primary">{link.label}</Button>)}</div></> : <p>Linki do BuyCoffee i Patronite pojawią się tutaj wkrótce. Nie pobieramy płatności bezpośrednio w serwisie.</p>}</section>
     <section><h2>Dziękujemy</h2><p>Jeśli nie możesz wesprzeć finansowo, udostępnij diagnozę z <Link href="/klinika">Kliniki</Link> na X — to też bardzo pomaga.</p></section>
     <NewsletterSignup source="wsparcie" />
   </InfoPage>;

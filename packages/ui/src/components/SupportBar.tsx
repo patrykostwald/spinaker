@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { SUPPORT_LINKS } from "../lib/support";
 
 /**
  * Pasek wsparcia przyklejony nad stopką: jedno zdanie po lewej, po prawej — ile zebraliśmy w tym miesiącu
@@ -22,10 +23,10 @@ export function SupportBar() {
     <div className="sc-support-bar">
       <p className="sc-support-bar__text">Działamy dzięki wpłatom czytelników — bez reklam i bez pieniędzy partii. Każda wpłata to kolejne zbadane wpisy.</p>
       {goal > 0 ? (
-        <div className="sc-support-bar__progress" aria-label={`Zebrano ${format(raised)} z ${format(goal)} zł w tym miesiącu`}>
+        <a className="sc-support-bar__progress" href={SUPPORT_LINKS.monthly} target="_blank" rel="noopener noreferrer" aria-label={`Zebrano ${format(raised)} z ${format(goal)} zł w tym miesiącu`}>
           <span className="sc-support-bar__amount"><strong>{format(raised)} zł</strong> z {format(goal)} zł w tym miesiącu</span>
           <span className="sc-support-bar__track" aria-hidden="true"><i style={{ width: `${Math.max(percent, 2)}%` }} /></span>
-        </div>
+        </a>
       ) : null}
     </div>
   );

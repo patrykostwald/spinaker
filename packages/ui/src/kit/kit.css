@@ -4586,3 +4586,6 @@ html[data-touch-scroll="guard"] [data-scroll-active] {
 .sc-home-interview__head:not(:first-child) { border-top: 1px solid var(--sc-hairline); padding-top: var(--sc-s-4); }
 .sc-home-interview__head:not(:first-child) + .sc-interview { border-top: 1px solid var(--sc-hairline); padding-top: var(--sc-s-4); }
 @media (max-width: 900px) { .sc-home-interview__head:not(:first-child) + .sc-interview { border-top: 0; padding-top: 0; } }
+/* Licznik w pasku wsparcia prowadzi do zbiórki miesięcznej. */
+a.sc-support-bar__progress { color: inherit; text-decoration: none; }
+a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--sc-accent); }

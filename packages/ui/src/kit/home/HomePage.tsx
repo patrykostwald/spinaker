@@ -176,10 +176,11 @@ export function HomePage() {
             }
           />
         </HomeReveal>
-        <HomeSpinTeaser />
+        {/* Własne paski czytelnika zaraz pod wiadomością dnia — przed Wywiadami i Dr. Spinem (decyzja właściciela 28.09). */}
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
+        <HomeSpinTeaser />
         <JournalistInvite />
         {drSpin.data?.published ? (
           <HomeReveal>

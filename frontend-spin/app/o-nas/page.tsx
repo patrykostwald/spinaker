@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ContextThreadExample } from './ContextThreadExample';
+import { SUPPORT_LINKS } from '@spin-clinic/ui';
 
 export const metadata: Metadata = {
   title: 'O nas — spin.clinic',
@@ -515,6 +516,7 @@ export default function AboutPage() {
                 <p className="sc-onas-phase__status">{phase.status}</p>
                 <h3 id={`${phase.id}-title`}>{phase.title}</h3>
                 <p>{phase.lead}</p>
+                {phase.id === 'faza-3' ? <p><a href={SUPPORT_LINKS.phase3} target="_blank" rel="noopener noreferrer">Zbieramy na nią tutaj: zrzutka.pl — cel 30 000 zł →</a></p> : null}
                 <ul className="sc-onas-tagged">
                   {phase.features.map((feature) => (
                     <li key={feature.text}>

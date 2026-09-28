@@ -3,6 +3,7 @@ export * from "./lib/api";
 export * from "./lib/utils";
 export * from "./lib/portal";
 export * from "./lib/useDebouncedValue";
+export * from "./lib/support";
 export { SearchBar } from "./components/SearchBar";
 export { TimelineGrid } from "./components/TimelineGrid";
 export { DateRow } from "./components/DateRow";
