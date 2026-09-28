@@ -6,6 +6,8 @@ app = Celery('spin_clinic')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
+    # Kontekst spinu dnia z Bazy — 19:30 czasu Europe/Warsaw, wymaga DR_SPIN_THREADS_ENABLED=true.
+    'dr-spin-thread-daily': {'task': 'news.tasks.dr_spin_thread_task', 'schedule': crontab(hour=19, minute=30)},
     'clinic-screen-5m': {'task': 'news.tasks.clinic_screen_task', 'schedule': crontab(minute='*/5')},
     'clinic-interview-10m': {'task': 'news.tasks.clinic_interview_task', 'schedule': crontab(minute='*/10')},
     'clinic-interview-pick': {'task': 'news.tasks.clinic_interview_pick_task', 'schedule': crontab(hour='7,10', minute=5)},

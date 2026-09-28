@@ -15,7 +15,8 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
-from news.models import Article, ArticleCategory, Ballot, EvidenceLink, Thread, ThreadItem
+from news.models import Article, ArticleCategory, Ballot, Thread, ThreadItem
+from news.search import article_token_query
 from news.serializers import ArticleSerializer, BallotSerializer, SearchTimelineSerializer, ThreadListSerializer, ThreadSerializer
 
 def voting_question_tokens(query):
@@ -91,10 +92,7 @@ class SearchViewSet(viewsets.ViewSet):
         # Each word must have evidence in text, a member identity, or a sourced editorial link.
         for token in tokens:
             motion_match = Q(voting__motion__icontains=token) if voting_tokens is not None else Q(pk__in=[])
-            qs = qs.filter(Q(title__icontains=token) | Q(description__icontains=token) | Q(content__text__icontains=token)
-                | motion_match
-                | Q(pk__in=Ballot.objects.filter(name__icontains=token).values('voting__article_id'))
-                | Q(pk__in=EvidenceLink.objects.filter(phrase__icontains=token).values('article_id')))
+            qs = qs.filter(article_token_query(token) | motion_match)
         if categories:
             qs = qs.filter(category__in=categories)
         for name, day in dates.items():
