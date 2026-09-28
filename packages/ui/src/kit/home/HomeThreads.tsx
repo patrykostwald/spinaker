@@ -87,7 +87,7 @@ function StripForm({
   );
 }
 
-function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; onEdit: () => void; onRemove: () => void }) {
+function PersonalStripBody({ strip, onEdit, onRemove, excludedArticleIds }: { strip: PersonalStrip; onEdit: () => void; onRemove: () => void; excludedArticleIds?: ReadonlySet<number> }) {
   const feed = useHomeFeed(`personal-${strip.id}`, {
     query: strip.query,
     categories: strip.category ? expandCategories([strip.category]) : [],
@@ -96,7 +96,7 @@ function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; 
     // Pluralizm: po jednym najnowszym z każdego źródła, zanim drugi z tego samego.
     diverse: true,
   });
-  const articles = feed.data?.results ?? [];
+  const articles = (feed.data?.results ?? []).filter((article) => !excludedArticleIds?.has(article.id));
   return (
     <div className="sc-home-personal__strip">
       <div className="sc-home-personal__actions">
@@ -119,8 +119,8 @@ function PersonalStripBody({ strip, onEdit, onRemove }: { strip: PersonalStrip; 
   );
 }
 
-export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(function HomeThreads(
-  { sources },
+export const HomeThreads = forwardRef<HTMLElement, { sources: Source[]; excludedArticleIds?: ReadonlySet<number> }>(function HomeThreads(
+  { sources, excludedArticleIds },
   ref,
 ) {
   const [strips, setStrips] = useState<PersonalStrip[]>([]);
@@ -180,7 +180,7 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
           strips={rows}
           storageKey="spinclinic-home-strips-order"
           label="Kolejność Twoich nitek"
-          renderStrip={(row) =>
+          renderStrip={(row, index) =>
             editingId === row.id ? (
               <StripForm
                 initial={row.strip}
@@ -190,6 +190,7 @@ export const HomeThreads = forwardRef<HTMLElement, { sources: Source[] }>(functi
               />
             ) : (
               <PersonalStripBody
+                excludedArticleIds={index === 0 ? excludedArticleIds : undefined}
                 strip={row.strip}
                 onEdit={() => { setEditingId(row.id); setAdding(false); }}
                 onRemove={() => { setStrips(removePersonalStrip(row.id)); if (editingId === row.id) setEditingId(null); }}

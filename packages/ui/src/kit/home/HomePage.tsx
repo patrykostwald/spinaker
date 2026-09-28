@@ -19,6 +19,7 @@ import { HomeBaza } from "./HomeBaza";
 import { HomeSupport } from "./HomeSupport";
 import { NewsCard } from "../NewsCard";
 import { EmptySlot } from "./Strip";
+import { expandCategories } from "../../lib/categoryGroups";
 import { HomeCategoryBar } from "./HomeCategoryBar";
 import { HomeSpinTeaser } from "./HomeSpinTeaser";
 import { HomeDrSpin } from "./HomeDrSpin";
@@ -30,6 +31,13 @@ import { JournalistInvite } from "../../components/JournalistInvite";
 import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
 import { GROUP_EMPTY_HINT, SOURCE_GROUPS, SOURCE_GROUP_PARAM, activeSources, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
+
+const NEWS_TYPES = [
+  { value: null, label: "Wszystkie", groups: [] },
+  { value: "video", label: "Wideo i TV", groups: ["film", "wywiad", "podcast"] },
+  { value: "official", label: "Komunikaty urzędowe", groups: ["publiczne"] },
+  { value: "articles", label: "Artykuły", groups: ["artykul", "reportaz"] },
+];
 
 function DemoBanner() {
   const demo = useDemoMode();
@@ -51,7 +59,7 @@ export function HomePage() {
   const [topQuery, setTopQuery] = useState("");
   const config = useHomeConfig();
   const drSpin = useDrSpinThread();
-  const [activeTopic, setActiveTopic] = useState<string | null>(null);
+  const [activeType, setActiveType] = useState<string | null>(null);
   const bazaRef = useRef<HTMLElement | null>(null);
 
   const sources = config.data?.sources ?? [];
@@ -72,14 +80,16 @@ export function HomePage() {
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
 
-  // „Top 10”: najnowsze materiały, zawężane tematem, grupą źródeł i hasłem z wiersza filtrów.
+  // Wiadomości: typ materiału, grupa źródeł i hasło zawężają wyniki przez API.
   const top = useHomeFeed(
     "top10",
-    { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 20, diverse: true },
+    { mode: "latest", categories: expandCategories(NEWS_TYPES.find((type) => type.value === activeType)?.groups ?? []), sources: groupIds, query: topQuery, pageSize: 20, diverse: true },
     { refetchInterval: 30_000, enabled: !groupEmpty },
   );
   const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
   const newsGrid = useMemo(() => collapseSimilar(latest).slice(0, 6), [latest]);
+
+  const newsIds = useMemo(() => new Set(newsGrid.map(({ article }) => article.id)), [newsGrid]);
 
   useEffect(() => {
     if (q) bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
@@ -103,8 +113,10 @@ export function HomePage() {
             </div>
           </header>
           <HomeCategoryBar
-            value={activeTopic}
-            onChange={setActiveTopic}
+            items={NEWS_TYPES}
+            label="Typ materiału"
+            value={activeType}
+            onChange={setActiveType}
             start={
               <Dropdown
                 label={sourceGroup ? `Źródła: ${sourceGroupLabel(sourceGroup)}` : "Źródła: wszystkie"}
@@ -126,7 +138,7 @@ export function HomePage() {
           {groupEmpty && sourceGroup ? (
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”. {GROUP_EMPTY_HINT}</p>
           ) : null}
-          {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeTopic) ? (
+          {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeType) ? (
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak najnowszych materiałów dla tego wyboru.</p>
           ) : null}
           {/* Karty średniej wielkości — bez olbrzymiego boxu, w którym miniatury się rozmywały. */}
@@ -138,7 +150,7 @@ export function HomePage() {
           </ul>
         </section>
         <HomeReveal>
-          <HomeThreads sources={sources} />
+          <HomeThreads sources={sources} excludedArticleIds={newsIds} />
         </HomeReveal>
         {/* Nitka Dr. Spina — pokazuje, czym są nitki kontekstowe; z paskiem dla dziennikarzy (28.09). */}
         <HomeReveal>

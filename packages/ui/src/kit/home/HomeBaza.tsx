@@ -265,6 +265,33 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
         </Button>
       </header>
 
+      <div className="sc-home-baza__quick" role="group" aria-label="Szybkie filtry Bazy">
+        <button
+          type="button"
+          aria-pressed={!filters.people && filters.period === "24h"}
+          onClick={() => setFilters((current) => ({ ...current, people: false, period: !current.people && current.period === "24h" ? "all" : "24h" }))}
+        >
+          Ostatnie 24 h
+        </button>
+        {[
+          { category: "film", label: "Tylko wideo" },
+          { category: "publiczne", label: "Komunikaty urzędowe" },
+        ].map(({ category, label }) => (
+          <button
+            key={category}
+            type="button"
+            aria-pressed={!filters.people && filters.categories.length === 1 && filters.categories[0] === category}
+            onClick={() => setFilters((current) => ({
+              ...current,
+              people: false,
+              categories: !current.people && current.categories.length === 1 && current.categories[0] === category ? [] : [category],
+            }))}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="sc-home-baza__layout">
         <div ref={scrollRef} className="sc-home-baza__results" tabIndex={0} aria-label="Materiały w Bazie — przewijaj w obrębie sekcji">
           {filters.people ? (

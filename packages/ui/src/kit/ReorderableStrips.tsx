@@ -19,7 +19,7 @@ export type ReorderableStrip = { id: string; title: string };
 export type ReorderableStripsProps<T extends ReorderableStrip> = {
   strips: T[];
   /** Содержимое полосы — заглушки витрины рисует вызывающий, не `NewsCard` (её строит R3). */
-  renderStrip: (strip: T) => ReactNode;
+  renderStrip: (strip: T, index: number) => ReactNode;
   /** Ключ `localStorage`. Порядок сохраняется НА УСТРОЙСТВЕ, не в профиле — см. план. */
   storageKey?: string;
   /** Подпись группы для скринридера. */
@@ -280,7 +280,7 @@ export function ReorderableStrips<T extends ReorderableStrip>({
         className="sc-reorder-strips__list"
         aria-label={label}
       >
-        {order.map((strip) => (
+        {order.map((strip, index) => (
           <StripRow
             key={strip.id}
             strip={strip}
@@ -292,7 +292,7 @@ export function ReorderableStrips<T extends ReorderableStrip>({
             onDragProgress={handleDragProgress}
             onEndPointerDrag={endPointerDrag}
             onKeyDown={handleKeyDown}
-            renderStrip={renderStrip}
+            renderStrip={(item) => renderStrip(item, index)}
           />
         ))}
       </Reorder.Group>

@@ -4782,3 +4782,12 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 /* Partia przy nazwisku zwykłym tekstem; w podglądzie Dr. Spina siła i metka po prawej. */
 .sc-spin-author__party-text { font-weight: 500; color: var(--sc-text-2); }
 .sc-spin-preview__verdict { justify-content: flex-end; }
+
+/* Wiadomości według typu oraz skróty do istniejących filtrów Bazy. */
+.sc-home-news .sc-home-catbar { overflow-x: auto; }
+.sc-home-news .sc-home-catbar .sc-nav-categories__list { flex-wrap: nowrap; width: max-content; min-width: 100%; }
+.sc-home-news .sc-home-catbar__btn { white-space: nowrap; }
+.sc-home-baza__quick { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
+.sc-home-baza__quick button { min-height: 44px; padding: var(--sc-s-2) var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface-2); color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); cursor: pointer; }
+.sc-home-baza__quick button[aria-pressed="true"] { background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); border-color: var(--sc-accent); }
+.sc-home-baza__quick button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
