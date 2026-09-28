@@ -94,7 +94,7 @@ const IMAGE_SIZES: Record<NewsCardSize, string> = {
 const VIEWPORT_MARGIN = 16;
 /** Zwijanie ze stopnia B: czas sprężyny `collapse` (0.26s, bounce 0) i jej odpowiednik krzywą — jedyna
  *  animacja poza `useMotionTokens().t()`, bo idzie przez Web Animations, nie przez framer (patrz leave()). */
-const COLLAPSE_MS = 260;
+const COLLAPSE_MS = 340;
 const COLLAPSE_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 /**

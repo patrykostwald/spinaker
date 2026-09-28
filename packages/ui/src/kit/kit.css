@@ -63,8 +63,9 @@ html[data-theme="dark"],
   --sc-glow: rgba(74, 158, 255, 0.45);
   --sc-glow-strong: rgba(74, 158, 255, 0.66);
   /* ореол за элементом; объявлен в блоке темы, чтобы [data-sc-theme] на витрине подхватывал свой цвет */
-  --sc-glow-ring: 0 0 0 1px rgba(74, 158, 255, 0.55), 0 0 28px 6px var(--sc-glow);
-  --sc-glow-ring-strong: 0 0 0 1px rgba(74, 158, 255, 0.7), 0 0 44px 12px var(--sc-glow-strong);
+  /* 29.09 (właściciel: „subtelnie, bez neonów”): cienka, delikatna krawędź i miękki cień zamiast niebieskiego poświaty */
+  --sc-glow-ring: 0 0 0 1px rgba(74, 158, 255, 0.22), 0 10px 28px rgba(0, 0, 0, 0.45);
+  --sc-glow-ring-strong: 0 0 0 1px rgba(74, 158, 255, 0.3), 0 18px 44px rgba(0, 0, 0, 0.55);
   --sc-sheen: rgba(255, 255, 255, 0.22);
   /* Тени глубже, чем днём, плюс внутренняя кромка — на чёрном тень не читается. */
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.2);
@@ -113,8 +114,8 @@ html[data-theme="pastel"],
   --sc-negative: #c42b2b;
   --sc-glow: rgba(10, 98, 208, 0.28);
   --sc-glow-strong: rgba(10, 98, 208, 0.42);
-  --sc-glow-ring: 0 0 0 1px rgba(10, 98, 208, 0.4), 0 0 28px 6px var(--sc-glow);
-  --sc-glow-ring-strong: 0 0 0 1px rgba(10, 98, 208, 0.55), 0 0 44px 12px var(--sc-glow-strong);
+  --sc-glow-ring: 0 0 0 1px rgba(10, 98, 208, 0.16), 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sc-glow-ring-strong: 0 0 0 1px rgba(10, 98, 208, 0.22), 0 16px 40px rgba(0, 0, 0, 0.14);
   --sc-sheen: rgba(255, 255, 255, 0.6);
   --sc-e-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 1px rgba(0, 0, 0, 0.04);
   --sc-e-2: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.06);

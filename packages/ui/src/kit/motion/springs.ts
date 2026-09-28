@@ -16,7 +16,7 @@ const spring = (bounce: number, duration: number): Transition => ({
 
 export const springs = {
   /** Наведение, подсветка, кромка, служебные переходы. Bounce 0.18 — по просьбе владельца, см. «Три ступени». */
-  ui: spring(0.18, 0.26),
+  ui: spring(0, 0.32),
   /** Нажатие: должно уложиться в один кадр ввода. */
   press: spring(0, 0.16),
   /** Переезд на новое место: индикаторы, layout-перестановки. */
@@ -34,9 +34,9 @@ export const springs = {
   /** Возврат после отпускания с реальной инерцией. */
   settle: spring(0.25, 0.38),
   /** Содержимое, раскрывающееся внутри расширения — здесь живёт «bounce» владельца. */
-  expand: spring(0.22, 0.4),
+  expand: spring(0, 0.5),
   /** Сворачивание. Не отскакивает. */
-  collapse: spring(0, 0.26),
+  collapse: spring(0, 0.34),
   /** Замена любой пружины при prefers-reduced-motion: короткое затухание, всё ещё прерываемое. */
   reduced: spring(0, 0.18),
 } as const satisfies Record<string, Transition>;
