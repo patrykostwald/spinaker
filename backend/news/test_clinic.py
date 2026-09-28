@@ -332,13 +332,16 @@ def test_failures_do_not_use_the_daily_quota_but_a_series_of_them_stops_spending
 
 @pytest.mark.django_db
 def test_no_diagnoses_at_night_and_the_quota_is_spread_over_the_day(ai_on, monkeypatch):
+    monkeypatch.setenv('CLINIC_DAILY_LIMIT', '20')
     acc = account()
     for index in range(10):
         post(acc, post_id=str(9200 + index))
     clinic.run_screening()
     at_hour(monkeypatch, 3)
     assert clinic.run_diagnoses() == {'status': 'night'}
-    at_hour(monkeypatch, 8)
+    morning = at_hour(monkeypatch, 8)
+    # Data publikacji zależy od udawanego poranka, a nie od godziny uruchomienia testu.
+    PoliticalPost.objects.update(published_at=morning - timedelta(hours=1))
     clinic.run_diagnoses()
     clinic.run_diagnoses()
     # O 8:00 minęła 1/16 dnia: z 19 zwykłych diagnoz należą się 2 — nie cały limit naraz.
