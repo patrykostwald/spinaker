@@ -57,6 +57,7 @@ export { SpinDetail } from "./components/clinic/SpinDetail";
 export { ClinicQueue } from "./components/clinic/ClinicQueue";
 export { NewsletterSignup, NEWSLETTER_CONSENT } from "./components/NewsletterSignup";
 export { ShareThreadOnX } from "./components/ShareThreadOnX";
+export { TouchScrollGuard } from "./components/TouchScrollGuard";
 export { ContextThreadStrip } from "./components/ContextThreadStrip";
 export { OpinionsPanel } from "./components/OpinionsPanel";
 export * from "./lib/clinic";

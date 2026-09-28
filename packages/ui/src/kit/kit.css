@@ -4467,3 +4467,28 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 /* Spin dnia: „KLINIKA SPINU”, przełącznik i „Raport tygodnia” w jednej linii */
 .sc-spin-switch__bar { align-items: center; }
 .sc-spin-switch__bar .sc-home-kicker { margin: 0; }
+
+/* Telefon: zamiast ☰ widoczne „Klinika” i „O nas” obok logo (logo = strona główna); motyw zostaje na pasku. */
+@container sc-navmenu (max-width: 767px) {
+  .sc-navmenu__list { display: flex; gap: 0; margin: 0 0 0 4px; }
+  .sc-navmenu__list > li:first-child { display: none; }
+  .sc-navmenu__list .sc-navmenu__item-wrap a, .sc-navmenu__list .sc-navmenu__link { padding-left: 8px; padding-right: 8px; font-size: 14px; }
+  .sc-navmenu__toggle-wrap, .sc-navmenu__mobile-wrap { display: none; }
+  .sc-navmenu__cta { display: flex; margin-left: auto; }
+  .sc-navmenu__cta .sc-nav-clock { display: none; }
+}
+@container sc-navmenu (max-width: 360px) {
+  .sc-beta { display: none; }
+}
+
+/* Telefon: listy z własnym przewijaniem nie łapią palca, dopóki ich nie „przytrzymasz” (TouchScrollGuard). */
+html[data-touch-scroll="guard"] :is(.sc-clinic-column__list, .sc-home-baza__results, .sc-home-baza__aside, .sc-home-lead__list, .sc-deleted__list, .sc-clinic-sotd__reading, .sc-source-coverage__list):not([data-scroll-active]) {
+  overflow-y: hidden !important;
+  overscroll-behavior: auto;
+}
+html[data-touch-scroll="guard"] [data-scroll-active] {
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  box-shadow: inset 0 0 0 2px var(--sc-accent);
+  border-radius: var(--sc-r-lg);
+}

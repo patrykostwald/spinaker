@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
-import { SiteHeader } from "@spin-clinic/ui";
+import { SiteHeader, TouchScrollGuard } from "@spin-clinic/ui";
 import { SiteFooter } from "@spin-clinic/ui/kit";
 
 import "./globals.css";
@@ -29,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main-content" className="sr-only focus:not-sr-only focus:p-4">Przejdź do treści</a>
         <Providers>
           <SiteHeader site={site} />
+          <TouchScrollGuard />
           <main id="main-content" className="sc-app-main">{children}</main>
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
