@@ -13,6 +13,13 @@ app.conf.beat_schedule = {
     'youtube-official-2h': {'task': 'news.tasks.youtube_official_task', 'schedule': crontab(minute=40, hour='*/2')},
     'youtube-leftover': {'task': 'news.tasks.youtube_leftover_task', 'schedule': crontab(hour=8, minute=35)},
     'source-social-night': {'task': 'news.tasks.source_social_task', 'schedule': crontab(hour=3, minute=40)},
+    'deleted-posts-3h': {'task': 'news.tasks.deleted_posts_task', 'schedule': crontab(minute=50, hour='*/3')},
+    # Agent KRS (Gemini + oficjalny KRS): nocą co godzinę partia osób, aż do KRS_AGENT_DAILY — KRS_AGENT_ENABLED=true.
+    'krs-agent-night': {'task': 'news.tasks.krs_agent_task', 'schedule': crontab(hour='0-6', minute=10)},
+    'sejm-career-weekly': {'task': 'news.tasks.sejm_career_task', 'schedule': crontab(day_of_week='mon', hour=5, minute=20)},
+    # Konto spin.clinic na X: silne spiny jako wątek — co 30 minut w dzień, do dziennego limitu (domyślnie wyłączone).
+    'x-publish-day': {'task': 'news.tasks.x_publish_task', 'schedule': crontab(minute='15,45', hour='8-21')},
+    'weekly-report-sunday': {'task': 'news.tasks.weekly_report_task', 'schedule': crontab(day_of_week='sun', hour=20, minute=0)},
     # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
     'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
     # Przekaz dnia obu obozów (darmowe modele): 9:00, 12:00, 15:00, 18:00 i 21:30.

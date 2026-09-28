@@ -17,11 +17,29 @@ function sourceGroups(sources: Source[]) {
   };
 }
 
+/** Znaczki przy źródle: co już mamy (zgoda / dane publiczne, YouTube, X), a na co czekamy. */
+function SourceChannels({ source }: { source: Source }) {
+  const channelOnly = (source.url || '').includes('youtube.com');
+  const youtube = channelOnly ? source.url : source.youtube_url;
+  return <small className="sc-source-chips">
+    {channelOnly ? null : source.access === 'approved'
+      ? <span className="sc-source-chip is-on" title="Zgoda wydawcy albo dane publiczne na jawnych zasadach">Zgoda</span>
+      : <span className="sc-source-chip" title="Czekamy na zgodę wydawcy">weryfikacja</span>}
+    {youtube ? <a className="sc-source-chip is-on" href={youtube} target="_blank" rel="noopener noreferrer" aria-label={`${source.name} na YouTube`}>YouTube</a> : null}
+    {source.x_handle ? <a className="sc-source-chip is-on" href={`https://x.com/${source.x_handle}`} target="_blank" rel="noopener noreferrer" aria-label={`${source.name} na X (@${source.x_handle})`}>X</a> : null}
+  </small>;
+}
+
 export default function SourcesPage() {
   const config = useQuery({ queryKey: ['mvp-portal-config'], queryFn: getPortalConfig });
   const [search, setSearch] = useState('');
   const [suggestion, setSuggestion] = useState('');
-  const visible = useMemo(() => (config.data?.sources ?? []).filter(source => source.name.toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl'))), [config.data?.sources, search]);
+  // Kanał YouTube serwisu, który już jest w katalogu, pokazujemy znaczkiem przy serwisie — nie jako osobne źródło.
+  const visible = useMemo(() => {
+    const all = config.data?.sources ?? [];
+    const linkedChannels = new Set(all.map(source => source.youtube_url).filter(Boolean));
+    return all.filter(source => !linkedChannels.has(source.url) && source.name.toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl')));
+  }, [config.data?.sources, search]);
   const groups = sourceGroups(visible);
   const contact = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
   const stats = config.data?.source_stats;
@@ -39,13 +57,17 @@ export default function SourcesPage() {
       <div><dt>Aktywne</dt><dd>{stats?.active ?? '—'}</dd></div>
       <div><dt>Oczekuje na odpowiedź</dt><dd>{stats?.awaiting_response ?? '—'}</dd></div>
     </dl>
+    <ul className="sc-source-legend" aria-label="Oznaczenia">
+      <li><span className="sc-source-chip is-on">Zgoda</span> zgoda wydawcy albo dane publiczne na jawnych zasadach</li>
+      <li><span className="sc-source-chip is-on">YouTube</span> <span className="sc-source-chip is-on">X</span> oficjalny kanał i konto, podlinkowane na stronie źródła</li>
+      <li><span className="sc-source-chip">weryfikacja</span> czekamy na zgodę albo potwierdzenie kanału</li>
+    </ul>
     <SearchField className="sc-source-page__search" label="Znajdź źródło" value={search} onChange={setSearch} placeholder="Nazwa źródła" />
     <div className="sc-source-page__grid">
       {([['important', 'Największe media'], ['media', 'Media'], ['public', 'Publiczne']] as const).map(([key, label]) => <section key={key}>
         <h2>{label}<span>{groups[key].length}</span></h2>
-        <ul>{groups[key].map(source => <li key={source.id}><span>{source.url ? <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a> : source.name}
-          {source.x_handle ? <a className="sc-source-page__social" href={`https://x.com/${source.x_handle}`} target="_blank" rel="noopener noreferrer" aria-label={`${source.name} na X (@${source.x_handle})`}>X</a> : null}
-          {source.youtube_url ? <a className="sc-source-page__social" href={source.youtube_url} target="_blank" rel="noopener noreferrer" aria-label={`${source.name} na YouTube`}>YouTube</a> : null}</span><small className={source.is_active ? 'is-active' : ''}>{source.is_active ? 'Aktywne' : 'Katalog · weryfikacja'}</small></li>)}</ul>
+        <ul>{groups[key].map(source => <li key={source.id}><span>{source.url ? <a href={source.url} target="_blank" rel="noreferrer">{source.name}</a> : source.name}</span>
+          <SourceChannels source={source} /></li>)}</ul>
       </section>)}
     </div>
     <section className="sc-source-page__progress"><p>POSTĘP KATALOGU</p><h2>Jak rozwija się baza źródeł?</h2><ArchiveProgress /></section>

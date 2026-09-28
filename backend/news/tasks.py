@@ -119,6 +119,26 @@ def youtube_official_task():
     return collect_latest()
 
 
+@shared_task(name="news.tasks.weekly_report_task", soft_time_limit=600, time_limit=660)
+def weekly_report_task():
+    """Niedziela wieczorem: raport tygodnia Dr. Spina (dane + podsumowanie darmowym modelem)."""
+    from news.weekly_report import generate
+    report = generate()
+    return {"status": "ok", "week_end": str(report.week_end), "summary": bool(report.summary)}
+
+
+@shared_task(name="news.tasks.deleted_posts_task", soft_time_limit=600, time_limit=660)
+def deleted_posts_task():
+    """Strażnica usuniętych postów polityków — darmowy oEmbed X, do 60 wpisów na przebieg."""
+    if not cache.add("deleted-posts-lock", "1", timeout=700):
+        return {"status": "locked"}
+    try:
+        from news.deleted_posts import check_batch
+        return check_batch()
+    finally:
+        cache.delete("deleted-posts-lock")
+
+
 @shared_task(name="news.tasks.source_social_task", soft_time_limit=1500, time_limit=1600)
 def source_social_task():
     """W nocy: linki YouTube i X na stronach źródeł — sprawdzenia starsze niż 30 dni albo ze starszej wersji."""
@@ -150,3 +170,40 @@ def clinic_interview_pick_task():
     from news.clinic_interview import pick_yesterday
     return pick_yesterday()
 
+
+@shared_task(name="news.tasks.newsletter_confirmation_task", soft_time_limit=60, time_limit=90)
+def newsletter_confirmation_task(subscriber_id):
+    """Mail z linkiem potwierdzającym zapis na newsletter."""
+    from news.newsletter import send_confirmation
+    return send_confirmation(subscriber_id)
+
+
+@shared_task(name="news.tasks.krs_agent_task", soft_time_limit=1500, time_limit=1600)
+def krs_agent_task():
+    """Codziennie kilka kolejnych osób publicznych: podmioty z KRS (KRS_AGENT_ENABLED, KRS_AGENT_DAILY, KRS_DAILY_BUDGET_USD)."""
+    if not cache.add("krs-agent-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news.krs_agent import run
+        return run()
+    finally:
+        cache.delete("krs-agent-lock")
+
+
+@shared_task(name="news.tasks.sejm_career_task", soft_time_limit=900, time_limit=960)
+def sejm_career_task():
+    """Kariera sejmowa (kadencje, daty mandatu, klub) z oficjalnego API Sejmu — raz w tygodniu."""
+    from news.sejm_career import run
+    return run()
+
+
+@shared_task(name="news.tasks.x_publish_task", soft_time_limit=300, time_limit=360)
+def x_publish_task():
+    """Wątki silnych spinów z konta spin.clinic (X_POST_ENABLED i klucze z uprawnieniem zapisu)."""
+    if not cache.add("x-publish-lock", "1", timeout=400):
+        return {"status": "locked"}
+    try:
+        from news.x_publish import run
+        return run()
+    finally:
+        cache.delete("x-publish-lock")

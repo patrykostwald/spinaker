@@ -159,6 +159,9 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
   );
 }
 
+/** Etykieta werdyktu w archiwum wywiadów dopiero od tej siły (niżej — pojedyncze, słabe techniki). */
+const ARCHIVE_TAG_MIN = 40;
+
 /** Archiwum wywiadów dnia: jeden pasek na dzień — data po lewej, gość, nagłówek, werdykt; klik otwiera analizę. */
 function InterviewArchive({ items }: { items: Interview[] }) {
   const [openId, setOpenId] = useState<number | null>(null);
@@ -171,8 +174,12 @@ function InterviewArchive({ items }: { items: Interview[] }) {
           <button type="button" className="sc-interview-archive__row" onClick={() => setOpenId(item.id)} aria-haspopup="dialog">
             <time dateTime={item.day}>{formatDatePl(item.day)}</time>
             <span className="sc-interview-archive__who">{item.guest_name}<small>{item.channel}</small></span>
+            {/* Licznik siły zawsze; etykieta werdyktu dopiero od progu — przy 6/100 „Spin” sugerowałby więcej, niż stwierdzono. */}
+            <span className="sc-interview-archive__score">
+              <IntensityMeter value={item.guest.intensity} />
+              {item.guest.intensity >= ARCHIVE_TAG_MIN ? <VerdictTag verdict={item.guest.verdict} label={item.guest.verdict_label} /> : null}
+            </span>
             <span className="sc-interview-archive__headline">{item.headline || item.title}</span>
-            <VerdictTag verdict={item.guest.verdict} label={item.guest.verdict_label} />
           </button>
         </li>
       ))}</ul>

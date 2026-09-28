@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import html
 import os
 import re
 from datetime import timedelta
@@ -150,7 +151,8 @@ def transcribe(url: str) -> tuple[dict, dict]:
         text = payload['candidates'][0]['content']['parts'][0]['text']
         data = json.loads(text[text.find('{'):text.rfind('}') + 1])
     except (KeyError, IndexError, ValueError):
-        raise clinic_ai.ClinicAIError('gemini_invalid_json')
+        reason = ((payload.get('candidates') or [{}])[0] or {}).get('finishReason', '')
+        raise clinic_ai.ClinicAIError(f'gemini_invalid_json {reason}'.strip())
     if not data.get('segments'):
         raise clinic_ai.ClinicAIError('gemini_empty_transcript')
     usage = payload.get('usageMetadata', {})
@@ -230,7 +232,17 @@ def diagnose_transcript(meta: dict, transcript: str) -> dict:
     user = '\n'.join([f"Program: {meta.get('program') or meta.get('title', '')}", f"Kanał: {meta.get('channel', '')}",
                       f"Gość: {meta.get('guest_name', '')} ({meta.get('guest_role', '')})", f"Prowadzący: {meta.get('host_name', '')}",
                       f"Link: {meta.get('url', '')}", '', 'Transkrypcja:', '<<<', transcript, '>>>'])
-    response = clinic_ai._call(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+    # Wywiad dnia to jedna, najważniejsza diagnoza dnia — Claude, gdy wskazano go w CLINIC_INTERVIEW_PROVIDER (i są środki);
+    # inaczej zwykła ścieżka (Claude albo Gemini). Przy braku środków na koncie Anthropic — Gemini.
+    if os.environ.get('CLINIC_INTERVIEW_PROVIDER', '').strip().lower() == 'anthropic' and os.environ.get('ANTHROPIC_API_KEY', '').strip():
+        try:
+            response = clinic_ai._call_claude(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+        except clinic_ai.ClinicAIError as error:
+            if 'credit balance' not in error.code.lower():
+                raise
+            response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+    else:
+        response = clinic_ai._call(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
     data = clinic_ai._json_from_text(response.content)
     result = clean_interview(data, transcript, clinic_ai._search_results(response.content))
     result['usage'] = clinic_ai._usage(response)
@@ -250,7 +262,16 @@ def queue_interview(url: str, day=None, user=None) -> ClinicInterview:
     return interview
 
 
+INTERVIEW_RESERVE_USD = 0.6  # wywiad to długa transkrypcja — bez tego zapasu w budżecie nie zaczynamy (ani Gemini)
+
+
 def process(interview: ClinicInterview) -> ClinicInterview:
+    from news.clinic import budget_left
+    if budget_left() < INTERVIEW_RESERVE_USD:
+        # Dzienny budżet wyczerpany: wywiad czeka w kolejce do jutra — bez transkrypcji i bez diagnozy.
+        interview.status, interview.error = 'queued', 'budżet dzienny wyczerpany — spróbujemy jutro'
+        interview.save(update_fields=['status', 'error'])
+        return interview
     meta = _oembed(interview.url)
     interview.title = str(meta.get('title', interview.title))[:300]
     interview.channel = str(meta.get('author_name', interview.channel))[:200]
@@ -288,6 +309,9 @@ def rediagnose(interview: ClinicInterview) -> ClinicInterview:
     """Nowa diagnoza Dr. Spina z zapisanej transkrypcji — bez ponownej transkrypcji (Gemini)."""
     if not interview.transcript:
         raise clinic_ai.ClinicAIError('no_transcript')
+    from news.clinic import budget_left
+    if budget_left() < INTERVIEW_RESERVE_USD:
+        raise clinic_ai.ClinicAIError('daily_budget')
     meta = {'title': interview.title, 'channel': interview.channel, 'url': interview.url, 'guest_name': interview.guest_name,
             'guest_role': interview.guest_role, 'host_name': interview.host_name}
     result = diagnose_transcript(meta, interview.transcript)
@@ -360,11 +384,35 @@ def interview_archive(limit: int = 10) -> list[dict]:
 
 # --- automatyczny wybór: najgłośniejszy wywiad z politykiem z poprzedniego dnia --------------------------
 
-# Kanały informacyjne i publicystyczne różnych stron (uchwyt @… albo identyfikator UC…, sprawdzone 27.09.2026).
-# Nadpisz w CLINIC_INTERVIEW_CHANNELS (po przecinku).
-DEFAULT_CHANNELS = ('@KanalZeroPL', '@tvn24', 'UCb7O4-iI4pEO5UZPlOBr0Ug', '@tvpinfo', 'UCkC9YgH_FlqOhOIoTDFt4CA',
-                    'UCvHFbkohgX29NhaUtmkzLmg', 'UCPiu4CZlknkTworskK79CPg', '@TVRepublika', 'UC-wh71MEZ4KAx94aZyoG_qg',
-                    '@onet', '@RadioWnet')
+# Kanały informacyjne i publicystyczne różnych stron — wyłącznie identyfikatory UC… sprawdzone w API (27.09.2026).
+# Uchwyty @… bywają zajęte przez podróbki (np. „@TVRepublika” to mały, obcy kanał). Nadpisz w CLINIC_INTERVIEW_CHANNELS.
+DEFAULT_CHANNELS = (
+    'UClhEl4bMD8_escGCCTmRAYg',  # Kanał Zero
+    'UC3R8278fJUWn2ysrOCJrmAQ',  # TVN24
+    'UCb7O4-iI4pEO5UZPlOBr0Ug',  # Polsat News
+    'UCzQZbOb86WvhOPoR7jgAfsA',  # TVP Info
+    'UCkC9YgH_FlqOhOIoTDFt4CA',  # RMF24
+    'UCvHFbkohgX29NhaUtmkzLmg',  # Radio ZET
+    'UCPiu4CZlknkTworskK79CPg',  # wPolsce24
+    'UCc282c_TN8xIba_Z6GaDnQw',  # Telewizja Republika
+    'UC-wh71MEZ4KAx94aZyoG_qg',  # Wirtualna Polska News
+    'UC_vMDcmkuEvw0N-gaP35wTA',  # Onet
+    'UCjkNubkfecaFLZbHnnsz6pw',  # Onet Rano
+    'UCr8b33W30PoW4NhKI-ySRbg',  # Interia Rozmowy
+    'UCpchzx2u5Ab8YASeJsR1WIw',  # Rzeczpospolita
+    'UC4uWtFsAryV2p_UDvu0rraA',  # Rymanowski Live
+    'UCUlZzs-r5LDqARiq1xPkQlw',  # Radio TOK FM
+    'UCbG7jYj1nN32cnvhgbOMcZA',  # Tygodnik Do Rzeczy
+    'UC4QyTpuQKpBFWbA5mKqLUPA',  # TVP Info Publicystyka
+    # Autorskie kanały dziennikarzy z rozmowami (Gozdyra — Polsat News, Piasecki i „Kropka nad i” — TVN24: już wyżej).
+    'UCmuaurR3Fl5ugr6Bi066tHA',  # SEKIELSKI
+    'UCuAOJnMr905iKjURUsffDgA',  # Kanał Otwarty (Igor Janke)
+    'UCqXzykyeNdMNwiXTvfUOSNQ',  # Rafał Ziemkiewicz
+    'UCaTcgqhFqYzhrLQzaibPyeA',  # Jan Piński
+    'UC9zRB_xpaSpJxofUrltx1xQ',  # Żurnalista
+    'UChgp0bnprzgBQLWAc-PEgvg',  # Wywiadowcy Podcast
+    'UCl5Oqbu_DQMylH15jjiTBCg',  # Poranek Siódma9 (Marcin Fijołek)
+)
 MIN_NAMED_SECONDS = 15 * 60  # film z nazwiskiem polityka w tytule, ale bez słowa „wywiad” — musi być dłuższą rozmową
 # Rdzenie, żeby łapać odmianę: „ministrem”, „posłanką”, „marszałkiem”.
 POLITICS_WORDS = ('premier', 'prezydent', 'minist', 'marszał', 'poseł', 'posł', 'europos', 'senator',
@@ -372,6 +420,7 @@ POLITICS_WORDS = ('premier', 'prezydent', 'minist', 'marszał', 'poseł', 'posł
 INTERVIEW_WORDS = ('wywiad', 'rozmowa', 'rozmawia', 'gość', 'gośćmi', 'pytania', 'kropka nad i', 'godzina zero',
                    'graffiti', 'rozmowa piaseckiego', 'jeden na jeden', 'fakty po faktach', 'kawa na ławę', 'sedno sprawy')
 MIN_SECONDS = 8 * 60
+MAX_SECONDS = 95 * 60  # dłuższe to zwykle transmisje i maratony — transkrypcja nie mieści się w odpowiedzi Gemini
 
 
 def _yt(path: str, **params) -> dict:
@@ -425,7 +474,8 @@ TOP_POLITICIANS = ('tusk', 'nawrock', 'kaczyńsk', 'morawieck', 'mentzen', 'bosa
                    'sikorsk', 'trzaskowsk', 'siemoniak', 'kierwińsk', 'domańsk', 'żurek', 'żurk', 'gawkowsk', 'zandberg',
                    'braun', 'błaszczak', 'hennig', 'szłapk', 'kobosk', 'ziobr', 'przydacz', 'bocheńsk', 'czarnek',
                    'biejat', 'kidaw', 'pełczyńsk', 'bodnar', 'sobierańsk', 'klimczak', 'nowack', 'kwaśniewsk',
-                   'duda', 'dudy', 'wałęs', 'petru', 'budka', 'budki', 'lewandowsk', 'mastalerek', 'bosak')
+                   'duda', 'dudy', 'wałęs', 'petru', 'budka', 'budki', 'lewandowsk', 'mastalerek', 'bosak',
+                   'szydł', 'macierewicz')
 HOT_LOUDNESS = 150_000  # mniej znany polityk wchodzi tylko, gdy rozmowa jest naprawdę „gorąca”
 # Tytuł w stylu „Joński: w moim przekonaniu…” — typowy zapis rozmowy z politykiem w mediach.
 QUOTE_TITLE = re.compile(r'^\W*[A-ZŁŚŻŹĆ][a-ząćęłńóśźż-]{3,}(?: [A-ZŁŚŻŹĆ][a-ząćęłńóśźż-]{3,})?\s*:')
@@ -444,14 +494,94 @@ def _top_politicians() -> tuple[str, ...]:
     return tuple(name.strip().lower() for name in custom.split(',') if name.strip()) or TOP_POLITICIANS
 
 
-def looks_like_interview(title: str, description: str, channel: str) -> tuple[bool, str]:
-    """Darmowy model (Groq, zapasowo NIM) czyta tytuł i opis: czy to rozmowa dziennikarza z politykiem."""
+CLASSIFY_RETRIES = (0, 8, 20)  # sekundy przed kolejną próbą — darmowy model ma limit zapytań na minutę
+
+
+def looks_like_interview(title: str, description: str, channel: str) -> tuple[bool | None, str]:
+    """Darmowy model (Groq, zapasowo NIM) czyta tytuł i opis: czy to rozmowa dziennikarza z politykiem.
+    None = klasyfikator nie odpowiedział (to nie jest odrzucenie)."""
+    import time
     user = f'Kanał: {channel}\nTytuł: {title}\nOpis: {description[:1200]}'
+    for pause in CLASSIFY_RETRIES:
+        time.sleep(pause)
+        try:
+            data, _ = clinic_ai._free_chat(CLASSIFY_SYSTEM, user, CLASSIFY_SCHEMA, max_tokens=1500)
+        except clinic_ai.ClinicAIError:
+            continue
+        return bool(data.get('interview')), str(data.get('reason', ''))[:200]
+    return None, 'klasyfikator niedostępny'
+
+
+def talk_signal(title: str, description: str, names=None) -> bool:
+    """Gdy klasyfikator milczy: w TYTULE nazwisko polityka i wyraźny znak rozmowy (całe słowa — „wywiadu” to służby,
+    nie wywiad). Monologi i tak odpadną na transkrypcji (is_dialogue) — przed płatną diagnozą."""
+    lowered = title.lower()
+    names = names if names is not None else set(_top_politicians())
+    if not any(name in lowered for name in names):
+        return False
+    text = f'{title} {description}'.lower()
+    words = INTERVIEW_WORDS + ('poranna rozmowa', 'gość dzisiaj')
+    return bool(QUOTE_TITLE.match(title)) or any(re.search(rf'(?<!\w){re.escape(word)}(?!\w)', text) for word in words)
+
+
+def _uploads_between(channel_id: str, start, end, max_pages: int = 4) -> list[tuple[str, dict]]:
+    """Filmy kanału opublikowane w oknie [start, end) — z listy „uploads” (1 jednostka na 50 filmów, bez limitu
+    wyszukiwań YouTube, który jest osobny i mały). Strony czytamy, dopóki najstarszy film jest jeszcze w oknie."""
+    from django.utils.dateparse import parse_datetime
+    found, token = [], ''
+    for _ in range(max_pages):
+        params = {'part': 'snippet,contentDetails', 'playlistId': 'UU' + channel_id[2:], 'maxResults': 50}
+        if token:
+            params['pageToken'] = token
+        data = _yt('playlistItems', **params)
+        oldest = None
+        for item in data.get('items') or []:
+            details, snippet = item.get('contentDetails') or {}, item.get('snippet') or {}
+            published = parse_datetime(details.get('videoPublishedAt') or snippet.get('publishedAt') or '')
+            if not published:
+                continue
+            oldest = published if oldest is None else min(oldest, published)
+            if start <= published < end and details.get('videoId'):
+                found.append((details['videoId'], snippet))
+        token = data.get('nextPageToken', '')
+        if not token or (oldest and oldest < start):
+            break
+    return found
+
+
+# Poza listą kanałów: dwa zapytania dziennie po całym YouTube (wyszukiwarka ma osobny, mały limit dzienny).
+BROAD_QUERIES = (
+    'Tusk|Nawrocki|Kaczyński|Mentzen|Bosak|Sikorski|Trzaskowski|Kosiniak-Kamysz|Hołownia|Czarzasty|Morawiecki|Braun|Zandberg|Błaszczak|Żurek',
+    'wywiad polityk|rozmowa z ministrem|rozmowa z posłem|gość programu polityka',
+)
+BROAD_MIN_SUBSCRIBERS = 50_000  # kanały spoza listy: tylko duże — bez przeróbek, wycinków i kopii cudzych wywiadów
+
+
+def _broad_search(start, end, known_channels: set[str]) -> list[tuple[str, dict]]:
+    """Najczęściej oglądane filmy z danego okna po całym YouTube (PL), tylko z dużych kanałów spoza listy."""
+    found = {}
+    for query in BROAD_QUERIES:
+        try:
+            data = _yt('search', part='snippet', q=query, type='video', order='viewCount', maxResults=25,
+                       regionCode='PL', relevanceLanguage='pl', publishedAfter=start.isoformat(), publishedBefore=end.isoformat())
+        except clinic_ai.ClinicAIError as error:
+            logger.warning('interview broad search: %s', error.code)
+            continue
+        for item in data.get('items') or []:
+            snippet = item.get('snippet') or {}
+            video_id = (item.get('id') or {}).get('videoId')
+            if video_id and snippet.get('channelId') not in known_channels:
+                found[video_id] = snippet
+    channel_ids = list({snippet.get('channelId') for snippet in found.values() if snippet.get('channelId')})[:50]
+    if not channel_ids:
+        return []
     try:
-        data, _ = clinic_ai._free_chat(CLASSIFY_SYSTEM, user, CLASSIFY_SCHEMA, max_tokens=300)
+        channels = _yt('channels', part='statistics', id=','.join(channel_ids))
     except clinic_ai.ClinicAIError:
-        return False, 'klasyfikator niedostępny'
-    return bool(data.get('interview')), str(data.get('reason', ''))[:200]
+        return []
+    big = {item['id'] for item in channels.get('items') or []
+           if int((item.get('statistics') or {}).get('subscriberCount', 0)) >= BROAD_MIN_SUBSCRIBERS}
+    return [(video_id, snippet) for video_id, snippet in found.items() if snippet.get('channelId') in big]
 
 
 def rank_interviews(day) -> list[dict]:
@@ -464,6 +594,7 @@ def rank_interviews(day) -> list[dict]:
     top = _top_politicians()
     names = set(_politician_names()) | set(top)
     candidates = {}
+    pool, known = [], set()
     for handle in handles:
         try:
             if handle.startswith('UC'):
@@ -473,27 +604,32 @@ def rank_interviews(day) -> list[dict]:
                 if not channel:
                     continue
                 channel_id = channel[0]['id']
-            found = _yt('search', part='snippet', channelId=channel_id, type='video', order='viewCount', maxResults=15,
-                        publishedAfter=start.isoformat(), publishedBefore=end.isoformat())
+            known.add(channel_id)
+            pool += _uploads_between(channel_id, start, end)
         except clinic_ai.ClinicAIError as error:
             logger.warning('interview pick: %s %s', handle, error.code)
             continue
-        for item in found.get('items') or []:
-            snippet = item.get('snippet') or {}
-            import html
-            title = html.unescape(snippet.get('title', ''))
-            text = f"{title} {snippet.get('description', '')}".lower()
-            quoted = bool(QUOTE_TITLE.match(title))
-            named = quoted or any(name in text for name in names) or any(word in text for word in POLITICS_WORDS)
-            if named and (quoted or any(word in text for word in INTERVIEW_WORDS)):
-                candidates[item['id']['videoId']] = {**snippet, 'title': title, 'top': any(name in text for name in top)}
+    # Głośne rozmowy z dużych kanałów spoza listy (dwa zapytania po całym YouTube).
+    pool += _broad_search(start, end, known)
+    for video_id, snippet in pool:
+        if video_id in candidates:
+            continue
+        title = html.unescape(snippet.get('title', ''))
+        text = f"{title} {snippet.get('description', '')}".lower()
+        quoted = bool(QUOTE_TITLE.match(title))
+        named = quoted or any(name in text for name in names) or any(word in text for word in POLITICS_WORDS)
+        if named and (quoted or any(word in text for word in INTERVIEW_WORDS)):
+            candidates[video_id] = {**snippet, 'title': title, 'top': any(name in text for name in top)}
     if not candidates:
         return []
-    details = _yt('videos', part='statistics,contentDetails', id=','.join(list(candidates)[:50]))
+    ids = list(candidates)
+    items = []
+    for offset in range(0, min(len(ids), 150), 50):  # po 50 filmów na zapytanie (1 jednostka)
+        items += _yt('videos', part='statistics,contentDetails', id=','.join(ids[offset:offset + 50])).get('items') or []
     ranked = []
-    for item in details.get('items') or []:
-        if _duration_seconds((item.get('contentDetails') or {}).get('duration', '')) < MIN_SECONDS:
-            continue  # zapowiedzi, wycinki i krótkie komentarze odpadają
+    for item in items:
+        if not MIN_SECONDS <= _duration_seconds((item.get('contentDetails') or {}).get('duration', '')) <= MAX_SECONDS:
+            continue  # zapowiedzi, wycinki i krótkie komentarze odpadają; kilkugodzinne transmisje też
         snippet = candidates[item['id']]
         stats = item.get('statistics') or {}
         loudness = int(stats.get('viewCount', 0)) + 20 * int(stats.get('commentCount', 0)) + 5 * int(stats.get('likeCount', 0))
@@ -507,13 +643,19 @@ def rank_interviews(day) -> list[dict]:
 
 def find_loudest_interview(day, exclude=()) -> dict | None:
     """Pierwszy z rankingu, który darmowy klasyfikator uznał za wywiad (tytuł i opis) — dopiero on idzie do płatnej analizy."""
+    names = set(_politician_names()) | set(_top_politicians())
     for candidate in rank_interviews(day)[:8]:
         if candidate['video_id'] in exclude:
             continue
+        import time
         ok, reason = looks_like_interview(candidate['title'], candidate['description'], candidate['channel'])
+        if ok is None:
+            ok = talk_signal(candidate['title'], candidate['description'], names)
+            reason = f'{reason}; znak rozmowy w tytule/opisie: {"tak" if ok else "nie"}'
         logger.info('interview pick %s %s: %s', candidate['video_id'], ok, reason)
         if ok:
             return candidate
+        time.sleep(2)  # odstęp między pytaniami do darmowego modelu
     return None
 
 

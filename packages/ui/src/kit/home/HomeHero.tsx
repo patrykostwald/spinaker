@@ -2,7 +2,7 @@
 
 /**
  * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.webp`) jako niskie tło, a na niej
- * jedno zdanie o trzech częściach serwisu, linki i „Wesprzyj nas”. Zastępuje wysoki baner, który
+ * jedno zdanie o trzech częściach serwisu, linki i „Wspomóż projekt”. Zastępuje wysoki baner, który
  * spychał wiadomości pod linię przewijania. Pas jest stały — nie da się go ukryć.
  */
 
@@ -56,7 +56,7 @@ export function HomeHero() {
         </p>
       </div>
       <div className="sc-home-intro__actions">
-        <Button href="/wsparcie" variant="primary" size="sm">Wesprzyj nas</Button>
+        <Button href="/wsparcie" variant="primary" size="sm">Wspomóż projekt</Button>
       </div>
     </section>
   );

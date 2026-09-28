@@ -178,6 +178,9 @@ def test_feed_first_page_is_diverse_across_sources():
     assert [row['title'] for row in plain] == ['A0', 'A1', 'A2']
     mixed = APIClient().get('/api/feed/?page_size=3&diverse=1').json()['results']
     assert [row['title'] for row in mixed] == ['A0', 'B0', 'C0']
+    # Jedno źródło najwyżej dwa razy, nawet gdy inne mają mniej materiałów (nie zapychamy strony jednym kanałem).
+    capped = APIClient().get('/api/feed/?page_size=8&diverse=1').json()['results']
+    assert [row['title'] for row in capped] == ['A0', 'B0', 'C0', 'A1']
 
 
 def test_source_x_handle_only_when_unambiguous():
@@ -209,3 +212,29 @@ def test_stale_videos_are_refreshed_or_removed(monkeypatch, settings):
     kept.refresh_from_db()
     assert kept.title == 'Nowy tytuł' and not Article.objects.filter(pk=gone.pk).exists()
     assert Article.objects.get(pk=fresh.pk).title == 'Świeży'
+
+
+@pytest.mark.django_db
+def test_youtube_channel_named_like_top_media_is_not_top_media():
+    from news.portal import top_sources
+    from news.source_groups import TOP_MEDIA, portal_group
+    name = sorted(TOP_MEDIA)[0]
+    channel = Source.objects.create(name=name, url='https://www.youtube.com/channel/UCtop', is_active=True)
+    assert channel not in top_sources() and portal_group(channel) == 'media'
+
+
+@pytest.mark.django_db
+def test_top_media_channels_join_top_sources_by_id_only():
+    from news.portal import top_sources
+    from news.source_groups import portal_group
+    tvn = Source.objects.create(name='tvn24', url='https://www.youtube.com/channel/UC3R8278fJUWn2ysrOCJrmAQ', is_active=True)
+    fake = Source.objects.create(name='TVN24', url='https://www.youtube.com/channel/UCfake', is_active=True)
+    assert tvn in top_sources() and portal_group(tvn) == 'top'
+    assert fake not in top_sources() and portal_group(fake) == 'media'
+
+
+def test_mixed_channels_keep_only_public_affairs():
+    from news.youtube_collect import public_affairs
+    assert public_affairs('Tusk o budżecie na 2027 rok')
+    assert public_affairs('Gość Radia ZET: minister zdrowia')
+    assert not public_affairs('Najlepsze hity lata 2026 — składanka')

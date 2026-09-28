@@ -48,12 +48,20 @@ export type SpinClaim = {
 };
 
 export type SpinDetailData = SpinCardData & {
+  /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
+  x_share?: string[];
   analysis: string;
   techniques: Array<{ name: string; quote: string; explanation: string }>;
   claims: SpinClaim[];
   limitations: string;
   /** Synteza diagnozy do wątku na X (pusta, dopóki darmowy model jej nie przygotuje). */
   x_thread?: string[];
+  /** Konsylium Dr. Spina: członkowie (model, werdykt, siła), zgodność, przewodniczący, językoznawca, recenzja, docisk. */
+  council?: {
+    agreement: string; chair: string; linguist: string; escalated: boolean;
+    review: { ok: boolean | null; issues: string[]; model: string; revised?: boolean };
+    members: Array<{ model: string; verdict: string; intensity: number }>;
+  } | null;
   model: string;
   prompt_version: string;
   created_at: string;
@@ -94,6 +102,8 @@ export type ClinicPageData = {
   message_history: Record<Camp, DailyMessage[]>;
   columns: Record<Camp, SpinCardData[]>;
   accounts_count: number;
+  /** Liczniki pracy Kliniki: łącznie i dziś. */
+  stats?: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", { total: number; today: number }>;
 };
 
 export type ClinicAccount = {
@@ -121,6 +131,22 @@ export const getClinicSpins = (camp: Camp, page: number) =>
 export const getSpin = (id: number | string) => apiFetch<SpinDetailData>(`/api/clinic/spins/${id}/`);
 export const getClinicAccounts = () => apiFetch<{ results: ClinicAccount[] }>("/api/clinic/accounts/");
 
+/** Usunięte posty polityków — sam fakt (kto, kiedy, czy był spinem), bez treści (zasady X). */
+export type DeletedPost = {
+  author: SpinAuthor; camp: Camp; camp_label: string; published_at: string; unavailable_at: string;
+  verdict: Verdict | ""; verdict_label: string;
+  /** Godziny od publikacji do wykrycia usunięcia (górna granica — sprawdzamy co 3 godziny). */
+  hours_visible: number;
+  /** Kopia w Wayback Machine sprzed usunięcia (tylko link) albo "". */
+  archive_url: string;
+  archive_search_url: string;
+};
+export const getClinicDeleted = () =>
+  apiFetch<{
+    days: number; items: DeletedPost[]; week_by_camp: Partial<Record<Camp, number>>;
+    top_deleters: Array<{ author: SpinAuthor; count: number }>;
+  }>("/api/clinic/deleted/");
+
 export type FlaggedPost = { id: number; score: number | null; reason: string; screened_by: string; camp_label: string; author: SpinAuthor; post: { url: string; text: string; published_at: string } };
 
 export type ClinicQueue = {
@@ -131,6 +157,9 @@ export type ClinicQueue = {
   counts: { pending: number; flagged: number; queued: number; diagnosed_today: number; daily_limit: number; approved: number; rejected: number; not_applicable: number; failed: Record<string, number>; suggestions: number };
 };
 export const getClinicQueue = () => apiFetch<ClinicQueue>("/api/staff/clinic/queue/");
+/** Newsletter: liczba zapisów (tylko dla zespołu). */
+export type NewsletterStats = { confirmed: number; pending: number; unsubscribed: number; confirmed_last_7_days: number; smtp_ready: boolean; daily: Array<{ day: string; confirmed: number }> };
+export const getNewsletterStats = () => apiFetch<NewsletterStats>("/api/staff/newsletter/");
 export const reviewSpin = (id: number, decision: "approve" | "reject") =>
   apiWrite(`/api/staff/clinic/diagnoses/${id}/review/`, { decision });
 export const decideFlag = (id: number, decision: "investigate" | "dismiss") =>

@@ -464,18 +464,40 @@ def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
         'ddddddddddd': ('Żurek broni Wałęsy — komentarz Mazurka', 'PT20M', 500000),  # klasyfikator: monolog
     }
 
+    searches = []
+
     def fake_yt(path, **params):
-        if path == 'channels':
+        if path == 'channels' and 'forHandle' in params:
             return {'items': [{'id': 'UC1'}]}
-        if path == 'search':
-            return {'items': [{'id': {'videoId': vid}, 'snippet': {'title': title, 'description': 'rozmowa', 'channelTitle': 'Kanał'}}
-                              for vid, (title, _, _) in videos.items()]}
+        if path == 'channels':  # liczby subskrypcji kanałów spoza listy
+            return {'items': [{'id': 'UCbig', 'statistics': {'subscriberCount': '900000'}},
+                              {'id': 'UCsmall', 'statistics': {'subscriberCount': '800'}}]}
+        if path == 'search':  # dwa zapytania po całym YouTube — nie więcej (osobny, mały limit dzienny)
+            searches.append(params['q'])
+            return {'items': [
+                {'id': {'videoId': 'eeeeeeeeeee'}, 'snippet': {'title': 'Wywiad: Kaczyński o wyborach', 'description': 'rozmowa',
+                                                               'channelTitle': 'Duży podcast', 'channelId': 'UCbig'}},
+                {'id': {'videoId': 'fffffffffff'}, 'snippet': {'title': 'Wywiad: Tusk PRZERÓBKA', 'description': 'rozmowa',
+                                                               'channelTitle': 'Mały kanał', 'channelId': 'UCsmall'}}]}
+        if path == 'playlistItems':
+            yesterday = (timezone.localtime() - timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
+            old = yesterday - timedelta(days=3)
+            return {'items': [{'contentDetails': {'videoId': vid, 'videoPublishedAt': yesterday.isoformat()},
+                               'snippet': {'title': title, 'description': 'rozmowa', 'channelTitle': 'Kanał'}}
+                              for vid, (title, _, _) in videos.items()]
+                             + [{'contentDetails': {'videoId': 'zzzzzzzzzzz', 'videoPublishedAt': old.isoformat()},
+                                 'snippet': {'title': 'Stary wywiad: premier Tusk', 'description': 'rozmowa', 'channelTitle': 'Kanał'}}]}
+        catalog = {**videos, 'eeeeeeeeeee': ('Wywiad: Kaczyński o wyborach', 'PT40M', 50000),
+                   'fffffffffff': ('Wywiad: Tusk PRZERÓBKA', 'PT40M', 5000000)}
         return {'items': [{'id': vid, 'contentDetails': {'duration': duration}, 'statistics': {'viewCount': str(views)}}
-                          for vid, (_, duration, views) in videos.items() if vid in params['id']]}
+                          for vid, (_, duration, views) in catalog.items() if vid in params['id']]}
     monkeypatch.setattr(clinic_interview, '_yt', fake_yt)
     monkeypatch.setattr(clinic_interview, 'looks_like_interview', lambda title, description, channel: ('Mazurka' not in title, ''))
     result = clinic_interview.pick_yesterday()
     assert result['status'] == 'queued' and 'Tusk' in result['title'] and result['top_politician']
+    assert 'PRZERÓBKA' not in result['title'] and len(searches) == 2  # mały kanał spoza listy odpada mimo wyświetleń
+    ranked_ids = [row['video_id'] for row in clinic_interview.rank_interviews(timezone.localdate() - timedelta(days=1))]
+    assert 'eeeeeeeeeee' in ranked_ids and 'fffffffffff' not in ranked_ids
     assert clinic_interview.pick_yesterday()['status'] == 'already_chosen'
 
 
@@ -519,3 +541,182 @@ def test_x_thread_synthesis_is_saved_once_and_rejects_english(ai_on, monkeypatch
     assert diagnosis.x_thread[0] == 'Wpis przypisuje rządowi intencje bez dowodu.' and len(diagnosis.x_thread) == 3
     assert diagnosis.verdict == 'spin' and diagnosis.intensity == 70  # synteza nie zmienia diagnozy
     assert clinic.ensure_x_thread(diagnosis) is False  # tylko raz
+
+
+def test_silent_classifier_is_not_a_rejection(monkeypatch):
+    from news import clinic_interview
+    monkeypatch.setattr(clinic_interview, 'CLASSIFY_RETRIES', (0, 0))
+    calls = []
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **k: calls.append(1) or (_ for _ in ()).throw(clinic_ai.ClinicAIError('rate')))
+    ok, reason = clinic_interview.looks_like_interview('Błaszczak: Tusk łata dziurę | Gość Dzisiaj', '', 'Republika')
+    assert ok is None and len(calls) == 2  # ponowiona próba, potem „nie wiem”, a nie „nie”
+    assert clinic_interview.talk_signal('Błaszczak: Tusk łata dziurę | Gość Dzisiaj', '')
+    assert not clinic_interview.talk_signal('Dzisiaj Informacje 26.09.2026', 'serwis informacyjny')
+    assert clinic_interview.talk_signal('Szydło: Nie mieści mi się w głowie, że służby do tego dopuściły', '')
+    # „Major wywiadu” (służby), rozmowa z ekspertem — bez polityka w tytule i bez słowa „wywiad” jako całego wyrazu.
+    assert not clinic_interview.talk_signal('Fortu Trump nie będzie. Major wywiadu Robert Cheda i Jan Piński', 'rozmowa')
+
+
+@pytest.mark.django_db
+def test_deleted_posts_keep_the_fact_but_not_the_text(ai_on, monkeypatch):
+    from news import deleted_posts
+    acc = account()
+    kept, gone = post(acc, post_id='9601'), post(acc, post_id='9602')
+    status = {kept.url: 200, gone.url: 404}
+    monkeypatch.setattr(deleted_posts.requests, 'get', lambda url, params, timeout, headers: SimpleNamespace(status_code=status[params['url']]))
+    monkeypatch.setattr(deleted_posts, 'find_archive', lambda url, before: 'https://web.archive.org/web/20260920/' + url)
+    assert deleted_posts.check_batch(pause=0) == {'checked': 2, 'deleted': 1, 'archived': 0}
+    gone.refresh_from_db(); kept.refresh_from_db()
+    assert not gone.available and gone.text == '' and gone.unavailable_at  # zasady X: treść usuniętego wpisu znika
+    assert gone.archive_url.startswith('https://web.archive.org/')  # zostaje tylko link do publicznej kopii
+    assert kept.available and kept.availability_checked_at
+    data = APIClient().get('/api/clinic/deleted/').json()
+    assert len(data['items']) == 1 and data['items'][0]['author']['handle'] == acc.handle and 'text' not in data['items'][0]
+    assert data['week_by_camp'] == {'opposition': 1}
+
+
+@pytest.mark.django_db
+def test_weekly_report_collects_the_week_without_paid_models(ai_on, monkeypatch):
+    from news import weekly_report
+    monkeypatch.setenv('CLINIC_AUTO_PUBLISH', 'true')
+    post(account())
+    pipeline()
+    monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **k: ({'summary': 'W tym tygodniu Dr. Spin ocenił jeden post opozycji, w którym użyto fałszywej alternatywy.'}, 'm'))
+    report = weekly_report.generate()
+    assert report.summary.startswith('W tym tygodniu') and report.data['diagnoses'] == {'government': 0, 'opposition': 1}
+    assert report.data['techniques']['opposition'][0]['name'] == 'fałszywa alternatywa'
+    data = APIClient().get('/api/clinic/report/').json()
+    assert data['report']['week_end'] == str(report.week_end) and data['archive'][0]['week_end'] == str(report.week_end)
+    assert APIClient().get('/api/clinic/report/nie-data/').status_code == 404
+
+
+def test_gemini_diagnosis_keeps_only_sources_found_by_google(monkeypatch):
+    import json as _json
+    monkeypatch.setenv('CLINIC_PROVIDER', 'gemini')
+    monkeypatch.setenv('GEMINI_API_KEY', 'g')
+    answer = {'verdict': 'spin', 'intensity': 60, 'headline': 'H', 'summary': 'S', 'analysis': 'A', 'limitations': '',
+              'techniques': [{'name': 'fałszywa alternatywa', 'quote': 'Tylko my obronimy Polaków!', 'explanation': 'e'}],
+              'claims': [{'claim': 'Podatki wzrosły o 50%', 'assessment': 'contradicted', 'explanation': 'e',
+                          'sources': [{'url': 'https://www.gus.gov.pl/inny-adres', 'title': 'GUS'},
+                                      {'url': 'https://zmyslone.example/x', 'title': 'X'}]}]}
+    payload = {'candidates': [{'content': {'parts': [{'text': '```json\n' + _json.dumps(answer) + '\n```'}]}, 'finishReason': 'STOP',
+                               'groundingMetadata': {'webSearchQueries': ['podatki 2026'],
+                                                     'groundingChunks': [{'web': {'uri': 'https://redirect.example/abc', 'title': 'gus.gov.pl'}}]}}],
+               'usageMetadata': {'promptTokenCount': 1000, 'candidatesTokenCount': 500}}
+    monkeypatch.setattr(clinic_ai.requests, 'post', lambda *a, **k: SimpleNamespace(status_code=200, json=lambda: payload, text=''))
+    monkeypatch.setattr(clinic_ai.requests, 'head', lambda *a, **k: SimpleNamespace(headers={'Location': 'https://gus.gov.pl/dane'}))
+    result = clinic_ai.diagnose({'author': 'A', 'camp_label': 'Opozycja', 'published_at': '2026-09-27', 'url': 'u', 'text': POST_TEXT})
+    sources = [s['url'] for s in result['claims'][0]['sources']]
+    assert sources == ['https://gus.gov.pl/dane']  # ta sama domena → adres z wyników; zmyślona strona odpada
+    assert result['usage']['model'].startswith('gemini') and 0 < clinic_ai.cost_usd(result['usage']) < 0.1
+
+
+def test_council_combines_independent_opinions_by_fixed_rules():
+    from news import clinic_council as c
+    text = 'Rząd nie jest zainteresowany obniżką cen paliw, bo zarabia na wysokich cenach.'
+    quote = 'Rząd nie jest zainteresowany obniżką cen paliw'
+    opinions = [
+        {'model': 'a', 'verdict': 'spin', 'intensity': 70, 'techniques': [{'id': 'przypisywanie_intencji', 'quote': quote, 'explanation': 'e'}], 'claims': []},
+        {'model': 'b', 'verdict': 'spin', 'intensity': 85, 'techniques': [{'id': 'przypisywanie_intencji', 'quote': quote, 'explanation': 'e'},
+                                                                           {'id': 'straszenie', 'quote': quote, 'explanation': 'e'}], 'claims': []},
+        {'model': 'c', 'verdict': 'partial', 'intensity': 60, 'techniques': [], 'claims': []},
+    ]
+    combined = c.combine(opinions)
+    assert combined['verdict'] == 'spin' and combined['intensity'] == 70 and combined['agreement'] == '2/3'
+    assert [t['name'] for t in combined['techniques']] == ['Przypisywanie intencji']  # straszenie: tylko jeden głos — odpada
+
+
+@pytest.mark.django_db
+def test_council_diagnosis_end_to_end_with_review_and_linguist(monkeypatch):
+    from news import clinic_council as c
+    monkeypatch.setenv('GROQ_API_KEY', 'g'); monkeypatch.setenv('NIM_API_KEY', 'n'); monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    monkeypatch.setenv('CLINIC_COUNCIL', 'groq:m1,groq:m2,nim:m3')
+    quote = 'Tylko my obronimy Polaków!'
+    member = {'verdict': 'spin', 'intensity': 60, 'techniques': [{'id': 'falszywa_alternatywa', 'quote': quote, 'explanation': 'e'}],
+              'claims': ['Podatki wzrosły o 50 procent']}
+    def fake_ask(m, system, user, schema, max_tokens=3000):
+        if system == c.MEMBER_SYSTEM:
+            return member
+        if system == c.REVIEW_SYSTEM:
+            return {'ok': True, 'issues': []}
+        return {'headline': 'Wpis zestawia jedną partię z obroną Polaków', 'summary': 'Post buduje fałszywą alternatywę i nie podaje źródła liczby.',
+                'analysis': 'Autor przedstawia wybór między swoją partią a zagrożeniem, co zawęża możliwości do dwóch.', 'limitations': 'Brak źródeł do liczby.'}
+    monkeypatch.setattr(c, 'ask', fake_ask)
+    result = c.diagnose({'text': POST_TEXT}, POST_TEXT)
+    assert result['verdict'] == 'spin' and result['techniques'][0]['name'] == 'Fałszywa alternatywa'
+    assert result['claims'][0]['assessment'] == 'unverified'  # bez Gemini — bez udawanych źródeł
+    assert result['usage']['council']['agreement'] == '3/3' and result['usage']['council']['review']['ok'] is True
+    assert result['usage']['model'].startswith('konsylium')
+
+
+@pytest.mark.django_db
+def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
+    from types import SimpleNamespace
+    from news import x_publish
+    from news.x_share import weight
+    acc = account()
+    row = SpinDiagnosis.objects.create(post=post(acc), status='approved', verdict='spin', intensity=82, headline='Teza bez dowodu',
+                                       summary='Krótko.', techniques=[{'name': 'Fałszywa alternatywa', 'quote': 'Tylko my', 'explanation': '…'}],
+                                       claims=[{'claim': 'Bezrobocie spadło', 'assessment': 'misleading', 'explanation': 'Spadało wcześniej.',
+                                                'sources': [{'url': 'https://stat.gov.pl/a', 'title': 'GUS'}]}],
+                                       diagnosed_at=timezone.now())
+    thread = clinic.detail_data(row)['x_share']
+    assert len(thread) == 1 and weight(thread[0]) <= 280  # jeden wpis
+    assert thread[0].startswith('Dr. Spin (AI) ocenia wpis @posel_test na 82/100') and 'fałszywa alternatywa' in thread[0]
+    assert 'https://stat.gov.pl/a' in thread[0] and thread[0].endswith(row.post.url)  # źródło i cytowany wpis
+
+    assert x_publish.run() == {'status': 'disabled'}  # bez kluczy i przełącznika — nic nie wysyłamy
+    for key in x_publish.KEYS:
+        monkeypatch.setenv(key, 'test-key-0123456789')
+    monkeypatch.setenv('X_POST_ENABLED', 'true')
+    sent, uploads = [], []
+    monkeypatch.setattr(x_publish, 'polish', lambda text: text)  # redaktor polszczyzny (darmowy model) — poza testem
+
+    def fake_post(url, headers, timeout, json=None, files=None, data=None):
+        assert headers['Authorization'].startswith('OAuth ') and 'oauth_signature=' in headers['Authorization']
+        if url == x_publish.MEDIA:
+            uploads.append(files['media'][1][:8])
+            return SimpleNamespace(status_code=200, json=lambda: {'data': {'id': 'm1'}}, text='')
+        sent.append(json)
+        return SimpleNamespace(status_code=201, json=lambda: {'data': {'id': str(len(sent))}}, text='')
+
+    monkeypatch.setattr(x_publish.requests, 'post', fake_post)
+    result = x_publish.run()
+    assert result['results'] == [{'id': row.pk, 'posted': True}]
+    assert uploads == [bytes([0x89]) + b'PNG' + bytes([13, 10, 26, 10])]  # obrazek PNG z wpisem polityka
+    body = sent[0]
+    assert len(sent) == 1 and body['media'] == {'media_ids': ['m1']} and weight(body['text']) <= 280
+    assert '@posel_test' not in body['text'] and 'x.com/' not in body['text']  # bez oznaczenia i bez linku do polityka
+    row.refresh_from_db()
+    assert row.x_posted_ids == ['1'] and row.x_posted_at
+    assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz
+
+    # Autor usuwa wpis — usuwamy też nasz (zasady X).
+    deleted = []
+    monkeypatch.setattr(x_publish.requests, 'delete', lambda url, headers, timeout: deleted.append(url) or SimpleNamespace(status_code=200, text=''))
+    from news import deleted_posts
+    deleted_posts.mark_deleted(row.post)
+    row.refresh_from_db()
+    assert deleted == [f'{x_publish.TWEETS}/1'] and row.x_posted_ids == []
+
+
+@pytest.mark.django_db
+def test_x_publish_failure_sends_one_alert(monkeypatch):
+    from types import SimpleNamespace
+    from django.core.cache import cache
+    from news import x_publish
+    cache.delete('x-publish-alert')
+    acc = account()
+    row = SpinDiagnosis.objects.create(post=post(acc), status='approved', verdict='spin', intensity=90, headline='Teza',
+                                       summary='Krótko.', diagnosed_at=timezone.now())
+    for key in x_publish.KEYS:
+        monkeypatch.setenv(key, 'test-key-0123456789')
+    monkeypatch.setenv('X_POST_ENABLED', 'true')
+    monkeypatch.setattr(x_publish, 'polish', lambda text: text)
+    monkeypatch.setattr(x_publish.requests, 'post', lambda *a, **k: SimpleNamespace(status_code=403, text='forbidden', json=lambda: {}))
+    alerts = []
+    monkeypatch.setattr(x_publish, 'alert', lambda diagnosis_id, error: alerts.append((diagnosis_id, error)) or 'sent')
+    result = x_publish.run()
+    assert result['results'][0]['posted'] is False and alerts and alerts[0][0] == row.pk and '403' in alerts[0][1]
+    row.refresh_from_db()
+    assert row.x_posted_at is None  # nieopublikowany — kolejna próba przy następnym przebiegu

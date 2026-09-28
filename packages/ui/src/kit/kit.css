@@ -4165,3 +4165,330 @@ html, body { overflow-x: clip; }
 /* Klinika: panel spinu dnia z nagłówkiem jak na głównej — mniejszy odstęp od górnej krawędzi. */
 @media (min-width: 761px) { .sc-clinic > .sc-clinic-sotd:has(.sc-spin-switch__bar) { padding-top: var(--sc-s-4); } }
 .sc-clinic-sotd .sc-spin-switch__bar .sc-home-section__title { margin: 0; }
+
+/* Klinika: „Waga spinu” wyśrodkowana; miniatury diagnoz równo z lewą krawędzią kolumny (pod „Rządzący”). */
+.sc-clinic-group > .sc-scale .sc-scale__title { text-align: center; }
+.sc-clinic-group .sc-clinic-column__list .sc-spin-row { padding-left: 0; }
+
+/* O nas: technologia w zwijanej sekcji „dla dociekliwych”; pozycje planowane w zasadach z etykietą stanu. */
+.sc-onas-tech { margin-top: var(--sc-s-3); }
+.sc-onas-tech > summary { cursor: pointer; color: var(--sc-accent); font-size: var(--sc-t-body-s-size); font-weight: 600; list-style: none; }
+.sc-onas-tech > summary::-webkit-details-marker { display: none; }
+.sc-onas-tech > summary::after { content: " ↓"; }
+.sc-onas-tech[open] > summary::after { content: " ↑"; }
+.sc-onas-tech > .sc-onas-stack { margin-top: var(--sc-s-3); }
+.sc-onas-planned .sc-onas-tag { margin-right: var(--sc-s-1); vertical-align: middle; }
+
+/* Wsparcie: jawny cel miesięczny z paskiem postępu. */
+.sc-support-goal { display: grid; gap: var(--sc-s-2); }
+.sc-support-goal__bar { height: 12px; border-radius: 999px; background: var(--sc-surface-2); box-shadow: var(--sc-panel-ring); overflow: hidden; }
+.sc-support-goal__bar > span { display: block; height: 100%; border-radius: inherit; background: var(--sc-accent); }
+.sc-support-goal p { margin: 0; color: var(--sc-text-2); font-variant-numeric: tabular-nums; }
+.sc-support-goal strong { color: var(--sc-text); }
+
+/* Klinika: strażnica usuniętych postów (bez treści wpisów). */
+.sc-deleted { display: grid; gap: var(--sc-s-4); padding: var(--sc-panel-pad); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-deleted__head { display: grid; gap: var(--sc-s-1); }
+.sc-deleted__head h2 { margin: 0; font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+.sc-deleted__head p:not(.sc-clinic-kicker) { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-deleted__list { display: grid; gap: var(--sc-s-2); margin: 0; padding: 0; list-style: none; max-height: 420px; overflow-y: auto; scrollbar-width: thin; }
+.sc-deleted__list li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 10.5rem 8.5rem; align-items: center; gap: var(--sc-s-4); padding: var(--sc-s-2) var(--sc-s-3); border-radius: var(--sc-r-lg); box-shadow: var(--sc-panel-ring); }
+.sc-deleted__who { display: grid; min-width: 0; font-weight: 600; }
+.sc-deleted__who a { color: var(--sc-text); text-decoration: none; }
+.sc-deleted__who small, .sc-deleted__when, .sc-deleted__none { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-weight: 400; }
+.sc-deleted__top { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-deleted__top a { color: var(--sc-text); font-weight: 600; text-decoration: none; }
+.sc-deleted__archive a { color: var(--sc-accent, #3b82f6); font-size: var(--sc-t-caption-size); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sc-deleted__archive a.sc-deleted__search { color: var(--sc-text-3); font-weight: 400; }
+@media (max-width: 640px) { .sc-deleted__list li { grid-template-columns: minmax(0, 1fr) auto; } .sc-deleted__when { grid-column: 1 / -1; } }
+
+/* Raport tygodnia Dr. Spina. */
+.sc-report-page { width: min(100% - 2 * var(--sc-gutter, 16px), 1180px); margin: var(--sc-s-6) auto var(--sc-s-8); }
+.sc-report { display: grid; gap: var(--sc-s-5); }
+.sc-report__head { display: grid; gap: var(--sc-s-3); justify-items: start; }
+.sc-report__head h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); line-height: 1.15; font-weight: var(--sc-w-title); }
+.sc-report__summary { margin: 0; max-width: 75ch; color: var(--sc-text-2); font-size: var(--sc-t-body-l-size, 18px); line-height: 1.6; }
+.sc-report__share { border: 0; background: none; padding: 0; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
+.sc-report__panel { display: grid; gap: var(--sc-s-4); padding: var(--sc-panel-pad); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-report__panel > .sc-scale { padding: 0; box-shadow: none; background: none; }
+.sc-report__title { margin: 0; font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+.sc-report__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s-6); }
+.sc-report__cols h3 { margin: 0 0 var(--sc-s-2); font-size: var(--sc-t-body-l-size, 18px); }
+.sc-report__cols h3 span, .sc-report__cols li span, .sc-report__note, .sc-report__interviews small, .sc-report__interviews li > span { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-weight: 400; }
+.sc-report__cols ol { display: grid; gap: var(--sc-s-1); margin: 0; padding-left: 1.2em; }
+.sc-report__deleted { display: flex; gap: var(--sc-s-6); margin: 0; font-size: var(--sc-t-body-l-size, 18px); }
+.sc-report__note { margin: 0; }
+.sc-report__interviews { display: grid; gap: var(--sc-s-2); margin: 0; padding: 0; list-style: none; }
+.sc-report__interviews li > span { margin-right: var(--sc-s-2); }
+.sc-report__archive ul { display: flex; flex-wrap: wrap; gap: var(--sc-s-2) var(--sc-s-4); margin: var(--sc-s-2) 0 0; padding: 0; list-style: none; }
+.sc-report__archive a[aria-current="page"] { color: var(--sc-text); font-weight: 600; }
+@media (max-width: 760px) { .sc-report__cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* O nas: „Czym nie jesteśmy” — trzy punkty w trzech równych kolumnach (na telefonie jeden pod drugim). */
+.sc-onas-terms--three { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
+@media (max-width: 900px) { .sc-onas-terms--three { grid-template-columns: minmax(0, 1fr); } }
+
+/* O nas: tekst ciągły wyjustowany z polskim dzieleniem wyrazów (bez „dziur” między słowami); tytuły bez zmian.
+   Na telefonie wąska kolumna — zostaje wyrównanie do lewej. */
+@media (min-width: 761px) {
+  .sc-onas-prose p, .sc-onas-hero__after { text-align: justify; hyphens: auto; -webkit-hyphens: auto; hyphenate-limit-chars: 7 3 3; }
+}
+
+/* Źródła: znaczki kanałów — pełny: mamy (zgoda / dane publiczne, YouTube, X); przygaszony: czekamy. */
+.sc-source-chips { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.sc-source-chip { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; box-shadow: var(--sc-panel-ring);
+  color: var(--sc-text-3); font-size: 11px; font-weight: 600; letter-spacing: .02em; text-decoration: none; white-space: nowrap; }
+.sc-source-chip.is-on { color: var(--sc-accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--sc-accent) 55%, transparent); }
+a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, transparent); }
+.sc-source-legend { display: flex; flex-wrap: wrap; gap: var(--sc-s-2) var(--sc-s-5); margin: 0; padding: 0; list-style: none; color: var(--sc-text-2); font-size: var(--sc-t-caption-size); }
+.sc-source-legend li { display: flex; align-items: center; gap: 6px; }
+
+/* Wsparcie: przyciski wpłat z oddechem od tekstu nad nimi (bliżej środka między sekcjami). */
+.sc-info-page .sc-info-page__actions { margin-top: var(--sc-s-4); }
+
+/* Konsylium Dr. Spina przy diagnozie. */
+.sc-council { display: grid; gap: var(--sc-s-2); padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-lg); box-shadow: var(--sc-panel-ring); font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-council__title { margin: 0; color: var(--sc-text); font-weight: 600; }
+.sc-council ul { display: flex; flex-wrap: wrap; gap: var(--sc-s-1) var(--sc-s-4); margin: 0; padding: 0; list-style: none; }
+.sc-council strong { color: var(--sc-text); font-weight: 600; }
+.sc-council__roles { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+
+/* Archiwum wywiadów: licznik siły (i etykieta od progu) po lewej stronie nagłówka. */
+.sc-interview-archive__row { grid-template-columns: 9.5rem minmax(9rem, 13rem) auto minmax(0, 1fr); }
+.sc-interview-archive__score { display: inline-flex; align-items: center; gap: var(--sc-s-2); white-space: nowrap; }
+@media (max-width: 760px) { .sc-interview-archive__row { grid-template-columns: minmax(0, 1fr) auto; } .sc-interview-archive__score { justify-self: end; } }
+
+/* Spin dnia: zdjęcia z posta pod jego treścią (do dwóch), w tej samej kolumnie. */
+.sc-clinic-sotd__quote { display: grid; gap: var(--sc-s-3); align-content: start; min-width: 0; }
+.sc-clinic-sotd__media { display: grid; grid-template-columns: 1fr; gap: var(--sc-s-2); border-radius: var(--sc-r-lg); overflow: hidden; }
+.sc-clinic-sotd__media[data-count="2"] { grid-template-columns: 1fr 1fr; }
+.sc-clinic-sotd__media img { width: 100%; max-height: 260px; object-fit: cover; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); }
+@media (min-width: 901px) { .sc-clinic-sotd__post > .sc-clinic-sotd__quote { grid-row: 3; align-self: start; } }
+
+/* O nas: pięć kroków diagnozy (strażnik → konsylium → fakty i recenzja → publikacja → wątek na X). */
+@media (min-width: 761px) { .sc-onas-flow { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); } }
+
+/* O nas — śródtytuł w sekcji (np. „Jak konsylium łączy głosy”) */
+.sc-onas-subtitle { margin: var(--sc-s-5) 0 var(--sc-s-2); color: var(--sc-text); font-size: var(--sc-t-title-s-size); line-height: var(--sc-t-title-s-lh); font-weight: var(--sc-w-title); }
+
+/* Klinika — liczniki pracy nad wagą (łącznie i dziś) */
+.sc-clinic-stats ul { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sc-s-2); margin: 0; padding: 0; list-style: none; }
+.sc-clinic-stats li { display: grid; gap: 2px; justify-items: center; padding: var(--sc-s-3) var(--sc-s-2); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); text-align: center; }
+.sc-clinic-stats strong { color: var(--sc-text); font-size: var(--sc-t-title-m-size); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.sc-clinic-stats span { color: var(--sc-text-2); font-size: var(--sc-t-caption-size); }
+.sc-clinic-stats small { color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 600; }
+@media (max-width: 760px) { .sc-clinic-stats ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sc-clinic-stats li:last-child { grid-column: 1 / -1; } }
+
+/* Newsletter — zapis na powiadomienie o starcie */
+.sc-newsletter { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: var(--sc-s-6); padding: var(--sc-s-6); border-radius: var(--sc-r-xl); background: linear-gradient(135deg, var(--sc-accent-soft), var(--sc-surface) 70%); box-shadow: var(--sc-panel-ring); }
+.sc-newsletter__text { display: grid; gap: var(--sc-s-1); }
+.sc-newsletter__text h2 { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-m-size); font-weight: var(--sc-w-title); }
+.sc-newsletter__text p:last-child { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-newsletter__form { display: grid; gap: var(--sc-s-2); }
+.sc-newsletter__row { display: flex; gap: var(--sc-s-2); }
+.sc-newsletter__row input { flex: 1; min-width: 0; padding: 10px 14px; border: 1px solid var(--sc-border, rgba(255,255,255,.14)); border-radius: var(--sc-r-lg); background: var(--sc-bg, transparent); color: var(--sc-text); font: inherit; }
+.sc-newsletter__row input:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 1px; }
+.sc-newsletter__row button { flex: none; padding: 10px 18px; border: 0; border-radius: var(--sc-r-lg); background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); font: inherit; font-weight: 600; cursor: pointer; }
+.sc-newsletter__row button:hover { background: var(--sc-primary-hover, var(--sc-accent-hover)); }
+.sc-newsletter__row button:disabled { opacity: .6; cursor: wait; }
+.sc-newsletter__consent { display: flex; gap: var(--sc-s-2); align-items: flex-start; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); line-height: 1.45; cursor: pointer; }
+.sc-newsletter__consent input { margin-top: 2px; flex: none; }
+.sc-newsletter__consent a { color: var(--sc-text-2); }
+.sc-newsletter__trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.sc-newsletter__error { margin: 0; color: var(--sc-danger, #ff6b6b); font-size: var(--sc-t-body-s-size); }
+.sc-newsletter__done { margin: 0; color: var(--sc-text); font-weight: 600; }
+@media (max-width: 760px) { .sc-newsletter { grid-template-columns: minmax(0, 1fr); gap: var(--sc-s-4); padding: var(--sc-s-5); } .sc-newsletter__row { flex-direction: column; } }
+
+/* O nas — ilustracja: autoryzowana nitka kontekstowa jako poziomy pasek boxów (dla redakcji) */
+.sc-ctx { display: grid; gap: var(--sc-s-4); margin: var(--sc-s-5) 0; scroll-margin-top: 96px; }
+.sc-ctx__lead { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); max-width: 60rem; }
+.sc-ctx__strip-wrap { display: grid; gap: var(--sc-s-2); margin: 0; min-width: 0; }
+.sc-ctx__strip { display: flex; gap: var(--sc-s-3); margin: 0; padding: var(--sc-s-2) 2px var(--sc-s-3); list-style: none; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.sc-ctx__box { position: relative; flex: 0 0 210px; display: grid; align-content: start; gap: 6px; padding: var(--sc-s-3); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); scroll-snap-align: start; font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-ctx__box + .sc-ctx__box::before, .sc-ctx__more::before { content: "→"; position: absolute; left: -15px; top: 50%; transform: translateY(-50%); color: var(--sc-accent); font-weight: 700; font-size: 13px; }
+.sc-ctx__box[data-opening] { flex-basis: 250px; background: linear-gradient(160deg, var(--sc-accent-soft), var(--sc-surface) 70%); box-shadow: 0 0 0 2px var(--sc-accent); }
+.sc-ctx__badge { justify-self: start; padding: 1px 8px; border-radius: 999px; background: var(--sc-accent); color: #fff; font-size: var(--sc-t-caption-size); font-weight: 700; }
+.sc-ctx__num { justify-self: start; min-width: 22px; height: 22px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--sc-surface-2); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-weight: 700; }
+.sc-ctx__thumb { display: block; aspect-ratio: 16 / 9; border-radius: var(--sc-r-lg); background: linear-gradient(135deg, var(--sc-surface-2), var(--sc-accent-soft)); }
+.sc-ctx__kind { color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.sc-ctx__box strong { color: var(--sc-text); line-height: 1.3; }
+.sc-ctx__box small, .sc-ctx__caption { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-ctx__caption { margin: 0; }
+.sc-ctx__more { position: relative; flex: 0 0 120px; display: grid; place-items: center; border-radius: var(--sc-r-xl); border: 2px dashed var(--sc-border, rgba(255,255,255,.18)); color: var(--sc-text-3); font-size: var(--sc-t-body-s-size); font-weight: 600; text-align: center; }
+.sc-ctx__recipe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sc-s-3); margin: 0; }
+.sc-ctx__recipe div { padding: var(--sc-s-3); border-radius: var(--sc-r-lg); box-shadow: var(--sc-panel-ring); }
+.sc-ctx__recipe dt { color: var(--sc-text); font-weight: 700; }
+.sc-ctx__recipe dd { margin: 2px 0 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+@media (max-width: 860px) { .sc-ctx__recipe { grid-template-columns: minmax(0, 1fr); } }
+
+.sc-clinic-journalists p a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+.sc-clinic-journalists p a:hover { text-decoration: underline; }
+
+/* Profil osoby — „Występuje w podmiotach” (KRS) i drzewko kariery publicznej */
+.sc-public-figure-entities { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--sc-s-2); margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-public-figure-entities small { color: var(--sc-text-3); }
+.sc-entities { display: grid; gap: 2px; border-radius: var(--sc-r-lg); overflow: hidden; box-shadow: var(--sc-panel-ring); }
+.sc-entities__row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr) minmax(0, 1.2fr) 7rem minmax(0, 1.3fr); gap: var(--sc-s-3); align-items: center; padding: var(--sc-s-3) var(--sc-s-4); background: var(--sc-surface-2); font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-entities__head { background: var(--sc-surface); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); text-transform: uppercase; letter-spacing: .05em; }
+.sc-entities__row[data-status="former"] { opacity: .78; }
+.sc-entities__name { display: grid; gap: 2px; }
+.sc-entities__name strong { color: var(--sc-text); }
+.sc-entities__name small, .sc-entities__row small { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-entities__period { font-variant-numeric: tabular-nums; color: var(--sc-text); }
+.sc-entities__proof { display: grid; gap: 2px; font-size: var(--sc-t-caption-size); }
+@media (max-width: 860px) {
+  .sc-entities__head { display: none; }
+  .sc-entities__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .sc-entities__name, .sc-entities__proof { grid-column: 1 / -1; }
+}
+.sc-career { display: grid; gap: var(--sc-s-2); margin-top: var(--sc-s-6); }
+.sc-career h3 { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-s-size); font-weight: var(--sc-w-title); }
+.sc-career__lead { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-career__tree { position: relative; display: grid; gap: var(--sc-s-3); margin: var(--sc-s-2) 0 0; padding: 0 0 0 26px; list-style: none; }
+.sc-career__tree::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--sc-border, rgba(255,255,255,.14)); }
+.sc-career__tree > li { position: relative; display: grid; gap: 2px; padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-lg); background: var(--sc-surface-2); font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-career__tree > li::before { content: ""; position: absolute; left: -24px; top: 16px; width: 12px; height: 12px; border-radius: 50%; background: var(--sc-surface); border: 2px solid var(--sc-text-3); }
+.sc-career__tree > li[data-status="current"]::before { background: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-career__tree > li[data-sector="state"]::before, .sc-career__tree > li[data-sector="municipal"]::before { border-color: #ff9f43; }
+.sc-career__tree > li[data-sector="state"][data-status="current"]::before, .sc-career__tree > li[data-sector="municipal"][data-status="current"]::before { background: #ff9f43; }
+.sc-career__tree strong { color: var(--sc-text); }
+.sc-career__period { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-variant-numeric: tabular-nums; }
+.sc-career__org small { color: #ff9f43; font-weight: 600; }
+
+/* Strona główna — zaproszenie dla dziennikarzy z przykładową nitką i podglądem wątku na X */
+.sc-invite { display: grid; gap: var(--sc-s-5); padding: var(--sc-s-6); border-radius: var(--sc-r-xl); background: linear-gradient(135deg, var(--sc-accent-soft), var(--sc-surface) 55%); box-shadow: var(--sc-panel-ring); min-width: 0; }
+.sc-invite__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sc-s-4); }
+.sc-invite__head > div { display: grid; gap: var(--sc-s-2); max-width: 50rem; }
+.sc-invite__head h3 { margin: 0; color: var(--sc-text); font-size: var(--sc-t-title-m-size); line-height: var(--sc-t-title-m-lh); font-weight: var(--sc-w-title); }
+.sc-invite__head p { margin: 0; color: var(--sc-text-2); }
+.sc-invite__head a:not(.sc-onas-mail) { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+.sc-invite__cta { flex: none; }
+.sc-invite__below { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sc-s-5); align-items: start; }
+.sc-invite__steps { display: grid; gap: var(--sc-s-3); margin: 0; padding: 0; list-style: none; }
+.sc-invite__steps li { display: flex; gap: var(--sc-s-3); align-items: flex-start; }
+.sc-invite__steps li > span { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--sc-accent); color: #fff; font-weight: 700; font-size: var(--sc-t-caption-size); }
+.sc-invite__steps strong { color: var(--sc-text); }
+.sc-invite__steps p { margin: 2px 0 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-invite__x { display: grid; gap: var(--sc-s-2); }
+.sc-invite__xlabel { margin: 0; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.sc-xmock { position: relative; display: grid; gap: var(--sc-s-2); margin: 0; padding: 0 0 0 18px; list-style: none; }
+.sc-xmock::before { content: ""; position: absolute; left: 5px; top: 10px; bottom: 10px; width: 2px; background: var(--sc-border, rgba(255,255,255,.14)); }
+.sc-xmock > li { position: relative; display: grid; gap: 4px; padding: var(--sc-s-3); border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-xmock > li::before { content: ""; position: absolute; left: -17px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-text-3); }
+.sc-xmock p { margin: 0; }
+.sc-xmock strong { color: var(--sc-text); }
+.sc-xmock__n { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-variant-numeric: tabular-nums; }
+.sc-xmock__card { justify-self: start; padding: 4px 10px; border-radius: var(--sc-r-md, 8px); border: 1px solid var(--sc-border, rgba(255,255,255,.14)); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-xmock__more { background: transparent !important; box-shadow: none !important; color: var(--sc-text-3) !important; }
+@media (max-width: 860px) { .sc-invite { padding: var(--sc-s-5); } .sc-invite__below { grid-template-columns: minmax(0, 1fr); } }
+
+/* Profil osoby — metka partii, jeden pasek filtrów, wpisy X jako wiersze, kariera jak na LinkedIn */
+.sc-party-tag { display: inline-flex; align-items: center; margin-left: .45em; padding: .08em .5em; border-radius: 999px; background: var(--sc-accent-soft); color: var(--sc-accent); font-size: .38em; font-weight: 700; vertical-align: middle; }
+.sc-party-tag--small { margin-left: 6px; font-size: var(--sc-t-caption-size); padding: 0 7px; }
+.sc-pf-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px; border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-pf-bar .sc-public-figure-types { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; border: 0; background: transparent; }
+.sc-pf-bar .sc-public-figure-types button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--sc-text-2); font: inherit; font-size: var(--sc-t-body-s-size); cursor: pointer; box-shadow: none; }
+.sc-pf-bar .sc-public-figure-types button strong { color: var(--sc-text-3); font-weight: 600; }
+.sc-pf-bar .sc-public-figure-types button[aria-pressed="true"], .sc-pf-bar .sc-public-figure-types button[aria-pressed="true"] strong { background: var(--sc-accent-soft); color: var(--sc-accent); }
+.sc-pf-bar__selects { display: flex; flex-wrap: wrap; gap: 6px; }
+.sc-pf-bar__selects select { min-height: 34px; max-width: 14rem; padding: 0 12px; border: 1px solid var(--sc-line, rgba(255,255,255,.12)); border-radius: 999px; background: var(--sc-surface-2); color: var(--sc-text); font: inherit; font-size: var(--sc-t-body-s-size); }
+.sc-xrows { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sc-xrow { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px; border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); color: inherit; text-decoration: none; }
+.sc-xrow:hover { box-shadow: 0 0 0 1.5px var(--sc-accent); }
+.sc-xrow__avatar { position: relative; width: 56px; height: 56px; display: grid; place-items: center; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); color: var(--sc-text-2); font-weight: 700; }
+.sc-xrow__avatar small { position: absolute; left: 4px; bottom: 4px; padding: 0 5px; border-radius: 6px; background: rgba(0,0,0,.7); color: #fff; font-size: 10px; }
+.sc-xrow__body { display: grid; gap: 4px; min-width: 0; }
+.sc-xrow__text { color: var(--sc-text); font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-xrow__meta, .sc-xrow__open { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-career__groups { display: grid; gap: 12px; margin: 8px 0 0; padding: 0; list-style: none; }
+.sc-career__group { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; padding: 16px; border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-career__logo { width: 48px; height: 48px; display: grid; place-items: center; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); color: var(--sc-text-2); font-weight: 800; }
+.sc-career__group[data-status="current"] .sc-career__logo { background: var(--sc-accent-soft); color: var(--sc-accent); }
+.sc-career__group[data-sector="state"] .sc-career__logo { background: rgba(255,159,67,.16); color: #ff9f43; }
+.sc-career__main { display: grid; gap: 2px; min-width: 0; }
+.sc-career__main > strong { color: var(--sc-text); }
+.sc-career__org, .sc-career__span { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-career__roles { position: relative; display: grid; gap: 8px; margin: 8px 0 0; padding: 0 0 0 18px; list-style: none; }
+.sc-career__roles::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; background: var(--sc-line, rgba(255,255,255,.12)); }
+.sc-career__roles > li { position: relative; display: grid; gap: 1px; font-size: var(--sc-t-body-s-size); color: var(--sc-text-2); }
+.sc-career__roles > li::before { content: ""; position: absolute; left: -18px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-surface); border: 2px solid var(--sc-text-3); }
+.sc-career__roles > li[data-status="current"]::before { background: var(--sc-accent); border-color: var(--sc-accent); }
+.sc-career__when { color: var(--sc-text); font-weight: 600; }
+.sc-career__when small { color: var(--sc-text-3); font-weight: 400; }
+
+/* Wyszukiwarka — karta profilu, gdy hasło to osoba z rejestru; dni jako paski miniatur */
+.sc-figure-match { display: grid; gap: 2px; margin: 0 0 var(--sc-s-4); padding: var(--sc-s-4) var(--sc-s-5); border-radius: var(--sc-r-xl); background: linear-gradient(135deg, var(--sc-accent-soft), var(--sc-surface) 70%); box-shadow: 0 0 0 1.5px var(--sc-accent); color: var(--sc-text-2); text-decoration: none; }
+.sc-figure-match strong { color: var(--sc-text); font-size: var(--sc-t-title-m-size); }
+.sc-figure-match__kicker { color: var(--sc-accent); font-size: var(--sc-t-caption-size); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.sc-figure-match__cta { margin-top: 4px; color: var(--sc-accent); font-weight: 600; }
+.sc-search-day { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sc-s-2); margin-bottom: var(--sc-s-4); min-width: 0; }
+.sc-search-day__head { position: static; }
+/* Zaproszenie na głównej — mniejsze: kroki w jednej linii, węższe boxy przykładu */
+.sc-invite { gap: var(--sc-s-4); padding: var(--sc-s-5); }
+.sc-invite__steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sc-s-4); }
+.sc-invite__steps p { font-size: var(--sc-t-caption-size); }
+.sc-invite .sc-ctx__box { flex-basis: 170px; padding: var(--sc-s-2); gap: 4px; font-size: var(--sc-t-caption-size); }
+.sc-invite .sc-ctx__box[data-opening] { flex-basis: 200px; }
+.sc-invite .sc-ctx__thumb { aspect-ratio: 16 / 7; }
+.sc-invite .sc-ctx__more { flex-basis: 100px; }
+@media (max-width: 860px) { .sc-invite__steps { grid-template-columns: minmax(0, 1fr); } }
+.sc-spin-detail__intro { margin: -4px 0 var(--sc-s-3); color: var(--sc-text-3); font-size: var(--sc-t-body-s-size); }
+
+/* O nas — każda sekcja jako osobny, delikatnie obramowany panel (jak sekcje strony głównej) */
+.sc-onas-main { gap: var(--sc-s-5); }
+.sc-onas-section { padding: var(--sc-s-6); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-onas-section + .sc-onas-section { padding-top: var(--sc-s-6); border-top: 0; }
+@media (max-width: 640px) { .sc-onas-section { padding: var(--sc-s-4); } }
+/* Zakres dostępu wydawcy — zwykła lista w stylu strony zamiast bloku do kopiowania */
+.sc-onas-scope { display: grid; margin: 0; border-radius: var(--sc-r-lg); overflow: hidden; box-shadow: var(--sc-panel-ring); }
+.sc-onas-scope div { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--sc-s-3); padding: var(--sc-s-2) var(--sc-s-4); background: var(--sc-surface-2); }
+.sc-onas-scope div + div { border-top: 1px solid var(--sc-line, rgba(255,255,255,.08)); }
+.sc-onas-scope dt { color: var(--sc-text); font-weight: 600; }
+.sc-onas-scope dd { margin: 0; color: var(--sc-text-2); }
+@media (max-width: 640px) { .sc-onas-scope div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+/* Zaproszenie — mały przycisk w linii z tytułem */
+.sc-invite__head { align-items: flex-start; flex-wrap: nowrap; }
+.sc-invite__cta { flex: none; display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; margin-top: 18px; border-radius: 999px; background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); font-size: var(--sc-t-body-s-size); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sc-invite__cta:hover { background: var(--sc-primary-hover, var(--sc-accent-hover)); }
+@media (max-width: 760px) { .sc-invite__head { flex-wrap: wrap; } .sc-invite__cta { margin-top: 0; } }
+.sc-invite__head a.sc-invite__cta { color: var(--sc-primary-fg, #0b0b0b); font-weight: 600; }
+/* Liczniki Kliniki: przyrost dziś nad liczbą, większe liczby */
+.sc-clinic-stats li { gap: 0; padding: var(--sc-s-3) var(--sc-s-2) var(--sc-s-4); }
+.sc-clinic-stats strong { font-size: calc(var(--sc-t-title-m-size) * 1.35); line-height: 1.05; }
+.sc-clinic-stats small { font-size: var(--sc-t-caption-size); line-height: 1.2; }
+.sc-clinic-stats span { margin-top: 4px; }
+/* Zaproszenie: pasek boxów na całą szerokość panelu, szerszy przycisk kończący się równo z ostatnim boxem */
+.sc-invite .sc-ctx__strip { padding-right: 0; }
+.sc-invite .sc-ctx__box { flex: 1 1 0; min-width: 150px; }
+.sc-invite .sc-ctx__box[data-opening] { flex-grow: 1.25; }
+.sc-invite .sc-ctx__more { flex: 0 0 110px; }
+.sc-invite__cta { min-width: 220px; justify-content: center; }
+.sc-invite .sc-ctx__box[data-opening] { flex: 1.3 1 0; }
+/* Spin dnia: „KLINIKA SPINU”, przełącznik i „Raport tygodnia” w jednej linii */
+.sc-spin-switch__bar { align-items: center; }
+.sc-spin-switch__bar .sc-home-kicker { margin: 0; }
+
+/* Telefon: zamiast ☰ widoczne „Klinika” i „O nas” obok logo (logo = strona główna); motyw zostaje na pasku. */
+@container sc-navmenu (max-width: 767px) {
+  .sc-navmenu__list { display: flex; gap: 0; margin: 0 0 0 4px; }
+  .sc-navmenu__list > li:first-child { display: none; }
+  .sc-navmenu__list .sc-navmenu__item-wrap a, .sc-navmenu__list .sc-navmenu__link { padding-left: 8px; padding-right: 8px; font-size: 14px; }
+  .sc-navmenu__toggle-wrap, .sc-navmenu__mobile-wrap { display: none; }
+  .sc-navmenu__cta { display: flex; margin-left: auto; }
+  .sc-navmenu__cta .sc-nav-clock { display: none; }
+}
+@container sc-navmenu (max-width: 360px) {
+  .sc-beta { display: none; }
+}
+
+/* Telefon: listy z własnym przewijaniem nie łapią palca, dopóki ich nie „przytrzymasz” (TouchScrollGuard). */
+html[data-touch-scroll="guard"] :is(.sc-clinic-column__list, .sc-home-baza__results, .sc-home-baza__aside, .sc-home-lead__list, .sc-deleted__list, .sc-clinic-sotd__reading, .sc-source-coverage__list):not([data-scroll-active]) {
+  overflow-y: hidden !important;
+  overscroll-behavior: auto;
+}
+html[data-touch-scroll="guard"] [data-scroll-active] {
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  box-shadow: inset 0 0 0 2px var(--sc-accent);
+  border-radius: var(--sc-r-lg);
+}

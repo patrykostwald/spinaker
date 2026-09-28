@@ -22,7 +22,7 @@ from news.schema import ArticleContextResponse, ContextCountsResponse, FEED_PARA
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from news.models import Article, ArticleCategory, Source, Thread, ThreadItem, SourceContactCard
+from news.models import Article, ArticleCategory, Source, SourceAccessInstruction, Thread, ThreadItem, SourceContactCard
 from news.serializers import ArticleSerializer, SourceSerializer, ThreadSerializer
 from news.source_groups import TOP_MEDIA
 
@@ -45,9 +45,15 @@ def hydrated(qs):
 
 
 def top_sources():
+    from news.source_groups import TOP_MEDIA_CHANNELS, YOUTUBE_CHANNEL
     rows = {source.name: source for source in Source.objects.filter(name__in=TOP_TEN,
-        is_active=True).exclude(catalog_stage='excluded')}
-    return [rows[name] for name in TOP_TEN if name in rows]
+        is_active=True).exclude(catalog_stage='excluded').exclude(url__contains='youtube.com')}
+    channels = list(Source.objects.filter(url__in=[YOUTUBE_CHANNEL + cid for cid in TOP_MEDIA_CHANNELS],
+        is_active=True).exclude(catalog_stage='excluded'))
+    order = {name: index for index, name in enumerate(TOP_TEN)}
+    channels.sort(key=lambda source: order.get(TOP_MEDIA_CHANNELS[source.url[len(YOUTUBE_CHANNEL):].strip('/')], 99))
+    # Strony wydawców (gdy dostaniemy zgodę) i ich oficjalne kanały YouTube.
+    return [rows[name] for name in TOP_TEN if name in rows] + channels
 
 
 def _integer(value, label, default, maximum):
@@ -101,7 +107,10 @@ def _filters(request, qs):
 DIVERSE_WINDOW = 600  # ile najnowszych materiałów przeglądamy, żeby ułożyć stronę z różnych źródeł
 
 
-def diverse_rows(qs, size: int) -> list:
+DIVERSE_PER_SOURCE = 2  # jedno źródło najwyżej dwa razy na stronie — nawet gdy inne dziś jeszcze nic nie dały
+
+
+def diverse_rows(qs, size: int, per_source: int = DIVERSE_PER_SOURCE) -> list:
     """Pluralizm na pierwszej stronie: najpierw najnowszy materiał każdego źródła, potem drugi z każdego itd.
     Źródło, które publikuje najwięcej (np. kanał wideo z dziesiątkami filmów dziennie), nie zajmuje całej strony.
     Kolejność w obrębie „rundy” — od najnowszego."""
@@ -109,7 +118,7 @@ def diverse_rows(qs, size: int) -> list:
     for row in qs[:DIVERSE_WINDOW]:
         by_source.setdefault(row.source_id, []).append(row)
     picked, depth = [], 0
-    while len(picked) < size and any(len(rows) > depth for rows in by_source.values()):
+    while len(picked) < size and depth < per_source and any(len(rows) > depth for rows in by_source.values()):
         picked += [rows[depth] for rows in by_source.values() if len(rows) > depth]
         depth += 1
     return picked[:size]
@@ -118,6 +127,16 @@ def diverse_rows(qs, size: int) -> list:
 @extend_schema(summary="Pasek materiałów: najnowsze albo dzisiejsze wiodących mediów", tags=["portal"], parameters=FEED_PARAMETERS, responses=FeedResponse)
 @api_view(['GET'])
 def feed(request):
+    # Paski strony głównej to te same zapytania u każdego czytelnika — minuta w Redis zamiast 1–2 s liczenia za każdym razem.
+    key = 'feed:v1:' + sha256(repr(sorted(request.query_params.lists())).encode()).hexdigest()
+    payload = cache.get(key)
+    if payload is None:
+        payload = _feed_payload(request)
+        cache.set(key, payload, 60)
+    return Response(payload)
+
+
+def _feed_payload(request) -> dict:
     mode = request.query_params.get('mode', 'latest')
     if mode not in ('latest', 'top'):
         raise ValidationError({'mode': 'Nieznany rodzaj paska.'})
@@ -128,7 +147,8 @@ def feed(request):
     qs = visible_articles().filter(Q(published_date__lte=now) | Q(published_date__isnull=True))
     if mode == 'top':
         day = now.astimezone(WARSAW).date()
-        start = datetime.combine(day, time.min, tzinfo=WARSAW)
+        # Rano (np. o 5:00) od północy prawie nic nie ma — wtedy „dziś” obejmuje ostatnie 18 godzin (wieczór i noc).
+        start = min(datetime.combine(day, time.min, tzinfo=WARSAW), now - timedelta(hours=18))
         end = datetime.combine(day + timedelta(days=1), time.min, tzinfo=WARSAW)
         qs = qs.filter(source_id__in=[source.pk for source in sources],
                        published_date__gte=start, published_date__lt=end)
@@ -147,13 +167,21 @@ def feed(request):
         'top_sources': SourceSerializer(sources, many=True).data,
         'selection_note': 'Dzisiejsze materiały z redakcyjnego wyboru wiodących mediów; kolejność według daty publikacji.'
             if mode == 'top' else 'Materiały dostępne w bazie, od najnowszej znanej daty publikacji. Braki danych pozostają jawne.'}
-    return Response(payload)
+    return payload
 
 
 @extend_schema(summary="Konfiguracja portalu: kategorie, tematy, katalog źródeł z grupami", tags=["portal"], responses=PortalConfigResponse)
 @api_view(['GET'])
 def portal_config(request):
-    visible = ThreadItem.objects.select_related('thread__created_by', 'article__source',
+    payload = cache.get('portal-config:v1')
+    if payload is None:
+        payload = _portal_config_payload()
+        cache.set('portal-config:v1', payload, 120)
+    return Response(payload)
+
+
+def _portal_config_payload() -> dict:
+    visible =ThreadItem.objects.select_related('thread__created_by', 'article__source',
         'article__voting', 'article__official_record', 'article__content').prefetch_related(
         'article__evidence_links').order_by('position', 'id')
     editions = Thread.objects.filter(published=True, editorial_slot__in=('government', 'opposition')).prefetch_related(
@@ -169,11 +197,12 @@ def portal_config(request):
     except PoliticalReadError:
         configured = False
     catalog_sources = Source.objects.exclude(catalog_stage='excluded').order_by('name', 'pk')
-    return Response({'categories': [{'value': value, 'label': label} for value, label in ArticleCategory.choices
+    return ({'categories': [{'value': value, 'label': label} for value, label in ArticleCategory.choices
         if value not in ('tweet', 'context')], 'top_sources': SourceSerializer(top_sources(), many=True).data,
         # The picker is also a public catalogue: candidates are visible, but remain
         # inactive until their access and ingestion path have been approved.
-        'topics': topic_choices(), 'sources': SourceSerializer(catalog_sources, many=True).data,
+        'topics': topic_choices(), 'sources': SourceSerializer(catalog_sources, many=True, context={'approved_ids': set(
+            SourceAccessInstruction.objects.filter(status='approved', daily_request_cap__gt=0).values_list('source_id', flat=True))}).data,
         'source_stats': {'catalog_total': catalog_sources.count(), 'active': catalog_sources.filter(is_active=True).count(),
             'awaiting_response': SourceContactCard.objects.filter(status='sent').count()},
         'editorial': slots, 'x_editorial': {'configured': configured,

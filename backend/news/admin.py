@@ -403,3 +403,14 @@ register_political_admin(site)
 
 from news import clinic_admin  # noqa: E402,F401
 from news import community_admin  # noqa: E402,F401
+
+
+from news.newsletter_models import NewsletterSubscriber  # noqa: E402
+
+
+@admin.register(NewsletterSubscriber)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    list_display = ('email', 'status', 'source', 'created_at', 'confirmed_at', 'unsubscribed_at')
+    list_filter = ('status', 'source')
+    search_fields = ('email',)
+    readonly_fields = ('token', 'consent_version', 'created_at', 'confirmation_sent_at', 'confirmed_at', 'unsubscribed_at')

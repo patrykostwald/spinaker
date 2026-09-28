@@ -121,6 +121,7 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
         'url': post.url,
         'text': post.text,
         'media_notes': ', '.join(media),
+        'media': [item for item in post.media or [] if isinstance(item, dict)],
     }
 
 
@@ -210,7 +211,8 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         row.status, row.usage, row.error = ('approved' if auto_publish() else 'pending_review'), usage, ''
         if row.status == 'approved':
             row.reviewed_at = timezone.now()
-        row.provider, row.model_name = 'anthropic', usage.get('model') or clinic_ai.model_name()
+        row.provider = 'anthropic'  # płatna diagnoza (Claude albo Gemini) — to pole odróżnia ją od strażnika
+        row.model_name = usage.get('model') or clinic_ai.model_name()
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
     row.save()
@@ -323,11 +325,36 @@ def pick_featured():
     return best
 
 
+def spent_today() -> float:
+    """Szacowane wydatki na Claude'a od północy: diagnozy postów i wywiad dnia."""
+    from news.clinic_models import ClinicInterview
+    start = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    total = sum(clinic_ai.cost_usd(usage) for usage in
+                SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic').values_list('usage', flat=True))
+    total += sum(clinic_ai.cost_usd((usage or {}).get('claude') or {}) for usage in
+                 ClinicInterview.objects.filter(diagnosed_at__gte=start).values_list('usage', flat=True))
+    return round(total, 4)
+
+
+def budget_left() -> float:
+    """Twardy dzienny budżet na płatne diagnozy (CLINIC_DAILY_BUDGET_USD, domyślnie 2 USD)."""
+    try:
+        budget = float(os.environ.get('CLINIC_DAILY_BUDGET_USD', '2'))
+    except ValueError:
+        budget = 2.0
+    return round(budget - spent_today(), 4)
+
+
+BUDGET_RESERVE_USD = 0.25  # nie zaczynamy diagnozy, gdy w budżecie zostało mniej niż jej przybliżony koszt
+
+
 def run_diagnoses(limit: int = 2) -> dict:
     """Płatne diagnozy rozłożone na dzień: zwykłe równo od rana do wieczora, a jedno miejsce czeka na
     najpopularniejszy post dnia (od CLINIC_FEATURED_HOUR) — to on zostaje spinem dnia."""
     if not clinic_ai.enabled():
         return {'status': 'disabled'}
+    if budget_left() < BUDGET_RESERVE_USD:
+        return {'status': 'budget', 'spent_today_usd': spent_today()}
     if failures_today() >= _env_int('CLINIC_DAILY_FAILURE_LIMIT', 5):
         # Seria błędów (klucz, model, limit konta) — nie palimy pieniędzy do jutra albo do naprawy.
         return {'status': 'too_many_failures', 'failed_today': failures_today()}
@@ -335,7 +362,7 @@ def run_diagnoses(limit: int = 2) -> dict:
     start, end = day_window(now)
     if not start <= now < end:
         return {'status': 'night'}
-    daily = _env_int('CLINIC_DAILY_LIMIT', 20)
+    daily = _env_int('CLINIC_DAILY_LIMIT', 8)
     reserve = 1 if daily > 1 else 0
     counts = {}
     featured = featured_today()
@@ -343,7 +370,8 @@ def run_diagnoses(limit: int = 2) -> dict:
         row = pick_featured()
         if row:
             figure = figures_by_account({row.post.account_id}).get(row.post.account_id)
-            diagnose(row, figure)
+            if budget_left() >= BUDGET_RESERVE_USD:
+                diagnose(row, figure)
             counts[f'featured_{row.status}'] = 1
     regular_done = diagnoses_today() - (1 if featured_today() else 0)
     take = max(0, min(limit, paced_target(now, daily - reserve) - regular_done))
@@ -359,10 +387,14 @@ def run_diagnoses(limit: int = 2) -> dict:
         rows += list(extra)
     figures = figures_by_account({row.post.account_id for row in rows})
     for row in rows:
+        if budget_left() < BUDGET_RESERVE_USD:
+            counts['budget_stop'] = 1
+            break
         diagnose(row, figures.get(row.post.account_id))
         counts[row.status] = counts.get(row.status, 0) + 1
     alert = send_review_alert()
-    return {'status': 'ok', 'budget_left': max(0, daily - diagnoses_today()), 'diagnosed': counts, 'alert': alert}
+    return {'status': 'ok', 'budget_left': max(0, daily - diagnoses_today()), 'usd_left_today': budget_left(),
+            'diagnosed': counts, 'alert': alert}
 
 
 MIN_MESSAGE_ACCOUNTS = 3
@@ -510,6 +542,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')} for claim in diagnosis.claims],
         'limitations': diagnosis.limitations,
         'x_thread': diagnosis.x_thread,
+        'council': (diagnosis.usage or {}).get('council'),
         'model': diagnosis.model_name,
         'prompt_version': diagnosis.prompt_version,
         'created_at': diagnosis.created_at,
@@ -517,6 +550,8 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'auto_published': diagnosis.status == 'approved' and not diagnosis.reviewed_by_id,
         'notice': NOTICE,
     })
+    from news.x_share import build
+    data['x_share'] = build(data)
     return data
 
 
@@ -608,6 +643,34 @@ def latest_spin(exclude_id: int | None = None):
     return detail_data(latest) if latest else None
 
 
+def clinic_stats() -> dict:
+    """Liczniki pracy Kliniki: przeczytane posty, ocenione i odrzucone przez strażnika, opublikowane diagnozy i spiny.
+
+    Każda liczba: łącznie od startu i dziś (od północy czasu polskiego). Pięć minut w pamięci podręcznej.
+    """
+    from django.core.cache import cache
+    cached = cache.get('clinic-stats:v1')
+    if cached is not None:
+        return cached
+    today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    screened = SpinDiagnosis.objects.all()
+    published = published_diagnoses()
+    spins = published.filter(verdict__in=['spin', 'partial'])
+
+    def pair(total_qs, today_qs):
+        return {'total': total_qs.count(), 'today': today_qs.count()}
+
+    result = {
+        'read': pair(PoliticalPost.objects.all(), PoliticalPost.objects.filter(fetched_at__gte=today)),
+        'screened': pair(screened, screened.filter(created_at__gte=today)),
+        'rejected': pair(screened.filter(status='not_applicable'), screened.filter(status='not_applicable', created_at__gte=today)),
+        'diagnosed': pair(published, published.filter(diagnosed_at__gte=today)),
+        'spins': pair(spins, spins.filter(diagnosed_at__gte=today)),
+    }
+    cache.set('clinic-stats:v1', result, 300)
+    return result
+
+
 def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
     from news.clinic_interview import interview_archive, latest_interview_data
     sotd = spin_of_day()
@@ -616,6 +679,7 @@ def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
     return {
         'notice': NOTICE_AUTO if auto_publish() else NOTICE_REVIEW,
         'scale': scale_data(window_days),
+        'stats': clinic_stats(),
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
         'spin_of_day': sotd,
         'latest_spin': latest_spin(sotd['id'] if sotd else None),

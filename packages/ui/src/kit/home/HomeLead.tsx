@@ -37,14 +37,14 @@ export function HomeLead({
 }) {
   const m = useMotionTokens();
   return (
-    <section className="sc-home-section sc-home-lead" aria-label="Wiadomości dnia">
+    <section className="sc-home-section sc-home-lead" aria-label="Najnowsze">
       <div className="sc-home-band-surface">
         <header className="sc-home-section__head sc-home-lead__head">
           <div>
             <p className="sc-t-caption sc-text-3 sc-home-kicker" suppressHydrationWarning>
-              {dateLabel ? `Podsumowanie dnia · ${dateLabel}` : "Podsumowanie dnia"}
+              {dateLabel || "Dzisiaj"}
             </p>
-            <h2 className="sc-t-title-l sc-home-section__title">Wiadomości dnia</h2>
+            <h2 className="sc-t-title-l sc-home-section__title">Najnowsze</h2>
           </div>
           {actions ? <div className="sc-home-section__actions">{actions}</div> : null}
         </header>
@@ -58,7 +58,7 @@ export function HomeLead({
             ) : (
               <div className="sc-home-anchor-placeholder sc-home-lead__placeholder">
                 <div className="sc-skeleton sc-home-anchor-placeholder__media" />
-                <span className="sc-t-caption sc-text-3">Wiadomości dnia</span>
+                <span className="sc-t-caption sc-text-3">Najnowsze</span>
                 <strong className="sc-t-title-m">Ładuję dzisiejsze doniesienia…</strong>
               </div>
             )}

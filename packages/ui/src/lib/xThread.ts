@@ -13,7 +13,7 @@ const RESERVE = 6; // „5/5 ” z zapasem
 const fits = (text: string) => measurePost(text).weightedLength <= LIMIT;
 
 /** Skraca do limitu całymi słowami (a jeśli się da — całymi zdaniami). */
-function shorten(text: string, budget: number): string {
+export function shorten(text: string, budget: number): string {
   if (measurePost(text).weightedLength <= budget) return text;
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [];
   let bySentence = "";
@@ -38,6 +38,7 @@ export function diagnosisUrl(spin: { id: number }): string {
 }
 
 export function buildXThread(spin: SpinDetailData): string[] {
+  if (spin.x_share?.length) return spin.x_share;
   const url = diagnosisUrl(spin);
   const head = `Dr. Spin (AI) o wpisie @${spin.author.handle}: ${spin.verdict_label.toLowerCase()}, siła ${spin.intensity}/100.`;
   const leadBudget = LIMIT - RESERVE - measurePost(`${head}  ${url}`).weightedLength;
@@ -54,8 +55,14 @@ export function buildXThread(spin: SpinDetailData): string[] {
     if (summary) body.push(`Twierdzenia we wpisie — ${summary}. Każde ze źródłami w pełnej diagnozie.`);
   }
   const first = `${head} ${shorten(lead, Math.max(60, leadBudget))} ${url}`;
-  const last = `Pełna diagnoza: techniki z cytatami, twierdzenia ze źródłami i ograniczenia analizy — ${url} · Diagnozę przygotowało AI.`;
-  const posts = [first, ...body.map(post => shorten(post, LIMIT - RESERVE)), last];
+  // Terapia: po jednym źródle na wpis — twierdzenie, ocena, krótkie wyjaśnienie i link (X liczy link jako 23 znaki).
+  const therapy = spin.claims.filter(claim => claim.sources.length).slice(0, 3).map((claim, index) => {
+    const intro = index === 0 ? "W ramach terapii Dr. Spin zaleca: " : "";
+    const text = `${intro}„${claim.claim}” — ${claim.assessment_label.toLowerCase()}. ${claim.explanation}`;
+    return `${shorten(text, LIMIT - RESERVE - 25)} ${claim.sources[0].url}`;
+  });
+  const last = `Pełna diagnoza i terapia: techniki z cytatami, twierdzenia ze źródłami i ograniczenia analizy — ${url} · Diagnozę przygotowało AI.`;
+  const posts = [first, ...body.filter(post => !/^Twierdzenia we wpisie/.test(post) || !therapy.length).map(post => shorten(post, LIMIT - RESERVE)), ...therapy, last];
   const total = posts.length;
   return posts.map((post, index) => {
     const numbered = `${index + 1}/${total} ${post}`;

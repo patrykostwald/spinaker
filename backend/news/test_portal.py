@@ -31,13 +31,14 @@ def ids(payload):
 def test_top_today_warsaw_not_utc_only_and_no_import_date(source):
     # Warsaw midnight is 22:00 UTC on the previous calendar date.
     today = record(source, 'today', datetime(2026, 9, 8, 22, 1, tzinfo=dt_timezone.utc))
-    record(source, 'yesterday', datetime(2026, 9, 8, 21, 59, tzinfo=dt_timezone.utc), discovered_at=NOW)
+    late = record(source, 'yesterday', datetime(2026, 9, 8, 21, 59, tzinfo=dt_timezone.utc), discovered_at=NOW)
     record(source, 'unknown', discovered_at=NOW)
     record(source, 'future', datetime(2026, 9, 9, 1, 0, tzinfo=dt_timezone.utc))
     other = Source.objects.create(name='Other publisher', url='https://other.example', is_active=True)
     record(other, 'outside-selection', NOW)
     result = APIClient().get('/api/feed/?mode=top').data
-    assert ids(result) == {today.pk} and result['total'] == 1
+    # O 2:30 czasu polskiego „dziś” obejmuje ostatnie 18 godzin — wpis z 23:59 poprzedniego dnia też (poranek bez pustki).
+    assert ids(result) == {today.pk, late.pk} and result['total'] == 2
 
 
 def test_latest_visibility_null_dates_and_filters(source):

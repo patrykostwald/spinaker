@@ -16,14 +16,16 @@ export function SpinDiagnosisBody({ spin }: { spin: SpinDetailData }) {
     <div className="sc-spin-detail__analysis">{spin.analysis.split(/\n{2,}/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
 
     {spin.techniques.length > 0 && <section className="sc-spin-detail__section">
-      <h2>Techniki</h2>
+      <h2>Diagnoza — techniki perswazji</h2>
+      <p className="sc-spin-detail__intro">Jak zbudowano przekaz: każda technika z dosłownym cytatem z wpisu.</p>
       <ol className="sc-spin-detail__techniques">{spin.techniques.map((item, index) => (
         <li key={index}><strong>{item.name}</strong><blockquote>„{item.quote}”</blockquote><p>{item.explanation}</p></li>
       ))}</ol>
     </section>}
 
     {spin.claims.length > 0 && <section className="sc-spin-detail__section">
-      <h2>Twierdzenia i źródła</h2>
+      <h2>Terapia — co mówią źródła</h2>
+      <p className="sc-spin-detail__intro">Dr. Spin zaleca sprawdzić twierdzenia we wpisie u źródła: ocena każdego i linki, które ją uzasadniają.</p>
       <ul className="sc-spin-detail__claims">{spin.claims.map((claim, index) => (
         <li key={index} data-assessment={claim.assessment}>
           <p className="sc-spin-detail__claim"><span className="sc-verdict" data-assessment={claim.assessment}>{claim.assessment_label}</span> {claim.claim}</p>
@@ -36,6 +38,7 @@ export function SpinDiagnosisBody({ spin }: { spin: SpinDetailData }) {
     </section>}
 
     {spin.limitations && <p className="sc-spin-detail__limits"><strong>Ograniczenia diagnozy:</strong> {spin.limitations}</p>}
+    {spin.council ? <CouncilNote council={spin.council} /> : null}
     <p className="sc-spin-detail__meta"><AiTag /> Model {spin.model} · instrukcja {spin.prompt_version} · diagnoza {formatDateTimePl(spin.created_at)}{spin.auto_published ? " · opublikowana automatycznie, bez redakcji człowieka" : spin.reviewed_at ? ` · zatwierdzona bez zmian ${formatDateTimePl(spin.reviewed_at)}` : ""}</p>
     <p className="sc-spin-detail__share"><ShareSpinOnX id={spin.id} spin={spin} /></p>
   </>;
@@ -74,5 +77,23 @@ export function SpinDetail({ id }: { id: string }) {
         signedOut: "Zaloguj się, aby ocenić diagnozę i dodać komentarz. Komentarz zawsze idzie z reakcją.",
       }} />
     </div>
+  );
+}
+
+
+const VERDICT_SHORT: Record<string, string> = { spin: "spin", partial: "częściowy spin", no_spin: "bez spinu", unclear: "nie da się ocenić" };
+const short = (model: string) => model.split("/").pop() ?? model;
+
+/** Konsylium Dr. Spina: kto oceniał, jak zagłosował, lekarz prowadzący, redaktor i ordynator. */
+function CouncilNote({ council }: { council: NonNullable<SpinDetailData["council"]> }) {
+  return (
+    <section className="sc-council" aria-label="Konsylium Dr. Spina">
+      <p className="sc-council__title">Konsylium Dr. Spina · zgodność {council.agreement}{council.escalated ? " · konsultacja specjalisty: fakty sprawdził dodatkowo mocniejszy model z wyszukiwaniem" : ""}</p>
+      <ul>{council.members.map(member => (
+        <li key={member.model}><strong>{short(member.model)}</strong> — {VERDICT_SHORT[member.verdict] ?? member.verdict}, siła {member.intensity}/100</li>
+      ))}</ul>
+      <p className="sc-council__roles">Lekarz prowadzący: {short(council.chair)}{council.linguist ? ` · redaktor: ${short(council.linguist)}` : ""}
+        {council.review.model ? ` · ordynator: ${short(council.review.model)} — ${council.review.ok ? "bez zastrzeżeń" : council.review.ok === false ? `uwagi${council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}</p>
+    </section>
   );
 }

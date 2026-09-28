@@ -181,8 +181,9 @@ def test_journalist_login_me_and_separate_admin_rights(people, login_url):
     assert not me['can_publish'] and not me['can_manage_sponsorship']
     assert me['role'] == 'journalist'
     csrf = client.get('/api/auth/csrf/').json()['csrfToken']
-    for url in ('/api/editor/articles/', '/api/editor/sources/'):
-        assert client.post(url, {}, format='json', HTTP_X_CSRFTOKEN=csrf).status_code == 403
+    # Nowy box po linku — tak (pusty formularz: błąd walidacji); katalog źródeł — nadal nie.
+    assert client.post('/api/editor/articles/', {}, format='json', HTTP_X_CSRFTOKEN=csrf).status_code == 400
+    assert client.post('/api/editor/sources/', {}, format='json', HTTP_X_CSRFTOKEN=csrf).status_code == 403
     assert client.get('/admin/').status_code == 302
     author.groups.clear()
     assert client.get('/api/editor/threads/').status_code == 403
@@ -199,3 +200,28 @@ def test_signup_cannot_self_grant_journalist_role():
     user = get_user_model().objects.get(username='self_appointed')
     assert not user.groups.exists() and not user.is_staff
     assert client.get('/api/editor/threads/').status_code == 403
+
+
+def test_journalist_context_thread_rules(people):
+    """Box otwierający + do 14 boxów, kolejność autora, nowy box po linku trafia do Bazy, opis jak wpis na X."""
+    _, journalist, _, _ = people
+    client = APIClient()
+    client.force_authenticate(journalist)
+    created = client.post('/api/editor/articles/', {'title': 'Nasz wywiad', 'url': 'https://redakcja.example/wywiad',
+                                                    'source_name': 'Redakcja', 'category': 'interview',
+                                                    'image_url': 'https://redakcja.example/foto.jpg'}, format='json')
+    assert created.status_code == 201, created.data
+    opening = Article.objects.get(url='https://redakcja.example/wywiad')
+    assert opening.image_url and opening.source.name == 'Redakcja'
+    source = opening.source
+    older = Article.objects.create(source=source, title='Starszy', url='https://redakcja.example/a', category='article',
+                                   published_date='2020-01-01T00:00:00Z')
+    items = [{'article_id': opening.pk}, {'article_id': older.pk}]
+    response = client.post('/api/editor/threads/', {'title': 'Afera', 'description': 'Krótko.', 'items': items}, format='json')
+    assert response.status_code == 201, response.data
+    thread = Thread.objects.get(slug=response.data['slug'])
+    assert [item.article_id for item in thread.thread_items.order_by('position')] == [opening.pk, older.pk]  # nie według dat
+    many = [{'article_id': Article.objects.create(source=source, title=f'B{i}', url=f'https://redakcja.example/b{i}', category='article').pk}
+            for i in range(16)]
+    assert client.post('/api/editor/threads/', {'title': 'Za dużo', 'items': many}, format='json').status_code == 400
+    assert client.post('/api/editor/threads/', {'title': 'Afera', 'description': 'x' * 260, 'items': items}, format='json').status_code == 400

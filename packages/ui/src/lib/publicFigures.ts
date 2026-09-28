@@ -24,16 +24,57 @@ export type PublicFigureSummary = {
   has_x_account?: boolean;
 };
 
+export type OrganisationSector = 'state' | 'municipal' | 'public' | 'private' | 'ngo' | 'unknown';
+export type OrganisationVerification = 'editor' | 'krs_register' | 'public_sources';
+
 export type PublicFigureOrganisation = {
   id: number;
   name: string;
   krs_number: string;
   kind: OrganisationKind;
+  legal_form?: string;
+  sector?: OrganisationSector;
+  /** Publiczna strona podmiotu z danymi KRS. */
   official_register_url: string;
   public_role: string;
+  organ?: string;
   relation_status: 'current' | 'former';
+  /** Daty wpisu i wykreślenia w KRS (albo puste, gdy relację potwierdzają tylko źródła). */
+  since?: string | null;
+  until?: string | null;
+  verification_method?: OrganisationVerification;
+  sources?: Array<{ url: string; title: string }>;
   evidence_url: string;
   verified_at: string | null;
+};
+
+/** Oś kariery: funkcje publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych (z KRS). */
+export type EmploymentEntry = {
+  position: string;
+  organisation: string;
+  status: 'current' | 'former';
+  checked_at: string | null;
+  since?: string | null;
+  until?: string | null;
+  sector?: OrganisationSector;
+  /** Klub albo partia w czasie tej funkcji (np. klub w danej kadencji Sejmu). */
+  party?: string;
+  source: { label: string; url: string };
+};
+
+export const SECTOR_LABELS: Record<OrganisationSector, string> = {
+  state: 'spółka Skarbu Państwa',
+  municipal: 'spółka komunalna',
+  public: 'podmiot publiczny',
+  private: 'podmiot prywatny',
+  ngo: 'organizacja pozarządowa',
+  unknown: '',
+};
+
+export const VERIFICATION_LABELS: Record<OrganisationVerification, string> = {
+  editor: 'potwierdzone przez zespół',
+  krs_register: 'potwierdzone w KRS',
+  public_sources: 'potwierdzone w źródłach',
 };
 
 export type PublicFigureVote = { date: string | null; topic: string; vote: string; article_url: string; source: string };
@@ -60,6 +101,9 @@ export type PublicFigureXPost = {
 
 export type PublicFigureDetail = PublicFigureSummary & {
   organisations: PublicFigureOrganisation[];
+  employment_timeline?: EmploymentEntry[];
+  /** Obecny klub lub partia (z rejestru Sejmu albo notatki). */
+  party?: { code: string; short: string; name: string } | null;
   votes: PublicFigureVotes;
   x_account?: VerifiedXAccount | null;
   /** Wpisy wyłącznie z potwierdzonego konta X tej osoby, bez dopasowania po nazwisku. */

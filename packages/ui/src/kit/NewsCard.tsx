@@ -149,6 +149,15 @@ function CardBadge({ category, transition }: { category: string; transition: Tra
   );
 }
 
+/** Miniatury YouTube: na dużych kartach największa wersja (1280 px), gdy jej brak — 480 px; małe karty zostają lekkie. */
+const YT_THUMB = /^(https:\/\/i\d?\.ytimg\.com\/vi\/[\w-]{11}\/)(?:default|mqdefault|hqdefault|sddefault|maxresdefault)\.jpg/;
+
+function sharperThumb(src: string, size: NewsCardSize, fallback: boolean): string {
+  const match = YT_THUMB.exec(src);
+  if (!match || size === "mini" || size === "compact") return src;
+  return `${match[1]}${fallback ? "hqdefault" : "maxresdefault"}.jpg`;
+}
+
 function CardMedia({
   article,
   size,
@@ -166,12 +175,17 @@ function CardMedia({
   transition: Transition;
   layoutTransition: Transition;
 }) {
-  const src = article.image_url?.trim();
+  const [fallback, setFallback] = useState(false);
+  const raw = article.image_url?.trim();
+  const src = raw ? sharperThumb(raw, size, fallback) : raw;
   return (
     <motion.div className="sc-card__media" layout transition={layoutTransition}>
       {src ? (
         <motion.div className="sc-card__media-inner" layout animate={{ scale: thumbScale }} transition={{ default: transition, layout: layoutTransition }}>
-          <Image src={src} alt="" fill unoptimized priority={priority} sizes={IMAGE_SIZES[size]} className="sc-card__image" />
+          <Image src={src} alt="" fill unoptimized priority={priority} sizes={IMAGE_SIZES[size]} className="sc-card__image"
+            onError={() => setFallback(true)}
+            // maxresdefault bywa niedostępny: YouTube zwraca wtedy szary obrazek 120×90 zamiast błędu
+            onLoad={(event) => { if (event.currentTarget.naturalWidth <= 120 && src.includes("maxresdefault")) setFallback(true); }} />
         </motion.div>
       ) : (
         // Bez zdjęcia: tło w kolorze rodzaju materiału i inicjały źródła zamiast pustego szarego pola.
