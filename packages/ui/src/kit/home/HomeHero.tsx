@@ -47,12 +47,12 @@ export function HomeHero() {
       {theme && period ? <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.webp`} alt="" decoding="async" /> : null}
       <div className="sc-home-intro__content">
         <p className="sc-home-intro__title">
-          Dr. Spin analizuje język polityków. <span>Ty układasz własne wiadomości.</span>
+          Konsylium AI bada przekaz polityków. <span>Ty układasz własne wiadomości.</span>
         </p>
-        {/* Jedno zdanie „co to jest” dla kogoś, kto trafia tu pierwszy raz (28.09 — ludzie gubili się w opisie). */}
+        {/* Dwa wiersze: kim jest konsylium i jaka obowiązuje je zasada (29.09, właściciel). */}
         <p className="sc-home-intro__lead">
-          Codzienne analizy AI wpisów i wywiadów — z cytatami, źródłami i tymi samymi zasadami dla rządu i opozycji.
-          Do tego wiadomości dopasowane do Twoich tematów i źródeł.
+          Modele AI kilku firm, także płatne, rozbierają każdy wpis i wywiad: techniki, manipulacje, zagrania.<br className="sc-home-intro__br" />
+          Bez sympatii i antypatii — te same zasady dla rządu i opozycji, z cytatami i źródłami.
         </p>
         <p className="sc-home-intro__links">
           <a href="#dr-spin">Zobacz dzisiejsze diagnozy →</a>

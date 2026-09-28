@@ -4595,7 +4595,8 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 .sc-ctx__strip { touch-action: pan-x pan-y; }
 
 /* Pas powitalny: jedno zdanie „co to jest” pod tytułem. */
-.sc-home-intro__lead { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.45; max-width: 34rem; }
+.sc-home-intro__lead { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.45; max-width: 56rem; }
+@media (max-width: 760px) { .sc-home-intro__br { display: none; } }
 
 /* Twoje wiadomości (komputer): tytuł po lewej; po prawej podpowiedź z licznikiem tuż obok „Dodaj pasek” — jedna linia. */
 @media (min-width: 761px) {
