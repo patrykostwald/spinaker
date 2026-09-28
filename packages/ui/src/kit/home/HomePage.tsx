@@ -30,6 +30,9 @@ import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
 import { GROUP_EMPTY_HINT, SOURCE_GROUPS, SOURCE_GROUP_PARAM, activeSources, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
 
+/** „Najnowsze” z taśmą i kategoriami — wyłączone 28.09.2026 (zostają paski czytelnika). */
+const SHOW_LATEST = false;
+
 function DemoBanner() {
   const demo = useDemoMode();
   if (!demo) return null;
@@ -86,7 +89,7 @@ export function HomePage() {
   const top = useHomeFeed(
     "top10",
     { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 20, diverse: true },
-    { refetchInterval: 30_000, enabled: !groupEmpty },
+    { refetchInterval: 30_000, enabled: SHOW_LATEST && !groupEmpty },
   );
   const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
 
@@ -94,12 +97,12 @@ export function HomePage() {
   const dayLabel = useTodayLabel({ weekday: "long", day: "numeric", month: "long" });
   const dayIds = useMemo(() => (dayGroup ? groupSources(activeSources(sources))[dayGroup].map((source) => source.id) : []), [sources, dayGroup]);
   const dayGroupEmpty = Boolean(dayGroup) && sources.length > 0 && dayIds.length === 0;
-  const day = useHomeFeed("day-top", { mode: "top", sources: dayIds, pageSize: 13, diverse: true }, { refetchInterval: 120_000, enabled: !dayGroupEmpty });
+  const day = useHomeFeed("day-top", { mode: "top", sources: dayIds, pageSize: 13, diverse: true }, { refetchInterval: 120_000, enabled: SHOW_LATEST && !dayGroupEmpty });
   const dayArticles = useMemo(() => day.data?.results ?? [], [day.data]);
   const dayEmpty = day.isSuccess && dayArticles.length === 0;
   // Dopóki wiodące media nie są aktywne (zgody), `mode=top` jest pusty — wtedy dzisiejsze doniesienia
   // aktywnych źródeł (instytucje publiczne), a gdy dziś jest ich mniej niż 3 — najnowsze materiały.
-  const dayFallback = useHomeFeed("day-latest", { mode: "latest", sources: dayIds, pageSize: 40, diverse: true }, { enabled: dayEmpty && !dayGroupEmpty });
+  const dayFallback = useHomeFeed("day-latest", { mode: "latest", sources: dayIds, pageSize: 40, diverse: true }, { enabled: SHOW_LATEST && dayEmpty && !dayGroupEmpty });
   const fallbackToday = useMemo(() => {
     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date());
     return (dayFallback.data?.results ?? []).filter(
@@ -124,6 +127,12 @@ export function HomePage() {
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <DemoBanner />
         <HomeHero />
+        {/* Spin dnia (z przekazami dnia) → licznik obu stron → Wywiady (decyzja 28.09). */}
+        <HomeSpinTeaser />
+        {/* „Najnowsze”, kategorie i taśma najnowszych — na razie wyłączone (28.09: dopóki media nie dadzą zgód,
+            to głównie BIP-y); zostają paski czytelnika. Włączenie: SHOW_LATEST = true. */}
+        {SHOW_LATEST ? (
+          <>
         <div className="sc-home-top">
           <HomeCategoryBar
             value={activeTopic}
@@ -176,17 +185,18 @@ export function HomePage() {
             }
           />
         </HomeReveal>
-        {/* Własne paski czytelnika zaraz pod wiadomością dnia — przed Wywiadami i Dr. Spinem (decyzja właściciela 28.09). */}
+          </>
+        ) : null}
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
-        <HomeSpinTeaser />
-        <JournalistInvite />
         {drSpin.data?.published ? (
           <HomeReveal>
             <HomeDrSpin thread={drSpin.data} />
           </HomeReveal>
         ) : null}
+        {/* Zaproszenie dla dziennikarzy tuż nad Bazą. */}
+        <JournalistInvite />
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>

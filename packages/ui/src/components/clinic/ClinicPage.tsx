@@ -20,14 +20,17 @@ const CONTACT = "kontakt@spin.clinic";
 export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
   // Pełna odpowiedź Dr. Spina obok posta: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
   const [expanded, setExpanded] = useState(false);
+  // Telefon: wpis przycięty do kilku linii (CSS), żeby licznik i wywiad nie zjeżdżały daleko w dół.
+  const [postOpen, setPostOpen] = useState(false);
   const sources = spin.claims.flatMap(claim => claim.sources.map(source => ({ ...source, label: claim.assessment_label, claim: claim.claim })));
   return (
     <div className="sc-clinic-sotd__body">
       <div className="sc-clinic-sotd__main">
         <div className="sc-clinic-sotd__post">
           <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" caption={spin.camp_label} />
-          <div className="sc-clinic-sotd__quote">
+          <div className="sc-clinic-sotd__quote" data-open={postOpen || undefined}>
             <blockquote>{spin.post.text}</blockquote>
+            {postOpen ? null : <button type="button" className="sc-clinic-sotd__more-post" onClick={() => setPostOpen(true)}>Rozwiń wpis ↓</button>}
             {/* Zdjęcia z posta — część przekazu (np. twarz, grafika z hasłem); klik otwiera post na X. */}
             {spin.post.media?.length ? (
               <a className="sc-clinic-sotd__media" data-count={Math.min(spin.post.media.length, 2)} href={spin.post.url} target="_blank" rel="noopener noreferrer"
@@ -95,7 +98,7 @@ function visibleFor(hours: number) {
   return `w ciągu ${Math.ceil(hours / 24)} dni`;
 }
 
-const STAT_LABELS: Array<[keyof NonNullable<ClinicPageData["stats"]>, string, string]> = [
+const STAT_LABELS: Array<["read" | "screened" | "rejected" | "diagnosed" | "spins", string, string]> = [
   ["read", "przeczytanych postów", "wszystkie nowe posty z oficjalnych kont"],
   ["screened", "ocenionych na izbie przyjęć", "czy jest w nich coś do zbadania"],
   ["rejected", "odrzuconych", "bez tezy do sprawdzenia: życzenia, zapowiedzi, informacje"],

@@ -668,7 +668,7 @@ def clinic_stats() -> dict:
     Każda liczba: łącznie od startu i dziś (od północy czasu polskiego). Pięć minut w pamięci podręcznej.
     """
     from django.core.cache import cache
-    cached = cache.get('clinic-stats:v1')
+    cached = cache.get('clinic-stats:v2')
     if cached is not None:
         return cached
     today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -685,8 +685,15 @@ def clinic_stats() -> dict:
         'rejected': pair(screened.filter(status='not_applicable'), screened.filter(status='not_applicable', created_at__gte=today)),
         'diagnosed': pair(published, published.filter(diagnosed_at__gte=today)),
         'spins': pair(spins, spins.filter(diagnosed_at__gte=today)),
+        # Obie strony obok siebie (pasek „ta sama miara” na głównej): konta, przeczytane wpisy, diagnozy, spiny.
+        'by_camp': {camp: {
+            'accounts': reading_accounts().filter(camp=camp).count(),
+            'read': PoliticalPost.objects.filter(camp_at_collection=camp).count(),
+            'diagnosed': published.filter(post__camp_at_collection=camp).count(),
+            'spins': spins.filter(post__camp_at_collection=camp).count(),
+        } for camp in CAMPS},
     }
-    cache.set('clinic-stats:v1', result, 300)
+    cache.set('clinic-stats:v2', result, 300)
     return result
 
 

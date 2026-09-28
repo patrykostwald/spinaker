@@ -105,7 +105,10 @@ export type ClinicPageData = {
   columns: Record<Camp, SpinCardData[]>;
   accounts_count: number;
   /** Liczniki pracy Kliniki: łącznie i dziś. */
-  stats?: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", { total: number; today: number }>;
+  stats?: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", { total: number; today: number }> & {
+    /** Obie strony obok siebie: konta, przeczytane wpisy, opublikowane diagnozy, spiny (od startu). */
+    by_camp?: Record<Camp, { accounts: number; read: number; diagnosed: number; spins: number }>;
+  };
 };
 
 export type ClinicAccount = {

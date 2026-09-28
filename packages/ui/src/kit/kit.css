@@ -4610,3 +4610,22 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
   .sc-invite__head { align-items: center; }
   .sc-invite__cta { align-self: center; margin-top: calc(var(--sc-s-4) - var(--sc-s-5)); }
 }
+
+/* Pasek „ta sama miara”: obie strony obok siebie pod spinem dnia. */
+.sc-camp-counter { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sc-s-2) var(--sc-s-5); padding: var(--sc-s-3) var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-ring); }
+.sc-camp-counter__side { margin: 0; display: grid; gap: 2px; }
+.sc-camp-counter__side strong { color: var(--sc-text); font-size: var(--sc-t-body-s-size); }
+.sc-camp-counter__side span { color: var(--sc-text-2); font-size: var(--sc-t-caption-size); }
+.sc-camp-counter__side[data-camp="opposition"] { text-align: right; }
+.sc-camp-counter__note { grid-column: 1 / -1; margin: 0; padding-top: var(--sc-s-2); border-top: 1px solid var(--sc-hairline); text-align: center; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-camp-counter__note strong { color: var(--sc-text); }
+.sc-camp-counter__note a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+@media (max-width: 560px) { .sc-camp-counter { padding: var(--sc-s-3); } .sc-camp-counter__side span { font-size: 11px; } }
+
+/* Spin dnia na telefonie: wpis przycięty do kilku linii, „Rozwiń wpis”. */
+.sc-clinic-sotd__more-post { display: none; }
+@media (max-width: 760px) {
+  .sc-clinic-sotd__quote:not([data-open]) blockquote { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+  .sc-clinic-sotd__quote:not([data-open]) .sc-clinic-sotd__media { display: none; }
+  .sc-clinic-sotd__more-post { display: inline-flex; margin-top: var(--sc-s-2); padding: 0; border: 0; background: none; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; cursor: pointer; }
+}

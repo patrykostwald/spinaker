@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CAMPS, getClinicPage, sharePercent } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, getClinicPage, sharePercent, type ClinicPageData } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "../../components/clinic/SpinParts";
 import { InterviewArchive, InterviewBox, MessageBox, SpinSwitch } from "../../components/clinic/ClinicExtras";
@@ -35,32 +35,6 @@ export function HomeSpinTeaser() {
   const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
   return (
     <>
-    {/* Wywiad dnia (najważniejszy wywiad z poprzedniego dnia) — nad spinem dnia, w tym samym stylu boxa. */}
-    {data?.interview ? (
-      <section className="sc-home-spin sc-home-interview" aria-labelledby="home-interview-title">
-        {/* Tytuł sekcji po lewej (jak „Dr. Spin”), box wywiadu przesunięty w prawo. */}
-        <header className="sc-home-interview__head">
-          <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-          <h2 id="home-interview-title" className="sc-t-title-l sc-home-section__title">Wywiady</h2>
-          <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
-          <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
-        </header>
-        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore />
-        {/* Drugi wywiad dnia (dodany ręcznie) — ten sam układ: nagłówek po lewej, box po prawej. */}
-        {data.interview_second ? (
-          <>
-            <header className="sc-home-interview__head">
-              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <p className="sc-home-spin__meta">{data.interview_second.channel} · {formatDatePl(data.interview_second.day)}</p>
-              <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setSecondOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
-            </header>
-            <InterviewBox interview={data.interview_second} open={secondOpen} onOpenChange={setSecondOpen} hideMore kicker="Wywiady" />
-          </>
-        ) : null}
-        {/* Wcześniejsze wywiady na pełną szerokość sekcji — od lewej krawędzi, jak tytuł „Wywiady”. */}
-        {data.interview_archive?.length ? <div className="sc-home-interview__archive"><InterviewArchive items={data.interview_archive.slice(0, 3)} /></div> : null}
-      </section>
-    ) : null}
     <section className="sc-home-spin" aria-labelledby="home-spin-title">
       {/* Sekcja „Dr. Spin”: nagłówek jak w innych sekcjach, pod nim ten sam element co w Klinice —
           przełącznik „Spin dnia | Najnowszy spin” i post obok pełnej odpowiedzi Dr. Spina. */}
@@ -88,6 +62,56 @@ export function HomeSpinTeaser() {
         </div>
       ) : null}
     </section>
+    {/* Obie strony obok siebie — ta sama miara, niezależnie od tego, czyj wpis jest dziś spinem dnia. */}
+    {data?.stats?.by_camp ? <HomeCampCounter stats={data.stats} /> : null}
+    {/* Wywiad dnia (najważniejszy wywiad z poprzedniego dnia) — nad spinem dnia, w tym samym stylu boxa. */}
+    {data?.interview ? (
+      <section className="sc-home-spin sc-home-interview" aria-labelledby="home-interview-title">
+        {/* Tytuł sekcji po lewej (jak „Dr. Spin”), box wywiadu przesunięty w prawo. */}
+        <header className="sc-home-interview__head">
+          <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
+          <h2 id="home-interview-title" className="sc-t-title-l sc-home-section__title">Wywiady</h2>
+          <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
+          <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
+        </header>
+        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore />
+        {/* Drugi wywiad dnia (dodany ręcznie) — ten sam układ: nagłówek po lewej, box po prawej. */}
+        {data.interview_second ? (
+          <>
+            <header className="sc-home-interview__head">
+              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
+              <p className="sc-home-spin__meta">{data.interview_second.channel} · {formatDatePl(data.interview_second.day)}</p>
+              <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setSecondOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
+            </header>
+            <InterviewBox interview={data.interview_second} open={secondOpen} onOpenChange={setSecondOpen} hideMore kicker="Wywiady" />
+          </>
+        ) : null}
+        {/* Wcześniejsze wywiady na pełną szerokość sekcji — od lewej krawędzi, jak tytuł „Wywiady”. */}
+        {data.interview_archive?.length ? <div className="sc-home-interview__archive"><InterviewArchive items={data.interview_archive.slice(0, 3)} /></div> : null}
+      </section>
+    ) : null}
     </>
+  );
+}
+
+
+function HomeCampCounter({ stats }: { stats: NonNullable<ClinicPageData["stats"]> }) {
+  const format = (value: number) => value.toLocaleString("pl-PL");
+  return (
+    <section className="sc-camp-counter" aria-label="Ta sama miara dla obu stron">
+      {CAMPS.map((camp) => {
+        const row = stats.by_camp![camp];
+        return (
+          <p key={camp} className="sc-camp-counter__side" data-camp={camp}>
+            <strong>{CAMP_LABELS[camp]}</strong>
+            <span>{format(row.accounts)} kont · {format(row.read)} przeczytanych wpisów · {format(row.diagnosed)} diagnoz</span>
+          </p>
+        );
+      })}
+      <p className="sc-camp-counter__note">
+        <strong>{format(stats.read.total)}</strong> wpisów przeczytanych · ta sama miara dla obu stron ·{" "}
+        <Link href="/o-nas#konsylium">jak to liczymy →</Link>
+      </p>
+    </section>
   );
 }
