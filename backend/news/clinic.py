@@ -26,6 +26,8 @@ from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure,
 
 logger = logging.getLogger(__name__)
 
+from news.clinic_council import check_failed, clean_claim  # noqa: E402
+
 CAMPS = ('government', 'opposition')
 CAMP_LABELS = {'government': 'Rządzący', 'opposition': 'Opozycja'}
 CAMP_PROMPT_LABELS = {'government': 'obóz rządzący', 'opposition': 'opozycja'}
@@ -558,7 +560,8 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
     data.update({
         'analysis': diagnosis.analysis,
         'techniques': diagnosis.techniques,
-        'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')} for claim in diagnosis.claims],
+        'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')}
+                   for claim in (clean_claim(item) for item in diagnosis.claims)],
         'limitations': diagnosis.limitations,
         'x_thread': diagnosis.x_thread,
         'council': (diagnosis.usage or {}).get('council'),
@@ -661,11 +664,19 @@ def spin_of_day_by_camp() -> dict:
     now = timezone.now()
     today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
     picks = {}
+
+    def first_checked(queryset):
+        # Na wizytówkę tylko pełna usługa: pomijamy diagnozy, w których sprawdzanie faktów się nie odbyło.
+        for row in queryset[:20]:
+            if not check_failed([clean_claim(item) for item in row.claims]):
+                return row
+        return None
+
     for camp in CAMPS:
         rows = base.filter(post__camp_at_collection=camp)
         best, window = None, ''
         for label, since in (('today', today), ('24h', now - timedelta(hours=24)), ('72h', now - timedelta(hours=72))):
-            best = rows.filter(post__published_at__gte=since).order_by('-intensity', '-post__published_at').first()
+            best = first_checked(rows.filter(post__published_at__gte=since).order_by('-intensity', '-post__published_at'))
             if best:
                 window = label
                 break

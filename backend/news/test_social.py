@@ -116,3 +116,14 @@ def test_spin_of_day_per_camp_puts_stronger_fresh_spin_first():
     SpinDiagnosis.objects.filter(post__post_id='7002').delete()
     data = clinic.spin_of_day_by_camp()
     assert data['spins']['opposition']['window'] == 'latest' and data['order'][0] == 'government'
+
+
+def test_tool_failure_text_is_not_shown_as_claim_explanation():
+    from news.clinic_council import check_failed, clean_claim
+    leaked = {'claim': 'X', 'assessment': 'unverified', 'sources': [],
+              'explanation': 'Nie udało się przeprowadzić weryfikacji w wyszukiwarce z powodu wyczerpania limitu zapytań narzędzia wyszukiwania w tej sesji.'}
+    cleaned = clean_claim(leaked)
+    assert cleaned['explanation'].startswith('Nie sprawdzono w wyszukiwarce') and cleaned['assessment'] == 'unverified'
+    real = {'claim': 'Y', 'assessment': 'contradicted', 'explanation': 'GUS podaje inną liczbę.', 'sources': [{'url': 'https://stat.gov.pl', 'title': 'GUS'}]}
+    assert clean_claim(real) == real
+    assert check_failed([cleaned, cleaned]) and not check_failed([cleaned, real])

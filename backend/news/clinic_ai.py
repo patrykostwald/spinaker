@@ -322,7 +322,7 @@ def _call_claude(system: str, user: str, schema: dict, *, web_search: bool, max_
     import anthropic
     client = _client()
     tools = [{'type': 'web_search_20260209', 'name': 'web_search',
-              'max_uses': int(os.environ.get('CLINIC_WEB_SEARCH_MAX_USES', '3'))}] if web_search else []
+              'max_uses': int(os.environ.get('CLINIC_WEB_SEARCH_MAX_USES', '6'))}] if web_search else []
     effort = os.environ.get('CLINIC_EFFORT', 'high')
     structured = True
     messages = [{'role': 'user', 'content': user}]

@@ -275,6 +275,27 @@ def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
     return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
 
 
+UNCHECKED = 'Nie sprawdzono w wyszukiwarce — twierdzenie niezweryfikowane.'
+_TOOL_FAILURE = re.compile(r'limit\w* (zapyta|wyszuk)|wyczerpan|nie uda\w* si\w* (przeprowadzi|wykona|sprawdzi)|narz\w*dzi\w* wyszuk|max_uses|quota|w tej sesji', re.I)
+
+
+def is_tool_failure(explanation: str) -> bool:
+    """Wyjaśnienie, które opisuje awarię narzędzia (limit, brak wyszukiwania), a nie samo twierdzenie."""
+    return bool(_TOOL_FAILURE.search(explanation or ''))
+
+
+def clean_claim(claim: dict) -> dict:
+    """Komunikat techniczny zamiast wyjaśnienia → jedno zdanie „niezweryfikowane” (bez zmiany oceny i źródeł)."""
+    if is_tool_failure(claim.get('explanation', '')) and not claim.get('sources'):
+        return {**claim, 'assessment': 'unverified', 'explanation': UNCHECKED}
+    return claim
+
+
+def check_failed(claims: list[dict]) -> bool:
+    """Sprawdzanie faktów się nie odbyło: są twierdzenia, a żadne nie ma źródła i wszystkie są niezweryfikowane."""
+    return bool(claims) and all(c.get('assessment') == 'unverified' and not c.get('sources') for c in claims)
+
+
 def _checked(data: dict, found: dict) -> list[dict]:
     result = []
     for item in data.get('claims') or []:
@@ -283,8 +304,8 @@ def _checked(data: dict, found: dict) -> list[dict]:
         assessment = item.get('assessment') if item.get('assessment') in clinic_ai.ASSESSMENTS else 'unverified'
         if assessment != 'unverified' and not sources:
             assessment = 'unverified'
-        result.append({'claim': str(item.get('claim', ''))[:600], 'assessment': assessment,
-                       'explanation': str(item.get('explanation', ''))[:1200], 'sources': sources[:4]})
+        result.append(clean_claim({'claim': str(item.get('claim', ''))[:600], 'assessment': assessment,
+                                   'explanation': str(item.get('explanation', ''))[:1200], 'sources': sources[:4]}))
     return result[:8]
 
 
