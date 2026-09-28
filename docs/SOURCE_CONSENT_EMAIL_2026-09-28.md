@@ -1,62 +1,49 @@
-# Prośba o zgodę na RSS (metadane) — wysyłka w poniedziałek 28 września 2026
+# Prośba o zgodę na tytuły i linki — wysyłka w poniedziałek 28 września 2026
 
-Nadawca: `zrodla@spin.clinic`. Jedna wiadomość na wydawcę; nie wysyłamy automatycznie.
-Brak odpowiedzi nie jest zgodą. Zgodę (albo odmowę) zapisujemy przy karcie źródła
-razem z oryginalną wiadomością, adresem nadawcy, datą i dokładnym zakresem.
+Nadawca: `zrodla@spin.clinic`. Jedna wiadomość na adresata, wysyłana ręcznie. Brak odpowiedzi nie jest zgodą.
+Zgodę (albo odmowę) zapisujemy przy karcie źródła razem z oryginalną wiadomością, nadawcą, datą i zakresem.
 
-Pola do uzupełnienia: `{WYDAWCA}`, `{TYTUŁ/SERWIS}`, `{ADRES KANAŁU RSS}`.
+Dwie wersje: **A — redakcja** (media), **B — instytucja publiczna**. Pola do uzupełnienia:
+
+- `{NAZWA}` — nazwa redakcji albo instytucji w mianowniku („OKO.press”, „Ministerstwo Finansów”);
+- `{NAZWY}` — ta sama nazwa w dopełniaczu („OKO.press”, „Ministerstwa Finansów”);
+- `{POWÓD}` — jedno zdanie, dlaczego piszemy właśnie do nich. Konkretnie i prawdziwie — bez komplementów
+  na wyrost. Przykłady niżej.
 
 ---
 
-**Temat:** spin.clinic — prośba o zgodę na odczyt RSS {TYTUŁ/SERWIS} (tylko tytuły i linki)
+## A. Redakcja
+
+**Temat:** {NAZWA} w spin.clinic — prośba o zgodę na tytuły i linki
 
 Dzień dobry,
 
-prosimy o zgodę na automatyczny odczyt publicznego kanału RSS {TYTUŁ/SERWIS}
-(`{ADRES KANAŁU RSS}`) przez serwis spin.clinic.
+{POWÓD}
 
-Zakres jest wąski:
+spin.clinic to niezależny serwis, który zestawia wiadomości dnia ze źródłami — każda prowadzi do oryginału.
+W Klinice spinu Dr. Spin (AI) pokazuje, jak zbudowane są wpisy polityków: rządzących i opozycji, tą samą miarą.
+Nie przyjmujemy pieniędzy od partii ani polityków.
 
-- zapisujemy wyłącznie metadane: tytuł, datę, autora (jeśli jest w kanale), nazwę
-  źródła i link — każdy materiał prowadzi czytelnika do Państwa strony;
-- nie kopiujemy ani nie publikujemy pełnych tekstów, zdjęć ani nagrań i nie
-  przekazujemy Państwa treści do trenowania modeli AI;
-- zachowujemy co najmniej 3 sekundy odstępu między żądaniami i limit dzienny,
-  który Państwo wskażą (domyślnie najwyżej 24 odczyty kanału na dobę).
+Chcielibyśmy pokazywać materiały {NAZWY}, ale tylko za Państwa zgodą. Pobieramy wyłącznie tytuł, datę, autora
+i link — bez pełnych tekstów, zdjęć i nagrań; nie trenujemy na nich modeli AI. Czytelnik zawsze trafia
+na Państwa stronę.
 
-spin.clinic to niezależny serwis, który porządkuje wiadomości dnia według źródeł
-i pokazuje je obok siebie, z linkiem do oryginału. Druga część serwisu,
-Klinika spinu, to analiza AI wypowiedzi polityków obu stron według tych samych
-zasad. Nie przyjmujemy pieniędzy od partii, polityków ani ich fundacji.
-Więcej: https://spin.clinic/o-nas#dla-redakcji
+Która droga będzie dla Państwa najwygodniejsza?
+– API, jeśli je Państwo udostępniają;
+– kanał RSS;
+– strona z listą publikacji (z przerwą między zapytaniami i w limicie, który Państwo wskażą).
 
-Chętnie zaprosimy też dziennikarzy {WYDAWCA} do prowadzenia w serwisie
-autoryzowanych nitek kontekstowych — podpisanych, z linkami do Państwa materiałów.
+Wystarczy krótka odpowiedź, na przykład:
+„Zgoda — RSS, najwyżej 24 odczyty na dobę”, „Zgoda — API, dokumentacja w załączniku” albo „Nie”.
 
-Nitka kontekstowa to poziomy pasek boxów. Pierwszy — box otwierający — to
-materiał, który chcą Państwo wypromować: artykuł, wywiad, film, śledztwo. Za nim
-dodają Państwo od 1 do 14 boxów, które dają mu kontekst (razem najwyżej 15).
-Przykład (wymyślony):
+**Zaproszenie dla Państwa dziennikarzy — autoryzowana nitka.** Państwa materiał otwiera pasek, a za nim
+idą źródła, które dają mu kontekst:
 
-  [WYWIAD — Państwa redakcja] → [komunikat prokuratury o zatrzymaniu]
-  → [artykuł innej redakcji] → [film] → [Państwa śledztwo]
+[Państwa wywiad] → [komunikat prokuratury] → [dokument] → [film] → [Państwa śledztwo]
 
-Boxy wybierają Państwo z naszej Bazy albo tworzą sami — wystarczy link, tytuł
-i zdjęcie; nowy box trafia wtedy do Bazy. Kolejność ustala autor. Każdy box ma
-źródło, datę i link do oryginału, więc czytelnik trafia na Państwa stronę.
-Opis całej nitki mieści się w jednym wpisie na X (do 280 znaków), więc łatwo ją
-udostępnić. Nitkę podpisuje autor i redakcja. To nie jest ciąg kolejnych wiadomości o tym
-samym — takie paski nasz serwis układa sam.
-Ilustracja: https://spin.clinic/o-nas#nitka-kontekstowa
-
-Prosimy o odpowiedź na trzy pytania:
-
-1. Czy zgadzają się Państwo na opisany zakres?
-2. Jaki limit dzienny i jaką formę podpisu źródła mamy stosować?
-3. Na jaki adres kierować sprawy techniczne?
-
-W każdej chwili możemy zmienić zakres albo wyłączyć odczyt — wystarczy odpowiedź
-na tę wiadomość.
+Do 15 boxów, pod nazwiskiem autora, z linkami do oryginałów; całą nitkę udostępnia się na X jednym
+kliknięciem. Jak to wygląda: https://spin.clinic/o-nas#nitka-kontekstowa
+Jeśli chcą Państwo poprowadzić własną nitkę, wystarczy napisać na kontakt@spin.clinic.
 
 Z poważaniem
 Zespół spin.clinic
@@ -65,9 +52,59 @@ Operator serwisu: iapply sp. z o.o.
 
 ---
 
+## B. Instytucja publiczna
+
+**Temat:** Komunikaty {NAZWY} w spin.clinic — prośba o zgodę na tytuły i linki
+
+Dzień dobry,
+
+{POWÓD}
+
+spin.clinic to niezależny serwis, który zestawia wypowiedzi polityków i wiadomości mediów z dokumentami
+źródłowymi: komunikatami, danymi i aktami prawnymi. W Klinice spinu Dr. Spin (AI) przy każdej diagnozie
+odsyła czytelnika do źródeł — rządzących i opozycję ocenia tą samą miarą. Nie przyjmujemy pieniędzy
+od partii ani polityków.
+
+Chcielibyśmy pokazywać komunikaty i publikacje {NAZWY} obok wiadomości, których dotyczą. Pobieramy wyłącznie
+tytuł, datę i link — treści nie zmieniamy ani nie kopiujemy w całości, a czytelnik zawsze trafia
+na Państwa stronę.
+
+Która droga będzie dla Państwa najwygodniejsza?
+– API albo zbiór w portalu otwartych danych (dane.gov.pl);
+– kanał RSS;
+– strona albo BIP z listą publikacji (z przerwą między zapytaniami i w limicie, który Państwo wskażą).
+
+Wystarczy krótka odpowiedź, na przykład:
+„Zgoda — RSS, najwyżej 24 odczyty na dobę”, „Zgoda — API: adres dokumentacji” albo „Nie”.
+
+Z poważaniem
+Zespół spin.clinic
+zrodla@spin.clinic · https://spin.clinic
+Operator serwisu: iapply sp. z o.o.
+
+---
+
+## Przykłady zdania {POWÓD}
+
+Jedno zdanie, prawdziwe i sprawdzalne. Nie piszemy, że ktoś „jest najlepszy”; piszemy, po co nam jego materiały.
+
+- **OKO.press:** „Państwa teksty o finansowaniu partii i o danych publicznych to dokładnie ten rodzaj źródeł, do których
+  Dr. Spin odsyła czytelników, gdy polityk podaje liczby bez kontekstu.”
+- **Bankier.pl:** „Gdy politycy mówią o inflacji, podatkach czy kursie złotego, nasi czytelnicy potrzebują rzetelnego
+  źródła gospodarczego — a Bankier.pl jest nim na co dzień.”
+- **Demagog / Konkret24:** „Sprawdzają Państwo wypowiedzi polityków — my pokazujemy, jak zbudowano przekaz; oba
+  podejścia się uzupełniają, a Państwa analizy są naturalnym źródłem dla naszej Kliniki.”
+- **TVN24 / Polsat News / TVP Info:** „Wywiady z politykami na Państwa antenie to materiał, który Dr. Spin analizuje
+  najczęściej — chcielibyśmy prowadzić czytelników prosto do oryginału.”
+- **Ministerstwo / urząd (wersja B):** „Komunikaty {NAZWY} są punktem odniesienia, gdy politycy mówią o {TEMAT} —
+  chcemy, by czytelnik widział je obok wypowiedzi, których dotyczą.”
+
+---
+
 ## Po wysyłce
 
 1. Trzy dni bez odpowiedzi — jedno uprzejme przypomnienie; nie więcej.
-2. Zgoda — karta RSS, zakres `metadata`, `terms_url` = link do wiadomości w archiwum
-   skrzynki albo strony z warunkami, `evidence` = data, nadawca, cytat zgody.
-3. Odmowa — źródło zostaje wyłączone; zapisujemy decyzję, nie wracamy do tematu.
+2. Zgoda — karta źródła: metoda (API, RSS albo strona), zakres `metadata`, limit, `terms_url` = link do wiadomości
+   w archiwum skrzynki, `evidence` = data, nadawca, cytat zgody.
+3. Odmowa — źródło zostaje wyłączone; zapisujemy decyzję i nie wracamy do tematu.
+4. Prośba o nitkę (kontakt@spin.clinic) — zakładamy konto dziennikarza (grupa `journalists`) i odsyłamy dane logowania.
