@@ -1,5 +1,5 @@
-"""Automatyczne wpisy konta spin.clinic na X: silne spiny (domyślnie od 70/100) — własny wpis z cytowanym wpisem polityka,
-pod nim 3–5 odpowiedzi z diagnozą i terapią, oraz (jeśli X pozwoli) krótki komentarz pod wpisem polityka.
+"""Automatyczne wpisy konta spin.clinic na X: silny spin (domyślnie od 70/100) = JEDEN wpis na profilu, z cytowanym wpisem
+polityka (bez wątku i bez komentarzy pod cudzymi wpisami — decyzja właściciela 28.09, koszt). Nieudany wpis = alarm mailem.
 
 Wątek to ten sam 2–3-wpisowy skrót co przycisk „Udostępnij” (news/x_share.py). Wyłączone domyślnie — działa dopiero
 z kluczami konta z uprawnieniem zapisu (OAuth 1.0a: X_POST_API_KEY, X_POST_API_SECRET, X_POST_ACCESS_TOKEN,
@@ -64,6 +64,32 @@ def post(text: str, reply_to: str | None = None) -> str:
     return str(response.json()['data']['id'])
 
 
+def alert(diagnosis_id: int, error: str) -> str:
+    """Mail do zespołu, gdy wpis na X się nie udał — najwyżej jeden na 6 godzin (bez zasypywania skrzynki)."""
+    import smtplib
+    from email.message import EmailMessage
+    from django.conf import settings
+    from django.core.cache import cache
+    from news.clinic import _smtp_ready
+    recipient = os.environ.get('X_POST_ALERT_EMAIL', '').strip() or os.environ.get('CLINIC_REVIEW_EMAIL', '').strip()
+    if not recipient or not _smtp_ready() or not cache.add('x-publish-alert', '1', timeout=6 * 3600):
+        return 'skipped'
+    email = EmailMessage()
+    email['From'], email['To'] = settings.SOURCE_MAIL_SMTP_FROM, recipient
+    email['Subject'] = 'spin.clinic: wpis na X się nie udał'
+    email.set_content(f'Automatyczny wpis diagnozy {diagnosis_id} na profilu spin.clinic nie został opublikowany.\n\n'
+                      f'Odpowiedź X: {error[:500]}\n\nNajczęstsze przyczyny: wygasłe albo błędne klucze (X_POST_*), brak uprawnienia '
+                      'Read and write, limit albo brak środków na koncie deweloperskim X. Kolejna próba — przy następnym przebiegu (co 30 minut).')
+    try:
+        with smtplib.SMTP_SSL(settings.SOURCE_MAIL_SMTP_HOST, settings.SOURCE_MAIL_SMTP_PORT, timeout=20) as client:
+            client.login(settings.SOURCE_MAIL_SMTP_USERNAME, settings.SOURCE_MAIL_SMTP_PASSWORD)
+            client.send_message(email)
+    except (OSError, smtplib.SMTPException) as error_mail:
+        logger.warning('x publish alert failed: %s', type(error_mail).__name__)
+        return 'failed'
+    return 'sent'
+
+
 def candidates(limit: int):
     from news.clinic import published_diagnoses
     minimum = int(os.environ.get('X_POST_MIN_INTENSITY', '70'))
@@ -81,31 +107,19 @@ def run(dry_run: bool = False) -> dict:
     posted_today = SpinDiagnosis.objects.filter(x_posted_at__gte=start).count()
     room = max(0, int(os.environ.get('X_POST_DAILY_LIMIT', '3')) - posted_today)
     done = []
-    from news.x_share import build_author_reply, build_thread
-    reply_to_author = os.environ.get('X_POST_REPLY_TO_AUTHOR', 'true').strip().lower() == 'true'
     for diagnosis in candidates(room if not dry_run else 3):
-        data = detail_data(diagnosis)
-        main, thread, author_reply = data['x_share'][0], build_thread(data), build_author_reply(data)
+        text = detail_data(diagnosis)['x_share'][0]
         if dry_run:
-            done.append({'id': diagnosis.pk, 'posts': [main, *thread], 'author_reply': author_reply if reply_to_author else ''})
+            done.append({'id': diagnosis.pk, 'posts': [text]})
             continue
-        ids = []
         try:
-            ids.append(post(main))                       # własny wpis z cytowanym wpisem polityka
-            for text in thread:                          # 3–5 odpowiedzi pod własnym wpisem
-                ids.append(post(text, ids[-1]))
+            post_id = post(text)  # jeden wpis na profilu spin.clinic, z cytowanym wpisem polityka
         except (requests.RequestException, RuntimeError, KeyError, ValueError) as error:
             logger.warning('x publish %s: %s', diagnosis.pk, error)
-            if not ids:
-                break  # nie udało się nawet pierwszego wpisu — klucze albo limit; spróbujemy przy następnym przebiegu
-        replied = False
-        if ids and reply_to_author:
-            try:                                          # komentarz pod wpisem polityka — X może na to nie pozwolić
-                ids.append(post(author_reply, diagnosis.post.post_id))
-                replied = True
-            except (requests.RequestException, RuntimeError, KeyError, ValueError) as error:
-                logger.info('x reply to author %s skipped: %s', diagnosis.pk, error)
-        diagnosis.x_posted_ids, diagnosis.x_posted_at = ids, timezone.now()
+            alert(diagnosis.pk, str(error))
+            done.append({'id': diagnosis.pk, 'posted': False, 'error': str(error)[:200]})
+            break  # klucze, uprawnienia albo limit — nie próbujemy kolejnych w tym przebiegu
+        diagnosis.x_posted_ids, diagnosis.x_posted_at = [post_id], timezone.now()
         diagnosis.save(update_fields=['x_posted_ids', 'x_posted_at'])
-        done.append({'id': diagnosis.pk, 'posted': len(ids), 'thread': len(thread), 'reply_to_author': replied})
+        done.append({'id': diagnosis.pk, 'posted': True})
     return {'status': 'dry_run' if dry_run else 'ok', 'results': done}

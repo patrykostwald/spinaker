@@ -21,8 +21,6 @@ class Command(BaseCommand):
                 self.stdout.write(f"— diagnoza {item['id']}:")
                 for text in item['posts']:
                     self.stdout.write(f'   {text}\n')
-                if item.get('author_reply'):
-                    self.stdout.write(f"   [komentarz pod wpisem polityka] {item['author_reply']}\n")
             if not result['results']:
                 self.stdout.write('Brak spinów od progu X_POST_MIN_INTENSITY z ostatniej doby.')
         else:

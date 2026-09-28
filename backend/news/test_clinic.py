@@ -678,13 +678,29 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
 
     monkeypatch.setattr(x_publish.requests, 'post', fake_post)
     result = x_publish.run()
-    item = result['results'][0]
-    assert item['id'] == row.pk and 3 <= item['thread'] <= 5 and item['reply_to_author'] is True
-    assert 'reply' not in sent[0]  # własny wpis na profilu (z cytowanym wpisem polityka)
-    for index in range(1, item['thread'] + 1):  # 3–5 odpowiedzi pod własnym wpisem, jedna pod drugą
-        assert sent[index]['reply'] == {'in_reply_to_tweet_id': str(index)}
-    assert sent[-1]['reply'] == {'in_reply_to_tweet_id': row.post.post_id}  # komentarz pod wpisem polityka
-    assert all(weight(body['text']) <= 280 for body in sent)
+    assert result['results'] == [{'id': row.pk, 'posted': True}]
+    assert len(sent) == 1 and 'reply' not in sent[0] and weight(sent[0]['text']) <= 280  # jeden wpis na profilu
     row.refresh_from_db()
-    assert len(row.x_posted_ids) == item['thread'] + 2 and row.x_posted_at
+    assert row.x_posted_ids == ['1'] and row.x_posted_at
     assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz
+
+
+@pytest.mark.django_db
+def test_x_publish_failure_sends_one_alert(monkeypatch):
+    from types import SimpleNamespace
+    from django.core.cache import cache
+    from news import x_publish
+    cache.delete('x-publish-alert')
+    acc = account()
+    row = SpinDiagnosis.objects.create(post=post(acc), status='approved', verdict='spin', intensity=90, headline='Teza',
+                                       summary='Krótko.', diagnosed_at=timezone.now())
+    for key in x_publish.KEYS:
+        monkeypatch.setenv(key, 'test-key-0123456789')
+    monkeypatch.setenv('X_POST_ENABLED', 'true')
+    monkeypatch.setattr(x_publish.requests, 'post', lambda *a, **k: SimpleNamespace(status_code=403, text='forbidden', json=lambda: {}))
+    alerts = []
+    monkeypatch.setattr(x_publish, 'alert', lambda diagnosis_id, error: alerts.append((diagnosis_id, error)) or 'sent')
+    result = x_publish.run()
+    assert result['results'][0]['posted'] is False and alerts and alerts[0][0] == row.pk and '403' in alerts[0][1]
+    row.refresh_from_db()
+    assert row.x_posted_at is None  # nieopublikowany — kolejna próba przy następnym przebiegu
