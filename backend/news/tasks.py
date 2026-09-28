@@ -197,6 +197,18 @@ def sejm_career_task():
     return run()
 
 
+@shared_task(name="news.tasks.social_publish_task", soft_time_limit=900, time_limit=960)
+def social_publish_task():
+    """Silne spiny na Facebooku, Instagramie, Bluesky i mail z filmem na TikTok i Shorts (SOCIAL_POST_ENABLED i klucze)."""
+    if not cache.add("social-publish-lock", "1", timeout=1000):
+        return {"status": "locked"}
+    try:
+        from news.social_publish import run
+        return run()
+    finally:
+        cache.delete("social-publish-lock")
+
+
 @shared_task(name="news.tasks.x_publish_task", soft_time_limit=300, time_limit=360)
 def x_publish_task():
     """Wątki silnych spinów z konta spin.clinic (X_POST_ENABLED i klucze z uprawnieniem zapisu)."""

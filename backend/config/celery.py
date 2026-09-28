@@ -19,6 +19,8 @@ app.conf.beat_schedule = {
     'sejm-career-weekly': {'task': 'news.tasks.sejm_career_task', 'schedule': crontab(day_of_week='mon', hour=5, minute=20)},
     # Konto spin.clinic na X: silne spiny jako wątek — co 30 minut w dzień, do dziennego limitu (domyślnie wyłączone).
     'x-publish-day': {'task': 'news.tasks.x_publish_task', 'schedule': crontab(minute='15,45', hour='8-21')},
+    # Facebook, Instagram, Bluesky i film na TikTok/Shorts — po wpisie na X, do SOCIAL_DAILY_LIMIT (domyślnie wyłączone).
+    'social-publish-day': {'task': 'news.tasks.social_publish_task', 'schedule': crontab(minute='25,55', hour='8-21')},
     'weekly-report-sunday': {'task': 'news.tasks.weekly_report_task', 'schedule': crontab(day_of_week='sun', hour=20, minute=0)},
     # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
     'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},

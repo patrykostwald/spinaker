@@ -3,6 +3,7 @@ from __future__ import annotations
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import newsletter
+from news.social_publish import serve_video
 from news.views import source_coverage, archive_status, health, me, google_news, patronite_webhook, editorial_status
 from news.auth_views import csrf, sign_in, sign_out
 from news.editorial import EditorialThreadViewSet, EditorialArticleViewSet
@@ -48,6 +49,7 @@ urlpatterns = [
     path('newsletter/confirm/', newsletter.confirm),
     path('newsletter/unsubscribe/', newsletter.unsubscribe),
     path('staff/newsletter/', newsletter.staff_stats),
+    path('social/video/<str:name>', serve_video),
     path('clinic/', clinic_page),
     path('clinic/spins/', clinic_spins),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),

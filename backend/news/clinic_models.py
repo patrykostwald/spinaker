@@ -194,3 +194,29 @@ class WeeklyReport(models.Model):
 
     def __str__(self):
         return f'Raport {self.week_start} – {self.week_end}'
+
+
+SOCIAL_PLATFORMS = [
+    ('facebook', 'Facebook (film)'),
+    ('instagram', 'Instagram (Reels)'),
+    ('bluesky', 'Bluesky'),
+    ('manual', 'TikTok i YouTube Shorts (mail z filmem)'),
+]
+
+
+class SocialPost(models.Model):
+    """Wpis diagnozy w mediach społecznościowych poza X (news/social_publish.py). Usunięty, gdy autor usunie swój wpis."""
+    diagnosis = models.ForeignKey(SpinDiagnosis, on_delete=models.CASCADE, related_name='social_posts')
+    platform = models.CharField(max_length=12, choices=SOCIAL_PLATFORMS)
+    external_id = models.CharField(max_length=200, blank=True)
+    url = models.URLField(max_length=500, blank=True)
+    posted_at = models.DateTimeField(default=timezone.now, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    error = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        ordering = ['-posted_at']
+        constraints = [models.UniqueConstraint(fields=['diagnosis', 'platform'], name='social_post_once_per_platform')]
+
+    def __str__(self):
+        return f'{self.get_platform_display()} — diagnoza {self.diagnosis_id}'
