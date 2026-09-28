@@ -158,7 +158,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
     <section className="sc-clinic" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
       <header className="sc-clinic-head">
         <p className="sc-clinic-kicker">Klinika spinu</p>
-        <Title id="clinic-title">Dr. Spin stawia diagnozy</Title>
+        <Title id="clinic-title">Dr. Spin</Title>
         <p className="sc-clinic-subtitle"><AiTag /> Treści w tej sekcji generuje AI. {data?.notice ?? ""} <Link href="/o-nas#klinika">Jak to działa</Link></p>
       </header>
 
