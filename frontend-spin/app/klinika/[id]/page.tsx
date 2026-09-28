@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     return {
       title: `${title} — Klinika spinu`,
       description,
-      openGraph: { title, description, type: 'article', siteName: 'spin.clinic' },
-      twitter: { card: 'summary', title, description },
+      openGraph: { title, description, type: 'article', siteName: 'spin.clinic', images: [{ url: '/og.png', width: 1200, height: 630 }] },
+      twitter: { card: 'summary_large_image', site: '@spinclinic', title, description, images: ['/og.png'] },
     };
   } catch {
     return { title: 'Diagnoza spinu — spin.clinic' };

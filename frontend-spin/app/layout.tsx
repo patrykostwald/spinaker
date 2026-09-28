@@ -16,9 +16,15 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
+const DESCRIPTION = "Wiadomości ze źródłami i Klinika spinu: Dr. Spin (AI) pokazuje techniki perswazji we wpisach polityków i zestawia twierdzenia ze źródłami. Ta sama miara dla wszystkich.";
+
 export const metadata: Metadata = {
-  title: "spin.clinic — historie w źródłach",
-  description: "Przeszukuj źródła i poznawaj historie wydarzeń na osi czasu. Context before content.",
+  metadataBase: new URL(`https://${process.env.NEXT_PUBLIC_DOMAIN || "spin.clinic"}`),
+  title: "spin.clinic — pokazujemy chwyty, nie werdykty",
+  description: DESCRIPTION,
+  // Podgląd linku na X, Facebooku i w komunikatorach — obrazek public/og.png (1200×630).
+  openGraph: { type: "website", siteName: "spin.clinic", locale: "pl_PL", title: "spin.clinic — pokazujemy chwyty, nie werdykty", description: DESCRIPTION, images: [{ url: "/og.png", width: 1200, height: 630, alt: "spin.clinic — Klinika spinu" }] },
+  twitter: { card: "summary_large_image", site: "@spinclinic", title: "spin.clinic — pokazujemy chwyty, nie werdykty", description: DESCRIPTION, images: ["/og.png"] },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
