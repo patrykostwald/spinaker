@@ -325,24 +325,43 @@ def pick_featured():
     return best
 
 
-def spent_today() -> float:
-    """Szacowane wydatki na Claude'a od północy: diagnozy postów i wywiad dnia."""
+def posts_spent_today() -> float:
+    """Szacowane wydatki na Claude'a od północy — tylko diagnozy wpisów."""
+    start = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    return round(sum(clinic_ai.cost_usd(usage) for usage in
+                     SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic').values_list('usage', flat=True)), 4)
+
+
+def interview_spent_today() -> float:
+    """Szacowane wydatki od północy na diagnozę wywiadu dnia (Claude albo Gemini; transkrypcja nie jest liczona)."""
     from news.clinic_models import ClinicInterview
     start = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
-    total = sum(clinic_ai.cost_usd(usage) for usage in
-                SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic').values_list('usage', flat=True))
-    total += sum(clinic_ai.cost_usd((usage or {}).get('claude') or {}) for usage in
-                 ClinicInterview.objects.filter(diagnosed_at__gte=start).values_list('usage', flat=True))
-    return round(total, 4)
+    return round(sum(clinic_ai.cost_usd((usage or {}).get('claude') or {}) for usage in
+                     ClinicInterview.objects.filter(diagnosed_at__gte=start).values_list('usage', flat=True)), 4)
+
+
+def spent_today() -> float:
+    """Szacowane wydatki od północy razem: diagnozy wpisów i wywiad dnia."""
+    return round(posts_spent_today() + interview_spent_today(), 4)
+
+
+def _env_usd(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name, '') or default)
+    except ValueError:
+        return default
 
 
 def budget_left() -> float:
-    """Twardy dzienny budżet na płatne diagnozy (CLINIC_DAILY_BUDGET_USD, domyślnie 2 USD)."""
-    try:
-        budget = float(os.environ.get('CLINIC_DAILY_BUDGET_USD', '2'))
-    except ValueError:
-        budget = 2.0
-    return round(budget - spent_today(), 4)
+    """Twardy dzienny budżet na płatne diagnozy WPISÓW (CLINIC_DAILY_BUDGET_USD, domyślnie 2 USD).
+    Wywiad dnia ma osobny budżet (interview_budget_left) — nie zabiera pieniędzy wpisom (decyzja właściciela 28.09)."""
+    return round(_env_usd('CLINIC_DAILY_BUDGET_USD', 2.0) - posts_spent_today(), 4)
+
+
+def interview_budget_left() -> float:
+    """Osobny dzienny budżet na diagnozę wywiadu dnia Claude'em (CLINIC_INTERVIEW_BUDGET_USD, domyślnie 3.5 USD).
+    Gdy go brakuje, wywiad ocenia Gemini (darmowy limit) — patrz clinic_interview.diagnose_transcript."""
+    return round(_env_usd('CLINIC_INTERVIEW_BUDGET_USD', 3.5) - interview_spent_today(), 4)
 
 
 BUDGET_RESERVE_USD = 0.25  # nie zaczynamy diagnozy, gdy w budżecie zostało mniej niż jej przybliżony koszt

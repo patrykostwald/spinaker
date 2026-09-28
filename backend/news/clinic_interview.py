@@ -232,17 +232,21 @@ def diagnose_transcript(meta: dict, transcript: str) -> dict:
     user = '\n'.join([f"Program: {meta.get('program') or meta.get('title', '')}", f"Kanał: {meta.get('channel', '')}",
                       f"Gość: {meta.get('guest_name', '')} ({meta.get('guest_role', '')})", f"Prowadzący: {meta.get('host_name', '')}",
                       f"Link: {meta.get('url', '')}", '', 'Transkrypcja:', '<<<', transcript, '>>>'])
-    # Wywiad dnia to jedna, najważniejsza diagnoza dnia — Claude, gdy wskazano go w CLINIC_INTERVIEW_PROVIDER (i są środki);
-    # inaczej zwykła ścieżka (Claude albo Gemini). Przy braku środków na koncie Anthropic — Gemini.
-    if os.environ.get('CLINIC_INTERVIEW_PROVIDER', '').strip().lower() == 'anthropic' and os.environ.get('ANTHROPIC_API_KEY', '').strip():
+    # Wywiad dnia (decyzja właściciela 28.09): Claude z osobnego budżetu wywiadu; gdy tego budżetu brakuje albo konto
+    # Anthropic nie ma środków — Gemini. CLINIC_INTERVIEW_PROVIDER=gemini wymusza Gemini zawsze.
+    from news.clinic import interview_budget_left
+    forced_gemini = os.environ.get('CLINIC_INTERVIEW_PROVIDER', '').strip().lower() == 'gemini'
+    use_claude = (not forced_gemini and os.environ.get('ANTHROPIC_API_KEY', '').strip()
+                  and interview_budget_left() >= INTERVIEW_CLAUDE_MIN_USD)
+    response = None
+    if use_claude:
         try:
             response = clinic_ai._call_claude(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
         except clinic_ai.ClinicAIError as error:
             if 'credit balance' not in error.code.lower():
                 raise
-            response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
-    else:
-        response = clinic_ai._call(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+    if response is None:
+        response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
     data = clinic_ai._json_from_text(response.content)
     result = clean_interview(data, transcript, clinic_ai._search_results(response.content))
     result['usage'] = clinic_ai._usage(response)
@@ -262,16 +266,12 @@ def queue_interview(url: str, day=None, user=None) -> ClinicInterview:
     return interview
 
 
-INTERVIEW_RESERVE_USD = 0.6  # wywiad to długa transkrypcja — bez tego zapasu w budżecie nie zaczynamy (ani Gemini)
+# Claude ocenia wywiad tylko, gdy w budżecie wywiadu zostało co najmniej tyle (jedna ocena to zwykle 1,5–3 USD);
+# poniżej — Gemini. Wywiad nie korzysta już z budżetu wpisów, więc nigdy nie czeka „do jutra” z powodu pieniędzy.
+INTERVIEW_CLAUDE_MIN_USD = 1.0
 
 
 def process(interview: ClinicInterview) -> ClinicInterview:
-    from news.clinic import budget_left
-    if budget_left() < INTERVIEW_RESERVE_USD:
-        # Dzienny budżet wyczerpany: wywiad czeka w kolejce do jutra — bez transkrypcji i bez diagnozy.
-        interview.status, interview.error = 'queued', 'budżet dzienny wyczerpany — spróbujemy jutro'
-        interview.save(update_fields=['status', 'error'])
-        return interview
     meta = _oembed(interview.url)
     interview.title = str(meta.get('title', interview.title))[:300]
     interview.channel = str(meta.get('author_name', interview.channel))[:200]
@@ -309,9 +309,6 @@ def rediagnose(interview: ClinicInterview) -> ClinicInterview:
     """Nowa diagnoza Dr. Spina z zapisanej transkrypcji — bez ponownej transkrypcji (Gemini)."""
     if not interview.transcript:
         raise clinic_ai.ClinicAIError('no_transcript')
-    from news.clinic import budget_left
-    if budget_left() < INTERVIEW_RESERVE_USD:
-        raise clinic_ai.ClinicAIError('daily_budget')
     meta = {'title': interview.title, 'channel': interview.channel, 'url': interview.url, 'guest_name': interview.guest_name,
             'guest_role': interview.guest_role, 'host_name': interview.host_name}
     result = diagnose_transcript(meta, interview.transcript)
