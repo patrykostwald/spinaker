@@ -4762,3 +4762,5 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 .sc-home-support__progress strong { color: var(--sc-text); }
 .sc-home-support__actions { display: flex; gap: var(--sc-s-2); flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 900px) { .sc-home-support { grid-template-columns: minmax(0, 1fr); } .sc-home-support__actions { justify-content: flex-start; } }
+/* Pas powitalny: tytuł w jednej linii na komputerze. */
+.sc-home-intro__content { max-width: 46rem; }

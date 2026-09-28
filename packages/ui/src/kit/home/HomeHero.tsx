@@ -55,8 +55,7 @@ export function HomeHero() {
           Do tego wiadomości dopasowane do Twoich tematów i źródeł.
         </p>
         <p className="sc-home-intro__links">
-          <a className="sc-home-intro__cta" href="#dr-spin">Zobacz analizę</a>
-          <a className="sc-home-intro__cta" href="#nitki">Ustaw swoje wiadomości</a>
+          <a href="#dr-spin">Zobacz dzisiejsze diagnozy →</a>
           {THREADS_ENABLED && <Link href="/nitki">Nitki →</Link>}
           <Link href="/o-nas">Jak to działa</Link>
         </p>
