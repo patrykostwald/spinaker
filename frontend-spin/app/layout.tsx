@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main id="main-content" className="sc-app-main">{children}</main>
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
-            cta={{ label: "Wesprzyj nas", href: "/wsparcie" }}
+            cta={{ label: "Wspomóż projekt", href: "/wsparcie" }}
             columns={[{ title: "Informacje", links: [{ label: "Źródła", href: "/zrodla" }, { label: "O nas", href: "/o-nas" }, { label: "Newsletter", href: "/newsletter" }, { label: "Zasady korzystania", href: "/zasady-korzystania" }, { label: "Prywatność i cookies", href: "/polityka-prywatnosci" }] }]}
             sticky
           />

@@ -560,7 +560,7 @@ export default function AboutPage() {
             </p>
             <p>Na stronie Wsparcie pokazujemy jawnie, ile kosztuje utrzymanie i na co zbieramy. Każda wpłata to kolejne sprawdzone wypowiedzi i źródła.</p>
             <p>
-              <Link className="sc-onas-mail" href="/wsparcie">Wesprzyj spin.clinic</Link>
+              <Link className="sc-onas-mail" href="/wsparcie">Wspomóż projekt</Link>
             </p>
           </div>
           <h3 className="sc-onas-subtitle">Kontakt</h3>
