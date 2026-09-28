@@ -11,7 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CAMPS, getClinicPage, sharePercent } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "../../components/clinic/SpinParts";
-import { InterviewBox, MessageBox, SpinSwitch } from "../../components/clinic/ClinicExtras";
+import { InterviewArchive, InterviewBox, MessageBox, SpinSwitch } from "../../components/clinic/ClinicExtras";
 import { SpinOfDay } from "../../components/clinic/ClinicPage";
 
 /** Godziny generowania przekazu dnia (jak w harmonogramie serwera). */
@@ -44,7 +44,9 @@ export function HomeSpinTeaser() {
           <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
           <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
         </header>
-        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore archive={data.interview_archive?.slice(0, 3)} />
+        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore />
+        {/* Wcześniejsze wywiady na pełną szerokość sekcji — od lewej krawędzi, jak tytuł „Wywiad dnia”. */}
+        {data.interview_archive?.length ? <div className="sc-home-interview__archive"><InterviewArchive items={data.interview_archive.slice(0, 3)} /></div> : null}
       </section>
     ) : null}
     <section className="sc-home-spin" aria-labelledby="home-spin-title">

@@ -163,7 +163,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
 const ARCHIVE_TAG_MIN = 40;
 
 /** Archiwum wywiadów dnia: jeden pasek na dzień — data po lewej, gość, nagłówek, werdykt; klik otwiera analizę. */
-function InterviewArchive({ items }: { items: Interview[] }) {
+export function InterviewArchive({ items }: { items: Interview[] }) {
   const [openId, setOpenId] = useState<number | null>(null);
   const current = items.find(item => item.id === openId) ?? null;
   return (

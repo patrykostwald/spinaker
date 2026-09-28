@@ -129,10 +129,9 @@ export function MaterialSurface({
   // powrotu, PortalProvider.close()), który AnimatePresence dostarcza przez `custom` już PO usunięciu
   // dziecka — zwykły prop `exit` widziałby wartości z renderu sprzed zamknięcia (`null`).
   const variants = {
-    closed: (custom: MaterialSurfaceExit | null) =>
-      custom
-        ? { top: custom.rect.top, left: custom.rect.left, width: custom.rect.width, height: custom.rect.height, borderRadius: custom.radius, opacity: 1, transition: custom.transition }
-        : { opacity: 0, transition: m.t("fade") },
+    // Zamknięcie = krótkie wygaszenie i ukrycie (decyzja właściciela 28.09): powrót „do pudełka” z zawartością
+    // okna (X, suwaki) wyglądał jak zepsuty box, a zacięta animacja potrafiła go tak zostawić.
+    closed: () => ({ opacity: 0, transition: m.t("fade"), transitionEnd: { display: "none" } }),
   };
 
   const content = (

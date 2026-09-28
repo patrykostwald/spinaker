@@ -4492,3 +4492,86 @@ html[data-touch-scroll="guard"] [data-scroll-active] {
   box-shadow: inset 0 0 0 2px var(--sc-accent);
   border-radius: var(--sc-r-lg);
 }
+.sc-home-interview__archive { grid-column: 1 / -1; min-width: 0; }
+
+/* Telefon: tytuł paska („Film”) i „Edytuj | Usuń” w jednej linii, tytuł mniejszy. */
+@media (max-width: 860px) {
+  .sc-home-threads .sc-strip-row { position: relative; }
+  .sc-home-threads .sc-strip-row__title { font-size: var(--sc-t-title-m-size); line-height: 40px; padding-right: 130px; }
+  .sc-home-threads .sc-home-personal__actions { position: absolute; top: var(--sc-s-3); right: var(--sc-s-4); height: 40px; align-items: center; }
+}
+
+/* Koniec strony: bez pustej przerwy przed stopką (strona „zatrzymuje się” na ostatniej sekcji). */
+.sc-home { padding-bottom: 0; }
+.sc-app-main { padding-bottom: var(--sc-s-4); }
+
+/* Stopka: jeden wiersz, przycisk wyśrodkowany w pionie; na telefonie bez wordmarku (logo jest w szapce). */
+.sc-footer[data-sticky] { padding-top: 0; padding-bottom: 0; }
+.sc-footer[data-sticky] .sc-footer__bar { min-height: 60px; align-items: center; }
+@container sc-footer (max-width: 1099px) {
+  .sc-footer__bar { flex-wrap: nowrap; }
+  .sc-footer[data-sticky] .sc-footer__columns { order: 0; width: auto; flex: 1; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+}
+@container sc-footer (max-width: 639px) {
+  .sc-footer[data-sticky] .sc-footer__brand { display: none; }
+  .sc-footer[data-sticky] .sc-footer__bar { min-height: 52px; gap: var(--sc-s-3); }
+  .sc-footer[data-sticky] .sc-footer__link { font-size: var(--sc-t-body-s-size); }
+  .sc-footer__bar-cta { padding-left: 12px; padding-right: 12px; }
+}
+
+/* Pasek wsparcia nad stopką: zdanie po lewej, licznik zbiórki po prawej (nad „Wspomóż projekt”). */
+.sc-support-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); }
+.sc-support-bar__text { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: 1.35; min-width: 0; }
+.sc-support-bar__progress { flex: none; display: grid; gap: 4px; justify-items: end; min-width: 220px; }
+.sc-support-bar__amount { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); white-space: nowrap; }
+.sc-support-bar__amount strong { color: var(--sc-text); }
+.sc-support-bar__track { position: relative; display: block; width: 100%; height: 6px; border-radius: 6px; background: var(--sc-surface-2, rgba(255,255,255,.08)); overflow: hidden; }
+.sc-support-bar__track i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--sc-accent); }
+@container sc-support (max-width: 639px) {
+  .sc-support-bar__text:not(:only-child) { display: none; } .sc-support-bar__text:only-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sc-support-bar__progress { width: 100%; justify-items: stretch; grid-template-columns: auto 1fr; align-items: center; gap: var(--sc-s-3); min-width: 0; }
+}
+.sc-support-bar__track { background: rgba(127,127,127,.25); }
+/* Paski: pierwszy box nie ucina się przy lewej krawędzi (ramka i zaokrąglenia mają 4 px oddechu). */
+.sc-strip__scroller { padding-inline: 4px; scroll-padding-inline: 4px; }
+.sc-ctx__strip { padding-left: 4px; padding-right: 4px; scroll-padding-inline: 4px; }
+
+/* Spin dnia: kolumna wpisu płynie sama (bez sklejania wierszy z diagnozą) — bez pustego miejsca pod autorem
+   przy długim tytule diagnozy; zdjęcie z wpisu nad tekstem. */
+@media (min-width: 901px) {
+  .sc-clinic-sotd__post { display: flex; flex-direction: column; gap: var(--sc-s-3); grid-template-rows: none; }
+  .sc-clinic-sotd__post > * { grid-row: auto; }
+  .sc-clinic-sotd__post > a:last-child { margin-top: auto; }
+}
+.sc-clinic-sotd__quote { display: flex; flex-direction: column; gap: var(--sc-s-3); }
+.sc-clinic-sotd__quote .sc-clinic-sotd__media { order: -1; margin: 0; }
+.sc-clinic-sotd__quote blockquote { margin: 0; }
+
+/* O nas — droga wpisu jako schemat (bez technologii; te są w sekcji Konsylium). */
+.sc-flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px; margin: var(--sc-s-2) 0 0; padding: 0; list-style: none; counter-reset: none; }
+.sc-flow__step { position: relative; display: grid; justify-items: center; gap: 6px; padding: var(--sc-s-4) var(--sc-s-3); border-radius: var(--sc-r-xl); background: var(--sc-surface-2); text-align: center; }
+.sc-flow__step + .sc-flow__step::before { content: "→"; position: absolute; left: -22px; top: 50%; transform: translateY(-50%); color: var(--sc-accent); font-weight: 800; }
+.sc-flow__num { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--sc-accent); color: #fff; font-weight: 800; }
+.sc-flow__step strong { color: var(--sc-text); font-size: var(--sc-t-body-size, 1rem); line-height: 1.25; }
+.sc-flow__caption { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); line-height: 1.35; }
+.sc-flow__more { margin: var(--sc-s-2) 0 0; }
+.sc-flow__more a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+@media (max-width: 860px) {
+  .sc-flow { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .sc-flow__step { grid-template-columns: 36px minmax(0, 1fr); justify-items: start; text-align: left; column-gap: var(--sc-s-3); }
+  .sc-flow__num { grid-row: span 2; }
+  .sc-flow__step + .sc-flow__step::before { content: "↓"; left: 28px; top: -16px; transform: none; }
+}
+
+/* Telefon: linki stopki przewijają się w bok, przycisk „Wspomóż projekt” zawsze widoczny w całości. */
+.sc-footer[data-sticky] .sc-footer__columns { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.sc-footer[data-sticky] .sc-footer__columns::-webkit-scrollbar { display: none; }
+.sc-footer[data-sticky] .sc-footer__bar-cta { flex: none; }
+@media (max-width: 639px) {
+  .sc-footer[data-sticky] .sc-footer__columns { mask-image: linear-gradient(90deg, #000 85%, transparent); }
+}
+
+/* Pasek wsparcia jako osobny pasek na całą szerokość, przyklejony razem ze stopką tuż nad nią (stopka bez zmian). */
+.sc-footer-dock { position: sticky; bottom: 0; z-index: 25; box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.28); }
+.sc-footer-dock > .sc-footer[data-sticky] { position: relative; bottom: auto; box-shadow: var(--sc-ring); }
+.sc-footer-dock__above { container-type: inline-size; container-name: sc-support; padding: 8px var(--sc-gutter); background: var(--sc-surface); box-shadow: var(--sc-ring); }

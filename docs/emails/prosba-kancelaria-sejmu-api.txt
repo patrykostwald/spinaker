@@ -1,0 +1,22 @@
+DO: Kancelaria Sejmu — administratorzy API Sejmu (api.sejm.gov.pl)
+Adres: sprawdź na https://api.sejm.gov.pl (stopka / kontakt) albo na https://www.sejm.gov.pl → Kontakt; w razie braku — biuro prasowe Kancelarii Sejmu.
+OD: kontakt@spin.clinic
+
+TEMAT: API Sejmu — prośba o odblokowanie adresu IP 194.41.12.231 (spin.clinic)
+
+Dzień dobry,
+
+prowadzimy spin.clinic — niezależny serwis, który zestawia wypowiedzi polityków z dokumentami źródłowymi. Z API Sejmu korzystamy, by przy wypowiedziach posłów pokazywać ich głosowania i przebieg mandatu, zawsze z linkiem do strony Sejmu.
+
+Od kilku dni każde zapytanie z naszego serwera (adres IP 194.41.12.231, OVH) kończy się odpowiedzią HTTP 404, także dla adresów, które z innych sieci działają poprawnie. Wygląda to na blokadę adresu, a nie na zmianę w API.
+
+Nie obchodzimy blokad i nie korzystamy z pośredników — dlatego piszemy z prośbą:
+– o odblokowanie adresu 194.41.12.231 albo
+– o informację, jakie warunki korzystania z API powinniśmy spełnić (limit zapytań, nagłówek identyfikujący, pora pobierania).
+
+Nasz ruch jest niewielki: pobieramy listę posłów i nowe głosowania kilka razy na dobę, z przerwami między zapytaniami; każde zapytanie przedstawia się nagłówkiem User-Agent z nazwą serwisu i adresem strony. Chętnie dostosujemy się do każdego wskazanego limitu.
+
+Z poważaniem
+Zespół spin.clinic
+kontakt@spin.clinic · https://spin.clinic · X: https://x.com/spinclinic
+Operator serwisu: iapply sp. z o.o.
