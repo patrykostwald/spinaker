@@ -107,9 +107,9 @@ function QuoteList({ interview, items }: { interview: Interview; items: Intervie
 }
 
 /** Wywiad dnia: pasek z miniaturą i tytułem, pod nim Dr. Spin o gościu i o prowadzącym, na dole podsumowanie. */
-export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore, archive = [], kicker = "Wywiad dnia" }: {
+export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore, archive = [], kicker = "Wywiady" }: {
   interview: Interview;
-  /** Napis nad tytułem — „Wywiad dnia” albo „Drugi wywiad dnia”. */
+  /** Napis nad tytułem sekcji (domyślnie „Wywiady”). */
   kicker?: string;
   /** Wcześniejsze wywiady — paski z datą po lewej, pod aktualnym wywiadem (ten sam panel). */
   archive?: Interview[];
@@ -154,7 +154,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
         </article>
       </div>
       {archive.length ? <InterviewArchive items={archive} /> : null}
-      <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad dnia · ${interview.title}`}>
+      <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad · ${interview.title}`}>
         <InterviewAnalysis interview={interview} />
       </ClinicDialog>
     </section>
@@ -185,7 +185,7 @@ export function InterviewArchive({ items }: { items: Interview[] }) {
           </button>
         </li>
       ))}</ul>
-      <ClinicDialog open={current !== null} onClose={() => setOpenId(null)} title={current ? `Wywiad dnia · ${current.title}` : ""}>
+      <ClinicDialog open={current !== null} onClose={() => setOpenId(null)} title={current ? `Wywiad · ${current.title}` : ""}>
         {current ? <InterviewAnalysis interview={current} /> : null}
       </ClinicDialog>
     </div>

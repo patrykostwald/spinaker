@@ -41,7 +41,7 @@ export function HomeSpinTeaser() {
         {/* Tytuł sekcji po lewej (jak „Dr. Spin”), box wywiadu przesunięty w prawo. */}
         <header className="sc-home-interview__head">
           <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-          <h2 id="home-interview-title" className="sc-t-title-l sc-home-section__title">Wywiad dnia</h2>
+          <h2 id="home-interview-title" className="sc-t-title-l sc-home-section__title">Wywiady</h2>
           <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
           <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
         </header>
@@ -51,14 +51,13 @@ export function HomeSpinTeaser() {
           <>
             <header className="sc-home-interview__head">
               <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <h3 className="sc-t-title-l sc-home-section__title">Drugi wywiad dnia</h3>
               <p className="sc-home-spin__meta">{data.interview_second.channel} · {formatDatePl(data.interview_second.day)}</p>
               <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setSecondOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
             </header>
-            <InterviewBox interview={data.interview_second} open={secondOpen} onOpenChange={setSecondOpen} hideMore kicker="Drugi wywiad dnia" />
+            <InterviewBox interview={data.interview_second} open={secondOpen} onOpenChange={setSecondOpen} hideMore kicker="Wywiady" />
           </>
         ) : null}
-        {/* Wcześniejsze wywiady na pełną szerokość sekcji — od lewej krawędzi, jak tytuł „Wywiad dnia”. */}
+        {/* Wcześniejsze wywiady na pełną szerokość sekcji — od lewej krawędzi, jak tytuł „Wywiady”. */}
         {data.interview_archive?.length ? <div className="sc-home-interview__archive"><InterviewArchive items={data.interview_archive.slice(0, 3)} /></div> : null}
       </section>
     ) : null}
