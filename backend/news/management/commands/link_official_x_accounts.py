@@ -72,16 +72,54 @@ class TechnicalError(Exception):
     """Błąd konfiguracji albo połączenia — dowodu nie odrzucamy, można ponowić."""
 
 
+USER_FIELDS = 'name,username,description,protected,created_at,public_metrics,verified'
+FRESH_DAYS = 365          # konto młodsze niż rok …
+FRESH_MIN_FOLLOWERS = 2000  # … i z mniejszą liczbą obserwujących = podejrzane (zajęta stara nazwa, podróbka)
+MIN_HANDLE_SURNAME = 5    # w samej nazwie użytkownika liczymy tylko nazwisko co najmniej 5-literowe
+
+
+def identity_problem(data, full_name, now=None):
+    """Powód odrzucenia konta X jako konta tej osoby albo '' — gdy wygląda na jej oficjalne konto.
+
+    28.09.2026: @AgaBak przeszło starą regułę, bo „bak” (Bąk) jest fragmentem obcej nazwy „Agabak” — konto
+    założone w lipcu 2026 po tym, jak ministra zmieniła nazwę. Dlatego: nazwisko jako całe słowo w nazwie
+    wyświetlanej (w nazwie użytkownika — tylko dłuższe nazwiska) i odrzucanie świeżych kont z małym zasięgiem."""
+    from datetime import datetime, timezone as dt_timezone
+    if data.get('protected'):
+        return 'konto chronione'
+    bio = _fold(data.get('description', ''))
+    if any(word in bio for word in ('parod', 'fan ', 'fanpage', 'nieoficjaln', 'parody', 'not affiliated')):
+        return 'opis wskazuje parodię lub konto nieoficjalne'
+    parts = [part for part in _fold(full_name).replace('-', ' ').replace('.', ' ').split() if len(part) > 2]
+    surname = parts[-2:]
+    words = set(re.findall(r'[a-z0-9]+', _fold(data.get('name', ''))))
+    handle = _fold(data.get('username', ''))
+    if not surname or not (any(part in words for part in surname)
+                           or any(len(part) >= MIN_HANDLE_SURNAME and part in handle for part in surname)):
+        return f'nazwa w X („{data.get("name", "")}”, @{data.get("username", "")}) nie zawiera nazwiska'
+    created = data.get('created_at')
+    followers = (data.get('public_metrics') or {}).get('followers_count')
+    if created and isinstance(followers, int):
+        try:
+            born = datetime.fromisoformat(str(created).replace('Z', '+00:00'))
+        except ValueError:
+            born = None
+        now = now or datetime.now(dt_timezone.utc)
+        if born and (now - born).days < FRESH_DAYS and followers < FRESH_MIN_FOLLOWERS:
+            return f'konto założone niedawno ({born:%m.%Y}) i ma tylko {followers} obserwujących — możliwa zajęta stara nazwa'
+    return ''
+
+
 def official_identity(handle, full_name):
-    """Tylko oficjalne konta: nazwa lub handle w X musi zawierać nazwisko osoby; konta chronione, parodie
-    i fanowskie pomijamy. Zwraca (ok, powód)."""
+    """Tylko oficjalne konta: nazwisko w nazwie konta, bez parodii, kont chronionych i świeżych kont z małym
+    zasięgiem. Zwraca (ok, powód)."""
     import os
     token = os.environ.get('X_POLITICAL_BEARER_TOKEN', '').strip()
     if not token:
         raise TechnicalError('brak tokenu X (X_POLITICAL_BEARER_TOKEN) w konfiguracji serwera')
     try:
         response = requests.get(f'https://api.x.com/2/users/by/username/{handle}', timeout=(5, 15), allow_redirects=False,
-                                params={'user.fields': 'name,username,description,protected'},
+                                params={'user.fields': USER_FIELDS},
                                 headers={'Authorization': f'Bearer {token}'})
         data = response.json().get('data') if response.status_code == 200 else None
     except (requests.RequestException, ValueError):
@@ -90,16 +128,8 @@ def official_identity(handle, full_name):
         raise TechnicalError(f'X odrzucił zapytanie (HTTP {response.status_code})')
     if not data:
         return False, 'konto nie istnieje w X'
-    if data.get('protected'):
-        return False, 'konto chronione'
-    text = _fold(f"{data.get('name', '')} {data.get('username', '')}")
-    bio = _fold(data.get('description', ''))
-    if any(word in bio for word in ('parod', 'fan ', 'fanpage', 'nieoficjaln', 'parody', 'not affiliated')):
-        return False, 'opis wskazuje parodię lub konto nieoficjalne'
-    surname = [part for part in _fold(full_name).replace('-', ' ').split() if len(part) > 2]
-    if not surname or not any(part in text for part in surname[-2:]):
-        return False, f'nazwa w X („{data.get("name", "")}”) nie zawiera nazwiska'
-    return True, ''
+    problem = identity_problem(data, full_name)
+    return (False, problem) if problem else (True, '')
 
 
 def evidence_entry(evidence, figures_type):
