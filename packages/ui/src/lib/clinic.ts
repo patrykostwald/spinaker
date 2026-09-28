@@ -14,6 +14,7 @@ export type SpinAuthor = {
   figure_id: number | null;
   role_title: string;
   party: Party | null;
+  eu_group?: string | null;
 };
 
 export type SpinCardData = {
@@ -26,6 +27,7 @@ export type SpinCardData = {
   headline: string;
   summary: string;
   technique_names: string[];
+  technique_groups?: string[];
   post: {
     id: string;
     url: string;
@@ -133,6 +135,43 @@ export const CAMP_LABELS: Record<Camp, string> = { government: "Rządzący", opp
 export const CAMPS: Camp[] = ["government", "opposition"];
 
 export const getClinicPage = () => apiFetch<ClinicPageData>("/api/clinic/");
+export type ClinicSearchParams = {
+  page?: number;
+  q?: string;
+  camp?: Camp;
+  verdict?: Verdict;
+  party?: string;
+  technique?: string;
+  intensity_min?: number;
+  intensity_max?: number;
+  date_from?: string;
+  date_to?: string;
+  sort?: "new" | "strong";
+};
+export type ClinicSearchResult = {
+  results: SpinCardData[];
+  next_page: number | null;
+  /** Starsze API nie zwraca jeszcze liczby wyników. */
+  count?: number;
+};
+export const searchClinicSpins = (params: ClinicSearchParams = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  });
+  return apiFetch<ClinicSearchResult>(`/api/clinic/spins/?${query}`);
+};
+export type ClinicStats = {
+  totals: {
+    diagnosed: { total: number; today: number };
+    read: { total: number; today: number };
+    by_camp: Record<Camp, { accounts: number }>;
+  };
+  by_party: Record<string, { party: Party | null }>;
+  accounts?: Array<{ account_id: number }>;
+  techniques: Record<string, Record<Camp, { count: number; enough_data: boolean }>>;
+};
+export const getClinicStats = () => apiFetch<ClinicStats>("/api/clinic/stats/");
 export const getClinicSpins = (camp: Camp, page: number) =>
   apiFetch<{ results: SpinCardData[]; next_page: number | null }>(`/api/clinic/spins/?camp=${camp}&page=${page}`);
 export const getSpin = (id: number | string) => apiFetch<SpinDetailData>(`/api/clinic/spins/${id}/`);

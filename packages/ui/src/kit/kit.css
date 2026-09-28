@@ -4900,3 +4900,39 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-ind-camps { grid-template-columns: minmax(0, 1fr); }
   .sc-ind-card { padding: var(--sc-s-4); }
 }
+/* Baza diagnoz (zlecenie 008) */
+.sc-clinic-db { min-width: 0; }
+.sc-clinic-db__links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sc-s-3); }
+.sc-clinic-db__toolbar { padding: var(--sc-panel-pad); background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); display: grid; gap: var(--sc-s-4); }
+.sc-clinic-db label { display: grid; gap: var(--sc-s-2); min-width: 0; font-size: var(--sc-t-body-s-size); }
+.sc-clinic-db input, .sc-clinic-db select { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: var(--sc-s-2); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; }
+.sc-clinic-db button, .sc-clinic-db__all { min-height: 44px; padding: var(--sc-s-2) var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; cursor: pointer; }
+.sc-clinic-db button:disabled { opacity: .6; cursor: wait; }
+.sc-clinic-db :is(button, input, select, a):focus-visible, .sc-clinic-db__all:focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 3px; }
+.sc-clinic-db__filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-s-3); align-items: end; }
+.sc-clinic-db fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.sc-clinic-db legend { margin-bottom: var(--sc-s-2); font-size: var(--sc-t-body-s-size); }
+.sc-clinic-db__camp { grid-column: span 2; }
+.sc-clinic-db__camp > div { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
+.sc-clinic-db__camp button, .sc-clinic-db__toggle { font-size: var(--sc-t-body-s-size); }
+.sc-clinic-db__camp button[aria-pressed="true"], .sc-clinic-db__all { background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); border-color: var(--sc-accent); }
+.sc-clinic-db__toggle { display: none; }
+.sc-clinic-db__list { display: grid; gap: var(--sc-s-3); }
+.sc-clinic-db .sc-spin-row__summary { display: block; overflow: visible; }
+.sc-clinic-db .sc-spin-row__body { overflow-wrap: anywhere; }
+.sc-clinic-db .sc-spin-techniques { flex-wrap: wrap; margin: 0; }
+.sc-clinic-db .sc-spin-techniques li { white-space: normal; }
+.sc-clinic-db__more { display: block; margin: var(--sc-s-4) auto; }
+.sc-clinic-db__notice { color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.6; border-top: 1px solid var(--sc-line); padding-top: var(--sc-s-4); }
+.sc-clinic-db__all { display: table; margin: var(--sc-s-4) auto 0; text-align: center; text-decoration: none; box-sizing: border-box; }
+@media (max-width: 760px) {
+  .sc-clinic-db__toggle { display: block; }
+  .sc-clinic-db__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sc-clinic-db__filters[data-open="false"] { display: none; }
+}
+@media (max-width: 420px) {
+  .sc-clinic-db__filters { grid-template-columns: minmax(0, 1fr); }
+  .sc-clinic-db__camp { grid-column: auto; }
+  .sc-clinic-db .sc-spin-row { grid-template-columns: minmax(0, 1fr); }
+  .sc-clinic-db .sc-spin-row__thumb { display: none; }
+}

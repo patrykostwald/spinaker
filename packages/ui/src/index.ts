@@ -52,6 +52,7 @@ export { ThreadFavoriteButton } from './components/ThreadFavoriteButton';
 export { PublicFigureProfile } from "./components/PublicFigureProfile";
 export { PublicFigureDirectory, PublicFigurePage } from "./components/PublicFigureDirectory";
 export * from "./lib/publicFigures";
+export { ClinicDatabase } from "./components/clinic/ClinicDatabase";
 export { ClinicPage } from "./components/clinic/ClinicPage";
 export { WeeklyReport } from "./components/clinic/WeeklyReport";
 export { SpinDetail } from "./components/clinic/SpinDetail";

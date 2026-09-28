@@ -174,6 +174,8 @@ function Politicians() {
 export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
   const data = query.data;
+  const latest = data ? CAMPS.flatMap(camp => data.columns[camp])
+    .sort((a, b) => Date.parse(b.post.published_at) - Date.parse(a.post.published_at) || b.id - a.id).slice(0, 8) : [];
   const Title = embedded ? "h2" : "h1";
   return (
     <section className="sc-clinic" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
@@ -227,14 +229,15 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
             {CAMPS.map(camp => (
               <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>
                 <h4 id={`clinic-col-${camp}`} className="sc-sr-only">{CAMP_LABELS[camp]}</h4>
-                {data.columns[camp].length ? (
+                {latest.some(spin => spin.camp === camp) ? (
                   <div className="sc-clinic-column__list" tabIndex={0} aria-label={`Diagnozy: ${CAMP_LABELS[camp]} — przewijaj`}>
-                    {data.columns[camp].map(spin => <SpinRow key={spin.id} spin={spin} />)}
+                    {latest.filter(spin => spin.camp === camp).map(spin => <SpinRow key={spin.id} spin={spin} />)}
                   </div>
-                ) : <p className="sc-clinic-empty">Pierwsze diagnozy pojawią się, gdy strażnik znajdzie posty warte sprawdzenia.</p>}
+                ) : <p className="sc-clinic-empty">Brak diagnoz tej strony wśród 8 najnowszych.</p>}
               </section>
             ))}
           </div>
+          <Link className="sc-clinic-db__all" href="/klinika/diagnozy">Wszystkie diagnozy{data.stats?.diagnosed.total !== undefined ? ` (${data.stats.diagnosed.total.toLocaleString("pl-PL")})` : ""} →</Link>
         </section>
         </div>
 
