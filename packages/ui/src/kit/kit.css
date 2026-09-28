@@ -4936,3 +4936,31 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-clinic-db .sc-spin-row { grid-template-columns: minmax(0, 1fr); }
   .sc-clinic-db .sc-spin-row__thumb { display: none; }
 }
+
+/* ---------- Panel „Praca Kliniki” (/klinika, góra) i linia z liczbami na głównej (29.09) ---------- */
+.sc-ind-show { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem); gap: var(--sc-s-6); align-items: stretch; padding: var(--sc-s-5) var(--sc-s-6); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface); }
+.sc-ind-show__main { display: grid; gap: var(--sc-s-4); align-content: start; min-width: 0; }
+.sc-ind-show__tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: var(--sc-s-4); }
+.sc-ind-show__tiles li { display: grid; gap: 2px; align-content: start; }
+.sc-ind-show__tiles strong { font-size: clamp(1.8rem, 3.2vw, 2.6rem); line-height: 1; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sc-ind-show__tiles span { color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.35; }
+.sc-ind-show__tiles small { color: var(--sc-positive); font-size: var(--sc-t-caption-size); font-weight: 600; }
+.sc-ind-show__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-3) var(--sc-s-5); margin: 0; font-weight: 600; }
+.sc-ind-show__actions a { color: var(--sc-accent); text-decoration: none; }
+.sc-ind-show__actions a:hover { text-decoration: underline; }
+.sc-ind-show__actions .sc-ind-show__primary { padding: 10px 16px; border-radius: 999px; background: var(--sc-primary-bg, var(--sc-text)); color: var(--sc-primary-fg, var(--sc-bg)); }
+.sc-ind-show__actions .sc-ind-show__primary:hover { text-decoration: none; background: var(--sc-primary-hover, var(--sc-text)); }
+.sc-ind-show__spark { margin: 0; display: grid; grid-template-rows: auto 1fr auto; gap: var(--sc-s-2); padding-left: var(--sc-s-5); border-left: 1px solid var(--sc-line); min-height: 9rem; }
+.sc-ind-show__spark figcaption { font-size: var(--sc-t-caption-size); color: var(--sc-text-3); font-weight: 600; }
+.sc-ind-show__spark p { margin: 0; font-size: var(--sc-t-caption-size); color: var(--sc-text-3); }
+.sc-ind-show__bars { display: flex; align-items: flex-end; gap: 3px; min-height: 5rem; }
+.sc-ind-show__bars span { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.sc-ind-show__bars i { display: block; width: 100%; border-radius: 3px 3px 0 0; background: var(--sc-accent); }
+@media (max-width: 760px) {
+  .sc-ind-show { grid-template-columns: minmax(0, 1fr); padding: var(--sc-s-4); }
+  .sc-ind-show__spark { padding-left: 0; border-left: 0; border-top: 1px solid var(--sc-line); padding-top: var(--sc-s-3); min-height: 7rem; }
+  .sc-ind-show__tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.sc-home-doctor__work { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.6; }
+.sc-home-doctor__work strong { color: var(--sc-text); font-variant-numeric: tabular-nums; }
+.sc-home-doctor__work a { margin-left: var(--sc-s-3); color: var(--sc-accent); font-weight: 600; text-decoration: none; white-space: nowrap; }

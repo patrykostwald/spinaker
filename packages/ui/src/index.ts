@@ -57,7 +57,7 @@ export { ClinicPage } from "./components/clinic/ClinicPage";
 export { WeeklyReport } from "./components/clinic/WeeklyReport";
 export { SpinDetail } from "./components/clinic/SpinDetail";
 export { ClinicQueue } from "./components/clinic/ClinicQueue";
-export { ClinicIndicators } from "./components/clinic/ClinicIndicators";
+export { ClinicIndicators, ClinicShowcase } from "./components/clinic/ClinicIndicators";
 export { NewsletterSignup, NEWSLETTER_CONSENT } from "./components/NewsletterSignup";
 export { ShareThreadOnX } from "./components/ShareThreadOnX";
 export { TouchScrollGuard } from "./components/TouchScrollGuard";

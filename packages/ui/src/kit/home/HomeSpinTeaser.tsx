@@ -130,6 +130,14 @@ export function HomeSpinTeaser() {
       <div className="sc-home-doctor__pair">
         {CAMPS.map((camp) => <SpinPreview key={camp} camp={camp} spin={spins?.[camp] ?? null} active={camp === shown} />)}
       </div>
+      {data.stats ? (
+        <p className="sc-home-doctor__work">
+          Dr. Spin przeczytał <strong>{data.stats.read.total.toLocaleString("pl-PL")}</strong> wpisów polityków,
+          ocenił <strong>{data.stats.screened.total.toLocaleString("pl-PL")}</strong> i postawił <strong>{data.stats.diagnosed.total.toLocaleString("pl-PL")}</strong> diagnoz.
+          <Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link>
+          <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
+        </p>
+      ) : null}
       <p className="sc-home-doctor__scale">
         <strong>Siła spinu 0–100</strong> — jak mocno wpis opiera się na technikach perswazji. To nie jest ocena prawdziwości ani osoby;
         prawdziwość twierdzeń sprawdzamy osobno, ze źródłami. Obie strony — te same zasady.

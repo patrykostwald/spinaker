@@ -10,6 +10,7 @@ import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicDeleted, getClinicPage,
 import { NewsletterSignup } from "../NewsletterSignup";
 import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
+import { ClinicShowcase } from "./ClinicIndicators";
 import { formatDateTimePl } from "../../lib/utils";
 import { InterviewBox, MessageBox, MessageHistory, PoliticiansTable, SpinSwitch } from "./ClinicExtras";
 
@@ -100,30 +101,6 @@ function visibleFor(hours: number) {
   return `w ciągu ${Math.ceil(hours / 24)} dni`;
 }
 
-const STAT_LABELS: Array<["read" | "screened" | "rejected" | "diagnosed" | "spins", string, string]> = [
-  ["read", "przeczytanych postów", "wszystkie nowe posty z oficjalnych kont"],
-  ["screened", "ocenionych na izbie przyjęć", "czy jest w nich coś do zbadania"],
-  ["rejected", "odrzuconych", "bez tezy do sprawdzenia: życzenia, zapowiedzi, informacje"],
-  ["diagnosed", "diagnoz Dr. Spina", "opublikowane oceny konsylium"],
-  ["spins", "spinów", "diagnozy z werdyktem spin albo częściowy spin"],
-];
-
-/** Liczniki pracy Kliniki — ile postów przeczytaliśmy, ile odsiał strażnik, ile zdiagnozował Dr. Spin. */
-function ClinicStats({ stats }: { stats: NonNullable<ClinicPageData["stats"]> }) {
-  const format = (value: number) => value.toLocaleString("pl-PL");
-  return (
-    <section className="sc-clinic-stats" aria-label="Liczniki Kliniki">
-      <ul>{STAT_LABELS.map(([key, label, hint]) => (
-        <li key={key} title={hint}>
-          <small title="dziś">+{format(stats[key].today)}</small>
-          <strong>{format(stats[key].total)}</strong>
-          <span>{label}</span>
-        </li>
-      ))}</ul>
-    </section>
-  );
-}
-
 /** Strażnica usuniętych postów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
 function DeletedPosts() {
   const query = useQuery({ queryKey: ["clinic-deleted"], queryFn: getClinicDeleted, staleTime: 10 * 60_000 });
@@ -189,6 +166,8 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
       {data && <>
+        <ClinicShowcase fallback={data.stats} />
+
         <section className="sc-clinic-sotd" aria-labelledby="clinic-drspin-title">
           {/* Nagłówek jak na głównej: „Klinika spinu AI” + „Dr. Spin”, zakładki na środku, link po prawej. */}
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}
@@ -213,7 +192,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
 
         {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
         <div className="sc-clinic-group">
-        {data.stats ? <ClinicStats stats={data.stats} /> : null}
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
           {/* Jedna linia: „Rządzący” przy lewej krawędzi, tytuł na środku, „Opozycja” przy prawej. */}

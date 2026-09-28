@@ -262,8 +262,65 @@ function Accounts({ stats }: { stats: IndicatorStats }) {
   );
 }
 
+type PageTotals = Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", Pair>;
+
+/**
+ * Panel „Praca Kliniki” na górze /klinika: duże liczniki (od początku i dziś), słupki diagnoz z ostatnich dni
+ * i dwa wejścia — do bazy wszystkich diagnoz i do wskaźników. Gdy /api/clinic/stats/ niedostępne — liczniki z /api/clinic/.
+ */
+export function ClinicShowcase({ fallback }: { fallback?: PageTotals | null }) {
+  const query = useQuery({ queryKey: ["clinic-indicators"], queryFn: getIndicatorStats, staleTime: 10 * 60_000 });
+  const stats = query.data;
+  const totals: PageTotals | null | undefined = stats?.totals ?? fallback;
+  if (!totals) return null;
+  const accounts = stats ? new Set(stats.accounts.map((row) => row.account_id)).size : null;
+  const first = stats ? stats.daily.findIndex((day) => CAMPS.some((camp) => day.by_camp[camp].diagnosed)) : -1;
+  const days = stats && first >= 0 ? stats.daily.slice(Math.max(0, Math.min(first, stats.daily.length - 7))) : [];
+  const perDay = days.map((day) => CAMPS.reduce((sum, camp) => sum + day.by_camp[camp].diagnosed, 0));
+  const top = Math.max(...perDay, 1);
+  const tiles: Array<[string, number, number | null]> = [
+    ["przeczytanych wpisów polityków", totals.read.total, totals.read.today],
+    ["ocenionych na izbie przyjęć", totals.screened.total, totals.screened.today],
+    ["diagnoz Dr. Spina", totals.diagnosed.total, totals.diagnosed.today],
+  ];
+  return (
+    <section className="sc-ind-show" aria-labelledby="ind-show-title">
+      <div className="sc-ind-show__main">
+        <p className="sc-clinic-kicker" id="ind-show-title">Praca Kliniki od początku</p>
+        <ul className="sc-ind-show__tiles">
+          {tiles.map(([label, total, today]) => (
+            <li key={label}>
+              <strong>{format(total)}</strong>
+              <span>{label}</span>
+              {today ? <small>+{format(today)} dziś</small> : null}
+            </li>
+          ))}
+          {accounts ? <li><strong>{format(accounts)}</strong><span>zbadanych kont polityków</span></li> : null}
+        </ul>
+        <p className="sc-ind-show__actions">
+          <Link className="sc-ind-show__primary" href="/klinika/diagnozy">Wszystkie diagnozy ({format(totals.diagnosed.total)}) →</Link>
+          <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
+        </p>
+      </div>
+      {perDay.length ? (
+        <figure className="sc-ind-show__spark">
+          <figcaption>Diagnozy dziennie</figcaption>
+          <div className="sc-ind-show__bars" role="img" aria-label={`Diagnozy dziennie: ${perDay.join(", ")}`}>
+            {days.map((day, index) => (
+              <span key={day.date} title={`${day.date}: ${perDay[index]}`}>
+                <i style={{ height: `${Math.max(3, (perDay[index] / top) * 100)}%` }} />
+              </span>
+            ))}
+          </div>
+          <p>{days[0].date.slice(8, 10)}.{days[0].date.slice(5, 7)} – dziś</p>
+        </figure>
+      ) : null}
+    </section>
+  );
+}
+
 export function ClinicIndicators() {
-  const query = useQuery({ queryKey: ["clinic-stats"], queryFn: getIndicatorStats, staleTime: 10 * 60_000 });
+  const query = useQuery({ queryKey: ["clinic-indicators"], queryFn: getIndicatorStats, staleTime: 10 * 60_000 });
   const stats = query.data;
   return (
     <section className="sc-clinic sc-ind" aria-labelledby="ind-title">
