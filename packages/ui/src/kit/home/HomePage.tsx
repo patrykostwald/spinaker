@@ -16,22 +16,19 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
 import { HomeBaza } from "./HomeBaza";
+import { NewsCard } from "../NewsCard";
+import { EmptySlot } from "./Strip";
 import { HomeCategoryBar } from "./HomeCategoryBar";
 import { HomeSpinTeaser } from "./HomeSpinTeaser";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
-import { HomeLead } from "./HomeLead";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads } from "./HomeThreads";
-import { HomeTicker } from "./HomeTicker";
 import { NewsletterSignup } from "../../components/NewsletterSignup";
 import { JournalistInvite } from "../../components/JournalistInvite";
 import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
 import { GROUP_EMPTY_HINT, SOURCE_GROUPS, SOURCE_GROUP_PARAM, activeSources, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
-
-/** „Najnowsze” z taśmą i kategoriami — wyłączone 28.09.2026 (zostają paski czytelnika). */
-const SHOW_LATEST = false;
 
 function DemoBanner() {
   const demo = useDemoMode();
@@ -41,15 +38,6 @@ function DemoBanner() {
       <strong>Dane demonstracyjne.</strong> Backend jest niedostępny — materiały poniżej są FIKCYJNE i służą tylko do pracy nad układem.
     </p>
   );
-}
-
-function useTodayLabel(options: Intl.DateTimeFormatOptions) {
-  const [label, setLabel] = useState("");
-  const key = JSON.stringify(options);
-  useEffect(() => {
-    setLabel(new Intl.DateTimeFormat("pl-PL", JSON.parse(key)).format(new Date()));
-  }, [key]);
-  return label;
 }
 
 export function HomePage() {
@@ -63,8 +51,6 @@ export function HomePage() {
   const config = useHomeConfig();
   const drSpin = useDrSpinThread();
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  // Grupa źródeł „Wiadomości dnia” — własny selektor w nagłówku pasa, niezależny od filtrów paska newsowego.
-  const [dayGroup, setDayGroup] = useState<SourceGroup | null>(null);
   const bazaRef = useRef<HTMLElement | null>(null);
 
   const sources = config.data?.sources ?? [];
@@ -89,37 +75,15 @@ export function HomePage() {
   const top = useHomeFeed(
     "top10",
     { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 20, diverse: true },
-    { refetchInterval: 30_000, enabled: SHOW_LATEST && !groupEmpty },
+    { refetchInterval: 30_000, enabled: !groupEmpty },
   );
   const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
-
-  // Wiadomości dnia: dzisiejsze doniesienia z wiodących źródeł (`mode=top`), niezależne od filtrów paska.
-  const dayLabel = useTodayLabel({ weekday: "long", day: "numeric", month: "long" });
-  const dayIds = useMemo(() => (dayGroup ? groupSources(activeSources(sources))[dayGroup].map((source) => source.id) : []), [sources, dayGroup]);
-  const dayGroupEmpty = Boolean(dayGroup) && sources.length > 0 && dayIds.length === 0;
-  const day = useHomeFeed("day-top", { mode: "top", sources: dayIds, pageSize: 13, diverse: true }, { refetchInterval: 120_000, enabled: SHOW_LATEST && !dayGroupEmpty });
-  const dayArticles = useMemo(() => day.data?.results ?? [], [day.data]);
-  const dayEmpty = day.isSuccess && dayArticles.length === 0;
-  // Dopóki wiodące media nie są aktywne (zgody), `mode=top` jest pusty — wtedy dzisiejsze doniesienia
-  // aktywnych źródeł (instytucje publiczne), a gdy dziś jest ich mniej niż 3 — najnowsze materiały.
-  const dayFallback = useHomeFeed("day-latest", { mode: "latest", sources: dayIds, pageSize: 40, diverse: true }, { enabled: SHOW_LATEST && dayEmpty && !dayGroupEmpty });
-  const fallbackToday = useMemo(() => {
-    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date());
-    return (dayFallback.data?.results ?? []).filter(
-      (article) => article.published_date && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date(article.published_date)) === today,
-    );
-  }, [dayFallback.data]);
-  const fallbackIsToday = fallbackToday.length >= 3;
-  const leadArticles = dayGroupEmpty ? [] : dayEmpty ? (fallbackIsToday ? fallbackToday : dayFallback.data?.results ?? []).slice(0, 13) : dayArticles;
+  const newsGrid = useMemo(() => collapseSimilar(latest).slice(0, 6), [latest]);
 
   useEffect(() => {
     if (q) bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
   }, [q]);
 
-  // Serie niemal identycznych doniesień jednego źródła zwinięte w jeden box („+N podobnych”).
-  const leadCollapsed = useMemo(() => collapseSimilar(leadArticles), [leadArticles]);
-  const leadMain = leadCollapsed[0]?.article ?? null;
-  const related = leadCollapsed.slice(1, 13);
 
   return (
     <>
@@ -127,14 +91,16 @@ export function HomePage() {
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <DemoBanner />
         <HomeHero />
-        {/* Dr. Spin: spin dnia obu stron → przekaz dnia i liczby → wywiady; pod nim zaproszenie dla dziennikarzy (28.09). */}
+        {/* 1. Dr. Spin — po co tu jesteś. 2. Wiadomości — agregat z naszej Bazy do przeglądania i własnych pasków.
+            3. Dla dziennikarzy. 4. Baza. 5. Newsletter (decyzja właściciela 28.09). */}
         <HomeSpinTeaser />
-        <JournalistInvite />
-        {/* „Najnowsze”, kategorie i taśma najnowszych — na razie wyłączone (28.09: dopóki media nie dadzą zgód,
-            to głównie BIP-y); zostają paski czytelnika. Włączenie: SHOW_LATEST = true. */}
-        {SHOW_LATEST ? (
-          <>
-        <div className="sc-home-top">
+        <section className="sc-home-section sc-home-news" aria-labelledby="home-news-title">
+          <header className="sc-home-news__head">
+            <div>
+              <p className="sc-t-caption sc-text-3 sc-home-kicker">Z naszej Bazy · każda wiadomość prowadzi do źródła</p>
+              <h2 id="home-news-title" className="sc-t-title-l sc-home-section__title">Wiadomości</h2>
+            </div>
+          </header>
           <HomeCategoryBar
             value={activeTopic}
             onChange={setActiveTopic}
@@ -162,35 +128,18 @@ export function HomePage() {
           {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeTopic) ? (
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak najnowszych materiałów dla tego wyboru.</p>
           ) : null}
-          <HomeTicker articles={latest} loading={top.isPending && !groupEmpty} />
-        </div>
-        <HomeReveal>
-          <HomeLead
-            main={leadMain}
-            related={related}
-            fallback={dayEmpty && !fallbackIsToday}
-            dateLabel={dayLabel}
-            emptyNote={dayGroupEmpty && dayGroup ? `Brak aktywnych źródeł w grupie „${sourceGroupLabel(dayGroup)}”. ${GROUP_EMPTY_HINT}` : null}
-            actions={
-              <Dropdown
-                label={dayGroup ? `Źródła: ${sourceGroupLabel(dayGroup)}` : "Źródła: wszystkie"}
-                ariaLabel="Źródła sekcji Najnowsze"
-                mode="single"
-                presentation="auto"
-                triggerVariant="quiet"
-                align="end"
-                items={[{ value: "", label: "Wszystkie źródła" }, ...SOURCE_GROUPS]}
-                value={dayGroup ?? ""}
-                onChange={(value) => setDayGroup(parseSourceGroup(value as string))}
-              />
-            }
-          />
-        </HomeReveal>
-          </>
-        ) : null}
+          {/* Karty średniej wielkości — bez olbrzymiego boxu, w którym miniatury się rozmywały. */}
+          <ul className="sc-home-news__grid" role="list">
+            {newsGrid.map(({ article, similar }) => (
+              <li key={article.id}><NewsCard article={article} size="medium" headingLevel={3} similarCount={similar} expandable={false} /></li>
+            ))}
+            {!newsGrid.length && top.isPending ? Array.from({ length: 3 }, (_, index) => <li key={index}><EmptySlot index={index + 1} label="Ładuję…" /></li>) : null}
+          </ul>
+        </section>
         <HomeReveal>
           <HomeThreads sources={sources} />
         </HomeReveal>
+        <JournalistInvite />
         {drSpin.data?.published ? (
           <HomeReveal>
             <HomeDrSpin thread={drSpin.data} />

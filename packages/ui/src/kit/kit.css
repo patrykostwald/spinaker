@@ -4669,3 +4669,29 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
   .sc-mclamp:not([data-open]) .sc-interview__lede { display: none; }
   .sc-mclamp__more { position: absolute; z-index: 1; left: 50%; bottom: var(--sc-s-2); transform: translateX(-50%); display: inline-flex; min-height: 36px; align-items: center; padding: 0 16px; border: 0; border-radius: 999px; background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 700; }
 }
+
+/* ===== Główna 28.09 (wersja 2): sekcja „Dr. Spin” i sekcja „Wiadomości” — jeden panel każda, bez wyróżniającej ramki ===== */
+.sc-home-doctor, .sc-home-news { display: grid; gap: var(--sc-s-4); padding: var(--sc-panel-pad); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); min-width: 0; }
+.sc-home-doctor .sc-clinic-sotd { padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.sc-home-doctor .sc-spin-switch__bar header .sc-home-kicker { display: flex; align-items: center; gap: var(--sc-s-2); margin: 0; }
+.sc-home-doctor .sc-spin-switch__bar header h2 { margin: 0; }
+.sc-home-doctor .sc-spin-switch__tabs { color: var(--sc-accent); font-size: var(--sc-t-body-s-size); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; }
+.sc-home-doctor__tab { display: inline-flex; align-items: center; gap: var(--sc-s-2); }
+.sc-home-doctor__window { margin: 0 0 var(--sc-s-2); color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
+.sc-home-news__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sc-s-3); }
+.sc-home-news__head .sc-home-kicker { margin: 0; }
+.sc-home-news__head h2 { margin: 0; }
+.sc-home-news__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sc-s-4); margin: 0; padding: 0; list-style: none; }
+.sc-home-news__grid > li { min-width: 0; display: flex; }
+.sc-home-news__grid > li > * { flex: 1; min-width: 0; }
+@media (max-width: 1000px) { .sc-home-news__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .sc-home-news__grid { grid-template-columns: minmax(0, 1fr); } .sc-home-doctor, .sc-home-news { padding: var(--sc-s-4); } }
+/* Wiadomości na telefonie: filtry jeden pod drugim (bez nachodzenia), karty w poziomym pasku przewijanym palcem. */
+@media (max-width: 760px) {
+  .sc-home-news .sc-home-catrow { grid-template-columns: minmax(0, 1fr); grid-template-areas: "start" "cats" "end"; row-gap: var(--sc-s-2); padding-block: var(--sc-s-2); }
+  .sc-home-news .sc-home-catrow > .sc-home-catbar { overflow-x: auto; scrollbar-width: none; }
+  .sc-home-news .sc-home-catrow__end, .sc-home-news .sc-home-catrow__search, .sc-home-news .sc-home-catrow__search .sc-search { width: 100%; justify-self: stretch; }
+  .sc-home-news__grid { display: flex; grid-template-columns: none; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; touch-action: pan-x pan-y; scrollbar-width: none; gap: var(--sc-s-3); padding-bottom: 2px; }
+  .sc-home-news__grid > li { flex: 0 0 82%; scroll-snap-align: start; }
+}
+.sc-home-news .sc-home-catbar { margin: 0; min-width: 0; max-width: 100%; }
