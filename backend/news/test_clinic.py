@@ -669,20 +669,35 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
     for key in x_publish.KEYS:
         monkeypatch.setenv(key, 'test-key-0123456789')
     monkeypatch.setenv('X_POST_ENABLED', 'true')
-    sent = []
+    sent, uploads = [], []
+    monkeypatch.setattr(x_publish, 'polish', lambda text: text)  # redaktor polszczyzny (darmowy model) — poza testem
 
-    def fake_post(url, json, headers, timeout):
+    def fake_post(url, headers, timeout, json=None, files=None, data=None):
         assert headers['Authorization'].startswith('OAuth ') and 'oauth_signature=' in headers['Authorization']
+        if url == x_publish.MEDIA:
+            uploads.append(files['media'][1][:8])
+            return SimpleNamespace(status_code=200, json=lambda: {'data': {'id': 'm1'}}, text='')
         sent.append(json)
         return SimpleNamespace(status_code=201, json=lambda: {'data': {'id': str(len(sent))}}, text='')
 
     monkeypatch.setattr(x_publish.requests, 'post', fake_post)
     result = x_publish.run()
     assert result['results'] == [{'id': row.pk, 'posted': True}]
-    assert len(sent) == 1 and 'reply' not in sent[0] and weight(sent[0]['text']) <= 280  # jeden wpis na profilu
+    assert uploads == [bytes([0x89]) + b'PNG' + bytes([13, 10, 26, 10])]  # obrazek PNG z wpisem polityka
+    body = sent[0]
+    assert len(sent) == 1 and body['media'] == {'media_ids': ['m1']} and weight(body['text']) <= 280
+    assert '@posel_test' not in body['text'] and 'x.com/' not in body['text']  # bez oznaczenia i bez linku do polityka
     row.refresh_from_db()
     assert row.x_posted_ids == ['1'] and row.x_posted_at
     assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz
+
+    # Autor usuwa wpis — usuwamy też nasz (zasady X).
+    deleted = []
+    monkeypatch.setattr(x_publish.requests, 'delete', lambda url, headers, timeout: deleted.append(url) or SimpleNamespace(status_code=200, text=''))
+    from news import deleted_posts
+    deleted_posts.mark_deleted(row.post)
+    row.refresh_from_db()
+    assert deleted == [f'{x_publish.TWEETS}/1'] and row.x_posted_ids == []
 
 
 @pytest.mark.django_db
@@ -697,6 +712,7 @@ def test_x_publish_failure_sends_one_alert(monkeypatch):
     for key in x_publish.KEYS:
         monkeypatch.setenv(key, 'test-key-0123456789')
     monkeypatch.setenv('X_POST_ENABLED', 'true')
+    monkeypatch.setattr(x_publish, 'polish', lambda text: text)
     monkeypatch.setattr(x_publish.requests, 'post', lambda *a, **k: SimpleNamespace(status_code=403, text='forbidden', json=lambda: {}))
     alerts = []
     monkeypatch.setattr(x_publish, 'alert', lambda diagnosis_id, error: alerts.append((diagnosis_id, error)) or 'sent')

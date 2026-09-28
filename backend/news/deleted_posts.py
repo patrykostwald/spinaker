@@ -78,6 +78,11 @@ def mark_deleted(post: PoliticalPost) -> None:
     post.text, post.source_data, post.media = '', {}, []
     post.save(update_fields=['available', 'unavailable_at', 'text', 'source_data', 'media'])
     refresh_archive(post)
+    # Nasz wpis na X pokazywał treść tego wpisu (obrazek) — znika razem z nim.
+    diagnosis = getattr(post, 'spin_diagnosis', None)
+    if diagnosis is not None and diagnosis.x_posted_ids:
+        from news.x_publish import unpublish_deleted
+        unpublish_deleted(diagnosis)
 
 
 def archive_batch(limit: int = 20, pause: float = 2.0) -> int:
