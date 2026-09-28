@@ -1,6 +1,7 @@
 """API Kliniki spinu: strona /klinika, diagnozy, reakcje, sugestie kont X i kolejka zatwierdzania."""
 import os
 import re
+from datetime import date, datetime, time, timedelta
 
 from django.db import IntegrityError, transaction
 from django.db.models import Count
@@ -21,6 +22,7 @@ from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, X
 from news.political_models import PublicFigure
 from news.public_figures import verified_x_account_record
 from news.schema import json_view
+from news.techniques import CANONICAL_TECHNIQUES, normalized, technique_groups
 
 X_PROFILE = re.compile(r'^https?://(?:www\.|mobile\.)?(?:x|twitter)\.com/([A-Za-z0-9_]{1,15})/?(?:[?#].*)?$')
 RESERVED_PATHS = {'home', 'search', 'explore', 'i', 'intent', 'share', 'settings', 'messages', 'notifications', 'login', 'signup', 'tos', 'privacy'}
@@ -51,9 +53,58 @@ def clinic_spins(request):
     verdict = request.query_params.get('verdict', '')
     if verdict in clinic.VERDICT_LABELS:
         rows = rows.filter(verdict=verdict)
+    params = request.query_params
+    try:
+        minimum = int(params.get('intensity_min', '0'))
+        maximum = int(params.get('intensity_max', '100'))
+        if not 0 <= minimum <= maximum <= 100:
+            raise ValueError
+        dates = {key: date.fromisoformat(params[key]) for key in ('date_from', 'date_to') if params.get(key)}
+        if len(dates) == 2 and dates['date_from'] > dates['date_to']:
+            raise ValueError
+        for key, day in dates.items():
+            boundary = timezone.make_aware(datetime.combine(day, time.min))
+            rows = rows.filter(**({'post__published_at__gte': boundary} if key == 'date_from'
+                                  else {'post__published_at__lt': boundary + timedelta(days=1)}))
+    except (ValueError, OverflowError):
+        return Response({'detail': 'Nieprawidłowy zakres siły (0–100) lub dat (RRRR-MM-DD).'}, status=400)
+    sort = params.get('sort', 'new')
+    technique = params.get('technique', '')
+    if sort not in ('new', 'strong') or (technique and technique not in CANONICAL_TECHNIQUES):
+        return Response({'detail': 'Nieprawidłowe sortowanie lub kanoniczna technika.'}, status=400)
+    if 'intensity_min' in params or 'intensity_max' in params:
+        rows = rows.filter(intensity__gte=minimum, intensity__lte=maximum)
+    rows = rows.order_by(*(['-intensity'] if sort == 'strong' else []), '-post__published_at', '-pk')
+    query, party = normalized(params.get('q', '')), normalized(params.get('party', ''))
+    if query or party or technique:
+        candidates = list(rows)
+        figures = clinic.figures_by_account({row.post.account_id for row in candidates}) if query or party else {}
+        matched = []
+        for row in candidates:
+            author = clinic.author_data(row.post, figures.get(row.post.account_id)) if query or party else {}
+            if query and not any(query in normalized(value) for value in (
+                row.headline, row.summary, author['name'], author['handle'], row.post.account.display_name)):
+                continue
+            affiliation = author.get('party')
+            if party and party not in ({normalized(value) for value in affiliation.values()} if affiliation else {'unknown'}):
+                continue
+            if technique and technique not in technique_groups(row.techniques):
+                continue
+            matched.append(row)
+        rows = matched
     size = 20
-    batch = list(rows.order_by('-post__published_at', '-pk')[(page - 1) * size:page * size + 1])
-    return Response({'results': clinic.cards(batch[:size]), 'next_page': page + 1 if len(batch) > size else None})
+    count = len(rows) if isinstance(rows, list) else rows.count()
+    batch = list(rows[(page - 1) * size:page * size + 1])
+    return Response({'results': clinic.cards(batch[:size]), 'next_page': page + 1 if len(batch) > size else None,
+                     'count': count})
+
+
+@extend_schema(summary='Statystyki Kliniki z liczebnością próby', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_statistics(request):
+    from news.clinic_stats import stats_data
+    return Response(stats_data())
 
 
 @extend_schema(summary='Pełna diagnoza spinu', tags=['klinika'], responses=OpenApiTypes.OBJECT)

@@ -11,6 +11,7 @@ import logging
 import math
 import os
 import smtplib
+import unicodedata
 from datetime import datetime, time, timedelta
 from email.message import EmailMessage
 
@@ -23,6 +24,7 @@ from django.utils import timezone
 from news import clinic_ai
 from news.clinic_models import ClinicDailyMessage, SpinDiagnosis
 from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure, SocialHandleEvidence
+from news.techniques import technique_groups, normalized
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +75,7 @@ def figures_by_account(account_ids) -> dict[int, PublicFigure]:
             by_roster.setdefault(account_id, row['roster_entry_id'])
     figures = PublicFigure.objects.filter(
         Q(pk__in=by_figure.values()) | Q(parliamentary_roster_entry_id__in=by_roster.values()), archived=False,
-    ).select_related('parliamentary_roster_entry')
+    ).select_related('parliamentary_roster_entry').prefetch_related('public_roles')
     figure_by_id = {figure.pk: figure for figure in figures}
     figure_by_roster = {figure.parliamentary_roster_entry_id: figure for figure in figures if figure.parliamentary_roster_entry_id}
     result = {}
@@ -84,27 +86,63 @@ def figures_by_account(account_ids) -> dict[int, PublicFigure]:
     return result
 
 
-def party_data(figure: PublicFigure | None):
+EU_GROUPS = {'pfe', 'ppe', 'epp', 'ecr', 's d', 'renew', 'renew europe', 'greens efa',
+             'zieloni wse', 'the left', 'gue ngl', 'esn', 'ni', 'id', 'patriots for europe'}
+
+
+def clean_account_name(value):
+    """Usuwa symbole emoji, selektory wariantów i łączniki sekwencji emoji."""
+    return ' '.join(''.join(char for char in (value or '')
+                           if unicodedata.category(char) not in {'So', 'Sk', 'Cf'}
+                           and not ('\ufe00' <= char <= '\ufe0f')
+                           and char != '\u20e3').split())
+
+
+def party_affiliation(figure):
+    """Zwraca krajową afiliację i osobno frakcję PE; nie zgaduje po nazwisku."""
     if figure is None:
-        return None
-    code = (figure.parliamentary_roster_entry.club if figure.parliamentary_roster_entry_id else '') or figure.political_alignment
-    if not code:
-        return None
-    short, name = CLUBS.get(code, (code, code))
-    return {'code': code, 'short': short, 'name': name}
+        return {'party': None, 'eu_group': None, 'source': None}
+    today = local_now().date()
+    roles = sorted((role for role in figure.public_roles.all()
+                    if not role.archived and role.status == 'current'
+                    and (role.since is None or role.since <= today)
+                    and (role.until is None or role.until >= today)),
+                   key=lambda role: (role.source_checked_at, role.pk), reverse=True)
+    candidates = [(role.party, 'role.party') for role in roles]
+    candidates += [(figure.parliamentary_roster_entry.club, 'roster.club')] if figure.parliamentary_roster_entry_id else []
+    candidates += [(figure.political_alignment, 'figure.political_alignment')]
+    result = {'party': None, 'eu_group': None, 'source': None}
+    for value, source in candidates:
+        code = clean_account_name(value)
+        if not code:
+            continue
+        if normalized(code) in EU_GROUPS:
+            result['eu_group'] = result['eu_group'] or code
+        elif result['party'] is None:
+            code = next((key for key, labels in CLUBS.items()
+                         if normalized(code) in {normalized(key), *(normalized(label) for label in labels)}), code)
+            short, name = CLUBS.get(code, (code, code))
+            result.update(party={'code': code, 'short': short, 'name': name}, source=source)
+    return result
+
+
+def party_data(figure: PublicFigure | None):
+    return party_affiliation(figure)['party']
 
 
 def author_data(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     author = post.author_data or {}
     avatar = author.get('profile_image_url') or ''
+    affiliation = party_affiliation(figure)
     return {
-        'name': figure.canonical_name if figure else (author.get('name') or post.account.display_name),
+        'name': clean_account_name(figure.canonical_name if figure else (author.get('name') or post.account.display_name)),
         'handle': post.account.handle,
         'account_url': f'https://x.com/{post.account.handle}',
         'avatar_url': avatar.replace('_normal.', '_bigger.') if avatar else '',
         'figure_id': figure.pk if figure else None,
         'role_title': figure.role_title if figure else '',
-        'party': party_data(figure),
+        'party': affiliation['party'],
+        'eu_group': affiliation['eu_group'],
     }
 
 
@@ -545,6 +583,7 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
         'headline': diagnosis.headline,
         'summary': diagnosis.summary,
         'technique_names': [item['name'] for item in diagnosis.techniques][:4],
+        'technique_groups': technique_groups(diagnosis.techniques),
         'post': {'id': post.post_id, 'url': post.url, 'text': post.text, 'published_at': post.published_at,
                  'media': _media(post), 'likes': metrics.get('like_count', 0), 'reposts': metrics.get('retweet_count', 0)},
         'author': author_data(post, figures.get(post.account_id)),

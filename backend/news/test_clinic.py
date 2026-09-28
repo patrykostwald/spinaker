@@ -108,6 +108,9 @@ def test_watcher_skips_low_scores_for_free(ai_on, monkeypatch):
 
 @pytest.mark.django_db
 def test_medium_score_waits_for_investigate_decision(ai_on, monkeypatch):
+    from news.tasks import clinic_diagnose_task
+    # Test wykonuje diagnozę poniżej; nie wymaga uruchomionego brokera Redis.
+    monkeypatch.setattr(clinic_diagnose_task, 'delay', lambda: None)
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 55, 'reason': 'teza bez liczb', 'provider': 'groq', 'model': 'm'})
     post(account())
     pipeline()
@@ -411,7 +414,9 @@ def test_interview_pipeline_keeps_only_quotes_from_the_transcript(monkeypatch):
 
     def fake_call(system, user, schema, **kwargs):
         return SimpleNamespace(content=[], stop_reason='end_turn', usage=None, model='claude-opus-5')
-    monkeypatch.setattr(clinic_ai, '_call', fake_call)
+    # Wywiady wybierają dostawcę bezpośrednio, z pominięciem ogólnego _call.
+    monkeypatch.setattr(clinic_ai, '_call_claude', fake_call)
+    monkeypatch.setattr(clinic_ai, '_call_gemini', fake_call)
     monkeypatch.setattr(clinic_ai, '_json_from_text', lambda blocks: {
         'headline': 'H', 'summary': 'S', 'overall': 'O', 'limitations': '',
         'guest': {'verdict': 'spin', 'intensity': 70, 'summary': 'g', 'claims': [],
