@@ -661,8 +661,9 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
                                                 'sources': [{'url': 'https://stat.gov.pl/a', 'title': 'GUS'}]}],
                                        diagnosed_at=timezone.now())
     thread = clinic.detail_data(row)['x_share']
-    assert 2 <= len(thread) <= 3 and all(weight(p) <= 280 for p in thread)
-    assert thread[0].startswith('1/3 Dr. Spin (AI) o wpisie @posel_test') and 'https://stat.gov.pl/a' in thread[-1]
+    assert len(thread) == 1 and weight(thread[0]) <= 280  # jeden wpis
+    assert thread[0].startswith('Dr. Spin (AI) ocenia wpis @posel_test na 82/100') and 'fałszywa alternatywa' in thread[0]
+    assert 'https://stat.gov.pl/a' in thread[0] and thread[0].endswith(row.post.url)  # źródło i cytowany wpis
 
     assert x_publish.run() == {'status': 'disabled'}  # bez kluczy i przełącznika — nic nie wysyłamy
     for key in x_publish.KEYS:
@@ -677,8 +678,8 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
 
     monkeypatch.setattr(x_publish.requests, 'post', fake_post)
     result = x_publish.run()
-    assert result['results'] == [{'id': row.pk, 'posted': 3, 'of': 3}]
-    assert 'reply' not in sent[0] and sent[1]['reply'] == {'in_reply_to_tweet_id': '1'} and sent[2]['reply'] == {'in_reply_to_tweet_id': '2'}
+    assert result['results'] == [{'id': row.pk, 'posted': 1, 'of': 1}]
+    assert 'reply' not in sent[0] and len(sent) == 1
     row.refresh_from_db()
-    assert row.x_posted_ids == ['1', '2', '3'] and row.x_posted_at
+    assert row.x_posted_ids == ['1'] and row.x_posted_at
     assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz

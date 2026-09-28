@@ -15,9 +15,9 @@ function ThreadPosts({ spin }: { spin: SpinDetailData }) {
   }
   return (
     <div className="sc-xshare">
-      <p className="sc-xshare__hint">Wątek z {posts.length} wpisów: synteza diagnozy z cytowanym wpisem polityka, diagnoza i terapia — źródła z linkami. Opublikuj pierwszy, kolejne wklej jako odpowiedzi.</p>
+      <p className="sc-xshare__hint">{posts.length === 1 ? "Jeden wpis: ocena w skali spinu, techniki i terapia — źródła z linkami. Na końcu cytowany wpis polityka i link do pełnej diagnozy." : `Wątek z ${posts.length} wpisów. Opublikuj pierwszy, kolejne wklej jako odpowiedzi.`}</p>
       <div className="sc-xshare__actions">
-        <a className="sc-xshare__link is-primary" href={xIntentUrl(posts[0])} target="_blank" rel="noopener noreferrer">Opublikuj 1/{posts.length} na X</a>
+        <a className="sc-xshare__link is-primary" href={xIntentUrl(posts[0])} target="_blank" rel="noopener noreferrer">{posts.length === 1 ? "Opublikuj na X" : `Opublikuj 1/${posts.length} na X`}</a>
         <a className="sc-xshare__link" href={xIntentUrl(posts[0], spin.post.id)} target="_blank" rel="noopener noreferrer">Odpowiedz pod wpisem @{spin.author.handle}</a>
         <Button variant="quiet" size="sm" onClick={() => copy(posts.join("\n\n"), -1)}>{copied === -1 ? "Skopiowano cały wątek" : "Kopiuj cały wątek"}</Button>
       </div>
