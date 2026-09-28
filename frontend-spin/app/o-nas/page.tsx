@@ -41,7 +41,7 @@ const CLINIC_FEATURES = [
   ['Wywiad dnia', 'Co rano automat wybiera najgłośniejszą rozmowę z politykiem z poprzedniego dnia; Dr. Spin ocenia gościa i warsztat prowadzącego tą samą skalą, z minutą nagrania.'],
   ['Strażnica', 'Sprawdzamy, czy politycy usuwają wpisy. Treści nie pokazujemy (zasady X) — fakt, czas i link do kopii w publicznym archiwum, jeśli istnieje. W niedzielę — raport tygodnia.'],
   ['Profile polityków', '„Występuje w podmiotach”: fundacje, stowarzyszenia i spółki potwierdzone w KRS, oraz kariera w spółkach Skarbu Państwa.'],
-  ['Wątek na X', 'Każdą diagnozę udostępnisz jako wątek 1/N — także jako odpowiedź pod wpisem polityka.'],
+  ['Na X', 'Konto @spinclinic samo publikuje silne spiny (od 70/100) — jeden wpis z obrazkiem wpisu, bez oznaczania autora. Każdą diagnozę udostępnisz też sam jednym wpisem.'],
 ];
 
 /** Zakres dostępu do materiałów wydawcy (odczyt RSS) — prostym językiem. */
@@ -78,7 +78,7 @@ const CLINIC_STEPS = [
   { title: 'Konsylium', tech: 'modele OpenAI · Alibaba · NVIDIA · Google', text: 'Wpis wart zbadania — tekst, zdjęcia i linki — niezależnie oceniają modele różnych firm. Według stałych zasad powstaje jedna ocena: werdykt, siła i techniki wskazane przez co najmniej dwóch lekarzy, zawsze z dosłownym cytatem.' },
   { title: 'Badania i konsultacja', tech: 'wyszukiwarka Google · Claude przy sporach', text: 'Twierdzenia badamy w wyszukiwarce — źródło zostaje tylko wtedy, gdy rzeczywiście je znaleziono. Przy sporze albo silnym spinie wzywamy konsultanta. Lekarz prowadzący pisze diagnozę, ordynator ją kontroluje, redaktor dba o polszczyznę.' },
   { title: 'Diagnoza i terapia', tech: 'automatycznie · etykieta AI', text: 'Na stronę trafiają diagnoza (techniki perswazji z cytatami) i terapia (co mówią źródła), oznaczone jako wygenerowane przez AI. Nikt nie poprawia ich treści.' },
-  { title: 'Wątek na X', tech: 'udostępnianie', text: 'Diagnozę udostępnisz jako wątek: najpierw jej synteza, potem zalecana terapia — źródła z krótkim wyjaśnieniem. Także jako odpowiedź pod wpisem polityka.' },
+  { title: 'Na X', tech: '@spinclinic · udostępnianie', text: 'Silne spiny (od 70/100) konto @spinclinic publikuje samo: ocena, techniki i zalecana terapia — źródła, w jednym wpisie. Każdą diagnozę możesz też udostępnić sam.' },
 ];
 
 /**
@@ -122,7 +122,7 @@ const PHASES: Phase[] = [
       { text: 'konsylium Dr. Spina: kilka niezależnych modeli AI różnych firm, wspólna ocena, kontrola ordynatora i korekta językowa', status: 'beta' },
       { text: 'strażnica usuniętych wpisów polityków i tygodniowy raport Dr. Spina z wątkiem na X', status: 'beta' },
       { text: 'profile osób publicznych: „Występuje w podmiotach” — fundacje, stowarzyszenia i spółki potwierdzone w KRS — oraz drzewko kariery w spółkach Skarbu Państwa', status: 'beta' },
-      { text: 'udostępnianie diagnozy jako wątku na X; rejestr osób publicznych z oficjalnymi kontami X', status: 'beta' },
+      { text: 'diagnoza na X jednym wpisem — do udostępnienia przez czytelnika i automatycznie z konta @spinclinic (spiny od 70/100); rejestr osób publicznych z oficjalnymi kontami X', status: 'beta' },
       { text: 'autoryzowane nitki dziennikarzy: box otwierający i do 14 boxów kontekstu, nowy box po linku, cała nitka jako wątek na X', status: 'beta' },
       { text: 'instalacja na telefonie z przeglądarki (aplikacja PWA)', status: 'beta' },
     ],
