@@ -42,7 +42,7 @@ def test_techniques(name, expected):
 
 
 def test_all_canonical_names():
-    assert len(CANONICAL_TECHNIQUES) == 18
+    assert len(CANONICAL_TECHNIQUES) == 22
     for name in CANONICAL_TECHNIQUES:
         assert canonical_technique(name) == name
 

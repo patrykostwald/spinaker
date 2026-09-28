@@ -1,0 +1,314 @@
+"use client";
+
+/**
+ * Wskaźniki Kliniki (/klinika/wskazniki, 29.09.2026): ile pracy wykonuje Klinika i co widać w diagnozach.
+ * Zasady uczciwości: obie strony obok siebie na tych samych osiach, zawsze z liczebnością próby, udziały liczone
+ * względem diagnoz danej strony (strony mają różną liczbę diagnoz), poniżej progu próby — „za mało danych” zamiast średniej.
+ * Dane: GET /api/clinic/stats/ (news/clinic_stats.py), cache 10 min.
+ */
+
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "../../lib/api";
+import { CAMPS, CAMP_LABELS, type Camp, type Party } from "../../lib/clinic";
+import { AiTag } from "./SpinParts";
+
+type Sample = { count: number; enough_data: boolean };
+type Pair = { total: number; today: number };
+type CampBucket = {
+  diagnosed: number; spin: number; partial: number; no_spin: number; unclear: number;
+  average_intensity: number | null; enough_data: boolean;
+  intensity_histogram: Array<Sample & { min: number; max: number }>;
+};
+type IndicatorStats = {
+  min_sample: number;
+  window: { days: number; date_from: string; date_to: string };
+  totals: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", Pair> & {
+    by_camp?: Record<Camp, { read: number; diagnosed: number; spins: number }>;
+  };
+  funnel: Record<"read" | "screened" | "flagged_queued" | "diagnosed" | "spin", Sample>;
+  daily: Array<{ date: string; by_camp: Record<Camp, { read: number; screened: number; diagnosed: number; spins: number }> }>;
+  by_camp: Record<Camp, CampBucket>;
+  by_party: Record<string, CampBucket & { party: Party | null; camp: Camp | "mixed"; camps: Partial<Record<Camp, number>> }>;
+  techniques: Record<string, Record<Camp, Sample>>;
+  accounts: Array<{ account_id: number; name: string; handle: string; party: Party | null; camp: Camp; diagnosed: number }>;
+};
+
+const getIndicatorStats = () => apiFetch<IndicatorStats>("/api/clinic/stats/");
+const format = (value: number) => value.toLocaleString("pl-PL");
+const percent = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
+const VERDICTS: Array<[keyof Pick<CampBucket, "spin" | "partial" | "no_spin" | "unclear">, string]> = [
+  ["spin", "spin"], ["partial", "częściowy spin"], ["no_spin", "bez spinu"], ["unclear", "nie da się ocenić"],
+];
+
+/** Zaokrąglenie osi w górę do „ładnej” wartości (1, 2, 5 × 10^n). */
+function niceMax(value: number): number {
+  if (value <= 4) return 4;
+  const power = 10 ** Math.floor(Math.log10(value));
+  const step = [1, 2, 5, 10].find((m) => m * power >= value) ?? 10;
+  return step * power;
+}
+
+function Funnel({ stats }: { stats: IndicatorStats }) {
+  const rows: Array<[string, number, number | null, string]> = [
+    ["Przeczytane wpisy", stats.totals.read.total, stats.totals.read.today, "każdy nowy wpis z oficjalnych kont polityków"],
+    ["Ocenione na izbie przyjęć", stats.totals.screened.total, stats.totals.screened.today, "czy we wpisie jest teza warta zbadania"],
+    ["Diagnozy Dr. Spina", stats.totals.diagnosed.total, stats.totals.diagnosed.today, "opublikowane oceny konsylium modeli AI"],
+    ["Spin lub częściowy spin", stats.totals.spins.total, stats.totals.spins.today, "diagnozy z jednym z tych dwóch werdyktów"],
+  ];
+  const max = Math.max(...rows.map((row) => row[1]), 1);
+  return (
+    <section className="sc-ind-card sc-ind-funnel" aria-labelledby="ind-funnel-title">
+      <header className="sc-ind-card__head">
+        <h2 id="ind-funnel-title">Praca Kliniki od początku</h2>
+        <p>Dr. Spin bada tylko wpisy, w których jest teza do sprawdzenia. Stąd różnica między przeczytanymi a zdiagnozowanymi.</p>
+      </header>
+      <ol className="sc-ind-funnel__list">
+        {rows.map(([label, total, today, hint]) => (
+          <li key={label}>
+            <div className="sc-ind-funnel__label"><strong>{label}</strong><span>{hint}</span></div>
+            <div className="sc-ind-funnel__bar" aria-hidden="true"><i style={{ width: `${Math.max(0.6, (total / max) * 100)}%` }} /></div>
+            <div className="sc-ind-funnel__value"><strong>{format(total)}</strong>{today ? <small>+{format(today)} dziś</small> : null}</div>
+          </li>
+        ))}
+      </ol>
+      {stats.funnel.flagged_queued.count ? (
+        <p className="sc-ind-note">Teraz w kolejce do diagnozy: {format(stats.funnel.flagged_queued.count)}.</p>
+      ) : null}
+    </section>
+  );
+}
+
+function Legend() {
+  return (
+    <p className="sc-ind-legend">
+      {CAMPS.map((camp) => <span key={camp} data-camp={camp}><i aria-hidden="true" />{CAMP_LABELS[camp]}</span>)}
+    </p>
+  );
+}
+
+/** Słupki dzienne z podziałem na strony (skumulowane), jedna skala dla obu. */
+function DailyChart({ stats, metric, title, note }: { stats: IndicatorStats; metric: "read" | "diagnosed"; title: string; note: string }) {
+  // Klinika działa krócej niż okno 30 dni — wykres zaczyna się od pierwszego dnia z danymi (co najmniej 7 dni).
+  const first = stats.daily.findIndex((day) => CAMPS.some((camp) => day.by_camp[camp].read || day.by_camp[camp].diagnosed));
+  const days = stats.daily.slice(Math.max(0, Math.min(first < 0 ? 0 : first, stats.daily.length - 7)));
+  const totals = days.map((day) => CAMPS.reduce((sum, camp) => sum + day.by_camp[camp][metric], 0));
+  const top = niceMax(Math.max(...totals, 1));
+  const W = 640, H = 200, L = 36, R = 8, T = 10, B = 26;
+  const plotW = W - L - R, plotH = H - T - B;
+  const slot = plotW / days.length;
+  const labelStep = days.length > 14 ? 7 : days.length > 7 ? 3 : 1;
+  const y = (value: number) => T + plotH - (value / top) * plotH;
+  const ticks = [0, top / 2, top];
+  const sum = totals.reduce((a, b) => a + b, 0);
+  return (
+    <figure className="sc-ind-card sc-ind-chart">
+      <figcaption className="sc-ind-card__head">
+        <h3>{title}</h3>
+        <p>{note} Razem w {days.length} dniach: {format(sum)}.</p>
+      </figcaption>
+      <Legend />
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: ${format(sum)} w ${days.length} dniach`}>
+        {ticks.map((tick) => (
+          <g key={tick}>
+            <line x1={L} x2={W - R} y1={y(tick)} y2={y(tick)} className="sc-ind-grid" />
+            <text x={L - 6} y={y(tick) + 4} textAnchor="end" className="sc-ind-axis">{format(tick)}</text>
+          </g>
+        ))}
+        {days.map((day, index) => {
+          let base = 0;
+          const x = L + index * slot + slot * 0.15;
+          return (
+            <g key={day.date}>
+              <title>{`${day.date}: ${CAMPS.map((camp) => `${CAMP_LABELS[camp]} ${day.by_camp[camp][metric]}`).join(", ")}`}</title>
+              {CAMPS.map((camp) => {
+                const value = day.by_camp[camp][metric];
+                const height = (value / top) * plotH;
+                const rect = <rect key={camp} x={x} width={slot * 0.7} y={y(base + value)} height={height} className="sc-ind-bar" data-camp={camp} />;
+                base += value;
+                return value ? rect : null;
+              })}
+              {index === days.length - 1 || (index % labelStep === 0 && days.length - 1 - index >= labelStep / 2) ? (
+                <text x={x + slot * 0.35} y={H - 8} textAnchor="middle" className="sc-ind-axis">{day.date.slice(8, 10)}.{day.date.slice(5, 7)}</text>
+              ) : null}
+            </g>
+          );
+        })}
+      </svg>
+    </figure>
+  );
+}
+
+function CampColumn({ camp, bucket, minSample, read }: { camp: Camp; bucket: CampBucket; minSample: number; read?: number }) {
+  const n = bucket.diagnosed;
+  const histMax = Math.max(...bucket.intensity_histogram.map((bin) => bin.count), 1);
+  return (
+    <section className="sc-ind-camp" data-camp={camp} aria-labelledby={`ind-camp-${camp}`}>
+      <h3 id={`ind-camp-${camp}`}>{CAMP_LABELS[camp]}</h3>
+      <p className="sc-ind-camp__n">
+        <strong>{format(n)}</strong> diagnoz{read ? <> z {format(read)} przeczytanych wpisów</> : null}
+      </p>
+      <div className="sc-ind-stack" role="img" aria-label={VERDICTS.map(([key, label]) => `${label}: ${bucket[key]}`).join(", ")}>
+        {VERDICTS.map(([key]) => bucket[key] ? <i key={key} data-verdict={key} style={{ flexGrow: bucket[key] }} /> : null)}
+      </div>
+      <ul className="sc-ind-verdicts">
+        {VERDICTS.map(([key, label]) => (
+          <li key={key} data-verdict={key}><i aria-hidden="true" />{label}<span>{bucket[key]} ({percent(bucket[key], n)}%)</span></li>
+        ))}
+      </ul>
+      <p className="sc-ind-avg">
+        Średnia siła spinu:{" "}
+        {bucket.enough_data && bucket.average_intensity !== null
+          ? <strong>{Math.round(bucket.average_intensity)}/100</strong>
+          : <span className="sc-ind-few">za mało danych (n = {n}, próg {minSample})</span>}
+      </p>
+      <div className="sc-ind-hist" aria-label="Rozkład siły spinu">
+        {bucket.intensity_histogram.map((bin) => (
+          <div key={bin.min} className="sc-ind-hist__bin">
+            <span className="sc-ind-hist__bar" style={{ height: `${(bin.count / histMax) * 100}%` }} aria-hidden="true" />
+            <span className="sc-ind-hist__count">{bin.count}</span>
+            <span className="sc-ind-hist__label">{bin.min}–{bin.max}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Techniques({ stats }: { stats: IndicatorStats }) {
+  const rows = Object.entries(stats.techniques)
+    .map(([name, counts]) => ({ name, counts, total: CAMPS.reduce((sum, camp) => sum + counts[camp].count, 0) }))
+    .filter((row) => row.total > 0)
+    .sort((a, b) => (a.name === "Inne" ? 1 : b.name === "Inne" ? -1 : b.total - a.total));
+  return (
+    <section className="sc-ind-card" aria-labelledby="ind-tech-title">
+      <header className="sc-ind-card__head">
+        <h2 id="ind-tech-title">Najczęstsze techniki</h2>
+        <p>Odsetek diagnoz danej strony, w których Dr. Spin wskazał technikę (liczona raz na diagnozę). Odsetki, bo strony mają różną liczbę diagnoz.</p>
+      </header>
+      <Legend />
+      {rows.length ? (
+        <ul className="sc-ind-tech">
+          {rows.map((row) => (
+            <li key={row.name}>
+              <span className="sc-ind-tech__name">{row.name}</span>
+              {CAMPS.map((camp) => {
+                const n = stats.by_camp[camp]?.diagnosed ?? 0;
+                const share = percent(row.counts[camp].count, n);
+                return (
+                  <span key={camp} className="sc-ind-tech__row" data-camp={camp}>
+                    <span className="sc-ind-tech__track" aria-hidden="true"><i style={{ width: `${share}%` }} /></span>
+                    <span className="sc-ind-tech__value">{share}% <small>({row.counts[camp].count} z {n})</small></span>
+                  </span>
+                );
+              })}
+            </li>
+          ))}
+        </ul>
+      ) : <p className="sc-ind-note">Brak diagnoz w tym okresie.</p>}
+    </section>
+  );
+}
+
+function Parties({ stats }: { stats: IndicatorStats }) {
+  const rows = Object.entries(stats.by_party).sort(([, a], [, b]) => b.diagnosed - a.diagnosed);
+  if (!rows.length) return null;
+  return (
+    <section className="sc-ind-card" aria-labelledby="ind-party-title">
+      <header className="sc-ind-card__head">
+        <h2 id="ind-party-title">Według partii</h2>
+        <p>Partia krajowa z rejestru osób publicznych. Europosłów liczymy przy ich partii, nie frakcji w Parlamencie Europejskim.</p>
+      </header>
+      <div className="sc-ind-table-wrap">
+        <table className="sc-ind-table">
+          <thead><tr><th scope="col">Partia</th><th scope="col">Strona</th><th scope="col">Diagnozy</th><th scope="col">Spin / częściowy</th><th scope="col">Średnia siła</th></tr></thead>
+          <tbody>
+            {rows.map(([code, row]) => (
+              <tr key={code}>
+                <th scope="row">{row.party?.short ?? "bez przypisanej partii"}</th>
+                <td>{row.camp === "mixed" ? "obie" : CAMP_LABELS[row.camp]}</td>
+                <td>{row.diagnosed}</td>
+                <td>{row.spin} / {row.partial}</td>
+                <td>{row.enough_data && row.average_intensity !== null ? `${Math.round(row.average_intensity)}/100` : <span className="sc-ind-few">za mało danych</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function Accounts({ stats }: { stats: IndicatorStats }) {
+  const rows = stats.accounts.slice(0, 10);
+  if (!rows.length) return null;
+  const max = Math.max(...rows.map((row) => row.diagnosed), 1);
+  return (
+    <section className="sc-ind-card" aria-labelledby="ind-acc-title">
+      <header className="sc-ind-card__head">
+        <h2 id="ind-acc-title">Najczęściej badane konta</h2>
+        <p>Ile razy Dr. Spin badał wpisy danej osoby. To miara aktywności i tematów, nie ocena osoby. Diagnoza może też brzmieć „bez spinu”.</p>
+      </header>
+      <ol className="sc-ind-accounts">
+        {rows.map((row) => (
+          <li key={`${row.account_id}-${row.camp}`} data-camp={row.camp}>
+            <Link href={`/klinika/diagnozy?q=${encodeURIComponent(row.handle)}`}>{row.name}{row.party ? `, ${row.party.short}` : ""}</Link>
+            <span className="sc-ind-accounts__bar" aria-hidden="true"><i style={{ width: `${(row.diagnosed / max) * 100}%` }} /></span>
+            <span className="sc-ind-accounts__n">{row.diagnosed}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+export function ClinicIndicators() {
+  const query = useQuery({ queryKey: ["clinic-stats"], queryFn: getIndicatorStats, staleTime: 10 * 60_000 });
+  const stats = query.data;
+  return (
+    <section className="sc-clinic sc-ind" aria-labelledby="ind-title">
+      <header className="sc-clinic-head">
+        <p className="sc-clinic-kicker"><Link href="/klinika">Klinika spinu</Link> <AiTag /></p>
+        <h1 id="ind-title">Wskaźniki Kliniki</h1>
+        <p className="sc-clinic-subtitle">
+          Ile wpisów czytamy, ile badamy i co widać w diagnozach Dr. Spina. Obie strony pokazujemy obok siebie, na tych samych osiach i zawsze z liczbą diagnoz.
+        </p>
+        <p className="sc-ind-links"><Link href="/klinika/diagnozy">Baza wszystkich diagnoz →</Link><Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link></p>
+      </header>
+
+      {query.isError ? <p role="alert" className="sc-clinic-empty">Nie udało się pobrać wskaźników. <button type="button" className="sc-ind-retry" onClick={() => query.refetch()}>Spróbuj ponownie</button></p> : null}
+      {query.isLoading ? <p className="sc-clinic-empty">Ładowanie wskaźników…</p> : null}
+
+      {stats ? <>
+        <Funnel stats={stats} />
+        <div className="sc-ind-pair">
+          <DailyChart stats={stats} metric="read" title="Przeczytane wpisy dziennie" note="Wszystkie nowe wpisy z kont obu stron." />
+          <DailyChart stats={stats} metric="diagnosed" title="Diagnozy dziennie" note="Opublikowane diagnozy według dnia diagnozy." />
+        </div>
+        <section className="sc-ind-card" aria-labelledby="ind-sides-title">
+          <header className="sc-ind-card__head">
+            <h2 id="ind-sides-title">Obie strony obok siebie</h2>
+            <p>Ostatnie {stats.window.days} dni. Średnią siłę pokazujemy od {stats.min_sample} diagnoz strony, a przy mniejszej próbie tylko liczby.</p>
+          </header>
+          <div className="sc-ind-camps">
+            {CAMPS.map((camp) => stats.by_camp[camp]
+              ? <CampColumn key={camp} camp={camp} bucket={stats.by_camp[camp]} minSample={stats.min_sample} read={stats.totals.by_camp?.[camp]?.read} />
+              : null)}
+          </div>
+        </section>
+        <Techniques stats={stats} />
+        <Parties stats={stats} />
+        <Accounts stats={stats} />
+        <aside className="sc-ind-method" aria-label="Jak czytać te dane">
+          <h2>Jak czytać te dane</h2>
+          <ul>
+            <li>Diagnozy obejmują wpisy, które izba przyjęć uznała za warte zbadania. To nie jest próba całej polityki, więc liczba diagnoz jednej strony nie mówi, która strona spinuje więcej.</li>
+            <li>Siła spinu (0–100) mówi, jak mocno wpis opiera się na technikach perswazji. Nie jest oceną prawdziwości ani osoby.</li>
+            <li>Diagnozy stawia AI (konsylium kilku modeli). Każda ma numer, pełne uzasadnienie i przycisk „Zgłoś błąd”.</li>
+            <li>Okres: {stats.window.date_from} – {stats.window.date_to}. Dane odświeżamy co 10 minut.</li>
+          </ul>
+        </aside>
+      </> : null}
+    </section>
+  );
+}

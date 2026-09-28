@@ -12,10 +12,15 @@ def normalized(value):
 # Kolejność rozstrzyga niejednoznaczności: szczegółowe techniki przed ogólnymi.
 RULES = (
     ('Straszenie', r'strasz|strach|leku|katastrof'),
+    ('Przypisywanie sobie zasług', r'zaslug|przypisanie wysilku'),
     ('Przypisywanie intencji', r'intencj|motywow|czytanie w mysl'),
     ('Atak na osobę', r'atak.*osob|ad hominem|personaln|dyskredyt'),
-    ('Fałszywa alternatywa', r'alternatyw|dychotom|falszywy dylemat'),
-    ('Słomiany człowiek', r'slomian|chochol|straw man'),
+    ('Fałszywa alternatywa', r'alternatyw|dychotom|falszywy dylemat|zero jedynkow'),
+    # przeinaczenie cudzego stanowiska przed ogólnym „przeinaczeniem”
+    ('Słomiany człowiek', r'slomian|chochol|straw man|przeinaczenie (stanowiska|cudzej)'),
+    ('Fałszywa analogia i skojarzenie', r'analogi|skojarzen|amalgamat|zestawienie|laczenie'),
+    ('Przeinaczenie faktów', r'jako fakt|statusu faktu|przeinacz|przesuniecie kategorii|niedopasowan'),
+    ('Sugestia i niedopowiedzenie', r'sugest|nieostr|nieokreslon|presupozyc|pytanie retoryczne|zakladanie zgody'),
     ('Fałszywa przyczynowość', r'przyczyn|korelac'),
     ('Liczba bez punktu odniesienia', r'(liczb|procent|kwot).*bez.*(odnies|porown|kontekst|zrodl)'),
     ('Wybiórcze dane', r'wybior|selektywn|cherry pick'),
@@ -25,8 +30,9 @@ RULES = (
     ('My kontra oni', r'my (kontra|i|przeciw) oni|polaryzac|podzial.*(my|oni)'),
     ('Zmiana tematu', r'zmiana tematu|odwr.*uwag|whatabout|a u was'),
     ('Odwołanie do autorytetu', r'autorytet|eksperc'),
-    ('Teza bez dowodu', r'bez dowod|nieudowod|goloslown|ukryte zaloz|insynuac|dowod.*(nie pokaz|niepokaz)|teza.*dowod'),
-    ('Przesada', r'przesad|hiperbol|wyolbrzym|wniosek.*przeslank'),
+    ('Teza bez dowodu', r'bez dowod|nieudowod|goloslown|ukryte zaloz|insynuac|dowod.*(nie pokaz|niepokaz)|teza.*dowod'
+                        r'|skok wnioskow|bez pokrycia|niefalsyfikowal|samopotwierdz|kontrfaktyczn'),
+    ('Przesada', r'przesad|hiperbol|wyolbrzym|wniosek.*przeslank|dramatyzac'),
     ('Apel do emocji', r'emocj'),
 )
 CANONICAL_TECHNIQUES = tuple(name for name, _ in RULES) + ('Inne',)
