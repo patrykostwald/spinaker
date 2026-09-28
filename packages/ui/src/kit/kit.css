@@ -4520,14 +4520,14 @@ html[data-touch-scroll="guard"] [data-scroll-active] {
 }
 
 /* Pasek wsparcia nad stopką: zdanie po lewej, licznik zbiórki po prawej (nad „Wspomóż projekt”). */
-.sc-support-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); padding: 8px 0; border-bottom: 1px solid var(--sc-line, rgba(255,255,255,.08)); }
+.sc-support-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-4); }
 .sc-support-bar__text { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: 1.35; min-width: 0; }
 .sc-support-bar__progress { flex: none; display: grid; gap: 4px; justify-items: end; min-width: 220px; }
 .sc-support-bar__amount { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); white-space: nowrap; }
 .sc-support-bar__amount strong { color: var(--sc-text); }
 .sc-support-bar__track { position: relative; display: block; width: 100%; height: 6px; border-radius: 6px; background: var(--sc-surface-2, rgba(255,255,255,.08)); overflow: hidden; }
 .sc-support-bar__track i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--sc-accent); }
-@container sc-footer (max-width: 639px) {
+@container sc-support (max-width: 639px) {
   .sc-support-bar__text:not(:only-child) { display: none; } .sc-support-bar__text:only-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sc-support-bar__progress { width: 100%; justify-items: stretch; grid-template-columns: auto 1fr; align-items: center; gap: var(--sc-s-3); min-width: 0; }
 }
@@ -4563,14 +4563,6 @@ html[data-touch-scroll="guard"] [data-scroll-active] {
   .sc-flow__step + .sc-flow__step::before { content: "↓"; left: 28px; top: -16px; transform: none; }
 }
 
-/* Nagłówek i stopka w tej samej kolumnie co treść (jak w dużych serwisach): logo nad lewą krawędzią sekcji, ikona motywu nad prawą. */
-.sc-navmenu__row,
-.sc-footer[data-sticky] { padding-inline: max(calc(var(--sc-s-8) / 2), calc((100% - var(--sc-layout-wide)) / 2)); }
-@media (max-width: 480px) {
-  .sc-navmenu__row,
-  .sc-footer[data-sticky] { padding-inline: calc(var(--sc-s-5) / 2); }
-}
-
 /* Telefon: linki stopki przewijają się w bok, przycisk „Wspomóż projekt” zawsze widoczny w całości. */
 .sc-footer[data-sticky] .sc-footer__columns { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .sc-footer[data-sticky] .sc-footer__columns::-webkit-scrollbar { display: none; }
@@ -4578,3 +4570,8 @@ html[data-touch-scroll="guard"] [data-scroll-active] {
 @media (max-width: 639px) {
   .sc-footer[data-sticky] .sc-footer__columns { mask-image: linear-gradient(90deg, #000 85%, transparent); }
 }
+
+/* Pasek wsparcia jako osobny pasek na całą szerokość, przyklejony razem ze stopką tuż nad nią (stopka bez zmian). */
+.sc-footer-dock { position: sticky; bottom: 0; z-index: 25; box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.28); }
+.sc-footer-dock > .sc-footer[data-sticky] { position: relative; bottom: auto; box-shadow: var(--sc-ring); }
+.sc-footer-dock__above { container-type: inline-size; container-name: sc-support; padding: 8px var(--sc-gutter); background: var(--sc-surface); box-shadow: var(--sc-ring); }

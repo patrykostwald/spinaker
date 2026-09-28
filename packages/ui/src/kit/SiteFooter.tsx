@@ -87,9 +87,8 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
   );
 
   if (sticky) {
-    return (
+    const bar = (
       <footer role="contentinfo" className="sc-footer" data-sticky>
-        {above}
         <div className="sc-footer__bar">
           <div className="sc-footer__brand">{brand}</div>
           {columnsRow}
@@ -101,6 +100,13 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
         </div>
       </footer>
     );
+    // Pasek nad stopką (np. wsparcie) to osobny pasek na całą szerokość — przyklejony razem ze stopką.
+    return above ? (
+      <div className="sc-footer-dock">
+        <div className="sc-footer-dock__above">{above}</div>
+        {bar}
+      </div>
+    ) : bar;
   }
 
   return (
