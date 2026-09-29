@@ -9,10 +9,11 @@ from django.utils import timezone
 from news import clinic
 from news.clinic_models import SpinDiagnosis
 from news.political_models import PoliticalPost
-from news.techniques import CANONICAL_TECHNIQUES, technique_groups
+from news.techniques import CANONICAL_TECHNIQUES, FAMILIES, technique_groups
+from news.clinic_scan import scan_data
 
 MIN_SAMPLE = 10
-CACHE_KEY = 'clinic-public-stats:v1'
+CACHE_KEY = 'clinic-public-stats:v2'
 
 
 def sample(count):
@@ -54,8 +55,33 @@ def stats_data():
     camps = {camp: bucket() for camp in clinic.CAMPS}
     parties, accounts = {}, {}
     techniques = {name: {camp: 0 for camp in clinic.CAMPS} for name in CANONICAL_TECHNIQUES}
+    families = {name: {camp: 0 for camp in clinic.CAMPS} for name in FAMILIES}
+    claims = {camp: dict.fromkeys(('checked', 'supported', 'misleading', 'contradicted', 'unverified'), 0)
+              for camp in clinic.CAMPS}
+    council = {'diagnosed': 0, 'unanimous': 0, 'escalations': 0}
+    engagement = {camp: {verdict: {'count': 0, 'likes_sum': 0} for verdict in ('spin', 'partial', 'no_spin')}
+                  for camp in clinic.CAMPS}
     for row in rows:
         camp = row.post.camp_at_collection
+        scan = scan_data(row)
+        for family, count in scan['families'].items():
+            families[family].setdefault(camp, 0)
+            families[family][camp] += bool(count)
+        claim_totals = claims.setdefault(camp, dict.fromkeys(scan['claims'], 0))
+        for key, count in scan['claims'].items():
+            claim_totals[key] += count
+        votes = scan['council']['votes']
+        if len(votes) >= 2:
+            council['diagnosed'] += 1
+            council['unanimous'] += len({vote['verdict'] for vote in votes}) == 1
+        council['escalations'] += scan['council']['escalated']
+        metrics = (row.post.source_data or {}).get('public_metrics') or {}
+        likes = metrics.get('like_count')
+        if row.verdict in ('spin', 'partial', 'no_spin') and isinstance(likes, (int, float)) and likes >= 0:
+            group = engagement.setdefault(camp, {v: {'count': 0, 'likes_sum': 0}
+                                                 for v in ('spin', 'partial', 'no_spin')})[row.verdict]
+            group['count'] += 1
+            group['likes_sum'] += likes
         camps.setdefault(camp, bucket())
         add(camps[camp], row)
         affiliation = clinic.party_affiliation(figures.get(row.post.account_id))
@@ -105,6 +131,13 @@ def stats_data():
     # To stan kolejki, nie liczba wszystkich historycznych przejść przez ten etap.
     funnel['flagged_queued'] = sample(screened.filter(status__in=['flagged', 'queued']).count())
     result = {
+        'families': {name: {camp: sample(n) for camp, n in counts.items()} for name, counts in families.items()},
+        'claims': claims,
+        'council': {**council, 'unanimous_percent': round(100 * council['unanimous'] / council['diagnosed'], 2)
+                    if council['diagnosed'] else None, 'enough_data': council['diagnosed'] >= MIN_SAMPLE},
+        'engagement': {camp: {verdict: {**sample(group['count']),
+                        'average_likes': round(group['likes_sum'] / group['count'], 2) if group['count'] else None}
+                        for verdict, group in groups.items()} for camp, groups in engagement.items()},
         'totals': totals, 'funnel': funnel, 'min_sample': MIN_SAMPLE,
         'window': {'days': 30, 'date_from': start.date().isoformat(), 'date_to': today.date().isoformat(),
                    'timezone': str(timezone.get_current_timezone()), 'diagnoses_by': 'diagnosed_at',

@@ -163,6 +163,19 @@ def clinic_spin_detail(request, diagnosis_id):
     return Response(clinic.detail_data(diagnosis))
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_spin_card(request, diagnosis_id):
+    from django.http import FileResponse
+    from news.clinic_card import cached_card
+    diagnosis = get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
+    figures = clinic.figures_by_account([diagnosis.post.account_id])
+    path = cached_card(clinic.card_data(diagnosis, figures))
+    response = FileResponse(path.open('rb'), content_type='image/png')
+    response['Cache-Control'] = 'public, max-age=3600'
+    return response
+
+
 @extend_schema(summary='Konta X, z których czyta Klinika', tags=['klinika'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def clinic_accounts(request):

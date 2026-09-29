@@ -26,6 +26,7 @@ from news.names import display_name
 from news.clinic_models import ClinicDailyMessage, SpinDiagnosis
 from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure, SocialHandleEvidence
 from news.techniques import technique_groups, normalized
+from news.clinic_scan import scan_data, synthesis_fingerprint, model_label
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +265,7 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
 
 def ensure_x_thread(row: SpinDiagnosis, save: bool = True) -> bool:
     """Synteza diagnozy do wątku na X — raz na diagnozę, darmowym modelem. Treści diagnozy nie zmienia."""
-    if row.x_thread or not row.verdict:
+    if (row.x_thread and scan_data(row)['synthesis']) or not row.verdict:
         return False
     figure = figures_by_account([row.post.account_id]).get(row.post.account_id)
     try:
@@ -277,16 +278,23 @@ def ensure_x_thread(row: SpinDiagnosis, save: bool = True) -> bool:
     except clinic_ai.ClinicAIError:
         return False
     row.x_thread = result['posts']
+    row.usage = {**(row.usage or {}), 'scan_synthesis': synthesis_fingerprint(row)}
     if save:
-        row.save(update_fields=['x_thread'])
+        row.save(update_fields=['x_thread', 'usage'])
     return True
 
 
 def fill_x_threads(limit: int = 5) -> int:
-    """Uzupełnia syntezy dla opublikowanych diagnoz, które jeszcze jej nie mają (najnowsze najpierw)."""
-    rows = (SpinDiagnosis.objects.filter(status='approved', hidden_at__isnull=True, x_thread=[])
-            .exclude(verdict='').select_related('post__account').order_by('-diagnosed_at')[:limit])
-    return sum(ensure_x_thread(row) for row in rows)
+    """Uzupełnia brakujące lub niesprawdzone syntezy z całego backlogu, od najstarszych."""
+    rows = published_diagnoses().exclude(verdict='').order_by('diagnosed_at', 'pk')
+    completed = attempted = 0
+    for row in rows.iterator():
+        if attempted >= max(0, limit):
+            break
+        if scan_data(row)['synthesis'] is None:
+            attempted += 1
+            completed += ensure_x_thread(row)
+    return completed
 
 
 def queue_for_diagnosis(row: SpinDiagnosis) -> SpinDiagnosis:
@@ -586,6 +594,7 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
         'summary': diagnosis.summary,
         'technique_names': [item['name'] for item in diagnosis.techniques][:4],
         'technique_groups': technique_groups(diagnosis.techniques),
+        'scan': scan_data(diagnosis),
         'post': {'id': post.post_id, 'url': post.url, 'text': post.text, 'published_at': post.published_at,
                  'media': _media(post), 'likes': metrics.get('like_count', 0), 'reposts': metrics.get('retweet_count', 0)},
         'author': author_data(post, figures.get(post.account_id)),

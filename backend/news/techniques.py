@@ -37,6 +37,29 @@ RULES = (
 )
 CANONICAL_TECHNIQUES = tuple(name for name, _ in RULES) + ('Inne',)
 
+FAMILIES = {
+    'fakty': ('Liczba bez punktu odniesienia', 'Wybiórcze dane', 'Pominięcie kontekstu',
+              'Przeinaczenie faktów', 'Teza bez dowodu', 'Fałszywa przyczynowość',
+              'Nadmierne uogólnienie', 'Fałszywa analogia i skojarzenie'),
+    'emocje': ('Apel do emocji', 'Straszenie', 'Przesada', 'Etykietowanie', 'My kontra oni',
+               'Sugestia i niedopowiedzenie'),
+    'zagrania': ('Atak na osobę', 'Przypisywanie intencji', 'Słomiany człowiek', 'Fałszywa alternatywa',
+                 'Zmiana tematu', 'Odwołanie do autorytetu', 'Przypisywanie sobie zasług'),
+    'inne': ('Inne',),
+}
+FAMILY_LABELS = {'fakty': 'Fakty i liczby', 'emocje': 'Emocje i ramy',
+                 'zagrania': 'Zagrania wobec innych', 'inne': 'Inne'}
+FAMILY_DEFINITIONS = {
+    'fakty': 'Dobór i przedstawianie faktów, liczb oraz związków między nimi.',
+    'emocje': 'Wpływanie na odbiór przez emocje, język i ramy interpretacji.',
+    'zagrania': 'Sposoby przedstawiania innych osób i prowadzenia sporu.',
+    'inne': 'Techniki spoza trzech głównych rodzin.',
+}
+
+
+def technique_family(category):
+    return next((family for family, categories in FAMILIES.items() if category in categories), 'inne')
+
 
 DEFINITIONS = {
     'Straszenie': 'Budowanie lęku nieproporcjonalnego do przedstawionych faktów.',
