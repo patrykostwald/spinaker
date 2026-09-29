@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 
 from news.x_share import diagnosis_url, shorten, weight
 
+from news.loaded_words import loaded_data
 from news.social_content import checked_claims
 from news.techniques import DISPLAY_NAMES, FAMILIES, normalized, technique_category, technique_family
 
@@ -117,7 +118,8 @@ def scan_data(row):
     synthesis = {'lead': thread[0], 'points': thread[1:]} if thread and safe else None
     scores = [v['intensity'] for v in votes if isinstance(v['intensity'], (int, float))]
     agreement = f"{sum(v['verdict'] == row.verdict for v in votes)}/{len(votes)}" if votes else None
-    return {'families': {key: {'technique_types': count} for key, count in families.items()}, 'techniques': techniques[:6], 'claims': claims, 'sources': len(sources), 'source_domains': sorted(sources)[:5],
+    return {'loaded': loaded_data(row.post.text, (row.usage or {}).get('loaded_words')),
+            'families': {key: {'technique_types': count} for key, count in families.items()}, 'techniques': techniques[:6], 'claims': claims, 'sources': len(sources), 'source_domains': sorted(sources)[:5],
             'scope': scope_data(row.post), 'share': {'single': single_share(row, synthesis)},
             'diagnosed_at': row.diagnosed_at,
             'council': {'models': len(votes), 'verdict_agreement': agreement,

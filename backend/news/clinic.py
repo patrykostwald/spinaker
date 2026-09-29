@@ -250,6 +250,7 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         row.provider, row.model_name = 'anthropic', clinic_ai.model_name()
     else:
         usage = result.pop('usage', {})
+        usage['loaded_words'] = result.pop('loaded_words', [])
         for field, value in result.items():
             setattr(row, field, value)
         row.status, row.usage, row.error = ('approved' if auto_publish() else 'pending_review'), usage, ''

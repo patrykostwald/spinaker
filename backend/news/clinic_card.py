@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageOps
 from news.techniques import FAMILY_LABELS
 from news.x_card import _font, EMOJI
 
-VERSION = 'v4'
+VERSION = 'v5'
 COLORS = {'spin': '#ff6b6b', 'partial': '#f2b441', 'no_spin': '#4ed18a', 'unclear': '#a6a6a6'}
 MUTED, ACCENT = '#a6a6a6', '#4a9eff'
 FAMILIES = {'dane': '#7ea6d8', 'przedstawienie': '#d2a86a', 'spor': '#b58ad8'}
@@ -263,6 +263,12 @@ def render(data):
         names = [t['name'] for t in scan.get('techniques', []) if t.get('family') == family]
         text(' · '.join(names) or 'Nie wskazano', (952, y + 12, 1455, y + 40), size=17, minimum=14, color='#ffffff' if names else '#8c8c8c')
         text(counts[family], (1480, y + 12, end, y + 40), size=18, weight=700)
+    loaded = scan.get('loaded') or {}
+    loaded_top = table_top + 170
+    if loaded and loaded_top + 28 <= 802:
+        label = f"Słowa nacechowane: {loaded['count']}"
+        words = ' · '.join(item['word'] for item in loaded.get('words', []))
+        text(label + (' · ' + words if words else ''), (right, loaded_top, end, loaded_top + 28), size=18, color=MUTED)
     text(f"spin.clinic/klinika/{data['id']}", (38, 858, 560, 890), size=18, color=MUTED)
     footer = 'Diagnoza AI · rządzący i opozycja według tych samych zasad'
     footer_x = 1560 - draw.textlength(footer, font=_font(18))

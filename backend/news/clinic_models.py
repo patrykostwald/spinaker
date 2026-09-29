@@ -67,6 +67,9 @@ class SpinDiagnosis(models.Model):
     def save(self, *args, **kwargs):
         if kwargs.get('update_fields') is None or 'techniques' in kwargs['update_fields']:
             self.techniques = categorize_techniques(self.techniques)
+        if (kwargs.get('update_fields') is None or 'usage' in kwargs['update_fields']) and 'loaded_words' in (self.usage or {}):
+            from news.loaded_words import validate_loaded_words
+            self.usage = {**self.usage, 'loaded_words': validate_loaded_words(self.post.text, self.usage['loaded_words'])}
         return super().save(*args, **kwargs)
 
     class Meta:

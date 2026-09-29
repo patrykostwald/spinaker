@@ -11,9 +11,10 @@ from news.clinic_models import SpinDiagnosis
 from news.political_models import PoliticalPost
 from news.techniques import CANONICAL_TECHNIQUES, FAMILIES, technique_groups
 from news.clinic_scan import scan_data
+from news.loaded_words import KINDS
 
 MIN_SAMPLE = 10
-CACHE_KEY = 'clinic-public-stats:v3'
+CACHE_KEY = 'clinic-public-stats:v4'
 
 
 def sample(count):
@@ -58,12 +59,18 @@ def stats_data():
     families = {name: {camp: 0 for camp in clinic.CAMPS} for name in FAMILIES}
     claims = {camp: dict.fromkeys(('checked', 'supported', 'misleading', 'contradicted', 'unverified', 'opinions', 'distinct'), 0)
               for camp in clinic.CAMPS}
+    loaded = {camp: {'count': 0, 'total': 0, 'by_kind': dict.fromkeys(KINDS, 0)} for camp in clinic.CAMPS}
     council = {'diagnosed': 0, 'unanimous': 0, 'escalations': 0}
     engagement = {camp: {verdict: {'count': 0, 'likes_sum': 0} for verdict in ('spin', 'partial', 'no_spin')}
                   for camp in clinic.CAMPS}
     for row in rows:
         camp = row.post.camp_at_collection
         scan = scan_data(row)
+        group = loaded.setdefault(camp, {'count': 0, 'total': 0, 'by_kind': dict.fromkeys(KINDS, 0)})
+        group['count'] += 1
+        group['total'] += scan['loaded']['count']
+        for kind, count in scan['loaded']['by_kind'].items():
+            group['by_kind'][kind] += count
         for family, count in scan['families'].items():
             families[family].setdefault(camp, 0)
             families[family][camp] += bool(count['technique_types'])
@@ -132,6 +139,10 @@ def stats_data():
     funnel['flagged_queued'] = sample(screened.filter(status__in=['flagged', 'queued']).count())
     result = {
         'families': {name: {camp: sample(n) for camp, n in counts.items()} for name, counts in families.items()},
+        'loaded': {camp: {**sample(group['count']), 'total': group['total'],
+                    'average_count': round(group['total'] / group['count'], 2) if group['count'] else None,
+                    'by_kind': {kind: sample(n) for kind, n in group['by_kind'].items()}}
+                   for camp, group in loaded.items()},
         'claims': claims,
         'council': {**council, 'unanimous_percent': round(100 * council['unanimous'] / council['diagnosed'], 2)
                     if council['diagnosed'] else None, 'enough_data': council['diagnosed'] >= MIN_SAMPLE},
