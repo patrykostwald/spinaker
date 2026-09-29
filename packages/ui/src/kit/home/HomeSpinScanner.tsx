@@ -155,14 +155,14 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
           <p className="sc-scan-p-meta"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time>{" · "}<a href={spin.post.url} target="_blank" rel="noopener noreferrer">Otwórz wpis na X ↗</a></p>
         </div></header>
         <p className="sc-scan-p-scope">Analiza: {analyzed.join(" i ")}{notAnalyzed.length ? ` · ${notAnalyzed.join(", ")} nieanalizowany` : ""}</p>
-        <p ref={textRef} className="sc-scan-p-text" data-clipped={!fullText && clipped || undefined}>{spin.post.text}</p>
-        {clipped || fullText ? <button type="button" className="sc-scan-p-more" onClick={() => setFullText(!fullText)}>{fullText ? "Zwiń wpis" : "Pokaż cały wpis"}</button> : null}
         {media ? <figure className="sc-scan-p-media">
           {videoFile ? <video src={media.url} controls preload="none" aria-label={media.alt || "Film dołączony do wpisu"} /> :
             // eslint-disable-next-line @next/next/no-img-element
             <img src={media.url} alt={media.alt || "Załącznik wpisu"} loading="lazy" referrerPolicy="no-referrer" />}
           <figcaption>Załącznik wpisu</figcaption>
         </figure> : null}
+        <p ref={textRef} className="sc-scan-p-text" data-clipped={!fullText && clipped || undefined}>{spin.post.text}</p>
+        {clipped || fullText ? <button type="button" className="sc-scan-p-more" onClick={() => setFullText(!fullText)}>{fullText ? "Zwiń wpis" : "Pokaż cały wpis"}</button> : null}
       </div>
     </div>
     <div className="sc-scan-dg">
