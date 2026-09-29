@@ -11,6 +11,7 @@ import { NewsletterSignup } from "../NewsletterSignup";
 import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { ClinicShowcase } from "./ClinicIndicators";
+import { HomeSpinScanner } from "../../kit/home/HomeSpinScanner";
 import { formatDateTimePl } from "../../lib/utils";
 import { InterviewBox, MessageBox, MessageHistory, PoliticiansTable, SpinSwitch } from "./ClinicExtras";
 
@@ -170,7 +171,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
 
         <section className="sc-clinic-sotd" aria-labelledby="clinic-drspin-title">
           {/* Nagłówek jak na głównej: „Klinika spinu AI” + „Dr. Spin”, zakładki na środku, link po prawej. */}
-          <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}
+          <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <HomeSpinScanner key={spin.id} spin={spin} />}
             left={<header>
               <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
               <h2 id="clinic-drspin-title" className="sc-sr-only">Dr. Spin</h2>
