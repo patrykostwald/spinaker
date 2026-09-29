@@ -56,20 +56,21 @@ export default function SupportPage() {
   return <InfoPage eyebrow="WSPARCIE" title="Pomóż nam analizować kolejne wypowiedzi." longTitle lead="Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu."
     actions={<Button href={SUPPORT_LINKS.monthly} variant="primary">Wesprzyj miesięczny budżet</Button>}>
     <p>Politycy mają spin doktorów. My mamy spin.clinic</p>
-    <section><h2>Kto za tym stoi</h2><p>Serwis rozwija jedna osoba, korzystając z narzędzi AI do programowania i analizy przekazów. Projekt powstaje dzięki pracy twórcy; wsparcie czytelników pomaga finansować jego dalsze działanie.</p><p>Operatorem serwisu jest iapply sp. z o.o. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. <Link href="/o-nas#kontakt">Dane operatora i pozostałe kontakty</Link>.</p></section>
+    <section><h2>Kto za tym stoi</h2><p>Serwis rozwija jedna osoba, korzystając z narzędzi AI do programowania i analizy przekazów. Projekt powstaje dzięki pracy twórcy; wsparcie czytelników pomaga finansować jego dalsze działanie.</p><p>Operatorem serwisu jest iapply sp. z o.o. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. <Link href="/o-nas#operator">Dane operatora</Link> · <Link href="/o-nas#kontakt">pozostałe kontakty</Link>.</p></section>
     <section><h2>Na co idą pieniądze</h2>
       <p>Finansujemy dostęp do wpisów na X, płatne etapy analizy, transkrypcje nagrań oraz serwer, bazę danych i kopie zapasowe. Część zadań korzysta z bezpłatnych limitów usług.</p>
       <dl className="sc-support-costs">{COSTS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>
     </section>
     {progress ? <section aria-labelledby="support-goal-title"><h2 id="support-goal-title">Cel na ten miesiąc</h2>
-      <p>Cel miesięczny: {progress.goal.toLocaleString('pl-PL')} zł. Zebrano: {progress.raised === null ? 'brak danych' : `${progress.raised.toLocaleString('pl-PL')} zł`}. Aktualizacja: {progress.updated ?? 'brak daty aktualizacji'}.</p>
-      {progress.percent !== null ? <div className="sc-support-goal" role="img" aria-label={`Zebrano ${progress.percent}% celu`}><div className="sc-support-goal__bar"><span style={{ width: `${progress.percent}%` }} /></div></div> : null}
+      {/* Bez daty aktualizacji nie pokazujemy kwoty ani paska — mogłyby być nieaktualne (audyt 046) */}
+      <p>Cel miesięczny: {progress.goal.toLocaleString('pl-PL')} zł. {progress.updated && progress.raised !== null ? `Zebrano: ${progress.raised.toLocaleString('pl-PL')} zł (stan na ${progress.updated}).` : 'Aktualna kwota zbiórki jest widoczna na stronie zbiórki.'}</p>
+      {progress.updated && progress.percent !== null ? <div className="sc-support-goal" role="img" aria-label={`Zebrano ${progress.percent}% celu`}><div className="sc-support-goal__bar"><span style={{ width: `${progress.percent}%` }} /></div></div> : null}
     </section> : null}
     <section><h2>Na co zbieramy</h2><dl className="sc-support-costs">{GOALS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>
       <p><a href={SUPPORT_LINKS.phase3}>Wesprzyj własny serwer AI na zrzutka.pl</a></p>
       <p><Link href="/o-nas#rozwoj">Trzy fazy projektu</Link></p>
     </section>
-    <section><h2>Wsparcie nie kupuje wpływu</h2><p>Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.</p></section>
+    <section><h2>Wsparcie nie kupuje wpływu</h2><p>Nie przyjmujemy pieniędzy od partii ani polityków. Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.</p></section>
     <section><h2>Inne sposoby wsparcia</h2><p>Wpłaty obsługują zewnętrzne serwisy; spin.clinic nie przetwarza danych płatniczych. Zbiórka na miesięczny budżet nie jest subskrypcją.</p><ul>{links.filter(link => link.href !== SUPPORT_LINKS.monthly).map(link => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}</ul><p>Możesz też udostępnić diagnozę z <Link href="/klinika">Kliniki</Link>.</p></section>
     <NewsletterSignup source="wsparcie" />
   </InfoPage>;

@@ -43,7 +43,7 @@ export function NewsletterSignup({ source, compact = false }: { source: string; 
         <h2 id={`newsletter-${source}`}>Powiadomimy Cię o starcie pełnej wersji</h2>
         <p>
           spin.clinic działa w wersji beta. Zostaw e-mail — napiszemy, gdy wystartuje pełna wersja, i od czasu do czasu o najważniejszych nowościach.
-          Bez spamu, bez przekazywania adresu dalej.
+          Bez spamu; nie sprzedajemy ani nie udostępniamy adresów do cudzego marketingu.
         </p>
       </div>
       {state.kind === "done" ? (

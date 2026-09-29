@@ -30,7 +30,7 @@ export default function PressPage() {
     <section id="cytowanie"><h2>Jak cytować diagnozę</h2>
       <p>Podaj nazwę spin.clinic, tytuł i datę diagnozy oraz jej bezpośredni adres. Zaznacz, że analizę przygotowało AI. Rozróżniaj ocenę techniki perswazji od statusu sprawdzanego twierdzenia; zachowaj kontekst cytatu i ograniczenia wyniku.</p>
       <blockquote className="sc-doc-quote">Przykład zapisu: „Według analizy AI Dr. Spina w spin.clinic («[tytuł diagnozy]», [data diagnozy]) w tej wypowiedzi rozpoznano [technikę]. Źródło: [trwały adres diagnozy], dostęp: [data]”.</blockquote>
-      <p>Uzupełnij pola danymi wybranej diagnozy. Jej siła 0–100 opisuje komunikat, nie osobę. Ocena AI nie zastępuje samodzielnej weryfikacji redakcyjnej.</p>
+      <p>Wpis lub film spin.clinic w mediach społecznościowych jest skrótem analizy — przed cytowaniem otwórz pełną diagnozę i sprawdź materiał źródłowy. Uzupełnij pola danymi wybranej diagnozy. Jej siła 0–100 opisuje komunikat, nie osobę. Ocena AI nie zastępuje samodzielnej weryfikacji redakcyjnej.</p>
     </section>
     <section id="link"><h2>Trwały link</h2>
       <p>Otwórz konkretną diagnozę z <Link href="/klinika/diagnozy">archiwum</Link> i skopiuj adres jej strony: <code>https://spin.clinic/klinika/[id]</code>. Zachowuje on identyfikator analizy; adres strony głównej lub widok „spin dnia” nie wskazuje stale tego samego materiału.</p>
@@ -38,7 +38,7 @@ export default function PressPage() {
     </section>
     <section id="zrodla"><h2>Źródła i metodologia</h2>
       <p>Przy diagnozie są wpis wejściowy, cytaty i źródła do sprawdzanych twierdzeń. Otwórz oryginały i sprawdź, co rzeczywiście potwierdzają. <Link href="/zrodla">Katalog źródeł wiadomości</Link> to osobny wykaz; nie jest listą dowodów użytych w każdej diagnozie.</p>
-      <p><Link href="/metodologia">Metodologia — wersja 1.0 z 29 września 2026</Link> wyjaśnia sposób obliczeń i ograniczenia. <Link href="/konsylium">Konsylium AI</Link> pokazuje aktualny skład, a uczestników konkretnej analizy sprawdzisz przy jej wyniku. <Link href="/metodologia#korekty">Zasady wycofania diagnozy</Link>.</p>
+      <p><Link href="/metodologia">Aktualna metodologia</Link> wyjaśnia sposób obliczeń i ograniczenia. <Link href="/konsylium">Konsylium AI</Link> pokazuje aktualny skład, a uczestników konkretnej analizy sprawdzisz przy jej wyniku. <Link href="/metodologia#korekty">Zasady wycofania diagnozy</Link>.</p>
     </section>
     <section id="kontakt"><h2>Kontakt z projektem</h2>
       <p>Współpraca i pytania mediów: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Zgłoszenia błędów wraz z linkiem i dowodami: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Operator: iapply sp. z o.o.; <Link href="/o-nas#operator">dane operatora</Link>.</p>

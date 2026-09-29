@@ -26,7 +26,7 @@ const FLOW = [
   ["Łączenie", "Stałe reguły łączą głosy w jeden werdykt, siłę spinu i listę technik."],
   ["Źródła i badania", "Twierdzenia trafiają do wyszukiwarki, a laboratorium dodaje badania pomocnicze. Źródło musi pochodzić z wyników."],
   ["Uzasadnienie", "Przewodniczący pisze diagnozę z ustaleń, recenzent sprawdza zgodność, językoznawca poprawia polszczyznę."],
-  ["Publikacja", "Diagnoza ukazuje się automatycznie, z głosami modeli i ograniczeniami. Nikt nie edytuje jej treści."],
+  ["Publikacja", "Diagnoza ukazuje się automatycznie, z głosami modeli i ograniczeniami. Nikt nie edytuje jej treści. Wybrane wyniki trafiają też jako skróty i filmy do mediów społecznościowych — zawsze z linkiem do pełnej analizy."],
 ];
 
 const ROLES = [
@@ -100,7 +100,7 @@ export default function CouncilPage() {
       <p className="sc-kons-example__cap">Przykład obliczenia, nie rzeczywista diagnoza.</p>
       <ul className="sc-kons-rules">
         <li><strong>Werdykt i siła</strong> to środkowe oceny (mediana). Jeden skrajny model nie przesądza wyniku; przy remisie wybieramy łagodniejszą ocenę.</li>
-        <li><strong>Technika</strong> trafia do diagnozy, gdy wskażą ją co najmniej dwa modele — zawsze z dosłownym cytatem z wpisu.</li>
+        <li><strong>Technika</strong> wymaga dosłownego cytatu z badanego materiału. Przy co najmniej trzech rozstrzygniętych głosach muszą ją wskazać minimum dwa modele; przy jednym lub dwóch takich głosach wystarczy jedno wskazanie.</li>
         <li><strong>Zgoda modeli</strong> to informacja dla czytelnika, nie dowód prawdy: modele mogą popełnić ten sam błąd.</li>
       </ul>
     </section>

@@ -46,7 +46,7 @@ export function InterviewResults({ interview }: { interview: Interview }) {
       <ResultBar value={guest.intensity} />
     </section>
     <section>
-      <p className="sc-scan-m-lbl">Prowadzący · warsztat</p>
+      <p className="sc-scan-m-lbl">Prowadzący · siła spinu w pytaniach</p>
       <p className="sc-interview-results__who">{interview.host_name || "Prowadzący"}</p>
       <div className="sc-interview-results__score">{host.intensity == null ? <p className="sc-interview-results__none">Brak wyniku liczbowego</p> : <p className="sc-scan-m-num">{host.intensity}<small>/100</small></p>}
         {host.verdict ? <VerdictTag verdict={host.verdict} label={host.verdict_label ?? ""} /> : null}</div>

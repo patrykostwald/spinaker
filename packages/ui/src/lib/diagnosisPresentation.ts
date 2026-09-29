@@ -3,6 +3,7 @@ import { FAMILY_OF, TECHNIQUE_FAMILIES } from "./techniqueFamilies";
 type Technique = { name: string; category?: string; family?: string; quote?: string; explanation?: string };
 type Vote = { model: string; verdict: string | null; intensity: number | null; status?: string };
 type DiagnosisInput<T extends Technique> = {
+  verdict?: string;
   techniques?: T[];
   claims?: Array<{ assessment: string }>;
   council?: { members?: Vote[] } | null;
@@ -55,7 +56,10 @@ export function diagnosisPresentation<T extends Technique>(input: DiagnosisInput
   }));
   const responses = votes.filter(vote => !vote.missing);
   const missing = votes.filter(vote => vote.missing);
-  const sameVerdict = Math.max(0, ...responses.map(vote => responses.filter(other => other.verdict === vote.verdict).length));
+  // Zgodność liczymy względem końcowego werdyktu diagnozy (np. 2× „nie da się ocenić” + 1× „spin” przy wyniku „spin” = 1/3).
+  const sameVerdict = input.verdict
+    ? responses.filter(vote => vote.verdict === input.verdict).length
+    : Math.max(0, ...responses.map(vote => responses.filter(other => other.verdict === vote.verdict).length));
   return {
     techniques, types, families, typeCount: types.length,
     familyMax: Math.max(1, ...families.map(family => family.count)),

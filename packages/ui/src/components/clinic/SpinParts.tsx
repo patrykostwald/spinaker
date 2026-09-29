@@ -64,7 +64,7 @@ export function IntensityMeter({ value }: { value: number }) {
 }
 
 export function AiTag() {
-  return <span className="sc-ai-tag" title="Treść przygotowana automatycznie przez AI, zatwierdzona bez edycji">AI</span>;
+  return <span className="sc-ai-tag" title="Treść przygotowana automatycznie przez AI — nikt nie edytuje jej treści; tryb publikacji opisano przy analizie">AI</span>;
 }
 
 /**

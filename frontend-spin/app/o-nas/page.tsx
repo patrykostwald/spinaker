@@ -11,7 +11,7 @@ export const metadata = {
 const sections = [
   { id: "projekt", label: "Projekt" }, { id: "operator", label: "Autor i operator" },
   { id: "finansowanie", label: "Finansowanie" }, { id: "obserwuj", label: "Obserwuj nas" }, { id: "kontakt", label: "Kontakt" },
-  { id: "rozwoj", label: "Rozwój" },
+  { id: "rozwoj", label: "Co działa i co planujemy" },
 ];
 
 export default function AboutPage() {
@@ -19,7 +19,7 @@ export default function AboutPage() {
   return <DocLayout eyebrow="O NAS" title="Pokazujemy, jak zbudowany jest przekaz" version="1.0" updatedAt="2026-09-30" sections={sections}
     lead="spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.">
     <section id="projekt"><h2>Projekt</h2>
-      <p>spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Projekt działa w wersji beta i rozwija się etapami.</p>
+      <p>spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Wybrane diagnozy publikujemy także jako wpisy, grafiki i krótkie filmy w mediach społecznościowych — zawsze z linkiem do pełnej analizy. Projekt działa w wersji beta i rozwija się etapami.</p>
       <p><Link id="konsylium" href="/konsylium">Jak wykorzystujemy AI</Link> · <Link id="klinika" href="/metodologia">Metodologia analiz</Link> · <Link id="dla-redakcji" href="/dla-redakcji">Informacje dla redakcji</Link> · <Link id="film" href="/konsylium#film">Film o serwisie</Link></p>
     </section>
     <section id="operator"><h2>Autor i operator</h2>
@@ -37,15 +37,15 @@ export default function AboutPage() {
     </section>
     <section id="kontakt"><h2>Kontakt</h2>
       <ul>
-        <li><a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a> — projekt, współpraca i media.</li>
+        <li><a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a> — projekt, współpraca, media, sprawy techniczne, prywatność i zgłoszenia dotyczące diagnoz.</li>
         <li><a href={`mailto:${sourcesEmail}`}>{sourcesEmail}</a> — źródła, zgody wydawców i zakres dostępu.</li>
-        <li><a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a> — sprawy techniczne, prywatność i zgłoszenia dotyczące diagnoz.</li>
       </ul>
       <p>Zgłaszając błąd, dołącz link do diagnozy i źródła. <Link href="/metodologia#korekty">Jak obsługujemy zgłoszenia</Link>.</p>
     </section>
-    <section id="rozwoj"><h2>Trzy fazy rozwoju</h2>
+    <section id="rozwoj"><h2>Co działa i co planujemy</h2>
+      <p>Działa obecnie: diagnozy wypowiedzi polityków, analizy wywiadów, „Przekaz dnia” obu obozów, raporty tygodnia, dane i wykresy oraz publikacja wybranych diagnoz w mediach społecznościowych.</p>
       <ol>
-        <li><strong>Faza I — działa w wersji beta:</strong> wiadomości, Klinika, analizy AI i pilotaż autoryzowanych nitek redakcyjnych.</li>
+        <li><strong>Faza I — działa w wersji beta:</strong> wiadomości, Klinika z Konsylium AI, wywiady, raporty, wykresy, filmy z diagnoz i pilotaż autoryzowanych nitek kontekstowych.</li>
         <li><strong>Faza II — planowana:</strong> konta i nitki czytelników, dyskusje oraz śledzenie zmian źródeł.</li>
         <li><strong>Faza III — planowana:</strong> własna maszyna do analiz na otwartych modelach, asystent oparty na bazie źródeł i aplikacje mobilne.</li>
       </ol>

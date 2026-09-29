@@ -5913,3 +5913,14 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 @media (hover: hover) { .sc-social-list li:has(a:hover) { box-shadow: 0 0 0 1px var(--sc-accent); } }
 .sc-social-list p { margin: 0; font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
 @media (max-width: 560px) { .sc-social-list { grid-template-columns: minmax(0, 1fr); } }
+
+/* === Poprawki z audytu 046 (30.09.2026) === */
+/* Przekaz dnia: etykieta w kolorze obozu (rządzący niebieski, opozycja czerwona) */
+.sc-clinic-message[data-camp="government"] > .sc-clinic-kicker { color: var(--sc-ind-gov); }
+.sc-clinic-message[data-camp="opposition"] > .sc-clinic-kicker { color: var(--sc-ind-opp); }
+/* Telefon: przekazy obu obozów jeden pod drugim zamiast dwóch wąskich kolumn */
+@media (max-width: 760px) { .sc-clinic-overview .sc-clinic-split { grid-template-columns: minmax(0, 1fr) !important; } }
+/* Wywiady: siła spinu prowadzącego tym samym niebieskim co pozostałe miary siły */
+.sc-interview-results > section + section .sc-scan-g-track i { background: var(--sc-accent) !important; }
+/* Źródła: klikalne znaczki X/YouTube z celem dotyku 44 px */
+a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items: center; justify-content: center; }

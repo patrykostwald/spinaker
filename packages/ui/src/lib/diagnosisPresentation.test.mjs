@@ -132,3 +132,9 @@ test("daty raportu są polskie, bez sekund, także przy zmianie roku", () => {
   assert.equal(reportWeekLabel("2026-12-28", "2027-01-03"), "28 grudnia 2026 – 3 stycznia 2027");
   assert.equal(reportPublicationLabel("2026-09-27T18:00:00Z"), "27 września, 20:00");
 });
+
+test("zgodność liczona względem końcowego werdyktu (audyt 046)", () => {
+  const members = [{ model: "a", verdict: "unclear", intensity: 20 }, { model: "b", verdict: "unclear", intensity: 30 }, { model: "c", verdict: "spin", intensity: 70 }];
+  assert.equal(diagnosisPresentation({ verdict: "spin", council: { members } }).council.agreement, "1/3");
+  assert.equal(diagnosisPresentation({ council: { members } }).council.agreement, "2/3");
+});
