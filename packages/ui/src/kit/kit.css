@@ -4840,23 +4840,56 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-ind-camps { grid-template-columns: minmax(0, 1fr); }
   .sc-ind-card { padding: var(--sc-s-4); }
 }
-/* Baza diagnoz (zlecenie 008) */
-.sc-clinic-db { min-width: 0; }
-.sc-clinic-db__links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sc-s-3); }
-.sc-clinic-db__toolbar { padding: var(--sc-panel-pad); background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); display: grid; gap: var(--sc-s-4); }
-.sc-clinic-db label { display: grid; gap: var(--sc-s-2); min-width: 0; font-size: var(--sc-t-body-s-size); }
-.sc-clinic-db input, .sc-clinic-db select { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: var(--sc-s-2); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; }
-.sc-clinic-db button, .sc-clinic-db__all { min-height: 44px; padding: var(--sc-s-2) var(--sc-s-3); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; cursor: pointer; }
+/* Baza diagnoz — zwarty pasek i mobilny panel filtrów (zlecenie 022). */
+.sc-clinic-db { min-width: 0; gap: 24px; }
+.sc-clinic-db__links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.sc-clinic-db__toolbar { display: grid; gap: 16px; min-width: 0; }
+.sc-clinic-db__top { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.sc-clinic-db__search { position: relative; display: flex; flex: 1; align-items: center; min-width: 0; }
+.sc-clinic-db__search svg { position: absolute; left: 16px; color: var(--sc-text-2); pointer-events: none; }
+.sc-clinic-db input.sc-clinic-db__input[type="search"] { width: 100%; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 16px 0 44px; border: 0; border-radius: 999px; background: var(--sc-surface); color: var(--sc-text); font: inherit; font-size: var(--sc-t-body-s-size); }
+.sc-clinic-db__search input::placeholder { color: var(--sc-text-2); opacity: 1; }
+.sc-clinic-db button, .sc-clinic-db__all { min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--sc-surface); color: var(--sc-text); font: inherit; font-size: var(--sc-t-body-s-size); cursor: pointer; }
 .sc-clinic-db button:disabled { opacity: .6; cursor: wait; }
 .sc-clinic-db :is(button, input, select, a):focus-visible, .sc-clinic-db__all:focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 3px; }
-.sc-clinic-db__filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-s-3); align-items: end; }
 .sc-clinic-db fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-.sc-clinic-db legend { margin-bottom: var(--sc-s-2); font-size: var(--sc-t-body-s-size); }
-.sc-clinic-db__camp { grid-column: span 2; }
-.sc-clinic-db__camp > div { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
-.sc-clinic-db__camp button, .sc-clinic-db__toggle { font-size: var(--sc-t-body-s-size); }
-.sc-clinic-db__camp button[aria-pressed="true"], .sc-clinic-db__all { background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); border-color: var(--sc-accent); }
-.sc-clinic-db__toggle { display: none; }
+.sc-clinic-db__camp > div { display: flex; gap: 8px; }
+.sc-clinic-db__camp button { white-space: nowrap; color: var(--sc-text-2); }
+.sc-clinic-db__camp button[aria-pressed="true"] { background: var(--sc-accent-soft); color: var(--sc-text); box-shadow: inset 0 0 0 1px var(--sc-accent); }
+.sc-clinic-db__bottom { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-width: 0; }
+.sc-clinic-db__filters { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.sc-clinic-db__chip { display: flex; align-items: stretch; min-width: 0; max-width: 100%; border-radius: 999px; background: var(--sc-surface); }
+.sc-clinic-db__choice { position: relative; display: flex; min-width: 0; max-width: 100%; cursor: pointer; }
+.sc-clinic-db__chip-copy { display: flex; align-items: center; gap: 8px; height: 44px; min-width: 0; padding: 0 12px; font-size: var(--sc-t-body-s-size); }
+.sc-clinic-db__chip-copy > span:first-child, .sc-clinic-db__caption, .sc-clinic-db__count > span { color: var(--sc-text-2); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.sc-clinic-db__chip-copy strong { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.sc-clinic-db__choice select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font: inherit; }
+.sc-clinic-db__chip:focus-within { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 3px; }
+.sc-clinic-db__chip[data-active="true"] { background: var(--sc-accent-soft); box-shadow: inset 0 0 0 1px var(--sc-accent); }
+.sc-clinic-db button.sc-clinic-db__chip-clear { flex: none; width: 44px; padding: 0; background: transparent; font-size: 20px; }
+.sc-clinic-db button.sc-clinic-db__reset { padding: 0 8px; background: transparent; color: var(--sc-text-2); text-decoration: underline; text-underline-offset: 4px; }
+.sc-clinic-db__count { display: flex; align-items: baseline; gap: 8px; margin: 0 0 0 auto; white-space: nowrap; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-clinic-db__count strong { color: var(--sc-text); font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sc-clinic-db button.sc-clinic-db__toggle { display: none; }
+.sc-clinic-db__sheet { box-sizing: border-box; width: min(100%, 760px); max-width: 100%; max-height: 90dvh; margin: auto auto 0; padding: 0; border: 0; border-radius: 24px 24px 0 0; background: var(--sc-surface); color: var(--sc-text); }
+.sc-clinic-db__sheet[open] { display: flex; flex-direction: column; }
+.sc-clinic-db__sheet::backdrop { background: rgb(0 0 0 / .6); }
+.sc-clinic-db__sheet-head, .sc-clinic-db__sheet-footer { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; }
+.sc-clinic-db__sheet-head h2 { margin: 0; font-size: 20px; }
+.sc-clinic-db__sheet-head button { width: 44px; padding: 0; font-size: 24px; }
+.sc-clinic-db__sheet-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 24px 16px; }
+.sc-clinic-db__caption { margin: 0 0 8px; }
+.sc-clinic-db__sheet-filters { display: grid; gap: 12px; margin-top: 24px; }
+.sc-clinic-db__sheet .sc-clinic-db__chip { background: var(--sc-surface-2); }
+.sc-clinic-db__sheet .sc-clinic-db__chip[data-active="true"] { background: var(--sc-accent-soft); }
+.sc-clinic-db__sheet .sc-clinic-db__choice, .sc-clinic-db__sheet .sc-clinic-db__chip-copy { flex: 1; }
+.sc-clinic-db__sheet .sc-clinic-db__chip-copy strong { margin-left: auto; max-width: none; }
+.sc-clinic-db__sheet .sc-clinic-db__camp > div { gap: 8px; }
+.sc-clinic-db__sheet .sc-clinic-db__camp button { flex: 1; padding: 0 8px; }
+.sc-clinic-db__sheet-footer { padding-bottom: max(16px, env(safe-area-inset-bottom)); border-top: 1px solid var(--sc-line); }
+.sc-clinic-db button.sc-clinic-db__apply, .sc-clinic-db__all { background: var(--sc-primary-bg, var(--sc-accent)); color: var(--sc-primary-fg, #fff); }
+.sc-clinic-db__apply { flex: 1; }
+.sc-clinic-db__sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .sc-clinic-db__list { display: grid; gap: var(--sc-s-3); }
 .sc-clinic-db .sc-spin-row__summary { display: block; overflow: visible; }
 .sc-clinic-db .sc-spin-row__body { overflow-wrap: anywhere; }
@@ -4864,19 +4897,17 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-clinic-db .sc-spin-techniques li { white-space: normal; }
 .sc-clinic-db__more { display: block; margin: var(--sc-s-4) auto; }
 .sc-clinic-db__notice { color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: 1.6; border-top: 1px solid var(--sc-line); padding-top: var(--sc-s-4); }
-.sc-clinic-db__all { display: table; margin: var(--sc-s-4) auto 0; text-align: center; text-decoration: none; box-sizing: border-box; }
+.sc-clinic-db__all { display: table; margin: var(--sc-s-4) auto 0; padding: 12px 16px; text-align: center; text-decoration: none; box-sizing: border-box; }
 @media (max-width: 760px) {
-  .sc-clinic-db__toggle { display: block; }
-  .sc-clinic-db__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sc-clinic-db__filters[data-open="false"] { display: none; }
+  .sc-clinic-db__top { gap: 8px; }
+  .sc-clinic-db button.sc-clinic-db__toggle { display: block; flex: none; }
+  .sc-clinic-db__desktop-camp, .sc-clinic-db__filters { display: none; }
+  .sc-clinic-db__sheet-head, .sc-clinic-db__sheet-body, .sc-clinic-db__sheet-footer { padding-left: 16px; padding-right: 16px; }
 }
 @media (max-width: 420px) {
-  .sc-clinic-db__filters { grid-template-columns: minmax(0, 1fr); }
-  .sc-clinic-db__camp { grid-column: auto; }
   .sc-clinic-db .sc-spin-row { grid-template-columns: minmax(0, 1fr); }
   .sc-clinic-db .sc-spin-row__thumb { display: none; }
 }
-
 /* ---------- Panel „Praca Kliniki” (/klinika, góra) i linia z liczbami na głównej (29.09) ---------- */
 .sc-ind-show { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem); gap: var(--sc-s-6); align-items: stretch; padding: var(--sc-s-5) var(--sc-s-6); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface); }
 .sc-ind-show__main { display: grid; gap: var(--sc-s-4); align-content: start; min-width: 0; }

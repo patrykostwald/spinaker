@@ -96,12 +96,15 @@ def test_diagnosis_persists_loaded_words(monkeypatch):
     assert row.usage['loaded_words'] == [{'word': 'Tragedia', 'kind': 'strach'}]
 
 
-@pytest.mark.skip(reason="Układ karty ze zlecenia 020 — wiersz słów nacechowanych wraca w zleceniu 022")
-def test_card_loaded_row_has_separate_space(monkeypatch):
+@pytest.mark.parametrize('long_content', [False, True])
+def test_card_loaded_row_has_separate_space(monkeypatch, long_content):
     from news import clinic_card
     from news.test_clinic_scan import card_fixture
     data = card_fixture()
     data['scan']['loaded'] = loaded_data('Tragedia skandal')
+    if long_content:
+        data['headline'] = 'Bardzo długi nagłówek diagnozy ' * 40
+        data['scan']['synthesis'] = {'points': ['To jest uzasadnienie, które zajmuje dwa wiersze tekstu i musi pozostawić miejsce na panel oraz słowa nacechowane.']}
     boxes = []
     original = clinic_card._text
     def capture(draw, value, box, **kwargs):

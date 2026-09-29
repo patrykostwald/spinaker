@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageOps
 from news.techniques import FAMILY_LABELS
 from news.x_card import _font, EMOJI
 
-VERSION = 'v5'
+VERSION = 'v6'
 FORMATS = {'diagnoza', 'skrot'}
 COLORS = {'spin': '#ff6b6b', 'partial': '#f2b441', 'no_spin': '#4ed18a', 'unclear': '#a6a6a6'}
 MUTED, ACCENT = '#a6a6a6', '#4a9eff'
@@ -243,6 +243,8 @@ def _draw_panel(draw, data, box):
                 dot_x = end - 4 * scale
                 draw.ellipse((dot_x, row_y + 6 * scale, dot_x + 8 * scale, row_y + 14 * scale), fill=COLORS.get(vote.get('verdict'), MUTED))
         elif i == 2:
+            # Pięć kategorii musi zmieścić się z czytelną legendą (minimum 18 px).
+            y = bottom - 158 * scale
             entries = [(key, label, color) for key, label, color in [
                 ('supported', 'potw.', '#4ed18a'), ('misleading', 'mylące', '#f2b441'),
                 ('contradicted', 'sprzeczne', '#ff6b6b'), ('unverified', 'niespr.', MUTED),
@@ -264,10 +266,10 @@ def _draw_panel(draw, data, box):
                     cursor += square + gap
                     drawn += 1
             for j, (key, label, shade) in enumerate(entries):
-                row_y = y + 28 * scale + j * 18 * scale
+                row_y = y + 28 * scale + j * 24 * scale
                 draw.rectangle((x, row_y + 4 * scale, x + 7 * scale, row_y + 11 * scale),
                                fill=None if key == 'opinions' else shade, outline=shade)
-                text(f'{claims[key]} {label}', x + 13 * scale, row_y, end, size=12, color='#ffffff')
+                text(f'{claims[key]} {label}', x + 13 * scale, row_y, end, size=max(18, 18 / scale), color='#ffffff')
         else:
             maximum = max(1, *counts)
             for j, (label, shade, count) in enumerate(zip(['Dane', 'Emocje', 'Spór'], FAMILIES.values(), counts)):
@@ -348,9 +350,15 @@ def render(data, card_format='diagnoza'):
     if deleted:
         text('Wpis usunięty przez autora', (left, 218, 612, 802), size=25, lines=3, color=MUTED)
     else:
-        bottom = text(post.get('text', ''), (left, 214, 612, 582 if attachment is not None else 802), size=23, lines=100, tight=True)
+        text_top = 214
         if attachment is not None:
-            _paste(image, attachment, (left, bottom + 20, 612, 802))
+            # Krótki wpis oddaje miejsce zdjęciu; długi zachowuje min. 220 px zdjęcia.
+            line_count = len(_wrap(draw, post.get('text', ''), _font(23), 612 - left - 4))
+            text_height = min(line_count, (802 - 214 - 220 - 16) // 31) * 31
+            attachment_bottom = 802 - text_height - (16 if text_height else 0)
+            _paste(image, attachment, (left, 214, 612, attachment_bottom))
+            text_top = attachment_bottom + 16
+        text(post.get('text', ''), (left, text_top, 612, 802), size=23, lines=100, tight=True)
     color = COLORS.get(data.get('verdict'), MUTED)
     verdict = data.get('verdict_label') or ''
     badge_end = right + int(draw.textlength(verdict, font=_font(16, 700)) + 29)
@@ -365,8 +373,9 @@ def render(data, card_format='diagnoza'):
     # Całe zdanie musi zmieścić się w najwyżej dwóch wierszach.
     reason_top = lead_bottom + 14
     reason = _short_reason(draw, reason, data.get('summary'), end - right - 4)
-    text(reason, (right, reason_top, end, reason_top + 50), size=17, lines=2, color=MUTED)
-    panel_bottom = _draw_panel(draw, data, (right, 330, end, 602))
+    reason_bottom = text(reason, (right, reason_top, end, reason_top + 50), size=17, lines=2, color=MUTED, tight=True) if reason else lead_bottom
+    panel_top = reason_bottom + 16
+    panel_bottom = _draw_panel(draw, data, (right, panel_top, end, panel_top + 272))
     families = scan.get('families') or {}
     counts = {family: families.get(family, {}).get('technique_types', 0) for family in FAMILIES}
     table_top = panel_bottom + 24

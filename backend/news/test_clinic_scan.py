@@ -79,6 +79,7 @@ def test_card_long_text_stays_in_boxes_and_does_not_overlap(card_format):
     data['headline'] = 'Długi wniosek diagnozy ' * 80
     data['summary'] = 'Obszerne uzasadnienie ' * 70
     data['post']['text'] = 'https://example.org/' + 'x' * 600 + ' długi wpis' * 100
+    data['scan']['claims'] = {'checked': 8, 'supported': 2, 'misleading': 2, 'contradicted': 2, 'unverified': 2, 'opinions': 2}
     boxes, bounds = [], []
     original_text, original_draw = clinic_card._text, ImageDraw.ImageDraw.text
     def field(draw, value, box, **kwargs):
@@ -88,6 +89,8 @@ def test_card_long_text_stays_in_boxes_and_does_not_overlap(card_format):
         finally:
             boxes.pop()
     def record(self, xy, text, *args, **kwargs):
+        if text in {'2 potw.', '2 mylące', '2 sprzeczne', '2 niespr.', '2 opinie'}:
+            assert kwargs['font'].size >= 18
         bound = self.textbbox(xy, text, font=kwargs['font'], anchor=kwargs['anchor'])
         x, y, right, bottom = boxes[-1]
         assert x <= bound[0] and y <= bound[1] and bound[2] <= right and bound[3] <= bottom
@@ -99,13 +102,26 @@ def test_card_long_text_stays_in_boxes_and_does_not_overlap(card_format):
         assert Image.open(io.BytesIO(clinic_card.render(data, card_format))).size == (1600, 900)
 
 
-def test_card_attachment_fills_column_bottom():
-    from news.clinic_card import render
+@pytest.mark.parametrize('post_text', ['', 'Treść wpisu.', 'Długi wpis z pełnymi słowami. ' * 100])
+def test_card_attachment_precedes_text_and_fills_available_space(post_text):
+    from news import clinic_card
     data = card_fixture()
+    data['post']['text'] = post_text
     data['post']['media'] = [{'url': 'https://pbs.twimg.com/photo'}]
-    with patch('news.clinic_card.fetch_image', side_effect=[None, Image.new('RGB', (300, 900), '#ff0000')]):
-        image = Image.open(io.BytesIO(render(data)))
-    assert image.getpixel((300, 801)) == (255, 0, 0)
+    with patch('news.clinic_card.fetch_image', side_effect=[None, Image.new('RGB', (300, 900), '#ff0000')]), \
+            patch.object(clinic_card, '_paste', wraps=clinic_card._paste) as paste, \
+            patch.object(clinic_card, '_text', wraps=clinic_card._text) as text:
+        image = Image.open(io.BytesIO(clinic_card.render(data)))
+    attachment = paste.call_args.args[2]
+    assert attachment[1] == 214 and attachment[3] - attachment[1] >= 220
+    assert image.getpixel((300, 215)) == (255, 0, 0)
+    if post_text:
+        post_box = next(call.args[2] for call in text.call_args_list if call.args[1] == post_text)
+        assert post_box[1] == attachment[3] + 16 and post_box[3] == 802
+        assert image.getpixel((300, 801)) != (255, 0, 0)
+        assert attachment[3] < (500 if len(post_text) > 100 else 802)
+    else:
+        assert attachment[3] == 802
 
 
 def diagnosis(acc=None, number=1, **kwargs):

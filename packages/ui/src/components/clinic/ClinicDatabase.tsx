@@ -10,6 +10,24 @@ import { SpinRow } from "./SpinParts";
 const FILTER_KEYS = ["q", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
 const format = (value: number) => value.toLocaleString("pl-PL");
 
+type FilterOption = { value: string; label: string };
+
+function FilterChip({ label, value, options, onChange, defaultValue = "" }: {
+  label: string; value: string; options: FilterOption[]; onChange: (value: string) => void; defaultValue?: string;
+}) {
+  const selected = options.find(option => option.value === value);
+  const active = value !== defaultValue;
+  return <div className="sc-clinic-db__chip" data-active={active}>
+    <label className="sc-clinic-db__choice">
+      <span className="sc-clinic-db__chip-copy" aria-hidden="true"><span>{label}</span><strong>{selected?.label ?? value}</strong><span>⌄</span></span>
+      <select aria-label={label} value={value} onChange={event => onChange(event.target.value)}>
+        {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>
+    {active && <button type="button" className="sc-clinic-db__chip-clear" aria-label={`Wyczyść filtr: ${label}`} onClick={() => onChange(defaultValue)}>×</button>}
+  </div>;
+}
+
 function daysAgo(days: number) {
   const date = new Date();
   date.setDate(date.getDate() - days + 1);
@@ -25,12 +43,30 @@ export function ClinicDatabase() {
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const filterButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     currentUrl.current = url;
     setSearch(new URLSearchParams(url).get("q") ?? "");
     clearTimeout(timer.current);
   }, [url]);
   useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const sheet = dialog.current;
+    sheet?.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const desktop = window.matchMedia("(min-width: 761px)");
+    const closeOnDesktop = () => { if (desktop.matches) setFiltersOpen(false); };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => {
+      sheet?.close();
+      document.body.style.overflow = previousOverflow;
+      desktop.removeEventListener("change", closeOnDesktop);
+      if (!desktop.matches) filterButton.current?.focus();
+    };
+  }, [filtersOpen]);
 
   function update(values: Record<string, string>, clear = false) {
     const next = new URLSearchParams(currentUrl.current);
@@ -77,6 +113,42 @@ export function ClinicDatabase() {
   const intensity = params.intensity_min === undefined && params.intensity_max === undefined ? "" :
     `${params.intensity_min ?? 0}-${params.intensity_max ?? 100}`;
 
+  const campControl = <fieldset className="sc-clinic-db__camp">
+    <legend className="sc-clinic-db__sr-only">Strona</legend>
+    <div>{[["", "Wszystkie"], ...CAMPS.map(camp => [camp, CAMP_LABELS[camp]])].map(([value, label]) =>
+      <button key={value} type="button" aria-pressed={(params.camp ?? "") === value} onClick={() => change({ camp: value })}>{label}</button>)}</div>
+  </fieldset>;
+  const filterControls = <>
+    <FilterChip label="Werdykt" value={params.verdict ?? ""} onChange={value => change({ verdict: value })} options={[
+      { value: "", label: "Wszystkie" }, { value: "spin", label: "Spin" }, { value: "partial", label: "Częściowy spin" },
+      { value: "no_spin", label: "Bez spinu" }, { value: "unclear", label: "Niejednoznaczne" },
+    ]} />
+    <FilterChip label="Partia" value={params.party ?? ""} onChange={value => change({ party: value })} options={[
+      { value: "", label: "Wszystkie" },
+      ...(params.party && !parties.some(([code]) => code === params.party) ? [{ value: params.party, label: params.party === "unknown" ? "Nieustalona partia" : params.party }] : []),
+      ...parties.map(([code, value]) => ({ value: code, label: value.party?.short ?? "Nieustalona partia" })),
+    ]} />
+    <FilterChip label="Technika" value={params.technique ?? ""} onChange={value => change({ technique: value })} options={[
+      { value: "", label: "Wszystkie" },
+      ...(params.technique && !techniques.some(([name]) => name === params.technique) ? [{ value: params.technique, label: params.technique }] : []),
+      ...techniques.map(([name]) => ({ value: name, label: name })),
+    ]} />
+    <FilterChip label="Siła" value={intensity} onChange={value => {
+      const [minimum = "", maximum = ""] = value.split("-");
+      change({ intensity_min: minimum, intensity_max: maximum });
+    }} options={[
+      { value: "", label: "Każda" }, ...["0-29", "30-69", "70-100"].map(value => ({ value, label: value.replace("-", "–") })),
+      ...(intensity && !["0-29", "30-69", "70-100"].includes(intensity) ? [{ value: intensity, label: intensity.replace("-", "–") }] : []),
+    ]} />
+    <FilterChip label="Okres" value={period} onChange={value => change({ date_from: value ? daysAgo(Number(value)) : "", date_to: "" })} options={[
+      { value: "", label: "Cały czas" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },
+      ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} — ${params.date_to ?? "dzisiaj"}` }] : []),
+    ]} />
+    <FilterChip label="Sortuj" value={params.sort ?? "new"} defaultValue="new" onChange={value => change({ sort: value === "new" ? "" : "strong" })} options={[
+      { value: "new", label: "Najnowsze" }, { value: "strong", label: "Najsilniejsze" },
+    ]} />
+  </>;
+
   return (
     <section className="sc-clinic sc-clinic-db" aria-labelledby="clinic-db-title">
       <header className="sc-clinic-head">
@@ -88,53 +160,45 @@ export function ClinicDatabase() {
         {totals && <p>{format(totals.diagnosed.total)} diagnoz · {stats.data?.accounts ? <>{format(new Set(stats.data.accounts.map(row => row.account_id)).size)} zbadanych kont · </> : null}{format(CAMPS.reduce((sum, camp) => sum + totals.by_camp[camp].accounts, 0))} obserwowanych kont · {format(totals.read.total)} przeczytanych wpisów</p>}
       </header>
       <div className="sc-clinic-db__toolbar">
-        <label className="sc-clinic-db__search">Szukaj diagnozy
-          <input type="search" value={search} placeholder="Nagłówek, podsumowanie, nazwisko lub konto" onChange={event => {
-            const value = event.target.value;
-            setSearch(value);
-            clearTimeout(timer.current);
-            timer.current = setTimeout(() => update({ q: value.trim() }), 300);
-          }} />
-        </label>
-        <button type="button" className="sc-clinic-db__toggle" aria-expanded={filtersOpen} aria-controls="clinic-db-filters" onClick={() => setFiltersOpen(value => !value)}>Filtry ({active})</button>
-        <div id="clinic-db-filters" className="sc-clinic-db__filters" data-open={filtersOpen}>
-          <fieldset className="sc-clinic-db__camp">
-            <legend>Strona</legend>
-            <div>{[["", "Wszystkie"], ...CAMPS.map(camp => [camp, CAMP_LABELS[camp]])].map(([value, label]) =>
-              <button key={value} type="button" aria-pressed={(params.camp ?? "") === value} onClick={() => change({ camp: value })}>{label}</button>)}</div>
-          </fieldset>
-          <label>Werdykt<select value={params.verdict ?? ""} onChange={event => change({ verdict: event.target.value })}>
-            <option value="">Wszystkie werdykty</option><option value="spin">Spin</option><option value="partial">Częściowy spin</option><option value="no_spin">Bez spinu</option><option value="unclear">Niejednoznaczne</option>
-          </select></label>
-          <label>Partia<select value={params.party ?? ""} onChange={event => change({ party: event.target.value })}>
-            <option value="">Wszystkie partie</option>
-            {params.party && !parties.some(([code]) => code === params.party) && <option value={params.party}>{params.party === "unknown" ? "Nieustalona partia" : params.party}</option>}
-            {parties.map(([code, value]) => <option key={code} value={code}>{value.party?.short ?? "Nieustalona partia"}</option>)}
-          </select></label>
-          <label>Technika<select value={params.technique ?? ""} onChange={event => change({ technique: event.target.value })}>
-            <option value="">Wszystkie techniki</option>
-            {params.technique && !techniques.some(([name]) => name === params.technique) && <option>{params.technique}</option>}
-            {techniques.map(([name]) => <option key={name}>{name}</option>)}
-          </select></label>
-          <label>Siła spinu<select value={intensity} onChange={event => {
-            const [minimum = "", maximum = ""] = event.target.value.split("-");
-            change({ intensity_min: minimum, intensity_max: maximum });
-          }}>
-            <option value="">Wszystkie poziomy</option><option value="0-29">0–29</option><option value="30-69">30–69</option><option value="70-100">70–100</option>
-            {intensity && !["0-29", "30-69", "70-100"].includes(intensity) && <option value={intensity}>{params.intensity_min ?? 0}–{params.intensity_max ?? 100}</option>}
-          </select></label>
-          <label>Okres<select value={period} onChange={event => change({ date_from: event.target.value ? daysAgo(Number(event.target.value)) : "", date_to: "" })}>
-            <option value="">Wszystko</option><option value="7">Ostatnie 7 dni</option><option value="30">Ostatnie 30 dni</option>
-            {period === "custom" && <option value="custom">{params.date_from ?? "Początek"} — {params.date_to ?? "dzisiaj"}</option>}
-          </select></label>
-          <label>Sortowanie<select value={params.sort ?? "new"} onChange={event => change({ sort: event.target.value === "new" ? "" : "strong" })}>
-            <option value="new">Najnowsze</option><option value="strong">Najsilniejsze</option>
-          </select></label>
+        <div className="sc-clinic-db__top">
+          <label className="sc-clinic-db__search">
+            <span className="sc-clinic-db__sr-only">Szukaj diagnozy</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>
+            <input className="sc-clinic-db__input" type="search" value={search} placeholder="Szukaj diagnozy, nazwiska lub konta…" onChange={event => {
+              const value = event.target.value;
+              setSearch(value);
+              clearTimeout(timer.current);
+              timer.current = setTimeout(() => update({ q: value.trim() }), 300);
+            }} />
+          </label>
+          <div className="sc-clinic-db__desktop-camp">{campControl}</div>
+          <button ref={filterButton} type="button" className="sc-clinic-db__toggle" aria-haspopup="dialog" aria-expanded={filtersOpen} aria-controls="clinic-db-filters" onClick={() => setFiltersOpen(true)}>Filtry ({active})</button>
         </div>
-        {hasFilters && <button type="button" onClick={reset}>Wyczyść filtry</button>}
+        <div className="sc-clinic-db__bottom">
+          <div className="sc-clinic-db__filters">{filterControls}</div>
+          {hasFilters && <button type="button" className="sc-clinic-db__reset" onClick={reset}>Wyczyść filtry</button>}
+          <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Szukamy diagnoz…" : count !== undefined ? <><span>Znaleziono:</span> <strong>{format(count)}</strong></> : ""}</p>
+        </div>
         {stats.isError && <p role="status">Nie udało się pobrać statystyk i opcji filtrów. <button type="button" onClick={() => void stats.refetch()}>Spróbuj ponownie</button></p>}
+        <dialog ref={dialog} id="clinic-db-filters" className="sc-clinic-db__sheet" aria-labelledby="clinic-db-filters-title" onCancel={() => setFiltersOpen(false)} onClose={() => setFiltersOpen(false)} onClick={event => {
+          if (event.target === event.currentTarget) {
+            const bounds = event.currentTarget.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) setFiltersOpen(false);
+          }
+        }}>
+          <div className="sc-clinic-db__sheet-head"><h2 id="clinic-db-filters-title">Filtry diagnoz</h2><button type="button" aria-label="Zamknij filtry" onClick={() => setFiltersOpen(false)}>×</button></div>
+          <div className="sc-clinic-db__sheet-body">
+            <p className="sc-clinic-db__caption">Strona</p>
+            {campControl}
+            <div className="sc-clinic-db__sheet-filters">{filterControls}</div>
+          </div>
+          <div className="sc-clinic-db__sheet-footer">
+            <p className="sc-clinic-db__sr-only" role="status" aria-atomic="true">{filtersOpen ? query.isPending ? "Szukamy diagnoz…" : count !== undefined ? `Znaleziono: ${format(count)}` : "" : ""}</p>
+            {hasFilters && <button type="button" className="sc-clinic-db__reset" onClick={reset}>Wyczyść filtry</button>}
+            <button type="button" className="sc-clinic-db__apply" onClick={() => setFiltersOpen(false)}>Pokaż wyniki{count !== undefined ? ` (${format(count)})` : ""}</button>
+          </div>
+        </dialog>
       </div>
-      <p aria-live="polite" aria-atomic="true">{query.isPending ? "Szukamy diagnoz…" : count !== undefined ? `Znaleziono: ${format(count)}` : ""}</p>
       <div className="sc-clinic-db__list" aria-busy={query.isFetching}>
         {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques />)}
       </div>
