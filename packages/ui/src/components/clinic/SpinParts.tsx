@@ -56,7 +56,7 @@ export function VerdictTag({ verdict, label }: { verdict: Verdict; label: string
 export function IntensityMeter({ value }: { value: number }) {
   return (
     <span className="sc-intensity" data-level={value >= 70 ? "high" : value >= 30 ? "mid" : "low"} title="Siła spinu według diagnozy (0–100): jak mocno wpis opiera się na technikach perswazji">
-      <span className="sc-intensity__track" aria-hidden="true"><span style={{ width: `${Math.max(2, value)}%` }} /></span>
+      <span className="sc-intensity__track" aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></span>
       <span className="sc-intensity__value">Siła spinu {value}/100</span>
     </span>
   );
@@ -81,11 +81,11 @@ export function SpinRow({ spin, withSummary = false, withTechniques = false, bad
           : <SpinAvatar author={spin.author} size="lg" />}
       </span>
       <div className="sc-spin-row__body">
-        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
+        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
         {withTechniques && !!spin.technique_groups?.length && <ul className="sc-spin-techniques" aria-label="Techniki">{spin.technique_groups.slice(0, 3).map(name => <li key={name}>{name}</li>)}</ul>}
-        <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle} · <time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
+        <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle}</p><p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
       </div>
     </article>
   );

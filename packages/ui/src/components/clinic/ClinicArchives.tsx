@@ -1,5 +1,7 @@
 "use client";
 
+import { ClinicNav } from "./ClinicNav";
+import { SearchField } from "../../kit/SearchField";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
@@ -12,16 +14,6 @@ import { MessageBox } from "./ClinicExtras";
 import { InterviewScanner } from "./InterviewScanner";
 import { IntensityMeter, VerdictTag } from "./SpinParts";
 
-function ArchiveNavigation() {
-  return <nav className="sc-clinic-archives__nav" aria-label="Nawigacja Kliniki">
-    <Link href="/klinika">← Klinika spinu</Link>
-    <Link href="/klinika/diagnozy">Baza diagnoz</Link>
-    <Link href="/klinika/wskazniki">Wskaźniki</Link>
-    <Link href="/klinika/wywiady">Wywiady</Link>
-    <Link href="/klinika/przekazy">Przekazy</Link>
-  </nav>;
-}
-
 function guestLabel(interview: Interview) {
   // Afiliacja wyłącznie z zapisanego opisu gościa, nigdy z dopasowania nazwiska.
   const party = interview.guest_role.match(/(?:^|[\s,(])(KO|PiS|PSL|Polska 2050|Konfederacja|Lewica|Razem|PO|Nowa Lewica|Nowa Nadzieja|Suwerenna Polska)(?=$|[\s,).])/i)?.[1];
@@ -29,17 +21,17 @@ function guestLabel(interview: Interview) {
 }
 
 function InterviewScores({ interview }: { interview: Interview }) {
-  return <div className="sc-clinic-archives__columns">
-    <section><h3>Gość · {guestLabel(interview)}</h3>
+  return <><div className="sc-clinic-archives__columns">
+    <section><h3>Wypowiedzi gościa</h3><p>{guestLabel(interview)}</p>
       <p className="sc-spin-card__verdict"><VerdictTag verdict={interview.guest.verdict} label={interview.guest.verdict_label} /><IntensityMeter value={interview.guest.intensity} /></p>
-      <p>{interview.guest.summary}</p>
+      <p className="sc-t-caption">Ocena technik perswazji w wypowiedziach gościa.</p>
     </section>
-    <section><h3>Prowadzący · {interview.host_name}</h3>
-      {interview.host.verdict ? <p className="sc-spin-card__verdict"><VerdictTag verdict={interview.host.verdict} label={interview.host.verdict_label ?? ""} /><IntensityMeter value={interview.host.intensity ?? 0} /></p>
+    <section><h3>Pytania i reakcje prowadzącego</h3><p>{interview.host_name}</p>
+      {interview.host.verdict ? <p className="sc-spin-card__verdict"><VerdictTag verdict={interview.host.verdict} label={interview.host.verdict_label ?? ""} />{interview.host.intensity == null ? <span>Brak odpowiedzi</span> : <IntensityMeter value={interview.host.intensity} />}</p>
         : <p className="sc-interview__noverdict">Brak oceny warsztatu w tym wywiadzie.</p>}
-      <p>{interview.host.summary}</p>
+      <p className="sc-t-caption">Ocena sposobu zadawania pytań i reakcji na odpowiedzi.</p>
     </section>
-  </div>;
+  </div><p className="sc-archive-interview-summary">{interview.summary}</p></>;
 }
 
 export function ClinicInterviewArchive() {
@@ -55,10 +47,10 @@ export function ClinicInterviewArchive() {
   const first = query.data?.pages[0];
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   return <section className="sc-clinic-archives">
-    <ArchiveNavigation />
+    <ClinicNav />
     <SectionHeader variant="page" title="Archiwum wywiadów" subtitle="Analizy wypowiedzi gości oraz pytań i reakcji prowadzących — z cytatami i odwołaniami do nagrania." />
     <div className="sc-clinic-archives__filters">
-      <label>Szukaj gościa, prowadzącego lub tytułu<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label>
+      <div><p className="sc-archive-search-label">Szukaj gościa, prowadzącego lub tytułu</p><SearchField label="Szukaj gościa, prowadzącego lub tytułu" value={search} onChange={setSearch} /></div>
       <label>Kanał<select value={channel} onChange={event => setChannel(event.target.value)}>
         <option value="">Wszystkie kanały</option>
         {Array.from(new Set([...(first?.channels ?? []), ...(channel ? [channel] : [])])).map(name => <option key={name} value={name}>{name}</option>)}
@@ -80,8 +72,8 @@ export function ClinicInterviewArchive() {
 
 export function ClinicInterviewPage({ interview }: { interview: Interview }) {
   return <section className="sc-clinic-archives">
-    <ArchiveNavigation />
-    <h1>{interview.title || interview.headline}</h1>
+    <ClinicNav />
+    <SectionHeader variant="page" longTitle title={interview.title || interview.headline} />
     <InterviewScanner interview={interview} />
   </section>;
 }
@@ -96,7 +88,7 @@ export function ClinicMessageArchive() {
   const first = query.data?.pages[0];
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   return <section className="sc-clinic-archives">
-    <ArchiveNavigation />
+    <ClinicNav />
     <SectionHeader variant="page" title="Archiwum przekazów" subtitle="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji." />
     {first ? <p>Liczba dni: {first.count.toLocaleString("pl-PL")}</p> : null}
     {query.isPending ? <p role="status">Wczytywanie przekazów…</p> : null}

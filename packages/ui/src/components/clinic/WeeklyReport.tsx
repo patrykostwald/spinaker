@@ -9,7 +9,10 @@ import { CAMPS, CAMP_LABELS, type Camp, type SpinDetailData, type SpinScale as S
 import { measurePost } from "../../lib/xText";
 import { xIntentUrl } from "../../lib/xThread";
 import { Dialog } from "../Dialog";
-import { SpinOfDay } from "./ClinicPage";
+import { SpinSummary } from "./SpinSummary";
+import { ClinicNav } from "./ClinicNav";
+import { SpinAuthorRow } from "./SpinParts";
+import { Button } from "../../kit/Button";
 import { AiTag, VerdictTag } from "./SpinParts";
 
 type Report = {
@@ -92,16 +95,26 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
   return (
     <article className="sc-report">
       {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
+      <ClinicNav />
       <SectionHeader variant="page" longTitle kicker={<>Raport tygodnia <AiTag /></>}
         title={<>Tydzień w spinie: {weekLabel(report.week_start, report.week_end)}</>}
-        subtitle={<><p>Najważniejsze obserwacje z diagnoz opublikowanych w tym tygodniu.</p>{report.summary ? <p className="sc-report__summary">{report.summary}</p> : null}</>}
+        subtitle="Najważniejsze obserwacje z diagnoz opublikowanych w tym tygodniu."
         action={<ShareReport report={report} />} />
 
+      <p className="sc-ind-note">Okres: {report.week_start} – {report.week_end} · Publikacja: {new Date(report.created_at).toLocaleString("pl-PL")}</p>
+      <div className="sc-report__cols sc-report__counts">{CAMPS.map(camp => <section key={camp} data-camp={camp}><h2>{CAMP_LABELS[camp]}</h2><p><strong>{report.diagnoses[camp]}</strong> opublikowanych diagnoz</p><p>{report.scale[camp].assessed ? `${report.scale[camp].spin + report.scale[camp].partial} z ${report.scale[camp].assessed} (${Math.round((report.scale[camp].spin + report.scale[camp].partial) / report.scale[camp].assessed * 100)}%) ze spinem lub częściowym spinem` : "Brak diagnoz do obliczenia udziału spinu."}</p></section>)}</div>
+      <section className="sc-report__panel" aria-labelledby="report-observations"><h2 id="report-observations" className="sc-report__title">Trzy obserwacje</h2><ol>
+        <li>Opublikowano {report.diagnoses.government + report.diagnoses.opposition} diagnoz: {report.diagnoses.government} wpisów rządzących i {report.diagnoses.opposition} opozycji. To wybrane materiały, nie reprezentatywna próba całej polityki.</li>
+        <li>{CAMPS.map(camp => `${CAMP_LABELS[camp]} — najczęstsza technika: ${[...report.techniques[camp]].sort((a, b) => b.count - a.count)[0]?.name ?? "brak danych"}`).join(". ")}.</li>
+        <li>Odnotowano {report.deleted.government + report.deleted.opposition} niedostępnych wpisów; niedostępność nie potwierdza usunięcia przez autora.</li>
+      </ol>{report.summary ? <details><summary>Pełne podsumowanie tygodnia</summary><p>{report.summary}</p></details> : null}</section>
 
       {report.spin_of_week ? (
         <section className="sc-report__panel sc-clinic-sotd" aria-labelledby="report-sotw">
           <h2 id="report-sotw" className="sc-report__title">Spin tygodnia</h2>
-          <SpinOfDay spin={report.spin_of_week} />
+          <SpinAuthorRow author={report.spin_of_week.author} publishedAt={report.spin_of_week.post.published_at} />
+          <SpinSummary spin={report.spin_of_week} />
+          <Button href={`/klinika/${report.spin_of_week.id}`}>Pełna diagnoza ze źródłami →</Button>
         </section>
       ) : null}
 
@@ -110,7 +123,7 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
         <div className="sc-report__cols">{CAMPS.map(camp => (
           <div key={camp}>
             <h3>{CAMP_LABELS[camp]} <span>{report.diagnoses[camp]} ocenionych wpisów</span></h3>
-            {report.techniques[camp].length ? <ol>{report.techniques[camp].map(t => <li key={t.name}>{t.name} <span>×{t.count}</span></li>)}</ol>
+            {report.techniques[camp].length ? <ol>{report.techniques[camp].map(t => <li key={t.name}>{t.name} <span>{t.count} z {report.diagnoses[camp]} ({report.diagnoses[camp] ? `${Math.round(t.count / report.diagnoses[camp] * 100)}%` : "brak danych"})</span></li>)}</ol>
               : <p className="sc-clinic-empty">Brak ocenionych wpisów.</p>}
           </div>
         ))}</div>
@@ -126,7 +139,7 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
         <section className="sc-report__panel" aria-labelledby="report-interviews">
           <h2 id="report-interviews" className="sc-report__title">Wywiady dnia</h2>
           <ul className="sc-report__interviews">{report.interviews.map(row => (
-            <li key={row.id}><span>{row.day}</span><strong>{row.guest}</strong> <small>{row.channel}</small> — {row.headline}
+            <li key={row.id}><span>{row.day}</span><strong>{row.guest}</strong> <small>{row.channel}</small> — <Link href={`/klinika/wywiady/${row.id}`}>{row.headline || "Czytaj analizę"} →</Link>
               {row.verdict ? <> <VerdictTag verdict={row.verdict} label={row.verdict === "spin" ? "Spin" : row.verdict === "partial" ? "Częściowy spin" : row.verdict === "no_spin" ? "Bez spinu" : "Nie da się ocenić"} /></> : null}</li>
           ))}</ul>
         </section>

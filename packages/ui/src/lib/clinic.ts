@@ -51,7 +51,7 @@ export type SpinCardData = {
 
 export type SpinClaim = {
   claim: string;
-  assessment: "supported" | "contradicted" | "misleading" | "unverified";
+  assessment: "supported" | "contradicted" | "misleading" | "unverified" | "opinion";
   assessment_label: string;
   explanation: string;
   sources: Array<{ url: string; title: string }>;

@@ -6,6 +6,7 @@
  * i archiwum przekazów dnia. Powiększenia to natywny <dialog> (Esc i kliknięcie tła zamykają).
  */
 
+import { Button } from "../../kit/Button";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CAMPS, CAMP_LABELS, type Camp, type ClinicAccount, type DailyMessage, type Interview, type InterviewQuote, type SpinDetailData } from "../../lib/clinic";
@@ -39,16 +40,16 @@ function Themes({ themes }: { themes: string[] }) {
 }
 
 /** Przekaz dnia: skrót w boxie; kliknięcie otwiera pełną analizę i listę wpisów, z których powstał. */
-export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: DailyMessage | null; emptyText?: string }) {
+export function MessageBox({ camp, message, emptyText, surface = "standalone" }: { camp: Camp; message: DailyMessage | null; emptyText?: string; surface?: "standalone" | "nested" }) {
   const [open, setOpen] = useState(false);
   return (
-    <article className="sc-clinic-message" data-camp={camp} data-clickable={message ? "" : undefined}>
-      <p className="sc-clinic-kicker">Przekaz dnia · {CAMP_LABELS[camp]} <AiTag />{message ? <span className="sc-clinic-message__meta">z {message.posts_count} wpisów · {formatDatePl(message.day)}</span> : null}</p>
+    <article className="sc-clinic-message" data-surface={surface} data-camp={camp} data-clickable={message ? "" : undefined}>
+      <p className="sc-clinic-kicker"><span>Przekaz dnia · {CAMP_LABELS[camp]}</span><AiTag /></p>
       {message ? <>
-        <button type="button" className="sc-clinic-message__open" onClick={() => setOpen(true)} aria-haspopup="dialog">
-          <span className="sc-clinic-message__text">{message.message}</span>
-        </button>
+        <p className="sc-clinic-message__text">{message.message}</p>
         <Themes themes={message.themes} />
+        <Button variant="quiet" onClick={() => setOpen(true)} aria-haspopup="dialog">Czytaj przekaz i zobacz źródła →</Button>
+        <footer className="sc-clinic-message__foot"><time dateTime={message.day}>{formatDatePl(message.day)}</time><span>Źródła: {message.posts_count} wpisów</span></footer>
         <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Przekaz dnia · ${CAMP_LABELS[camp]} · ${formatDatePl(message.day)}`}>
           <p className="sc-clinic-dialog__lead">{message.message}</p>
           {message.analysis ? message.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>) : null}
@@ -78,15 +79,15 @@ export function SpinSwitch({ spinOfDay, latest, render, empty, left, right }: {
   const [mode, setMode] = useState<"day" | "latest">("day");
   const spin = mode === "day" ? spinOfDay : latest;
   const tabs = (
-    <div className="sc-spin-switch__tabs" role="tablist" aria-label="Który spin pokazać">
-      <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Spin dnia</button>
-      <span aria-hidden="true">|</span>
-      <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowszy spin</button>
+    <div className="sc-scan-s-tabs sc-spin-switch__tabs2" role="tablist" aria-label="Którą diagnozę pokazać">
+      <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Najwyższa siła spinu dziś</button>
+      <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowsza</button>
     </div>
   );
   return (
     <div className="sc-spin-switch">
       {left || right ? <div className="sc-spin-switch__bar"><div>{left}</div>{tabs}<div className="sc-spin-switch__right">{right}</div></div> : tabs}
+      <p className="sc-spin-switch__rule">{mode === "day" ? "Diagnoza z najwyższą siłą spinu spośród dzisiejszych publikacji obu stron." : "Ostatnia opublikowana diagnoza, niezależnie od strony."}</p>
       {spin ? render(spin) : empty}
     </div>
   );
@@ -238,10 +239,11 @@ export function PoliticiansTable({ accounts }: { accounts: ClinicAccount[] }) {
         {CAMPS.map(camp => {
           const rows = accounts.filter(item => item.camp === camp)
             .sort((a, b) => (b.spins + b.partial_spins) - (a.spins + a.partial_spins) || b.posts_screened - a.posts_screened);
+          if (!rows.length) return null;
           return (
             <section key={camp}>
               <h3>{CAMP_LABELS[camp]} <span>{rows.length}</span></h3>
-              <table>
+              <table className="sc-ind-table">
                 <thead><tr><th scope="col">Polityk</th><th scope="col" title="Wstępnie ocenione wpisy">Wstępnie ocenione wpisy</th><th scope="col">Częściowe</th><th scope="col">Spiny</th></tr></thead>
                 <tbody>{(expanded ? rows : rows.slice(0, VISIBLE_ROWS)).map(item => (
                   <tr key={item.handle}>
@@ -255,7 +257,7 @@ export function PoliticiansTable({ accounts }: { accounts: ClinicAccount[] }) {
           );
         })}
       </div>
-      {accounts.length > VISIBLE_ROWS * 2 ? (
+      {CAMPS.some(camp => accounts.filter(item => item.camp === camp).length > VISIBLE_ROWS) ? (
         <p className="sc-politicians__more"><button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
           {expanded ? "Zwiń listę ↑" : `Pokaż wszystkich (${accounts.length}) ↓`}</button></p>
       ) : null}

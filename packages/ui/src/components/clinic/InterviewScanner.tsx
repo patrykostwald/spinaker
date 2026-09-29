@@ -10,7 +10,7 @@ import { formatDatePl } from "../../lib/utils";
 import { VerdictTag } from "./SpinParts";
 
 const FAMILIES = [["dane", "Dane i wnioskowanie"], ["przedstawienie", "Emocje i przedstawienie"], ["spor", "Spór i odpowiedzialność"]] as const;
-const ASSESSMENTS = [["supported", "ok", "potw."], ["misleading", "mid", "mylące"], ["contradicted", "bad", "sprzeczne"], ["unverified", "op", "niezweryf."]] as const;
+const ASSESSMENTS = [["supported", "ok", "potw."], ["misleading", "mid", "mylące"], ["contradicted", "bad", "sprzeczne"], ["unverified", "unverified", "niesprawdzone"], ["opinion", "op", "opinie"]] as const;
 const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 function domain(url: string) {
   try { const parsed = new URL(url); return /^https?:$/.test(parsed.protocol) ? parsed.hostname.replace(/^www\./, "") : ""; }
@@ -49,7 +49,7 @@ export function InterviewScanner({ interview }: { interview: Interview }) {
   const families: ReadonlyArray<readonly [string, string]> = types.some(item => item.family === "inne") ? [...FAMILIES, ["inne", "Inne techniki"]] : FAMILIES;
   const familyCount = (key: string) => types.filter(item => item.family === key).length;
   const familyMax = Math.max(1, ...FAMILIES.map(([key]) => familyCount(key)));
-  const checked = guest.claims.filter(item => item.assessment !== "unverified" || item.sources.length > 0);
+  const checked = guest.claims.filter(item => ["supported", "misleading", "contradicted"].includes(item.assessment));
   const path = `/klinika/wywiady/${interview.id}`;
   const shareText = `Dr. Spin (AI) · Wywiad z ${interview.guest_name} · ${guest.verdict_label} ${guest.intensity}/100\n${interview.headline}\nhttps://spin.clinic${path}`;
   const prefix = `interview-scan-${interview.id}`;
@@ -90,9 +90,9 @@ export function InterviewScanner({ interview }: { interview: Interview }) {
       <p className="sc-scan-dg-point">{firstSentence(interview.summary)}</p>
       <div className="sc-scan-m">
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Gość · Siła spinu</p><p className="sc-scan-m-num sc-scan-strength">{guest.intensity}<small>/100</small></p><ScoreGraphic value={guest.intensity} /></div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Prowadzący · Warsztat</p><p className="sc-scan-m-num">{host.intensity ?? "—"}{host.intensity != null ? <small>/100</small> : null}</p><ScoreGraphic value={host.intensity} label={host.verdict_label || "Brak oceny"} /></div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Prowadzący · Warsztat</p><p className="sc-scan-m-num">{host.intensity ?? <span className="sc-scan-missing">Brak odpowiedzi</span>}{host.intensity != null ? <small>/100</small> : null}</p><ScoreGraphic value={host.intensity} label={host.verdict_label} /></div>
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Twierdzenia</p><p className="sc-scan-m-num">{checked.length}<small> sprawdzone</small></p>
-          <div className="sc-scan-g"><span className="sc-scan-g-squares" aria-hidden="true">{checked.map((item, index) => <i key={index} data-k={ASSESSMENTS.find(([key]) => key === item.assessment)?.[1]} />)}</span><span className="sc-scan-g-legend">{ASSESSMENTS.map(([key, kind, label]) => { const count = checked.filter(item => item.assessment === key).length; return count ? <span key={key} data-k={kind}>{count} {label}</span> : null; })}</span></div>
+          <div className="sc-scan-g"><span className="sc-scan-g-squares" aria-hidden="true">{guest.claims.map((item, index) => <i key={index} data-k={ASSESSMENTS.find(([key]) => key === item.assessment)?.[1]} />)}</span><span className="sc-scan-g-legend">{ASSESSMENTS.map(([key, kind, label]) => { const count = guest.claims.filter(item => item.assessment === key).length; return count ? <span key={key} data-k={kind}>{count} {label}</span> : null; })}</span></div>
         </div>
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{types.length}<small> {techniqueLabel(types.length)}</small></p><div className="sc-scan-g">{FAMILIES.map(([key, label]) => <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${familyCount(key) / familyMax * 100}%` }} /></span><b>{familyCount(key)}</b></span>)}</div></div>
       </div>

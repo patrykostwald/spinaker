@@ -3,6 +3,7 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { SearchIcon } from "../kit/icons/SearchIcon";
 import { Button, NavMenu, SearchField } from "../kit";
 import { useAccount } from "../lib/account";
 import type { SiteConfig } from "../types";
@@ -21,7 +22,7 @@ function HeaderSearch() {
 
   return (
     <form className="sc-nav-search" role="search" onSubmit={submit}>
-      <SearchField id={id} label="Szukaj w bazie materiałów" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj w bazie…" />
+      <SearchField id={id} label="Szukaj materiałów" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj materiałów…" />
     </form>
   );
 }
@@ -65,7 +66,7 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
       layout="centered"
       items={SECTIONS.map(section => ({
         ...section,
-        current: section.href === "/" ? pathname === "/" : pathname.startsWith(section.href),
+        current: section.href === "/" ? pathname === "/" : section.href === "/klinika" ? pathname.startsWith("/klinika") || pathname.startsWith("/raport") : pathname.startsWith(section.href),
       }))}
       brand={
         <div className="sc-nav-brand">
@@ -74,7 +75,7 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         </div>
       }
       search={<HeaderSearch />}
-      cta={<div className="sc-nav-cta"><HeaderClock /><ThemeSwitcher compact />{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
+      cta={<div className="sc-nav-cta"><Link className="sc-nav-mobile-search" href="/search" aria-label="Szukaj materiałów"><SearchIcon size={20} /></Link><HeaderClock /><ThemeSwitcher compact />{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
     />
   );
 }

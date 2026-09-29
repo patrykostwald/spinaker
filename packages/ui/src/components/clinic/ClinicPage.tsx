@@ -1,5 +1,6 @@
 "use client";
 
+import { ClinicNav } from "./ClinicNav";
 import { useLongPress } from "../../lib/useLongPress";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
@@ -154,10 +155,9 @@ function Politicians() {
 export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
   const data = query.data;
-  const latest = data ? CAMPS.flatMap(camp => data.columns[camp])
-    .sort((a, b) => Date.parse(b.post.published_at) - Date.parse(a.post.published_at) || b.id - a.id).slice(0, 8) : [];
   return (
     <section className="sc-clinic" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
+      {!embedded ? <ClinicNav /> : null}
       <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title="Dr. Spin"
         subtitle={<><AiTag /> Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji, oceny modeli AI i źródła dotyczące sprawdzanych twierdzeń.</>}
         link={<Link href="/o-nas#klinika">Jak działa analiza</Link>} />
@@ -173,7 +173,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <HomeSpinScanner key={spin.id} spin={spin} />}
             left={<header>
               <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <h2 id="clinic-drspin-title" className="sc-sr-only">Dr. Spin</h2>
+              <h2 id="clinic-drspin-title">Wybrana diagnoza</h2>
             </header>}
             right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/raport">Raport tygodnia →</Link></p>}
             empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
@@ -182,7 +182,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
         <div className="sc-clinic-group">
           <div className="sc-clinic-split" aria-label="Przekazy dnia">
-            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
+            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" />)}
           </div>
           <MessageHistory history={data.message_history} />
           <p><Link href="/klinika/przekazy">Archiwum przekazów →</Link></p>
@@ -196,27 +196,19 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         <div className="sc-clinic-group">
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
-          {/* Jedna linia: „Rządzący” przy lewej krawędzi, tytuł na środku, „Opozycja” przy prawej. */}
-          <header className="sc-clinic-latest__head sc-clinic-latest__bar">
-            <span className="sc-clinic-latest__camp" aria-hidden="true">{CAMP_LABELS.government}</span>
-            <div>
-              <h3 id="clinic-latest-title">Najnowsze diagnozy</h3>
-              <p>Rządzący i opozycja obok siebie — według tych samych zasad. Każdą diagnozę udostępnisz jako wątek na X.</p>
-            </div>
-            <span className="sc-clinic-latest__camp" aria-hidden="true">{CAMP_LABELS.opposition}</span>
-          </header>
+          <SectionHeader titleId="clinic-latest-title" title="Najnowsze diagnozy" subtitle="Rządzący i opozycja — według tych samych zasad. Liczby opublikowanych diagnoz mogą się różnić." />
           <div className="sc-clinic-columns">
-            {CAMPS.map(camp => (
+            {CAMPS.filter(camp => data.columns[camp].length > 0).map(camp => (
               <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>
-                <h4 id={`clinic-col-${camp}`} className="sc-sr-only">{CAMP_LABELS[camp]}</h4>
-                {latest.some(spin => spin.camp === camp) ? (
-                  <div className="sc-clinic-column__list" tabIndex={0} aria-label={`Diagnozy: ${CAMP_LABELS[camp]} — przewijaj`}>
-                    {latest.filter(spin => spin.camp === camp).map(spin => <SpinRow key={spin.id} spin={spin} />)}
-                  </div>
-                ) : <p className="sc-clinic-empty">Brak diagnoz tej strony wśród 8 najnowszych.</p>}
+                <h3 id={`clinic-col-${camp}`}>{CAMP_LABELS[camp]}</h3>
+                <div className="sc-clinic-column__list">
+                  {[...data.columns[camp]].sort((a, b) => b.id - a.id).slice(0, 3).map(spin => <SpinRow key={spin.id} spin={spin} />)}
+                </div>
+                <Button href={`/klinika/diagnozy?camp=${camp}`} variant="quiet">Wszystkie diagnozy {camp === "government" ? "rządzących" : "opozycji"} →</Button>
               </section>
             ))}
           </div>
+          {!CAMPS.some(camp => data.columns[camp].length) ? <p className="sc-clinic-empty">Nie ma jeszcze opublikowanych diagnoz.</p> : null}
           <Link className="sc-clinic-db__all" href="/klinika/diagnozy">Wszystkie diagnozy{data.stats?.diagnosed.total !== undefined ? ` (${data.stats.diagnosed.total.toLocaleString("pl-PL")})` : ""} →</Link>
         </section>
         </div>

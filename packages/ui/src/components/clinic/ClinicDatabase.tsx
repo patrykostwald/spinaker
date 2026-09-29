@@ -1,5 +1,6 @@
 "use client";
 
+import { ClinicNav } from "./ClinicNav";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
@@ -115,6 +116,16 @@ export function ClinicDatabase() {
   const intensity = params.intensity_min === undefined && params.intensity_max === undefined ? "" :
     `${params.intensity_min ?? 0}-${params.intensity_max ?? 100}`;
 
+  const activeChips: Array<{ label: string; clear: Record<string, string> }> = [];
+  if (params.q) activeChips.push({ label: `Szukaj: ${params.q}`, clear: { q: "" } });
+  if (params.camp) activeChips.push({ label: CAMP_LABELS[params.camp], clear: { camp: "" } });
+  if (params.verdict) activeChips.push({ label: { spin: "Spin", partial: "Częściowy spin", no_spin: "Bez spinu", unclear: "Nie da się ocenić" }[params.verdict], clear: { verdict: "" } });
+  if (params.party) activeChips.push({ label: parties.find(([code]) => code === params.party)?.[1].party?.short ?? (params.party === "unknown" ? "Nieustalona afiliacja" : params.party), clear: { party: "" } });
+  if (params.technique) activeChips.push({ label: params.technique, clear: { technique: "" } });
+  if (intensity) activeChips.push({ label: `Siła spinu: ${intensity.replace("-", "–")}`, clear: { intensity_min: "", intensity_max: "" } });
+  if (params.date_from || params.date_to) activeChips.push({ label: `${params.date_from ?? "Początek"} – ${params.date_to ?? "dzisiaj"}`, clear: { date_from: "", date_to: "" } });
+  if (params.sort === "strong") activeChips.push({ label: "Najwyższa siła spinu", clear: { sort: "" } });
+
   const campControl = <fieldset className="sc-clinic-db__camp">
     <legend className="sc-clinic-db__sr-only">Strona</legend>
     <div>{[["", "Wszystkie"], ...CAMPS.map(camp => [camp, CAMP_LABELS[camp]])].map(([value, label]) =>
@@ -127,8 +138,8 @@ export function ClinicDatabase() {
     ]} />
     <FilterChip label="Partia" value={params.party ?? ""} onChange={value => change({ party: value })} options={[
       { value: "", label: "Wszystkie" },
-      ...(params.party && !parties.some(([code]) => code === params.party) ? [{ value: params.party, label: params.party === "unknown" ? "Nieustalona partia" : params.party }] : []),
-      ...parties.map(([code, value]) => ({ value: code, label: value.party?.short ?? "Nieustalona partia" })),
+      ...(params.party && !parties.some(([code]) => code === params.party) ? [{ value: params.party, label: params.party === "unknown" ? "Nieustalona afiliacja" : params.party }] : []),
+      ...parties.map(([code, value]) => ({ value: code, label: value.party?.short ?? "Nieustalona afiliacja" })),
     ]} />
     <FilterChip label="Technika" value={params.technique ?? ""} onChange={value => change({ technique: value })} options={[
       { value: "", label: "Wszystkie" },
@@ -154,13 +165,10 @@ export function ClinicDatabase() {
   return (
     <section className="sc-clinic sc-clinic-db" aria-labelledby="clinic-db-title">
       <div>
-        <nav className="sc-clinic-db__links" aria-label="Klinika spinu">
-          <Link href="/klinika">← Klinika spinu</Link>
-          <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
-        </nav>
+        <ClinicNav />
         <SectionHeader variant="page" titleId="clinic-db-title" title="Baza diagnoz" subtitle={<>
         <p>Znajdź analizę wpisu, autora lub techniki perswazji.</p>
-        {totals && <p>{format(totals.diagnosed.total)} diagnoz · {stats.data?.accounts ? <>{format(new Set(stats.data.accounts.map(row => row.account_id)).size)} kont z opublikowaną diagnozą · </> : null}{format(CAMPS.reduce((sum, camp) => sum + totals.by_camp[camp].accounts, 0))} obserwowanych kont · {format(totals.read.total)} przeczytanych wpisów</p>}
+        {totals && <p>{format(totals.diagnosed.total)} diagnoz{stats.data?.accounts ? <> · {format(new Set(stats.data.accounts.map(row => row.account_id)).size)} kont z diagnozą</> : null}</p>}
       </>} />
       </div>
       <div className="sc-clinic-db__toolbar">
@@ -203,6 +211,9 @@ export function ClinicDatabase() {
           </div>
         </dialog>
       </div>
+      {activeChips.length ? <div className="sc-clinic-db__active" aria-label="Aktywne filtry">
+        {activeChips.map(chip => <button key={Object.keys(chip.clear).join("-")} type="button" aria-label={`Usuń filtr: ${chip.label}`} onClick={() => { if ("q" in chip.clear) setSearch(""); change(chip.clear); }}>{chip.label} <span aria-hidden="true">×</span></button>)}
+      </div> : null}
       <div className="sc-clinic-db__list" aria-busy={query.isFetching}>
         {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques />)}
       </div>
