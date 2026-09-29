@@ -13,16 +13,16 @@ export function ReportError({ spin }: { spin: SpinDetailData }) {
 }
 
 /** Wspólny wynik i panel liczb; źródło i akcje pozostają w komponencie osadzającym. */
-export function SpinSummary({ spin, heading: Heading = "h3", compact = false }: { spin: SpinDetailData; heading?: "h1" | "h2" | "h3"; compact?: boolean }) {
+export function SpinSummary({ spin, heading: Heading = "h3", compact = false, withPoint = true, withReport = false }: { spin: SpinDetailData; heading?: "h1" | "h2" | "h3"; compact?: boolean; withPoint?: boolean; withReport?: boolean }) {
   const scan = spin.scan;
-  const lead = scan?.synthesis?.lead || spin.headline;
+  const lead = Heading === "h1" ? spin.headline : scan?.synthesis?.lead || spin.headline;
   const point = scan?.synthesis?.points?.[0] || firstSentence(spin.summary);
   const { families, typeCount, familyMax, claims, checked, claimSquares, council } = diagnosisPresentation(spin);
   const { votes, agreement } = council;
   return <div className="sc-spin-summary" data-compact={compact || undefined}>
-      <header className="sc-scan-dg-head"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><span className="sc-scan-dg-ai">Ocena Konsylium AI</span><span className="sc-scan-dg-id">#SPIN-{spin.id} · diagnoza {formatDatePl(scan?.diagnosed_at || spin.created_at)}</span></header>
+      <header className="sc-scan-dg-head"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><span className="sc-scan-dg-ai">Ocena Konsylium AI</span><span className="sc-scan-dg-id">#SPIN-{spin.id} · diagnoza {formatDatePl(scan?.diagnosed_at || spin.created_at)}</span>{withReport ? <ReportError spin={spin} /> : null}</header>
       <Heading className="sc-scan-dg-lead" id={`scan-lead-${spin.id}`}>{lead}</Heading>
-      <p className="sc-scan-dg-point">{point}</p>
+      {withPoint ? <p className="sc-scan-dg-point">{point}</p> : null}
       <div className="sc-scan-m">
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Siła spinu</p><p className="sc-scan-m-num sc-scan-strength">{spin.intensity}<small>/100</small></p>
           <div className="sc-scan-g" title="Ocena AI w skali 0–100"><span className="sc-scan-g-track"><i style={{ width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div></div>

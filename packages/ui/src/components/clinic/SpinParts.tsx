@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { Party, SpinAuthor, SpinCardData, SpinScale as SpinScaleData, Verdict } from "../../lib/clinic";
-import { sharePercent } from "../../lib/clinic";
+import { sharePercent, techniqueLabel } from "../../lib/clinic";
+import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDateTimePl } from "../../lib/utils";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { ACCOUNTS_ENABLED } from "../../lib/features";
@@ -70,8 +71,10 @@ export function AiTag() {
  * Zwarty wiersz diagnozy — rozmiar boxa z pasków: po lewej miniatura (zdjęcie z wpisu albo awatar autora),
  * po prawej obóz, werdykt, nagłówek diagnozy i autor. Cały wiersz prowadzi do pełnej diagnozy.
  */
-export function SpinRow({ spin, withSummary = false, withTechniques = false, badge }: { spin: SpinCardData; withSummary?: boolean; withTechniques?: boolean; badge?: string }) {
+export function SpinRow({ spin, withSummary = false, withTechniques = false, badge, returnTo, onOpen }: { spin: SpinCardData; withSummary?: boolean; withTechniques?: boolean; badge?: string; returnTo?: string; onOpen?: () => void }) {
   const image = spin.post.media.find(item => item.url);
+  const { typeCount } = diagnosisPresentation({ techniques: spin.technique_types ?? spin.technique_names.map(name => ({ name })) });
+  const href = `/klinika/${spin.id}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
   return (
     <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`}>
       <span className="sc-spin-row__thumb">
@@ -81,10 +84,10 @@ export function SpinRow({ spin, withSummary = false, withTechniques = false, bad
           : <SpinAvatar author={spin.author} size="lg" />}
       </span>
       <div className="sc-spin-row__body">
-        <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
+        <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={href} onClick={onOpen}>{spin.headline}</Link></h3>
         <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
-        {withTechniques && !!spin.technique_groups?.length && <ul className="sc-spin-techniques" aria-label="Techniki">{spin.technique_groups.slice(0, 3).map(name => <li key={name}>{name}</li>)}</ul>}
+        {withTechniques && <p className="sc-spin-row__techniques">{typeCount} {techniqueLabel(typeCount)}</p>}
         <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle}</p><p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
       </div>
     </article>

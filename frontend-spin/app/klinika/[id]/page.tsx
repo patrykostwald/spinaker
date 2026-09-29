@@ -22,6 +22,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   }
 }
 
-export default function SpinRoute({ params }: { params: { id: string } }) {
-  return <SpinDetail id={params.id} />;
+export default function SpinRoute({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string | string[] } }) {
+  return <SpinDetail id={params.id} returnTo={typeof searchParams.returnTo === "string" ? searchParams.returnTo : undefined} />;
 }

@@ -421,6 +421,7 @@ def verified_x_account_data(figure):
         return None
     account, evidence = record
     return {
+        'account_id': account.pk,
         'handle': account.handle,
         'url': f'https://x.com/{account.handle}',
         'evidence_url': evidence.evidence_url,

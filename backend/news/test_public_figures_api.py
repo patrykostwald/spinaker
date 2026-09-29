@@ -130,6 +130,7 @@ def test_profile_exposes_x_only_after_public_link_candidate_resolution_and_accou
     candidate.save(update_fields=['resolved_account'])
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert data['x_account']['handle'] == 'AnnaPubliczna'
+    assert data['x_account']['account_id'] == account.pk
     assert data['x_account']['posts_collected'] == 0
     assert data['x_posts'] == {'available': True, 'results': []}
 
@@ -167,6 +168,7 @@ def test_non_parliamentary_figure_exposes_only_generic_confirmed_x_evidence():
     candidate.save(update_fields=['resolved_account'])
     data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
     assert data['x_account'] == {
+        'account_id': account.pk,
         'handle': 'MinistraPL', 'url': 'https://x.com/MinistraPL',
         'evidence_url': 'https://gov.example/ministra', 'posts_collected': 0,
     }

@@ -11,29 +11,7 @@ import { CAMPS, getClinicInterviews, getClinicMessages, type Interview } from ".
 import { formatDatePl } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { MessageBox } from "./ClinicExtras";
-import { InterviewScanner } from "./InterviewScanner";
-import { IntensityMeter, VerdictTag } from "./SpinParts";
-
-function guestLabel(interview: Interview) {
-  // Afiliacja wyłącznie z zapisanego opisu gościa, nigdy z dopasowania nazwiska.
-  const party = interview.guest_role.match(/(?:^|[\s,(])(KO|PiS|PSL|Polska 2050|Konfederacja|Lewica|Razem|PO|Nowa Lewica|Nowa Nadzieja|Suwerenna Polska)(?=$|[\s,).])/i)?.[1];
-  return `${interview.guest_name}${party || interview.guest_role ? `, ${party || interview.guest_role}` : ""}`;
-}
-
-function InterviewScores({ interview }: { interview: Interview }) {
-  return <><div className="sc-clinic-archives__columns">
-    <section><h3>Wypowiedzi gościa</h3><p>{guestLabel(interview)}</p>
-      <p className="sc-spin-card__verdict"><VerdictTag verdict={interview.guest.verdict} label={interview.guest.verdict_label} /><IntensityMeter value={interview.guest.intensity} /></p>
-      <p className="sc-t-caption">Ocena technik perswazji w wypowiedziach gościa.</p>
-    </section>
-    <section><h3>Pytania i reakcje prowadzącego</h3><p>{interview.host_name}</p>
-      {interview.host.verdict ? <p className="sc-spin-card__verdict"><VerdictTag verdict={interview.host.verdict} label={interview.host.verdict_label ?? ""} />{interview.host.intensity == null ? <span>Brak odpowiedzi</span> : <IntensityMeter value={interview.host.intensity} />}</p>
-        : <p className="sc-interview__noverdict">Brak oceny warsztatu w tym wywiadzie.</p>}
-      <p className="sc-t-caption">Ocena sposobu zadawania pytań i reakcji na odpowiedzi.</p>
-    </section>
-  </div><p className="sc-archive-interview-summary">{interview.summary}</p></>;
-}
-
+import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
 export function ClinicInterviewArchive() {
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("");
@@ -60,10 +38,13 @@ export function ClinicInterviewArchive() {
     {query.isPending ? <p role="status">Wczytywanie wywiadów…</p> : null}
     {query.isError ? <p role="alert">Nie udało się wczytać wywiadów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !rows.length ? <p>Brak wywiadów spełniających wybrane kryteria.</p> : null}
+    <InterviewScope />
     <div className="sc-clinic-archives__list">{rows.map(interview => <article className="sc-clinic-archives__card" key={interview.id}>
       <p><time dateTime={interview.day}>{formatDatePl(interview.day)}</time> · {interview.channel}</p>
-      <h2><Link href={`/klinika/wywiady/${interview.id}`}>{interview.title || interview.headline}</Link></h2>
-      <InterviewScores interview={interview} />
+      <h2><Link href={`/klinika/wywiady/${interview.id}`}>{interview.headline || "Analiza wywiadu"}</Link></h2>
+      <p className="sc-interview-recording-title"><span>Tytuł nagrania:</span> {interview.title}</p>
+      <InterviewResults interview={interview} />
+      <p className="sc-archive-interview-summary">{interview.summary}</p>
       <Link href={`/klinika/wywiady/${interview.id}`}>Czytaj analizę →</Link>
     </article>)}</div>
     {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button> : null}
@@ -73,7 +54,7 @@ export function ClinicInterviewArchive() {
 export function ClinicInterviewPage({ interview }: { interview: Interview }) {
   return <section className="sc-clinic-archives">
     <ClinicNav />
-    <SectionHeader variant="page" longTitle title={interview.title || interview.headline} />
+    <SectionHeader variant="page" longTitle title={interview.headline || "Analiza wywiadu"} />
     <InterviewScanner interview={interview} />
   </section>;
 }

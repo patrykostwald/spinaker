@@ -56,7 +56,7 @@ function PeriodNote({ stats, allTime = false, from, to }: { stats: IndicatorStat
 }
 
 function DataTable({ title, headers, rows }: { title: string; headers: string[]; rows: Array<Array<string | number>> }) {
-  return <details className="sc-chart-data"><summary>Tabela danych — {title}</summary><div className="sc-ind-table-wrap"><table className="sc-ind-table"><caption>{title}</caption>
+  return <details className="sc-chart-data"><summary>Tabela danych — {title}</summary><p className="sc-ind-scroll-hint">Przewijaj tabelę w poziomie, aby zobaczyć wszystkie kolumny.</p><div className="sc-ind-table-wrap" role="region" aria-label={`${title} — tabela przewijana poziomo`} tabIndex={0}><table className="sc-ind-table"><caption>{title}</caption>
     <thead><tr>{headers.map(header => <th scope="col" key={header}>{header}</th>)}</tr></thead>
     <tbody>{rows.map((row, index) => <tr key={index}>{row.map((cell, column) => column === 0 ? <th scope="row" key={column}>{cell}</th> : <td key={column}>{cell}</td>)}</tr>)}</tbody>
   </table></div></details>;
@@ -213,10 +213,11 @@ function CampColumn({ camp, bucket, minSample, read, histMax }: { camp: Camp; bu
 }
 
 function Techniques({ stats }: { stats: IndicatorStats }) {
+  const [all, setAll] = useState(false);
   const rows = Object.entries(stats.techniques)
     .map(([name, counts]) => ({ name, counts, total: CAMPS.reduce((sum, camp) => sum + counts[camp].count, 0) }))
     .filter((row) => row.total > 0)
-    .sort((a, b) => (a.name === "Inne" ? 1 : b.name === "Inne" ? -1 : b.total - a.total));
+    .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "pl"));
   return (
     <section className="sc-ind-card" aria-labelledby="ind-tech-title">
       <header className="sc-ind-card__head">
@@ -226,8 +227,8 @@ function Techniques({ stats }: { stats: IndicatorStats }) {
       <PeriodNote stats={stats} />
       <Legend />
       {rows.length ? (
-        <ul className="sc-ind-tech">
-          {rows.map((row) => (
+        <ul className="sc-ind-tech" id="ind-tech-list">
+          {(all ? rows : rows.slice(0, 6)).map((row) => (
             <li key={row.name}>
               <span className="sc-ind-tech__name">{row.name}</span>
               {CAMPS.map((camp) => {
@@ -245,6 +246,7 @@ function Techniques({ stats }: { stats: IndicatorStats }) {
           ))}
         </ul>
       ) : <p className="sc-ind-note">Brak diagnoz w tym okresie.</p>}
+      {rows.length > 6 ? <Button type="button" variant="quiet" aria-expanded={all} aria-controls="ind-tech-list" onClick={() => setAll(value => !value)}>{all ? "Pokaż sześć najczęstszych" : `Pokaż wszystkie (${rows.length})`}</Button> : null}
       <DataTable title="Techniki" headers={["Technika", "Rządzący — liczba", "Rządzący — próba", "Opozycja — liczba", "Opozycja — próba"]} rows={rows.map(row => [row.name, ...CAMPS.flatMap(camp => [row.counts[camp].count, stats.by_camp[camp].diagnosed])])} />
     </section>
   );
@@ -260,7 +262,8 @@ function Parties({ stats }: { stats: IndicatorStats }) {
         <p>Partia krajowa z rejestru osób publicznych. Europosłów liczymy przy ich partii, nie frakcji w Parlamencie Europejskim. „Nieustalona afiliacja” oznacza brak danych o partii w rejestrze, a nie osobną partię ani deklarację bezpartyjności.</p>
       </header>
       <PeriodNote stats={stats} />
-      <div className="sc-ind-table-wrap">
+      <p className="sc-ind-scroll-hint">Przewijaj tabelę w poziomie, aby zobaczyć wszystkie kolumny.</p>
+      <div className="sc-ind-table-wrap" role="region" aria-label="Według partii — tabela przewijana poziomo" tabIndex={0}>
         <table className="sc-ind-table">
           <thead><tr><th scope="col">Partia</th><th scope="col">Strona</th><th scope="col">Diagnozy</th><th scope="col">Spin / częściowy</th><th scope="col">Średnia siła spinu</th></tr></thead>
           <tbody>
@@ -288,7 +291,7 @@ function Accounts({ stats }: { stats: IndicatorStats }) {
     <section className="sc-ind-card" aria-labelledby="ind-acc-title">
       <header className="sc-ind-card__head">
         <h2 id="ind-acc-title">Najczęściej badane konta</h2>
-        <p>Ile razy Dr. Spin badał wpisy danej osoby. To miara aktywności i tematów, nie ocena osoby. Diagnoza może też brzmieć „bez spinu”.</p>
+        <p>Zakres wybranej próby: liczba przeanalizowanych wpisów z poszczególnych kont w podanym okresie. Zależy od doboru materiałów do badania i nie mierzy aktywności ani jakości wypowiedzi osoby.</p>
       </header>
       <PeriodNote stats={stats} />
       <Legend />
@@ -312,7 +315,7 @@ type PageTotals = Record<"read" | "screened" | "rejected" | "diagnosed" | "spins
  * Panel „Praca Kliniki” na górze /klinika: duże liczniki (od początku i dziś), słupki diagnoz z ostatnich dni
  * i dwa wejścia — do bazy wszystkich diagnoz i do wskaźników. Gdy /api/clinic/stats/ niedostępne — liczniki z /api/clinic/.
  */
-export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0 }: { fallback?: PageTotals | null; fallbackPeriod?: DataPeriod; fetchedAt?: number }) {
+export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compact = false }: { fallback?: PageTotals | null; fallbackPeriod?: DataPeriod; fetchedAt?: number; compact?: boolean }) {
   const query = useQuery({ queryKey: ["clinic-indicators"], queryFn: getIndicatorStats, staleTime: 10 * 60_000 });
   const stats = query.data;
   const totals: PageTotals | null | undefined = stats?.totals ?? fallback;
@@ -328,7 +331,7 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0 }: { fa
     ["diagnoz Dr. Spina", totals.diagnosed.total, totals.diagnosed.today],
   ];
   return (
-    <UpdatedAt.Provider value={query.dataUpdatedAt}><section className="sc-ind-show" aria-labelledby="ind-show-title">
+    <UpdatedAt.Provider value={query.dataUpdatedAt}><section className="sc-ind-show" data-compact={compact || undefined} aria-labelledby="ind-show-title">
       <div className="sc-ind-show__main">
         <p className="sc-clinic-kicker" id="ind-show-title">Praca Kliniki od początku</p>
         {stats ? <PeriodNote stats={stats} allTime /> : <p className="sc-ind-note">{clinicPeriodLabel(fallbackPeriod, fetchedAt)}</p>}
@@ -344,10 +347,10 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0 }: { fa
         </ul>
         <p className="sc-ind-show__actions">
           <Button variant="primary" href="/klinika/diagnozy">Wszystkie diagnozy ({format(totals.diagnosed.total)}) →</Button>
-          <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
+          <Link href="/klinika/wskazniki">Dane i wykresy →</Link>
         </p>
       </div>
-      {perDay.length ? (
+      {!compact && perDay.length ? (
         <figure className="sc-ind-show__spark">
           <figcaption>Diagnozy dziennie</figcaption>
           <div className="sc-ind-show__bars" role="img" aria-label={`Diagnozy dziennie: ${perDay.join(", ")}`}>
@@ -372,11 +375,11 @@ export function ClinicIndicators() {
   return (
     <section className="sc-clinic sc-ind" aria-labelledby="ind-title">
       <ClinicNav />
-      <SectionHeader variant="page" titleId="ind-title" title="Wskaźniki Kliniki"
+      <SectionHeader variant="page" titleId="ind-title" title="Dane i wykresy"
         kicker={<><Link href="/klinika">Klinika spinu</Link> <AiTag /></>}
         subtitle="Zobacz, ile wpisów przetworzyliśmy i co pokazują opublikowane diagnozy. Porównania dotyczą analizowanych materiałów, nie całej polityki."
         action={<Button href="/klinika/diagnozy" variant="primary">Baza wszystkich diagnoz →</Button>}
-        link={<Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link>} />
+        link={<Link href="/metodologia">Jak wybieramy i liczymy?</Link>} />
 
       {query.isError ? <p role="alert" className="sc-clinic-empty">Nie udało się pobrać wskaźników. <Button type="button" variant="quiet" onClick={() => query.refetch()}>Spróbuj ponownie</Button></p> : null}
       {query.isLoading ? <p className="sc-clinic-empty">Ładowanie wskaźników…</p> : null}

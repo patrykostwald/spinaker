@@ -60,18 +60,19 @@ export function SpinSwitch({ spinOfDay, latest, render, empty, left, right }: {
   /** Opcjonalnie: tytuł po lewej i link po prawej — w jednej linii z zakładkami. */
   left?: ReactNode; right?: ReactNode;
 }) {
-  const [mode, setMode] = useState<"day" | "latest">("day");
+  const [mode, setMode] = useState<"day" | "latest">("latest");
   const spin = mode === "day" ? spinOfDay : latest;
+  const day = spinOfDay ? formatDatePl(spinOfDay.post.published_at) : null;
   const tabs = (
-    <div className="sc-scan-s-tabs sc-spin-switch__tabs2" role="tablist" aria-label="Którą diagnozę pokazać">
-      <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Najwyższa siła spinu dziś</button>
-      <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowsza</button>
+    <div className="sc-scan-s-tabs sc-spin-switch__tabs2" role="group" aria-label="Którą diagnozę pokazać">
+      <button type="button" aria-pressed={mode === "latest"} onClick={() => setMode("latest")}>Najnowsza</button>
+      <button type="button" aria-pressed={mode === "day"} disabled={!day} onClick={() => setMode("day")}>Najwyższa siła spinu{day ? ` ${day}` : " — brak danych"}</button>
     </div>
   );
   return (
     <div className="sc-spin-switch">
       {left || right ? <div className="sc-spin-switch__bar"><div>{left}</div>{tabs}<div className="sc-spin-switch__right">{right}</div></div> : tabs}
-      <p className="sc-spin-switch__rule">{mode === "day" ? "Diagnoza z najwyższą siłą spinu spośród dzisiejszych publikacji obu stron." : "Ostatnia opublikowana diagnoza, niezależnie od strony."}</p>
+      <p className="sc-spin-switch__rule">{mode === "day" ? `Najwyższa siła spinu wśród przeanalizowanych wpisów obu stron z ${day}.` : "Ostatnia opublikowana diagnoza, niezależnie od strony."}</p>
       {spin ? render(spin) : empty}
     </div>
   );

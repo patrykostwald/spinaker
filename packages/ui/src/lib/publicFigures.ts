@@ -88,7 +88,7 @@ export type PublicFigureVotes =
  * przeglądzie linku z oficjalnego profilu, potwierdzeniu przez oficjalne API X i potwierdzeniu
  * redakcyjnym. W innym wypadku `null`. Interfejs nigdy nie zgaduje handle'a.
  */
-export type VerifiedXAccount = { handle: string; url: string; evidence_url: string; posts_collected: number };
+export type VerifiedXAccount = { account_id?: number; handle: string; url: string; evidence_url: string; posts_collected: number };
 export type PublicFigureXPost = {
   id: number;
   post_id: string;

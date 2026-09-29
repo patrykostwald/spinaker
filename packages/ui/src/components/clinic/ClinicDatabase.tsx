@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicStats, searchClinicSpins, type ClinicSearchParams } from "../../lib/clinic";
 import { SpinRow } from "./SpinParts";
+import { clearClinicResults, readClinicResults, rememberClinicResults } from "../../lib/clinicNavigation";
 
 const FILTER_KEYS = ["q", "account", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
 const format = (value: number) => value.toLocaleString("pl-PL");
@@ -60,14 +61,10 @@ export function ClinicDatabase() {
     sheet?.showModal();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const desktop = window.matchMedia("(min-width: 761px)");
-    const closeOnDesktop = () => { if (desktop.matches) setFiltersOpen(false); };
-    desktop.addEventListener("change", closeOnDesktop);
     return () => {
       sheet?.close();
       document.body.style.overflow = previousOverflow;
-      desktop.removeEventListener("change", closeOnDesktop);
-      if (!desktop.matches) filterButton.current?.focus();
+      filterButton.current?.focus();
     };
   }, [filtersOpen]);
 
@@ -76,6 +73,7 @@ export function ClinicDatabase() {
     if (clear) FILTER_KEYS.forEach(key => next.delete(key));
     Object.entries(values).forEach(([key, value]) => value ? next.set(key, value) : next.delete(key));
     next.delete("page");
+    clearClinicResults(`${pathname}${next.size ? `?${next}` : ""}`);
     currentUrl.current = next.toString();
     router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
   }
@@ -103,6 +101,24 @@ export function ClinicDatabase() {
   });
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   const count = query.data?.pages[0]?.count;
+  const resultsUrl = `${pathname}${url ? `?${url}` : ""}`;
+  const restored = useRef<string | null>(null);
+  useEffect(() => {
+    if (!query.data || restored.current === resultsUrl) return;
+    const saved = readClinicResults(resultsUrl);
+    if (saved && query.data.pages.length < saved.pages && query.hasNextPage) {
+      if (!query.isFetching && !query.isFetchNextPageError) void query.fetchNextPage();
+      return;
+    }
+    // Wait for the list's DOM (including previously loaded pages) and route effects.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        if (saved) window.scrollTo({ top: saved.top, behavior: "instant" as ScrollBehavior });
+        restored.current = resultsUrl;
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [resultsUrl, query.data, query.hasNextPage, query.isFetching, query.isFetchNextPageError, query.fetchNextPage]);
   const totals = stats.data?.totals;
   const active = [params.account, params.camp, params.verdict, params.party, params.technique,
     params.intensity_min !== undefined || params.intensity_max !== undefined,
@@ -163,9 +179,6 @@ export function ClinicDatabase() {
       { value: "", label: "Cały okres" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },
       ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} — ${params.date_to ?? "dzisiaj"}` }] : []),
     ]} />
-    <FilterChip label="Sortuj" value={params.sort ?? "new"} defaultValue="new" onChange={value => change({ sort: value === "new" ? "" : "strong" })} options={[
-      { value: "new", label: "Najnowsze" }, { value: "strong", label: "Najwyższa siła spinu" },
-    ]} />
   </>;
 
   return (
@@ -182,20 +195,18 @@ export function ClinicDatabase() {
           <label className="sc-clinic-db__search">
             <span className="sc-clinic-db__sr-only">Szukaj diagnozy</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>
-            <input className="sc-clinic-db__input" type="search" value={search} placeholder="Szukaj diagnozy, nazwiska lub konta…" onChange={event => {
+            <input className="sc-clinic-db__input" type="search" value={search} placeholder="Szukaj diagnoz…" onChange={event => {
               const value = event.target.value;
               setSearch(value);
               clearTimeout(timer.current);
               timer.current = setTimeout(() => update({ q: value.trim() }), 300);
             }} />
           </label>
-          <div className="sc-clinic-db__desktop-camp">{campControl}</div>
           <button ref={filterButton} type="button" className="sc-clinic-db__toggle" aria-haspopup="dialog" aria-expanded={filtersOpen} aria-controls="clinic-db-filters" onClick={() => setFiltersOpen(true)}>Filtry ({active})</button>
         </div>
         <div className="sc-clinic-db__bottom">
-          <div className="sc-clinic-db__filters">{filterControls}</div>
-          {hasFilters && <button type="button" className="sc-clinic-db__reset" onClick={reset}>Wyczyść filtry</button>}
-          <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Wczytujemy diagnozy…" : count !== undefined ? <><span>Znaleziono:</span> <strong>{format(count)}</strong></> : ""}</p>
+          <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Wczytywanie…" : count !== undefined ? `${format(count)} ${count === 1 ? "wynik" : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? "wyniki" : "wyników"}` : ""}</p>
+          <label className="sc-clinic-db__sort"><span>· Sortuj</span><select value={params.sort ?? "new"} onChange={event => change({ sort: event.target.value === "new" ? "" : "strong" })}><option value="new">Najnowsze</option><option value="strong">Najwyższa siła spinu</option></select></label>
         </div>
         {stats.isError && <p role="status">Nie udało się pobrać statystyk i opcji filtrów. <button type="button" onClick={() => void stats.refetch()}>Spróbuj ponownie</button></p>}
         <dialog ref={dialog} id="clinic-db-filters" className="sc-clinic-db__sheet" aria-labelledby="clinic-db-filters-title" onCancel={() => setFiltersOpen(false)} onClose={() => setFiltersOpen(false)} onClick={event => {
@@ -221,12 +232,12 @@ export function ClinicDatabase() {
         {activeChips.map(chip => <button key={Object.keys(chip.clear).join("-")} type="button" aria-label={`Usuń filtr: ${chip.label}`} onClick={() => { if ("q" in chip.clear) setSearch(""); change(chip.clear); }}>{chip.label} <span aria-hidden="true">×</span></button>)}
       </div> : null}
       <div className="sc-clinic-db__list" aria-busy={query.isFetching}>
-        {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques />)}
+        {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques returnTo={resultsUrl} onOpen={() => rememberClinicResults(resultsUrl, query.data?.pages.length ?? 1)} />)}
       </div>
       {query.isError && <p role="alert">Nie udało się pobrać diagnoz. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p>}
       {query.isSuccess && rows.length === 0 && <div className="sc-clinic-empty"><p>{hasFilters ? "Nie znaleźliśmy pasujących diagnoz." : "Nie ma jeszcze opublikowanych diagnoz dla tego wyboru."}</p>{hasFilters ? <button type="button" onClick={reset}>Wyczyść filtry</button> : null}</div>}
       {query.hasNextPage && !query.isFetchNextPageError && <Button className="sc-clinic-db__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button>}
-      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania — to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link></p>
+      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania — to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/metodologia">Jak wybieramy i liczymy?</Link></p>
     </section>
   );
 }

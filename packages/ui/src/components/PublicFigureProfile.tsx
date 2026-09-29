@@ -1,6 +1,7 @@
 "use client";
 
 import { XAccountSuggest } from "./clinic/XAccountSuggest";
+import { AuthorDiagnoses } from "./AuthorDiagnoses";
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query';
@@ -495,10 +496,11 @@ function useMaterialsTotal(name: string) {
 
 export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: PublicFigureDetail; titleId?: string }) {
   const materialsTotal = useMaterialsTotal(figure.name);
-  const [tab, setTab] = useState<'timeline' | 'votes' | 'relations' | 'materials' | 'x'>('timeline');
+  const [tab, setTab] = useState<'timeline' | 'votes' | 'relations' | 'materials' | 'x' | 'diagnoses'>('timeline');
   const select = (next: 'votes' | 'relations' | 'career' | 'materials') => setTab(next === 'career' ? 'relations' : next);
   const tabs = [
     { id: 'timeline' as const, label: 'Oś czasu' },
+    { id: 'diagnoses' as const, label: 'Diagnozy wpisów' },
     { id: 'votes' as const, label: 'Głosowania' },
     { id: 'relations' as const, label: 'Podmioty i kariera' },
     { id: 'materials' as const, label: 'Materiały' },
@@ -514,6 +516,7 @@ export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: 
         {tab === 'timeline' && <PublicFigureTimeline figureId={figure.id} materialsTotal={materialsTotal} onShowMaterials={() => setTab('materials')} />}
         {tab === 'votes' && <VotesSection figure={figure} />}
         {tab === 'x' && <XPostsSection figure={figure} />}
+        {tab === 'diagnoses' && <AuthorDiagnoses figure={figure} />}
         {tab === 'relations' && <OrganisationsSection figure={figure} />}
         {tab === 'materials' && <LiveMaterials name={figure.name} />}
       </div>

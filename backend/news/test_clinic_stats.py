@@ -283,6 +283,18 @@ def test_invalid_filters(params):
 
 
 @pytest.mark.django_db
+def test_cards_keep_all_technique_types_for_the_shared_presentation_model():
+    items = [{'name': f'Example {index}', 'category': category}
+             for index, category in enumerate(CANONICAL_TECHNIQUES[:7])]
+    row = diagnosis(account(), 9901, techniques=items)
+    card = APIClient().get('/api/clinic/spins/').json()['results'][0]
+    assert len(card['technique_names']) == 4  # legacy preview remains compatible
+    assert card['technique_types'] == [{'name': item['name'], 'category': item['category']}
+                                      for item in row.techniques]
+    assert len(card['technique_types']) == 7
+
+
+@pytest.mark.django_db
 def test_account_filter_exact_id_combines_filters_and_paginates():
     acc = account()
     other = account('opposition', 'posel_test_extra', '102')

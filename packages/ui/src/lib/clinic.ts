@@ -36,6 +36,7 @@ export type SpinCardData = {
   headline: string;
   summary: string;
   technique_names: string[];
+  technique_types?: Array<{ name: string; category?: string }>;
   technique_groups?: string[];
   post: {
     id: string;
