@@ -39,6 +39,8 @@ export type Article = {
   author: string;
   description: string;
   source: Source;
+  /** Polubienia materiału (np. wpis na X, film), gdy źródło je podaje — prawy górny róg boxa. */
+  likes?: number | null;
 };
 
 export type Ballot = { mp_id: number; name: string; club: string; vote: string; list_votes: Record<string, string> };

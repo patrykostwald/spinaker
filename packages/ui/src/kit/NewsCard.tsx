@@ -194,6 +194,9 @@ function CardMedia({
         </span>
       )}
       {size !== "mini" && showCategory ? <CardBadge category={article.category} transition={layoutTransition} /> : null}
+      {size !== "mini" && typeof article.likes === "number" && article.likes > 0 ? (
+        <span className="sc-card__likes sc-t-caption" title="Polubienia">♥ {article.likes.toLocaleString("pl-PL")}</span>
+      ) : null}
     </motion.div>
   );
 }
@@ -201,10 +204,9 @@ function CardMedia({
 function CardMeta({ article, size, full, transition }: { article: Article; size: NewsCardSize; full: boolean; transition: Transition }) {
   return (
     <motion.p className="sc-card__meta sc-t-meta sc-text-2" layout="position" transition={transition}>
-      <span className="sc-card__meta-source" title={article.source.name}>{sourceDisplayName(article.source.name)}</span>
-      {(size === "large" || full) && article.author ? <span> · {article.author}</span> : null}
-      <span> · </span>
-      {renderDate(article, full ? "full" : size)}
+      {/* Zasada boxa: źródło w lewym dolnym rogu, data i godzina w prawym dolnym. */}
+      <span className="sc-card__meta-source" title={article.source.name}>{sourceDisplayName(article.source.name)}{(size === "large" || full) && article.author ? ` · ${article.author}` : ""}</span>
+      <span className="sc-card__meta-date">{renderDate(article, full ? "full" : size)}</span>
     </motion.p>
   );
 }
