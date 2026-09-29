@@ -57,18 +57,21 @@ def test_card_media_cache_and_limits(settings, tmp_path):
             assert get.call_count == 1
 
 
-def test_card_deleted_omits_text_and_attachment():
+@pytest.mark.parametrize('card_format', ['diagnoza', 'skrot'])
+def test_card_deleted_omits_text_and_attachment(card_format):
     from news.clinic_card import render
     data = card_fixture()
     data['post'].update(available=False, text='TAJNA TREŚĆ', media=[{'url': 'https://pbs.twimg.com/secret'}])
     clean = deepcopy(data)
     clean['post'].update(text='', media=[])
+    data['scan']['techniques'] = [{'quote': 'TAJNY CYTAT'}]
     with patch('news.clinic_card.fetch_image', return_value=None) as fetch:
-        assert render(data) == render(clean)
+        assert render(data, card_format) == render(clean, card_format)
     assert all(call.args == ('',) for call in fetch.call_args_list)
 
 
-def test_card_long_text_stays_in_boxes_and_does_not_overlap():
+@pytest.mark.parametrize('card_format', ['diagnoza', 'skrot'])
+def test_card_long_text_stays_in_boxes_and_does_not_overlap(card_format):
     from news import clinic_card
     from PIL import ImageDraw
     data = card_fixture()
@@ -93,7 +96,7 @@ def test_card_long_text_stays_in_boxes_and_does_not_overlap():
         bounds.append(bound)
         return original_draw(self, xy, text, *args, **kwargs)
     with patch('news.clinic_card.fetch_image', return_value=None), patch.object(clinic_card, '_text', field), patch.object(ImageDraw.ImageDraw, 'text', record):
-        assert Image.open(io.BytesIO(clinic_card.render(data))).size == (1600, 900)
+        assert Image.open(io.BytesIO(clinic_card.render(data, card_format))).size == (1600, 900)
 
 
 def test_card_attachment_fills_column_bottom():
@@ -179,6 +182,19 @@ def test_png_visibility_and_cache(settings, tmp_path):
         response = client.get(url)
         assert b''.join(response.streaming_content) == payload
         response.close()
+    short = client.get(url + '?format=skrot')
+    short_payload = b''.join(short.streaming_content)
+    short.close()
+    assert short.status_code == 200
+    assert Image.open(io.BytesIO(short_payload)).size == (1600, 900)
+    assert short_payload != payload
+    assert len(list((tmp_path / 'clinic_cards').glob('diagnosis-*.png'))) == 2
+    with patch('news.clinic_card.render', side_effect=AssertionError('cache')):
+        for suffix, expected in [('', payload), ('?format=diagnoza', payload), ('?format=skrot', short_payload)]:
+            response = client.get(url + suffix)
+            assert b''.join(response.streaming_content) == expected
+            response.close()
+    assert client.get(url + '?format=unknown').status_code == 400
     row.hidden_at = timezone.now()
     row.save()
     assert client.get(url).status_code == 404
@@ -302,3 +318,20 @@ def test_merge_priority_sources_and_missing_text():
     assert len(merged[0]['sources']) == 3
     assert items[0]['assessment'] == 'supported'
     assert len(merge_claims([claim(''), claim('')])) == 2
+
+
+def test_short_quote_and_complete_reason():
+    from news.clinic_card import _quote, _short_reason, _wrap
+    from news.x_card import _font
+    from PIL import ImageDraw
+    data = card_fixture()
+    data['scan']['techniques'] = [{'quote': ' '.join(f'word{i}' for i in range(40))}]
+    assert _quote(data) == ' '.join(f'word{i}' for i in range(25)) + '…'
+    data['scan']['techniques'] = []
+    assert _quote(data) == data['post']['text']
+    draw = ImageDraw.Draw(Image.new('RGB', (1600, 900)))
+    long = 'Bardzo długie zdanie ' * 80 + '.'
+    reason = _short_reason(draw, long, 'Krótkie pełne zdanie. Następne zdanie.', 864)
+    assert reason == 'Krótkie pełne zdanie.'
+    assert len(_wrap(draw, reason, _font(17), 864)) <= 2
+    assert _short_reason(draw, long, long, 864) == ''

@@ -11,6 +11,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
@@ -163,17 +164,31 @@ def clinic_spin_detail(request, diagnosis_id):
     return Response(clinic.detail_data(diagnosis))
 
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def clinic_spin_card(request, diagnosis_id):
-    from django.http import FileResponse
-    from news.clinic_card import cached_card
-    diagnosis = get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
-    figures = clinic.figures_by_account([diagnosis.post.account_id])
-    path = cached_card(clinic.card_data(diagnosis, figures))
-    response = FileResponse(path.open('rb'), content_type='image/png')
-    response['Cache-Control'] = 'public, max-age=3600'
-    return response
+class CardContentNegotiation(DefaultContentNegotiation):
+    def filter_renderers(self, renderers, format):
+        # W tym endpointcie parametr format wybiera układ PNG, nie renderer DRF.
+        return renderers
+
+
+class ClinicSpinCardView(APIView):
+    permission_classes = [AllowAny]
+    content_negotiation_class = CardContentNegotiation
+
+    def get(self, request, diagnosis_id):
+        from django.http import FileResponse
+        from news.clinic_card import FORMATS, cached_card
+        card_format = request.query_params.get('format', 'diagnoza')
+        if card_format not in FORMATS:
+            return Response({'detail': 'Nieznany format obrazu.'}, status=400)
+        diagnosis = get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
+        figures = clinic.figures_by_account([diagnosis.post.account_id])
+        path = cached_card(clinic.card_data(diagnosis, figures), card_format)
+        response = FileResponse(path.open('rb'), content_type='image/png')
+        response['Cache-Control'] = 'public, max-age=3600'
+        return response
+
+
+clinic_spin_card = ClinicSpinCardView.as_view()
 
 
 @extend_schema(summary='Konta X, z których czyta Klinika', tags=['klinika'], responses=OpenApiTypes.OBJECT)

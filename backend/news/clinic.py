@@ -53,7 +53,7 @@ ASSESSMENT_LABELS = {'supported': 'potwierdzone', 'contradicted': 'sprzeczne ze 
 SCALE_MIN_SAMPLE = 10
 NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera wpisy warte sprawdzenia, a konsylium kilku modeli stawia diagnozę. '
                'Fakty są sprawdzane w wyszukiwarce. Przy zgodności werdyktu poniżej 2/3 lub spinie z oceną co najmniej 70 '
-               'możliwa jest konsultacja faktów z Claude, jeśli jest włączona i pozwala na nią budżet. '
+               'możliwa jest konsultacja faktów z Claude. '
                'Publikacja jest automatyczna · nikt nie poprawia treści diagnoz.')
 NOTICE_REVIEW = ('Diagnozy przygotowuje AI. Człowiek może je tylko zatwierdzić albo odrzucić — nie zmienia ich treści.')
 NOTICE = NOTICE_AUTO

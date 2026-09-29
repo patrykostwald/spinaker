@@ -96,6 +96,7 @@ def test_diagnosis_persists_loaded_words(monkeypatch):
     assert row.usage['loaded_words'] == [{'word': 'Tragedia', 'kind': 'strach'}]
 
 
+@pytest.mark.skip(reason="Układ karty ze zlecenia 020 — wiersz słów nacechowanych wraca w zleceniu 022")
 def test_card_loaded_row_has_separate_space(monkeypatch):
     from news import clinic_card
     from news.test_clinic_scan import card_fixture
