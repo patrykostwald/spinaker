@@ -5636,10 +5636,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-ind-show__day { font-family: inherit; font-variant-numeric: tabular-nums; }
 .sc-chart-data > summary { font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); font-weight: 600; }
 
-/* Kolory obozów (decyzja konsylium projektowego): turkus / malinowy — poza barwami partii i poza niebieskim,
-   który jest zarezerwowany dla siły spinu i akcentu; opozycja dodatkowo kreskowana (czytelne bez koloru). */
-:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-ind-gov: #2EC4B6; --sc-ind-opp: #F0609E; }
-html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-ind-gov: #0E7C72; --sc-ind-opp: #B8235F; }
+/* Kolory obozów (decyzja właściciela 29.09.2026): niebieski / czerwony; opozycja dodatkowo kreskowana. */
+:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-ind-gov: #5B9BFF; --sc-ind-opp: #FF6B6B; }
+html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-ind-gov: #1D5FCC; --sc-ind-opp: #C42B2B; }
 .sc-ind [data-camp="opposition"] :is(.sc-ind-hist__bar, .sc-ind-tech__track i, .sc-ind-accounts__bar i), .sc-ind-legend [data-camp="opposition"] i { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgb(0 0 0 / .22) 4px 6px); }
 .sc-ind-bar[data-camp="opposition"] { stroke: none; }
 
