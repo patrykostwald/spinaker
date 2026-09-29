@@ -188,7 +188,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         <div className="sc-clinic-group">
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
-          <SectionHeader titleId="clinic-latest-title" title="Najnowsze diagnozy" subtitle="Rządzący i opozycja — według tych samych zasad. Liczby opublikowanych diagnoz mogą się różnić." />
+          <SectionHeader titleId="clinic-latest-title" title="Najnowsze diagnozy" subtitle="Obie strony oceniane według tych samych zasad. Liczby opublikowanych diagnoz mogą się różnić." />
           <div className="sc-clinic-columns">
             {CAMPS.filter(camp => data.columns[camp].length > 0).map(camp => (
               <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>

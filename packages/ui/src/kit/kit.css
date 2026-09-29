@@ -5733,3 +5733,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 }
 .sc-method-family h3 span { flex: none; white-space: nowrap; align-self: flex-start; }
 @media (max-width: 640px) { .sc-method-strength, .sc-method-agree { grid-template-columns: 1fr; gap: 10px; } .sc-method-table tbody th { width: 40%; } }
+/* Podtytuły obozów: wersaliki, większe, w kolorze obozu — od razu widać, która kolumna jest czyja */
+.sc-camp-heading { font-size: 20px; line-height: 26px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-ind-gov); padding-bottom: 12px; border-bottom: 2px solid color-mix(in srgb, var(--sc-ind-gov) 45%, transparent); }
+.sc-camp-heading[data-camp="opposition"] { color: var(--sc-ind-opp); border-bottom-color: color-mix(in srgb, var(--sc-ind-opp) 45%, transparent); }
+.sc-camp-heading::before { width: 12px; height: 12px; }

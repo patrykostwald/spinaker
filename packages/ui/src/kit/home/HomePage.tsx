@@ -108,7 +108,6 @@ export function HomePage() {
         <section className="sc-home-section sc-home-news" aria-labelledby="home-news-title">
           <header className="sc-home-news__head">
             <div>
-              <p className="sc-t-caption sc-text-3 sc-home-kicker">Materiały ze źródeł. Każda karta prowadzi do oryginalnej publikacji.</p>
               <h2 id="home-news-title" className="sc-t-title-l sc-home-section__title">Wiadomości</h2>
             </div>
           </header>
