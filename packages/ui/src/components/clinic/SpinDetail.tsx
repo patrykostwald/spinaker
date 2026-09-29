@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { ApiError } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { getSpin, type SpinDetailData } from "../../lib/clinic";
+import { agreementLabel, getSpin, type SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { OpinionsPanel } from "../OpinionsPanel";
 import { AiTag, IntensityMeter, SpinAuthorRow, VerdictTag } from "./SpinParts";
@@ -17,15 +18,15 @@ export function SpinDiagnosisBody({ spin }: { spin: SpinDetailData }) {
 
     {spin.techniques.length > 0 && <section className="sc-spin-detail__section">
       <h2>Diagnoza — techniki perswazji</h2>
-      <p className="sc-spin-detail__intro">Jak zbudowano przekaz: każda technika z dosłownym cytatem z wpisu.</p>
+      <p className="sc-spin-detail__intro">Jak zbudowano przekaz: techniki, cytaty i wyjaśnienia.</p>
       <ol className="sc-spin-detail__techniques">{spin.techniques.map((item, index) => (
         <li key={index}><strong>{item.name}</strong><blockquote>„{item.quote}”</blockquote><p>{item.explanation}</p></li>
       ))}</ol>
     </section>}
 
     {spin.claims.length > 0 && <section className="sc-spin-detail__section">
-      <h2>Terapia — co mówią źródła</h2>
-      <p className="sc-spin-detail__intro">Dr. Spin zaleca sprawdzić twierdzenia we wpisie u źródła: ocena każdego i linki, które ją uzasadniają.</p>
+      <h2>Twierdzenia i źródła</h2>
+      <p className="sc-spin-detail__intro">Co można sprawdzić i jakie źródła wykorzystano w analizie.</p>
       <ul className="sc-spin-detail__claims">{spin.claims.map((claim, index) => (
         <li key={index} data-assessment={claim.assessment}>
           <p className="sc-spin-detail__claim"><span className="sc-verdict" data-assessment={claim.assessment}>{claim.assessment_label}</span> {claim.claim}</p>
@@ -39,18 +40,21 @@ export function SpinDiagnosisBody({ spin }: { spin: SpinDetailData }) {
 
     {spin.limitations && <p className="sc-spin-detail__limits"><strong>Ograniczenia diagnozy:</strong> {spin.limitations}</p>}
     {spin.council ? <CouncilNote council={spin.council} /> : null}
-    <p className="sc-spin-detail__meta"><AiTag /> Model {spin.model} · instrukcja {spin.prompt_version} · diagnoza {formatDateTimePl(spin.created_at)}{spin.auto_published ? " · opublikowana automatycznie, bez redakcji człowieka" : spin.reviewed_at ? ` · zatwierdzona bez zmian ${formatDateTimePl(spin.reviewed_at)}` : ""}</p>
+    <p className="sc-spin-detail__meta"><AiTag /> Model {spin.model} · instrukcja {spin.prompt_version} · diagnoza {formatDateTimePl(spin.created_at)}{spin.auto_published ? " · opublikowana automatycznie" : spin.reviewed_at ? ` · zatwierdzona bez zmian ${formatDateTimePl(spin.reviewed_at)}` : ""}</p>
+    <p>Zasady publikacji i korekt: <Link href="/o-nas/karta-konsylium">Karta Konsylium</Link>.</p>
     <p className="sc-spin-detail__share"><ShareSpinOnX id={spin.id} spin={spin} /></p>
   </>;
 }
 
 export function SpinDetail({ id }: { id: string }) {
   const query = useQuery({ queryKey: ["clinic-spin", id], queryFn: () => getSpin(id) });
-  if (query.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Ładowanie diagnozy…</p></div>;
+  if (query.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Wczytujemy diagnozy…</p></div>;
+  if (query.isError && !(query.error instanceof ApiError && query.error.status === 404) && !query.data) return <div className="sc-clinic" role="alert"><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
   if (!query.data) return <div className="sc-clinic"><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;
   const spin = query.data;
   return (
     <div className="sc-clinic sc-spin-detail">
+      {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       <p><Link href="/klinika" className="sc-spin-detail__back">← Klinika spinu</Link></p>
       <div className="sc-spin-detail__grid">
         <aside className="sc-spin-detail__post">
@@ -60,9 +64,9 @@ export function SpinDetail({ id }: { id: string }) {
           <p className="sc-spin-card__text sc-spin-card__text--full">{spin.post.text}</p>
           {spin.post.media.filter(item => item.url).slice(0, 2).map(item => (
             // eslint-disable-next-line @next/next/no-img-element -- miniatura z oficjalnego API X
-            <img key={item.url} className="sc-spin-card__media" src={item.url} alt={item.alt || "Załącznik do posta"} loading="lazy" referrerPolicy="no-referrer" />
+            <img key={item.url} className="sc-spin-card__media" src={item.url} alt={item.alt || "Załącznik do wpisu"} loading="lazy" referrerPolicy="no-referrer" />
           ))}
-          <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Oryginalny post na X ↗</a>
+          <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Oryginalny wpis na X ↗</a>
         </aside>
         <article className="sc-spin-detail__diagnosis">
           <SpinDiagnosisBody spin={spin} />
@@ -88,9 +92,9 @@ const short = (model: string) => model.split("/").pop() ?? model;
 function CouncilNote({ council }: { council: NonNullable<SpinDetailData["council"]> }) {
   return (
     <section className="sc-council" aria-label="Konsylium Dr. Spina">
-      <p className="sc-council__title">Konsylium Dr. Spina · zgodność {council.agreement}{council.escalated ? " · konsultacja specjalisty: fakty sprawdził dodatkowo mocniejszy model z wyszukiwaniem" : ""}</p>
+      <p className="sc-council__title">Konsylium Dr. Spina · {agreementLabel(council.agreement)}{council.escalated ? " · konsultacja specjalisty: fakty sprawdził dodatkowo mocniejszy model z wyszukiwaniem" : ""}</p>
       <ul>{council.members.map(member => (
-        <li key={member.model}><strong>{short(member.model)}</strong> — {VERDICT_SHORT[member.verdict] ?? member.verdict}, siła {member.intensity}/100</li>
+        <li key={member.model}><strong>{short(member.model)}</strong> — {member.intensity == null || !member.verdict ? "Brak odpowiedzi" : <>{VERDICT_SHORT[member.verdict] ?? member.verdict}, siła spinu {member.intensity}/100</>}</li>
       ))}</ul>
       <p className="sc-council__roles">Lekarz prowadzący: {short(council.chair)}{council.linguist ? ` · redaktor: ${short(council.linguist)}` : ""}
         {council.review.model ? ` · ordynator: ${short(council.review.model)} — ${council.review.ok ? "bez zastrzeżeń" : council.review.ok === false ? `uwagi${council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}</p>

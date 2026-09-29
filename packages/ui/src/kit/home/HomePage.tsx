@@ -108,7 +108,7 @@ export function HomePage() {
         <section className="sc-home-section sc-home-news" aria-labelledby="home-news-title">
           <header className="sc-home-news__head">
             <div>
-              <p className="sc-t-caption sc-text-3 sc-home-kicker">Z naszej Bazy · każda wiadomość prowadzi do źródła</p>
+              <p className="sc-t-caption sc-text-3 sc-home-kicker">Materiały ze źródeł. Każda karta prowadzi do oryginalnej publikacji.</p>
               <h2 id="home-news-title" className="sc-t-title-l sc-home-section__title">Wiadomości</h2>
             </div>
           </header>
@@ -138,15 +138,16 @@ export function HomePage() {
           {groupEmpty && sourceGroup ? (
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”. {GROUP_EMPTY_HINT}</p>
           ) : null}
-          {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeType) ? (
-            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak najnowszych materiałów dla tego wyboru.</p>
+          {!groupEmpty && top.isSuccess && !latest.length ? (
+            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">{topQuery || activeType || sourceGroup ? <>Nie znaleźliśmy pasujących materiałów. <button type="button" onClick={() => { setKeyword(""); setTopQuery(""); setActiveType(null); setSourceGroup(null); }}>Wyczyść filtry</button></> : "Nie ma jeszcze opublikowanych materiałów."}</p>
           ) : null}
+          {!groupEmpty && top.isError ? <p role="alert">{top.data ? `Pokazujemy dane z ${new Date(top.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna.` : "Nie udało się pobrać danych."} <button type="button" onClick={() => void top.refetch()}>Spróbuj ponownie</button></p> : null}
           {/* Karty średniej wielkości — bez olbrzymiego boxu, w którym miniatury się rozmywały. */}
           <ul className="sc-home-news__grid" role="list">
             {newsGrid.map(({ article, similar }) => (
               <li key={article.id}><NewsCard article={article} size="medium" headingLevel={3} similarCount={similar} expandable={false} /></li>
             ))}
-            {!newsGrid.length && top.isPending ? Array.from({ length: 3 }, (_, index) => <li key={index}><EmptySlot index={index + 1} label="Ładuję…" /></li>) : null}
+            {!groupEmpty && !newsGrid.length && top.isPending ? Array.from({ length: 3 }, (_, index) => <li key={index}><EmptySlot index={index + 1} label="Ładuję…" /></li>) : null}
           </ul>
         </section>
         <HomeReveal>

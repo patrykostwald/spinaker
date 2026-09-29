@@ -22,9 +22,9 @@ export function HomeSpinTeaser() {
   const [slot, setSlot] = useState<string | null>(null);
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   useEffect(() => { setSlot(nextMessageSlot(new Date())); }, []);
-  if (!data) return null;
+  if (!data) return <section id="dr-spin" className="sc-home-section"><h2>Dr. Spin</h2>{query.isError ? <p role="alert">Nie udało się pobrać danych. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : <p role="status">Wczytujemy diagnozy…</p>}</section>;
 
-  const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
+  const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy wpisy opublikują co najmniej trzy konta tego obozu.`;
   const spins = data.spin_by_camp?.spins;
   const order = data.spin_by_camp?.order ?? CAMPS;
   const shown: Camp = selectedCamp ?? order[0] ?? CAMPS[0];
@@ -32,6 +32,7 @@ export function HomeSpinTeaser() {
 
   return (
     <section id="dr-spin" className="sc-home-section sc-scan-s" aria-labelledby="home-drspin-title">
+      {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       <header className="sc-scan-s-head">
         <h2 id="home-drspin-title">Dr. Spin</h2>
         <p className="sc-scan-s-links"><Link href="/o-nas#klinika">Jak wybieramy i oceniamy?</Link><Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link></p>
@@ -48,10 +49,11 @@ export function HomeSpinTeaser() {
       </div>
       <div id="scan-camp-panel" role="tabpanel" aria-labelledby={`scan-tab-${shown}`}>
         {spin ? <>
-          <p className="sc-scan-s-rule">{spin.window === "latest" ? "Najnowszy spin tej strony — w ostatnich trzech dobach nie było nowych diagnoz." :
-            `Pokazujemy wpis z najwyższą oceną AI wśród ${spin.pool ?? "dostępnych"} przeanalizowanych wpisów ${shown === "government" ? "rządzących" : "opozycji"} (${spin.window_label || ({ today: "dzisiaj", "24h": "ostatnia doba", "72h": "ostatnie trzy doby" }[spin.window] ?? "bieżące okno")}).`}</p>
+          <p className="sc-scan-s-rule">{spin.window === "latest" ? "Najnowsza dostępna diagnoza tej strony — w ostatnich trzech dobach nie było nowych diagnoz." :
+            `Pokazujemy wpis z najwyższą siłą spinu wśród ${spin.pool ?? "dostępnych"} przeanalizowanych wpisów ${shown === "government" ? "rządzących" : "opozycji"} (${spin.window_label || ({ today: "dzisiaj", "24h": "ostatnia doba", "72h": "ostatnie trzy doby" }[spin.window] ?? "okres niepodany")}).`}</p>
           <HomeSpinScanner key={`${shown}-${spin.id}`} spin={spin} />
-        </> : <p>Jeszcze bez diagnozy tej strony. Dr. Spin analizuje wpisy obu stron według tych samych zasad.</p>}
+          <p className="sc-t-caption">Diagnoza opublikowana: <time dateTime={spin.created_at}>{new Date(spin.created_at).toLocaleString("pl-PL", { timeZone: "Europe/Warsaw" })}</time>.</p>
+        </> : <p>Nie ma jeszcze opublikowanych diagnoz dla tego wyboru.</p>}
       </div>
       <p className="sc-home-doctor__scale">
         <strong>Siła spinu 0–100</strong> — jak mocno wpis opiera się na technikach perswazji. To nie jest ocena prawdziwości ani osoby;
@@ -64,7 +66,7 @@ export function HomeSpinTeaser() {
       {data.stats ? (
         <footer className="sc-home-doctor__work">
           Dr. Spin przeczytał <strong>{data.stats.read.total.toLocaleString("pl-PL")}</strong> wpisów polityków,
-          ocenił <strong>{data.stats.screened.total.toLocaleString("pl-PL")}</strong> i postawił <strong>{data.stats.diagnosed.total.toLocaleString("pl-PL")}</strong> diagnoz.
+          wstępnie ocenił <strong>{data.stats.screened.total.toLocaleString("pl-PL")}</strong> i postawił <strong>{data.stats.diagnosed.total.toLocaleString("pl-PL")}</strong> diagnoz.
           <Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link>
           <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
         </footer>

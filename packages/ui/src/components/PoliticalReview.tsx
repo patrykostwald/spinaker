@@ -29,11 +29,11 @@ type EvidenceDraft = { evidenceFor: string; evidenceAgainst: string; uncertainty
 
 const VIEWS = [
   { key: 'government' as const, label: 'Przekaz obozu rządzącego',
-    description: 'Posty z kont potwierdzonych jako obóz rządzący. Widok pokazuje wyłącznie już zapisane posty.' },
+    description: 'Wpisy z kont potwierdzonych jako obóz rządzący. Widok pokazuje wyłącznie już zapisane wpisy.' },
   { key: 'opposition' as const, label: 'Przekaz opozycji',
-    description: 'Posty z kont potwierdzonych jako opozycja. Widok pokazuje wyłącznie już zapisane posty.' },
+    description: 'Wpisy z kont potwierdzonych jako opozycja. Widok pokazuje wyłącznie już zapisane wpisy.' },
   { key: 'candidates' as const, label: 'Kandydaci Dr. Spina',
-    description: 'Redaktor samodzielnie wskazuje posty z dowolnego obozu do jednej propozycji.' },
+    description: 'Redaktor samodzielnie wskazuje wpisy z dowolnego obozu do jednej propozycji.' },
 ];
 type ViewKey = typeof VIEWS[number]['key'];
 
@@ -98,7 +98,7 @@ export function PoliticalReview() {
     setError('');
     setSelectedIds(ids => {
       if (ids.includes(post.id)) return ids.filter(id => id !== post.id);
-      if (ids.length >= 15) { setError('Możesz wybrać maksymalnie 15 postów do jednej propozycji.'); return ids; }
+      if (ids.length >= 15) { setError('Możesz wybrać maksymalnie 15 wpisów do jednej propozycji.'); return ids; }
       return [...ids, post.id];
     });
   }
@@ -119,7 +119,7 @@ export function PoliticalReview() {
     event.preventDefault();
     setError(''); setNotice('');
     if (!title.trim()) { setError('Podaj tytuł propozycji.'); return; }
-    if (!selectedPosts.length) { setError('Wybierz co najmniej jeden post źródłowy z listy powyżej.'); return; }
+    if (!selectedPosts.length) { setError('Wybierz co najmniej jeden wpis źródłowy z listy powyżej.'); return; }
     setBusy(true);
     try {
       const camp = view === 'candidates' ? candidateCamp : view;
@@ -153,10 +153,10 @@ export function PoliticalReview() {
 
   return <div className="sc-political">
     <header className="sc-political__head"><p className="sc-t-caption">PANEL PRZEGLĄDU X</p>
-      <h1 className="sc-t-title-l">Propozycje z już zapisanych postów X</h1>
+      <h1 className="sc-t-title-l">Propozycje z już zapisanych wpisów X</h1>
       <p className="sc-political-copy">Panel wyłącznie przegląda materiał już pobrany i zapisany jako
         PoliticalPost. Nie łączy się z płatnym API X, nie publikuje nitek, nie pisze oskarżeń i nie ocenia prawdziwości
-        postów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja zespołu.</p>
+        wpisów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja zespołu.</p>
     </header>
 
     {status.data?.draft_rules && <details className="sc-political-rules">
@@ -175,17 +175,17 @@ export function PoliticalReview() {
     {notice && <p role="status" className="sc-political-message">{notice}</p>}
 
     <section className="sc-political-section">
-      <h2 className="sc-t-title-m">1. Wybierz posty źródłowe</h2>
+      <h2 className="sc-t-title-m">1. Wybierz wpisy źródłowe</h2>
       <div className="sc-political-filters">
         <label className="sc-political-field">Szukaj po treści lub koncie<input type="search" value={search}
-          onChange={event => setSearch(event.target.value)} placeholder="np. nazwa konta lub fraza z posta" className={input} /></label>
+          onChange={event => setSearch(event.target.value)} placeholder="np. nazwa konta lub fraza z wpisu" className={input} /></label>
         {view === 'candidates' && <label className="sc-political-field">Obóz<select value={candidateCampFilter}
           onChange={event => setCandidateCampFilter(event.target.value as Camp | 'all')} className={input}>
           <option value="all">Wszystkie grupy</option><option value="government">Obóz rządzący</option><option value="opposition">Opozycja</option><option value="public">Instytucje publiczne</option>
         </select></label>}
       </div>
-      {posts.isPending ? <p role="status">Ładuję zapisane posty…</p>
-        : posts.isError ? <div role="alert"><p>Nie udało się pobrać postów.</p>
+      {posts.isPending ? <p role="status">Ładuję zapisane wpisy…</p>
+        : posts.isError ? <div role="alert"><p>Nie udało się pobrać wpisów.</p>
             <button className={button} onClick={() => posts.refetch()}>Spróbuj ponownie</button></div>
         : <div className="sc-political-list">
             {rows.map(post => <article key={post.id} className="sc-political-post">
@@ -200,12 +200,12 @@ export function PoliticalReview() {
                 <a href={post.url} target="_blank" rel="noopener noreferrer" className="sc-political-link">{post.url}</a>
               </div>
             </article>)}
-            {!rows.length && <p className="sc-political-empty">Brak zapisanych postów pasujących do filtrów.</p>}
+            {!rows.length && <p className="sc-political-empty">Brak zapisanych wpisów pasujących do filtrów.</p>}
           </div>}
     </section>
 
     <form onSubmit={submitDraft} className="sc-political-form">
-      <h2 className="sc-t-title-m">2. Przygotuj propozycję do przeglądu ({selectedPosts.length}/15 postów)</h2>
+      <h2 className="sc-t-title-m">2. Przygotuj propozycję do przeglądu ({selectedPosts.length}/15 wpisów)</h2>
       <div className="sc-political-fields">
         <label className="sc-political-field">Tytuł propozycji<input required maxLength={250} value={title}
           onChange={event => setTitle(event.target.value)} className={input} disabled={busy} /></label>
@@ -245,7 +245,7 @@ export function PoliticalReview() {
       <div className="sc-political-actions">
         <button type="submit" disabled={busy} className={primaryButton}>{busy ? 'Zapisuję…' : 'Zapisz jako propozycję do przeglądu'}</button>
         <button type="button" disabled={busy || !selectedPosts.length} className={button} onClick={resetForm}>Wyczyść wybór</button>
-        <p className="sc-political-copy">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje nitki i nie ocenia prawdziwości postów.</p>
+        <p className="sc-political-copy">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje nitki i nie ocenia prawdziwości wpisów.</p>
       </div>
     </form>
 
@@ -260,7 +260,7 @@ export function PoliticalReview() {
                 <span className="sc-political-copy">{STATUS_LABELS[item.status]}</span>
               </div>
               <p className="sc-political-copy">{item.day} · {item.camp === 'government' ? 'obóz rządzący' : 'opozycja'} ·
-                {' '}{item.posts.length} {item.posts.length === 1 ? 'post' : 'postów'} · {item.origin === 'ai_proposal' ? 'propozycja AI' : 'wybór zespołu'}</p>
+                {' '}{item.posts.length} {item.posts.length === 1 ? 'wpis' : 'wpisów'} · {item.origin === 'ai_proposal' ? 'propozycja AI' : 'wybór zespołu'}</p>
             </article>)}
             {!drafts.data?.results.length && <p className="sc-political-empty">Brak propozycji w tym widoku.</p>}
           </div>}

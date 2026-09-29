@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "../../kit/Button";
+import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -52,10 +54,9 @@ export function ClinicInterviewArchive() {
   });
   const first = query.data?.pages[0];
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
-  return <main className="sc-clinic-archives">
+  return <section className="sc-clinic-archives">
     <ArchiveNavigation />
-    <h1>Archiwum wywiadów</h1>
-    <p>Ocena gościa i warsztatu prowadzącego — wszystkie opublikowane analizy.</p>
+    <SectionHeader variant="page" title="Archiwum wywiadów" subtitle="Analizy wypowiedzi gości oraz pytań i reakcji prowadzących — z cytatami i odwołaniami do nagrania." />
     <div className="sc-clinic-archives__filters">
       <label>Szukaj gościa, prowadzącego lub tytułu<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label>
       <label>Kanał<select value={channel} onChange={event => setChannel(event.target.value)}>
@@ -65,24 +66,24 @@ export function ClinicInterviewArchive() {
     </div>
     {first ? <p role="status">Liczba wywiadów{q || channel ? " spełniających filtry" : ""}: {first.count.toLocaleString("pl-PL")}</p> : null}
     {query.isPending ? <p role="status">Wczytywanie wywiadów…</p> : null}
-    {query.isError ? <p role="alert">Nie udało się wczytać wywiadów. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p> : null}
+    {query.isError ? <p role="alert">Nie udało się wczytać wywiadów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !rows.length ? <p>Brak wywiadów spełniających wybrane kryteria.</p> : null}
     <div className="sc-clinic-archives__list">{rows.map(interview => <article className="sc-clinic-archives__card" key={interview.id}>
       <p><time dateTime={interview.day}>{formatDatePl(interview.day)}</time> · {interview.channel}</p>
       <h2><Link href={`/klinika/wywiady/${interview.id}`}>{interview.title || interview.headline}</Link></h2>
       <InterviewScores interview={interview} />
-      <Link href={`/klinika/wywiady/${interview.id}`}>Otwórz stronę wywiadu →</Link>
+      <Link href={`/klinika/wywiady/${interview.id}`}>Czytaj analizę →</Link>
     </article>)}</div>
-    {query.hasNextPage ? <button className="sc-clinic-archives__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</button> : null}
-  </main>;
+    {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button> : null}
+  </section>;
 }
 
 export function ClinicInterviewPage({ interview }: { interview: Interview }) {
-  return <main className="sc-clinic-archives">
+  return <section className="sc-clinic-archives">
     <ArchiveNavigation />
     <h1>{interview.title || interview.headline}</h1>
     <InterviewScanner interview={interview} />
-  </main>;
+  </section>;
 }
 
 export function ClinicMessageArchive() {
@@ -94,18 +95,17 @@ export function ClinicMessageArchive() {
   });
   const first = query.data?.pages[0];
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
-  return <main className="sc-clinic-archives">
+  return <section className="sc-clinic-archives">
     <ArchiveNavigation />
-    <h1>Archiwum przekazów</h1>
-    <p>Przekazy dnia Rządzących i Opozycji, od najnowszych.</p>
+    <SectionHeader variant="page" title="Archiwum przekazów" subtitle="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji." />
     {first ? <p>Liczba dni: {first.count.toLocaleString("pl-PL")}</p> : null}
     {query.isPending ? <p role="status">Wczytywanie przekazów…</p> : null}
-    {query.isError ? <p role="alert">Nie udało się wczytać przekazów. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p> : null}
+    {query.isError ? <p role="alert">Nie udało się wczytać przekazów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !rows.length ? <p>Nie ma jeszcze opublikowanych przekazów.</p> : null}
     <div className="sc-clinic-archives__list">{rows.map(row => <section className="sc-clinic-archives__day" key={row.day} aria-labelledby={`day-${row.day}`}>
       <h2 id={`day-${row.day}`}><time dateTime={row.day}>{formatDatePl(row.day)}</time></h2>
       <div className="sc-clinic-archives__columns">{CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={row[camp]} emptyText="Brak zatwierdzonego przekazu tego dnia." />)}</div>
     </section>)}</div>
-    {query.hasNextPage ? <button className="sc-clinic-archives__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż wcześniejsze dni"}</button> : null}
-  </main>;
+    {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż wcześniejsze dni"}</Button> : null}
+  </section>;
 }

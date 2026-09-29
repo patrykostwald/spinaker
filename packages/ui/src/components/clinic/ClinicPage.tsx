@@ -1,6 +1,7 @@
 "use client";
 
 import { useLongPress } from "../../lib/useLongPress";
+import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +23,7 @@ const CONTACT = "kontakt@spin.clinic";
 
 /** Spin dnia jako nitka: box główny (post + diagnoza), a za nim boxy kontekstu — źródła twierdzeń. */
 export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
-  // Pełna odpowiedź Dr. Spina obok posta: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
+  // Pełna odpowiedź Dr. Spina obok wpisu: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
   const [expanded, setExpanded] = useState(false);
   // Telefon: wpis przycięty do kilku linii (CSS), żeby licznik i wywiad nie zjeżdżały daleko w dół.
   const [postOpen, setPostOpen] = useState(false);
@@ -36,18 +37,18 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
           <div className="sc-clinic-sotd__quote" data-open={postOpen || undefined} {...(postOpen ? {} : pressPost)}>
             <blockquote>{spin.post.text}</blockquote>
             {postOpen ? null : <button type="button" className="sc-clinic-sotd__more-post" onClick={() => setPostOpen(true)}>Rozwiń wpis ↓</button>}
-            {/* Zdjęcia z posta — część przekazu (np. twarz, grafika z hasłem); klik otwiera post na X. */}
+            {/* Zdjęcia z wpisu — część przekazu (np. twarz, grafika z hasłem); klik otwiera wpis na X. */}
             {spin.post.media?.length ? (
               <a className="sc-clinic-sotd__media" data-count={Math.min(spin.post.media.length, 2)} href={spin.post.url} target="_blank" rel="noopener noreferrer"
-                aria-label="Zdjęcia z posta — otwórz na X">
+                aria-label="Zdjęcia z wpisu — otwórz na X">
                 {spin.post.media.slice(0, 2).map(item => (
                   // eslint-disable-next-line @next/next/no-img-element -- miniatury z X
-                  <img key={item.url} src={item.url} alt={item.alt || "Zdjęcie dołączone do posta"} loading="lazy" referrerPolicy="no-referrer" />
+                  <img key={item.url} src={item.url} alt={item.alt || "Zdjęcie dołączone do wpisu"} loading="lazy" referrerPolicy="no-referrer" />
                 ))}
               </a>
             ) : null}
           </div>
-          <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
+          <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Wpis na X ↗</a>
         </div>
         <div className="sc-clinic-sotd__diagnosis">
           <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
@@ -103,7 +104,7 @@ function visibleFor(hours: number) {
   return `w ciągu ${Math.ceil(hours / 24)} dni`;
 }
 
-/** Strażnica usuniętych postów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
+/** Strażnica niedostępnych wpisów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
 function DeletedPosts() {
   const query = useQuery({ queryKey: ["clinic-deleted"], queryFn: getClinicDeleted, staleTime: 10 * 60_000 });
   const data = query.data;
@@ -113,13 +114,13 @@ function DeletedPosts() {
     <section className="sc-deleted" aria-labelledby="deleted-title">
       <header className="sc-deleted__head">
         <p className="sc-clinic-kicker">Strażnica</p>
-        <h2 id="deleted-title">Usunięte posty</h2>
+        <h2 id="deleted-title">Niedostępne wpisy</h2>
         <p>
-          Wpisy, które politycy usunęli po publikacji (albo stały się niedostępne). Zasady X nie pozwalają nam pokazać treści usuniętego wpisu —
+          Wpisy niedostępne podczas sprawdzania. Nie przesądzamy, czy autor je usunął — przyczyną może być także ograniczenie dostępu. Nie pokazujemy ich treści,
           ale jeśli ktoś zachował go w publicznym archiwum internetu, linkujemy do tej kopii. Ostatnie 7 dni: {week}.
         </p>
         {data.top_deleters.length ? (
-          <p className="sc-deleted__top">Najczęściej usuwający (30 dni): {data.top_deleters.map((row, index) => (
+          <p className="sc-deleted__top">Konta z największą liczbą niedostępnych wpisów (30 dni): {data.top_deleters.map((row, index) => (
             <span key={row.author.handle}>{index ? " · " : ""}<a href={row.author.account_url} target="_blank" rel="noopener noreferrer">{row.author.name}</a> {row.count}</span>
           ))}</p>
         ) : null}
@@ -136,7 +137,7 @@ function DeletedPosts() {
             <span>{item.verdict ? <VerdictTag verdict={item.verdict} label={item.verdict_label} /> : <span className="sc-deleted__none">bez diagnozy</span>}</span>
           </li>
         ))}</ul>
-      ) : <p className="sc-clinic-empty">W ostatnich {data.days} dniach nie zauważyliśmy usuniętych postów. Sprawdzamy co 3 godziny wpisy z ostatnich dwóch tygodni.</p>}
+      ) : <p className="sc-clinic-empty">W ostatnich {data.days} dniach nie zauważyliśmy niedostępnych wpisów. Sprawdzamy co 3 godziny wpisy z ostatnich dwóch tygodni.</p>}
     </section>
   );
 }
@@ -155,14 +156,11 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
   const data = query.data;
   const latest = data ? CAMPS.flatMap(camp => data.columns[camp])
     .sort((a, b) => Date.parse(b.post.published_at) - Date.parse(a.post.published_at) || b.id - a.id).slice(0, 8) : [];
-  const Title = embedded ? "h2" : "h1";
   return (
     <section className="sc-clinic" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
-      <header className="sc-clinic-head">
-        <p className="sc-clinic-kicker">Klinika spinu</p>
-        <Title id="clinic-title">Dr. Spin</Title>
-        <p className="sc-clinic-subtitle"><AiTag /> Treści w tej sekcji generuje AI. {data?.notice ?? ""} <Link href="/o-nas#klinika">Jak to działa</Link></p>
-      </header>
+      <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title="Dr. Spin"
+        subtitle={<><AiTag /> Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji, oceny modeli AI i źródła dotyczące sprawdzanych twierdzeń.</>}
+        link={<Link href="/o-nas#klinika">Jak działa analiza</Link>} />
 
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}

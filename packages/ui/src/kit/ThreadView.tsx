@@ -7,7 +7,7 @@
  *  - `row`: jedna kolumna na całą szerokość z przewijaniem poziomym (taśma `compact` z datami).
  * Przełącznik (`Segmented`) zapamiętuje wybór na urządzeniu (`localStorage`); przejście między
  * układami to morfing tych samych kart (`layoutId` per materiał w jednej `LayoutGroup`).
- * Posty-odnośniki (`reference_only`) i komentarze autora renderują się tak samo w obu układach.
+ * Wpisy-odnośniki (`reference_only`) i komentarze autora renderują się tak samo w obu układach.
  */
 
 import { LayoutGroup, motion } from "framer-motion";
@@ -65,10 +65,10 @@ function ItemNote({ item }: { item: ThreadItem }) {
 function ReferencePost({ item }: { item: ThreadItem }) {
   return (
     <div className="sc-thread-view__reference">
-      <p className="sc-t-caption sc-text-3">Post · odnośnik X</p>
-      <p className="sc-t-body-s sc-text-2">Treść i dostępność posta nie zostały sprawdzone. Materiał wskazał autor nitki.</p>
+      <p className="sc-t-caption sc-text-3">Wpis · odnośnik X</p>
+      <p className="sc-t-body-s sc-text-2">Treść i dostępność wpisu nie zostały sprawdzone. Materiał wskazał autor nitki.</p>
       <a className="sc-thread-view__source sc-t-meta" href={item.article.url} target="_blank" rel="noopener noreferrer">
-        Otwórz post na X ↗
+        Otwórz wpis na X ↗
       </a>
     </div>
   );

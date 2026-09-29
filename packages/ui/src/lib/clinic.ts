@@ -1,6 +1,14 @@
 /** Klinika spinu — typy i zapytania do /api/clinic/ (backend/news/clinic.py). */
 import { apiFetch, apiWrite } from "./api";
 
+/** Etykiety wspólne dla panelu głosów i pełnej diagnozy. */
+export function agreementLabel(value: string | null | undefined): string {
+  const match = value?.match(/^(\d+)\s*\/\s*(\d+)$/);
+  return match ? `Zgodność oceny: ${match[1]} z ${match[2]} modeli` : "Zgodność oceny: brak danych";
+}
+export function techniqueLabel(count: number): string {
+  return count === 1 ? "technika" : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? "techniki" : "technik";
+}
 export type Camp = "government" | "opposition";
 export type Verdict = "spin" | "partial" | "no_spin" | "unclear";
 
@@ -63,7 +71,7 @@ export type SpinDetailData = SpinCardData & {
   council?: {
     agreement: string; chair: string; linguist: string; escalated: boolean;
     review: { ok: boolean | null; issues: string[]; model: string; revised?: boolean };
-    members: Array<{ model: string; verdict: string; intensity: number }>;
+    members: Array<{ model: string; verdict: string | null; intensity: number | null }>;
   } | null;
   model: string;
   prompt_version: string;

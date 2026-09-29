@@ -34,7 +34,7 @@ export function IllustrationStrip() {
     <div className="sc-illustration-strip__frame">
       {theme && period ? <img src={`/illustrations/${theme}/${period}.webp`} alt="Akwarelowa ilustracja polskiego krajobrazu, rysowana konturami kredek" decoding="async" /> : null}
       <span className="sc-illustration-strip__sign"><small>przystanek</small>spin.clinic</span>
-      <Button href="/wsparcie" variant="secondary" size="sm" className="sc-illustration-strip__support">Wspomóż projekt</Button>
+      <Button href="/wsparcie" variant="secondary" size="sm" className="sc-illustration-strip__support">Wesprzyj projekt</Button>
       <p>Polska · ilustracja autorska</p>
     </div>
   </section>;

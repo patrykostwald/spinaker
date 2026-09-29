@@ -85,7 +85,7 @@ export function ClinicQueue() {
       )}
       {data?.messages.map(message => (
         <article key={`m-${message.id}`} className="sc-clinic-queue__item">
-          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {message.posts_count} postów</p>
+          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {message.posts_count} wpisów</p>
           <p className="sc-clinic-message__text">{message.message}</p>
           <p>{message.themes.join(" · ")}</p>
           {buttons("message", message.id)}
@@ -97,7 +97,7 @@ export function ClinicQueue() {
             <p className="sc-clinic-kicker">{spin.camp_label}</p>
             <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
             <p className="sc-spin-card__text sc-spin-card__text--full">{spin.post.text}</p>
-            <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
+            <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Wpis na X ↗</a>
           </aside>
           <div className="sc-spin-detail__diagnosis"><SpinDiagnosisBody spin={spin} />{buttons("spin", spin.id)}</div>
         </article>

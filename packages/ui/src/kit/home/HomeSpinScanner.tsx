@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import { agreementLabel, techniqueLabel } from "../../lib/clinic";
 import Link from "next/link";
 import { FAMILY_OF } from "../../lib/techniqueFamilies";
 import { useEffect, useRef, useState } from "react";
@@ -163,15 +164,15 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
       <h3 className="sc-scan-dg-lead" id={`scan-lead-${spin.id}`}>{lead}</h3>
       <p className="sc-scan-dg-point">{point}</p>
       <div className="sc-scan-m">
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Nasilenie spinu</p><p className="sc-scan-m-num sc-scan-strength">{spin.intensity}<small>/100</small></p>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Siła spinu</p><p className="sc-scan-m-num sc-scan-strength">{spin.intensity}<small>/100</small></p>
           <div className="sc-scan-g" title="Ocena AI w skali 0–100"><span className="sc-scan-g-track"><i style={{ width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div></div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Konsylium AI</p><p className="sc-scan-m-num">{agreement}<small> zgodne</small></p>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Konsylium AI</p><p className="sc-t-caption">{agreementLabel(agreement)}</p>
           <div className="sc-scan-g" title={scan?.council?.method || "Oceny modeli w skali 0–100; kropka — werdykt modelu"}>{votes.map((vote, index) => (
-            <span key={index} className="sc-scan-g-row"><em>{modelLabel(vote.model)}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${Math.max(0, Math.min(100, vote.intensity ?? 0))}%` }} /></span><b>{vote.intensity ?? "—"}</b><u data-verdict={vote.verdict} title={`werdykt: ${vote.verdict ?? "brak"}`} /></span>))}</div></div>
+            <span key={index} className="sc-scan-g-row">{vote.intensity == null || !vote.verdict ? <span>{modelLabel(vote.model)} — Brak odpowiedzi</span> : <><em>{modelLabel(vote.model)}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${Math.max(0, Math.min(100, vote.intensity ?? 0))}%` }} /></span><b>{vote.intensity == null ? "Brak odpowiedzi" : vote.intensity}</b><u data-verdict={vote.verdict} title={`werdykt: ${vote.verdict ?? "brak"}`} /></>}</span>))}</div></div>
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Twierdzenia</p><p className="sc-scan-m-num">{checked}<small> sprawdzone</small></p>
           <div className="sc-scan-g"><span className="sc-scan-g-squares">{claimSquares.map((kind, index) => <i key={index} data-k={kind} data-gap={index === claimSquares.indexOf("op") || undefined} />)}</span>
             <span className="sc-scan-g-legend">{supported ? <span data-k="ok">{supported} potw.</span> : null}{misleading ? <span data-k="mid">{misleading} mylące</span> : null}{contradicted ? <span data-k="bad">{contradicted} sprzeczne</span> : null}{opinions ? <span data-k="op">{opinions} {opinionsLabel(opinions)}</span> : null}</span></div></div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{typeCount}<small> {typeCount === 1 ? "typ" : typeCount >= 2 && typeCount <= 4 ? "typy" : "typów"}</small></p>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{typeCount}<small> {techniqueLabel(typeCount)}</small></p>
           <div className="sc-scan-g">{FAMILIES.map(([key, label]) => (
             <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${(familyCount(key) / familyMax) * 100}%` }} /></span><b>{familyCount(key)}</b></span>))}</div></div>
       </div>
@@ -179,7 +180,7 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
         {FAMILIES.map(([key, label]) => <tr key={key} data-family={key}><th scope="row"><i />{label}</th><td>{techniques.filter(item => item.family === key).map(item => item.name).join(" · ") || <span className="sc-scan-t-none">Nie wskazano</span>}</td><td className="sc-scan-t-n">{familyCount(key)}</td></tr>)}
       </tbody></table>
       <footer className="sc-scan-dg-foot"><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie ${spin.id}`)}`}>Zgłoś błąd</a><div className="sc-scan-dg-actions">
-        <button ref={expandRef} type="button" aria-expanded={expanded} aria-controls={`scan-details-${spin.id}`} onClick={() => expanded ? collapse() : setExpanded(true)}>{expanded ? "Zwiń uzasadnienie" : "Rozwiń uzasadnienie"}</button>
+        <button ref={expandRef} type="button" aria-expanded={expanded} aria-controls={`scan-details-${spin.id}`} onClick={() => expanded ? collapse() : setExpanded(true)}>{expanded ? "Zwiń uzasadnienie" : "Pokaż uzasadnienie"}</button>
         <button type="button" aria-expanded={sharing} aria-controls={`scan-share-${spin.id}`} onClick={() => setSharing(!sharing)}>Udostępnij</button>
         <Link className="sc-scan-button sc-scan-primary" href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link>
       </div></footer>

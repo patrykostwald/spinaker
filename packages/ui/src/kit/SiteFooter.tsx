@@ -95,7 +95,18 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
       <footer role="contentinfo" className="sc-footer" data-sticky>
         <div className="sc-footer__bar">
           <div className="sc-footer__brand">{brand}</div>
-          {columnsRow}
+          <details className="sc-footer__more" onKeyDown={event => {
+            if (event.key === "Escape") {
+              event.currentTarget.open = false;
+              event.currentTarget.querySelector("summary")?.focus();
+            }
+          }}>
+            <summary>Więcej</summary>
+            <div className="sc-footer__menu">
+              {columnsRow}
+              {above && <div className="sc-footer__support">{above}</div>}
+            </div>
+          </details>
           {cta ? (
             <Button href={cta.href} variant="primary" size="sm" className="sc-footer__bar-cta">
               {cta.label}
@@ -104,13 +115,12 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
         </div>
       </footer>
     );
-    // Pasek nad stopką (np. wsparcie) to osobny pasek na całą szerokość — przyklejony razem ze stopką.
-    return above ? (
+    // Jeden dok także bez komunikatu wsparcia; linki i komunikat mieszczą się w menu.
+    return (
       <div className="sc-footer-dock" ref={dockRef}>
-        <div className="sc-footer-dock__above">{above}</div>
         {bar}
       </div>
-    ) : bar;
+    );
   }
 
   return (
@@ -152,15 +162,31 @@ function useHideOnScroll() {
         const node = ref.current;
         if (node) {
           const nearBottom = window.innerHeight + y >= document.documentElement.scrollHeight - 80;
-          if (y > last + 6 && y > 120 && !nearBottom) node.dataset.hidden = "true";
+          if (y > last + 6 && y > 120 && !nearBottom && !node.contains(document.activeElement) && !node.querySelector("details[open]")) node.dataset.hidden = "true";
           else if (y < last - 6 || nearBottom || y <= 120) delete node.dataset.hidden;
         }
-        last = y;
+        if (Math.abs(y - last) > 6) last = y;
         ticking = false;
       });
     };
+    const onFocus = (event: FocusEvent) => {
+      const node = ref.current;
+      const target = event.target;
+      if (!node || !(target instanceof HTMLElement)) return;
+      if (node.contains(target)) delete node.dataset.hidden;
+      else {
+        node.querySelectorAll("details[open]").forEach(menu => menu.removeAttribute("open"));
+        const rect = target.getBoundingClientRect();
+        const bottom = window.innerHeight - node.getBoundingClientRect().height - 12;
+        if (rect.bottom > bottom && rect.top < window.innerHeight) window.scrollBy({ top: rect.bottom - bottom, behavior: "instant" });
+      }
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    document.addEventListener("focusin", onFocus);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("focusin", onFocus);
+    };
   }, []);
   return ref;
 }

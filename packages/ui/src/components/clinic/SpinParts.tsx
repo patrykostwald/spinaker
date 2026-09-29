@@ -50,14 +50,14 @@ export function SpinAuthorRow({ author, publishedAt, size = "md", caption }: {
 }
 
 export function VerdictTag({ verdict, label }: { verdict: Verdict; label: string }) {
-  return <span className="sc-verdict" data-verdict={verdict}>{label}</span>;
+  return <span className="sc-verdict" data-verdict={verdict}>{verdict === "unclear" ? "Nie da się ocenić" : label}</span>;
 }
 
 export function IntensityMeter({ value }: { value: number }) {
   return (
     <span className="sc-intensity" data-level={value >= 70 ? "high" : value >= 30 ? "mid" : "low"} title="Siła spinu według diagnozy (0–100): jak mocno wpis opiera się na technikach perswazji">
       <span className="sc-intensity__track" aria-hidden="true"><span style={{ width: `${Math.max(2, value)}%` }} /></span>
-      <span className="sc-intensity__value">siła {value}/100</span>
+      <span className="sc-intensity__value">Siła spinu {value}/100</span>
     </span>
   );
 }
@@ -67,7 +67,7 @@ export function AiTag() {
 }
 
 /**
- * Zwarty wiersz diagnozy — rozmiar boxa z pasków: po lewej miniatura (zdjęcie z posta albo awatar autora),
+ * Zwarty wiersz diagnozy — rozmiar boxa z pasków: po lewej miniatura (zdjęcie z wpisu albo awatar autora),
  * po prawej obóz, werdykt, nagłówek diagnozy i autor. Cały wiersz prowadzi do pełnej diagnozy.
  */
 export function SpinRow({ spin, withSummary = false, withTechniques = false, badge }: { spin: SpinCardData; withSummary?: boolean; withTechniques?: boolean; badge?: string }) {
@@ -101,9 +101,9 @@ export function SpinCard({ spin }: { spin: SpinCardData }) {
         <p className="sc-spin-card__text">{spin.post.text}</p>
         {image && (
           // eslint-disable-next-line @next/next/no-img-element -- miniatura z oficjalnego API X
-          <img className="sc-spin-card__media" src={image.url} alt={image.alt || "Załącznik do posta"} loading="lazy" referrerPolicy="no-referrer" />
+          <img className="sc-spin-card__media" src={image.url} alt={image.alt || "Załącznik do wpisu"} loading="lazy" referrerPolicy="no-referrer" />
         )}
-        <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
+        <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Wpis na X ↗</a>
       </div>
       <div className="sc-spin-card__diagnosis">
         <p className="sc-spin-card__verdict"><span className="sc-spin-card__camp">{spin.camp_label}</span><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
@@ -123,13 +123,13 @@ export function SpinCard({ spin }: { spin: SpinCardData }) {
   );
 }
 
-/** Waga — dwie liczby i dwa paski: udział postów ze spinem po każdej stronie (jeden neutralny kolor). */
+/** Waga — dwie liczby i dwa paski: udział wpisów ze spinem po każdej stronie (jeden neutralny kolor). */
 export function SpinScale({ scale }: { scale: SpinScaleData }) {
   const left = sharePercent(scale.government);
   const right = sharePercent(scale.opposition);
   const diff = left !== null && right !== null ? left - right : null;
   const verdict = !scale.enough_data
-    ? `Za mało danych — wynik pokażemy, gdy każda strona będzie miała co najmniej ${scale.min_sample} ocenionych postów.`
+    ? `Za mało danych — wynik pokażemy, gdy każda strona będzie miała co najmniej ${scale.min_sample} ocenionych wpisów.`
     : diff === 0 ? "Obie strony mają taki sam udział spinu."
     : `Więcej spinu: ${diff! > 0 ? "rządzący" : "opozycja"} (o ${Math.abs(diff!)} p.p.).`;
   return (
@@ -140,7 +140,7 @@ export function SpinScale({ scale }: { scale: SpinScaleData }) {
           const share = camp === "government" ? left : right;
           const data = scale[camp];
           return (
-            <div key={camp} className="sc-scale__row">
+            <div key={camp} className="sc-scale__row" data-camp={camp}>
               <span className="sc-scale__label">{camp === "government" ? "Rządzący" : "Opozycja"}</span>
               <span className="sc-scale__track"><span style={{ width: `${share ?? 0}%` }} /></span>
               <strong className="sc-scale__value">{share === null ? "—" : `${share}%`}</strong>
@@ -149,7 +149,7 @@ export function SpinScale({ scale }: { scale: SpinScaleData }) {
           );
         })}
       </div>
-      <p className="sc-scale__verdict">{verdict} Porównujemy udział postów ze spinem, nie ich liczbę.</p>
+      <p className="sc-scale__verdict">{verdict} Porównujemy udział wpisów ze spinem, nie ich liczbę.</p>
     </section>
   );
 }

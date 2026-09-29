@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "../../kit/Button";
+import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -121,7 +123,7 @@ export function ClinicDatabase() {
   const filterControls = <>
     <FilterChip label="Werdykt" value={params.verdict ?? ""} onChange={value => change({ verdict: value })} options={[
       { value: "", label: "Wszystkie" }, { value: "spin", label: "Spin" }, { value: "partial", label: "Częściowy spin" },
-      { value: "no_spin", label: "Bez spinu" }, { value: "unclear", label: "Niejednoznaczne" },
+      { value: "no_spin", label: "Bez spinu" }, { value: "unclear", label: "Nie da się ocenić" },
     ]} />
     <FilterChip label="Partia" value={params.party ?? ""} onChange={value => change({ party: value })} options={[
       { value: "", label: "Wszystkie" },
@@ -133,7 +135,7 @@ export function ClinicDatabase() {
       ...(params.technique && !techniques.some(([name]) => name === params.technique) ? [{ value: params.technique, label: params.technique }] : []),
       ...techniques.map(([name]) => ({ value: name, label: name })),
     ]} />
-    <FilterChip label="Siła" value={intensity} onChange={value => {
+    <FilterChip label="Siła spinu" value={intensity} onChange={value => {
       const [minimum = "", maximum = ""] = value.split("-");
       change({ intensity_min: minimum, intensity_max: maximum });
     }} options={[
@@ -141,24 +143,26 @@ export function ClinicDatabase() {
       ...(intensity && !["0-29", "30-69", "70-100"].includes(intensity) ? [{ value: intensity, label: intensity.replace("-", "–") }] : []),
     ]} />
     <FilterChip label="Okres" value={period} onChange={value => change({ date_from: value ? daysAgo(Number(value)) : "", date_to: "" })} options={[
-      { value: "", label: "Cały czas" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },
+      { value: "", label: "Cały okres" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },
       ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} — ${params.date_to ?? "dzisiaj"}` }] : []),
     ]} />
     <FilterChip label="Sortuj" value={params.sort ?? "new"} defaultValue="new" onChange={value => change({ sort: value === "new" ? "" : "strong" })} options={[
-      { value: "new", label: "Najnowsze" }, { value: "strong", label: "Najsilniejsze" },
+      { value: "new", label: "Najnowsze" }, { value: "strong", label: "Najwyższa siła spinu" },
     ]} />
   </>;
 
   return (
     <section className="sc-clinic sc-clinic-db" aria-labelledby="clinic-db-title">
-      <header className="sc-clinic-head">
+      <div>
         <nav className="sc-clinic-db__links" aria-label="Klinika spinu">
           <Link href="/klinika">← Klinika spinu</Link>
           <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
         </nav>
-        <h1 id="clinic-db-title">Baza diagnoz</h1>
-        {totals && <p>{format(totals.diagnosed.total)} diagnoz · {stats.data?.accounts ? <>{format(new Set(stats.data.accounts.map(row => row.account_id)).size)} zbadanych kont · </> : null}{format(CAMPS.reduce((sum, camp) => sum + totals.by_camp[camp].accounts, 0))} obserwowanych kont · {format(totals.read.total)} przeczytanych wpisów</p>}
-      </header>
+        <SectionHeader variant="page" titleId="clinic-db-title" title="Baza diagnoz" subtitle={<>
+        <p>Znajdź analizę wpisu, autora lub techniki perswazji.</p>
+        {totals && <p>{format(totals.diagnosed.total)} diagnoz · {stats.data?.accounts ? <>{format(new Set(stats.data.accounts.map(row => row.account_id)).size)} kont z opublikowaną diagnozą · </> : null}{format(CAMPS.reduce((sum, camp) => sum + totals.by_camp[camp].accounts, 0))} obserwowanych kont · {format(totals.read.total)} przeczytanych wpisów</p>}
+      </>} />
+      </div>
       <div className="sc-clinic-db__toolbar">
         <div className="sc-clinic-db__top">
           <label className="sc-clinic-db__search">
@@ -177,7 +181,7 @@ export function ClinicDatabase() {
         <div className="sc-clinic-db__bottom">
           <div className="sc-clinic-db__filters">{filterControls}</div>
           {hasFilters && <button type="button" className="sc-clinic-db__reset" onClick={reset}>Wyczyść filtry</button>}
-          <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Szukamy diagnoz…" : count !== undefined ? <><span>Znaleziono:</span> <strong>{format(count)}</strong></> : ""}</p>
+          <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Wczytujemy diagnozy…" : count !== undefined ? <><span>Znaleziono:</span> <strong>{format(count)}</strong></> : ""}</p>
         </div>
         {stats.isError && <p role="status">Nie udało się pobrać statystyk i opcji filtrów. <button type="button" onClick={() => void stats.refetch()}>Spróbuj ponownie</button></p>}
         <dialog ref={dialog} id="clinic-db-filters" className="sc-clinic-db__sheet" aria-labelledby="clinic-db-filters-title" onCancel={() => setFiltersOpen(false)} onClose={() => setFiltersOpen(false)} onClick={event => {
@@ -193,9 +197,9 @@ export function ClinicDatabase() {
             <div className="sc-clinic-db__sheet-filters">{filterControls}</div>
           </div>
           <div className="sc-clinic-db__sheet-footer">
-            <p className="sc-clinic-db__sr-only" role="status" aria-atomic="true">{filtersOpen ? query.isPending ? "Szukamy diagnoz…" : count !== undefined ? `Znaleziono: ${format(count)}` : "" : ""}</p>
+            <p className="sc-clinic-db__sr-only" role="status" aria-atomic="true">{filtersOpen ? query.isPending ? "Wczytujemy diagnozy…" : count !== undefined ? `Znaleziono: ${format(count)}` : "" : ""}</p>
             {hasFilters && <button type="button" className="sc-clinic-db__reset" onClick={reset}>Wyczyść filtry</button>}
-            <button type="button" className="sc-clinic-db__apply" onClick={() => setFiltersOpen(false)}>Pokaż wyniki{count !== undefined ? ` (${format(count)})` : ""}</button>
+            <Button type="button" variant="primary" onClick={() => setFiltersOpen(false)}>Pokaż wyniki{count !== undefined ? ` (${format(count)})` : ""}</Button>
           </div>
         </dialog>
       </div>
@@ -203,8 +207,8 @@ export function ClinicDatabase() {
         {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques />)}
       </div>
       {query.isError && <p role="alert">Nie udało się pobrać diagnoz. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p>}
-      {query.isSuccess && rows.length === 0 && <div className="sc-clinic-empty"><p>Nie znaleźliśmy diagnoz pasujących do tych filtrów.</p><button type="button" onClick={reset}>Wyczyść filtry</button></div>}
-      {query.hasNextPage && !query.isFetchNextPageError && <button className="sc-clinic-db__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</button>}
+      {query.isSuccess && rows.length === 0 && <div className="sc-clinic-empty"><p>{hasFilters ? "Nie znaleźliśmy pasujących diagnoz." : "Nie ma jeszcze opublikowanych diagnoz dla tego wyboru."}</p>{hasFilters ? <button type="button" onClick={reset}>Wyczyść filtry</button> : null}</div>}
+      {query.hasNextPage && !query.isFetchNextPageError && <Button className="sc-clinic-db__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button>}
       <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania — to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link></p>
     </section>
   );

@@ -94,3 +94,5 @@ export { HomePage } from "./home/HomePage";
 export { Strip, EmptySlot, type StripProps } from "./home/Strip";
 export { ThreadView, type ThreadViewProps, type ThreadLayout } from "./ThreadView";
 export { useDemoMode } from "./home/data";
+
+export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";

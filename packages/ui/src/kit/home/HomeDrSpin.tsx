@@ -78,10 +78,10 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
                 ) : null}
               </>
             ) : (
-              <div className="sc-home-anchor-placeholder" role="img" aria-label="Główny materiał Dr. Spina — miejsce na post lub materiał otwierający">
+              <div className="sc-home-anchor-placeholder" role="img" aria-label="Główny materiał Dr. Spina — miejsce na wpis lub materiał otwierający">
                 <div className="sc-skeleton sc-home-anchor-placeholder__media" />
                 <span className="sc-t-caption sc-text-3">Główny materiał</span>
-                <strong className="sc-t-title-m">Post lub materiał otwierający</strong>
+                <strong className="sc-t-title-m">Wpis lub materiał otwierający</strong>
                 <span className="sc-t-body-s sc-text-2">Tu Dr. Spin krótko wyjaśni, co sprawdzamy i dlaczego.</span>
               </div>
             )}

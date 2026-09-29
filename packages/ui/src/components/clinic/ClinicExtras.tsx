@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Części Kliniki spinu używane też na stronie głównej: przekaz dnia z powiększeniem (pełna analiza i posty
+ * Części Kliniki spinu używane też na stronie głównej: przekaz dnia z powiększeniem (pełna analiza i wpisy
  * źródłowe), przełącznik „Spin dnia | Najnowszy spin”, wywiad dnia, lista polityków z licznikami
  * i archiwum przekazów dnia. Powiększenia to natywny <dialog> (Esc i kliknięcie tła zamykają).
  */
@@ -38,12 +38,12 @@ function Themes({ themes }: { themes: string[] }) {
   return themes.length ? <ul className="sc-spin-techniques" aria-label="Główne hasła">{themes.map(theme => <li key={theme}>{theme}</li>)}</ul> : null;
 }
 
-/** Przekaz dnia: skrót w boxie; kliknięcie otwiera pełną analizę i listę postów, z których powstał. */
+/** Przekaz dnia: skrót w boxie; kliknięcie otwiera pełną analizę i listę wpisów, z których powstał. */
 export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: DailyMessage | null; emptyText?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <article className="sc-clinic-message" data-camp={camp} data-clickable={message ? "" : undefined}>
-      <p className="sc-clinic-kicker">Przekaz dnia · {CAMP_LABELS[camp]} <AiTag />{message ? <span className="sc-clinic-message__meta">z {message.posts_count} postów · {formatDatePl(message.day)}</span> : null}</p>
+      <p className="sc-clinic-kicker">Przekaz dnia · {CAMP_LABELS[camp]} <AiTag />{message ? <span className="sc-clinic-message__meta">z {message.posts_count} wpisów · {formatDatePl(message.day)}</span> : null}</p>
       {message ? <>
         <button type="button" className="sc-clinic-message__open" onClick={() => setOpen(true)} aria-haspopup="dialog">
           <span className="sc-clinic-message__text">{message.message}</span>
@@ -54,7 +54,7 @@ export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: 
           {message.analysis ? message.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>) : null}
           <Themes themes={message.themes} />
           {message.posts?.length ? <>
-            <h3>Źródła — posty ({message.posts.length})</h3>
+            <h3>Źródła — wpisy ({message.posts.length})</h3>
             <ul className="sc-clinic-dialog__posts">{message.posts.map(post => (
               <li key={post.url}>
                 <a href={post.url} target="_blank" rel="noopener noreferrer"><strong>{post.author}</strong> @{post.handle} · {formatDateTimePl(post.published_at)} ↗</a>
@@ -62,9 +62,9 @@ export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: 
               </li>
             ))}</ul>
           </> : null}
-          <p className="sc-clinic-dialog__note"><AiTag /> Przekaz przygotował model {message.model || "AI"} z postów z oficjalnych kont. Nikt nie poprawia jego treści.</p>
+          <p className="sc-clinic-dialog__note"><AiTag /> Przekaz przygotował model {message.model || "AI"} z wpisów z oficjalnych kont. Przekaz jest publikowany automatycznie.</p>
         </ClinicDialog>
-      </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy posty opublikują co najmniej trzy konta tego obozu."}</p>}
+      </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy wpisy opublikują co najmniej trzy konta tego obozu."}</p>}
     </article>
   );
 }
@@ -153,7 +153,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
-      <p className="sc-interview__more"><Link href={`/klinika/wywiady/${interview.id}`}>Otwórz stronę wywiadu →</Link>{" · "}<Link href="/klinika/wywiady">Archiwum wywiadów →</Link></p>
+      <p className="sc-interview__more"><Link href={`/klinika/wywiady/${interview.id}`}>Czytaj analizę →</Link>{" · "}<Link href="/klinika/wywiady">Archiwum wywiadów →</Link></p>
       {archive.length ? <InterviewArchive items={archive} /> : null}
       <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad · ${interview.title}`}>
         <InterviewAnalysis interview={interview} />
@@ -225,14 +225,14 @@ export function InterviewAnalysis({ interview }: { interview: Interview }) {
 
 const VISIBLE_ROWS = 5;
 
-/** Politycy z licznikami: sprawdzone posty / częściowe spiny / spiny. Pierwsze wiersze, reszta po rozwinięciu. */
+/** Politycy z licznikami: sprawdzone wpisy / częściowe spiny / spiny. Pierwsze wiersze, reszta po rozwinięciu. */
 export function PoliticiansTable({ accounts }: { accounts: ClinicAccount[] }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <section className="sc-politicians" id="konta" aria-labelledby="politicians-title">
       <header className="sc-politicians__head">
         <h2 id="politicians-title">Politycy w Klinice <span>{accounts.length}</span></h2>
-        <p>Tylko oficjalne konta X polityków i partii, potwierdzone rejestrem albo otwartymi danymi. Liczniki: posty sprawdzone przez strażnika · częściowe spiny · spiny.</p>
+        <p>Tylko oficjalne konta X polityków i partii, potwierdzone rejestrem albo otwartymi danymi. Liczniki: wpisy sprawdzone przez strażnika · częściowe spiny · spiny.</p>
       </header>
       <div className="sc-politicians__cols">
         {CAMPS.map(camp => {
@@ -242,7 +242,7 @@ export function PoliticiansTable({ accounts }: { accounts: ClinicAccount[] }) {
             <section key={camp}>
               <h3>{CAMP_LABELS[camp]} <span>{rows.length}</span></h3>
               <table>
-                <thead><tr><th scope="col">Polityk</th><th scope="col" title="Posty sprawdzone przez strażnika">Posty</th><th scope="col">Częściowe</th><th scope="col">Spiny</th></tr></thead>
+                <thead><tr><th scope="col">Polityk</th><th scope="col" title="Wstępnie ocenione wpisy">Wstępnie ocenione wpisy</th><th scope="col">Częściowe</th><th scope="col">Spiny</th></tr></thead>
                 <tbody>{(expanded ? rows : rows.slice(0, VISIBLE_ROWS)).map(item => (
                   <tr key={item.handle}>
                     <td>{item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}{item.party?.short ? `, ${item.party.short}` : ""}

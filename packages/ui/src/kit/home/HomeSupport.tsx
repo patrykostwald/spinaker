@@ -22,8 +22,8 @@ export function HomeSupport() {
   return (
     <section className="sc-home-section sc-home-support" aria-labelledby="home-support-title">
       <div className="sc-home-support__text">
-        <h2 id="home-support-title" className="sc-t-title-m">Działamy dzięki wpłatom czytelników</h2>
-        <p>Bez reklam i bez pieniędzy partii. Każda wpłata to kolejne zbadane wpisy i wywiady.</p>
+        <h2 id="home-support-title" className="sc-t-title-m">Pomóż nam analizować kolejne wypowiedzi</h2>
+        <p>Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu.</p>
       </div>
       {goal > 0 ? (
         <div className="sc-home-support__progress" aria-label={`Zebrano ${format(raised)} z ${format(goal)} zł w tym miesiącu`}>
@@ -32,7 +32,7 @@ export function HomeSupport() {
         </div>
       ) : null}
       <div className="sc-home-support__actions">
-        <Button href={SUPPORT_LINKS.monthly} variant="primary" size="sm">Wspieraj co miesiąc</Button>
+        <Button href={SUPPORT_LINKS.monthly} variant="primary" size="sm">Wesprzyj miesięczny budżet</Button>
         <Button href="/wsparcie" variant="secondary" size="sm">Na co idą pieniądze</Button>
       </div>
     </section>

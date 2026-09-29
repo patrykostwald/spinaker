@@ -3,7 +3,7 @@ import { WeeklyReport } from '@spin-clinic/ui';
 
 export const metadata: Metadata = {
   title: 'Raport tygodnia Dr. Spina — spin.clinic',
-  description: 'Automatyczny raport tygodnia: waga spinu rządzących i opozycji, spin tygodnia, najczęstsze techniki, usunięte posty polityków i wywiady dnia.',
+  description: 'Automatyczny raport tygodnia: waga spinu rządzących i opozycji, spin tygodnia, najczęstsze techniki, niedostępne wpisy polityków i wywiady dnia.',
   alternates: { canonical: '/raport' },
 };
 

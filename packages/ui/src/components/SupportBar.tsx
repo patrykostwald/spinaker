@@ -5,7 +5,7 @@ import { SUPPORT_LINKS } from "../lib/support";
 
 /**
  * Pasek wsparcia przyklejony nad stopką: jedno zdanie po lewej, po prawej — ile zebraliśmy w tym miesiącu
- * (nad przyciskiem „Wspomóż projekt”). Kwoty z /support-progress (zmienne środowiska serwera).
+ * (nad przyciskiem „Wesprzyj projekt”). Kwoty z /support-progress (zmienne środowiska serwera).
  */
 export function SupportBar() {
   const query = useQuery({
@@ -21,7 +21,7 @@ export function SupportBar() {
   const format = (value: number) => value.toLocaleString("pl-PL");
   return (
     <div className="sc-support-bar">
-      <p className="sc-support-bar__text">Działamy dzięki wpłatom czytelników — bez reklam i bez pieniędzy partii. Każda wpłata to kolejne zbadane wpisy.</p>
+      <p className="sc-support-bar__text">Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu.</p>
       {goal > 0 ? (
         <a className="sc-support-bar__progress" href={SUPPORT_LINKS.monthly} target="_blank" rel="noopener noreferrer" aria-label={`Zebrano ${format(raised)} z ${format(goal)} zł w tym miesiącu`}>
           <span className="sc-support-bar__amount"><strong>{format(raised)} zł</strong> z {format(goal)} zł w tym miesiącu</span>

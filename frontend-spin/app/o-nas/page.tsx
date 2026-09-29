@@ -7,12 +7,12 @@ import { SUPPORT_LINKS } from '@spin-clinic/ui';
 export const metadata: Metadata = {
   title: 'O nas — spin.clinic',
   description:
-    'spin.clinic pokazuje chwyty, nie werdykty: Dr. Spin (AI) rozkłada przekazy polityków i mediów na czynniki pierwsze — obie strony tą samą miarą, automatycznie, ze źródłami.',
+    'spin.clinic pokazuje, jak zbudowany jest przekaz: Dr. Spin (AI) rozkłada przekazy polityków i mediów na czynniki pierwsze — obie strony tą samą miarą, automatycznie, ze źródłami.',
   alternates: { canonical: '/o-nas' },
 };
 
 /** Data ostatniej zmiany opisu — aktualizować przy każdej zmianie treści tej strony. */
-const LAST_UPDATED = { iso: '2026-09-28', label: '28 września 2026' };
+const LAST_UPDATED = { iso: '2026-09-29', label: '29 września 2026' };
 
 const SOURCES_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'zrodla@spin.clinic';
 const OPERATOR = 'iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488';
@@ -23,8 +23,8 @@ const CONTACTS: Array<{ email: string; purpose: string }> = [
 ];
 
 const SECTIONS = [
+  { id: 'o-nas', label: 'O spin.clinic' },
   { id: 'spin-doctor', label: 'Spin doctor' },
-  { id: 'o-nas', label: 'Dlaczego' },
   { id: 'czym-nie-jestesmy', label: 'Czym nie jesteśmy' },
   { id: 'pojecia', label: 'Pojęcia' },
   { id: 'klinika', label: 'Jak działa Dr. Spin' },
@@ -40,7 +40,7 @@ const CLINIC_FEATURES = [
   ['Spin dnia', 'Diagnoza z najwyższą siłą spinu z dzisiejszego dnia — oraz najnowszy spin, żeby zawsze było co porównać.'],
   ['Przekaz dnia', 'Darmowe modele streszczają wpisy obozu (co najmniej trzech kont) pięć razy dziennie — z pełną analizą, wpisami źródłowymi i archiwum.'],
   ['Wywiad dnia', 'Co rano automat wybiera najgłośniejszą rozmowę z politykiem z poprzedniego dnia; Dr. Spin ocenia gościa i warsztat prowadzącego tą samą skalą, z minutą nagrania.'],
-  ['Strażnica', 'Sprawdzamy, czy politycy usuwają wpisy. Treści nie pokazujemy (zasady X) — fakt, czas i link do kopii w publicznym archiwum, jeśli istnieje. W niedzielę — raport tygodnia.'],
+  ['Strażnica', 'Sprawdzamy dostępność wpisów. Niedostępność nie przesądza o usunięciu przez autora. Pokazujemy czas wykrycia i link do publicznej kopii, jeśli istnieje. W niedzielę — raport tygodnia.'],
   ['Profile polityków', '„Występuje w podmiotach”: fundacje, stowarzyszenia i spółki potwierdzone w KRS, oraz kariera w spółkach Skarbu Państwa.'],
   ['Na X', 'Konto @spinclinic samo publikuje silne spiny (od 70/100) — jeden wpis z obrazkiem wpisu, bez oznaczania autora. Każdą diagnozę udostępnisz też sam jednym wpisem.'],
 ];
@@ -121,7 +121,7 @@ const PHASES: Phase[] = [
       { text: 'wywiad dnia wybierany automatycznie z kilkudziesięciu kanałów i całego YouTube — ocena gościa i warsztatu prowadzącego, z cytatami i minutą nagrania', status: 'beta' },
       { text: 'filmy z oficjalnych kanałów YouTube instytucji, partii i mediów — z doborem materiałów z różnych źródeł (pluralizm)', status: 'beta' },
       { text: 'konsylium Dr. Spina: kilka niezależnych modeli AI różnych firm, wspólna ocena, kontrola ordynatora i korekta językowa', status: 'beta' },
-      { text: 'strażnica usuniętych wpisów polityków i tygodniowy raport Dr. Spina z wątkiem na X', status: 'beta' },
+      { text: 'strażnica niedostępnych wpisów polityków i tygodniowy raport Dr. Spina z wątkiem na X', status: 'beta' },
       { text: 'profile osób publicznych: „Występuje w podmiotach” — fundacje, stowarzyszenia i spółki potwierdzone w KRS — oraz drzewko kariery w spółkach Skarbu Państwa', status: 'beta' },
       { text: 'diagnoza na X jednym wpisem — do udostępnienia przez czytelnika i automatycznie z konta @spinclinic (spiny od 70/100); rejestr osób publicznych z oficjalnymi kontami X', status: 'beta' },
       { text: 'autoryzowane nitki dziennikarzy: box otwierający i do 14 boxów kontekstu, nowy box po linku, cała nitka jako wątek na X', status: 'beta' },
@@ -227,6 +227,7 @@ export default function AboutPage() {
   return (
     <div className="sc-onas">
       <nav className="sc-onas-toc" aria-label="Na tej stronie">
+        <details className="sc-onas-toc__mobile"><summary>Na tej stronie</summary><ol>{SECTIONS.map(section => <li key={section.id}><a href={`#${section.id}`}>{section.label}</a></li>)}</ol></details>
         <p className="sc-onas-toc__title">Na tej stronie</p>
         <ol>
           {SECTIONS.map((section, index) => (
@@ -241,9 +242,27 @@ export default function AboutPage() {
       </nav>
 
       <article className="sc-onas-main">
+        <Section id="o-nas" index={1} kicker="O projekcie" title="O spin.clinic" level={1}>
+          <div className="sc-onas-prose">
+            <p className="sc-onas-lead">spin.clinic pomaga zrozumieć, jak politycy budują przekaz. Wskazujemy techniki perswazji, pokazujemy cytaty i zestawiamy sprawdzane twierdzenia ze źródłami. Analizy przygotowuje Konsylium AI — kilka modeli pracujących według wspólnych zasad. Możesz przejrzeć ich oceny, sprawdzić uzasadnienie i zgłosić błąd.</p>
+            <h2>Pokazujemy, jak zbudowany jest przekaz</h2>
+            <h3>Oceniamy wypowiedzi, nie ludzi.</h3>
+            <p>Siła spinu opisuje użycie technik perswazji w konkretnym materiale. Nie jest oceną autora ani miarą prawdziwości całej wypowiedzi. Twierdzenia o faktach sprawdzamy osobno.</p>
+          </div>
+          <ul className="sc-onas-parts">
+            {PARTS.map((part) => (
+              <li key={part.href}>
+                <p className="sc-onas-parts__status">{part.status}</p>
+                <h3>{part.href.startsWith('#') ? part.name : <Link href={part.href}>{part.name}</Link>}</h3>
+                <p>{part.text}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
         <section id="spin-doctor" className="sc-onas-section sc-onas-hero" aria-labelledby="spin-doctor-title">
           <p className="sc-onas-kicker">
-            <span className="sc-onas-num">01</span> Słownik
+            <span className="sc-onas-num">02</span> Słownik
           </p>
           <figure className="sc-onas-dict">
             <p className="sc-onas-dict__term" id="spin-doctor-title">
@@ -265,33 +284,6 @@ export default function AboutPage() {
             Tu spin traci przewagę — każdą informację widać razem ze źródłem, datą i kontekstem.
           </p>
         </section>
-
-        <Section id="o-nas" index={2} kicker="Dlaczego" title="Pokazujemy chwyty, nie werdykty" level={1}>
-          <div className="sc-onas-prose">
-            <p className="sc-onas-lead">
-              Każdy przekaz polityczny ma swój cel — i swoje sposoby, by go osiągnąć. Te sposoby pokazujemy: fałszywą alternatywę, przypisywanie intencji,
-              dobór wygodnych danych. Wnioski należą do Ciebie.
-            </p>
-            <p>
-              Dlatego Dr. Spin nie rozstrzyga, kto ma rację. Rozkłada wypowiedzi polityków i przekazy mediów na czynniki pierwsze: stawia diagnozę — wskazuje
-              techniki z dosłownymi cytatami — i zaleca terapię: zestawia twierdzenia ze źródłami. Rządzących i opozycję obok siebie, tą samą miarą.
-              Dr. Spin to konsylium: kilka niezależnych modeli AI różnych firm ocenia każdy wpis
-              osobno, a diagnoza powstaje z ich wspólnej oceny.
-            </p>
-            <p>
-              Całość działa automatycznie: diagnoz nie pisze ani nie poprawia człowiek. Ocenia AI — według jawnych zasad, bez sympatii i uprzedzeń.
-            </p>
-          </div>
-          <ul className="sc-onas-parts">
-            {PARTS.map((part) => (
-              <li key={part.href}>
-                <p className="sc-onas-parts__status">{part.status}</p>
-                <h3>{part.href.startsWith('#') ? part.name : <Link href={part.href}>{part.name}</Link>}</h3>
-                <p>{part.text}</p>
-              </li>
-            ))}
-          </ul>
-        </Section>
 
         <Section id="czym-nie-jestesmy" index={3} kicker="Czym nie jesteśmy" title="Nie fact-check, nie czat z AI">
           <dl className="sc-onas-terms sc-onas-terms--three">
@@ -344,7 +336,7 @@ export default function AboutPage() {
             <div>
               <dt>Diagnoza spinu</dt>
               <dd>
-                Ocena Dr. Spina: werdykt (spin, częściowy spin, bez spinu, nie da się ocenić), siła 0–100 i techniki z dosłownymi cytatami. Do diagnozy
+                Ocena Dr. Spina: werdykt (spin, częściowy spin, bez spinu, nie da się ocenić), siła spinu 0–100 i techniki z dosłownymi cytatami. Do diagnozy
                 dołącza terapia — twierdzenia zestawione ze źródłami. Z czasem dowodami będą boxy z naszej Bazy.
               </dd>
             </div>
@@ -355,8 +347,7 @@ export default function AboutPage() {
           <div className="sc-onas-prose">
             <p>
               Czytamy wyłącznie oficjalne konta X polityków i partii, a każde potwierdzamy dowodem — rejestrem Sejmu, Senatu albo Parlamentu Europejskiego
-              lub wpisem w Wikidata. Pełną listę publikujemy na dole Kliniki; brakujące konto można zgłosić. Każdy nowy wpis przechodzi pięć etapów, a płacimy
-              tylko za te, które naprawdę warto zbadać.
+              lub wpisem w Wikidata. Pełną listę publikujemy na dole Kliniki; brakujące konto można zgłosić. Wpisy przechodzą wstępną selekcję; wybrane materiały trafiają do dalszej analizy.
             </p>
           </div>
           <ol className="sc-flow" aria-label="Droga wpisu do diagnozy">
@@ -385,15 +376,9 @@ export default function AboutPage() {
 
         <Section id="konsylium" index={6} kicker="Konsylium AI" title="Rada modeli AI zamiast jednego">
           <div className="sc-onas-prose">
-            <p className="sc-onas-lead">
-              Każdy model AI ma swoje skrzywienia — wynikające z danych, na których go uczono, i z zasad firmy, która go zbudowała. Jeden model to jedna opinia.
-              Dlatego Dr. Spin nie jest jednym modelem, tylko konsylium: kilka modeli różnych firm ocenia ten sam wpis niezależnie od siebie, a diagnoza powstaje
-              z ich wspólnej oceny według stałych, jawnych zasad.
-            </p>
-            <p>
-              Do każdego zadania dobieramy model, który sprawdza się w nim najlepiej: otwarty i darmowy tam, gdzie wystarczy, płatny tam, gdzie potrzebna jest
-              mocniejsza weryfikacja. Pieniądze wydajemy więc tylko na trudne przypadki.
-            </p>
+            <p className="sc-onas-lead">Konsylium AI to kilka modeli, które osobno analizują ten sam materiał według wspólnych zasad. Przy diagnozie pokazujemy uczestników, ich oceny i wykorzystane źródła. Skład może się zmieniać; analiza zachowuje informację o modelach, które ją przygotowały.</p>
+            <p>Modele wskazują techniki perswazji, oceniają ich siłę i wyodrębniają twierdzenia do sprawdzenia. Kolejne etapy porównują wyniki, szukają źródeł i przygotowują uzasadnienie. Rozbieżność ocen jest informacją dla czytelnika, a nie dowodem, że większość musi mieć rację. Analizy mogą zawierać błędy.</p>
+            <p>Zasady pracy, skład i sposób zgłaszania błędów opisuje <Link href="/o-nas/karta-konsylium">Karta Konsylium</Link>.</p>
           </div>
           <dl className="sc-onas-terms sc-onas-terms--three">
             {COUNCIL_ROLES.map(item => (
@@ -411,7 +396,7 @@ export default function AboutPage() {
           <ul className="sc-onas-list">
             <li><strong>Werdykt i siła</strong> — mediana głosów, czyli ocena środkowa: jeden skrajny model nie przesądza. Przy remisie wygrywa łagodniejsza ocena.</li>
             <li><strong>Techniki</strong> — do diagnozy trafia tylko technika wskazana przez co najmniej dwóch specjalistów, zawsze z dosłownym cytatem z wpisu.</li>
-            <li><strong>Kworum</strong> — diagnoza powstaje tylko wtedy, gdy wypowie się co najmniej trzech specjalistów; oceny jednego czy dwóch modeli nie publikujemy.</li>
+            <li><strong>Kworum</strong> — publikacja wymaga wystarczającej liczby odpowiedzi zgodnie z zasadami analizy. Skład uczestników pokazujemy przy diagnozie.</li>
             <li><strong>Cały wpis</strong> — specjaliści dostają tekst, opisy zdjęć i grafik (także tekst na nich) oraz tytuły i opisy stron, do których prowadzą linki.</li>
             <li>
               <strong>Jawność</strong> — pod każdą diagnozą pokazujemy skład konsylium, głos każdego specjalisty, zgodność, uwagi ordynatora i to, czy wzywano
@@ -423,7 +408,7 @@ export default function AboutPage() {
           </p>
         </Section>
 
-        <Section id="zasady" index={7} kicker="Zasady" title="AI ocenia, człowiek nie poprawia">
+        <Section id="zasady" index={7} kicker="Zasady" title="Zasady publikacji i korekt">
           <ul className="sc-onas-list">
             <li>
               <strong>Automatycznie.</strong> O wyborze wpisów, wywiadu dnia i o treści diagnoz decyduje AI. Zespół nie poprawia ani nie wybiera diagnoz — może je
@@ -460,7 +445,7 @@ export default function AboutPage() {
               <ul className="sc-onas-list is-no">
                 <li>nie oceniamy osób ani ich poglądów</li>
                 <li>nie uznajemy twierdzeń za fałszywe bez źródła</li>
-                <li>nie poprawiamy diagnoz AI — publikujemy je z etykietą AI albo wcale</li>
+                <li>publikujemy diagnozy automatycznie; zasady korekt opisuje Karta Konsylium</li>
                 <li>nie piszemy własnych wiadomości i bez zgody wydawcy nie kopiujemy pełnych tekstów</li>
                 <li>nie obchodzimy zabezpieczeń, limitów ani płatnego dostępu</li>
                 <li>nie przyjmujemy wpłat od partii, polityków ani ich fundacji</li>
@@ -500,16 +485,6 @@ export default function AboutPage() {
 
         <Section id="fazy" index={9} kicker="Rozwój" title="Trzy fazy projektu">
           <p className="sc-onas-prose">Przy każdej funkcji i technologii piszemy wprost, w jakim jest stanie — nie przedstawiamy planów jako czegoś, co już działa.</p>
-          <dl className="sc-onas-legend" aria-label="Oznaczenia stanu">
-            {STATUS_HELP.map(([status, help]) => (
-              <div key={status}>
-                <dt>
-                  <StatusTag status={status} />
-                </dt>
-                <dd>{help}</dd>
-              </div>
-            ))}
-          </dl>
           <ol className="sc-onas-phases">
             {PHASES.map((phase) => (
               <li key={phase.id} className="sc-onas-phase" data-current={phase.current || undefined} aria-labelledby={`${phase.id}-title`}>
@@ -517,6 +492,8 @@ export default function AboutPage() {
                 <h3 id={`${phase.id}-title`}>{phase.title}</h3>
                 <p>{phase.lead}</p>
                 {phase.id === 'faza-3' ? <p><a href={SUPPORT_LINKS.phase3} target="_blank" rel="noopener noreferrer">Zbieramy na nią tutaj: zrzutka.pl — cel 30 000 zł →</a></p> : null}
+                <details className="sc-onas-tech">
+                <summary>Szczegóły techniczne</summary>
                 <ul className="sc-onas-tagged">
                   {phase.features.map((feature) => (
                     <li key={feature.text}>
@@ -525,8 +502,7 @@ export default function AboutPage() {
                     </li>
                   ))}
                 </ul>
-                <details className="sc-onas-tech">
-                <summary>Technologia — dla dociekliwych</summary>
+
                 <dl className="sc-onas-stack">
                   {phase.stack.map((group) => (
                     <div key={group.group}>
@@ -553,16 +529,16 @@ export default function AboutPage() {
           </ol>
         </Section>
 
-        <Section id="wsparcie" index={10} kicker="Utrzymanie i kontakt" title="Niezależni — utrzymują nas czytelnicy">
+        <Section id="wsparcie" index={10} kicker="Utrzymanie i kontakt" title="Utrzymanie i kontakt">
           <div className="sc-onas-prose">
             <p>
               spin.clinic korzysta z płatnych usług: oficjalnego API X, modeli AI, które sprawdzają fakty i konsultują sporne diagnozy, i serwera, na którym działa baza.
               Wszystko, co się da, robimy w ramach darmowych limitów. Nie mamy reklam ani sponsorów, którzy mogliby wpływać na treść, i nie przyjmujemy
               wpłat od partii, polityków ani ich fundacji. Wsparcie nigdy nie daje wpływu na diagnozy.
             </p>
-            <p>Na stronie Wsparcie pokazujemy jawnie, ile kosztuje utrzymanie i na co zbieramy. Każda wpłata to kolejne sprawdzone wypowiedzi i źródła.</p>
+            <p>Na stronie Wsparcie pokazujemy jawnie, ile kosztuje utrzymanie i na co zbieramy. Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu.</p>
             <p>
-              <Link className="sc-onas-mail" href="/wsparcie">Wspomóż projekt</Link>
+              <Link className="sc-onas-mail" href="/wsparcie">Wesprzyj projekt</Link>
             </p>
           </div>
           <h3 className="sc-onas-subtitle">Kontakt</h3>

@@ -7,6 +7,8 @@
  * Dane: GET /api/clinic/stats/ (news/clinic_stats.py), cache 10 min.
  */
 
+import { Button } from "../../kit/Button";
+import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../lib/api";
@@ -52,7 +54,7 @@ function niceMax(value: number): number {
 function Funnel({ stats }: { stats: IndicatorStats }) {
   const rows: Array<[string, number, number | null, string]> = [
     ["Przeczytane wpisy", stats.totals.read.total, stats.totals.read.today, "każdy nowy wpis z oficjalnych kont polityków"],
-    ["Ocenione na izbie przyjęć", stats.totals.screened.total, stats.totals.screened.today, "czy we wpisie jest teza warta zbadania"],
+    ["Wstępnie ocenione wpisy", stats.totals.screened.total, stats.totals.screened.today, "czy we wpisie jest teza warta zbadania"],
     ["Diagnozy Dr. Spina", stats.totals.diagnosed.total, stats.totals.diagnosed.today, "opublikowane oceny konsylium modeli AI"],
     ["Spin lub częściowy spin", stats.totals.spins.total, stats.totals.spins.today, "diagnozy z jednym z tych dwóch werdyktów"],
   ];
@@ -221,7 +223,7 @@ function Parties({ stats }: { stats: IndicatorStats }) {
       </header>
       <div className="sc-ind-table-wrap">
         <table className="sc-ind-table">
-          <thead><tr><th scope="col">Partia</th><th scope="col">Strona</th><th scope="col">Diagnozy</th><th scope="col">Spin / częściowy</th><th scope="col">Średnia siła</th></tr></thead>
+          <thead><tr><th scope="col">Partia</th><th scope="col">Strona</th><th scope="col">Diagnozy</th><th scope="col">Spin / częściowy</th><th scope="col">Średnia siła spinu</th></tr></thead>
           <tbody>
             {rows.map(([code, row]) => (
               <tr key={code}>
@@ -280,7 +282,7 @@ export function ClinicShowcase({ fallback }: { fallback?: PageTotals | null }) {
   const top = Math.max(...perDay, 1);
   const tiles: Array<[string, number, number | null]> = [
     ["przeczytanych wpisów polityków", totals.read.total, totals.read.today],
-    ["ocenionych na izbie przyjęć", totals.screened.total, totals.screened.today],
+    ["wstępnie ocenionych wpisów", totals.screened.total, totals.screened.today],
     ["diagnoz Dr. Spina", totals.diagnosed.total, totals.diagnosed.today],
   ];
   return (
@@ -295,10 +297,10 @@ export function ClinicShowcase({ fallback }: { fallback?: PageTotals | null }) {
               {today ? <small>+{format(today)} dziś</small> : null}
             </li>
           ))}
-          {accounts ? <li><strong>{format(accounts)}</strong><span>zbadanych kont polityków</span></li> : null}
+          {accounts ? <li><strong>{format(accounts)}</strong><span>kont z opublikowaną diagnozą polityków</span></li> : null}
         </ul>
         <p className="sc-ind-show__actions">
-          <Link className="sc-ind-show__primary" href="/klinika/diagnozy">Wszystkie diagnozy ({format(totals.diagnosed.total)}) →</Link>
+          <Button variant="primary" href="/klinika/diagnozy">Wszystkie diagnozy ({format(totals.diagnosed.total)}) →</Button>
           <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
         </p>
       </div>
@@ -324,16 +326,13 @@ export function ClinicIndicators() {
   const stats = query.data;
   return (
     <section className="sc-clinic sc-ind" aria-labelledby="ind-title">
-      <header className="sc-clinic-head">
-        <p className="sc-clinic-kicker"><Link href="/klinika">Klinika spinu</Link> <AiTag /></p>
-        <h1 id="ind-title">Wskaźniki Kliniki</h1>
-        <p className="sc-clinic-subtitle">
-          Ile wpisów czytamy, ile badamy i co widać w diagnozach Dr. Spina. Obie strony pokazujemy obok siebie, na tych samych osiach i zawsze z liczbą diagnoz.
-        </p>
-        <p className="sc-ind-links"><Link href="/klinika/diagnozy">Baza wszystkich diagnoz →</Link><Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link></p>
-      </header>
+      <SectionHeader variant="page" titleId="ind-title" title="Wskaźniki Kliniki"
+        kicker={<><Link href="/klinika">Klinika spinu</Link> <AiTag /></>}
+        subtitle="Zobacz, ile wpisów przetworzyliśmy i co pokazują opublikowane diagnozy. Porównania dotyczą analizowanych materiałów, nie całej polityki."
+        action={<Button href="/klinika/diagnozy" variant="primary">Baza wszystkich diagnoz →</Button>}
+        link={<Link href="/o-nas#klinika">Jak wybieramy i liczymy?</Link>} />
 
-      {query.isError ? <p role="alert" className="sc-clinic-empty">Nie udało się pobrać wskaźników. <button type="button" className="sc-ind-retry" onClick={() => query.refetch()}>Spróbuj ponownie</button></p> : null}
+      {query.isError ? <p role="alert" className="sc-clinic-empty">Nie udało się pobrać wskaźników. <Button type="button" variant="quiet" onClick={() => query.refetch()}>Spróbuj ponownie</Button></p> : null}
       {query.isLoading ? <p className="sc-clinic-empty">Ładowanie wskaźników…</p> : null}
 
       {stats ? <>

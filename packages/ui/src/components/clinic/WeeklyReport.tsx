@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +10,7 @@ import { measurePost } from "../../lib/xText";
 import { xIntentUrl } from "../../lib/xThread";
 import { Dialog } from "../Dialog";
 import { SpinOfDay } from "./ClinicPage";
-import { AiTag, SpinScale, VerdictTag } from "./SpinParts";
+import { AiTag, VerdictTag } from "./SpinParts";
 
 type Report = {
   week_start: string; week_end: string; summary: string; created_at: string;
@@ -39,18 +40,18 @@ function shorten(text: string, budget: number): string {
   return `${result}…`;
 }
 
-/** Raport jako wątek na X: podsumowanie z linkiem, techniki obu stron, spin tygodnia, usunięte posty. */
+/** Raport jako wątek na X: podsumowanie z linkiem, techniki obu stron, spin tygodnia, niedostępne wpisy. */
 function reportThread(report: Report, url: string): string[] {
   const label = weekLabel(report.week_start, report.week_end);
   const head = `Raport tygodnia Dr. Spina (AI), ${label}:`;
-  const posts = [`${head} ${shorten(report.summary || "najważniejsze spiny, techniki i usunięte posty polityków.", 280 - 30 - measurePost(head).weightedLength)} ${url}`];
+  const posts = [`${head} ${shorten(report.summary || "najważniejsze spiny, techniki i niedostępne wpisy polityków.", 280 - 30 - measurePost(head).weightedLength)} ${url}`];
   const tech = CAMPS.map(camp => `${CAMP_LABELS[camp]}: ${report.techniques[camp].slice(0, 3).map(t => t.name).join(", ") || "brak ocen"}`).join(". ");
-  posts.push(shorten(`Najczęstsze techniki w ocenionych postach. ${tech}.`, 270));
+  posts.push(shorten(`Najczęstsze techniki w ocenionych wpisach. ${tech}.`, 270));
   if (report.spin_of_week) {
     const spin = report.spin_of_week;
-    posts.push(shorten(`Spin tygodnia: ${spin.author.name} (@${spin.author.handle}) — ${spin.headline} Siła ${spin.intensity}/100. https://${DOMAIN}/klinika/${spin.id}`, 280));
+    posts.push(shorten(`Spin tygodnia: ${spin.author.name} (@${spin.author.handle}) — ${spin.headline} Siła spinu ${spin.intensity}/100. https://${DOMAIN}/klinika/${spin.id}`, 280));
   }
-  posts.push(`Usunięte posty polityków w tym tygodniu — rządzący: ${report.deleted.government}, opozycja: ${report.deleted.opposition}. Pełny raport: ${url}`);
+  posts.push(`Niedostępne wpisy polityków w tym tygodniu — rządzący: ${report.deleted.government}, opozycja: ${report.deleted.opposition}. Pełny raport: ${url}`);
   return posts.map((post, index) => `${index + 1}/${posts.length} ${post}`);
 }
 
@@ -77,7 +78,7 @@ function ShareReport({ report }: { report: Report }) {
   </>;
 }
 
-/** Raport tygodnia Dr. Spina — automatyczne zestawienie z 7 dni: waga spinu, spin tygodnia, techniki, usunięte posty, wywiady. */
+/** Raport tygodnia Dr. Spina — automatyczne zestawienie z 7 dni: waga spinu, spin tygodnia, techniki, niedostępne wpisy, wywiady. */
 export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
   const query = useQuery({
     queryKey: ["clinic-report", weekEnd ?? "latest"],
@@ -85,19 +86,17 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
   });
   const data = query.data;
   if (query.isLoading) return <p className="sc-clinic-empty">Ładowanie raportu…</p>;
-  if (!data?.report) return <p className="sc-clinic-empty">Pierwszy raport tygodnia pojawi się w niedzielę wieczorem.</p>;
+  if (query.isError && !data?.report) return <div role="alert"><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
+  if (!data?.report) return <p className="sc-clinic-empty">Raport za ten okres nie został jeszcze opublikowany.</p>;
   const report = data.report;
   return (
     <article className="sc-report">
-      <header className="sc-report__head">
-        <p className="sc-clinic-kicker">Raport tygodnia <AiTag /></p>
-        <h1>Tydzień w spinie: {weekLabel(report.week_start, report.week_end)}</h1>
-        {report.summary ? <p className="sc-report__summary">{report.summary}</p> : null}
-        <ShareReport report={report} />
-      </header>
+      {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
+      <SectionHeader variant="page" longTitle kicker={<>Raport tygodnia <AiTag /></>}
+        title={<>Tydzień w spinie: {weekLabel(report.week_start, report.week_end)}</>}
+        subtitle={<><p>Najważniejsze obserwacje z diagnoz opublikowanych w tym tygodniu.</p>{report.summary ? <p className="sc-report__summary">{report.summary}</p> : null}</>}
+        action={<ShareReport report={report} />} />
 
-      <section className="sc-report__panel" aria-label="Waga spinu">
-      </section>
 
       {report.spin_of_week ? (
         <section className="sc-report__panel sc-clinic-sotd" aria-labelledby="report-sotw">
@@ -110,17 +109,17 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
         <h2 id="report-techniques" className="sc-report__title">Najczęstsze techniki</h2>
         <div className="sc-report__cols">{CAMPS.map(camp => (
           <div key={camp}>
-            <h3>{CAMP_LABELS[camp]} <span>{report.diagnoses[camp]} ocenionych postów</span></h3>
+            <h3>{CAMP_LABELS[camp]} <span>{report.diagnoses[camp]} ocenionych wpisów</span></h3>
             {report.techniques[camp].length ? <ol>{report.techniques[camp].map(t => <li key={t.name}>{t.name} <span>×{t.count}</span></li>)}</ol>
-              : <p className="sc-clinic-empty">Brak ocenionych postów.</p>}
+              : <p className="sc-clinic-empty">Brak ocenionych wpisów.</p>}
           </div>
         ))}</div>
       </section>
 
       <section className="sc-report__panel" aria-labelledby="report-deleted">
-        <h2 id="report-deleted" className="sc-report__title">Usunięte posty</h2>
+        <h2 id="report-deleted" className="sc-report__title">Niedostępne wpisy</h2>
         <p className="sc-report__deleted">{CAMPS.map(camp => <span key={camp}>{CAMP_LABELS[camp]}: <strong>{report.deleted[camp]}</strong></span>)}</p>
-        <p className="sc-report__note">Bez treści wpisów — zasady X. Szczegóły w <Link href="/klinika">Klinice → Usunięte posty</Link>.</p>
+        <p className="sc-report__note">Niedostępność wpisu nie oznacza potwierdzonego usunięcia przez autora. Nie pokazujemy treści wpisów. Szczegóły w <Link href="/klinika">Klinice → Niedostępne wpisy</Link>.</p>
       </section>
 
       {report.interviews.length ? (

@@ -41,7 +41,7 @@ const hourFormat = new Intl.DateTimeFormat('pl-PL', { timeZone: TIME_ZONE, hour:
 const dayKeyFormat = new Intl.DateTimeFormat('sv-SE', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' });
 
 const GROUP_TAGS: Record<MaterialGroupKey, string> = {
-  artykuly: 'ARTYKUŁ', reportaze: 'REPORTAŻ', wywiady: 'WYWIAD', dokumenty: 'DOKUMENT', filmy: 'FILM', posty: 'POST', komunikaty: 'KOMUNIKAT',
+  artykuly: 'ARTYKUŁ', reportaze: 'REPORTAŻ', wywiady: 'WYWIAD', dokumenty: 'DOKUMENT', filmy: 'FILM', posty: 'WPIS', komunikaty: 'KOMUNIKAT',
 };
 
 const formatDay = (iso: string | null) => (iso ? dateFormat.format(new Date(iso)) : 'data nieustalona');
@@ -95,7 +95,7 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
       {!x && (
         <p className="sc-public-figure-x">
           <span className="sc-public-figure-tag">KONTO X</span>
-          <span>Brak potwierdzonego konta — nie czytamy jeszcze postów tej osoby.</span>
+          <span>Brak potwierdzonego konta — nie czytamy jeszcze wpisów tej osoby.</span>
           <XAccountSuggest figureId={figure.id} name={figure.name} />
         </p>
       )}

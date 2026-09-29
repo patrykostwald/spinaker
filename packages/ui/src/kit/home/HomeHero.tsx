@@ -2,14 +2,16 @@
 
 /**
  * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.webp`) jako niskie tło, a na niej
- * jedno zdanie o trzech częściach serwisu, linki i „Wspomóż projekt”. Zastępuje wysoki baner, który
+ * jedno zdanie o trzech częściach serwisu, linki i „Wesprzyj projekt”. Zastępuje wysoki baner, który
  * spychał wiadomości pod linię przewijania. Pas jest stały — nie da się go ukryć.
  */
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "../Button";
-import { THREADS_ENABLED } from "../../lib/features";
+import { useQuery } from "@tanstack/react-query";
+import { getClinicPage } from "../../lib/clinic";
+import { formatDateTimePl } from "../../lib/utils";
 
 type DayPeriod = "morning" | "afternoon" | "evening";
 type ThemeName = "dark" | "light";
@@ -27,6 +29,8 @@ function readTheme(): ThemeName {
 }
 
 export function HomeHero() {
+  const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
+  const stats = query.data?.stats;
   // Pora dnia i motyw znamy dopiero w przeglądarce — do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
   const [period, setPeriod] = useState<DayPeriod | null>(null);
   const [theme, setTheme] = useState<ThemeName | null>(null);
@@ -49,19 +53,18 @@ export function HomeHero() {
         <p className="sc-home-intro__title">
           Konsylium AI bada przekaz polityków. <span>Ty układasz własne wiadomości.</span>
         </p>
-        {/* Dwa wiersze: kim jest konsylium i jaka obowiązuje je zasada (29.09, właściciel). */}
-        <p className="sc-home-intro__lead">
-          Modele AI kilku firm, także płatne, rozbierają każdy wpis i wywiad: techniki, manipulacje, zagrania.<br className="sc-home-intro__br" />
-          Bez sympatii i antypatii — te same zasady dla rządu i opozycji, z cytatami i źródłami.
-        </p>
-        <p className="sc-home-intro__links">
-          <a href="#dr-spin">Zobacz dzisiejsze diagnozy →</a>
-          {THREADS_ENABLED && <Link href="/nitki">Nitki →</Link>}
-          <Link href="/o-nas">Jak to działa</Link>
-        </p>
+        <p className="sc-home-intro__lead">Konsylium AI to kilka modeli, które osobno analizują ten sam materiał według wspólnych zasad.</p>
+        {stats ? <div aria-label="Praca Kliniki">
+          <dl className="sc-home-intro__stats">
+            {([["Przeczytane wpisy", stats.read.total], ["Wstępnie ocenione wpisy", stats.screened.total], ["Opublikowane diagnozy", stats.diagnosed.total]] as const).map(([label, count]) => <div key={label}><dt>{label}</dt><dd>{count.toLocaleString("pl-PL")}</dd></div>)}
+          </dl>
+          <p className="sc-t-caption">Od 23 września · aktualizacja {formatDateTimePl(new Date(query.dataUpdatedAt).toISOString())} (pobranie danych)</p>
+        </div> : <p role="status">{query.isPending ? "Wczytujemy liczniki…" : "Liczniki są chwilowo niedostępne."}</p>}
+        {query.isError ? <p role="alert">{stats ? "Aktualizacja jest chwilowo niedostępna." : "Nie udało się pobrać danych."} <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
+        <p className="sc-home-intro__links"><Link href="/o-nas#konsylium">Jak działa Konsylium AI</Link></p>
       </div>
       <div className="sc-home-intro__actions">
-        <Button href="/wsparcie" variant="primary" size="sm">Wspomóż projekt</Button>
+        <Button href="/klinika/diagnozy" variant="primary" size="sm">Przeglądaj diagnozy</Button>
       </div>
     </section>
   );
