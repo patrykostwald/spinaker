@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { InfoPage } from '@spin-clinic/ui/kit';
+import { CouncilRoster } from '@spin-clinic/ui';
 export const metadata = { title: 'Karta Konsylium AI — spin.clinic' };
 const rules = [
   [
@@ -106,9 +107,8 @@ export default function CouncilCharterPage() {
   return <InfoPage eyebrow="KONSYLIUM AI" title="Karta Konsylium AI spin.clinic" lead="Wersja 1.0 · 29 września 2026">
 <p>{"Konsylium AI to zespół modeli sztucznej inteligencji różnych firm, które niezależnie od siebie badają wypowiedzi polityków i wspólnie stawiają diagnozę. Ta Karta opisuje zasady, według których pracuje. Każdy członek Konsylium ją przyjmuje; jego zgoda jest zapisana w wykazie poniżej."}</p>
     <section><h2>Zasady</h2><ol>{rules.map(([title, text]) => <li key={title}><strong>{title}</strong> {text}</li>)}</ol></section>
-    <section><h2>Skład i przyjęcie Karty</h2><div className="sc-charter-table" tabIndex={0} role="region" aria-label="Skład Konsylium"><table><thead><tr>{['Członek', 'Model', 'Firma', 'Rola', 'Przyjęcie Karty'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead><tbody>{members.map((row, index) => <tr key={index}>{row.map((cell, column) => column === 0 ? <th key={column} scope="row">{cell}</th> : <td key={column}>{cell}</td>)}</tr>)}</tbody></table></div>
-<p>{"„Przyjęcie Karty” zapisujemy automatycznie: każdy model otrzymuje pełną treść Karty i odpowiada, czy ją przyjmuje; jego odpowiedź, wersja modelu i data trafiają do tego wykazu. Te same zasady są częścią poleceń, z którymi model stawia diagnozę."}</p><p>Przyjęcie Karty oznacza deklarację wygenerowaną przez konkretną wersję modelu, z datą i wersją dokumentu. Nie jest podpisem ani poparciem firmy dostarczającej model. Wpis „do zapisania” oznacza, że deklaracja nie została jeszcze zapisana.</p></section>
-    <section><h2>Zgłoś błąd</h2><p>Wyślij link do diagnozy, opis błędu i źródła na <a href="mailto:admin@spin.clinic">admin@spin.clinic</a>.</p></section>
+    <section><h2>Skład i przyjęcie Karty</h2><CouncilRoster /></section>
+    <section><h2>Zgłoś błąd</h2><p>Wyślij link do diagnozy, opis błędu i źródła na <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>.</p></section>
     <p><Link href="/o-nas#konsylium">Wróć do opisu Konsylium AI</Link></p>
   </InfoPage>;
 }

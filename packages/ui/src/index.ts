@@ -70,3 +70,4 @@ export { CommunityThreadsPage, CommunityThreadPage } from "./components/communit
 export * from "./lib/community";
 export * from "./lib/features";
 export { HowItWorksFilm } from "./components/HowItWorksFilm";
+export { CouncilRoster } from "./components/clinic/CouncilRoster";

@@ -5361,3 +5361,23 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-hero__stats span { font-size: 12px; line-height: 16px; }
 }
 .sc-hero__stats span { overflow-wrap: normal; word-break: normal; hyphens: auto; }
+
+/* Skład Konsylium na żywo (Karta Konsylium). */
+.sc-council { display: grid; gap: 16px; }
+.sc-council__summary { margin: 0; font-size: 15px; color: var(--sc-text-2); }
+.sc-council__summary strong { color: var(--sc-text); font-variant-numeric: tabular-nums; }
+.sc-council__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.sc-council__member { display: grid; gap: 8px; align-content: start; padding: 16px; border-radius: var(--sc-radius-panel, 18px); background: var(--sc-surface-2); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-council__member p { margin: 0; }
+.sc-council__head { display: grid; gap: 2px; }
+.sc-council__model { font-size: 16px; font-weight: 700; color: var(--sc-text); overflow-wrap: anywhere; }
+.sc-council__company { font-size: 13px; color: var(--sc-text-2); }
+.sc-council__roles { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-accent); }
+.sc-council__statement { margin: 0; padding-left: 12px; border-left: 3px solid var(--sc-positive); font-size: 14px; line-height: 20px; color: var(--sc-text); }
+.sc-council__statement[data-accepts="false"] { border-color: var(--sc-negative); }
+.sc-council__statement footer { margin-top: 6px; font-size: 12px; color: var(--sc-text-3); }
+.sc-council__pending, .sc-council__status, .sc-council__empty { font-size: 13px; color: var(--sc-text-3); }
+.sc-council__note { margin: 0; font-size: 13px; color: var(--sc-text-3); }
+.sc-info-page .sc-council .sc-council__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; padding: 0; list-style: none; }
+.sc-info-page .sc-council .sc-council__member { margin: 0; width: auto; }
+.sc-info-page .sc-council p, .sc-info-page .sc-council blockquote { max-width: none; }
