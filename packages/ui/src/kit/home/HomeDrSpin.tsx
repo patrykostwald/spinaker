@@ -31,7 +31,7 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
             <strong>Nitki kontekstowe:</strong> gdy Dr. Spin znajdzie w Bazie trafny kontekst do spinu dnia, pokaże tu nitkę — materiał i źródła wokół niego.
             <span> Dziennikarze i redakcje mogą prowadzić własne, autoryzowane nitki.</span>
           </p>
-          <Button href="/o-nas#dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
+          <Button href="/dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
         </aside>
       </section>
     );
@@ -113,7 +113,7 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
             <strong>Dla dziennikarzy i redakcji:</strong> poprowadź autoryzowaną nitkę — Twój materiał i jego kontekst, pod Twoim nazwiskiem.
             <span> Wkrótce własne nitki ułożą też czytelnicy.</span>
           </p>
-          <Button href="/o-nas#dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
+          <Button href="/dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
         </aside>
       </div>
     </section>

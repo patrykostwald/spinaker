@@ -35,12 +35,13 @@ export function CouncilRoster() {
             <div className="sc-council__head">
               <p className="sc-council__model">{shortModel(member.model)}</p>
               <p className="sc-council__company">{member.company}</p>
+              <p className="sc-council__provider">Dostawca usługi: {member.provider}</p>
             </div>
             <p className="sc-council__roles">{member.roles.join(" · ")}</p>
             {member.charter ? (
               <blockquote className="sc-council__statement" data-accepts={member.charter.accepts}>
                 „{member.charter.statement || (member.charter.accepts ? "Przyjmuję zasady Karty." : "Nie przyjmuję zasad Karty.")}”
-                <footer>{member.charter.accepts ? "Przyjął Kartę" : "Nie przyjął Karty"} · {formatDatePl(member.charter.date)}</footer>
+                <footer>{member.charter.accepts ? "Przyjął Kartę" : "Nie przyjął Karty"} {member.charter.version} · {formatDatePl(member.charter.date)}</footer>
               </blockquote>
             ) : <p className="sc-council__pending">Oczekuje na przyjęcie Karty</p>}
             {member.status !== "dostępny" ? <p className="sc-council__status">Chwilowo niedostępny</p> : null}

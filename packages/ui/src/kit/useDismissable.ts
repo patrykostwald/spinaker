@@ -12,9 +12,11 @@ export type UseDismissableOptions = {
   open: boolean;
   onClose: () => void;
   triggerRef: RefObject<HTMLElement>;
+  /** Rozwijana nawigacja pozostaje otwarta, gdy Tab przechodzi po jej linkach. */
+  closeOnTab?: boolean;
 };
 
-export function useDismissable<T extends HTMLElement>({ open, onClose, triggerRef }: UseDismissableOptions): RefObject<T> {
+export function useDismissable<T extends HTMLElement>({ open, onClose, triggerRef, closeOnTab = true }: UseDismissableOptions): RefObject<T> {
   const panelRef = useRef<T>(null);
 
   useEffect(() => {
@@ -32,19 +34,26 @@ export function useDismissable<T extends HTMLElement>({ open, onClose, triggerRe
         event.stopPropagation();
         onClose();
         triggerRef.current?.focus();
-      } else if (event.key === "Tab") {
+      } else if (event.key === "Tab" && closeOnTab) {
         // Nie łapiemy fokusu: Tab dokańcza swój naturalny ruch, panel tylko się zamyka.
         onClose();
       }
     }
 
+    function onFocusIn(event: FocusEvent) {
+      const target = event.target as Node | null;
+      if (!closeOnTab && target && !panelRef.current?.contains(target) && !triggerRef.current?.contains(target)) onClose();
+    }
+
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("focusin", onFocusIn);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("focusin", onFocusIn);
     };
-  }, [open, onClose, triggerRef]);
+  }, [open, onClose, triggerRef, closeOnTab]);
 
   return panelRef;
 }

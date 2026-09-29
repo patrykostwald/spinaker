@@ -102,7 +102,9 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
             }
           }}>
             <summary>Więcej</summary>
-            <div className="sc-footer__menu">
+            <div className="sc-footer__menu" onClick={event => {
+              if ((event.target as HTMLElement).closest("a")) event.currentTarget.closest("details")?.removeAttribute("open");
+            }}>
               {columnsRow}
               {above && <div className="sc-footer__support">{above}</div>}
             </div>

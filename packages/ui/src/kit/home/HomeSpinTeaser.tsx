@@ -35,7 +35,7 @@ export function HomeSpinTeaser() {
       {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       <header className="sc-scan-s-head">
         <h2 id="home-drspin-title">Dr. Spin</h2>
-        <p className="sc-scan-s-links"><Link href="/o-nas#klinika">Jak wybieramy i oceniamy?</Link><Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link></p>
+        <p className="sc-scan-s-links"><Link href="/metodologia">Jak wybieramy i oceniamy?</Link><Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link></p>
       </header>
       <div className="sc-scan-s-tabs" role="tablist" aria-label="Strona polityczna">
         {CAMPS.map((camp, index) => <button key={camp} type="button" role="tab" id={`scan-tab-${camp}`} aria-selected={shown === camp} aria-controls="scan-camp-panel" tabIndex={shown === camp ? 0 : -1}

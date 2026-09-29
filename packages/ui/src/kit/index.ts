@@ -88,6 +88,7 @@ export { PortalLayer } from "./portal/PortalLayer";
 export { useHistoryPortal } from "./portal/useHistoryPortal";
 export { MaterialSurface } from "./MaterialSurface";
 export { InfoPage } from "./InfoPage";
+export { DocLayout, type DocLayoutProps, type DocSection } from "./DocLayout";
 
 // Этап 2 — страницы на ките
 export { HomePage } from "./home/HomePage";

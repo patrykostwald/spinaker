@@ -17,7 +17,7 @@ const RECIPE = [
 export function ContextThreadExample() {
   return (
     <div id="nitka-kontekstowa" className="sc-ctx">
-      <h3 className="sc-onas-subtitle">Autoryzowana nitka kontekstowa — jak wygląda</h3>
+      <h3>Autoryzowana nitka kontekstowa — jak wygląda</h3>
       <p className="sc-ctx__lead">
         Poziomy pasek boxów. Pierwszy to materiał, który chcą Państwo wypromować; za nim — boxy, które dają mu kontekst. Czytelnik przewija w bok
         i w kilka sekund widzi całą historię, a każdy box prowadzi do oryginału.

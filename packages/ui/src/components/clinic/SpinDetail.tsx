@@ -43,7 +43,7 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
     {spin.limitations && <section className="sc-spin-detail__section"><h2>Ograniczenia analizy</h2><p className="sc-spin-detail__limits">{spin.limitations}</p></section>}
     {spin.council ? <CouncilNote council={spin.council} /> : null}
     <p className="sc-spin-detail__meta"><AiTag /> Model {spin.model} · instrukcja {spin.prompt_version} · diagnoza {formatDateTimePl(spin.created_at)}{spin.auto_published ? " · opublikowana automatycznie" : spin.reviewed_at ? ` · zatwierdzona bez zmian ${formatDateTimePl(spin.reviewed_at)}` : ""}</p>
-    <p>Zasady publikacji i korekt: <Link href="/o-nas/karta-konsylium">Karta Konsylium</Link>.</p>
+    <p>Zasady publikacji i korekt: <Link href="/konsylium/karta">Karta Konsylium</Link>.</p>
     <p><ReportError spin={spin} /></p>
     <p className="sc-spin-detail__share"><ShareSpinOnX id={spin.id} spin={spin} /></p>
   </>;

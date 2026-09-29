@@ -56,8 +56,8 @@ export function HomeHero() {
           <p className="sc-hero__lead">Konsylium AI to kilka modeli różnych firm, które osobno analizują ten sam wpis według wspólnych zasad — te same dla rządu i opozycji.</p>
           <div className="sc-hero__actions">
             <Button href="/klinika/diagnozy" variant="primary">Przeglądaj diagnozy</Button>
-            <Button href="/o-nas#film" variant="secondary">▶ Jak to działa (70 s)</Button>
-            <Link className="sc-hero__link" href="/o-nas/karta-konsylium">Karta Konsylium →</Link>
+            <Button href="/konsylium#film" variant="secondary">▶ Jak to działa (70 s)</Button>
+            <Link className="sc-hero__link" href="/konsylium/karta">Karta Konsylium →</Link>
           </div>
         </div>
         {tiles ? (

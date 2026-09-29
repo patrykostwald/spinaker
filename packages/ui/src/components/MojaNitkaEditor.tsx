@@ -274,7 +274,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         {draft.isPublic
           ? <p className="sc-account-private is-public"><span>PUBLICZNA</span> Po zapisaniu nitka jest widoczna w sekcji <Link href="/nitki">Nitki</Link> pod Twoją nazwą użytkownika{threadId ? <> · <Link href={`/nitki/${threadId}`}>zobacz publiczną wersję</Link></> : null}.</p>
           : <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie układa jej AI — kolejność ustalasz sam. Możesz ją opublikować w sekcji Nitki.</p>}
-        {thread.data?.hidden_at && <p className="sc-account-error">Zespół ukrył tę nitkę po zgłoszeniu. Napisz na admin@spin.clinic, jeśli uważasz, że to pomyłka.</p>}
+        {thread.data?.hidden_at && <p className="sc-account-error">Zespół ukrył tę nitkę po zgłoszeniu. Napisz na kontakt@spin.clinic, jeśli uważasz, że to pomyłka.</p>}
       </header>
 
       <section className="sc-account-section" aria-labelledby={`${uid}-basics`}>

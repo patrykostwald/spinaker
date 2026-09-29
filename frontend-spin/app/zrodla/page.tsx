@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getPortalConfig } from '@spin-clinic/ui';
 import type { Source } from '@spin-clinic/ui';
 import { ArchiveProgress } from '@spin-clinic/ui';
-import { Button, SearchField } from '@spin-clinic/ui/kit';
+import { Button, InfoPage, SearchField } from '@spin-clinic/ui/kit';
 
 const IMPORTANT = /onet|wp|wirtualna polska|tvn|polsat|rmf|radio zet|gazeta\.pl|interia|reuters|pap|rzeczpospolita/i;
 
@@ -50,8 +50,8 @@ export default function SourcesPage() {
     window.location.href = `mailto:${contact}?subject=${encodeURIComponent('Sugestia źródła dla spin.clinic')}&body=${encodeURIComponent(`Proponowane źródło: ${suggestion.trim()}`)}`;
   }
 
-  return <article className="sc-source-page">
-    <header className="sc-source-page__hero"><p>KATALOG</p><h1>Źródła</h1><p>Pokazujemy źródła aktywne oraz kandydatury, które czekają na weryfikację kanału i zasad wykorzystania.</p></header>
+  return <InfoPage className="sc-source-page" eyebrow="KATALOG" title="Źródła"
+    lead="Źródła wiadomości: aktywne oraz kandydatury czekające na weryfikację kanału i zasad wykorzystania. Dowody do konkretnej diagnozy znajdziesz przy jej twierdzeniach.">
     <dl className="sc-source-page__stats">
       <div><dt>W katalogu</dt><dd>{stats?.catalog_total ?? '—'}</dd></div>
       <div><dt>Aktywne</dt><dd>{stats?.active ?? '—'}</dd></div>
@@ -75,5 +75,5 @@ export default function SourcesPage() {
       <form className="sc-search-form" onSubmit={suggest}><SearchField label="Adres proponowanego źródła" value={suggestion} onChange={setSuggestion} placeholder="https://…" inputType="url" required /><Button type="submit" variant="primary" disabled={!contact}>Wyślij sugestię</Button></form>
       {!contact && <small>Formularz połączymy ze skrzynką kontaktową po wskazaniu adresu kontaktowego.</small>}
     </section>
-  </article>;
+  </InfoPage>;
 }
