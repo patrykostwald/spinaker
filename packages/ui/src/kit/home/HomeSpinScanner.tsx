@@ -145,7 +145,7 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
     setExpanded(false);
     expandRef.current?.focus({ preventScroll: true });
   }
-  return <article className="sc-scan-card" aria-labelledby={`scan-lead-${spin.id}`} onClick={event => {
+  return <article className="sc-scan-card" data-expanded={expanded || undefined} aria-labelledby={`scan-lead-${spin.id}`} onClick={event => {
     if (!(event.target as HTMLElement).closest("a,button,textarea,input,select,label,video") && !window.getSelection()?.toString()) setExpanded(true);
   }}>
     <div className="sc-scan-p" data-full={fullText || undefined}>
@@ -167,6 +167,7 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
     </div>
     <div className="sc-scan-dg">
       <header className="sc-scan-dg-head"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><span className="sc-scan-dg-ai">Ocena Konsylium AI</span><span className="sc-scan-dg-id">#SPIN-{spin.id} · diagnoza {formatDatePl(scan?.diagnosed_at || spin.created_at)}</span></header>
+      {expanded ? <p className="sc-scan-dg-who">Wpis: <strong>{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""}</strong> · {formatDateTimePl(spin.post.published_at)} · <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Otwórz wpis na X ↗</a></p> : null}
       <h3 className="sc-scan-dg-lead" id={`scan-lead-${spin.id}`}>{lead}</h3>
       <p className="sc-scan-dg-point">{point}</p>
       <div className="sc-scan-m">
@@ -191,15 +192,25 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
         <Link className="sc-scan-button sc-scan-primary" href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link>
       </div></footer>
       <div className="sc-scan-expand" data-open={expanded}><div><section id={`scan-details-${spin.id}`} className="sc-scan-details" aria-label="Uzasadnienie" aria-hidden={!expanded}>
-        <h4>Techniki z cytatami</h4>
-        {techniques.map((item, index) => {
-          const original = spin.techniques?.find(old => ("category" in item && item.category && old.category === item.category) || old.name === item.name || (item.quote && old.quote === item.quote));
-          return <div className="sc-scan-t-item" key={index}><strong>{item.name}</strong>{item.quote ? <q>{item.quote}</q> : null}<span>{item.explanation || original?.explanation}</span></div>;
-        })}
-        <h4>Twierdzenia i źródła</h4>
-        {claims.length ? <ul className="sc-scan-cl">{claims.map((claim, index) => <li key={index}><span className="sc-scan-assessment" data-assessment={claim.assessment}>{claim.assessment_label}</span><q>{claim.claim}</q><p>{firstSentence(claim.explanation)}</p><div className="sc-scan-cl-src">{claim.sources?.filter(source => domain(source.url)).map((source, sourceIndex) => <a tabIndex={expanded ? 0 : -1} key={sourceIndex} href={source.url} target="_blank" rel="noopener noreferrer">{domain(source.url)}</a>)}</div></li>)}</ul> : <p>Brak osobno sprawdzonych twierdzeń.</p>}
-        {scan?.synthesis?.points?.slice(1).map((text, index) => <p key={index}>{text}</p>)}
-        <button type="button" tabIndex={expanded ? 0 : -1} onClick={collapse}>Zwiń</button>
+        <div className="sc-scan-details-grid">
+          <div className="sc-scan-details-col">
+            <h4>Techniki według rodzin</h4>
+            {FAMILIES.map(([key, label]) => {
+              const items = techniques.filter(item => item.family === key);
+              return <div className="sc-scan-fam" data-family={key} key={key}><p className="sc-scan-fam-head"><i />{label}<b>{items.length}</b></p>
+                {items.length ? items.map((item, index) => {
+                  const original = spin.techniques?.find(old => ("category" in item && item.category && old.category === item.category) || old.name === item.name || (item.quote && old.quote === item.quote));
+                  return <div className="sc-scan-t-item" key={index}><strong>{item.name}</strong>{item.quote ? <q>{item.quote}</q> : null}<span>{item.explanation || original?.explanation}</span></div>;
+                }) : <p className="sc-scan-t-none">Nie wskazano</p>}</div>;
+            })}
+          </div>
+          <div className="sc-scan-details-col">
+            <h4>Twierdzenia i dowody</h4>
+            {claims.length ? <ul className="sc-scan-cl">{claims.map((claim, index) => <li key={index}><span className="sc-scan-assessment" data-assessment={claim.assessment}>{claim.assessment_label}</span><q>{claim.claim}</q><p>{firstSentence(claim.explanation)}</p><div className="sc-scan-cl-src">{claim.sources?.filter(source => domain(source.url)).map((source, sourceIndex) => <a tabIndex={expanded ? 0 : -1} key={sourceIndex} href={source.url} target="_blank" rel="noopener noreferrer">{domain(source.url)}</a>)}</div></li>)}</ul> : <p>Brak osobno sprawdzonych twierdzeń.</p>}
+            {scan?.synthesis?.points?.slice(1).map((text, index) => <p key={index}>{text}</p>)}
+          </div>
+        </div>
+        <button type="button" tabIndex={expanded ? 0 : -1} onClick={collapse}>Zwiń uzasadnienie</button>
       </section></div></div>
     </div>
     {sharing ? <div id={`scan-share-${spin.id}`} className="sc-scan-share"><SharePanel spin={spin} lead={lead} point={point} /></div> : null}

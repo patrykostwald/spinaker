@@ -5118,3 +5118,22 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-card__meta-source { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-card__meta-date { flex: none; margin-left: auto; white-space: nowrap; }
 .sc-card__likes { position: absolute; top: var(--sc-s-2); right: var(--sc-s-2); z-index: 1; padding: 4px 10px; border-radius: var(--sc-r-pill); background: var(--sc-chrome); color: var(--sc-text); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); font-variant-numeric: tabular-nums; }
+
+/* Rozwinięte uzasadnienie (właściciel 29.09): bez kolumny wpisu, diagnoza na całą szerokość, techniki i twierdzenia obok siebie. */
+.sc-scan-card[data-expanded] { grid-template-columns: minmax(0, 1fr); }
+.sc-scan-card[data-expanded] > .sc-scan-p { display: none; }
+.sc-scan-card[data-expanded] .sc-scan-t { display: none; }
+.sc-scan-dg-who { margin: 8px 0 0; font-size: 14px; color: var(--sc-text-2); }
+.sc-scan-dg-who strong { color: var(--sc-text); }
+.sc-scan-dg-who a { color: var(--sc-accent); font-weight: 600; }
+.sc-scan-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; align-items: start; }
+.sc-scan-details-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.sc-scan-details-col h4 { font-size: 12px !important; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-text-3); }
+.sc-scan-fam { display: grid; gap: 10px; padding: 14px 16px; border-radius: 14px; background: var(--sc-surface); }
+.sc-scan-fam-head { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 14px !important; font-weight: 700; color: var(--sc-text) !important; }
+.sc-scan-fam-head i { width: 8px; height: 8px; border-radius: 2px; background: var(--fam, var(--sc-text-3)); }
+.sc-scan-fam-head b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.sc-scan-fam[data-family="dane"] { --fam: #7ea6d8; } .sc-scan-fam[data-family="przedstawienie"] { --fam: #d2a86a; } .sc-scan-fam[data-family="spor"] { --fam: #b58ad8; }
+.sc-scan-fam .sc-scan-t-none { margin: 0; color: var(--sc-text-3); }
+.sc-scan-details > button { justify-self: start; }
+@media (max-width: 760px) { .sc-scan-details-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
