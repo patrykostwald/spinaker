@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DocLayout } from "@spin-clinic/ui/kit";
+import { socialChannels } from "@spin-clinic/ui";
 
 export const metadata = {
   title: "O nas — spin.clinic",
@@ -9,13 +10,13 @@ export const metadata = {
 
 const sections = [
   { id: "projekt", label: "Projekt" }, { id: "operator", label: "Autor i operator" },
-  { id: "finansowanie", label: "Finansowanie" }, { id: "kontakt", label: "Kontakt" },
+  { id: "finansowanie", label: "Finansowanie" }, { id: "obserwuj", label: "Obserwuj nas" }, { id: "kontakt", label: "Kontakt" },
   { id: "rozwoj", label: "Rozwój" },
 ];
 
 export default function AboutPage() {
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
-  return <DocLayout eyebrow="O NAS" title="Pokazujemy, jak zbudowany jest przekaz" version="1.0" updatedAt="2026-09-29" sections={sections}
+  return <DocLayout eyebrow="O NAS" title="Pokazujemy, jak zbudowany jest przekaz" version="1.0" updatedAt="2026-09-30" sections={sections}
     lead="spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.">
     <section id="projekt"><h2>Projekt</h2>
       <p>spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Projekt działa w wersji beta i rozwija się etapami.</p>
@@ -27,6 +28,12 @@ export default function AboutPage() {
     <section id="finansowanie"><h2>Finansowanie i niezależność</h2>
       <p>Projekt powstaje dzięki pracy twórcy i wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.</p>
       <p>Nie przyjmujemy pieniędzy od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór materiałów ani wynik diagnozy. Nie mamy reklam ani sponsorów wpływających na treść. <Link href="/wsparcie">Koszty i wsparcie projektu</Link>.</p>
+    </section>
+    <section id="obserwuj"><h2>Obserwuj nas</h2>
+      <p>Najsilniejsze diagnozy publikujemy automatycznie także poza stroną — zawsze z linkiem do pełnej analizy i źródeł, bez oznaczania polityków.</p>
+      <ul className="sc-social-list">{socialChannels.map(channel => (
+        <li key={channel.name}><a href={channel.href} target="_blank" rel="noopener noreferrer"><strong>{channel.name}</strong><span>{channel.handle}</span></a><p>{channel.what}</p></li>
+      ))}</ul>
     </section>
     <section id="kontakt"><h2>Kontakt</h2>
       <ul>

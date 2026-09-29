@@ -5903,3 +5903,13 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 /* Mniej pustego miejsca nad stopką: ostatnia sekcja bez dolnego marginesu, treść kończy się 32 px nad paskiem (właściciel, 30.09.2026) */
 .sc-app-main { padding-bottom: 32px; }
 .sc-app-main > * > :last-child, .sc-app-main > :last-child { margin-bottom: 0; }
+
+/* O nas → „Obserwuj nas”: kanały w siatce, nazwa + adres jako link, pod spodem co tam publikujemy */
+.sc-social-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }
+.sc-social-list li { display: grid; align-content: start; gap: 6px; margin: 0 !important; padding: 16px; border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-social-list a { display: grid; gap: 2px; text-decoration: none; color: var(--sc-text); }
+.sc-social-list a strong { font-size: 16px; }
+.sc-social-list a span { font-size: 14px; color: var(--sc-accent); overflow-wrap: anywhere; }
+@media (hover: hover) { .sc-social-list li:has(a:hover) { box-shadow: 0 0 0 1px var(--sc-accent); } }
+.sc-social-list p { margin: 0; font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
+@media (max-width: 560px) { .sc-social-list { grid-template-columns: minmax(0, 1fr); } }
