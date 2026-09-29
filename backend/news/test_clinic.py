@@ -535,6 +535,8 @@ def test_interview_is_processed_only_once(monkeypatch):
 
 @pytest.mark.django_db
 def test_x_thread_synthesis_is_saved_once_and_rejects_english(ai_on, monkeypatch):
+    # Językoznawca ma osobny test (test_polish_synthesis); tu sprawdzamy samą syntezę.
+    monkeypatch.setattr('news.clinic_council.polish_lines', lambda lines, limits: lines)
     post(account())
     pipeline()
     diagnosis = SpinDiagnosis.objects.get()

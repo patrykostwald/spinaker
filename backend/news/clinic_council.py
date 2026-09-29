@@ -123,7 +123,11 @@ WRITER_SCHEMA = {'type': 'object', 'properties': {'headline': {'type': 'string'}
 
 LINGUIST_SYSTEM = """Jesteś językoznawcą i redaktorem polszczyzny. Popraw WYŁĄCZNIE język tekstu diagnozy: gramatykę, składnię,
 interpunkcję, kalki z angielskiego, powtórzenia — tak, by brzmiał jak rzetelny polski raport analityczny.
-Nie zmieniaj treści, ocen, faktów, liczb ani cytatów w cudzysłowie. Zwróć te same pola."""
+Pilnuj polskiej słowotwórczości: przymiotnik nie może zastępować rzeczownika („13-letni planował” → „13-latek planował”
+albo „13-letni chłopiec planował”), złożenia z liczbą piszemy poprawnie („30-cm nóż” → „30-centymetrowy nóż”),
+skrótowce i nazwy odmieniaj zgodnie z normą. Nie zmieniaj treści, ocen, faktów, liczb ani cytatów w cudzysłowie.
+Zwróć te same pola."""
+LINES_SCHEMA = {'type': 'object', 'properties': {'lines': {'type': 'array', 'items': {'type': 'string'}}}, 'required': ['lines']}
 REVIEW_SYSTEM = """Jesteś niezależnym recenzentem diagnoz Dr. Spina. Sprawdź diagnozę względem ocen konsylium, sprawdzenia faktów
 i posta: czy nie dodaje technik, faktów ani ocen, których tam nie ma; czy nie ocenia osoby zamiast komunikatu; czy trzyma
 tę samą miarę bez sympatii politycznych; czy cytaty pochodzą z posta. ok=true, gdy diagnoza jest rzetelna; w issues
@@ -362,6 +366,28 @@ def polish(text: dict) -> tuple[dict, str]:
         ok = candidate and 0.6 <= len(candidate) / max(1, len(original)) <= 1.4 and (len(candidate) < 40 or looks_polish(candidate))
         fixed[key] = candidate if ok else original
     return fixed, model
+
+
+def polish_lines(lines: list[str], limits: list[int]) -> list[str]:
+    """Językoznawca dla krótkich tekstów (synteza diagnozy): ta sama liczba linii, podobna długość, limit znaków, po polsku.
+    Linia, której poprawka nie spełnia warunków, zostaje bez zmian."""
+    if not lines:
+        return lines
+    try:
+        data, _model = ask_role('CLINIC_COUNCIL_LINGUIST', LINGUIST, LINGUIST_SYSTEM,
+                                json.dumps({'lines': lines}, ensure_ascii=False), LINES_SCHEMA, max_tokens=1500)
+    except ClinicAIError:
+        return lines
+    fixed = data.get('lines') or []
+    if len(fixed) != len(lines):
+        return lines
+    result = []
+    for original, candidate, limit in zip(lines, fixed, limits):
+        candidate = ' '.join(str(candidate).split())
+        ok = (candidate and len(candidate) <= limit and 0.7 <= len(candidate) / max(1, len(original)) <= 1.3
+              and looks_polish(candidate) and not re.search(r'[!?@#🀀-🫿☀-➿]|https?://', candidate))
+        result.append(candidate if ok else original)
+    return result
 
 
 def review(text: dict, combined: dict, claims: list[dict], context_lines: str) -> dict:

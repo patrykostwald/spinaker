@@ -288,11 +288,18 @@ def ensure_x_thread(row: SpinDiagnosis, save: bool = True) -> bool:
         })
     except clinic_ai.ClinicAIError:
         return False
-    row.x_thread = result['posts']
+    row.x_thread = polish_synthesis(result['posts'])
     row.usage = {**(row.usage or {}), 'scan_synthesis': synthesis_fingerprint(row)}
     if save:
         row.save(update_fields=['x_thread', 'usage'])
     return True
+
+
+def polish_synthesis(posts: list[str]) -> list[str]:
+    """Synteza przechodzi przez językoznawcę Konsylium, jak treść diagnozy (limity X zachowane)."""
+    from news.clinic_council import polish_lines
+    limits = [clinic_ai.X_LEAD_CHARS + 20] + [clinic_ai.X_POINT_CHARS + 20] * (len(posts) - 1)
+    return polish_lines(list(posts), limits)
 
 
 def fill_x_threads(limit: int = 5) -> int:

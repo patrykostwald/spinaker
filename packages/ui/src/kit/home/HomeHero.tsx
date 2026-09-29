@@ -52,7 +52,7 @@ export function HomeHero() {
       {theme && period ? <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.webp`} alt="" decoding="async" /> : null}
       <div className="sc-hero">
         <div className="sc-hero__copy">
-          <h1 className="sc-hero__title">Konsylium AI bada przekaz polityków. <span>Ty układasz własne wiadomości.</span></h1>
+          <h1 className="sc-hero__title">Konsylium AI bada przekaz polityków.</h1>
           <p className="sc-hero__lead">Konsylium AI to kilka modeli różnych firm, które osobno analizują ten sam wpis według wspólnych zasad, takich samych dla rządu i opozycji.</p>
           <div className="sc-hero__actions">
             <Button href="/klinika/diagnozy" variant="primary">Przeglądaj diagnozy</Button>
