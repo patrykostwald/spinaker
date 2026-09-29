@@ -5856,3 +5856,15 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-spin-detail__claim-item > summary::after { grid-column: 2; }
   .sc-spin-detail__claim-item > summary .sc-spin-detail__claim, .sc-spin-detail__claim-count { grid-column: 1 / -1; }
 }
+
+/* === Baza diagnoz: siatka dwóch kolumn na komputerze (uwagi recenzenta UX, 30.09.2026) ===
+   Blok tekstu w karcie ~430–470 px zamiast ~1000 px; karty w rzędzie równej wysokości, autor i data przy dolnej krawędzi. */
+@media (min-width: 1000px) {
+  .sc-clinic-db .sc-clinic-db__list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+  .sc-clinic-db .sc-spin-row { grid-template-columns: 88px minmax(0, 1fr); align-items: start; height: 100%; padding: 16px; }
+  .sc-clinic-db .sc-spin-row__thumb { width: 88px; height: 88px; }
+  .sc-clinic-db .sc-spin-row__body { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+  .sc-clinic-db .sc-spin-row__summary { -webkit-line-clamp: 3; }
+  .sc-clinic-db .sc-spin-row__techniques { margin: 0; }
+  .sc-clinic-db .sc-spin-row__author { margin-top: auto; }
+}
