@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { apiWrite } from "../lib/api";
+import { Button } from "../kit/Button";
 
 /** Ta sama treść zgody co w backendzie (news/newsletter.py, CONSENT_TEXT) — zapisujemy jej wersję przy każdym zapisie. */
 export const NEWSLETTER_CONSENT =
@@ -51,9 +52,9 @@ export function NewsletterSignup({ source, compact = false }: { source: string; 
         <form className="sc-newsletter__form" onSubmit={submit} noValidate>
           <div className="sc-newsletter__row">
             <label className="sc-sr-only" htmlFor={`newsletter-email-${source}`}>Adres e-mail</label>
-            <input id={`newsletter-email-${source}`} type="email" required autoComplete="email" placeholder="twoj@adres.pl"
+            <input className="sc-input" id={`newsletter-email-${source}`} type="email" required autoComplete="email" placeholder="twoj@adres.pl"
               value={email} onChange={event => setEmail(event.target.value)} />
-            <button type="submit" disabled={state.kind === "sending"}>{state.kind === "sending" ? "Zapisuję…" : "Zapisz mnie"}</button>
+            <Button type="submit" variant="primary" loading={state.kind === "sending"}>{state.kind === "sending" ? "Zapisuję…" : "Zapisz mnie"}</Button>
           </div>
           {/* Pole-pułapka: ludzie go nie widzą, boty je wypełniają. */}
           <input className="sc-newsletter__trap" tabIndex={-1} autoComplete="off" aria-hidden="true" name="website"

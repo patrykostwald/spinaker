@@ -80,10 +80,8 @@ function Funnel({ stats }: { stats: IndicatorStats }) {
   const max = Math.max(...rows.map((row) => row[1]), 1);
   return (
     <section className="sc-ind-card sc-ind-funnel" aria-labelledby="ind-funnel-title">
-      <header className="sc-ind-card__head">
-        <h2 id="ind-funnel-title">Praca Kliniki od początku</h2>
-        <p>Dr. Spin bada tylko wpisy, w których jest teza do sprawdzenia. Stąd różnica między przeczytanymi a zdiagnozowanymi.</p>
-      </header>
+      <SectionHeader variant="panel" titleId="ind-funnel-title" title="Praca Kliniki od początku"
+        subtitle="Dr. Spin bada tylko wpisy, w których jest teza do sprawdzenia. Stąd różnica między przeczytanymi a zdiagnozowanymi." />
       <PeriodNote stats={stats} allTime />
       <ol className="sc-ind-funnel__list">
         {rows.map(([label, total, today, hint]) => (
@@ -322,7 +320,7 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
   if (!totals) return null;
   const accounts = stats ? new Set(stats.accounts.map((row) => row.account_id)).size : null;
   const first = stats ? stats.daily.findIndex((day) => CAMPS.some((camp) => day.by_camp[camp].diagnosed)) : -1;
-  const days = stats && first >= 0 ? stats.daily.slice(Math.max(0, Math.min(first, stats.daily.length - 7))) : [];
+  const days = stats && first >= 0 ? stats.daily.slice(Math.max(0, first, stats.daily.length - 14)) : [];
   const perDay = days.map((day) => CAMPS.reduce((sum, camp) => sum + day.by_camp[camp].diagnosed, 0));
   const top = Math.max(...perDay, 1);
   const tiles: Array<[string, number, number | null]> = [
@@ -333,7 +331,7 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
   return (
     <UpdatedAt.Provider value={query.dataUpdatedAt}><section className="sc-ind-show" data-compact={compact || undefined} aria-labelledby="ind-show-title">
       <div className="sc-ind-show__main">
-        <p className="sc-clinic-kicker" id="ind-show-title">Praca Kliniki od początku</p>
+        <SectionHeader variant="panel" titleId="ind-show-title" title="Praca Kliniki od początku" />
         {stats ? <PeriodNote stats={stats} allTime /> : <p className="sc-ind-note">{clinicPeriodLabel(fallbackPeriod, fetchedAt)}</p>}
         <ul className="sc-ind-show__tiles">
           {tiles.map(([label, total, today]) => (
@@ -353,12 +351,15 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
       {!compact && perDay.length ? (
         <figure className="sc-ind-show__spark">
           <figcaption>Diagnozy dziennie</figcaption>
-          <div className="sc-ind-show__bars" role="img" aria-label={`Diagnozy dziennie: ${perDay.join(", ")}`}>
-            {days.map((day, index) => (
-              <span key={day.date} title={`${day.date}: ${perDay[index]}`}>
-                <i style={{ height: `${(perDay[index] / top) * 100}%` }} />
-              </span>
-            ))}
+          <div className="sc-ind-show__chart-scroll" role="region" aria-label="Diagnozy dziennie — wykres przewijany poziomo" tabIndex={0}>
+            <div className="sc-ind-show__bars" role="img" aria-label={`Diagnozy dziennie: ${days.map((day, index) => `${day.date}: ${perDay[index]}`).join(", ")}`}>
+              {days.map((day, index) => (
+                <div className="sc-ind-show__day" key={day.date} title={`${day.date}: ${perDay[index]}`} aria-hidden="true">
+                  <span className="sc-ind-show__plot"><i style={{ height: `${(perDay[index] / top) * 100}%` }}><b>{perDay[index]}</b></i></span>
+                  <time dateTime={day.date}>{day.date.slice(8, 10)}.{day.date.slice(5, 7)}</time>
+                </div>
+              ))}
+            </div>
           </div>
           {stats ? <PeriodNote stats={stats} from={days[0].date} to={days.at(-1)?.date} /> : null}
           <DataTable title="Diagnozy dziennie" headers={["Data", "Diagnozy"]} rows={days.map((day, index) => [day.date, perDay[index]])} />

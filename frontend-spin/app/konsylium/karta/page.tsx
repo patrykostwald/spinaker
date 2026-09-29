@@ -57,7 +57,7 @@ const sections = [
   { id: 'zgloszenie', label: 'Zgłoś błąd' },
 ];
 export default function CouncilCharterPage() {
-  return <DocLayout eyebrow="KONSYLIUM AI" title="Karta Konsylium AI" longTitle version="1.1" updatedAt="2026-09-29" sections={sections}
+  return <DocLayout eyebrow="KONSYLIUM AI" title="Karta Konsylium AI" version="1.1" updatedAt="2026-09-29" sections={sections}
     lead="Zasady pracy modeli analizujących konkretne wypowiedzi. Wersja 1.1 doprecyzowuje statusy twierdzeń i obecne możliwości obsługi błędów.">
     <section id="zasady"><h2>Zasady</h2><ol>{rules.map(([title, text]) => <li key={title}><strong>{title}</strong> {text}</li>)}</ol></section>
     <section id="przyjecie"><h2>Stan przyjęcia Karty</h2>

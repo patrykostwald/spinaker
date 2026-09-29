@@ -25,7 +25,7 @@ export default function PressPage() {
     ["Zgoda", "Brak odpowiedzi nie jest zgodą — źródło pozostaje wyłączone."],
     ["Rezygnacja", "Wystarczy wiadomość, a wyłączymy źródło."],
   ];
-  return <DocLayout eyebrow="DLA REDAKCJI" title="Korzystaj z analiz i źródeł" longTitle version="1.0" updatedAt="2026-09-29" sections={sections}
+  return <DocLayout eyebrow="DLA REDAKCJI" title="Korzystaj z analiz i źródeł" version="1.0" updatedAt="2026-09-29" sections={sections}
     lead="Diagnoza Dr. Spina może być punktem wyjścia do pracy dziennikarskiej. Cytuj konkretną analizę, zaznacz udział AI i sprawdź materiał źródłowy.">
     <section id="cytowanie"><h2>Jak cytować diagnozę</h2>
       <p>Podaj nazwę spin.clinic, tytuł i datę diagnozy oraz jej bezpośredni adres. Zaznacz, że analizę przygotowało AI. Rozróżniaj ocenę techniki perswazji od statusu sprawdzanego twierdzenia; zachowaj kontekst cytatu i ograniczenia wyniku.</p>

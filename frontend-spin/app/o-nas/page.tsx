@@ -15,7 +15,7 @@ const sections = [
 
 export default function AboutPage() {
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
-  return <DocLayout eyebrow="O NAS" title="Pokazujemy, jak zbudowany jest przekaz" longTitle version="1.0" updatedAt="2026-09-29" sections={sections}
+  return <DocLayout eyebrow="O NAS" title="Pokazujemy, jak zbudowany jest przekaz" version="1.0" updatedAt="2026-09-29" sections={sections}
     lead="spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.">
     <section id="projekt"><h2>Projekt</h2>
       <p>spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Projekt działa w wersji beta i rozwija się etapami.</p>

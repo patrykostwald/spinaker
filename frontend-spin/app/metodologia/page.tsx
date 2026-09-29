@@ -16,7 +16,7 @@ const sections = [
 ];
 
 export default function MethodologyPage() {
-  return <DocLayout eyebrow="METODOLOGIA" title="Jak analizujemy przekaz" longTitle version="1.0" updatedAt="2026-09-29" sections={sections}
+  return <DocLayout eyebrow="METODOLOGIA" title="Jak analizujemy przekaz" version="1.0" updatedAt="2026-09-29" sections={sections}
     lead="Opis obecnego sposobu analizy wpisów i liczenia danych Kliniki. Diagnoza dotyczy konkretnego komunikatu; nie jest oceną osoby ani jej prawdomówności.">
     <section id="selekcja"><h2>Selekcja wpisów</h2>
       <p>Materiał pochodzi z obserwowanych, włączonych kont X polityków i partii. Strażnik analizuje dostępne wpisy z ostatnich dni; domyślne okno to 3 dni. Wstępny wynik wybiera kandydatów do pełnej analizy i nie jest siłą spinu z diagnozy.</p>

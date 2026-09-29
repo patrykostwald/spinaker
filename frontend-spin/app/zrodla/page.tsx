@@ -57,12 +57,12 @@ export default function SourcesPage() {
       <div><dt>Aktywne</dt><dd>{stats?.active ?? '—'}</dd></div>
       <div><dt>Oczekuje na odpowiedź</dt><dd>{stats?.awaiting_response ?? '—'}</dd></div>
     </dl>
+    <SearchField className="sc-source-page__search" label="Znajdź źródło" value={search} onChange={setSearch} placeholder="Nazwa źródła" />
     <ul className="sc-source-legend" aria-label="Oznaczenia">
       <li><span className="sc-source-chip is-on">Zgoda</span> zgoda wydawcy albo dane publiczne na jawnych zasadach</li>
       <li><span className="sc-source-chip is-on">YouTube</span> <span className="sc-source-chip is-on">X</span> oficjalny kanał i konto, podlinkowane na stronie źródła</li>
       <li><span className="sc-source-chip">weryfikacja</span> czekamy na zgodę albo potwierdzenie kanału</li>
     </ul>
-    <SearchField className="sc-source-page__search" label="Znajdź źródło" value={search} onChange={setSearch} placeholder="Nazwa źródła" />
     <div className="sc-source-page__grid">
       {([['important', 'Największe media'], ['media', 'Media'], ['public', 'Publiczne']] as const).map(([key, label]) => <section key={key}>
         <h2>{label}<span>{groups[key].length}</span></h2>

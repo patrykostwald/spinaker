@@ -14,7 +14,7 @@ import {
 } from '../lib/publicFigures';
 import { Dialog } from './Dialog';
 import { PublicFigureProfile } from './PublicFigureProfile';
-import { Button, Dropdown, SearchField } from '../kit';
+import { Button, Dropdown, SearchField, SectionHeader } from '../kit';
 
 const notFound = (error: unknown) => error instanceof ApiError && (error.status === 404 || error.status === 405);
 
@@ -79,11 +79,8 @@ export function PublicFigureDirectory() {
 
   return (
     <section className="sc-public-directory" aria-labelledby={`${uid}-title`}>
-      <header className="sc-public-directory__head">
-        <p className="sc-t-caption">REJESTR</p>
-        <h1 id={`${uid}-title`} className="sc-t-title-l">Osoby publiczne</h1>
-        <p className="sc-t-body sc-text-2">Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Zespół spin.clinic dodaje osoby ręcznie, z linkiem do źródła funkcji.</p>
-      </header>
+      <SectionHeader variant="page" kicker="REJESTR" titleId={`${uid}-title`} title="Osoby publiczne"
+        subtitle="Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Zespół spin.clinic dodaje osoby ręcznie, z linkiem do źródła funkcji." />
       <form className="sc-public-directory__filters" role="search" onSubmit={submit}>
         <SearchField id={`${uid}-q`} label="Imię, funkcja lub instytucja" value={input} onChange={setInput} maxLength={120} placeholder="Imię, funkcja lub instytucja" />
         <Dropdown label="Rodzaj funkcji" ariaLabel="Rodzaj funkcji" mode="single" presentation="auto" value={role} onChange={value => setRole(value as PublicFigureRoleCategory | '')}
@@ -107,7 +104,7 @@ export function PublicFigureDirectory() {
                 <p className="sc-t-body"><span className="sc-public-figure-status" data-status={row.status}>{row.status === 'current' ? 'Aktualna' : 'Była'}</span>{row.role_title}{row.organisation && ` · ${row.organisation}`}</p>
                 <p className="sc-public-directory__x">{row.has_x_account ? <span className="sc-x-badge" title="Konto X potwierdzone oficjalnym dowodem — czytamy je w Klinice">X · czytamy</span> : <><span className="sc-x-badge sc-x-badge--none">X · brak konta</span><XAccountSuggest figureId={row.id} name={row.name} /></>}</p>
               </div>
-              <Button type="button" variant="quiet" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
+              <Button type="button" variant="link" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
             </li>
           ))}
         </ul>

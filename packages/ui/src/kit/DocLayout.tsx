@@ -1,7 +1,7 @@
 import { InfoPage, type InfoPageProps } from "./InfoPage";
 
 export type DocSection = { id: string; label: string };
-export type DocLayoutProps = InfoPageProps & {
+export type DocLayoutProps = Omit<InfoPageProps, "longTitle"> & {
   sections: readonly DocSection[];
   version: string;
   updatedAt: string;

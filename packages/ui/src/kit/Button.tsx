@@ -21,7 +21,7 @@ import { useMotionTokens } from "./motion/useMotionTokens";
 import { SpinnerIcon } from "./icons/SpinnerIcon";
 import type { IconSize } from "./icons/types";
 
-export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost" | "danger" | "link";
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonShape = "rounded" | "pill" | "icon";
 

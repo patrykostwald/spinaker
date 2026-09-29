@@ -47,7 +47,7 @@ export function MessageBox({ camp, message, emptyText, surface = "standalone" }:
       {message ? <>
         <p className="sc-clinic-message__text">{message.message}</p>
         <Themes themes={message.themes} />
-        <Button variant="quiet" href={`/klinika/przekazy/${message.day}#${camp === "government" ? "rzadzacy" : "opozycja"}`}>Czytaj przekaz i zobacz źródła →</Button>
+        <Button variant="link" href={`/klinika/przekazy/${message.day}#${camp === "government" ? "rzadzacy" : "opozycja"}`}>Czytaj przekaz i zobacz źródła →</Button>
         <footer className="sc-clinic-message__foot"><time dateTime={message.day}>{formatDatePl(message.day)}</time><span>Źródła: {message.posts_count} wpisów</span></footer>
       </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy wpisy opublikują co najmniej trzy konta tego obozu."}</p>}
     </article>
