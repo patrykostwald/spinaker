@@ -22,7 +22,7 @@ export default function AboutPage() {
       <p><Link id="konsylium" href="/konsylium">Jak wykorzystujemy AI</Link> · <Link id="klinika" href="/metodologia">Metodologia analiz</Link> · <Link id="dla-redakcji" href="/dla-redakcji">Informacje dla redakcji</Link> · <Link id="film" href="/konsylium#film">Film o serwisie</Link></p>
     </section>
     <section id="operator"><h2>Autor i operator</h2>
-      <p>Projekt rozwija jedna osoba, korzystając z AI do programowania i analiz. Operatorem serwisu jest <strong>iapply sp. z o.o.</strong>, pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.</p>
+      <p>Projekt rozwija jedna osoba, korzystając z AI do programowania i analiz. Operatorem serwisu jest iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.</p>
     </section>
     <section id="finansowanie"><h2>Finansowanie i niezależność</h2>
       <p>Projekt powstaje dzięki pracy twórcy i wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.</p>
