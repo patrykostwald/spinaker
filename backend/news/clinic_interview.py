@@ -324,7 +324,8 @@ def diagnose_transcript(meta: dict, transcript: str) -> dict:
         try:
             response = clinic_ai._call_claude(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
         except clinic_ai.ClinicAIError as error:
-            if 'credit balance' not in error.code.lower():
+            # Brak środków albo zerwane połączenie z Anthropic — ocenę robi Gemini (transkrypcja już jest).
+            if 'credit balance' not in error.code.lower() and error.code != 'connection':
                 raise
     if response is None:
         response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
