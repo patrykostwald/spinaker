@@ -76,7 +76,7 @@ def _summary_input(data: dict) -> str:
         lines.append(f"{clinic.CAMP_LABELS[camp]} — Dr. Spin ocenił {data['diagnoses'][camp]} wybranych wpisów tej strony (to nie jest liczba wszystkich wpisów); "
                      f"{'za mało ocen, by podać udział spinu' if share is None else f'wskaźnik ważony spinu {round(share * 100)}% (spin = 1, częściowy spin = 0,5; to nie odsetek wpisów)'}; "
                      f"wpisy, które stały się niedostępne (przyczyna nieznana): {data['deleted'][camp]}; "
-                     f"trzy najczęstsze techniki: {', '.join(t['name'] for t in data['techniques'][camp] if t['name'] != 'Inne'][:3]) or 'brak'}")
+                     f"trzy najczęstsze techniki: {', '.join([t['name'] for t in data['techniques'][camp] if t['name'] != 'Inne'][:3]) or 'brak'}")
     if data['spin_of_week']:
         spin = data['spin_of_week']
         lines.append(f"Spin tygodnia: {spin['author']['name']} — {spin['headline']} (siła {spin['intensity']}/100)")
