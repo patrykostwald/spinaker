@@ -5145,7 +5145,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 @media (max-width: 760px) { .sc-scan-m-col { padding: 12px !important; } .sc-scan-m-num { font-size: 30px !important; line-height: 34px !important; } }
 
 /* ---------- Zasada boxa (29.09): kategoria ↖, polubienia ↗, data ↙, źródło ↘ (do krawędzi) ---------- */
-.sc-card__meta { justify-content: space-between; align-items: baseline; gap: 2px 10px; flex-wrap: nowrap; }
+.sc-card__meta { justify-content: space-between; align-items: baseline; gap: 2px 10px; flex-wrap: nowrap; min-width: 0; contain: inline-size; } /* stopka nie wyznacza szerokości boxa */
 .sc-card__meta-date { flex: none; white-space: nowrap; }
 .sc-card__meta-source { min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
 .sc-card__likes { position: absolute; top: var(--sc-s-2); right: var(--sc-s-2); z-index: 1; padding: 4px 10px; border-radius: var(--sc-r-pill); background: var(--sc-chrome); color: var(--sc-text); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); font-variant-numeric: tabular-nums; }
