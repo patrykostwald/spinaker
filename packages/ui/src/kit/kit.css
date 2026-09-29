@@ -5317,3 +5317,12 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-onas-toc .sc-onas-toc__mobile a { white-space: normal; }
 }
 .sc-onas-toc a > :first-child { flex: none; white-space: nowrap; }
+
+/* Animacja „Jak działa spin.clinic” na „O nas” (29.09). */
+.sc-film { margin: 24px 0 0; display: grid; gap: 8px; }
+.sc-film__frame { width: 100%; aspect-ratio: 16 / 10.4; border: 0; border-radius: var(--sc-radius-panel, 18px); background: var(--sc-bg); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-film__caption { font-size: 13px; line-height: 18px; color: var(--sc-text-3); }
+.sc-onas-docs { margin: 16px 0 0; font-size: 14px; color: var(--sc-text-2); }
+.sc-onas-docs a { color: var(--sc-accent); font-weight: 600; }
+.sc-home-intro__links { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+@media (max-width: 639px) { .sc-film__frame { aspect-ratio: 9 / 11; } }

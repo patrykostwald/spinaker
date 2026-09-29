@@ -69,3 +69,4 @@ export * from "./lib/clinic";
 export { CommunityThreadsPage, CommunityThreadPage } from "./components/community/CommunityPages";
 export * from "./lib/community";
 export * from "./lib/features";
+export { HowItWorksFilm } from "./components/HowItWorksFilm";

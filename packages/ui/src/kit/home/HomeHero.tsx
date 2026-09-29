@@ -61,7 +61,7 @@ export function HomeHero() {
           <p className="sc-t-caption">Od 23 września · aktualizacja {formatDateTimePl(new Date(query.dataUpdatedAt).toISOString())} (pobranie danych)</p>
         </div> : <p role="status">{query.isPending ? "Wczytujemy liczniki…" : "Liczniki są chwilowo niedostępne."}</p>}
         {query.isError ? <p role="alert">{stats ? "Aktualizacja jest chwilowo niedostępna." : "Nie udało się pobrać danych."} <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
-        <p className="sc-home-intro__links"><Link href="/o-nas#konsylium">Jak działa Konsylium AI</Link></p>
+        <p className="sc-home-intro__links"><Link href="/o-nas#film">Zobacz, jak to działa (70 s)</Link><Link href="/o-nas#konsylium">Jak działa Konsylium AI</Link><Link href="/o-nas/karta-konsylium">Karta Konsylium</Link></p>
       </div>
       <div className="sc-home-intro__actions">
         <Button href="/klinika/diagnozy" variant="primary" size="sm">Przeglądaj diagnozy</Button>

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ContextThreadExample } from './ContextThreadExample';
-import { SUPPORT_LINKS } from '@spin-clinic/ui';
+import { HowItWorksFilm, SUPPORT_LINKS } from '@spin-clinic/ui';
 
 export const metadata: Metadata = {
   title: 'O nas — spin.clinic',
@@ -249,6 +249,8 @@ export default function AboutPage() {
             <h3>Oceniamy wypowiedzi, nie ludzi.</h3>
             <p>Siła spinu opisuje użycie technik perswazji w konkretnym materiale. Nie jest oceną autora ani miarą prawdziwości całej wypowiedzi. Twierdzenia o faktach sprawdzamy osobno.</p>
           </div>
+          <HowItWorksFilm />
+          <p className="sc-onas-docs">Zasady i dokumenty: <Link href="/o-nas/karta-konsylium">Karta Konsylium AI</Link> · <Link href="#konsylium">Skład Konsylium</Link> · <Link href="/klinika/wskazniki">Wskaźniki i wykresy</Link> · <Link href="#zasady">Zasady</Link></p>
           <ul className="sc-onas-parts">
             {PARTS.map((part) => (
               <li key={part.href}>
