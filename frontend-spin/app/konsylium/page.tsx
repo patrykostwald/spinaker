@@ -20,7 +20,7 @@ const sections = [
 export default function CouncilPage() {
   return <DocLayout eyebrow="KONSYLIUM AI" title="Kilka modeli AI, jedna diagnoza" version="1.0" updatedAt="2026-09-29" sections={sections}
     lead="Każdy wpis osobno badają modele AI różnych firm. Pokazujemy ich głosy, źródła, zakres analizy i ograniczenia.">
-    <section aria-labelledby="film-title"><h2 id="film-title">Zobacz, jak działa serwis</h2><HowItWorksFilm /></section>
+    <section aria-label="Film: jak działa spin.clinic"><HowItWorksFilm /></section>
     <section id="droga-wpisu"><h2>Droga wpisu do diagnozy</h2>
       <ol className="sc-doc-steps">
         <li><strong>Strażnik.</strong> Wstępnie ocenia tekst wpisu z obserwowanego konta. Wynik selekcji kieruje wpis do kolejki, dalszej decyzji albo pominięcia; nie jest diagnozą.</li>
