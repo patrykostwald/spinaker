@@ -5924,3 +5924,4 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-interview-results > section + section .sc-scan-g-track i { background: var(--sc-accent) !important; }
 /* Źródła: klikalne znaczki X/YouTube z celem dotyku 44 px */
 a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items: center; justify-content: center; }
+.sc-social-list li:last-child:nth-child(odd) { grid-column: 1 / -1; }
