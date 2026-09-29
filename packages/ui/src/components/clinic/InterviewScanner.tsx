@@ -35,6 +35,8 @@ function ResultBar({ value }: { value: number }) {
   return <div className="sc-scan-g"><span className="sc-scan-g-track"><i style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div>;
 }
 
+const suspectScale = (part: { verdict: string; intensity: number }) => ["spin", "partial"].includes(part.verdict) && part.intensity > 0 && part.intensity <= 10;
+
 /** Wynik gościa i prowadzącego w układzie panelu skanera: etykieta, werdykt, duża liczba, pasek 0–100. */
 export function InterviewResults({ interview }: { interview: Interview }) {
   const { guest, host } = interview;
@@ -42,8 +44,10 @@ export function InterviewResults({ interview }: { interview: Interview }) {
     <section>
       <p className="sc-scan-m-lbl">Gość · siła spinu</p>
       <p className="sc-interview-results__who">{interview.guest_name}{interview.guest_role ? <span>, {interview.guest_role}</span> : null}</p>
+      {/* Najstarsze analizy mogły podać siłę w skali 0–10: werdykt „spin” przy sile ≤ 10 jest sprzeczny — nie pokazujemy mylącej liczby (audyt 046) */}
+      {suspectScale(guest) ? <div className="sc-interview-results__score"><p className="sc-interview-results__none">Siła: skala tej analizy wymaga wyjaśnienia</p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div> : <>
       <div className="sc-interview-results__score"><p className="sc-scan-m-num sc-scan-strength">{guest.intensity}<small>/100</small></p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div>
-      <ResultBar value={guest.intensity} />
+      <ResultBar value={guest.intensity} /></>}
     </section>
     <section>
       <p className="sc-scan-m-lbl">Prowadzący · siła spinu w pytaniach</p>
@@ -55,8 +59,9 @@ export function InterviewResults({ interview }: { interview: Interview }) {
   </div>;
 }
 
-export function InterviewScanner({ interview }: { interview: Interview }) {
-  const [expanded, setExpanded] = useState(false);
+/** `full` — własna strona wywiadu: jeden tytuł (H1 strony), uzasadnienie od razu otwarte, bez odsyłacza do samej siebie (audyt 046). */
+export function InterviewScanner({ interview, full = false }: { interview: Interview; full?: boolean }) {
+  const [expanded, setExpanded] = useState(full);
   const [sharing, setSharing] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
   const expandRef = useRef<HTMLButtonElement>(null);
@@ -98,13 +103,13 @@ export function InterviewScanner({ interview }: { interview: Interview }) {
     <div className="sc-scan-dg">
       <header className="sc-scan-dg-head"><span className="sc-scan-dg-ai">OCENA KONSYLIUM AI</span><span className="sc-scan-dg-id">#WYWIAD-{interview.id} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "—"}</span></header>
       {expanded ? <p className="sc-scan-dg-who">Wywiad: <strong>{interview.guest_name}</strong> · {formatDatePl(interview.day)} · <a href={interview.url} target="_blank" rel="noopener noreferrer">{interview.channel} ↗</a></p> : null}
-      <h3 className="sc-scan-dg-lead" id={`${prefix}-lead`}>{interview.headline}</h3>
+      {full ? <span id={`${prefix}-lead`} hidden>{interview.headline}</span> : <h3 className="sc-scan-dg-lead" id={`${prefix}-lead`}>{interview.headline}</h3>}
       <InterviewScope />
       <InterviewResults interview={interview} />
       <p className="sc-archive-interview-summary">{interview.summary}</p>
       <footer className="sc-scan-dg-foot"><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a><div className="sc-scan-dg-actions">
         <button ref={expandRef} type="button" aria-expanded={expanded} aria-controls={`${prefix}-details`} onClick={() => expanded ? collapse() : setExpanded(true)}>{expanded ? "Zwiń uzasadnienie" : "Pokaż uzasadnienie"}</button>
-        <button type="button" aria-expanded={sharing} aria-controls={`${prefix}-share`} onClick={() => setSharing(!sharing)}>Udostępnij</button><Link className="sc-scan-button sc-scan-primary" href={path}>Pełna analiza →</Link>
+        <button type="button" aria-expanded={sharing} aria-controls={`${prefix}-share`} onClick={() => setSharing(!sharing)}>Udostępnij</button>{full ? null : <Link className="sc-scan-button sc-scan-primary" href={path}>Pełna analiza →</Link>}
       </div></footer>
       <div className="sc-scan-expand" data-open={expanded}><div><section id={`${prefix}-details`} className="sc-scan-details" aria-label="Uzasadnienie" aria-hidden={!expanded}>
       <div className="sc-scan-m">

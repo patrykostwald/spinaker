@@ -156,3 +156,17 @@ export function SpinScale({ scale }: { scale: SpinScaleData }) {
     </section>
   );
 }
+
+/** „Jak czytać wynik” — krótko, żeby nikt nie czytał 70/100 jako „70% kłamstwa” (audyt 046). */
+export function HowToRead({ interview = false }: { interview?: boolean }) {
+  return <details className="sc-howto">
+    <summary>Jak czytać wynik?</summary>
+    <dl>
+      <div><dt>Siła spinu 0–100</dt><dd>Jak mocno {interview ? "wypowiedź opiera" : "komunikat opiera"} się na technikach perswazji. To nie procent kłamstwa i nie ocena osoby.</dd></div>
+      <div><dt>Konsylium AI</dt><dd>Ile modeli wydało ten sam werdykt co diagnoza końcowa, np. 3/4.</dd></div>
+      <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne albo wprowadzające w błąd. „Niezweryfikowane” znaczy: bez źródła — nie że to fałsz.</dd></div>
+      <div><dt>Techniki</dt><dd>Ile różnych technik wskazano, z dosłownym cytatem, w trzech rodzinach: dane, emocje, spór.</dd></div>
+    </dl>
+    <p><a href="/metodologia">Pełna metodologia →</a></p>
+  </details>;
+}

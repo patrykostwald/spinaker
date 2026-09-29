@@ -14,7 +14,7 @@ export const CLAIM_ASSESSMENTS = [
   ["supported", "ok", "potwierdzone"],
   ["misleading", "mid", "mylące"],
   ["contradicted", "bad", "sprzeczne"],
-  ["unverified", "unverified", "niesprawdzone"],
+  ["unverified", "unverified", "niezweryfikowane"],
   ["opinion", "op", "opinia"],
 ] as const;
 

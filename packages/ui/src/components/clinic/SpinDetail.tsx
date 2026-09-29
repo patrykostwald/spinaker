@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { agreementLabel, getSpin, type SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { OpinionsPanel } from "../OpinionsPanel";
-import { AiTag, SpinAuthorRow } from "./SpinParts";
+import { AiTag, HowToRead, SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { clinicResultsUrl } from "../../lib/clinicNavigation";
 
@@ -89,7 +89,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
         <section className="sc-dg-quick" aria-label="Podsumowanie"><h2>W skrócie</h2><p className="sc-spin-detail__summary">{spin.summary}</p></section>
         </aside>
         <div className="sc-dg-main">
-        <div className="sc-dg-score"><SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} /></div>
+        <div className="sc-dg-score"><SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} /><HowToRead /></div>
         <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>
         <article className="sc-spin-detail__diagnosis">
           <SpinDiagnosisBody spin={spin} withSummary={false} />

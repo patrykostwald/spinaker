@@ -12,6 +12,7 @@ import { formatDatePl } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { MessageBox } from "./ClinicExtras";
 import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
+import { HowToRead } from "./SpinParts";
 export function ClinicInterviewArchive() {
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("");
@@ -58,7 +59,8 @@ export function ClinicInterviewPage({ interview }: { interview: Interview }) {
   return <section className="sc-clinic-archives">
     <ClinicNav />
     <SectionHeader variant="page" longTitle title={interview.headline || "Analiza wywiadu"} />
-    <InterviewScanner interview={interview} />
+    <InterviewScanner interview={interview} full />
+    <HowToRead interview />
   </section>;
 }
 

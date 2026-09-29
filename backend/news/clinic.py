@@ -49,7 +49,7 @@ CLUBS = {
 }
 VERDICT_LABELS = {'spin': 'Spin', 'partial': 'Częściowy spin', 'no_spin': 'Bez spinu', 'unclear': 'Nie da się ocenić'}
 ASSESSMENT_LABELS = {'supported': 'potwierdzone', 'contradicted': 'sprzeczne ze źródłami',
-                     'misleading': 'wprowadza w błąd', 'unverified': 'nie do sprawdzenia'}
+                     'misleading': 'wprowadza w błąd', 'unverified': 'niezweryfikowane'}  # jedno słowo w całym serwisie (audyt 046)
 SCALE_MIN_SAMPLE = 10
 NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera wpisy warte sprawdzenia, a konsylium kilku modeli stawia diagnozę. '
                'Fakty są sprawdzane w wyszukiwarce. Przy zgodności werdyktu poniżej 2/3 lub spinie z oceną co najmniej 70 '
