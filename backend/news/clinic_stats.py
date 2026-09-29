@@ -13,7 +13,7 @@ from news.techniques import CANONICAL_TECHNIQUES, FAMILIES, technique_groups
 from news.clinic_scan import scan_data
 
 MIN_SAMPLE = 10
-CACHE_KEY = 'clinic-public-stats:v2'
+CACHE_KEY = 'clinic-public-stats:v3'
 
 
 def sample(count):
@@ -56,7 +56,7 @@ def stats_data():
     parties, accounts = {}, {}
     techniques = {name: {camp: 0 for camp in clinic.CAMPS} for name in CANONICAL_TECHNIQUES}
     families = {name: {camp: 0 for camp in clinic.CAMPS} for name in FAMILIES}
-    claims = {camp: dict.fromkeys(('checked', 'supported', 'misleading', 'contradicted', 'unverified'), 0)
+    claims = {camp: dict.fromkeys(('checked', 'supported', 'misleading', 'contradicted', 'unverified', 'opinions', 'distinct'), 0)
               for camp in clinic.CAMPS}
     council = {'diagnosed': 0, 'unanimous': 0, 'escalations': 0}
     engagement = {camp: {verdict: {'count': 0, 'likes_sum': 0} for verdict in ('spin', 'partial', 'no_spin')}
@@ -66,7 +66,7 @@ def stats_data():
         scan = scan_data(row)
         for family, count in scan['families'].items():
             families[family].setdefault(camp, 0)
-            families[family][camp] += bool(count)
+            families[family][camp] += bool(count['technique_types'])
         claim_totals = claims.setdefault(camp, dict.fromkeys(scan['claims'], 0))
         for key, count in scan['claims'].items():
             claim_totals[key] += count

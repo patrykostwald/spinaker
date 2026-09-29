@@ -38,21 +38,21 @@ RULES = (
 CANONICAL_TECHNIQUES = tuple(name for name, _ in RULES) + ('Inne',)
 
 FAMILIES = {
-    'fakty': ('Liczba bez punktu odniesienia', 'Wybiórcze dane', 'Pominięcie kontekstu',
+    'dane': ('Liczba bez punktu odniesienia', 'Wybiórcze dane', 'Pominięcie kontekstu',
               'Przeinaczenie faktów', 'Teza bez dowodu', 'Fałszywa przyczynowość',
-              'Nadmierne uogólnienie', 'Fałszywa analogia i skojarzenie'),
-    'emocje': ('Apel do emocji', 'Straszenie', 'Przesada', 'Etykietowanie', 'My kontra oni',
+              'Nadmierne uogólnienie', 'Fałszywa analogia i skojarzenie', 'Fałszywa alternatywa', 'Odwołanie do autorytetu'),
+    'przedstawienie': ('Apel do emocji', 'Straszenie', 'Przesada', 'Etykietowanie', 'My kontra oni',
                'Sugestia i niedopowiedzenie'),
-    'zagrania': ('Atak na osobę', 'Przypisywanie intencji', 'Słomiany człowiek', 'Fałszywa alternatywa',
-                 'Zmiana tematu', 'Odwołanie do autorytetu', 'Przypisywanie sobie zasług'),
+    'spor': ('Atak na osobę', 'Przypisywanie intencji', 'Słomiany człowiek',
+                 'Zmiana tematu', 'Przypisywanie sobie zasług'),
     'inne': ('Inne',),
 }
-FAMILY_LABELS = {'fakty': 'Fakty i liczby', 'emocje': 'Emocje i ramy',
-                 'zagrania': 'Zagrania wobec innych', 'inne': 'Inne'}
+FAMILY_LABELS = {'dane': 'Dane i wnioskowanie', 'przedstawienie': 'Emocje i przedstawienie',
+                 'spor': 'Spór i odpowiedzialność', 'inne': 'Inne'}
 FAMILY_DEFINITIONS = {
-    'fakty': 'Dobór i przedstawianie faktów, liczb oraz związków między nimi.',
-    'emocje': 'Wpływanie na odbiór przez emocje, język i ramy interpretacji.',
-    'zagrania': 'Sposoby przedstawiania innych osób i prowadzenia sporu.',
+    'dane': 'Dobór i przedstawianie faktów, liczb oraz związków między nimi.',
+    'przedstawienie': 'Wpływanie na odbiór przez emocje, język i ramy interpretacji.',
+    'spor': 'Sposoby przedstawiania innych osób i prowadzenia sporu.',
     'inne': 'Techniki spoza trzech głównych rodzin.',
 }
 
@@ -114,3 +114,6 @@ def canonical_technique(name) -> str:
 def technique_groups(techniques):
     return list(dict.fromkeys(technique_category(item)
                              for item in (techniques or []) if isinstance(item, dict)))
+
+DISPLAY_NAMES = {name: name for name in CANONICAL_TECHNIQUES}
+DISPLAY_NAMES['Słomiany człowiek'] = 'Zniekształcenie cudzego stanowiska'

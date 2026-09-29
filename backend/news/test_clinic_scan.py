@@ -25,7 +25,7 @@ def test_families():
     categories = [category for values in FAMILIES.values() for category in values]
     assert len(categories) == len(set(categories)) == 22
     assert set(categories) == set(CANONICAL_TECHNIQUES)
-    assert [len(v) for v in FAMILIES.values()] == [8, 6, 7, 1]
+    assert [len(v) for v in FAMILIES.values()] == [10, 6, 5, 1]
     assert technique_family('nieznana') == 'inne'
 
 
@@ -44,8 +44,8 @@ def test_scan_and_safe_synthesis(monkeypatch):
         usage={'council': {'members': [{'model': 'openai/gpt-oss-20b', 'verdict': 'spin', 'intensity': 55}],
                            'agreement': '1/1', 'review': {'ok': False}, 'escalated': True}})
     scan = scan_data(row)
-    assert scan['families'] == {'fakty': 1, 'emocje': 1, 'zagrania': 0, 'inne': 0}
-    assert scan['claims'] == {'checked': 2, 'supported': 1, 'misleading': 1, 'contradicted': 0, 'unverified': 1}
+    assert scan['families'] == {k: {'technique_types': v} for k, v in {'dane': 1, 'przedstawienie': 1, 'spor': 0, 'inne': 0}.items()}
+    assert scan['claims'] == {'checked': 2, 'supported': 1, 'misleading': 1, 'contradicted': 0, 'unverified': 1, 'opinions': 0, 'distinct': 3}
     assert scan['sources'] == 1 and scan['synthesis'] is None
     assert scan['council']['reviewed'] is True
     monkeypatch.setattr(clinic.clinic_ai, 'x_thread', lambda data: {'posts': ['Bezpieczna synteza.', 'Punkt.']})
@@ -126,10 +126,90 @@ def test_scan_statistics():
     row.post.source_data = {'public_metrics': {'like_count': 42}}
     row.post.save()
     result = stats_data()
-    assert result['families']['emocje']['opposition'] == {'count': 1, 'enough_data': False}
+    assert result['families']['przedstawienie']['opposition'] == {'count': 1, 'enough_data': False}
     assert result['claims']['opposition']['checked'] == 1
     assert result['council']['unanimous_percent'] == 100
     assert result['council']['escalations'] == 1
     assert result['engagement']['opposition']['spin']['average_likes'] == 42
     assert result['engagement']['government']['spin']['average_likes'] is None
     cache.clear()
+
+
+def claim(text, assessment='supported', url='https://www.example.org/a'):
+    return {'claim': text, 'assessment': assessment, 'sources': [{'url': url}] if url else []}
+
+
+@pytest.mark.django_db
+def test_audit_1041_duplicates():
+    row = diagnosis(claims=[
+        claim('Kurtki nie chronią żołnierzy przed zimnem.'),
+        claim('„Kurtki nie chronią żołnierzy przed zimnem!”', url='https://example.org/b'),
+        claim('Program obejmuje wyłącznie slajdy.', 'contradicted', 'https://second.org/a'),
+        claim('Nie dostarczono żadnego sprzętu.', 'contradicted'),
+        claim('To wielka porażka polityczna.', 'unverified', ''),
+        claim('Minister zasługuje na krytykę.', 'unverified', '')])
+    scan = scan_data(row)
+    assert scan['claims'] == dict(supported=1, misleading=0, contradicted=2,
+                                 checked=3, opinions=2, distinct=5, unverified=0)
+    assert scan['sources'] == 2
+    assert scan['source_domains'] == ['example.org', 'second.org']
+
+
+@pytest.mark.django_db
+def test_audit_1060_three_pairs():
+    row = diagnosis(claims=[
+        claim('Firmy paliwowe osiągnęły rekordowe zyski w ubiegłym roku.'),
+        claim('Firmy paliwowe osiągnęły rekordowe zyski w ubiegłym roku według raportu.'),
+        claim('Podatek obejmuje okres od stycznia do grudnia.'),
+        claim('Podatek obejmuje okres od stycznia do grudnia 2025 roku.'),
+        claim('Projekt prezydencki pomija kryterium dochodowe gospodarstw domowych.', 'misleading'),
+        claim('Projekt prezydencki pomija kryterium dochodowe gospodarstw.', 'contradicted')])
+    scan = scan_data(row)
+    assert scan['claims']['distinct'] == scan['claims']['checked'] == 3
+    assert scan['claims']['supported'] == 2
+    assert scan['claims']['contradicted'] == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('kind', ['video', 'animated_gif', 'amplify_video_thumb'])
+def test_scope_council_and_share(kind):
+    from news.x_share import weight
+    row = diagnosis(x_thread=['Krótki wniosek.'], usage={'council': {'members': [
+        {'verdict': 'spin', 'intensity': 55}, {'verdict': 'spin', 'intensity': 75},
+        {'verdict': 'partial', 'intensity': 55}]}})
+    row.post.media = [{'type': 'photo'}, {'type': kind}]
+    scan = scan_data(row)
+    assert scan['scope'] == dict(text=True, image=True, video=False,
+                                 analyzed=['tekst', 'obraz'], not_analyzed=['film'])
+    assert scan['council']['verdict_agreement'] == '2/3'
+    assert scan['council']['range'] == [55, 75]
+    assert weight(scan['share']['single']) <= 220
+    assert f'/klinika/{row.pk}' in scan['share']['single']
+    row.x_thread = ['Bardzo długi tekst ' * 100 + '.']
+    row.post.account.display_name = 'Nazwisko' * 100
+    assert weight(scan_data(row)['share']['single']) <= 220
+
+
+@pytest.mark.django_db
+def test_selection_pool_includes_all_published_verdicts():
+    row = diagnosis()
+    other = diagnosis(row.post.account, 2)
+    other.verdict = 'no_spin'
+    other.save()
+    result = clinic.spin_of_day_by_camp()['spins']['opposition']
+    assert result['id'] == row.pk
+    assert result['pool'] == 2
+    assert result['window_label'] in ('dzisiaj', 'ostatnia doba')
+
+
+def test_merge_priority_sources_and_missing_text():
+    from news.clinic_scan import merge_claims
+    items = [claim('Ta sama teza.', 'supported', 'https://example.org/a'),
+             claim('TA SAMA TEZA!', 'misleading', 'https://example.org/b'),
+             claim('Ta sama teza', 'contradicted', 'https://other.org/a')]
+    merged = merge_claims(items)
+    assert len(merged) == 1
+    assert merged[0]['assessment'] == 'contradicted'
+    assert len(merged[0]['sources']) == 3
+    assert items[0]['assessment'] == 'supported'
+    assert len(merge_claims([claim(''), claim('')])) == 2

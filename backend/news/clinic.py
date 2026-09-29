@@ -51,8 +51,10 @@ VERDICT_LABELS = {'spin': 'Spin', 'partial': 'Częściowy spin', 'no_spin': 'Bez
 ASSESSMENT_LABELS = {'supported': 'potwierdzone', 'contradicted': 'sprzeczne ze źródłami',
                      'misleading': 'wprowadza w błąd', 'unverified': 'nie do sprawdzenia'}
 SCALE_MIN_SAMPLE = 10
-NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera posty warte sprawdzenia, Claude stawia diagnozę ze źródłami, '
-               'a publikacja jest automatyczna — nikt nie poprawia treści diagnoz.')
+NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera wpisy warte sprawdzenia, a konsylium kilku modeli stawia diagnozę. '
+               'Fakty są sprawdzane w wyszukiwarce. Przy zgodności werdyktu poniżej 2/3 lub spinie z oceną co najmniej 70 '
+               'możliwa jest konsultacja faktów z Claude, jeśli jest włączona i pozwala na nią budżet. '
+               'Publikacja jest automatyczna · nikt nie poprawia treści diagnoz.')
 NOTICE_REVIEW = ('Diagnozy przygotowuje AI. Człowiek może je tylko zatwierdzić albo odrzucić — nie zmienia ich treści.')
 NOTICE = NOTICE_AUTO
 
@@ -732,7 +734,13 @@ def spin_of_day_by_camp() -> dict:
                 break
         if best is None:
             best, window = rows.order_by('-diagnosed_at', '-pk').first(), 'latest'
-        picks[camp] = {**detail_data(best), 'window': window} if best else None
+        pool = published_diagnoses().filter(post__camp_at_collection=camp)
+        if window != 'latest':
+            pool = pool.filter(post__published_at__gte=since)
+        labels = {'today': 'dzisiaj', '24h': 'ostatnia doba', '72h': 'ostatnie trzy doby',
+                  'latest': 'całe archiwum; najnowszy spin'}
+        picks[camp] = {**detail_data(best), 'window': window, 'pool': pool.count(),
+                       'window_label': labels[window]} if best else None
     fresh = {'today': 3, '24h': 2, '72h': 1, 'latest': 0}
     order = sorted(CAMPS, key=lambda camp: (-(fresh[picks[camp]['window']] if picks[camp] else -1),
                                              -(picks[camp]['intensity'] if picks[camp] else -1)))
