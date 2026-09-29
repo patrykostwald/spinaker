@@ -166,7 +166,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
       {data && <>
-        <ClinicShowcase fallback={data.stats} />
+        <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
 
         <section className="sc-clinic-sotd" aria-labelledby="clinic-drspin-title">
           {/* Nagłówek jak na głównej: „Klinika spinu AI” + „Dr. Spin”, zakładki na środku, link po prawej. */}

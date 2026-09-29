@@ -14,7 +14,7 @@ from news.clinic_scan import scan_data
 from news.loaded_words import KINDS
 
 MIN_SAMPLE = 10
-CACHE_KEY = 'clinic-public-stats:v4'
+CACHE_KEY = 'clinic-public-stats:v5'
 
 
 def sample(count):
@@ -130,7 +130,7 @@ def stats_data():
                 daily[value['day'].isoformat()][camp][metric] = value['n']
     totals = {key: ({**value, 'enough_data': value['total'] >= MIN_SAMPLE,
                      'today_enough_data': value['today'] >= MIN_SAMPLE} if 'total' in value else value)
-              for key, value in clinic.clinic_stats().items()}
+              for key, value in clinic.clinic_stats().items() if key not in ('generated_at', 'since')}
     totals['by_camp'] = {camp: {**values, 'enough_data': values['diagnosed'] >= MIN_SAMPLE}
                          for camp, values in totals['by_camp'].items()}
     funnel = {key: sample(totals[source]['total']) for key, source in (
@@ -138,6 +138,7 @@ def stats_data():
     # To stan kolejki, nie liczba wszystkich historycznych przejść przez ten etap.
     funnel['flagged_queued'] = sample(screened.filter(status__in=['flagged', 'queued']).count())
     result = {
+        **clinic.clinic_data_period(),
         'families': {name: {camp: sample(n) for camp, n in counts.items()} for name, counts in families.items()},
         'loaded': {camp: {**sample(group['count']), 'total': group['total'],
                     'average_count': round(group['total'] / group['count'], 2) if group['count'] else None,

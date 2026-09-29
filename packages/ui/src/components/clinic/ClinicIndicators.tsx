@@ -14,7 +14,9 @@ import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../lib/api";
-import { CAMPS, CAMP_LABELS, type Camp, type Party } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, type Camp, type Party, type DataPeriod } from "../../lib/clinic";
+import { clinicPeriodLabel } from "../../lib/clinicPeriod";
+import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "./SpinParts";
 
 type Sample = { count: number; enough_data: boolean };
@@ -24,7 +26,7 @@ type CampBucket = {
   average_intensity: number | null; enough_data: boolean;
   intensity_histogram: Array<Sample & { min: number; max: number }>;
 };
-type IndicatorStats = {
+type IndicatorStats = DataPeriod & {
   min_sample: number;
   window: { days: number; date_from: string; date_to: string };
   totals: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", Pair> & {
@@ -49,11 +51,8 @@ const UpdatedAt = createContext(0);
 
 function PeriodNote({ stats, allTime = false, from, to }: { stats: IndicatorStats; allTime?: boolean; from?: string; to?: string }) {
   const updatedAt = useContext(UpdatedAt);
-  // Daty po ludzku: „23 wrz – 29 wrz · stan na 29 wrz, 04:04” zamiast ISO i technicznego opisu odświeżania.
-  const day = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
-  const range = allTime ? "od 23 wrz" : `${day(from || stats.window.date_from)} – ${day(to || stats.window.date_to)}`;
-  const stamp = updatedAt ? new Date(updatedAt).toLocaleString("pl-PL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
-  return <p className="sc-ind-note sc-ind-period">{range}{stamp ? ` · stan na ${stamp}` : ""}</p>;
+  const range = allTime ? "" : `${formatDatePl(from || stats.window.date_from)} – ${formatDatePl(to || stats.window.date_to)}`;
+  return <p className="sc-ind-note sc-ind-period">{range ? <>Zakres: {range} · </> : null}{clinicPeriodLabel(stats, updatedAt)}</p>;
 }
 
 function DataTable({ title, headers, rows }: { title: string; headers: string[]; rows: Array<Array<string | number>> }) {
@@ -296,7 +295,7 @@ function Accounts({ stats }: { stats: IndicatorStats }) {
       <ol className="sc-ind-accounts">
         {rows.map((row) => (
           <li key={`${row.account_id}-${row.camp}`} data-camp={row.camp}>
-            <Link href={`/klinika/diagnozy?q=${encodeURIComponent(row.handle)}`}>{row.name}{row.party ? `, ${row.party.short}` : ""}<span className="sc-ind-account-camp"><span aria-hidden="true">{row.camp === "government" ? "●" : "■"}</span> {CAMP_LABELS[row.camp]}</span></Link>
+            <Link href={`/klinika/diagnozy?account=${row.account_id}`}>{row.name}{row.party ? `, ${row.party.short}` : ""}<span className="sc-ind-account-camp"><span aria-hidden="true">{row.camp === "government" ? "●" : "■"}</span> {CAMP_LABELS[row.camp]}</span></Link>
             <span className="sc-ind-accounts__bar" aria-hidden="true"><i style={{ width: `${(row.diagnosed / max) * 100}%` }} /></span>
             <span className="sc-ind-accounts__n">{row.diagnosed}</span>
           </li>
@@ -313,7 +312,7 @@ type PageTotals = Record<"read" | "screened" | "rejected" | "diagnosed" | "spins
  * Panel „Praca Kliniki” na górze /klinika: duże liczniki (od początku i dziś), słupki diagnoz z ostatnich dni
  * i dwa wejścia — do bazy wszystkich diagnoz i do wskaźników. Gdy /api/clinic/stats/ niedostępne — liczniki z /api/clinic/.
  */
-export function ClinicShowcase({ fallback }: { fallback?: PageTotals | null }) {
+export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0 }: { fallback?: PageTotals | null; fallbackPeriod?: DataPeriod; fetchedAt?: number }) {
   const query = useQuery({ queryKey: ["clinic-indicators"], queryFn: getIndicatorStats, staleTime: 10 * 60_000 });
   const stats = query.data;
   const totals: PageTotals | null | undefined = stats?.totals ?? fallback;
@@ -332,7 +331,7 @@ export function ClinicShowcase({ fallback }: { fallback?: PageTotals | null }) {
     <UpdatedAt.Provider value={query.dataUpdatedAt}><section className="sc-ind-show" aria-labelledby="ind-show-title">
       <div className="sc-ind-show__main">
         <p className="sc-clinic-kicker" id="ind-show-title">Praca Kliniki od początku</p>
-        {stats ? <PeriodNote stats={stats} allTime /> : <p className="sc-ind-note">od 23 wrz</p>}
+        {stats ? <PeriodNote stats={stats} allTime /> : <p className="sc-ind-note">{clinicPeriodLabel(fallbackPeriod, fetchedAt)}</p>}
         <ul className="sc-ind-show__tiles">
           {tiles.map(([label, total, today]) => (
             <li key={label}>

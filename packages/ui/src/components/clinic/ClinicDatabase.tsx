@@ -10,7 +10,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicStats, searchClinicSpins, type ClinicSearchParams } from "../../lib/clinic";
 import { SpinRow } from "./SpinParts";
 
-const FILTER_KEYS = ["q", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
+const FILTER_KEYS = ["q", "account", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
 const format = (value: number) => value.toLocaleString("pl-PL");
 
 type FilterOption = { value: string; label: string };
@@ -104,7 +104,7 @@ export function ClinicDatabase() {
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   const count = query.data?.pages[0]?.count;
   const totals = stats.data?.totals;
-  const active = [params.camp, params.verdict, params.party, params.technique,
+  const active = [params.account, params.camp, params.verdict, params.party, params.technique,
     params.intensity_min !== undefined || params.intensity_max !== undefined,
     params.date_from || params.date_to, params.sort === "strong"].filter(Boolean).length;
   const hasFilters = active > 0 || !!params.q || !!search;
@@ -117,6 +117,12 @@ export function ClinicDatabase() {
     `${params.intensity_min ?? 0}-${params.intensity_max ?? 100}`;
 
   const activeChips: Array<{ label: string; clear: Record<string, string> }> = [];
+  if (params.account) {
+    const author = rows.find(row => String(row.author.account_id) === params.account)?.author;
+    const known = stats.data?.accounts?.find(row => String(row.account_id) === params.account);
+    const label = author ? `${author.name} (@${author.handle})` : known ? `${known.name} (@${known.handle})` : `konto #${params.account}`;
+    activeChips.push({ label: `Autor: ${label}`, clear: { account: "" } });
+  }
   if (params.q) activeChips.push({ label: `Szukaj: ${params.q}`, clear: { q: "" } });
   if (params.camp) activeChips.push({ label: CAMP_LABELS[params.camp], clear: { camp: "" } });
   if (params.verdict) activeChips.push({ label: { spin: "Spin", partial: "Częściowy spin", no_spin: "Bez spinu", unclear: "Nie da się ocenić" }[params.verdict], clear: { verdict: "" } });

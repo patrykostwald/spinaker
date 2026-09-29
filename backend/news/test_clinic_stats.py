@@ -280,3 +280,85 @@ def test_filters_and_legacy(monkeypatch):
     {'date_from': '2026-09-29', 'date_to': '2026-09-28'}, {'sort': 'x'}, {'technique': 'x'}])
 def test_invalid_filters(params):
     assert APIClient().get('/api/clinic/spins/', params).status_code == 400
+
+
+@pytest.mark.django_db
+def test_account_filter_exact_id_combines_filters_and_paginates():
+    acc = account()
+    other = account('opposition', 'posel_test_extra', '102')
+    rows = [diagnosis(acc, 2000 + index, intensity=20 + index) for index in range(21)]
+    diagnosis(other, 3000, headline='posel_test', summary='Ten sam autor w tekście')
+    diagnosis(acc, 3001, hidden_at=timezone.now())
+    diagnosis(acc, 3002, status='pending_review')
+    unavailable = diagnosis(acc, 3003)
+    unavailable.post.available = False
+    unavailable.post.save()
+    client = APIClient()
+    result = client.get('/api/clinic/spins/', {'account': acc.pk}).json()
+    assert result['count'] == 21 and result['next_page'] == 2
+    assert all(row['author']['account_id'] == acc.pk for row in result['results'])
+    last = client.get('/api/clinic/spins/', {'account': acc.pk, 'page': 2}).json()
+    assert [row['id'] for row in last['results']] == [rows[0].pk]
+    assert last['next_page'] is None
+    combined = client.get('/api/clinic/spins/', {'account': acc.pk, 'intensity_min': 40, 'sort': 'strong'}).json()
+    assert [row['id'] for row in combined['results']] == [rows[-1].pk]
+    assert client.get('/api/clinic/spins/', {'account': acc.pk, 'camp': 'government'}).json()['count'] == 0
+    assert client.get('/api/clinic/spins/', {'account': 99999999}).json()['count'] == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('account_id', ['posel_test', '-1', '0', '1.5', '1e2', '9223372036854775808', '9' * 100])
+def test_account_filter_invalid_id(account_id):
+    assert APIClient().get('/api/clinic/spins/', {'account': account_id}).status_code == 400
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('first', ['read', 'diagnosis'])
+def test_period_uses_first_collection_or_diagnosis_and_caches_timestamp(first):
+    from django.utils.dateparse import parse_datetime
+    acc = account()
+    row = diagnosis(acc, 9000)
+    early = timezone.now() - timedelta(days=60)
+    later = early + timedelta(days=1)
+    type(row.post).objects.filter(pk=row.post_id).update(
+        fetched_at=early if first == 'read' else later,
+        published_at=early - timedelta(days=100))  # data źródła nie jest datą startu Kliniki
+    SpinDiagnosis.objects.filter(pk=row.pk).update(diagnosed_at=early if first == 'diagnosis' else later)
+    before = timezone.now()
+    client = APIClient()
+    for endpoint in ('/api/clinic/', '/api/clinic/stats/'):
+        value = client.get(endpoint).json()
+        assert value['since'] == timezone.localdate(early).isoformat()
+        assert before <= parse_datetime(value['generated_at']) <= timezone.now()
+        again = client.get(endpoint).json()
+        assert again['generated_at'] == value['generated_at']
+
+
+@pytest.mark.django_db
+def test_empty_period_and_hidden_diagnoses():
+    client = APIClient()
+    for endpoint in ('/api/clinic/', '/api/clinic/stats/'):
+        value = client.get(endpoint).json()
+        assert value['since'] is None and value['generated_at']
+    cache.clear()
+    row = diagnosis(account(), 9001, hidden_at=timezone.now(), diagnosed_at=timezone.now() - timedelta(days=60))
+    expected = timezone.localdate(row.post.fetched_at).isoformat()
+    assert client.get('/api/clinic/').json()['since'] == expected
+    assert client.get('/api/clinic/stats/').json()['since'] == expected
+
+
+@pytest.mark.django_db
+def test_report_categories_count_once_per_diagnosis_and_keep_original_names():
+    from news.weekly_report import build
+    acc = account()
+    diagnosis(acc, 9100, techniques=[
+        {'name': 'Liczby bez kontekstu', 'category': 'Liczba bez punktu odniesienia'},
+        {'name': 'Kwota bez porównania', 'category': 'Liczba bez punktu odniesienia'},
+        {'name': 'Dawna technika', 'category': 'Inne'},
+    ])
+    diagnosis(acc, 9101, techniques=[{'name': 'Liczby bez kontekstu', 'category': 'Liczba bez punktu odniesienia'}])
+    value = build()['techniques']['opposition']
+    assert len(value) == 2
+    assert value[0]['category'] == 'Liczba bez punktu odniesienia' and value[0]['count'] == 2
+    assert value[0]['original_names'] == ['Kwota bez porównania', 'Liczby bez kontekstu']
+    assert value[1]['category'] == 'Inne' and value[1]['count'] == 1

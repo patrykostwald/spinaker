@@ -3,17 +3,12 @@
 import { SpinSummary } from "../../components/clinic/SpinSummary";
 import { SourceDisclosure } from "../../components/clinic/SourceDisclosure";
 import Link from "next/link";
-import { FAMILY_OF } from "../../lib/techniqueFamilies";
+import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { useEffect, useRef, useState } from "react";
 import type { SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { SpinAvatar } from "../../components/clinic/SpinParts";
 
-const FAMILIES = [
-  ["dane", "Dane i wnioskowanie"],
-  ["przedstawienie", "Emocje i przedstawienie"],
-  ["spor", "Spór i odpowiedzialność"],
-] as const;
 const firstSentence = (text = "") => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 const characterCount = (text: string) => Array.from(text.replace(/https?:\/\/[^\s]+/g, "x".repeat(23))).length;
 function domain(url: string) {
@@ -95,8 +90,7 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
   const media = spin.post.media?.find(item => item.url);
   const videoFile = media && /\.(mp4|webm|mov)(?:[?#]|$)/i.test(media.url);
   const claims = spin.claims ?? [];
-  const techniques = (scan?.techniques ?? (spin.techniques ?? []).map(item => ({ ...item, name: item.category || item.name, family: FAMILY_OF[item.category || item.name] ?? "inne" })))
-    .filter((item, index, list) => list.findIndex(other => other.name === item.name) === index);
+  const { techniques, families } = diagnosisPresentation(spin);
   const analyzed = scan?.scope?.analyzed ?? (scan?.scope ? [scan.scope.text && "tekst", scan.scope.image && "obraz", scan.scope.video && "film"].filter(Boolean) : ["tekst", ...(media?.type === "photo" || media?.type === "image" ? ["obraz"] : [])]);
   const notAnalyzed = scan?.scope?.not_analyzed ?? (!scan?.scope?.video && spin.post.media?.some(item => ["video", "animated_gif", "amplify_video_thumb"].includes(item.type)) ? ["film"] : []);
   useEffect(() => {
@@ -143,9 +137,9 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
         <div className="sc-scan-details-grid">
           <div className="sc-scan-details-col">
             <h4>Techniki według rodzin</h4>
-            {FAMILIES.map(([key, label]) => {
+            {families.map(({ key, label, count }) => {
               const items = techniques.filter(item => item.family === key);
-              return <div className="sc-scan-fam" data-family={key} key={key}><p className="sc-scan-fam-head"><i />{label}<b>{items.length}</b></p>
+              return <div className="sc-scan-fam" data-family={key} key={key}><p className="sc-scan-fam-head"><i />{label}<b>{count}</b></p>
                 {items.length ? items.map((item, index) => {
                   const original = spin.techniques?.find(old => ("category" in item && item.category && old.category === item.category) || old.name === item.name || (item.quote && old.quote === item.quote));
                   return <div className="sc-scan-t-item" key={index}><strong>{item.name}</strong>{item.quote ? <q>{item.quote}</q> : null}<span>{item.explanation || original?.explanation}</span></div>;

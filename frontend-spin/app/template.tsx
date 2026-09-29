@@ -7,6 +7,11 @@ import { useMotionTokens } from "@spin-clinic/ui/kit";
 export default function RouteTemplate({ children }: { children: ReactNode }) {
   const m = useMotionTokens();
   useEffect(() => {
+    // Trwałe linki przekazów wskazują konkretną stronę dnia.
+    if (window.location.hash) {
+      document.getElementById(window.location.hash.slice(1))?.scrollIntoView();
+      return;
+    }
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, []);
   return (

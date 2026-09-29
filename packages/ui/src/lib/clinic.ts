@@ -15,6 +15,7 @@ export type Verdict = "spin" | "partial" | "no_spin" | "unclear";
 export type Party = { code: string; short: string; name: string };
 
 export type SpinAuthor = {
+  account_id?: number;
   name: string;
   handle: string;
   account_url: string;
@@ -71,7 +72,7 @@ export type SpinDetailData = SpinCardData & {
   council?: {
     agreement: string; chair: string; linguist: string; escalated: boolean;
     review: { ok: boolean | null; issues: string[]; model: string; revised?: boolean };
-    members: Array<{ model: string; verdict: string | null; intensity: number | null }>;
+    members: Array<{ model: string; verdict: string | null; intensity: number | null; status?: string }>;
   } | null;
   model: string;
   prompt_version: string;
@@ -102,13 +103,16 @@ export type SpinScan = {
 export type ScaleSide = { spin: number; partial: number; no_spin: number; unclear: number; assessed: number; share: number | null };
 export type SpinScale = { window_days: number; min_sample: number; enough_data: boolean; government: ScaleSide; opposition: ScaleSide };
 
-export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string };
+export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string; available?: boolean };
 export type DailyMessage = {
   id?: number; day: string; camp?: Camp; message: string; analysis?: string; themes: string[]; posts_count: number; model: string;
   posts?: MessagePost[];
+  created_at?: string;
+  reviewed_at?: string | null;
+  scope?: { date_from: string | null; date_to: string | null; timezone: string };
 };
 
-export type InterviewQuote = { name: string; quote: string; time: string; seconds: number | null; explanation: string };
+export type InterviewQuote = { name: string; category?: string; quote: string; time: string; seconds: number | null; explanation: string };
 export type InterviewClaim = SpinClaim & { time: string; seconds: number | null };
 export type Interview = {
   id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
@@ -119,7 +123,9 @@ export type Interview = {
   limitations: string; model: string; diagnosed_at: string | null;
 };
 
-export type ClinicPageData = {
+export type DataPeriod = { generated_at?: string; since?: string | null };
+
+export type ClinicPageData = DataPeriod & {
   notice: string;
   scale: SpinScale;
   messages: Record<Camp, DailyMessage | null>;
@@ -174,12 +180,15 @@ export const getClinicInterviews = (params: InterviewSearchParams = {}) => {
 };
 export const getClinicInterview = (id: number | string) => apiFetch<Interview>(`/api/clinic/interviews/${encodeURIComponent(id)}/`);
 export const getClinicMessages = (page = 1) => apiFetch<ArchivePage<MessageDay>>(`/api/clinic/messages/?page=${page}`);
+export const getClinicMessage = (day: string) => apiFetch<MessageDay>(`/api/clinic/messages/${encodeURIComponent(day)}/`);
 export type ClinicSearchParams = {
   page?: number;
   q?: string;
   camp?: Camp;
   verdict?: Verdict;
   party?: string;
+  /** Identyfikator rekordu konta X (account_id ze statystyk), nie nazwisko ani handle. */
+  account?: string;
   technique?: string;
   intensity_min?: number;
   intensity_max?: number;
@@ -200,14 +209,14 @@ export const searchClinicSpins = (params: ClinicSearchParams = {}) => {
   });
   return apiFetch<ClinicSearchResult>(`/api/clinic/spins/?${query}`);
 };
-export type ClinicStats = {
+export type ClinicStats = DataPeriod & {
   totals: {
     diagnosed: { total: number; today: number };
     read: { total: number; today: number };
     by_camp: Record<Camp, { accounts: number }>;
   };
   by_party: Record<string, { party: Party | null }>;
-  accounts?: Array<{ account_id: number }>;
+  accounts?: Array<{ account_id: number; name: string; handle: string }>;
   techniques: Record<string, Record<Camp, { count: number; enough_data: boolean }>>;
 };
 export const getClinicStats = () => apiFetch<ClinicStats>("/api/clinic/stats/");

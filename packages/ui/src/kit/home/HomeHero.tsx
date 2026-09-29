@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../Button";
 import { useQuery } from "@tanstack/react-query";
 import { getClinicPage } from "../../lib/clinic";
-import { formatDateTimePl } from "../../lib/utils";
+import { clinicPeriodLabel } from "../../lib/clinicPeriod";
 
 type DayPeriod = "morning" | "afternoon" | "evening";
 type ThemeName = "dark" | "light";
@@ -61,9 +61,9 @@ export function HomeHero() {
           </div>
         </div>
         {tiles ? (
-          <div className="sc-hero__stats" aria-label="Praca Kliniki od 23 września">
+          <div className="sc-hero__stats" aria-label="Praca Kliniki od początku">
             <ul>{tiles.map(([label, count]) => <li key={label}><strong>{count.toLocaleString("pl-PL")}</strong><span>{label}</span></li>)}</ul>
-            <p>od 23 września · stan na {formatDateTimePl(new Date(query.dataUpdatedAt).toISOString())}</p>
+            <p>{clinicPeriodLabel(query.data, query.dataUpdatedAt)}</p>
           </div>
         ) : <p className="sc-hero__stats-empty" role="status">{query.isPending ? "Wczytujemy liczniki…" : "Liczniki są chwilowo niedostępne."}{query.isError ? <> <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></> : null}</p>}
       </div>

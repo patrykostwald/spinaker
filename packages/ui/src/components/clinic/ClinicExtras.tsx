@@ -39,32 +39,16 @@ function Themes({ themes }: { themes: string[] }) {
   return themes.length ? <ul className="sc-spin-techniques" aria-label="Główne hasła">{themes.map(theme => <li key={theme}>{theme}</li>)}</ul> : null;
 }
 
-/** Przekaz dnia: skrót w boxie; kliknięcie otwiera pełną analizę i listę wpisów, z których powstał. */
+/** Przekaz dnia: skrót w boxie i trwały link do pełnej analizy ze źródłami. */
 export function MessageBox({ camp, message, emptyText, surface = "standalone" }: { camp: Camp; message: DailyMessage | null; emptyText?: string; surface?: "standalone" | "nested" }) {
-  const [open, setOpen] = useState(false);
   return (
     <article className="sc-clinic-message" data-surface={surface} data-camp={camp} data-clickable={message ? "" : undefined}>
       <p className="sc-clinic-kicker"><span>Przekaz dnia · {CAMP_LABELS[camp]}</span><AiTag /></p>
       {message ? <>
         <p className="sc-clinic-message__text">{message.message}</p>
         <Themes themes={message.themes} />
-        <Button variant="quiet" onClick={() => setOpen(true)} aria-haspopup="dialog">Czytaj przekaz i zobacz źródła →</Button>
+        <Button variant="quiet" href={`/klinika/przekazy/${message.day}#${camp === "government" ? "rzadzacy" : "opozycja"}`}>Czytaj przekaz i zobacz źródła →</Button>
         <footer className="sc-clinic-message__foot"><time dateTime={message.day}>{formatDatePl(message.day)}</time><span>Źródła: {message.posts_count} wpisów</span></footer>
-        <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Przekaz dnia · ${CAMP_LABELS[camp]} · ${formatDatePl(message.day)}`}>
-          <p className="sc-clinic-dialog__lead">{message.message}</p>
-          {message.analysis ? message.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>) : null}
-          <Themes themes={message.themes} />
-          {message.posts?.length ? <>
-            <h3>Źródła — wpisy ({message.posts.length})</h3>
-            <ul className="sc-clinic-dialog__posts">{message.posts.map(post => (
-              <li key={post.url}>
-                <a href={post.url} target="_blank" rel="noopener noreferrer"><strong>{post.author}</strong> @{post.handle} · {formatDateTimePl(post.published_at)} ↗</a>
-                <p>{post.text}</p>
-              </li>
-            ))}</ul>
-          </> : null}
-          <p className="sc-clinic-dialog__note"><AiTag /> Przekaz przygotował model {message.model || "AI"} z wpisów z oficjalnych kont. Przekaz jest publikowany automatycznie.</p>
-        </ClinicDialog>
       </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy wpisy opublikują co najmniej trzy konta tego obozu."}</p>}
     </article>
   );

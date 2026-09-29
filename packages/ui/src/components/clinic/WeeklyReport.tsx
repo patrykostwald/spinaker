@@ -4,8 +4,11 @@ import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch, DOMAIN } from "../../lib/api";
-import { CAMPS, CAMP_LABELS, type Camp, type SpinDetailData, type SpinScale as SpinScaleData, type Verdict } from "../../lib/clinic";
+import { DOMAIN } from "../../lib/api";
+import { CAMPS, CAMP_LABELS } from "../../lib/clinic";
+import { getClinicReport, reportWeekLabel as weekLabel, reportPublicationLabel, type ClinicReport as Report, type ReportResponse, type ReportTechnique } from "../../lib/clinicReports";
+import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
+import { formatDatePl, formatDateTimePl } from "../../lib/utils";
 import { measurePost } from "../../lib/xText";
 import { xIntentUrl } from "../../lib/xThread";
 import { Dialog } from "../Dialog";
@@ -14,23 +17,6 @@ import { ClinicNav } from "./ClinicNav";
 import { SpinAuthorRow } from "./SpinParts";
 import { Button } from "../../kit/Button";
 import { AiTag, VerdictTag } from "./SpinParts";
-
-type Report = {
-  week_start: string; week_end: string; summary: string; created_at: string;
-  diagnoses: Record<Camp, number>; scale: SpinScaleData; spin_of_week: SpinDetailData | null;
-  techniques: Record<Camp, Array<{ name: string; count: number }>>; deleted: Record<Camp, number>;
-  interviews: Array<{ id: number; day: string; headline: string; guest: string; channel: string; verdict: Verdict | "" }>;
-};
-type ReportResponse = { report: Report | null; archive: Array<{ week_start: string; week_end: string }> };
-
-const MONTHS = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
-
-function weekLabel(start: string, end: string): string {
-  const [ys, ms, ds] = start.split("-").map(Number);
-  const [ye, me, de] = end.split("-").map(Number);
-  if (ms === me && ys === ye) return `${ds}–${de} ${MONTHS[me - 1]} ${ye}`;
-  return `${ds} ${MONTHS[ms - 1]} – ${de} ${MONTHS[me - 1]} ${ye}`;
-}
 
 function shorten(text: string, budget: number): string {
   if (measurePost(text).weightedLength <= budget) return text;
@@ -61,7 +47,7 @@ function reportThread(report: Report, url: string): string[] {
 function ShareReport({ report }: { report: Report }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
-  const posts = reportThread(report, `https://${DOMAIN}/raport/${report.week_end}`);
+  const posts = reportThread(report, `https://${DOMAIN}/klinika/raporty/${report.week_end}`);
   async function copy(text: string, index: number) {
     try { await navigator.clipboard.writeText(text); setCopied(index); } catch { setCopied(null); }
   }
@@ -81,11 +67,24 @@ function ShareReport({ report }: { report: Report }) {
   </>;
 }
 
+function ReportTechniques({ items, diagnoses }: { items: ReportTechnique[]; diagnoses: number }) {
+  const presentation = diagnosisPresentation({ techniques: items });
+  if (!items.length) return <p className="sc-clinic-empty">Brak wskazanych technik.</p>;
+  return <div className="sc-report__families">{presentation.families.filter(family => family.count > 0).map(family => <section key={family.key}>
+    <h4>{family.label}</h4>
+    <ul>{items.map((item, index) => presentation.techniques[index].family === family.key ? <li key={`${item.name}-${index}`}>
+      {item.name} <span>{item.count} z {diagnoses} ({diagnoses ? `${Math.round(item.count / diagnoses * 100)}%` : "brak danych"})</span>
+      {item.original_names?.length ? <details><summary>Nazwy w diagnozach</summary><ul>{item.original_names.map(name => <li key={name}>{name}</li>)}</ul></details> : null}
+    </li> : null)}</ul>
+  </section>)}</div>;
+}
+
 /** Raport tygodnia Dr. Spina — automatyczne zestawienie z 7 dni: waga spinu, spin tygodnia, techniki, niedostępne wpisy, wywiady. */
-export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
+export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initialData?: ReportResponse }) {
   const query = useQuery({
     queryKey: ["clinic-report", weekEnd ?? "latest"],
-    queryFn: () => apiFetch<ReportResponse>(weekEnd ? `/api/clinic/report/${weekEnd}/` : "/api/clinic/report/"),
+    queryFn: () => getClinicReport(weekEnd),
+    initialData,
   });
   const data = query.data;
   if (query.isLoading) return <p className="sc-clinic-empty">Ładowanie raportu…</p>;
@@ -94,17 +93,18 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
   const report = data.report;
   return (
     <article className="sc-report">
-      {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
+      {query.isError ? <p role="status">Pobrano {formatDateTimePl(new Date(query.dataUpdatedAt).toISOString())}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       <ClinicNav />
       <SectionHeader variant="page" longTitle kicker={<>Raport tygodnia <AiTag /></>}
         title={<>Tydzień w spinie: {weekLabel(report.week_start, report.week_end)}</>}
         subtitle="Najważniejsze obserwacje z diagnoz opublikowanych w tym tygodniu."
         action={<ShareReport report={report} />} />
 
-      <p className="sc-ind-note">Okres: {report.week_start} – {report.week_end} · Publikacja: {new Date(report.created_at).toLocaleString("pl-PL")}</p>
-      <div className="sc-report__cols sc-report__counts">{CAMPS.map(camp => <section key={camp} data-camp={camp}><h2>{CAMP_LABELS[camp]}</h2><p><strong>{report.diagnoses[camp]}</strong> opublikowanych diagnoz</p><p>{report.scale[camp].assessed ? `${report.scale[camp].spin + report.scale[camp].partial} z ${report.scale[camp].assessed} (${Math.round((report.scale[camp].spin + report.scale[camp].partial) / report.scale[camp].assessed * 100)}%) ze spinem lub częściowym spinem` : "Brak diagnoz do obliczenia udziału spinu."}</p></section>)}</div>
-      <section className="sc-report__panel" aria-labelledby="report-observations"><h2 id="report-observations" className="sc-report__title">Trzy obserwacje</h2><ol>
-        <li>Opublikowano {report.diagnoses.government + report.diagnoses.opposition} diagnoz: {report.diagnoses.government} wpisów rządzących i {report.diagnoses.opposition} opozycji. To wybrane materiały, nie reprezentatywna próba całej polityki.</li>
+      <p className="sc-ind-note">{weekLabel(report.week_start, report.week_end)} · opublikowano {reportPublicationLabel(report.created_at)}</p>
+      <div className="sc-report__cols sc-report__counts">{CAMPS.map(camp => <section key={camp} data-camp={camp}><h2>{CAMP_LABELS[camp]}</h2><p><strong>{report.diagnoses[camp]}</strong> opublikowanych diagnoz</p></section>)}</div>
+      <p className="sc-report__note">To wybrane materiały, nie reprezentatywna próba całej polityki. Liczba diagnoz i udział spinu dotyczą tylko ocenionych wpisów; nie służą do oceniania osób ani całych obozów.</p>
+      <section className="sc-report__panel" aria-labelledby="report-observations"><h2 id="report-observations" className="sc-report__title">Trzy obserwacje</h2><ol className="sc-report__observations">
+        <li>Opublikowano {report.diagnoses.government + report.diagnoses.opposition} diagnoz: {report.diagnoses.government} wpisów rządzących i {report.diagnoses.opposition} opozycji.</li>
         <li>{CAMPS.map(camp => `${CAMP_LABELS[camp]} — najczęstsza technika: ${[...report.techniques[camp]].sort((a, b) => b.count - a.count)[0]?.name ?? "brak danych"}`).join(". ")}.</li>
         <li>Odnotowano {report.deleted.government + report.deleted.opposition} niedostępnych wpisów; niedostępność nie potwierdza usunięcia przez autora.</li>
       </ol>{report.summary ? <details><summary>Pełne podsumowanie tygodnia</summary><p>{report.summary}</p></details> : null}</section>
@@ -113,7 +113,7 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
         <section className="sc-report__panel sc-clinic-sotd" aria-labelledby="report-sotw">
           <h2 id="report-sotw" className="sc-report__title">Spin tygodnia</h2>
           <SpinAuthorRow author={report.spin_of_week.author} publishedAt={report.spin_of_week.post.published_at} />
-          <SpinSummary spin={report.spin_of_week} />
+          <SpinSummary spin={report.spin_of_week} compact />
           <Button href={`/klinika/${report.spin_of_week.id}`}>Pełna diagnoza ze źródłami →</Button>
         </section>
       ) : null}
@@ -123,8 +123,7 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
         <div className="sc-report__cols">{CAMPS.map(camp => (
           <div key={camp}>
             <h3>{CAMP_LABELS[camp]} <span>{report.diagnoses[camp]} ocenionych wpisów</span></h3>
-            {report.techniques[camp].length ? <ol>{report.techniques[camp].map(t => <li key={t.name}>{t.name} <span>{t.count} z {report.diagnoses[camp]} ({report.diagnoses[camp] ? `${Math.round(t.count / report.diagnoses[camp] * 100)}%` : "brak danych"})</span></li>)}</ol>
-              : <p className="sc-clinic-empty">Brak ocenionych wpisów.</p>}
+            <ReportTechniques items={report.techniques[camp]} diagnoses={report.diagnoses[camp]} />
           </div>
         ))}</div>
       </section>
@@ -139,17 +138,18 @@ export function WeeklyReport({ weekEnd }: { weekEnd?: string }) {
         <section className="sc-report__panel" aria-labelledby="report-interviews">
           <h2 id="report-interviews" className="sc-report__title">Wywiady dnia</h2>
           <ul className="sc-report__interviews">{report.interviews.map(row => (
-            <li key={row.id}><span>{row.day}</span><strong>{row.guest}</strong> <small>{row.channel}</small> — <Link href={`/klinika/wywiady/${row.id}`}>{row.headline || "Czytaj analizę"} →</Link>
+            <li key={row.id}><span>{formatDatePl(row.day)}</span><strong>{row.guest}</strong> <small>{row.channel}</small> — <Link href={`/klinika/wywiady/${row.id}`}>{row.headline || "Czytaj analizę"} →</Link>
               {row.verdict ? <> <VerdictTag verdict={row.verdict} label={row.verdict === "spin" ? "Spin" : row.verdict === "partial" ? "Częściowy spin" : row.verdict === "no_spin" ? "Bez spinu" : "Nie da się ocenić"} /></> : null}</li>
           ))}</ul>
         </section>
       ) : null}
 
+      <Link href="/klinika/raporty">Wszystkie raporty →</Link>
       {data.archive.length > 1 ? (
         <nav className="sc-report__archive" aria-label="Poprzednie raporty">
           <h2 className="sc-report__title">Poprzednie tygodnie</h2>
           <ul>{data.archive.map(week => (
-            <li key={week.week_end}><Link href={`/raport/${week.week_end}`} aria-current={week.week_end === report.week_end ? "page" : undefined}>{weekLabel(week.week_start, week.week_end)}</Link></li>
+            <li key={week.week_end}><Link href={`/klinika/raporty/${week.week_end}`} aria-current={week.week_end === report.week_end ? "page" : undefined}>{weekLabel(week.week_start, week.week_end)}</Link></li>
           ))}</ul>
         </nav>
       ) : null}

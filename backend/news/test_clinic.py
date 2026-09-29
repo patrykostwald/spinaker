@@ -592,7 +592,9 @@ def test_weekly_report_collects_the_week_without_paid_models(ai_on, monkeypatch)
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **k: ({'summary': 'W tym tygodniu Dr. Spin ocenił jeden post opozycji, w którym użyto fałszywej alternatywy.'}, 'm'))
     report = weekly_report.generate()
     assert report.summary.startswith('W tym tygodniu') and report.data['diagnoses'] == {'government': 0, 'opposition': 1}
-    assert report.data['techniques']['opposition'][0]['name'] == 'fałszywa alternatywa'
+    technique = report.data['techniques']['opposition'][0]
+    assert technique['name'] == technique['category'] == 'Fałszywa alternatywa'
+    assert technique['original_names'] == ['fałszywa alternatywa']
     data = APIClient().get('/api/clinic/report/').json()
     assert data['report']['week_end'] == str(report.week_end) and data['archive'][0]['week_end'] == str(report.week_end)
     assert APIClient().get('/api/clinic/report/nie-data/').status_code == 404

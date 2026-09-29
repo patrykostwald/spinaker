@@ -5514,3 +5514,60 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-spin-switch__tabs2 { justify-self: start; }
 .sc-spin-switch__tabs2 button { text-transform: none; letter-spacing: 0; }
 .sc-spin-switch__rule { margin: 0; font-size: 14px; line-height: 20px; color: var(--sc-text-2); }
+
+/* Fala D1 (zlecenie 029) */
+.sc-scan-m-num .sc-scan-agreement-caption { display: block; margin-top: 4px; font-size: 12px; line-height: 18px; }
+.sc-scan-vote-note { margin: 4px 0 0; font-size: 12px; line-height: 18px; color: var(--sc-text-2); }
+.sc-scan-g-fam[data-family="inne"] { color: var(--sc-text-2); }
+.sc-scan-g-fam[data-family="inne"] .sc-scan-g-track i { background: var(--sc-text-3); }
+.sc-scan-t [data-family="inne"] th i, .sc-scan-fam[data-family="inne"] .sc-scan-fam-head i { background: var(--sc-text-3); }
+.sc-spin-summary[data-compact] .sc-scan-g { display: none; }
+.sc-spin-summary .sc-scan-g-track[data-missing] { opacity: .35; }
+.sc-spin-summary[data-compact] .sc-scan-dg-point { margin-bottom: 12px; }
+.sc-clinic-message { grid-template-rows: auto 1fr auto auto auto; }
+.sc-message-detail__anchors { display: flex; flex-wrap: wrap; gap: 12px; }
+.sc-message-detail__anchors a { display: inline-flex; align-items: center; min-height: 44px; }
+.sc-message-detail__camp { scroll-margin-top: 100px; min-width: 0; display: grid; gap: 16px; }
+.sc-message-detail__camp + .sc-message-detail__camp { padding-top: 24px; border-top: 1px solid var(--sc-line); }
+.sc-message-detail__camp > p { max-width: 75ch; margin: 0; white-space: pre-line; }
+.sc-message-detail__lead { font-size: 18px; line-height: 28px; }
+.sc-message-detail__meta { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0; font-size: 12px; line-height: 18px; }
+.sc-message-detail__meta dt { color: var(--sc-text-3); }
+.sc-message-detail__meta dd { margin: 0; overflow-wrap: anywhere; }
+.sc-message-detail__sources { display: grid; gap: 16px; padding-left: 24px; margin: 0; max-width: 75ch; }
+.sc-message-detail__sources li { padding-left: 4px; overflow-wrap: anywhere; }
+.sc-message-detail__sources time { display: block; color: var(--sc-text-3); font-size: 12px; line-height: 18px; }
+.sc-message-detail__sources p { margin: 4px 0 0; white-space: pre-line; }
+.sc-report-archive__latest { display: grid; gap: 16px; padding: 20px; border-radius: var(--sc-radius-panel); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
+.sc-report-archive__latest > p { margin: 0; max-width: 75ch; }
+.sc-report-archive__latest > .sc-btn { justify-self: start; }
+.sc-report-archive__weeks { list-style: none; padding: 0; margin: 20px 0 0; }
+.sc-report-archive__weeks li { border-top: 1px solid var(--sc-line); }
+.sc-report-archive__weeks a { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 44px; padding-block: 12px; }
+.sc-report__observations { display: grid; gap: 12px; margin: 0; padding-left: 24px; list-style: decimal; }
+.sc-report__observations > li { display: list-item; padding-left: 4px; }
+.sc-report__counts { gap: 12px; }
+.sc-report__counts section { padding: 12px 16px; }
+.sc-report__counts h2 { margin: 0; font-size: 16px; line-height: 24px; }
+.sc-report__counts p { margin: 8px 0 0; font-size: 12px; line-height: 18px; }
+.sc-report__counts strong { font-size: 28px; line-height: 32px; }
+.sc-report__families { display: grid; gap: 16px; }
+.sc-report__families h4 { margin: 0 0 8px; font-size: 14px; line-height: 21px; }
+.sc-report__families ul { display: grid; gap: 8px; margin: 0; padding-left: 20px; }
+.sc-report__families details { font-size: 12px; line-height: 18px; color: var(--sc-text-2); }
+.sc-report__families summary { cursor: pointer; padding-block: 8px; }
+@media (min-width: 360px) {
+  .sc-report__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .sc-message-detail__lead { font-size: 16px; line-height: 26px; }
+  .sc-clinic-message { grid-template-rows: auto 1fr auto auto; gap: 12px; }
+  .sc-clinic-message > .sc-spin-techniques { display: none; }
+  .sc-clinic-message > .sc-clinic-message__text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .sc-clinic-message__foot { flex-wrap: wrap; }
+}
+@media (min-width: 360px) and (max-width: 760px) {
+  .sc-clinic-archives__day > .sc-clinic-archives__columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .sc-clinic-archives__day .sc-clinic-message { padding: 12px; }
+  .sc-clinic-archives__day .sc-clinic-message > .sc-clinic-kicker { flex-wrap: wrap; }
+}

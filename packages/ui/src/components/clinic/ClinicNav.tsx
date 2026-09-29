@@ -7,7 +7,7 @@ import { useId, useState } from "react";
 const pages = [
   ["/klinika", "Przegląd"], ["/klinika/diagnozy", "Diagnozy"],
   ["/klinika/wskazniki", "Wskaźniki"], ["/klinika/wywiady", "Wywiady"],
-  ["/klinika/przekazy", "Przekazy"], ["/raport", "Raporty"],
+  ["/klinika/przekazy", "Przekazy"], ["/klinika/raporty", "Raporty"],
 ] as const;
 
 export function ClinicNav() {

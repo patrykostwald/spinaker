@@ -9,6 +9,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from news import clinic, clinic_ai
+from news.techniques import technique_category
 
 REPORT_SYSTEM = """Jesteś Dr. Spinem z serwisu spin.clinic. Dostajesz dane z mijającego tygodnia (liczby, techniki,
 nagłówki diagnoz). Napisz podsumowanie tygodnia: 3–4 zdania, rzeczowo i neutralnie, jak w raporcie analitycznym,
@@ -39,9 +40,20 @@ def build(today=None) -> dict:
     techniques = {}
     for camp in clinic.CAMPS:
         counter = Counter()
+        names = {}
         for items in diagnoses.filter(post__camp_at_collection=camp).values_list('techniques', flat=True):
-            counter.update({str(item.get('name', '')).strip().lower() for item in items or [] if item.get('name')})
-        techniques[camp] = [{'name': name, 'count': count} for name, count in counter.most_common(5)]
+            categories = set()
+            for item in items or []:
+                if not isinstance(item, dict):
+                    continue
+                category = technique_category(item)
+                categories.add(category)
+                if item.get('name'):
+                    names.setdefault(category, set()).add(item['name'])
+            counter.update(categories)
+        techniques[camp] = [{'name': name, 'category': name, 'count': count,
+                             'original_names': sorted(names.get(name, []))}
+                            for name, count in sorted(counter.items(), key=lambda item: (-item[1], item[0]))]
     deleted = {camp: PoliticalPost.objects.filter(available=False, camp_at_collection=camp,
                                                   unavailable_at__gte=since, unavailable_at__lt=until).count()
                for camp in clinic.CAMPS}

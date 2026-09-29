@@ -18,7 +18,7 @@ from email.message import EmailMessage
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Min, Max, Q
 from django.utils import timezone
 
 from news import clinic_ai
@@ -139,6 +139,7 @@ def author_data(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     avatar = author.get('profile_image_url') or ''
     affiliation = party_affiliation(figure)
     return {
+        'account_id': post.account_id,
         'name': display_name(clean_account_name(figure.canonical_name if figure else (author.get('name') or post.account.display_name))),
         'handle': post.account.handle,
         'account_url': f'https://x.com/{post.account.handle}',
@@ -677,15 +678,19 @@ def scale_data(window_days: int = 7) -> dict:
     return result
 
 
-def _message_data(message: ClinicDailyMessage, with_posts: bool = False) -> dict:
+def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_posts: bool = False) -> dict:
     data = {'id': message.pk, 'day': message.day, 'camp': message.camp, 'message': message.message,
             'analysis': message.analysis, 'themes': message.themes, 'posts_count': message.posts.count(),
-            'model': message.model_name}
+            'model': message.model_name, 'created_at': message.created_at, 'reviewed_at': message.reviewed_at}
     if with_posts:
+        data['scope'] = {**message.posts.aggregate(date_from=Min('published_at'), date_to=Max('published_at')),
+                         'timezone': str(timezone.get_current_timezone())}
         # Źródła przekazu: posty, z których powstał (autor, link do X, fragment treści).
-        posts = list(message.posts.select_related('account').order_by('-published_at')[:60])
+        rows = message.posts.select_related('account').order_by('-published_at', '-pk')
+        posts = list(rows if all_posts else rows[:60])
         figures = figures_by_account({post.account_id for post in posts})
-        data['posts'] = [{'url': post.url, 'text': post.text[:280], 'published_at': post.published_at,
+        data['posts'] = [{'url': post.url, 'text': post.text[:280] if post.available else '',
+                          'available': post.available, 'published_at': post.published_at,
                           'author': (figures[post.account_id].canonical_name if post.account_id in figures
                                      else post.account.display_name), 'handle': post.account.handle} for post in posts]
     return data
@@ -772,7 +777,7 @@ def clinic_stats() -> dict:
     Każda liczba: łącznie od startu i dziś (od północy czasu polskiego). Pięć minut w pamięci podręcznej.
     """
     from django.core.cache import cache
-    cached = cache.get('clinic-stats:v2')
+    cached = cache.get('clinic-stats:v3')
     if cached is not None:
         return cached
     today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -784,6 +789,7 @@ def clinic_stats() -> dict:
         return {'total': total_qs.count(), 'today': today_qs.count()}
 
     result = {
+        **clinic_data_period(),
         'read': pair(PoliticalPost.objects.all(), PoliticalPost.objects.filter(fetched_at__gte=today)),
         'screened': pair(screened, screened.filter(created_at__gte=today)),
         'rejected': pair(screened.filter(status='not_applicable'), screened.filter(status='not_applicable', created_at__gte=today)),
@@ -797,8 +803,17 @@ def clinic_stats() -> dict:
             'spins': spins.filter(post__camp_at_collection=camp).count(),
         } for camp in CAMPS},
     }
-    cache.set('clinic-stats:v2', result, 300)
+    cache.set('clinic-stats:v3', result, 300)
     return result
+
+
+def clinic_data_period() -> dict:
+    """Zakres pracy od pierwszego odczytu lub publicznej diagnozy; nie data wpisu na X."""
+    first_read = PoliticalPost.objects.aggregate(first=Min('fetched_at'))['first']
+    first_diagnosis = published_diagnoses().aggregate(first=Min('diagnosed_at'))['first']
+    moments = [stamp for stamp in (first_read, first_diagnosis) if stamp is not None]
+    return {'generated_at': timezone.now().isoformat(),
+            'since': timezone.localdate(min(moments)).isoformat() if moments else None}
 
 
 def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
@@ -806,10 +821,12 @@ def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
     sotd = spin_of_day()
     columns = {camp: cards(published_diagnoses().filter(post__camp_at_collection=camp)
                            .order_by('-post__published_at', '-pk')[:per_camp]) for camp in CAMPS}
+    stats = clinic_stats()
     return {
+        'generated_at': stats['generated_at'], 'since': stats['since'],
         'notice': NOTICE_AUTO if auto_publish() else NOTICE_REVIEW,
         'scale': scale_data(window_days),
-        'stats': clinic_stats(),
+        'stats': stats,
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
         'spin_of_day': sotd,
         'spin_by_camp': spin_of_day_by_camp(),

@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timedelta
 
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
@@ -86,6 +87,25 @@ def clinic_messages(request):
                      'count': count})
 
 
+@extend_schema(summary='Przekazy konkretnego dnia: obie strony, zakres i źródła', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_message_detail(request, day):
+    try:
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', day):
+            raise ValueError
+        selected_day = date.fromisoformat(day)
+    except ValueError:
+        raise Http404
+    rows = list(ClinicDailyMessage.objects.filter(day=selected_day, status='approved', camp__in=clinic.CAMPS))
+    if not rows:
+        raise Http404
+    result = {'day': selected_day, 'government': None, 'opposition': None}
+    for row in rows:
+        result[row.camp] = clinic._message_data(row, with_posts=True, all_posts=True)
+    return Response(result)
+
+
 @extend_schema(summary='Klinika spinu: waga, przekazy dnia, spin dnia i diagnozy obu stron', tags=['klinika'],
                responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
@@ -112,6 +132,11 @@ def clinic_spins(request):
     if verdict in clinic.VERDICT_LABELS:
         rows = rows.filter(verdict=verdict)
     params = request.query_params
+    account = params.get('account', '')
+    if account:
+        if not re.fullmatch(r'[0-9]{1,19}', account) or not 0 < int(account) <= 9223372036854775807:
+            return Response({'detail': 'Nieprawidłowy identyfikator konta.'}, status=400)
+        rows = rows.filter(post__account_id=int(account))
     try:
         minimum = int(params.get('intensity_min', '0'))
         maximum = int(params.get('intensity_max', '100'))
@@ -222,7 +247,7 @@ def clinic_report(request, week_end=None):
     report = get_object_or_404(rows, week_end=week_end) if week_end else rows.first()
     if report is None:
         return Response({'report': None, 'archive': []})
-    archive = list(rows.values('week_start', 'week_end')[:26])
+    archive = list(rows.values('week_start', 'week_end'))
     return Response({'report': report_data(report), 'archive': archive})
 
 

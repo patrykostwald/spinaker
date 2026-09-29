@@ -5,12 +5,10 @@ import { techniqueLabel } from "../../lib/clinic";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { Interview, InterviewQuote } from "../../lib/clinic";
-import { FAMILY_OF } from "../../lib/techniqueFamilies";
+import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDatePl } from "../../lib/utils";
 import { VerdictTag } from "./SpinParts";
 
-const FAMILIES = [["dane", "Dane i wnioskowanie"], ["przedstawienie", "Emocje i przedstawienie"], ["spor", "Spór i odpowiedzialność"]] as const;
-const ASSESSMENTS = [["supported", "ok", "potw."], ["misleading", "mid", "mylące"], ["contradicted", "bad", "sprzeczne"], ["unverified", "unverified", "niesprawdzone"], ["opinion", "op", "opinie"]] as const;
 const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 function domain(url: string) {
   try { const parsed = new URL(url); return /^https?:$/.test(parsed.protocol) ? parsed.hostname.replace(/^www\./, "") : ""; }
@@ -44,12 +42,7 @@ export function InterviewScanner({ interview }: { interview: Interview }) {
   const expandRef = useRef<HTMLButtonElement>(null);
   const cardRef = useRef<HTMLElement>(null);
   const { guest, host } = interview;
-  const techniques = guest.techniques.map(item => ({ ...item, family: FAMILY_OF[(item as { category?: string }).category || item.name] ?? "inne" }));
-  const types = techniques.filter((item, index, all) => all.findIndex(other => other.name === item.name) === index);
-  const families: ReadonlyArray<readonly [string, string]> = types.some(item => item.family === "inne") ? [...FAMILIES, ["inne", "Inne techniki"]] : FAMILIES;
-  const familyCount = (key: string) => types.filter(item => item.family === key).length;
-  const familyMax = Math.max(1, ...FAMILIES.map(([key]) => familyCount(key)));
-  const checked = guest.claims.filter(item => ["supported", "misleading", "contradicted"].includes(item.assessment));
+  const { techniques, families, familyMax, typeCount, checked, claims, claimSquares } = diagnosisPresentation(guest);
   const path = `/klinika/wywiady/${interview.id}`;
   const shareText = `Dr. Spin (AI) · Wywiad z ${interview.guest_name} · ${guest.verdict_label} ${guest.intensity}/100\n${interview.headline}\nhttps://spin.clinic${path}`;
   const prefix = `interview-scan-${interview.id}`;
@@ -91,19 +84,19 @@ export function InterviewScanner({ interview }: { interview: Interview }) {
       <div className="sc-scan-m">
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Gość · Siła spinu</p><p className="sc-scan-m-num sc-scan-strength">{guest.intensity}<small>/100</small></p><ScoreGraphic value={guest.intensity} /></div>
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Prowadzący · Warsztat</p><p className="sc-scan-m-num">{host.intensity ?? <span className="sc-scan-missing">Brak odpowiedzi</span>}{host.intensity != null ? <small>/100</small> : null}</p><ScoreGraphic value={host.intensity} label={host.verdict_label} /></div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Twierdzenia</p><p className="sc-scan-m-num">{checked.length}<small> sprawdzone</small></p>
-          <div className="sc-scan-g"><span className="sc-scan-g-squares" aria-hidden="true">{guest.claims.map((item, index) => <i key={index} data-k={ASSESSMENTS.find(([key]) => key === item.assessment)?.[1]} />)}</span><span className="sc-scan-g-legend">{ASSESSMENTS.map(([key, kind, label]) => { const count = guest.claims.filter(item => item.assessment === key).length; return count ? <span key={key} data-k={kind}>{count} {label}</span> : null; })}</span></div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl" title="Liczymy zapisane pozycje analizy, bez scalania podobnych twierdzeń">Twierdzenia</p><p className="sc-scan-m-num">{checked}<small> sprawdzone</small></p>
+          <div className="sc-scan-g"><span className="sc-scan-g-squares" aria-hidden="true">{claimSquares.map((kind, index) => <i key={index} data-k={kind} />)}</span><span className="sc-scan-g-legend">{claims.map(claim => claim.count ? <span key={claim.key} data-k={claim.kind}>{claim.count} {claim.label}</span> : null)}</span></div>
         </div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{types.length}<small> {techniqueLabel(types.length)}</small></p><div className="sc-scan-g">{FAMILIES.map(([key, label]) => <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${familyCount(key) / familyMax * 100}%` }} /></span><b>{familyCount(key)}</b></span>)}</div></div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{typeCount}<small> {techniqueLabel(typeCount)}</small></p><div className="sc-scan-g">{families.map(({ key, label, count }) => <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${count / familyMax * 100}%` }} /></span><b>{count}</b></span>)}</div></div>
       </div>
-      <table className="sc-scan-t"><thead><tr><th>Rodzina technik</th><th>Techniki w analizowanym materiale</th><th className="sc-scan-t-n">Typy</th></tr></thead><tbody>{families.map(([key, label]) => <tr key={key} data-family={key}><th scope="row"><i />{label}</th><td>{types.filter(item => item.family === key).map(item => item.name).join(" · ") || <span className="sc-scan-t-none">Nie wskazano</span>}</td><td className="sc-scan-t-n">{familyCount(key)}</td></tr>)}</tbody></table>
+      <table className="sc-scan-t"><thead><tr><th>Rodzina technik</th><th>Techniki w analizowanym materiale</th><th className="sc-scan-t-n">Typy</th></tr></thead><tbody>{families.map(({ key, label, count, types }) => <tr key={key} data-family={key}><th scope="row"><i />{label}</th><td>{types.map(item => item.label).join(" · ") || <span className="sc-scan-t-none">Nie wskazano</span>}</td><td className="sc-scan-t-n">{count}</td></tr>)}</tbody></table>
       <footer className="sc-scan-dg-foot"><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a><div className="sc-scan-dg-actions">
         <button ref={expandRef} type="button" aria-expanded={expanded} aria-controls={`${prefix}-details`} onClick={() => expanded ? collapse() : setExpanded(true)}>{expanded ? "Zwiń uzasadnienie" : "Pokaż uzasadnienie"}</button>
         <button type="button" aria-expanded={sharing} aria-controls={`${prefix}-share`} onClick={() => setSharing(!sharing)}>Udostępnij</button><Link className="sc-scan-button sc-scan-primary" href={path}>Pełna analiza →</Link>
       </div></footer>
       <div className="sc-scan-expand" data-open={expanded}><div><section id={`${prefix}-details`} className="sc-scan-details" aria-label="Uzasadnienie" aria-hidden={!expanded}>
         <div className="sc-scan-details-grid">
-          <div className="sc-scan-details-col"><h4>Techniki gościa według rodzin</h4>{families.map(([key, label]) => <div className="sc-scan-fam" data-family={key} key={key}><p className="sc-scan-fam-head"><i />{label}<b>{familyCount(key)}</b></p>{techniques.some(item => item.family === key) ? techniques.filter(item => item.family === key).map(quote) : <p className="sc-scan-t-none">Nie wskazano</p>}</div>)}</div>
+          <div className="sc-scan-details-col"><h4>Techniki gościa według rodzin</h4>{families.map(({ key, label, count }) => <div className="sc-scan-fam" data-family={key} key={key}><p className="sc-scan-fam-head"><i />{label}<b>{count}</b></p>{techniques.some(item => item.family === key) ? guest.techniques.filter((_, index) => techniques[index].family === key).map(quote) : <p className="sc-scan-t-none">Nie wskazano</p>}</div>)}</div>
           <div className="sc-scan-details-col"><h4>Twierdzenia i dowody</h4>{guest.claims.length ? <ul className="sc-scan-cl">{guest.claims.map((claim, index) => <li key={index}><span className="sc-scan-assessment" data-assessment={claim.assessment}>{claim.assessment_label}</span><q>{claim.claim}</q><p>{firstSentence(claim.explanation)}</p><div className="sc-scan-cl-src">{claim.sources.filter(source => domain(source.url)).map((source, index) => <a key={index} tabIndex={expanded ? 0 : -1} href={source.url} target="_blank" rel="noopener noreferrer">{domain(source.url)}</a>)}<RecordingTime url={interview.url} item={claim} expanded={expanded} /></div></li>)}</ul> : <p>Brak osobno sprawdzonych twierdzeń.</p>}</div>
         </div>
         <section className="sc-scan-details-col"><h4>Warsztat prowadzącego</h4><p>{host.summary}</p>{host.notes.map(quote)}</section>

@@ -5,7 +5,8 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from news.clinic_interview import interview_data
-from news.clinic_models import ClinicDailyMessage, ClinicInterview
+from news.clinic_models import ClinicDailyMessage, ClinicInterview, WeeklyReport
+from news.test_clinic import account, post
 
 pytestmark = pytest.mark.django_db
 
@@ -92,3 +93,70 @@ def test_empty_archives_and_invalid_pages(endpoint):
     assert result['results'] == [] and result['count'] == 0 and result['next_page'] is None
     assert client.get(f'/api/clinic/{endpoint}/?page=invalid').status_code == 400
     assert client.get(f'/api/clinic/{endpoint}/?page=0').status_code == 200
+
+
+def test_message_detail_both_camps_scope_and_all_sources():
+    day = date(2026, 9, 27)
+    acc = account()
+    sources = [post(acc, str(4000 + index), hours_ago=index) for index in range(61)]
+    for camp in ('government', 'opposition'):
+        message = ClinicDailyMessage.objects.create(day=day, camp=camp, status='approved',
+            message=f'Przekaz {camp}', analysis='Pełna analiza', model_name='model-test', themes=['Temat'])
+        message.posts.add(*sources)
+    response = APIClient().get(f'/api/clinic/messages/{day}/')
+    assert response.status_code == 200
+    assert response.data['day'] == day
+    for camp in ('government', 'opposition'):
+        value = response.data[camp]
+        assert value['message'] == f'Przekaz {camp}' and value['analysis'] == 'Pełna analiza'
+        assert value['posts_count'] == len(value['posts']) == 61  # bez limitu 60 ze starego podglądu
+        assert value['scope']['date_from'] == sources[-1].published_at
+        assert value['scope']['date_to'] == sources[0].published_at
+        assert value['posts'][0]['url'] == sources[0].url
+        assert value['posts'][0]['handle'] == acc.handle
+        assert value['created_at'] and value['model'] == 'model-test'
+
+
+@pytest.mark.parametrize('status', ['pending_review', 'rejected'])
+def test_message_detail_missing_camp_does_not_expose_unpublished(status):
+    day = date(2026, 9, 27)
+    ClinicDailyMessage.objects.create(day=day, camp='government', status='approved', message='Jawny')
+    ClinicDailyMessage.objects.create(day=day, camp='opposition', status=status, message='Nieopublikowany')
+    value = APIClient().get(f'/api/clinic/messages/{day}/').json()
+    assert value['government']['message'] == 'Jawny' and value['opposition'] is None
+    assert value['government']['scope']['date_from'] is None
+    assert value['government']['posts'] == []
+
+
+@pytest.mark.parametrize('day', ['2026-09-27', '2026-02-30', '20260927', '2026-9-27', 'brak'])
+def test_message_detail_404(day):
+    ClinicDailyMessage.objects.create(day=date(2026, 9, 27), camp='government', status='pending_review', message='Ukryty')
+    assert APIClient().get(f'/api/clinic/messages/{day}/').status_code == 404
+
+
+def test_message_unavailable_source_retains_reference_without_text():
+    source = post(account())
+    source.available = False
+    source.save()
+    message = ClinicDailyMessage.objects.create(day=date(2026, 9, 27), camp='government', status='approved', message='Jawny')
+    message.posts.add(source)
+    value = APIClient().get('/api/clinic/messages/2026-09-27/').json()['government']['posts'][0]
+    assert value['url'] == source.url and value['available'] is False and value['text'] == ''
+
+
+def test_report_archive_keeps_all_weeks_and_historical_data():
+    client = APIClient()
+    assert client.get('/api/clinic/report/').json() == {'report': None, 'archive': []}
+    last = date(2026, 9, 27)
+    for index in range(28):
+        end = last - timedelta(weeks=index)
+        WeeklyReport.objects.create(week_start=end - timedelta(days=6), week_end=end,
+            summary=f'Tydzień {index}', data={'techniques': {'opposition': [{'name': 'Dawna nazwa', 'count': 1}]}})
+    data = client.get('/api/clinic/report/').json()
+    assert data['report']['week_end'] == str(last) and len(data['archive']) == 28
+    assert data['archive'][0]['week_end'] == str(last)
+    week = data['archive'][-1]['week_end']
+    detail = client.get(f'/api/clinic/report/{week}/').json()['report']
+    assert detail['week_end'] == week and detail['summary'] == 'Tydzień 27'
+    assert detail['techniques']['opposition'] == [{'name': 'Dawna nazwa', 'count': 1}]
+    assert client.get('/api/clinic/report/2026-09-28/').status_code == 404
