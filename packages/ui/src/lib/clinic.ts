@@ -50,10 +50,11 @@ export type SpinClaim = {
 };
 
 export type SpinDetailData = SpinCardData & {
+  scan?: SpinScan;
   /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
   x_share?: string[];
   analysis: string;
-  techniques: Array<{ name: string; quote: string; explanation: string }>;
+  techniques: Array<{ name: string; quote: string; explanation: string; category?: string }>;
   claims: SpinClaim[];
   limitations: string;
   /** Synteza diagnozy do wątku na X (pusta, dopóki darmowy model jej nie przygotuje). */
@@ -70,6 +71,24 @@ export type SpinDetailData = SpinCardData & {
   reviewed_at: string | null;
   auto_published?: boolean;
   notice: string;
+};
+
+/** Opcjonalne dane skanera; starsze API nadal korzysta z pól diagnozy. */
+export type SpinScan = {
+  families?: Record<string, { technique_types?: number }>;
+  techniques?: Array<{ category?: string; family?: string; name: string; quote?: string; explanation?: string }>;
+  claims?: { checked?: number; supported?: number; misleading?: number; contradicted?: number; opinions?: number; distinct?: number; unverified?: number };
+  sources?: number;
+  source_domains?: string[];
+  scope?: { text?: boolean; image?: boolean; video?: boolean; analyzed?: string[]; not_analyzed?: string[] };
+  council?: {
+    models?: number; agreement?: string | null; verdict_agreement?: string | null;
+    range?: number[] | null; votes?: Array<{ model: string; verdict: string | null; intensity: number | null }>;
+    method?: string; chair?: string; escalated?: boolean; reviewed?: boolean;
+  };
+  synthesis?: { lead?: string; points?: string[] } | null;
+  share?: { single?: string };
+  diagnosed_at?: string | null;
 };
 
 export type ScaleSide = { spin: number; partial: number; no_spin: number; unclear: number; assessed: number; share: number | null };
@@ -98,7 +117,7 @@ export type ClinicPageData = {
   messages: Record<Camp, DailyMessage | null>;
   spin_of_day: SpinDetailData | null;
   /** Spin dnia każdej strony; `order` — najpierw strona z mocniejszym (świeższym) spinem. `window`: today | 24h | 72h | latest. */
-  spin_by_camp?: { spins: Record<Camp, (SpinDetailData & { window: string }) | null>; order: Camp[] };
+  spin_by_camp?: { spins: Record<Camp, (SpinDetailData & { window: string; pool?: number; window_label?: string }) | null>; order: Camp[] };
   latest_spin: SpinDetailData | null;
   interview: Interview | null;
   /** Drugi wywiad dnia — dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */
