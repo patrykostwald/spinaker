@@ -94,6 +94,8 @@ const IMAGE_SIZES: Record<NewsCardSize, string> = {
 const VIEWPORT_MARGIN = 16;
 /** Zwijanie ze stopnia B: czas sprężyny `collapse` (0.26s, bounce 0) i jej odpowiednik krzywą — jedyna
  *  animacja poza `useMotionTokens().t()`, bo idzie przez Web Animations, nie przez framer (patrz leave()). */
+/** Serce „ulubione” w powiększonym boxie — wyłączone do czasu kont czytelników (decyzja właściciela 29.09). */
+const FAVORITES_ENABLED = false;
 const COLLAPSE_MS = 340;
 const COLLAPSE_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
@@ -472,7 +474,7 @@ export function NewsCard({
         data-size={size}
         data-stage={stage}
         data-layout={size === "large" ? layout : undefined}
-        data-has-action={action || grown ? "" : undefined}
+        data-has-action={action || (grown && FAVORITES_ENABLED) ? "" : undefined}
         data-no-image={article.image_url?.trim() ? undefined : ""}
         data-expandable={expandable || undefined}
         className="sc-card sc-hoverable"
@@ -556,7 +558,7 @@ export function NewsCard({
           <div className="sc-card__action">{action}</div>
         ) : (
           <AnimatePresence initial={false}>
-            {grown ? (
+            {grown && FAVORITES_ENABLED ? (
               <motion.div
                 key="fav"
                 className="sc-card__action"
