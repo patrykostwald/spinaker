@@ -9,6 +9,37 @@ from django.utils import timezone
 from news.models import ImportState
 
 
+@shared_task(bind=True, name='news.tasks.clinic_archive_task', max_retries=60, rate_limit='6/m',
+             soft_time_limit=25, time_limit=30)
+def clinic_archive_task(self, post_id, job_id=''):
+    """Osobna kolejka; wspólna blokada zachowuje odstęp także przy wielu workerach."""
+    import re
+    import requests
+    from news.clinic_lab import archive_request
+    from news.political_models import PoliticalPost
+    post = PoliticalPost.objects.filter(pk=post_id).first()
+    if post is None or post.archive_url:
+        return {'status': 'pominięto'}
+    if not cache.add('clinic-archive:spacing', 1, timeout=11):
+        raise self.retry(countdown=11)
+    try:
+        result = archive_request(post.url, job_id)
+    except (requests.RequestException, ValueError, TypeError, KeyError):
+        raise self.retry(countdown=60)
+    if not isinstance(result, dict):
+        return {'status': 'brak odpowiedzi'}
+    if result.get('status') == 'success' and re.fullmatch(r'\d{14}', str(result.get('timestamp', ''))):
+        url = f"https://web.archive.org/web/{result['timestamp']}/{post.url}"
+        if len(url) > 500:
+            return {'status': 'url_too_long'}
+        PoliticalPost.objects.filter(pk=post.pk, archive_url='').update(archive_url=url, archive_checked_at=timezone.now())
+        return {'status': 'ok', 'archive_url': url}
+    next_job = result.get('job_id') or job_id
+    if next_job and result.get('status') not in ('error', 'pominięto'):
+        raise self.retry(args=[post_id, next_job], countdown=15)
+    return {'status': result.get('status', 'brak odpowiedzi')}
+
+
 @shared_task(name="news.tasks.clinic_diagnose_task", soft_time_limit=1500, time_limit=1600)
 def clinic_diagnose_task():
     """Diagnozy nowych postów polityków (Klinika spinu). Wyłączone bez CLINIC_AI_ENABLED i klucza."""

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from news.clinic_api import clinic_council
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import newsletter
@@ -54,6 +55,7 @@ urlpatterns = [
     path('clinic/interviews/', clinic_interviews),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
     path('clinic/messages/', clinic_messages),
+    path('clinic/council/', clinic_council),
     path('clinic/spins/', clinic_spins),
     path('clinic/stats/', clinic_statistics),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),

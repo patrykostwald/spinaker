@@ -29,6 +29,14 @@ X_PROFILE = re.compile(r'^https?://(?:www\.|mobile\.)?(?:x|twitter)\.com/([A-Za-
 RESERVED_PATHS = {'home', 'search', 'explore', 'i', 'intent', 'share', 'settings', 'messages', 'notifications', 'login', 'signup', 'tos', 'privacy'}
 
 
+@extend_schema(summary='Skład Konsylium i przyjęcie Karty', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_council(request):
+    from news.council_charter import council_data
+    return Response(council_data())
+
+
 @extend_schema(summary='Archiwum opublikowanych wywiadów', tags=['klinika'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 @permission_classes([AllowAny])

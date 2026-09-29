@@ -247,8 +247,13 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         result = clinic_ai.diagnose(_post_context(row.post, figure))
     except clinic_ai.ClinicAIError as error:
         row.status, row.error = 'failed', error.code
+        if hasattr(error, 'council'):
+            row.usage = {**(row.usage or {}), 'council': error.council}
         row.provider, row.model_name = 'anthropic', clinic_ai.model_name()
     else:
+        if 'lab' not in result:
+            from news.clinic_lab import run_lab
+            result['lab'] = run_lab(row.post.text, result.get('claims', []), result.get('loaded_words'))
         usage = result.pop('usage', {})
         usage['loaded_words'] = result.pop('loaded_words', [])
         for field, value in result.items():
@@ -262,6 +267,8 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
     row.prompt_version = clinic_ai.PROMPT_VERSION
     row.save()
     if row.status in ('approved', 'pending_review'):
+        from news.clinic_lab import queue_archive
+        queue_archive(row.post)
         ensure_x_thread(row)
     return row
 
@@ -613,6 +620,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
     data = card_data(diagnosis, figures, counts)
     data.update({
         'analysis': diagnosis.analysis,
+        'lab': diagnosis.lab,
         'techniques': diagnosis.techniques,
         'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')}
                    for claim in (clean_claim(item) for item in diagnosis.claims)],

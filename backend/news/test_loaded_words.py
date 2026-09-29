@@ -74,7 +74,8 @@ def test_schemas_and_council_validation(monkeypatch):
     for schema in [clinic_ai.DIAGNOSIS_SCHEMA, clinic_council.MEMBER_SCHEMA]:
         assert 'loaded_words' not in schema['required']
         assert schema['properties']['loaded_words']['items']['properties']['kind']['enum'] == list(KINDS)
-    raw = {'verdict': 'spin', 'loaded_words': [{'word': 'TRAGEDIA', 'kind': 'strach'},
+    raw = {'verdict': 'spin', 'intensity': 50, 'techniques': [], 'claims': [],
+           'loaded_words': [{'word': 'TRAGEDIA', 'kind': 'strach'},
                                              {'word': 'zdrada', 'kind': 'gniew'}]}
     monkeypatch.setattr(clinic_council, 'ask', lambda *a, **kw: raw)
     opinion = clinic_council._opinion(('groq', 'test'), 'Tragedia', '')

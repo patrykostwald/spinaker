@@ -111,7 +111,8 @@ def scan_data(row):
                 continue
     council = (row.usage or {}).get('council') or {}
     votes = [{'model': model_label(m.get('model')), 'verdict': m.get('verdict'),
-              'intensity': m.get('intensity')} for m in council.get('members') or []]
+              'intensity': m.get('intensity')} for m in council.get('members') or []
+             if m.get('status') != 'brak odpowiedzi']
     thread = row.x_thread or []
     safe = (not (claims['unverified'] + claims['opinions']) or
             (row.usage or {}).get('scan_synthesis') == synthesis_fingerprint(row))
@@ -119,6 +120,7 @@ def scan_data(row):
     scores = [v['intensity'] for v in votes if isinstance(v['intensity'], (int, float))]
     agreement = f"{sum(v['verdict'] == row.verdict for v in votes)}/{len(votes)}" if votes else None
     return {'loaded': loaded_data(row.post.text, (row.usage or {}).get('loaded_words')),
+            'lab': getattr(row, 'lab', {}),
             'families': {key: {'technique_types': count} for key, count in families.items()}, 'techniques': techniques[:6], 'claims': claims, 'sources': len(sources), 'source_domains': sorted(sources)[:5],
             'scope': scope_data(row.post), 'share': {'single': single_share(row, synthesis)},
             'diagnosed_at': row.diagnosed_at,

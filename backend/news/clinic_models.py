@@ -41,6 +41,7 @@ class SpinDiagnosis(models.Model):
     analysis = models.TextField(blank=True)
     techniques = models.JSONField(default=list, blank=True)
     claims = models.JSONField(default=list, blank=True)
+    lab = models.JSONField(default=dict, blank=True)
     limitations = models.TextField(blank=True)
     x_thread = models.JSONField(default=list, blank=True,
                                 help_text='Synteza diagnozy do wątku na X (darmowy model): wpis otwierający i 2–3 kolejne.')
@@ -83,6 +84,17 @@ class SpinDiagnosis(models.Model):
     @property
     def camp(self):
         return self.post.camp_at_collection
+
+
+class CouncilCharterAcceptance(models.Model):
+    """Historia odpowiedzi modeli; zmiana Karty nie nadpisuje poprzednich deklaracji."""
+    model = models.CharField(max_length=200)
+    provider = models.CharField(max_length=32)
+    company = models.CharField(max_length=100)
+    charter_version = models.CharField(max_length=32)
+    charter_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(default=timezone.now)
+    response = models.JSONField(default=dict)
 
 
 class ClinicDailyMessage(models.Model):
