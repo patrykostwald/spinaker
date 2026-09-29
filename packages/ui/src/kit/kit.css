@@ -5893,3 +5893,13 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   .sc-iv-card__text { max-width: 600px; }
   .sc-iv-card .sc-interview-results { align-self: start; }
 }
+
+/* „Jak działa analiza” na prawym końcu paska Kliniki (decyzja właściciela 30.09.2026) */
+.sc-clinic-nav .sc-clinic-nav__aside { margin-left: auto; color: var(--sc-accent); }
+@media (max-width: 760px) { .sc-clinic-nav .sc-clinic-nav__aside { margin-left: 0; } }
+/* Klinika: podtytuły sekcji w jednej linii na komputerze; nazwy obozów wyśrodkowane nad kolumnami (właściciel, 30.09.2026) */
+.sc-clinic .sc-section-header__subtitle { max-width: none; }
+.sc-camp-heading { justify-content: center; }
+/* Mniej pustego miejsca nad stopką: ostatnia sekcja bez dolnego marginesu, treść kończy się 32 px nad paskiem (właściciel, 30.09.2026) */
+.sc-app-main { padding-bottom: 32px; }
+.sc-app-main > * > :last-child, .sc-app-main > :last-child { margin-bottom: 0; }

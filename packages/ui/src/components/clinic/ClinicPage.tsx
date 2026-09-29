@@ -150,7 +150,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {!embedded ? <ClinicNav /> : null}
       <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title="Dr. Spin"
         subtitle={<><AiTag /> Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji i źródła.</>}
-        link={<Link href="/metodologia">Jak działa analiza</Link>} />
+        link={embedded ? <Link href="/metodologia">Jak działa analiza</Link> : undefined} />
 
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
