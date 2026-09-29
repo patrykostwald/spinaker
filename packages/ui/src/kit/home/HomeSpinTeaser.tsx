@@ -52,7 +52,6 @@ export function HomeSpinTeaser() {
           <p className="sc-scan-s-rule">{spin.window === "latest" ? "Najnowsza dostępna diagnoza tej strony — w ostatnich trzech dobach nie było nowych diagnoz." :
             `Pokazujemy wpis z najwyższą siłą spinu wśród ${spin.pool ?? "dostępnych"} przeanalizowanych wpisów ${shown === "government" ? "rządzących" : "opozycji"} (${spin.window_label || ({ today: "dzisiaj", "24h": "ostatnia doba", "72h": "ostatnie trzy doby" }[spin.window] ?? "okres niepodany")}).`}</p>
           <HomeSpinScanner key={`${shown}-${spin.id}`} spin={spin} />
-          <p className="sc-t-caption">Diagnoza opublikowana: <time dateTime={spin.created_at}>{new Date(spin.created_at).toLocaleString("pl-PL", { timeZone: "Europe/Warsaw" })}</time>.</p>
         </> : <p>Nie ma jeszcze opublikowanych diagnoz dla tego wyboru.</p>}
       </div>
       <p className="sc-home-doctor__scale">
