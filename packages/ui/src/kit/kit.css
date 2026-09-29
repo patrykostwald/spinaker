@@ -5000,7 +5000,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-scan-s *, .sc-scan-s *::before, .sc-scan-s *::after { box-sizing: border-box; }
 .sc-scan-s a { text-decoration: none; }
 .sc-scan-s a:hover { text-decoration: underline; }
-.sc-scan-s button, .sc-scan-button { min-height: 44px; border: 1px solid var(--sc-line); border-radius: 10px; padding: 10px 12px; background: transparent; color: var(--sc-text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.sc-scan-s button, .sc-scan-card button, .sc-scan-button { min-height: 44px; border: 1px solid var(--sc-line); border-radius: 10px; padding: 10px 12px; background: transparent; color: var(--sc-text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .sc-scan-s :is(button, a, textarea):focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 3px; }
 .sc-scan-s-links { flex-wrap: wrap; }
 .sc-scan-s-links a:last-child, .sc-scan-p-meta a { color: var(--sc-accent); }
@@ -5137,3 +5137,26 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-scan-fam .sc-scan-t-none { margin: 0; color: var(--sc-text-3); }
 .sc-scan-details > button { justify-self: start; }
 @media (max-width: 760px) { .sc-scan-details-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+/* Wywiad dnia — materiał i uzupełnienia wspólnego skanera (zlecenie 021). */
+.sc-interview-scan .sc-scan-p-inner { position: static; height: 100%; max-height: none; }
+.sc-interview-scan .sc-scan-p-inner > p { margin: 0; }
+.sc-interview-scan .sc-interview-scan-media { position: relative; display: flex; flex: 1 0 auto; align-items: center; min-height: 0; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: var(--sc-surface-3); }
+.sc-interview-scan-media img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; }
+.sc-interview-scan-media > span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 40px; color: var(--sc-text); text-shadow: 0 2px 8px var(--sc-surface); }
+.sc-interview-scan-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: auto; font-size: 12px; color: var(--sc-text-3); }
+.sc-interview-scan-meta time { flex: none; }
+.sc-interview-scan-meta a { min-width: 0; text-align: right; }
+.sc-interview-scan-host-label { font-size: 11px; line-height: 14px; color: var(--sc-text-3); margin-bottom: 6px; }
+.sc-interview-scan .sc-scan-g-track[data-missing] { background: var(--sc-text-3); opacity: .35; }
+.sc-interview-scan .sc-scan-m-lbl { white-space: normal; min-height: 32px; }
+.sc-interview-scan .sc-scan-g-legend { display: flex; flex-wrap: wrap; gap: 0 6px; font-size: 10px; line-height: 14px; }
+.sc-interview-scan .sc-scan-g-squares { gap: 3px; overflow: hidden; }
+.sc-interview-scan .sc-scan-g-squares i { width: 10px; height: 10px; flex: none; }
+.sc-interview-scan .sc-scan-g-fam { grid-template-columns: 40px minmax(0, 1fr) 18px; }
+@media (max-width: 760px) {
+  .sc-interview-scan .sc-interview-scan-media { flex-grow: 0; }
+}
+/* Wywiad: miniatura wypełnia obszar filmu (bez szarej pustki). */
+.sc-interview-scan-media img { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; object-fit: cover; }
+.sc-interview-scan .sc-scan-g-fam em { overflow: visible; }
+.sc-interview-scan .sc-scan-g-fam { grid-template-columns: 52px minmax(0, 1fr) 18px; }

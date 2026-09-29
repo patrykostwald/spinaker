@@ -13,7 +13,8 @@ import { ShareSpinOnX } from "./ShareSpinOnX";
 import { ClinicShowcase } from "./ClinicIndicators";
 import { HomeSpinScanner } from "../../kit/home/HomeSpinScanner";
 import { formatDateTimePl } from "../../lib/utils";
-import { InterviewBox, MessageBox, MessageHistory, PoliticiansTable, SpinSwitch } from "./ClinicExtras";
+import { InterviewScanner } from "./InterviewScanner";
+import { InterviewArchive, MessageBox, MessageHistory, PoliticiansTable, SpinSwitch } from "./ClinicExtras";
 
 export { MessageBox } from "./ClinicExtras";
 
@@ -189,8 +190,9 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           <p><Link href="/klinika/przekazy">Archiwum przekazów →</Link></p>
         </div>
 
-        {data.interview ? <InterviewBox interview={data.interview} archive={data.interview_second ? [] : data.interview_archive} /> : null}
-        {data.interview_second ? <InterviewBox interview={data.interview_second} archive={data.interview_archive} /> : null}
+        {data.interview ? <InterviewScanner interview={data.interview} /> : null}
+        {data.interview_second ? <InterviewScanner interview={data.interview_second} /> : null}
+        {data.interview_archive?.length ? <InterviewArchive items={data.interview_archive} /> : null}
 
         {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
         <div className="sc-clinic-group">

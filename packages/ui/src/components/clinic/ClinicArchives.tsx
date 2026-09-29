@@ -6,7 +6,8 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { CAMPS, getClinicInterviews, getClinicMessages, type Interview } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
-import { InterviewAnalysis, MessageBox } from "./ClinicExtras";
+import { MessageBox } from "./ClinicExtras";
+import { InterviewScanner } from "./InterviewScanner";
 import { IntensityMeter, VerdictTag } from "./SpinParts";
 
 function ArchiveNavigation() {
@@ -79,13 +80,8 @@ export function ClinicInterviewArchive() {
 export function ClinicInterviewPage({ interview }: { interview: Interview }) {
   return <main className="sc-clinic-archives">
     <ArchiveNavigation />
-    <article className="sc-clinic-archives__detail">
-      <p><time dateTime={interview.day}>{formatDatePl(interview.day)}</time> · {interview.channel}</p>
-      <h1>{interview.title || interview.headline}</h1>
-      <p>Gość: {guestLabel(interview)} · Prowadzący: {interview.host_name}</p>
-      <p>{interview.summary}</p>
-      <InterviewAnalysis interview={interview} />
-    </article>
+    <h1>{interview.title || interview.headline}</h1>
+    <InterviewScanner interview={interview} />
   </main>;
 }
 

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import { FAMILY_OF } from "../../lib/techniqueFamilies";
 import { useEffect, useRef, useState } from "react";
 import type { SpinDetailData } from "../../lib/clinic";
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
@@ -11,15 +12,6 @@ const FAMILIES = [
   ["przedstawienie", "Emocje i przedstawienie"],
   ["spor", "Spór i odpowiedzialność"],
 ] as const;
-/** Rodzina każdej kategorii techniki (jak backend/news/techniques.py) — gdy odpowiedź API nie ma jeszcze pola scan. */
-const FAMILY_OF: Record<string, string> = {
-  "Liczba bez punktu odniesienia": "dane", "Wybiórcze dane": "dane", "Pominięcie kontekstu": "dane", "Przeinaczenie faktów": "dane",
-  "Teza bez dowodu": "dane", "Fałszywa przyczynowość": "dane", "Nadmierne uogólnienie": "dane", "Fałszywa analogia i skojarzenie": "dane",
-  "Fałszywa alternatywa": "dane", "Odwołanie do autorytetu": "dane",
-  "Apel do emocji": "przedstawienie", "Straszenie": "przedstawienie", "Przesada": "przedstawienie", "Etykietowanie": "przedstawienie",
-  "My kontra oni": "przedstawienie", "Sugestia i niedopowiedzenie": "przedstawienie",
-  "Atak na osobę": "spor", "Przypisywanie intencji": "spor", "Słomiany człowiek": "spor", "Zmiana tematu": "spor", "Przypisywanie sobie zasług": "spor",
-};
 const modelLabel = (model = "") => /gpt/i.test(model) ? "GPT" : /qwen/i.test(model) ? "Qwen" : /gemini/i.test(model) ? "Gemini" : /claude/i.test(model) ? "Claude" : /nemotron/i.test(model) ? "Nemotron" : model;
 const opinionsLabel = (n: number) => n === 1 ? "opinia" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "opinie" : "opinii";
 const firstSentence = (text = "") => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
