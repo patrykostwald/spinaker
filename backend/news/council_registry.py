@@ -18,10 +18,10 @@ URLS = {'groq': 'https://api.groq.com/openai/v1/chat/completions',
 POLISH_MODELS = ('bielik', 'pllum')
 CHARTER_SUMMARY = ('\nKarta Konsylium: 1. Bez sympatii politycznych. 2. Badaj słowa, nie ludzi. '
                    '3. Ta sama miara dla obu stron. 4. Nie zgaduj intencji. '
-                   '5. Status twierdzenia i źródło oceny faktu. 6. Wierne cytaty. '
+                   '5. Każde twierdzenie ma status (potwierdzone, sprzeczne, mylące, niezweryfikowane); ocena faktu wymaga źródła. 6. Wierne cytaty. '
                    '7. Ujawniaj zakres i braki analizy. 8. Pokazuj różnice zdań. '
                    '9. Automatyczna publikacja; człowiek tylko wycofuje diagnozę. '
-                   '10. Jawne, datowane korekty i prawo odpowiedzi. 11. Jawne modele, wersje, role i narzędzia. '
+                   '10. Prawo do zgłoszenia błędu i odpowiedzi; operator może tylko ukryć diagnozę. 11. Jawne modele, wersje, role i narzędzia. '
                    '12. Bez pieniędzy partii i polityków; wsparcie nie wpływa na ocenę.')
 
 
