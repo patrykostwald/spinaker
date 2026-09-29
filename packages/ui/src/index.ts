@@ -75,3 +75,5 @@ export * from "./lib/features";
 export { HowItWorksFilm } from "./components/HowItWorksFilm";
 export { CouncilRoster } from "./components/clinic/CouncilRoster";
 export { siteNavigation, socialChannels } from "./lib/siteNavigation";
+
+export { sourceDirectory, directoryGroup, channelIdentity } from "./lib/sourceDirectory";

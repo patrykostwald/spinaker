@@ -5935,3 +5935,23 @@ a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items:
 .sc-howto dt { font-size: 13px; font-weight: 700; }
 .sc-howto dd { margin: 2px 0 0; font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
 .sc-howto > p { margin: 0; padding: 12px 16px 16px; font-size: 14px; }
+
+/* Źródła i osoby (zlecenie 047) */
+.sc-directory-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-3); }
+.sc-source-directory-filter { display: grid; gap: var(--sc-s-2); }
+.sc-source-directory-filter select { min-height: 44px; max-width: 100%; padding: var(--sc-s-2); color: var(--sc-text); background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-r-sm); }
+.sc-source-page__grid li { flex-wrap: wrap; align-items: center; }
+.sc-source-page__grid li > span { flex: 1 1 100%; }
+.sc-source-page__grid li > small { max-width: 100%; white-space: normal; }
+.sc-source-page__grid li > span > a, .sc-public-directory__name { display: inline-flex; align-items: center; min-height: 44px; overflow-wrap: anywhere; max-width: 100%; }
+.sc-source-page .sc-source-chips { display: flex; flex-wrap: wrap; }
+.sc-source-page a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items: center; justify-content: center; }
+.sc-public-directory, .sc-public-directory__filters > *, .sc-source-page__suggestion .sc-search { min-width: 0; }
+.sc-public-directory { overflow-wrap: anywhere; }
+.sc-public-directory .sc-btn, .sc-source-page .sc-btn, .sc-source-editor .sc-btn { min-height: 44px; }
+@media (max-width: 480px) {
+  .sc-source-page__suggestion .sc-search-form { display: flex; flex-direction: column; align-items: stretch; }
+  .sc-source-page__suggestion .sc-search { width: 100%; flex-basis: auto; }
+  .sc-public-directory__filters { grid-template-columns: minmax(0, 1fr); }
+  .sc-public-directory__list li > div { width: 100%; }
+}
