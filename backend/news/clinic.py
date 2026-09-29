@@ -598,6 +598,7 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
         'technique_groups': technique_groups(diagnosis.techniques),
         'scan': scan_data(diagnosis),
         'post': {'id': post.post_id, 'url': post.url, 'text': post.text, 'published_at': post.published_at,
+                 'available': post.available,
                  'media': _media(post), 'likes': metrics.get('like_count', 0), 'reposts': metrics.get('retweet_count', 0)},
         'author': author_data(post, figures.get(post.account_id)),
         'opinions': counts or {'positive': 0, 'negative': 0},

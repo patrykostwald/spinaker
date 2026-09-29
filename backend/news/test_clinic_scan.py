@@ -1,4 +1,5 @@
 import io
+from copy import deepcopy
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -14,6 +15,94 @@ from news.clinic_models import SpinDiagnosis
 from news.clinic_scan import model_label, scan_data
 from news.techniques import CANONICAL_TECHNIQUES, FAMILIES, technique_family
 from news.test_clinic import account, post
+
+
+def card_fixture():
+    return {'id': 1041, 'verdict': 'partial', 'verdict_label': 'Częściowy spin', 'intensity': 55,
+            'headline': 'Wniosek diagnozy.', 'summary': 'Uzasadnienie.',
+            'author': {'name': 'Jan Kowalski', 'avatar_url': '', 'party': {'short': 'ABC'}},
+            'post': {'text': 'Treść wpisu.', 'published_at': '2026-09-28', 'media': []},
+            'scan': {'scope': {}, 'families': {}, 'claims': {}, 'council': {}, 'synthesis': None}}
+
+
+@pytest.mark.parametrize('url', ['https://example.com/x.png', 'http://pbs.twimg.com/a',
+    'https://pbs.twimg.com.evil.org/a', 'https://pbs.twimg.com@evil.org/a',
+    'https://pbs.twimg.com:444/a', 'file:///tmp/a'])
+def test_card_rejects_media_hosts(url):
+    from news.clinic_card import fetch_image
+    with patch('news.clinic_card.requests.get') as get:
+        assert fetch_image(url) is None
+        get.assert_not_called()
+
+
+def test_card_media_cache_and_limits(settings, tmp_path):
+    from unittest.mock import MagicMock
+    from news.clinic_card import fetch_image, MAX_BYTES
+    settings.MEDIA_ROOT = tmp_path
+    stream = io.BytesIO()
+    Image.new('RGB', (20, 20)).save(stream, 'PNG')
+    response = MagicMock(status_code=200, headers={})
+    response.__enter__.return_value = response
+    response.iter_content.return_value = [stream.getvalue()]
+    with patch('news.clinic_card.requests.get', return_value=response) as get:
+        for _ in range(2):
+            assert fetch_image('https://pbs.twimg.com/good').size == (20, 20)
+        get.assert_called_once_with('https://pbs.twimg.com/good', stream=True, timeout=5, allow_redirects=False)
+    for name, status, chunks in [('redirect', 302, []), ('large', 200, [b'x' * (MAX_BYTES + 1)]), ('invalid', 200, [b'bad'])]:
+        response.status_code = status
+        response.iter_content.return_value = chunks
+        with patch('news.clinic_card.requests.get', return_value=response) as get:
+            assert fetch_image(f'https://pbs.twimg.com/{name}') is None
+            assert fetch_image(f'https://pbs.twimg.com/{name}') is None
+            assert get.call_count == 1
+
+
+def test_card_deleted_omits_text_and_attachment():
+    from news.clinic_card import render
+    data = card_fixture()
+    data['post'].update(available=False, text='TAJNA TREŚĆ', media=[{'url': 'https://pbs.twimg.com/secret'}])
+    clean = deepcopy(data)
+    clean['post'].update(text='', media=[])
+    with patch('news.clinic_card.fetch_image', return_value=None) as fetch:
+        assert render(data) == render(clean)
+    assert all(call.args == ('',) for call in fetch.call_args_list)
+
+
+def test_card_long_text_stays_in_boxes_and_does_not_overlap():
+    from news import clinic_card
+    from PIL import ImageDraw
+    data = card_fixture()
+    data['author']['name'] = 'Bardzo długie nazwisko ' * 30
+    data['headline'] = 'Długi wniosek diagnozy ' * 80
+    data['summary'] = 'Obszerne uzasadnienie ' * 70
+    data['post']['text'] = 'https://example.org/' + 'x' * 600 + ' długi wpis' * 100
+    boxes, bounds = [], []
+    original_text, original_draw = clinic_card._text, ImageDraw.ImageDraw.text
+    def field(draw, value, box, **kwargs):
+        boxes.append(box)
+        try:
+            return original_text(draw, value, box, **kwargs)
+        finally:
+            boxes.pop()
+    def record(self, xy, text, *args, **kwargs):
+        bound = self.textbbox(xy, text, font=kwargs['font'], anchor=kwargs['anchor'])
+        x, y, right, bottom = boxes[-1]
+        assert x <= bound[0] and y <= bound[1] and bound[2] <= right and bound[3] <= bottom
+        for other in bounds:
+            assert bound[2] <= other[0] or bound[0] >= other[2] or bound[3] <= other[1] or bound[1] >= other[3]
+        bounds.append(bound)
+        return original_draw(self, xy, text, *args, **kwargs)
+    with patch('news.clinic_card.fetch_image', return_value=None), patch.object(clinic_card, '_text', field), patch.object(ImageDraw.ImageDraw, 'text', record):
+        assert Image.open(io.BytesIO(clinic_card.render(data))).size == (1600, 900)
+
+
+def test_card_attachment_fills_column_bottom():
+    from news.clinic_card import render
+    data = card_fixture()
+    data['post']['media'] = [{'url': 'https://pbs.twimg.com/photo'}]
+    with patch('news.clinic_card.fetch_image', side_effect=[None, Image.new('RGB', (300, 900), '#ff0000')]):
+        image = Image.open(io.BytesIO(render(data)))
+    assert image.getpixel((300, 801)) == (255, 0, 0)
 
 
 def diagnosis(acc=None, number=1, **kwargs):
@@ -85,7 +174,7 @@ def test_png_visibility_and_cache(settings, tmp_path):
     response.close()
     assert response.status_code == 200 and response['Content-Type'] == 'image/png'
     assert response['Cache-Control'] == 'public, max-age=3600'
-    assert Image.open(io.BytesIO(payload)).size == (1200, 675)
+    assert Image.open(io.BytesIO(payload)).size == (1600, 900)
     with patch('news.clinic_card.render', side_effect=AssertionError('cache')):
         response = client.get(url)
         assert b''.join(response.streaming_content) == payload
