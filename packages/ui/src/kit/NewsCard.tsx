@@ -206,9 +206,9 @@ function CardMedia({
 function CardMeta({ article, size, full, transition }: { article: Article; size: NewsCardSize; full: boolean; transition: Transition }) {
   return (
     <motion.p className="sc-card__meta sc-t-meta sc-text-2" layout="position" transition={transition}>
-      {/* Zasada boxa: źródło w lewym dolnym rogu, data i godzina w prawym dolnym. */}
-      <span className="sc-card__meta-source" title={article.source.name}>{sourceDisplayName(article.source.name)}{(size === "large" || full) && article.author ? ` · ${article.author}` : ""}</span>
+      {/* Zasada boxa: data i godzina w lewym dolnym rogu, źródło w prawym dolnym (do krawędzi). */}
       <span className="sc-card__meta-date">{renderDate(article, full ? "full" : size)}</span>
+      <span className="sc-card__meta-source" title={article.source.name}>{sourceDisplayName(article.source.name)}{(size === "large" || full) && article.author ? ` · ${article.author}` : ""}</span>
     </motion.p>
   );
 }
