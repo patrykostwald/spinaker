@@ -9,17 +9,18 @@ export const metadata = {
 };
 
 const sections = [
+  { id: "film", label: "Film" },
   { id: "droga-wpisu", label: "Droga wpisu" },
   { id: "sklad", label: "Skład i oświadczenia" },
   { id: "narzedzia", label: "Narzędzia" },
   { id: "roznice", label: "Różnice ocen" },
   { id: "zasady", label: "Zasady i błędy" },
-  { id: "film", label: "Film" },
 ];
 
 export default function CouncilPage() {
   return <DocLayout eyebrow="KONSYLIUM AI" title="Co zrobiliśmy z AI" version="1.0" updatedAt="2026-09-29" sections={sections}
     lead="Dr. Spin korzysta z kilku modeli, które osobno badają tę samą wypowiedź. Pokazujemy ich głosy, źródła, zakres analizy i ograniczenia.">
+    <section aria-labelledby="film-title"><h2 id="film-title">Zobacz, jak działa serwis</h2><HowItWorksFilm /></section>
     <section id="droga-wpisu"><h2>Droga wpisu do diagnozy</h2>
       <ol className="sc-doc-steps">
         <li><strong>Strażnik.</strong> Wstępnie ocenia tekst wpisu z obserwowanego konta. Wynik selekcji kieruje wpis do kolejki, dalszej decyzji albo pominięcia; nie jest diagnozą.</li>
@@ -63,6 +64,5 @@ export default function CouncilPage() {
       <p><Link href="/metodologia">Metodologia</Link> wyjaśnia selekcję, obliczenia i ograniczenia. <Link href="/konsylium/karta">Karta Konsylium</Link> opisuje zasady pracy oraz stan ich przyjęcia przez modele.</p>
       <p>Błąd zgłoś z linkiem do diagnozy i źródłami na <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Operator może wycofać diagnozę z publicznego widoku; nie edytuje jej treści. Publiczna historia korekt i odpowiedzi jest planowana.</p>
     </section>
-    <section aria-labelledby="film-title"><h2 id="film-title">Zobacz, jak działa serwis</h2><HowItWorksFilm /></section>
   </DocLayout>;
 }

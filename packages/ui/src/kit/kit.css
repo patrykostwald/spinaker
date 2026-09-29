@@ -5610,3 +5610,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 /* Siła spinu zawsze niebieska — także w wierszach listy i archiwach (kolor oceny tylko w etykiecie werdyktu). */
 .sc-intensity .sc-intensity__track span, .sc-intensity[data-level] .sc-intensity__track span { background: var(--sc-accent); }
 .sc-clinic-nav > button > svg { flex: none; }
+
+/* Odbiór: listy w dokumentach mają widoczne znaczniki (wcięcie ma sens), numery zasad Karty */
+.sc-info-page__body :where(ol) { list-style: decimal; padding-left: 28px; }
+.sc-info-page__body :where(ul) { list-style: disc; padding-left: 22px; }
+.sc-info-page__body :where(ol, ul) > li::marker { color: var(--sc-text-3); font-weight: 600; }
+.sc-info-page__body :where(ol.sc-plain, ul.sc-plain, .sc-council__list) { list-style: none; padding-left: 0; }

@@ -13,7 +13,7 @@ export function ReportError({ spin }: { spin: SpinDetailData }) {
 }
 
 /** Wspólny wynik i panel liczb; źródło i akcje pozostają w komponencie osadzającym. */
-export function SpinSummary({ spin, heading: Heading = "h3", compact = false, withPoint = true, withReport = false }: { spin: SpinDetailData; heading?: "h1" | "h2" | "h3"; compact?: boolean; withPoint?: boolean; withReport?: boolean }) {
+export function SpinSummary({ spin, heading: Heading = "h3", compact = false, withPoint = true, withReport = false, withTable = !compact }: { spin: SpinDetailData; heading?: "h1" | "h2" | "h3"; compact?: boolean; withPoint?: boolean; withReport?: boolean; withTable?: boolean }) {
   const scan = spin.scan;
   const lead = Heading === "h1" ? spin.headline : scan?.synthesis?.lead || spin.headline;
   const point = scan?.synthesis?.points?.[0] || firstSentence(spin.summary);
@@ -36,7 +36,7 @@ export function SpinSummary({ spin, heading: Heading = "h3", compact = false, wi
           <div className="sc-scan-g">{families.map(({ key, label, count }) => (
             <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${(count / familyMax) * 100}%` }} /></span><b>{count}</b></span>))}</div></div>
       </div>
-      {!compact ? <table className="sc-scan-t"><thead><tr><th>Rodzina technik</th><th>Techniki w analizowanym materiale</th><th className="sc-scan-t-n">Typy</th></tr></thead><tbody>
+      {withTable ? <table className="sc-scan-t"><thead><tr><th>Rodzina technik</th><th>Techniki w analizowanym materiale</th><th className="sc-scan-t-n">Typy</th></tr></thead><tbody>
         {families.map(({ key, label, count, types }) => <tr key={key} data-family={key}><th scope="row"><i />{label}</th><td>{types.map(item => item.label).join(" · ") || <span className="sc-scan-t-none">Nie wskazano</span>}</td><td className="sc-scan-t-n">{count}</td></tr>)}
       </tbody></table> : null}
   </div>;

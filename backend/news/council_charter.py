@@ -7,7 +7,7 @@ from news import council_registry as registry
 
 
 def charter():
-    text = (Path(__file__).resolve().parents[2] / 'docs' / 'KARTA_KONSYLIUM.md').read_text(encoding='utf-8')
+    text = (Path(__file__).resolve().parent / 'KARTA_KONSYLIUM.md').read_text(encoding='utf-8')
     version = re.search(r'^Wersja\s+(\S+)', text, re.M)[1]
     return text, version, hashlib.sha256(text.encode()).hexdigest()
 

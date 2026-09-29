@@ -66,7 +66,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
       <ClinicNav />
       <Link className="sc-spin-detail__back" href={clinicResultsUrl(returnTo ?? null)} scroll={false}>← Wróć do wyników</Link>
       <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
-      <SpinSummary spin={spin} heading="h1" compact withPoint={false} withReport />
+      <SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} />
       <p className="sc-spin-detail__summary">{spin.summary}</p>
       <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>
       <div className="sc-spin-detail__grid">
