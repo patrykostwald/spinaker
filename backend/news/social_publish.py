@@ -311,7 +311,7 @@ def candidates(limit: int, ready: list[str]):
 
 def run(dry_run: bool = False) -> dict:
     from news.clinic_models import SocialPost
-    from news.x_card import for_diagnosis as card
+    from news.clinic_card import share_png as card  # ta sama karta z panelem danych co na X
     ready = channels()
     if not ready and not dry_run:
         return {'status': 'disabled'}

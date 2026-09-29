@@ -415,3 +415,21 @@ def cached_card(data, card_format='diagnoza'):
     if not path.exists():
         _atomic_write(path, render(data, card_format))
     return path
+
+
+def share_png(diagnosis, max_bytes: int = 950_000) -> bytes:
+    """Karta diagnozy w nowym formacie (panel danych jak na stronie) do wpisów na X i Bluesky.
+    Bluesky przyjmuje obrazy do ~1 MB, więc w razie potrzeby zmniejszamy paletę, a potem rozmiar."""
+    from news import clinic
+    figures = clinic.figures_by_account([diagnosis.post.account_id])
+    payload = cached_card(clinic.card_data(diagnosis, figures), 'diagnoza').read_bytes()
+    if len(payload) <= max_bytes:
+        return payload
+    image = Image.open(io.BytesIO(payload)).convert('RGB')
+    for size in (image.size, (1200, 675)):
+        candidate = image.resize(size, Image.LANCZOS) if size != image.size else image
+        buffer = io.BytesIO()
+        candidate.quantize(colors=256, method=Image.Quantize.MEDIANCUT).save(buffer, format='PNG', optimize=True)
+        if buffer.tell() <= max_bytes:
+            return buffer.getvalue()
+    return buffer.getvalue()

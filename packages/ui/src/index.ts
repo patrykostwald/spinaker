@@ -74,4 +74,4 @@ export * from "./lib/community";
 export * from "./lib/features";
 export { HowItWorksFilm } from "./components/HowItWorksFilm";
 export { CouncilRoster } from "./components/clinic/CouncilRoster";
-export { siteNavigation } from "./lib/siteNavigation";
+export { siteNavigation, socialChannels } from "./lib/siteNavigation";

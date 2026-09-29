@@ -164,7 +164,7 @@ def run(dry_run: bool = False) -> dict:
     posted_today = SpinDiagnosis.objects.filter(x_posted_at__gte=start).count()
     room = max(0, int(os.environ.get('X_POST_DAILY_LIMIT', '3')) - posted_today)
     done = []
-    from news.x_card import for_diagnosis
+    from news.clinic_card import share_png as for_diagnosis  # nowy format: panel danych jak na stronie
     from news.x_share import build
     for diagnosis in candidates(room if not dry_run else 3):
         if not diagnosis.post.available:

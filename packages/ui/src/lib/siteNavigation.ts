@@ -17,6 +17,14 @@ const links = {
   privacy: { label: "Prywatność i cookies", href: "/polityka-prywatnosci" },
 } satisfies Record<string, SiteNavigationItem>;
 
+/** Kanały spin.clinic w mediach społecznościowych — jedno źródło dla stopki i strony O nas. */
+export const socialChannels = [
+  { name: "X", handle: "@spinclinic", href: "https://x.com/spinclinic", what: "Diagnozy najsilniejszych spinów i wątki z uzasadnieniem." },
+  { name: "Instagram", handle: "@spinclinic", href: "https://www.instagram.com/spinclinic/", what: "Krótkie filmy z diagnoz i satyryczny „Przekaz dnia”." },
+  { name: "YouTube", handle: "@spin.clinic", href: "https://www.youtube.com/@spin.clinic", what: "Shorts: „Przekaz dnia — co usłyszało stado?” i filmy z diagnoz." },
+  { name: "Bluesky", handle: "@spinclinic.bsky.social", href: "https://bsky.app/profile/spinclinic.bsky.social", what: "Karty diagnoz z linkiem do pełnej analizy." },
+] as const;
+
 export const siteNavigation = {
   // Logo prowadzi na główną; pozostałe strony są w stopce („Więcej”) i w menu telefonu.
   primary: [links.clinic, links.council, links.about],
@@ -25,7 +33,8 @@ export const siteNavigation = {
   footer: [
     { title: "Czytaj", links: [links.home, links.clinic, links.people, links.sources, links.newsletter] },
     { title: "Jak pracujemy", links: [links.council, links.methodology, links.charter] },
-    { title: "Projekt i kontakt", links: [links.about, links.press, links.contact, { label: "X @spinclinic", href: "https://x.com/spinclinic" }] },
+    { title: "Projekt i kontakt", links: [links.about, links.press, links.contact] },
+    { title: "Obserwuj", links: socialChannels.map(channel => ({ label: channel.name, href: channel.href })) },
     { title: "Dokumenty prawne", links: [links.terms, links.privacy] },
   ],
 };
