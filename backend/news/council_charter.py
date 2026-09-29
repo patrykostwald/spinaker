@@ -24,7 +24,9 @@ def roster():
         for member in council._members(setting, default):
             row = members.setdefault(member, {**registry.metadata(member), 'roles': []})
             row['roles'].append(role)
-            row['status'] = 'dostępny' if registry.available(member) else 'niedostępny'
+            # skład stały; dzienny limit darmowego dostępu to przerwa do północy, a nie wyjście z Konsylium
+            row['status'] = ('dostępny' if registry.available(member) else
+                             'limit dzienny' if registry.configured(member) else 'niedostępny')
     return list(members.values())
 
 

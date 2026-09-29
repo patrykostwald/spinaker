@@ -21,8 +21,8 @@ export function CouncilRoster() {
   const query = useQuery({ queryKey: ["clinic-council"], queryFn: () => apiFetch<Council>("/api/clinic/council/"), staleTime: 10 * 60_000 });
   if (query.isPending) return <p className="sc-council__empty">Wczytujemy skład Konsylium…</p>;
   if (query.isError || !query.data) return <p className="sc-council__empty">Skład Konsylium jest chwilowo niedostępny.</p>;
-  // Pokazujemy skład, który faktycznie pracuje; oświadczenie tylko tam, gdzie model je złożył.
-  const members = query.data.members.filter(m => m.status === "dostępny");
+  // Pokazujemy cały skonfigurowany skład (także modele na przerwie po dziennym limicie); oświadczenie tylko tam, gdzie model je złożył.
+  const members = query.data.members.filter(m => m.status !== "niedostępny");
   const accepted = members.filter(m => m.charter?.accepts).length;
   return (
     <div className="sc-council">
@@ -39,6 +39,7 @@ export function CouncilRoster() {
               <p className="sc-council__provider">Dostawca usługi: {member.provider}</p>
             </div>
             <p className="sc-council__roles">{member.roles.join(" · ")}</p>
+            {member.status === "limit dzienny" ? <p className="sc-council__provider">Dziś wyczerpał darmowy limit zapytań — wraca o północy.</p> : null}
             {member.charter?.accepts ? (
               <blockquote className="sc-council__statement" data-accepts={member.charter.accepts}>
                 „{member.charter.statement || "Przyjmuję zasady Karty."}”
