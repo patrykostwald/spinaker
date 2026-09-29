@@ -18,8 +18,8 @@ const sections = [
 ];
 
 export default function CouncilPage() {
-  return <DocLayout eyebrow="KONSYLIUM AI" title="Co zrobiliśmy z AI" version="1.0" updatedAt="2026-09-29" sections={sections}
-    lead="Dr. Spin korzysta z kilku modeli, które osobno badają tę samą wypowiedź. Pokazujemy ich głosy, źródła, zakres analizy i ograniczenia.">
+  return <DocLayout eyebrow="KONSYLIUM AI" title="Kilka modeli AI, jedna diagnoza" version="1.0" updatedAt="2026-09-29" sections={sections}
+    lead="Każdy wpis osobno badają modele AI różnych firm. Pokazujemy ich głosy, źródła, zakres analizy i ograniczenia.">
     <section aria-labelledby="film-title"><h2 id="film-title">Zobacz, jak działa serwis</h2><HowItWorksFilm /></section>
     <section id="droga-wpisu"><h2>Droga wpisu do diagnozy</h2>
       <ol className="sc-doc-steps">
