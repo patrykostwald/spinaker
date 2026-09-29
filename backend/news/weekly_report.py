@@ -12,7 +12,7 @@ from news import clinic, clinic_ai
 from news.techniques import technique_category
 
 REPORT_SYSTEM = """Jesteś Dr. Spinem z serwisu spin.clinic. Dostajesz dane z mijającego tygodnia (liczby, techniki,
-nagłówki diagnoz). Napisz podsumowanie tygodnia: 3–4 zdania, rzeczowo i neutralnie, jak w raporcie analitycznym,
+nagłówki diagnoz). Napisz podsumowanie tygodnia: 3–4 zdania (najwyżej 900 znaków), rzeczowo i neutralnie, jak w raporcie analitycznym; pisz „Dr. Spin ocenił N wpisów”, nigdy „politycy opublikowali N postów”; najwyżej trzy techniki na obóz, nazwy małą literą,
 bez emocji, ironii i ocen osób — obie strony tą samą miarą. Nie dodawaj niczego, czego nie ma w danych.
 Liczby dotyczą postów polityków, które ocenił Dr. Spin (politycy niczego nie „diagnozują”). „Wskaźnik ważony spinu” to NIE
 odsetek wpisów ze spinem: spin liczy się za 1, częściowy spin za 0,5 — pisz zawsze „wskaźnik ważony spinu”, nigdy „X% wpisów to spin”. Nie podawaj, ile postów politycy opublikowali łącznie. Pomijaj zera i braki danych —
@@ -73,10 +73,10 @@ def _summary_input(data: dict) -> str:
     lines = [f"Tydzień {data['start']} – {data['end']}"]
     for camp in clinic.CAMPS:
         share = data['scale'][camp]['share']
-        lines.append(f"{clinic.CAMP_LABELS[camp]} — Dr. Spin ocenił {data['diagnoses'][camp]} postów tej strony; "
+        lines.append(f"{clinic.CAMP_LABELS[camp]} — Dr. Spin ocenił {data['diagnoses'][camp]} wybranych wpisów tej strony (to nie jest liczba wszystkich wpisów); "
                      f"{'za mało ocen, by podać udział spinu' if share is None else f'wskaźnik ważony spinu {round(share * 100)}% (spin = 1, częściowy spin = 0,5; to nie odsetek wpisów)'}; "
                      f"wpisy, które stały się niedostępne (przyczyna nieznana): {data['deleted'][camp]}; "
-                     f"techniki: {', '.join(t['name'] for t in data['techniques'][camp]) or 'brak'}")
+                     f"trzy najczęstsze techniki: {', '.join(t['name'] for t in data['techniques'][camp] if t['name'] != 'Inne'][:3]) or 'brak'}")
     if data['spin_of_week']:
         spin = data['spin_of_week']
         lines.append(f"Spin tygodnia: {spin['author']['name']} — {spin['headline']} (siła {spin['intensity']}/100)")
@@ -92,7 +92,10 @@ def summarize(data: dict) -> str:
     except clinic_ai.ClinicAIError:
         return ''
     text = ' '.join(str(answer.get('summary', '')).split())
-    return text[:1200] if text and clinic_ai.looks_polish(text) else ''
+    if len(text) > 1200:  # tniemy na końcu zdania, nigdy w pół słowa
+        cut = text[:1200]
+        text = cut[:max(cut.rfind('. '), cut.rfind('.'))+1] or cut
+    return text if text and clinic_ai.looks_polish(text) else ''
 
 
 def generate(today=None):
