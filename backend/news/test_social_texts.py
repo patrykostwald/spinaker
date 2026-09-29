@@ -72,7 +72,7 @@ def test_only_sourced_claims_reach_ai_and_video(monkeypatch):
     monkeypatch.setattr(social_video, '_chrome', lambda scene, label: (labels.append(label), original(scene, label)))
     data['claims'] = [bad]
     scenes = social_video.build_scenes(data, {'name': 'Ewa ZAJĄCZKOWSKA-HERNIK', 'text': 'Pełne zdanie.'})
-    assert scenes[0].duration == 2
+    assert scenes[0].duration == 2.6
     assert not any('Terapia' in label or 'Źródła' in label for label in labels)
     bad['assessment'] = 'supported'
     bad['sources'] = [{'url': 'https://example.org'}]

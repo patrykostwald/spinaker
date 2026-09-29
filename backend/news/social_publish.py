@@ -76,7 +76,7 @@ def video_dir() -> Path:
 
 def video_name(diagnosis_id: int) -> str:
     """Nazwa nie do zgadnięcia (HMAC z SECRET_KEY) — film jest publiczny tylko dla tego, kto dostał adres."""
-    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-v2-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
+    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-v3-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
     return f'{diagnosis_id}-{digest[:20]}.mp4'
 
 
