@@ -18,7 +18,8 @@ const links = {
 } satisfies Record<string, SiteNavigationItem>;
 
 export const siteNavigation = {
-  primary: [links.home, links.clinic, links.council, links.about],
+  // Logo prowadzi na główną; pozostałe strony są w stopce („Więcej”) i w menu telefonu.
+  primary: [links.clinic, links.council, links.about],
   more: [links.press, links.methodology, links.charter, links.people, links.sources, links.newsletter, links.contact],
   support: links.support,
   footer: [

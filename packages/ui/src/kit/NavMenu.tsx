@@ -31,6 +31,8 @@ export type NavItem = {
 export type NavMenuProps = {
   items: NavItem[];
   moreItems?: NavItem[];
+  /** false: pozycje „Więcej” tylko w menu telefonu (na komputerze są w stopce). */
+  desktopMore?: boolean;
   mobileAction?: ReactNode;
   /** Domyślnie 'Nawigacja główna'. */
   ariaLabel?: string;
@@ -81,6 +83,7 @@ function NavLink({ item }: { item: NavItem }) {
 export function NavMenu({
   items,
   moreItems = [],
+  desktopMore = true,
   mobileAction,
   ariaLabel = "Nawigacja główna",
   cta,
@@ -170,7 +173,7 @@ export function NavMenu({
                 )}
               </li>
             ))}
-            {overflowItems.length > 0 && (
+            {desktopMore && overflowItems.length > 0 && (
               <li className="sc-navmenu__item">
                 <span className="sc-navmenu__item-wrap">
                   <Dropdown

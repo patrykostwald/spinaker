@@ -21,13 +21,14 @@ export function CouncilRoster() {
   const query = useQuery({ queryKey: ["clinic-council"], queryFn: () => apiFetch<Council>("/api/clinic/council/"), staleTime: 10 * 60_000 });
   if (query.isPending) return <p className="sc-council__empty">Wczytujemy skład Konsylium…</p>;
   if (query.isError || !query.data) return <p className="sc-council__empty">Skład Konsylium jest chwilowo niedostępny.</p>;
-  const members = query.data.members;
+  // Pokazujemy skład, który faktycznie pracuje; oświadczenie tylko tam, gdzie model je złożył.
+  const members = query.data.members.filter(m => m.status === "dostępny");
   const accepted = members.filter(m => m.charter?.accepts).length;
   return (
     <div className="sc-council">
       <p className="sc-council__summary">
-        <strong>{members.length}</strong> modeli · <strong>{new Set(members.map(m => m.company)).size}</strong> firm ·
-        Kartę w wersji {query.data.charter_version} przyjęło <strong>{accepted}</strong> z {members.length}
+        <strong>{members.length}</strong> modeli · <strong>{new Set(members.map(m => m.company)).size}</strong> firm
+        {accepted === members.length && members.length ? <> · wszystkie przyjęły Kartę {query.data.charter_version}</> : null}
       </p>
       <ul className="sc-council__list">
         {members.map(member => (
@@ -38,13 +39,12 @@ export function CouncilRoster() {
               <p className="sc-council__provider">Dostawca usługi: {member.provider}</p>
             </div>
             <p className="sc-council__roles">{member.roles.join(" · ")}</p>
-            {member.charter ? (
+            {member.charter?.accepts ? (
               <blockquote className="sc-council__statement" data-accepts={member.charter.accepts}>
-                „{member.charter.statement || (member.charter.accepts ? "Przyjmuję zasady Karty." : "Nie przyjmuję zasad Karty.")}”
-                <footer>{member.charter.accepts ? "Przyjął Kartę" : "Nie przyjął Karty"} {member.charter.version} · {formatDatePl(member.charter.date)}</footer>
+                „{member.charter.statement || "Przyjmuję zasady Karty."}”
+                <footer>Przyjął Kartę {member.charter.version} · {formatDatePl(member.charter.date)}</footer>
               </blockquote>
-            ) : <p className="sc-council__pending">Oczekuje na przyjęcie Karty</p>}
-            {member.status !== "dostępny" ? <p className="sc-council__status">Chwilowo niedostępny</p> : null}
+            ) : null}
           </li>
         ))}
       </ul>

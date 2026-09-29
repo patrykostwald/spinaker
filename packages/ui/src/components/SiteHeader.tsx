@@ -39,6 +39,7 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         ...section,
         current: isSiteNavigationCurrent(pathname, section.href),
       }))}
+      desktopMore={false}
       moreItems={siteNavigation.more.map(item => ({ ...item, current: isSiteNavigationCurrent(pathname, item.href) }))}
       brand={
         <div className="sc-nav-brand">

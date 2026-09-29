@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import type { Interview, InterviewQuote } from "../../lib/clinic";
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDatePl } from "../../lib/utils";
-import { IntensityMeter, VerdictTag } from "./SpinParts";
+import { VerdictTag } from "./SpinParts";
 
 const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 function domain(url: string) {
@@ -31,15 +31,26 @@ export function InterviewScope() {
   return <p className="sc-interview-scope">Analiza transkrypcji: u gościa badamy techniki perswazji, u prowadzącego — sposób zadawania pytań i reakcje na odpowiedzi.</p>;
 }
 
+function ResultBar({ value }: { value: number }) {
+  return <div className="sc-scan-g"><span className="sc-scan-g-track"><i style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div>;
+}
+
+/** Wynik gościa i prowadzącego w układzie panelu skanera: etykieta, werdykt, duża liczba, pasek 0–100. */
 export function InterviewResults({ interview }: { interview: Interview }) {
+  const { guest, host } = interview;
   return <div className="sc-interview-results">
-    <section><h3>Wypowiedzi gościa</h3><p>{interview.guest_name}{interview.guest_role ? `, ${interview.guest_role}` : ""}</p>
-      <VerdictTag verdict={interview.guest.verdict} label={interview.guest.verdict_label} />
-      <IntensityMeter value={interview.guest.intensity} />
+    <section>
+      <p className="sc-scan-m-lbl">Gość · siła spinu</p>
+      <p className="sc-interview-results__who">{interview.guest_name}{interview.guest_role ? <span>, {interview.guest_role}</span> : null}</p>
+      <div className="sc-interview-results__score"><p className="sc-scan-m-num sc-scan-strength">{guest.intensity}<small>/100</small></p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div>
+      <ResultBar value={guest.intensity} />
     </section>
-    <section><h3>Pytania prowadzącego</h3><p>{interview.host_name}</p>
-      {interview.host.verdict ? <VerdictTag verdict={interview.host.verdict} label={interview.host.verdict_label ?? ""} /> : <span>Brak oceny warsztatu</span>}
-      {interview.host.intensity == null ? <span>Brak wyniku liczbowego</span> : <span className="sc-interview-results__host">Warsztat {interview.host.intensity}/100</span>}
+    <section>
+      <p className="sc-scan-m-lbl">Prowadzący · warsztat</p>
+      <p className="sc-interview-results__who">{interview.host_name || "Prowadzący"}</p>
+      <div className="sc-interview-results__score">{host.intensity == null ? <p className="sc-interview-results__none">Brak wyniku liczbowego</p> : <p className="sc-scan-m-num">{host.intensity}<small>/100</small></p>}
+        {host.verdict ? <VerdictTag verdict={host.verdict} label={host.verdict_label ?? ""} /> : null}</div>
+      {host.intensity == null ? null : <ResultBar value={host.intensity} />}
     </section>
   </div>;
 }
