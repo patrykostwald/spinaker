@@ -5326,3 +5326,38 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-onas-docs a { color: var(--sc-accent); font-weight: 600; }
 .sc-home-intro__links { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 @media (max-width: 639px) { .sc-film__frame { aspect-ratio: 9 / 11; } }
+
+/* ---------- Pas powitalny v2 (29.09): jeden spójny blok — tekst i akcje po lewej, liczniki jak „Praca Kliniki” po prawej ---------- */
+.sc-home-intro[data-v="2"] { display: block; padding: 32px 36px; min-height: 0; }
+.sc-home-intro[data-v="2"]::before { background: linear-gradient(90deg, var(--sc-bg) 0%, color-mix(in srgb, var(--sc-bg) 88%, transparent) 45%, color-mix(in srgb, var(--sc-bg) 55%, transparent) 100%); }
+.sc-hero { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: end; }
+.sc-hero__copy { display: grid; gap: 14px; align-content: start; }
+.sc-hero__title { margin: 0; font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em; color: var(--sc-text); text-wrap: balance; }
+.sc-hero__title span { color: var(--sc-text-2); font-weight: 600; }
+.sc-hero__lead { margin: 0; max-width: 56ch; font-size: 16px; line-height: 25px; color: var(--sc-text-2); }
+.sc-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 6px; }
+.sc-hero__link { color: var(--sc-accent); font-weight: 600; font-size: 14px; text-decoration: none; }
+.sc-hero__link:hover { text-decoration: underline; }
+.sc-hero__stats { display: grid; gap: 10px; padding: 18px 20px; border-radius: var(--sc-radius-panel, 18px); background: color-mix(in srgb, var(--sc-bg) 72%, transparent); box-shadow: 0 0 0 1px var(--sc-line); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.sc-hero__stats ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.sc-hero__stats li { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.sc-hero__stats li + li { padding-left: 16px; border-left: 1px solid var(--sc-line); }
+.sc-hero__stats strong { font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--sc-text); }
+.sc-hero__stats span { font-size: 13px; line-height: 18px; color: var(--sc-text-2); }
+.sc-hero__stats p { margin: 0; font-size: 12px; line-height: 16px; color: var(--sc-text-3); }
+.sc-hero__stats-empty { margin: 0; color: var(--sc-text-2); }
+@media (max-width: 900px) {
+  .sc-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
+@media (max-width: 639px) {
+  .sc-home-intro[data-v="2"] { padding: 20px 16px; }
+  .sc-hero__title { font-size: 22px; line-height: 29px; }
+  .sc-hero__lead { font-size: 15px; line-height: 23px; }
+  .sc-hero__actions .sc-btn { flex: 1 1 100%; }
+  .sc-hero__stats { padding: 14px; }
+  .sc-hero__stats ul { gap: 10px; }
+  .sc-hero__stats li + li { padding-left: 10px; }
+  .sc-hero__stats strong { font-size: 24px; line-height: 28px; }
+  .sc-hero__stats span { font-size: 12px; line-height: 16px; }
+}
+.sc-hero__stats span { overflow-wrap: normal; word-break: normal; hyphens: auto; }

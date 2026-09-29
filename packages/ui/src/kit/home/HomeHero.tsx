@@ -45,26 +45,27 @@ export function HomeHero() {
     return () => observer.disconnect();
   }, []);
 
+  const tiles = stats ? ([["przeczytanych wpisów polityków", stats.read.total], ["wstępnie ocenionych", stats.screened.total], ["opublikowanych diagnoz", stats.diagnosed.total]] as const) : null;
   return (
-    <section className="sc-home-intro" aria-label="Czym jest spin.clinic">
+    <section className="sc-home-intro" data-v="2" aria-label="Czym jest spin.clinic">
       {/* eslint-disable-next-line @next/next/no-img-element -- ilustracja z /public, bez optymalizacji (images.unoptimized) */}
       {theme && period ? <img className="sc-home-intro__art" src={`/illustrations/${theme}/${period}.webp`} alt="" decoding="async" /> : null}
-      <div className="sc-home-intro__content">
-        <p className="sc-home-intro__title">
-          Konsylium AI bada przekaz polityków. <span>Ty układasz własne wiadomości.</span>
-        </p>
-        <p className="sc-home-intro__lead">Konsylium AI to kilka modeli, które osobno analizują ten sam materiał według wspólnych zasad.</p>
-        {stats ? <div aria-label="Praca Kliniki">
-          <dl className="sc-home-intro__stats">
-            {([["Przeczytane wpisy", stats.read.total], ["Wstępnie ocenione wpisy", stats.screened.total], ["Opublikowane diagnozy", stats.diagnosed.total]] as const).map(([label, count]) => <div key={label}><dt>{label}</dt><dd>{count.toLocaleString("pl-PL")}</dd></div>)}
-          </dl>
-          <p className="sc-t-caption">Od 23 września · aktualizacja {formatDateTimePl(new Date(query.dataUpdatedAt).toISOString())} (pobranie danych)</p>
-        </div> : <p role="status">{query.isPending ? "Wczytujemy liczniki…" : "Liczniki są chwilowo niedostępne."}</p>}
-        {query.isError ? <p role="alert">{stats ? "Aktualizacja jest chwilowo niedostępna." : "Nie udało się pobrać danych."} <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
-        <p className="sc-home-intro__links"><Link href="/o-nas#film">Zobacz, jak to działa (70 s)</Link><Link href="/o-nas#konsylium">Jak działa Konsylium AI</Link><Link href="/o-nas/karta-konsylium">Karta Konsylium</Link></p>
-      </div>
-      <div className="sc-home-intro__actions">
-        <Button href="/klinika/diagnozy" variant="primary" size="sm">Przeglądaj diagnozy</Button>
+      <div className="sc-hero">
+        <div className="sc-hero__copy">
+          <h1 className="sc-hero__title">Konsylium AI bada przekaz polityków. <span>Ty układasz własne wiadomości.</span></h1>
+          <p className="sc-hero__lead">Konsylium AI to kilka modeli różnych firm, które osobno analizują ten sam wpis według wspólnych zasad — te same dla rządu i opozycji.</p>
+          <div className="sc-hero__actions">
+            <Button href="/klinika/diagnozy" variant="primary">Przeglądaj diagnozy</Button>
+            <Button href="/o-nas#film" variant="secondary">▶ Jak to działa (70 s)</Button>
+            <Link className="sc-hero__link" href="/o-nas/karta-konsylium">Karta Konsylium →</Link>
+          </div>
+        </div>
+        {tiles ? (
+          <div className="sc-hero__stats" aria-label="Praca Kliniki od 23 września">
+            <ul>{tiles.map(([label, count]) => <li key={label}><strong>{count.toLocaleString("pl-PL")}</strong><span>{label}</span></li>)}</ul>
+            <p>od 23 września · stan na {formatDateTimePl(new Date(query.dataUpdatedAt).toISOString())}</p>
+          </div>
+        ) : <p className="sc-hero__stats-empty" role="status">{query.isPending ? "Wczytujemy liczniki…" : "Liczniki są chwilowo niedostępne."}{query.isError ? <> <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></> : null}</p>}
       </div>
     </section>
   );
