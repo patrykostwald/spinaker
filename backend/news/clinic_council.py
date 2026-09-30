@@ -38,7 +38,8 @@ DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemo
 CHAIR = 'gemini:gemini-3.8-flash,nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # przewodniczący
 LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,groq:qwen/qwen3.8-27b,gemini:gemini-3.8-flash'  # językoznawca — tylko polszczyzna
 REVIEWER = 'nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # recenzent — zgodność z ocenami i zasadami
-MIN_MEMBERS = 3
+MIN_MEMBERS = 2  # absolutne minimum: dwie niezależne oceny; poniżej trzech diagnoza jest jawnie oznaczona jako ograniczony skład
+PREFERRED_MEMBERS = 3
 SLOW_TIMEOUT = 180  # DeepSeek i Kimi przez NVIDIA odpowiadają wolno
 
 # Stała lista technik — dzięki niej da się policzyć, ilu członków konsylium wskazało tę samą technikę.
@@ -503,7 +504,8 @@ def diagnose(context: dict, lines: str) -> dict:
     diversity = registry.diversity([(op.get('provider', ''), op['model']) for op in opinions])
     diversity['polish_required'] = any(registry.is_polish(m) and registry.configured(m)
                                      for m in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL))
-    diversity['degraded'] = not diversity['sufficient'] or (diversity['polish_required'] and not diversity['polish'])
+    diversity['degraded'] = (not diversity['sufficient'] or (diversity['polish_required'] and not diversity['polish'])
+                             or len(opinions) < PREFERRED_MEMBERS)
     if len(opinions) < MIN_MEMBERS:
         error = ClinicAIError(f'council_too_few_members: {len(opinions)}')
         error.council = {'members': member_records, 'diversity': diversity}
