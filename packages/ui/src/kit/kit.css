@@ -5843,7 +5843,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 @media (max-width: 1000px) {
   .sc-dg-layout { display: flex; flex-direction: column; align-items: stretch; gap: 20px; }
   .sc-dg-side, .sc-dg-main { display: contents; }
-  .sc-dg-score { order: 1; } .sc-dg-quick { order: 2; } .sc-dg-layout .sc-spin-detail__post { order: 3; }
+  /* Najpierw wpis (z autorem), pod nim ocena i podsumowanie (uwaga testera UX, 30.09) */
+  .sc-dg-layout .sc-spin-detail__post { order: 1; } .sc-dg-score { order: 2; } .sc-dg-quick { order: 3; }
+  .sc-spin-detail > .sc-spin-author { display: none; }
   .sc-dg-main .sc-spin-detail__anchors { order: 4; margin-top: 0; } .sc-dg-main .sc-spin-detail__diagnosis { order: 5; max-width: none; }
 }
 @media (max-width: 560px) {
@@ -6360,3 +6362,14 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 /* Nazwy członków Konsylium w karcie diagnozy nigdy nie wychodzą poza kolumnę */
 .sc-scan-g-row { min-width: 0; }
 .sc-scan-g-row > em, .sc-scan-vote-missing { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Karta Dr. Spina na telefonie: najpierw autor i wpis, pod nimi ocena (uwaga testera UX, 30.09) */
+@media (max-width: 760px) {
+  .sc-post-scan > .sc-scan-mobile-author { order: 1; grid-row: auto !important; }
+  .sc-post-scan > .sc-scan-p { order: 2; grid-row: auto !important; }
+  .sc-post-scan > .sc-scan-dg { order: 3; grid-row: auto !important; }
+  .sc-post-scan > .sc-scan-share { order: 4; }
+  .sc-post-scan .sc-source-disclosure > summary { display: none; }
+  .sc-post-scan .sc-source-disclosure:not([data-full]) .sc-scan-p-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; }
+  .sc-post-scan .sc-source-disclosure .sc-scan-p-more { display: inline-flex; min-height: 44px; align-items: center; }
+  .sc-post-scan .sc-source-disclosure { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--sc-line); }
+}

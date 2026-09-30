@@ -84,7 +84,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
       <Link className="sc-spin-detail__back" href={clinicResultsUrl(returnTo ?? null)} scroll={false}>← Wróć do wyników</Link>
       <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
       {/* Lewa kolumna: źródło i szybkie podsumowanie; prawa: ocena i pełna analiza (uwagi recenzenta UX, 30.09).
-          Na telefonie kolejność: ocena → podsumowanie → wpis → analiza. */}
+          Na telefonie kolejność: wpis → ocena → podsumowanie → analiza. */}
       <div className="sc-dg-layout">
         <FitStickyAside className="sc-dg-side">
         <SourceDisclosure className="sc-spin-detail__post">
