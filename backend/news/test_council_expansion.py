@@ -423,3 +423,7 @@ def test_free_fact_check_without_sources_falls_through(monkeypatch):
     monkeypatch.setattr(council.requests, 'post', lambda *a, **k: Mock(status_code=200, json=lambda: payload))
     monkeypatch.setattr(council, 'claude_check', lambda claims: ([{'claim': 'x', 'assessment': 'false', 'sources': []}], {'model': 'claude'}))
     assert council.check_claims(['x'])[1] == {'model': 'claude'}
+
+
+def test_json_answer_with_trailing_text_is_read():
+    assert council._json('Oto ocena: {"verdict": "spin", "intensity": 60} Uwaga: {dodatkowy komentarz}') == {'verdict': 'spin', 'intensity': 60}

@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from news import clinic, clinic_council as council, council_registry as registry
 from news.clinic_models import CouncilCall, CouncilSeat, SpinDiagnosis
-from news.council_health import WARSAW, bench, bench_key, day_start, error_kind
+from news.council_health import QUORUM, WARSAW, bench, bench_key, day_start, error_kind
 from news.models import RepairAction, RepairerState
 from news.repairer import Run, compare_delete
 
@@ -59,7 +59,7 @@ def health(now):
         result.append({**registry.metadata(member), 'attempts': len(entries), 'successes': counts['ok'], 'camps': camp_stats,
             'response_rate': round(counts['ok'] / len(entries), 3) if entries else None,
             'errors': dict(counts - Counter(ok=counts['ok'])), 'seconds': round(sum(times) / len(times), 2) if times else None,
-            'streak': streak, 'benched': bool(cache.get(bench_key(member, now))),
+            'streak': streak, 'streak_kind': entries[-1][0] if streak else 'ok', 'benched': bool(cache.get(bench_key(member, now))),
             'seat': seat.status if seat else 'config', 'last_error': error_kind(seat.last_error) if seat else 'ok',
             'available': member in candidates and registry.available(member)})
     return result
@@ -117,12 +117,19 @@ def run(*, dry_run=False, now=None):
     try:
         data = observe(now)
         ranking = {}
+        free = sum(1 for m in data['members'] if m['available'] and not m['benched'])
         for member in data['members']:
             key = (member['provider'], member['model'])
             ranking[':'.join(key)] = member['response_rate'] or 0
             if member['streak'] >= 3 and not member['benched']:
-                ctx.apply('auditor:bench', ':'.join(key), lambda key=key: bench(key, now), 'fixed',
-                          'Ławka do północy Europe/Warsaw po co najmniej 3 kolejnych błędach 402/429/timeout; jutro automatyczny powrót.')
+                if free - 1 < QUORUM:
+                    ctx.record('auditor:bench', ':'.join(key), 'skipped',
+                               'Bez ławki: odsunięcie odebrałoby Konsylium kworum (3 członków).')
+                    continue
+                kind = member.get('streak_kind', '402')
+                ctx.apply('auditor:bench', ':'.join(key), lambda key=key, kind=kind: bench(key, now, kind), 'fixed',
+                          'Ławka po 3 kolejnych błędach: 402 do północy, 429/timeout na godzinę; udana odpowiedź zdejmuje z ławki.')
+                free -= 1
         ranking_key = f'council:ranking:{day_start(now).date()}'
         changed = ranking != cache.get(ranking_key, {})
         if changed and not dry_run:

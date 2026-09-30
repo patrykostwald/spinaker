@@ -38,14 +38,21 @@ def bench_key(member, now=None):
     return f'council:bench:{day_start(now).date()}:{digest}'
 
 
-def bench(member, now):
-    ttl = max(1, int((day_start(now) + timedelta(days=1) - now).total_seconds()))
+QUORUM = 3  # tyle członków musi zostać poza ławką (MIN_MEMBERS w clinic_council)
+
+
+def bench(member, now, kind='402'):
+    """Brak środków (402): ławka do północy. Chwilowe limity (429) i przekroczenia czasu: tylko godzina."""
+    until_midnight = max(1, int((day_start(now) + timedelta(days=1) - now).total_seconds()))
+    ttl = until_midnight if kind == '402' else min(3600, until_midnight)
     return cache.add(bench_key(member, now), True, ttl)
 
 
 def adjust_roles(name, members):
     now = timezone.now()
-    members = [m for m in members if not cache.get(bench_key(m, now))]
+    active = [m for m in members if not cache.get(bench_key(m, now))]
+    # Ławka nigdy nie może odebrać Konsylium kworum — wtedy pytamy wszystkich, jak przed audytorem.
+    members = active if name != 'CLINIC_COUNCIL' or len(active) >= QUORUM else members
     if name != 'CLINIC_COUNCIL':
         scores = cache.get(f'council:ranking:{day_start(now).date()}', {})
         members.sort(key=lambda m: -scores.get(':'.join(m), 0))
@@ -60,6 +67,8 @@ def record(member, error, seconds):
                                    outcome=error_kind(error), seconds=max(0, seconds))
     except Exception:
         pass
+    if error is None:
+        cache.delete(bench_key(member))  # udana odpowiedź od razu zdejmuje z ławki (np. po doładowaniu)
     from news.repairer import provider_event
     provider_event(member[0], error)
 

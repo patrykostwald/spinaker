@@ -61,15 +61,18 @@ def test_failures_only_permanent():
 
 
 def test_bench_and_midnight_return():
-    m = MEMBERS[0]
+    members = MEMBERS + [('mistral', 'mistral-small')]  # 4 członków: po odsunięciu jednego zostaje kworum
+    m = members[0]
     assert health.bench(m, NOW)
     assert not health.bench(m, NOW)
-    assert health.adjust_roles('CLINIC_COUNCIL', MEMBERS) == MEMBERS[1:]
+    with patch('django.utils.timezone.now', return_value=NOW):
+        assert health.adjust_roles('CLINIC_COUNCIL', members) == members[1:]
     with patch('django.utils.timezone.now', return_value=NOW + timedelta(days=1)):
-        assert health.adjust_roles('CLINIC_COUNCIL', MEMBERS) == MEMBERS
+        assert health.adjust_roles('CLINIC_COUNCIL', members) == members
 
 
-def test_streak_resets_on_success_and_ranking():
+def test_streak_resets_on_success_and_ranking(monkeypatch):
+    monkeypatch.setattr(audit, 'QUORUM', 1)  # skład testowy jest mały; kworum sprawdza osobny test
     for kind in ['402', 'timeout', 'ok', '429', '429']:
         CouncilCall.objects.create(provider=MEMBERS[0][0], model=MEMBERS[0][1], outcome=kind, seconds=2, created_at=NOW)
     for _ in range(3):
@@ -342,3 +345,19 @@ def test_legacy_wallet_failure_is_adopted_and_only_success_resolves(isolated):
     assert isolated[0].call_count == 2
     repairer.operational_notifications(repairer.Run(NOW))
     assert isolated[0].call_count == 2
+
+
+def test_bench_never_breaks_quorum_and_success_unbenches(monkeypatch):
+    from django.core.cache import cache
+    from django.utils import timezone
+    from news import council_health as health
+    cache.clear()
+    members = [('groq', 'a'), ('groq', 'b'), ('nim', 'c'), ('gemini', 'd')]
+    now = timezone.now()
+    health.bench(members[0], now, '429')
+    health.bench(members[1], now, '402')
+    # dwóch odsuniętych — zostałoby 2 < kworum 3, więc pytamy wszystkich
+    assert health.adjust_roles('CLINIC_COUNCIL', list(members)) == members
+    health.record(members[1], None, 1.0)
+    assert health.adjust_roles('CLINIC_COUNCIL', list(members)) == members[1:]
+    assert cache.ttl(health.bench_key(members[0], now)) <= 3600 if hasattr(cache, 'ttl') else True

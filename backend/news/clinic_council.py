@@ -156,7 +156,11 @@ def _json(text: str) -> dict:
     start, end = text.find('{'), text.rfind('}')
     if start == -1 or end == -1:
         raise ClinicAIError('invalid_json')
-    result = json.loads(text[start:end + 1])
+    try:
+        result = json.loads(text[start:end + 1])
+    except ValueError:
+        # Model dopisał tekst po obiekcie (np. drugi nawias w komentarzu) — bierzemy pierwszy pełny obiekt JSON.
+        result, _ = json.JSONDecoder().raw_decode(text[start:])
     if not isinstance(result, dict):
         raise ClinicAIError('invalid_json')
     return result
