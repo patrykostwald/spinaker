@@ -112,3 +112,9 @@ def test_run_examines_several_candidates_per_night(monkeypatch):
     calls = iter([{'status': 'ok', 'model': 'a'}, {'status': 'ok', 'model': 'b'}, {'status': 'no_candidates'}, {'status': 'ok'}])
     monkeypatch.setattr(recruiter, 'recruit', lambda dry_run=False: next(calls))
     assert [r.get('model') for r in recruiter.run()['recruitment']] == ['a', 'b', None]
+
+
+@pytest.mark.django_db
+def test_exam_items_query_runs_on_real_models():
+    # Wcześniej filtr po nieistniejącym polu „council” wywracał Rekrutera na produkcji (testy mockowały exam_items).
+    assert recruiter.exam_items() == []

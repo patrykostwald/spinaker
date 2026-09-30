@@ -234,7 +234,7 @@ def sieve(found: list[dict]) -> list[dict]:
 def exam_items() -> list:
     """5 opublikowanych diagnoz Konsylium z rozstrzygniętym werdyktem — naprzemiennie z obu obozów, stały dobór na dzień."""
     from news.clinic import published_diagnoses
-    rows = list(published_diagnoses().filter(verdict__in=['spin', 'partial', 'no_spin'], council__isnull=False)
+    rows = list(published_diagnoses().filter(verdict__in=['spin', 'partial', 'no_spin'], usage__has_key='council')
                 .select_related('post__account').order_by('-pk')[:40])
     camps = {'government': [r for r in rows if r.post.camp_at_collection == 'government'],
              'opposition': [r for r in rows if r.post.camp_at_collection == 'opposition']}
