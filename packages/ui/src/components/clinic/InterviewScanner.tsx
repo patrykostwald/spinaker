@@ -3,7 +3,7 @@
 import { techniqueLabel } from "../../lib/clinic";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { ShareXCardContent } from "./ShareSpinOnX";
 import type { Interview, InterviewQuote, InterviewParticipant } from "../../lib/clinic";
@@ -72,7 +72,8 @@ function CompactInterviewScanner({ interview, full = false }: { interview: Inter
   const { techniques, families, familyMax, typeCount, checked, claims, claimSquares } = diagnosisPresentation(guest);
   const path = `/klinika/wywiady/${interview.id}`;
   const shareText = `Dr. Spin (AI) · Wywiad z ${interview.guest_name} · ${guest.verdict_label} ${guest.intensity}/100\n${interview.headline}\nhttps://spin.clinic${path}`;
-  const prefix = `interview-scan-${interview.id}`;
+  const instanceId = useId();
+  const prefix = `interview-scan-${interview.id}-${instanceId}`;
   function collapse() {
     setExpanded(false);
     expandRef.current?.focus({ preventScroll: true });

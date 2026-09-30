@@ -5,7 +5,8 @@ import { SearchField } from "../../kit/SearchField";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { rememberClinicVisit } from "../../lib/clinicHistory";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getClinicInterviews, getClinicMessages, type Interview } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
@@ -55,6 +56,13 @@ export function ClinicInterviewArchive() {
 }
 
 export function ClinicInterviewPage({ interview }: { interview: Interview }) {
+  const recorded = useRef<number | null>(null);
+  useEffect(() => {
+    if (recorded.current === interview.id) return;
+    recorded.current = interview.id;
+    rememberClinicVisit({ type: "interview", id: interview.id, title: interview.headline || interview.title,
+      camp: null, verdict: interview.guest.verdict, intensity: interview.guest.intensity, guest: interview.guest_name });
+  }, [interview]);
   return <section className="sc-clinic-archives">
     <ClinicNav />
     <SectionHeader variant="page" longTitle title={interview.headline || "Analiza wywiadu"} />

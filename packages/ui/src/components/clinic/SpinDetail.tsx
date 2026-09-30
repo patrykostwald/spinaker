@@ -13,6 +13,8 @@ import { AiTag, FitStickyAside, HowToRead, SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { clinicResultsUrl } from "../../lib/clinicNavigation";
 import { ContextThreadStrip } from '../ContextThreadStrip';
+import { useEffect, useRef } from "react";
+import { rememberClinicVisit } from "../../lib/clinicHistory";
 
 export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDetailData; withSummary?: boolean }) {
   return <>
@@ -63,6 +65,14 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
 
 export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) {
   const query = useQuery({ queryKey: ["clinic-spin", id], queryFn: () => getSpin(id) });
+  const recorded = useRef<number | null>(null);
+  useEffect(() => {
+    const spin = query.data;
+    if (!spin || recorded.current === spin.id) return;
+    recorded.current = spin.id;
+    rememberClinicVisit({ type: "diagnosis", id: spin.id, title: spin.headline, camp: spin.camp,
+      verdict: spin.verdict, intensity: spin.intensity, author: spin.author.name });
+  }, [query.data]);
   if (query.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Wczytujemy diagnozy…</p></div>;
   if (query.isError && !(query.error instanceof ApiError && query.error.status === 404) && !query.data) return <div className="sc-clinic" role="alert"><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
   if (!query.data) return <div className="sc-clinic"><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;

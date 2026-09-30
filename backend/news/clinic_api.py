@@ -175,7 +175,12 @@ def clinic_spins(request):
                 continue
             matched.append(row)
         rows = matched
-    size = 20
+    try:
+        size = int(params.get('page_size', '20'))
+        if not 1 <= size <= 20:
+            raise ValueError
+    except ValueError:
+        return Response({'detail': 'Liczba wyników musi wynosić od 1 do 20.'}, status=400)
     count = len(rows) if isinstance(rows, list) else rows.count()
     batch = list(rows[(page - 1) * size:page * size + 1])
     return Response({'results': clinic.cards(batch[:size]), 'next_page': page + 1 if len(batch) > size else None,

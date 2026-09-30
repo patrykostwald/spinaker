@@ -13,10 +13,11 @@ import { NewsletterSignup } from "../NewsletterSignup";
 import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { ClinicShowcase } from "./ClinicIndicators";
-import { HomeSpinScanner } from "../../kit/home/HomeSpinScanner";
+import { ClinicRecentlyViewed } from "./ClinicRecentlyViewed";
+import { ClinicRanking } from "./ClinicRanking";
 import { formatDateTimePl } from "../../lib/utils";
 import { InterviewScanner } from "./InterviewScanner";
-import { MessageBox, SpinSwitch } from "./ClinicExtras";
+import { MessageBox } from "./ClinicExtras";
 
 export { MessageBox } from "./ClinicExtras";
 
@@ -152,23 +153,12 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         subtitle={<><AiTag /> Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji i źródła.</>}
         link={embedded ? <Link href="/metodologia">Jak działa analiza</Link> : undefined} />
 
+      <ClinicRecentlyViewed />
+
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
       {data && <>
-        <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
-
-        <section className="sc-clinic-sotd" aria-labelledby="clinic-drspin-title">
-          {/* Nagłówek jak na głównej: „Klinika spinu AI” + „Dr. Spin”, zakładki na środku, link po prawej. */}
-          <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <HomeSpinScanner key={spin.id} spin={spin} />}
-            left={<header>
-              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <h2 id="clinic-drspin-title">Wybrana diagnoza</h2>
-            </header>}
-            right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/klinika/raporty">Raporty tygodnia →</Link></p>}
-            empty={<p className="sc-clinic-empty" id="sotd-title">Nie ma jeszcze opublikowanej diagnozy dla tego wyboru.</p>} />
-        </section>
-
         {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
         <section className="sc-clinic-group" aria-labelledby="clinic-messages-title">
           <SectionHeader titleId="clinic-messages-title" kicker={<>Klinika spinu <AiTag /></>} title="Przekazy dnia"
@@ -177,12 +167,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
             {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" />)}
           </div>
         </section>
-
-        {data.interview ? <section className="sc-clinic-group sc-clinic-interview-preview" aria-labelledby="clinic-interview-title">
-          <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
-            subtitle="Najgłośniejszy wywiad polityczny poprzedniego dnia: gość i prowadzący." link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
-          <InterviewScanner interview={data.interview} />
-        </section> : null}
 
         {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
         <div className="sc-clinic-group">
@@ -194,7 +178,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
               <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>
                 <h3 id={`clinic-col-${camp}`} className="sc-camp-heading" data-camp={camp}>{CAMP_LABELS[camp]}</h3>
                 <div className="sc-clinic-column__list">
-                  {[...data.columns[camp]].sort((a, b) => b.id - a.id).slice(0, 3).map(spin => <SpinRow key={spin.id} spin={spin} />)}
+                  {data.columns[camp].slice(0, 3).map(spin => <SpinRow key={spin.id} spin={spin} />)}
                 </div>
                 <Button href={`/klinika/diagnozy?camp=${camp}`} variant="quiet">Wszystkie diagnozy {camp === "government" ? "rządzących" : "opozycji"} →</Button>
               </section>
@@ -204,6 +188,15 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           <Link className="sc-clinic-db__all" href="/klinika/diagnozy">Wszystkie diagnozy{data.stats?.diagnosed.total !== undefined ? ` (${data.stats.diagnosed.total.toLocaleString("pl-PL")})` : ""} →</Link>
         </section>
         </div>
+
+        {data.interview ? <section className="sc-clinic-group sc-clinic-interview-preview" aria-labelledby="clinic-interview-title">
+          <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
+            subtitle="Najgłośniejszy wywiad polityczny poprzedniego dnia: gość i prowadzący." link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
+          <InterviewScanner interview={data.interview} />
+        </section> : null}
+
+        <ClinicRanking data={data} />
+        <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
 
         <DeletedPosts />
         <p><Link href="/osoby-publiczne">Katalog osób publicznych →</Link> · <Link href="/klinika/raporty">Raporty tygodnia →</Link></p>

@@ -191,6 +191,7 @@ export const getClinicMessages = (page = 1) => apiFetch<ArchivePage<MessageDay>>
 export const getClinicMessage = (day: string) => apiFetch<MessageDay>(`/api/clinic/messages/${encodeURIComponent(day)}/`);
 export type ClinicSearchParams = {
   page?: number;
+  page_size?: number;
   q?: string;
   camp?: Camp;
   verdict?: Verdict;

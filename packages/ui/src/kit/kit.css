@@ -6331,3 +6331,29 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-participant-result { padding: 16px; }
   .sc-spin-card__links:has(.sc-share-cta) { width: 100%; flex-direction: column; align-items: stretch; }
 }
+
+/* Przegląd Kliniki (zlecenie 059) */
+.sc-clinic-recent, .sc-clinic-recent__card, .sc-clinic-ranking, .sc-clinic-ranking__columns > * { min-width: 0; max-width: 100%; }
+.sc-clinic-recent__chips { display: flex; gap: 8px; width: 100%; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; padding: 4px 2px 12px; margin-bottom: 16px; }
+.sc-clinic-recent__chips button { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; max-width: min(320px, 85vw); min-height: 44px; padding: 10px 14px; border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); background: var(--sc-surface); color: var(--sc-text); font: inherit; cursor: pointer; }
+.sc-clinic-recent__chips small { flex-shrink: 0; }
+.sc-clinic-recent__chips span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sc-clinic-recent__chips button[aria-pressed="true"] { border-color: var(--sc-accent); box-shadow: inset 0 0 0 1px var(--sc-accent); font-weight: 700; }
+.sc-clinic-recent button, .sc-clinic-recent__actions > a, .sc-clinic-ranking button { min-height: 44px; min-width: 44px; }
+.sc-clinic-recent button:focus-visible, .sc-clinic-recent a:focus-visible, .sc-clinic-ranking a:focus-visible, .sc-clinic-ranking button:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+.sc-clinic-recent__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.sc-clinic-recent__actions > a:not(.sc-share-cta) { display: inline-flex; align-items: center; padding: 8px 16px; }
+.sc-clinic-recent__actions > .sc-share-cta { flex: 1 1 300px; width: auto; }
+.sc-clinic-ranking__columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.sc-clinic-ranking .sc-camp-heading { flex-wrap: wrap; }
+.sc-clinic-ranking .sc-camp-heading small { font-size: 14px; font-weight: 400; }
+.sc-clinic-ranking__list { padding-left: 24px; margin: 0; }
+.sc-clinic-ranking__list li { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  .sc-clinic-ranking__columns { grid-template-columns: minmax(0, 1fr); }
+  .sc-clinic-recent__actions > .sc-share-cta { flex-basis: 100%; }
+}
+/* Przegląd Kliniki — poprawki po zrzutach 1440/390 (Claude) */
+.sc-interview-results > section > .sc-scan-m-lbl { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: normal; line-height: 1.35; }
+.sc-clinic-recent__actions > * { order: 2; }
+.sc-clinic-recent__actions > :nth-child(2) { order: 1; flex: 1 1 100%; }
