@@ -205,7 +205,11 @@ def featured_today():
 
 
 def failures_today() -> int:
-    return _anthropic_today().filter(status='failed').count()
+    from news.repairer import permanent
+    from news.council_health import error_kind
+    transient = {'429', 'timeout', 'daily_limit', 'too_few', 'connection', 'server'}
+    return sum(error_kind(error) not in transient and permanent(error)
+               for error in _anthropic_today().filter(status='failed').values_list('error', flat=True))
 
 
 def _anthropic_today():

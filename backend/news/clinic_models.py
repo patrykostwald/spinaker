@@ -87,6 +87,30 @@ class SpinDiagnosis(models.Model):
         return self.post.camp_at_collection
 
 
+class CouncilCall(models.Model):
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    provider = models.CharField(max_length=32)
+    model = models.CharField(max_length=200)
+    outcome = models.CharField(max_length=24)
+    seconds = models.FloatField(default=0)
+
+
+class InquisitorReview(models.Model):
+    diagnosis = models.OneToOneField(SpinDiagnosis, on_delete=models.PROTECT, related_name='inquisitor_review')
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    camp = models.CharField(max_length=12)
+    reviewers = models.JSONField(default=list)
+    answers = models.JSONField(default=list)
+    verdict = models.CharField(max_length=16, default='incomplete')
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision = models.CharField(max_length=8, blank=True)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name='+')
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+
 class CouncilCharterAcceptance(models.Model):
     """Historia odpowiedzi modeli; zmiana Karty nie nadpisuje poprzednich deklaracji."""
     model = models.CharField(max_length=200)

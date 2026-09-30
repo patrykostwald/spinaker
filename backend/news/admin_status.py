@@ -283,6 +283,8 @@ def snapshot(now):
     collect('Diagnozy', lambda: diagnoses('Diagnozy', 'diagnosed_at', today, yesterday, tomorrow, now))
     collect('Wywiad dnia', interview)
     collect('Konsylium / Rekruter', council)
+    from news.council_auditor import panel_section as audit_section
+    collect('Audytor-inkwizytor', lambda: audit_section(now))
     collect('Media społecznościowe', lambda: social(today, tomorrow))
     collect('Kolejki', lambda: queues(now))
     collect('Źródła / harvestery', sources)

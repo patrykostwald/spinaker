@@ -144,6 +144,19 @@ export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initi
         </section>
       ) : null}
 
+      {report.inquisitor?.length ? (
+        <section className="sc-report__panel" aria-labelledby="report-inquisitor">
+          <h2 id="report-inquisitor" className="sc-report__title">Kontrola jakości diagnoz</h2>
+          <p className="sc-report__note">Mała próba kontroli, losowana po obu obozach. Liczymy kontrole z zarzutem wobec diagnozy, w której uczestniczył model — to nie dowód błędu tego członka. Te same kryteria dla obu stron.</p>
+          {CAMPS.map(camp => <div key={camp}>
+            <h3>{CAMP_LABELS[camp]}</h3>
+            {report.inquisitor?.some(row => row.camp === camp) ? <ul>{report.inquisitor.filter(row => row.camp === camp).map(row => <li key={row.member}>
+              {row.member}: n={row.n}; {Object.entries(row.issues).map(([issue, count]) => `${({ quotes: 'cytat nie uzasadnia techniki', intensity: 'siła nie pasuje do skali', sources: 'ocena bez oparcia w źródłach', intentions: 'przypisywanie intencji', equal_measure: 'nierówna miara' } as Record<string, string>)[issue] || issue}: ${count}`).join('; ') || 'brak zarzutów'}.
+            </li>)}</ul> : <p>Brak kontroli w tym tygodniu (n=0).</p>}
+          </div>)}
+        </section>
+      ) : null}
+
       <Link href="/klinika/raporty">Wszystkie raporty →</Link>
       {data.archive.length > 1 ? (
         <nav className="sc-report__archive" aria-label="Poprzednie raporty">

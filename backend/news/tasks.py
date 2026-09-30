@@ -49,14 +49,20 @@ def clinic_archive_task(self, post_id, job_id=''):
 @shared_task(name="news.tasks.clinic_diagnose_task", soft_time_limit=1500, time_limit=1600)
 def clinic_diagnose_task():
     """Diagnozy nowych postów polityków (Klinika spinu). Wyłączone bez CLINIC_AI_ENABLED i klucza."""
+    from news.council_health import record_run
     if not cache.add("clinic-diagnose-lock", "1", timeout=1700):
+        record_run({'status': 'locked'})
         return {"status": "locked"}
     try:
         from news.clinic import fill_x_threads, run_diagnoses
         result = run_diagnoses(limit=2)
+        record_run(result)
         # Syntezy do wątków na X dla starszych diagnoz (darmowy model, po kilka na raz).
         result['x_threads'] = fill_x_threads(limit=3)
         return result
+    except Exception:
+        record_run({'status': 'error'})
+        raise
     finally:
         cache.delete("clinic-diagnose-lock")
 
@@ -280,3 +286,18 @@ def council_recruiter_task():
         return run()
     finally:
         cache.delete("council-recruiter-lock")
+
+
+@shared_task(name='news.tasks.council_audit_task', soft_time_limit=210, time_limit=240)
+def council_audit_task():
+    from news.council_auditor import run
+    return run()
+
+
+@shared_task(bind=True, name='news.tasks.inquisitor_task', soft_time_limit=900, time_limit=960, max_retries=15)
+def inquisitor_task(self):
+    from news.inquisitor import run
+    result = run()
+    if result['status'] == 'locked':
+        raise self.retry(countdown=120)
+    return result

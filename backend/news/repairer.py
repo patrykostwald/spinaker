@@ -8,6 +8,7 @@ import os
 import pickle
 import re
 import time
+from collections import Counter
 from datetime import timedelta
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -74,7 +75,7 @@ def flag(name, default):
 def permanent(error):
     text = str(error).lower()
     return bool(re.search(r'(?<!\d)4(?!29)\d\d(?!\d)', text) or any(word in text for word in (
-        'missing_key', 'no_key', 'api_key', 'not_configured', 'invalid', 'malformed',
+        'missing_key', 'key_missing', 'no_key', 'api_key', 'not_configured', 'invalid', 'malformed',
         'rejected', 'refusal', 'odrzuc', 'brak klucza', 'no_approved_instruction',
         'credit balance', 'insufficient', 'unauthorized', 'authentication', 'permission',
         'configuration', 'not_found', 'not found', 'disabled', 'wyłączone', 'nieskonfigurowane')))
@@ -233,6 +234,8 @@ def repair_locks(run, snapshot):
         value = cache.get(key)
         if value is None or not names:
             continue
+        if key == 'clinic-diagnose-lock' and str(value).startswith('inquisitor:'):
+            continue  # Independent control owns this bounded lease; diagnosis pulse cannot prove it stale.
         guards = {f'heartbeat:{n}': cache.get(f'heartbeat:{n}', {}) for n in names}
         if any(p.get('phase') not in ('ok', 'error') or not stamp(p.get('last_event'))
                or (run.now - stamp(p['last_event'])).total_seconds() <= timeout for p in guards.values()):
@@ -411,14 +414,172 @@ def owner_items(snapshot):
             identity = 'task-config:' + name
             result[identity] = {'id': identity, 'title': name,
                                 'hint': 'Zadanie zgłasza brak konfiguracji. Sprawdź wymagane klucze i ustawienia na serwerze.'}
+    # New, nonurgent automatic actions join the existing morning digest.
+    from news.council_health import day_start
+    for row in RepairAction.objects.filter(created_at__gte=day_start(timezone.now()) - timedelta(days=1),
+            rule__in=['auditor:bench', 'auditor:roles', 'auditor:diagnose']):
+        identity = 'audit:' + str(row.pk)
+        result[identity] = {'id': identity, 'title': 'Audytor wykonał odwracalne działanie.',
+            'automatic': {'auditor:bench': 'Model trafił na ławkę do północy.',
+                          'auditor:roles': 'Ustalono kolejność zapasowych według sukcesów.',
+                          'auditor:diagnose': 'Zlecono dodatkowy przebieg diagnoz.'}[row.rule],
+            'hint': 'Nie musisz nic robić; szczegóły: https://spin.clinic/admin/'}
     return sorted(result.values(), key=lambda item: item['id'])
+
+
+def notify_problem(run, identity, active, happened, automatic, next_step):
+    """One shared urgent/resolved mail channel. Inputs must be code-owned text.
+
+    None means unknown: absence of observations is never recovery evidence.
+    Reserve durably before SMTP, so concurrent workers cannot duplicate mail.
+    """
+    if active is None:
+        return
+    from news.council_recruiter import _owner_email
+    from news.social_publish import _mail
+    key = 'alert:' + hashlib.sha256(identity.encode()).hexdigest()[:32]
+    if run.dry_run:
+        return
+    with transaction.atomic():
+        row, _ = RepairerState.objects.get_or_create(key=key)
+        row = RepairerState.objects.select_for_update().get(pk=row.pk)
+        data = row.data or {}
+        last = stamp(data.get('attempted_at'))
+        resolved = not active and data.get('reported', False) and not data.get('resolved', False)
+        due = active and (not last or run.now - last >= timedelta(hours=6))
+        if not (due or resolved):
+            return
+        # Recovery reserves its own transition before SMTP. A failed recovery
+        # is retried on the next observation, without marking it delivered.
+        if data.get('sending_until') and stamp(data['sending_until']) > run.now:
+            return
+        data.update(sending_until=(run.now + timedelta(minutes=5)).isoformat())
+        if due:
+            data.update(attempted_at=run.now.isoformat(), resolved=False)
+        row.data = data
+        row.save(update_fields=['data'])
+    subject = 'spin.clinic · Naprawiacz: ' + ('rozwiązane' if resolved else 'pilne — wymaga Ciebie')
+    body = (f'Co się stało: {happened}\nCo zrobiono automatycznie: {automatic}\n'
+            f'Co dalej: {"Problem ustąpił. Nie musisz nic robić." if resolved else next_step}')
+    try:
+        ok = _mail(_owner_email(), subject, body)
+    except Exception:
+        ok = False
+    with transaction.atomic():
+        row = RepairerState.objects.select_for_update().get(pk=row.pk)
+        data = {**row.data, 'sending_until': None}
+        if ok:
+            data.update(reported=True, resolved=resolved)
+        row.data = data
+        row.save(update_fields=['data'])
+    run.record('owner_mail', identity, 'needs_owner' if ok and not resolved else 'fixed' if ok else 'failed',
+               'Wysłano mail: rozwiązane.' if ok and resolved else 'Wysłano pilne zgłoszenie.' if ok else 'Nie wysłano maila; sprawdź SMTP.')
+
+
+def provider_event(provider, error=None):
+    """Called on real provider outcomes, including failures swallowed by fallbacks."""
+    if provider not in ('x', 'gemini', 'anthropic'):
+        return
+    from news.council_health import error_kind
+    code = error_kind(error)
+    active = code == '402' or 'credit balance' in str(error).lower()
+    if not active and error is not None:
+        return  # 429/timeout does not prove the wallet recovered.
+    try:
+        now = timezone.now()
+        RepairerState.objects.update_or_create(key='wallet-event:' + provider,
+            defaults={'data': {'active': active, 'at': now.isoformat()}})
+        notify_problem(Run(now), 'wallet:' + provider, active,
+            f'{provider}: brak środków (402).' if active else f'{provider}: dostawca znów przyjmuje zapytania.',
+            'Zapisano stan portfela; automatyka nie doładowuje kont.',
+            f'Doładuj konto {provider} u dostawcy.')
+    except Exception:
+        pass  # Provider outcomes must not depend on SMTP or telemetry storage.
+
+
+def wallet_observed(provider):
+    from functools import wraps
+    def decorate(fn):
+        @wraps(fn)
+        def call(*args, **kwargs):
+            try:
+                result = fn(*args, **kwargs)
+            except Exception as exc:
+                provider_event(provider, getattr(exc, 'code', str(exc)))
+                raise
+            provider_event(provider)
+            return result
+        return call
+    return decorate
+
+
+def operational_notifications(run, snapshot=None):
+    from news import clinic, clinic_council as council, council_registry as registry
+    from news.council_auditor import pending
+    from news.council_health import day_start, error_kind
+    from news.clinic_models import CouncilSeat, InquisitorReview
+    from news.political_models import PoliticalPost
+    from django.db.models import Max
+    local = run.now.astimezone(WARSAW)
+    daytime = 7 <= local.hour <= 23
+    if daytime:
+        start = day_start(run.now).replace(hour=7)
+        queue = pending(run.now)
+        last = SpinDiagnosis.objects.exclude(verdict='').exclude(status='failed').aggregate(last=Max('diagnosed_at'))['last']
+        oldest = queue.order_by('created_at').values_list('created_at', flat=True).first()
+        stalled = bool(oldest and run.now - max(start, oldest, last or start) >= timedelta(hours=3))
+        diagnosis_state = True if stalled else False if not oldest or (last and last >= start and run.now - last < timedelta(hours=3)) else None
+        retried = RepairAction.objects.filter(rule='auditor:diagnose', result='retried', created_at__gte=run.now - timedelta(hours=1)).exists()
+        notify_problem(run, 'diagnoses-stalled', diagnosis_state, 'Brak diagnoz od co najmniej 3 godzin przy niepustej kolejce.',
+            'Zlecono dodatkowy przebieg diagnoz.' if retried else 'Sprawdzono kolejkę i czas ostatniej diagnozy; brak potwierdzonego dodatkowego przebiegu w ostatniej godzinie.',
+            'Uruchom: python manage.py council_audit --dry-run')
+        last_x = PoliticalPost.objects.aggregate(last=Max('fetched_at'))['last']
+        stale_x = run.now - max(start, last_x or start) >= timedelta(hours=2)
+        x_state = True if stale_x else False if last_x and last_x >= start and run.now - last_x < timedelta(hours=2) else None
+        notify_problem(run, 'x-stalled', x_state, 'Brak nowych wpisów z X od co najmniej 2 godzin.',
+            'Naprawiacz sprawdza zadania pobierania; nie zmienia limitów X.',
+            'Sprawdź odczyty X w panelu: https://spin.clinic/admin/')
+    members = council._members('CLINIC_COUNCIL', council.DEFAULT_COUNCIL)
+    available = sum(registry.available(m) for m in members)
+    state = RepairerState.objects.filter(key='council-low-since').first()
+    since = stamp((state.data if state else {}).get('since'))
+    low = available < council.MIN_MEMBERS
+    if low and not since:
+        since = run.now
+    if not run.dry_run:
+        RepairerState.objects.update_or_create(key='council-low-since', defaults={'data': {'since': since.isoformat() if low else None}})
+    if not low or run.now - since >= timedelta(hours=2):
+        reasons = Counter(error_kind(s.last_error) if s.status != 'suspended' else 'suspended' for s in CouncilSeat.objects.all())
+        reasons.update('daily_limit' if registry.configured(m) else 'configuration' for m in members if not registry.available(m))
+        description = f'Dostępnych członków: {available}; wymagane {council.MIN_MEMBERS}. Przyczyny: {dict(reasons)}.'
+        if low:
+            run.record('auditor:quorum', 'council', 'needs_owner', description)
+        notify_problem(run, 'council-quorum', low, description,
+            'Sprawdzono dostępność, limity i ławkę; skład bez zmian.',
+            'Sprawdź konfigurację i limity dostawców: python manage.py council_audit --dry-run')
+    # Adopt already recorded wallet failures after deployment; later recovery
+    # requires a real success (never simply expiry of the historical window).
+    from news.admin_finance import provider_signals
+    for provider in provider_signals(run.now):
+        if not run.dry_run:
+            RepairerState.objects.get_or_create(key='wallet-event:' + provider,
+                defaults={'data': {'active': True, 'at': run.now.isoformat()}})
+    for state in RepairerState.objects.filter(key__startswith='wallet-event:'):
+        provider = state.key.split(':', 1)[1]
+        if provider in ('x', 'gemini', 'anthropic'):
+            notify_problem(run, 'wallet:' + provider, state.data['active'], f'{provider}: brak środków (402).',
+                'Zapisano stan portfela; nie zmieniono budżetu.', f'Doładuj konto {provider} u dostawcy.')
+    from news.inquisitor import review_url
+    for review in InquisitorReview.objects.filter(verdict='error'):
+        notify_problem(run, f'inquisitor:{review.pk}', not bool(review.decided_at), 'Obaj recenzenci wskazali błąd diagnozy.',
+            'Zapisano kontrolę do decyzji; treść diagnozy bez zmian.', 'Zatwierdź albo odrzuć: ' + review_url(review))
 
 
 def owner_digest(run, snapshot):
     from news.council_recruiter import _owner_email
     from news.social_publish import _mail
     local = run.now.astimezone(WARSAW)
-    if local.hour < 8 or not run.room:
+    if local.hour != 8 or not run.room:
         return
     items = owner_items(snapshot)
     day = local.date().isoformat()
@@ -438,7 +599,8 @@ def owner_digest(run, snapshot):
     # Persist before SMTP: no duplicate mail after a worker crash/ambiguous SMTP
     # response. On failure retain old hashes and try on the next day only.
     RepairerState.objects.update_or_create(key='owner-mail', defaults={'data': {'day': day, 'hashes': previous.get('hashes', [])}})
-    body = 'Wymaga Ciebie:\n\n' + '\n'.join(f"- {i['title']}: {i['hint']}" for i in items)
+    body = 'Wymaga Ciebie:\n\n' + '\n\n'.join(
+        f"Co się stało: {i['title']}\nCo zrobiono automatycznie: {i.get('automatic', 'Naprawiacz sprawdził problem; nie zmienia środków ani konfiguracji.')}\nCo dalej: {i['hint']}" for i in items)
     ok = _mail(_owner_email(), 'spin.clinic · Naprawiacz: wymaga Ciebie', body)
     if ok:
         RepairerState.objects.filter(key='owner-mail').update(data={'day': day, 'hashes': hashes})
@@ -498,7 +660,7 @@ def run(*, dry_run=False, now=None):
         from news.admin_status import snapshot
         data = snapshot(ctx.now)
         # Daily mail gets a slot even when there is a large repair backlog.
-        for rule in (owner_digest, *RULES):
+        for rule in (operational_notifications, owner_digest, *RULES):
             if not ctx.room:
                 break
             try:

@@ -23,6 +23,7 @@ import requests
 
 from news.loaded_words import LOADED_PROMPT, LOADED_SCHEMA, validate_loaded_words
 from news.techniques import CATEGORY_PROMPT, CATEGORY_SCHEMA, technique_category
+from news.repairer import wallet_observed
 
 PROMPT_VERSION = 'clinic-1'
 DEFAULT_MODEL = 'claude-sonnet-5'  # Sonnet: kilkukrotnie taniej niż Opus przy dobrej jakości diagnoz (27.09.2026)
@@ -281,6 +282,7 @@ def _align_sources(data, found: dict[str, str]):
     return data
 
 
+@wallet_observed('gemini')
 def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
     """Gemini z wyszukiwaniem Google. Zwraca obiekt w kształcie odpowiedzi Claude'a (bloki tekstu i wyników wyszukiwania),
     żeby reszta ścieżki (walidacja cytatów i źródeł, zapis, budżet) działała bez zmian."""
@@ -328,6 +330,7 @@ def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_
         model=model, stop_reason='end_turn')
 
 
+@wallet_observed('anthropic')
 def _call_claude(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
     """Jedno zapytanie do Claude z obsługą pause_turn, odmowy i trybu awaryjnego JSON."""
     import anthropic

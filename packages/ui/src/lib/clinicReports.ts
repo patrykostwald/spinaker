@@ -7,6 +7,7 @@ export type ClinicReport = {
   diagnoses: Record<Camp, number>; scale: SpinScale; spin_of_week: SpinDetailData | null;
   techniques: Record<Camp, ReportTechnique[]>; deleted: Record<Camp, number>;
   interviews: Array<{ id: number; day: string; headline: string; guest: string; channel: string; verdict: Verdict | "" }>;
+  inquisitor?: Array<{ camp: Camp; member: string; n: number; issues: Record<string, number> }>;
 };
 export type ReportResponse = { report: ClinicReport | null; archive: Array<{ week_start: string; week_end: string }> };
 export const getClinicReport = (week?: string) => apiFetch<ReportResponse>(week

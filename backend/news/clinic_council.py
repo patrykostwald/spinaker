@@ -13,6 +13,7 @@ import json
 import os
 import re
 import statistics
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import logging
@@ -142,7 +143,8 @@ def _members(name: str, default: str) -> list[tuple[str, str]]:
     members = [tuple(part.strip() for part in item.split(':', 1)) for item in raw.split(',') if ':' in item]
     # Rekruter Konsylium: bez zawieszonych, z przyjętymi do tej roli (news/council_recruiter.py)
     from news.council_recruiter import adjust
-    return adjust(name, members)
+    from news.council_health import adjust_roles
+    return adjust_roles(name, adjust(name, members))
 
 
 def enabled() -> bool:
@@ -163,12 +165,16 @@ def _json(text: str) -> dict:
 def ask(member: tuple[str, str], system: str, user: str, schema: dict, max_tokens: int = 3000) -> dict:
     """Jedno zapytanie do członka; wynik trafia do kontroli zdrowia Rekrutera (twarde błędy → zawieszenie po 3 dniach)."""
     from news.council_recruiter import record
+    from news.council_health import record as record_health
+    started = time.monotonic()
     try:
         result = _ask(member, system, user, schema, max_tokens)
     except ClinicAIError as error:
         record(member, error.code)
+        record_health(member, error.code, time.monotonic() - started)
         raise
     record(member, None)
+    record_health(member, None, time.monotonic() - started)
     return result
 
 
@@ -243,6 +249,7 @@ def _quoted(text: str, quote: str) -> bool:
 
 
 def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dict | None:
+    started = time.monotonic()
     try:
         # Groq wlicza zarezerwowaną długość odpowiedzi do limitu na minutę — krótko; NVIDIA myśli dłużej przed JSON-em.
         raw = ask(member, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=1500 if member[0] == 'groq' else 4000)
@@ -252,12 +259,14 @@ def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dic
             raise ClinicAIError('invalid_opinion')
     except ClinicAIError as error:
         logger.warning('council member %s failed: %s', member[1], error.code)
-        return {**registry.metadata(member), 'status': 'brak odpowiedzi', 'note': error.code}
+        return {**registry.metadata(member), 'status': 'brak odpowiedzi', 'note': error.code,
+                'seconds': round(time.monotonic() - started, 3)}
     verdict, intensity = raw['verdict'], raw['intensity']
     techniques = [item for item in raw.get('techniques') or [] if isinstance(item, dict)
                   and isinstance(item.get('id'), str) and item['id'] in TECHNIQUES
                   and _quoted(post_text, str(item.get('quote', '')))]
     return {**registry.metadata(member), 'status': 'odpowiedział',
+            'seconds': round(time.monotonic() - started, 3),
             'loaded_words': validate_loaded_words(post_text, raw.get('loaded_words')),
             'model': member[1], 'verdict': verdict, 'intensity': intensity, 'techniques': techniques,
             'claims': [str(c)[:300] for c in raw.get('claims') or [] if str(c).strip()][:6]}
@@ -486,7 +495,7 @@ def diagnose(context: dict, lines: str) -> dict:
     members = consult(context['text'], lines)
     opinions = [op for op in members if op.get('status') != 'brak odpowiedzi']
     member_records = [{k: v for k, v in op.items() if k in (
-        'model', 'company', 'provider', 'role', 'status', 'note', 'verdict', 'intensity')} for op in members]
+        'model', 'company', 'provider', 'role', 'status', 'note', 'verdict', 'intensity', 'seconds')} for op in members]
     diversity = registry.diversity([(op.get('provider', ''), op['model']) for op in opinions])
     diversity['polish_required'] = any(registry.is_polish(m) and registry.configured(m)
                                      for m in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL))

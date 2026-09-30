@@ -8,7 +8,7 @@ import { apiWrite } from '../lib/api';
 type Status = 'ok' | 'warn' | 'error' | 'unknown';
 type Reading = number | 'unknown';
 type Metric = { label: string; value: string | number | boolean };
-type Card = { title: string; status: Status; description: string; last_event: string; metrics: Metric[]; items: Card[] };
+type Card = { title: string; status: Status; description: string; last_event: string; metrics: Metric[]; items: Card[]; href?: string; link_label?: string };
 type Kpi = { key: string; label: string; today: Reading; yesterday: Reading; unit?: string };
 type Series = { key: string; label: string; unit?: string; points: { date: string; value: Reading }[] };
 type Wallet = { provider: string; label: string; currency: string; recorded_balance: Reading; recorded_at: string; spent_since: Reading; estimated_balance: Reading; actual_balance: Reading; actual_currency?: string; actual_checked_at?: string; days_remaining: Reading; status: Status; note?: string; tracked?: boolean; signal?: string; signal_at?: string };
@@ -68,6 +68,7 @@ function DetailCard({ card, onlyProblems, nested = false }: { card: Card; onlyPr
   return <details id={nested ? undefined : sectionId(card.title)} className={nested ? 'sc-command-item' : 'sc-command-card'} open={onlyProblems || undefined}>
     <summary><span>{card.title}</span><StatusDot status={cardStatus(card)} /><span className="sc-command-toggle" aria-hidden="true">+</span></summary>
     <div className="sc-command-card-body"><p>{card.description}</p><Metrics metrics={card.metrics || []} /><p className="sc-command-time">Ostatnie zdarzenie: {date(card.last_event)}</p>
+      {card.href && <a href={card.href}>{card.link_label || 'Otwórz szczegóły'}</a>}
       {items.map((item, i) => <DetailCard key={`${item.title}-${i}`} card={item} onlyProblems={onlyProblems} nested />)}
     </div>
   </details>;

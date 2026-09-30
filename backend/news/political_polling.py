@@ -72,6 +72,8 @@ def fetch_x_timeline(account, window, config):
     with requests.get(f'https://api.x.com/2/users/{account.user_id}/tweets', params=params,
             headers={'Authorization': 'Bearer ' + config['token'], 'Accept': 'application/json'},
             timeout=(5, 15), allow_redirects=False, stream=True) as response:
+        from news.repairer import provider_event
+        provider_event('x', None if response.status_code == 200 else f'http_{response.status_code}')
         if response.status_code != 200:
             wait = 3600 if response.status_code in (401, 402, 403) else 300
             try:

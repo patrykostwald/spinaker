@@ -62,7 +62,9 @@ def build(today=None) -> dict:
                   for row in ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True,
                                                             day__gte=start, day__lte=end).order_by('day')]
     counts = {camp: diagnoses.filter(post__camp_at_collection=camp).count() for camp in clinic.CAMPS}
+    from news.inquisitor import findings
     return {
+        'inquisitor': findings(since, until),
         'start': start, 'end': end, 'diagnoses': counts, 'scale': clinic.scale_data(7),
         'spin_of_week': clinic.detail_data(top) if top else None,
         'techniques': techniques, 'deleted': deleted, 'interviews': interviews,

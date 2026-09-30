@@ -3,6 +3,46 @@ from django.contrib import admin, messages
 
 from news import clinic
 from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
+from news.clinic_models import InquisitorReview
+from django.utils.html import format_html
+
+
+@admin.register(InquisitorReview)
+class InquisitorReviewAdmin(admin.ModelAdmin):
+    change_form_template = 'admin/news/inquisitor_review.html'
+    list_display = ('diagnosis', 'camp', 'verdict', 'decision', 'created_at')
+    list_filter = ('verdict', 'camp', 'decision')
+    readonly_fields = tuple(f.name for f in InquisitorReview._meta.fields) + ('diagnosis_link',)
+    actions = ['approve_diagnoses', 'reject_diagnoses']
+
+    @admin.display(description='Diagnoza (tylko odczyt)')
+    def diagnosis_link(self, obj):
+        return format_html('<a href="/admin/news/spindiagnosis/{}/change/">Otwórz diagnozę {}</a>', obj.diagnosis_id, obj.diagnosis_id)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def response_change(self, request, obj):
+        if '_inquisitor_approve' in request.POST or '_inquisitor_reject' in request.POST:
+            self._decide(request, InquisitorReview.objects.filter(pk=obj.pk),
+                         'approve' if '_inquisitor_approve' in request.POST else 'reject')
+        return super().response_change(request, obj)
+
+    def _decide(self, request, queryset, decision):
+        from news.inquisitor import decide
+        count = sum(decide(pk, request.user, decision) for pk in queryset.values_list('pk', flat=True))
+        self.message_user(request, f'Zapisano decyzje: {count}. Treść diagnoz bez zmian.')
+
+    @admin.action(description='Zatwierdź diagnozę bez zmiany treści')
+    def approve_diagnoses(self, request, queryset):
+        self._decide(request, queryset, 'approve')
+
+    @admin.action(description='Odrzuć diagnozę bez zmiany treści')
+    def reject_diagnoses(self, request, queryset):
+        self._decide(request, queryset, 'reject')
 
 AI_FIELDS = ('post', 'verdict', 'intensity', 'headline', 'summary', 'analysis', 'techniques', 'claims', 'limitations',
              'triage', 'provider', 'model_name', 'prompt_version', 'usage', 'error', 'created_at', 'status',

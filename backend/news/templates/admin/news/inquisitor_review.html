@@ -1,0 +1,9 @@
+{% extends "admin/change_form.html" %}
+{% block submit_buttons_bottom %}
+  {% if original.verdict == 'error' and not original.decided_at and has_change_permission %}
+    <div class="submit-row">
+      <input type="submit" name="_inquisitor_approve" value="Zatwierdź diagnozę bez zmiany treści">
+      <input type="submit" name="_inquisitor_reject" value="Odrzuć diagnozę bez zmiany treści">
+    </div>
+  {% endif %}
+{% endblock %}
