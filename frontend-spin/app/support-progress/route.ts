@@ -11,7 +11,8 @@ const RAISED_PLN = 40;
 
 export function GET() {
   const goal = Number(process.env.SUPPORT_MONTHLY_GOAL_PLN || GOAL_PLN);
-  const raised = Math.max(0, Number(process.env.SUPPORT_MONTHLY_RAISED_PLN || RAISED_PLN));
+  // Wyższa z dwóch kwot: stary wpis „0” w .env.production nie może przykryć wpłat zapisanych w kodzie.
+  const raised = Math.max(0, RAISED_PLN, Number(process.env.SUPPORT_MONTHLY_RAISED_PLN) || 0);
   return NextResponse.json({ goal: Number.isFinite(goal) ? goal : 0, raised: Number.isFinite(raised) ? raised : 0 },
     { headers: { 'Cache-Control': 'public, max-age=300' } });
 }
