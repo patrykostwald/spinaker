@@ -231,3 +231,22 @@ def test_account_and_push_api_require_signature(settings):
     assert client.get('/api/community/threads/').status_code == 200
     assert client.post('/api/editor/threads/', {}, format='json').status_code in (401, 403)
     assert not APIClient().get('/api/account/me/').data['accounts_enabled']
+
+
+@pytest.mark.django_db
+def test_tester_login_grants_preview_only_to_testers(settings):
+    from io import StringIO
+    from django.contrib.auth import get_user_model
+    from django.core.management import call_command
+    from rest_framework.test import APIClient
+    settings.PREVIEW_KEY = 'k' * 32
+    call_command('create_tester', 'politycznyux', password='Proste-Haslo-47', stdout=StringIO())
+    get_user_model().objects.create_user(username='zwykly', password='Proste-Haslo-47')
+    client = APIClient()
+    bad = client.post('/api/preview/login/', {'username': 'zwykly', 'password': 'Proste-Haslo-47'}, format='json')
+    assert bad.status_code == 403 and 'sc_preview_sig' not in bad.cookies
+    ok = client.post('/api/preview/login/', {'username': 'PolitycznyUX', 'password': 'Proste-Haslo-47'}, format='json')
+    assert ok.status_code == 200 and ok.json()['next'] == '/podglad'
+    assert ok.cookies['sc_preview'].value == '1' and ok.cookies['sc_preview_sig'].value
+    user = get_user_model().objects.get(username='politycznyux')
+    assert not user.is_staff and user.account_identity.email_verified

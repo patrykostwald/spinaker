@@ -5,7 +5,8 @@ from django.conf import settings
 from django.core import signing
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils.cache import patch_vary_headers
-from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_GET, require_POST
 from rest_framework.throttling import SimpleRateThrottle
 from news.features import preview_active
 
@@ -89,11 +90,7 @@ def enter(request):
     if (not settings.PREVIEW_KEY or not PreviewThrottle().allow_request(request, None)
             or not getattr(request, '_preview_key_valid', False)):
         return HttpResponse(status=404)
-    response = HttpResponseRedirect('/podglad')
-    response.set_cookie('sc_preview_sig', signing.dumps(key_digest(), salt=SALT),
-                        max_age=MAX_AGE, httponly=True, secure=True, samesite='Lax', path='/')
-    response.set_cookie('sc_preview', '1', max_age=MAX_AGE, secure=True, samesite='Lax', path='/')
-    return response
+    return grant(HttpResponseRedirect('/podglad'))
 
 
 @require_GET
@@ -106,3 +103,36 @@ def leave(request):
 @require_GET
 def status(request):
     return JsonResponse({'active': preview_active.get()})
+
+
+TESTERS_GROUP = 'testerzy'
+
+
+def is_tester(user):
+    return bool(user and user.is_authenticated and (user.is_staff or user.groups.filter(name=TESTERS_GROUP).exists()))
+
+
+def grant(response):
+    response.set_cookie('sc_preview_sig', signing.dumps(key_digest(), salt=SALT),
+                        max_age=MAX_AGE, httponly=True, secure=True, samesite='Lax', path='/')
+    response.set_cookie('sc_preview', '1', max_age=MAX_AGE, secure=True, samesite='Lax', path='/')
+    return response
+
+
+@csrf_protect
+@require_POST
+def tester_login(request):
+    """Logowanie testera (login i hasło zamiast tajnego linku): konto z grupy „testerzy” albo personel dostaje podgląd."""
+    import json
+    from django.contrib.auth import authenticate, login
+    if not settings.PREVIEW_KEY or not PreviewThrottle().allow_request(request, None):
+        return JsonResponse({'detail': 'Podgląd jest wyłączony albo było zbyt wiele prób. Spróbuj za godzinę.'}, status=429 if settings.PREVIEW_KEY else 404)
+    try:
+        data = json.loads(request.body or b'{}')
+    except ValueError:
+        data = {}
+    user = authenticate(request, username=str(data.get('username', '')).strip().lower(), password=str(data.get('password', '')))
+    if not is_tester(user):
+        return JsonResponse({'detail': 'Nieprawidłowy login lub hasło.'}, status=403)
+    login(request, user)
+    return grant(JsonResponse({'ok': True, 'next': '/podglad'}))
