@@ -32,6 +32,18 @@ def card(title, status='unknown', description='Brak danych.', last_event=None, m
                 metrics=metrics or [], items=items or [])
 
 
+def severity(error, last_success=None, now=None):
+    """Czerwień tylko dla problemów do działania: błędy przejściowe (timeout, 429, 5xx) i błąd przy niedawnym
+    sukcesie (≤ 48 h) to „Uwaga” — naprawiacz ponawia je sam."""
+    from news.repairer import transient
+    if not error:
+        return None
+    now = now or timezone.now()
+    if transient(error) or (last_success and now - last_success < timedelta(hours=48)):
+        return 'warn'
+    return 'error'
+
+
 def worst(items):
     return next((s for s in ('error', 'warn', 'unknown') if any(i['status'] == s for i in items)), 'ok') if items else 'unknown'
 
@@ -136,13 +148,13 @@ def diagnoses(title, field, today, yesterday, tomorrow, now):
     counts = list(query.filter(**{f'{field}__gte': yesterday, f'{field}__lt': tomorrow}).order_by().values('status').annotate(
         today=Count('pk', filter=Q(**{f'{field}__gte': today})), yesterday=Count('pk', filter=Q(**{f'{field}__lt': today}))))
     labels = dict(SpinDiagnosis._meta.get_field('status').choices)
-    rows = [card(labels.get(r['status'], r['status']), 'error' if r['status'] == 'failed' else 'ok',
+    rows = [card(labels.get(r['status'], r['status']), ('error' if r['today'] >= 3 else 'warn') if r['status'] == 'failed' else 'ok',
                  'Obecny status rekordów utworzonych/diagnozowanych danego dnia.', metrics=[metric('Dziś', r['today']), metric('Wczoraj', r['yesterday'])]) for r in counts]
     # diagnose() records diagnosed_at on both success and failure. Screening has
     # no separate error history; its status is later overwritten by diagnosis.
     errors = list(query.filter(diagnosed_at__gte=now - timedelta(hours=24), diagnosed_at__lte=now).exclude(error='').order_by()
                   .values('error').annotate(count=Count('pk'), last=Max('diagnosed_at')).order_by('-count', 'error')[:5]) if field == 'diagnosed_at' else []
-    rows += [card('Błąd diagnozy (24 h)', 'error', safe_error(r['error']), r['last'], [metric('Liczba', r['count'])]) for r in errors]
+    rows += [card('Błąd diagnozy (24 h)', 'error' if r['count'] >= 3 and severity(r['error']) == 'error' else 'warn', safe_error(r['error']), r['last'], [metric('Liczba', r['count'])]) for r in errors]
     totals = daily_counts(query, field, today, yesterday, tomorrow)
     description = ('Obecne statusy rekordów przesiewu; status po diagnozie zastępuje status strażnika. Historia błędów strażnika: brak danych.'
                    if field == 'created_at' else 'Diagnozy według czasu ostatniej próby. Najczęstsze zapisane błędy z ostatnich 24 h; ponowienia nadpisują wcześniejszy wynik.')
@@ -171,7 +183,7 @@ def council():
     for member in roster():
         seat = seats.get((member['provider'], member['model']))
         error = safe_error(seat.last_error) if seat else ''
-        state = 'error' if error else 'ok' if member['status'] == 'dostępny' else 'warn'
+        state = ('warn' if seat and severity(seat.last_error) == 'warn' else 'error') if error else 'ok' if member['status'] == 'dostępny' else 'warn'
         rows.append(card(f"{member['provider']} · {member['model']}", state, member['status'] + (f' · {error}' if error else ''),
                          max(filter(None, (seat.last_ok_at, seat.suspended_at, seat.admitted_at)), default=None) if seat else None,
                          [metric('Próby dziś (dzień UTC)', cache.get(limit_key((member['provider'], member['model'])))),
@@ -238,7 +250,7 @@ def sources():
     rss = Source.objects.filter(source_type='rss').aggregate(
         active=Count('pk', filter=Q(is_active=True, scrape_enabled=True)),
         blocked=Count('pk', filter=Q(is_active=False) | Q(scrape_enabled=False)), errors=Count('pk', filter=~Q(last_error='')), last=Max('last_scraped'))
-    rows = [card(r['name'], 'error' if r['last_error'] else 'ok' if r['last_success'] else 'unknown', safe_error(r['last_error']) or 'Stan zapisany przez importer.',
+    rows = [card(r['name'], severity(r['last_error'], r['last_success']) or ('ok' if r['last_success'] else 'unknown'), safe_error(r['last_error']) or 'Stan zapisany przez importer.',
                  r['last_started'] or r['last_success'], [metric('Ostatni sukces', r['last_success']), metric('Zaimportowano', r['imported'])]) for r in states]
     return card('Źródła / harvestery', 'warn' if rss['errors'] and worst(rows) != 'error' else worst(rows),
                 'Liczba bieżących stanów z błędem; brak historycznego licznika błędów. RSS zablokowane = wyłączone źródło lub pobieranie.',

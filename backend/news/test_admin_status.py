@@ -38,7 +38,7 @@ def test_anonymous_and_regular_user_cannot_read_status():
 def test_staff_snapshot_shape_and_recorded_failures():
     client = APIClient()
     client.force_authenticate(get_user_model().objects.create_user('owner048', is_staff=True))
-    ImportState.objects.create(name='test-import', last_error='ConnectionError')
+    ImportState.objects.create(name='test-import', last_error='official_prints_failed')
     CouncilSeat.objects.create(provider='gemini', model='test-model', status='suspended', last_error='http_402')
     CouncilRecruitment.objects.create(provider='gemini', model='candidate048', decision='would_admit', mode='trial')
     ClinicInterview.objects.create(day=timezone.localdate(), video_id='abcdefghijk', status='pending_review', title='Wywiad testowy', channel='Kanał')
@@ -123,3 +123,16 @@ def test_unavailable_section_does_not_hide_others():
     assert response.status_code == 200
     assert response.data['sections'][1]['status'] == 'unknown'
     assert b'sensitive' not in response.content
+
+
+def test_transient_and_recent_errors_are_warnings_not_red():
+    from datetime import timedelta
+    from django.utils import timezone
+    from news.admin_status import severity
+    now = timezone.now()
+    assert severity('ReadTimeout: gdelt', None, now) == 'warn'
+    assert severity('openrouter: http_429', None, now) == 'warn'
+    assert severity('official_prints_failed', now - timedelta(hours=3), now) == 'warn'
+    assert severity('official_prints_failed', now - timedelta(days=5), now) == 'error'
+    assert severity('gemini: http_402', None, now) == 'error'
+    assert severity('', None, now) is None
