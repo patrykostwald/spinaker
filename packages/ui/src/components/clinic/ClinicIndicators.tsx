@@ -378,7 +378,7 @@ export function ClinicIndicators() {
       <ClinicNav />
       <SectionHeader variant="page" titleId="ind-title" title="Dane i wykresy"
         kicker={<><Link href="/klinika">Klinika spinu</Link> <AiTag /></>}
-        subtitle="Zobacz, ile wpisów przetworzyliśmy i co pokazują opublikowane diagnozy. Porównania dotyczą analizowanych materiałów, nie całej polityki."
+        subtitle="Co pokazują opublikowane diagnozy — obie strony obok siebie, techniki, partie i konta — a niżej, ile wpisów przetworzyliśmy. Porównania dotyczą analizowanych materiałów, nie całej polityki."
         action={<Button href="/klinika/diagnozy" variant="primary">Baza wszystkich diagnoz →</Button>}
         link={<Link href="/metodologia">Jak wybieramy i liczymy?</Link>} />
 
@@ -386,11 +386,6 @@ export function ClinicIndicators() {
       {query.isLoading ? <p className="sc-clinic-empty">Ładowanie wskaźników…</p> : null}
 
       {stats ? <UpdatedAt.Provider value={query.dataUpdatedAt}>
-        <Funnel stats={stats} />
-        <div className="sc-ind-pair">
-          <DailyChart stats={stats} metric="read" title="Przeczytane wpisy dziennie" note="Wszystkie nowe wpisy z kont obu stron." />
-          <DailyChart stats={stats} metric="diagnosed" title="Diagnozy dziennie" note="Opublikowane diagnozy według dnia diagnozy." />
-        </div>
         <section className="sc-ind-card" aria-labelledby="ind-sides-title">
           <header className="sc-ind-card__head">
             <h2 id="ind-sides-title">Obie strony obok siebie</h2>
@@ -407,6 +402,12 @@ export function ClinicIndicators() {
         <Techniques stats={stats} />
         <Parties stats={stats} />
         <Accounts stats={stats} />
+        {/* Najpierw polityczne podsumowania (to czytelnik chce zobaczyć od razu), niżej — jak pracuje Klinika (uwaga testera UX). */}
+        <Funnel stats={stats} />
+        <div className="sc-ind-pair">
+          <DailyChart stats={stats} metric="read" title="Przeczytane wpisy dziennie" note="Wszystkie nowe wpisy z kont obu stron." />
+          <DailyChart stats={stats} metric="diagnosed" title="Diagnozy dziennie" note="Opublikowane diagnozy według dnia diagnozy." />
+        </div>
         <aside className="sc-ind-method" aria-label="Jak czytać te dane">
           <h2>Jak czytać te dane</h2>
           <ul>
