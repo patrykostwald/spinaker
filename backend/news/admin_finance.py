@@ -185,6 +185,18 @@ def provider_signals(now):
     return signals
 
 
+def usd_rate(currency):
+    """Ile jednostek waluty portfela kosztuje 1 USD (stały kurs z ustawień; domyślnie PLN 3,70, EUR 0,92)."""
+    if currency == 'USD':
+        return 1.0
+    default = {'PLN': 3.7, 'EUR': 0.92}.get(currency)
+    try:
+        value = float(os.environ.get(f'WALLET_USD_{currency}', '') or default)
+    except (TypeError, ValueError):
+        return default
+    return value if value and value > 0 else default
+
+
 def wallet_snapshot(entries, events, now, actual, history_complete=True, signals=None):
     signals = signals or {}
     wallets = []
@@ -198,11 +210,15 @@ def wallet_snapshot(entries, events, now, actual, history_complete=True, signals
                    days_remaining=UNKNOWN, status='unknown', note='Wpisz saldo odczytane u dostawcy i datę pomiaru.')
         if entry:
             row['note'] = 'Szacunek z zapisanych zużyć; brak historii wszystkich prób i wydatków poza projektem.'
-            if entry.currency != 'USD':
+            fx = usd_rate(entry.currency)
+            if fx is None:
                 row['note'] = 'Koszty zapisano w USD. Brak kursu walut — szacowane saldo i liczba dni są nieznane.'
             elif provider in ('x', 'anthropic', 'gemini') and history_complete:
                 spent = total(events, provider, entry.recorded_at, now + timedelta(microseconds=1))
                 rate = total(events, provider, now - timedelta(days=7), now + timedelta(microseconds=1))
+                # Wydatki liczymy w USD; saldo wpisane w złotych/euro przeliczamy stałym kursem z ustawień.
+                spent = round(spent * fx, 6) if spent != UNKNOWN else spent
+                rate = round(rate * fx, 6) if rate != UNKNOWN else rate
                 # Unattributable paid usage cannot safely be excluded from a wallet.
                 if provider != 'x' and any(e[1] == 'unknown' and e[0] >= entry.recorded_at for e in events):
                     spent = UNKNOWN
@@ -215,6 +231,8 @@ def wallet_snapshot(entries, events, now, actual, history_complete=True, signals
                         row['days_remaining'] = max(0, round(row['estimated_balance'] / (rate / 7), 1))
                     row['status'] = ('error' if row['estimated_balance'] <= 0 else 'warn'
                                      if row['days_remaining'] != UNKNOWN and row['days_remaining'] < 7 else 'ok')
+                if entry.currency != 'USD':
+                    row['note'] += f' Wydatki przeliczone kursem 1 USD = {fx} {entry.currency} (WALLET_USD_{entry.currency}).'
                 if provider == 'x':
                     row['note'] = 'Od salda odejmujemy górny szacunek: pełne rezerwacje PoliticalRead (także nieudane). Dni według ostatnich 7×24 h.'
                 if provider == 'gemini':
@@ -241,7 +259,7 @@ def finance_snapshot(now, today):
     latest = WalletBalance.objects.filter(provider=OuterRef('provider'), recorded_at__lte=now).values('pk')[:1]
     entries = {row.provider: row for row in WalletBalance.objects.filter(pk=Subquery(latest))}
     start = min([today.replace(day=1), today - timedelta(days=7)] +
-                [e.recorded_at for e in entries.values() if e.provider in ('x', 'gemini', 'anthropic') and e.currency == 'USD'])
+                [e.recorded_at for e in entries.values() if e.provider in ('x', 'gemini', 'anthropic') and usd_rate(e.currency)])
     complete = True
     try:
         events = recorded_events(start, now)

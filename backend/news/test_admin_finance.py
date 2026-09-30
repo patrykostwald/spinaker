@@ -76,7 +76,8 @@ def test_wallet_saved_and_cost_subtracted_only_since_balance(staff):
 
 
 @pytest.mark.django_db
-def test_x_upper_reservations_currency_and_no_usage_runway():
+def test_x_upper_reservations_currency_and_no_usage_runway(monkeypatch):
+    monkeypatch.delenv('WALLET_USD_PLN', raising=False)
     account = PoliticalAccount.objects.create(user_id='490', handle='x049')
     PoliticalRead.objects.create(account=account, started_at=NOW - timedelta(days=1), reserved_usd='2.5', reserved_posts=100, status='error')
     usd = WalletBalance.objects.create(provider='x', amount=10, currency='USD', recorded_at=NOW - timedelta(days=2))
@@ -85,7 +86,10 @@ def test_x_upper_reservations_currency_and_no_usage_runway():
     x = wallets[0]
     assert x['estimated_balance'] == 7.5
     assert x['days_remaining'] == 21
-    usd.currency = 'PLN'
+    usd.currency = 'PLN'  # 2,5 USD × 3,7 = 9,25 zł wydatków
+    x = finance.wallet_snapshot({'x': usd}, events, NOW, {'balance': 'unknown', 'checked_at': 'unknown'})[0]
+    assert x['estimated_balance'] == 0.75 and x['status'] == 'warn'
+    usd.currency = 'GBP'
     x = finance.wallet_snapshot({'x': usd}, events, NOW, {'balance': 'unknown', 'checked_at': 'unknown'})[0]
     assert x['estimated_balance'] == x['days_remaining'] == 'unknown'
     usd.currency = 'USD'
@@ -182,3 +186,12 @@ def test_gemini_402_marks_wallet_without_manual_entry():
                                                                   signals=finance.provider_signals(NOW))}
     assert wallets['gemini']['status'] == 'error' and '402' in wallets['gemini']['signal']
     assert wallets['x']['status'] == 'unknown'
+
+
+def test_pln_wallet_is_estimated_with_fixed_rate(monkeypatch):
+    monkeypatch.setenv('WALLET_USD_PLN', '4')
+    entry = WalletBalance(provider='gemini', amount=Decimal('82'), currency='PLN', recorded_at=NOW - timedelta(days=1))
+    events = [(NOW - timedelta(hours=5), 'gemini', 2.0, 1)]
+    wallet = {w['provider']: w for w in finance.wallet_snapshot({'gemini': entry}, events, NOW, {'balance': 'unknown', 'checked_at': 'unknown'})}['gemini']
+    assert wallet['spent_since'] == 8.0 and wallet['estimated_balance'] == 74.0
+    assert wallet['days_remaining'] == round(74 / (8 / 7), 1)
