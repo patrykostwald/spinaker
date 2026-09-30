@@ -6422,3 +6422,11 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-news-strip__track.sc-strip-bleed { padding-block: calc(120px + var(--sc-s-2)) calc(120px + var(--sc-s-4)); pointer-events: none; }
 .sc-news-strip__track.sc-strip-bleed > * { pointer-events: auto; }
 @media (max-width: 760px) { .sc-f2 .sc-news-strip__track.sc-strip-bleed { padding: 8px 0; pointer-events: auto; } }
+
+/* Stały czytelnik (zainstalowana aplikacja albo pierwsza wizyta ponad 12 h temu — atrybut ustawia skrypt w <head> przed
+   pierwszym malowaniem): bez objaśnień „co, jak i dlaczego”, od razu treść. Objaśnienia zostają dla nowych gości oraz
+   na /konsylium i /metodologia (uwaga testera UX, 30.09). Hero znika tylko wizualnie — h1 zostaje dla czytników ekranu. */
+[data-familiar] .sc-home-intro { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-familiar] .sc-home-doctor__scale, [data-familiar] .sc-scan-s-rule { display: none; }
+/* Wynik członka Konsylium w karcie nie łamie się na dwie linie (np. „Nemotron 45” w wąskiej kolumnie) */
+.sc-scan-council .sc-scan-g-row b { white-space: nowrap; }
