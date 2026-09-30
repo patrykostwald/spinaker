@@ -119,7 +119,9 @@ def test_diverse_selection_and_daily_limit(monkeypatch):
     monkeypatch.setenv('CLINIC_HF_DAILY_LIMIT', '1')
     assert registry.reserve(polish)
     assert not registry.available(polish)
-    assert any('pllum' in m[1].lower() for m in registry.select_members(candidates))
+    # PLLuM zniknął z Hugging Face (30.09.2026): po limicie Bielika skład działa dalej, bez modelu polskiego
+    fallback = registry.select_members(candidates)
+    assert len(fallback) >= 3 and not any(registry.is_polish(m) for m in fallback)
     assert registry.metadata(('cloudflare', '@cf/meta/llama-3.3'))['company'] == registry.metadata(('openrouter', 'meta-llama/llama-3.3:free'))['company']
 
 

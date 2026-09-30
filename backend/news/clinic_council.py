@@ -31,10 +31,11 @@ logger = logging.getLogger(__name__)
 # Po jednym modelu z każdej firmy (pluralizm ocen, bez powtarzania silników jednego dostawcy). Nadpisz w CLINIC_COUNCIL.
 # DeepSeek i Kimi (przez NVIDIA) odpowiadają dziś > 3 min — do dopisania w CLINIC_COUNCIL, gdy przyspieszą.
 # gpt-oss-20b, nie 120b: na 120b pracują przekazy dnia i syntezy wątków, a Groq liczy dzienny limit tokenów osobno dla każdego modelu.
-DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemotron-3-super-120b-a12b,gemini:gemini-3.8-flash,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast,hf:CYFRAGOVPL/Llama-PLLuM-70B-instruct-2508:featherless-ai,openrouter:meta-llama/llama-3.3-70b-instruct:free'
+DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemotron-3-super-120b-a12b,gemini:gemini-3.8-flash,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast,openrouter:google/gemma-4-31b-it:free'
+# 30.09.2026: PLLuM zniknął z Hugging Face (brak dostawcy, 404), darmowej Llamy nie ma już na OpenRouter (404) — zamiast niej Gemma 4 31B.
 # Role u różnych dostawców (darmowe limity nie wyczerpują się naraz); po przecinku — kolejne w zapasie.
 CHAIR = 'gemini:gemini-3.8-flash,nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # przewodniczący
-LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,hf:CYFRAGOVPL/Llama-PLLuM-70B-instruct-2508:featherless-ai,groq:qwen/qwen3.8-27b,gemini:gemini-3.8-flash'  # językoznawca — tylko polszczyzna
+LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,groq:qwen/qwen3.8-27b,gemini:gemini-3.8-flash'  # językoznawca — tylko polszczyzna
 REVIEWER = 'nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # recenzent — zgodność z ocenami i zasadami
 MIN_MEMBERS = 3
 SLOW_TIMEOUT = 180  # DeepSeek i Kimi przez NVIDIA odpowiadają wolno
