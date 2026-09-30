@@ -11,12 +11,12 @@ type Metric = { label: string; value: string | number | boolean };
 type Card = { title: string; status: Status; description: string; last_event: string; metrics: Metric[]; items: Card[] };
 type Kpi = { key: string; label: string; today: Reading; yesterday: Reading; unit?: string };
 type Series = { key: string; label: string; unit?: string; points: { date: string; value: Reading }[] };
-type Wallet = { provider: string; label: string; currency: string; recorded_balance: Reading; recorded_at: string; spent_since: Reading; estimated_balance: Reading; actual_balance: Reading; actual_currency?: string; actual_checked_at?: string; days_remaining: Reading; status: Status; note?: string };
+type Wallet = { provider: string; label: string; currency: string; recorded_balance: Reading; recorded_at: string; spent_since: Reading; estimated_balance: Reading; actual_balance: Reading; actual_currency?: string; actual_checked_at?: string; days_remaining: Reading; status: Status; note?: string; tracked?: boolean; signal?: string; signal_at?: string };
 type Action = { title: string; status: Status; detail?: string; section?: string };
 type Snapshot = { generated_at: string; sections: Card[]; kpis?: Kpi[]; series?: Series[]; wallets?: Wallet[]; actions?: Action[] };
 const labels: Record<Status, string> = { ok: 'Działa', warn: 'Uwaga', error: 'Błąd', unknown: 'Brak danych' };
 const order: Record<Status, number> = { error: 0, warn: 1, unknown: 2, ok: 3 };
-const providers = [['x', 'X API'], ['gemini', 'Gemini / Google AI Studio'], ['anthropic', 'Anthropic'], ['openrouter', 'OpenRouter'], ['ovh', 'OVH'], ['other', 'Inne']];
+const providers = [['x', 'X API'], ['gemini', 'Gemini / Google AI Studio'], ['anthropic', 'Anthropic']];
 const numeric = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const number = (v: Reading | undefined, unit = '') => numeric(v) ? `${v.toLocaleString('pl-PL', { maximumFractionDigits: unit ? 4 : 0 })}${unit ? ` ${unit}` : ''}` : 'brak danych';
 const date = (v: string | undefined) => !v || v === 'unknown' || Number.isNaN(Date.parse(v)) ? 'brak danych' : new Date(v).toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw', dateStyle: 'short', timeStyle: 'short' });
@@ -74,12 +74,20 @@ function DetailCard({ card, onlyProblems, nested = false }: { card: Card; onlyPr
 }
 function WalletCard({ wallet }: { wallet: Wallet }) {
   const days = wallet.days_remaining;
+  // Najpierw saldo odczytane z API, potem szacunek (wpisane − wydatki), na końcu samo wpisane saldo.
+  const [heading, main, unit] = numeric(wallet.actual_balance) ? ['Saldo z API dostawcy', wallet.actual_balance, wallet.actual_currency || 'USD']
+    : numeric(wallet.estimated_balance) ? ['Szacowane saldo', wallet.estimated_balance, wallet.currency]
+    : numeric(wallet.recorded_balance) ? ['Wpisane saldo', wallet.recorded_balance, wallet.currency] : ['Saldo', 'unknown' as Reading, wallet.currency];
+  const facts: [string, string][] = [];
+  if (numeric(wallet.actual_balance)) facts.push(['Odczyt z API', date(wallet.actual_checked_at)]);
+  if (numeric(wallet.recorded_balance)) facts.push(['Wpisane saldo', `${number(wallet.recorded_balance, wallet.currency)} · ${date(wallet.recorded_at)}`]);
+  if (numeric(wallet.spent_since)) facts.push(['Wydano od wpisu · szacunek', number(wallet.spent_since, wallet.currency)]);
   return <article className="sc-command-wallet" data-status={wallet.status}><div className="sc-command-wallet-head"><h3>{wallet.label}</h3><StatusDot status={wallet.status} /></div>
-    <span className="sc-command-eyebrow">Szacowane saldo</span><strong className="sc-command-balance">{number(wallet.estimated_balance, wallet.currency)}</strong>
-    <p className="sc-command-runway">{numeric(wallet.estimated_balance) && wallet.estimated_balance <= 0 ? 'Szacowane saldo wyczerpane — doładuj portfel' : numeric(days) ? days < 1 ? 'Starczy na mniej niż 1 dzień' : `Starczy na ~${number(days)} dni` : 'Czas do wyczerpania: brak danych'}</p>
+    {wallet.signal && <p role="alert" className="sc-command-error">{wallet.signal}</p>}
+    <span className="sc-command-eyebrow">{heading}</span><strong className="sc-command-balance">{numeric(main) ? number(main, unit) : wallet.signal ? 'brak środków' : 'brak danych'}</strong>
+    {(numeric(days) || (numeric(main) && main <= 0)) && <p className="sc-command-runway">{numeric(main) && main <= 0 ? 'Saldo wyczerpane — doładuj portfel' : numeric(days) ? days < 1 ? 'Starczy na mniej niż 1 dzień' : `Starczy na ~${number(days)} dni` : ''}</p>}
     {numeric(days) && <div className="sc-command-wallet-track" role="meter" aria-label="Dni finansowania, skala do 30 dni" aria-valuemin={0} aria-valuemax={30} aria-valuenow={Math.min(30, Math.max(0, days))} aria-valuetext={`Około ${number(days)} dni`}><span style={{ width: `${Math.min(100, Math.max(0, days / 30 * 100))}%` }} /></div>}
-    <dl className="sc-command-wallet-facts"><div><dt>Saldo rzeczywiste z API</dt><dd>{number(wallet.actual_balance, wallet.actual_currency || 'USD')}</dd></div><div><dt>Odczyt API (Warszawa)</dt><dd>{date(wallet.actual_checked_at)}</dd></div><div><dt>Wpisane saldo</dt><dd>{number(wallet.recorded_balance, wallet.currency)}</dd></div><div><dt>Stan na (Warszawa)</dt><dd>{date(wallet.recorded_at)}</dd></div><div><dt>Wydatki od tej daty · szacunek</dt><dd>{number(wallet.spent_since, wallet.currency)}</dd></div></dl>
-    <p className="sc-command-note">{wallet.note || 'Prognoza według średniego tempa wydatków z ostatnich 7 dni. Skala paska: 30 dni.'}</p>
+    {facts.length > 0 && <dl className="sc-command-wallet-facts">{facts.map(([label, text]) => <div key={label}><dt>{label}</dt><dd>{text}</dd></div>)}</dl>}
   </article>;
 }
 function WalletForm({ onSaved }: { onSaved: () => Promise<void> }) {
@@ -99,7 +107,7 @@ function WalletForm({ onSaved }: { onSaved: () => Promise<void> }) {
     } catch (e) { setFailed(true); setMessage(e instanceof Error ? e.message : 'Nie udało się zapisać salda.'); }
     finally { setSaving(false); }
   };
-  return <details className="sc-command-wallet-editor"><summary>＋ Wpisz aktualne saldo</summary><form onSubmit={event => void submit(event)}>
+  return <details className="sc-command-wallet-editor"><summary>＋ Wpisz aktualne saldo (po doładowaniu)</summary><form onSubmit={event => void submit(event)}>
     <p>Wpisz całe saldo widoczne u dostawcy na wskazany moment. To nowy punkt odniesienia, nie kwota dodawana do poprzedniego salda.</p>
     <div className="sc-command-form-grid"><label>Dostawca<select name="provider" required>{providers.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
       <label>Saldo<input name="amount" type="number" min="0" step="0.01" inputMode="decimal" placeholder="0,00" required /></label>
@@ -145,7 +153,7 @@ export function CommandPanel() {
   const sections = allSections.filter(section => !onlyProblems || hasProblem(section));
   const actions = [...(data?.actions || [])].filter(action => action.status !== 'ok').sort((a, b) => order[a.status] - order[b.status]);
   const problemCount = allSections.filter(hasProblem).length;
-  const wallets = (data?.wallets || []).filter(wallet => !onlyProblems || wallet.status !== 'ok');
+  const wallets = (data?.wallets || []).filter(wallet => wallet.tracked !== false && (!onlyProblems || wallet.status !== 'ok'));
   const worst: Status = error ? 'unknown' : [...actions.map(action => action.status), ...allSections.map(cardStatus)].sort((a, b) => order[a] - order[b])[0] || 'ok';
 
   return <div className="sc-command-panel sc-command-v2">
@@ -160,8 +168,8 @@ export function CommandPanel() {
       {data && <>
         {!onlyProblems && <><section className="sc-command-kpis" aria-label="Dziś w porównaniu z wczoraj">{(data.kpis || []).map(kpi => <article key={kpi.key}><h2>{kpi.label}</h2><strong>{number(kpi.today, kpi.unit)}</strong><span className="sc-command-eyebrow">Dziś{kpi.unit ? ' · szacunek' : ''}</span><Trend {...kpi} /></article>)}</section>
           <section className="sc-command-charts" aria-label="Trendy siedmiodniowe">{(data.series || []).map(series => <Sparkline key={series.key} series={series} />)}</section></>}
-        <section id="command-wallets" className="sc-command-wallets" aria-labelledby="command-wallets-title"><div className="sc-command-section-heading"><h2 id="command-wallets-title">Portfele</h2><span>Saldo i tempo wydatków</span></div><p className="sc-command-note">Szacunek = wpisane saldo − zapisane wydatki od tej daty. Brak danych lub inna waluta nie oznaczają zerowych wydatków.</p>
-          <div className="sc-command-wallet-grid">{wallets.map(wallet => <WalletCard key={wallet.provider} wallet={wallet} />)}</div>{onlyProblems && !wallets.length && <p className="sc-command-note">Brak portfeli wymagających uwagi.</p>}<WalletForm onSaved={refresh} />
+        <section id="command-wallets" className="sc-command-wallets" aria-labelledby="command-wallets-title"><div className="sc-command-section-heading"><h2 id="command-wallets-title">Portfele</h2><span>X · Gemini · Anthropic</span></div><p className="sc-command-note">Tylko płatne portfele (reszta modeli działa na darmowych pulach). Dostawcy nie udostępniają salda w API: liczymy wpisane saldo minus zapisane wydatki i przeliczamy przy każdym odświeżeniu panelu (co 60 s). Brak środków (402) wykrywamy automatycznie z odpowiedzi dostawcy.</p>
+          <div className="sc-command-wallet-grid">{wallets.map(wallet => <WalletCard key={wallet.provider} wallet={wallet} />)}</div>{!wallets.length && <p className="sc-command-note">{onlyProblems ? 'Brak portfeli wymagających uwagi.' : 'Brak portfeli z saldem — wpisz saldo poniżej.'}</p>}<WalletForm onSaved={refresh} />
         </section>
         <section aria-labelledby="command-details-title"><div className="sc-command-section-heading"><h2 id="command-details-title">Pełny obraz projektu</h2><span>{sections.length} sekcji · rozwiń szczegóły</span></div>
           <div className="sc-command-grid">{sections.map(section => <DetailCard key={`${section.title}-${onlyProblems}`} card={section} onlyProblems={onlyProblems} />)}</div>{onlyProblems && !sections.length && <p className="sc-command-note">Brak sekcji wymagających uwagi.</p>}

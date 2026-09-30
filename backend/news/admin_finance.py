@@ -165,9 +165,30 @@ def openrouter_balance():
     return {'balance': UNKNOWN, 'checked_at': UNKNOWN}
 
 
-def wallet_snapshot(entries, events, now, actual, history_complete=True):
+PAID = ('x', 'gemini', 'anthropic')  # jedyne portfele z doładowaniami; reszta modeli działa na darmowych pulach
+
+
+def provider_signals(now):
+    """Brak środków rozpoznany automatycznie z odpowiedzi dostawców (402 / „credit balance”), dopóki nie przyjdzie sukces."""
+    from news.clinic_models import CouncilSeat
+    signals = {}
+    since = now - timedelta(hours=48)
+    read = PoliticalRead.objects.filter(finished_at__isnull=False).order_by('-finished_at').values('http_status', 'finished_at').first()
+    if read and read['http_status'] == 402 and read['finished_at'] >= since:
+        signals['x'] = 'X odrzuca odczyty wpisów: brak środków (402).'
+    if CouncilSeat.objects.filter(provider='gemini', last_error__contains='402').exists():
+        signals['gemini'] = 'Gemini odrzuca zapytania: brak środków (402). Wraca samo po doładowaniu.'
+    failed = SpinDiagnosis.objects.filter(diagnosed_at__gte=since, error__icontains='credit balance').order_by('-diagnosed_at').values('diagnosed_at').first()
+    if failed and not SpinDiagnosis.objects.filter(diagnosed_at__gt=failed['diagnosed_at'], error='').filter(
+            Q(model_name__icontains='claude') | Q(model_name__icontains='sonnet') | Q(model_name__icontains='haiku')).exists():
+        signals['anthropic'] = 'Anthropic odrzuca zapytania: za niskie saldo (credit balance).'
+    return signals
+
+
+def wallet_snapshot(entries, events, now, actual, history_complete=True, signals=None):
+    signals = signals or {}
     wallets = []
-    for provider, label in PROVIDERS:
+    for provider, label in [p for p in PROVIDERS if p[0] in PAID]:
         entry = entries.get(provider)
         row = dict(provider=provider, label=label, currency=entry.currency if entry else 'USD',
                    recorded_balance=float(entry.amount) if entry else UNKNOWN,
@@ -210,6 +231,8 @@ def wallet_snapshot(entries, events, now, actual, history_complete=True):
             row['note'] += ' Saldo API w USD; cache 10 min, pierwszy odczyt w tle. API może wymagać klucza zarządzającego.'
             if actual['balance'] != UNKNOWN:
                 row['status'] = 'error' if actual['balance'] <= 0 else 'ok'
+        if provider in signals:
+            row.update(status='error', signal=signals[provider], note=f"{signals[provider]} {row['note']}")
         wallets.append(row)
     return wallets
 
@@ -238,7 +261,7 @@ def finance_snapshot(now, today):
     from news.admin_status import card
     section = ai_section(events, today, now) if complete else card('AI i koszty', description='Historia przekracza limit 5000 rekordów jednego typu; podaj nowszy pomiar salda. Nie pokazujemy niepełnych sum.')
     return {'section': section,
-            'wallets': wallet_snapshot(entries, events, now, openrouter_balance(), complete), 'series': series,
+            'wallets': wallet_snapshot(entries, events, now, {'balance': UNKNOWN, 'checked_at': UNKNOWN}, complete, provider_signals(now)), 'series': series,
             'kpi': {'key': 'costs', 'label': 'Koszty AI · szacunek', 'unit': 'USD',
                     'today': total(events, None, today, now + timedelta(microseconds=1)) if complete else UNKNOWN,
                     'yesterday': total(events, None, today - timedelta(days=1), today) if complete else UNKNOWN}}

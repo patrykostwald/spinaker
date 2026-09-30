@@ -132,7 +132,7 @@ def test_krs_spending_and_history_limit_remain_explicit():
     assert snapshot['kpi']['today'] == .5
     with patch.object(finance, 'recorded_events', side_effect=finance.HistoryLimit):
         snapshot = finance.finance_snapshot(NOW, NOW.replace(hour=0))
-    assert len(snapshot['wallets']) == 6
+    assert [w['provider'] for w in snapshot['wallets']] == ['x', 'gemini', 'anthropic']
     assert all(w['estimated_balance'] == 'unknown' for w in snapshot['wallets'])
     assert all(p['value'] == 'unknown' for p in snapshot['series']['points'])
 
@@ -172,3 +172,13 @@ def test_status_redacts_persisted_error_secrets(staff):
     assert secret.encode() not in response.content
     assert b'Authorization' not in response.content
     assert any('Doładuj gemini' in action['title'] for action in response.data['actions'])
+
+
+@pytest.mark.django_db
+def test_gemini_402_marks_wallet_without_manual_entry():
+    from news.clinic_models import CouncilSeat
+    CouncilSeat.objects.create(provider='gemini', model='gemini-3.8-flash', last_error='gemini: http_402')
+    wallets = {w['provider']: w for w in finance.wallet_snapshot({}, [], NOW, {'balance': 'unknown', 'checked_at': 'unknown'},
+                                                                  signals=finance.provider_signals(NOW))}
+    assert wallets['gemini']['status'] == 'error' and '402' in wallets['gemini']['signal']
+    assert wallets['x']['status'] == 'unknown'

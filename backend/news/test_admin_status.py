@@ -50,7 +50,7 @@ def test_staff_snapshot_shape_and_recorded_failures():
     sections = {s['title']: s for s in response.data['sections']}
     assert len(sections) == 18
     assert {"Pobieranie i czytanie", "Kolejki", "AI i koszty", "Agenci", "YouTube"} <= set(sections)
-    assert len(response.data['wallets']) == 6
+    assert len(response.data['wallets']) == 3
     assert len(response.data['series']) == 3
     assert len(response.data['kpis']) == 4
     assert sections['Źródła / harvestery']['status'] == 'error'
