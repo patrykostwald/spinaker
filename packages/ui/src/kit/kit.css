@@ -6003,3 +6003,6 @@ a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items:
 /* Panel jak aplikacja: bez publicznego menu i paska wsparcia */
 body:has(.sc-command-panel) .sc-navmenu, body:has(.sc-command-panel) .sc-footer-dock { display: none !important; }
 body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-inset-top, 0px)); }
+/* Legenda twierdzeń: jedna linia na pozycję — dłuższe „niezweryfikowane” nie może się łamać ani wychodzić z kafelka */
+.sc-scan-g-legend span { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-scan-g-legend { font-size: 11px; letter-spacing: -0.01em; }
