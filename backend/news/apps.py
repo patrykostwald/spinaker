@@ -10,3 +10,4 @@ class NewsConfig(AppConfig):
 
     def ready(self):
         from news import signals  # noqa: F401
+        from news import task_heartbeat  # noqa: F401

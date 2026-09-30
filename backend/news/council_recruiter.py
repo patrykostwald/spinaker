@@ -99,7 +99,10 @@ def record(member: tuple[str, str], error: str | None) -> None:
             CouncilSeat.objects.filter(provider=member[0], model=member[1]).update(last_ok_at=now, first_fail_at=None, last_error='')
             return
         if not HARD_ERRORS.search(error or ''):
-            return  # limity, przeciążenie, chwilowe awarie — nie świadczą o tym, że modelu nie ma
+            # limity, brak środków (402), chwilowe awarie — zapisujemy dla panelu, ale nie zaczynamy serii do zawieszenia
+            CouncilSeat.objects.update_or_create(provider=member[0], model=member[1], defaults={
+                'last_error': error[:160], 'company': registry.metadata(member)['company']})
+            return
         seat, _ = CouncilSeat.objects.get_or_create(provider=member[0], model=member[1],
                                                     defaults={'company': registry.metadata(member)['company']})
         seat.first_fail_at = seat.first_fail_at or now

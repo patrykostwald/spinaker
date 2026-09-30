@@ -22,7 +22,7 @@ def test_adjust_drops_suspended_and_adds_admitted_role():
 @pytest.mark.django_db
 def test_hard_errors_start_a_streak_soft_ones_do_not(monkeypatch):
     recruiter.record(('openrouter', 'm'), 'openrouter: http_429')
-    assert not CouncilSeat.objects.exists()
+    assert CouncilSeat.objects.get().first_fail_at is None  # limit zapisany dla panelu, bez serii do zawieszenia
     recruiter.record(('openrouter', 'm'), 'openrouter: http_404')
     seat = CouncilSeat.objects.get()
     assert seat.first_fail_at and 'http_404' in seat.last_error

@@ -77,3 +77,4 @@ export { CouncilRecruitmentLog, CouncilRoster } from "./components/clinic/Counci
 export { siteNavigation, socialChannels } from "./lib/siteNavigation";
 
 export { sourceDirectory, directoryGroup, channelIdentity } from "./lib/sourceDirectory";
+export { CommandPanel } from './components/CommandPanel';
