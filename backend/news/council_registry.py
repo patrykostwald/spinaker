@@ -65,8 +65,18 @@ def limit_key(member):
     return f'council:daily:{timezone.now().date()}:{digest}'
 
 
+# Domyślne limity dzienne (zapytania na model) — poniżej darmowych pul dostawców, ale z zapasem na 16 diagnoz dziennie
+# z ponowieniami, role przewodniczącego/językoznawcy/recenzenta, Rekrutera i inkwizytora. 50 wyczerpywało się do południa.
+DEFAULT_DAILY_LIMITS = {'groq': 300, 'nim': 200, 'hf': 150, 'cloudflare': 200, 'gemini': 150, 'mistral': 200, 'openrouter': 50}
+
+
 def daily_limit(member):
-    return max(0, int(os.environ.get(f'CLINIC_{member[0].upper()}_DAILY_LIMIT', '50')))
+    default = DEFAULT_DAILY_LIMITS.get(member[0], 50)
+    # Wyższa z wartości: stary wpis „50” w .env.production nie może obniżyć limitu poniżej domyślnego.
+    try:
+        return max(default, int(os.environ.get(f'CLINIC_{member[0].upper()}_DAILY_LIMIT', '') or 0))
+    except ValueError:
+        return default
 
 
 def available(member):

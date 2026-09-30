@@ -116,7 +116,7 @@ def test_diverse_selection_and_daily_limit(monkeypatch):
     assert any(registry.is_polish(m) for m in selected)
     assert all(m[0] != 'openrouter' for m in selected)
     polish = next(m for m in selected if m[0] == 'hf')
-    monkeypatch.setenv('CLINIC_HF_DAILY_LIMIT', '1')
+    monkeypatch.setitem(registry.DEFAULT_DAILY_LIMITS, 'hf', 1)  # limit z pliku nie może obniżyć domyślnego, więc zmieniamy domyślny
     assert registry.reserve(polish)
     assert not registry.available(polish)
     # PLLuM zniknął z Hugging Face (30.09.2026): po limicie Bielika skład działa dalej, bez modelu polskiego
