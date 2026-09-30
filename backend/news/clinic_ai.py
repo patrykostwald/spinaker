@@ -15,11 +15,14 @@ powiązać z danymi: cytat, którego nie ma w poście, i źródło spoza wynikó
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import unicodedata
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 from news.loaded_words import LOADED_PROMPT, LOADED_SCHEMA, validate_loaded_words
 from news.techniques import CATEGORY_PROMPT, CATEGORY_SCHEMA, technique_category
@@ -310,7 +313,10 @@ def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_
         raise ClinicAIError(f'gemini_{response.status_code}: {response.text[:180]}'[:240])
     payload = response.json()
     candidate = (payload.get('candidates') or [{}])[0] or {}
-    text = ''.join(part.get('text', '') for part in (candidate.get('content') or {}).get('parts', []))
+    # Części z „myśleniem” modelu (thought) pomijamy — ich nawiasy psuły odczyt JSON-a właściwej odpowiedzi.
+    answer_parts = [part.get('text', '') for part in (candidate.get('content') or {}).get('parts', [])
+                    if part.get('text') and not part.get('thought')]
+    text = ''.join(answer_parts)
     if candidate.get('finishReason') == 'MAX_TOKENS':
         raise ClinicAIError('max_tokens')
     grounding = candidate.get('groundingMetadata') or {}
@@ -320,8 +326,10 @@ def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_
         if web.get('uri'):
             found[_resolve_redirect(web['uri'])] = web.get('title') or ''
     try:
-        data = _json_from_text([SimpleNamespace(type='text', text=text)])
+        data = _json_from_text([SimpleNamespace(type='text', text=t) for t in [*answer_parts, text] if t.strip()])
     except ClinicAIError:
+        logger.warning('gemini invalid json: finish=%s parts=%s start=%r', candidate.get('finishReason'),
+                       len(answer_parts), text[:160])
         raise ClinicAIError('gemini_invalid_json')
     text = json.dumps(_align_sources(data, found), ensure_ascii=False)
     usage = payload.get('usageMetadata') or {}

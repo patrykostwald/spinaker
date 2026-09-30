@@ -465,3 +465,14 @@ def test_free_fact_check_tries_next_model_name_on_404(monkeypatch):
     monkeypatch.setattr(council.requests, 'post', post)
     claims, usage = council.free_check(['x'])
     assert seen[:2] == ['groq/compound', 'groq/compound-mini'] and usage['model'] == 'groq/compound-mini'
+
+
+def test_gemini_thought_parts_are_skipped(monkeypatch):
+    from news import clinic_ai
+    monkeypatch.setenv('GEMINI_API_KEY', 'x')
+    payload = {'candidates': [{'finishReason': 'STOP', 'content': {'parts': [
+        {'text': 'Myślę {nad} tym...', 'thought': True},
+        {'text': '{"claims": [{"claim": "x", "assessment": "unverified", "sources": []}]}'}]}}]}
+    monkeypatch.setattr(clinic_ai.requests, 'post', lambda *a, **k: Mock(status_code=200, json=lambda: payload))
+    response = clinic_ai._call_gemini('s', 'u', {'type': 'object'}, web_search=True)
+    assert clinic_ai._json_from_text(response.content)['claims'][0]['claim'] == 'x'
