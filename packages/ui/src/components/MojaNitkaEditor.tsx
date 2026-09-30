@@ -4,7 +4,11 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type Keybo
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../lib/api';
+import { apiFetch, apiWrite } from '../lib/api';
+import { emailVerified, TERMS_VERSION, useAccount } from '../lib/account';
+import { accountMessage } from '../lib/accountPhase2';
+import { AccountDataState, VerifyEmailNotice } from './AccountPhase2';
+import { ElementRow } from './community/CommunityPages';
 import { getNewsFeed, getPortalConfig } from '../lib/portal';
 import { categoryLabel, formatDateTimePl } from '../lib/utils';
 import {
@@ -39,8 +43,8 @@ type EditorItem = {
   domain?: string;
   note: string;
 };
-type Draft = { title: string; description: string; keywords: string[]; categories: string[]; sourceIds: number[]; items: EditorItem[]; isPublic: boolean };
-const EMPTY: Draft = { title: '', description: '', keywords: [], categories: [], sourceIds: [], items: [], isPublic: false };
+type Draft = { title: string; description: string; keywords: string[]; categories: string[]; topics: string[]; sourceIds: number[]; items: EditorItem[]; isPublic: boolean };
+const EMPTY: Draft = { title: '', description: '', keywords: [], categories: [], topics: [], sourceIds: [], items: [], isPublic: false };
 const NOTE_LIMIT = 280;
 const MIN_PUBLIC_ITEMS = 2;
 
@@ -63,6 +67,7 @@ function fromThread(thread: PersonalContextThread): Draft {
     description: thread.description,
     keywords: splitKeywords(thread.query),
     categories: thread.categories,
+    topics: thread.topics ?? [],
     sourceIds: thread.source_ids,
     items,
     isPublic: Boolean(thread.is_public),
@@ -78,14 +83,24 @@ const serialize = (draft: Draft) => JSON.stringify({ ...draft, items: draft.item
 export function MojaNitkaEditor({ threadId }: { threadId?: number }) {
   const { account, ownerId } = useOwnerId();
   if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam, czy jesteś zalogowany…</p>;
+  if (account.isError) return <div className="sc-account"><AccountDataState query={account} empty="Konta będą dostępne wkrótce." /></div>;
   if (!ownerId) return <SignedOutPanel title="Zaloguj się, aby ułożyć własną nitkę" />;
-  return <Editor key={threadId ?? 'new'} ownerId={ownerId} threadId={threadId} />;
+  return <Editor key={`${ownerId}:${threadId ?? 'new'}`} ownerId={ownerId} threadId={threadId} />;
 }
 
 function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   const uid = useId();
   const router = useRouter();
   const cache = useQueryClient();
+  const account = useAccount();
+  const [step, setStep] = useState(1);
+  const [terms, setTerms] = useState(false);
+  const [activeId, setActiveId] = useState(threadId);
+  const saving = useRef(false);
+  const failedSnapshot = useRef('');
+  const published = useRef(false);
+  const dragged = useRef<string | null>(null);
+  const stepHeading = useRef<HTMLHeadingElement>(null);
   const thread = useQuery({
     queryKey: personalKeys.thread(ownerId, threadId ?? 0),
     queryFn: () => apiFetch<PersonalContextThread>(`/api/account/context-threads/${threadId}/`),
@@ -96,6 +111,8 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   const favorites = useArticleFavorites();
 
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
   const [saved, setSaved] = useState(serialize(EMPTY));
   const [initialized, setInitialized] = useState(!threadId);
   const [keywordInput, setKeywordInput] = useState('');
@@ -120,6 +137,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       const next = fromThread(thread.data);
       setDraft(next);
       setSaved(serialize(next));
+      published.current = next.isPublic;
       setInitialized(true);
     }
   }, [thread.data, initialized]);
@@ -139,6 +157,24 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   });
 
   const dirty = serialize(draft) !== saved;
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    // Also guard same-tab links: beforeunload alone does not cover Next navigation.
+    const link = (event: MouseEvent) => {
+      const anchor = (event.target as Element).closest?.('a');
+      if (!anchor || anchor.target === '_blank' || event.ctrlKey || event.metaKey || anchor.getAttribute('href')?.startsWith('#')) return;
+      if (!window.confirm('Masz niezapisane zmiany. Opuścić edytor?')) { event.preventDefault(); event.stopPropagation(); }
+    };
+    window.addEventListener('beforeunload', warn); document.addEventListener('click', link, true);
+    return () => { window.removeEventListener('beforeunload', warn); document.removeEventListener('click', link, true); };
+  }, [dirty]);
+  useEffect(() => {
+    if (!initialized || !dirty || !draft.title.trim() || draft.isPublic || published.current || pending || failedSnapshot.current === serialize(draft)) return;
+    const timer = window.setTimeout(() => { void persist(false, true); }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [draft, dirty, initialized, pending, activeId]);
+  useEffect(() => { stepHeading.current?.focus(); }, [step]);
   const query = joinKeywords(draft.keywords);
   const selectedIds = useMemo(() => new Set(draft.items.filter(item => item.kind === 'article').map(item => item.id)), [draft.items]);
   const sources = config.data?.sources ?? [];
@@ -163,10 +199,11 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   function toggle<T>(list: T[], value: T) { return list.includes(value) ? list.filter(item => item !== value) : [...list, value]; }
 
   function addItem(item: EditorItem) {
-    if (draft.items.some(current => current.key === item.key)) { setLinkMessage('Ten materiał jest już w nitce.'); return; }
-    if (draft.items.length >= MAX_THREAD_ARTICLES) { setError(`Nitka może mieć najwyżej ${MAX_THREAD_ARTICLES} elementów.`); return; }
-    update({ items: [...draft.items, item] });
-    setAnnouncement(`Dodano na pozycji ${draft.items.length + 1}: ${item.title}`);
+    const current = latestDraft.current;
+    if (current.items.some(row => row.key === item.key)) { setLinkMessage('Ten materiał jest już w nitce.'); return; }
+    if (current.items.length >= MAX_THREAD_ARTICLES) { setError(`Nitka może mieć najwyżej ${MAX_THREAD_ARTICLES} elementów.`); return; }
+    setDraft(value => ({ ...value, items: [...value.items, item] })); setNotice('');
+    setAnnouncement(`Dodano na pozycji ${current.items.length + 1}: ${item.title}`);
   }
 
   function addArticle(article: PersonalArticleRef) {
@@ -175,7 +212,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
 
   async function addLink() {
     const url = linkUrl.trim();
-    if (!url) return;
+    if (!url || linkPending) return;
     setLinkPending(true); setLinkMessage(''); setError('');
     try {
       const result = await resolveLink(url, linkTitle.trim());
@@ -186,7 +223,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         : result.status === 'existing_link' ? 'Ktoś już dodał ten link — użyliśmy tego samego boxa.' : 'Dodano link spoza Bazy.');
       setLinkUrl(''); setLinkTitle(''); setLinkNeedsTitle(false);
     } catch (reason) {
-      setLinkMessage(reason instanceof Error ? reason.message : 'Nie udało się dodać linku.');
+      setLinkMessage(accountMessage(reason));
     } finally { setLinkPending(false); }
   }
 
@@ -211,44 +248,60 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
     const neighbour = next[Math.min(index, next.length - 1)];
     focusAfterMove.current = neighbour ? `${neighbour.key}:remove` : null;
     update({ items: next });
-    setAnnouncement('Usunięto element z nitki. Zmiana zostanie zapisana po kliknięciu „Zapisz nitkę”.');
+    setAnnouncement('Usunięto element z nitki.');
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await persist(draft.isPublic, false);
+  }
+
+  async function persist(makePublic: boolean, automatic: boolean) {
+    if (saving.current) return;
+    if (makePublic && thread.data?.hidden_at) { setError('Nitka jest ukryta przez zespół po zgłoszeniu.'); return; }
     if (!draft.title.trim()) { setError('Podaj tytuł nitki.'); return; }
-    if (draft.isPublic && draft.items.length < MIN_PUBLIC_ITEMS) { setError(`Opublikować można nitkę z co najmniej ${MIN_PUBLIC_ITEMS} elementami.`); return; }
+    if (makePublic && (!emailVerified(account.data) || !terms || step !== 5)) { setError('Potwierdź e-mail i Zasady w kroku Publikacja.'); return; }
+    if (makePublic && !draft.description.trim()) { setError('Podaj pytanie, na które odpowiada nitka.'); return; }
+    if (makePublic && draft.items.length < MIN_PUBLIC_ITEMS) { setError(`Opublikować można nitkę z co najmniej ${MIN_PUBLIC_ITEMS} elementami.`); return; }
+    const snapshot = { ...draft, isPublic: makePublic };
+    saving.current = true;
     setPending(true); setError(''); setNotice('');
     try {
+      if (makePublic) await apiWrite('/api/account/me/', { accepted_terms_version: TERMS_VERSION }, 'PATCH');
       const result = await savePersonalThread({
         title: draft.title.trim(),
         description: draft.description.trim(),
         query,
         categories: draft.categories,
+        topics: draft.topics,
         source_ids: draft.sourceIds,
         items: draft.items.map(item => (item.kind === 'article' ? { article_id: item.id, note: item.note.trim() } : { link_id: item.id, note: item.note.trim() })),
-        is_public: draft.isPublic,
-      }, threadId);
-      const next = fromThread(result);
-      setDraft(next);
-      setSaved(serialize(next));
+        is_public: makePublic,
+      }, activeId);
+      // Save the sent revision, never replace text entered while the request was in flight.
+      setSaved(serialize(snapshot));
+      setDraft(current => ({ ...current, isPublic: makePublic }));
+      published.current = makePublic;
+      setActiveId(result.id);
       cache.setQueryData(personalKeys.thread(ownerId, result.id), result);
       await cache.invalidateQueries({ queryKey: personalKeys.threads(ownerId) });
       setNotice(`Zapisano ${formatDateTimePl(result.updated_at)}. ${result.is_public ? 'Nitka jest publiczna w sekcji Nitki.' : 'Nitka pozostaje prywatna.'}`);
-      if (!threadId) router.replace(`/konto/nitki/${result.id}`);
+      if (!activeId) window.history.replaceState(window.history.state, '', `/konto/nitki/${result.id}`);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Nie udało się zapisać nitki. Nic nie zostało zmienione.');
-    } finally { setPending(false); }
+      if (automatic) failedSnapshot.current = serialize(draft);
+      setError(accountMessage(reason));
+    } finally { saving.current = false; setPending(false); }
   }
 
   async function removeThread() {
-    if (!threadId) return;
+    if (!activeId || saving.current) return;
+    saving.current = true;
     setPending(true); setError('');
     try {
-      await deletePersonalThread(threadId);
+      await deletePersonalThread(activeId);
       await cache.invalidateQueries({ queryKey: personalKeys.threads(ownerId) });
       router.push('/konto#moje-nitki');
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Nie udało się usunąć nitki.'); setPending(false); }
+    } catch (reason) { setError(accountMessage(reason)); saving.current = false; setPending(false); }
   }
 
   if (threadId && thread.isPending) return <p role="status" className="sc-account-empty">Ładuję nitkę…</p>;
@@ -264,41 +317,55 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   }
 
   const selectedSources = sources.filter(source => draft.sourceIds.includes(source.id));
+  const steps = ['Tytuł i pytanie', 'Materiały', 'Kolejność i notatki', 'Podgląd', 'Publikacja'];
+  const preview: ThreadElement[] = draft.items.map((item, position) => item.kind === 'article'
+    ? { ...item, kind: 'article', category: item.category ?? '', published_date: item.published_date ?? null, source_name: item.source_name ?? '', position }
+    : { ...item, kind: 'link', domain: item.domain ?? '', title_origin: 'reader', position });
+  const canAdvance = step === 1 ? Boolean(draft.title.trim() && draft.description.trim()) : step === 2 ? draft.items.length > 0 : true;
 
   return (
-    <form className="sc-account sc-account-editor" onSubmit={save} aria-labelledby={`${uid}-title`}>
+    <form className="sc-account sc-account-editor sc-f2" onSubmit={save} noValidate aria-labelledby={`${uid}-title`}>
       <header className="sc-account-head">
         <Link href="/konto#moje-nitki" className="sc-account-back">← Moje konto</Link>
         <p className="sc-account-kicker">MOJA NITKA KONTEKSTOWA</p>
-        <h1 id={`${uid}-title`}>{threadId ? draft.title || 'Nitka bez tytułu' : 'Nowa nitka'}</h1>
+        <h1 id={`${uid}-title`}>{activeId ? draft.title || 'Nitka bez tytułu' : 'Nowa nitka'}</h1>
         {draft.isPublic
           ? <p className="sc-account-private is-public"><span>PUBLICZNA</span> Po zapisaniu nitka jest widoczna w sekcji <Link href="/nitki">Nitki</Link> pod Twoją nazwą użytkownika{threadId ? <> · <Link href={`/nitki/${threadId}`}>zobacz publiczną wersję</Link></> : null}.</p>
           : <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie układa jej AI — kolejność ustalasz sam. Możesz ją opublikować w sekcji Nitki.</p>}
         {thread.data?.hidden_at && <p className="sc-account-error">Zespół ukrył tę nitkę po zgłoszeniu. Napisz na kontakt@spin.clinic, jeśli uważasz, że to pomyłka.</p>}
       </header>
+      <nav aria-label="Kroki tworzenia nitki"><ol className="sc-f2-steps">{steps.map((label, index) => <li key={label}><button type="button" aria-current={step === index + 1 ? 'step' : undefined} disabled={pending || (index + 1 > step && !canAdvance)} onClick={() => setStep(index + 1)}>{index + 1}. {label}</button></li>)}</ol></nav>
+      <h2 ref={stepHeading} tabIndex={-1}>Krok {step} z 5: {steps[step - 1]}</h2>
+      <p className="sc-f2-muted">{draft.isPublic ? 'Zmiany w opublikowanej nitce zatwierdzisz w kroku Publikacja.' : 'Szkic zapisuje się automatycznie po wpisaniu tytułu. Publikujesz dopiero w ostatnim kroku.'}</p>
 
-      <section className="sc-account-section" aria-labelledby={`${uid}-basics`}>
+      <section hidden={step !== 1} className="sc-account-section" aria-labelledby={`${uid}-basics`}>
         <header><h2 id={`${uid}-basics`}>Opis</h2></header>
         <div className="sc-account-fields">
           <label><span className="sc-account-label-row">Tytuł <span className="sc-account-req">(wymagany)</span></span>
             <input value={draft.title} maxLength={THREAD_LIMITS.title} required onChange={event => update({ title: event.target.value })} />
             <small>{draft.title.length}/{THREAD_LIMITS.title}</small>
           </label>
-          <label><span className="sc-account-label-row">Opis <span>(opcjonalnie)</span></span>
+          <label><span className="sc-account-label-row">Na jakie pytanie odpowiada nitka?</span>
             <textarea rows={3} value={draft.description} maxLength={THREAD_LIMITS.description} onChange={event => update({ description: event.target.value })} />
             <small>{draft.description.length}/{THREAD_LIMITS.description} · {draft.isPublic ? 'Widoczny dla czytelników pod tytułem.' : 'Notatka dla Ciebie, np. co chcesz porównać.'}</small>
           </label>
+          <fieldset><legend>Tematy nitki (opcjonalnie)</legend><p>Ułatwiają znalezienie nitki na liście.</p><div className="sc-account-pills">{config.data?.topics?.map(topic => <label key={topic.value} className="sc-f2-check"><input type="checkbox" checked={draft.topics.includes(topic.value)} onChange={() => update({ topics: toggle(draft.topics, topic.value) })} />{topic.label}</label>)}</div></fieldset>
         </div>
       </section>
 
-      <section className="sc-account-section" aria-labelledby={`${uid}-materials`}>
+      <section hidden={step !== 2 && step !== 3} className="sc-account-section" aria-labelledby={`${uid}-materials`}>
         <header><h2 id={`${uid}-materials`}>Elementy nitki <span>{draft.items.length}</span></h2></header>
         {draft.items.length === 0 ? (
           <p className="sc-account-empty">Nitka nie ma jeszcze elementów. Pierwszy to materiał otwierający — ten, od którego zaczyna się sprawa. Znajdź go poniżej w Bazie albo dodaj przez link.</p>
         ) : (
           <ol className="sc-account-items" aria-label="Kolejność elementów w nitce">
             {draft.items.map((item, index) => (
-              <li key={item.key}>
+              <li key={item.key} onDragOver={event => { if (step === 3) event.preventDefault(); }} onDrop={event => {
+                event.preventDefault(); const key = dragged.current; dragged.current = null;
+                if (!key || key === item.key || step !== 3) return;
+                const next = [...draft.items]; const from = next.findIndex(row => row.key === key); if (from < 0) return;
+                const [row] = next.splice(from, 1); next.splice(index, 0, row); update({ items: next }); setAnnouncement(`Przeniesiono na pozycję ${index + 1}.`);
+              }}>
                 <span className="sc-account-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
                 <div className="sc-account-item-copy">
                   <p className="sc-account-meta">
@@ -316,12 +383,13 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
                     <a href={item.url} target="_blank" rel="noopener noreferrer">Otwórz materiał ↗<span className="sr-only"> (oryginał, nowa karta)</span></a>
                     {item.kind === 'article' && <Link href={`/material/${item.id}`}>Kontekst materiału</Link>}
                   </p>
-                  <label className="sc-account-note">Notatka (opcjonalnie)
+                  <label hidden={step !== 3} className="sc-account-note">Notatka (opcjonalnie)
                     <textarea rows={2} maxLength={NOTE_LIMIT} value={item.note} onChange={event => setNote(item.key, event.target.value)} placeholder="Dlaczego ten materiał jest w nitce?" />
                     <small>{item.note.length}/{NOTE_LIMIT}</small>
                   </label>
                 </div>
-                <div className="sc-account-item-actions">
+                <div hidden={step !== 3} className="sc-account-item-actions">
+                  <span draggable onDragStart={event => { dragged.current = item.key; event.dataTransfer.setData('text/plain', item.key); event.dataTransfer.effectAllowed = 'move'; }} onDragEnd={() => { dragged.current = null; }} className="sc-f2-drag" title="Przeciągnij albo użyj strzałek">Przeciągnij</span>
                   <button type="button" ref={node => { if (node) controls.current.set(`${item.key}:-1`, node); }} aria-label={`Przesuń wcześniej: ${item.title}`} aria-disabled={index === 0} onClick={() => move(item.key, -1)}>↑</button>
                   <button type="button" ref={node => { if (node) controls.current.set(`${item.key}:1`, node); }} aria-label={`Przesuń dalej: ${item.title}`} aria-disabled={index === draft.items.length - 1} onClick={() => move(item.key, 1)}>↓</button>
                   <button type="button" ref={node => { if (node) controls.current.set(`${item.key}:remove`, node); }} aria-label={`Usuń z nitki: ${item.title}`} onClick={() => remove(item.key)}>✕</button>
@@ -331,7 +399,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           </ol>
         )}
 
-        <div className="sc-account-finder">
+        <div hidden={step !== 2} className="sc-account-finder">
           <div className="sc-account-field">
             <label htmlFor={`${uid}-search`}>Dodaj materiał z Bazy</label>
             <div className="sc-account-inline">
@@ -397,7 +465,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         </div>
       </section>
 
-      <details className="sc-account-section sc-account-filters">
+      <details hidden={step !== 2} className="sc-account-section sc-account-filters">
         <summary><h2>Hasła, kategorie i źródła <span>(opcjonalnie — pomagają szukać w Bazie)</span></h2></summary>
         <div className="sc-account-fields">
           <div className="sc-account-field">
@@ -455,23 +523,30 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         </div>
       </details>
 
+      {step === 4 && <section className="sc-f2-preview" aria-label="Podgląd oczami czytelnika"><h2>{draft.title}</h2><p>{draft.description}</p><p>Autor: @{account.data?.user?.username} · {draft.items.length} materiałów</p><ol className="sc-thread-els">{preview.map((element, index) => <ElementRow key={`${element.kind}-${element.id}`} element={element} index={index} />)}</ol></section>}
+      {step === 5 && <section className="sc-f2-publish"><h2>{draft.isPublic ? 'Zatwierdź zmiany publicznej nitki' : 'Gotowa do publikacji?'}</h2><p>„{draft.title}” · {draft.items.length} materiałów. Po publikacji tytuł, pytanie i notatki będą widoczne dla wszystkich pod Twoją nazwą użytkownika.</p>
+        <VerifyEmailNotice />
+        <label className="sc-f2-check"><input type="checkbox" checked={terms} onChange={event => setTerms(event.target.checked)} /><span>Potwierdzam <Link href="/zasady-korzystania" target="_blank">Zasady korzystania</Link> (wersja {TERMS_VERSION}). Nie publikuję danych prywatnych ani treści naruszających prawa innych.</span></label>
+        {draft.items.length < MIN_PUBLIC_ITEMS && <p>Do publikacji dodaj co najmniej dwa materiały.</p>}
+        <Button type="button" variant="primary" disabled={pending || !terms || !emailVerified(account.data) || draft.items.length < MIN_PUBLIC_ITEMS || Boolean(thread.data?.hidden_at)} onClick={() => persist(true, false)}>{draft.isPublic ? 'Opublikuj zmiany' : 'Opublikuj nitkę'}</Button>
+        {activeId && draft.isPublic && <Button href={`/nitki/${activeId}`} variant="quiet">Zobacz opublikowaną nitkę</Button>}
+      </section>}
+
+      <div className="sc-f2-actions">{step > 1 && <Button type="button" variant="quiet" disabled={pending} onClick={() => setStep(step - 1)}>Wstecz</Button>}{step < 5 && <Button type="button" variant="primary" disabled={pending || !canAdvance} onClick={() => setStep(step + 1)}>Dalej: {steps[step]}</Button>}</div>
+
       <div className="sc-account-savebar">
         <div role="status" aria-live="polite">
-          {error ? <p className="sc-account-error">{error}</p> : notice ? <p>{notice}</p> : <p>{dirty ? 'Masz niezapisane zmiany.' : threadId ? 'Wszystkie zmiany zapisane.' : 'Nowa nitka nie jest jeszcze zapisana.'}</p>}
+          {pending ? <p>Zapisuję…</p> : error ? <p>{error}</p> : dirty ? <p>Masz niezapisane zmiany.</p> : notice ? <p>{notice}</p> : <p>{activeId ? 'Wszystkie zmiany zapisane.' : 'Nadaj tytuł, aby rozpocząć autozapis.'}</p>}
         </div>
         <div className="sc-account-actions">
-          <label className="sc-account-publish" title={`Publiczna nitka potrzebuje co najmniej ${MIN_PUBLIC_ITEMS} elementów`}>
-            <input type="checkbox" checked={draft.isPublic} onChange={event => update({ isPublic: event.target.checked })} />
-            Publiczna w sekcji Nitki
-          </label>
-          <Button type="submit" variant="primary" disabled={pending}>{pending ? 'Zapisuję…' : 'Zapisz nitkę'}</Button>
-          {threadId && (confirmDelete ? (
+          {!draft.isPublic && <Button type="submit" variant="quiet" disabled={pending}>Zapisz szkic teraz</Button>}
+          {activeId && (confirmDelete ? (
             <span className="sc-account-confirm">
               <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={removeThread}>Potwierdź usunięcie nitki</Button>
               <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmDelete(false)}>Anuluj</Button>
             </span>
           ) : (
-            <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmDelete(true)}>Usuń nitkę</Button>
+            <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={() => setConfirmDelete(true)}>Usuń nitkę</Button>
           ))}
         </div>
       </div>

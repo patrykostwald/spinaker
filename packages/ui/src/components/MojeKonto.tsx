@@ -3,11 +3,10 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch, apiWrite } from '../lib/api';
+import { apiFetch } from '../lib/api';
 import { categoryLabel, formatDateTimePl } from '../lib/utils';
 import {
   isUnavailable,
-  personalKeys,
   removeThreadFavorite,
   setArticleFavorite,
   useArticleFavorites,
@@ -19,6 +18,8 @@ import {
 import { AccountDialog } from './AccountDialog';
 import { THREADS_ENABLED } from '../lib/features';
 import { Button } from '../kit';
+import { AccountNews, AccountOnboarding, AccountSettings, FollowedSection, NotificationsSection } from './AccountPhase2';
+import { useFollows, useNotifications } from '../lib/accountPhase2';
 
 function plural(count: number, one: string, few: string, many: string) {
   const tens = count % 100;
@@ -151,52 +152,6 @@ function ThreadFavoritesSection() {
   );
 }
 
-function TopicsSection() {
-  const { ownerId } = useOwnerId();
-  const topics = useSavedTopics();
-  const cache = useQueryClient();
-  const [confirmId, setConfirmId] = useState<number | null>(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState('');
-  const rows = [...(topics.data?.topics ?? [])].sort((a, b) => a.position - b.position);
-  async function remove(id: number) {
-    setPending(true); setError('');
-    try { await apiWrite(`/api/account/topics/${id}/`, {}, 'DELETE'); await cache.invalidateQueries({ queryKey: personalKeys.topics(ownerId) }); setConfirmId(null); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'Nie udało się usunąć paska.'); }
-    finally { setPending(false); }
-  }
-  return (
-    <Section id="paski-tematow" title="Paski tematów na koncie" count={topics.isSuccess ? rows.length : undefined}
-      action={<Button href="/profile" variant="quiet" size="sm">Dodaj lub edytuj w profilu</Button>}>
-      <QueryState query={topics} unavailableText="Paski tematów na koncie są w trakcie udostępniania w interfejsie MVP." />
-      {topics.isSuccess && !rows.length && <p className="sc-account-empty">Pasek to zapisany widok Bazy: hasło, kategorie lub źródła. Możesz mieć do {topics.data.max_topics} pasków.</p>}
-      {error && <p role="alert" className="sc-account-error">{error}</p>}
-      {rows.length > 0 && (
-        <ul className="sc-account-rows">
-          {rows.map(topic => (
-            <li key={topic.id}>
-              <div>
-                <p className="sc-account-title">{topic.label}</p>
-                <p className="sc-account-meta">
-                  {[topic.query && `hasło: ${topic.query}`, topic.categories.length && `${topic.categories.length} ${plural(topic.categories.length, 'kategoria', 'kategorie', 'kategorii')}`, topic.source_ids.length && `${topic.source_ids.length} ${plural(topic.source_ids.length, 'źródło', 'źródła', 'źródeł')}`].filter(Boolean).join(' · ') || 'wszystkie materiały'}
-                </p>
-              </div>
-              {confirmId === topic.id ? (
-                <span className="sc-account-confirm">
-                  <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={() => remove(topic.id)}>Potwierdź usunięcie</Button>
-                  <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmId(null)}>Anuluj</Button>
-                </span>
-              ) : (
-                <Button type="button" variant="quiet" size="sm" onClick={() => setConfirmId(topic.id)}>Usuń<span className="sr-only"> pasek {topic.label}</span></Button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Section>
-  );
-}
-
 type Reaction = {
   kind: 'material' | 'drspin' | 'clinic' | 'community';
   id: number;
@@ -230,7 +185,7 @@ function useMyReactions() {
 function threadStatus(thread: { is_public?: boolean; hidden_at?: string | null }) {
   if (thread.hidden_at) return { label: 'UKRYTA', tone: 'hidden', hint: 'ukryta przez zespół po zgłoszeniu' };
   if (thread.is_public) return { label: 'PUBLICZNA', tone: 'public', hint: 'widoczna w sekcji Nitki' };
-  return { label: 'PRYWATNA', tone: 'private', hint: 'widzisz ją tylko Ty' };
+  return { label: 'SZKIC', tone: 'private', hint: 'widzisz go tylko Ty' };
 }
 
 function ThreadsSection() {
@@ -238,7 +193,7 @@ function ThreadsSection() {
   const rows = threads.data?.results ?? [];
   const publicCount = rows.filter(row => row.is_public && !row.hidden_at).length;
   return (
-    <Section id="moje-nitki" title="Moje nitki kontekstowe" count={threads.isSuccess ? rows.length : undefined}
+    <Section id="moje-nitki" title="Twoje nitki" count={threads.isSuccess ? rows.length : undefined}
       action={<Button href="/konto/nitki/nowa" variant="primary" size="sm">+ Nowa nitka</Button>}>
       <p className="sc-account-hint">Nitka to jeden materiał na początku i to, co go dopełnia — z Bazy albo dodane przez link. Prywatną widzisz tylko Ty; publiczna trafia do sekcji <Link href="/nitki">Nitki</Link>{publicCount ? ` (masz ${publicCount} ${plural(publicCount, 'publiczną', 'publiczne', 'publicznych')})` : ''}.</p>
       <QueryState query={threads} unavailableText="Nitki są chwilowo niedostępne." />
@@ -265,6 +220,7 @@ function ThreadsSection() {
                 <p className="sc-account-card__actions">
                   <Link href={`/konto/nitki/${thread.id}`}>Edytuj</Link>
                   {thread.is_public && !thread.hidden_at && <Link href={`/nitki/${thread.id}`}>Zobacz publicznie ↗</Link>}
+                  {thread.is_public && !thread.hidden_at && <Link href={`/nitki/${thread.id}#opinie`}>Opinie czytelników</Link>}
                 </p>
               </li>
             );
@@ -272,22 +228,6 @@ function ThreadsSection() {
         </ul>
       )}
     </Section>
-  );
-}
-
-function StripsSection() {
-  return (
-    <section id="paski" className="sc-account-section" aria-labelledby="paski-title">
-      <header><h2 id="paski-title">Moje paski</h2></header>
-      <div className="sc-account-duo">
-        <div className="sc-account-emptycard">
-          <p><strong>Nitki newsowe na stronie głównej</strong></p>
-          <p>Do pięciu pasków najnowszych materiałów według hasła, kategorii albo źródła. Zapisują się na tym urządzeniu — działają także bez konta.</p>
-          <Button href="/#nitki" variant="quiet" size="sm">Ustaw paski na stronie głównej →</Button>
-        </div>
-        <TopicsSection />
-      </div>
-    </section>
   );
 }
 
@@ -328,14 +268,15 @@ function ReactionsSection() {
 
 function Overview() {
   const threads = usePersonalThreads();
-  const articles = useArticleFavorites();
-  const drspin = useThreadFavorites();
-  const reactions = useMyReactions();
+  const topics = useSavedTopics();
+  const follows = useFollows();
+  const notifications = useNotifications();
   const threadRows = threads.data?.results ?? [];
   const tiles = [
-    ...(!THREADS_ENABLED ? [] : [{ href: '#moje-nitki', label: 'Moje nitki', value: threads.isSuccess ? threadRows.length : null, note: threads.isSuccess ? (() => { const n = threadRows.filter(row => row.is_public && !row.hidden_at).length; return `${n} ${plural(n, 'publiczna', 'publiczne', 'publicznych')}`; })() : '' }]),
-    { href: '#ulubione', label: 'Ulubione', value: articles.isSuccess && drspin.isSuccess ? (articles.data.results.length + drspin.data.results.length) : null, note: 'materiały i nitki Dr. Spina' },
-    { href: '#reakcje', label: 'Reakcje', value: reactions.isSuccess ? reactions.data.results.length : null, note: reactions.isSuccess ? `${reactions.data.comments} z komentarzem` : '' },
+    { href: '#wiadomosci', label: 'Twoje wiadomości', value: topics.data?.topics.length, note: 'zapisane tematy' },
+    ...(!THREADS_ENABLED ? [] : [{ href: '#moje-nitki', label: 'Twoje nitki', value: threads.isSuccess ? threadRows.length : null, note: 'szkice i opublikowane' }]),
+    { href: '#obserwowani', label: 'Obserwowani', value: follows.data?.length, note: 'osoby i nitki' },
+    { href: '#powiadomienia', label: 'Powiadomienia', value: notifications.data?.unread, note: 'nieprzeczytane' },
   ];
   return (
     <section className="sc-account-overview" aria-label="Przegląd konta">
@@ -346,52 +287,53 @@ function Overview() {
           <span className="sc-account-tile__note">{tile.note}</span>
         </a>
       ))}
-      <div className="sc-account-tile sc-account-tile--actions">
-        <span className="sc-account-tile__label">Na skróty</span>
-        {THREADS_ENABLED && <Link href="/konto/nitki/nowa">+ Nowa nitka</Link>}
-        <Link href="/klinika">Klinika spinu</Link>
-        {THREADS_ENABLED ? <Link href="/nitki">Nitki czytelników</Link> : <Link href="/">Wiadomości</Link>}
-      </div>
     </section>
   );
 }
 
 const NAV = [
-  { id: 'moje-nitki', label: 'Moje nitki' },
+  { id: 'wiadomosci', label: 'Twoje wiadomości' },
+  { id: 'moje-nitki', label: 'Twoje nitki' },
+  { id: 'obserwowani', label: 'Obserwowani' },
   { id: 'ulubione', label: 'Ulubione' },
-  { id: 'paski', label: 'Paski' },
+  { id: 'powiadomienia', label: 'Powiadomienia' },
   { id: 'reakcje', label: 'Reakcje i komentarze' },
+  { id: 'ustawienia', label: 'Ustawienia' },
 ];
 
 export function MojeKonto() {
   const { account, ownerId } = useOwnerId();
   if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam, czy jesteś zalogowany…</p>;
+  if (account.isError) return <div className="sc-account"><QueryState query={account} unavailableText="Konta będą dostępne wkrótce. Możesz nadal czytać wiadomości i diagnozy." /></div>;
   if (!ownerId) return <SignedOutPanel />;
   const user = account.data!.user!;
   return (
-    <div className="sc-account sc-account-dashboard">
+    <div className="sc-account sc-account-dashboard sc-f2">
       <header className="sc-account-head">
-        <p className="sc-account-kicker">MOJE KONTO</p>
-        <h1>@{user.username}</h1>
-        <p>{THREADS_ENABLED ? 'Twoje nitki, ulubione, paski, reakcje i komentarze — w jednym miejscu.' : 'Twoje ulubione, paski, reakcje i komentarze — w jednym miejscu.'}</p>
+        <p className="sc-account-kicker">Witaj, @{user.username}</p>
+        <h1>Mój spin.clinic</h1>
+        <p>Twoje wiadomości i to, do czego chcesz wrócić — w jednym miejscu.</p>
       </header>
       <Overview />
+      <AccountOnboarding key={ownerId} ownerId={ownerId} />
       <div className="sc-account-layout">
         <nav className="sc-account-sidenav" aria-label="Sekcje konta">
           {NAV.filter(item => THREADS_ENABLED || item.id !== 'moje-nitki').map(item => <a key={item.id} href={`#${item.id}`}>{item.label}</a>)}
-          <Link href="/profile">Ustawienia i prywatność</Link>
         </nav>
         <div className="sc-account-content">
+          <AccountNews />
           {THREADS_ENABLED && <ThreadsSection />}
+          <FollowedSection />
           <section id="ulubione" className="sc-account-section" aria-labelledby="ulubione-title">
             <header><h2 id="ulubione-title">Ulubione</h2></header>
             <div className="sc-account-duo">
               <ArticleFavoritesSection />
-              <ThreadFavoritesSection />
+              {THREADS_ENABLED && <ThreadFavoritesSection />}
             </div>
           </section>
-          <StripsSection />
+          <NotificationsSection />
           <ReactionsSection />
+          <AccountSettings />
         </div>
       </div>
     </div>

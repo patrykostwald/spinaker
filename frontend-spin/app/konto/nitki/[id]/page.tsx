@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default function PersonalThreadPage({ params }: { params: { id: string } }) {
   // Nitki czytelników wracają w fazie II (NEXT_PUBLIC_THREADS_ENABLED=true).
   if (process.env.NEXT_PUBLIC_THREADS_ENABLED !== 'true') redirect('/konto');
+  if (process.env.NEXT_PUBLIC_ACCOUNTS_ENABLED !== 'true') redirect('/');
   if (!/^[1-9]\d{0,11}$/.test(params.id)) notFound();
   return <MojaNitkaEditor threadId={Number(params.id)} />;
 }

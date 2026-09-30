@@ -1,6 +1,7 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { ApiError, apiFetch, apiWrite } from './api';
 import { useAccount, type SavedTopic } from './account';
+import { THREADS_ENABLED } from './features';
 
 /* ——— Kształty odpowiedzi z backend/news/personal_context.py, profiles.py i accounts.py ——— */
 
@@ -40,6 +41,7 @@ export type PersonalContextThreadInput = {
   description: string;
   query: string;
   categories: string[];
+  topics?: string[];
   source_ids: number[];
   article_ids?: number[];
   items?: PersonalThreadItemInput[];
@@ -92,7 +94,7 @@ export function usePersonalThreads() {
   return useQuery({
     queryKey: personalKeys.threads(ownerId),
     queryFn: () => apiFetch<{ results: PersonalContextThread[] }>('/api/account/context-threads/'),
-    enabled: Boolean(ownerId),
+    enabled: THREADS_ENABLED && Boolean(ownerId),
     retry: false,
   });
 }

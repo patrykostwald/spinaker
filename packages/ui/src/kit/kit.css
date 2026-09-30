@@ -6147,3 +6147,94 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-account-form__google { margin-top: var(--sc-s-6); padding-top: var(--sc-s-4); border-top: 1px solid var(--sc-line); }
 .sc-account-recovery { width: min(100% - 32px, 480px); margin: var(--sc-s-8) auto; }
 .sc-account-recovery h1 { margin-bottom: var(--sc-s-6); }
+
+/* Faza 2: panel i nitki (zlecenie 055) */
+.sc-f2, .sc-f2-form, .sc-f2-context { font-family: var(--sc-font-sans); color: var(--sc-text); font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
+.sc-f2 { width: 100%; max-width: 1200px; margin-inline: auto; padding: 32px 24px; }
+.sc-f2 *, .sc-f2-context *, .sc-f2-form * { box-sizing: border-box; min-width: 0; }
+.sc-f2 [hidden] { display: none !important; }
+.sc-f2 h1 { font-size: clamp(28px, 3.5vw, 40px); line-height: 1.2; }
+.sc-f2 h2, .sc-f2-context h2 { font-size: 24px; line-height: 1.35; }
+.sc-f2 h3 { font-size: 18px; line-height: 1.4; }
+.sc-f2 :is(p, ul, ol) { margin-block: 12px; }
+.sc-f2 :is(small, .sc-account-meta, .sc-account-kicker, .sc-account-hint, .sc-community-card__meta, .sc-account-tile__note), .sc-f2-muted, .sc-f2-form small { font-size: 14px; line-height: 1.5; color: var(--sc-text-2); }
+.sc-f2 a, .sc-f2-context a, .sc-f2-form a { color: var(--sc-accent); text-underline-offset: 3px; }
+.sc-f2 :is(button, .sc-btn, select, summary), .sc-f2-form :is(button, .sc-btn), .sc-f2-follow :is(button, .sc-btn), .sc-f2-share { min-height: 44px; min-width: 44px; white-space: normal; }
+.sc-f2 :is(button, a, input, select, textarea, summary):focus-visible, .sc-f2-form :is(button, a, input):focus-visible, .sc-f2-follow button:focus-visible { outline: 3px solid var(--sc-focus); outline-offset: 3px; }
+.sc-f2 :is(input:not([type="checkbox"]), textarea, select), .sc-f2-form input:not([type="checkbox"]) { display: block; width: 100%; max-width: 100%; min-height: 48px; padding: 12px; border: 1px solid var(--sc-line-strong); border-radius: 8px; background: var(--sc-surface); color: var(--sc-text); font: inherit; }
+.sc-f2 label, .sc-f2-form label { display: grid; gap: 8px; margin-block: 12px; }
+.sc-f2 .sc-f2-check, .sc-f2-form .sc-f2-check { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; }
+.sc-f2-check input[type="checkbox"] { flex: 0 0 22px; width: 22px; height: 22px; accent-color: var(--sc-accent); }
+.sc-f2 .sc-account-overview { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.sc-f2 .sc-account-tile { min-height: 132px; padding: 20px; border: 1px solid var(--sc-line-strong); border-radius: 12px; background: var(--sc-surface); text-decoration: none; }
+.sc-f2 .sc-account-tile__label { color: var(--sc-text); font-size: 16px; }
+.sc-f2 .sc-account-tile__value { color: var(--sc-accent); font-size: 30px; }
+.sc-f2 .sc-account-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 32px; margin-top: 32px; }
+.sc-f2 .sc-account-sidenav { align-self: start; position: sticky; top: 100px; }
+.sc-f2 .sc-account-sidenav a { display: flex; align-items: center; min-height: 48px; padding: 10px 12px; }
+.sc-f2 .sc-account-section { scroll-margin-top: 120px; margin-block: 0 32px; }
+.sc-f2 .sc-account-content > .sc-account-section { border-top: 1px solid var(--sc-line-strong); padding-top: 24px; }
+.sc-f2 .sc-account-rows > li { padding: 16px; border: 1px solid var(--sc-line); border-radius: 8px; gap: 16px; }
+.sc-f2 .sc-account-rows > li[data-unread] { border-inline-start: 3px solid var(--sc-accent); }
+.sc-f2 .sc-account-rows > li > div { flex: 1; }
+.sc-f2 .sc-account-duo, .sc-f2 .sc-account-cards { display: grid; grid-template-columns: minmax(0, 1fr); }
+.sc-f2 .sc-account-card__actions { flex-wrap: wrap; }
+.sc-f2 .sc-account-card__actions a, .sc-f2 .sc-account-links a { display: inline-flex; align-items: center; min-height: 44px; }
+.sc-f2-onboarding, .sc-f2-notice { padding: 20px; margin-block: 24px; background: var(--sc-surface-2); border: 1px solid var(--sc-line-strong); border-radius: 12px; }
+.sc-f2-onboarding form { max-width: 620px; }
+.sc-f2-actions, .sc-f2-follow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.sc-f2-follow { max-width: 100%; }
+.sc-f2-follow > span { flex-basis: 100%; font-size: 14px; }
+.sc-f2-settings { display: grid; gap: 24px; }
+.sc-f2-settings > section { border-bottom: 1px solid var(--sc-line); padding-bottom: 24px; }
+.sc-f2-settings form { max-width: 640px; }
+.sc-f2-settings > section > .sc-btn { margin: 8px 8px 8px 0; }
+.sc-f2-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 0; gap: 8px; list-style: none; }
+.sc-f2-steps button { height: 100%; width: 100%; padding: 12px 8px; border: 1px solid var(--sc-line-strong); border-radius: 8px; color: var(--sc-text-2); background: var(--sc-surface); text-align: start; font: inherit; }
+.sc-f2-steps button[aria-current="step"] { color: var(--sc-text); border-color: var(--sc-accent); background: var(--sc-accent-soft); }
+.sc-f2 button:disabled { opacity: .6; cursor: not-allowed; }
+.sc-f2 .sc-account-item-actions { align-items: center; }
+.sc-f2-drag { padding: 8px; font-size: 14px; cursor: grab; color: var(--sc-text-2); }
+.sc-f2 .sc-account-savebar { position: static; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; padding: 20px 0; margin-top: 24px; border-top: 1px solid var(--sc-line-strong); box-shadow: none; }
+.sc-f2-preview, .sc-f2-publish { padding: 24px; border: 1px solid var(--sc-line-strong); border-radius: 12px; margin-block: 24px; }
+.sc-f2 .sc-thread-el { grid-template-columns: 36px minmax(0, 1fr); }
+.sc-f2-context { margin-block: 32px; padding-block: 24px; border-top: 1px solid var(--sc-line-strong); }
+.sc-f2-context ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0; gap: 16px; list-style: none; }
+.sc-f2-context li { padding: 16px; border: 1px solid var(--sc-line-strong); border-radius: 8px; background: var(--sc-surface); }
+.sc-f2-context li > a { display: block; min-height: 44px; font-weight: 600; }
+.sc-f2-figure .sc-public-figure-tabs { flex-wrap: wrap; overflow: visible; }
+.sc-f2-figure .sc-public-figure-tabs button { min-height: 44px; white-space: normal; }
+.sc-f2-figure .sc-public-figure-tabs button:focus-visible { outline: 3px solid var(--sc-focus); outline-offset: 3px; }
+.sc-f2-filters { display: flex; flex-wrap: wrap; gap: 16px; }
+.sc-f2-filters label { flex: 1 1 200px; }
+.sc-f2-drspin { border-inline-start: 3px solid var(--sc-accent); padding: 0 0 0 20px; margin-block: 32px; }
+.sc-f2-drspin > div, .sc-f2 .sc-community__list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.sc-f2-share { display: inline-flex; align-items: center; padding: 8px 12px; }
+.sc-f2 .sc-saved-topics, .sc-f2 .sc-news-strip, .sc-f2 .sc-news-strip__track { max-width: 100%; min-width: 0; }
+@media (max-width: 760px) {
+  .sc-f2 { padding: 24px 16px max(24px, env(safe-area-inset-bottom)); }
+  .sc-f2 .sc-account-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .sc-f2 .sc-account-tile { padding: 16px; }
+  .sc-f2 .sc-account-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .sc-f2 .sc-account-sidenav { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .sc-f2 .sc-account-sidenav a { white-space: normal; }
+  .sc-f2 .sc-account-section { padding-inline: 0; }
+  .sc-f2 .sc-account-section > header { flex-wrap: wrap; }
+  .sc-f2 .sc-account-rows > li, .sc-f2 .sc-account-candidates > li { flex-direction: column; }
+  .sc-f2-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sc-f2 .sc-account-items > li { display: grid; grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .sc-f2 .sc-account-inline { display: flex; flex-wrap: wrap; }
+  .sc-f2 .sc-account-inline input { flex: 1 1 100%; }
+  .sc-f2-preview, .sc-f2-publish, .sc-f2-onboarding, .sc-f2-notice { padding: 16px; }
+  .sc-f2 .sc-community__actions, .sc-f2 .sc-community__search, .sc-f2 .sc-saved-topics__head { flex-wrap: wrap; }
+  .sc-f2 .sc-community__search { width: 100%; }
+  .sc-f2 .sc-community__list, .sc-f2-drspin > div, .sc-f2-context ul { grid-template-columns: minmax(0, 1fr); }
+  .sc-f2 .sc-news-strip__track { display: grid; grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr); overflow: visible; margin: 0; padding: 8px 0; }
+  .sc-f2 .sc-news-strip__track > * { width: 100%; min-width: 0; max-width: 100%; }
+  .sc-f2 .sc-news-strip__actions [data-shape="icon"] { display: none; }
+  .sc-f2 .sc-thread-opinions-columns { grid-template-columns: minmax(0, 1fr); }
+  .sc-f2 .sc-account-savebar { padding-bottom: env(safe-area-inset-bottom); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-f2 *, .sc-f2-context *, .sc-f2-follow * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

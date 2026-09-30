@@ -1,9 +1,11 @@
 import { InfoPage } from '@spin-clinic/ui/kit';
+import { TERMS_VERSION } from '@spin-clinic/ui';
 
 export const metadata = { title: 'Zasady korzystania · spin.clinic' };
 
 export default function TermsPage() {
   return <InfoPage eyebrow="INFORMACJE" title="Zasady korzystania" lead="spin.clinic porządkuje i łączy odnośniki do materiałów źródłowych. Nie zastępuje publikacji wydawcy ani samodzielnej oceny czytelnika.">
+    <p>Wersja zasad: {TERMS_VERSION}.</p>
     <section><h2>Materiały i kontekst</h2><p>Karta materiału pokazuje materiał, jego źródło, datę i odnośnik do oryginału. Powiązanie po haśle, kategorii, źródle lub czasie jest wskazówką do dalszego czytania, a nie dowodem, że jeden materiał potwierdza drugi. Dr. Spin przedstawia wybór i kolejność materiałów zatwierdzone przez zespół spin.clinic.</p></section>
     <section><h2>Klinika spinu</h2><p>Diagnozy wpisów polityków przygotowuje i publikuje automatycznie AI — każda jest tak oznaczona, z nazwą modelu i wersją instrukcji. Zasady publikacji i korekt opisuje <a href="/konsylium/karta">Karta Konsylium</a>. Diagnoza opisuje komunikat — techniki perswazji i zgodność twierdzeń ze źródłami — a nie osobę. AI przypisuje twierdzeniom status: potwierdzone, sprzeczne ze źródłami, wprowadzające w błąd albo niezweryfikowane — ustalenia o faktach mają linki do źródeł. Brak źródła oznacza brak weryfikacji, nie fałsz. Zgłoszenia dotyczące diagnoz przyjmujemy pod adresem <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>; po zgłoszeniu prawnym diagnoza może zostać ukryta.</p></section>
     <section><h2>Czego portal nie robi</h2><p>Nie ocenia osób ani ich prawdomówności, nie ogłasza, że wypowiedź „jest kłamstwem” — ocenia konkretny komunikat i status poszczególnych twierdzeń, nie publikuje treści modeli bez wyraźnego oznaczenia, że przygotowało je AI, i nie zastępuje oryginalnej publikacji. Jeśli czegoś nie wiemy, pokazujemy brak danych zamiast dopowiadać.</p></section>

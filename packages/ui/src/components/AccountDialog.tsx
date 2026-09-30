@@ -5,6 +5,7 @@ import Link from "next/link";
 import { apiWrite, ApiValidationError } from "../lib/api";
 import { useAccount, type Account } from "../lib/account";
 import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useRouter } from "next/navigation";
 import { Dialog } from "./Dialog";
 import { Button } from "../kit/Button";
 
@@ -20,6 +21,7 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
   const id = useId();
   const cache = useQueryClient();
   const account = useAccount();
+  const router = useRouter();
   useEffect(() => { if (open) { setError(""); setFields({}); setNotice(""); setGoogleConsent(false); } }, [open]);
   function changeMode(next: Mode) { setMode(next); setError(""); setFields({}); setNotice(""); setGoogleConsent(false); requestAnimationFrame(() => formRef.current?.querySelector<HTMLInputElement>("input")?.focus()); }
   function field(name: string) { return { "aria-invalid": !!fields[name], "aria-describedby": fields[name] ? `${id}-${name}` : undefined }; }
@@ -33,8 +35,14 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
         setNotice("Jeśli ten adres jest przypisany do konta, wyślemy link do zmiany hasła. Sprawdź też spam.");
       } else {
         const result = await apiWrite<Account>(`/api/account/${mode}/`, { username: form.get("username"), password: form.get("password"), ...(mode === "register" ? { email: form.get("email"), accepted_terms: form.get("accepted_terms") === "on", accepted_privacy: form.get("accepted_privacy") === "on" } : {}) });
-        cache.setQueryData<Account>(["account"], previous => ({ ...previous, ...result, google_enabled: result.google_enabled ?? previous?.google_enabled })); await cache.invalidateQueries({ queryKey: ["me"] });
-        if (mode === "register") setNotice("Sprawdź pocztę, aby potwierdzić e-mail. Jeśli masz już konto, zaloguj się lub ustaw nowe hasło. Link potwierdzający działa przez 48 godzin."); else if (!result.user?.email_verified) setNotice("Jesteś zalogowany. Możesz czytać i zapisywać prywatnie. Aby publikować nitki i opinie, potwierdź e-mail."); else onClose();
+        // Nowa sesja nie dziedziczy prywatnych danych poprzedniego czytelnika (zlecenie 055).
+        const googleEnabled = result.google_enabled ?? cache.getQueryData<Account>(["account"])?.google_enabled;
+        cache.clear(); cache.setQueryData<Account>(["account"], { ...result, google_enabled: googleEnabled });
+        let firstVisit = true;
+        try { firstVisit = localStorage.getItem(`sc-onboarding:${result.user?.id}`) !== "done"; } catch {}
+        if (mode === "register") setNotice("Sprawdź pocztę, aby potwierdzić e-mail. Jeśli masz już konto, zaloguj się lub ustaw nowe hasło. Link potwierdzający działa przez 48 godzin.");
+        else if (!result.user?.email_verified) setNotice("Jesteś zalogowany. Możesz czytać i zapisywać prywatnie. Aby publikować nitki i opinie, potwierdź e-mail.");
+        else { onClose(); if (firstVisit) router.push("/konto"); }
       }
     } catch (reason) {
       const errors = reason instanceof ApiValidationError ? reason.fields : {};
@@ -63,6 +71,6 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
 
 export function AccountControl() {
   const account = useAccount(); const cache = useQueryClient(); const [open, setOpen] = useState(false); const [pending, setPending] = useState(false); const [error, setError] = useState("");
-  async function logout() { setPending(true); setError(""); try { await apiWrite("/api/account/logout/", {}); cache.removeQueries({ queryKey: ["account-topics"] }); cache.removeQueries({ queryKey: ["topic-feed"] }); await Promise.all([cache.invalidateQueries({ queryKey: ["account"] }), cache.invalidateQueries({ queryKey: ["me"] })]); } catch (reason) { setError(reason instanceof Error ? reason.message : "Nie udało się wylogować."); } finally { setPending(false); } }
-  return <div className="sc-account-control">{account.data?.authenticated ? <><Link href="/profile" className="sc-account-control__name" title="Twój profil">{account.data.user?.username}</Link>{account.data.user?.can_edit_threads ? <Link href="/editor" className="sc-account-control__name">{account.data.user?.is_staff ? "Zespół" : "Warsztat"}</Link> : null}<Button type="button" variant="quiet" size="sm" loading={pending} onClick={logout}>Wyloguj</Button></> : <Button type="button" variant="quiet" size="sm" disabled={account.isPending} onClick={() => setOpen(true)}>Zaloguj się</Button>}{error ? <span role="alert" className="sc-t-caption">{error}</span> : null}<AccountDialog open={open} onClose={() => setOpen(false)} /></div>;
+  async function logout() { setPending(true); setError(""); try { await apiWrite("/api/account/logout/", {}); cache.clear(); cache.setQueryData<Account>(["account"], { authenticated: false, user: null, csrfToken: "" }); await cache.invalidateQueries({ queryKey: ["account"] }); } catch (reason) { setError(reason instanceof Error ? reason.message : "Nie udało się wylogować."); } finally { setPending(false); } }
+  return <div className="sc-account-control">{account.data?.authenticated ? <><Link href="/konto" className="sc-account-control__name" title="Mój spin.clinic">Mój spin.clinic</Link>{account.data.user?.can_edit_threads ? <Link href="/editor" className="sc-account-control__name">{account.data.user?.is_staff ? "Zespół" : "Warsztat"}</Link> : null}<Button type="button" variant="quiet" size="sm" loading={pending} onClick={logout}>Wyloguj</Button></> : <Button type="button" variant="quiet" size="sm" disabled={account.isPending} onClick={() => setOpen(true)}>Zaloguj się</Button>}{error ? <span role="alert" className="sc-t-caption">{error}</span> : null}<AccountDialog open={open} onClose={() => setOpen(false)} /></div>;
 }

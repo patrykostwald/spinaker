@@ -10,6 +10,7 @@ import { AccountDialog } from './AccountDialog';
 import { Button, MorphList, Reveal, Switch, usePortalApi } from '../kit';
 import { PersonalizedNews } from './PersonalizedNews';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { FollowButton } from './FollowButton';
 
 type HistoryItem = { id: number; article_id: number; body: string; polarity: 'positive' | 'negative'; created_at: string };
 type HistoryPage = { results: HistoryItem[]; next_page: number | null };
@@ -103,11 +104,11 @@ export function AccountProfile() {
 }
 
 export function PublicAccountProfile({ username }: { username: string }) {
-  const history = useInfiniteQuery({ queryKey: ['public-profile', username], initialPageParam: 1, queryFn: ({ pageParam }) => apiFetch<{ username: string; history: HistoryPage }>(`/api/profiles/${encodeURIComponent(username)}/activity/?page=${pageParam}`), getNextPageParam: last => last.history.next_page ?? undefined, retry: false });
+  const history = useInfiniteQuery({ queryKey: ['public-profile', username], initialPageParam: 1, queryFn: ({ pageParam }) => apiFetch<{ id?: number; username: string; history: HistoryPage }>(`/api/profiles/${encodeURIComponent(username)}/activity/?page=${pageParam}`), getNextPageParam: last => last.history.next_page ?? undefined, retry: false });
   if (history.isPending) return <p role="status" className="sc-account-profile-empty">Ładuję publiczną historię…</p>;
   if (history.isError) return <section className="sc-account-profile-page sc-account-profile-signed-out"><p className="sc-account-profile-kicker">PROFIL UŻYTKOWNIKA</p><h1>Historia aktywności</h1><p>{history.error instanceof ApiError && history.error.status === 404 ? 'Ten profil nie udostępnia publicznej historii.' : 'Nie udało się pobrać publicznej historii.'}</p><Button href="/" variant="quiet">Wróć do wiadomości ↗</Button></section>;
   const rows = history.data.pages.flatMap(page => page.history.results);
-  return <section className="sc-account-profile-page sc-account-profile-public"><header className="sc-account-profile-header"><div><p className="sc-account-profile-kicker">PROFIL PUBLICZNY</p><h1>@{history.data.pages[0].username}</h1><p className="sc-account-profile-role">Historia udostępniona przez użytkownika</p></div><Button href="/" variant="quiet">Wiadomości ↗</Button></header><div className="sc-account-profile-public-content"><h2>Aktywność</h2><HistoryRows rows={rows} />{!rows.length && <p className="sc-account-profile-empty">Brak aktywności do wyświetlenia.</p>}{history.hasNextPage && <Button loading={history.isFetchingNextPage} variant="secondary" onClick={() => history.fetchNextPage()}>Wcześniejsza aktywność ↓</Button>}</div></section>;
+  return <section className="sc-account-profile-page sc-account-profile-public"><header className="sc-account-profile-header"><div><p className="sc-account-profile-kicker">PROFIL PUBLICZNY</p><h1>@{history.data.pages[0].username}</h1><p className="sc-account-profile-role">Historia udostępniona przez użytkownika</p></div><Button href="/" variant="quiet">Wiadomości ↗</Button></header><div className="sc-account-profile-public-content"><h2>Aktywność</h2>{history.data.pages[0].id && <FollowButton kind="user" targetId={history.data.pages[0].id} label={`@${username}`} />}<HistoryRows rows={rows} />{!rows.length && <p className="sc-account-profile-empty">Brak aktywności do wyświetlenia.</p>}{history.hasNextPage && <Button loading={history.isFetchingNextPage} variant="secondary" onClick={() => history.fetchNextPage()}>Wcześniejsza aktywność ↓</Button>}</div></section>;
 }
 
 

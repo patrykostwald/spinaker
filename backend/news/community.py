@@ -151,8 +151,8 @@ def _counts(thread_ids):
 
 def thread_summary(thread, counts):
     items = [item for item in thread.items.all() if not (item.link_id and item.link.hidden_at)]
-    return {'id': thread.pk, 'title': thread.title, 'description': thread.description,
-            'author': thread.owner.username, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
+    return {'id': thread.pk, 'title': thread.title, 'description': thread.description, 'topics': thread.topics,
+            'author': thread.owner.username, 'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
             'items_count': len(items), 'preview': [item_data(item) for item in items[:3]],
             'opinions': counts.get(thread.pk, {'positive': 0, 'negative': 0})}
 
@@ -173,11 +173,55 @@ def community_threads(request):
     author = request.query_params.get('author', '').strip()
     if author:
         rows = rows.filter(owner__username=author)
+    topic = request.query_params.get('topic', '').strip()
+    if topic:
+        from news.topics import TOPICS
+        if topic not in TOPICS:
+            return Response({'detail': 'Nieznany temat.'}, status=400)
+        # Indexed JSON lookups work on both SQLite (tests) and PostgreSQL.
+        topic_filter = Q()
+        for index in range(len(TOPICS)):
+            topic_filter |= Q(**{f'topics__{index}': topic})
+        rows = rows.filter(topic_filter)
+    context_filtered = False
+    for key in ('article_id', 'figure_id'):
+        value = request.query_params.get(key)
+        if value is not None:
+            if not value.isdigit() or int(value) < 1:
+                return Response({'detail': 'Nieprawidłowy identyfikator.'}, status=400)
+            context_filtered = True
+            if key == 'article_id':
+                rows = rows.filter(items__article_id=int(value))
+            else:
+                from news.political_models import PublicFigureArticleReference
+                articles = PublicFigureArticleReference.objects.filter(
+                    public_figure_id=int(value), verification_status='confirmed').values('article_id')
+                rows = rows.filter(items__article_id__in=articles)
+    url = request.query_params.get('url')
+    if url:
+        try:
+            canonical = canonical_url(url)
+        except ValueError:
+            return Response({'detail': 'Nieprawidłowy adres.'}, status=400)
+        context_filtered = True
+        base = find_article(url, canonical)
+        match = Q(items__link__canonical_url=canonical, items__link__hidden_at__isnull=True)
+        if base:
+            match |= Q(items__article_id=base.pk)
+        rows = rows.filter(match)
+    sort = request.query_params.get('sort', 'new')
+    if sort not in ('new', 'best'):
+        return Response({'detail': 'Nieznana kolejność.'}, status=400)
+    if sort == 'best':
+        rows = rows.annotate(positive_count=Count('opinions', filter=Q(opinions__polarity='positive'), distinct=True))
+        rows = rows.order_by('-positive_count', '-published_at', '-pk')
+    else:
+        rows = rows.order_by('-published_at', '-pk')
     size = 20
-    batch = list(rows.order_by('-published_at', '-pk')[(page - 1) * size:page * size + 1])
+    batch = list(rows.distinct()[(page - 1) * size:page * size + 1])
     counts = _counts([row.pk for row in batch])
     return Response({'results': [thread_summary(row, counts) for row in batch[:size]],
-                     'next_page': page + 1 if len(batch) > size else None})
+                     'next_page': page + 1 if len(batch) > size else None, 'context_filtered': context_filtered})
 
 
 @extend_schema(summary='Publiczna nitka czytelnika', tags=['nitki'], responses=OpenApiTypes.OBJECT)

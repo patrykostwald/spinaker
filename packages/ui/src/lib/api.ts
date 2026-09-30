@@ -1,8 +1,8 @@
 import type { Article, Paginated, ThreadDetail, ThreadListItem, TimelineResponse } from '../types';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? process.env.NEXT_PUBLIC_FRONTEND_DOMAIN ?? 'spin.clinic';
-export class ApiError extends Error { constructor(public status: number) {
-  super(status === 403 ? 'Brak dostępu. Zaloguj się ponownie.' : status === 404 ? 'Nie znaleziono materiału.' : status === 429 ? 'Zbyt wiele zapytań. Spróbuj ponownie za chwilę.' : 'Nie udało się połączyć z serwisem. Spróbuj ponownie.');
+export class ApiError extends Error { constructor(public status: number, message?: string) {
+  super(message ?? (status === 403 ? 'Brak dostępu. Zaloguj się ponownie.' : status === 404 ? 'Nie znaleziono materiału.' : status === 429 ? 'Zbyt wiele zapytań. Spróbuj ponownie za chwilę.' : 'Nie udało się połączyć z serwisem. Spróbuj ponownie.'));
 } }
 export async function apiFetch<T>(path: string): Promise<T> {
   const base = typeof window === 'undefined' ? API_URL : '';
@@ -34,8 +34,9 @@ export function getMe(): Promise<{ authenticated: boolean; is_editor: boolean; i
 }
 export { API_URL, DOMAIN };
 
-export class ApiValidationError extends Error {
-  constructor(message: string, public fields: Record<string, string> = {}) { super(message); }
+// Błąd zapisu z polami formularza; dziedziczy ApiError, żeby kod sprawdzający status (404 — funkcja jeszcze wyłączona) działał dalej.
+export class ApiValidationError extends ApiError {
+  constructor(message: string, public fields: Record<string, string> = {}, status = 400) { super(status, message); }
 }
 
 export async function apiWrite<T>(path: string, body: unknown, method = 'POST'): Promise<T> {
@@ -59,7 +60,7 @@ export async function apiWrite<T>(path: string, body: unknown, method = 'POST'):
       }
       message = explain(data) || message;
     } catch {}
-    throw new ApiValidationError(message, fields);
+    throw new ApiValidationError(message, fields, response.status);
   }
   return response.status === 204 ? undefined as T : response.json();
 }

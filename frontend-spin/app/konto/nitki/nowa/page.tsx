@@ -10,5 +10,6 @@ export const metadata: Metadata = {
 export default function NewPersonalThreadPage() {
   // Nitki czytelników wracają w fazie II (NEXT_PUBLIC_THREADS_ENABLED=true).
   if (process.env.NEXT_PUBLIC_THREADS_ENABLED !== 'true') redirect('/konto');
+  if (process.env.NEXT_PUBLIC_ACCOUNTS_ENABLED !== 'true') redirect('/');
   return <MojaNitkaEditor />;
 }

@@ -12,6 +12,7 @@ import { OpinionsPanel } from "../OpinionsPanel";
 import { AiTag, HowToRead, SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { clinicResultsUrl } from "../../lib/clinicNavigation";
+import { ContextThreadStrip } from '../ContextThreadStrip';
 
 export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDetailData; withSummary?: boolean }) {
   return <>
@@ -56,6 +57,7 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
     <p>Zasady publikacji i korekt: <Link href="/konsylium/karta">Karta Konsylium</Link>.</p>
     <p><ReportError spin={spin} /></p>
     <p className="sc-spin-detail__share"><ShareSpinOnX id={spin.id} spin={spin} /></p>
+    <ContextThreadStrip url={spin.post.url} />
   </>;
 }
 

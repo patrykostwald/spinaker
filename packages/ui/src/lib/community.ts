@@ -1,5 +1,5 @@
 /** Nitki czytelników — typy i zapytania do /api/community/ (backend/news/community.py). */
-import { apiFetch, apiWrite } from "./api";
+import { ApiError, apiFetch, apiWrite } from "./api";
 
 export type ThreadElement =
   | { kind: "article"; id: number; title: string; url: string; category: string; published_date: string | null; source_name: string; note: string; position: number }
@@ -10,6 +10,8 @@ export type CommunityThreadSummary = {
   title: string;
   description: string;
   author: string;
+  author_id?: number;
+  topics?: string[];
   published_at: string | null;
   updated_at: string;
   items_count: number;
@@ -21,11 +23,12 @@ export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElem
 
 export type ResolvedLink = { item: Omit<ThreadElement, "note" | "position">; status: "in_base" | "existing_link" | "created" };
 
-export const getCommunityThreads = (page = 1, q = "", author = "") => {
+export const getCommunityThreads = (page = 1, q = "", author = "", options: { sort?: 'new' | 'best'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
   const params = new URLSearchParams({ page: String(page) });
   if (q) params.set("q", q);
   if (author) params.set("author", author);
-  return apiFetch<{ results: CommunityThreadSummary[]; next_page: number | null }>(`/api/community/threads/?${params}`);
+  Object.entries(options).forEach(([key, value]) => { if (value) params.set(key, String(value)); });
+  return apiFetch<{ results: CommunityThreadSummary[]; next_page: number | null; context_filtered?: boolean }>(`/api/community/threads/?${params}`);
 };
 export const getCommunityThread = (id: number | string) => apiFetch<CommunityThreadDetail>(`/api/community/threads/${id}/`);
 /** Link do nitki. `needsTitle` — strona nie podała tytułu, czytelnik musi go przepisać. */
@@ -40,7 +43,7 @@ export async function resolveLink(url: string, title = ""): Promise<ResolvedLink
   if (response.status === 422 && data.needs_title) return { needsTitle: true, message: data.detail };
   if (!response.ok) {
     const detail = data.detail || data.url?.[0] || data.title?.[0];
-    throw new Error(typeof detail === "string" ? detail : "Nie udało się dodać linku.");
+    throw new ApiError(response.status, typeof detail === "string" ? detail : "Nie udało się dodać linku.");
   }
   return data as ResolvedLink;
 }
