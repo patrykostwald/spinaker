@@ -17,6 +17,12 @@ from news.models import ImportState
 from news.political_models import PoliticalAccount, PoliticalPost
 
 
+@pytest.fixture(autouse=True)
+def no_credit_network():
+    with patch('news.admin_finance.openrouter_balance', return_value={'balance': 'unknown', 'checked_at': 'unknown'}):
+        yield
+
+
 @pytest.mark.django_db
 def test_anonymous_and_regular_user_cannot_read_status():
     client = APIClient()
@@ -42,8 +48,11 @@ def test_staff_snapshot_shape_and_recorded_failures():
     assert response.status_code == 200
     assert 'no-store' in response['Cache-Control']
     sections = {s['title']: s for s in response.data['sections']}
-    assert len(sections) == 13
-    assert {"Pobieranie materiałów", "Kolejki"} <= set(sections)
+    assert len(sections) == 18
+    assert {"Pobieranie i czytanie", "Kolejki", "AI i koszty", "Agenci", "YouTube"} <= set(sections)
+    assert len(response.data['wallets']) == 6
+    assert len(response.data['series']) == 3
+    assert len(response.data['kpis']) == 4
     assert sections['Źródła / harvestery']['status'] == 'error'
     assert sections['Konsylium']['status'] == 'error'
     assert any('402 — brak środków' in r['description'] for r in sections['Konsylium']['items'])
@@ -101,7 +110,7 @@ def test_warsaw_day_boundaries_and_diagnosis_errors_last_24h():
     assert sections['X — pobieranie wpisów']['metrics'][:2] == [status.metric('Dziś', 1), status.metric('Wczoraj', 1)]
     errors = [i for i in sections['Diagnozy']['items'] if i['title'] == 'Błąd diagnozy (24 h)']
     assert len(errors) == 1
-    assert errors[0]['description'] == 'recent'
+    assert errors[0]['description'] == status.safe_error('recent')
     assert errors[0]['metrics'] == [status.metric('Liczba', 2)]
 
 

@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import newsletter
 from news.admin_status import admin_status
+from news.admin_finance import admin_wallets
 from news.social_publish import serve_video
 from news.views import source_coverage, archive_status, health, me, google_news, patronite_webhook, editorial_status
 from news.auth_views import csrf, sign_in, sign_out
@@ -34,6 +35,7 @@ router.register(r"threads", ThreadViewSet, basename="threads")
 
 urlpatterns = [
     path('admin/status/', admin_status),
+    path('admin/wallets/', admin_wallets),
     path('', include('news.account_urls')),
     path('staff/political/', include('news.political_urls')),
     path('feed/', feed),

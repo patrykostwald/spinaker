@@ -1,4 +1,4 @@
-"""Staff-only snapshot: database, cache and local OS; no outbound probes or AI."""
+"""Staff-only snapshot. Never call models; credit refresh is off the request path."""
 import os
 import shutil
 from datetime import datetime, timedelta, time
@@ -20,6 +20,7 @@ from news.models import ArchiveJob, Article, FetchRequest, ImportState, Source
 from news.newsletter_models import NewsletterSubscriber
 from news.political_models import PoliticalPost
 from news.task_heartbeat import cadence
+from news.admin_telemetry import safe_error
 
 
 def metric(label, value):
@@ -33,6 +34,46 @@ def card(title, status='unknown', description='Brak danych.', last_event=None, m
 
 def worst(items):
     return next((s for s in ('error', 'warn', 'unknown') if any(i['status'] == s for i in items)), 'ok') if items else 'unknown'
+
+
+def local_times(value):
+    if isinstance(value, datetime):
+        return value.astimezone(ZoneInfo('Europe/Warsaw')).isoformat() if timezone.is_aware(value) else 'unknown'
+    if isinstance(value, dict):
+        return {key: local_times(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [local_times(item) for item in value]
+    if isinstance(value, str) and len(value) > 10 and value[10] == 'T':
+        try:
+            parsed = parse_datetime(value)
+            if parsed:
+                return local_times(parsed)
+        except ValueError:
+            pass
+    return value
+
+
+def actions(sections, wallets):
+    result = []
+    def visit(row, section):
+        if row['status'] not in ('error', 'warn'):
+            return
+        children = [child for child in row['items'] if child['status'] in ('error', 'warn')]
+        if children:
+            for child in children:
+                visit(child, section)
+            return
+        note = row['description']
+        title = (f"Doładuj {row['title']} — 402" if '402' in note else
+                 f"Sprawdź {row['title']}")
+        result.append({'title': title, 'status': row['status'], 'detail': note, 'section': section})
+    for section in sections:
+        visit(section, section['title'])
+    for wallet in wallets:
+        if wallet['status'] in ('error', 'warn'):
+            result.append({'title': f"Sprawdź saldo / doładuj {wallet['label']}", 'status': wallet['status'],
+                           'detail': wallet['note'], 'section': 'Portfele'})
+    return sorted(result, key=lambda row: row['status'] != 'error')
 
 
 def server(now):
@@ -101,7 +142,7 @@ def diagnoses(title, field, today, yesterday, tomorrow, now):
     # no separate error history; its status is later overwritten by diagnosis.
     errors = list(query.filter(diagnosed_at__gte=now - timedelta(hours=24), diagnosed_at__lte=now).exclude(error='').order_by()
                   .values('error').annotate(count=Count('pk'), last=Max('diagnosed_at')).order_by('-count', 'error')[:5]) if field == 'diagnosed_at' else []
-    rows += [card('Błąd diagnozy (24 h)', 'error', r['error'], r['last'], [metric('Liczba', r['count'])]) for r in errors]
+    rows += [card('Błąd diagnozy (24 h)', 'error', safe_error(r['error']), r['last'], [metric('Liczba', r['count'])]) for r in errors]
     totals = daily_counts(query, field, today, yesterday, tomorrow)
     description = ('Obecne statusy rekordów przesiewu; status po diagnozie zastępuje status strażnika. Historia błędów strażnika: brak danych.'
                    if field == 'created_at' else 'Diagnozy według czasu ostatniej próby. Najczęstsze zapisane błędy z ostatnich 24 h; ponowienia nadpisują wcześniejszy wynik.')
@@ -117,24 +158,25 @@ def interview():
     stages = {'queued': 'W kolejce', 'approved': 'Opublikowany', 'failed': 'Błąd', 'pending_review': 'W toku: transkrypcja albo diagnoza', 'not_applicable': 'Bez treści do oceny', 'rejected': 'Odrzucony'}
     stage = 'Ukryty' if row.hidden_at else stages.get(row.status, 'unknown')
     return card('Wywiad dnia', 'error' if row.status == 'failed' else 'ok' if stage == 'Opublikowany' else 'warn',
-                row.error or 'Najnowszy wybrany materiał. Dokładny etap pracy w toku nie jest rejestrowany.', row.diagnosed_at or row.created_at,
+                safe_error(row.error) or 'Najnowszy wybrany materiał. Dokładny etap pracy w toku nie jest rejestrowany.', row.diagnosed_at or row.created_at,
                 [metric('Tytuł', row.title), metric('Kanał', row.channel), metric('Dzień emisji', row.day), metric('Etap', stage)])
 
 
 def council():
     from news.council_charter import roster
     from news.council_recruiter import auto_mode
+    from news.council_registry import limit_key, daily_limit
     seats = {(s.provider, s.model): s for s in CouncilSeat.objects.all()}
     rows = []
     for member in roster():
         seat = seats.get((member['provider'], member['model']))
-        error = seat.last_error if seat else ''
-        if '402' in error:
-            error = '402 — brak środków / wymagana płatność u dostawcy. ' + error
+        error = safe_error(seat.last_error) if seat else ''
         state = 'error' if error else 'ok' if member['status'] == 'dostępny' else 'warn'
         rows.append(card(f"{member['provider']} · {member['model']}", state, member['status'] + (f' · {error}' if error else ''),
                          max(filter(None, (seat.last_ok_at, seat.suspended_at, seat.admitted_at)), default=None) if seat else None,
-                         [metric('Czas ostatniego błędu', None)] if error else []))
+                         [metric('Próby dziś (dzień UTC)', cache.get(limit_key((member['provider'], member['model'])))),
+                          metric('Limit dzienny', daily_limit((member['provider'], member['model'])))] +
+                         ([metric('Czas ostatniego błędu', None)] if error else [])))
     recent = list(CouncilRecruitment.objects.order_by('-created_at', '-pk').values('provider', 'model', 'decision', 'mode', 'created_at')[:5])
     recruitments = [card(f"{r['provider']} · {r['model']}", 'ok', f"Decyzja: {r['decision']} · tryb: {r['mode']}", r['created_at']) for r in recent]
     return [card('Konsylium', worst(rows), 'Dostępność z konfiguracji i lokalnych limitów; bez odpytywania modeli.',
@@ -148,7 +190,7 @@ def social(today, tomorrow):
     for platform, label in SOCIAL_PLATFORMS:
         post = SocialPost.objects.filter(platform=platform).order_by('-posted_at', '-pk').values('posted_at', 'error', 'deleted_at', 'external_id').first()
         rows.append(card(label, 'error' if post and post['error'] else 'ok' if post else 'unknown',
-                         post['error'] or ('Usunięty' if post['deleted_at'] else f"Ostatni wpis: {post['external_id'] or 'brak identyfikatora'}") if post else 'Brak wpisów.',
+                         safe_error(post['error']) or ('Usunięty' if post['deleted_at'] else f"Ostatni wpis: {post['external_id'] or 'brak identyfikatora'}") if post else 'Brak wpisów.',
                          post['posted_at'] if post else None))
     x = SpinDiagnosis.objects.aggregate(last=Max('x_posted_at'), today=Count('pk', filter=Q(x_posted_at__gte=today, x_posted_at__lt=tomorrow)))
     rows.append(card('X', 'ok' if x['last'] else 'unknown', 'Liczba opublikowanych wątków diagnoz (nie pojedynczych tweetów).', x['last'], [metric('Dziś', x['today'])]))
@@ -196,7 +238,7 @@ def sources():
     rss = Source.objects.filter(source_type='rss').aggregate(
         active=Count('pk', filter=Q(is_active=True, scrape_enabled=True)),
         blocked=Count('pk', filter=Q(is_active=False) | Q(scrape_enabled=False)), errors=Count('pk', filter=~Q(last_error='')), last=Max('last_scraped'))
-    rows = [card(r['name'], 'error' if r['last_error'] else 'ok' if r['last_success'] else 'unknown', r['last_error'] or 'Stan zapisany przez importer.',
+    rows = [card(r['name'], 'error' if r['last_error'] else 'ok' if r['last_success'] else 'unknown', safe_error(r['last_error']) or 'Stan zapisany przez importer.',
                  r['last_started'] or r['last_success'], [metric('Ostatni sukces', r['last_success']), metric('Zaimportowano', r['imported'])]) for r in states]
     return card('Źródła / harvestery', 'warn' if rss['errors'] and worst(rows) != 'error' else worst(rows),
                 'Liczba bieżących stanów z błędem; brak historycznego licznika błędów. RSS zablokowane = wyłączone źródło lub pobieranie.',
@@ -222,34 +264,35 @@ def admin_status(request):
             sections.append(card(title, description='Nie udało się odczytać stanu.'))
     collect('Serwer (VPS)', lambda: server(now))
     collect('Zadania w tle', lambda: tasks(now))
-    def posts():
-        import os
-        data = daily_counts(PoliticalPost.objects.all(), 'fetched_at', today, yesterday, tomorrow)
-        state = ImportState.objects.filter(name='political-x-budget').first()
-        budget = dict(state.cursor) if state else {}
-        limit = os.environ.get('X_POLITICAL_MONTHLY_USD_LIMIT', '5')
-        spent = budget.get('spent_upper_usd')
-        blocked = budget.get('blocked_until', '') > now.isoformat()
-        near = spent is not None and float(spent) >= float(limit) * 0.95
-        status = 'error' if blocked or (state and state.last_error) else 'warn' if near or not data['today'] else 'ok'
-        note = ('Wstrzymane: X odrzuca zapytania (np. brak środków na koncie X) — wznowi się samo.' if blocked else
-                'Miesięczny limit wydatków prawie wyczerpany — pobieranie stanie do nowego miesiąca albo podniesienia limitu.' if near else
-                'Wpisy polityków z oficjalnego API X według czasu pobrania.')
-        return card('X — pobieranie wpisów', status, note, data['last'], [
-            metric('Dziś', data['today']), metric('Wczoraj', data['yesterday']),
-            metric('Zapytania dziś', budget.get('daily_requests')), metric('Wydane w miesiącu (USD, górny szacunek)', spent),
-            metric('Limit miesięczny (USD)', limit), metric('Ostatni błąd', (state.last_error if state else None) or 'brak')])
-    collect('X — pobieranie wpisów', posts)
     collect('Strażnik', lambda: diagnoses('Strażnik', 'created_at', today, yesterday, tomorrow, now))
     collect('Diagnozy', lambda: diagnoses('Diagnozy', 'diagnosed_at', today, yesterday, tomorrow, now))
     collect('Wywiad dnia', interview)
     collect('Konsylium / Rekruter', council)
     collect('Media społecznościowe', lambda: social(today, tomorrow))
-    collect('Pobieranie materiałów', lambda: intake(today, yesterday, tomorrow))
     collect('Kolejki', lambda: queues(now))
     collect('Źródła / harvestery', sources)
     def newsletter():
         data = NewsletterSubscriber.objects.filter(status='confirmed').aggregate(count=Count('pk'), last=Max('confirmed_at'))
         return card('Newsletter', 'ok', 'Potwierdzone zapisy.', data['last'], [metric('Zapisy', data['count'])])
     collect('Newsletter', newsletter)
-    return Response({'generated_at': now, 'sections': sections})
+    from news.admin_telemetry import extended_sections, telemetry_series, kpis_from_sections
+    from news.admin_finance import finance_snapshot
+    sections.extend(extended_sections(now, today, yesterday, tomorrow))
+    try:
+        series = telemetry_series(today, tomorrow)
+    except Exception:
+        series = [{'key': key, 'label': label, 'points': [
+            {'date': (local_day - timedelta(days=d)).isoformat(), 'value': 'unknown'} for d in range(6, -1, -1)]}
+            for key, label in (('intake', 'Pobrane materiały'), ('diagnoses', 'Próby diagnoz'))]
+    kpis = kpis_from_sections(sections)
+    wallets = []
+    try:
+        finance = finance_snapshot(now, today)
+        sections.append(finance['section'])
+        series.append(finance['series'])
+        kpis.append(finance['kpi'])
+        wallets = finance['wallets']
+    except Exception:
+        sections.append(card('AI i koszty', description='Nie udało się odczytać kosztów i portfeli.'))
+    return Response(local_times({'generated_at': now, 'sections': sections, 'series': series,
+                                'kpis': kpis, 'wallets': wallets, 'actions': actions(sections, wallets)}))
