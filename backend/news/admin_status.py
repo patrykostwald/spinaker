@@ -16,7 +16,7 @@ from rest_framework.response import Response
 
 from news.clinic_models import (ClinicInterview, CouncilRecruitment, CouncilSeat,
                                SocialPost, SpinDiagnosis, SOCIAL_PLATFORMS)
-from news.models import ImportState, Source
+from news.models import ArchiveJob, Article, FetchRequest, ImportState, Source
 from news.newsletter_models import NewsletterSubscriber
 from news.political_models import PoliticalPost
 from news.task_heartbeat import cadence
@@ -156,6 +156,41 @@ def social(today, tomorrow):
                 max((r['last_event'] for r in rows if r['last_event'] != 'unknown'), default=None), items=rows)
 
 
+INGESTION_LABELS = {'rss': 'RSS', 'gdelt': 'GDELT', 'newsapi': 'NewsAPI', 'x': 'X (materiały)', 'sejm': 'API Sejmu',
+                    'eli': 'ELI (akty prawne)', 'archive': 'Archiwa wydawców', 'youtube': 'YouTube', 'manual': 'Ręcznie'}
+
+
+def intake(today, yesterday, tomorrow):
+    """Ile materiałów weszło do bazy dziś i wczoraj — osobno z każdego źródła pobierania."""
+    rows = []
+    for method, label in INGESTION_LABELS.items():
+        data = daily_counts(Article.objects.filter(ingestion_method=method), 'scraped_at', today, yesterday, tomorrow)
+        if not (data['today'] or data['yesterday'] or data['last']):
+            continue
+        rows.append(card(label, 'ok' if data['today'] else 'warn' if data['yesterday'] else 'unknown',
+                         'Nowe materiały według czasu zapisu w bazie.', data['last'],
+                         [metric('Dziś', data['today']), metric('Wczoraj', data['yesterday'])]))
+    total = daily_counts(Article.objects.all(), 'scraped_at', today, yesterday, tomorrow)
+    return card('Pobieranie materiałów', 'ok' if total['today'] else 'warn', 'Materiały ze wszystkich harvesterów; szczegóły dla każdego źródła poniżej.',
+                total['last'], [metric('Dziś razem', total['today']), metric('Wczoraj razem', total['yesterday']),
+                               metric('W bazie', Article.objects.count())], rows)
+
+
+def queues(now):
+    """Kolejki pracy: archiwa wydawców, pobrania w toku, wpisy czekające na strażnika i diagnozę."""
+    jobs = ArchiveJob.objects.aggregate(pending=Count('pk', filter=Q(status='pending')), ready=Count('pk', filter=Q(status='pending', available_at__lte=now)),
+                                        failed=Count('pk', filter=Q(status='failed')), done_24h=Count('pk', filter=Q(checked_at__gte=now - timedelta(hours=24))))
+    reserved = FetchRequest.objects.filter(state='reserved').count()
+    clinic = SpinDiagnosis.objects.aggregate(queued=Count('pk', filter=Q(status='queued')), review=Count('pk', filter=Q(status='pending_review')),
+                                             failed_24h=Count('pk', filter=Q(status='failed', diagnosed_at__gte=now - timedelta(hours=24))))
+    status = 'warn' if jobs['failed'] > 50 or clinic['failed_24h'] > 5 else 'ok'
+    return card('Kolejki', status, 'Co czeka na przetworzenie. Diagnozy robią się w dzień (7:00–23:00).', now, [
+        metric('Archiwa: w kolejce', jobs['pending']), metric('Archiwa: gotowe teraz', jobs['ready']),
+        metric('Archiwa: sprawdzone w 24 h', jobs['done_24h']), metric('Archiwa: nieudane', jobs['failed']),
+        metric('Pobrania w toku', reserved), metric('Wpisy czekające na diagnozę', clinic['queued']),
+        metric('Diagnozy do przeglądu', clinic['review']), metric('Nieudane diagnozy (24 h)', clinic['failed_24h'])])
+
+
 def sources():
     states = list(ImportState.objects.order_by('name').values('name', 'last_success', 'last_started', 'last_error', 'imported'))
     rss = Source.objects.filter(source_type='rss').aggregate(
@@ -188,16 +223,30 @@ def admin_status(request):
     collect('Serwer (VPS)', lambda: server(now))
     collect('Zadania w tle', lambda: tasks(now))
     def posts():
+        import os
         data = daily_counts(PoliticalPost.objects.all(), 'fetched_at', today, yesterday, tomorrow)
-        return card('X — pobieranie wpisów', 'ok' if data['today'] else 'warn' if data['last'] else 'unknown',
-                    'Zapisane posty polityków według czasu pobrania; brak nowych postów nie przesądza o awarii.', data['last'],
-                    [metric('Dziś', data['today']), metric('Wczoraj', data['yesterday'])])
+        state = ImportState.objects.filter(name='political-x-budget').first()
+        budget = dict(state.cursor) if state else {}
+        limit = os.environ.get('X_POLITICAL_MONTHLY_USD_LIMIT', '5')
+        spent = budget.get('spent_upper_usd')
+        blocked = budget.get('blocked_until', '') > now.isoformat()
+        near = spent is not None and float(spent) >= float(limit) * 0.95
+        status = 'error' if blocked or (state and state.last_error) else 'warn' if near or not data['today'] else 'ok'
+        note = ('Wstrzymane: X odrzuca zapytania (np. brak środków na koncie X) — wznowi się samo.' if blocked else
+                'Miesięczny limit wydatków prawie wyczerpany — pobieranie stanie do nowego miesiąca albo podniesienia limitu.' if near else
+                'Wpisy polityków z oficjalnego API X według czasu pobrania.')
+        return card('X — pobieranie wpisów', status, note, data['last'], [
+            metric('Dziś', data['today']), metric('Wczoraj', data['yesterday']),
+            metric('Zapytania dziś', budget.get('daily_requests')), metric('Wydane w miesiącu (USD, górny szacunek)', spent),
+            metric('Limit miesięczny (USD)', limit), metric('Ostatni błąd', (state.last_error if state else None) or 'brak')])
     collect('X — pobieranie wpisów', posts)
     collect('Strażnik', lambda: diagnoses('Strażnik', 'created_at', today, yesterday, tomorrow, now))
     collect('Diagnozy', lambda: diagnoses('Diagnozy', 'diagnosed_at', today, yesterday, tomorrow, now))
     collect('Wywiad dnia', interview)
     collect('Konsylium / Rekruter', council)
     collect('Media społecznościowe', lambda: social(today, tomorrow))
+    collect('Pobieranie materiałów', lambda: intake(today, yesterday, tomorrow))
+    collect('Kolejki', lambda: queues(now))
     collect('Źródła / harvestery', sources)
     def newsletter():
         data = NewsletterSubscriber.objects.filter(status='confirmed').aggregate(count=Count('pk'), last=Max('confirmed_at'))
