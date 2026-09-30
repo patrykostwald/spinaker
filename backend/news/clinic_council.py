@@ -255,11 +255,32 @@ def _quoted(text: str, quote: str) -> bool:
     return bool(quote) and clinic_ai._normalize(quote) in clinic_ai._normalize(text)
 
 
+def _normalize_opinion(raw):
+    """Drobne różnice formatu między modelami (np. Nemotron): siła jako tekst albo ułamek, werdykt wielkimi literami,
+    brak pustych list. Treść oceny bez zmian — ujednolicamy tylko typy."""
+    if not isinstance(raw, dict):
+        return raw
+    raw = dict(raw)
+    if isinstance(raw.get('verdict'), str):
+        raw['verdict'] = raw['verdict'].strip().lower().replace(' ', '_').replace('-', '_')
+    value = raw.get('intensity')
+    if isinstance(value, str):
+        match = re.search(r'\d+(?:[.,]\d+)?', value)
+        value = float(match.group().replace(',', '.')) if match else value
+    if isinstance(value, float) and not isinstance(value, bool):
+        value = int(round(value))
+    raw['intensity'] = value
+    for key in ('techniques', 'claims'):
+        if raw.get(key) is None:
+            raw[key] = []
+    return raw
+
+
 def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dict | None:
     started = time.monotonic()
     try:
         # Groq wlicza zarezerwowaną długość odpowiedzi do limitu na minutę — krótko; NVIDIA myśli dłużej przed JSON-em.
-        raw = ask(member, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=1500 if member[0] == 'groq' else 4000)
+        raw = _normalize_opinion(ask(member, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=1500 if member[0] == 'groq' else 4000))
         if (not isinstance(raw, dict) or raw.get('verdict') not in (*VERDICT_SCORE, 'unclear') or
                 type(raw.get('intensity')) is not int or not 0 <= raw['intensity'] <= 100 or
                 not isinstance(raw.get('techniques'), list) or not isinstance(raw.get('claims'), list)):

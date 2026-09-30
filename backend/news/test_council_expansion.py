@@ -476,3 +476,9 @@ def test_gemini_thought_parts_are_skipped(monkeypatch):
     monkeypatch.setattr(clinic_ai.requests, 'post', lambda *a, **k: Mock(status_code=200, json=lambda: payload))
     response = clinic_ai._call_gemini('s', 'u', {'type': 'object'}, web_search=True)
     assert clinic_ai._json_from_text(response.content)['claims'][0]['claim'] == 'x'
+
+
+def test_opinion_format_differences_are_normalized():
+    raw = council._normalize_opinion({'verdict': 'Partial', 'intensity': '45/100', 'techniques': None, 'claims': []})
+    assert raw['verdict'] == 'partial' and raw['intensity'] == 45 and raw['techniques'] == []
+    assert council._normalize_opinion({'verdict': 'no-spin', 'intensity': 12.6, 'techniques': [], 'claims': []})['intensity'] == 13
