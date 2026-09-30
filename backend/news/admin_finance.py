@@ -99,8 +99,16 @@ def recorded_events(start, now):
         events.append((row['started_at'], 'openai', None, 1))
     # Each reservation is an upper bound, even on an error/unknown outcome.
     # Settled user-resource counts are not stored, so do not invent a net bill.
-    for row in bounded_rows(PoliticalRead.objects.filter(started_at__gte=start, started_at__lte=now).values('started_at', 'reserved_usd')):
-        events.append((row['started_at'], 'x', float(row['reserved_usd']), 1))
+    from news.political_polling import POST_PRICE, USER_PRICE
+    for row in bounded_rows(PoliticalRead.objects.filter(started_at__gte=start, started_at__lte=now)
+                            .values('started_at', 'reserved_usd', 'status', 'returned_posts')):
+        if row['status'] == 'ok' and row['returned_posts'] is not None:
+            # Rozliczony odczyt: wpisy × cena + autor (jak w budżecie X). Rezerwacja na 100 wpisów zawyżała koszt kilkadziesiąt razy.
+            posts = int(row['returned_posts'])
+            cost = float(POST_PRICE * posts + (USER_PRICE if posts else 0))
+        else:
+            cost = float(row['reserved_usd'])  # w toku albo błąd — górny szacunek jak w budżecie
+        events.append((row['started_at'], 'x', cost, 1))
     return events
 
 
@@ -234,7 +242,7 @@ def wallet_snapshot(entries, events, now, actual, history_complete=True, signals
                 if entry.currency != 'USD':
                     row['note'] += f' Wydatki przeliczone kursem 1 USD = {fx} {entry.currency} (WALLET_USD_{entry.currency}).'
                 if provider == 'x':
-                    row['note'] = 'Od salda odejmujemy górny szacunek: pełne rezerwacje PoliticalRead (także nieudane). Dni według ostatnich 7×24 h.'
+                    row['note'] = 'Od salda odejmujemy rozliczony koszt odczytów (0,005 USD za wpis + autor); odczyty z błędem liczone pełną rezerwacją. Dni według ostatnich 7×24 h.'
                 if provider == 'gemini':
                     # KRS only stores daily totals, so spending before/after
                     # an intraday balance observation cannot be apportioned.

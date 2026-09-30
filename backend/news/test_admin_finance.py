@@ -195,3 +195,11 @@ def test_pln_wallet_is_estimated_with_fixed_rate(monkeypatch):
     wallet = {w['provider']: w for w in finance.wallet_snapshot({'gemini': entry}, events, NOW, {'balance': 'unknown', 'checked_at': 'unknown'})}['gemini']
     assert wallet['spent_since'] == 8.0 and wallet['estimated_balance'] == 74.0
     assert wallet['days_remaining'] == round(74 / (8 / 7), 1)
+
+
+def test_x_settled_reads_cost_posts_not_full_reservation():
+    account = PoliticalAccount.objects.create(user_id='491', handle='x050')
+    PoliticalRead.objects.create(account=account, started_at=NOW - timedelta(hours=2), reserved_usd='0.51', reserved_posts=100, status='ok', returned_posts=3)
+    PoliticalRead.objects.create(account=account, started_at=NOW - timedelta(hours=1), reserved_usd='0.51', reserved_posts=100, status='ok', returned_posts=0)
+    costs = [e[2] for e in finance.recorded_events(NOW - timedelta(days=1), NOW) if e[1] == 'x']
+    assert sorted(costs) == [0.0, 0.025]
