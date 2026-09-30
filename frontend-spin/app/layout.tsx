@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
-import { SiteHeader, SupportBar, TouchScrollGuard, siteNavigation } from "@spin-clinic/ui";
+import { APP_ENABLED, SiteHeader, SupportBar, TouchScrollGuard, siteNavigation } from "@spin-clinic/ui";
 import { SiteFooter } from "@spin-clinic/ui/kit";
 
 import "./globals.css";
@@ -42,15 +42,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <SiteHeader site={site} />
           <TouchScrollGuard />
-          <PwaControls />
+          {APP_ENABLED && <PwaControls />}
           <main id="main-content" className="sc-app-main">{children}</main>
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
             cta={{ label: "Wesprzyj projekt", href: "/wsparcie" }}
-            columns={[...siteNavigation.footer, { title: 'Aplikacja', links: [
+            columns={APP_ENABLED ? [...siteNavigation.footer, { title: 'Aplikacja', links: [
               { label: 'Zainstaluj aplikację', href: '#zainstaluj-aplikacje' },
               ...(process.env.NEXT_PUBLIC_PUSH_ENABLED === 'true' ? [{ label: 'Powiadomienia', href: '#powiadomienia' }] : []),
-            ] }]}
+            ] }] : siteNavigation.footer}
             above={<SupportBar />}
             sticky
           />
