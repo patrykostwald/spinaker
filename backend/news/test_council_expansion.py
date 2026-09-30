@@ -396,3 +396,30 @@ def test_council_usage_is_priced_by_fact_check_model_not_opus():
     assert old == cost_usd({**tokens, 'model': 'gemini-3.8-flash'})
     claude = cost_usd({**tokens, 'model': 'konsylium: gpt-oss-20b', 'check_model': 'claude-sonnet-5'})
     assert claude == cost_usd({**tokens, 'model': 'claude-sonnet-5'}) < cost_usd({**tokens, 'model': 'claude-opus'})
+
+
+def test_free_fact_check_uses_only_search_result_sources(monkeypatch):
+    monkeypatch.setenv('GROQ_API_KEY', 'g')
+    monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    cache.clear()
+    content = json.dumps({'claims': [{'claim': 'PKB wzrósł o 3%', 'assessment': 'supported', 'explanation': 'GUS.',
+                                      'sources': [{'url': 'https://stat.gov.pl/pkb', 'title': 'GUS'},
+                                                  {'url': 'https://zmyslone.pl/x', 'title': 'x'}]}]})
+    payload = {'choices': [{'message': {'content': content, 'executed_tools': [
+        {'type': 'search', 'search_results': {'results': [{'title': 'GUS — PKB', 'url': 'https://stat.gov.pl/pkb'}]}}]}}],
+        'usage': {'total_tokens': 900}}
+    monkeypatch.setattr(council.requests, 'post', lambda *a, **k: Mock(status_code=200, json=lambda: payload))
+    monkeypatch.setattr(council, 'claude_check', lambda claims: (_ for _ in ()).throw(AssertionError('paid path')))
+    claims, usage = council.check_claims(['PKB wzrósł o 3%'])
+    assert claims[0]['assessment'] == 'supported' and [s['url'] for s in claims[0]['sources']] == ['https://stat.gov.pl/pkb']
+    assert usage['free'] is True and usage['input_tokens'] == 0
+
+
+def test_free_fact_check_without_sources_falls_through(monkeypatch):
+    monkeypatch.setenv('GROQ_API_KEY', 'g')
+    monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    cache.clear()
+    payload = {'choices': [{'message': {'content': json.dumps({'claims': [{'claim': 'x', 'assessment': 'true', 'sources': []}]})}}]}
+    monkeypatch.setattr(council.requests, 'post', lambda *a, **k: Mock(status_code=200, json=lambda: payload))
+    monkeypatch.setattr(council, 'claude_check', lambda claims: ([{'claim': 'x', 'assessment': 'false', 'sources': []}], {'model': 'claude'}))
+    assert council.check_claims(['x'])[1] == {'model': 'claude'}

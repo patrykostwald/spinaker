@@ -314,8 +314,43 @@ def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
             return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
         except ClinicAIError as error:
             logger.warning('council fact check (Gemini) failed: %s', error.code)
-    return claude_check(claims) or ([{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.',
-                                      'sources': []} for c in claims], {})
+    return free_check(claims) or claude_check(claims) or ([{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.',
+                                                         'sources': []} for c in claims], {})
+
+
+FREE_CHECK = ('groq', 'groq/compound')  # darmowy Groq z wbudowaną wyszukiwarką; model w CLINIC_FREE_CHECK_MODEL
+
+
+def free_check(claims: list[str]) -> tuple[list[dict], dict] | None:
+    """Darmowe sprawdzenie faktów (Groq Compound z wyszukiwarką), gdy płatne Gemini nie działa. Źródła tylko z wyników
+    wyszukiwania; gdy żadne twierdzenie nie ma źródła — None (próbuje następny sposób)."""
+    member = ('groq', os.environ.get('CLINIC_FREE_CHECK_MODEL', '').strip() or FREE_CHECK[1])
+    if not registry.configured(member) or not registry.reserve(member):
+        return None
+    body = {'model': member[1], 'temperature': 0.1, 'max_tokens': 4000, 'messages': [
+        {'role': 'system', 'content': CHECK_SYSTEM + '\nSchemat JSON odpowiedzi:\n' + json.dumps(CHECK_SCHEMA, ensure_ascii=False)},
+        {'role': 'user', 'content': '\n'.join(f'- {c}' for c in claims)}]}
+    try:
+        response = requests.post(registry.endpoint('groq'), json=body, timeout=(5, 120),
+                                 headers={'Authorization': f"Bearer {registry.credentials('groq')}"})
+        if response.status_code >= 400:
+            raise ClinicAIError(f'groq: http_{response.status_code}')
+        message = response.json()['choices'][0]['message']
+        found = {}
+        for tool in message.get('executed_tools') or []:
+            results = (tool.get('search_results') or {}).get('results') or []
+            for item in results:
+                if isinstance(item, dict) and str(item.get('url', '')).startswith('http'):
+                    found[item['url']] = str(item.get('title') or item['url'])[:300]
+        checked = _checked(_json(message.get('content') or ''), found)
+    except (ClinicAIError, requests.RequestException, KeyError, IndexError, ValueError, TypeError) as error:
+        logger.warning('council fact check (free) failed: %s', getattr(error, 'code', type(error).__name__))
+        return None
+    if not checked or check_failed(checked):
+        return None
+    usage = response.json().get('usage') or {}
+    return checked, {'model': member[1], 'free': True, 'input_tokens': 0, 'output_tokens': 0,
+                     'reported_tokens': int(usage.get('total_tokens') or 0)}
 
 
 UNCHECKED = 'Nie sprawdzono w wyszukiwarce — twierdzenie niezweryfikowane.'
