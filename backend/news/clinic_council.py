@@ -225,10 +225,9 @@ def _ask_gemini(model: str, system: str, user: str, schema: dict, max_tokens: in
     body = {'systemInstruction': {'parts': [{'text': system}]},
             'contents': [{'role': 'user', 'parts': [{'text': user[:12000]}]}],
             'generationConfig': {'temperature': 0.2, 'maxOutputTokens': max_tokens, 'responseMimeType': 'application/json',
-                                 'responseSchema': schema}}
+                                 'responseSchema': schema, **clinic_ai.gemini_thinking('council')}}
     try:
-        response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-                                 json=body, timeout=(5, 90), headers={'x-goog-api-key': key})
+        response = clinic_ai.gemini_post(model, body, timeout=(5, 90), key=key)
         if response.status_code >= 400:
             raise ClinicAIError(f'gemini: http_{response.status_code}')  # np. 402 — wyczerpane środki, 404 — model zniknął
         parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
@@ -347,7 +346,10 @@ def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
     if os.environ.get('GEMINI_API_KEY', '').strip():
         try:
             # Limit z zapasem: Gemini myśli i wyszukuje w ramach tych samych tokenów (płaci się tylko za zużyte).
-            response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=16000)
+            # Oszczędnie z wyszukiwarką: każde zapytanie Google jest płatne osobno.
+            response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims)
+                                              + '\n\nWyszukuj oszczędnie: zwykle jedno zapytanie na twierdzenie wystarcza.',
+                                              CHECK_SCHEMA, web_search=True, max_tokens=16000, task='check')
             return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
         except ClinicAIError as error:
             logger.warning('council fact check (Gemini) failed: %s', error.code)

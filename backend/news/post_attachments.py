@@ -12,6 +12,8 @@ from urllib.parse import urlsplit
 
 import requests
 
+from news import clinic_ai
+
 LINK = re.compile(r'https?://\S+')
 MAX_IMAGES = 3
 MAX_LINKS = 3
@@ -76,9 +78,9 @@ def describe_image(url: str) -> str:
         model = os.environ.get('CLINIC_GEMINI_MODEL', '').strip() or 'gemini-3.8-flash'
         body = {'contents': [{'parts': [{'inline_data': {'mime_type': mime, 'data': base64.b64encode(image.content).decode()}},
                                         {'text': IMAGE_PROMPT}]}],
-                'generationConfig': {'temperature': 0.1, 'maxOutputTokens': 600, 'mediaResolution': 'MEDIA_RESOLUTION_LOW'}}
-        response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-                                 json=body, timeout=(5, 60), headers={'x-goog-api-key': key})
+                'generationConfig': {'temperature': 0.1, 'maxOutputTokens': 600, 'mediaResolution': 'MEDIA_RESOLUTION_LOW',
+                                     **clinic_ai.gemini_thinking('image')}}
+        response = clinic_ai.gemini_post(model, body, timeout=(5, 60), key=key)
         response.raise_for_status()
         parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
         return ' '.join(''.join(part.get('text', '') for part in parts).split())[:800]

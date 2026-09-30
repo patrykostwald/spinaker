@@ -289,8 +289,37 @@ def _align_sources(data, found: dict[str, str]):
     return data
 
 
+# Poziom „myślenia” Gemini dla każdego zadania. Bez ustawienia model myśli na najwyższym poziomie, a tokeny myślenia
+# kosztują jak odpowiedź — przy przepisywaniu nagrań i opisach zdjęć to czysty koszt. Sprawdzanie faktów i ocena wywiadu
+# zostają na średnim poziomie (jakość), role Konsylium na niskim. Nadpisanie: GEMINI_THINKING_<ZADANIE>=minimal|low|medium|high|default.
+GEMINI_THINKING = {'check': 'medium', 'interview': 'medium', 'krs': 'low', 'council': 'low', 'image': 'minimal', 'transcript': 'minimal'}
+
+
+def gemini_thinking(task: str) -> dict:
+    level = os.environ.get(f'GEMINI_THINKING_{task.upper()}', '').strip().lower() or GEMINI_THINKING.get(task, 'low')
+    return {} if level == 'default' else {'thinkingConfig': {'thinkingLevel': level}}
+
+
+def gemini_post(model: str, body: dict, *, timeout, key: str = ''):
+    """generateContent; gdy model nie zna ustawienia myślenia (400), jedna próba bez niego — zadanie ma się wykonać."""
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
+    headers = {'x-goog-api-key': key or os.environ['GEMINI_API_KEY'].strip()}
+    response = requests.post(url, json=body, timeout=timeout, headers=headers)
+    config = body.get('generationConfig') or {}
+    if response.status_code == 400 and 'thinkingConfig' in config and 'thinking' in response.text.lower():
+        logger.warning('gemini %s: thinkingLevel odrzucony, ponawiam bez niego', model)
+        body = {**body, 'generationConfig': {k: v for k, v in config.items() if k != 'thinkingConfig'}}
+        response = requests.post(url, json=body, timeout=timeout, headers=headers)
+    return response
+
+
+def gemini_output_tokens(usage: dict) -> int:
+    """Tokeny odpowiedzi łącznie z myśleniem — Google liczy je osobno (thoughtsTokenCount), a płaci się za oba."""
+    return int(usage.get('candidatesTokenCount') or 0) + int(usage.get('thoughtsTokenCount') or 0)
+
+
 @wallet_observed('gemini')
-def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
+def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000, task: str = 'check'):
     """Gemini z wyszukiwaniem Google. Zwraca obiekt w kształcie odpowiedzi Claude'a (bloki tekstu i wyników wyszukiwania),
     żeby reszta ścieżki (walidacja cytatów i źródeł, zapis, budżet) działała bez zmian."""
     from types import SimpleNamespace
@@ -300,13 +329,12 @@ def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_
         'contents': [{'role': 'user', 'parts': [{'text': user + '\n\nOdpowiedz wyłącznie obiektem JSON zgodnym z tym schematem '
                                                    '(w polach sources podawaj adresy stron znalezionych w wyszukiwarce):\n'
                                                    + json.dumps(schema, ensure_ascii=False)}]}],
-        'generationConfig': {'temperature': 0.2, 'maxOutputTokens': min(max_tokens, 32000)},
+        'generationConfig': {'temperature': 0.2, 'maxOutputTokens': min(max_tokens, 32000), **gemini_thinking(task)},
     }
     if web_search:
         body['tools'] = [{'google_search': {}}]
     try:
-        response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-                                 json=body, timeout=(10, 600), headers={'x-goog-api-key': os.environ['GEMINI_API_KEY'].strip()})
+        response = gemini_post(model, body, timeout=(10, 600))
     except requests.RequestException:
         raise ClinicAIError('gemini_connection')
     if response.status_code != 200:
@@ -337,7 +365,7 @@ def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_
         content=[SimpleNamespace(type='text', text=text),
                  SimpleNamespace(type='web_search_tool_result',
                                  content=[SimpleNamespace(url=url, title=title or url) for url, title in found.items()])],
-        usage=SimpleNamespace(input_tokens=usage.get('promptTokenCount', 0), output_tokens=usage.get('candidatesTokenCount', 0),
+        usage=SimpleNamespace(input_tokens=usage.get('promptTokenCount', 0), output_tokens=gemini_output_tokens(usage),
                               server_tool_use=SimpleNamespace(web_search_requests=len(grounding.get('webSearchQueries') or []))),
         model=model, stop_reason='end_turn')
 

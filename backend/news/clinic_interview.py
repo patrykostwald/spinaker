@@ -168,12 +168,11 @@ def _transcribe_part(url: str, start: int | None = None, end: int | None = None)
     body = {
         'contents': [{'parts': [part, {'text': prompt}]}],
         'generationConfig': {'responseMimeType': 'application/json', 'responseSchema': TRANSCRIPT_SCHEMA,
-                             'mediaResolution': 'MEDIA_RESOLUTION_LOW', 'maxOutputTokens': 60000, 'temperature': 0},
+                             'mediaResolution': 'MEDIA_RESOLUTION_LOW', 'maxOutputTokens': 60000, 'temperature': 0,
+                             **clinic_ai.gemini_thinking('transcript')},
     }
     try:
-        response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-                                 json=body, timeout=(10, 900),
-                                 headers={'x-goog-api-key': os.environ['GEMINI_API_KEY'].strip()})
+        response = clinic_ai.gemini_post(model, body, timeout=(10, 900))
     except requests.RequestException:
         raise clinic_ai.ClinicAIError('gemini_connection')
     if response.status_code != 200:
@@ -187,7 +186,7 @@ def _transcribe_part(url: str, start: int | None = None, end: int | None = None)
         raise clinic_ai.ClinicAIError(f'gemini_invalid_json {reason}'.strip())
     usage = payload.get('usageMetadata', {})
     return data, {'model': model, 'input_tokens': usage.get('promptTokenCount', 0),
-                  'output_tokens': usage.get('candidatesTokenCount', 0)}
+                  'output_tokens': clinic_ai.gemini_output_tokens(usage)}
 
 
 def _chunk(url: str, start: int, end: int) -> tuple[list[dict], dict, dict]:
@@ -328,7 +327,7 @@ def diagnose_transcript(meta: dict, transcript: str) -> dict:
             if 'credit balance' not in error.code.lower() and error.code != 'connection':
                 raise
     if response is None:
-        response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+        response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000, task='interview')
     data = clinic_ai._json_from_text(response.content)
     result = clean_interview(data, transcript, clinic_ai._search_results(response.content))
     result['usage'] = clinic_ai._usage(response)
