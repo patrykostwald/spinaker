@@ -1,0 +1,16 @@
+[Unit]
+Description=spin.clinic host watchdog
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/spin-clinic
+ExecStart=/bin/bash /srv/spin-clinic/deploy/watchdog.sh
+StateDirectory=spin-watchdog
+TimeoutStartSec=240
+StandardOutput=journal
+StandardError=journal
+# Clear a stale invocation guard if a previous run was killed by systemd.
+ExecStartPre=-/usr/bin/rmdir /var/lib/spin-watchdog/running
+ExecStopPost=-/usr/bin/rmdir /var/lib/spin-watchdog/running

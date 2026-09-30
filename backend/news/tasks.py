@@ -9,6 +9,12 @@ from django.utils import timezone
 from news.models import ImportState
 
 
+@shared_task(name='news.tasks.repairer_task', soft_time_limit=210, time_limit=240)
+def repairer_task():
+    from news.repairer import run
+    return run()
+
+
 @shared_task(bind=True, name='news.tasks.clinic_archive_task', max_retries=60, rate_limit='6/m',
              soft_time_limit=25, time_limit=30)
 def clinic_archive_task(self, post_id, job_id=''):

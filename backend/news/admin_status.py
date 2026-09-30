@@ -251,7 +251,10 @@ def sources():
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def admin_status(request):
-    now = timezone.now()
+    return Response(snapshot(timezone.now()))
+
+
+def snapshot(now):
     local_day = now.astimezone(ZoneInfo('Europe/Warsaw')).date()
     today, yesterday, tomorrow = [datetime.combine(local_day + timedelta(days=d), time.min, ZoneInfo('Europe/Warsaw')) for d in (0, -1, 1)]
     sections = []
@@ -294,5 +297,12 @@ def admin_status(request):
         wallets = finance['wallets']
     except Exception:
         sections.append(card('AI i koszty', description='Nie udało się odczytać kosztów i portfeli.'))
-    return Response(local_times({'generated_at': now, 'sections': sections, 'series': series,
-                                'kpis': kpis, 'wallets': wallets, 'actions': actions(sections, wallets)}))
+    from news.repairer import panel_section, annotate_actions
+    action_list = actions(sections, wallets)
+    collect('Naprawiacz', lambda: panel_section(now, {'sections': sections, 'actions': action_list}))
+    try:
+        action_list = annotate_actions(action_list, now)
+    except Exception:
+        pass  # Repair journal outage must not hide the rest of the panel.
+    return local_times({'generated_at': now, 'sections': sections, 'series': series,
+                        'kpis': kpis, 'wallets': wallets, 'actions': action_list})

@@ -1,0 +1,11 @@
+[Unit]
+Description=Check spin.clinic every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=spin-watchdog.service
+
+[Install]
+WantedBy=timers.target

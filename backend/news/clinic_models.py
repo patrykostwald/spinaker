@@ -32,6 +32,7 @@ POLARITIES = [('positive', 'Trafna diagnoza'), ('negative', 'Nietrafna diagnoza'
 
 
 class SpinDiagnosis(models.Model):
+    repair_attempts = models.PositiveSmallIntegerField(default=0)
     post = models.OneToOneField(PoliticalPost, on_delete=models.CASCADE, related_name='spin_diagnosis')
     status = models.CharField(max_length=16, choices=REVIEW_STATUSES, default='pending_review', db_index=True)
     verdict = models.CharField(max_length=12, choices=VERDICTS, blank=True)
@@ -205,6 +206,7 @@ class XAccountSuggestion(models.Model):
 
 
 class ClinicInterview(models.Model):
+    repair_attempts = models.PositiveSmallIntegerField(default=0)
     """Wywiad dnia: publiczny film z YouTube z politykiem — transkrypcja (Gemini) i diagnoza Dr. Spina (Claude).
 
     Człowiek wybiera tylko materiał (link); treści diagnozy nikt nie poprawia. Ukrycie wyłącznie po zgłoszeniu prawnym.

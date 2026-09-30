@@ -802,6 +802,25 @@ class EvidenceLink(models.Model):
         constraints = [models.UniqueConstraint(fields=["article", "phrase", "source_url"], name="unique_evidence_link")]
 
 
+class RepairAction(models.Model):
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    rule = models.CharField(max_length=40)
+    target = models.CharField(max_length=160)
+    result = models.CharField(max_length=16, choices=[(s, s) for s in
+        ('fixed', 'retried', 'skipped', 'failed', 'needs_owner')])
+    description = models.CharField(max_length=300)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+        indexes = [models.Index(fields=['rule', 'target', 'created_at'], name='repair_target_time')]
+
+
+class RepairerState(models.Model):
+    """Durable run/mail bookkeeping, independent of the 30-day action retention."""
+    key = models.CharField(max_length=40, unique=True)
+    data = models.JSONField(default=dict)
+
+
 class ImportState(models.Model):
     name = models.CharField(max_length=100, unique=True)
     last_started = models.DateTimeField(null=True, blank=True)

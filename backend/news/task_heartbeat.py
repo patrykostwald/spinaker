@@ -65,6 +65,14 @@ def record(sender, phase, task_id=None, args=None, kwargs=None, result=None, exc
             else:
                 data.update(finished_at=now, result=phase,
                             summary=type(exception).__name__ if exception else summary(result))
+                # Retain a classification, never the exception message or a
+                # provider response. Generic HTTPError can otherwise hide 402.
+                from news.repairer import permanent, transient
+                from news.admin_telemetry import safe_error
+                error = (str(getattr(getattr(exception, 'response', None), 'status_code', '')) + ' ' + str(exception)
+                         if exception else str(result.get('error', '')) if isinstance(result, dict) else '')
+                data['repair_error'] = 'permanent' if permanent(error) else 'transient' if transient(error) else 'unknown'
+                data['repair_hint'] = safe_error(error) if error.strip() else ''
             cache.set(key, data, TTL)
     except Exception:
         logger.warning('Nie udało się zapisać pulsu Celery.', exc_info=False)
