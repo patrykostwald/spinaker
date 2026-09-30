@@ -5,7 +5,12 @@ import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDatePl } from "../../lib/utils";
 import { VerdictTag } from "./SpinParts";
 
-const modelLabel = (model = "") => /gpt/i.test(model) ? "GPT" : /qwen/i.test(model) ? "Qwen" : /gemini/i.test(model) ? "Gemini" : /claude/i.test(model) ? "Claude" : /nemotron/i.test(model) ? "Nemotron" : model;
+// Krótkie nazwy członków Konsylium — pełna nazwa modelu (np. „speakleash/Bielik-11B-v3.0-Instruct:publicai”) rozpychała kartę.
+const MODEL_LABELS: [RegExp, string][] = [[/gpt/i, "GPT"], [/qwen/i, "Qwen"], [/gemini/i, "Gemini"], [/gemma/i, "Gemma"], [/claude/i, "Claude"],
+  [/nemotron/i, "Nemotron"], [/bielik/i, "Bielik"], [/pllum/i, "PLLuM"], [/llama/i, "Llama"], [/mistral|mixtral/i, "Mistral"], [/deepseek/i, "DeepSeek"],
+  [/kimi/i, "Kimi"], [/glm/i, "GLM"], [/granite/i, "Granite"], [/jamba/i, "Jamba"], [/phi/i, "Phi"]];
+const modelLabel = (model = "") => MODEL_LABELS.find(([pattern]) => pattern.test(model))?.[1]
+  ?? (model.split("/").pop() || model).split(":")[0].slice(0, 14);
 const firstSentence = (text = "") => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 
 export function ReportError({ spin }: { spin: SpinDetailData }) {

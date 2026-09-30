@@ -6357,3 +6357,6 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-interview-results > section > .sc-scan-m-lbl { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: normal; line-height: 1.35; }
 .sc-clinic-recent__actions > * { order: 2; }
 .sc-clinic-recent__actions > :nth-child(2) { order: 1; flex: 1 1 100%; }
+/* Nazwy członków Konsylium w karcie diagnozy nigdy nie wychodzą poza kolumnę */
+.sc-scan-g-row { min-width: 0; }
+.sc-scan-g-row > em, .sc-scan-vote-missing { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

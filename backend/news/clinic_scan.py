@@ -24,7 +24,12 @@ def model_label(model):
         return 'Gemini' + (' Flash' if 'flash' in lower else ' Pro' if 'pro' in lower else '')
     if 'claude' in lower:
         return 'Claude'
-    return name
+    for key, label in (('gemma', 'Gemma'), ('nemotron', 'Nemotron'), ('bielik', 'Bielik'), ('pllum', 'PLLuM'), ('llama', 'Llama'),
+                       ('mistral', 'Mistral'), ('mixtral', 'Mistral'), ('deepseek', 'DeepSeek'), ('kimi', 'Kimi'), ('glm', 'GLM'),
+                       ('granite', 'Granite'), ('jamba', 'Jamba')):
+        if key in lower:
+            return label + suffix
+    return name.split(':')[0][:14]
 
 
 def synthesis_fingerprint(row):
