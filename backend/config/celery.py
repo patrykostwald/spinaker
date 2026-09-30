@@ -103,6 +103,9 @@ app.conf.beat_schedule = {
     # BZP remains inactive until BZP_API_ENABLED=true is set in the deployment environment.
     'bzp-metadata-3m': {'task': 'scraper.tasks.import_bzp_metadata', 'schedule': crontab(minute='*/3')},
 }
+app.conf.beat_schedule['push-evening-spin'] = {
+    'task': 'news.push_events.evening_spin', 'schedule': crontab(hour=21, minute=15)}
+
 if os.environ.get('NEWSAPI_TIER', 'free') in ('business', 'advanced'):
     app.conf.beat_schedule['newsapi-frequent'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(minute='*/15')}
 else:

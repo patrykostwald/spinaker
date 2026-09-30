@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
 import { SiteHeader, SupportBar, TouchScrollGuard, siteNavigation } from "@spin-clinic/ui";
 import { SiteFooter } from "@spin-clinic/ui/kit";
@@ -7,6 +7,7 @@ import "./globals.css";
 // Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css — порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
 import { Providers } from "./providers";
+import { PwaControls } from "./PwaControls";
 import { site } from "../lib/site";
 
 // Montserrat includes Polish diacritics and is the shared typeface for live pages.
@@ -19,7 +20,11 @@ const montserrat = Montserrat({
 const TITLE = "spin.clinic — pokazujemy, jak zbudowany jest przekaz";
 const DESCRIPTION = "Pokazujemy, jak zbudowany jest przekaz. Dr. Spin (AI) analizuje techniki perswazji we wpisach polityków i zestawia twierdzenia ze źródłami. Ta sama miara dla wszystkich.";
 
+export const viewport: Viewport = { themeColor: '#000000' };
+
 export const metadata: Metadata = {
+  appleWebApp: { capable: true, title: 'spin.clinic', statusBarStyle: 'black-translucent' },
+  icons: { apple: '/app/icon-192.png' },
   metadataBase: new URL(`https://${process.env.NEXT_PUBLIC_DOMAIN || "spin.clinic"}`),
   title: TITLE,
   description: DESCRIPTION,
@@ -37,11 +42,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <SiteHeader site={site} />
           <TouchScrollGuard />
+          <PwaControls />
           <main id="main-content" className="sc-app-main">{children}</main>
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
             cta={{ label: "Wesprzyj projekt", href: "/wsparcie" }}
-            columns={siteNavigation.footer}
+            columns={[...siteNavigation.footer, { title: 'Aplikacja', links: [
+              { label: 'Zainstaluj aplikację', href: '#zainstaluj-aplikacje' },
+              ...(process.env.NEXT_PUBLIC_PUSH_ENABLED === 'true' ? [{ label: 'Powiadomienia', href: '#powiadomienia' }] : []),
+            ] }]}
             above={<SupportBar />}
             sticky
           />

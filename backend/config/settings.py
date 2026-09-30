@@ -13,9 +13,15 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
 )
 
-if not os.environ.get("PYTEST_VERSION") and "pytest" not in __import__("sys").modules:
+if (not os.environ.get("PYTEST_VERSION") and "pytest" not in __import__("sys").modules
+        and os.environ.get('SKIP_DOTENV') != '1'):
     environ.Env.read_env(ROOT_DIR / ".env", overwrite=False)
     environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
+
+PUSH_ENABLED = env.bool('PUSH_ENABLED', default=False)
+VAPID_PUBLIC_KEY = env('VAPID_PUBLIC_KEY', default='')
+VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='')
+VAPID_SUBJECT = env('VAPID_SUBJECT', default='')
 SEJM_TERM = env.int('SEJM_TERM', default=10)
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")

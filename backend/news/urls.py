@@ -25,6 +25,7 @@ from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_de
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
+from news.push_api import SubscriptionsView
 
 router = DefaultRouter()
 router.register(r"editor/threads", EditorialThreadViewSet, basename="editor-threads")
@@ -34,6 +35,7 @@ router.register(r"articles", ArticleViewSet, basename="articles")
 router.register(r"threads", ThreadViewSet, basename="threads")
 
 urlpatterns = [
+    path('push/subscriptions/', SubscriptionsView.as_view()),
     path('admin/status/', admin_status),
     path('admin/wallets/', admin_wallets),
     path('', include('news.account_urls')),
