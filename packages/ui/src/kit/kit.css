@@ -6169,6 +6169,8 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-f2 .sc-account-tile { min-height: 132px; padding: 20px; border: 1px solid var(--sc-line-strong); border-radius: 12px; background: var(--sc-surface); text-decoration: none; }
 .sc-f2 .sc-account-tile__label { color: var(--sc-text); font-size: 16px; }
 .sc-f2 .sc-account-tile__value { color: var(--sc-accent); font-size: 30px; }
+.sc-f2 .sc-account-tile__label { text-transform: none; letter-spacing: 0; font-weight: 700; line-height: 1.35; overflow-wrap: normal; word-break: normal; hyphens: manual; }
+.sc-f2 :is(h1, h2, h3)[tabindex="-1"]:focus { outline: none; }
 .sc-f2 .sc-account-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 32px; margin-top: 32px; }
 .sc-f2 .sc-account-sidenav { align-self: start; position: sticky; top: 100px; }
 .sc-f2 .sc-account-sidenav a { display: flex; align-items: center; min-height: 48px; padding: 10px 12px; }

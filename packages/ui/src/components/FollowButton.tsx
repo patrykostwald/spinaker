@@ -32,7 +32,7 @@ function FollowControl({ kind, targetId, label }: { kind: FollowKind; targetId: 
   if (isUnavailable(follows.error)) return <span className="sc-f2-muted">Obserwowanie będzie dostępne wkrótce.</span>;
   return <span className="sc-f2-follow">
     <Button type="button" variant="quiet" aria-pressed={Boolean(match)} aria-label={`${match ? 'Przestań obserwować' : 'Obserwuj'}: ${label}`} loading={pending}
-      disabled={account.isFetching || Boolean(account.data?.authenticated && !follows.isSuccess)} onClick={toggle}>{match ? 'Obserwujesz' : kind === 'thread' ? 'Obserwuj nitkę' : kind === 'user' ? 'Obserwuj autora' : 'Obserwuj'}</Button>
+      disabled={account.isFetching || Boolean(account.data?.authenticated && !follows.isSuccess)} onClick={toggle}>{kind === 'thread' ? (match ? 'Obserwujesz nitkę ✓' : 'Obserwuj nitkę') : kind === 'user' ? (match ? 'Obserwujesz autora ✓' : 'Obserwuj autora') : (match ? 'Obserwujesz ✓' : 'Obserwuj')}</Button>
     {follows.isError && <Button variant="quiet" onClick={() => follows.refetch()}>Ponów</Button>}
     {message && <span role="status">{message}</span>}
     <AccountDialog open={open} onClose={() => setOpen(false)} />

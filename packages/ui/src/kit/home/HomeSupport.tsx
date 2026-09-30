@@ -5,11 +5,15 @@
  * Przyklejony pasek wsparcia chowa się przy przewijaniu — tu jest stałe miejsce, gdzie widać cel i postęp.
  */
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SUPPORT_LINKS } from "../../lib/support";
 import { Button } from "../Button";
 
 export function HomeSupport() {
+  // Kwota przychodzi dopiero w przeglądarce — pokazujemy ją po zamontowaniu, żeby HTML z serwera zgadzał się przy hydratacji.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const query = useQuery({
     queryKey: ["support-progress"],
     queryFn: async () => (await fetch("/support-progress")).json() as Promise<{ goal: number; raised: number }>,
@@ -25,7 +29,7 @@ export function HomeSupport() {
         <h2 id="home-support-title" className="sc-t-title-m">Pomóż nam analizować kolejne wypowiedzi</h2>
         <p>Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu.</p>
       </div>
-      {goal > 0 ? (
+      {mounted && goal > 0 ? (
         <div className="sc-home-support__progress" aria-label={`Zebrano ${format(raised)} z ${format(goal)} zł w tym miesiącu`}>
           <p><strong>{format(raised)} zł</strong> z {format(goal)} zł w tym miesiącu</p>
           <span className="sc-support-bar__track" aria-hidden="true"><i style={{ width: `${Math.max(percent, 2)}%` }} /></span>

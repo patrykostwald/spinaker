@@ -236,12 +236,12 @@ function ReactionsSection() {
   const [kind, setKind] = useState<Reaction['kind'] | 'all'>('all');
   const rows = (reactions.data?.results ?? []).filter(row => kind === 'all' || row.kind === kind);
   return (
-    <Section id="reakcje" title="Reakcje i komentarze" count={reactions.isSuccess ? reactions.data.results.length : undefined}>
+    <Section id="reakcje" title="Reakcje i komentarze" count={reactions.isSuccess ? reactions.data?.results?.length ?? 0 : undefined}>
       <p className="sc-account-hint">Twoje oceny i komentarze w całym serwisie. Komentarze są publiczne pod materiałem, diagnozą albo nitką; zbiorcza lista — tylko dla Ciebie, chyba że włączysz publiczną aktywność w ustawieniach.</p>
       <div className="sc-account-filter" role="group" aria-label="Filtruj reakcje">
         {REACTION_KINDS.map(option => (
           <button key={option.value} type="button" aria-pressed={kind === option.value} onClick={() => setKind(option.value)}>
-            {option.label}{option.value !== 'all' && reactions.data ? ` ${reactions.data.counts[option.value]}` : ''}
+            {option.label}{option.value !== 'all' && reactions.data?.counts ? ` ${reactions.data.counts[option.value]}` : ''}
           </button>
         ))}
       </div>

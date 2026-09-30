@@ -411,8 +411,8 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           </div>
           {results.isFetching && <p role="status" className="sc-account-hint">Szukam w Bazie…</p>}
           {results.isError && <p role="alert" className="sc-account-hint">Nie udało się przeszukać Bazy.</p>}
-          {results.isSuccess && !results.data.results.length && <p className="sc-account-hint">Brak materiałów dla „{searchTerm}”.</p>}
-          {results.isSuccess && results.data.results.length > 0 && (
+          {results.isSuccess && !results.data?.results?.length && <p className="sc-account-hint">Brak materiałów dla „{searchTerm}”.</p>}
+          {results.isSuccess && results.data?.results?.length > 0 && (
             <ul className="sc-account-candidates" aria-label="Wyniki wyszukiwania">
               {results.data.results.map(article => (
                 <li key={article.id}>
@@ -427,9 +427,9 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
               ))}
             </ul>
           )}
-          {(favorites.data?.results.length ?? 0) > 0 && (
+          {(favorites.data?.results?.length ?? 0) > 0 && (
             <details className="sc-account-from-favorites">
-              <summary>Dodaj z ulubionych materiałów ({favorites.data!.results.length})</summary>
+              <summary>Dodaj z ulubionych materiałów ({favorites.data?.results?.length})</summary>
               <ul className="sc-account-candidates">
                 {favorites.data!.results.map(row => (
                   <li key={row.id}>

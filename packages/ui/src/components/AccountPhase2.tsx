@@ -40,7 +40,7 @@ function LatestDiagnosis({ figureId }: { figureId: number }) {
   const spins = useQuery({ queryKey: ['follow-diagnoses', id], queryFn: () => searchClinicSpins({ account: String(id), sort: 'new' }), enabled: Boolean(id), retry: false, staleTime: 60_000 });
   if (figure.isPending || (id && spins.isPending)) return <p role="status">Sprawdzam najnowsze diagnozy…</p>;
   if (figure.isError || spins.isError) return <p>Diagnozy są chwilowo niedostępne. <Button variant="quiet" onClick={() => { void figure.refetch(); if (id) void spins.refetch(); }}>Ponów</Button></p>;
-  if (!id || !spins.data?.results.length) return <p className="sc-f2-muted">Nie ma jeszcze dostępnych diagnoz wpisów.</p>;
+  if (!id || !spins.data?.results?.length) return <p className="sc-f2-muted">Nie ma jeszcze dostępnych diagnoz wpisów.</p>;
   return <ul>{spins.data.results.slice(0, 2).map(spin => <li key={spin.id}><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></li>)}</ul>;
 }
 export function FollowedSection() {
@@ -69,7 +69,7 @@ export function NotificationsSection() {
   return <PanelSection id="powiadomienia" title={`Powiadomienia${notifications.data ? ` · ${notifications.data.unread} nieprzeczytanych` : ''}`}>
     <AccountDataState query={notifications} />
     {Boolean(notifications.data?.unread) && <Button variant="quiet" disabled={pending} onClick={() => read()}>Oznacz wszystkie jako przeczytane</Button>}
-    {notifications.isSuccess && !notifications.data.results.length && <p>Nie masz nowych powiadomień. Tutaj pojawią się informacje o obserwowanych osobach i nitkach.</p>}
+    {notifications.isSuccess && !notifications.data?.results?.length && <p>Nie masz nowych powiadomień. Tutaj pojawią się informacje o obserwowanych osobach i nitkach.</p>}
     <ul className="sc-account-rows">{notifications.data?.results.map(row => <li key={row.id} data-unread={!row.read_at || undefined}>
       <div><p className="sc-f2-muted">{!row.read_at && <strong>Nowe · </strong>}<time dateTime={row.created_at}>{formatDateTimePl(row.created_at)}</time></p><Link href={accountHref(row.url)}>{row.title}</Link></div>
       {!row.read_at && <Button variant="quiet" disabled={pending} onClick={() => read([row.id])} aria-label={`Oznacz jako przeczytane: ${row.title}`}>Przeczytane</Button>}
@@ -182,7 +182,7 @@ export function AccountOnboarding({ ownerId }: { ownerId: number }) {
       <AccountDataState query={topics} />
     </>}
     {step === 2 && <><p>Wybór należy do Ciebie. Obserwowanie nie oznacza poparcia dla osoby.</p><form onSubmit={event => { event.preventDefault(); setTerm(search.trim()); }}><label>Znajdź osobę publiczną<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label><Button type="submit" variant="quiet" disabled={search.trim().length < 2}>Szukaj</Button></form>
-      {term && <AccountDataState query={figures} />}{figures.isSuccess && !figures.data.results.length && <p>Nie znaleziono osoby. Spróbuj innego nazwiska.</p>}
+      {term && <AccountDataState query={figures} />}{figures.isSuccess && !figures.data?.results?.length && <p>Nie znaleziono osoby. Spróbuj innego nazwiska.</p>}
       <ul className="sc-account-rows">{figures.data?.results.slice(0, 5).map(figure => <li key={figure.id}><Link href={`/osoby-publiczne/${figure.id}`}>{figure.name}</Link><FollowButton kind="figure" targetId={figure.id} label={figure.name} /></li>)}</ul>
     </>}
     {step === 3 && <p>{topics.data?.topics.length ? `Twój pasek „${topics.data.topics[0].label}” znajdziesz poniżej w Twoich wiadomościach.` : 'Możesz zacząć od przeglądania wiadomości, a własny pasek dodać w dowolnym momencie.'} Ulubione, obserwowani i powiadomienia są zawsze w tym panelu.</p>}
