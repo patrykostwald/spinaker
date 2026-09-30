@@ -61,7 +61,7 @@ export function CouncilRoster() {
 }
 
 const DECISIONS: Record<string, string> = {
-  admitted: "przyjęty", rejected: "odrzucony", would_admit: "rekomendacja: przyjąć", would_reject: "rekomendacja: odrzucić",
+  admitted: "przyjęty", rejected: "odrzucony", would_admit: "rekomendacja: przyjąć", would_reject: "rekomendacja: odrzucić", deferred: "odłożony (awaria dostawcy)",
   suspended: "zawieszony", returned: "powrót do składu",
 };
 

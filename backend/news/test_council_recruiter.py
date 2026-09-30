@@ -118,3 +118,48 @@ def test_run_examines_several_candidates_per_night(monkeypatch):
 def test_exam_items_query_runs_on_real_models():
     # Wcześniej filtr po nieistniejącym polu „council” wywracał Rekrutera na produkcji (testy mockowały exam_items).
     assert recruiter.exam_items() == []
+
+
+@pytest.mark.django_db
+def test_provider_outage_defers_instead_of_rejecting(monkeypatch):
+    # 429/402 na każdym wpisie to awaria dostawcy, nie ocena modelu: bez głosowania, kandydat wraca po 3 dniach.
+    monkeypatch.setattr(recruiter, '_notify', lambda *a: True)
+    candidate = {'provider': 'groq', 'model': 'openai/gpt-oss-120b', 'company': 'OpenAI', 'context': 0,
+                 'polish': False, 'new_company': False, 'billions': 120}
+    monkeypatch.setattr(recruiter, 'sieve', lambda found: [candidate])
+    monkeypatch.setattr(recruiter, 'discover', lambda: [])
+    monkeypatch.setattr(recruiter, 'exam_items', lambda: [])
+    monkeypatch.setattr(recruiter, 'examine', lambda member, items: {
+        'items': 5, 'answered': 0, 'hard_error': False, 'agreement': 0, 'mae': 100, 'techniques_avg': 0, 'polish': None,
+        'passed': False, 'answers': [{'note': 'http_429', 'verdict': None}]})
+    with patch.object(recruiter, 'vote', side_effect=AssertionError('no vote on outage')):
+        assert recruiter.recruit()['decision'] == 'deferred'
+    assert ('groq', 'openai/gpt-oss-120b') in recruiter.blocked()
+    CouncilRecruitment.objects.update(created_at=timezone.now() - timedelta(days=4))
+    assert ('groq', 'openai/gpt-oss-120b') not in recruiter.blocked()
+
+
+@pytest.mark.django_db
+def test_old_rejection_with_zero_answers_is_retried_but_404_stays_blocked():
+    old = timezone.now() - timedelta(days=4)
+    CouncilRecruitment.objects.create(provider='hf', model='a/b-70b', decision='would_reject', created_at=old,
+                                      exam={'answered': 0, 'items': 5})
+    CouncilRecruitment.objects.create(provider='nim', model='meta/llama2-70b', decision='would_reject', created_at=old,
+                                      exam={'answered': 0, 'items': 5, 'hard_error': True})
+    CouncilRecruitment.objects.create(provider='nim', model='c/d-70b', decision='would_reject', created_at=old,
+                                      exam={'answered': 5, 'items': 5})
+    assert recruiter.blocked() == {('nim', 'meta/llama2-70b'), ('nim', 'c/d-70b')}
+
+
+def test_sieve_skips_outdated_models_and_second_routes(monkeypatch):
+    monkeypatch.setattr(recruiter, 'blocked', lambda: set())
+    monkeypatch.setattr(recruiter.registry, 'configured', lambda member: True)
+    with patch('news.clinic_council._members', return_value=[('groq', 'openai/gpt-oss-120b')]), \
+            patch('news.clinic_models.CouncilSeat.objects') as seats:
+        seats.all.return_value = []
+        found = [{'provider': 'nim', 'model': 'meta/llama2-70b', 'context': 32000},
+                 {'provider': 'hf', 'model': 'openai/gpt-oss-120b:novita', 'context': 128000},
+                 {'provider': 'nim', 'model': 'meta/llama-3.3-70b-instruct', 'context': 128000},
+                 {'provider': 'hf', 'model': 'meta-llama/Llama-3.3-70B-Instruct:groq', 'context': 128000}]
+        names = [c['model'] for c in recruiter.sieve(found)]
+    assert names == ['meta/llama-3.3-70b-instruct']

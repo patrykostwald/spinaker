@@ -37,6 +37,13 @@ EXAM_SIZE = 5
 GATES = {'answered': 4, 'agreement': 0.6, 'mae': 20}
 SKIP = re.compile(r'embed|guard|safety|whisper|tts|audio|speech|rerank|coder|code|math|ocr|vision|vl\b|-vl-|image|'
                   r'moderation|reward|retriev|nano|mini\b|-mini|tiny|small|lite|translate|instruct-1b|preview-tool', re.I)
+# Stare generacje modeli, które dostawcy jeszcze listują, ale które nie mają szans z obecnym składem.
+OUTDATED = re.compile(r'llama-?2(?![\d.])|llama3-\d|llama-3-\d+b|codellama|qwen1\.5|qwen-?2-|gemma-?2-|gemma-7b|'
+                      r'mixtral-8x7b|mistral-7b|falcon|vicuna|mpt-|dolly|zephyr|openchat|nous-hermes-2|yi-34b', re.I)
+# Egzamin bez żadnej odpowiedzi to awaria dostawcy (limit 429, brak środków 402, przeciążenie), nie ocena modelu:
+# kandydat wraca do kolejki po DEFER_DAYS. Twardy błąd (404 — model zniknął) blokuje go jak zwykłe odrzucenie.
+DEFER_DAYS = 3
+REJECT_DAYS = 60
 SIZE = re.compile(r'(\d+(?:\.\d+)?)\s*[bB](?![a-z])')
 MIN_BILLIONS = 20
 VOTE_SCHEMA = {'type': 'object', 'properties': {
@@ -200,21 +207,47 @@ def _billions(model: str) -> float | None:
     return max(sizes) if sizes else None
 
 
+def base_name(model: str) -> str:
+    """Ten sam model u różnych dostawców: „openai/gpt-oss-120b:novita” i „openai/gpt-oss-120b” → „gpt-oss-120b”."""
+    return model.split(':')[0].split('/')[-1].lower()
+
+
+def _technical_failure(exam: dict) -> bool:
+    return bool(exam) and not exam.get('answered') and not exam.get('hard_error')
+
+
+def blocked() -> set[tuple[str, str]]:
+    """Kandydaci niedawno egzaminowani: odrzuceni na 60 dni, odłożeni przez awarię dostawcy tylko na 3 dni
+    (także dawne wpisy „odrzucony” z zerem odpowiedzi — to była awaria, nie ocena)."""
+    from news.clinic_models import CouncilRecruitment
+    now = timezone.now()
+    result = set()
+    for provider, model, exam, created in (CouncilRecruitment.objects.filter(kind='candidate', created_at__gte=now - timedelta(days=REJECT_DAYS))
+                                           .values_list('provider', 'model', 'exam', 'created_at')):
+        if _technical_failure(exam or {}) and created < now - timedelta(days=DEFER_DAYS):
+            continue
+        result.add((provider, model))
+    return result
+
+
 def sieve(found: list[dict]) -> list[dict]:
-    """Twarde warunki i kolejność: polski model, nowa firma, większy model. Bez modeli ocenianych w ostatnich 60 dniach."""
+    """Twarde warunki i kolejność: polski model, nowa firma, większy model. Bez modeli niedawno egzaminowanych,
+    starych generacji i drugiej drogi do modelu, który już jest w składzie albo w kolejce."""
     from news.clinic_council import DEFAULT_COUNCIL, _members
-    from news.clinic_models import CouncilRecruitment, CouncilSeat
+    from news.clinic_models import CouncilSeat
     current = set(_members('CLINIC_COUNCIL', DEFAULT_COUNCIL))
     known = current | {(s.provider, s.model) for s in CouncilSeat.objects.all()}
-    recent = set(CouncilRecruitment.objects.filter(kind='candidate', created_at__gte=timezone.now() - timedelta(days=60))
-                 .values_list('provider', 'model'))
+    recent = blocked()
     companies = {registry.metadata(m)['company'] for m in current}
+    bases = {base_name(m[1]) for m in known}
     candidates = []
     for item in found:
         member = (item['provider'], item['model'])
         if member in known or member in recent or not registry.configured(member):
             continue
         name = item['model'].lower()
+        if OUTDATED.search(name) or base_name(item['model']) in bases:
+            continue
         polish = registry.is_polish(member)
         size = _billions(item['model'])
         if not polish and (SKIP.search(name) or (size is not None and size < MIN_BILLIONS)):
@@ -224,6 +257,7 @@ def sieve(found: list[dict]) -> list[dict]:
         company = registry.metadata(member)['company']
         if company == 'unknown' and not polish:
             continue  # model, którego pochodzenia nie umiemy jawnie podać, nie spełnia Karty (pkt 11)
+        bases.add(base_name(item['model']))
         candidates.append({**item, 'company': company, 'polish': polish, 'new_company': company not in companies, 'billions': size})
     candidates.sort(key=lambda c: (not c['polish'], not c['new_company'], -(c['billions'] or 0)))
     return candidates
@@ -274,7 +308,8 @@ def examine(member: tuple[str, str], items: list) -> dict:
     polish = looks_polish(text) if text.strip() else None
     passed = (len(answered) >= GATES['answered'] and agreement >= GATES['agreement'] and mae <= GATES['mae']
               and polish is not False)
-    return {'items': len(items), 'answered': len(answered), 'agreement': round(agreement, 2), 'mae': round(mae, 1),
+    hard = any(HARD_ERRORS.search(str(a['note'])) for a in answers if not a['verdict'])
+    return {'items': len(items), 'answered': len(answered), 'hard_error': hard and not answered, 'agreement': round(agreement, 2), 'mae': round(mae, 1),
             'techniques_avg': round(sum(a['techniques'] for a in answered) / len(answered), 1) if answered else 0,
             'polish': polish, 'seconds': round(time.monotonic() - started), 'passed': passed,
             'answers': [{k: v for k, v in a.items() if k != 'claims'} for a in answers]}
@@ -344,6 +379,14 @@ def recruit(dry_run: bool = False) -> dict:
         return {'status': 'dry_run', 'candidate': candidate, 'queue': [c['model'] for c in candidates[:10]]}
     items = exam_items()
     exam = examine(member, items)
+    if _technical_failure(exam):
+        codes = sorted({str(a['note']) for a in exam['answers'] if a['note']}) or ['brak odpowiedzi']
+        entry = CouncilRecruitment.objects.create(
+            kind='candidate', provider=member[0], model=member[1], company=candidate['company'],
+            source={k: candidate[k] for k in ('context', 'polish', 'new_company', 'billions')}, exam=exam, decision='deferred',
+            mode='auto' if auto_mode() else 'trial',
+            reason=f"Egzamin nieodbyty — dostawca nie odpowiedział ({', '.join(codes)[:120]}). Ponowna próba za {DEFER_DAYS} dni.")
+        return {'status': 'ok', 'id': entry.pk, 'model': candidate['model'], 'decision': 'deferred', 'roles': []}
     votes = vote(candidate, exam) if exam['passed'] else []
     cast = [v for v in votes if v['admit'] is not None]
     admitted = exam['passed'] and len(cast) >= 2 and sum(v['admit'] for v in cast) * 2 > len(cast)
@@ -352,7 +395,7 @@ def recruit(dry_run: bool = False) -> dict:
     roles = roles_for(candidate, exam, votes) if admitted else []
     auto = auto_mode()
     if not exam['passed']:
-        reason = (f"Egzamin niezdany: odpowiedzi {exam['answered']}/{exam['items']}, zgodność {round(exam['agreement'] * 100)}%, "
+        reason = ("Model niedostępny u dostawcy (404) — pomijamy go na 60 dni. " if exam.get('hard_error') else '') + (f"Egzamin niezdany: odpowiedzi {exam['answered']}/{exam['items']}, zgodność {round(exam['agreement'] * 100)}%, "
                   f"różnica siły {exam['mae']} pkt (progi: {GATES['answered']}/{EXAM_SIZE}, {round(GATES['agreement'] * 100)}%, ≤ {GATES['mae']}).")
     elif not admitted:
         reason = 'Konsylium nie poparło kandydata większością głosów albo kandydat nie przyjął Karty.'
