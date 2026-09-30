@@ -27,6 +27,15 @@ def roster():
             # skład stały; dzienny limit darmowego dostępu to przerwa do północy, a nie wyjście z Konsylium
             row['status'] = ('dostępny' if registry.available(member) else
                              'limit dzienny' if registry.configured(member) else 'niedostępny')
+    from news.clinic_models import CouncilSeat
+    try:
+        for seat in CouncilSeat.objects.filter(status='suspended'):
+            member = (seat.provider, seat.model)
+            row = members.setdefault(member, {**registry.metadata(member), 'roles': []})
+            row['status'] = 'zawieszony'
+            row['suspended_reason'] = seat.last_error
+    except Exception:
+        pass
     return list(members.values())
 
 
@@ -41,4 +50,17 @@ def council_data():
         acceptance = latest.get((row['provider'], row['model']))
         row['charter'] = ({'version': version, 'date': acceptance.created_at,
                            **acceptance.response} if acceptance else None)
-    return {'charter_version': version, 'charter_hash': digest, 'members': members}
+    return {'charter_version': version, 'charter_hash': digest, 'members': members, 'recruitment': recruitment_log()}
+
+
+def recruitment_log(limit: int = 20) -> list[dict]:
+    """Jawny dziennik Rekrutera: kandydaci z wynikiem egzaminu i głosami, zawieszenia i powroty (bez odpowiedzi na wpisy)."""
+    from news.clinic_models import CouncilRecruitment
+    rows = []
+    for row in CouncilRecruitment.objects.all()[:limit]:
+        exam = row.exam or {}
+        rows.append({'date': row.created_at, 'kind': row.kind, 'model': row.model, 'company': row.company, 'provider': row.provider,
+                     'decision': row.decision, 'mode': row.mode, 'roles': row.roles, 'reason': row.reason,
+                     'exam': {k: exam.get(k) for k in ('items', 'answered', 'agreement', 'mae', 'passed')} if exam else None,
+                     'votes': [{'model': v.get('model'), 'admit': v.get('admit'), 'reason': v.get('reason')} for v in row.votes or []]})
+    return rows

@@ -5955,3 +5955,15 @@ a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items:
   .sc-public-directory__filters { grid-template-columns: minmax(0, 1fr); }
   .sc-public-directory__list li > div { width: 100%; }
 }
+
+/* Konsylium → dziennik Rekrutera */
+.sc-recruit { display: grid; gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }
+.sc-recruit__row { display: grid; gap: 6px; margin: 0 !important; padding: 16px; border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-recruit__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0; }
+.sc-recruit__head span, .sc-recruit__head time { font-size: 13px; color: var(--sc-text-3); }
+.sc-recruit__head .sc-recruit__decision { font-weight: 700; color: var(--sc-text-2); }
+.sc-recruit__row[data-decision="admitted"] .sc-recruit__decision, .sc-recruit__row[data-decision="would_admit"] .sc-recruit__decision, .sc-recruit__row[data-decision="returned"] .sc-recruit__decision { color: var(--sc-positive); }
+.sc-recruit__row[data-decision="suspended"] .sc-recruit__decision { color: var(--sc-warning); }
+.sc-recruit__head time { margin-left: auto; }
+.sc-recruit__exam, .sc-recruit__reason { margin: 0; font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
+.sc-recruit__votes { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 19px; color: var(--sc-text-2); }

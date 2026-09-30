@@ -97,6 +97,47 @@ class CouncilCharterAcceptance(models.Model):
     response = models.JSONField(default=dict)
 
 
+class CouncilSeat(models.Model):
+    """Miejsce modelu w Konsylium poza stałą konfiguracją: przyjęty przez Rekrutera albo zawieszony przez kontrolę zdrowia.
+
+    Stały skład nadal pochodzi z konfiguracji (clinic_council); ta tabela go koryguje — zawieszeni są pomijani we wszystkich
+    rolach, przyjęci przez Rekrutera dochodzą do ról, które przyznało im Konsylium."""
+    STATUSES = [('active', 'aktywny'), ('suspended', 'zawieszony')]
+    provider = models.CharField(max_length=32)
+    model = models.CharField(max_length=200)
+    company = models.CharField(max_length=100, blank=True)
+    origin = models.CharField(max_length=16, default='config', help_text='config — stały skład, recruiter — przyjęty przez Rekrutera.')
+    roles = models.JSONField(default=list, blank=True, help_text='Role przyznane przez Konsylium (dla origin=recruiter).')
+    status = models.CharField(max_length=12, choices=STATUSES, default='active', db_index=True)
+    admitted_at = models.DateTimeField(null=True, blank=True)
+    suspended_at = models.DateTimeField(null=True, blank=True)
+    last_ok_at = models.DateTimeField(null=True, blank=True)
+    first_fail_at = models.DateTimeField(null=True, blank=True, help_text='Początek nieprzerwanej serii twardych błędów (np. 404).')
+    last_error = models.CharField(max_length=160, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['provider', 'model'], name='council_seat_unique')]
+
+
+class CouncilRecruitment(models.Model):
+    """Dziennik Rekrutera: kandydat, egzamin, głosy Konsylium i decyzja (jawny na stronie Konsylium)."""
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    kind = models.CharField(max_length=16, default='candidate', help_text='candidate, suspension, return')
+    provider = models.CharField(max_length=32)
+    model = models.CharField(max_length=200)
+    company = models.CharField(max_length=100, blank=True)
+    source = models.JSONField(default=dict, blank=True, help_text='Skąd kandydat: katalog dostawcy, kontekst, uwagi sita.')
+    exam = models.JSONField(default=dict, blank=True)
+    votes = models.JSONField(default=list, blank=True)
+    decision = models.CharField(max_length=20, blank=True, help_text='admitted, rejected, would_admit, would_reject, suspended, returned')
+    roles = models.JSONField(default=list, blank=True)
+    mode = models.CharField(max_length=8, default='trial', help_text='trial — tylko rekomendacja, auto — decyzja wykonana.')
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+
 class ClinicDailyMessage(models.Model):
     """Przekaz dnia jednego obozu — streszczenie AI z postów danego dnia."""
     day = models.DateField()

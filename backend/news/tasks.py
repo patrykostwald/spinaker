@@ -262,3 +262,15 @@ def dr_spin_thread_task():
         return build_daily_thread()
     finally:
         cache.delete('dr-spin-thread-lock')
+
+
+@shared_task(name="news.tasks.council_recruiter_task", soft_time_limit=1500, time_limit=1600)
+def council_recruiter_task():
+    """Rekruter Konsylium (co noc): zawieszenia martwych członków, powroty, egzamin jednego kandydata."""
+    if not cache.add("council-recruiter-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news.council_recruiter import run
+        return run()
+    finally:
+        cache.delete("council-recruiter-lock")

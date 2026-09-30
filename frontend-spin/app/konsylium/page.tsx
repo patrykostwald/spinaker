@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CouncilRoster, HowItWorksFilm } from "@spin-clinic/ui";
+import { CouncilRecruitmentLog, CouncilRoster, HowItWorksFilm } from "@spin-clinic/ui";
 import { DocLayout } from "@spin-clinic/ui/kit";
 
 export const metadata = {
@@ -113,6 +113,12 @@ export default function CouncilPage() {
       </ul>
       <p>Do każdego wpisu dobieramy modele różnych firm, zaczynając od polskiego. Gdy któryś nie odpowie, dołącza kolejny. Przy mniej niż 3 odpowiedziach diagnoza się nie ukazuje; niepełny skład opisujemy w jej ograniczeniach. Poniżej modele skonfigurowane do pracy w Konsylium.</p>
       <CouncilRoster />
+    </section>
+
+    <section id="rekrutacja"><h2>Rekrutacja do Konsylium</h2>
+      <p>Skład nie jest zamknięty. Co noc Rekruter Konsylium przegląda katalogi darmowych modeli i wybiera najwyżej jednego kandydata — pierwszeństwo ma model polski i firma, której jeszcze nie ma w składzie. Kandydat zdaje egzamin: ocenia te same wpisy polityków co Konsylium. Liczy się zgodność werdyktu i siły spinu z diagnozą końcową, cytowanie technik i polszczyzna. Obecni członkowie głosują, a przyjęty model musi przyjąć Kartę; role dostaje tylko wtedy, gdy wynik egzaminu je uzasadnia.</p>
+      <p>Członek, który od trzech dni nie odpowiada (np. zniknął u dostawcy), zostaje zawieszony i wraca sam, gdy znów zacznie działać. Wszystkie decyzje zapisujemy poniżej. Do 7 października Rekruter działa w trybie próbnym: przyjęcia są rekomendacjami.</p>
+      <CouncilRecruitmentLog />
     </section>
 
     <section id="narzedzia"><h2>Narzędzia</h2>

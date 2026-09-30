@@ -54,7 +54,9 @@ def metadata(member):
         ('bielik', 'SpeakLeash / Cyfronet'), ('pllum', 'Konsorcjum PLLuM'),
         ('gpt', 'OpenAI'), ('qwen', 'Alibaba'), ('nemotron', 'NVIDIA'),
         ('gemini', 'Google'), ('mistral', 'Mistral AI'), ('llama', 'Meta'),
-        ('deepseek', 'DeepSeek'), ('kimi', 'Moonshot AI'), ('gemma', 'Google')) if token in lower), 'unknown')
+        ('deepseek', 'DeepSeek'), ('kimi', 'Moonshot AI'), ('gemma', 'Google'), ('glm', 'Zhipu AI'), ('phi-', 'Microsoft'),
+        ('command', 'Cohere'), ('granite', 'IBM'), ('olmo', 'Ai2'), ('hermes', 'Nous Research'), ('minimax', 'MiniMax'),
+        ('ernie', 'Baidu'), ('grok', 'xAI'), ('jamba', 'AI21'), ('magistral', 'Mistral AI'), ('ministral', 'Mistral AI')) if token in lower), 'unknown')
     return {'model': model, 'company': company, 'provider': service, 'role': 'członek'}
 
 

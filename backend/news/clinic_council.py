@@ -139,7 +139,10 @@ REVIEW_SCHEMA = {'type': 'object', 'properties': {'ok': {'type': 'boolean'}, 'is
 
 def _members(name: str, default: str) -> list[tuple[str, str]]:
     raw = os.environ.get(name, '').strip() or default
-    return [tuple(part.strip() for part in item.split(':', 1)) for item in raw.split(',') if ':' in item]
+    members = [tuple(part.strip() for part in item.split(':', 1)) for item in raw.split(',') if ':' in item]
+    # Rekruter Konsylium: bez zawieszonych, z przyjętymi do tej roli (news/council_recruiter.py)
+    from news.council_recruiter import adjust
+    return adjust(name, members)
 
 
 def enabled() -> bool:
@@ -158,6 +161,18 @@ def _json(text: str) -> dict:
 
 
 def ask(member: tuple[str, str], system: str, user: str, schema: dict, max_tokens: int = 3000) -> dict:
+    """Jedno zapytanie do członka; wynik trafia do kontroli zdrowia Rekrutera (twarde błędy → zawieszenie po 3 dniach)."""
+    from news.council_recruiter import record
+    try:
+        result = _ask(member, system, user, schema, max_tokens)
+    except ClinicAIError as error:
+        record(member, error.code)
+        raise
+    record(member, None)
+    return result
+
+
+def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_tokens: int = 3000) -> dict:
     """Jedno zapytanie do darmowego modelu (Groq albo NVIDIA NIM, API zgodne z OpenAI). JSON opisany w poleceniu."""
     service, model = member
     if not registry.configured(member):
@@ -202,7 +217,8 @@ def _ask_gemini(model: str, system: str, user: str, schema: dict, max_tokens: in
     try:
         response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
                                  json=body, timeout=(5, 90), headers={'x-goog-api-key': key})
-        response.raise_for_status()
+        if response.status_code >= 400:
+            raise ClinicAIError(f'gemini: http_{response.status_code}')  # np. 402 — wyczerpane środki, 404 — model zniknął
         parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
         return _json(''.join(part.get('text', '') for part in parts))
     except (requests.RequestException, KeyError, IndexError, ValueError, TypeError) as error:
