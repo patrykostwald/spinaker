@@ -19,12 +19,26 @@ VOTING_PATHS = [
 ]
 
 
+PRINT_PATHS = [
+    '/sejm/term10/prints',
+    '/sejm/term10/prints/{token}',
+]
+
+
 OFFICIAL_APIS = (
     (
         'sejm',
         API + '/sejm/term10/votings',
         'https://www.sejm.gov.pl/sejm10.nsf/page.xsp/copyright',
         'Publiczna dokumentacja API Sejmu opisuje wyszukiwanie, głosowania i stronicowanie; karta obejmuje wyłącznie trzy ścieżki głosowań kadencji 10.',
+        VOTING_PATHS,
+    ),
+    (
+        'sejm',
+        API + '/sejm/term10/prints',
+        'https://www.sejm.gov.pl/sejm10.nsf/page.xsp/copyright',
+        'Publiczna dokumentacja API Sejmu opisuje listę druków i szczegóły druku; karta obejmuje wyłącznie metadane druków kadencji 10 (lista i pojedynczy druk).',
+        PRINT_PATHS,
     ),
 )
 
@@ -53,7 +67,7 @@ class Command(BaseCommand):
         now = timezone.now()
         if options['apply'] and (not options['evidence_url'] or not options['reviewed_by']):
             raise ValueError('--apply wymaga --evidence-url i --reviewed-by; komenda nie może sama tworzyć podstawy dostępu.')
-        for provider, endpoint, terms_url, note in OFFICIAL_APIS:
+        for provider, endpoint, terms_url, note, paths in OFFICIAL_APIS:
             # Planning is an audit view, not a side effect.  In particular it
             # must not create a catalogue Source before an editor supplies the
             # reviewed evidence required by --apply.
@@ -84,10 +98,13 @@ class Command(BaseCommand):
                 continue
             current_paths = set(latest.allowed_path_patterns) if latest else set()
             if (latest and latest.endpoint == endpoint and latest.valid_until and latest.valid_until > now
-                    and set(VOTING_PATHS).issubset(current_paths)):
+                    and set(paths).issubset(current_paths)):
                 self.stdout.write(f'{provider}: aktualna karta v{latest.version} już istnieje.')
                 continue
-            version = (latest.version + 1) if latest else 1
+            # Wersja jest unikalna dla całego źródła (głosowania i druki to osobne karty tego samego Sejmu).
+            newest = (SourceAccessInstruction.objects.filter(source=source).order_by('-version')
+                      .values_list('version', flat=True).first() if source else None)
+            version = (newest or 0) + 1
             message = f'{provider}: karta API v{version}, zakres content, ważna {valid_days} dni.'
             if not options['apply']:
                 self.stdout.write('PLAN ' + message)
@@ -99,7 +116,7 @@ class Command(BaseCommand):
                 channel=SourceAccessInstruction.Channel.API,
                 allowed_scope=SourceAccessInstruction.Scope.CONTENT,
                 endpoint=endpoint,
-                allowed_path_patterns=VOTING_PATHS,
+                allowed_path_patterns=paths,
                 terms_url=terms_url,
                 evidence={
                     'documentation_url': options['evidence_url'],
