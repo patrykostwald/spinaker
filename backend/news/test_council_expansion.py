@@ -364,3 +364,26 @@ def test_scan_ignores_unanswered_member_scores():
                                                         {'model': 'bielik', 'verdict': 'partial', 'intensity': 50}]}})
     result = scan_data(row)['council']
     assert result['verdict_agreement'] == '1/1' and result['range'] == [50, 50]
+
+
+def test_fact_check_falls_back_to_claude_when_gemini_fails(monkeypatch):
+    monkeypatch.setenv('GEMINI_API_KEY', 'x')
+
+    def no_money(*args, **kwargs):
+        raise council.ClinicAIError('gemini_402: brak środków')
+
+    monkeypatch.setattr(council.clinic_ai, '_call_gemini', no_money)
+    monkeypatch.setattr(council, 'claude_check', lambda claims: ([{'claim': claims[0], 'assessment': 'true', 'sources': []}], {'model': 'claude'}))
+    claims, usage = council.check_claims(['PKB wzrósł o 3%'])
+    assert usage == {'model': 'claude'} and claims[0]['assessment'] == 'true'
+    monkeypatch.setattr(council, 'claude_check', lambda claims: None)
+    claims, usage = council.check_claims(['PKB wzrósł o 3%'])
+    assert usage == {} and claims[0]['assessment'] == 'unverified'
+
+
+def test_escalation_needs_flag_but_fallback_does_not(monkeypatch):
+    monkeypatch.delenv('CLINIC_ESCALATE', raising=False)
+    monkeypatch.setattr(council, 'claude_check', lambda claims: ([], {'model': 'claude'}))
+    assert council.escalate_claims(['x']) is None
+    monkeypatch.setenv('CLINIC_ESCALATE', 'claude')
+    assert council.escalate_claims(['x']) == ([], {'model': 'claude'})

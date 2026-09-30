@@ -641,7 +641,7 @@ def test_council_combines_independent_opinions_by_fixed_rules():
 @pytest.mark.django_db
 def test_council_diagnosis_end_to_end_with_review_and_linguist(monkeypatch):
     from news import clinic_council as c
-    monkeypatch.setenv('GROQ_API_KEY', 'g'); monkeypatch.setenv('NIM_API_KEY', 'n'); monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    monkeypatch.setenv('GROQ_API_KEY', 'g'); monkeypatch.setenv('NIM_API_KEY', 'n'); monkeypatch.delenv('GEMINI_API_KEY', raising=False); monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
     monkeypatch.setenv('CLINIC_COUNCIL', 'groq:m1,groq:m2,nim:m3')
     quote = 'Tylko my obronimy Polaków!'
     member = {'verdict': 'spin', 'intensity': 60, 'techniques': [{'id': 'falszywa_alternatywa', 'quote': quote, 'explanation': 'e'}],

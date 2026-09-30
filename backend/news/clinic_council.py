@@ -303,19 +303,19 @@ def combine(opinions: list[dict]) -> dict:
 
 
 def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
-    """Twierdzenia sprawdza Gemini z wyszukiwarką Google; źródła wyłącznie z wyników wyszukiwania."""
+    """Twierdzenia sprawdza Gemini z wyszukiwarką Google; źródła wyłącznie z wyników wyszukiwania.
+    Gdy Gemini nie działa (brak klucza, 402 — brak środków, limit), sprawdza Claude z wyszukiwarką w ramach dziennego budżetu."""
     if not claims:
         return [], {}
-    if not os.environ.get('GEMINI_API_KEY', '').strip():
-        return [{'claim': c, 'assessment': 'unverified', 'explanation': 'Nie sprawdzono w wyszukiwarce.', 'sources': []} for c in claims], {}
-    try:
-        # Limit z zapasem: Gemini myśli i wyszukuje w ramach tych samych tokenów (płaci się tylko za zużyte).
-        response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=16000)
-    except ClinicAIError as error:
-        logger.warning('council fact check failed: %s', error.code)
-        return [{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.', 'sources': []}
-                for c in claims], {}
-    return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
+    if os.environ.get('GEMINI_API_KEY', '').strip():
+        try:
+            # Limit z zapasem: Gemini myśli i wyszukuje w ramach tych samych tokenów (płaci się tylko za zużyte).
+            response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=16000)
+            return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
+        except ClinicAIError as error:
+            logger.warning('council fact check (Gemini) failed: %s', error.code)
+    return claude_check(claims) or ([{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.',
+                                      'sources': []} for c in claims], {})
 
 
 UNCHECKED = 'Nie sprawdzono w wyszukiwarce — twierdzenie niezweryfikowane.'
@@ -426,7 +426,14 @@ def needs_escalation(combined: dict, opinions: list[dict]) -> bool:
 
 def escalate_claims(claims: list[str]) -> tuple[list[dict], dict] | None:
     """Mocniejsze sprawdzenie faktów płatnym Claude z wyszukiwaniem (CLINIC_ESCALATE=claude, klucz i budżet)."""
-    if os.environ.get('CLINIC_ESCALATE', '').strip().lower() != 'claude' or not os.environ.get('ANTHROPIC_API_KEY', '').strip():
+    if os.environ.get('CLINIC_ESCALATE', '').strip().lower() != 'claude':
+        return None
+    return claude_check(claims)
+
+
+def claude_check(claims: list[str]) -> tuple[list[dict], dict] | None:
+    """Sprawdzenie faktów Claude z wyszukiwarką — przy docisku i jako zapas za Gemini. Bez klucza albo budżetu: None."""
+    if not os.environ.get('ANTHROPIC_API_KEY', '').strip():
         return None
     from news.clinic import BUDGET_RESERVE_USD, budget_left
     if budget_left() < BUDGET_RESERVE_USD:
