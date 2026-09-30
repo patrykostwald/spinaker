@@ -307,3 +307,13 @@ def inquisitor_task(self):
 from news.notification_tasks import process_notification_events, send_notification_digests  # noqa: F401,E402
 
 from news.account_lifecycle import send_password_reset, send_account_verification  # noqa: F401
+
+
+@shared_task(name="news.tasks.council_charter_missing_task", soft_time_limit=600, time_limit=660)
+def council_charter_missing_task():
+    """Po resecie darmowych limitów (2:15): Kartę przyjmują modele, które jeszcze nie odpowiedziały (np. po 429 lub 402)."""
+    from io import StringIO
+    from django.core.management import call_command
+    out, err = StringIO(), StringIO()
+    call_command('council_charter', missing=True, stdout=out, stderr=err)
+    return {'status': 'ok', 'accepted': out.getvalue().count('\n'), 'no_answer': err.getvalue().count('\n')}
