@@ -387,3 +387,12 @@ def test_escalation_needs_flag_but_fallback_does_not(monkeypatch):
     assert council.escalate_claims(['x']) is None
     monkeypatch.setenv('CLINIC_ESCALATE', 'claude')
     assert council.escalate_claims(['x']) == ([], {'model': 'claude'})
+
+
+def test_council_usage_is_priced_by_fact_check_model_not_opus():
+    from news.clinic_ai import cost_usd
+    tokens = {'input_tokens': 10000, 'output_tokens': 2000, 'web_search_requests': 1}
+    old = cost_usd({**tokens, 'model': 'konsylium: gpt-oss-20b, qwen3.8-27b, Bielik-11B', 'council': {'escalated': False}})
+    assert old == cost_usd({**tokens, 'model': 'gemini-3.8-flash'})
+    claude = cost_usd({**tokens, 'model': 'konsylium: gpt-oss-20b', 'check_model': 'claude-sonnet-5'})
+    assert claude == cost_usd({**tokens, 'model': 'claude-sonnet-5'}) < cost_usd({**tokens, 'model': 'claude-opus'})

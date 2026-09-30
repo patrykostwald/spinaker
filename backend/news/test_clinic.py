@@ -735,3 +735,20 @@ def test_x_publish_failure_sends_one_alert(monkeypatch):
     assert result['results'][0]['posted'] is False and alerts and alerts[0][0] == row.pk and '403' in alerts[0][1]
     row.refresh_from_db()
     assert row.x_posted_at is None  # nieopublikowany — kolejna próba przy następnym przebiegu
+
+
+@pytest.mark.django_db
+def test_backfill_takes_missed_posts_by_score_and_skips_permanent_failures(monkeypatch):
+    from io import StringIO
+    from django.core.management import call_command
+    from news.management.commands import clinic_backfill
+    acc = account()
+    rows = {name: SpinDiagnosis.objects.create(post=post(acc, post_id=pid, hours_ago=30), status=status, screen_score=score, error=error)
+            for name, pid, status, score, error in [('queued', '1', 'queued', 60, ''), ('flagged', '2', 'flagged', 80, ''),
+                                                    ('transient', '3', 'failed', 70, 'council_too_few_members: 2'),
+                                                    ('paid', '4', 'failed', 90, 'gemini_402: brak środków'), ('done', '5', 'approved', 95, '')]}
+    seen = []
+    monkeypatch.setattr(clinic_backfill, 'budget_left', lambda: 3.0)
+    monkeypatch.setattr(clinic_backfill, 'diagnose', lambda row, figure=None: seen.append(row.pk) or row)
+    call_command('clinic_backfill', since=(timezone.localdate() - timedelta(days=3)).isoformat(), limit=10, stdout=StringIO())
+    assert seen == [rows['flagged'].pk, rows['transient'].pk, rows['queued'].pk]

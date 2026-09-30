@@ -205,6 +205,11 @@ def cost_usd(usage: dict) -> float:
     if not usage:
         return 0.0
     model = str(usage.get('model') or model_name()).lower()
+    if model.startswith('konsylium'):
+        # Konsylium: członkowie są darmowi, płaci się tylko za sprawdzenie faktów — wyceniamy model, który je zrobił
+        # (starsze wpisy bez check_model: Gemini, a przy docisku Claude). Lista członków nie może trafić w cennik Opusa.
+        escalated = (usage.get('council') or {}).get('escalated')
+        model = str(usage.get('check_model') or (model_name() if escalated else 'gemini')).lower()
     family = next((name for name in PRICES if name in model), 'opus')
     price_in = float(os.environ.get('CLINIC_PRICE_IN', '') or PRICES[family][0])
     price_out = float(os.environ.get('CLINIC_PRICE_OUT', '') or PRICES[family][1])
