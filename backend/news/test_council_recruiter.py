@@ -103,3 +103,12 @@ def test_failed_exam_is_rejected_without_votes(monkeypatch):
         'items': 5, 'answered': 2, 'agreement': 0.2, 'mae': 40, 'techniques_avg': 0, 'polish': None, 'passed': False, 'answers': []})
     with patch.object(recruiter, 'vote', side_effect=AssertionError('no vote on failed exam')):
         assert recruiter.recruit()['decision'] == 'would_reject'
+
+
+@pytest.mark.django_db
+def test_run_examines_several_candidates_per_night(monkeypatch):
+    monkeypatch.setenv('COUNCIL_RECRUITER_PER_NIGHT', '3')
+    monkeypatch.setattr(recruiter, 'health', lambda: [])
+    calls = iter([{'status': 'ok', 'model': 'a'}, {'status': 'ok', 'model': 'b'}, {'status': 'no_candidates'}, {'status': 'ok'}])
+    monkeypatch.setattr(recruiter, 'recruit', lambda dry_run=False: next(calls))
+    assert [r.get('model') for r in recruiter.run()['recruitment']] == ['a', 'b', None]

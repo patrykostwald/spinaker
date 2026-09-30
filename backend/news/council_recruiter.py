@@ -377,6 +377,23 @@ def recruit(dry_run: bool = False) -> dict:
     return {'status': 'ok', 'id': entry.pk, 'model': candidate['model'], 'decision': decision, 'roles': roles}
 
 
+def per_night() -> int:
+    """Ilu kandydatów egzaminujemy w jednym nocnym przebiegu (COUNCIL_RECRUITER_PER_NIGHT, domyślnie 3, najwyżej 10)."""
+    try:
+        return max(1, min(10, int(os.environ.get('COUNCIL_RECRUITER_PER_NIGHT', '3'))))
+    except ValueError:
+        return 3
+
+
 def run(dry_run: bool = False) -> dict:
     changes = [] if dry_run else health()
-    return {'health': changes, 'recruitment': recruit(dry_run=dry_run)}
+    if dry_run:
+        return {'health': changes, 'recruitment': recruit(dry_run=True)}
+    # Każdy egzamin trafia do dziennika, a sito pomija kandydatów z ostatnich 60 dni — kolejny przebieg bierze następnego.
+    results = []
+    for _ in range(per_night()):
+        result = recruit()
+        results.append(result)
+        if result.get('status') != 'ok':
+            break
+    return {'health': changes, 'recruitment': results}
