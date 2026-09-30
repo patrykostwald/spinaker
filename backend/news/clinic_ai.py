@@ -189,9 +189,13 @@ def _json_from_text(blocks) -> dict:
         if start == -1 or end == -1:
             continue
         try:
-            return json.loads(candidate[start:end + 1])
+            # strict=False: dosłowne nowe linie w długich tekstach (Gemini z wyszukiwarką tak odpowiada).
+            return json.loads(candidate[start:end + 1], strict=False)
         except json.JSONDecodeError:
-            continue
+            try:
+                return json.JSONDecoder(strict=False).raw_decode(candidate[start:])[0]
+            except json.JSONDecodeError:
+                continue
     raise ClinicAIError('invalid_json')
 
 

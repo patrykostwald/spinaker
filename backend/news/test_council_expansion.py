@@ -432,3 +432,36 @@ def test_json_answer_with_trailing_text_is_read():
 def test_json_answer_with_literal_newlines_in_strings_is_read():
     raw = '{"headline": "Tytuł", "analysis": "Pierwszy akapit.\nDrugi akapit."}'
     assert council._json(raw)['analysis'] == 'Pierwszy akapit.\nDrugi akapit.'
+
+
+@pytest.mark.django_db
+def test_long_council_roster_fits_model_name_field(monkeypatch):
+    from news import clinic
+    from news.test_clinic import account, post
+    from news.clinic_models import SpinDiagnosis
+    roster = 'konsylium: ' + ', '.join(['gpt-oss-20b', 'qwen3.8-27b', 'nemotron-3-super-120b-a12b', 'gemini-3.8-flash',
+                                        'Bielik-11B-v3.0-Instruct:publicai', 'llama-3.3-70b-instruct-fp8-fast', 'gemma-4-31b-it:free'])
+    row = SpinDiagnosis.objects.create(post=post(account()), status='queued', screen_score=80)
+    result = {'verdict': 'spin', 'intensity': 60, 'headline': 'Nagłówek', 'summary': 'Krótko.', 'analysis': 'Dłużej.',
+              'limitations': '', 'techniques': [], 'loaded_words': [], 'claims': [], 'usage': {'model': roster}}
+    monkeypatch.setattr(clinic.clinic_ai, 'diagnose', lambda *a, **k: result)
+    clinic.diagnose(row)
+    row.refresh_from_db()
+    assert len(row.model_name) <= 64 and row.status != 'failed'
+
+
+def test_free_fact_check_tries_next_model_name_on_404(monkeypatch):
+    monkeypatch.setenv('GROQ_API_KEY', 'g')
+    monkeypatch.delenv('CLINIC_FREE_CHECK_MODEL', raising=False)
+    cache.clear()
+    seen = []
+    content = json.dumps({'claims': [{'claim': 'x', 'assessment': 'supported', 'sources': [{'url': 'https://a.pl/1'}]}]})
+    def post(url, json=None, **kwargs):
+        seen.append(json['model'])
+        if json['model'] == 'groq/compound':
+            return Mock(status_code=404)
+        return Mock(status_code=200, json=lambda: {'choices': [{'message': {'content': content, 'executed_tools': [
+            {'search_results': {'results': [{'url': 'https://a.pl/1', 'title': 'A'}]}}]}}]})
+    monkeypatch.setattr(council.requests, 'post', post)
+    claims, usage = council.free_check(['x'])
+    assert seen[:2] == ['groq/compound', 'groq/compound-mini'] and usage['model'] == 'groq/compound-mini'

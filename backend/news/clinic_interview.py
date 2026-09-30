@@ -381,7 +381,7 @@ def process(interview: ClinicInterview) -> ClinicInterview:
     for field, value in result.items():
         setattr(interview, field, value)
     interview.usage = {'gemini': gemini_usage, 'claude': usage}
-    interview.model_name = usage.get('model') or clinic_ai.model_name()
+    interview.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
     interview.status, interview.error, interview.diagnosed_at = 'approved', '', timezone.now()
     interview.save()
     return interview
@@ -398,7 +398,7 @@ def rediagnose(interview: ClinicInterview) -> ClinicInterview:
     for field, value in result.items():
         setattr(interview, field, value)
     interview.usage = {**(interview.usage or {}), 'claude': usage}
-    interview.model_name = usage.get('model') or clinic_ai.model_name()
+    interview.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
     interview.status, interview.error, interview.diagnosed_at = 'approved', '', timezone.now()
     interview.save()
     return interview

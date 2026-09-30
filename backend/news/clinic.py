@@ -228,7 +228,7 @@ def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
         score = result['score']
         status = 'queued' if score >= auto else 'flagged' if score >= flag else 'not_applicable'
         fields = {'status': status, 'triage': result, 'screen_score': score,
-                  'provider': result['provider'], 'model_name': result['model']}
+                  'provider': result['provider'], 'model_name': str(result['model'])[:64]}
     try:
         with transaction.atomic():
             return SpinDiagnosis.objects.create(post=post, prompt_version=clinic_ai.PROMPT_VERSION, **fields)
@@ -267,7 +267,8 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         if row.status == 'approved':
             row.reviewed_at = timezone.now()
         row.provider = 'anthropic'  # płatna diagnoza (Claude albo Gemini) — to pole odróżnia ją od strażnika
-        row.model_name = usage.get('model') or clinic_ai.model_name()
+        # Pełny skład Konsylium jest w usage['council']; pole ma 64 znaki (lista nazw przy komplecie członków jest dłuższa).
+        row.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
     row.save()
@@ -521,7 +522,7 @@ def run_daily_messages(day=None) -> dict:
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
             'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
             'usage': result['usage'], 'status': status,
-            'model_name': result['usage'].get('model', ''), 'prompt_version': clinic_ai.PROMPT_VERSION,
+            'model_name': result['usage'].get('model', '')[:64], 'prompt_version': clinic_ai.PROMPT_VERSION,
             'reviewed_at': timezone.now() if status == 'approved' else None})
         message.posts.set(posts)
         created[camp] = message.pk

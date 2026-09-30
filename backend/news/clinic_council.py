@@ -340,7 +340,19 @@ FREE_CHECK = ('groq', 'groq/compound')  # darmowy Groq z wbudowaną wyszukiwark�
 def free_check(claims: list[str]) -> tuple[list[dict], dict] | None:
     """Darmowe sprawdzenie faktów (Groq Compound z wyszukiwarką), gdy płatne Gemini nie działa. Źródła tylko z wyników
     wyszukiwania; gdy żadne twierdzenie nie ma źródła — None (próbuje następny sposób)."""
-    member = ('groq', os.environ.get('CLINIC_FREE_CHECK_MODEL', '').strip() or FREE_CHECK[1])
+    configured_model = os.environ.get('CLINIC_FREE_CHECK_MODEL', '').strip()
+    for name in ([configured_model] if configured_model else []) + FREE_CHECK_MODELS:
+        result = _free_check_with(('groq', name), claims)
+        if result != 'not_found':
+            return result
+    return None
+
+
+# Nazwy modelu Groq z wbudowaną wyszukiwarką zmieniały się (compound-beta → groq/compound); 404 → następna.
+FREE_CHECK_MODELS = ['groq/compound', 'groq/compound-mini', 'compound-beta', 'compound-beta-mini']
+
+
+def _free_check_with(member, claims):
     if not registry.configured(member) or not registry.reserve(member):
         return None
     body = {'model': member[1], 'temperature': 0.1, 'max_tokens': 4000, 'messages': [
@@ -349,6 +361,8 @@ def free_check(claims: list[str]) -> tuple[list[dict], dict] | None:
     try:
         response = requests.post(registry.endpoint('groq'), json=body, timeout=(5, 120),
                                  headers={'Authorization': f"Bearer {registry.credentials('groq')}"})
+        if response.status_code == 404:
+            return 'not_found'
         if response.status_code >= 400:
             raise ClinicAIError(f'groq: http_{response.status_code}')
         message = response.json()['choices'][0]['message']
