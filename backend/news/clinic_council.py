@@ -158,10 +158,11 @@ def _json(text: str) -> dict:
     if start == -1 or end == -1:
         raise ClinicAIError('invalid_json')
     try:
-        result = json.loads(text[start:end + 1])
+        # strict=False: modele wstawiają dosłowne nowe linie w długich tekstach (akapity analizy) — to nadal poprawna treść.
+        result = json.loads(text[start:end + 1], strict=False)
     except ValueError:
         # Model dopisał tekst po obiekcie (np. drugi nawias w komentarzu) — bierzemy pierwszy pełny obiekt JSON.
-        result, _ = json.JSONDecoder().raw_decode(text[start:])
+        result, _ = json.JSONDecoder(strict=False).raw_decode(text[start:])
     if not isinstance(result, dict):
         raise ClinicAIError('invalid_json')
     return result
@@ -245,6 +246,7 @@ def ask_role(name: str, default: str, system: str, user: str, schema: dict, max_
         try:
             return ask(member, system, user, schema, max_tokens), member[1]
         except ClinicAIError as error:
+            logger.warning('council role %s: %s failed: %s', name, member[1], error.code)
             last = error
     raise last or ClinicAIError(f'{name}_unavailable')
 
@@ -411,7 +413,8 @@ def write(combined: dict, claims: list[dict], context_lines: str, opinions: list
         payload['uwagi_recenzenta_do_poprawienia'] = issues
     user = json.dumps(payload, ensure_ascii=False, default=str)
     for attempt in range(2):
-        data, model = ask_role('CLINIC_COUNCIL_CHAIR', CHAIR, WRITER_SYSTEM, user, WRITER_SCHEMA, max_tokens=3000)
+        # Zapas na rozumowanie modeli „myślących” — przy 3000 tokenach odpowiedź bywała ucięta w połowie JSON-a.
+        data, model = ask_role('CLINIC_COUNCIL_CHAIR', CHAIR, WRITER_SYSTEM, user, WRITER_SCHEMA, max_tokens=8000)
         text = ' '.join(str(data.get(k, '')) for k in ('headline', 'summary', 'analysis'))
         if data.get('headline') and looks_polish(text):
             return data, model
@@ -423,7 +426,7 @@ def polish(text: dict) -> tuple[dict, str]:
     """Językoznawca: poprawia tylko język. Gdy odpowiedź jest podejrzana (inna długość, nie po polsku) — zostaje oryginał."""
     fields = {k: str(text.get(k, '')) for k in ('headline', 'summary', 'analysis', 'limitations')}
     try:
-        data, model = ask_role('CLINIC_COUNCIL_LINGUIST', LINGUIST, LINGUIST_SYSTEM, json.dumps(fields, ensure_ascii=False), WRITER_SCHEMA)
+        data, model = ask_role('CLINIC_COUNCIL_LINGUIST', LINGUIST, LINGUIST_SYSTEM, json.dumps(fields, ensure_ascii=False), WRITER_SCHEMA, max_tokens=8000)
     except ClinicAIError:
         return fields, ''
     fixed = {}

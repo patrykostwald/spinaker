@@ -427,3 +427,8 @@ def test_free_fact_check_without_sources_falls_through(monkeypatch):
 
 def test_json_answer_with_trailing_text_is_read():
     assert council._json('Oto ocena: {"verdict": "spin", "intensity": 60} Uwaga: {dodatkowy komentarz}') == {'verdict': 'spin', 'intensity': 60}
+
+
+def test_json_answer_with_literal_newlines_in_strings_is_read():
+    raw = '{"headline": "Tytuł", "analysis": "Pierwszy akapit.\nDrugi akapit."}'
+    assert council._json(raw)['analysis'] == 'Pierwszy akapit.\nDrugi akapit.'
