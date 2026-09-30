@@ -6373,3 +6373,46 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-post-scan .sc-source-disclosure .sc-scan-p-more { display: inline-flex; min-height: 44px; align-items: center; }
   .sc-post-scan .sc-source-disclosure { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--sc-line); }
 }
+/* Kreator nitki (zlecenie 060) */
+.sc-f2-editor-layout { display: grid; grid-template-columns: 240px minmax(0, 720px); gap: 32px; align-items: start; }
+.sc-f2-editor-nav { position: sticky; top: 100px; }
+.sc-f2-editor-nav .sc-f2-steps { grid-template-columns: minmax(0, 1fr); margin: 0; }
+.sc-f2-editor-nav button { display: flex; align-items: center; gap: 12px; padding: 16px; cursor: pointer; }
+.sc-f2-step-number { flex: 0 0 28px; text-align: center; font-weight: 700; }
+.sc-f2-editor-nav small { display: block; margin-top: 4px; }
+.sc-f2-step-compact { display: none; }
+.sc-f2-editor-content { min-width: 0; overflow-wrap: anywhere; }
+.sc-f2-editor-content > h2 { margin-top: 0; }
+.sc-f2 .sc-f2-add-material { display: grid; gap: 8px; width: 100%; min-height: 80px; padding: 20px; border: 2px dashed var(--sc-line-strong); border-radius: 12px; background: var(--sc-surface); color: var(--sc-text); font: inherit; text-align: left; cursor: pointer; }
+.sc-f2-add-material:hover { border-color: var(--sc-accent); }
+.sc-f2-add-material span { color: var(--sc-text-2); }
+.sc-f2-editor-content .sc-f2-preview .sc-thread-el { padding: 16px; margin-block: 12px; background: var(--sc-surface-2); border-radius: 12px; border: 1px solid var(--sc-line); }
+.sc-f2-publish-actions { margin-top: 24px; }
+.sc-f2-editor-dialog { box-sizing: border-box; padding: 0; border: 1px solid var(--sc-line-strong); border-radius: 16px; width: min(600px, calc(100% - 32px)); max-width: 100%; max-height: calc(100dvh - 32px); color: var(--sc-text); background: var(--sc-surface); font: inherit; overflow: hidden; }
+.sc-f2-editor-dialog::backdrop { background: rgb(0 0 0 / .65); }
+.sc-f2-dialog-panel { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); }
+.sc-f2-dialog-panel > header, .sc-f2-dialog-panel > footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; padding: 20px; }
+.sc-f2-dialog-panel > header { border-bottom: 1px solid var(--sc-line); }
+.sc-f2-dialog-panel > header h2 { margin: 0; }
+.sc-f2-dialog-panel > footer { border-top: 1px solid var(--sc-line); padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+.sc-f2-dialog-body { padding: 20px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; overflow-wrap: anywhere; }
+.sc-f2-dialog-body .sc-account-candidates > li { flex-wrap: wrap; }
+.sc-f2-dialog-body .sc-account-candidates > li > div { flex: 1 1 240px; min-width: 0; }
+.sc-f2-editor-drawer { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(580px, 100%); height: 100dvh; max-height: 100dvh; border-radius: 16px 0 0 16px; }
+.sc-f2-editor-drawer .sc-f2-dialog-panel { height: 100%; max-height: 100%; }
+.sc-f2-editor-drawer .sc-f2-dialog-body { flex: 1; }
+.sc-f2-editor-content [hidden], .sc-f2-editor-dialog [hidden] { display: none !important; }
+@media (max-width: 999px) {
+  .sc-f2-editor-layout { grid-template-columns: minmax(0, 720px); justify-content: center; gap: 24px; }
+  .sc-f2-editor-nav { position: static; }
+  .sc-f2-editor-nav .sc-f2-steps { display: none; }
+  .sc-f2-step-compact { display: block; }
+  .sc-f2-step-compact progress { display: block; width: 100%; height: 8px; accent-color: var(--sc-accent); }
+}
+@media (max-width: 600px) {
+  .sc-f2-editor-drawer { width: 100%; border: 0; border-radius: 0; }
+  .sc-f2-dialog-panel > header, .sc-f2-dialog-panel > footer, .sc-f2-dialog-body { padding-inline: 16px; }
+  .sc-f2-dialog-panel > footer { flex-wrap: wrap; }
+  .sc-f2-dialog-body .sc-account-field { padding: 12px; }
+  .sc-f2-dialog-body .sc-account-candidates > li > div { flex-basis: auto; }
+}

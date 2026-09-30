@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode, type FormEvent, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -80,6 +80,40 @@ function toRef(article: Article): PersonalArticleRef {
 
 const serialize = (draft: Draft) => JSON.stringify({ ...draft, items: draft.items.map(item => [item.key, item.note]) });
 
+/** Native modal keeps the background inert and restores focus to its trigger. */
+function EditorDialog({ title, drawer = false, onClose, children, footer }: {
+  title: string; drawer?: boolean; onClose: () => void; children: ReactNode; footer: ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  useEffect(() => {
+    const dialog = ref.current!;
+    const trigger = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
+    return () => { dialog.close(); document.body.style.overflow = overflow; trigger?.focus(); };
+  }, []);
+  return <dialog ref={ref} className={`sc-f2-editor-dialog${drawer ? ' sc-f2-editor-drawer' : ''}`} aria-labelledby={titleId}
+    onCancel={event => { event.preventDefault(); onClose(); }}
+    onKeyDown={event => {
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]'))
+        .filter(element => element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }}
+    onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="sc-f2-dialog-panel">
+      <header><h2 id={titleId}>{title}</h2><Button type="button" variant="ghost" aria-label="Zamknij okno" onClick={onClose}>✕</Button></header>
+      <div className="sc-f2-dialog-body">{children}</div>
+      <footer>{footer}</footer>
+    </div>
+  </dialog>;
+}
+
 export function MojaNitkaEditor({ threadId }: { threadId?: number }) {
   const { account, ownerId } = useOwnerId();
   if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam, czy jesteś zalogowany…</p>;
@@ -94,6 +128,9 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   const cache = useQueryClient();
   const account = useAccount();
   const [step, setStep] = useState(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'search' | 'link'>('search');
+  const [publishOpen, setPublishOpen] = useState(false);
   const [terms, setTerms] = useState(false);
   const [activeId, setActiveId] = useState(threadId);
   const saving = useRef(false);
@@ -246,21 +283,22 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
     const index = draft.items.findIndex(item => item.key === key);
     const next = draft.items.filter(item => item.key !== key);
     const neighbour = next[Math.min(index, next.length - 1)];
-    focusAfterMove.current = neighbour ? `${neighbour.key}:remove` : null;
+    focusAfterMove.current = !drawerOpen && neighbour ? `${neighbour.key}:remove` : null;
     update({ items: next });
     setAnnouncement('Usunięto element z nitki.');
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await persist(draft.isPublic, false);
+    if (draft.isPublic) { setPublishOpen(true); return; }
+    await persist(false, false);
   }
 
-  async function persist(makePublic: boolean, automatic: boolean) {
+  async function persist(makePublic: boolean, automatic: boolean, confirmedInModal = false) {
     if (saving.current) return;
     if (makePublic && thread.data?.hidden_at) { setError('Nitka jest ukryta przez zespół po zgłoszeniu.'); return; }
     if (!draft.title.trim()) { setError('Podaj tytuł nitki.'); return; }
-    if (makePublic && (!emailVerified(account.data) || !terms || step !== 5)) { setError('Potwierdź e-mail i Zasady w kroku Publikacja.'); return; }
+    if (makePublic && (!emailVerified(account.data) || !terms || !confirmedInModal)) { setError('Potwierdź e-mail i Zasady w oknie publikacji.'); return; }
     if (makePublic && !draft.description.trim()) { setError('Podaj pytanie, na które odpowiada nitka.'); return; }
     if (makePublic && draft.items.length < MIN_PUBLIC_ITEMS) { setError(`Opublikować można nitkę z co najmniej ${MIN_PUBLIC_ITEMS} elementami.`); return; }
     const snapshot = { ...draft, isPublic: makePublic };
@@ -283,6 +321,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       setDraft(current => ({ ...current, isPublic: makePublic }));
       published.current = makePublic;
       setActiveId(result.id);
+      if (makePublic) setPublishOpen(false);
       cache.setQueryData(personalKeys.thread(ownerId, result.id), result);
       await cache.invalidateQueries({ queryKey: personalKeys.threads(ownerId) });
       setNotice(`Zapisano ${formatDateTimePl(result.updated_at)}. ${result.is_public ? 'Nitka jest publiczna w sekcji Nitki.' : 'Nitka pozostaje prywatna.'}`);
@@ -317,7 +356,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   }
 
   const selectedSources = sources.filter(source => draft.sourceIds.includes(source.id));
-  const steps = ['Tytuł i pytanie', 'Materiały', 'Kolejność i notatki', 'Podgląd', 'Publikacja'];
+  const steps = ['Tytuł i pytanie', 'Materiały', 'Kolejność i notatki', 'Podgląd'];
   const preview: ThreadElement[] = draft.items.map((item, position) => item.kind === 'article'
     ? { ...item, kind: 'article', category: item.category ?? '', published_date: item.published_date ?? null, source_name: item.source_name ?? '', position }
     : { ...item, kind: 'link', domain: item.domain ?? '', title_origin: 'reader', position });
@@ -334,9 +373,21 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           : <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie układa jej AI — kolejność ustalasz sam. Możesz ją opublikować w sekcji Nitki.</p>}
         {thread.data?.hidden_at && <p className="sc-account-error">Zespół ukrył tę nitkę po zgłoszeniu. Napisz na kontakt@spin.clinic, jeśli uważasz, że to pomyłka.</p>}
       </header>
-      <nav aria-label="Kroki tworzenia nitki"><ol className="sc-f2-steps">{steps.map((label, index) => <li key={label}><button type="button" aria-current={step === index + 1 ? 'step' : undefined} disabled={pending || (index + 1 > step && !canAdvance)} onClick={() => setStep(index + 1)}>{index + 1}. {label}</button></li>)}</ol></nav>
-      <h2 ref={stepHeading} tabIndex={-1}>Krok {step} z 5: {steps[step - 1]}</h2>
-      <p className="sc-f2-muted">{draft.isPublic ? 'Zmiany w opublikowanej nitce zatwierdzisz w kroku Publikacja.' : 'Szkic zapisuje się automatycznie po wpisaniu tytułu. Publikujesz dopiero w ostatnim kroku.'}</p>
+      <div className="sc-f2-editor-layout">
+      <nav className="sc-f2-editor-nav" aria-label="Kroki tworzenia nitki">
+        <div className="sc-f2-step-compact"><p>Krok {step} z 4 · {steps[step - 1]}</p><progress value={step} max={4} aria-label={`Krok ${step} z 4`} /></div>
+        <ol className="sc-f2-steps">{steps.map((label, index) => {
+          const number = index + 1;
+          const available = number === 1 || (Boolean(draft.title.trim() && draft.description.trim()) && (number === 2 || draft.items.length > 0));
+          const completed = number < step && available;
+          return <li key={label}><button type="button" aria-current={step === number ? 'step' : undefined} disabled={pending || (!available && number !== step)} onClick={() => setStep(number)}>
+            <span className="sc-f2-step-number" aria-hidden="true">{completed ? '✓' : number}</span><span>{label}<small>{step === number ? 'Bieżący' : completed ? 'Ukończony' : available ? 'Dostępny' : 'Uzupełnij wcześniejsze kroki'}</small></span>
+          </button></li>;
+        })}</ol>
+      </nav>
+      <div className="sc-f2-editor-content">
+      <h2 ref={stepHeading} tabIndex={-1}>Krok {step} z 4: {steps[step - 1]}</h2>
+      <p className="sc-f2-muted">{draft.isPublic ? 'Zmiany w opublikowanej nitce zatwierdzisz w podglądzie.' : 'Szkic zapisuje się automatycznie po wpisaniu tytułu. Publikację potwierdzisz po podglądzie.'}</p>
 
       <section hidden={step !== 1} className="sc-account-section" aria-labelledby={`${uid}-basics`}>
         <header><h2 id={`${uid}-basics`}>Opis</h2></header>
@@ -356,7 +407,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       <section hidden={step !== 2 && step !== 3} className="sc-account-section" aria-labelledby={`${uid}-materials`}>
         <header><h2 id={`${uid}-materials`}>Elementy nitki <span>{draft.items.length}</span></h2></header>
         {draft.items.length === 0 ? (
-          <p className="sc-account-empty">Nitka nie ma jeszcze elementów. Pierwszy to materiał otwierający — ten, od którego zaczyna się sprawa. Znajdź go poniżej w Bazie albo dodaj przez link.</p>
+          <p className="sc-account-empty">Nitka nie ma jeszcze elementów. Pierwszy to materiał otwierający — ten, od którego zaczyna się sprawa. Kliknij „Dodaj materiał”, aby znaleźć go w Bazie albo dodać przez link.</p>
         ) : (
           <ol className="sc-account-items" aria-label="Kolejność elementów w nitce">
             {draft.items.map((item, index) => (
@@ -399,70 +450,11 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           </ol>
         )}
 
-        <div hidden={step !== 2} className="sc-account-finder">
-          <div className="sc-account-field">
-            <label htmlFor={`${uid}-search`}>Dodaj materiał z Bazy</label>
-            <div className="sc-account-inline">
-              <input id={`${uid}-search`} type="search" value={search} onChange={event => setSearch(event.target.value)}
-                onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setSearchTerm(search.trim()); } }} placeholder="Tytuł, hasło, osoba…" />
-              <Button type="button" variant="quiet" size="sm" onClick={() => setSearchTerm(search.trim())} disabled={search.trim().length < 2}>Szukaj</Button>
-              {draft.keywords.length > 0 && <Button type="button" variant="quiet" size="sm" onClick={() => { setSearch(draft.keywords.join(' ')); setSearchTerm(draft.keywords.join(' ')); }}>Szukaj po hasłach nitki</Button>}
-            </div>
-          </div>
-          {results.isFetching && <p role="status" className="sc-account-hint">Szukam w Bazie…</p>}
-          {results.isError && <p role="alert" className="sc-account-hint">Nie udało się przeszukać Bazy.</p>}
-          {results.isSuccess && !results.data?.results?.length && <p className="sc-account-hint">Brak materiałów dla „{searchTerm}”.</p>}
-          {results.isSuccess && results.data?.results?.length > 0 && (
-            <ul className="sc-account-candidates" aria-label="Wyniki wyszukiwania">
-              {results.data.results.map(article => (
-                <li key={article.id}>
-                  <div>
-                    <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(article.category)}</span> {article.source?.name} · {formatDateTimePl(article.published_date, article.date_precision)}</p>
-                    <strong>{article.title}</strong>
-                  </div>
-                  <Button type="button" variant="quiet" size="sm" disabled={selectedIds.has(article.id)} onClick={() => addArticle(toRef(article))}>
-                    {selectedIds.has(article.id) ? 'W nitce' : 'Dodaj'}<span className="sr-only">: {article.title}</span>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {(favorites.data?.results?.length ?? 0) > 0 && (
-            <details className="sc-account-from-favorites">
-              <summary>Dodaj z ulubionych materiałów ({favorites.data?.results?.length})</summary>
-              <ul className="sc-account-candidates">
-                {favorites.data!.results.map(row => (
-                  <li key={row.id}>
-                    <div>
-                      <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(row.article.category)}</span> {row.article.published_date ? formatDateTimePl(row.article.published_date) : ''}</p>
-                      <strong>{row.article.title}</strong>
-                    </div>
-                    <Button type="button" variant="quiet" size="sm" disabled={selectedIds.has(row.article.id)} onClick={() => addArticle(row.article)}>
-                      {selectedIds.has(row.article.id) ? 'W nitce' : 'Dodaj'}<span className="sr-only">: {row.article.title}</span>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
+        {step === 2 && <button type="button" className="sc-f2-add-material" aria-haspopup="dialog" onClick={() => { setDrawerMode('search'); setDrawerOpen(true); }}>
+          <strong>+ Dodaj materiał</strong>
+          {draft.items.length === 0 && <span>Zacznij od materiału otwierającego — tego, od którego zaczyna się sprawa.</span>}
+        </button>}
 
-          <div className="sc-account-field sc-account-linkadd">
-            <label htmlFor={`${uid}-link`}>Dodaj materiał przez link</label>
-            <div className="sc-account-inline">
-              <input id={`${uid}-link`} type="url" inputMode="url" value={linkUrl} maxLength={1024} placeholder="https://…"
-                onChange={event => { setLinkUrl(event.target.value); setLinkNeedsTitle(false); setLinkMessage(''); }}
-                onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addLink(); } }} />
-              <Button type="button" variant="quiet" size="sm" loading={linkPending} disabled={!linkUrl.trim() || linkPending || (linkNeedsTitle && !linkTitle.trim())} onClick={addLink}>Dodaj link</Button>
-            </div>
-            {linkNeedsTitle && (
-              <label className="sc-account-sublabel">Tytuł materiału — przepisz go ze strony źródła
-                <input value={linkTitle} maxLength={300} onChange={event => setLinkTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addLink(); } }} />
-              </label>
-            )}
-            <small>Jeśli materiał jest już w Bazie, podepniemy istniejący box. Z linków spoza Bazy zapisujemy tylko tytuł, adres i nazwę strony — bez treści i zdjęć.</small>
-            {linkMessage && <p role="status" className="sc-account-hint">{linkMessage}</p>}
-          </div>
-        </div>
       </section>
 
       <details hidden={step !== 2} className="sc-account-section sc-account-filters">
@@ -524,22 +516,105 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       </details>
 
       {step === 4 && <section className="sc-f2-preview" aria-label="Podgląd oczami czytelnika"><h2>{draft.title}</h2><p>{draft.description}</p><p>Autor: @{account.data?.user?.username} · {draft.items.length} materiałów</p><ol className="sc-thread-els">{preview.map((element, index) => <ElementRow key={`${element.kind}-${element.id}`} element={element} index={index} />)}</ol></section>}
-      {step === 5 && <section className="sc-f2-publish"><h2>{draft.isPublic ? 'Zatwierdź zmiany publicznej nitki' : 'Gotowa do publikacji?'}</h2><p>„{draft.title}” · {draft.items.length} materiałów. Po publikacji tytuł, pytanie i notatki będą widoczne dla wszystkich pod Twoją nazwą użytkownika.</p>
+      {drawerOpen && <EditorDialog drawer title={drawerMode === 'search' ? 'Dodaj materiał' : 'Dodaj link'} onClose={() => setDrawerOpen(false)} footer={<>
+        {drawerMode === 'search'
+          ? <Button type="button" variant="ghost" onClick={() => setDrawerMode('link')}>Dodaj link</Button>
+          : <Button type="button" variant="ghost" onClick={() => setDrawerMode('search')}>← Wróć do wyszukiwania</Button>}
+        <Button type="button" variant="primary" onClick={() => setDrawerOpen(false)}>Zamknij</Button>
+      </>}>
+        <div hidden={drawerMode !== 'search'} className="sc-account-finder">
+          <div className="sc-account-field">
+            <label htmlFor={`${uid}-search`}>Dodaj materiał z Bazy</label>
+            <div className="sc-account-inline">
+              <input id={`${uid}-search`} type="search" value={search} onChange={event => setSearch(event.target.value)}
+                onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setSearchTerm(search.trim()); } }} placeholder="Tytuł, hasło, osoba…" />
+              <Button type="button" variant="quiet" size="sm" onClick={() => setSearchTerm(search.trim())} disabled={search.trim().length < 2}>Szukaj</Button>
+              {draft.keywords.length > 0 && <Button type="button" variant="quiet" size="sm" onClick={() => { setSearch(draft.keywords.join(' ')); setSearchTerm(draft.keywords.join(' ')); }}>Szukaj po hasłach nitki</Button>}
+            </div>
+          </div>
+          {results.isFetching && <p role="status" className="sc-account-hint">Szukam w Bazie…</p>}
+          {results.isError && <p role="alert" className="sc-account-hint">Nie udało się przeszukać Bazy.</p>}
+          {results.isSuccess && !results.data?.results?.length && <p className="sc-account-hint">Brak materiałów dla „{searchTerm}”.</p>}
+          {results.isSuccess && results.data?.results?.length > 0 && (
+            <ul className="sc-account-candidates" aria-label="Wyniki wyszukiwania">
+              {results.data.results.map(article => (
+                <li key={article.id}>
+                  <div>
+                    <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(article.category)}</span> {article.source?.name} · {formatDateTimePl(article.published_date, article.date_precision)}</p>
+                    <strong>{article.title}</strong>
+                  </div>
+                  <Button type="button" variant={selectedIds.has(article.id) ? 'danger' : 'quiet'} size="sm" onClick={() => selectedIds.has(article.id) ? remove(`a:${article.id}`) : addArticle(toRef(article))}>
+                    <span aria-hidden="true">{selectedIds.has(article.id) ? '🗑' : '+'}</span> {selectedIds.has(article.id) ? 'Usuń' : 'Dodaj'}<span className="sr-only">: {article.title}</span>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {(favorites.data?.results?.length ?? 0) > 0 && (
+            <details className="sc-account-from-favorites">
+              <summary>Dodaj z ulubionych materiałów ({favorites.data?.results?.length})</summary>
+              <ul className="sc-account-candidates">
+                {favorites.data!.results.map(row => (
+                  <li key={row.id}>
+                    <div>
+                      <p className="sc-account-meta"><span className="sc-account-tag">{categoryLabel(row.article.category)}</span> {row.article.published_date ? formatDateTimePl(row.article.published_date) : ''}</p>
+                      <strong>{row.article.title}</strong>
+                    </div>
+                    <Button type="button" variant={selectedIds.has(row.article.id) ? 'danger' : 'quiet'} size="sm" onClick={() => selectedIds.has(row.article.id) ? remove(`a:${row.article.id}`) : addArticle(row.article)}>
+                      <span aria-hidden="true">{selectedIds.has(row.article.id) ? '🗑' : '+'}</span> {selectedIds.has(row.article.id) ? 'Usuń' : 'Dodaj'}<span className="sr-only">: {row.article.title}</span>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+
+        </div>
+          <div hidden={drawerMode !== 'link'} className="sc-account-field sc-account-linkadd">
+            <label htmlFor={`${uid}-link`}>Link (URL)</label>
+            <div className="sc-account-inline">
+              <input id={`${uid}-link`} type="url" inputMode="url" value={linkUrl} maxLength={1024} placeholder="https://…"
+                onChange={event => { setLinkUrl(event.target.value); setLinkNeedsTitle(false); setLinkMessage(''); }}
+                onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addLink(); } }} />
+
+            </div>
+            <label className="sc-account-sublabel">Tytuł materiału
+                <input value={linkTitle} maxLength={300} onChange={event => setLinkTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addLink(); } }} />
+              </label>
+            <Button type="button" variant="primary" loading={linkPending} disabled={!linkUrl.trim() || linkPending || (linkNeedsTitle && !linkTitle.trim())} onClick={addLink}>Dodaj</Button>
+            <small>Jeśli materiał jest już w Bazie, podepniemy istniejący box. Z linków spoza Bazy zapisujemy tylko tytuł, adres i nazwę strony — bez treści i zdjęć.</small>
+            {linkMessage && <p role="status" className="sc-account-hint">{linkMessage}</p>}
+          </div>
+
+        {error && <p role="alert" className="sc-account-error">{error}</p>}
+        <p role="status" className="sc-account-hint">{announcement || `${draft.items.length} materiałów w nitce.`}</p>
+      </EditorDialog>}
+      {publishOpen && <EditorDialog title={draft.isPublic ? 'Zatwierdź zmiany publicznej nitki' : 'Gotowa do publikacji?'} onClose={() => setPublishOpen(false)} footer={<>
+        <Button type="button" variant="ghost" onClick={() => setPublishOpen(false)}>Anuluj</Button>
+        <Button type="button" variant="primary" loading={pending} disabled={pending || !terms || !emailVerified(account.data) || draft.items.length < MIN_PUBLIC_ITEMS || Boolean(thread.data?.hidden_at)} onClick={() => persist(true, false, true)}>{draft.isPublic ? 'Zapisz zmiany' : 'Opublikuj nitkę'}</Button>
+      </>}>
+        <p>„{draft.title}” · {draft.items.length} materiałów. Po publikacji tytuł, pytanie i notatki będą widoczne dla wszystkich pod Twoją nazwą użytkownika: @{account.data?.user?.username}.</p>
         <VerifyEmailNotice />
         <label className="sc-f2-check"><input type="checkbox" checked={terms} onChange={event => setTerms(event.target.checked)} /><span>Potwierdzam <Link href="/zasady-korzystania" target="_blank">Zasady korzystania</Link> (wersja {TERMS_VERSION}). Nie publikuję danych prywatnych ani treści naruszających prawa innych.</span></label>
         {draft.items.length < MIN_PUBLIC_ITEMS && <p>Do publikacji dodaj co najmniej dwa materiały.</p>}
-        <Button type="button" variant="primary" disabled={pending || !terms || !emailVerified(account.data) || draft.items.length < MIN_PUBLIC_ITEMS || Boolean(thread.data?.hidden_at)} onClick={() => persist(true, false)}>{draft.isPublic ? 'Opublikuj zmiany' : 'Opublikuj nitkę'}</Button>
-        {activeId && draft.isPublic && <Button href={`/nitki/${activeId}`} variant="quiet">Zobacz opublikowaną nitkę</Button>}
-      </section>}
+        {error && <p role="alert" className="sc-account-error">{error}</p>}
+      </EditorDialog>}
 
-      <div className="sc-f2-actions">{step > 1 && <Button type="button" variant="quiet" disabled={pending} onClick={() => setStep(step - 1)}>Wstecz</Button>}{step < 5 && <Button type="button" variant="primary" disabled={pending || !canAdvance} onClick={() => setStep(step + 1)}>Dalej: {steps[step]}</Button>}</div>
+      <div className="sc-f2-actions" hidden={step === 4}>{step > 1 && <Button type="button" variant="quiet" disabled={pending} onClick={() => setStep(step - 1)}>Wstecz</Button>}{step < 4 && <Button type="button" variant="primary" disabled={pending || !canAdvance} onClick={() => setStep(step + 1)}>Dalej: {steps[step]}</Button>}</div>
+
+      {step === 4 && <div className="sc-f2-actions sc-f2-publish-actions">
+        <Button type="button" variant="quiet" disabled={pending} onClick={() => setStep(3)}>Wstecz</Button>
+        <Button type="button" variant="primary" disabled={pending} onClick={() => { setError(''); setPublishOpen(true); }}>{draft.isPublic ? 'Zapisz zmiany' : 'Publikuj'}</Button>
+        {!draft.isPublic && <Button type="submit" variant="ghost" disabled={pending}>Zapisz szkic</Button>}
+        {activeId && draft.isPublic && <Button href={`/nitki/${activeId}`} variant="quiet">Zobacz opublikowaną nitkę</Button>}
+      </div>}
 
       <div className="sc-account-savebar">
         <div role="status" aria-live="polite">
           {pending ? <p>Zapisuję…</p> : error ? <p>{error}</p> : dirty ? <p>Masz niezapisane zmiany.</p> : notice ? <p>{notice}</p> : <p>{activeId ? 'Wszystkie zmiany zapisane.' : 'Nadaj tytuł, aby rozpocząć autozapis.'}</p>}
         </div>
         <div className="sc-account-actions">
-          {!draft.isPublic && <Button type="submit" variant="quiet" disabled={pending}>Zapisz szkic teraz</Button>}
+          {!draft.isPublic && step !== 4 && <Button type="submit" variant="quiet" disabled={pending}>Zapisz szkic teraz</Button>}
           {activeId && (confirmDelete ? (
             <span className="sc-account-confirm">
               <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={removeThread}>Potwierdź usunięcie nitki</Button>
@@ -550,7 +625,9 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           ))}
         </div>
       </div>
-      <p className="sr-only" aria-live="polite">{announcement}</p>
+      </div>
+      </div>
+      <p className="sr-only" aria-live="polite">{drawerOpen ? '' : announcement}</p>
     </form>
   );
 }
