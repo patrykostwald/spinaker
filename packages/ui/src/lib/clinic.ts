@@ -1,12 +1,21 @@
 /** Klinika spinu — typy i zapytania do /api/clinic/ (backend/news/clinic.py). */
 import { apiFetch, apiWrite } from "./api";
 
+/** Etykiety wspólne dla panelu głosów i pełnej diagnozy. */
+export function agreementLabel(value: string | null | undefined): string {
+  const match = value?.match(/^(\d+)\s*\/\s*(\d+)$/);
+  return match ? `Zgodność oceny: ${match[1]} z ${match[2]} modeli` : "Zgodność oceny: brak danych";
+}
+export function techniqueLabel(count: number): string {
+  return count === 1 ? "technika" : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? "techniki" : "technik";
+}
 export type Camp = "government" | "opposition";
 export type Verdict = "spin" | "partial" | "no_spin" | "unclear";
 
 export type Party = { code: string; short: string; name: string };
 
 export type SpinAuthor = {
+  account_id?: number;
   name: string;
   handle: string;
   account_url: string;
@@ -14,6 +23,7 @@ export type SpinAuthor = {
   figure_id: number | null;
   role_title: string;
   party: Party | null;
+  eu_group?: string | null;
 };
 
 export type SpinCardData = {
@@ -26,6 +36,8 @@ export type SpinCardData = {
   headline: string;
   summary: string;
   technique_names: string[];
+  technique_types?: Array<{ name: string; category?: string }>;
+  technique_groups?: string[];
   post: {
     id: string;
     url: string;
@@ -41,17 +53,18 @@ export type SpinCardData = {
 
 export type SpinClaim = {
   claim: string;
-  assessment: "supported" | "contradicted" | "misleading" | "unverified";
+  assessment: "supported" | "contradicted" | "misleading" | "unverified" | "opinion";
   assessment_label: string;
   explanation: string;
   sources: Array<{ url: string; title: string }>;
 };
 
 export type SpinDetailData = SpinCardData & {
+  scan?: SpinScan;
   /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
   x_share?: string[];
   analysis: string;
-  techniques: Array<{ name: string; quote: string; explanation: string }>;
+  techniques: Array<{ name: string; quote: string; explanation: string; category?: string }>;
   claims: SpinClaim[];
   limitations: string;
   /** Synteza diagnozy do wątku na X (pusta, dopóki darmowy model jej nie przygotuje). */
@@ -60,7 +73,7 @@ export type SpinDetailData = SpinCardData & {
   council?: {
     agreement: string; chair: string; linguist: string; escalated: boolean;
     review: { ok: boolean | null; issues: string[]; model: string; revised?: boolean };
-    members: Array<{ model: string; verdict: string; intensity: number }>;
+    members: Array<{ model: string; verdict: string | null; intensity: number | null; status?: string }>;
   } | null;
   model: string;
   prompt_version: string;
@@ -70,18 +83,46 @@ export type SpinDetailData = SpinCardData & {
   notice: string;
 };
 
+/** Opcjonalne dane skanera; starsze API nadal korzysta z pól diagnozy. */
+export type SpinScan = {
+  families?: Record<string, { technique_types?: number }>;
+  techniques?: Array<{ category?: string; family?: string; name: string; quote?: string; explanation?: string }>;
+  claims?: { checked?: number; supported?: number; misleading?: number; contradicted?: number; opinions?: number; distinct?: number; unverified?: number };
+  sources?: number;
+  source_domains?: string[];
+  scope?: { text?: boolean; image?: boolean; video?: boolean; analyzed?: string[]; not_analyzed?: string[] };
+  council?: {
+    models?: number; agreement?: string | null; verdict_agreement?: string | null;
+    range?: number[] | null; votes?: Array<{ model: string; verdict: string | null; intensity: number | null }>;
+    method?: string; chair?: string; escalated?: boolean; reviewed?: boolean;
+  };
+  synthesis?: { lead?: string; points?: string[] } | null;
+  share?: { single?: string };
+  diagnosed_at?: string | null;
+};
+
 export type ScaleSide = { spin: number; partial: number; no_spin: number; unclear: number; assessed: number; share: number | null };
 export type SpinScale = { window_days: number; min_sample: number; enough_data: boolean; government: ScaleSide; opposition: ScaleSide };
 
-export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string };
+export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string; available?: boolean };
 export type DailyMessage = {
   id?: number; day: string; camp?: Camp; message: string; analysis?: string; themes: string[]; posts_count: number; model: string;
   posts?: MessagePost[];
+  created_at?: string;
+  reviewed_at?: string | null;
+  scope?: { date_from: string | null; date_to: string | null; timezone: string };
 };
 
-export type InterviewQuote = { name: string; quote: string; time: string; seconds: number | null; explanation: string };
+export type InterviewQuote = { name: string; category?: string; quote: string; time: string; seconds: number | null; explanation: string };
 export type InterviewClaim = SpinClaim & { time: string; seconds: number | null };
+/** Optional participant list; legacy responses are adapted in the reader. */
+export type InterviewParticipant = {
+  id: string; role: "guest" | "host"; name: string; function?: string;
+  verdict?: Verdict; verdict_label?: string; intensity?: number; summary: string;
+  techniques: InterviewQuote[]; claims: InterviewClaim[]; limitations?: string;
+};
 export type Interview = {
+  participants?: InterviewParticipant[];
   id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
   guest_name: string; guest_role: string; host_name: string; headline: string; summary: string; overall: string;
   guest: { verdict: Verdict; verdict_label: string; intensity: number; summary: string; techniques: InterviewQuote[]; claims: InterviewClaim[] };
@@ -90,20 +131,29 @@ export type Interview = {
   limitations: string; model: string; diagnosed_at: string | null;
 };
 
-export type ClinicPageData = {
+export type DataPeriod = { generated_at?: string; since?: string | null };
+
+export type ClinicPageData = DataPeriod & {
   notice: string;
   scale: SpinScale;
   messages: Record<Camp, DailyMessage | null>;
   spin_of_day: SpinDetailData | null;
+  /** Spin dnia każdej strony; `order` — najpierw strona z mocniejszym (świeższym) spinem. `window`: today | 24h | 72h | latest. */
+  spin_by_camp?: { spins: Record<Camp, (SpinDetailData & { window: string; pool?: number; window_label?: string }) | null>; order: Camp[] };
   latest_spin: SpinDetailData | null;
   interview: Interview | null;
+  /** Drugi wywiad dnia — dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */
+  interview_second?: Interview | null;
   /** Wcześniejsze wywiady dnia (bez aktualnego), najnowsze najpierw. */
   interview_archive?: Interview[];
   message_history: Record<Camp, DailyMessage[]>;
   columns: Record<Camp, SpinCardData[]>;
   accounts_count: number;
   /** Liczniki pracy Kliniki: łącznie i dziś. */
-  stats?: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", { total: number; today: number }>;
+  stats?: Record<"read" | "screened" | "rejected" | "diagnosed" | "spins", { total: number; today: number }> & {
+    /** Obie strony obok siebie: konta, przeczytane wpisy, opublikowane diagnozy, spiny (od startu). */
+    by_camp?: Record<Camp, { accounts: number; read: number; diagnosed: number; spins: number }>;
+  };
 };
 
 export type ClinicAccount = {
@@ -126,6 +176,59 @@ export const CAMP_LABELS: Record<Camp, string> = { government: "Rządzący", opp
 export const CAMPS: Camp[] = ["government", "opposition"];
 
 export const getClinicPage = () => apiFetch<ClinicPageData>("/api/clinic/");
+export type ArchivePage<T> = { results: T[]; next_page: number | null; count: number };
+export type InterviewSearchParams = { page?: number; q?: string; channel?: string };
+export type MessageDay = { day: string; government: DailyMessage | null; opposition: DailyMessage | null };
+export const getClinicInterviews = (params: InterviewSearchParams = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  });
+  return apiFetch<ArchivePage<Interview> & { channels: string[] }>(`/api/clinic/interviews/?${query}`);
+};
+export const getClinicInterview = (id: number | string) => apiFetch<Interview>(`/api/clinic/interviews/${encodeURIComponent(id)}/`);
+export const getClinicMessages = (page = 1) => apiFetch<ArchivePage<MessageDay>>(`/api/clinic/messages/?page=${page}`);
+export const getClinicMessage = (day: string) => apiFetch<MessageDay>(`/api/clinic/messages/${encodeURIComponent(day)}/`);
+export type ClinicSearchParams = {
+  page?: number;
+  page_size?: number;
+  q?: string;
+  camp?: Camp;
+  verdict?: Verdict;
+  party?: string;
+  /** Identyfikator rekordu konta X (account_id ze statystyk), nie nazwisko ani handle. */
+  account?: string;
+  technique?: string;
+  intensity_min?: number;
+  intensity_max?: number;
+  date_from?: string;
+  date_to?: string;
+  sort?: "new" | "strong";
+};
+export type ClinicSearchResult = {
+  results: SpinCardData[];
+  next_page: number | null;
+  /** Starsze API nie zwraca jeszcze liczby wyników. */
+  count?: number;
+};
+export const searchClinicSpins = (params: ClinicSearchParams = {}) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  });
+  return apiFetch<ClinicSearchResult>(`/api/clinic/spins/?${query}`);
+};
+export type ClinicStats = DataPeriod & {
+  totals: {
+    diagnosed: { total: number; today: number };
+    read: { total: number; today: number };
+    by_camp: Record<Camp, { accounts: number }>;
+  };
+  by_party: Record<string, { party: Party | null }>;
+  accounts?: Array<{ account_id: number; name: string; handle: string }>;
+  techniques: Record<string, Record<Camp, { count: number; enough_data: boolean }>>;
+};
+export const getClinicStats = () => apiFetch<ClinicStats>("/api/clinic/stats/");
 export const getClinicSpins = (camp: Camp, page: number) =>
   apiFetch<{ results: SpinCardData[]; next_page: number | null }>(`/api/clinic/spins/?camp=${camp}&page=${page}`);
 export const getSpin = (id: number | string) => apiFetch<SpinDetailData>(`/api/clinic/spins/${id}/`);

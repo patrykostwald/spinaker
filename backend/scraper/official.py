@@ -237,6 +237,20 @@ def import_eli_changes(since):
             raise ValueError('Incomplete ELI changes pagination')
 
 
+BACKFILL_SHARE = 0.6  # archiwum (backfill) nie zużywa więcej niż 60% dziennego limitu API — reszta dla bieżących danych
+
+
+def backfill_budget_left(provider, path):
+    """Czy import archiwalny może jeszcze pytać API dziś, nie zabierając limitu bieżącym głosowaniom i drukom."""
+    from news.models import SourceDailyFetchBudget
+    instruction = approved_instruction(official_source(provider), SourceAccessInstruction.Channel.API, API + path)
+    if instruction is None or not instruction.daily_request_cap:
+        return False
+    used = (SourceDailyFetchBudget.objects.filter(instruction=instruction, day=timezone.localdate())
+            .values_list('used', flat=True).first() or 0)
+    return used < int(instruction.daily_request_cap) * BACKFILL_SHARE
+
+
 def official_access_allowed(provider, path):
     source = official_source(provider)
     return approved_instruction(source, SourceAccessInstruction.Channel.API, API + path) is not None

@@ -23,7 +23,7 @@ export function JournalistInvite() {
           <p>
             Dr. Spin pokazuje, jak zbudowany jest przekaz. Ty wiesz, co wydarzyło się naprawdę. Ułóż swój materiał i jego kontekst w jedną
             nitkę — pod własnym nazwiskiem, z linkiem do redakcji — i udostępnij ją na X jako gotowy wątek.{" "}
-            <Link href="/o-nas#nitka-kontekstowa">Więcej o nitkach</Link>
+            <Link href="/dla-redakcji#nitka-kontekstowa">Więcej o nitkach</Link>
           </p>
         </div>
         <a className="sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`} title={CONTACT}>Napisz do nas</a>

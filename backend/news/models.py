@@ -802,6 +802,25 @@ class EvidenceLink(models.Model):
         constraints = [models.UniqueConstraint(fields=["article", "phrase", "source_url"], name="unique_evidence_link")]
 
 
+class RepairAction(models.Model):
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    rule = models.CharField(max_length=40)
+    target = models.CharField(max_length=160)
+    result = models.CharField(max_length=16, choices=[(s, s) for s in
+        ('fixed', 'retried', 'skipped', 'failed', 'needs_owner')])
+    description = models.CharField(max_length=300)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+        indexes = [models.Index(fields=['rule', 'target', 'created_at'], name='repair_target_time')]
+
+
+class RepairerState(models.Model):
+    """Durable run/mail bookkeeping, independent of the 30-day action retention."""
+    key = models.CharField(max_length=40, unique=True)
+    data = models.JSONField(default=dict)
+
+
 class ImportState(models.Model):
     name = models.CharField(max_length=100, unique=True)
     last_started = models.DateTimeField(null=True, blank=True)
@@ -940,13 +959,15 @@ class AIResearchCall(models.Model):
         ordering = ['-started_at', '-pk']
 
 
+from .wallet_models import WalletBalance  # noqa: E402,F401
 from .account_models import (  # noqa: E402,F401
     SavedTopic, ArticleOpinion, ThreadOpinion, ThreadFavorite, ArticleFavorite,
     PersonalContextThread, PersonalContextThreadItem, CommentReport,
 )
 from .community_models import CommunityLink, CommunityThreadOpinion, CommunityThreadReport  # noqa: E402,F401
-from .clinic_models import SpinDiagnosis, ClinicDailyMessage, SpinOpinion, XAccountSuggestion  # noqa: E402,F401
+from .clinic_models import SpinDiagnosis, ClinicDailyMessage, SpinOpinion, XAccountSuggestion, SocialPost, CouncilCharterAcceptance  # noqa: E402,F401
 from .newsletter_models import NewsletterSubscriber  # noqa: E402,F401
+from .push_models import PushSubscription, PushEvent  # noqa: E402,F401
 from .political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
 from .evidence_snapshot import (  # noqa: E402,F401
     EvidenceSnapshot,
@@ -965,3 +986,6 @@ from .evidence_extraction import (  # noqa: E402,F401
 
 
 
+
+from .account_models import AccountIdentity
+from .notification_models import Follow, Notification, NotificationSettings, NotificationEvent

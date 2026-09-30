@@ -804,3 +804,35 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .mvp-support-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .mvp-support-links a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--color-primary); color: var(--text); text-decoration: none; font-size: 13px; }
 .mvp-support-links a:hover { background: var(--color-primary); color: var(--background); }
+
+/* Zlecenie 024: starsze widoki korzystają z semantycznej palety UI kit. */
+:root, html[data-theme] {
+  --background: var(--sc-bg);
+  --surface: var(--sc-surface);
+  --surface-raised: var(--sc-surface-2);
+  --chrome: var(--sc-chrome);
+  --line: var(--sc-line);
+  --text: var(--sc-text);
+  --text-secondary: var(--sc-text-2);
+  --color-primary: var(--sc-accent);
+  --color-primary-hover: var(--sc-accent-hover);
+  --color-live: var(--sc-live);
+  --color-secondary: var(--sc-text-2);
+  --color-positive: var(--sc-positive);
+  --color-negative: var(--sc-negative);
+  --color-warning: var(--sc-warning);
+  --control: var(--sc-control-line);
+  --theme-bar-1: var(--sc-accent);
+  --theme-bar-2: var(--sc-positive);
+  --theme-bar-3: var(--sc-negative);
+  scroll-padding-bottom: var(--sc-footer-space, 72px);
+}
+:root, html[data-theme="dark"] {
+  --background-rgb: 0 0 0; --surface-rgb: 15 15 15; --line-rgb: 38 38 38;
+  --text-rgb: 255 255 255; --secondary-rgb: 179 179 179; --accent-rgb: 74 158 255;
+}
+html[data-theme="light"], html[data-theme="pastel"] {
+  --background-rgb: 255 255 255; --surface-rgb: 244 244 244; --line-rgb: 218 218 218;
+  --text-rgb: 17 17 17; --secondary-rgb: 79 79 79; --accent-rgb: 10 98 208;
+}
+:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 3px; }

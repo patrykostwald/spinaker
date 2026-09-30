@@ -13,8 +13,15 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
 )
 
-environ.Env.read_env(ROOT_DIR / ".env", overwrite=False)
-environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
+if (not os.environ.get("PYTEST_VERSION") and "pytest" not in __import__("sys").modules
+        and os.environ.get('SKIP_DOTENV') != '1'):
+    environ.Env.read_env(ROOT_DIR / ".env", overwrite=False)
+    environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
+
+PUSH_ENABLED = env.bool('PUSH_ENABLED', default=False)
+VAPID_PUBLIC_KEY = env('VAPID_PUBLIC_KEY', default='')
+VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='')
+VAPID_SUBJECT = env('VAPID_SUBJECT', default='')
 SEJM_TERM = env.int('SEJM_TERM', default=10)
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")
@@ -44,7 +51,10 @@ INSTALLED_APPS = [
     "scraper",
 ]
 
+PREVIEW_KEY = env("PREVIEW_KEY", default="")
+
 MIDDLEWARE = [
+    "news.preview.PreviewMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -270,3 +280,14 @@ SOURCE_MAIL_SMTP_PORT = env.int('SOURCE_MAIL_SMTP_PORT', default=465)
 SOURCE_MAIL_SMTP_USERNAME = env('SOURCE_MAIL_SMTP_USERNAME', default='')
 SOURCE_MAIL_SMTP_PASSWORD = env('SOURCE_MAIL_SMTP_PASSWORD', default='')
 SOURCE_MAIL_SMTP_FROM = env('SOURCE_MAIL_SMTP_FROM', default='')
+
+# Phase 2 remains opt-in on every deployment.
+ACCOUNTS_ENABLED = env.bool('ACCOUNTS_ENABLED', default=False)
+THREADS_ENABLED = env.bool('THREADS_ENABLED', default=False)
+PUSH_ENABLED = env.bool('PUSH_ENABLED', default=False)
+GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
+GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
+ACCOUNT_PUBLIC_URL = env('ACCOUNT_PUBLIC_URL', default='https://spin.clinic').rstrip('/')
+ACCOUNT_TERMS_VERSION = env('ACCOUNT_TERMS_VERSION', default='2026-09-30')
+ACCOUNT_PRIVACY_VERSION = env('ACCOUNT_PRIVACY_VERSION', default='2026-09-30')
+PASSWORD_RESET_TIMEOUT = 3600

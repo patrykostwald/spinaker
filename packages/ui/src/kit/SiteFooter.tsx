@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 /**
  * SiteFooter (docs/UI_KIT_PLAN.md → «Компоненты» SiteFooter, «Оживление каждого элемента → Футер»).
  * Każda kolumna to WŁASNY `<nav aria-label>` z prawdziwym `<ul>` — obecny footer w
@@ -41,6 +43,7 @@ export type SiteFooterProps = {
   sticky?: boolean;
   /** Wiersz nad paskiem stopki `sticky` (np. pasek wsparcia z licznikiem). */
   above?: ReactNode;
+  actions?: ReactNode;
 };
 
 const MotionLink = motion(Link);
@@ -59,7 +62,7 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, above }: SiteFooterProps) {
+export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, above, actions }: SiteFooterProps) {
   const m = useMotionTokens();
   const columnsRow = (
     <div className="sc-footer__columns">
@@ -86,12 +89,28 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
     </div>
   );
 
+  // Przewijanie w dół chowa przyklejony dół (pasek wsparcia + stopka), w górę — pokazuje (audyt UX 28.09).
+  const dockRef = useHideOnScroll();
   if (sticky) {
     const bar = (
       <footer role="contentinfo" className="sc-footer" data-sticky>
         <div className="sc-footer__bar">
           <div className="sc-footer__brand">{brand}</div>
-          {columnsRow}
+          {actions}
+          <details className="sc-footer__more" onKeyDown={event => {
+            if (event.key === "Escape") {
+              event.currentTarget.open = false;
+              event.currentTarget.querySelector("summary")?.focus();
+            }
+          }}>
+            <summary>Więcej</summary>
+            <div className="sc-footer__menu" onClick={event => {
+              if ((event.target as HTMLElement).closest("a")) event.currentTarget.closest("details")?.removeAttribute("open");
+            }}>
+              {columnsRow}
+              {above && <div className="sc-footer__support">{above}</div>}
+            </div>
+          </details>
           {cta ? (
             <Button href={cta.href} variant="primary" size="sm" className="sc-footer__bar-cta">
               {cta.label}
@@ -100,13 +119,12 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
         </div>
       </footer>
     );
-    // Pasek nad stopką (np. wsparcie) to osobny pasek na całą szerokość — przyklejony razem ze stopką.
-    return above ? (
-      <div className="sc-footer-dock">
-        <div className="sc-footer-dock__above">{above}</div>
+    // Jeden dok także bez komunikatu wsparcia; linki i komunikat mieszczą się w menu.
+    return (
+      <div className="sc-footer-dock" ref={dockRef}>
         {bar}
       </div>
-    ) : bar;
+    );
   }
 
   return (
@@ -128,8 +146,52 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
       </div>
 
       {columnsRow}
+      {actions}
 
       {bottom && <div className="sc-footer__bottom sc-t-caption sc-text-3">{bottom}</div>}
     </footer>
   );
+}
+
+
+function useHideOnScroll() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    let last = window.scrollY;
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const node = ref.current;
+        if (node) {
+          const nearBottom = window.innerHeight + y >= document.documentElement.scrollHeight - 80;
+          if (y > last + 6 && y > 120 && !nearBottom && !node.contains(document.activeElement) && !node.querySelector("details[open]")) node.dataset.hidden = "true";
+          else if (y < last - 6 || nearBottom || y <= 120) delete node.dataset.hidden;
+        }
+        if (Math.abs(y - last) > 6) last = y;
+        ticking = false;
+      });
+    };
+    const onFocus = (event: FocusEvent) => {
+      const node = ref.current;
+      const target = event.target;
+      if (!node || !(target instanceof HTMLElement)) return;
+      if (node.contains(target)) delete node.dataset.hidden;
+      else {
+        node.querySelectorAll("details[open]").forEach(menu => menu.removeAttribute("open"));
+        const rect = target.getBoundingClientRect();
+        const bottom = window.innerHeight - node.getBoundingClientRect().height - 12;
+        if (rect.bottom > bottom && rect.top < window.innerHeight) window.scrollBy({ top: rect.bottom - bottom, behavior: "instant" });
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("focusin", onFocus);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("focusin", onFocus);
+    };
+  }, []);
+  return ref;
 }

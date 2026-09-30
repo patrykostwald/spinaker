@@ -190,10 +190,12 @@ def test_journalist_login_me_and_separate_admin_rights(people, login_url):
     assert not client.get('/api/me/').json()['is_editor']
 
 
-def test_signup_cannot_self_grant_journalist_role():
+def test_signup_cannot_self_grant_journalist_role(settings):
+    settings.ACCOUNTS_ENABLED = True
     client = APIClient()
     response = client.post('/api/account/register/', {
-        'username': 'self_appointed', 'password': 'SecreT~unique~942!',
+        'username': 'self_appointed', 'password': 'SecreT~unique~942!', 'email': 'self@example.com',
+        'accepted_terms': True, 'accepted_privacy': True,
         'groups': ['journalists'], 'role': 'journalist', 'is_journalist': True, 'is_staff': True,
     }, format='json')
     assert response.status_code == 201, response.data

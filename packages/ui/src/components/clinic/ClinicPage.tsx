@@ -1,45 +1,55 @@
 "use client";
 
+import { ClinicNav } from "./ClinicNav";
+import { useLongPress } from "../../lib/useLongPress";
+import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
-import { CAMPS, CAMP_LABELS, getClinicAccounts, getClinicDeleted, getClinicPage, type ClinicPageData, type SpinDetailData } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, getClinicDeleted, getClinicPage, type SpinDetailData } from "../../lib/clinic";
 import { NewsletterSignup } from "../NewsletterSignup";
-import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, SpinScale, VerdictTag } from "./SpinParts";
+import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
+import { ClinicShowcase } from "./ClinicIndicators";
+import { ClinicRecentlyViewed } from "./ClinicRecentlyViewed";
+import { ClinicRanking } from "./ClinicRanking";
 import { formatDateTimePl } from "../../lib/utils";
-import { InterviewBox, MessageBox, MessageHistory, PoliticiansTable, SpinSwitch } from "./ClinicExtras";
+import { InterviewScanner } from "./InterviewScanner";
+import { MessageBox } from "./ClinicExtras";
 
 export { MessageBox } from "./ClinicExtras";
 
-const CONTACT = "kontakt@spin.clinic";
 
 /** Spin dnia jako nitka: box główny (post + diagnoza), a za nim boxy kontekstu — źródła twierdzeń. */
 export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
-  // Pełna odpowiedź Dr. Spina obok posta: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
+  // Pełna odpowiedź Dr. Spina obok wpisu: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
   const [expanded, setExpanded] = useState(false);
+  // Telefon: wpis przycięty do kilku linii (CSS), żeby licznik i wywiad nie zjeżdżały daleko w dół.
+  const [postOpen, setPostOpen] = useState(false);
+  const pressPost = useLongPress(() => setPostOpen(true));
   const sources = spin.claims.flatMap(claim => claim.sources.map(source => ({ ...source, label: claim.assessment_label, claim: claim.claim })));
   return (
     <div className="sc-clinic-sotd__body">
       <div className="sc-clinic-sotd__main">
         <div className="sc-clinic-sotd__post">
           <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" caption={spin.camp_label} />
-          <div className="sc-clinic-sotd__quote">
+          <div className="sc-clinic-sotd__quote" data-open={postOpen || undefined} {...(postOpen ? {} : pressPost)}>
             <blockquote>{spin.post.text}</blockquote>
-            {/* Zdjęcia z posta — część przekazu (np. twarz, grafika z hasłem); klik otwiera post na X. */}
+            {postOpen ? null : <button type="button" className="sc-clinic-sotd__more-post" onClick={() => setPostOpen(true)}>Rozwiń wpis ↓</button>}
+            {/* Zdjęcia z wpisu — część przekazu (np. twarz, grafika z hasłem); klik otwiera wpis na X. */}
             {spin.post.media?.length ? (
               <a className="sc-clinic-sotd__media" data-count={Math.min(spin.post.media.length, 2)} href={spin.post.url} target="_blank" rel="noopener noreferrer"
-                aria-label="Zdjęcia z posta — otwórz na X">
+                aria-label="Zdjęcia z wpisu — otwórz na X">
                 {spin.post.media.slice(0, 2).map(item => (
                   // eslint-disable-next-line @next/next/no-img-element -- miniatury z X
-                  <img key={item.url} src={item.url} alt={item.alt || "Zdjęcie dołączone do posta"} loading="lazy" referrerPolicy="no-referrer" />
+                  <img key={item.url} src={item.url} alt={item.alt || "Zdjęcie dołączone do wpisu"} loading="lazy" referrerPolicy="no-referrer" />
                 ))}
               </a>
             ) : null}
           </div>
-          <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Post na X ↗</a>
+          <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Wpis na X ↗</a>
         </div>
         <div className="sc-clinic-sotd__diagnosis">
           <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
@@ -95,47 +105,22 @@ function visibleFor(hours: number) {
   return `w ciągu ${Math.ceil(hours / 24)} dni`;
 }
 
-const STAT_LABELS: Array<[keyof NonNullable<ClinicPageData["stats"]>, string, string]> = [
-  ["read", "przeczytanych postów", "wszystkie nowe posty z oficjalnych kont"],
-  ["screened", "ocenionych na izbie przyjęć", "czy jest w nich coś do zbadania"],
-  ["rejected", "odrzuconych", "bez tezy do sprawdzenia: życzenia, zapowiedzi, informacje"],
-  ["diagnosed", "diagnoz Dr. Spina", "opublikowane oceny konsylium"],
-  ["spins", "spinów", "diagnozy z werdyktem spin albo częściowy spin"],
-];
-
-/** Liczniki pracy Kliniki — ile postów przeczytaliśmy, ile odsiał strażnik, ile zdiagnozował Dr. Spin. */
-function ClinicStats({ stats }: { stats: NonNullable<ClinicPageData["stats"]> }) {
-  const format = (value: number) => value.toLocaleString("pl-PL");
-  return (
-    <section className="sc-clinic-stats" aria-label="Liczniki Kliniki">
-      <ul>{STAT_LABELS.map(([key, label, hint]) => (
-        <li key={key} title={hint}>
-          <small title="dziś">+{format(stats[key].today)}</small>
-          <strong>{format(stats[key].total)}</strong>
-          <span>{label}</span>
-        </li>
-      ))}</ul>
-    </section>
-  );
-}
-
-/** Strażnica usuniętych postów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
+/** Strażnica niedostępnych wpisów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
 function DeletedPosts() {
   const query = useQuery({ queryKey: ["clinic-deleted"], queryFn: getClinicDeleted, staleTime: 10 * 60_000 });
   const data = query.data;
   if (!data) return null;
   const week = CAMPS.map(camp => `${CAMP_LABELS[camp].toLowerCase()} ${data.week_by_camp[camp] ?? 0}`).join(" · ");
   return (
-    <section className="sc-deleted" aria-labelledby="deleted-title">
+    <details className="sc-deleted sc-deleted--compact">
+      <summary>Niedostępne wpisy <span>· ostatnie 7 dni: {Object.values(data.week_by_camp).reduce((sum, value) => sum + value, 0)}</span></summary>
       <header className="sc-deleted__head">
-        <p className="sc-clinic-kicker">Strażnica</p>
-        <h2 id="deleted-title">Usunięte posty</h2>
         <p>
-          Wpisy, które politycy usunęli po publikacji (albo stały się niedostępne). Zasady X nie pozwalają nam pokazać treści usuniętego wpisu —
+          Wpisy niedostępne podczas sprawdzania. Nie przesądzamy, czy autor je usunął — przyczyną może być także ograniczenie dostępu. Nie pokazujemy ich treści,
           ale jeśli ktoś zachował go w publicznym archiwum internetu, linkujemy do tej kopii. Ostatnie 7 dni: {week}.
         </p>
         {data.top_deleters.length ? (
-          <p className="sc-deleted__top">Najczęściej usuwający (30 dni): {data.top_deleters.map((row, index) => (
+          <p className="sc-deleted__top">Konta z największą liczbą niedostępnych wpisów (30 dni): {data.top_deleters.map((row, index) => (
             <span key={row.author.handle}>{index ? " · " : ""}<a href={row.author.account_url} target="_blank" rel="noopener noreferrer">{row.author.name}</a> {row.count}</span>
           ))}</p>
         ) : null}
@@ -152,88 +137,69 @@ function DeletedPosts() {
             <span>{item.verdict ? <VerdictTag verdict={item.verdict} label={item.verdict_label} /> : <span className="sc-deleted__none">bez diagnozy</span>}</span>
           </li>
         ))}</ul>
-      ) : <p className="sc-clinic-empty">W ostatnich {data.days} dniach nie zauważyliśmy usuniętych postów. Sprawdzamy co 3 godziny wpisy z ostatnich dwóch tygodni.</p>}
-    </section>
+      ) : <p className="sc-clinic-empty">W ostatnich {data.days} dniach nie zauważyliśmy niedostępnych wpisów. Sprawdzamy co 3 godziny wpisy z ostatnich dwóch tygodni.</p>}
+    </details>
   );
 }
 
-function Politicians() {
-  const query = useQuery({ queryKey: ["clinic-accounts"], queryFn: getClinicAccounts, staleTime: 10 * 60_000 });
-  return query.data ? <PoliticiansTable accounts={query.data.results} /> : null;
-}
-
-/**
- * Klinika spinu — kolejność: spin dnia / najnowszy spin, przekazy dnia, wywiad dnia, waga spinu,
- * najnowsze diagnozy w dwóch kolumnach, politycy z licznikami, archiwum przekazów, zaproszenie dla dziennikarzy.
- */
+/** Przegląd: krótkie podglądy i wejścia do pełnych archiwów. */
 export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
   const data = query.data;
-  const Title = embedded ? "h2" : "h1";
   return (
-    <section className="sc-clinic" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
-      <header className="sc-clinic-head">
-        <p className="sc-clinic-kicker">Klinika spinu</p>
-        <Title id="clinic-title">Dr. Spin stawia diagnozy</Title>
-        <p className="sc-clinic-subtitle"><AiTag /> Treści w tej sekcji generuje AI. {data?.notice ?? ""} <Link href="/o-nas#klinika">Jak to działa</Link></p>
-      </header>
+    <section className="sc-clinic sc-clinic-overview" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
+      {!embedded ? <ClinicNav /> : null}
+      <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title="Dr. Spin"
+        subtitle={<><AiTag /> Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji i źródła.</>}
+        link={embedded ? <Link href="/metodologia">Jak działa analiza</Link> : undefined} />
+
+      <ClinicRecentlyViewed />
 
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
       {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
 
       {data && <>
-        <section className="sc-clinic-sotd" aria-labelledby="clinic-drspin-title">
-          {/* Nagłówek jak na głównej: „Klinika spinu AI” + „Dr. Spin”, zakładki na środku, link po prawej. */}
-          <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={spin => <SpinOfDay key={spin.id} spin={spin} />}
-            left={<header>
-              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <h2 id="clinic-drspin-title" className="sc-sr-only">Dr. Spin</h2>
-            </header>}
-            right={<p className="sc-home-spin__meta"><Link className="sc-home-spin__open" href="/raport">Raport tygodnia →</Link></p>}
-            empty={<p className="sc-clinic-empty" id="sotd-title">Spin dnia to diagnoza z najwyższą siłą spinu z dzisiaj. Pojawi się po pierwszych diagnozach.</p>} />
-        </section>
-
         {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
-        <div className="sc-clinic-group">
-          <div className="sc-clinic-split" aria-label="Przekazy dnia">
-            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} />)}
+        <section className="sc-clinic-group" aria-labelledby="clinic-messages-title">
+          <SectionHeader titleId="clinic-messages-title" kicker={<>Klinika spinu <AiTag /></>} title="Przekazy dnia"
+            subtitle="O czym i jak mówiły obie strony w przeanalizowanych wpisach." link={<Link className="sc-home-spin__open" href="/klinika/przekazy">Archiwum przekazów →</Link>} />
+          <div className="sc-clinic-split">
+            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" />)}
           </div>
-          <MessageHistory history={data.message_history} />
-        </div>
-
-        {data.interview ? <InterviewBox interview={data.interview} archive={data.interview_archive} /> : null}
+        </section>
 
         {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
         <div className="sc-clinic-group">
-        {data.stats ? <ClinicStats stats={data.stats} /> : null}
 
         <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
-          {/* Jedna linia: „Rządzący” przy lewej krawędzi, tytuł na środku, „Opozycja” przy prawej. */}
-          <header className="sc-clinic-latest__head sc-clinic-latest__bar">
-            <span className="sc-clinic-latest__camp" aria-hidden="true">{CAMP_LABELS.government}</span>
-            <div>
-              <h3 id="clinic-latest-title">Najnowsze diagnozy</h3>
-              <p>Rządzący i opozycja obok siebie — według tych samych zasad. Każdą diagnozę udostępnisz jako wątek na X.</p>
-            </div>
-            <span className="sc-clinic-latest__camp" aria-hidden="true">{CAMP_LABELS.opposition}</span>
-          </header>
+          <SectionHeader titleId="clinic-latest-title" title="Najnowsze diagnozy" subtitle="Obie strony oceniane według tych samych zasad. Liczby opublikowanych diagnoz mogą się różnić." />
           <div className="sc-clinic-columns">
-            {CAMPS.map(camp => (
+            {CAMPS.filter(camp => data.columns[camp].length > 0).map(camp => (
               <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>
-                <h4 id={`clinic-col-${camp}`} className="sc-sr-only">{CAMP_LABELS[camp]}</h4>
-                {data.columns[camp].length ? (
-                  <div className="sc-clinic-column__list" tabIndex={0} aria-label={`Diagnozy: ${CAMP_LABELS[camp]} — przewijaj`}>
-                    {data.columns[camp].map(spin => <SpinRow key={spin.id} spin={spin} />)}
-                  </div>
-                ) : <p className="sc-clinic-empty">Pierwsze diagnozy pojawią się, gdy strażnik znajdzie posty warte sprawdzenia.</p>}
+                <h3 id={`clinic-col-${camp}`} className="sc-camp-heading" data-camp={camp}>{CAMP_LABELS[camp]}</h3>
+                <div className="sc-clinic-column__list">
+                  {data.columns[camp].slice(0, 3).map(spin => <SpinRow key={spin.id} spin={spin} />)}
+                </div>
+                <Button href={`/klinika/diagnozy?camp=${camp}`} variant="quiet">Wszystkie diagnozy {camp === "government" ? "rządzących" : "opozycji"} →</Button>
               </section>
             ))}
           </div>
+          {!CAMPS.some(camp => data.columns[camp].length) ? <p className="sc-clinic-empty">Nie ma jeszcze opublikowanych diagnoz.</p> : null}
+          <Link className="sc-clinic-db__all" href="/klinika/diagnozy">Wszystkie diagnozy{data.stats?.diagnosed.total !== undefined ? ` (${data.stats.diagnosed.total.toLocaleString("pl-PL")})` : ""} →</Link>
         </section>
         </div>
 
+        {data.interview ? <section className="sc-clinic-group sc-clinic-interview-preview" aria-labelledby="clinic-interview-title">
+          <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
+            subtitle="Najgłośniejszy wywiad polityczny poprzedniego dnia: gość i prowadzący." link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
+          <InterviewScanner interview={data.interview} />
+        </section> : null}
+
+        <ClinicRanking data={data} />
+        <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
+
         <DeletedPosts />
-        <Politicians />
+        <p><Link href="/osoby-publiczne">Katalog osób publicznych →</Link> · <Link href="/klinika/raporty">Raporty tygodnia →</Link></p>
 
         <NewsletterSignup source="klinika" />
       </>}

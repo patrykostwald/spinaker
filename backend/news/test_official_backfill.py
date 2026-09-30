@@ -14,6 +14,7 @@ def allow_official_api_for_backfill_unit_tests(monkeypatch):
     """These tests exercise the persisted cursor, not the access gate."""
     monkeypatch.setattr('scraper.official_backfill.official_access_allowed', lambda provider, path: True)
     monkeypatch.setattr('scraper.official.official_access_allowed', lambda provider, path: True)
+    monkeypatch.setattr('scraper.official_backfill.backfill_budget_left', lambda provider, path: True)
 
 
 @pytest.fixture
@@ -110,3 +111,9 @@ def test_source_disabled_while_detail_is_fetched_prevents_persisting_it(source):
 def test_missing_source_is_not_automatically_created():
     assert backfill_votings_cycle()['status'] == 'disabled'
     assert not Source.objects.exists()
+
+
+def test_backfill_leaves_daily_api_budget_for_current_imports(source, monkeypatch):
+    from scraper.official_backfill import backfill_votings_cycle
+    monkeypatch.setattr('scraper.official_backfill.backfill_budget_left', lambda provider, path: False)
+    assert backfill_votings_cycle() == {'status': 'budget_reserved_for_current', 'new_records': 0}

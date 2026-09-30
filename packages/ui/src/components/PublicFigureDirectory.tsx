@@ -14,7 +14,7 @@ import {
 } from '../lib/publicFigures';
 import { Dialog } from './Dialog';
 import { PublicFigureProfile } from './PublicFigureProfile';
-import { Button, Dropdown, SearchField } from '../kit';
+import { Button, Dropdown, SearchField, SectionHeader } from '../kit';
 
 const notFound = (error: unknown) => error instanceof ApiError && (error.status === 404 || error.status === 405);
 
@@ -72,25 +72,29 @@ export function PublicFigureDirectory() {
   const [query, setQuery] = useState('');
   const [role, setRole] = useState<PublicFigureRoleCategory | ''>('');
   const [preview, setPreview] = useState<PublicFigureSummary | null>(null);
-  const list = usePublicFigures(query, role);
+  const [page, setPage] = useState(1);
+  const list = usePublicFigures(query, role, page);
   const rows = list.data?.results ?? [];
 
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setQuery(input.trim()); }
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setQuery(input.trim()); setPage(1); }
 
   return (
     <section className="sc-public-directory" aria-labelledby={`${uid}-title`}>
-      <header className="sc-public-directory__head">
-        <p className="sc-t-caption">REJESTR</p>
-        <h1 id={`${uid}-title`} className="sc-t-title-l">Osoby publiczne</h1>
-        <p className="sc-t-body sc-text-2">Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Zespół spin.clinic dodaje osoby ręcznie, z linkiem do źródła funkcji.</p>
-      </header>
+      <SectionHeader variant="page" kicker="REJESTR" titleId={`${uid}-title`} title="Osoby publiczne"
+        subtitle="Profile pokazują funkcję publiczną, oficjalne głosowania i relacje potwierdzone w publicznych źródłach. Zespół spin.clinic dodaje osoby ręcznie, z linkiem do źródła funkcji." />
       <form className="sc-public-directory__filters" role="search" onSubmit={submit}>
         <SearchField id={`${uid}-q`} label="Imię, funkcja lub instytucja" value={input} onChange={setInput} maxLength={120} placeholder="Imię, funkcja lub instytucja" />
-        <Dropdown label="Rodzaj funkcji" ariaLabel="Rodzaj funkcji" mode="single" presentation="auto" value={role} onChange={value => setRole(value as PublicFigureRoleCategory | '')}
+        <Dropdown label="Rodzaj funkcji" ariaLabel="Rodzaj funkcji" mode="single" presentation="auto" value={role} onChange={value => { setRole(value as PublicFigureRoleCategory | ''); setPage(1); }}
           items={[{ value: '', label: 'Wszystkie' }, ...Object.entries(ROLE_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))]} />
         <Button type="submit" variant="primary">Szukaj</Button>
       </form>
 
+      <p className="sc-t-caption sc-text-2" role="status">{list.data ? `Wyświetlono ${rows.length ? (list.data.page - 1) * list.data.page_size + 1 : 0}–${rows.length ? (list.data.page - 1) * list.data.page_size + rows.length : 0} z ${list.data.count} osób dla wybranych filtrów. ` : ''}Pokazujemy wyłącznie profile oparte na danych z rejestru; rejestr nie obejmuje wszystkich osób publicznych.</p>
+      <nav className="sc-directory-pagination" aria-label="Strony rejestru osób">
+        <Button disabled={page === 1 || list.isFetching} onClick={() => setPage(value => value - 1)}>Poprzednia</Button>
+        <span>Strona {page}</span>
+        <Button disabled={!list.data || list.isFetching || page * list.data.page_size >= list.data.count} onClick={() => setPage(value => value + 1)}>Następna</Button>
+      </nav>
       {list.isPending && <p role="status" className="sc-t-body sc-text-2">Ładuję rejestr…</p>}
       {list.isError && (
         <p className="sc-t-body sc-text-2">
@@ -105,14 +109,14 @@ export function PublicFigureDirectory() {
               <div>
                 <Link href={`/osoby-publiczne/${row.id}`} className="sc-public-directory__name">{row.name}</Link>
                 <p className="sc-t-body"><span className="sc-public-figure-status" data-status={row.status}>{row.status === 'current' ? 'Aktualna' : 'Była'}</span>{row.role_title}{row.organisation && ` · ${row.organisation}`}</p>
-                <p className="sc-public-directory__x">{row.has_x_account ? <span className="sc-x-badge" title="Konto X potwierdzone oficjalnym dowodem — czytamy je w Klinice">X · czytamy</span> : <><span className="sc-x-badge sc-x-badge--none">X · brak konta</span><XAccountSuggest figureId={row.id} name={row.name} /></>}</p>
+                <p className="sc-public-directory__x">{row.has_x_account ? <span className="sc-x-badge" title="Konto X potwierdzone oficjalnym dowodem — czytamy je w Klinice">X · czytamy</span> : <><span className="sc-x-badge sc-x-badge--none">X · brak potwierdzonego konta w bazie</span><XAccountSuggest figureId={row.id} name={row.name} /></>}</p>
               </div>
-              <Button type="button" variant="quiet" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
+              <Button type="button" variant="link" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
             </li>
           ))}
         </ul>
       )}
-      <p className="sc-t-caption sc-text-2">Lista zawiera najwyżej 100 osób. Pokazujemy wyłącznie profile oparte na danych z rejestru.</p>
+
       <Dialog open={preview !== null} onClose={() => setPreview(null)} title={preview ? `Podgląd profilu: ${preview.name}` : 'Podgląd profilu'} className="sc-public-figure-dialog">
         {preview && <FigurePreview key={preview.id} summary={preview} />}
       </Dialog>

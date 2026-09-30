@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 import requests
 from django.conf import settings
+from news.features import accounts_enabled
 from django.http import HttpResponseRedirect
 from hashlib import sha256
 
@@ -26,7 +27,9 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from news.account_models import ArticleOpinion, ThreadOpinion, SavedTopic, UserXConnection
+from news.account_models import ArticleOpinion, ThreadOpinion, SavedTopic, UserXConnection, AccountIdentity
+from news.account_security import AccountEnabled, require_verified
+from django.utils import timezone
 from news.models import Article, ArticleCategory, Source, Thread
 from news.topics import TOPICS
 from news.editorial_roles import role_data
@@ -35,7 +38,10 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 
 def user_data(user):
-    return {'id': user.pk, 'username': user.username, 'is_staff': user.is_staff, **role_data(user)}
+    identity = getattr(user, 'account_identity', None)
+    return {'id': user.pk, 'username': user.username, 'is_staff': user.is_staff,
+            'email': user.email, 'email_verified': bool(identity and identity.email_verified),
+            'accepted_terms_version': identity.accepted_terms_version if identity else '', **role_data(user)}
 
 
 class AccountIPThrottle(SimpleRateThrottle):
@@ -57,9 +63,15 @@ class AccountNameThrottle(SimpleRateThrottle):
 class RegistrationInput(serializers.Serializer):
     username = serializers.RegexField(r'^[A-Za-z0-9_]{3,30}$', max_length=30)
     password = serializers.CharField(max_length=256, trim_whitespace=False, write_only=True)
-    email = serializers.EmailField(required=False, allow_blank=True)
+    email = serializers.EmailField(max_length=254)
+    accepted_terms = serializers.BooleanField()
+    accepted_privacy = serializers.BooleanField()
 
     def validate(self, attrs):
+        for field in ('accepted_terms', 'accepted_privacy'):
+            if not attrs.get(field):
+                raise serializers.ValidationError({field: 'Zaakceptuj dokument, aby utworzyć konto.'})
+        attrs['email'] = attrs['email'].strip().lower()
         # Canonical public handles prevent case-only impersonation/races.
         attrs['username'] = attrs['username'].lower()
         if get_user_model().objects.filter(username__iexact=attrs['username']).exists():
@@ -75,37 +87,61 @@ class RegistrationInput(serializers.Serializer):
 @method_decorator(csrf_protect, name='dispatch')
 @json_view("Rejestracja konta", tags=["konto"])
 class RegisterView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [AccountEnabled, AllowAny]
     throttle_classes = [AccountIPThrottle, AccountNameThrottle]
 
     def post(self, request):
         serializer = RegistrationInput(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            with transaction.atomic():
-                user = get_user_model().objects.create_user(**serializer.validated_data,
-                    is_staff=False, is_superuser=False, is_active=True)
-        except IntegrityError:
-            return Response({'username': ['Ta nazwa jest niedostępna.']}, status=400)
-        login(request, user)
-        return Response({'authenticated': True, 'user': user_data(user), 'csrfToken': get_token(request)}, status=201)
+        data = dict(serializer.validated_data)
+        data.pop('accepted_terms')
+        data.pop('accepted_privacy')
+        user = get_user_model()(username=data['username'], email=data['email'],
+                                is_staff=False, is_superuser=False, is_active=True)
+        user.set_password(data['password'])
+        # Identical response for an occupied email; never log in based on registration.
+        if not get_user_model().objects.filter(email__iexact=data['email']).exists():
+            try:
+                with transaction.atomic():
+                    user.save()
+                    AccountIdentity.objects.create(user=user, email=data['email'],
+                        accepted_terms_version=settings.ACCOUNT_TERMS_VERSION,
+                        accepted_privacy_version=settings.ACCOUNT_PRIVACY_VERSION, accepted_at=timezone.now())
+            except IntegrityError:
+                pass
+        from news.account_lifecycle import queue_verification
+        queue_verification(data['email'])
+        return Response({'authenticated': False, 'user': None, 'csrfToken': get_token(request),
+                         'detail': 'Sprawdź pocztę, aby potwierdzić e-mail. Jeśli masz już konto, zaloguj się lub ustaw nowe hasło.'}, status=201)
+
 
 
 class LoginInput(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
+    username = serializers.CharField(max_length=254)
     password = serializers.CharField(max_length=256, trim_whitespace=False)
 
 
 @method_decorator(csrf_protect, name='dispatch')
 @json_view("Logowanie", tags=["konto"])
 class LoginView(APIView):
+    # Logowanie działa zawsze (zespół, dziennikarze); flaga ACCOUNTS_ENABLED zamyka tylko rejestrację czytelników.
     permission_classes = [AllowAny]
     throttle_classes = [AccountIPThrottle, AccountNameThrottle]
     def post(self, request):
         serializer = LoginInput(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        user = authenticate(request, username=data['username'].lower(), password=data['password'])
+        identifier = data['username'].strip().lower()
+        if '@' in identifier:
+            matches = list(get_user_model().objects.filter(email__iexact=identifier).values_list('username', flat=True)[:2])
+            if len(matches) == 1:
+                user = authenticate(request, username=matches[0], password=data['password'])
+            else:
+                # Match the password-hash work without using a reservable username.
+                get_user_model()().set_password(data['password'])
+                user = None
+        else:
+            user = authenticate(request, username=identifier, password=data['password'])
         if user is None:
             return Response({'detail': 'Nieprawidłowa nazwa lub hasło.'}, status=403)
         login(request, user)
@@ -125,10 +161,23 @@ class LogoutView(APIView):
 @json_view("Bieżące konto", tags=["konto"])
 class AccountMeView(APIView):
     permission_classes = [AllowAny]
+    def get_throttles(self):
+        return [AccountIPThrottle()] if self.request.method == 'PATCH' else []
+
     def get(self, request):
         return Response({'authenticated': request.user.is_authenticated,
                          'user': user_data(request.user) if request.user.is_authenticated else None,
-                         'csrfToken': get_token(request)})
+                         'csrfToken': get_token(request),
+                         'accounts_enabled': accounts_enabled(),
+                         'google_enabled': bool(accounts_enabled() and settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET)})
+
+    def patch(self, request):
+        AccountEnabled().has_permission(request, self)
+        if not request.user.is_authenticated:
+            from rest_framework.exceptions import NotAuthenticated
+            raise NotAuthenticated()
+        from news.account_lifecycle import update_account
+        return update_account(request)
 
 
 @json_view("Połączenie z kontem X", tags=["konto"])
@@ -311,6 +360,7 @@ class OpinionsView(APIView):
                                 'next_page': page + 1 if len(batch) > size else None}
         return Response(result)
     def post(self, request, article_id):
+        require_verified(request.user)
         article = get_object_or_404(Article, pk=article_id)
         serializer = OpinionInput(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -322,6 +372,7 @@ class OpinionsView(APIView):
         return Response(OpinionSerializer(opinion).data, status=201)
 
     def patch(self, request, article_id):
+        require_verified(request.user)
         if not isinstance(request.data, dict) or set(request.data) - {'body'}:
             raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
         serializer = OpinionInput(data={'polarity': 'positive', **request.data})
@@ -367,6 +418,7 @@ class ThreadOpinionsView(APIView):
             'negative': ThreadOpinionSerializer(rows.filter(polarity='negative').exclude(body='')[:20], many=True).data,
         })
     def post(self, request, slug):
+        require_verified(request.user)
         thread = self._thread(slug)
         serializer = OpinionInput(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -377,6 +429,7 @@ class ThreadOpinionsView(APIView):
             return Response({'detail': 'Twoja opinia o tej nitce jest już zapisana.'}, status=409)
         return Response(ThreadOpinionSerializer(opinion).data, status=201)
     def patch(self, request, slug):
+        require_verified(request.user)
         if not isinstance(request.data, dict) or set(request.data) - {'body'}:
             raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
         serializer = OpinionInput(data={'polarity': 'positive', **request.data})

@@ -82,7 +82,7 @@ def test_429_retry_after_defers_without_moving_cursor_or_writing(source):
 
 
 @override_settings(BZP_API_SEARCH_URL=SEARCH_URL)
-def test_fetch_uses_official_endpoint_and_audited_post_transport(source):
+def test_fetch_uses_official_endpoint_and_audited_get_transport(source):
     response = Mock(status_code=429, headers={'Retry-After': '321'})
     instruction = SourceAccessInstruction.objects.get(source=source)
     with patch('scraper.bzp_backfill.fetch_feed', side_effect=requests.HTTPError(response=response)) as fetch:
@@ -90,9 +90,9 @@ def test_fetch_uses_official_endpoint_and_audited_post_transport(source):
             fetch_page(source=source, instruction=instruction, endpoint=SEARCH_URL,
                 date_from='2026-09-13', date_to='2026-09-13', page=1, page_size=100)
     assert raised.value.retry_after == 321
-    assert fetch.call_args.kwargs['method'] == 'POST'
+    assert 'method' not in fetch.call_args.kwargs and 'body' not in fetch.call_args.kwargs  # API przyjmuje GET (POST → 405)
     assert fetch.call_args.kwargs['requested_kind'] == 'api_record'
-    assert b'"pageSize":25' in fetch.call_args.kwargs['body']
+    assert fetch.call_args.args[0].startswith(SEARCH_URL + '?') and 'PageSize=25' in fetch.call_args.args[0]
 
 
 @override_settings(BZP_API_ENABLED=True)

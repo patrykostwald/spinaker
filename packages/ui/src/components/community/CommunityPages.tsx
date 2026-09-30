@@ -9,9 +9,18 @@ import { REPORT_REASONS, getCommunityThread, getCommunityThreads, reportCommunit
 import { useAccount } from "../../lib/account";
 import { categoryLabel, formatDatePl, formatDateTimePl } from "../../lib/utils";
 import { OpinionsPanel } from "../OpinionsPanel";
+import { FollowButton } from '../FollowButton';
+import { AccountDataState } from '../AccountPhase2';
+import { accountMessage } from '../../lib/accountPhase2';
+import { useFeature } from '../../lib/features';
+import { isUnavailable } from '../../lib/personal';
+import { getThreads } from '../../lib/api';
+import { getPortalConfig } from '../../lib/portal';
+import { ThreadCard } from '../ThreadCard';
 
 /** Jeden element nitki: materiał z Bazy (z linkiem do kontekstu) albo link spoza Bazy — wyraźnie oznaczony. */
 export function ElementRow({ element, index }: { element: ThreadElement; index: number }) {
+  if (element.kind === 'link' && element.hidden) return <li className="sc-thread-el">Link ukryty przez zespół po zgłoszeniu.</li>;
   return (
     <li className="sc-thread-el" data-kind={element.kind}>
       <span className="sc-thread-el__index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
@@ -46,23 +55,30 @@ function ThreadCardLink({ thread }: { thread: CommunityThreadSummary }) {
           <li key={`${item.kind}-${item.id}`}>{item.kind === "link" ? <span className="sc-thread-el__tag sc-thread-el__tag--outside">spoza Bazy</span> : null}{item.title}</li>
         ))}</ol>
       )}
-      <p className="sc-community-card__foot"><span>Przydatna {thread.opinions.positive} · Nieprzydatna {thread.opinions.negative}</span><Link href={`/nitki/${thread.id}`}>Otwórz nitkę →</Link></p>
+      <p className="sc-community-card__foot"><span>Zgadzam się {thread.opinions.positive} · Nie zgadzam się {thread.opinions.negative}</span><Link href={`/nitki/${thread.id}`}>Otwórz nitkę →</Link></p>
     </li>
   );
 }
 
-export function CommunityThreadsPage() {
+export function CommunityThreadsPage({ context = {} }: { context?: { article_id?: number; figure_id?: number; url?: string } }) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
+  const [sort, setSort] = useState<'new' | 'best'>('new');
+  const [topic, setTopic] = useState('');
+  const config = useQuery({ queryKey: ['portal-config'], queryFn: getPortalConfig, retry: false, staleTime: 60_000 });
+  const drspin = useQuery({ queryKey: ['community-drspin'], queryFn: () => getThreads(), retry: false });
+  const contextActive = Boolean(context.article_id || context.figure_id || context.url);
   const query = useInfiniteQuery({
-    queryKey: ["community-threads", term],
-    queryFn: ({ pageParam }) => getCommunityThreads(pageParam, term),
+    queryKey: ["community-threads", term, sort, topic, context],
+    queryFn: ({ pageParam }) => getCommunityThreads(pageParam, term, '', { sort, topic, ...context }),
+    retry: false,
     initialPageParam: 1,
     getNextPageParam: last => last.next_page ?? undefined,
   });
-  const threads = query.data?.pages.flatMap(page => page.results) ?? [];
+  const threads = query.data?.pages.flatMap(page => contextActive && !page.context_filtered ? [] : page.results) ?? [];
   return (
-    <div className="sc-community">
+    <div className="sc-community sc-f2">
       <header className="sc-community__head">
         <p className="sc-clinic-kicker">Nitki czytelników</p>
         <h1>Sprawy ułożone przez czytelników</h1>
@@ -71,15 +87,20 @@ export function CommunityThreadsPage() {
           swoją z materiałów z naszej Bazy albo dodać źródło przez link.
         </p>
         <div className="sc-community__actions">
-          <Button href="/konto/nitki/nowa" variant="primary">Ułóż swoją nitkę</Button>
+          {ACCOUNTS_ENABLED && <Button href="/konto/nitki/nowa" variant="primary">Ułóż swoją nitkę</Button>}
           <form role="search" className="sc-community__search" onSubmit={(event: FormEvent) => { event.preventDefault(); setTerm(search.trim()); }}>
             <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Szukaj w tytułach nitek…" aria-label="Szukaj nitek" />
             <Button type="submit" variant="quiet" size="sm">Szukaj</Button>
           </form>
         </div>
+        <div className="sc-f2-filters"><label>Kolejność<select value={sort} onChange={event => setSort(event.target.value as 'new' | 'best')}><option value="new">Najnowsze</option><option value="best">Najlepiej oceniane</option></select></label>
+          <label>Temat<select value={topic} disabled={!config.isSuccess} onChange={event => setTopic(event.target.value)}><option value="">Wszystkie tematy</option>{config.data?.topics?.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+        </div>
+        {sort === 'best' && <p>Według liczby opinii „Zgadzam się”; przy remisie od najnowszej publikacji.</p>}
+        {contextActive && <p>Pokazujemy nitki zawierające wybrany materiał lub potwierdzone powiązanie. <Link href="/nitki">Pokaż wszystkie</Link></p>}
       </header>
-      {query.isLoading && <p className="sc-clinic-empty">Ładowanie nitek…</p>}
-      {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać nitek.</p>}
+      {!contextActive && !term && !topic && Boolean(drspin.data?.results.some(row => row.published && row.slug.startsWith('dr-spin-kontekst-'))) && <section className="sc-f2-drspin"><h2>Nitki Dr. Spina</h2><p>Źródła ułożone przez Dr. Spina.</p><div>{drspin.data?.results.filter(row => row.published && row.slug.startsWith('dr-spin-kontekst-')).slice(0, 2).map(row => <ThreadCard key={row.id} thread={row} />)}</div></section>}
+      <AccountDataState query={query} empty="Publiczne nitki będą dostępne wkrótce." />
       {query.isSuccess && !threads.length && (
         <p className="sc-clinic-empty">{term ? `Brak nitek dla „${term}”.` : "Nie ma jeszcze publicznych nitek. Ułóż pierwszą — wystarczą dwa materiały."}</p>
       )}
@@ -99,55 +120,63 @@ function ReportButton({ threadId }: { threadId: number }) {
   const [reason, setReason] = useState("spam");
   const [details, setDetails] = useState("");
   const [status, setStatus] = useState("");
+  const [pending, setPending] = useState(false);
   if (!account.data?.authenticated) return null;
   async function send(event: FormEvent) {
     event.preventDefault();
+    if (pending) return;
+    setPending(true);
     try {
       const result = await reportCommunityThread(threadId, reason, details.trim());
       setStatus(result.status === "received" ? "Dziękujemy — zgłoszenie trafiło do zespołu." : "Ta nitka jest już przez Ciebie zgłoszona.");
       setOpen(false);
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Nie udało się wysłać zgłoszenia."); }
+    } catch (error) { setStatus(accountMessage(error)); } finally { setPending(false); }
   }
   return <>
-    {status ? <span className="sc-community__status" role="status">{status}</span> : <Button variant="quiet" size="sm" onClick={() => setOpen(true)}>Zgłoś nitkę</Button>}
+    {status && <span className="sc-community__status" role="status">{status}</span>}<Button variant="quiet" size="sm" onClick={() => { setOpen(true); setStatus(''); }}>Zgłoś nitkę</Button>
     <Dialog open={open} onClose={() => setOpen(false)} title="Zgłoś nitkę do moderacji">
       <form className="sc-community-report" onSubmit={send}>
         <label>Powód<select value={reason} onChange={event => setReason(event.target.value)}>{REPORT_REASONS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
         <label>Szczegóły (opcjonalnie)<textarea rows={3} maxLength={500} value={details} onChange={event => setDetails(event.target.value)} /></label>
-        <Button type="submit" variant="primary">Wyślij zgłoszenie</Button>
+        <Button type="submit" variant="primary" disabled={pending}>Wyślij zgłoszenie</Button>
+        {status && <p role="status">{status}</p>}
       </form>
     </Dialog>
   </>;
 }
 
 export function CommunityThreadPage({ id }: { id: string }) {
-  const query = useQuery({ queryKey: ["community-thread", id], queryFn: () => getCommunityThread(id) });
+  const query = useQuery({ queryKey: ["community-thread", id], queryFn: () => getCommunityThread(id), retry: false });
   if (query.isLoading) return <div className="sc-community"><p className="sc-clinic-empty">Ładowanie nitki…</p></div>;
+  if (query.isError && !isUnavailable(query.error)) return <div className="sc-community"><AccountDataState query={query} /></div>;
   if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono nitki — mogła zostać usunięta albo nie jest publiczna. <Link href="/nitki">Wszystkie nitki</Link></p></div>;
   const thread = query.data;
   return (
-    <div className="sc-community sc-community--detail">
+    <div className="sc-community sc-community--detail sc-f2">
       <p><Link href="/nitki" className="sc-spin-detail__back">← Nitki czytelników</Link></p>
       <header className="sc-community__head">
-        <p className="sc-clinic-kicker">Nitka czytelnika · @{thread.author}</p>
+        <p className="sc-clinic-kicker">Nitka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>@{thread.author}</Link></p>
         <h1>{thread.title}</h1>
         {thread.description && <p className="sc-clinic-lead">{thread.description}</p>}
         <p className="sc-community-card__meta">
           {thread.published_at ? `Opublikowana ${formatDateTimePl(thread.published_at)}` : ""} · {thread.items_count} elementów · kolejność ustalił autor
         </p>
         <div className="sc-community__actions">
+          <FollowButton kind="thread" targetId={thread.id} label={thread.title} />
+          {thread.author_id && !thread.is_owner && <FollowButton kind="user" targetId={thread.author_id} label={`@${thread.author}`} />}
+          <a className="sc-f2-share" href={`https://twitter.com/intent/tweet?${new URLSearchParams({ text: thread.title, url: `https://spin.clinic/nitki/${thread.id}` })}`} target="_blank" rel="noopener noreferrer">Udostępnij na X ↗</a>
           {thread.is_owner && <Button href={`/konto/nitki/${thread.id}`} variant="quiet" size="sm">Edytuj swoją nitkę</Button>}
           <ReportButton threadId={thread.id} />
         </div>
       </header>
       <ol className="sc-thread-els" aria-label="Elementy nitki w kolejności">{thread.items.map((item, index) => <ElementRow key={`${item.kind}-${item.id}`} element={item} index={index} />)}</ol>
-      <OpinionsPanel endpoint={`/api/community/threads/${thread.id}/opinions/`} labels={{
+      <div id="opinie"><OpinionsPanel endpoint={`/api/community/threads/${thread.id}/opinions/`} labels={{
         kicker: "REAKCJE CZYTELNIKÓW",
-        question: "Czy ta nitka była przydatna?",
-        positive: "Przydatna",
-        negative: "Nieprzydatna",
+        question: "Czy zgadzasz się z argumentacją tej nitki?",
+        positive: "Zgadzam się",
+        negative: "Nie zgadzam się",
         signedOut: "Zaloguj się, aby ocenić nitkę i dodać komentarz.",
-      }} />
+      }} /></div>
     </div>
   );
 }

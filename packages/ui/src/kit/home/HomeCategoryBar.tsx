@@ -29,18 +29,21 @@ export function HomeCategoryBar({
   onChange,
   start,
   end,
+  items = [{ label: "Wszystko", value: null }, ...HOME_TOPICS],
+  label = "Tematy",
 }: {
   value: string | null;
   onChange: (topic: string | null) => void;
   start?: ReactNode;
   end?: ReactNode;
+  items?: { label: string; value: string | null }[];
+  label?: string;
 }) {
   const m = useMotionTokens();
-  const items = [{ label: "Wszystko", value: null as string | null }, ...HOME_TOPICS];
   return (
     <div className="sc-home-catrow">
     {start ? <div className="sc-home-catrow__start">{start}</div> : null}
-    <nav className="sc-nav-categories sc-home-catbar" aria-label="Tematy">
+    <nav className="sc-nav-categories sc-home-catbar" aria-label={label}>
       <ul className="sc-nav-categories__list" role="list">
         {items.map((item) => (
           <li key={item.value ?? "all"} className="sc-nav-categories__item">

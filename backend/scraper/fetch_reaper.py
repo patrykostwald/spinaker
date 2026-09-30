@@ -12,7 +12,7 @@ DEFAULT_MAX_AGE_SECONDS = 300
 SUSPEND_AFTER_ABANDONED = 3
 
 
-def reap_incomplete_fetches(*, max_age_seconds=DEFAULT_MAX_AGE_SECONDS, now=None):
+def reap_incomplete_fetches(*, max_age_seconds=DEFAULT_MAX_AGE_SECONDS, now=None, request_ids=None, limit=None):
     """Append an `abandoned` fact for expired open requests.
 
     The mutable FetchRequest row serializes this with the normal terminal write.
@@ -21,9 +21,12 @@ def reap_incomplete_fetches(*, max_age_seconds=DEFAULT_MAX_AGE_SECONDS, now=None
     """
     now = now or timezone.now()
     cutoff = now - timedelta(seconds=max_age_seconds)
-    candidates = list(FetchRequest.objects.filter(
+    candidates = FetchRequest.objects.filter(
         state=FetchRequest.State.RESERVED, reserved_at__lte=cutoff,
-    ).values_list('request_id', flat=True))
+    ).order_by('reserved_at', 'pk')
+    if request_ids is not None:
+        candidates = candidates.filter(request_id__in=request_ids)
+    candidates = list(candidates.values_list('request_id', flat=True)[:limit])
     reaped = suspended = 0
     for request_id in candidates:
         with transaction.atomic():

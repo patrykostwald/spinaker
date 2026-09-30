@@ -6,6 +6,14 @@ app = Celery('spin_clinic')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
+    'council-charter-missing-nightly': {'task': 'news.tasks.council_charter_missing_task', 'schedule': crontab(hour=2, minute=15)},
+    'council-audit-hourly': {'task': 'news.tasks.council_audit_task', 'schedule': crontab(minute=0, hour='7-23')},
+    'inquisitor-evening': {'task': 'news.tasks.inquisitor_task', 'schedule': crontab(minute=45, hour=21)},
+    'account-notification-events': {'task': 'news.notification_tasks.process_notification_events', 'schedule': crontab(minute='*')},
+    'account-notification-digests': {'task': 'news.notification_tasks.send_notification_digests', 'schedule': crontab(minute=0)},
+    'repairer-15m': {'task': 'news.tasks.repairer_task', 'schedule': crontab(minute='*/15')},
+    # Kontekst spinu dnia z Bazy — 19:30 czasu Europe/Warsaw, wymaga DR_SPIN_THREADS_ENABLED=true.
+    'dr-spin-thread-daily': {'task': 'news.tasks.dr_spin_thread_task', 'schedule': crontab(hour=19, minute=30)},
     'clinic-screen-5m': {'task': 'news.tasks.clinic_screen_task', 'schedule': crontab(minute='*/5')},
     'clinic-interview-10m': {'task': 'news.tasks.clinic_interview_task', 'schedule': crontab(minute='*/10')},
     'clinic-interview-pick': {'task': 'news.tasks.clinic_interview_pick_task', 'schedule': crontab(hour='7,10', minute=5)},
@@ -19,6 +27,10 @@ app.conf.beat_schedule = {
     'sejm-career-weekly': {'task': 'news.tasks.sejm_career_task', 'schedule': crontab(day_of_week='mon', hour=5, minute=20)},
     # Konto spin.clinic na X: silne spiny jako wątek — co 30 minut w dzień, do dziennego limitu (domyślnie wyłączone).
     'x-publish-day': {'task': 'news.tasks.x_publish_task', 'schedule': crontab(minute='15,45', hour='8-21')},
+    # Facebook, Instagram, Bluesky i film na TikTok/Shorts — po wpisie na X, do SOCIAL_DAILY_LIMIT (domyślnie wyłączone).
+    'social-publish-day': {'task': 'news.tasks.social_publish_task', 'schedule': crontab(minute='25,55', hour='8-21')},
+    # Rekruter Konsylium: kontrola zdrowia składu i jeden kandydat na noc — po diagnozach, z resztek dziennych limitów.
+    'council-recruiter-night': {'task': 'news.tasks.council_recruiter_task', 'schedule': crontab(hour=23, minute=30)},
     'weekly-report-sunday': {'task': 'news.tasks.weekly_report_task', 'schedule': crontab(day_of_week='sun', hour=20, minute=0)},
     # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
     'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
@@ -92,6 +104,9 @@ app.conf.beat_schedule = {
     # BZP remains inactive until BZP_API_ENABLED=true is set in the deployment environment.
     'bzp-metadata-3m': {'task': 'scraper.tasks.import_bzp_metadata', 'schedule': crontab(minute='*/3')},
 }
+app.conf.beat_schedule['push-evening-spin'] = {
+    'task': 'news.push_events.evening_spin', 'schedule': crontab(hour=21, minute=15)}
+
 if os.environ.get('NEWSAPI_TIER', 'free') in ('business', 'advanced'):
     app.conf.beat_schedule['newsapi-frequent'] = {'task': 'scraper.tasks.scrape_newsapi_batch_task', 'schedule': crontab(minute='*/15')}
 else:

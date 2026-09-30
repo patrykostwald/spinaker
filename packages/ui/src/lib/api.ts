@@ -1,8 +1,8 @@
 import type { Article, Paginated, ThreadDetail, ThreadListItem, TimelineResponse } from '../types';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? process.env.NEXT_PUBLIC_FRONTEND_DOMAIN ?? 'spin.clinic';
-export class ApiError extends Error { constructor(public status: number) {
-  super(status === 403 ? 'Brak dostępu. Zaloguj się ponownie.' : status === 404 ? 'Nie znaleziono materiału.' : status === 429 ? 'Zbyt wiele zapytań. Spróbuj ponownie za chwilę.' : 'Nie udało się połączyć z serwisem. Spróbuj ponownie.');
+export class ApiError extends Error { constructor(public status: number, message?: string) {
+  super(message ?? (status === 403 ? 'Brak dostępu. Zaloguj się ponownie.' : status === 404 ? 'Nie znaleziono materiału.' : status === 429 ? 'Zbyt wiele zapytań. Spróbuj ponownie za chwilę.' : 'Nie udało się połączyć z serwisem. Spróbuj ponownie.'));
 } }
 export async function apiFetch<T>(path: string): Promise<T> {
   const base = typeof window === 'undefined' ? API_URL : '';
@@ -34,12 +34,18 @@ export function getMe(): Promise<{ authenticated: boolean; is_editor: boolean; i
 }
 export { API_URL, DOMAIN };
 
+// Błąd zapisu z polami formularza; dziedziczy ApiError, żeby kod sprawdzający status (404 — funkcja jeszcze wyłączona) działał dalej.
+export class ApiValidationError extends ApiError {
+  constructor(message: string, public fields: Record<string, string> = {}, status = 400) { super(status, message); }
+}
+
 export async function apiWrite<T>(path: string, body: unknown, method = 'POST'): Promise<T> {
   const csrf = await apiFetch<{csrfToken: string}>('/api/auth/csrf/');
   const response = await fetch(path, { method, credentials: 'include', cache: 'no-store',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf.csrfToken }, body: JSON.stringify(body) });
   if (!response.ok) {
     let message = 'Nie udało się zapisać. Sprawdź formularz i spróbuj ponownie.';
+    const fields: Record<string, string> = {};
     try {
       const labels: Record<string, string> = { name: 'Nazwa', source_type: 'Rodzaj źródła', rss_url: 'Adres RSS', catalog_notes: 'Notatki', catalog_stage: 'Etap', scrape_frequency_minutes: 'Odstęp między pobraniami', is_active: 'Aktywność', scrape_enabled: 'Pobieranie', title: 'Tytuł', url: 'Adres źródła', source_name: 'Nazwa źródła', category: 'Kategoria', published_date: 'Data publikacji', items: 'Materiały', description: 'Opis', evidence_note: 'Uwagi o źródle' };
       const explain = (value: unknown): string => {
@@ -48,9 +54,13 @@ export async function apiWrite<T>(path: string, body: unknown, method = 'POST'):
         if (value && typeof value === 'object') return Object.entries(value).map(([key, item]) => `${labels[key] ? labels[key] + ': ' : ''}${explain(item)}`).join(' ');
         return '';
       };
-      message = explain(await response.json()) || message;
+      const data = await response.json();
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        for (const [key, value] of Object.entries(data)) fields[key] = explain(value);
+      }
+      message = explain(data) || message;
     } catch {}
-    throw new Error(message);
+    throw new ApiValidationError(message, fields, response.status);
   }
   return response.status === 204 ? undefined as T : response.json();
 }

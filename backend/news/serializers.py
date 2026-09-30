@@ -2,6 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from news.models import Article, Source, Thread, ThreadItem, Ballot
 from news.editorial_roles import role_data
+from news.descriptions import clean_description
 from news.source_groups import portal_group
 
 
@@ -67,6 +68,17 @@ class ArticleSerializer(serializers.ModelSerializer):
         content = getattr(obj, 'content', None)
         return content.status if content else 'not_fetched'
     official = serializers.SerializerMethodField()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Media bez zgody redakcji: tylko tytuł, data, autor i link (news/media_rights.py, decyzja 28.09.2026).
+        from news.media_rights import article_media_allowed
+        if not article_media_allowed(instance):
+            data['image_url'] = ''
+            data['description'] = ''
+        data['description'] = clean_description(data.get('description') or '')
+        return data
+
     @extend_schema_field(serializers.JSONField(allow_null=True))
     def get_official(self, obj):
         from urllib.parse import quote
@@ -138,7 +150,9 @@ class ThreadListSerializer(serializers.ModelSerializer):
     def get_item_count(self, obj) -> int:
         return len(obj.visible_items)
     def get_image_url(self, obj) -> str:
-        return next((i.article.image_url for i in obj.visible_items if i.article_id and i.article.image_url), '')
+        from news.media_rights import article_media_allowed
+        return next((i.article.image_url for i in obj.visible_items
+                     if i.article_id and i.article.image_url and article_media_allowed(i.article)), '')
     class Meta:
         model = Thread
         fields = ('id', 'title', 'slug', 'thread_type', 'editorial_slot', 'is_featured', 'featured', 'description', 'published', 'views_count', 'created_at', 'updated_at', 'item_count', 'image_url', 'items', 'author_name', 'author_role', 'is_sponsored', 'sponsor_name', 'sponsorship_label')

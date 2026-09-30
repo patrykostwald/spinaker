@@ -108,6 +108,9 @@ def test_watcher_skips_low_scores_for_free(ai_on, monkeypatch):
 
 @pytest.mark.django_db
 def test_medium_score_waits_for_investigate_decision(ai_on, monkeypatch):
+    from news.tasks import clinic_diagnose_task
+    # Test wykonuje diagnozę poniżej; nie wymaga uruchomionego brokera Redis.
+    monkeypatch.setattr(clinic_diagnose_task, 'delay', lambda: None)
     monkeypatch.setattr(clinic_ai, 'screen', lambda text: {'score': 55, 'reason': 'teza bez liczb', 'provider': 'groq', 'model': 'm'})
     post(account())
     pipeline()
@@ -332,13 +335,16 @@ def test_failures_do_not_use_the_daily_quota_but_a_series_of_them_stops_spending
 
 @pytest.mark.django_db
 def test_no_diagnoses_at_night_and_the_quota_is_spread_over_the_day(ai_on, monkeypatch):
+    monkeypatch.setenv('CLINIC_DAILY_LIMIT', '20')
     acc = account()
     for index in range(10):
         post(acc, post_id=str(9200 + index))
     clinic.run_screening()
     at_hour(monkeypatch, 3)
     assert clinic.run_diagnoses() == {'status': 'night'}
-    at_hour(monkeypatch, 8)
+    morning = at_hour(monkeypatch, 8)
+    # Data publikacji zależy od udawanego poranka, a nie od godziny uruchomienia testu.
+    PoliticalPost.objects.update(published_at=morning - timedelta(hours=1))
     clinic.run_diagnoses()
     clinic.run_diagnoses()
     # O 8:00 minęła 1/16 dnia: z 19 zwykłych diagnoz należą się 2 — nie cały limit naraz.
@@ -408,7 +414,9 @@ def test_interview_pipeline_keeps_only_quotes_from_the_transcript(monkeypatch):
 
     def fake_call(system, user, schema, **kwargs):
         return SimpleNamespace(content=[], stop_reason='end_turn', usage=None, model='claude-opus-5')
-    monkeypatch.setattr(clinic_ai, '_call', fake_call)
+    # Wywiady wybierają dostawcę bezpośrednio, z pominięciem ogólnego _call.
+    monkeypatch.setattr(clinic_ai, '_call_claude', fake_call)
+    monkeypatch.setattr(clinic_ai, '_call_gemini', fake_call)
     monkeypatch.setattr(clinic_ai, '_json_from_text', lambda blocks: {
         'headline': 'H', 'summary': 'S', 'overall': 'O', 'limitations': '',
         'guest': {'verdict': 'spin', 'intensity': 70, 'summary': 'g', 'claims': [],
@@ -527,13 +535,15 @@ def test_interview_is_processed_only_once(monkeypatch):
 
 @pytest.mark.django_db
 def test_x_thread_synthesis_is_saved_once_and_rejects_english(ai_on, monkeypatch):
+    # Językoznawca ma osobny test (test_polish_synthesis); tu sprawdzamy samą syntezę.
+    monkeypatch.setattr('news.clinic_council.polish_lines', lambda lines, limits: lines)
     post(account())
     pipeline()
     diagnosis = SpinDiagnosis.objects.get()
     assert diagnosis.x_thread == []  # darmowy model niedostępny — diagnoza i tak zapisana
     answers = [{'lead': 'The post blames the government.', 'points': ['One point here.', 'Another point here.']},
                {'lead': 'Wpis przypisuje rządowi intencje bez dowodu.',
-                'points': ['Technika: fałszywa alternatywa — „Tylko my obronimy Polaków!”.', 'Twierdzenie o podatkach nie ma źródła w diagnozie.']}]
+                'points': ['Fałszywa alternatywa ogranicza wybór do dwóch opcji.', 'Wpis przedstawia autora jako jedynego obrońcę odbiorców.']}]
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: (answers.pop(0), 'm'))
     monkeypatch.setattr(clinic_ai, 'x_thread', ORIGINAL_X_THREAD)
     assert clinic.ensure_x_thread(diagnosis) is True
@@ -584,7 +594,9 @@ def test_weekly_report_collects_the_week_without_paid_models(ai_on, monkeypatch)
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **k: ({'summary': 'W tym tygodniu Dr. Spin ocenił jeden post opozycji, w którym użyto fałszywej alternatywy.'}, 'm'))
     report = weekly_report.generate()
     assert report.summary.startswith('W tym tygodniu') and report.data['diagnoses'] == {'government': 0, 'opposition': 1}
-    assert report.data['techniques']['opposition'][0]['name'] == 'fałszywa alternatywa'
+    technique = report.data['techniques']['opposition'][0]
+    assert technique['name'] == technique['category'] == 'Fałszywa alternatywa'
+    assert technique['original_names'] == ['fałszywa alternatywa']
     data = APIClient().get('/api/clinic/report/').json()
     assert data['report']['week_end'] == str(report.week_end) and data['archive'][0]['week_end'] == str(report.week_end)
     assert APIClient().get('/api/clinic/report/nie-data/').status_code == 404
@@ -629,7 +641,7 @@ def test_council_combines_independent_opinions_by_fixed_rules():
 @pytest.mark.django_db
 def test_council_diagnosis_end_to_end_with_review_and_linguist(monkeypatch):
     from news import clinic_council as c
-    monkeypatch.setenv('GROQ_API_KEY', 'g'); monkeypatch.setenv('NIM_API_KEY', 'n'); monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    monkeypatch.setenv('GROQ_API_KEY', 'g'); monkeypatch.setenv('NIM_API_KEY', 'n'); monkeypatch.delenv('GEMINI_API_KEY', raising=False); monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
     monkeypatch.setenv('CLINIC_COUNCIL', 'groq:m1,groq:m2,nim:m3')
     quote = 'Tylko my obronimy Polaków!'
     member = {'verdict': 'spin', 'intensity': 60, 'techniques': [{'id': 'falszywa_alternatywa', 'quote': quote, 'explanation': 'e'}],
@@ -660,10 +672,12 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
                                        claims=[{'claim': 'Bezrobocie spadło', 'assessment': 'misleading', 'explanation': 'Spadało wcześniej.',
                                                 'sources': [{'url': 'https://stat.gov.pl/a', 'title': 'GUS'}]}],
                                        diagnosed_at=timezone.now())
+    row.x_thread = ['Wpis pomija kontekst danych.', 'Dane GUS pokazują wcześniejszy spadek.']
+    row.save(update_fields=['x_thread'])
     thread = clinic.detail_data(row)['x_share']
     assert len(thread) == 1 and weight(thread[0]) <= 280  # jeden wpis
-    assert thread[0].startswith('Dr. Spin (AI) ocenia wpis @posel_test na 82/100') and 'fałszywa alternatywa' in thread[0]
-    assert 'https://stat.gov.pl/a' in thread[0] and thread[0].endswith(row.post.url)  # źródło i cytowany wpis
+    assert thread[0].startswith('Dr. Spin (AI) · Poseł Test') and 'fałszywa alternatywa' in thread[0]
+    assert f'/klinika/{row.pk}' in thread[0] and '…' not in thread[0]
 
     assert x_publish.run() == {'status': 'disabled'}  # bez kluczy i przełącznika — nic nie wysyłamy
     for key in x_publish.KEYS:
@@ -685,10 +699,11 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
     assert result['results'] == [{'id': row.pk, 'posted': True}]
     assert uploads == [bytes([0x89]) + b'PNG' + bytes([13, 10, 26, 10])]  # obrazek PNG z wpisem polityka
     body = sent[0]
-    assert len(sent) == 1 and body['media'] == {'media_ids': ['m1']} and weight(body['text']) <= 280
+    assert len(sent) == 2 and body['media'] == {'media_ids': ['m1']} and weight(body['text']) <= 280
     assert '@posel_test' not in body['text'] and 'x.com/' not in body['text']  # bez oznaczenia i bez linku do polityka
     row.refresh_from_db()
-    assert row.x_posted_ids == ['1'] and row.x_posted_at
+    assert sent[1]['reply'] == {'in_reply_to_tweet_id': '1'}
+    assert row.x_posted_ids == ['1', '2'] and row.x_posted_at
     assert x_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz
 
     # Autor usuwa wpis — usuwamy też nasz (zasady X).
@@ -697,7 +712,7 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
     from news import deleted_posts
     deleted_posts.mark_deleted(row.post)
     row.refresh_from_db()
-    assert deleted == [f'{x_publish.TWEETS}/1'] and row.x_posted_ids == []
+    assert deleted == [f'{x_publish.TWEETS}/1', f'{x_publish.TWEETS}/2'] and row.x_posted_ids == []
 
 
 @pytest.mark.django_db
@@ -708,7 +723,7 @@ def test_x_publish_failure_sends_one_alert(monkeypatch):
     cache.delete('x-publish-alert')
     acc = account()
     row = SpinDiagnosis.objects.create(post=post(acc), status='approved', verdict='spin', intensity=90, headline='Teza',
-                                       summary='Krótko.', diagnosed_at=timezone.now())
+                                       summary='Krótko.', x_thread=['Wpis pomija kontekst.', 'Autor stosuje uproszczenie.'], diagnosed_at=timezone.now())
     for key in x_publish.KEYS:
         monkeypatch.setenv(key, 'test-key-0123456789')
     monkeypatch.setenv('X_POST_ENABLED', 'true')
@@ -720,3 +735,20 @@ def test_x_publish_failure_sends_one_alert(monkeypatch):
     assert result['results'][0]['posted'] is False and alerts and alerts[0][0] == row.pk and '403' in alerts[0][1]
     row.refresh_from_db()
     assert row.x_posted_at is None  # nieopublikowany — kolejna próba przy następnym przebiegu
+
+
+@pytest.mark.django_db
+def test_backfill_takes_missed_posts_by_score_and_skips_permanent_failures(monkeypatch):
+    from io import StringIO
+    from django.core.management import call_command
+    from news.management.commands import clinic_backfill
+    acc = account()
+    rows = {name: SpinDiagnosis.objects.create(post=post(acc, post_id=pid, hours_ago=30), status=status, screen_score=score, error=error)
+            for name, pid, status, score, error in [('queued', '1', 'queued', 60, ''), ('flagged', '2', 'flagged', 80, ''),
+                                                    ('transient', '3', 'failed', 70, 'council_too_few_members: 2'),
+                                                    ('paid', '4', 'failed', 90, 'gemini_402: brak środków'), ('done', '5', 'approved', 95, '')]}
+    seen = []
+    monkeypatch.setattr(clinic_backfill, 'budget_left', lambda: 3.0)
+    monkeypatch.setattr(clinic_backfill, 'diagnose', lambda row, figure=None: seen.append(row.pk) or row)
+    call_command('clinic_backfill', since=(timezone.localdate() - timedelta(days=3)).isoformat(), limit=10, stdout=StringIO())
+    assert seen == [rows['flagged'].pk, rows['transient'].pk, rows['queued'].pk]

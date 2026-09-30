@@ -14,14 +14,14 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     return {
       title: `${title} — Klinika spinu`,
       description,
-      openGraph: { title, description, type: 'article', siteName: 'spin.clinic', images: [{ url: '/og.png', width: 1200, height: 630 }] },
-      twitter: { card: 'summary_large_image', site: '@spinclinic', title, description, images: ['/og.png'] },
+      openGraph: { title, description, type: 'article', siteName: 'spin.clinic', images: [{ url: `/api/clinic/spins/${encodeURIComponent(params.id)}/card.png`, width: 1600, height: 900 }] },
+      twitter: { card: 'summary_large_image', site: '@spinclinic', title, description, images: [`/api/clinic/spins/${encodeURIComponent(params.id)}/card.png`] },
     };
   } catch {
     return { title: 'Diagnoza spinu — spin.clinic' };
   }
 }
 
-export default function SpinRoute({ params }: { params: { id: string } }) {
-  return <SpinDetail id={params.id} />;
+export default function SpinRoute({ params, searchParams }: { params: { id: string }; searchParams: { returnTo?: string | string[] } }) {
+  return <SpinDetail id={params.id} returnTo={typeof searchParams.returnTo === "string" ? searchParams.returnTo : undefined} />;
 }

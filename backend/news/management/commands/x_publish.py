@@ -19,9 +19,11 @@ class Command(BaseCommand):
         if dry_run:
             for item in result['results']:
                 self.stdout.write(f"— diagnoza {item['id']}:")
-                for text in item['posts']:
+                if item.get('error'):
+                    self.stdout.write('   Pominięto: brak poprawnej syntezy.')
+                for text in item.get('posts', []):
                     self.stdout.write(f'   {text}\n')
             if not result['results']:
-                self.stdout.write('Brak spinów od progu X_POST_MIN_INTENSITY z ostatniej doby.')
+                self.stdout.write('Brak nieopublikowanych spinów dnia od progu X_POST_MIN_INTENSITY.')
         else:
             self.stdout.write(str(result))

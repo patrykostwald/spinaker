@@ -16,19 +16,28 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Dropdown } from "../Dropdown";
 import { SearchField } from "../SearchField";
 import { HomeBaza } from "./HomeBaza";
+import { HomeSupport } from "./HomeSupport";
+import { NewsCard } from "../NewsCard";
+import { EmptySlot } from "./Strip";
+import { expandCategories } from "../../lib/categoryGroups";
 import { HomeCategoryBar } from "./HomeCategoryBar";
 import { HomeSpinTeaser } from "./HomeSpinTeaser";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
-import { HomeLead } from "./HomeLead";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads } from "./HomeThreads";
-import { HomeTicker } from "./HomeTicker";
 import { NewsletterSignup } from "../../components/NewsletterSignup";
 import { JournalistInvite } from "../../components/JournalistInvite";
 import { collapseSimilar } from "./collapseSimilar";
 import { useDemoMode, useDrSpinThread, useHomeConfig, useHomeFeed } from "./data";
 import { GROUP_EMPTY_HINT, SOURCE_GROUPS, SOURCE_GROUP_PARAM, activeSources, groupSources, parseSourceGroup, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
+
+const NEWS_TYPES = [
+  { value: null, label: "Wszystkie", groups: [] },
+  { value: "video", label: "Wideo i TV", groups: ["film", "wywiad", "podcast"] },
+  { value: "official", label: "Komunikaty urzędowe", groups: ["publiczne"] },
+  { value: "articles", label: "Artykuły", groups: ["artykul", "reportaz"] },
+];
 
 function DemoBanner() {
   const demo = useDemoMode();
@@ -38,15 +47,6 @@ function DemoBanner() {
       <strong>Dane demonstracyjne.</strong> Backend jest niedostępny — materiały poniżej są FIKCYJNE i służą tylko do pracy nad układem.
     </p>
   );
-}
-
-function useTodayLabel(options: Intl.DateTimeFormatOptions) {
-  const [label, setLabel] = useState("");
-  const key = JSON.stringify(options);
-  useEffect(() => {
-    setLabel(new Intl.DateTimeFormat("pl-PL", JSON.parse(key)).format(new Date()));
-  }, [key]);
-  return label;
 }
 
 export function HomePage() {
@@ -59,9 +59,7 @@ export function HomePage() {
   const [topQuery, setTopQuery] = useState("");
   const config = useHomeConfig();
   const drSpin = useDrSpinThread();
-  const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  // Grupa źródeł „Wiadomości dnia” — własny selektor w nagłówku pasa, niezależny od filtrów paska newsowego.
-  const [dayGroup, setDayGroup] = useState<SourceGroup | null>(null);
+  const [activeType, setActiveType] = useState<string | null>(null);
   const bazaRef = useRef<HTMLElement | null>(null);
 
   const sources = config.data?.sources ?? [];
@@ -82,41 +80,21 @@ export function HomePage() {
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
 
-  // „Top 10”: najnowsze materiały, zawężane tematem, grupą źródeł i hasłem z wiersza filtrów.
+  // Wiadomości: typ materiału, grupa źródeł i hasło zawężają wyniki przez API.
   const top = useHomeFeed(
     "top10",
-    { mode: "latest", topics: activeTopic ? [activeTopic] : [], sources: groupIds, query: topQuery, pageSize: 20, diverse: true },
+    { mode: "latest", categories: expandCategories(NEWS_TYPES.find((type) => type.value === activeType)?.groups ?? []), sources: groupIds, query: topQuery, pageSize: 20, diverse: true },
     { refetchInterval: 30_000, enabled: !groupEmpty },
   );
   const latest = useMemo(() => (groupEmpty ? [] : top.data?.results ?? []), [groupEmpty, top.data]);
+  const newsGrid = useMemo(() => collapseSimilar(latest).slice(0, 6), [latest]);
 
-  // Wiadomości dnia: dzisiejsze doniesienia z wiodących źródeł (`mode=top`), niezależne od filtrów paska.
-  const dayLabel = useTodayLabel({ weekday: "long", day: "numeric", month: "long" });
-  const dayIds = useMemo(() => (dayGroup ? groupSources(activeSources(sources))[dayGroup].map((source) => source.id) : []), [sources, dayGroup]);
-  const dayGroupEmpty = Boolean(dayGroup) && sources.length > 0 && dayIds.length === 0;
-  const day = useHomeFeed("day-top", { mode: "top", sources: dayIds, pageSize: 13, diverse: true }, { refetchInterval: 120_000, enabled: !dayGroupEmpty });
-  const dayArticles = useMemo(() => day.data?.results ?? [], [day.data]);
-  const dayEmpty = day.isSuccess && dayArticles.length === 0;
-  // Dopóki wiodące media nie są aktywne (zgody), `mode=top` jest pusty — wtedy dzisiejsze doniesienia
-  // aktywnych źródeł (instytucje publiczne), a gdy dziś jest ich mniej niż 3 — najnowsze materiały.
-  const dayFallback = useHomeFeed("day-latest", { mode: "latest", sources: dayIds, pageSize: 40, diverse: true }, { enabled: dayEmpty && !dayGroupEmpty });
-  const fallbackToday = useMemo(() => {
-    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date());
-    return (dayFallback.data?.results ?? []).filter(
-      (article) => article.published_date && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw" }).format(new Date(article.published_date)) === today,
-    );
-  }, [dayFallback.data]);
-  const fallbackIsToday = fallbackToday.length >= 3;
-  const leadArticles = dayGroupEmpty ? [] : dayEmpty ? (fallbackIsToday ? fallbackToday : dayFallback.data?.results ?? []).slice(0, 13) : dayArticles;
+  const newsIds = useMemo(() => new Set(newsGrid.map(({ article }) => article.id)), [newsGrid]);
 
   useEffect(() => {
     if (q) bazaRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
   }, [q]);
 
-  // Serie niemal identycznych doniesień jednego źródła zwinięte w jeden box („+N podobnych”).
-  const leadCollapsed = useMemo(() => collapseSimilar(leadArticles), [leadArticles]);
-  const leadMain = leadCollapsed[0]?.article ?? null;
-  const related = leadCollapsed.slice(1, 13);
 
   return (
     <>
@@ -124,10 +102,20 @@ export function HomePage() {
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <DemoBanner />
         <HomeHero />
-        <div className="sc-home-top">
+        {/* 1. Dr. Spin — po co tu jesteś. 2. Wiadomości — agregat z naszej Bazy do przeglądania i własnych pasków.
+            3. Dla dziennikarzy. 4. Baza. 5. Newsletter (decyzja właściciela 28.09). */}
+        <HomeSpinTeaser />
+        <section className="sc-home-section sc-home-news" aria-labelledby="home-news-title">
+          <header className="sc-home-news__head">
+            <div>
+              <h2 id="home-news-title" className="sc-t-title-l sc-home-section__title">Wiadomości</h2>
+            </div>
+          </header>
           <HomeCategoryBar
-            value={activeTopic}
-            onChange={setActiveTopic}
+            items={NEWS_TYPES}
+            label="Typ materiału"
+            value={activeType}
+            onChange={setActiveType}
             start={
               <Dropdown
                 label={sourceGroup ? `Źródła: ${sourceGroupLabel(sourceGroup)}` : "Źródła: wszystkie"}
@@ -149,46 +137,29 @@ export function HomePage() {
           {groupEmpty && sourceGroup ? (
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”. {GROUP_EMPTY_HINT}</p>
           ) : null}
-          {!groupEmpty && top.isSuccess && !latest.length && (topQuery || activeTopic) ? (
-            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">Brak najnowszych materiałów dla tego wyboru.</p>
+          {!groupEmpty && top.isSuccess && !latest.length ? (
+            <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">{topQuery || activeType || sourceGroup ? <>Nie znaleźliśmy pasujących materiałów. <button type="button" onClick={() => { setKeyword(""); setTopQuery(""); setActiveType(null); setSourceGroup(null); }}>Wyczyść filtry</button></> : "Nie ma jeszcze opublikowanych materiałów."}</p>
           ) : null}
-          <HomeTicker articles={latest} loading={top.isPending && !groupEmpty} />
-        </div>
+          {!groupEmpty && top.isError ? <p role="alert">{top.data ? `Pokazujemy dane z ${new Date(top.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna.` : "Nie udało się pobrać danych."} <button type="button" onClick={() => void top.refetch()}>Spróbuj ponownie</button></p> : null}
+          {/* Karty średniej wielkości — bez olbrzymiego boxu, w którym miniatury się rozmywały. */}
+          <ul className="sc-home-news__grid" role="list">
+            {newsGrid.map(({ article, similar }) => (
+              <li key={article.id}><NewsCard article={article} size="medium" headingLevel={3} similarCount={similar} expandable={false} /></li>
+            ))}
+            {!groupEmpty && !newsGrid.length && top.isPending ? Array.from({ length: 3 }, (_, index) => <li key={index}><EmptySlot index={index + 1} label="Ładuję…" /></li>) : null}
+          </ul>
+        </section>
         <HomeReveal>
-          <HomeLead
-            main={leadMain}
-            related={related}
-            fallback={dayEmpty && !fallbackIsToday}
-            dateLabel={dayLabel}
-            emptyNote={dayGroupEmpty && dayGroup ? `Brak aktywnych źródeł w grupie „${sourceGroupLabel(dayGroup)}”. ${GROUP_EMPTY_HINT}` : null}
-            actions={
-              <Dropdown
-                label={dayGroup ? `Źródła: ${sourceGroupLabel(dayGroup)}` : "Źródła: wszystkie"}
-                ariaLabel="Źródła sekcji Najnowsze"
-                mode="single"
-                presentation="auto"
-                triggerVariant="quiet"
-                align="end"
-                items={[{ value: "", label: "Wszystkie źródła" }, ...SOURCE_GROUPS]}
-                value={dayGroup ?? ""}
-                onChange={(value) => setDayGroup(parseSourceGroup(value as string))}
-              />
-            }
-          />
+          <HomeThreads sources={sources} excludedArticleIds={newsIds} />
         </HomeReveal>
-        <HomeSpinTeaser />
+        {/* Nitka Dr. Spina — pokazuje, czym są nitki kontekstowe; z paskiem dla dziennikarzy (28.09). */}
         <HomeReveal>
-          <HomeThreads sources={sources} />
+          <HomeDrSpin thread={drSpin.data ?? null} />
         </HomeReveal>
-        <JournalistInvite />
-        {drSpin.data?.published ? (
-          <HomeReveal>
-            <HomeDrSpin thread={drSpin.data} />
-          </HomeReveal>
-        ) : null}
         <HomeReveal>
           <HomeBaza ref={bazaRef} sources={sources} initialQuery={q} sourceGroup={sourceGroup} />
         </HomeReveal>
+        <HomeSupport />
         <NewsletterSignup source="home" />
       </div>
     </>

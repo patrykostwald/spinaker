@@ -9,17 +9,60 @@ from django.utils import timezone
 from news.models import ImportState
 
 
+@shared_task(name='news.tasks.repairer_task', soft_time_limit=210, time_limit=240)
+def repairer_task():
+    from news.repairer import run
+    return run()
+
+
+@shared_task(bind=True, name='news.tasks.clinic_archive_task', max_retries=60, rate_limit='6/m',
+             soft_time_limit=25, time_limit=30)
+def clinic_archive_task(self, post_id, job_id=''):
+    """Osobna kolejka; wspólna blokada zachowuje odstęp także przy wielu workerach."""
+    import re
+    import requests
+    from news.clinic_lab import archive_request
+    from news.political_models import PoliticalPost
+    post = PoliticalPost.objects.filter(pk=post_id).first()
+    if post is None or post.archive_url:
+        return {'status': 'pominięto'}
+    if not cache.add('clinic-archive:spacing', 1, timeout=11):
+        raise self.retry(countdown=11)
+    try:
+        result = archive_request(post.url, job_id)
+    except (requests.RequestException, ValueError, TypeError, KeyError):
+        raise self.retry(countdown=60)
+    if not isinstance(result, dict):
+        return {'status': 'brak odpowiedzi'}
+    if result.get('status') == 'success' and re.fullmatch(r'\d{14}', str(result.get('timestamp', ''))):
+        url = f"https://web.archive.org/web/{result['timestamp']}/{post.url}"
+        if len(url) > 500:
+            return {'status': 'url_too_long'}
+        PoliticalPost.objects.filter(pk=post.pk, archive_url='').update(archive_url=url, archive_checked_at=timezone.now())
+        return {'status': 'ok', 'archive_url': url}
+    next_job = result.get('job_id') or job_id
+    if next_job and result.get('status') not in ('error', 'pominięto'):
+        raise self.retry(args=[post_id, next_job], countdown=15)
+    return {'status': result.get('status', 'brak odpowiedzi')}
+
+
 @shared_task(name="news.tasks.clinic_diagnose_task", soft_time_limit=1500, time_limit=1600)
 def clinic_diagnose_task():
     """Diagnozy nowych postów polityków (Klinika spinu). Wyłączone bez CLINIC_AI_ENABLED i klucza."""
+    from news.council_health import record_run
     if not cache.add("clinic-diagnose-lock", "1", timeout=1700):
+        record_run({'status': 'locked'})
         return {"status": "locked"}
     try:
         from news.clinic import fill_x_threads, run_diagnoses
         result = run_diagnoses(limit=2)
+        record_run(result)
         # Syntezy do wątków na X dla starszych diagnoz (darmowy model, po kilka na raz).
         result['x_threads'] = fill_x_threads(limit=3)
         return result
+    except Exception:
+        record_run({'status': 'error'})
+        raise
     finally:
         cache.delete("clinic-diagnose-lock")
 
@@ -197,6 +240,18 @@ def sejm_career_task():
     return run()
 
 
+@shared_task(name="news.tasks.social_publish_task", soft_time_limit=900, time_limit=960)
+def social_publish_task():
+    """Silne spiny na Facebooku, Instagramie, Bluesky i mail z filmem na TikTok i Shorts (SOCIAL_POST_ENABLED i klucze)."""
+    if not cache.add("social-publish-lock", "1", timeout=1000):
+        return {"status": "locked"}
+    try:
+        from news.social_publish import run
+        return run()
+    finally:
+        cache.delete("social-publish-lock")
+
+
 @shared_task(name="news.tasks.x_publish_task", soft_time_limit=300, time_limit=360)
 def x_publish_task():
     """Wątki silnych spinów z konta spin.clinic (X_POST_ENABLED i klucze z uprawnieniem zapisu)."""
@@ -207,3 +262,58 @@ def x_publish_task():
         return run()
     finally:
         cache.delete("x-publish-lock")
+
+
+@shared_task(name="news.tasks.dr_spin_thread_task", soft_time_limit=300, time_limit=360)
+def dr_spin_thread_task():
+    """Codzienna nitka kontekstowa; domyślnie wyłączona."""
+    if not cache.add('dr-spin-thread-lock', '1', timeout=400):
+        return {'status': 'locked'}
+    try:
+        from news.dr_spin_threads import build_daily_thread
+        return build_daily_thread()
+    finally:
+        cache.delete('dr-spin-thread-lock')
+
+
+@shared_task(name="news.tasks.council_recruiter_task", soft_time_limit=1500, time_limit=1600)
+def council_recruiter_task():
+    """Rekruter Konsylium (co noc): zawieszenia martwych członków, powroty, egzamin jednego kandydata."""
+    if not cache.add("council-recruiter-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news.council_recruiter import run
+        return run()
+    finally:
+        cache.delete("council-recruiter-lock")
+
+
+@shared_task(name='news.tasks.council_audit_task', soft_time_limit=210, time_limit=240)
+def council_audit_task():
+    from news.council_auditor import run
+    return run()
+
+
+@shared_task(bind=True, name='news.tasks.inquisitor_task', soft_time_limit=900, time_limit=960, max_retries=15)
+def inquisitor_task(self):
+    from news.inquisitor import run
+    result = run()
+    if result['status'] == 'locked':
+        raise self.retry(countdown=120)
+    return result
+
+
+# Register account tasks with Celery autodiscovery.
+from news.notification_tasks import process_notification_events, send_notification_digests  # noqa: F401,E402
+
+from news.account_lifecycle import send_password_reset, send_account_verification  # noqa: F401
+
+
+@shared_task(name="news.tasks.council_charter_missing_task", soft_time_limit=600, time_limit=660)
+def council_charter_missing_task():
+    """Po resecie darmowych limitów (2:15): Kartę przyjmują modele, które jeszcze nie odpowiedziały (np. po 429 lub 402)."""
+    from io import StringIO
+    from django.core.management import call_command
+    out, err = StringIO(), StringIO()
+    call_command('council_charter', missing=True, stdout=out, stderr=err)
+    return {'status': 'ok', 'accepted': out.getvalue().count('\n'), 'no_answer': err.getvalue().count('\n')}

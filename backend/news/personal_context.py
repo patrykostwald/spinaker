@@ -119,7 +119,13 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        if attrs.get('is_public'):
+        if attrs.get('is_public', self.instance.is_public if self.instance else False):
+            from news.account_security import require_verified
+            from news.community import threads_enabled
+            if not threads_enabled():
+                raise serializers.ValidationError({'is_public': 'Publikacja nitek nie jest jeszcze dostępna.'})
+            request = self.context.get('request')
+            require_verified(request.user if request else self.instance.owner if self.instance else None)
             if 'items' in attrs:
                 count = len(attrs['items'])
             elif 'article_ids' in attrs:
@@ -193,7 +199,7 @@ class PersonalContextThreadsView(APIView):
         return Response({'results': PersonalContextThreadSerializer(rows, many=True).data})
 
     def post(self, request):
-        serializer = PersonalContextThreadSerializer(data=request.data)
+        serializer = PersonalContextThreadSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
             instance = serializer.save(owner=request.user)
@@ -214,7 +220,7 @@ class PersonalContextThreadDetailView(APIView):
 
     def patch(self, request, thread_id):
         instance = self._get(request, thread_id)
-        serializer = PersonalContextThreadSerializer(instance, data=request.data, partial=True)
+        serializer = PersonalContextThreadSerializer(instance, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
             instance = serializer.save()

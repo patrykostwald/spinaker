@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from news.clinic_api import clinic_council
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import newsletter
+from news.admin_status import admin_status
+from news.admin_finance import admin_wallets
+from news.social_publish import serve_video
 from news.views import source_coverage, archive_status, health, me, google_news, patronite_webhook, editorial_status
 from news.auth_views import csrf, sign_in, sign_out
 from news.editorial import EditorialThreadViewSet, EditorialArticleViewSet
@@ -16,11 +20,12 @@ from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCa
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
 from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
-from news.clinic_api import (clinic_page, clinic_spins, clinic_spin_detail, clinic_accounts, clinic_deleted, clinic_report, SpinOpinionsView,
+from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report, SpinOpinionsView,
                              suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
+from news.push_api import SubscriptionsView
 
 router = DefaultRouter()
 router.register(r"editor/threads", EditorialThreadViewSet, basename="editor-threads")
@@ -30,6 +35,9 @@ router.register(r"articles", ArticleViewSet, basename="articles")
 router.register(r"threads", ThreadViewSet, basename="threads")
 
 urlpatterns = [
+    path('push/subscriptions/', SubscriptionsView.as_view()),
+    path('admin/status/', admin_status),
+    path('admin/wallets/', admin_wallets),
     path('', include('news.account_urls')),
     path('staff/political/', include('news.political_urls')),
     path('feed/', feed),
@@ -48,9 +56,17 @@ urlpatterns = [
     path('newsletter/confirm/', newsletter.confirm),
     path('newsletter/unsubscribe/', newsletter.unsubscribe),
     path('staff/newsletter/', newsletter.staff_stats),
+    path('social/video/<str:name>', serve_video),
     path('clinic/', clinic_page),
+    path('clinic/interviews/', clinic_interviews),
+    path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
+    path('clinic/messages/', clinic_messages),
+    path('clinic/messages/<str:day>/', clinic_message_detail),
+    path('clinic/council/', clinic_council),
     path('clinic/spins/', clinic_spins),
+    path('clinic/stats/', clinic_statistics),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
+    path('clinic/spins/<int:diagnosis_id>/card.png', clinic_spin_card),
     path('clinic/spins/<int:diagnosis_id>/opinions/', SpinOpinionsView.as_view()),
     path('clinic/accounts/', clinic_accounts),
     path('clinic/deleted/', clinic_deleted),

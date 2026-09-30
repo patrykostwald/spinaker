@@ -169,3 +169,14 @@ class CommentReport(models.Model):
             models.UniqueConstraint(fields=['reporter', 'article_opinion'], name='unique_reporter_article_comment_report'),
             models.UniqueConstraint(fields=['reporter', 'thread_opinion'], name='unique_reporter_thread_comment_report'),
         ]
+
+
+class AccountIdentity(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account_identity')
+    email = models.EmailField(unique=True)
+    email_verified = models.BooleanField(default=False)
+    accepted_terms_version = models.CharField(max_length=40, default='')
+    accepted_privacy_version = models.CharField(max_length=40, default='')
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    verification_nonce = models.CharField(max_length=64, default='')

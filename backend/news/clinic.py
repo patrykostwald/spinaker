@@ -11,20 +11,26 @@ import logging
 import math
 import os
 import smtplib
+import unicodedata
 from datetime import datetime, time, timedelta
 from email.message import EmailMessage
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Min, Max, Q
 from django.utils import timezone
 
 from news import clinic_ai
+from news.names import display_name
 from news.clinic_models import ClinicDailyMessage, SpinDiagnosis
 from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure, SocialHandleEvidence
+from news.techniques import technique_groups, normalized
+from news.clinic_scan import scan_data, synthesis_fingerprint, model_label
 
 logger = logging.getLogger(__name__)
+
+from news.clinic_council import check_failed, clean_claim  # noqa: E402
 
 CAMPS = ('government', 'opposition')
 CAMP_LABELS = {'government': 'Rządzący', 'opposition': 'Opozycja'}
@@ -43,10 +49,12 @@ CLUBS = {
 }
 VERDICT_LABELS = {'spin': 'Spin', 'partial': 'Częściowy spin', 'no_spin': 'Bez spinu', 'unclear': 'Nie da się ocenić'}
 ASSESSMENT_LABELS = {'supported': 'potwierdzone', 'contradicted': 'sprzeczne ze źródłami',
-                     'misleading': 'wprowadza w błąd', 'unverified': 'nie do sprawdzenia'}
+                     'misleading': 'wprowadza w błąd', 'unverified': 'niezweryfikowane'}  # jedno słowo w całym serwisie (audyt 046)
 SCALE_MIN_SAMPLE = 10
-NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera posty warte sprawdzenia, Claude stawia diagnozę ze źródłami, '
-               'a publikacja jest automatyczna — nikt nie poprawia treści diagnoz.')
+NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera wpisy warte sprawdzenia, a konsylium kilku modeli stawia diagnozę. '
+               'Fakty są sprawdzane w wyszukiwarce. Przy zgodności werdyktu poniżej 2/3 lub spinie z oceną co najmniej 70 '
+               'możliwa jest konsultacja faktów z Claude. '
+               'Publikacja jest automatyczna · nikt nie poprawia treści diagnoz.')
 NOTICE_REVIEW = ('Diagnozy przygotowuje AI. Człowiek może je tylko zatwierdzić albo odrzucić — nie zmienia ich treści.')
 NOTICE = NOTICE_AUTO
 
@@ -71,7 +79,7 @@ def figures_by_account(account_ids) -> dict[int, PublicFigure]:
             by_roster.setdefault(account_id, row['roster_entry_id'])
     figures = PublicFigure.objects.filter(
         Q(pk__in=by_figure.values()) | Q(parliamentary_roster_entry_id__in=by_roster.values()), archived=False,
-    ).select_related('parliamentary_roster_entry')
+    ).select_related('parliamentary_roster_entry').prefetch_related('public_roles')
     figure_by_id = {figure.pk: figure for figure in figures}
     figure_by_roster = {figure.parliamentary_roster_entry_id: figure for figure in figures if figure.parliamentary_roster_entry_id}
     result = {}
@@ -82,27 +90,64 @@ def figures_by_account(account_ids) -> dict[int, PublicFigure]:
     return result
 
 
-def party_data(figure: PublicFigure | None):
+EU_GROUPS = {'pfe', 'ppe', 'epp', 'ecr', 's d', 'renew', 'renew europe', 'greens efa',
+             'zieloni wse', 'the left', 'gue ngl', 'esn', 'ni', 'id', 'patriots for europe'}
+
+
+def clean_account_name(value):
+    """Usuwa symbole emoji, selektory wariantów i łączniki sekwencji emoji."""
+    return ' '.join(''.join(char for char in (value or '')
+                           if unicodedata.category(char) not in {'So', 'Sk', 'Cf'}
+                           and not ('\ufe00' <= char <= '\ufe0f')
+                           and char != '\u20e3').split())
+
+
+def party_affiliation(figure):
+    """Zwraca krajową afiliację i osobno frakcję PE; nie zgaduje po nazwisku."""
     if figure is None:
-        return None
-    code = (figure.parliamentary_roster_entry.club if figure.parliamentary_roster_entry_id else '') or figure.political_alignment
-    if not code:
-        return None
-    short, name = CLUBS.get(code, (code, code))
-    return {'code': code, 'short': short, 'name': name}
+        return {'party': None, 'eu_group': None, 'source': None}
+    today = local_now().date()
+    roles = sorted((role for role in figure.public_roles.all()
+                    if not role.archived and role.status == 'current'
+                    and (role.since is None or role.since <= today)
+                    and (role.until is None or role.until >= today)),
+                   key=lambda role: (role.source_checked_at, role.pk), reverse=True)
+    candidates = [(role.party, 'role.party') for role in roles]
+    candidates += [(figure.parliamentary_roster_entry.club, 'roster.club')] if figure.parliamentary_roster_entry_id else []
+    candidates += [(figure.political_alignment, 'figure.political_alignment')]
+    result = {'party': None, 'eu_group': None, 'source': None}
+    for value, source in candidates:
+        code = clean_account_name(value)
+        if not code:
+            continue
+        if normalized(code) in EU_GROUPS:
+            result['eu_group'] = result['eu_group'] or code
+        elif result['party'] is None:
+            code = next((key for key, labels in CLUBS.items()
+                         if normalized(code) in {normalized(key), *(normalized(label) for label in labels)}), code)
+            short, name = CLUBS.get(code, (code, code))
+            result.update(party={'code': code, 'short': short, 'name': name}, source=source)
+    return result
+
+
+def party_data(figure: PublicFigure | None):
+    return party_affiliation(figure)['party']
 
 
 def author_data(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     author = post.author_data or {}
     avatar = author.get('profile_image_url') or ''
+    affiliation = party_affiliation(figure)
     return {
-        'name': figure.canonical_name if figure else (author.get('name') or post.account.display_name),
+        'account_id': post.account_id,
+        'name': display_name(clean_account_name(figure.canonical_name if figure else (author.get('name') or post.account.display_name))),
         'handle': post.account.handle,
         'account_url': f'https://x.com/{post.account.handle}',
         'avatar_url': avatar.replace('_normal.', '_bigger.') if avatar else '',
         'figure_id': figure.pk if figure else None,
         'role_title': figure.role_title if figure else '',
-        'party': party_data(figure),
+        'party': affiliation['party'],
+        'eu_group': affiliation['eu_group'],
     }
 
 
@@ -160,7 +205,11 @@ def featured_today():
 
 
 def failures_today() -> int:
-    return _anthropic_today().filter(status='failed').count()
+    from news.repairer import permanent
+    from news.council_health import error_kind
+    transient = {'429', 'timeout', 'daily_limit', 'too_few', 'connection', 'server'}
+    return sum(error_kind(error) not in transient and permanent(error)
+               for error in _anthropic_today().filter(status='failed').values_list('error', flat=True))
 
 
 def _anthropic_today():
@@ -179,7 +228,7 @@ def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
         score = result['score']
         status = 'queued' if score >= auto else 'flagged' if score >= flag else 'not_applicable'
         fields = {'status': status, 'triage': result, 'screen_score': score,
-                  'provider': result['provider'], 'model_name': result['model']}
+                  'provider': result['provider'], 'model_name': str(result['model'])[:64]}
     try:
         with transaction.atomic():
             return SpinDiagnosis.objects.create(post=post, prompt_version=clinic_ai.PROMPT_VERSION, **fields)
@@ -203,27 +252,36 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         result = clinic_ai.diagnose(_post_context(row.post, figure))
     except clinic_ai.ClinicAIError as error:
         row.status, row.error = 'failed', error.code
+        if hasattr(error, 'council'):
+            row.usage = {**(row.usage or {}), 'council': error.council}
         row.provider, row.model_name = 'anthropic', clinic_ai.model_name()
     else:
+        if 'lab' not in result:
+            from news.clinic_lab import run_lab
+            result['lab'] = run_lab(row.post.text, result.get('claims', []), result.get('loaded_words'))
         usage = result.pop('usage', {})
+        usage['loaded_words'] = result.pop('loaded_words', [])
         for field, value in result.items():
             setattr(row, field, value)
         row.status, row.usage, row.error = ('approved' if auto_publish() else 'pending_review'), usage, ''
         if row.status == 'approved':
             row.reviewed_at = timezone.now()
         row.provider = 'anthropic'  # płatna diagnoza (Claude albo Gemini) — to pole odróżnia ją od strażnika
-        row.model_name = usage.get('model') or clinic_ai.model_name()
+        # Pełny skład Konsylium jest w usage['council']; pole ma 64 znaki (lista nazw przy komplecie członków jest dłuższa).
+        row.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
     row.save()
     if row.status in ('approved', 'pending_review'):
+        from news.clinic_lab import queue_archive
+        queue_archive(row.post)
         ensure_x_thread(row)
     return row
 
 
-def ensure_x_thread(row: SpinDiagnosis) -> bool:
+def ensure_x_thread(row: SpinDiagnosis, save: bool = True) -> bool:
     """Synteza diagnozy do wątku na X — raz na diagnozę, darmowym modelem. Treści diagnozy nie zmienia."""
-    if row.x_thread or not row.verdict:
+    if (row.x_thread and scan_data(row)['synthesis']) or not row.verdict:
         return False
     figure = figures_by_account([row.post.account_id]).get(row.post.account_id)
     try:
@@ -235,16 +293,31 @@ def ensure_x_thread(row: SpinDiagnosis) -> bool:
         })
     except clinic_ai.ClinicAIError:
         return False
-    row.x_thread = result['posts']
-    row.save(update_fields=['x_thread'])
+    row.x_thread = polish_synthesis(result['posts'])
+    row.usage = {**(row.usage or {}), 'scan_synthesis': synthesis_fingerprint(row)}
+    if save:
+        row.save(update_fields=['x_thread', 'usage'])
     return True
 
 
+def polish_synthesis(posts: list[str]) -> list[str]:
+    """Synteza przechodzi przez językoznawcę Konsylium, jak treść diagnozy (limity X zachowane)."""
+    from news.clinic_council import polish_lines
+    limits = [clinic_ai.X_LEAD_CHARS + 20] + [clinic_ai.X_POINT_CHARS + 20] * (len(posts) - 1)
+    return polish_lines(list(posts), limits)
+
+
 def fill_x_threads(limit: int = 5) -> int:
-    """Uzupełnia syntezy dla opublikowanych diagnoz, które jeszcze jej nie mają (najnowsze najpierw)."""
-    rows = (SpinDiagnosis.objects.filter(status='approved', hidden_at__isnull=True, x_thread=[])
-            .exclude(verdict='').select_related('post__account').order_by('-diagnosed_at')[:limit])
-    return sum(ensure_x_thread(row) for row in rows)
+    """Uzupełnia brakujące lub niesprawdzone syntezy z całego backlogu, od najstarszych."""
+    rows = published_diagnoses().exclude(verdict='').order_by('diagnosed_at', 'pk')
+    completed = attempted = 0
+    for row in rows.iterator():
+        if attempted >= max(0, limit):
+            break
+        if scan_data(row)['synthesis'] is None:
+            attempted += 1
+            completed += ensure_x_thread(row)
+    return completed
 
 
 def queue_for_diagnosis(row: SpinDiagnosis) -> SpinDiagnosis:
@@ -325,24 +398,43 @@ def pick_featured():
     return best
 
 
-def spent_today() -> float:
-    """Szacowane wydatki na Claude'a od północy: diagnozy postów i wywiad dnia."""
+def posts_spent_today() -> float:
+    """Szacowane wydatki na Claude'a od północy — tylko diagnozy wpisów."""
+    start = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    return round(sum(clinic_ai.cost_usd(usage) for usage in
+                     SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic').values_list('usage', flat=True)), 4)
+
+
+def interview_spent_today() -> float:
+    """Szacowane wydatki od północy na diagnozę wywiadu dnia (Claude albo Gemini; transkrypcja nie jest liczona)."""
     from news.clinic_models import ClinicInterview
     start = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
-    total = sum(clinic_ai.cost_usd(usage) for usage in
-                SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic').values_list('usage', flat=True))
-    total += sum(clinic_ai.cost_usd((usage or {}).get('claude') or {}) for usage in
-                 ClinicInterview.objects.filter(diagnosed_at__gte=start).values_list('usage', flat=True))
-    return round(total, 4)
+    return round(sum(clinic_ai.cost_usd((usage or {}).get('claude') or {}) for usage in
+                     ClinicInterview.objects.filter(diagnosed_at__gte=start).values_list('usage', flat=True)), 4)
+
+
+def spent_today() -> float:
+    """Szacowane wydatki od północy razem: diagnozy wpisów i wywiad dnia."""
+    return round(posts_spent_today() + interview_spent_today(), 4)
+
+
+def _env_usd(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name, '') or default)
+    except ValueError:
+        return default
 
 
 def budget_left() -> float:
-    """Twardy dzienny budżet na płatne diagnozy (CLINIC_DAILY_BUDGET_USD, domyślnie 2 USD)."""
-    try:
-        budget = float(os.environ.get('CLINIC_DAILY_BUDGET_USD', '2'))
-    except ValueError:
-        budget = 2.0
-    return round(budget - spent_today(), 4)
+    """Twardy dzienny budżet na płatne diagnozy WPISÓW (CLINIC_DAILY_BUDGET_USD, domyślnie 2 USD).
+    Wywiad dnia ma osobny budżet (interview_budget_left) — nie zabiera pieniędzy wpisom (decyzja właściciela 28.09)."""
+    return round(_env_usd('CLINIC_DAILY_BUDGET_USD', 2.0) - posts_spent_today(), 4)
+
+
+def interview_budget_left() -> float:
+    """Osobny dzienny budżet na diagnozę wywiadu dnia Claude'em (CLINIC_INTERVIEW_BUDGET_USD, domyślnie 3.5 USD).
+    Gdy go brakuje, wywiad ocenia Gemini (darmowy limit) — patrz clinic_interview.diagnose_transcript."""
+    return round(_env_usd('CLINIC_INTERVIEW_BUDGET_USD', 3.5) - interview_spent_today(), 4)
 
 
 BUDGET_RESERVE_USD = 0.25  # nie zaczynamy diagnozy, gdy w budżecie zostało mniej niż jej przybliżony koszt
@@ -430,7 +522,7 @@ def run_daily_messages(day=None) -> dict:
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
             'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
             'usage': result['usage'], 'status': status,
-            'model_name': result['usage'].get('model', ''), 'prompt_version': clinic_ai.PROMPT_VERSION,
+            'model_name': result['usage'].get('model', '')[:64], 'prompt_version': clinic_ai.PROMPT_VERSION,
             'reviewed_at': timezone.now() if status == 'approved' else None})
         message.posts.set(posts)
         created[camp] = message.pk
@@ -524,7 +616,11 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
         'headline': diagnosis.headline,
         'summary': diagnosis.summary,
         'technique_names': [item['name'] for item in diagnosis.techniques][:4],
+        'technique_types': [{'name': item['name'], 'category': item.get('category', '')} for item in diagnosis.techniques],
+        'technique_groups': technique_groups(diagnosis.techniques),
+        'scan': scan_data(diagnosis),
         'post': {'id': post.post_id, 'url': post.url, 'text': post.text, 'published_at': post.published_at,
+                 'available': post.available,
                  'media': _media(post), 'likes': metrics.get('like_count', 0), 'reposts': metrics.get('retweet_count', 0)},
         'author': author_data(post, figures.get(post.account_id)),
         'opinions': counts or {'positive': 0, 'negative': 0},
@@ -538,8 +634,10 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
     data = card_data(diagnosis, figures, counts)
     data.update({
         'analysis': diagnosis.analysis,
+        'lab': diagnosis.lab,
         'techniques': diagnosis.techniques,
-        'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')} for claim in diagnosis.claims],
+        'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')}
+                   for claim in (clean_claim(item) for item in diagnosis.claims)],
         'limitations': diagnosis.limitations,
         'x_thread': diagnosis.x_thread,
         'council': (diagnosis.usage or {}).get('council'),
@@ -593,15 +691,19 @@ def scale_data(window_days: int = 7) -> dict:
     return result
 
 
-def _message_data(message: ClinicDailyMessage, with_posts: bool = False) -> dict:
+def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_posts: bool = False) -> dict:
     data = {'id': message.pk, 'day': message.day, 'camp': message.camp, 'message': message.message,
             'analysis': message.analysis, 'themes': message.themes, 'posts_count': message.posts.count(),
-            'model': message.model_name}
+            'model': message.model_name, 'created_at': message.created_at, 'reviewed_at': message.reviewed_at}
     if with_posts:
+        data['scope'] = {**message.posts.aggregate(date_from=Min('published_at'), date_to=Max('published_at')),
+                         'timezone': str(timezone.get_current_timezone())}
         # Źródła przekazu: posty, z których powstał (autor, link do X, fragment treści).
-        posts = list(message.posts.select_related('account').order_by('-published_at')[:60])
+        rows = message.posts.select_related('account').order_by('-published_at', '-pk')
+        posts = list(rows if all_posts else rows[:60])
         figures = figures_by_account({post.account_id for post in posts})
-        data['posts'] = [{'url': post.url, 'text': post.text[:280], 'published_at': post.published_at,
+        data['posts'] = [{'url': post.url, 'text': post.text[:280] if post.available else '',
+                          'available': post.available, 'published_at': post.published_at,
                           'author': (figures[post.account_id].canonical_name if post.account_id in figures
                                      else post.account.display_name), 'handle': post.account.handle} for post in posts]
     return data
@@ -634,6 +736,45 @@ def spin_of_day():
     return None
 
 
+def spin_of_day_by_camp() -> dict:
+    """Spin dnia każdej strony — ta sama reguła co spin_of_day (najwyższa siła spinu wśród dzisiejszych postów,
+    potem z ostatniej doby i trzech dni), a gdy strona nie ma świeżego spinu — jej najnowszy spin z datą.
+    Kolejność zakładek: strona z mocniejszym spinem pierwsza (decyzja właściciela 28.09 — ocenia się wpis, nie stronę)."""
+    base = published_diagnoses().filter(verdict__in=['spin', 'partial'])
+    now = timezone.now()
+    today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+    picks = {}
+
+    def first_checked(queryset):
+        # Na wizytówkę tylko pełna usługa: pomijamy diagnozy, w których sprawdzanie faktów się nie odbyło.
+        for row in queryset[:20]:
+            if not check_failed([clean_claim(item) for item in row.claims]):
+                return row
+        return None
+
+    for camp in CAMPS:
+        rows = base.filter(post__camp_at_collection=camp)
+        best, window = None, ''
+        for label, since in (('today', today), ('24h', now - timedelta(hours=24)), ('72h', now - timedelta(hours=72))):
+            best = first_checked(rows.filter(post__published_at__gte=since).order_by('-intensity', '-post__published_at'))
+            if best:
+                window = label
+                break
+        if best is None:
+            best, window = rows.order_by('-diagnosed_at', '-pk').first(), 'latest'
+        pool = published_diagnoses().filter(post__camp_at_collection=camp)
+        if window != 'latest':
+            pool = pool.filter(post__published_at__gte=since)
+        labels = {'today': 'dzisiaj', '24h': 'ostatnia doba', '72h': 'ostatnie trzy doby',
+                  'latest': 'całe archiwum; najnowszy spin'}
+        picks[camp] = {**detail_data(best), 'window': window, 'pool': pool.count(),
+                       'window_label': labels[window]} if best else None
+    fresh = {'today': 3, '24h': 2, '72h': 1, 'latest': 0}
+    order = sorted(CAMPS, key=lambda camp: (-(fresh[picks[camp]['window']] if picks[camp] else -1),
+                                             -(picks[camp]['intensity'] if picks[camp] else -1)))
+    return {'spins': picks, 'order': order}
+
+
 def latest_spin(exclude_id: int | None = None):
     """Najnowszy spin — inny niż spin dnia, żeby przełącznik zawsze pokazywał drugi wpis."""
     rows = published_diagnoses().filter(verdict__in=['spin', 'partial'])
@@ -649,7 +790,7 @@ def clinic_stats() -> dict:
     Każda liczba: łącznie od startu i dziś (od północy czasu polskiego). Pięć minut w pamięci podręcznej.
     """
     from django.core.cache import cache
-    cached = cache.get('clinic-stats:v1')
+    cached = cache.get('clinic-stats:v3')
     if cached is not None:
         return cached
     today = local_now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -661,29 +802,50 @@ def clinic_stats() -> dict:
         return {'total': total_qs.count(), 'today': today_qs.count()}
 
     result = {
+        **clinic_data_period(),
         'read': pair(PoliticalPost.objects.all(), PoliticalPost.objects.filter(fetched_at__gte=today)),
         'screened': pair(screened, screened.filter(created_at__gte=today)),
         'rejected': pair(screened.filter(status='not_applicable'), screened.filter(status='not_applicable', created_at__gte=today)),
         'diagnosed': pair(published, published.filter(diagnosed_at__gte=today)),
         'spins': pair(spins, spins.filter(diagnosed_at__gte=today)),
+        # Obie strony obok siebie (pasek „ta sama miara” na głównej): konta, przeczytane wpisy, diagnozy, spiny.
+        'by_camp': {camp: {
+            'accounts': reading_accounts().filter(camp=camp).count(),
+            'read': PoliticalPost.objects.filter(camp_at_collection=camp).count(),
+            'diagnosed': published.filter(post__camp_at_collection=camp).count(),
+            'spins': spins.filter(post__camp_at_collection=camp).count(),
+        } for camp in CAMPS},
     }
-    cache.set('clinic-stats:v1', result, 300)
+    cache.set('clinic-stats:v3', result, 300)
     return result
 
 
+def clinic_data_period() -> dict:
+    """Zakres pracy od pierwszego odczytu lub publicznej diagnozy; nie data wpisu na X."""
+    first_read = PoliticalPost.objects.aggregate(first=Min('fetched_at'))['first']
+    first_diagnosis = published_diagnoses().aggregate(first=Min('diagnosed_at'))['first']
+    moments = [stamp for stamp in (first_read, first_diagnosis) if stamp is not None]
+    return {'generated_at': timezone.now().isoformat(),
+            'since': timezone.localdate(min(moments)).isoformat() if moments else None}
+
+
 def clinic_page_data(window_days: int = 7, per_camp: int = 20) -> dict:
-    from news.clinic_interview import interview_archive, latest_interview_data
+    from news.clinic_interview import interview_archive, latest_interview_data, second_interview_data
     sotd = spin_of_day()
     columns = {camp: cards(published_diagnoses().filter(post__camp_at_collection=camp)
                            .order_by('-post__published_at', '-pk')[:per_camp]) for camp in CAMPS}
+    stats = clinic_stats()
     return {
+        'generated_at': stats['generated_at'], 'since': stats['since'],
         'notice': NOTICE_AUTO if auto_publish() else NOTICE_REVIEW,
         'scale': scale_data(window_days),
-        'stats': clinic_stats(),
+        'stats': stats,
         'messages': {camp: daily_message_data(camp) for camp in CAMPS},
         'spin_of_day': sotd,
+        'spin_by_camp': spin_of_day_by_camp(),
         'latest_spin': latest_spin(sotd['id'] if sotd else None),
         'interview': latest_interview_data(),
+        'interview_second': second_interview_data(),
         'interview_archive': interview_archive(),
         'message_history': message_history(),
         'columns': columns,

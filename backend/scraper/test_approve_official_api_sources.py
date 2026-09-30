@@ -25,11 +25,12 @@ def test_command_creates_one_current_official_voting_card():
         '--evidence-url=https://api.sejm.gov.pl/sejm.html', '--reviewed-by=Test redakcyjny', stdout=StringIO())
 
     cards = SourceAccessInstruction.objects.filter(channel='api').order_by('endpoint')
-    assert cards.count() == 1
+    assert cards.count() == 2  # głosowania i druki — osobne karty tego samego źródła
     assert all(card.status == SourceAccessInstruction.Status.APPROVED for card in cards)
     assert all(card.allowed_scope == SourceAccessInstruction.Scope.CONTENT for card in cards)
-    assert cards.get().allowed_path_patterns == [
+    assert cards.get(endpoint__endswith='/votings').allowed_path_patterns == [
         '/sejm/term10/votings/search', '/sejm/term10/votings/{int}', '/sejm/term10/votings/{int}/{int}']
+    assert cards.get(endpoint__endswith='/prints').allowed_path_patterns == ['/sejm/term10/prints', '/sejm/term10/prints/{token}']
 
 
 @pytest.mark.django_db
@@ -49,8 +50,9 @@ def test_command_issues_a_new_card_when_the_current_card_lacks_search_endpoint()
     call_command('approve_official_api_sources', '--apply',
         '--evidence-url=https://api.sejm.gov.pl/sejm.html', '--reviewed-by=Test redakcyjny', stdout=StringIO())
 
-    assert SourceAccessInstruction.objects.filter(source=source).count() == 2
-    assert SourceAccessInstruction.objects.get(source=source, version=2).allowed_path_patterns[0].endswith('/search')
+    votings = SourceAccessInstruction.objects.filter(source=source, endpoint__endswith='/votings')
+    assert votings.count() == 2
+    assert votings.get(version=2).allowed_path_patterns[0].endswith('/search')
 
 
 @pytest.mark.django_db
@@ -79,7 +81,7 @@ def test_command_never_overrides_a_newer_suspension():
     call_command('approve_official_api_sources', '--apply',
         '--evidence-url=https://api.sejm.gov.pl/sejm.html', '--reviewed-by=Test redakcyjny', stdout=StringIO())
 
-    assert SourceAccessInstruction.objects.filter(source=source).count() == 1
+    assert SourceAccessInstruction.objects.filter(source=source, endpoint__endswith='/votings').count() == 1
 
 
 @pytest.mark.django_db

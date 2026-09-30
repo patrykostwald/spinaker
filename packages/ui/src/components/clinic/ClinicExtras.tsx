@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * Części Kliniki spinu używane też na stronie głównej: przekaz dnia z powiększeniem (pełna analiza i posty
+ * Części Kliniki spinu używane też na stronie głównej: przekaz dnia z powiększeniem (pełna analiza i wpisy
  * źródłowe), przełącznik „Spin dnia | Najnowszy spin”, wywiad dnia, lista polityków z licznikami
  * i archiwum przekazów dnia. Powiększenia to natywny <dialog> (Esc i kliknięcie tła zamykają).
  */
 
+import { Button } from "../../kit/Button";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CAMPS, CAMP_LABELS, type Camp, type ClinicAccount, type DailyMessage, type Interview, type InterviewQuote, type SpinDetailData } from "../../lib/clinic";
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
-import { AiTag, IntensityMeter, PartyBadge, VerdictTag } from "./SpinParts";
+import { AiTag, IntensityMeter, VerdictTag } from "./SpinParts";
 
 export function ClinicDialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -38,33 +39,17 @@ function Themes({ themes }: { themes: string[] }) {
   return themes.length ? <ul className="sc-spin-techniques" aria-label="Główne hasła">{themes.map(theme => <li key={theme}>{theme}</li>)}</ul> : null;
 }
 
-/** Przekaz dnia: skrót w boxie; kliknięcie otwiera pełną analizę i listę postów, z których powstał. */
-export function MessageBox({ camp, message, emptyText }: { camp: Camp; message: DailyMessage | null; emptyText?: string }) {
-  const [open, setOpen] = useState(false);
+/** Przekaz dnia: skrót w boxie i trwały link do pełnej analizy ze źródłami. */
+export function MessageBox({ camp, message, emptyText, surface = "standalone" }: { camp: Camp; message: DailyMessage | null; emptyText?: string; surface?: "standalone" | "nested" }) {
   return (
-    <article className="sc-clinic-message" data-camp={camp} data-clickable={message ? "" : undefined}>
-      <p className="sc-clinic-kicker">Przekaz dnia · {CAMP_LABELS[camp]} <AiTag />{message ? <span className="sc-clinic-message__meta">z {message.posts_count} postów · {formatDatePl(message.day)}</span> : null}</p>
+    <article className="sc-clinic-message" data-surface={surface} data-camp={camp} data-clickable={message ? "" : undefined}>
+      <p className="sc-clinic-kicker"><span>Przekaz dnia · {CAMP_LABELS[camp]}</span><AiTag /></p>
       {message ? <>
-        <button type="button" className="sc-clinic-message__open" onClick={() => setOpen(true)} aria-haspopup="dialog">
-          <span className="sc-clinic-message__text">{message.message}</span>
-        </button>
+        <p className="sc-clinic-message__text">{message.message}</p>
         <Themes themes={message.themes} />
-        <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Przekaz dnia · ${CAMP_LABELS[camp]} · ${formatDatePl(message.day)}`}>
-          <p className="sc-clinic-dialog__lead">{message.message}</p>
-          {message.analysis ? message.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>) : null}
-          <Themes themes={message.themes} />
-          {message.posts?.length ? <>
-            <h3>Źródła — posty ({message.posts.length})</h3>
-            <ul className="sc-clinic-dialog__posts">{message.posts.map(post => (
-              <li key={post.url}>
-                <a href={post.url} target="_blank" rel="noopener noreferrer"><strong>{post.author}</strong> @{post.handle} · {formatDateTimePl(post.published_at)} ↗</a>
-                <p>{post.text}</p>
-              </li>
-            ))}</ul>
-          </> : null}
-          <p className="sc-clinic-dialog__note"><AiTag /> Przekaz przygotował model {message.model || "AI"} z postów z oficjalnych kont. Nikt nie poprawia jego treści.</p>
-        </ClinicDialog>
-      </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy posty opublikują co najmniej trzy konta tego obozu."}</p>}
+        <Button variant="link" href={`/klinika/przekazy/${message.day}#${camp === "government" ? "rzadzacy" : "opozycja"}`}>Czytaj przekaz i zobacz źródła →</Button>
+        <footer className="sc-clinic-message__foot"><time dateTime={message.day}>{formatDatePl(message.day)}</time><span>Źródła: {message.posts_count} wpisów</span></footer>
+      </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy wpisy opublikują co najmniej trzy konta tego obozu."}</p>}
     </article>
   );
 }
@@ -75,18 +60,19 @@ export function SpinSwitch({ spinOfDay, latest, render, empty, left, right }: {
   /** Opcjonalnie: tytuł po lewej i link po prawej — w jednej linii z zakładkami. */
   left?: ReactNode; right?: ReactNode;
 }) {
-  const [mode, setMode] = useState<"day" | "latest">("day");
+  const [mode, setMode] = useState<"day" | "latest">("latest");
   const spin = mode === "day" ? spinOfDay : latest;
+  const day = spinOfDay ? formatDatePl(spinOfDay.post.published_at) : null;
   const tabs = (
-    <div className="sc-spin-switch__tabs" role="tablist" aria-label="Który spin pokazać">
-      <button type="button" role="tab" aria-selected={mode === "day"} onClick={() => setMode("day")}>Spin dnia</button>
-      <span aria-hidden="true">|</span>
-      <button type="button" role="tab" aria-selected={mode === "latest"} onClick={() => setMode("latest")}>Najnowszy spin</button>
+    <div className="sc-scan-s-tabs sc-spin-switch__tabs2" role="group" aria-label="Którą diagnozę pokazać">
+      <button type="button" aria-pressed={mode === "latest"} onClick={() => setMode("latest")}>Najnowsza</button>
+      <button type="button" aria-pressed={mode === "day"} disabled={!day} onClick={() => setMode("day")}>Najwyższa siła spinu{day ? ` ${day}` : " — brak danych"}</button>
     </div>
   );
   return (
     <div className="sc-spin-switch">
       {left || right ? <div className="sc-spin-switch__bar"><div>{left}</div>{tabs}<div className="sc-spin-switch__right">{right}</div></div> : tabs}
+      <p className="sc-spin-switch__rule">{mode === "day" ? `Najwyższa siła spinu wśród przeanalizowanych wpisów obu stron z ${day}.` : "Ostatnia opublikowana diagnoza, niezależnie od strony."}</p>
       {spin ? render(spin) : empty}
     </div>
   );
@@ -107,8 +93,10 @@ function QuoteList({ interview, items }: { interview: Interview; items: Intervie
 }
 
 /** Wywiad dnia: pasek z miniaturą i tytułem, pod nim Dr. Spin o gościu i o prowadzącym, na dole podsumowanie. */
-export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore, archive = [] }: {
+export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore, archive = [], kicker = "Wywiady" }: {
   interview: Interview;
+  /** Napis nad tytułem sekcji (domyślnie „Wywiady”). */
+  kicker?: string;
   /** Wcześniejsze wywiady — paski z datą po lewej, pod aktualnym wywiadem (ten sam panel). */
   archive?: Interview[];
   /** Opcjonalnie: okno analizy sterowane z zewnątrz (np. link w nagłówku sekcji na głównej). */
@@ -130,7 +118,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
         {hideMore ? null : <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>}
         </div>
         <div className="sc-interview__head">
-          <p className="sc-clinic-kicker">Wywiad dnia <AiTag /><span className="sc-clinic-message__meta">{interview.channel} · {formatDatePl(interview.day)}</span></p>
+          <p className="sc-clinic-kicker">{kicker} <AiTag /><span className="sc-clinic-message__meta">{interview.channel} · {formatDatePl(interview.day)}</span></p>
           <h3 id={`interview-${interview.id}`}><button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog">{interview.headline || interview.title}</button></h3>
           <p className="sc-interview__summary">{interview.summary}</p>
           {interview.overall ? <p className="sc-interview__lede">{interview.overall}</p> : null}
@@ -151,8 +139,9 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
           <p className="sc-interview__text">{interview.host.summary}</p>
         </article>
       </div>
+      <p className="sc-interview__more"><Link href={`/klinika/wywiady/${interview.id}`}>Czytaj analizę →</Link>{" · "}<Link href="/klinika/wywiady">Archiwum wywiadów →</Link></p>
       {archive.length ? <InterviewArchive items={archive} /> : null}
-      <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad dnia · ${interview.title}`}>
+      <ClinicDialog open={open} onClose={() => setOpen(false)} title={`Wywiad · ${interview.title}`}>
         <InterviewAnalysis interview={interview} />
       </ClinicDialog>
     </section>
@@ -183,7 +172,7 @@ export function InterviewArchive({ items }: { items: Interview[] }) {
           </button>
         </li>
       ))}</ul>
-      <ClinicDialog open={current !== null} onClose={() => setOpenId(null)} title={current ? `Wywiad dnia · ${current.title}` : ""}>
+      <ClinicDialog open={current !== null} onClose={() => setOpenId(null)} title={current ? `Wywiad · ${current.title}` : ""}>
         {current ? <InterviewAnalysis interview={current} /> : null}
       </ClinicDialog>
     </div>
@@ -191,7 +180,7 @@ export function InterviewArchive({ items }: { items: Interview[] }) {
 }
 
 /** Pełna analiza wywiadu (okno): gość z technikami i twierdzeniami, prowadzący, ograniczenia. */
-function InterviewAnalysis({ interview }: { interview: Interview }) {
+export function InterviewAnalysis({ interview }: { interview: Interview }) {
   return (
     <>
         <p className="sc-clinic-dialog__lead">{interview.headline}</p>
@@ -222,27 +211,28 @@ function InterviewAnalysis({ interview }: { interview: Interview }) {
 
 const VISIBLE_ROWS = 5;
 
-/** Politycy z licznikami: sprawdzone posty / częściowe spiny / spiny. Pierwsze wiersze, reszta po rozwinięciu. */
+/** Politycy z licznikami: sprawdzone wpisy / częściowe spiny / spiny. Pierwsze wiersze, reszta po rozwinięciu. */
 export function PoliticiansTable({ accounts }: { accounts: ClinicAccount[] }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <section className="sc-politicians" id="konta" aria-labelledby="politicians-title">
       <header className="sc-politicians__head">
         <h2 id="politicians-title">Politycy w Klinice <span>{accounts.length}</span></h2>
-        <p>Tylko oficjalne konta X polityków i partii, potwierdzone rejestrem albo otwartymi danymi. Liczniki: posty sprawdzone przez strażnika · częściowe spiny · spiny.</p>
+        <p>Tylko oficjalne konta X polityków i partii, potwierdzone rejestrem albo otwartymi danymi. Liczniki: wpisy sprawdzone przez strażnika · częściowe spiny · spiny.</p>
       </header>
       <div className="sc-politicians__cols">
         {CAMPS.map(camp => {
           const rows = accounts.filter(item => item.camp === camp)
             .sort((a, b) => (b.spins + b.partial_spins) - (a.spins + a.partial_spins) || b.posts_screened - a.posts_screened);
+          if (!rows.length) return null;
           return (
             <section key={camp}>
               <h3>{CAMP_LABELS[camp]} <span>{rows.length}</span></h3>
-              <table>
-                <thead><tr><th scope="col">Polityk</th><th scope="col" title="Posty sprawdzone przez strażnika">Posty</th><th scope="col">Częściowe</th><th scope="col">Spiny</th></tr></thead>
+              <table className="sc-ind-table">
+                <thead><tr><th scope="col">Polityk</th><th scope="col" title="Wstępnie ocenione wpisy">Wstępnie ocenione wpisy</th><th scope="col">Częściowe</th><th scope="col">Spiny</th></tr></thead>
                 <tbody>{(expanded ? rows : rows.slice(0, VISIBLE_ROWS)).map(item => (
                   <tr key={item.handle}>
-                    <td><PartyBadge party={item.party} /> {item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}
+                    <td>{item.figure_id ? <Link href={`/osoby-publiczne/${item.figure_id}`}>{item.figure_name}</Link> : item.display_name}{item.party?.short ? `, ${item.party.short}` : ""}
                       {" "}<a href={item.url} target="_blank" rel="noopener noreferrer">@{item.handle}</a></td>
                     <td>{item.posts_screened}</td><td>{item.partial_spins}</td><td>{item.spins}</td>
                   </tr>
@@ -252,7 +242,7 @@ export function PoliticiansTable({ accounts }: { accounts: ClinicAccount[] }) {
           );
         })}
       </div>
-      {accounts.length > VISIBLE_ROWS * 2 ? (
+      {CAMPS.some(camp => accounts.filter(item => item.camp === camp).length > VISIBLE_ROWS) ? (
         <p className="sc-politicians__more"><button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
           {expanded ? "Zwiń listę ↑" : `Pokaż wszystkich (${accounts.length}) ↓`}</button></p>
       ) : null}

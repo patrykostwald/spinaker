@@ -10,7 +10,7 @@ from news.models import Article, Source
 
 @pytest.fixture(autouse=True)
 def threads_on(monkeypatch):
-    monkeypatch.setenv('THREADS_ENABLED', 'true')
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
 
 
 def user(name='czytelnik'):
@@ -131,5 +131,5 @@ def test_my_reactions_collects_every_part_of_the_site():
 
 @pytest.mark.django_db
 def test_public_threads_api_is_off_until_phase_two(monkeypatch):
-    monkeypatch.delenv('THREADS_ENABLED')
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', False)
     assert APIClient().get('/api/community/threads/').status_code == 404

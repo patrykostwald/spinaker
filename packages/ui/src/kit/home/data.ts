@@ -206,13 +206,18 @@ function demoThread(): ThreadDetail {
   };
 }
 
-/** Nitka Dr. Spina: pierwsza OPUBLIKOWANA wyróżniona nitka; brak → sekcja pokazuje układ-zapowiedź. */
+/** Nitka Dr. Spina: najnowsza codzienna nitka Dr. Spina (slug „dr-spin-kontekst-…”), a bez niej pierwsza
+ *  opublikowana wyróżniona; brak obu → sekcja pokazuje układ-zapowiedź. */
 export function useDrSpinThread() {
   return useQuery({
     queryKey: ["home-dr-spin"],
     queryFn: () =>
       withDemo(
-        async () => (await getThreads(true)).results.find((thread) => thread.published) ?? null,
+        async () => {
+          const all = (await getThreads(false)).results.filter((thread) => thread.published);
+          return all.find((thread) => thread.slug.startsWith("dr-spin-kontekst-"))
+            ?? (await getThreads(true)).results.find((thread) => thread.published) ?? null;
+        },
         (): ThreadDetail | null => demoThread(),
       ),
     staleTime: 300_000,

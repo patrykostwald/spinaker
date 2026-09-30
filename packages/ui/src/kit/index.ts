@@ -88,9 +88,12 @@ export { PortalLayer } from "./portal/PortalLayer";
 export { useHistoryPortal } from "./portal/useHistoryPortal";
 export { MaterialSurface } from "./MaterialSurface";
 export { InfoPage } from "./InfoPage";
+export { DocLayout, type DocLayoutProps, type DocSection } from "./DocLayout";
 
 // Этап 2 — страницы на ките
 export { HomePage } from "./home/HomePage";
 export { Strip, EmptySlot, type StripProps } from "./home/Strip";
 export { ThreadView, type ThreadViewProps, type ThreadLayout } from "./ThreadView";
 export { useDemoMode } from "./home/data";
+
+export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";

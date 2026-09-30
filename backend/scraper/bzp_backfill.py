@@ -63,17 +63,18 @@ def reviewed_endpoint(source):
 
 
 def fetch_page(*, source, instruction, endpoint, date_from, date_to, page, page_size):
-    """Read one reviewed search page through the shared audited POST transport."""
+    """Read one reviewed search page through the shared audited transport.
+
+    30.09.2026: the public board API answers POST with 405 and expects GET with query parameters,
+    returning a plain JSON list (older responses wrapped rows in ``items``/``data``)."""
+    from urllib.parse import urlencode
     page_size = min(MAX_BATCH_SIZE, max(1, int(page_size)))
-    body = json.dumps({
-        'publicationDateFrom': date_from, 'publicationDateTo': date_to,
-        'pageNumber': page, 'pageSize': page_size, 'sort': 'publicationDate,desc',
-    }, separators=(',', ':')).encode('utf-8')
+    query = urlencode({'PublicationDateFrom': date_from, 'PublicationDateTo': date_to,
+                       'PageNumber': page, 'PageSize': page_size})
     try:
-        raw = fetch_feed(endpoint, hostname_transport=True, audit_source=source,
+        raw = fetch_feed(f'{endpoint}?{query}', hostname_transport=True, audit_source=source,
             audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD,
-            method='POST', body=body,
-            request_headers={'Accept': 'application/json', 'Content-Type': 'application/json'})
+            request_headers={'Accept': 'application/json'})
     except requests.HTTPError as exc:
         if getattr(exc.response, 'status_code', None) == 429:
             raise BZPRateLimited(_retry_after(exc.response)) from exc
@@ -82,7 +83,7 @@ def fetch_page(*, source, instruction, endpoint, date_from, date_to, page, page_
         payload = json.loads(raw)
     except (TypeError, ValueError) as exc:
         raise ValueError('Invalid BZP search response') from exc
-    rows = payload.get('items', payload.get('data')) if isinstance(payload, dict) else None
+    rows = payload if isinstance(payload, list) else payload.get('items', payload.get('data')) if isinstance(payload, dict) else None
     if not isinstance(rows, list):
         raise ValueError('Invalid BZP search response')
     return rows
@@ -101,6 +102,9 @@ def _metadata(row, window_from, window_to):
     notice_id = str(_field(row, 'noticeId', 'id', 'objectId') or '').strip()
     number = str(_field(row, 'noticeNumber', 'number') or '').strip()
     title = str(_field(row, 'orderObject', 'title', 'noticeTitle') or '').strip()
+    if not title and _field(row, 'organizationName'):
+        # Plany postępowań i część ogłoszeń nie mają przedmiotu zamówienia — tytuł z typu ogłoszenia i zamawiającego.
+        title = f"{_field(row, 'noticeTypeDisplayName', 'noticeType') or 'Ogłoszenie'}: {_field(row, 'organizationName')}".strip()
     published = _field(row, 'publicationDate', 'publicationDateTime', 'publishedAt')
     if not notice_id or not number or not title or not published:
         raise ValueError('Incomplete BZP notice metadata')
@@ -152,7 +156,14 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
         rows = fetch_page(source=source, instruction=instruction, endpoint=endpoint,
             date_from=day.isoformat(), date_to=day.isoformat(),
             page=int(cursor['page']), page_size=batch_size)
-        created = sum(save_metadata(source, row, day, day) for row in rows)
+        created = 0
+        for row in rows:
+            try:
+                created += save_metadata(source, row, day, day)
+            except ValueError as exc:
+                if 'Incomplete BZP notice metadata' not in str(exc):
+                    raise  # wpis spoza okna albo zła odpowiedź — kursor nie może się przesunąć
+                continue  # jeden niepełny wpis nie zatrzymuje całej strony wyników
         next_cursor = dict(cursor)
         if len(rows) < batch_size:
             next_cursor.update(day=(day - timedelta(days=1)).isoformat(), page=1)

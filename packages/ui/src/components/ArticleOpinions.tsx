@@ -10,7 +10,7 @@ import { formatDateTimePl } from "../lib/utils";
 import { AccountDialog } from "./AccountDialog";
 import { CommentReportButton } from "./CommentReportButton";
 import { Button, RadioGroup, Reveal } from "../kit";
-import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
 
 type Polarity = "positive" | "negative";
 type Opinion = { id: number; author: { id: number; username: string }; polarity: Polarity; body: string; created_at: string };
@@ -24,8 +24,8 @@ function CopyPost({ text, articleId }: { text: string; articleId: number }) {
   const post = `${text}\n${url}`;
   const stats = measurePost(post);
   return <div className="sc-article-post">
-    <Button type="button" variant="quiet" size="sm" onClick={() => { setUrl(window.location.origin + "/material/" + articleId); setPrepared(value => !value); }}>{prepared ? "Zwiń post" : "Przygotuj post na X"}</Button>
-    <Reveal when={prepared} className="sc-article-post__body"><textarea readOnly aria-label="Post do skopiowania na X" rows={4} value={post} /><div><span>{stats.weightedLength}/280 · znaki ważone</span><Button type="button" variant="secondary" size="sm" disabled={!stats.valid} onClick={async () => { try { await navigator.clipboard.writeText(post); setNotice("Skopiowano post."); } catch { setNotice("Zaznacz tekst i skopiuj go ręcznie."); } }}>Kopiuj post</Button></div>{!stats.valid ? <p role="alert">Ten tekst przekracza limit posta. Skróć komentarz przed publikacją.</p> : null}<p>Link prowadzi do materiału i jego kontekstu w spin.clinic. Gotowy tekst publikujesz samodzielnie na X.</p>{notice ? <p role="status">{notice}</p> : null}</Reveal>
+    <Button type="button" variant="quiet" size="sm" onClick={() => { setUrl(window.location.origin + "/material/" + articleId); setPrepared(value => !value); }}>{prepared ? "Zwiń wpis" : "Przygotuj wpis na X"}</Button>
+    <Reveal when={prepared} className="sc-article-post__body"><textarea readOnly aria-label="Wpis do skopiowania na X" rows={4} value={post} /><div><span>{stats.weightedLength}/280 · znaki ważone</span><Button type="button" variant="secondary" size="sm" disabled={!stats.valid} onClick={async () => { try { await navigator.clipboard.writeText(post); setNotice("Skopiowano wpis."); } catch { setNotice("Zaznacz tekst i skopiuj go ręcznie."); } }}>Kopiuj wpis</Button></div>{!stats.valid ? <p role="alert">Ten tekst przekracza limit wpisu. Skróć komentarz przed publikacją.</p> : null}<p>Link prowadzi do materiału i jego kontekstu w spin.clinic. Gotowy tekst publikujesz samodzielnie na X.</p>{notice ? <p role="status">{notice}</p> : null}</Reveal>
   </div>;
 }
 
@@ -92,5 +92,6 @@ function ArticleOpinionsInner({ article }: { article: Pick<Article, "id"> }) {
 
 /** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
 export function ArticleOpinions(props: Parameters<typeof ArticleOpinionsInner>[0]) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   return ACCOUNTS_ENABLED ? <ArticleOpinionsInner {...props} /> : null;
 }

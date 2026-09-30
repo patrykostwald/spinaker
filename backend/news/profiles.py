@@ -78,7 +78,7 @@ class PublicActivityView(APIView):
     def get(self, request, username):
         user = get_object_or_404(get_user_model(), username=username, is_active=True,
                                 profile_preference__public_activity=True)
-        return Response({'username': user.username, 'history': history(request, user)})
+        return Response({'id': user.pk, 'username': user.username, 'history': history(request, user)})
 
 
 def favorite_data(row):

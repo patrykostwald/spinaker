@@ -83,6 +83,10 @@ def mark_deleted(post: PoliticalPost) -> None:
     if diagnosis is not None and diagnosis.x_posted_ids:
         from news.x_publish import unpublish_deleted
         unpublish_deleted(diagnosis)
+    # To samo na Facebooku, Instagramie, Bluesky (i alarm dla TikToka i Shorts, gdzie usuwa się ręcznie).
+    if diagnosis is not None and diagnosis.social_posts.filter(deleted_at__isnull=True).exists():
+        from news.social_publish import unpublish_deleted as unpublish_social
+        unpublish_social(diagnosis)
 
 
 def archive_batch(limit: int = 20, pause: float = 2.0) -> int:

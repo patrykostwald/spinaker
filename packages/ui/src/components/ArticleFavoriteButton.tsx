@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { setArticleFavorite, useArticleFavorites, useOwnerId } from '../lib/personal';
 import { AccountDialog } from './AccountDialog';
 import { Button } from '../kit';
-import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
 
 /**
  * Dyskretne wejście do ulubionych materiałów.
@@ -56,5 +56,6 @@ function ArticleFavoriteButtonInner({ articleId, title, compact = false }: { art
 
 /** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
 export function ArticleFavoriteButton(props: Parameters<typeof ArticleFavoriteButtonInner>[0]) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   return ACCOUNTS_ENABLED ? <ArticleFavoriteButtonInner {...props} /> : null;
 }

@@ -9,7 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from news.models import ImportState, Source
-from scraper.official import API, fetch_json, import_voting_period, official_access_allowed
+from scraper.official import API, backfill_budget_left, fetch_json, import_voting_period, official_access_allowed
 
 # Confirmed by https://api.sejm.gov.pl/sejm/term10 and the Sejm API docs.
 TERM_STARTS = {10: date(2023, 11, 13)}
@@ -32,6 +32,8 @@ def backfill_votings_cycle():
         return {'status': 'disabled', 'new_records': 0}
     if not official_access_allowed('sejm', f'/sejm/term{settings.SEJM_TERM}/votings/search'):
         return {'status': 'blocked_access_review', 'new_records': 0}
+    if not backfill_budget_left('sejm', f'/sejm/term{settings.SEJM_TERM}/votings/search'):
+        return {'status': 'budget_reserved_for_current', 'new_records': 0}
     token = uuid4().hex
     if not cache.add(LOCK, token, 3600):
         return {'status': 'already_running', 'new_records': 0}
@@ -43,6 +45,8 @@ def backfill_votings_cycle():
             raise BackfillPaused('source_disabled')
         if monotonic() >= deadline:
             raise BackfillPaused('cycle_budget_reached')
+        if not backfill_budget_left('sejm', f'/sejm/term{settings.SEJM_TERM}/votings/search'):
+            raise BackfillPaused('budget_reserved_for_current')
         if cache.get(LOCK) != token:
             raise BackfillPaused('lock_lost')
         cache.touch(LOCK, 3600)

@@ -1,6 +1,9 @@
 "use client";
 
 import { XAccountSuggest } from "./clinic/XAccountSuggest";
+import { AuthorDiagnoses } from "./AuthorDiagnoses";
+import { FollowButton } from './FollowButton';
+import { ContextThreadStrip } from './ContextThreadStrip';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query';
@@ -41,7 +44,7 @@ const hourFormat = new Intl.DateTimeFormat('pl-PL', { timeZone: TIME_ZONE, hour:
 const dayKeyFormat = new Intl.DateTimeFormat('sv-SE', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' });
 
 const GROUP_TAGS: Record<MaterialGroupKey, string> = {
-  artykuly: 'ARTYKUŁ', reportaze: 'REPORTAŻ', wywiady: 'WYWIAD', dokumenty: 'DOKUMENT', filmy: 'FILM', posty: 'POST', komunikaty: 'KOMUNIKAT',
+  artykuly: 'ARTYKUŁ', reportaze: 'REPORTAŻ', wywiady: 'WYWIAD', dokumenty: 'DOKUMENT', filmy: 'FILM', posty: 'WPIS', komunikaty: 'KOMUNIKAT',
 };
 
 const formatDay = (iso: string | null) => (iso ? dateFormat.format(new Date(iso)) : 'data nieustalona');
@@ -95,7 +98,7 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
       {!x && (
         <p className="sc-public-figure-x">
           <span className="sc-public-figure-tag">KONTO X</span>
-          <span>Brak potwierdzonego konta — nie czytamy jeszcze postów tej osoby.</span>
+          <span>Brak potwierdzonego konta — nie czytamy jeszcze wpisów tej osoby.</span>
           <XAccountSuggest figureId={figure.id} name={figure.name} />
         </p>
       )}
@@ -495,28 +498,37 @@ function useMaterialsTotal(name: string) {
 
 export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: PublicFigureDetail; titleId?: string }) {
   const materialsTotal = useMaterialsTotal(figure.name);
-  const [tab, setTab] = useState<'timeline' | 'votes' | 'relations' | 'materials' | 'x'>('timeline');
+  const [tab, setTab] = useState<'timeline' | 'votes' | 'relations' | 'materials' | 'x' | 'diagnoses'>('timeline');
   const select = (next: 'votes' | 'relations' | 'career' | 'materials') => setTab(next === 'career' ? 'relations' : next);
   const tabs = [
     { id: 'timeline' as const, label: 'Oś czasu' },
+    { id: 'diagnoses' as const, label: 'Diagnozy wpisów' },
     { id: 'votes' as const, label: 'Głosowania' },
     { id: 'relations' as const, label: 'Podmioty i kariera' },
     { id: 'materials' as const, label: 'Materiały' },
     { id: 'x' as const, label: 'Wpisy X' },
   ];
   return (
-    <article className="sc-public-figure" aria-labelledby={titleId}>
+    <article className="sc-public-figure sc-f2-figure" aria-labelledby={titleId}>
       <FigureHeader figure={figure} titleId={titleId} materialsTotal={materialsTotal} onSelect={select} />
+      <FollowButton kind="figure" targetId={figure.id} label={figure.name} />
       <nav className="sc-public-figure-tabs" role="tablist" aria-label="Dane profilu">
-        {tabs.map(item => <button key={item.id} id={`pf-tab-${item.id}`} type="button" role="tab" aria-selected={tab === item.id} aria-controls={`pf-panel-${item.id}`} onClick={() => setTab(item.id)}>{tab === item.id && <MorphIndicator id="public-figure-tabs" active variant="underline" />}{item.label}</button>)}
+        {tabs.map((item, index) => <button key={item.id} id={`${titleId}-tab-${item.id}`} type="button" role="tab" tabIndex={tab === item.id ? 0 : -1} aria-selected={tab === item.id} aria-controls={`${titleId}-panel-${item.id}`} onClick={() => setTab(item.id)} onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+          setTab(tabs[next].id); event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+        }}>{tab === item.id && <MorphIndicator id="public-figure-tabs" active variant="underline" />}{item.label}</button>)}
       </nav>
-      <div id={`pf-panel-${tab}`} role="tabpanel" aria-labelledby={`pf-tab-${tab}`} tabIndex={0}>
+      <div id={`${titleId}-panel-${tab}`} role="tabpanel" aria-labelledby={`${titleId}-tab-${tab}`} tabIndex={0}>
         {tab === 'timeline' && <PublicFigureTimeline figureId={figure.id} materialsTotal={materialsTotal} onShowMaterials={() => setTab('materials')} />}
         {tab === 'votes' && <VotesSection figure={figure} />}
         {tab === 'x' && <XPostsSection figure={figure} />}
+        {tab === 'diagnoses' && <AuthorDiagnoses figure={figure} />}
         {tab === 'relations' && <OrganisationsSection figure={figure} />}
         {tab === 'materials' && <LiveMaterials name={figure.name} />}
       </div>
+      <ContextThreadStrip figureId={figure.id} />
       <p className="sc-public-figure-disclaimer">
         Profil pokazuje wyłącznie dane publiczne: funkcję, oficjalne głosowania i potwierdzone funkcje w podmiotach z KRS. Nie zawiera adresów, numerów PESEL, dat urodzenia ani danych rodzinnych. Nie wystawiamy ocen osób ani automatycznych wniosków.
       </p>

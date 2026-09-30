@@ -65,7 +65,8 @@ class Command(BaseCommand):
         self.line(statuses['failed'] < 5, 'Klinika — statusy z ostatniej doby', ', '.join(f'{k}: {v}' for k, v in statuses.items()))
         last = SpinDiagnosis.objects.filter(status='approved').aggregate(t=Max('diagnosed_at'))['t']
         self.line(bool(last and now - last < timedelta(hours=30)), 'Ostatnia opublikowana diagnoza', str(last)[:16] if last else 'brak')
-        self.line(None, 'Wydatki AI dziś (limit CLINIC_DAILY_BUDGET_USD)', f'{clinic.spent_today():.2f} USD')
+        self.line(None, 'Wydatki AI dziś', f'wpisy {clinic.posts_spent_today():.2f} USD (zostało {clinic.budget_left():.2f}), '
+                  f'wywiad {clinic.interview_spent_today():.2f} USD (zostało {clinic.interview_budget_left():.2f}, potem Gemini)')
         checked = PoliticalPost.objects.aggregate(t=Max('availability_checked_at'))['t']
         self.line(bool(checked and now - checked < timedelta(hours=8)), 'Strażnica usuniętych wpisów — ostatnie sprawdzenie', str(checked)[:16] if checked else 'nigdy')
         posted = SpinDiagnosis.objects.filter(x_posted_at__isnull=False).aggregate(t=Max('x_posted_at'))['t']

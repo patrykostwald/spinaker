@@ -1,12 +1,9 @@
-"""Diagnoza Dr. Spina jako JEDEN wpis na X — ten sam dla czytelników („Kopiuj”) i dla konta spin.clinic.
-
-Ocena w skali spinu, techniki, terapia (źródła z linkami), link do pełnej diagnozy, a na końcu link do wpisu polityka —
-X pokaże go jako cytowany wpis. Mieści się w 280 znakach ważonych (X liczy każdy link jako 23 znaki).
-"""
+"""Pełne zdania syntezy diagnozy w jednym lub dwóch wpisach na X."""
 from __future__ import annotations
 
 import os
 import re
+import unicodedata
 
 LIMIT = 280
 URL_WEIGHT = 23
@@ -14,30 +11,25 @@ URL = re.compile(r'https?://\S+')
 
 
 def weight(text: str) -> int:
-    return len(URL.sub('x' * URL_WEIGHT, text))
+    text = unicodedata.normalize('NFC', URL.sub('x' * URL_WEIGHT, text))
+    return sum(1 if ord(c) <= 0x10FF or 0x2000 <= ord(c) <= 0x200D
+               or 0x2010 <= ord(c) <= 0x201F or 0x2032 <= ord(c) <= 0x2037 else 2 for c in text)
 
 
 def shorten(text: str, budget: int) -> str:
-    """Skraca całymi zdaniami, a gdy się nie da — całymi słowami, z wielokropkiem."""
+    """Wybiera wyłącznie pełne zdania mieszczące się w limicie."""
     text = ' '.join(text.split())
-    if weight(text) <= budget:
-        return text
-    sentences = re.findall(r'[^.!?]+[.!?]+', text)
-    kept = ''
+    if not text or '…' in text or '...' in text:
+        return ''
+    sentences = re.split(r'(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ])', text)
+    kept = []
     for sentence in sentences:
-        candidate = (kept + ' ' + sentence.strip()).strip()
-        if weight(candidate) > budget:
+        if not sentence.endswith(('.', '”', '»')):
             break
-        kept = candidate
-    if len(kept) > len(text) / 3:
-        return kept
-    words, result = text.split(), ''
-    for word in words:
-        candidate = f'{result} {word}'.strip()
-        if weight(candidate + '…') > budget:
+        if weight(' '.join([*kept, sentence])) > budget:
             break
-        result = candidate
-    return result.rstrip(',;:—–-') + '…'
+        kept.append(sentence)
+    return ' '.join(kept)
 
 
 def diagnosis_url(diagnosis_id: int) -> str:
@@ -50,56 +42,54 @@ def _technique_name(name: str) -> str:
     return name[:1].lower() + name[1:]
 
 
-def _display(name: str) -> str:
-    return ' '.join(part.capitalize() if part.isupper() and len(part) > 1 else part for part in (name or '').split())
+def heading(data: dict) -> str:
+    from news.names import display_name
+    author = data.get('author') or {}
+    party = (author.get('party') or {}).get('short', '')
+    who = display_name(author.get('name', '')) + (f', {party}' if party else '')
+    return f"Dr. Spin (AI) · {who} · {data.get('verdict_label') or 'Spin'} {data.get('intensity', 0)}/100"
 
 
 def build(data: dict, account: bool = False) -> list[str]:
-    """Jeden wpis: ocena w skali spinu, sedno diagnozy, techniki, terapia — źródła, link do pełnej diagnozy.
-
-    account=False — wersja do skopiowania dla czytelnika: z @autorem i linkiem do wpisu (X pokaże cytat).
-    account=True — wpis konta spin.clinic: BEZ oznaczenia i bez linku do polityka (żadnych powiadomień, które kończą
-    się blokadą) — wpis polityka idzie jako obrazek (news/x_card.py). Wolne miejsce wypełnia sedno diagnozy."""
-    author = data.get('author') or {}
-    party = (author.get('party') or {}).get('short', '')
-    intensity = data.get('intensity', 0)
-    if account:
-        who = _display(author.get('name', '')) + (f' ({party})' if party else '')
-        head = f'{who} — wpis oceniony przez Dr. Spina (AI) na {intensity}/100 w skali spinu.'
-        tail_link = ''
-    else:
-        head = f"Dr. Spin (AI) ocenia wpis @{author.get('handle', '')} na {intensity}/100 w skali spinu."
-        tail_link = (data.get('post') or {}).get('url', '')
+    """Dwa wpisy konta lub jeden do skopiowania; brak syntezy oznacza brak publikacji."""
+    from news.social_content import checked_claims
     synthesis = data.get('x_thread') or []
-    lead = synthesis[0] if synthesis else (data.get('headline') or '')
-    names = list(dict.fromkeys(_technique_name(t.get('name', '')) for t in data.get('techniques') or [] if t.get('name')))
-    urls = list(dict.fromkeys(source['url'] for claim in data.get('claims') or [] for source in (claim.get('sources') or [])[:1]
-                              if source.get('url')))
-    full = f'Pełna diagnoza: {diagnosis_url(data["id"])}'
-
-    def compose(technique_count: int, source_count: int, lead_text: str = '') -> str:
-        parts = [head]
-        if lead_text:
-            parts.append(lead_text)
-        if technique_count:
-            parts.append('Techniki: ' + ', '.join(names[:technique_count]) + '.')
-        if source_count:
-            parts.append('W ramach terapii Dr. Spin zaleca źródła: ' + ' '.join(urls[:source_count]))
-        parts.append(full)
-        if tail_link:
-            parts.append(tail_link)
-        return ' '.join(parts)
-
-    # Kolejność prób: najpierw 2–3 techniki i 1–2 źródła, potem mniej; wolne miejsce — sedno diagnozy.
-    preferences = [(3, 2), (2, 2), (3, 1), (2, 1), (1, 2), (1, 1), (3, 0), (2, 0), (1, 0), (0, 1), (0, 0)]
-    for techniques, sources in preferences:
-        if techniques > len(names) or sources > len(urls):
-            continue
-        base = compose(techniques, sources)
-        if weight(base) > LIMIT:
-            continue
-        room = LIMIT - weight(base) - 1
-        if lead and room >= 50:
-            return [compose(techniques, sources, shorten(lead, room))]
-        return [base]
-    return [shorten(compose(1 if names else 0, 0), LIMIT)]
+    from news.clinic_council import UNCHECKED, is_tool_failure
+    if any(re.search(r'[!?@#\U0001F000-\U0001FAFF\u2600-\u27bf]', text) or URL.search(text) for text in synthesis):
+        return []
+    if any(is_tool_failure(text) or UNCHECKED in text or 'nie do sprawdzenia' in text.lower()
+           or 'niezweryfikowan' in text.lower() for text in synthesis):
+        return []
+    if len(synthesis) < 2:
+        return []
+    head = heading(data)
+    full = f'Pełna diagnoza ze źródłami: {diagnosis_url(data["id"])}'
+    names = list(dict.fromkeys(_technique_name(t['name']) for t in data.get('techniques') or [] if t.get('name')))
+    first = ''
+    for count in range(min(3, len(names)), 0 if names else -1, -1):
+        technique = 'Techniki: ' + ', '.join(names[:count]) + '.' if count else ''
+        parts = [head] + ([technique] if technique else []) + ([] if account else [full])
+        lead = shorten(synthesis[0], LIMIT - weight('\n'.join(parts)) - 1)
+        if lead:
+            first = '\n'.join([head, lead] + ([technique] if technique else []) + ([] if account else [full]))
+            break
+    if not first:
+        return []
+    if not account:
+        return [first]
+    point = shorten(synthesis[1], LIMIT - weight(full) - 1)
+    if not point:
+        return []
+    second = point + '\n' + full
+    claims = checked_claims(data.get('claims'))
+    # Przy kilku twierdzeniach dobieramy źródło nazwane w punkcie, zamiast przypisywać mu losowy link.
+    sources = [source for claim in claims for source in claim.get('sources', [])
+               if source.get('url', '').startswith(('http://', 'https://'))]
+    matching = [source for source in sources if source.get('title')
+                and source['title'].casefold() in point.casefold()]
+    if sources and (len(claims) == 1 or len(matching) == 1):
+        source = (matching[0] if len(matching) == 1 else sources[0])['url']
+        extra = '\nŹródło: ' + source
+        if source and weight(second + extra) <= LIMIT:
+            second += extra
+    return [first, second]

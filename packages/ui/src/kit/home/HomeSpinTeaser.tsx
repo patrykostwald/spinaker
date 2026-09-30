@@ -1,18 +1,11 @@
 "use client";
 
-/**
- * Niski pas „Spin dnia” na stronie głównej — jedna karta z Kliniki i przejście do pełnej strony /klinika.
- * Bez zatwierdzonych diagnoz: jedno zdanie, czym jest Klinika (bez pustych atrap).
- */
-
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CAMPS, getClinicPage, sharePercent } from "../../lib/clinic";
-import { formatDatePl } from "../../lib/utils";
-import { AiTag } from "../../components/clinic/SpinParts";
-import { InterviewArchive, InterviewBox, MessageBox, SpinSwitch } from "../../components/clinic/ClinicExtras";
-import { SpinOfDay } from "../../components/clinic/ClinicPage";
+import { CAMPS, CAMP_LABELS, getClinicPage, type Camp } from "../../lib/clinic";
+import { HomeSpinScanner } from "./HomeSpinScanner";
+import { MessageBox } from "../../components/clinic/ClinicExtras";
 
 /** Godziny generowania przekazu dnia (jak w harmonogramie serwera). */
 const MESSAGE_SLOTS: Array<[number, number]> = [[9, 0], [12, 0], [15, 0], [18, 0], [21, 30]];
@@ -26,56 +19,59 @@ function nextMessageSlot(now: Date): string {
 export function HomeSpinTeaser() {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
   const data = query.data;
-  const left = data ? sharePercent(data.scale.government) : null;
-  const right = data ? sharePercent(data.scale.opposition) : null;
   const [slot, setSlot] = useState<string | null>(null);
-  const [interviewOpen, setInterviewOpen] = useState(false);
-  useEffect(() => setSlot(nextMessageSlot(new Date())), []);
-  const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy posty opublikują co najmniej trzy konta tego obozu.`;
+  const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
+  useEffect(() => { setSlot(nextMessageSlot(new Date())); }, []);
+  if (!data) return <section id="dr-spin" className="sc-home-section"><h2>Dr. Spin</h2>{query.isError ? <p role="alert">Nie udało się pobrać danych. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : <p role="status">Wczytujemy diagnozy…</p>}</section>;
+
+  const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy wpisy opublikują co najmniej trzy konta tego obozu.`;
+  const spins = data.spin_by_camp?.spins;
+  const order = data.spin_by_camp?.order ?? CAMPS;
+  const shown: Camp = selectedCamp ?? order[0] ?? CAMPS[0];
+  const spin = spins?.[shown];
+
   return (
-    <>
-    {/* Wywiad dnia (najważniejszy wywiad z poprzedniego dnia) — nad spinem dnia, w tym samym stylu boxa. */}
-    {data?.interview ? (
-      <section className="sc-home-spin sc-home-interview" aria-labelledby="home-interview-title">
-        {/* Tytuł sekcji po lewej (jak „Dr. Spin”), box wywiadu przesunięty w prawo. */}
-        <header className="sc-home-interview__head">
-          <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-          <h2 id="home-interview-title" className="sc-t-title-l sc-home-section__title">Wywiad dnia</h2>
-          <p className="sc-home-spin__meta">{data.interview.channel} · {formatDatePl(data.interview.day)}</p>
-          <button type="button" className="sc-home-spin__open sc-home-interview__more" onClick={() => setInterviewOpen(true)} aria-haspopup="dialog">Pełna analiza ze źródłami →</button>
+    <section id="dr-spin" className="sc-home-section sc-scan-s" aria-labelledby="home-drspin-title">
+      {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
+      <div className="sc-scan-s-top">
+        <header className="sc-scan-s-head">
+          <h2 id="home-drspin-title">Dr. Spin</h2>
+          <p className="sc-scan-s-links"><Link href="/metodologia">Jak wybieramy i oceniamy?</Link><Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link></p>
         </header>
-        <InterviewBox interview={data.interview} open={interviewOpen} onOpenChange={setInterviewOpen} hideMore />
-        {/* Wcześniejsze wywiady na pełną szerokość sekcji — od lewej krawędzi, jak tytuł „Wywiad dnia”. */}
-        {data.interview_archive?.length ? <div className="sc-home-interview__archive"><InterviewArchive items={data.interview_archive.slice(0, 3)} /></div> : null}
-      </section>
-    ) : null}
-    <section className="sc-home-spin" aria-labelledby="home-spin-title">
-      {/* Sekcja „Dr. Spin”: nagłówek jak w innych sekcjach, pod nim ten sam element co w Klinice —
-          przełącznik „Spin dnia | Najnowszy spin” i post obok pełnej odpowiedzi Dr. Spina. */}
-      {data ? (
-        <div className="sc-clinic-sotd sc-home-spin__sotd">
-          {/* Jedna linia: „Dr. Spin” po lewej, zakładki na środku, link do Kliniki po prawej. */}
-          <SpinSwitch spinOfDay={data.spin_of_day} latest={data.latest_spin} render={item => <SpinOfDay key={item.id} spin={item} />}
-            left={<header>
-              <p className="sc-t-caption sc-text-3 sc-home-kicker">Klinika spinu <AiTag /></p>
-              <h2 id="home-spin-title" className="sc-sr-only">Dr. Spin</h2>
-            </header>}
-            right={<p className="sc-home-spin__meta">
-              {data.scale.enough_data && left !== null && right !== null ? <>Waga {data.scale.window_days} dni: rządzący {left}% · opozycja {right}% · </> : null}
-              <Link className="sc-home-spin__open" href="/klinika">Otwórz Klinikę spinu →</Link>
-            </p>}
-            empty={<p className="sc-t-body-s sc-text-2 sc-home-spin__empty">
-              Strażnik przegląda każdy nowy post polityków z oficjalnych kont, a te warte sprawdzenia bada Dr. Spin — rządzący i opozycja według tych samych zasad.
-            </p>} />
+        <div className="sc-scan-s-tabs" role="tablist" aria-label="Strona polityczna">
+          {CAMPS.map((camp, index) => <button key={camp} type="button" role="tab" id={`scan-tab-${camp}`} aria-selected={shown === camp} aria-controls="scan-camp-panel" tabIndex={shown === camp ? 0 : -1}
+            onClick={() => setSelectedCamp(camp)} onKeyDown={event => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+              event.preventDefault();
+              const next = event.key === "Home" ? CAMPS[0] : event.key === "End" ? CAMPS[1] : CAMPS[1 - index];
+              setSelectedCamp(next);
+              document.getElementById(`scan-tab-${next}`)?.focus();
+            }}>{CAMP_LABELS[camp]}</button>)}
         </div>
-      ) : null}
-      {/* Przekazy dnia obu obozów pod spinem dnia: najpierw jeden konkretny post, potem szerszy obraz dnia. */}
-      {data ? (
-        <div className="sc-clinic-split sc-home-spin__messages" aria-label="Przekazy dnia">
-          {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} emptyText={emptyMessage} />)}
-        </div>
+      </div>
+      <div id="scan-camp-panel" role="tabpanel" aria-labelledby={`scan-tab-${shown}`}>
+        {spin ? <>
+          <p className="sc-scan-s-rule">{spin.window === "latest" ? "Najnowsza dostępna diagnoza tej strony — w ostatnich trzech dobach nie było nowych diagnoz." :
+            `Pokazujemy wpis z najwyższą siłą spinu wśród ${spin.pool ?? "dostępnych"} przeanalizowanych wpisów ${shown === "government" ? "rządzących" : "opozycji"} (${spin.window_label || ({ today: "dzisiaj", "24h": "ostatnia doba", "72h": "ostatnie trzy doby" }[spin.window] ?? "okres niepodany")}).`}</p>
+          <HomeSpinScanner key={`${shown}-${spin.id}`} spin={spin} />
+        </> : <p>Nie ma jeszcze opublikowanych diagnoz dla tego wyboru.</p>}
+      </div>
+      <p className="sc-home-doctor__scale">
+        <strong>Siła spinu 0–100</strong> — jak mocno wpis opiera się na technikach perswazji. To nie jest ocena prawdziwości ani osoby;
+        prawdziwość twierdzeń sprawdzamy osobno, ze źródłami. Obie strony — te same zasady.
+      </p>
+      {/* Przekazy dnia obu obozów: szerszy obraz dnia pod konkretnymi wpisami. */}
+      <div className="sc-clinic-split sc-home-spin__messages" aria-label="Przekazy dnia">
+        {CAMPS.map((key) => <MessageBox key={key} camp={key} message={data.messages[key]} emptyText={emptyMessage} />)}
+      </div>
+      {data.stats ? (
+        <footer className="sc-home-doctor__work">
+          Dr. Spin przeczytał <strong>{data.stats.read.total.toLocaleString("pl-PL")}</strong> wpisów polityków,
+          wstępnie ocenił <strong>{data.stats.screened.total.toLocaleString("pl-PL")}</strong> i postawił <strong>{data.stats.diagnosed.total.toLocaleString("pl-PL")}</strong> diagnoz.
+          <Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link>
+          <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
+        </footer>
       ) : null}
     </section>
-    </>
   );
 }

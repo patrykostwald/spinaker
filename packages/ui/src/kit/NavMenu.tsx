@@ -7,16 +7,15 @@
  * Dolna kreska pojawia się DOPIERO po przewinięciu — wykrywana 1px sentinelem przez
  * IntersectionObserver, nigdy przez nasłuch scrolla. Aktywny punkt dostaje aria-current="page"
  * ORAZ wspólny MorphIndicator (layoutId), który przejeżdża między punktami na sprężynie `move`.
- * Poniżej 768px lista chowa się w panel rozwijany przyciskiem z ikoną MenuClose.
+ * Poniżej 1200px lista chowa się w panel rozwijany przyciskiem Menu.
  */
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Button } from "./Button";
 import { Dropdown, type DropdownItem } from "./Dropdown";
-import { MenuClose } from "./icons/MenuClose";
 import { MorphIndicator } from "./motion/MorphIndicator";
 import { useDismissable } from "./useDismissable";
 import { useMotionTokens } from "./motion/useMotionTokens";
@@ -31,6 +30,10 @@ export type NavItem = {
 
 export type NavMenuProps = {
   items: NavItem[];
+  moreItems?: NavItem[];
+  /** false: pozycje „Więcej” tylko w menu telefonu (na komputerze są w stopce). */
+  desktopMore?: boolean;
+  mobileAction?: ReactNode;
   /** Domyślnie 'Nawigacja główna'. */
   ariaLabel?: string;
   /** Slot na wezwanie do działania po prawej (np. Zaloguj). */
@@ -41,7 +44,7 @@ export type NavMenuProps = {
   overflowLabel?: string;
   /** Slot na wordmark. */
   brand?: ReactNode;
-  /** Slot na pole wyszukiwania (np. SearchField). Ukrywany poniżej 768px — brak miejsca w rzędzie. */
+  /** Slot na pole wyszukiwania (np. SearchField). Poniżej 1200px zastępuje go mobileAction. */
   search?: ReactNode;
   /**
    * `centered`: pole szukania na środku rzędu, po lewej wordmark + punkty (prowadzą do pola),
@@ -79,6 +82,9 @@ function NavLink({ item }: { item: NavItem }) {
 
 export function NavMenu({
   items,
+  moreItems = [],
+  desktopMore = true,
+  mobileAction,
   ariaLabel = "Nawigacja główna",
   cta,
   sticky = true,
@@ -89,6 +95,7 @@ export function NavMenu({
 }: NavMenuProps) {
   const m = useMotionTokens();
   const router = useRouter();
+  const pathname = usePathname();
   const instanceId = useId();
   const mobilePanelId = `sc-navmenu-mobile-${instanceId}`;
   // R0 «один живой элемент»: панель вырастает из кнопки меню — общий layoutId с «семенем» в кнопке,
@@ -98,6 +105,14 @@ export function NavMenu({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1200px)");
+    const close = () => { if (media.matches) setMobileOpen(false); };
+    media.addEventListener("change", close);
+    return () => media.removeEventListener("change", close);
+  }, []);
 
   // Kromka u dołu szapki pojawia się dopiero po przewinięciu — sentinel 1px zamiast nasłuchu scrolla.
   useEffect(() => {
@@ -112,10 +127,11 @@ export function NavMenu({
     open: mobileOpen,
     onClose: () => setMobileOpen(false),
     triggerRef: toggleRef as RefObject<HTMLElement>,
+    closeOnTab: false,
   });
 
   const visible = items.slice(0, MAX_VISIBLE_ITEMS);
-  const overflow = items.slice(MAX_VISIBLE_ITEMS);
+  const overflow = [...items.slice(MAX_VISIBLE_ITEMS), ...moreItems];
   const overflowItems: DropdownItem[] = overflow.map((item) => ({ value: item.href, label: item.label }));
   const overflowActive = overflow.some((item) => item.current);
 
@@ -134,7 +150,6 @@ export function NavMenu({
         data-layout={layout}
       >
         <div className="sc-navmenu__row">
-          {/* start/end mają `display: contents` w układzie `inline` — rząd wygląda jak dotąd. */}
           <div className="sc-navmenu__start">
           {brand && <div className="sc-navmenu__brand">{brand}</div>}
 
@@ -158,7 +173,7 @@ export function NavMenu({
                 )}
               </li>
             ))}
-            {overflowItems.length > 0 && (
+            {desktopMore && overflowItems.length > 0 && (
               <li className="sc-navmenu__item">
                 <span className="sc-navmenu__item-wrap">
                   <Dropdown
@@ -179,7 +194,8 @@ export function NavMenu({
           {search && <div className="sc-navmenu__search">{search}</div>}
 
           <div className="sc-navmenu__end">
-          {cta && <div className="sc-navmenu__cta">{cta}</div>}
+          {cta && !mobileOpen && <div className="sc-navmenu__cta">{cta}</div>}
+          {mobileAction && <div className="sc-navmenu__mobile-action">{mobileAction}</div>}
 
           <span className="sc-navmenu__toggle-wrap">
             {m.morph && !mobileOpen && (
@@ -187,16 +203,15 @@ export function NavMenu({
             )}
             <Button
               ref={toggleRef}
-              shape="icon"
+              shape="rounded"
               variant="ghost"
               size="md"
               className="sc-navmenu__toggle"
               aria-label={mobileOpen ? "Zamknij menu" : "Otwórz menu"}
               aria-expanded={mobileOpen}
               aria-controls={mobilePanelId}
-              iconStart={<MenuClose open={mobileOpen} />}
               onClick={() => setMobileOpen((value) => !value)}
-            />
+            >Menu</Button>
           </span>
           </div>
         </div>
@@ -213,9 +228,8 @@ export function NavMenu({
             exit={{ opacity: 0 }}
             transition={m.t(mobileOpen ? "ui" : "collapse")}
           >
-            {cta && <div className="sc-navmenu__mobile-cta">{cta}</div>}
             <ul className="sc-navmenu__mobile-list" role="list">
-              {items.map((item, index) => (
+              {[...items, ...moreItems].map((item, index) => (
                 <li key={item.href}>
                   <motion.div
                     initial={{ opacity: 0, y: m.rise }}
@@ -250,6 +264,7 @@ export function NavMenu({
                 </li>
               ))}
             </ul>
+            {cta && <div className="sc-navmenu__mobile-cta">{cta}</div>}
           </motion.div>
           )}
           </AnimatePresence>

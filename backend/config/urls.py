@@ -9,7 +9,15 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+from news import preview
+
 urlpatterns = [
+    # Avoid an APPEND_SLASH redirect echoing the secret query in Location.
+    path("api/preview", preview.enter),
+    path("api/preview/", preview.enter),
+    path("api/preview/off/", preview.leave),
+    path("api/preview/login/", preview.tester_login),
+    path("api/preview/status/", preview.status),
     path("zasady-zrodel/", TemplateView.as_view(template_name="source-principles.html"), name="source-principles"),
     path("admin/", admin.site.urls),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

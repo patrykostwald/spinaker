@@ -9,6 +9,8 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from news.techniques import categorize_techniques
+
 from news.political_models import EDITORIAL_CAMPS, PoliticalPost, PublicFigure
 
 REVIEW_STATUSES = [
@@ -30,6 +32,7 @@ POLARITIES = [('positive', 'Trafna diagnoza'), ('negative', 'Nietrafna diagnoza'
 
 
 class SpinDiagnosis(models.Model):
+    repair_attempts = models.PositiveSmallIntegerField(default=0)
     post = models.OneToOneField(PoliticalPost, on_delete=models.CASCADE, related_name='spin_diagnosis')
     status = models.CharField(max_length=16, choices=REVIEW_STATUSES, default='pending_review', db_index=True)
     verdict = models.CharField(max_length=12, choices=VERDICTS, blank=True)
@@ -39,6 +42,7 @@ class SpinDiagnosis(models.Model):
     analysis = models.TextField(blank=True)
     techniques = models.JSONField(default=list, blank=True)
     claims = models.JSONField(default=list, blank=True)
+    lab = models.JSONField(default=dict, blank=True)
     limitations = models.TextField(blank=True)
     x_thread = models.JSONField(default=list, blank=True,
                                 help_text='Synteza diagnozy do wątku na X (darmowy model): wpis otwierający i 2–3 kolejne.')
@@ -62,6 +66,14 @@ class SpinDiagnosis(models.Model):
                                      help_text='Ukrycie po zgłoszeniu prawnym. Treść diagnozy pozostaje bez zmian.')
     hidden_reason = models.CharField(max_length=240, blank=True)
 
+    def save(self, *args, **kwargs):
+        if kwargs.get('update_fields') is None or 'techniques' in kwargs['update_fields']:
+            self.techniques = categorize_techniques(self.techniques)
+        if (kwargs.get('update_fields') is None or 'usage' in kwargs['update_fields']) and 'loaded_words' in (self.usage or {}):
+            from news.loaded_words import validate_loaded_words
+            self.usage = {**self.usage, 'loaded_words': validate_loaded_words(self.post.text, self.usage['loaded_words'])}
+        return super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-post__published_at', '-pk']
         verbose_name = 'diagnoza spinu'
@@ -73,6 +85,82 @@ class SpinDiagnosis(models.Model):
     @property
     def camp(self):
         return self.post.camp_at_collection
+
+
+class CouncilCall(models.Model):
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    provider = models.CharField(max_length=32)
+    model = models.CharField(max_length=200)
+    outcome = models.CharField(max_length=24)
+    seconds = models.FloatField(default=0)
+
+
+class InquisitorReview(models.Model):
+    diagnosis = models.OneToOneField(SpinDiagnosis, on_delete=models.PROTECT, related_name='inquisitor_review')
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    camp = models.CharField(max_length=12)
+    reviewers = models.JSONField(default=list)
+    answers = models.JSONField(default=list)
+    verdict = models.CharField(max_length=16, default='incomplete')
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision = models.CharField(max_length=8, blank=True)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name='+')
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+
+class CouncilCharterAcceptance(models.Model):
+    """Historia odpowiedzi modeli; zmiana Karty nie nadpisuje poprzednich deklaracji."""
+    model = models.CharField(max_length=200)
+    provider = models.CharField(max_length=32)
+    company = models.CharField(max_length=100)
+    charter_version = models.CharField(max_length=32)
+    charter_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(default=timezone.now)
+    response = models.JSONField(default=dict)
+
+
+class CouncilSeat(models.Model):
+    """Miejsce modelu w Konsylium poza stałą konfiguracją: przyjęty przez Rekrutera albo zawieszony przez kontrolę zdrowia.
+
+    Stały skład nadal pochodzi z konfiguracji (clinic_council); ta tabela go koryguje — zawieszeni są pomijani we wszystkich
+    rolach, przyjęci przez Rekrutera dochodzą do ról, które przyznało im Konsylium."""
+    STATUSES = [('active', 'aktywny'), ('suspended', 'zawieszony')]
+    provider = models.CharField(max_length=32)
+    model = models.CharField(max_length=200)
+    company = models.CharField(max_length=100, blank=True)
+    origin = models.CharField(max_length=16, default='config', help_text='config — stały skład, recruiter — przyjęty przez Rekrutera.')
+    roles = models.JSONField(default=list, blank=True, help_text='Role przyznane przez Konsylium (dla origin=recruiter).')
+    status = models.CharField(max_length=12, choices=STATUSES, default='active', db_index=True)
+    admitted_at = models.DateTimeField(null=True, blank=True)
+    suspended_at = models.DateTimeField(null=True, blank=True)
+    last_ok_at = models.DateTimeField(null=True, blank=True)
+    first_fail_at = models.DateTimeField(null=True, blank=True, help_text='Początek nieprzerwanej serii twardych błędów (np. 404).')
+    last_error = models.CharField(max_length=160, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['provider', 'model'], name='council_seat_unique')]
+
+
+class CouncilRecruitment(models.Model):
+    """Dziennik Rekrutera: kandydat, egzamin, głosy Konsylium i decyzja (jawny na stronie Konsylium)."""
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    kind = models.CharField(max_length=16, default='candidate', help_text='candidate, suspension, return')
+    provider = models.CharField(max_length=32)
+    model = models.CharField(max_length=200)
+    company = models.CharField(max_length=100, blank=True)
+    source = models.JSONField(default=dict, blank=True, help_text='Skąd kandydat: katalog dostawcy, kontekst, uwagi sita.')
+    exam = models.JSONField(default=dict, blank=True)
+    votes = models.JSONField(default=list, blank=True)
+    decision = models.CharField(max_length=20, blank=True, help_text='admitted, rejected, would_admit, would_reject, suspended, returned')
+    roles = models.JSONField(default=list, blank=True)
+    mode = models.CharField(max_length=8, default='trial', help_text='trial — tylko rekomendacja, auto — decyzja wykonana.')
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class ClinicDailyMessage(models.Model):
@@ -142,6 +230,7 @@ class XAccountSuggestion(models.Model):
 
 
 class ClinicInterview(models.Model):
+    repair_attempts = models.PositiveSmallIntegerField(default=0)
     """Wywiad dnia: publiczny film z YouTube z politykiem — transkrypcja (Gemini) i diagnoza Dr. Spina (Claude).
 
     Człowiek wybiera tylko materiał (link); treści diagnozy nikt nie poprawia. Ukrycie wyłącznie po zgłoszeniu prawnym.
@@ -172,6 +261,14 @@ class ClinicInterview(models.Model):
     hidden_at = models.DateTimeField(null=True, blank=True)
     hidden_reason = models.CharField(max_length=240, blank=True)
 
+    def save(self, *args, **kwargs):
+        for field, key in (('guest_analysis', 'techniques'), ('host_analysis', 'notes')):
+            if kwargs.get('update_fields') is None or field in kwargs['update_fields']:
+                analysis = getattr(self, field)
+                if isinstance(analysis, dict) and key in analysis:
+                    setattr(self, field, {**analysis, key: categorize_techniques(analysis[key])})
+        return super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-day', '-created_at']
         verbose_name = 'wywiad dnia'
@@ -194,3 +291,29 @@ class WeeklyReport(models.Model):
 
     def __str__(self):
         return f'Raport {self.week_start} – {self.week_end}'
+
+
+SOCIAL_PLATFORMS = [
+    ('facebook', 'Facebook (film)'),
+    ('instagram', 'Instagram (Reels)'),
+    ('bluesky', 'Bluesky'),
+    ('manual', 'TikTok i YouTube Shorts (mail z filmem)'),
+]
+
+
+class SocialPost(models.Model):
+    """Wpis diagnozy w mediach społecznościowych poza X (news/social_publish.py). Usunięty, gdy autor usunie swój wpis."""
+    diagnosis = models.ForeignKey(SpinDiagnosis, on_delete=models.CASCADE, related_name='social_posts')
+    platform = models.CharField(max_length=12, choices=SOCIAL_PLATFORMS)
+    external_id = models.CharField(max_length=200, blank=True)
+    url = models.URLField(max_length=500, blank=True)
+    posted_at = models.DateTimeField(default=timezone.now, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    error = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        ordering = ['-posted_at']
+        constraints = [models.UniqueConstraint(fields=['diagnosis', 'platform'], name='social_post_once_per_platform')]
+
+    def __str__(self):
+        return f'{self.get_platform_display()} — diagnoza {self.diagnosis_id}'

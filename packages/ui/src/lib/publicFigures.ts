@@ -88,7 +88,7 @@ export type PublicFigureVotes =
  * przeglądzie linku z oficjalnego profilu, potwierdzeniu przez oficjalne API X i potwierdzeniu
  * redakcyjnym. W innym wypadku `null`. Interfejs nigdy nie zgaduje handle'a.
  */
-export type VerifiedXAccount = { handle: string; url: string; evidence_url: string; posts_collected: number };
+export type VerifiedXAccount = { account_id?: number; handle: string; url: string; evidence_url: string; posts_collected: number };
 export type PublicFigureXPost = {
   id: number;
   post_id: string;
@@ -157,20 +157,20 @@ export function verifiedXAccount(figure: Pick<PublicFigureDetail, 'x_account'>):
   return account;
 }
 
-export function getPublicFigures(query = '', roleCategory = '') {
-  const params = new URLSearchParams();
+export function getPublicFigures(query = '', roleCategory = '', page = 1) {
+  const params = new URLSearchParams({ page: String(page), page_size: '30' });
   if (query) params.set('q', query);
   if (roleCategory) params.set('role_category', roleCategory);
   const suffix = params.toString() ? `?${params}` : '';
-  return apiFetch<{ results: PublicFigureSummary[] }>(`/api/public-figures/${suffix}`);
+  return apiFetch<{ count: number; page: number; page_size: number; results: PublicFigureSummary[] }>(`/api/public-figures/${suffix}`);
 }
 
 export function getPublicFigure(id: number) {
   return apiFetch<PublicFigureDetail>(`/api/public-figures/${id}/`);
 }
 
-export function usePublicFigures(query: string, roleCategory: string) {
-  return useQuery({ queryKey: ['public-figures', query, roleCategory], queryFn: () => getPublicFigures(query, roleCategory), retry: false, staleTime: 60_000 });
+export function usePublicFigures(query: string, roleCategory: string, page = 1) {
+  return useQuery({ queryKey: ['public-figures', query, roleCategory, page], queryFn: () => getPublicFigures(query, roleCategory, page), retry: false, staleTime: 60_000 });
 }
 
 export function usePublicFigure(id: number | null) {

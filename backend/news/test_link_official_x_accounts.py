@@ -106,3 +106,19 @@ def test_reopen_rejected_restores_technical_rejections():
                                         evidence_url='https://www.wikidata.org/wiki/Q1', extracted_url='https://x.com/jankowalski')
     call_command('link_official_x_accounts', '--skip-discovery', '--reopen-rejected', stdout=StringIO())
     assert SocialHandleEvidence.objects.get().status == 'pending_review'
+
+
+def test_identity_rejects_squatted_short_surname_handle_and_fresh_accounts():
+    from datetime import datetime, timezone as tz
+    now = datetime(2026, 9, 28, tzinfo=tz.utc)
+    # 28.09.2026: @AgaBak — obca osoba zajęła starą nazwę ministry; „bak” było tylko fragmentem „Agabak”.
+    squatter = {'name': 'Agaba', 'username': 'Agabak', 'description': '', 'created_at': '2026-07-10T10:00:00.000Z',
+                'public_metrics': {'followers_count': 2}}
+    real = {'name': 'A. Dziemianowicz-Bąk', 'username': 'a_dziemianowicz', 'description': 'Ministra Rodziny, Pracy i Polityki Społecznej',
+            'created_at': '2009-06-17T07:21:36.000Z', 'public_metrics': {'followers_count': 94346}}
+    assert command.identity_problem(squatter, 'Agnieszka Dziemianowicz-Bąk')
+    assert command.identity_problem(real, 'Agnieszka Dziemianowicz-Bąk', now) == ''
+    fresh = {**real, 'created_at': '2026-06-01T00:00:00.000Z', 'public_metrics': {'followers_count': 150}}
+    assert 'niedawno' in command.identity_problem(fresh, 'Agnieszka Dziemianowicz-Bąk', now)
+    # długie nazwisko w samej nazwie użytkownika wystarcza (np. @donaldtusk przy nazwie „Donald Tusk”)
+    assert command.identity_problem({'name': 'DT', 'username': 'donaldtusk'}, 'Donald Tusk') == ''

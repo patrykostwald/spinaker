@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button, NavMenu, SearchField } from "../kit";
 import { useAccount } from "../lib/account";
 import type { SiteConfig } from "../types";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { ACCOUNTS_ENABLED, THREADS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
+import { isSiteNavigationCurrent, siteNavigation } from "../lib/siteNavigation";
 
 function HeaderSearch() {
   const [value, setValue] = useState("");
@@ -21,52 +22,26 @@ function HeaderSearch() {
 
   return (
     <form className="sc-nav-search" role="search" onSubmit={submit}>
-      <SearchField id={id} label="Szukaj w bazie materiałów" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj w bazie…" />
+      <SearchField id={id} label="Szukaj materiałów" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj materiałów…" />
     </form>
   );
 }
 
-/** Data i godzina obok wyszukiwarki (zastępuje osobny wiersz z datą nad stroną główną). */
-function HeaderClock() {
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-    const timer = window.setInterval(() => setNow(new Date()), 30_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  if (!now) return <span className="sc-nav-clock" aria-hidden="true" />;
-  const day = now.toLocaleDateString("pl-PL", { weekday: "short", day: "numeric", month: "short" });
-  const time = now.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
-  return <time className="sc-nav-clock" dateTime={now.toISOString()}><span>{day}</span> {time}</time>;
-}
-
-/**
- * Szapka: po lewej marka i nawigacja (Główna · Klinika · O nas — jeden krój, wspólny wskaźnik
- * aktywnej strony), na środku pole szukania, po prawej narzędzia (godzina, motyw, konto).
- * Nitki wrócą w fazie II (THREADS_ENABLED).
- */
-const SECTIONS: Array<{ label: string; href: string }> = [
-  { label: "Główna", href: "/" },
-  { label: "Klinika", href: "/klinika" },
-  ...(THREADS_ENABLED ? [{ label: "Nitki", href: "/nitki" }] : []),
-  { label: "O nas", href: "/o-nas" },
-];
-
 export function SiteHeader({ site }: { site: SiteConfig }) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const pathname = usePathname();
   const account = useAccount();
   const [first, ...rest] = site.name.split(".");
   const second = rest.join(".");
-  // Szapka: po lewej wordmark z dopiskiem BETA i trzy części serwisu, pole szukania na środku, po prawej
-  // „O nas” · motyw · konto (te same odstępy). Źródła są w globalnej stopce, nie w szapce.
-
   return (
     <NavMenu
       layout="centered"
-      items={SECTIONS.map(section => ({
+      items={siteNavigation.primary.map(section => ({
         ...section,
-        current: section.href === "/" ? pathname === "/" : pathname.startsWith(section.href),
+        current: isSiteNavigationCurrent(pathname, section.href),
       }))}
+      desktopMore={false}
+      moreItems={siteNavigation.more.map(item => ({ ...item, current: isSiteNavigationCurrent(pathname, item.href) }))}
       brand={
         <div className="sc-nav-brand">
           <Link href="/" className="sc-wordmark">{first}<span aria-hidden="true">.</span>{second}</Link>
@@ -74,7 +49,8 @@ export function SiteHeader({ site }: { site: SiteConfig }) {
         </div>
       }
       search={<HeaderSearch />}
-      cta={<div className="sc-nav-cta"><HeaderClock /><ThemeSwitcher compact />{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
+      mobileAction={<Link className="sc-nav-mobile-search" href="/search" aria-label="Szukaj materiałów">Szukaj</Link>}
+      cta={<div className="sc-nav-cta"><ThemeSwitcher compact /><Link className="sc-nav-support" href={siteNavigation.support.href}>{siteNavigation.support.label}</Link>{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
     />
   );
 }

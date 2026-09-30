@@ -1,15 +1,18 @@
 """API Kliniki spinu: strona /klinika, diagnozy, reakcje, sugestie kont X i kolejka zatwierdzania."""
 import os
 import re
+from datetime import date, datetime, time, timedelta
 
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
@@ -21,9 +24,86 @@ from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, X
 from news.political_models import PublicFigure
 from news.public_figures import verified_x_account_record
 from news.schema import json_view
+from news.techniques import CANONICAL_TECHNIQUES, normalized, technique_groups
 
 X_PROFILE = re.compile(r'^https?://(?:www\.|mobile\.)?(?:x|twitter)\.com/([A-Za-z0-9_]{1,15})/?(?:[?#].*)?$')
 RESERVED_PATHS = {'home', 'search', 'explore', 'i', 'intent', 'share', 'settings', 'messages', 'notifications', 'login', 'signup', 'tos', 'privacy'}
+
+
+@extend_schema(summary='Skład Konsylium i przyjęcie Karty', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_council(request):
+    from news.council_charter import council_data
+    return Response(council_data())
+
+
+@extend_schema(summary='Archiwum opublikowanych wywiadów', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_interviews(request):
+    from news.clinic_interview import _published_interviews, interview_data
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+    except ValueError:
+        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+    rows = _published_interviews().order_by('-day', '-diagnosed_at', '-pk')
+    channels = list(rows.exclude(channel='').order_by('channel').values_list('channel', flat=True).distinct())
+    channel, query = (request.query_params.get(key, '').strip() for key in ('channel', 'q'))
+    if channel:
+        rows = rows.filter(channel=channel)
+    if query:
+        rows = rows.filter(Q(guest_name__icontains=query) | Q(host_name__icontains=query) | Q(title__icontains=query))
+    count = rows.count()
+    batch = list(rows[(page - 1) * 20:page * 20 + 1])
+    return Response({'results': [interview_data(row) for row in batch[:20]],
+                     'next_page': page + 1 if len(batch) > 20 else None, 'count': count, 'channels': channels})
+
+
+@extend_schema(summary='Pełna analiza opublikowanego wywiadu', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_interview_detail(request, interview_id):
+    from news.clinic_interview import _published_interviews, interview_data
+    return Response(interview_data(get_object_or_404(_published_interviews(), pk=interview_id)))
+
+
+@extend_schema(summary='Przekazy obu stron według dni', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_messages(request):
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+    except ValueError:
+        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+    rows = ClinicDailyMessage.objects.filter(status='approved', camp__in=clinic.CAMPS)
+    days = rows.order_by('-day').values_list('day', flat=True).distinct()
+    count = days.count()
+    batch = list(days[(page - 1) * 14:page * 14 + 1])
+    grouped = {day: {'day': day, 'government': None, 'opposition': None} for day in batch[:14]}
+    for row in rows.filter(day__in=batch[:14]).prefetch_related('posts'):
+        grouped[row.day][row.camp] = clinic._message_data(row)
+    return Response({'results': list(grouped.values()), 'next_page': page + 1 if len(batch) > 14 else None,
+                     'count': count})
+
+
+@extend_schema(summary='Przekazy konkretnego dnia: obie strony, zakres i źródła', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_message_detail(request, day):
+    try:
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', day):
+            raise ValueError
+        selected_day = date.fromisoformat(day)
+    except ValueError:
+        raise Http404
+    rows = list(ClinicDailyMessage.objects.filter(day=selected_day, status='approved', camp__in=clinic.CAMPS))
+    if not rows:
+        raise Http404
+    result = {'day': selected_day, 'government': None, 'opposition': None}
+    for row in rows:
+        result[row.camp] = clinic._message_data(row, with_posts=True, all_posts=True)
+    return Response(result)
 
 
 @extend_schema(summary='Klinika spinu: waga, przekazy dnia, spin dnia i diagnozy obu stron', tags=['klinika'],
@@ -51,9 +131,68 @@ def clinic_spins(request):
     verdict = request.query_params.get('verdict', '')
     if verdict in clinic.VERDICT_LABELS:
         rows = rows.filter(verdict=verdict)
-    size = 20
-    batch = list(rows.order_by('-post__published_at', '-pk')[(page - 1) * size:page * size + 1])
-    return Response({'results': clinic.cards(batch[:size]), 'next_page': page + 1 if len(batch) > size else None})
+    params = request.query_params
+    account = params.get('account', '')
+    if account:
+        if not re.fullmatch(r'[0-9]{1,19}', account) or not 0 < int(account) <= 9223372036854775807:
+            return Response({'detail': 'Nieprawidłowy identyfikator konta.'}, status=400)
+        rows = rows.filter(post__account_id=int(account))
+    try:
+        minimum = int(params.get('intensity_min', '0'))
+        maximum = int(params.get('intensity_max', '100'))
+        if not 0 <= minimum <= maximum <= 100:
+            raise ValueError
+        dates = {key: date.fromisoformat(params[key]) for key in ('date_from', 'date_to') if params.get(key)}
+        if len(dates) == 2 and dates['date_from'] > dates['date_to']:
+            raise ValueError
+        for key, day in dates.items():
+            boundary = timezone.make_aware(datetime.combine(day, time.min))
+            rows = rows.filter(**({'post__published_at__gte': boundary} if key == 'date_from'
+                                  else {'post__published_at__lt': boundary + timedelta(days=1)}))
+    except (ValueError, OverflowError):
+        return Response({'detail': 'Nieprawidłowy zakres siły (0–100) lub dat (RRRR-MM-DD).'}, status=400)
+    sort = params.get('sort', 'new')
+    technique = params.get('technique', '')
+    if sort not in ('new', 'strong') or (technique and technique not in CANONICAL_TECHNIQUES):
+        return Response({'detail': 'Nieprawidłowe sortowanie lub kanoniczna technika.'}, status=400)
+    if 'intensity_min' in params or 'intensity_max' in params:
+        rows = rows.filter(intensity__gte=minimum, intensity__lte=maximum)
+    rows = rows.order_by(*(['-intensity'] if sort == 'strong' else []), '-post__published_at', '-pk')
+    query, party = normalized(params.get('q', '')), normalized(params.get('party', ''))
+    if query or party or technique:
+        candidates = list(rows)
+        figures = clinic.figures_by_account({row.post.account_id for row in candidates}) if query or party else {}
+        matched = []
+        for row in candidates:
+            author = clinic.author_data(row.post, figures.get(row.post.account_id)) if query or party else {}
+            if query and not any(query in normalized(value) for value in (
+                row.headline, row.summary, author['name'], author['handle'], row.post.account.display_name)):
+                continue
+            affiliation = author.get('party')
+            if party and party not in ({normalized(value) for value in affiliation.values()} if affiliation else {'unknown'}):
+                continue
+            if technique and technique not in technique_groups(row.techniques):
+                continue
+            matched.append(row)
+        rows = matched
+    try:
+        size = int(params.get('page_size', '20'))
+        if not 1 <= size <= 20:
+            raise ValueError
+    except ValueError:
+        return Response({'detail': 'Liczba wyników musi wynosić od 1 do 20.'}, status=400)
+    count = len(rows) if isinstance(rows, list) else rows.count()
+    batch = list(rows[(page - 1) * size:page * size + 1])
+    return Response({'results': clinic.cards(batch[:size]), 'next_page': page + 1 if len(batch) > size else None,
+                     'count': count})
+
+
+@extend_schema(summary='Statystyki Kliniki z liczebnością próby', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_statistics(request):
+    from news.clinic_stats import stats_data
+    return Response(stats_data())
 
 
 @extend_schema(summary='Pełna diagnoza spinu', tags=['klinika'], responses=OpenApiTypes.OBJECT)
@@ -61,6 +200,33 @@ def clinic_spins(request):
 def clinic_spin_detail(request, diagnosis_id):
     diagnosis = get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
     return Response(clinic.detail_data(diagnosis))
+
+
+class CardContentNegotiation(DefaultContentNegotiation):
+    def filter_renderers(self, renderers, format):
+        # W tym endpointcie parametr format wybiera układ PNG, nie renderer DRF.
+        return renderers
+
+
+class ClinicSpinCardView(APIView):
+    permission_classes = [AllowAny]
+    content_negotiation_class = CardContentNegotiation
+
+    def get(self, request, diagnosis_id):
+        from django.http import FileResponse
+        from news.clinic_card import FORMATS, cached_card
+        card_format = request.query_params.get('format', 'diagnoza')
+        if card_format not in FORMATS:
+            return Response({'detail': 'Nieznany format obrazu.'}, status=400)
+        diagnosis = get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
+        figures = clinic.figures_by_account([diagnosis.post.account_id])
+        path = cached_card(clinic.card_data(diagnosis, figures), card_format)
+        response = FileResponse(path.open('rb'), content_type='image/png')
+        response['Cache-Control'] = 'public, max-age=3600'
+        return response
+
+
+clinic_spin_card = ClinicSpinCardView.as_view()
 
 
 @extend_schema(summary='Konta X, z których czyta Klinika', tags=['klinika'], responses=OpenApiTypes.OBJECT)
@@ -86,7 +252,7 @@ def clinic_report(request, week_end=None):
     report = get_object_or_404(rows, week_end=week_end) if week_end else rows.first()
     if report is None:
         return Response({'report': None, 'archive': []})
-    archive = list(rows.values('week_start', 'week_end')[:26])
+    archive = list(rows.values('week_start', 'week_end'))
     return Response({'report': report_data(report), 'archive': archive})
 
 
@@ -133,6 +299,8 @@ class SpinOpinionsView(APIView):
         })
 
     def post(self, request, diagnosis_id):
+        from news.account_security import require_verified
+        require_verified(request.user)
         diagnosis = self._diagnosis(diagnosis_id)
         serializer = OpinionInput(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -144,6 +312,8 @@ class SpinOpinionsView(APIView):
         return Response(SpinOpinionSerializer(opinion).data, status=201)
 
     def patch(self, request, diagnosis_id):
+        from news.account_security import require_verified
+        require_verified(request.user)
         if not isinstance(request.data, dict) or set(request.data) - {'body'}:
             raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
         serializer = OpinionInput(data={'polarity': 'positive', **request.data})
