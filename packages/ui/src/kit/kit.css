@@ -6240,3 +6240,57 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 @media (prefers-reduced-motion: reduce) {
   .sc-f2 *, .sc-f2-context *, .sc-f2-follow * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
+/* Poprawki testera (zlecenie 056) */
+.sc-interview-full__share { margin-top: 16px; }
+.sc-interview-full__share summary { cursor: pointer; }
+.sc-interview-full__share label { display: block; }
+.sc-interview-full__share textarea { box-sizing: border-box; width: 100%; max-width: 100%; font: inherit; background: var(--sc-surface); color: var(--sc-text); border: 1px solid var(--sc-line); }
+.sc-interview-full__share button { min-height: 44px; min-width: 44px; padding: 8px 16px; background: var(--sc-surface); color: var(--sc-text); border: 1px solid var(--sc-line); font: inherit; cursor: pointer; }
+.sc-reader-switch { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 16px; }
+.sc-reader-switch button { flex: 1 1 120px; min-width: 44px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface); color: var(--sc-text); font: inherit; cursor: pointer; }
+.sc-reader-switch button[aria-pressed="true"] { border-color: var(--sc-accent); box-shadow: inset 0 -3px var(--sc-accent); font-weight: 700; }
+.sc-reader-switch button:focus-visible, .sc-interview-full :is(a, button, summary):focus-visible, .sc-message-detail__camp :is(a, button, summary):focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 3px; }
+.sc-interview-full { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+.sc-interview-full :is(section, article, aside, li), .sc-message-detail__camp > * { min-width: 0; overflow-wrap: anywhere; }
+.sc-interview-full__summary { display: grid; gap: 12px; padding: 16px; background: var(--sc-surface); border-radius: var(--sc-r-lg); }
+.sc-interview-full__summary p { margin: 0; }
+.sc-interview-full__summary .sc-interview-results { grid-template-columns: minmax(0, 1fr); }
+.sc-interview-full__summary .sc-interview-results > section { grid-template-columns: minmax(0, 1fr); grid-template-areas: "lbl" "who" "score" "bar"; }
+.sc-interview-full__summary .sc-interview-results > section > .sc-scan-m-lbl { white-space: normal; font-size: 14px; line-height: 1.5; }
+.sc-interview-full__summary .sc-interview-results > section > .sc-interview-results__score { flex-direction: row; align-items: center; justify-content: flex-start; }
+.sc-interview-full__summary .sc-interview-results__score { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sc-interview-full__summary .sc-scan-m-num { font-size: 24px; line-height: 32px; }
+.sc-interview-full__summary .sc-scan-m-num small { font-size: 14px; }
+.sc-interview-full__summary nav { display: grid; }
+.sc-interview-full a, .sc-message-detail__camp a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; overflow-wrap: anywhere; }
+.sc-interview-full .sc-interview__thumb { display: block; }
+.sc-interview-full__body { width: 100%; max-width: 75ch; font-size: 16px; line-height: 1.6; }
+.sc-interview-full__body section { margin-bottom: 24px; scroll-margin-top: 112px; }
+.sc-interview-full__body [hidden] { display: none; }
+.sc-interview-full__body p, .sc-interview-full__body blockquote { white-space: pre-line; }
+.sc-interview-full__body h2 { font-size: 22px; line-height: 1.35; }
+.sc-interview-full__quotes { list-style: none; padding: 0; display: grid; gap: 16px; }
+.sc-interview-full__quotes li { padding: 16px; background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); }
+.sc-interview-full__quotes h3 { font-size: 18px; margin: 0 0 12px; }
+.sc-interview-full__quotes blockquote { margin: 0; padding-left: 16px; border-left: 2px solid var(--sc-line); }
+.sc-interview-full__body summary { min-height: 44px; }
+.sc-interview-full__meta { font-size: 14px; color: var(--sc-text-3); }
+.sc-message-detail__camp { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 24px; }
+.sc-message-detail__narrative { max-width: 75ch; font-size: 16px; line-height: 1.6; }
+.sc-message-detail__narrative > p { white-space: pre-line; }
+.sc-message-detail__meta, .sc-message-detail__sources time { font-size: 14px; line-height: 1.6; }
+.sc-message-detail__feed { padding: 16px; background: var(--sc-surface); border-radius: var(--sc-r-lg); }
+.sc-message-detail__feed summary { min-height: 44px; cursor: pointer; font-weight: 700; }
+.sc-message-detail__sources { list-style: none; padding: 0; margin-top: 16px; font-size: 16px; line-height: 1.6; }
+.sc-message-detail__sources li { padding: 0 0 16px; border-bottom: 1px solid var(--sc-line); }
+.sc-message-detail__sources a { display: block; }
+.sc-message-detail__source-column button { min-height: 44px; }
+.sc-clinic-archives__day > a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (min-width: 1024px) {
+  .sc-fit-sticky[data-fits] { position: sticky; top: 104px; align-self: start; }
+  .sc-interview-full { grid-template-columns: minmax(240px, 300px) minmax(0, 75ch); justify-content: space-between; }
+  .sc-interview-full__summary { position: sticky; top: 104px; max-height: calc(100dvh - 120px); overflow-y: auto; scrollbar-gutter: stable; }
+  .sc-message-detail__camp { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 32px; }
+  .sc-message-detail__source-column { position: sticky; top: 104px; max-height: calc(100dvh - 120px); overflow-y: auto; scrollbar-gutter: stable; }
+}

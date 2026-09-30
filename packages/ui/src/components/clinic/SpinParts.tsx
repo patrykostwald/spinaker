@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Party, SpinAuthor, SpinCardData, SpinScale as SpinScaleData, Verdict } from "../../lib/clinic";
 import { sharePercent, techniqueLabel } from "../../lib/clinic";
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
@@ -169,4 +170,21 @@ export function HowToRead({ interview = false }: { interview?: boolean }) {
     </dl>
     <p><a href="/metodologia">Pełna metodologia →</a></p>
   </details>;
+}
+
+/** Stick only when the whole panel fits below the site header. Recheck after images/fonts/layout change. */
+export function FitStickyAside({ children, className = "", label }: { children: ReactNode; className?: string; label?: string }) {
+  const ref = useRef<HTMLElement>(null);
+  const [fits, setFits] = useState(false);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const measure = () => setFits(window.innerWidth >= 1024 && element.getBoundingClientRect().height <= window.innerHeight - 120);
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    window.addEventListener("resize", measure);
+    measure();
+    return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
+  return <aside ref={ref} className={`sc-fit-sticky ${className}`} data-fits={fits || undefined} aria-label={label}>{children}</aside>;
 }

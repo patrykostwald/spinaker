@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { agreementLabel, getSpin, type SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { OpinionsPanel } from "../OpinionsPanel";
-import { AiTag, HowToRead, SpinAuthorRow } from "./SpinParts";
+import { AiTag, FitStickyAside, HowToRead, SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { clinicResultsUrl } from "../../lib/clinicNavigation";
 import { ContextThreadStrip } from '../ContextThreadStrip';
@@ -76,7 +76,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
       {/* Lewa kolumna: źródło i szybkie podsumowanie; prawa: ocena i pełna analiza (uwagi recenzenta UX, 30.09).
           Na telefonie kolejność: ocena → podsumowanie → wpis → analiza. */}
       <div className="sc-dg-layout">
-        <aside className="sc-dg-side">
+        <FitStickyAside className="sc-dg-side">
         <SourceDisclosure className="sc-spin-detail__post">
           <p className="sc-clinic-kicker">{spin.camp_label}</p>
           <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} size="lg" />
@@ -89,7 +89,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
           <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Oryginalny wpis na X ↗</a>
         </SourceDisclosure>
         <section className="sc-dg-quick" aria-label="Podsumowanie"><h2>W skrócie</h2><p className="sc-spin-detail__summary">{spin.summary}</p></section>
-        </aside>
+        </FitStickyAside>
         <div className="sc-dg-main">
         <div className="sc-dg-score"><SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} /><HowToRead /></div>
         <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>

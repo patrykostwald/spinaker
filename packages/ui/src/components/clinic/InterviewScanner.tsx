@@ -3,11 +3,12 @@
 import { techniqueLabel } from "../../lib/clinic";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { Interview, InterviewQuote } from "../../lib/clinic";
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDatePl } from "../../lib/utils";
-import { VerdictTag } from "./SpinParts";
+import { FitStickyAside, VerdictTag } from "./SpinParts";
 
 const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 function domain(url: string) {
@@ -60,7 +61,7 @@ export function InterviewResults({ interview }: { interview: Interview }) {
 }
 
 /** `full` — własna strona wywiadu: jeden tytuł (H1 strony), uzasadnienie od razu otwarte, bez odsyłacza do samej siebie (audyt 046). */
-export function InterviewScanner({ interview, full = false }: { interview: Interview; full?: boolean }) {
+function CompactInterviewScanner({ interview, full = false }: { interview: Interview; full?: boolean }) {
   const [expanded, setExpanded] = useState(full);
   const [sharing, setSharing] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
@@ -130,4 +131,84 @@ export function InterviewScanner({ interview, full = false }: { interview: Inter
     </div>
     {sharing ? <div id={`${prefix}-share`} className="sc-scan-share"><section className="sc-scan-sh sc-scan-sh-text" aria-label="Udostępnij wywiad"><label htmlFor={`${prefix}-text`}>Tekst z linkiem</label><textarea id={`${prefix}-text`} value={shareText} readOnly rows={5} /><button type="button" onClick={() => void copy()}>Kopiuj</button><span role="status">{copyStatus}</span></section></div> : null}
   </article>;
+}
+
+export function InterviewScanner({ interview, full = false }: { interview: Interview; full?: boolean }) {
+  return full ? <FullInterview interview={interview} /> : <CompactInterviewScanner interview={interview} />;
+}
+
+function FullInterview({ interview }: { interview: Interview }) {
+  const [speaker, setSpeaker] = useState<"guest" | "host">("guest");
+  const [copyStatus, setCopyStatus] = useState("");
+  const { guest, host } = interview;
+  const hasHost = Boolean(host.summary || host.notes.length || host.verdict || host.intensity != null);
+  const prefix = `interview-${interview.id}`;
+  useEffect(() => {
+    const followHash = () => {
+      const hash = window.location.hash;
+      if (hash === `#${prefix}-host`) setSpeaker("host");
+      else if (hash === `#${prefix}-techniques` || hash === `#${prefix}-claims`) setSpeaker("guest");
+    };
+    followHash();
+    window.addEventListener("hashchange", followHash);
+    return () => window.removeEventListener("hashchange", followHash);
+  }, [prefix]);
+  useEffect(() => {
+    const hash = window.location.hash;
+    if ([`#${prefix}-host`, `#${prefix}-techniques`, `#${prefix}-claims`].includes(hash)) document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [prefix, speaker]);
+  const shareText = `Dr. Spin (AI) · Wywiad z ${interview.guest_name} · ${guest.verdict_label} ${guest.intensity}/100\n${interview.headline}\nhttps://spin.clinic/klinika/wywiady/${interview.id}`;
+  async function copy() {
+    try { await navigator.clipboard.writeText(shareText); setCopyStatus("Skopiowano"); }
+    catch { setCopyStatus("Nie udało się skopiować. Zaznacz tekst i skopiuj ręcznie."); }
+  }
+  const quote = (item: InterviewQuote, index: number) => <li key={index}>
+    <h3>{item.name}</h3>{item.quote ? <blockquote>„{item.quote}”</blockquote> : null}
+    <p>{item.explanation}</p><RecordingTime url={interview.url} item={item} expanded />
+  </li>;
+  return <div className="sc-interview-full">
+    <FitStickyAside className="sc-interview-full__summary" label="Podsumowanie wywiadu">
+      <a className="sc-interview__thumb" href={interview.url} target="_blank" rel="noopener noreferrer" aria-label={`Odtwórz nagranie: ${interview.title}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {interview.thumbnail_url ? <img src={interview.thumbnail_url} alt={`Miniatura wywiadu: ${interview.title}`} referrerPolicy="no-referrer" /> : null}<span aria-hidden="true">▶</span>
+      </a>
+      <p className="sc-interview-recording-title">{interview.title}</p>
+      <p><time dateTime={interview.day}>{formatDatePl(interview.day)}</time> · <a href={interview.url} target="_blank" rel="noopener noreferrer">{interview.channel} ↗</a></p>
+      <InterviewResults interview={interview} />
+      <nav aria-label="Spis treści wywiadu">
+        <a href={`#${prefix}-summary`}>Podsumowanie</a>
+        <a href={`#${prefix}-techniques`} onClick={() => flushSync(() => setSpeaker("guest"))}>Techniki gościa</a>
+        <a href={`#${prefix}-claims`} onClick={() => flushSync(() => setSpeaker("guest"))}>Twierdzenia i źródła</a>
+        {hasHost ? <a href={`#${prefix}-host`} onClick={() => flushSync(() => setSpeaker("host"))}>Warsztat prowadzącego</a> : null}
+        <a href={`#${prefix}-limits`}>Ograniczenia</a>
+      </nav>
+    </FitStickyAside>
+    <article className="sc-interview-full__body" aria-label="Analiza wywiadu">
+      <section id={`${prefix}-summary`}><h2>Podsumowanie wywiadu</h2><InterviewScope /><p>{interview.summary}</p>{interview.overall ? <p>{interview.overall}</p> : null}</section>
+      {hasHost ? <div className="sc-reader-switch" role="group" aria-label="Osoba w analizie">
+        <button type="button" aria-pressed={speaker === "guest"} aria-controls={`${prefix}-guest`} onClick={() => setSpeaker("guest")}>Gość</button>
+        <button type="button" aria-pressed={speaker === "host"} aria-controls={`${prefix}-host`} onClick={() => setSpeaker("host")}>Prowadzący</button>
+      </div> : null}
+      <div id={`${prefix}-guest`} hidden={speaker !== "guest"}>
+        <section id={`${prefix}-techniques`}><h2>Techniki gościa</h2><p>{guest.summary}</p>
+          {guest.techniques.length ? <ol className="sc-interview-full__quotes">{guest.techniques.map(quote)}</ol> : <p>Nie wskazano technik w tej analizie.</p>}
+        </section>
+        <section id={`${prefix}-claims`}><h2>Twierdzenia i źródła</h2>
+          {guest.claims.length ? <ul className="sc-spin-detail__claims">{guest.claims.map((claim, index) => <li key={index} data-assessment={claim.assessment}>
+            <details className="sc-spin-detail__claim-item"><summary><span className="sc-verdict" data-assessment={claim.assessment}>{claim.assessment_label}</span><span className="sc-spin-detail__claim">{claim.claim}</span></summary>
+              <div className="sc-spin-detail__claim-body"><p>{claim.explanation}</p>
+                <ul className="sc-spin-detail__sources">{claim.sources.filter(source => domain(source.url)).map((source, index) => <li key={index}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || domain(source.url)} ↗</a></li>)}</ul>
+                <RecordingTime url={interview.url} item={claim} expanded />
+              </div>
+            </details>
+          </li>)}</ul> : <p>Brak osobno sprawdzonych twierdzeń.</p>}
+        </section>
+      </div>
+      {hasHost ? <section id={`${prefix}-host`} hidden={speaker !== "host"}><h2>Warsztat prowadzącego</h2><p>{host.summary}</p><ol className="sc-interview-full__quotes">{host.notes.map(quote)}</ol></section> : null}
+      <section id={`${prefix}-limits`}><h2>Ograniczenia analizy</h2><p>{interview.limitations || "Nie zapisano dodatkowych ograniczeń tej analizy."}</p></section>
+      <p className="sc-interview-full__meta">Ocena konsylium AI · {interview.model} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "—"}</p>
+      <a href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a>
+      <details className="sc-interview-full__share"><summary>Udostępnij wywiad</summary><label htmlFor={`${prefix}-share`}>Tekst z linkiem</label><textarea id={`${prefix}-share`} value={shareText} readOnly rows={5} /><button type="button" onClick={() => void copy()}>Kopiuj</button><p role="status">{copyStatus}</p></details>
+    </article>
+  </div>;
 }
