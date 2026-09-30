@@ -301,3 +301,9 @@ def inquisitor_task(self):
     if result['status'] == 'locked':
         raise self.retry(countdown=120)
     return result
+
+
+# Register account tasks with Celery autodiscovery.
+from news.notification_tasks import process_notification_events, send_notification_digests  # noqa: F401,E402
+
+from news.account_lifecycle import send_password_reset, send_account_verification  # noqa: F401

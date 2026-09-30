@@ -78,3 +78,6 @@ export { siteNavigation, socialChannels } from "./lib/siteNavigation";
 
 export { sourceDirectory, directoryGroup, channelIdentity } from "./lib/sourceDirectory";
 export { CommandPanel } from './components/CommandPanel';
+
+export { AccountRecovery } from "./components/AccountRecovery";
+export { AccountDelete } from "./components/AccountDelete";

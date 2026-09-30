@@ -6,7 +6,7 @@ from django.db import IntegrityError, transaction
 from django.test import override_settings
 from django.urls import include, path
 from rest_framework.test import APIClient
-from news.account_models import SavedTopic, ArticleOpinion, ThreadOpinion, UserXConnection
+from news.account_models import SavedTopic, ArticleOpinion, ThreadOpinion, UserXConnection, AccountIdentity
 from news.models import Article, Source, Thread
 
 urlpatterns = [path('api/', include('news.account_urls')), path('api/', include('news.urls'))]
@@ -16,13 +16,15 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def isolated_urls():
     cache.clear()
-    with override_settings(ROOT_URLCONF=__name__):
+    with override_settings(ROOT_URLCONF=__name__, ACCOUNTS_ENABLED=True):
         yield
 
 
 @pytest.fixture
 def user():
-    return get_user_model().objects.create_user(username='reader', password='A8!quite-strong-secret')
+    user = get_user_model().objects.create_user(username='reader', email='reader@example.org', password='A8!quite-strong-secret')
+    AccountIdentity.objects.create(user=user, email=user.email, email_verified=True)
+    return user
 
 
 @pytest.fixture
@@ -37,14 +39,19 @@ def token(client):
 
 def test_register_csrf_password_and_no_privilege_escalation():
     client = APIClient(enforce_csrf_checks=True)
-    data = {'username': 'Reader', 'password': 'Str0ng~unique~zxcv!', 'is_staff': True, 'is_superuser': True}
+    data = {'username': 'Reader', 'email': 'reader@example.org', 'accepted_terms': True,
+            'accepted_privacy': True, 'password': 'Str0ng~unique~zxcv!', 'is_staff': True, 'is_superuser': True}
     assert client.post('/api/account/register/', data, format='json').status_code == 403
     csrf = token(client)
-    response = client.post('/api/account/register/', data, format='json', HTTP_X_CSRFTOKEN=csrf)
+    with patch('news.account_lifecycle.queue_verification'):
+        response = client.post('/api/account/register/', data, format='json', HTTP_X_CSRFTOKEN=csrf)
     assert response.status_code == 201
     created = get_user_model().objects.get(username='reader')
     assert not created.is_staff and not created.is_superuser
     assert created.check_password(data['password'])
+    assert response.data['authenticated'] is False
+    response = client.post('/api/account/login/', data, format='json', HTTP_X_CSRFTOKEN=response.data['csrfToken'])
+    assert response.status_code == 200
     assert response.data['csrfToken'] != csrf
     assert client.get('/api/account/me/').data['authenticated']
     assert client.post('/api/editor/threads/', {}, format='json', HTTP_X_CSRFTOKEN=response.data['csrfToken']).status_code == 403
@@ -53,8 +60,9 @@ def test_register_csrf_password_and_no_privilege_escalation():
 
 def test_weak_password_and_duplicate_handle_rejected(user):
     client = APIClient()
-    assert client.post('/api/account/register/', {'username': 'newreader', 'password': '123'}, format='json').status_code == 400
-    assert client.post('/api/account/register/', {'username': 'READER', 'password': 'Something!99long'}, format='json').status_code == 400
+    common = {'email': 'new@example.org', 'accepted_terms': True, 'accepted_privacy': True}
+    assert client.post('/api/account/register/', {**common, 'username': 'newreader', 'password': '123'}, format='json').status_code == 400
+    assert client.post('/api/account/register/', {**common, 'username': 'READER', 'password': 'Something!99long'}, format='json').status_code == 400
 
 
 def test_public_login_logout_csrf_and_editor_login_still_rejects(user):

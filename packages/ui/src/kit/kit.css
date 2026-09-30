@@ -6139,3 +6139,11 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-command-item > summary > span:first-child { flex-basis: calc(100% - 100px); }
 }
 @media (prefers-reduced-motion: reduce) { .sc-command-toggle { transition: none; } }
+
+.sc-account-form .sc-account-form__consent { grid-template-columns: 44px minmax(0, 1fr); align-items: center; min-height: 44px; font-weight: 400; }
+.sc-account-form__consent input[type="checkbox"] { width: 22px; height: 22px; min-height: 22px; margin: 11px; accent-color: var(--sc-accent); }
+.sc-account-form__consent .sc-account-form__error { grid-column: 2; }
+.sc-account-form a { text-decoration: underline; text-underline-offset: 3px; }
+.sc-account-form__google { margin-top: var(--sc-s-6); padding-top: var(--sc-s-4); border-top: 1px solid var(--sc-line); }
+.sc-account-recovery { width: min(100% - 32px, 480px); margin: var(--sc-s-8) auto; }
+.sc-account-recovery h1 { margin-bottom: var(--sc-s-6); }

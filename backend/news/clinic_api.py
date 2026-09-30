@@ -294,6 +294,8 @@ class SpinOpinionsView(APIView):
         })
 
     def post(self, request, diagnosis_id):
+        from news.account_security import require_verified
+        require_verified(request.user)
         diagnosis = self._diagnosis(diagnosis_id)
         serializer = OpinionInput(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -305,6 +307,8 @@ class SpinOpinionsView(APIView):
         return Response(SpinOpinionSerializer(opinion).data, status=201)
 
     def patch(self, request, diagnosis_id):
+        from news.account_security import require_verified
+        require_verified(request.user)
         if not isinstance(request.data, dict) or set(request.data) - {'body'}:
             raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
         serializer = OpinionInput(data={'polarity': 'positive', **request.data})
