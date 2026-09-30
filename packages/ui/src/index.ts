@@ -82,3 +82,5 @@ export { CommandPanel } from './components/CommandPanel';
 export { AccountRecovery } from "./components/AccountRecovery";
 export { AccountDelete } from "./components/AccountDelete";
 export { TERMS_VERSION } from './lib/account';
+
+export { HowToRead } from "./components/clinic/SpinParts";

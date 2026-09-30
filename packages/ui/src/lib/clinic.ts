@@ -115,7 +115,14 @@ export type DailyMessage = {
 
 export type InterviewQuote = { name: string; category?: string; quote: string; time: string; seconds: number | null; explanation: string };
 export type InterviewClaim = SpinClaim & { time: string; seconds: number | null };
+/** Optional participant list; legacy responses are adapted in the reader. */
+export type InterviewParticipant = {
+  id: string; role: "guest" | "host"; name: string; function?: string;
+  verdict?: Verdict; verdict_label?: string; intensity?: number; summary: string;
+  techniques: InterviewQuote[]; claims: InterviewClaim[]; limitations?: string;
+};
 export type Interview = {
+  participants?: InterviewParticipant[];
   id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
   guest_name: string; guest_role: string; host_name: string; headline: string; summary: string; overall: string;
   guest: { verdict: Verdict; verdict_label: string; intensity: number; summary: string; techniques: InterviewQuote[]; claims: InterviewClaim[] };

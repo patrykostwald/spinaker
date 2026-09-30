@@ -43,6 +43,7 @@ export type SiteFooterProps = {
   sticky?: boolean;
   /** Wiersz nad paskiem stopki `sticky` (np. pasek wsparcia z licznikiem). */
   above?: ReactNode;
+  actions?: ReactNode;
 };
 
 const MotionLink = motion(Link);
@@ -61,7 +62,7 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, above }: SiteFooterProps) {
+export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, above, actions }: SiteFooterProps) {
   const m = useMotionTokens();
   const columnsRow = (
     <div className="sc-footer__columns">
@@ -95,6 +96,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
       <footer role="contentinfo" className="sc-footer" data-sticky>
         <div className="sc-footer__bar">
           <div className="sc-footer__brand">{brand}</div>
+          {actions}
           <details className="sc-footer__more" onKeyDown={event => {
             if (event.key === "Escape") {
               event.currentTarget.open = false;
@@ -144,6 +146,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
       </div>
 
       {columnsRow}
+      {actions}
 
       {bottom && <div className="sc-footer__bottom sc-t-caption sc-text-3">{bottom}</div>}
     </footer>

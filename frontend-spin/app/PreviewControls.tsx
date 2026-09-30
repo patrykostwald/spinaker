@@ -1,6 +1,8 @@
 "use client";
 import { useFeature, usePreview, SupportBar, siteNavigation } from '@spin-clinic/ui';
 import { SiteFooter } from '@spin-clinic/ui/kit';
+import { usePathname } from 'next/navigation';
+import { HowToRead } from '@spin-clinic/ui';
 import { PwaControls } from './PwaControls';
 
 export function PreviewBanner() {
@@ -14,6 +16,7 @@ export function PreviewPwa() {
   return enabled ? <PwaControls /> : null;
 }
 export function FeatureFooter() {
+  const pathname = usePathname();
   const APP_ENABLED = useFeature('APP_ENABLED');
   const PUSH_ENABLED = useFeature('PUSH_ENABLED');
   return (
@@ -24,6 +27,7 @@ export function FeatureFooter() {
               { label: 'Zainstaluj aplikację', href: '#zainstaluj-aplikacje' },
               ...(PUSH_ENABLED ? [{ label: 'Powiadomienia', href: '#powiadomienia' }] : []),
             ] }] : siteNavigation.footer}
+            actions={pathname?.startsWith("/klinika") ? <HowToRead interview={pathname.startsWith("/klinika/wywiady")} /> : null}
             above={<SupportBar />}
             sticky
           />

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Dialog } from "../Dialog";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Party, SpinAuthor, SpinCardData, SpinScale as SpinScaleData, Verdict } from "../../lib/clinic";
 import { sharePercent, techniqueLabel } from "../../lib/clinic";
@@ -161,16 +162,19 @@ export function SpinScale({ scale }: { scale: SpinScaleData }) {
 
 /** „Jak czytać wynik” — krótko, żeby nikt nie czytał 70/100 jako „70% kłamstwa” (audyt 046). */
 export function HowToRead({ interview = false }: { interview?: boolean }) {
-  return <details className="sc-howto">
-    <summary>Jak czytać wynik?</summary>
+  const [open, setOpen] = useState(false);
+  return <>
+    <button type="button" className="sc-howto-trigger" aria-haspopup="dialog" onClick={() => setOpen(true)}>Jak czytać wynik?</button>
+    <Dialog open={open} onClose={() => setOpen(false)} title="Jak czytać wynik?" className="sc-howto-panel">
     <dl>
       <div><dt>Siła spinu 0–100</dt><dd>Jak mocno {interview ? "wypowiedź opiera" : "komunikat opiera"} się na technikach perswazji. To nie procent kłamstwa i nie ocena osoby.</dd></div>
       <div><dt>Konsylium AI</dt><dd>Ile modeli wydało ten sam werdykt co diagnoza końcowa, np. 3/4.</dd></div>
       <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne albo wprowadzające w błąd. „Niezweryfikowane” znaczy: bez źródła — nie że to fałsz.</dd></div>
       <div><dt>Techniki</dt><dd>Ile różnych technik wskazano, z dosłownym cytatem, w trzech rodzinach: dane, emocje, spór.</dd></div>
     </dl>
-    <p><a href="/metodologia">Pełna metodologia →</a></p>
-  </details>;
+    <Link className="sc-howto-methodology" href="/metodologia">Pełna metodologia →</Link>
+    </Dialog>
+  </>;
 }
 
 /** Stick only when the whole panel fits below the site header. Recheck after images/fonts/layout change. */

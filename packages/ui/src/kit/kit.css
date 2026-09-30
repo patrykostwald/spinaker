@@ -6294,3 +6294,40 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-message-detail__camp { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 32px; }
   .sc-message-detail__source-column { position: sticky; top: 104px; max-height: calc(100dvh - 120px); overflow-y: auto; scrollbar-gutter: stable; }
 }
+
+/* Poprawki testera 2 (zlecenie 058) */
+.sc-participant-tabs { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; padding: 4px; }
+.sc-participant-tabs button { flex: 0 0 auto; white-space: nowrap; }
+.sc-participant-tabs button[aria-selected="true"] { border-color: var(--sc-accent); box-shadow: inset 0 -3px var(--sc-accent); font-weight: 700; }
+.sc-interview-full [role="tabpanel"] { min-width: 0; scroll-margin-top: 112px; }
+.sc-participant-result { padding: 24px; background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); }
+.sc-participant-result .sc-scan-m-lbl { white-space: normal; font-size: 14px; }
+.sc-participant-result h2 span { font-weight: 400; }
+.sc-participant-result__score { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-block: 16px; }
+.sc-participant-result .sc-scan-m-num { margin: 0; font-size: 48px !important; line-height: 1.2 !important; }
+.sc-participant-result .sc-scan-m-num small { font-size: 20px; }
+.sc-participant-result .sc-scan-g { width: 100%; height: auto; }
+.sc-participant-result .sc-scan-g-scale { font-size: 14px; }
+.sc-howto-trigger { min-height: 44px; padding: 8px; border: 0; background: transparent; color: var(--sc-accent); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.sc-dialog-backdrop:has(.sc-howto-panel) { justify-items: end; }
+.sc-howto-panel { width: min(100%, 440px); max-height: calc(100dvh - 32px); font-family: var(--sc-font-sans); font-size: 16px; line-height: 1.6; }
+.sc-howto-panel dl { display: grid; gap: 24px; margin: 0 0 24px; }
+.sc-howto-panel dt { font-weight: 700; }
+.sc-howto-panel dd { margin: 4px 0 0; }
+.sc-howto-methodology { display: flex; align-items: center; justify-content: center; min-height: 56px; padding: 8px 16px; border-radius: var(--sc-r-md); background: var(--sc-accent); color: var(--sc-on-accent); font-weight: 700; text-decoration: none; }
+.sc-share-cta, .sc-interview-full__share > summary.sc-share-cta { display: flex; align-items: center; gap: 16px; box-sizing: border-box; width: 100%; min-width: 0; min-height: 88px; padding: 20px; border: 1px solid var(--sc-accent); border-radius: var(--sc-r-lg); background: var(--sc-accent); color: var(--sc-on-accent); font: inherit; line-height: 1.5; text-align: left; text-decoration: none; cursor: pointer; list-style: none; }
+.sc-share-cta::-webkit-details-marker { display: none; }
+.sc-share-cta__icon { flex: 0 0 28px; width: 28px; height: 28px; }
+.sc-share-cta > span { min-width: 0; overflow-wrap: anywhere; }
+.sc-share-cta strong { display: block; font-size: 20px; }
+.sc-share-cta span span { display: block; margin-top: 4px; font-size: 16px; }
+.sc-share-cta:hover, .sc-howto-methodology:hover { box-shadow: inset 0 0 0 2px var(--sc-on-accent); }
+.sc-share-cta:focus-visible, .sc-howto-trigger:focus-visible, .sc-howto-methodology:focus-visible, .sc-interview-full [role="tabpanel"]:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 3px; }
+@media (max-width: 639px) {
+  .sc-dialog-backdrop:has(.sc-howto-panel) { padding: 0; align-items: end; }
+  .sc-howto-panel { width: 100%; max-height: 90dvh; border-radius: var(--sc-r-lg) var(--sc-r-lg) 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  .sc-footer__bar:has(.sc-howto-trigger) { flex-wrap: wrap; }
+  .sc-footer__bar > .sc-howto-trigger { order: 4; width: 100%; text-align: center; }
+  .sc-participant-result { padding: 16px; }
+  .sc-spin-card__links:has(.sc-share-cta) { width: 100%; flex-direction: column; align-items: stretch; }
+}
