@@ -1,5 +1,5 @@
 """Account notification endpoints; all queries are scoped to their owner."""
-from django.conf import settings
+from news.features import accounts_enabled
 from urllib.parse import quote
 from django.contrib.auth import get_user_model
 from django.http import Http404
@@ -14,10 +14,6 @@ from news.accounts import AccountWriteThrottle
 from news.notification_models import Follow, Notification, NotificationSettings
 from news.political_models import PublicFigure
 from news.schema import json_view
-
-
-def accounts_enabled():
-    return getattr(settings, 'ACCOUNTS_ENABLED', False)
 
 
 class AccountNotificationView(APIView):

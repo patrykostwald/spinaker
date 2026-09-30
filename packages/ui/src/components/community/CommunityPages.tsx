@@ -12,7 +12,7 @@ import { OpinionsPanel } from "../OpinionsPanel";
 import { FollowButton } from '../FollowButton';
 import { AccountDataState } from '../AccountPhase2';
 import { accountMessage } from '../../lib/accountPhase2';
-import { ACCOUNTS_ENABLED } from '../../lib/features';
+import { useFeature } from '../../lib/features';
 import { isUnavailable } from '../../lib/personal';
 import { getThreads } from '../../lib/api';
 import { getPortalConfig } from '../../lib/portal';
@@ -61,6 +61,7 @@ function ThreadCardLink({ thread }: { thread: CommunityThreadSummary }) {
 }
 
 export function CommunityThreadsPage({ context = {} }: { context?: { article_id?: number; figure_id?: number; url?: string } }) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
   const [sort, setSort] = useState<'new' | 'best'>('new');

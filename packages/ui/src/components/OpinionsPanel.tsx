@@ -8,7 +8,7 @@ import { formatDateTimePl } from "../lib/utils";
 import { AccountDialog } from "./AccountDialog";
 import { CommentReportButton } from "./CommentReportButton";
 import { Button, RadioGroup, Reveal } from "../kit";
-import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
 import { isUnavailable } from '../lib/personal';
 import { accountMessage } from '../lib/accountPhase2';
 
@@ -72,5 +72,6 @@ function OpinionsPanelInner({ endpoint, labels, reportKind }: { endpoint: string
 
 /** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
 export function OpinionsPanel(props: Parameters<typeof OpinionsPanelInner>[0]) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   return ACCOUNTS_ENABLED ? <OpinionsPanelInner {...props} /> : null;
 }

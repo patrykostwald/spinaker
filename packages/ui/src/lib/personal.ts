@@ -1,7 +1,7 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { ApiError, apiFetch, apiWrite } from './api';
 import { useAccount, type SavedTopic } from './account';
-import { THREADS_ENABLED } from './features';
+import { useFeature } from './features';
 
 /* ——— Kształty odpowiedzi z backend/news/personal_context.py, profiles.py i accounts.py ——— */
 
@@ -90,6 +90,7 @@ export function useOwnerId() {
 }
 
 export function usePersonalThreads() {
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const { ownerId } = useOwnerId();
   return useQuery({
     queryKey: personalKeys.threads(ownerId),

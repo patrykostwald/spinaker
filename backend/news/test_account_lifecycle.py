@@ -181,7 +181,7 @@ def test_publication_blocked_across_opinion_endpoints(user):
 
 
 def test_public_thread_requires_verification_but_private_save_works(user, monkeypatch):
-    monkeypatch.setenv('THREADS_ENABLED', 'true')
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
     source = Source.objects.create(name='Source', url='https://example.org')
     articles = [Article.objects.create(source=source, title=f'Article {i}', url=f'https://example.org/{i}') for i in range(2)]
     client = APIClient()

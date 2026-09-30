@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 import requests
 from django.conf import settings
+from news.features import accounts_enabled
 from django.http import HttpResponseRedirect
 from hashlib import sha256
 
@@ -167,8 +168,8 @@ class AccountMeView(APIView):
         return Response({'authenticated': request.user.is_authenticated,
                          'user': user_data(request.user) if request.user.is_authenticated else None,
                          'csrfToken': get_token(request),
-                         'accounts_enabled': settings.ACCOUNTS_ENABLED,
-                         'google_enabled': bool(settings.ACCOUNTS_ENABLED and settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET)})
+                         'accounts_enabled': accounts_enabled(),
+                         'google_enabled': bool(accounts_enabled() and settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET)})
 
     def patch(self, request):
         AccountEnabled().has_permission(request, self)

@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import './pwa.css';
+import { useFeature } from '@spin-clinic/ui';
 
 type InstallPrompt = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Config = { enabled: boolean; public_key: string; csrfToken: string; consent_version: string; results: { endpoint: string; topics: string[] }[] };
 const topics = [['spin-dnia', 'Spin dnia'], ['nitki-dr-spina', 'Nitki Dr. Spina'], ['obserwowani', 'Obserwowani (po zalogowaniu)']];
-const pushEnabled = process.env.NEXT_PUBLIC_PUSH_ENABLED === 'true';
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
 export function PwaControls() {
+  const pushEnabled = useFeature('PUSH_ENABLED');
   const dialog = useRef<HTMLDialogElement>(null);
   const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
   const [ios, setIos] = useState(false);
@@ -61,7 +62,7 @@ export function PwaControls() {
       window.removeEventListener('hashchange', onHash);
       document.removeEventListener('click', onLink, true);
     };
-  }, []);
+  }, [pushEnabled]);
 
   async function loadConfig() {
     const response = await fetch('/api/push/subscriptions/', { credentials: 'same-origin', cache: 'no-store' });
@@ -80,7 +81,7 @@ export function PwaControls() {
       if (!cancelled) setSelected(data.results.find(row => row.endpoint === subscription?.endpoint)?.topics || []);
     }).catch(error => { if (!cancelled) setMessage(error.message); });
     return () => { cancelled = true; };
-  }, [mode, opened]);
+  }, [mode, opened, pushEnabled]);
 
   function dismiss() {
     setBanner(false);

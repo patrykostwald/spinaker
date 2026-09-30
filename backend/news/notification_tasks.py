@@ -24,8 +24,8 @@ def _deliver_event(event):
         recipients = Follow.objects.filter(figure=figure, created_at__lte=event.created_at)
         kind, title, url = 'followed_diagnosis', f'Nowa diagnoza: {figure.canonical_name}', f'/klinika/{diagnosis.pk}'
     elif event.kind == 'thread':
-        from news.community import public_threads, threads_enabled
-        if not threads_enabled():
+        from news.community import public_threads
+        if not settings.THREADS_ENABLED:
             return
         thread = public_threads().filter(pk=event.target_id).select_related('owner').first()
         if not thread:
@@ -33,9 +33,9 @@ def _deliver_event(event):
         recipients = Follow.objects.filter(target_user=thread.owner, created_at__lte=event.created_at).exclude(user=thread.owner)
         kind, title, url = 'followed_thread', f'{thread.owner.username}: {thread.title}', f'/nitki/{thread.pk}'
     elif event.kind == 'reply':
-        from news.community import public_threads, threads_enabled
+        from news.community import public_threads
         from news.community_models import CommunityThreadOpinion
-        if not threads_enabled():
+        if not settings.THREADS_ENABLED:
             return
         opinion = CommunityThreadOpinion.objects.select_related('thread', 'user').filter(pk=event.target_id, thread__in=public_threads()).first()
         if not opinion:

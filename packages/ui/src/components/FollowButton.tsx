@@ -4,12 +4,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '../kit';
 import { apiWrite } from '../lib/api';
 import { useAccount } from '../lib/account';
-import { ACCOUNTS_ENABLED, THREADS_ENABLED } from '../lib/features';
+import { useFeature } from '../lib/features';
 import { isUnavailable } from '../lib/personal';
 import { accountMessage, useFollows, type FollowKind } from '../lib/accountPhase2';
 import { AccountDialog } from './AccountDialog';
 
 export function FollowButton(props: { kind: FollowKind; targetId: number; label: string }) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   return ACCOUNTS_ENABLED && (props.kind !== 'thread' || THREADS_ENABLED) ? <FollowControl {...props} /> : null;
 }
 function FollowControl({ kind, targetId, label }: { kind: FollowKind; targetId: number; label: string }) {

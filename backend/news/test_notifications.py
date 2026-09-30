@@ -18,7 +18,7 @@ pytestmark = pytest.mark.django_db
 def enabled(settings, monkeypatch):
     settings.ACCOUNTS_ENABLED = True
     settings.PUSH_ENABLED = False
-    monkeypatch.setenv('THREADS_ENABLED', 'true')
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
 
 
 @pytest.fixture

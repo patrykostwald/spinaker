@@ -12,7 +12,7 @@ from news.topics import TOPICS
 
 @pytest.fixture
 def fixture(monkeypatch):
-    monkeypatch.setenv('THREADS_ENABLED', 'true')
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
     owner = get_user_model().objects.create_user('author')
     source = Source.objects.create(name='Source', url='https://example.org', is_active=True)
     article = Article.objects.create(source=source, title='Material', url='https://example.org/material')
@@ -80,5 +80,5 @@ def test_filters_validate_and_feature_flag_still_gates(fixture, monkeypatch):
     client = APIClient()
     for params in ({'article_id': '-1'}, {'figure_id': 'x'}, {'topic': 'not-a-topic'}, {'sort': 'invented'}, {'url': 'file:///etc/hosts'}):
         assert client.get('/api/community/threads/', params).status_code == 400
-    monkeypatch.setenv('THREADS_ENABLED', 'false')
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', False)
     assert client.get('/api/community/threads/?sort=best').status_code == 404

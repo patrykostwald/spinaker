@@ -7,7 +7,7 @@ import { apiFetch, apiWrite } from '../lib/api';
 import { accountEmail, emailVerified, useAccount } from '../lib/account';
 import { accountHref, accountMessage, useFollows, useNotifications, type NotificationSettings } from '../lib/accountPhase2';
 import { isUnavailable, useSavedTopics } from '../lib/personal';
-import { PUSH_ENABLED, THREADS_ENABLED } from '../lib/features';
+import { useFeature } from '../lib/features';
 import { getPortalConfig } from '../lib/portal';
 import { getPublicFigures, usePublicFigure, verifiedXAccount } from '../lib/publicFigures';
 import { searchClinicSpins } from '../lib/clinic';
@@ -44,6 +44,7 @@ function LatestDiagnosis({ figureId }: { figureId: number }) {
   return <ul>{spins.data.results.slice(0, 2).map(spin => <li key={spin.id}><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></li>)}</ul>;
 }
 export function FollowedSection() {
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const follows = useFollows();
   return <PanelSection id="obserwowani" title="Obserwowani">
     <AccountDataState query={follows} />
@@ -93,6 +94,8 @@ export function VerifyEmailNotice() {
 }
 
 export function AccountSettings() {
+  const PUSH_ENABLED = useFeature('PUSH_ENABLED');
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const account = useAccount(); const cache = useQueryClient(); const ownerId = account.data?.user?.id;
   const profile = useQuery({ queryKey: ['account-profile', ownerId], queryFn: () => apiFetch<{ username: string; public_activity: boolean }>('/api/account/profile/'), retry: false, enabled: Boolean(ownerId) });
   const settings = useQuery({ queryKey: ['notification-settings', ownerId], queryFn: () => apiFetch<NotificationSettings>('/api/account/notification-settings/'), retry: false, enabled: Boolean(ownerId) });

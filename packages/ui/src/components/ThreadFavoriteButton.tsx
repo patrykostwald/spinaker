@@ -7,7 +7,7 @@ import { apiFetch, apiWrite } from "../lib/api";
 import { AccountDialog } from "./AccountDialog";
 import { Button } from "../kit/Button";
 import { HeartIcon } from "../kit/icons/HeartIcon";
-import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
 
 function ThreadFavoriteButtonInner({ thread }: { thread: Pick<ThreadListItem, "id" | "published" | "title"> }) {
   const account = useAccount(); const ownerId = account.data?.user?.id; const cache = useQueryClient();
@@ -22,5 +22,6 @@ function ThreadFavoriteButtonInner({ thread }: { thread: Pick<ThreadListItem, "i
 
 /** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
 export function ThreadFavoriteButton(props: Parameters<typeof ThreadFavoriteButtonInner>[0]) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   return ACCOUNTS_ENABLED ? <ThreadFavoriteButtonInner {...props} /> : null;
 }

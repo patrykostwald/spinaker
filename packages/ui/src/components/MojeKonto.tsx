@@ -16,7 +16,7 @@ import {
   useThreadFavorites,
 } from '../lib/personal';
 import { AccountDialog } from './AccountDialog';
-import { THREADS_ENABLED } from '../lib/features';
+import { useFeature } from '../lib/features';
 import { Button } from '../kit';
 import { AccountNews, AccountOnboarding, AccountSettings, FollowedSection, NotificationsSection } from './AccountPhase2';
 import { useFollows, useNotifications } from '../lib/accountPhase2';
@@ -31,6 +31,7 @@ function plural(count: number, one: string, few: string, many: string) {
 
 /** Spokojny ekran dla osób niezalogowanych — korzysta z istniejącego okna logowania. */
 export function SignedOutPanel({ title = 'Twoje prywatne miejsce do pracy z materiałami' }: { title?: string }) {
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const [open, setOpen] = useState(false);
   return (
     <section className="sc-account sc-account-signed-out" aria-labelledby="acc-signed-out">
@@ -267,6 +268,7 @@ function ReactionsSection() {
 }
 
 function Overview() {
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const threads = usePersonalThreads();
   const topics = useSavedTopics();
   const follows = useFollows();
@@ -302,6 +304,7 @@ const NAV = [
 ];
 
 export function MojeKonto() {
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const { account, ownerId } = useOwnerId();
   if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam, czy jesteś zalogowany…</p>;
   if (account.isError) return <div className="sc-account"><QueryState query={account} unavailableText="Konta będą dostępne wkrótce. Możesz nadal czytać wiadomości i diagnozy." /></div>;

@@ -7,7 +7,7 @@ import { Button, NavMenu, SearchField } from "../kit";
 import { useAccount } from "../lib/account";
 import type { SiteConfig } from "../types";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
 import { isSiteNavigationCurrent, siteNavigation } from "../lib/siteNavigation";
 
 function HeaderSearch() {
@@ -28,6 +28,7 @@ function HeaderSearch() {
 }
 
 export function SiteHeader({ site }: { site: SiteConfig }) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const pathname = usePathname();
   const account = useAccount();
   const [first, ...rest] = site.name.split(".");

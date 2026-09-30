@@ -4,6 +4,8 @@ from urllib.parse import urlencode
 
 from celery import shared_task
 from django.conf import settings
+from news.features import accounts_enabled
+from news.preview import mail_preview_kwargs, valid_preview
 from django.contrib.auth import get_user_model, logout
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
@@ -32,8 +34,8 @@ VERIFY_SALT = 'news.account.verify.v1'
 
 
 @shared_task(ignore_result=True)
-def send_account_verification(email):
-    if not settings.ACCOUNTS_ENABLED:
+def send_account_verification(email, preview_grant=None):
+    if not (settings.ACCOUNTS_ENABLED or valid_preview(preview_grant)):
         return
     identity = AccountIdentity.objects.select_related('user').filter(email=email, email_verified=False).first()
     if identity and cache.add(f'account-verification-delivery:{identity.user_id}', True, 300):
@@ -42,7 +44,7 @@ def send_account_verification(email):
 
 def queue_verification(email):
     try:
-        send_account_verification.apply_async(args=[email], retry=False)
+        send_account_verification.apply_async(args=[email], retry=False, **mail_preview_kwargs())
     except Exception:
         import logging
         logging.getLogger(__name__).warning('Account verification queue unavailable')
@@ -109,8 +111,8 @@ class ResetInput(serializers.Serializer):
 
 
 @shared_task(ignore_result=True)
-def send_password_reset(email):
-    if not settings.ACCOUNTS_ENABLED:
+def send_password_reset(email, preview_grant=None):
+    if not (settings.ACCOUNTS_ENABLED or valid_preview(preview_grant)):
         return
     # The same task is queued for every valid address. No existence check in HTTP.
     users = list(get_user_model().objects.filter(email__iexact=email, is_active=True)[:2])
@@ -136,7 +138,7 @@ class PasswordResetView(APIView):
         from hashlib import sha256
         if cache.add('account-reset:' + sha256(email.encode()).hexdigest(), True, 300):
             try:
-                send_password_reset.apply_async(args=[email], retry=False)
+                send_password_reset.apply_async(args=[email], retry=False, **mail_preview_kwargs())
             except Exception:
                 # Broker failure must not become an account-existence oracle.
                 import logging
@@ -220,7 +222,7 @@ def update_account(request):
         queue_verification(email)
     user = get_user_model().objects.get(pk=user.pk)
     return Response({'authenticated': True, 'user': user_data(user), 'csrfToken': get_token(request),
-                     'accounts_enabled': settings.ACCOUNTS_ENABLED,
+                     'accounts_enabled': accounts_enabled(),
                      'google_enabled': bool(settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET)})
 
 

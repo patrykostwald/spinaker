@@ -51,7 +51,10 @@ INSTALLED_APPS = [
     "scraper",
 ]
 
+PREVIEW_KEY = env("PREVIEW_KEY", default="")
+
 MIDDLEWARE = [
+    "news.preview.PreviewMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",

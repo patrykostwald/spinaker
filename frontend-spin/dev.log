@@ -1,0 +1,2512 @@
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Experiments (use with caution):
+    · proxyTimeout
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 8.9s (2217 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 9346ms
+ ✓ Compiled in 843ms (995 modules)
+ GET / 200 in 96ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 587ms (1232 modules)
+ ✓ Compiled (1257 modules)
+ GET /support-progress 200 in 820ms
+ GET /icon.svg?e47f5885ca57a952 200 in 923ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 219ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled in 564ms (995 modules)
+ ✓ Compiled in 1071ms (2197 modules)
+ ✓ Compiled in 1213ms (2197 modules)
+ ✓ Compiled in 1833ms (2210 modules)
+ ✓ Compiled in 1396ms (2197 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 401ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 558ms (1233 modules)
+ ✓ Compiled (1258 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 1056ms
+ GET /support-progress 200 in 899ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 276ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled in 1479ms (2197 modules)
+ ✓ Compiled in 946ms (2193 modules)
+ ✓ Compiled in 821ms (2193 modules)
+ ✓ Compiled in 2s (2206 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 697ms
+ ✓ Compiled /support-progress in 357ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /support-progress 200 in 526ms
+ GET /icon.svg?e47f5885ca57a952 200 in 617ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 163ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 1467ms (2206 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 627ms
+ ✓ Compiled /support-progress in 208ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /support-progress 200 in 373ms
+ GET /icon.svg?e47f5885ca57a952 200 in 460ms
+ ✓ Compiled in 1338ms (2263 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 443ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 2.5s (2191 modules)
+ ✓ Compiled in 1665ms (2191 modules)
+ ✓ Compiled in 1976ms (2191 modules)
+ ✓ Compiled in 2.1s (2191 modules)
+ ✓ Compiled in 1352ms (2204 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 503ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 511ms (1230 modules)
+ ✓ Compiled (1255 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 971ms
+ GET /support-progress 200 in 850ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 347ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 63ms
+ ✓ Compiled in 948ms (2248 modules)
+ ✓ Compiled in 1496ms (2248 modules)
+ ✓ Compiled in 1837ms (2191 modules)
+ ✓ Compiled in 299ms (993 modules)
+ ✓ Compiled in 1908ms (2206 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 273ms
+ ✓ Compiled /support-progress in 309ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /support-progress 200 in 677ms
+ GET /icon.svg?e47f5885ca57a952 200 in 818ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 247ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 35ms
+ GET / 200 in 60ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+(node:14888) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ GET /support-progress 200 in 23ms
+ ✓ Compiled in 1056ms (2193 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 278ms
+ ✓ Compiled /support-progress in 256ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 499ms
+ GET /support-progress 200 in 474ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 262ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 34ms
+ ✓ Compiled in 1086ms (2263 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 232ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 14ms
+ GET / 200 in 86ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 1683ms (2263 modules)
+ ✓ Compiled in 1483ms (2206 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 488ms
+ ✓ Compiled /support-progress in 174ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /support-progress 200 in 332ms
+ GET /icon.svg?e47f5885ca57a952 200 in 401ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 164ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 1874ms (2263 modules)
+ ✓ Compiled in 784ms (2221 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 272ms
+ ✓ Compiled /support-progress in 254ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 538ms
+ GET /support-progress 200 in 439ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 140ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /support-progress 200 in 9ms
+ ⨯ ../packages/ui/src/kit/kit.css:4796:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unknown word
+
+ [90m 4794 | [39m[33m.sc-home-baza__quick[39m button[33m[[39maria-pressed=[32m"true"[39m[33m][39m [33m{[39m background[33m:[39m [36mvar[39m[36m([39m--sc-primary-bg, [36mvar[39m[36m(--sc-accent)[39m[36m)[39m[33m;[39m color[33m:[39m [36mvar[39m[36m(--sc-primary-fg, #fff)[39m[33m;[39m border-color[33m:[39m [36mvar[39m[36m(--sc-accent)[39m[33m;[39m [33m}[39m
+ [90m 4795 | [39m[33m.sc-home-baza__quick[39m button[33m:[39mfocus-visible [33m{[39m outline[33m:[39m 2px solid [36mvar[39m[36m(--sc-accent)[39m[33m;[39m outline-offset[33m:[39m 2px[33m;[39m [33m}[39m
+[1m[31m>[39m[22m[90m 4796 | [39m>>>>>>> theirs
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 4797 | [39m
+ ⨯ ../packages/ui/src/kit/kit.css:4796:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unknown word
+
+ [90m 4794 | [39m[33m.sc-home-baza__quick[39m button[33m[[39maria-pressed=[32m"true"[39m[33m][39m [33m{[39m background[33m:[39m [36mvar[39m[36m([39m--sc-primary-bg, [36mvar[39m[36m(--sc-accent)[39m[36m)[39m[33m;[39m color[33m:[39m [36mvar[39m[36m(--sc-primary-fg, #fff)[39m[33m;[39m border-color[33m:[39m [36mvar[39m[36m(--sc-accent)[39m[33m;[39m [33m}[39m
+ [90m 4795 | [39m[33m.sc-home-baza__quick[39m button[33m:[39mfocus-visible [33m{[39m outline[33m:[39m 2px solid [36mvar[39m[36m(--sc-accent)[39m[33m;[39m outline-offset[33m:[39m 2px[33m;[39m [33m}[39m
+[1m[31m>[39m[22m[90m 4796 | [39m>>>>>>> theirs
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 4797 | [39m
+ ✓ Compiled in 874ms (2206 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 279ms
+ ✓ Compiled /support-progress in 284ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 498ms
+ GET /support-progress 200 in 428ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 183ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 8ms
+ ✓ Compiled in 1512ms (2206 modules)
+ ✓ Compiled in 553ms (2193 modules)
+ ✓ Compiled in 1209ms (2206 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 295ms
+ ✓ Compiled /support-progress in 317ms (1231 modules)
+ ✓ Compiled (1256 modules)
+ GET /support-progress 200 in 530ms
+ GET /icon.svg?e47f5885ca57a952 200 in 632ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 192ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 1150ms (2263 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 398ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 14ms
+ GET / 200 in 53ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled in 1047ms (2263 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 431ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 84ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 9ms
+ ✓ Compiled in 1161ms (2263 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 494ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 9ms
+ GET / 200 in 70ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 446ms (994 modules)
+ ✓ Compiled in 780ms (2179 modules)
+ ✓ Compiled in 3.2s (2182 modules)
+ ○ Compiling /klinika ...
+ ✓ Compiled /klinika in 845ms (2200 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1143ms
+ ✓ Compiled /klinika/wskazniki in 462ms (2188 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 723ms
+ ✓ Compiled /support-progress in 246ms (1238 modules)
+ ✓ Compiled (1263 modules)
+ GET /support-progress 200 in 454ms
+ GET /icon.svg?e47f5885ca57a952 200 in 541ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 125ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 2.9s (2200 modules)
+ ✓ Compiled in 648ms (2200 modules)
+ ✓ Compiled in 581ms (2200 modules)
+ ✓ Compiled in 604ms (2200 modules)
+ ⨯ ../packages/ui/src/kit/kit.css:4938:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unknown word
+
+ [90m 4936 | [39m  [33m.sc-clinic-db[39m [33m.sc-spin-row[39m [33m{[39m grid-template-columns[33m:[39m [36mminmax[39m[36m(0, 1fr)[39m[33m;[39m [33m}[39m
+ [90m 4937 | [39m  [33m.sc-clinic-db[39m [33m.sc-spin-row__thumb[39m [33m{[39m display[33m:[39m none[33m;[39m [33m}[39m
+[1m[31m>[39m[22m[90m 4938 | [39m>>>>>>> theirs
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 4939 | [39m[33m}[39m
+ [90m 4940 | [39m
+ ⨯ ../packages/ui/src/kit/kit.css:4899:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unclosed block
+
+ [90m 4897 | [39m  [33m.sc-ind-funnel__bar[39m [33m{[39m grid-column[33m:[39m 1 / -1[33m;[39m grid-row[33m:[39m 2[33m;[39m [33m}[39m
+ [90m 4898 | [39m[33m}[39m
+[1m[31m>[39m[22m[90m 4899 | [39m[36m@media[39m[36m [39m[36m(max-width: 560px)[39m [33m{[39m
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 4900 | [39m  [33m.sc-ind-camps[39m [33m{[39m grid-template-columns[33m:[39m [36mminmax[39m[36m(0, 1fr)[39m[33m;[39m [33m}[39m
+ [90m 4901 | [39m  [33m.sc-ind-card[39m [33m{[39m padding[33m:[39m [36mvar[39m[36m(--sc-s-4)[39m[33m;[39m [33m}[39m
+<w> [webpack.cache.PackFileCacheStrategy] Skipped not serializable cache item 'Compilation/modules|C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\loaders\css-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[2]!C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\loaders\postcss-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[3]!C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css': No serializer registered for PostCSSSyntaxError
+<w> while serializing webpack/lib/cache/PackFileCacheStrategy.PackContentItems -> webpack/lib/NormalModule -> webpack/lib/ModuleBuildError -> PostCSSSyntaxError
+ ○ Compiling /klinika/diagnozy ...
+ ⨯ ../packages/ui/src/kit/kit.css:4899:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unclosed block
+
+ [90m 4897 | [39m  [33m.sc-ind-funnel__bar[39m [33m{[39m grid-column[33m:[39m 1 / -1[33m;[39m grid-row[33m:[39m 2[33m;[39m [33m}[39m
+ [90m 4898 | [39m[33m}[39m
+[1m[31m>[39m[22m[90m 4899 | [39m[36m@media[39m[36m [39m[36m(max-width: 560px)[39m [33m{[39m
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 4900 | [39m  [33m.sc-ind-camps[39m [33m{[39m grid-template-columns[33m:[39m [36mminmax[39m[36m(0, 1fr)[39m[33m;[39m [33m}[39m
+ [90m 4901 | [39m  [33m.sc-ind-card[39m [33m{[39m padding[33m:[39m [36mvar[39m[36m(--sc-s-4)[39m[33m;[39m [33m}[39m
+ ⨯ ../packages/ui/src/kit/kit.css:4899:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unclosed block
+
+ [90m 4897 | [39m  [33m.sc-ind-funnel__bar[39m [33m{[39m grid-column[33m:[39m 1 / -1[33m;[39m grid-row[33m:[39m 2[33m;[39m [33m}[39m
+ [90m 4898 | [39m[33m}[39m
+[1m[31m>[39m[22m[90m 4899 | [39m[36m@media[39m[36m [39m[36m(max-width: 560px)[39m [33m{[39m
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 4900 | [39m  [33m.sc-ind-camps[39m [33m{[39m grid-template-columns[33m:[39m [36mminmax[39m[36m(0, 1fr)[39m[33m;[39m [33m}[39m
+ [90m 4901 | [39m  [33m.sc-ind-card[39m [33m{[39m padding[33m:[39m [36mvar[39m[36m(--sc-s-4)[39m[33m;[39m [33m}[39m
+ GET /klinika/diagnozy 500 in 3950ms
+ GET /klinika/diagnozy 500 in 17ms
+ ✓ Compiled /_error in 1888ms (2439 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 1251ms
+ ✓ Compiled /support-progress in 245ms (1280 modules)
+ ✓ Compiled (1305 modules)
+ GET /support-progress 200 in 447ms
+ GET /icon.svg?e47f5885ca57a952 200 in 534ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 159ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 9ms
+ ✓ Compiled in 1806ms (2509 modules)
+ ✓ Compiled in 4s (2439 modules)
+ ✓ Compiled in 2.1s (2452 modules)
+ ○ Compiling /klinika ...
+ ✓ Compiled /klinika in 1025ms (2440 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1371ms
+ ✓ Compiled /support-progress in 385ms (1282 modules)
+ ✓ Compiled (1307 modules)
+ GET /support-progress 200 in 675ms
+ GET /icon.svg?e47f5885ca57a952 200 in 811ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 204ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 159ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 13ms
+ GET / 200 in 99ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 14ms
+ ⨯ ../packages/ui/src/kit/kit.css:4992:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unknown word
+
+ [90m 4990 | [39m  [33m.sc-clinic-archives[39m [33m{[39m padding[33m:[39m [36mvar[39m[36m(--sc-s-4)[39m [36mvar[39m[36m(--sc-s-3)[39m[33m;[39m [33m}[39m
+ [90m 4991 | [39m[33m}[39m
+[1m[31m>[39m[22m[90m 4992 | [39m>>>>>>> theirs
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 4993 | [39m
+ ✓ Compiled in 1734ms (2456 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 261ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 589ms (1284 modules)
+ ✓ Compiled (1309 modules)
+ GET /support-progress 200 in 745ms
+ GET /icon.svg?e47f5885ca57a952 200 in 996ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 164ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 2s (2443 modules)
+ ✓ Compiled in 2.4s (2456 modules)
+ ✓ Compiled in 1639ms (2443 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 281ms
+ ✓ Compiled /support-progress in 398ms (1284 modules)
+ ✓ Compiled (1309 modules)
+ GET /support-progress 200 in 651ms
+ GET /icon.svg?e47f5885ca57a952 200 in 750ms
+ ✓ Compiled in 1636ms (2443 modules)
+ ✓ Compiled in 2.8s (2456 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 2127ms
+ ✓ Compiled /support-progress in 275ms (1284 modules)
+ ✓ Compiled (1309 modules)
+ GET /support-progress 200 in 629ms
+ GET /icon.svg?e47f5885ca57a952 200 in 714ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 185ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 35ms
+ ✓ Compiled in 1240ms (2513 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 220ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 14ms
+ GET / 200 in 65ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 604ms (1191 modules)
+ ✓ Compiled in 3.3s (2458 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 370ms
+ ✓ Compiled /support-progress in 356ms (1285 modules)
+ ✓ Compiled (1310 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 755ms
+ GET /support-progress 200 in 663ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 189ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 1473ms (2445 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 272ms
+ ✓ Compiled /support-progress in 378ms (1285 modules)
+ ✓ Compiled (1310 modules)
+ GET /support-progress 200 in 626ms
+ GET /icon.svg?e47f5885ca57a952 200 in 706ms
+ ✓ Compiled in 2.1s (2515 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 1463ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 17ms
+ GET / 200 in 66ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 16ms
+ GET / 200 in 86ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 51ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 2s (2515 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 1402ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 59ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 13ms
+ GET / 200 in 60ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 1878ms (2515 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 1224ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 54ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET / 200 in 74ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 11ms
+ GET / 200 in 72ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /support-progress 200 in 9ms
+ ✓ Compiled in 1541ms (2515 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 636ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 74ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET / 200 in 71ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 2.1s (2458 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 347ms
+ ✓ Compiled /support-progress in 320ms (1285 modules)
+ ✓ Compiled (1310 modules)
+ GET /support-progress 200 in 632ms
+ GET /icon.svg?e47f5885ca57a952 200 in 727ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 266ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled in 2.2s (2458 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 408ms
+ ✓ Compiled /support-progress in 292ms (1285 modules)
+ ✓ Compiled (1310 modules)
+ GET /support-progress 200 in 652ms
+ GET /icon.svg?e47f5885ca57a952 200 in 755ms
+ ✓ Compiled in 1849ms (2458 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 347ms
+ ✓ Compiled /support-progress in 367ms (1285 modules)
+ ✓ Compiled (1310 modules)
+ GET /support-progress 200 in 642ms
+ GET /icon.svg?e47f5885ca57a952 200 in 735ms
+ ✓ Compiled in 433ms (1192 modules)
+ ✓ Compiled in 2.1s (2445 modules)
+ ✓ Compiled in 1992ms (2458 modules)
+ ✓ Compiled in 1240ms (2445 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 328ms
+ ✓ Compiled /support-progress in 483ms (1285 modules)
+ ✓ Compiled (1310 modules)
+ GET /support-progress 200 in 771ms
+ GET /icon.svg?e47f5885ca57a952 200 in 880ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 202ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 4.6s (2502 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 243ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 22ms
+ GET /klinika/diagnozy 200 in 60ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled in 2s (2519 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 247ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled in 1879ms (2462 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 246ms
+ ✓ Compiled /support-progress in 261ms (1287 modules)
+ ✓ Compiled (1312 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 578ms
+ GET /support-progress 200 in 516ms
+ ✓ Compiled in 1739ms (2462 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 267ms
+ ✓ Compiled /support-progress in 296ms (1287 modules)
+ ✓ Compiled (1312 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 662ms
+ GET /support-progress 200 in 588ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 175ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 20ms
+ GET /klinika/diagnozy 200 in 76ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 12ms
+ GET /klinika/diagnozy 200 in 59ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 21ms
+ GET /klinika/diagnozy 200 in 70ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled in 1672ms (2462 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 791ms
+ ✓ Compiled /support-progress in 330ms (1287 modules)
+ ✓ Compiled (1312 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 718ms
+ GET /support-progress 200 in 628ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 173ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 11ms
+ GET /klinika 200 in 91ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 13ms
+ GET /klinika/diagnozy 200 in 106ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 13ms
+ GET /klinika/wskazniki 200 in 90ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ ○ Compiling /klinika/wywiady ...
+ ✓ Compiled /klinika/wywiady in 1157ms (2508 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 1405ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 18ms
+ ○ Compiling /klinika/przekazy ...
+ ✓ Compiled /klinika/przekazy in 767ms (2510 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 927ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 14ms
+ ○ Compiling /klinika/[id] ...
+ ✓ Compiled /klinika/[id] in 650ms (2498 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 4400ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 18ms
+ ○ Compiling /o-nas ...
+ ✓ Compiled /o-nas in 742ms (2501 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 954ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 26ms
+ ○ Compiling /wsparcie ...
+ ✓ Compiled /wsparcie in 785ms (2503 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 961ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 21ms
+ ○ Compiling /raport ...
+ ✓ Compiled /raport in 910ms (2505 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /raport 200 in 1037ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 19ms
+ GET / 200 in 146ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 15ms
+ GET /klinika 200 in 128ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 14ms
+ GET /klinika/diagnozy 200 in 109ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/wskazniki 200 in 125ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/wywiady 200 in 122ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 12ms
+ GET /klinika/przekazy 200 in 90ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/1041 200 in 206ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ GET /o-nas 200 in 89ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 14ms
+ GET /wsparcie 200 in 67ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 14ms
+ GET /raport 200 in 34ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled in 5.7s (2454 modules)
+ ⨯ ../packages/ui/src/kit/kit.css:5319:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unknown word
+
+ [90m 5317 | [39m  [33m.sc-onas-toc[39m [33m.sc-onas-toc__mobile[39m ol [33m{[39m display[33m:[39m grid[33m;[39m overflow[33m:[39m visible[33m;[39m [33m}[39m
+ [90m 5318 | [39m  [33m.sc-onas-toc[39m [33m.sc-onas-toc__mobile[39m a [33m{[39m white-space[33m:[39m normal[33m;[39m [33m}[39m
+[1m[31m>[39m[22m[90m 5319 | [39m>>>>>>> theirs
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 5320 | [39m[33m}[39m
+ [90m 5321 | [39m
+ ⨯ ../packages/ui/src/kit/home/HomeSpinScanner.tsx
+Error: 
+  [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\home\HomeSpinScanner.tsx[0m:1:1]
+ [2m1[0m | import { agreementLabel, techniqueLabel } from "../../lib/clinic";
+ [2m2[0m | ﻿"use client";
+   : [31;1m   ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | import Link from "next/link";
+ [2m4[0m | import { FAMILY_OF } from "../../lib/techniqueFamilies";
+   `----
+
+Import trace for requested module:
+../packages/ui/src/kit/home/HomeSpinScanner.tsx
+../packages/ui/src/kit/home/HomeSpinTeaser.tsx
+../packages/ui/src/kit/home/HomePage.tsx
+ ⨯ ../packages/ui/src/kit/home/HomeSpinScanner.tsx
+Error: 
+  [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\home\HomeSpinScanner.tsx[0m:1:1]
+ [2m1[0m | import { agreementLabel, techniqueLabel } from "../../lib/clinic";
+ [2m2[0m | ﻿"use client";
+   : [31;1m   ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | import Link from "next/link";
+ [2m4[0m | import { FAMILY_OF } from "../../lib/techniqueFamilies";
+   `----
+
+Import trace for requested module:
+../packages/ui/src/kit/home/HomeSpinScanner.tsx
+../packages/ui/src/components/clinic/ClinicPage.tsx
+ ○ Compiling /_not-found ...
+ ⨯ ../packages/ui/src/kit/home/HomeSpinScanner.tsx
+Error: 
+  [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\home\HomeSpinScanner.tsx[0m:1:1]
+ [2m1[0m | import { agreementLabel, techniqueLabel } from "../../lib/clinic";
+ [2m2[0m | ﻿"use client";
+   : [31;1m   ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | import Link from "next/link";
+ [2m4[0m | import { FAMILY_OF } from "../../lib/techniqueFamilies";
+   `----
+
+Import trace for requested module:
+../packages/ui/src/kit/home/HomeSpinScanner.tsx
+../packages/ui/src/components/clinic/ClinicPage.tsx
+ GET / 500 in 889ms
+ ⨯ ../packages/ui/src/kit/home/HomeSpinScanner.tsx
+Error: 
+  [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\home\HomeSpinScanner.tsx[0m:1:1]
+ [2m1[0m | import { agreementLabel, techniqueLabel } from "../../lib/clinic";
+ [2m2[0m | ﻿"use client";
+   : [31;1m   ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | import Link from "next/link";
+ [2m4[0m | import { FAMILY_OF } from "../../lib/techniqueFamilies";
+   `----
+
+Import trace for requested module:
+../packages/ui/src/kit/home/HomeSpinScanner.tsx
+../packages/ui/src/components/clinic/ClinicPage.tsx
+ GET /klinika 500 in 430ms
+ ⨯ ../packages/ui/src/kit/home/HomeSpinScanner.tsx
+Error: 
+  [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\home\HomeSpinScanner.tsx[0m:1:1]
+ [2m1[0m | import { agreementLabel, techniqueLabel } from "../../lib/clinic";
+ [2m2[0m | ﻿"use client";
+   : [31;1m   ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | import Link from "next/link";
+ [2m4[0m | import { FAMILY_OF } from "../../lib/techniqueFamilies";
+   `----
+
+Import trace for requested module:
+../packages/ui/src/kit/home/HomeSpinScanner.tsx
+../packages/ui/src/components/clinic/ClinicPage.tsx
+ GET /klinika/diagnozy 500 in 459ms
+ ⨯ ../packages/ui/src/kit/home/HomeSpinScanner.tsx
+Error: 
+  [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\home\HomeSpinScanner.tsx[0m:1:1]
+ [2m1[0m | import { agreementLabel, techniqueLabel } from "../../lib/clinic";
+ [2m2[0m | ﻿"use client";
+   : [31;1m   ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | import Link from "next/link";
+ [2m4[0m | import { FAMILY_OF } from "../../lib/techniqueFamilies";
+   `----
+
+Import trace for requested module:
+../packages/ui/src/kit/home/HomeSpinScanner.tsx
+../packages/ui/src/components/clinic/ClinicPage.tsx
+ GET /klinika/wskazniki 500 in 376ms
+ ⨯ ../packages/ui/src/kit/home/HomeSpinScanner.tsx
+Error: 
+  [31mx[0m The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\home\HomeSpinScanner.tsx[0m:1:1]
+ [2m1[0m | import { agreementLabel, techniqueLabel } from "../../lib/clinic";
+ [2m2[0m | ﻿"use client";
+   : [31;1m   ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | import Link from "next/link";
+ [2m4[0m | import { FAMILY_OF } from "../../lib/techniqueFamilies";
+   `----
+
+Import trace for requested module:
+../packages/ui/src/kit/home/HomeSpinScanner.tsx
+../packages/ui/src/components/clinic/ClinicPage.tsx
+ GET /klinika/wywiady 500 in 399ms
+ GET /klinika/przekazy 500 in 11ms
+ GET /klinika/1041 500 in 9ms
+ GET /o-nas 500 in 10ms
+ GET /wsparcie 500 in 9ms
+ GET /raport 500 in 9ms
+ GET / 500 in 9ms
+ GET /klinika 500 in 8ms
+ GET /klinika/diagnozy 500 in 10ms
+ GET /klinika/wskazniki 500 in 11ms
+ GET /klinika/wywiady 500 in 10ms
+ GET /klinika/przekazy 500 in 13ms
+ GET /klinika/1041 500 in 9ms
+ GET /o-nas 500 in 11ms
+ GET /wsparcie 500 in 9ms
+ GET /raport 500 in 8ms
+ ✓ Compiled /klinika/wywiady in 2.1s (2457 modules)
+motion() is deprecated. Use motion.create() instead.
+ ✓ Compiled /support-progress in 483ms (1294 modules)
+ ✓ Compiled (1319 modules)
+ GET /support-progress 200 in 803ms
+ GET /icon.svg?e47f5885ca57a952 200 in 927ms
+ ○ Compiling /klinika ...
+ ✓ Compiled /klinika in 1105ms (1319 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1550ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 27ms
+ ✓ Compiled /klinika/diagnozy in 455ms (1319 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 838ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /klinika/wskazniki in 459ms (1321 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 800ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled /klinika/wywiady in 332ms (1320 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 633ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /klinika/przekazy in 411ms (1320 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 699ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 23ms
+ ✓ Compiled /klinika/[id] in 349ms (1320 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 625ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /o-nas in 443ms (1323 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 655ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /wsparcie in 392ms (1325 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 564ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 129ms
+ ✓ Compiled /raport in 482ms (1327 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /raport 200 in 732ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 17ms
+ GET / 200 in 142ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ GET /klinika 200 in 125ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/diagnozy 200 in 120ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/wskazniki 200 in 84ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/wywiady 200 in 92ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/przekazy 200 in 105ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/1041 200 in 164ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /support-progress 200 in 9ms
+ GET /o-nas 200 in 86ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ GET /wsparcie 200 in 87ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 9ms
+ GET /raport 200 in 70ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 1650ms (2467 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 512ms (1262 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 970ms
+ ✓ Compiled /support-progress in 493ms (1294 modules)
+ ✓ Compiled (1319 modules)
+ GET /support-progress 200 in 886ms
+ GET /icon.svg?e47f5885ca57a952 200 in 1041ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 208ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 608ms (1195 modules)
+ ✓ Compiled in 3.2s (2471 modules)
+ ✓ Compiled in 504ms (1196 modules)
+ ✓ Compiled in 1447ms (2458 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 346ms
+ ○ Compiling /icon.svg ...
+ ✓ Compiled /icon.svg in 504ms (1290 modules)
+ ✓ Compiled (1319 modules)
+ GET /support-progress 200 in 890ms
+ GET /icon.svg?e47f5885ca57a952 200 in 690ms
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 196ms
+ GET /support-progress 200 in 11ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ ✓ Compiled in 2.2s (2471 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 339ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 553ms (1294 modules)
+ ✓ Compiled (1319 modules)
+ GET /support-progress 200 in 848ms
+ GET /icon.svg?e47f5885ca57a952 200 in 945ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 167ms
+ GET /icon.svg?e47f5885ca57a952 200 in 26ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled in 1383ms (2528 modules)
+ ✓ Compiled in 697ms (1196 modules)
+ ✓ Compiled in 3.3s (2475 modules)
+ ○ Compiling /o-nas/karta-konsylium ...
+ ✓ Compiled /o-nas/karta-konsylium in 1110ms (2464 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas/karta-konsylium 200 in 1350ms
+ ✓ Compiled /support-progress in 350ms (1298 modules)
+ ✓ Compiled (1323 modules)
+ GET /support-progress 200 in 765ms
+ GET /icon.svg?e47f5885ca57a952 200 in 872ms
+ ✓ Compiled in 2.2s (2532 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas/karta-konsylium 200 in 1383ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 19ms
+ ⨯ ../packages/ui/src/kit/kit.css:5512:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unknown word
+
+ [90m 5510 | [39m  [33m.sc-spin-detail[39m [33m.sc-spin-detail__grid[39m [33m{[39m grid-template-columns[33m:[39m [36mminmax[39m[36m(0, 4fr)[39m [36mminmax[39m[36m(0, 7fr)[39m[33m;[39m [33m}[39m
+ [90m 5511 | [39m[33m}[39m
+[1m[31m>[39m[22m[90m 5512 | [39m>>>>>>> theirs
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 5513 | [39m
+ ✓ Compiled in 1780ms (2538 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 297ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 22ms
+ ○ Compiling /klinika ...
+ ✓ Compiled /klinika in 675ms (2513 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 926ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 17ms
+ ○ Compiling /klinika/diagnozy ...
+ ✓ Compiled /klinika/diagnozy in 814ms (2512 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 978ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ ○ Compiling /klinika/wskazniki ...
+ ✓ Compiled /klinika/wskazniki in 812ms (2512 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 950ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 13ms
+ ○ Compiling /klinika/wywiady ...
+ ✓ Compiled /klinika/wywiady in 791ms (2514 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 967ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 13ms
+ ○ Compiling /klinika/przekazy ...
+ ✓ Compiled /klinika/przekazy in 841ms (2513 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 996ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /klinika/[id] in 501ms (1329 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 1014ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /o-nas in 364ms (1330 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 520ms
+ GET /support-progress 200 in 14ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ ○ Compiling /wsparcie ...
+ ✓ Compiled /wsparcie in 610ms (1332 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 791ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /raport in 465ms (1334 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /raport 200 in 638ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 11ms
+ GET / 200 in 125ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 13ms
+ GET /klinika 200 in 98ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/diagnozy 200 in 90ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/wskazniki 200 in 104ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/wywiady 200 in 138ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 12ms
+ GET /klinika/przekazy 200 in 94ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/1041 200 in 177ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ GET /o-nas 200 in 87ms
+ GET /support-progress 200 in 14ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /wsparcie 200 in 105ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ GET /raport 200 in 66ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled in 4.1s (2523 modules)
+ ✓ Compiled in 1889ms (2523 modules)
+ ✓ Compiled /klinika in 384ms (1268 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 839ms
+ ✓ Compiled /support-progress in 440ms (1300 modules)
+ ✓ Compiled (1325 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 851ms
+ GET /support-progress 200 in 738ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 201ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 9ms
+ ✓ Compiled in 2.3s (2536 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1391ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled in 2s (2536 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1188ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 2.6s (2536 modules)
+ ✓ Compiled in 1660ms (2466 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 557ms (1269 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 1011ms
+ ✓ Compiled /support-progress in 425ms (1301 modules)
+ ✓ Compiled (1326 modules)
+ GET /support-progress 200 in 708ms
+ GET /icon.svg?e47f5885ca57a952 200 in 819ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 206ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /klinika/diagnozy in 422ms (1326 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 842ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /klinika/wskazniki in 349ms (1328 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 702ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ○ Compiling /klinika/wywiady ...
+ ✓ Compiled /klinika/wywiady in 919ms (1325 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 1319ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /klinika/przekazy in 336ms (1325 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 694ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /klinika/[id] in 336ms (1327 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 538ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /o-nas in 371ms (1330 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 611ms
+ GET /icon.svg?e47f5885ca57a952 200 in 23ms
+ GET /support-progress 200 in 29ms
+ ✓ Compiled /wsparcie in 438ms (1332 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 688ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 22ms
+ ✓ Compiled /raport in 429ms (1334 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /raport 200 in 597ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 161ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 21ms
+ GET /klinika 200 in 99ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/diagnozy 200 in 109ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/wskazniki 200 in 99ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/wywiady 200 in 102ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/przekazy 200 in 94ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/1041 200 in 144ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /o-nas 200 in 99ms
+ GET /support-progress 200 in 12ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /wsparcie 200 in 89ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 11ms
+ GET /raport 200 in 67ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 11ms
+ GET / 200 in 69ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 10ms
+ GET /klinika 200 in 71ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/diagnozy 200 in 65ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/wskazniki 200 in 59ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/wywiady 200 in 48ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/przekazy 200 in 75ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 12ms
+ GET /klinika/1041 200 in 122ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 10ms
+ GET /o-nas 200 in 42ms
+ GET /support-progress 200 in 11ms
+ GET /icon.svg?e47f5885ca57a952 200 in 7ms
+ GET /wsparcie 200 in 73ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 11ms
+ GET /raport 200 in 39ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 87ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 11ms
+ GET /klinika 200 in 67ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/diagnozy 200 in 62ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ GET /klinika/wskazniki 200 in 49ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/wywiady 200 in 56ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 11ms
+ GET /klinika/przekazy 200 in 58ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/1041 200 in 72ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /o-nas 200 in 62ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 13ms
+ GET /wsparcie 200 in 54ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 13ms
+ GET /raport 200 in 57ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled in 2.7s (2523 modules)
+ ✓ Compiled in 5.3s (2480 modules)
+ ✓ Compiled (2466 modules)
+ ⨯ ../packages/ui/src/components/clinic/ClinicNav.tsx
+Error: 
+  [31mx[0m Merge conflict marker encountered.
+   ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\components\clinic\ClinicNav.tsx[0m:3:1]
+ [2m3[0m | import Link from "next/link";
+ [2m4[0m | import { usePathname } from "next/navigation";
+ [2m5[0m | import { useId, useState } from "react";
+ [2m6[0m | <<<<<<< ours
+   : [31;1m^^^^^^^[0m
+ [2m7[0m | 
+ [2m8[0m | const pages = [
+ [2m8[0m |   ["/klinika", "Przegląd"], ["/klinika/diagnozy", "Diagnozy"],
+   `----
+
+  [31mx[0m Merge conflict marker encountered.
+    ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\components\clinic\ClinicNav.tsx[0m:10:1]
+ [2m10[0m |   ["/klinika/wskazniki", "Wskaźniki"], ["/klinika/wywiady", "Wywiady"],
+ [2m11[0m |   ["/klinika/przekazy", "Przekazy"], ["/klinika/raporty", "Raporty"],
+ [2m12[0m | ] as const;
+ [2m13[0m | =======
+    : [31;1m^^^^^^^[0m
+ [2m14[0m | import { clinicNavigation, isClinicNavigationCurrent } from "../../lib/siteNavigation";
+ [2m15[0m | >>>>>>> theirs
+ [2m15[0m | 
+    `----
+
+  [31mx[0m Merge conflict marker encountered.
+    ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\components\clinic\ClinicNav.tsx[0m:12:1]
+ [2m12[0m | ] as const;
+ [2m13[0m | =======
+ [2m14[0m | import { clinicNavigation, isClinicNavigationCurrent } from "../../lib/siteNavigation";
+ [2m15[0m | >>>>>>> theirs
+    : [31;1m^^^^^^^[0m
+ [2m16[0m | 
+ [2m17[0m | export function ClinicNav() {
+ [2m17[0m |   const pathname = usePathname();
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+../packages/ui/src/components/clinic/ClinicNav.tsx
+../packages/ui/src/components/clinic/ClinicArchives.tsx
+ ✓ Compiled in 1989ms (2473 modules)
+ ✓ Compiled / in 495ms (1281 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 991ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 534ms (1313 modules)
+ ✓ Compiled (1338 modules)
+ GET /support-progress 200 in 843ms
+ GET /icon.svg?e47f5885ca57a952 200 in 959ms
+ ○ Compiling /klinika ...
+ ✓ Compiled /klinika in 972ms (2547 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1257ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 16ms
+ ○ Compiling /klinika/diagnozy ...
+ ✓ Compiled /klinika/diagnozy in 990ms (2533 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 1229ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 13ms
+ ○ Compiling /klinika/wskazniki ...
+ ✓ Compiled /klinika/wskazniki in 724ms (2532 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 850ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ○ Compiling /klinika/wywiady ...
+ ✓ Compiled /klinika/wywiady in 744ms (2532 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 923ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /klinika/przekazy in 407ms (1339 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 608ms
+ GET /icon.svg?e47f5885ca57a952 200 in 30ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /klinika/[id] in 374ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 619ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 20ms
+ ✓ Compiled /o-nas in 352ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 602ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /wsparcie in 343ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 530ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 15ms
+ ○ Compiling /klinika/raporty ...
+ ✓ Compiled /klinika/raporty in 1033ms (2542 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 1551ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 21ms
+ ○ Compiling /konsylium ...
+ ✓ Compiled /konsylium in 839ms (2542 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 1007ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 21ms
+ ○ Compiling /metodologia ...
+ ✓ Compiled /metodologia in 900ms (2542 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 1039ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 14ms
+ ○ Compiling /dla-redakcji ...
+ ✓ Compiled /dla-redakcji in 934ms (2543 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 1108ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 15ms
+ ○ Compiling /konsylium/karta ...
+ ✓ Compiled /konsylium/karta in 844ms (2541 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 993ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled / in 403ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 601ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /klinika in 300ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 520ms
+ GET /icon.svg?e47f5885ca57a952 200 in 35ms
+ GET /support-progress 200 in 24ms
+ ✓ Compiled /klinika/diagnozy in 315ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 479ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /klinika/wskazniki in 280ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 454ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /klinika/wywiady in 334ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 558ms
+ GET /icon.svg?e47f5885ca57a952 200 in 24ms
+ GET /support-progress 200 in 26ms
+ ✓ Compiled /klinika/przekazy in 313ms (1339 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 556ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled /klinika/[id] in 459ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 732ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /o-nas in 306ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 523ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /wsparcie in 366ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 543ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /klinika/raporty in 343ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 688ms
+ GET /icon.svg?e47f5885ca57a952 200 in 23ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /konsylium in 335ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 537ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /metodologia in 320ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 461ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /dla-redakcji in 332ms (1348 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 508ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /konsylium/karta in 319ms (1348 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 495ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled in 5s (2553 modules)
+ ⨯ ../packages/ui/src/components/clinic/ClinicPage.tsx
+Error: 
+  [31mx[0m Unexpected token `section`. Expected jsx identifier
+     ,-[[36;1;4mC:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\components\clinic\ClinicPage.tsx[0m:146:1]
+ [2m146[0m |   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
+ [2m147[0m |   const data = query.data;
+ [2m148[0m |   return (
+ [2m149[0m |     <section className="sc-clinic sc-clinic-overview" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
+     : [31;1m     ^^^^^^^[0m
+ [2m150[0m |       {!embedded ? <ClinicNav /> : null}
+ [2m151[0m |       <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title="Dr. Spin"
+ [2m151[0m | <<<<<<< ours
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+../packages/ui/src/components/clinic/ClinicPage.tsx
+ ✓ Compiled in 1660ms (2500 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 3.2s (2503 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 2608ms
+ ✓ Compiled /support-progress in 477ms (1324 modules)
+ ✓ Compiled (1349 modules)
+ GET /support-progress 200 in 809ms
+ GET /icon.svg?e47f5885ca57a952 200 in 946ms
+ ✓ Compiled /klinika in 398ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 835ms
+ GET /icon.svg?e47f5885ca57a952 200 in 31ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /klinika/diagnozy in 441ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 840ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled /klinika/wskazniki in 341ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 688ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /klinika/wywiady in 467ms (1342 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 821ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /klinika/przekazy in 362ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 829ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 22ms
+ ✓ Compiled /klinika/[id] in 461ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 963ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 21ms
+ ✓ Compiled /o-nas in 442ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 871ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 22ms
+ ✓ Compiled /wsparcie in 400ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 780ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /klinika/raporty in 411ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 689ms
+ GET /icon.svg?e47f5885ca57a952 200 in 23ms
+ GET /support-progress 200 in 25ms
+ ✓ Compiled /konsylium in 340ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 542ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /metodologia in 346ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 509ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /dla-redakcji in 326ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 501ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /konsylium/karta in 347ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 509ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled / in 328ms (1351 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 516ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /klinika in 344ms (1351 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 508ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /klinika/diagnozy in 375ms (1345 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 628ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /klinika/wskazniki in 361ms (1345 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 560ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 21ms
+ ✓ Compiled /klinika/wywiady in 332ms (1345 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 518ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled /klinika/przekazy in 291ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 497ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /klinika/[id] in 319ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 573ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /o-nas in 325ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 529ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /wsparcie in 328ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 490ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /klinika/raporty in 339ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 585ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 21ms
+ ✓ Compiled /konsylium in 334ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 538ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /metodologia in 331ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 479ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /dla-redakcji in 331ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 502ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /konsylium/karta in 334ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 487ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled in 3s (2500 modules)
+ ✓ Compiled in 4.7s (2513 modules)
+ ✓ Compiled in 2.2s (2500 modules)
+ ✓ Compiled /klinika in 475ms (1291 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 939ms
+ ✓ Compiled /support-progress in 362ms (1323 modules)
+ ✓ Compiled (1348 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 809ms
+ GET /support-progress 200 in 709ms
+ ○ Compiling / ...
+ ✓ Compiled / in 946ms (1286 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 1431ms
+ GET / 200 in 84ms
+ ✓ Compiled /support-progress in 378ms (1318 modules)
+ ✓ Compiled (1343 modules)
+ GET /support-progress 200 in 755ms
+ GET /icon.svg?e47f5885ca57a952 200 in 857ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 198ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled /klinika/diagnozy in 431ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 796ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 21ms
+ ✓ Compiled /klinika/wskazniki in 396ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 713ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /klinika/wywiady in 411ms (1342 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 721ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /klinika/przekazy in 322ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 698ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 18ms
+ ○ Compiling /klinika/[id] ...
+ ✓ Compiled /klinika/[id] in 863ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 1354ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /o-nas in 427ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 818ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /wsparcie in 427ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 783ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 18ms
+ ○ Compiling /klinika/raporty ...
+ ✓ Compiled /klinika/raporty in 708ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 1107ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 21ms
+ ✓ Compiled /konsylium in 439ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 800ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 22ms
+ ✓ Compiled /metodologia in 342ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 654ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /dla-redakcji in 342ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 676ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /konsylium/karta in 316ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 649ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 16ms
+ ○ Compiling /osoby-publiczne ...
+ ✓ Compiled /osoby-publiczne in 1174ms (2561 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /osoby-publiczne 200 in 1329ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ ○ Compiling /zrodla ...
+ ✓ Compiled /zrodla in 1019ms (2551 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /zrodla 200 in 1165ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 13ms
+ ○ Compiling /newsletter ...
+ ✓ Compiled /newsletter in 965ms (2545 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /newsletter 200 in 1207ms
+ GET /icon.svg?e47f5885ca57a952 200 in 30ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled / in 324ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 551ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled /klinika in 294ms (1344 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 617ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /klinika/diagnozy in 305ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 497ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 24ms
+ ✓ Compiled /klinika/wskazniki in 273ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 462ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /klinika/wywiady in 323ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 547ms
+ GET /icon.svg?e47f5885ca57a952 200 in 27ms
+ GET /support-progress 200 in 32ms
+ ✓ Compiled /klinika/przekazy in 304ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 527ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /klinika/[id] in 290ms (1340 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 476ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /o-nas in 338ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 552ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled /wsparcie in 312ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 497ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /klinika/raporty in 328ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 603ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /konsylium in 401ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 598ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled /metodologia in 316ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 464ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /dla-redakcji in 412ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 585ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 28ms
+ ✓ Compiled /konsylium/karta in 314ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 453ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /osoby-publiczne in 392ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /osoby-publiczne 200 in 558ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /zrodla in 332ms (1352 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /zrodla 200 in 472ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /newsletter in 315ms (1346 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /newsletter 200 in 541ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled in 4.7s (2555 modules)
+ ✓ Compiled /klinika/[id] in 481ms (1344 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 1163ms
+ GET /icon.svg?e47f5885ca57a952 200 in 31ms
+ GET /support-progress 200 in 21ms
+ ○ Compiling /konsylium ...
+ ✓ Compiled /konsylium in 2.7s (2512 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 2142ms
+ ✓ Compiled /support-progress in 345ms (1318 modules)
+ ✓ Compiled (1343 modules)
+ GET /support-progress 200 in 678ms
+ GET /icon.svg?e47f5885ca57a952 200 in 778ms
+ ✓ Compiled in 1225ms (2553 modules)
+ ✓ Compiled in 4.6s (2509 modules)
+ ✓ Compiled / in 451ms (1286 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 940ms
+ ✓ Compiled /support-progress in 444ms (1318 modules)
+ ✓ Compiled (1343 modules)
+ GET /support-progress 200 in 781ms
+ GET /icon.svg?e47f5885ca57a952 200 in 906ms
+ ✓ Compiled /klinika in 429ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 846ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /klinika/diagnozy in 427ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 788ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /klinika/wskazniki in 330ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 670ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 13ms
+ ○ Compiling /klinika/wywiady ...
+ ✓ Compiled /klinika/wywiady in 626ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 1115ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 25ms
+ ✓ Compiled /klinika/przekazy in 335ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 767ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled /klinika/[id] in 377ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 622ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /o-nas in 379ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 780ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /wsparcie in 349ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 673ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /klinika/raporty in 338ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 711ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 19ms
+ ○ Compiling /konsylium ...
+ ✓ Compiled /konsylium in 898ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 1100ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /metodologia in 411ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 781ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /dla-redakcji in 349ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 700ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /konsylium/karta in 343ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 675ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /osoby-publiczne in 339ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /osoby-publiczne 200 in 494ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /zrodla in 320ms (1352 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /zrodla 200 in 460ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /newsletter in 390ms (1346 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /newsletter 200 in 590ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled / in 356ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 573ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 16ms
+ ✓ Compiled /klinika in 406ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 576ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /klinika/diagnozy in 375ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 587ms
+ GET /icon.svg?e47f5885ca57a952 200 in 27ms
+ GET /support-progress 200 in 23ms
+ ✓ Compiled /klinika/wskazniki in 337ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 531ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /klinika/wywiady in 282ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 445ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled /klinika/przekazy in 309ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/przekazy 200 in 483ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /klinika/[id] in 393ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1041 200 in 593ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /o-nas in 316ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 527ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /wsparcie in 382ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /wsparcie 200 in 536ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /klinika/raporty in 325ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/raporty 200 in 569ms
+ GET /icon.svg?e47f5885ca57a952 200 in 16ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled /konsylium in 403ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 578ms
+ GET /icon.svg?e47f5885ca57a952 200 in 22ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /metodologia in 362ms (1349 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 520ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /dla-redakcji in 404ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /dla-redakcji 200 in 579ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled /konsylium/karta in 321ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium/karta 200 in 475ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled /osoby-publiczne in 392ms (1350 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /osoby-publiczne 200 in 548ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /zrodla in 308ms (1352 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /zrodla 200 in 477ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled /newsletter in 390ms (1346 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /newsletter 200 in 577ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled in 1974ms (2568 modules)
+ ✓ Compiled / in 415ms (1345 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 806ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 32ms
+ GET / 200 in 90ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 9ms
+ GET / 200 in 84ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ ○ Compiling /konsylium ...
+ ✓ Compiled /konsylium in 532ms (1287 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 973ms
+ ✓ Compiled /icon.svg in 495ms (1315 modules)
+ ✓ Compiled (1344 modules)
+ GET /support-progress 200 in 959ms
+ GET /icon.svg?e47f5885ca57a952 200 in 707ms
+ ✓ Compiled in 3.6s (2497 modules)
+ ✓ Compiled in 611ms (1213 modules)
+ ✓ Compiled in 1615ms (2497 modules)
+ ✓ Compiled in 2.4s (2497 modules)
+ ✓ Compiled in 1758ms (2510 modules)
+ ✓ Compiled /klinika in 459ms (1286 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1055ms
+ ✓ Compiled /support-progress in 370ms (1318 modules)
+ ✓ Compiled (1343 modules)
+ GET /support-progress 200 in 886ms
+ GET /icon.svg?e47f5885ca57a952 200 in 985ms
+ ✓ Compiled /klinika/wskazniki in 386ms (1343 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 830ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 18ms
+ ✓ Compiled in 10.7s (2565 modules)
+ ✓ Compiled in 2.4s (2552 modules)
+ ○ Compiling /metodologia ...
+ ✓ Compiled /metodologia in 1450ms (1285 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 1885ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 504ms (1317 modules)
+ ✓ Compiled (1342 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 982ms
+ GET /support-progress 200 in 906ms
+ ✓ Compiled in 1588ms (2496 modules)
+ ✓ Compiled in 2.1s (2496 modules)
+ ✓ Compiled in 2.1s (2509 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 258ms
+ ✓ Compiled /support-progress in 326ms (1315 modules)
+ ✓ Compiled (1340 modules)
+ GET /support-progress 200 in 783ms
+ GET /icon.svg?e47f5885ca57a952 200 in 886ms
+motion() is deprecated. Use motion.create() instead.
+ GET /metodologia 200 in 192ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled in 1782ms (2566 modules)
+ ✓ Compiled in 2.8s (2566 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1623ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 14ms
+ GET /klinika/wskazniki 200 in 107ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 10ms
+ ✓ Compiled in 3.1s (2496 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 2407ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 561ms (1315 modules)
+ ✓ Compiled (1340 modules)
+ GET /support-progress 200 in 862ms
+ GET /icon.svg?e47f5885ca57a952 200 in 933ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 391ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 54ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 12ms
+ GET / 200 in 89ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 25ms
+ GET / 200 in 48ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 16ms
+ GET / 200 in 63ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled in 5.6s (2553 modules)
+ ✓ Compiled in 4.1s (2566 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 2976ms
+ GET /icon.svg?e47f5885ca57a952 200 in 28ms
+ GET /support-progress 200 in 20ms
+ ✓ Compiled in 1998ms (2553 modules)
+ ✓ Compiled in 4s (2496 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 348ms
+ ○ Compiling /icon.svg ...
+ ✓ Compiled /icon.svg in 559ms (1311 modules)
+ ✓ Compiled (1340 modules)
+ GET /support-progress 200 in 946ms
+ GET /icon.svg?e47f5885ca57a952 200 in 715ms
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 182ms
+ GET /support-progress 200 in 10ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ ✓ Compiled in 1248ms (2496 modules)
+ ✓ Compiled in 1421ms (2496 modules)
+ ✓ Compiled in 3.8s (2509 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 398ms
+ ✓ Compiled /support-progress in 350ms (1315 modules)
+ ✓ Compiled (1340 modules)
+ GET /support-progress 200 in 916ms
+ GET /icon.svg?e47f5885ca57a952 200 in 1022ms
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 234ms
+ GET /support-progress 200 in 14ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ ✓ Compiled in 7.9s (2553 modules)
+ ✓ Compiled in 2.7s (2496 modules)
+ ✓ Compiled in 2.5s (2509 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 290ms
+ ✓ Compiled /support-progress in 378ms (1315 modules)
+ ✓ Compiled (1340 modules)
+ GET /support-progress 200 in 853ms
+ GET /icon.svg?e47f5885ca57a952 200 in 967ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 200ms
+ GET /icon.svg?e47f5885ca57a952 200 in 24ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 3.5s (2509 modules)
+ ✓ Compiled in 3.1s (2509 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1931ms
+ ✓ Compiled /support-progress in 321ms (1315 modules)
+ ✓ Compiled (1340 modules)
+ GET /support-progress 200 in 699ms
+ GET /icon.svg?e47f5885ca57a952 200 in 864ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wskazniki 200 in 280ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 23ms
+ ✓ Compiled in 5.3s (2496 modules)
+ ✓ Compiled in 1280ms (1213 modules)
+ ✓ Compiled in 664ms (1213 modules)
+ ✓ Compiled in 6.9s (2496 modules)
+ ✓ Compiled in 683ms (1213 modules)
+ ✓ Compiled in 2.2s (2509 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 807ms
+ ○ Compiling /klinika/[id] ...
+ ✓ Compiled /klinika/[id] in 732ms (1285 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1076 200 in 2113ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 765ms (1317 modules)
+ ✓ Compiled (1342 modules)
+ GET /support-progress 200 in 1304ms
+ GET /icon.svg?e47f5885ca57a952 200 in 1477ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1076 200 in 419ms
+ GET /icon.svg?e47f5885ca57a952 200 in 72ms
+ GET /support-progress 200 in 19ms
+ ✓ Compiled in 3.1s (2568 modules)
+ ✓ Compiled in 3.3s (2568 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1076 200 in 2546ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 16ms
+ GET /klinika/1076 200 in 140ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ ✓ Compiled in 3.1s (2565 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/594 200 in 1852ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 18ms
+ GET /klinika/594 200 in 124ms
+ GET /icon.svg?e47f5885ca57a952 200 in 15ms
+ GET /support-progress 200 in 25ms
+ ○ Compiling /klinika/diagnozy ...
+ ✓ Compiled /klinika/diagnozy in 978ms (1284 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 1449ms
+ ✓ Compiled /support-progress in 374ms (1316 modules)
+ ✓ Compiled (1341 modules)
+ GET /support-progress 200 in 734ms
+ GET /icon.svg?e47f5885ca57a952 200 in 846ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 177ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 2.6s (2565 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/diagnozy 200 in 1470ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 17ms
+ GET /klinika/diagnozy 200 in 93ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 15ms
+ ○ Compiling /klinika/wywiady ...
+ ✓ Compiled /klinika/wywiady in 747ms (1341 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 1148ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 18ms
+ GET /klinika/wywiady 200 in 63ms
+ GET /icon.svg?e47f5885ca57a952 200 in 25ms
+ GET /support-progress 200 in 25ms
+ ✓ Compiled in 5.3s (2508 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 355ms
+ ✓ Compiled /support-progress in 381ms (1314 modules)
+ ✓ Compiled (1339 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 848ms
+ GET /support-progress 200 in 679ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 227ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 15ms
+ ○ Compiling /klinika/wywiady/[id] ...
+ ✓ Compiled /klinika/wywiady/[id] in 1594ms (2559 modules)
+motion() is deprecated. Use motion.create() instead.
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+    at Parser.finish (node:internal/deps/undici/undici:7388:9)
+    at Socket.onHttpSocketEnd (node:internal/deps/undici/undici:7827:34)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1764:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+ ⨯ uncaughtException: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+    at Parser.finish (node:internal/deps/undici/undici:7388:9)
+    at Socket.onHttpSocketEnd (node:internal/deps/undici/undici:7827:34)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1764:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+ ⨯ uncaughtException: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+    at Parser.finish (node:internal/deps/undici/undici:7388:9)
+    at Socket.onHttpSocketEnd (node:internal/deps/undici/undici:7827:34)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1764:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+ GET /klinika/wywiady/10 404 in 2469ms
+ GET /support-progress 200 in 18ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+    at Parser.finish (node:internal/deps/undici/undici:7388:9)
+    at Socket.onHttpSocketEnd (node:internal/deps/undici/undici:7827:34)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1764:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+ ⨯ uncaughtException: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+    at Parser.finish (node:internal/deps/undici/undici:7388:9)
+    at Socket.onHttpSocketEnd (node:internal/deps/undici/undici:7827:34)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1764:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+ ⨯ uncaughtException: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(!this.paused)
+
+    at Parser.finish (node:internal/deps/undici/undici:7388:9)
+    at Socket.onHttpSocketEnd (node:internal/deps/undici/undici:7827:34)
+    at Socket.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:1764:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+ GET /klinika/wywiady/10 404 in 141ms
+ GET /support-progress 200 in 14ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ ✓ Compiled in 2.5s (2570 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 1492ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 21ms
+ GET /klinika/wywiady 200 in 33ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 13ms
+ ○ Compiling /klinika ...
+ ✓ Compiled /klinika in 511ms (1346 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1000ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 13ms
+ GET /klinika 200 in 65ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled in 2.8s (2569 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 215ms
+ GET /icon.svg?e47f5885ca57a952 200 in 20ms
+ GET /support-progress 200 in 15ms
+ GET /klinika/wywiady 200 in 71ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/wywiady 200 in 75ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 9ms
+ ✓ Compiled in 2.7s (2569 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/wywiady 200 in 2112ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 15ms
+ GET /klinika/wywiady 200 in 68ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 9ms
+ GET /klinika/wywiady 200 in 82ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 11ms
+ ○ Compiling / ...
+ ✓ Compiled / in 677ms (1346 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 1042ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 14ms
+ GET /klinika 200 in 99ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 7ms
+ ✓ Compiled in 6.1s (2513 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 281ms
+ ✓ Compiled /support-progress in 309ms (1319 modules)
+ ✓ Compiled (1344 modules)
+ GET /support-progress 200 in 592ms
+ GET /icon.svg?e47f5885ca57a952 200 in 689ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 163ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled in 2.6s (2570 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 1487ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 19ms
+ GET / 200 in 128ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 10ms
+ GET /klinika 200 in 82ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 13ms
+ GET / 200 in 61ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika 200 in 53ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 9ms
+ ✓ Compiled in 3s (2570 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 2230ms
+ GET /icon.svg?e47f5885ca57a952 200 in 30ms
+ GET /support-progress 200 in 24ms
+ GET / 200 in 152ms
+ GET /icon.svg?e47f5885ca57a952 200 in 8ms
+ GET /support-progress 200 in 13ms
+ ○ Compiling /o-nas ...
+ ✓ Compiled /o-nas in 1396ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 1944ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 18ms
+ ○ Compiling /konsylium ...
+ ✓ Compiled /konsylium in 560ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /konsylium 200 in 958ms
+ GET /icon.svg?e47f5885ca57a952 200 in 19ms
+ GET /support-progress 200 in 15ms
+ GET /klinika/wywiady 200 in 116ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET / 200 in 113ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 11ms
+ GET /o-nas 200 in 46ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 9ms
+ GET /konsylium 200 in 84ms
+ GET /icon.svg?e47f5885ca57a952 200 in 9ms
+ GET /support-progress 200 in 10ms
+ GET /klinika/wywiady 200 in 67ms
+ GET /icon.svg?e47f5885ca57a952 200 in 10ms
+ GET /support-progress 200 in 13ms
+ GET / 200 in 109ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 14ms
+ GET / 200 in 74ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 12ms
+ ✓ Compiled in 3.1s (2496 modules)
+ ✓ Compiled in 3.9s (2496 modules)
+ ✓ Compiled in 4.2s (2495 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 399ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 597ms (1314 modules)
+ ✓ Compiled (1339 modules)
+ GET /icon.svg?e47f5885ca57a952 200 in 1061ms
+ GET /support-progress 200 in 998ms
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 298ms
+ GET /icon.svg?e47f5885ca57a952 200 in 14ms
+ GET /support-progress 200 in 17ms
+ ✓ Compiled in 3s (2565 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 2351ms
+ GET /icon.svg?e47f5885ca57a952 200 in 18ms
+ GET /support-progress 200 in 23ms
+ GET /o-nas 200 in 68ms
+ GET /icon.svg?e47f5885ca57a952 200 in 11ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled in 4.1s (2508 modules)
+ ✓ Compiled in 7.1s (2495 modules)
+ ✓ Compiled in 1640ms (2495 modules)
+ ✓ Compiled in 3.9s (2495 modules)
+ ✓ Compiled in 1195ms (1213 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika 200 in 337ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 829ms (1314 modules)
+ ✓ Compiled (1339 modules)
+ GET /support-progress 200 in 937ms
+ GET /icon.svg?e47f5885ca57a952 200 in 1313ms
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 205ms
+ GET /icon.svg?e47f5885ca57a952 200 in 38ms
+ GET /support-progress 200 in 54ms
+ ✓ Compiled in 2.9s (2508 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 404ms
+ ✓ Compiled /support-progress in 398ms (1314 modules)
+ ✓ Compiled (1339 modules)
+ GET /support-progress 200 in 724ms
+ GET /icon.svg?e47f5885ca57a952 200 in 804ms
+motion() is deprecated. Use motion.create() instead.
+ GET /o-nas 200 in 248ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 1033ms (1213 modules)
+ ✓ Compiled in 4.1s (2495 modules)
+ ✓ Compiled in 3.4s (2495 modules)
+ ✓ Compiled in 2.1s (2495 modules)
+ ✓ Compiled in 6.7s (2508 modules)
+ ○ Compiling /klinika/[id] ...
+ ✓ Compiled /klinika/[id] in 544ms (1284 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1076 200 in 1187ms
+ ✓ Compiled /support-progress in 371ms (1316 modules)
+ ✓ Compiled (1341 modules)
+ GET /support-progress 200 in 830ms
+ GET /icon.svg?e47f5885ca57a952 200 in 918ms
+motion() is deprecated. Use motion.create() instead.
+ GET /klinika/1076 200 in 372ms
+ GET /icon.svg?e47f5885ca57a952 200 in 17ms
+ GET /support-progress 200 in 19ms
+ ⨯ ../packages/ui/src/kit/kit.css:5960:1
+Syntax error: C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\packages\ui\src\kit\kit.css Unknown word
+
+ [90m 5958 | [39m  [33m.sc-public-directory__list[39m li > div [33m{[39m width[33m:[39m 100%[33m;[39m [33m}[39m
+ [90m 5959 | [39m[33m}[39m
+[1m[31m>[39m[22m[90m 5960 | [39m>>>>>>> theirs
+ [90m      | [39m[1m[31m^[39m[22m
+ [90m 5961 | [39m
+ ✓ Compiled in 2.5s (2511 modules)
+ ○ Compiling /zrodla ...
+ ✓ Compiled /zrodla in 541ms (1288 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /zrodla 200 in 1062ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 554ms (1320 modules)
+ ✓ Compiled (1345 modules)
+ GET /support-progress 200 in 1094ms
+ GET /icon.svg?e47f5885ca57a952 200 in 1255ms
+ ✓ Compiled /osoby-publiczne in 459ms (1347 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /osoby-publiczne 200 in 908ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 23ms
+ GET /zrodla 200 in 66ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 21ms
+ GET /osoby-publiczne 200 in 106ms
+ GET /icon.svg?e47f5885ca57a952 200 in 12ms
+ GET /support-progress 200 in 13ms
+ ⚠ ./app/konsylium/page.tsx
+Attempted import error: 'CouncilRecruitmentLog' is not exported from '@spin-clinic/ui' (imported as 'CouncilRecruitmentLog').
+
+Import trace for requested module:
+./app/konsylium/page.tsx
+ ✓ Compiled in 8.7s (2513 modules)
+ ✓ Compiled in 5.5s (2489 modules)
+ ○ Compiling /panel ...
+ ✓ Compiled /panel in 1935ms (2505 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /panel 200 in 2415ms
+ ○ Compiling /support-progress ...
+ ✓ Compiled /support-progress in 590ms (1317 modules)
+ GET /support-progress 200 in 689ms
+motion() is deprecated. Use motion.create() instead.
+ GET /panel 200 in 191ms
+ GET /support-progress 200 in 58ms
+ ✓ Compiled in 2.1s (2544 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /panel 200 in 262ms
+ GET /support-progress 200 in 31ms
+ GET /panel 200 in 83ms
+ GET /support-progress 200 in 23ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7.7s (2506 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 6401ms
+ ✓ Compiled /support-progress in 488ms (1322 modules)
+ ✓ Compiled (1347 modules)
+ GET /support-progress 200 in 824ms
+ GET /icon.svg?e47f5885ca57a952 200 in 938ms
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 209ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 14ms
+ ✓ Compiled in 2.2s (2574 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET / 200 in 1103ms
+ GET /icon.svg?e47f5885ca57a952 200 in 21ms
+ GET /support-progress 200 in 29ms
+ GET / 200 in 81ms
+ GET /icon.svg?e47f5885ca57a952 200 in 13ms
+ GET /support-progress 200 in 13ms
+ GET /panel 200 in 138ms
+ GET /support-progress 200 in 17ms
+ GET /panel 200 in 53ms
+ GET /support-progress 200 in 13ms
+ ✓ Compiled in 2.9s (2517 modules)
+motion() is deprecated. Use motion.create() instead.
+ GET /panel 200 in 235ms
+ ✓ Compiled /support-progress in 469ms (1316 modules)
+ GET /support-progress 200 in 550ms
+motion() is deprecated. Use motion.create() instead.
+ GET /panel 200 in 160ms
+ GET /support-progress 200 in 15ms
+ ✓ Compiled in 1826ms (2504 modules)
+ ✓ Compiled in 1288ms (2504 modules)
+ ✓ Compiled in 1055ms (1216 modules)
+ ✓ Compiled in 3.5s (2504 modules)
+ ✓ Compiled in 5.5s (2524 modules)
+ ✓ Compiled (2497 modules)
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Experiments (use with caution):
+    · proxyTimeout
+
+ ✓ Starting...
+ ✓ Ready in 7.6s
+ ○ Compiling / ...
+ ✓ Compiled / in 14.5s (2307 modules)
+motion() is deprecated. Use motion.create() instead.
+ ✓ Compiled in 615ms (1025 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat 'C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\frontend-spin\.next\server\app\page.js'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../../../../frontend-spin/.next/server/app/page' in C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server for build dependencies doesn't lead to expected result 'C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\frontend-spin\.next\server\app\page.js', but to 'Error: Can't resolve '../../../../../../../frontend-spin/.next/server/app/page' in 'C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../../../../frontend-spin/.next/server/app/page (expected C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\frontend-spin\.next\server\app\page.js)
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\swc\index.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\swc\index.js
+<w>  at file dependencies C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js
+<w>  at file C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js
+<w>  at resolve commonjs C:\Users\User\spin-clinic\.local\spinaker-mvp-frontend\node_modules\.pnpm\next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js
+ ✓ Compiled in 1199ms (1025 modules)
+ ✓ Compiled in 499ms (1025 modules)
+ ✓ Compiled in 429ms (1025 modules)
+ ✓ Compiled in 399ms (1025 modules)
+ ✓ Compiled in 1091ms (1038 modules)

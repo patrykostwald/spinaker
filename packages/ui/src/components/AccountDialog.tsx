@@ -4,13 +4,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { apiWrite, ApiValidationError } from "../lib/api";
 import { useAccount, type Account } from "../lib/account";
-import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
 import { useRouter } from "next/navigation";
 import { Dialog } from "./Dialog";
 import { Button } from "../kit/Button";
 
 type Mode = "login" | "register" | "reset";
 export function AccountDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const [mode, setMode] = useState<Mode>("login");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");

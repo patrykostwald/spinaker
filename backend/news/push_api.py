@@ -10,9 +10,15 @@ from rest_framework import serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from news.push import enabled, TOPICS, CONSENT_VERSION
+from news.push import TOPICS, CONSENT_VERSION
+from news.features import push_enabled
 from news.push_models import PushSubscription
 from django.conf import settings
+
+
+def enabled():
+    return bool(push_enabled() and settings.VAPID_PUBLIC_KEY
+                and settings.VAPID_PRIVATE_KEY and settings.VAPID_SUBJECT)
 
 
 class SubscriptionInput(serializers.Serializer):

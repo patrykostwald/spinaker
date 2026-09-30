@@ -7,7 +7,7 @@ import { sharePercent, techniqueLabel } from "../../lib/clinic";
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDateTimePl } from "../../lib/utils";
 import { ShareSpinOnX } from "./ShareSpinOnX";
-import { ACCOUNTS_ENABLED } from "../../lib/features";
+import { useFeature } from "../../lib/features";
 
 /** Plakietka partii po lewej od awatara. Skrót tekstowy zamiast logo — neutralnie i bez praw do znaków. */
 export function PartyBadge({ party }: { party: Party | null }) {
@@ -97,6 +97,7 @@ export function SpinRow({ spin, withSummary = false, withTechniques = false, bad
 
 /** Karta: po lewej post (autor, treść, zdjęcie), po prawej diagnoza. */
 export function SpinCard({ spin }: { spin: SpinCardData }) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const image = spin.post.media.find(item => item.url);
   return (
     <article className="sc-spin-card" data-verdict={spin.verdict} aria-labelledby={`spin-${spin.id}-title`}>

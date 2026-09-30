@@ -10,7 +10,7 @@ import { formatDateTimePl } from "../lib/utils";
 import { AccountDialog } from "./AccountDialog";
 import { CommentReportButton } from "./CommentReportButton";
 import { Button, RadioGroup, Reveal } from "../kit";
-import { ACCOUNTS_ENABLED } from "../lib/features";
+import { useFeature } from "../lib/features";
 
 type Polarity = "positive" | "negative";
 type Opinion = { id: number; author: { id: number; username: string }; polarity: Polarity; body: string; created_at: string };
@@ -92,5 +92,6 @@ function ArticleOpinionsInner({ article }: { article: Pick<Article, "id"> }) {
 
 /** Wyłączone razem z kontami czytelników (NEXT_PUBLIC_ACCOUNTS_ENABLED). */
 export function ArticleOpinions(props: Parameters<typeof ArticleOpinionsInner>[0]) {
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   return ACCOUNTS_ENABLED ? <ArticleOpinionsInner {...props} /> : null;
 }

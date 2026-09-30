@@ -1,5 +1,6 @@
 """Nitki czytelników (faza II): publiczne nitki kontekstowe, linki spoza Bazy, reakcje i zgłoszenia."""
 import os
+from news.features import threads_enabled
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.db import IntegrityError, transaction
@@ -22,11 +23,6 @@ from news.schema import json_view
 
 TRACKING_PARAMS = ('utm_', 'fbclid', 'gclid', 'mc_', 'igshid', 'ref_src', 'dclid', 'yclid', '_ga')
 MIN_PUBLIC_ITEMS = 2
-
-
-def threads_enabled() -> bool:
-    """Nitki czytelników czekają na fazę II — publiczne API działa dopiero z THREADS_ENABLED=true."""
-    return os.environ.get('THREADS_ENABLED', '').lower() == 'true'
 
 
 def _disabled():

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { getCommunityThreads } from '../lib/community';
-import { THREADS_ENABLED } from '../lib/features';
+import { useFeature } from '../lib/features';
 import { AccountDataState } from './AccountPhase2';
 
 /**
@@ -23,6 +23,7 @@ export const EXAMPLE_THREAD = {
 
 type ContextTarget = { articleId?: number; figureId?: number; url?: string };
 export function ContextThreadStrip(props: ContextTarget = {}) {
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   if (props.articleId || props.figureId || props.url) return THREADS_ENABLED ? <RelatedThreads {...props} /> : null;
   return <ExampleStrip />;
 }
