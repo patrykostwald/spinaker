@@ -17,7 +17,7 @@ from email.message import EmailMessage
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Count, Min, Max, Q
 from django.utils import timezone
 
@@ -246,10 +246,34 @@ def run_screening(limit: int = 30) -> dict:
     return {'screened': counts, 'alert': alert}
 
 
-def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiagnosis:
-    """Płatna diagnoza (Claude) jednego wpisu z kolejki."""
+SNAPSHOT_DAYS = 7
+
+
+def _snapshot(row: SpinDiagnosis) -> dict | None:
+    """Zapisany wynik wcześniejszej, opłaconej diagnozy tego wpisu, której nie udało się zapisać w całości."""
+    snap = (row.usage or {}).get('snapshot')
+    taken = (row.usage or {}).get('snapshot_at')
+    if not isinstance(snap, dict) or not taken:
+        return None
     try:
-        result = clinic_ai.diagnose(_post_context(row.post, figure))
+        fresh = timezone.now() - datetime.fromisoformat(taken) < timedelta(days=SNAPSHOT_DAYS)
+    except (TypeError, ValueError):
+        return None
+    return dict(snap) if fresh else None
+
+
+def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiagnosis:
+    """Płatna diagnoza jednego wpisu z kolejki. Wynik najpierw trafia do bazy jako „zdjęcie” (usage['snapshot']) — gdy
+    pełny zapis się wywróci, kolejna próba bierze zdjęcie zamiast płacić za AI drugi raz (29–30.09.2026 ponawiane
+    nieudane zapisy kosztowały ok. 135 zł)."""
+    try:
+        result = _snapshot(row)
+        if result is None:
+            result = clinic_ai.diagnose(_post_context(row.post, figure))
+            # Zdjęcie: jedna mała aktualizacja samego pola JSON (bez limitów długości), zanim cokolwiek innego się zapisze.
+            row.usage = {**(row.usage or {}), 'snapshot': result, 'snapshot_at': timezone.now().isoformat()}
+            SpinDiagnosis.objects.filter(pk=row.pk).update(usage=row.usage)
+        result = dict(result)
     except clinic_ai.ClinicAIError as error:
         row.status, row.error = 'failed', error.code
         if hasattr(error, 'council'):
@@ -259,7 +283,7 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         if 'lab' not in result:
             from news.clinic_lab import run_lab
             result['lab'] = run_lab(row.post.text, result.get('claims', []), result.get('loaded_words'))
-        usage = result.pop('usage', {})
+        usage = result.pop('usage', {})  # po udanym zapisie zdjęcie znika z usage — wynik jest już w kolumnach
         usage['loaded_words'] = result.pop('loaded_words', [])
         for field, value in result.items():
             setattr(row, field, value)
@@ -271,7 +295,15 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         row.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
-    row.save()
+    try:
+        with transaction.atomic():
+            row.save()
+    except DatabaseError as error:
+        # Wynik jest bezpieczny w zdjęciu; wpis oznaczamy jako nieudany z przyczyną — kolejna próba nic nie kosztuje.
+        logger.error('diagnosis %s: save failed, snapshot kept: %s', row.pk, error)
+        SpinDiagnosis.objects.filter(pk=row.pk).update(status='failed', error=f'save_failed: {error}'[:240])
+        row.status, row.error = 'failed', f'save_failed: {error}'[:240]
+        return row
     if row.status in ('approved', 'pending_review'):
         from news.clinic_lab import queue_archive
         queue_archive(row.post)

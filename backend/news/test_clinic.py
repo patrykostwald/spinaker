@@ -752,3 +752,29 @@ def test_backfill_takes_missed_posts_by_score_and_skips_permanent_failures(monke
     monkeypatch.setattr(clinic_backfill, 'diagnose', lambda row, figure=None: seen.append(row.pk) or row)
     call_command('clinic_backfill', since=(timezone.localdate() - timedelta(days=3)).isoformat(), limit=10, stdout=StringIO())
     assert seen == [rows['flagged'].pk, rows['transient'].pk, rows['queued'].pk]
+
+
+@pytest.mark.django_db
+def test_paid_result_survives_failed_save_and_is_reused(monkeypatch):
+    # 29–30.09.2026: wynik AI przepadał przy zapisie, a każda kolejna próba płaciła za AI od nowa.
+    from django.db import DatabaseError
+    from news import clinic
+    row = _diagnosis_row_for_snapshot_test()
+    calls = []
+    result = {'verdict': 'spin', 'intensity': 60, 'headline': 'H', 'summary': 'S', 'analysis': 'A', 'limitations': '',
+              'techniques': [], 'claims': [], 'lab': {}, 'loaded_words': [], 'usage': {'model': 'm'}}
+    monkeypatch.setattr(clinic.clinic_ai, 'diagnose', lambda context: calls.append(1) or dict(result))
+    monkeypatch.setattr(clinic, 'ensure_x_thread', lambda row: True)
+    original_save = clinic.SpinDiagnosis.save
+    monkeypatch.setattr(clinic.SpinDiagnosis, 'save', lambda self, *a, **k: (_ for _ in ()).throw(DatabaseError('value too long')))
+    failed = clinic.diagnose(row)
+    assert failed.status == 'failed' and failed.error.startswith('save_failed') and len(calls) == 1
+    monkeypatch.setattr(clinic.SpinDiagnosis, 'save', original_save)
+    row.refresh_from_db()
+    assert row.usage['snapshot']['headline'] == 'H'
+    saved = clinic.diagnose(row)
+    assert len(calls) == 1 and saved.headline == 'H' and 'snapshot' not in saved.usage
+
+
+def _diagnosis_row_for_snapshot_test():
+    return SpinDiagnosis.objects.create(post=post(account(handle='snap', user_id='777'), post_id='7771'), status='queued')
