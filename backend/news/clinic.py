@@ -539,7 +539,8 @@ def run_daily_messages(day=None) -> dict:
         posts = list(PoliticalPost.objects.filter(
             available=True, camp_at_collection=camp, account__enabled=True,
             published_at__gte=start, published_at__lt=start + timedelta(days=1),
-        ).select_related('account').order_by('-published_at')[:60])
+        ).exclude(spin_diagnosis__withdrawn_at__isnull=False)
+         .exclude(spin_diagnosis__hidden_at__isnull=False).select_related('account').order_by('-published_at')[:60])
         if len({post.account_id for post in posts}) < MIN_MESSAGE_ACCOUNTS:
             continue
         figures = figures_by_account({post.account_id for post in posts})
@@ -619,9 +620,33 @@ def review(obj, staff, decision: str):
 
 # --- dane publiczne -------------------------------------------------------------------------
 
+@transaction.atomic
+def withdraw(diagnosis, staff, reason):
+    """Wycofuje publikację atomowo; zapisane wyniki AI pozostają nietknięte."""
+    if not staff or not staff.is_active or not staff.is_staff:
+        raise PermissionError('Wycofanie wymaga uprawnień zespołu.')
+    reason = reason.strip() if isinstance(reason, str) else ''
+    if not reason or len(reason) > 400:
+        raise ValueError('Podaj powód wycofania (od 1 do 400 znaków).')
+    current = SpinDiagnosis.objects.select_for_update().get(pk=diagnosis.pk)
+    if current.status != 'approved' or current.withdrawn_at:
+        raise ValueError('Można wycofać tylko opublikowaną diagnozę.')
+    current.status = 'withdrawn'
+    current.withdrawn_at, current.withdrawn_by, current.withdrawn_reason = timezone.now(), staff, reason
+    current.save(update_fields=['status', 'withdrawn_at', 'withdrawn_by', 'withdrawn_reason'])
+    diagnosis.refresh_from_db()
+    return diagnosis
+
+
 def published_diagnoses():
-    return (SpinDiagnosis.objects.filter(status='approved', hidden_at__isnull=True, post__available=True)
+    return (SpinDiagnosis.objects.filter(status='approved', withdrawn_at__isnull=True, hidden_at__isnull=True, post__available=True)
             .select_related('post__account'))
+
+
+def published_messages():
+    # Synteza może nadal cytować wycofany materiał: wyłączamy cały przekaz.
+    unavailable = SpinDiagnosis.objects.filter(Q(withdrawn_at__isnull=False) | Q(hidden_at__isnull=False))
+    return ClinicDailyMessage.objects.filter(status='approved').exclude(posts__spin_diagnosis__in=unavailable)
 
 
 def _media(post: PoliticalPost) -> list[dict]:
@@ -667,6 +692,11 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
 
 
 def detail_data(diagnosis: SpinDiagnosis) -> dict:
+    from news.clinic_corrections import withdrawn_data
+    if diagnosis.hidden_at:
+        raise ValueError('Diagnoza ukryta po zgłoszeniu prawnym.')
+    if diagnosis.withdrawn_at:
+        return withdrawn_data(diagnosis)
     figures = figures_by_account([diagnosis.post.account_id])
     counts = {'positive': 0, 'negative': 0}
     counts.update({row['polarity']: row['n'] for row in diagnosis.opinions.filter(polarity__isnull=False).values('polarity').annotate(n=Count('id'))})
@@ -686,6 +716,9 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'reviewed_at': diagnosis.reviewed_at,
         'auto_published': diagnosis.status == 'approved' and not diagnosis.reviewed_by_id,
         'notice': NOTICE,
+        'status': 'approved',
+        'author_replies': list(diagnosis.author_replies.filter(published_at__lte=timezone.now()).values(
+            'id', 'body', 'source_url', 'received_at', 'published_at')),
     })
     from news.x_share import build
     data['x_share'] = build(data)
@@ -751,14 +784,14 @@ def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_
 
 
 def daily_message_data(camp: str):
-    message = ClinicDailyMessage.objects.filter(camp=camp, status='approved').order_by('-day').first()
+    message = published_messages().filter(camp=camp).order_by('-day').first()
     return _message_data(message, with_posts=True) if message else None
 
 
 def message_history(days: int = 30) -> dict:
     """Wcześniejsze przekazy dnia każdego obozu — od najnowszych."""
     return {camp: [_message_data(message) for message in
-                   ClinicDailyMessage.objects.filter(camp=camp, status='approved').order_by('-day')[:days]]
+                   published_messages().filter(camp=camp).order_by('-day')[:days]]
             for camp in CAMPS}
 
 

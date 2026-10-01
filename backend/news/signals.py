@@ -3,6 +3,7 @@ from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from news.models import Article, Source, EvidenceLink, ArticleContent
+from news.clinic_models import SpinDiagnosis
 
 
 def invalidate_search():
@@ -20,3 +21,12 @@ def invalidate_search():
 @receiver(post_delete, sender=EvidenceLink)
 def article_changed(**kwargs):
     transaction.on_commit(invalidate_search)
+
+
+@receiver(post_save, sender=SpinDiagnosis)
+@receiver(post_delete, sender=SpinDiagnosis)
+def diagnosis_changed(**kwargs):
+    from news.clinic_stats import CACHE_KEY
+    keys = [CACHE_KEY, 'clinic-stats:v3']
+    cache.delete_many(keys)
+    transaction.on_commit(lambda: cache.delete_many(keys))

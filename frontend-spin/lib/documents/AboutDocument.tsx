@@ -35,7 +35,7 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
         <li><a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a> {t("— projekt, współpraca, media, sprawy techniczne, prywatność i zgłoszenia dotyczące diagnoz.")}</li>
         <li><a href={`mailto:${sourcesEmail}`}>{sourcesEmail}</a> {t("— źródła, zgody wydawców i zakres dostępu.")}</li>
       </ul>
-      <p>{t("Zgłaszając błąd, dołącz link do diagnozy i źródła.")} <Link lang={lang} href="/metodologia#korekty">{t("Jak obsługujemy zgłoszenia")}</Link>.</p>
+      <p>{t("Zgłaszając błąd, dołącz link do diagnozy i źródła.")} <Link lang={lang} href="/metodologia#korekty">{t("Jak obsługujemy zgłoszenia")}</Link>. {t("Wycofania, ukrycia prawne i odpowiedzi autorów:")} <Link lang={lang} href="/klinika/korekty">{t("Rejestr korekt")}</Link>.</p>
     </section>
     <section id="rozwoj"><h2>{t("Co działa i co planujemy")}</h2>
       <p>{t("Działa obecnie: diagnozy wypowiedzi polityków, analizy wywiadów, „Przekaz dnia” obu obozów, raporty tygodnia, dane i wykresy oraz publikacja wybranych diagnoz w mediach społecznościowych.")}</p>

@@ -98,9 +98,12 @@ def serve_video(request, name: str):
         raise Http404
     path = video_dir() / name
     diagnosis_id = int(name.split('-', 1)[0])
-    if not path.exists() or name != video_name(diagnosis_id):
+    from news.clinic import published_diagnoses
+    if not path.exists() or name != video_name(diagnosis_id) or not published_diagnoses().filter(pk=diagnosis_id).exists():
         raise Http404
-    return FileResponse(path.open('rb'), content_type='video/mp4')
+    response = FileResponse(path.open('rb'), content_type='video/mp4')
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 # --- teksty ---------------------------------------------------------------------------------
@@ -343,6 +346,9 @@ def run(dry_run: bool = False) -> dict:
             try:
                 if platform in ('facebook', 'instagram', 'manual') and path is None:
                     path = ensure_video(diagnosis)
+                from news.clinic import published_diagnoses
+                if not published_diagnoses().filter(pk=diagnosis.pk).exists():
+                    break
                 if platform == 'facebook':
                     external, url = post_facebook(path, text['facebook'])
                 elif platform == 'instagram':

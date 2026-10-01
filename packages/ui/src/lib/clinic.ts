@@ -64,6 +64,8 @@ export type SpinClaim = {
 };
 
 export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
+  status?: "approved";
+  author_replies?: ClinicAuthorReply[];
   scan?: SpinScan;
   /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
   x_share?: string[];
@@ -238,7 +240,23 @@ export type ClinicStats = DataPeriod & {
 export const getClinicStats = () => apiFetch<ClinicStats>("/api/clinic/stats/");
 export const getClinicSpins = (camp: Camp, page: number) =>
   apiFetch<{ results: SpinCardData[]; next_page: number | null }>(`/api/clinic/spins/?camp=${camp}&page=${page}`);
-export const getSpin = (id: number | string) => apiFetch<SpinDetailData>(`/api/clinic/spins/${id}/`);
+export type ClinicAuthorReply = { id: number; body: string; source_url: string; received_at: string; published_at: string };
+export type WithdrawnDiagnosis = {
+  id: number; status: "withdrawn"; withdrawn_at: string; withdrawn_reason: string;
+  author: SpinAuthor; camp: Camp; camp_label: string; post: { url: string; published_at: string };
+  author_replies: ClinicAuthorReply[];
+};
+export type ClinicCorrection = {
+  id: string; type: "withdrawal" | "hiding" | "author_reply"; date: string;
+  author: SpinAuthor | null; camp: Camp | null; camp_label: string | null; post_date: string | null;
+  diagnosis_url: string | null; reason: string; reply_excerpt: string; notice?: string;
+};
+export type ClinicCorrectionsData = {
+  results: ClinicCorrection[]; count: number; next_page: number | null;
+  counts: { published: number; withdrawn: number; hidden: number; replies: number };
+};
+export const getClinicCorrections = (page = 1) => apiFetch<ClinicCorrectionsData>(`/api/clinic/corrections/?page=${page}`);
+export const getSpin = (id: number | string) => apiFetch<SpinDetailData | WithdrawnDiagnosis>(`/api/clinic/spins/${id}/`);
 export const getClinicAccounts = () => apiFetch<{ results: ClinicAccount[] }>("/api/clinic/accounts/");
 
 /** Usunięte posty polityków — sam fakt (kto, kiedy, czy był spinem), bez treści (zasady X). */

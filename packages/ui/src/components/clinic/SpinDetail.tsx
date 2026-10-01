@@ -15,6 +15,7 @@ import { clinicResultsUrl } from "../../lib/clinicNavigation";
 import { ContextThreadStrip } from '../ContextThreadStrip';
 import { useEffect, useRef } from "react";
 import { rememberClinicVisit } from "../../lib/clinicHistory";
+import { AuthorReplies, WithdrawnSpin } from "./ClinicCorrections";
 
 export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDetailData; withSummary?: boolean }) {
   return <>
@@ -64,22 +65,22 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
 }
 
 export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) {
-  const query = useQuery({ queryKey: ["clinic-spin", id], queryFn: () => getSpin(id) });
+  const query = useQuery({ queryKey: ["clinic-spin", id], queryFn: () => getSpin(id), staleTime: 0, refetchOnMount: "always" });
   const recorded = useRef<number | null>(null);
   useEffect(() => {
     const spin = query.data;
-    if (!spin || recorded.current === spin.id) return;
+    if (!spin || spin.status === "withdrawn" || recorded.current === spin.id) return;
     recorded.current = spin.id;
     rememberClinicVisit({ type: "diagnosis", id: spin.id, title: spin.headline, camp: spin.camp,
       verdict: spin.verdict, intensity: spin.intensity, author: spin.author.name });
   }, [query.data]);
-  if (query.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Wczytujemy diagnozy…</p></div>;
-  if (query.isError && !(query.error instanceof ApiError && query.error.status === 404) && !query.data) return <div className="sc-clinic" role="alert"><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
-  if (!query.data) return <div className="sc-clinic"><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;
+  if (query.isFetching || query.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Wczytujemy diagnozę…</p></div>;
+  if (query.isError && !(query.error instanceof ApiError && query.error.status === 404)) return <div className="sc-clinic" role="alert"><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
+  if (query.isError || !query.data) return <div className="sc-clinic"><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;
   const spin = query.data;
+  if (spin.status === "withdrawn") return <WithdrawnSpin spin={spin} />;
   return (
     <div className="sc-clinic sc-spin-detail">
-      {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       <ClinicNav />
       <Link className="sc-spin-detail__back" href={clinicResultsUrl(returnTo ?? null)} scroll={false}>← Wróć do wyników</Link>
       <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
@@ -109,6 +110,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
         </article>
         </div>
       </div>
+      <AuthorReplies replies={spin.author_replies} />
       <ClinicDiscussion kind="spins" id={spin.id} />
     </div>
   );

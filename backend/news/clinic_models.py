@@ -6,6 +6,7 @@ Człowiek wyłącznie zatwierdza albo odrzuca gotową diagnozę — nigdy nie ed
 jej treści (model nie ma pola do edycji, a API przeglądu przyjmuje tylko decyzję).
 """
 from django.conf import settings
+from django.core.validators import MaxLengthValidator
 from django.db import models
 from django.utils import timezone
 
@@ -34,7 +35,7 @@ POLARITIES = [('positive', 'Trafna diagnoza'), ('negative', 'Nietrafna diagnoza'
 class SpinDiagnosis(models.Model):
     repair_attempts = models.PositiveSmallIntegerField(default=0)
     post = models.OneToOneField(PoliticalPost, on_delete=models.CASCADE, related_name='spin_diagnosis')
-    status = models.CharField(max_length=16, choices=REVIEW_STATUSES, default='pending_review', db_index=True)
+    status = models.CharField(max_length=16, choices=REVIEW_STATUSES + [('withdrawn', 'Wycofana')], default='pending_review', db_index=True)
     verdict = models.CharField(max_length=12, choices=VERDICTS, blank=True)
     intensity = models.PositiveSmallIntegerField(default=0, help_text='Siła spinu 0–100 według modelu.')
     headline = models.CharField(max_length=200, blank=True)
@@ -65,6 +66,10 @@ class SpinDiagnosis(models.Model):
     hidden_at = models.DateTimeField(null=True, blank=True,
                                      help_text='Ukrycie po zgłoszeniu prawnym. Treść diagnozy pozostaje bez zmian.')
     hidden_reason = models.CharField(max_length=240, blank=True)
+    withdrawn_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    withdrawn_reason = models.CharField(max_length=400, blank=True)
+    withdrawn_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name='+')
 
     def save(self, *args, **kwargs):
         if kwargs.get('update_fields') is None or 'techniques' in kwargs['update_fields']:
@@ -85,6 +90,24 @@ class SpinDiagnosis(models.Model):
     @property
     def camp(self):
         return self.post.camp_at_collection
+
+
+class ClinicAuthorReply(models.Model):
+    diagnosis = models.ForeignKey(SpinDiagnosis, on_delete=models.PROTECT, related_name='author_replies')
+    body = models.TextField(max_length=1500, validators=[MaxLengthValidator(1500)], verbose_name='treść')
+    source_url = models.URLField(max_length=500, verbose_name='link do źródła')
+    received_at = models.DateTimeField(default=timezone.now, verbose_name='data otrzymania')
+    published_at = models.DateTimeField(default=timezone.now, db_index=True, verbose_name='data publikacji')
+    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                on_delete=models.SET_NULL, related_name='+')
+
+    class Meta:
+        ordering = ['-published_at', '-pk']
+        verbose_name = 'odpowiedź autora'
+        verbose_name_plural = 'odpowiedzi autorów'
+
+    def __str__(self):
+        return f'Odpowiedź do diagnozy {self.diagnosis_id}'
 
 
 class CouncilCall(models.Model):

@@ -147,7 +147,7 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
       <div className="sc-method-callout">
         <p><strong>{t("Widzisz błąd?")}</strong> {t("Wyślij link do diagnozy, opis i źródła na")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>{t(". Tą samą drogą autor wypowiedzi może przesłać odpowiedź.")}</p>
       </div>
-      <p>{t("Operator może wycofać całą diagnozę — zapisujemy datę i powód. Treści, werdyktu ani siły nie poprawia się ręcznie. Publiczny rejestr korekt i odpowiedzi jest planowany.")} <Link lang={lang} href="/konsylium/karta">{t("Karta Konsylium")}</Link></p>
+      <p>{t("Operator może wycofać całą diagnozę – zapisujemy datę i powód. Treści, werdyktu ani siły nie poprawia się ręcznie. Każde wycofanie, ukrycie prawne i odpowiedź autora znajdziesz w")} <Link lang={lang} href="/klinika/korekty">{t("publicznym rejestrze korekt i odpowiedzi")}</Link>. <Link lang={lang} href="/konsylium/karta">{t("Karta Konsylium")}</Link></p>
     </section>
   </DocLayout>;
 }

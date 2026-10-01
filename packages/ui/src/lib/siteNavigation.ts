@@ -7,6 +7,7 @@ const links = {
   about: { label: "O nas", href: "/o-nas" },
   press: { label: "Dla redakcji", href: "/dla-redakcji" },
   methodology: { label: "Metodologia", href: "/metodologia" },
+  corrections: { label: "Rejestr korekt", href: "/klinika/korekty" },
   charter: { label: "Karta Konsylium", href: "/konsylium/karta" },
   people: { label: "Osoby publiczne", href: "/osoby-publiczne" },
   sources: { label: "Źródła", href: "/zrodla" },
@@ -33,7 +34,7 @@ export const siteNavigation = {
   support: links.support,
   footer: [
     { title: "Czytaj", links: [links.home, links.clinic, links.people, links.sources, links.newsletter] },
-    { title: "Jak pracujemy", links: [links.council, links.methodology, links.charter] },
+    { title: "Jak pracujemy", links: [links.council, links.methodology, links.corrections, links.charter] },
     { title: "Projekt i kontakt", links: [links.about, links.press, links.contact] },
     { title: "Obserwuj", links: socialChannels.map(channel => ({ label: channel.name, href: channel.href })) },
     { title: "Dokumenty prawne", links: [links.terms, links.privacy] },
@@ -47,6 +48,7 @@ export const clinicNavigation: SiteNavigationItem[] = [
   { href: "/klinika/wywiady", label: "Wywiady" },
   { href: "/klinika/przekazy", label: "Przekazy" },
   { href: "/klinika/raporty", label: "Raporty" },
+  links.corrections,
 ];
 
 export function isClinicNavigationCurrent(pathname: string, href: string) {

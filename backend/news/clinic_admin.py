@@ -1,8 +1,11 @@
 """Admin Kliniki spinu. Treść diagnoz jest tylko do odczytu — można ją wyłącznie zatwierdzić albo odrzucić."""
 from django.contrib import admin, messages
+from django import forms
+from django.db import transaction
+from django.template.response import TemplateResponse
 
 from news import clinic
-from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
+from news.clinic_models import ClinicAuthorReply, ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
 from news.clinic_models import InquisitorReview
 from django.utils.html import format_html
 
@@ -61,16 +64,64 @@ def _decide(decision):
     return action
 
 
+class WithdrawalForm(forms.Form):
+    reason = forms.CharField(label='Publiczny powód wycofania', max_length=400, strip=True,
+                             widget=forms.Textarea(attrs={'rows': 4, 'cols': 70}),
+                             help_text='Powód będzie widoczny w rejestrze korekt. Nie wpisuj danych prywatnych.')
+
+
 @admin.register(SpinDiagnosis)
 class SpinDiagnosisAdmin(admin.ModelAdmin):
     list_display = ('pk', 'status', 'verdict', 'intensity', 'headline', 'created_at')
     list_filter = ('status', 'verdict', 'post__camp_at_collection')
     search_fields = ('headline', 'post__text', 'post__account__handle')
-    readonly_fields = AI_FIELDS
-    fields = AI_FIELDS + ('hidden_at', 'hidden_reason')
-    actions = [_decide('approve'), _decide('reject')]
+    readonly_fields = tuple(f.name for f in SpinDiagnosis._meta.fields if f.name not in ('hidden_at', 'hidden_reason'))
+    fields = readonly_fields + ('hidden_at', 'hidden_reason')
+    actions = [_decide('approve'), _decide('reject'), 'withdraw_diagnoses']
+
+    @admin.action(description='Wycofaj diagnozę', permissions=['change'])
+    def withdraw_diagnoses(self, request, queryset):
+        form = WithdrawalForm(request.POST if 'confirm_withdrawal' in request.POST else None)
+        if form.is_bound and form.is_valid():
+            try:
+                with transaction.atomic():
+                    count = 0
+                    for diagnosis in queryset.order_by('pk'):
+                        clinic.withdraw(diagnosis, request.user, form.cleaned_data['reason'])
+                        count += 1
+            except ValueError as error:
+                form.add_error(None, str(error))
+            else:
+                self.message_user(request, f'Wycofano diagnozy: {count}. Powód zapisano w publicznym rejestrze.', messages.SUCCESS)
+                return None
+        return TemplateResponse(request, 'admin/news/withdraw_diagnoses.html', {
+            **self.admin_site.each_context(request), 'title': 'Wycofaj diagnozę', 'opts': self.model._meta,
+            'form': form, 'diagnoses': queryset, 'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
+            'select_across': request.POST.get('select_across', '0'),
+        })
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
     def has_add_permission(self, request):
+        return False
+
+
+@admin.register(ClinicAuthorReply)
+class ClinicAuthorReplyAdmin(admin.ModelAdmin):
+    list_display = ('diagnosis', 'received_at', 'published_at', 'added_by')
+    raw_id_fields = ('diagnosis',)
+    readonly_fields = ('added_by',)
+
+    def get_readonly_fields(self, request, obj=None):
+        return tuple(f.name for f in self.model._meta.fields) if obj else self.readonly_fields
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.added_by = request.user
+        super().save_model(request, obj, form, change)
+
+    def has_delete_permission(self, request, obj=None):
         return False
 
 

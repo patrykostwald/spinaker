@@ -74,7 +74,7 @@ def clinic_messages(request):
         page = max(1, int(request.query_params.get('page', '1')))
     except ValueError:
         return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
-    rows = ClinicDailyMessage.objects.filter(status='approved', camp__in=clinic.CAMPS)
+    rows = clinic.published_messages().filter(camp__in=clinic.CAMPS)
     days = rows.order_by('-day').values_list('day', flat=True).distinct()
     count = days.count()
     batch = list(days[(page - 1) * 14:page * 14 + 1])
@@ -95,7 +95,7 @@ def clinic_message_detail(request, day):
         selected_day = date.fromisoformat(day)
     except ValueError:
         raise Http404
-    rows = list(ClinicDailyMessage.objects.filter(day=selected_day, status='approved', camp__in=clinic.CAMPS))
+    rows = list(clinic.published_messages().filter(day=selected_day, camp__in=clinic.CAMPS))
     if not rows:
         raise Http404
     result = {'day': selected_day, 'government': None, 'opposition': None}
@@ -196,8 +196,30 @@ def clinic_statistics(request):
 @extend_schema(summary='Pełna diagnoza spinu', tags=['klinika'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def clinic_spin_detail(request, diagnosis_id):
-    diagnosis = get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
-    return Response(clinic.detail_data(diagnosis))
+    rows = SpinDiagnosis.objects.filter(hidden_at__isnull=True).filter(
+        Q(withdrawn_at__isnull=False) | Q(status='approved', post__available=True))
+    diagnosis = get_object_or_404(rows.select_related('post__account'), pk=diagnosis_id)
+    response = Response(clinic.detail_data(diagnosis))
+    response['Cache-Control'] = 'no-store'
+    if diagnosis.withdrawn_at:
+        response['X-Robots-Tag'] = 'noindex'
+    return response
+
+
+@extend_schema(summary='Publiczny rejestr korekt i odpowiedzi autorów', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_corrections(request):
+    from news.clinic_corrections import corrections_data
+    try:
+        page = int(request.query_params.get('page', '1'))
+        if page < 1:
+            raise ValueError
+    except ValueError:
+        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+    response = Response(corrections_data(page))
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 class CardContentNegotiation(DefaultContentNegotiation):
@@ -220,7 +242,7 @@ class ClinicSpinCardView(APIView):
         figures = clinic.figures_by_account([diagnosis.post.account_id])
         path = cached_card(clinic.card_data(diagnosis, figures), card_format)
         response = FileResponse(path.open('rb'), content_type='image/png')
-        response['Cache-Control'] = 'public, max-age=3600'
+        response['Cache-Control'] = 'no-store'
         return response
 
 
@@ -383,10 +405,10 @@ class HideInput(serializers.Serializer):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def hide_diagnosis(request, diagnosis_id):
-    diagnosis = get_object_or_404(SpinDiagnosis, pk=diagnosis_id, status='approved')
+    diagnosis = get_object_or_404(SpinDiagnosis, pk=diagnosis_id, status__in=['approved', 'withdrawn'])
     serializer = HideInput(data=request.data)
     serializer.is_valid(raise_exception=True)
-    diagnosis.hidden_at, diagnosis.hidden_reason = timezone.now(), serializer.validated_data['reason']
+    diagnosis.hidden_at, diagnosis.hidden_reason = diagnosis.hidden_at or timezone.now(), serializer.validated_data['reason']
     diagnosis.save(update_fields=['hidden_at', 'hidden_reason'])
     return Response({'id': diagnosis.pk, 'hidden_at': diagnosis.hidden_at})
 

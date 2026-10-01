@@ -61,6 +61,7 @@ export { ReportArchive } from "./components/clinic/ReportArchive";
 export { MessageDetail } from "./components/clinic/MessageDetail";
 export * from "./lib/clinicReports";
 export { SpinDetail } from "./components/clinic/SpinDetail";
+export { ClinicCorrections } from "./components/clinic/ClinicCorrections";
 export { ClinicQueue } from "./components/clinic/ClinicQueue";
 export { ClinicIndicators, ClinicShowcase } from "./components/clinic/ClinicIndicators";
 export { NewsletterSignup, NEWSLETTER_CONSENT } from "./components/NewsletterSignup";

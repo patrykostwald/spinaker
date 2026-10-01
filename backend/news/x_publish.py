@@ -179,6 +179,9 @@ def run(dry_run: bool = False) -> dict:
         try:
             ids = list(diagnosis.x_posted_ids or [])
             for index in range(len(ids), len(texts)):
+                from news.clinic import published_diagnoses
+                if not published_diagnoses().filter(pk=diagnosis.pk).exists():
+                    break
                 post_id = post(texts[index], reply_to=ids[0] if ids else None,
                                media_id=upload_image(for_diagnosis(diagnosis)) if not ids else None)
                 ids.append(post_id)
@@ -190,6 +193,9 @@ def run(dry_run: bool = False) -> dict:
             alert(diagnosis.pk, str(error))
             done.append({'id': diagnosis.pk, 'posted': False, 'error': str(error)[:200]})
             break  # klucze, uprawnienia albo limit — nie próbujemy kolejnych w tym przebiegu
+        if len(ids) != len(texts):
+            done.append({'id': diagnosis.pk, 'posted': False, 'error': 'diagnosis_unavailable'})
+            continue
         diagnosis.x_posted_ids, diagnosis.x_posted_at = ids, timezone.now()
         diagnosis.save(update_fields=['x_posted_ids', 'x_posted_at'])
         done.append({'id': diagnosis.pk, 'posted': True})

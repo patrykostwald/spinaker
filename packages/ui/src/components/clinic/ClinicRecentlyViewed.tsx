@@ -15,29 +15,32 @@ function RecentCard({ item }: { item: ClinicVisit }) {
   const [copyStatus, setCopyStatus] = useState("");
   const query = useQuery({
     queryKey: ["clinic-recent", item.type, item.id],
+    staleTime: 0, refetchOnMount: "always",
     queryFn: async () => item.type === "diagnosis"
       ? { type: "diagnosis" as const, data: await getSpin(item.id) }
       : { type: "interview" as const, data: await getClinicInterview(item.id) },
     retry: (count, error) => !(error instanceof ApiError && error.status === 404) && count < 2,
   });
-  const missing = query.error instanceof ApiError && query.error.status === 404;
+  const missing = (query.error instanceof ApiError && query.error.status === 404)
+    || (query.data?.type === "diagnosis" && query.data.data.status === "withdrawn");
   useEffect(() => {
     if (missing) writeClinicHistory(readClinicHistory().filter(old => visitKey(old) !== visitKey(item)));
   }, [missing, item.type, item.id]);
   if (missing) return null;
-  if (query.isPending) return <p role="status">Wczytywanie karty…</p>;
+  if (query.isPending || query.isFetching) return <p role="status">Wczytywanie karty…</p>;
   if (query.isError) return <p role="alert">Nie udało się wczytać karty. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>;
   const result = query.data;
+  if (result.type === "diagnosis" && result.data.status === "withdrawn") return null;
   const path = item.type === "diagnosis" ? `/klinika/${item.id}` : `/klinika/wywiady/${item.id}`;
   async function copyLink() {
     try { await navigator.clipboard.writeText(new URL(path, window.location.origin).href); setCopyStatus("Link skopiowany."); }
     catch { setCopyStatus("Nie udało się skopiować linku. Użyj menu odnośnika „Otwórz”."); }
   }
   return <div className="sc-clinic-recent__card">
-    {result.type === "diagnosis" ? <HomeSpinScanner spin={result.data} /> : <InterviewScanner interview={result.data} />}
+    {result.type === "diagnosis" ? (result.data.status !== "withdrawn" ? <HomeSpinScanner spin={result.data} /> : null) : <InterviewScanner interview={result.data} />}
     <div className="sc-clinic-recent__actions">
       <Link href={path}>Otwórz</Link>
-      {result.type === "diagnosis" ? <ShareSpinOnX id={item.id} spin={result.data} />
+      {result.type === "diagnosis" ? (result.data.status !== "withdrawn" ? <ShareSpinOnX id={item.id} spin={result.data} /> : null)
         : <a className="sc-share-cta" target="_blank" rel="noopener noreferrer" href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(result.data.headline)}&url=${encodeURIComponent(new URL(path, window.location.origin).href)}`}><ShareXCardContent interview /></a>}
       <button type="button" onClick={() => void copyLink()}>Kopiuj link</button>
     </div>

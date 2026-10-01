@@ -4,6 +4,7 @@ import { SiteFooter } from '@spin-clinic/ui/kit';
 import { usePathname } from 'next/navigation';
 import { HowToRead } from '@spin-clinic/ui';
 import { PwaControls } from './PwaControls';
+import Link from 'next/link';
 
 export function PreviewBanner() {
   const preview = usePreview();
@@ -27,7 +28,7 @@ export function FeatureFooter() {
               { label: 'Zainstaluj aplikację', href: '#zainstaluj-aplikacje' },
               ...(PUSH_ENABLED ? [{ label: 'Powiadomienia', href: '#powiadomienia' }] : []),
             ] }] : siteNavigation.footer}
-            actions={<><a href="/en/about" lang="en" hrefLang="en" className="sc-footer__link">English</a>{pathname?.startsWith("/klinika") ? <HowToRead interview={pathname.startsWith("/klinika/wywiady")} /> : null}</>}
+            actions={<><a href="/en/about" lang="en" hrefLang="en" className="sc-footer__link">English</a>{pathname?.startsWith("/klinika") ? <div className="sc-clinic-footer-actions"><HowToRead interview={pathname.startsWith("/klinika/wywiady")} /><Link className="sc-howto-trigger" href="/klinika/korekty">Rejestr korekt</Link></div> : null}</>}
             above={<SupportBar />}
             sticky
           />

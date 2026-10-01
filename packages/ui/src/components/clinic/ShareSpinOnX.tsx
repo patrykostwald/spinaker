@@ -40,12 +40,14 @@ export function ShareXCardContent({ interview = false }: { interview?: boolean }
 /** „Udostępnij na X” — dla czytelników i dla zespołu (ten sam przycisk w kolejce). */
 export function ShareSpinOnX({ id, spin }: { id: number; spin?: SpinDetailData }) {
   const [open, setOpen] = useState(false);
-  const query = useQuery({ queryKey: ["clinic-spin", String(id)], queryFn: () => getSpin(id), enabled: open && !spin });
-  const data = spin ?? query.data;
+  const query = useQuery({ queryKey: ["clinic-spin", String(id)], queryFn: () => getSpin(id), enabled: open, staleTime: 0 });
+  const data = query.data;
   return <>
     <button type="button" className="sc-share-cta" aria-haspopup="dialog" onClick={() => setOpen(true)}><ShareXCardContent /></button>
     <Dialog open={open} onClose={() => setOpen(false)} title="Diagnoza jako wątek na X">
-      {data ? <ThreadPosts spin={data} /> : <p>Ładowanie diagnozy…</p>}
+      {query.isFetching ? <p>Sprawdzanie dostępności diagnozy…</p> : query.isError ? <p>Diagnoza jest niedostępna. Nie można przygotować publikacji.</p>
+        : data?.status === "withdrawn" ? <p>Diagnoza została wycofana. Nie można jej udostępnić.</p>
+        : data ? <ThreadPosts spin={data} /> : <p>Ładowanie diagnozy…</p>}
     </Dialog>
   </>;
 }

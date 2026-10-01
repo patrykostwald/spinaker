@@ -1,7 +1,7 @@
 from __future__ import annotations
 from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView
 
-from news.clinic_api import clinic_council
+from news.clinic_api import clinic_council, clinic_corrections
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import agents_api
@@ -62,6 +62,7 @@ urlpatterns = [
     path('staff/newsletter/', newsletter.staff_stats),
     path('social/video/<str:name>', serve_video),
     path('clinic/', clinic_page),
+    path('clinic/corrections/', clinic_corrections),
     path('clinic/interviews/', clinic_interviews),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
     path('clinic/messages/', clinic_messages),
