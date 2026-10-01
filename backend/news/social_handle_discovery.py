@@ -50,7 +50,7 @@ def extract_x_links(html):
     for match in _HREF_RE.finditer(html):
         raw_url = unescape(match.group('href')).strip()
         parsed = urlparse(raw_url)
-        if parsed.scheme != 'https' or parsed.hostname.lower() not in {'x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'}:
+        if parsed.scheme != 'https' or (parsed.hostname or '').lower() not in {'x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'}:
             continue
         segments = [part for part in parsed.path.split('/') if part]
         if not segments:

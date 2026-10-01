@@ -296,6 +296,12 @@ def dr_spin_thread_task():
         cache.delete('dr-spin-thread-lock')
 
 
+@shared_task(name="news.tasks.account_warden_task", soft_time_limit=6000, time_limit=6300)
+def account_warden_task():
+    from news.account_warden import run
+    return run()
+
+
 @shared_task(name="news.tasks.council_recruiter_task", soft_time_limit=1500, time_limit=1600)
 def council_recruiter_task():
     """Rekruter Konsylium (co noc): zawieszenia martwych członków, powroty, egzamin jednego kandydata."""

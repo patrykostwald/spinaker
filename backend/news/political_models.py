@@ -36,8 +36,9 @@ class PoliticalAccount(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
     confirmation_fingerprint = models.CharField(max_length=64, blank=True, editable=False)
     enabled = models.BooleanField(default=False)
-    poll_interval_minutes = models.PositiveSmallIntegerField(default=15,
-        validators=[MinValueValidator(1), MaxValueValidator(1440)])
+    poll_interval_minutes = models.PositiveIntegerField(default=15,
+        validators=[MinValueValidator(1), MaxValueValidator(525600)])
+    last_verified_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
     poll_cursor = models.JSONField(default=dict, blank=True, editable=False)
     next_poll_at = models.DateTimeField(default=timezone.now, db_index=True, editable=False)
     last_polled_at = models.DateTimeField(null=True, editable=False)
@@ -73,6 +74,14 @@ class PoliticalAccount(models.Model):
         self.confirmed_by, self.confirmed_at = staff, timezone.now()
         self.confirmation_fingerprint = self.identity_fingerprint()
         self.save(update_fields=['confirmed_by', 'confirmed_at', 'confirmation_fingerprint'])
+
+
+class AccountWardenRun(models.Model):
+    """Durable run journal; reservations survive worker loss and remain visible in costs."""
+    started_at = models.DateTimeField(default=timezone.now, db_index=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    lookups = models.PositiveIntegerField(default=0)
+    report = models.JSONField(default=dict)
 
 
 class PoliticalAccountCandidate(models.Model):
@@ -186,6 +195,7 @@ class PublicFigure(models.Model):
         help_text='Opcjonalna, ręczna notatka redakcyjna; nie jest ustalana automatycznie.')
     organisations_checked_at = models.DateTimeField(null=True, blank=True, db_index=True,
         help_text='Kiedy agent KRS ostatnio szukał podmiotów tej osoby.')
+    account_discovery_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
     source_checked_at = models.DateTimeField(default=timezone.now)
     parliamentary_roster_entry = models.ForeignKey(ParliamentaryRosterEntry, null=True, blank=True,
         on_delete=models.PROTECT, related_name='public_figure_profiles',
