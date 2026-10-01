@@ -40,3 +40,16 @@ def test_gemini_costs_command_runs():
     out = StringIO()
     call_command('gemini_costs', '--days', '3', stdout=out)
     assert 'RAZEM' in out.getvalue()
+
+
+def test_spend_counter_adds_thinking_and_searches(settings):
+    from django.core.cache import cache
+    from django.utils import timezone
+    settings.CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+    cache.clear()
+    payload = {'usageMetadata': {'promptTokenCount': 1_000_000, 'candidatesTokenCount': 0, 'thoughtsTokenCount': 1_000_000},
+               'candidates': [{'groundingMetadata': {'webSearchQueries': ['a', 'b']}}]}
+    clinic_ai.record_gemini_spend('check', payload)
+    row = cache.get(clinic_ai.GEMINI_SPEND_KEY.format(day=timezone.localdate().isoformat(), task='check'))
+    assert row['calls'] == 1 and row['searches'] == 2 and row['thinking'] == 1_000_000
+    assert abs(row['usd'] - (0.5 + 3.0 + 2 * clinic_ai.GEMINI_SEARCH_USD)) < 1e-9

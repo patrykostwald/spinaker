@@ -300,7 +300,29 @@ def gemini_thinking(task: str) -> dict:
     return {} if level == 'default' else {'thinkingConfig': {'thinkingLevel': level}}
 
 
-def gemini_post(model: str, body: dict, *, timeout, key: str = ''):
+GEMINI_SPEND_KEY = 'gemini-spend:{day}:{task}'
+
+
+def record_gemini_spend(task: str, payload: dict) -> None:
+    """Dzienny licznik kosztu Gemini na zadanie — liczony przy każdej odpowiedzi, także gdy diagnoza potem się wywróci."""
+    from django.core.cache import cache
+    from django.utils import timezone
+    try:
+        usage = payload.get('usageMetadata') or {}
+        candidate = (payload.get('candidates') or [{}])[0] or {}
+        searches = len((candidate.get('groundingMetadata') or {}).get('webSearchQueries') or [])
+        cost = (int(usage.get('promptTokenCount') or 0) * PRICES['gemini'][0]
+                + gemini_output_tokens(usage) * PRICES['gemini'][1]) / 1_000_000 + searches * GEMINI_SEARCH_USD
+        key = GEMINI_SPEND_KEY.format(day=timezone.localdate().isoformat(), task=task)
+        row = cache.get(key) or {'calls': 0, 'usd': 0.0, 'searches': 0, 'thinking': 0}
+        row = {'calls': row['calls'] + 1, 'usd': row['usd'] + cost, 'searches': row['searches'] + searches,
+               'thinking': row['thinking'] + int(usage.get('thoughtsTokenCount') or 0)}
+        cache.set(key, row, 60 * 60 * 24 * 40)
+    except Exception:  # licznik nie może zatrzymać diagnozy
+        logger.debug('gemini spend counter failed', exc_info=True)
+
+
+def gemini_post(model: str, body: dict, *, timeout, key: str = '', task: str = 'check'):
     """generateContent; gdy model nie zna ustawienia myślenia (400), jedna próba bez niego — zadanie ma się wykonać."""
     url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
     headers = {'x-goog-api-key': key or os.environ['GEMINI_API_KEY'].strip()}
@@ -310,6 +332,11 @@ def gemini_post(model: str, body: dict, *, timeout, key: str = ''):
         logger.warning('gemini %s: thinkingLevel odrzucony, ponawiam bez niego', model)
         body = {**body, 'generationConfig': {k: v for k, v in config.items() if k != 'thinkingConfig'}}
         response = requests.post(url, json=body, timeout=timeout, headers=headers)
+    if response.status_code == 200:
+        try:
+            record_gemini_spend(task, response.json())
+        except ValueError:
+            pass
     return response
 
 
@@ -334,7 +361,7 @@ def _call_gemini(system: str, user: str, schema: dict, *, web_search: bool, max_
     if web_search:
         body['tools'] = [{'google_search': {}}]
     try:
-        response = gemini_post(model, body, timeout=(10, 600))
+        response = gemini_post(model, body, timeout=(10, 600), task=task)
     except requests.RequestException:
         raise ClinicAIError('gemini_connection')
     if response.status_code != 200:

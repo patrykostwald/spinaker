@@ -172,7 +172,7 @@ def _transcribe_part(url: str, start: int | None = None, end: int | None = None)
                              **clinic_ai.gemini_thinking('transcript')},
     }
     try:
-        response = clinic_ai.gemini_post(model, body, timeout=(10, 900))
+        response = clinic_ai.gemini_post(model, body, timeout=(10, 900), task='transcript')
     except requests.RequestException:
         raise clinic_ai.ClinicAIError('gemini_connection')
     if response.status_code != 200:

@@ -80,7 +80,7 @@ def describe_image(url: str) -> str:
                                         {'text': IMAGE_PROMPT}]}],
                 'generationConfig': {'temperature': 0.1, 'maxOutputTokens': 600, 'mediaResolution': 'MEDIA_RESOLUTION_LOW',
                                      **clinic_ai.gemini_thinking('image')}}
-        response = clinic_ai.gemini_post(model, body, timeout=(5, 60), key=key)
+        response = clinic_ai.gemini_post(model, body, timeout=(5, 60), key=key, task='image')
         response.raise_for_status()
         parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
         return ' '.join(''.join(part.get('text', '') for part in parts).split())[:800]

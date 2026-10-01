@@ -227,7 +227,7 @@ def _ask_gemini(model: str, system: str, user: str, schema: dict, max_tokens: in
             'generationConfig': {'temperature': 0.2, 'maxOutputTokens': max_tokens, 'responseMimeType': 'application/json',
                                  'responseSchema': schema, **clinic_ai.gemini_thinking('council')}}
     try:
-        response = clinic_ai.gemini_post(model, body, timeout=(5, 90), key=key)
+        response = clinic_ai.gemini_post(model, body, timeout=(5, 90), key=key, task='council')
         if response.status_code >= 400:
             raise ClinicAIError(f'gemini: http_{response.status_code}')  # np. 402 — wyczerpane środki, 404 — model zniknął
         parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
