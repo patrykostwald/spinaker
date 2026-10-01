@@ -56,7 +56,7 @@ export default function SupportPage() {
   return <InfoPage eyebrow="WSPARCIE" title="Pomóż nam analizować kolejne wypowiedzi." longTitle lead="Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu."
     actions={<Button href={SUPPORT_LINKS.monthly} variant="primary">Wesprzyj miesięczny budżet</Button>}>
     <p>Politycy mają spin doktorów. My mamy spin.clinic</p>
-    <section><h2>Kto za tym stoi</h2><p>Serwis rozwija jedna osoba, korzystając z narzędzi AI do programowania i analizy przekazów. Projekt powstaje dzięki pracy twórcy; wsparcie czytelników pomaga finansować jego dalsze działanie.</p><p>Operatorem serwisu jest iapply sp. z o.o. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. <Link href="/o-nas#operator">Dane operatora</Link> · <Link href="/o-nas#kontakt">pozostałe kontakty</Link>.</p></section>
+    <section><h2>Kto za tym stoi</h2><p>Operatorem serwisu jest iapply sp. z o.o.; wsparcie czytelników pomaga finansować dalsze działanie. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. <Link href="/o-nas#operator">Dane operatora</Link> · <Link href="/o-nas#kontakt">pozostałe kontakty</Link>.</p></section>
     <section><h2>Na co idą pieniądze</h2>
       <p>Finansujemy dostęp do wpisów na X, płatne etapy analizy, transkrypcje nagrań oraz serwer, bazę danych i kopie zapasowe. Część zadań korzysta z bezpłatnych limitów usług.</p>
       <dl className="sc-support-costs">{COSTS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>

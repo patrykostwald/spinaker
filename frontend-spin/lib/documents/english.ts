@@ -1,7 +1,7 @@
 /** British English copy for the shared static documents. Polish copy is the lookup key. */
 export const english = {
   "Projekt": "Project",
-  "Autor i operator": "Creator and operator",
+  "Operator": "Operator",
   "Finansowanie": "Funding",
   "Obserwuj nas": "Follow us",
   "Kontakt": "Contact",
@@ -14,9 +14,9 @@ export const english = {
   "Metodologia analiz": "Analysis methodology",
   "Informacje dla redakcji": "Information for the press",
   "Film o serwisie": "Film about the service",
-  "Projekt rozwija jedna osoba, korzystając z AI do programowania i analiz. Operatorem serwisu jest iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.": "One person develops the project, using AI for programming and analysis. The service is operated by iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.",
+  "Operatorem serwisu jest iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.": "The service is operated by iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.",
   "Finansowanie i niezależność": "Funding and independence",
-  "Projekt powstaje dzięki pracy twórcy i wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.": "The project is made possible by its creator's work and readers' support. We pay for the X API, paid stages of AI analysis, transcription and running the service; some tasks operate within services' free usage limits.",
+  "Projekt finansuje operator, iapply sp. z o.o., przy wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.": "The project is funded by its operator, iapply sp. z o.o., with support from readers. We pay for the X API, paid stages of AI analysis, transcription and running the service; some tasks operate within services' free usage limits.",
   "Nie przyjmujemy pieniędzy od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór materiałów ani wynik diagnozy. Nie mamy reklam ani sponsorów wpływających na treść.": "We do not accept money from political parties, politicians or their foundations. Donations confer no influence over the selection of material or the outcome of a diagnosis. We have no advertising or sponsors influencing the content.",
   "Koszty i wsparcie projektu": "Project costs and support",
   "Najsilniejsze diagnozy publikujemy automatycznie także poza stroną — zawsze z linkiem do pełnej analizy i źródeł, bez oznaczania polityków.": "We also automatically publish diagnoses with the highest spin strength outside the website - always with a link to the full analysis and sources, without tagging politicians.",

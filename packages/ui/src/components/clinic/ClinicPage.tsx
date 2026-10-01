@@ -149,8 +149,8 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
   return (
     <section className="sc-clinic sc-clinic-overview" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
       {!embedded ? <ClinicNav /> : null}
-      <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title="Dr. Spin"
-        subtitle={<><AiTag /> Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji i źródła.</>}
+      <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title={<>Dr. Spin<sup className="sc-tm-ai"><AiTag /></sup></>}
+        subtitle={<>Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji i źródła.</>}
         link={embedded ? <Link href="/metodologia">Jak działa analiza</Link> : undefined} />
 
       <ClinicRecentlyViewed />

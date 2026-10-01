@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicPage, type Camp } from "../../lib/clinic";
 import { HomeSpinScanner } from "./HomeSpinScanner";
 import { MessageBox } from "../../components/clinic/ClinicExtras";
+import { AiTag } from "../../components/clinic/SpinParts";
 
 /** Godziny generowania przekazu dnia (jak w harmonogramie serwera). */
 const MESSAGE_SLOTS: Array<[number, number]> = [[9, 0], [12, 0], [15, 0], [18, 0], [21, 30]];
@@ -35,7 +36,7 @@ export function HomeSpinTeaser() {
       {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       <div className="sc-scan-s-top">
         <header className="sc-scan-s-head">
-          <h2 id="home-drspin-title">Dr. Spin</h2>
+          <h2 id="home-drspin-title">Dr. Spin<sup className="sc-tm-ai"><AiTag /></sup></h2>
           <p className="sc-scan-s-links"><Link href="/metodologia">Jak wybieramy i oceniamy?</Link><Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link></p>
         </header>
         <div className="sc-scan-s-tabs" role="tablist" aria-label="Strona polityczna">

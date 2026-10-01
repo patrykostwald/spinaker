@@ -5,7 +5,7 @@ import { socialChannels } from "@spin-clinic/ui";
 export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const t = documentTranslator(lang);
   const sections = [
-    { id: "projekt", label: t("Projekt") }, { id: "operator", label: t("Autor i operator") },
+    { id: "projekt", label: t("Projekt") }, { id: "operator", label: t("Operator") },
     { id: "finansowanie", label: t("Finansowanie") }, { id: "obserwuj", label: t("Obserwuj nas") }, { id: "kontakt", label: t("Kontakt") },
     { id: "rozwoj", label: t("Co działa i co planujemy") },
   ];
@@ -17,11 +17,11 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       <p>{t("spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Wybrane diagnozy publikujemy także jako wpisy, grafiki i krótkie filmy w mediach społecznościowych — zawsze z linkiem do pełnej analizy. Projekt działa w wersji beta i rozwija się etapami.")}</p>
       <p><Link lang={lang} id="konsylium" href="/konsylium">{t("Jak wykorzystujemy AI")}</Link> · <Link lang={lang} id="klinika" href="/metodologia">{t("Metodologia analiz")}</Link> · <Link lang={lang} id="dla-redakcji" href="/dla-redakcji">{t("Informacje dla redakcji")}</Link> · <Link lang={lang} id="film" href="/konsylium#film">{t("Film o serwisie")}</Link></p>
     </section>
-    <section id="operator"><h2>{t("Autor i operator")}</h2>
-      <p>{t("Projekt rozwija jedna osoba, korzystając z AI do programowania i analiz. Operatorem serwisu jest iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.")}</p>
+    <section id="operator"><h2>{t("Operator")}</h2>
+      <p>{t("Operatorem serwisu jest iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.")}</p>
     </section>
     <section id="finansowanie"><h2>{t("Finansowanie i niezależność")}</h2>
-      <p>{t("Projekt powstaje dzięki pracy twórcy i wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.")}</p>
+      <p>{t("Projekt finansuje operator, iapply sp. z o.o., przy wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.")}</p>
       <p>{t("Nie przyjmujemy pieniędzy od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór materiałów ani wynik diagnozy. Nie mamy reklam ani sponsorów wpływających na treść.")} <Link lang={lang} href="/wsparcie">{t("Koszty i wsparcie projektu")}</Link>.</p>
     </section>
     <section id="obserwuj"><h2>{t("Obserwuj nas")}</h2>

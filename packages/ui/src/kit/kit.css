@@ -6593,3 +6593,6 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-interview-results > section[data-role] > .sc-scan-m-lbl, .sc-participant-result[data-role] > .sc-scan-m-lbl { color: color-mix(in srgb, var(--sc-role) 75%, var(--sc-text-3)); }
 .sc-interview-results .sc-interview-results__who { font-size: 17px; line-height: 24px; font-weight: 700; }
 @media (max-width: 520px) { .sc-interview-results .sc-interview-results__who { font-size: 16px; line-height: 22px; } }
+/* Znak AI przy „Dr. Spin” jak znak zastrzeżony: mały, w górnym rogu za nazwą (właściciel 2.10.2026) */
+.sc-tm-ai { display: inline-block; vertical-align: top; margin-left: 4px; font-size: 0; line-height: 0; position: relative; top: 4px; }
+.sc-tm-ai .sc-ai-tag { height: 16px; padding: 0 5px; font-size: 9px; }
