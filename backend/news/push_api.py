@@ -24,7 +24,7 @@ def enabled():
 class SubscriptionInput(serializers.Serializer):
     endpoint = serializers.URLField(max_length=2048)
     keys = serializers.DictField(child=serializers.CharField(max_length=128))
-    topics = serializers.ListField(child=serializers.ChoiceField(choices=TOPICS), max_length=3, allow_empty=False)
+    topics = serializers.ListField(child=serializers.ChoiceField(choices=TOPICS), max_length=len(TOPICS), allow_empty=False)
     consent_version = serializers.ChoiceField(choices=[CONSENT_VERSION])
 
     def validate_endpoint(self, value):

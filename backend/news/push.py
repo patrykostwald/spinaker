@@ -5,7 +5,7 @@ from django.conf import settings
 from news.push_models import PushSubscription
 
 logger = logging.getLogger(__name__)
-TOPICS = ('spin-dnia', 'nitki-dr-spina', 'obserwowani')
+TOPICS = ('spiny-na-zywo', 'spin-dnia', 'nitki-dr-spina', 'obserwowani')
 CONSENT_VERSION = '2026-09-30'
 
 
@@ -51,3 +51,10 @@ def send_to_user(user, payload):
     rows = PushSubscription.objects.filter(user=user)
     ids = [r.pk for r in rows.only('pk', 'topics') if 'obserwowani' in r.topics]
     return _send(rows.filter(pk__in=ids), payload)
+
+
+def send_to_staff(payload):
+    """Powiadomienie dla zespołu (np. diagnoza czeka na zatwierdzenie) — niezależnie od tematów."""
+    if not enabled():
+        return 0
+    return _send(PushSubscription.objects.filter(user__is_staff=True, user__is_active=True), payload)

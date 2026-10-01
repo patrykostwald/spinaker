@@ -6,7 +6,7 @@ import { useFeature } from '@spin-clinic/ui';
 
 type InstallPrompt = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Config = { enabled: boolean; public_key: string; csrfToken: string; consent_version: string; results: { endpoint: string; topics: string[] }[] };
-const topics = [['spin-dnia', 'Spin dnia'], ['nitki-dr-spina', 'Nitki Dr. Spina'], ['obserwowani', 'Obserwowani (po zalogowaniu)']];
+const topics = [['spiny-na-zywo', 'Każdy nowy spin — od razu po diagnozie'], ['spin-dnia', 'Spin dnia'], ['nitki-dr-spina', 'Nitki Dr. Spina'], ['obserwowani', 'Obserwowani (po zalogowaniu)']];
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
 export function PwaControls() {
