@@ -6575,3 +6575,21 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 @media (max-width: 640px) {
   .sc-clinic-footer-actions { order: 4; width: 100%; }
 }
+
+/* Tytuły (synteza) na listach diagnoz: mniejsze i lekko przygaszone, żeby nie biły po oczach (właściciel 2.10.2026) */
+.sc-spin-row .sc-spin-row__title { font-size: 17px; line-height: 24px; font-weight: 700; }
+.sc-spin-row .sc-spin-row__title a { color: color-mix(in srgb, var(--sc-text) 88%, var(--sc-bg)); transition: color .15s; }
+.sc-spin-row:hover .sc-spin-row__title a, .sc-spin-row .sc-spin-row__title a:focus-visible { color: var(--sc-text); }
+@media (max-width: 520px) { .sc-spin-row .sc-spin-row__title { font-size: 16px; line-height: 22px; } }
+/* Etykieta werdyktu wyśrodkowana pod miniaturą, nie zahacza o krawędź karty (właściciel 2.10.2026) */
+.sc-spin-row .sc-spin-row__verdict { left: 50%; right: auto; transform: translateX(-50%); justify-content: center; bottom: 6px; }
+/* W kolumnach Kliniki karta miała zerowy lewy odstęp, więc autor i miniatura dotykały ramki po najechaniu */
+.sc-clinic-group .sc-clinic-column__list .sc-spin-row { padding-left: var(--sc-s-3); }
+/* Wywiad: etykiety „Gość” i „Prowadzący” bez dopisku o sile spinu, większe nazwiska, delikatne rozróżnienie kolorem (właściciel 2.10.2026) */
+:root { --sc-role-guest: #3fb8af; --sc-role-host: #9b87f5; }
+.sc-interview-results > section[data-role], .sc-participant-result[data-role] { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--sc-role) 55%, transparent); }
+[data-role="guest"] { --sc-role: var(--sc-role-guest); }
+[data-role="host"] { --sc-role: var(--sc-role-host); }
+.sc-interview-results > section[data-role] > .sc-scan-m-lbl, .sc-participant-result[data-role] > .sc-scan-m-lbl { color: color-mix(in srgb, var(--sc-role) 75%, var(--sc-text-3)); }
+.sc-interview-results .sc-interview-results__who { font-size: 17px; line-height: 24px; font-weight: 700; }
+@media (max-width: 520px) { .sc-interview-results .sc-interview-results__who { font-size: 16px; line-height: 22px; } }
