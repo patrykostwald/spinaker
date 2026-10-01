@@ -91,6 +91,13 @@ class SpinOpinionAdmin(admin.ModelAdmin):
     list_display = ('diagnosis', 'user', 'polarity', 'body', 'created_at')
     list_filter = ('polarity',)
     raw_id_fields = ('user', 'diagnosis')
+    readonly_fields = tuple(field.name for field in SpinOpinion._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(XAccountSuggestion)

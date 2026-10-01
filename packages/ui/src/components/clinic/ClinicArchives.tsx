@@ -1,5 +1,6 @@
 "use client";
 
+import { ClinicDiscussion, DiscussionCounts } from "./ClinicDiscussion";
 import { ClinicNav } from "./ClinicNav";
 import { SearchField } from "../../kit/SearchField";
 import { Button } from "../../kit/Button";
@@ -47,6 +48,7 @@ export function ClinicInterviewArchive() {
         <h2><Link href={`/klinika/wywiady/${interview.id}`}>{interview.headline || "Analiza wywiadu"}</Link></h2>
         <p className="sc-interview-recording-title"><span>Tytuł nagrania:</span> {interview.title}</p>
         <p className="sc-archive-interview-summary">{interview.summary}</p>
+        <DiscussionCounts {...interview} />
         <Link className="sc-iv-card__cta" href={`/klinika/wywiady/${interview.id}`}>Czytaj analizę →</Link>
       </div>
       <InterviewResults interview={interview} />
@@ -67,6 +69,7 @@ export function ClinicInterviewPage({ interview }: { interview: Interview }) {
     <ClinicNav />
     <SectionHeader variant="page" longTitle title={interview.headline || "Analiza wywiadu"} />
     <InterviewScanner interview={interview} full />
+    <ClinicDiscussion kind="interviews" id={interview.id} />
   </section>;
 }
 

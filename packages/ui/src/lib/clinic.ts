@@ -27,6 +27,7 @@ export type SpinAuthor = {
 };
 
 export type SpinCardData = {
+  comment_count?: number;
   id: number;
   camp: Camp;
   camp_label: string;
@@ -122,6 +123,8 @@ export type InterviewParticipant = {
   techniques: InterviewQuote[]; claims: InterviewClaim[]; limitations?: string;
 };
 export type Interview = {
+  opinions?: { positive: number; negative: number };
+  comment_count?: number;
   participants?: InterviewParticipant[];
   id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
   guest_name: string; guest_role: string; host_name: string; headline: string; summary: string; overall: string;

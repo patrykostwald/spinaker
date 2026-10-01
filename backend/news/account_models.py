@@ -172,6 +172,7 @@ class CommentReport(models.Model):
 
 
 class AccountIdentity(models.Model):
+    comments_blocked_until = models.DateTimeField(null=True, blank=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account_identity')
     email = models.EmailField(unique=True)
     email_verified = models.BooleanField(default=False)

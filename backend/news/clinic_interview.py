@@ -430,9 +430,12 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
     if not interview:
         return None
     from news.clinic import ASSESSMENT_LABELS
+    from news.clinic_discussion import counts
     from news.clinic_models import VERDICTS
     guest = interview.guest_analysis or {}
     return {
+        'opinions': {'positive': interview.positive_count, 'negative': interview.negative_count} if hasattr(interview, 'positive_count') else counts(interview.opinions.all()),
+        'comment_count': interview.discussion_count if hasattr(interview, 'discussion_count') else interview.comments.count(),
         'id': interview.pk, 'day': interview.day, 'url': interview.url, 'video_id': interview.video_id,
         'title': interview.title, 'channel': interview.channel, 'thumbnail_url': interview.thumbnail_url,
         'guest_name': interview.guest_name, 'guest_role': interview.guest_role, 'host_name': interview.host_name,
@@ -448,7 +451,12 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
 
 
 def _published_interviews():
-    return ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True).order_by('-day', '-diagnosed_at')
+    from django.db.models import Count, Q
+    return ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True).annotate(
+        positive_count=Count('opinions', filter=Q(opinions__polarity='positive'), distinct=True),
+        negative_count=Count('opinions', filter=Q(opinions__polarity='negative'), distinct=True),
+        discussion_count=Count('comments', distinct=True),
+    ).order_by('-day', '-diagnosed_at')
 
 
 def _edition(limit: int = 12):

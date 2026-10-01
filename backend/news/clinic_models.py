@@ -195,7 +195,7 @@ class SpinOpinion(models.Model):
     """Reakcja czytelnika na diagnozę: trafna / nietrafna, opcjonalnie z komentarzem."""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='spin_opinions')
     diagnosis = models.ForeignKey(SpinDiagnosis, on_delete=models.CASCADE, related_name='opinions')
-    polarity = models.CharField(max_length=8, choices=POLARITIES)
+    polarity = models.CharField(max_length=8, choices=POLARITIES, null=True, blank=True)
     body = models.CharField(max_length=240, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -203,7 +203,7 @@ class SpinOpinion(models.Model):
         ordering = ['-created_at', '-id']
         constraints = [
             models.UniqueConstraint(fields=['user', 'diagnosis'], name='one_opinion_per_user_spin'),
-            models.CheckConstraint(condition=models.Q(polarity__in=['positive', 'negative']), name='spin_opinion_valid_polarity'),
+            models.CheckConstraint(condition=models.Q(polarity__isnull=True) | models.Q(polarity__in=['positive', 'negative']), name='spin_opinion_valid_polarity'),
         ]
 
 

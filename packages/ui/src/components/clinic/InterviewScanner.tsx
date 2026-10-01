@@ -1,5 +1,7 @@
 "use client";
 
+import { DiscussionCounts } from "./ClinicDiscussion";
+
 import { techniqueLabel } from "../../lib/clinic";
 
 import Link from "next/link";
@@ -110,6 +112,7 @@ function CompactInterviewScanner({ interview, full = false }: { interview: Inter
       <InterviewScope />
       <InterviewResults interview={interview} />
       <p className="sc-archive-interview-summary">{interview.summary}</p>
+      <DiscussionCounts {...interview} />
       <footer className="sc-scan-dg-foot"><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a><div className="sc-scan-dg-actions">
         <button ref={expandRef} type="button" aria-expanded={expanded} aria-controls={`${prefix}-details`} onClick={() => expanded ? collapse() : setExpanded(true)}>{expanded ? "Zwiń uzasadnienie" : "Pokaż uzasadnienie"}</button>
         <button type="button" aria-expanded={sharing} aria-controls={`${prefix}-share`} onClick={() => setSharing(!sharing)}>Udostępnij</button>{full ? null : <Link className="sc-scan-button sc-scan-primary" href={path}>Pełna analiza →</Link>}

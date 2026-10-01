@@ -93,7 +93,7 @@ def send_notification_digests():
                 from news.account_models import AccountIdentity
                 if not user.is_active or not user.email or not AccountIdentity.objects.filter(user=user, email_verified=True).exists():
                     continue
-                rows = Notification.objects.filter(user=user, emailed_at__isnull=True, created_at__lte=now, created_at__gt=preference.last_digest_at or now - timedelta(days=days)).order_by('created_at')
+                rows = Notification.objects.exclude(kind='clinic_reply').filter(user=user, emailed_at__isnull=True, created_at__lte=now, created_at__gt=preference.last_digest_at or now - timedelta(days=days)).order_by('created_at')
                 batch = list(rows[:100])
                 if not batch:
                     preference.last_digest_at = now

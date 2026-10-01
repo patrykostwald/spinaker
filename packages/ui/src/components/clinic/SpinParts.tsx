@@ -1,5 +1,7 @@
 "use client";
 
+import { DiscussionCounts } from "./ClinicDiscussion";
+
 import Link from "next/link";
 import { Dialog } from "../Dialog";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -88,6 +90,7 @@ export function SpinRow({ spin, withSummary = false, withTechniques = false, bad
       <div className="sc-spin-row__body">
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={href} onClick={onOpen}>{spin.headline}</Link></h3>
         <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
+        <DiscussionCounts {...spin} />
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
         {withTechniques && <p className="sc-spin-row__techniques">{typeCount} {techniqueLabel(typeCount)}</p>}
         <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle}</p><p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
@@ -119,9 +122,7 @@ export function SpinCard({ spin }: { spin: SpinCardData }) {
           <ul className="sc-spin-techniques" aria-label="Techniki">{spin.technique_names.map(name => <li key={name}>{name}</li>)}</ul>
         )}
         <footer className="sc-spin-card__foot">
-          {ACCOUNTS_ENABLED ? <span aria-label={`Trafna diagnoza: ${spin.opinions.positive}, nietrafna: ${spin.opinions.negative}`}>
-            <span aria-hidden="true">▲ {spin.opinions.positive} · ▼ {spin.opinions.negative}</span>
-          </span> : <AiTag />}
+          {ACCOUNTS_ENABLED ? <DiscussionCounts {...spin} /> : <AiTag />}
           <span className="sc-spin-card__links"><ShareSpinOnX id={spin.id} /><Link href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link></span>
         </footer>
       </div>

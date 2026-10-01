@@ -635,7 +635,7 @@ def _media(post: PoliticalPost) -> list[dict]:
     return result[:4]
 
 
-def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = None) -> dict:
+def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = None, comment_count: int | None = None) -> dict:
     post = diagnosis.post
     metrics = (post.source_data or {}).get('public_metrics', {})
     return {
@@ -656,13 +656,14 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
                  'media': _media(post), 'likes': metrics.get('like_count', 0), 'reposts': metrics.get('retweet_count', 0)},
         'author': author_data(post, figures.get(post.account_id)),
         'opinions': counts or {'positive': 0, 'negative': 0},
+        'comment_count': comment_count if comment_count is not None else diagnosis.comments.count(),
     }
 
 
 def detail_data(diagnosis: SpinDiagnosis) -> dict:
     figures = figures_by_account([diagnosis.post.account_id])
     counts = {'positive': 0, 'negative': 0}
-    counts.update({row['polarity']: row['n'] for row in diagnosis.opinions.values('polarity').annotate(n=Count('id'))})
+    counts.update({row['polarity']: row['n'] for row in diagnosis.opinions.filter(polarity__isnull=False).values('polarity').annotate(n=Count('id'))})
     data = card_data(diagnosis, figures, counts)
     data.update({
         'analysis': diagnosis.analysis,
@@ -688,7 +689,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
 def _opinion_counts(ids) -> dict[int, dict]:
     from news.clinic_models import SpinOpinion
     result = {pk: {'positive': 0, 'negative': 0} for pk in ids}
-    for row in SpinOpinion.objects.filter(diagnosis_id__in=ids).values('diagnosis_id', 'polarity').annotate(n=Count('id')):
+    for row in SpinOpinion.objects.filter(diagnosis_id__in=ids, polarity__isnull=False).values('diagnosis_id', 'polarity').annotate(n=Count('id')):
         result[row['diagnosis_id']][row['polarity']] = row['n']
     return result
 
@@ -697,7 +698,9 @@ def cards(queryset) -> list[dict]:
     rows = list(queryset)
     figures = figures_by_account({row.post.account_id for row in rows})
     counts = _opinion_counts([row.pk for row in rows])
-    return [card_data(row, figures, counts[row.pk]) for row in rows]
+    from news.clinic_discussion_models import ClinicComment
+    comments = dict(ClinicComment.objects.filter(diagnosis_id__in=counts).values('diagnosis_id').annotate(n=Count('id')).values_list('diagnosis_id', 'n'))
+    return [card_data(row, figures, counts[row.pk], comments.get(row.pk, 0)) for row in rows]
 
 
 def scale_data(window_days: int = 7) -> dict:

@@ -3,7 +3,6 @@ import os
 import re
 from datetime import date, datetime, time, timedelta
 
-from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -19,8 +18,7 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from news import clinic
-from news.accounts import AccountWriteThrottle, OpinionInput, OpinionReadThrottle
-from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
+from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, XAccountSuggestion
 from news.political_models import PublicFigure
 from news.public_figures import verified_x_account_record
 from news.schema import json_view
@@ -261,74 +259,6 @@ def clinic_report(request, week_end=None):
 def clinic_deleted(request):
     from news.deleted_posts import deleted_data
     return Response(deleted_data())
-
-
-class SpinOpinionSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
-
-    class Meta:
-        model = SpinOpinion
-        fields = ['id', 'author', 'polarity', 'body', 'created_at']
-
-    def get_author(self, opinion):
-        return {'id': opinion.user_id, 'username': opinion.user.username}
-
-
-@json_view('Reakcje i komentarze do diagnozy spinu (trafna / nietrafna)', tags=['klinika'])
-class SpinOpinionsView(APIView):
-    """Najpierw reakcja, komentarz opcjonalnie. Sam komentarz bez reakcji nie jest możliwy."""
-    permission_classes = [AllowAny]
-    throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
-
-    def get_permissions(self):
-        return [IsAuthenticated()] if self.request.method in ('POST', 'PATCH') else super().get_permissions()
-
-    def _diagnosis(self, diagnosis_id):
-        return get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
-
-    def get(self, request, diagnosis_id):
-        rows = self._diagnosis(diagnosis_id).opinions.select_related('user')
-        counts = {'positive': 0, 'negative': 0}
-        counts.update({row['polarity']: row['n'] for row in rows.values('polarity').annotate(n=Count('id'))})
-        mine = rows.filter(user=request.user).first() if request.user.is_authenticated else None
-        return Response({
-            'counts': counts,
-            'mine': SpinOpinionSerializer(mine).data if mine else None,
-            'positive': SpinOpinionSerializer(rows.filter(polarity='positive').exclude(body='')[:50], many=True).data,
-            'negative': SpinOpinionSerializer(rows.filter(polarity='negative').exclude(body='')[:50], many=True).data,
-        })
-
-    def post(self, request, diagnosis_id):
-        from news.account_security import require_verified
-        require_verified(request.user)
-        diagnosis = self._diagnosis(diagnosis_id)
-        serializer = OpinionInput(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            with transaction.atomic():
-                opinion = SpinOpinion.objects.create(user=request.user, diagnosis=diagnosis, **serializer.validated_data)
-        except IntegrityError:
-            return Response({'detail': 'Twoja reakcja na tę diagnozę jest już zapisana.'}, status=409)
-        return Response(SpinOpinionSerializer(opinion).data, status=201)
-
-    def patch(self, request, diagnosis_id):
-        from news.account_security import require_verified
-        require_verified(request.user)
-        if not isinstance(request.data, dict) or set(request.data) - {'body'}:
-            raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
-        serializer = OpinionInput(data={'polarity': 'positive', **request.data})
-        serializer.is_valid(raise_exception=True)
-        body = serializer.validated_data['body']
-        if not body:
-            raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
-        self._diagnosis(diagnosis_id)
-        with transaction.atomic():
-            opinion = get_object_or_404(SpinOpinion.objects.select_for_update().select_related('user'),
-                                        diagnosis_id=diagnosis_id, user=request.user)
-            if opinion.body or not SpinOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
-                return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
-            opinion.body = body
-        return Response(SpinOpinionSerializer(opinion).data)
 
 
 class SuggestionThrottle(AnonRateThrottle):

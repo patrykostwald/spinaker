@@ -8,7 +8,7 @@ import { ApiError } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { agreementLabel, getSpin, type SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
-import { OpinionsPanel } from "../OpinionsPanel";
+import { ClinicDiscussion } from "./ClinicDiscussion";
 import { AiTag, FitStickyAside, HowToRead, SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { clinicResultsUrl } from "../../lib/clinicNavigation";
@@ -109,13 +109,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
         </article>
         </div>
       </div>
-      <OpinionsPanel endpoint={`/api/clinic/spins/${spin.id}/opinions/`} labels={{
-        kicker: "REAKCJE CZYTELNIKÓW",
-        question: "Czy ta diagnoza jest trafna?",
-        positive: "Trafna",
-        negative: "Nietrafna",
-        signedOut: "Zaloguj się, aby ocenić diagnozę i dodać komentarz. Komentarz zawsze idzie z reakcją.",
-      }} />
+      <ClinicDiscussion kind="spins" id={spin.id} />
     </div>
   );
 }

@@ -210,7 +210,9 @@ def test_json_is_read_from_the_last_text_block():
 
 
 @pytest.mark.django_db
-def test_reaction_is_required_and_comment_is_optional(ai_on):
+def test_rating_can_be_changed_and_withdrawn(ai_on, settings):
+    from news.account_models import AccountIdentity
+    settings.ACCOUNTS_ENABLED = True
     post(account())
     pipeline()
     diagnosis = SpinDiagnosis.objects.get()
@@ -219,13 +221,13 @@ def test_reaction_is_required_and_comment_is_optional(ai_on):
     client = APIClient()
     assert client.post(url, {'polarity': 'positive'}, format='json').status_code in (401, 403)
     reader = get_user_model().objects.create_user('czytelnik', password='x')
+    AccountIdentity.objects.create(user=reader, email='reader@example.org', email_verified=True)
     client.force_authenticate(reader)
-    assert client.post(url, {'body': 'sam komentarz'}, format='json').status_code == 400
-    assert client.post(url, {'polarity': 'negative', 'body': 'Liczba jest z oficjalnego komunikatu.'}, format='json').status_code == 201
-    assert client.post(url, {'polarity': 'positive'}, format='json').status_code == 409
-    data = APIClient().get(url).json()
-    assert data['counts'] == {'positive': 0, 'negative': 1}
-    assert [row['body'] for row in data['negative']] == ['Liczba jest z oficjalnego komunikatu.']
+    assert client.post(url, {'polarity': 'negative'}, format='json').status_code == 200
+    assert client.post(url, {'polarity': 'positive'}, format='json').status_code == 200
+    assert APIClient().get(url).json()['counts'] == {'positive': 1, 'negative': 0}
+    assert client.delete(url).status_code == 200
+    assert APIClient().get(url).json()['counts'] == {'positive': 0, 'negative': 0}
 
 
 @pytest.mark.django_db

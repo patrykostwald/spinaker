@@ -1,4 +1,5 @@
 from __future__ import annotations
+from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView
 
 from news.clinic_api import clinic_council
 from rest_framework.routers import DefaultRouter
@@ -21,7 +22,7 @@ from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCa
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
 from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
-from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report, SpinOpinionsView,
+from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report,
                              suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
@@ -70,7 +71,12 @@ urlpatterns = [
     path('clinic/stats/', clinic_statistics),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
     path('clinic/spins/<int:diagnosis_id>/card.png', clinic_spin_card),
-    path('clinic/spins/<int:diagnosis_id>/opinions/', SpinOpinionsView.as_view()),
+    path('clinic/spins/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'interviews'}),
+    path('clinic/spins/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'interviews'}),
+    path('clinic/spins/<int:target_id>/comments/<int:comment_id>/report/', ClinicCommentReportView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/comments/<int:comment_id>/report/', ClinicCommentReportView.as_view(), {'kind': 'interviews'}),
     path('clinic/accounts/', clinic_accounts),
     path('clinic/deleted/', clinic_deleted),
     path('clinic/report/', clinic_report),
