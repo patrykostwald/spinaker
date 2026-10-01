@@ -80,19 +80,23 @@ export function SpinRow({ spin, withSummary = false, badge, returnTo, onOpen }: 
   const href = `/klinika/${spin.id}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
   return (
     <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`}>
-      <span className="sc-spin-row__thumb">
-        {image
-          // eslint-disable-next-line @next/next/no-img-element -- miniatura z oficjalnego API X
-          ? <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" />
-          : <SpinAvatar author={spin.author} size="lg" />}
-      </span>
+      {/* Lewa kolumna: kto i kiedy (miniatura, werdykt, autor, data); prawa: tytuł i dane diagnozy. */}
+      <div className="sc-spin-row__side">
+        <span className="sc-spin-row__thumb">
+          {image
+            // eslint-disable-next-line @next/next/no-img-element -- miniatura z oficjalnego API X
+            ? <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" />
+            : <SpinAvatar author={spin.author} size="lg" />}
+        </span>
+        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
+        <p className="sc-spin-row__author"><span>{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""}</span> <span>@{spin.author.handle}</span></p>
+        <p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
+      </div>
       <div className="sc-spin-row__body">
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={href} onClick={onOpen}>{spin.headline}</Link></h3>
         <SpinListMetrics spin={spin} />
-        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         <DiscussionCounts {...spin} />
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
-        <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle}</p><p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
       </div>
     </article>
   );
@@ -108,8 +112,7 @@ export function SpinListMetrics({ spin }: { spin: SpinCardData }) {
     <div><dt>Siła spinu</dt><dd className="sc-list-metrics__strength">{spin.intensity}<small>/100</small></dd>
       <span className="sc-list-metrics__track" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span></div>
     <div><dt>Konsylium AI</dt><dd>{council.agreement ?? "—"}</dd><small>ten sam werdykt</small></div>
-    <div><dt>Twierdzenia</dt><dd>{checked}</dd><small>sprawdzone</small>
-      {unverified > 0 ? <small className="sc-list-metrics__unverified">{unverified} niezweryfikowane</small> : null}</div>
+    <div><dt>Twierdzenia</dt><dd>{checked}</dd><small>{unverified > 0 ? `sprawdzone z ${checked + unverified}` : "sprawdzone"}</small></div>
     <div><dt>Techniki</dt><dd>{typeCount}</dd><small>{techniqueLabel(typeCount)}</small>
       <span className="sc-list-metrics__families">{families.filter(family => family.key !== "inne").map(family =>
         <i key={family.key} data-family={family.key} data-empty={!family.count || undefined} role="img" aria-label={`${family.label}: ${family.count}`} title={`${family.label}: ${family.count}`} />)}</span></div>

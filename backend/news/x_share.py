@@ -69,18 +69,19 @@ def build(data: dict, account: bool = False) -> list[str]:
     for count in range(min(3, len(names)), 0 if names else -1, -1):
         technique = 'Techniki: ' + ', '.join(names[:count]) + '.' if count else ''
         parts = [head] + ([technique] if technique else []) + ([] if account else [full])
-        lead = shorten(synthesis[0], LIMIT - weight('\n'.join(parts)) - 1)
+        # Sekcje rozdzielone pustą linią (decyzja właściciela 1.10.2026).
+        lead = shorten(synthesis[0], LIMIT - weight('\n\n'.join(parts)) - 2)
         if lead:
-            first = '\n'.join([head, lead] + ([technique] if technique else []) + ([] if account else [full]))
+            first = '\n\n'.join([head, lead] + ([technique] if technique else []) + ([] if account else [full]))
             break
     if not first:
         return []
     if not account:
         return [first]
-    point = shorten(synthesis[1], LIMIT - weight(full) - 1)
+    point = shorten(synthesis[1], LIMIT - weight(full) - 2)
     if not point:
         return []
-    second = point + '\n' + full
+    second = point + '\n\n' + full
     claims = checked_claims(data.get('claims'))
     # Przy kilku twierdzeniach dobieramy źródło nazwane w punkcie, zamiast przypisywać mu losowy link.
     sources = [source for claim in claims for source in claim.get('sources', [])
@@ -89,7 +90,7 @@ def build(data: dict, account: bool = False) -> list[str]:
                 and source['title'].casefold() in point.casefold()]
     if sources and (len(claims) == 1 or len(matching) == 1):
         source = (matching[0] if len(matching) == 1 else sources[0])['url']
-        extra = '\nŹródło: ' + source
+        extra = '\n\nŹródło: ' + source
         if source and weight(second + extra) <= LIMIT:
             second += extra
     return [first, second]
