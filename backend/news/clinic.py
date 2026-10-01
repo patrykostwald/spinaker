@@ -565,6 +565,12 @@ def run_daily_messages(day=None) -> dict:
 
 # --- alerty ---------------------------------------------------------------------------------
 
+def staff_mail_enabled() -> bool:
+    """Maile wewnętrzne do zespołu (alerty, raporty agentów, filmy do TikToka). Domyślnie wyłączone (właściciel 2.10.2026:
+    za dużo wiadomości na admin@spin.clinic). Włączenie: STAFF_MAIL_ENABLED=true. Maile do czytelników działają bez zmian."""
+    return os.environ.get('STAFF_MAIL_ENABLED', 'false').strip().lower() in ('1', 'true', 'yes')
+
+
 def _smtp_ready() -> bool:
     required = ('SOURCE_MAIL_SMTP_HOST', 'SOURCE_MAIL_SMTP_USERNAME', 'SOURCE_MAIL_SMTP_PASSWORD', 'SOURCE_MAIL_SMTP_FROM')
     return bool(settings.SOURCE_MAIL_SMTP_ENABLED and all(getattr(settings, item, '') for item in required))
@@ -581,7 +587,7 @@ def send_review_alert() -> str:
         return 'nothing'
     recipient = os.environ.get('CLINIC_REVIEW_EMAIL', '').strip()
     status = 'queued_only'
-    if recipient and _smtp_ready():
+    if recipient and staff_mail_enabled() and _smtp_ready():
         domain = os.environ.get('SPIN_DOMAIN', 'spin.clinic')
         email = EmailMessage()
         email['From'] = settings.SOURCE_MAIL_SMTP_FROM

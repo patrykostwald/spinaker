@@ -266,8 +266,8 @@ def delete_bluesky(uri: str) -> None:
 def _mail(to: str, subject: str, body: str, attachment: Path | None = None) -> bool:
     import smtplib
     from email.message import EmailMessage
-    from news.clinic import _smtp_ready
-    if not to or not _smtp_ready():
+    from news.clinic import _smtp_ready, staff_mail_enabled
+    if not to or not staff_mail_enabled() or not _smtp_ready():
         return False
     email = EmailMessage()
     email['From'], email['To'], email['Subject'] = settings.SOURCE_MAIL_SMTP_FROM, to, subject
@@ -288,6 +288,9 @@ def post_manual(path: Path, caption: str, link: str) -> tuple[str, str]:
     body = ('Gotowy film do wrzucenia na TikTok i YouTube Shorts (w załączniku).\n\n'
             f'Opis do wklejenia:\n\n{caption}\n\nLink do diagnozy (do bio / pierwszego komentarza): {link}\n\n'
             'Jeśli polityk usunie wpis, dostaniesz osobny mail — wtedy usuń film ręcznie z TikToka i YouTube.')
+    from news.clinic import staff_mail_enabled
+    if not staff_mail_enabled():
+        return '', ''  # maile wyłączone: film czeka w panelu, bez wiadomości
     if not _mail(_video_email(), 'spin.clinic: film do TikToka i Shorts', body, path):
         raise RuntimeError('mail_failed')
     return '', ''

@@ -192,7 +192,7 @@ def test_png_visibility_and_cache(settings, tmp_path):
     payload = b''.join(response.streaming_content)
     response.close()
     assert response.status_code == 200 and response['Content-Type'] == 'image/png'
-    assert response['Cache-Control'] == 'public, max-age=3600'
+    assert response['Cache-Control'] == 'no-store'  # zlecenie 065: wycofana diagnoza nie może zostać w cache
     assert Image.open(io.BytesIO(payload)).size == (1600, 900)
     with patch('news.clinic_card.render', side_effect=AssertionError('cache')):
         response = client.get(url)
