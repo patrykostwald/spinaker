@@ -1,5 +1,6 @@
 "use client";
 
+import { SEMEVAL_MAP } from "../../lib/semeval";
 import { ClinicNav } from "./ClinicNav";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
@@ -208,6 +209,7 @@ export function ClinicDatabase() {
           <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Wczytywanie…" : count !== undefined ? `${format(count)} ${count === 1 ? "wynik" : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? "wyniki" : "wyników"}` : ""}</p>
           <label className="sc-clinic-db__sort"><span>· Sortuj</span><select value={params.sort ?? "new"} onChange={event => change({ sort: event.target.value === "new" ? "" : "strong" })}><option value="new">Najnowsze</option><option value="strong">Najwyższa siła spinu</option></select></label>
         </div>
+        {params.technique && SEMEVAL_MAP[params.technique] && <p className="sc-semeval-note">SemEval: {(stats.data?.technique_definitions?.[params.technique]?.semeval ?? SEMEVAL_MAP[params.technique]).join("; ") || "brak odpowiednika"}. <Link href="/metodologia#techniki">O przypisaniu</Link></p>}
         {stats.isError && <p role="status">Nie udało się pobrać statystyk i opcji filtrów. <button type="button" onClick={() => void stats.refetch()}>Spróbuj ponownie</button></p>}
         <dialog ref={dialog} id="clinic-db-filters" className="sc-clinic-db__sheet" aria-labelledby="clinic-db-filters-title" onCancel={() => setFiltersOpen(false)} onClose={() => setFiltersOpen(false)} onClick={event => {
           if (event.target === event.currentTarget) {

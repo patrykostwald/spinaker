@@ -232,6 +232,7 @@ export type ClinicStats = DataPeriod & {
   };
   by_party: Record<string, { party: Party | null }>;
   accounts?: Array<{ account_id: number; name: string; handle: string }>;
+  technique_definitions?: Record<string, { definition: string; semeval: string[] }>;
   techniques: Record<string, Record<Camp, { count: number; enough_data: boolean }>>;
 };
 export const getClinicStats = () => apiFetch<ClinicStats>("/api/clinic/stats/");

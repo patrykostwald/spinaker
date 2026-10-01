@@ -37,6 +37,71 @@ RULES = (
 )
 CANONICAL_TECHNIQUES = tuple(name for name, _ in RULES) + ('Inne',)
 
+# Nasze orientacyjne przypisanie do SemEval 2023 Task 3, podzadanie 3.
+SEMEVAL_2023 = {
+    'Attack on reputation': ['Name Calling/Labeling', 'Guilt by Association', 'Casting Doubt', 'Appeal to Hypocrisy', 'Questioning the Reputation'],
+    'Justification': ['Flag Waving', 'Appeal to Authority', 'Appeal to Popularity', 'Appeal to Values', 'Appeal to Fear/Prejudice'],
+    'Simplification': ['Causal Oversimplification', 'False Dilemma/No Choice', 'Consequential Oversimplification'],
+    'Distraction': ['Strawman', 'Red Herring', 'Whataboutism'],
+    'Call': ['Slogans', 'Conversation Killer', 'Appeal to Time'],
+    'Manipulative wording': ['Loaded Language', 'Obfuscation/Vagueness/Confusion', 'Exaggeration/Minimisation', 'Repetition']
+}
+
+SEMEVAL_MAP = {
+    "Straszenie": [
+        "Appeal to Fear/Prejudice"
+    ],
+    "Przypisywanie sobie zasług": [],
+    "Przypisywanie intencji": [
+        "Casting Doubt"
+    ],
+    "Atak na osobę": [
+        "Questioning the Reputation"
+    ],
+    "Fałszywa alternatywa": [
+        "False Dilemma/No Choice"
+    ],
+    "Słomiany człowiek": [
+        "Strawman"
+    ],
+    "Fałszywa analogia i skojarzenie": [
+        "Guilt by Association"
+    ],
+    "Przeinaczenie faktów": [],
+    "Sugestia i niedopowiedzenie": [
+        "Casting Doubt"
+    ],
+    "Fałszywa przyczynowość": [
+        "Causal Oversimplification"
+    ],
+    "Liczba bez punktu odniesienia": [],
+    "Wybiórcze dane": [],
+    "Pominięcie kontekstu": [],
+    "Nadmierne uogólnienie": [],
+    "Etykietowanie": [
+        "Name Calling/Labeling"
+    ],
+    "My kontra oni": [
+        "Flag Waving"
+    ],
+    "Zmiana tematu": [
+        "Red Herring",
+        "Whataboutism"
+    ],
+    "Odwołanie do autorytetu": [
+        "Appeal to Authority"
+    ],
+    "Teza bez dowodu": [],
+    "Przesada": [
+        "Exaggeration/Minimisation"
+    ],
+    "Apel do emocji": [
+        "Loaded Language",
+        "Appeal to Values"
+    ],
+    "Inne": []
+}
+
 FAMILIES = {
     'dane': ('Liczba bez punktu odniesienia', 'Wybiórcze dane', 'Pominięcie kontekstu',
               'Przeinaczenie faktów', 'Teza bez dowodu', 'Fałszywa przyczynowość',

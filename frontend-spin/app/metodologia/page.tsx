@@ -1,3 +1,4 @@
+import { SEMEVAL_MAP, SEMEVAL_UNRECOGNIZED } from "@spin-clinic/ui";
 import Link from "next/link";
 import { DocLayout } from "@spin-clinic/ui/kit";
 
@@ -53,7 +54,7 @@ const measures = [
 ];
 
 export default function MethodologyPage() {
-  return <DocLayout eyebrow="METODOLOGIA" title="Jak analizujemy przekaz" version="1.0" updatedAt="2026-09-29" sections={sections}
+  return <DocLayout eyebrow="METODOLOGIA" title="Jak analizujemy przekaz" version="1.0" updatedAt="2026-10-01" sections={sections}
     lead="Diagnoza dotyczy konkretnego komunikatu, nie osoby. Poniżej: skąd biorą się wpisy, jak powstaje wynik i jak liczymy dane Kliniki.">
 
     <section id="droga"><h2>W skrócie</h2>
@@ -110,6 +111,16 @@ export default function MethodologyPage() {
           <h3><i />{label}<span>{items.length}</span></h3>
           <ul>{items.map(item => <li key={item}>{item}</li>)}</ul>
         </div>)}</div>
+      <h3 id="semeval-title">Zgodność z SemEval 2023</h3>
+      <p><a href="https://propaganda.math.unipd.it/semeval2023task3/">SemEval 2023 Task 3</a> to międzynarodowe zadanie badawcze, którego podzadanie 3 dotyczy rozpoznawania 23 technik perswazji w 6 grupach, także w tekstach po polsku. Poniższe przypisanie jest nasze i orientacyjne. Kategorie dotyczące rzetelności danych, faktów i wnioskowania wykraczają poza ten katalog perswazji językowej. Przypisanie nie oznacza walidacji skuteczności naszego systemu w SemEval.</p>
+      <div className="sc-semeval-scroll" role="region" aria-labelledby="semeval-title" tabIndex={0}>
+        <table className="sc-method-table sc-semeval-table"><thead><tr><th scope="col">Nasza kategoria</th><th scope="col">Odpowiednik SemEval</th></tr></thead>
+          <tbody>{Object.entries(SEMEVAL_MAP).map(([name, equivalents]) => <tr key={name}><th scope="row">{name}</th><td>{equivalents.length ? equivalents.join("; ") : <span className="sc-semeval-note">brak odpowiednika</span>}</td></tr>)}
+            <tr><th scope="row">Słowa nacechowane (osobny moduł)</th><td>Loaded Language</td></tr>
+          </tbody></table>
+      </div>
+      <p>Techniki SemEval, których nie rozpoznajemy osobno:</p>
+      <ul>{SEMEVAL_UNRECOGNIZED.map(name => <li key={name}>{name}</li>)}</ul>
     </section>
 
     <section id="slowa"><h2>Słowa nacechowane</h2>

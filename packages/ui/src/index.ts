@@ -85,3 +85,5 @@ export { AccountDelete } from "./components/AccountDelete";
 export { TERMS_VERSION } from './lib/account';
 
 export { HowToRead } from "./components/clinic/SpinParts";
+
+export { SEMEVAL_MAP, SEMEVAL_UNRECOGNIZED } from "./lib/semeval";
