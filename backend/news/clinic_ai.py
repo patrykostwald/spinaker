@@ -322,8 +322,28 @@ def record_gemini_spend(task: str, payload: dict) -> None:
         logger.debug('gemini spend counter failed', exc_info=True)
 
 
+def gemini_spent_today() -> float:
+    from django.core.cache import cache
+    from django.utils import timezone
+    day = timezone.localdate().isoformat()
+    return sum((cache.get(GEMINI_SPEND_KEY.format(day=day, task=task)) or {}).get('usd', 0.0) for task in GEMINI_THINKING)
+
+
+def gemini_daily_budget() -> float:
+    """Bezpiecznik: dzienny limit wydatków na Gemini w USD (GEMINI_DAILY_BUDGET_USD, domyślnie 4 ≈ 15 zł). Zwykły dzień
+    to 0,3–2 USD; 29–30.09.2026 ponawiane nieudane diagnozy kosztowały ok. 70 zł dziennie. 0 — bez limitu."""
+    try:
+        return float(os.environ.get('GEMINI_DAILY_BUDGET_USD', '') or 4)
+    except ValueError:
+        return 4.0
+
+
 def gemini_post(model: str, body: dict, *, timeout, key: str = '', task: str = 'check'):
-    """generateContent; gdy model nie zna ustawienia myślenia (400), jedna próba bez niego — zadanie ma się wykonać."""
+    """generateContent; gdy model nie zna ustawienia myślenia (400), jedna próba bez niego — zadanie ma się wykonać.
+    Po przekroczeniu dziennego limitu — ClinicAIError: fakty sprawdza wtedy darmowy Groq, reszta czeka do jutra."""
+    budget = gemini_daily_budget()
+    if budget > 0 and gemini_spent_today() >= budget:
+        raise ClinicAIError('gemini_daily_budget')
     url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
     headers = {'x-goog-api-key': key or os.environ['GEMINI_API_KEY'].strip()}
     response = requests.post(url, json=body, timeout=timeout, headers=headers)

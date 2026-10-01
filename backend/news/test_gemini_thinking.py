@@ -53,3 +53,16 @@ def test_spend_counter_adds_thinking_and_searches(settings):
     row = cache.get(clinic_ai.GEMINI_SPEND_KEY.format(day=timezone.localdate().isoformat(), task='check'))
     assert row['calls'] == 1 and row['searches'] == 2 and row['thinking'] == 1_000_000
     assert abs(row['usd'] - (0.5 + 3.0 + 2 * clinic_ai.GEMINI_SEARCH_USD)) < 1e-9
+
+
+def test_daily_budget_stops_paid_calls(settings, monkeypatch):
+    from django.core.cache import cache
+    from django.utils import timezone
+    settings.CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+    cache.clear()
+    monkeypatch.setenv('GEMINI_API_KEY', 'k')
+    monkeypatch.setenv('GEMINI_DAILY_BUDGET_USD', '1')
+    cache.set(clinic_ai.GEMINI_SPEND_KEY.format(day=timezone.localdate().isoformat(), task='council'), {'calls': 9, 'usd': 1.2, 'searches': 0, 'thinking': 0})
+    monkeypatch.setattr(clinic_ai.requests, 'post', lambda *a, **k: (_ for _ in ()).throw(AssertionError('no paid call over budget')))
+    with pytest.raises(clinic_ai.ClinicAIError, match='gemini_daily_budget'):
+        clinic_ai.gemini_post('m', {'generationConfig': {}}, timeout=1)

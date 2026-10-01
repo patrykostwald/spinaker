@@ -84,7 +84,7 @@ def describe_image(url: str) -> str:
         response.raise_for_status()
         parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
         return ' '.join(''.join(part.get('text', '') for part in parts).split())[:800]
-    except (requests.RequestException, KeyError, IndexError, ValueError):
+    except (requests.RequestException, KeyError, IndexError, ValueError, clinic_ai.ClinicAIError):
         return ''
 
 
