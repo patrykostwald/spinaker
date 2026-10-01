@@ -335,7 +335,7 @@ def gemini_post(model: str, body: dict, *, timeout, key: str = '', task: str = '
     if response.status_code == 200:
         try:
             record_gemini_spend(task, response.json())
-        except ValueError:
+        except (ValueError, AttributeError):
             pass
     return response
 
