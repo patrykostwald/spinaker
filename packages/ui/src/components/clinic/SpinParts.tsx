@@ -75,9 +75,8 @@ export function AiTag() {
  * Zwarty wiersz diagnozy — rozmiar boxa z pasków: po lewej miniatura (zdjęcie z wpisu albo awatar autora),
  * po prawej obóz, werdykt, nagłówek diagnozy i autor. Cały wiersz prowadzi do pełnej diagnozy.
  */
-export function SpinRow({ spin, withSummary = false, withTechniques = false, badge, returnTo, onOpen }: { spin: SpinCardData; withSummary?: boolean; withTechniques?: boolean; badge?: string; returnTo?: string; onOpen?: () => void }) {
+export function SpinRow({ spin, withSummary = false, badge, returnTo, onOpen }: { spin: SpinCardData; withSummary?: boolean; withTechniques?: boolean; badge?: string; returnTo?: string; onOpen?: () => void }) {
   const image = spin.post.media.find(item => item.url);
-  const { typeCount } = diagnosisPresentation({ techniques: spin.technique_types ?? spin.technique_names.map(name => ({ name })) });
   const href = `/klinika/${spin.id}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
   return (
     <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`}>
@@ -89,14 +88,32 @@ export function SpinRow({ spin, withSummary = false, withTechniques = false, bad
       </span>
       <div className="sc-spin-row__body">
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={href} onClick={onOpen}>{spin.headline}</Link></h3>
-        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
+        <SpinListMetrics spin={spin} />
+        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         <DiscussionCounts {...spin} />
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
-        {withTechniques && <p className="sc-spin-row__techniques">{typeCount} {techniqueLabel(typeCount)}</p>}
         <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle}</p><p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
       </div>
     </article>
   );
+}
+
+/** Te same obliczenia co SpinSummary, w czterech kolumnach pod tytułem. */
+export function SpinListMetrics({ spin }: { spin: SpinCardData }) {
+  const { checked, claims, council, typeCount, families } = diagnosisPresentation({
+    ...spin, techniques: spin.technique_types ?? spin.technique_names.map(name => ({ name })),
+  });
+  const unverified = claims.find(claim => claim.key === "unverified")?.count ?? 0;
+  return <dl className="sc-list-metrics" aria-label="Dane diagnozy">
+    <div><dt>Siła spinu</dt><dd className="sc-list-metrics__strength">{spin.intensity}<small>/100</small></dd>
+      <span className="sc-list-metrics__track" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span></div>
+    <div><dt>Konsylium AI</dt><dd>{council.agreement ?? "—"}</dd><small>ten sam werdykt</small></div>
+    <div><dt>Twierdzenia</dt><dd>{checked}</dd><small>sprawdzone</small>
+      {unverified > 0 ? <small className="sc-list-metrics__unverified">{unverified} niezweryfikowane</small> : null}</div>
+    <div><dt>Techniki</dt><dd>{typeCount}</dd><small>{techniqueLabel(typeCount)}</small>
+      <span className="sc-list-metrics__families">{families.filter(family => family.key !== "inne").map(family =>
+        <i key={family.key} data-family={family.key} data-empty={!family.count || undefined} role="img" aria-label={`${family.label}: ${family.count}`} title={`${family.label}: ${family.count}`} />)}</span></div>
+  </dl>;
 }
 
 /** Karta: po lewej post (autor, treść, zdjęcie), po prawej diagnoza. */

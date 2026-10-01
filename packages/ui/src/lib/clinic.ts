@@ -37,7 +37,10 @@ export type SpinCardData = {
   headline: string;
   summary: string;
   technique_names: string[];
-  technique_types?: Array<{ name: string; category?: string }>;
+  technique_types?: Array<{ name: string; category?: string; family?: string }>;
+  claims?: Array<Pick<SpinClaim, "assessment">>;
+  council?: { members: Array<{ model: string; verdict: string | null; intensity: number | null; status?: string }> } | null;
+  scan?: SpinScan;
   technique_groups?: string[];
   post: {
     id: string;
@@ -60,7 +63,7 @@ export type SpinClaim = {
   sources: Array<{ url: string; title: string }>;
 };
 
-export type SpinDetailData = SpinCardData & {
+export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   scan?: SpinScan;
   /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
   x_share?: string[];

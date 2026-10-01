@@ -138,3 +138,21 @@ test("zgodność liczona względem końcowego werdyktu (audyt 046)", () => {
   assert.equal(diagnosisPresentation({ verdict: "spin", council: { members } }).council.agreement, "1/3");
   assert.equal(diagnosisPresentation({ council: { members } }).council.agreement, "2/3");
 });
+
+test("064: lekki payload listy daje te same liczby co detal", () => {
+  const detail = {
+    verdict: "partial",
+    techniques: [{ name: "Opis", category: "Teza bez dowodu" }, { name: "Drugi cytat", category: "Teza bez dowodu" }, { name: "Straszenie" }],
+    claims: [{ assessment: "supported", sources: [{ url: "https://example.org" }] }, { assessment: "unverified" }],
+    council: { members: [{ model: "A", verdict: "partial" }, { model: "B", verdict: "spin" }, { model: "C", verdict: null, status: "brak odpowiedzi" }] },
+  };
+  const list = { ...detail, claims: detail.claims.map(({ assessment }) => ({ assessment })) };
+  const summary = input => {
+    const value = diagnosisPresentation(input);
+    return { checked: value.checked, claims: value.claims, agreement: value.council.agreement,
+      count: value.typeCount, families: value.families.map(({ key, count }) => ({ key, count })) };
+  };
+  assert.deepEqual(summary(list), summary(detail));
+  assert.equal(summary(list).agreement, "1/2");
+  assert.equal(summary(list).count, 2);
+});

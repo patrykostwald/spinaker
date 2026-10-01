@@ -648,7 +648,12 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
         'headline': diagnosis.headline,
         'summary': diagnosis.summary,
         'technique_names': [item['name'] for item in diagnosis.techniques][:4],
-        'technique_types': [{'name': item['name'], 'category': item.get('category', '')} for item in diagnosis.techniques],
+        'technique_types': [{key: item[key] for key in ('name', 'category', 'family') if key in item}
+                            for item in diagnosis.techniques],
+        'claims': [{'assessment': clean_claim(item).get('assessment', 'unverified')} for item in diagnosis.claims],
+        'council': ({'members': [{key: member.get(key) for key in ('model', 'verdict', 'intensity', 'status')}
+                                  for member in (diagnosis.usage['council'].get('members') or [])]}
+                    if (diagnosis.usage or {}).get('council') is not None else None),
         'technique_groups': technique_groups(diagnosis.techniques),
         'scan': scan_data(diagnosis),
         'post': {'id': post.post_id, 'url': post.url, 'text': post.text, 'published_at': post.published_at,

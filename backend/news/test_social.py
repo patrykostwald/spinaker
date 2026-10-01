@@ -8,6 +8,86 @@ from news.clinic_models import SocialPost, SpinDiagnosis
 from news.test_clinic import account, post
 
 
+@pytest.mark.django_db
+def test_list_metrics_without_queries(django_assert_num_queries):
+    from news.clinic import card_data, detail_data
+    row = SpinDiagnosis.objects.create(post=post(account()), verdict='partial', intensity=67,
+        techniques=[{'name': 'Opis', 'category': 'Teza bez dowodu'}, {'name': 'Straszenie'}],
+        claims=[{'claim': 'X', 'assessment': 'supported', 'explanation': 'GUS',
+                 'sources': [{'url': 'https://stat.gov.pl', 'title': 'GUS'}]},
+                {'claim': 'Y', 'assessment': 'unverified', 'sources': []}],
+        usage={'council': {'members': [{'model': 'A', 'verdict': 'partial', 'intensity': 67},
+                                      {'model': 'B', 'verdict': None, 'status': 'brak odpowiedzi'}]}})
+    with django_assert_num_queries(0):
+        card = card_data(row, {}, comment_count=0)
+    detail = detail_data(row)
+    assert card['claims'] == [{'assessment': c['assessment']} for c in detail['claims']]
+    assert len(card['technique_types']) == len(detail['techniques']) == 2
+    assert card['council']['members'][1]['status'] == 'brak odpowiedzi'
+    assert card['scan']['techniques'] == detail['scan']['techniques']
+
+
+def test_cover_quote_and_editorial_gate():
+    from news.social_video import cover_quote, cover_lead
+    assert cover_quote('Pierwsze zdanie. ' + 'słowo ' * 70) == '„Pierwsze zdanie. […]”'
+    quote = cover_quote('słowo ' * 70)
+    assert len(quote) <= 192 and quote.endswith('słowo…”')
+    assert cover_quote('Krótki cytat.') == '„Krótki cytat.”'
+    assert cover_quote('') == ''
+    data = {'headline': 'Tytuł', 'scan': {'synthesis': {'lead': 'Synteza'}},
+            'claims': [{'assessment': 'supported', 'sources': [{'url': 'https://example.org'}]}]}
+    assert cover_lead(data) == 'Synteza'
+    data['claims'].append({'assessment': 'unverified', 'sources': []})
+    assert cover_lead(data) == 'Tytuł'
+    for claim in [{'assessment': 'supported', 'sources': []},
+                  {'assessment': 'opinion', 'sources': [{'url': 'https://example.org'}]}]:
+        data['claims'] = [claim]
+        assert cover_lead(data) == 'Tytuł'
+
+
+def test_cover_first_frame_complete_and_safe():
+    from PIL import Image, ImageChops
+    from news.social_video import cover_scene, W, H, X0, X1, TOP, BOTTOM, BG, presentation
+    data = {'verdict': 'spin', 'verdict_label': 'Spin', 'intensity': 67, 'camp': 'government',
+            'headline': 'Wybiórcze dane bez kontekstu.', 'techniques': [{'name': 'Teza bez dowodu'}],
+            'council': {'members': [{'model': 'A', 'verdict': 'spin'}, {'model': 'B', 'verdict': 'unclear'},
+                                     {'model': 'C', 'verdict': 'unclear'},
+                                     {'model': 'D', 'verdict': 'spin', 'status': 'brak odpowiedzi'}]}}
+    assert presentation(data)['agreement'] == '1/3'
+    assert presentation(data)['families'][0][3] == 1
+    scene = cover_scene(data, {'name': 'Przykładowy Autor', 'text': 'To jest przykładowy cytat. ' * 30})
+    first = scene.frame(0).convert('RGB')
+    assert first.tobytes() == scene.frame(2).convert('RGB').tobytes()
+    box = ImageChops.difference(first, Image.new('RGB', (W, H), BG)).getbbox()
+    assert X0 <= box[0] < box[2] <= X1 and TOP <= box[1] < box[3] <= BOTTOM
+    assert scene.duration == 2.6
+
+
+def test_instagram_uses_first_frame(monkeypatch):
+    calls = []
+    def request_post(url, **kwargs):
+        calls.append(kwargs['data'])
+        return SimpleNamespace(status_code=200, json=lambda: {'id': '123'})
+    monkeypatch.setattr(social_publish.requests, 'post', request_post)
+    monkeypatch.setattr(social_publish.requests, 'get', lambda *a, **kw:
+        SimpleNamespace(json=lambda: {'status_code': 'FINISHED', 'permalink': 'https://example.org/reel'}))
+    assert social_publish.post_instagram(7, 'Opis')[0] == '123'
+    assert calls[0]['thumb_offset'] == 0 and calls[0]['media_type'] == 'REELS'
+
+
+def test_facebook_uploads_jpeg_thumbnail(monkeypatch, tmp_path):
+    from news import social_video
+    path = tmp_path / 'film.mp4'
+    path.write_bytes(b'video')
+    monkeypatch.setattr(social_video, 'first_frame_jpeg', lambda supplied: b'jpeg' if supplied == path else None)
+    def request_post(url, **kwargs):
+        assert kwargs['files']['thumb'] == ('cover.jpg', b'jpeg', 'image/jpeg')
+        assert kwargs['files']['source'][1].read() == b'video'
+        return SimpleNamespace(status_code=200, json=lambda: {'id': '321'})
+    monkeypatch.setattr(social_publish.requests, 'post', request_post)
+    assert social_publish.post_facebook(path, 'Opis')[0] == '321'
+
+
 def test_bluesky_link_facets_count_bytes_not_characters():
     text = 'Żółć — spin 82/100\n\nhttps://spin.clinic/klinika/7'
     facet = social_publish.link_facets(text)[0]

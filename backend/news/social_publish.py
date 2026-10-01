@@ -76,7 +76,7 @@ def video_dir() -> Path:
 
 def video_name(diagnosis_id: int) -> str:
     """Nazwa nie do zgadnięcia (HMAC z SECRET_KEY) — film jest publiczny tylko dla tego, kto dostał adres."""
-    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-v3-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
+    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-v4-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
     return f'{diagnosis_id}-{digest[:20]}.mp4'
 
 
@@ -156,11 +156,14 @@ def _meta_error(response) -> str:
 
 
 def post_facebook(path: Path, text: str) -> tuple[str, str]:
+    from news.social_video import first_frame_jpeg
     page = _env('META_PAGE_ID')
+    thumbnail = first_frame_jpeg(path)
     with path.open('rb') as handle:
         response = requests.post(f'{GRAPH_VIDEO}/{_graph_version()}/{page}/videos', timeout=(10, 300),
                                  data={'description': text, 'access_token': _env('META_PAGE_TOKEN')},
-                                 files={'source': (path.name, handle, 'video/mp4')})
+                                 files={'source': (path.name, handle, 'video/mp4'),
+                                        'thumb': ('cover.jpg', thumbnail, 'image/jpeg')})
     if response.status_code != 200:
         raise RuntimeError(_meta_error(response))
     video_id = str(response.json()['id'])
@@ -172,7 +175,7 @@ def post_instagram(diagnosis_id: int, caption: str, wait_seconds: int = 300) -> 
     user, token, version = _env('META_IG_USER_ID'), _env('META_PAGE_TOKEN'), _graph_version()
     response = requests.post(f'{GRAPH}/{version}/{user}/media', timeout=(10, 60), data={
         'media_type': 'REELS', 'video_url': video_url(diagnosis_id), 'caption': caption, 'share_to_feed': 'true',
-        'access_token': token})
+        'access_token': token, 'thumb_offset': 0})
     if response.status_code != 200:
         raise RuntimeError(_meta_error(response))
     container = response.json()['id']
