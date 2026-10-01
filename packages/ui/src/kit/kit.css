@@ -6523,3 +6523,8 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-semeval-table th, .sc-semeval-table td { overflow-wrap: anywhere; }
 @media (max-width: 600px) { .sc-semeval-table th[scope="row"] { width: 46%; } }
 .sc-semeval-note { color: var(--sc-text-3); font-size: 14px; }
+/* === 067: document language switch === */
+.sc-doc-language { display: inline-flex; align-items: center; gap: 4px; font-size: var(--sc-t-body-s-size); }
+.sc-doc-language :is(a, [aria-current]) { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: var(--sc-radius-control); }
+.sc-doc-language a { color: var(--sc-accent); text-decoration: underline; text-underline-offset: 3px; }
+.sc-doc-language [aria-current] { color: var(--sc-text); font-weight: 700; }

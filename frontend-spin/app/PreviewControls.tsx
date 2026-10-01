@@ -27,7 +27,7 @@ export function FeatureFooter() {
               { label: 'Zainstaluj aplikację', href: '#zainstaluj-aplikacje' },
               ...(PUSH_ENABLED ? [{ label: 'Powiadomienia', href: '#powiadomienia' }] : []),
             ] }] : siteNavigation.footer}
-            actions={pathname?.startsWith("/klinika") ? <HowToRead interview={pathname.startsWith("/klinika/wywiady")} /> : null}
+            actions={<><a href="/en/about" lang="en" hrefLang="en" className="sc-footer__link">English</a>{pathname?.startsWith("/klinika") ? <HowToRead interview={pathname.startsWith("/klinika/wywiady")} /> : null}</>}
             above={<SupportBar />}
             sticky
           />
