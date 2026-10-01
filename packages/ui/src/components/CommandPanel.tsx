@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { apiWrite } from '../lib/api';
+import { AgentsPanel } from './AgentsPanel';
 
 type Status = 'ok' | 'warn' | 'error' | 'unknown';
 type Reading = number | 'unknown';
@@ -167,6 +168,7 @@ export function CommandPanel() {
       </section>
       <div className="sc-command-toolbar"><p>Stan: {data ? date(data.generated_at) : 'brak danych'}<span>Europe/Warsaw · co 60 s</span></p><button type="button" className="sc-command-filter" aria-pressed={onlyProblems} onClick={() => setOnlyProblems(current => !current)}>Tylko problemy {onlyProblems ? '✓' : ''}</button></div>
       {data && <>
+        <AgentsPanel />
         {!onlyProblems && <><section className="sc-command-kpis" aria-label="Dziś w porównaniu z wczoraj">{(data.kpis || []).map(kpi => <article key={kpi.key}><h2>{kpi.label}</h2><strong>{number(kpi.today, kpi.unit)}</strong><span className="sc-command-eyebrow">Dziś{kpi.unit ? ' · szacunek' : ''}</span><Trend {...kpi} /></article>)}</section>
           <section className="sc-command-charts" aria-label="Trendy siedmiodniowe">{(data.series || []).map(series => <Sparkline key={series.key} series={series} />)}</section></>}
         <section id="command-wallets" className="sc-command-wallets" aria-labelledby="command-wallets-title"><div className="sc-command-section-heading"><h2 id="command-wallets-title">Portfele</h2><span>X · Gemini · Anthropic</span></div><p className="sc-command-note">Tylko płatne portfele (reszta modeli działa na darmowych pulach). Dostawcy nie udostępniają salda w API: liczymy wpisane saldo minus zapisane wydatki i przeliczamy przy każdym odświeżeniu panelu (co 60 s). Brak środków (402) wykrywamy automatycznie z odpowiedzi dostawcy.</p>

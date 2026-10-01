@@ -9,6 +9,26 @@ from django.utils import timezone
 from news.models import ImportState
 
 
+@shared_task(soft_time_limit=840, time_limit=900)
+def agents_window_task():
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news.agents_common import step
+    return step('auto', hourly=True)
+
+
+@shared_task
+def agents_report_task(agent):
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    if agent not in ('strateg', 'pielgrzym'):
+        raise ValueError('Unknown agent')
+    from news.agents_common import report
+    return report(agent)
+
+
 @shared_task(name='news.tasks.repairer_task', soft_time_limit=210, time_limit=240)
 def repairer_task():
     from news.repairer import run

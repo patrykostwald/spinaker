@@ -960,6 +960,7 @@ class AIResearchCall(models.Model):
 
 
 from .wallet_models import WalletBalance  # noqa: E402,F401
+from .agent_models import AgentNote  # noqa: E402,F401
 from .account_models import (  # noqa: E402,F401
     SavedTopic, ArticleOpinion, ThreadOpinion, ThreadFavorite, ArticleFavorite,
     PersonalContextThread, PersonalContextThreadItem, CommentReport,

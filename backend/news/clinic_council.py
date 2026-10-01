@@ -201,7 +201,7 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
     body = {'model': model, 'temperature': 0.2, 'max_tokens': max_tokens, 'messages': [
         {'role': 'system', 'content': system + '\nSchemat JSON odpowiedzi:\n' + json.dumps(schema, ensure_ascii=False)},
         {'role': 'user', 'content': user[:12000]}]}
-    if service == 'groq':
+    if service == 'groq' and 'compound' not in model:
         body['response_format'] = {'type': 'json_object'}
         if 'gpt-oss' in model:
             body['reasoning_effort'] = 'low'

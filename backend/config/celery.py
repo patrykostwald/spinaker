@@ -6,6 +6,9 @@ app = Celery('spin_clinic')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
+    'agents-window-hourly': {'task': 'news.tasks.agents_window_task', 'schedule': crontab(minute=20)},
+    'strateg-weekly-report': {'task': 'news.tasks.agents_report_task', 'args': ['strateg'], 'schedule': crontab(day_of_week='mon', hour=7, minute=0)},
+    'pielgrzym-monthly-report': {'task': 'news.tasks.agents_report_task', 'args': ['pielgrzym'], 'schedule': crontab(day_of_month=1, hour=7, minute=0)},
     'council-charter-missing-nightly': {'task': 'news.tasks.council_charter_missing_task', 'schedule': crontab(hour=2, minute=15)},
     'council-audit-hourly': {'task': 'news.tasks.council_audit_task', 'schedule': crontab(minute=0, hour='7-23')},
     'inquisitor-evening': {'task': 'news.tasks.inquisitor_task', 'schedule': crontab(minute=45, hour=21)},

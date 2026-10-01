@@ -2,11 +2,14 @@
 import hashlib
 import logging
 import os
+from contextvars import ContextVar
 
 from django.core.cache import cache
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+# Optional per-call guard, used only by background proposal agents.
+reservation_guard = ContextVar('council_reservation_guard', default=None)
 KEYS = {'groq': 'GROQ_API_KEY', 'nim': 'NIM_API_KEY', 'gemini': 'GEMINI_API_KEY',
         'mistral': 'MISTRAL_API_KEY', 'openrouter': 'OPENROUTER_API_KEY',
         'cloudflare': 'CLOUDFLARE_AI_TOKEN', 'hf': 'HF_TOKEN', 'pllum': 'PLLUM_API_KEY'}
@@ -86,7 +89,12 @@ def available(member):
 def reserve(member):
     key = limit_key(member)
     cache.add(key, 0, timeout=86400)
-    return cache.incr(key) <= daily_limit(member)
+    used = cache.incr(key)
+    guard = reservation_guard.get()
+    if guard is not None and not guard(member, used):
+        cache.decr(key)
+        return False
+    return used <= daily_limit(member)
 
 
 def endpoint(service):
