@@ -24,7 +24,7 @@ export const viewport: Viewport = { themeColor: '#000000' };
 
 export const metadata: Metadata = {
   appleWebApp: { capable: true, title: 'spin.clinic', statusBarStyle: 'black-translucent' },
-  icons: { apple: '/app/icon-192.png' },
+  icons: { icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/icon.svg', type: 'image/svg+xml' }], shortcut: '/favicon.ico', apple: '/app/icon-192.png' },
   metadataBase: new URL(`https://${process.env.NEXT_PUBLIC_DOMAIN || "spin.clinic"}`),
   title: TITLE,
   description: DESCRIPTION,
