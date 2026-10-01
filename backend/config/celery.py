@@ -36,7 +36,7 @@ app.conf.beat_schedule = {
     'council-recruiter-night': {'task': 'news.tasks.council_recruiter_task', 'schedule': crontab(hour=23, minute=30)},
     'weekly-report-sunday': {'task': 'news.tasks.weekly_report_task', 'schedule': crontab(day_of_week='sun', hour=20, minute=0)},
     # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
-    'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
+    'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='*/10', hour='7-22')},
     # Przekaz dnia obu obozów (darmowe modele): 9:00, 12:00, 15:00, 18:00 i 21:30.
     'clinic-daily-messages-day': {'task': 'news.tasks.clinic_daily_messages_task', 'schedule': crontab(hour='9,12,15,18', minute=0)},
     'clinic-daily-messages-evening': {'task': 'news.tasks.clinic_daily_messages_task', 'schedule': crontab(hour=21, minute=30)},
