@@ -14,7 +14,7 @@ from django.conf import settings
 from PIL import Image, ImageDraw, ImageOps
 
 from news.techniques import FAMILY_LABELS
-from news.x_card import _font, EMOJI
+from news.x_card import _font, EMOJI, glue_short
 
 VERSION = 'v6'
 FORMATS = {'diagnoza', 'skrot'}
@@ -83,7 +83,7 @@ def fetch_image(url):
 
 
 def _wrap(draw, value, font, width):
-    words = EMOJI.sub('', str(value if value is not None else '')).split()
+    words = glue_short(EMOJI.sub('', str(value if value is not None else '')).split())
     lines, line = [], ''
     for word in words:
         if draw.textlength(word, font=font) > width:

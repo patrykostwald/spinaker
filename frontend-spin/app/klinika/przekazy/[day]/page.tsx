@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { MessageDetail, formatDatePl, type MessageDay } from '@spin-clinic/ui';
+import { typographize } from '@spin-clinic/ui';
 
 const API = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const loadMessage = cache(async (day: string): Promise<MessageDay> => {
@@ -9,7 +10,7 @@ const loadMessage = cache(async (day: string): Promise<MessageDay> => {
   const response = await fetch(`${API}/api/clinic/messages/${encodeURIComponent(day)}/`, { cache: 'no-store' });
   if (response.status === 404) notFound();
   if (!response.ok) throw new Error('Unable to load daily messages');
-  return response.json();
+  return typographize(await response.json());
 });
 
 export async function generateMetadata({ params }: { params: { day: string } }): Promise<Metadata> {

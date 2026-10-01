@@ -80,17 +80,19 @@ export function SpinRow({ spin, withSummary = false, badge, returnTo, onOpen }: 
   const href = `/klinika/${spin.id}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
   return (
     <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`}>
-      {/* Lewa kolumna: kto i kiedy (miniatura, werdykt, autor, data); prawa: tytuł i dane diagnozy. */}
+      {/* Siatka 2×2: kto i kiedy obok tytułu, miniatura obok danych diagnozy. */}
       <div className="sc-spin-row__side">
         <span className="sc-spin-row__thumb">
           {image
             // eslint-disable-next-line @next/next/no-img-element -- miniatura z oficjalnego API X
             ? <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" />
             : <SpinAvatar author={spin.author} size="lg" />}
+          <span className="sc-spin-row__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</span>
         </span>
-        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
-        <p className="sc-spin-row__author"><span>{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""}</span> <span>@{spin.author.handle}</span></p>
-        <p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
+        <div className="sc-spin-row__who">
+          <p className="sc-spin-row__author">{spin.author.name}</p>
+          <p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
+        </div>
       </div>
       <div className="sc-spin-row__body">
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={href} onClick={onOpen}>{spin.headline}</Link></h3>

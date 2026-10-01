@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./lib/api";
+export * from "./lib/typography";
 export * from "./lib/utils";
 export * from "./lib/portal";
 export * from "./lib/useDebouncedValue";

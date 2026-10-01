@@ -1,4 +1,5 @@
 import type { Article, Paginated, ThreadDetail, ThreadListItem, TimelineResponse } from '../types';
+import { typographize } from './typography';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN ?? process.env.NEXT_PUBLIC_FRONTEND_DOMAIN ?? 'spin.clinic';
 export class ApiError extends Error { constructor(public status: number, message?: string) {
@@ -11,7 +12,9 @@ export async function apiFetch<T>(path: string): Promise<T> {
     headers: { Accept: 'application/json', 'X-Frontend-Domain': DOMAIN },
   });
   if (!response.ok) throw new ApiError(response.status);
-  return response.json() as Promise<T>;
+  const data = await response.json() as T;
+  // Teksty Kliniki do wyświetlenia: bez jednoliterowych słów na końcu wiersza (nie dotyczy paneli edycji).
+  return path.startsWith('/api/clinic') && !/admin|moderat|edit/.test(path) ? typographize(data) : data;
 }
 export function searchTimeline(q: string, categories = '', fromDate = '', toDate = '', page = 1): Promise<TimelineResponse> {
   const params = new URLSearchParams({ q, page: String(page) });

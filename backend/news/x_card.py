@@ -26,11 +26,23 @@ def _font(size: int, weight: int = 500) -> ImageFont.FreeTypeFont:
     return font
 
 
+def glue_short(words: list[str]) -> list[str]:
+    """Polska typografia: jednoliterowe słowo (a, i, o, u, w, z…) nie zostaje na końcu wiersza,
+    tylko przechodzi do następnego razem z kolejnym słowem (decyzja właściciela 1.10.2026)."""
+    out: list[str] = []
+    for word in words:
+        if out and len(out[-1].split(' ')[-1]) == 1 and out[-1].split(' ')[-1].isalpha():
+            out[-1] = f'{out[-1]} {word}'
+        else:
+            out.append(word)
+    return out
+
+
 def _wrap(draw: ImageDraw.ImageDraw, text: str, font, width: int, max_lines: int) -> list[str]:
     """Zawija tekst do szerokości w pikselach; ostatnia linia z wielokropkiem, gdy się nie mieści."""
     lines: list[str] = []
     for paragraph in (text or '').split('\n'):
-        words, line = paragraph.split(), ''
+        words, line = glue_short(paragraph.split()), ''
         for word in words:
             candidate = f'{line} {word}'.strip()
             if draw.textlength(candidate, font=font) <= width:
