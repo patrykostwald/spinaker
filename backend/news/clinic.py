@@ -661,7 +661,8 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
                  'media': _media(post), 'likes': metrics.get('like_count', 0), 'reposts': metrics.get('retweet_count', 0)},
         'author': author_data(post, figures.get(post.account_id)),
         'opinions': counts or {'positive': 0, 'negative': 0},
-        'comment_count': comment_count if comment_count is not None else diagnosis.comments.count(),
+        # Bez zapytania do bazy: liczbę komentarzy podaje wywołujący (lista, strona diagnozy); obrazki jej nie potrzebują.
+        'comment_count': comment_count or 0,
     }
 
 
@@ -669,7 +670,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
     figures = figures_by_account([diagnosis.post.account_id])
     counts = {'positive': 0, 'negative': 0}
     counts.update({row['polarity']: row['n'] for row in diagnosis.opinions.filter(polarity__isnull=False).values('polarity').annotate(n=Count('id'))})
-    data = card_data(diagnosis, figures, counts)
+    data = card_data(diagnosis, figures, counts, diagnosis.comments.count())
     data.update({
         'analysis': diagnosis.analysis,
         'lab': diagnosis.lab,

@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageOps
 from news.techniques import FAMILY_LABELS
 from news.x_card import _font, EMOJI, glue_short
 
-VERSION = 'v6'
+VERSION = 'v7'
 FORMATS = {'diagnoza', 'skrot'}
 COLORS = {'spin': '#ff6b6b', 'partial': '#f2b441', 'no_spin': '#4ed18a', 'unclear': '#a6a6a6'}
 MUTED, ACCENT = '#a6a6a6', '#4a9eff'
@@ -191,6 +191,15 @@ def _quote(data):
     return ' '.join(words[:25]) + ('…' if len(words) > 25 else '')
 
 
+MODEL_LABELS = [('gpt', 'GPT'), ('claude', 'Claude'), ('gemini', 'Gemini'), ('gemma', 'Gemma'), ('qwen', 'Qwen'),
+                ('mistral', 'Mistral'), ('bielik', 'Bielik'), ('nemotron', 'Nemotron'), ('llama', 'Llama'), ('deepseek', 'DeepSeek')]
+
+
+def _model_label(model):
+    value = str(model or '').lower()
+    return next((label for key, label in MODEL_LABELS if key in value), (str(model or '').split('/')[-1].split('-')[0] or '?').capitalize())
+
+
 def _draw_panel(draw, data, box):
     """Wspólny panel obu formatów; grafiki mają tę samą linię dołu."""
     left, top, right, bottom = box
@@ -232,11 +241,12 @@ def _draw_panel(draw, data, box):
                 tick_x = x + (width - label_width) * fraction
                 text(label, tick_x, bottom - 32 * scale, end + 3, size=13)
         elif i == 1:
-            votes = council.get('votes') or []
-            for j, key in enumerate(['gpt', 'qwen', 'gemini']):
-                vote = next((v for v in votes if key in str(v.get('model', '')).lower()), {})
+            # Tylko modele, które oceniły wpis (bez „—” dla milczących), najwyżej trzy wiersze.
+            votes = [v for v in council.get('votes') or [] if v.get('intensity') is not None and not v.get('missing')
+                     and v.get('status') != 'brak odpowiedzi'][:3]
+            for j, vote in enumerate(votes):
                 row_y = y + 14 * scale + j * 33 * scale
-                text(['GPT', 'Qwen', 'Gemini'][j], x, row_y, x + width * .4, size=14)
+                text(_model_label(vote.get('model')), x, row_y, x + width * .4, size=14)
                 score = vote.get('intensity')
                 bar(x + width * .41, row_y + 6 * scale, width * .28, max(0, score or 0) / 100, ACCENT)
                 text(score if score is not None else '—', x + width * .73, row_y, end - 9 * scale, size=15, color='#ffffff', weight=700)

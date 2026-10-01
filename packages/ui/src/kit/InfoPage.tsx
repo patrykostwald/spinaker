@@ -3,7 +3,7 @@ import { SectionHeader } from "./SectionHeader";
 
 export type InfoPageProps = {
   eyebrow: string;
-  title: string;
+  title: React.ReactNode;
   lead: ReactNode;
   children: ReactNode;
   className?: string;

@@ -69,7 +69,7 @@ const TOOLS: Array<[string, string, "obsługiwane" | "planowane"]> = [
 ];
 
 export default function CouncilPage() {
-  return <DocLayout eyebrow="KONSYLIUM AI" title="Kilka modeli AI, jedna diagnoza" version="1.1" updatedAt="2026-09-29" sections={sections}
+  return <DocLayout eyebrow="KONSYLIUM AI" title={<>Kilka modeli AI,<br />jedna diagnoza</>} version="1.1" updatedAt="2026-09-29" sections={sections}
     lead="Wybrane wpisy polityków osobno ocenia kilka modeli AI różnych firm. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę — z jawnym składem i ograniczeniami. Modele mogą się mylić.">
 
     <section aria-label="Film: jak działa spin.clinic"><HowItWorksFilm /></section>
