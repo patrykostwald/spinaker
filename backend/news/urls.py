@@ -11,6 +11,8 @@ from news import polls
 from news.admin_status import admin_status
 from news.admin_finance import admin_wallets
 from news.social_publish import serve_video
+from news.social_api import (SocialQueueView, SocialPublicationView, SocialPublishedView,
+    SocialTasksView, StaffSocialTasksView, StaffSocialTaskDetailView, SocialPasswordResetConfirmView)
 from news.views import source_coverage, archive_status, health, me, google_news, patronite_webhook, editorial_status
 from news.auth_views import csrf, sign_in, sign_out
 from news.editorial import EditorialThreadViewSet, EditorialArticleViewSet
@@ -39,6 +41,13 @@ router.register(r"articles", ArticleViewSet, basename="articles")
 router.register(r"threads", ThreadViewSet, basename="threads")
 
 urlpatterns = [
+    path('social/queue/', SocialQueueView.as_view()),
+    path('social/published/', SocialPublishedView.as_view()),
+    path('social/materials/<int:diagnosis_id>/', SocialPublicationView.as_view()),
+    path('social/tasks/', SocialTasksView.as_view()),
+    path('social/password/confirm/', SocialPasswordResetConfirmView.as_view()),
+    path('staff/social/tasks/', StaffSocialTasksView.as_view()),
+    path('staff/social/tasks/<int:task_id>/', StaffSocialTaskDetailView.as_view()),
     path('staff/agents/', agents_api.notes),
     path('staff/agents/map/', agents_api.agent_map),
     path('staff/warden-reviews/', warden_api.reviews),
@@ -68,6 +77,7 @@ urlpatterns = [
     path('newsletter/unsubscribe/', newsletter.unsubscribe),
     path('staff/newsletter/', newsletter.staff_stats),
     path('social/video/<str:name>', serve_video),
+    path('social/video/<str:name>/', serve_video),
     path('clinic/', clinic_page),
     path('clinic/corrections/', clinic_corrections),
     path('clinic/interviews/', clinic_interviews),
@@ -79,6 +89,7 @@ urlpatterns = [
     path('clinic/stats/', clinic_statistics),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
     path('clinic/spins/<int:diagnosis_id>/card.png', clinic_spin_card),
+    path('clinic/spins/<int:diagnosis_id>/card.png/', clinic_spin_card),
     path('clinic/spins/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'spins'}),
     path('clinic/interviews/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'interviews'}),
     path('clinic/spins/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'spins'}),

@@ -40,6 +40,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 def user_data(user):
     identity = getattr(user, 'account_identity', None)
     return {'id': user.pk, 'username': user.username, 'is_staff': user.is_staff,
+            'is_social': user.groups.filter(name='social').exists(),
             'email': user.email, 'email_verified': bool(identity and identity.email_verified),
             'accepted_terms_version': identity.accepted_terms_version if identity else '', **role_data(user)}
 

@@ -57,7 +57,7 @@ def channels() -> list[str]:
             ready.append('instagram')
     if _env('BLUESKY_HANDLE') and _env('BLUESKY_APP_PASSWORD'):
         ready.append('bluesky')
-    if _video_email():
+    if _video_email() or _env('SOCIAL_PANEL_ENABLED').lower() == 'true':
         ready.append('manual')
     return ready
 
@@ -294,7 +294,7 @@ def post_manual(path: Path, caption: str, link: str) -> tuple[str, str]:
             f'Opis do wklejenia:\n\n{caption}\n\nLink do diagnozy (do bio / pierwszego komentarza): {link}\n\n'
             'Jeśli polityk usunie wpis, dostaniesz osobny mail — wtedy usuń film ręcznie z TikToka i YouTube.')
     from news.clinic import staff_mail_enabled
-    if not staff_mail_enabled() and not social_manager():
+    if not _video_email() or (not staff_mail_enabled() and not social_manager()):
         return '', ''  # maile wyłączone: film czeka w panelu, bez wiadomości
     if not _mail(_video_email(), 'spin.clinic: film do TikToka i Shorts', body, path, social=True):
         raise RuntimeError('mail_failed')
@@ -365,6 +365,10 @@ def run(dry_run: bool = False) -> dict:
                     alt = f'Wpis polityka i ocena Dr. Spina: {diagnosis.get_verdict_display()} {diagnosis.intensity}/100.'
                     external, url = post_bluesky(text['bluesky'], card(diagnosis), alt)
                 else:
+                    # Persist the exact delivered copy even if SMTP fails.
+                    from news.social_models import SocialMaterial
+                    SocialMaterial.objects.get_or_create(diagnosis=diagnosis,
+                        defaults={'caption': text['instagram'], 'link': text['link']})
                     external, url = post_manual(path, text['instagram'], text['link'])
             except (requests.RequestException, RuntimeError, KeyError, ValueError, OSError) as error:
                 logger.warning('social %s %s: %s', platform, diagnosis.pk, error)
@@ -404,9 +408,7 @@ def unpublish_deleted(diagnosis) -> None:
               f'spin.clinic: usuń ręcznie film diagnozy {diagnosis.pk}',
               f'Polityk usunął wpis, którego dotyczy diagnoza {diagnosis.pk}. Zasady serwisów: usuwamy też nasze materiały.\n\n'
               f'Usuń ręcznie: {where}\n(TikTok i YouTube Shorts — jeśli film tam wrzuciłeś.)', social=True)
-        for item in manual:
-            item.deleted_at = timezone.now()
-            item.save(update_fields=['deleted_at'])
+        # Sending an alert is not proof of deletion. The social panel records confirmation.
     try:
         (video_dir() / video_name(diagnosis.pk)).unlink(missing_ok=True)
     except OSError:

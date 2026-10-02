@@ -48,7 +48,9 @@ def test_staff_snapshot_shape_and_recorded_failures():
     assert response.status_code == 200
     assert 'no-store' in response['Cache-Control']
     sections = {s['title']: s for s in response.data['sections']}
-    assert len(sections) == 23  # + Drugi klucz i Seba
+    assert len(sections) == 24  # + skrzynka social media
+    assert sections['Zadania od social media']['metrics'] == [status.metric('Nowe', 0)]
+    assert sections['Zadania od social media']['href'] == '/panel#social-tasks'
     assert 'Dyżurny' in sections
     assert 'Strażnik kont' in sections
     assert 'Audytor-inkwizytor' in sections
@@ -63,7 +65,10 @@ def test_staff_snapshot_shape_and_recorded_failures():
     assert sections['Zadania w tle']['items']
     assert 'transkrypcja albo diagnoza' in str(sections['Wywiad dnia']['metrics'])
     for section in sections.values():
-        assert set(section) == {'title', 'status', 'description', 'last_event', 'metrics', 'items'}
+        expected = {'title', 'status', 'description', 'last_event', 'metrics', 'items'}
+        if section['title'] == 'Zadania od social media':
+            expected |= {'href', 'link_label'}
+        assert set(section) == expected
         assert section['status'] in {'ok', 'warn', 'error', 'unknown'}
         assert section['description'] != 'Nie udało się odczytać stanu.'
 

@@ -18,6 +18,7 @@ def agent(name, description, task, env='', default=False, collector=False, cost=
 
 
 REGISTRY = {
+    'social-assistant': agent('Asystent social media', 'Odpowiada na pytania osoby od publikacji. Tylko darmowe modele, domyślnie do 30 prób dziennie.', 'news.social_assistant.answer_question', default=True),
     'plain-editor': agent('Redaktor prostoty', 'Pisze krótki pierwszy ekran po korekcie języka diagnozy.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),
     'plain-meter': agent('Miernik', 'Bez AI sprawdza długość, powtórzenia i proste słowa.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),
     'plain-guard': agent('Strażnik rzetelności', 'Bez AI sprawdza cytaty, techniki i słownik zarzutów.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),

@@ -6695,3 +6695,43 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-plain__gist { font-size: 16px; }
   .sc-plain__techniques { margin-top: 20px; gap: 14px; }
 }
+.sc-social { color: var(--sc-text); background: transparent; border-radius: 16px; color-scheme: dark; }
+.sc-social h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 650; margin: 6px 0; }
+.sc-social h2 { font-size: 20px; font-weight: 600; line-height: 1.4; margin: 0 0 12px; }
+.sc-social p { margin: 12px 0; line-height: 1.6; }
+.sc-social a { color: var(--sc-accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.sc-social button, .sc-social-download { min-height: 44px; border: 1px solid var(--sc-line-strong); border-radius: 10px; padding: 10px 14px; background: var(--sc-surface-2); color: var(--sc-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.sc-social button:disabled { opacity: .55; cursor: wait; }
+.sc-social button:hover:not(:disabled) { background: var(--sc-surface-3); }
+.sc-social .sc-social-download { display: inline-flex; align-items: center; background: var(--sc-accent); color: #06111f; text-decoration: none; }
+.sc-social-intro, .sc-social-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; justify-content: space-between; }
+.sc-social-actions h2 { margin: 0; }
+.sc-social-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; border-bottom: 1px solid var(--sc-line); padding-bottom: 16px; }
+.sc-social-tabs [aria-pressed=true], .sc-social-tabs [aria-pressed=true]:hover:not(:disabled) { background: var(--sc-accent); color: #06111f; border-color: var(--sc-accent); }
+.sc-social-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.sc-social-box { padding: 24px; border: 1px solid var(--sc-line); border-radius: 14px; background: var(--sc-surface); margin-bottom: 20px; min-width: 0; overflow-wrap: anywhere; }
+.sc-social-thumbnail { display: block; width: 100%; aspect-ratio: 1200 / 675; object-fit: contain; border-radius: 8px; background: var(--sc-surface-2); margin-bottom: 20px; }
+.sc-social-form { display: grid; gap: 14px; margin-top: 20px; }
+.sc-social-form label { display: grid; gap: 8px; font-size: 14px; font-weight: 500; }
+.sc-social-form input, .sc-social-form textarea, .sc-social-form select { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: 12px; border-radius: 8px; border: 1px solid var(--sc-line-strong); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; font-size: 16px; }
+.sc-social-form textarea { resize: vertical; }
+.sc-social-copy { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sc-social details { margin-top: 18px; }
+.sc-social summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
+.sc-social .sc-social-quiet { margin-top: 18px; background: transparent; }
+.sc-social-removal { border: 1px solid var(--sc-negative); border-radius: 10px; padding: 16px; background: color-mix(in srgb, var(--sc-negative) 14%, var(--sc-surface)); margin-bottom: 20px; }
+.sc-social-removal strong { font-size: 22px; }
+.sc-social-posted { color: var(--sc-positive); }
+.sc-social-tag { border: 1px solid var(--sc-line-strong); border-radius: 20px; padding: 5px 12px; font-size: 13px; }
+.sc-social-answer { border-left: 3px solid var(--sc-accent); padding: 12px 16px; margin-top: 18px; background: var(--sc-surface-2); }
+.sc-social-inbox { padding: 12px 0; }
+.sc-social small, .sc-social .sc-command-eyebrow { color: var(--sc-text-3); }
+.sc-social :is(input, textarea, select, button, a, summary):focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 3px; }
+@media (max-width: 650px) {
+  .sc-social-grid { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .sc-social-box { padding: 16px; }
+  .sc-social-tabs { gap: 6px; }
+  .sc-social-tabs button { flex: 1 1 auto; padding: 10px; }
+  .sc-social .sc-command-header { align-items: flex-start; gap: 16px; flex-direction: column; }
+  .sc-social-actions { justify-content: flex-start; }
+}

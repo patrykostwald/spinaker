@@ -292,6 +292,8 @@ def snapshot(now):
     from news.review_status import panel_section as reviews_section
     collect('Drugi klucz i Seba', lambda: reviews_section(now))
     collect('Media społecznościowe', lambda: social(today, tomorrow))
+    from news.social_api import panel_section as social_tasks_section
+    collect('Zadania od social media', social_tasks_section)
     collect('Kolejki', lambda: queues(now))
     collect('Źródła / harvestery', sources)
     def newsletter():

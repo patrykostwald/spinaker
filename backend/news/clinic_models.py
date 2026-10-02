@@ -318,6 +318,8 @@ class WeeklyReport(models.Model):
 
 
 SOCIAL_PLATFORMS = [
+    ('tiktok', 'TikTok'),
+    ('shorts', 'YouTube Shorts'),
     ('facebook', 'Facebook (film)'),
     ('instagram', 'Instagram (Reels)'),
     ('bluesky', 'Bluesky'),
