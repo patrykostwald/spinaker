@@ -18,12 +18,12 @@ const links = {
   privacy: { label: "Prywatność i cookies", href: "/polityka-prywatnosci" },
 } satisfies Record<string, SiteNavigationItem>;
 
-/** Kanały spin.clinic w mediach społecznościowych — jedno źródło dla stopki i strony O nas. */
+/** Kanały spin.clinic w mediach społecznościowych - jedno źródło dla stopki i strony O nas. */
 export const socialChannels = [
   { name: "X", handle: "@spinclinic", href: "https://x.com/spinclinic", what: "Diagnozy najsilniejszych spinów i wątki z uzasadnieniem." },
   { name: "Facebook", handle: "spin.clinic", href: "https://www.facebook.com/profile.php?id=61595171420399", what: "Filmy z wybranych diagnoz i odnośniki do pełnych analiz." },
   { name: "Instagram", handle: "@spinclinic", href: "https://www.instagram.com/spinclinic/", what: "Krótkie filmy z diagnoz i satyryczny „Przekaz dnia”." },
-  { name: "YouTube", handle: "@spin.clinic", href: "https://www.youtube.com/@spin.clinic", what: "Shorts: „Przekaz dnia — co usłyszało stado?” i filmy z diagnoz." },
+  { name: "YouTube", handle: "@spin.clinic", href: "https://www.youtube.com/@spin.clinic", what: "Shorts: „Przekaz dnia - co usłyszało stado?” i filmy z diagnoz." },
   { name: "Bluesky", handle: "@spinclinic.bsky.social", href: "https://bsky.app/profile/spinclinic.bsky.social", what: "Karty diagnoz z linkiem do pełnej analizy." },
 ] as const;
 

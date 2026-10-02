@@ -14,7 +14,7 @@ import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../lib/api";
-import { CAMPS, CAMP_LABELS, type Camp, type Party, type DataPeriod } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, spinVar, type Camp, type Party, type DataPeriod } from "../../lib/clinic";
 import { clinicPeriodLabel } from "../../lib/clinicPeriod";
 import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "./SpinParts";
@@ -192,7 +192,7 @@ function CampColumn({ camp, bucket, minSample, read, histMax }: { camp: Camp; bu
       <p className="sc-ind-avg">
         Średnia siła spinu:{" "}
         {bucket.enough_data && bucket.average_intensity !== null
-          ? <strong>{Math.round(bucket.average_intensity)}/100</strong>
+          ? <strong><span className="sc-spin-num" style={spinVar(bucket.average_intensity)}>{Math.round(bucket.average_intensity)}</span>/100</strong>
           : <span className="sc-ind-few">za mało danych (n = {n}, próg {minSample})</span>}
       </p>
       <p className="sc-ind-note">Liczba diagnoz — wspólna skala: 0–{histMax}.</p>
@@ -271,7 +271,7 @@ function Parties({ stats }: { stats: IndicatorStats }) {
                 <td>{row.camp === "mixed" ? "obie" : CAMP_LABELS[row.camp]}</td>
                 <td>{row.diagnosed}</td>
                 <td>{row.spin} / {row.partial}</td>
-                <td>{row.enough_data && row.average_intensity !== null ? `${Math.round(row.average_intensity)}/100` : <span className="sc-ind-few">za mało danych</span>}</td>
+                <td>{row.enough_data && row.average_intensity !== null ? <><span className="sc-spin-num" style={spinVar(row.average_intensity)}>{Math.round(row.average_intensity)}</span>/100</> : <span className="sc-ind-few">za mało danych</span>}</td>
               </tr>
             ))}
           </tbody>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../kit";
+import { spinVar } from "../../lib/clinic";
 import { decideFlag, getClinicQueue, getNewsletterStats, reviewDailyMessage, reviewSpin } from "../../lib/clinic";
 import { useAccount } from "../../lib/account";
 import { SpinDiagnosisBody } from "./SpinDetail";
@@ -107,7 +108,7 @@ export function ClinicQueue() {
           <h2 id="recent-title">Opublikowane — udostępnij na X</h2>
           <ul>{data.recent.map(item => (
             <li key={item.id} className="sc-clinic-queue__flag">
-              <span className="sc-clinic-queue__score" title="Siła spinu">{item.intensity}</span>
+              <span className="sc-clinic-queue__score sc-spin-num" style={spinVar(item.intensity)} title="Siła spinu">{item.intensity}</span>
               <div>
                 <SpinAuthorRow author={item.author} publishedAt={item.post.published_at} />
                 <p><strong>{item.verdict_label}:</strong> <Link href={`/klinika/${item.id}`}>{item.headline}</Link></p>

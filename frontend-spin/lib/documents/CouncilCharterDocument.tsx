@@ -30,7 +30,7 @@ export function CouncilCharterDocument({ lang = "pl" }: { lang?: DocumentLanguag
     ],
     [
       t("Mówimy, co zbadaliśmy."),
-      t("Zakres analizy jest jawny (tekst, obraz, film) — czego nie zbadano, piszemy wprost.")
+      t("Zakres analizy jest jawny (tekst, obraz, film) - czego nie zbadano, piszemy wprost.")
     ],
     [
       t("Pokazujemy różnice zdań."),

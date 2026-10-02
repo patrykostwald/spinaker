@@ -5761,7 +5761,8 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-info-page__body .sc-kons-roles .sc-kons-roles__who { font-size: 12px; line-height: 18px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-accent); }
 .sc-kons-example { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); margin-top: 12px; border-radius: 16px; background: var(--sc-surface); box-shadow: var(--sc-panel-ring); overflow: hidden; }
 .sc-info-page__body .sc-kons-example__votes { list-style: none; margin: 0; padding: 16px; display: grid; gap: 10px; }
-.sc-info-page__body .sc-kons-example__votes li { margin: 0; display: grid; grid-template-columns: 64px 118px minmax(40px, 1fr) 28px; align-items: center; gap: 10px; font-size: 13.5px; }
+.sc-info-page__body .sc-kons-example__votes li { margin: 0; display: grid; grid-template-columns: 64px minmax(0, 1fr) 3ch; align-items: center; gap: 10px; font-size: 13.5px; }
+.sc-info-page__body .sc-kons-example__votes li b { text-align: right; font-variant-numeric: tabular-nums; }
 .sc-kons-example__model { color: var(--sc-text-2); }
 .sc-kons-example__votes .sc-verdict { justify-self: start; }
 .sc-kons-example__track { height: 8px; border-radius: 99px; background: var(--sc-surface-3); overflow: hidden; }

@@ -62,7 +62,7 @@ export function IntensityMeter({ value }: { value: number }) {
   return (
     <span className="sc-intensity" data-level={value >= 70 ? "high" : value >= 30 ? "mid" : "low"} title="Siła spinu według diagnozy (0–100): jak mocno wpis opiera się na technikach perswazji">
       <span className="sc-intensity__track" aria-hidden="true"><span className="sc-spin-fill" style={{ ...spinVar(value), width: `${Math.max(0, Math.min(100, value))}%` }} /></span>
-      <span className="sc-intensity__value">Siła spinu {value}/100</span>
+      <span className="sc-intensity__value">Siła spinu <b className="sc-spin-num" style={spinVar(value)}>{value}</b>/100</span>
     </span>
   );
 }

@@ -1,6 +1,7 @@
 import { DocumentLink as Link, documentTranslator, type DocumentLanguage } from "./locale";
 import { CouncilRecruitmentLog, CouncilRoster, HowItWorksFilm } from "@spin-clinic/ui";
 import { DocLayout } from "@spin-clinic/ui/kit";
+import type { CSSProperties } from "react";
 
 export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const t = documentTranslator(lang);
@@ -22,12 +23,12 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     [t("Łączenie"), t("Stałe reguły łączą głosy w jeden werdykt, siłę spinu i listę technik.")],
     [t("Źródła i badania"), t("Twierdzenia trafiają do wyszukiwarki, a laboratorium dodaje badania pomocnicze. Źródło musi pochodzić z wyników.")],
     [t("Uzasadnienie"), t("Przewodniczący pisze diagnozę z ustaleń, recenzent sprawdza zgodność, językoznawca poprawia polszczyznę.")],
-    [t("Publikacja"), t("Diagnoza ukazuje się automatycznie, z głosami modeli i ograniczeniami. Nikt nie edytuje jej treści. Wybrane wyniki trafiają też jako skróty i filmy do mediów społecznościowych — zawsze z linkiem do pełnej analizy.")],
+    [t("Publikacja"), t("Diagnoza ukazuje się automatycznie, z głosami modeli i ograniczeniami. Nikt nie edytuje jej treści. Wybrane wyniki trafiają też jako skróty i filmy do mediów społecznościowych - zawsze z linkiem do pełnej analizy.")],
   ];
 
   const ROLES = [
     { role: t("Członkowie Konsylium"), who: "gpt-oss · Qwen · Nemotron · Gemini · Bielik · PLLuM · Llama · Mistral",
-      text: t("Każdy osobno podaje werdykt, siłę 0–100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia.") },
+      text: t("Każdy osobno podaje werdykt, siłę 0-100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia.") },
     { role: t("Sprawdzanie faktów"), who: t("Gemini z wyszukiwarką Google"),
       text: t("Szuka źródeł do każdego twierdzenia. Bez źródła twierdzenie zostaje niezweryfikowane.") },
     { role: t("Konsultant"), who: t("Claude (Anthropic) · płatny"),
@@ -42,7 +43,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       text: t("Poprawia tylko polszczyznę. Gdy poprawka wyraźnie zmienia długość tekstu albo nie jest po polsku, zostaje wersja przewodniczącego.") },
   ];
 
-  /** Przykład obliczenia (nie rzeczywista diagnoza) — zgodny z clinic_council.combine. */
+  /** Przykład obliczenia (nie rzeczywista diagnoza) - zgodny z clinic_council.combine. */
   const EXAMPLE = [
     { model: "Model A", verdict: "partial", label: t("Częściowy spin"), strength: 30 },
     { model: "Model B", verdict: "partial", label: t("Częściowy spin"), strength: 40 },
@@ -55,7 +56,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     [t("Gemini z wyszukiwarką Google"), t("źródła do twierdzeń"), "obsługiwane"],
     [t("Claude z wyszukiwaniem"), t("konsultacja przy sporze i silnym spinie, gdy pozwala budżet"), "obsługiwane"],
     [t("Słownik słów nacechowanych i 21 kategorii technik"), t("wspólny język diagnoz"), "obsługiwane"],
-    ["HerBERT (Hugging Face)", t("wydźwięk i mowa nienawiści — sygnał pomocniczy"), "obsługiwane"],
+    ["HerBERT (Hugging Face)", t("wydźwięk i mowa nienawiści - sygnał pomocniczy"), "obsługiwane"],
     ["Google Fact Check Tools", t("wcześniejsze sprawdzenia innych redakcji"), "obsługiwane"],
     ["GUS BDL", t("bezrobocie i wynagrodzenia w Polsce"), "obsługiwane"],
     ["Firecrawl", t("czy cytat naprawdę jest w źródle (do 3 na diagnozę)"), "obsługiwane"],
@@ -65,7 +66,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   ];
 
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/council" : "/konsylium"} eyebrow={t("KONSYLIUM AI")} title={<>{t("Kilka modeli AI,")}<br />{t("jedna diagnoza")}</>} version="1.1" updatedAt="2026-09-29" sections={sections}
-    lead={t("Wybrane wpisy polityków osobno ocenia kilka modeli AI różnych firm. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę — z jawnym składem i ograniczeniami. Modele mogą się mylić.")}>
+    lead={t("Wybrane wpisy polityków osobno ocenia kilka modeli AI różnych firm. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę - z jawnym składem i ograniczeniami. Modele mogą się mylić.")}>
 
     <section aria-label={t("Film: jak działa spin.clinic")}><HowItWorksFilm lang={lang} /></section>
 
@@ -75,7 +76,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     </section>
 
     <section id="role"><h2>{t("Kto co robi")}</h2>
-      <p>{t("Konsylium działa jak rada lekarska: kilku niezależnych specjalistów, osobne badania i jeden opis wyniku. Poniżej domyślna obsada ról — gdy model nie odpowie, zastępuje go kolejny. Rzeczywistych wykonawców pokazujemy przy każdej diagnozie.")}</p>
+      <p>{t("Konsylium działa jak rada lekarska: kilku niezależnych specjalistów, osobne badania i jeden opis wyniku. Poniżej domyślna obsada ról - gdy model nie odpowie, zastępuje go kolejny. Rzeczywistych wykonawców pokazujemy przy każdej diagnozie.")}</p>
       <ul className="sc-kons-roles">{ROLES.map(item =>
         <li key={item.role}><h3>{item.role}</h3><p className="sc-kons-roles__who">{item.who}</p><p>{item.text}</p></li>)}</ul>
     </section>
@@ -84,12 +85,12 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       <div className="sc-kons-example" aria-label={t("Przykład obliczenia, nie rzeczywista diagnoza")}>
         <ul className="sc-kons-example__votes">{EXAMPLE.map(vote =>
           <li key={vote.model}><span className="sc-kons-example__model">{vote.model}</span><span className="sc-verdict" data-verdict={vote.verdict}>{vote.label}</span>
-            <span className="sc-kons-example__track"><i style={{ width: `${vote.strength}%` }} /></span><b>{vote.strength}</b></li>)}</ul>
+            <b>{vote.strength}</b></li>)}</ul>
         <div className="sc-kons-example__result">
           <p className="sc-kons-example__lbl">{t("Wynik")}</p>
           <span className="sc-verdict" data-verdict="partial">{t("Częściowy spin")}</span>
-          <p className="sc-kons-example__num">50<small>/100</small></p>
-          <p className="sc-kons-example__agree"><strong>3/4</strong> {t("ten sam werdykt · rozrzut 30–80")}</p>
+          <p className="sc-kons-example__num"><span className="sc-spin-num" style={{ "--spin": 50 } as CSSProperties}>50</span><small>/100</small></p>
+          <p className="sc-kons-example__agree"><strong>3/4</strong> {t("ten sam werdykt · rozrzut od 30 do 80")}</p>
         </div>
       </div>
       <p className="sc-kons-example__cap">{t("Przykład obliczenia, nie rzeczywista diagnoza.")}</p>
@@ -102,7 +103,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
 
     <section id="sklad"><h2>{t("Aktualny skład")}</h2>
       <ul className="sc-kons-rulebar">
-        <li><strong>4</strong><span>{t("odpowiedzi — cel dla każdego wpisu")}</span></li>
+        <li><strong>4</strong><span>{t("odpowiedzi - cel dla każdego wpisu")}</span></li>
         <li><strong>3+</strong><span>{t("różne firmy")}</span></li>
         <li><strong>PL</strong><span>{t("model polski wybierany jako pierwszy")}</span></li>
       </ul>
@@ -111,7 +112,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     </section>
 
     <section id="rekrutacja"><h2>{t("Rekrutacja do Konsylium")}</h2>
-      <p>{t("Skład nie jest zamknięty. Co noc Rekruter Konsylium przegląda katalogi darmowych modeli i wybiera najwyżej jednego kandydata — pierwszeństwo ma model polski i firma, której jeszcze nie ma w składzie. Kandydat zdaje egzamin: ocenia te same wpisy polityków co Konsylium. Liczy się zgodność werdyktu i siły spinu z diagnozą końcową, cytowanie technik i polszczyzna. Obecni członkowie głosują, a przyjęty model musi przyjąć Kartę; role dostaje tylko wtedy, gdy wynik egzaminu je uzasadnia.")}</p>
+      <p>{t("Skład nie jest zamknięty. Co noc Rekruter Konsylium przegląda katalogi darmowych modeli i wybiera najwyżej jednego kandydata - pierwszeństwo ma model polski i firma, której jeszcze nie ma w składzie. Kandydat zdaje egzamin: ocenia te same wpisy polityków co Konsylium. Liczy się zgodność werdyktu i siły spinu z diagnozą końcową, cytowanie technik i polszczyzna. Obecni członkowie głosują, a przyjęty model musi przyjąć Kartę; role dostaje tylko wtedy, gdy wynik egzaminu je uzasadnia.")}</p>
       <p>{t("Członek, który od trzech dni nie odpowiada (np. zniknął u dostawcy), zostaje zawieszony i wraca sam, gdy znów zacznie działać. Wszystkie decyzje zapisujemy poniżej. Do 7 października Rekruter działa w trybie próbnym: przyjęcia są rekomendacjami.")}</p>
       <CouncilRecruitmentLog lang={lang} />
     </section>
@@ -129,7 +130,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
         <li>{t("Brak źródła oznacza brak weryfikacji, nie fałsz.")}</li>
         <li>{t("Brak recenzji albo jej negatywny wynik nie wstrzymuje automatycznie publikacji.")}</li>
         <li>{t("Film dołączony do wpisu nie jest analizowany; wywiady mają osobny proces.")}</li>
-        <li>{t("Zgoda modeli nie jest dowodem prawdy — mogą popełnić ten sam błąd.")}</li>
+        <li>{t("Zgoda modeli nie jest dowodem prawdy - mogą popełnić ten sam błąd.")}</li>
       </ul>
     </section>
 

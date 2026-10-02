@@ -17,7 +17,7 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     [t("Tempo"), t("Co najmniej 3 sekundy między zapytaniami i uzgodniony limit dzienny.")],
     [t("Zakres"), t("Bez pełnych tekstów, zdjęć ani kopii artykułów; nie trenujemy na nich modeli AI.")],
     [t("Czytelnik"), t("Widzi box ze źródłem, a po kliknięciu trafia do oryginału.")],
-    [t("Zgoda"), t("Brak odpowiedzi nie jest zgodą — źródło pozostaje wyłączone.")],
+    [t("Zgoda"), t("Brak odpowiedzi nie jest zgodą - źródło pozostaje wyłączone.")],
     [t("Rezygnacja"), t("Wystarczy wiadomość, a wyłączymy źródło.")],
   ];
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/press" : "/dla-redakcji"} eyebrow={t("DLA REDAKCJI")} title={t("Korzystaj z analiz i źródeł")} version="1.0" updatedAt="2026-09-29" sections={sections}
@@ -25,7 +25,7 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     <section id="cytowanie"><h2>{t("Jak cytować diagnozę")}</h2>
       <p>{t("Podaj nazwę spin.clinic, tytuł i datę diagnozy oraz jej bezpośredni adres. Zaznacz, że analizę przygotowało AI. Rozróżniaj ocenę techniki perswazji od statusu sprawdzanego twierdzenia; zachowaj kontekst cytatu i ograniczenia wyniku.")}</p>
       <blockquote className="sc-doc-quote">{t("Przykład zapisu: „Według analizy AI Dr. Spina w spin.clinic («[tytuł diagnozy]», [data diagnozy]) w tej wypowiedzi rozpoznano [technikę]. Źródło: [trwały adres diagnozy], dostęp: [data]”.")}</blockquote>
-      <p>{t("Wpis lub film spin.clinic w mediach społecznościowych jest skrótem analizy — przed cytowaniem otwórz pełną diagnozę i sprawdź materiał źródłowy. Uzupełnij pola danymi wybranej diagnozy. Jej siła 0–100 opisuje komunikat, nie osobę. Ocena AI nie zastępuje samodzielnej weryfikacji redakcyjnej.")}</p>
+      <p>{t("Wpis lub film spin.clinic w mediach społecznościowych jest skrótem analizy - przed cytowaniem otwórz pełną diagnozę i sprawdź materiał źródłowy. Uzupełnij pola danymi wybranej diagnozy. Jej siła 0-100 opisuje komunikat, nie osobę. Ocena AI nie zastępuje samodzielnej weryfikacji redakcyjnej.")}</p>
     </section>
     <section id="link"><h2>{t("Trwały link")}</h2>
       <p>{t("Otwórz konkretną diagnozę z")} <Link lang={lang} href="/klinika/diagnozy">{t("archiwum")}</Link> {t("i skopiuj adres jej strony:")} <code>https://spin.clinic/klinika/[id]</code>{t(". Zachowuje on identyfikator analizy; adres strony głównej lub widok „spin dnia” nie wskazuje stale tego samego materiału.")}</p>
