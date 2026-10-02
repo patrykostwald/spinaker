@@ -190,7 +190,12 @@ def get_rows(source: str, *, http_get=requests.get) -> Iterable[RosterRow]:
     if source == 'sejm':
         return sejm_rows(http_get=http_get)
     if source == 'senat':
-        return senat_rows(http_get=http_get)
+        # senat.gov.pl odpowiada serwerowi 403; domyślnie Wikipedia z kontrolą krzyżową (news/senate_wikipedia.py).
+        import os
+        if os.environ.get('SENAT_METADATA_ENABLED', 'false').lower() == 'true':
+            return senat_rows(http_get=http_get)
+        from news.senate_wikipedia import senat_rows as wikipedia_rows
+        return wikipedia_rows(http_get=http_get)
     if source == 'ep':
         return ep_rows(http_get=http_get)
     raise CommandError('Źródło musi być jednym z: sejm, senat, ep.')
