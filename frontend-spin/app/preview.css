@@ -32,7 +32,7 @@ a.sc-preview-exit { display: inline-block; padding: .7rem 1.1rem; border: 1px so
 .sc-survey-bar p { margin: 0; flex: 1; min-width: 0; color: var(--sc-text-2); }
 .sc-survey-bar strong { color: var(--sc-text); font-weight: 700; }
 .sc-survey-bar__dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: var(--sc-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sc-accent) 22%, transparent); }
-.sc-survey-bar__go { flex: none; padding: 7px 14px; border-radius: 999px; background: var(--sc-accent); color: #06111f; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.sc-survey-bar__go { flex: none; padding: 7px 14px; border-radius: 999px; background: var(--sc-accent); color: var(--sc-on-accent); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .sc-survey-bar__go:hover { filter: brightness(1.08); }
 .sc-survey-bar__close { flex: none; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--sc-text-3); font-size: 20px; line-height: 1; cursor: pointer; }
 .sc-survey-bar__close:hover { background: var(--sc-surface-2); color: var(--sc-text); }
