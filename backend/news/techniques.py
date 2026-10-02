@@ -112,8 +112,9 @@ FAMILIES = {
                  'Zmiana tematu', 'Przypisywanie sobie zasług'),
     'inne': ('Inne',),
 }
-FAMILY_LABELS = {'dane': 'Dane i wnioskowanie', 'przedstawienie': 'Emocje i przedstawienie',
-                 'spor': 'Spór i odpowiedzialność', 'inne': 'Inne'}
+# Kolejność prezentacji jak sygnalizator; niezależna od reguł klasyfikacji.
+FAMILY_LABELS = {'spor': 'Spór i odpowiedzialność', 'przedstawienie': 'Emocje i przedstawienie',
+                 'dane': 'Dane i wnioskowanie', 'inne': 'Inne'}
 FAMILY_DEFINITIONS = {
     'dane': 'Dobór i przedstawianie faktów, liczb oraz związków między nimi.',
     'przedstawienie': 'Wpływanie na odbiór przez emocje, język i ramy interpretacji.',

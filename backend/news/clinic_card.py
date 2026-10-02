@@ -14,13 +14,14 @@ from django.conf import settings
 from PIL import Image, ImageDraw, ImageOps
 
 from news.techniques import FAMILY_LABELS
+from news.spin_colors import CLAIM_COLORS, FAMILY_COLORS, VERDICT_COLORS, strength_bar, strength_color, tabular_score
 from news.x_card import _font, EMOJI, glue_short
 
-VERSION = 'v8'
+VERSION = 'v9'
 FORMATS = {'diagnoza', 'skrot'}
-COLORS = {'spin': '#ff6b6b', 'partial': '#f2b441', 'no_spin': '#4ed18a', 'unclear': '#a6a6a6'}
+COLORS = VERDICT_COLORS
 MUTED, ACCENT = '#a6a6a6', '#4a9eff'
-FAMILIES = {'dane': '#7ea6d8', 'przedstawienie': '#d2a86a', 'spor': '#b58ad8'}
+FAMILIES = {key: FAMILY_COLORS[key] for key in FAMILY_LABELS}
 MAX_BYTES = 5 * 1024 * 1024
 
 
@@ -228,14 +229,14 @@ def _draw_panel(draw, data, box):
         x, end = edge + 20 * scale, edge + cell - 18 * scale
         text(title, x, top + 22 * scale, end, size=14, weight=700, color='#8c8c8c')
         number_size = round(44 * scale)
-        text(numbers[i], x, top + 57 * scale, end, size=44, weight=700, color=ACCENT if i == 0 else '#ffffff')
+        text(numbers[i], x, top + 57 * scale, end, size=44, weight=700, color=strength_color(numbers[i]) if i == 0 else '#ffffff')
         offset = draw.textlength(str(numbers[i]), font=_font(number_size, 700))
         text(suffixes[i], x + offset + 5 * scale, top + 80 * scale, end, size=15)
         # Obszar wykresów: 104 jednostki, wspólny dół nad marginesem.
         y = bottom - 126 * scale
         width = end - x
         if i == 0:
-            bar(x, bottom - 53 * scale, width, max(0, (data.get('intensity') or 0)) / 100, ACCENT)
+            strength_bar(draw, (x, bottom - 53 * scale, end, bottom - 45 * scale), data.get('intensity'))
             for label, fraction in [('0', 0), ('50', .5), ('100', 1)]:
                 label_width = draw.textlength(label, font=_font(round(13 * scale))) + 5
                 tick_x = x + (width - label_width) * fraction
@@ -246,18 +247,17 @@ def _draw_panel(draw, data, box):
                      and v.get('status') != 'brak odpowiedzi'][:3]
             for j, vote in enumerate(votes):
                 row_y = y + 14 * scale + j * 33 * scale
-                text(_model_label(vote.get('model')), x, row_y, x + width * .4, size=14)
+                text(_model_label(vote.get('model')), x, row_y, x + width * .65, size=14)
                 score = vote.get('intensity')
-                bar(x + width * .41, row_y + 6 * scale, width * .28, max(0, score or 0) / 100, ACCENT)
-                text(score if score is not None else '—', x + width * .73, row_y, end - 9 * scale, size=15, color='#ffffff', weight=700)
+                tabular_score(draw, end - 11 * scale, row_y, score, _font(round(15 * scale), 700), '#ffffff')
                 dot_x = end - 4 * scale
                 draw.ellipse((dot_x, row_y + 6 * scale, dot_x + 8 * scale, row_y + 14 * scale), fill=COLORS.get(vote.get('verdict'), MUTED))
         elif i == 2:
             # Pięć kategorii musi zmieścić się z czytelną legendą (minimum 18 px).
             y = bottom - 158 * scale
             entries = [(key, label, color) for key, label, color in [
-                ('supported', 'potw.', '#4ed18a'), ('misleading', 'mylące', '#f2b441'),
-                ('contradicted', 'sprzeczne', '#ff6b6b'), ('unverified', 'niespr.', MUTED),
+                ('supported', 'potw.', CLAIM_COLORS['supported']), ('misleading', 'mylące', CLAIM_COLORS['misleading']),
+                ('contradicted', 'sprzeczne', CLAIM_COLORS['contradicted']), ('unverified', 'niespr.', CLAIM_COLORS['unverified']),
                 ('opinions', plural_pl(claims.get('opinions', 0), 'opinia', 'opinie', 'opinii'), '#8c8c8c')]
                 if claims.get(key, 0)]
             units = sum(claims[key] for key, _, _ in entries)
@@ -282,9 +282,11 @@ def _draw_panel(draw, data, box):
                 text(f'{claims[key]} {label}', x + 13 * scale, row_y, end, size=max(18, 18 / scale), color='#ffffff')
         else:
             maximum = max(1, *counts)
-            for j, (label, shade, count) in enumerate(zip(['Dane', 'Emocje', 'Spór'], FAMILIES.values(), counts)):
-                row_y = y + 14 * scale + j * 33 * scale
-                text(label, x, row_y, x + width * .45, size=14)
+            entries = [(key, shade, count) for (key, shade), count in zip(FAMILIES.items(), counts)
+                       if key != 'inne' or count]
+            for j, (key, shade, count) in enumerate(entries):
+                row_y = y + 14 * scale + j * (26 if len(entries) == 4 else 33) * scale
+                text(FAMILY_LABELS[key].split()[0], x, row_y, x + width * .45, size=14, color=shade)
                 bar(x + width * .47, row_y + 6 * scale, width * .32, count / maximum, shade)
                 text(count, x + width * .86, row_y, end + 3, size=15, color='#ffffff', weight=700)
     return bottom
@@ -392,7 +394,8 @@ def render(data, card_format='diagnoza'):
     text('RODZINA TECHNIK', (right, table_top, 932, table_top + 27), size=15, weight=700, color='#8c8c8c')
     text('TECHNIKI W ANALIZOWANYM MATERIALE', (952, table_top, 1460, table_top + 27), size=14, weight=700, color='#8c8c8c')
     text('TYPY', (1475, table_top, end, table_top + 27), size=14, color='#8c8c8c')
-    for index, (family, shade) in enumerate(FAMILIES.items()):
+    entries = [(family, shade) for family, shade in FAMILIES.items() if family != 'inne' or counts[family]]
+    for index, (family, shade) in enumerate(entries):
         y = table_top + 34 + index * 42
         draw.line((right, y, end, y), fill='#262626')
         draw.rounded_rectangle((right, y + 17, right + 9, y + 26), radius=2, fill=shade)
@@ -401,7 +404,7 @@ def render(data, card_format='diagnoza'):
         text(' · '.join(names) or 'Nie wskazano', (952, y + 12, 1455, y + 40), size=17, minimum=14, color='#ffffff' if names else '#8c8c8c')
         text(counts[family], (1480, y + 12, end, y + 40), size=18, weight=700)
     loaded = scan.get('loaded') or {}
-    loaded_top = table_top + 170
+    loaded_top = table_top + 44 + 42 * len(entries)
     if loaded and loaded_top + 28 <= 802:
         label = f"Słowa nacechowane: {loaded['count']}"
         words = ' · '.join(item['word'] for item in loaded.get('words', []))

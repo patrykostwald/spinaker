@@ -2,7 +2,7 @@
 
 Sceny (tempo pod krótkie formaty): siła spinu z licznikiem → wpis polityka (nasza grafika, nie zrzut z X) → panel danych
 jak na stronie (siła spinu, Konsylium AI, twierdzenia, techniki — z rosnącymi paskami) → diagnoza → techniki z cytatami
-→ spin.clinic. Kolory i układ panelu są te same co na karcie skanera (SpinSummary.tsx): czarne tło, siła na niebiesko,
+→ spin.clinic. Kolory i układ panelu są te same co na karcie skanera (SpinSummary.tsx): czarne tło, siła na skali barw,
 rodziny technik w swoich kolorach, obóz rządzący niebieski, opozycja czerwona w paski. Klatki rysuje Pillow czcionką
 Montserrat (OFL), film składa ffmpeg z paczki imageio-ffmpeg. Bez muzyki (cicha ścieżka dźwiękowa, bo część serwisów
 odrzuca filmy bez audio). Treść diagnozy przechodzi bez zmian — skracamy tylko długość; tekst syntezy pokazujemy tylko
@@ -17,6 +17,8 @@ import subprocess
 from PIL import Image, ImageDraw
 
 from news.x_card import EMOJI, _font, _wrap
+from news.techniques import FAMILY_LABELS
+from news.spin_colors import CLAIM_COLORS, FAMILY_COLORS, VERDICT_COLORS, strength_bar, strength_color, tabular_score
 
 W, H, FPS = 1080, 1920, 30
 X0, X1 = 72, W - 72           # marginesy; dół i prawa krawędź są zasłonięte przyciskami TikToka i Reels
@@ -29,12 +31,11 @@ CROSS = 0.22                  # przejście między scenami (s)
 BG, SURF, SURF2, SURF3, LINE = (0, 0, 0), (15, 15, 15), (23, 23, 23), (38, 38, 38), (52, 52, 52)
 TEXT, TEXT2, TEXT3 = (255, 255, 255), (179, 179, 179), (140, 140, 140)
 ACCENT, GOV, OPP, OPP_DARK = (74, 158, 255), (91, 155, 255), (255, 107, 107), (201, 74, 74)
-POSITIVE, WARNING, NEGATIVE = (78, 209, 138), (242, 180, 65), (255, 107, 107)
-FAMILIES = [('dane', 'Dane i wnioskowanie', (85, 180, 255)), ('przedstawienie', 'Emocje i przedstawienie', (245, 165, 74)),
-            ('spor', 'Spór i odpowiedzialność', (181, 138, 216)), ('inne', 'Inne', TEXT3)]
+FAMILIES = [(key, label, FAMILY_COLORS[key]) for key, label in FAMILY_LABELS.items()]
 FAMILY_COLOR = {key: color for key, _, color in FAMILIES}
-CLAIM_KINDS = [('supported', POSITIVE, 'potwierdzone'), ('misleading', WARNING, 'mylące'), ('contradicted', NEGATIVE, 'sprzeczne'),
-               ('unverified', TEXT3, 'niezweryfikowane'), ('opinion', None, 'opinie')]
+CLAIM_KINDS = [(key, CLAIM_COLORS[key], label) for key, label in
+               [('supported', 'potwierdzone'), ('misleading', 'mylące'), ('contradicted', 'sprzeczne'),
+                ('unverified', 'niezweryfikowane')]] + [('opinion', None, 'opinie')]
 
 
 def _clean(text: str) -> str:
@@ -261,7 +262,7 @@ def _tile(label: str, number: str, suffix: str, graphic, number_color=TEXT):
             x += draw.textlength(char, font=_font(28, 800)) + 2
         shown = number(p) if callable(number) else number
         big = _font(120, 800)
-        draw.text((TILE_PAD, TILE_PAD + 44), shown, font=big, fill=number_color)
+        draw.text((TILE_PAD, TILE_PAD + 44), shown, font=big, fill=number_color(p) if callable(number_color) else number_color)
         width = draw.textlength(shown, font=big)
         draw.text((TILE_PAD, TILE_PAD + 44 + 178), suffix, font=_font(30, 600), fill=TEXT3, anchor='ls')
         graphic(draw, (TILE_PAD, 270, TILE_W - TILE_PAD, TILE_H - TILE_PAD), p)
@@ -274,11 +275,12 @@ def _strength_tile(value: int):
 
     def graphic(draw, box, p):
         x0, y0, x1, y1 = box
-        _track(draw, (x0, y1 - 84, x1, y1 - 54), value / 100 * p, ACCENT)
+        strength_bar(draw, (x0, y1 - 84, x1, y1 - 54), value * p, SURF3)
         for i, tick in enumerate(('0', '50', '100')):
             anchor = ('ls', 'ms', 'rs')[i]
             draw.text(((x0, (x0 + x1) // 2, x1)[i], y1), tick, font=_font(30, 700), fill=TEXT3, anchor=anchor)
-    return _tile('Siła spinu', lambda p: str(round(value * p)), '/100', graphic, ACCENT)
+    return _tile('Siła spinu', lambda p: str(round(value * p)), '/100', graphic,
+                 lambda p: strength_color(round(value * p)))
 
 
 def _council_tile(info: dict):
@@ -296,8 +298,8 @@ def _council_tile(info: dict):
             name = re.sub(r'\s+', ' ', str(vote.get('model', '')))[:13]
             draw.text((x0, y + 16), name, font=_font(27, 600), fill=TEXT2, anchor='lm')
             intensity = vote.get('intensity')
-            _track(draw, (x0 + 200, y + 9, x1 - 60, y + 23), (intensity or 0) / 100 * p, ACCENT)
-            draw.text((x1, y + 16), str(intensity if intensity is not None else '—'), font=_font(30, 800), fill=TEXT, anchor='rm')
+            tabular_score(draw, x1 - 28, y + 5, intensity if intensity is not None else '—', _font(30, 800), TEXT)
+            draw.ellipse((x1 - 14, y + 9, x1, y + 23), fill=VERDICT_COLORS.get(vote.get('verdict'), TEXT3))
     return _tile('Konsylium AI', info['agreement'], 'ten sam werdykt', graphic)
 
 
@@ -329,7 +331,7 @@ def _techniques_tile(info: dict):
 
     def graphic(draw, box, p):
         x0, y0, x1, y1 = box
-        row = 60
+        row = 48 if len(families) == 4 else 60
         top = y1 - row * len(families) + 16
         for i, (key, label, color, count) in enumerate(families):
             y = top + i * row
@@ -400,16 +402,25 @@ def _cover_panel(data: dict) -> Image.Image:
         x, y = (i % 2) * (width + gap), (i // 2) * (height + gap)
         draw.rounded_rectangle((x, y, x + width - 1, y + height - 1), radius=24, fill=SURF2, outline=LINE, width=2)
         draw.text((x + 24, y + 20), label.upper(), font=_font(27, 800), fill=TEXT3)
-        draw.text((x + 24, y + 57), number, font=_font(72, 800), fill=ACCENT if i == 0 else TEXT)
+        number_font = _font(72, 800)
+        if i == 0:
+            draw.text((x + 24, y + 57), str(value), font=number_font, fill=strength_color(value))
+            offset = draw.textlength(str(value), font=number_font)
+            draw.text((x + 24 + offset, y + 57), '/100', font=number_font, fill=TEXT3)
+        else:
+            draw.text((x + 24, y + 57), number, font=number_font, fill=TEXT)
         draw.text((x + 24, y + 148), caption, font=_font(25, 600), fill=TEXT3)
         if i == 0:
-            _track(draw, (x + 24, y + 175, x + width - 24, y + 187), value / 100, ACCENT)
+            strength_bar(draw, (x + 24, y + 175, x + width - 24, y + 187), value, SURF3)
         if i == 3:
-            for j, (_, family, color, count) in enumerate(info['families'][:3]):
-                fx = x + 24 + j * 132
+            labels = [f'{family.split()[0]} {count}' for _, family, _, count in info['families']]
+            widths = [16 + draw.textlength(label, font=_font(18, 600)) for label in labels]
+            legend_gap = (width - 48 - sum(widths)) / max(1, len(labels) - 1)
+            fx = x + 24
+            for j, (_, family, color, count) in enumerate(info['families']):
                 draw.ellipse((fx, y + 190, fx + 10, y + 200), fill=color if count else None, outline=color)
-                label = ('Dane', 'Emocje', 'Spór')[j]
-                draw.text((fx + 16, y + 183), f'{label} {count}', font=_font(18, 600), fill=color)
+                draw.text((fx + 16, y + 183), labels[j], font=_font(18, 600), fill=color)
+                fx += 132 if len(labels) == 3 else widths[j] + legend_gap
     return layer
 
 

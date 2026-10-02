@@ -54,7 +54,8 @@ def test_cover_first_frame_complete_and_safe():
                                      {'model': 'C', 'verdict': 'unclear'},
                                      {'model': 'D', 'verdict': 'spin', 'status': 'brak odpowiedzi'}]}}
     assert presentation(data)['agreement'] == '1/3'
-    assert presentation(data)['families'][0][3] == 1
+    assert [(key, count) for key, _, _, count in presentation(data)['families']] == [
+        ('spor', 0), ('przedstawienie', 0), ('dane', 1)]
     scene = cover_scene(data, {'name': 'Przykładowy Autor', 'text': 'To jest przykładowy cytat. ' * 30})
     first = scene.frame(0).convert('RGB')
     assert first.tobytes() == scene.frame(2).convert('RGB').tobytes()
