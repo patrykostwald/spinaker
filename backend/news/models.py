@@ -1014,3 +1014,4 @@ from .evidence_extraction import (  # noqa: E402,F401
 
 from .account_models import AccountIdentity
 from .notification_models import Follow, Notification, NotificationSettings, NotificationEvent
+from .poll_models import PollVote

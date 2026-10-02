@@ -7,6 +7,7 @@ from django.urls import include, path
 from news import agents_api
 from news import warden_api
 from news import newsletter
+from news import polls
 from news.admin_status import admin_status
 from news.admin_finance import admin_wallets
 from news.social_publish import serve_video
@@ -60,6 +61,8 @@ urlpatterns = [
     path('community/threads/<int:thread_id>/', community_thread_detail),
     path('community/threads/<int:thread_id>/opinions/', CommunityOpinionsView.as_view()),
     path('community/threads/<int:thread_id>/report/', report_thread),
+    path('polls/<slug:slug>/', polls.poll_results),
+    path('polls/<slug:slug>/vote/', polls.poll_vote),
     path('newsletter/subscribe/', newsletter.subscribe),
     path('newsletter/confirm/', newsletter.confirm),
     path('newsletter/unsubscribe/', newsletter.unsubscribe),
