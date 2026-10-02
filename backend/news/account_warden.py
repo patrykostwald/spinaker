@@ -25,6 +25,8 @@ from news.political_polling import POST_PRICE, USER_PRICE, configuration
 
 STATE = 'account-warden'
 AGENT = 'system-account-warden'
+AGENT_INFO = {'name': 'Strażnik kont', 'what': 'Sprawdza konta i składa wnioski do drugiego klucza.',
+              'task': 'news.tasks.account_warden_task', 'flag': 'WARDEN_SECOND_KEY_ENABLED'}
 RUN_ID = ContextVar('account_warden_run_id', default=None)
 GROUP_LABELS = {'sejm': 'Posłowie', 'senat': 'Senatorowie', 'ep': 'Europosłowie', 'cabinet': 'Rząd',
                 'voivodes': 'Wojewodowie', 'leaders': 'Liderzy partii i klubów', 'parties': 'Partie'}
@@ -321,6 +323,7 @@ def verify_days():
 
 def verify_accounts(report, limit):
     from news.clinic import figures_by_account
+    from news.warden_second_key import submit
     now = timezone.now()
     due = PoliticalAccount.objects.filter(enabled=True).filter(
         Q(last_verified_at__isnull=True) | Q(last_verified_at__lte=now - timedelta(days=verify_days()))).order_by(
@@ -344,14 +347,16 @@ def verify_accounts(report, limit):
             party_handle = next((p[3] for p in sources.PARTIES if p[1] == expected), '')
             if data:
                 expected = identity_name(data, expected, party_handle)
-            problem = ''
+            problem, category, decision = '', '', 'disable'
             if data is None:
                 if account.user_id not in missing:
                     report['events'].append({'kind': 'error', 'detail': f'@{account.handle}: brak pełnej odpowiedzi X; bez wyłączania.'})
                     continue
                 problem = 'konto usunięte lub zawieszone'
+                category = 'unavailable'
             elif data.get('protected') is True:
                 problem = 'konto chronione'
+                category = 'protected'
             elif not all(k in data for k in ('name', 'username', 'protected')):
                 report['events'].append({'kind': 'error', 'detail': f'@{account.handle}: niepełne dane X.'})
                 continue
@@ -362,24 +367,27 @@ def verify_accounts(report, limit):
             elif not display_matches(data, expected) or identity_problem(data, expected):
                 # Różnica w nazwie to tylko podejrzenie: konto zostaje włączone i trafia do weryfikacji (drugi klucz).
                 report['events'].append({'kind': 'review', 'detail': f'@{account.handle}: nazwa w X („{data.get("name", "")}”) nie pasuje do „{expected}”; do weryfikacji, bez wyłączania.'})
-                problem = ''
+                problem, category, decision = 'Nazwa wyświetlana wymaga weryfikacji.', 'name', 'review'
             with transaction.atomic():
                 current = PoliticalAccount.objects.select_for_update().get(pk=account.pk)
                 if current.identity_fingerprint() != account.identity_fingerprint() or not current.enabled:
                     continue
                 if problem:
-                    current.enabled, current.last_error = False, ('warden: ' + problem)[:120]
-                    report['events'].append({'kind': 'disabled', 'detail': f'@{account.handle}: {problem}.'})
+                    submit(current, category, problem, payload, expected, decision)
+                    if decision == 'disable':
+                        report['events'].append({'kind': 'review', 'detail': f'@{account.handle}: {problem}. Czeka na drugi klucz.'})
                 elif data['username'].casefold() != account.handle.casefold():
                     if PoliticalAccount.objects.filter(handle__iexact=data['username']).exclude(pk=account.pk).exists():
-                        current.enabled = False
-                        report['events'].append({'kind': 'disabled', 'detail': f'@{account.handle}: nowy handle koliduje z innym ID; do decyzji.'})
+                        submit(current, 'collision', 'Nowy handle koliduje z innym ID.', payload, expected)
+                        report['events'].append({'kind': 'review', 'detail': f'@{account.handle}: nowy handle koliduje z innym ID; do decyzji.'})
                     elif current.is_confirmed():
                         current.handle = data['username']
                         current.confirmation_fingerprint = current.identity_fingerprint()
                         report['events'].append({'kind': 'renamed', 'detail': f'@{account.handle} → @{current.handle} (to samo ID).'} )
                 current.last_verified_at = now
-                current.save(update_fields=['enabled', 'last_error', 'handle', 'confirmation_fingerprint', 'last_verified_at'])
+                if data and data.get('name') and not any(row.get('name') == data['name'] for row in current.name_history):
+                    current.name_history = [*current.name_history, {'name': data['name'], 'at': now.isoformat(), 'source': 'x'}]
+                current.save(update_fields=['enabled', 'last_error', 'handle', 'confirmation_fingerprint', 'last_verified_at', 'name_history'])
             cutoff = now - timedelta(days=30)
             if (account.created_at < cutoff and account.last_polled_at and account.last_polled_at >= cutoff
                     and account.api_reads.filter(status='ok', started_at__lte=cutoff).exists()

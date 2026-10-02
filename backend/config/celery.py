@@ -8,6 +8,8 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'duty-15m': {'task': 'news.tasks.duty_task', 'schedule': crontab(minute='*/15')},
     'account-warden-nightly': {'task': 'news.tasks.account_warden_task', 'schedule': crontab(hour=3, minute=10)},
+    'warden-second-key-hourly': {'task': 'news.tasks.warden_second_key_task', 'schedule': crontab(minute=15)},
+    'seba-hourly': {'task': 'news.tasks.seba_task', 'schedule': crontab(minute=30)},
     'agents-window-hourly': {'task': 'news.tasks.agents_window_task', 'schedule': crontab(minute=20)},
     'strateg-weekly-report': {'task': 'news.tasks.agents_report_task', 'args': ['strateg'], 'schedule': crontab(day_of_week='mon', hour=7, minute=0)},
     'pielgrzym-monthly-report': {'task': 'news.tasks.agents_report_task', 'args': ['pielgrzym'], 'schedule': crontab(day_of_month=1, hour=7, minute=0)},

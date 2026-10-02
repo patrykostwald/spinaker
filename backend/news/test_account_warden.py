@@ -130,13 +130,14 @@ def test_rename_by_id_preserves_confirmation(monkeypatch):
     {'errors': [{'resource_id': '1234', 'type': 'https://api.x.com/2/problems/resource-unavailable'}]},
     {'data': [user_data(protected=True)]},
 ])
-def test_suspended_or_protected_disabled(payload, monkeypatch):
+def test_suspended_or_protected_waits_for_second_key(payload, monkeypatch):
     a = add(target())
     PoliticalAccount.objects.filter(pk=a.pk).update(last_verified_at=None)
     monkeypatch.setattr(w, 'x_lookup', lambda **k: payload)
     w.verify_accounts(report(), 100)
     a.refresh_from_db()
-    assert not a.enabled
+    # Wyłącza dopiero drugi klucz (test_warden_second_key); pierwszy składa wniosek.
+    assert a.enabled and a.warden_reviews.get().status == 'pending'
 
 
 def test_partial_response_does_not_disable_or_verify(monkeypatch):

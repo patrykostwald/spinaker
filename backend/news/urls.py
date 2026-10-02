@@ -5,6 +5,7 @@ from news.clinic_api import clinic_council, clinic_corrections
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import agents_api
+from news import warden_api
 from news import newsletter
 from news.admin_status import admin_status
 from news.admin_finance import admin_wallets
@@ -39,6 +40,8 @@ router.register(r"threads", ThreadViewSet, basename="threads")
 urlpatterns = [
     path('staff/agents/', agents_api.notes),
     path('staff/agents/map/', agents_api.agent_map),
+    path('staff/warden-reviews/', warden_api.reviews),
+    path('staff/warden-reviews/<int:review_id>/decision/', warden_api.decide),
     path('staff/agents/<int:note_id>/decision/', agents_api.decide),
     path('push/subscriptions/', SubscriptionsView.as_view()),
     path('admin/status/', admin_status),

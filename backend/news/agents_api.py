@@ -36,8 +36,11 @@ def notes(request):
     rows = AgentNote.objects.filter(agent=agent)
     if kind:
         rows = rows.filter(kind=kind)
-    results = list(rows.values(*FIELDS)[offset:offset + 51])
-    return Response({'results': results[:50], 'has_more': len(results) > 50})
+    from news.seba import visible, enabled
+    results = list(visible(rows).values(*FIELDS)[offset:offset + 51])
+    rejected = list(rows.filter(seba_review__status='rejected').values(*FIELDS)[offset:offset + 51]) if enabled() else []
+    return Response({'results': results[:50], 'has_more': len(results) > 50 or len(rejected) > 50,
+                     'rejected': rejected[:50], 'seba_queued': rows.filter(seba_review__status='queued').count() if enabled() else 0})
 
 
 @never_cache
@@ -52,6 +55,9 @@ def decide(request, note_id):
             return Response({'detail': 'Nieprawidłowa decyzja.'}, status=400)
         if note.status not in ('pending', 'new'):
             return Response({'detail': 'Ten wpis ma już decyzję.'}, status=409)
+        from news.seba import can_show
+        if not can_show(note):
+            return Response({'detail': 'Propozycja nie przeszła oceny Seby.'}, status=409)
         note.status, note.decided_by, note.decided_at = action, request.user, timezone.now()
         note.save(update_fields=['status', 'decided_by', 'decided_at'])
     return Response({'id': note.pk, 'status': note.status})

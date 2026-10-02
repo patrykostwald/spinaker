@@ -317,7 +317,7 @@ def test_map_staff_only_and_reports(django_user_model):
     assert len(response.data['reports']) == 5
     assert response.data['reports'][0]['title'] == 'Raport 5'
     rows = response.data['results']
-    assert next(r for r in rows if r['name'] == 'Seba')['schedule'] == 'wkrótce'
+    assert next(r for r in rows if r['name'] == 'Seba')['schedule'] == 'co godzinę, minuta: 30'
     assert any(row['collector'] for row in rows)
 
 

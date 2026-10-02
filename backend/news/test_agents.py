@@ -24,6 +24,7 @@ def isolated(monkeypatch):
     cache.clear()
     monkeypatch.setenv('STRATEG_DAILY_STEPS', '12')
     monkeypatch.setenv('PIELGRZYM_DAILY_STEPS', '12')
+    monkeypatch.setenv('SEBA_ENABLED', 'false')  # filtr Seby testuje test_seba.py
     with patch('django.utils.timezone.now', return_value=NOW), \
          patch('news.council_registry.configured', return_value=True), \
          patch('news.clinic_council._members', return_value=MEMBERS), \

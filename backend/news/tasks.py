@@ -9,6 +9,18 @@ from django.utils import timezone
 from news.models import ImportState
 
 
+@shared_task(name='news.tasks.warden_second_key_task', soft_time_limit=600, time_limit=660)
+def warden_second_key_task():
+    from news.warden_second_key import run
+    return run()
+
+
+@shared_task(name='news.tasks.seba_task', soft_time_limit=840, time_limit=900)
+def seba_task():
+    from news.seba import run
+    return run()
+
+
 @shared_task(soft_time_limit=840, time_limit=900)
 def agents_window_task():
     import os

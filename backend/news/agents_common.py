@@ -112,6 +112,9 @@ def ask(member, prompt, data, schema, force=False):
 
 
 def notify(note):
+    from news.seba import can_show
+    if not can_show(note):
+        return False
     from news.council_recruiter import _notify
     return _notify(f'{note.agent.capitalize()} — {note.title}',
                    f'{note.body}\n\nOcena: {note.score}/100\nKoszt USD: {note.cost_usd or 0}\n'
@@ -155,7 +158,7 @@ def proposal(agent, track, signal, force=False):
     score = 0 if violations else round(sum(c['score'] for c in critiques) / len(critiques))
     with transaction.atomic():
         note = AgentNote.objects.create(agent=agent, kind='idea' if agent == 'strateg' else 'experiment',
-            track=track, title=data['title'][:240], body=body, sources=signal.sources,
+            track=track, title=data['title'][:240], body=body, sources=signal.sources, cost_usd=cost,
             scores={'author': registry.metadata(panel[0]), 'violations': violations,
                     'dimensions': [c['scores'] for c in critiques]}, critiques=critiques,
             score=score, status='rejected' if violations else 'new')
@@ -268,8 +271,9 @@ def report(agent):
     try:
         note = AgentNote.objects.filter(agent=agent, kind='report', title=title).first()
         if note is None:
-            rows = AgentNote.objects.filter(agent=agent, kind__in=['idea', 'experiment', 'finding'],
-                created_at__gte=start, created_at__lt=end).exclude(status='rejected').order_by('-score', '-pk')[:10]
+            from news.seba import visible
+            rows = visible(AgentNote.objects.filter(agent=agent, kind__in=['idea', 'experiment', 'finding'],
+                created_at__gte=start, created_at__lt=end).exclude(status='rejected')).order_by('-score', '-pk')[:10]
             body = '\n\n'.join(f'#{n.pk} {n.title} ({n.score}/100)\n{n.body}' for n in rows) or 'Brak nowych propozycji w tym okresie.'
             note = AgentNote.objects.create(agent=agent, kind='report', title=title, body=body,
                 sources=[s for n in rows for s in n.sources])

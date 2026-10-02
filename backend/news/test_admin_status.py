@@ -48,7 +48,7 @@ def test_staff_snapshot_shape_and_recorded_failures():
     assert response.status_code == 200
     assert 'no-store' in response['Cache-Control']
     sections = {s['title']: s for s in response.data['sections']}
-    assert len(sections) == 22
+    assert len(sections) == 23  # + Drugi klucz i Seba
     assert 'Dyżurny' in sections
     assert 'Strażnik kont' in sections
     assert 'Audytor-inkwizytor' in sections

@@ -287,6 +287,8 @@ def snapshot(now):
     collect('Audytor-inkwizytor', lambda: audit_section(now))
     from news.account_warden import panel_section as warden_section
     collect('Strażnik kont', lambda: warden_section(now))
+    from news.review_status import panel_section as reviews_section
+    collect('Drugi klucz i Seba', lambda: reviews_section(now))
     collect('Media społecznościowe', lambda: social(today, tomorrow))
     collect('Kolejki', lambda: queues(now))
     collect('Źródła / harvestery', sources)
