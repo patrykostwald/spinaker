@@ -292,7 +292,7 @@ def _align_sources(data, found: dict[str, str]):
 # Poziom „myślenia” Gemini dla każdego zadania. Bez ustawienia model myśli na najwyższym poziomie, a tokeny myślenia
 # kosztują jak odpowiedź — przy przepisywaniu nagrań i opisach zdjęć to czysty koszt. Sprawdzanie faktów i ocena wywiadu
 # zostają na średnim poziomie (jakość), role Konsylium na niskim. Nadpisanie: GEMINI_THINKING_<ZADANIE>=minimal|low|medium|high|default.
-GEMINI_THINKING = {'check': 'medium', 'interview': 'medium', 'krs': 'low', 'council': 'low', 'image': 'minimal', 'transcript': 'minimal'}
+GEMINI_THINKING = {'check': 'medium', 'interview': 'medium', 'krs': 'low', 'council': 'low', 'image': 'minimal', 'video': 'minimal', 'transcript': 'minimal'}
 
 
 def gemini_thinking(task: str) -> dict:
@@ -531,18 +531,25 @@ def diagnose(context: dict) -> dict:
         f"Załączniki: {context.get('media_notes') or 'brak'}",
         '', 'Treść posta:', '<<<', context['text'], '>>>',
     ])
-    # Cały post, nie sam tekst: co jest na zdjęciach i dokąd prowadzą linki (opis zdjęcia — Gemini, link — tytuł i opis strony).
+    # Modele dostają też opis zdjęć, nagrań i podglądy linków.
     from news.post_attachments import describe
-    attachments = describe(context['text'], context.get('media') or [])
+    video_results = []
+    attachments = describe(context['text'], context.get('media') or [], video_results=video_results)
     if attachments:
         user += '\n\nZałączniki posta (opis automatyczny):\n' + attachments
     if provider() == 'council':
         from news import clinic_council
-        return clinic_council.diagnose(context, user)
-    response = _call(DIAGNOSIS_SYSTEM, user, DIAGNOSIS_SCHEMA, web_search=True)
-    data = _json_from_text(response.content)
-    result = clean_diagnosis(data, context['text'], _search_results(response.content))
-    result['usage'] = _usage(response)
+        result = clinic_council.diagnose(context, user)
+    else:
+        response = _call(DIAGNOSIS_SYSTEM, user, DIAGNOSIS_SCHEMA, web_search=True)
+        data = _json_from_text(response.content)
+        result = clean_diagnosis(data, context['text'], _search_results(response.content))
+        result['usage'] = _usage(response)
+    if video_results:
+        # Ograniczenia oglądania zapisujemy nawet wtedy, gdy model je pominie.
+        limits = [f"Nagranie {v['index']}: {v['limitation']}." for v in video_results if v['limitation']]
+        result['limitations'] = '\n'.join(limits + [result.get('limitations') or '']).strip()
+        result.setdefault('usage', {})['videos'] = video_results
     return result
 
 

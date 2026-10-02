@@ -13,6 +13,261 @@ from news.political_models import PoliticalAccount, PoliticalPost, PublicFigure
 POST_TEXT = 'Rząd podniósł podatki o 50 procent. Tylko my obronimy Polaków!'
 
 
+@pytest.fixture(autouse=True)
+def no_real_http(monkeypatch):
+    monkeypatch.setattr('requests.sessions.Session.request',
+                        lambda *args, **kwargs: pytest.fail('Test nie może wysłać prawdziwego zapytania HTTP'))
+
+
+def video_item(**extra):
+    return {'type': 'video', 'media_key': 'v1', 'duration_ms': 60_000,
+            'thumbnail_url': 'https://pbs.twimg.com/video/preview.jpg',
+            'variants': [{'content_type': 'video/mp4', 'bit_rate': 256_000,
+                          'url': 'https://video.twimg.com/clip.mp4'}], **extra}
+
+
+@pytest.fixture
+def video_api(monkeypatch):
+    from unittest.mock import MagicMock, Mock
+    from news import post_attachments as attachments
+    monkeypatch.setenv('GEMINI_API_KEY', 'synthetic-key')
+    monkeypatch.setenv('CLINIC_GEMINI_MODEL', 'gemini-3.8-flash')
+    monkeypatch.delenv('GEMINI_THINKING_VIDEO', raising=False)
+    monkeypatch.setattr(clinic_ai, 'gemini_spent_today', lambda: 0)
+    download = MagicMock(status_code=200, headers={'Content-Type': 'video/mp4'})
+    download.__enter__.return_value = download
+    download.iter_content.return_value = [b'synthetic mp4']
+    get = Mock(return_value=download)
+    reply = Mock(status_code=200)
+    reply.json.return_value = {'candidates': [{'finishReason': 'STOP', 'content': {'parts': [
+        {'text': 'Ukryte rozumowanie', 'thought': True},
+        {'text': 'Mówca: „Witam”. Widać mównicę. Napis: „Sejm”.'}]}}]}
+    generate = Mock(return_value=reply)
+    thumbnail = Mock(return_value='Mównica i flaga.')
+    monkeypatch.setattr(attachments.requests, 'get', get)
+    monkeypatch.setattr(clinic_ai, 'gemini_post', generate)
+    monkeypatch.setattr(attachments, 'describe_image', thumbnail)
+    return SimpleNamespace(get=get, download=download, generate=generate, reply=reply, thumbnail=thumbnail)
+
+
+def test_video_selects_lowest_mp4_bitrate():
+    from news.post_attachments import video_variant
+    variants = [
+        {'content_type': 'application/x-mpegURL', 'bit_rate': 1, 'url': 'https://video.twimg.com/hls'},
+        {'content_type': 'video/mp4', 'bit_rate': 900, 'url': 'https://video.twimg.com/high.mp4'},
+        {'content_type': 'video/mp4', 'bitrate': 100, 'url': 'https://video.twimg.com/low.mp4'},
+        {'content_type': 'video/mp4', 'url': 'https://video.twimg.com/unknown.mp4'},
+        {'content_type': 'video/mp4', 'bit_rate': 0, 'url': 'https://example.org/foreign.mp4'}, None]
+    assert video_variant({'variants': variants}) == variants[2]
+    assert video_variant({'variants': variants[:1]}) == {}
+    assert video_variant({'variants': None}) == {}
+
+
+@pytest.mark.parametrize('kind', ['video', 'animated_gif'])
+@pytest.mark.parametrize('duration,partial', [(60_000, False), (180_000, False), (180_001, True), (None, True)])
+def test_video_payload_and_duration_limit(video_api, kind, duration, partial):
+    from news.post_attachments import describe_video
+    outcome = {}
+    seen = describe_video(video_item(type=kind, duration_ms=duration), outcome=outcome)
+    assert seen == 'Mówca: „Witam”. Widać mównicę. Napis: „Sejm”.'
+    assert outcome['status'] == ('partial' if partial else 'full')
+    model, body = video_api.generate.call_args.args
+    assert model == 'gemini-3.8-flash'
+    config = body['generationConfig']
+    assert config['mediaResolution'] == 'MEDIA_RESOLUTION_LOW' and config['temperature'] == 0.1
+    assert config['thinkingConfig'] == {'thinkingLevel': 'minimal'}
+    assert video_api.generate.call_args.kwargs['task'] == 'video'
+    part = body['contents'][0]['parts'][0]
+    assert part['inline_data']['mime_type'] == 'video/mp4'
+    if partial:
+        assert part['video_metadata'] == {'start_offset': '0s', 'end_offset': '180s'}
+        assert 'fragment' in outcome['limitation']
+    else:
+        assert 'video_metadata' not in part and outcome['limitation'] == ''
+    assert video_api.get.call_args.kwargs['stream'] is True
+    assert video_api.get.call_args.kwargs['allow_redirects'] is False
+
+
+@pytest.mark.parametrize('mode', ['header', 'stream', 'base64'])
+def test_video_size_limit_uses_thumbnail(video_api, mode):
+    from news.post_attachments import describe_video, MAX_VIDEO_BYTES
+    if mode == 'header':
+        video_api.download.headers['Content-Length'] = str(MAX_VIDEO_BYTES + 1)
+    elif mode == 'stream':
+        video_api.download.iter_content.return_value = [b'x' * MAX_VIDEO_BYTES, b'x']
+    else:
+        video_api.download.iter_content.return_value = [b'x' * 15_000_000]
+    outcome = {}
+    assert describe_video(video_item(), outcome=outcome) == 'Mównica i flaga.'
+    assert outcome['status'] == 'thumbnail' and '20 MB' in outcome['limitation']
+    video_api.generate.assert_not_called()
+    if mode == 'header':
+        video_api.download.iter_content.assert_not_called()
+
+
+def test_video_unsupported_clipping_uses_thumbnail(video_api):
+    from news.post_attachments import describe_video
+    video_api.reply.status_code = 400
+    outcome = {}
+    assert describe_video(video_item(duration_ms=200_000), outcome=outcome)
+    assert 'obejrzano tylko miniaturę, nagranie za długie' in outcome['limitation']
+    video_api.generate.assert_called_once()
+
+
+def test_video_large_and_long_without_thumbnail_stays_unseen(video_api):
+    from news.post_attachments import describe_video, MAX_VIDEO_BYTES
+    video_api.download.headers['Content-Length'] = str(MAX_VIDEO_BYTES + 1)
+    video_api.thumbnail.return_value = ''
+    outcome = {}
+    assert describe_video(video_item(duration_ms=300_000), outcome=outcome) == ''
+    assert outcome['status'] == 'unseen'
+    assert 'nagranie za długie' in outcome['limitation']
+    assert 'obejrzano tylko miniaturę' not in outcome['limitation']
+    video_api.generate.assert_not_called()
+
+
+def test_video_truncated_response_is_disclosed(video_api):
+    from news.post_attachments import describe_video
+    video_api.reply.json.return_value = {'candidates': [{'finishReason': 'MAX_TOKENS',
+        'content': {'parts': [{'text': 'a' * 1600}]}}]}
+    outcome = {}
+    assert len(describe_video(video_item(), outcome=outcome)) == 1500
+    assert 'transkrypcja skrócone' in outcome['limitation']
+
+
+@pytest.mark.parametrize('kind', ['video', 'animated_gif'])
+def test_video_without_variant_uses_thumbnail(video_api, kind):
+    from news.post_attachments import describe_video
+    outcome = {}
+    assert describe_video(video_item(type=kind, variants=[]), outcome=outcome) == 'Mównica i flaga.'
+    assert 'brak wariantu MP4' in outcome['limitation']
+    video_api.get.assert_not_called()
+    video_api.generate.assert_not_called()
+
+
+@pytest.mark.parametrize('failure', ['key', 'budget', 'budget_race', 'http', 'empty', 'blocked', 'malformed'])
+def test_video_failure_is_explicit(video_api, monkeypatch, failure):
+    import requests
+    from news.post_attachments import describe, describe_video
+    reason = {'key': 'brak klucza', 'budget': 'budżet', 'budget_race': 'budżet',
+              'http': 'błąd pobierania', 'empty': 'nie zwrócił opisu', 'blocked': 'nie zwrócił opisu',
+              'malformed': 'błąd pobierania'}[failure]
+    if failure == 'key':
+        monkeypatch.delenv('GEMINI_API_KEY')
+    elif failure == 'budget':
+        monkeypatch.setattr(clinic_ai, 'gemini_daily_budget', lambda: 1)
+        monkeypatch.setattr(clinic_ai, 'gemini_spent_today', lambda: 1)
+    elif failure == 'budget_race':
+        video_api.generate.side_effect = clinic_ai.ClinicAIError('gemini_daily_budget')
+    elif failure == 'http':
+        video_api.get.side_effect = requests.Timeout()
+    elif failure == 'empty':
+        video_api.reply.json.return_value = {'candidates': []}
+    elif failure == 'malformed':
+        video_api.reply.json.return_value = {'candidates': [None]}
+    else:
+        video_api.reply.json.return_value = {'candidates': [{'finishReason': 'SAFETY',
+                                                           'content': {'parts': [{'text': 'niepełna odpowiedź'}]}}]}
+    assert describe_video(video_item()) == ''
+    notes = describe('', [video_item(alt_text='Tekst autora')])
+    assert 'nagranie nieobejrzane' in notes and reason in notes
+    assert 'Opis alternatywny autora' in notes
+    if failure in ('key', 'budget'):
+        video_api.get.assert_not_called()
+        video_api.generate.assert_not_called()
+    video_api.thumbnail.assert_not_called()
+
+
+def test_describe_limits_two_videos_and_keeps_every_omission(video_api):
+    from news.post_attachments import describe
+    results = []
+    notes = describe('', [video_item(), video_item(duration_ms=181_000), video_item()], video_results=results)
+    assert video_api.generate.call_count == 2
+    assert [v['status'] for v in results] == ['full', 'partial', 'unseen']
+    assert 'fragment' in notes and 'limit 2 nagrań na wpis' in notes
+
+
+@pytest.mark.parametrize('provider', ['gemini', 'council'])
+def test_diagnosis_persists_video_limitations_even_when_model_omits_them(video_api, monkeypatch, provider):
+    import json
+    from news import clinic_council
+    monkeypatch.setattr(clinic_ai, 'provider', lambda: provider)
+    prompts = []
+    def diagnose(*args, **kwargs):
+        prompts.append(args[1])
+        if provider == 'council':
+            return fake_diagnosis()
+        return SimpleNamespace(content=[SimpleNamespace(type='text', text=json.dumps(fake_diagnosis()))])
+    monkeypatch.setattr(clinic_ai, '_call', diagnose)
+    monkeypatch.setattr(clinic_council, 'diagnose', diagnose)
+    context = {'author': 'Test', 'camp_label': 'Test', 'published_at': '2026-10-03', 'url': '',
+               'text': POST_TEXT, 'media': [video_item(duration_ms=200_000)]}
+    result = clinic_ai.diagnose(context)
+    assert 'Mówca: „Witam”' in prompts[0]
+    assert 'pierwsze 180 s' in result['limitations']
+    assert result['usage']['videos'][0]['status'] == 'partial'
+
+
+@pytest.mark.parametrize('statuses,watched,omitted', [([], False, True), (['full'], True, False),
+    (['partial'], True, True), (['thumbnail'], False, True), (['full', 'unseen'], True, True)])
+def test_scan_uses_recorded_video_coverage(statuses, watched, omitted):
+    from news.clinic_scan import scope_data
+    media = [video_item() for _ in statuses or [None]]
+    scope = scope_data(SimpleNamespace(media=media), [{'status': s} for s in statuses])
+    assert scope['video'] is watched
+    assert bool(scope['not_analyzed']) is omitted
+    assert not scope_data(SimpleNamespace(media=[]), [{'status': 'full'}])['video']
+
+
+def test_video_spend_counts_towards_shared_budget(settings, monkeypatch):
+    from unittest.mock import Mock
+    from django.core.cache import cache
+    settings.CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache', 'LOCATION': 'test-video-budget'}}
+    cache.clear()
+    monkeypatch.setenv('GEMINI_API_KEY', 'synthetic-key')
+    monkeypatch.setenv('GEMINI_DAILY_BUDGET_USD', '0.001')
+    payload = {'usageMetadata': {'promptTokenCount': 6000, 'candidatesTokenCount': 500, 'thoughtsTokenCount': 100}}
+    post_request = Mock(return_value=SimpleNamespace(status_code=200, json=lambda: payload))
+    monkeypatch.setattr(clinic_ai.requests, 'post', post_request)
+    clinic_ai.gemini_post('gemini-3.8-flash', {}, timeout=1, task='video')
+    assert clinic_ai.gemini_spent_today() == pytest.approx(0.0048)
+    with pytest.raises(clinic_ai.ClinicAIError, match='gemini_daily_budget'):
+        clinic_ai.gemini_post('gemini-3.8-flash', {}, timeout=1, task='image')
+    post_request.assert_called_once()
+    cache.clear()
+
+
+@pytest.mark.django_db
+def test_x_video_fields_are_requested_and_saved(monkeypatch):
+    import json
+    from unittest.mock import MagicMock
+    from news.political_polling import fetch_x_timeline, parse_page
+    acc = account()
+    window = {'page_size': 5, 'start_time': (timezone.now() - timedelta(days=1)).isoformat(),
+              'end_time': timezone.now().isoformat()}
+    attachment = video_item()
+    payload = {'data': [{'id': '9001', 'author_id': acc.user_id, 'text': POST_TEXT,
+                        'created_at': (timezone.now() - timedelta(hours=1)).isoformat(),
+                        'attachments': {'media_keys': ['v1']}}], 'meta': {'result_count': 1},
+               'includes': {'users': [{'id': acc.user_id, 'username': acc.handle, 'name': 'Test', 'protected': False}],
+                            'media': [attachment]}}
+    raw = json.dumps(payload).encode()
+    response = MagicMock(status_code=200, headers={})
+    response.__enter__.return_value = response
+    response.iter_content.return_value = [raw]
+    get = MagicMock(return_value=response)
+    monkeypatch.setattr('news.political_polling.requests.get', get)
+    monkeypatch.setattr('news.repairer.provider_event', lambda *args: None)
+    assert fetch_x_timeline(acc, window, {'token': 'synthetic-key'}) == raw
+    fields = get.call_args.kwargs['params']['media.fields'].split(',')
+    assert {'variants', 'duration_ms'} <= set(fields)
+    parsed, _, _ = parse_page(raw, acc, window)
+    saved = PoliticalPost.objects.create(account=acc, **parsed[0])
+    saved.refresh_from_db()
+    assert saved.media[0]['variants'] == attachment['variants']
+    assert saved.media[0]['duration_ms'] == 60_000
+
+
 def at_hour(monkeypatch, hour, minute=0):
     """Ustala porę dnia dla Kliniki (diagnozy tylko w dzień, tempo zależy od godziny)."""
     moment = timezone.localtime().replace(hour=hour, minute=minute, second=0, microsecond=0)
@@ -656,6 +911,9 @@ def test_council_diagnosis_end_to_end_with_review_and_linguist(monkeypatch):
         return {'headline': 'Wpis zestawia jedną partię z obroną Polaków', 'summary': 'Post buduje fałszywą alternatywę i nie podaje źródła liczby.',
                 'analysis': 'Autor przedstawia wybór między swoją partią a zagrożeniem, co zawęża możliwości do dwóch.', 'limitations': 'Brak źródeł do liczby.'}
     monkeypatch.setattr(c, 'ask', fake_ask)
+    monkeypatch.setattr(c, 'check_claims', lambda claims: ([
+        {'claim': claim, 'assessment': 'unverified', 'explanation': 'Brak źródeł.', 'sources': []}
+        for claim in claims], {}))
     result = c.diagnose({'text': POST_TEXT}, POST_TEXT)
     assert result['verdict'] == 'spin' and result['techniques'][0]['name'] == 'Fałszywa alternatywa'
     assert result['claims'][0]['assessment'] == 'unverified'  # bez Gemini — bez udawanych źródeł
@@ -712,6 +970,7 @@ def test_x_share_is_short_and_x_publish_threads_replies(monkeypatch):
     deleted = []
     monkeypatch.setattr(x_publish.requests, 'delete', lambda url, headers, timeout: deleted.append(url) or SimpleNamespace(status_code=200, text=''))
     from news import deleted_posts
+    monkeypatch.setattr(deleted_posts, 'find_archive', lambda *args: '')
     deleted_posts.mark_deleted(row.post)
     row.refresh_from_db()
     assert deleted == [f'{x_publish.TWEETS}/1', f'{x_publish.TWEETS}/2'] and row.x_posted_ids == []

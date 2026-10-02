@@ -61,7 +61,7 @@ def fetch_x_timeline(account, window, config):
         'post.fields': 'id,text,created_at,entities,attachments,note_post,public_metrics,possibly_sensitive,withheld',
         'expansions': 'author_id,attachments.media_keys',
         'user.fields': 'id,name,username,profile_image_url,protected,public_metrics',
-        'media.fields': 'media_key,type,url,preview_image_url,alt_text', 'end_time': window['end_time']}
+        'media.fields': 'media_key,type,url,preview_image_url,alt_text,variants,duration_ms', 'end_time': window['end_time']}
     if window.get('since_id'):
         params['since_id'] = window['since_id']
     else:
@@ -91,12 +91,12 @@ def fetch_x_timeline(account, window, config):
         return b''.join(chunks)
 
 
-def media_url(value):
+def media_url(value, host='pbs.twimg.com'):
     if not isinstance(value, str) or len(value) > 1024:
         return ''
     try:
         parsed = urlsplit(value)
-        return value if parsed.scheme == 'https' and parsed.hostname == 'pbs.twimg.com' and not parsed.username and parsed.port in (None, 443) else ''
+        return value if parsed.scheme == 'https' and parsed.hostname == host and not parsed.username and parsed.port in (None, 443) else ''
     except ValueError:
         return ''
 
@@ -163,8 +163,22 @@ def parse_page(raw, account, window):
                 continue
             item = matches[0]
             candidate = item.get('url') if item.get('type') == 'photo' else item.get('preview_image_url')
-            if item.get('type') in ('photo', 'video', 'animated_gif') and media_url(candidate):
-                media.append({'media_key': key, 'type': item['type'], 'thumbnail_url': candidate})
+            if item.get('type') not in ('photo', 'video', 'animated_gif'):
+                continue
+            attachment = {'media_key': key, 'type': item['type']}
+            if media_url(candidate):
+                attachment['thumbnail_url'] = candidate
+            if isinstance(item.get('alt_text'), str):
+                attachment['alt_text'] = item['alt_text']
+            if item['type'] in ('video', 'animated_gif'):
+                variants = item.get('variants')
+                attachment['variants'] = [dict(v) for v in variants
+                    if isinstance(v, dict) and media_url(v.get('url'), 'video.twimg.com')] if isinstance(variants, list) else []
+                duration = item.get('duration_ms')
+                if isinstance(duration, int) and not isinstance(duration, bool) and duration > 0:
+                    attachment['duration_ms'] = duration
+            if attachment.get('thumbnail_url') or item['type'] in ('video', 'animated_gif'):
+                media.append(attachment)
         available = not bool(row.get('withheld'))
         parsed.append({'post_id': row['id'], 'url': f'https://x.com/{account.handle}/status/{row["id"]}',
             'text': text if available else '', 'published_at': published,
