@@ -799,3 +799,20 @@ def test_pick_requeues_interview_that_failed_on_payment(monkeypatch):
     assert result['status'] == 'requeued' and result['id'] == failed.pk
     assert failed.status == 'queued' and failed.error == ''
     assert clinic_interview.pick_yesterday()['status'] == 'already_chosen'
+
+
+@pytest.mark.django_db
+def test_interview_stuck_in_progress_returns_to_queue(monkeypatch):
+    """Proces przerwany w trakcie (limit czasu, restart) nie blokuje wywiadu na zawsze (właściciel 2.10.2026)."""
+    from django.core.cache import cache
+    from news import clinic_interview
+    from news.clinic_models import ClinicInterview
+    day = timezone.localdate() - timedelta(days=1)
+    stuck = ClinicInterview.objects.create(video_id='ccccccccccc', url='https://www.youtube.com/watch?v=ccccccccccc',
+                                           day=day, status='queued')
+    assert clinic_interview.claim(stuck)
+    assert clinic_interview.release_stuck() == []  # znacznik żyje: proces pracuje
+    cache.delete(clinic_interview._claim_key(stuck.pk))
+    assert clinic_interview.release_stuck() == [stuck.pk]
+    stuck.refresh_from_db()
+    assert stuck.status == 'queued'

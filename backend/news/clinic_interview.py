@@ -18,6 +18,7 @@ from datetime import timedelta
 import requests
 
 from news.techniques import CATEGORY_PROMPT, CATEGORY_SCHEMA, technique_category
+from django.core.cache import cache
 from django.utils import timezone
 
 from news import clinic_ai
@@ -409,13 +410,35 @@ def claim(interview: ClinicInterview) -> bool:
     taken = ClinicInterview.objects.filter(pk=interview.pk, status='queued').update(status=IN_PROGRESS)
     if taken:
         interview.status = IN_PROGRESS
+        cache.set(_claim_key(interview.pk), timezone.now().isoformat(), CLAIM_TTL)
     return bool(taken)
+
+
+# Znacznik „w trakcie” żyje dłużej niż najdłuższe zadanie (30 min). Gdy go brak, proces padł (limit czasu,
+# restart przy wgraniu wersji) i wywiad wraca do kolejki zamiast utknąć na zawsze (właściciel 2.10.2026).
+CLAIM_TTL = 40 * 60
+
+
+def _claim_key(pk) -> str:
+    return f'clinic-interview-claim-{pk}'
+
+
+def release_stuck() -> list[int]:
+    stuck = [pk for pk in ClinicInterview.objects.filter(status=IN_PROGRESS).values_list('pk', flat=True)
+             if cache.get(_claim_key(pk)) is None]
+    if stuck:
+        ClinicInterview.objects.filter(pk__in=stuck, status=IN_PROGRESS).update(status='queued')
+        logger.warning('interview: wywiady %s utknęły w trakcie opracowania, wracają do kolejki', stuck)
+    return stuck
 
 
 def run_interviews(limit: int = 1) -> dict:
     if not enabled():
         return {'status': 'disabled'}
     done = {}
+    released = release_stuck()
+    if released:
+        done['released'] = released
     for interview in ClinicInterview.objects.filter(status='queued').order_by('created_at')[:limit]:
         if not claim(interview):
             continue
