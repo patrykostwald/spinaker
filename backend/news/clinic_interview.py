@@ -765,6 +765,18 @@ def find_loudest_interview(day, exclude=()) -> dict | None:
     return None
 
 
+TRANSIENT_ERRORS = ('gemini_402', 'gemini_429', 'gemini_5', 'gemini_connection', 'gemini_daily_budget', 'youtube_quota',
+                    'connection', 'rate_limited', 'free_models_unavailable', 'timeout')
+
+
+def _transient_error_q():
+    from django.db.models import Q
+    query = Q()
+    for prefix in TRANSIENT_ERRORS:
+        query |= Q(error__startswith=prefix)
+    return query
+
+
 def pick_yesterday() -> dict:
     """Codziennie rano: najważniejszy wywiad z politykiem z poprzedniego dnia (jeśli zespół nie wskazał go sam)."""
     if not enabled():
@@ -772,6 +784,13 @@ def pick_yesterday() -> dict:
     day = timezone.localdate() - timedelta(days=1)
     if ClinicInterview.objects.filter(day=day, status__in=['queued', 'approved']).exists():
         return {'status': 'already_chosen', 'day': str(day)}
+    # Błąd chwilowy (brak środków, limit) nie przekreśla wywiadu: po doładowaniu wraca do kolejki (właściciel 2.10).
+    retry = (ClinicInterview.objects.filter(day=day, status='failed')
+             .filter(_transient_error_q()).order_by('created_at').first())
+    if retry:
+        retry.status, retry.error = 'queued', ''
+        retry.save(update_fields=['status', 'error'])
+        return {'status': 'requeued', 'day': str(day), 'id': retry.pk, 'title': retry.title}
     tried = set(ClinicInterview.objects.filter(day=day).values_list('video_id', flat=True))
     best = find_loudest_interview(day, exclude=tried)
     if not best:

@@ -24,7 +24,7 @@ app.conf.beat_schedule = {
     'dr-spin-thread-daily': {'task': 'news.tasks.dr_spin_thread_task', 'schedule': crontab(hour=19, minute=30)},
     'clinic-screen-5m': {'task': 'news.tasks.clinic_screen_task', 'schedule': crontab(minute='*/5')},
     'clinic-interview-10m': {'task': 'news.tasks.clinic_interview_task', 'schedule': crontab(minute='*/10')},
-    'clinic-interview-pick': {'task': 'news.tasks.clinic_interview_pick_task', 'schedule': crontab(hour='7,10', minute=5)},
+    'clinic-interview-pick': {'task': 'news.tasks.clinic_interview_pick_task', 'schedule': crontab(hour='7,10,13,16,19', minute=5)},
     # Filmy oficjalnych kanałów; o 8:35 — przed resetem darmowego limitu YouTube (ok. 9:00) zużywamy resztę jednostek.
     'youtube-official-2h': {'task': 'news.tasks.youtube_official_task', 'schedule': crontab(minute=40, hour='*/2')},
     'youtube-leftover': {'task': 'news.tasks.youtube_leftover_task', 'schedule': crontab(hour=8, minute=35)},

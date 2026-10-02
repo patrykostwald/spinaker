@@ -780,3 +780,22 @@ def test_paid_result_survives_failed_save_and_is_reused(monkeypatch):
 
 def _diagnosis_row_for_snapshot_test():
     return SpinDiagnosis.objects.create(post=post(account(handle='snap', user_id='777'), post_id='7771'), status='queued')
+
+
+@pytest.mark.django_db
+def test_pick_requeues_interview_that_failed_on_payment(monkeypatch):
+    """Po doładowaniu Gemini wywiad nieudany przez 402 wraca do kolejki zamiast przepaść (właściciel 2.10.2026)."""
+    from news import clinic_interview
+    from news.clinic_models import ClinicInterview
+    monkeypatch.setattr(clinic_interview, 'enabled', lambda: True)
+    day = timezone.localdate() - timedelta(days=1)
+    failed = ClinicInterview.objects.create(video_id='aaaaaaaaaaa', url='https://www.youtube.com/watch?v=aaaaaaaaaaa', day=day,
+                                            status='failed', error='gemini_402: {"error": {"code": 402}}', title='Wywiad')
+    ClinicInterview.objects.create(video_id='bbbbbbbbbbb', url='https://www.youtube.com/watch?v=bbbbbbbbbbb', day=day,
+                                   status='not_applicable', error='nie_wywiad: monolog')
+    monkeypatch.setattr(clinic_interview, 'find_loudest_interview', lambda *a, **k: pytest.fail('nie szukamy nowego'))
+    result = clinic_interview.pick_yesterday()
+    failed.refresh_from_db()
+    assert result['status'] == 'requeued' and result['id'] == failed.pk
+    assert failed.status == 'queued' and failed.error == ''
+    assert clinic_interview.pick_yesterday()['status'] == 'already_chosen'
