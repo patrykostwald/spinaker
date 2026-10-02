@@ -54,7 +54,9 @@ export function ShareXCardContent({ interview = false }: { interview?: boolean }
 /** „Udostępnij na X” — dla czytelników i dla zespołu (ten sam przycisk w kolejce). */
 export function ShareSpinOnX({ id, spin }: { id: number; spin?: SpinDetailData }) {
   const [open, setOpen] = useState(false);
-  const query = useQuery({ queryKey: ["clinic-spin", String(id)], queryFn: () => getSpin(id), enabled: open, staleTime: 0 });
+  // Osobny klucz: odświeżenie przy otwarciu nie może przełączyć strony diagnozy (ten sam klucz) w „Wczytujemy…”,
+  // bo strona odmontowuje wtedy przycisk razem ze stanem okna i okno nigdy się nie otwiera.
+  const query = useQuery({ queryKey: ["clinic-spin-share", String(id)], queryFn: () => getSpin(id), enabled: open, staleTime: 0 });
   const data = query.data;
   return <>
     <button type="button" className="sc-share-cta" aria-haspopup="dialog" onClick={() => setOpen(true)}><ShareXCardContent /></button>
