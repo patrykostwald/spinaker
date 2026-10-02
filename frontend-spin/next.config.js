@@ -12,6 +12,10 @@ module.exports = {
       { key: 'Service-Worker-Allowed', value: '/' },
     ] }];
   },
+  // Krótkie adresy ankiety do postów w social media (właściciel 2.10).
+  async redirects() {
+    return ['/glosowanie', '/glosowanie/', '/ankieta', '/ankieta/'].map(source => ({ source, destination: '/glosowanie/index.html', permanent: false }));
+  },
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*/` }];
   },
