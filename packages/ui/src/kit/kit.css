@@ -61,7 +61,8 @@ html[data-theme="dark"],
   --sc-negative: #ff6b6b;
   /* Wypełnienia grafik diagnozy (właściciel 2.10): twierdzenia i rodziny technik */
   --sc-claim-ok: #4ed18a; --sc-claim-mid: #f2b441; --sc-claim-bad: #ff6b6b; --sc-claim-unv: #8b9097;
-  --sc-fam-dane: #45c4e0; --sc-fam-przedstawienie: #f27aa6; --sc-fam-spor: #a98bf0; --sc-fam-inne: #8b9097;
+  /* rodziny technik (właściciel 2.10): Dane zielone, Emocje żółte, Spór czerwony */
+  --sc-fam-dane: #4ed18a; --sc-fam-przedstawienie: #f2c94c; --sc-fam-spor: #ff6b6b; --sc-fam-inne: #8b9097;
   --sc-spin-lo: #4ed18a; --sc-spin-mid: #4a9eff; --sc-spin-hi: #ff6b6b;
   /* Свечение при наведении — синее (решение владельца 23.09: янтаря в системе нет). Только свет, никогда заливка или текст. */
   --sc-glow: rgba(74, 158, 255, 0.45);
@@ -117,7 +118,7 @@ html[data-theme="pastel"],
   --sc-warning: #8a5a00;
   --sc-negative: #c42b2b;
   --sc-claim-ok: #1f9d63; --sc-claim-mid: #e0a020; --sc-claim-bad: #d64545; --sc-claim-unv: #a3a9b1;
-  --sc-fam-dane: #0e8aa8; --sc-fam-przedstawienie: #d1477a; --sc-fam-spor: #7b55c7; --sc-fam-inne: #a3a9b1;
+  --sc-fam-dane: #1f9d63; --sc-fam-przedstawienie: #d9a514; --sc-fam-spor: #d64545; --sc-fam-inne: #a3a9b1;
   --sc-spin-lo: #1f9d63; --sc-spin-mid: #0a62d0; --sc-spin-hi: #d64545;
   --sc-glow: rgba(10, 98, 208, 0.28);
   --sc-glow-strong: rgba(10, 98, 208, 0.42);

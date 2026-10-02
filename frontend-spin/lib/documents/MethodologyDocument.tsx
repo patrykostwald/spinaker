@@ -38,9 +38,9 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
   ];
 
   const families = [
-    ["dane", t("Dane i wnioskowanie"), [t("Liczba bez punktu odniesienia"), t("Wybiórcze dane"), t("Pominięcie kontekstu"), t("Przeinaczenie faktów"), t("Teza bez dowodu"), t("Fałszywa przyczynowość"), t("Nadmierne uogólnienie"), t("Fałszywa analogia i skojarzenie"), t("Fałszywa alternatywa"), t("Odwołanie do autorytetu")]],
-    ["przedstawienie", t("Emocje i przedstawienie"), [t("Apel do emocji"), t("Straszenie"), t("Przesada"), t("Etykietowanie"), t("My kontra oni"), t("Sugestia i niedopowiedzenie")]],
     ["spor", t("Spór i odpowiedzialność"), [t("Atak na osobę"), t("Przypisywanie intencji"), t("Zniekształcenie cudzego stanowiska"), t("Zmiana tematu"), t("Przypisywanie sobie zasług")]],
+    ["przedstawienie", t("Emocje i przedstawienie"), [t("Apel do emocji"), t("Straszenie"), t("Przesada"), t("Etykietowanie"), t("My kontra oni"), t("Sugestia i niedopowiedzenie")]],
+    ["dane", t("Dane i wnioskowanie"), [t("Liczba bez punktu odniesienia"), t("Wybiórcze dane"), t("Pominięcie kontekstu"), t("Przeinaczenie faktów"), t("Teza bez dowodu"), t("Fałszywa przyczynowość"), t("Nadmierne uogólnienie"), t("Fałszywa analogia i skojarzenie"), t("Fałszywa alternatywa"), t("Odwołanie do autorytetu")]],
   ] as const;
 
   const measures = [
