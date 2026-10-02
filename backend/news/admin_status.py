@@ -314,6 +314,8 @@ def snapshot(now):
     except Exception:
         sections.append(card('AI i koszty', description='Nie udało się odczytać kosztów i portfeli.'))
     from news.repairer import panel_section, annotate_actions
+    from news.duty import panel_section as duty_section
+    collect('Dyżurny', lambda: duty_section(now))
     action_list = actions(sections, wallets)
     collect('Naprawiacz', lambda: panel_section(now, {'sections': sections, 'actions': action_list}))
     try:

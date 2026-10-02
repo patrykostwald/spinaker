@@ -15,6 +15,16 @@ FIELDS = ('id', 'agent', 'kind', 'track', 'title', 'body', 'sources', 'scores', 
 @never_cache
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
+def agent_map(request):
+    from news.agent_registry import snapshot
+    from news.admin_status import local_times
+    reports = list(AgentNote.objects.filter(kind='report').order_by('-created_at', '-pk').values(*FIELDS)[:5])
+    return Response(local_times({'results': snapshot(), 'reports': reports}))
+
+
+@never_cache
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
 def notes(request):
     agent, kind = request.query_params.get('agent', 'strateg'), request.query_params.get('kind', '')
     if agent not in ('strateg', 'pielgrzym') or kind not in ('', 'signal', 'idea', 'finding', 'experiment', 'request', 'report'):

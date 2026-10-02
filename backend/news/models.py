@@ -821,6 +821,28 @@ class RepairerState(models.Model):
     data = models.JSONField(default=dict)
 
 
+class DutyAlarm(models.Model):
+    key = models.CharField(max_length=180, unique=True)
+    rule = models.CharField(max_length=48, db_index=True)
+    severity = models.CharField(max_length=12, choices=[('critical', 'Krytyczny'), ('warning', 'Uwaga')])
+    title = models.CharField(max_length=240)
+    details = models.JSONField(default=dict)
+    repairer = models.CharField(max_length=160, blank=True)
+    instruction = models.CharField(max_length=300)
+    status = models.CharField(max_length=8, default='open', db_index=True,
+                              choices=[('open', 'Otwarty'), ('closed', 'Zamknięty')])
+    since = models.DateTimeField(default=timezone.now)
+    first_seen = models.DateTimeField(default=timezone.now)
+    last_seen = models.DateTimeField(default=timezone.now)
+    occurrences = models.PositiveIntegerField(default=0)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    last_dispatch_at = models.DateTimeField(null=True, blank=True)
+    dispatch_note = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ['first_seen', 'pk']
+
+
 class ImportState(models.Model):
     name = models.CharField(max_length=100, unique=True)
     last_started = models.DateTimeField(null=True, blank=True)

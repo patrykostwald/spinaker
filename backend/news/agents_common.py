@@ -215,6 +215,45 @@ def step(agent, force=False, hourly=False):
         compare_delete('agents:step-lock', token)
 
 
+def window_step():
+    """Persist capacity backoff; unrelated provider/programming errors still fail."""
+    import re
+    from news.clinic_ai import ClinicAIError
+    from news.models import RepairerState
+    from news.repairer import compare_delete, stamp
+    token = uuid4().hex
+    if not cache.add('agents:window-lock', token, 960):
+        return {'status': 'busy'}
+    try:
+        now = timezone.now()
+        state, _ = RepairerState.objects.get_or_create(key='agents-window')
+        data = dict(state.data)
+        due = stamp(data.get('next_attempt'))
+        if due and now < due:
+            return {'status': 'no_free_models', 'next_attempt': due.isoformat()}
+        data.setdefault('first_attempt', now.isoformat())
+        state.data = data
+        state.save(update_fields=['data'])
+        try:
+            result = step('auto', hourly=True)
+        except ClinicAIError as error:
+            if not re.search(r'(?<!\d)429(?!\d)|_daily_limit|_unavailable|no_free_models', error.code):
+                raise
+            result = {'status': 'closed'}
+        if result.get('status') == 'closed':
+            failures = min(int(data.get('capacity_failures', 0)) + 1, 4)
+            hours = min(2 ** failures, 12)
+            data.update(capacity_failures=failures, next_attempt=(now + timedelta(hours=hours)).isoformat())
+            result = {'status': 'no_free_models', 'backoff_hours': hours, 'next_attempt': data['next_attempt']}
+        elif result.get('status') == 'ok':
+            data.update(capacity_failures=0, next_attempt=None, last_success=now.isoformat())
+        state.data = data
+        state.save(update_fields=['data'])
+        return result
+    finally:
+        compare_delete('agents:window-lock', token)
+
+
 def report(agent):
     """Calendar periods; no model calls and no sending the same report twice."""
     now = timezone.now().astimezone(WARSAW)

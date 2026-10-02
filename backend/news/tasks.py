@@ -14,8 +14,8 @@ def agents_window_task():
     import os
     if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
         return {'status': 'disabled'}
-    from news.agents_common import step
-    return step('auto', hourly=True)
+    from news.agents_common import window_step
+    return window_step()
 
 
 @shared_task
@@ -32,6 +32,12 @@ def agents_report_task(agent):
 @shared_task(name='news.tasks.repairer_task', soft_time_limit=210, time_limit=240)
 def repairer_task():
     from news.repairer import run
+    return run()
+
+
+@shared_task(name='news.tasks.duty_task', soft_time_limit=120, time_limit=150)
+def duty_task():
+    from news.duty import run
     return run()
 
 

@@ -38,6 +38,7 @@ router.register(r"threads", ThreadViewSet, basename="threads")
 
 urlpatterns = [
     path('staff/agents/', agents_api.notes),
+    path('staff/agents/map/', agents_api.agent_map),
     path('staff/agents/<int:note_id>/decision/', agents_api.decide),
     path('push/subscriptions/', SubscriptionsView.as_view()),
     path('admin/status/', admin_status),

@@ -7,7 +7,7 @@ from django.core.cache import cache
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
-TTL = 7 * 86400
+TTL = 90 * 86400  # Monthly jobs need history longer than one cadence.
 
 
 def cadence(schedule):
@@ -34,6 +34,7 @@ def summary(result):
         states = {'ok': 'OK', 'disabled': 'Wyłączone', 'not_configured': 'Nieskonfigurowane',
                   'locked': 'Zajęta blokada', 'already_running': 'Już działa', 'failed': 'Błąd',
                   'error': 'Błąd', 'too_many_failures': 'Zbyt wiele błędów', 'pominięto': 'Pominięto',
+                  'no_free_models': 'Pominięto: brak wolnych modeli',
                   'blocked_access_review': 'Zablokowane: przegląd dostępu', 'brak odpowiedzi': 'Brak odpowiedzi'}
         if result.get('status') in states:
             safe.insert(0, states[result['status']])
@@ -65,6 +66,13 @@ def record(sender, phase, task_id=None, args=None, kwargs=None, result=None, exc
             else:
                 data.update(finished_at=now, result=phase,
                             summary=type(exception).__name__ if exception else summary(result))
+                if phase == 'error':
+                    data['consecutive_errors'] = previous.get('consecutive_errors', 0) + 1
+                    data['error_since'] = previous.get('error_since') or now
+                else:
+                    data.update(consecutive_errors=0, error_since=None)
+                    if phase == 'ok':
+                        data['last_success'] = now
                 # Retain a classification, never the exception message or a
                 # provider response. Generic HTTPError can otherwise hide 402.
                 from news.repairer import permanent, transient
@@ -86,7 +94,9 @@ def started(sender=None, task_id=None, args=None, kwargs=None, **extra):
 @task_success.connect(weak=False)
 def succeeded(sender=None, result=None, **extra):
     failed_result = isinstance(result, dict) and (result.get('status') in ('error', 'failed', 'too_many_failures') or bool(result.get('error')) or bool(result.get('failed')) or bool(result.get('errors')))
-    record(sender, 'error' if failed_result else 'ok', result=result)
+    skipped = isinstance(result, dict) and result.get('status') in (
+        'no_free_models', 'closed', 'disabled', 'already_run', 'busy', 'daily_limit', 'locked', 'already_running')
+    record(sender, 'error' if failed_result else 'skipped' if skipped else 'ok', result=result)
 
 
 @task_failure.connect(weak=False)

@@ -6,6 +6,7 @@ app = Celery('spin_clinic')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
+    'duty-15m': {'task': 'news.tasks.duty_task', 'schedule': crontab(minute='*/15')},
     'account-warden-nightly': {'task': 'news.tasks.account_warden_task', 'schedule': crontab(hour=3, minute=10)},
     'agents-window-hourly': {'task': 'news.tasks.agents_window_task', 'schedule': crontab(minute=20)},
     'strateg-weekly-report': {'task': 'news.tasks.agents_report_task', 'args': ['strateg'], 'schedule': crontab(day_of_week='mon', hour=7, minute=0)},

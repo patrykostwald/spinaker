@@ -9,6 +9,60 @@ type Note = { id: number; kind: string; track: string; title: string; body: stri
 const kinds: Record<string, string> = { signal: 'Sygnały', idea: 'Pomysły', finding: 'Znaleziska', experiment: 'Eksperymenty', request: 'Prośby', report: 'Raporty' };
 const statuses: Record<string, string> = { new: 'Nowy', accepted: 'Przyjęty', rejected: 'Odrzucony', done: 'Zakończony', pending: 'Czeka na zgodę', approved: 'Zgoda zapisana', denied: 'Odmowa' };
 
+type AgentRow = { id: string; name: string; description: string; collector: boolean; flag: string;
+  enabled: boolean; schedule: string; last_run: string | null; next_run: string | null;
+  result: 'ok' | 'warn' | 'error'; summary: string; cost_today_usd: number | null; cost_note: string; source: string };
+const timeLabel = (value: string | null) => value
+  ? new Date(value).toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' }) : 'Brak danych';
+
+function AgentMap() {
+  const [rows, setRows] = useState<AgentRow[]>([]);
+  const [reports, setReports] = useState<Note[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+    setLoading(true); setError('');
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    void fetch('/api/staff/agents/map/', { credentials: 'include', cache: 'no-store', signal: controller.signal,
+      headers: { Accept: 'application/json', 'X-Frontend-Domain': process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic' },
+    }).then(async response => {
+      if (!response.ok) throw new Error('Nie udało się pobrać mapy agentów.');
+      const data = await response.json();
+      if (active) { setRows(data.results); setReports(data.reports); }
+    }).catch(e => { if (active) setError(controller.signal.aborted ? 'Przekroczono czas pobierania mapy.' : e.message); })
+      .finally(() => { clearTimeout(timeout); if (active) setLoading(false); });
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
+  }, [revision]);
+  const table = (items: AgentRow[], label: string) => <div style={{ overflowX: 'auto' }}>
+    <table style={{ width: '100%', textAlign: 'left', borderSpacing: '12px' }}>
+      <caption>{label} - czas w Warszawie</caption>
+      <thead><tr>{['Agent i zadanie', 'Harmonogram', 'Ostatni bieg', 'Wynik', 'Następny bieg', 'Koszt dziś (USD)', 'Włączenie'].map(h => <th key={h} scope="col">{h}</th>)}</tr></thead>
+      <tbody>{items.map(row => <tr key={row.id}>
+        <th scope="row"><strong>{row.name}{row.source && ` (${row.source})`}</strong><p>{row.description}</p></th>
+        <td>{row.schedule}</td><td>{timeLabel(row.last_run)}</td>
+        <td><strong>{row.result === 'error' ? 'Błąd' : row.result === 'warn' ? 'Uwaga' : 'OK'}</strong><p>{row.summary}</p></td>
+        <td>{row.enabled ? timeLabel(row.next_run) : 'Wyłączony'}</td>
+        <td title={row.cost_note}>{row.cost_today_usd == null ? 'Brak danych' : row.cost_today_usd.toLocaleString('pl-PL', { maximumFractionDigits: 6 })}</td>
+        <td>{row.enabled ? 'Włączony' : 'Wyłączony'}{row.flag && <p><code>{row.flag}</code></p>}</td>
+      </tr>)}</tbody>
+    </table></div>;
+  return <div className="sc-command-agent-map">
+    <h3>Mapa agentów</h3>
+    <button type="button" className="sc-command-refresh" disabled={loading} onClick={() => setRevision(v => v + 1)}>Odśwież mapę</button>
+    {loading && <p role="status">Pobieranie mapy agentów…</p>}
+    {error && <p role="alert" className="sc-command-error">{error}</p>}
+    {rows.length > 0 && <>{table(rows.filter(row => !row.collector), 'Agenci')}
+      <details><summary>Zbieracze ({rows.filter(row => row.collector).length})</summary>{table(rows.filter(row => row.collector), 'Zbieracze')}</details></>}
+    <h3>Ostatnie raporty agentów</h3>
+    {!loading && reports.length === 0 && !error && <p>Brak raportów.</p>}
+    {reports.map(note => <details key={note.id}><summary>{note.title} - {timeLabel(note.created_at)}</summary>
+      <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{note.body}</p></details>)}
+  </div>;
+}
+
 export function AgentsPanel() {
   const [agent, setAgent] = useState('strateg');
   const [kind, setKind] = useState('');
@@ -45,6 +99,7 @@ export function AgentsPanel() {
   };
   return <section className="sc-command-agents" aria-labelledby="agents-heading">
     <h2 id="agents-heading">Agenci</h2>
+    <AgentMap />
     <p>Strateg rozwija serwis. Dziennik Pielgrzyma zbiera propozycje dla Konsylium. Zgoda na koszt zapisuje decyzję; wykonanie wymaga kolejnego etapu.</p>
     <div className="sc-command-toolbar"><div role="group" aria-label="Wybór agenta">
       {['strateg', 'pielgrzym'].map(name => <button className="sc-command-filter" type="button" key={name} aria-pressed={agent === name}
