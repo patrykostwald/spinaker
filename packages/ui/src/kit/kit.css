@@ -6660,3 +6660,14 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-agentmap__more, .sc-agentmap__report { margin-left: 0; }
   .sc-agentmap__more > div { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* Lewa kolumna wiersza diagnozy (właściciel 3.10): nazwisko od górnego marginesu, miniatura zawsze na dole,
+   równo z kropkami technik, data tuż nad miniaturą; długie nazwisko korzysta z wolnego miejsca nad datą. */
+@media (min-width: 521px) {
+  .sc-spin-row .sc-spin-row__side { align-self: stretch; }
+  .sc-spin-row .sc-spin-row__who { display: contents; }
+  .sc-spin-row .sc-spin-row__side .sc-spin-row__author { order: 0; }
+  .sc-spin-row .sc-spin-row__side .sc-spin-row__date { order: 1; margin-top: auto; padding-top: 6px; }
+  .sc-spin-row .sc-spin-row__side .sc-spin-row__thumb { order: 2; margin-top: 4px; }
+  .sc-spin-row .sc-list-metrics { align-self: end; }
+}
