@@ -6670,6 +6670,7 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-spin-row .sc-spin-row__side .sc-spin-row__date { order: 1; margin-top: auto; padding-top: 6px; }
   .sc-spin-row .sc-spin-row__side .sc-spin-row__thumb { order: 2; margin-top: 4px; }
   .sc-spin-row .sc-list-metrics { align-self: end; }
+}
 /* === R071 Prosty pierwszy ekran diagnozy === */
 .sc-plain { max-width: 760px; margin: 24px 0 20px; color: var(--sc-text); }
 .sc-plain__score { display: flex; align-items: baseline; gap: 20px; margin: 4px 0 12px; }
