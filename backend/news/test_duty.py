@@ -112,6 +112,17 @@ def test_import_cadence_and_timer_survives_repeated_attempts():
     assert duty.check_importers(context()) == []
 
 
+def test_missing_access_card_is_a_decision_visible_in_panel():
+    from news.models import Source
+    Source.objects.create(name='Bez karty', url='https://www.gov.pl/web/test', source_type='institution')
+    ImportState.objects.create(name='official:votings', last_started=NOW - timedelta(days=3),
+                               last_error='no_approved_instruction')
+    assert duty.check_importers(context()) == []
+    metrics = {item['label']: item['value'] for item in duty.panel_section(NOW)['metrics']}
+    assert metrics['Źródła bez karty dostępu'] == 1
+    assert metrics['Importery bez zatwierdzonej karty'] == 1
+
+
 @pytest.mark.parametrize('age,failures,expected', [(44, 2, False), (46, 0, True), (1, 3, True)])
 def test_beat(age, failures, expected):
     name = 'sejm-votes-15m'

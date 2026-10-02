@@ -13,7 +13,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from news.clinic_models import ClinicInterview, SpinDiagnosis
-from news.models import DutyAlarm, ImportState, RepairerState
+from news.models import DutyAlarm, ImportState, RepairerState, Source
 from news.political_models import AccountWardenRun, PoliticalAccount
 from news.repairer import Run, SAFE_TASKS, compare_delete, flag, importer_entry, permanent, retry_task, stamp
 from news.task_heartbeat import cadence
@@ -113,6 +113,9 @@ def check_warden(ctx):
 def check_importers(ctx):
     alarms = []
     for row in ImportState.objects.filter(last_success__isnull=True):
+        if 'no_approved_instruction' in row.last_error:
+            # An owner decision is pending, not a failed importer.
+            continue
         name, entry = importer_entry(row.name, ctx.entries)
         since = ctx.since(f'import:{row.pk}', row.last_started)
         interval = cadence(entry['schedule']) if entry else None
@@ -286,4 +289,6 @@ def panel_section(now):
     return card('Dyżurny', 'error' if critical else 'warn' if rows else 'ok',
         'Kontrola wyników co 15 min, bez wywołań modeli.', metrics=[metric('Krytyczne', critical),
         metric('Uwagi', len(rows) - critical), metric('Najstarszy alarm', min((row.since for row in rows), default=None)),
+        metric('Źródła bez karty dostępu', Source.objects.filter(access_instructions__isnull=True).exclude(catalog_stage='excluded').count()),
+        metric('Importery bez zatwierdzonej karty', ImportState.objects.filter(last_error__contains='no_approved_instruction').count()),
         metric('Włączony', flag('DUTY_ENABLED', True))], items=items)

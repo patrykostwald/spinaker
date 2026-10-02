@@ -256,7 +256,9 @@ def sources():
                 'Liczba bieżących stanów z błędem; brak historycznego licznika błędów. RSS zablokowane = wyłączone źródło lub pobieranie.',
                 max(filter(None, [rss['last']] + [r['last_success'] for r in states]), default=None),
                 [metric('Importery z błędem', sum(bool(r['last_error']) for r in states)), metric('RSS aktywne', rss['active']),
-                 metric('RSS zablokowane', rss['blocked']), metric('RSS z błędem', rss['errors']), metric('Historyczna liczba błędów', None)], rows)
+                 metric('RSS zablokowane', rss['blocked']), metric('RSS z błędem', rss['errors']),
+                 metric('Źródła bez karty dostępu', Source.objects.filter(access_instructions__isnull=True).exclude(catalog_stage='excluded').count()),
+                 metric('Historyczna liczba błędów', None)], rows)
 
 
 @never_cache
