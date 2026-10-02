@@ -367,6 +367,13 @@ from news.notification_tasks import process_notification_events, send_notificati
 from news.account_lifecycle import send_password_reset, send_account_verification  # noqa: F401
 
 
+@shared_task(name='news.tasks.clinic_video_stats_task', soft_time_limit=210, time_limit=240)
+def clinic_video_stats_task():
+    """Codzienny raport filmów i wspólne powiadomienie o kosztach oraz równowadze."""
+    from news.clinic_video_stats import notify
+    return {'sent': notify(daily=True)}
+
+
 @shared_task(name="news.tasks.council_charter_missing_task", soft_time_limit=600, time_limit=660)
 def council_charter_missing_task():
     """Po resecie darmowych limitów (2:15): Kartę przyjmują modele, które jeszcze nie odpowiedziały (np. po 429 lub 402)."""

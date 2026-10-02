@@ -268,11 +268,12 @@ def delete_bluesky(uri: str) -> None:
 
 # --- poczta (TikTok, Shorts, alarmy) --------------------------------------------------------
 
-def _mail(to: str, subject: str, body: str, attachment: Path | None = None, social: bool = False) -> bool:
+def _mail(to: str, subject: str, body: str, attachment: Path | None = None, social: bool = False, important: bool = False) -> bool:
     import smtplib
     from email.message import EmailMessage
     from news.clinic import _smtp_ready, staff_mail_enabled
-    if not to or not (staff_mail_enabled() or (social and social_manager())) or not _smtp_ready():
+    # important: rzadkie alerty (koszt filmów, nierówna miara) idą także przy STAFF_MAIL_ENABLED=false
+    if not to or not (staff_mail_enabled() or important or (social and social_manager())) or not _smtp_ready():
         return False
     email = EmailMessage()
     email['From'], email['To'], email['Subject'] = settings.SOURCE_MAIL_SMTP_FROM, to, subject

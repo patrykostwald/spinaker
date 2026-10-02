@@ -279,7 +279,21 @@ export const getClinicDeleted = () =>
 
 export type FlaggedPost = { id: number; score: number | null; reason: string; screened_by: string; camp_label: string; author: SpinAuthor; post: { url: string; text: string; published_at: string } };
 
+export type ClinicVideoStats = {
+  as_of: string;
+  warning: string;
+  monthly: { month: string; usd: number; pln: number; threshold_pln: number; usd_pln: number };
+  periods: Array<{
+    label: string; start: string; end: string; unassigned_usd: number;
+    camps: Record<Camp, {
+      label: string; posts: number; videos: number; full: number; partial: number;
+      thumbnail: number; unseen: number; reasons: Record<string, number>;
+      unwatched_share: number | null; cost_usd: number; cost_pln: number;
+    }>;
+  }>;
+};
 export type ClinicQueue = {
+  video_stats: ClinicVideoStats;
   flagged: FlaggedPost[];
   recent: SpinCardData[];
   diagnoses: Array<SpinDetailData & { status: string; triage: Record<string, unknown>; usage: Record<string, unknown> }>;

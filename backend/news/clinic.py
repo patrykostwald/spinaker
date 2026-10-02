@@ -162,6 +162,7 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
         'role': figure.role_title if figure else '',
         'club': party['name'] if party else '',
         'camp_label': CAMP_PROMPT_LABELS.get(post.camp_at_collection, post.camp_at_collection),
+        'camp_at_collection': post.camp_at_collection,
         'published_at': timezone.localtime(post.published_at).strftime('%Y-%m-%d %H:%M'),
         'url': post.url,
         'text': post.text,
@@ -276,6 +277,10 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         result = dict(result)
     except clinic_ai.ClinicAIError as error:
         row.status, row.error = 'failed', error.code
+        if hasattr(error, 'videos'):
+            row.usage = {key: value for key, value in (row.usage or {}).items()
+                         if key not in ('snapshot', 'snapshot_at')}
+            row.usage['videos'] = error.videos
         if hasattr(error, 'council'):
             row.usage = {**(row.usage or {}), 'council': error.council}
         row.provider, row.model_name = 'anthropic', clinic_ai.model_name()

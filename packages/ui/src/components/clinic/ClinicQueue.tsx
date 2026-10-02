@@ -63,6 +63,28 @@ export function ClinicQueue() {
           <strong>Newsletter:</strong> potwierdzeni {newsletter.data.confirmed} · czekają na potwierdzenie {newsletter.data.pending} · wypisani {newsletter.data.unsubscribed} · nowi w 7 dni +{newsletter.data.confirmed_last_7_days}
           {!newsletter.data.smtp_ready && " · UWAGA: poczta (SMTP) nieskonfigurowana - maile potwierdzające nie wychodzą"}</p>}
       </header>
+      {data?.video_stats && <section aria-labelledby="video-stats-title">
+        <h2 id="video-stats-title">Filmy: rządzący i opozycja</h2>
+        <p className="sc-clinic-notice">Koszt filmów w {data.video_stats.monthly.month}: {data.video_stats.monthly.pln.toFixed(2)} zł
+          {" · "}próg alertu {data.video_stats.monthly.threshold_pln.toFixed(2)} zł
+          {" · "}kurs {data.video_stats.monthly.usd_pln} zł/USD.</p>
+        <p>Wpisy według daty publikacji, oglądanie według ostatniego zapisanego wyniku. Koszty według dnia analizy, łącznie z ponowieniami.
+          Miniatura liczy się jako film nieobejrzany przy porównaniu stron.</p>
+        {data.video_stats.periods.map(period => <div key={period.label}>
+          <h3>{period.label} ({period.start} do {period.end})</h3>
+          {Object.entries(period.camps).map(([camp, row]) => <div key={camp}>
+            <p><strong>{row.label}:</strong> wpisy z filmem {row.posts} · filmy {row.videos} · całe {row.full} · fragment {row.partial}
+              {" · "}miniatura {row.thumbnail} · nieobejrzane {row.unseen}
+              {" · "}udział bez obejrzenia {row.unwatched_share === null ? "brak filmów" : `${(row.unwatched_share * 100).toFixed(1)}%`}
+              {" · "}koszt {row.cost_pln.toFixed(2)} zł ({row.cost_usd.toFixed(4)} USD)</p>
+            {Object.keys(row.reasons).length > 0 && <details><summary>Powody nieobejrzenia</summary>
+              <ul>{Object.entries(row.reasons).map(([reason, count]) => <li key={reason}>{reason}: {count}</li>)}</ul>
+            </details>}
+          </div>)}
+          {period.unassigned_usd > 0 && <p>Koszt bez przypisania do strony: {period.unassigned_usd.toFixed(4)} USD.</p>}
+        </div>)}
+        {data.video_stats.warning && <p role="alert" className="sc-clinic-notice">{data.video_stats.warning}</p>}
+      </section>}
       {error && <p role="alert" className="sc-clinic-empty">{error}</p>}
       {data && data.flagged.length > 0 && (
         <section className="sc-clinic-queue__flagged" aria-labelledby="flagged-title">

@@ -313,11 +313,24 @@ def record_gemini_spend(task: str, payload: dict) -> None:
         searches = len((candidate.get('groundingMetadata') or {}).get('webSearchQueries') or [])
         cost = (int(usage.get('promptTokenCount') or 0) * PRICES['gemini'][0]
                 + gemini_output_tokens(usage) * PRICES['gemini'][1]) / 1_000_000 + searches * GEMINI_SEARCH_USD
-        key = GEMINI_SPEND_KEY.format(day=timezone.localdate().isoformat(), task=task)
+        day = timezone.localdate()
+        if task == 'video':
+            from news.clinic_video_stats import record_cost
+            try:
+                record_cost(cost, day)
+            except Exception:
+                logger.warning('Nie udało się zapisać trwałego kosztu filmów', exc_info=True)
+        key = GEMINI_SPEND_KEY.format(day=day.isoformat(), task=task)
         row = cache.get(key) or {'calls': 0, 'usd': 0.0, 'searches': 0, 'thinking': 0}
         row = {'calls': row['calls'] + 1, 'usd': row['usd'] + cost, 'searches': row['searches'] + searches,
                'thinking': row['thinking'] + int(usage.get('thoughtsTokenCount') or 0)}
         cache.set(key, row, 60 * 60 * 24 * 40)
+        if task == 'video':
+            from news.clinic_video_stats import notify
+            try:
+                notify(today=day)
+            except Exception:
+                logger.warning('Nie udało się sprawdzić alertu kosztu filmów', exc_info=True)
     except Exception:  # licznik nie może zatrzymać diagnozy
         logger.debug('gemini spend counter failed', exc_info=True)
 
@@ -533,18 +546,27 @@ def diagnose(context: dict) -> dict:
     ])
     # Modele dostają też opis zdjęć, nagrań i podglądy linków.
     from news.post_attachments import describe
+    from news.clinic_video_stats import video_camp
     video_results = []
-    attachments = describe(context['text'], context.get('media') or [], video_results=video_results)
+    token = video_camp.set(context.get('camp_at_collection', 'unassigned'))
+    try:
+        attachments = describe(context['text'], context.get('media') or [], video_results=video_results)
+    finally:
+        video_camp.reset(token)
     if attachments:
         user += '\n\nZałączniki posta (opis automatyczny):\n' + attachments
-    if provider() == 'council':
-        from news import clinic_council
-        result = clinic_council.diagnose(context, user)
-    else:
-        response = _call(DIAGNOSIS_SYSTEM, user, DIAGNOSIS_SCHEMA, web_search=True)
-        data = _json_from_text(response.content)
-        result = clean_diagnosis(data, context['text'], _search_results(response.content))
-        result['usage'] = _usage(response)
+    try:
+        if provider() == 'council':
+            from news import clinic_council
+            result = clinic_council.diagnose(context, user)
+        else:
+            response = _call(DIAGNOSIS_SYSTEM, user, DIAGNOSIS_SCHEMA, web_search=True)
+            data = _json_from_text(response.content)
+            result = clean_diagnosis(data, context['text'], _search_results(response.content))
+            result['usage'] = _usage(response)
+    except ClinicAIError as error:
+        error.videos = video_results
+        raise
     if video_results:
         # Ograniczenia oglądania zapisujemy nawet wtedy, gdy model je pominie.
         limits = [f"Nagranie {v['index']}: {v['limitation']}." for v in video_results if v['limitation']]

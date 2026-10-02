@@ -333,6 +333,7 @@ def _queue_diagnosis(diagnosis):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def clinic_queue(request):
+    from news.clinic_video_stats import build_report
     diagnoses = (SpinDiagnosis.objects.filter(status='pending_review').select_related('post__account')
                  .order_by('post__published_at'))[:50]
     messages = ClinicDailyMessage.objects.filter(status='pending_review').order_by('day', 'camp')[:10]
@@ -341,6 +342,7 @@ def clinic_queue(request):
                .order_by('-screen_score', '-post__published_at'))[:50]
     flagged_figures = clinic.figures_by_account({row.post.account_id for row in flagged})
     return Response({
+        'video_stats': build_report(),
         'flagged': [{'id': row.pk, 'score': row.screen_score, 'reason': (row.triage or {}).get('reason', ''),
                      'screened_by': (row.triage or {}).get('provider', ''), 'camp_label': clinic.CAMP_LABELS.get(row.post.camp_at_collection, ''),
                      'author': clinic.author_data(row.post, flagged_figures.get(row.post.account_id)),
