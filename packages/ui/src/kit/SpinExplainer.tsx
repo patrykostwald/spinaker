@@ -8,9 +8,9 @@ export const SPIN_EXPLAINER_PL: SpinExplainerText = {
   kicker: "Czym jest spin",
   title: "Politycy mają spin doktorów. Ty masz spin.clinic.",
   items: [
-    { name: "Spin", text: "Takie podanie faktów, żeby wybrzmiały na czyjąś korzyść: dobór słów, pominięcia, emocje, wybrane liczby. Nie zawsze kłamstwo, zawsze kierunek." },
-    { name: "Spin doktor", text: "Doradca, który układa przekaz polityka: co powiedzieć, jak to ująć i czego nie mówić. Pracują dla polityków po obu stronach sceny." },
-    { name: "spin.clinic", text: "Strażnik po Twojej stronie: Konsylium AI rozkłada przekaz na techniki perswazji i sprawdza twierdzenia. Ta sama miara dla rządu i opozycji." },
+    { name: "Spin", text: "Fakty podane tak, by działały na czyjąś korzyść: dobór słów, pominięcia, emocje. Nie zawsze kłamstwo, zawsze kierunek." },
+    { name: "Spin doktor", text: "Doradca, który układa przekaz polityka: co powiedzieć, jak to ująć i co przemilczeć. Są po obu stronach sceny." },
+    { name: "spin.clinic", text: "Strażnik po Twojej stronie: Konsylium AI rozkłada przekaz na techniki i sprawdza twierdzenia. Jedna miara dla wszystkich." },
   ],
 };
 

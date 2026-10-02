@@ -14,9 +14,9 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/about" : "/o-nas"} eyebrow={t("O NAS")} title={lang === "pl" ? <>Jak działa <GlitchWord word="przekaz" /></> : t("Jak działa przekaz")} version="1.0" updatedAt="2026-09-30" sections={sections}
     lead={t("spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.")}>
     <SpinExplainer id="spin" text={{ kicker: t("Czym jest spin"), title: t("Politycy mają spin doktorów. Ty masz spin.clinic."), items: [
-      { name: t("Spin"), text: t("Takie podanie faktów, żeby wybrzmiały na czyjąś korzyść: dobór słów, pominięcia, emocje, wybrane liczby. Nie zawsze kłamstwo, zawsze kierunek.") },
-      { name: t("Spin doktor"), text: t("Doradca, który układa przekaz polityka: co powiedzieć, jak to ująć i czego nie mówić. Pracują dla polityków po obu stronach sceny.") },
-      { name: t("spin.clinic"), text: t("Strażnik po Twojej stronie: Konsylium AI rozkłada przekaz na techniki perswazji i sprawdza twierdzenia. Ta sama miara dla rządu i opozycji.") },
+      { name: t("Spin"), text: t("Fakty podane tak, by działały na czyjąś korzyść: dobór słów, pominięcia, emocje. Nie zawsze kłamstwo, zawsze kierunek.") },
+      { name: t("Spin doktor"), text: t("Doradca, który układa przekaz polityka: co powiedzieć, jak to ująć i co przemilczeć. Są po obu stronach sceny.") },
+      { name: t("spin.clinic"), text: t("Strażnik po Twojej stronie: Konsylium AI rozkłada przekaz na techniki i sprawdza twierdzenia. Jedna miara dla wszystkich.") },
     ] }} />
     <section id="projekt"><h2>{t("Projekt")}</h2>
       <p>{t("spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Wybrane diagnozy publikujemy także jako wpisy, grafiki i krótkie filmy w mediach społecznościowych - zawsze z linkiem do pełnej analizy. Projekt działa w wersji beta i rozwija się etapami.")}</p>
