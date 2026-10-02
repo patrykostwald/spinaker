@@ -120,7 +120,6 @@ export function ClinicDatabase() {
     });
     return () => cancelAnimationFrame(frame);
   }, [resultsUrl, query.data, query.hasNextPage, query.isFetching, query.isFetchNextPageError, query.fetchNextPage]);
-  const totals = stats.data?.totals;
   const active = [params.account, params.camp, params.verdict, params.party, params.technique,
     params.intensity_min !== undefined || params.intensity_max !== undefined,
     params.date_from || params.date_to, params.sort === "strong"].filter(Boolean).length;
@@ -188,7 +187,6 @@ export function ClinicDatabase() {
         <ClinicNav />
         <SectionHeader variant="page" titleId="clinic-db-title" title="Baza diagnoz" subtitle={<>
         <p>Znajdź analizę wpisu, autora lub techniki perswazji.</p>
-        {totals && <p>{format(totals.diagnosed.total)} diagnoz{stats.data?.accounts ? <> · {format(new Set(stats.data.accounts.map(row => row.account_id)).size)} kont z diagnozą</> : null}</p>}
       </>} />
       </div>
       <div className="sc-clinic-db__toolbar">
