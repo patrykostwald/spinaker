@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageOps
 from news.techniques import FAMILY_LABELS
 from news.x_card import _font, EMOJI, glue_short
 
-VERSION = 'v7'
+VERSION = 'v8'
 FORMATS = {'diagnoza', 'skrot'}
 COLORS = {'spin': '#ff6b6b', 'partial': '#f2b441', 'no_spin': '#4ed18a', 'unclear': '#a6a6a6'}
 MUTED, ACCENT = '#a6a6a6', '#4a9eff'
@@ -406,7 +406,17 @@ def render(data, card_format='diagnoza'):
         label = f"Słowa nacechowane: {loaded['count']}"
         words = ' · '.join(item['word'] for item in loaded.get('words', []))
         text(label + (' · ' + words if words else ''), (right, loaded_top, end, loaded_top + 28), size=18, color=MUTED)
-    text(f"spin.clinic/klinika/{data['id']}", (38, 858, 560, 890), size=18, color=MUTED)
+    # Znak spin.clinic w lewym dolnym rogu i pełny adres pod nim – kto zobaczy kartę na X, wie, gdzie wejść (właściciel 2.10.2026).
+    mark_font = _font(28, 800)
+    x0 = 40
+    top = mark_font.getbbox('spin', anchor='ls')[1]
+    for part, colour in (('spin', '#ffffff'), ('.', ACCENT), ('clinic', '#ffffff')):
+        width = draw.textlength(part, font=mark_font)
+        # pola dosuwają tekst do górnej krawędzi glifu – kropkę obniżamy o różnicę, żeby stała na linii pisma
+        dy = mark_font.getbbox(part, anchor='ls')[1] - top
+        text(part, (x0 - 2, 840 + dy, x0 + width + 6, 878 + dy), size=28, weight=800, color=colour)
+        x0 += width
+    text(f"www.spin.clinic/klinika/{data['id']}", (38, 874, 700, 900), size=16, color=MUTED)
     footer = 'Diagnoza AI · rządzący i opozycja według tych samych zasad'
     footer_x = 1560 - draw.textlength(footer, font=_font(18))
     text(footer, (footer_x - 2, 858, 1562, 890), size=18, color=MUTED)

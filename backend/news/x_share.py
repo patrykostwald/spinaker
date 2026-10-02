@@ -65,6 +65,10 @@ def build(data: dict, account: bool = False) -> list[str]:
     head = heading(data)
     full = f'Pełna diagnoza ze źródłami: {diagnosis_url(data["id"])}'
     names = list(dict.fromkeys(_technique_name(t['name']) for t in data.get('techniques') or [] if t.get('name')))
+    # Bez powtórzeń: technika nazwana już w zdaniu głównym nie wraca w linii „Techniki:” (właściciel 2.10.2026:
+    # „etykietowanie przeciwnika i atak na osobę” stało w obu miejscach). Gdy wszystkie są w zdaniu – bez tej linii.
+    said = synthesis[0].casefold()
+    names = [name for name in names if name.casefold() not in said]
     first = ''
     for count in range(min(3, len(names)), 0 if names else -1, -1):
         technique = 'Techniki: ' + ', '.join(names[:count]) + '.' if count else ''

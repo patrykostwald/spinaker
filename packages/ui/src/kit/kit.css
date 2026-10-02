@@ -6604,3 +6604,8 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-spin-row__thumb:has(> .sc-spin-avatar) > .sc-spin-avatar { width: 34px; height: 34px; flex: none; }
   .sc-spin-row__thumb:has(> .sc-spin-avatar) > .sc-spin-row__verdict > * { font-size: 10px; padding: 1px 6px; }
 }
+/* Udostępnianie na X: karta z wynikami na pierwszym planie (właściciel 2.10.2026) */
+.sc-xshare__card { margin: 0; border-radius: var(--sc-r-md); overflow: hidden; box-shadow: 0 0 0 1px var(--sc-line); background: #0d0d0d; }
+.sc-xshare__card img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.sc-xshare button.sc-xshare__link { border: 0; background: none; cursor: pointer; font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 600; }
+.sc-xshare__posts { max-height: none; }
