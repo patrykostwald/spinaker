@@ -8,6 +8,7 @@ import "./preview.css";
 // Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css — порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
 import { Providers } from "./providers";
+import { SurveyBar } from "./SurveyBar";
 import { site } from "../lib/site";
 
 // Montserrat includes Polish diacritics and is the shared typeface for live pages.
@@ -44,7 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteHeader site={site} />
           <TouchScrollGuard />
           <PreviewPwa />
-          <main id="main-content" className="sc-app-main">{children}</main>
+          <main id="main-content" className="sc-app-main"><SurveyBar />{children}</main>
           <FeatureFooter />
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}

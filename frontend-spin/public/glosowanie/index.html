@@ -280,7 +280,7 @@ Ta sama miara dla obu stron. Szczegóły w wątku.
     $('prog').style.setProperty('--p', (i / (STEPS.length - 1) * 100) + '%');
     $('stepn').textContent = inQ ? `${i} / 4` : i === 0 ? '' : 'koniec';
     if (inQ) { $('next').disabled = !state.mine[sec.dataset.q]; $('next').textContent = i === 4 ? 'Zobacz wyniki' : 'Dalej'; animate(sec); }
-    if (i === STEPS.length - 1) results();
+    if (i === STEPS.length - 1) { results(); try { localStorage.setItem('sc-survey-done', '1'); } catch (_) {} }
     status('');
     scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   }
