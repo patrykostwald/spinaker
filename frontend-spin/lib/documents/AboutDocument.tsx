@@ -1,5 +1,5 @@
 import { DocumentLink as Link, documentTranslator, type DocumentLanguage } from "./locale";
-import { DocLayout } from "@spin-clinic/ui/kit";
+import { DocLayout, GlitchWord } from "@spin-clinic/ui/kit";
 import { socialChannels } from "@spin-clinic/ui";
 
 export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
@@ -11,7 +11,7 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   ];
 
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
-  return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/about" : "/o-nas"} eyebrow={t("O NAS")} title={t("Pokazujemy, jak zbudowany jest przekaz")} version="1.0" updatedAt="2026-09-30" sections={sections}
+  return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/about" : "/o-nas"} eyebrow={t("O NAS")} title={lang === "pl" ? <>Jak działa <GlitchWord word="przekaz" /></> : t("Jak działa przekaz")} version="1.0" updatedAt="2026-09-30" sections={sections}
     lead={t("spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.")}>
     <section id="projekt"><h2>{t("Projekt")}</h2>
       <p>{t("spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Wybrane diagnozy publikujemy także jako wpisy, grafiki i krótkie filmy w mediach społecznościowych - zawsze z linkiem do pełnej analizy. Projekt działa w wersji beta i rozwija się etapami.")}</p>

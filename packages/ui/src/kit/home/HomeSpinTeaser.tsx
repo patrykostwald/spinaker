@@ -67,10 +67,10 @@ export function HomeSpinTeaser() {
       </div>
       {data.stats ? (
         <footer className="sc-home-doctor__work">
-          Dr. Spin przeczytał <strong>{data.stats.read.total.toLocaleString("pl-PL")}</strong> wpisów polityków,
+          <span>Dr. Spin przeczytał <strong>{data.stats.read.total.toLocaleString("pl-PL")}</strong> wpisów polityków,
           wstępnie ocenił <strong>{data.stats.screened.total.toLocaleString("pl-PL")}</strong> i postawił <strong>{data.stats.diagnosed.total.toLocaleString("pl-PL")}</strong> diagnoz.
-          <Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link>
-          <Link href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
+          <Link href="/klinika/diagnozy">Wszystkie diagnozy →</Link></span>
+          <Link className="sc-home-doctor__end" href="/klinika/wskazniki">Wskaźniki i wykresy →</Link>
         </footer>
       ) : null}
     </section>

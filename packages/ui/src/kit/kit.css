@@ -6788,7 +6788,7 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-kons-rulebar strong, .sc-method-steps strong, .sc-method-families strong { white-space: nowrap; }
 
 /* „przekaz” psuje się na chwilę w znaki (właściciel 3.10): litera zostaje na miejscu (przezroczysta), znak szumu leży na niej */
-.sc-hero__title .sc-glitch, .sc-hero__title .sc-glitch span { color: inherit; font-weight: inherit; }
+.sc-glitch, .sc-glitch span { color: inherit; font-weight: inherit; }
 .sc-glitch { white-space: nowrap; }
 .sc-glitch__l { position: relative; display: inline-block; }
 .sc-glitch__l[data-g] { color: transparent !important; }
@@ -6800,3 +6800,13 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-clinic-db__toolbar > :not(.sc-clinic-db__top):not(.sc-clinic-db__bottom) { grid-column: 1 / -1; }
   .sc-clinic-db__bottom { justify-content: flex-end; }
 }
+/* Liczniki diagnozy (właściciel 3.10): nazwa kolumny po lewej, liczba i jej podpis („ten sam werdykt”, „/100”) dociągnięte do prawej,
+   tak jak liczby w wierszach Konsylium, twierdzeń i technik */
+.sc-scan-m-num { text-align: right; }
+.sc-scan-m-num .sc-scan-agreement-caption { text-align: right; }
+.sc-list-metrics dd, .sc-list-metrics small { text-align: right; }
+.sc-list-metrics__families { justify-content: flex-end; }
+/* Strona główna (właściciel 3.10): „Wskaźniki i wykresy” przy prawej krawędzi, „Wszystkie diagnozy” zostaje przy tekście */
+.sc-home-doctor__work { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.sc-home-doctor__work a.sc-home-doctor__end { margin-left: auto; }
+@media (max-width: 760px) { .sc-home-doctor__work a.sc-home-doctor__end { margin-right: 0; } }

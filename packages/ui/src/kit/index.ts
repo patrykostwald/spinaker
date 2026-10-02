@@ -97,3 +97,4 @@ export { ThreadView, type ThreadViewProps, type ThreadLayout } from "./ThreadVie
 export { useDemoMode } from "./home/data";
 
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
+export { GlitchWord } from "./GlitchWord";

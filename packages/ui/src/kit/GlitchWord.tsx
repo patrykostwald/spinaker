@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 const NOISE = "#%&@$*▒░/\\<>?!";
 const PERIOD = 5200;
 const STEP = 55;
-const STEPS = 11;
+const STEPS = 7;
 
 export function GlitchWord({ word }: { word: string }) {
   const [shown, setShown] = useState<string[]>(() => [...word]);
@@ -26,7 +26,7 @@ export function GlitchWord({ word }: { word: string }) {
         step += 1;
         // rozpad do połowy, potem składanie z powrotem; coraz mniej szumu pod koniec
         const strength = step <= STEPS / 2 ? step / (STEPS / 2) : (STEPS - step) / (STEPS / 2);
-        setShown(letters.map(letter => (letter !== " " && Math.random() < strength * 0.85 ? NOISE[Math.floor(Math.random() * NOISE.length)] : letter)));
+        setShown(letters.map(letter => (letter !== " " && Math.random() < strength * 0.4 ? NOISE[Math.floor(Math.random() * NOISE.length)] : letter)));
         if (step >= STEPS) { clearInterval(tick); setShown(letters); }
       }, STEP);
     };
