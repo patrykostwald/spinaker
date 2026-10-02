@@ -66,6 +66,11 @@ def _video_email() -> str:
     return _env('SOCIAL_VIDEO_EMAIL') or _env('X_POST_ALERT_EMAIL')
 
 
+def social_manager() -> bool:
+    """Osobny adres osoby od social mediów (właściciel 3.10.2026: tata). Jej maile idą mimo STAFF_MAIL_ENABLED=false."""
+    return bool(_env('SOCIAL_VIDEO_EMAIL'))
+
+
 # --- pliki filmów ---------------------------------------------------------------------------
 
 def video_dir() -> Path:
@@ -263,11 +268,11 @@ def delete_bluesky(uri: str) -> None:
 
 # --- poczta (TikTok, Shorts, alarmy) --------------------------------------------------------
 
-def _mail(to: str, subject: str, body: str, attachment: Path | None = None) -> bool:
+def _mail(to: str, subject: str, body: str, attachment: Path | None = None, social: bool = False) -> bool:
     import smtplib
     from email.message import EmailMessage
     from news.clinic import _smtp_ready, staff_mail_enabled
-    if not to or not staff_mail_enabled() or not _smtp_ready():
+    if not to or not (staff_mail_enabled() or (social and social_manager())) or not _smtp_ready():
         return False
     email = EmailMessage()
     email['From'], email['To'], email['Subject'] = settings.SOURCE_MAIL_SMTP_FROM, to, subject
@@ -289,9 +294,9 @@ def post_manual(path: Path, caption: str, link: str) -> tuple[str, str]:
             f'Opis do wklejenia:\n\n{caption}\n\nLink do diagnozy (do bio / pierwszego komentarza): {link}\n\n'
             'Jeśli polityk usunie wpis, dostaniesz osobny mail — wtedy usuń film ręcznie z TikToka i YouTube.')
     from news.clinic import staff_mail_enabled
-    if not staff_mail_enabled():
+    if not staff_mail_enabled() and not social_manager():
         return '', ''  # maile wyłączone: film czeka w panelu, bez wiadomości
-    if not _mail(_video_email(), 'spin.clinic: film do TikToka i Shorts', body, path):
+    if not _mail(_video_email(), 'spin.clinic: film do TikToka i Shorts', body, path, social=True):
         raise RuntimeError('mail_failed')
     return '', ''
 
@@ -395,10 +400,10 @@ def unpublish_deleted(diagnosis) -> None:
         item.save(update_fields=['deleted_at'])
     if manual:
         where = ', '.join(f'{item.get_platform_display()} {item.url}'.strip() for item in manual)
-        _mail(_env('X_POST_ALERT_EMAIL') or _env('CLINIC_REVIEW_EMAIL'),
+        _mail(_env('SOCIAL_VIDEO_EMAIL') or _env('X_POST_ALERT_EMAIL') or _env('CLINIC_REVIEW_EMAIL'),
               f'spin.clinic: usuń ręcznie film diagnozy {diagnosis.pk}',
               f'Polityk usunął wpis, którego dotyczy diagnoza {diagnosis.pk}. Zasady serwisów: usuwamy też nasze materiały.\n\n'
-              f'Usuń ręcznie: {where}\n(TikTok i YouTube Shorts — jeśli film tam wrzuciłeś.)')
+              f'Usuń ręcznie: {where}\n(TikTok i YouTube Shorts — jeśli film tam wrzuciłeś.)', social=True)
         for item in manual:
             item.deleted_at = timezone.now()
             item.save(update_fields=['deleted_at'])
