@@ -34,6 +34,8 @@ def backfill_votings_cycle():
         return {'status': 'blocked_access_review', 'new_records': 0}
     if not backfill_budget_left('sejm', f'/sejm/term{settings.SEJM_TERM}/votings/search'):
         return {'status': 'budget_reserved_for_current', 'new_records': 0}
+    if cache.get('priority:official:votings'):
+        return {'status': 'current_import_pending', 'new_records': 0}
     token = uuid4().hex
     if not cache.add(LOCK, token, 3600):
         return {'status': 'already_running', 'new_records': 0}
@@ -41,6 +43,8 @@ def backfill_votings_cycle():
     deadline = monotonic() + 1200
 
     def guard():
+        if cache.get('priority:official:votings'):
+            raise BackfillPaused('current_import_pending')
         if not _source_enabled(source.pk):
             raise BackfillPaused('source_disabled')
         if monotonic() >= deadline:

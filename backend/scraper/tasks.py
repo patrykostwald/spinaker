@@ -92,10 +92,12 @@ def import_official_task(kind):
     from django.conf import settings
     from django.utils import timezone
     from news.models import ImportState
-    from scraper.official import import_voting_period, import_prints, import_eli_changes, official_access_allowed
+    from scraper.official import import_voting_period, import_prints, import_eli_changes, official_access_allowed, current_voting_budget
     from scraper.utils import HostRateLimited
     if kind not in {'votings', 'prints', 'eli'}:
         raise ValueError('Unknown official import')
+    if kind == 'votings':
+        cache.set('priority:official:votings', True, 3600)
     lock = 'lock:official:' + kind
     if not cache.add(lock, True, 3600):
         return {'status': 'already_running'}
@@ -117,11 +119,30 @@ def import_official_task(kind):
         # Revisit seven days for corrections; resume from last success after downtime.
         since = (state.last_success or started) - timedelta(days=7)
         if kind == 'votings':
-            count = import_voting_period(settings.SEJM_TERM, timezone.localtime(since).date().isoformat(), timezone.localtime(started).date().isoformat())
+            with current_voting_budget():
+                count = import_voting_period(settings.SEJM_TERM, timezone.localtime(since).date().isoformat(), timezone.localtime(started).date().isoformat())
         elif kind == 'prints':
             count = import_prints(settings.SEJM_TERM)
         else:
-            count = import_eli_changes(timezone.localtime(since).strftime('%Y-%m-%dT%H:%M:%S'))
+            cursor = state.cursor or {'since': timezone.localtime(since).strftime('%Y-%m-%dT%H:%M:%S'),
+                                      'offset': 0, 'started': started.isoformat()}
+            state.cursor = cursor
+            state.save(update_fields=['cursor'])
+
+            def checkpoint(offset, complete, count):
+                state.cursor = {**cursor, 'offset': offset}
+                state.save(update_fields=['cursor'])
+
+            result = import_eli_changes(cursor['since'], offset=cursor['offset'], max_pages=2, checkpoint=checkpoint)
+            if not result['complete']:
+                state.last_error = ''
+                state.save(update_fields=['last_error'])
+                return {'status': 'partial', 'new_records': result['count']}
+            from datetime import datetime
+            started = datetime.fromisoformat(cursor['started'])
+            count = result['count']
+            state.cursor = {}
+            state.save(update_fields=['cursor'])
         state.last_success, state.last_error, state.imported = started, '', count
         state.save(update_fields=['last_success', 'last_error', 'imported'])
         return {'status': 'ok', 'new_records': count}
@@ -142,6 +163,8 @@ def import_official_task(kind):
         raise
     finally:
         cache.delete(lock)
+        if kind == 'votings':
+            cache.delete('priority:official:votings')
 
 
 @shared_task(soft_time_limit=120, time_limit=150)

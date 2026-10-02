@@ -162,6 +162,9 @@ def sync_live_public_rosters_task():
     ]
     try:
         for label, command, options in commands:
+            if label.endswith('-profiles') and label.replace('-profiles', '-roster') not in completed:
+                failed.append({'roster': label, 'error': 'roster_not_refreshed'})
+                continue
             try:
                 call_command(command, stdout=StringIO(), **options)
                 completed.append(label)

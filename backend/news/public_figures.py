@@ -135,6 +135,14 @@ CURRENT_TERMS = {'parliamentary:sejm:': '2023-11-13', 'parliamentary:ep:': '2024
 def _current_term_start(figure):
     if figure.status != 'current':
         return None, ''
+    if (figure.import_key or '').startswith('parliamentary:sejm:'):
+        from django.conf import settings
+        from news.sejm_career import KNOWN_TERMS
+        entry = figure.parliamentary_roster_entry
+        if not entry or entry.term != settings.SEJM_TERM or not entry.active:
+            return None, ''
+        term = next((item for item in KNOWN_TERMS if item['num'] == settings.SEJM_TERM), {})
+        return term.get('from'), _club_short(entry.club)
     for prefix, start in CURRENT_TERMS.items():
         if (figure.import_key or '').startswith(prefix):
             club = figure.parliamentary_roster_entry.club if figure.parliamentary_roster_entry_id else ''
