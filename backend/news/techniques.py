@@ -14,7 +14,7 @@ RULES = (
     ('Straszenie', r'strasz|strach|leku|katastrof'),
     ('Przypisywanie sobie zasług', r'zaslug|przypisanie wysilku'),
     ('Przypisywanie intencji', r'intencj|motywow|czytanie w mysl'),
-    ('Atak na osobę', r'atak.*osob|ad hominem|personaln|dyskredyt'),
+    ('Atak na osobę', r'atak.*osob|ad hominem|ad personam|personaln|dyskredyt'),
     ('Fałszywa alternatywa', r'alternatyw|dychotom|falszywy dylemat|zero jedynkow'),
     # przeinaczenie cudzego stanowiska przed ogólnym „przeinaczeniem”
     ('Słomiany człowiek', r'slomian|chochol|straw man|przeinaczenie (stanowiska|cudzej)'),
@@ -182,3 +182,29 @@ def technique_groups(techniques):
 
 DISPLAY_NAMES = {name: name for name in CANONICAL_TECHNIQUES}
 DISPLAY_NAMES['Słomiany człowiek'] = 'Zniekształcenie cudzego stanowiska'
+
+# Tylko pierwszy ekran. Nazwy fachowe pozostają w szczegółach i metodologii.
+PLAIN_NAMES = {
+    'Przypisywanie intencji': 'Sugerowanie złych zamiarów',
+    'Wybiórcze dane': 'Pomijanie niewygodnych faktów',
+    'Nadmierne uogólnienie': 'Obwinianie całej grupy',
+    'Etykietowanie': 'Przyklejanie łatek',
+    'Atak na osobę': 'Atak na osobę zamiast na argument',
+    'Apel do emocji': 'Granie na emocjach',
+    'Straszenie': 'Budzenie strachu',
+    'Przypisywanie sobie zasług': 'Przypisywanie sobie sukcesu',
+    'Fałszywa alternatywa': 'Tylko dwie możliwości',
+    'Słomiany człowiek': 'Przekręcanie cudzych słów',
+    'Fałszywa analogia i skojarzenie': 'Mylące porównanie',
+    'Przeinaczenie faktów': 'Przekręcanie faktów',
+    'Sugestia i niedopowiedzenie': 'Zarzut między wierszami',
+    'Fałszywa przyczynowość': 'Łączenie faktów bez dowodu',
+    'Liczba bez punktu odniesienia': 'Liczby bez porównania',
+    'Pominięcie kontekstu': 'Pomijanie ważnych okoliczności',
+    'My kontra oni': 'Dzielenie ludzi na obozy',
+    'Zmiana tematu': 'Odwracanie uwagi',
+    'Odwołanie do autorytetu': 'Podpieranie się cudzą opinią',
+    'Teza bez dowodu': 'Zarzut bez dowodu',
+    'Przesada': 'Wyolbrzymianie sprawy',
+    'Inne': 'Inny chwyt',
+}

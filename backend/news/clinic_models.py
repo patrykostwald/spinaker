@@ -40,6 +40,7 @@ class SpinDiagnosis(models.Model):
     intensity = models.PositiveSmallIntegerField(default=0, help_text='Siła spinu 0–100 według modelu.')
     headline = models.CharField(max_length=200, blank=True)
     summary = models.TextField(blank=True)
+    plain = models.JSONField(default=dict, blank=True, help_text='Prosty pierwszy ekran: title, gist, top.')
     analysis = models.TextField(blank=True)
     techniques = models.JSONField(default=list, blank=True)
     claims = models.JSONField(default=list, blank=True)

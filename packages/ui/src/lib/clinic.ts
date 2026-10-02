@@ -64,6 +64,7 @@ export type SpinClaim = {
 };
 
 export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
+  plain?: { title: string; gist: string; top: Array<{ name: string; quote: string }> } | null;
   status?: "approved";
   author_replies?: ClinicAuthorReply[];
   scan?: SpinScan;

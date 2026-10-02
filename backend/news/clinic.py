@@ -285,6 +285,7 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
             result['lab'] = run_lab(row.post.text, result.get('claims', []), result.get('loaded_words'))
         usage = result.pop('usage', {})  # po udanym zapisie zdjęcie znika z usage — wynik jest już w kolumnach
         usage['loaded_words'] = result.pop('loaded_words', [])
+        result.setdefault('plain', {})  # Ponowna diagnoza starym dostawcą nie zachowuje starego skrótu.
         for field, value in result.items():
             setattr(row, field, value)
         row.status, row.usage, row.error = ('approved' if auto_publish() else 'pending_review'), usage, ''
@@ -718,6 +719,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
     data = card_data(diagnosis, figures, counts, diagnosis.comments.count())
     data.update({
         'analysis': diagnosis.analysis,
+        'plain': diagnosis.plain,
         'lab': diagnosis.lab,
         'techniques': diagnosis.techniques,
         'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')}

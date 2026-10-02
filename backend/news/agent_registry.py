@@ -18,6 +18,10 @@ def agent(name, description, task, env='', default=False, collector=False, cost=
 
 
 REGISTRY = {
+    'plain-editor': agent('Redaktor prostoty', 'Pisze krótki pierwszy ekran po korekcie języka diagnozy.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),
+    'plain-meter': agent('Miernik', 'Bez AI sprawdza długość, powtórzenia i proste słowa.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),
+    'plain-guard': agent('Strażnik rzetelności', 'Bez AI sprawdza cytaty, techniki i słownik zarzutów.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),
+    'plain-reader': agent('Czytelnik testowy', 'Co tydzień czyta do 20 losowych prostych diagnoz i zapisuje raporty w panelu.', 'news.tasks.plain_reader_task', 'PLAIN_READER_ENABLED'),
     'dr-spin': agent('Dr. Spin', 'Diagnozuje wpisy polityków z pomocą Konsylium.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED', cost='diagnoses'),
     'council': agent('Konsylium', 'Uzupełnia deklaracje Karty członków Konsylium.', 'news.tasks.council_charter_missing_task'),
     'screen': agent('Strażnik wpisów', 'Wybiera wpisy warte diagnozy.', 'news.tasks.clinic_screen_task', 'CLINIC_AI_ENABLED'),

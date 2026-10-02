@@ -565,11 +565,14 @@ def diagnose(context: dict, lines: str) -> dict:
         text, chair = write(combined, claims, lines, opinions, verdict_review['issues'])
         verdict_review = {**review(text, combined, claims, lines), 'revised': True}
     text, linguist = polish(text)
+    from news.clinic_plain import edit_plain
+    plain = edit_plain({**text, **combined, 'claims': claims}, context['text'])
     if diversity['degraded']:
         text['limitations'] = ('Ograniczony skład: nie uzyskano 4 odpowiedzi z 3 firm lub odpowiedzi modelu polskiego. '
                                + str(text.get('limitations', '')))
     return {
         'verdict': combined['verdict'], 'intensity': combined['intensity'],
+        'plain': plain,
         'headline': str(text.get('headline', ''))[:200], 'summary': str(text.get('summary', ''))[:1200],
         'analysis': str(text.get('analysis', ''))[:6000], 'limitations': str(text.get('limitations', ''))[:1500],
         'techniques': [{k: t[k] for k in ('name', 'category', 'quote', 'explanation')} for t in combined['techniques']],

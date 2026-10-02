@@ -351,6 +351,17 @@ def inquisitor_task(self):
 
 
 # Register account tasks with Celery autodiscovery.
+@shared_task(name='news.tasks.plain_reader_task', soft_time_limit=5700, time_limit=6000)
+def plain_reader_task():
+    if not cache.add('plain-reader-lock', '1', timeout=6100):
+        return {'status': 'locked'}
+    try:
+        from news.plain_reader import run
+        return run()
+    finally:
+        cache.delete('plain-reader-lock')
+
+
 from news.notification_tasks import process_notification_events, send_notification_digests  # noqa: F401,E402
 
 from news.account_lifecycle import send_password_reset, send_account_verification  # noqa: F401

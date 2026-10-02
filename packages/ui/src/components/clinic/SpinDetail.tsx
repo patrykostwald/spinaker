@@ -13,9 +13,39 @@ import { AiTag, FitStickyAside, HowToRead, SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { clinicResultsUrl } from "../../lib/clinicNavigation";
 import { ContextThreadStrip } from '../ContextThreadStrip';
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { rememberClinicVisit } from "../../lib/clinicHistory";
 import { AuthorReplies, WithdrawnSpin } from "./ClinicCorrections";
+
+// Jedno ustawienie pierwszego ekranu: "word" pokazuje samą ocenę słowną.
+export const SCORE_STYLE: "number" | "word" = "number";
+
+function hasPlain(plain: SpinDetailData["plain"]): plain is NonNullable<SpinDetailData["plain"]> {
+  return !!plain && typeof plain.title === "string" && !!plain.title.trim()
+    && typeof plain.gist === "string" && !!plain.gist.trim() && Array.isArray(plain.top)
+    && plain.top.length === 2 && plain.top.every(t => t && typeof t.name === "string"
+      && !!t.name.trim() && typeof t.quote === "string" && !!t.quote.trim());
+}
+
+export function PlainDiagnosis({ spin }: { spin: SpinDetailData }) {
+  const plain = spin.plain;
+  if (!hasPlain(plain)) return null;
+  const score = Math.max(0, Math.min(100, spin.intensity));
+  const level = score >= 70 ? "wysoki" : score >= 30 ? "średni" : "niski";
+  return <section className="sc-plain" aria-label="Diagnoza w skrócie">
+    <p className="sc-clinic-kicker">Siła spinu</p>
+    <p className="sc-plain__score" data-level={level}>
+      {SCORE_STYLE === "number" && <span>{score}<small>/100</small></span>}
+      <strong>{level}</strong>
+    </p>
+    <div className="sc-plain__bar" data-level={level} aria-hidden="true"><i style={{ width: `${score}%` }} /></div>
+    <h1>{plain.title}</h1>
+    <p className="sc-plain__gist">{plain.gist}</p>
+    <ul className="sc-plain__techniques">{plain.top.map((technique, index) => <li key={index}>
+      <h2>{technique.name}</h2><blockquote>„{technique.quote}”</blockquote>
+    </li>)}</ul>
+  </section>;
+}
 
 export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDetailData; withSummary?: boolean }) {
   return <>
@@ -65,6 +95,7 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
 }
 
 export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const query = useQuery({ queryKey: ["clinic-spin", id], queryFn: () => getSpin(id), staleTime: 0, refetchOnMount: "always" });
   const recorded = useRef<number | null>(null);
   useEffect(() => {
@@ -79,11 +110,21 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
   if (query.isError || !query.data) return <div className="sc-clinic"><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;
   const spin = query.data;
   if (spin.status === "withdrawn") return <WithdrawnSpin spin={spin} />;
+  const simple = hasPlain(spin.plain);
+  const expanded = expandedId === id;
   return (
     <div className="sc-clinic sc-spin-detail">
       <ClinicNav />
       <Link className="sc-spin-detail__back" href={clinicResultsUrl(returnTo ?? null)} scroll={false}>← Wróć do wyników</Link>
       <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
+      {simple && <>
+        <PlainDiagnosis spin={spin} />
+        <button type="button" className="sc-plain__toggle" aria-expanded={expanded}
+          aria-controls={`spin-${spin.id}-details`} onClick={() => setExpandedId(expanded ? null : id)}>
+          {expanded ? "Ukryj szczegóły" : "Pokaż szczegóły"}
+        </button>
+      </>}
+      <div id={`spin-${spin.id}-details`} hidden={simple && !expanded}>
       {/* Lewa kolumna: źródło i szybkie podsumowanie; prawa: ocena i pełna analiza (uwagi recenzenta UX, 30.09).
           Na telefonie kolejność: wpis → ocena → podsumowanie → analiza. */}
       <div className="sc-dg-layout">
@@ -112,6 +153,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
       </div>
       <AuthorReplies replies={spin.author_replies} />
       <ClinicDiscussion kind="spins" id={spin.id} />
+      </div>
     </div>
   );
 }
