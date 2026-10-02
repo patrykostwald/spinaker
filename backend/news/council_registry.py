@@ -55,6 +55,9 @@ def metadata(member):
     lower = model.lower()
     company = next((company for token, company in (
         ('bielik', 'SpeakLeash / Cyfronet'), ('pllum', 'Konsorcjum PLLuM'),
+        # Nowe darmowe modele w katalogu OpenRouter (3.10.2026); bez nazwy firmy Rekruter je pomijał.
+        ('thinkingmachines/', 'Thinking Machines Lab'), ('inclusionai/', 'Inclusion AI (Ant Group)'), ('poolside/', 'Poolside'),
+        ('liquid/', 'Liquid AI'), ('dots-studio/', 'rednote hi lab'),
         ('gpt', 'OpenAI'), ('qwen', 'Alibaba'), ('nemotron', 'NVIDIA'),
         ('gemini', 'Google'), ('mistral', 'Mistral AI'), ('llama', 'Meta'),
         ('deepseek', 'DeepSeek'), ('kimi', 'Moonshot AI'), ('gemma', 'Google'), ('glm', 'Zhipu AI'), ('phi-', 'Microsoft'),

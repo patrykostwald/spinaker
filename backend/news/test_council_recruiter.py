@@ -163,3 +163,9 @@ def test_sieve_skips_outdated_models_and_second_routes(monkeypatch):
                  {'provider': 'hf', 'model': 'meta-llama/Llama-3.3-70B-Instruct:groq', 'context': 128000}]
         names = [c['model'] for c in recruiter.sieve(found)]
     assert names == ['meta/llama-3.3-70b-instruct']
+
+
+def test_new_catalog_companies_are_known():
+    from news import council_registry as registry
+    for model, company in (('thinkingmachines/inkling:free', 'Thinking Machines Lab'), ('inclusionai/ling-3.0-flash-sante:free', 'Inclusion AI (Ant Group)')):
+        assert registry.metadata(('openrouter', model))['company'] == company
