@@ -44,7 +44,6 @@ app.conf.beat_schedule = {
     'sejm-votes-15m': {'task': 'scraper.tasks.import_official_task', 'args': ['votings'], 'schedule': crontab(minute='*/15')},
     'sejm-prints-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['prints'], 'schedule': crontab(minute=10)},
     'eli-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['eli'], 'schedule': crontab(minute=20)},
-    'gdelt-2h': {'task': 'scraper.tasks.gdelt_daily_topics', 'schedule': crontab(minute=0, hour='*/2')},
     'archive-discovery-daily': {'task': 'scraper.tasks.discover_archives', 'schedule': crontab(hour=3, minute=30)},
     'quality-5m': {'task': 'scraper.tasks.check_data_quality', 'schedule': crontab(minute='*/5')},
     'quality-enrichment-5m': {'task': 'scraper.tasks.enrich_data_quality', 'schedule': crontab(minute='1-59/5')},
@@ -59,7 +58,6 @@ app.conf.beat_schedule = {
     'zdrowie-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['zdrowie'], 'schedule': crontab(minute=55, hour='*/6')},
     'edukacja-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['edukacja'], 'schedule': crontab(minute=10, hour='*/6')},
     'rolnictwo-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['rolnictwo'], 'schedule': crontab(minute=20, hour='*/6')},
-    'senat-metadata-6h': {'task': 'scraper.tasks.discover_senat_metadata', 'schedule': crontab(minute=40, hour='*/6')},
     'mon-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['mon'], 'schedule': crontab(minute=2, hour='*/6')},
     'justice-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['sprawiedliwosc'], 'schedule': crontab(minute=32, hour='*/6')},
     'infrastructure-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['infrastruktura'], 'schedule': crontab(minute=50, hour='*/6')},
@@ -120,3 +118,10 @@ else:
 if os.environ.get('SOURCE_MAIL_IMAP_ENABLED', '').lower() in ('1', 'true', 'yes'):
     app.conf.beat_schedule['source-mail-inbox-5m'] = {
         'task': 'scraper.tasks.sync_source_mailbox', 'schedule': crontab(minute='*/5')}
+
+# 2.10.2026: GDELT na tym serwerze nigdy nie odpowiedział (ReadTimeout we wszystkich 30 tematach), a senat.gov.pl
+# blokuje nasz serwer (403) – oba zadania tylko zaśmiecały panel. Włączenie: GDELT_ENABLED=true / SENAT_METADATA_ENABLED=true.
+if os.environ.get('GDELT_ENABLED', 'false').strip().lower() == 'true':
+    app.conf.beat_schedule['gdelt-2h'] = {'task': 'scraper.tasks.gdelt_daily_topics', 'schedule': crontab(minute=0, hour='*/2')}
+if os.environ.get('SENAT_METADATA_ENABLED', 'false').strip().lower() == 'true':
+    app.conf.beat_schedule['senat-metadata-6h'] = {'task': 'scraper.tasks.discover_senat_metadata', 'schedule': crontab(minute=40, hour='*/6')}

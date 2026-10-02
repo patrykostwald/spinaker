@@ -31,7 +31,7 @@ GROUP_LABELS = {'sejm': 'Posłowie', 'senat': 'Senatorowie', 'ep': 'Europosłowi
 EVENT_LABELS = {'added': 'Dodane konto', 'renamed': 'Zmiana nazwy konta', 'disabled': 'Wyłączone konto',
                 'pending': 'Do decyzji', 'rejected': 'Odrzucone konto', 'camp': 'Zmiana obozu do decyzji',
                 'former': 'Utrata funkcji', 'inactive': 'Nieaktywne konto', 'interval': 'Rzadsze czytanie',
-                'capacity': 'Dostępny budżet', 'error': 'Błąd przebiegu'}
+                'capacity': 'Dostępny budżet', 'error': 'Błąd przebiegu', 'review': 'Do weryfikacji (drugi klucz)'}
 
 
 def daily_limit():
@@ -355,10 +355,14 @@ def verify_accounts(report, limit):
             elif not all(k in data for k in ('name', 'username', 'protected')):
                 report['events'].append({'kind': 'error', 'detail': f'@{account.handle}: niepełne dane X.'})
                 continue
-            elif not display_matches(data, expected):
-                problem = 'nazwa wyświetlana nie pasuje do osoby lub partii'
-            else:
-                problem = identity_problem(data, expected)
+            elif account.camp == 'public':
+                # Instytucje (ministerstwa, KPRM, Kancelaria Sejmu) mają nazwy urzędów, nie osób – 2.10.2026 Strażnik
+                # wyłączył 8 takich kont przez porównanie z nazwiskiem. Instytucji nie wyłączamy za nazwę.
+                problem = ''
+            elif not display_matches(data, expected) or identity_problem(data, expected):
+                # Różnica w nazwie to tylko podejrzenie: konto zostaje włączone i trafia do weryfikacji (drugi klucz).
+                report['events'].append({'kind': 'review', 'detail': f'@{account.handle}: nazwa w X („{data.get("name", "")}”) nie pasuje do „{expected}”; do weryfikacji, bez wyłączania.'})
+                problem = ''
             with transaction.atomic():
                 current = PoliticalAccount.objects.select_for_update().get(pk=account.pk)
                 if current.identity_fingerprint() != account.identity_fingerprint() or not current.enabled:

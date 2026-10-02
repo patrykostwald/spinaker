@@ -128,9 +128,9 @@ def test_rename_by_id_preserves_confirmation(monkeypatch):
 
 @pytest.mark.parametrize('payload', [
     {'errors': [{'resource_id': '1234', 'type': 'https://api.x.com/2/problems/resource-unavailable'}]},
-    {'data': [user_data(protected=True)]}, {'data': [user_data(name='Obca Osoba')]},
+    {'data': [user_data(protected=True)]},
 ])
-def test_suspended_protected_or_changed_identity_disabled(payload, monkeypatch):
+def test_suspended_or_protected_disabled(payload, monkeypatch):
     a = add(target())
     PoliticalAccount.objects.filter(pk=a.pk).update(last_verified_at=None)
     monkeypatch.setattr(w, 'x_lookup', lambda **k: payload)
@@ -431,3 +431,25 @@ def test_merged_cabinet_member_loses_role_but_keeps_mp_and_account(monkeypatch):
     assert PublicFigureRole.objects.get(public_figure=t.figure).status == 'former'
     t.figure.refresh_from_db(); a.refresh_from_db(); f.refresh_from_db()
     assert t.figure.status == 'current' and a.enabled and f.archived and f.status == 'former'
+
+
+def test_changed_display_name_goes_to_review_without_disabling(monkeypatch):
+    # 2.10.2026: sama różnica w nazwie to podejrzenie, nie dowód – decyduje drugi klucz.
+    a = add(target())
+    PoliticalAccount.objects.filter(pk=a.pk).update(last_verified_at=None)
+    monkeypatch.setattr(w, 'x_lookup', lambda **k: {'data': [user_data(name='Obca Osoba')]})
+    r = report()
+    w.verify_accounts(r, 100)
+    a.refresh_from_db()
+    assert a.enabled and a.last_verified_at is not None
+    assert [e['kind'] for e in r['events']] == ['review']
+
+
+def test_public_institution_is_not_judged_by_person_name(monkeypatch):
+    a = add(target())
+    PoliticalAccount.objects.filter(pk=a.pk).update(last_verified_at=None, camp='public', display_name='MON')
+    monkeypatch.setattr(w, 'x_lookup', lambda **k: {'data': [user_data(name='Ministerstwo Obrony Narodowej')]})
+    r = report()
+    w.verify_accounts(r, 100)
+    a.refresh_from_db()
+    assert a.enabled and not [e for e in r['events'] if e['kind'] in ('disabled', 'review')]

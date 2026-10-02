@@ -469,7 +469,15 @@ def interview_budget_left() -> float:
     return round(_env_usd('CLINIC_INTERVIEW_BUDGET_USD', 3.5) - interview_spent_today(), 4)
 
 
-BUDGET_RESERVE_USD = 0.25  # nie zaczynamy diagnozy, gdy w budżecie zostało mniej niż jej przybliżony koszt
+BUDGET_RESERVE_USD = 0.25  # dolna granica rezerwy; prawdziwa rezerwa liczona z kosztów ostatnich diagnoz
+
+
+def diagnosis_reserve() -> float:
+    """Ile musi zostać w budżecie, żeby zacząć diagnozę: najdroższa z ostatnich 15 diagnoz (min. 0,25 USD, maks. 3 USD).
+    2.10.2026: przy stałej rezerwie 0,25 USD limit 5 USD przekroczono o 23% (pojedyncze diagnozy kosztowały do 1,51 USD)."""
+    recent = SpinDiagnosis.objects.filter(provider='anthropic', diagnosed_at__isnull=False).order_by('-diagnosed_at').values_list('usage', flat=True)[:15]
+    costs = [clinic_ai.cost_usd(usage or {}) for usage in recent]
+    return round(min(3.0, max([BUDGET_RESERVE_USD, *costs])), 4)
 
 
 def run_diagnoses(limit: int = 2) -> dict:
@@ -477,8 +485,9 @@ def run_diagnoses(limit: int = 2) -> dict:
     najpopularniejszy post dnia (od CLINIC_FEATURED_HOUR) — to on zostaje spinem dnia."""
     if not clinic_ai.enabled():
         return {'status': 'disabled'}
-    if budget_left() < BUDGET_RESERVE_USD:
-        return {'status': 'budget', 'spent_today_usd': spent_today()}
+    reserve = diagnosis_reserve()
+    if budget_left() < reserve:
+        return {'status': 'budget', 'spent_today_usd': spent_today(), 'reserve_usd': reserve}
     if failures_today() >= _env_int('CLINIC_DAILY_FAILURE_LIMIT', 5):
         # Seria błędów (klucz, model, limit konta) — nie palimy pieniędzy do jutra albo do naprawy.
         return {'status': 'too_many_failures', 'failed_today': failures_today()}
@@ -494,7 +503,7 @@ def run_diagnoses(limit: int = 2) -> dict:
         row = pick_featured()
         if row:
             figure = figures_by_account({row.post.account_id}).get(row.post.account_id)
-            if budget_left() >= BUDGET_RESERVE_USD:
+            if budget_left() >= reserve:
                 diagnose(row, figure)
             counts[f'featured_{row.status}'] = 1
     regular_done = diagnoses_today() - (1 if featured_today() else 0)
@@ -511,7 +520,7 @@ def run_diagnoses(limit: int = 2) -> dict:
         rows += list(extra)
     figures = figures_by_account({row.post.account_id for row in rows})
     for row in rows:
-        if budget_left() < BUDGET_RESERVE_USD:
+        if budget_left() < reserve:
             counts['budget_stop'] = 1
             break
         diagnose(row, figures.get(row.post.account_id))
