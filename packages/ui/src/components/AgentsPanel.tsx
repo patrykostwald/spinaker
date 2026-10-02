@@ -16,8 +16,40 @@ const statuses: Record<string, string> = { new: 'Nowy', accepted: 'Przyjęty', r
 type AgentRow = { id: string; name: string; description: string; collector: boolean; flag: string;
   enabled: boolean; schedule: string; last_run: string | null; next_run: string | null;
   result: 'ok' | 'warn' | 'error'; summary: string; cost_today_usd: number | null; cost_note: string; source: string };
-const timeLabel = (value: string | null) => value
-  ? new Date(value).toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' }) : 'Brak danych';
+// „dziś 14:15”, „wczoraj 21:45”, „jutro 03:10”, inaczej „5.10 07:00” (czas warszawski).
+const when = (value: string | null) => {
+  if (!value) return 'brak';
+  const zone = { timeZone: 'Europe/Warsaw' } as const;
+  const date = new Date(value);
+  const day = (d: Date) => d.toLocaleDateString('pl-PL', zone);
+  const hour = date.toLocaleTimeString('pl-PL', { ...zone, hour: '2-digit', minute: '2-digit' });
+  const shift = (n: number) => day(new Date(Date.now() + n * 86400000));
+  const label = day(date) === shift(0) ? 'dziś' : day(date) === shift(-1) ? 'wczoraj' : day(date) === shift(1) ? 'jutro'
+    : date.toLocaleDateString('pl-PL', { ...zone, day: 'numeric', month: 'numeric' });
+  return `${label} ${hour}`;
+};
+const RESULT: Record<string, string> = { ok: 'OK', warn: 'Uwaga', error: 'Błąd', off: 'Wyłączony' };
+const state = (row: AgentRow) => (row.enabled ? row.result : 'off');
+const ORDER: Record<string, number> = { error: 0, warn: 1, ok: 2, off: 3 };
+
+function AgentRowView({ row }: { row: AgentRow }) {
+  const s = state(row);
+  return <details className="sc-agentmap__row" data-status={s}>
+    <summary>
+      <span className="sc-agentmap__dot" aria-label={RESULT[s]} />
+      <span className="sc-agentmap__name"><strong>{row.name}</strong><small>{row.description}</small></span>
+      <span className="sc-agentmap__when"><small>ostatnio</small>{when(row.last_run)}</span>
+      <span className="sc-agentmap__sched">{row.schedule}</span>
+    </summary>
+    <dl className="sc-agentmap__more">
+      <div><dt>Wynik</dt><dd><b data-status={s}>{RESULT[s]}</b> {row.summary}</dd></div>
+      <div><dt>Następny bieg</dt><dd>{row.enabled ? when(row.next_run) : 'wyłączony'}</dd></div>
+      {row.cost_today_usd != null && <div><dt>Koszt dziś</dt><dd title={row.cost_note}>{row.cost_today_usd.toLocaleString('pl-PL', { maximumFractionDigits: 3 })} USD</dd></div>}
+      {row.flag && <div><dt>Włącznik</dt><dd><code>{row.flag}</code> {row.enabled ? 'włączony' : 'wyłączony'}</dd></div>}
+      {row.source && <div><dt>Zadanie</dt><dd>{row.source}</dd></div>}
+    </dl>
+  </details>;
+}
 
 function AgentMap() {
   const [rows, setRows] = useState<AgentRow[]>([]);
@@ -40,31 +72,35 @@ function AgentMap() {
       .finally(() => { clearTimeout(timeout); if (active) setLoading(false); });
     return () => { active = false; clearTimeout(timeout); controller.abort(); };
   }, [revision]);
-  const table = (items: AgentRow[], label: string) => <div style={{ overflowX: 'auto' }}>
-    <table style={{ width: '100%', textAlign: 'left', borderSpacing: '12px' }}>
-      <caption>{label} - czas w Warszawie</caption>
-      <thead><tr>{['Agent i zadanie', 'Harmonogram', 'Ostatni bieg', 'Wynik', 'Następny bieg', 'Koszt dziś (USD)', 'Włączenie'].map(h => <th key={h} scope="col">{h}</th>)}</tr></thead>
-      <tbody>{items.map(row => <tr key={row.id}>
-        <th scope="row"><strong>{row.name}{row.source && ` (${row.source})`}</strong><p>{row.description}</p></th>
-        <td>{row.schedule}</td><td>{timeLabel(row.last_run)}</td>
-        <td><strong>{row.result === 'error' ? 'Błąd' : row.result === 'warn' ? 'Uwaga' : 'OK'}</strong><p>{row.summary}</p></td>
-        <td>{row.enabled ? timeLabel(row.next_run) : 'Wyłączony'}</td>
-        <td title={row.cost_note}>{row.cost_today_usd == null ? 'Brak danych' : row.cost_today_usd.toLocaleString('pl-PL', { maximumFractionDigits: 6 })}</td>
-        <td>{row.enabled ? 'Włączony' : 'Wyłączony'}{row.flag && <p><code>{row.flag}</code></p>}</td>
-      </tr>)}</tbody>
-    </table></div>;
-  return <div className="sc-command-agent-map">
-    <h3>Mapa agentów</h3>
-    <button type="button" className="sc-command-refresh" disabled={loading} onClick={() => setRevision(v => v + 1)}>Odśwież mapę</button>
-    {loading && <p role="status">Pobieranie mapy agentów…</p>}
-    {error && <p role="alert" className="sc-command-error">{error}</p>}
-    {rows.length > 0 && <>{table(rows.filter(row => !row.collector), 'Agenci')}
-      <details><summary>Zbieracze ({rows.filter(row => row.collector).length})</summary>{table(rows.filter(row => row.collector), 'Zbieracze')}</details></>}
-    <h3>Ostatnie raporty agentów</h3>
-    {!loading && reports.length === 0 && !error && <p>Brak raportów.</p>}
-    {reports.map(note => <details key={note.id}><summary>{note.title} - {timeLabel(note.created_at)}</summary>
-      <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{note.body}</p></details>)}
-  </div>;
+  const sorted = (items: AgentRow[]) => [...items].sort((a, b) => ORDER[state(a)] - ORDER[state(b)] || a.name.localeCompare(b.name, 'pl'));
+  const agents = sorted(rows.filter(row => !row.collector));
+  const collectors = sorted(rows.filter(row => row.collector));
+  const count = (s: string) => agents.filter(row => state(row) === s).length;
+  const problems = count('error') + count('warn');
+  return <details className="sc-agentmap" open={problems > 0 || undefined}>
+    <summary className="sc-agentmap__head">
+      <span><strong>Mapa agentów</strong><small>co robią, kiedy działają, z jakim wynikiem · kliknij wiersz po szczegóły</small></span>
+      <span className="sc-agentmap__chips">
+        {loading ? <em>wczytywanie…</em> : <>
+          <em data-status="ok">{count('ok')} OK</em>
+          {count('warn') > 0 && <em data-status="warn">{count('warn')} uwagi</em>}
+          {count('error') > 0 && <em data-status="error">{count('error')} błąd</em>}
+          {count('off') > 0 && <em data-status="off">{count('off')} wyłączone</em>}
+        </>}
+      </span>
+    </summary>
+    <div className="sc-agentmap__body">
+      <div className="sc-agentmap__tools"><button type="button" className="sc-command-refresh" disabled={loading} onClick={() => setRevision(v => v + 1)}>Odśwież</button></div>
+      {error && <p role="alert" className="sc-command-error">{error}</p>}
+      <div className="sc-agentmap__list">{agents.map(row => <AgentRowView key={row.id} row={row} />)}</div>
+      {collectors.length > 0 && <details className="sc-agentmap__group"><summary>Zbieracze danych ({collectors.length})</summary>
+        <div className="sc-agentmap__list">{collectors.map(row => <AgentRowView key={row.id} row={row} />)}</div></details>}
+      {reports.length > 0 && <details className="sc-agentmap__group"><summary>Ostatnie raporty agentów ({reports.length})</summary>
+        <div className="sc-agentmap__list">{reports.map(note => <details key={note.id} className="sc-agentmap__row" data-status="ok">
+          <summary><span className="sc-agentmap__dot" /><span className="sc-agentmap__name"><strong>{note.title}</strong></span><span className="sc-agentmap__when">{when(note.created_at)}</span></summary>
+          <p className="sc-agentmap__report">{note.body}</p></details>)}</div></details>}
+    </div>
+  </details>;
 }
 
 export function AgentsPanel() {

@@ -71,3 +71,12 @@ def test_charter_violation_never_passes():
     note = idea(violations=['stronniczość'])
     with patch.object(common, 'ask', return_value=verdict(10, 'przepuść')):
         assert seba.process(note.seba_review.pk) == 'rejected'
+
+
+def test_legacy_proposal_without_review_stays_visible_and_blocked_request_hidden():
+    old = AgentNote.objects.create(agent='strateg', kind='idea', title='Stary', body='Plan')
+    SebaReview.objects.filter(note=old).delete()
+    new = idea()
+    req = AgentNote.objects.create(agent='strateg', kind='request', title='Koszt', body='x', scores={'proposal_id': new.pk})
+    visible = set(seba.visible(AgentNote.objects.all()).values_list('pk', flat=True))
+    assert old.pk in visible and new.pk not in visible and req.pk not in visible

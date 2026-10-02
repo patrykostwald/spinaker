@@ -87,8 +87,11 @@ def visible(rows):
     if not enabled():
         return rows
     # Cost requests inherit the visibility of the proposal they belong to.
-    blocked = AgentNote.objects.filter(kind__in=PROPOSALS).exclude(seba_review__status='passed').values('pk')
-    return rows.filter(~Q(kind__in=PROPOSALS) | Q(seba_review__status='passed')).exclude(
+    # Lista, nie podzapytanie: Postgres nie porówna klucza JSON (jsonb) z podzapytaniem liczb (dziennik w panelu
+    # zwracał błąd 500). Propozycje sprzed Seby (bez oceny) zostają widoczne.
+    blocked = list(AgentNote.objects.filter(kind__in=PROPOSALS, seba_review__isnull=False)
+                   .exclude(seba_review__status='passed').values_list('pk', flat=True))
+    return rows.filter(~Q(kind__in=PROPOSALS) | Q(seba_review__status='passed') | Q(seba_review__isnull=True)).exclude(
         kind='request', scores__proposal_id__in=blocked)
 
 
