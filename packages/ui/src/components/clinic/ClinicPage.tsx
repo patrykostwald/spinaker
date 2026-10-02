@@ -180,12 +180,18 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
                 <div className="sc-clinic-column__list">
                   {data.columns[camp].slice(0, 3).map(spin => <SpinRow key={spin.id} spin={spin} />)}
                 </div>
-                <Button href={`/klinika/diagnozy?camp=${camp}`} variant="quiet">Wszystkie diagnozy {camp === "government" ? "rządzących" : "opozycji"} →</Button>
+                <Button className="sc-clinic-column__more" href={`/klinika/diagnozy?camp=${camp}`} variant="quiet">Wszystkie diagnozy {camp === "government" ? "rządzących" : "opozycji"} →</Button>
               </section>
             ))}
           </div>
           {!CAMPS.some(camp => data.columns[camp].length) ? <p className="sc-clinic-empty">Nie ma jeszcze opublikowanych diagnoz.</p> : null}
-          <Link className="sc-clinic-db__all" href="/klinika/diagnozy">Wszystkie diagnozy{data.stats?.diagnosed.total !== undefined ? ` (${data.stats.diagnosed.total.toLocaleString("pl-PL")})` : ""} →</Link>
+          {/* Komputer: jeden pasek pod kolumnami - rządzący do lewej krawędzi, wszystkie na środku, opozycja do prawej
+              (właściciel 3.10). Telefon: linki obozów zostają pod swoimi kolumnami. */}
+          <nav className="sc-clinic-latest__foot" aria-label="Więcej diagnoz">
+            {data.columns.government.length ? <Link className="sc-clinic-latest__camp-link" data-camp="government" href="/klinika/diagnozy?camp=government">Diagnozy rządzących →</Link> : <span />}
+            <Link className="sc-clinic-db__all" href="/klinika/diagnozy">Wszystkie diagnozy{data.stats?.diagnosed.total !== undefined ? ` (${data.stats.diagnosed.total.toLocaleString("pl-PL")})` : ""} →</Link>
+            {data.columns.opposition.length ? <Link className="sc-clinic-latest__camp-link" data-camp="opposition" href="/klinika/diagnozy?camp=opposition">Diagnozy opozycji →</Link> : <span />}
+          </nav>
         </section>
         </div>
 
