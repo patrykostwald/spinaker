@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ThreadView — nitka w dwóch układach (замечание владельца 24.09):
+ * ThreadView - nitka w dwóch układach (замечание владельца 24.09):
  *  - `columns`: po lewej duży materiał otwierający (`large`), po prawej przewijana pionowo lista
  *    kolejnych materiałów z datami (szyna dat + karty `mini`);
  *  - `row`: jedna kolumna na całą szerokość z przewijaniem poziomym (taśma `compact` z datami).
@@ -27,7 +27,7 @@ export type ThreadViewProps = {
   anchorFirst?: boolean;
   /** Układ startowy, gdy nic nie zapisano. @default "columns" */
   defaultLayout?: ThreadLayout;
-  /** Klucz `localStorage` — różne miejsca mogą pamiętać własny wybór. */
+  /** Klucz `localStorage` - różne miejsca mogą pamiętać własny wybór. */
   storageKey?: string;
   /** Ukrywa przełącznik (np. gdy sekcja sama steruje układem). */
   layout?: ThreadLayout;
@@ -172,7 +172,7 @@ export function ThreadView({
                     {dateLabel(item, index, anchorFirst)}
                   </p>
                   {item.is_sponsored ? <p className="sc-t-caption sc-text-3">{item.sponsorship_label || "Nitka sponsorowana"}</p> : null}
-                  {/* W taśmie bez spadu karta nie rośnie na najechanie — przycięłoby ją przewijanie. */}
+                  {/* W taśmie bez spadu karta nie rośnie na najechanie - przycięłoby ją przewijanie. */}
                   <ItemCard item={item} size="compact" headingLevel={3} expandable={false} />
                   <ItemNote item={item} />
                 </div>

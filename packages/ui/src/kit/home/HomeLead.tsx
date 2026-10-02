@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Wiadomości dnia — podsumowanie jednego, bieżącego dnia (nie jeden wybrany temat): jeden wspólny
+ * Wiadomości dnia - podsumowanie jednego, bieżącego dnia (nie jeden wybrany temat): jeden wspólny
  * pas, po lewej największy box (najnowsze doniesienie dnia z wiodących źródeł), po prawej oś
  * kolejnych doniesień tego dnia (`mini`, przewijana w pionie w obrębie pasa; na telefonie lista).
- * Dane: `/api/feed/?mode=top` — dzisiejsze materiały z redakcyjnego wyboru dziesięciu źródeł.
- * Gdy dziś jeszcze nic nie ma — najnowsze materiały, a nagłówek mówi to wprost.
- * (Osobny, redakcyjny „Temat dnia” w lustrzanym układzie — oś po lewej, box po prawej — jest planowany.)
+ * Dane: `/api/feed/?mode=top` - dzisiejsze materiały z redakcyjnego wyboru dziesięciu źródeł.
+ * Gdy dziś jeszcze nic nie ma - najnowsze materiały, a nagłówek mówi to wprost.
+ * (Osobny, redakcyjny „Temat dnia” w lustrzanym układzie - oś po lewej, box po prawej - jest planowany.)
  */
 
 import { motion } from "framer-motion";
@@ -26,13 +26,13 @@ export function HomeLead({
 }: {
   main: Article | null;
   related: Collapsed[];
-  /** `true` — dziś brak doniesień z wiodących źródeł, pas pokazuje najnowsze materiały. */
+  /** `true` - dziś brak doniesień z wiodących źródeł, pas pokazuje najnowsze materiały. */
   fallback: boolean;
   /** Prawa strona nagłówka (np. wybór źródeł). */
   actions?: ReactNode;
   /** Komunikat zamiast treści, np. pusta grupa źródeł. */
   emptyNote?: string | null;
-  /** Np. „piątek, 25 września” — pusty do hydratacji (data liczona po stronie klienta). */
+  /** Np. „piątek, 25 września” - pusty do hydratacji (data liczona po stronie klienta). */
   dateLabel: string;
 }) {
   const m = useMotionTokens();

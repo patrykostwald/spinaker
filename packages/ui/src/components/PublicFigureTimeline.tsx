@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Pionowa oś czasu profilu osoby publicznej (zakładka „Oś czasu”) — z `GET /api/public-figures/:id/dossier/`,
+ * Pionowa oś czasu profilu osoby publicznej (zakładka „Oś czasu”) - z `GET /api/public-figures/:id/dossier/`,
  * wyłącznie z rekordów, które mają publiczny dowód:
- * 1) funkcje w podmiotach publicznych (role/urzędy; źródła nie podają dziś dat objęcia i zakończenia — mówimy to wprost),
- * 2) relacje z podmiotami rejestrowymi (spółki, fundacje, stowarzyszenia — tylko potwierdzone przez redakcję),
+ * 1) funkcje w podmiotach publicznych (role/urzędy; źródła nie podają dziś dat objęcia i zakończenia - mówimy to wprost),
+ * 2) relacje z podmiotami rejestrowymi (spółki, fundacje, stowarzyszenia - tylko potwierdzone przez redakcję),
  * 3) zdarzenia z datą: oficjalne głosowania i potwierdzone materiały, od najnowszych,
- * 4) powiązane osoby — wyłącznie przez wspólne, potwierdzone podmioty (wymaga danych po stronie serwera).
+ * 4) powiązane osoby - wyłącznie przez wspólne, potwierdzone podmioty (wymaga danych po stronie serwera).
  * Żadnych wniosków ani dopasowań automatycznych: brak danych to brak danych.
  */
 
@@ -62,7 +62,7 @@ export function PublicFigureTimeline({ figureId, onShowMaterials, materialsTotal
     <section id="os-czasu" className="sc-public-figure-section sc-pf-timeline" aria-labelledby="pf-timeline">
       <header>
         <h2 id="pf-timeline">Oś czasu</h2>
-        <p>Funkcje publiczne, potwierdzone relacje z podmiotami i zdarzenia z datą — każdy wpis prowadzi do publicznego źródła. Nie łączymy danych automatycznie po nazwisku.</p>
+        <p>Funkcje publiczne, potwierdzone relacje z podmiotami i zdarzenia z datą - każdy wpis prowadzi do publicznego źródła. Nie łączymy danych automatycznie po nazwisku.</p>
       </header>
 
       <ol className="sc-pf-axis">
@@ -106,7 +106,7 @@ export function PublicFigureTimeline({ figureId, onShowMaterials, materialsTotal
               ))}
             </ul>
           ) : (
-            <p className="sc-pf-axis__empty">Brak jeszcze relacji potwierdzonych w rejestrze (np. KRS). Nie oznacza to, że ich nie ma — dodajemy wyłącznie sprawdzone wpisy.</p>
+            <p className="sc-pf-axis__empty">Brak jeszcze relacji potwierdzonych w rejestrze (np. KRS). Nie oznacza to, że ich nie ma - dodajemy wyłącznie sprawdzone wpisy.</p>
           )}
         </li>
 
@@ -139,7 +139,7 @@ export function PublicFigureTimeline({ figureId, onShowMaterials, materialsTotal
         <li className="sc-pf-axis__group">
           <h3 className="sc-pf-axis__label">Doniesienia w Bazie</h3>
           <p className="sc-pf-axis__empty">
-            {materialsTotal ? `${materialsTotal} materiałów zawiera to imię i nazwisko (dopasowanie po słowach — sprawdź, czy dotyczą tej osoby). ` : "Materiały zawierające to imię i nazwisko. "}
+            {materialsTotal ? `${materialsTotal} materiałów zawiera to imię i nazwisko (dopasowanie po słowach - sprawdź, czy dotyczą tej osoby). ` : "Materiały zawierające to imię i nazwisko. "}
             {onShowMaterials ? (
               <button type="button" className="sc-home-linkbtn" onClick={onShowMaterials}>
                 Pokaż wszystkie doniesienia

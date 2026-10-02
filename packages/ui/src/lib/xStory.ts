@@ -1,8 +1,8 @@
 /**
  * Nitka kontekstowa jako wątek na X.
- * 1/N — tytuł, krótki opis całej nitki i link do nitki na spin.clinic (X pokaże jej kartę).
- * 2/N…N/N — kolejne boxy: rodzaj, źródło, tytuł, komentarz autora i link do ORYGINAŁU
- * (X pokaże kartę ze zdjęciem strony redakcji — ruch idzie do autora materiału).
+ * 1/N - tytuł, krótki opis całej nitki i link do nitki na spin.clinic (X pokaże jej kartę).
+ * 2/N…N/N - kolejne boxy: rodzaj, źródło, tytuł, komentarz autora i link do ORYGINAŁU
+ * (X pokaże kartę ze zdjęciem strony redakcji - ruch idzie do autora materiału).
  * Każdy wpis mieści się w 280 znakach ważonych; dłuższe fragmenty skracamy całymi słowami.
  */
 import { DOMAIN } from "./api";
@@ -36,7 +36,7 @@ function boxPost(index: number, total: number, article: Article, note: string): 
   const head = `${index}/${total} ${kind}${source}`;
   const budget = LIMIT - URL_WEIGHT - measurePost(head).weightedLength - 6;
   const title = article.reference_only ? "" : article.title.trim();
-  const body = [title, note.trim()].filter(Boolean).join(" — ");
+  const body = [title, note.trim()].filter(Boolean).join(" - ");
   return [head, shorten(body, Math.max(40, budget)), url].filter(Boolean).join("\n");
 }
 

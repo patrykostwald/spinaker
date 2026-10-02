@@ -25,7 +25,7 @@ export type OpinionLabels = {
 };
 
 /**
- * Reakcje czytelników w dwóch kolumnach. Najpierw reakcja (za / przeciw), komentarz opcjonalnie —
+ * Reakcje czytelników w dwóch kolumnach. Najpierw reakcja (za / przeciw), komentarz opcjonalnie -
  * sam komentarz bez reakcji nie jest możliwy; komentarz trafia do kolumny swojej reakcji.
  */
 function OpinionsPanelInner({ endpoint, labels, reportKind }: { endpoint: string; labels: OpinionLabels; reportKind?: "thread" }) {

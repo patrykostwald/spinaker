@@ -28,7 +28,7 @@ export function ClinicRanking({ data }: { data: ClinicPageData }) {
   const from = start.toISOString().slice(0, 10);
   return <section className="sc-clinic-group sc-clinic-ranking" aria-labelledby="clinic-ranking-title">
     <SectionHeader titleId="clinic-ranking-title" title="Najwyższa siła spinu"
-      subtitle={`Trzy najwyższe wyniki każdej strony, wspólna skala 0–100. Wpisy z okresu ${from} – ${to} (${data.scale.window_days} dni). Przy remisie najpierw nowszy wpis. To wybrane materiały, nie reprezentatywna próba całej polityki.`} />
+      subtitle={`Po trzy najsilniejsze spiny każdej strony z ostatnich ${data.scale.window_days} dni, w tej samej skali. To wybrane wpisy, nie przegląd całej polityki.`} />
     <div className="sc-clinic-ranking__columns">{CAMPS.map(camp => <RankingColumn key={camp} camp={camp} from={from} to={to} />)}</div>
   </section>;
 }

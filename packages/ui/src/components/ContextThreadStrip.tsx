@@ -10,14 +10,14 @@ import { AccountDataState } from './AccountPhase2';
  * Box otwierający (materiał do wypromowania) → do 14 boxów kontekstu, razem najwyżej 15. Przykład jest wymyślony.
  */
 export const EXAMPLE_THREAD = {
-  title: 'Przetarg w spółce miejskiej — cała historia w pięciu materiałach',
+  title: 'Przetarg w spółce miejskiej - cała historia w pięciu materiałach',
   description: 'Od wywiadu z byłym dyrektorem do dokumentów przetargu: co wiedziano, kiedy i kto ostrzegał.',
   boxes: [
     { kind: 'Wywiad', source: 'Państwa redakcja', title: 'Rozmowa z byłym dyrektorem spółki: „Ostrzegałem zarząd pół roku wcześniej”', date: '12.09', opening: true },
     { kind: 'Komunikat', source: 'Prokuratura Krajowa', title: 'Zatrzymanie trzech osób w sprawie przetargu', date: '14.09' },
     { kind: 'Artykuł', source: 'inna redakcja', title: 'Kim są zatrzymani i co łączy ich ze spółką', date: '15.09' },
     { kind: 'Film', source: 'kanał YouTube', title: 'Nagranie z posiedzenia rady nadzorczej', date: '16.09' },
-    { kind: 'Śledztwo', source: 'Państwa redakcja', title: 'Jak rozpisano przetarg — dokumenty krok po kroku', date: '18.09' },
+    { kind: 'Śledztwo', source: 'Państwa redakcja', title: 'Jak rozpisano przetarg - dokumenty krok po kroku', date: '18.09' },
   ],
 };
 
@@ -55,7 +55,7 @@ function ExampleStrip() {
         ))}
         <li className="sc-ctx__more" aria-label="5 z 15 możliwych boxów">5/15</li>
       </ol>
-      <figcaption className="sc-ctx__caption">Przykład wymyślony — pokazuje zasadę, nie prawdziwą sprawę.</figcaption>
+      <figcaption className="sc-ctx__caption">Przykład wymyślony - pokazuje zasadę, nie prawdziwą sprawę.</figcaption>
     </figure>
   );
 }

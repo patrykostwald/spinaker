@@ -39,7 +39,7 @@ export function Section() {
               key={card.id}
               type="button"
               className="sc-morph-card sc-hoverable"
-              // layoutId TYLKO na aktywnej karcie — rejestr pomiarów rośnie z N do 1 (plan → «Бюджет производительности»).
+              // layoutId TYLKO na aktywnej karcie - rejestr pomiarów rośnie z N do 1 (plan → «Бюджет производительности»).
               layoutId={m.morph && isActive ? `sc-probe-${card.id}` : undefined}
               style={{ borderRadius: RADIUS.lg, opacity: isActive ? 0 : 1 }}
               whileHover={{ scale: m.scale(1.03), y: m.reduced ? 0 : -2 }}
@@ -75,7 +75,7 @@ export function Section() {
                   aria-label={`Karta próbna ${active}`}
                   className="sc-morph-surface"
                   layoutId={m.morph ? `sc-probe-${active}` : undefined}
-                  // Promień inline i liczbowo — na tym samym elemencie co layoutId, inaczej rogi rozjadą się w elipsę.
+                  // Promień inline i liczbowo - na tym samym elemencie co layoutId, inaczej rogi rozjadą się w elipsę.
                   style={{ borderRadius: RADIUS["2xl"] }}
                   initial={m.morph ? undefined : { opacity: 0 }}
                   animate={m.morph ? undefined : { opacity: 1 }}
@@ -91,7 +91,7 @@ export function Section() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={m.t("expand", { delay: 0.12 })}
                   >
-                    Treść wchodzi kaskadą już w trakcie morfingu, nie po nim — jedno działanie zamiast dwóch etapów. Zamknięcie wraca do karty bez odbicia.
+                    Treść wchodzi kaskadą już w trakcie morfingu, nie po nim - jedno działanie zamiast dwóch etapów. Zamknięcie wraca do karty bez odbicia.
                   </motion.p>
                   <button type="button" onClick={() => setActive(null)}>Zamknij</button>
                 </motion.div>

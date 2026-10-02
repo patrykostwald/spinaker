@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Button — jedyny komponent przycisku w bibliotece (docs/UI_KIT_PLAN.md → «Компоненты», «Каталог кнопок»).
+ * Button - jedyny komponent przycisku w bibliotece (docs/UI_KIT_PLAN.md → «Компоненты», «Каталог кнопок»).
  * Warianty, rozmiary i kształty różnicują propsy, nie osobne implementacje.
  */
 
@@ -40,7 +40,7 @@ type ButtonOwnProps = {
 };
 
 /**
- * Klucze zdarzeń, którymi framer-motion nadaje własny (gestowy) typ sygnatury —
+ * Klucze zdarzeń, którymi framer-motion nadaje własny (gestowy) typ sygnatury -
  * kolidują z natywnymi typami DOM przy spreadowaniu na motion.button/motion(Link).
  */
 type MotionConflictingKeys =
@@ -70,7 +70,7 @@ type NativeProps = Omit<DOMAttributes<HTMLElement>, "children" | MotionConflicti
     className?: string;
     style?: CSSProperties;
     role?: AriaRole;
-    /** np. data-lit="true" — witryna wymusza stan naświetlenia bez realnego hover. */
+    /** np. data-lit="true" - witryna wymusza stan naświetlenia bez realnego hover. */
     [dataAttr: `data-${string}`]: string | boolean | undefined;
   };
 
@@ -89,7 +89,7 @@ type ButtonIconOnlyProps = ButtonOwnProps &
     type?: "button" | "submit" | "reset";
   };
 
-/** Ikonowy przycisk musi mieć aria-label — wymuszone przeciążeniem typu, nie propem w runtime. */
+/** Ikonowy przycisk musi mieć aria-label - wymuszone przeciążeniem typu, nie propem w runtime. */
 export type ButtonProps = ButtonTextProps | ButtonIconOnlyProps;
 
 const MotionButton = motion.button;
@@ -117,7 +117,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   const m = useMotionTokens();
   const isIconOnly = shape === "icon";
   const iconPx = ICON_PX[size];
-  // Ikona z katalogu ma trzy rozmiary (16/20/24) — bierzemy najbliższy nie większy od pudełka.
+  // Ikona z katalogu ma trzy rozmiary (16/20/24) - bierzemy najbliższy nie większy od pudełka.
   const spinnerSize: IconSize = iconPx >= 24 ? 24 : iconPx >= 20 ? 20 : 16;
   const isDisabled = Boolean(disabled) || loading;
 

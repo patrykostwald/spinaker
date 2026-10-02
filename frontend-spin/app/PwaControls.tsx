@@ -6,7 +6,7 @@ import { useFeature } from '@spin-clinic/ui';
 
 type InstallPrompt = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Config = { enabled: boolean; public_key: string; csrfToken: string; consent_version: string; results: { endpoint: string; topics: string[] }[] };
-const topics = [['spiny-na-zywo', 'Każdy nowy spin — od razu po diagnozie'], ['spin-dnia', 'Spin dnia'], ['nitki-dr-spina', 'Nitki Dr. Spina'], ['obserwowani', 'Obserwowani (po zalogowaniu)']];
+const topics = [['spiny-na-zywo', 'Każdy nowy spin - od razu po diagnozie'], ['spin-dnia', 'Spin dnia'], ['nitki-dr-spina', 'Nitki Dr. Spina'], ['obserwowani', 'Obserwowani (po zalogowaniu)']];
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
 export function PwaControls() {
@@ -143,7 +143,7 @@ export function PwaControls() {
       <button type="button" className="sc-pwa-close" onClick={close} aria-label="Zamknij okno">×</button>
       <h2 id="sc-pwa-title">{mode === 'push' ? 'Powiadomienia' : 'Zainstaluj aplikację'}</h2>
       {mode === 'install' ? <>
-        <p>Klinika, wiadomości i nitki pod ręką — prosto z ekranu telefonu.</p>
+        <p>Klinika, wiadomości i nitki pod ręką - prosto z ekranu telefonu.</p>
         {installed ? <p>Aplikacja jest już zainstalowana.</p> : ios ? <p>Otwórz stronę w Safari. Wybierz <strong>Udostępnij → Do ekranu początkowego → Dodaj</strong>.</p> : prompt ? <button className="sc-pwa-primary" onClick={() => void install()}>Zainstaluj</button> : <p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna.</p>}
         <button onClick={() => { dismiss(); close(); }}>Nie pokazuj przez 30 dni</button>
         {pushEnabled && <p><a href="#powiadomienia">Wybierz powiadomienia</a></p>}

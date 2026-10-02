@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * NavMenu — przezroczysta, przyklejona szapka (docs/UI_KIT_PLAN.md → «Компоненты» NavMenu,
+ * NavMenu - przezroczysta, przyklejona szapka (docs/UI_KIT_PLAN.md → «Компоненты» NavMenu,
  * «Оживление каждого элемента → Меню и шапка»).
  *
- * Dolna kreska pojawia się DOPIERO po przewinięciu — wykrywana 1px sentinelem przez
+ * Dolna kreska pojawia się DOPIERO po przewinięciu - wykrywana 1px sentinelem przez
  * IntersectionObserver, nigdy przez nasłuch scrolla. Aktywny punkt dostaje aria-current="page"
  * ORAZ wspólny MorphIndicator (layoutId), który przejeżdża między punktami na sprężynie `move`.
  * Poniżej 1200px lista chowa się w panel rozwijany przyciskiem Menu.
@@ -38,7 +38,7 @@ export type NavMenuProps = {
   ariaLabel?: string;
   /** Slot na wezwanie do działania po prawej (np. Zaloguj). */
   cta?: ReactNode;
-  /** Domyślnie true — `position: sticky` u góry. */
+  /** Domyślnie true - `position: sticky` u góry. */
   sticky?: boolean;
   /** Etykieta dropdownu z punktami, które nie zmieściły się w rzędzie. Domyślnie 'Więcej'. */
   overflowLabel?: string;
@@ -48,7 +48,7 @@ export type NavMenuProps = {
   search?: ReactNode;
   /**
    * `centered`: pole szukania na środku rzędu, po lewej wordmark + punkty (prowadzą do pola),
-   * po prawej cta. Domyślnie `inline` — dotychczasowy rząd od lewej.
+   * po prawej cta. Domyślnie `inline` - dotychczasowy rząd od lewej.
    */
   layout?: "inline" | "centered";
 };
@@ -98,7 +98,7 @@ export function NavMenu({
   const pathname = usePathname();
   const instanceId = useId();
   const mobilePanelId = `sc-navmenu-mobile-${instanceId}`;
-  // R0 «один живой элемент»: панель вырастает из кнопки меню — общий layoutId с «семенем» в кнопке,
+  // R0 «один живой элемент»: панель вырастает из кнопки меню - общий layoutId с «семенем» в кнопке,
   // ровно один держатель за раз (семя, пока закрыто; панель, пока открыто). Как в Dropdown.
   const seedId = `${instanceId}-menu-surface`;
   const toggleRef = useRef<HTMLButtonElement | HTMLAnchorElement>(null);
@@ -114,7 +114,7 @@ export function NavMenu({
     return () => media.removeEventListener("change", close);
   }, []);
 
-  // Kromka u dołu szapki pojawia się dopiero po przewinięciu — sentinel 1px zamiast nasłuchu scrolla.
+  // Kromka u dołu szapki pojawia się dopiero po przewinięciu - sentinel 1px zamiast nasłuchu scrolla.
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node || typeof IntersectionObserver === "undefined") return;

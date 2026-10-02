@@ -169,10 +169,10 @@ function CouncilNote({ council }: { council: NonNullable<SpinDetailData["council
       <h2>Oceny modeli</h2>
       <p className="sc-council__title">Konsylium Dr. Spina · {agreementLabel(council.agreement)}{council.escalated ? " · konsultacja specjalisty: fakty sprawdził dodatkowo mocniejszy model z wyszukiwaniem" : ""}</p>
       <ul>{council.members.map(member => (
-        <li key={member.model}><strong>{short(member.model)}</strong> — {member.intensity == null || !member.verdict ? "Brak odpowiedzi" : <>{VERDICT_SHORT[member.verdict] ?? member.verdict}, siła spinu {member.intensity}/100</>}</li>
+        <li key={member.model}><strong>{short(member.model)}</strong> - {member.intensity == null || !member.verdict ? "Brak odpowiedzi" : <>{VERDICT_SHORT[member.verdict] ?? member.verdict}, siła spinu {member.intensity}/100</>}</li>
       ))}</ul>
       <p className="sc-council__roles">Lekarz prowadzący: {short(council.chair)}{council.linguist ? ` · redaktor: ${short(council.linguist)}` : ""}
-        {council.review.model ? ` · ordynator: ${short(council.review.model)} — ${council.review.ok ? "bez zastrzeżeń" : council.review.ok === false ? `uwagi${council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}</p>
+        {council.review.model ? ` · ordynator: ${short(council.review.model)} - ${council.review.ok ? "bez zastrzeżeń" : council.review.ok === false ? `uwagi${council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}</p>
     </section>
   );
 }

@@ -15,7 +15,7 @@ const loadMessage = cache(async (day: string): Promise<MessageDay> => {
 
 export async function generateMetadata({ params }: { params: { day: string } }): Promise<Metadata> {
   const data = await loadMessage(params.day);
-  const title = `Przekazy dnia: ${formatDatePl(data.day)} — Klinika spinu`;
+  const title = `Przekazy dnia: ${formatDatePl(data.day)} - Klinika spinu`;
   const description = 'Przekaz rządzących i opozycji: syntezy, zakres analizowanego materiału i wpisy źródłowe.';
   return { title, description, alternates: { canonical: `/klinika/przekazy/${data.day}` },
     openGraph: { title, description, type: 'article', siteName: 'spin.clinic' } };

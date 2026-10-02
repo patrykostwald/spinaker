@@ -1,4 +1,4 @@
-/** Klinika spinu — typy i zapytania do /api/clinic/ (backend/news/clinic.py). */
+/** Klinika spinu - typy i zapytania do /api/clinic/ (backend/news/clinic.py). */
 import type { CSSProperties } from "react";
 import { apiFetch, apiWrite } from "./api";
 
@@ -69,7 +69,7 @@ export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   status?: "approved";
   author_replies?: ClinicAuthorReply[];
   scan?: SpinScan;
-  /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
+  /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami - backend news/x_share.py. */
   x_share?: string[];
   analysis: string;
   techniques: Array<{ name: string; quote: string; explanation: string; category?: string }>;
@@ -136,7 +136,7 @@ export type Interview = {
   id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
   guest_name: string; guest_role: string; host_name: string; headline: string; summary: string; overall: string;
   guest: { verdict: Verdict; verdict_label: string; intensity: number; summary: string; techniques: InterviewQuote[]; claims: InterviewClaim[] };
-  /** Werdykt i siła prowadzącego — w wywiadach ocenionych od 27.09.2026 (wcześniejsze: puste). */
+  /** Werdykt i siła prowadzącego - w wywiadach ocenionych od 27.09.2026 (wcześniejsze: puste). */
   host: { summary: string; notes: InterviewQuote[]; verdict?: Verdict; verdict_label?: string; intensity?: number };
   limitations: string; model: string; diagnosed_at: string | null;
 };
@@ -148,11 +148,11 @@ export type ClinicPageData = DataPeriod & {
   scale: SpinScale;
   messages: Record<Camp, DailyMessage | null>;
   spin_of_day: SpinDetailData | null;
-  /** Spin dnia każdej strony; `order` — najpierw strona z mocniejszym (świeższym) spinem. `window`: today | 24h | 72h | latest. */
+  /** Spin dnia każdej strony; `order` - najpierw strona z mocniejszym (świeższym) spinem. `window`: today | 24h | 72h | latest. */
   spin_by_camp?: { spins: Record<Camp, (SpinDetailData & { window: string; pool?: number; window_label?: string }) | null>; order: Camp[] };
   latest_spin: SpinDetailData | null;
   interview: Interview | null;
-  /** Drugi wywiad dnia — dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */
+  /** Drugi wywiad dnia - dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */
   interview_second?: Interview | null;
   /** Wcześniejsze wywiady dnia (bez aktualnego), najnowsze najpierw. */
   interview_archive?: Interview[];
@@ -261,11 +261,11 @@ export const getClinicCorrections = (page = 1) => apiFetch<ClinicCorrectionsData
 export const getSpin = (id: number | string) => apiFetch<SpinDetailData | WithdrawnDiagnosis>(`/api/clinic/spins/${id}/`);
 export const getClinicAccounts = () => apiFetch<{ results: ClinicAccount[] }>("/api/clinic/accounts/");
 
-/** Usunięte posty polityków — sam fakt (kto, kiedy, czy był spinem), bez treści (zasady X). */
+/** Usunięte posty polityków - sam fakt (kto, kiedy, czy był spinem), bez treści (zasady X). */
 export type DeletedPost = {
   author: SpinAuthor; camp: Camp; camp_label: string; published_at: string; unavailable_at: string;
   verdict: Verdict | ""; verdict_label: string;
-  /** Godziny od publikacji do wykrycia usunięcia (górna granica — sprawdzamy co 3 godziny). */
+  /** Godziny od publikacji do wykrycia usunięcia (górna granica - sprawdzamy co 3 godziny). */
   hours_visible: number;
   /** Kopia w Wayback Machine sprzed usunięcia (tylko link) albo "". */
   archive_url: string;

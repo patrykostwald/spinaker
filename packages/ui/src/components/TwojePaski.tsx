@@ -46,7 +46,7 @@ function StripRow({ strip, editing, categories, sources, onEdit, onSave, onCance
     <header><h3>{strip.label}</h3><div><Button type="button" variant="quiet" size="sm" onClick={onEdit}>Edytuj</Button><Button type="button" variant="quiet" size="sm" onClick={onRemove}>Usuń pasek</Button></div></header>
     {feed.isPending ? <p role="status">Ładuję materiały…</p> : null}
     {feed.isSuccess && !articles.length ? <p>Nie znaleźliśmy jeszcze materiałów pasujących do tego wyboru.</p> : null}
-    {articles.length ? <div className="sc-personal-strip__track sc-strip-bleed" aria-label={`${strip.label} — przewijaj poziomo`}>{articles.map(article => <MaterialBox key={article.id} article={article} />)}</div> : null}
+    {articles.length ? <div className="sc-personal-strip__track sc-strip-bleed" aria-label={`${strip.label} - przewijaj poziomo`}>{articles.map(article => <MaterialBox key={article.id} article={article} />)}</div> : null}
   </section>;
 }
 
@@ -71,7 +71,7 @@ export const TwojePaski = forwardRef<HTMLDivElement, { categories: CategoryOptio
       {!strips.length && !adding ? <p className="sc-personal-strips__empty">Dodaj własny pasek, aby zachować wygodny przegląd interesującego Cię tematu.</p> : null}
       {adding ? <StripForm categories={categories} sources={sources} onSave={create} onCancel={() => setAdding(false)} /> : null}
       {strips.length ? <ReorderableStrips strips={reorderableStrips} storageKey="spinclinic-mvp-strips-order" label="Kolejność Twoich pasków" onReorder={next => setStrips(next.map(({ title: _title, ...strip }) => strip))} renderStrip={strip => <StripRow strip={strip} editing={editingId === strip.id} categories={categories} sources={sources} onEdit={() => { setEditingId(strip.id); setAdding(false); }} onSave={save} onCancelEdit={() => setEditingId(null)} onRemove={() => remove(strip.id)} />} /> : null}
-      {atLimit ? <p className="sc-personal-strips__empty">Masz już {MAX_PERSONAL_STRIPS} pasków — usuń jeden, aby dodać kolejny.</p> : null}
+      {atLimit ? <p className="sc-personal-strips__empty">Masz już {MAX_PERSONAL_STRIPS} pasków - usuń jeden, aby dodać kolejny.</p> : null}
     </section>;
   },
 );

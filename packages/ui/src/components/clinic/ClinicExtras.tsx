@@ -57,7 +57,7 @@ export function MessageBox({ camp, message, emptyText, surface = "standalone" }:
 /** Przełącznik widoku: spin dnia (najwyższa siła z dzisiaj) albo najnowszy spin. */
 export function SpinSwitch({ spinOfDay, latest, render, empty, left, right }: {
   spinOfDay: SpinDetailData | null; latest: SpinDetailData | null; render: (spin: SpinDetailData) => ReactNode; empty: ReactNode;
-  /** Opcjonalnie: tytuł po lewej i link po prawej — w jednej linii z zakładkami. */
+  /** Opcjonalnie: tytuł po lewej i link po prawej - w jednej linii z zakładkami. */
   left?: ReactNode; right?: ReactNode;
 }) {
   const [mode, setMode] = useState<"day" | "latest">("latest");
@@ -66,7 +66,7 @@ export function SpinSwitch({ spinOfDay, latest, render, empty, left, right }: {
   const tabs = (
     <div className="sc-scan-s-tabs sc-spin-switch__tabs2" role="group" aria-label="Którą diagnozę pokazać">
       <button type="button" aria-pressed={mode === "latest"} onClick={() => setMode("latest")}>Najnowsza</button>
-      <button type="button" aria-pressed={mode === "day"} disabled={!day} onClick={() => setMode("day")}>Najwyższa siła spinu{day ? ` ${day}` : " — brak danych"}</button>
+      <button type="button" aria-pressed={mode === "day"} disabled={!day} onClick={() => setMode("day")}>Najwyższa siła spinu{day ? ` ${day}` : " - brak danych"}</button>
     </div>
   );
   return (
@@ -87,7 +87,7 @@ function timeLink(interview: Interview, item: { time: string; seconds: number | 
 function QuoteList({ interview, items }: { interview: Interview; items: InterviewQuote[] }) {
   return items.length ? (
     <ul className="sc-clinic-sotd__list">{items.map(item => (
-      <li key={item.name + item.quote}><strong>{item.name}</strong> ({timeLink(interview, item)}) — „{item.quote}”. {item.explanation}</li>
+      <li key={item.name + item.quote}><strong>{item.name}</strong> ({timeLink(interview, item)}) - „{item.quote}”. {item.explanation}</li>
     ))}</ul>
   ) : null;
 }
@@ -97,7 +97,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
   interview: Interview;
   /** Napis nad tytułem sekcji (domyślnie „Wywiady”). */
   kicker?: string;
-  /** Wcześniejsze wywiady — paski z datą po lewej, pod aktualnym wywiadem (ten sam panel). */
+  /** Wcześniejsze wywiady - paski z datą po lewej, pod aktualnym wywiadem (ten sam panel). */
   archive?: Interview[];
   /** Opcjonalnie: okno analizy sterowane z zewnątrz (np. link w nagłówku sekcji na głównej). */
   open?: boolean; onOpenChange?: (open: boolean) => void; hideMore?: boolean;
@@ -114,7 +114,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
           <img src={interview.thumbnail_url} alt="" loading="lazy" referrerPolicy="no-referrer" />
           <span aria-hidden="true">▶</span>
         </a>
-        {/* „Pełna analiza” tuż pod miniaturą, przy lewej krawędzi — bez osobnej linii na dole boxu. */}
+        {/* „Pełna analiza” tuż pod miniaturą, przy lewej krawędzi - bez osobnej linii na dole boxu. */}
         {hideMore ? null : <p className="sc-interview__more"><button type="button" onClick={() => setOpen(true)}>Pełna analiza ze źródłami →</button></p>}
         </div>
         <div className="sc-interview__head">
@@ -132,7 +132,7 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
         </article>
         <article>
           <p className="sc-interview__who">Prowadzący · {interview.host_name}</p>
-          {/* Werdykt prowadzącego w tym samym wierszu co gościa — teksty obu kart zaczynają się na jednej wysokości. */}
+          {/* Werdykt prowadzącego w tym samym wierszu co gościa - teksty obu kart zaczynają się na jednej wysokości. */}
           <p className="sc-spin-card__verdict">{interview.host.verdict
             ? <><VerdictTag verdict={interview.host.verdict} label={interview.host.verdict_label ?? ""} /><IntensityMeter value={interview.host.intensity ?? 0} /></>
             : <span className="sc-interview__noverdict">ocena warsztatu od kolejnych wywiadów</span>}</p>
@@ -148,10 +148,10 @@ export function InterviewBox({ interview, open: openProp, onOpenChange, hideMore
   );
 }
 
-/** Etykieta werdyktu w archiwum wywiadów dopiero od tej siły (niżej — pojedyncze, słabe techniki). */
+/** Etykieta werdyktu w archiwum wywiadów dopiero od tej siły (niżej - pojedyncze, słabe techniki). */
 const ARCHIVE_TAG_MIN = 40;
 
-/** Archiwum wywiadów dnia: jeden pasek na dzień — data po lewej, gość, nagłówek, werdykt; klik otwiera analizę. */
+/** Archiwum wywiadów dnia: jeden pasek na dzień - data po lewej, gość, nagłówek, werdykt; klik otwiera analizę. */
 export function InterviewArchive({ items }: { items: Interview[] }) {
   const [openId, setOpenId] = useState<number | null>(null);
   const current = items.find(item => item.id === openId) ?? null;
@@ -163,7 +163,7 @@ export function InterviewArchive({ items }: { items: Interview[] }) {
           <button type="button" className="sc-interview-archive__row" onClick={() => setOpenId(item.id)} aria-haspopup="dialog">
             <time dateTime={item.day}>{formatDatePl(item.day)}</time>
             <span className="sc-interview-archive__who">{item.guest_name}<small>{item.channel}</small></span>
-            {/* Licznik siły zawsze; etykieta werdyktu dopiero od progu — przy 6/100 „Spin” sugerowałby więcej, niż stwierdzono. */}
+            {/* Licznik siły zawsze; etykieta werdyktu dopiero od progu - przy 6/100 „Spin” sugerowałby więcej, niż stwierdzono. */}
             <span className="sc-interview-archive__score">
               <IntensityMeter value={item.guest.intensity} />
               {item.guest.intensity >= ARCHIVE_TAG_MIN ? <VerdictTag verdict={item.guest.verdict} label={item.guest.verdict_label} /> : null}
@@ -256,7 +256,7 @@ export function MessageHistory({ history }: { history: Record<Camp, DailyMessage
   if (!CAMPS.some(camp => history[camp]?.length)) return null;
   return (
     <section className="sc-message-history" aria-labelledby="message-history-title">
-      <h2 id="message-history-title">Przekazy dnia — archiwum</h2>
+      <h2 id="message-history-title">Przekazy dnia - archiwum</h2>
       <div className="sc-message-history__cols">
         {CAMPS.map(camp => (
           <section key={camp}>

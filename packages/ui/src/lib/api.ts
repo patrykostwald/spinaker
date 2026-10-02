@@ -37,7 +37,7 @@ export function getMe(): Promise<{ authenticated: boolean; is_editor: boolean; i
 }
 export { API_URL, DOMAIN };
 
-// Błąd zapisu z polami formularza; dziedziczy ApiError, żeby kod sprawdzający status (404 — funkcja jeszcze wyłączona) działał dalej.
+// Błąd zapisu z polami formularza; dziedziczy ApiError, żeby kod sprawdzający status (404 - funkcja jeszcze wyłączona) działał dalej.
 export class ApiValidationError extends ApiError {
   constructor(message: string, public fields: Record<string, string> = {}, status = 400) { super(status, message); }
 }

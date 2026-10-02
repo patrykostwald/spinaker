@@ -2,7 +2,7 @@
 
 /**
  * Skład Konsylium AI na żywo (GET /api/clinic/council/): model, firma, role, dostępność i przyjęcie Karty z oświadczeniem
- * modelu. Przyjęcie to odpowiedź konkretnej wersji modelu na pełną treść Karty — nie podpis ani poparcie firmy.
+ * modelu. Przyjęcie to odpowiedź konkretnej wersji modelu na pełną treść Karty - nie podpis ani poparcie firmy.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -50,7 +50,7 @@ export function CouncilRoster({ lang = "pl" }: LanguageProps) {
               <p className="sc-council__provider">{en ? "Service provider:" : "Dostawca usługi:"} {member.provider}</p>
             </div>
             <p className="sc-council__roles">{member.roles.map(role => en ? EN_ROLES[role] ?? `${role} (in Polish)` : role).join(" · ")}</p>
-            {member.status === "limit dzienny" ? <p className="sc-council__provider">{en ? "Today's free request quota is exhausted - returns at midnight." : "Dziś wyczerpał darmowy limit zapytań — wraca o północy."}</p> : null}
+            {member.status === "limit dzienny" ? <p className="sc-council__provider">{en ? "Today's free request quota is exhausted - returns at midnight." : "Dziś wyczerpał darmowy limit zapytań - wraca o północy."}</p> : null}
             {member.status === "zawieszony" ? <p className="sc-council__provider">{en ? "Suspended by the Recruiter after several days without a response. Returns automatically when it works again." : "Zawieszony przez Rekrutera: od kilku dni nie odpowiada. Wróci sam, gdy znów zacznie działać."}</p> : null}
             {member.charter?.accepts ? (
               <blockquote className="sc-council__statement" data-accepts={member.charter.accepts}>
@@ -90,7 +90,7 @@ export function CouncilRecruitmentLog({ lang = "pl" }: LanguageProps) {
       {row.exam ? <p className="sc-recruit__exam">{en ? "Exam:" : "Egzamin:"} {row.exam.answered}/{row.exam.items} {en ? "responses · agreement with the Council" : "odpowiedzi · zgodność z Konsylium"} {Math.round(row.exam.agreement * 100)}% · {en ? "strength difference" : "różnica siły"} {row.exam.mae} {en ? "points" : "pkt"} · {row.exam.passed ? en ? "thresholds met" : "progi spełnione" : en ? "thresholds not met" : "progi niespełnione"}</p> : null}
       <p className="sc-recruit__reason">{en && "Reason (in Polish): "}<span lang={en ? "pl" : undefined}>{row.reason}</span></p>
       {row.votes.length ? <ul className="sc-recruit__votes">{row.votes.map((vote, voteIndex) => (
-        <li key={voteIndex}><strong>{shortModel(vote.model)}</strong> {en ? "-" : "—"} {vote.admit === true ? en ? "in favour" : "za" : vote.admit === false ? en ? "against" : "przeciw" : en ? "no vote" : "brak głosu"}{vote.reason ? <>{en ? " (reason in Polish): " : ": "}<span lang={en ? "pl" : undefined}>{vote.reason}</span></> : ""}</li>
+        <li key={voteIndex}><strong>{shortModel(vote.model)}</strong> {en ? "-" : "-"} {vote.admit === true ? en ? "in favour" : "za" : vote.admit === false ? en ? "against" : "przeciw" : en ? "no vote" : "brak głosu"}{vote.reason ? <>{en ? " (reason in Polish): " : ": "}<span lang={en ? "pl" : undefined}>{vote.reason}</span></> : ""}</li>
       ))}</ul> : null}
     </li>
   ))}</ol>;

@@ -178,7 +178,7 @@ export function ClinicDatabase() {
     ]} />
     <FilterChip label="Okres" value={period} onChange={value => change({ date_from: value ? daysAgo(Number(value)) : "", date_to: "" })} options={[
       { value: "", label: "Cały okres" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },
-      ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} — ${params.date_to ?? "dzisiaj"}` }] : []),
+      ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} - ${params.date_to ?? "dzisiaj"}` }] : []),
     ]} />
   </>;
 
@@ -239,7 +239,7 @@ export function ClinicDatabase() {
       {query.isError && <p role="alert">Nie udało się pobrać diagnoz. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p>}
       {query.isSuccess && rows.length === 0 && <div className="sc-clinic-empty"><p>{hasFilters ? "Nie znaleźliśmy pasujących diagnoz." : "Nie ma jeszcze opublikowanych diagnoz dla tego wyboru."}</p>{hasFilters ? <button type="button" onClick={reset}>Wyczyść filtry</button> : null}</div>}
       {query.hasNextPage && !query.isFetchNextPageError && <Button className="sc-clinic-db__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button>}
-      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania — to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/metodologia">Jak wybieramy i liczymy?</Link></p>
+      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania - to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/metodologia">Jak wybieramy i liczymy?</Link></p>
     </section>
   );
 }

@@ -1,7 +1,7 @@
 /**
- * @spin-clinic/ui/kit — точка входа библиотеки нового визуального языка.
+ * @spin-clinic/ui/kit - точка входа библиотеки нового визуального языка.
  * Экспорты только явные, без `export *` из компонентов: конфликт имён должен ронять сборку,
- * а не молча теряться в рантайме. Владелец файла — R0 (интегратор).
+ * а не молча теряться в рантайме. Владелец файла - R0 (интегратор).
  */
 
 // Контракты (волна 0)
@@ -25,7 +25,7 @@ export {
   POLISH_LONG_WORDS,
 } from "./showcase/fixtures";
 
-// Волна 1 — R1 иконки и контролы
+// Волна 1 - R1 иконки и контролы
 export {
   type IconProps, type IconSize,
   SearchIcon, CloseIcon,
@@ -47,7 +47,7 @@ export { Switch, type SwitchProps } from "./Switch";
 export { Segmented, type SegmentedOption, type SegmentedProps } from "./Segmented";
 export { SearchField, type SearchFieldProps } from "./SearchField";
 
-// Волна 1 — R2 кнопки и дропдаун
+// Волна 1 - R2 кнопки и дропдаун
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize, type ButtonShape } from "./Button";
 export { useDismissable, type UseDismissableOptions } from "./useDismissable";
 export {
@@ -55,10 +55,10 @@ export {
   type DropdownProps, type DropdownItem, type DropdownMode, type DropdownPresentation, type DropdownAlign,
 } from "./Dropdown";
 
-// Волна 1 — R3 карточка
+// Волна 1 - R3 карточка
 export { NewsCard, type NewsCardProps, type NewsCardSize } from "./NewsCard";
 
-// Волна 1 — R4 примитивы движения и жесты
+// Волна 1 - R4 примитивы движения и жесты
 export { Morph, type MorphProps } from "./motion/Morph";
 export { MorphList, type MorphListProps } from "./motion/MorphList";
 export { MorphIndicator, type MorphIndicatorProps } from "./motion/MorphIndicator";
@@ -70,19 +70,19 @@ export { useScrollLock } from "./portal/useScrollLock";
 export { useModalA11y, type ModalA11y } from "./portal/useModalA11y";
 export { useDragDismiss, type DragDismiss, type DragDismissOptions } from "./portal/useDragDismiss";
 
-// Волна 2 — R6 навигация и футер
+// Волна 2 - R6 навигация и футер
 export { NavMenu, NavCategories, type NavItem, type NavMenuProps, type NavCategory, type NavCategoriesProps } from "./NavMenu";
 export { SiteFooter, type SiteFooterProps, type SiteFooterColumn, type SiteFooterCta } from "./SiteFooter";
 export { ThemeToggle, type ThemeToggleProps, type ThemeToggleMode } from "./ThemeToggle";
 
-// Волна 2 — R7 мобильный слой
+// Волна 2 - R7 мобильный слой
 export {
   useFocalBand, FOCAL_BAND, focalBandRootMargin,
   FoldedSection, Carousel, BottomSheet, CompactHeader,
 } from "./mobile";
 export type * from "./mobile";
 
-// Волна 2 — R5 портал
+// Волна 2 - R5 портал
 export { PortalProvider, usePortal, usePortalApi, usePortalApiOptional, usePortalState } from "./portal/PortalProvider";
 export { PortalLayer } from "./portal/PortalLayer";
 export { useHistoryPortal } from "./portal/useHistoryPortal";
@@ -90,7 +90,7 @@ export { MaterialSurface } from "./MaterialSurface";
 export { InfoPage } from "./InfoPage";
 export { DocLayout, type DocLayoutProps, type DocSection } from "./DocLayout";
 
-// Этап 2 — страницы на ките
+// Этап 2 - страницы на ките
 export { HomePage } from "./home/HomePage";
 export { Strip, EmptySlot, type StripProps } from "./home/Strip";
 export { ThreadView, type ThreadViewProps, type ThreadLayout } from "./ThreadView";

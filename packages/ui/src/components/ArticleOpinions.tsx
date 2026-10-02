@@ -66,7 +66,7 @@ function OpinionContent({ article, ownerId }: { article: Pick<Article, "id">; ow
   }
 
   return <section className="sc-article-opinions">
-    <header><div><p>REAKCJE CZYTELNIKÓW</p><h2>Reakcje i komentarze</h2><span>Czy materiał był przydatny w tym kontekście? Reakcja dotyczy materiału — nie ocenia osób ani prawdziwości treści.</span></div></header>
+    <header><div><p>REAKCJE CZYTELNIKÓW</p><h2>Reakcje i komentarze</h2><span>Czy materiał był przydatny w tym kontekście? Reakcja dotyczy materiału - nie ocenia osób ani prawdziwości treści.</span></div></header>
     {opinions.isPending ? <p role="status" className="sc-article-opinions__message">Ładuję opinie…</p> : null}
     {opinions.isError ? <p role="alert" className="sc-article-opinions__message">Nie udało się pobrać opinii. <Button type="button" variant="quiet" size="sm" onClick={() => opinions.refetch()}>Ponów</Button></p> : null}
     {opinions.data ? <div className="sc-article-opinions__columns">{(["negative", "positive"] as const).map(side => {

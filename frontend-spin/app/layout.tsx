@@ -5,7 +5,7 @@ import { FeatureFooter, PreviewBanner, PreviewPwa } from "./PreviewControls";
 
 import "./globals.css";
 import "./preview.css";
-// Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css — порядок каскада (docs/UI_KIT_PLAN.md).
+// Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css - порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
 import { Providers } from "./providers";
 import { SurveyBar } from "./SurveyBar";
@@ -18,7 +18,7 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
-const TITLE = "spin.clinic — pokazujemy, jak zbudowany jest przekaz";
+const TITLE = "spin.clinic - pokazujemy, jak zbudowany jest przekaz";
 const DESCRIPTION = "Pokazujemy, jak zbudowany jest przekaz. Dr. Spin (AI) analizuje techniki perswazji we wpisach polityków i zestawia twierdzenia ze źródłami. Ta sama miara dla wszystkich.";
 
 export const viewport: Viewport = { themeColor: '#000000' };
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(`https://${process.env.NEXT_PUBLIC_DOMAIN || "spin.clinic"}`),
   title: TITLE,
   description: DESCRIPTION,
-  // Podgląd linku na X, Facebooku i w komunikatorach — obrazek public/og.png (1200×630).
-  openGraph: { type: "website", siteName: "spin.clinic", locale: "pl_PL", title: TITLE, description: DESCRIPTION, images: [{ url: "/og.png", width: 1200, height: 630, alt: "spin.clinic — Klinika spinu" }] },
+  // Podgląd linku na X, Facebooku i w komunikatorach - obrazek public/og.png (1200×630).
+  openGraph: { type: "website", siteName: "spin.clinic", locale: "pl_PL", title: TITLE, description: DESCRIPTION, images: [{ url: "/og.png", width: 1200, height: 630, alt: "spin.clinic - Klinika spinu" }] },
   twitter: { card: "summary_large_image", site: "@spinclinic", title: TITLE, description: DESCRIPTION, images: ["/og.png"] },
 };
 

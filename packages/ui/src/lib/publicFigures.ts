@@ -84,7 +84,7 @@ export type PublicFigureVotes =
   | { available: false; reason?: string; results: PublicFigureVote[] };
 
 /**
- * Konto X z backend/news/public_figures.py::verified_x_account_data — obecne wyłącznie po
+ * Konto X z backend/news/public_figures.py::verified_x_account_data - obecne wyłącznie po
  * przeglądzie linku z oficjalnego profilu, potwierdzeniu przez oficjalne API X i potwierdzeniu
  * redakcyjnym. W innym wypadku `null`. Interfejs nigdy nie zgaduje handle'a.
  */

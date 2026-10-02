@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SUPPORT_LINKS } from "../lib/support";
 
 /**
- * Pasek wsparcia przyklejony nad stopką: jedno zdanie po lewej, po prawej — ile zebraliśmy w tym miesiącu
+ * Pasek wsparcia przyklejony nad stopką: jedno zdanie po lewej, po prawej - ile zebraliśmy w tym miesiącu
  * (nad przyciskiem „Wesprzyj projekt”). Kwoty z /support-progress (zmienne środowiska serwera).
  */
 export function SupportBar() {
@@ -14,7 +14,7 @@ export function SupportBar() {
     staleTime: 5 * 60_000,
   });
   const data = query.data;
-  // Bez ustawionego celu zostaje samo zdanie — licznik pojawia się, gdy SUPPORT_MONTHLY_GOAL_PLN > 0.
+  // Bez ustawionego celu zostaje samo zdanie - licznik pojawia się, gdy SUPPORT_MONTHLY_GOAL_PLN > 0.
   const goal = data?.goal ?? 0;
   const raised = data?.raised ?? 0;
   const percent = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;

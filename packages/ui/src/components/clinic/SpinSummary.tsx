@@ -1,11 +1,11 @@
 "use client";
 
-import { agreementLabel, spinVar, techniqueLabel, type SpinDetailData } from "../../lib/clinic";
+import { agreementLabel, spinVar, type SpinDetailData } from "../../lib/clinic";
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDatePl } from "../../lib/utils";
 import { VerdictTag } from "./SpinParts";
 
-// Krótkie nazwy członków Konsylium — pełna nazwa modelu (np. „speakleash/Bielik-11B-v3.0-Instruct:publicai”) rozpychała kartę.
+// Krótkie nazwy członków Konsylium - pełna nazwa modelu (np. „speakleash/Bielik-11B-v3.0-Instruct:publicai”) rozpychała kartę.
 const MODEL_LABELS: [RegExp, string][] = [[/gpt/i, "GPT"], [/qwen/i, "Qwen"], [/gemini/i, "Gemini"], [/gemma/i, "Gemma"], [/claude/i, "Claude"],
   [/nemotron/i, "Nemotron"], [/bielik/i, "Bielik"], [/pllum/i, "PLLuM"], [/llama/i, "Llama"], [/mistral|mixtral/i, "Mistral"], [/deepseek/i, "DeepSeek"],
   [/kimi/i, "Kimi"], [/glm/i, "GLM"], [/granite/i, "Granite"], [/jamba/i, "Jamba"], [/phi/i, "Phi"]];
@@ -32,13 +32,13 @@ export function SpinSummary({ spin, heading: Heading = "h3", compact = false, wi
       <div className="sc-scan-m">
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Siła spinu</p><p className="sc-scan-m-num sc-scan-strength sc-spin-num" style={spinVar(spin.intensity)}>{spin.intensity}<small>/100</small></p>
           <div className="sc-scan-g" title="Ocena AI w skali 0–100"><span className="sc-scan-g-track"><i className="sc-spin-fill" style={{ ...spinVar(spin.intensity), width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div></div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Konsylium AI</p><p className="sc-scan-m-num" title={agreementLabel(agreement)}>{agreement && /\d/.test(agreement) ? agreement : "—"}<small className="sc-scan-agreement-caption">ten sam werdykt</small></p>
-          {!compact ? <div className="sc-scan-g sc-scan-council" title={scan?.council?.method || "Oceny modeli w skali 0–100; kropka — werdykt modelu"}>{!votes.length ? <span>Brak zapisanych głosów modeli</span> : null}{votes.map((vote, index) => (
-            <span key={index} className="sc-scan-g-row">{vote.missing ? <span className="sc-scan-vote-missing">{modelLabel(vote.model)} — Brak odpowiedzi</span> : <><em title={vote.model}>{modelLabel(vote.model)}</em><b title={vote.intensity == null ? "Brak oceny siły" : "siła spinu według modelu, 0–100"}>{vote.intensity ?? "—"}</b><u data-verdict={vote.verdict} title={`werdykt: ${vote.verdict ?? "brak"}`} /></>}</span>))}</div> : null}</div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl" title="Liczymy zapisane pozycje analizy, bez scalania podobnych twierdzeń">Twierdzenia</p><p className="sc-scan-m-num">{checked}<small> sprawdzone</small></p>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Konsylium AI</p><p className="sc-scan-m-num" title={agreementLabel(agreement)}>{agreement && /\d/.test(agreement) ? agreement : "-"}<small className="sc-scan-agreement-caption">ten sam werdykt</small></p>
+          {!compact ? <div className="sc-scan-g sc-scan-council" title={scan?.council?.method || "Oceny modeli w skali 0–100; kropka - werdykt modelu"}>{!votes.length ? <span>Brak zapisanych głosów modeli</span> : null}{votes.map((vote, index) => (
+            <span key={index} className="sc-scan-g-row">{vote.missing ? <span className="sc-scan-vote-missing">{modelLabel(vote.model)} - Brak odpowiedzi</span> : <><em title={vote.model}>{modelLabel(vote.model)}</em><b title={vote.intensity == null ? "Brak oceny siły" : "siła spinu według modelu, 0–100"}>{vote.intensity ?? "-"}</b><u data-verdict={vote.verdict} title={`werdykt: ${vote.verdict ?? "brak"}`} /></>}</span>))}</div> : null}</div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl" title="Liczymy zapisane pozycje analizy, bez scalania podobnych twierdzeń">Twierdzenia</p><p className="sc-scan-m-num">{checked}</p>
           <div className="sc-scan-g"><span className="sc-scan-g-squares" aria-hidden="true">{claimSquares.map((kind, index) => <i key={index} data-k={kind} data-gap={index === claimSquares.indexOf("op") || undefined} />)}</span>
-            <span className="sc-scan-g-legend">{claims.map(claim => claim.count ? <span key={claim.key} data-k={claim.kind}>{claim.count} {claim.label}</span> : null)}</span></div></div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{typeCount}<small> {techniqueLabel(typeCount)}</small></p>
+            <span className="sc-scan-g-legend">{claims.map(claim => claim.count ? <span key={claim.key} data-k={claim.kind}><em>{claim.label}</em><b>{claim.count}</b></span> : null)}</span></div></div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{typeCount}</p>
           <div className="sc-scan-g">{families.map(({ key, label, count }) => (
             <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${(count / familyMax) * 100}%` }} /></span><b>{count}</b></span>))}</div></div>
       </div>

@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * PortalLayer — `createPortal` w `document.body`, `AnimatePresence` zamontowany NA STAŁE
- * (dziecko warunkowe) — patrz docs/UI_KIT_PLAN.md → «Сплошная система движения» → «Портал»:
+ * PortalLayer - `createPortal` w `document.body`, `AnimatePresence` zamontowany NA STAŁE
+ * (dziecko warunkowe) - patrz docs/UI_KIT_PLAN.md → «Сплошная система движения» → «Портал»:
  * warunkowo zamontowany `<AnimatePresence>` to „przyczyna numer jeden” braku animacji
  * wyjścia. Renderuje powierzchnię pełnoekranową stopnia C (`MaterialSurface`) razem z
- * przyciemnieniem. Stopień B (R0, 24.09) żyje w samej NewsCard — karta zmienia formę tym samym
+ * przyciemnieniem. Stopień B (R0, 24.09) żyje w samej NewsCard - karta zmienia formę tym samym
  * elementem, klonu w tej warstwie już nie ma.
  *
  * Trzy przypadki powrotu przy zamknięciu (docs → «Три случая возврата») są policzone
  * SYNCHRONICZNIE w `PortalProvider.close()` (scrollIntoView w tym samym takcie, zanim
- * jakikolwiek stan trafi do Reacta) — tu tylko czytamy gotowy `engine.exit`.
+ * jakikolwiek stan trafi do Reacta) - tu tylko czytamy gotowy `engine.exit`.
  */
 
 import { AnimatePresence } from "framer-motion";
@@ -31,7 +31,7 @@ export type PortalLayerProps = {
   resolveArticle?: (id: number) => Article | null | undefined | Promise<Article | null | undefined>;
   /** Materiały «Powiązane materiały» pod aktualnie otwartym. */
   relatedFor?: (article: Article) => Article[];
-  /** Treść pod nagłówkiem materiału (np. oś czasu, reakcje, baza powiązanych); `navigate` — przejście do innego boxa. */
+  /** Treść pod nagłówkiem materiału (np. oś czasu, reakcje, baza powiązanych); `navigate` - przejście do innego boxa. */
   renderDetails?: (article: Article, navigate: (next: Article) => void) => ReactNode;
 };
 
@@ -51,16 +51,16 @@ export function PortalLayer({ resolveArticle, relatedFor, renderDetails }: Porta
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const dismissVelocity = useRef<number | null>(null);
 
-  // Materiał aktualnie WYŚWIETLANY w powierzchni — NIE to samo co `engine.article`:
+  // Materiał aktualnie WYŚWIETLANY w powierzchni - NIE to samo co `engine.article`:
   // nawigacja do powiązanego materiału wewnątrz overlaya podmienia TYLKO treść (replaceState),
   // powierzchnia zostaje tym samym zamontowanym elementem («не подмена контента, а морфинг:
   // старое тело уходит, новое приходит, поверхность остаётся»).
   const [displayed, setDisplayed] = useState<Article | null>(null);
   const prevPhaseRef = useRef(engine.phase);
-  // Zrzut prostokąta startowego («flight») — liczony TYLKO raz na sesję otwarcia, nie przy
+  // Zrzut prostokąta startowego («flight») - liczony TYLKO raz na sesję otwarcia, nie przy
   // każdej nawigacji do powiązanego materiału (inaczej powierzchnia próbowałaby ponownie
   // "wyrosnąć z karty" za każdym kliknięciem w powiązany materiał). `useLayoutEffect`, żeby
-  // rozstrzygnąć PRZED malowaniem klatki — bez migotania „brak powierzchni → jest”.
+  // rozstrzygnąć PRZED malowaniem klatki - bez migotania „brak powierzchni → jest”.
   const seedRef = useRef<{ rect: MaterialSurfaceRect; radius: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -79,13 +79,13 @@ export function PortalLayer({ resolveArticle, relatedFor, renderDetails }: Porta
 
   // `displayed !== null`, NIE `engine.phase === "open"`: `close()` zeruje fazę OD RAZU
   // (żeby AnimatePresence wykryło zniknięcie dziecka i odegrało `exit`), a lokalny stan
-  // `displayed` żyje aż do `onExitComplete` — właśnie po to, żeby blokada scrolla i sama
+  // `displayed` żyje aż do `onExitComplete` - właśnie po to, żeby blokada scrolla i sama
   // powierzchnia dotrwały do końca animacji zamykania, a nie znikły od razu.
   const isOpenSession = displayed !== null;
   // A11y (`inert`) NATOMIAST wraca do `engine.phase === "open"`: `inert` musi zniknąć z
-  // #main-content/header ZANIM `onExitComplete` spróbuje oddać fokus kartie — inert na
+  // #main-content/header ZANIM `onExitComplete` spróbuje oddać fokus kartie - inert na
   // przodku po cichu blokuje .focus() (żaden błąd, fokus po prostu zostaje na <body>).
-  // Tło staje się interaktywne odrobinę wcześniej niż kończy się animacja zamykania —
+  // Tło staje się interaktywne odrobinę wcześniej niż kończy się animacja zamykania -
   // świadomy kompromis, powszechny wzorzec w modalach z animowanym wyjściem.
   const a11y = useModalA11y(surfaceRef, engine.phase === "open", () => requestClose());
 
@@ -125,20 +125,20 @@ export function PortalLayer({ resolveArticle, relatedFor, renderDetails }: Porta
     a11y.focusFirst();
   }
 
-  // `engine.phase === "open"`, NIE `isOpenSession` — to WŁAŚNIE ten przełącznik ma
+  // `engine.phase === "open"`, NIE `isOpenSession` - to WŁAŚNIE ten przełącznik ma
   // uruchomić `exit` AnimatePresence, kiedy `close()` zeruje fazę. `isOpenSession`
   // (lokalny `displayed`) czyści się DOPIERO w `onExitComplete`, więc oparcie tych
   // dwóch flag na nim byłoby cyklem, który nigdy się nie domyka.
   // `displayed !== null` dodatkowo strzeże PIERWSZEGO przebiegu renderu, w którym `phase`
   // zdążył już przełączyć się na "open", a `displayed` jeszcze nie (ustawia go dopiero
-  // `useLayoutEffect` wyżej) — bez tego `article={displayed!}` przekazałoby `null`.
+  // `useLayoutEffect` wyżej) - bez tego `article={displayed!}` przekazałoby `null`.
   const showSurface = engine.phase === "open" && displayed !== null;
 
   const exitTransition = dismissVelocity.current !== null
     ? responsive(springs.portalOut, dismissVelocity.current)
     : m.t("portalOut");
 
-  // R0 (24.09): cel powrotu idzie przez `custom` AnimatePresence, NIE przez prop `exit` powierzchni —
+  // R0 (24.09): cel powrotu idzie przez `custom` AnimatePresence, NIE przez prop `exit` powierzchni -
   // AnimatePresence odgrywa wyjście na elemencie z OSTATNIEGO renderu przed usunięciem, a wtedy
   // `engine.exit` był jeszcze `null` (close() ustawia fazę i cel w jednym setState). `custom`
   // jest jedyną wartością, którą AnimatePresence aktualizuje na już wychodzącym dziecku.
@@ -154,7 +154,7 @@ export function PortalLayer({ resolveArticle, relatedFor, renderDetails }: Porta
         custom={exitCustom}
         onExitComplete={() => {
           if (engine.exit) {
-            // Świeże dogranie po id (nie zapamiętana referencja DOM — mogła się zdezaktualizować
+            // Świeże dogranie po id (nie zapamiętana referencja DOM - mogła się zdezaktualizować
             // między `open()` a `close()`, patrz `focusTargetById`) jest najbardziej niezawodne.
             const byId = engine.exit.articleId !== null ? focusTargetById(engine.exit.articleId) : null;
             const focusEl = byId ?? engine.exit.focusEl;

@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next';
 
-/** Aplikacja instalowana z przeglądarki (PWA) — pierwszy krok do aplikacji na telefon. */
+/** Aplikacja instalowana z przeglądarki (PWA) - pierwszy krok do aplikacji na telefon. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'spin.clinic — wiadomości i Klinika spinu',
+    name: 'spin.clinic - wiadomości i Klinika spinu',
     short_name: 'spin.clinic',
     description: 'Wiadomości ze źródłami i automatyczne diagnozy spinu polityków.',
     id: '/',

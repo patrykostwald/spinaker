@@ -9,7 +9,7 @@ import { useMotionTokens } from "./motion/useMotionTokens";
 export interface CheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
-  /** Trzeci, wizualny stan — nie wpływa na wartość `checked` przekazywaną dalej. */
+  /** Trzeci, wizualny stan - nie wpływa na wartość `checked` przekazywaną dalej. */
   indeterminate?: boolean;
   disabled?: boolean;
   error?: boolean;
@@ -24,7 +24,7 @@ export interface CheckboxProps {
  * Prawdziwy `<input type="checkbox">` pod spodem (dostępność), strefa dotyku 44px
  * (`.sc-checkbox__hit`, patrz kit.css), jednorazowy blik `.sc-sheen` tylko przy
  * włączeniu, ptaszek rysuje się kreską (CheckIcon), pudełko „strzela” scale 1→.92→1,
- * nieokreślone — kreska rośnie od środka (MinusIcon), błąd — jednorazowe potrząśnięcie 2px.
+ * nieokreślone - kreska rośnie od środka (MinusIcon), błąd - jednorazowe potrząśnięcie 2px.
  */
 export function Checkbox({
   checked,

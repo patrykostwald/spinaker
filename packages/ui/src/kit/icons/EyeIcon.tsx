@@ -6,7 +6,7 @@ import { iconStroke, iconA11yProps } from "./types";
 import { useMotionTokens } from "../motion/useMotionTokens";
 
 export interface EyeIconProps extends IconProps {
-  /** Prywatność profilu. true (domyślnie) — oko otwarte; false — przekreślone (eye-off). */
+  /** Prywatność profilu. true (domyślnie) - oko otwarte; false - przekreślone (eye-off). */
   visible?: boolean;
 }
 

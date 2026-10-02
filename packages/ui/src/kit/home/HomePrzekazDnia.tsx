@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Przekaz dnia (stary `PrzekazDnia`): dwie kolumny „Rządzący” / „Opozycja” — każda to karta
+ * Przekaz dnia (stary `PrzekazDnia`): dwie kolumny „Rządzący” / „Opozycja” - każda to karta
  * `compact` z materiałem otwierającym nitkę (klik → strona nitki). Brak obu nitek → sekcji nie ma.
  */
 

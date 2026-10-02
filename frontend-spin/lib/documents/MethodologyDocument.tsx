@@ -64,7 +64,7 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
     <section id="selekcja"><h2>{t("Selekcja wpisów")}</h2>
       <p>{t("Czytamy wpisy z obserwowanych kont X polityków i partii z ostatnich 3 dni. Strażnik daje każdemu wstępny wynik - to nie jest siła spinu.")}</p>
       <figure className="sc-method-gauge" aria-label={t("Progi wyniku selekcji")}>
-        <div className="sc-method-gauge__bar"><span style={{ flexBasis: "40%" }}>{t("pomijany")}</span><span style={{ flexBasis: "35%" }}>{t("do decyzji")}</span><span style={{ flexBasis: "25%" }}>{t("kolejka automatyczna")}</span></div>
+        <div className="sc-method-gauge__bar"><span style={{ flexBasis: "40%" }}>{t("pomijany")}</span><span style={{ flexBasis: "35%" }}>{t("do decyzji")}</span><span style={{ flexBasis: "25%" }}>{t("kolejka")}</span></div>
         <div className="sc-method-gauge__scale"><b>0</b><b style={{ left: "40%" }}>40</b><b style={{ left: "75%" }}>75</b><b>100</b></div>
       </figure>
       <p className="sc-method-note">{t("To próba wybranych wypowiedzi, nie cała debata. Więcej diagnoz jednej strony nie znaczy, że ta strona częściej stosuje spin. Brak diagnozy nie oznacza „bez spinu”.")}</p>

@@ -6,10 +6,10 @@ export const metadata: Metadata = { title: "Zasady dyskusji | spin.clinic" };
 export default function DiscussionRules() {
   return <article className="sc-discussion-rules">
     <h1>Zasady dyskusji</h1>
-    <p>Dyskutujemy o przekazie i analizach, z szacunkiem dla rozmówców. Możesz zgadzać się z diagnozą lub ją krytykować — ocena jest niezależna od komentarza.</p>
+    <p>Dyskutujemy o przekazie i analizach, z szacunkiem dla rozmówców. Możesz zgadzać się z diagnozą lub ją krytykować - ocena jest niezależna od komentarza.</p>
     <ul>
       <li>Pisz kulturalnie: bez wulgaryzmów, gróźb, mowy nienawiści i spamu.</li>
-      <li>Nie publikuj danych prywatnych — swoich ani innych osób.</li>
+      <li>Nie publikuj danych prywatnych - swoich ani innych osób.</li>
       <li>Ta sama miara obowiązuje wszystkich, niezależnie od poglądów politycznych.</li>
       <li>Moderacja ocenia zachowanie, nigdy poglądy. Może ukryć komentarz lub czasowo zablokować komentowanie. Nie edytuje treści komentarzy ani diagnoz AI.</li>
     </ul>

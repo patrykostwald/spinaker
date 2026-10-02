@@ -18,7 +18,7 @@ import { getThreads } from '../../lib/api';
 import { getPortalConfig } from '../../lib/portal';
 import { ThreadCard } from '../ThreadCard';
 
-/** Jeden element nitki: materiał z Bazy (z linkiem do kontekstu) albo link spoza Bazy — wyraźnie oznaczony. */
+/** Jeden element nitki: materiał z Bazy (z linkiem do kontekstu) albo link spoza Bazy - wyraźnie oznaczony. */
 export function ElementRow({ element, index }: { element: ThreadElement; index: number }) {
   if (element.kind === 'link' && element.hidden) return <li className="sc-thread-el">Link ukryty przez zespół po zgłoszeniu.</li>;
   return (
@@ -30,7 +30,7 @@ export function ElementRow({ element, index }: { element: ThreadElement; index: 
             <span className="sc-thread-el__tag">{categoryLabel(element.category)}</span>
             {element.source_name}{element.published_date ? ` · ${formatDatePl(element.published_date)}` : ""}
           </> : <>
-            <span className="sc-thread-el__tag sc-thread-el__tag--outside" title="Materiał spoza naszej Bazy — dodany przez czytelnika">spoza Bazy</span>
+            <span className="sc-thread-el__tag sc-thread-el__tag--outside" title="Materiał spoza naszej Bazy - dodany przez czytelnika">spoza Bazy</span>
             {element.domain}{element.title_origin === "reader" ? " · tytuł przepisany przez autora nitki" : ""}
           </>}
         </p>
@@ -83,7 +83,7 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
         <p className="sc-clinic-kicker">Nitki czytelników</p>
         <h1>Sprawy ułożone przez czytelników</h1>
         <p className="sc-clinic-lead">
-          Nitka kontekstowa to jeden materiał na początku, a za nim — w kolejności — to, co go dopełnia, potwierdza albo podważa. Każdy może ułożyć
+          Nitka kontekstowa to jeden materiał na początku, a za nim - w kolejności - to, co go dopełnia, potwierdza albo podważa. Każdy może ułożyć
           swoją z materiałów z naszej Bazy albo dodać źródło przez link.
         </p>
         <div className="sc-community__actions">
@@ -102,12 +102,12 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
       {!contextActive && !term && !topic && Boolean(drspin.data?.results.some(row => row.published && row.slug.startsWith('dr-spin-kontekst-'))) && <section className="sc-f2-drspin"><h2>Nitki Dr. Spina</h2><p>Źródła ułożone przez Dr. Spina.</p><div>{drspin.data?.results.filter(row => row.published && row.slug.startsWith('dr-spin-kontekst-')).slice(0, 2).map(row => <ThreadCard key={row.id} thread={row} />)}</div></section>}
       <AccountDataState query={query} empty="Publiczne nitki będą dostępne wkrótce." />
       {query.isSuccess && !threads.length && (
-        <p className="sc-clinic-empty">{term ? `Brak nitek dla „${term}”.` : "Nie ma jeszcze publicznych nitek. Ułóż pierwszą — wystarczą dwa materiały."}</p>
+        <p className="sc-clinic-empty">{term ? `Brak nitek dla „${term}”.` : "Nie ma jeszcze publicznych nitek. Ułóż pierwszą - wystarczą dwa materiały."}</p>
       )}
       {threads.length > 0 && <ul className="sc-community__list">{threads.map(thread => <ThreadCardLink key={thread.id} thread={thread} />)}</ul>}
       {query.hasNextPage && <Button variant="quiet" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej</Button>}
       <aside className="sc-clinic-roadmap">
-        Linki spoza Bazy zapisujemy bez treści i zdjęć — tylko tytuł, adres i nazwę strony; czytelnik trafia do oryginału. Ten sam link w wielu nitkach
+        Linki spoza Bazy zapisujemy bez treści i zdjęć - tylko tytuł, adres i nazwę strony; czytelnik trafia do oryginału. Ten sam link w wielu nitkach
         to jeden box. Nitki możesz zgłosić do moderacji.
       </aside>
     </div>
@@ -128,7 +128,7 @@ function ReportButton({ threadId }: { threadId: number }) {
     setPending(true);
     try {
       const result = await reportCommunityThread(threadId, reason, details.trim());
-      setStatus(result.status === "received" ? "Dziękujemy — zgłoszenie trafiło do zespołu." : "Ta nitka jest już przez Ciebie zgłoszona.");
+      setStatus(result.status === "received" ? "Dziękujemy - zgłoszenie trafiło do zespołu." : "Ta nitka jest już przez Ciebie zgłoszona.");
       setOpen(false);
     } catch (error) { setStatus(accountMessage(error)); } finally { setPending(false); }
   }
@@ -149,7 +149,7 @@ export function CommunityThreadPage({ id }: { id: string }) {
   const query = useQuery({ queryKey: ["community-thread", id], queryFn: () => getCommunityThread(id), retry: false });
   if (query.isLoading) return <div className="sc-community"><p className="sc-clinic-empty">Ładowanie nitki…</p></div>;
   if (query.isError && !isUnavailable(query.error)) return <div className="sc-community"><AccountDataState query={query} /></div>;
-  if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono nitki — mogła zostać usunięta albo nie jest publiczna. <Link href="/nitki">Wszystkie nitki</Link></p></div>;
+  if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono nitki - mogła zostać usunięta albo nie jest publiczna. <Link href="/nitki">Wszystkie nitki</Link></p></div>;
   const thread = query.data;
   return (
     <div className="sc-community sc-community--detail sc-f2">

@@ -131,7 +131,7 @@ export function PoliticalReview() {
       const path = view === 'candidates' ? '/api/staff/political/drafts/candidates/' : '/api/staff/political/drafts/';
       const created = await apiWrite<XDraft>(path,
         { camp, day, title: title.trim(), posts: selectedPosts.map(post => post.id), notes, proposed_items });
-      setNotice(`Zapisano propozycję „${created.title}” — status: ${STATUS_LABELS[created.status]}. `
+      setNotice(`Zapisano propozycję „${created.title}” - status: ${STATUS_LABELS[created.status]}. `
         + 'To wyłącznie materiał do przeglądu zespołu; nic nie zostało opublikowane.');
       resetForm();
       await cache.invalidateQueries({ queryKey: ['political-drafts', view] });
@@ -156,7 +156,7 @@ export function PoliticalReview() {
       <h1 className="sc-t-title-l">Propozycje z już zapisanych wpisów X</h1>
       <p className="sc-political-copy">Panel wyłącznie przegląda materiał już pobrany i zapisany jako
         PoliticalPost. Nie łączy się z płatnym API X, nie publikuje nitek, nie pisze oskarżeń i nie ocenia prawdziwości
-        wpisów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja zespołu.</p>
+        wpisów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje - to osobna decyzja zespołu.</p>
     </header>
 
     {status.data?.draft_rules && <details className="sc-political-rules">

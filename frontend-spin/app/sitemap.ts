@@ -6,7 +6,7 @@ const BASE = `https://${DOMAIN}`;
 
 export const revalidate = 3600;
 
-/** Mapa strony dla wyszukiwarek: strony stałe i najnowsze diagnozy Kliniki (gdy API nie odpowie — same strony stałe). */
+/** Mapa strony dla wyszukiwarek: strony stałe i najnowsze diagnozy Kliniki (gdy API nie odpowie - same strony stałe). */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const pages: MetadataRoute.Sitemap = [

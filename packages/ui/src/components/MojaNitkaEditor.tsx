@@ -256,8 +256,8 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       if ('needsTitle' in result) { setLinkNeedsTitle(true); setLinkMessage(result.message); return; }
       addItem(fromElement({ ...result.item, note: '', position: 0 } as ThreadElement));
       setLinkMessage(result.status === 'in_base'
-        ? 'Ten materiał jest już w naszej Bazie — dodaliśmy istniejący box.'
-        : result.status === 'existing_link' ? 'Ktoś już dodał ten link — użyliśmy tego samego boxa.' : 'Dodano link spoza Bazy.');
+        ? 'Ten materiał jest już w naszej Bazie - dodaliśmy istniejący box.'
+        : result.status === 'existing_link' ? 'Ktoś już dodał ten link - użyliśmy tego samego boxa.' : 'Dodano link spoza Bazy.');
       setLinkUrl(''); setLinkTitle(''); setLinkNeedsTitle(false);
     } catch (reason) {
       setLinkMessage(accountMessage(reason));
@@ -370,7 +370,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         <h1 id={`${uid}-title`}>{activeId ? draft.title || 'Nitka bez tytułu' : 'Nowa nitka'}</h1>
         {draft.isPublic
           ? <p className="sc-account-private is-public"><span>PUBLICZNA</span> Po zapisaniu nitka jest widoczna w sekcji <Link href="/nitki">Nitki</Link> pod Twoją nazwą użytkownika{threadId ? <> · <Link href={`/nitki/${threadId}`}>zobacz publiczną wersję</Link></> : null}.</p>
-          : <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie układa jej AI — kolejność ustalasz sam. Możesz ją opublikować w sekcji Nitki.</p>}
+          : <p className="sc-account-private"><span>PRYWATNA</span> Widzisz ją tylko Ty. Nie układa jej AI - kolejność ustalasz sam. Możesz ją opublikować w sekcji Nitki.</p>}
         {thread.data?.hidden_at && <p className="sc-account-error">Zespół ukrył tę nitkę po zgłoszeniu. Napisz na kontakt@spin.clinic, jeśli uważasz, że to pomyłka.</p>}
       </header>
       <div className="sc-f2-editor-layout">
@@ -407,7 +407,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       <section hidden={step !== 2 && step !== 3} className="sc-account-section" aria-labelledby={`${uid}-materials`}>
         <header><h2 id={`${uid}-materials`}>Elementy nitki <span>{draft.items.length}</span></h2></header>
         {draft.items.length === 0 ? (
-          <p className="sc-account-empty">Nitka nie ma jeszcze elementów. Pierwszy to materiał otwierający — ten, od którego zaczyna się sprawa. Kliknij „Dodaj materiał”, aby znaleźć go w Bazie albo dodać przez link.</p>
+          <p className="sc-account-empty">Nitka nie ma jeszcze elementów. Pierwszy to materiał otwierający - ten, od którego zaczyna się sprawa. Kliknij „Dodaj materiał”, aby znaleźć go w Bazie albo dodać przez link.</p>
         ) : (
           <ol className="sc-account-items" aria-label="Kolejność elementów w nitce">
             {draft.items.map((item, index) => (
@@ -452,13 +452,13 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
 
         {step === 2 && <button type="button" className="sc-f2-add-material" aria-haspopup="dialog" onClick={() => { setDrawerMode('search'); setDrawerOpen(true); }}>
           <strong>+ Dodaj materiał</strong>
-          {draft.items.length === 0 && <span>Zacznij od materiału otwierającego — tego, od którego zaczyna się sprawa.</span>}
+          {draft.items.length === 0 && <span>Zacznij od materiału otwierającego - tego, od którego zaczyna się sprawa.</span>}
         </button>}
 
       </section>
 
       <details hidden={step !== 2} className="sc-account-section sc-account-filters">
-        <summary><h2>Hasła, kategorie i źródła <span>(opcjonalnie — pomagają szukać w Bazie)</span></h2></summary>
+        <summary><h2>Hasła, kategorie i źródła <span>(opcjonalnie - pomagają szukać w Bazie)</span></h2></summary>
         <div className="sc-account-fields">
           <div className="sc-account-field">
             <label htmlFor={`${uid}-keyword`}>Hasła</label>
@@ -582,7 +582,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
                 <input value={linkTitle} maxLength={300} onChange={event => setLinkTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addLink(); } }} />
               </label>
             <Button type="button" variant="primary" loading={linkPending} disabled={!linkUrl.trim() || linkPending || (linkNeedsTitle && !linkTitle.trim())} onClick={addLink}>Dodaj</Button>
-            <small>Jeśli materiał jest już w Bazie, podepniemy istniejący box. Z linków spoza Bazy zapisujemy tylko tytuł, adres i nazwę strony — bez treści i zdjęć.</small>
+            <small>Jeśli materiał jest już w Bazie, podepniemy istniejący box. Z linków spoza Bazy zapisujemy tylko tytuł, adres i nazwę strony - bez treści i zdjęć.</small>
             {linkMessage && <p role="status" className="sc-account-hint">{linkMessage}</p>}
           </div>
 

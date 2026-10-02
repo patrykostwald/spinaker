@@ -115,9 +115,9 @@ export function Section() {
         <FullWidthDemo theme="light" />
       </div>
 
-      <h3 className="sc-t-title-m sc-section__sub">Ramka 375px — panel mobilny (rozwiń przyciskiem menu)</h3>
+      <h3 className="sc-t-title-m sc-section__sub">Ramka 375px - panel mobilny (rozwiń przyciskiem menu)</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-3)" }}>
-        Próg 768px liczony jest od szerokości samej szapki (container query), nie okna przeglądarki —
+        Próg 768px liczony jest od szerokości samej szapki (container query), nie okna przeglądarki -
         dlatego panel mobilny widać tu bez zmniejszania okna.
       </p>
       <div style={{ display: "flex", gap: "var(--sc-s-5)", flexWrap: "wrap" }}>

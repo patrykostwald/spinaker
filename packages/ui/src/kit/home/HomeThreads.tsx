@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Nitki użytkownika — do pięciu własnych pasków „Twoje wiadomości”:
+ * Nitki użytkownika - do pięciu własnych pasków „Twoje wiadomości”:
  * pasek konfiguracji (wyśrodkowany: hasło · kategoria · źródło + „+ Dodaj pasek”), a pod nim
- * do {@link MAX_PERSONAL_STRIPS} własnych nitek — każda to filtr hasło/kategoria/źródło nad
+ * do {@link MAX_PERSONAL_STRIPS} własnych nitek - każda to filtr hasło/kategoria/źródło nad
  * `/api/portal/news`, zapis lokalny, kolejność przeciągana za uchwyt (`ReorderableStrips`).
  * Limit pilnuje interfejs (przycisk i pigułki wyłączone, formularz się nie otwiera, zapis
  * odrzucany) oraz `savePersonalStrip`.
@@ -40,7 +40,7 @@ function StripForm({
   onCancel: () => void;
 }) {
   const [query, setQuery] = useState(initial?.query ?? "");
-  // Starsze nitki mogą mieć zapisaną pojedynczą kategorię backendu — pokazujemy jej grupę.
+  // Starsze nitki mogą mieć zapisaną pojedynczą kategorię backendu - pokazujemy jej grupę.
   const [category, setCategory] = useState(initial?.category ? (categoryGroupByKey(initial.category)?.key ?? categoryGroupOf(initial.category).key) : "");
   const [sourceId, setSourceId] = useState<string>(initial?.sourceId ? String(initial.sourceId) : "");
 

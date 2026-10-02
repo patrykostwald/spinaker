@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     const title = `${spin.verdict_label}: ${spin.headline}`;
     const description = `Diagnoza AI wpisu @${spin.author.handle}. ${spin.summary}`.slice(0, 300);
     return {
-      title: `${title} — Klinika spinu`,
+      title: `${title} - Klinika spinu`,
       description,
       openGraph: { title, description, type: 'article', siteName: 'spin.clinic', images: [{ url: `/api/clinic/spins/${encodeURIComponent(params.id)}/card.png`, width: 1600, height: 900 }] },
       twitter: { card: 'summary_large_image', site: '@spinclinic', title, description, images: [`/api/clinic/spins/${encodeURIComponent(params.id)}/card.png`] },

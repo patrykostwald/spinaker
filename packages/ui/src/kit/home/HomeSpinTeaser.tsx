@@ -25,7 +25,7 @@ export function HomeSpinTeaser() {
   useEffect(() => { setSlot(nextMessageSlot(new Date())); }, []);
   if (!data) return <section id="dr-spin" className="sc-home-section"><h2>Dr. Spin</h2>{query.isError ? <p role="alert">Nie udało się pobrać danych. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : <p role="status">Wczytujemy diagnozy…</p>}</section>;
 
-  const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} — gdy wpisy opublikują co najmniej trzy konta tego obozu.`;
+  const emptyMessage = `Najbliższy przekaz${slot ? ` o ${slot}` : ""} - gdy wpisy opublikują co najmniej trzy konta tego obozu.`;
   const spins = data.spin_by_camp?.spins;
   const order = data.spin_by_camp?.order ?? CAMPS;
   const shown: Camp = selectedCamp ?? order[0] ?? CAMPS[0];
@@ -52,14 +52,14 @@ export function HomeSpinTeaser() {
       </div>
       <div id="scan-camp-panel" role="tabpanel" aria-labelledby={`scan-tab-${shown}`}>
         {spin ? <>
-          <p className="sc-scan-s-rule">{spin.window === "latest" ? "Najnowsza dostępna diagnoza tej strony — w ostatnich trzech dobach nie było nowych diagnoz." :
+          <p className="sc-scan-s-rule">{spin.window === "latest" ? "Najnowsza dostępna diagnoza tej strony - w ostatnich trzech dobach nie było nowych diagnoz." :
             `Pokazujemy wpis z najwyższą siłą spinu wśród ${spin.pool ?? "dostępnych"} przeanalizowanych wpisów ${shown === "government" ? "rządzących" : "opozycji"} (${spin.window_label || ({ today: "dzisiaj", "24h": "ostatnia doba", "72h": "ostatnie trzy doby" }[spin.window] ?? "okres niepodany")}).`}</p>
           <HomeSpinScanner key={`${shown}-${spin.id}`} spin={spin} />
         </> : <p>Nie ma jeszcze opublikowanych diagnoz dla tego wyboru.</p>}
       </div>
       <p className="sc-home-doctor__scale">
-        <strong>Siła spinu 0–100</strong> — jak mocno wpis opiera się na technikach perswazji. To nie jest ocena prawdziwości ani osoby;
-        prawdziwość twierdzeń sprawdzamy osobno, ze źródłami. Obie strony — te same zasady.
+        <strong>Siła spinu 0–100</strong> - jak mocno wpis opiera się na technikach perswazji. To nie jest ocena prawdziwości ani osoby;
+        prawdziwość twierdzeń sprawdzamy osobno, ze źródłami. Obie strony - te same zasady.
       </p>
       {/* Przekazy dnia obu obozów: szerszy obraz dnia pod konkretnymi wpisami. */}
       <div className="sc-clinic-split sc-home-spin__messages" aria-label="Przekazy dnia">

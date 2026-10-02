@@ -12,7 +12,7 @@ import { formatDateTimePl } from "../../lib/utils";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { useFeature } from "../../lib/features";
 
-/** Plakietka partii po lewej od awatara. Skrót tekstowy zamiast logo — neutralnie i bez praw do znaków. */
+/** Plakietka partii po lewej od awatara. Skrót tekstowy zamiast logo - neutralnie i bez praw do znaków. */
 export function PartyBadge({ party }: { party: Party | null }) {
   if (!party) return <span className="sc-party sc-party--none" aria-hidden="true" />;
   return <span className="sc-party" title={party.name} aria-label={`Partia: ${party.name}`}>{party.short}</span>;
@@ -41,7 +41,7 @@ export function SpinAuthorRow({ author, publishedAt, size = "md", caption }: {
       <div className="sc-spin-author__text">
         <p className="sc-spin-author__name">
           {author.figure_id ? <Link href={`/osoby-publiczne/${author.figure_id}`}>{author.name}</Link> : author.name}
-          {/* Partia zwykłym tekstem przy nazwisku („Mariusz Błaszczak, PiS”) — decyzja właściciela 29.09. */}
+          {/* Partia zwykłym tekstem przy nazwisku („Mariusz Błaszczak, PiS”) - decyzja właściciela 29.09. */}
           {author.party?.short ? <span className="sc-spin-author__party-text">, {author.party.short}</span> : null}
         </p>
         <p className="sc-spin-author__meta">
@@ -68,11 +68,11 @@ export function IntensityMeter({ value }: { value: number }) {
 }
 
 export function AiTag() {
-  return <span className="sc-ai-tag" title="Treść przygotowana automatycznie przez AI — nikt nie edytuje jej treści; tryb publikacji opisano przy analizie">AI</span>;
+  return <span className="sc-ai-tag" title="Treść przygotowana automatycznie przez AI - nikt nie edytuje jej treści; tryb publikacji opisano przy analizie">AI</span>;
 }
 
 /**
- * Zwarty wiersz diagnozy — rozmiar boxa z pasków: po lewej miniatura (zdjęcie z wpisu albo awatar autora),
+ * Zwarty wiersz diagnozy - rozmiar boxa z pasków: po lewej miniatura (zdjęcie z wpisu albo awatar autora),
  * po prawej obóz, werdykt, nagłówek diagnozy i autor. Cały wiersz prowadzi do pełnej diagnozy.
  */
 export function SpinRow({ spin, withSummary = false, badge, returnTo, onOpen }: { spin: SpinCardData; withSummary?: boolean; withTechniques?: boolean; badge?: string; returnTo?: string; onOpen?: () => void }) {
@@ -113,7 +113,7 @@ export function SpinListMetrics({ spin }: { spin: SpinCardData }) {
   return <dl className="sc-list-metrics" aria-label="Dane diagnozy">
     <div><dt>Siła spinu</dt><dd className="sc-list-metrics__strength sc-spin-num" style={spinVar(spin.intensity)}>{spin.intensity}<small>/100</small></dd>
       <span className="sc-list-metrics__track" aria-hidden="true"><i className="sc-spin-fill" style={{ ...spinVar(spin.intensity), width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span></div>
-    <div><dt>Konsylium AI</dt><dd>{council.agreement ?? "—"}</dd><small>ten sam werdykt</small></div>
+    <div><dt>Konsylium AI</dt><dd>{council.agreement ?? "-"}</dd><small>ten sam werdykt</small></div>
     <div><dt>Twierdzenia</dt><dd>{checked}</dd><small>{unverified > 0 ? `sprawdzone z ${checked + unverified}` : "sprawdzone"}</small></div>
     <div><dt>Techniki</dt><dd>{typeCount}</dd><small>{techniqueLabel(typeCount)}</small>
       <span className="sc-list-metrics__families">{families.filter(family => family.key !== "inne").map(family =>
@@ -152,13 +152,13 @@ export function SpinCard({ spin }: { spin: SpinCardData }) {
   );
 }
 
-/** Waga — dwie liczby i dwa paski: udział wpisów ze spinem po każdej stronie (jeden neutralny kolor). */
+/** Waga - dwie liczby i dwa paski: udział wpisów ze spinem po każdej stronie (jeden neutralny kolor). */
 export function SpinScale({ scale }: { scale: SpinScaleData }) {
   const left = sharePercent(scale.government);
   const right = sharePercent(scale.opposition);
   const diff = left !== null && right !== null ? left - right : null;
   const verdict = !scale.enough_data
-    ? `Za mało danych — wynik pokażemy, gdy każda strona będzie miała co najmniej ${scale.min_sample} ocenionych wpisów.`
+    ? `Za mało danych - wynik pokażemy, gdy każda strona będzie miała co najmniej ${scale.min_sample} ocenionych wpisów.`
     : diff === 0 ? "Obie strony mają taki sam udział spinu."
     : `Więcej spinu: ${diff! > 0 ? "rządzący" : "opozycja"} (o ${Math.abs(diff!)} p.p.).`;
   return (
@@ -172,7 +172,7 @@ export function SpinScale({ scale }: { scale: SpinScaleData }) {
             <div key={camp} className="sc-scale__row" data-camp={camp}>
               <span className="sc-scale__label">{camp === "government" ? "Rządzący" : "Opozycja"}</span>
               <span className="sc-scale__track"><span style={{ width: `${share ?? 0}%` }} /></span>
-              <strong className="sc-scale__value">{share === null ? "—" : `${share}%`}</strong>
+              <strong className="sc-scale__value">{share === null ? "-" : `${share}%`}</strong>
               <span className="sc-scale__n">{data.spin + data.partial}/{data.assessed}</span>
             </div>
           );
@@ -183,7 +183,7 @@ export function SpinScale({ scale }: { scale: SpinScaleData }) {
   );
 }
 
-/** „Jak czytać wynik” — krótko, żeby nikt nie czytał 70/100 jako „70% kłamstwa” (audyt 046). */
+/** „Jak czytać wynik” - krótko, żeby nikt nie czytał 70/100 jako „70% kłamstwa” (audyt 046). */
 export function HowToRead({ interview = false }: { interview?: boolean }) {
   const [open, setOpen] = useState(false);
   return <>
@@ -192,7 +192,7 @@ export function HowToRead({ interview = false }: { interview?: boolean }) {
     <dl>
       <div><dt>Siła spinu 0–100</dt><dd>Jak mocno {interview ? "wypowiedź opiera" : "komunikat opiera"} się na technikach perswazji. To nie procent kłamstwa i nie ocena osoby.</dd></div>
       <div><dt>Konsylium AI</dt><dd>Ile modeli wydało ten sam werdykt co diagnoza końcowa, np. 3/4.</dd></div>
-      <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne albo wprowadzające w błąd. „Niezweryfikowane” znaczy: bez źródła — nie że to fałsz.</dd></div>
+      <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne albo wprowadzające w błąd. „Niezweryfikowane” znaczy: bez źródła - nie że to fałsz.</dd></div>
       <div><dt>Techniki</dt><dd>Ile różnych technik wskazano, z dosłownym cytatem, w trzech rodzinach: dane, emocje, spór.</dd></div>
     </dl>
     <Link className="sc-howto-methodology" href="/metodologia">Pełna metodologia →</Link>

@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 import { apiWrite } from "../lib/api";
 import { Button } from "../kit/Button";
 
-/** Ta sama treść zgody co w backendzie (news/newsletter.py, CONSENT_TEXT) — zapisujemy jej wersję przy każdym zapisie. */
+/** Ta sama treść zgody co w backendzie (news/newsletter.py, CONSENT_TEXT) - zapisujemy jej wersję przy każdym zapisie. */
 export const NEWSLETTER_CONSENT =
   "Zgadzam się na otrzymywanie od spin.clinic (iapply sp. z o.o.) e-maili o starcie serwisu i jego nowościach. Mogę się wypisać w każdej chwili jednym kliknięciem.";
 
@@ -13,7 +13,7 @@ type State = { kind: "idle" | "sending" | "done" | "error"; message?: string };
 
 /**
  * Zapis na powiadomienie o starcie: e-mail + zgoda, potem mail z linkiem potwierdzającym (podwójna zgoda).
- * `source` mówi, skąd przyszedł zapis (home, klinika, o-nas…) — do statystyk w panelu.
+ * `source` mówi, skąd przyszedł zapis (home, klinika, o-nas…) - do statystyk w panelu.
  */
 export function NewsletterSignup({ source, compact = false }: { source: string; compact?: boolean }) {
   const [email, setEmail] = useState("");
@@ -42,7 +42,7 @@ export function NewsletterSignup({ source, compact = false }: { source: string; 
         <p className="sc-clinic-kicker">Newsletter</p>
         <h2 id={`newsletter-${source}`}>Powiadomimy Cię o starcie pełnej wersji</h2>
         <p>
-          spin.clinic działa w wersji beta. Zostaw e-mail — napiszemy, gdy wystartuje pełna wersja, i od czasu do czasu o najważniejszych nowościach.
+          spin.clinic działa w wersji beta. Zostaw e-mail - napiszemy, gdy wystartuje pełna wersja, i od czasu do czasu o najważniejszych nowościach.
           Bez spamu; nie sprzedajemy ani nie udostępniamy adresów do cudzego marketingu.
         </p>
       </div>

@@ -15,7 +15,7 @@ function publicSupportUrl(value: string | undefined) {
   }
 }
 
-/** Koszty z konfiguracji (twardy budżet AI) i rodzaje opłat — bez kwot, których nie znamy z faktur. */
+/** Koszty z konfiguracji (twardy budżet AI) i rodzaje opłat - bez kwot, których nie znamy z faktur. */
 const COSTS: Array<[string, string]> = [
   ['Wpisy polityków', 'dostęp do wpisów na X przez oficjalne API.'],
   ['Analizy AI', 'płatne etapy analizy i sprawdzanie twierdzeń w źródłach.'],
@@ -23,7 +23,7 @@ const COSTS: Array<[string, string]> = [
   ['Utrzymanie', 'serwer, baza danych i kopie zapasowe.'],
 ];
 
-/** Jawny cel miesięczny i zebrana kwota — ustawiane w .env.production (SUPPORT_MONTHLY_GOAL_PLN, SUPPORT_MONTHLY_RAISED_PLN). */
+/** Jawny cel miesięczny i zebrana kwota - ustawiane w .env.production (SUPPORT_MONTHLY_GOAL_PLN, SUPPORT_MONTHLY_RAISED_PLN). */
 function supportProgress() {
   const rawGoal = process.env.SUPPORT_MONTHLY_GOAL_PLN;
   const rawRaised = process.env.SUPPORT_MONTHLY_RAISED_PLN;
@@ -38,7 +38,7 @@ function supportProgress() {
 }
 
 const GOALS: Array<[string, string]> = [
-  ['Utrzymanie', 'Pełny miesiąc Kliniki: diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej — sprawdzamy więcej wypowiedzi.'],
+  ['Utrzymanie', 'Pełny miesiąc Kliniki: diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej - sprawdzamy więcej wypowiedzi.'],
   ['Faza II', 'Konta czytelników, nitki kontekstowe z materiałów z Bazy i strażnica zmian, która pokaże, gdy źródło po publikacji zmieni albo usunie materiał.'],
   ['Własny serwer AI', 'Maszyna z kartą graficzną i otwarte modele, także polskie. Celem jest większa kontrola nad kosztami i sposobem prowadzenia analiz.'],
 ];
@@ -62,7 +62,7 @@ export default function SupportPage() {
       <dl className="sc-support-costs">{COSTS.map(([name, text]) => <div key={name}><dt>{name}</dt><dd>{text}</dd></div>)}</dl>
     </section>
     {progress ? <section aria-labelledby="support-goal-title"><h2 id="support-goal-title">Cel na ten miesiąc</h2>
-      {/* Bez daty aktualizacji nie pokazujemy kwoty ani paska — mogłyby być nieaktualne (audyt 046) */}
+      {/* Bez daty aktualizacji nie pokazujemy kwoty ani paska - mogłyby być nieaktualne (audyt 046) */}
       <p>Cel miesięczny: {progress.goal.toLocaleString('pl-PL')} zł. {progress.updated && progress.raised !== null ? `Zebrano: ${progress.raised.toLocaleString('pl-PL')} zł (stan na ${progress.updated}).` : 'Aktualna kwota zbiórki jest widoczna na stronie zbiórki.'}</p>
       {progress.updated && progress.percent !== null ? <div className="sc-support-goal" role="img" aria-label={`Zebrano ${progress.percent}% celu`}><div className="sc-support-goal__bar"><span style={{ width: `${progress.percent}%` }} /></div></div> : null}
     </section> : null}

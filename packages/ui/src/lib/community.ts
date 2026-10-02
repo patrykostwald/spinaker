@@ -1,4 +1,4 @@
-/** Nitki czytelników — typy i zapytania do /api/community/ (backend/news/community.py). */
+/** Nitki czytelników - typy i zapytania do /api/community/ (backend/news/community.py). */
 import { ApiError, apiFetch, apiWrite } from "./api";
 
 export type ThreadElement =
@@ -31,7 +31,7 @@ export const getCommunityThreads = (page = 1, q = "", author = "", options: { so
   return apiFetch<{ results: CommunityThreadSummary[]; next_page: number | null; context_filtered?: boolean }>(`/api/community/threads/?${params}`);
 };
 export const getCommunityThread = (id: number | string) => apiFetch<CommunityThreadDetail>(`/api/community/threads/${id}/`);
-/** Link do nitki. `needsTitle` — strona nie podała tytułu, czytelnik musi go przepisać. */
+/** Link do nitki. `needsTitle` - strona nie podała tytułu, czytelnik musi go przepisać. */
 export async function resolveLink(url: string, title = ""): Promise<ResolvedLink | { needsTitle: true; message: string }> {
   const csrf = await apiFetch<{ csrfToken: string }>("/api/auth/csrf/");
   const response = await fetch("/api/community/links/", {

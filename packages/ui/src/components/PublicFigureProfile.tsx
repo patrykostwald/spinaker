@@ -68,7 +68,7 @@ function Neutral({ children }: { children: ReactNode }) {
   return <p className="sc-public-figure-neutral">{children}</p>;
 }
 
-/* ——— Nagłówek profilu ——— */
+/* --- Nagłówek profilu --- */
 
 function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'career' | 'materials') => void }) {
   const x = verifiedXAccount(figure);
@@ -98,12 +98,12 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
       {!x && (
         <p className="sc-public-figure-x">
           <span className="sc-public-figure-tag">KONTO X</span>
-          <span>Brak potwierdzonego konta — nie czytamy jeszcze wpisów tej osoby.</span>
+          <span>Brak potwierdzonego konta - nie czytamy jeszcze wpisów tej osoby.</span>
           <XAccountSuggest figureId={figure.id} name={figure.name} />
         </p>
       )}
       <nav className="sc-public-figure-summary" aria-label="Sekcje profilu">
-        <button type="button" onClick={() => onSelect('votes')}><span>Głosowania</span><strong>{figure.votes.available ? figure.votes.results.length : '—'}</strong></button>
+        <button type="button" onClick={() => onSelect('votes')}><span>Głosowania</span><strong>{figure.votes.available ? figure.votes.results.length : '-'}</strong></button>
         <button type="button" onClick={() => onSelect('relations')}><span>Występuje w podmiotach</span><strong>{organisations}</strong></button>
         <button type="button" onClick={() => onSelect('materials')}><span>Materiały w Bazie</span><strong>{materialsTotal ?? '…'}</strong></button>
       </nav>
@@ -123,7 +123,7 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
   );
 }
 
-/* ——— Głosowania ——— */
+/* --- Głosowania --- */
 
 function ShortTopic({ topic }: { topic: string }) {
   if (topic.length <= 110) return <>{topic}</>;
@@ -155,7 +155,7 @@ function VotesSection({ figure }: { figure: PublicFigureDetail }) {
         {votes.available && <p>Ostatnie {votes.results.length} {plural(votes.results.length, 'głosowanie', 'głosowania', 'głosowań')} z oficjalnego zapisu · <SourceLink href={votes.source_url}>profil w Sejmie</SourceLink></p>}
       </header>
       {!votes.available ? (
-        <Neutral>{votes.reason || 'Brak jeszcze ręcznie potwierdzonego połączenia z mandatem poselskim.'} Nie oznacza to, że głosowań nie było — zespół łączy profil z oficjalnym wpisem ręcznie, nie po nazwisku.</Neutral>
+        <Neutral>{votes.reason || 'Brak jeszcze ręcznie potwierdzonego połączenia z mandatem poselskim.'} Nie oznacza to, że głosowań nie było - zespół łączy profil z oficjalnym wpisem ręcznie, nie po nazwisku.</Neutral>
       ) : votes.results.length === 0 ? (
         <Neutral>Oficjalny zapis nie zawiera jeszcze głosowań dla tego mandatu w naszej Bazie.</Neutral>
       ) : (
@@ -170,7 +170,7 @@ function VotesSection({ figure }: { figure: PublicFigureDetail }) {
   );
 }
 
-/* ——— Wpisy z potwierdzonego konta X ——— */
+/* --- Wpisy z potwierdzonego konta X --- */
 
 function XPostsSection({ figure }: { figure: PublicFigureDetail }) {
   const posts = figure.x_posts;
@@ -212,9 +212,9 @@ function XPostsSection({ figure }: { figure: PublicFigureDetail }) {
   );
 }
 
-/* ——— Występuje w podmiotach (KRS) ——— */
+/* --- Występuje w podmiotach (KRS) --- */
 
-/** Fundacje najpierw, potem stowarzyszenia, spółki i inne; w obrębie typu — obecne przed dawnymi. */
+/** Fundacje najpierw, potem stowarzyszenia, spółki i inne; w obrębie typu - obecne przed dawnymi. */
 function orderedOrganisations(rows: PublicFigureOrganisation[]) {
   return [...rows].sort((a, b) => ORGANISATION_KIND_ORDER.indexOf(a.kind) - ORGANISATION_KIND_ORDER.indexOf(b.kind)
     || Number(a.relation_status === 'former') - Number(b.relation_status === 'former') || a.name.localeCompare(b.name, 'pl'));
@@ -234,7 +234,7 @@ function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
         <h2 id="pf-orgs">Występuje w podmiotach</h2>
         <p>
           Fundacje, stowarzyszenia i spółki z Krajowego Rejestru Sądowego, w których ta osoba pełni albo pełniła funkcję. Każdy wpis potwierdza
-          oficjalny KRS (organ, funkcja i daty) albo co najmniej dwa niezależne źródła. Nie pokazujemy danych prywatnych — tylko jawne funkcje.
+          oficjalny KRS (organ, funkcja i daty) albo co najmniej dwa niezależne źródła. Nie pokazujemy danych prywatnych - tylko jawne funkcje.
         </p>
       </header>
       {rows.length ? (
@@ -263,7 +263,7 @@ function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
         </div>
       ) : (
         <Neutral>
-          Nie znaleźliśmy jeszcze potwierdzonych podmiotów. Agent sprawdza kolejne osoby co noc — brak wpisu nie oznacza braku funkcji, tylko że
+          Nie znaleźliśmy jeszcze potwierdzonych podmiotów. Agent sprawdza kolejne osoby co noc - brak wpisu nie oznacza braku funkcji, tylko że
           nie potwierdziliśmy jej w KRS ani w dwóch niezależnych źródłach.
         </Neutral>
       )}
@@ -293,7 +293,7 @@ function dates(entry: EmploymentEntry) {
 
 type CareerGroup = { position: string; place: string; entries: EmploymentEntry[] };
 
-/** Kolejne kadencje tej samej funkcji (np. „Poseł na Sejm RP”) łączymy w jedną grupę — jak kolejne stanowiska w jednej firmie. */
+/** Kolejne kadencje tej samej funkcji (np. „Poseł na Sejm RP”) łączymy w jedną grupę - jak kolejne stanowiska w jednej firmie. */
 function groupCareer(entries: EmploymentEntry[]): CareerGroup[] {
   const groups: CareerGroup[] = [];
   for (const entry of entries) {
@@ -312,7 +312,7 @@ function CareerTree({ entries }: { entries: EmploymentEntry[] }) {
   return (
     <section className="sc-career" aria-labelledby="pf-career">
       <h3 id="pf-career">Kariera publiczna</h3>
-      <p className="sc-career__lead">Stanowiska publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych — z datami z oficjalnych rejestrów (Sejm, KRS).</p>
+      <p className="sc-career__lead">Stanowiska publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych - z datami z oficjalnych rejestrów (Sejm, KRS).</p>
       <ol className="sc-career__groups">
         {groups.map((group, index) => {
           const first = group.entries[group.entries.length - 1];
@@ -325,7 +325,7 @@ function CareerTree({ entries }: { entries: EmploymentEntry[] }) {
               <div className="sc-career__main">
                 <strong>{group.position}</strong>
                 <span className="sc-career__org">{group.place}{sector && SECTOR_LABELS[sector] ? <small> · {SECTOR_LABELS[sector]}</small> : null}</span>
-                {first.since ? <span className="sc-career__span">{monthYear.format(new Date(first.since))} – {current ? 'obecnie' : lastEntry.until ? monthYear.format(new Date(lastEntry.until)) : '—'} · {span(first.since, current ? null : lastEntry.until)}{group.entries.length > 1 ? ` · ${group.entries.length} kadencje` : ''}</span> : null}
+                {first.since ? <span className="sc-career__span">{monthYear.format(new Date(first.since))} – {current ? 'obecnie' : lastEntry.until ? monthYear.format(new Date(lastEntry.until)) : '-'} · {span(first.since, current ? null : lastEntry.until)}{group.entries.length > 1 ? ` · ${group.entries.length} kadencje` : ''}</span> : null}
                 <ol className="sc-career__roles">
                   {group.entries.map((entry, roleIndex) => (
                     <li key={`${entry.organisation}-${roleIndex}`} data-status={entry.status}>
@@ -347,7 +347,7 @@ function CareerTree({ entries }: { entries: EmploymentEntry[] }) {
   );
 }
 
-/* ——— Materiały z Bazy ——— */
+/* --- Materiały z Bazy --- */
 
 type MaterialFilters = { group: MaterialGroupKey | ''; source: number | ''; topic: string; order: 'desc' | 'asc' };
 
@@ -380,11 +380,11 @@ function MaterialsView({ name, counts, items, total, status, filters, setFilters
     <section id="materialy" className="sc-public-figure-section" aria-labelledby="pf-materials">
       <header>
         <h2 id="pf-materials">Materiały w Bazie</h2>
-        <p>Wyniki wyszukiwania hasła „{name}” w Bazie. To wyszukiwanie tekstowe, nie potwierdzone powiązanie — materiał może dotyczyć innej osoby o tym samym nazwisku.</p>
+        <p>Wyniki wyszukiwania hasła „{name}” w Bazie. To wyszukiwanie tekstowe, nie potwierdzone powiązanie - materiał może dotyczyć innej osoby o tym samym nazwisku.</p>
       </header>
 
       <div className="sc-pf-bar">
-      <div className="sc-public-figure-types" role="group" aria-label="Typ materiału — kliknij, aby filtrować">
+      <div className="sc-public-figure-types" role="group" aria-label="Typ materiału - kliknij, aby filtrować">
         <button type="button" aria-pressed={filters.group === ''} onClick={() => set({ group: '' })}><span>Wszystkie</span><strong>{total ?? '…'}</strong></button>
         {MATERIAL_GROUPS.map(group => (
           <button key={group.key} type="button" aria-pressed={filters.group === group.key} onClick={() => set({ group: filters.group === group.key ? '' : group.key })}>
@@ -482,7 +482,7 @@ function LiveMaterials({ name }: { name: string }) {
     hasMore={Boolean(feed.hasNextPage)} loadMore={() => feed.fetchNextPage()} loadingMore={feed.isFetchingNextPage} />;
 }
 
-/** Łączna liczba materiałów do nagłówka — ta sama pamięć podręczna co liczniki sekcji. */
+/** Łączna liczba materiałów do nagłówka - ta sama pamięć podręczna co liczniki sekcji. */
 function useMaterialsTotal(name: string) {
   const queries = useQueries({
     queries: MATERIAL_GROUPS.map(group => ({
@@ -494,7 +494,7 @@ function useMaterialsTotal(name: string) {
   return queries.every(query => query.isSuccess) ? queries.reduce((sum, query) => sum + (query.data?.total ?? 0), 0) : null;
 }
 
-/* ——— Profil ——— */
+/* --- Profil --- */
 
 export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: PublicFigureDetail; titleId?: string }) {
   const materialsTotal = useMaterialsTotal(figure.name);

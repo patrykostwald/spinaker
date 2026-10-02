@@ -49,7 +49,7 @@ function MaterialReactionsInner({ article }: { article: Pick<Article, "id"> }) {
           Dodaj reakcję lub komentarz
         </button>
       </div>
-      <div id={`opinie-${article.id}`} className="sc-material-reactions__body" tabIndex={0} aria-label="Komentarze — przewijaj w obrębie sekcji">
+      <div id={`opinie-${article.id}`} className="sc-material-reactions__body" tabIndex={0} aria-label="Komentarze - przewijaj w obrębie sekcji">
         <ArticleOpinions article={article} />
       </div>
     </section>

@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { MojaNitkaEditor } from '@spin-clinic/ui';
 
 export const metadata: Metadata = {
-  title: 'Moja nitka kontekstowa — spin.clinic',
+  title: 'Moja nitka kontekstowa - spin.clinic',
   robots: { index: false, follow: false },
 };
 

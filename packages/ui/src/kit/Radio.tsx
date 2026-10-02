@@ -13,7 +13,7 @@ export interface RadioProps {
   id?: string;
   name?: string;
   value?: string;
-  /** Nadawany przez RadioGroup — włącza wspólny `layoutId` kropki w obrębie grupy. */
+  /** Nadawany przez RadioGroup - włącza wspólny `layoutId` kropki w obrębie grupy. */
   groupId?: string;
   className?: string;
 }
@@ -21,7 +21,7 @@ export interface RadioProps {
 /**
  * Radio (docs/UI_KIT_PLAN.md → «Селекторы, флажки и переключатели»).
  * W grupie kropka „przejeżdża” między opcjami wspólnym `layoutId` (a nie gaśnie/zapala się);
- * poza grupą — zwykłe pojawienie scale 0→1 z pружиny (ta sama `Radio`, `groupId` bez wartości).
+ * poza grupą - zwykłe pojawienie scale 0→1 z pружиny (ta sama `Radio`, `groupId` bez wartości).
  */
 export function Radio({ checked, onChange, disabled = false, error = false, label, id, name, value, groupId, className }: RadioProps) {
   const autoId = useId();

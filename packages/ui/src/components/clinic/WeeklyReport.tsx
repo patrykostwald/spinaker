@@ -38,9 +38,9 @@ function reportThread(report: Report, url: string): string[] {
   posts.push(shorten(`Najczęstsze techniki w ocenionych wpisach. ${tech}.`, 270));
   if (report.spin_of_week) {
     const spin = report.spin_of_week;
-    posts.push(shorten(`Spin tygodnia: ${spin.author.name} (@${spin.author.handle}) — ${spin.headline} Siła spinu ${spin.intensity}/100. https://${DOMAIN}/klinika/${spin.id}`, 280));
+    posts.push(shorten(`Spin tygodnia: ${spin.author.name} (@${spin.author.handle}) - ${spin.headline} Siła spinu ${spin.intensity}/100. https://${DOMAIN}/klinika/${spin.id}`, 280));
   }
-  posts.push(`Niedostępne wpisy polityków w tym tygodniu — rządzący: ${report.deleted.government}, opozycja: ${report.deleted.opposition}. Pełny raport: ${url}`);
+  posts.push(`Niedostępne wpisy polityków w tym tygodniu - rządzący: ${report.deleted.government}, opozycja: ${report.deleted.opposition}. Pełny raport: ${url}`);
   return posts.map((post, index) => `${index + 1}/${posts.length} ${post}`);
 }
 
@@ -79,7 +79,7 @@ function ReportTechniques({ items, diagnoses }: { items: ReportTechnique[]; diag
   </section>)}</div>;
 }
 
-/** Raport tygodnia Dr. Spina — automatyczne zestawienie z 7 dni: waga spinu, spin tygodnia, techniki, niedostępne wpisy, wywiady. */
+/** Raport tygodnia Dr. Spina - automatyczne zestawienie z 7 dni: waga spinu, spin tygodnia, techniki, niedostępne wpisy, wywiady. */
 export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initialData?: ReportResponse }) {
   const query = useQuery({
     queryKey: ["clinic-report", weekEnd ?? "latest"],
@@ -105,7 +105,7 @@ export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initi
       <p className="sc-report__note">To wybrane materiały, nie reprezentatywna próba całej polityki. Liczba diagnoz i udział spinu dotyczą tylko ocenionych wpisów; nie służą do oceniania osób ani całych obozów.</p>
       <section className="sc-report__panel" aria-labelledby="report-observations"><h2 id="report-observations" className="sc-report__title">Trzy obserwacje</h2><ol className="sc-report__observations">
         <li>Opublikowano {report.diagnoses.government + report.diagnoses.opposition} diagnoz: {report.diagnoses.government} wpisów rządzących i {report.diagnoses.opposition} opozycji.</li>
-        <li>{CAMPS.map(camp => `${CAMP_LABELS[camp]} — najczęstsza technika: ${[...report.techniques[camp]].sort((a, b) => b.count - a.count)[0]?.name ?? "brak danych"}`).join(". ")}.</li>
+        <li>{CAMPS.map(camp => `${CAMP_LABELS[camp]} - najczęstsza technika: ${[...report.techniques[camp]].sort((a, b) => b.count - a.count)[0]?.name ?? "brak danych"}`).join(". ")}.</li>
         <li>Odnotowano {report.deleted.government + report.deleted.opposition} niedostępnych wpisów; niedostępność nie potwierdza usunięcia przez autora.</li>
       </ol>{report.summary ? <details><summary>Pełne podsumowanie tygodnia</summary><p>{report.summary}</p></details> : null}</section>
 
@@ -138,7 +138,7 @@ export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initi
         <section className="sc-report__panel" aria-labelledby="report-interviews">
           <h2 id="report-interviews" className="sc-report__title">Wywiady dnia</h2>
           <ul className="sc-report__interviews">{report.interviews.map(row => (
-            <li key={row.id}><span>{formatDatePl(row.day)}</span><strong>{row.guest}</strong> <small>{row.channel}</small> — <Link href={`/klinika/wywiady/${row.id}`}>{row.headline || "Czytaj analizę"} →</Link>
+            <li key={row.id}><span>{formatDatePl(row.day)}</span><strong>{row.guest}</strong> <small>{row.channel}</small> - <Link href={`/klinika/wywiady/${row.id}`}>{row.headline || "Czytaj analizę"} →</Link>
               {row.verdict ? <> <VerdictTag verdict={row.verdict} label={row.verdict === "spin" ? "Spin" : row.verdict === "partial" ? "Częściowy spin" : row.verdict === "no_spin" ? "Bez spinu" : "Nie da się ocenić"} /></> : null}</li>
           ))}</ul>
         </section>
@@ -147,7 +147,7 @@ export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initi
       {report.inquisitor?.length ? (
         <section className="sc-report__panel" aria-labelledby="report-inquisitor">
           <h2 id="report-inquisitor" className="sc-report__title">Kontrola jakości diagnoz</h2>
-          <p className="sc-report__note">Mała próba kontroli, losowana po obu obozach. Liczymy kontrole z zarzutem wobec diagnozy, w której uczestniczył model — to nie dowód błędu tego członka. Te same kryteria dla obu stron.</p>
+          <p className="sc-report__note">Mała próba kontroli, losowana po obu obozach. Liczymy kontrole z zarzutem wobec diagnozy, w której uczestniczył model - to nie dowód błędu tego członka. Te same kryteria dla obu stron.</p>
           {CAMPS.map(camp => <div key={camp}>
             <h3>{CAMP_LABELS[camp]}</h3>
             {report.inquisitor?.some(row => row.camp === camp) ? <ul>{report.inquisitor.filter(row => row.camp === camp).map(row => <li key={row.member}>

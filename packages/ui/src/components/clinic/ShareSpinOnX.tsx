@@ -48,10 +48,10 @@ function ThreadPosts({ spin }: { spin: SpinDetailData }) {
 }
 
 export function ShareXCardContent({ interview = false }: { interview?: boolean }) {
-  return <><svg className="sc-share-cta__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.3l7.9-9L.8 2h6.5l4.5 6.8L18.9 2Zm-1.1 18h1.7L6.4 3.9H4.6L17.8 20Z" /></svg><span><strong>Udostępnij na X</strong><span>{interview ? "Pokaż, jak zbudowana jest ta rozmowa — z analizą wywiadu" : "Pokaż, jak zbudowany jest ten przekaz — z kartą diagnozy"}</span></span></>;
+  return <><svg className="sc-share-cta__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.3l7.9-9L.8 2h6.5l4.5 6.8L18.9 2Zm-1.1 18h1.7L6.4 3.9H4.6L17.8 20Z" /></svg><span><strong>Udostępnij na X</strong><span>{interview ? "Pokaż, jak zbudowana jest ta rozmowa - z analizą wywiadu" : "Pokaż, jak zbudowany jest ten przekaz - z kartą diagnozy"}</span></span></>;
 }
 
-/** „Udostępnij na X” — dla czytelników i dla zespołu (ten sam przycisk w kolejce). */
+/** „Udostępnij na X” - dla czytelników i dla zespołu (ten sam przycisk w kolejce). */
 export function ShareSpinOnX({ id, spin }: { id: number; spin?: SpinDetailData }) {
   const [open, setOpen] = useState(false);
   // Osobny klucz: odświeżenie przy otwarciu nie może przełączyć strony diagnozy (ten sam klucz) w „Wczytujemy…”,

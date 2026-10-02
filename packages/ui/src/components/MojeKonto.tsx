@@ -29,7 +29,7 @@ function plural(count: number, one: string, few: string, many: string) {
   return many;
 }
 
-/** Spokojny ekran dla osób niezalogowanych — korzysta z istniejącego okna logowania. */
+/** Spokojny ekran dla osób niezalogowanych - korzysta z istniejącego okna logowania. */
 export function SignedOutPanel({ title = 'Twoje prywatne miejsce do pracy z materiałami' }: { title?: string }) {
   const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const [open, setOpen] = useState(false);
@@ -39,8 +39,8 @@ export function SignedOutPanel({ title = 'Twoje prywatne miejsce do pracy z mate
       <h1 id="acc-signed-out">{title}</h1>
       <p>Po zalogowaniu możesz zapisywać materiały, oceniać diagnozy w Klinice, komentować i wracać do swoich pasków.</p>
       <ul className="sc-account-points">
-        {THREADS_ENABLED && <li>Nitki możesz zostawić prywatne albo opublikować w sekcji Nitki — decydujesz przy każdej.</li>}
-        <li>Reakcje dotyczą materiału, diagnozy albo nitki — nie osób. Komentarz zawsze idzie z reakcją.</li>
+        {THREADS_ENABLED && <li>Nitki możesz zostawić prywatne albo opublikować w sekcji Nitki - decydujesz przy każdej.</li>}
+        <li>Reakcje dotyczą materiału, diagnozy albo nitki - nie osób. Komentarz zawsze idzie z reakcją.</li>
         <li>Korzystanie z Bazy nie wymaga konta.</li>
       </ul>
       <div className="sc-info-page__actions">
@@ -196,7 +196,7 @@ function ThreadsSection() {
   return (
     <Section id="moje-nitki" title="Twoje nitki" count={threads.isSuccess ? rows.length : undefined}
       action={<Button href="/konto/nitki/nowa" variant="primary" size="sm">+ Nowa nitka</Button>}>
-      <p className="sc-account-hint">Nitka to jeden materiał na początku i to, co go dopełnia — z Bazy albo dodane przez link. Prywatną widzisz tylko Ty; publiczna trafia do sekcji <Link href="/nitki">Nitki</Link>{publicCount ? ` (masz ${publicCount} ${plural(publicCount, 'publiczną', 'publiczne', 'publicznych')})` : ''}.</p>
+      <p className="sc-account-hint">Nitka to jeden materiał na początku i to, co go dopełnia - z Bazy albo dodane przez link. Prywatną widzisz tylko Ty; publiczna trafia do sekcji <Link href="/nitki">Nitki</Link>{publicCount ? ` (masz ${publicCount} ${plural(publicCount, 'publiczną', 'publiczne', 'publicznych')})` : ''}.</p>
       <QueryState query={threads} unavailableText="Nitki są chwilowo niedostępne." />
       {threads.isSuccess && !rows.length && (
         <div className="sc-account-emptycard">
@@ -238,7 +238,7 @@ function ReactionsSection() {
   const rows = (reactions.data?.results ?? []).filter(row => kind === 'all' || row.kind === kind);
   return (
     <Section id="reakcje" title="Reakcje i komentarze" count={reactions.isSuccess ? reactions.data?.results?.length ?? 0 : undefined}>
-      <p className="sc-account-hint">Twoje oceny i komentarze w całym serwisie. Komentarze są publiczne pod materiałem, diagnozą albo nitką; zbiorcza lista — tylko dla Ciebie, chyba że włączysz publiczną aktywność w ustawieniach.</p>
+      <p className="sc-account-hint">Twoje oceny i komentarze w całym serwisie. Komentarze są publiczne pod materiałem, diagnozą albo nitką; zbiorcza lista - tylko dla Ciebie, chyba że włączysz publiczną aktywność w ustawieniach.</p>
       <div className="sc-account-filter" role="group" aria-label="Filtruj reakcje">
         {REACTION_KINDS.map(option => (
           <button key={option.value} type="button" aria-pressed={kind === option.value} onClick={() => setKind(option.value)}>
@@ -247,7 +247,7 @@ function ReactionsSection() {
         ))}
       </div>
       <QueryState query={reactions} unavailableText="Lista reakcji jest chwilowo niedostępna." />
-      {reactions.isSuccess && !rows.length && <p className="sc-account-empty">Brak reakcji w tej części. Oceniaj materiały, diagnozy i nitki — trafią tutaj.</p>}
+      {reactions.isSuccess && !rows.length && <p className="sc-account-empty">Brak reakcji w tej części. Oceniaj materiały, diagnozy i nitki - trafią tutaj.</p>}
       {rows.length > 0 && (
         <ol className="sc-account-activity">
           {rows.slice(0, 50).map(row => (
@@ -256,7 +256,7 @@ function ReactionsSection() {
               <span className="sc-account-tag">{KIND_LABEL[row.kind]}</span>
               <p>
                 <span className="sc-account-polarity" data-polarity={row.polarity}>{POLARITY_LABEL[row.kind][row.polarity === 'positive' ? 0 : 1]}</span>
-                {' — '}<Link href={row.target.href}>{row.target.title}</Link>
+                {' - '}<Link href={row.target.href}>{row.target.title}</Link>
                 {row.body && <span className="sc-account-comment">„{row.body}”</span>}
               </p>
             </li>
@@ -285,7 +285,7 @@ function Overview() {
       {tiles.map(tile => (
         <a key={tile.href} href={tile.href} className="sc-account-tile">
           <span className="sc-account-tile__label">{tile.label}</span>
-          <strong className="sc-account-tile__value">{tile.value ?? '—'}</strong>
+          <strong className="sc-account-tile__value">{tile.value ?? '-'}</strong>
           <span className="sc-account-tile__note">{tile.note}</span>
         </a>
       ))}
@@ -315,7 +315,7 @@ export function MojeKonto() {
       <header className="sc-account-head">
         <p className="sc-account-kicker">Witaj, @{user.username}</p>
         <h1>Mój spin.clinic</h1>
-        <p>Twoje wiadomości i to, do czego chcesz wrócić — w jednym miejscu.</p>
+        <p>Twoje wiadomości i to, do czego chcesz wrócić - w jednym miejscu.</p>
       </header>
       <Overview />
       <AccountOnboarding key={ownerId} ownerId={ownerId} />

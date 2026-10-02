@@ -7,7 +7,7 @@
  * (do 5 własnych pasków) → Dr. Spin → Przekaz dnia →
  * Baza (stała wysokość, przewijana w środku) → globalna stopka.
  * Grupa źródeł żyje w adresie (`?zrodla=`), bo ustawiają ją też linki w stopce; zawęża „Top 10” i Bazę.
- * Portal (`PortalProvider` w trybie `path`), szapka i stopka są globalne — `app/providers.tsx`
+ * Portal (`PortalProvider` w trybie `path`), szapka i stopka są globalne - `app/providers.tsx`
  * i `app/layout.tsx`; klik w kartę otwiera materiał morfingiem i wpisuje `/material/<id>`.
  */
 
@@ -44,7 +44,7 @@ function DemoBanner() {
   if (!demo) return null;
   return (
     <p className="sc-home-demo sc-t-meta" role="status">
-      <strong>Dane demonstracyjne.</strong> Backend jest niedostępny — materiały poniżej są FIKCYJNE i służą tylko do pracy nad układem.
+      <strong>Dane demonstracyjne.</strong> Backend jest niedostępny - materiały poniżej są FIKCYJNE i służą tylko do pracy nad układem.
     </p>
   );
 }
@@ -102,7 +102,7 @@ export function HomePage() {
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <DemoBanner />
         <HomeHero />
-        {/* 1. Dr. Spin — po co tu jesteś. 2. Wiadomości — agregat z naszej Bazy do przeglądania i własnych pasków.
+        {/* 1. Dr. Spin - po co tu jesteś. 2. Wiadomości - agregat z naszej Bazy do przeglądania i własnych pasków.
             3. Dla dziennikarzy. 4. Baza. 5. Newsletter (decyzja właściciela 28.09). */}
         <HomeSpinTeaser />
         <section className="sc-home-section sc-home-news" aria-labelledby="home-news-title">
@@ -141,7 +141,7 @@ export function HomePage() {
             <p className="sc-t-body-s sc-text-2 sc-home-top__note" role="status">{topQuery || activeType || sourceGroup ? <>Nie znaleźliśmy pasujących materiałów. <button type="button" onClick={() => { setKeyword(""); setTopQuery(""); setActiveType(null); setSourceGroup(null); }}>Wyczyść filtry</button></> : "Nie ma jeszcze opublikowanych materiałów."}</p>
           ) : null}
           {!groupEmpty && top.isError ? <p role="alert">{top.data ? `Pokazujemy dane z ${new Date(top.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna.` : "Nie udało się pobrać danych."} <button type="button" onClick={() => void top.refetch()}>Spróbuj ponownie</button></p> : null}
-          {/* Karty średniej wielkości — bez olbrzymiego boxu, w którym miniatury się rozmywały. */}
+          {/* Karty średniej wielkości - bez olbrzymiego boxu, w którym miniatury się rozmywały. */}
           <ul className="sc-home-news__grid" role="list">
             {newsGrid.map(({ article, similar }) => (
               <li key={article.id}><NewsCard article={article} size="medium" headingLevel={3} similarCount={similar} expandable={false} /></li>
@@ -152,7 +152,7 @@ export function HomePage() {
         <HomeReveal>
           <HomeThreads sources={sources} excludedArticleIds={newsIds} />
         </HomeReveal>
-        {/* Nitka Dr. Spina — pokazuje, czym są nitki kontekstowe; z paskiem dla dziennikarzy (28.09). */}
+        {/* Nitka Dr. Spina - pokazuje, czym są nitki kontekstowe; z paskiem dla dziennikarzy (28.09). */}
         <HomeReveal>
           <HomeDrSpin thread={drSpin.data ?? null} />
         </HomeReveal>

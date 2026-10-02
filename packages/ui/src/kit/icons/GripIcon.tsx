@@ -3,7 +3,7 @@ import { iconStroke, iconA11yProps } from "./types";
 
 /**
  * Uchwyt przeciągania polosy (dwie kolumny × trzy rzędy kropek).
- * Kropki są krótkimi odcinkami z okrągłym zakończeniem — system nie używa wypełnień.
+ * Kropki są krótkimi odcinkami z okrągłym zakończeniem - system nie używa wypełnień.
  * Widoczność przy najechaniu na polosę zarządza kontener polosy (R4); tu tylko kształt.
  */
 export function GripIcon({ size = 24, className, title }: IconProps) {

@@ -21,7 +21,7 @@ export function DrSpin({ thread }: { thread: ThreadDetail | null }) {
       </header>
       <div className="sc-dr-spin__layout">
         <NewsCard article={anchorArticle} href={`/thread/${published.slug}`} size="large" headingLevel={3} showDescription action={<span className="sc-dr-spin__thread-label">Nitka kontekstowa</span>} />
-        {published.items.length > 1 ? <div className="sc-dr-spin__related sc-strip-bleed" aria-label="Dr. Spin — materiały wyjaśniające">
+        {published.items.length > 1 ? <div className="sc-dr-spin__related sc-strip-bleed" aria-label="Dr. Spin - materiały wyjaśniające">
           {published.items.slice(1, 6).map(item => <NewsCard key={item.id} article={item.article} size="compact" headingLevel={3} />)}
         </div> : null}
       </div>

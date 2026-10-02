@@ -22,7 +22,7 @@ import { MessageBox } from "./ClinicExtras";
 export { MessageBox } from "./ClinicExtras";
 
 
-/** Spin dnia jako nitka: box główny (post + diagnoza), a za nim boxy kontekstu — źródła twierdzeń. */
+/** Spin dnia jako nitka: box główny (post + diagnoza), a za nim boxy kontekstu - źródła twierdzeń. */
 export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
   // Pełna odpowiedź Dr. Spina obok wpisu: tej samej wysokości co post, przewijana po najechaniu; „Rozwiń” pokazuje całość.
   const [expanded, setExpanded] = useState(false);
@@ -38,10 +38,10 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
           <div className="sc-clinic-sotd__quote" data-open={postOpen || undefined} {...(postOpen ? {} : pressPost)}>
             <blockquote>{spin.post.text}</blockquote>
             {postOpen ? null : <button type="button" className="sc-clinic-sotd__more-post" onClick={() => setPostOpen(true)}>Rozwiń wpis ↓</button>}
-            {/* Zdjęcia z wpisu — część przekazu (np. twarz, grafika z hasłem); klik otwiera wpis na X. */}
+            {/* Zdjęcia z wpisu - część przekazu (np. twarz, grafika z hasłem); klik otwiera wpis na X. */}
             {spin.post.media?.length ? (
               <a className="sc-clinic-sotd__media" data-count={Math.min(spin.post.media.length, 2)} href={spin.post.url} target="_blank" rel="noopener noreferrer"
-                aria-label="Zdjęcia z wpisu — otwórz na X">
+                aria-label="Zdjęcia z wpisu - otwórz na X">
                 {spin.post.media.slice(0, 2).map(item => (
                   // eslint-disable-next-line @next/next/no-img-element -- miniatury z X
                   <img key={item.url} src={item.url} alt={item.alt || "Zdjęcie dołączone do wpisu"} loading="lazy" referrerPolicy="no-referrer" />
@@ -54,13 +54,13 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
         <div className="sc-clinic-sotd__diagnosis">
           <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
           <h3 id="sotd-title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
-          <div className="sc-clinic-sotd__reading" data-expanded={expanded || undefined} tabIndex={0} aria-label="Diagnoza Dr. Spina — przewijaj">
+          <div className="sc-clinic-sotd__reading" data-expanded={expanded || undefined} tabIndex={0} aria-label="Diagnoza Dr. Spina - przewijaj">
             <p>{spin.summary}</p>
             {spin.analysis && spin.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>)}
             {spin.techniques.length > 0 && <>
               <h4>Techniki</h4>
               <ul className="sc-clinic-sotd__list">{spin.techniques.map(item => (
-                <li key={item.name + item.quote}><strong>{item.name}</strong> — „{item.quote}”. {item.explanation}</li>
+                <li key={item.name + item.quote}><strong>{item.name}</strong> - „{item.quote}”. {item.explanation}</li>
               ))}</ul>
             </>}
             {spin.claims.length > 0 && <>
@@ -73,7 +73,7 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
           </div>
           <p className="sc-clinic-sotd__actions">
             <button type="button" className="sc-clinic-sotd__toggle" aria-expanded={expanded} onClick={event => {
-              // Po zwinięciu wracamy do początku diagnozy — czytelnik nie zostaje na dole strony.
+              // Po zwinięciu wracamy do początku diagnozy - czytelnik nie zostaje na dole strony.
               const box = event.currentTarget.closest(".sc-clinic-sotd__diagnosis");
               setExpanded(value => !value);
               if (expanded && box) requestAnimationFrame(() => { if (box.getBoundingClientRect().top < 0) box.scrollIntoView({ block: "start", behavior: "smooth" }); });
@@ -105,7 +105,7 @@ function visibleFor(hours: number) {
   return `w ciągu ${Math.ceil(hours / 24)} dni`;
 }
 
-/** Strażnica niedostępnych wpisów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin — bez treści (zasady X). */
+/** Strażnica niedostępnych wpisów: kto i kiedy usunął wpis, czy Dr. Spin ocenił go jako spin - bez treści (zasady X). */
 function DeletedPosts() {
   const query = useQuery({ queryKey: ["clinic-deleted"], queryFn: getClinicDeleted, staleTime: 10 * 60_000 });
   const data = query.data;
@@ -116,7 +116,7 @@ function DeletedPosts() {
       <summary>Niedostępne wpisy <span>· ostatnie 7 dni: {Object.values(data.week_by_camp).reduce((sum, value) => sum + value, 0)}</span></summary>
       <header className="sc-deleted__head">
         <p>
-          Wpisy niedostępne podczas sprawdzania. Nie przesądzamy, czy autor je usunął — przyczyną może być także ograniczenie dostępu. Nie pokazujemy ich treści,
+          Wpisy niedostępne podczas sprawdzania. Nie przesądzamy, czy autor je usunął - przyczyną może być także ograniczenie dostępu. Nie pokazujemy ich treści,
           ale jeśli ktoś zachował go w publicznym archiwum internetu, linkujemy do tej kopii. Ostatnie 7 dni: {week}.
         </p>
         {data.top_deleters.length ? (
@@ -197,7 +197,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
 
         {data.interview ? <section className="sc-clinic-group sc-clinic-interview-preview" aria-labelledby="clinic-interview-title">
           <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
-            subtitle="Najgłośniejszy wywiad polityczny poprzedniego dnia: gość i prowadzący." link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
+            subtitle="Wywiad z wczoraj: gość i prowadzący." link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
           <InterviewScanner interview={data.interview} />
         </section> : null}
 

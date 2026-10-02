@@ -3,7 +3,7 @@ import { ApiError, apiFetch, apiWrite } from './api';
 import { useAccount, type SavedTopic } from './account';
 import { useFeature } from './features';
 
-/* ——— Kształty odpowiedzi z backend/news/personal_context.py, profiles.py i accounts.py ——— */
+/* --- Kształty odpowiedzi z backend/news/personal_context.py, profiles.py i accounts.py --- */
 
 export type PersonalArticleRef = {
   id: number;
@@ -12,7 +12,7 @@ export type PersonalArticleRef = {
   category: string;
   published_date: string | null;
   position?: number;
-  /** Tylko w interfejsie — backend nitki nie zwraca nazwy źródła. */
+  /** Tylko w interfejsie - backend nitki nie zwraca nazwy źródła. */
   source_name?: string;
 };
 
@@ -79,7 +79,7 @@ export const personalKeys = {
   history: (ownerId?: number) => ['account-history', ownerId, 'first-page'] as const,
 };
 
-/** Endpoint nieobecny na serwerze (np. starsza wersja backendu) — pokazujemy pusty stan, bez udawania zapisu. */
+/** Endpoint nieobecny na serwerze (np. starsza wersja backendu) - pokazujemy pusty stan, bez udawania zapisu. */
 export function isUnavailable(error: unknown) {
   return error instanceof ApiError && (error.status === 404 || error.status === 405 || error.status === 501);
 }

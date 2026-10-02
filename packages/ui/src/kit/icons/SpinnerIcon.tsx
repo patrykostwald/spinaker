@@ -3,11 +3,11 @@ import { iconStroke, iconA11yProps } from "./types";
 
 /**
  * Ładowanie. Jedyna zapętlona animacja w systemie: obrót 1s przez CSS (`.sc-icon--spinner`
- * w kit.css), nie przez framer-motion — nie ma sensu płacić za JS-owy re-render co klatkę
+ * w kit.css), nie przez framer-motion - nie ma sensu płacić za JS-owy re-render co klatkę
  * dla nieskończonej pętli. Globalny kill-switch `prefers-reduced-motion` w kit.css ustawia
  * wszystkim elementom `.sc-root` animation-iteration-count:1 i animation-duration:1ms, więc
- * przy zredukowanym ruchu obrót zatrzymuje się natychmiast — zostaje statyczny łuk (kropka).
- * Struktura znaczników jest zawsze taka sama (bez rozgałęzień na `reduced` — patrz zasada 6).
+ * przy zredukowanym ruchu obrót zatrzymuje się natychmiast - zostaje statyczny łuk (kropka).
+ * Struktura znaczników jest zawsze taka sama (bez rozgałęzień na `reduced` - patrz zasada 6).
  */
 export function SpinnerIcon({ size = 24, className, title }: IconProps) {
   return (

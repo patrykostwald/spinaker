@@ -7,7 +7,7 @@ import { xIntentUrl } from "../lib/xThread";
 import { Dialog } from "./Dialog";
 
 /**
- * Cała nitka jako wątek na X: 1/N — tytuł, opis i link do nitki; dalej po jednym wpisie na box
+ * Cała nitka jako wątek na X: 1/N - tytuł, opis i link do nitki; dalej po jednym wpisie na box
  * z linkiem do oryginału (X pokaże kartę ze zdjęciem strony źródła). Kolejne wpisy wkleja się jako odpowiedzi.
  */
 export function ShareThreadOnX({ thread }: { thread: StoryThread }) {
@@ -22,7 +22,7 @@ export function ShareThreadOnX({ thread }: { thread: StoryThread }) {
     <Dialog open={open} onClose={() => setOpen(false)} title="Nitka jako wątek na X">
       <div className="sc-xshare">
         <p className="sc-xshare__hint">
-          Wątek z {posts.length} wpisów. Pierwszy to tytuł i opis z linkiem do nitki; każdy kolejny to jeden box z linkiem do oryginału —
+          Wątek z {posts.length} wpisów. Pierwszy to tytuł i opis z linkiem do nitki; każdy kolejny to jeden box z linkiem do oryginału -
           X pokaże przy nim kartę ze zdjęciem. Opublikuj pierwszy, a kolejne wklej jako odpowiedzi.
         </p>
         <div className="sc-xshare__actions">

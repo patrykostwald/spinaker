@@ -14,7 +14,7 @@ export function DraftAssistant({ articles, onAdd }: { articles: Article[]; onAdd
   const [draftTopic, setDraftTopic] = useState('');
   return <section className="sc-draft-assistant" aria-labelledby="draft-assistant-title">
     <h2 id="draft-assistant-title" className="sc-t-title-m">spin.clinic · propozycja nitki</h2>
-    <p className="sc-t-body sc-text-2">Wpisz temat. Narzędzie zaproponuje do 15 materiałów z bazy i Twojego wyboru. Przed publikacją sprawdź źródła — propozycja opiera się na metadanych, nie rozstrzyga prawdziwości twierdzeń ani związków przyczynowych.</p>
+    <p className="sc-t-body sc-text-2">Wpisz temat. Narzędzie zaproponuje do 15 materiałów z bazy i Twojego wyboru. Przed publikacją sprawdź źródła - propozycja opiera się na metadanych, nie rozstrzyga prawdziwości twierdzeń ani związków przyczynowych.</p>
     <p className="sc-t-caption sc-text-2">Na tym etapie analizujemy do 60 kandydatów: wybrane przez Ciebie materiały i pierwsze wyniki wyszukiwania. To propozycja z ograniczonego zestawu, nie pełna historia tematu.</p>
     <form className="sc-draft-assistant__form" onSubmit={async event => {
       event.preventDefault(); setBusy(true); setError(''); setDraft(null);

@@ -4,7 +4,7 @@
  * Baza: jeden główny pasek (tytuł · pole szukania na środku · „Najnowsze materiały” z liczbą
  * i zakresem źródeł), pod nim obszar o stałej wysokości: siatka `mini` (3 kolumny × ~5 rzędów)
  * przewijana WEWNĄTRZ obszaru, z nieskończonym doładowaniem obserwowanym w tym samym kontenerze,
- * i obok niej kolumna filtrów (≤900px — arkusz dolny z przycisku w pasku). Strona nie rośnie
+ * i obok niej kolumna filtrów (≤900px - arkusz dolny z przycisku w pasku). Strona nie rośnie
  * razem z liczbą materiałów, więc globalna stopka jest zaraz pod Bazą.
  * Grupa źródeł (`?zrodla=`, selektor w pasku kategorii / stopka) zawęża Bazę, dopóki nie wybrano
  * konkretnych źródeł w filtrach. Zmiana filtra: ocalałe karty jadą, nowe wchodzą (`MorphList`).
@@ -254,7 +254,7 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
             resultsCount={query ? (filters.people ? peopleTotal : total) : undefined}
           />
         </form>
-        {/* Nagłówek nad kolumną filtrów (Kategorie · Źródła · Platformy · Okres) — ta sama szerokość i krawędź. */}
+        {/* Nagłówek nad kolumną filtrów (Kategorie · Źródła · Platformy · Okres) - ta sama szerokość i krawędź. */}
         <div className="sc-home-baza__latest">
           <h3 className="sc-t-title-s" title={filters.people ? undefined : `${sourcesNote} · od najnowszej publikacji`}>
             {filters.people ? "Osoby publiczne" : "Najnowsze materiały"}
@@ -266,7 +266,7 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
       </header>
 
       <div className="sc-home-baza__layout">
-        <div ref={scrollRef} className="sc-home-baza__results" tabIndex={0} aria-label="Materiały w Bazie — przewijaj w obrębie sekcji">
+        <div ref={scrollRef} className="sc-home-baza__results" tabIndex={0} aria-label="Materiały w Bazie - przewijaj w obrębie sekcji">
           {filters.people ? (
             <HomePeople query={query} scrollRoot={scrollRef} />
           ) : (

@@ -23,7 +23,7 @@ const WORD_POOL = ["Alfa", "Beta", "Gamma", "Delta", "Epsilon", "Dzeta", "Eta", 
 
 type ListItem = { id: number; label: string };
 
-// R0: чистая функция вместо модульного счётчика — тот рос на каждом SSR-запросе и при
+// R0: чистая функция вместо модульного счётчика - тот рос на каждом SSR-запросе и при
 // двойном вызове инициализатора в StrictMode, давая расхождение гидратации (нашёл R6).
 function makeItem(id: number): ListItem {
   return { id, label: `${WORD_POOL[id % WORD_POOL.length]} · #${id}` };
@@ -53,7 +53,7 @@ export function Section() {
   );
 }
 
-/** Живой список: добавление, удаление, перемешивание, фильтрация — уцелевшие элементы едут. */
+/** Живой список: добавление, удаление, перемешивание, фильтрация - уцелевшие элементы едут. */
 function ListDemo() {
   const [items, setItems] = useState<ListItem[]>(() => [1, 2, 3, 4].map(makeItem));
   const [seq, setSeq] = useState(4);
@@ -127,7 +127,7 @@ function TabsDemo() {
   );
 }
 
-/** Перетекающий счётчик — MorphValue. */
+/** Перетекающий счётчик - MorphValue. */
 function CounterDemo() {
   const [count, setCount] = useState(0);
   return (
@@ -191,7 +191,7 @@ function AccordionDemo() {
       <RevealHeight when={open} className="sc-motion-accordion">
         <p className="sc-t-body-s sc-text-2" style={{ margin: "var(--sc-s-3) 0 0" }}>
           Treść dodatkowa: wysokość kontenera morfuje sprężyną `expand`, a zawartość wewnątrz przechodzi
-          krzyżowym zanikiem — to jedyny dozwolony wyjątek od reguły „tylko transform/opacity”, i to na
+          krzyżowym zanikiem - to jedyny dozwolony wyjątek od reguły „tylko transform/opacity”, i to na
           zewnętrznej obwódce, nie na tym akapicie.
         </p>
       </RevealHeight>
@@ -207,7 +207,7 @@ function InterruptDemo() {
     <div className="sc-motion-block">
       <h3 className="sc-t-title-s">Sprawdzenie przerywalności</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-3)" }}>
-        Kliknij drugi przycisk w trakcie lotu kropki — ruch ma się przekierować z bieżącego miejsca, nie zacząć od nowa.
+        Kliknij drugi przycisk w trakcie lotu kropki - ruch ma się przekierować z bieżącego miejsca, nie zacząć od nowa.
       </p>
       <div className="sc-motion-toolbar">
         <button type="button" className="sc-motion-btn" aria-pressed={target === "a"} onClick={() => setTarget("a")}>
@@ -228,7 +228,7 @@ function InterruptDemo() {
   );
 }
 
-/** Перетаскивание полос — пять FIXTURE_STRIPS, простые sc-плитки вместо NewsCard (её строит R3). */
+/** Перетаскивание полос - пять FIXTURE_STRIPS, простые sc-плитки вместо NewsCard (её строит R3). */
 function StripsDemo() {
   return (
     <div className="sc-motion-block">
@@ -287,7 +287,7 @@ function DragDismissDemo() {
     <div className="sc-motion-block">
       <h3 className="sc-t-title-s">Stend useDragDismiss</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-3)" }}>
-        Przeciągnij panel za uchwyt u góry w dół — myszą lub palcem. Decyzję o zamknięciu podejmuje znak
+        Przeciągnij panel za uchwyt u góry w dół - myszą lub palcem. Decyzję o zamknięciu podejmuje znak
         prędkości, nie osiągnięta pozycja.
       </p>
       <div className="sc-drag-sandbox" style={{ height: HEIGHT + 32 }}>
@@ -331,7 +331,7 @@ function DragDismissDemo() {
       </dl>
       {status === "dismissed" && (
         <p className="sc-t-caption" style={{ color: "var(--sc-positive)" }}>
-          Zamknięto z prędkością {Math.round(lastVelocity)}px/s (symulacja na witrynie — panel wraca).
+          Zamknięto z prędkością {Math.round(lastVelocity)}px/s (symulacja na witrynie - panel wraca).
         </p>
       )}
     </div>

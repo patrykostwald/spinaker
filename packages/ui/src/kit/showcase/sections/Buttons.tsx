@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Witryna Button — pełna matryca z docs/UI_KIT_PLAN.md → «Каталог кнопок».
+ * Witryna Button - pełna matryca z docs/UI_KIT_PLAN.md → «Каталог кнопок».
  * Obie wersje kolorystyczne obok siebie, jak w Typography.tsx: [data-sc-theme] + klasa sc-root.
  */
 
@@ -14,7 +14,7 @@ export const meta = {
   lead: "Jeden komponent Button, różnicowany propsami. Każdy wariant pokazany we wszystkich rozmiarach i stanach, w obu motywach.",
 };
 
-// TODO(R1): zamienić na kit/icons po scaleniu — na razie tymczasowy inline SVG własny dla sekcji R2.
+// TODO(R1): zamienić na kit/icons po scaleniu - na razie tymczasowy inline SVG własny dla sekcji R2.
 function IconHeart() {
   return (
     <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" aria-hidden="true">

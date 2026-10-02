@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Dropdown — jedna implementacja zamiast trzech (docs/UI_KIT_PLAN.md → «Компоненты», «Дропдаун»).
+ * Dropdown - jedna implementacja zamiast trzech (docs/UI_KIT_PLAN.md → «Компоненты», «Дропдаун»).
  * Tryby: menu (akcje) · single (wybór jednej wartości) · multi (wybór wielu, panel nie zamyka się na wyborze).
  * Wyzwalacz to własny Button; panel rośnie z punktu wyzwalacza i odwraca się w górę przy dolnej krawędzi ekranu.
  */
@@ -45,11 +45,11 @@ export type DropdownProps = {
   triggerVariant?: ButtonVariant;
   footer?: ReactNode;
   /**
-   * 'popover' — panel rosnący z wyzwalacza. 'sheet' — zawsze BottomSheet (kit/mobile).
-   * 'auto' — BottomSheet poniżej BREAKPOINTS.phone (481px), inaczej popover. (R7)
+   * 'popover' - panel rosnący z wyzwalacza. 'sheet' - zawsze BottomSheet (kit/mobile).
+   * 'auto' - BottomSheet poniżej BREAKPOINTS.phone (481px), inaczej popover. (R7)
    */
   presentation?: DropdownPresentation;
-  /** Wygodne dla wystawek/dema — panel startuje otwarty, bez zmiany kontraktu innych propsów. */
+  /** Wygodne dla wystawek/dema - panel startuje otwarty, bez zmiany kontraktu innych propsów. */
   defaultOpen?: boolean;
 };
 
@@ -152,7 +152,7 @@ export function Dropdown({
         ? current.filter((entry) => entry !== item.value)
         : [...current, item.value];
       onChange?.(next);
-      // multi nie zamyka panelu — wybór można poprawiać dalej.
+      // multi nie zamyka panelu - wybór można poprawiać dalej.
     }
   }
 
@@ -202,7 +202,7 @@ export function Dropdown({
     }
   }
 
-  // Fokus podąża za aktywnym elementem (roving tabindex) — tylko podczas otwarcia panelu.
+  // Fokus podąża za aktywnym elementem (roving tabindex) - tylko podczas otwarcia panelu.
   useEffect(() => {
     if (!open) return;
     const id = requestAnimationFrame(() => {
@@ -222,11 +222,11 @@ export function Dropdown({
   const scaleFrom = m.reduced ? 1 : 0.96;
   // R0 «один живой элемент»: панель РАЗВОРАЧИВАЕТСЯ из бокса триггера, а не появляется рядом.
   // Общий layoutId держит ровно один элемент за раз: «семя» в триггере, пока закрыто, и панель,
-  // пока открыто — так framer-motion морфит панель из формы кнопки и обратно при закрытии.
+  // пока открыто - так framer-motion морфит панель из формы кнопки и обратно при закрытии.
   const surfaceId = `${instanceId}-surface`;
 
   // R7: lista pozycji wydzielona, żeby popover i BottomSheet renderowały DOKŁADNIE tę samą
-  // klawiaturę/role/kaskadę — różni się tylko opakowanie (panel na transform-origin vs arkusz).
+  // klawiaturę/role/kaskadę - różni się tylko opakowanie (panel na transform-origin vs arkusz).
   function renderItemsList() {
     return (
       <LayoutGroup id={instanceId}>
@@ -290,7 +290,7 @@ export function Dropdown({
     );
   }
 
-  /** Верхняя строка панели — «та же кнопка», подсвеченная; клик сворачивает панель обратно в кнопку. */
+  /** Верхняя строка панели - «та же кнопка», подсвеченная; клик сворачивает панель обратно в кнопку. */
   function renderHead() {
     return (
       <div className="sc-dropdown__head" role="presentation" onClick={close}>
@@ -338,8 +338,8 @@ export function Dropdown({
         {label}
       </Button>
 
-      {/* R7: presentation="sheet" (lub "auto" ≤ BREAKPOINTS.phone) — pozycje w BottomSheet zamiast
-          popovera. Ta sama klawiatura (onListKeyDown), te same role — patrz renderItemsList() wyżej. */}
+      {/* R7: presentation="sheet" (lub "auto" ≤ BREAKPOINTS.phone) - pozycje w BottomSheet zamiast
+          popovera. Ta sama klawiatura (onListKeyDown), te same role - patrz renderItemsList() wyżej. */}
       {useSheet ? (
         <BottomSheet open={open} onClose={close} title={ariaLabel ?? label} id={panelId}>
           {renderItemsList()}
@@ -356,7 +356,7 @@ export function Dropdown({
               className="sc-dropdown__panel sc-chrome"
               data-align={align}
               data-placement={placement}
-              // R0: панель разворачивается из бокса триггера — общий layoutId с «семенем» в кнопке.
+              // R0: панель разворачивается из бокса триггера - общий layoutId с «семенем» в кнопке.
               layoutId={m.morph ? surfaceId : undefined}
               style={{
                 transformOrigin: `${originX} ${originY}`,

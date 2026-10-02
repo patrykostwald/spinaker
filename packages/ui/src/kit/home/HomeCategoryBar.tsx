@@ -4,7 +4,7 @@
  * Pasek tematów nad rzędem „Top 10” (wzór: rząd kategorii w referencji). Te same tematy, które stary
  * `TopTenRedakcji` pokazywał jako pigułki; aktywny temat filtruje rząd „Top 10”.
  * Wskaźnik przejeżdża wspólnym `layoutId` (MorphIndicator), jak w NavMenu.
- * Jeden wiersz: [`start` — np. selektor źródeł] [tematy, wyśrodkowane] [`end` — np. pole hasła];
+ * Jeden wiersz: [`start` - np. selektor źródeł] [tematy, wyśrodkowane] [`end` - np. pole hasła];
  * boczne sloty mają równe kolumny `1fr`, więc nie przesuwają tematów ze środka.
  */
 

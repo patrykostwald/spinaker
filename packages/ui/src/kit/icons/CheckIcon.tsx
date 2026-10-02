@@ -10,7 +10,7 @@ export interface CheckIconProps extends IconProps {
   animate?: boolean;
 }
 
-/** Ptaszek — flażki, zaznaczony punkt menu. Rysuje się kreską (~0.2s), a nie pojawia całością. */
+/** Ptaszek - flażki, zaznaczony punkt menu. Rysuje się kreską (~0.2s), a nie pojawia całością. */
 export function CheckIcon({ size = 24, className, title, animate = true }: CheckIconProps) {
   const { t, reduced } = useMotionTokens();
   return (

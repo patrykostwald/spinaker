@@ -74,9 +74,9 @@ export function materialTypeLabel(category: string): string {
   return map[category] ?? 'ARTYKUŁ';
 }
 
-/* ——— Czytelniejsze boxy (25.09): krótka etykieta, rodzaj materiału, nazwa źródła, inicjały, czas względny ——— */
+/* --- Czytelniejsze boxy (25.09): krótka etykieta, rodzaj materiału, nazwa źródła, inicjały, czas względny --- */
 
-/** Krótka, jednowierszowa etykieta kategorii (pełna — `categoryLabel`, np. w podpowiedzi). */
+/** Krótka, jednowierszowa etykieta kategorii (pełna - `categoryLabel`, np. w podpowiedzi). */
 export function shortCategoryLabel(category: string): string {
   const map: Record<string, string> = {
     voting: "Głosowanie", legislation: "Akt prawny", parliamentary_print: "Druk sejmowy", article: "Artykuł",
@@ -87,7 +87,7 @@ export function shortCategoryLabel(category: string): string {
   return map[category] ?? categoryLabel(category);
 }
 
-/** Rodzina materiału — kolor kropki i tła zaślepki (CSS `data-kind`). */
+/** Rodzina materiału - kolor kropki i tła zaślepki (CSS `data-kind`). */
 export function materialKind(category: string): "official" | "article" | "talk" | "video" | "report" | "check" | "ad" {
   if (["document", "voting", "legislation", "parliamentary_print", "statement"].includes(category)) return "official";
   if (["interview", "podcast"].includes(category)) return "talk";

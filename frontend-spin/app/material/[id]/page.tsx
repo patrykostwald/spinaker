@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const image = article.image_url && /^https?:\/\//i.test(article.image_url) ? article.image_url : undefined;
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-    title: `${article.title} — spin.clinic`, description,
+    title: `${article.title} - spin.clinic`, description,
     alternates: { canonical: `/material/${article.id}` },
     openGraph: { type: 'article', title: article.title, description, url: `/material/${article.id}`, siteName: 'spin.clinic', ...(image ? { images: [{ url: image, alt: '' }] } : {}) },
     twitter: { card: image ? 'summary_large_image' : 'summary', title: article.title, description, ...(image ? { images: [image] } : {}) },

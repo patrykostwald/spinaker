@@ -2,7 +2,7 @@
 
 /**
  * Zbiórka jako zwykła sekcja nad newsletterem (audyt UX i makiety 28.09): licznik miesięczny i obie zbiórki.
- * Przyklejony pasek wsparcia chowa się przy przewijaniu — tu jest stałe miejsce, gdzie widać cel i postęp.
+ * Przyklejony pasek wsparcia chowa się przy przewijaniu - tu jest stałe miejsce, gdzie widać cel i postęp.
  */
 
 import { useEffect, useState } from "react";
@@ -11,7 +11,7 @@ import { SUPPORT_LINKS } from "../../lib/support";
 import { Button } from "../Button";
 
 export function HomeSupport() {
-  // Kwota przychodzi dopiero w przeglądarce — pokazujemy ją po zamontowaniu, żeby HTML z serwera zgadzał się przy hydratacji.
+  // Kwota przychodzi dopiero w przeglądarce - pokazujemy ją po zamontowaniu, żeby HTML z serwera zgadzał się przy hydratacji.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const query = useQuery({

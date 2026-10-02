@@ -11,7 +11,7 @@ import { AiTag } from "./SpinParts";
 
 const CAMP_STORAGE = "sc-message-camp-v1";
 export function useMessageCamp() {
-  // Pierwsza wizyta: pierwsza zakładka w stałej kolejności serwisu (Rządzący, Opozycja) — pusty ekran nic nie mówi.
+  // Pierwsza wizyta: pierwsza zakładka w stałej kolejności serwisu (Rządzący, Opozycja) - pusty ekran nic nie mówi.
   // Wybór czytelnika zapamiętujemy lokalnie.
   const [camp, setCamp] = useState<Camp | null>("government");
   useEffect(() => {
@@ -85,7 +85,7 @@ function MessageSources({ message }: { message: MessageDay["government"] }) {
     return () => media.removeEventListener("change", sync);
   }, []);
   return <aside className="sc-message-detail__feed" aria-label="Źródła przekazu"><details open={open} onToggle={event => setOpen(event.currentTarget.open)}>
-    <summary>Źródła — wpisy ({message?.posts?.length ?? message?.posts_count ?? 0})</summary>
+    <summary>Źródła - wpisy ({message?.posts?.length ?? message?.posts_count ?? 0})</summary>
     {message ? <>
           {message.posts?.length ? <ol className="sc-message-detail__sources">{message.posts.map(post => <li key={post.url}>
             <a href={post.url} target="_blank" rel="noopener noreferrer"><strong>{post.author}</strong> @{post.handle} ↗</a>

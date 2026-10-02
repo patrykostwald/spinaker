@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Witryna ThreadView — dwa układy nitki (dwie kolumny / jeden rząd) na fikcyjnej nitce z fikstur,
+ * Witryna ThreadView - dwa układy nitki (dwie kolumny / jeden rząd) na fikcyjnej nitce z fikstur,
  * w obu motywach. Przełącznik zapamiętuje wybór osobno dla witryny (`storageKey`).
  */
 
@@ -12,7 +12,7 @@ import type { ThreadItem } from "../../../types";
 export const meta = {
   id: "nitka",
   title: "Nitka",
-  lead: "ThreadView: dwie kolumny (materiał otwierający + przewijana lista z datami) albo jeden rząd na całą szerokość z przewijaniem poziomym. Przejście między układami — morfing tych samych kart.",
+  lead: "ThreadView: dwie kolumny (materiał otwierający + przewijana lista z datami) albo jeden rząd na całą szerokość z przewijaniem poziomym. Przejście między układami - morfing tych samych kart.",
 };
 
 const ITEMS: ThreadItem[] = FIXTURE_STRIPS[1].articles.map((article, index) => ({

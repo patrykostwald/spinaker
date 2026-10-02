@@ -1,24 +1,24 @@
 "use client";
 
 /**
- * NewsCard — karta materiału. Jeden komponent, cztery rozmiary (docs/UI_KIT_PLAN.md → «Komponenty»,
+ * NewsCard - karta materiału. Jeden komponent, cztery rozmiary (docs/UI_KIT_PLAN.md → «Komponenty»,
  * «Karta newsowa», «Trzy stopnie», «Stopień B»).
  *
- * Budowa (R0, 24.09 — замечание владельца: «не клон, а сам элемент меняет форму»):
- *  <article.sc-card-slot>  — MIEJSCE w siatce: nigdy nie zmienia rozmiaru (na stopniu B wysokość jest
+ * Budowa (R0, 24.09 - замечание владельца: «не клон, а сам элемент меняет форму»):
+ *  <article.sc-card-slot>  - MIEJSCE w siatce: nigdy nie zmienia rozmiaru (na stopniu B wysokość jest
  *                            zablokowana inline), więc sąsiedzi ani sekcja nie drgną («Слой выше, а не поток»).
- *    <div.sc-card>         — sama KARTA: tło, promień, poświata, cała treść. Na stopniu B wychodzi z potoku
- *                            (position:absolute w obrębie slotu, z-index nad siatką) i ZMIENIA FORMĘ — ten sam
+ *    <div.sc-card>         - sama KARTA: tło, promień, poświata, cała treść. Na stopniu B wychodzi z potoku
+ *                            (position:absolute w obrębie slotu, z-index nad siatką) i ZMIENIA FORMĘ - ten sam
  *                            element, framer-motion `layout` projektuje korzeń i każde dziecko (media, tytuł,
  *                            meta) ze starego pudełka do nowego na sprężynie `expand` (bounce 0.22).
  *
  * Stopnie:
- *  A — najechanie/fokus: natychmiast (scale, lewitacja, poświata przez --sc-ring).
- *  B — po 400ms zamiaru (PREVIEW_DELAY_MS), z klawiatury natychmiast: karta rośnie w formę własną dla
- *      swojego rozmiaru (mini — szerzej, w wierszu; compact/medium — w dół; large — w miejscu), ale z tym
+ *  A - najechanie/fokus: natychmiast (scale, lewitacja, poświata przez --sc-ring).
+ *  B - po 400ms zamiaru (PREVIEW_DELAY_MS), z klawiatury natychmiast: karta rośnie w formę własną dla
+ *      swojego rozmiaru (mini - szerzej, w wierszu; compact/medium - w dół; large - w miejscu), ale z tym
  *      samym zestawem treści: media → tytuł → opis → źródło · data → ulubione (serce). Uchodząc ze
  *      stopnia B wraca tą samą drogą (`collapse`, bez odbicia).
- *  C — pełny ekran: portal (R5) czyta pudełko `.sc-card` (już rozrośnięte, jeśli trwa B) i morfuje z niego
+ *  C - pełny ekran: portal (R5) czyta pudełko `.sc-card` (już rozrośnięte, jeśli trwa B) i morfuje z niego
  *      powierzchnię; wewnątrz `PortalProvider` karta podpina się do portalu sama (`usePortalApiOptional`).
  *
  * Rozciągnięty link: jedyny <Link> siedzi w nagłówku; jego ::after rozciąga obszar klikalny na kartę.
@@ -63,7 +63,7 @@ export type NewsCardProps = {
   eyebrow?: ReactNode;
   /** Renderowany POZA linkiem, jako rodzeństwo z własnym stackingiem (np. ulubione). Zastępuje wbudowane serce. */
   action?: ReactNode;
-  /** Bez tego propa: wewnątrz PortalProvider — portal; poza nim — zwykła nawigacja <Link>. */
+  /** Bez tego propa: wewnątrz PortalProvider - portal; poza nim - zwykła nawigacja <Link>. */
   onOpen?: (article: Article) => void;
   /** Włącza stopień B. @default true */
   expandable?: boolean;
@@ -92,16 +92,16 @@ const IMAGE_SIZES: Record<NewsCardSize, string> = {
 };
 
 const VIEWPORT_MARGIN = 16;
-/** Zwijanie ze stopnia B: czas sprężyny `collapse` (0.26s, bounce 0) i jej odpowiednik krzywą — jedyna
+/** Zwijanie ze stopnia B: czas sprężyny `collapse` (0.26s, bounce 0) i jej odpowiednik krzywą - jedyna
  *  animacja poza `useMotionTokens().t()`, bo idzie przez Web Animations, nie przez framer (patrz leave()). */
-/** Serce „ulubione” w powiększonym boxie — wyłączone do czasu kont czytelników (decyzja właściciela 29.09). */
+/** Serce „ulubione” w powiększonym boxie - wyłączone do czasu kont czytelników (decyzja właściciela 29.09). */
 const FAVORITES_ENABLED = false;
 const COLLAPSE_MS = 340;
 const COLLAPSE_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 /**
- * Pudełko stopnia B: szerokość wg `CARD_SPEC[size].grow`, rośnie od środka, a przy krawędzi okna —
- * do wewnątrz. `offsetWidth/Height` (bez transformacji stopnia A), krawędzie okna — z rect.
+ * Pudełko stopnia B: szerokość wg `CARD_SPEC[size].grow`, rośnie od środka, a przy krawędzi okna -
+ * do wewnątrz. `offsetWidth/Height` (bez transformacji stopnia A), krawędzie okna - z rect.
  */
 function computeLock(el: HTMLElement, size: NewsCardSize): Lock {
   const rect = el.getBoundingClientRect();
@@ -151,7 +151,7 @@ function CardBadge({ category, transition }: { category: string; transition: Tra
   );
 }
 
-/** Miniatury YouTube: na dużych kartach największa wersja (1280 px), gdy jej brak — 480 px; małe karty zostają lekkie. */
+/** Miniatury YouTube: na dużych kartach największa wersja (1280 px), gdy jej brak - 480 px; małe karty zostają lekkie. */
 const YT_THUMB = /^(https:\/\/i\d?\.ytimg\.com\/vi\/[\w-]{11}\/)(?:default|mqdefault|hqdefault|sddefault|maxresdefault)\.jpg/;
 
 function sharperThumb(src: string, size: NewsCardSize, fallback: boolean): string {
@@ -225,7 +225,7 @@ export function NewsCard({
   eyebrow,
   action,
   onOpen: onOpenProp,
-  expandable = true, // R0: ступень B — штатное поведение, не опция (замечание владельца 23.09)
+  expandable = true, // R0: ступень B - штатное поведение, не опция (замечание владельца 23.09)
   similarCount,
   className,
 }: NewsCardProps) {
@@ -239,14 +239,14 @@ export function NewsCard({
   const collapseAnimRef = useRef<Animation | null>(null);
   const [stage, setStage] = useState<Stage>("rest");
   // `lock` żyje od wejścia w hover do KOŃCA animacji zwijania: dopóki karta się kurczy, zostaje
-  // absolutna w pudełku spoczynku (a slot ma zablokowaną wysokość) — inaczej wracałaby do potoku
+  // absolutna w pudełku spoczynku (a slot ma zablokowaną wysokość) - inaczej wracałaby do potoku
   // z jeszcze gasnącym opisem i na ~250 ms rozpychała siatkę (замечание владельца 24.09).
   const [lock, setLock] = useState<Lock | null>(null);
   const [collapsing, setCollapsing] = useState(false);
   const [entered, setEntered] = useState(false);
   const [favourite, setFavourite] = useState(false);
 
-  // R0 (24.09): внутри PortalProvider карточка сама открывается через портал — клик везде даёт один и
+  // R0 (24.09): внутри PortalProvider карточка сама открывается через портал - клик везде даёт один и
   // тот же морфинг «карточка → полный экран → карточка», без пропов в каждом месте использования.
   const portal = usePortalApiOptional();
   const onOpen = onOpenProp ?? (portal ? (a: Article) => portal.open(a, slotRef.current) : undefined);
@@ -280,7 +280,7 @@ export function NewsCard({
     [],
   );
 
-  // Po zwolnieniu do potoku: `commitStyles()` zostawił inline `height` (React go nie zna) — zdejmujemy.
+  // Po zwolnieniu do potoku: `commitStyles()` zostawił inline `height` (React go nie zna) - zdejmujemy.
   useLayoutEffect(() => {
     if (!lock && cardRef.current) {
       cardRef.current.style.height = "";
@@ -289,7 +289,7 @@ export function NewsCard({
     }
   }, [lock]);
 
-  // Pionowe wyśrodkowanie stopnia B wymaga realnej wysokości rozrośniętej karty — mierzymy ją
+  // Pionowe wyśrodkowanie stopnia B wymaga realnej wysokości rozrośniętej karty - mierzymy ją
   // synchronicznie po pierwszym renderze B (przed malowaniem klatki; framer trzyma migawkę „przed”
   // z tego samego commitu, więc animuje wciąż od pudełka spoczynku, a nie od pozycji tymczasowej).
   useLayoutEffect(() => {
@@ -308,7 +308,7 @@ export function NewsCard({
   }, [stage, lock]);
 
   const spec = CARD_SPEC[size];
-  // large: w spoczynku TYLKO tytuł nad zdjęciem — opis, meta i serce dopiero na stopniu B (замечание владельца 24.09).
+  // large: w spoczynku TYLKO tytuł nad zdjęciem - opis, meta i serce dopiero na stopniu B (замечание владельца 24.09).
   const staticDescription = showDescription ?? size === "medium";
   const staticMeta = size !== "large";
   const resolvedHref = href ?? `/material/${article.id}`;
@@ -352,7 +352,7 @@ export function NewsCard({
   function release() {
     if (collapseAnimRef.current) {
       // Utrwalamy końcowe pudełko inline, żeby między anulowaniem animacji a commitem Reacta nie
-      // mignęła rozrośnięta geometria ze `style`; `height` React nie zna — czyścimy w efekcie niżej.
+      // mignęła rozrośnięta geometria ze `style`; `height` React nie zna - czyścimy w efekcie niżej.
       try {
         collapseAnimRef.current.commitStyles();
       } catch {
@@ -371,9 +371,9 @@ export function NewsCard({
     const lock = lockRef.current;
     if (stage === "b" && el && lock && !motionTokens.reduced) {
       // Zwijanie: JAWNA animacja pudełka (top/left/width/height → spoczynek) przez Web Animations,
-      // nie `layout` framera — layout mierzy tylko w commitach Reacta, więc wysokość skakała w chwili
+      // nie `layout` framera - layout mierzy tylko w commitach Reacta, więc wysokość skakała w chwili
       // odmontowania opisu (замечание владельца 24.09). Slot trzyma wysokość do końca; karta wraca
-      // do potoku dopiero po `finish`, w tej samej geometrii — bez skoku.
+      // do potoku dopiero po `finish`, w tej samej geometrii - bez skoku.
       setCollapsing(true);
       stopCollapseAnim();
       const from = { top: `${el.offsetTop}px`, left: `${el.offsetLeft}px`, width: `${el.offsetWidth}px`, height: `${el.offsetHeight}px` };
@@ -402,7 +402,7 @@ export function NewsCard({
   function handleFocus(e: FocusEvent<HTMLElement>) {
     arm(e.currentTarget);
     clearTimer();
-    // Fokus z klawiatury to już jawny zamiar — stopień B natychmiast, bez PREVIEW_DELAY_MS.
+    // Fokus z klawiatury to już jawny zamiar - stopień B natychmiast, bez PREVIEW_DELAY_MS.
     setStage(expandable ? "b" : "a");
   }
   function handleBlur(e: FocusEvent<HTMLElement>) {
@@ -413,7 +413,7 @@ export function NewsCard({
     return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
   }
   /**
-   * Klik w dowolne miejsce karty (także w media, których ::after linku nie pokrywa — .sc-card__body
+   * Klik w dowolne miejsce karty (także w media, których ::after linku nie pokrywa - .sc-card__body
    * jest pozycjonowane, żeby w `large` tekst leżał NAD absolutnym zdjęciem). Akcja/serce to własne
    * przyciski i nie otwierają nic; sam link obsługuje się w handleLinkClick.
    */
@@ -433,7 +433,7 @@ export function NewsCard({
     if (!onOpen) return;
     if (isPlainLeftClick(e)) {
       e.preventDefault();
-      // Portal mierzy `.sc-card` SYNCHRONICZNIE (jeszcze rozrośniętą) — powierzchnia rośnie z tego, co
+      // Portal mierzy `.sc-card` SYNCHRONICZNIE (jeszcze rozrośniętą) - powierzchnia rośnie z tego, co
       // widać; sama karta wraca do spoczynku pod przyciemnieniem, żeby po zamknięciu powierzchnia
       // wróciła do stanu SPRZED rozwinięcia (замечание владельца 24.09).
       onOpen(article);
@@ -447,7 +447,7 @@ export function NewsCard({
   const lift = stage === "rest" ? (entered ? 0 : motionTokens.rise) : motionTokens.reduced ? 0 : -spec.lift;
   const thumbScale = stage === "rest" ? 1 : motionTokens.scale(1.04);
   const grown = stage === "b" && lock !== null;
-  // Podczas zwijania geometria ze `style` zostaje rozrośnięta — nadpisuje ją animacja WAAPI.
+  // Podczas zwijania geometria ze `style` zostaje rozrośnięta - nadpisuje ją animacja WAAPI.
   const held = grown || (collapsing && lock !== null);
   const stagger = (i: number) => motionTokens.t("expand", { delay: motionTokens.reduced ? 0 : 0.06 + i * 0.04 });
 

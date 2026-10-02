@@ -134,7 +134,7 @@ export const Baza = forwardRef<HTMLDivElement, { categories: CategoryOption[]; s
             <details>
               <summary>Platformy <span>{selectedPlatforms.length || 'wszystkie'}</span></summary>
               <div className="sc-base-platform-options">
-                <Checkbox checked={selectedPlatforms.includes('youtube')} onChange={() => setSelectedPlatforms(current => current.includes('youtube') ? [] : ['youtube'])} label="YouTube — materiały wideo" />
+                <Checkbox checked={selectedPlatforms.includes('youtube')} onChange={() => setSelectedPlatforms(current => current.includes('youtube') ? [] : ['youtube'])} label="YouTube - materiały wideo" />
                 <p><strong>X</strong> · wpisy polityków przechodzą wstępną ocenę AI w Klinice.</p>
               </div>
             </details>

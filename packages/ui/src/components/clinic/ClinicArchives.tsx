@@ -28,7 +28,7 @@ export function ClinicInterviewArchive() {
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   return <section className="sc-clinic-archives">
     <ClinicNav />
-    <SectionHeader variant="page" title="Archiwum wywiadów" subtitle="Analizy wypowiedzi gości oraz pytań i reakcji prowadzących — z cytatami i odwołaniami do nagrania." />
+    <SectionHeader variant="page" title="Archiwum wywiadów" subtitle="Analizy wypowiedzi gości oraz pytań i reakcji prowadzących - z cytatami i odwołaniami do nagrania." />
     <div className="sc-clinic-archives__filters">
       <div><p className="sc-archive-search-label">Szukaj gościa, prowadzącego lub tytułu</p><SearchField label="Szukaj gościa, prowadzącego lub tytułu" value={search} onChange={setSearch} /></div>
       <label>Kanał<select value={channel} onChange={event => setChannel(event.target.value)}>

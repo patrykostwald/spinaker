@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * MaterialSurface — wspólne ciało overlaya portalu ORAZ (etap 2) strony `/material/[id]`
+ * MaterialSurface - wspólne ciało overlaya portalu ORAZ (etap 2) strony `/material/[id]`
  * (docs/UI_KIT_PLAN.md → «Портал» → «Адрес»: „oba muszą renderować DOKŁADNIE ten sam
  * komponent MaterialSurface z propem mode: 'page' | 'overlay'”).
  *
- * Ciągłość „karta → pełny ekran” (R0, 24.09): jedna ścieżka — jawny FLIP. `PortalProvider.open()`
+ * Ciągłość „karta → pełny ekran” (R0, 24.09): jedna ścieżka - jawny FLIP. `PortalProvider.open()`
  * mierzy `.sc-card` (rozrośniętą, jeśli trwa stopień B) i powierzchnia animuje WPROST
  * `top/left/width/height/borderRadius` od `fromRect` do docelowego pudełka. Dla POJEDYNCZEGO
  * elementu koszt reflow jest pomijalny. Zamknięcie wraca do celu z trzech przypadków powrotu
@@ -26,16 +26,16 @@ import type { Article } from "../types";
 import type { DragDismiss } from "./portal/useDragDismiss";
 
 export type MaterialSurfaceRect = { top: number; left: number; width: number; height: number };
-/** Cel powrotu — przychodzi przez `custom` AnimatePresence w chwili zamknięcia (patrz PortalLayer). */
+/** Cel powrotu - przychodzi przez `custom` AnimatePresence w chwili zamknięcia (patrz PortalLayer). */
 export type MaterialSurfaceExit = { rect: MaterialSurfaceRect; radius: number; transition: Transition };
 
 export type MaterialSurfaceProps = {
   mode: "overlay" | "page";
   article: Article;
   related?: Article[];
-  /** overlay: krzyżyk/scrim/Escape/przeciągnięcie — wywołujący decyduje (historia). */
+  /** overlay: krzyżyk/scrim/Escape/przeciągnięcie - wywołujący decyduje (historia). */
   onClose?: () => void;
-  /** Klik w kartę „Powiązane materiały” — morfing treści + `replaceState`, powierzchnia zostaje. */
+  /** Klik w kartę „Powiązane materiały” - morfing treści + `replaceState`, powierzchnia zostaje. */
   onNavigate?: (article: Article) => void;
   surfaceRef?: Ref<HTMLDivElement>;
   scrollerRef?: RefObject<HTMLDivElement>;
@@ -52,7 +52,7 @@ export type MaterialSurfaceProps = {
 };
 
 /**
- * Cel morfingu: CAŁY ekran, promień 0 — karta rozwija się w nowy ekran, nie w okno modalne
+ * Cel morfingu: CAŁY ekran, promień 0 - karta rozwija się w nowy ekran, nie w okno modalne
  * (замечание владельца 24.09). Adres zmienia się na /material/<id>, więc odświeżenie daje tę
  * samą stronę serwerową.
  */
@@ -127,7 +127,7 @@ export function MaterialSurface({
 
   // Wyjście jako WARIANT z `custom`: zamknięcie zawsze wraca do prostokąta oryginału (trzy przypadki
   // powrotu, PortalProvider.close()), który AnimatePresence dostarcza przez `custom` już PO usunięciu
-  // dziecka — zwykły prop `exit` widziałby wartości z renderu sprzed zamknięcia (`null`).
+  // dziecka - zwykły prop `exit` widziałby wartości z renderu sprzed zamknięcia (`null`).
   const variants = {
     // Zamknięcie = krótkie wygaszenie i ukrycie (decyzja właściciela 28.09): powrót „do pudełka” z zawartością
     // okna (X, suwaki) wyglądał jak zepsuty box, a zacięta animacja potrafiła go tak zostawić.
@@ -184,7 +184,7 @@ export function MaterialSurface({
           {article.description ? <p className="sc-t-body sc-text-2 sc-surface__description">{article.description}</p> : null}
 
           <div className="sc-surface__actions">
-            {/* Button nie eksponuje `target`/`rel` (plik R2, poza zasięgiem edycji) — nowa karta przez window.open. */}
+            {/* Button nie eksponuje `target`/`rel` (plik R2, poza zasięgiem edycji) - nowa karta przez window.open. */}
             <Button variant="primary" size="md" onClick={() => window.open(article.url, "_blank", "noopener,noreferrer")}>
               Otwórz źródło
             </Button>

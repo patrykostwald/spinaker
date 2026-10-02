@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Pasek newsowy spin.clinic („Top 10”) — pozioma taśma najnowszych materiałów, przewijana
+ * Pasek newsowy spin.clinic („Top 10”) - pozioma taśma najnowszych materiałów, przewijana
  * w prawo/lewo (palcem, kółkiem, strzałkami) na każdej szerokości, także na telefonie.
  * Zawężają go filtry z wiersza nad nim (grupa źródeł · temat · hasło).
  */

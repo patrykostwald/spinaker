@@ -11,7 +11,7 @@ import { SpinDiagnosisBody } from "./SpinDetail";
 import { SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 
-/** Kolejka zatwierdzania. Tylko dwie decyzje — treści nie da się tu zmienić. */
+/** Kolejka zatwierdzania. Tylko dwie decyzje - treści nie da się tu zmienić. */
 export function ClinicQueue() {
   const account = useAccount();
   const isStaff = Boolean(account.data?.user?.is_staff);
@@ -61,13 +61,13 @@ export function ClinicQueue() {
           {data.counts.suggestions > 0 && <> · <a href="/admin/news/xaccountsuggestion/">sugestie kont X: {data.counts.suggestions}</a></>}</p>}
         {newsletter.data && <p className="sc-clinic-notice">
           <strong>Newsletter:</strong> potwierdzeni {newsletter.data.confirmed} · czekają na potwierdzenie {newsletter.data.pending} · wypisani {newsletter.data.unsubscribed} · nowi w 7 dni +{newsletter.data.confirmed_last_7_days}
-          {!newsletter.data.smtp_ready && " · UWAGA: poczta (SMTP) nieskonfigurowana — maile potwierdzające nie wychodzą"}</p>}
+          {!newsletter.data.smtp_ready && " · UWAGA: poczta (SMTP) nieskonfigurowana - maile potwierdzające nie wychodzą"}</p>}
       </header>
       {error && <p role="alert" className="sc-clinic-empty">{error}</p>}
       {data && data.flagged.length > 0 && (
         <section className="sc-clinic-queue__flagged" aria-labelledby="flagged-title">
           <h2 id="flagged-title">Strażnik: warte sprawdzenia <span>{data.counts.flagged}</span></h2>
-          <p className="sc-clinic-empty">Darmowa ocena strażnika. „Zbadaj” uruchamia płatną diagnozę (Claude), „Pomiń” — nic nie kosztuje.</p>
+          <p className="sc-clinic-empty">Darmowa ocena strażnika. „Zbadaj” uruchamia płatną diagnozę (Claude), „Pomiń” - nic nie kosztuje.</p>
           <ul>{data.flagged.map(item => (
             <li key={item.id} className="sc-clinic-queue__flag">
               <span className="sc-clinic-queue__score" title={`Ocena strażnika (${item.screened_by || "brak"})`}>{item.score ?? "?"}</span>
@@ -105,7 +105,7 @@ export function ClinicQueue() {
       ))}
       {data && data.recent.length > 0 && (
         <section className="sc-clinic-queue__flagged" aria-labelledby="recent-title">
-          <h2 id="recent-title">Opublikowane — udostępnij na X</h2>
+          <h2 id="recent-title">Opublikowane - udostępnij na X</h2>
           <ul>{data.recent.map(item => (
             <li key={item.id} className="sc-clinic-queue__flag">
               <span className="sc-clinic-queue__score sc-spin-num" style={spinVar(item.intensity)} title="Siła spinu">{item.intensity}</span>

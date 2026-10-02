@@ -15,10 +15,10 @@ import { shouldDismiss } from "../motion/physics";
 import { useMotionTokens } from "../motion/useMotionTokens";
 
 export type DragDismissOptions = {
-  /** Высота поверхности в px — знаменатель порога закрытия (`DISTANCE_COMMIT` из physics.ts). */
+  /** Высота поверхности в px - знаменатель порога закрытия (`DISTANCE_COMMIT` из physics.ts). */
   height: number;
   /** Решение принято: закрыть. Вызывающий сам проигрывает выход, например
-   * `responsive(springs.portalOut, velocity)` — эта длительность остаётся на его стороне. */
+   * `responsive(springs.portalOut, velocity)` - эта длительность остаётся на его стороне. */
   onDismiss: (velocity: number) => void;
 };
 
@@ -46,7 +46,7 @@ export type DragDismiss = {
   /** Готовый набор пропсов для motion-элемента поверхности. */
   dragProps: DragDismissDragProps;
   /**
-   * Стартует жест ТОЛЬКО если внутренний скроллер уже наверху — иначе попытка
+   * Стартует жест ТОЛЬКО если внутренний скроллер уже наверху - иначе попытка
    * прокрутить содержимое вверх закрывала бы оверлей вместо прокрутки.
    */
   startIfAtTop: (event: ReactPointerEvent, scrollerEl: HTMLElement | null) => void;
@@ -55,8 +55,8 @@ export type DragDismiss = {
 /**
  * Закрытие полноэкранной поверхности перетаскиванием вниз (Apple, «Designing Fluid
  * Interfaces»). Прозрачность фона, масштаб и радиус меняются ВО ВРЕМЯ жеста через
- * `useTransform` — на композиторе, без единого React-рендера. Решение «закрыть/вернуть»
- * принимает `shouldDismiss` по знаку скорости, а не по достигнутой позиции. Возврат —
+ * `useTransform` - на композиторе, без единого React-рендера. Решение «закрыть/вернуть»
+ * принимает `shouldDismiss` по знаку скорости, а не по достигнутой позиции. Возврат -
  * пружина `settle` с ПЕРЕДАЧЕЙ реальной скорости отпускания.
  */
 export function useDragDismiss({ height, onDismiss }: DragDismissOptions): DragDismiss {
@@ -75,7 +75,7 @@ export function useDragDismiss({ height, onDismiss }: DragDismissOptions): DragD
         return;
       }
       // Передача скорости: пружина по MotionValue принимает начальную скорость (в отличие
-      // от layout-анимации выхода, куда скорость по осям не вложить — см. план, «Портал»).
+      // от layout-анимации выхода, куда скорость по осям не вложить - см. план, «Портал»).
       animate(y, 0, { ...m.t("settle"), velocity: info.velocity.y } as ValueAnimationTransition<number>);
     },
     [height, m, onDismiss, y],

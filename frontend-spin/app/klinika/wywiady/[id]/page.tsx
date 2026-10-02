@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const title = `${interview.guest_name}: ${interview.headline || interview.title}`;
   const description = `Wywiad w ${interview.channel}. Prowadzący: ${interview.host_name}. ${interview.summary}`.slice(0, 300);
   return {
-    title: `${title} — Klinika spinu`,
+    title: `${title} - Klinika spinu`,
     description,
     openGraph: { title, description, type: 'article', siteName: 'spin.clinic', images: [{ url: '/og.png', width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', site: '@spinclinic', title, description, images: ['/og.png'] },

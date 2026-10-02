@@ -3,7 +3,7 @@
 /**
  * Dane strony głównej (etap 2, krok 1). Te same wywołania API co w starym `PortalHome`
  * (`getPortalConfig`, `getNewsFeed`, `/api/portal/topic-of-day/`, `getThreads`), plus jedna rzecz,
- * której stara strona nie miała: **tryb demonstracyjny** — gdy backend jest nieosiągalny
+ * której stara strona nie miała: **tryb demonstracyjny** - gdy backend jest nieosiągalny
  * (fetch rzuca TypeError, nie ApiError) i nie jesteśmy w produkcji, w miejsce danych wchodzą
  * fikstury z witryny (fikcyjne, `przyklad.invalid`, ujemne id, „DEMO” na obrazkach), a strona
  * pokazuje baner „Dane demonstracyjne”. Dzięki temu układ da się oglądać i poprawiać bez Django
@@ -32,7 +32,7 @@ function setDemo(active: boolean) {
   demoListeners.forEach((listener) => listener());
 }
 
-/** `true`, gdy choć jedno zapytanie spadło na fikstury — strona pokazuje baner. */
+/** `true`, gdy choć jedno zapytanie spadło na fikstury - strona pokazuje baner. */
 export function useDemoMode(): boolean {
   return useSyncExternalStore(
     (listener) => {
@@ -46,7 +46,7 @@ export function useDemoMode(): boolean {
 
 function isNetworkFailure(error: unknown): boolean {
   // Brak połączenia (fetch rzuca TypeError) albo 5xx z proxy Next (`/api/*` → backend, którego nie ma).
-  // Odpowiedzi 4xx to prawdziwe odpowiedzi backendu — ich NIE maskujemy fiksturami.
+  // Odpowiedzi 4xx to prawdziwe odpowiedzi backendu - ich NIE maskujemy fiksturami.
   if (error instanceof TypeError) return true;
   return error instanceof ApiError && error.status >= 500;
 }
@@ -181,14 +181,14 @@ function demoThread(): ThreadDetail {
   const articles = FIXTURE_STRIPS[2].articles;
   return {
     id: -9100,
-    title: "Nitka demonstracyjna — układ dwóch kolumn i jednego rzędu",
+    title: "Nitka demonstracyjna - układ dwóch kolumn i jednego rzędu",
     slug: "nitka-demonstracyjna",
     thread_type: "context",
     is_featured: true,
     updated_at: articles[0]?.published_date ?? new Date().toISOString(),
     published: true,
     item_count: articles.length,
-    description: "Fikcyjna nitka z fikstur witryny — tylko do pracy nad układem.",
+    description: "Fikcyjna nitka z fikstur witryny - tylko do pracy nad układem.",
     image_url: articles[0]?.image_url ?? "",
     views_count: 0,
     created_at: articles[0]?.published_date ?? new Date().toISOString(),
