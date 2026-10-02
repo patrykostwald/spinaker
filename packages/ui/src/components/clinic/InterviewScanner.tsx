@@ -2,7 +2,7 @@
 
 import { DiscussionCounts } from "./ClinicDiscussion";
 
-import { techniqueLabel } from "../../lib/clinic";
+import { spinVar, techniqueLabel } from "../../lib/clinic";
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
@@ -36,7 +36,7 @@ export function InterviewScope() {
 }
 
 function ResultBar({ value }: { value: number }) {
-  return <div className="sc-scan-g"><span className="sc-scan-g-track"><i style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div>;
+  return <div className="sc-scan-g"><span className="sc-scan-g-track"><i className="sc-spin-fill" style={{ ...spinVar(value), width: `${Math.max(0, Math.min(100, value))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div>;
 }
 
 const suspectScale = (part: { verdict: string; intensity: number }) => ["spin", "partial"].includes(part.verdict) && part.intensity > 0 && part.intensity <= 10;
@@ -50,13 +50,13 @@ export function InterviewResults({ interview }: { interview: Interview }) {
       <p className="sc-interview-results__who">{interview.guest_name}{interview.guest_role ? <span>, {interview.guest_role}</span> : null}</p>
       {/* Najstarsze analizy mogły podać siłę w skali 0–10: werdykt „spin” przy sile ≤ 10 jest sprzeczny — nie pokazujemy mylącej liczby (audyt 046) */}
       {suspectScale(guest) ? <div className="sc-interview-results__score"><p className="sc-interview-results__none">Siła: skala tej analizy wymaga wyjaśnienia</p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div> : <>
-      <div className="sc-interview-results__score"><p className="sc-scan-m-num sc-scan-strength">{guest.intensity}<small>/100</small></p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div>
+      <div className="sc-interview-results__score"><p className="sc-scan-m-num sc-scan-strength sc-spin-num" style={spinVar(guest.intensity)}>{guest.intensity}<small>/100</small></p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div>
       <ResultBar value={guest.intensity} /></>}
     </section>
     <section data-role="host">
       <p className="sc-scan-m-lbl">Prowadzący</p>
       <p className="sc-interview-results__who">{interview.host_name || "Prowadzący"}</p>
-      <div className="sc-interview-results__score">{host.intensity == null ? <p className="sc-interview-results__none">Brak wyniku liczbowego</p> : <p className="sc-scan-m-num">{host.intensity}<small>/100</small></p>}
+      <div className="sc-interview-results__score">{host.intensity == null ? <p className="sc-interview-results__none">Brak wyniku liczbowego</p> : <p className="sc-scan-m-num sc-spin-num" style={spinVar(host.intensity)}>{host.intensity}<small>/100</small></p>}
         {host.verdict ? <VerdictTag verdict={host.verdict} label={host.verdict_label ?? ""} /> : null}</div>
       {host.intensity == null ? null : <ResultBar value={host.intensity} />}
     </section>

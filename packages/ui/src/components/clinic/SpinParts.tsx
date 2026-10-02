@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Dialog } from "../Dialog";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Party, SpinAuthor, SpinCardData, SpinScale as SpinScaleData, Verdict } from "../../lib/clinic";
-import { sharePercent, techniqueLabel } from "../../lib/clinic";
+import { sharePercent, spinVar, techniqueLabel } from "../../lib/clinic";
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDateTimePl } from "../../lib/utils";
 import { ShareSpinOnX } from "./ShareSpinOnX";
@@ -61,7 +61,7 @@ export function VerdictTag({ verdict, label }: { verdict: Verdict; label: string
 export function IntensityMeter({ value }: { value: number }) {
   return (
     <span className="sc-intensity" data-level={value >= 70 ? "high" : value >= 30 ? "mid" : "low"} title="Siła spinu według diagnozy (0–100): jak mocno wpis opiera się na technikach perswazji">
-      <span className="sc-intensity__track" aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></span>
+      <span className="sc-intensity__track" aria-hidden="true"><span className="sc-spin-fill" style={{ ...spinVar(value), width: `${Math.max(0, Math.min(100, value))}%` }} /></span>
       <span className="sc-intensity__value">Siła spinu {value}/100</span>
     </span>
   );
@@ -111,8 +111,8 @@ export function SpinListMetrics({ spin }: { spin: SpinCardData }) {
   });
   const unverified = claims.find(claim => claim.key === "unverified")?.count ?? 0;
   return <dl className="sc-list-metrics" aria-label="Dane diagnozy">
-    <div><dt>Siła spinu</dt><dd className="sc-list-metrics__strength">{spin.intensity}<small>/100</small></dd>
-      <span className="sc-list-metrics__track" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span></div>
+    <div><dt>Siła spinu</dt><dd className="sc-list-metrics__strength sc-spin-num" style={spinVar(spin.intensity)}>{spin.intensity}<small>/100</small></dd>
+      <span className="sc-list-metrics__track" aria-hidden="true"><i className="sc-spin-fill" style={{ ...spinVar(spin.intensity), width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span></div>
     <div><dt>Konsylium AI</dt><dd>{council.agreement ?? "—"}</dd><small>ten sam werdykt</small></div>
     <div><dt>Twierdzenia</dt><dd>{checked}</dd><small>{unverified > 0 ? `sprawdzone z ${checked + unverified}` : "sprawdzone"}</small></div>
     <div><dt>Techniki</dt><dd>{typeCount}</dd><small>{techniqueLabel(typeCount)}</small>

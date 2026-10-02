@@ -1,4 +1,5 @@
 /** Klinika spinu — typy i zapytania do /api/clinic/ (backend/news/clinic.py). */
+import type { CSSProperties } from "react";
 import { apiFetch, apiWrite } from "./api";
 
 /** Etykiety wspólne dla panelu głosów i pełnej diagnozy. */
@@ -303,3 +304,6 @@ export const suggestXAccount = (figureId: number, url: string, note = "") =>
 export function sharePercent(side: ScaleSide): number | null {
   return side.share === null ? null : Math.round(side.share * 100);
 }
+
+/** Kolor siły spinu (właściciel 2.10): pasek i liczba od zielonego (0) przez niebieski (50) do czerwonego (100). */
+export const spinVar = (value: number) => ({ "--spin": Math.max(0, Math.min(100, Math.round(value))) }) as CSSProperties;

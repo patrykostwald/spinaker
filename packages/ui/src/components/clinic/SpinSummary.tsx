@@ -1,6 +1,6 @@
 "use client";
 
-import { agreementLabel, techniqueLabel, type SpinDetailData } from "../../lib/clinic";
+import { agreementLabel, spinVar, techniqueLabel, type SpinDetailData } from "../../lib/clinic";
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDatePl } from "../../lib/utils";
 import { VerdictTag } from "./SpinParts";
@@ -30,8 +30,8 @@ export function SpinSummary({ spin, heading: Heading = "h3", compact = false, wi
       <Heading className="sc-scan-dg-lead" id={`scan-lead-${spin.id}`}>{lead}</Heading>
       {withPoint ? <p className="sc-scan-dg-point">{point}</p> : null}
       <div className="sc-scan-m">
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Siła spinu</p><p className="sc-scan-m-num sc-scan-strength">{spin.intensity}<small>/100</small></p>
-          <div className="sc-scan-g" title="Ocena AI w skali 0–100"><span className="sc-scan-g-track"><i style={{ width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div></div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Siła spinu</p><p className="sc-scan-m-num sc-scan-strength sc-spin-num" style={spinVar(spin.intensity)}>{spin.intensity}<small>/100</small></p>
+          <div className="sc-scan-g" title="Ocena AI w skali 0–100"><span className="sc-scan-g-track"><i className="sc-spin-fill" style={{ ...spinVar(spin.intensity), width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div></div>
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Konsylium AI</p><p className="sc-scan-m-num" title={agreementLabel(agreement)}>{agreement && /\d/.test(agreement) ? agreement : "—"}<small className="sc-scan-agreement-caption">ten sam werdykt</small></p>
           {!compact ? <div className="sc-scan-g sc-scan-council" title={scan?.council?.method || "Oceny modeli w skali 0–100; kropka — werdykt modelu"}>{!votes.length ? <span>Brak zapisanych głosów modeli</span> : null}{votes.map((vote, index) => (
             <span key={index} className="sc-scan-g-row">{vote.missing ? <span className="sc-scan-vote-missing">{modelLabel(vote.model)} — Brak odpowiedzi</span> : <><em title={vote.model}>{modelLabel(vote.model)}</em><b title={vote.intensity == null ? "Brak oceny siły" : "siła spinu według modelu, 0–100"}>{vote.intensity ?? "—"}</b><u data-verdict={vote.verdict} title={`werdykt: ${vote.verdict ?? "brak"}`} /></>}</span>))}</div> : null}</div>

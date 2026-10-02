@@ -6,7 +6,7 @@ import { SourceDisclosure } from "./SourceDisclosure";
 import Link from "next/link";
 import { ApiError } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { agreementLabel, getSpin, type SpinDetailData } from "../../lib/clinic";
+import { agreementLabel, getSpin, spinVar, type SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { ClinicDiscussion } from "./ClinicDiscussion";
 import { AiTag, FitStickyAside, HowToRead, SpinAuthorRow } from "./SpinParts";
@@ -35,10 +35,10 @@ export function PlainDiagnosis({ spin }: { spin: SpinDetailData }) {
   return <section className="sc-plain" aria-label="Diagnoza w skrócie">
     <p className="sc-clinic-kicker">Siła spinu</p>
     <p className="sc-plain__score" data-level={level}>
-      {SCORE_STYLE === "number" && <span>{score}<small>/100</small></span>}
+      {SCORE_STYLE === "number" && <span className="sc-spin-num" style={spinVar(score)}>{score}<small>/100</small></span>}
       <strong>{level}</strong>
     </p>
-    <div className="sc-plain__bar" data-level={level} aria-hidden="true"><i style={{ width: `${score}%` }} /></div>
+    <div className="sc-plain__bar" data-level={level} aria-hidden="true"><i className="sc-spin-fill" style={{ ...spinVar(score), width: `${score}%` }} /></div>
     <h1>{plain.title}</h1>
     <p className="sc-plain__gist">{plain.gist}</p>
     <ul className="sc-plain__techniques">{plain.top.map((technique, index) => <li key={index}>
