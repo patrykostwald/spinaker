@@ -24,6 +24,7 @@ import { HomeCategoryBar } from "./HomeCategoryBar";
 import { HomeSpinTeaser } from "./HomeSpinTeaser";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
+import { SpinExplainer } from "../SpinExplainer";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads } from "./HomeThreads";
 import { NewsletterSignup } from "../../components/NewsletterSignup";
@@ -102,6 +103,7 @@ export function HomePage() {
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <DemoBanner />
         <HomeHero />
+        <SpinExplainer id="czym-jest-spin" />
         {/* 1. Dr. Spin - po co tu jesteś. 2. Wiadomości - agregat z naszej Bazy do przeglądania i własnych pasków.
             3. Dla dziennikarzy. 4. Baza. 5. Newsletter (decyzja właściciela 28.09). */}
         <HomeSpinTeaser />

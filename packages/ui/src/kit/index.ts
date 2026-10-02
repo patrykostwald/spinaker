@@ -98,3 +98,4 @@ export { useDemoMode } from "./home/data";
 
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
 export { GlitchWord } from "./GlitchWord";
+export { SpinExplainer, SPIN_EXPLAINER_PL, type SpinExplainerText } from "./SpinExplainer";
