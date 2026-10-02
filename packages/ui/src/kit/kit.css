@@ -6596,3 +6596,11 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 /* Znak AI przy „Dr. Spin” jak znak zastrzeżony: mały, w górnym rogu za nazwą (właściciel 2.10.2026) */
 .sc-tm-ai { display: inline-block; vertical-align: top; margin-left: 4px; font-size: 0; line-height: 0; position: relative; top: 4px; }
 .sc-tm-ai .sc-ai-tag { height: 16px; padding: 0 5px; font-size: 9px; }
+/* Miniatura bez zdjęcia: awatar i etykieta werdyktu jako jedna wyśrodkowana grupa, etykieta nie nachodzi na awatar (właściciel 2.10.2026) */
+.sc-spin-row__thumb:has(> .sc-spin-avatar) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.sc-spin-row__thumb:has(> .sc-spin-avatar) > .sc-spin-row__verdict { position: static; transform: none; max-width: calc(100% - 8px); }
+@media (max-width: 520px) {
+  .sc-spin-row__thumb:has(> .sc-spin-avatar) { gap: 3px; }
+  .sc-spin-row__thumb:has(> .sc-spin-avatar) > .sc-spin-avatar { width: 34px; height: 34px; flex: none; }
+  .sc-spin-row__thumb:has(> .sc-spin-avatar) > .sc-spin-row__verdict > * { font-size: 10px; padding: 1px 6px; }
+}
