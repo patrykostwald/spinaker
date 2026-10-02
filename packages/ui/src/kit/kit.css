@@ -63,7 +63,8 @@ html[data-theme="dark"],
   --sc-claim-ok: #4ed18a; --sc-claim-mid: #f2b441; --sc-claim-bad: #ff6b6b; --sc-claim-unv: #8b9097;
   /* rodziny technik (właściciel 2.10): Dane zielone, Emocje żółte, Spór czerwony */
   --sc-fam-dane: #4ed18a; --sc-fam-przedstawienie: #f2c94c; --sc-fam-spor: #ff6b6b; --sc-fam-inne: #8b9097;
-  --sc-spin-lo: #4ed18a; --sc-spin-mid: #4a9eff; --sc-spin-hi: #ff6b6b;
+  /* skala siły spinu (właściciel 2.10): przygaszona, czerwień od 70, krwista przy 100 */
+  --sc-spin-lo: #3f9e6e; --sc-spin-mid: #4a86d4; --sc-spin-hi: #e0544a; --sc-spin-blood: #b8302a;
   /* Свечение при наведении — синее (решение владельца 23.09: янтаря в системе нет). Только свет, никогда заливка или текст. */
   --sc-glow: rgba(74, 158, 255, 0.45);
   --sc-glow-strong: rgba(74, 158, 255, 0.66);
@@ -119,7 +120,7 @@ html[data-theme="pastel"],
   --sc-negative: #c42b2b;
   --sc-claim-ok: #1f9d63; --sc-claim-mid: #e0a020; --sc-claim-bad: #d64545; --sc-claim-unv: #a3a9b1;
   --sc-fam-dane: #1f9d63; --sc-fam-przedstawienie: #d9a514; --sc-fam-spor: #d64545; --sc-fam-inne: #a3a9b1;
-  --sc-spin-lo: #1f9d63; --sc-spin-mid: #0a62d0; --sc-spin-hi: #d64545;
+  --sc-spin-lo: #1e8a57; --sc-spin-mid: #1f5fbf; --sc-spin-hi: #c0392b; --sc-spin-blood: #8b1a1a;
   --sc-glow: rgba(10, 98, 208, 0.28);
   --sc-glow-strong: rgba(10, 98, 208, 0.42);
   --sc-glow-ring: 0 0 0 1px rgba(10, 98, 208, 0.16), 0 8px 24px rgba(0, 0, 0, 0.1);
@@ -6768,5 +6769,5 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 @media (min-width: 861px) { .sc-clinic-latest__foot .sc-clinic-db__all { min-height: 36px; padding: 7px 18px; display: inline-flex; align-items: center; } }
 
 /* Siła spinu w kolorze (właściciel 2.10): pasek to wycinek skali zielony > niebieski > czerwony, liczba w kolorze swojego miejsca na skali */
-.sc-spin-fill { background: linear-gradient(90deg, var(--sc-spin-lo), var(--sc-spin-mid) 50%, var(--sc-spin-hi)) !important; background-size: calc(10000% / max(var(--spin, 100), 1)) 100% !important; background-repeat: no-repeat !important; }
-.sc-spin-num { color: color-mix(in oklab, var(--sc-spin-lo) clamp(0%, calc((50 - var(--spin, 50)) * 2%), 100%), color-mix(in oklab, var(--sc-spin-hi) clamp(0%, calc((var(--spin, 50) - 50) * 2%), 100%), var(--sc-spin-mid))) !important; }
+.sc-spin-fill { background: linear-gradient(90deg, var(--sc-spin-lo), var(--sc-spin-mid) 40%, var(--sc-spin-mid) 62%, var(--sc-spin-hi) 70%, var(--sc-spin-blood)) !important; background-size: calc(10000% / max(var(--spin, 100), 1)) 100% !important; background-repeat: no-repeat !important; }
+.sc-spin-num { color: color-mix(in oklab, var(--sc-spin-blood) clamp(0%, calc((var(--spin, 50) - 70) * 3.333%), 100%), color-mix(in oklab, var(--sc-spin-hi) clamp(0%, calc((var(--spin, 50) - 62) * 12.5%), 100%), color-mix(in oklab, var(--sc-spin-mid) clamp(0%, calc(var(--spin, 50) * 2.5%), 100%), var(--sc-spin-lo)))) !important; }

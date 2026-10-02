@@ -1,7 +1,8 @@
 """Wspólna paleta ciemnych grafik Pillow i skala siły spinu."""
 from PIL import Image, ImageDraw
 
-STRENGTH_STOPS = ((78, 209, 138), (74, 158, 255), (255, 107, 107))
+# Skala siły spinu (właściciel 2.10): przygaszona; niebieski do 62, czerwień od 70, krwista przy 100.
+STRENGTH_STOPS = ((0, (63, 158, 110)), (40, (74, 134, 212)), (62, (74, 134, 212)), (70, (224, 84, 74)), (100, (184, 48, 42)))
 FAMILY_COLORS = {'spor': '#ff6b6b', 'przedstawienie': '#f2c94c', 'dane': '#4ed18a', 'inne': '#8b9097'}
 CLAIM_COLORS = {'supported': '#4ed18a', 'misleading': '#f2b441',
                 'contradicted': '#ff6b6b', 'unverified': '#8b9097'}
@@ -9,12 +10,13 @@ VERDICT_COLORS = {'spin': '#ff6b6b', 'partial': '#f2b441', 'no_spin': '#4ed18a',
 
 
 def strength_color(value):
-    """Interpolacja RGB skali 0-100, z ograniczeniem do jej końców."""
+    """Interpolacja RGB po stopach skali 0-100, z ograniczeniem do jej końców."""
     value = max(0, min(100, value or 0))
-    index = 0 if value <= 50 else 1
-    fraction = (value - 50 * index) / 50
-    return tuple(round(a + (b - a) * fraction)
-                 for a, b in zip(STRENGTH_STOPS[index], STRENGTH_STOPS[index + 1]))
+    for (x0, c0), (x1, c1) in zip(STRENGTH_STOPS, STRENGTH_STOPS[1:]):
+        if value <= x1:
+            fraction = (value - x0) / (x1 - x0) if x1 > x0 else 1
+            return tuple(round(a + (b - a) * fraction) for a, b in zip(c0, c1))
+    return STRENGTH_STOPS[-1][1]
 
 
 def strength_bar(draw, box, value, track='#262626'):

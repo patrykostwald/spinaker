@@ -8,8 +8,8 @@ from news.spin_colors import strength_bar, strength_color, tabular_score
 
 
 @pytest.mark.parametrize('value, expected', [
-    (0, (78, 209, 138)), (25, (76, 184, 196)), (50, (74, 158, 255)),
-    (100, (255, 107, 107)), (-10, (78, 209, 138)), (110, (255, 107, 107)),
+    (0, (63, 158, 110)), (40, (74, 134, 212)), (50, (74, 134, 212)), (66, (149, 109, 143)),
+    (70, (224, 84, 74)), (100, (184, 48, 42)), (-10, (63, 158, 110)), (110, (184, 48, 42)),
 ])
 def test_strength_color(value, expected):
     assert strength_color(value) == expected
