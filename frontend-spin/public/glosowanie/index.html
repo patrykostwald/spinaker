@@ -49,12 +49,20 @@ h1, h2, h3, p { margin: 0; }
 .q-head p { color: var(--muted); font-size: 14px; max-width: 64ch; }
 .opts { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .opts.two { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-.opt { position: relative; text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 10px; align-content: start; cursor: pointer; transition: border-color .2s, background .2s, transform .2s var(--ease); }
+/* Zasada boxu: pierwsza linia przy górnej krawędzi, ostatnia przy dolnej, środek się rozciąga; boxy w rzędzie równej wysokości. */
+.opt { position: relative; text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 100%; cursor: pointer; transition: border-color .2s, background .2s, transform .2s var(--ease); }
 .opt:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); transform: translateY(-2px); }
 .opt.mine { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
 .opt .top { display: flex; gap: 10px; align-items: baseline; }
 .opt .top b { color: var(--accent); font-size: 13px; font-weight: 800; }
-.opt .top strong { font-size: 15px; }
+.opt .top strong { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.opt .top { min-width: 0; }
+.opt .mid { flex: 1; display: grid; }
+.opt .mid > * { height: 100%; }
+.opt .mid > img, .opt .mid > .mock { height: auto; align-self: start; }
+.cap { display: grid; gap: 2px; }
+.cap-t { font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap-s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .opt .top small { margin-left: auto; font-size: 11px; color: var(--muted); }
 .opt .check { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 13px; color: #06111f; transition: background .2s, border-color .2s; }
 .opt.mine .check { background: var(--accent); border-color: var(--accent); }
@@ -66,7 +74,7 @@ h1, h2, h3, p { margin: 0; }
 .cnt { font-size: 11px; color: var(--muted); }
 .attach { display: flex; gap: 14px; align-items: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 12px; }
 .attach img { width: 160px; border-radius: 8px; border: 1px solid #2f3336; flex: none; }
-.attach p { font-size: 13px; color: var(--ink-2); }
+.attach p { font-size: 16px; line-height: 1.5; color: var(--ink); }
 .hook { font-size: 17px; font-weight: 700; background: #000; border: 1px solid #2f3336; border-radius: 12px; padding: 14px; color: #e7e9ea; }
 .nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .status { font-size: 13px; color: var(--muted); min-height: 1.4em; }
@@ -125,22 +133,22 @@ h1, h2, h3, p { margin: 0; }
   <section class="screen" id="s-x" data-q="x" hidden>
     <div class="q-head"><span class="n">Pytanie 1 z 4</span><h2 data-type="Który wpis na X najbardziej zachęca do kliknięcia?"></h2>
       <p>Przykład na jednej diagnozie (Jan Kowalski, PiS, spin 70/100).</p></div>
-    <div class="attach enter"><img src="karta.png" alt="Karta diagnozy"><p>Każdy wpis ma dołączoną kartę diagnozy z&nbsp;wynikiem, jak ta obok. Oceniasz sam tekst.</p></div>
-    <div class="opts"><button type="button" class="opt" data-o="p01"><span class="check"></span><span class="top"><b>01</b><strong>Wynik na początku</strong></span><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
+    <div class="attach enter"><img src="karta.png" alt="Karta diagnozy"><p>Każdy wpis ma dołączoną kartę diagnozy z&nbsp;wynikiem, jak ta obok.<br>Oceniasz sam tekst wpisu.</p></div>
+    <div class="opts"><button type="button" class="opt" data-o="p01"><span class="check"></span><span class="top"><b>01</b><strong>Wynik na początku</strong></span><span class="mid"><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
 
 Pięć zarzutów wobec rządu, żaden z dowodem. Błędy pojedynczych osób przypisane całej koalicji.
 
 Diagnoza AI: sposób mówienia, nie ocena faktów.
-<a>spin.clinic/klinika/1076</a></span><span class="desc">Wynik i nazwisko w pierwszej linii, krótka synteza, zastrzeżenie. <span class="cnt">201/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p02"><span class="check"></span><span class="top"><b>02</b><strong>Jedno zdanie po ludzku</strong></span><span class="tw">Jan Kowalski (PiS) wylicza pięć zarzutów wobec rządu i nie podaje dowodu na żaden.
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Wynik, synteza i zastrzeżenie</span><span class="cap-s">czytelnik (domyślny) · 201/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p02"><span class="check"></span><span class="top"><b>02</b><strong>Jedno zdanie po ludzku</strong></span><span class="mid"><span class="tw">Jan Kowalski (PiS) wylicza pięć zarzutów wobec rządu i nie podaje dowodu na żaden.
 
 Dr. Spin (AI): spin 70/100.
-<a>spin.clinic/klinika/1076</a></span><span class="desc">Jedno zdanie po ludzku. <span class="cnt">135/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p03"><span class="check"></span><span class="top"><b>03</b><strong>Cytat i nazwa techniki</strong></span><span class="tw">„Minister pozwala, by z kopalni soli zrobić śmietnik.”
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Bez technicznych słów</span><span class="cap-s">czytelnik · 135/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p03"><span class="check"></span><span class="top"><b>03</b><strong>Cytat i nazwa techniki</strong></span><span class="mid"><span class="tw">„Minister pozwala, by z kopalni soli zrobić śmietnik.”
 
 To sugerowanie złych zamiarów bez dowodu. Jan Kowalski (PiS), spin 70/100 według Dr. Spina (AI).
-<a>spin.clinic/klinika/1076</a></span><span class="desc">Cytat polityka i nazwa techniki. <span class="cnt">176/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p04"><span class="check"></span><span class="top"><b>04</b><strong>Trzy techniki w punktach</strong></span><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Cytat polityka i nazwa chwytu</span><span class="cap-s">czytelnik · 176/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p04"><span class="check"></span><span class="top"><b>04</b><strong>Techniki w punktach</strong></span><span class="mid"><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
 
 Dr. Spin (AI) znalazł:
 - ukrywanie faktów
@@ -148,50 +156,50 @@ Dr. Spin (AI) znalazł:
 - obwinianie całej grupy
 
 Cytaty i źródła:
-<a>spin.clinic/klinika/1076</a></span><span class="desc">Trzy techniki w punktach. <span class="cnt">171/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p05"><span class="check"></span><span class="top"><b>05</b><strong>Pytanie, które otwiera</strong></span><span class="tw">Ile spinu jest w tym wpisie Jana Kowalskiego (PiS)?
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Trzy techniki i link do cytatów</span><span class="cap-s">czytelnik · 171/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p05"><span class="check"></span><span class="top"><b>05</b><strong>Pytanie na początku</strong></span><span class="mid"><span class="tw">Ile spinu jest w tym wpisie Jana Kowalskiego (PiS)?
 
 Dr. Spin (AI): 70 na 100. Głównie zarzuty bez dowodów i przypisywanie złych zamiarów.
-<a>spin.clinic/klinika/1076</a></span><span class="desc">Pytanie, które zachęca do kliknięcia. <span class="cnt">162/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p06"><span class="check"></span><span class="top"><b>06</b><strong>Odpowiedź pod wpisem</strong></span><span class="tw">Dr. Spin (AI) przeanalizował ten wpis: spin 70/100.
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Zachęca do kliknięcia</span><span class="cap-s">czytelnik · 162/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p06"><span class="check"></span><span class="top"><b>06</b><strong>Odpowiedź pod wpisem</strong></span><span class="mid"><span class="tw">Dr. Spin (AI) przeanalizował ten wpis: spin 70/100.
 
 Najmocniej: zarzuty bez dowodów i obwinianie całej koalicji za błędy pojedynczych osób.
 
-Metoda i cytaty: <a>spin.clinic/klinika/1076</a></span><span class="desc">Spokojna odpowiedź naszego konta pod wpisem polityka. <span class="cnt">182/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p07"><span class="check"></span><span class="top"><b>07</b><strong>Cytat wpisu z komentarzem (QT)</strong></span><span class="tw">Spin 70/100. Pięć zarzutów, zero dowodów, wina jednej osoby rozciągnięta na cały rząd.
+Metoda i cytaty: <a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Nasze konto pod wpisem polityka</span><span class="cap-s">konto @spinclinic · 182/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p07"><span class="check"></span><span class="top"><b>07</b><strong>Cytat z komentarzem</strong></span><span class="mid"><span class="tw">Spin 70/100. Pięć zarzutów, zero dowodów, wina jednej osoby rozciągnięta na cały rząd.
 
-Pełna diagnoza Dr. Spina (AI): <a>spin.clinic/klinika/1076</a></span><span class="desc">Cytat wpisu z krótkim komentarzem. <span class="cnt">142/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p08"><span class="check"></span><span class="top"><b>08</b><strong>Karta jako zdjęcie, link w odpowiedzi</strong></span><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
+Pełna diagnoza Dr. Spina (AI): <a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Nasze konto cytuje wpis</span><span class="cap-s">konto @spinclinic · 142/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p08"><span class="check"></span><span class="top"><b>08</b><strong>Sama karta</strong></span><span class="mid"><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
 
 Pięć zarzutów wobec rządu, żaden z dowodem.
 
-Diagnoza AI, ta sama miara dla rządzących i opozycji. Link w odpowiedzi.</span><span class="desc">Sama grafika, link w pierwszej odpowiedzi. <span class="cnt">151/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p09"><span class="check"></span><span class="top"><b>09</b><strong>Najczystszy wpis dnia</strong></span><span class="tw">Najczystszy wpis dnia: Anna Nowak (KO), spin 8/100.
+Diagnoza AI, ta sama miara dla rządzących i opozycji. Link w odpowiedzi.</span></span><span class="cap"><span class="cap-t">Link w pierwszej odpowiedzi</span><span class="cap-s">konto (co 4. wpis) · 151/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p09"><span class="check"></span><span class="top"><b>09</b><strong>Najczystszy wpis dnia</strong></span><span class="mid"><span class="tw">Najczystszy wpis dnia: Anna Nowak (KO), spin 8/100.
 
 Konkretna liczba, źródło, zero etykiet. Tak też się da.
 
 Dr. Spin (AI), ta sama miara dla wszystkich:
-<a>spin.clinic/klinika/1076</a></span><span class="desc">Codziennie: najczystszy wpis dnia. <span class="cnt">178/280 znaków</span></span></button>
-<button type="button" class="opt" data-o="p10"><span class="check"></span><span class="top"><b>10</b><strong>Trzy najmocniej podkręcone wpisy dnia</strong></span><span class="tw">Trzy najbardziej podkręcone wpisy dnia według Dr. Spina (AI):
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Codziennie, nagradza rzetelność</span><span class="cap-s">konto (raz dziennie) · 178/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p10"><span class="check"></span><span class="top"><b>10</b><strong>Top 3 dnia</strong></span><span class="mid"><span class="tw">Trzy najbardziej podkręcone wpisy dnia według Dr. Spina (AI):
 
 1. 82/100 · polityk opozycji
 2. 76/100 · polityk koalicji
 3. 70/100 · polityk opozycji
 
 Ta sama miara dla obu stron. Szczegóły w wątku.
-<a>spin.clinic/klinika/1076</a></span><span class="desc">Codziennie: trzy najbardziej podkręcone wpisy, obie strony. <span class="cnt">222/280 znaków</span></span></button></div>
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Codziennie, obie strony sceny</span><span class="cap-s">konto (raz dziennie, wątek) · 222/280 znaków</span></span></button></div>
   </section>
 
   <section class="screen" id="s-card" data-q="card" hidden>
     <div class="q-head"><span class="n">Pytanie 2 z 4</span><h2 data-type="Która karta lepiej działa na telefonie?"></h2>
       <p>W aplikacji X karta ma około 500 pikseli szerokości. Porównaj czytelność wyniku i&nbsp;nazwiska.</p></div>
     <div class="opts two">
-      <button type="button" class="opt" data-o="now"><span class="check"></span><span class="top"><b>A</b><strong>Obecna karta</strong></span><img class="full" src="karta.png" alt="Obecna karta diagnozy"><span class="desc">Pełna tabela technik, twierdzenia, Konsylium. Wynik mniejszy.</span></button>
+      <button type="button" class="opt" data-o="now"><span class="check"></span><span class="top"><b>A</b><strong>Obecna karta</strong></span><span class="mid"><img class="full" src="karta.png" alt="Obecna karta diagnozy"></span><span class="cap"><span class="cap-t">Pełna tabela technik, wynik mniejszy</span><span class="cap-s">dużo informacji naraz</span></span></button>
       <button type="button" class="opt" data-o="big"><span class="check"></span><span class="top"><b>B</b><strong>Powiększona karta</strong><small>makieta</small></span>
-        <span class="mock"><span class="h"><i>JK</i><span><strong>Jan Kowalski</strong><small>PiS · wpis na X</small></span></span>
+        <span class="mid"><span class="mock"><span class="h"><i>JK</i><span><strong>Jan Kowalski</strong><small>PiS · wpis na X</small></span></span>
           <span class="m"><span class="num">70<small>/100</small></span><span class="tags"><span class="v">Spin</span><span>Sugerowanie złych zamiarów</span><span>Obwinianie całej grupy</span></span></span>
-          <span class="f"><span><b>spin<em>.</em>clinic</b>www.spin.clinic/klinika/1076</span><span>Analiza AI, nie ocena faktów</span></span></span>
-        <span class="desc">Wynik i&nbsp;nazwisko czytelne w&nbsp;miniaturze, dwie techniki. Szczegóły po kliknięciu.</span></button>
+          <span class="f"><span><b>spin<em>.</em>clinic</b>www.spin.clinic/klinika/1076</span><span>Analiza AI, nie ocena faktów</span></span></span></span>
+        <span class="cap"><span class="cap-t">Wynik i&nbsp;nazwisko czytelne w&nbsp;miniaturze</span><span class="cap-s">dwie techniki, szczegóły po kliknięciu</span></span></button>
     </div>
   </section>
 
@@ -199,9 +207,9 @@ Ta sama miara dla obu stron. Szczegóły w wątku.
     <div class="q-head"><span class="n">Pytanie 3 z 4</span><h2 data-type="Jak powinna brzmieć pierwsza linia wpisu?"></h2>
       <p>To jedyne, co widać przy szybkim przewijaniu.</p></div>
     <div class="opts">
-      <button type="button" class="opt" data-o="score"><span class="check"></span><span class="top"><b>A</b><strong>Wynik na początku</strong></span><span class="hook">Spin 70/100 · Jan Kowalski (PiS)</span></button>
-      <button type="button" class="opt" data-o="brand"><span class="check"></span><span class="top"><b>B</b><strong>Najpierw Dr. Spin</strong></span><span class="hook">Dr. Spin (AI): Jan Kowalski (PiS), spin 70/100</span></button>
-      <button type="button" class="opt" data-o="name"><span class="check"></span><span class="top"><b>C</b><strong>Najpierw polityk</strong></span><span class="hook">Jan Kowalski (PiS): spin 70/100 według Dr. Spina (AI)</span></button>
+      <button type="button" class="opt" data-o="score"><span class="check"></span><span class="top"><b>A</b><strong>Wynik na początku</strong></span><span class="mid"><span class="hook">Spin 70/100 · Jan Kowalski (PiS)</span></span></button>
+      <button type="button" class="opt" data-o="brand"><span class="check"></span><span class="top"><b>B</b><strong>Najpierw Dr. Spin</strong></span><span class="mid"><span class="hook">Dr. Spin (AI): Jan Kowalski (PiS), spin 70/100</span></span></button>
+      <button type="button" class="opt" data-o="name"><span class="check"></span><span class="top"><b>C</b><strong>Najpierw polityk</strong></span><span class="mid"><span class="hook">Jan Kowalski (PiS): spin 70/100 według Dr. Spina (AI)</span></span></button>
     </div>
   </section>
 
@@ -209,12 +217,12 @@ Ta sama miara dla obu stron. Szczegóły w wątku.
     <div class="q-head"><span class="n">Pytanie 4 z 4</span><h2 data-type="Jak pokazać wynik na stronie diagnozy?"></h2>
       <p>Pierwszy ekran na telefonie. Liczba to nasz znak rozpoznawczy, ale część osób woli samo słowo.</p></div>
     <div class="opts two">
-      <button type="button" class="opt" data-o="number"><span class="check"></span><span class="top"><b>A</b><strong>Liczba i słowo</strong></span><span class="dg">
+      <button type="button" class="opt" data-o="number"><span class="check"></span><span class="top"><b>A</b><strong>Liczba i słowo</strong></span><span class="mid"><span class="dg">
         <span class="v"><b>70</b><span>/100 siła spinu</span><em>wysoki</em></span><span class="track"><i></i></span>
-        <h4>Pięć zarzutów wobec rządu, żaden z&nbsp;dowodem</h4><p>Poseł wylicza błędy ministrów i&nbsp;przypisuje im złe zamiary.</p></span></button>
-      <button type="button" class="opt" data-o="word"><span class="check"></span><span class="top"><b>B</b><strong>Samo słowo</strong></span><span class="dg">
+        <h4>Pięć zarzutów wobec rządu, żaden z&nbsp;dowodem</h4><p>Poseł wylicza błędy ministrów i&nbsp;przypisuje im złe zamiary.</p></span></span></button>
+      <button type="button" class="opt" data-o="word"><span class="check"></span><span class="top"><b>B</b><strong>Samo słowo</strong></span><span class="mid"><span class="dg">
         <span class="v"><em class="big">Wysoki spin</em></span>
-        <h4>Pięć zarzutów wobec rządu, żaden z&nbsp;dowodem</h4><p>Poseł wylicza błędy ministrów i&nbsp;przypisuje im złe zamiary.</p></span></button>
+        <h4>Pięć zarzutów wobec rządu, żaden z&nbsp;dowodem</h4><p>Poseł wylicza błędy ministrów i&nbsp;przypisuje im złe zamiary.</p></span></span></button>
     </div>
   </section>
 
