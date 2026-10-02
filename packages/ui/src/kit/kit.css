@@ -6753,3 +6753,5 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-clinic-column__list .sc-spin-row__title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   .sc-clinic-column__list .sc-spin-row__who .sc-spin-row__author { font-size: 12px; line-height: 16px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 }
+/* „Wszystkie diagnozy” w pasku pod kolumnami: niższy przycisk (właściciel 3.10). */
+@media (min-width: 861px) { .sc-clinic-latest__foot .sc-clinic-db__all { min-height: 36px; padding: 7px 18px; display: inline-flex; align-items: center; } }
