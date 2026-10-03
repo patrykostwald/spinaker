@@ -65,6 +65,7 @@ class ThreadItemInput(serializers.Serializer):
     article_id = serializers.IntegerField(min_value=1, required=False)
     link_id = serializers.IntegerField(min_value=1, required=False)
     note = serializers.CharField(max_length=280, required=False, allow_blank=True, default='')
+    link_note = serializers.CharField(max_length=280, required=False, allow_blank=True, default='')
 
     def validate(self, attrs):
         if bool(attrs.get('article_id')) == bool(attrs.get('link_id')):
@@ -154,7 +155,8 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         PersonalContextThreadItem.objects.filter(thread=instance).delete()
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=instance, article_id=row.get('article_id'), link_id=row.get('link_id'),
-                                      note=row.get('note', ''), position=position)
+                                      note=row.get('note', ''),
+                                      link_note=row.get('link_note', '') if position else '', position=position)
             for position, row in enumerate(rows)
         ])
 
@@ -175,8 +177,10 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         rows = self._rows(validated_data) or []
+        sources = validated_data.pop('sources', [])
         self._publication(validated_data)
         instance = PersonalContextThread.objects.create(**validated_data)
+        instance.sources.set(sources)
         self._replace_items(instance, rows)
         return instance
 

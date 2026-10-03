@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
@@ -22,7 +22,12 @@ import { ThreadCard } from '../ThreadCard';
 export function ElementRow({ element, index }: { element: ThreadElement; index: number }) {
   if (element.kind === 'link' && element.hidden) return <li className="sc-thread-el">Link ukryty przez zespół po zgłoszeniu.</li>;
   return (
-    <li className="sc-thread-el" data-kind={element.kind}>
+    <li className="sc-thread-step">
+      {index > 0 && <div className="sc-thread-connector">
+        <span className="sc-thread-connector__arrow" aria-hidden="true">↓</span>
+        {element.link_note && <p><span className="sr-only">Powiązanie z poprzednim: </span>{element.link_note}</p>}
+      </div>}
+      <div className="sc-thread-el" data-kind={element.kind}>
       <span className="sc-thread-el__index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
       <div className="sc-thread-el__body">
         <p className="sc-thread-el__meta">
@@ -35,27 +40,46 @@ export function ElementRow({ element, index }: { element: ThreadElement; index: 
           </>}
         </p>
         <p className="sc-thread-el__title">
-          <a href={element.url} target="_blank" rel="noopener noreferrer">{element.title} ↗</a>
+          <a href={element.url} title={element.title} target="_blank" rel="noopener noreferrer">{element.title} ↗</a>
         </p>
         {element.kind === "article" && <p className="sc-thread-el__links"><Link href={`/material/${element.id}`}>Kontekst materiału</Link></p>}
         {element.note && <p className="sc-thread-el__note">{element.note}</p>}
+      </div>
       </div>
     </li>
   );
 }
 
 function ThreadCardLink({ thread }: { thread: CommunityThreadSummary }) {
+  const [expanded, setExpanded] = useState(false);
+  const uid = useId();
+  const detail = useQuery({
+    queryKey: ['community-thread', String(thread.id)],
+    queryFn: () => getCommunityThread(thread.id), enabled: expanded, retry: false,
+  });
   return (
     <li className="sc-community-card">
       <p className="sc-community-card__meta">@{thread.author}{thread.published_at ? ` · ${formatDatePl(thread.published_at)}` : ""} · {thread.items_count} elementów</p>
-      <h2><Link href={`/nitki/${thread.id}`}>{thread.title}</Link></h2>
+      <h2><button type="button" id={`${uid}-toggle`} className="sc-community-card__toggle" aria-expanded={expanded}
+        aria-controls={`${uid}-content`} onClick={() => setExpanded(value => !value)}>
+        <span title={thread.title}>{thread.title}</span><span aria-hidden="true">{expanded ? '−' : '+'}</span>
+      </button></h2>
       {thread.description && <p className="sc-community-card__desc">{thread.description}</p>}
-      {thread.preview && thread.preview.length > 0 && (
+      {!expanded && thread.preview && thread.preview.length > 0 && (
         <ol className="sc-community-card__preview">{thread.preview.map(item => (
           <li key={`${item.kind}-${item.id}`}>{item.kind === "link" ? <span className="sc-thread-el__tag sc-thread-el__tag--outside">spoza Bazy</span> : null}{item.title}</li>
         ))}</ol>
       )}
-      <p className="sc-community-card__foot"><span>Zgadzam się {thread.opinions.positive} · Nie zgadzam się {thread.opinions.negative}</span><Link href={`/nitki/${thread.id}`}>Otwórz nitkę →</Link></p>
+      <div id={`${uid}-content`} role="region" aria-labelledby={`${uid}-toggle`} hidden={!expanded}>
+        {expanded && <>
+          {detail.isPending && <p role="status">Ładuję nitkę…</p>}
+          {detail.isError && <p role="alert">{isUnavailable(detail.error) ? 'Nitka nie jest już dostępna.' : 'Nie udało się pobrać nitki.'}
+            <Button type="button" variant="quiet" onClick={() => detail.refetch()}>Spróbuj ponownie</Button></p>}
+          {detail.isSuccess && <ol className="sc-thread-els" aria-label="Elementy nitki w kolejności">{detail.data.items.map((item, index) => <ElementRow key={`${item.kind}-${item.id}`} element={item} index={index} />)}</ol>}
+          <p><Link href={`/nitki/${thread.id}`}>Otwórz nitkę</Link></p>
+        </>}
+      </div>
+      <p className="sc-community-card__foot"><span>Zgadzam się {thread.opinions.positive} · Nie zgadzam się {thread.opinions.negative}</span></p>
     </li>
   );
 }

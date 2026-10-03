@@ -2,8 +2,8 @@
 import { ApiError, apiFetch, apiWrite } from "./api";
 
 export type ThreadElement =
-  | { kind: "article"; id: number; title: string; url: string; category: string; published_date: string | null; source_name: string; note: string; position: number }
-  | { kind: "link"; id: number; title: string; url: string; domain: string; title_origin: "publisher" | "reader"; hidden?: boolean; note: string; position: number };
+  | { kind: "article"; id: number; title: string; url: string; category: string; published_date: string | null; source_name: string; note: string; link_note?: string; position: number }
+  | { kind: "link"; id: number; title: string; url: string; domain: string; title_origin: "publisher" | "reader"; hidden?: boolean; note: string; link_note?: string; position: number };
 
 export type CommunityThreadSummary = {
   id: number;
@@ -21,7 +21,8 @@ export type CommunityThreadSummary = {
 
 export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElement[]; is_owner: boolean };
 
-export type ResolvedLink = { item: Omit<ThreadElement, "note" | "position">; status: "in_base" | "existing_link" | "created" };
+type ResolvedElement = ThreadElement extends infer Element ? Element extends ThreadElement ? Omit<Element, "note" | "link_note" | "position"> : never : never;
+export type ResolvedLink = { item: ResolvedElement; status: "in_base" | "existing_link" | "created" };
 
 export const getCommunityThreads = (page = 1, q = "", author = "", options: { sort?: 'new' | 'best'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
   const params = new URLSearchParams({ page: String(page) });

@@ -2,7 +2,7 @@
 from django.contrib import admin, messages
 from django.utils import timezone
 
-from news.account_models import PersonalContextThread
+from news.account_models import PersonalContextThread, PersonalContextThreadItem
 from news.community_models import CommunityLink, CommunityThreadOpinion, CommunityThreadReport
 
 
@@ -40,7 +40,19 @@ class CommunityThreadOpinionAdmin(admin.ModelAdmin):
     raw_id_fields = ('thread', 'user')
 
 
+class PublicThreadItemInline(admin.TabularInline):
+    model = PersonalContextThreadItem
+    fields = ('position', 'article', 'link', 'note', 'link_note')
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 class PublicThreadAdmin(admin.ModelAdmin):
+    inlines = [PublicThreadItemInline]
     list_display = ('title', 'owner', 'is_public', 'published_at', 'hidden_at')
     list_filter = ('is_public',)
     search_fields = ('title', 'owner__username')

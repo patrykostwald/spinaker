@@ -126,6 +126,7 @@ class PersonalContextThreadItem(models.Model):
     link = models.ForeignKey('news.CommunityLink', null=True, blank=True, on_delete=models.CASCADE,
                              related_name='thread_items')
     note = models.CharField(max_length=280, blank=True, default='')
+    link_note = models.CharField(max_length=280, blank=True, default='')
     position = models.PositiveSmallIntegerField()
 
     class Meta:
@@ -134,6 +135,8 @@ class PersonalContextThreadItem(models.Model):
             models.UniqueConstraint(fields=['thread', 'article'], name='unique_personal_context_thread_article'),
             models.UniqueConstraint(fields=['thread', 'link'], name='unique_personal_context_thread_link'),
             models.UniqueConstraint(fields=['thread', 'position'], name='unique_personal_context_thread_position'),
+            models.CheckConstraint(condition=~models.Q(position=0) | models.Q(link_note=''),
+                                   name='personal_thread_first_without_link_note'),
             models.CheckConstraint(condition=models.Q(article__isnull=False, link__isnull=True) | models.Q(article__isnull=True, link__isnull=False),
                                    name='personal_thread_item_article_xor_link'),
         ]

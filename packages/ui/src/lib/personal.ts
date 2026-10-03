@@ -34,7 +34,7 @@ export type PersonalContextThread = {
   updated_at: string;
 };
 
-export type PersonalThreadItemInput = { article_id?: number; link_id?: number; note?: string };
+export type PersonalThreadItemInput = { article_id?: number; link_id?: number; note?: string; link_note?: string };
 
 export type PersonalContextThreadInput = {
   title: string;
