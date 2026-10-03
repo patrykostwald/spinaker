@@ -8461,3 +8461,17 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-social-text > div { flex: 1 1 auto; min-width: 0; }
 .sc-social-text > button { flex: none; }
 .sc-thread-strip__head--full:has(.sc-repins) .sc-fullhead { flex: 0 1 auto; }
+
+/* komentarz autora nad boksem i rodzaj spinki nad zatrzaskiem (właściciel 4.10) */
+.sc-trop-overlay__body > article .sc-thread-strip__track { padding-top: 74px; }
+.sc-trop-overlay__body > article .sc-thread-strip__box { overflow: visible; }
+.sc-box-cap { position: absolute; left: 0; right: 0; bottom: calc(100% + 10px); display: grid; gap: 3px; font-size: 12px; line-height: 1.4; color: var(--sc-text-2); pointer-events: none; }
+.sc-box-cap b { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sc-text-3); }
+.sc-box-cap[data-role="teza"] b { color: #c9a7ff; } .sc-box-cap[data-role="fakt"] b { color: #7fd6a8; } .sc-box-cap[data-role="kontekst"] b { color: #8fb8ff; }
+.sc-box-cap[data-role="pytanie"] b { color: #f2c66d; } .sc-box-cap[data-role="opinia"] b { color: var(--sc-text-2); } .sc-box-cap[data-role="wniosek"] b { color: var(--sc-text); }
+.sc-box-cap span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.sc-joint[data-kind] { width: auto !important; min-width: 34px; padding-inline: 4px; }
+.sc-joint__kind { position: absolute; left: 50%; bottom: calc(50% + 12px); transform: translateX(-50%); font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--sc-text-2); white-space: nowrap; pointer-events: none; transition: opacity .25s; }
+.sc-joint.is-open .sc-joint__kind { opacity: 0; }
+.sc-joint[data-kind] { min-width: 100px; }
+.sc-trop-overlay__body > article .sc-thread-strip__track:not(:has(.sc-joint.is-open)) { padding-top: 92px; }

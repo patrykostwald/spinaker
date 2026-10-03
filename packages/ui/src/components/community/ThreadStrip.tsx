@@ -213,7 +213,9 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         edges();
       }}>
       {ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
-        {expanded && index > 0 && <li className={`sc-joint${openJoint === index ? ' is-open' : ''}`}>
+        {expanded && index > 0 && <li className={`sc-joint${openJoint === index ? ' is-open' : ''}`} data-kind={item.link_kind || undefined}>
+          {/* rodzaj spinki nad zatrzaskiem (właściciel 4.10) */}
+          {item.link_kind && <span className="sc-joint__kind">{LINK_WORD[item.link_kind]}</span>}
           {/* Spinka (właściciel 3.10): kreska z zawijasem spinająca następny boks, w kolorze reakcji. Kliknięta rozsuwa się
               z lekkim zygzakiem, a nad nią pojawia się boks z wyjaśnieniem autora i oceną; „Otwórz” pokazuje ją na całym obszarze. */}
           <button type="button" className="sc-joint__dot" aria-expanded={openJoint === index}
@@ -236,6 +238,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)}
           style={{ ['--i' as string]: index }} onClick={event => { if (expanded && !(event.target as HTMLElement).closest('a, button')) setFocus({ kind: 'box', index }); }}>
           {item.note && !expanded && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
+          {/* nad boksem: rodzaj i komentarz autora, najwyżej 2 wiersze (właściciel 4.10) */}
+          {expanded && (item.role || item.note) && <span className="sc-box-cap" data-role={item.role || undefined}>{item.role && <b>{ROLE_WORD[item.role]}</b>}{item.note && <span>{item.note}</span>}</span>}
           {expanded && <BoxFace item={item} />}
           {expanded && <span className="sc-rframe" aria-hidden="true" />}
           {item.box_type === 'post' ? <XPostCard item={item} /> :
@@ -270,6 +274,9 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     </div>}
   </article>;
 }
+
+const ROLE_WORD = { teza: 'Teza', fakt: 'Fakt', kontekst: 'Kontekst', pytanie: 'Pytanie', opinia: 'Opinia', wniosek: 'Wniosek' } as const;
+const LINK_WORD = { bo: 'bo', ale: 'ale', czy_na_pewno: 'czy na pewno?', przeczy: 'przeczy', wynika_z: 'wynika z' } as const;
 
 /**
  * Narzędzia otwartej spinki (Konsylium 3.10, decyzja właściciela): kontraspinka, czyli ten sam materiał ułożony

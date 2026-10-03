@@ -79,6 +79,8 @@ class ThreadItemInput(serializers.Serializer):
     # wyjaśnienie autora = „tytuł” boksu: dlaczego ten materiał jest w spince; może być długie (właściciel 3.10)
     note = serializers.CharField(max_length=4000, required=False, allow_blank=True, default='')
     link_note = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')
+    role = serializers.ChoiceField(choices=[c for c, _ in PersonalContextThreadItem.ROLES], required=False, allow_blank=True, default='')
+    link_kind = serializers.ChoiceField(choices=[c for c, _ in PersonalContextThreadItem.LINK_KINDS], required=False, allow_blank=True, default='')
 
     def validate(self, attrs):
         if sum(bool(attrs.get(key)) for key in ('article_id', 'link_id', 'box_item_id')) != 1:
@@ -212,7 +214,8 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         PersonalContextThreadItem.objects.filter(thread=instance).delete()
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=instance, article_id=row.get('article_id'), link_id=row.get('link_id'),
-                                      box_data=boxes.get(row.get('box_item_id')), note=row.get('note', ''),
+                                      box_data=boxes.get(row.get('box_item_id')), note=row.get('note', ''), role=row.get('role', ''),
+                                      link_kind=row.get('link_kind', '') if position else '',
                                       link_note=row.get('link_note', '') if position else '', position=position)
             for position, row in enumerate(rows)
         ])

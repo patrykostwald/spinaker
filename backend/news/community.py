@@ -162,7 +162,8 @@ def item_data(item):
     else:
         data = _link_ref(item.link)
         data['hidden'] = bool(item.link.hidden_at)
-    data.update({'note': item.note, 'link_note': item.link_note if item.position else '', 'position': item.position, 'item_id': item.pk})
+    data.update({'note': item.note, 'link_note': item.link_note if item.position else '', 'position': item.position, 'item_id': item.pk,
+                 'role': item.role, 'link_kind': item.link_kind if item.position else ''})
     return data
 
 

@@ -357,7 +357,7 @@ def test_repin_uses_same_boxes_and_is_counted(setup):
     client, thread, reader, author, base = setup
     client.force_authenticate(reader)
     links = list(thread.items.values_list('link_id', flat=True))
-    rows = [{'link_id': pk, 'note': f'Moje {i}', 'link_note': 'Inaczej' if i else ''} for i, pk in enumerate(reversed(links))]
+    rows = [{'link_id': pk, 'note': f'Moje {i}', 'link_note': 'Inaczej' if i else '', 'role': 'fakt' if i else 'teza', 'link_kind': 'ale' if i else ''} for i, pk in enumerate(reversed(links))]
     wrong = client.post('/api/account/context-threads/', {'title': 'Przepięcie', 'repin_of': thread.pk, 'items': rows[:-1], 'is_public': True}, format='json')
     assert wrong.status_code == 400 and 'repin_of' in wrong.data
     response = client.post('/api/account/context-threads/', {'title': 'Przepięcie', 'repin_of': thread.pk, 'items': rows, 'is_public': True}, format='json')
@@ -365,6 +365,8 @@ def test_repin_uses_same_boxes_and_is_counted(setup):
     pk = response.data['id']
     assert client.get(base).data['repins'] == [pk]
     assert client.get(f'/api/community/threads/{pk}/').data['repin_of'] == thread.pk
+    items = client.get(f'/api/community/threads/{pk}/').data['items']
+    assert [i['role'] for i in items][:2] == ['teza', 'fakt'] and items[0]['link_kind'] == '' and items[1]['link_kind'] == 'ale'
     client.force_authenticate(thread.owner)
     own = client.post('/api/account/context-threads/', {'title': 'Własna', 'repin_of': thread.pk, 'items': rows}, format='json')
     assert own.status_code == 400
