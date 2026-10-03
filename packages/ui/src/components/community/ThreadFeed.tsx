@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getCommunityThreads } from '../../lib/community';
 import { useFeature } from '../../lib/features';
@@ -10,23 +11,20 @@ import { Button } from '../../kit/Button';
 
 export type FeedSort = 'hot' | 'new' | 'best' | 'comments';
 export type FeedSource = 'all' | 'drspin' | 'readers' | 'izba';
-const SOURCES: { value: FeedSource; label: string }[] = [
-  { value: 'all', label: 'Wszystkie' }, { value: 'drspin', label: 'Dr. Spin' }, { value: 'readers', label: 'Czytelnicy' }, { value: 'izba', label: 'Izba przyjęć' },
-];
-const SORTS: { value: FeedSort; label: string }[] = [
-  { value: 'hot', label: 'Najgorętsze' }, { value: 'new', label: 'Najnowsze' }, { value: 'best', label: 'Najlepiej oceniane' }, { value: 'comments', label: 'Komentowane' },
-];
+const SOURCES: FeedSource[] = ['all', 'drspin', 'readers', 'izba'];
+const SORTS: FeedSort[] = ['hot', 'new', 'best', 'comments'];
 
 /**
- * Jedna lista tropów. Pasek: zakładki źródła (co oglądam) i obok ciche sortowanie (jak). Bez filtra obozów:
+ * Jedna lista tropów. Źródło i kolejność wybiera się w pasku kategorii nad treścią (SectionBar, ?zrodlo= i ?sort=). Bez filtra obozów:
  * ta sama miara dla wszystkich. Izba przyjęć: nowe tropy czytelników przed awansem na główną (news/admission.py).
  */
 export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}, exclude, label = 'Tropy' }: {
   initialSort?: FeedSort; limit?: number; term?: string; context?: { article_id?: number; figure_id?: number; url?: string }; exclude?: number; label?: string;
 }) {
   const accounts = useFeature('ACCOUNTS_ENABLED');
-  const [sort, setSort] = useState<FeedSort>(initialSort);
-  const [source, setSource] = useState<FeedSource>('all');
+  const params = useSearchParams();
+  const sort = SORTS.find(value => value === params?.get('sort')) ?? initialSort;
+  const source = SOURCES.find(value => value === params?.get('zrodlo')) ?? 'all';
   const [openId, setOpenId] = useState<number | null>(null);
   const [fullId, setFullId] = useState<number | null>(null);
   const query = useInfiniteQuery({
@@ -40,17 +38,6 @@ export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}
   const all = (query.data?.pages.flatMap(page => page.results) ?? []).filter(thread => thread.id !== exclude);
   const threads = limit ? all.slice(0, limit) : all;
   return <section className="sc-thread-feed" aria-label={label}>
-    <div className="sc-thread-sortbar">
-      <div role="tablist" aria-label="Źródło tropów" className="sc-thread-sortbar__tabs">
-        {SOURCES.map(item => <button key={item.value} type="button" role="tab" aria-selected={source === item.value}
-          onClick={() => { setSource(item.value); setOpenId(null); }}>{item.label}</button>)}
-      </div>
-      <label className="sc-thread-sortbar__sort"><span className="sc-sr-only">Kolejność</span>
-        <select value={sort} onChange={event => { setSort(event.target.value as FeedSort); setOpenId(null); }}>
-          {SORTS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
-      </label>
-    </div>
     {source === 'izba' && <p className="sc-thread-sortbar__hint">Nowe tropy czytelników. Na główną przechodzi trop, który w 7 dni zbierze 10 ocen ✓ i co najmniej 60% poparcia.</p>}
     {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie tropów" />}
     {query.isError && <p role="alert" className="sc-thread-feed__empty">Nie udało się pobrać tropów. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}

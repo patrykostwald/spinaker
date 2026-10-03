@@ -68,7 +68,7 @@ export function SocialNavigation() {
   const unread = notifications.data?.unread ?? 0;
 
   const item = (entry: Entry, compact = false) => {
-    const content = <><Icon d={entry.path} /><span>{entry.label}</span>
+    const content = <>{compact && <Icon d={entry.path} />}<span>{entry.label}</span>
       {entry.path === icon.bell && unread > 0 && <small className="sc-rail__badge" aria-label={`${unread} nieprzeczytanych`}>{unread}</small>}</>;
     if (entry.account && !accounts) return <span key={entry.label} aria-disabled="true" title="Dostępne po włączeniu kont">{content}</span>;
     return <Link key={entry.label} href={entry.href} className={compact ? undefined : entry.href === '/wsparcie' ? 'sc-rail__support' : undefined}
@@ -103,7 +103,7 @@ export function SocialNavigation() {
 
     {sheet && <div className="sc-more-sheet" onClick={event => { if (event.target === event.currentTarget) setSheet(false); }}>
       <div id="sc-more-sheet" role="dialog" aria-modal="true" aria-label="Więcej" className="sc-more-sheet__panel">
-        <div className="sc-rail__group">{extra.map(entry => item(entry, true))}</div>
+        <div className="sc-rail__group">{extra.map(entry => item(entry))}</div>
         <p>{small.map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}<a href="/en/about" lang="en" hrefLang="en">English</a></p>
         <ThemeSwitcher compact />
         <button type="button" className="sc-more-sheet__close" onClick={() => setSheet(false)}>Zamknij</button>

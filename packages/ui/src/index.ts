@@ -94,3 +94,4 @@ export { SocialPanel, SocialInbox, SocialPasswordSetup } from './components/Soci
 
 export { ThreadAppealPage } from './components/community/ThreadAppealPage';
 export { SocialNavigation } from './components/community/SocialNavigation';
+export { SectionBar } from './components/community/SectionBar';

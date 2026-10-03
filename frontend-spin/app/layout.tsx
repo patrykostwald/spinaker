@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
-import { SiteHeader, TouchScrollGuard, SocialNavigation } from "@spin-clinic/ui";
+import { SiteHeader, TouchScrollGuard, SocialNavigation, SectionBar } from "@spin-clinic/ui";
 import { FeatureFooter, PreviewBanner, PreviewPwa } from "./PreviewControls";
 
 import "./globals.css";
@@ -45,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteHeader site={site} />
           <TouchScrollGuard />
           <PreviewPwa />
-          <div className="sc-social-layout"><SocialNavigation /><main id="main-content" className="sc-app-main"><SurveyBar />{children}</main></div>
+          <div className="sc-social-layout"><SocialNavigation /><div className="sc-app-col"><Suspense><SectionBar /></Suspense><main id="main-content" className="sc-app-main"><SurveyBar />{children}</main></div></div>
           <FeatureFooter />
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}

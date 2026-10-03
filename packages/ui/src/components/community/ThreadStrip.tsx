@@ -20,9 +20,9 @@ const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', te
  * `variant="row"`: wiersz wspólnej listy (ThreadFeed) - rozwija się po chwili najechania albo stuknięciu,
  * otwarty jest tylko jeden naraz (stan trzyma lista), pod spodem 3 najtrafniejsze komentarze i „Odpowiedz”.
  */
-export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false, variant = 'card', open, onOpenChange, offset = 0, onFullscreen }: {
+export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false, variant = 'card', open, onOpenChange, offset = 0, onFullscreen, badge }: {
   thread: CommunityThreadSummary; items?: ThreadElement[]; full?: boolean; initiallyExpanded?: boolean;
-  variant?: 'card' | 'row'; open?: boolean; onOpenChange?: (open: boolean) => void; offset?: number; onFullscreen?: () => void;
+  variant?: 'card' | 'row'; open?: boolean; onOpenChange?: (open: boolean) => void; offset?: number; onFullscreen?: () => void; badge?: string;
 }) {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [commentCount, setCommentCount] = useState<number | null>(null);
@@ -118,7 +118,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     {row ? <header className="sc-trow">
       <Avatar name={thread.is_ai ? 'Dr. Spin' : thread.display_name || thread.author} ai={thread.is_ai} size={36} />
       <h2 className="sc-trow__h"><button type="button" className="sc-trow__main" aria-expanded={expanded} aria-controls={`${uid}-track`} onClick={toggle}>
-        <span className="sc-trow__by"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}
+        <span className="sc-trow__by"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}{badge && <span className="sc-trow__badge">{badge}</span>}
           {thread.published_at && <><span aria-hidden="true">·</span><time dateTime={thread.published_at}>{ago(thread.published_at)}</time></>}</span>
         <span className="sc-trow__title" title={thread.title}>{thread.title}</span>
         <span className="sc-trow__meta">

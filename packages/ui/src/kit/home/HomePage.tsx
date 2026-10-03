@@ -2,10 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { HomeSupport } from "./HomeSupport";
-import { HomeSpinTeaser } from "./HomeSpinTeaser";
 import { HomeThreads } from "./HomeThreads";
-import { NewsletterSignup } from "../../components/NewsletterSignup";
 import { useDemoMode } from "./data";
 
 function DemoBanner() {
@@ -36,9 +33,6 @@ export function HomePage() {
         {/* Właściciel 3.10: pierwsze, co widzi czytelnik, to nitki; Klinika pod nimi; Baza, Wiadomości i Twoje wiadomości
             nie stoją na głównej (Baza i wyszukiwanie zostają pod własnym adresem). */}
         <HomeThreads />
-        <HomeSpinTeaser />
-        <HomeSupport />
-        <NewsletterSignup source="home" />
       </div>
     </>
   );
