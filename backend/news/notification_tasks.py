@@ -19,6 +19,10 @@ def retry_thread_moderation_mail():
 
 
 def _deliver_event(event):
+    if event.kind == 'post':
+        from news.followed_posts import deliver_post
+        deliver_post(event)
+        return
     if event.kind == 'account_newsletter':
         import secrets
         from news.account_models import AccountIdentity
@@ -61,10 +65,14 @@ def _deliver_event(event):
         diagnosis = published_diagnoses().filter(pk=event.target_id).first()
         if not diagnosis:
             return
+        from news.followed_posts import update_diagnosis
+        update_diagnosis(diagnosis)
         figure = figures_by_account({diagnosis.post.account_id}).get(diagnosis.post.account_id)
         if not figure:
             return
-        recipients = Follow.objects.filter(figure=figure, created_at__lte=event.created_at)
+        modes = ['diagnoses', 'strong_spin'] if diagnosis.intensity >= 70 else ['diagnoses']
+        recipients = Follow.objects.filter(figure=figure, mode__in=modes, created_at__lte=event.created_at).exclude(
+            user__notifications__posts__post=diagnosis.post)
         kind, title, url = 'followed_diagnosis', f'Nowa diagnoza: {figure.canonical_name}', f'/klinika/{diagnosis.pk}'
     elif event.kind == 'thread':
         from news.community import public_threads
@@ -110,7 +118,7 @@ def _deliver_event(event):
     else:
         return
     for user in get_user_model().objects.filter(pk__in=recipients.values('user_id'), is_active=True):
-        notify(user, kind, title, url)
+        notify(user, kind, title, url, figure=figure if event.kind == 'diagnosis' else None)
 
 
 @shared_task(name='news.notification_tasks.process_notification_events', soft_time_limit=50, time_limit=60)
@@ -131,6 +139,8 @@ def process_notification_events():
             count += 1
         except Exception:
             logger.exception('Notification event delivery failed')
+    from news.followed_posts import flush_post_pushes
+    flush_post_pushes()
     return count
 
 
@@ -161,7 +171,7 @@ def send_notification_digests():
                     preference.save(update_fields=['last_digest_at'])
                     continue
                 origin = settings.ACCOUNT_PUBLIC_URL
-                body = 'Co nowego w spin.clinic:\n\n' + '\n\n'.join(f'{row.title}\n{origin}{row.url}' for row in batch)
+                body = 'Co nowego w spin.clinic:\n\n' + '\n\n'.join(f'{row.title}\n{row.url if row.url.startswith("https://x.com/") else origin + row.url}' for row in batch)
                 remaining = rows.count() - len(batch)
                 if remaining:
                     body += f'\n\nPozostałe powiadomienia: {remaining}. Zobacz wszystkie: {origin}/konto'

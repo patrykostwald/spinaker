@@ -6251,6 +6251,14 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-f2-onboarding form { max-width: 620px; }
 .sc-f2-actions, .sc-f2-follow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .sc-f2-follow { max-width: 100%; }
+.sc-follow-mode-box { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--sc-line); border-radius: 8px; max-width: 100%; min-width: 0; box-sizing: border-box; }
+.sc-follow-mode-box [role="radiogroup"] { display: grid; }
+.sc-follow-mode-box label { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 44px; margin: 0; padding: 0; white-space: nowrap; }
+.sc-follow-mode-box input[type="radio"] { flex: 0 0 20px; width: 20px; height: 20px; min-height: 20px; margin: 0; padding: 0; accent-color: var(--sc-text); }
+.sc-follow-mode-setting { display: grid; gap: 8px; margin-block: 8px; max-width: 100%; }
+.sc-follow-mode-setting label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sc-follow-mode-setting select { max-width: 100%; min-width: 0; }
+.sc-follow-diagnosed { display: inline-block; margin: 4px; padding: 4px 8px; border: 1px solid var(--sc-line); border-radius: 8px; font-size: 13px; }
 .sc-f2-follow > span { flex-basis: 100%; font-size: 14px; }
 .sc-f2-settings { display: grid; gap: 24px; }
 .sc-f2-settings > section { border-bottom: 1px solid var(--sc-line); padding-bottom: 24px; }

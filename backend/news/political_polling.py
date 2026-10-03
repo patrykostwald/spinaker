@@ -35,6 +35,7 @@ def configuration():
         return None
     try:
         config = {'token': token, 'page_size': int(os.environ.get('X_POLITICAL_PAGE_SIZE', '10')),
+            'followed_minutes': max(5, int(os.environ.get('X_FOLLOWED_POLL_MINUTES', '15'))),
             'daily_posts': int(os.environ.get('X_POLITICAL_DAILY_POST_LIMIT', '100')),
             'daily_requests': int(os.environ.get('X_POLITICAL_DAILY_REQUEST_LIMIT', '100')),
             'monthly_usd': Decimal(os.environ.get('X_POLITICAL_MONTHLY_USD_LIMIT', '5')),
@@ -57,11 +58,14 @@ def fetch_x_timeline(account, window, config):
     """Only this fixed official endpoint receives the bearer token; redirects fail."""
     if not NUMERIC_ID.fullmatch(account.user_id):
         raise PoliticalReadError('invalid_account_identity')
-    params = {'max_results': window['page_size'], 'exclude': 'retweets',
-        'post.fields': 'id,text,created_at,entities,attachments,note_post,public_metrics,possibly_sensitive,withheld',
+    params = {'max_results': window['page_size'],
+        'post.fields': 'id,text,created_at,entities,attachments,note_post,public_metrics,possibly_sensitive,withheld,referenced_tweets,in_reply_to_user_id',
         'expansions': 'author_id,attachments.media_keys',
         'user.fields': 'id,name,username,profile_image_url,protected,public_metrics',
         'media.fields': 'media_key,type,url,preview_image_url,alt_text,variants,duration_ms', 'end_time': window['end_time']}
+    exclude = ([] if account.include_reposts else ['retweets']) + ([] if account.include_replies else ['replies'])
+    if exclude:
+        params['exclude'] = ','.join(exclude)
     if window.get('since_id'):
         params['since_id'] = window['since_id']
     else:
@@ -187,6 +191,29 @@ def parse_page(raw, account, window):
     return parsed, token, len(users)
 
 
+def followed_account_ids(account_ids):
+    from django.conf import settings
+    from news.clinic import figures_by_account
+    from news.notification_models import Follow
+    if not getattr(settings, 'ACCOUNTS_ENABLED', False):
+        return set()
+    figures = figures_by_account(account_ids)
+    followed = set(Follow.objects.filter(mode='posts', figure_id__in=[f.pk for f in figures.values()],
+        user__is_active=True).values_list('figure_id', flat=True))
+    return {pk for pk, figure in figures.items() if figure.pk in followed}
+
+
+def poll_minutes(account, config, followed):
+    return max(5, min(account.poll_interval_minutes, config.get('followed_minutes', 15))) if followed else account.poll_interval_minutes
+
+
+def due_at(account, config, followed):
+    # A new follow may shorten an existing schedule, but never a retry/backoff or pagination lease.
+    if followed and account.last_polled_at and not account.last_error and not account.poll_cursor.get('window'):
+        return min(account.next_poll_at, account.last_polled_at + timedelta(minutes=poll_minutes(account, config, True)))
+    return account.next_poll_at
+
+
 def reserve(account_id, config):
     """A global DB lease serializes reservation across worker processes as well."""
     now, token = timezone.now(), uuid4().hex
@@ -197,7 +224,8 @@ def reserve(account_id, config):
         if budget.get('lease_until', '') > now.isoformat() or budget.get('blocked_until', '') > now.isoformat():
             return None, 'deferred'
         account = PoliticalAccount.objects.select_for_update().get(pk=account_id)
-        if not account.enabled or not account.is_confirmed() or account.next_poll_at > now:
+        followed = account.pk in followed_account_ids([account.pk])
+        if not account.enabled or not account.is_confirmed() or due_at(account, config, followed) > now:
             return None, 'unconfirmed_or_not_due'
         month, day = now.astimezone(dt_timezone.utc).strftime('%Y-%m'), now.astimezone(dt_timezone.utc).date().isoformat()
         if budget.get('month') != month:
@@ -233,9 +261,13 @@ def political_poll_cycle():
         return {'status': 'disabled', 'reason': exc.code, 'new_posts': 0}
     if config is None:
         return {'status': 'disabled', 'reason': 'x_not_configured', 'new_posts': 0}
-    candidates = PoliticalAccount.objects.filter(enabled=True, confirmed_at__isnull=False,
-        confirmed_by__is_active=True, confirmed_by__is_staff=True, next_poll_at__lte=timezone.now()).order_by('next_poll_at', 'pk')
-    account = next((item for item in candidates if item.is_confirmed()), None)
+    candidates = list(PoliticalAccount.objects.filter(enabled=True, confirmed_at__isnull=False,
+        confirmed_by__is_active=True, confirmed_by__is_staff=True).select_related('confirmed_by'))
+    followed = followed_account_ids([item.pk for item in candidates])
+    now = timezone.now()
+    candidates = [item for item in candidates if due_at(item, config, item.pk in followed) <= now and item.is_confirmed()]
+    candidates.sort(key=lambda item: (item.pk not in followed, due_at(item, config, item.pk in followed), item.pk))
+    account = next(iter(candidates), None)
     if account is None:
         return {'status': 'idle', 'reason': 'no_confirmed_due_accounts', 'new_posts': 0}
     reservation, status = reserve(account.pk, config)
@@ -274,7 +306,7 @@ def political_poll_cycle():
                 cursor['completed_until'] = window['end_time']
             current.poll_cursor, current.last_error = cursor, ''
             current.last_polled_at = timezone.now()
-            current.next_poll_at = timezone.now() + timedelta(seconds=60 if next_token else current.poll_interval_minutes * 60)
+            current.next_poll_at = timezone.now() + timedelta(seconds=60 if next_token else poll_minutes(current, config, current.pk in followed) * 60)
             current.save(update_fields=['poll_cursor', 'last_error', 'last_polled_at', 'next_poll_at'])
             # Settle only a fully validated response. Unknown/error outcomes keep
             # the full reservation; repeated resources get no assumed discount.

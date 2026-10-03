@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, usePortalApi } from '../kit';
 import { apiFetch, apiWrite } from '../lib/api';
 import { accountEmail, emailVerified, useAccount } from '../lib/account';
-import { accountHref, accountMessage, useFollows, useNotifications, type NotificationSettings } from '../lib/accountPhase2';
+import { accountHref, notificationHref, accountMessage, useFollows, useNotifications, type NotificationSettings } from '../lib/accountPhase2';
 import { isUnavailable, useSavedTopics } from '../lib/personal';
 import { useFeature } from '../lib/features';
 import { getPortalConfig } from '../lib/portal';
@@ -13,7 +13,7 @@ import { getPublicFigures, usePublicFigure, verifiedXAccount } from '../lib/publ
 import { searchClinicSpins } from '../lib/clinic';
 import { formatDateTimePl } from '../lib/utils';
 import { PersonalizedNews } from './PersonalizedNews';
-import { FollowButton } from './FollowButton';
+import { FollowButton, FollowModeSelect } from './FollowButton';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { XAccountSettings } from './XAccountSettings';
 import { ProfileEditor, MutedSettings } from './AccountDashboardParts';
@@ -54,7 +54,7 @@ export function FollowedSection() {
     {(['figure', 'user'] as const).map(kind => {
       const rows = follows.data?.filter(row => row.kind === kind) ?? [];
       return rows.length ? <div key={kind}><h3>{kind === 'figure' ? 'Osoby publiczne' : 'Autorzy nitek'}</h3><ul className="sc-account-rows">{rows.map(row => <li key={row.id}>
-        <div><Link className="sc-account-title" href={accountHref(row.url)}>{row.label}</Link>{kind === 'figure' && <LatestDiagnosis figureId={row.target_id} />}</div>
+        <div><Link className="sc-account-title" href={accountHref(row.url)}>{row.label}</Link>{kind === 'figure' && <><FollowModeSelect follow={row} /><LatestDiagnosis figureId={row.target_id} /></>}</div>
         <FollowButton kind={row.kind} targetId={row.target_id} label={row.label} />
       </li>)}</ul></div> : null;
     })}
@@ -74,7 +74,9 @@ export function NotificationsSection() {
     {Boolean(notifications.data?.unread) && <Button variant="quiet" disabled={pending} onClick={() => read()}>Oznacz wszystkie jako przeczytane</Button>}
     {notifications.isSuccess && !notifications.data?.results?.length && <div className="sc-account-empty"><span aria-hidden="true">○</span><p>Nie masz nowych powiadomień.</p><Button href="/konto#ustawienia">Ustaw powiadomienia</Button></div>}
     <ul className="sc-account-rows">{notifications.data?.results.map(row => <li key={row.id} data-unread={!row.read_at || undefined}>
-      <div><p className="sc-f2-muted">{!row.read_at && <strong>Nowe · </strong>}<time dateTime={row.created_at}>{formatDateTimePl(row.created_at)}</time></p><Link href={accountHref(row.url)}>{row.title}</Link></div>
+      <div><p className="sc-f2-muted">{!row.read_at && <strong>Nowe · </strong>}<time dateTime={row.created_at}>{formatDateTimePl(row.created_at)}</time></p><a href={notificationHref(row.url)}>{row.title}</a>
+        {row.posts?.map(post => <p key={post.id}>{row.posts!.length > 1 && <a href={notificationHref(post.url)}>{post.title}</a>}{post.score !== null && <a className="sc-follow-diagnosed" href={notificationHref(post.url)}>Zbadane: {post.score}/100</a>}</p>)}
+      </div>
       {!row.read_at && <Button variant="quiet" disabled={pending} onClick={() => read([row.id])} aria-label={`Oznacz jako przeczytane: ${row.title}`}>Przeczytane</Button>}
     </li>)}</ul>
     {message && <p role="status">{message}</p>}

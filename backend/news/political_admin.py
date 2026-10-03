@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Count, Q
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -144,12 +145,30 @@ class ParliamentaryRosterEntryAdmin(admin.ModelAdmin):
 
 class PublicFigureAdmin(admin.ModelAdmin):
     """Manual editorial register; deliberately has no social-account actions."""
-    list_display = ['canonical_name', 'role_category', 'role_title', 'organisation', 'status', 'archived', 'source_checked_at']
+    change_list_template = 'admin/news/publicfigure/change_list.html'
+    list_display = ['canonical_name', 'follower_count', 'post_follower_count', 'role_category', 'role_title', 'organisation', 'status', 'archived', 'source_checked_at']
     list_filter = ['role_category', 'status', 'archived']
     search_fields = ['canonical_name', 'role_title', 'organisation', 'political_alignment']
     autocomplete_fields = ['parliamentary_roster_entry']
     readonly_fields = ['created_at', 'updated_at']
     actions = ['archive_selected', 'restore_selected']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            followers_total=Count('follow', filter=Q(follow__user__is_active=True), distinct=True),
+            post_followers_total=Count('follow', filter=Q(follow__user__is_active=True, follow__mode='posts'), distinct=True))
+
+    @admin.display(description='Obserwujący', ordering='followers_total')
+    def follower_count(self, obj):
+        return obj.followers_total
+
+    @admin.display(description='Każdy wpis', ordering='post_followers_total')
+    def post_follower_count(self, obj):
+        return obj.post_followers_total
+
+    def changelist_view(self, request, extra_context=None):
+        top = self.get_queryset(request).filter(followers_total__gt=0).order_by('-followers_total', 'canonical_name')[:20]
+        return super().changelist_view(request, extra_context={**(extra_context or {}), 'most_followed': top})
 
     @admin.action(description='Archiwizuj wybrane wpisy (bez usuwania)')
     def archive_selected(self, request, queryset):

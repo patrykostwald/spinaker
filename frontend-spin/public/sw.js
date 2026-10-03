@@ -70,7 +70,7 @@ self.addEventListener('notificationclick', event => {
   let url = new URL('/', self.location.origin);
   try {
     const candidate = new URL(event.notification.data?.url || '/', self.location.origin);
-    if (candidate.origin === url.origin) url = candidate;
+    if (candidate.origin === url.origin || /^https:\/\/x\.com\/[A-Za-z0-9_]{1,15}\/status\/[1-9][0-9]*$/.test(candidate.href)) url = candidate;
   } catch { /* Keep the safe home URL. */ }
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
     const existing = clients.find(client => client.url === url.href);

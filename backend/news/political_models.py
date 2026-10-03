@@ -40,6 +40,8 @@ class PoliticalAccount(models.Model):
     name_history = models.JSONField(default=list, blank=True, editable=False)
     poll_interval_minutes = models.PositiveIntegerField(default=15,
         validators=[MinValueValidator(1), MaxValueValidator(525600)])
+    include_replies = models.BooleanField(default=True, verbose_name='Czytaj odpowiedzi')
+    include_reposts = models.BooleanField(default=False, verbose_name='Czytaj podania dalej')
     last_verified_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
     poll_cursor = models.JSONField(default=dict, blank=True, editable=False)
     next_poll_at = models.DateTimeField(default=timezone.now, db_index=True, editable=False)
