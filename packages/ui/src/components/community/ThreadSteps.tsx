@@ -64,17 +64,11 @@ export function SpinkaClip({ counts, open = false }: { counts?: Counts3; id?: st
   const c = counts ?? { positive: 0, doubt: 0, negative: 0 };
   const top = Math.max(c.positive, c.doubt, c.negative);
   const color = !top ? 'var(--sc-text-3)' : c.positive === top ? 'var(--sc-positive)' : c.doubt === top ? 'var(--sc-warning)' : 'var(--sc-negative)';
-  // zatrzask (właściciel 3.10): linia od boksu do boksu, pośrodku dwa zazębione ogniwa = spięcie dwóch materiałów;
-  // rozsunięta: ogniwa rozchodzą się w lekki zygzak (nad nią boks z wyjaśnieniem)
-  const line = { fill: 'none', stroke: color, strokeWidth: 2.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, vectorEffect: 'non-scaling-stroke' as const };
-  if (open) return <svg className="sc-clip" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0 26 H88 L100 16 L112 26 H200" {...line} />
-  </svg>;
-  return <svg className="sc-clip" viewBox="0 0 34 34" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-    <path d="M0 17 H9 M25 17 H34" {...line} />
-    <rect x="8" y="12.5" width="11" height="9" rx="4.5" {...line} />
-    <rect x="15" y="12.5" width="11" height="9" rx="4.5" {...line} />
-  </svg>;
+  // zatrzask (właściciel 3.10): linia od boksu do boksu, pośrodku dwa zazębione ogniwa = spięcie dwóch materiałów.
+  // Rozwinięta: ogniwa płynnie rozprostowują się w jedną prostą linię; po zwinięciu znów zaczepiają się w zatrzask.
+  return <span className={`sc-clip sc-clasp${open ? ' is-open' : ''}`} style={{ color }} aria-hidden="true">
+    <i className="sc-clasp__line" /><span className="sc-clasp__knot"><i /><i /></span><i className="sc-clasp__line" />
+  </span>;
 }
 
 type FocusComment = { id: number; author: string; body: string; created_at: string; author_color?: string };
