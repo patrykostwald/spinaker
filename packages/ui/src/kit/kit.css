@@ -6832,3 +6832,15 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 /* Mniej miejsca pod menu (właściciel 3.10: „o połowę”): odstęp od menu do treści z ok. 50 px do ok. 25 px */
 .sc-app-main { padding-top: 10px; }
 .sc-app-main .sc-clinic { margin-top: 0; }
+/* Zasada boksów (właściciel 3.10, uwaga na podglądzie aplikacji): w boksach w rzędzie górna linia przy górnej krawędzi,
+   ostatnia przy dolnej. Liczniki: nazwa u góry, liczba na dole, dodatki (pasek, podpis, kropki) pomiędzy. */
+.sc-list-metrics > div { display: flex; flex-direction: column; }
+.sc-list-metrics > div > dd { order: 9; margin-top: auto; padding-top: 4px; }
+.sc-list-metrics > div > :is(small, .sc-list-metrics__track, .sc-list-metrics__families) { order: 5; }
+.sc-kons-rulebar li, .sc-info-page__body .sc-method-steps li, .sc-method-pair > div, .sc-method-verdicts > li, .sc-method-family { display: flex; flex-direction: column; }
+:is(.sc-kons-rulebar li, .sc-info-page__body .sc-method-steps li, .sc-method-pair > div, .sc-method-verdicts > li, .sc-method-family) > :last-child { margin-top: auto; }
+.sc-clinic-message, .sc-kons-flow > li, .sc-kons-roles > li, .sc-method-verdicts > li { display: flex; flex-direction: column; }
+:is(.sc-clinic-message, .sc-kons-flow > li, .sc-kons-roles > li, .sc-method-verdicts > li) > :last-child { margin-top: auto; }
+.sc-clinic-message { gap: var(--sc-s-3); }
+.sc-info-page__body :is(.sc-kons-flow, .sc-kons-roles, .sc-method-verdicts) li { display: flex; flex-direction: column; align-items: flex-start; }
+.sc-info-page__body :is(.sc-kons-flow, .sc-kons-roles, .sc-method-verdicts) li > :last-child { margin-top: auto; }
