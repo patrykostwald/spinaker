@@ -164,7 +164,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           <SectionHeader titleId="clinic-messages-title" kicker={<>Klinika spinu <AiTag /></>} title="Przekazy dnia"
             subtitle="O czym i jak mówiły obie strony w przeanalizowanych wpisach." link={<Link className="sc-archive-btn" href="/klinika/przekazy" aria-label="Archiwum przekazów">Archiwum</Link>} />
           <div className="sc-clinic-split">
-            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" />)}
+            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" compact={false} />)}
           </div>
         </section>
 

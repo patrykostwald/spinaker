@@ -574,14 +574,20 @@ def message_posts(day, camp):
         published_at__gte=start, published_at__lt=start + timedelta(days=1),
     ).exclude(spin_diagnosis__withdrawn_at__isnull=False)
     rows = rows.exclude(spin_diagnosis__hidden_at__isnull=False).select_related('account').order_by('-published_at')
+    from news.message_stats import is_noise
     selected, per_account = [], {}
+    substantive_count = 0
     for post in rows.iterator(chunk_size=200):
+        if is_noise(post.text):
+            selected.append(post)
+            continue
         # Jedno aktywne konto nie może wyprzeć pozostałych autorów.
         if per_account.get(post.account_id, 0) >= clinic_ai.DAILY_POSTS_PER_AUTHOR:
             continue
         selected.append(post)
         per_account[post.account_id] = per_account.get(post.account_id, 0) + 1
-        if len(selected) == 60:
+        substantive_count += 1
+        if substantive_count == 60:
             break
     return selected
 
@@ -610,15 +616,18 @@ def _message_for(day, camps, *, models=None, only_missing=False, errors=None) ->
         existing = ClinicDailyMessage.objects.filter(day=day, camp=camp).first()
         if existing and (existing.reviewed_by_id or (only_missing and existing.message and existing.status in ('approved', 'pending_review'))):
             continue  # zatwierdzony ręcznie — nie nadpisujemy
+        from news.message_stats import calculate_stats, is_noise, post_rows
         posts = message_posts(day, camp)
-        if len({post.account_id for post in posts}) < MIN_MESSAGE_ACCOUNTS:
+        rows = post_rows(posts)
+        _, material = clinic_ai._daily_material(CAMP_PROMPT_LABELS[camp], day.isoformat(), rows)
+        included = {row['id'] for row in material}
+        posts = [post for post in posts if str(post.pk) in included or is_noise(post.text)]
+        rows = [row for row in rows if row['id'] in included or is_noise(row['text'])]
+        if len({row['author_id'] for row in material}) < MIN_MESSAGE_ACCOUNTS:
             continue
-        figures = figures_by_account({post.account_id for post in posts})
-        rows = [{'author': (figures[p.account_id].canonical_name if p.account_id in figures else p.account.display_name),
-                 'text': p.text[:1200]} for p in posts]
         try:
             options = {'models': models} if models is not None else {}
-            result = clinic_ai.daily_message(CAMP_PROMPT_LABELS[camp], day.isoformat(), rows, **options)
+            result = clinic_ai.daily_message(CAMP_PROMPT_LABELS[camp], day.isoformat(), material, **options)
         except clinic_ai.ClinicAIError as error:
             logger.warning('clinic daily message failed: %s', error.code)
             if errors is not None:
@@ -632,6 +641,8 @@ def _message_for(day, camps, *, models=None, only_missing=False, errors=None) ->
         status = 'approved' if auto_publish() else 'pending_review'
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
             'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
+            'thesis': result.get('thesis', ''), 'points': result.get('points', []), 'tone': result.get('tone', []),
+            'stats': calculate_stats(rows, result.get('points'), result.get('tone')),
             'usage': result['usage'], 'status': status,
             'model_name': result['usage'].get('model', '')[:64], 'prompt_version': clinic_ai.PROMPT_VERSION,
             'reviewed_at': timezone.now() if status == 'approved' else None})
@@ -851,7 +862,8 @@ def scale_data(window_days: int = 7) -> dict:
 
 def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_posts: bool = False) -> dict:
     data = {'id': message.pk, 'day': message.day, 'camp': message.camp, 'message': message.message,
-            'analysis': message.analysis, 'themes': message.themes, 'posts_count': message.posts.count(),
+            'analysis': message.analysis, 'themes': message.themes,
+            'thesis': message.thesis, 'points': message.points, 'stats': message.stats, 'posts_count': message.posts.count(),
             'model': message.model_name, 'created_at': message.created_at, 'reviewed_at': message.reviewed_at}
     if with_posts:
         data['scope'] = {**message.posts.aggregate(date_from=Min('published_at'), date_to=Max('published_at')),
@@ -860,7 +872,7 @@ def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_
         rows = message.posts.select_related('account').order_by('-published_at', '-pk')
         posts = list(rows if all_posts else rows[:60])
         figures = figures_by_account({post.account_id for post in posts})
-        data['posts'] = [{'url': post.url, 'text': post.text[:280] if post.available else '',
+        data['posts'] = [{'id': str(post.pk), 'url': post.url, 'text': post.text[:280] if post.available else '',
                           'available': post.available, 'published_at': post.published_at,
                           'author': (figures[post.account_id].canonical_name if post.account_id in figures
                                      else post.account.display_name), 'handle': post.account.handle} for post in posts]

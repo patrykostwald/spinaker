@@ -6,6 +6,7 @@
  * i archiwum przekazów dnia. Powiększenia to natywny <dialog> (Esc i kliknięcie tła zamykają).
  */
 
+import { MessageCard } from "./MessageCard";
 import { Button } from "../../kit/Button";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -40,18 +41,8 @@ function Themes({ themes }: { themes: string[] }) {
 }
 
 /** Przekaz dnia: skrót w boxie i trwały link do pełnej analizy ze źródłami. */
-export function MessageBox({ camp, message, emptyText, surface = "standalone" }: { camp: Camp; message: DailyMessage | null; emptyText?: string; surface?: "standalone" | "nested" }) {
-  return (
-    <article className="sc-clinic-message" data-surface={surface} data-camp={camp} data-clickable={message ? "" : undefined}>
-      <p className="sc-clinic-kicker"><span>Przekaz dnia · {CAMP_LABELS[camp]}</span><AiTag /></p>
-      {message ? <>
-        <p className="sc-clinic-message__text">{message.message}</p>
-        <Themes themes={message.themes} />
-        <Button variant="link" href={`/klinika/przekazy/${message.day}#${camp === "government" ? "rzadzacy" : "opozycja"}`}>Czytaj przekaz i zobacz źródła →</Button>
-        <footer className="sc-clinic-message__foot"><time dateTime={message.day}>{formatDatePl(message.day)}</time><span>Źródła: {message.posts_count} wpisów</span></footer>
-      </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy wpisy opublikują co najmniej trzy konta tego obozu."}</p>}
-    </article>
-  );
+export function MessageBox({ camp, message, emptyText, compact = true }: { camp: Camp; message: DailyMessage | null; emptyText?: string; surface?: "standalone" | "nested"; compact?: boolean }) {
+  return <MessageCard camp={camp} message={message} emptyText={emptyText} compact={compact} />;
 }
 
 /** Przełącznik widoku: spin dnia (najwyższa siła z dzisiaj) albo najnowszy spin. */

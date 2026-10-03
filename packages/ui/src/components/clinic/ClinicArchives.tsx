@@ -12,7 +12,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { getClinicInterviews, getClinicMessages, type Interview } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
-import { MessageCampSwitch, MessageDayContent, useMessageCamp } from "./MessageDetail";
+import { MessageDayContent } from "./MessageDetail";
 import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
 export function ClinicInterviewArchive() {
   const [search, setSearch] = useState("");
@@ -76,7 +76,6 @@ export function ClinicInterviewPage({ interview }: { interview: Interview }) {
 }
 
 export function ClinicMessageArchive() {
-  const { camp, select } = useMessageCamp();
   const query = useInfiniteQuery({
     queryKey: ["clinic-messages"],
     queryFn: ({ pageParam }) => getClinicMessages(pageParam),
@@ -92,10 +91,9 @@ export function ClinicMessageArchive() {
     {query.isPending ? <p role="status">Wczytywanie przekazów…</p> : null}
     {query.isError ? <p role="alert">Nie udało się wczytać przekazów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !rows.length ? <p>Nie ma jeszcze opublikowanych przekazów.</p> : null}
-    <MessageCampSwitch camp={camp} select={select} />
     <div className="sc-clinic-archives__list">{rows.map(row => <section className="sc-clinic-archives__day" key={row.day} aria-labelledby={`day-${row.day}`}>
       <h2 id={`day-${row.day}`}><time dateTime={row.day}>{formatDatePl(row.day)}</time></h2>
-      <MessageDayContent data={row} camp={camp} />
+      <MessageDayContent data={row} />
       <Link href={`/klinika/przekazy/${row.day}`}>Pełny przekaz i źródła →</Link>
     </section>)}</div>
     {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż wcześniejsze dni"}</Button> : null}

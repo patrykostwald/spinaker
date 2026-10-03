@@ -526,11 +526,11 @@ def test_daily_message_needs_three_posts_and_review(monkeypatch):
     now = timezone.localtime()
     for number in range(3):
         acc = account('government', f'min_{number}', str(301 + number))
-        PoliticalPost.objects.create(account=acc, post_id=str(700 + number), url='https://x.com/min_c/status/1', text='t',
+        PoliticalPost.objects.create(account=acc, post_id=str(700 + number), url='https://x.com/min_c/status/1', text=POST_TEXT,
                                      published_at=now.replace(hour=12, minute=number), camp_at_collection='government')
     one = account('opposition', 'solo', '399')
     for number in range(5):
-        PoliticalPost.objects.create(account=one, post_id=str(800 + number), url='https://x.com/solo/status/1', text='t',
+        PoliticalPost.objects.create(account=one, post_id=str(800 + number), url='https://x.com/solo/status/1', text=POST_TEXT,
                                      published_at=now.replace(hour=12, minute=number), camp_at_collection='opposition')
     clinic.run_daily_messages(now.date())
     assert not ClinicDailyMessage.objects.filter(camp='opposition').exists()  # jedno konto to za mało
@@ -651,11 +651,11 @@ def test_daily_message_in_english_is_retried_and_then_rejected(monkeypatch):
     answers = iter([({'message': 'Opposition stresses high fuel prices and the budget deficit.', 'themes': ['Fuel prices']}, 'm'),
                     ({'message': 'Opozycja podkreśla wysokie ceny paliw i deficyt budżetowy.', 'themes': ['ceny paliw']}, 'm')])
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: next(answers))
-    result = clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': 'x'}])
+    result = clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': POST_TEXT}])
     assert result['message'].startswith('Opozycja')
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *args, **kwargs: ({'message': 'Only English here.', 'themes': []}, 'm'))
     with pytest.raises(clinic_ai.ClinicAIError):
-        clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': 'x'}])
+        clinic_ai.daily_message('opozycja', '2026-09-26', [{'author': 'A', 'text': POST_TEXT}])
 
 
 @pytest.mark.django_db
@@ -1088,7 +1088,7 @@ def test_daily_messages_catch_up_missing_yesterday(db, monkeypatch):
     yesterday = timezone.localtime() - timedelta(days=1)
     for number in range(3):
         acc = account('opposition', f'opp_{number}', str(501 + number))
-        PoliticalPost.objects.create(account=acc, post_id=str(900 + number), url='https://x.com/opp/status/1', text='t',
+        PoliticalPost.objects.create(account=acc, post_id=str(900 + number), url='https://x.com/opp/status/1', text=POST_TEXT,
                                      published_at=yesterday.replace(hour=12, minute=number), camp_at_collection='opposition')
     result = clinic.run_daily_messages()
     message = ClinicDailyMessage.objects.get(camp='opposition', day=yesterday.date())

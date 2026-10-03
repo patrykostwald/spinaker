@@ -36,7 +36,7 @@ def isolated(monkeypatch):
 def post(camp='government', account=None, **fields):
     n = PoliticalPost.objects.count() + 1
     account = account or PoliticalAccount.objects.create(user_id=str(n), handle='konto' + str(n), camp=camp, enabled=True)
-    return PoliticalPost.objects.create(account=account, post_id=str(n), text='Wpis do sprawdzenia.',
+    return PoliticalPost.objects.create(account=account, post_id=str(n), text='Na program edukacyjny przeznaczono 20 mln zł.',
         camp_at_collection=camp, published_at=NOW - timedelta(hours=2),
         fetched_at=fields.pop('fetched_at', NOW - timedelta(hours=1)), **fields)
 
@@ -376,7 +376,8 @@ def test_normal_messages_never_use_paid_model():
     with patch.object(clinic_ai, '_free_chat', side_effect=clinic_ai.ClinicAIError('free_models_unavailable')) as free, \
          patch('news.daily_message_fallback.generate') as paid:
         with pytest.raises(clinic_ai.ClinicAIError):
-            clinic_ai.daily_message('Opozycja', str(NOW.date()), [])
+            clinic_ai.daily_message('Opozycja', str(NOW.date()), [
+                {'author': 'Autor testowy', 'text': 'Na program edukacyjny przeznaczono 20 mln zł.'}])
     assert free.call_count == 2
     paid.assert_not_called()
 

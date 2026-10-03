@@ -113,7 +113,14 @@ export type ScaleSide = { spin: number; partial: number; no_spin: number; unclea
 export type SpinScale = { window_days: number; min_sample: number; enough_data: boolean; government: ScaleSide; opposition: ScaleSide };
 
 export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string; available?: boolean };
+export type MessageStats = {
+  version: number; posts: number; authors: number; noise: number; concrete_count: number; concrete_pct: number;
+  coherence_authors: number | null; coherence_pct: number | null;
+  tone: { atak: number; osiagniecie: number; apel: number; inne: number } | null; tone_classified: number;
+};
+export type MessagePoint = { title: string; summary: string; post_ids: string[]; authors: string[] };
 export type DailyMessage = {
+  thesis?: string; points?: MessagePoint[]; stats?: MessageStats;
   id?: number; day: string; camp?: Camp; message: string; analysis?: string; themes: string[]; posts_count: number; model: string;
   posts?: MessagePost[];
   created_at?: string;
