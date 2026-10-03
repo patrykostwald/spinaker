@@ -8407,3 +8407,6 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 /* licznik przepięć na lewo od miniatury łańcucha (właściciel 3.10) */
 .sc-trow__chainrow { display: inline-flex; align-items: center; gap: 14px; justify-self: end; }
 .sc-trow__chainrow .sc-trow__repins { margin: 0; font-size: 12px; color: var(--sc-text-3); }
+/* wiersze listy ok. 20% wyższe: więcej powietrza nad i pod treścią (właściciel 4.10) */
+.sc-thread-feed__list > li .sc-trow, .sc-spin-of-day .sc-trow { padding-block: 8px; }
+.sc-trow__main:not(:has(.sc-trow__desc)) .sc-trow__title { grid-row: 1 / span 2; align-self: center; }
