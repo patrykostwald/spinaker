@@ -8453,3 +8453,17 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 /* linia między polem komentarza a komentarzami innych (właściciel 4.10) */
 .sc-thread-social .sc-social-composer { padding-bottom: 22px; margin-bottom: 8px; border-bottom: 1px solid var(--sc-grid) !important; }
 .sc-trop-overlay .sc-social-comments > ol > li:first-child { border-top: 0; }
+/* PRÓBA: prowadnica od tytułu do miniatury łańcucha (jak w spisie treści) */
+.sc-thread-feed__list .sc-trow__h, .sc-spin-of-day .sc-trow__h { display: flex; align-items: center; min-width: 0; }
+.sc-thread-feed__list .sc-trow__main, .sc-spin-of-day .sc-trow__main { flex: 0 1 auto; min-width: 0; }
+.sc-thread-feed__list .sc-trow__h::after, .sc-spin-of-day .sc-trow__h::after { content: ""; flex: 1 1 40px; min-width: 40px; height: 1px; margin-left: 24px;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--sc-text) 28%, transparent) .7px, transparent 1px); background-size: 6px 1px; background-repeat: repeat-x; opacity: .8; transition: opacity .3s; }
+.sc-thread-feed__list li:hover .sc-trow__h::after { opacity: 1; background-image: radial-gradient(circle, color-mix(in srgb, var(--sc-text) 50%, transparent) .7px, transparent 1px); }
+.sc-thread-feed__list .sc-trow__main, .sc-spin-of-day .sc-trow__main { grid-template-columns: 132px minmax(0, max-content) !important; }
+.sc-thread-feed__list .sc-trow__h::after, .sc-spin-of-day .sc-trow__h::after { display: none; }
+.sc-thread-feed__list .sc-trow__main, .sc-spin-of-day .sc-trow__main { flex: 1 1 auto; grid-template-columns: 132px minmax(0, max-content) minmax(40px, 1fr) !important; }
+.sc-thread-feed__list .sc-trow__desc, .sc-spin-of-day .sc-trow__desc { grid-column: 2 / span 2; }
+.sc-thread-feed__list .sc-trow__main::after, .sc-spin-of-day .sc-trow__main::after { content: ""; grid-column: 3; grid-row: 1; align-self: center; height: 2px; margin-left: 22px;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--sc-text) 26%, transparent) .8px, transparent 1.1px); background-size: 7px 2px; background-repeat: repeat-x; transition: opacity .3s; }
+.sc-thread-feed__list .sc-trow__main:not(:has(.sc-trow__desc))::after, .sc-spin-of-day .sc-trow__main:not(:has(.sc-trow__desc))::after { grid-row: 1 / span 2; }
+.sc-thread-feed__list li:hover .sc-trow__main::after { background-image: radial-gradient(circle, color-mix(in srgb, var(--sc-text) 48%, transparent) .8px, transparent 1.1px); }
