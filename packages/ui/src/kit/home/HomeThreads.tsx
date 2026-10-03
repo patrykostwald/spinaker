@@ -1,204 +1,28 @@
 "use client";
 
-/**
- * Nitki użytkownika - do pięciu własnych pasków „Twoje wiadomości”:
- * pasek konfiguracji (wyśrodkowany: hasło · kategoria · źródło + „+ Dodaj pasek”), a pod nim
- * do {@link MAX_PERSONAL_STRIPS} własnych nitek - każda to filtr hasło/kategoria/źródło nad
- * `/api/portal/news`, zapis lokalny, kolejność przeciągana za uchwyt (`ReorderableStrips`).
- * Limit pilnuje interfejs (przycisk i pigułki wyłączone, formularz się nie otwiera, zapis
- * odrzucany) oraz `savePersonalStrip`.
- */
+import { useQuery } from '@tanstack/react-query';
+import { useFeature } from '../../lib/features';
+import { getCommunityThreads } from '../../lib/community';
+import { ThreadStrip } from '../../components/community/ThreadStrip';
+import { Button } from '../Button';
 
-import { forwardRef, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Button } from "../Button";
-import { Dropdown } from "../Dropdown";
-import { NewsCard } from "../NewsCard";
-import { ReorderableStrips } from "../ReorderableStrips";
-import { SearchField } from "../SearchField";
-import { CATEGORY_GROUPS, categoryGroupByKey, categoryGroupOf, expandCategories } from "../../lib/categoryGroups";
-import {
-  MAX_PERSONAL_STRIPS,
-  loadPersonalStrips,
-  removePersonalStrip,
-  savePersonalStrip,
-  updatePersonalStrip,
-  type PersonalStrip,
-} from "../../lib/personalStrips";
-import type { Source } from "../../types";
-import { useHomeFeed } from "./data";
-import { Strip } from "./Strip";
-
-function StripForm({
-  initial,
-  sources,
-  onSave,
-  onCancel,
-}: {
-  initial?: PersonalStrip;
-  sources: Source[];
-  onSave: (strip: PersonalStrip) => void;
-  onCancel: () => void;
-}) {
-  const [query, setQuery] = useState(initial?.query ?? "");
-  // Starsze nitki mogą mieć zapisaną pojedynczą kategorię backendu - pokazujemy jej grupę.
-  const [category, setCategory] = useState(initial?.category ? (categoryGroupByKey(initial.category)?.key ?? categoryGroupOf(initial.category).key) : "");
-  const [sourceId, setSourceId] = useState<string>(initial?.sourceId ? String(initial.sourceId) : "");
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const source = sources.find((item) => String(item.id) === sourceId);
-    const label = query.trim() || categoryGroupByKey(category)?.label || source?.name || "Moja nitka";
-    onSave({ id: initial?.id || `${Date.now()}`, label, query: query.trim(), category, sourceId: sourceId ? Number(sourceId) : "" });
-  }
-
-  return (
-    <form className="sc-home-stripform" onSubmit={submit}>
-      <p className="sc-t-caption sc-text-3">{initial?.id ? "Edytuj nitkę" : "Nowa nitka"}</p>
-      <div className="sc-home-stripform__row">
-        <SearchField value={query} onChange={setQuery} placeholder="Hasło lub nazwisko" label="Hasło lub nazwisko" />
-        <Dropdown
-          label={categoryGroupByKey(category)?.label ?? "Kategoria: wszystkie"}
-          ariaLabel="Kategoria"
-          mode="single"
-          presentation="auto"
-          items={[{ value: "", label: "Wszystkie" }, ...CATEGORY_GROUPS.map((group) => ({ value: group.key, label: group.label }))]}
-          value={category}
-          onChange={(value) => setCategory(value as string)}
-        />
-        <Dropdown
-          label={sources.find((item) => String(item.id) === sourceId)?.name ?? "Źródło: wszystkie"}
-          ariaLabel="Źródło"
-          mode="single"
-          presentation="auto"
-          items={[{ value: "", label: "Wszystkie" }, ...sources.map((item) => ({ value: String(item.id), label: item.name }))]}
-          value={sourceId}
-          onChange={(value) => setSourceId(value as string)}
-        />
-        <div className="sc-home-stripform__actions">
-          <Button type="submit" variant="primary" size="sm">
-            Pokaż materiały
-          </Button>
-          <Button type="button" variant="quiet" size="sm" onClick={onCancel}>
-            Anuluj
-          </Button>
-        </div>
-      </div>
-    </form>
-  );
+export function HomeThreads() {
+  const enabled = useFeature('THREADS_ENABLED');
+  const accounts = useFeature('ACCOUNTS_ENABLED');
+  const query = useQuery({ queryKey: ['community-threads', 'hot'],
+    queryFn: () => getCommunityThreads(1, '', '', { sort: 'hot' }), enabled, staleTime: 60_000, retry: false });
+  if (!enabled) return null;
+  return <section id="nitki" className="sc-home-section sc-home-thread-feed" aria-labelledby="home-threads-title">
+    <header className="sc-home-thread-feed__head">
+      <h2 id="home-threads-title" className="sc-t-title-l sc-home-section__title">Nitki</h2>
+      <Button href={accounts ? '/konto/nitki/nowa' : '/nitki'} variant="secondary" size="sm">{accounts ? 'Ułóż swoją nitkę' : 'Wszystkie nitki'}</Button>
+    </header>
+    <p className="sc-t-body-s sc-text-2">Materiały ułożone w łańcuch: boks, powiązanie, boks. Dr. Spin rozkłada każdą diagnozę, a Ty możesz ułożyć własną nitkę.</p>
+    <p className="sc-t-caption sc-text-3">Najgorętsze - reakcje z ostatnich 7 dni, przy remisie najnowsze nitki.</p>
+    {query.isPending && <p role="status">Ładuję nitki…</p>}
+    {query.isError && <p role="alert">Nie udało się pobrać nitek. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
+    {query.isSuccess && !query.data.results.length && <p>Pierwsze nitki pojawią się po publikacji diagnoz.</p>}
+    <ul className="sc-community__list">{query.data?.results.slice(0, 6).map(thread => <li key={thread.id}><ThreadStrip thread={thread} /></li>)}</ul>
+    {accounts && <Button href="/nitki" variant="quiet" size="sm">Wszystkie nitki</Button>}
+  </section>;
 }
-
-function PersonalStripBody({ strip, onEdit, onRemove, excludedArticleIds }: { strip: PersonalStrip; onEdit: () => void; onRemove: () => void; excludedArticleIds?: ReadonlySet<number> }) {
-  const feed = useHomeFeed(`personal-${strip.id}`, {
-    query: strip.query,
-    categories: strip.category ? expandCategories([strip.category]) : [],
-    sources: strip.sourceId ? [strip.sourceId] : [],
-    pageSize: 20,
-    // Pluralizm: po jednym najnowszym z każdego źródła, zanim drugi z tego samego.
-    diverse: true,
-  });
-  const articles = (feed.data?.results ?? []).filter((article) => !excludedArticleIds?.has(article.id));
-  return (
-    <div className="sc-home-personal__strip">
-      <div className="sc-home-personal__actions">
-        <button type="button" onClick={onEdit}>Edytuj</button>
-        <span aria-hidden="true">|</span>
-        <button type="button" onClick={onRemove} aria-label={`Usuń pasek: ${strip.label}`}>Usuń</button>
-      </div>
-      {feed.isPending ? <p role="status" className="sc-t-body-s sc-text-2">Ładuję materiały…</p> : null}
-      {feed.isSuccess && !articles.length ? <p className="sc-t-body-s sc-text-2">Nie znaleźliśmy jeszcze materiałów pasujących do tego wyboru.</p> : null}
-      {articles.length > 0 ? (
-        <Strip label={strip.label}>
-          {articles.map((article) => (
-            <div key={article.id} className="sc-strip__slot">
-              <NewsCard article={article} size="compact" headingLevel={4} expandable={false} />
-            </div>
-          ))}
-        </Strip>
-      ) : null}
-    </div>
-  );
-}
-
-export const HomeThreads = forwardRef<HTMLElement, { sources: Source[]; excludedArticleIds?: ReadonlySet<number> }>(function HomeThreads(
-  { sources, excludedArticleIds },
-  ref,
-) {
-  const [strips, setStrips] = useState<PersonalStrip[]>([]);
-  const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setStrips(loadPersonalStrips());
-  }, []);
-
-  const atLimit = strips.length >= MAX_PERSONAL_STRIPS;
-
-  function startAdding() {
-    if (atLimit) return;
-    setAdding(true);
-    setEditingId(null);
-  }
-
-  function saveNew(strip: PersonalStrip) {
-    if (loadPersonalStrips().length >= MAX_PERSONAL_STRIPS) {
-      setStrips(loadPersonalStrips());
-      setAdding(false);
-      return;
-    }
-    setStrips(savePersonalStrip({ ...strip, id: strip.id || `${Date.now()}` }));
-    setAdding(false);
-  }
-
-  const rows = useMemo(() => strips.map((strip) => ({ id: strip.id, title: strip.label, strip })), [strips]);
-
-  return (
-    <section ref={ref} id="nitki" className="sc-home-section sc-home-threads" aria-label="Twoje wiadomości">
-      {/* Tytuł, a pod nim jedna linia: podpowiedź z licznikiem i „Dodaj pasek” (rodzaj paska wybiera się w formularzu). */}
-      <div className="sc-home-threads__config">
-        <header className="sc-home-threads__head">
-          <h2 className="sc-t-title-l sc-home-section__title">Twoje wiadomości</h2>
-          <div className="sc-home-threads__line">
-            <p className="sc-t-body-s sc-text-2 sc-home-threads__hint" aria-live="polite">
-              {strips.length}/{MAX_PERSONAL_STRIPS} · {atLimit ? "usuń pasek, by dodać nowy" : "np. Zdrowie, Moje miasto, wybrane media"}
-            </p>
-            <Button variant="secondary" size="sm" disabled={atLimit} onClick={startAdding}>
-              + Obserwuj temat lub źródło
-            </Button>
-          </div>
-        </header>
-        {adding && !atLimit ? (
-          <StripForm
-            sources={sources}
-            onSave={saveNew}
-            onCancel={() => setAdding(false)}
-          />
-        ) : null}
-      </div>
-
-      {rows.length > 0 ? (
-        <ReorderableStrips
-          strips={rows}
-          storageKey="spinclinic-home-strips-order"
-          label="Kolejność Twoich nitek"
-          renderStrip={(row, index) =>
-            editingId === row.id ? (
-              <StripForm
-                initial={row.strip}
-                sources={sources}
-                onSave={(strip) => { setStrips(updatePersonalStrip(strip)); setEditingId(null); }}
-                onCancel={() => setEditingId(null)}
-              />
-            ) : (
-              <PersonalStripBody
-                excludedArticleIds={index === 0 ? excludedArticleIds : undefined}
-                strip={row.strip}
-                onEdit={() => { setEditingId(row.id); setAdding(false); }}
-                onRemove={() => { setStrips(removePersonalStrip(row.id)); if (editingId === row.id) setEditingId(null); }}
-              />
-            )
-          }
-        />
-      ) : null}
-    </section>
-  );
-});

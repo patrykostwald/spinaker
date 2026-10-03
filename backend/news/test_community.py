@@ -11,10 +11,14 @@ from news.models import Article, Source
 @pytest.fixture(autouse=True)
 def threads_on(monkeypatch):
     monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
+    monkeypatch.setattr('django.conf.settings.ACCOUNTS_ENABLED', True)
 
 
 def user(name='czytelnik'):
-    return get_user_model().objects.create_user(name, password='x')
+    from news.account_models import AccountIdentity
+    row = get_user_model().objects.create_user(name, password='x')
+    AccountIdentity.objects.create(user=row, email=f'{name}@example.org', email_verified=True)
+    return row
 
 
 def article(url='https://www.gov.pl/web/premier/komunikat'):

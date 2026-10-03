@@ -28,7 +28,7 @@ def _deliver_event(event):
         if not settings.THREADS_ENABLED:
             return
         thread = public_threads().filter(pk=event.target_id).select_related('owner').first()
-        if not thread:
+        if not thread or not thread.owner_id:
             return
         recipients = Follow.objects.filter(target_user=thread.owner, created_at__lte=event.created_at).exclude(user=thread.owner)
         kind, title, url = 'followed_thread', f'{thread.owner.username}: {thread.title}', f'/nitki/{thread.pk}'

@@ -327,11 +327,11 @@ export function Dropdown({
           </motion.span>
         }
       >
-        {m.morph && !open && !useSheet && (
+        {!open && !useSheet && (
           <motion.span
             aria-hidden="true"
             className="sc-dropdown__trigger-surface"
-            layoutId={surfaceId}
+            layoutId={m.morph ? surfaceId : undefined}
             style={{ borderRadius: RADIUS.md }}
           />
         )}

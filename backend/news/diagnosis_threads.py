@@ -1,0 +1,82 @@
+"""Rozkład każdej opublikowanej diagnozy. Wyłącznie zapisane dane, bez wywołań AI/HTTP."""
+import re
+from urllib.parse import urlsplit
+
+from django.db import transaction
+
+from news.account_models import PersonalContextThread, PersonalContextThreadItem
+from news.clinic_models import SpinDiagnosis
+
+
+def short(value, limit=280):
+    return ' '.join(str(value or '').replace('—', '-').replace('–', '-').split())[:limit]
+
+
+def sentence(value):
+    return short(re.split(r'(?<=[.!?])\s+', str(value or ''), maxsplit=1)[0])
+
+
+def boxes(diagnosis):
+    from news.clinic import ASSESSMENT_LABELS, author_data
+    from news.clinic_council import clean_claim
+    from news.clinic_scan import scan_data
+
+    post = diagnosis.post
+    url = f'/klinika/{diagnosis.pk}'
+    result = []
+
+    def add(kind, title, href=url, *, body='', author='', date=None, note='', link_note=''):
+        result.append({'box_data': {'kind': 'link', 'box_type': kind, 'title': short(title, 600),
+            'url': href, 'domain': urlsplit(href).hostname or 'spin.clinic', 'title_origin': 'system',
+            'body': body, 'source_name': author, 'published_date': date},
+            'note': short(note), 'link_note': short(link_note) if result else ''})
+
+    author = author_data(post, None)['name']
+    add('post', post.text, post.url, body=post.text, author=author,
+        date=post.published_at.isoformat() if post.published_at else None)
+    technique = next(iter(diagnosis.techniques or []), {})
+    technique_note = short(f"Technika: {technique.get('name') or 'brak wskazanej techniki'}. "
+                           f"{sentence(technique.get('explanation'))}")
+    claims = [clean_claim(row) for row in (diagnosis.claims or []) if isinstance(row, dict)][:3]
+    for index, claim in enumerate(claims):
+        assessment = ASSESSMENT_LABELS.get(claim.get('assessment'), 'niezweryfikowane')
+        add('claim', f"{assessment}: {claim.get('claim', '')}", body=sentence(claim.get('explanation')),
+            link_note=technique_note if index == 0 else 'Kolejne sprawdzone twierdzenie')
+        for source in claim.get('sources') or []:
+            if not isinstance(source, dict) or urlsplit(source.get('url') or '').scheme not in ('http', 'https'):
+                continue
+            add('source', source.get('title') or source['url'], source['url'],
+                link_note='Źródło, które to potwierdza / podważa')
+    if not claims:
+        add('technique', technique.get('name') or 'Brak wskazanej techniki',
+            body=sentence(technique.get('explanation')), link_note=technique_note)
+    agreement = scan_data(diagnosis)['council']['verdict_agreement'] or '0/0'
+    add('diagnosis', 'Pełna diagnoza: ' + diagnosis.headline,
+        link_note=f'Siła spinu {diagnosis.intensity}/100, Konsylium {agreement} zgodnych')
+    return result
+
+
+@transaction.atomic
+def sync_diagnosis_thread(diagnosis_id):
+    """Blokada diagnozy i OneToOne chronią przed podwójną publikacją. Nie cofamy moderacji."""
+    diagnosis = SpinDiagnosis.objects.select_for_update().select_related('post__account').get(pk=diagnosis_id)
+    visible = (diagnosis.status == 'approved' and not diagnosis.withdrawn_at
+               and not diagnosis.hidden_at and diagnosis.post.available)
+    if not visible:
+        PersonalContextThread.objects.filter(diagnosis=diagnosis).update(is_public=False)
+        return None
+    thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
+        'title': short('Rozkład: ' + diagnosis.headline, 140),
+        'description': 'Nitka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.',
+        'is_public': True, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
+    title = short('Rozkład: ' + diagnosis.headline, 140)
+    payload = boxes(diagnosis)
+    existing = list(thread.items.values('box_data', 'note', 'link_note'))
+    if existing != payload:
+        thread.items.all().delete()
+        PersonalContextThreadItem.objects.bulk_create([
+            PersonalContextThreadItem(thread=thread, position=index, **row) for index, row in enumerate(payload)])
+    if existing != payload or thread.title != title or not thread.is_public:
+        thread.title, thread.is_public = title, True
+        thread.save(update_fields=['title', 'is_public', 'updated_at'])
+    return thread

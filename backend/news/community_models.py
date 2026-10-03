@@ -36,6 +36,12 @@ class CommunityThreadOpinion(models.Model):
     polarity = models.CharField(max_length=8, choices=[('positive', 'Przydatna'), ('negative', 'Nieprzydatna')])
     body = models.CharField(max_length=240, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
+    comment_added_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.body and not self.comment_added_at:
+            self.comment_added_at = timezone.now()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-created_at', '-id']

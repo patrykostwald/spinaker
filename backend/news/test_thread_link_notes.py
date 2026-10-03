@@ -15,7 +15,10 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def context(monkeypatch):
     monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
+    monkeypatch.setattr('django.conf.settings.ACCOUNTS_ENABLED', True)
     owner = get_user_model().objects.create_user('thread-author')
+    from news.account_models import AccountIdentity
+    AccountIdentity.objects.create(user=owner, email='thread-author@example.org', email_verified=True)
     source = Source.objects.create(name='Źródło', url='https://example.org', is_active=True)
     article = Article.objects.create(source=source, title='Materiał', url='https://example.org/1')
     link = CommunityLink.objects.create(canonical_url='https://example.org/2', domain='example.org', title='Film')

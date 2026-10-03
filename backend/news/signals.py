@@ -30,3 +30,10 @@ def diagnosis_changed(**kwargs):
     keys = [CACHE_KEY, 'clinic-stats:v3']
     cache.delete_many(keys)
     transaction.on_commit(lambda: cache.delete_many(keys))
+
+
+@receiver(post_save, sender=SpinDiagnosis)
+def diagnosis_thread_changed(sender, instance, raw=False, **kwargs):
+    if not raw:
+        from news.diagnosis_threads import sync_diagnosis_thread
+        sync_diagnosis_thread(instance.pk)

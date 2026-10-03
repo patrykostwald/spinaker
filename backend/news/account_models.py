@@ -97,9 +97,11 @@ class ArticleFavorite(models.Model):
 class PersonalContextThread(models.Model):
     """Nitka kontekstowa czytelnika. Domyślnie prywatna; po publikacji widoczna w /nitki.
 
-    Nigdy nie jest redakcyjną nitką Dr. Spina (`Thread`). Zespół może ją ukryć po zgłoszeniu.
+    Rozkład diagnozy ma diagnosis zamiast właściciela. Zespół może ukryć każdą nitkę.
     """
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+    diagnosis = models.OneToOneField('news.SpinDiagnosis', null=True, blank=True,
+        on_delete=models.CASCADE, related_name='context_thread')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
         related_name='personal_context_threads')
     title = models.CharField(max_length=140)
     description = models.CharField(max_length=500, blank=True, default='')
@@ -116,10 +118,14 @@ class PersonalContextThread(models.Model):
 
     class Meta:
         ordering = ['-updated_at', '-id']
+        constraints = [models.CheckConstraint(
+            condition=(models.Q(owner__isnull=False, diagnosis__isnull=True) |
+                       models.Q(owner__isnull=True, diagnosis__isnull=False)),
+            name='context_thread_owner_or_diagnosis')]
 
 
 class PersonalContextThreadItem(models.Model):
-    """Element nitki: materiał z Bazy albo link spoza Bazy (CommunityLink) — dokładnie jedno z nich."""
+    """Dokładnie jeden element: materiał z Bazy, link czytelnika albo fragment diagnozy."""
     thread = models.ForeignKey(PersonalContextThread, on_delete=models.CASCADE, related_name='items')
     article = models.ForeignKey('news.Article', null=True, blank=True, on_delete=models.CASCADE,
                                 related_name='personal_context_thread_items')
@@ -127,6 +133,7 @@ class PersonalContextThreadItem(models.Model):
                              related_name='thread_items')
     note = models.CharField(max_length=280, blank=True, default='')
     link_note = models.CharField(max_length=280, blank=True, default='')
+    box_data = models.JSONField(null=True, blank=True, help_text='Deterministyczny fragment diagnozy Dr. Spina.')
     position = models.PositiveSmallIntegerField()
 
     class Meta:
@@ -137,7 +144,9 @@ class PersonalContextThreadItem(models.Model):
             models.UniqueConstraint(fields=['thread', 'position'], name='unique_personal_context_thread_position'),
             models.CheckConstraint(condition=~models.Q(position=0) | models.Q(link_note=''),
                                    name='personal_thread_first_without_link_note'),
-            models.CheckConstraint(condition=models.Q(article__isnull=False, link__isnull=True) | models.Q(article__isnull=True, link__isnull=False),
+            models.CheckConstraint(condition=(models.Q(article__isnull=False, link__isnull=True, box_data__isnull=True) |
+                models.Q(article__isnull=True, link__isnull=False, box_data__isnull=True) |
+                models.Q(article__isnull=True, link__isnull=True, box_data__isnull=False)),
                                    name='personal_thread_item_article_xor_link'),
         ]
 

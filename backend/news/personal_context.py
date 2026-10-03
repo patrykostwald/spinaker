@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,6 +18,12 @@ from news.models import Article, ArticleCategory, Source
 from news.topics import TOPICS
 from news.schema import json_view
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+
+class ThreadAccountsEnabled(BasePermission):
+    def has_permission(self, request, view):
+        from news.features import accounts_enabled, threads_enabled
+        return accounts_enabled() and threads_enabled()
 
 
 def article_favorite_data(row):
@@ -195,7 +202,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
 @json_view("Prywatne nitki kontekstowe", tags=["konto"])
 class PersonalContextThreadsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ThreadAccountsEnabled]
     throttle_classes = [AccountWriteThrottle]
 
     def get(self, request):
@@ -213,7 +220,7 @@ class PersonalContextThreadsView(APIView):
 @json_view("Prywatna nitka kontekstowa", tags=["konto"])
 @extend_schema_view(get=extend_schema(operation_id="account_context_threads_detail_retrieve"))
 class PersonalContextThreadDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ThreadAccountsEnabled]
     throttle_classes = [AccountWriteThrottle]
 
     def _get(self, request, thread_id):

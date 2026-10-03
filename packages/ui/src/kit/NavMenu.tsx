@@ -198,8 +198,8 @@ export function NavMenu({
           {mobileAction && <div className="sc-navmenu__mobile-action">{mobileAction}</div>}
 
           <span className="sc-navmenu__toggle-wrap">
-            {m.morph && !mobileOpen && (
-              <motion.span aria-hidden="true" className="sc-navmenu__toggle-seed" layoutId={seedId} style={{ borderRadius: RADIUS.md }} />
+            {!mobileOpen && (
+              <motion.span aria-hidden="true" className="sc-navmenu__toggle-seed" layoutId={m.morph ? seedId : undefined} style={{ borderRadius: RADIUS.md }} />
             )}
             <Button
               ref={toggleRef}

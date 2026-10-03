@@ -1,10 +1,13 @@
 """Nitki czytelników (faza II): publiczne nitki kontekstowe, linki spoza Bazy, reakcje i zgłoszenia."""
 import os
-from news.features import threads_enabled
+from datetime import timedelta
+from django.utils import timezone
+from news.features import threads_enabled, accounts_enabled
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Max, F
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -90,7 +93,7 @@ class LinkThrottle(UserRateThrottle):
 @permission_classes([IsAuthenticated])
 @throttle_classes([LinkThrottle])
 def resolve_link(request):
-    if not threads_enabled():
+    if not threads_enabled() or not accounts_enabled():
         return _disabled()
     serializer = LinkInput(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -124,12 +127,16 @@ def resolve_link(request):
 # --- publiczne nitki ------------------------------------------------------------------------
 
 def public_threads():
+    from news.clinic import published_diagnoses
     return (PersonalContextThread.objects.filter(is_public=True, hidden_at__isnull=True)
+            .filter(Q(diagnosis__isnull=True) | Q(diagnosis__in=published_diagnoses()))
             .annotate(items_count=Count('items', distinct=True)).filter(items_count__gte=MIN_PUBLIC_ITEMS))
 
 
 def item_data(item):
-    if item.article_id:
+    if item.box_data is not None:
+        data = {**item.box_data, 'id': item.pk}
+    elif item.article_id:
         data = _article_ref(item.article)
     else:
         data = _link_ref(item.link)
@@ -148,8 +155,10 @@ def _counts(thread_ids):
 def thread_summary(thread, counts):
     items = [item for item in thread.items.all() if not (item.link_id and item.link.hidden_at)]
     return {'id': thread.pk, 'title': thread.title, 'description': thread.description, 'topics': thread.topics,
-            'author': thread.owner.username, 'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
-            'items_count': len(items), 'preview': [item_data(item) for item in items[:3]],
+            'author': 'Dr. Spin (AI)' if thread.diagnosis_id else thread.owner.username,
+            'is_ai': bool(thread.diagnosis_id), 'diagnosis_id': thread.diagnosis_id,
+            'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
+            'items_count': len(items), 'preview': [item_data(item) for item in items],
             'opinions': counts.get(thread.pk, {'positive': 0, 'negative': 0})}
 
 
@@ -205,12 +214,20 @@ def community_threads(request):
         if base:
             match |= Q(items__article_id=base.pk)
         rows = rows.filter(match)
-    sort = request.query_params.get('sort', 'new')
-    if sort not in ('new', 'best'):
+    sort = request.query_params.get('sort', 'best')
+    if sort not in ('new', 'best', 'hot', 'comments'):
         return Response({'detail': 'Nieznana kolejność.'}, status=400)
     if sort == 'best':
         rows = rows.annotate(positive_count=Count('opinions', filter=Q(opinions__polarity='positive'), distinct=True))
         rows = rows.order_by('-positive_count', '-published_at', '-pk')
+    elif sort == 'hot':
+        now = timezone.now()
+        rows = rows.annotate(recent_reactions=Count('opinions', distinct=True,
+            filter=Q(opinions__created_at__gte=now - timedelta(days=7), opinions__created_at__lte=now)))
+        rows = rows.order_by('-recent_reactions', '-published_at', '-pk')
+    elif sort == 'comments':
+        rows = rows.annotate(last_comment=Max(Coalesce('opinions__comment_added_at', 'opinions__created_at'), filter=~Q(opinions__body='')))
+        rows = rows.order_by(F('last_comment').desc(nulls_last=True), '-published_at', '-pk')
     else:
         rows = rows.order_by('-published_at', '-pk')
     size = 20
@@ -238,7 +255,7 @@ class CommunityOpinionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CommunityThreadOpinion
-        fields = ['id', 'author', 'polarity', 'body', 'created_at']
+        fields = ['id', 'author', 'polarity', 'body', 'created_at', 'comment_added_at']
 
     def get_author(self, opinion):
         return {'id': opinion.user_id, 'username': opinion.user.username}
@@ -271,6 +288,8 @@ class CommunityOpinionsView(APIView):
         })
 
     def post(self, request, thread_id):
+        if not accounts_enabled():
+            return _disabled()
         from news.account_security import require_verified
         require_verified(request.user)
         thread = self._thread(thread_id)
@@ -284,6 +303,8 @@ class CommunityOpinionsView(APIView):
         return Response(CommunityOpinionSerializer(opinion).data, status=201)
 
     def patch(self, request, thread_id):
+        if not accounts_enabled():
+            return _disabled()
         from news.account_security import require_verified
         require_verified(request.user)
         if not isinstance(request.data, dict) or set(request.data) - {'body'}:
@@ -297,9 +318,11 @@ class CommunityOpinionsView(APIView):
         with transaction.atomic():
             opinion = get_object_or_404(CommunityThreadOpinion.objects.select_for_update().select_related('user'),
                                         thread_id=thread_id, user=request.user)
-            if opinion.body or not CommunityThreadOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
+            added_at = timezone.now()
+            if opinion.body or not CommunityThreadOpinion.objects.filter(pk=opinion.pk, body='').update(body=body, comment_added_at=added_at):
                 return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
             opinion.body = body
+            opinion.comment_added_at = added_at
         return Response(CommunityOpinionSerializer(opinion).data)
 
 
@@ -313,7 +336,7 @@ class ReportInput(serializers.Serializer):
 @permission_classes([IsAuthenticated])
 @throttle_classes([AccountWriteThrottle])
 def report_thread(request, thread_id):
-    if not threads_enabled():
+    if not threads_enabled() or not accounts_enabled():
         return _disabled()
     thread = get_object_or_404(public_threads(), pk=thread_id)
     serializer = ReportInput(data=request.data)

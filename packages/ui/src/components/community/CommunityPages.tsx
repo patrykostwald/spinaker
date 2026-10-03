@@ -1,11 +1,11 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { Dialog } from "../Dialog";
-import { REPORT_REASONS, getCommunityThread, getCommunityThreads, reportCommunityThread, type CommunityThreadSummary, type ThreadElement } from "../../lib/community";
+import { REPORT_REASONS, getCommunityThread, getCommunityThreads, reportCommunityThread, type ThreadElement } from "../../lib/community";
 import { useAccount } from "../../lib/account";
 import { categoryLabel, formatDatePl, formatDateTimePl } from "../../lib/utils";
 import { OpinionsPanel } from "../OpinionsPanel";
@@ -14,9 +14,7 @@ import { AccountDataState } from '../AccountPhase2';
 import { accountMessage } from '../../lib/accountPhase2';
 import { useFeature } from '../../lib/features';
 import { isUnavailable } from '../../lib/personal';
-import { getThreads } from '../../lib/api';
-import { getPortalConfig } from '../../lib/portal';
-import { ThreadCard } from '../ThreadCard';
+import { ThreadStrip } from './ThreadStrip';
 
 /** Jeden element nitki: materiał z Bazy (z linkiem do kontekstu) albo link spoza Bazy - wyraźnie oznaczony. */
 export function ElementRow({ element, index }: { element: ThreadElement; index: number }) {
@@ -50,52 +48,15 @@ export function ElementRow({ element, index }: { element: ThreadElement; index: 
   );
 }
 
-function ThreadCardLink({ thread }: { thread: CommunityThreadSummary }) {
-  const [expanded, setExpanded] = useState(false);
-  const uid = useId();
-  const detail = useQuery({
-    queryKey: ['community-thread', String(thread.id)],
-    queryFn: () => getCommunityThread(thread.id), enabled: expanded, retry: false,
-  });
-  return (
-    <li className="sc-community-card">
-      <p className="sc-community-card__meta">@{thread.author}{thread.published_at ? ` · ${formatDatePl(thread.published_at)}` : ""} · {thread.items_count} elementów</p>
-      <h2><button type="button" id={`${uid}-toggle`} className="sc-community-card__toggle" aria-expanded={expanded}
-        aria-controls={`${uid}-content`} onClick={() => setExpanded(value => !value)}>
-        <span title={thread.title}>{thread.title}</span><span aria-hidden="true">{expanded ? '−' : '+'}</span>
-      </button></h2>
-      {thread.description && <p className="sc-community-card__desc">{thread.description}</p>}
-      {!expanded && thread.preview && thread.preview.length > 0 && (
-        <ol className="sc-community-card__preview">{thread.preview.map(item => (
-          <li key={`${item.kind}-${item.id}`}>{item.kind === "link" ? <span className="sc-thread-el__tag sc-thread-el__tag--outside">spoza Bazy</span> : null}{item.title}</li>
-        ))}</ol>
-      )}
-      <div id={`${uid}-content`} role="region" aria-labelledby={`${uid}-toggle`} hidden={!expanded}>
-        {expanded && <>
-          {detail.isPending && <p role="status">Ładuję nitkę…</p>}
-          {detail.isError && <p role="alert">{isUnavailable(detail.error) ? 'Nitka nie jest już dostępna.' : 'Nie udało się pobrać nitki.'}
-            <Button type="button" variant="quiet" onClick={() => detail.refetch()}>Spróbuj ponownie</Button></p>}
-          {detail.isSuccess && <ol className="sc-thread-els" aria-label="Elementy nitki w kolejności">{detail.data.items.map((item, index) => <ElementRow key={`${item.kind}-${item.id}`} element={item} index={index} />)}</ol>}
-          <p><Link href={`/nitki/${thread.id}`}>Otwórz nitkę</Link></p>
-        </>}
-      </div>
-      <p className="sc-community-card__foot"><span>Zgadzam się {thread.opinions.positive} · Nie zgadzam się {thread.opinions.negative}</span></p>
-    </li>
-  );
-}
-
 export function CommunityThreadsPage({ context = {} }: { context?: { article_id?: number; figure_id?: number; url?: string } }) {
   const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
-  const [sort, setSort] = useState<'new' | 'best'>('new');
-  const [topic, setTopic] = useState('');
-  const config = useQuery({ queryKey: ['portal-config'], queryFn: getPortalConfig, retry: false, staleTime: 60_000 });
-  const drspin = useQuery({ queryKey: ['community-drspin'], queryFn: () => getThreads(), retry: false });
+  const [sort, setSort] = useState<'new' | 'best' | 'comments'>('best');
   const contextActive = Boolean(context.article_id || context.figure_id || context.url);
   const query = useInfiniteQuery({
-    queryKey: ["community-threads", term, sort, topic, context],
-    queryFn: ({ pageParam }) => getCommunityThreads(pageParam, term, '', { sort, topic, ...context }),
+    queryKey: ["community-threads", term, sort, context],
+    queryFn: ({ pageParam }) => getCommunityThreads(pageParam, term, '', { sort, ...context }),
     retry: false,
     initialPageParam: 1,
     getNextPageParam: last => last.next_page ?? undefined,
@@ -104,8 +65,8 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
   return (
     <div className="sc-community sc-f2">
       <header className="sc-community__head">
-        <p className="sc-clinic-kicker">Nitki czytelników</p>
-        <h1>Sprawy ułożone przez czytelników</h1>
+        <p className="sc-clinic-kicker">Nitki</p>
+        <h1>Diagnozy i materiały ułożone w nitki</h1>
         <p className="sc-clinic-lead">
           Nitka kontekstowa to jeden materiał na początku, a za nim - w kolejności - to, co go dopełnia, potwierdza albo podważa. Każdy może ułożyć
           swoją z materiałów z naszej Bazy albo dodać źródło przez link.
@@ -117,18 +78,16 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
             <Button type="submit" variant="quiet" size="sm">Szukaj</Button>
           </form>
         </div>
-        <div className="sc-f2-filters"><label>Kolejność<select value={sort} onChange={event => setSort(event.target.value as 'new' | 'best')}><option value="new">Najnowsze</option><option value="best">Najlepiej oceniane</option></select></label>
-          {/* Bez filtra tematów, dopóki nie ma użytkowników (właściciel 3.10: test schematu box + powiązanie) */}
+        <div className="sc-f2-filters"><label>Kolejność<select value={sort} onChange={event => setSort(event.target.value as 'new' | 'best' | 'comments')}><option value="best">Najlepiej oceniane</option><option value="new">Najnowsze nitki</option><option value="comments">Najnowsze komentarze</option></select></label>
         </div>
         {sort === 'best' && <p>Według liczby opinii „Zgadzam się”; przy remisie od najnowszej publikacji.</p>}
         {contextActive && <p>Pokazujemy nitki zawierające wybrany materiał lub potwierdzone powiązanie. <Link href="/nitki">Pokaż wszystkie</Link></p>}
       </header>
-      {!contextActive && !term && !topic && Boolean(drspin.data?.results.some(row => row.published && row.slug.startsWith('dr-spin-kontekst-'))) && <section className="sc-f2-drspin"><h2>Nitki Dr. Spina</h2><p>Źródła ułożone przez Dr. Spina.</p><div>{drspin.data?.results.filter(row => row.published && row.slug.startsWith('dr-spin-kontekst-')).slice(0, 2).map(row => <ThreadCard key={row.id} thread={row} />)}</div></section>}
       <AccountDataState query={query} empty="Publiczne nitki będą dostępne wkrótce." />
       {query.isSuccess && !threads.length && (
         <p className="sc-clinic-empty">{term ? `Brak nitek dla „${term}”.` : "Nie ma jeszcze publicznych nitek. Ułóż pierwszą - wystarczą dwa materiały."}</p>
       )}
-      {threads.length > 0 && <ul className="sc-community__list">{threads.map(thread => <ThreadCardLink key={thread.id} thread={thread} />)}</ul>}
+      {threads.length > 0 && <ul className="sc-community__list">{threads.map(thread => <li key={thread.id}><ThreadStrip thread={thread} /></li>)}</ul>}
       {query.hasNextPage && <Button variant="quiet" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej</Button>}
       <aside className="sc-clinic-roadmap">
         Linki spoza Bazy zapisujemy bez treści i zdjęć - tylko tytuł, adres i nazwę strony; czytelnik trafia do oryginału. Ten sam link w wielu nitkach
@@ -140,12 +99,13 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
 
 function ReportButton({ threadId }: { threadId: number }) {
   const account = useAccount();
+  const accountsEnabled = useFeature('ACCOUNTS_ENABLED');
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("spam");
   const [details, setDetails] = useState("");
   const [status, setStatus] = useState("");
   const [pending, setPending] = useState(false);
-  if (!account.data?.authenticated) return null;
+  if (!accountsEnabled || !account.data?.authenticated) return null;
   async function send(event: FormEvent) {
     event.preventDefault();
     if (pending) return;
@@ -179,7 +139,7 @@ export function CommunityThreadPage({ id }: { id: string }) {
     <div className="sc-community sc-community--detail sc-f2">
       <p><Link href="/nitki" className="sc-spin-detail__back">← Nitki czytelników</Link></p>
       <header className="sc-community__head">
-        <p className="sc-clinic-kicker">Nitka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>@{thread.author}</Link></p>
+        <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Nitka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>@{thread.author}</Link></>}</p>
         <h1>{thread.title}</h1>
         {thread.description && <p className="sc-clinic-lead">{thread.description}</p>}
         <p className="sc-community-card__meta">
@@ -193,8 +153,8 @@ export function CommunityThreadPage({ id }: { id: string }) {
           <ReportButton threadId={thread.id} />
         </div>
       </header>
-      <ol className="sc-thread-els" aria-label="Elementy nitki w kolejności">{thread.items.map((item, index) => <ElementRow key={`${item.kind}-${item.id}`} element={item} index={index} />)}</ol>
-      <div id="opinie"><OpinionsPanel endpoint={`/api/community/threads/${thread.id}/opinions/`} labels={{
+      <ThreadStrip thread={thread} items={thread.items} full />
+      <div id="opinie"><OpinionsPanel publicRead endpoint={`/api/community/threads/${thread.id}/opinions/`} labels={{
         kicker: "REAKCJE CZYTELNIKÓW",
         question: "Czy zgadzasz się z argumentacją tej nitki?",
         positive: "Zgadzam się",

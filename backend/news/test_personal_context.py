@@ -9,6 +9,12 @@ from news.models import Article, Source
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def thread_flags(settings):
+    settings.ACCOUNTS_ENABLED = True
+    settings.THREADS_ENABLED = True
+
+
 @pytest.fixture
 def people():
     return [get_user_model().objects.create_user(username=name) for name in ('owner', 'other')]
