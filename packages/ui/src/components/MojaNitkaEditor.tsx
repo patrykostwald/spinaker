@@ -106,8 +106,8 @@ function MaterialPicker({ selected, onSelect }: { selected: Set<string>; onSelec
       <Button type="button" variant={mode === 'link' ? 'primary' : 'quiet'} aria-pressed={mode === 'link'} onClick={() => setMode('link')}>Link / zdjęcie / film</Button>
     </div></fieldset>
     {mode === 'base' ? <>
-      <label htmlFor={searchId}>Szukaj materiału w bazie</label><div className="sc-simple-thread__actions">
-        <input id={searchId} type="search" value={search} placeholder="Tytuł, hasło, osoba" onChange={event => setSearch(event.target.value)}
+      <label htmlFor={searchId} className="sr-only">Szukaj materiału w bazie</label><div className="sc-simple-thread__actions">
+        <input id={searchId} type="search" value={search} placeholder="Szukaj w bazie: tytuł, hasło, osoba" onChange={event => setSearch(event.target.value)}
           onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setTerm(search.trim()); } }} />
         <Button type="button" variant="quiet" disabled={search.trim().length < 2} onClick={() => setTerm(search.trim())}>Szukaj</Button>
       </div>
@@ -117,8 +117,8 @@ function MaterialPicker({ selected, onSelect }: { selected: Set<string>; onSelec
       {results.data && candidates(results.data.results.map(article => ({ ...article, source_name: article.source?.name })))}
       {Boolean(favorites.data?.results.length) && <details><summary>Z ulubionych materiałów</summary>{candidates(favorites.data!.results.map(row => row.article))}</details>}
     </> : mode === 'spin' ? <>
-      <label htmlFor={searchId}>Szukaj diagnozy wpisu albo spinu</label><div className="sc-simple-thread__actions">
-        <input id={searchId} type="search" value={search} placeholder="Polityk, temat, hasło (puste: najnowsze)" onChange={event => setSearch(event.target.value)}
+      <label htmlFor={searchId} className="sr-only">Szukaj diagnozy wpisu albo spinu</label><div className="sc-simple-thread__actions">
+        <input id={searchId} type="search" value={search} placeholder="Szukaj diagnozy: polityk, temat (puste: najnowsze)" onChange={event => setSearch(event.target.value)}
           onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setTerm(search.trim()); } }} />
         <Button type="button" variant="quiet" onClick={() => setTerm(search.trim())}>Szukaj</Button>
       </div>
@@ -277,7 +277,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
 
   return <form className="sc-account sc-simple-thread" onSubmit={submit} noValidate aria-label="Kreator nitki">
     <label className="sc-simple-thread__title">Tytuł nitki
-      <input value={draft.title} maxLength={THREAD_LIMITS.title} required placeholder="O czym jest Twoja nitka?"
+      <input value={draft.title} maxLength={THREAD_LIMITS.title} required placeholder="O czym chcesz opowiedzieć?"
         onChange={event => setDraft(current => ({ ...current, title: event.target.value }))} />
     </label>
     <ol className="sc-simple-thread__boxes" aria-label="Boksy nitki">
