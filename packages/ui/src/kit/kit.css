@@ -8467,19 +8467,3 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
   background-image: radial-gradient(circle, color-mix(in srgb, var(--sc-text) 26%, transparent) .8px, transparent 1.1px); background-size: 7px 2px; background-repeat: repeat-x; transition: opacity .3s; }
 .sc-thread-feed__list .sc-trow__main:not(:has(.sc-trow__desc))::after, .sc-spin-of-day .sc-trow__main:not(:has(.sc-trow__desc))::after { grid-row: 1 / span 2; }
 .sc-thread-feed__list li:hover .sc-trow__main::after { background-image: radial-gradient(circle, color-mix(in srgb, var(--sc-text) 48%, transparent) .8px, transparent 1.1px); }
-
-/* każdy wiersz jako osobna płytka (werdykt Konsylium 0025 + otwarte narożniki serwisu, właściciel 4.10):
-   prawie niewidoczna w spoczynku, przerwa 8 px zamiast kreski (widać kropkowy gradient), po najechaniu jaśniejsze linie i cień */
-@media (min-width: 768px) {
-  .sc-thread-feed__list > li::after, .sc-spin-of-day::after { display: none !important; }
-  .sc-thread-feed__list { display: grid; gap: 8px; }
-  .sc-thread-feed__list > li, .sc-spin-of-day { --rl: color-mix(in srgb, var(--sc-text) 9%, transparent); margin-left: 12px; border-radius: 3px; transition: box-shadow .3s;
-    background:
-      linear-gradient(var(--rl), var(--rl)) left 22px top 0 / calc(100% - 22px) 1px no-repeat,
-      linear-gradient(var(--rl), var(--rl)) right 0 top 0 / 1px calc(100% - 22px) no-repeat,
-      linear-gradient(var(--rl), var(--rl)) left 0 bottom 0 / calc(100% - 22px) 1px no-repeat,
-      linear-gradient(var(--rl), var(--rl)) left 0 top 22px / 1px calc(100% - 22px) no-repeat,
-      rgb(255 255 255 / .012) !important; }
-  .sc-thread-feed__list > li:hover, .sc-spin-of-day:hover { --rl: color-mix(in srgb, var(--sc-text) 18%, transparent); box-shadow: 0 10px 26px -16px rgb(0 0 0 / .9); }
-  .sc-spin-of-day { margin-bottom: 8px; }
-}
