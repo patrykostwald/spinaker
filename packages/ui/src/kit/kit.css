@@ -6956,3 +6956,13 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
   .sc-interview-voting__row > img { width: 48px; height: 36px; }
   .sc-interview-voting__info strong { font-size: 13px; }
 }
+/* Strony-dokumenty (O nas, Metodologia, Konsylium…; właściciel 3.10): przełącznik PL / EN w wierszu tytułu, po prawej;
+   opis na samym dole nagłówka; tytuł odrobinę większy */
+.sc-info-page__hero:has(> .sc-info-page__actions .sc-doc-language) { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: center; }
+.sc-info-page__hero:has(> .sc-info-page__actions .sc-doc-language) > .sc-section-header,
+.sc-info-page__hero:has(> .sc-info-page__actions .sc-doc-language) > .sc-section-header > .sc-section-header__copy { display: contents; }
+.sc-info-page__hero:has(> .sc-info-page__actions .sc-doc-language) .sc-section-header__copy > * { grid-column: 1; }
+.sc-info-page__hero:has(> .sc-info-page__actions .sc-doc-language) > .sc-info-page__actions { grid-column: 2; grid-row: 2; margin: 0; align-self: center; }
+.sc-info-page__hero:has(> .sc-info-page__actions .sc-doc-language) .sc-section-header__kicker { grid-row: 1; }
+.sc-info-page__hero:has(> .sc-info-page__actions .sc-doc-language) .sc-section-header__subtitle { margin-bottom: 0; }
+.sc-info-page .sc-section-header[data-variant="page"] .sc-section-header__title { font-size: calc(var(--sc-t-display-size) * 1.15); line-height: 1.1; }
