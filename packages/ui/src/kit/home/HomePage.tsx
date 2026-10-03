@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HomeSupport } from "./HomeSupport";
 import { HomeSpinTeaser } from "./HomeSpinTeaser";
-import { HomeHero } from "./HomeHero";
 import { SpinExplainer } from "../SpinExplainer";
 import { HomeThreads } from "./HomeThreads";
 import { NewsletterSignup } from "../../components/NewsletterSignup";
@@ -35,7 +34,6 @@ export function HomePage() {
       <div className="sc-home">
         <h1 className="sc-sr-only">Diagnozy Dr. Spina i nitki kontekstowe</h1>
         <DemoBanner />
-        <HomeHero />
         <SpinExplainer id="czym-jest-spin" collapsible />
         {/* Właściciel 3.10: pierwsze, co widzi czytelnik, to nitki; Klinika pod nimi; Baza, Wiadomości i Twoje wiadomości
             nie stoją na głównej (Baza i wyszukiwanie zostają pod własnym adresem). */}
