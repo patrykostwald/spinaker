@@ -90,3 +90,6 @@ export { HowToRead } from "./components/clinic/SpinParts";
 
 export { SEMEVAL_MAP, SEMEVAL_UNRECOGNIZED } from "./lib/semeval";
 export { SocialPanel, SocialInbox, SocialPasswordSetup } from './components/SocialPanel';
+
+export { ThreadAppealPage } from './components/community/ThreadAppealPage';
+export { SocialNavigation } from './components/community/SocialNavigation';

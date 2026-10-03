@@ -11,6 +11,7 @@ from news import clinic
 from news.account_models import AccountIdentity, PersonalContextThread, PersonalContextThreadItem
 from news.clinic_models import SpinDiagnosis
 from news.community_models import CommunityLink, CommunityThreadOpinion
+from news.thread_social_models import ThreadComment
 from news.diagnosis_threads import sync_diagnosis_thread
 from news.political_models import PoliticalAccount, PoliticalPost
 
@@ -88,11 +89,12 @@ def test_community_latest_comment_uses_append_time(settings):
     AccountIdentity.objects.create(user=reader, email='reader@example.org', email_verified=True)
     old = CommunityThreadOpinion.objects.create(thread=first, user=reader, polarity='positive')
     CommunityThreadOpinion.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=10))
-    CommunityThreadOpinion.objects.create(thread=second, user=reader, polarity='positive', body='Wcześniejszy komentarz')
+    CommunityThreadOpinion.objects.create(thread=second, user=reader, polarity='positive')
+    ThreadComment.objects.create(thread=second, author=reader, body='Wcześniejszy komentarz')
     client = APIClient()
     client.force_authenticate(reader)
-    response = client.patch(f'/api/community/threads/{first.pk}/opinions/', {'body': 'Dopisany komentarz'}, format='json')
-    assert response.status_code == 200 and response.data['comment_added_at']
+    response = client.post(f'/api/community/threads/{first.pk}/comments/', {'body': 'Dopisany komentarz'}, format='json')
+    assert response.status_code == 201 and response.data['created_at']
     assert client.get('/api/community/threads/?sort=comments').data['results'][0]['id'] == first.pk
     assert client.get('/api/community/threads/?sort=hot').data['results'][0]['id'] == second.pk
 
@@ -152,7 +154,8 @@ def test_community_hot_ranking_mixed_threads_and_comments(settings):
     hot = '/api/community/threads/?sort=hot'
     assert [t['id'] for t in client.get(hot).data['results']] == [user.pk, ai.pk]
     reader = get_user_model().objects.create_user('reader')
-    CommunityThreadOpinion.objects.create(thread=ai, user=reader, polarity='negative', body='Komentarz')
+    CommunityThreadOpinion.objects.create(thread=ai, user=reader, polarity='negative')
+    ThreadComment.objects.create(thread=ai, author=reader, body='Komentarz')
     rows = client.get(hot).data['results']
     assert [t['id'] for t in rows] == [ai.pk, user.pk]
     assert rows[0]['author'] == 'Dr. Spin (AI)' and rows[0]['is_ai']
@@ -176,5 +179,5 @@ def test_community_read_write_flags(settings, threads, accounts):
     assert client.get(url + 'opinions/').status_code == (200 if threads else 404)
     assert client.post(url + 'opinions/', {'polarity': 'positive'}).status_code in (401, 403)
     client.force_authenticate(reader)
-    assert client.post(url + 'opinions/', {'polarity': 'positive'}).status_code == (201 if threads and accounts else 404)
+    assert client.post(url + 'opinions/', {'polarity': 'positive'}).status_code == (200 if threads and accounts else 404)
     assert client.post('/api/account/context-threads/', {'title': 'Szkic'}, format='json').status_code == (201 if threads and accounts else 403)

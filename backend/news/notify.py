@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from news.account_models import PersonalContextThread
 from news.clinic_models import SpinDiagnosis
 from news.community_models import CommunityThreadOpinion
+from news.thread_social_models import ThreadComment
 from news.notification_models import Notification, NotificationEvent, NotificationSettings
 
 logger = logging.getLogger(__name__)
@@ -70,5 +71,11 @@ def thread_published(sender, instance, raw=False, **kwargs):
 
 @receiver(post_save, sender=CommunityThreadOpinion)
 def opinion_published(sender, instance, created, raw=False, **kwargs):
-    if not raw and created:
+    if not raw and created and instance.body:
         queue_event('reply', instance.pk)
+
+
+@receiver(post_save, sender=ThreadComment)
+def thread_comment_published(sender, instance, created, raw=False, **kwargs):
+    if not raw and created and not instance.hidden_at and not instance.deleted_at:
+        queue_event('thread_comment', instance.pk)

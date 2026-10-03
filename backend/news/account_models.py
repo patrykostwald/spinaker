@@ -103,7 +103,7 @@ class PersonalContextThread(models.Model):
         on_delete=models.CASCADE, related_name='context_thread')
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
         related_name='personal_context_threads')
-    title = models.CharField(max_length=140)
+    title = models.TextField()
     description = models.CharField(max_length=500, blank=True, default='')
     query = models.CharField(max_length=200, blank=True, default='')
     categories = models.JSONField(default=list)
@@ -131,8 +131,8 @@ class PersonalContextThreadItem(models.Model):
                                 related_name='personal_context_thread_items')
     link = models.ForeignKey('news.CommunityLink', null=True, blank=True, on_delete=models.CASCADE,
                              related_name='thread_items')
-    note = models.CharField(max_length=280, blank=True, default='')
-    link_note = models.CharField(max_length=280, blank=True, default='')
+    note = models.TextField(blank=True, default='')
+    link_note = models.TextField(blank=True, default='')
     box_data = models.JSONField(null=True, blank=True, help_text='Deterministyczny fragment diagnozy Dr. Spina.')
     position = models.PositiveSmallIntegerField()
 

@@ -12,6 +12,12 @@ from news.notify import enabled, notify
 logger = logging.getLogger(__name__)
 
 
+@shared_task(name='news.notification_tasks.retry_thread_moderation_mail', soft_time_limit=50, time_limit=60)
+def retry_thread_moderation_mail():
+    from news.thread_moderation import deliver_mail
+    deliver_mail(max_messages=2)
+
+
 def _deliver_event(event):
     if event.kind == 'diagnosis':
         from news.clinic import figures_by_account, published_diagnoses
@@ -32,6 +38,22 @@ def _deliver_event(event):
             return
         recipients = Follow.objects.filter(target_user=thread.owner, created_at__lte=event.created_at).exclude(user=thread.owner)
         kind, title, url = 'followed_thread', f'{thread.owner.username}: {thread.title}', f'/nitki/{thread.pk}'
+    elif event.kind == 'thread_comment':
+        from news.community import public_threads
+        from news.thread_social_models import ThreadComment
+        if not settings.THREADS_ENABLED:
+            return
+        comment = ThreadComment.objects.select_related('thread').filter(pk=event.target_id,
+            thread__in=public_threads(), hidden_at__isnull=True, deleted_at__isnull=True).first()
+        if not comment:
+            return
+        ids = set(Follow.objects.filter(thread=comment.thread, created_at__lte=event.created_at).values_list('user_id', flat=True))
+        if comment.thread.owner_id:
+            ids.add(comment.thread.owner_id)
+        ids.discard(comment.author_id)
+        for user in get_user_model().objects.filter(pk__in=ids, is_active=True):
+            notify(user, 'thread_reply', f'Nowy komentarz: {comment.thread.title}', f'/nitki/{comment.thread_id}')
+        return
     elif event.kind == 'reply':
         from news.community import public_threads
         from news.community_models import CommunityThreadOpinion

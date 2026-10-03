@@ -8,8 +8,15 @@ from news.account_models import PersonalContextThread, PersonalContextThreadItem
 from news.clinic_models import SpinDiagnosis
 
 
-def short(value, limit=280):
-    return ' '.join(str(value or '').replace('—', '-').replace('–', '-').split())[:limit]
+def short(value, limit=200):
+    value = ' '.join(str(value or '').replace('—', '-').replace('–', '-').split())
+    if len(value) <= limit:
+        return value
+    candidate = value[:limit - 1]
+    ends = list(re.finditer(r'[.!?](?=\s|$)', candidate))
+    if ends:
+        return candidate[:ends[-1].end()]
+    return candidate.rsplit(' ', 1)[0] + '…'
 
 
 def sentence(value):
@@ -26,10 +33,10 @@ def boxes(diagnosis):
     result = []
 
     def add(kind, title, href=url, *, body='', author='', date=None, note='', link_note=''):
-        result.append({'box_data': {'kind': 'link', 'box_type': kind, 'title': short(title, 600),
+        result.append({'box_data': {'kind': 'link', 'box_type': kind, 'title': short(title, 80),
             'url': href, 'domain': urlsplit(href).hostname or 'spin.clinic', 'title_origin': 'system',
-            'body': body, 'source_name': author, 'published_date': date},
-            'note': short(note), 'link_note': short(link_note) if result else ''})
+            'body': short(body, 400), 'source_name': author, 'published_date': date},
+            'note': short(note, 400), 'link_note': short(link_note) if result else ''})
 
     author = author_data(post, None)['name']
     add('post', post.text, post.url, body=post.text, author=author,
@@ -66,10 +73,10 @@ def sync_diagnosis_thread(diagnosis_id):
         PersonalContextThread.objects.filter(diagnosis=diagnosis).update(is_public=False)
         return None
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
-        'title': short('Rozkład: ' + diagnosis.headline, 140),
+        'title': short('Rozkład: ' + diagnosis.headline, 80),
         'description': 'Nitka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.',
         'is_public': True, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
-    title = short('Rozkład: ' + diagnosis.headline, 140)
+    title = short('Rozkład: ' + diagnosis.headline, 80)
     payload = boxes(diagnosis)
     existing = list(thread.items.values('box_data', 'note', 'link_note'))
     if existing != payload:

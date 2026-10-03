@@ -4,17 +4,14 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
-import { Dialog } from "../Dialog";
-import { REPORT_REASONS, getCommunityThread, getCommunityThreads, reportCommunityThread, type ThreadElement } from "../../lib/community";
-import { useAccount } from "../../lib/account";
+import { getCommunityThread, getCommunityThreads, type ThreadElement } from "../../lib/community";
 import { categoryLabel, formatDatePl, formatDateTimePl } from "../../lib/utils";
-import { OpinionsPanel } from "../OpinionsPanel";
-import { FollowButton } from '../FollowButton';
+
 import { AccountDataState } from '../AccountPhase2';
-import { accountMessage } from '../../lib/accountPhase2';
 import { useFeature } from '../../lib/features';
 import { isUnavailable } from '../../lib/personal';
 import { ThreadStrip } from './ThreadStrip';
+import { ClampedText } from './SocialPrimitives';
 
 /** Jeden element nitki: materiał z Bazy (z linkiem do kontekstu) albo link spoza Bazy - wyraźnie oznaczony. */
 export function ElementRow({ element, index }: { element: ThreadElement; index: number }) {
@@ -97,41 +94,9 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
   );
 }
 
-function ReportButton({ threadId }: { threadId: number }) {
-  const account = useAccount();
-  const accountsEnabled = useFeature('ACCOUNTS_ENABLED');
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("spam");
-  const [details, setDetails] = useState("");
-  const [status, setStatus] = useState("");
-  const [pending, setPending] = useState(false);
-  if (!accountsEnabled || !account.data?.authenticated) return null;
-  async function send(event: FormEvent) {
-    event.preventDefault();
-    if (pending) return;
-    setPending(true);
-    try {
-      const result = await reportCommunityThread(threadId, reason, details.trim());
-      setStatus(result.status === "received" ? "Dziękujemy - zgłoszenie trafiło do zespołu." : "Ta nitka jest już przez Ciebie zgłoszona.");
-      setOpen(false);
-    } catch (error) { setStatus(accountMessage(error)); } finally { setPending(false); }
-  }
-  return <>
-    {status && <span className="sc-community__status" role="status">{status}</span>}<Button variant="quiet" size="sm" onClick={() => { setOpen(true); setStatus(''); }}>Zgłoś nitkę</Button>
-    <Dialog open={open} onClose={() => setOpen(false)} title="Zgłoś nitkę do moderacji">
-      <form className="sc-community-report" onSubmit={send}>
-        <label>Powód<select value={reason} onChange={event => setReason(event.target.value)}>{REPORT_REASONS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-        <label>Szczegóły (opcjonalnie)<textarea rows={3} maxLength={500} value={details} onChange={event => setDetails(event.target.value)} /></label>
-        <Button type="submit" variant="primary" disabled={pending}>Wyślij zgłoszenie</Button>
-        {status && <p role="status">{status}</p>}
-      </form>
-    </Dialog>
-  </>;
-}
-
 export function CommunityThreadPage({ id }: { id: string }) {
   const query = useQuery({ queryKey: ["community-thread", id], queryFn: () => getCommunityThread(id), retry: false });
-  if (query.isLoading) return <div className="sc-community"><p className="sc-clinic-empty">Ładowanie nitki…</p></div>;
+  if (query.isLoading) return <div className="sc-community"><div className="sc-social-skeleton" aria-label="Ładowanie nitki" /></div>;
   if (query.isError && !isUnavailable(query.error)) return <div className="sc-community"><AccountDataState query={query} /></div>;
   if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono nitki - mogła zostać usunięta albo nie jest publiczna. <Link href="/nitki">Wszystkie nitki</Link></p></div>;
   const thread = query.data;
@@ -140,27 +105,13 @@ export function CommunityThreadPage({ id }: { id: string }) {
       <p><Link href="/nitki" className="sc-spin-detail__back">← Nitki czytelników</Link></p>
       <header className="sc-community__head">
         <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Nitka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>@{thread.author}</Link></>}</p>
-        <h1>{thread.title}</h1>
-        {thread.description && <p className="sc-clinic-lead">{thread.description}</p>}
+        <ClampedText><h1>{thread.title}</h1></ClampedText>
+        {thread.description && <ClampedText>{thread.description}</ClampedText>}
         <p className="sc-community-card__meta">
           {thread.published_at ? `Opublikowana ${formatDateTimePl(thread.published_at)}` : ""} · {thread.items_count} elementów · kolejność ustalił autor
         </p>
-        <div className="sc-community__actions">
-          <FollowButton kind="thread" targetId={thread.id} label={thread.title} />
-          {thread.author_id && !thread.is_owner && <FollowButton kind="user" targetId={thread.author_id} label={`@${thread.author}`} />}
-          <a className="sc-f2-share" href={`https://twitter.com/intent/tweet?${new URLSearchParams({ text: thread.title, url: `https://spin.clinic/nitki/${thread.id}` })}`} target="_blank" rel="noopener noreferrer">Udostępnij na X ↗</a>
-          {thread.is_owner && <Button href={`/konto/nitki/${thread.id}`} variant="quiet" size="sm">Edytuj swoją nitkę</Button>}
-          <ReportButton threadId={thread.id} />
-        </div>
       </header>
       <ThreadStrip thread={thread} items={thread.items} full />
-      <div id="opinie"><OpinionsPanel publicRead endpoint={`/api/community/threads/${thread.id}/opinions/`} labels={{
-        kicker: "REAKCJE CZYTELNIKÓW",
-        question: "Czy zgadzasz się z argumentacją tej nitki?",
-        positive: "Zgadzam się",
-        negative: "Nie zgadzam się",
-        signedOut: "Zaloguj się, aby ocenić nitkę i dodać komentarz.",
-      }} /></div>
     </div>
   );
 }

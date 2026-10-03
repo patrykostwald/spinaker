@@ -7,22 +7,18 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Max, F
-from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
-from rest_framework.views import APIView
 
 from news.account_models import PersonalContextThread
-from news.accounts import AccountWriteThrottle, OpinionInput, OpinionReadThrottle
-from news.community_models import CommunityLink, CommunityThreadOpinion, CommunityThreadReport
+from news.community_models import CommunityLink, CommunityThreadOpinion
 from news.models import Article
-from news.schema import json_view
 
 TRACKING_PARAMS = ('utm_', 'fbclid', 'gclid', 'mc_', 'igshid', 'ref_src', 'dclid', 'yclid', '_ga')
 MIN_PUBLIC_ITEMS = 2
@@ -130,7 +126,7 @@ def public_threads():
     from news.clinic import published_diagnoses
     return (PersonalContextThread.objects.filter(is_public=True, hidden_at__isnull=True)
             .filter(Q(diagnosis__isnull=True) | Q(diagnosis__in=published_diagnoses()))
-            .annotate(items_count=Count('items', distinct=True)).filter(items_count__gte=MIN_PUBLIC_ITEMS))
+            .annotate(items_count=Count('items', distinct=True), visible_comments_count=Count('comments', filter=Q(comments__deleted_at__isnull=True, comments__hidden_at__isnull=True), distinct=True)).filter(items_count__gte=MIN_PUBLIC_ITEMS))
 
 
 def item_data(item):
@@ -146,7 +142,7 @@ def item_data(item):
 
 
 def _counts(thread_ids):
-    result = {pk: {'positive': 0, 'negative': 0} for pk in thread_ids}
+    result = {pk: {'positive': 0, 'doubt': 0, 'negative': 0} for pk in thread_ids}
     for row in CommunityThreadOpinion.objects.filter(thread_id__in=thread_ids).values('thread_id', 'polarity').annotate(n=Count('id')):
         result[row['thread_id']][row['polarity']] = row['n']
     return result
@@ -159,7 +155,8 @@ def thread_summary(thread, counts):
             'is_ai': bool(thread.diagnosis_id), 'diagnosis_id': thread.diagnosis_id,
             'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
             'items_count': len(items), 'preview': [item_data(item) for item in items],
-            'opinions': counts.get(thread.pk, {'positive': 0, 'negative': 0})}
+            'comments_count': getattr(thread, 'visible_comments_count', 0),
+            'opinions': counts.get(thread.pk, {'positive': 0, 'doubt': 0, 'negative': 0})}
 
 
 @extend_schema(summary='Publiczne nitki kontekstowe czytelników', tags=['nitki'], responses=OpenApiTypes.OBJECT)
@@ -172,6 +169,8 @@ def community_threads(request):
     except ValueError:
         return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
     rows = public_threads().select_related('owner').prefetch_related('items__article__source', 'items__link')
+    if request.query_params.get('ai') == '1':
+        rows = rows.filter(diagnosis__isnull=False)
     query = request.query_params.get('q', '').strip()
     if query:
         rows = rows.filter(Q(title__icontains=query) | Q(description__icontains=query))
@@ -226,7 +225,7 @@ def community_threads(request):
             filter=Q(opinions__created_at__gte=now - timedelta(days=7), opinions__created_at__lte=now)))
         rows = rows.order_by('-recent_reactions', '-published_at', '-pk')
     elif sort == 'comments':
-        rows = rows.annotate(last_comment=Max(Coalesce('opinions__comment_added_at', 'opinions__created_at'), filter=~Q(opinions__body='')))
+        rows = rows.annotate(last_comment=Max('comments__created_at', filter=Q(comments__deleted_at__isnull=True, comments__hidden_at__isnull=True)))
         rows = rows.order_by(F('last_comment').desc(nulls_last=True), '-published_at', '-pk')
     else:
         rows = rows.order_by('-published_at', '-pk')
@@ -248,98 +247,3 @@ def community_thread_detail(request, thread_id):
     data.update({'items': [item_data(item) for item in items], 'preview': None,
                  'is_owner': request.user.is_authenticated and request.user.pk == thread.owner_id})
     return Response(data)
-
-
-class CommunityOpinionSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CommunityThreadOpinion
-        fields = ['id', 'author', 'polarity', 'body', 'created_at', 'comment_added_at']
-
-    def get_author(self, opinion):
-        return {'id': opinion.user_id, 'username': opinion.user.username}
-
-
-@json_view('Reakcje i komentarze do publicznej nitki czytelnika', tags=['nitki'])
-class CommunityOpinionsView(APIView):
-    permission_classes = [AllowAny]
-    throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
-
-    def get_permissions(self):
-        return [IsAuthenticated()] if self.request.method in ('POST', 'PATCH') else super().get_permissions()
-
-    def _thread(self, thread_id):
-        if not threads_enabled():
-            from django.http import Http404
-            raise Http404
-        return get_object_or_404(public_threads(), pk=thread_id)
-
-    def get(self, request, thread_id):
-        rows = self._thread(thread_id).opinions.select_related('user')
-        counts = {'positive': 0, 'negative': 0}
-        counts.update({row['polarity']: row['n'] for row in rows.values('polarity').annotate(n=Count('id'))})
-        mine = rows.filter(user=request.user).first() if request.user.is_authenticated else None
-        return Response({
-            'counts': counts,
-            'mine': CommunityOpinionSerializer(mine).data if mine else None,
-            'positive': CommunityOpinionSerializer(rows.filter(polarity='positive').exclude(body='')[:50], many=True).data,
-            'negative': CommunityOpinionSerializer(rows.filter(polarity='negative').exclude(body='')[:50], many=True).data,
-        })
-
-    def post(self, request, thread_id):
-        if not accounts_enabled():
-            return _disabled()
-        from news.account_security import require_verified
-        require_verified(request.user)
-        thread = self._thread(thread_id)
-        serializer = OpinionInput(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            with transaction.atomic():
-                opinion = CommunityThreadOpinion.objects.create(user=request.user, thread=thread, **serializer.validated_data)
-        except IntegrityError:
-            return Response({'detail': 'Twoja reakcja na tę nitkę jest już zapisana.'}, status=409)
-        return Response(CommunityOpinionSerializer(opinion).data, status=201)
-
-    def patch(self, request, thread_id):
-        if not accounts_enabled():
-            return _disabled()
-        from news.account_security import require_verified
-        require_verified(request.user)
-        if not isinstance(request.data, dict) or set(request.data) - {'body'}:
-            raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
-        serializer = OpinionInput(data={'polarity': 'positive', **request.data})
-        serializer.is_valid(raise_exception=True)
-        body = serializer.validated_data['body']
-        if not body:
-            raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
-        self._thread(thread_id)
-        with transaction.atomic():
-            opinion = get_object_or_404(CommunityThreadOpinion.objects.select_for_update().select_related('user'),
-                                        thread_id=thread_id, user=request.user)
-            added_at = timezone.now()
-            if opinion.body or not CommunityThreadOpinion.objects.filter(pk=opinion.pk, body='').update(body=body, comment_added_at=added_at):
-                return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
-            opinion.body = body
-            opinion.comment_added_at = added_at
-        return Response(CommunityOpinionSerializer(opinion).data)
-
-
-class ReportInput(serializers.Serializer):
-    reason = serializers.ChoiceField(choices=[value for value, _ in CommunityThreadReport.REASONS])
-    details = serializers.CharField(max_length=500, required=False, allow_blank=True, default='')
-
-
-@extend_schema(summary='Zgłoś publiczną nitkę do moderacji', tags=['nitki'], request=ReportInput, responses=OpenApiTypes.OBJECT)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@throttle_classes([AccountWriteThrottle])
-def report_thread(request, thread_id):
-    if not threads_enabled() or not accounts_enabled():
-        return _disabled()
-    thread = get_object_or_404(public_threads(), pk=thread_id)
-    serializer = ReportInput(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    _, created = CommunityThreadReport.objects.get_or_create(reporter=request.user, thread=thread, defaults=serializer.validated_data)
-    return Response({'status': 'received' if created else 'already_reported'}, status=201 if created else 200)

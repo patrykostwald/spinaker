@@ -415,3 +415,5 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     list_filter = ('status', 'source')
     search_fields = ('email',)
     readonly_fields = ('token', 'consent_version', 'created_at', 'confirmation_sent_at', 'confirmed_at', 'unsubscribed_at')
+
+from news import thread_social_admin  # noqa: E402,F401

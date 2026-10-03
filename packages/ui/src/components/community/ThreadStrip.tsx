@@ -1,18 +1,30 @@
 "use client";
 
-import { Fragment, useId, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { CommunityThreadSummary, ThreadElement } from '../../lib/community';
+import { RatingFrame, SocialIcon, ClampedText, type Counts } from './SocialPrimitives';
+import { SocialReport, ThreadSocial } from './ThreadSocial';
+import { useFeature } from '../../lib/features';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 
 const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza' };
 
 /** Jeden tor w głównej, na liście i w pełnej nitce. Powiązanie należy do następnego boksu. */
-export function ThreadStrip({ thread, items = thread.preview ?? [], full = false }: {
-  thread: CommunityThreadSummary; items?: ThreadElement[]; full?: boolean;
+export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false }: {
+  thread: CommunityThreadSummary; items?: ThreadElement[]; full?: boolean; initiallyExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(full);
+  const accountsEnabled = useFeature('ACCOUNTS_ENABLED');
+  const [counts, setCounts] = useState<Counts | null>(null);
+  const [commentCount, setCommentCount] = useState<number | null>(null);
+  const [showComments, setShowComments] = useState(full);
+  const [draft, setDraft] = useState('');
+  const [highlight, setHighlight] = useState<number | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const scrollingTo = useRef<number | null>(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const [expanded, setExpanded] = useState(full || initiallyExpanded);
   const [active, setActive] = useState(0);
   const [selected, setSelected] = useState(0);
   const track = useRef<HTMLOListElement>(null);
@@ -32,6 +44,16 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     setActive(next);
     setSelected(slots[next] ?? 0);
   }
+  function focusBox(n: number) {
+    const box = track.current?.querySelector<HTMLElement>(`[data-box="${n}"]`);
+    if (!box || !track.current) return;
+    scrollingTo.current = n - 1;
+    setExpanded(true); setSelected(n - 1); setHighlight(n);
+    requestAnimationFrame(() => {
+      if (track.current) track.current.scrollTo({ left: track.current.scrollLeft + box.getBoundingClientRect().left - track.current.getBoundingClientRect().left, behavior: reduced ? 'auto' : 'smooth' });
+    });
+    clearTimeout(timer.current); timer.current = setTimeout(() => { setHighlight(null); scrollingTo.current = null; }, 1500);
+  }
   function toggle() {
     if (full) return;
     setExpanded(value => !value);
@@ -41,13 +63,14 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   }
 
   return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}`}>
+    <div className="sc-thread-strip__frame">
     <header className="sc-thread-strip__head">
-      <h2>{full ? thread.title : <button type="button" aria-expanded={expanded} aria-controls={`${uid}-track ${uid}-notes`} onClick={toggle} title={thread.title}>
+      {full ? <div className="sc-thread-strip__title"><ClampedText><h2>{thread.title}</h2></ClampedText></div> : <h2><button type="button" aria-expanded={expanded} aria-controls={`${uid}-track ${uid}-notes`} onClick={toggle} title={thread.title}>
         <span>{thread.title}</span><span aria-hidden="true">{expanded ? '−' : '+'}</span>
-      </button>}</h2>
+      </button></h2>}
       <span className="sc-thread-strip__author" title={thread.author}>{thread.is_ai ? 'Dr. Spin (AI)' : `@${thread.author}`}</span>
-      <span>{ordered.length} boksów</span>
-      <span aria-label={`Ocena: ${thread.opinions.positive} za, ${thread.opinions.negative} przeciw`}>+{thread.opinions.positive} / −{thread.opinions.negative}</span>
+      <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => setShowComments(!showComments)}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
+      <SocialReport threadId={thread.id} />
     </header>
     <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" tabIndex={0} aria-label={`Boksy nitki: ${thread.title}`}
       onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); move(active + (event.key === 'ArrowRight' ? 1 : -1)); } }}
@@ -60,14 +83,14 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         });
         if (event.currentTarget.scrollWidth > event.currentTarget.clientWidth &&
             event.currentTarget.scrollLeft + event.currentTarget.clientWidth >= event.currentTarget.scrollWidth - 2) nearest = slots.length - 1;
-        setActive(nearest); setSelected(slots[nearest] ?? 0);
+        setActive(nearest); if (scrollingTo.current === null) setSelected(slots[nearest] ?? 0);
       }}>
       {ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
         {expanded && index > 0 && item.link_note && <motion.li layout="position" initial={reduced ? false : { opacity: 0, scale: .95 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: reduced ? 0 : .24 }} className="sc-thread-strip__link">
-          <span className="sc-sr-only">Powiązanie: </span><p>{item.link_note}</p>
+          transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className="sc-thread-strip__link">
+          <span className="sc-sr-only">Powiązanie: </span><ClampedText>{item.link_note}</ClampedText>
         </motion.li>}
-        <motion.li layout="position" transition={{ duration: reduced ? 0 : .24 }} className="sc-thread-strip__box">
+        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1}>
           <button type="button" className="sc-thread-strip__select" onClick={() => { if (!expanded) toggle(); setSelected(index); }}
             aria-pressed={expanded && selected === index}
             aria-label={`${expanded ? 'Pokaż opis boksu' : 'Rozwiń nitkę od boksu'} ${index + 1}: ${item.title}`}>
@@ -80,18 +103,18 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         </motion.li>
       </Fragment>)}
     </ol>
-    <nav className="sc-thread-strip__position" aria-label="Pozycja w nitce">
-      <button type="button" aria-label="Poprzedni element" disabled={active === 0} onClick={() => move(active - 1)}>←</button>
-      <span aria-live="polite">{slots.length ? active + 1 : 0} / {slots.length}</span>
-      <button type="button" aria-label="Następny element" disabled={active >= slots.length - 1} onClick={() => move(active + 1)}>→</button>
-      {!full && <Link href={`/nitki/${thread.id}`}>Otwórz nitkę</Link>}
-    </nav>
     <div id={`${uid}-notes`} className="sc-thread-strip__details" aria-hidden={!expanded}>
       <div>{current && <div className="sc-thread-strip__note">
-        <p><strong>Boks {selected + 1}: </strong><a href={current.url} target={current.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">{current.title} ↗</a></p>
-        {current.body && <p>{current.body}</p>}
-        {current.note && <p><strong>Komentarz autora: </strong>{current.note}</p>}
+        <ClampedText><strong>Boks {selected + 1}: </strong><a href={current.url} target={current.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">{current.title} ↗</a></ClampedText>
+        {current.body && <ClampedText>{current.body}</ClampedText>}
+        {current.note && <ClampedText><strong>Komentarz autora: </strong>{current.note}</ClampedText>}
+        {accountsEnabled && <button type="button" onClick={() => { setDraft((draft + ` @boks ${selected + 1} `).trimStart().slice(0, 600)); setShowComments(true); }}>Odpowiedz do boksu</button>}
       </div>}</div>
     </div>
+    <RatingFrame counts={counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative }} ai={thread.is_ai} />
+    </div>
+    <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
+      draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount} />
+    {!full && expanded && <Link href={`/nitki/${thread.id}`}>Otwórz nitkę</Link>}
   </article>;
 }

@@ -71,8 +71,8 @@ class ArticleFavoriteDetailView(APIView):
 class ThreadItemInput(serializers.Serializer):
     article_id = serializers.IntegerField(min_value=1, required=False)
     link_id = serializers.IntegerField(min_value=1, required=False)
-    note = serializers.CharField(max_length=280, required=False, allow_blank=True, default='')
-    link_note = serializers.CharField(max_length=280, required=False, allow_blank=True, default='')
+    note = serializers.CharField(max_length=400, required=False, allow_blank=True, default='')
+    link_note = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')
 
     def validate(self, attrs):
         if bool(attrs.get('article_id')) == bool(attrs.get('link_id')):
@@ -84,6 +84,7 @@ MIN_PUBLIC_ITEMS = 2
 
 
 class PersonalContextThreadSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(max_length=80)
     source_ids = serializers.PrimaryKeyRelatedField(source='sources', many=True,
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
     article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=100, required=False)

@@ -17,6 +17,7 @@ app.conf.beat_schedule = {
     'council-audit-hourly': {'task': 'news.tasks.council_audit_task', 'schedule': crontab(minute=0, hour='7-23')},
     'inquisitor-evening': {'task': 'news.tasks.inquisitor_task', 'schedule': crontab(minute=45, hour=21)},
     'account-notification-events': {'task': 'news.notification_tasks.process_notification_events', 'schedule': crontab(minute='*')},
+    'thread-moderation-mail': {'task': 'news.notification_tasks.retry_thread_moderation_mail', 'schedule': crontab(minute='*')},
     'account-notification-digests': {'task': 'news.notification_tasks.send_notification_digests', 'schedule': crontab(minute=0)},
     'repairer-15m': {'task': 'news.tasks.repairer_task', 'schedule': crontab(minute='*/15')},
     'clinic-video-stats-daily': {'task': 'news.tasks.clinic_video_stats_task', 'schedule': crontab(hour=6, minute=30)},

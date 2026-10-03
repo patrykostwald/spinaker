@@ -33,7 +33,7 @@ class CommunityLink(models.Model):
 class CommunityThreadOpinion(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='community_thread_opinions')
     thread = models.ForeignKey('news.PersonalContextThread', on_delete=models.CASCADE, related_name='opinions')
-    polarity = models.CharField(max_length=8, choices=[('positive', 'Przydatna'), ('negative', 'Nieprzydatna')])
+    polarity = models.CharField(max_length=8, choices=[('positive', 'Zgadzam się'), ('doubt', 'Mam wątpliwości'), ('negative', 'Nie zgadzam się')])
     body = models.CharField(max_length=240, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     comment_added_at = models.DateTimeField(null=True, blank=True)
@@ -47,7 +47,7 @@ class CommunityThreadOpinion(models.Model):
         ordering = ['-created_at', '-id']
         constraints = [
             models.UniqueConstraint(fields=['user', 'thread'], name='one_opinion_per_user_community_thread'),
-            models.CheckConstraint(condition=models.Q(polarity__in=['positive', 'negative']), name='community_opinion_valid_polarity'),
+            models.CheckConstraint(condition=models.Q(polarity__in=['positive', 'doubt', 'negative']), name='community_opinion_valid_polarity'),
         ]
 
 

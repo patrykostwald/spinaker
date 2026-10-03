@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@spin-clinic/ui": [
+        "../packages/ui/src/index.ts"
+      ],
+      "@spin-clinic/ui/kit": [
+        "../packages/ui/src/kit/index.ts"
+      ]
+    },
+    "incremental": false
+  }
+}

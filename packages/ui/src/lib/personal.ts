@@ -68,7 +68,7 @@ export const REACTION_LABELS = {
 } as const;
 
 export const MAX_THREAD_ARTICLES = 100;
-export const THREAD_LIMITS = { title: 140, description: 500, query: 200 };
+export const THREAD_LIMITS = { title: 80, description: 500, query: 200 };
 
 export const personalKeys = {
   threads: (ownerId?: number) => ['personal-threads', ownerId] as const,

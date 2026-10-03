@@ -1,4 +1,6 @@
 from __future__ import annotations
+from news.thread_card import thread_card
+from news.thread_social import ThreadRatingsView, ThreadCommentsView, ThreadCommentDetailView, ThreadReportView, ThreadAppealView, ThreadModerationQueueView
 from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView
 
 from news.clinic_api import clinic_council, clinic_corrections
@@ -25,7 +27,7 @@ from news.ai_research_stream import AIResearchStreamView, AIResearchSourcesView
 from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCatalogExport
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
-from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
+from news.community import resolve_link, community_threads, community_thread_detail
 from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report,
                              suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
@@ -69,9 +71,15 @@ urlpatterns = [
     path('public-figures/<int:figure_id>/x-suggestions/', suggest_x_account),
     path('community/links/', resolve_link),
     path('community/threads/', community_threads),
+    path('community/moderation/', ThreadModerationQueueView.as_view()),
+    path('community/threads/<int:thread_id>/card.png', thread_card),
+    path('community/reports/<int:report_id>/', ThreadAppealView.as_view()),
+    path('community/threads/<int:thread_id>/comments/', ThreadCommentsView.as_view()),
+    path('community/threads/<int:thread_id>/comments/<int:comment_id>/', ThreadCommentDetailView.as_view()),
+    path('community/threads/<int:thread_id>/comments/<int:comment_id>/report/', ThreadReportView.as_view()),
     path('community/threads/<int:thread_id>/', community_thread_detail),
-    path('community/threads/<int:thread_id>/opinions/', CommunityOpinionsView.as_view()),
-    path('community/threads/<int:thread_id>/report/', report_thread),
+    path('community/threads/<int:thread_id>/opinions/', ThreadRatingsView.as_view()),
+    path('community/threads/<int:thread_id>/report/', ThreadReportView.as_view()),
     path('polls/<slug:slug>/', polls.poll_results),
     path('polls/<slug:slug>/vote/', polls.poll_vote),
     path('newsletter/subscribe/', newsletter.subscribe),

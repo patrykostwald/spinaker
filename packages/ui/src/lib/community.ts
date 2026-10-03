@@ -18,7 +18,8 @@ export type CommunityThreadSummary = {
   updated_at: string;
   items_count: number;
   preview: ThreadElement[] | null;
-  opinions: { positive: number; negative: number };
+  opinions: { positive: number; doubt?: number; negative: number };
+  comments_count?: number;
 };
 
 export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElement[]; is_owner: boolean };
@@ -26,7 +27,7 @@ export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElem
 type ResolvedElement = ThreadElement extends infer Element ? Element extends ThreadElement ? Omit<Element, "note" | "link_note" | "position"> : never : never;
 export type ResolvedLink = { item: ResolvedElement; status: "in_base" | "existing_link" | "created" };
 
-export const getCommunityThreads = (page = 1, q = "", author = "", options: { sort?: 'new' | 'best' | 'hot' | 'comments'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
+export const getCommunityThreads = (page = 1, q = "", author = "", options: { ai?: '1'; sort?: 'new' | 'best' | 'hot' | 'comments'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
   const params = new URLSearchParams({ page: String(page) });
   if (q) params.set("q", q);
   if (author) params.set("author", author);

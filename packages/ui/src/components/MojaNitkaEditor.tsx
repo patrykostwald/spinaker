@@ -15,12 +15,13 @@ import { MAX_THREAD_ARTICLES, THREAD_LIMITS, deletePersonalThread, personalKeys,
   useArticleFavorites, useOwnerId, type PersonalArticleRef, type PersonalContextThread } from '../lib/personal';
 import { resolveLink, type ThreadElement } from '../lib/community';
 import { Button } from '../kit';
+import { CharacterCount } from './community/SocialPrimitives';
 import { SignedOutPanel } from './MojeKonto';
 
 type Box = { key: string; material: ThreadElement | null; note: string; link_note: string };
 type Draft = { title: string; items: Box[]; isPublic: boolean };
-const NOTE_LIMIT = 280;
-const LINK_NOTE_LIMIT = 280;
+const NOTE_LIMIT = 400;
+const LINK_NOTE_LIMIT = 400;
 const MIN_PUBLIC_ITEMS = 2;
 const blankBox = (key: string): Box => ({ key, material: null, note: '', link_note: '' });
 const initialDraft = (): Draft => ({ title: '', items: [blankBox('first')], isPublic: false });
@@ -279,6 +280,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
     <label className="sc-simple-thread__title">Tytuł nitki
       <input value={draft.title} maxLength={THREAD_LIMITS.title} required placeholder="O czym chcesz opowiedzieć?"
         onChange={event => setDraft(current => ({ ...current, title: event.target.value }))} />
+      <CharacterCount text={draft.title} limit={THREAD_LIMITS.title} />
     </label>
     <ol className="sc-simple-thread__boxes" aria-label="Boksy nitki">
       {draft.items.map((item, index) => <li key={item.key} className="sc-simple-thread__box">
@@ -292,7 +294,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         {index > 0 && <label>Powiązanie z poprzednim
           <textarea rows={2} maxLength={LINK_NOTE_LIMIT} value={item.link_note} aria-describedby={`${uid}-${item.key}-link-count`}
             placeholder="Dlaczego ten materiał łączy się z poprzednim?" onChange={event => updateBox(item.key, { link_note: event.target.value })} />
-          <small id={`${uid}-${item.key}-link-count`}>{item.link_note.length}/{LINK_NOTE_LIMIT} · Opcjonalne. Pomóż czytelnikom połączyć materiały.</small>
+          <small className="sc-social-count" data-near={item.link_note.length >= LINK_NOTE_LIMIT * .9} id={`${uid}-${item.key}-link-count`}>{item.link_note.length}/{LINK_NOTE_LIMIT} · Opcjonalne. Pomóż czytelnikom połączyć materiały.</small>
         </label>}
         {item.material ? <div className="sc-simple-thread__material">
           <p className="sc-simple-thread__domain">{item.material.kind === 'article' ? 'Z bazy' : 'Spoza bazy'} · {domain(item.material.url)}</p>
@@ -302,7 +304,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         {item.material && <label>Komentarz
           <textarea rows={3} maxLength={NOTE_LIMIT} value={item.note} placeholder="Co warto zauważyć w tym materiale?"
             aria-describedby={`${uid}-${item.key}-note-count`} onChange={event => updateBox(item.key, { note: event.target.value })} />
-          <small id={`${uid}-${item.key}-note-count`}>{item.note.length}/{NOTE_LIMIT}</small>
+          <small className="sc-social-count" data-near={item.note.length >= NOTE_LIMIT * .9} id={`${uid}-${item.key}-note-count`}>{item.note.length}/{NOTE_LIMIT}</small>
         </label>}
       </li>)}
     </ol>

@@ -50,16 +50,16 @@ def test_thread_link_note_create_read_update_and_public_preview(context):
     assert client.get(url).data['elements'] == response.data['elements']
     updated = client.patch(url, {'items': [
         {'link_id': link.pk, 'link_note': 'Stare powiązanie po zmianie kolejności'},
-        {'article_id': article.pk, 'note': 'Nowy komentarz', 'link_note': 'ą' * 280},
+        {'article_id': article.pk, 'note': 'Nowy komentarz', 'link_note': 'ą' * 200},
     ]}, format='json')
     assert updated.status_code == 200
-    assert [item['link_note'] for item in updated.data['elements']] == ['', 'ą' * 280]
+    assert [item['link_note'] for item in updated.data['elements']] == ['', 'ą' * 200]
     assert PersonalContextThreadItem.objects.get(thread_id=thread_id, position=0).link_note == ''
     public = APIClient()
     detail = public.get(f'/api/community/threads/{thread_id}/').data
-    assert [item['link_note'] for item in detail['items']] == ['', 'ą' * 280]
+    assert [item['link_note'] for item in detail['items']] == ['', 'ą' * 200]
     assert detail['items'][1]['note'] == 'Nowy komentarz'
-    assert public.get('/api/community/threads/').data['results'][0]['preview'][1]['link_note'] == 'ą' * 280
+    assert public.get('/api/community/threads/').data['results'][0]['preview'][1]['link_note'] == 'ą' * 200
 
 
 @pytest.mark.parametrize('position', [0, 1])
@@ -68,7 +68,7 @@ def test_thread_link_note_limit_is_validated_before_writing(context, position):
     response = create_thread(context)
     url = f'/api/account/context-threads/{response.data["id"]}/'
     items = [{'article_id': article.pk}, {'link_id': link.pk}]
-    items[position]['link_note'] = 'x' * 281
+    items[position]['link_note'] = 'x' * 201
     invalid = client.patch(url, {'items': items}, format='json')
     assert invalid.status_code == 400
     assert 'link_note' in invalid.data['items'][position]
