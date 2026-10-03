@@ -154,18 +154,18 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         {/* obok awatara: czas publikacji nad nazwą autora, dalej tytuł (właściciel 3.10) */}
         <span className="sc-trow__by"><span className="sc-trow__when">{thread.published_at && <time dateTime={thread.published_at}>{ago(thread.published_at)}</time>}{badge && <span className="sc-trow__badge">{badge}</span>}</span>
           <span className="sc-trow__who"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}</span></span>
-        <span className="sc-trow__title" title={thread.title}>{thread.title}</span>
+        {/* przepięcia jako mała etykieta przy tytule = sygnał sporu (propozycja Qwen, 1. miejsce Konsylium 0104, właściciel 4.10) */}
+        <span className="sc-trow__title" title={thread.title}>{thread.title}{Boolean(thread.repins?.length) && <span className="sc-trow__repin-tag" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}>⇄ {thread.repins!.length}</span>}</span>
         {thread.description && !thread.signal_kind && !thread.narrative && <span className="sc-trow__desc">{thread.description}</span>}
       </button></h2>
       <span className="sc-trow__boxes">
         {/* miniatura spinki (właściciel 3.10): kwadraty boksów i zatrzaski między nimi, każdy w kolorze przeważającej reakcji;
             bez reakcji boksy są szare, a zatrzaski niebieskie */}
         <span className="sc-trow__chainrow">
-          {Boolean(thread.repins?.length) && <span className="sc-trow__repins" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}><SpinkaClip />{thread.repins!.length}</span>}
         <span className="sc-trow__chain" role="img" aria-label={clipsLabel}>{Array.from({ length: Math.min(thread.items_count, 8) }, (_, i) => <Fragment key={i}>
           {i > 0 && <i className="sc-trow__link" data-r={clips[i - 1] ? dominant(clips[i - 1]) : undefined} />}
           <i className="sc-trow__sq" data-r={thread.boxes?.[i] ? dominant(thread.boxes[i]) : undefined} /></Fragment>)}</span></span>
-        <span className="sc-trow__facts">{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
+        <span className="sc-trow__facts" hidden>{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
       </span>
       {/* bez komentarza w wierszu (właściciel 3.10): tytuł w dwóch wierszach i opis jak na Wykopie, łańcuch przy licznikach */}
       <span className="sc-trow__side">
