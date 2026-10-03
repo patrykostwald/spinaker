@@ -103,7 +103,7 @@ export function HomePage() {
         <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
         <DemoBanner />
         <HomeHero />
-        <SpinExplainer id="czym-jest-spin" />
+        <SpinExplainer id="czym-jest-spin" collapsible />
         {/* 1. Dr. Spin - po co tu jesteś. 2. Wiadomości - agregat z naszej Bazy do przeglądania i własnych pasków.
             3. Dla dziennikarzy. 4. Baza. 5. Newsletter (decyzja właściciela 28.09). */}
         <HomeSpinTeaser />
