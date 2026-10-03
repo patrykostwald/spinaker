@@ -352,6 +352,24 @@ def test_continuation_links_respect_publication(setup):
     assert client.get(base).data['continuations'] == []
 
 
+def test_repin_uses_same_boxes_and_is_counted(setup):
+    """Przepięcie (właściciel 3.10): te same boksy cudzej spinki, własne wyjaśnienia; oryginał zna swoje przepięcia."""
+    client, thread, reader, author, base = setup
+    client.force_authenticate(reader)
+    links = list(thread.items.values_list('link_id', flat=True))
+    rows = [{'link_id': pk, 'note': f'Moje {i}', 'link_note': 'Inaczej' if i else ''} for i, pk in enumerate(reversed(links))]
+    wrong = client.post('/api/account/context-threads/', {'title': 'Przepięcie', 'repin_of': thread.pk, 'items': rows[:-1], 'is_public': True}, format='json')
+    assert wrong.status_code == 400 and 'repin_of' in wrong.data
+    response = client.post('/api/account/context-threads/', {'title': 'Przepięcie', 'repin_of': thread.pk, 'items': rows, 'is_public': True}, format='json')
+    assert response.status_code == 201
+    pk = response.data['id']
+    assert client.get(base).data['repins'] == [pk]
+    assert client.get(f'/api/community/threads/{pk}/').data['repin_of'] == thread.pk
+    client.force_authenticate(thread.owner)
+    own = client.post('/api/account/context-threads/', {'title': 'Własna', 'repin_of': thread.pk, 'items': rows}, format='json')
+    assert own.status_code == 400
+
+
 def test_narrative_strongest_and_limits():
     obj, posts = message(count=8, author_count=5)
     for i, post in enumerate(posts[:2]):

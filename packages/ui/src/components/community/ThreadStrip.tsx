@@ -11,6 +11,7 @@ import { XPostCard } from './XPostCard';
 import { FocusView, SpinkaClip, StepRate, useThreadSteps, type FocusStep } from './ThreadSteps';
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
+import { RepinPanel } from './RepinPanel';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
@@ -38,6 +39,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   const [counts, setCounts] = useState<Counts | null>(null);
   const [commentCount, setCommentCount] = useState<number | null>(null);
   const [showComments, setShowComments] = useState(full);
+  const [repinning, setRepinning] = useState(false);
   const [draft, setDraft] = useState('');
   const [highlight, setHighlight] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -163,6 +165,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       </span>
       {thread.top_comments?.[0] ? <p className="sc-trow__voice"><b style={thread.top_comments[0].author_color ? { color: thread.top_comments[0].author_color } : undefined}>{thread.top_comments[0].author}</b> {thread.top_comments[0].body}</p> : <span className="sc-trow__voice sc-trow__voice--empty">Bez komentarzy</span>}
       <span className="sc-trow__side">
+        {Boolean(thread.repins?.length) && <span className="sc-trow__repins" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}><SpinkaClip />{thread.repins!.length}</span>}
         <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={onFullscreen ? undefined : () => { if (!expanded) toggle(); setShowComments(!showComments); }}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
       </span>
     </header> : full ? <header className="sc-thread-strip__head sc-thread-strip__head--full">
@@ -179,7 +182,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <SocialReport threadId={thread.id} />
       {onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz spinkę na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
     </header>}
-    {thread.admission && <p className="sc-thread-admission" aria-label="Postęp w izbie przyjęć">
+    {thread.admission?.mode === 'first' && <p className="sc-thread-admission">W izbie przyjęć: przejdzie na główną po pierwszym komentarzu albo reakcji.</p>}
+    {thread.admission && thread.admission.mode !== 'first' && <p className="sc-thread-admission" aria-label="Postęp w izbie przyjęć">
       <span className="sc-thread-admission__bar" aria-hidden="true"><span style={{ width: `${Math.min(100, 100 * thread.admission.positive / thread.admission.needed)}%` }} /></span>
       {thread.admission.open ? `${thread.admission.positive}/${thread.admission.needed} ✓ do głównej · zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'Czas w izbie minął'}
     </p>}
@@ -247,7 +251,13 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     {(variant !== 'row' || expanded) && <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
       expanded={expanded} preview={variant === 'row'}
       draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount}
-      tools={full ? <ExportTools thread={thread} items={ordered} /> : undefined} />}
+      tools={full ? <ExportTools thread={thread} items={ordered} onRepin={() => { setRepinning(true); setShowComments(false); }} /> : undefined} />}
+    {/* przepięcie zastępuje sekcję komentarzy; pod spodem lista przepięć tej spinki */}
+    {full && repinning && <RepinPanel thread={thread} items={ordered} onClose={() => { setRepinning(false); setShowComments(true); }} />}
+    {full && (thread.repin_of || Boolean(thread.repins?.length)) && <nav className="sc-repins" aria-label="Przepięcia">
+      {thread.repin_of && <Link href={`/spinki/${thread.repin_of}`}>Przepięcie innej spinki: zobacz oryginał →</Link>}
+      {thread.repins?.map((id, index) => <Link key={id} href={`/spinki/${id}`}>Przepięcie {index + 1} →</Link>)}
+    </nav>}
     {!full && expanded && <div className="sc-thread-strip__foot">
       <Link className="sc-thread-strip__open" href={`/spinki/${thread.id}`} onClick={event => { if (onFullscreen && !event.metaKey && !event.ctrlKey) { event.preventDefault(); onFullscreen(); } }}>Otwórz całą spinkę →</Link>
       <span className="sc-thread-strip__tools">{row && <SocialReport threadId={thread.id} />}{row && onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz spinkę na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
@@ -261,7 +271,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
  * Narzędzia otwartej spinki (Konsylium 3.10, decyzja właściciela): kontraspinka, czyli ten sam materiał ułożony
  * po swojemu, oraz kopiowanie i eksport dla dziennikarzy i badaczy.
  */
-function ExportTools({ thread, items }: { thread: CommunityThreadSummary; items: ThreadElement[] }) {
+function ExportTools({ thread, items, onRepin }: { thread: CommunityThreadSummary; items: ThreadElement[]; onRepin: () => void }) {
   const [copied, setCopied] = useState(false);
   const meta = { id: thread.id, title: thread.title, author: thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}` };
   async function copy() {
@@ -276,8 +286,9 @@ function ExportTools({ thread, items }: { thread: CommunityThreadSummary; items:
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return <>
-    <Link className="sc-thread-social-actions__tool" href={`/konto/spinki/nowa?kontra=${thread.id}`}>Ułóż kontraspinkę</Link>
+    <button type="button" className="sc-thread-social-actions__tool" onClick={onRepin}>Przepnij spinkę</button>
     <button type="button" className="sc-thread-social-actions__tool" onClick={() => void copy()}>{copied ? 'Skopiowano' : 'Kopiuj'}</button>
-    <button type="button" className="sc-thread-social-actions__tool" onClick={download}>Pobierz CSV</button>
+    {/* „Pobierz CSV” wyłączone na razie (właściciel 3.10); włączenie: odkomentować */}
+    {false && <button type="button" className="sc-thread-social-actions__tool" onClick={download}>Pobierz CSV</button>}
   </>;
 }

@@ -113,6 +113,8 @@ class PersonalContextThread(models.Model):
     # Izba przyjęć: trop czytelnika trafia na główną listę dopiero po spełnieniu progów (news/admission.py).
     admitted_at = models.DateTimeField(null=True, blank=True, db_index=True)
     continues = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='continuations')
+    # przepięcie (właściciel 3.10): te same boksy co w cudzej spince, spięte po swojemu (własne wyjaśnienia i spinki)
+    repin_of = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='repins')
     narrative_message = models.OneToOneField('news.ClinicDailyMessage', null=True, blank=True,
         on_delete=models.CASCADE, related_name='narrative_thread')
     narrative_score = models.PositiveIntegerField(default=0)

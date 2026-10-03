@@ -3,6 +3,9 @@
 Trop czytelnika najpierw stoi w izbie; na główną listę przechodzi, gdy w ciągu 7 dni od publikacji zbierze co najmniej
 10 ocen ✓ i ✓ stanowią co najmniej 60% wszystkich ocen. Liczą się oceny innych osób z kont starszych niż doba
 (ochrona przed kontami założonymi tylko do podbicia tropu). Tropy Dr. Spina nie przechodzą przez izbę.
+
+Na start (właściciel 3.10, póki jest mało treści): ADMISSION_FIRST_ACTIVITY=True - spinka przechodzi na główną po pierwszym
+komentarzu albo pierwszej reakcji kogokolwiek poza autorem. Progi wyżej wracają po ustawieniu False.
 """
 from datetime import timedelta
 
@@ -11,12 +14,24 @@ from django.utils import timezone
 
 POSITIVE = lambda: int(getattr(settings, 'ADMISSION_POSITIVE', 10))
 RATIO = lambda: float(getattr(settings, 'ADMISSION_RATIO', 0.6))
+FIRST_ACTIVITY = lambda: bool(getattr(settings, 'ADMISSION_FIRST_ACTIVITY', True))
 WINDOW = timedelta(days=7)
 MIN_ACCOUNT_AGE = timedelta(days=1)
 
 
+def first_activity(thread):
+    """Czy ktokolwiek poza autorem skomentował spinkę albo na nią zareagował (ocena, reakcja na boks lub spinkę)."""
+    from news.thread_social_models import ThreadStepReaction
+    other = lambda qs, field: qs.exclude(**{field: thread.owner_id}).exists()
+    return (other(thread.opinions.all(), 'user_id')
+            or other(thread.comments.filter(deleted_at__isnull=True, hidden_at__isnull=True), 'author_id')
+            or other(ThreadStepReaction.objects.filter(thread=thread), 'user_id'))
+
+
 def progress(thread, now=None):
     now = now or timezone.now()
+    if FIRST_ACTIVITY():
+        return {'mode': 'first', 'positive': 0, 'needed': 1, 'ratio': 0, 'ratio_needed': 0, 'days_left': 0, 'open': True}
     opinions = thread.opinions.exclude(user_id=thread.owner_id).filter(user__date_joined__lte=now - MIN_ACCOUNT_AGE)
     counts = {key: 0 for key in ('positive', 'doubt', 'negative')}
     for polarity in opinions.values_list('polarity', flat=True):
@@ -32,6 +47,11 @@ def progress(thread, now=None):
 def check_admission(thread, now=None):
     """Przenosi spinkę czytelnika na główną listę, gdy spełnia progi. Zwraca True, jeśli właśnie przyjęto."""
     if thread.owner_id is None or thread.admitted_at or not thread.is_public:
+        return False
+    if FIRST_ACTIVITY():
+        if first_activity(thread):
+            type(thread).objects.filter(pk=thread.pk, admitted_at__isnull=True).update(admitted_at=now or timezone.now())
+            return True
         return False
     data = progress(thread, now)
     if data['open'] and data['positive'] >= data['needed'] and data['ratio'] >= data['ratio_needed']:

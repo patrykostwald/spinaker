@@ -148,7 +148,7 @@ def public_threads(user=None):
 
 def item_data(item):
     if item.box_data is not None:
-        data = {**item.box_data, 'id': item.pk}
+        data = {**item.box_data, 'id': item.pk, 'box': True}
         if data.get('political_post_id'):
             from news.political_models import PoliticalPost
             if not PoliticalPost.objects.filter(pk=data['political_post_id'], available=True).exists():
@@ -231,6 +231,8 @@ def thread_summary(thread, counts):
             'confidence': thread.signal_data.get('confidence'),
             'continues': thread.continues_id if thread.continues_id and public_threads().filter(pk=thread.continues_id).exists() else None,
             'continuations': list(public_threads().filter(continues=thread).values_list('pk', flat=True)),
+            'repin_of': thread.repin_of_id if thread.repin_of_id and public_threads().filter(pk=thread.repin_of_id).exists() else None,
+            'repins': list(public_threads().filter(repin_of=thread).values_list('pk', flat=True)[:50]),
             'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
             'items_count': len(items), 'preview': [item_data(item) for item in items],
             'comments_count': getattr(thread, 'visible_comments_count', 0),

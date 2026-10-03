@@ -38,7 +38,7 @@ export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}
   const all = (query.data?.pages.flatMap(page => page.results) ?? []).filter(thread => thread.id !== exclude);
   const threads = limit ? all.slice(0, limit) : all;
   return <section className="sc-thread-feed" aria-label={label}>
-    {source === 'izba' && <p className="sc-thread-sortbar__hint">Nowe spinki czytelników. Na główną przechodzi spinka, która w 7 dni zbierze 10 ocen ✓ i co najmniej 60% poparcia.</p>}
+    {source === 'izba' && <p className="sc-thread-sortbar__hint">Nowe spinki czytelników. Na główną przechodzi spinka, którą ktoś skomentuje albo oceni.</p>}
     {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinek" />}
     {query.isError && <p role="alert" className="sc-thread-feed__empty">Nie udało się pobrać spinek. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
     {query.isSuccess && !threads.length && (source === 'izba'

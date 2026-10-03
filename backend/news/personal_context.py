@@ -74,12 +74,14 @@ class ArticleFavoriteDetailView(APIView):
 class ThreadItemInput(serializers.Serializer):
     article_id = serializers.IntegerField(min_value=1, required=False)
     link_id = serializers.IntegerField(min_value=1, required=False)
+    # przepięcie: boks z oryginalnej spinki (np. diagnoza albo wpis z X ułożony przez Dr. Spina) - materiał kopiowany 1:1
+    box_item_id = serializers.IntegerField(min_value=1, required=False)
     # wyjaśnienie autora = „tytuł” boksu: dlaczego ten materiał jest w spince; może być długie (właściciel 3.10)
     note = serializers.CharField(max_length=4000, required=False, allow_blank=True, default='')
     link_note = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')
 
     def validate(self, attrs):
-        if bool(attrs.get('article_id')) == bool(attrs.get('link_id')):
+        if sum(bool(attrs.get(key)) for key in ('article_id', 'link_id', 'box_item_id')) != 1:
             raise serializers.ValidationError('Element spinki to materiał z Bazy albo link - dokładnie jedno z nich.')
         return attrs
 
@@ -95,6 +97,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
     article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=10, required=False)
     continues = serializers.PrimaryKeyRelatedField(queryset=PersonalContextThread.objects.all(), required=False, allow_null=True)
+    repin_of = serializers.PrimaryKeyRelatedField(queryset=PersonalContextThread.objects.all(), required=False, allow_null=True)
     articles = serializers.SerializerMethodField(read_only=True)
     items = ThreadItemInput(many=True, required=False, write_only=True)
     elements = serializers.SerializerMethodField(read_only=True)
@@ -103,7 +106,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PersonalContextThread
-        fields = ['id', 'continues', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
+        fields = ['id', 'continues', 'repin_of', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
                   'articles', 'items', 'elements', 'is_public', 'published_at', 'hidden_at', 'created_at', 'updated_at', 'opinions', 'comments_count']
         read_only_fields = ['id', 'articles', 'elements', 'published_at', 'hidden_at', 'created_at', 'updated_at']
 
@@ -153,6 +156,25 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
             rows = attrs.get('items') or [{'article_id': pk} for pk in attrs.get('article_ids', [])]
             if not last or not rows or (rows[0].get('article_id'), rows[0].get('link_id')) != (last.article_id, last.link_id):
                 raise serializers.ValidationError({'continues': 'Pierwszy boks musi być ostatnim boksem poprzedniej spinki.'})
+        original = attrs.get('repin_of')
+        if original:
+            from news.community import public_threads
+            if self.instance and self.instance.repin_of_id != original.pk:
+                raise serializers.ValidationError({'repin_of': 'Przepięcia nie można przenieść do innej spinki.'})
+            if not public_threads().filter(pk=original.pk).exists():
+                raise serializers.ValidationError({'repin_of': 'Przepiąć można tylko opublikowaną spinkę.'})
+            request = self.context.get('request')
+            if request and original.owner_id == request.user.pk:
+                raise serializers.ValidationError({'repin_of': 'Własną spinkę możesz po prostu edytować.'})
+            rows = attrs.get('items') or [{'article_id': pk} for pk in attrs.get('article_ids', [])]
+            key = lambda article, link, box: ('a', article) if article else ('l', link) if link else ('b', box)
+            mine = [key(row.get('article_id'), row.get('link_id'), row.get('box_item_id')) for row in rows]
+            theirs = {key(item.article_id, item.link_id, item.pk if item.box_data is not None else None)
+                      for item in original.items.all() if not (item.link_id and item.link.hidden_at)}
+            if rows and (set(mine) != theirs or len(mine) != len(set(mine))):
+                raise serializers.ValidationError({'repin_of': 'Przepięcie używa dokładnie tych samych boksów co spinka.'})
+        if not original and any(row.get('box_item_id') for row in attrs.get('items') or []):
+            raise serializers.ValidationError({'items': 'Boksy z cudzej spinki można użyć tylko w przepięciu.'})
         if attrs.get('is_public', self.instance.is_public if self.instance else False):
             from news.account_security import require_verified
             from news.community import threads_enabled
@@ -185,10 +207,12 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         return list(dict.fromkeys(value))
 
     def _replace_items(self, instance, rows):
+        boxes = dict(PersonalContextThreadItem.objects.filter(pk__in=[row['box_item_id'] for row in rows if row.get('box_item_id')])
+                     .values_list('pk', 'box_data'))
         PersonalContextThreadItem.objects.filter(thread=instance).delete()
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=instance, article_id=row.get('article_id'), link_id=row.get('link_id'),
-                                      note=row.get('note', ''),
+                                      box_data=boxes.get(row.get('box_item_id')), note=row.get('note', ''),
                                       link_note=row.get('link_note', '') if position else '', position=position)
             for position, row in enumerate(rows)
         ])

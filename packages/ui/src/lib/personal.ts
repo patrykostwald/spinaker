@@ -37,10 +37,11 @@ export type PersonalContextThread = {
   updated_at: string;
 };
 
-export type PersonalThreadItemInput = { article_id?: number; link_id?: number; note?: string; link_note?: string };
+export type PersonalThreadItemInput = { article_id?: number; link_id?: number; box_item_id?: number; note?: string; link_note?: string };
 
 export type PersonalContextThreadInput = {
   continues?: number | null;
+  repin_of?: number | null;
   title: string;
   description: string;
   query: string;

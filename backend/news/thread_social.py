@@ -164,6 +164,8 @@ class ThreadCommentsView(SocialView):
                 count = thread.comments.filter(deleted_at__isnull=True, hidden_at__isnull=True).exclude(author_id=thread.owner_id).count()
                 grouped_notification(thread.owner_id, f'thread-comments:{thread.pk}', 'thread_reply',
                     f'Komentarze pod Twoją spinką: {count}', f'/spinki/{thread.pk}')
+            from news.admission import check_admission
+            check_admission(thread)
         return Response(comment_data(row, request.user), status=201)
 
 

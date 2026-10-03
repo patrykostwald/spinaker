@@ -324,7 +324,8 @@ def _voters(n, prefix, days_old=2):
     return rows
 
 
-def test_admission_thresholds_window_and_source_filter(setup):
+def test_admission_thresholds_window_and_source_filter(setup, settings):
+    settings.ADMISSION_FIRST_ACTIVITY = False
     from news.admission import check_admission, progress
     from news.community_models import CommunityThreadOpinion
     client, thread, reader, author, base = setup
@@ -351,7 +352,8 @@ def test_admission_thresholds_window_and_source_filter(setup):
     assert client.get(list_url, {'source': 'zle'}).status_code == 400
 
 
-def test_admission_window_closes_after_seven_days(setup):
+def test_admission_window_closes_after_seven_days(setup, settings):
+    settings.ADMISSION_FIRST_ACTIVITY = False
     from news.admission import check_admission, progress
     from news.community_models import CommunityThreadOpinion
     client, thread, *_ = setup
@@ -375,3 +377,20 @@ def test_nick_color_only_for_x_connected_accounts(setup):
     assert data['nick_color'] == '#4a9eff' and data['can_color_nick']
     ThreadComment.objects.create(thread=thread, author=reader, body='Kolorowy nick')
     assert client.get(base+'comments/').json()['results'][0]['author_color'] == '#4a9eff'
+
+
+def test_admission_first_activity_mode(setup, settings):
+    """Na start (właściciel 3.10): spinka czytelnika przechodzi na główną po pierwszym komentarzu lub reakcji kogoś innego."""
+    from news.admission import check_admission
+    settings.ADMISSION_FIRST_ACTIVITY = True
+    client, thread, reader, author, base = setup
+    PersonalContextThread.objects.filter(pk=thread.pk).update(admitted_at=None)
+    thread.refresh_from_db()
+    client.force_authenticate(thread.owner)
+    client.post(base + 'comments/', {'body': 'Mój własny komentarz'})
+    thread.refresh_from_db()
+    assert thread.admitted_at is None and not check_admission(thread)
+    client.force_authenticate(reader if reader.pk != thread.owner_id else author)
+    assert client.post(base + 'comments/', {'body': 'Ciekawe zestawienie'}).status_code == 201
+    thread.refresh_from_db()
+    assert thread.admitted_at is not None
