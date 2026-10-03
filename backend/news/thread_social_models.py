@@ -75,3 +75,18 @@ class ThreadModerationMail(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['decision', 'recipient'], name='thread_decision_recipient_085')]
+
+
+class ThreadStepReaction(models.Model):
+    """Reakcja czytelnika na jeden krok tropu: boks albo powiązanie prowadzące do niego (news/thread_steps.py)."""
+    thread = models.ForeignKey('news.PersonalContextThread', on_delete=models.CASCADE, related_name='step_reactions')
+    item = models.ForeignKey('news.PersonalContextThreadItem', on_delete=models.CASCADE, related_name='step_reactions')
+    part = models.CharField(max_length=8, choices=[('box', 'Boks'), ('context', 'Powiązanie')])
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='thread_step_reactions')
+    polarity = models.CharField(max_length=8, choices=[('positive', 'Trafny'), ('doubt', 'Wątpliwy'), ('negative', 'Nietrafny')])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['item', 'part', 'user'], name='thread_step_reaction_user')]
+        indexes = [models.Index(fields=['thread', 'user'])]

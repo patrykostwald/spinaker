@@ -177,7 +177,8 @@ def test_community_read_write_flags(settings, threads, accounts):
     assert client.get('/api/community/threads/').status_code == (200 if threads else 404)
     assert client.get(url).status_code == (200 if threads else 404)
     assert client.get(url + 'opinions/').status_code == (200 if threads else 404)
-    assert client.post(url + 'opinions/', {'polarity': 'positive'}).status_code in (401, 403)
+    step = {'item_id': thread.items.first().pk, 'part': 'box', 'polarity': 'positive'}
+    assert client.post(url + 'steps/', step).status_code in (401, 403)
     client.force_authenticate(reader)
-    assert client.post(url + 'opinions/', {'polarity': 'positive'}).status_code == (200 if threads and accounts else 404)
+    assert client.post(url + 'steps/', step).status_code == (200 if threads and accounts else 404)
     assert client.post('/api/account/context-threads/', {'title': 'Szkic'}, format='json').status_code == (201 if threads and accounts else 403)

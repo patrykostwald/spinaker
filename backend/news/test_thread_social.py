@@ -53,21 +53,33 @@ def setup():
 
 
 def test_vote_unique_change_verified_distribution(setup):
+    """Trop ocenia się krok po kroku; ocena całości to średnia z przejścia wszystkich kroków (właściciel 3.10)."""
     client, thread, reader, _, base = setup
     assert client.get(base+'opinions/').data['distribution'] == {'positive': 0, 'doubt': 0, 'negative': 0}
-    for rating in ('positive', 'doubt', 'negative'):
-        response = client.post(base+'opinions/', {'polarity': rating})
-        assert response.status_code == 200
-        assert response.data['mine']['polarity'] == rating
-        assert not response.data['highlight']
-    assert CommunityThreadOpinion.objects.filter(thread=thread, user=reader).count() == 1
+    assert client.post(base+'opinions/', {'polarity': 'positive'}).status_code == 400
+    items = list(thread.items.values_list('pk', flat=True))
+    step = lambda item, polarity: client.post(base+'steps/', {'item_id': item, 'part': 'box', 'polarity': polarity})
+    for item in items[:2]:
+        assert step(item, 'positive').data['progress']['done'] in (1, 2)
+    assert not CommunityThreadOpinion.objects.filter(thread=thread, user=reader).exists()
+    result = step(items[2], 'negative').data
+    assert result['progress'] == {'done': 3, 'total': 3} and result['score'] == {'percent': 67, 'reactions': 3}
+    assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'positive'
+    step(items[1], 'negative')
+    assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'negative'
+    assert step(items[1], 'negative').data['progress']['done'] == 2
+    assert not CommunityThreadOpinion.objects.filter(thread=thread, user=reader).exists()
+    assert client.post(base+'steps/', {'item_id': 999999, 'part': 'box', 'polarity': 'positive'}).status_code == 400
+    assert client.post(base+'steps/', {'item_id': items[1], 'part': 'context', 'polarity': 'positive'}).status_code == 400
+    step(items[1], 'negative')
+    assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'negative'
     for name, rating in [('second', 'positive'), ('third', 'doubt')]:
         CommunityThreadOpinion.objects.create(user=user(name), thread=thread, polarity=rating)
     result = client.get(base+'opinions/').data
     assert result['highlight'] and result['total'] == 3
     assert all(n == pytest.approx(1/3) for n in result['distribution'].values())
     client.force_authenticate(user('unverified', False))
-    assert client.post(base+'opinions/', {'polarity': 'positive'}).status_code == 403
+    assert client.post(base+'steps/', {'item_id': items[0], 'part': 'box', 'polarity': 'positive'}).status_code == 403
     assert client.post(base+'comments/', {'body': 'Text'}).status_code == 403
     client.force_authenticate(None)
     assert client.post(base+'opinions/', {'polarity': 'positive'}).status_code in (401, 403)
@@ -127,9 +139,11 @@ def test_comment_paging_count_sort_stable_after_delete(setup):
     assert client.get(base+'comments/?after=bad').status_code == 400
 
 
-@pytest.mark.parametrize('kind,limit,endpoint,payload', [('comment',20,'comments/',{'body':'test'}),('rating',50,'opinions/',{'polarity':'doubt'})])
+@pytest.mark.parametrize('kind,limit,endpoint,payload', [('comment',20,'comments/',{'body':'test'}),('rating',50,'steps/',{'part':'box','polarity':'doubt'})])
 def test_durable_account_limits(setup, kind, limit, endpoint, payload):
-    client, _, reader, _, base = setup
+    client, thread, reader, _, base = setup
+    if kind == 'rating':
+        payload = {**payload, 'item_id': thread.items.first().pk}
     ThreadRateEvent.objects.bulk_create([ThreadRateEvent(user=reader, kind=kind) for _ in range(limit-1)])
     assert client.post(base+endpoint, payload).status_code in (200,201)
     if kind == 'comment':

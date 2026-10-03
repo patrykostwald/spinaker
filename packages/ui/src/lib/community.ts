@@ -1,7 +1,7 @@
 /** Tropy czytelników - typy i zapytania do /api/community/ (backend/news/community.py). */
 import { ApiError, apiFetch, apiWrite } from "./api";
 
-export type ThreadElement = ({ box_type?: 'post' | 'claim' | 'source' | 'technique' | 'diagnosis' | 'message' | 'print' | 'amendment' | 'consultation' | 'registry' | 'declaration' | 'summary'; x_handle?: string; diagnosis_id?: number | null; intensity?: number | null; body?: string; source_name?: string; published_date?: string | null } & (
+export type ThreadElement = ({ item_id?: number; image_url?: string; box_type?: 'post' | 'claim' | 'source' | 'technique' | 'diagnosis' | 'message' | 'print' | 'amendment' | 'consultation' | 'registry' | 'declaration' | 'summary'; x_handle?: string; diagnosis_id?: number | null; intensity?: number | null; body?: string; source_name?: string; published_date?: string | null } & (
   | { kind: "article"; id: number; title: string; url: string; category: string; published_date: string | null; source_name: string; note: string; link_note?: string; position: number }
   | { kind: "link"; id: number; title: string; url: string; domain: string; title_origin: "publisher" | "reader" | "system"; hidden?: boolean; note: string; link_note?: string; position: number }));
 
@@ -28,6 +28,10 @@ export type CommunityThreadSummary = {
   preview: ThreadElement[] | null;
   opinions: { positive: number; doubt?: number; negative: number };
   comments_count?: number;
+  score?: { percent: number; reactions: number };
+  contexts_count?: number;
+  sources_count?: number;
+  top_comments?: { id: number; author: string; body: string; created_at: string }[];
 };
 
 export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElement[]; is_owner: boolean };
@@ -69,3 +73,13 @@ export const REPORT_REASONS = [
   { value: "copyright", label: "Naruszenie praw autorskich" },
   { value: "other", label: "Inne" },
 ];
+
+export type StepPart = 'box' | 'context';
+export type StepState = { item_id: number; part: StepPart; counts: { positive: number; doubt: number; negative: number }; mine: 'positive' | 'doubt' | 'negative' | null };
+export type StepsData = { steps: StepState[]; progress: { done: number; total: number }; score: { percent: number; reactions: number } };
+export const getThreadSteps = (id: number) => apiFetch<StepsData>(`/api/community/threads/${id}/steps/`);
+export const rateThreadStep = (id: number, item_id: number, part: StepPart, polarity: string) =>
+  apiWrite<StepsData>(`/api/community/threads/${id}/steps/`, { item_id, part, polarity });
+export type BoxDetail = { item: ThreadElement; position: number; counts: { positive: number; doubt: number; negative: number };
+  context_before: string; context_after: string; other_threads: { id: number; title: string }[] };
+export const getThreadBox = (id: number, itemId: number) => apiFetch<BoxDetail>(`/api/community/threads/${id}/boxes/${itemId}/`);

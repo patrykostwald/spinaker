@@ -1,5 +1,6 @@
 from __future__ import annotations
 from news.thread_card import thread_card
+from news.thread_steps import ThreadBoxView, ThreadStepsView
 from news.thread_social import ThreadCommentReactionView, ThreadRatingsView, ThreadCommentsView, ThreadCommentDetailView, ThreadReportView, ThreadAppealView, ThreadModerationQueueView
 from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView
 
@@ -80,6 +81,8 @@ urlpatterns = [
     path('community/threads/<int:thread_id>/comments/<int:comment_id>/report/', ThreadReportView.as_view()),
     path('community/threads/<int:thread_id>/', community_thread_detail),
     path('community/threads/<int:thread_id>/opinions/', ThreadRatingsView.as_view()),
+    path('community/threads/<int:thread_id>/steps/', ThreadStepsView.as_view()),
+    path('community/threads/<int:thread_id>/boxes/<int:item_id>/', ThreadBoxView.as_view()),
     path('community/threads/<int:thread_id>/report/', ThreadReportView.as_view()),
     path('polls/<slug:slug>/', polls.poll_results),
     path('polls/<slug:slug>/vote/', polls.poll_vote),

@@ -22,7 +22,7 @@ const montserrat = Montserrat({
 const TITLE = "spin.clinic - pokazujemy, jak zbudowany jest przekaz";
 const DESCRIPTION = "Pokazujemy, jak zbudowany jest przekaz. Dr. Spin (AI) analizuje techniki perswazji we wpisach polityków i zestawia twierdzenia ze źródłami. Ta sama miara dla wszystkich.";
 
-export const viewport: Viewport = { themeColor: '#0f172a' };
+export const viewport: Viewport = { themeColor: '#000000' };
 
 export const metadata: Metadata = {
   appleWebApp: { capable: true, title: 'spin.clinic', statusBarStyle: 'black-translucent' },

@@ -4,13 +4,36 @@ import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { CommunityThreadSummary, ThreadElement } from '../../lib/community';
-import { ago, Avatar, RatingFrame, SocialIcon, ClampedText, type Counts } from './SocialPrimitives';
+import { ago, Avatar, SocialIcon, ClampedText, type Counts } from './SocialPrimitives';
 import { SocialReport, ThreadSocial } from './ThreadSocial';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
+import { BoxPanel, StepProgress, StepRate, useThreadSteps } from './ThreadSteps';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
+const plural = (n: number, one: string, few: string, many: string) => n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many;
+/** Druga strona boksu (na zmianę z tekstem): zdjęcie, jeśli źródło na nie pozwala, inaczej znak rodzaju i krótka etykieta. */
+/**
+ * Obramowanie boksu z trzech boków (właściciel 3.10): lewy ✓, dolny ?, prawy ✕. Im więcej danej reakcji,
+ * tym dalej sięga jej bok (od 5 reakcji proporcjonalnie do udziału).
+ */
+function ReactionFrame({ counts }: { counts?: { positive: number; doubt: number; negative: number } }) {
+  const c = counts ?? { positive: 0, doubt: 0, negative: 0 };
+  const base = Math.max(5, c.positive + c.doubt + c.negative);
+  const style = { ['--rp' as string]: c.positive / base, ['--rd' as string]: c.doubt / base, ['--rn' as string]: c.negative / base };
+  return <span className="sc-rframe" style={style} aria-hidden="true"><i data-r="p" /><i data-r="d" /><i data-r="n" /></span>;
+}
+function BoxFace({ item }: { item: ThreadElement }) {
+  if (item.image_url) return <span className="sc-box-face" aria-hidden="true"><img src={item.image_url} alt="" loading="lazy" /></span>;
+  const kind = kindOf(item);
+  const glyph = kind === 'post' ? (item.source_name || item.title).replace('@', '').charAt(0).toUpperCase()
+    : kind === 'diagnosis' && item.intensity != null ? String(item.intensity)
+    : ({ print: '§', amendment: '§', consultation: '❝', registry: '≡', declaration: '≡', summary: 'DS', claim: '✓', technique: '◎', message: '❝', source: '↗' } as Record<string, string>)[kind]
+      ?? (item.source_name || (item.kind === 'link' ? item.domain : '') || '↗').charAt(0).toUpperCase();
+  const label = item.box_type ? TYPES[item.box_type] : item.source_name || (item.kind === 'link' ? item.domain : '');
+  return <span className="sc-box-face" aria-hidden="true"><b>{glyph}</b><small>{kind === 'diagnosis' && item.intensity != null ? 'siła spinu' : label}</small></span>;
+}
 const ratingsWord = (n: number) => n === 1 ? 'ocena' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'oceny' : 'ocen';
 
 const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza', message: 'Przekaz dnia', print: 'Druk sejmowy', amendment: 'Poprawka', consultation: 'Postulat organizacji', registry: 'Wpis w rejestrze', declaration: 'Zgłoszenie w uzasadnieniu', summary: 'Podsumowanie Dr. Spina' };
@@ -40,6 +63,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     if (controlled) onOpenChange?.(value); else setOwnExpanded(value);
   };
   const hover = useRef<ReturnType<typeof setTimeout>>();
+  const [panel, setPanel] = useState<number | null>(null);
   const [openJoint, setOpenJoint] = useState<number | null>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -63,6 +87,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   const row = variant === 'row' && !full;
   const shown = counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative };
   const total = shown.positive + shown.doubt + shown.negative;
+  const steps = useThreadSteps(thread.id, expanded);
+  const score = steps.data?.score ?? thread.score;
   const slots = ordered.flatMap((item, index) => expanded && index > 0 && item.link_note ? [index, index] : [index]);
 
   function move(index: number) {
@@ -124,9 +150,13 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         <span className="sc-trow__meta">
           <span className="sc-trow__chips" aria-label={`${thread.items_count} boksów`}>{Array.from({ length: Math.min(thread.items_count, 10) }, (_, i) =>
             <i key={i} data-type={ordered[i] ? kindOf(ordered[i]) : 'more'} title={ordered[i]?.box_type ? TYPES[ordered[i].box_type!] : undefined} />)}</span>
-          <span className="sc-trow__score">{total ? `${Math.round(100 * shown.positive / total)}% trafnych · ${total} ${ratingsWord(total)}` : 'Jeszcze bez ocen'}</span>
+          <span className="sc-trow__score">{score?.reactions ? `${score.percent}% trafnych · ${score.reactions} ${plural(score.reactions, 'reakcja', 'reakcje', 'reakcji')}` : total ? `${Math.round(100 * shown.positive / total)}% trafnych · ${total} ${ratingsWord(total)}` : 'Jeszcze bez ocen'}</span>
+          <span className="sc-trow__facts">{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.contexts_count ? ` · ${thread.contexts_count} ${plural(thread.contexts_count, 'powiązanie', 'powiązania', 'powiązań')}` : ''}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
         </span>
       </button></h2>
+      {!expanded && Boolean(thread.top_comments?.length) && <ul className="sc-trow__voices" aria-label="Najlepsze komentarze">
+        {thread.top_comments!.map(row => <li key={row.id}><b>{row.author}</b> {row.body}</li>)}
+      </ul>}
       <span className="sc-trow__side">
         <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => { if (!expanded) toggle(); setShowComments(!showComments); }}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
         <button type="button" className="sc-trow__chev" data-open={expanded || undefined} aria-label={expanded ? 'Zwiń trop' : 'Rozwiń trop'} onClick={toggle}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
@@ -162,16 +192,28 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         edges();
       }}>
       {ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
-        {expanded && index > 0 && item.link_note && <li className={`sc-thread-strip__joint${openJoint === index ? ' is-open' : ''}`}>
-          {/* Kontekst między boksami: niebieska kropka; po zatrzymaniu kursora (albo stuknięciu) boksy się rozsuwają i widać tekst. */}
-          <button type="button" className="sc-thread-strip__dot" aria-expanded={openJoint === index} aria-label={`Kontekst między boksem ${index} a ${index + 1}`}
-            onClick={() => setOpenJoint(openJoint === index ? null : index)}><span aria-hidden="true" /></button>
-          <span className="sc-thread-strip__context"><span className="sc-sr-only">Kontekst: </span>{item.link_note}</span>
+        {expanded && index > 0 && item.link_note && <li className={`sc-joint${openJoint === index ? ' is-open' : ''}`}>
+          {/* Powiązanie (właściciel 3.10): sama kropka między boksami; kliknięta powiększa się w boks z kontekstem do oceny. */}
+          <div className="sc-joint__morph">
+            <button type="button" className="sc-joint__dot" aria-expanded={openJoint === index} hidden={openJoint === index}
+              aria-label={`Powiązanie między boksem ${index} a ${index + 1}${steps.find(item.item_id, 'context')?.mine ? ' (ocenione)' : ''}`}
+              data-done={steps.find(item.item_id, 'context')?.mine || undefined} onClick={() => setOpenJoint(index)} />
+            <div className="sc-joint__inner" hidden={openJoint !== index}>
+              <span className="sc-joint__label">Powiązanie</span>
+              <p>{item.link_note}</p>
+              {item.item_id && <StepRate step={steps.find(item.item_id, 'context')} canRate={steps.canRate} label={`powiązanie ${index} → ${index + 1}`}
+                onRate={polarity => void steps.rate(item.item_id!, 'context', polarity)} />}
+              <button type="button" className="sc-joint__x" aria-label="Zwiń powiązanie" onClick={() => setOpenJoint(null)}>✕</button>
+            </div>
+          </div>
         </li>}
-        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)}>
+        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)}
+          style={{ ['--i' as string]: index }} onClick={event => { if (expanded && item.item_id && !(event.target as HTMLElement).closest('a, button')) setPanel(item.item_id); }}>
           {item.note && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
+          {expanded && <BoxFace item={item} />}
+          {expanded && <ReactionFrame counts={steps.find(item.item_id, 'box')?.counts} />}
           {item.box_type === 'post' ? <XPostCard item={item} /> :
-          <button type="button" className="sc-thread-strip__select" onClick={() => { if (!expanded) toggle(); setSelected(index); }}
+          <button type="button" className="sc-thread-strip__select" onClick={() => { if (!expanded) toggle(); else if (item.item_id) setPanel(item.item_id); setSelected(index); }}
             aria-pressed={expanded && selected === index}
             aria-label={`${expanded ? 'Pokaż opis boksu' : 'Rozwiń trop od boksu'} ${index + 1}: ${item.title}`}>
             <span className="sc-thread-strip__type"><span aria-hidden="true">{item.box_type === 'claim' ? '✓' : '↗'}</span> {item.box_type ? TYPES[item.box_type] : item.kind === 'article' ? categoryLabel(item.category) : 'Link'}</span>
@@ -180,15 +222,16 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
             <span className="sc-thread-strip__source">{item.source_name || (item.kind === 'link' ? item.domain : '')}
               {item.published_date && <time dateTime={item.published_date}> · {formatDatePl(item.published_date)}</time>}</span>
           </button>}
+          {expanded && item.item_id && <StepRate step={steps.find(item.item_id, 'box')} canRate={steps.canRate} label={`boks ${index + 1}`}
+            onRate={polarity => void steps.rate(item.item_id!, 'box', polarity)} />}
         </motion.li>
       </Fragment>)}
     </ol>
     </div>
     {/* W zwiniętym wierszu jest tylko „78% trafnych”; szczegóły ✓ ? ✕ po rozwinięciu (werdykt 1810). */}
-    {(!row || expanded) && <RatingFrame counts={shown} ai={thread.is_ai} cycle={false} offset={offset} numbers />}
+    {/* Ocena tropu = średnia reakcji na kroki; całości nie ocenia się osobno (właściciel 3.10). */}
+    {expanded && <StepProgress data={steps.data} canRate={steps.canRate} />}
     </div>
-    {expanded && variant !== 'row' && <p className="sc-thread-totals"><span data-rating="positive">✓</span> {counts?.positive ?? thread.opinions.positive} · <span data-rating="doubt">?</span> {counts?.doubt ?? thread.opinions.doubt ?? 0} · <span data-rating="negative">✕</span> {counts?.negative ?? thread.opinions.negative} · {commentCount ?? thread.comments_count ?? 0} komentarzy</p>}
-    {(thread.narrative || thread.signal_kind) && <p className="sc-thread-totals">{thread.description}</p>}
     <nav className="sc-thread-continuations" aria-label="Części tropu">{thread.continues && <Link href={`/tropy/${thread.continues}`}>← Poprzednia część</Link>}{thread.continuations?.map(id => <Link key={id} href={`/tropy/${id}`}>Ciąg dalszy →</Link>)}</nav>
     {(variant !== 'row' || expanded) && <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
       expanded={expanded} preview={variant === 'row'}
@@ -198,5 +241,6 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <span className="sc-thread-strip__tools">{row && <SocialReport threadId={thread.id} />}{row && onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz trop na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
         <button type="button" className="sc-thread-strip__collapse" onClick={toggle}>Zwiń trop <span aria-hidden="true">⌃</span></button></span>
     </div>}
+    {panel !== null && <BoxPanel threadId={thread.id} itemId={panel} steps={steps} onClose={() => setPanel(null)} />}
   </article>;
 }

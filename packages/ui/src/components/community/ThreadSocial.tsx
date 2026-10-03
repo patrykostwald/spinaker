@@ -135,7 +135,6 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
   }
   return <div className="sc-thread-social">
     <nav className="sc-thread-social-actions" aria-label="Akcje tropu">
-      <button type="button" aria-expanded={showRatings} onClick={() => setShowRatings(!showRatings)}>Oceń</button>
       <button type="button" aria-expanded={showComments} onClick={() => setShowComments(!showComments)}>Komentarz</button>
       <button type="button" onClick={async () => {
         try { const url = `${location.origin}/tropy/${id}`; if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); setStatus('Skopiowano link.'); } }

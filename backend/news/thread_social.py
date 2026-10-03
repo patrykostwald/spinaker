@@ -68,17 +68,9 @@ class ThreadRatingsView(SocialView):
                          'distribution': {key: value / total if total else 0 for key, value in counts.items()}})
 
     def post(self, request, thread_id):
-        thread = get_object_or_404(public_threads(request.user), pk=thread_id)
-        data = RatingInput(data=request.data)
-        data.is_valid(raise_exception=True)
-        if set(request.data) != {'polarity'}:
-            raise serializers.ValidationError('Komentarz dodaj osobno pod tropem.')
-        with transaction.atomic():
-            locked_account(request.user, 'rating')
-            CommunityThreadOpinion.objects.update_or_create(user=request.user, thread=thread, defaults=data.validated_data)
-            from news.admission import check_admission
-            check_admission(thread)
-        return self.get(request, thread_id)
+        """Trop ocenia się krok po kroku (news/thread_steps.py); ocena całości wynika z przejścia wszystkich kroków."""
+        get_object_or_404(public_threads(request.user), pk=thread_id)
+        raise serializers.ValidationError('Oceń trop krok po kroku: każdy boks i każde powiązanie.')
 
     patch = post
 

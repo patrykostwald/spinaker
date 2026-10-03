@@ -43,9 +43,12 @@ def canonical_url(value: str) -> str:
 
 
 def _article_ref(article):
+    from news.media_rights import article_media_allowed
     return {'kind': 'article', 'id': article.pk, 'title': article.title, 'url': article.url,
             'category': article.category, 'published_date': article.published_date,
-            'source_name': article.source.name if article.source_id else ''}
+            'source_name': article.source.name if article.source_id else '',
+            # miniatura w boksie tylko ze źródeł, które na to pozwalają
+            'image_url': article.image_url if article.image_url and article_media_allowed(article) else ''}
 
 
 def _link_ref(link):
@@ -159,7 +162,7 @@ def item_data(item):
     else:
         data = _link_ref(item.link)
         data['hidden'] = bool(item.link.hidden_at)
-    data.update({'note': item.note, 'link_note': item.link_note if item.position else '', 'position': item.position})
+    data.update({'note': item.note, 'link_note': item.link_note if item.position else '', 'position': item.position, 'item_id': item.pk})
     return data
 
 
@@ -168,6 +171,29 @@ def _counts(thread_ids):
     for row in CommunityThreadOpinion.objects.filter(thread_id__in=thread_ids).values('thread_id', 'polarity').annotate(n=Count('id')):
         result[row['thread_id']][row['polarity']] = row['n']
     return result
+
+
+def source_key(item):
+    if item.article_id:
+        return f'a:{item.article.source_id or item.article.url}'
+    if item.link_id:
+        return f'l:{item.link.domain}'
+    data = item.box_data or {}
+    return f"b:{data.get('source_name') or data.get('url') or ''}" if (data.get('source_name') or data.get('url')) else ''
+
+
+def top_comments(thread, limit=2):
+    from news.thread_social_models import ThreadComment
+    rows = (ThreadComment.objects.filter(thread=thread, deleted_at__isnull=True, hidden_at__isnull=True)
+            .select_related('author').annotate(liked=Count('reactions', filter=Q(reactions__polarity='positive')))
+            .order_by('-liked', '-created_at')[:limit])
+    return [{'id': row.pk, 'author': f'@{row.author.username}' if row.author_id else 'Czytelnik', 'body': row.body[:220],
+             'created_at': row.created_at} for row in rows]
+
+
+def _scores(thread_ids):
+    from news.thread_steps import score_of
+    return score_of(thread_ids)
 
 
 def thread_summary(thread, counts):
@@ -188,6 +214,11 @@ def thread_summary(thread, counts):
             'items_count': len(items), 'preview': [item_data(item) for item in items],
             'comments_count': getattr(thread, 'visible_comments_count', 0),
             'opinions': counts.get(thread.pk, {'positive': 0, 'doubt': 0, 'negative': 0}),
+            'score': _scores([thread.pk]).get(thread.pk, {'percent': 0, 'reactions': 0}),
+            # dane do wiersza na liście (właściciel 3.10): powiązania, źródła, dwa najlepsze komentarze
+            'contexts_count': sum(1 for item in items if item.position and item.link_note),
+            'sources_count': len({source_key(item) for item in items} - {''}),
+            'top_comments': top_comments(thread),
             'admission': admission_progress(thread) if thread.owner_id and not thread.admitted_at else None}
 
 

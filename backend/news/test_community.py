@@ -87,7 +87,10 @@ def test_publish_thread_with_article_and_link_then_react():
     reader.force_authenticate(user('czytelnik2'))
     opinions = f'/api/community/threads/{thread_id}/opinions/'
     assert reader.post(opinions, {'body': 'sam komentarz'}, format='json').status_code == 400
-    assert reader.post(opinions, {'polarity': 'positive'}, format='json').status_code == 200
+    assert reader.post(opinions, {'polarity': 'positive'}, format='json').status_code == 400
+    steps = f'/api/community/threads/{thread_id}/steps/'
+    for row in reader.get(steps).json()['steps']:
+        assert reader.post(steps, {'item_id': row['item_id'], 'part': row['part'], 'polarity': 'positive'}, format='json').status_code == 200
     assert reader.post(f'/api/community/threads/{thread_id}/comments/', {'body': 'Dobre zestawienie'}, format='json').status_code == 201
     assert public.get(opinions).json()['counts'] == {'positive': 1, 'doubt': 0, 'negative': 0}
     assert reader.post(f'/api/community/threads/{thread_id}/report/', {'reason': 'spam'}, format='json').status_code == 201
