@@ -118,7 +118,7 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
           </form>
         </div>
         <div className="sc-f2-filters"><label>Kolejność<select value={sort} onChange={event => setSort(event.target.value as 'new' | 'best')}><option value="new">Najnowsze</option><option value="best">Najlepiej oceniane</option></select></label>
-          <label>Temat<select value={topic} disabled={!config.isSuccess} onChange={event => setTopic(event.target.value)}><option value="">Wszystkie tematy</option>{config.data?.topics?.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+          {/* Bez filtra tematów, dopóki nie ma użytkowników (właściciel 3.10: test schematu box + powiązanie) */}
         </div>
         {sort === 'best' && <p>Według liczby opinii „Zgadzam się”; przy remisie od najnowszej publikacji.</p>}
         {contextActive && <p>Pokazujemy nitki zawierające wybrany materiał lub potwierdzone powiązanie. <Link href="/nitki">Pokaż wszystkie</Link></p>}
