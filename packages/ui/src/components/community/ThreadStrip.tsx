@@ -8,7 +8,7 @@ import { ago, Avatar, SocialIcon, ClampedText, type Counts } from './SocialPrimi
 import { SocialReport, ThreadSocial } from './ThreadSocial';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
-import { FocusView, SpinkaClip, StepRate, useThreadSteps, type FocusStep } from './ThreadSteps';
+import { FocusView, focusRef, SpinkaClip, StepRate, useThreadSteps, type FocusStep } from './ThreadSteps';
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
@@ -54,6 +54,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   };
   const hover = useRef<ReturnType<typeof setTimeout>>();
   const [focus, setFocus] = useState<FocusStep | null>(null);
+  const [picked, setPicked] = useState<FocusStep | null>(null);
   const [openJoint, setOpenJoint] = useState<number | null>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -187,7 +188,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <span className="sc-thread-admission__bar" aria-hidden="true"><span style={{ width: `${Math.min(100, 100 * thread.admission.positive / thread.admission.needed)}%` }} /></span>
       {thread.admission.open ? `${thread.admission.positive}/${thread.admission.needed} ✓ do głównej · zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'Czas w izbie minął'}
     </p>}
-    <div className="sc-thread-strip__rail">
+    {focus ? <FocusView key={`${focus.kind}-${focus.index}`} threadId={thread.id} items={ordered} start={focus} steps={steps} onClose={() => { setFocus(null); setPicked(null); }} onStep={setPicked} /> : <div className="sc-thread-strip__rail">
     {expanded && canPrev && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--prev" aria-label="Poprzednie boksy" onClick={() => slide(-1)}>‹</button>}
     {expanded && canNext && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--next" aria-label="Kolejne boksy" onClick={() => slide(1)}>›</button>}
     <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" tabIndex={0} aria-label={`Boksy spinki: ${thread.title}`}
@@ -243,7 +244,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         </motion.li>
       </Fragment>)}
     </ol>
-    </div>
+    </div>}
     {/* W zwiniętym wierszu jest tylko „78% trafnych”; szczegóły ✓ ? ✕ po rozwinięciu (werdykt 1810). */}
     {/* Ocena tropu = średnia reakcji na kroki; całości nie ocenia się osobno (właściciel 3.10). */}
     </div>
@@ -251,6 +252,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     {(variant !== 'row' || expanded) && <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
       expanded={expanded} preview={variant === 'row'}
       draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount}
+      filter={picked ? focusRef(picked) : undefined} onClearFilter={() => { setFocus(null); setPicked(null); }}
       tools={full ? <ExportTools thread={thread} items={ordered} onRepin={() => { setRepinning(true); setShowComments(false); }} /> : undefined} />}
     {/* przepięcie zastępuje sekcję komentarzy; pod spodem lista przepięć tej spinki */}
     {full && repinning && <RepinPanel thread={thread} items={ordered} onClose={() => { setRepinning(false); setShowComments(true); }} />}
@@ -263,7 +265,6 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <span className="sc-thread-strip__tools">{row && <SocialReport threadId={thread.id} />}{row && onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz spinkę na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
         <button type="button" className="sc-thread-strip__collapse" onClick={toggle}>Zwiń spinkę <span aria-hidden="true">⌃</span></button></span>
     </div>}
-    {focus && <FocusView threadId={thread.id} title={thread.title} items={ordered} start={focus} steps={steps} onClose={() => setFocus(null)} />}
   </article>;
 }
 

@@ -8307,3 +8307,70 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-joint__pop .sc-joint__more { left: 0; right: 0; bottom: 22px; text-align: center; font-size: 13px; color: var(--sc-text-2); }
 .sc-joint__pop .sc-joint__more:hover { color: var(--sc-text); }
 .sc-thread-strip__track:has(.sc-joint.is-open) { padding-top: 200px; }
+
+/* wybrany boks/spinka w miejscu łańcucha (właściciel 3.10): płytka jak boksy, z lewej miniatura, z prawej tekst,
+   strzałki po bokach, licznik, mini-łańcuch z podświetlonym elementem; komentarze zostają na dole */
+.sc-pick { --fr: color-mix(in srgb, var(--sc-text) 22%, transparent); display: grid; gap: 14px; padding: 4px 0 18px; animation: sc-menu-in .3s cubic-bezier(.2,.8,.2,1); }
+.sc-pick__bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 13px; }
+.sc-pick__back { border: 0; background: none; padding: 4px 0; color: var(--sc-text-3); font: inherit; cursor: pointer; transition: color .2s; }
+.sc-pick__back:hover { color: var(--sc-text); }
+.sc-pick__count { color: var(--sc-text-3); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.sc-pick__stage { display: grid; grid-template-columns: 36px minmax(0, 760px) 36px; justify-content: center; align-items: center; gap: 12px; }
+.sc-pick__arrow { width: 36px; height: 36px; border: 0; background: none; color: var(--sc-text-3); font-size: 26px; line-height: 1; cursor: pointer; transition: color .2s, transform .2s; }
+.sc-pick__arrow:hover:not(:disabled) { color: var(--sc-text); transform: scale(1.1); }
+.sc-pick__arrow:disabled { opacity: .25; cursor: default; }
+.sc-pick__card { position: relative; display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 22px; min-height: 200px; padding: 20px 22px 30px; border-radius: 3px;
+  background:
+    linear-gradient(var(--fr), var(--fr)) left 22px top 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--fr), var(--fr)) right 0 top 0 / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(var(--fr), var(--fr)) left 0 bottom 0 / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(180deg, #121316 0%, #0a0b0d 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .05), 0 14px 30px -14px rgb(0 0 0 / .95); animation: sc-menu-in .3s cubic-bezier(.2,.8,.2,1); }
+.sc-pick__media { aspect-ratio: 1 / 1; border-radius: 2px; overflow: hidden; display: grid; place-items: center; background: color-mix(in srgb, var(--sc-text) 4%, transparent); color: var(--sc-text-3); font-size: 34px; font-weight: 300; }
+.sc-pick__media img { width: 100%; height: 100%; object-fit: cover; opacity: .85; }
+.sc-pick__media .sc-clasp { width: 70%; height: 30px; }
+.sc-pick__text { display: grid; align-content: start; gap: 8px; min-width: 0; }
+.sc-pick__kicker { margin: 0; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-text-3); }
+.sc-pick__text h2 { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--sc-text); text-wrap: balance; }
+.sc-pick__body { margin: 0; font-size: 14px; line-height: 1.55; color: var(--sc-text-2); }
+.sc-pick__note { margin: 4px 0 0; font-size: 14px; line-height: 1.55; color: var(--sc-text); }
+.sc-pick__note span { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-text-3); margin-bottom: 2px; }
+.sc-pick__pair { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 14px; font-weight: 600; color: var(--sc-text); }
+.sc-pick__pair b { color: var(--sc-text-3); font-weight: 400; }
+.sc-pick__source { justify-self: start; font-size: 13px; color: var(--sc-text-2); text-decoration: none; }
+.sc-pick__source:hover { color: var(--sc-text); }
+.sc-pick__web { margin: 0; font-size: 12.5px; color: var(--sc-text-3); }
+.sc-pick__web a { color: var(--sc-text-2); }
+/* reakcje wpisane w dolną linię karty (lewy dolny róg zamknięty przez lewą linię, prawy dolny otwarty) */
+.sc-pick__card .sc-step-rate { position: absolute; left: 0; right: 22px; bottom: 0; transform: translateY(50%); display: flex; align-items: center; gap: 0; border: 0 !important; border-radius: 0 !important; background: none; padding: 0; overflow: visible !important; }
+.sc-pick__card .sc-step-rate::before, .sc-pick__card .sc-step-rate::after { content: ""; flex: 1 1 0; height: 1px; background: var(--fr); }
+.sc-pick__card .sc-step-rate button { position: relative; padding: 0 8px !important; border: 0 !important; background: none !important; line-height: 1; font-size: 15px; }
+.sc-pick__card .sc-step-rate button + button { margin-left: 12px; }
+.sc-pick__card .sc-step-rate button + button::before { content: ""; position: absolute; left: -12px; top: 50%; width: 12px; height: 1px; background: var(--fr); }
+.sc-pick__card .sc-step-rate button[aria-pressed="true"] { filter: drop-shadow(0 0 6px currentColor); }
+/* mini-łańcuch pod kartą: bieżący element powiększony i podświetlony */
+.sc-pick__chain { display: flex; justify-content: center; align-items: center; gap: 3px; padding-top: 10px; }
+.sc-pick__chain button { padding: 0; cursor: pointer; background-color: transparent; transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; }
+.sc-pick__chain button.sc-trow__link { border: 0; background: color-mix(in srgb, var(--sc-accent) 50%, transparent); }
+.sc-pick__chain button[aria-current="true"] { transform: scale(1.6); box-shadow: 0 0 10px color-mix(in srgb, var(--sc-text) 30%, transparent); }
+.sc-pick__chain button.sc-trow__link[aria-current="true"] { transform: scale(1.6, 2); }
+@media (max-width: 767px) { .sc-pick__stage { grid-template-columns: 28px minmax(0, 1fr) 28px; gap: 4px; } .sc-pick__card { grid-template-columns: 1fr; } .sc-pick__media { max-width: 120px; } }
+.sc-social-filter { display: flex; align-items: center; gap: 12px; margin: 0 0 6px; font-size: 13px; color: var(--sc-text-2); }
+.sc-social-filter button { border: 0; background: none; padding: 0; color: var(--sc-text-3); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.sc-social-filter button:hover { color: var(--sc-text); }
+.sc-pick__card { border: 0 !important; outline: 0; }
+.sc-pick .sc-pick__arrow { font-size: 30px !important; width: 40px; height: 40px; }
+.sc-pick__card .sc-step-rate button { font-size: 16px !important; }
+
+/* „Udostępnij” i „Zgłoś” na skrajnej prawej w wierszu z „Skomentuj” (właściciel 3.10) */
+.sc-social-composer__end { display: inline-flex; align-items: center; gap: 16px; margin-left: 10px; padding-left: 18px; border-left: 1px solid var(--sc-grid); }
+.sc-thread-social .sc-social-composer__end button, .sc-social-sortrow .sc-social-composer__end button { height: auto; padding: 4px 0; border: 0; border-radius: 0; background: none; color: var(--sc-text-3); font: inherit; font-size: 13px; font-weight: 400; cursor: pointer; }
+.sc-thread-social .sc-social-composer__end button:hover { color: var(--sc-text); }
+.sc-thread-social .sc-social-composer__end button::before { display: none; }
+/* łańcuch otwartej spinki zaczyna się tam, gdzie tekst komentarzy (za awatarem) */
+@media (min-width: 768px) {
+  .sc-trop-overlay__body > article .sc-pick { margin-left: 60px; }
+  /* po rozwinięciu spinki łańcuch zajmuje całą szerokość (może wejść nad awatar) */
+  .sc-trop-overlay__body > article .sc-thread-strip__track { padding-left: 60px; transition: padding-left .45s cubic-bezier(.2,.8,.2,1), padding-top .45s cubic-bezier(.2,.8,.2,1); }
+  .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open) { padding-left: 0; }
+}

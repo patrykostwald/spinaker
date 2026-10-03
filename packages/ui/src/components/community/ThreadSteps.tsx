@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getThreadBox, getThreadSteps, rateThreadStep, type StepPart, type StepsData, type ThreadElement } from '../../lib/community';
@@ -71,30 +71,31 @@ export function SpinkaClip({ counts, open = false }: { counts?: Counts3; id?: st
   </span>;
 }
 
-type FocusComment = { id: number; author: string; body: string; created_at: string; author_color?: string };
 export type FocusStep = { kind: 'box' | 'clip'; index: number };
 
+/** Element wybrany w spince: odnośnik w komentarzach (@b1, @s1) i jego nazwa do nagłówka komentarzy. */
+export type FocusRef = { ref: string; label: string; pattern: RegExp };
+
+export function focusRef(step: FocusStep): FocusRef {
+  return step.kind === 'box'
+    ? { ref: `@b${step.index + 1}`, label: `boks ${step.index + 1}`, pattern: new RegExp(String.raw`@(?:boks\s*|b)${step.index + 1}(?!\d)`, 'i') }
+    : { ref: `@s${step.index}`, label: `spinka ${step.index}`, pattern: new RegExp(String.raw`@(?:spinka\s*|s)${step.index}(?!\d)`, 'i') };
+}
+
 /**
- * Pełny widok boksu albo spinki (właściciel 3.10): drugie kliknięcie otwiera wybrany element na całym obszarze treści.
- * Na środku boks (materiał ze źródła) albo spinka (kontekst autora + ocena), pod spodem komentarze przypisane
- * do tego miejsca (@boks N / @spinka N) i pole „Skomentuj”, które samo dodaje odniesienie.
+ * Wybrany boks albo spinka (właściciel 3.10): widok się nie przeskakuje. Karta zastępuje łańcuch u góry otwartej spinki
+ * (z lewej miniatura, z prawej tekst), po bokach strzałki, licznik i mini-łańcuch z podświetlonym elementem.
+ * Komentarze zostają na dole w tym samym miejscu, tylko zawężone do tego elementu (onStep przekazuje odnośnik).
  */
-export function FocusView({ threadId, title, items, start, steps, onClose }: {
-  threadId: number; title: string; items: ThreadElement[]; start: FocusStep; steps: ReturnType<typeof useThreadSteps>; onClose: () => void;
+export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
+  threadId: number; items: ThreadElement[]; start: FocusStep; steps: ReturnType<typeof useThreadSteps>; onClose: () => void; onStep: (step: FocusStep) => void;
 }) {
   const sequence = useMemo(() => items.flatMap((_, i): FocusStep[] => i === 0 ? [{ kind: 'box', index: 0 }] : [{ kind: 'clip', index: i }, { kind: 'box', index: i }]), [items]);
   const [at, setAt] = useState(() => Math.max(0, sequence.findIndex(step => step.kind === start.kind && step.index === start.index)));
   const step = sequence[at];
   const item = items[step.index];
-  const ref = step.kind === 'box' ? `@b${step.index + 1}` : `@s${step.index}`;
-  const pattern = new RegExp((step.kind === 'box' ? String.raw`@(?:boks\s*|b)` + (step.index + 1) : String.raw`@(?:spinka\s*|s)` + step.index) + String.raw`(?!\d)`, 'i');
-  const cache = useQueryClient();
-  const comments = useQuery({ queryKey: ['thread-comments-all', threadId], queryFn: () => apiFetch<{ results: FocusComment[] }>(`/api/community/threads/${threadId}/comments/?sort=best`), retry: false });
   const box = useQuery({ queryKey: ['thread-box', threadId, item.item_id], queryFn: () => getThreadBox(threadId, item.item_id!), enabled: step.kind === 'box' && Boolean(item.item_id), retry: false });
-  const mine = (comments.data?.results ?? []).filter(row => pattern.test(row.body));
-  const [draft, setDraft] = useState('');
-  const [status, setStatus] = useState('');
-  useEffect(() => { setDraft(''); setStatus(''); }, [at]);
+  useEffect(() => { onStep(step); }, [at]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if ((event.target as HTMLElement | null)?.closest?.('input, textarea')) return;
@@ -105,65 +106,54 @@ export function FocusView({ threadId, title, items, start, steps, onClose }: {
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, [onClose, sequence.length]);
-  async function send(event: FormEvent) {
-    event.preventDefault();
-    try {
-      await apiWrite(`/api/community/threads/${threadId}/comments/`, { body: `${ref} ${draft.trim()}` });
-      setDraft(''); setStatus('Komentarz dodany.');
-      void cache.invalidateQueries({ queryKey: ['thread-comments-all', threadId] });
-      void cache.invalidateQueries({ queryKey: ['thread-comments', threadId] });
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'Nie udało się dodać komentarza.'); }
-  }
   const clipStep = step.kind === 'clip' ? steps.find(item.item_id, 'context') : undefined;
   const boxStep = step.kind === 'box' ? steps.find(item.item_id, 'box') : undefined;
-  // pełny widok spinki: tło w kolorach reakcji tego połączenia; boks i wyjście: całej spinki
+  // tło w kolorach reakcji wybranego elementu; po wyjściu: całej spinki
   const whole = sumCounts(steps.data?.steps.map(row => row.counts));
-  useEffect(() => { setReactionMood(clipStep ? sumCounts([clipStep.counts]) ?? whole : whole); }, [clipStep, whole]);
+  const current = clipStep ?? boxStep;
+  useEffect(() => { setReactionMood(current ? sumCounts([current.counts]) ?? whole : whole); }, [current, whole]);
   useEffect(() => () => setReactionMood(sumCounts(steps.data?.steps.map(row => row.counts))), []); // eslint-disable-line react-hooks/exhaustive-deps
-  return <section className="sc-focus" role="dialog" aria-modal="true" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Spinka ${step.index}`}>
-    <header className="sc-focus__bar">
-      <button type="button" className="sc-focus__back" onClick={onClose}>← Wróć</button>
-      <span className="sc-focus__title" title={title}>{title}</span>
-      <nav className="sc-focus__nav" aria-label="Kolejne boksy i spinki">
-        <button type="button" disabled={at === 0} onClick={() => setAt(at - 1)} aria-label="Poprzedni">‹</button>
-        <span>{step.kind === 'box' ? `Boks ${step.index + 1} z ${items.length}` : `Spinka ${step.index} z ${items.length - 1}`}</span>
-        <button type="button" disabled={at === sequence.length - 1} onClick={() => setAt(at + 1)} aria-label="Następny">›</button>
-      </nav>
+  const dominant = (counts?: { positive: number; doubt: number; negative: number }) => {
+    const top = counts ? Math.max(counts.positive, counts.doubt, counts.negative) : 0;
+    return !counts || !top ? undefined : counts.positive === top ? 'positive' : counts.doubt === top ? 'doubt' : 'negative';
+  };
+  const source = [item.source_name || (item.kind === 'link' ? item.domain : ''), item.published_date ? formatDatePl(item.published_date) : ''].filter(Boolean).join(' · ');
+  const kind = item.box_type ?? item.kind;
+  return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Spinka ${step.index}`}>
+    <header className="sc-pick__bar">
+      <button type="button" className="sc-pick__back" onClick={onClose}>← Cała spinka</button>
+      <span className="sc-pick__count">{step.kind === 'box' ? `Boks ${step.index + 1} z ${items.length}` : `Spinka ${step.index} z ${items.length - 1}`}</span>
     </header>
-    <div className="sc-focus__stage" key={at}>
-      {step.kind === 'box' ? <article className="sc-focus__card">
-        <p className="sc-focus__kicker">{[item.source_name || (item.kind === 'link' ? item.domain : ''), item.published_date ? formatDatePl(item.published_date) : ''].filter(Boolean).join(' · ')}</p>
-        {item.image_url && <img className="sc-focus__img" src={item.image_url} alt="" />}
-        <h2>{item.title}</h2>
-        {item.body && <p className="sc-focus__body">{item.body}</p>}
-        {item.note && <p className="sc-focus__note"><span>Komentarz autora spinki</span>{item.note}</p>}
-        <a className="sc-focus__source" href={item.url} target={item.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">Otwórz źródło ↗</a>
-        {item.item_id && <div className="sc-focus__rate"><span>Twoja reakcja na ten boks</span>
-          <StepRate step={boxStep} canRate={steps.canRate} label={`boks ${step.index + 1}`} onRate={polarity => void steps.rate(item.item_id!, 'box', polarity)} /></div>}
-        {Boolean(box.data?.other_threads.length) && <div className="sc-focus__web"><span>Ten materiał w innych spinkach</span>
-          <ul>{box.data!.other_threads.map(row => <li key={row.id}><Link href={`/spinki/${row.id}`}>{row.title}</Link></li>)}</ul></div>}
-      </article> : <article className="sc-focus__card sc-focus__card--clip">
-        <SpinkaClip counts={clipStep?.counts} id={`focus-clip-${threadId}-${step.index}`} />
-        <p className="sc-focus__kicker">Spinka {step.index}: łączy boks {step.index} i {step.index + 1}</p>
-        <p className="sc-focus__pair"><span>{items[step.index - 1].title}</span><b aria-hidden="true">→</b><span>{item.title}</span></p>
-        <p className="sc-focus__context">{item.link_note || 'Autor nie opisał tej spinki. Oceń, czy te dwa materiały naprawdę się łączą.'}</p>
-        {item.item_id && <div className="sc-focus__rate"><span>Twoja ocena tej spinki</span>
-          <StepRate step={clipStep} canRate={steps.canRate} label={`spinka ${step.index}`} onRate={polarity => void steps.rate(item.item_id!, 'context', polarity)} /></div>}
-      </article>}
-      <div className="sc-focus__comments sc-social-comments">
-        <form className="sc-focus__compose" onSubmit={send}>
-          <span className="sc-focus__ref">{ref}</span>
-          <input value={draft} maxLength={1990} onChange={event => setDraft(event.target.value)} placeholder="Skomentuj" aria-label={`Skomentuj: ${ref}`} />
-          <button disabled={!draft.trim() || !steps.canRate}>Skomentuj</button>
-        </form>
-        {status && <p role="status" className="sc-focus__status">{status}</p>}
-        {comments.isSuccess && !mine.length && <p className="sc-focus__empty">Nikt jeszcze nie skomentował {step.kind === 'box' ? 'tego boksu' : 'tej spinki'}.</p>}
-        <ol>{mine.map(row => <li key={row.id} className="sc-cmt">
-          <Avatar name={row.author} />
-          <div className="sc-cmt__body"><header><strong style={row.author_color ? { color: row.author_color } : undefined}>{row.author}</strong><span aria-hidden="true">·</span><time dateTime={row.created_at}>{ago(row.created_at)}</time></header>
-            <div className="sc-social-text">{row.body.replace(new RegExp('^\\s*' + pattern.source, 'i'), '').trim()}</div></div>
-        </li>)}</ol>
-      </div>
+    <div className="sc-pick__stage">
+      <button type="button" className="sc-pick__arrow" disabled={at === 0} onClick={() => setAt(at - 1)} aria-label="Poprzedni element">‹</button>
+      <article className="sc-pick__card" key={at} data-kind={step.kind}>
+        <div className="sc-pick__media" data-type={kind}>
+          {step.kind === 'clip' ? <SpinkaClip counts={clipStep?.counts} />
+            : item.image_url ? <img src={item.image_url} alt="" /> : <span aria-hidden="true">{kind.slice(0, 1).toUpperCase()}</span>}
+        </div>
+        <div className="sc-pick__text">
+          {step.kind === 'box' ? <>
+            {source && <p className="sc-pick__kicker">{source}</p>}
+            <h2>{item.title}</h2>
+            {item.body && <p className="sc-pick__body">{item.body}</p>}
+            {item.note && <p className="sc-pick__note"><span>Wyjaśnienie autora</span>{item.note}</p>}
+            <a className="sc-pick__source" href={item.url} target={item.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">Otwórz źródło ↗</a>
+            {Boolean(box.data?.other_threads.length) && <p className="sc-pick__web"><span>W innych spinkach:</span> {box.data!.other_threads.map((row, i) => <Fragment key={row.id}>{i > 0 && ', '}<Link href={`/spinki/${row.id}`}>{row.title}</Link></Fragment>)}</p>}
+          </> : <>
+            <p className="sc-pick__kicker">Łączy boks {step.index} i {step.index + 1}</p>
+            <p className="sc-pick__pair"><span>{items[step.index - 1].title}</span><b aria-hidden="true">→</b><span>{item.title}</span></p>
+            <p className="sc-pick__body">{item.link_note || 'Autor nie opisał tej spinki. Oceń, czy te dwa materiały naprawdę się łączą.'}</p>
+          </>}
+        </div>
+        {item.item_id && <StepRate step={current} canRate={steps.canRate} label={step.kind === 'box' ? `boks ${step.index + 1}` : `spinka ${step.index}`}
+          onRate={polarity => void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity)} />}
+      </article>
+      <button type="button" className="sc-pick__arrow" disabled={at === sequence.length - 1} onClick={() => setAt(at + 1)} aria-label="Następny element">›</button>
     </div>
+    <nav className="sc-pick__chain" aria-label="Elementy spinki">
+      {sequence.map((row, i) => <button key={i} type="button" className={row.kind === 'box' ? 'sc-trow__sq' : 'sc-trow__link'} aria-current={i === at || undefined}
+        data-r={dominant(steps.find(items[row.index].item_id, row.kind === 'box' ? 'box' : 'context')?.counts)}
+        aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Spinka ${row.index}`} onClick={() => setAt(i)} />)}
+    </nav>
   </section>;
 }

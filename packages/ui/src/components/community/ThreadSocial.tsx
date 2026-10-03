@@ -36,8 +36,8 @@ function CommentSort({ sort, setSort }: { sort: string; setSort: (value: string)
   </div>;
 }
 
-function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit, extra }: {
-  id: number; me: string; draft: string; setDraft: (text: string) => void; boxCount: number; pending: boolean; onSubmit: () => void; extra?: ReactNode;
+function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit, extra, end }: {
+  id: number; me: string; draft: string; setDraft: (text: string) => void; boxCount: number; pending: boolean; onSubmit: () => void; extra?: ReactNode; end?: ReactNode;
 }) {
   const [long, setLong] = useState(draft.length > 280);
   const refs = Array.from({ length: boxCount }, (_, i) => i === 0 ? [{ ref: '@b1', label: 'Boks 1' }] : [{ ref: `@s${i}`, label: `Spinka ${i}` }, { ref: `@b${i + 1}`, label: `Boks ${i + 1}` }]).flat();
@@ -55,6 +55,7 @@ function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit, extra 
         {extra}
         <CharacterCount text={draft} limit={limit} />
         <button type="submit" disabled={pending || !draft.trim()}>Skomentuj</button>
+        {end && <span className="sc-social-composer__end">{end}</span>}
       </div>
     </div>
   </form>;
@@ -85,7 +86,9 @@ export function SocialReport({ threadId, commentId }: { threadId: number; commen
   </span>;
 }
 
-export function ThreadSocial({ id, title, ai, expanded, preview = false, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount, tools }: {
+export function ThreadSocial({ id, title, ai, expanded, preview = false, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount, tools, filter, onClearFilter }: {
+  /** Wybrany boks albo spinka: komentarze zawężone do jego odnośnika (@b1, @s1); sekcja zostaje w tym samym miejscu. */
+  filter?: { ref: string; label: string; pattern: RegExp }; onClearFilter?: () => void;
   /** Dodatkowe akcje w pasku (otwarta spinka): kontraspinka, kopiowanie, eksport. */
   tools?: ReactNode;
   expanded?: boolean;
@@ -156,6 +159,11 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
     const label = { positive: 'zgadza się', doubt: 'ma wątpliwości', negative: 'nie zgadza się' }[row.stance];
     return <span className="sc-stance-dot" data-stance={row.stance} title={`Autor ${label} ze spinką`} role="img" aria-label={`Autor ${label} ze spinką`} />;
   }
+  useEffect(() => {
+    const bare = /^\s*(@[bs]\d+\s*)?$/.test(draft);
+    if (filter && bare) setDraft(`${filter.ref} `);
+    if (!filter && bare && draft) setDraft('');
+  }, [filter?.ref]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!threads) return null;
   if (preview) {
     const rows = comments.data?.pages[0]?.results.slice(0, 3) ?? [];
@@ -180,17 +188,15 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       <p role="status">{status}</p>
     </div>;
   }
+  async function share() {
+    try { const url = `${location.origin}/spinki/${id}`; if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); setStatus('Skopiowano link.'); } }
+    catch (error) { if (!(error instanceof Error && error.name === 'AbortError')) setStatus('Nie udało się udostępnić linku.'); }
+  }
+  // pasek akcji zniknął (właściciel 3.10): na razie tylko „Udostępnij” i „Zgłoś”, na skrajnej prawej w wierszu z „Skomentuj”;
+  // „Zapisz”, „Przepnij spinkę” i „Kopiuj” czekają na nowe miejsce (tools zostaje w kodzie)
+  void tools; void FollowButton;
+  const end = <><button type="button" className="sc-social-share" onClick={() => void share()}>Udostępnij</button><SocialReport threadId={id} /></>;
   return <div className="sc-thread-social">
-    <nav className="sc-thread-social-actions" aria-label="Akcje spinki">
-      <button type="button" aria-expanded={showComments} onClick={() => setShowComments(!showComments)}>Komentarz</button>
-      <button type="button" onClick={async () => {
-        try { const url = `${location.origin}/spinki/${id}`; if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); setStatus('Skopiowano link.'); } }
-        catch (error) { if (!(error instanceof Error && error.name === 'AbortError')) setStatus('Nie udało się udostępnić linku.'); }
-      }}>Udostępnij</button>
-      <FollowButton kind="thread" targetId={id} label={title} compactLabel />
-      {tools}
-      <span className="sc-thread-social-actions__report"><SocialReport threadId={id} /></span>
-    </nav>
     {showRatings && <section aria-label="Ocena całej spinki" className="sc-social-ratings">
       {ratings.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie ocen" />}
       {ratings.isError && <button onClick={() => ratings.refetch()}>Ponów odczyt ocen</button>}
@@ -200,13 +206,15 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       {enabled && !canWrite && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby oceniać i komentować.</p>}
     </section>}
     {showComments && <section id="komentarze" aria-label="Komentarze pod spinką" className="sc-social-comments">
-      {canWrite ? <Composer id={id} me={me} draft={draft} setDraft={setDraft} boxCount={boxCount} pending={pending} extra={<CommentSort sort={sort} setSort={setSort} />}
+      {filter && <p className="sc-social-filter">Komentarze: {filter.label}<button type="button" onClick={onClearFilter}>pokaż wszystkie</button></p>}
+      {canWrite ? <Composer id={id} me={me} draft={draft} setDraft={setDraft} boxCount={boxCount} pending={pending} extra={<CommentSort sort={sort} setSort={setSort} />} end={end}
         onSubmit={async () => { if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }} />
-        : <div className="sc-social-sortrow">{enabled && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p>}<CommentSort sort={sort} setSort={setSort} /></div>}
+        : <div className="sc-social-sortrow">{enabled && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p>}<CommentSort sort={sort} setSort={setSort} /><span className="sc-social-composer__end">{end}</span></div>}
       {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
       {comments.isSuccess && !comments.data.pages[0].results.length && <p><SocialIcon kind="comment" /> Bądź pierwszy.</p>}
-      <ol>{comments.data?.pages.flatMap(page => page.results).map(row => <li key={row.id} id={`comment-${row.id}`} className="sc-cmt">
+      {filter && comments.isSuccess && !comments.data.pages.flatMap(page => page.results).some(row => filter.pattern.test(row.body)) && <p className="sc-social-empty">Nikt jeszcze nie skomentował: {filter.label}.</p>}
+      <ol>{comments.data?.pages.flatMap(page => page.results).filter(row => !filter || filter.pattern.test(row.body)).map(row => <li key={row.id} id={`comment-${row.id}`} className="sc-cmt">
         <Avatar name={row.author} />
         <div className="sc-cmt__body">
         <header><strong style={row.author_color ? { color: row.author_color } : undefined}>{row.username ? <Link href={`/profile/${encodeURIComponent(row.username)}`} style={row.author_color ? { color: row.author_color } : undefined}>{row.author}</Link> : row.author}</strong>{row.x_profile && <a href={row.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}{stanceDot(row)}<span aria-hidden="true">·</span><time dateTime={row.created_at} title={new Date(row.created_at).toLocaleString('pl-PL')}>{ago(row.created_at)}</time>{row.edited_at && <small>edytowany</small>}</header>
