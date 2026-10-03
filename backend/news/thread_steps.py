@@ -20,10 +20,19 @@ WEIGHT = {'positive': 1.0, 'doubt': 0.5, 'negative': 0.0}
 
 
 def steps_of(thread):
-    """Kroki do oceny (właściciel 3.10): tylko spinki, czyli powiązania między kolejnymi boksami (także bez opisu autora).
-    Boksy to materiały ze źródeł; ocenia się to, co je łączy."""
+    """Kroki do reakcji w kolejności łańcucha: boks, spinka, boks... (właściciel 3.10: reakcje także na boksy,
+    żeby w pasku listy boksy przejmowały kolor). Wynik spinki i ocena całości liczą się tylko ze spinek (połączeń)."""
     items = [item for item in thread.items.all() if not (item.link_id and item.link.hidden_at)]
-    return [(item.pk, 'context') for item in items[1:]]
+    out = []
+    for index, item in enumerate(items):
+        if index:
+            out.append((item.pk, 'context'))
+        out.append((item.pk, 'box'))
+    return out
+
+
+def rated_steps(thread):
+    return [step for step in steps_of(thread) if step[1] == 'context']
 
 
 def verdict(values):
@@ -35,7 +44,7 @@ def verdict(values):
 def score_of(thread_ids):
     """{thread_id: {'percent': 0-100, 'reactions': n}} ze wszystkich reakcji na kroki."""
     result = {}
-    rows = (ThreadStepReaction.objects.filter(thread_id__in=thread_ids).values('thread_id')
+    rows = (ThreadStepReaction.objects.filter(thread_id__in=thread_ids, part='context').values('thread_id')
             .annotate(n=Count('id'), p=Count('id', filter=Q(polarity='positive')), d=Count('id', filter=Q(polarity='doubt'))))
     for row in rows:
         result[row['thread_id']] = {'percent': round(100 * (row['p'] + 0.5 * row['d']) / row['n']) if row['n'] else 0,
@@ -45,7 +54,7 @@ def score_of(thread_ids):
 
 def sync_opinion(thread, user):
     """Pełne przejście spinki daje jedną ocenę całości; niepełne jej nie daje."""
-    steps = steps_of(thread)
+    steps = rated_steps(thread)
     mine = dict(((r.item_id, r.part), r.polarity) for r in ThreadStepReaction.objects.filter(thread=thread, user=user))
     values = [mine[step] for step in steps if step in mine]
     if steps and len(values) == len(steps):
@@ -56,7 +65,7 @@ def sync_opinion(thread, user):
 
 class StepInput(serializers.Serializer):
     item_id = serializers.IntegerField()
-    part = serializers.ChoiceField(choices=['context'])
+    part = serializers.ChoiceField(choices=['context', 'box'])
     polarity = serializers.ChoiceField(choices=['positive', 'doubt', 'negative'])
 
 
@@ -73,7 +82,7 @@ class ThreadStepsView(SocialView):
         return Response({
             'steps': [{'item_id': item_id, 'part': part, 'counts': counts.get((item_id, part), {'positive': 0, 'doubt': 0, 'negative': 0}),
                        'mine': mine.get((item_id, part))} for item_id, part in steps],
-            'progress': {'done': sum(1 for step in steps if step in mine), 'total': len(steps)},
+            'progress': {'done': sum(1 for step in steps if step in mine and step[1] == 'context'), 'total': sum(1 for step in steps if step[1] == 'context')},
             'score': score_of([thread.pk]).get(thread.pk, {'percent': 0, 'reactions': 0}),
         })
 

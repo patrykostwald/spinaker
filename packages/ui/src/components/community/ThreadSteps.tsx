@@ -121,6 +121,7 @@ export function FocusView({ threadId, title, items, start, steps, onClose }: {
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Nie udało się dodać komentarza.'); }
   }
   const clipStep = step.kind === 'clip' ? steps.find(item.item_id, 'context') : undefined;
+  const boxStep = step.kind === 'box' ? steps.find(item.item_id, 'box') : undefined;
   // pełny widok spinki: tło w kolorach reakcji tego połączenia; boks i wyjście: całej spinki
   const whole = sumCounts(steps.data?.steps.map(row => row.counts));
   useEffect(() => { setReactionMood(clipStep ? sumCounts([clipStep.counts]) ?? whole : whole); }, [clipStep, whole]);
@@ -143,6 +144,8 @@ export function FocusView({ threadId, title, items, start, steps, onClose }: {
         {item.body && <p className="sc-focus__body">{item.body}</p>}
         {item.note && <p className="sc-focus__note"><span>Komentarz autora spinki</span>{item.note}</p>}
         <a className="sc-focus__source" href={item.url} target={item.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">Otwórz źródło ↗</a>
+        {item.item_id && <div className="sc-focus__rate"><span>Twoja reakcja na ten boks</span>
+          <StepRate step={boxStep} canRate={steps.canRate} label={`boks ${step.index + 1}`} onRate={polarity => void steps.rate(item.item_id!, 'box', polarity)} /></div>}
         {Boolean(box.data?.other_threads.length) && <div className="sc-focus__web"><span>Ten materiał w innych spinkach</span>
           <ul>{box.data!.other_threads.map(row => <li key={row.id}><Link href={`/spinki/${row.id}`}>{row.title}</Link></li>)}</ul></div>}
       </article> : <article className="sc-focus__card sc-focus__card--clip">

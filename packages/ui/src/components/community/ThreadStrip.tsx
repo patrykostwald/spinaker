@@ -145,16 +145,18 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     {row ? <header className="sc-trow">
       {/* Wiersz listy (właściciel 3.10): z lewej autor, tytuł i kwadraty reakcji (jeden na spinkę), w środku miniatury boksów,
           z prawej najlepszy komentarz. Kliknięcie wchodzi w spinkę: otwiera się na całym obszarze treści z komentarzami. */}
-      {/* pod awatarem: jedna kreska na każde połączenie, w kolorze przeważającej reakcji (właściciel 3.10) */}
-      <span className="sc-trow__left"><Avatar name={thread.is_ai ? 'Dr. Spin' : thread.display_name || thread.author} ai={thread.is_ai} size={36} />
-        {clips.length > 0 && <span className="sc-trow__clips" role="img" aria-label={clipsLabel}>{clips.map((c, i) => <i key={i} data-r={dominant(c)} />)}</span>}</span>
+      <Avatar name={thread.is_ai ? 'Dr. Spin' : thread.display_name || thread.author} ai={thread.is_ai} size={36} />
       <h2 className="sc-trow__h"><button type="button" className="sc-trow__main" aria-expanded={expanded} aria-controls={`${uid}-track`} onClick={onFullscreen ? undefined : toggle}>
         <span className="sc-trow__by"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}{badge && <span className="sc-trow__badge">{badge}</span>}
           {thread.published_at && <><span aria-hidden="true">·</span><time dateTime={thread.published_at}>{ago(thread.published_at)}</time></>}</span>
         <span className="sc-trow__title" title={thread.title}>{thread.title}</span>
       </button></h2>
-      <span className="sc-trow__boxes" aria-hidden="true">
-        <span className="sc-trow__minis">{Array.from({ length: Math.min(thread.items_count, 8) }, (_, i) => <i key={i} data-type={ordered[i] ? kindOf(ordered[i]) : 'more'} />)}</span>
+      <span className="sc-trow__boxes">
+        {/* miniatura spinki (właściciel 3.10): kwadraty boksów i zatrzaski między nimi, każdy w kolorze przeważającej reakcji;
+            bez reakcji boksy są szare, a zatrzaski niebieskie */}
+        <span className="sc-trow__chain" role="img" aria-label={clipsLabel}>{Array.from({ length: Math.min(thread.items_count, 8) }, (_, i) => <Fragment key={i}>
+          {i > 0 && <i className="sc-trow__link" data-r={clips[i - 1] ? dominant(clips[i - 1]) : undefined} />}
+          <i className="sc-trow__sq" data-r={thread.boxes?.[i] ? dominant(thread.boxes[i]) : undefined} /></Fragment>)}</span>
         <span className="sc-trow__facts">{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
       </span>
       {thread.top_comments?.[0] ? <p className="sc-trow__voice"><b style={thread.top_comments[0].author_color ? { color: thread.top_comments[0].author_color } : undefined}>{thread.top_comments[0].author}</b> {thread.top_comments[0].body}</p> : <span className="sc-trow__voice sc-trow__voice--empty">Bez komentarzy</span>}

@@ -192,6 +192,16 @@ def clip_counts(items):
     return [out[pk] for pk in ids]
 
 
+def box_counts(items):
+    """Reakcje na każdy boks - kolor kwadratów w miniaturze spinki na liście (właściciel 3.10)."""
+    from news.thread_social_models import ThreadStepReaction
+    ids = [item.pk for item in items]
+    out = {pk: {'positive': 0, 'doubt': 0, 'negative': 0} for pk in ids}
+    for row in ThreadStepReaction.objects.filter(item_id__in=ids, part='box').values('item_id', 'polarity').annotate(n=Count('id')):
+        out[row['item_id']][row['polarity']] = row['n']
+    return [out[pk] for pk in ids]
+
+
 def top_comments(thread, limit=2):
     from news.thread_social_models import ThreadComment
     rows = (ThreadComment.objects.filter(thread=thread, deleted_at__isnull=True, hidden_at__isnull=True)
@@ -231,6 +241,7 @@ def thread_summary(thread, counts):
             'sources_count': len({source_key(item) for item in items} - {''}),
             'top_comments': top_comments(thread),
             'clips': clip_counts(items),
+            'boxes': box_counts(items),
             'admission': admission_progress(thread) if thread.owner_id and not thread.admitted_at else None}
 
 

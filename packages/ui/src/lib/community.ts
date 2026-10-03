@@ -33,6 +33,7 @@ export type CommunityThreadSummary = {
   sources_count?: number;
   top_comments?: { id: number; author: string; body: string; created_at: string; author_color?: string }[];
   clips?: { positive: number; doubt: number; negative: number }[];
+  boxes?: { positive: number; doubt: number; negative: number }[];
 };
 
 export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElement[]; is_owner: boolean };

@@ -8187,3 +8187,16 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-trow__left { display: grid; justify-items: center; gap: 8px; align-self: center; }
 .sc-trow__left .sc-trow__clips { display: flex; justify-content: center; gap: 2px; width: 36px; margin: 0; }
 .sc-trow__left .sc-trow__clips i { flex: 0 1 6px; min-width: 2px; height: 2px; }
+/* miniatura spinki w wierszu: kwadraty boksów i zatrzaski między nimi (właściciel 3.10) */
+.sc-trow__chain { display: inline-flex; align-items: center; gap: 0; }
+.sc-trow__sq { width: 10px; height: 10px; border: 1.5px solid color-mix(in srgb, var(--sc-text) 32%, transparent); border-radius: 2px; box-sizing: border-box; }
+.sc-trow__link { width: 9px; height: 1.5px; background: color-mix(in srgb, var(--sc-accent) 75%, transparent); }
+.sc-trow__sq[data-r="positive"] { border-color: var(--sc-positive); }
+.sc-trow__sq[data-r="doubt"] { border-color: var(--sc-warning); }
+.sc-trow__sq[data-r="negative"] { border-color: var(--sc-negative); }
+.sc-trow__link[data-r="positive"] { background: var(--sc-positive); }
+.sc-trow__link[data-r="doubt"] { background: var(--sc-warning); }
+.sc-trow__link[data-r="negative"] { background: var(--sc-negative); }
+.sc-trow__boxes { gap: 8px; }
+.sc-trow__sq { width: 12px; height: 12px; }
+.sc-trow__link { width: 10px; }

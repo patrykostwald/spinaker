@@ -58,7 +58,7 @@ def test_vote_unique_change_verified_distribution(setup):
     assert client.get(base+'opinions/').data['distribution'] == {'positive': 0, 'doubt': 0, 'negative': 0}
     assert client.post(base+'opinions/', {'polarity': 'positive'}).status_code == 400
     items = list(thread.items.values_list('pk', flat=True))
-    # oceniane są tylko spinki (powiązania między boksami): przy 3 boksach są 2 kroki
+    # wynik liczą tylko spinki (powiązania między boksami): przy 3 boksach są 2 takie kroki
     step = lambda item, polarity: client.post(base+'steps/', {'item_id': item, 'part': 'context', 'polarity': polarity})
     assert step(items[1], 'positive').data['progress'] == {'done': 1, 'total': 2}
     assert not CommunityThreadOpinion.objects.filter(thread=thread, user=reader).exists()
@@ -71,7 +71,11 @@ def test_vote_unique_change_verified_distribution(setup):
     assert not CommunityThreadOpinion.objects.filter(thread=thread, user=reader).exists()
     assert client.post(base+'steps/', {'item_id': 999999, 'part': 'context', 'polarity': 'positive'}).status_code == 400
     assert client.post(base+'steps/', {'item_id': items[0], 'part': 'context', 'polarity': 'positive'}).status_code == 400
-    assert client.post(base+'steps/', {'item_id': items[1], 'part': 'box', 'polarity': 'positive'}).status_code == 400
+    # reakcje na boksy (kolor kwadratów na liście) są przyjmowane, ale nie zmieniają wyniku spinki ani postępu
+    boxed = client.post(base+'steps/', {'item_id': items[0], 'part': 'box', 'polarity': 'positive'})
+    assert boxed.status_code == 200 and boxed.data['progress'] == {'done': 1, 'total': 2}
+    assert boxed.data['score'] == {'percent': 0, 'reactions': 1}
+    assert [row['part'] for row in boxed.data['steps']] == ['box', 'context', 'box', 'context', 'box']
     step(items[1], 'negative')
     assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'negative'
     for name, rating in [('second', 'positive'), ('third', 'doubt')]:
