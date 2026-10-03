@@ -1,4 +1,14 @@
 {% extends "admin/change_list.html" %}
+{% block content %}
+  <div class="module">
+    <h2>Czas od publikacji na X — mediana z 7 dni</h2>
+    <p>Do zapisu: {{ x_watch_latency.ingestion_seconds|floatformat:1|default:"—" }} s
+      ({{ x_watch_latency.posts }} wpisów).
+      Do diagnozy: {{ x_watch_latency.diagnosis_seconds|floatformat:1|default:"—" }} s
+      ({{ x_watch_latency.diagnoses }} diagnoz).</p>
+  </div>
+  {{ block.super }}
+{% endblock %}
 {% block object-tools-items %}
   <li><a href="{% url 'admin:news_politicalaccount_import_csv' %}">Importuj CSV</a></li>
   {{ block.super }}

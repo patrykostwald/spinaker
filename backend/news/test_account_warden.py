@@ -81,7 +81,7 @@ def test_certain_added_confirmed_and_readable_one_lookup(camp, monkeypatch):
     monkeypatch.setattr('news.political_polling.configuration', lambda: config)
     payload = {'data': [{'id': '987654321', 'author_id': a.user_id, 'text': 'Testowy wpis posła',
                          'created_at': (timezone.now() - timedelta(minutes=1)).isoformat()}],
-               'meta': {'result_count': 1}, 'includes': {'users': [user_data()]}}
+               'meta': {'result_count': 1}, 'includes': {}}
     monkeypatch.setattr('news.political_polling.fetch_x_timeline', lambda *args: json.dumps(payload).encode())
     assert political_poll_cycle()['new_posts'] == 1
     assert a.posts.get().text == 'Testowy wpis posła'

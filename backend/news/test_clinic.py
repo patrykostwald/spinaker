@@ -249,8 +249,7 @@ def test_x_video_fields_are_requested_and_saved(monkeypatch):
     payload = {'data': [{'id': '9001', 'author_id': acc.user_id, 'text': POST_TEXT,
                         'created_at': (timezone.now() - timedelta(hours=1)).isoformat(),
                         'attachments': {'media_keys': ['v1']}}], 'meta': {'result_count': 1},
-               'includes': {'users': [{'id': acc.user_id, 'username': acc.handle, 'name': 'Test', 'protected': False}],
-                            'media': [attachment]}}
+               'includes': {'media': [attachment]}}
     raw = json.dumps(payload).encode()
     response = MagicMock(status_code=200, headers={})
     response.__enter__.return_value = response

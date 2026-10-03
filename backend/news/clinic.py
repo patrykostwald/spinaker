@@ -245,9 +245,14 @@ def screen_post(post: PoliticalPost, retry=False) -> SpinDiagnosis | None:
         return None
 
 
-def run_screening(limit: int = 30, *, include_old=False) -> dict:
+def run_screening(limit: int = 30, *, include_old=False, post_ids=None) -> dict:
     counts = {}
-    for post in unscreened_posts(include_old=include_old)[:limit]:
+    posts = unscreened_posts(include_old=include_old)
+    if post_ids is not None:
+        posts = posts.filter(pk__in=post_ids)
+    if not include_old:
+        posts = posts.order_by('-watch_priority', '-published_at', '-pk')
+    for post in posts[:limit]:
         row = screen_post(post, retry=True)
         if row:
             counts[row.status] = counts.get(row.status, 0) + 1
@@ -525,7 +530,7 @@ def run_diagnoses(limit: int = 2) -> dict:
     # Tylko świeże posty (domyślnie z ostatnich 24 h) — Klinika komentuje bieżące przekazy, nie archiwum.
     fresh = timezone.now() - timedelta(hours=_env_int('CLINIC_FRESH_HOURS', 24))
     rows = list(SpinDiagnosis.objects.filter(status='queued', post__published_at__gte=fresh).select_related('post__account')
-                .order_by('-screen_score', '-post__published_at')[:take])
+                .order_by('-post__watch_priority', '-screen_score', '-post__published_at')[:take])
     if auto_publish() and len(rows) < take:
         # Żeby spiny wpadały codziennie: gdy wysoko ocenionych postów brakuje, bierzemy najwyżej ocenione
         # z oznaczonych przez strażnika (z ostatniej doby), aż do dziennego limitu.

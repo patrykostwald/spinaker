@@ -213,7 +213,7 @@ def test_followed_due_account_precedes_older_due_and_shortens_interval(clock, re
     assert PoliticalRead.objects.count() == 1
 
 
-@pytest.mark.parametrize('variable,value', [('X_POLITICAL_DAILY_REQUEST_LIMIT', '1'), ('X_POLITICAL_DAILY_POST_LIMIT', '5'), ('X_POLITICAL_MONTHLY_USD_LIMIT', '0.035')])
+@pytest.mark.parametrize('variable,value', [('X_POLITICAL_DAILY_REQUEST_LIMIT', '1'), ('X_POLITICAL_DAILY_POST_LIMIT', '5'), ('X_POLITICAL_MONTHLY_USD_LIMIT', '0.025')])
 def test_followed_cannot_exceed_any_budget(clock, reader, account, config, monkeypatch, variable, value):
     monkeypatch.setenv(variable, value)
     with patch('news.political_polling.fetch_x_timeline', side_effect=PoliticalReadError('timeout')) as fetch:
@@ -222,7 +222,7 @@ def test_followed_cannot_exceed_any_budget(clock, reader, account, config, monke
         assert political_poll_cycle()['status'] == 'budget_limit'
         assert fetch.call_count == 1
     budget = ImportState.objects.get(name='political-x-budget').cursor
-    assert Decimal(budget['spent_upper_usd']) == Decimal('0.035')
+    assert Decimal(budget['spent_upper_usd']) == Decimal('0.025')
     assert budget['daily_requests'] == 1 and budget['daily_posts'] == 5
 
 

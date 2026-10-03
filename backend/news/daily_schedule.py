@@ -29,8 +29,16 @@ BEAT_PLAN = {
 
 def beat_entries():
     from celery.schedules import crontab
-    return {key: {'task': 'news.tasks.' + task, 'schedule': crontab(**plan)}
+    import os
+    entries = {key: {'task': 'news.tasks.' + task, 'schedule': crontab(**plan)}
             for key, (task, plan) in BEAT_PLAN.items()}
+    if os.environ.get('X_POLL_MODE', 'timeline') == 'batched':
+        try:
+            seconds = max(30, int(os.environ.get('X_WATCH_SECONDS', '60')))
+        except ValueError:
+            seconds = 60
+        entries['political-x-minute']['schedule'] = timedelta(seconds=seconds)
+    return entries
 
 
 def bounds(now):

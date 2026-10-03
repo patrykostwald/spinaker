@@ -7,8 +7,8 @@ Dyżurny sprawdza wyniki co 15 minut. Nie powstał żaden nowy agent AI.
 
 | Co | Kiedy pracuje automat | Gdzie trafia wynik | Termin | Co robi Ratownik |
 | --- | --- | --- | --- | --- |
-| Zbieranie X | Co minutę, pobiera tylko konta gotowe do odczytu | Baza wpisów | Udany puls do 10 min między 7:00 a 23:00, do 2 h nocą | Uruchamia zbieranie teraz |
-| Strażnik wpisów | Co 5 min | Ocena w Klinice | Do 30 min od pobrania wpisu | Ponawia ocenę, także po awarii darmowego modelu |
+| Zbieranie X | Domyślnie `timeline`: jedno gotowe konto co minutę. Opcjonalnie `batched`: grupy co `X_WATCH_SECONDS` (60 s, minimum 30 s); mniej aktywne co `X_WATCH_SLOW_MINUTES` (15 min) | Baza wpisów | Udany puls do 10 min między 7:00 a 23:00, do 2 h nocą | Uruchamia zbieranie teraz |
+| Strażnik wpisów | Od razu po zapisie nowych wpisów; dodatkowo przegląd co 5 min | Ocena w Klinice; zakwalifikowane wpisy budzą kolejkę diagnoz | Do 30 min od pobrania wpisu | Ponawia ocenę, także po awarii darmowego modelu |
 | Diagnozy | Co 10 min w godzinach 7-22 | Klinika albo kolejka do decyzji | Pierwsza diagnoza do 10:00, jeśli są kandydaci | Uruchamia diagnozy z zachowaniem obecnych limitów |
 | Wywiad dnia | Wybór 7:05, potem 10:05, 13:05, 16:05 i 19:05; opracowanie co 10 min | Klinika albo kolejka do decyzji | Wybrany do 8:00; gotowy do 18:00 | Uwalnia osieroconą pracę i ponawia; następnie ponawia wybór; na końcu bierze kolejnego kandydata |
 | Przekaz dnia każdej strony | 9:00, 12:00, 15:00, 18:00, 21:30 | Klinika albo kolejka do decyzji | Do 12:30; końcowa kontrola 22:15 | Groq, potem NVIDIA NIM, na końcu ograniczony Gemini Flash |
@@ -22,6 +22,25 @@ przekaz ma status „nie dotyczy”. Podobnie jest z brakiem kandydatów do diag
 brakiem diagnozy nadającej się do publikacji i brakiem materiałów do nitki.
 Raport tygodnia obowiązuje tylko w niedzielę. Wyłączone zbieranie, wywiady lub nitki
 są opisane jako „nie dotyczy”. Brak klucza przy włączonej funkcji pozostaje problemem.
+
+W `batched` pierwszeństwo mają konta obserwowane w trybie „Każdy wpis”, następnie
+10% najaktywniejszych kont według zapisanych wpisów z 14 dni (tylko konta z wpisami).
+Pozostałe są odczytywane w wolniejszym rytmie. Grupy mieszczą się w 512 znakach
+Recent Search self-service; podania dalej są wykluczone. Odpowiedzi zależą od
+ustawienia konta, cytaty pozostają w odczycie. Dalsza strona jest pobierana tylko
+po otrzymaniu `next_token`. Budżet nadal jest rezerwowany przed każdą płatną stroną.
+Puste odpowiedzi zwalniają rezerwację wpisów i USD, ale zużywają limit zapytań.
+
+Profile nie są dołączane do wpisów w żadnym trybie. Zwykłe odświeżanie przez
+Strażnika kont odbywa się nie częściej niż raz na 7 dni, również po nieudanej próbie.
+Natychmiastowe uruchomienie diagnoz zachowuje dotychczasowe progi, godziny,
+tempo i budżety Dr. Spina. Panel kont X pokazuje medianę czasu od publikacji
+do zapisu oraz do udanej diagnozy dla wpisów opublikowanych w ostatnich 7 dniach.
+
+Włączenie grup wymaga `X_POLL_MODE=batched` i restartu workerów oraz beat.
+Bez tej zmiany pozostaje `timeline`. Komenda `python manage.py x_watch_estimate`
+(opcjonalnie `--json`) oblicza prognozę z lokalnych danych z 14 dni, bez wywołań X.
+Szczegóły kosztów, ograniczeń i konfiguracji: [raport 089](../reports/089-x-watch.md).
 
 Wywiad dotyczy materiału z poprzedniego dnia. Brak znalezionego wywiadu przy włączonej
 funkcji nie jest uznawany za sukces. „Czeka na decyzję” oznacza gotowy materiał,

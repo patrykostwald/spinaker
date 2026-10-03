@@ -314,11 +314,11 @@ def display_matches(data, name):
 
 
 def verify_days():
-    """Co ile dni każde obserwowane konto jest sprawdzane w X (właściciel, 1.10.2026: co 2 dni)."""
+    """Routine profile refresh is never more frequent than once per seven days."""
     try:
-        return max(1, min(30, int(os.environ.get('ACCOUNT_WARDEN_VERIFY_DAYS', '2'))))
+        return max(7, min(30, int(os.environ.get('ACCOUNT_WARDEN_VERIFY_DAYS', '7'))))
     except ValueError:
-        return 2
+        return 7
 
 
 def verify_accounts(report, limit):
@@ -326,14 +326,20 @@ def verify_accounts(report, limit):
     from news.warden_second_key import submit
     now = timezone.now()
     due = PoliticalAccount.objects.filter(enabled=True).filter(
-        Q(last_verified_at__isnull=True) | Q(last_verified_at__lte=now - timedelta(days=verify_days()))).order_by(
+        Q(last_verified_at__isnull=True) | Q(last_verified_at__lte=now - timedelta(days=verify_days()))).filter(
+        Q(last_profile_read_at__isnull=True) | Q(last_profile_read_at__lte=now - timedelta(days=verify_days()))).order_by(
             F('last_verified_at').asc(nulls_first=True), 'pk')
     accounts = list(due[:min(limit, remaining())])
     figures = figures_by_account(a.pk for a in accounts)
     for start in range(0, len(accounts), 100):
-        batch = accounts[start:start + 100]
-        if not reserve_units('x', len(batch)):
-            return
+        with transaction.atomic():
+            batch = list(due.select_for_update().filter(pk__in=[a.pk for a in accounts[start:start + 100]]))
+            if not batch:
+                continue
+            if not reserve_units('x', len(batch)):
+                return
+            # Reserve the per-account refresh slot before HTTP, also on timeout.
+            PoliticalAccount.objects.filter(pk__in=[a.pk for a in batch]).update(last_profile_read_at=now)
         report['lookups'] += len(batch)
         payload = x_lookup(ids=[a.user_id for a in batch])
         users = {str(row['id']): row for row in payload.get('data', []) if isinstance(row, dict) and row.get('id')}
@@ -407,13 +413,17 @@ def fit_polling_budget(targets, report):
     if not config:
         report['events'].append({'kind': 'capacity', 'detail': 'Polling X wyłączony lub nieskonfigurowany; nowe konta czekają na uruchomienie czytania.'})
         return
+    if config.get('mode', 'timeline') == 'batched':
+        # The page reservation is a safety ceiling, not an empty-poll charge.
+        # Batched cadence and actual limits are enforced by the poller.
+        return
     accounts, _ = observed()
     figures = figures_by_account(a.pk for a in accounts)
     priority = {t.figure.pk: t.priority for t in targets if t.figure}
     weights = {a.pk: 4 if priority.get(getattr(figures.get(a.pk), 'pk', None), 2) == 0 else
                2 if priority.get(getattr(figures.get(a.pk), 'pk', None), 2) == 1 else 1 for a in accounts}
     # Include all confirmed accounts, not just the newly added ones.
-    cost = POST_PRICE * config['page_size'] + USER_PRICE
+    cost = POST_PRICE * config['page_size']
     capacity = min(config['daily_requests'], config['daily_posts'] / config['page_size'],
                    float(config['monthly_usd'] / (Decimal(31) * cost)))
     total_weight = sum(weights.values())

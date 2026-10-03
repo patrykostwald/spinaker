@@ -118,13 +118,18 @@ def clinic_diagnose_task():
 
 
 @shared_task(name="news.tasks.clinic_screen_task", soft_time_limit=600, time_limit=660)
-def clinic_screen_task(include_old=False):
+def clinic_screen_task(include_old=False, post_ids=None):
     """Strażnik Kliniki: darmowa ocena nowych postów (Groq, zapasowo NVIDIA NIM)."""
     if not cache.add("clinic-screen-lock", "1", timeout=700):
         return {"status": "locked"}
     try:
         from news.clinic import run_screening
-        return run_screening(limit=30, include_old=include_old)
+        result = run_screening(limit=100 if post_ids is not None else 30,
+            include_old=include_old, post_ids=post_ids)
+        if result.get('screened', {}).get('queued'):
+            # Existing diagnosis task keeps its budget, pacing and thresholds.
+            clinic_diagnose_task.apply_async(priority=0)
+        return result
     finally:
         cache.delete("clinic-screen-lock")
 
@@ -135,9 +140,9 @@ def clinic_daily_messages_task():
     return run_daily_messages()
 
 
-@shared_task(name="news.tasks.political_poll_task", soft_time_limit=45, time_limit=60)
+@shared_task(name="news.tasks.political_poll_task", soft_time_limit=90, time_limit=100)
 def political_poll_task():
-    """Run at most one due, confirmed political X account.
+    """Run due official X groups, or one account in timeline mode.
 
     ``political_poll_cycle`` is independently opt-in, budgeted and leased.  A
     frequent scheduler tick therefore does not itself make a paid request when

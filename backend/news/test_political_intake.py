@@ -27,7 +27,7 @@ def staff():
 @pytest.fixture
 def account(staff):
     item = PoliticalAccount.objects.create(user_id='12345', handle='FixtureOnly', display_name='Synthetic account',
-        camp='government', enabled=True, confirmation_url='https://example.org/public-account-fixture')
+        camp='government', enabled=True, confirmation_url='https://example.org/public-account-fixture', next_poll_at=timezone.now())
     item.confirm(staff)
     return item
 
@@ -51,8 +51,7 @@ def item(post_id, **extra):
 
 def page(rows, token=None, **extra):
     payload = {'data': rows, 'meta': {'result_count': len(rows)},
-        'includes': {'users': [{'id': '12345', 'username': 'FixtureOnly', 'name': 'API display name',
-            'profile_image_url': 'https://pbs.twimg.com/profile_images/fixture.jpg', 'protected': False}] if rows else []}}
+        'includes': {}}
     if token:
         payload['meta']['next_token'] = token
     payload.update(extra)
@@ -123,11 +122,11 @@ def test_source_text_and_matching_media_are_preserved(account, config, monkeypat
     assert political_poll_cycle()['new_posts'] == 1
     saved = PoliticalPost.objects.get()
     assert saved.text == row['note_post']['text'] and saved.source_data == row
-    assert saved.author_data['name'] == 'API display name' and saved.camp_at_collection == 'government'
+    assert saved.author_data['name'] == account.display_name and saved.camp_at_collection == 'government'
     assert saved.media == [{'media_key': 'valid', 'type': 'photo', 'thumbnail_url': 'https://pbs.twimg.com/media/fixture.jpg'}]
     assert saved.url == 'https://x.com/FixtureOnly/status/11' and len(saved.response_sha256) == 64
     budget = ImportState.objects.get(name='political-x-budget').cursor
-    assert Decimal(budget['spent_upper_usd']) == Decimal('0.015')  # one Post + one user, no dedup discount
+    assert Decimal(budget['spent_upper_usd']) == Decimal('0.005')  # one Post, no profile expansion
     assert budget['daily_posts'] == 1 and budget['daily_requests'] == 1
 
 
@@ -138,7 +137,7 @@ def test_invalid_source_identity_text_or_date_does_not_advance(account, config, 
     assert political_poll_cycle()['status'] == 'error'
     account.refresh_from_db()
     assert not account.poll_cursor.get('since_id') and not PoliticalPost.objects.exists()
-    assert Decimal(ImportState.objects.get(name='political-x-budget').cursor['spent_upper_usd']) == Decimal('0.035')
+    assert Decimal(ImportState.objects.get(name='political-x-budget').cursor['spent_upper_usd']) == Decimal('0.025')
 
 
 def test_source_disabled_during_read_prevents_posts(account, config, monkeypatch):
@@ -161,7 +160,7 @@ def test_transient_failure_retains_exact_window_for_retry(account, config, monke
     assert political_poll_cycle()['status'] == 'error'
     due(account)
     assert political_poll_cycle()['new_posts'] == 1
-    assert windows[0] == windows[1]
+    assert {k: v for k, v in windows[0].items() if k != 'read_id'} == {k: v for k, v in windows[1].items() if k != 'read_id'}
     assert PoliticalRead.objects.count() == 2
 
 

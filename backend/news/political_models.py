@@ -43,6 +43,7 @@ class PoliticalAccount(models.Model):
     include_replies = models.BooleanField(default=True, verbose_name='Czytaj odpowiedzi')
     include_reposts = models.BooleanField(default=False, verbose_name='Czytaj podania dalej')
     last_verified_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
+    last_profile_read_at = models.DateTimeField(null=True, blank=True, editable=False)
     poll_cursor = models.JSONField(default=dict, blank=True, editable=False)
     next_poll_at = models.DateTimeField(default=timezone.now, db_index=True, editable=False)
     last_polled_at = models.DateTimeField(null=True, editable=False)
@@ -628,6 +629,7 @@ class SocialHandleEvidence(models.Model):
             raise ValidationError('Ręczny dowód konta może dotyczyć wyłącznie rekordu osoby publicznej.')
 
 class PoliticalPost(models.Model):
+    watch_priority = models.BooleanField(default=False, editable=False)
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='posts')
     post_id = models.CharField(max_length=19, unique=True, validators=[ID_VALIDATOR])
     url = models.URLField(max_length=1024)
@@ -686,6 +688,8 @@ class PoliticalDraft(models.Model):
 class PoliticalRead(models.Model):
     """Conservative pre-request reservation, not a statement of X billing."""
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='api_reads')
+    account_ids = models.JSONField(default=list, editable=False)
+    response_body = models.BinaryField(null=True, editable=False)
     started_at = models.DateTimeField(default=timezone.now, db_index=True)
     finished_at = models.DateTimeField(null=True)
     reserved_posts = models.PositiveSmallIntegerField()

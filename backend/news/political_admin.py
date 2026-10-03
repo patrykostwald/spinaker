@@ -23,6 +23,11 @@ class PoliticalAccountAdmin(admin.ModelAdmin):
         'next_poll_at', 'last_polled_at', 'last_error', 'created_at']
     actions = ['confirm_accounts']
 
+    def changelist_view(self, request, extra_context=None):
+        from news.x_watch import latency_metrics
+        return super().changelist_view(request, extra_context={
+            **(extra_context or {}), 'x_watch_latency': latency_metrics()})
+
     def get_urls(self):
         urls = super().get_urls()
         custom = [
