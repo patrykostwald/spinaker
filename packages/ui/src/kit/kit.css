@@ -6829,3 +6829,6 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 @container (max-width: 1000px) { .sc-spin-explainer__grid { grid-template-columns: minmax(0, 1fr); } }
 @container (max-width: 340px) { .sc-spin-explainer__grid p { font-size: 13px; line-height: 19px; } .sc-spin-explainer__grid li { padding: 12px 12px; } }
 .sc-spin-explainer__grid li:first-child strong { color: var(--sc-negative); }
+/* Mniej miejsca pod menu (właściciel 3.10: „o połowę”): odstęp od menu do treści z ok. 50 px do ok. 25 px */
+.sc-app-main { padding-top: 10px; }
+.sc-app-main .sc-clinic { margin-top: 0; }
