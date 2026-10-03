@@ -11,7 +11,7 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   ];
 
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
-  return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/about" : "/o-nas"} eyebrow={t("O NAS")} title={lang === "pl" ? <>Jak działa <GlitchWord word="przekaz" /></> : t("Jak działa przekaz")} version="1.0" updatedAt="2026-09-30" sections={sections}
+  return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/about" : "/o-nas"} eyebrow={t("O NAS")} title={lang === "pl" ? <>Ta sama <GlitchWord word="miara" /> dla wszystkich</> : t("Ta sama miara dla wszystkich")} version="1.0" updatedAt="2026-09-30" sections={sections}
     lead={t("spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.")}>
     <SpinExplainer id="spin" text={{ kicker: t("Czym jest spin"), title: t("Politycy mają spin doktorów. Ty masz spin.clinic."), items: [
       { name: t("Spin"), text: t("Fakty podane tak, by działały na czyjąś korzyść: dobór słów, pominięcia, emocje. Nie zawsze kłamstwo, zawsze kierunek.") },
