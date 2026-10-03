@@ -8200,3 +8200,9 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-trow__boxes { gap: 8px; }
 .sc-trow__sq { width: 12px; height: 12px; }
 .sc-trow__link { width: 10px; }
+
+/* narzędzia otwartej spinki: sam tekst, jak pozostałe akcje */
+.sc-thread-social-actions__tool { border: 0; background: none; padding: 6px 2px; color: var(--sc-text-3); font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; transition: color .2s; }
+.sc-thread-social-actions__tool:hover { color: var(--sc-text); }
+.sc-thread-social-actions a.sc-thread-social-actions__tool { color: var(--sc-text-3); font-weight: 400; }
+.sc-thread-social-actions a.sc-thread-social-actions__tool:hover { color: var(--sc-text); }

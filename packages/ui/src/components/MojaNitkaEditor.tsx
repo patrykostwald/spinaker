@@ -13,7 +13,7 @@ import { searchClinicSpins } from '../lib/clinic';
 import { formatDateTimePl } from '../lib/utils';
 import { MAX_THREAD_ARTICLES, THREAD_LIMITS, deletePersonalThread, personalKeys, savePersonalThread,
   useArticleFavorites, useOwnerId, type PersonalArticleRef, type PersonalContextThread } from '../lib/personal';
-import { resolveLink, type ThreadElement } from '../lib/community';
+import { getCommunityThread, resolveLink, type ThreadElement } from '../lib/community';
 import { Button } from '../kit';
 import { CharacterCount } from './community/SocialPrimitives';
 import { SignedOutPanel } from './MojeKonto';
@@ -149,15 +149,15 @@ function MaterialPicker({ selected, onSelect }: { selected: Set<string>; onSelec
   </div>;
 }
 
-export function MojaNitkaEditor({ threadId }: { threadId?: number }) {
+export function MojaNitkaEditor({ threadId, counterTo }: { threadId?: number; counterTo?: number }) {
   const { account, ownerId } = useOwnerId();
   if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam logowanie…</p>;
   if (account.isError) return <div className="sc-account"><AccountDataState query={account} empty="Konta będą dostępne wkrótce." /></div>;
   if (!ownerId) return <SignedOutPanel title="Zaloguj się, aby ułożyć własną spinkę" />;
-  return <Editor key={`${ownerId}:${threadId ?? 'new'}`} ownerId={ownerId} threadId={threadId} />;
+  return <Editor key={`${ownerId}:${threadId ?? 'new'}:${counterTo ?? ''}`} ownerId={ownerId} threadId={threadId} counterTo={threadId ? undefined : counterTo} />;
 }
 
-function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
+function Editor({ ownerId, threadId, counterTo }: { ownerId: number; threadId?: number; counterTo?: number }) {
   const uid = useId();
   const router = useRouter();
   const cache = useQueryClient();
@@ -184,6 +184,16 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   const emptyDraft = draft.items.length === 1 && !draft.items[0].material && !draft.items[0].note && !draft.items[0].link_note;
   const selected = new Set(draft.items.flatMap(item => item.material ? [`${item.material.kind}:${item.material.id}`] : []));
 
+  // kontraspinka: te same materiały co w spince, którą czytelnik chce ułożyć po swojemu (bez cudzych wyjaśnień)
+  const counter = useQuery({ queryKey: ['community-thread', String(counterTo)], queryFn: () => getCommunityThread(counterTo!), enabled: Boolean(counterTo), retry: false });
+  const counterDone = useRef(false);
+  useEffect(() => {
+    if (!counter.data || counterDone.current) return;
+    counterDone.current = true;
+    const items = [...counter.data.items].sort((a, b) => a.position - b.position)
+      .slice(0, MAX_THREAD_ARTICLES).map(element => ({ key: `${element.kind}:${element.id}`, material: { ...element, note: '', link_note: '' }, note: '', link_note: '' }));
+    setDraft(current => ({ ...current, title: `Kontraspinka: ${counter.data!.title}`.slice(0, THREAD_LIMITS.title), items: items.length ? items : current.items }));
+  }, [counter.data]);
   useEffect(() => {
     if (thread.data && !initialized) { const next = fromThread(thread.data); setDraft(next); setSaved(serialize(next)); setInitialized(true); }
   }, [thread.data, initialized]);
@@ -291,7 +301,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   if (threadId && thread.isError) return <div className="sc-account"><AccountDataState query={thread} empty="Nie znaleziono spinki." /></div>;
 
   return <form className="sc-account sc-simple-thread" onSubmit={submit} noValidate aria-label="Kreator spinki">
-    <label className="sc-simple-thread__title">Tytuł nitki
+    <label className="sc-simple-thread__title">Tytuł spinki
       <input value={draft.title} maxLength={THREAD_LIMITS.title} required placeholder="O czym chcesz opowiedzieć?"
         onChange={event => setDraft(current => ({ ...current, title: event.target.value }))} />
       <CharacterCount text={draft.title} limit={THREAD_LIMITS.title} />

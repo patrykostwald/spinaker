@@ -85,7 +85,9 @@ export function SocialReport({ threadId, commentId }: { threadId: number; commen
   </span>;
 }
 
-export function ThreadSocial({ id, title, ai, expanded, preview = false, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount }: {
+export function ThreadSocial({ id, title, ai, expanded, preview = false, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount, tools }: {
+  /** Dodatkowe akcje w pasku (otwarta spinka): kontraspinka, kopiowanie, eksport. */
+  tools?: ReactNode;
   expanded?: boolean;
   /** Rozwinięty wiersz listy: 3 najtrafniejsze komentarze, „Pokaż wszystkie” i jedno pole „Odpowiedz”. */
   preview?: boolean;
@@ -186,6 +188,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         catch (error) { if (!(error instanceof Error && error.name === 'AbortError')) setStatus('Nie udało się udostępnić linku.'); }
       }}>Udostępnij</button>
       <FollowButton kind="thread" targetId={id} label={title} compactLabel />
+      {tools}
       <span className="sc-thread-social-actions__report"><SocialReport threadId={id} /></span>
     </nav>
     {showRatings && <section aria-label="Ocena całej spinki" className="sc-social-ratings">

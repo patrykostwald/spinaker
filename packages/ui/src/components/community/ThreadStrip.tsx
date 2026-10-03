@@ -10,6 +10,7 @@ import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
 import { FocusView, SpinkaClip, StepRate, useThreadSteps, type FocusStep } from './ThreadSteps';
 import { setReactionMood, sumCounts } from '../../lib/mood';
+import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
@@ -244,7 +245,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     <nav className="sc-thread-continuations" aria-label="Części spinki">{thread.continues && <Link href={`/spinki/${thread.continues}`}>← Poprzednia część</Link>}{thread.continuations?.map(id => <Link key={id} href={`/spinki/${id}`}>Ciąg dalszy →</Link>)}</nav>
     {(variant !== 'row' || expanded) && <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
       expanded={expanded} preview={variant === 'row'}
-      draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount} />}
+      draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount}
+      tools={full ? <ExportTools thread={thread} items={ordered} /> : undefined} />}
     {!full && expanded && <div className="sc-thread-strip__foot">
       <Link className="sc-thread-strip__open" href={`/spinki/${thread.id}`} onClick={event => { if (onFullscreen && !event.metaKey && !event.ctrlKey) { event.preventDefault(); onFullscreen(); } }}>Otwórz całą spinkę →</Link>
       <span className="sc-thread-strip__tools">{row && <SocialReport threadId={thread.id} />}{row && onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz spinkę na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
@@ -252,4 +254,29 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     </div>}
     {focus && <FocusView threadId={thread.id} title={thread.title} items={ordered} start={focus} steps={steps} onClose={() => setFocus(null)} />}
   </article>;
+}
+
+/**
+ * Narzędzia otwartej spinki (Konsylium 3.10, decyzja właściciela): kontraspinka, czyli ten sam materiał ułożony
+ * po swojemu, oraz kopiowanie i eksport dla dziennikarzy i badaczy.
+ */
+function ExportTools({ thread, items }: { thread: CommunityThreadSummary; items: ThreadElement[] }) {
+  const [copied, setCopied] = useState(false);
+  const meta = { id: thread.id, title: thread.title, author: thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}` };
+  async function copy() {
+    const text = spinkaMarkdown(meta, items, window.location.origin);
+    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1600); }
+    catch { window.prompt('Skopiuj spinkę:', text); }
+  }
+  function download() {
+    const blob = new Blob(['\uFEFF' + spinkaCsv(meta, items, window.location.origin)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `spinka-${thread.id}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  return <>
+    <Link className="sc-thread-social-actions__tool" href={`/konto/spinki/nowa?kontra=${thread.id}`}>Ułóż kontraspinkę</Link>
+    <button type="button" className="sc-thread-social-actions__tool" onClick={() => void copy()}>{copied ? 'Skopiowano' : 'Kopiuj'}</button>
+    <button type="button" className="sc-thread-social-actions__tool" onClick={download}>Pobierz CSV</button>
+  </>;
 }
