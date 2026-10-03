@@ -1019,3 +1019,5 @@ from .poll_models import PollVote
 from .interview_vote_models import InterviewBallot, InterviewCandidate, InterviewSubmission, InterviewVote
 
 from .thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRateEvent, ThreadModerationReport, ThreadModerationDecision, ThreadModerationMail  # noqa: E402,F401
+
+from .public_records_models import PublicRecord, PublicRecordPerson, PublicCollectionState, PublicCollectionJob  # noqa: E402,F401

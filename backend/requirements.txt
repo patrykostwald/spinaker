@@ -21,3 +21,6 @@ responses>=0.25
 freezegun>=1.4
 sentry-sdk>=2.0,<3
 anthropic>=1.8,<2
+
+# Text-layer extraction only, no OCR (public records 090).
+pypdf>=5,<7

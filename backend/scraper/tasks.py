@@ -269,3 +269,56 @@ def enrich_data_quality():
         return enrich_quality_cycle(limit=200)
     finally:
         cache.delete('lock:quality-enrichment')
+
+
+# Public research collectors have distinct Celery identities and heartbeats.
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_votes():
+    from scraper.public_records import collect
+    return collect('votes')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_statements():
+    from scraper.public_records import collect
+    return collect('statements')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_interpellations():
+    from scraper.public_records import collect
+    return collect('interpellations')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_questions():
+    from scraper.public_records import collect
+    return collect('questions')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_lobby_mswia():
+    from scraper.public_records import collect
+    return collect('lobby_mswia')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_lobby_sejm():
+    from scraper.public_records import collect
+    return collect('lobby_sejm')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_consultations():
+    from scraper.public_records import collect
+    return collect('consultations')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_pkw():
+    from scraper.public_records import collect
+    return collect('pkw')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_assets():
+    from scraper.public_records import collect
+    return collect('assets')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_meta_ads():
+    from scraper.public_records import collect
+    return collect('meta_ads')

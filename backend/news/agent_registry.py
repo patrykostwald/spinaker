@@ -88,6 +88,14 @@ for task, name, env in (
                            'news.tasks.' + task, env, collector=True)
 
 
+# Explicit private research sources, each with its own flag/task/pulse.
+from scraper.public_records import SOURCES as PUBLIC_RECORD_SOURCES
+for _source, _spec in PUBLIC_RECORD_SOURCES.items():
+    REGISTRY['public-records-' + _source] = agent(
+        _spec.title, 'Dane publiczne do analiz wewnętrznych, bez AI.',
+        'scraper.tasks.collect_public_' + _source, _spec.flag(_source), collector=True)
+
+
 def enabled(spec):
     return not spec['flag'] or flag(spec['flag'], spec['default'])
 

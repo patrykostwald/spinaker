@@ -118,3 +118,13 @@ if os.environ.get('SENAT_METADATA_ENABLED', 'false').strip().lower() == 'true':
 # Plan dnia i terminy mają wspólne źródło.
 from news.daily_schedule import beat_entries
 app.conf.beat_schedule.update(beat_entries())
+
+# Small resumable batches; collector refresh_hours controls new scan cycles.
+for _index, _source in enumerate((
+    'votes', 'statements', 'interpellations', 'questions', 'lobby_mswia',
+    'lobby_sejm', 'consultations', 'pkw', 'assets', 'meta_ads',
+)):
+    app.conf.beat_schedule['public-records-' + _source] = {
+        'task': 'scraper.tasks.collect_public_' + _source,
+        'schedule': crontab(minute=f'{_index}-59/15'),
+    }

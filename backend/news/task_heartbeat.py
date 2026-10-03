@@ -36,6 +36,8 @@ def summary(result):
                   'error': 'Błąd', 'too_many_failures': 'Zbyt wiele błędów', 'pominięto': 'Pominięto',
                   'no_free_models': 'Pominięto: brak wolnych modeli',
                   'blocked_access_review': 'Zablokowane: przegląd dostępu', 'brak odpowiedzi': 'Brak odpowiedzi'}
+        states.update(partial='Porcja zakończona', deferred='Odroczone: limit lub odstęp',
+                      idle='Oczekuje na następny cykl', needs_review='Dokumenty wymagają kontroli')
         if result.get('status') in states:
             safe.insert(0, states[result['status']])
         for key in ('completed', 'failed', 'errors', 'screened'):
@@ -105,6 +107,10 @@ def succeeded(sender=None, result=None, **extra):
         'no_free_models', 'closed', 'disabled', 'already_run', 'busy', 'daily_limit', 'locked', 'already_running')
     if getattr(sender, 'name', '') == 'news.tasks.political_poll_task' and isinstance(result, dict):
         skipped = result.get('status') not in ('ok', 'idle')
+    if getattr(sender, 'name', '').startswith('scraper.tasks.collect_public_') and isinstance(result, dict):
+        # A controlled budget deferral is visible, but is not a failed import.
+        skipped = result.get('status') in ('disabled', 'already_running', 'idle', 'deferred')
+        failed_result = result.get('status') in ('error', 'blocked_access_review', 'needs_review')
     record(sender, 'error' if failed_result else 'skipped' if skipped else 'ok', result=result)
 
 

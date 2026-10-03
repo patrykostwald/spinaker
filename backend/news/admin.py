@@ -417,3 +417,6 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     readonly_fields = ('token', 'consent_version', 'created_at', 'confirmation_sent_at', 'confirmed_at', 'unsubscribed_at')
 
 from news import thread_social_admin  # noqa: E402,F401
+
+from news.public_records_admin import register as register_public_records
+register_public_records(site)
