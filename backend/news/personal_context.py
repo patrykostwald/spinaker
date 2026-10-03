@@ -74,7 +74,8 @@ class ArticleFavoriteDetailView(APIView):
 class ThreadItemInput(serializers.Serializer):
     article_id = serializers.IntegerField(min_value=1, required=False)
     link_id = serializers.IntegerField(min_value=1, required=False)
-    note = serializers.CharField(max_length=400, required=False, allow_blank=True, default='')
+    # wyjaśnienie autora = „tytuł” boksu: dlaczego ten materiał jest w spince; może być długie (właściciel 3.10)
+    note = serializers.CharField(max_length=4000, required=False, allow_blank=True, default='')
     link_note = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')
 
     def validate(self, attrs):

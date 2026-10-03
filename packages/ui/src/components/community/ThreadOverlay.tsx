@@ -5,6 +5,7 @@ import { flushSync } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getCommunityThread, getCommunityThreads } from '../../lib/community';
 import { ThreadStrip } from './ThreadStrip';
+import { setReactionMood, sumCounts } from '../../lib/mood';
 
 /** Płynne przenikanie przy otwieraniu i zamykaniu pełnego ekranu (View Transitions); bez wsparcia albo przy ograniczonym ruchu - od razu. */
 export function viewTransition(update: () => void) {
@@ -56,6 +57,9 @@ export function ThreadOverlay({ id: initial, onClose }: { id: number; onClose: (
   }, [initial]);
 
   const thread = query.data;
+  // po wejściu w spinkę tło odpowiada jej reakcjom; po wyjściu wraca do kolorów działu
+  useEffect(() => { setReactionMood(sumCounts(thread?.clips)); }, [thread]);
+  useEffect(() => () => setReactionMood(null), []);
   return <div className="sc-trop-overlay" role="dialog" aria-modal="true" aria-label={thread ? `Spinka: ${thread.title}` : 'Spinka'}>
     <div className="sc-trop-overlay__bar">
       <button ref={close} type="button" className="sc-trop-overlay__back" onClick={() => window.history.back()}>← Wszystkie spinki</button>

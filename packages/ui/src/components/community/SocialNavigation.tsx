@@ -27,7 +27,7 @@ const main: Entry[] = [
 ];
 const extra: Entry[] = [
   { label: 'Konsylium AI', href: '/konsylium', path: icon.council },
-  { label: 'Wesprzyj', href: '/wsparcie', path: icon.support },
+  { label: 'Wesprzyj nas', href: '/wsparcie', path: icon.support },
 ];
 // Kolejność od najkrótszej nazwy do najdłuższej: równy „schodek” (właściciel 3.10: harmonia).
 const small = [

@@ -44,16 +44,16 @@ def test_diagnosis_thread_full_and_idempotent():
     thread = row.context_thread
     items = list(thread.items.all())
     assert thread.owner_id is None and thread.is_public
-    assert [item.box_data['box_type'] for item in items] == ['post', 'technique', 'claim', 'source', 'claim', 'source', 'claim', 'diagnosis']
-    assert items[0].box_data['body'] == row.post.text
-    assert items[0].box_data['source_name'] == 'Poseł Test'
-    assert items[0].box_data['published_date'] and items[0].box_data['url'] == row.post.url
-    assert items[0].link_note == ''
-    assert items[1].link_note.startswith('Technika: wybiórczość.')
-    assert items[2].box_data['body'] == 'Dane mówią inaczej.'
-    assert items[3].link_note == 'Dane mówią inaczej.'
-    assert items[-1].link_note == row.headline
-    assert items[-1].box_data['url'] == f'/klinika/{row.pk}'
+    assert [item.box_data['box_type'] for item in items] == ['diagnosis', 'post', 'technique', 'claim', 'source', 'claim', 'source', 'claim']
+    # pierwszy boks = pełna diagnoza (właściciel 3.10), potem wpis i technika
+    assert items[0].box_data['url'] == f'/klinika/{row.pk}' and items[0].link_note == ''
+    assert items[1].box_data['body'] == row.post.text
+    assert items[1].box_data['source_name'] == 'Poseł Test'
+    assert items[1].box_data['published_date'] and items[1].box_data['url'] == row.post.url
+    assert items[1].link_note == 'Wpis, który Dr. Spin zdiagnozował.'
+    assert items[2].link_note.startswith('Technika: wybiórczość.')
+    assert items[3].box_data['body'] == 'Dane mówią inaczej.'
+    assert items[4].link_note == 'Dane mówią inaczej.'
     assert all(len(item.link_note) <= 280 for item in items)
     before = [item.pk for item in items]
     assert sync_diagnosis_thread(row.pk).pk == thread.pk
@@ -66,15 +66,15 @@ def test_diagnosis_thread_without_claims_and_without_council():
     row.usage = {}
     row.save()
     items = list(row.context_thread.items.all())
-    assert [item.box_data['box_type'] for item in items] == ['post', 'technique', 'diagnosis']
-    assert items[1].link_note.startswith('Technika:')
-    assert items[-1].link_note == row.headline
+    assert [item.box_data['box_type'] for item in items] == ['diagnosis', 'post', 'technique']
+    assert items[2].link_note.startswith('Technika:')
+    assert items[0].box_data['title'].endswith(row.headline)
 
 
 def test_diagnosis_thread_claim_without_sources_and_moderation_survives_sync():
     row = diagnosis(claims=[{'claim': 'Deklaracja', 'assessment': 'unverified', 'explanation': 'Brak danych.', 'sources': []}])
     thread = row.context_thread
-    assert [i.box_data['box_type'] for i in thread.items.all()] == ['post', 'technique', 'claim', 'diagnosis']
+    assert [i.box_data['box_type'] for i in thread.items.all()] == ['diagnosis', 'post', 'technique', 'claim']
     thread.hidden_at = timezone.now()
     thread.save()
     sync_diagnosis_thread(row.pk)

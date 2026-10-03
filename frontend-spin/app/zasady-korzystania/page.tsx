@@ -23,7 +23,7 @@ export default function TermsPage() {
         <li><strong>N4. Spam.</strong> Nie publikuj spamu ani powtarzanych reklam.</li>
         <li><strong>N5. Brak naruszenia.</strong> Krytyka, wątpliwości i odmienne poglądy same w sobie nie są podstawą ukrycia treści.</li>
       </ul>
-      <p>Tytuł spinki ma do 80 znaków, komentarz autora w boksie do 400, powiązanie do 200, komentarz pod spinką do 600. Starsze dłuższe teksty pozostają dostępne. Komentarze tworzą płaską listę; możesz wskazać boks przez @boks 3. Własny komentarz możesz edytować przez 5 minut i usunąć także później.</p>
+      <p>Tytuł spinki ma do 80 znaków, wyjaśnienie autora w boksie do 4000, opis spinki (powiązania) do 200, komentarz pod spinką do 280, a dłuższy do 2000. Starsze dłuższe teksty pozostają dostępne. Komentarze tworzą płaską listę; możesz wskazać boks przez @b3, a spinkę przez @s2. Własny komentarz możesz edytować przez 5 minut i usunąć także później.</p>
       <p>Oceniać i komentować mogą zalogowane osoby z potwierdzonym e-mailem. Masz jeden głos na spinkę i możesz go zmienić. Limit to 20 zapisów komentarzy oraz 50 zapisów ocen na godzinę na konto; zmiany też wliczamy do limitu.</p>
       <p>„Zgadzam się”, „Mam wątpliwości” i „Nie zgadzam się” dotyczą całej spinki. Spinki z diagnoz są oznaczone „Dr. Spin (AI)”; ich oceny „Trafna”, „Mam wątpliwości” i „Błędna” dotyczą jakości diagnozy. Oceny nie zmieniają metody diagnozowania ani treści diagnozy.</p>
       <p>Naruszenie możesz zgłosić przyciskiem „Zgłoś” przy spince lub komentarzu. Wybierz powód i opisz, co narusza zasady. Bez konta możesz napisać do punktu kontaktowego: <a href={`mailto:${contact}`}>{contact}</a>, podając link, powód i opis. Odpowiadamy po polsku.</p>

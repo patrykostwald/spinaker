@@ -106,7 +106,7 @@ def comment_data(row, user, stance=None):
             'created_at': row.created_at, 'edited_at': row.edited_at, 'is_owner': mine,
             'hidden': bool(row.hidden_at),
             'can_edit': mine and not row.hidden_at and timezone.now() < row.created_at + timedelta(minutes=5),
-            'box_references': [int(n) for n in re.findall(r'@boks\s+(\d{1,3})\b', row.body, re.I)],
+            'box_references': [int(n) for n in re.findall(r'@(?:boks\s*|b)(\d{1,3})\b', row.body, re.I)],
             'stance': stance if stance is not None else author_stances(row.thread_id, [row.author_id]).get(row.author_id, '')}
 
 

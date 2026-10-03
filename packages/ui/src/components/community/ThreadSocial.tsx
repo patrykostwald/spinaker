@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiWrite } from '../../lib/api';
@@ -17,22 +17,42 @@ export type RatingsData = { counts: Counts; mine: { polarity: Rating } | null };
  * Pole „Skomentuj” (właściciel 3.10): krótki komentarz do 280 znaków albo dłuższy do 2000,
  * w którym jednym kliknięciem wstawia się odniesienie do boksu (@boks N) albo spinki (@spinka N).
  */
-function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit }: {
-  id: number; me: string; draft: string; setDraft: (text: string) => void; boxCount: number; pending: boolean; onSubmit: () => void;
+const COMMENT_SORTS = [{ value: 'best', label: 'Najtrafniejsze' }, { value: 'new', label: 'Najnowsze' }];
+/** Kolejność komentarzy: sam tekst, rozwija się na tle motywu bez obramowania i zakrywa to, co pod spodem (właściciel 3.10). */
+function CommentSort({ sort, setSort }: { sort: string; setSort: (value: string) => void }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: Event) => { if (!(event.target as HTMLElement).closest?.('.sc-social-sort')) setOpen(false); };
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('click', close); window.addEventListener('keydown', key);
+    return () => { document.removeEventListener('click', close); window.removeEventListener('keydown', key); };
+  }, [open]);
+  const label = COMMENT_SORTS.find(item => item.value === sort)?.label ?? COMMENT_SORTS[0].label;
+  return <div className="sc-social-sort">
+    <button type="button" aria-haspopup="listbox" aria-expanded={open} aria-label={`Kolejność komentarzy: ${label}`} onClick={() => setOpen(!open)}>{label} <span aria-hidden="true">⌄</span></button>
+    {open && <ul role="listbox" aria-label="Kolejność komentarzy">{COMMENT_SORTS.map(item => <li key={item.value}>
+      <button type="button" role="option" aria-selected={item.value === sort} onClick={() => { setSort(item.value); setOpen(false); }}>{item.label}</button></li>)}</ul>}
+  </div>;
+}
+
+function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit, extra }: {
+  id: number; me: string; draft: string; setDraft: (text: string) => void; boxCount: number; pending: boolean; onSubmit: () => void; extra?: ReactNode;
 }) {
   const [long, setLong] = useState(draft.length > 280);
-  const refs = Array.from({ length: boxCount }, (_, i) => i === 0 ? [{ ref: '@boks 1', label: 'Boks 1' }] : [{ ref: `@spinka ${i}`, label: `Spinka ${i}` }, { ref: `@boks ${i + 1}`, label: `Boks ${i + 1}` }]).flat();
+  const refs = Array.from({ length: boxCount }, (_, i) => i === 0 ? [{ ref: '@b1', label: 'Boks 1' }] : [{ ref: `@s${i}`, label: `Spinka ${i}` }, { ref: `@b${i + 1}`, label: `Boks ${i + 1}` }]).flat();
   const insert = (ref: string) => setDraft(`${draft.trimEnd()} ${ref} `.trimStart());
   const limit = long ? 2000 : 280;
   return <form className={`sc-social-composer${long ? ' is-long' : ''}`} onSubmit={event => { event.preventDefault(); onSubmit(); }}>
     <Avatar name={me} />
     <div>
+      {boxCount > 0 && <div className="sc-social-refs" aria-label="Odnieś się do boksu albo spinki">{refs.map(row => <button key={row.ref} type="button" title={row.label} onClick={() => insert(row.ref)}>{row.ref}</button>)}</div>}
       <label className="sc-sr-only" htmlFor={`compose-${id}`}>Skomentuj spinkę</label>
-      {long ? <textarea id={`compose-${id}`} value={draft} maxLength={limit} rows={4} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj. Odnieś się do boksów i spinek przyciskami poniżej." />
+      {long ? <textarea id={`compose-${id}`} value={draft} maxLength={limit} rows={4} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj. Przyciski nad polem dodają odnośnik do boksu (@b1) albo spinki (@s1)." />
         : <input id={`compose-${id}`} value={draft} maxLength={limit} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj" />}
-      {long && boxCount > 0 && <div className="sc-social-refs"><span>Odnieś się do:</span>{refs.map(row => <button key={row.ref} type="button" onClick={() => insert(row.ref)}>{row.label}</button>)}</div>}
       <div className="sc-social-composer__row">
         <button type="button" className="sc-social-longtoggle" onClick={() => setLong(!long)}>{long ? 'Krótki komentarz' : 'Dłuższy komentarz'}</button>
+        {extra}
         <CharacterCount text={draft} limit={limit} />
         <button type="submit" disabled={pending || !draft.trim()}>Skomentuj</button>
       </div>
@@ -109,9 +129,10 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
     } catch (error) { setStatus(message(error)); } finally { setPending(false); }
   }
   function content(body: string) {
-    return body.split(/(@boks\s+\d{1,3}\b)/gi).map((part, index) => {
-      const match = /^@boks\s+(\d+)$/i.exec(part), n = Number(match?.[1]);
-      return match && n > 0 && n <= boxCount ? <button className="sc-social-chip" key={index} onClick={() => focusBox(n)}>{part}</button> : part;
+    return body.split(/(@(?:boks\s*|b)\d{1,3}\b|@(?:spinka\s*|s)\d{1,3}\b)/gi).map((part, index) => {
+      const box = /^@(?:boks\s*|b)(\d+)$/i.exec(part), clip = /^@(?:spinka\s*|s)(\d+)$/i.exec(part), n = Number(box?.[1]);
+      if (clip) return <span className="sc-social-chip sc-social-chip--clip" key={index} title={`Spinka ${clip[1]}`}>{part}</span>;
+      return box && n > 0 && n <= boxCount ? <button className="sc-social-chip" key={index} title={`Boks ${n}`} onClick={() => focusBox(n)}>{part}</button> : part;
     });
   }
   /** Pierwsze zdanie komentarza w kolorze oceny, którą autor dał tropowi (✓ zielony, ? żółty, ✕ czerwony); reszta neutralna. */
@@ -175,9 +196,9 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       {enabled && !canWrite && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby oceniać i komentować.</p>}
     </section>}
     {showComments && <section id="komentarze" aria-label="Komentarze pod spinką" className="sc-social-comments">
-      {canWrite ? <Composer id={id} me={me} draft={draft} setDraft={setDraft} boxCount={boxCount} pending={pending}
-        onSubmit={async () => { if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }} /> : enabled ? <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p> : null}
-      <label className="sc-social-sort">Kolejność komentarzy<select value={sort} onChange={e => setSort(e.target.value)}><option value="best">Najtrafniejsze</option><option value="new">Najnowsze</option></select></label>
+      {canWrite ? <Composer id={id} me={me} draft={draft} setDraft={setDraft} boxCount={boxCount} pending={pending} extra={<CommentSort sort={sort} setSort={setSort} />}
+        onSubmit={async () => { if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }} />
+        : <div className="sc-social-sortrow">{enabled && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p>}<CommentSort sort={sort} setSort={setSort} /></div>}
       {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
       {comments.isSuccess && !comments.data.pages[0].results.length && <p><SocialIcon kind="comment" /> Bądź pierwszy.</p>}

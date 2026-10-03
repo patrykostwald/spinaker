@@ -59,7 +59,7 @@ def activity(user, public=False, viewer=None):
         comments = comments.filter(hidden_at__isnull=True, thread__in=public_threads(viewer))
     rows = []
     for row in comments:
-        refs = [int(n) for n in re.findall(r'@boks\s+(\d{1,3})\b', row.body, re.I)]
+        refs = [int(n) for n in re.findall(r'@(?:boks\s*|b)(\d{1,3})\b', row.body, re.I)]
         rows.append({'id': f'comment-{row.pk}', 'kind': 'comments', 'created_at': row.created_at,
             'body': row.body, 'title': row.thread.title, 'url': f'/spinki/{row.thread_id}#comment-{row.pk}',
             'thread_id': row.thread_id, 'box_references': refs, 'hidden': bool(row.hidden_at)})

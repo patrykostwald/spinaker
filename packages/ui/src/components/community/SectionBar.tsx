@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useFeature } from '../../lib/features';
@@ -30,6 +30,20 @@ export function SectionBar() {
   const clinic = pathname.startsWith('/klinika') || pathname.startsWith('/raport') || pathname === '/metodologia';
   const view = tropy || pathname.startsWith('/spinki') ? 'tropy' : clinic ? 'klinika' : 'inne';
   useEffect(() => { document.documentElement.dataset.view = view; }, [view]);
+  // kulka pod aktywną pozycją; przesuwanie kursora po pasku przesuwa ją płynnie (właściciel 3.10)
+  const nav = useRef<HTMLElement>(null);
+  const [dot, setDot] = useState<number | null>(null);
+  const [sortOpen, setSortOpen] = useState(false);
+  const place = (el: Element | null) => setDot(el instanceof HTMLElement ? el.offsetLeft + el.offsetWidth / 2 : null);
+  const home = () => place(nav.current?.querySelector('[aria-current="page"]') ?? null);
+  useLayoutEffect(() => { home(); }, [pathname, params?.toString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!sortOpen) return;
+    const close = (event: Event) => { if (!(event.target as HTMLElement).closest?.('.sc-topbar__sort')) setSortOpen(false); };
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setSortOpen(false); };
+    document.addEventListener('click', close); window.addEventListener('keydown', key);
+    return () => { document.removeEventListener('click', close); window.removeEventListener('keydown', key); };
+  }, [sortOpen]);
   if (!threads) return null;
 
   const source = params?.get('zrodlo') ?? 'all';
@@ -54,12 +68,21 @@ export function SectionBar() {
     items = ABOUT.map(([id, label]) => ({ label, href: `/o-nas#${id}`, current: false }));
   }
 
-  return <nav className="sc-topbar" aria-label="Kategorie działu" data-count={items.length + (tropy ? 1 : 0)}>
+  const sortLabel = FEED_SORTS.find(item => item.value === sort)?.label ?? 'Najgorętsze';
+  return <nav ref={nav} className="sc-topbar" aria-label="Kategorie działu" data-count={items.length + (tropy ? 1 : 0)}
+    onMouseOver={event => { const el = (event.target as HTMLElement).closest('a, .sc-topbar__sort'); if (el && nav.current?.contains(el)) place(el); }}
+    onMouseLeave={home}>
     {items.map(item => <Link key={item.href + item.label} href={item.href} scroll={false} className={item.accent ? 'sc-topbar__accent' : undefined}
       aria-current={item.current ? 'page' : undefined}>{item.label}</Link>)}
-    {tropy && <label className="sc-topbar__sort"><span className="sc-sr-only">Kolejność spinek</span>
-      <select value={sort} onChange={event => router.replace(query({ sort: event.target.value }), { scroll: false })}>
-        {FEED_SORTS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-      </select></label>}
+    {tropy && <div className="sc-topbar__sort">
+      {/* kolejność: rozwija się na czarnym tle, sam tekst i niedociągnięte linie (właściciel 3.10) */}
+      <button type="button" aria-haspopup="listbox" aria-expanded={sortOpen} aria-label={`Kolejność spinek: ${sortLabel}`} onClick={() => setSortOpen(!sortOpen)}>
+        {sortLabel} <span aria-hidden="true">⌄</span></button>
+      {sortOpen && <ul className="sc-topbar__menu" role="listbox" aria-label="Kolejność spinek">
+        {FEED_SORTS.map(item => <li key={item.value}><button type="button" role="option" aria-selected={item.value === sort}
+          onClick={() => { setSortOpen(false); router.replace(query({ sort: item.value }), { scroll: false }); }}>{item.label}</button></li>)}
+      </ul>}
+    </div>}
+    <span className="sc-topbar__dot" aria-hidden="true" hidden={dot === null} style={{ transform: `translateX(${dot ?? 0}px)` }} />
   </nav>;
 }

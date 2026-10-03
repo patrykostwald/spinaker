@@ -21,7 +21,8 @@ import { XPostCard } from './community/XPostCard';
 
 type Box = { key: string; material: ThreadElement | null; note: string; link_note: string };
 type Draft = { title: string; items: Box[]; isPublic: boolean };
-const NOTE_LIMIT = 400;
+// wyjaśnienie autora = „tytuł” boksu; może być długie (właściciel 3.10)
+const NOTE_LIMIT = 4000;
 const LINK_NOTE_LIMIT = 200;
 const MIN_PUBLIC_ITEMS = 2;
 const blankBox = (key: string): Box => ({ key, material: null, note: '', link_note: '' });
@@ -317,7 +318,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           <button type="button" onClick={() => updateBox(item.key, { material: null })}>Zmień materiał</button>
         </div> : <MaterialPicker selected={selected} onSelect={material => { focusKey.current = item.key; updateBox(item.key, { material }); }} />}
         {item.material && <label>Komentarz
-          <textarea rows={3} maxLength={NOTE_LIMIT} value={item.note} placeholder="Co warto zauważyć w tym materiale?"
+          <textarea rows={4} maxLength={NOTE_LIMIT} value={item.note} placeholder="Twoje wyjaśnienie: dlaczego ten materiał jest w spince? To będzie tytuł boksu. Możesz napisać krótko albo dłużej."
             aria-describedby={`${uid}-${item.key}-note-count`} onChange={event => updateBox(item.key, { note: event.target.value })} />
           <small className="sc-social-count" data-near={item.note.length >= NOTE_LIMIT * .9} id={`${uid}-${item.key}-note-count`}>{item.note.length}/{NOTE_LIMIT}</small>
         </label>}

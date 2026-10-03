@@ -7617,7 +7617,7 @@ body:has(.sc-rail) .sc-home .sc-spin-explainer[data-collapsible] { margin-top: 0
   .sc-rail::before { content: ""; position: absolute; right: 0; top: calc(var(--sc-bar-h) - 18px); bottom: 0; width: 1px; background: var(--sc-line-strong); }
   /* pozioma kreska pod logo: szara, zaczyna się przed napisami, przechodzi w niebieską nad treścią */
   .sc-rail::after { content: ""; position: absolute; left: 40px; right: 0; top: var(--sc-bar-h); height: 1px; background: var(--sc-line-strong); }
-  .sc-rail > .sc-rail__logo { height: var(--sc-bar-h); padding: 0 0 0 70px; align-items: center; font-size: 1.35rem; }
+  .sc-rail > .sc-rail__logo { height: var(--sc-bar-h); padding: 0 0 0 52px; align-items: center; font-size: 1.35rem; } /* logo w linii z pozycjami menu */
   .sc-rail > .sc-rail__group:first-of-type { margin-top: 18px; }
   .sc-rail__group { gap: 0; }
   .sc-rail__group a, .sc-rail__group > span { padding: 10px 16px 10px 52px; border-radius: 0; font-size: 12px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--sc-text-2); }
@@ -7832,7 +7832,8 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-thread-strip__box .sc-x-post-card > :not(header):not(time) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .sc-thread-strip__box .sc-x-post-card a, .sc-thread-strip__box .sc-x-post-card button { display: none; }
 /* ikona motywu w tej samej linii co linki pod nią */
-.sc-rail__foot > button, .sc-rail__foot > .sc-theme-switcher { justify-self: start; margin-left: -10px; }
+.sc-rail__foot > button, .sc-rail__foot > .sc-theme-switcher { justify-self: start; width: 20px; height: 20px; min-width: 0; min-height: 0; padding: 0; margin: 0 0 6px; display: grid; place-items: start; background: none; border: 0; }
+.sc-rail__foot > button svg { width: 18px; height: 18px; }
 
 /* === Spinki (właściciel 3.10): wiersz listy, spinka z zawijasem, pełny widok, pole „Skomentuj”. === */
 /* wiersz: autor, tytuł, kwadraty reakcji | miniatury boksów | najlepszy komentarz | komentarze */
@@ -7960,3 +7961,144 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-nick-colors button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: pointer; box-shadow: 0 0 0 2px var(--sc-bg), 0 0 0 3px transparent; transition: transform .2s, box-shadow .2s; }
 .sc-nick-colors button:hover { transform: scale(1.12); }
 .sc-nick-colors button[aria-checked="true"] { box-shadow: 0 0 0 2px var(--sc-bg), 0 0 0 3.5px var(--c); }
+
+/* === Spinki, runda 2 (właściciel 3.10) === */
+/* pasek kategorii: pierwsza i ostatnia pozycja zawsze w tych samych miejscach, środek wypełniony równo */
+@media (min-width: 768px) { .sc-topbar, .sc-topbar[data-count] { justify-content: space-between; padding-inline: 40px; gap: 12px; } }
+
+/* odnośniki w polu komentarza: @b1 = boks 1, @s1 = spinka 1 */
+.sc-social-refs { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 0 0 4px; }
+.sc-social-refs button { padding: 2px 0; font-size: 12.5px; font-weight: 600; color: var(--sc-text-3); letter-spacing: .02em; }
+.sc-social-refs button:hover { color: var(--sc-accent); }
+.sc-social-chip--clip { color: var(--sc-accent); font-weight: 600; }
+
+/* boks przeskakuje: zdjęcie źródła -> tytuł ze źródłem -> wyjaśnienie autora */
+.sc-box-face { inset: 0; display: block; padding: 0; animation: none; opacity: 0; background: var(--sc-surface-2); }
+.sc-box-face--img { animation: sc-face-img 12s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 1.1s); }
+.sc-box-face--img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.sc-box-face--note { display: flex; align-items: center; padding: 14px 14px; animation: sc-face-note 12s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 1.1s); }
+.sc-box-face--note[data-only] { animation-name: sc-face-note-only; }
+.sc-box-face--note span { font-size: 14px; line-height: 1.4; font-weight: 600; color: var(--sc-text); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; }
+@keyframes sc-face-img { 0%, 4% { opacity: 0; } 8%, 28% { opacity: 1; } 32%, 100% { opacity: 0; } }
+@keyframes sc-face-note { 0%, 62% { opacity: 0; } 66%, 92% { opacity: 1; } 96%, 100% { opacity: 0; } }
+@keyframes sc-face-note-only { 0%, 46% { opacity: 0; } 52%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
+.sc-thread-strip__box:hover .sc-box-face, .sc-thread-strip__box:focus-within .sc-box-face { animation: none; opacity: 0; transition: opacity .25s; }
+
+/* boksy: delikatne, niedociągnięte białe linie (bez rogów) */
+.sc-rframe, .sc-thread-strip__box:hover .sc-rframe { border: 0; z-index: 4;
+  background:
+    linear-gradient(var(--fr), var(--fr)) left 0 top 22px / 1px calc(100% - 44px) no-repeat,
+    linear-gradient(var(--fr), var(--fr)) left 22px bottom 0 / calc(100% - 44px) 1px no-repeat,
+    linear-gradient(var(--fr), var(--fr)) right 0 top 22px / 1px calc(100% - 44px) no-repeat; }
+.sc-thread-strip__box { --fr: color-mix(in srgb, var(--sc-text) 20%, transparent); }
+.sc-thread-strip__box:hover { --fr: color-mix(in srgb, var(--sc-text) 42%, transparent); }
+
+/* bez pasków przewijania; strzałki po bokach tylko po najechaniu */
+.sc-thread-strip__track { scrollbar-width: none; }
+.sc-thread-strip__track::-webkit-scrollbar { display: none; }
+.sc-thread-strip__arrow { opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s, color .2s; }
+.sc-thread-strip__rail:hover .sc-thread-strip__arrow, .sc-thread-strip__arrow:focus-visible { opacity: 1; pointer-events: auto; }
+.sc-step-progress { display: none; }
+
+/* po wejściu: boksy ściśnięte, spinki mniejsze; najechanie rozsuwa boks, żeby go przeczytać */
+.sc-trop-overlay .sc-thread-strip__box, .sc-community--detail .sc-thread-strip__box { flex-basis: 132px; max-width: 132px; height: 168px; transition: flex-basis .45s cubic-bezier(.2,.8,.2,1), max-width .45s cubic-bezier(.2,.8,.2,1), transform .35s; }
+.sc-trop-overlay .sc-thread-strip__box:hover, .sc-trop-overlay .sc-thread-strip__box:focus-within,
+.sc-community--detail .sc-thread-strip__box:hover, .sc-community--detail .sc-thread-strip__box:focus-within { flex-basis: 220px; max-width: 220px; }
+.sc-trop-overlay .sc-thread-strip__box .sc-thread-strip__select strong { -webkit-line-clamp: 4; }
+.sc-joint, .sc-joint.is-open { width: 34px; }
+.sc-joint.is-open { width: 200px; }
+.sc-joint__dot, .sc-joint__dot .sc-clip { height: 34px; }
+
+/* reakcje na spinkę: na środku, w jednolitym obrysie, kolorowe tylko ikonki */
+.sc-joint__actions { flex-direction: column; align-items: center; gap: 8px; }
+.sc-joint__pop .sc-step-rate, .sc-focus__rate .sc-step-rate { justify-content: center; gap: 0; padding: 0; border: 1px solid color-mix(in srgb, var(--sc-text) 22%, transparent); border-radius: 999px; overflow: hidden; }
+.sc-joint__pop .sc-step-rate button, .sc-focus__rate .sc-step-rate button { padding: 6px 14px; }
+.sc-joint__pop .sc-step-rate button + button, .sc-focus__rate .sc-step-rate button + button { border-left: 1px solid color-mix(in srgb, var(--sc-text) 14%, transparent); }
+.sc-joint__pop .sc-step-rate button[data-rating="positive"], .sc-focus__rate .sc-step-rate button[data-rating="positive"] { color: var(--sc-positive); }
+.sc-joint__pop .sc-step-rate button[data-rating="doubt"], .sc-focus__rate .sc-step-rate button[data-rating="doubt"] { color: var(--sc-warning); }
+.sc-joint__pop .sc-step-rate button[data-rating="negative"], .sc-focus__rate .sc-step-rate button[data-rating="negative"] { color: var(--sc-negative); }
+.sc-joint__pop .sc-step-rate button[aria-pressed="true"], .sc-focus__rate .sc-step-rate button[aria-pressed="true"] { background: color-mix(in srgb, currentColor 16%, transparent); }
+.sc-joint__pop .sc-step-rate button svg { width: 15px; height: 15px; }
+.sc-joint__pop { text-align: center; justify-items: center; }
+.sc-focus__rate { display: grid; justify-items: center; }
+@media (prefers-reduced-motion: reduce) { .sc-box-face--img, .sc-box-face--note { animation: none; } }
+
+/* ikona motywu: lewa krawędź księżyca/słońca dokładnie w linii z napisami pod nią */
+.sc-rail .sc-rail__foot > button { margin-left: -20px !important; }
+
+/* wiersz: delikatniej (właściciel 3.10) - spinki jako krótkie cienkie kreski, boksy jako małe obrysy bez wypełnienia */
+.sc-trow__clips { gap: 5px; margin-top: 7px; }
+.sc-trow__clips i { width: 14px; height: 2px; border-radius: 2px; background: color-mix(in srgb, var(--sc-text) 22%, transparent); }
+.sc-trow__clips i[data-r="positive"] { background: color-mix(in srgb, var(--sc-positive) 85%, transparent); }
+.sc-trow__clips i[data-r="doubt"] { background: color-mix(in srgb, var(--sc-warning) 85%, transparent); }
+.sc-trow__clips i[data-r="negative"] { background: color-mix(in srgb, var(--sc-negative) 85%, transparent); }
+.sc-trow__minis { gap: 4px; }
+.sc-trow__minis i { width: 7px; height: 10px; border-radius: 2px; background: none; border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent); }
+
+/* nastrój tła: kolory gradientu przechodzą płynnie (zarejestrowane właściwości można animować) */
+@property --sc-g1 { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --sc-g2 { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --sc-g3 { syntax: '<color>'; inherits: true; initial-value: transparent; }
+:root { transition: --sc-g1 1.1s ease, --sc-g2 1.1s ease, --sc-g3 1.1s ease; }
+@media (prefers-reduced-motion: reduce) { :root { transition: none; } }
+
+/* ściśnięte boksy: nazwa autora wpisu z X w jednej linii, data i „Otwórz na X” dopiero po rozsunięciu */
+.sc-thread-strip__box .sc-x-post-card header > span:nth-child(2) { min-width: 0; }
+.sc-thread-strip__box .sc-x-post-card strong, .sc-thread-strip__box .sc-x-post-card small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-trop-overlay .sc-thread-strip__box:not(:hover):not(:focus-within) .sc-x-post-card time { display: none; }
+.sc-trop-overlay .sc-thread-strip__box .sc-thread-strip__select strong { overflow-wrap: normal; word-break: normal; hyphens: auto; }
+
+/* linia pod paskiem kategorii: delikatna szara jak pozostałe kreski (właściciel 3.10), bez niebieskiego */
+.sc-topbar { border-bottom-color: var(--sc-line-strong) !important; }
+
+/* pasek kategorii: biała delikatna linia, niebieska kulka pod aktywną pozycją, płynnie podąża za kursorem,
+   a kawałek linii przed nią i za nią lekko świeci na niebiesko (właściciel 3.10) */
+.sc-topbar { position: sticky; border-bottom-color: color-mix(in srgb, var(--sc-text) 30%, transparent) !important; }
+.sc-topbar a[aria-current="page"]::after { display: none; }
+.sc-topbar__dot { position: absolute; left: 0; bottom: -4px; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 50%; background: var(--sc-accent);
+  box-shadow: 0 0 10px var(--sc-accent); transition: transform .55s cubic-bezier(.2,.8,.2,1); pointer-events: none; z-index: 2; }
+.sc-topbar__dot::before { content: ""; position: absolute; left: 50%; top: 3px; width: 150px; height: 1px; margin-left: -75px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sc-accent) 85%, transparent), transparent); }
+.sc-topbar__dot[hidden] { display: none; }
+/* kolejność: własna lista na czarnym tle */
+.sc-topbar__sort { position: relative; }
+.sc-topbar__sort > button { position: relative; border: 0; background: none; padding: 8px 4px; color: var(--sc-text-2); font: 500 12px/1 var(--sc-font-sans, inherit); letter-spacing: .09em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.sc-topbar__sort > button span { margin-left: 6px; display: inline-block; transition: transform .3s; }
+.sc-topbar__sort > button[aria-expanded="true"] span { transform: rotate(180deg); }
+.sc-topbar__sort > button:hover { color: var(--sc-text); }
+.sc-topbar__menu { position: absolute; right: -14px; top: calc(100% + 14px); z-index: 40; min-width: 210px; margin: 0; padding: 10px 18px; list-style: none;
+  background:
+    linear-gradient(var(--fr), var(--fr)) left 0 top 14px / 1px calc(100% - 28px) no-repeat,
+    linear-gradient(var(--fr), var(--fr)) left 14px bottom 0 / calc(100% - 28px) 1px no-repeat,
+    linear-gradient(var(--fr), var(--fr)) right 0 top 14px / 1px calc(100% - 28px) no-repeat,
+    linear-gradient(var(--fr), var(--fr)) left 14px top 0 / calc(100% - 28px) 1px no-repeat, #000;
+  --fr: color-mix(in srgb, var(--sc-text) 24%, transparent); animation: sc-menu-in .25s cubic-bezier(.2,.8,.2,1); }
+@keyframes sc-menu-in { from { opacity: 0; transform: translateY(-4px); } }
+.sc-topbar__menu button { display: block; width: 100%; padding: 9px 0; border: 0; background: none; text-align: left; color: var(--sc-text-2); font: 500 12px/1 var(--sc-font-sans, inherit); letter-spacing: .09em; text-transform: uppercase; cursor: pointer; transition: color .2s, padding-left .25s; }
+.sc-topbar__menu button:hover { color: var(--sc-text); padding-left: 4px; }
+.sc-topbar__menu button[aria-selected="true"] { color: var(--sc-accent); }
+@media (max-width: 767px) { .sc-topbar__dot { display: none; } .sc-topbar__menu { position: fixed; right: 16px; top: 108px; } }
+@media (prefers-reduced-motion: reduce) { .sc-topbar__dot { transition: none; } }
+
+/* kolejność komentarzy w wierszu z licznikiem i „Skomentuj”: sam tekst, lista na tle motywu bez obramowania (właściciel 3.10) */
+.sc-social-sort { position: relative; display: block; padding: 0; margin-left: auto; }
+.sc-social-composer__row .sc-social-sort + * { margin-left: 0; }
+.sc-social-sort > button { border: 0; background: none; padding: 4px 2px; color: var(--sc-text-3); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; transition: color .2s; }
+.sc-social-sort > button:hover, .sc-social-sort > button[aria-expanded="true"] { color: var(--sc-text); }
+.sc-social-sort > button span { display: inline-block; margin-left: 4px; transition: transform .3s; }
+.sc-social-sort > button[aria-expanded="true"] span { transform: rotate(180deg); }
+.sc-social-sort ul { position: absolute; right: -12px; top: calc(100% + 4px); z-index: 30; margin: 0; padding: 6px 12px; min-width: 150px; list-style: none;
+  background: var(--sc-bg); border: 0; box-shadow: 0 10px 24px color-mix(in srgb, var(--sc-bg) 80%, transparent); animation: sc-menu-in .2s cubic-bezier(.2,.8,.2,1); }
+.sc-social-sort li button { display: block; width: 100%; padding: 7px 0; border: 0; background: none; text-align: left; color: var(--sc-text-2); font: inherit; font-size: 13px; cursor: pointer; transition: color .2s; }
+.sc-social-sort li button:hover { color: var(--sc-text); }
+.sc-social-sort li button[aria-selected="true"] { color: var(--sc-accent); }
+.sc-social-sortrow { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+/* kolejność komentarzy: wyciszenie ogólnych stylów przycisków i wierszy listy komentarzy */
+.sc-thread-social .sc-social-sort button { height: auto; border-radius: 0; background: none; font-weight: 500; font-size: 13px; transform: none !important; }
+.sc-thread-social .sc-social-sort button::before { display: none; }
+.sc-thread-social .sc-social-sort > button { padding: 4px 2px; color: var(--sc-text-3); }
+.sc-thread-social .sc-social-sort > button:hover, .sc-thread-social .sc-social-sort > button[aria-expanded="true"] { color: var(--sc-text); }
+.sc-thread-social .sc-social-sort li { padding: 0; border: 0; }
+.sc-thread-social .sc-social-sort li button { padding: 7px 0; color: var(--sc-text-2); }
+.sc-thread-social .sc-social-sort li button:hover { color: var(--sc-text); }
+.sc-thread-social .sc-social-sort li button[aria-selected="true"] { color: var(--sc-accent); }

@@ -39,8 +39,11 @@ def boxes(diagnosis):
             'note': short(note, 400), 'link_note': short(link_note) if result else ''})
 
     author = author_data(post, None)['name']
+    # pierwszy boks = pełna diagnoza Dr. Spina (właściciel 3.10): od niej spinka się zaczyna
+    add('diagnosis', 'Pełna diagnoza: ' + diagnosis.headline, body=sentence(diagnosis.headline),
+        author='Dr. Spin', date=diagnosis.created_at.isoformat() if getattr(diagnosis, 'created_at', None) else None)
     add('post', post.text, post.url, body=post.text, author=author,
-        date=post.published_at.isoformat() if post.published_at else None)
+        date=post.published_at.isoformat() if post.published_at else None, link_note='Wpis, który Dr. Spin zdiagnozował.')
     technique = next(iter(diagnosis.techniques or []), {})
     technique_note = short(f"Technika: {technique.get('name') or 'brak wskazanej techniki'}. "
                            f"{sentence(technique.get('explanation'))}")
@@ -48,20 +51,18 @@ def boxes(diagnosis):
         body=sentence(technique.get('explanation')) or 'W diagnozie nie wskazano techniki perswazji.', link_note=technique_note)
     claims = [clean_claim(row) for row in (diagnosis.claims or []) if isinstance(row, dict)][:3]
     for index, claim in enumerate(claims):
-        if len(result) >= 7:
+        if len(result) >= 8:
             break
         assessment = ASSESSMENT_LABELS.get(claim.get('assessment'), 'niezweryfikowane')
         add('claim', f"{assessment}: {claim.get('claim', '')}", body=sentence(claim.get('explanation')),
             link_note=technique_note if index == 0 else 'Kolejne sprawdzone twierdzenie')
         for source in claim.get('sources') or []:
-            if len(result) >= 7:
+            if len(result) >= 8:
                 break
             if not isinstance(source, dict) or urlsplit(source.get('url') or '').scheme not in ('http', 'https'):
                 continue
             add('source', source.get('title') or source['url'], source['url'],
                 link_note=sentence(claim.get('explanation')) or 'Źródło przywołane przy tym twierdzeniu.')
-    add('diagnosis', 'Pełna diagnoza: ' + diagnosis.headline,
-        link_note=sentence(diagnosis.headline))
     return result
 
 

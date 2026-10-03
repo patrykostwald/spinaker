@@ -8,6 +8,7 @@ import { apiFetch, apiWrite } from '../../lib/api';
 import { useAccount, emailVerified } from '../../lib/account';
 import { useFeature } from '../../lib/features';
 import { Avatar, ago, SocialIcon, RATINGS } from './SocialPrimitives';
+import { setReactionMood, sumCounts } from '../../lib/mood';
 import { formatDatePl } from '../../lib/utils';
 
 const LABELS = { positive: 'Trafne', doubt: 'Wątpliwe', negative: 'Nietrafne' } as const;
@@ -59,20 +60,15 @@ type Counts3 = { positive: number; doubt: number; negative: number };
  * Spinka (właściciel 3.10): kreska z zawijasem w górę, która „spina” następny boks.
  * Kolor = reakcje czytelników (zielony ✓, żółty ?, czerwony ✕ w proporcji); bez reakcji - szara.
  */
-export function SpinkaClip({ counts, id, open = false }: { counts?: Counts3; id: string; open?: boolean }) {
+export function SpinkaClip({ counts, open = false }: { counts?: Counts3; id?: string; open?: boolean }) {
   const c = counts ?? { positive: 0, doubt: 0, negative: 0 };
-  const total = c.positive + c.doubt + c.negative;
-  const stops: [string, number][] = total ? [['var(--sc-positive)', c.positive / total], ['var(--sc-warning)', c.doubt / total], ['var(--sc-negative)', c.negative / total]] : [];
-  let at = 0;
-  // rozsunięta spinka: kreska z lekkim zygzakiem w górę (wskazuje boks z wyjaśnieniem nad nią) i zawijas przy następnym boksie
-  const d = open ? 'M2 30 H84 L100 12 L116 30 H182 C189 30 192 25 192 19 C192 13 187.5 10.5 184.5 13 C182 15 183 18.5 186.5 18.5'
-    : 'M1 27 H27 C34 27 37 22 37 16 C37 10 32.5 7.5 29.5 10 C27 12 28 15.5 31.5 15.5';
+  const top = Math.max(c.positive, c.doubt, c.negative);
+  const color = !top ? 'var(--sc-text-3)' : c.positive === top ? 'var(--sc-positive)' : c.doubt === top ? 'var(--sc-warning)' : 'var(--sc-negative)';
+  // rozsunięta: lekki zygzak w górę (wskazuje boks z wyjaśnieniem nad nią); zawsze tylko delikatny zawijas na końcu
+  const d = open ? 'M2 26 H88 L100 16 L112 26 H186 C191 26 193 23 192 21 C191 19 188.5 19 188 21'
+    : 'M1 22 H32 C37 22 39 19.5 38 17.5 C37 15.5 34.5 15.5 34 17.5';
   return <svg className="sc-clip" viewBox={open ? '0 0 200 40' : '0 0 44 40'} preserveAspectRatio="none" aria-hidden="true">
-    {total > 0 && <defs><linearGradient id={id} x1="0" x2="1" y1="0" y2="0">
-      {stops.flatMap(([color, share], i) => { const from = at; at += share; return [<stop key={`${i}a`} offset={from} stopColor={color} />, <stop key={`${i}b`} offset={at} stopColor={color} />]; })}
-    </linearGradient></defs>}
-    <path d={d} fill="none" vectorEffect="non-scaling-stroke"
-      stroke={total ? `url(#${id})` : 'var(--sc-text-3)'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d={d} fill="none" vectorEffect="non-scaling-stroke" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>;
 }
 
@@ -91,8 +87,8 @@ export function FocusView({ threadId, title, items, start, steps, onClose }: {
   const [at, setAt] = useState(() => Math.max(0, sequence.findIndex(step => step.kind === start.kind && step.index === start.index)));
   const step = sequence[at];
   const item = items[step.index];
-  const ref = step.kind === 'box' ? `@boks ${step.index + 1}` : `@spinka ${step.index}`;
-  const pattern = new RegExp(ref.replace(' ', String.raw`\s+`) + String.raw`(?!\d)`, 'i');
+  const ref = step.kind === 'box' ? `@b${step.index + 1}` : `@s${step.index}`;
+  const pattern = new RegExp((step.kind === 'box' ? String.raw`@(?:boks\s*|b)` + (step.index + 1) : String.raw`@(?:spinka\s*|s)` + step.index) + String.raw`(?!\d)`, 'i');
   const cache = useQueryClient();
   const comments = useQuery({ queryKey: ['thread-comments-all', threadId], queryFn: () => apiFetch<{ results: FocusComment[] }>(`/api/community/threads/${threadId}/comments/?sort=best`), retry: false });
   const box = useQuery({ queryKey: ['thread-box', threadId, item.item_id], queryFn: () => getThreadBox(threadId, item.item_id!), enabled: step.kind === 'box' && Boolean(item.item_id), retry: false });
@@ -120,6 +116,10 @@ export function FocusView({ threadId, title, items, start, steps, onClose }: {
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Nie udało się dodać komentarza.'); }
   }
   const clipStep = step.kind === 'clip' ? steps.find(item.item_id, 'context') : undefined;
+  // pełny widok spinki: tło w kolorach reakcji tego połączenia; boks i wyjście: całej spinki
+  const whole = sumCounts(steps.data?.steps.map(row => row.counts));
+  useEffect(() => { setReactionMood(clipStep ? sumCounts([clipStep.counts]) ?? whole : whole); }, [clipStep, whole]);
+  useEffect(() => () => setReactionMood(sumCounts(steps.data?.steps.map(row => row.counts))), []); // eslint-disable-line react-hooks/exhaustive-deps
   return <section className="sc-focus" role="dialog" aria-modal="true" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Spinka ${step.index}`}>
     <header className="sc-focus__bar">
       <button type="button" className="sc-focus__back" onClick={onClose}>← Wróć</button>

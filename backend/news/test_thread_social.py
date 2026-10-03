@@ -210,7 +210,7 @@ def test_write_limits_and_legacy_data_preserved(setup):
     assert client.post('/api/account/context-threads/', {'title':'x'*81}).status_code == 400
     assert client.post('/api/account/context-threads/', {'title':'x'*80}).status_code == 201
     item = thread.items.first()
-    for field, limit in [('note',400),('link_note',200)]:
+    for field, limit in [('note',4000),('link_note',200)]:
         payload = {'title':'Test','items':[{'link_id':item.link_id,field:'x'*(limit+1)}]}
         assert client.post('/api/account/context-threads/', payload, format='json').status_code == 400
     thread.title='x'*140;thread.save()
