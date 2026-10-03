@@ -39,7 +39,8 @@ function CommentSort({ sort, setSort }: { sort: string; setSort: (value: string)
 function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit, extra, end }: {
   id: number; me: string; draft: string; setDraft: (text: string) => void; boxCount: number; pending: boolean; onSubmit: () => void; extra?: ReactNode; end?: ReactNode;
 }) {
-  const [long, setLong] = useState(draft.length > 280);
+  // bez przełącznika (właściciel 4.10): pole samo robi się dłuższe po 280 znakach albo po Shift+Enter
+  const long = draft.length > 280 || draft.includes(String.fromCharCode(10));
   const refs = Array.from({ length: boxCount }, (_, i) => i === 0 ? [{ ref: '@b1', label: 'Boks 1' }] : [{ ref: `@s${i}`, label: `Spinka ${i}` }, { ref: `@b${i + 1}`, label: `Boks ${i + 1}` }]).flat();
   const insert = (ref: string) => setDraft(`${draft.trimEnd()} ${ref} `.trimStart());
   const limit = long ? 2000 : 280;
@@ -52,15 +53,13 @@ function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit, extra,
         <span className="sc-social-composer__tools">{extra}<CharacterCount text={draft} limit={limit} />{end && <span className="sc-social-composer__end">{end}</span>}</span>
       </div>
       <label className="sc-sr-only" htmlFor={`compose-${id}`}>Skomentuj spinkę</label>
-      {long ? <textarea id={`compose-${id}`} value={draft} maxLength={limit} rows={4} onChange={e => setDraft(e.target.value)}
+      {long ? <textarea id={`compose-${id}`} value={draft} maxLength={limit} rows={4} autoFocus onFocus={e => { const end = e.currentTarget.value.length; e.currentTarget.setSelectionRange(end, end); }} onChange={e => setDraft(e.target.value)}
           onKeyDown={event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && draft.trim() && !pending) { event.preventDefault(); onSubmit(); } }}
           placeholder="Skomentuj. Ctrl+Enter wysyła. Odnośniki nad polem dodają boks (@b1) albo spinkę (@s1)." />
-        : <input id={`compose-${id}`} value={draft} maxLength={limit} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj i naciśnij Enter" enterKeyHint="send" />}
+        : <input id={`compose-${id}`} value={draft} maxLength={2000} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj i naciśnij Enter" enterKeyHint="send"
+            onKeyDown={event => { if (event.key === 'Enter' && event.shiftKey) { event.preventDefault(); setDraft(draft + String.fromCharCode(10)); } }} />}
       {/* „Skomentuj” jako przycisk wróci w nowym miejscu; na razie Enter (dłuższy: Ctrl+Enter) */}
       <button type="submit" className="sc-sr-only" disabled={pending || !draft.trim()}>Skomentuj</button>
-      <div className="sc-social-composer__row">
-        <button type="button" className="sc-social-longtoggle" onClick={() => setLong(!long)}>{long ? 'Krótki komentarz' : 'Dłuższy komentarz'}</button>
-      </div>
     </div>
   </form>;
 }

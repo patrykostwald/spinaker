@@ -8449,3 +8449,7 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-joint__pop p { font-style: italic; color: var(--sc-text-2); }
 .sc-joint.is-open::before { background: color-mix(in srgb, var(--sc-accent) 55%, transparent); }
 .sc-thread-strip__track:has(.sc-joint.is-open), .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open) { padding-top: 236px; }
+
+/* linia między polem komentarza a komentarzami innych (właściciel 4.10) */
+.sc-thread-social .sc-social-composer { padding-bottom: 22px; margin-bottom: 8px; border-bottom: 1px solid var(--sc-grid) !important; }
+.sc-trop-overlay .sc-social-comments > ol > li:first-child { border-top: 0; }
