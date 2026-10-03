@@ -18,8 +18,10 @@ class ThreadComment(models.Model):
 
 
 class ThreadCommentReaction(models.Model):
+    """Ocena komentarza przez innych czytelników: ✓ trafny, ? wątpliwy, ✕ nietrafny (jedna na osobę, zmienialna)."""
     comment = models.ForeignKey(ThreadComment, on_delete=models.CASCADE, related_name='reactions')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    polarity = models.CharField(max_length=8, default='positive', choices=[('positive', 'Trafny'), ('doubt', 'Wątpliwy'), ('negative', 'Nietrafny')])
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

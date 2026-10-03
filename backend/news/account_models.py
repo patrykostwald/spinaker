@@ -106,6 +106,8 @@ class PersonalContextThread(models.Model):
     signal_kind = models.CharField(max_length=24, blank=True, default='', choices=[('', 'Pozostałe'), ('lobbying', 'Sygnał lobbingu'), ('new_narrative', 'Nowa narracja')])
     signal_key = models.CharField(max_length=64, null=True, blank=True, unique=True)
     signal_data = models.JSONField(default=dict, blank=True)
+    # Izba przyjęć: trop czytelnika trafia na główną listę dopiero po spełnieniu progów (news/admission.py).
+    admitted_at = models.DateTimeField(null=True, blank=True, db_index=True)
     continues = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='continuations')
     narrative_message = models.OneToOneField('news.ClinicDailyMessage', null=True, blank=True,
         on_delete=models.CASCADE, related_name='narrative_thread')

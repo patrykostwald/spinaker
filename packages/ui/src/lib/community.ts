@@ -14,6 +14,7 @@ export type CommunityThreadSummary = {
   x_profile?: string | null;
   narrative?: boolean;
   signal_kind?: '' | 'lobbying' | 'new_narrative';
+  admission?: { positive: number; needed: number; ratio: number; ratio_needed: number; days_left: number; open: boolean } | null;
   confidence?: 'niski' | 'średni' | 'wysoki' | null;
   continues?: number | null;
   continuations?: number[];
@@ -34,7 +35,7 @@ export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElem
 type ResolvedElement = ThreadElement extends infer Element ? Element extends ThreadElement ? Omit<Element, "note" | "link_note" | "position"> : never : never;
 export type ResolvedLink = { item: ResolvedElement; status: "in_base" | "existing_link" | "created" };
 
-export const getCommunityThreads = (page = 1, q = "", author = "", options: { ai?: '1'; featured?: '1'; sort?: 'new' | 'best' | 'hot' | 'comments'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
+export const getCommunityThreads = (page = 1, q = "", author = "", options: { ai?: '1'; featured?: '1'; source?: 'all' | 'drspin' | 'readers' | 'izba'; sort?: 'new' | 'best' | 'hot' | 'comments'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
   const params = new URLSearchParams({ page: String(page) });
   if (q) params.set("q", q);
   if (author) params.set("author", author);

@@ -76,6 +76,8 @@ class ThreadRatingsView(SocialView):
         with transaction.atomic():
             locked_account(request.user, 'rating')
             CommunityThreadOpinion.objects.update_or_create(user=request.user, thread=thread, defaults=data.validated_data)
+            from news.admission import check_admission
+            check_admission(thread)
         return self.get(request, thread_id)
 
     patch = post
@@ -91,17 +93,28 @@ class CommentInput(serializers.Serializer):
         return body
 
 
-def comment_data(row, user):
+def author_stances(thread_id, author_ids):
+    """Ocena tropu wystawiona przez autorów komentarzy (✓ ? ✕): front koloruje nią pierwsze zdanie komentarza."""
+    from news.community_models import CommunityThreadOpinion
+    return dict(CommunityThreadOpinion.objects.filter(thread_id=thread_id, user_id__in=[a for a in author_ids if a]).values_list('user_id', 'polarity'))
+
+
+def comment_data(row, user, stance=None):
     from news.x_accounts import public_identity
     identity = public_identity(row.author)
     mine = user.is_authenticated and row.author_id == user.pk
     return {'id': row.pk, 'body': row.body, 'author': identity['display_name'], 'username': row.author.username if row.author_id else '', 'x_profile': identity['x_profile'],
-            'reactions_count': row.reaction_count if hasattr(row, 'reaction_count') else row.reactions.count(),
-            'reacted': user.is_authenticated and row.reactions.filter(user=user).exists(),
+            'reactions_count': row.reaction_count if hasattr(row, 'reaction_count') else row.reactions.filter(polarity='positive').count(),
+            'reacted': user.is_authenticated and row.reactions.filter(user=user, polarity='positive').exists(),
+            # trzy oceny komentarza od innych czytelników: ✓ ? ✕ i ocena bieżącego czytelnika
+            'reactions': {key: (getattr(row, f'{key}_count', None) if hasattr(row, f'{key}_count') else row.reactions.filter(polarity=key).count())
+                          for key in ('positive', 'doubt', 'negative')},
+            'my_reaction': (row.reactions.filter(user=user).values_list('polarity', flat=True).first() or '') if user.is_authenticated else '',
             'created_at': row.created_at, 'edited_at': row.edited_at, 'is_owner': mine,
             'hidden': bool(row.hidden_at),
             'can_edit': mine and not row.hidden_at and timezone.now() < row.created_at + timedelta(minutes=5),
-            'box_references': [int(n) for n in re.findall(r'@boks\s+(\d{1,3})\b', row.body, re.I)]}
+            'box_references': [int(n) for n in re.findall(r'@boks\s+(\d{1,3})\b', row.body, re.I)],
+            'stance': stance if stance is not None else author_stances(row.thread_id, [row.author_id]).get(row.author_id, '')}
 
 
 class ThreadCommentsView(SocialView):
@@ -125,16 +138,22 @@ class ThreadCommentsView(SocialView):
         # Freeze time across pages; keyset pagination handles deletions without offsets.
         anchor = cursor['at'] if cursor else timezone.now().timestamp()
         rows = rows.filter(created_at__lte=datetime.fromtimestamp(anchor, tz=dt_timezone.utc))
-        ranked = list(rows.select_related('author__x_connection').annotate(reaction_count=Count('reactions')))
+        ranked = list(rows.select_related('author__x_connection').annotate(
+            reaction_count=Count('reactions', filter=Q(reactions__polarity='positive')),
+            positive_count=Count('reactions', filter=Q(reactions__polarity='positive')),
+            doubt_count=Count('reactions', filter=Q(reactions__polarity='doubt')),
+            negative_count=Count('reactions', filter=Q(reactions__polarity='negative'))))
         def key(row):
-            age = max(0, (anchor - row.created_at.timestamp()) / 3600)
-            score = row.reaction_count / (age + 2) ** 1.5 if order == 'best' else row.created_at.timestamp()
-            return (score, row.pk)
+            # Najtrafniejsze: najwięcej ocen ✓ zawsze na górze, przy remisie nowszy komentarz (decyzja 3.10).
+            if order == 'best':
+                return (row.reaction_count, row.created_at.timestamp(), row.pk)
+            return (row.created_at.timestamp(), row.pk, 0)
         ranked.sort(key=key, reverse=True)
         if cursor:
             ranked = [row for row in ranked if key(row) < tuple(cursor['last'])]
         batch = ranked[:21]
-        return Response({'results': [comment_data(row, request.user) for row in batch[:20]],
+        stances = author_stances(thread_id, [row.author_id for row in batch[:20]])
+        return Response({'results': [comment_data(row, request.user, stances.get(row.author_id, '')) for row in batch[:20]],
                          'next_cursor': signing.dumps({'at': anchor, 'last': key(batch[19])}, salt=f'comments:{thread_id}:{order}') if len(batch) > 20 else None,
                          'count': rows.filter(hidden_at__isnull=True).count()})
 
@@ -176,12 +195,19 @@ class ThreadCommentReactionView(SocialView):
             row = get_object_or_404(ThreadComment.objects.select_for_update(), pk=comment_id,
                 thread_id=thread_id, deleted_at__isnull=True, hidden_at__isnull=True)
             if enabled:
-                _, changed = ThreadCommentReaction.objects.get_or_create(comment=row, user=request.user)
+                polarity = request.data.get('polarity', 'positive') if hasattr(request, 'data') else 'positive'
+                if polarity not in ('positive', 'doubt', 'negative'):
+                    raise serializers.ValidationError({'polarity': 'Nieznana ocena.'})
+                reaction, created = ThreadCommentReaction.objects.get_or_create(comment=row, user=request.user, defaults={'polarity': polarity})
+                changed = created or reaction.polarity != polarity
+                if not created and changed:
+                    reaction.polarity = polarity
+                    reaction.save(update_fields=['polarity'])
             else:
                 changed, _ = row.reactions.filter(user=request.user).delete()
             if changed and row.author_id and row.author_id != request.user.pk:
                 from news.notification_models import Notification
-                count = row.reactions.exclude(user_id=row.author_id).count()
+                count = row.reactions.filter(polarity='positive').exclude(user_id=row.author_id).count()
                 key = f'comment-reactions:{row.pk}'
                 if count:
                     title = '1 osoba uznała Twój komentarz za trafny' if count == 1 else f'{count} osób uznało Twój komentarz za trafny'

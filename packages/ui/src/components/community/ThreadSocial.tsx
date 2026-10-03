@@ -10,7 +10,7 @@ import { Dialog } from '../Dialog';
 import { FollowButton } from '../FollowButton';
 import { CharacterCount, ClampedText, RATINGS, ratingLabels, SocialIcon, type Counts, type Rating } from './SocialPrimitives';
 
-type Comment = { id: number; body: string; author: string; username?: string; x_profile?: string | null; reactions_count: number; reacted: boolean; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean };
+type Comment = { id: number; body: string; author: string; username?: string; x_profile?: string | null; reactions_count: number; reacted: boolean; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean; stance?: '' | 'positive' | 'doubt' | 'negative'; reactions?: Counts; my_reaction?: '' | Rating };
 type CommentPage = { results: Comment[]; next_cursor: string | null; count: number };
 export type RatingsData = { counts: Counts; mine: { polarity: Rating } | null };
 const message = (error: unknown) => error instanceof Error ? error.message : 'Nie udało się zapisać.';
@@ -86,6 +86,25 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       return match && n > 0 && n <= boxCount ? <button className="sc-social-chip" key={index} onClick={() => focusBox(n)}>{part}</button> : part;
     });
   }
+  /** Pierwsze zdanie komentarza w kolorze oceny, którą autor dał tropowi (✓ zielony, ? żółty, ✕ czerwony); reszta neutralna. */
+  const commentLabels: Record<Rating, string> = { positive: 'Trafny', doubt: 'Wątpliwy', negative: 'Nietrafny' };
+  /** Oceny komentarza od innych czytelników: trzy małe przyciski ✓ ? ✕ z liczbami; ponowne kliknięcie cofa ocenę. */
+  function commentRating(row: Comment) {
+    const counts = row.reactions ?? { positive: row.reactions_count ?? 0, doubt: 0, negative: 0 };
+    return <div className="sc-comment-rate" role="group" aria-label="Oceń komentarz">
+      {RATINGS.map(key => <button key={key} type="button" data-rating={key} aria-pressed={row.my_reaction === key}
+        disabled={!canWrite || pending || row.is_owner || row.hidden} title={`${commentLabels[key]}: ${counts[key]}`} aria-label={`${commentLabels[key]}: ${counts[key]}`}
+        onClick={() => write(`comments/${row.id}/reaction/`, row.my_reaction === key ? {} : { polarity: key }, row.my_reaction === key ? 'DELETE' : 'POST')}>
+        <SocialIcon kind={key} /><span>{counts[key]}</span></button>)}
+    </div>;
+  }
+  function stanced(row: Comment) {
+    if (!row.stance) return content(row.body);
+    const match = /^([\s\S]+?[.!?…])(\s+[\s\S]*)?$/.exec(row.body);
+    const [lead, rest] = match ? [match[1], match[2] ?? ''] : [row.body, ''];
+    const label = { positive: 'zgadza się', doubt: 'ma wątpliwości', negative: 'nie zgadza się' }[row.stance];
+    return <><span className="sc-stance" data-stance={row.stance} title={`Autor ${label} z tropem`}>{content(lead)}</span>{content(rest)}</>;
+  }
   if (!threads) return null;
   if (preview) {
     const rows = comments.data?.pages[0]?.results.slice(0, 3) ?? [];
@@ -95,8 +114,9 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
         {comments.isSuccess && !rows.length && <p className="sc-social-empty">Nikt jeszcze nie skomentował. Bądź pierwszy.</p>}
         {rows.length > 0 && <ol>{rows.map(row => <li key={row.id}>
-          <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.author}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleDateString('pl-PL')}</time>{row.reactions_count > 0 && <small className="sc-social-trafne"><SocialIcon kind="positive" />{row.reactions_count}</small>}</header>
-          <ClampedText>{content(row.body)}</ClampedText>
+          <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.author}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleDateString('pl-PL')}</time></header>
+          <ClampedText>{stanced(row)}</ClampedText>
+          {commentRating(row)}
         </li>)}</ol>}
         {count > 3 && <Link className="sc-social-all" href={`/tropy/${id}#komentarze`}>Pokaż wszystkie komentarze ({count})</Link>}
         {canWrite ? <form className="sc-social-reply" onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
@@ -137,8 +157,8 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         {editing === row.id ? <form onSubmit={async e => { e.preventDefault(); if (await write(`comments/${row.id}/`, { body: editBody }, 'PATCH')) setEditing(null); }}>
           <label>Edytuj komentarz<textarea value={editBody} maxLength={600} onChange={e => setEditBody(e.target.value)} /></label><CharacterCount text={editBody} limit={600} />
           <button disabled={pending || !editBody.trim()}>Zapisz</button><button type="button" onClick={() => setEditing(null)}>Anuluj</button>
-        </form> : <ClampedText>{content(row.body)}</ClampedText>}
-        <footer>{!row.hidden && <button type="button" className="sc-comment-reaction" disabled={!canWrite || pending} aria-pressed={row.reacted} onClick={() => write(`comments/${row.id}/reaction/`, {}, row.reacted ? 'DELETE' : 'POST')}><SocialIcon kind="positive" />Trafne <small>{row.reactions_count ?? 0}</small></button>}{enabled && row.is_owner && <>{row.can_edit && <button onClick={() => { setEditing(row.id); setEditBody(row.body); }}>Edytuj</button>}<button disabled={pending} onClick={() => write(`comments/${row.id}/`, {}, 'DELETE')}>Usuń</button></>}
+        </form> : <ClampedText>{stanced(row)}</ClampedText>}
+        <footer>{!row.hidden && commentRating(row)}{enabled && row.is_owner && <>{row.can_edit && <button onClick={() => { setEditing(row.id); setEditBody(row.body); }}>Edytuj</button>}<button disabled={pending} onClick={() => write(`comments/${row.id}/`, {}, 'DELETE')}>Usuń</button></>}
           {!row.hidden && <SocialReport threadId={id} commentId={row.id} />}</footer>
       </li>)}</ol>
       {comments.hasNextPage && <button disabled={comments.isFetchingNextPage} onClick={() => comments.fetchNextPage()}>Pokaż kolejne komentarze</button>}

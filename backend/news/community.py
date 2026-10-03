@@ -187,7 +187,13 @@ def thread_summary(thread, counts):
             'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
             'items_count': len(items), 'preview': [item_data(item) for item in items],
             'comments_count': getattr(thread, 'visible_comments_count', 0),
-            'opinions': counts.get(thread.pk, {'positive': 0, 'doubt': 0, 'negative': 0})}
+            'opinions': counts.get(thread.pk, {'positive': 0, 'doubt': 0, 'negative': 0}),
+            'admission': admission_progress(thread) if thread.owner_id and not thread.admitted_at else None}
+
+
+def admission_progress(thread):
+    from news.admission import progress
+    return progress(thread)
 
 
 @extend_schema(summary='Publiczne nitki kontekstowe czytelników', tags=['nitki'], responses=OpenApiTypes.OBJECT)
@@ -206,6 +212,20 @@ def community_threads(request):
         selected = rows.filter(narrative_message__day=timezone.localdate()).order_by('-narrative_score', '-pk').first()
         selected = selected or rows.filter(diagnosis__isnull=False).order_by('-published_at', '-pk').first()
         return Response({'results': [thread_summary(selected, _counts([selected.pk]))] if selected else [], 'next_page': None})
+    # Źródło listy: Wszystkie (Dr. Spin + przyjęte tropy czytelników), Dr. Spin, Czytelnicy (przyjęci), Izba przyjęć.
+    source = request.query_params.get('source', '')
+    if source:
+        if source not in ('all', 'drspin', 'readers', 'izba'):
+            return Response({'detail': 'Nieznane źródło.'}, status=400)
+        from news.admission import WINDOW
+        if source == 'all':
+            rows = rows.filter(Q(owner__isnull=True) | Q(admitted_at__isnull=False))
+        elif source == 'drspin':
+            rows = rows.filter(owner__isnull=True)
+        elif source == 'readers':
+            rows = rows.filter(owner__isnull=False, admitted_at__isnull=False)
+        else:
+            rows = rows.filter(owner__isnull=False, admitted_at__isnull=True, published_at__gte=timezone.now() - WINDOW)
     query = request.query_params.get('q', '').strip()
     if query:
         rows = rows.filter(Q(title__icontains=query) | Q(description__icontains=query))

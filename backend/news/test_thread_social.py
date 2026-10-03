@@ -284,3 +284,61 @@ def test_comment_notification_not_rating_and_hidden_suppressed(setup, settings):
     ThreadComment.objects.filter(pk=response.data['id']).update(hidden_at=timezone.now())
     process_notification_events()
     assert Notification.objects.filter(user=author,kind='thread_reply').count() == 1
+
+
+def test_comment_carries_author_stance_for_coloring(settings):
+    """Komentarz niesie ocenę tropu wystawioną przez autora (front koloruje nią pierwsze zdanie)."""
+    from news.thread_social import author_stances, comment_data
+    from news.community_models import CommunityThreadOpinion
+    import inspect
+    assert 'stance' in inspect.signature(comment_data).parameters
+    assert author_stances(10**9, []) == {}
+    assert CommunityThreadOpinion._meta.get_field('polarity')
+
+
+def _voters(n, prefix, days_old=2):
+    rows = []
+    for i in range(n):
+        row = user(f'{prefix}{i}')
+        get_user_model().objects.filter(pk=row.pk).update(date_joined=timezone.now() - timedelta(days=days_old))
+        rows.append(row)
+    return rows
+
+
+def test_admission_thresholds_window_and_source_filter(setup):
+    from news.admission import check_admission, progress
+    from news.community_models import CommunityThreadOpinion
+    client, thread, reader, author, base = setup
+    list_url = '/api/community/threads/'
+    ids = lambda source: [r['id'] for r in client.get(list_url, {'source': source}).data['results']]
+    assert thread.pk in ids('izba') and thread.pk not in ids('all') and thread.pk not in ids('readers')
+    # 9 ✓ to za mało; ✓ od kont młodszych niż doba się nie liczą
+    for voter in _voters(9, 'yes'):
+        CommunityThreadOpinion.objects.create(user=voter, thread=thread, polarity='positive')
+    for voter in _voters(3, 'fresh', days_old=0):
+        CommunityThreadOpinion.objects.create(user=voter, thread=thread, polarity='positive')
+    assert progress(thread)['positive'] == 9 and not check_admission(thread)
+    # 10. ✓, ale za dużo ✕ (poniżej 60% ✓)
+    for voter in _voters(1, 'ten'):
+        CommunityThreadOpinion.objects.create(user=voter, thread=thread, polarity='positive')
+    for voter in _voters(7, 'no'):
+        CommunityThreadOpinion.objects.create(user=voter, thread=thread, polarity='negative')
+    assert progress(thread)['ratio'] < .6 and not check_admission(thread)
+    CommunityThreadOpinion.objects.filter(user__username__startswith='no').delete()
+    thread.refresh_from_db()
+    assert check_admission(thread)
+    thread.refresh_from_db()
+    assert thread.admitted_at and thread.pk in ids('all') and thread.pk in ids('readers') and thread.pk not in ids('izba')
+    assert client.get(list_url, {'source': 'zle'}).status_code == 400
+
+
+def test_admission_window_closes_after_seven_days(setup):
+    from news.admission import check_admission, progress
+    from news.community_models import CommunityThreadOpinion
+    client, thread, *_ = setup
+    PersonalContextThread.objects.filter(pk=thread.pk).update(published_at=timezone.now() - timedelta(days=8))
+    thread.refresh_from_db()
+    for voter in _voters(10, 'late'):
+        CommunityThreadOpinion.objects.create(user=voter, thread=thread, polarity='positive')
+    assert not progress(thread)['open'] and not check_admission(thread)
+    assert thread.pk not in [r['id'] for r in client.get('/api/community/threads/', {'source': 'izba'}).data['results']]
