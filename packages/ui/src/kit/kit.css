@@ -7078,6 +7078,24 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-thread-strip__box { flex: 0 0 min(240px, calc(100vw - 96px)); max-width: 240px; height: 240px; border-radius: 8px; transition: border-color .3s cubic-bezier(.2,.8,.2,1); }
 .sc-thread-strip__box.is-highlighted { border-color: var(--sc-text); outline: 1.5px solid var(--sc-text); outline-offset: 2px; }
 .sc-thread-strip__select { padding: 16px; }
+.sc-thread-totals, .sc-thread-continuations { color: var(--sc-text-2); font-size: 13px; line-height: 1.5; margin: 12px 0; }
+.sc-thread-totals [data-rating="positive"] { color: var(--sc-positive); }
+.sc-thread-totals [data-rating="doubt"] { color: var(--sc-warning); }
+.sc-thread-totals [data-rating="negative"] { color: var(--sc-negative); }
+.sc-thread-continuations { display: flex; flex-wrap: wrap; gap: 16px; }
+.sc-comment-reaction { display: inline-flex; align-items: center; gap: 4px; }
+.sc-comment-reaction small { color: var(--sc-text-2); font-size: 13px; }
+.sc-comment-reaction[aria-pressed="true"] svg { color: var(--sc-positive); }
+.sc-thread-social > button, .sc-thread-strip__box > button:not(.sc-thread-strip__select) { border: 1px solid var(--sc-line); border-radius: 8px; background: transparent; color: var(--sc-text); padding: 8px 12px; font: inherit; cursor: pointer; }
+.sc-x-post-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.sc-x-post-card header { display: flex; align-items: flex-start; gap: 8px; }
+.sc-x-post-card header > span:nth-child(2) { flex: 1; min-width: 0; }
+.sc-x-post-card strong { font-size: 13px; }
+.sc-x-post-card small, .sc-x-post-card time { display: block; font-size: 13px; color: var(--sc-text-2); }
+.sc-x-post-card a { font-size: 13px; color: inherit; text-decoration: underline; }
+.sc-thread-strip__box:has(.sc-x-post-card) { height: auto; min-height: 240px; align-self: stretch; }
+.sc-thread-strip__box > button { margin: 0 12px 8px; }
+.sc-thread-strip__box > .sc-thread-strip__select { margin: 0; }
 .sc-thread-strip__select strong, .sc-thread-strip__excerpt { -webkit-line-clamp: 3; font-size: 15px; line-height: 1.5; }
 .sc-thread-strip__type, .sc-thread-strip__source { font-size: 13px; }
 .sc-thread-strip__type > span { color: inherit; }

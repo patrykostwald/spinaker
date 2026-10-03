@@ -35,6 +35,7 @@ class NotificationSettings(models.Model):
 
 
 class Notification(models.Model):
+    group_key = models.CharField(max_length=100, null=True, blank=True, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     kind = models.CharField(max_length=40)
     title = models.CharField(max_length=240)

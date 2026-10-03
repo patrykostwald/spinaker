@@ -412,3 +412,9 @@ def council_charter_missing_task():
     out, err = StringIO(), StringIO()
     call_command('council_charter', missing=True, stdout=out, stderr=err)
     return {'status': 'ok', 'accepted': out.getvalue().count('\n'), 'no_answer': err.getvalue().count('\n')}
+
+
+@shared_task(name='news.tasks.narrative_thread_task', soft_time_limit=120, time_limit=180)
+def narrative_thread_task():
+    from news.narrative_threads import build_narratives
+    return build_narratives()

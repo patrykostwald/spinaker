@@ -21,7 +21,7 @@ def render_thread_card(thread, counts, story=False):
     top, bottom = (280, height - 280) if story else (32, height - 48)
     draw.rounded_rectangle((32, top, width - 32, bottom), radius=16, outline=color, width=3)
     _text(draw, thread.title, (64, top + 32, width - 64, top + 148), size=38, lines=2, weight=700)
-    _text(draw, 'Dr. Spin (AI)' if thread.diagnosis_id else f'@{thread.owner.username}',
+    _text(draw, 'Dr. Spin (AI)' if thread.diagnosis_id or thread.narrative_message_id else f'@{thread.owner.username}',
           (64, top + 150, width - 64, top + 192), size=22, color='#a6a6a6')
     rows = [item_data(i) for i in thread.items.select_related('article__source', 'link')
             if not (i.link_id and i.link.hidden_at)][:2]

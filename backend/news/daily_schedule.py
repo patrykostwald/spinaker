@@ -8,6 +8,8 @@ WARSAW = ZoneInfo('Europe/Warsaw')
 
 # Ten sam plan zasila beat, panel i dokumentację terminów.
 BEAT_PLAN = {
+    'narrative-thread-daily': ('narrative_thread_task', {'hour': 21, 'minute': 45}),
+    'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),
     'duty-15m': ('duty_task', {'minute': '*/15'}),
     'political-x-minute': ('political_poll_task', {'minute': '*'}),
     'clinic-screen-5m': ('clinic_screen_task', {'minute': '*/5'}),
@@ -170,6 +172,26 @@ def check_thread(now):
     return missing(now, at(now, 20, 30), 'Nitka z kontekstem nie powstała.')
 
 
+def check_narrative(now):
+    from news.clinic_models import ClinicDailyMessage
+    from news.narrative_threads import candidates
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return result('na', 'Nitki są wyłączone.')
+    messages = list(ClinicDailyMessage.objects.filter(day=bounds(now)[0].date(), status='approved',
+        camp__in=['government', 'opposition']))
+    eligible = [message for message in messages if candidates(message)]
+    if not eligible:
+        if now < at(now, 21, 45):
+            return result('waiting', 'Czekamy na ostatni przekaz dnia.')
+        return result('na', 'Brak wątku z 3 wpisami od 2 autorów i przypisanym tonem lub techniką.')
+    from news.account_models import PersonalContextThread
+    completed = PersonalContextThread.objects.filter(narrative_message__in=eligible, is_public=True, hidden_at__isnull=True)
+    if completed.count() == len(eligible):
+        return result('done', 'Nitki narracji gotowe dla kwalifikujących się stron.', completed.latest('updated_at').updated_at)
+    return missing(now, at(now, 22, 30), 'Nitka narracji czeka na opracowanie.')
+
+
 def check_weekly(now):
     from news.clinic_models import WeeklyReport
     day = bounds(now)[0].date()
@@ -194,6 +216,8 @@ class Milestone:
 
 
 MILESTONES = (
+    Milestone('narrative', 'Nitka narracji', 'Wątek przekazu dnia według wspólnego kryterium dla obu stron.',
+              '21:45', '22:30', check_narrative, ('narrative',) * 3, 'Brak kwalifikującego się wątku.'),
     Milestone('poll', 'Zbieranie wpisów z X', 'Sprawdzamy udany puls zadania, także bez nowych wpisów.',
               'co minutę', '10 min w godz. 7-23, 2 h w nocy', check_poll, ('poll',) * 3, 'Zbieranie wyłączone.'),
     Milestone('screen', 'Strażnik wpisów', 'Każdy dostępny wpis otrzymuje ocenę.',

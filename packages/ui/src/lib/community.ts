@@ -1,7 +1,7 @@
 /** Nitki czytelników - typy i zapytania do /api/community/ (backend/news/community.py). */
 import { ApiError, apiFetch, apiWrite } from "./api";
 
-export type ThreadElement = ({ box_type?: 'post' | 'claim' | 'source' | 'technique' | 'diagnosis'; body?: string; source_name?: string; published_date?: string | null } & (
+export type ThreadElement = ({ box_type?: 'post' | 'claim' | 'source' | 'technique' | 'diagnosis' | 'message'; x_handle?: string; diagnosis_id?: number | null; intensity?: number | null; body?: string; source_name?: string; published_date?: string | null } & (
   | { kind: "article"; id: number; title: string; url: string; category: string; published_date: string | null; source_name: string; note: string; link_note?: string; position: number }
   | { kind: "link"; id: number; title: string; url: string; domain: string; title_origin: "publisher" | "reader" | "system"; hidden?: boolean; note: string; link_note?: string; position: number }));
 
@@ -10,6 +10,11 @@ export type CommunityThreadSummary = {
   title: string;
   description: string;
   author: string;
+  display_name?: string;
+  x_profile?: string | null;
+  narrative?: boolean;
+  continues?: number | null;
+  continuations?: number[];
   is_ai?: boolean;
   diagnosis_id?: number | null;
   author_id?: number;
@@ -27,7 +32,7 @@ export type CommunityThreadDetail = CommunityThreadSummary & { items: ThreadElem
 type ResolvedElement = ThreadElement extends infer Element ? Element extends ThreadElement ? Omit<Element, "note" | "link_note" | "position"> : never : never;
 export type ResolvedLink = { item: ResolvedElement; status: "in_base" | "existing_link" | "created" };
 
-export const getCommunityThreads = (page = 1, q = "", author = "", options: { ai?: '1'; sort?: 'new' | 'best' | 'hot' | 'comments'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
+export const getCommunityThreads = (page = 1, q = "", author = "", options: { ai?: '1'; featured?: '1'; sort?: 'new' | 'best' | 'hot' | 'comments'; topic?: string; article_id?: number; figure_id?: number; url?: string } = {}) => {
   const params = new URLSearchParams({ page: String(page) });
   if (q) params.set("q", q);
   if (author) params.set("author", author);

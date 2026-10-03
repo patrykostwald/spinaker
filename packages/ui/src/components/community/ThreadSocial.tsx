@@ -9,8 +9,8 @@ import { Dialog } from '../Dialog';
 import { FollowButton } from '../FollowButton';
 import { CharacterCount, ClampedText, RATINGS, ratingLabels, SocialIcon, type Counts, type Rating } from './SocialPrimitives';
 
-type Comment = { id: number; body: string; author: string; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean };
-type CommentPage = { results: Comment[]; next_cursor: number | null; count: number };
+type Comment = { id: number; body: string; author: string; x_profile?: string | null; reactions_count: number; reacted: boolean; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean };
+type CommentPage = { results: Comment[]; next_cursor: string | null; count: number };
 export type RatingsData = { counts: Counts; mine: { polarity: Rating } | null };
 const message = (error: unknown) => error instanceof Error ? error.message : 'Nie udało się zapisać.';
 
@@ -37,7 +37,8 @@ export function SocialReport({ threadId, commentId }: { threadId: number; commen
   </span>;
 }
 
-export function ThreadSocial({ id, title, ai, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount }: {
+export function ThreadSocial({ id, title, ai, expanded, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount }: {
+  expanded?: boolean;
   id: number; title: string; ai?: boolean; showComments: boolean; setShowComments: (value: boolean) => void;
   draft: string; setDraft: (text: string) => void; focusBox: (n: number) => void; boxCount: number;
   onCounts: (counts: Counts) => void; onCommentCount: (count: number) => void;
@@ -46,10 +47,11 @@ export function ThreadSocial({ id, title, ai, showComments, setShowComments, dra
   const canWrite = enabled && account.data?.authenticated && emailVerified(account.data);
   const [showRatings, setShowRatings] = useState(false), [pending, setPending] = useState(false), [status, setStatus] = useState('');
   const [editing, setEditing] = useState<number | null>(null), [editBody, setEditBody] = useState('');
+  const [sort, setSort] = useState('best');
   const cache = useQueryClient(), base = `/api/community/threads/${id}/`;
   const ratings = useQuery({ queryKey: ['thread-ratings', id, account.data?.user?.id], queryFn: () => apiFetch<RatingsData>(base + 'opinions/'), enabled: threads && showRatings });
-  const comments = useInfiniteQuery({ queryKey: ['thread-comments', id, account.data?.user?.id],
-    queryFn: ({ pageParam }) => apiFetch<CommentPage>(base + `comments/?after=${pageParam}`), initialPageParam: 0,
+  const comments = useInfiniteQuery({ queryKey: ['thread-comments', id, account.data?.user?.id, sort],
+    queryFn: ({ pageParam }) => apiFetch<CommentPage>(base + `comments/?sort=${sort}&after=${encodeURIComponent(pageParam)}`), initialPageParam: '',
     getNextPageParam: page => page.next_cursor ?? undefined, enabled: threads && showComments });
   const labels = ratingLabels(ai);
   async function write(path: string, body: unknown, method = 'POST') {
@@ -96,26 +98,28 @@ export function ThreadSocial({ id, title, ai, showComments, setShowComments, dra
       {enabled && !canWrite && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby oceniać i komentować.</p>}
     </section>}
     {showComments && <section aria-label="Komentarze pod nitką" className="sc-social-comments">
+      <label>Kolejność komentarzy<select value={sort} onChange={e => setSort(e.target.value)}><option value="best">Najtrafniejsze</option><option value="new">Najnowsze</option></select></label>
       {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
-      {comments.isSuccess && !comments.data.pages[0].results.length && <p><SocialIcon kind="comment" /> Nie ma jeszcze komentarzy.</p>}
+      {comments.isSuccess && !comments.data.pages[0].results.length && <p><SocialIcon kind="comment" /> Bądź pierwszy.</p>}
       <ol>{comments.data?.pages.flatMap(page => page.results).map(row => <li key={row.id}>
-        <header><span className="sc-social-avatar" aria-hidden="true">{row.author.charAt(0).toUpperCase()}</span><strong>{row.author}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleString('pl-PL')}</time>{row.edited_at && <small>edytowany</small>}</header>
+        <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.author}</strong>{row.x_profile && <a href={row.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}<time dateTime={row.created_at}>{new Date(row.created_at).toLocaleString('pl-PL')}</time>{row.edited_at && <small>edytowany</small>}</header>
         {row.hidden && <p>Ten komentarz jest ukryty. Treść widzisz jako autor.</p>}
         {editing === row.id ? <form onSubmit={async e => { e.preventDefault(); if (await write(`comments/${row.id}/`, { body: editBody }, 'PATCH')) setEditing(null); }}>
           <label>Edytuj komentarz<textarea value={editBody} maxLength={600} onChange={e => setEditBody(e.target.value)} /></label><CharacterCount text={editBody} limit={600} />
           <button disabled={pending || !editBody.trim()}>Zapisz</button><button type="button" onClick={() => setEditing(null)}>Anuluj</button>
         </form> : <ClampedText>{content(row.body)}</ClampedText>}
-        <footer>{enabled && row.is_owner && <>{row.can_edit && <button onClick={() => { setEditing(row.id); setEditBody(row.body); }}>Edytuj</button>}<button disabled={pending} onClick={() => write(`comments/${row.id}/`, {}, 'DELETE')}>Usuń</button></>}
+        <footer>{!row.hidden && <button type="button" className="sc-comment-reaction" disabled={!canWrite || pending} aria-pressed={row.reacted} onClick={() => write(`comments/${row.id}/reaction/`, {}, row.reacted ? 'DELETE' : 'POST')}><SocialIcon kind="positive" />Trafne <small>{row.reactions_count ?? 0}</small></button>}{enabled && row.is_owner && <>{row.can_edit && <button onClick={() => { setEditing(row.id); setEditBody(row.body); }}>Edytuj</button>}<button disabled={pending} onClick={() => write(`comments/${row.id}/`, {}, 'DELETE')}>Usuń</button></>}
           {!row.hidden && <SocialReport threadId={id} commentId={row.id} />}</footer>
       </li>)}</ol>
       {comments.hasNextPage && <button disabled={comments.isFetchingNextPage} onClick={() => comments.fetchNextPage()}>Pokaż kolejne komentarze</button>}
-      {canWrite ? <form onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany na końcu listy.'); } }}>
+      {canWrite ? <form onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
         <label>Komentarz pod nitką<textarea value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Możesz wskazać @boks 3" /></label>
         <CharacterCount text={draft} limit={600} /><button disabled={pending || !draft.trim()}>Dodaj komentarz</button>
       </form> : enabled ? <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p> : null}
       <a href="/zasady-korzystania#nitki">Zasady nitek, ocen i komentarzy</a>
     </section>}
+    {expanded && canWrite && <button type="button" onClick={e => { setShowComments(true); const parent = e.currentTarget.parentElement; requestAnimationFrame(() => parent?.querySelector<HTMLTextAreaElement>('form textarea')?.focus()); }}>Dodaj swój komentarz</button>}
     <p role="status">{status}</p>
   </div>;
 }

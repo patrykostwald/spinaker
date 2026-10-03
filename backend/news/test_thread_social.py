@@ -114,11 +114,11 @@ def test_comment_paging_count_sort_stable_after_delete(setup):
     ThreadComment.objects.create(thread=other, author=reader, body='older')
     rows = [ThreadComment.objects.create(thread=thread, author=reader, body=str(i)) for i in range(22)]
     first = client.get(base+'comments/').data
-    assert [r['body'] for r in first['results']] == [str(i) for i in range(20)]
+    assert [r['body'] for r in first['results']] == [str(i) for i in range(21, 1, -1)]
     assert first['count'] == 22
-    client.delete(base+f'comments/{rows[0].pk}/')
+    client.delete(base+f'comments/{rows[-1].pk}/')
     second = client.get(base+f"comments/?after={first['next_cursor']}").data
-    assert [r['body'] for r in second['results']] == ['20', '21']
+    assert [r['body'] for r in second['results']] == ['1', '0']
     assert second['next_cursor'] is None
     result = client.get('/api/community/threads/?sort=comments').data['results']
     assert result[0]['id'] == thread.pk and result[0]['comments_count'] == 21

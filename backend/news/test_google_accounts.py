@@ -148,7 +148,8 @@ def test_jwks_signature_verified_and_tampering_rejected():
 
 
 def test_tokeninfo_fallback_still_validates_claims():
-    with patch.dict(sys.modules, {'cryptography': None}), \
+    with patch.dict(sys.modules, {'cryptography': None, 'cryptography.hazmat.primitives': None,
+                                 'cryptography.hazmat.primitives.asymmetric': None}), \
             patch('news.google_accounts.requests.get', return_value=Mock(json=lambda: claims())) as get:
         assert verify_id_token('provider-token', 'nonce')['email'] == 'reader@example.org'
         assert get.call_args.kwargs == {'params': {'id_token': 'provider-token'}, 'timeout': 10}

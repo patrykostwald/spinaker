@@ -313,7 +313,7 @@ export function MojeKonto() {
   return (
     <div className="sc-account sc-account-dashboard sc-f2">
       <header className="sc-account-head">
-        <p className="sc-account-kicker">Witaj, @{user.username}</p>
+        <p className="sc-account-kicker">Witaj, {user.display_name || `@${user.username}`} {user.x_profile && <a href={user.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</p>
         <h1>Mój spin.clinic</h1>
         <p>Twoje wiadomości i to, do czego chcesz wrócić - w jednym miejscu.</p>
       </header>

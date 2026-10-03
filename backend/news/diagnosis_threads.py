@@ -26,7 +26,6 @@ def sentence(value):
 def boxes(diagnosis):
     from news.clinic import ASSESSMENT_LABELS, author_data
     from news.clinic_council import clean_claim
-    from news.clinic_scan import scan_data
 
     post = diagnosis.post
     url = f'/klinika/{diagnosis.pk}'
@@ -44,22 +43,24 @@ def boxes(diagnosis):
     technique = next(iter(diagnosis.techniques or []), {})
     technique_note = short(f"Technika: {technique.get('name') or 'brak wskazanej techniki'}. "
                            f"{sentence(technique.get('explanation'))}")
+    add('technique', 'Technika: ' + (technique.get('name') or 'Brak wskazanej techniki'),
+        body=sentence(technique.get('explanation')) or 'W diagnozie nie wskazano techniki perswazji.', link_note=technique_note)
     claims = [clean_claim(row) for row in (diagnosis.claims or []) if isinstance(row, dict)][:3]
     for index, claim in enumerate(claims):
+        if len(result) >= 7:
+            break
         assessment = ASSESSMENT_LABELS.get(claim.get('assessment'), 'niezweryfikowane')
         add('claim', f"{assessment}: {claim.get('claim', '')}", body=sentence(claim.get('explanation')),
             link_note=technique_note if index == 0 else 'Kolejne sprawdzone twierdzenie')
         for source in claim.get('sources') or []:
+            if len(result) >= 7:
+                break
             if not isinstance(source, dict) or urlsplit(source.get('url') or '').scheme not in ('http', 'https'):
                 continue
             add('source', source.get('title') or source['url'], source['url'],
-                link_note='Źródło, które to potwierdza / podważa')
-    if not claims:
-        add('technique', technique.get('name') or 'Brak wskazanej techniki',
-            body=sentence(technique.get('explanation')), link_note=technique_note)
-    agreement = scan_data(diagnosis)['council']['verdict_agreement'] or '0/0'
+                link_note=sentence(claim.get('explanation')) or 'Źródło przywołane przy tym twierdzeniu.')
     add('diagnosis', 'Pełna diagnoza: ' + diagnosis.headline,
-        link_note=f'Siła spinu {diagnosis.intensity}/100, Konsylium {agreement} zgodnych')
+        link_note=sentence(diagnosis.headline))
     return result
 
 

@@ -49,8 +49,9 @@ def _article_ref(article):
 
 
 def _link_ref(link):
+    from news.x_link_cards import card_data
     return {'kind': 'link', 'id': link.pk, 'title': link.title, 'url': link.canonical_url, 'domain': link.domain,
-            'title_origin': link.title_origin}
+            'title_origin': link.title_origin, **card_data(link)}
 
 
 def find_article(url: str, canonical: str):
@@ -94,6 +95,14 @@ def resolve_link(request):
     serializer = LinkInput(data=request.data)
     serializer.is_valid(raise_exception=True)
     url = serializer.validated_data['url'].strip()
+    from news.x_link_cards import resolve_x
+    x_result = resolve_x(url, request.user, serializer.validated_data['title'].strip())
+    if x_result:
+        if x_result.get('blocked'):
+            return Response({'detail': 'Ten link jest ukryty.'}, status=409)
+        if x_result.get('needs_title'):
+            return Response({'detail': 'Nie udało się pobrać wpisu z X. Podaj tytuł linku.', 'needs_title': True}, status=422)
+        return Response({'item': _link_ref(x_result['link']), 'status': 'existing_link'})
     try:
         canonical = canonical_url(url)
     except ValueError:
@@ -126,12 +135,21 @@ def public_threads():
     from news.clinic import published_diagnoses
     return (PersonalContextThread.objects.filter(is_public=True, hidden_at__isnull=True)
             .filter(Q(diagnosis__isnull=True) | Q(diagnosis__in=published_diagnoses()))
+            .filter(Q(narrative_message__isnull=True) | Q(narrative_message__status='approved'))
             .annotate(items_count=Count('items', distinct=True), visible_comments_count=Count('comments', filter=Q(comments__deleted_at__isnull=True, comments__hidden_at__isnull=True), distinct=True)).filter(items_count__gte=MIN_PUBLIC_ITEMS))
 
 
 def item_data(item):
     if item.box_data is not None:
         data = {**item.box_data, 'id': item.pk}
+        if data.get('political_post_id'):
+            from news.political_models import PoliticalPost
+            if not PoliticalPost.objects.filter(pk=data['political_post_id'], available=True).exists():
+                data.update(title='Wpis niedostępny', body='', source_name='', x_handle='')
+        if data.get('box_type') == 'diagnosis' and data.get('diagnosis_id'):
+            from news.clinic import published_diagnoses
+            if not published_diagnoses().filter(pk=data['diagnosis_id']).exists():
+                data.update(title='Diagnoza niedostępna', body='')
     elif item.article_id:
         data = _article_ref(item.article)
     else:
@@ -149,10 +167,17 @@ def _counts(thread_ids):
 
 
 def thread_summary(thread, counts):
+    from news.x_accounts import public_identity
+    ai = bool(thread.diagnosis_id or thread.narrative_message_id)
+    identity = public_identity(thread.owner)
     items = [item for item in thread.items.all() if not (item.link_id and item.link.hidden_at)]
     return {'id': thread.pk, 'title': thread.title, 'description': thread.description, 'topics': thread.topics,
-            'author': 'Dr. Spin (AI)' if thread.diagnosis_id else thread.owner.username,
-            'is_ai': bool(thread.diagnosis_id), 'diagnosis_id': thread.diagnosis_id,
+            'author': 'Dr. Spin (AI)' if ai else thread.owner.username,
+            'display_name': 'Dr. Spin (AI)' if ai else identity['display_name'], 'x_profile': identity['x_profile'],
+            'is_ai': ai, 'diagnosis_id': thread.diagnosis_id,
+            'narrative': bool(thread.narrative_message_id),
+            'continues': thread.continues_id if thread.continues_id and public_threads().filter(pk=thread.continues_id).exists() else None,
+            'continuations': list(public_threads().filter(continues=thread).values_list('pk', flat=True)),
             'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
             'items_count': len(items), 'preview': [item_data(item) for item in items],
             'comments_count': getattr(thread, 'visible_comments_count', 0),
@@ -170,7 +195,11 @@ def community_threads(request):
         return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
     rows = public_threads().select_related('owner').prefetch_related('items__article__source', 'items__link')
     if request.query_params.get('ai') == '1':
-        rows = rows.filter(diagnosis__isnull=False)
+        rows = rows.filter(Q(diagnosis__isnull=False) | Q(narrative_message__isnull=False))
+    if request.query_params.get('featured') == '1':
+        selected = rows.filter(narrative_message__day=timezone.localdate()).order_by('-narrative_score', '-pk').first()
+        selected = selected or rows.filter(diagnosis__isnull=False).order_by('-published_at', '-pk').first()
+        return Response({'results': [thread_summary(selected, _counts([selected.pk]))] if selected else [], 'next_page': None})
     query = request.query_params.get('q', '').strip()
     if query:
         rows = rows.filter(Q(title__icontains=query) | Q(description__icontains=query))

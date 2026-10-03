@@ -15,6 +15,7 @@ import { formatDateTimePl } from '../lib/utils';
 import { PersonalizedNews } from './PersonalizedNews';
 import { FollowButton } from './FollowButton';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { XAccountSettings } from './XAccountSettings';
 
 export function AccountDataState({ query, empty = 'Ta część będzie dostępna wkrótce.' }: { query: { isPending: boolean; isError: boolean; error: unknown; refetch: () => unknown }; empty?: string }) {
   if (query.isPending) return <p role="status">Ładuję…</p>;
@@ -130,6 +131,7 @@ export function AccountSettings() {
   }
   return <PanelSection id="ustawienia" title="Ustawienia">
     <div className="sc-f2-settings">
+      <XAccountSettings />
       <section><h3>Profil publiczny i motyw</h3><AccountDataState query={profile} />
         <p>Komentarze są publiczne. Zbiorczą historię pokazujemy tylko za Twoją zgodą. Ulubione i tematy są prywatne.</p>
         <label className="sc-f2-check"><input type="checkbox" checked={profile.data?.public_activity ?? false} disabled={pending || !profile.isSuccess} onChange={event => { const public_activity = event.target.checked; void perform(async () => {

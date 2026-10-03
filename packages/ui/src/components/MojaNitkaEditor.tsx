@@ -17,11 +17,12 @@ import { resolveLink, type ThreadElement } from '../lib/community';
 import { Button } from '../kit';
 import { CharacterCount } from './community/SocialPrimitives';
 import { SignedOutPanel } from './MojeKonto';
+import { XPostCard } from './community/XPostCard';
 
 type Box = { key: string; material: ThreadElement | null; note: string; link_note: string };
 type Draft = { title: string; items: Box[]; isPublic: boolean };
 const NOTE_LIMIT = 400;
-const LINK_NOTE_LIMIT = 400;
+const LINK_NOTE_LIMIT = 200;
 const MIN_PUBLIC_ITEMS = 2;
 const blankBox = (key: string): Box => ({ key, material: null, note: '', link_note: '' });
 const initialDraft = (): Draft => ({ title: '', items: [blankBox('first')], isPublic: false });
@@ -263,8 +264,20 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       }
       setNotice(`Zapisano ${formatDateTimePl(result.updated_at)}. ${result.is_public ? 'Nitka jest publiczna.' : 'Szkic jest prywatny.'}`);
       if (!activeId) window.history.replaceState(window.history.state, '', `/konto/nitki/${result.id}`);
+      return result.id;
     } catch (reason) { if (automatic) failedSnapshot.current = serialize(draft); setError(accountMessage(reason)); }
     finally { saving.current = false; setPending(false); }
+  }
+  async function continueThread() {
+    if (dirty || !activeId) { setError('Zapisz nitkę przed ułożeniem kontynuacji.'); return; }
+    const last = draft.items.at(-1)?.material;
+    if (!last || pending) return;
+    setPending(true); setError('');
+    try {
+      const next = await savePersonalThread({ title: ('Kontynuacja: ' + draft.title).slice(0, 80), description: '', query: '', categories: [], source_ids: [], continues: activeId,
+        items: [{ ...(last.kind === 'article' ? { article_id: last.id } : { link_id: last.id }), note: draft.items.at(-1)?.note ?? '', link_note: '' }], is_public: false });
+      router.push(`/konto/nitki/${next.id}`);
+    } catch (e) { setError(accountMessage(e)); } finally { setPending(false); }
   }
   async function removeThread() {
     if (!activeId || saving.current) return;
@@ -297,8 +310,10 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
           <small className="sc-social-count" data-near={item.link_note.length >= LINK_NOTE_LIMIT * .9} id={`${uid}-${item.key}-link-count`}>{item.link_note.length}/{LINK_NOTE_LIMIT} · Opcjonalne. Pomóż czytelnikom połączyć materiały.</small>
         </label>}
         {item.material ? <div className="sc-simple-thread__material">
+          {item.material.box_type === 'post' ? <XPostCard item={item.material} /> : <>
           <p className="sc-simple-thread__domain">{item.material.kind === 'article' ? 'Z bazy' : 'Spoza bazy'} · {domain(item.material.url)}</p>
           <p className="sc-simple-thread__material-title"><a href={item.material.url} title={item.material.title} target="_blank" rel="noopener noreferrer">{item.material.title}</a></p>
+          </>}
           <button type="button" onClick={() => updateBox(item.key, { material: null })}>Zmień materiał</button>
         </div> : <MaterialPicker selected={selected} onSelect={material => { focusKey.current = item.key; updateBox(item.key, { material }); }} />}
         {item.material && <label>Komentarz
@@ -309,7 +324,7 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       </li>)}
     </ol>
     <div className="sc-simple-thread__actions">
-      <Button type="button" variant="quiet" disabled={!complete || draft.items.length >= MAX_THREAD_ARTICLES} onClick={addBox}>Dodaj kolejny</Button>
+      {draft.items.length >= MAX_THREAD_ARTICLES ? <div><p>To maksimum jednej nitki. Możesz ułożyć kolejną i połączyć ją z tą.</p><Button type="button" variant="quiet" disabled={pending || !complete || dirty || !activeId} onClick={continueThread}>Ułóż kontynuację</Button>{dirty && <small>Zapisz zmiany, aby ułożyć kontynuację.</small>}</div> : <Button type="button" variant="quiet" disabled={!complete} onClick={addBox}>Dodaj kolejny</Button>}
       <Button type="submit" variant="primary" disabled={pending}>{draft.isPublic ? 'Zapisz zmiany' : 'Opublikuj'}</Button>
     </div>
     <small>{draft.items.length}/{MAX_THREAD_ARTICLES} boksów. Do publikacji potrzebujesz co najmniej dwóch materiałów.</small>

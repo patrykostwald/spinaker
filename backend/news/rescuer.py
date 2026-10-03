@@ -145,7 +145,7 @@ def execute(key, stored_key, token):
 def apply_remedy(item, remedy):
     from news import tasks
     simple = {'poll': tasks.political_poll_task, 'screen': tasks.clinic_screen_task,
-              'diagnoses': tasks.clinic_diagnose_task, 'thread': tasks.dr_spin_thread_task,
+              'narrative': tasks.narrative_thread_task, 'diagnoses': tasks.clinic_diagnose_task, 'thread': tasks.dr_spin_thread_task,
               'weekly': tasks.weekly_report_task}
     if remedy in simple:
         if remedy == 'diagnoses':

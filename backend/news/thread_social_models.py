@@ -17,6 +17,15 @@ class ThreadComment(models.Model):
         ordering = ['created_at', 'id']
 
 
+class ThreadCommentReaction(models.Model):
+    comment = models.ForeignKey(ThreadComment, on_delete=models.CASCADE, related_name='reactions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['comment', 'user'], name='comment_reaction_user_087')]
+
+
 class ThreadRateEvent(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     kind = models.CharField(max_length=8)

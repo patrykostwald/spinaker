@@ -63,7 +63,7 @@ class ProfilePreference(models.Model):
 
 
 class UserXConnection(models.Model):
-    """A minimal, OAuth-proven X identity used only to enable share controls.
+    """OAuth-proven X identity for login, display name and share controls.
 
     No access or refresh token is persisted: publication remains in the X
     compose window, under the user's final control.
@@ -71,6 +71,7 @@ class UserXConnection(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='x_connection')
     x_user_id = models.CharField(max_length=32, unique=True)
     username = models.CharField(max_length=15)
+    use_x_name = models.BooleanField(default=False)
     connected_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -99,6 +100,10 @@ class PersonalContextThread(models.Model):
 
     Rozkład diagnozy ma diagnosis zamiast właściciela. Zespół może ukryć każdą nitkę.
     """
+    continues = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='continuations')
+    narrative_message = models.OneToOneField('news.ClinicDailyMessage', null=True, blank=True,
+        on_delete=models.CASCADE, related_name='narrative_thread')
+    narrative_score = models.PositiveIntegerField(default=0)
     diagnosis = models.OneToOneField('news.SpinDiagnosis', null=True, blank=True,
         on_delete=models.CASCADE, related_name='context_thread')
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
@@ -119,9 +124,10 @@ class PersonalContextThread(models.Model):
     class Meta:
         ordering = ['-updated_at', '-id']
         constraints = [models.CheckConstraint(
-            condition=(models.Q(owner__isnull=False, diagnosis__isnull=True) |
-                       models.Q(owner__isnull=True, diagnosis__isnull=False)),
-            name='context_thread_owner_or_diagnosis')]
+            condition=(models.Q(owner__isnull=False, diagnosis__isnull=True, narrative_message__isnull=True) |
+                       models.Q(owner__isnull=True, diagnosis__isnull=False, narrative_message__isnull=True) |
+                       models.Q(owner__isnull=True, diagnosis__isnull=True, narrative_message__isnull=False)),
+            name='context_thread_origin_087')]
 
 
 class PersonalContextThreadItem(models.Model):
@@ -186,7 +192,7 @@ class CommentReport(models.Model):
 class AccountIdentity(models.Model):
     comments_blocked_until = models.DateTimeField(null=True, blank=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account_identity')
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
     email_verified = models.BooleanField(default=False)
     accepted_terms_version = models.CharField(max_length=40, default='')
     accepted_privacy_version = models.CharField(max_length=40, default='')

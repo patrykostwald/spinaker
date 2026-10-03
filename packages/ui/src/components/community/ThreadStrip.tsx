@@ -8,8 +8,9 @@ import { RatingFrame, SocialIcon, ClampedText, type Counts } from './SocialPrimi
 import { SocialReport, ThreadSocial } from './ThreadSocial';
 import { useFeature } from '../../lib/features';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
+import { XPostCard } from './XPostCard';
 
-const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza' };
+const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza', message: 'Przekaz dnia' };
 
 /** Jeden tor w głównej, na liście i w pełnej nitce. Powiązanie należy do następnego boksu. */
 export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false }: {
@@ -68,7 +69,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       {full ? <div className="sc-thread-strip__title"><ClampedText><h2>{thread.title}</h2></ClampedText></div> : <h2><button type="button" aria-expanded={expanded} aria-controls={`${uid}-track ${uid}-notes`} onClick={toggle} title={thread.title}>
         <span>{thread.title}</span><span aria-hidden="true">{expanded ? '−' : '+'}</span>
       </button></h2>}
-      <span className="sc-thread-strip__author" title={thread.author}>{thread.is_ai ? 'Dr. Spin (AI)' : `@${thread.author}`}</span>
+      <span className="sc-thread-strip__author" title={thread.author}>{thread.display_name || (thread.is_ai ? 'Dr. Spin (AI)' : `@${thread.author}`)} {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</span>
       <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => setShowComments(!showComments)}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
       <SocialReport threadId={thread.id} />
     </header>
@@ -91,29 +92,35 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
           <span className="sc-sr-only">Powiązanie: </span><ClampedText>{item.link_note}</ClampedText>
         </motion.li>}
         <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1}>
+          {item.box_type === 'post' ? <><XPostCard item={item} /><button type="button" onClick={() => { if (!expanded) toggle(); setSelected(index); }} aria-label={`Pokaż opis boksu ${index + 1}`}>Boks {index + 1}</button></> :
           <button type="button" className="sc-thread-strip__select" onClick={() => { if (!expanded) toggle(); setSelected(index); }}
             aria-pressed={expanded && selected === index}
             aria-label={`${expanded ? 'Pokaż opis boksu' : 'Rozwiń nitkę od boksu'} ${index + 1}: ${item.title}`}>
-            <span className="sc-thread-strip__type"><span aria-hidden="true">{item.box_type === 'post' ? '𝕏' : item.box_type === 'claim' ? '✓' : '↗'}</span> {item.box_type ? TYPES[item.box_type] : item.kind === 'article' ? categoryLabel(item.category) : 'Link'}</span>
+            <span className="sc-thread-strip__type"><span aria-hidden="true">{item.box_type === 'claim' ? '✓' : '↗'}</span> {item.box_type ? TYPES[item.box_type] : item.kind === 'article' ? categoryLabel(item.category) : 'Link'}</span>
             <strong title={item.title}>{item.title}</strong>
-            {item.body && item.box_type !== 'post' && <span className="sc-thread-strip__excerpt">{item.body}</span>}
+            {item.body && <span className="sc-thread-strip__excerpt">{item.body}</span>}
             <span className="sc-thread-strip__source">{item.source_name || (item.kind === 'link' ? item.domain : '')}
               {item.published_date && <time dateTime={item.published_date}> · {formatDatePl(item.published_date)}</time>}</span>
-          </button>
+          </button>}
         </motion.li>
       </Fragment>)}
     </ol>
     <div id={`${uid}-notes`} className="sc-thread-strip__details" aria-hidden={!expanded}>
       <div>{current && <div className="sc-thread-strip__note">
-        <ClampedText><strong>Boks {selected + 1}: </strong><a href={current.url} target={current.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">{current.title} ↗</a></ClampedText>
-        {current.body && <ClampedText>{current.body}</ClampedText>}
+        <small aria-label="Pozycja w nitce">{selected + 1}/{ordered.length}</small>
+        {current.box_type === 'post' ? <XPostCard item={current} /> : <><ClampedText><strong>Boks {selected + 1}: </strong><a href={current.url} target={current.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">{current.title} ↗</a></ClampedText>
+        {current.body && <ClampedText>{current.body}</ClampedText>}</>}
         {current.note && <ClampedText><strong>Komentarz autora: </strong>{current.note}</ClampedText>}
         {accountsEnabled && <button type="button" onClick={() => { setDraft((draft + ` @boks ${selected + 1} `).trimStart().slice(0, 600)); setShowComments(true); }}>Odpowiedz do boksu</button>}
       </div>}</div>
     </div>
     <RatingFrame counts={counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative }} ai={thread.is_ai} />
     </div>
+    {expanded && <p className="sc-thread-totals"><span data-rating="positive">✓</span> {counts?.positive ?? thread.opinions.positive} · <span data-rating="doubt">?</span> {counts?.doubt ?? thread.opinions.doubt ?? 0} · <span data-rating="negative">✕</span> {counts?.negative ?? thread.opinions.negative} · {commentCount ?? thread.comments_count ?? 0} komentarzy</p>}
+    {thread.narrative && <p className="sc-thread-totals">{thread.description}</p>}
+    <nav className="sc-thread-continuations" aria-label="Części nitki">{thread.continues && <Link href={`/nitki/${thread.continues}`}>← Poprzednia część</Link>}{thread.continuations?.map(id => <Link key={id} href={`/nitki/${id}`}>Ciąg dalszy →</Link>)}</nav>
     <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
+      expanded={expanded}
       draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount} />
     {!full && expanded && <Link href={`/nitki/${thread.id}`}>Otwórz nitkę</Link>}
   </article>;

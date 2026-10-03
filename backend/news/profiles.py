@@ -76,9 +76,10 @@ class PublicActivityView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
     def get(self, request, username):
+        from news.x_accounts import public_identity
         user = get_object_or_404(get_user_model(), username=username, is_active=True,
                                 profile_preference__public_activity=True)
-        return Response({'id': user.pk, 'username': user.username, 'history': history(request, user)})
+        return Response({'id': user.pk, 'username': user.username, **public_identity(user), 'history': history(request, user)})
 
 
 def favorite_data(row):

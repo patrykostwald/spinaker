@@ -87,7 +87,8 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
     title = serializers.CharField(max_length=80)
     source_ids = serializers.PrimaryKeyRelatedField(source='sources', many=True,
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
-    article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=100, required=False)
+    article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=10, required=False)
+    continues = serializers.PrimaryKeyRelatedField(queryset=PersonalContextThread.objects.all(), required=False, allow_null=True)
     articles = serializers.SerializerMethodField(read_only=True)
     items = ThreadItemInput(many=True, required=False, write_only=True)
     elements = serializers.SerializerMethodField(read_only=True)
@@ -96,7 +97,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PersonalContextThread
-        fields = ['id', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
+        fields = ['id', 'continues', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
                   'articles', 'items', 'elements', 'is_public', 'published_at', 'hidden_at', 'created_at', 'updated_at']
         read_only_fields = ['id', 'articles', 'elements', 'published_at', 'hidden_at', 'created_at', 'updated_at']
 
@@ -114,8 +115,8 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         return [item_data(item) for item in instance.items.select_related('article__source', 'link').all()]
 
     def validate_items(self, value):
-        if len(value) > 100:
-            raise serializers.ValidationError('Nitka może mieć najwyżej 100 elementów.')
+        if len(value) > 10:
+            raise serializers.ValidationError('Nitka może mieć najwyżej 10 boksów.')
         articles = [row['article_id'] for row in value if row.get('article_id')]
         links = [row['link_id'] for row in value if row.get('link_id')]
         if len(articles) != len(set(articles)) or len(links) != len(set(links)):
@@ -128,6 +129,17 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        if 'items' in attrs and 'article_ids' in attrs:
+            raise serializers.ValidationError('Podaj jeden zestaw boksów.')
+        previous = attrs.get('continues')
+        if previous:
+            request = self.context.get('request')
+            if not request or previous.owner_id != request.user.pk or self.instance:
+                raise serializers.ValidationError({'continues': 'Wybierz własną poprzednią nitkę przy tworzeniu kontynuacji.'})
+            last = previous.items.last()
+            rows = attrs.get('items') or [{'article_id': pk} for pk in attrs.get('article_ids', [])]
+            if not last or not rows or (rows[0].get('article_id'), rows[0].get('link_id')) != (last.article_id, last.link_id):
+                raise serializers.ValidationError({'continues': 'Pierwszy boks musi być ostatnim boksem poprzedniej nitki.'})
         if attrs.get('is_public', self.instance.is_public if self.instance else False):
             from news.account_security import require_verified
             from news.community import threads_enabled

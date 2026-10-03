@@ -9,6 +9,8 @@ from news.account_activity import MyReactionsView
 from news.accounts import XConnectionView, XConnectionStartView, XConnectionCallbackView
 
 urlpatterns = [
+    path('account/x/start/', XConnectionStartView.as_view()),
+    path('account/x/callback/', XConnectionCallbackView.as_view()),
     path('account/profile/', ProfileView.as_view()),
     path('account/history/', HistoryView.as_view()),
     path('account/reactions/', MyReactionsView.as_view()),

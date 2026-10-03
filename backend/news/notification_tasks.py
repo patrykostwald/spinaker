@@ -48,8 +48,8 @@ def _deliver_event(event):
         if not comment:
             return
         ids = set(Follow.objects.filter(thread=comment.thread, created_at__lte=event.created_at).values_list('user_id', flat=True))
-        if comment.thread.owner_id:
-            ids.add(comment.thread.owner_id)
+        # The owner already has a durable grouped notification written with the comment.
+        ids.discard(comment.thread.owner_id)
         ids.discard(comment.author_id)
         for user in get_user_model().objects.filter(pk__in=ids, is_active=True):
             notify(user, 'thread_reply', f'Nowy komentarz: {comment.thread.title}', f'/nitki/{comment.thread_id}')

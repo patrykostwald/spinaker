@@ -17,6 +17,7 @@ export type PersonalArticleRef = {
 };
 
 export type PersonalContextThread = {
+  continues?: number | null;
   id: number;
   title: string;
   description: string;
@@ -37,6 +38,7 @@ export type PersonalContextThread = {
 export type PersonalThreadItemInput = { article_id?: number; link_id?: number; note?: string; link_note?: string };
 
 export type PersonalContextThreadInput = {
+  continues?: number | null;
   title: string;
   description: string;
   query: string;
@@ -67,7 +69,7 @@ export const REACTION_LABELS = {
   negative: 'Nieprzydatne',
 } as const;
 
-export const MAX_THREAD_ARTICLES = 100;
+export const MAX_THREAD_ARTICLES = 8;
 export const THREAD_LIMITS = { title: 80, description: 500, query: 200 };
 
 export const personalKeys = {

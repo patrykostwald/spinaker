@@ -101,7 +101,7 @@ class ResendVerificationView(APIView):
         if not cache.add(f'account-verify-resend:{request.user.pk}', True, 300):
             return Response({'detail': 'Odczekaj 5 minut przed kolejną wysyłką.'}, status=429)
         identity = getattr(request.user, 'account_identity', None)
-        if identity:
+        if identity and identity.email:
             queue_verification(identity.email)
         return Response({'detail': 'Sprawdź pocztę i folder spam.'})
 
@@ -193,7 +193,9 @@ def update_account(request):
     email = values.get('email', user.email).strip().lower()
     changing = email != user.email.lower()
     identity = getattr(user, 'account_identity', None)
-    if (changing or not identity) and not user.check_password(values.get('password', '')):
+    first_x_email = bool(identity and not identity.email and not user.email and
+        not user.has_usable_password() and hasattr(user, 'x_connection'))
+    if (changing or not identity) and not first_x_email and not user.check_password(values.get('password', '')):
         return Response({'password': ['Podaj aktualne hasło.']}, status=400)
     if not identity and not (values.get('accepted_terms') and values.get('accepted_privacy')):
         return Response({'accepted_terms': ['Zaakceptuj zasady i politykę prywatności.']}, status=400)
@@ -244,6 +246,10 @@ class AccountExportView(APIView):
         from news.notification_api import follow_data
         from news.notification_models import Follow
         response = JsonResponse({
+            'x_connection': ({'x_user_id': user.x_connection.x_user_id, 'username': user.x_connection.username,
+                'use_x_name': user.x_connection.use_x_name, 'connected_at': user.x_connection.connected_at}
+                if hasattr(user, 'x_connection') else None),
+            'comment_reactions': list(user.threadcommentreaction_set.values('comment_id', 'created_at')),
             'account': {**user_data(user), 'date_joined': user.date_joined, 'last_login': user.last_login,
                         'first_name': user.first_name, 'last_name': user.last_name},
             'consents': {'accepted_terms_version': identity.accepted_terms_version if identity else '',

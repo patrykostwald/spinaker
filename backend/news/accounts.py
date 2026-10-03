@@ -39,7 +39,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 def user_data(user):
     identity = getattr(user, 'account_identity', None)
-    return {'id': user.pk, 'username': user.username, 'is_staff': user.is_staff,
+    return {'id': user.pk, 'username': user.username, **public_identity(user), 'is_staff': user.is_staff,
             'is_social': user.groups.filter(name='social').exists(),
             'email': user.email, 'email_verified': bool(identity and identity.email_verified),
             'accepted_terms_version': identity.accepted_terms_version if identity else '', **role_data(user)}
@@ -169,7 +169,7 @@ class AccountMeView(APIView):
         return Response({'authenticated': request.user.is_authenticated,
                          'user': user_data(request.user) if request.user.is_authenticated else None,
                          'csrfToken': get_token(request),
-                         'accounts_enabled': accounts_enabled(),
+                         'accounts_enabled': accounts_enabled(), 'x_enabled': bool(accounts_enabled() and x_enabled()),
                          'google_enabled': bool(accounts_enabled() and settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET)})
 
     def patch(self, request):
@@ -181,52 +181,7 @@ class AccountMeView(APIView):
         return update_account(request)
 
 
-@json_view("Połączenie z kontem X", tags=["konto"])
-class XConnectionView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        connection = getattr(request.user, 'x_connection', None)
-        enabled = bool(settings.X_USER_OAUTH_ENABLED and settings.X_USER_OAUTH_CLIENT_ID and settings.X_USER_OAUTH_REDIRECT_URI)
-        return Response({'connected': bool(connection), 'username': connection.username if connection else '',
-                         'oauth_enabled': enabled, 'connect_url': '/api/account/x-connection/start/' if enabled else None})
-
-    def delete(self, request):
-        UserXConnection.objects.filter(user=request.user).delete()
-        return Response(status=204)
-
-
-@json_view("Rozpoczęcie łączenia z X", tags=["konto"])
-class XConnectionStartView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        if not (settings.X_USER_OAUTH_ENABLED and settings.X_USER_OAUTH_CLIENT_ID and settings.X_USER_OAUTH_REDIRECT_URI):
-            return Response({'detail': 'Łączenie konta X nie jest jeszcze skonfigurowane.'}, status=503)
-        state, verifier = secrets.token_urlsafe(32), secrets.token_urlsafe(64)
-        challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
-        request.session['x_oauth_state'], request.session['x_oauth_verifier'] = state, verifier
-        params = {'response_type': 'code', 'client_id': settings.X_USER_OAUTH_CLIENT_ID,
-                  'redirect_uri': settings.X_USER_OAUTH_REDIRECT_URI, 'scope': 'users.read',
-                  'state': state, 'code_challenge': challenge, 'code_challenge_method': 'S256'}
-        return HttpResponseRedirect('https://twitter.com/i/oauth2/authorize?' + urlencode(params))
-
-
-@json_view("Powrót z autoryzacji X", tags=["konto"])
-class XConnectionCallbackView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        state, verifier = request.session.pop('x_oauth_state', ''), request.session.pop('x_oauth_verifier', '')
-        if not state or not verifier or not hmac.compare_digest(state, request.query_params.get('state', '')) or not request.query_params.get('code'):
-            return HttpResponseRedirect(settings.X_USER_OAUTH_SUCCESS_PATH + '?x=failed')
-        try:
-            token = requests.post('https://api.x.com/2/oauth2/token', data={'code': request.query_params['code'],
-                'grant_type': 'authorization_code', 'client_id': settings.X_USER_OAUTH_CLIENT_ID,
-                'redirect_uri': settings.X_USER_OAUTH_REDIRECT_URI, 'code_verifier': verifier}, timeout=(5, 20)).json()['access_token']
-            identity = requests.get('https://api.x.com/2/users/me', headers={'Authorization': f'Bearer {token}'}, timeout=(5, 20)).json()['data']
-            UserXConnection.objects.update_or_create(user=request.user, defaults={'x_user_id': identity['id'], 'username': identity['username']})
-        except (requests.RequestException, KeyError, TypeError, ValueError, IntegrityError):
-            return HttpResponseRedirect(settings.X_USER_OAUTH_SUCCESS_PATH + '?x=failed')
-        return HttpResponseRedirect(settings.X_USER_OAUTH_SUCCESS_PATH + '?x=connected')
+from news.x_accounts import XConnectionView, XConnectionStartView, XConnectionCallbackView, x_enabled, public_identity
 
 
 class TopicSerializer(serializers.ModelSerializer):

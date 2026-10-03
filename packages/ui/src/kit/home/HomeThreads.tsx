@@ -5,14 +5,16 @@ import { useFeature } from '../../lib/features';
 import { getCommunityThreads } from '../../lib/community';
 import { ThreadStrip } from '../../components/community/ThreadStrip';
 import { Button } from '../Button';
+import { useAccount } from '../../lib/account';
 
 export function HomeThreads() {
   const enabled = useFeature('THREADS_ENABLED');
   const accounts = useFeature('ACCOUNTS_ENABLED');
+  const account = useAccount();
   const query = useQuery({ queryKey: ['community-threads', 'hot'],
     queryFn: () => getCommunityThreads(1, '', '', { sort: 'hot' }), enabled, staleTime: 60_000, retry: false });
   const daily = useQuery({ queryKey: ['community-threads', 'ai-new'],
-    queryFn: () => getCommunityThreads(1, '', '', { sort: 'new', ai: '1' }), enabled, staleTime: 60_000, retry: false });
+    queryFn: () => getCommunityThreads(1, '', '', { featured: '1' }), enabled, staleTime: 60_000, retry: false });
   const spin = daily.data?.results[0];
   if (!enabled) return null;
   return <section id="nitki" className="sc-home-section sc-home-thread-feed" aria-labelledby="home-threads-title">
@@ -28,5 +30,6 @@ export function HomeThreads() {
     {query.isSuccess && !query.data.results.length && <p>Pierwsze nitki pojawią się po publikacji diagnoz.</p>}
     <ul className="sc-community__list">{query.data?.results.filter(thread => thread.id !== spin?.id).slice(0, 6).map(thread => <li key={thread.id}><ThreadStrip thread={thread} /></li>)}</ul>
     {accounts && <Button href="/nitki" variant="quiet" size="sm">Wszystkie nitki</Button>}
+    {accounts && account.data?.authenticated && <p><a href="/konto/nitki/nowa">Ułóż swoją nitkę: wybierz diagnozę i dodaj kontekst</a></p>}
   </section>;
 }

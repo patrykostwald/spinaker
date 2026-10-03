@@ -3,7 +3,7 @@ import { apiFetch } from './api';
 import { useFeature } from './features';
 
 type AccountDetails = { email?: string; email_verified?: boolean; accepted_terms_version?: string };
-export type Account = AccountDetails & { authenticated: boolean; google_enabled?: boolean; user: (AccountDetails & { id: number; username: string; is_staff: boolean; is_journalist?: boolean; can_edit_threads?: boolean }) | null; csrfToken: string };
+export type Account = AccountDetails & { authenticated: boolean; google_enabled?: boolean; x_enabled?: boolean; user: (AccountDetails & { id: number; username: string; display_name?: string; x_profile?: string | null; is_staff: boolean; is_journalist?: boolean; can_edit_threads?: boolean }) | null; csrfToken: string };
 export const TERMS_VERSION = '2026-10-03';
 export const accountEmail = (account?: Account) => account?.user?.email ?? account?.email ?? '';
 export const emailVerified = (account?: Account) => (account?.user?.email_verified ?? account?.email_verified) === true;

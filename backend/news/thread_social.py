@@ -1,10 +1,11 @@
 """Whole-thread ratings and flat comments. All mutations are account-gated."""
 import re
 import unicodedata
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.core import signing
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -19,7 +20,7 @@ from news.account_security import require_verified
 from news.community import public_threads, _counts
 from news.community_models import CommunityThreadOpinion, CommunityThreadReport
 from news.features import accounts_enabled, threads_enabled
-from news.thread_social_models import ThreadComment, ThreadRateEvent, ThreadModerationReport
+from news.thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRateEvent, ThreadModerationReport
 
 
 def locked_account(user, kind=None):
@@ -91,8 +92,12 @@ class CommentInput(serializers.Serializer):
 
 
 def comment_data(row, user):
+    from news.x_accounts import public_identity
+    identity = public_identity(row.author)
     mine = user.is_authenticated and row.author_id == user.pk
-    return {'id': row.pk, 'body': row.body, 'author': row.author.username if row.author_id else 'Usunięte konto',
+    return {'id': row.pk, 'body': row.body, 'author': identity['display_name'], 'x_profile': identity['x_profile'],
+            'reactions_count': row.reaction_count if hasattr(row, 'reaction_count') else row.reactions.count(),
+            'reacted': user.is_authenticated and row.reactions.filter(user=user).exists(),
             'created_at': row.created_at, 'edited_at': row.edited_at, 'is_owner': mine,
             'hidden': bool(row.hidden_at),
             'can_edit': mine and not row.hidden_at and timezone.now() < row.created_at + timedelta(minutes=5),
@@ -102,21 +107,34 @@ def comment_data(row, user):
 class ThreadCommentsView(SocialView):
     def get(self, request, thread_id):
         get_object_or_404(public_threads(), pk=thread_id)
+        order = request.query_params.get('sort', 'best')
+        if order not in ('best', 'new'):
+            raise serializers.ValidationError('Nieznana kolejność.')
+        after = request.query_params.get('after', '')
         try:
-            after = int(request.query_params.get('after', 0))
-            if after < 0:
-                raise ValueError
-        except ValueError:
+            cursor = signing.loads(after, salt=f'comments:{thread_id}:{order}', max_age=86400) if after not in ('', '0') else None
+        except signing.BadSignature:
             raise serializers.ValidationError('Nieprawidłowy kursor komentarzy.')
         rows = ThreadComment.objects.filter(thread_id=thread_id, deleted_at__isnull=True)
         visible = Q(hidden_at__isnull=True)
         if request.user.is_authenticated:
             visible |= Q(author=request.user)
         rows = rows.filter(visible)
-        # An ID cursor stays stable when earlier comments are removed.
-        batch = list(rows.filter(pk__gt=after).select_related('author').order_by('pk')[:21])
+        # Freeze time across pages; keyset pagination handles deletions without offsets.
+        anchor = cursor['at'] if cursor else timezone.now().timestamp()
+        rows = rows.filter(created_at__lte=datetime.fromtimestamp(anchor, tz=dt_timezone.utc))
+        ranked = list(rows.select_related('author__x_connection').annotate(reaction_count=Count('reactions')))
+        def key(row):
+            age = max(0, (anchor - row.created_at.timestamp()) / 3600)
+            score = row.reaction_count / (age + 2) ** 1.5 if order == 'best' else row.created_at.timestamp()
+            return (score, row.pk)
+        ranked.sort(key=key, reverse=True)
+        if cursor:
+            ranked = [row for row in ranked if key(row) < tuple(cursor['last'])]
+        batch = ranked[:21]
         return Response({'results': [comment_data(row, request.user) for row in batch[:20]],
-                         'next_cursor': batch[19].pk if len(batch) > 20 else None, 'count': rows.filter(hidden_at__isnull=True).count()})
+                         'next_cursor': signing.dumps({'at': anchor, 'last': key(batch[19])}, salt=f'comments:{thread_id}:{order}') if len(batch) > 20 else None,
+                         'count': rows.filter(hidden_at__isnull=True).count()})
 
     def post(self, request, thread_id):
         thread = get_object_or_404(public_threads(), pk=thread_id)
@@ -124,8 +142,51 @@ class ThreadCommentsView(SocialView):
         data.is_valid(raise_exception=True)
         with transaction.atomic():
             locked_account(request.user, 'comment')
+            # Lock before inserting the FK: upgrading two concurrent KEY SHARE locks
+            # after insertion would deadlock on PostgreSQL.
+            type(thread).objects.select_for_update().get(pk=thread.pk)
             row = ThreadComment.objects.create(thread=thread, author=request.user, **data.validated_data)
+            if thread.owner_id and thread.owner_id != request.user.pk:
+                count = thread.comments.filter(deleted_at__isnull=True, hidden_at__isnull=True).exclude(author_id=thread.owner_id).count()
+                grouped_notification(thread.owner_id, f'thread-comments:{thread.pk}', 'thread_reply',
+                    f'Komentarze pod Twoją nitką: {count}', f'/nitki/{thread.pk}')
         return Response(comment_data(row, request.user), status=201)
+
+
+def grouped_notification(user_id, key, kind, title, url):
+    from news.notification_models import Notification
+    Notification.objects.update_or_create(group_key=key, defaults={
+        'user_id': user_id, 'kind': kind, 'title': title, 'url': url,
+        'read_at': None, 'created_at': timezone.now()})
+
+
+class ThreadCommentReactionView(SocialView):
+    def post(self, request, thread_id, comment_id):
+        return self.change(request, thread_id, comment_id, True)
+
+    def delete(self, request, thread_id, comment_id):
+        return self.change(request, thread_id, comment_id, False)
+
+    def change(self, request, thread_id, comment_id, enabled):
+        get_object_or_404(public_threads(), pk=thread_id)
+        with transaction.atomic():
+            locked_account(request.user, 'rating' if enabled else None)
+            row = get_object_or_404(ThreadComment.objects.select_for_update(), pk=comment_id,
+                thread_id=thread_id, deleted_at__isnull=True, hidden_at__isnull=True)
+            if enabled:
+                _, changed = ThreadCommentReaction.objects.get_or_create(comment=row, user=request.user)
+            else:
+                changed, _ = row.reactions.filter(user=request.user).delete()
+            if changed and row.author_id and row.author_id != request.user.pk:
+                from news.notification_models import Notification
+                count = row.reactions.exclude(user_id=row.author_id).count()
+                key = f'comment-reactions:{row.pk}'
+                if count:
+                    title = '1 osoba uznała Twój komentarz za trafny' if count == 1 else f'{count} osób uznało Twój komentarz za trafny'
+                    grouped_notification(row.author_id, key, 'comment_reaction', title, f'/nitki/{thread_id}')
+                else:
+                    Notification.objects.filter(group_key=key).delete()
+        return Response(comment_data(row, request.user))
 
 
 class ThreadCommentDetailView(SocialView):

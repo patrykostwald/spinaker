@@ -12,6 +12,8 @@ TITLE_ORIGINS = [('publisher', 'Tytuł z metadanych strony'), ('reader', 'Tytuł
 
 
 class CommunityLink(models.Model):
+    x_data = models.JSONField(default=dict, blank=True)
+    x_fetched_at = models.DateTimeField(null=True, blank=True)
     canonical_url = models.URLField(max_length=1024, unique=True)
     domain = models.CharField(max_length=255, db_index=True)
     title = models.CharField(max_length=300)

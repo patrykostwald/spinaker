@@ -12,6 +12,7 @@ import { useFeature } from '../../lib/features';
 import { isUnavailable } from '../../lib/personal';
 import { ThreadStrip } from './ThreadStrip';
 import { ClampedText } from './SocialPrimitives';
+import { useAccount } from '../../lib/account';
 
 /** Jeden element nitki: materiał z Bazy (z linkiem do kontekstu) albo link spoza Bazy - wyraźnie oznaczony. */
 export function ElementRow({ element, index }: { element: ThreadElement; index: number }) {
@@ -46,6 +47,7 @@ export function ElementRow({ element, index }: { element: ThreadElement; index: 
 }
 
 export function CommunityThreadsPage({ context = {} }: { context?: { article_id?: number; figure_id?: number; url?: string } }) {
+  const account = useAccount();
   const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
@@ -86,9 +88,9 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
       )}
       {threads.length > 0 && <ul className="sc-community__list">{threads.map(thread => <li key={thread.id}><ThreadStrip thread={thread} /></li>)}</ul>}
       {query.hasNextPage && <Button variant="quiet" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej</Button>}
+      {ACCOUNTS_ENABLED && account.data?.authenticated && <p><Link href="/konto/nitki/nowa">Ułóż swoją nitkę: wybierz diagnozę i dodaj kontekst</Link></p>}
       <aside className="sc-clinic-roadmap">
-        Linki spoza Bazy zapisujemy bez treści i zdjęć - tylko tytuł, adres i nazwę strony; czytelnik trafia do oryginału. Ten sam link w wielu nitkach
-        to jeden box. Nitki możesz zgłosić do moderacji.
+        Link prowadzi do oryginału. Dla publicznych wpisów z X pokazujemy także krótki tekst, autora i datę. Nitki możesz zgłosić do moderacji.
       </aside>
     </div>
   );
@@ -104,7 +106,7 @@ export function CommunityThreadPage({ id }: { id: string }) {
     <div className="sc-community sc-community--detail sc-f2">
       <p><Link href="/nitki" className="sc-spin-detail__back">← Nitki czytelników</Link></p>
       <header className="sc-community__head">
-        <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Nitka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>@{thread.author}</Link></>}</p>
+        <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Nitka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link> {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</>}</p>
         <ClampedText><h1>{thread.title}</h1></ClampedText>
         {thread.description && <ClampedText>{thread.description}</ClampedText>}
         <p className="sc-community-card__meta">
