@@ -174,6 +174,11 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     </header> : full ? <header className="sc-thread-strip__head sc-thread-strip__head--full">
       {/* otwarta spinka: jeden wiersz „Autor: tytuł”, z prawej data i komentarze; „Zgłoś” jest w pasku akcji (właściciel 3.10) */}
       <h2 className="sc-fullhead"><span className="sc-fullhead__who">{thread.is_ai ? 'Dr. Spin (AI)' : <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link>}:</span> {thread.title}</h2>
+      {/* przepięcia na górze, wyśrodkowane w linii tytułu (właściciel 4.10) */}
+      {(thread.repin_of || Boolean(thread.repins?.length)) && <nav className="sc-repins" aria-label="Przepięcia">
+        {thread.repin_of && <Link href={`/spinki/${thread.repin_of}`}>Przepięcie innej spinki: zobacz oryginał →</Link>}
+        {thread.repins?.map((id, index) => <Link key={id} href={`/spinki/${id}`}>Przepięcie {index + 1} →</Link>)}
+      </nav>}
       {thread.published_at && <time className="sc-fullhead__time" dateTime={thread.published_at} title={new Date(thread.published_at).toLocaleString('pl-PL')}>{ago(thread.published_at)}</time>}
       <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => setShowComments(!showComments)}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
     </header> : <header className="sc-thread-strip__head">
@@ -258,10 +263,6 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       tools={full ? <ExportTools thread={thread} items={ordered} onRepin={() => { setRepinning(true); setShowComments(false); }} /> : undefined} />}
     {/* przepięcie zastępuje sekcję komentarzy; pod spodem lista przepięć tej spinki */}
     {full && repinning && <RepinPanel thread={thread} items={ordered} onClose={() => { setRepinning(false); setShowComments(true); }} />}
-    {full && (thread.repin_of || Boolean(thread.repins?.length)) && <nav className="sc-repins" aria-label="Przepięcia">
-      {thread.repin_of && <Link href={`/spinki/${thread.repin_of}`}>Przepięcie innej spinki: zobacz oryginał →</Link>}
-      {thread.repins?.map((id, index) => <Link key={id} href={`/spinki/${id}`}>Przepięcie {index + 1} →</Link>)}
-    </nav>}
     {!full && expanded && <div className="sc-thread-strip__foot">
       <Link className="sc-thread-strip__open" href={`/spinki/${thread.id}`} onClick={event => { if (onFullscreen && !event.metaKey && !event.ctrlKey) { event.preventDefault(); onFullscreen(); } }}>Otwórz całą spinkę →</Link>
       <span className="sc-thread-strip__tools">{row && <SocialReport threadId={thread.id} />}{row && onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz spinkę na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}

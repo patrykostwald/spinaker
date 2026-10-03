@@ -70,7 +70,7 @@ export function ClampedText({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element || open) return;
-    const measure = () => setOverflows(element.scrollHeight > element.clientHeight + 1);
+    const measure = () => setOverflows(element.scrollHeight > element.clientHeight + 4);
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
