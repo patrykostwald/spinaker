@@ -8374,3 +8374,12 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
   .sc-trop-overlay__body > article .sc-thread-strip__track { padding-left: 60px; transition: padding-left .45s cubic-bezier(.2,.8,.2,1), padding-top .45s cubic-bezier(.2,.8,.2,1); }
   .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open) { padding-left: 0; }
 }
+
+/* wiersz listy bez komentarza: tytuł (2 wiersze) + opis (1 wiersz), łańcuch przy prawej obok liczników (właściciel 3.10) */
+.sc-trow, .sc-trow:not(:has(.sc-trow__voices)) { grid-template-columns: 36px minmax(0, 1fr) auto auto !important; column-gap: 28px; }
+.sc-trow__main { grid-template-columns: 132px minmax(0, 1fr) !important; grid-template-rows: auto auto; }
+.sc-trow__main .sc-trow__by { grid-row: 1 / span 2; }
+.sc-trow__title { grid-column: 2; }
+.sc-trow__desc { grid-column: 2; margin-top: 3px; font-size: 13.5px; line-height: 1.45; color: var(--sc-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-trow__boxes { justify-self: end; }
+@media (max-width: 600px) { .sc-trow, .sc-trow:not(:has(.sc-trow__voices)) { grid-template-columns: 32px minmax(0, 1fr) auto !important; column-gap: 12px; } .sc-trow__main .sc-trow__by { grid-row: auto; } }

@@ -155,6 +155,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         <span className="sc-trow__by"><span className="sc-trow__when">{thread.published_at && <time dateTime={thread.published_at}>{ago(thread.published_at)}</time>}{badge && <span className="sc-trow__badge">{badge}</span>}</span>
           <span className="sc-trow__who"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}</span></span>
         <span className="sc-trow__title" title={thread.title}>{thread.title}</span>
+        {thread.description && !thread.signal_kind && !thread.narrative && <span className="sc-trow__desc">{thread.description}</span>}
       </button></h2>
       <span className="sc-trow__boxes">
         {/* miniatura spinki (właściciel 3.10): kwadraty boksów i zatrzaski między nimi, każdy w kolorze przeważającej reakcji;
@@ -164,7 +165,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
           <i className="sc-trow__sq" data-r={thread.boxes?.[i] ? dominant(thread.boxes[i]) : undefined} /></Fragment>)}</span>
         <span className="sc-trow__facts">{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
       </span>
-      {thread.top_comments?.[0] ? <p className="sc-trow__voice"><b style={thread.top_comments[0].author_color ? { color: thread.top_comments[0].author_color } : undefined}>{thread.top_comments[0].author}</b> {thread.top_comments[0].body}</p> : <span className="sc-trow__voice sc-trow__voice--empty">Bez komentarzy</span>}
+      {/* bez komentarza w wierszu (właściciel 3.10): tytuł w dwóch wierszach i opis jak na Wykopie, łańcuch przy licznikach */}
       <span className="sc-trow__side">
         {Boolean(thread.repins?.length) && <span className="sc-trow__repins" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}><SpinkaClip />{thread.repins!.length}</span>}
         <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={onFullscreen ? undefined : () => { if (!expanded) toggle(); setShowComments(!showComments); }}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
