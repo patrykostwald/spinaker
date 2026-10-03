@@ -1075,3 +1075,20 @@ def test_interview_stuck_in_progress_returns_to_queue(monkeypatch):
     assert clinic_interview.release_stuck() == [stuck.pk]
     stuck.refresh_from_db()
     assert stuck.status == 'queued'
+
+
+def test_daily_messages_catch_up_missing_yesterday(db, monkeypatch):
+    """Gdy wczoraj żaden przebieg nie zapisał przekazu obozu, dzisiejszy przebieg najpierw robi wczorajszy (właściciel 3.10)."""
+    from datetime import timedelta
+    monkeypatch.setattr(clinic_ai, 'daily_message', lambda label, day, posts: {'message': f'{day}', 'themes': ['x'], 'usage': {}})
+    yesterday = timezone.localtime() - timedelta(days=1)
+    for number in range(3):
+        acc = account('opposition', f'opp_{number}', str(501 + number))
+        PoliticalPost.objects.create(account=acc, post_id=str(900 + number), url='https://x.com/opp/status/1', text='t',
+                                     published_at=yesterday.replace(hour=12, minute=number), camp_at_collection='opposition')
+    result = clinic.run_daily_messages()
+    message = ClinicDailyMessage.objects.get(camp='opposition', day=yesterday.date())
+    assert message.message == yesterday.date().isoformat()
+    assert f'{yesterday.date().isoformat()}:opposition' in result['created']
+    clinic.run_daily_messages()  # istniejący wczorajszy przekaz nie jest robiony drugi raz
+    assert ClinicDailyMessage.objects.filter(camp='opposition', day=yesterday.date()).count() == 1

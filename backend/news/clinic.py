@@ -544,10 +544,24 @@ def run_daily_messages(day=None) -> dict:
 
     W ciągu dnia przekaz jest odświeżany (9:00, 12:00, 15:00, 18:00, 21:30), dopóki nikt go ręcznie nie zatwierdził.
     """
+    created = {}
+    if day is None:
+        # Dogrywka (właściciel 3.10: brak przekazu opozycji z 2.10): gdy wczoraj żaden przebieg nie zapisał przekazu
+        # obozu (np. limit darmowych modeli), próbujemy jeszcze raz dla wczoraj, zanim zrobimy dzisiejszy.
+        yesterday = timezone.localdate() - timedelta(days=1)
+        missing = [camp for camp in CAMPS if not ClinicDailyMessage.objects.filter(day=yesterday, camp=camp).exists()]
+        if missing:
+            created.update({f'{yesterday.isoformat()}:{camp}': pk for camp, pk in _daily_messages_for(yesterday, missing).items()})
     day = day or timezone.localdate()
+    created.update(_daily_messages_for(day, CAMPS))
+    alert = send_review_alert()
+    return {'status': 'ok', 'created': created, 'alert': alert}
+
+
+def _daily_messages_for(day, camps) -> dict:
     start = timezone.make_aware(datetime.combine(day, time.min))
     created = {}
-    for camp in CAMPS:
+    for camp in camps:
         existing = ClinicDailyMessage.objects.filter(day=day, camp=camp).first()
         if existing and existing.reviewed_by_id:
             continue  # zatwierdzony ręcznie — nie nadpisujemy
@@ -574,8 +588,7 @@ def run_daily_messages(day=None) -> dict:
             'reviewed_at': timezone.now() if status == 'approved' else None})
         message.posts.set(posts)
         created[camp] = message.pk
-    alert = send_review_alert()
-    return {'status': 'ok', 'created': created, 'alert': alert}
+    return created
 
 
 # --- alerty ---------------------------------------------------------------------------------
