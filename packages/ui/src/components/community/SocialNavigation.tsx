@@ -6,7 +6,7 @@ import { useNotifications } from '../../lib/accountPhase2';
 
 const entries = [
   { label: 'Start', href: '/', path: 'm3 11 9-8 9 8M5 10v11h14V10M9 21v-7h6v7' },
-  { label: 'Nitki', href: '/nitki', path: 'M3 6h6v12H3zM15 6h6v12h-6zM9 12h6' },
+  { label: 'Tropy', href: '/tropy', path: 'M3 6h6v12H3zM15 6h6v12h-6zM9 12h6' },
   { label: 'Szukaj', href: '/search', path: 'M21 21l-6-6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0' },
   { label: 'Powiadomienia', href: '/konto#powiadomienia', path: 'M18 8a6 6 0 0 0-12 0v7l-2 3h16l-2-3ZM10 21h4', account: true },
   { label: 'Profil', href: '/profile', path: 'M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 22v-3a8 8 0 0 1 16 0v3', account: true },

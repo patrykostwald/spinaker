@@ -18,8 +18,8 @@ export function ShareThreadOnX({ thread }: { thread: StoryThread }) {
     try { await navigator.clipboard.writeText(text); setCopied(index); } catch { setCopied(null); }
   }
   return <>
-    <Button variant="quiet" size="sm" onClick={() => setOpen(true)}>Udostępnij nitkę na X</Button>
-    <Dialog open={open} onClose={() => setOpen(false)} title="Nitka jako wątek na X">
+    <Button variant="quiet" size="sm" onClick={() => setOpen(true)}>Udostępnij trop na X</Button>
+    <Dialog open={open} onClose={() => setOpen(false)} title="Trop jako wątek na X">
       <div className="sc-xshare">
         <p className="sc-xshare__hint">
           Wątek z {posts.length} wpisów. Pierwszy to tytuł i opis z linkiem do nitki; każdy kolejny to jeden box z linkiem do oryginału -

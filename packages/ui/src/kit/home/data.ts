@@ -181,14 +181,14 @@ function demoThread(): ThreadDetail {
   const articles = FIXTURE_STRIPS[2].articles;
   return {
     id: -9100,
-    title: "Nitka demonstracyjna - układ dwóch kolumn i jednego rzędu",
+    title: "Trop demonstracyjny - układ dwóch kolumn i jednego rzędu",
     slug: "nitka-demonstracyjna",
     thread_type: "context",
     is_featured: true,
     updated_at: articles[0]?.published_date ?? new Date().toISOString(),
     published: true,
     item_count: articles.length,
-    description: "Fikcyjna nitka z fikstur witryny - tylko do pracy nad układem.",
+    description: "Fikcyjny trop z fikstur witryny - tylko do pracy nad układem.",
     image_url: articles[0]?.image_url ?? "",
     views_count: 0,
     created_at: articles[0]?.published_date ?? new Date().toISOString(),
@@ -206,7 +206,7 @@ function demoThread(): ThreadDetail {
   };
 }
 
-/** Nitka Dr. Spina: najnowsza codzienna nitka Dr. Spina (slug „dr-spin-kontekst-…”), a bez niej pierwsza
+/** Trop Dr. Spina: najnowsza codzienna nitka Dr. Spina (slug „dr-spin-kontekst-…”), a bez niej pierwsza
  *  opublikowana wyróżniona; brak obu → sekcja pokazuje układ-zapowiedź. */
 export function useDrSpinThread() {
   return useQuery({

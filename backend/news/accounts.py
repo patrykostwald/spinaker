@@ -386,7 +386,7 @@ class ThreadOpinionsView(APIView):
             with transaction.atomic():
                 opinion = ThreadOpinion.objects.create(user=request.user, thread=thread, **serializer.validated_data)
         except IntegrityError:
-            return Response({'detail': 'Twoja opinia o tej nitce jest już zapisana.'}, status=409)
+            return Response({'detail': 'Twoja opinia o tym tropie jest już zapisana.'}, status=409)
         return Response(ThreadOpinionSerializer(opinion).data, status=201)
     def patch(self, request, slug):
         require_verified(request.user)

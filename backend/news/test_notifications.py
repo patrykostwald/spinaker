@@ -198,7 +198,7 @@ def test_hidden_follow_is_not_exposed(users):
 
 def test_large_digest_reports_remaining_notifications(users):
     NotificationSettings.objects.create(user=users[0], email_digest='daily')
-    Notification.objects.bulk_create([Notification(user=users[0], kind='followed_thread', title=f'Nowa {i}', url=f'/nitki/{i}') for i in range(101)])
+    Notification.objects.bulk_create([Notification(user=users[0], kind='followed_thread', title=f'Nowa {i}', url=f'/tropy/{i}') for i in range(101)])
     with patch('news.account_mail.send_account_mail', return_value=True) as mail:
         assert send_notification_digests() == 1
         assert 'Pozostałe powiadomienia: 1.' in mail.call_args.args[2]

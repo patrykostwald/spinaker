@@ -72,7 +72,7 @@ class ThreadRatingsView(SocialView):
         data = RatingInput(data=request.data)
         data.is_valid(raise_exception=True)
         if set(request.data) != {'polarity'}:
-            raise serializers.ValidationError('Komentarz dodaj osobno pod nitką.')
+            raise serializers.ValidationError('Komentarz dodaj osobno pod tropem.')
         with transaction.atomic():
             locked_account(request.user, 'rating')
             CommunityThreadOpinion.objects.update_or_create(user=request.user, thread=thread, defaults=data.validated_data)
@@ -151,7 +151,7 @@ class ThreadCommentsView(SocialView):
             if thread.owner_id and thread.owner_id != request.user.pk:
                 count = thread.comments.filter(deleted_at__isnull=True, hidden_at__isnull=True).exclude(author_id=thread.owner_id).count()
                 grouped_notification(thread.owner_id, f'thread-comments:{thread.pk}', 'thread_reply',
-                    f'Komentarze pod Twoją nitką: {count}', f'/nitki/{thread.pk}')
+                    f'Komentarze pod Twoim tropem: {count}', f'/tropy/{thread.pk}')
         return Response(comment_data(row, request.user), status=201)
 
 
@@ -185,7 +185,7 @@ class ThreadCommentReactionView(SocialView):
                 key = f'comment-reactions:{row.pk}'
                 if count:
                     title = '1 osoba uznała Twój komentarz za trafny' if count == 1 else f'{count} osób uznało Twój komentarz za trafny'
-                    grouped_notification(row.author_id, key, 'comment_reaction', title, f'/nitki/{thread_id}')
+                    grouped_notification(row.author_id, key, 'comment_reaction', title, f'/tropy/{thread_id}')
                 else:
                     Notification.objects.filter(group_key=key).delete()
         return Response(comment_data(row, request.user))

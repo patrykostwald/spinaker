@@ -79,7 +79,7 @@ class ThreadItemInput(serializers.Serializer):
 
     def validate(self, attrs):
         if bool(attrs.get('article_id')) == bool(attrs.get('link_id')):
-            raise serializers.ValidationError('Element nitki to materiał z Bazy albo link — dokładnie jedno z nich.')
+            raise serializers.ValidationError('Element tropu to materiał z Bazy albo link - dokładnie jedno z nich.')
         return attrs
 
 
@@ -128,11 +128,11 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     def validate_items(self, value):
         if len(value) > 10:
-            raise serializers.ValidationError('Nitka może mieć najwyżej 10 boksów.')
+            raise serializers.ValidationError('Trop może mieć najwyżej 10 boksów.')
         articles = [row['article_id'] for row in value if row.get('article_id')]
         links = [row['link_id'] for row in value if row.get('link_id')]
         if len(articles) != len(set(articles)) or len(links) != len(set(links)):
-            raise serializers.ValidationError('Jeden materiał może wystąpić w nitce tylko raz.')
+            raise serializers.ValidationError('Jeden materiał może wystąpić w tropie tylko raz.')
         if set(Article.objects.filter(pk__in=articles, source__is_active=True).values_list('pk', flat=True)) != set(articles):
             raise serializers.ValidationError('Co najmniej jeden materiał nie jest dostępny.')
         if set(CommunityLink.objects.filter(pk__in=links, hidden_at__isnull=True).values_list('pk', flat=True)) != set(links):
@@ -151,12 +151,12 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
             last = previous.items.last()
             rows = attrs.get('items') or [{'article_id': pk} for pk in attrs.get('article_ids', [])]
             if not last or not rows or (rows[0].get('article_id'), rows[0].get('link_id')) != (last.article_id, last.link_id):
-                raise serializers.ValidationError({'continues': 'Pierwszy boks musi być ostatnim boksem poprzedniej nitki.'})
+                raise serializers.ValidationError({'continues': 'Pierwszy boks musi być ostatnim boksem poprzedniego tropu.'})
         if attrs.get('is_public', self.instance.is_public if self.instance else False):
             from news.account_security import require_verified
             from news.community import threads_enabled
             if not threads_enabled():
-                raise serializers.ValidationError({'is_public': 'Publikacja nitek nie jest jeszcze dostępna.'})
+                raise serializers.ValidationError({'is_public': 'Publikacja tropów nie jest jeszcze dostępna.'})
             request = self.context.get('request')
             require_verified(request.user if request else self.instance.owner if self.instance else None)
             if 'items' in attrs:
@@ -171,7 +171,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     def validate_article_ids(self, value):
         if len(value) != len(set(value)):
-            raise serializers.ValidationError('Jeden materiał może wystąpić w nitce tylko raz.')
+            raise serializers.ValidationError('Jeden materiał może wystąpić w tropie tylko raz.')
         existing = set(Article.objects.filter(pk__in=value, source__is_active=True).values_list('pk', flat=True))
         if existing != set(value):
             raise serializers.ValidationError('Co najmniej jeden materiał nie jest dostępny.')

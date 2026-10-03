@@ -172,7 +172,7 @@ def test_human_decisions_mail_retry_appeal_and_permissions(setup, monkeypatch):
     deliver_mail(); deliver_mail()
     assert send.call_count == 2
     assert set(call.args[0] for call in send.call_args_list) == {'reader@example.org','author@example.org'}
-    assert 'N4' in send.call_args.args[2] and f'/nitki/odwolanie/{report.pk}' in send.call_args.args[2]
+    assert 'N4' in send.call_args.args[2] and f'/tropy/odwolanie/{report.pk}' in send.call_args.args[2]
     url = f'/api/community/reports/{report.pk}/'
     client.force_authenticate(user('stranger'))
     assert client.get(url).status_code == 403

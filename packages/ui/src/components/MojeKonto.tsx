@@ -15,7 +15,7 @@ import { FollowButton } from './FollowButton';
 
 export function SignedOutPanel({ title = 'Mój spin.clinic' }: { title?: string }) {
   const [open, setOpen] = useState(false);
-  return <section className="sc-account sc-account-signed-out"><h1>{title}</h1><p>Zaloguj się, aby układać nitki, oceniać i komentować.</p>
+  return <section className="sc-account sc-account-signed-out"><h1>{title}</h1><p>Zaloguj się, aby układać tropy, oceniać i komentować.</p>
     <Button onClick={() => setOpen(true)} variant="primary">Zaloguj się lub załóż konto</Button><AccountDialog open={open} onClose={() => setOpen(false)} />
   </section>;
 }
@@ -31,7 +31,7 @@ function SavedSection() {
   async function remove(path: string) { setPending(true); try { await apiWrite(path, {}, 'DELETE'); await cache.invalidateQueries(); } catch (e) { setMessage(e instanceof Error ? e.message : 'Nie udało się usunąć.'); } finally { setPending(false); } }
   return <section className="sc-account-section"><header><h2>Zapisane</h2></header>
     <AccountDataState query={articles} /><AccountDataState query={threads} />
-    {articles.isSuccess && threads.isSuccess && follows.isSuccess && !articleRows.length && !threadRows.length && !saved.length && <EmptyState href="/nitki" label="Przeglądaj nitki">Nie masz jeszcze zapisanych treści.</EmptyState>}
+    {articles.isSuccess && threads.isSuccess && follows.isSuccess && !articleRows.length && !threadRows.length && !saved.length && <EmptyState href="/tropy" label="Przeglądaj tropy">Nie masz jeszcze zapisanych treści.</EmptyState>}
     <ul className="sc-account-rows">
       {saved.map(row => <li key={`saved-${row.id}`}><Link href={row.url}>{row.label}</Link><FollowButton kind="thread" targetId={row.target_id} label={row.label} compactLabel /></li>)}
       {articleRows.map(row => <li key={`article-${row.id}`}><Link href={`/material/${row.article.id}`}>{row.article.title}</Link><Button disabled={pending} onClick={() => remove(`/api/account/article-favorites/${row.article.id}/`)}>Usuń z zapisanych</Button></li>)}
@@ -39,13 +39,13 @@ function SavedSection() {
     </ul>{(articles.hasNextPage || threads.hasNextPage) && <Button disabled={articles.isFetchingNextPage || threads.isFetchingNextPage} onClick={() => { if (articles.hasNextPage) void articles.fetchNextPage(); if (threads.hasNextPage) void threads.fetchNextPage(); }}>Pokaż więcej zapisanych</Button>}{message && <p role="status">{message}</p>}
   </section>;
 }
-const NAV = [['moje-nitki', 'Moje nitki'], ['aktywnosc', 'Aktywność'], ['obserwowani', 'Obserwowani'], ['powiadomienia', 'Powiadomienia'], ['zgloszenia', 'Zgłoszenia'], ['ustawienia', 'Ustawienia']] as const;
+const NAV = [['moje-tropy', 'Moje tropy'], ['aktywnosc', 'Aktywność'], ['obserwowani', 'Obserwowani'], ['powiadomienia', 'Powiadomienia'], ['zgloszenia', 'Zgłoszenia'], ['ustawienia', 'Ustawienia']] as const;
 export function MojeKonto() {
   const account = useAccount(), profile = useAccountProfile(), threadsEnabled = useFeature('THREADS_ENABLED');
-  const [section, setSection] = useState<string>('moje-nitki');
+  const [section, setSection] = useState<string>('moje-tropy');
   useEffect(() => { const read = () => { const key = window.location.hash.slice(1); if (NAV.some(([id]) => id === key)) setSection(key); }; read(); window.addEventListener('hashchange', read); return () => window.removeEventListener('hashchange', read); }, []);
-  const nav = NAV.filter(([id]) => threadsEnabled || id !== 'moje-nitki');
-  const active = !threadsEnabled && section === 'moje-nitki' ? 'aktywnosc' : section;
+  const nav = NAV.filter(([id]) => threadsEnabled || id !== 'moje-tropy');
+  const active = !threadsEnabled && section === 'moje-tropy' ? 'aktywnosc' : section;
   if (account.isPending || account.isError) return <div className="sc-account"><AccountDataState query={account} /></div>;
   if (!account.data?.user) return <SignedOutPanel />;
   function navigate(id: string) { setSection(id); window.history.replaceState(null, '', `#${id}`); }
@@ -55,7 +55,7 @@ export function MojeKonto() {
     <AccountOnboarding key={account.data.user.id} ownerId={account.data.user.id} />
     <div className="sc-account-layout"><nav className="sc-account-sidenav" aria-label="Sekcje konta">{nav.map(([id, label]) => <a key={id} href={`#${id}`} aria-current={active === id ? 'page' : undefined} onClick={event => { event.preventDefault(); navigate(id); }}>{label}</a>)}</nav>
       <div className="sc-account-content" key={active}>
-        {active === 'moje-nitki' && <AccountThreads />}{active === 'aktywnosc' && <AccountActivity />}
+        {active === 'moje-tropy' && <AccountThreads />}{active === 'aktywnosc' && <AccountActivity />}
         {active === 'obserwowani' && <><FollowedSection /><SavedSection /></>}{active === 'powiadomienia' && <NotificationsSection />}
         {active === 'zgloszenia' && <AccountReports />}{active === 'ustawienia' && <AccountSettings />}
       </div>

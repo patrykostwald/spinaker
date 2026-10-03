@@ -17,8 +17,8 @@ export default function DiscussionRules() {
     <p>Komentować i oceniać można po zalogowaniu oraz potwierdzeniu e-maila. Komentarz mieści do 1000 znaków; odpowiedzi mają jeden poziom. Limit to 10 komentarzy na godzinę i 50 na dobę, z odstępem co najmniej 30 sekund. Powtórzenie tego samego komentarza jest blokowane.</p>
     <p>Nowe komentarze sprawdza automatyczny filtr. Wskazane naruszenia trafiają do zespołu spin.clinic jako ukryte komentarze. Jeśli filtr nie odpowie, komentarz zostaje opublikowany i oznaczony do przeglądu. Trzy niezależne zgłoszenia ukrywają komentarz do decyzji moderatora. Autor widzi swój ukryty komentarz wraz z powodem.</p>
     <p>Przycisk „Zgłoś” służy do wskazywania naruszeń. Jeśli chcesz wyjaśnić decyzję moderacji, napisz do <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>, podając numer komentarza. Operator serwisu: iapply sp. z o.o.</p>
-    <h2>Nitki</h2><p>Pod nitką komentarze tworzą płaską listę i mają limit 600 znaków. Możesz wskazać @boks 3, edytować przez 5 minut i usunąć swój komentarz później. Limit to 20 zapisów komentarzy i 50 zapisów ocen na godzinę. Jeden głos na nitkę można zmieniać. Zgłoszenia sprawdza zespół z pomocą AI; decyzja zawiera uzasadnienie i możliwość jednego odwołania rozpatrywanego przez człowieka.</p>
-    <p><Link href="/zasady-korzystania#nitki">Pełne zasady nitek, ocen i komentarzy oraz punkt kontaktowy</Link></p>
+    <h2>Tropy</h2><p>Pod tropem komentarze tworzą płaską listę i mają limit 600 znaków. Możesz wskazać @boks 3, edytować przez 5 minut i usunąć swój komentarz później. Limit to 20 zapisów komentarzy i 50 zapisów ocen na godzinę. Jeden głos na nitkę można zmieniać. Zgłoszenia sprawdza zespół z pomocą AI; decyzja zawiera uzasadnienie i możliwość jednego odwołania rozpatrywanego przez człowieka.</p>
+    <p><Link href="/zasady-korzystania#tropy">Pełne zasady tropów, ocen i komentarzy oraz punkt kontaktowy</Link></p>
     <p><Link href="/klinika">Wróć do Kliniki</Link></p>
   </article>;
 }

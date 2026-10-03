@@ -19,7 +19,7 @@ authoring = ContextVar('thread_review_authoring', default=False)
 # proper-name guard below keeps catching unknown surnames without rejecting template grammar.
 TEMPLATE_WORDS = frozenset(
     'Fragment Sam Wpis Wpisy Kolejność Zbieżne Zbieżny Zgłoszenie Druk Poprawka Codzienna Dane Blokada Brak '
-    'Fraza Kontekst Materiał Metoda Narracja Nitka Nowa Obecność Pełna Powtórzone Przekaz Rozkład Sygnał '
+    'Fraza Kontekst Materiał Metoda Narracja Nitka Trop Nowa Obecność Pełna Powtórzone Przekaz Rozkład Sygnał '
     'Technika Techniki Wspólny Zapis Zbieżność Zgłoszone Diagnoza Kolejne Najwcześniejszy Ten To Dla '
     'Twierdzenie Twierdzenia Źródło Uwaga Wątek Teza Ton Strona Rządzący Opozycja '
     'Spina Spinem Spinowi Klinika Kliniki Klinice Sejm Sejmu Senat Senatu'.split())
@@ -92,7 +92,7 @@ def measure(texts, payload, *, final=False):
         return ['Niepełny zestaw tekstów.']
     errors = []
     if not 3 <= len(payload['boxes']) <= 8:
-        errors.append('Nitka musi mieć od 3 do 8 boksów.')
+        errors.append('Trop musi mieć od 3 do 8 boksów.')
     evidence = json.dumps([payload['evidence'], payload['boxes']], ensure_ascii=False)
     known = set(re.findall(r'\w+', evidence.casefold()))
     for key, value in texts.items():
@@ -171,7 +171,7 @@ def enqueue(thread, evidence):
 
 def ask(role, data):
     if len(json.dumps(data, ensure_ascii=False)) > 12000:
-        raise ValueError('Materiał przekracza bezpieczny rozmiar recenzji; wymaga skrócenia nitki.')
+        raise ValueError('Materiał przekracza bezpieczny rozmiar recenzji; wymaga skrócenia tropu.')
     if role == 2:
         text_schema = {'type': 'object', 'additionalProperties': False,
             'properties': {key: {'type': 'string'} for key in data['texts']}, 'required': list(data['texts'])}

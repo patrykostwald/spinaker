@@ -60,7 +60,7 @@ def dr_spin_published(sender, instance, raw=False, **kwargs):
     if not instance.slug.startswith('dr-spin-kontekst-'):
         return
     key = f'dr-spin:{instance.pk}'
-    payload = {'title': 'Nowa nitka Dr. Spina', 'body': instance.title,
+    payload = {'title': 'Nowy trop Dr. Spina', 'body': instance.title,
                'url': f'/thread/{instance.slug}', 'tag': key}
     transaction.on_commit(lambda: _enqueue(key, 'nitki-dr-spina', payload))
 

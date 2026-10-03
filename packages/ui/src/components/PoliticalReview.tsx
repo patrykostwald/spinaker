@@ -245,7 +245,7 @@ export function PoliticalReview() {
       <div className="sc-political-actions">
         <button type="submit" disabled={busy} className={primaryButton}>{busy ? 'Zapisuję…' : 'Zapisz jako propozycję do przeglądu'}</button>
         <button type="button" disabled={busy || !selectedPosts.length} className={button} onClick={resetForm}>Wyczyść wybór</button>
-        <p className="sc-political-copy">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje nitki i nie ocenia prawdziwości wpisów.</p>
+        <p className="sc-political-copy">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje tropu i nie ocenia prawdziwości wpisów.</p>
       </div>
     </form>
 

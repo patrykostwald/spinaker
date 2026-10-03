@@ -23,7 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: 'Klinika', url: '/klinika' },
       { name: 'Wiadomości', url: '/' },
-      { name: 'Nitki', url: '/nitki' },
+      { name: 'Tropy', url: '/tropy' },
     ],
   };
 }

@@ -50,10 +50,10 @@ export function FollowedSection() {
   const follows = useFollows();
   return <PanelSection id="obserwowani" title="Obserwowani">
     <AccountDataState query={follows} />
-    {follows.isSuccess && !follows.data.length && <p>Obserwuj wybrane osoby i nitki, aby łatwo do nich wracać. <Link href="/osoby-publiczne">Znajdź osobę publiczną</Link>.</p>}
+    {follows.isSuccess && !follows.data.length && <p>Obserwuj wybrane osoby i tropy, aby łatwo do nich wracać. <Link href="/osoby-publiczne">Znajdź osobę publiczną</Link>.</p>}
     {(['figure', 'user'] as const).map(kind => {
       const rows = follows.data?.filter(row => row.kind === kind) ?? [];
-      return rows.length ? <div key={kind}><h3>{kind === 'figure' ? 'Osoby publiczne' : 'Autorzy nitek'}</h3><ul className="sc-account-rows">{rows.map(row => <li key={row.id}>
+      return rows.length ? <div key={kind}><h3>{kind === 'figure' ? 'Osoby publiczne' : 'Autorzy tropów'}</h3><ul className="sc-account-rows">{rows.map(row => <li key={row.id}>
         <div><Link className="sc-account-title" href={accountHref(row.url)}>{row.label}</Link>{kind === 'figure' && <><FollowModeSelect follow={row} /><LatestDiagnosis figureId={row.target_id} /></>}</div>
         <FollowButton kind={row.kind} targetId={row.target_id} label={row.label} />
       </li>)}</ul></div> : null;
@@ -90,7 +90,7 @@ export function VerifyEmailNotice() {
     try { await apiWrite('/api/account/verify-email/resend/', {}); setMessage('Wysłano wiadomość. Sprawdź skrzynkę i folder spam.'); }
     catch (error) { setMessage(accountMessage(error)); } finally { setPending(false); }
   }
-  return <div className="sc-f2-notice"><p>{accountEmail(account.data) ? 'Potwierdź e-mail, aby publikować nitki. Szkic możesz zapisać już teraz.' : 'Dodaj e-mail w ustawieniach konta i potwierdź go, aby publikować nitki.'}</p>
+  return <div className="sc-f2-notice"><p>{accountEmail(account.data) ? 'Potwierdź e-mail, aby publikować tropy. Szkic możesz zapisać już teraz.' : 'Dodaj e-mail w ustawieniach konta i potwierdź go, aby publikować tropy.'}</p>
     {accountEmail(account.data) ? <Button type="button" variant="quiet" loading={pending} onClick={resend}>Wyślij ponownie link potwierdzający</Button> : <Button href="/konto#ustawienia" variant="quiet">Ustaw e-mail</Button>}
     <Button type="button" variant="quiet" disabled={account.isFetching} onClick={() => account.refetch()}>Sprawdź potwierdzenie</Button>
     {message && <p role="status">{message}</p>}
@@ -143,7 +143,7 @@ export function AccountSettings() {
           <option value="off">Wyłączone</option><option value="daily">Raz dziennie</option><option value="weekly">Raz w tygodniu</option>
         </select></label>
         {PUSH_ENABLED && <><p>Wybierz rodzaje powiadomień push. Wymagają też włączonej subskrypcji na urządzeniu.</p>{([
-          ['push_spin_of_day', 'Spin dnia'], ['push_followed', 'Nowości u obserwowanych'], ...(THREADS_ENABLED ? [['push_thread_replies', 'Odpowiedzi w nitkach']] : []),
+          ['push_spin_of_day', 'Spin dnia'], ['push_followed', 'Nowości u obserwowanych'], ...(THREADS_ENABLED ? [['push_thread_replies', 'Odpowiedzi w tropach']] : []),
         ] as [keyof Omit<NotificationSettings, 'email_digest'>, string][]).map(([key, label]) => <label className="sc-f2-check" key={key}><input type="checkbox" checked={settings.data[key]} disabled={pending} onChange={event => { const checked = event.target.checked; void perform(() => updateSettings({ [key]: checked }), 'Zapisano preferencje push.'); }} />{label}</label>)}</>}
         </>}
       </section>
@@ -181,7 +181,7 @@ export function AccountOnboarding({ ownerId }: { ownerId: number }) {
   function finish() { try { localStorage.setItem(`sc-onboarding-social:${ownerId}`, 'done'); } catch {} setStep(null); }
   if (step === null) return <Button variant="quiet" onClick={() => setStep(0)}>Pierwsze kroki</Button>;
   const steps = [
-    ['Oceniaj nitki', 'Trzy znaki pomagają wyrazić ocenę: ✓ zgadzam się, ? mam wątpliwości, ✕ nie zgadzam się.'],
+    ['Oceniaj tropy', 'Trzy znaki pomagają wyrazić ocenę: ✓ zgadzam się, ? mam wątpliwości, ✕ nie zgadzam się.'],
     ['Obserwuj', 'Obserwuj polityków i autorów, aby łatwo wracać do ich treści.'],
     ['Ustaw powiadomienia', 'Powiadomienia serwisowe są włączone. Społecznościowe możesz włączyć w ustawieniach.'],
   ];

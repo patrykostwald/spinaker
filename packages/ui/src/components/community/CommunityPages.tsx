@@ -33,7 +33,7 @@ export function ElementRow({ element, index }: { element: ThreadElement; index: 
             {element.source_name}{element.published_date ? ` · ${formatDatePl(element.published_date)}` : ""}
           </> : <>
             <span className="sc-thread-el__tag sc-thread-el__tag--outside" title="Materiał spoza naszej Bazy - dodany przez czytelnika">spoza Bazy</span>
-            {element.domain}{element.title_origin === "reader" ? " · tytuł przepisany przez autora nitki" : ""}
+            {element.domain}{element.title_origin === "reader" ? " · tytuł przepisany przez autora tropu" : ""}
           </>}
         </p>
         <p className="sc-thread-el__title">
@@ -56,23 +56,23 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
   return (
     <div className="sc-community sc-f2">
       <header className="sc-community__head">
-        <p className="sc-clinic-kicker">Nitki</p>
-        <h1>Diagnozy i materiały ułożone w nitki</h1>
+        <p className="sc-clinic-kicker">Tropy</p>
+        <h1>Diagnozy i materiały ułożone w tropy</h1>
         <p className="sc-clinic-lead">
-          Nitka kontekstowa to jeden materiał na początku, a za nim - w kolejności - to, co go dopełnia, potwierdza albo podważa. Każdy może ułożyć
+          Trop to jeden materiał na początku, a za nim - w kolejności - to, co go dopełnia, potwierdza albo podważa. Każdy może ułożyć
           swoją z materiałów z naszej Bazy albo dodać źródło przez link.
         </p>
         <div className="sc-community__actions">
-          {ACCOUNTS_ENABLED && <Button href="/konto/nitki/nowa" variant="primary">Ułóż swoją nitkę</Button>}
+          {ACCOUNTS_ENABLED && <Button href="/konto/tropy/nowa" variant="primary">Ułóż swój trop</Button>}
           <form role="search" className="sc-community__search" onSubmit={(event: FormEvent) => { event.preventDefault(); setTerm(search.trim()); }}>
-            <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Szukaj w tytułach nitek…" aria-label="Szukaj nitek" />
+            <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Szukaj w tytułach tropów…" aria-label="Szukaj tropów" />
             <Button type="submit" variant="quiet" size="sm">Szukaj</Button>
           </form>
         </div>
-        {contextActive && <p>Pokazujemy nitki zawierające wybrany materiał lub potwierdzone powiązanie. <Link href="/nitki">Pokaż wszystkie</Link></p>}
+        {contextActive && <p>Pokazujemy tropy zawierające wybrany materiał lub potwierdzone powiązanie. <Link href="/tropy">Pokaż wszystkie</Link></p>}
       </header>
       <ThreadFeed initialSort="hot" term={term} context={context} />
-      {ACCOUNTS_ENABLED && account.data?.authenticated && <p><Link href="/konto/nitki/nowa">Ułóż swoją nitkę: wybierz diagnozę i dodaj kontekst</Link></p>}
+      {ACCOUNTS_ENABLED && account.data?.authenticated && <p><Link href="/konto/tropy/nowa">Ułóż swój trop: wybierz diagnozę i dodaj kontekst</Link></p>}
       <aside className="sc-clinic-roadmap">
         Link prowadzi do oryginału. Dla publicznych wpisów z X pokazujemy także krótki tekst, autora i datę. Nitki możesz zgłosić do moderacji.
       </aside>
@@ -82,15 +82,15 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
 
 export function CommunityThreadPage({ id }: { id: string }) {
   const query = useQuery({ queryKey: ["community-thread", id], queryFn: () => getCommunityThread(id), retry: false });
-  if (query.isLoading) return <div className="sc-community"><div className="sc-social-skeleton" aria-label="Ładowanie nitki" /></div>;
+  if (query.isLoading) return <div className="sc-community"><div className="sc-social-skeleton" aria-label="Ładowanie tropu" /></div>;
   if (query.isError && !isUnavailable(query.error)) return <div className="sc-community"><AccountDataState query={query} /></div>;
-  if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono nitki - mogła zostać usunięta albo nie jest publiczna. <Link href="/nitki">Wszystkie nitki</Link></p></div>;
+  if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono tropu - mógł zostać usunięty albo nie jest publiczny. <Link href="/tropy">Wszystkie tropy</Link></p></div>;
   const thread = query.data;
   return (
     <div className="sc-community sc-community--detail sc-f2">
-      <p><Link href="/nitki" className="sc-spin-detail__back">← Nitki czytelników</Link></p>
+      <p><Link href="/tropy" className="sc-spin-detail__back">← Tropy czytelników</Link></p>
       <header className="sc-community__head">
-        <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Nitka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link> {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</>}</p>
+        <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Trop czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link> {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</>}</p>
         <ClampedText><h1>{thread.title}</h1></ClampedText>
         {thread.description && <ClampedText>{thread.description}</ClampedText>}
         <p className="sc-community-card__meta">

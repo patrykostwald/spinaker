@@ -28,7 +28,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Redakcja",
     href: "/editor",
     items: [
-      { label: "Warsztat nitek", href: "/editor" },
+      { label: "Warsztat tropów", href: "/editor" },
       { label: "Katalog źródeł", href: "/editor/sources" },
       { label: "Panel redakcyjny X", href: "/editor/political" },
     ],

@@ -30,7 +30,7 @@ export function SocialReport({ threadId, commentId }: { threadId: number; commen
     } catch (error) { setStatus(message(error)); } finally { setPending(false); }
   }
   return <span className="sc-social-report"><button type="button" onClick={() => setOpen(true)}>Zgłoś</button><span role="status">{status}</span>
-    <Dialog className="sc-social-report-dialog" open={open} onClose={() => setOpen(false)} title={commentId ? 'Zgłoś komentarz' : 'Zgłoś nitkę'}><form onSubmit={submit}>
+    <Dialog className="sc-social-report-dialog" open={open} onClose={() => setOpen(false)} title={commentId ? 'Zgłoś komentarz' : 'Zgłoś trop'}><form onSubmit={submit}>
       <label>Powód<select value={reason} onChange={e => setReason(e.target.value)}>{REPORT_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select></label>
       <label>Opis<textarea maxLength={1000} value={details} onChange={e => setDetails(e.target.value)} /></label><CharacterCount text={details} limit={1000} />
       <button disabled={pending}>Wyślij zgłoszenie</button><p role="status">{status}</p>
@@ -98,9 +98,9 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
           <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.author}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleDateString('pl-PL')}</time>{row.reactions_count > 0 && <small className="sc-social-trafne"><SocialIcon kind="positive" />{row.reactions_count}</small>}</header>
           <ClampedText>{content(row.body)}</ClampedText>
         </li>)}</ol>}
-        {count > 3 && <Link className="sc-social-all" href={`/nitki/${id}#komentarze`}>Pokaż wszystkie komentarze ({count})</Link>}
+        {count > 3 && <Link className="sc-social-all" href={`/tropy/${id}#komentarze`}>Pokaż wszystkie komentarze ({count})</Link>}
         {canWrite ? <form className="sc-social-reply" onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
-          <label className="sc-sr-only" htmlFor={`reply-${id}`}>Odpowiedz w nitce</label>
+          <label className="sc-sr-only" htmlFor={`reply-${id}`}>Odpowiedz w tropie</label>
           <input id={`reply-${id}`} value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Odpowiedz…" />
           <button disabled={pending || !draft.trim()}>Odpowiedz</button>
         </form> : enabled ? <p className="sc-social-login"><a href="/konto">Zaloguj się</a>, aby odpowiedzieć.</p> : null}
@@ -109,16 +109,16 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
     </div>;
   }
   return <div className="sc-thread-social">
-    <nav className="sc-thread-social-actions" aria-label="Akcje nitki">
+    <nav className="sc-thread-social-actions" aria-label="Akcje tropu">
       <button type="button" aria-expanded={showRatings} onClick={() => setShowRatings(!showRatings)}>Oceń</button>
       <button type="button" aria-expanded={showComments} onClick={() => setShowComments(!showComments)}>Komentarz</button>
       <button type="button" onClick={async () => {
-        try { const url = `${location.origin}/nitki/${id}`; if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); setStatus('Skopiowano link.'); } }
+        try { const url = `${location.origin}/tropy/${id}`; if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); setStatus('Skopiowano link.'); } }
         catch (error) { if (!(error instanceof Error && error.name === 'AbortError')) setStatus('Nie udało się udostępnić linku.'); }
       }}>Udostępnij</button>
       <FollowButton kind="thread" targetId={id} label={title} compactLabel />
     </nav>
-    {showRatings && <section aria-label="Ocena całej nitki" className="sc-social-ratings">
+    {showRatings && <section aria-label="Ocena całego tropu" className="sc-social-ratings">
       {ratings.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie ocen" />}
       {ratings.isError && <button onClick={() => ratings.refetch()}>Ponów odczyt ocen</button>}
       {RATINGS.map(key => enabled ? <button key={key} data-rating={key} disabled={!canWrite || pending} aria-pressed={ratings.data?.mine?.polarity === key} onClick={() => rate(key)}>
@@ -126,7 +126,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       </button> : <span key={key} data-rating={key}><SocialIcon kind={key} />{labels[key]}: {ratings.data?.counts[key] ?? 0}</span>)}
       {enabled && !canWrite && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby oceniać i komentować.</p>}
     </section>}
-    {showComments && <section id="komentarze" aria-label="Komentarze pod nitką" className="sc-social-comments">
+    {showComments && <section id="komentarze" aria-label="Komentarze pod tropem" className="sc-social-comments">
       <label>Kolejność komentarzy<select value={sort} onChange={e => setSort(e.target.value)}><option value="best">Najtrafniejsze</option><option value="new">Najnowsze</option></select></label>
       {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
@@ -143,10 +143,10 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       </li>)}</ol>
       {comments.hasNextPage && <button disabled={comments.isFetchingNextPage} onClick={() => comments.fetchNextPage()}>Pokaż kolejne komentarze</button>}
       {canWrite ? <form onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
-        <label>Komentarz pod nitką<textarea value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Możesz wskazać @boks 3" /></label>
+        <label>Komentarz pod tropem<textarea value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Możesz wskazać @boks 3" /></label>
         <CharacterCount text={draft} limit={600} /><button disabled={pending || !draft.trim()}>Dodaj komentarz</button>
       </form> : enabled ? <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p> : null}
-      <a href="/zasady-korzystania#nitki">Zasady nitek, ocen i komentarzy</a>
+      <a href="/zasady-korzystania#tropy">Zasady tropów, ocen i komentarzy</a>
     </section>}
     {expanded && canWrite && <button type="button" onClick={e => { setShowComments(true); const parent = e.currentTarget.parentElement; requestAnimationFrame(() => parent?.querySelector<HTMLTextAreaElement>('form textarea')?.focus()); }}>Dodaj swój komentarz</button>}
     <p role="status">{status}</p>

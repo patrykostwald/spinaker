@@ -39,7 +39,7 @@ export function ShareOnX({ title, path, label = "Udostępnij na X" }: ShareOnXPr
         <label className="sc-share-x__label">Twój komentarz
           <textarea value={draft} maxLength={240} rows={4} onChange={event => setDraft(event.target.value)} />
         </label>
-        <p className="sc-t-caption sc-text-2">Link do materiału lub nitki zostanie dodany przez X. Publikację zatwierdzasz tam samodzielnie.</p>
+        <p className="sc-t-caption sc-text-2">Link do materiału lub tropu zostanie dodany przez X. Publikację zatwierdzasz tam samodzielnie.</p>
         <Button type="button" variant="primary" size="md" onClick={share}>Otwórz X ↗</Button>
       </div>
     </Dialog>

@@ -40,9 +40,9 @@ function FollowControl({ kind, targetId, label, compactLabel }: { kind: FollowKi
   if (kind === 'user' && account.data?.user?.id === targetId) return null;
   if (isUnavailable(follows.error)) return <span className="sc-f2-muted">Obserwowanie będzie dostępne wkrótce.</span>;
   return <span className="sc-f2-follow">
-    <Button type="button" variant="quiet" aria-pressed={Boolean(match)} aria-label={`${compactLabel ? (match ? 'Usuń z obserwowanych nitek' : 'Zapisz w obserwowanych nitkach') : match ? 'Przestań obserwować' : 'Obserwuj'}: ${label}`} title={compactLabel ? 'Zapisz w obserwowanych nitkach' : undefined} loading={pending}
+    <Button type="button" variant="quiet" aria-pressed={Boolean(match)} aria-label={`${compactLabel ? (match ? 'Usuń z obserwowanych tropów' : 'Zapisz w obserwowanych tropach') : match ? 'Przestań obserwować' : 'Obserwuj'}: ${label}`} title={compactLabel ? 'Zapisz w obserwowanych tropach' : undefined} loading={pending}
       aria-expanded={kind === 'figure' && !match ? choosing : undefined} aria-controls={choosing ? modeId : undefined}
-      disabled={account.isFetching || Boolean(account.data?.authenticated && !follows.isSuccess)} onClick={() => toggle()}>{compactLabel ? (match ? 'Zapisano' : 'Zapisz') : kind === 'thread' ? (match ? 'Obserwujesz nitkę ✓' : 'Obserwuj nitkę') : kind === 'user' ? (match ? 'Obserwujesz autora ✓' : 'Obserwuj autora') : (match ? 'Obserwujesz ✓' : 'Obserwuj')}</Button>
+      disabled={account.isFetching || Boolean(account.data?.authenticated && !follows.isSuccess)} onClick={() => toggle()}>{compactLabel ? (match ? 'Zapisano' : 'Zapisz') : kind === 'thread' ? (match ? 'Obserwujesz trop ✓' : 'Obserwuj trop') : kind === 'user' ? (match ? 'Obserwujesz autora ✓' : 'Obserwuj autora') : (match ? 'Obserwujesz ✓' : 'Obserwuj')}</Button>
     {choosing && !match && <span id={modeId} className="sc-follow-mode-box" onKeyDown={event => { if (event.key === 'Escape') setChoosing(false); }}>
       <span role="radiogroup" aria-label={`Powiadomienia: ${label}`}>
         {FOLLOW_MODES.map(option => <label key={option.value}><input type="radio" name={modeId} value={option.value} checked={mode === option.value} disabled={pending} onChange={() => setMode(option.value)} />{option.label}</label>)}

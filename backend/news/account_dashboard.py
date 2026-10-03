@@ -59,12 +59,12 @@ def activity(user, public=False, viewer=None):
     for row in comments:
         refs = [int(n) for n in re.findall(r'@boks\s+(\d{1,3})\b', row.body, re.I)]
         rows.append({'id': f'comment-{row.pk}', 'kind': 'comments', 'created_at': row.created_at,
-            'body': row.body, 'title': row.thread.title, 'url': f'/nitki/{row.thread_id}#comment-{row.pk}',
+            'body': row.body, 'title': row.thread.title, 'url': f'/tropy/{row.thread_id}#comment-{row.pk}',
             'thread_id': row.thread_id, 'box_references': refs, 'hidden': bool(row.hidden_at)})
     if not public:
         for row in ratings:
             rows.append({'id': f'rating-{row.pk}', 'kind': 'ratings', 'created_at': row.created_at,
-                'polarity': row.polarity, 'title': row.thread.title, 'url': f'/nitki/{row.thread_id}'})
+                'polarity': row.polarity, 'title': row.thread.title, 'url': f'/tropy/{row.thread_id}'})
         from news.clinic_models import ClinicInterview
         winners = {row.day: row for row in ClinicInterview.objects.filter(
             day__in=InterviewVote.objects.filter(user=user).values('ballot__day'),

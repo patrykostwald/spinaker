@@ -40,7 +40,7 @@ REGISTRY = {
     'duty': agent('Dyżurny', 'Wykrywa anomalie wyników i zleca bezpieczne naprawy.', 'news.tasks.duty_task', 'DUTY_ENABLED', True),
     'interview-candidates': agent('Kandydaci na wywiad dnia', 'Zbiera kandydatów do głosowania na wywiad dnia.', 'news.tasks.clinic_interview_candidates_task', default=True),
     'moderation-mail': agent('Poczta moderacji', 'Ponawia wysyłkę e-maili z decyzjami moderacji nitek.', 'news.notification_tasks.retry_thread_moderation_mail', 'THREADS_ENABLED'),
-    'narrative-threads': agent('Nitka narracji dnia', 'Układa nitkę narracji dnia dla każdej strony według jawnego kryterium.', 'news.tasks.narrative_thread_task', 'THREADS_ENABLED'),
+    'narrative-threads': agent('Trop narracji dnia', 'Układa nitkę narracji dnia dla każdej strony według jawnego kryterium.', 'news.tasks.narrative_thread_task', 'THREADS_ENABLED'),
     'signal-threads': agent('Sygnały i narracje', 'Bez AI wykrywa sygnały lobbingu przy drukach i nowe narracje; układa szkice nitek.', 'news.tasks.signal_threads_task', 'THREADS_ENABLED'),
     'thread-review': agent('Kontrola nitek', 'Miernik, recenzent merytoryczny i językoznawca sprawdzają każdy tekst Dr. Spina przed publikacją.', 'news.tasks.thread_reviews_task', 'THREADS_ENABLED'),
     'krs': agent('Agent KRS', 'Sprawdza powiązania osób z podmiotami KRS.', 'news.tasks.krs_agent_task', 'KRS_AGENT_ENABLED', cost='krs'),

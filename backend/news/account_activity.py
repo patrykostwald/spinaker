@@ -31,7 +31,7 @@ class MyReactionsView(APIView):
               for row in ThreadOpinion.objects.filter(user=user).select_related('thread')[:LIMIT]],
             *[_row('clinic', row, row.diagnosis.headline or 'Diagnoza spinu', f'/klinika/{row.diagnosis_id}')
               for row in SpinOpinion.objects.filter(user=user, polarity__isnull=False).select_related('diagnosis')[:LIMIT]],
-            *[_row('community', row, row.thread.title, f'/nitki/{row.thread_id}')
+            *[_row('community', row, row.thread.title, f'/tropy/{row.thread_id}')
               for row in CommunityThreadOpinion.objects.filter(user=user).select_related('thread')[:LIMIT]],
         ]
         rows.sort(key=lambda row: row['created_at'], reverse=True)

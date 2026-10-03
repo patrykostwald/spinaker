@@ -59,7 +59,7 @@ class WriteThreadSerializer(serializers.ModelSerializer):
         if not 1 <= len(items) <= 100:
             raise serializers.ValidationError('Dodaj od 1 do 100 materiałów.')
         if not self.context['request'].user.is_staff and len(items) > JOURNALIST_MAX_ITEMS:
-            raise serializers.ValidationError('Nitka ma najwyżej 15 boxów: box otwierający i do 14 boxów kontekstu.')
+            raise serializers.ValidationError('Trop ma najwyżej 15 boxów: box otwierający i do 14 boxów kontekstu.')
         ids = [('article', i['article_id'].pk) if i.get('article_id') else ('url', i['external_url']) for i in items]
         if len(ids) != len(set(ids)):
             raise serializers.ValidationError('Ten sam materiał nie może występować dwukrotnie.')

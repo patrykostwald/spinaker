@@ -14,7 +14,13 @@ module.exports = {
   },
   // Krótkie adresy ankiety do postów w social media (właściciel 2.10).
   async redirects() {
-    return ['/glosowanie', '/glosowanie/', '/ankieta', '/ankieta/'].map(source => ({ source, destination: '/glosowanie/index.html', permanent: false }));
+    return [
+      ...['/glosowanie', '/glosowanie/', '/ankieta', '/ankieta/'].map(source => ({ source, destination: '/glosowanie/index.html', permanent: false })),
+      // „Nitki” nazywają się teraz „Tropy”: stare linki (powiadomienia, udostępnienia) prowadzą pod nowy adres.
+      { source: '/nitki', destination: '/tropy', permanent: true },
+      { source: '/nitki/:path*', destination: '/tropy/:path*', permanent: true },
+      { source: '/konto/nitki/:path*', destination: '/konto/tropy/:path*', permanent: true },
+    ];
   },
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*/` }];

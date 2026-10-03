@@ -120,7 +120,7 @@ def deliver_mail(decision_id=None, max_messages=100):
             d = mail.decision
             body = (f'Zgłoszenie {d.report_id}: {d.get_action_display()}.\nPunkt regulaminu: {d.rule} ({RULES[d.rule]}).\n'
                     f'Uzasadnienie: {d.explanation}\nDecyzję podjął członek zespołu.\n'
-                    f'Decyzja i jednorazowe odwołanie: https://spin.clinic/nitki/odwolanie/{d.report_id}\n')
-            if send_account_mail(mail.recipient, 'spin.clinic: decyzja moderacji nitki', body):
+                    f'Decyzja i jednorazowe odwołanie: https://spin.clinic/tropy/odwolanie/{d.report_id}\n')
+            if send_account_mail(mail.recipient, 'spin.clinic: decyzja moderacji tropu', body):
                 mail.sent_at = timezone.now()
                 mail.save(update_fields=['sent_at'])

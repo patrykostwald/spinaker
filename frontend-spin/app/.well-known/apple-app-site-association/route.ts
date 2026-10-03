@@ -4,6 +4,6 @@ export function GET() {
   const bundle = process.env.APPLE_BUNDLE_ID;
   if (!team || !bundle) return new Response(null, { status: 404 });
   return Response.json({ applinks: { apps: [], details: [{
-    appID: `${team}.${bundle}`, paths: ['/klinika', '/klinika/*', '/thread/*', '/nitki', '/nitki/*'],
+    appID: `${team}.${bundle}`, paths: ['/klinika', '/klinika/*', '/thread/*', '/tropy', '/tropy/*'],
   }] } });
 }

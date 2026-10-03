@@ -25,7 +25,7 @@ MIN_PUBLIC_ITEMS = 2
 
 
 def _disabled():
-    return Response({'detail': 'Nitki czytelników będą dostępne w fazie II.'}, status=404)
+    return Response({'detail': 'Tropy czytelników będą dostępne wkrótce.'}, status=404)
 
 
 def canonical_url(value: str) -> str:

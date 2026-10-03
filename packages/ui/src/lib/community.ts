@@ -1,4 +1,4 @@
-/** Nitki czytelników - typy i zapytania do /api/community/ (backend/news/community.py). */
+/** Tropy czytelników - typy i zapytania do /api/community/ (backend/news/community.py). */
 import { ApiError, apiFetch, apiWrite } from "./api";
 
 export type ThreadElement = ({ box_type?: 'post' | 'claim' | 'source' | 'technique' | 'diagnosis' | 'message' | 'print' | 'amendment' | 'consultation' | 'registry' | 'declaration' | 'summary'; x_handle?: string; diagnosis_id?: number | null; intensity?: number | null; body?: string; source_name?: string; published_date?: string | null } & (

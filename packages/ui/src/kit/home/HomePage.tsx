@@ -32,7 +32,7 @@ export function HomePage() {
   return (
     <>
       <div className="sc-home">
-        <h1 className="sc-sr-only">Diagnozy Dr. Spina i nitki kontekstowe</h1>
+        <h1 className="sc-sr-only">Diagnozy Dr. Spina i tropy</h1>
         <DemoBanner />
         <SpinExplainer id="czym-jest-spin" collapsible />
         {/* Właściciel 3.10: pierwsze, co widzi czytelnik, to nitki; Klinika pod nimi; Baza, Wiadomości i Twoje wiadomości

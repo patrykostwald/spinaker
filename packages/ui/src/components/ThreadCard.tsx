@@ -4,7 +4,7 @@ import type { ThreadListItem } from "../types";
 import { formatDatePl } from "../lib/utils";
 
 function threadKind(thread: ThreadListItem) {
-  if (thread.thread_type === "sponsored" || thread.is_sponsored) return thread.sponsorship_label || "Nitka sponsorowana";
+  if (thread.thread_type === "sponsored" || thread.is_sponsored) return thread.sponsorship_label || "Trop sponsorowany";
   return thread.thread_type === "factcheck" ? "Weryfikacja wypowiedzi" : "Kontekst wydarzenia";
 }
 

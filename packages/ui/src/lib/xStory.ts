@@ -1,5 +1,5 @@
 /**
- * Nitka kontekstowa jako wątek na X.
+ * Trop jako wątek na X.
  * 1/N - tytuł, krótki opis całej nitki i link do nitki na spin.clinic (X pokaże jej kartę).
  * 2/N…N/N - kolejne boxy: rodzaj, źródło, tytuł, komentarz autora i link do ORYGINAŁU
  * (X pokaże kartę ze zdjęciem strony redakcji - ruch idzie do autora materiału).
