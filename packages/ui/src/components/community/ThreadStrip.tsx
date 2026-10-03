@@ -160,14 +160,15 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <span className="sc-trow__boxes">
         {/* miniatura spinki (właściciel 3.10): kwadraty boksów i zatrzaski między nimi, każdy w kolorze przeważającej reakcji;
             bez reakcji boksy są szare, a zatrzaski niebieskie */}
+        <span className="sc-trow__chainrow">
+          {Boolean(thread.repins?.length) && <span className="sc-trow__repins" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}><SpinkaClip />{thread.repins!.length}</span>}
         <span className="sc-trow__chain" role="img" aria-label={clipsLabel}>{Array.from({ length: Math.min(thread.items_count, 8) }, (_, i) => <Fragment key={i}>
           {i > 0 && <i className="sc-trow__link" data-r={clips[i - 1] ? dominant(clips[i - 1]) : undefined} />}
-          <i className="sc-trow__sq" data-r={thread.boxes?.[i] ? dominant(thread.boxes[i]) : undefined} /></Fragment>)}</span>
+          <i className="sc-trow__sq" data-r={thread.boxes?.[i] ? dominant(thread.boxes[i]) : undefined} /></Fragment>)}</span></span>
         <span className="sc-trow__facts">{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
       </span>
       {/* bez komentarza w wierszu (właściciel 3.10): tytuł w dwóch wierszach i opis jak na Wykopie, łańcuch przy licznikach */}
       <span className="sc-trow__side">
-        {Boolean(thread.repins?.length) && <span className="sc-trow__repins" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}><SpinkaClip />{thread.repins!.length}</span>}
         <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={onFullscreen ? undefined : () => { if (!expanded) toggle(); setShowComments(!showComments); }}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
       </span>
     </header> : full ? <header className="sc-thread-strip__head sc-thread-strip__head--full">
