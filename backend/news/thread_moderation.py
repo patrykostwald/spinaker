@@ -82,6 +82,9 @@ def decide(report_id, moderator, action, rule, explanation):
     if appeal and report.decisions.filter(moderator=moderator).exists():
         raise ValidationError('Odwołanie rozpatruje inny członek zespołu.')
     target = report.comment if report.target_kind == 'comment' else report.thread
+    if report.target_kind == 'profile' and report.target_author_id:
+        from news.account_models import ProfilePreference
+        target, _ = ProfilePreference.objects.get_or_create(user_id=report.target_author_id)
     if target is not None:
         target = type(target).objects.select_for_update().filter(pk=target.pk).first()
     if target is not None:
@@ -91,6 +94,8 @@ def decide(report_id, moderator, action, rule, explanation):
         rule=rule, explanation=explanation.strip(), is_appeal=appeal)
     report.status = 'resolved'
     report.save(update_fields=['status'])
+    from news.notify import queue_event
+    queue_event('moderation', decision.pk)
     author_id = report.target_author_id
     recipients = AccountIdentity.objects.filter(user_id__in=[pk for pk in (author_id, report.reporter_id) if pk],
         email_verified=True).values_list('email', flat=True)

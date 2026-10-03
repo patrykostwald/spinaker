@@ -59,7 +59,7 @@ async function main() {
         return route.abort();
       });
       await page.goto('https://offline.test/nitki/85');
-      await page.getByText('czytelnik',{exact:true}).waitFor();
+      await page.getByText('@czytelnik',{exact:true}).waitFor();
       assert.equal(await page.locator('.sc-social-frame__icon').count(),3);
       assert.equal(await page.locator('.sc-thread-social-actions').locator(':scope > button, :scope > span').count(),4);
       assert.equal(await page.locator('.sc-thread-strip__box .sc-social-frame').count(),0);

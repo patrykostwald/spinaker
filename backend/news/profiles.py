@@ -1,6 +1,8 @@
 """Private aggregate activity unless the account owner explicitly opts in."""
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from datetime import timedelta
+from django.db import IntegrityError, transaction
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -30,6 +32,8 @@ def history(request, user):
 
 
 class ProfileInput(serializers.Serializer):
+    username = serializers.RegexField(r'^[A-Za-z0-9_]{3,30}$', max_length=30, required=False)
+    bio = serializers.CharField(max_length=160, allow_blank=True, required=False)
     public_activity = serializers.BooleanField(required=False)
     theme_preference = serializers.ChoiceField(choices=ProfilePreference.THEME_CHOICES, required=False)
 
@@ -43,23 +47,36 @@ class ProfileInput(serializers.Serializer):
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response['Cache-Control'] = 'private, no-store'
+        return response
     def get(self, request):
-        value = ProfilePreference.objects.filter(user=request.user).values(
-            'public_activity', 'theme_preference').first()
-        return Response({
-            'username': request.user.username,
-            'public_activity': value['public_activity'] if value else False,
-            'theme_preference': value['theme_preference'] if value else 'auto',
-        })
+        from news.account_dashboard import profile_data
+        return Response(profile_data(request.user, private=True))
     def patch(self, request):
         serializer = ProfileInput(data=request.data)
         serializer.is_valid(raise_exception=True)
-        preference, _ = ProfilePreference.objects.get_or_create(user=request.user)
-        changed = []
-        for field, value in serializer.validated_data.items():
-            setattr(preference, field, value)
-            changed.append(field)
-        preference.save(update_fields=changed)
+        try:
+            with transaction.atomic():
+                user = get_user_model().objects.select_for_update().get(pk=request.user.pk)
+                preference, _ = ProfilePreference.objects.get_or_create(user=user)
+                values = dict(serializer.validated_data)
+                nick = values.pop('username', user.username).lower()
+                if nick != user.username:
+                    if preference.nick_changed_at and timezone.now() < preference.nick_changed_at + timedelta(days=30):
+                        raise serializers.ValidationError({'username': 'Nick możesz zmienić raz na 30 dni.'})
+                    if get_user_model().objects.filter(username__iexact=nick).exclude(pk=user.pk).exists():
+                        raise serializers.ValidationError({'username': 'Ten nick jest niedostępny.'})
+                    user.username = nick
+                    user.save(update_fields=['username'])
+                    preference.nick_changed_at = timezone.now()
+                for field, value in values.items():
+                    setattr(preference, field, value)
+                preference.save()
+                request.user.username = user.username
+        except IntegrityError:
+            raise serializers.ValidationError({'username': 'Ten nick jest niedostępny.'})
         return self.get(request)
 
 

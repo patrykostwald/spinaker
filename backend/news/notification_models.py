@@ -26,6 +26,8 @@ class Follow(models.Model):
 
 
 class NotificationSettings(models.Model):
+    service_enabled = models.BooleanField(default=True)
+    social_enabled = models.BooleanField(default=False)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notification_settings')
     email_digest = models.CharField(max_length=8, choices=[('off', 'Wyłączony'), ('daily', 'Codziennie'), ('weekly', 'Co tydzień')], default='off')
     push_spin_of_day = models.BooleanField(default=False)

@@ -72,7 +72,7 @@ class XConnectionStartView(APIView):
         redirect = settings.ACCOUNT_PUBLIC_URL.rstrip('/') + '/api/account/x/callback/'
         request.session[SESSION] = {'state': state, 'verifier': verifier, 'created': time.time(),
             'user_id': request.user.pk if connecting else None, 'redirect': redirect,
-            'consent': request.query_params.get('accepted_terms') == 'true' and request.query_params.get('accepted_privacy') == 'true',
+            'consent': request.query_params.get('accepted_terms') == 'true' and request.query_params.get('adult') == 'true',
             'terms': settings.ACCOUNT_TERMS_VERSION, 'privacy': settings.ACCOUNT_PRIVACY_VERSION}
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
         return HttpResponseRedirect('https://x.com/i/oauth2/authorize?' + urlencode({
@@ -126,7 +126,7 @@ class XConnectionCallbackView(APIView):
                     if not flow['consent']:
                         return failed
                     user = get_user_model().objects.create_user(username='czytelnik_' + secrets.token_hex(8), password=None)
-                    AccountIdentity.objects.create(user=user, email=None, email_verified=False,
+                    AccountIdentity.objects.create(user=user, email=None, email_verified=False, adult_declared_at=timezone.now(),
                         accepted_terms_version=flow['terms'], accepted_privacy_version=flow['privacy'], accepted_at=timezone.now())
                     UserXConnection.objects.create(user=user, x_user_id=profile['id'], username=profile['username'], use_x_name=True)
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')

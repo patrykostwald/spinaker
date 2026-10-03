@@ -859,5 +859,7 @@ def _pick_day(day, *, next_candidate=False):
     interview.selection_method = best.get('selection_method', 'views')
     interview.selection_votes = best.get('selection_votes', 0)
     interview.save(update_fields=['title', 'channel', 'guest_name', 'selection_method', 'selection_votes'])
+    from news.notify import queue_event
+    queue_event('vote_result', interview.pk)
     return {'status': 'queued', 'day': str(day), 'id': interview.pk, 'title': best['title'], 'channel': best['channel'],
             'loudness': best['loudness'], 'top_politician': best['top']}

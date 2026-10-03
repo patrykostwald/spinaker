@@ -1,5 +1,6 @@
 "use client";
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiWrite } from '../../lib/api';
 import { emailVerified, useAccount } from '../../lib/account';
@@ -9,7 +10,7 @@ import { Dialog } from '../Dialog';
 import { FollowButton } from '../FollowButton';
 import { CharacterCount, ClampedText, RATINGS, ratingLabels, SocialIcon, type Counts, type Rating } from './SocialPrimitives';
 
-type Comment = { id: number; body: string; author: string; x_profile?: string | null; reactions_count: number; reacted: boolean; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean };
+type Comment = { id: number; body: string; author: string; username?: string; x_profile?: string | null; reactions_count: number; reacted: boolean; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean };
 type CommentPage = { results: Comment[]; next_cursor: string | null; count: number };
 export type RatingsData = { counts: Counts; mine: { polarity: Rating } | null };
 const message = (error: unknown) => error instanceof Error ? error.message : 'Nie udało się zapisać.';
@@ -53,12 +54,16 @@ export function ThreadSocial({ id, title, ai, expanded, showComments, setShowCom
   const comments = useInfiniteQuery({ queryKey: ['thread-comments', id, account.data?.user?.id, sort],
     queryFn: ({ pageParam }) => apiFetch<CommentPage>(base + `comments/?sort=${sort}&after=${encodeURIComponent(pageParam)}`), initialPageParam: '',
     getNextPageParam: page => page.next_cursor ?? undefined, enabled: threads && showComments });
+  useEffect(() => {
+    if (/^#comment-\d+$/.test(window.location.hash)) document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: 'center' });
+  }, [comments.data]);
   const labels = ratingLabels(ai);
   async function write(path: string, body: unknown, method = 'POST') {
     if (pending) return false;
     setPending(true); setStatus('');
     try {
       await apiWrite(base + path, body, method);
+      await Promise.all(['account-activity', 'account-profile', 'public-profile', 'account-threads'].map(key => cache.invalidateQueries({ queryKey: [key] })));
       await Promise.all([cache.invalidateQueries({ queryKey: ['thread-comments', id] }), cache.invalidateQueries({ queryKey: ['community-threads'] }), cache.invalidateQueries({ queryKey: ['community-thread', String(id)] })]);
       const first = await apiFetch<CommentPage>(base + 'comments/'); onCommentCount(first.count);
       return true;
@@ -69,6 +74,7 @@ export function ThreadSocial({ id, title, ai, expanded, showComments, setShowCom
     try {
       const result = await apiWrite<RatingsData>(base + 'opinions/', { polarity });
       cache.setQueryData(['thread-ratings', id, account.data?.user?.id], result); onCounts(result.counts);
+      await Promise.all(['account-activity', 'account-profile', 'public-profile', 'account-threads'].map(key => cache.invalidateQueries({ queryKey: [key] })));
       await cache.invalidateQueries({ queryKey: ['community-threads'] });
     } catch (error) { setStatus(message(error)); } finally { setPending(false); }
   }
@@ -102,8 +108,8 @@ export function ThreadSocial({ id, title, ai, expanded, showComments, setShowCom
       {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
       {comments.isSuccess && !comments.data.pages[0].results.length && <p><SocialIcon kind="comment" /> Bądź pierwszy.</p>}
-      <ol>{comments.data?.pages.flatMap(page => page.results).map(row => <li key={row.id}>
-        <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.author}</strong>{row.x_profile && <a href={row.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}<time dateTime={row.created_at}>{new Date(row.created_at).toLocaleString('pl-PL')}</time>{row.edited_at && <small>edytowany</small>}</header>
+      <ol>{comments.data?.pages.flatMap(page => page.results).map(row => <li key={row.id} id={`comment-${row.id}`}>
+        <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.username ? <Link href={`/profile/${encodeURIComponent(row.username)}`}>{row.author}</Link> : row.author}</strong>{row.x_profile && <a href={row.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}<time dateTime={row.created_at}>{new Date(row.created_at).toLocaleString('pl-PL')}</time>{row.edited_at && <small>edytowany</small>}</header>
         {row.hidden && <p>Ten komentarz jest ukryty. Treść widzisz jako autor.</p>}
         {editing === row.id ? <form onSubmit={async e => { e.preventDefault(); if (await write(`comments/${row.id}/`, { body: editBody }, 'PATCH')) setEditing(null); }}>
           <label>Edytuj komentarz<textarea value={editBody} maxLength={600} onChange={e => setEditBody(e.target.value)} /></label><CharacterCount text={editBody} limit={600} />

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from news.account_models import PersonalContextThread
+from news.account_models import PersonalContextThread, AccountIdentity
 from news.clinic_models import SpinDiagnosis
 from news.community_models import CommunityThreadOpinion
 from news.thread_social_models import ThreadComment
@@ -21,8 +21,13 @@ def notify(user, kind, title, url):
     """Called by the worker; in-app delivery survives unavailable push providers."""
     if not enabled() or not user.is_active:
         return None
-    row = Notification.objects.create(user=user, kind=kind, title=title[:240], url=url[:1024])
     preferences = NotificationSettings.objects.filter(user=user).first()
+    social = kind in ('followed_thread', 'spin_of_day')
+    if social and not (preferences and preferences.social_enabled):
+        return None
+    if not social and preferences and not preferences.service_enabled:
+        return None
+    row = Notification.objects.create(user=user, kind=kind, title=title[:240], url=url[:1024])
     push_field = 'push_thread_replies' if kind == 'thread_reply' else 'push_spin_of_day' if kind == 'spin_of_day' else 'push_followed'
     if getattr(settings, 'PUSH_ENABLED', False) and preferences and getattr(preferences, push_field):
         def deliver():
@@ -45,6 +50,12 @@ def queue_event(kind, target_id):
                 NotificationEvent.objects.get_or_create(kind=kind, target_id=target_id)
         except Exception:
             logger.exception('Could not queue notification event')
+
+
+@receiver(post_save, sender=AccountIdentity)
+def account_newsletter_requested(sender, instance, raw=False, **kwargs):
+    if not raw and instance.email_verified and instance.newsletter_consent_at:
+        queue_event('account_newsletter', instance.pk)
 
 
 @receiver(pre_save, sender=SpinDiagnosis)

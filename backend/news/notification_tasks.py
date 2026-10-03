@@ -19,6 +19,43 @@ def retry_thread_moderation_mail():
 
 
 def _deliver_event(event):
+    if event.kind == 'account_newsletter':
+        import secrets
+        from news.account_models import AccountIdentity
+        from news.newsletter_models import NewsletterSubscriber
+        from news.newsletter import send_confirmation
+        identity = AccountIdentity.objects.filter(pk=event.target_id, email_verified=True,
+            newsletter_consent_at__isnull=False, user__is_active=True).first()
+        if not identity:
+            return
+        subscriber, _ = NewsletterSubscriber.objects.get_or_create(email=identity.email, defaults={
+            'token': secrets.token_urlsafe(32), 'consent_version': '2026-10-03', 'source': 'account'})
+        if subscriber.status == 'unsubscribed':
+            if subscriber.unsubscribed_at and subscriber.unsubscribed_at >= identity.newsletter_consent_at:
+                return
+            subscriber.status, subscriber.token, subscriber.source = 'pending', secrets.token_urlsafe(32), 'account'
+            subscriber.consent_version, subscriber.unsubscribed_at = '2026-10-03', None
+            subscriber.save()
+        if send_confirmation(subscriber.pk) in ('failed', 'no_smtp'):
+            raise RuntimeError('Newsletter confirmation awaits delivery')
+        return
+    if event.kind == 'moderation':
+        from news.thread_social_models import ThreadModerationDecision
+        decision = ThreadModerationDecision.objects.select_related('report').filter(pk=event.target_id).first()
+        if decision:
+            ids = {decision.report.reporter_id, decision.report.target_author_id} - {None}
+            for user in get_user_model().objects.filter(pk__in=ids):
+                notify(user, 'report_status', 'Rozpatrzono zgłoszenie', '/konto#zgloszenia')
+        return
+    if event.kind == 'vote_result':
+        from news.clinic_models import ClinicInterview
+        from news.interview_vote_models import InterviewVote
+        interview = ClinicInterview.objects.filter(pk=event.target_id).first()
+        if interview:
+            for vote in InterviewVote.objects.filter(ballot__day=interview.day).select_related('user', 'candidate'):
+                won = vote.candidate.video_id == interview.video_id
+                notify(vote.user, 'vote_result', f"{'Wybrano' if won else 'Nie wybrano'}: {vote.candidate.title}", '/konto#aktywnosc')
+        return
     if event.kind == 'diagnosis':
         from news.clinic import figures_by_account, published_diagnoses
         diagnosis = published_diagnoses().filter(pk=event.target_id).first()
@@ -36,7 +73,7 @@ def _deliver_event(event):
         thread = public_threads().filter(pk=event.target_id).select_related('owner').first()
         if not thread or not thread.owner_id:
             return
-        recipients = Follow.objects.filter(target_user=thread.owner, created_at__lte=event.created_at).exclude(user=thread.owner)
+        recipients = Follow.objects.filter(target_user=thread.owner, created_at__lte=event.created_at).exclude(user=thread.owner).exclude(user__muted_users__target_id=thread.owner_id)
         kind, title, url = 'followed_thread', f'{thread.owner.username}: {thread.title}', f'/nitki/{thread.pk}'
     elif event.kind == 'thread_comment':
         from news.community import public_threads
@@ -51,6 +88,8 @@ def _deliver_event(event):
         # The owner already has a durable grouped notification written with the comment.
         ids.discard(comment.thread.owner_id)
         ids.discard(comment.author_id)
+        from news.account_models import MutedUser
+        ids -= set(MutedUser.objects.filter(user_id__in=ids, target_id=comment.author_id).values_list('user_id', flat=True))
         for user in get_user_model().objects.filter(pk__in=ids, is_active=True):
             notify(user, 'thread_reply', f'Nowy komentarz: {comment.thread.title}', f'/nitki/{comment.thread_id}')
         return

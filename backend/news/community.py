@@ -131,12 +131,15 @@ def resolve_link(request):
 
 # --- publiczne nitki ------------------------------------------------------------------------
 
-def public_threads():
+def public_threads(user=None):
     from news.clinic import published_diagnoses
+    from news.account_models import MutedUser
+    muted = MutedUser.objects.filter(user=user).values('target_id') if user and user.is_authenticated else []
     return (PersonalContextThread.objects.filter(is_public=True, hidden_at__isnull=True)
+            .exclude(owner_id__in=muted)
             .filter(Q(diagnosis__isnull=True) | Q(diagnosis__in=published_diagnoses()))
             .filter(Q(narrative_message__isnull=True) | Q(narrative_message__status='approved'))
-            .annotate(items_count=Count('items', distinct=True), visible_comments_count=Count('comments', filter=Q(comments__deleted_at__isnull=True, comments__hidden_at__isnull=True), distinct=True)).filter(items_count__gte=MIN_PUBLIC_ITEMS))
+            .annotate(items_count=Count('items', distinct=True), visible_comments_count=Count('comments', filter=Q(comments__deleted_at__isnull=True, comments__hidden_at__isnull=True) & ~Q(comments__author_id__in=muted), distinct=True)).filter(items_count__gte=MIN_PUBLIC_ITEMS))
 
 
 def item_data(item):
@@ -193,7 +196,7 @@ def community_threads(request):
         page = max(1, int(request.query_params.get('page', '1')))
     except ValueError:
         return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
-    rows = public_threads().select_related('owner').prefetch_related('items__article__source', 'items__link')
+    rows = public_threads(request.user).select_related('owner').prefetch_related('items__article__source', 'items__link')
     if request.query_params.get('ai') == '1':
         rows = rows.filter(Q(diagnosis__isnull=False) | Q(narrative_message__isnull=False))
     if request.query_params.get('featured') == '1':
@@ -262,7 +265,7 @@ def community_threads(request):
     batch = list(rows.distinct()[(page - 1) * size:page * size + 1])
     counts = _counts([row.pk for row in batch])
     return Response({'results': [thread_summary(row, counts) for row in batch[:size]],
-                     'next_page': page + 1 if len(batch) > size else None, 'context_filtered': context_filtered})
+                     'next_page': page + 1 if len(batch) > size else None, 'context_filtered': context_filtered}, headers={'Cache-Control': 'private, no-store'})
 
 
 @extend_schema(summary='Publiczna nitka czytelnika', tags=['nitki'], responses=OpenApiTypes.OBJECT)
@@ -270,9 +273,9 @@ def community_threads(request):
 def community_thread_detail(request, thread_id):
     if not threads_enabled():
         return _disabled()
-    thread = get_object_or_404(public_threads().select_related('owner'), pk=thread_id)
+    thread = get_object_or_404(public_threads(request.user).select_related('owner'), pk=thread_id)
     items = [item for item in thread.items.select_related('article__source', 'link') if not (item.link_id and item.link.hidden_at)]
     data = thread_summary(thread, _counts([thread.pk]))
     data.update({'items': [item_data(item) for item in items], 'preview': None,
                  'is_owner': request.user.is_authenticated and request.user.pk == thread.owner_id})
-    return Response(data)
+    return Response(data, headers={'Cache-Control': 'private, no-store'})

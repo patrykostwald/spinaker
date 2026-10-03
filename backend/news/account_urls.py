@@ -35,6 +35,19 @@ urlpatterns = [
     path('threads/<slug:slug>/opinions/', ThreadOpinionsView.as_view()),
 ]
 
+from news.account_dashboard import (ActivityView, PublicProfileView, MutesView, MuteDetailView,
+    ReportsView, ProfileReportView, PasswordChangeView, LogoutAllView)
+urlpatterns += [
+    path('account/activity/', ActivityView.as_view()),
+    path('account/mutes/', MutesView.as_view()),
+    path('account/mutes/<int:user_id>/', MuteDetailView.as_view()),
+    path('account/reports/', ReportsView.as_view()),
+    path('account/password-change/', PasswordChangeView.as_view()),
+    path('account/logout-all/', LogoutAllView.as_view()),
+    path('profiles/<str:username>/', PublicProfileView.as_view()),
+    path('profiles/<str:username>/report/', ProfileReportView.as_view()),
+]
+
 from news.account_lifecycle import (VerifyEmailView, ResendVerificationView, PasswordResetView,
     PasswordResetConfirmView, AccountExportView, AccountDeleteView)
 from news.google_accounts import GoogleStartView, GoogleCallbackView

@@ -47,7 +47,8 @@ export { AIResearch } from './components/AIResearch';
 
 export { SourcesCatalog } from './components/SourcesCatalog';
 export { PoliticalReview } from './components/PoliticalReview';
-export { AccountProfile, PublicAccountProfile } from './components/AccountProfile';
+export { AccountProfile } from './components/AccountProfile';
+export { PublicSocialProfile as PublicAccountProfile } from './components/PublicSocialProfile';
 export { ThreadFavoriteButton } from './components/ThreadFavoriteButton';
 
 export { PublicFigureProfile } from "./components/PublicFigureProfile";

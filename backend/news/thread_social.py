@@ -59,7 +59,7 @@ class RatingInput(serializers.Serializer):
 
 class ThreadRatingsView(SocialView):
     def get(self, request, thread_id):
-        thread = get_object_or_404(public_threads(), pk=thread_id)
+        thread = get_object_or_404(public_threads(request.user), pk=thread_id)
         mine = thread.opinions.filter(user=request.user).first() if request.user.is_authenticated else None
         counts = _counts([thread_id])[thread_id]
         total = sum(counts.values())
@@ -68,7 +68,7 @@ class ThreadRatingsView(SocialView):
                          'distribution': {key: value / total if total else 0 for key, value in counts.items()}})
 
     def post(self, request, thread_id):
-        thread = get_object_or_404(public_threads(), pk=thread_id)
+        thread = get_object_or_404(public_threads(request.user), pk=thread_id)
         data = RatingInput(data=request.data)
         data.is_valid(raise_exception=True)
         if set(request.data) != {'polarity'}:
@@ -95,7 +95,7 @@ def comment_data(row, user):
     from news.x_accounts import public_identity
     identity = public_identity(row.author)
     mine = user.is_authenticated and row.author_id == user.pk
-    return {'id': row.pk, 'body': row.body, 'author': identity['display_name'], 'x_profile': identity['x_profile'],
+    return {'id': row.pk, 'body': row.body, 'author': identity['display_name'], 'username': row.author.username if row.author_id else '', 'x_profile': identity['x_profile'],
             'reactions_count': row.reaction_count if hasattr(row, 'reaction_count') else row.reactions.count(),
             'reacted': user.is_authenticated and row.reactions.filter(user=user).exists(),
             'created_at': row.created_at, 'edited_at': row.edited_at, 'is_owner': mine,
@@ -106,7 +106,7 @@ def comment_data(row, user):
 
 class ThreadCommentsView(SocialView):
     def get(self, request, thread_id):
-        get_object_or_404(public_threads(), pk=thread_id)
+        get_object_or_404(public_threads(request.user), pk=thread_id)
         order = request.query_params.get('sort', 'best')
         if order not in ('best', 'new'):
             raise serializers.ValidationError('Nieznana kolejność.')
@@ -116,6 +116,8 @@ class ThreadCommentsView(SocialView):
         except signing.BadSignature:
             raise serializers.ValidationError('Nieprawidłowy kursor komentarzy.')
         rows = ThreadComment.objects.filter(thread_id=thread_id, deleted_at__isnull=True)
+        from news.account_dashboard import muted_ids
+        rows = rows.exclude(author_id__in=muted_ids(request.user))
         visible = Q(hidden_at__isnull=True)
         if request.user.is_authenticated:
             visible |= Q(author=request.user)
@@ -137,7 +139,7 @@ class ThreadCommentsView(SocialView):
                          'count': rows.filter(hidden_at__isnull=True).count()})
 
     def post(self, request, thread_id):
-        thread = get_object_or_404(public_threads(), pk=thread_id)
+        thread = get_object_or_404(public_threads(request.user), pk=thread_id)
         data = CommentInput(data=request.data)
         data.is_valid(raise_exception=True)
         with transaction.atomic():
@@ -191,7 +193,7 @@ class ThreadCommentReactionView(SocialView):
 
 class ThreadCommentDetailView(SocialView):
     def patch(self, request, thread_id, comment_id):
-        get_object_or_404(public_threads(), pk=thread_id)
+        get_object_or_404(public_threads(request.user), pk=thread_id)
         data = CommentInput(data=request.data)
         data.is_valid(raise_exception=True)
         with transaction.atomic():
@@ -222,7 +224,7 @@ class ReportInput(serializers.Serializer):
 class ThreadReportView(SocialView):
     def post(self, request, thread_id, comment_id=None):
         from news.thread_moderation import assess_report, target_snapshot
-        thread = get_object_or_404(public_threads(), pk=thread_id)
+        thread = get_object_or_404(public_threads(request.user), pk=thread_id)
         comment = get_object_or_404(ThreadComment, pk=comment_id, thread=thread,
             hidden_at__isnull=True, deleted_at__isnull=True) if comment_id else None
         data = ReportInput(data=request.data)

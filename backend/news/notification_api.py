@@ -106,7 +106,7 @@ class NotificationReadView(AccountNotificationView):
 class SettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationSettings
-        fields = ['email_digest', 'push_spin_of_day', 'push_followed', 'push_thread_replies']
+        fields = ['email_digest', 'push_spin_of_day', 'push_followed', 'push_thread_replies', 'service_enabled', 'social_enabled']
 
 
 @json_view('Ustawienia powiadomień', tags=['konto'])

@@ -96,7 +96,7 @@ def mock_x(monkeypatch, x_id='123', handle='reader_x'):
 
 def start(client, mode='login', consent=True):
     response = client.get('/api/account/x/start/', {'mode': mode,
-        'accepted_terms': str(consent).lower(), 'accepted_privacy': str(consent).lower()})
+        'accepted_terms': str(consent).lower(), 'adult': str(consent).lower()})
     assert response.status_code == 302
     return parse_qs(urlsplit(response['Location']).query)
 

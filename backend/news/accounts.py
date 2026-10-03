@@ -66,12 +66,14 @@ class RegistrationInput(serializers.Serializer):
     password = serializers.CharField(max_length=256, trim_whitespace=False, write_only=True)
     email = serializers.EmailField(max_length=254)
     accepted_terms = serializers.BooleanField()
-    accepted_privacy = serializers.BooleanField()
+    accepted_privacy = serializers.BooleanField(required=False)
+    adult = serializers.BooleanField()
+    newsletter = serializers.BooleanField(default=False)
 
     def validate(self, attrs):
-        for field in ('accepted_terms', 'accepted_privacy'):
+        for field in ('accepted_terms', 'adult'):
             if not attrs.get(field):
-                raise serializers.ValidationError({field: 'Zaakceptuj dokument, aby utworzyć konto.'})
+                raise serializers.ValidationError({field: 'Potwierdź ukończenie 18 lat.' if field == 'adult' else 'Zaakceptuj zasady korzystania.'})
         attrs['email'] = attrs['email'].strip().lower()
         # Canonical public handles prevent case-only impersonation/races.
         attrs['username'] = attrs['username'].lower()
@@ -96,7 +98,7 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         data = dict(serializer.validated_data)
         data.pop('accepted_terms')
-        data.pop('accepted_privacy')
+        data.pop('accepted_privacy', None)
         user = get_user_model()(username=data['username'], email=data['email'],
                                 is_staff=False, is_superuser=False, is_active=True)
         user.set_password(data['password'])
@@ -106,6 +108,8 @@ class RegisterView(APIView):
                 with transaction.atomic():
                     user.save()
                     AccountIdentity.objects.create(user=user, email=data['email'],
+                        adult_declared_at=timezone.now(),
+                        newsletter_consent_at=timezone.now() if data['newsletter'] else None,
                         accepted_terms_version=settings.ACCOUNT_TERMS_VERSION,
                         accepted_privacy_version=settings.ACCOUNT_PRIVACY_VERSION, accepted_at=timezone.now())
             except IntegrityError:

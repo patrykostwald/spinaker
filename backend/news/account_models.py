@@ -51,6 +51,9 @@ class ThreadOpinion(models.Model):
 
 
 class ProfilePreference(models.Model):
+    bio = models.CharField(max_length=160, blank=True, default='')
+    nick_changed_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(null=True, blank=True)
     THEME_CHOICES = [
         ('auto', 'Automatyczny'),
         ('dark', 'Ciemny'),
@@ -190,6 +193,8 @@ class CommentReport(models.Model):
 
 
 class AccountIdentity(models.Model):
+    adult_declared_at = models.DateTimeField(null=True, blank=True)
+    newsletter_consent_at = models.DateTimeField(null=True, blank=True)
     comments_blocked_until = models.DateTimeField(null=True, blank=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account_identity')
     email = models.EmailField(unique=True, null=True, blank=True)
@@ -199,3 +204,15 @@ class AccountIdentity(models.Model):
     accepted_at = models.DateTimeField(null=True, blank=True)
     google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
     verification_nonce = models.CharField(max_length=64, default='')
+
+
+class MutedUser(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='muted_users')
+    target = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'target'], name='unique_muted_user_086'),
+            models.CheckConstraint(condition=~models.Q(user=models.F('target')), name='mute_other_user_086'),
+        ]

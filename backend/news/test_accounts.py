@@ -40,7 +40,7 @@ def token(client):
 def test_register_csrf_password_and_no_privilege_escalation():
     client = APIClient(enforce_csrf_checks=True)
     data = {'username': 'Reader', 'email': 'reader@example.org', 'accepted_terms': True,
-            'accepted_privacy': True, 'password': 'Str0ng~unique~zxcv!', 'is_staff': True, 'is_superuser': True}
+            'adult': True, 'password': 'Str0ng~unique~zxcv!', 'is_staff': True, 'is_superuser': True}
     assert client.post('/api/account/register/', data, format='json').status_code == 403
     csrf = token(client)
     with patch('news.account_lifecycle.queue_verification'):

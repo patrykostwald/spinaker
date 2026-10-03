@@ -18,6 +18,8 @@ export type PersonalArticleRef = {
 
 export type PersonalContextThread = {
   continues?: number | null;
+  opinions?: { positive: number; doubt: number; negative: number };
+  comments_count?: number;
   id: number;
   title: string;
   description: string;

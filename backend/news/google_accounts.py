@@ -113,7 +113,8 @@ class GoogleStartView(APIView):
             'state': state, 'nonce': nonce, 'verifier': verifier, 'created': time.time(),
             'redirect_uri': redirect_uri,
             'consent': request.query_params.get('accepted_terms') == 'true'
-                       and request.query_params.get('accepted_privacy') == 'true',
+                       and request.query_params.get('adult') == 'true',
+            'newsletter': request.query_params.get('newsletter') == 'true',
             'terms_version': settings.ACCOUNT_TERMS_VERSION,
             'privacy_version': settings.ACCOUNT_PRIVACY_VERSION,
         }
@@ -160,6 +161,8 @@ class GoogleCallbackView(APIView):
                         username='czytelnik_' + secrets.token_hex(8), email=claims['email'], password=None)
                     identity = AccountIdentity.objects.create(
                         user=user, email=claims['email'], email_verified=True, google_sub=claims['sub'],
+                        adult_declared_at=timezone.now(),
+                        newsletter_consent_at=timezone.now() if flow.get('newsletter') else None,
                         accepted_terms_version=flow['terms_version'],
                         accepted_privacy_version=flow['privacy_version'], accepted_at=timezone.now())
                 if not identity.user.is_active:

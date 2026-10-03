@@ -6,7 +6,7 @@ import { isUnavailable } from './personal';
 export type FollowKind = 'figure' | 'user' | 'thread';
 export type Follow = { id: number; kind: FollowKind; target_id: number; label: string; url: string };
 export type Notification = { id: number; kind: string; title: string; url: string; created_at: string; read_at: string | null };
-export type NotificationSettings = { email_digest: 'off' | 'daily' | 'weekly'; push_spin_of_day: boolean; push_followed: boolean; push_thread_replies: boolean };
+export type NotificationSettings = { service_enabled: boolean; social_enabled: boolean; email_digest: 'off' | 'daily' | 'weekly'; push_spin_of_day: boolean; push_followed: boolean; push_thread_replies: boolean };
 export function accountMessage(error: unknown) {
   return isUnavailable(error) ? 'Ta funkcja będzie dostępna wkrótce. Nie zapisano zmian.' : error instanceof Error ? error.message : 'Nie udało się zapisać. Spróbuj ponownie.';
 }

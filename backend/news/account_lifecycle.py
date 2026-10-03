@@ -197,8 +197,8 @@ def update_account(request):
         not user.has_usable_password() and hasattr(user, 'x_connection'))
     if (changing or not identity) and not first_x_email and not user.check_password(values.get('password', '')):
         return Response({'password': ['Podaj aktualne hasło.']}, status=400)
-    if not identity and not (values.get('accepted_terms') and values.get('accepted_privacy')):
-        return Response({'accepted_terms': ['Zaakceptuj zasady i politykę prywatności.']}, status=400)
+    if not identity and not values.get('accepted_terms'):
+        return Response({'accepted_terms': ['Zaakceptuj zasady korzystania.']}, status=400)
     if not identity and not email:
         return Response({'email': ['Podaj e-mail.']}, status=400)
     try:
@@ -213,7 +213,7 @@ def update_account(request):
                 identity.verification_nonce = ''
                 user.email = email
                 user.save(update_fields=['email'])
-            if values.get('accepted_terms') and values.get('accepted_privacy'):
+            if values.get('accepted_terms'):
                 identity.accepted_terms_version = settings.ACCOUNT_TERMS_VERSION
                 identity.accepted_privacy_version = settings.ACCOUNT_PRIVACY_VERSION
                 identity.accepted_at = timezone.now()
@@ -242,14 +242,36 @@ class AccountExportView(APIView):
         for thread in threads:
             value = user.personal_context_threads.get(pk=thread['id'])
             thread['source_ids'] = list(value.sources.values_list('pk', flat=True))
-            thread['items'] = list(value.items.values('article_id', 'link__title', 'link__canonical_url', 'link__domain', 'note', 'position'))
+            thread['items'] = list(value.items.values('article_id', 'link__title', 'link__canonical_url', 'link__domain', 'note', 'link_note', 'box_data', 'position'))
         from news.notification_api import follow_data
-        from news.notification_models import Follow
+        from news.notification_models import Follow, NotificationSettings
+        from news.account_dashboard import report_data, profile_data
+        from news.thread_social_models import ThreadComment, ThreadModerationReport
+        from news.interview_vote_models import InterviewVote, InterviewSubmission
+        from django.db.models import Q
+        saved_topics = rows('saved_topics', 'id', 'label', 'query', 'categories', 'topics', 'position')
+        for topic in saved_topics:
+            topic['source_ids'] = list(user.saved_topics.get(pk=topic['id']).sources.values_list('pk', flat=True))
         response = JsonResponse({
             'x_connection': ({'x_user_id': user.x_connection.x_user_id, 'username': user.x_connection.username,
                 'use_x_name': user.x_connection.use_x_name, 'connected_at': user.x_connection.connected_at}
                 if hasattr(user, 'x_connection') else None),
             'comment_reactions': list(user.threadcommentreaction_set.values('comment_id', 'created_at')),
+            'profile': profile_data(user, private=True),
+            'thread_comments': list(ThreadComment.objects.filter(author=user).values('id', 'thread_id', 'body', 'created_at', 'edited_at', 'hidden_at', 'deleted_at')),
+            'interview_votes': list(InterviewVote.objects.filter(user=user).values('ballot__day', 'candidate__video_id', 'candidate__title', 'updated_at')),
+            'interview_submissions': list(InterviewSubmission.objects.filter(user=user).values('candidate__video_id', 'created_at')),
+            'moderation_reports': [dict(report_data(row, user), details=row.details if row.reporter_id == user.pk else '',
+                appeal=row.appeal if row.appealed_by_id == user.pk else '') for row in ThreadModerationReport.objects.filter(Q(reporter=user) | Q(target_author=user)).prefetch_related('decisions')],
+            'legacy_reports': {'comments': rows('comment_reports', 'reason', 'details', 'status', 'created_at'),
+                'threads': rows('community_reports', 'thread_id', 'reason', 'details', 'status', 'created_at')},
+            'muted_users': rows('muted_users', 'target_id', 'created_at'),
+            'saved_topics': saved_topics,
+            'notification_settings': NotificationSettings.objects.filter(user=user).values(
+                'service_enabled', 'social_enabled', 'email_digest', 'push_spin_of_day', 'push_followed', 'push_thread_replies').first(),
+            'notifications': rows('notifications', 'kind', 'title', 'url', 'created_at', 'read_at'),
+            'adult_declared_at': identity.adult_declared_at if identity else None,
+            'newsletter_consent_at': identity.newsletter_consent_at if identity else None,
             'account': {**user_data(user), 'date_joined': user.date_joined, 'last_login': user.last_login,
                         'first_name': user.first_name, 'last_name': user.last_name},
             'consents': {'accepted_terms_version': identity.accepted_terms_version if identity else '',
@@ -289,7 +311,16 @@ class AccountDeleteView(APIView):
             return Response({'password': ['Hasło jest nieprawidłowe. Konto Google: najpierw ustaw hasło przez e-mail.']}, status=400)
         with transaction.atomic():
             user = get_user_model().objects.select_for_update().get(pk=request.user.pk)
+            # Flat comments use SET_NULL for moderation history; erase their content too.
+            from news.thread_social_models import ThreadComment
+            ThreadComment.objects.filter(author=user).update(body='', deleted_at=timezone.now())
             from news.notification_models import Notification, NotificationEvent
+            identity = getattr(user, 'account_identity', None)
+            if identity:
+                NotificationEvent.objects.filter(kind='account_newsletter', target_id=identity.pk).delete()
+                if identity.email_verified:
+                    from news.newsletter_models import NewsletterSubscriber
+                    NewsletterSubscriber.objects.filter(email=identity.email, source='account').delete()
             thread_ids = list(user.personal_context_threads.values_list('pk', flat=True))
             Notification.objects.filter(url__in=[f'/nitki/{pk}' for pk in thread_ids]).delete()
             NotificationEvent.objects.filter(kind='thread', target_id__in=thread_ids).delete()

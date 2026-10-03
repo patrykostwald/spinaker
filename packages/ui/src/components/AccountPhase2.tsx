@@ -16,9 +16,10 @@ import { PersonalizedNews } from './PersonalizedNews';
 import { FollowButton } from './FollowButton';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { XAccountSettings } from './XAccountSettings';
+import { ProfileEditor, MutedSettings } from './AccountDashboardParts';
 
 export function AccountDataState({ query, empty = 'Ta część będzie dostępna wkrótce.' }: { query: { isPending: boolean; isError: boolean; error: unknown; refetch: () => unknown }; empty?: string }) {
-  if (query.isPending) return <p role="status">Ładuję…</p>;
+  if (query.isPending) return <div role="status" aria-label="Ładowanie" className="sc-social-skeleton" />;
   if (isUnavailable(query.error)) return <p>{empty}</p>;
   if (query.isError) return <p role="alert">Nie udało się pobrać danych. <Button variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>;
   return null;
@@ -50,9 +51,9 @@ export function FollowedSection() {
   return <PanelSection id="obserwowani" title="Obserwowani">
     <AccountDataState query={follows} />
     {follows.isSuccess && !follows.data.length && <p>Obserwuj wybrane osoby i nitki, aby łatwo do nich wracać. <Link href="/osoby-publiczne">Znajdź osobę publiczną</Link>.</p>}
-    {(['figure', 'user', ...(THREADS_ENABLED ? ['thread'] as const : [])] as const).map(kind => {
+    {(['figure', 'user'] as const).map(kind => {
       const rows = follows.data?.filter(row => row.kind === kind) ?? [];
-      return rows.length ? <div key={kind}><h3>{kind === 'figure' ? 'Osoby publiczne' : kind === 'user' ? 'Użytkownicy' : 'Nitki'}</h3><ul className="sc-account-rows">{rows.map(row => <li key={row.id}>
+      return rows.length ? <div key={kind}><h3>{kind === 'figure' ? 'Osoby publiczne' : 'Autorzy nitek'}</h3><ul className="sc-account-rows">{rows.map(row => <li key={row.id}>
         <div><Link className="sc-account-title" href={accountHref(row.url)}>{row.label}</Link>{kind === 'figure' && <LatestDiagnosis figureId={row.target_id} />}</div>
         <FollowButton kind={row.kind} targetId={row.target_id} label={row.label} />
       </li>)}</ul></div> : null;
@@ -71,7 +72,7 @@ export function NotificationsSection() {
   return <PanelSection id="powiadomienia" title={`Powiadomienia${notifications.data ? ` · ${notifications.data.unread} nieprzeczytanych` : ''}`}>
     <AccountDataState query={notifications} />
     {Boolean(notifications.data?.unread) && <Button variant="quiet" disabled={pending} onClick={() => read()}>Oznacz wszystkie jako przeczytane</Button>}
-    {notifications.isSuccess && !notifications.data?.results?.length && <p>Nie masz nowych powiadomień. Tutaj pojawią się informacje o obserwowanych osobach i nitkach.</p>}
+    {notifications.isSuccess && !notifications.data?.results?.length && <div className="sc-account-empty"><span aria-hidden="true">○</span><p>Nie masz nowych powiadomień.</p><Button href="/konto#ustawienia">Ustaw powiadomienia</Button></div>}
     <ul className="sc-account-rows">{notifications.data?.results.map(row => <li key={row.id} data-unread={!row.read_at || undefined}>
       <div><p className="sc-f2-muted">{!row.read_at && <strong>Nowe · </strong>}<time dateTime={row.created_at}>{formatDateTimePl(row.created_at)}</time></p><Link href={accountHref(row.url)}>{row.title}</Link></div>
       {!row.read_at && <Button variant="quiet" disabled={pending} onClick={() => read([row.id])} aria-label={`Oznacz jako przeczytane: ${row.title}`}>Przeczytane</Button>}
@@ -98,7 +99,6 @@ export function AccountSettings() {
   const PUSH_ENABLED = useFeature('PUSH_ENABLED');
   const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const account = useAccount(); const cache = useQueryClient(); const ownerId = account.data?.user?.id;
-  const profile = useQuery({ queryKey: ['account-profile', ownerId], queryFn: () => apiFetch<{ username: string; public_activity: boolean }>('/api/account/profile/'), retry: false, enabled: Boolean(ownerId) });
   const settings = useQuery({ queryKey: ['notification-settings', ownerId], queryFn: () => apiFetch<NotificationSettings>('/api/account/notification-settings/'), retry: false, enabled: Boolean(ownerId) });
   const [pending, setPending] = useState(false); const [message, setMessage] = useState(''); const [deleting, setDeleting] = useState(false);
   async function perform(action: () => Promise<unknown>, success: string) {
@@ -111,8 +111,8 @@ export function AccountSettings() {
     await cache.invalidateQueries({ queryKey: ['notification-settings', ownerId] });
   }
   function emailSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const email = new FormData(event.currentTarget).get('email');
-    void perform(async () => { await apiWrite('/api/account/me/', { email }, 'PATCH'); await cache.invalidateQueries({ queryKey: ['account'] }); }, 'Zapisano adres e-mail. Sprawdź jego potwierdzenie poniżej.');
+    event.preventDefault(); const data = new FormData(event.currentTarget); const email = data.get('email'); const password = data.get('password');
+    void perform(async () => { await apiWrite('/api/account/me/', { email, password, accepted_terms: data.get('accepted_terms') === 'on' }, 'PATCH'); await cache.invalidateQueries({ queryKey: ['account'] }); }, 'Zapisano adres e-mail. Sprawdź jego potwierdzenie poniżej.');
   }
   async function download() {
     const data = await apiFetch<unknown>('/api/account/export/');
@@ -132,16 +132,12 @@ export function AccountSettings() {
   return <PanelSection id="ustawienia" title="Ustawienia">
     <div className="sc-f2-settings">
       <XAccountSettings />
-      <section><h3>Profil publiczny i motyw</h3><AccountDataState query={profile} />
-        <p>Komentarze są publiczne. Zbiorczą historię pokazujemy tylko za Twoją zgodą. Ulubione i tematy są prywatne.</p>
-        <label className="sc-f2-check"><input type="checkbox" checked={profile.data?.public_activity ?? false} disabled={pending || !profile.isSuccess} onChange={event => { const public_activity = event.target.checked; void perform(async () => {
-          await apiWrite('/api/account/profile/', { public_activity }, 'PATCH'); await cache.invalidateQueries({ queryKey: ['account-profile', ownerId] }); cache.removeQueries({ queryKey: ['public-profile'] });
-        }, 'Zapisano widoczność profilu.'); }} />Udostępnij historię aktywności</label>
-        {profile.data?.public_activity && <Link href={`/profile/${encodeURIComponent(profile.data.username)}`}>Zobacz profil publiczny</Link>}
-        <ThemeSwitcher />
-      </section>
+      <ProfileEditor />
+      <MutedSettings />
+      <section><h3>Motyw</h3><ThemeSwitcher /></section>
       <section><h3>Powiadomienia e-mail i push</h3><AccountDataState query={settings} />
-        {settings.data && <><label>Podsumowanie e-mail<select value={settings.data.email_digest} disabled={pending} onChange={event => { const email_digest = event.target.value as NotificationSettings['email_digest']; void perform(() => updateSettings({ email_digest }), 'Zapisano powiadomienia.'); }}>
+        {settings.data && <>
+        {([['service_enabled', 'Powiadomienia serwisowe'], ['social_enabled', 'Powiadomienia społecznościowe']] as const).map(([key, label]) => <label className="sc-f2-check" key={key}><input type="checkbox" checked={settings.data[key]} disabled={pending} onChange={event => { const checked = event.target.checked; void perform(() => updateSettings({ [key]: checked }), 'Zapisano powiadomienia.'); }} />{label}</label>)}<label>Podsumowanie e-mail<select value={settings.data.email_digest} disabled={pending} onChange={event => { const email_digest = event.target.value as NotificationSettings['email_digest']; void perform(() => updateSettings({ email_digest }), 'Zapisano powiadomienia.'); }}>
           <option value="off">Wyłączone</option><option value="daily">Raz dziennie</option><option value="weekly">Raz w tygodniu</option>
         </select></label>
         {PUSH_ENABLED && <><p>Wybierz rodzaje powiadomień push. Wymagają też włączonej subskrypcji na urządzeniu.</p>{([
@@ -150,13 +146,21 @@ export function AccountSettings() {
         </>}
       </section>
       <section><h3>E-mail i bezpieczeństwo</h3>
-        <form onSubmit={emailSubmit}><label>Adres e-mail<input key={accountEmail(account.data)} name="email" type="email" autoComplete="email" required defaultValue={accountEmail(account.data)} /></label><p>{emailVerified(account.data) ? 'E-mail potwierdzony.' : 'E-mail nie jest jeszcze potwierdzony.'}</p><Button type="submit" variant="secondary" disabled={pending}>Zapisz e-mail</Button></form>
+        <form onSubmit={emailSubmit}><label>Adres e-mail<input key={accountEmail(account.data)} name="email" type="email" autoComplete="email" required defaultValue={accountEmail(account.data)} /></label><p>{emailVerified(account.data) ? 'E-mail potwierdzony.' : 'E-mail nie jest jeszcze potwierdzony.'}</p><label>Aktualne hasło<input name="password" required type="password" autoComplete="current-password" /></label>
+          {!account.data?.user?.accepted_terms_version && <label className="sc-f2-check"><input type="checkbox" name="accepted_terms" required />Akceptuję <Link href="/zasady-korzystania">zasady korzystania</Link>.</label>}
+          <Button type="submit" variant="secondary" disabled={pending}>Zapisz e-mail</Button></form>
         <VerifyEmailNotice />
+        <form onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); const element = event.currentTarget; void perform(async () => { await apiWrite('/api/account/password-change/', { current_password: form.get('current_password'), password: form.get('new_password') }); element.reset(); }, 'Hasło zmienione.'); }}>
+          <label>Aktualne hasło<input required name="current_password" type="password" autoComplete="current-password" /></label>
+          <label>Nowe hasło<input required minLength={8} maxLength={256} name="new_password" type="password" autoComplete="new-password" /></label>
+          <Button type="submit" disabled={pending}>Zmień hasło</Button>
+        </form>
+        <Button disabled={pending} onClick={() => perform(async () => { await apiWrite('/api/account/logout-all/', {}); cache.clear(); window.location.assign('/konto'); }, 'Wylogowano ze wszystkich urządzeń.')}>Wyloguj ze wszystkich urządzeń</Button>
         <Button variant="quiet" disabled={pending || !accountEmail(account.data)} onClick={() => perform(() => apiWrite('/api/account/password-reset/', { email: accountEmail(account.data) }), 'Jeśli adres jest przypisany do konta, otrzymasz link do zmiany hasła.')}>Wyślij link do zmiany hasła</Button>
         <Button variant="quiet" disabled={pending} onClick={() => perform(download, 'Przygotowano plik JSON do pobrania.')}>Pobierz eksport konta (JSON)</Button>
       </section>
       <section><h3>Aplikacja na telefonie</h3><p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna. Na iPhonie: Safari → Udostępnij → Do ekranu początkowego.</p></section>
-      <section><h3>Usunięcie konta</h3><p>To działanie jest nieodwracalne. Przed usunięciem możesz pobrać eksport swoich danych. Operatorem serwisu jest iapply sp. z o.o.</p>
+      <section><h3>Usunięcie konta</h3><p>Konto i treści zostaną usunięte od razu po potwierdzeniu hasłem. To działanie jest nieodwracalne. Przed usunięciem pobierz eksport danych. Historia decyzji moderacji pozostaje bez przypisania do konta. Jeśli logujesz się przez Google, najpierw ustaw hasło przez e-mail.</p>
         {!deleting ? <Button variant="quiet" onClick={() => setDeleting(true)}>Chcę usunąć konto</Button> : <form onSubmit={deleteSubmit}>
           <label>Potwierdź aktualnym hasłem<input required name="password" type="password" autoComplete="current-password" /></label>
           <label>Wpisz USUŃ<input name="confirm" required pattern="USUŃ" autoComplete="off" /></label>
@@ -170,29 +174,16 @@ export function AccountSettings() {
 }
 
 export function AccountOnboarding({ ownerId }: { ownerId: number }) {
-  const [step, setStep] = useState<number | null>(null); const [topic, setTopic] = useState(''); const [search, setSearch] = useState(''); const [term, setTerm] = useState('');
-  const [pending, setPending] = useState(false); const [message, setMessage] = useState(''); const topics = useSavedTopics(); const cache = useQueryClient();
-  const figures = useQuery({ queryKey: ['onboarding-figures', term], queryFn: () => getPublicFigures(term), enabled: term.length >= 2, retry: false });
-  useEffect(() => { try { setStep(localStorage.getItem(`sc-onboarding:${ownerId}`) === 'done' ? null : 1); } catch { setStep(1); } }, [ownerId]);
-  function finish() { try { localStorage.setItem(`sc-onboarding:${ownerId}`, 'done'); } catch {} setStep(null); document.getElementById('wiadomosci')?.scrollIntoView(); }
-  async function saveTopic(event: FormEvent) {
-    event.preventDefault(); if (pending || !topic.trim() || !topics.isSuccess || topics.data.topics.length >= 5) return; setPending(true); setMessage('');
-    try { await apiWrite('/api/account/topics/', { label: topic.trim(), query: topic.trim(), categories: [], topics: [], source_ids: [] }); await cache.invalidateQueries({ queryKey: ['account-topics', ownerId] }); setStep(2); }
-    catch (error) { setMessage(accountMessage(error)); } finally { setPending(false); }
-  }
-  if (step === null) return <Button variant="quiet" onClick={() => setStep(1)}>Pokaż pierwsze kroki</Button>;
-  return <section className="sc-f2-onboarding" aria-labelledby="onboarding-title"><p className="sc-account-kicker">Pierwsze kroki · {step}/3</p><h2 id="onboarding-title">{step === 1 ? 'Co chcesz śledzić?' : step === 2 ? 'Kogo chcesz obserwować?' : 'Twoje miejsce jest gotowe'}</h2>
-    {step === 1 && <><p>Zacznij od jednego tematu: wydarzenia, miejscowości lub zagadnienia. Możesz później zmienić wybór.</p>
-      {(topics.data?.topics.length ?? 0) >= 5 ? <p>Masz już pięć pasków. Możesz je zmienić w Twoich wiadomościach.</p> : <form onSubmit={saveTopic}><label>Nazwa i hasło pierwszego paska<input value={topic} maxLength={80} required onChange={event => setTopic(event.target.value)} /></label><Button type="submit" variant="primary" disabled={pending || !topics.isSuccess || !topic.trim()}>Zapisz temat i przejdź dalej</Button></form>}
-      <AccountDataState query={topics} />
-    </>}
-    {step === 2 && <><p>Wybór należy do Ciebie. Obserwowanie nie oznacza poparcia dla osoby.</p><form onSubmit={event => { event.preventDefault(); setTerm(search.trim()); }}><label>Znajdź osobę publiczną<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label><Button type="submit" variant="quiet" disabled={search.trim().length < 2}>Szukaj</Button></form>
-      {term && <AccountDataState query={figures} />}{figures.isSuccess && !figures.data?.results?.length && <p>Nie znaleziono osoby. Spróbuj innego nazwiska.</p>}
-      <ul className="sc-account-rows">{figures.data?.results.slice(0, 5).map(figure => <li key={figure.id}><Link href={`/osoby-publiczne/${figure.id}`}>{figure.name}</Link><FollowButton kind="figure" targetId={figure.id} label={figure.name} /></li>)}</ul>
-    </>}
-    {step === 3 && <p>{topics.data?.topics.length ? `Twój pasek „${topics.data.topics[0].label}” znajdziesz poniżej w Twoich wiadomościach.` : 'Możesz zacząć od przeglądania wiadomości, a własny pasek dodać w dowolnym momencie.'} Ulubione, obserwowani i powiadomienia są zawsze w tym panelu.</p>}
-    {message && <p role="status">{message}</p>}
-    <div className="sc-f2-actions">{step > 1 && <Button variant="quiet" disabled={pending} onClick={() => setStep(step - 1)}>Wstecz</Button>}{step < 3 && <Button variant={step === 2 ? 'primary' : 'quiet'} disabled={pending} onClick={() => setStep(step + 1)}>{step === 1 ? 'Pomiń ten krok' : 'Dalej'}</Button>}<Button variant={step === 3 ? 'primary' : 'quiet'} disabled={pending} onClick={finish}>{step === 3 ? 'Przejdź do Twoich wiadomości' : 'Pomiń pierwsze kroki'}</Button></div>
-    <p className="sc-f2-muted">Pominięcie zapamiętamy na tym urządzeniu. Możesz wrócić do tych kroków.</p>
+  const [step, setStep] = useState<number | null>(null);
+  useEffect(() => { try { setStep(localStorage.getItem(`sc-onboarding-social:${ownerId}`) === 'done' ? null : 0); } catch { setStep(0); } }, [ownerId]);
+  function finish() { try { localStorage.setItem(`sc-onboarding-social:${ownerId}`, 'done'); } catch {} setStep(null); }
+  if (step === null) return <Button variant="quiet" onClick={() => setStep(0)}>Pierwsze kroki</Button>;
+  const steps = [
+    ['Oceniaj nitki', 'Trzy znaki pomagają wyrazić ocenę: ✓ zgadzam się, ? mam wątpliwości, ✕ nie zgadzam się.'],
+    ['Obserwuj', 'Obserwuj polityków i autorów, aby łatwo wracać do ich treści.'],
+    ['Ustaw powiadomienia', 'Powiadomienia serwisowe są włączone. Społecznościowe możesz włączyć w ustawieniach.'],
+  ];
+  return <section className="sc-f2-onboarding" aria-labelledby="onboarding-title"><p className="sc-account-meta">Pierwsze kroki · {step + 1}/3</p><h2 id="onboarding-title">{steps[step][0]}</h2><p>{steps[step][1]}</p>
+    <div className="sc-f2-actions">{step > 0 && <Button onClick={() => setStep(step - 1)}>Wstecz</Button>}<Button variant="primary" onClick={() => step === 2 ? finish() : setStep(step + 1)}>{step === 2 ? 'Gotowe' : 'Dalej'}</Button><Button variant="quiet" onClick={finish}>Pomiń</Button></div>
   </section>;
 }

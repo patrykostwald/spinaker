@@ -47,8 +47,11 @@ class ArticleFavoritesView(APIView):
 
     def get(self, request):
         rows = ArticleFavorite.objects.filter(user=request.user, article__source__is_active=True).exclude(
-            article__source__catalog_stage='excluded').select_related('article')[:100]
-        return Response({'results': [article_favorite_data(row) for row in rows]})
+            article__source__catalog_stage='excluded').select_related('article')
+        if 'page' in request.query_params:
+            from news.profiles import paginate
+            return Response(paginate(request, rows, article_favorite_data))
+        return Response({'results': [article_favorite_data(row) for row in rows[:100]]})
 
     def post(self, request):
         serializer = ArticleFavoriteInput(data=request.data)
@@ -84,6 +87,8 @@ MIN_PUBLIC_ITEMS = 2
 
 
 class PersonalContextThreadSerializer(serializers.ModelSerializer):
+    opinions = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
     title = serializers.CharField(max_length=80)
     source_ids = serializers.PrimaryKeyRelatedField(source='sources', many=True,
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
@@ -98,7 +103,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonalContextThread
         fields = ['id', 'continues', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
-                  'articles', 'items', 'elements', 'is_public', 'published_at', 'hidden_at', 'created_at', 'updated_at']
+                  'articles', 'items', 'elements', 'is_public', 'published_at', 'hidden_at', 'created_at', 'updated_at', 'opinions', 'comments_count']
         read_only_fields = ['id', 'articles', 'elements', 'published_at', 'hidden_at', 'created_at', 'updated_at']
 
     def get_articles(self, instance):
@@ -108,6 +113,13 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
              'position': item.position}
             for item in instance.items.select_related('article').filter(article__isnull=False)
         ]
+
+    def get_opinions(self, instance):
+        from news.community import _counts
+        return _counts([instance.pk])[instance.pk]
+
+    def get_comments_count(self, instance):
+        return instance.comments.filter(hidden_at__isnull=True, deleted_at__isnull=True).count()
 
     def get_elements(self, instance):
         """Wszystkie elementy w kolejności: materiały z Bazy i linki, z notatkami."""
@@ -219,8 +231,18 @@ class PersonalContextThreadsView(APIView):
     throttle_classes = [AccountWriteThrottle]
 
     def get(self, request):
-        rows = PersonalContextThread.objects.filter(owner=request.user).prefetch_related('items__article', 'sources')[:100]
-        return Response({'results': PersonalContextThreadSerializer(rows, many=True).data})
+        rows = PersonalContextThread.objects.filter(owner=request.user).prefetch_related('items__article', 'sources')
+        state = serializers.ChoiceField(choices=['all', 'draft', 'published', 'hidden']).run_validation(request.query_params.get('status', 'all'))
+        if state == 'draft':
+            rows = rows.filter(is_public=False, hidden_at__isnull=True)
+        elif state == 'published':
+            rows = rows.filter(is_public=True, hidden_at__isnull=True)
+        elif state == 'hidden':
+            rows = rows.filter(hidden_at__isnull=False)
+        if 'page' in request.query_params:
+            from news.profiles import paginate
+            return Response(paginate(request, rows, lambda row: PersonalContextThreadSerializer(row).data))
+        return Response({'results': PersonalContextThreadSerializer(rows[:100], many=True).data})
 
     def post(self, request):
         serializer = PersonalContextThreadSerializer(data=request.data, context={'request': request})

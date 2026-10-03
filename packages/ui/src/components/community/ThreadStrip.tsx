@@ -63,13 +63,20 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     track.current?.scrollTo({ left: 0, behavior: 'instant' });
   }
 
+  useEffect(() => {
+    if (!full) return;
+    const read = () => { const match = /^#boks-(\d+)$/.exec(window.location.hash); if (match) focusBox(Number(match[1])); };
+    read(); window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, [full]);
+
   return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}`}>
     <div className="sc-thread-strip__frame">
     <header className="sc-thread-strip__head">
       {full ? <div className="sc-thread-strip__title"><ClampedText><h2>{thread.title}</h2></ClampedText></div> : <h2><button type="button" aria-expanded={expanded} aria-controls={`${uid}-track ${uid}-notes`} onClick={toggle} title={thread.title}>
         <span>{thread.title}</span><span aria-hidden="true">{expanded ? '−' : '+'}</span>
       </button></h2>}
-      <span className="sc-thread-strip__author" title={thread.author}>{thread.display_name || (thread.is_ai ? 'Dr. Spin (AI)' : `@${thread.author}`)} {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</span>
+      <span className="sc-thread-strip__author" title={thread.author}>{thread.is_ai ? 'Dr. Spin (AI)' : <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link>} {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</span>
       <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => setShowComments(!showComments)}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
       <SocialReport threadId={thread.id} />
     </header>

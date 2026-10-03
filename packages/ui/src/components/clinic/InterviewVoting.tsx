@@ -34,6 +34,8 @@ export function InterviewVoting() {
   const [status, setStatus] = useState("");
   const [now, setNow] = useState(0);
   useEffect(() => {
+    const requestedDay = new URLSearchParams(window.location.search).get('day');
+    if (requestedDay && /^\d{4}-\d{2}-\d{2}$/.test(requestedDay)) setDay(requestedDay);
     setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
