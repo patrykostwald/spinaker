@@ -148,8 +148,9 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
           z prawej najlepszy komentarz. Kliknięcie wchodzi w spinkę: otwiera się na całym obszarze treści z komentarzami. */}
       <Avatar name={thread.is_ai ? 'Dr. Spin' : thread.display_name || thread.author} ai={thread.is_ai} size={36} />
       <h2 className="sc-trow__h"><button type="button" className="sc-trow__main" aria-expanded={expanded} aria-controls={`${uid}-track`} onClick={onFullscreen ? undefined : toggle}>
-        <span className="sc-trow__by"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}{badge && <span className="sc-trow__badge">{badge}</span>}
-          {thread.published_at && <><span aria-hidden="true">·</span><time dateTime={thread.published_at}>{ago(thread.published_at)}</time></>}</span>
+        {/* obok awatara: czas publikacji nad nazwą autora, dalej tytuł (właściciel 3.10) */}
+        <span className="sc-trow__by"><span className="sc-trow__when">{thread.published_at && <time dateTime={thread.published_at}>{ago(thread.published_at)}</time>}{badge && <span className="sc-trow__badge">{badge}</span>}</span>
+          <span className="sc-trow__who"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}</span></span>
         <span className="sc-trow__title" title={thread.title}>{thread.title}</span>
       </button></h2>
       <span className="sc-trow__boxes">

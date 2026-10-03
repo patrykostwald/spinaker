@@ -8206,3 +8206,23 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-thread-social-actions__tool:hover { color: var(--sc-text); }
 .sc-thread-social-actions a.sc-thread-social-actions__tool { color: var(--sc-text-3); font-weight: 400; }
 .sc-thread-social-actions a.sc-thread-social-actions__tool:hover { color: var(--sc-text); }
+
+/* wiersz: awatar | czas nad autorem | tytuł (właściciel 3.10) */
+.sc-trow__main { display: grid !important; grid-template-columns: 132px minmax(0, 1fr); align-items: center; column-gap: 20px; }
+.sc-trow__by { display: grid !important; gap: 2px; min-width: 0; margin: 0; }
+.sc-trow__when { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sc-text-3); white-space: nowrap; }
+.sc-trow__who { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+.sc-trow__who b { overflow: hidden; text-overflow: ellipsis; font-weight: 500; font-size: 14px; color: var(--sc-text-2); }
+.sc-trow__badge { margin: 0; }
+@media (max-width: 600px) { .sc-trow__main { grid-template-columns: minmax(0, 1fr); row-gap: 4px; } .sc-trow__by { grid-auto-flow: column; justify-content: start; gap: 8px; } }
+
+/* miniatura spinki stonowana: cieńsze linie, przygaszone kolory, zatrzaski nie stykają się z boksami */
+.sc-trow__chain { gap: 3px; }
+.sc-trow__sq { width: 11px; height: 11px; border-width: 1px; border-color: color-mix(in srgb, var(--sc-text) 26%, transparent); }
+.sc-trow__link { width: 8px; height: 1px; background: color-mix(in srgb, var(--sc-accent) 50%, transparent); }
+.sc-trow__sq[data-r="positive"] { border-color: color-mix(in srgb, var(--sc-positive) 55%, transparent); }
+.sc-trow__sq[data-r="doubt"] { border-color: color-mix(in srgb, var(--sc-warning) 55%, transparent); }
+.sc-trow__sq[data-r="negative"] { border-color: color-mix(in srgb, var(--sc-negative) 55%, transparent); }
+.sc-trow__link[data-r="positive"] { background: color-mix(in srgb, var(--sc-positive) 55%, transparent); }
+.sc-trow__link[data-r="doubt"] { background: color-mix(in srgb, var(--sc-warning) 55%, transparent); }
+.sc-trow__link[data-r="negative"] { background: color-mix(in srgb, var(--sc-negative) 55%, transparent); }
