@@ -8102,3 +8102,52 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-thread-social .sc-social-sort li button { padding: 7px 0; color: var(--sc-text-2); }
 .sc-thread-social .sc-social-sort li button:hover { color: var(--sc-text); }
 .sc-thread-social .sc-social-sort li button[aria-selected="true"] { color: var(--sc-accent); }
+
+/* odnośniki @b1/@s1: mniejsze, szare, bez pogrubienia (właściciel 3.10) */
+.sc-thread-social .sc-social-composer .sc-social-refs button { height: auto; padding: 1px 0; background: none; color: var(--sc-text-3); font-size: 11.5px; font-weight: 500; letter-spacing: .03em; }
+.sc-thread-social .sc-social-composer .sc-social-refs button:not(:disabled):hover { color: var(--sc-text); }
+.sc-thread-social .sc-social-composer .sc-social-refs button::before { display: none; }
+.sc-social-refs { gap: 4px 12px; }
+
+/* boksy kwadratowe, ostre rogi; obrys: lewy górny i prawy dolny róg otwarte, prawy górny i lewy dolny zamknięte (właściciel 3.10) */
+.sc-thread-strip__box, .sc-thread-strip__box .sc-rframe { border-radius: 0; }
+.sc-thread-strip__box { flex: 0 0 176px; max-width: 176px; height: 176px; }
+.sc-trop-overlay .sc-thread-strip__box, .sc-community--detail .sc-thread-strip__box,
+.sc-trop-overlay .sc-thread-strip__box:hover, .sc-trop-overlay .sc-thread-strip__box:focus-within,
+.sc-community--detail .sc-thread-strip__box:hover, .sc-community--detail .sc-thread-strip__box:focus-within { flex-basis: 156px; max-width: 156px; height: 156px; }
+.sc-rframe, .sc-thread-strip__box:hover .sc-rframe {
+  background:
+    linear-gradient(var(--fr), var(--fr)) left 22px top 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--fr), var(--fr)) right 0 top 0 / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(var(--fr), var(--fr)) left 0 bottom 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--fr), var(--fr)) left 0 bottom 0 / 1px calc(100% - 22px) no-repeat; }
+.sc-joint.is-open .sc-joint__morph { border-radius: 0; }
+
+/* spinka dotyka boksów: bez odstępu między boksem a połączeniem */
+.sc-thread-strip__track:has(.sc-joint) { gap: 0; }
+/* boks bez wypełnienia: kształt wyznaczają same linie, więc otwarte rogi są widoczne */
+.sc-thread-strip__box { background: transparent; box-shadow: none; }
+.sc-thread-strip__box:hover { background: color-mix(in srgb, var(--sc-text) 3%, transparent); }
+
+/* boksy: kwadratowe, rogi tylko minimalnie zaokrąglone; bez rozsuwania szerokości (właściciel 3.10) */
+.sc-thread-strip__box, .sc-thread-strip__box .sc-rframe, .sc-joint.is-open .sc-joint__morph { border-radius: 3px; }
+.sc-joint__dot .sc-clip, .sc-joint__dot { height: 34px; }
+.sc-joint:not(.is-open) .sc-joint__dot:hover .sc-clip { transform: scale(1.12); }
+
+/* otwarta spinka: minimalizm, bez kresek nad tytułem i podwójnych linii przy polu komentarza (właściciel 3.10) */
+.sc-trop-overlay__bar { border-bottom: 0; }
+.sc-trop-overlay__body { padding-top: 4px; }
+.sc-trop-overlay__body > article, .sc-trop-overlay__body > article > .sc-thread-strip__frame { border: 0; box-shadow: none; background: none; padding-top: 0; }
+.sc-trop-overlay__body > article::before, .sc-trop-overlay__body > article::after { display: none; }
+.sc-trop-overlay .sc-social-composer { border-top: 0; border-bottom: 0; }
+.sc-trop-overlay .sc-social-comments > ol > li:first-child { border-top: 0; }
+.sc-trop-overlay__following { margin-left: auto; border: 0; background: none; padding: 6px 2px; color: var(--sc-text-2); font: inherit; font-size: 13px; cursor: pointer; transition: color .2s; }
+.sc-trop-overlay__following:hover { color: var(--sc-text); }
+/* ikonka motywu nad „O nas”, w takim odstępie jak kolejne linki (właściciel 3.10) */
+@media (min-width: 768px) {
+  .sc-rail .sc-rail__foot { gap: 6px; }
+  .sc-rail .sc-rail__foot > button, .sc-rail .sc-rail__foot > .sc-theme-switcher { margin-bottom: 0; height: 15px; place-items: center start; }
+}
+@media (min-width: 768px) { .sc-rail .sc-rail__foot > button { height: 18px !important; min-height: 0 !important; max-height: 18px; overflow: visible; } }
+
+.sc-trop-overlay__body .sc-thread-strip, .sc-trop-overlay__body .sc-thread-strip__frame { background: none !important; border: 0 !important; box-shadow: none !important; }

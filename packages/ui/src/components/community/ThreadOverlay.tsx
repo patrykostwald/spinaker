@@ -17,14 +17,19 @@ export function viewTransition(update: () => void) {
 /**
  * Wejście w spinkę (właściciel 3.10): kliknięta na liście zajmuje cały obszar treści (na telefonie cały ekran),
  * adres zmienia się na /spinki/ID. Pod spodem komentarze, a na samym dole jedna spinka wybrana przez nas
- * (polecana, a bez niej najgorętsza). Wyjście: „Wszystkie spinki”, Esc albo „wstecz”.
+ * (polecana, a bez niej najgorętsza). Z prawej u góry „Następna spinka”: cały widok przechodzi do kolejnej spinki z listy.
+ * Wyjście: „Wszystkie spinki”, Esc albo „wstecz”.
  */
-export function ThreadOverlay({ id: initial, onClose }: { id: number; onClose: () => void }) {
+export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number; onClose: () => void; order?: number[] }) {
   const [id, setId] = useState(initial);
   const query = useQuery({ queryKey: ['community-thread', String(id)], queryFn: () => getCommunityThread(id), retry: false });
   const featured = useQuery({ queryKey: ['community-threads', 'next-pick'], queryFn: () => getCommunityThreads(1, '', '', { featured: '1' }), retry: false, staleTime: 60_000 });
   const hot = useQuery({ queryKey: ['community-threads', 'next-hot'], queryFn: () => getCommunityThreads(1, '', '', { sort: 'hot' }), retry: false, staleTime: 60_000 });
-  const next = [...(featured.data?.results ?? []), ...(hot.data?.results ?? [])].find(row => row.id !== id);
+  // kolejność z listy, z której weszliśmy; bez niej (np. Spin dnia) - kolejność najgorętszych
+  const list = order.length ? order : (hot.data?.results ?? []).map(row => row.id);
+  const at = list.indexOf(id);
+  const following = at >= 0 ? list[at + 1] ?? null : list.find(other => other !== id) ?? null;
+  const next = [...(featured.data?.results ?? []), ...(hot.data?.results ?? [])].find(row => row.id !== id && row.id !== following);
   const body = useRef<HTMLDivElement>(null);
   function open(nextId: number) {
     setId(nextId);
@@ -64,6 +69,7 @@ export function ThreadOverlay({ id: initial, onClose }: { id: number; onClose: (
     <div className="sc-trop-overlay__bar">
       <button ref={close} type="button" className="sc-trop-overlay__back" onClick={() => window.history.back()}>← Wszystkie spinki</button>
       <span className="sc-trop-overlay__who">{thread ? (thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`) : ''}</span>
+      {following !== null && <button type="button" className="sc-trop-overlay__following" onClick={() => viewTransition(() => open(following))}>Następna spinka →</button>}
     </div>
     <div className="sc-trop-overlay__body" ref={body}>
       {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinki" />}

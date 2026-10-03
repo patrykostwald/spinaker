@@ -54,7 +54,7 @@ export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}
           onOpenChange={value => setOpenId(value ? thread.id : null)} onFullscreen={() => viewTransition(() => setFullId(thread.id))} />
       </li>)}
     </ol>}
-    {fullId !== null && <ThreadOverlay id={fullId} onClose={() => viewTransition(() => setFullId(null))} />}
+    {fullId !== null && <ThreadOverlay id={fullId} order={threads.map(thread => thread.id)} onClose={() => viewTransition(() => setFullId(null))} />}
     {!limit && query.hasNextPage && <button type="button" className="sc-thread-feed__more" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej spinek</button>}
   </section>;
 }

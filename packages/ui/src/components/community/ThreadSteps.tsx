@@ -64,11 +64,16 @@ export function SpinkaClip({ counts, open = false }: { counts?: Counts3; id?: st
   const c = counts ?? { positive: 0, doubt: 0, negative: 0 };
   const top = Math.max(c.positive, c.doubt, c.negative);
   const color = !top ? 'var(--sc-text-3)' : c.positive === top ? 'var(--sc-positive)' : c.doubt === top ? 'var(--sc-warning)' : 'var(--sc-negative)';
-  // rozsunięta: lekki zygzak w górę (wskazuje boks z wyjaśnieniem nad nią); zawsze tylko delikatny zawijas na końcu
-  const d = open ? 'M2 26 H88 L100 16 L112 26 H186 C191 26 193 23 192 21 C191 19 188.5 19 188 21'
-    : 'M1 22 H32 C37 22 39 19.5 38 17.5 C37 15.5 34.5 15.5 34 17.5';
-  return <svg className="sc-clip" viewBox={open ? '0 0 200 40' : '0 0 44 40'} preserveAspectRatio="none" aria-hidden="true">
-    <path d={d} fill="none" vectorEffect="non-scaling-stroke" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  // zatrzask (właściciel 3.10): linia od boksu do boksu, pośrodku dwa zazębione ogniwa = spięcie dwóch materiałów;
+  // rozsunięta: ogniwa rozchodzą się w lekki zygzak (nad nią boks z wyjaśnieniem)
+  const line = { fill: 'none', stroke: color, strokeWidth: 2.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, vectorEffect: 'non-scaling-stroke' as const };
+  if (open) return <svg className="sc-clip" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 26 H88 L100 16 L112 26 H200" {...line} />
+  </svg>;
+  return <svg className="sc-clip" viewBox="0 0 34 34" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <path d="M0 17 H9 M25 17 H34" {...line} />
+    <rect x="8" y="12.5" width="11" height="9" rx="4.5" {...line} />
+    <rect x="15" y="12.5" width="11" height="9" rx="4.5" {...line} />
   </svg>;
 }
 

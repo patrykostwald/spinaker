@@ -216,7 +216,6 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         </div>
       </li>)}</ol>
       {comments.hasNextPage && <button disabled={comments.isFetchingNextPage} onClick={() => comments.fetchNextPage()}>Pokaż kolejne komentarze</button>}
-      <a href="/zasady-korzystania#tropy">Zasady spinek, ocen i komentarzy</a>
     </section>}
     <p role="status">{status}</p>
   </div>;
