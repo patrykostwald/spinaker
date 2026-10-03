@@ -6,7 +6,6 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { CommunityThreadSummary, ThreadElement } from '../../lib/community';
 import { RatingFrame, SocialIcon, ClampedText, type Counts } from './SocialPrimitives';
 import { SocialReport, ThreadSocial } from './ThreadSocial';
-import { useFeature } from '../../lib/features';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
 
@@ -17,11 +16,10 @@ const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', te
  * `variant="row"`: wiersz wspólnej listy (ThreadFeed) - rozwija się po chwili najechania albo stuknięciu,
  * otwarty jest tylko jeden naraz (stan trzyma lista), pod spodem 3 najtrafniejsze komentarze i „Odpowiedz”.
  */
-export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false, variant = 'card', open, onOpenChange, offset = 0 }: {
+export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false, variant = 'card', open, onOpenChange, offset = 0, onFullscreen }: {
   thread: CommunityThreadSummary; items?: ThreadElement[]; full?: boolean; initiallyExpanded?: boolean;
-  variant?: 'card' | 'row'; open?: boolean; onOpenChange?: (open: boolean) => void; offset?: number;
+  variant?: 'card' | 'row'; open?: boolean; onOpenChange?: (open: boolean) => void; offset?: number; onFullscreen?: () => void;
 }) {
-  const accountsEnabled = useFeature('ACCOUNTS_ENABLED');
   const [counts, setCounts] = useState<Counts | null>(null);
   const [commentCount, setCommentCount] = useState<number | null>(null);
   const [showComments, setShowComments] = useState(full);
@@ -59,7 +57,6 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   const reduced = useReducedMotion();
   const ordered = [...items].sort((a, b) => a.position - b.position);
   const slots = ordered.flatMap((item, index) => expanded && index > 0 && item.link_note ? [index, index] : [index]);
-  const current = ordered[selected] ?? ordered[0];
 
   function move(index: number) {
     const next = Math.max(0, Math.min(slots.length - 1, index));
@@ -112,12 +109,13 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} {...hoverProps}>
     <div className="sc-thread-strip__frame">
     <header className="sc-thread-strip__head">
-      {full ? <div className="sc-thread-strip__title"><ClampedText><h2>{thread.title}</h2></ClampedText></div> : <h2><button type="button" aria-expanded={expanded} aria-controls={`${uid}-track ${uid}-notes`} onClick={toggle} title={thread.title}>
+      {full ? <div className="sc-thread-strip__title"><ClampedText><h2>{thread.title}</h2></ClampedText></div> : <h2><button type="button" aria-expanded={expanded} aria-controls={`${uid}-track`} onClick={toggle} title={thread.title}>
         <span>{thread.title}</span><span className="sc-thread-strip__chev" aria-hidden="true" data-open={expanded || undefined}>⌄</span>
       </button></h2>}
       <span className="sc-thread-strip__author" title={thread.author}>{thread.is_ai ? 'Dr. Spin (AI)' : <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link>} {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</span>
       <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => setShowComments(!showComments)}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
       <SocialReport threadId={thread.id} />
+      {onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz trop na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
     </header>
     {thread.admission && <p className="sc-thread-admission" aria-label="Postęp w izbie przyjęć">
       <span className="sc-thread-admission__bar" aria-hidden="true"><span style={{ width: `${Math.min(100, 100 * thread.admission.positive / thread.admission.needed)}%` }} /></span>
@@ -149,7 +147,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         </li>}
         <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1}>
           {item.note && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
-          {item.box_type === 'post' ? <><XPostCard item={item} />{variant !== 'row' && <button type="button" onClick={() => { if (!expanded) toggle(); setSelected(index); }} aria-label={`Pokaż opis boksu ${index + 1}`}>Boks {index + 1}</button>}</> :
+          {item.box_type === 'post' ? <XPostCard item={item} /> :
           <button type="button" className="sc-thread-strip__select" onClick={() => { if (!expanded) toggle(); setSelected(index); }}
             aria-pressed={expanded && selected === index}
             aria-label={`${expanded ? 'Pokaż opis boksu' : 'Rozwiń trop od boksu'} ${index + 1}: ${item.title}`}>
@@ -163,15 +161,6 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       </Fragment>)}
     </ol>
     </div>
-    {variant !== 'row' && <div id={`${uid}-notes`} className="sc-thread-strip__details" aria-hidden={!expanded}>
-      <div>{current && <div className="sc-thread-strip__note">
-        <small aria-label="Pozycja w tropie">{selected + 1}/{ordered.length}</small>
-        {current.box_type === 'post' ? <XPostCard item={current} /> : <><ClampedText><strong>Boks {selected + 1}: </strong><a href={current.url} target={current.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">{current.title} ↗</a></ClampedText>
-        {current.body && <ClampedText>{current.body}</ClampedText>}</>}
-        {current.note && <ClampedText><strong>Komentarz autora: </strong>{current.note}</ClampedText>}
-        {accountsEnabled && <button type="button" onClick={() => { setDraft((draft + ` @boks ${selected + 1} `).trimStart().slice(0, 600)); setShowComments(true); }}>Odpowiedz do boksu</button>}
-      </div>}</div>
-    </div>}
     <RatingFrame counts={counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative }} ai={thread.is_ai} cycle={!full} offset={offset} />
     </div>
     {expanded && variant !== 'row' && <p className="sc-thread-totals"><span data-rating="positive">✓</span> {counts?.positive ?? thread.opinions.positive} · <span data-rating="doubt">?</span> {counts?.doubt ?? thread.opinions.doubt ?? 0} · <span data-rating="negative">✕</span> {counts?.negative ?? thread.opinions.negative} · {commentCount ?? thread.comments_count ?? 0} komentarzy</p>}
@@ -181,7 +170,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       expanded={expanded} preview={variant === 'row'}
       draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount} />}
     {!full && expanded && <div className="sc-thread-strip__foot">
-      <Link className="sc-thread-strip__open" href={`/tropy/${thread.id}`}>Otwórz cały trop →</Link>
+      <Link className="sc-thread-strip__open" href={`/tropy/${thread.id}`} onClick={event => { if (onFullscreen && !event.metaKey && !event.ctrlKey) { event.preventDefault(); onFullscreen(); } }}>Otwórz cały trop →</Link>
       <button type="button" className="sc-thread-strip__collapse" onClick={toggle}>Zwiń trop <span aria-hidden="true">⌃</span></button>
     </div>}
   </article>;

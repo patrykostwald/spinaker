@@ -20,6 +20,8 @@ export function FeatureFooter() {
   const pathname = usePathname();
   const APP_ENABLED = useFeature('APP_ENABLED');
   const PUSH_ENABLED = useFeature('PUSH_ENABLED');
+  // Przy tropach dolnego paska nie ma: linki i „Wesprzyj” są w lewym pasku (SocialNavigation).
+  if (useFeature('THREADS_ENABLED')) return null;
   return (
           <SiteFooter
             brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}

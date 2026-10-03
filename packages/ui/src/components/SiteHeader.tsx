@@ -29,10 +29,13 @@ function HeaderSearch() {
 
 export function SiteHeader({ site }: { site: SiteConfig }) {
   const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
+  const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const pathname = usePathname();
   const account = useAccount();
   const [first, ...rest] = site.name.split(".");
   const second = rest.join(".");
+  // Przy tropach górnego menu nie ma: nawigacja jest w lewym pasku (SocialNavigation).
+  if (THREADS_ENABLED) return null;
   return (
     <NavMenu
       layout="centered"
