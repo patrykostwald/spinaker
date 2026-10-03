@@ -38,8 +38,10 @@ export function SocialReport({ threadId, commentId }: { threadId: number; commen
   </span>;
 }
 
-export function ThreadSocial({ id, title, ai, expanded, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount }: {
+export function ThreadSocial({ id, title, ai, expanded, preview = false, showComments, setShowComments, draft, setDraft, focusBox, boxCount, onCounts, onCommentCount }: {
   expanded?: boolean;
+  /** Rozwinięty wiersz listy: 3 najtrafniejsze komentarze, „Pokaż wszystkie” i jedno pole „Odpowiedz”. */
+  preview?: boolean;
   id: number; title: string; ai?: boolean; showComments: boolean; setShowComments: (value: boolean) => void;
   draft: string; setDraft: (text: string) => void; focusBox: (n: number) => void; boxCount: number;
   onCounts: (counts: Counts) => void; onCommentCount: (count: number) => void;
@@ -53,7 +55,7 @@ export function ThreadSocial({ id, title, ai, expanded, showComments, setShowCom
   const ratings = useQuery({ queryKey: ['thread-ratings', id, account.data?.user?.id], queryFn: () => apiFetch<RatingsData>(base + 'opinions/'), enabled: threads && showRatings });
   const comments = useInfiniteQuery({ queryKey: ['thread-comments', id, account.data?.user?.id, sort],
     queryFn: ({ pageParam }) => apiFetch<CommentPage>(base + `comments/?sort=${sort}&after=${encodeURIComponent(pageParam)}`), initialPageParam: '',
-    getNextPageParam: page => page.next_cursor ?? undefined, enabled: threads && showComments });
+    getNextPageParam: page => page.next_cursor ?? undefined, enabled: threads && (showComments || preview) });
   useEffect(() => {
     if (/^#comment-\d+$/.test(window.location.hash)) document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: 'center' });
   }, [comments.data]);
@@ -85,6 +87,27 @@ export function ThreadSocial({ id, title, ai, expanded, showComments, setShowCom
     });
   }
   if (!threads) return null;
+  if (preview) {
+    const rows = comments.data?.pages[0]?.results.slice(0, 3) ?? [];
+    const count = comments.data?.pages[0]?.count ?? 0;
+    return <div className="sc-thread-social sc-thread-social--preview">
+      <section aria-label="Najtrafniejsze komentarze" className="sc-social-comments sc-social-comments--preview">
+        {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
+        {comments.isSuccess && !rows.length && <p className="sc-social-empty">Nikt jeszcze nie skomentował. Bądź pierwszy.</p>}
+        {rows.length > 0 && <ol>{rows.map(row => <li key={row.id}>
+          <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.author}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleDateString('pl-PL')}</time>{row.reactions_count > 0 && <small className="sc-social-trafne"><SocialIcon kind="positive" />{row.reactions_count}</small>}</header>
+          <ClampedText>{content(row.body)}</ClampedText>
+        </li>)}</ol>}
+        {count > 3 && <Link className="sc-social-all" href={`/nitki/${id}#komentarze`}>Pokaż wszystkie komentarze ({count})</Link>}
+        {canWrite ? <form className="sc-social-reply" onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
+          <label className="sc-sr-only" htmlFor={`reply-${id}`}>Odpowiedz w nitce</label>
+          <input id={`reply-${id}`} value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Odpowiedz…" />
+          <button disabled={pending || !draft.trim()}>Odpowiedz</button>
+        </form> : enabled ? <p className="sc-social-login"><a href="/konto">Zaloguj się</a>, aby odpowiedzieć.</p> : null}
+      </section>
+      <p role="status">{status}</p>
+    </div>;
+  }
   return <div className="sc-thread-social">
     <nav className="sc-thread-social-actions" aria-label="Akcje nitki">
       <button type="button" aria-expanded={showRatings} onClick={() => setShowRatings(!showRatings)}>Oceń</button>
@@ -103,7 +126,7 @@ export function ThreadSocial({ id, title, ai, expanded, showComments, setShowCom
       </button> : <span key={key} data-rating={key}><SocialIcon kind={key} />{labels[key]}: {ratings.data?.counts[key] ?? 0}</span>)}
       {enabled && !canWrite && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby oceniać i komentować.</p>}
     </section>}
-    {showComments && <section aria-label="Komentarze pod nitką" className="sc-social-comments">
+    {showComments && <section id="komentarze" aria-label="Komentarze pod nitką" className="sc-social-comments">
       <label>Kolejność komentarzy<select value={sort} onChange={e => setSort(e.target.value)}><option value="best">Najtrafniejsze</option><option value="new">Najnowsze</option></select></label>
       {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}

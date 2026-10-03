@@ -2,15 +2,16 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
-import { getCommunityThread, getCommunityThreads, type ThreadElement } from "../../lib/community";
+import { getCommunityThread, type ThreadElement } from "../../lib/community";
 import { categoryLabel, formatDatePl, formatDateTimePl } from "../../lib/utils";
 
 import { AccountDataState } from '../AccountPhase2';
 import { useFeature } from '../../lib/features';
 import { isUnavailable } from '../../lib/personal';
 import { ThreadStrip } from './ThreadStrip';
+import { ThreadFeed } from './ThreadFeed';
 import { ClampedText } from './SocialPrimitives';
 import { useAccount } from '../../lib/account';
 
@@ -51,16 +52,7 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
   const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
-  const [sort, setSort] = useState<'new' | 'best' | 'comments'>('best');
   const contextActive = Boolean(context.article_id || context.figure_id || context.url);
-  const query = useInfiniteQuery({
-    queryKey: ["community-threads", term, sort, context],
-    queryFn: ({ pageParam }) => getCommunityThreads(pageParam, term, '', { sort, ...context }),
-    retry: false,
-    initialPageParam: 1,
-    getNextPageParam: last => last.next_page ?? undefined,
-  });
-  const threads = query.data?.pages.flatMap(page => contextActive && !page.context_filtered ? [] : page.results) ?? [];
   return (
     <div className="sc-community sc-f2">
       <header className="sc-community__head">
@@ -77,17 +69,9 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
             <Button type="submit" variant="quiet" size="sm">Szukaj</Button>
           </form>
         </div>
-        <div className="sc-f2-filters"><label>Kolejność<select value={sort} onChange={event => setSort(event.target.value as 'new' | 'best' | 'comments')}><option value="best">Najlepiej oceniane</option><option value="new">Najnowsze nitki</option><option value="comments">Najnowsze komentarze</option></select></label>
-        </div>
-        {sort === 'best' && <p>Według liczby opinii „Zgadzam się”; przy remisie od najnowszej publikacji.</p>}
         {contextActive && <p>Pokazujemy nitki zawierające wybrany materiał lub potwierdzone powiązanie. <Link href="/nitki">Pokaż wszystkie</Link></p>}
       </header>
-      <AccountDataState query={query} empty="Publiczne nitki będą dostępne wkrótce." />
-      {query.isSuccess && !threads.length && (
-        <p className="sc-clinic-empty">{term ? `Brak nitek dla „${term}”.` : "Nie ma jeszcze publicznych nitek. Ułóż pierwszą - wystarczą dwa materiały."}</p>
-      )}
-      {threads.length > 0 && <ul className="sc-community__list">{threads.map(thread => <li key={thread.id}><ThreadStrip thread={thread} /></li>)}</ul>}
-      {query.hasNextPage && <Button variant="quiet" loading={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej</Button>}
+      <ThreadFeed initialSort="hot" term={term} context={context} />
       {ACCOUNTS_ENABLED && account.data?.authenticated && <p><Link href="/konto/nitki/nowa">Ułóż swoją nitkę: wybierz diagnozę i dodaj kontekst</Link></p>}
       <aside className="sc-clinic-roadmap">
         Link prowadzi do oryginału. Dla publicznych wpisów z X pokazujemy także krótki tekst, autora i datę. Nitki możesz zgłosić do moderacji.

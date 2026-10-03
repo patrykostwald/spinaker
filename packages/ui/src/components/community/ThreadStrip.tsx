@@ -12,9 +12,14 @@ import { XPostCard } from './XPostCard';
 
 const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza', message: 'Przekaz dnia', print: 'Druk sejmowy', amendment: 'Poprawka', consultation: 'Postulat organizacji', registry: 'Wpis w rejestrze', declaration: 'Zgłoszenie w uzasadnieniu', summary: 'Podsumowanie Dr. Spina' };
 
-/** Jeden tor w głównej, na liście i w pełnej nitce. Powiązanie należy do następnego boksu. */
-export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false }: {
+/**
+ * Jeden tor w głównej, na liście i w pełnej nitce. Powiązanie należy do następnego boksu.
+ * `variant="row"`: wiersz wspólnej listy (ThreadFeed) - rozwija się po chwili najechania albo stuknięciu,
+ * otwarty jest tylko jeden naraz (stan trzyma lista), pod spodem 3 najtrafniejsze komentarze i „Odpowiedz”.
+ */
+export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false, variant = 'card', open, onOpenChange, offset = 0 }: {
   thread: CommunityThreadSummary; items?: ThreadElement[]; full?: boolean; initiallyExpanded?: boolean;
+  variant?: 'card' | 'row'; open?: boolean; onOpenChange?: (open: boolean) => void; offset?: number;
 }) {
   const accountsEnabled = useFeature('ACCOUNTS_ENABLED');
   const [counts, setCounts] = useState<Counts | null>(null);
@@ -25,7 +30,15 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const scrollingTo = useRef<number | null>(null);
   useEffect(() => () => clearTimeout(timer.current), []);
-  const [expanded, setExpanded] = useState(full || initiallyExpanded);
+  const [ownExpanded, setOwnExpanded] = useState(full || initiallyExpanded);
+  const controlled = open !== undefined && !full;
+  const expanded = controlled ? Boolean(open) : ownExpanded;
+  const setExpanded = (next: boolean | ((value: boolean) => boolean)) => {
+    const value = typeof next === 'function' ? next(expanded) : next;
+    if (controlled) onOpenChange?.(value); else setOwnExpanded(value);
+  };
+  const hover = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(hover.current), []);
   const [active, setActive] = useState(0);
   const [selected, setSelected] = useState(0);
   const track = useRef<HTMLOListElement>(null);
@@ -70,7 +83,12 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     return () => window.removeEventListener('hashchange', read);
   }, [full]);
 
-  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}`}>
+  // Najechanie z zamiarem (450 ms), tylko na urządzeniach z myszką; przejazd kursorem po liście niczego nie rozwija.
+  const hoverProps = variant === 'row' && !full ? {
+    onMouseEnter: () => { if (window.matchMedia('(hover: hover)').matches && !expanded) hover.current = setTimeout(() => setExpanded(true), 450); },
+    onMouseLeave: () => clearTimeout(hover.current),
+  } : {};
+  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} {...hoverProps}>
     <div className="sc-thread-strip__frame">
     <header className="sc-thread-strip__head">
       {full ? <div className="sc-thread-strip__title"><ClampedText><h2>{thread.title}</h2></ClampedText></div> : <h2><button type="button" aria-expanded={expanded} aria-controls={`${uid}-track ${uid}-notes`} onClick={toggle} title={thread.title}>
@@ -99,6 +117,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
           <span className="sc-sr-only">Powiązanie: </span><ClampedText>{item.link_note}</ClampedText>
         </motion.li>}
         <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1}>
+          {item.note && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
           {item.box_type === 'post' ? <><XPostCard item={item} /><button type="button" onClick={() => { if (!expanded) toggle(); setSelected(index); }} aria-label={`Pokaż opis boksu ${index + 1}`}>Boks {index + 1}</button></> :
           <button type="button" className="sc-thread-strip__select" onClick={() => { if (!expanded) toggle(); setSelected(index); }}
             aria-pressed={expanded && selected === index}
@@ -121,14 +140,14 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         {accountsEnabled && <button type="button" onClick={() => { setDraft((draft + ` @boks ${selected + 1} `).trimStart().slice(0, 600)); setShowComments(true); }}>Odpowiedz do boksu</button>}
       </div>}</div>
     </div>
-    <RatingFrame counts={counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative }} ai={thread.is_ai} />
+    <RatingFrame counts={counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative }} ai={thread.is_ai} cycle={!full} offset={offset} />
     </div>
-    {expanded && <p className="sc-thread-totals"><span data-rating="positive">✓</span> {counts?.positive ?? thread.opinions.positive} · <span data-rating="doubt">?</span> {counts?.doubt ?? thread.opinions.doubt ?? 0} · <span data-rating="negative">✕</span> {counts?.negative ?? thread.opinions.negative} · {commentCount ?? thread.comments_count ?? 0} komentarzy</p>}
+    {expanded && variant !== 'row' && <p className="sc-thread-totals"><span data-rating="positive">✓</span> {counts?.positive ?? thread.opinions.positive} · <span data-rating="doubt">?</span> {counts?.doubt ?? thread.opinions.doubt ?? 0} · <span data-rating="negative">✕</span> {counts?.negative ?? thread.opinions.negative} · {commentCount ?? thread.comments_count ?? 0} komentarzy</p>}
     {(thread.narrative || thread.signal_kind) && <p className="sc-thread-totals">{thread.description}</p>}
     <nav className="sc-thread-continuations" aria-label="Części nitki">{thread.continues && <Link href={`/nitki/${thread.continues}`}>← Poprzednia część</Link>}{thread.continuations?.map(id => <Link key={id} href={`/nitki/${id}`}>Ciąg dalszy →</Link>)}</nav>
-    <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
-      expanded={expanded}
-      draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount} />
-    {!full && expanded && <Link href={`/nitki/${thread.id}`}>Otwórz nitkę</Link>}
+    {(variant !== 'row' || expanded) && <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
+      expanded={expanded} preview={variant === 'row'}
+      draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount} />}
+    {!full && expanded && <Link className="sc-thread-strip__open" href={`/nitki/${thread.id}`}>Otwórz całą nitkę →</Link>}
   </article>;
 }
