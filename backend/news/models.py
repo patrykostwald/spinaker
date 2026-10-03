@@ -982,6 +982,7 @@ class AIResearchCall(models.Model):
 
 
 from .wallet_models import WalletBalance  # noqa: E402,F401
+from .report_models import InstitutionalReport, ReportReview, ReportDailyBudget, ReportObservation  # noqa: E402,F401
 from .agent_models import AgentNote, SebaReview  # noqa: E402,F401
 from .political_models import WardenReview  # noqa: E402,F401
 from .account_models import (  # noqa: E402,F401

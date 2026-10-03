@@ -8,6 +8,7 @@ WARSAW = ZoneInfo('Europe/Warsaw')
 
 # Ten sam plan zasila beat, panel i dokumentację terminów.
 BEAT_PLAN = {
+    'institutional-reports-night': ('institutional_reports_task', {'hour': '2-5', 'minute': '*/5'}),
     'narrative-thread-daily': ('narrative_thread_task', {'hour': 21, 'minute': 45}),
     'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),
     'duty-15m': ('duty_task', {'minute': '*/15'}),
@@ -223,7 +224,25 @@ class Milestone:
     not_applicable: str
 
 
+def check_institutional_reports(now):
+    from django.conf import settings
+    from news.report_models import InstitutionalReport, ReportDailyBudget
+    from news.raportysta import window_open
+    if not settings.REPORTS_ENABLED:
+        return result('na', 'Przygotowanie raportów jest wyłączone.')
+    pending = InstitutionalReport.objects.filter(status__in=['queued', 'working'])
+    if not pending.exists():
+        return result('done', 'Brak raportów oczekujących na recenzję.', now)
+    if ReportDailyBudget.objects.filter(day=now.date(), calls__gte=settings.REPORTS_DAILY_CALLS).exists():
+        return result('budget', 'Dzienny limit raportów wykorzystany. Ciąg dalszy w kolejnym oknie.')
+    return result('running' if window_open(now) else 'waiting',
+                  'Recenzje w oknie 02:00-06:00 po resecie limitów i zakończeniu diagnoz.')
+
+
 MILESTONES = (
+    Milestone('institutional-reports', 'Raporty dla instytucji', 'Recenzje analiz i pliki do zatwierdzenia.',
+              '02:00-06:00 co 5 min', 'W granicach osobnego budżetu', check_institutional_reports,
+              (), 'Przygotowanie raportów wyłączone.'),
     Milestone('narrative', 'Nitka narracji', 'Wątek przekazu dnia według wspólnego kryterium dla obu stron.',
               '21:45', '22:30', check_narrative, ('narrative',) * 3, 'Brak kwalifikującego się wątku.'),
     Milestone('poll', 'Zbieranie wpisów z X', 'Sprawdzamy udany puls zadania, także bez nowych wpisów.',

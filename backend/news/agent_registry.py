@@ -18,6 +18,7 @@ def agent(name, description, task, env='', default=False, collector=False, cost=
 
 
 REGISTRY = {
+    'raportysta': agent('Raportysta', 'Przygotowuje analizy dla instytucji, recenzje i pliki do zatwierdzenia.', 'news.tasks.institutional_reports_task', 'REPORTS_ENABLED'),
     'schedule-health': agent('Kontrola dostępności', 'Sprawdza klucze, wolny dysk i pulsy zadań co 6 godzin.', 'news.tasks.schedule_health_task', default=True),
     'video-stats': agent('Koszt filmów', 'Sprawdza dzienny koszt opracowania filmów.', 'news.tasks.clinic_video_stats_task', default=True),
     'social-assistant': agent('Asystent social media', 'Odpowiada na pytania osoby od publikacji. Tylko darmowe modele, domyślnie do 30 prób dziennie.', 'news.social_assistant.answer_question', default=True),

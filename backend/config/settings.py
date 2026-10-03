@@ -24,6 +24,20 @@ VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='')
 VAPID_SUBJECT = env('VAPID_SUBJECT', default='')
 SEJM_TERM = env.int('SEJM_TERM', default=10)
 
+# Institutional reports use a small separate quota and only spare free-model capacity.
+REPORTS_ENABLED = env.bool('REPORTS_ENABLED', default=False)
+REPORTS_DAILY_CALLS = env.int('REPORTS_DAILY_CALLS', default=12)
+REPORTS_DIAGNOSIS_RESERVE_RATIO = env.float('REPORTS_DIAGNOSIS_RESERVE_RATIO', default=0.8)
+REPORTS_MIN_WEEKS = env.int('REPORTS_MIN_WEEKS', default=4)
+REPORTS_MIN_WEEKLY_PER_CAMP = env.int('REPORTS_MIN_WEEKLY_PER_CAMP', default=10)
+REPORTS_MIN_STATEMENTS = env.int('REPORTS_MIN_STATEMENTS', default=30)
+REPORTS_MIN_VOTES = env.int('REPORTS_MIN_VOTES', default=10)
+REPORTS_MIN_RESEARCH = env.int('REPORTS_MIN_RESEARCH', default=100)
+REPORTS_MIN_TOPIC = env.int('REPORTS_MIN_TOPIC', default=20)
+REPORTS_AUDIENCES = env.list('REPORTS_AUDIENCES', default=[
+    'biura-poselskie', 'kluby', 'agencje-pr-pa', 'dzialy-gr', 'monitoring-mediow',
+    'redakcje', 'think-tanki', 'uczelnie'])
+
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")
 CLINIC_VIDEO_MONTHLY_ALERT_PLN = env.float('CLINIC_VIDEO_MONTHLY_ALERT_PLN', default=50)
 CLINIC_VIDEO_USD_PLN = env.float('CLINIC_VIDEO_USD_PLN', default=4.0)

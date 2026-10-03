@@ -420,3 +420,6 @@ from news import thread_social_admin  # noqa: E402,F401
 
 from news.public_records_admin import register as register_public_records
 register_public_records(site)
+from news import report_admin  # noqa: E402,F401
+if site is not admin.site:
+    report_admin.register(site)
