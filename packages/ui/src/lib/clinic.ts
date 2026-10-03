@@ -130,6 +130,7 @@ export type InterviewParticipant = {
   techniques: InterviewQuote[]; claims: InterviewClaim[]; limitations?: string;
 };
 export type Interview = {
+  selection_label?: string; selection_method?: string; selection_votes?: number;
   opinions?: { positive: number; negative: number };
   comment_count?: number;
   participants?: InterviewParticipant[];

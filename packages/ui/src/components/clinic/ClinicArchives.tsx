@@ -69,6 +69,7 @@ export function ClinicInterviewPage({ interview }: { interview: Interview }) {
   return <section className="sc-clinic-archives">
     <ClinicNav />
     <SectionHeader variant="page" longTitle title={interview.headline || "Analiza wywiadu"} />
+    {interview.selection_label ? <p>{interview.selection_label}</p> : null}
     <InterviewScanner interview={interview} full />
     <ClinicDiscussion kind="interviews" id={interview.id} />
   </section>;

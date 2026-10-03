@@ -254,6 +254,8 @@ class XAccountSuggestion(models.Model):
 
 
 class ClinicInterview(models.Model):
+    selection_method = models.CharField(max_length=16, blank=True)
+    selection_votes = models.PositiveIntegerField(default=0)
     repair_attempts = models.PositiveSmallIntegerField(default=0)
     """Wywiad dnia: publiczny film z YouTube z politykiem — transkrypcja (Gemini) i diagnoza Dr. Spina (Claude).
 

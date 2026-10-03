@@ -32,6 +32,7 @@ from news.public_figures import public_figure_list, public_figure_detail, public
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
 from news.push_api import SubscriptionsView
+from news.interview_vote_api import InterviewBallotView, InterviewVoteView
 
 router = DefaultRouter()
 router.register(r"editor/threads", EditorialThreadViewSet, basename="editor-threads")
@@ -82,6 +83,8 @@ urlpatterns = [
     path('clinic/', clinic_page),
     path('clinic/corrections/', clinic_corrections),
     path('clinic/interviews/', clinic_interviews),
+    path('clinic/interviews/voting/', InterviewBallotView.as_view()),
+    path('clinic/interviews/voting/vote/', InterviewVoteView.as_view()),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
     path('clinic/messages/', clinic_messages),
     path('clinic/messages/<str:day>/', clinic_message_detail),

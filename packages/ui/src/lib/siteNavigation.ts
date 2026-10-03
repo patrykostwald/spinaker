@@ -46,12 +46,14 @@ export const clinicNavigation: SiteNavigationItem[] = [
   { href: "/klinika/diagnozy", label: "Diagnozy" },
   { href: "/klinika/wskazniki", label: "Dane i wykresy" },
   { href: "/klinika/wywiady", label: "Wywiady" },
+  { href: "/klinika/wywiady/glosowanie", label: "Głosowanie" },
   { href: "/klinika/przekazy", label: "Przekazy" },
   { href: "/klinika/raporty", label: "Raporty" },
   links.corrections,
 ];
 
 export function isClinicNavigationCurrent(pathname: string, href: string) {
+  if (href === "/klinika/wywiady" && pathname.startsWith("/klinika/wywiady/glosowanie")) return false;
   if (href === "/klinika") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`)
     || (href === "/klinika/diagnozy" && /^\/klinika\/\d+(?:\/|$)/.test(pathname))

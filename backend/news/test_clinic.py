@@ -717,6 +717,8 @@ def test_spin_of_day_is_the_strongest_today_and_latest_is_the_newest(ai_on, monk
 @pytest.mark.django_db
 def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
     from news import clinic_interview
+    now = timezone.localtime().replace(hour=7, minute=5)
+    monkeypatch.setattr(timezone, 'now', lambda: now)
     monkeypatch.setenv('CLINIC_INTERVIEW_ENABLED', 'true')
     monkeypatch.setenv('GEMINI_API_KEY', 'g')
     monkeypatch.setenv('CLINIC_AI_ENABLED', 'true')
@@ -1046,6 +1048,8 @@ def test_pick_requeues_interview_that_failed_on_payment(monkeypatch):
     """Po doładowaniu Gemini wywiad nieudany przez 402 wraca do kolejki zamiast przepaść (właściciel 2.10.2026)."""
     from news import clinic_interview
     from news.clinic_models import ClinicInterview
+    now = timezone.localtime().replace(hour=7, minute=5)
+    monkeypatch.setattr(timezone, 'now', lambda: now)
     monkeypatch.setattr(clinic_interview, 'enabled', lambda: True)
     day = timezone.localdate() - timedelta(days=1)
     failed = ClinicInterview.objects.create(video_id='aaaaaaaaaaa', url='https://www.youtube.com/watch?v=aaaaaaaaaaa', day=day,

@@ -14,6 +14,7 @@ BEAT_PLAN = {
     'clinic-diagnoses-day': ('clinic_diagnose_task', {'minute': '*/10', 'hour': '7-22'}),
     'clinic-interview-10m': ('clinic_interview_task', {'minute': '*/10'}),
     'clinic-interview-pick': ('clinic_interview_pick_task', {'hour': '7,10,13,16,19', 'minute': 5}),
+    'clinic-interview-candidates': ('clinic_interview_candidates_task', {'hour': '0,6,12,18,23', 'minute': 0}),
     'clinic-daily-messages-day': ('clinic_daily_messages_task', {'hour': '9,12,15,18', 'minute': 0}),
     'clinic-daily-messages-evening': ('clinic_daily_messages_task', {'hour': 21, 'minute': 30}),
     'x-publish-day': ('x_publish_task', {'minute': '15,45', 'hour': '8-21'}),

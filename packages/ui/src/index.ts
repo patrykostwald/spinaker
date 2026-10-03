@@ -55,6 +55,7 @@ export { PublicFigureDirectory, PublicFigurePage } from "./components/PublicFigu
 export * from "./lib/publicFigures";
 export { ClinicDatabase } from "./components/clinic/ClinicDatabase";
 export { ClinicInterviewArchive, ClinicMessageArchive, ClinicInterviewPage } from "./components/clinic/ClinicArchives";
+export { InterviewVoting } from "./components/clinic/InterviewVoting";
 export { ClinicPage } from "./components/clinic/ClinicPage";
 export { WeeklyReport } from "./components/clinic/WeeklyReport";
 export { ReportArchive } from "./components/clinic/ReportArchive";

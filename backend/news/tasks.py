@@ -262,9 +262,27 @@ def youtube_leftover_task():
 
 @shared_task(name="news.tasks.clinic_interview_pick_task", soft_time_limit=600, time_limit=660)
 def clinic_interview_pick_task():
-    """Rano: najgłośniejszy wywiad z politykiem z poprzedniego dnia trafia do kolejki wywiadu dnia."""
+    """Rano: wynik zamkniętego o 7:00 głosowania trafia do kolejki wywiadu dnia."""
     from news.clinic_interview import pick_yesterday
     return pick_yesterday()
+
+
+@shared_task(name="news.tasks.clinic_interview_candidates_task", soft_time_limit=600, time_limit=660)
+def clinic_interview_candidates_task():
+    from datetime import timedelta
+    from news.daily_schedule import WARSAW
+    from news.interview_votes import refresh_candidates
+    from news.repairer import flag
+    if not flag('CLINIC_INTERVIEW_ENABLED', False):
+        return {'status': 'disabled'}
+    if not cache.add('interview-candidates-lock', '1', timeout=660):
+        return {'status': 'locked'}
+    try:
+        now = timezone.now().astimezone(WARSAW)
+        day = now.date() - timedelta(days=1) if now.hour < 7 else now.date()
+        return {'day': str(day), 'candidates': refresh_candidates(day)}
+    finally:
+        cache.delete('interview-candidates-lock')
 
 
 @shared_task(name="news.tasks.newsletter_confirmation_task", soft_time_limit=60, time_limit=90)

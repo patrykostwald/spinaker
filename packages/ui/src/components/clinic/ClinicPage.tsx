@@ -199,6 +199,8 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
           <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
             subtitle="Wywiad z wczoraj: gość i prowadzący." link={<Link className="sc-archive-btn" href="/klinika/wywiady" aria-label="Archiwum wywiadów">Archiwum</Link>} />
           <InterviewScanner interview={data.interview} />
+          {data.interview.selection_label ? <p>{data.interview.selection_label}</p> : null}
+          <p><Link href="/klinika/wywiady/glosowanie">Głosowanie na wywiad dnia →</Link></p>
         </section> : null}
 
         <ClinicRanking data={data} />

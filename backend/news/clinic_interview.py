@@ -458,11 +458,14 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
     from news.clinic import ASSESSMENT_LABELS
     from news.clinic_discussion import counts
     from news.clinic_models import VERDICTS
+    from news.interview_votes import selection_label
     guest = interview.guest_analysis or {}
     return {
         'opinions': {'positive': interview.positive_count, 'negative': interview.negative_count} if hasattr(interview, 'positive_count') else counts(interview.opinions.all()),
         'comment_count': interview.discussion_count if hasattr(interview, 'discussion_count') else interview.comments.count(),
         'id': interview.pk, 'day': interview.day, 'url': interview.url, 'video_id': interview.video_id,
+        'selection_label': selection_label(interview), 'selection_method': interview.selection_method,
+        'selection_votes': interview.selection_votes,
         'title': interview.title, 'channel': interview.channel, 'thumbnail_url': interview.thumbnail_url,
         'guest_name': interview.guest_name, 'guest_role': interview.guest_role, 'host_name': interview.host_name,
         'headline': interview.headline, 'summary': interview.summary, 'overall': interview.overall,
@@ -581,12 +584,17 @@ def _duration_seconds(iso: str) -> int:
     return ((days * 24 + hours) * 60 + minutes) * 60 + secs
 
 
-def _politician_names() -> list[str]:
-    """Nazwiska polityków z oficjalnych kont czytanych w Klinice — do rozpoznania, że film jest z politykiem."""
+def _politician_full_names() -> set[str]:
     from news.clinic import figures_by_account, reading_accounts
     accounts = list(reading_accounts())
     figures = figures_by_account([account.pk for account in accounts])
     names = {(figures[account.pk].canonical_name if account.pk in figures else account.display_name) for account in accounts}
+    return names
+
+
+def _politician_names() -> list[str]:
+    """Nazwiska polityków z oficjalnych kont czytanych w Klinice — do rozpoznania, że film jest z politykiem."""
+    names = _politician_full_names()
     party_words = ('partia', 'prawo', 'platforma', 'polska', 'polski', 'konfederacja', 'lewica', 'stronnictwo',
                    'obywatelsk', 'ruch', 'korona', 'klub', 'koalicja', 'razem', 'republika')
     surnames = set()
@@ -768,17 +776,29 @@ def rank_interviews(day) -> list[dict]:
         if not snippet['top'] and loudness < HOT_LOUDNESS:
             continue
         ranked.append({'video_id': item['id'], 'loudness': loudness, 'score': loudness * (3 if snippet['top'] else 1),
+                       'views': int(stats.get('viewCount', 0)),
+                       'duration': _duration_seconds((item.get('contentDetails') or {}).get('duration', '')),
                        'title': snippet.get('title', ''), 'description': snippet.get('description', ''),
                        'channel': snippet.get('channelTitle', ''), 'top': snippet['top']})
     return sorted(ranked, key=lambda row: row['score'], reverse=True)
 
 
 def find_loudest_interview(day, exclude=()) -> dict | None:
-    """Pierwszy z rankingu, który darmowy klasyfikator uznał za wywiad (tytuł i opis) — dopiero on idzie do płatnej analizy."""
+    """Głosy, potem dotychczasowy ranking. Pomijamy gościa z poprzedniego dnia."""
+    from news.interview_votes import ranked_candidates, previous_guest_keys
     names = set(_politician_names()) | set(_top_politicians())
-    for candidate in rank_interviews(day)[:8]:
-        if candidate['video_id'] in exclude:
-            continue
+    previous_keys, previous_name = previous_guest_keys(day)
+    rows = list(ranked_candidates(day))
+    eligible = [row for row in rows if row.video_id not in exclude
+                and not previous_keys.intersection(row.guest_keys)
+                and not (previous_name and previous_name == row.guest_name.casefold().strip())]
+    for row in eligible:
+        candidate = {key: getattr(row, key) for key in ('video_id', 'title', 'description', 'channel', 'loudness', 'top', 'guest_name')}
+        tied = row.vote_count > 0 and sum(other.vote_count == row.vote_count for other in eligible) > 1
+        candidate.update(selection_votes=row.vote_count,
+                         selection_method='tie' if tied else 'votes' if row.vote_count else 'views')
+        if row.vote_count or not row.from_ranking:
+            return candidate
         import time
         ok, reason = looks_like_interview(candidate['title'], candidate['description'], candidate['channel'])
         if ok is None:
@@ -804,10 +824,20 @@ def _transient_error_q():
 
 
 def pick_yesterday(*, next_candidate=False) -> dict:
-    """Codziennie rano: najważniejszy wywiad z politykiem z poprzedniego dnia (jeśli zespół nie wskazał go sam)."""
+    """Głosowanie zamyka się o 7:00; beat i Ratownik korzystają z tego samego wyniku."""
     if not enabled():
         return {'status': 'disabled'}
-    day = timezone.localdate() - timedelta(days=1)
+    from django.db import transaction
+    from news.interview_votes import yesterday, closing_at, lock_ballot
+    day = yesterday()
+    if timezone.now() < closing_at(day):
+        return {'status': 'voting_open', 'day': str(day)}
+    with transaction.atomic():
+        lock_ballot(day)  # serializes selection with the last vote and concurrent rescuers
+        return _pick_day(day, next_candidate=next_candidate)
+
+
+def _pick_day(day, *, next_candidate=False):
     if ClinicInterview.objects.filter(day=day, status__in=['queued', 'flagged', 'approved', 'pending_review']).exists():
         return {'status': 'already_chosen', 'day': str(day)}
     # Błąd chwilowy (brak środków, limit) nie przekreśla wywiadu: po doładowaniu wraca do kolejki (właściciel 2.10).
@@ -817,10 +847,17 @@ def pick_yesterday(*, next_candidate=False) -> dict:
         retry.status, retry.error = 'queued', ''
         retry.save(update_fields=['status', 'error'])
         return {'status': 'requeued', 'day': str(day), 'id': retry.pk, 'title': retry.title}
-    tried = set(ClinicInterview.objects.filter(day=day).values_list('video_id', flat=True))
+    # Ranking includes overnight uploads, so a video can occur in two daily pools.
+    # Never move an existing interview to another day via queue_interview().
+    tried = set(ClinicInterview.objects.values_list('video_id', flat=True))
     best = find_loudest_interview(day, exclude=tried)
     if not best:
         return {'status': 'none_found', 'day': str(day)}
     interview = queue_interview(f"https://www.youtube.com/watch?v={best['video_id']}", day)
+    interview.title, interview.channel = best['title'], best['channel']
+    interview.guest_name = best.get('guest_name', '')[:200]
+    interview.selection_method = best.get('selection_method', 'views')
+    interview.selection_votes = best.get('selection_votes', 0)
+    interview.save(update_fields=['title', 'channel', 'guest_name', 'selection_method', 'selection_votes'])
     return {'status': 'queued', 'day': str(day), 'id': interview.pk, 'title': best['title'], 'channel': best['channel'],
             'loudness': best['loudness'], 'top_politician': best['top']}
