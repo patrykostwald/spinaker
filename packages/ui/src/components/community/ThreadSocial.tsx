@@ -46,16 +46,20 @@ function Composer({ id, me, draft, setDraft, boxCount, pending, onSubmit, extra,
   return <form className={`sc-social-composer${long ? ' is-long' : ''}`} onSubmit={event => { event.preventDefault(); onSubmit(); }}>
     <Avatar name={me} />
     <div>
-      {boxCount > 0 && <div className="sc-social-refs" aria-label="Odnieś się do boksu albo spinki">{refs.map(row => <button key={row.ref} type="button" title={row.label} onClick={() => insert(row.ref)}>{row.ref}</button>)}</div>}
+      {/* jedna linia (właściciel 3.10): odnośniki @b1 @s1 z lewej, kolejność, licznik, Udostępnij i Zgłoś z prawej - ta sama czcionka */}
+      <div className="sc-social-composer__top">
+        {boxCount > 0 && <div className="sc-social-refs" aria-label="Odnieś się do boksu albo spinki">{refs.map(row => <button key={row.ref} type="button" title={row.label} onClick={() => insert(row.ref)}>{row.ref}</button>)}</div>}
+        <span className="sc-social-composer__tools">{extra}<CharacterCount text={draft} limit={limit} />{end && <span className="sc-social-composer__end">{end}</span>}</span>
+      </div>
       <label className="sc-sr-only" htmlFor={`compose-${id}`}>Skomentuj spinkę</label>
-      {long ? <textarea id={`compose-${id}`} value={draft} maxLength={limit} rows={4} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj. Przyciski nad polem dodają odnośnik do boksu (@b1) albo spinki (@s1)." />
-        : <input id={`compose-${id}`} value={draft} maxLength={limit} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj" />}
+      {long ? <textarea id={`compose-${id}`} value={draft} maxLength={limit} rows={4} onChange={e => setDraft(e.target.value)}
+          onKeyDown={event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && draft.trim() && !pending) { event.preventDefault(); onSubmit(); } }}
+          placeholder="Skomentuj. Ctrl+Enter wysyła. Odnośniki nad polem dodają boks (@b1) albo spinkę (@s1)." />
+        : <input id={`compose-${id}`} value={draft} maxLength={limit} onChange={e => setDraft(e.target.value)} placeholder="Skomentuj i naciśnij Enter" enterKeyHint="send" />}
+      {/* „Skomentuj” jako przycisk wróci w nowym miejscu; na razie Enter (dłuższy: Ctrl+Enter) */}
+      <button type="submit" className="sc-sr-only" disabled={pending || !draft.trim()}>Skomentuj</button>
       <div className="sc-social-composer__row">
         <button type="button" className="sc-social-longtoggle" onClick={() => setLong(!long)}>{long ? 'Krótki komentarz' : 'Dłuższy komentarz'}</button>
-        {extra}
-        <CharacterCount text={draft} limit={limit} />
-        <button type="submit" disabled={pending || !draft.trim()}>Skomentuj</button>
-        {end && <span className="sc-social-composer__end">{end}</span>}
       </div>
     </div>
   </form>;

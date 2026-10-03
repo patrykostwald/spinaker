@@ -1,0 +1,98 @@
+WYSYŁKA 5.10.2026 (poniedziałek): Centralny Rejestr Umów (CRU), 2 pisma
+Cel: legalny dostęp do danych CRU, żeby przy profilach polityków pokazywać umowy, w których występują
+(po potwierdzeniu przez zespół, że to ta sama osoba, a nie imiennik).
+Portal rejestrumow.gov.pl ma ochronę przed botami - nie obchodzimy jej. API MF daje dziś klucz tylko
+roli „Publikującego” (urzędy publikujące umowy), stąd prośba o dostęp do odczytu i wniosek o dane.
+
+Kolejność: najpierw pismo 1 (mail), tego samego dnia pismo 2 (wniosek formalny).
+Wysyłka z: kontakt@spin.clinic
+
+===================================================================================================
+PISMO 1 - prośba o dostęp do API w trybie odczytu
+DO: pomoc.cru@mf.gov.pl (adres dla integratorów spoza jednostek sektora finansów publicznych,
+    podany przez MF w komunikacie o udostępnieniu API CRU)
+TEMAT: CRU API - prośba o klucz do odczytu (GET /summary, GET /{agreementId}) dla serwisu spin.clinic
+---------------------------------------------------------------------------------------------------
+
+Dzień dobry,
+
+prowadzimy spin.clinic - niezależny serwis, który zestawia wypowiedzi polityków z dokumentami
+źródłowymi: drukami sejmowymi, głosowaniami, a teraz także z umowami publikowanymi w Centralnym
+Rejestrze Umów. Wszystkie dane pokazujemy z linkiem do oryginału.
+
+Z dokumentacji integracyjnej CRU API wynika, że klucz X-API-KEY generuje użytkownik z rolą
+Publikującego. My niczego nie publikujemy - potrzebujemy wyłącznie odczytu. Dlatego prosimy:
+- o klucz API z uprawnieniem tylko do odczytu (GET /summary i GET /{agreementId}) albo
+- o wskazanie, w jaki sposób podmiot spoza sektora finansów publicznych może uzyskać taki dostęp,
+  albo kiedy planowane jest publiczne API do odczytu lub pliki z danymi (CSV/JSON).
+
+Zobowiązujemy się do:
+- przestrzegania limitów zapytań (zapytania sekwencyjne, odstęp co najmniej 1 s, pobieranie nocą),
+- przedstawiania się nagłówkiem User-Agent z nazwą serwisu i adresem kontaktowym,
+- pokazywania przy każdej umowie źródła (CRU, Ministerstwo Finansów) i linku do rejestru,
+- przetwarzania danych osób fizycznych zgodnie z RODO: nie publikujemy adresów, a powiązanie
+  umowy z osobą publiczną pokazujemy dopiero po ręcznym potwierdzeniu przez zespół.
+
+Chętnie przetestujemy integrację na środowisku testowym, jeśli to ułatwi decyzję.
+
+Z poważaniem
+Zespół spin.clinic
+kontakt@spin.clinic · https://spin.clinic · X: https://x.com/spinclinic
+Operator serwisu: iapply sp. z o.o.
+
+
+===================================================================================================
+PISMO 2 - wniosek o ponowne wykorzystywanie informacji sektora publicznego (dane CRU)
+DO: Minister Finansów, Ministerstwo Finansów, ul. Świętokrzyska 12, 00-916 Warszawa
+    e-mail: kancelaria@mf.gov.pl (SPRAWDŹ przed wysyłką na gov.pl/web/finanse -> Kontakt;
+    alternatywnie ePUAP: skrytka Ministerstwa Finansów, „pismo ogólne”)
+TEMAT: Wniosek o ponowne wykorzystywanie informacji sektora publicznego - dane Centralnego Rejestru Umów
+---------------------------------------------------------------------------------------------------
+
+Wnioskodawca: iapply sp. z o.o., operator serwisu spin.clinic
+Adres do korespondencji elektronicznej: kontakt@spin.clinic
+[DOPISZ: adres siedziby, KRS, NIP spółki - z danych rejestrowych iapply]
+
+Na podstawie ustawy z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu
+informacji sektora publicznego wnoszę o udostępnienie do ponownego wykorzystywania danych
+z Centralnego Rejestru Umów jednostek sektora finansów publicznych.
+
+1. Zakres informacji:
+   wszystkie umowy opublikowane w CRU od 1 lipca 2026 r., z polami publikowanymi w rejestrze:
+   identyfikator umowy w CRU, numer umowy, data zawarcia, okres obowiązywania, strony umowy
+   (nazwa, NIP lub REGON; dla osób fizycznych imię i nazwisko w zakresie, w jakim są jawne
+   w rejestrze), przedmiot umowy, wartość, informacja o środkach z budżetu Unii Europejskiej,
+   status umowy i data zakończenia, data publikacji i ostatniej zmiany.
+
+2. Forma i sposób:
+   plik w formacie otwartym, czytelnym maszynowo (CSV lub JSON) przekazany jednorazowo,
+   a następnie aktualizowany - najlepiej przez dostęp do odczytu w CRU API
+   (GET /summary, GET /{agreementId}) albo przez cykliczny plik (np. raz na dobę lub tydzień).
+
+3. Cel ponownego wykorzystywania:
+   publikacja w serwisie spin.clinic przy wypowiedziach i profilach osób publicznych (z linkiem
+   do rejestru), analizy wydatków publicznych dla czytelników, dziennikarzy i badaczy, w tym
+   raporty dla instytucji. Cel może mieć charakter komercyjny - prosimy o informację, jeśli
+   wiąże się to z warunkami lub opłatą.
+
+4. Ochrona danych osobowych:
+   dane osób fizycznych przetwarzamy zgodnie z RODO, bez adresów; powiązanie umowy z osobą
+   publiczną publikujemy dopiero po weryfikacji przez zespół. Przyjmiemy warunki ponownego
+   wykorzystywania określone przez Ministra, w tym ewentualną pseudonimizację danych osób
+   fizycznych niepełniących funkcji publicznych.
+
+Proszę o odpowiedź drogą elektroniczną na adres kontakt@spin.clinic.
+
+Z poważaniem
+[imię i nazwisko osoby uprawnionej do reprezentacji iapply sp. z o.o.]
+iapply sp. z o.o., operator serwisu spin.clinic
+
+
+===================================================================================================
+UWAGI DO WYSYŁKI
+- Pismo 2 podpisuje osoba uprawniona do reprezentacji spółki (przy ePUAP: profil zaufany
+  albo podpis kwalifikowany). Mail bez podpisu może zostać potraktowany jak zwykła korespondencja.
+- Termin odpowiedzi na wniosek o ponowne wykorzystywanie wynosi zwykle do 14 dni (może zostać
+  przedłużony) - sprawdzimy w kalendarzu ok. 19.10.2026.
+- Opcjonalnie: krótki mail do Sieci Obywatelskiej Watchdog Polska (apelują o otwarte API CRU)
+  z informacją, że też o nie wnioskujemy - wzmacnia sprawę, nic nie kosztuje.

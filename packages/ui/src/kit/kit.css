@@ -8383,3 +8383,23 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-trow__desc { grid-column: 2; margin-top: 3px; font-size: 13.5px; line-height: 1.45; color: var(--sc-text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-trow__boxes { justify-self: end; }
 @media (max-width: 600px) { .sc-trow, .sc-trow:not(:has(.sc-trow__voices)) { grid-template-columns: 32px minmax(0, 1fr) auto !important; column-gap: 12px; } .sc-trow__main .sc-trow__by { grid-row: auto; } }
+
+/* pole komentarza: jedna linia narzędzi w rozmiarze odnośników (właściciel 3.10) */
+.sc-social-composer__top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sc-social-composer__tools { margin-left: auto; display: inline-flex; align-items: center; gap: 14px; font-size: 11.5px; color: var(--sc-text-3); letter-spacing: .03em; }
+.sc-social-composer__tools .sc-social-sort { margin: 0; }
+.sc-thread-social .sc-social-composer__tools .sc-social-sort > button, .sc-social-composer__tools .sc-social-sort > button { font-size: 11.5px !important; font-weight: 500; padding: 1px 0; letter-spacing: .03em; }
+.sc-social-composer__tools .sc-social-count, .sc-social-composer__tools [class*="count"] { font-size: 11.5px; }
+.sc-social-composer__tools .sc-social-composer__end { margin-left: 0; padding-left: 14px; gap: 14px; }
+.sc-thread-social .sc-social-composer__tools .sc-social-composer__end button { font-size: 11.5px !important; letter-spacing: .03em; padding: 1px 0; }
+.sc-social-composer__row { justify-content: flex-start; }
+/* otwarta spinka: boksy ok. 15% większe, równe odstępy tytuł - łańcuch - komentarze */
+.sc-trop-overlay .sc-thread-strip__box, .sc-community--detail .sc-thread-strip__box,
+.sc-trop-overlay .sc-thread-strip__box:hover, .sc-trop-overlay .sc-thread-strip__box:focus-within,
+.sc-community--detail .sc-thread-strip__box:hover, .sc-community--detail .sc-thread-strip__box:focus-within { flex-basis: 180px; max-width: 180px; height: 180px; }
+/* równe odstępy: tytuł - łańcuch 40 px, łańcuch - pole komentarza 40 px (właściciel 3.10) */
+.sc-trop-overlay__body > article .sc-thread-strip__track { padding-top: 28px; padding-bottom: 0; }
+.sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open) { padding-top: 200px; }
+.sc-trop-overlay__body > article .sc-thread-social { margin-top: -24px; }
+.sc-social-composer button.sc-sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.sc-social-composer button.sc-sr-only::before { display: none; }
