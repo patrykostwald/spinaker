@@ -27,7 +27,7 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     </section>
     <section id="finansowanie"><h2>{t("Finansowanie i niezależność")}</h2>
       <p>{t("Projekt finansuje operator, iapply sp. z o.o., przy wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.")}</p>
-      <p>{t("Nie przyjmujemy pieniędzy od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór materiałów ani wynik diagnozy. Nie mamy reklam ani sponsorów wpływających na treść.")} <Link lang={lang} href="/wsparcie">{t("Koszty i wsparcie projektu")}</Link>.</p>
+      <p>{t("Nie przyjmujemy darowizn od partii, polityków ani ich fundacji. Dane i raporty sprzedajemy każdemu na tych samych warunkach. Żaden klient ani darczyńca nie ma wpływu na diagnozy, listę czytanych kont ani treści serwisu.")} <Link lang={lang} href="/wsparcie">{t("Koszty i wsparcie projektu")}</Link>.</p>
     </section>
     <section id="obserwuj"><h2>{t("Obserwuj nas")}</h2>
       <p>{t("Najsilniejsze diagnozy publikujemy automatycznie także poza stroną - zawsze z linkiem do pełnej analizy i źródeł, bez oznaczania polityków.")}</p>

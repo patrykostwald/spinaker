@@ -50,7 +50,7 @@ export function CouncilCharterDocument({ lang = "pl" }: { lang?: DocumentLanguag
     ],
     [
       t("Niezależność od pieniędzy politycznych."),
-      t("spin.clinic nie przyjmuje pieniędzy od partii ani polityków; wsparcie czytelników nie wpływa na diagnozy.")
+      t("spin.clinic nie przyjmuje darowizn od partii ani polityków; dane i raporty sprzedaje każdemu na tych samych warunkach, a ani wsparcie czytelników, ani klienci nie wpływają na diagnozy.")
     ]
   ];
   const sections = [

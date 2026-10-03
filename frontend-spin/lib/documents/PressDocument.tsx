@@ -1,12 +1,12 @@
 import { DocumentLink as Link, documentTranslator, type DocumentLanguage } from "./locale";
-import { DocLayout } from "@spin-clinic/ui/kit";
+import { Button, DocLayout } from "@spin-clinic/ui/kit";
 import { ContextThreadExample } from "../../app/dla-redakcji/ContextThreadExample";
 
 export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const t = documentTranslator(lang);
   const sections = [
     { id: "cytowanie", label: t("Cytowanie diagnozy") }, { id: "link", label: t("Trwały link") },
-    { id: "zrodla", label: t("Źródła i metodologia") }, { id: "kontakt", label: t("Kontakt") },
+    { id: "zrodla", label: t("Źródła i metodologia") }, { id: "kontakt", label: t("Kontakt") }, { id: "dane", label: t("Dane i raporty") },
     { id: "pilotaz", label: t("Pilotaż nitek") }, { id: "rss", label: t("Zgoda na odczyt RSS") },
   ];
 
@@ -37,6 +37,18 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     </section>
     <section id="kontakt"><h2>{t("Kontakt z projektem")}</h2>
       <p>{t("Współpraca i pytania mediów:")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>{t(". Zgłoszenia błędów wraz z linkiem i dowodami:")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Operator: iapply sp. z o.o.; <Link lang={lang} href="/o-nas#operator">{t("dane operatora")}</Link>.</p>
+    </section>
+    <section id="dane"><h2>{t("Dane i raporty dla firm i instytucji")}</h2>
+      <p>{t("Z danych, które zbieramy i analizujemy, przygotowujemy zestawienia na zamówienie:")}</p>
+      <ul>
+        <li>{t("powiadomienia o nowych wpisach i diagnozach wskazanych polityków,")}</li>
+        <li>{t("tygodniowy raport przekazu rządzących i opozycji,")}</li>
+        <li>{t("monitoring tematu lub branży: projekty ustaw, wypowiedzi polityków, sygnały lobbingu,")}</li>
+        <li>{t("zestawienie wypowiedzi polityka: historia, zmiany stanowiska, zgodność z głosowaniami,")}</li>
+        <li>{t("dane do badań naukowych.")}</li>
+      </ul>
+      <p>{t("Jedna oferta dla wszystkich: te same produkty i warunki bez względu na obóz polityczny. Klient nie ma wpływu na metodę, diagnozy ani treści serwisu. Sprzedajemy nasze analizy, nie treści cudzych wpisów.")}</p>
+      <p><Button href="mailto:kontakt@spin.clinic?subject=Dane%20i%20raporty%20spin.clinic" variant="secondary">{t("Zapytaj o dane")}</Button> <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a></p>
     </section>
     <section id="pilotaz"><h2>{t("Pilotaż autoryzowanych nitek")}</h2>
       <p>{t("Zapraszamy redakcje i poszczególnych dziennikarzy do prowadzenia autoryzowanych nitek kontekstowych. To osobna forma współpracy: autor układa materiały i ich kolejność, podpisując nitkę nazwiskiem i redakcją. Materiały mediów pobieramy wyłącznie w uzgodnionym zakresie, za zgodą wydawcy.")}</p>

@@ -369,6 +369,36 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
   );
 }
 
+/** Raporty dla instytucji: jedna oferta dla wszystkich, bez cen na stronie (kontakt mailowy). */
+const REPORTS: [string, string][] = [
+  ["Alerty o politykach", "Nowe wpisy i diagnozy wskazanych osób, na bieżąco."],
+  ["Raport tygodniowy", "Przekaz rządzących i opozycji: tezy, wątki, ton, techniki."],
+  ["Monitoring branży", "Projekty ustaw, wypowiedzi polityków i sygnały lobbingu."],
+  ["Profil wypowiedzi", "Historia, zmiany stanowiska, zgodność z głosowaniami."],
+  ["Dane do badań", "Zestawienia diagnoz i wskaźników dla uczelni i instytutów."],
+];
+
+function ReportsOffer() {
+  return (
+    <section className="sc-ind-reports" aria-labelledby="ind-reports-title">
+      <header className="sc-ind-reports__head">
+        <h2 id="ind-reports-title">Raporty dla instytucji</h2>
+        <p>Te same dane, uporządkowane pod konkretną potrzebę redakcji, firmy, organizacji lub uczelni.</p>
+      </header>
+      <ul className="sc-ind-reports__grid">
+        {REPORTS.map(([title, text]) => <li key={title}><strong>{title}</strong><span>{text}</span></li>)}
+      </ul>
+      <footer className="sc-ind-reports__foot">
+        <p>Jedna oferta dla wszystkich, bez względu na obóz polityczny. Klient nie ma wpływu na metodę ani diagnozy.</p>
+        <div className="sc-ind-reports__actions">
+          <Button href="mailto:kontakt@spin.clinic?subject=Raporty%20spin.clinic" variant="secondary" size="sm">Zapytaj o raport</Button>
+          <Link href="/dla-redakcji#dane">Szczegóły</Link>
+        </div>
+      </footer>
+    </section>
+  );
+}
+
 export function ClinicIndicators() {
   const query = useQuery({ queryKey: ["clinic-indicators"], queryFn: getIndicatorStats, staleTime: 10 * 60_000 });
   const stats = query.data;
@@ -417,6 +447,7 @@ export function ClinicIndicators() {
             <li>Okres: {stats.window.date_from} – {stats.window.date_to}. Dane odświeżamy co 10 minut.</li>
           </ul>
         </aside>
+        <ReportsOffer />
       </UpdatedAt.Provider> : null}
     </section>
   );

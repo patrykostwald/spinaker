@@ -70,7 +70,7 @@ export default function SupportPage() {
       <p><a href={SUPPORT_LINKS.phase3}>Wesprzyj własny serwer AI na zrzutka.pl</a></p>
       <p><Link href="/o-nas#rozwoj">Trzy fazy projektu</Link></p>
     </section>
-    <section><h2>Wsparcie nie kupuje wpływu</h2><p>Nie przyjmujemy pieniędzy od partii ani polityków. Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.</p></section>
+    <section><h2>Wsparcie nie kupuje wpływu</h2><p>Nie przyjmujemy darowizn od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Dane i raporty sprzedajemy każdemu na tych samych warunkach; klient też nie ma wpływu na diagnozy. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.</p></section>
     <section><h2>Inne sposoby wsparcia</h2><p>Wpłaty obsługują zewnętrzne serwisy; spin.clinic nie przetwarza danych płatniczych. Zbiórka na miesięczny budżet nie jest subskrypcją.</p><ul>{links.filter(link => link.href !== SUPPORT_LINKS.monthly).map(link => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}</ul><p>Możesz też udostępnić diagnozę z <Link href="/klinika">Kliniki</Link>.</p></section>
     <NewsletterSignup source="wsparcie" />
   </InfoPage>;
