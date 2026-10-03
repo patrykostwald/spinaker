@@ -63,7 +63,7 @@ type Counts3 = { positive: number; doubt: number; negative: number };
 export function SpinkaClip({ counts, open = false }: { counts?: Counts3; id?: string; open?: boolean }) {
   const c = counts ?? { positive: 0, doubt: 0, negative: 0 };
   const top = Math.max(c.positive, c.doubt, c.negative);
-  const color = !top ? 'var(--sc-text-3)' : c.positive === top ? 'var(--sc-positive)' : c.doubt === top ? 'var(--sc-warning)' : 'var(--sc-negative)';
+  const color = !top ? 'var(--sc-ctx)' : c.positive === top ? 'var(--sc-positive)' : c.doubt === top ? 'var(--sc-warning)' : 'var(--sc-negative)';
   // zatrzask (właściciel 3.10): linia od boksu do boksu, pośrodku dwa zazębione ogniwa = spięcie dwóch materiałów.
   // Rozwinięta: ogniwa płynnie rozprostowują się w jedną prostą linię; po zwinięciu znów zaczepiają się w zatrzask.
   return <span className={`sc-clip sc-clasp${open ? ' is-open' : ''}`} style={{ color }} aria-hidden="true">

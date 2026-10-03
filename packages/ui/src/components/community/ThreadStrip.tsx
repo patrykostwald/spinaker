@@ -20,7 +20,7 @@ const plural = (n: number, one: string, few: string, many: string) => n === 1 ? 
 function BoxFace({ item }: { item: ThreadElement }) {
   return <>
     {item.image_url && <span className="sc-box-face sc-box-face--img" aria-hidden="true"><img src={item.image_url} alt="" loading="lazy" /></span>}
-    {item.note && <span className="sc-box-face sc-box-face--note" data-only={!item.image_url || undefined}><span>{item.note}</span></span>}
+    {item.note && <span className="sc-box-face sc-box-face--note" data-only={!item.image_url || undefined}><span>{item.note}</span><small>komentarz autora</small></span>}
   </>;
 }
 const ratingsWord = (n: number) => n === 1 ? 'ocena' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'oceny' : 'ocen';
@@ -238,8 +238,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)}
           style={{ ['--i' as string]: index }} onClick={event => { if (expanded && !(event.target as HTMLElement).closest('a, button')) setFocus({ kind: 'box', index }); }}>
           {item.note && !expanded && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
-          {/* nad boksem: rodzaj i komentarz autora, najwyżej 2 wiersze (właściciel 4.10) */}
-          {expanded && (item.role || item.note) && <span className="sc-box-cap" data-role={item.role || undefined}>{item.role && <b>{ROLE_WORD[item.role]}</b>}{item.note && <span>{item.note}</span>}</span>}
+          {/* rodzaj wpisany w otwarty narożnik obrysu (propozycja 1, właściciel 4.10) */}
+          {expanded && item.role && <span className="sc-box-tag" data-role={item.role}>{ROLE_WORD[item.role]}</span>}
           {expanded && <BoxFace item={item} />}
           {expanded && <span className="sc-rframe" aria-hidden="true" />}
           {item.box_type === 'post' ? <XPostCard item={item} /> :
