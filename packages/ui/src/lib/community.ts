@@ -1,7 +1,7 @@
 /** Nitki czytelników - typy i zapytania do /api/community/ (backend/news/community.py). */
 import { ApiError, apiFetch, apiWrite } from "./api";
 
-export type ThreadElement = ({ box_type?: 'post' | 'claim' | 'source' | 'technique' | 'diagnosis' | 'message'; x_handle?: string; diagnosis_id?: number | null; intensity?: number | null; body?: string; source_name?: string; published_date?: string | null } & (
+export type ThreadElement = ({ box_type?: 'post' | 'claim' | 'source' | 'technique' | 'diagnosis' | 'message' | 'print' | 'amendment' | 'consultation' | 'registry' | 'declaration' | 'summary'; x_handle?: string; diagnosis_id?: number | null; intensity?: number | null; body?: string; source_name?: string; published_date?: string | null } & (
   | { kind: "article"; id: number; title: string; url: string; category: string; published_date: string | null; source_name: string; note: string; link_note?: string; position: number }
   | { kind: "link"; id: number; title: string; url: string; domain: string; title_origin: "publisher" | "reader" | "system"; hidden?: boolean; note: string; link_note?: string; position: number }));
 
@@ -13,6 +13,8 @@ export type CommunityThreadSummary = {
   display_name?: string;
   x_profile?: string | null;
   narrative?: boolean;
+  signal_kind?: '' | 'lobbying' | 'new_narrative';
+  confidence?: 'niski' | 'średni' | 'wysoki' | null;
   continues?: number | null;
   continuations?: number[];
   is_ai?: boolean;

@@ -6,6 +6,7 @@ from news.account_models import PersonalContextThread, PersonalContextThreadItem
 from news.clinic_models import ClinicDailyMessage
 from news.diagnosis_threads import short
 from news.message_stats import TONES, NUMBER, post_rows
+from news.thread_review import draft_builder
 
 CRITERION = 'Dla obu stron: co najmniej 3 wpisy od 2 autorów w jednym wątku z przypisanym tonem lub techniką.'
 
@@ -83,6 +84,7 @@ def payload(message, candidate):
 
 
 @transaction.atomic
+@draft_builder
 def sync_message(message_id):
     message = ClinicDailyMessage.objects.select_for_update().get(pk=message_id)
     eligible = candidates(message) if message.status == 'approved' else []
@@ -97,8 +99,11 @@ def sync_message(message_id):
         thread.items.all().delete()
         PersonalContextThreadItem.objects.bulk_create([PersonalContextThreadItem(thread=thread, position=i, **row) for i, row in enumerate(data)])
     thread.title = short('Narracja dnia: ' + best['point']['title'], 80)
-    thread.description, thread.is_public, thread.narrative_score = CRITERION, True, best['score']
+    thread.description, thread.is_public, thread.narrative_score = CRITERION, False, best['score']
     thread.save(update_fields=['title', 'description', 'is_public', 'narrative_score', 'updated_at'])
+    from news.thread_review import enqueue
+    enqueue(thread, {'posts': [{'text': p.text, 'author': p.account.display_name} for p in best['posts']],
+        'thesis': message.thesis, 'points': message.points, 'tone': message.tone, 'method': CRITERION})
     return thread
 
 

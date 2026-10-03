@@ -181,7 +181,7 @@ def test_preview_registers_ordinary_account_and_delivers_transactional_mail(sett
     enter(client, settings)
     csrf = client.get('/api/account/me/').data['csrfToken']
     data = {'username': 'previewreader', 'email': 'reader@example.org', 'password': 'Str0ng~unique~zxcv!',
-            'accepted_terms': True, 'accepted_privacy': True, 'is_staff': True, 'is_superuser': True}
+            'accepted_terms': True, 'accepted_privacy': True, 'adult': True, 'is_staff': True, 'is_superuser': True}
     assert client.post('/api/account/register/', data, format='json').status_code == 403
     with patch('news.account_lifecycle.send_account_verification.apply_async') as queued:
         response = client.post('/api/account/register/', data, format='json', HTTP_X_CSRFTOKEN=csrf)

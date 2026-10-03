@@ -4,6 +4,22 @@ import re
 from news.message_stats import TONES
 
 
+def phrase_ngrams(text):
+    """Literal 3-6 word phrases, sentence bounded; links/handles are not theses."""
+    from news.dr_spin_threads import STOP_WORDS
+    from news.message_stats import LINK
+    text = re.sub(r'@\w+', ' ', LINK.sub(' ', text or '')).casefold()
+    phrases = set()
+    for sentence in re.split(r'[.!?;\n]', text):
+        words = re.findall(r'[^\W_]+', sentence)
+        for size in range(3, 7):
+            for start in range(len(words) - size + 1):
+                part = words[start:start + size]
+                if sum(len(w) >= 4 and w not in STOP_WORDS for w in part) >= 2:
+                    phrases.add(' '.join(part))
+    return phrases
+
+
 def clean_structure(data, rows, camp):
     from news.clinic_ai import ClinicAIError, looks_polish
     empty = {'thesis': '', 'points': [], 'tone': []}

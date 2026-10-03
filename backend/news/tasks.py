@@ -429,3 +429,19 @@ def council_charter_missing_task():
 def narrative_thread_task():
     from news.narrative_threads import build_narratives
     return build_narratives()
+
+
+@shared_task(name='news.tasks.signal_threads_task', soft_time_limit=240, time_limit=300)
+def signal_threads_task():
+    from news.signal_threads import build_lobbying, build_new_narratives
+    return {'lobbying': build_lobbying(), 'narratives': build_new_narratives()}
+
+
+@shared_task(name='news.tasks.thread_reviews_task', soft_time_limit=840, time_limit=900)
+def thread_reviews_task():
+    from news.features import threads_enabled
+    from news.thread_review import run_queue, backfill_queue
+    if not threads_enabled():
+        return {'status': 'disabled'}
+    backfill_queue()
+    return run_queue(limit=10)

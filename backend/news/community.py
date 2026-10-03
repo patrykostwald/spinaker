@@ -136,6 +136,7 @@ def public_threads(user=None):
     from news.account_models import MutedUser
     muted = MutedUser.objects.filter(user=user).values('target_id') if user and user.is_authenticated else []
     return (PersonalContextThread.objects.filter(is_public=True, hidden_at__isnull=True)
+            .filter(Q(owner__isnull=False) | Q(publication_review__status='approved'))
             .exclude(owner_id__in=muted)
             .filter(Q(diagnosis__isnull=True) | Q(diagnosis__in=published_diagnoses()))
             .filter(Q(narrative_message__isnull=True) | Q(narrative_message__status='approved'))
@@ -171,7 +172,7 @@ def _counts(thread_ids):
 
 def thread_summary(thread, counts):
     from news.x_accounts import public_identity
-    ai = bool(thread.diagnosis_id or thread.narrative_message_id)
+    ai = bool(thread.diagnosis_id or thread.narrative_message_id or thread.signal_kind)
     identity = public_identity(thread.owner)
     items = [item for item in thread.items.all() if not (item.link_id and item.link.hidden_at)]
     return {'id': thread.pk, 'title': thread.title, 'description': thread.description, 'topics': thread.topics,
@@ -179,6 +180,8 @@ def thread_summary(thread, counts):
             'display_name': 'Dr. Spin (AI)' if ai else identity['display_name'], 'x_profile': identity['x_profile'],
             'is_ai': ai, 'diagnosis_id': thread.diagnosis_id,
             'narrative': bool(thread.narrative_message_id),
+            'signal_kind': thread.signal_kind,
+            'confidence': thread.signal_data.get('confidence'),
             'continues': thread.continues_id if thread.continues_id and public_threads().filter(pk=thread.continues_id).exists() else None,
             'continuations': list(public_threads().filter(continues=thread).values_list('pk', flat=True)),
             'author_id': thread.owner_id, 'published_at': thread.published_at, 'updated_at': thread.updated_at,
@@ -198,7 +201,7 @@ def community_threads(request):
         return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
     rows = public_threads(request.user).select_related('owner').prefetch_related('items__article__source', 'items__link')
     if request.query_params.get('ai') == '1':
-        rows = rows.filter(Q(diagnosis__isnull=False) | Q(narrative_message__isnull=False))
+        rows = rows.filter(owner__isnull=True)
     if request.query_params.get('featured') == '1':
         selected = rows.filter(narrative_message__day=timezone.localdate()).order_by('-narrative_score', '-pk').first()
         selected = selected or rows.filter(diagnosis__isnull=False).order_by('-published_at', '-pk').first()

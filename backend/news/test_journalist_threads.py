@@ -195,7 +195,7 @@ def test_signup_cannot_self_grant_journalist_role(settings):
     client = APIClient()
     response = client.post('/api/account/register/', {
         'username': 'self_appointed', 'password': 'SecreT~unique~942!', 'email': 'self@example.com',
-        'accepted_terms': True, 'accepted_privacy': True,
+        'accepted_terms': True, 'accepted_privacy': True, 'adult': True,
         'groups': ['journalists'], 'role': 'journalist', 'is_journalist': True, 'is_staff': True,
     }, format='json')
     assert response.status_code == 201, response.data

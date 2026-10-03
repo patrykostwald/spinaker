@@ -19,6 +19,7 @@ from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, Offi
     ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt,
     SourceThumbnailPolicy, SourceReviewDecision)
 from news.account_models import ArticleFavorite, CommentReport, PersonalContextThread
+from news.thread_review_models import ThreadReview, ThreadReviewRound
 from scraper.tasks import (
     scrape_gdelt_task,
     scrape_newsapi_batch_task,
@@ -333,10 +334,31 @@ site.register(SourceContactReply)
 site.register(SourceReviewDecision, SourceReviewDecisionAdmin)
 
 
+class PublicationReviewInline(admin.StackedInline):
+    model = ThreadReview
+    fk_name = 'thread'
+    extra = 0
+    can_delete = False
+    show_change_link = True
+    fields = ('status', 'reason', 'revision', 'step', 'next_attempt_at')
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 class PersonalContextThreadAdmin(admin.ModelAdmin):
-    list_display = ('title', 'owner', 'item_count', 'updated_at')
+    list_display = ('title', 'owner', 'signal_kind', 'item_count', 'updated_at')
     search_fields = ('title', 'owner__username', 'query')
     readonly_fields = ('owner', 'created_at', 'updated_at')
+    inlines = (PublicationReviewInline,)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.owner_id is None:
+            from news.thread_review import enqueue
+            review = ThreadReview.objects.filter(thread=obj).first()
+            enqueue(obj, review.payload.get('evidence', {}) if review else {})
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(_item_count=Count('items'))
@@ -394,6 +416,34 @@ class CommentReportAdmin(admin.ModelAdmin):
 
 
 site.register(PersonalContextThread, PersonalContextThreadAdmin)
+
+
+class ReviewRoundInline(admin.StackedInline):
+    model = ThreadReviewRound
+    extra = 0
+    can_delete = False
+    fields = ('revision', 'role', 'model', 'result', 'reason', 'texts', 'created_at')
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class ThreadReviewAdmin(admin.ModelAdmin):
+    list_display = ('id', 'thread', 'editorial_thread', 'status', 'revision', 'step', 'updated_at')
+    list_filter = ('status',)
+    fields = ('thread', 'editorial_thread', 'status', 'revision', 'step', 'reason', 'next_attempt_at', 'payload', 'working_texts')
+    readonly_fields = fields
+    inlines = (ReviewRoundInline,)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+site.register(ThreadReview, ThreadReviewAdmin)
 site.register(ArticleFavorite, ArticleFavoriteAdmin)
 site.register(CommentReport, CommentReportAdmin)
 

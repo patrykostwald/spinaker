@@ -193,7 +193,12 @@ def test_publication_excludes_hidden_and_unapproved():
 @pytest.mark.parametrize('state', ['done', 'late', 'na'])
 def test_thread(state):
     if state == 'done':
-        Thread.objects.create(slug=f'dr-spin-kontekst-{NOW.date()}', title='Kontekst', published=True)
+        from news.thread_review import authoring
+        token = authoring.set(True)  # a thread that already passed the publication review
+        try:
+            Thread.objects.create(slug=f'dr-spin-kontekst-{NOW.date()}', title='Kontekst', published=True)
+        finally:
+            authoring.reset(token)
     with patch('news.clinic.spin_of_day_by_camp', return_value={'order': ['government'], 'spins': {'government': {'id': 1}}}), \
          patch('news.dr_spin_threads._candidates', return_value=[] if state == 'na' else [1, 2, 3]):
         assert schedule.check_thread(NOW)[0] == state

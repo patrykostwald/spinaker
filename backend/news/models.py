@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from .thread_review_models import ThreadReview, ThreadReviewRound  # noqa: F401
 from django.conf import settings
 from uuid import uuid4
 from django.core.exceptions import ValidationError

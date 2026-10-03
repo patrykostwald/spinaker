@@ -6,6 +6,7 @@ from django.db import transaction
 
 from news.account_models import PersonalContextThread, PersonalContextThreadItem
 from news.clinic_models import SpinDiagnosis
+from news.thread_review import draft_builder
 
 
 def short(value, limit=200):
@@ -65,6 +66,7 @@ def boxes(diagnosis):
 
 
 @transaction.atomic
+@draft_builder
 def sync_diagnosis_thread(diagnosis_id):
     """Blokada diagnozy i OneToOne chronią przed podwójną publikacją. Nie cofamy moderacji."""
     diagnosis = SpinDiagnosis.objects.select_for_update().select_related('post__account').get(pk=diagnosis_id)
@@ -76,7 +78,7 @@ def sync_diagnosis_thread(diagnosis_id):
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
         'title': short('Rozkład: ' + diagnosis.headline, 80),
         'description': 'Nitka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.',
-        'is_public': True, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
+        'is_public': False, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
     title = short('Rozkład: ' + diagnosis.headline, 80)
     payload = boxes(diagnosis)
     existing = list(thread.items.values('box_data', 'note', 'link_note'))
@@ -85,6 +87,9 @@ def sync_diagnosis_thread(diagnosis_id):
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=thread, position=index, **row) for index, row in enumerate(payload)])
     if existing != payload or thread.title != title or not thread.is_public:
-        thread.title, thread.is_public = title, True
+        thread.title, thread.is_public = title, False
         thread.save(update_fields=['title', 'is_public', 'updated_at'])
+    from news.thread_review import enqueue
+    enqueue(thread, {'post': diagnosis.post.text, 'author': diagnosis.post.account.display_name,
+        'diagnosis': {key: getattr(diagnosis, key) for key in ('headline', 'summary', 'analysis', 'claims', 'techniques')}})
     return thread

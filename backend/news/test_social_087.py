@@ -23,7 +23,7 @@ from news.thread_social_models import ThreadComment, ThreadCommentReaction
 from news.x_accounts import SESSION
 from news.x_link_cards import x_post
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('auto_approve_threads')]
 
 
 @pytest.fixture(autouse=True)

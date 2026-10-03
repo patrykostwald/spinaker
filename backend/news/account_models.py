@@ -103,6 +103,9 @@ class PersonalContextThread(models.Model):
 
     Rozkład diagnozy ma diagnosis zamiast właściciela. Zespół może ukryć każdą nitkę.
     """
+    signal_kind = models.CharField(max_length=24, blank=True, default='', choices=[('', 'Pozostałe'), ('lobbying', 'Sygnał lobbingu'), ('new_narrative', 'Nowa narracja')])
+    signal_key = models.CharField(max_length=64, null=True, blank=True, unique=True)
+    signal_data = models.JSONField(default=dict, blank=True)
     continues = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='continuations')
     narrative_message = models.OneToOneField('news.ClinicDailyMessage', null=True, blank=True,
         on_delete=models.CASCADE, related_name='narrative_thread')
@@ -127,10 +130,11 @@ class PersonalContextThread(models.Model):
     class Meta:
         ordering = ['-updated_at', '-id']
         constraints = [models.CheckConstraint(
-            condition=(models.Q(owner__isnull=False, diagnosis__isnull=True, narrative_message__isnull=True) |
-                       models.Q(owner__isnull=True, diagnosis__isnull=False, narrative_message__isnull=True) |
-                       models.Q(owner__isnull=True, diagnosis__isnull=True, narrative_message__isnull=False)),
-            name='context_thread_origin_087')]
+            condition=(models.Q(owner__isnull=False, diagnosis__isnull=True, narrative_message__isnull=True, signal_kind='') |
+                       models.Q(owner__isnull=True, diagnosis__isnull=False, narrative_message__isnull=True, signal_kind='') |
+                       models.Q(owner__isnull=True, diagnosis__isnull=True, narrative_message__isnull=False, signal_kind='') |
+                       models.Q(owner__isnull=True, diagnosis__isnull=True, narrative_message__isnull=True, signal_kind__in=['lobbying', 'new_narrative'], signal_key__isnull=False)),
+            name='context_thread_origin_091')]
 
 
 class PersonalContextThreadItem(models.Model):

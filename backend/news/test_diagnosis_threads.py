@@ -15,7 +15,7 @@ from news.thread_social_models import ThreadComment
 from news.diagnosis_threads import sync_diagnosis_thread
 from news.political_models import PoliticalAccount, PoliticalPost
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('auto_approve_threads')]
 
 
 @pytest.fixture(autouse=True)

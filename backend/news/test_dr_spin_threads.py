@@ -13,6 +13,7 @@ from news import clinic_ai, dr_spin_threads as threads
 from news.clinic_models import SpinDiagnosis
 from news.models import Article, ArticleContent, EvidenceLink, Source, Thread, ThreadItem
 from news.test_clinic import account, post
+pytestmark = pytest.mark.usefixtures('auto_approve_threads')
 
 
 @pytest.fixture
@@ -243,7 +244,7 @@ def test_same_army_subject_creates_thread(context, monkeypatch, relevance):
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **kw: ({'title': 'Wyposażenie armii',
         'items': [{'id': row.pk, 'relevance': relevance, 'why': row.title} for row in rows[:3]]}, {}))
     result = threads.build_daily_thread()
-    assert result['status'] == 'created' and not result['fallback']
+    assert result['status'] == 'pending_review' and not result['fallback']  # created, then checked before publication
     assert len(result['items']) == 3
 
 

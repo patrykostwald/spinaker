@@ -12,9 +12,10 @@ from django.utils import timezone
 from news import clinic, clinic_ai
 from news.media_rights import is_official_host
 from news.models import Article, Thread, ThreadItem, ThreadType
+from news.thread_review import draft_builder
 
 
-DISCLOSURE = ('Nitka przygotowana automatycznie przez Dr. Spina (AI). Obecność materiału w nitce '
+DISCLOSURE = ('Nitka przygotowana automatycznie przez Dr. Spina (AI). Obecność materiału w nitce '
               'nie potwierdza niczyich twierdzeń.')
 FALLBACK_NOTE = 'Materiał z Bazy na ten sam temat.'
 STOP_WORDS = set(('oraz jest jako przez tylko tego tym dla nie się czy było będzie który która '
@@ -172,6 +173,7 @@ def _select(spin, candidates):
     return title, selected, False
 
 
+@draft_builder
 def build_daily_thread(dry_run=False) -> dict:
     """Zwraca plan lub wynik publikacji; flaga obowiązuje również przy podglądzie."""
     if os.environ.get('DR_SPIN_THREADS_ENABLED', '').lower() != 'true':
@@ -201,7 +203,7 @@ def build_daily_thread(dry_run=False) -> dict:
     # Unikalny slug chroni także równoległe uruchomienie komendy i zadania.
     with transaction.atomic():
         thread, created = Thread.objects.get_or_create(slug=slug, defaults={
-            'title': title, 'thread_type': ThreadType.CONTEXT, 'published': True,
+            'title': title, 'thread_type': ThreadType.CONTEXT, 'published': False,
             'created_by': None, 'description': DISCLOSURE})
         if not created:
             return {'status': 'exists', 'id': thread.pk, 'slug': slug}
@@ -210,4 +212,6 @@ def build_daily_thread(dry_run=False) -> dict:
         ThreadItem.objects.bulk_create([ThreadItem(thread=thread, article_id=item['id'], position=index,
                                                    editorial_note=item['why'])
                                        for index, item in enumerate(selected, 1)])
-    return {'status': 'created', 'id': thread.pk, **plan}
+        from news.thread_review import enqueue
+        enqueue(thread, {'spin': spin, 'sources': plan['items'], 'method': DISCLOSURE})
+    return {'status': 'pending_review', 'id': thread.pk, **plan}

@@ -10,7 +10,7 @@ import { useFeature } from '../../lib/features';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
 
-const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza', message: 'Przekaz dnia' };
+const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza', message: 'Przekaz dnia', print: 'Druk sejmowy', amendment: 'Poprawka', consultation: 'Postulat organizacji', registry: 'Wpis w rejestrze', declaration: 'Zgłoszenie w uzasadnieniu', summary: 'Podsumowanie Dr. Spina' };
 
 /** Jeden tor w głównej, na liście i w pełnej nitce. Powiązanie należy do następnego boksu. */
 export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false }: {
@@ -124,7 +124,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     <RatingFrame counts={counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative }} ai={thread.is_ai} />
     </div>
     {expanded && <p className="sc-thread-totals"><span data-rating="positive">✓</span> {counts?.positive ?? thread.opinions.positive} · <span data-rating="doubt">?</span> {counts?.doubt ?? thread.opinions.doubt ?? 0} · <span data-rating="negative">✕</span> {counts?.negative ?? thread.opinions.negative} · {commentCount ?? thread.comments_count ?? 0} komentarzy</p>}
-    {thread.narrative && <p className="sc-thread-totals">{thread.description}</p>}
+    {(thread.narrative || thread.signal_kind) && <p className="sc-thread-totals">{thread.description}</p>}
     <nav className="sc-thread-continuations" aria-label="Części nitki">{thread.continues && <Link href={`/nitki/${thread.continues}`}>← Poprzednia część</Link>}{thread.continuations?.map(id => <Link key={id} href={`/nitki/${id}`}>Ciąg dalszy →</Link>)}</nav>
     <ThreadSocial id={thread.id} title={thread.title} ai={thread.is_ai} showComments={showComments} setShowComments={setShowComments}
       expanded={expanded}
