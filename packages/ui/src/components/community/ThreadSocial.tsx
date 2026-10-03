@@ -186,6 +186,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         catch (error) { if (!(error instanceof Error && error.name === 'AbortError')) setStatus('Nie udało się udostępnić linku.'); }
       }}>Udostępnij</button>
       <FollowButton kind="thread" targetId={id} label={title} compactLabel />
+      <span className="sc-thread-social-actions__report"><SocialReport threadId={id} /></span>
     </nav>
     {showRatings && <section aria-label="Ocena całej spinki" className="sc-social-ratings">
       {ratings.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie ocen" />}

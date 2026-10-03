@@ -8151,3 +8151,39 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 @media (min-width: 768px) { .sc-rail .sc-rail__foot > button { height: 18px !important; min-height: 0 !important; max-height: 18px; overflow: visible; } }
 
 .sc-trop-overlay__body .sc-thread-strip, .sc-trop-overlay__body .sc-thread-strip__frame { background: none !important; border: 0 !important; box-shadow: none !important; }
+
+/* siatka jak na rysunku technicznym (szkic właściciela 3.10): jedna pozioma linia przez całą szerokość na wysokości
+   paska kategorii, pionowa przy menu od góry do dołu, separatory wierszy niedociągnięte z lewej; jeden delikatny kolor */
+:root { --sc-grid: color-mix(in srgb, var(--sc-text) 20%, transparent); --sc-grid-soft: color-mix(in srgb, var(--sc-text) 10%, transparent); }
+@media (min-width: 768px) {
+  .sc-rail::before { top: 14px; bottom: 0; background: var(--sc-grid); }
+  .sc-rail::after { left: 24px; right: 0; top: calc(var(--sc-bar-h) - 1px); background: var(--sc-grid); }
+  .sc-topbar { border-bottom-color: var(--sc-grid) !important; }
+  .sc-rail hr { border-top-color: var(--sc-grid); margin-left: 52px; margin-right: 0; }
+  .sc-home-thread-feed .sc-thread-feed__list > li + li, .sc-home-thread-feed .sc-thread-feed__list > li, .sc-spin-of-day,
+  .sc-thread-feed__list > li + li { border-top: 0; border-bottom: 0; }
+  .sc-thread-feed__list > li, .sc-spin-of-day { position: relative; }
+  .sc-thread-feed__list > li::after, .sc-spin-of-day::after { content: ""; position: absolute; left: 40px; right: 0; bottom: 0; height: 1px; background: var(--sc-grid-soft); pointer-events: none; }
+  .sc-trow__voice { border-left-color: var(--sc-grid); }
+}
+
+/* nagłówek otwartej spinki w jednym wierszu: „Autor: tytuł”, z prawej data i komentarze */
+.sc-thread-strip__head--full { display: flex; align-items: baseline; gap: 16px; }
+.sc-fullhead { flex: 1; min-width: 0; margin: 0; font-size: 18px; font-weight: 500; line-height: 1.35; color: var(--sc-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-fullhead__who, .sc-fullhead__who a { color: var(--sc-text-3); text-decoration: none; }
+.sc-fullhead__who a:hover { color: var(--sc-text); }
+.sc-fullhead__time { flex: none; font-size: 13px; color: var(--sc-text-3); }
+.sc-thread-strip__head--full .sc-thread-comment-count { flex: none; }
+.sc-thread-social-actions__report { margin-left: auto; }
+/* tytuł bez ucinania: zawija się do dwóch wierszy (właściciel 3.10) */
+.sc-trow__title { white-space: normal; text-overflow: clip; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: balance; }
+.sc-fullhead { white-space: normal; text-overflow: clip; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: balance; }
+/* wskaźniki boksów i podpis dociągnięte do prawej, przy kresce przed komentarzem (właściciel 3.10) */
+.sc-trow__boxes { justify-items: end; justify-self: end; text-align: right; }
+.sc-trow__boxes > * { justify-content: flex-end; }
+.sc-thread-strip__head.sc-thread-strip__head--full { display: flex !important; flex-wrap: nowrap; align-items: baseline; gap: 16px; grid-template-columns: none; }
+.sc-thread-strip__head--full > * { grid-column: auto !important; grid-row: auto !important; }
+
+.sc-trow__left { display: grid; justify-items: center; gap: 8px; align-self: center; }
+.sc-trow__left .sc-trow__clips { display: flex; justify-content: center; gap: 2px; width: 36px; margin: 0; }
+.sc-trow__left .sc-trow__clips i { flex: 0 1 6px; min-width: 2px; height: 2px; }
