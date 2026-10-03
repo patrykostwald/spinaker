@@ -187,7 +187,7 @@ export function SpinScale({ scale }: { scale: SpinScaleData }) {
 export function HowToRead({ interview = false }: { interview?: boolean }) {
   const [open, setOpen] = useState(false);
   return <>
-    <button type="button" className="sc-howto-trigger" aria-haspopup="dialog" onClick={() => setOpen(true)}>Jak czytać wynik?</button>
+    <button type="button" className="sc-howto-trigger" aria-haspopup="dialog" aria-label="Jak czytać wynik?" onClick={() => setOpen(true)}><span className="sc-howto-long">Jak czytać wynik?</span><span className="sc-howto-short">Jak czytać?</span></button>
     <Dialog open={open} onClose={() => setOpen(false)} title="Jak czytać wynik?" className="sc-howto-panel">
     <dl>
       <div><dt>Siła spinu 0–100</dt><dd>Jak mocno {interview ? "wypowiedź opiera" : "komunikat opiera"} się na technikach perswazji. To nie procent kłamstwa i nie ocena osoby.</dd></div>

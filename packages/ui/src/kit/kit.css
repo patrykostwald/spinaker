@@ -6802,8 +6802,7 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 }
 /* Liczniki diagnozy (właściciel 3.10): nazwa kolumny po lewej, liczba i jej podpis („ten sam werdykt”, „/100”) dociągnięte do prawej,
    tak jak liczby w wierszach Konsylium, twierdzeń i technik */
-.sc-scan-m-num { text-align: right; }
-.sc-scan-m-num .sc-scan-agreement-caption { text-align: right; }
+.sc-scan-m .sc-scan-m-num { text-align: right; }
 .sc-list-metrics dd, .sc-list-metrics small { text-align: right; }
 .sc-list-metrics__families { justify-content: flex-end; }
 /* Strona główna (właściciel 3.10): „Wskaźniki i wykresy” przy prawej krawędzi, „Wszystkie diagnozy” zostaje przy tekście */
@@ -6822,7 +6821,7 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-spin-explainer__grid p { margin: 0; font-size: 14.5px; line-height: 22px; color: var(--sc-text-2); }
 @media (max-width: 760px) { .sc-spin-explainer__grid { grid-template-columns: minmax(0, 1fr); } .sc-spin-explainer__title { font-size: 19px; line-height: 26px; } }
 /* Liczniki (właściciel 3.10): nazwa kolumny też przy prawej krawędzi, nad liczbą */
-.sc-scan-m-lbl, .sc-list-metrics dt { text-align: right; }
+.sc-scan-m .sc-scan-m-lbl, .sc-list-metrics dt { text-align: right; }
 
 /* Czym jest spin: opis w maks. 3 wierszach (właściciel 3.10) - w wąskim miejscu (O nas, tablet) boksy jeden pod drugim; „Spin” na czerwono */
 .sc-spin-explainer { container-type: inline-size; }
@@ -6844,3 +6843,42 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 .sc-clinic-message { gap: var(--sc-s-3); }
 .sc-info-page__body :is(.sc-kons-flow, .sc-kons-roles, .sc-method-verdicts) li { display: flex; flex-direction: column; align-items: flex-start; }
 .sc-info-page__body :is(.sc-kons-flow, .sc-kons-roles, .sc-method-verdicts) li > :last-child { margin-top: auto; }
+
+/* Archiwum wywiadów (właściciel 3.10): jedno pole wyszukiwania, wybór kanału w jego prawej części */
+.sc-iv-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; margin: 4px 0 12px; border: 1px solid var(--sc-control-line, var(--sc-line)); border-radius: var(--sc-radius-control, 10px); background: var(--sc-surface); overflow: hidden; }
+.sc-iv-search :is(input, select) { border: 0 !important; border-radius: 0 !important; background: transparent; min-height: 44px; font: inherit; font-size: 16px; color: var(--sc-text); }
+.sc-iv-search select { border-left: 1px solid var(--sc-line) !important; padding: 0 12px; max-width: 46vw; cursor: pointer; }
+.sc-iv-search > :first-child { min-width: 0; }
+.sc-iv-search__count { margin: 0 0 8px; font-size: 14px; color: var(--sc-text-2); }
+/* Aplikacja na telefonie gęściej (właściciel 3.10, podgląd aplikacji): większe odstępy w skali zmniejszone o ok. 1/3,
+   małe (do 20 px) bez zmian, żeby teksty w boksach dalej oddychały */
+@media (max-width: 760px) {
+  :root { --sc-s-6: 18px; --sc-s-7: 22px; --sc-s-8: 28px; --sc-s-9: 32px; --sc-s-10: 40px; --sc-s-11: 52px; }
+  .sc-clinic { gap: 16px; }
+}
+@media (max-width: 760px) {
+  .sc-home { gap: 14px; }
+  .sc-home .sc-spin-explainer { margin: 4px 0 0; }
+  .sc-home-intro { padding-block: 14px; }
+  .sc-home-section { padding-block: 8px; }
+}
+/* Klinika (właściciel 3.10): w prawym górnym rogu sekcji niebieski przycisk „Archiwum” zamiast linku z długą nazwą */
+.sc-archive-btn { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 999px; background: var(--sc-accent); color: var(--sc-on-accent, #fff) !important; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sc-archive-btn:hover { filter: brightness(1.08); }
+@media (max-width: 760px) {
+  .sc-section-header:has(.sc-archive-btn) { position: relative; }
+  .sc-section-header:has(.sc-archive-btn) .sc-section-header__copy { padding-right: 104px; }
+  .sc-section-header__actions:has(.sc-archive-btn) { position: absolute; top: 0; right: 0; margin: 0; }
+}
+/* Dolny pasek w Klinice na telefonie w jednym wierszu (właściciel 3.10): bez „English” i „Rejestr korekt” (jest w „Więcej”),
+   „Jak czytać?” krótko; na bardzo wąskich ekranach tylko Więcej i Wesprzyj */
+.sc-howto-short { display: none; }
+@media (max-width: 639px) {
+  .sc-footer__bar:has(.sc-clinic-footer-actions) { flex-wrap: nowrap; }
+  .sc-footer__bar:has(.sc-clinic-footer-actions) > .sc-footer__link { display: none; }
+  .sc-clinic-footer-actions { order: 0; width: auto; flex: 1; justify-content: flex-start; flex-wrap: nowrap; }
+  .sc-clinic-footer-actions > a.sc-howto-trigger { display: none; }
+  .sc-clinic-footer-actions .sc-howto-long { display: none; }
+  .sc-clinic-footer-actions .sc-howto-short { display: inline; }
+}
+@media (max-width: 379px) { .sc-clinic-footer-actions { display: none; } }

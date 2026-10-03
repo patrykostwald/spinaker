@@ -162,7 +162,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
         <section className="sc-clinic-group" aria-labelledby="clinic-messages-title">
           <SectionHeader titleId="clinic-messages-title" kicker={<>Klinika spinu <AiTag /></>} title="Przekazy dnia"
-            subtitle="O czym i jak mówiły obie strony w przeanalizowanych wpisach." link={<Link className="sc-home-spin__open" href="/klinika/przekazy">Archiwum przekazów →</Link>} />
+            subtitle="O czym i jak mówiły obie strony w przeanalizowanych wpisach." link={<Link className="sc-archive-btn" href="/klinika/przekazy" aria-label="Archiwum przekazów">Archiwum</Link>} />
           <div className="sc-clinic-split">
             {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" />)}
           </div>
@@ -197,7 +197,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
 
         {data.interview ? <section className="sc-clinic-group sc-clinic-interview-preview" aria-labelledby="clinic-interview-title">
           <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
-            subtitle="Wywiad z wczoraj: gość i prowadzący." link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
+            subtitle="Wywiad z wczoraj: gość i prowadzący." link={<Link className="sc-archive-btn" href="/klinika/wywiady" aria-label="Archiwum wywiadów">Archiwum</Link>} />
           <InterviewScanner interview={data.interview} />
         </section> : null}
 

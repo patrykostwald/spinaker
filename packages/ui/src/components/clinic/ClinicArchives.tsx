@@ -28,19 +28,19 @@ export function ClinicInterviewArchive() {
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   return <section className="sc-clinic-archives">
     <ClinicNav />
-    <SectionHeader variant="page" title="Archiwum wywiadów" subtitle="Analizy wypowiedzi gości oraz pytań i reakcji prowadzących - z cytatami i odwołaniami do nagrania." />
-    <div className="sc-clinic-archives__filters">
-      <div><p className="sc-archive-search-label">Szukaj gościa, prowadzącego lub tytułu</p><SearchField label="Szukaj gościa, prowadzącego lub tytułu" value={search} onChange={setSearch} /></div>
-      <label>Kanał<select value={channel} onChange={event => setChannel(event.target.value)}>
-        <option value="">Wszystkie kanały</option>
+    <SectionHeader variant="page" title="Archiwum wywiadów" subtitle="Analizy gości i prowadzących, z cytatami i odwołaniem do nagrania." />
+    {/* Jedno pole wyszukiwania z wyborem kanału w środku zamiast trzech boksów; liczba tylko przy filtrowaniu (właściciel 3.10) */}
+    <div className="sc-iv-search">
+      <SearchField label="Szukaj gościa, prowadzącego lub tytułu" placeholder="Szukaj gościa, prowadzącego, tytułu…" value={search} onChange={setSearch} />
+      <select aria-label="Kanał" value={channel} onChange={event => setChannel(event.target.value)}>
+        <option value="">Każdy kanał</option>
         {Array.from(new Set([...(first?.channels ?? []), ...(channel ? [channel] : [])])).map(name => <option key={name} value={name}>{name}</option>)}
-      </select></label>
+      </select>
     </div>
-    {first ? <p role="status">Liczba wywiadów{q || channel ? " spełniających filtry" : ""}: {first.count.toLocaleString("pl-PL")}</p> : null}
+    {first && (q || channel) ? <p role="status" className="sc-iv-search__count">Znaleziono: {first.count.toLocaleString("pl-PL")}</p> : null}
     {query.isPending ? <p role="status">Wczytywanie wywiadów…</p> : null}
     {query.isError ? <p role="alert">Nie udało się wczytać wywiadów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !rows.length ? <p>Brak wywiadów spełniających wybrane kryteria.</p> : null}
-    <InterviewScope />
     {/* Karta: z lewej teksty i przycisk na dole, z prawej gość i prowadzący w wierszach (uwagi recenzenta UX, 30.09) */}
     <div className="sc-clinic-archives__list">{rows.map(interview => <article className="sc-clinic-archives__card sc-iv-card" key={interview.id}>
       <div className="sc-iv-card__text">
@@ -54,6 +54,7 @@ export function ClinicInterviewArchive() {
       <InterviewResults interview={interview} />
     </article>)}</div>
     {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button> : null}
+    <InterviewScope />
   </section>;
 }
 
