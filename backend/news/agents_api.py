@@ -15,6 +15,15 @@ FIELDS = ('id', 'agent', 'kind', 'track', 'title', 'body', 'sources', 'scores', 
 @never_cache
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
+def daily_schedule(request):
+    from news.daily_schedule import snapshot
+    from news.schedule_health import snapshot as health
+    return Response({**snapshot(), 'health': health()})
+
+
+@never_cache
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
 def agent_map(request):
     from news.agent_registry import snapshot
     from news.admin_status import local_times

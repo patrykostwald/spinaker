@@ -53,6 +53,18 @@ def duty_task():
     return run()
 
 
+@shared_task(name='news.tasks.schedule_rescue_task', soft_time_limit=1900, time_limit=2000)
+def schedule_rescue_task(key, stored_key, token):
+    from news.rescuer import execute
+    return execute(key, stored_key, token)
+
+
+@shared_task(name='news.tasks.schedule_health_task', soft_time_limit=100, time_limit=120)
+def schedule_health_task():
+    from news.schedule_health import run
+    return run()
+
+
 @shared_task(bind=True, name='news.tasks.clinic_archive_task', max_retries=60, rate_limit='6/m',
              soft_time_limit=25, time_limit=30)
 def clinic_archive_task(self, post_id, job_id=''):
@@ -106,13 +118,13 @@ def clinic_diagnose_task():
 
 
 @shared_task(name="news.tasks.clinic_screen_task", soft_time_limit=600, time_limit=660)
-def clinic_screen_task():
+def clinic_screen_task(include_old=False):
     """Strażnik Kliniki: darmowa ocena nowych postów (Groq, zapasowo NVIDIA NIM)."""
     if not cache.add("clinic-screen-lock", "1", timeout=700):
         return {"status": "locked"}
     try:
         from news.clinic import run_screening
-        return run_screening(limit=30)
+        return run_screening(limit=30, include_old=include_old)
     finally:
         cache.delete("clinic-screen-lock")
 
@@ -184,13 +196,13 @@ def sync_live_public_rosters_task():
 
 
 @shared_task(name="news.tasks.clinic_interview_task", soft_time_limit=1700, time_limit=1800)
-def clinic_interview_task():
+def clinic_interview_task(day=None):
     """Wywiad dnia: transkrypcja (Gemini) i diagnoza Dr. Spina dla wklejonego linku. Wyłączone bez kluczy."""
     if not cache.add("clinic-interview-lock", "1", timeout=1790):
         return {"status": "locked"}
     try:
         from news.clinic_interview import run_interviews
-        return run_interviews(limit=1)
+        return run_interviews(limit=1, day=day)
     finally:
         cache.delete("clinic-interview-lock")
 

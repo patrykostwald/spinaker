@@ -154,6 +154,7 @@ def test_bluesky_post_once_and_removed_when_author_deletes(monkeypatch):
     assert social_publish.run()['results'] == []  # ta sama diagnoza nie idzie drugi raz
 
     from news import deleted_posts
+    monkeypatch.setattr(deleted_posts, 'find_archive', lambda *args: '')
     deleted_posts.mark_deleted(row.post)
     item.refresh_from_db()
     assert calls[-1].endswith('deleteRecord') and item.deleted_at is not None

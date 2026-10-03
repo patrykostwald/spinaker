@@ -227,20 +227,12 @@ def test_failed_check_does_not_close_alarm():
     assert DutyAlarm.objects.get(key='check:check_budget').status == 'closed'
 
 
-def test_safe_dispatch_two_hours_and_broker_failure(isolated):
-    ctx = context()
+def test_duty_proposes_without_dispatching_legacy_repairs(isolated):
     data = duty.alarm('task:test', 'warning', 'Test', {}, NOW, 'Sprawdź.', 'sejm-votes-15m')
-    duty.reconcile('test', [data], ctx, duty.Run(NOW))
-    assert isolated.call_count == 1
-    assert 'Wysłano Naprawiacza' in DutyAlarm.objects.get().dispatch_note
-    duty.reconcile('test', [data], context(NOW + timedelta(hours=1)), duty.Run(NOW + timedelta(hours=1)))
-    assert isolated.call_count == 1
-    isolated.side_effect = RuntimeError('broker secret')
-    duty.reconcile('test', [data], context(NOW + timedelta(hours=2)), duty.Run(NOW + timedelta(hours=2)))
-    assert isolated.call_count == 2
-    duty.reconcile('test', [data], context(NOW + timedelta(hours=2, minutes=15)), duty.Run(NOW + timedelta(hours=2, minutes=15)))
-    assert isolated.call_count == 2
-    assert 'secret' not in DutyAlarm.objects.get().dispatch_note
+    duty.reconcile('test', [data], context(), duty.Run(NOW))
+    duty.reconcile('test', [data], context(NOW + timedelta(hours=2)), duty.Run(NOW))
+    isolated.assert_not_called()
+    assert 'Decyzja należy do właściciela' in DutyAlarm.objects.get().dispatch_note
 
 
 @pytest.mark.parametrize('beat', ['agents-window-hourly', 'account-warden-nightly', 'krs-agent-night', 'seba'])

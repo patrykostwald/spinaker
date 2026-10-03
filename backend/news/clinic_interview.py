@@ -432,14 +432,17 @@ def release_stuck() -> list[int]:
     return stuck
 
 
-def run_interviews(limit: int = 1) -> dict:
+def run_interviews(limit: int = 1, *, day=None) -> dict:
     if not enabled():
         return {'status': 'disabled'}
     done = {}
     released = release_stuck()
     if released:
         done['released'] = released
-    for interview in ClinicInterview.objects.filter(status='queued').order_by('created_at')[:limit]:
+    queued = ClinicInterview.objects.filter(status='queued')
+    if day is not None:
+        queued = queued.filter(day=day)
+    for interview in queued.order_by('created_at')[:limit]:
         if not claim(interview):
             continue
         process(interview)
@@ -800,17 +803,17 @@ def _transient_error_q():
     return query
 
 
-def pick_yesterday() -> dict:
+def pick_yesterday(*, next_candidate=False) -> dict:
     """Codziennie rano: najważniejszy wywiad z politykiem z poprzedniego dnia (jeśli zespół nie wskazał go sam)."""
     if not enabled():
         return {'status': 'disabled'}
     day = timezone.localdate() - timedelta(days=1)
-    if ClinicInterview.objects.filter(day=day, status__in=['queued', 'approved']).exists():
+    if ClinicInterview.objects.filter(day=day, status__in=['queued', 'flagged', 'approved', 'pending_review']).exists():
         return {'status': 'already_chosen', 'day': str(day)}
     # Błąd chwilowy (brak środków, limit) nie przekreśla wywiadu: po doładowaniu wraca do kolejki (właściciel 2.10).
     retry = (ClinicInterview.objects.filter(day=day, status='failed')
              .filter(_transient_error_q()).order_by('created_at').first())
-    if retry:
+    if retry and not next_candidate:
         retry.status, retry.error = 'queued', ''
         retry.save(update_fields=['status', 'error'])
         return {'status': 'requeued', 'day': str(day), 'id': retry.pk, 'title': retry.title}

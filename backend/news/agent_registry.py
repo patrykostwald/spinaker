@@ -18,6 +18,8 @@ def agent(name, description, task, env='', default=False, collector=False, cost=
 
 
 REGISTRY = {
+    'schedule-health': agent('Kontrola dostępności', 'Sprawdza klucze, wolny dysk i pulsy zadań co 6 godzin.', 'news.tasks.schedule_health_task', default=True),
+    'video-stats': agent('Koszt filmów', 'Sprawdza dzienny koszt opracowania filmów.', 'news.tasks.clinic_video_stats_task', default=True),
     'social-assistant': agent('Asystent social media', 'Odpowiada na pytania osoby od publikacji. Tylko darmowe modele, domyślnie do 30 prób dziennie.', 'news.social_assistant.answer_question', default=True),
     'plain-editor': agent('Redaktor prostoty', 'Pisze krótki pierwszy ekran po korekcie języka diagnozy.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),
     'plain-meter': agent('Miernik', 'Bez AI sprawdza długość, powtórzenia i proste słowa.', 'news.tasks.clinic_diagnose_task', 'CLINIC_AI_ENABLED'),
@@ -27,7 +29,7 @@ REGISTRY = {
     'council': agent('Konsylium', 'Uzupełnia deklaracje Karty członków Konsylium.', 'news.tasks.council_charter_missing_task'),
     'screen': agent('Strażnik wpisów', 'Wybiera wpisy warte diagnozy.', 'news.tasks.clinic_screen_task', 'CLINIC_AI_ENABLED'),
     'warden': agent('Strażnik kont', 'Sprawdza tożsamość i aktywność obserwowanych kont.', 'news.tasks.account_warden_task', cost='warden'),
-    'repairer': agent('Naprawiacz', 'Ponawia zatwierdzone zadania i porządkuje osierocone blokady.', 'news.tasks.repairer_task', 'REPAIRER_ENABLED', True),
+    'repairer': agent('Naprawiacz', 'Analizuje błędy i proponuje działania właścicielowi. Nie zmienia produkcji.', 'news.tasks.repairer_task', 'REPAIRER_ENABLED', True),
     'auditor': agent('Audytor', 'Sprawdza kondycję i wyniki Konsylium.', 'news.tasks.council_audit_task'),
     'inquisitor': agent('Inkwizytor', 'Niezależnie kontroluje jakość diagnoz.', 'news.tasks.inquisitor_task'),
     'recruiter': agent('Rekruter', 'Sprawdza kandydatów do Konsylium.', 'news.tasks.council_recruiter_task'),

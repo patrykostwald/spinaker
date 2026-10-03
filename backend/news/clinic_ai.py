@@ -339,7 +339,7 @@ def gemini_spent_today() -> float:
     from django.core.cache import cache
     from django.utils import timezone
     day = timezone.localdate().isoformat()
-    return sum((cache.get(GEMINI_SPEND_KEY.format(day=day, task=task)) or {}).get('usd', 0.0) for task in GEMINI_THINKING)
+    return sum((cache.get(GEMINI_SPEND_KEY.format(day=day, task=task)) or {}).get('usd', 0.0) for task in (*GEMINI_THINKING, 'message'))
 
 
 def gemini_daily_budget() -> float:
@@ -575,11 +575,11 @@ def diagnose(context: dict) -> dict:
     return result
 
 
-def _free_chat(system: str, user: str, schema: dict, max_tokens: int = 1200, model: str = '') -> tuple[dict, str]:
+def _free_chat(system: str, user: str, schema: dict, max_tokens: int = 1200, model: str = '', *, only_provider: str = '') -> tuple[dict, str]:
     """Darmowe modele: Groq (JSON schema), a przy błędzie — NVIDIA NIM. Zwraca (dane, model)."""
     groq_key = os.environ.get('GROQ_API_KEY', '').strip()
     groq_model = model or os.environ.get('CLINIC_TRIAGE_MODEL', '').strip() or os.environ.get('GROQ_EDITORIAL_MODEL', '').strip()
-    if groq_key and groq_model:
+    if groq_key and groq_model and only_provider != 'nim':
         try:
             response = requests.post('https://api.groq.com/openai/v1/chat/completions', timeout=(5, 60), json={
                 'model': groq_model, 'temperature': 0, 'max_tokens': max_tokens,
@@ -593,8 +593,8 @@ def _free_chat(system: str, user: str, schema: dict, max_tokens: int = 1200, mod
         except (requests.RequestException, KeyError, IndexError, ValueError, TypeError):
             pass
     nim_key = os.environ.get('NIM_API_KEY', '').strip()
-    if nim_key:
-        model = os.environ.get('CLINIC_NIM_MODEL', '').strip() or 'deepseek-ai/deepseek-v4.1-flash'
+    if nim_key and only_provider != 'groq':
+        model = model if only_provider == 'nim' else os.environ.get('CLINIC_NIM_MODEL', '').strip() or 'deepseek-ai/deepseek-v4.1-flash'
         url = os.environ.get('CLINIC_NIM_URL', '').strip() or 'https://integrate.api.nvidia.com/v1/chat/completions'
         try:
             response = requests.post(url, timeout=(5, 90), json={
@@ -635,25 +635,43 @@ def _daily_input(camp_label: str, day: str, posts: list[dict]) -> str:
     return '\n'.join(lines)
 
 
-def daily_message(camp_label: str, day: str, posts: list[dict]) -> dict:
-    """Przekaz dnia z darmowych modeli — bez kosztów po naszej stronie."""
+DAILY_MESSAGE_MODELS = ('groq:openai/gpt-oss-120b', 'nim:deepseek-ai/deepseek-v4.1-flash', 'gemini:gemini-2.5-flash')
+
+
+def daily_message(camp_label: str, day: str, posts: list[dict], *, models=None) -> dict:
+    """Jawna lista modeli; płatny zapas wybiera wyłącznie Ratownik."""
     prompt = _daily_input(camp_label, day, posts)
-    for attempt in range(2):
-        # Przekaz dnia pisze większy darmowy model (lepsza polszczyzna); strażnik zostaje na szybkim.
-        data, model = _free_chat(DAILY_SYSTEM, prompt, DAILY_SCHEMA, max_tokens=2500,
-                                 model=os.environ.get('CLINIC_MESSAGE_MODEL', '').strip() or 'openai/gpt-oss-120b')
+    models = tuple(models) if models is not None else DAILY_MESSAGE_MODELS[:2]
+    if not models or len(models) > 3 or any(m not in DAILY_MESSAGE_MODELS for m in models):
+        raise ClinicAIError('invalid_message_models')
+    last_error = ClinicAIError('free_models_unavailable')
+    for spec in models:
+        provider, model = spec.split(':', 1)
+        try:
+            if provider == 'gemini':
+                from news.daily_message_fallback import generate
+                data, usage = generate(DAILY_SYSTEM, prompt, DAILY_SCHEMA)
+            else:
+                data, model = _free_chat(DAILY_SYSTEM, prompt, DAILY_SCHEMA, max_tokens=2500,
+                                         model=model, only_provider=provider)
+                usage = {'model': model}
+        except ClinicAIError as error:
+            last_error = error
+            continue
         message = str(data.get('message', '')).strip()
         if not message:
-            raise ClinicAIError('empty_message')
+            last_error = ClinicAIError('empty_message')
+            continue
         if looks_polish(message + ' ' + ' '.join(map(str, data.get('themes') or []))):
             break
         # Darmowy model czasem odpowiada po angielsku — druga próba z wyraźnym poleceniem, potem odrzucamy.
+        last_error = ClinicAIError('not_polish')
         prompt += '\n\nODPOWIEDZ WYŁĄCZNIE PO POLSKU (message i themes).'
     else:
-        raise ClinicAIError('not_polish')
+        raise last_error
     return {'message': message[:2000], 'analysis': str(data.get('analysis', '')).strip()[:6000],
             'themes': [str(t)[:80] for t in data.get('themes') or []][:5],
-            'usage': {'model': model}}
+            'usage': usage}
 
 
 def _screen_result(content: str, provider: str, model: str) -> dict:

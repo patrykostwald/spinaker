@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { apiWrite } from '../lib/api';
 import { AgentsPanel } from './AgentsPanel';
+import { DailySchedule } from './DailySchedule';
 import { SocialInbox } from './SocialPanel';
 
 type Status = 'ok' | 'warn' | 'error' | 'unknown';
@@ -175,6 +176,7 @@ export function CommandPanel() {
       <div className="sc-command-toolbar"><p>Stan: {data ? date(data.generated_at) : 'brak danych'}<span>Europe/Warsaw · co 60 s</span></p><button type="button" className="sc-command-filter" aria-pressed={onlyProblems} onClick={() => setOnlyProblems(current => !current)}>Tylko problemy {onlyProblems ? '✓' : ''}</button></div>
       {data && <>
         <AgentsPanel />
+        <DailySchedule />
         <div className="sc-social"><SocialInbox staff /></div>
         {!onlyProblems && <><section className="sc-command-kpis" aria-label="Dziś w porównaniu z wczoraj">{(data.kpis || []).map(kpi => <article key={kpi.key}><h2>{kpi.label}</h2><strong>{number(kpi.today, kpi.unit)}</strong><span className="sc-command-eyebrow">Dziś{kpi.unit ? ' · szacunek' : ''}</span><Trend {...kpi} /></article>)}</section>
           <section className="sc-command-charts" aria-label="Trendy siedmiodniowe">{(data.series || []).map(series => <Sparkline key={series.key} series={series} />)}</section></>}

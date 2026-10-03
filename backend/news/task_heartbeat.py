@@ -82,6 +82,13 @@ def record(sender, phase, task_id=None, args=None, kwargs=None, result=None, exc
                 data['repair_error'] = 'permanent' if permanent(error) else 'transient' if transient(error) else 'unknown'
                 data['repair_hint'] = safe_error(error) if error.strip() else ''
             cache.set(key, data, TTL)
+            from news.daily_schedule import BEAT_PLAN
+            if name in BEAT_PLAN:
+                from news.models import RepairerState
+                # Zachowujemy udany puls także po restarcie cache.
+                saved, _ = RepairerState.objects.get_or_create(key='pulse:' + name)
+                saved.data = {**saved.data, **data}
+                saved.save(update_fields=['data'])
     except Exception:
         logger.warning('Nie udało się zapisać pulsu Celery.', exc_info=False)
 
@@ -96,6 +103,8 @@ def succeeded(sender=None, result=None, **extra):
     failed_result = isinstance(result, dict) and (result.get('status') in ('error', 'failed', 'too_many_failures') or bool(result.get('error')) or bool(result.get('failed')) or bool(result.get('errors')))
     skipped = isinstance(result, dict) and result.get('status') in (
         'no_free_models', 'closed', 'disabled', 'already_run', 'busy', 'daily_limit', 'locked', 'already_running')
+    if getattr(sender, 'name', '') == 'news.tasks.political_poll_task' and isinstance(result, dict):
+        skipped = result.get('status') not in ('ok', 'idle')
     record(sender, 'error' if failed_result else 'skipped' if skipped else 'ok', result=result)
 
 

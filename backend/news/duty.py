@@ -175,6 +175,9 @@ def check_interviews(ctx):
 
 
 def check_diagnoses(ctx):
+    from news.clinic import budget_left, diagnosis_reserve
+    if budget_left() < diagnosis_reserve():
+        return []
     local = ctx.now.astimezone(WARSAW)
     if not 8 <= local.hour < 22:
         return []
@@ -208,28 +211,10 @@ CHECKS = (check_budget, check_warden, check_importers, check_tasks, check_interv
 
 
 def dispatch(row, ctx, repair_run):
-    from news.agent_registry import task_enabled
-    entry = ctx.entries.get(row.repairer)
-    if not entry or entry['task'] not in SAFE_TASKS or not task_enabled(entry['task']) or not flag('REPAIRER_ENABLED', True):
+    if not row.repairer:
         return
-    if flag('REPAIRER_DRY_RUN', False):
-        return
-    # Legacy diagnosis task defaults to a positive budget; duty never opts into it.
-    if entry['task'] == 'news.tasks.clinic_diagnose_task' and budget_limit() <= daily_costs(ctx.now)['diagnoses']:
-        return
-    if row.last_dispatch_at and ctx.now - row.last_dispatch_at < timedelta(hours=2):
-        return
-    # Reservation survives broker errors and worker loss. retry_task also applies
-    # its shared per-task limits, permanent-error rules and active-run guards.
-    row.last_dispatch_at = ctx.now
-    row.dispatch_note = 'Zarezerwowano sprawdzenie przez Naprawiacza.'
-    row.save(update_fields=['last_dispatch_at', 'dispatch_note'])
-    before = len(repair_run.actions)
-    retry_task(repair_run, row.repairer, entry)
-    actions = repair_run.actions[before:]
-    sent = any(a['result'] == 'retried' for a in actions)
-    row.dispatch_note = (f'Wysłano Naprawiacza {ctx.now.astimezone(WARSAW):%H:%M}.' if sent else
-                         'Naprawiacz nie ponowił zadania: sprawdź ograniczenia i konfigurację w panelu.')
+    # Naprawiacz opisuje propozycję; tylko Ratownik uruchamia naprawy harmonogramu.
+    row.dispatch_note = 'Propozycja: sprawdź zadanie ' + row.repairer + '. Decyzja należy do właściciela.'
     row.save(update_fields=['dispatch_note'])
 
 
@@ -257,6 +242,8 @@ def run(now=None):
             reconcile(name + ':health', [], ctx, repair_run)
             reconcile(name, found, ctx, repair_run)
         ctx.save()
+        from news.rescuer import guard
+        guard(now)
         return {'status': 'ok' if not errors else 'error', 'errors': errors,
                 'open': DutyAlarm.objects.filter(status='open').count()}
     finally:

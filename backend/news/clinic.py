@@ -171,11 +171,14 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     }
 
 
-def unscreened_posts():
+def unscreened_posts(include_old=False):
     since = timezone.now() - timedelta(days=int(os.environ.get('CLINIC_MAX_POST_AGE_DAYS', '3')))
-    return (PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, published_at__gte=since,
-                                         account__enabled=True, spin_diagnosis__isnull=True)
-            .select_related('account').order_by('-published_at', '-pk'))  # najpierw najnowsze
+    rows = PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, account__enabled=True).filter(
+        Q(spin_diagnosis__isnull=True) | Q(spin_diagnosis__status='flagged', spin_diagnosis__screen_score__isnull=True,
+                                          spin_diagnosis__diagnosed_at__isnull=True))
+    if not include_old:
+        rows = rows.filter(published_at__gte=since)
+    return rows.select_related('account').order_by('fetched_at' if include_old else '-published_at', '-pk')
 
 
 def auto_publish() -> bool:
@@ -218,7 +221,7 @@ def _anthropic_today():
     return SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic')
 
 
-def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
+def screen_post(post: PoliticalPost, retry=False) -> SpinDiagnosis | None:
     """Strażnik — darmowa ocena. Tworzy wpis: pominięty, oznaczony do decyzji albo w kolejce do diagnozy."""
     result = clinic_ai.screen(post.text)
     flag, auto = thresholds()
@@ -234,13 +237,18 @@ def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
         with transaction.atomic():
             return SpinDiagnosis.objects.create(post=post, prompt_version=clinic_ai.PROMPT_VERSION, **fields)
     except IntegrityError:
+        if retry and result is not None:
+            changed = SpinDiagnosis.objects.filter(post=post, status='flagged', screen_score__isnull=True,
+                diagnosed_at__isnull=True).update(**fields)
+            if changed:
+                return SpinDiagnosis.objects.get(post=post)
         return None
 
 
-def run_screening(limit: int = 30) -> dict:
+def run_screening(limit: int = 30, *, include_old=False) -> dict:
     counts = {}
-    for post in unscreened_posts()[:limit]:
-        row = screen_post(post)
+    for post in unscreened_posts(include_old=include_old)[:limit]:
+        row = screen_post(post, retry=True)
         if row:
             counts[row.status] = counts.get(row.status, 0) + 1
     alert = send_review_alert() if counts.get('flagged') else 'nothing'
@@ -539,7 +547,7 @@ def run_diagnoses(limit: int = 2) -> dict:
 MIN_MESSAGE_ACCOUNTS = 3
 
 
-def run_daily_messages(day=None) -> dict:
+def run_daily_messages(day=None, *, camps=None, models=None, only_missing=False) -> dict:
     """Przekaz dnia każdego obozu — darmowe modele (Groq, zapasowo NIM), z postów co najmniej trzech kont.
 
     W ciągu dnia przekaz jest odświeżany (9:00, 12:00, 15:00, 18:00, 21:30), dopóki nikt go ręcznie nie zatwierdził.
@@ -553,32 +561,73 @@ def run_daily_messages(day=None) -> dict:
         if missing:
             created.update({f'{yesterday.isoformat()}:{camp}': pk for camp, pk in _daily_messages_for(yesterday, missing).items()})
     day = day or timezone.localdate()
-    created.update(_daily_messages_for(day, CAMPS))
+    errors = {}
+    created.update(_daily_messages_for(day, camps or CAMPS, models=models, only_missing=only_missing, errors=errors))
     alert = send_review_alert()
-    return {'status': 'ok', 'created': created, 'alert': alert}
+    return {'status': 'error' if errors else 'ok', 'created': created, 'alert': alert, 'errors': errors}
 
 
-def _daily_messages_for(day, camps) -> dict:
+def message_posts(day, camp):
     start = timezone.make_aware(datetime.combine(day, time.min))
+    rows = PoliticalPost.objects.filter(
+        available=True, camp_at_collection=camp, account__enabled=True,
+        published_at__gte=start, published_at__lt=start + timedelta(days=1),
+    ).exclude(spin_diagnosis__withdrawn_at__isnull=False)
+    rows = rows.exclude(spin_diagnosis__hidden_at__isnull=False).select_related('account').order_by('-published_at')
+    selected, per_account = [], {}
+    for post in rows.iterator(chunk_size=200):
+        # Jedno aktywne konto nie może wyprzeć pozostałych autorów.
+        if per_account.get(post.account_id, 0) >= clinic_ai.DAILY_POSTS_PER_AUTHOR:
+            continue
+        selected.append(post)
+        per_account[post.account_id] = per_account.get(post.account_id, 0) + 1
+        if len(selected) == 60:
+            break
+    return selected
+
+
+def _daily_messages_for(day, camps, *, models=None, only_missing=False, errors=None) -> dict:
+    from django.core.cache import cache
+    from uuid import uuid4
+    from news.repairer import compare_delete
+    created = {}
+    for camp in camps:
+        key, token = f'clinic-message:{day}:{camp}', uuid4().hex
+        if not cache.add(key, token, 900):
+            if errors is not None:
+                errors[f'{day}:{camp}'] = 'Przekaz jest już opracowywany przez inny przebieg.'
+            continue
+        try:
+            created.update(_message_for(day, (camp,), models=models, only_missing=only_missing, errors=errors))
+        finally:
+            compare_delete(key, token)
+    return created
+
+
+def _message_for(day, camps, *, models=None, only_missing=False, errors=None) -> dict:
     created = {}
     for camp in camps:
         existing = ClinicDailyMessage.objects.filter(day=day, camp=camp).first()
-        if existing and existing.reviewed_by_id:
+        if existing and (existing.reviewed_by_id or (only_missing and existing.message and existing.status in ('approved', 'pending_review'))):
             continue  # zatwierdzony ręcznie — nie nadpisujemy
-        posts = list(PoliticalPost.objects.filter(
-            available=True, camp_at_collection=camp, account__enabled=True,
-            published_at__gte=start, published_at__lt=start + timedelta(days=1),
-        ).exclude(spin_diagnosis__withdrawn_at__isnull=False)
-         .exclude(spin_diagnosis__hidden_at__isnull=False).select_related('account').order_by('-published_at')[:60])
+        posts = message_posts(day, camp)
         if len({post.account_id for post in posts}) < MIN_MESSAGE_ACCOUNTS:
             continue
         figures = figures_by_account({post.account_id for post in posts})
         rows = [{'author': (figures[p.account_id].canonical_name if p.account_id in figures else p.account.display_name),
                  'text': p.text[:1200]} for p in posts]
         try:
-            result = clinic_ai.daily_message(CAMP_PROMPT_LABELS[camp], day.isoformat(), rows)
+            options = {'models': models} if models is not None else {}
+            result = clinic_ai.daily_message(CAMP_PROMPT_LABELS[camp], day.isoformat(), rows, **options)
         except clinic_ai.ClinicAIError as error:
             logger.warning('clinic daily message failed: %s', error.code)
+            if errors is not None:
+                from news.admin_telemetry import safe_error
+                labels = {'free_models_unavailable': 'Darmowe modele nie odpowiedziały.',
+                          'daily_message_paid_budget': 'Wyłączony lub wyczerpany limit płatnego zapasu.',
+                          'not_polish': 'Model nie odpowiedział po polsku.', 'empty_message': 'Pusta odpowiedź modelu.',
+                          'gemini_missing_key': 'Brak klucza Gemini.', 'gemini_daily_budget': 'Wyczerpany limit Gemini.'}
+                errors[f'{day}:{camp}'] = labels.get(error.code, safe_error(error.code).replace('—', '-'))
             continue
         status = 'approved' if auto_publish() else 'pending_review'
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
