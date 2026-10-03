@@ -8410,3 +8410,42 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 /* wiersze listy ok. 20% wyższe: więcej powietrza nad i pod treścią (właściciel 4.10) */
 .sc-thread-feed__list > li .sc-trow, .sc-spin-of-day .sc-trow { padding-block: 8px; }
 .sc-trow__main:not(:has(.sc-trow__desc)) .sc-trow__title { grid-row: 1 / span 2; align-self: center; }
+
+/* rozwinięta spinka jako „zawieszka” (właściciel 4.10): łańcuch się nie rozsuwa, zatrzask obraca się o 90°,
+   z jego środka wyrasta cienka nitka, a na niej pojawia się dymek z wyjaśnieniem */
+.sc-joint, .sc-joint.is-open, .sc-trop-overlay .sc-joint.is-open { width: 34px !important; }
+.sc-clasp__knot { transition: transform .5s cubic-bezier(.3,1.4,.4,1); }
+.sc-clasp.is-open .sc-clasp__knot { width: 17px; transform: rotate(90deg); }
+.sc-clasp.is-open .sc-clasp__knot i { top: 0; height: 9px; width: 11px; border-width: 2px; border-radius: 5px; }
+.sc-joint { position: relative; }
+.sc-joint::before { content: ""; position: absolute; left: 50%; bottom: 50%; width: 1px; height: 30px; margin-left: -.5px; background: color-mix(in srgb, var(--sc-text) 40%, transparent);
+  transform: scaleY(0); transform-origin: bottom; transition: transform .3s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
+.sc-joint.is-open::before { transform: scaleY(1); transition-delay: .15s; }
+.sc-joint__pop { bottom: calc(50% + 30px) !important; }
+.sc-joint.is-open .sc-joint__pop:not([hidden]) { animation: sc-hang .4s cubic-bezier(.2,.8,.2,1) .3s both; }
+@keyframes sc-hang { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.sc-joint__dot:focus { outline: none; }
+.sc-joint__dot:focus-visible { outline: 1px solid var(--sc-accent); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .sc-joint::before, .sc-clasp__knot { transition: none; } .sc-joint.is-open .sc-joint__pop:not([hidden]) { animation: none; } }
+
+/* ikonki komentarzy i przepięć wyśrodkowane w pionie (właściciel 4.10) */
+.sc-trow__side { align-self: center; display: inline-flex; align-items: center; }
+.sc-trow__boxes { display: grid; grid-template-columns: auto auto; column-gap: 14px; row-gap: 6px; align-items: center; align-self: center; }
+.sc-trow__chainrow { display: contents; }
+.sc-trow__chainrow .sc-trow__repins { grid-column: 1; grid-row: 1 / span 2; align-self: center; }
+.sc-trow__chain { grid-column: 2; grid-row: 1; justify-self: end; }
+.sc-trow__facts { grid-column: 2; grid-row: 2; justify-self: end; }
+/* zawieszka: dymek całkiem nad boksami, nitka od zatrzasku do dymka */
+.sc-joint__pop { bottom: calc(100% + 14px) !important; }
+.sc-joint::before { height: calc(50% + 14px); }
+/* dymek spinki inny niż boksy: bez płytki, czyste tło, linie w kolorze akcentu */
+.sc-joint__pop { --fr: color-mix(in srgb, var(--sc-accent) 45%, transparent);
+  background:
+    linear-gradient(var(--fr), var(--fr)) left 0 top 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--fr), var(--fr)) right 0 top 22px / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(var(--fr), var(--fr)) left 0 top 0 / 1px calc(100% - 22px) no-repeat,
+    #000 !important;
+  box-shadow: 0 0 0 1px rgb(0 0 0), 0 18px 40px -18px color-mix(in srgb, var(--sc-accent) 35%, transparent) !important; }
+.sc-joint__pop p { font-style: italic; color: var(--sc-text-2); }
+.sc-joint.is-open::before { background: color-mix(in srgb, var(--sc-accent) 55%, transparent); }
+.sc-thread-strip__track:has(.sc-joint.is-open), .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open) { padding-top: 236px; }
