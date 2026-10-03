@@ -4,10 +4,14 @@ import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { CommunityThreadSummary, ThreadElement } from '../../lib/community';
-import { RatingFrame, SocialIcon, ClampedText, type Counts } from './SocialPrimitives';
+import { ago, Avatar, RatingFrame, SocialIcon, ClampedText, type Counts } from './SocialPrimitives';
 import { SocialReport, ThreadSocial } from './ThreadSocial';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
+
+/** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
+const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
+const ratingsWord = (n: number) => n === 1 ? 'ocena' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'oceny' : 'ocen';
 
 const TYPES = { post: 'Wpis na X', claim: 'Twierdzenie', source: 'Źródło', technique: 'Technika', diagnosis: 'Diagnoza', message: 'Przekaz dnia', print: 'Druk sejmowy', amendment: 'Poprawka', consultation: 'Postulat organizacji', registry: 'Wpis w rejestrze', declaration: 'Zgłoszenie w uzasadnieniu', summary: 'Podsumowanie Dr. Spina' };
 
@@ -56,6 +60,9 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   const uid = useId();
   const reduced = useReducedMotion();
   const ordered = [...items].sort((a, b) => a.position - b.position);
+  const row = variant === 'row' && !full;
+  const shown = counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative };
+  const total = shown.positive + shown.doubt + shown.negative;
   const slots = ordered.flatMap((item, index) => expanded && index > 0 && item.link_note ? [index, index] : [index]);
 
   function move(index: number) {
@@ -108,7 +115,23 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   } : {};
   return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} {...hoverProps}>
     <div className="sc-thread-strip__frame">
-    <header className="sc-thread-strip__head">
+    {row ? <header className="sc-trow">
+      <Avatar name={thread.is_ai ? 'Dr. Spin' : thread.display_name || thread.author} ai={thread.is_ai} size={36} />
+      <h2 className="sc-trow__h"><button type="button" className="sc-trow__main" aria-expanded={expanded} aria-controls={`${uid}-track`} onClick={toggle}>
+        <span className="sc-trow__by"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}
+          {thread.published_at && <><span aria-hidden="true">·</span><time dateTime={thread.published_at}>{ago(thread.published_at)}</time></>}</span>
+        <span className="sc-trow__title" title={thread.title}>{thread.title}</span>
+        <span className="sc-trow__meta">
+          <span className="sc-trow__chips" aria-label={`${thread.items_count} boksów`}>{Array.from({ length: Math.min(thread.items_count, 10) }, (_, i) =>
+            <i key={i} data-type={ordered[i] ? kindOf(ordered[i]) : 'more'} title={ordered[i]?.box_type ? TYPES[ordered[i].box_type!] : undefined} />)}</span>
+          <span className="sc-trow__score">{total ? `${Math.round(100 * shown.positive / total)}% trafnych · ${total} ${ratingsWord(total)}` : 'Jeszcze bez ocen'}</span>
+        </span>
+      </button></h2>
+      <span className="sc-trow__side">
+        <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => { if (!expanded) toggle(); setShowComments(!showComments); }}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
+        <button type="button" className="sc-trow__chev" data-open={expanded || undefined} aria-label={expanded ? 'Zwiń trop' : 'Rozwiń trop'} onClick={toggle}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
+      </span>
+    </header> : <header className="sc-thread-strip__head">
       {full ? <div className="sc-thread-strip__title"><ClampedText><h2>{thread.title}</h2></ClampedText></div> : <h2><button type="button" aria-expanded={expanded} aria-controls={`${uid}-track`} onClick={toggle} title={thread.title}>
         <span>{thread.title}</span><span className="sc-thread-strip__chev" aria-hidden="true" data-open={expanded || undefined}>⌄</span>
       </button></h2>}
@@ -116,7 +139,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={() => setShowComments(!showComments)}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
       <SocialReport threadId={thread.id} />
       {onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz trop na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
-    </header>
+    </header>}
     {thread.admission && <p className="sc-thread-admission" aria-label="Postęp w izbie przyjęć">
       <span className="sc-thread-admission__bar" aria-hidden="true"><span style={{ width: `${Math.min(100, 100 * thread.admission.positive / thread.admission.needed)}%` }} /></span>
       {thread.admission.open ? `${thread.admission.positive}/${thread.admission.needed} ✓ do głównej · zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'Czas w izbie minął'}
@@ -145,7 +168,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
             onClick={() => setOpenJoint(openJoint === index ? null : index)}><span aria-hidden="true" /></button>
           <span className="sc-thread-strip__context"><span className="sc-sr-only">Kontekst: </span>{item.link_note}</span>
         </li>}
-        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1}>
+        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)}>
           {item.note && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
           {item.box_type === 'post' ? <XPostCard item={item} /> :
           <button type="button" className="sc-thread-strip__select" onClick={() => { if (!expanded) toggle(); setSelected(index); }}
@@ -161,7 +184,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       </Fragment>)}
     </ol>
     </div>
-    <RatingFrame counts={counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative }} ai={thread.is_ai} cycle={!full} offset={offset} />
+    {/* W zwiniętym wierszu jest tylko „78% trafnych”; szczegóły ✓ ? ✕ po rozwinięciu (werdykt 1810). */}
+    {(!row || expanded) && <RatingFrame counts={shown} ai={thread.is_ai} cycle={false} offset={offset} numbers />}
     </div>
     {expanded && variant !== 'row' && <p className="sc-thread-totals"><span data-rating="positive">✓</span> {counts?.positive ?? thread.opinions.positive} · <span data-rating="doubt">?</span> {counts?.doubt ?? thread.opinions.doubt ?? 0} · <span data-rating="negative">✕</span> {counts?.negative ?? thread.opinions.negative} · {commentCount ?? thread.comments_count ?? 0} komentarzy</p>}
     {(thread.narrative || thread.signal_kind) && <p className="sc-thread-totals">{thread.description}</p>}
@@ -171,7 +195,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       draft={draft} setDraft={setDraft} focusBox={focusBox} boxCount={ordered.length} onCounts={setCounts} onCommentCount={setCommentCount} />}
     {!full && expanded && <div className="sc-thread-strip__foot">
       <Link className="sc-thread-strip__open" href={`/tropy/${thread.id}`} onClick={event => { if (onFullscreen && !event.metaKey && !event.ctrlKey) { event.preventDefault(); onFullscreen(); } }}>Otwórz cały trop →</Link>
-      <button type="button" className="sc-thread-strip__collapse" onClick={toggle}>Zwiń trop <span aria-hidden="true">⌃</span></button>
+      <span className="sc-thread-strip__tools">{row && <SocialReport threadId={thread.id} />}{row && onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz trop na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
+        <button type="button" className="sc-thread-strip__collapse" onClick={toggle}>Zwiń trop <span aria-hidden="true">⌃</span></button></span>
     </div>}
   </article>;
 }

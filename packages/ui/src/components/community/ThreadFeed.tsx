@@ -5,7 +5,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { getCommunityThreads } from '../../lib/community';
 import { useFeature } from '../../lib/features';
 import { ThreadStrip } from './ThreadStrip';
-import { ThreadOverlay } from './ThreadOverlay';
+import { ThreadOverlay, viewTransition } from './ThreadOverlay';
 import { Button } from '../../kit/Button';
 
 export type FeedSort = 'hot' | 'new' | 'best' | 'comments';
@@ -64,10 +64,10 @@ export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}
     {threads.length > 0 && <ol className="sc-thread-feed__list">
       {threads.map((thread, index) => <li key={thread.id}>
         <ThreadStrip thread={thread} variant="row" open={openId === thread.id} offset={(index % 6) * 600}
-          onOpenChange={value => setOpenId(value ? thread.id : null)} onFullscreen={() => setFullId(thread.id)} />
+          onOpenChange={value => setOpenId(value ? thread.id : null)} onFullscreen={() => viewTransition(() => setFullId(thread.id))} />
       </li>)}
     </ol>}
-    {fullId !== null && <ThreadOverlay id={fullId} onClose={() => setFullId(null)} />}
+    {fullId !== null && <ThreadOverlay id={fullId} onClose={() => viewTransition(() => setFullId(null))} />}
     {!limit && query.hasNextPage && <button type="button" className="sc-thread-feed__more" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej tropów</button>}
   </section>;
 }

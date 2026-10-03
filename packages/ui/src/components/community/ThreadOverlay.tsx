@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getCommunityThread } from '../../lib/community';
 import { ThreadStrip } from './ThreadStrip';
+
+/** Płynne przenikanie przy otwieraniu i zamykaniu pełnego ekranu (View Transitions); bez wsparcia albo przy ograniczonym ruchu - od razu. */
+export function viewTransition(update: () => void) {
+  const doc = document as Document & { startViewTransition?: (callback: () => void) => unknown };
+  if (!doc.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { update(); return; }
+  doc.startViewTransition(() => flushSync(update));
+}
 
 /**
  * Trop na cały ekran: paski nawigacji znikają (html[data-immersive]), adres zmienia się na /tropy/ID,

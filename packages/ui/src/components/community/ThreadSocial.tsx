@@ -8,7 +8,7 @@ import { useFeature } from '../../lib/features';
 import { REPORT_REASONS } from '../../lib/community';
 import { Dialog } from '../Dialog';
 import { FollowButton } from '../FollowButton';
-import { CharacterCount, ClampedText, RATINGS, ratingLabels, SocialIcon, type Counts, type Rating } from './SocialPrimitives';
+import { ago, Avatar, CharacterCount, ClampedText, RATINGS, ratingLabels, SocialIcon, type Counts, type Rating } from './SocialPrimitives';
 
 type Comment = { id: number; body: string; author: string; username?: string; x_profile?: string | null; reactions_count: number; reacted: boolean; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean; stance?: '' | 'positive' | 'doubt' | 'negative'; reactions?: Counts; my_reaction?: '' | Rating };
 type CommentPage = { results: Comment[]; next_cursor: string | null; count: number };
@@ -48,6 +48,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
 }) {
   const account = useAccount(), enabled = useFeature('ACCOUNTS_ENABLED'), threads = useFeature('THREADS_ENABLED');
   const canWrite = enabled && account.data?.authenticated && emailVerified(account.data);
+  const me = account.data?.user?.username ?? 'Ty';
   const [showRatings, setShowRatings] = useState(false), [pending, setPending] = useState(false), [status, setStatus] = useState('');
   const [editing, setEditing] = useState<number | null>(null), [editBody, setEditBody] = useState('');
   const [sort, setSort] = useState('best');
@@ -98,12 +99,12 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         <SocialIcon kind={key} /><span>{counts[key]}</span></button>)}
     </div>;
   }
-  function stanced(row: Comment) {
-    if (!row.stance) return content(row.body);
-    const match = /^([\s\S]+?[.!?…])(\s+[\s\S]*)?$/.exec(row.body);
-    const [lead, rest] = match ? [match[1], match[2] ?? ''] : [row.body, ''];
+  function stanced(row: Comment) { return content(row.body); }
+  /** Stanowisko autora wobec tropu: mała kropka w kolorze jego oceny przy nazwie (✓ zielona, ? żółta, ✕ czerwona). */
+  function stanceDot(row: Comment) {
+    if (!row.stance) return null;
     const label = { positive: 'zgadza się', doubt: 'ma wątpliwości', negative: 'nie zgadza się' }[row.stance];
-    return <><span className="sc-stance" data-stance={row.stance} title={`Autor ${label} z tropem`}>{content(lead)}</span>{content(rest)}</>;
+    return <span className="sc-stance-dot" data-stance={row.stance} title={`Autor ${label} z tropem`} role="img" aria-label={`Autor ${label} z tropem`} />;
   }
   if (!threads) return null;
   if (preview) {
@@ -111,19 +112,23 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
     const count = comments.data?.pages[0]?.count ?? 0;
     return <div className="sc-thread-social sc-thread-social--preview">
       <section aria-label="Najtrafniejsze komentarze" className="sc-social-comments sc-social-comments--preview">
-        {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
-        {comments.isSuccess && !rows.length && <p className="sc-social-empty">Nikt jeszcze nie skomentował. Bądź pierwszy.</p>}
-        {rows.length > 0 && <ol>{rows.map(row => <li key={row.id}>
-          <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.author}</strong><time dateTime={row.created_at}>{new Date(row.created_at).toLocaleDateString('pl-PL')}</time></header>
-          <ClampedText>{stanced(row)}</ClampedText>
-          {commentRating(row)}
-        </li>)}</ol>}
-        {count > 3 && <Link className="sc-social-all" href={`/tropy/${id}#komentarze`}>Pokaż wszystkie komentarze ({count})</Link>}
         {canWrite ? <form className="sc-social-reply" onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
+          <Avatar name={me} />
           <label className="sc-sr-only" htmlFor={`reply-${id}`}>Odpowiedz w tropie</label>
-          <input id={`reply-${id}`} value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Odpowiedz…" />
+          <input id={`reply-${id}`} value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Napisz odpowiedź" />
           <button disabled={pending || !draft.trim()}>Odpowiedz</button>
         </form> : enabled ? <p className="sc-social-login"><a href="/konto">Zaloguj się</a>, aby odpowiedzieć.</p> : null}
+        {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
+        {comments.isSuccess && !rows.length && <p className="sc-social-empty">Nikt jeszcze nie skomentował. Bądź pierwszy.</p>}
+        {rows.length > 0 && <ol>{rows.map(row => <li key={row.id} className="sc-cmt">
+          <Avatar name={row.author} />
+          <div className="sc-cmt__body">
+            <header><strong>{row.author}</strong>{stanceDot(row)}<span aria-hidden="true">·</span><time dateTime={row.created_at} title={new Date(row.created_at).toLocaleString('pl-PL')}>{ago(row.created_at)}</time></header>
+            <ClampedText>{stanced(row)}</ClampedText>
+            <footer>{commentRating(row)}</footer>
+          </div>
+        </li>)}</ol>}
+        {count > 3 && <Link className="sc-social-all" href={`/tropy/${id}#komentarze`}>Pokaż wszystkie komentarze ({count})</Link>}
       </section>
       <p role="status">{status}</p>
     </div>;
@@ -147,12 +152,20 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       {enabled && !canWrite && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby oceniać i komentować.</p>}
     </section>}
     {showComments && <section id="komentarze" aria-label="Komentarze pod tropem" className="sc-social-comments">
-      <label>Kolejność komentarzy<select value={sort} onChange={e => setSort(e.target.value)}><option value="best">Najtrafniejsze</option><option value="new">Najnowsze</option></select></label>
+      {canWrite ? <form className="sc-social-composer" onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
+        <Avatar name={me} />
+        <div><label className="sc-sr-only" htmlFor={`compose-${id}`}>Komentarz pod tropem</label>
+          <textarea id={`compose-${id}`} value={draft} maxLength={600} rows={2} onChange={e => setDraft(e.target.value)} placeholder="Napisz odpowiedź. Możesz wskazać @boks 3" />
+          <div className="sc-social-composer__row"><CharacterCount text={draft} limit={600} /><button disabled={pending || !draft.trim()}>Odpowiedz</button></div></div>
+      </form> : enabled ? <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p> : null}
+      <label className="sc-social-sort">Kolejność komentarzy<select value={sort} onChange={e => setSort(e.target.value)}><option value="best">Najtrafniejsze</option><option value="new">Najnowsze</option></select></label>
       {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
       {comments.isSuccess && !comments.data.pages[0].results.length && <p><SocialIcon kind="comment" /> Bądź pierwszy.</p>}
-      <ol>{comments.data?.pages.flatMap(page => page.results).map(row => <li key={row.id} id={`comment-${row.id}`}>
-        <header><span className="sc-social-avatar" aria-hidden="true">{row.author.replace('@', '').charAt(0).toUpperCase()}</span><strong>{row.username ? <Link href={`/profile/${encodeURIComponent(row.username)}`}>{row.author}</Link> : row.author}</strong>{row.x_profile && <a href={row.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}<time dateTime={row.created_at}>{new Date(row.created_at).toLocaleString('pl-PL')}</time>{row.edited_at && <small>edytowany</small>}</header>
+      <ol>{comments.data?.pages.flatMap(page => page.results).map(row => <li key={row.id} id={`comment-${row.id}`} className="sc-cmt">
+        <Avatar name={row.author} />
+        <div className="sc-cmt__body">
+        <header><strong>{row.username ? <Link href={`/profile/${encodeURIComponent(row.username)}`}>{row.author}</Link> : row.author}</strong>{row.x_profile && <a href={row.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}{stanceDot(row)}<span aria-hidden="true">·</span><time dateTime={row.created_at} title={new Date(row.created_at).toLocaleString('pl-PL')}>{ago(row.created_at)}</time>{row.edited_at && <small>edytowany</small>}</header>
         {row.hidden && <p>Ten komentarz jest ukryty. Treść widzisz jako autor.</p>}
         {editing === row.id ? <form onSubmit={async e => { e.preventDefault(); if (await write(`comments/${row.id}/`, { body: editBody }, 'PATCH')) setEditing(null); }}>
           <label>Edytuj komentarz<textarea value={editBody} maxLength={600} onChange={e => setEditBody(e.target.value)} /></label><CharacterCount text={editBody} limit={600} />
@@ -160,15 +173,11 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         </form> : <ClampedText>{stanced(row)}</ClampedText>}
         <footer>{!row.hidden && commentRating(row)}{enabled && row.is_owner && <>{row.can_edit && <button onClick={() => { setEditing(row.id); setEditBody(row.body); }}>Edytuj</button>}<button disabled={pending} onClick={() => write(`comments/${row.id}/`, {}, 'DELETE')}>Usuń</button></>}
           {!row.hidden && <SocialReport threadId={id} commentId={row.id} />}</footer>
+        </div>
       </li>)}</ol>
       {comments.hasNextPage && <button disabled={comments.isFetchingNextPage} onClick={() => comments.fetchNextPage()}>Pokaż kolejne komentarze</button>}
-      {canWrite ? <form onSubmit={async e => { e.preventDefault(); if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }}>
-        <label>Komentarz pod tropem<textarea value={draft} maxLength={600} onChange={e => setDraft(e.target.value)} placeholder="Możesz wskazać @boks 3" /></label>
-        <CharacterCount text={draft} limit={600} /><button disabled={pending || !draft.trim()}>Dodaj komentarz</button>
-      </form> : enabled ? <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p> : null}
       <a href="/zasady-korzystania#tropy">Zasady tropów, ocen i komentarzy</a>
     </section>}
-    {expanded && canWrite && <button type="button" onClick={e => { setShowComments(true); const parent = e.currentTarget.parentElement; requestAnimationFrame(() => parent?.querySelector<HTMLTextAreaElement>('form textarea')?.focus()); }}>Dodaj swój komentarz</button>}
     <p role="status">{status}</p>
   </div>;
 }
