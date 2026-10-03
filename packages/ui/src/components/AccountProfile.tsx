@@ -16,10 +16,10 @@ type HistoryItem = { id: number; article_id: number; body: string; polarity: 'po
 type HistoryPage = { results: HistoryItem[]; next_page: number | null };
 type FavoritePage = { results: { id: number; thread: { id: number; slug: string; title: string }; created_at: string }[]; next_page: number | null };
 type ThemePreference = 'auto' | 'dark' | 'light' | 'pastel';
-type AccountProfileData = { username: string; public_activity: boolean; theme_preference: ThemePreference };
+type AccountProfileData = { username: string; public_activity: boolean; theme_preference: ThemePreference; nick_color?: string; nick_colors?: string[]; can_color_nick?: boolean };
 type Section = 'saved' | 'activity' | 'privacy' | 'settings';
 const sections: { id: Section; label: string; description: string }[] = [
-  { id: 'saved', label: 'Zapisane', description: 'Ulubione tropy i własne paski' },
+  { id: 'saved', label: 'Zapisane', description: 'Ulubione spinki i własne paski' },
   { id: 'activity', label: 'Aktywność', description: 'Twoje reakcje i komentarze' },
   { id: 'privacy', label: 'Prywatność', description: 'Widoczność Twojej historii' },
   { id: 'settings', label: 'Ustawienia', description: 'Konto i dostępne możliwości' },
@@ -64,14 +64,24 @@ export function AccountProfile() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się zapisać ustawień.'); }
     finally { setPending(false); }
   }
+  /** Kolor nicka (właściciel 3.10): tylko konta połączone z X; konto z samym e-mailem ma biały nick. */
+  async function nickColor(color: string) {
+    setPending(true); setError(''); setNotice('');
+    try {
+      const updated = await apiWrite('/api/account/profile/', { nick_color: color }, 'PATCH');
+      cache.setQueryData(['account-profile', ownerId], updated);
+      setNotice(color ? 'Twój nick ma teraz wybrany kolor.' : 'Twój nick jest znowu biały.');
+    } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się zapisać koloru.'); }
+    finally { setPending(false); }
+  }
   async function removeFavorite(threadId: number) {
     setPending(true); setError('');
     try { await apiWrite(`/api/account/favorites/${threadId}/`, {}, 'DELETE'); await Promise.all([cache.invalidateQueries({ queryKey: ['account-favorites', ownerId] }), cache.invalidateQueries({ queryKey: ['thread-favorite', ownerId, threadId] })]); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się usunąć tropu z ulubionych.'); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się usunąć spinki z ulubionych.'); }
     finally { setPending(false); }
   }
   if (account.isPending) return <p role="status" className="sc-account-profile-empty">Ładuję konto…</p>;
-  if (!ownerId) return <section className="sc-account-profile-page sc-account-profile-signed-out"><p className="sc-account-profile-kicker">TWOJE MIEJSCE W SPIN.CLINIC</p><h1>Wracaj do tego, co ważne.</h1><p>Zapisuj tropy, układaj własne paski tematów i przeglądaj swoją aktywność. Ulubione i tematy pozostają prywatne.</p><Button variant="primary" onClick={() => setOpen(true)}>Zaloguj się</Button><Button href="/" variant="quiet">Przeglądaj wiadomości ↗</Button><AccountDialog open={open} onClose={() => setOpen(false)} /></section>;
+  if (!ownerId) return <section className="sc-account-profile-page sc-account-profile-signed-out"><p className="sc-account-profile-kicker">TWOJE MIEJSCE W SPIN.CLINIC</p><h1>Wracaj do tego, co ważne.</h1><p>Zapisuj spinki, układaj własne paski tematów i przeglądaj swoją aktywność. Ulubione i tematy pozostają prywatne.</p><Button variant="primary" onClick={() => setOpen(true)}>Zaloguj się</Button><Button href="/" variant="quiet">Przeglądaj wiadomości ↗</Button><AccountDialog open={open} onClose={() => setOpen(false)} /></section>;
   const user = account.data!.user!;
   const role = user.is_staff ? 'Zespół spin.clinic' : user.is_journalist ? 'Dziennikarz' : 'Czytelnik';
   const current = sections.find(item => item.id === section)!;
@@ -79,14 +89,14 @@ export function AccountProfile() {
   const favoriteRows = favorites.data?.pages.flatMap(page => page.results) ?? [];
   return <div className="sc-account-profile-page">
     <header className="sc-account-profile-header"><div><p className="sc-account-profile-kicker">TWOJE KONTO</p><h1>{user.display_name || `@${user.username}`} {user.x_profile && <a href={user.x_profile} target="_blank" rel="noopener noreferrer">𝕏</a>}</h1><p className="sc-account-profile-role">{role}</p></div><Button href="/" variant="quiet">Wróć do wiadomości ↗</Button></header>
-    <div className="sc-account-profile-workspace"><aside className="sc-account-profile-sidebar"><nav aria-label="Sekcje profilu">{sections.map(item => <Button key={item.id} type="button" variant="quiet" pressed={section === item.id} aria-current={section === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}>{item.label}</Button>)}</nav><p>Ulubione tropy i zapisane tematy widzisz tylko Ty.</p></aside>
+    <div className="sc-account-profile-workspace"><aside className="sc-account-profile-sidebar"><nav aria-label="Sekcje profilu">{sections.map(item => <Button key={item.id} type="button" variant="quiet" pressed={section === item.id} aria-current={section === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}>{item.label}</Button>)}</nav><p>Ulubione spinki i zapisane tematy widzisz tylko Ty.</p></aside>
       <div className="sc-account-profile-content"><header className="sc-account-profile-section-heading"><div><h2>{current.label}</h2><p>{current.description}</p></div>{(section === 'activity' || section === 'saved') && <span className="sc-account-profile-status">{section === 'activity' ? (profile.isSuccess ? (profile.data.public_activity ? 'Historia publiczna' : 'Historia prywatna') : 'Sprawdzam widoczność') : 'Tylko dla Ciebie'}</span>}</header>
         <Reveal when={Boolean(error)} className="sc-account-profile-message sc-account-profile-message-error"><p role="alert">{error}</p></Reveal><Reveal when={Boolean(notice)} className="sc-account-profile-message"><p role="status">{notice}</p></Reveal>
         {section === 'saved' && <>
-          <section className="sc-account-profile-block"><h3>Ulubione tropy</h3>
+          <section className="sc-account-profile-block"><h3>Ulubione spinki</h3>
             {favorites.isPending && <p role="status" className="sc-account-profile-empty">Ładuję ulubione…</p>}
             {favorites.isError && <p role="alert" className="sc-account-profile-empty">Nie udało się pobrać ulubionych. <Button size="sm" variant="quiet" onClick={() => favorites.refetch()}>Ponów</Button></p>}
-            {favorites.isSuccess && !favoriteRows.length && <div className="sc-account-profile-empty"><p>Twoja kolekcja zaczyna się od jednego tropu.</p><p>Zapisz opublikowany trop przyciskiem serca. Znajdziesz go tutaj po powrocie.</p><Link href="/">Znajdź trop ↗</Link></div>}
+            {favorites.isSuccess && !favoriteRows.length && <div className="sc-account-profile-empty"><p>Twoja kolekcja zaczyna się od jednej spinki.</p><p>Zapisz opublikowaną spinkę przyciskiem serca. Znajdziesz ją tutaj po powrocie.</p><Link href="/">Znajdź spinkę ↗</Link></div>}
             <MorphList id="account-favorites" as="div" itemAs="div" className="sc-account-profile-favorites" items={favoriteRows} getKey={item => item.id} renderItem={item => <><div><Link href={`/thread/${item.thread.slug}`}>{item.thread.title}</Link><time dateTime={item.created_at}>Zapisano {formatDateTimePl(item.created_at)}</time></div><Button size="sm" variant="quiet" disabled={pending} onClick={() => removeFavorite(item.thread.id)}>Usuń z ulubionych</Button></>} />
             {favorites.hasNextPage && <Button loading={favorites.isFetchingNextPage} variant="secondary" onClick={() => favorites.fetchNextPage()}>Kolejne ulubione ↓</Button>}
           </section><section className="sc-account-profile-block sc-account-profile-topics"><ProfileTopics /></section>
@@ -96,8 +106,12 @@ export function AccountProfile() {
           {history.isSuccess && !historyRows.length && <div className="sc-account-profile-empty"><p>Nie masz jeszcze zapisanych reakcji ani komentarzy.</p><p>Otwórz materiał, poznaj jego kontekst i zaznacz, czy był przydatny.</p><Link href="/">Przejdź do wiadomości ↗</Link></div>}
           <HistoryRows rows={historyRows} />{history.hasNextPage && <Button loading={history.isFetchingNextPage} variant="secondary" onClick={() => history.fetchNextPage()}>Wcześniejsza aktywność ↓</Button>}
         </section>}
-        {section === 'privacy' && <section className="sc-account-profile-block sc-account-profile-privacy"><h3>Widoczność historii</h3><p>Komentarze pod materiałami są publiczne. Zbiorcza historia na Twoim profilu pozostaje prywatna, dopóki jej nie udostępnisz.</p><Switch checked={profile.data?.public_activity ?? false} disabled={pending || !profile.isSuccess} onChange={visibility} label="Udostępnij historię aktywności na publicznym profilu" /> <p className="sc-account-profile-hint">Możesz wyłączyć jej widoczność w dowolnym momencie.</p>{profile.data?.public_activity && <Button href={`/profile/${encodeURIComponent(profile.data.username)}`} size="sm" variant="quiet">Zobacz publiczny profil ↗</Button>}{profile.isError && <p role="alert">Nie udało się pobrać ustawienia prywatności. <Button size="sm" variant="quiet" onClick={() => profile.refetch()}>Ponów</Button></p>}<div className="sc-account-profile-privacy-note"><h3>Zawsze prywatne</h3><p>Ulubione tropy i zapisane paski nie pojawiają się na publicznym profilu.</p></div></section>}
-        {section === 'settings' && <section className="sc-account-profile-block"><h3>Dane konta</h3><dl className="sc-account-profile-details"><div><dt>Nazwa użytkownika</dt><dd>@{user.username}</dd></div><div><dt>Rola</dt><dd>{role}</dd></div><div><dt>Motyw</dt><dd><ThemeSwitcher /></dd></div><div><dt>Tworzenie tropów</dt><dd>{user.is_staff ? 'Tworzenie i publikacja' : user.is_journalist ? 'Własne szkice · publikacja po zatwierdzeniu przez zespół' : 'Zapisane tematy, reakcje, komentarze i prywatne tropy'}</dd></div></dl><div className="sc-account-profile-shortcuts"><Button size="sm" variant="quiet" onClick={() => navigate('privacy')}>Ustaw prywatność</Button><Button size="sm" variant="quiet" onClick={() => navigate('saved')}>Zarządzaj paskami</Button>{user.can_edit_threads && <Button href="/editor" size="sm" variant="quiet">Otwórz warsztat ↗</Button>}</div></section>}
+        {section === 'privacy' && <section className="sc-account-profile-block sc-account-profile-privacy"><h3>Widoczność historii</h3><p>Komentarze pod materiałami są publiczne. Zbiorcza historia na Twoim profilu pozostaje prywatna, dopóki jej nie udostępnisz.</p><Switch checked={profile.data?.public_activity ?? false} disabled={pending || !profile.isSuccess} onChange={visibility} label="Udostępnij historię aktywności na publicznym profilu" /> <p className="sc-account-profile-hint">Możesz wyłączyć jej widoczność w dowolnym momencie.</p>{profile.data?.public_activity && <Button href={`/profile/${encodeURIComponent(profile.data.username)}`} size="sm" variant="quiet">Zobacz publiczny profil ↗</Button>}{profile.isError && <p role="alert">Nie udało się pobrać ustawienia prywatności. <Button size="sm" variant="quiet" onClick={() => profile.refetch()}>Ponów</Button></p>}<div className="sc-account-profile-privacy-note"><h3>Zawsze prywatne</h3><p>Ulubione spinki i zapisane paski nie pojawiają się na publicznym profilu.</p></div></section>}
+        {section === 'settings' && <section className="sc-account-profile-block"><h3>Dane konta</h3><dl className="sc-account-profile-details"><div><dt>Nazwa użytkownika</dt><dd>@{user.username}</dd></div><div><dt>Rola</dt><dd>{role}</dd></div><div><dt>Motyw</dt><dd><ThemeSwitcher /></dd></div>
+          <div><dt>Kolor nicka</dt><dd>{profile.data?.can_color_nick ? <span className="sc-nick-colors" role="radiogroup" aria-label="Kolor nicka">
+            <button type="button" role="radio" aria-checked={!profile.data.nick_color} aria-label="Biały" disabled={pending} onClick={() => nickColor('')} style={{ ['--c' as string]: 'var(--sc-text)' }} />
+            {(profile.data.nick_colors ?? []).map(color => <button key={color} type="button" role="radio" aria-checked={profile.data!.nick_color === color} aria-label={`Kolor ${color}`} disabled={pending} onClick={() => nickColor(color)} style={{ ['--c' as string]: color }} />)}
+          </span> : <span className="sc-account-profile-hint">Połącz konto z X, aby wybrać kolor nicka. Kolor oznacza lepiej zweryfikowane konto.</span>}</dd></div><div><dt>Tworzenie spinek</dt><dd>{user.is_staff ? 'Tworzenie i publikacja' : user.is_journalist ? 'Własne szkice · publikacja po zatwierdzeniu przez zespół' : 'Zapisane tematy, reakcje, komentarze i prywatne spinki'}</dd></div></dl><div className="sc-account-profile-shortcuts"><Button size="sm" variant="quiet" onClick={() => navigate('privacy')}>Ustaw prywatność</Button><Button size="sm" variant="quiet" onClick={() => navigate('saved')}>Zarządzaj paskami</Button>{user.can_edit_threads && <Button href="/editor" size="sm" variant="quiet">Otwórz warsztat ↗</Button>}</div></section>}
       </div>
     </div>
   </div>;

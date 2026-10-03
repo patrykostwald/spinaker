@@ -358,7 +358,7 @@ class ThreadOpinionSerializer(serializers.ModelSerializer):
         return {'id': opinion.user_id, 'username': opinion.user.username}
 
 
-@json_view("Reakcje i komentarze do nitki kontekstowej", tags=["reakcje"])
+@json_view("Reakcje i komentarze do spinki kontekstowej", tags=["reakcje"])
 class ThreadOpinionsView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
@@ -386,7 +386,7 @@ class ThreadOpinionsView(APIView):
             with transaction.atomic():
                 opinion = ThreadOpinion.objects.create(user=request.user, thread=thread, **serializer.validated_data)
         except IntegrityError:
-            return Response({'detail': 'Twoja opinia o tym tropie jest już zapisana.'}, status=409)
+            return Response({'detail': 'Twoja opinia o tej spince jest już zapisana.'}, status=409)
         return Response(ThreadOpinionSerializer(opinion).data, status=201)
     def patch(self, request, slug):
         require_verified(request.user)

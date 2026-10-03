@@ -388,7 +388,7 @@ class PoliticalDraftAdmin(ReadOnlyPoliticalAdmin):
             except APIValidationError:
                 self.message_user(request, 'Szkic ma niedostępne źródła; nie został zatwierdzony.', messages.ERROR)
 
-    @admin.action(description='Zatwierdź szkic (bez publikacji nitki)')
+    @admin.action(description='Zatwierdź szkic (bez publikacji spinki)')
     def approve_drafts(self, request, queryset):
         self._review(request, queryset, 'approved')
 

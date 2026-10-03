@@ -53,24 +53,25 @@ def setup():
 
 
 def test_vote_unique_change_verified_distribution(setup):
-    """Trop ocenia się krok po kroku; ocena całości to średnia z przejścia wszystkich kroków (właściciel 3.10)."""
+    """Spinkę ocenia się krok po kroku; ocena całości to średnia z przejścia wszystkich kroków (właściciel 3.10)."""
     client, thread, reader, _, base = setup
     assert client.get(base+'opinions/').data['distribution'] == {'positive': 0, 'doubt': 0, 'negative': 0}
     assert client.post(base+'opinions/', {'polarity': 'positive'}).status_code == 400
     items = list(thread.items.values_list('pk', flat=True))
-    step = lambda item, polarity: client.post(base+'steps/', {'item_id': item, 'part': 'box', 'polarity': polarity})
-    for item in items[:2]:
-        assert step(item, 'positive').data['progress']['done'] in (1, 2)
+    # oceniane są tylko spinki (powiązania między boksami): przy 3 boksach są 2 kroki
+    step = lambda item, polarity: client.post(base+'steps/', {'item_id': item, 'part': 'context', 'polarity': polarity})
+    assert step(items[1], 'positive').data['progress'] == {'done': 1, 'total': 2}
     assert not CommunityThreadOpinion.objects.filter(thread=thread, user=reader).exists()
     result = step(items[2], 'negative').data
-    assert result['progress'] == {'done': 3, 'total': 3} and result['score'] == {'percent': 67, 'reactions': 3}
-    assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'positive'
+    assert result['progress'] == {'done': 2, 'total': 2} and result['score'] == {'percent': 50, 'reactions': 2}
+    assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'doubt'
     step(items[1], 'negative')
     assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'negative'
-    assert step(items[1], 'negative').data['progress']['done'] == 2
+    assert step(items[1], 'negative').data['progress']['done'] == 1
     assert not CommunityThreadOpinion.objects.filter(thread=thread, user=reader).exists()
-    assert client.post(base+'steps/', {'item_id': 999999, 'part': 'box', 'polarity': 'positive'}).status_code == 400
-    assert client.post(base+'steps/', {'item_id': items[1], 'part': 'context', 'polarity': 'positive'}).status_code == 400
+    assert client.post(base+'steps/', {'item_id': 999999, 'part': 'context', 'polarity': 'positive'}).status_code == 400
+    assert client.post(base+'steps/', {'item_id': items[0], 'part': 'context', 'polarity': 'positive'}).status_code == 400
+    assert client.post(base+'steps/', {'item_id': items[1], 'part': 'box', 'polarity': 'positive'}).status_code == 400
     step(items[1], 'negative')
     assert CommunityThreadOpinion.objects.get(thread=thread, user=reader).polarity == 'negative'
     for name, rating in [('second', 'positive'), ('third', 'doubt')]:
@@ -79,7 +80,7 @@ def test_vote_unique_change_verified_distribution(setup):
     assert result['highlight'] and result['total'] == 3
     assert all(n == pytest.approx(1/3) for n in result['distribution'].values())
     client.force_authenticate(user('unverified', False))
-    assert client.post(base+'steps/', {'item_id': items[0], 'part': 'box', 'polarity': 'positive'}).status_code == 403
+    assert client.post(base+'steps/', {'item_id': items[1], 'part': 'context', 'polarity': 'positive'}).status_code == 403
     assert client.post(base+'comments/', {'body': 'Text'}).status_code == 403
     client.force_authenticate(None)
     assert client.post(base+'opinions/', {'polarity': 'positive'}).status_code in (401, 403)
@@ -97,7 +98,7 @@ def test_flags(setup, settings, threads, accounts):
 
 def test_comment_limit_edit_delete_and_references(setup):
     client, thread, reader, author, base = setup
-    assert client.post(base+'comments/', {'body': 'x'*601}).status_code == 400
+    assert client.post(base+'comments/', {'body': 'x'*2001}).status_code == 400
     assert client.post(base+'comments/', {'body': ' '}).status_code == 400
     response = client.post(base+'comments/', {'body': '@boks 3 '+ 'x'*592})
     assert response.status_code == 201 and response.data['box_references'] == [3]
@@ -139,11 +140,11 @@ def test_comment_paging_count_sort_stable_after_delete(setup):
     assert client.get(base+'comments/?after=bad').status_code == 400
 
 
-@pytest.mark.parametrize('kind,limit,endpoint,payload', [('comment',20,'comments/',{'body':'test'}),('rating',50,'steps/',{'part':'box','polarity':'doubt'})])
+@pytest.mark.parametrize('kind,limit,endpoint,payload', [('comment',20,'comments/',{'body':'test'}),('rating',50,'steps/',{'part':'context','polarity':'doubt'})])
 def test_durable_account_limits(setup, kind, limit, endpoint, payload):
     client, thread, reader, _, base = setup
     if kind == 'rating':
-        payload = {**payload, 'item_id': thread.items.first().pk}
+        payload = {**payload, 'item_id': thread.items.all()[1].pk}
     ThreadRateEvent.objects.bulk_create([ThreadRateEvent(user=reader, kind=kind) for _ in range(limit-1)])
     assert client.post(base+endpoint, payload).status_code in (200,201)
     if kind == 'comment':
@@ -186,7 +187,7 @@ def test_human_decisions_mail_retry_appeal_and_permissions(setup, monkeypatch):
     deliver_mail(); deliver_mail()
     assert send.call_count == 2
     assert set(call.args[0] for call in send.call_args_list) == {'reader@example.org','author@example.org'}
-    assert 'N4' in send.call_args.args[2] and f'/tropy/odwolanie/{report.pk}' in send.call_args.args[2]
+    assert 'N4' in send.call_args.args[2] and f'/spinki/odwolanie/{report.pk}' in send.call_args.args[2]
     url = f'/api/community/reports/{report.pk}/'
     client.force_authenticate(user('stranger'))
     assert client.get(url).status_code == 403
@@ -253,7 +254,7 @@ def test_moderation_panel_permissions_and_deleted_thread_audit(setup):
     assert client.delete(f'/api/account/context-threads/{thread.pk}/').status_code == 204
     report = ThreadModerationReport.objects.get(pk=report_id)
     assert report.thread_id is None and report.snapshot and report.decisions.count() == 1
-    assert client.post(f'/api/community/reports/{report_id}/', {'body':'Odwołanie po usunięciu nitki'}).status_code == 200
+    assert client.post(f'/api/community/reports/{report_id}/', {'body':'Odwołanie po usunięciu spinki'}).status_code == 200
 
 
 def test_hidden_comment_visible_only_to_owner_and_deletable(setup):
@@ -301,7 +302,7 @@ def test_comment_notification_not_rating_and_hidden_suppressed(setup, settings):
 
 
 def test_comment_carries_author_stance_for_coloring(settings):
-    """Komentarz niesie ocenę tropu wystawioną przez autora (front koloruje nią pierwsze zdanie)."""
+    """Komentarz niesie ocenę spinki wystawioną przez autora (front koloruje nią pierwsze zdanie)."""
     from news.thread_social import author_stances, comment_data
     from news.community_models import CommunityThreadOpinion
     import inspect
@@ -356,3 +357,17 @@ def test_admission_window_closes_after_seven_days(setup):
         CommunityThreadOpinion.objects.create(user=voter, thread=thread, polarity='positive')
     assert not progress(thread)['open'] and not check_admission(thread)
     assert thread.pk not in [r['id'] for r in client.get('/api/community/threads/', {'source': 'izba'}).data['results']]
+
+
+def test_nick_color_only_for_x_connected_accounts(setup):
+    """Kolor nicka (właściciel 3.10) tylko po połączeniu konta z X; konto z samym e-mailem zostaje białe."""
+    from news.account_models import UserXConnection
+    client, thread, reader, _, base = setup
+    assert client.patch('/api/account/profile/', {'nick_color': '#4a9eff'}, format='json').status_code == 400
+    UserXConnection.objects.create(user=reader, x_user_id='1', username='czytelnik')
+    reader.refresh_from_db()
+    assert client.patch('/api/account/profile/', {'nick_color': '#123456'}, format='json').status_code == 400
+    data = client.patch('/api/account/profile/', {'nick_color': '#4a9eff'}, format='json').json()
+    assert data['nick_color'] == '#4a9eff' and data['can_color_nick']
+    ThreadComment.objects.create(thread=thread, author=reader, body='Kolorowy nick')
+    assert client.get(base+'comments/').json()['results'][0]['author_color'] == '#4a9eff'

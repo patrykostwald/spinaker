@@ -190,7 +190,7 @@ def agents(now, today, tomorrow):
     from news.admin_status import card, metric, worst
     from news.task_heartbeat import cadence
     names = {'council-recruiter-night': 'Rekruter', 'krs-agent-night': 'Agent KRS',
-             'dr-spin-thread-daily': 'Dr. Spin — nitki', 'clinic-daily-messages-day': 'Przekazy dnia',
+             'dr-spin-thread-daily': 'Dr. Spin — spinki', 'clinic-daily-messages-day': 'Przekazy dnia',
              'clinic-daily-messages-evening': 'Przekazy wieczorne', 'weekly-report-sunday': 'Raport tygodnia',
              'deleted-posts-3h': 'Strażnik usuniętych wpisów', 'social-publish-day': 'Publikacje social',
              'x-publish-day': 'Publikacje X'}

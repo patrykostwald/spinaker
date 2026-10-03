@@ -67,5 +67,5 @@ class CommunityThreadReport(models.Model):
     class Meta:
         ordering = ['-created_at']
         constraints = [models.UniqueConstraint(fields=['reporter', 'thread'], name='one_report_per_user_thread')]
-        verbose_name = 'zgłoszenie nitki'
-        verbose_name_plural = 'zgłoszenia nitek'
+        verbose_name = 'zgłoszenie spinki'
+        verbose_name_plural = 'zgłoszenia spinek'

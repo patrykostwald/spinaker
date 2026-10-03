@@ -30,7 +30,7 @@ def progress(thread, now=None):
 
 
 def check_admission(thread, now=None):
-    """Przenosi trop czytelnika na główną listę, gdy spełnia progi. Zwraca True, jeśli właśnie przyjęto."""
+    """Przenosi spinkę czytelnika na główną listę, gdy spełnia progi. Zwraca True, jeśli właśnie przyjęto."""
     if thread.owner_id is None or thread.admitted_at or not thread.is_public:
         return False
     data = progress(thread, now)

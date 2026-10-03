@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures('auto_approve_threa
 @pytest.fixture(autouse=True)
 def offline(monkeypatch):
     def forbidden(*args, **kwargs):
-        pytest.fail('Generator nitek nie może wywoływać HTTP ani AI.')
+        pytest.fail('Generator spinek nie może wywoływać HTTP ani AI.')
     monkeypatch.setattr('requests.sessions.Session.request', forbidden)
     monkeypatch.setattr('news.clinic_ai.diagnose', forbidden)
     monkeypatch.setattr('news.clinic_ai._free_chat', forbidden)
@@ -144,7 +144,7 @@ def test_community_hot_ranking_mixed_threads_and_comments(settings):
     settings.ACCOUNTS_ENABLED = False
     ai = diagnosis().context_thread
     author = get_user_model().objects.create_user('author')
-    user = PersonalContextThread.objects.create(owner=author, title='Nitka użytkownika', is_public=True, published_at=timezone.now())
+    user = PersonalContextThread.objects.create(owner=author, title='Spinka użytkownika', is_public=True, published_at=timezone.now())
     for i in range(2):
         link = CommunityLink.objects.create(canonical_url=f'https://example.org/{i}', title='Materiał', domain='example.org')
         PersonalContextThreadItem.objects.create(thread=user, link=link, position=i)
@@ -177,7 +177,7 @@ def test_community_read_write_flags(settings, threads, accounts):
     assert client.get('/api/community/threads/').status_code == (200 if threads else 404)
     assert client.get(url).status_code == (200 if threads else 404)
     assert client.get(url + 'opinions/').status_code == (200 if threads else 404)
-    step = {'item_id': thread.items.first().pk, 'part': 'box', 'polarity': 'positive'}
+    step = {'item_id': thread.items.all()[1].pk, 'part': 'context', 'polarity': 'positive'}
     assert client.post(url + 'steps/', step).status_code in (401, 403)
     client.force_authenticate(reader)
     assert client.post(url + 'steps/', step).status_code == (200 if threads and accounts else 404)

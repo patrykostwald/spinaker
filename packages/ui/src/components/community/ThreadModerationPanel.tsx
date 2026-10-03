@@ -11,10 +11,10 @@ function Review({ report, rules, done }: { report: Report; rules: Queue['rules']
   const [action, setAction] = useState(''), [rule, setRule] = useState(''), [explanation, setExplanation] = useState('');
   const [pending, setPending] = useState(false), [error, setError] = useState('');
   return <article className="sc-command-card sc-thread-social">
-    <h3>Zgłoszenie {report.id} · {report.target_kind === 'comment' ? 'komentarz' : 'trop'}</h3>
+    <h3>Zgłoszenie {report.id} · {report.target_kind === 'comment' ? 'komentarz' : 'spinka'}</h3>
     <p>{report.reason}: {report.details}</p><ClampedText>{report.snapshot}</ClampedText>
     <p>Wstępna ocena AI: {report.ai.state === 'assessed' ? `${Math.round((report.ai.probability ?? 0)*100)}%, ${report.ai.rule}` : 'brak oceny'}. Decyzję podejmuje człowiek.</p>
-    {report.thread_id && <a href={`/tropy/${report.thread_id}`}>Otwórz trop</a>}
+    {report.thread_id && <a href={`/spinki/${report.thread_id}`}>Otwórz spinkę</a>}
     {report.decisions.map((d, i) => <p key={i}>Poprzednia decyzja: {d.action}, {d.rule}. {d.explanation}</p>)}
     {report.appeal && <p><strong>Odwołanie: </strong>{report.appeal}</p>}
     <form onSubmit={async event => {
@@ -33,9 +33,9 @@ function Review({ report, rules, done }: { report: Report; rules: Queue['rules']
 export function ThreadModerationPanel() {
   const [open, setOpen] = useState(false), [page, setPage] = useState(1);
   const query = useQuery({ queryKey: ['thread-moderation', page], queryFn: () => apiFetch<Queue>(`/api/community/moderation/?page=${page}`), enabled: open, retry: false });
-  return <details className="sc-command-card sc-thread-moderation" onToggle={e => setOpen(e.currentTarget.open)}><summary>Moderacja tropów i komentarzy</summary>
+  return <details className="sc-command-card sc-thread-moderation" onToggle={e => setOpen(e.currentTarget.open)}><summary>Moderacja spinek i komentarzy</summary>
     {query.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie zgłoszeń" />}
-    {query.isError && <p role="alert">Nie można odczytać kolejki. Potrzebujesz uprawnienia do moderacji tropów. <button onClick={() => query.refetch()}>Ponów</button></p>}
+    {query.isError && <p role="alert">Nie można odczytać kolejki. Potrzebujesz uprawnienia do moderacji spinek. <button onClick={() => query.refetch()}>Ponów</button></p>}
     {query.data?.results.map(row => <Review key={row.id} report={row} rules={query.data.rules} done={() => { setPage(1); void query.refetch(); }} />)}
     {query.isSuccess && !query.data.results.length && <p>Nie ma zgłoszeń oczekujących na decyzję.</p>}
     {page > 1 && <button onClick={() => setPage(p => p-1)}>Poprzednie</button>}

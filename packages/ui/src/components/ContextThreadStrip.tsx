@@ -32,18 +32,18 @@ function RelatedThreads({ articleId, figureId, url }: ContextTarget) {
     queryFn: () => getCommunityThreads(1, '', '', { article_id: articleId, figure_id: figureId, url }) });
   // Older backends ignore unknown filters. Do not claim unrelated threads contain this material.
   const rows = query.data?.context_filtered ? query.data.results : [];
-  return <section className="sc-f2-context" aria-label="W tropach"><h2>W tropach</h2>
-    {figureId && <p>Tropy zawierające materiały z potwierdzonym powiązaniem z tą osobą.</p>}
-    <AccountDataState query={query} empty="Tropy będą dostępne wkrótce." />
-    {query.isSuccess && !rows.length && <p>{query.data.context_filtered ? 'Nie ma jeszcze publicznych tropów z tym materiałem lub powiązaniem.' : 'Powiązane tropy będą dostępne wkrótce.'}</p>}
-    {rows.length > 0 && <ul>{rows.slice(0, 3).map(thread => <li key={thread.id}><p className="sc-f2-muted">@{thread.author} · {thread.items_count} materiałów</p><Link href={`/tropy/${thread.id}`}>{thread.title}</Link></li>)}</ul>}
-    {rows.length > 3 && <Link href={`/tropy?${new URLSearchParams(articleId ? { article_id: String(articleId) } : figureId ? { figure_id: String(figureId) } : { url: url! })}`}>Wszystkie powiązane tropy</Link>}
+  return <section className="sc-f2-context" aria-label="W spinkach"><h2>W spinkach</h2>
+    {figureId && <p>Spinki zawierające materiały z potwierdzonym powiązaniem z tą osobą.</p>}
+    <AccountDataState query={query} empty="Spinki będą dostępne wkrótce." />
+    {query.isSuccess && !rows.length && <p>{query.data.context_filtered ? 'Nie ma jeszcze publicznych spinek z tym materiałem lub powiązaniem.' : 'Powiązane spinki będą dostępne wkrótce.'}</p>}
+    {rows.length > 0 && <ul>{rows.slice(0, 3).map(thread => <li key={thread.id}><p className="sc-f2-muted">@{thread.author} · {thread.items_count} materiałów</p><Link href={`/spinki/${thread.id}`}>{thread.title}</Link></li>)}</ul>}
+    {rows.length > 3 && <Link href={`/spinki?${new URLSearchParams(articleId ? { article_id: String(articleId) } : figureId ? { figure_id: String(figureId) } : { url: url! })}`}>Wszystkie powiązane spinki</Link>}
   </section>;
 }
 function ExampleStrip() {
   return (
     <figure className="sc-ctx__strip-wrap">
-      <ol className="sc-ctx__strip" aria-label="Przykładowy trop">
+      <ol className="sc-ctx__strip" aria-label="Przykładowa spinka">
         {EXAMPLE_THREAD.boxes.map((box, index) => (
           <li key={box.title} className="sc-ctx__box" data-opening={box.opening || undefined}>
             {box.opening ? <span className="sc-ctx__badge">Box otwierający</span> : <span className="sc-ctx__num">{index + 1}</span>}

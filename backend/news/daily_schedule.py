@@ -170,9 +170,9 @@ def check_thread(now):
     from news.repairer import flag
     row = Thread.objects.filter(slug=f'dr-spin-kontekst-{bounds(now)[0].date()}', published=True).first()
     if row:
-        return result('done', 'Trop z kontekstem jest opublikowany.', row.created_at)
+        return result('done', 'Spinka z kontekstem jest opublikowana.', row.created_at)
     if not flag('DR_SPIN_THREADS_ENABLED', False):
-        return result('na', 'Tropy są wyłączone.')
+        return result('na', 'Spinki są wyłączone.')
     daily = clinic.spin_of_day_by_camp()
     spin = daily['spins'].get(daily['order'][0]) if daily.get('order') else None
     if not spin:
@@ -180,7 +180,7 @@ def check_thread(now):
     from news.dr_spin_threads import _candidates
     if len(_candidates(spin)) < 3:
         return result('na', 'Mniej niż 3 materiały do kontekstu.')
-    return missing(now, at(now, 20, 30), 'Trop z kontekstem nie powstał.')
+    return missing(now, at(now, 20, 30), 'Spinka z kontekstem nie powstała.')
 
 
 def check_narrative(now):
@@ -188,7 +188,7 @@ def check_narrative(now):
     from news.narrative_threads import candidates
     from news.features import threads_enabled
     if not threads_enabled():
-        return result('na', 'Tropy są wyłączone.')
+        return result('na', 'Spinki są wyłączone.')
     messages = list(ClinicDailyMessage.objects.filter(day=bounds(now)[0].date(), status='approved',
         camp__in=['government', 'opposition']))
     eligible = [message for message in messages if candidates(message)]
@@ -199,8 +199,8 @@ def check_narrative(now):
     from news.account_models import PersonalContextThread
     completed = PersonalContextThread.objects.filter(narrative_message__in=eligible, is_public=True, hidden_at__isnull=True)
     if completed.count() == len(eligible):
-        return result('done', 'Tropy narracji gotowe dla kwalifikujących się stron.', completed.latest('updated_at').updated_at)
-    return missing(now, at(now, 22, 30), 'Trop narracji czeka na opracowanie.')
+        return result('done', 'Spinki narracji gotowe dla kwalifikujących się stron.', completed.latest('updated_at').updated_at)
+    return missing(now, at(now, 22, 30), 'Spinka narracji czeka na opracowanie.')
 
 
 def check_weekly(now):
@@ -245,7 +245,7 @@ MILESTONES = (
     Milestone('institutional-reports', 'Raporty dla instytucji', 'Recenzje analiz i pliki do zatwierdzenia.',
               '02:00-06:00 co 5 min', 'W granicach osobnego budżetu', check_institutional_reports,
               (), 'Przygotowanie raportów wyłączone.'),
-    Milestone('narrative', 'Trop narracji', 'Wątek przekazu dnia według wspólnego kryterium dla obu stron.',
+    Milestone('narrative', 'Spinka narracji', 'Wątek przekazu dnia według wspólnego kryterium dla obu stron.',
               '21:45', '22:30', check_narrative, ('narrative',) * 3, 'Brak kwalifikującego się wątku.'),
     Milestone('poll', 'Zbieranie wpisów z X', 'Sprawdzamy udany puls zadania, także bez nowych wpisów.',
               'co minutę', '10 min w godz. 7-23, 2 h w nocy', check_poll, ('poll',) * 3, 'Zbieranie wyłączone.'),
@@ -262,8 +262,8 @@ MILESTONES = (
       for camp, label in [('government', 'rządzący'), ('opposition', 'opozycja')]),
     Milestone('publication', 'Publikacja', 'Publikujemy zatwierdzoną diagnozę na X i w social mediach.',
               '8-21 co 30 min', '21:30', check_publication, ('publication',) * 3, 'Brak diagnoz do publikacji.'),
-    Milestone('thread', 'Trop Dr. Spina', 'Dodajemy kontekst spinu dnia w portalu.',
-              '19:30', '20:30', check_thread, ('thread',) * 3, 'Brak spinu lub 3 materiałów kontekstu; wyłączone tropy.'),
+    Milestone('thread', 'Spinka Dr. Spina', 'Dodajemy kontekst spinu dnia w portalu.',
+              '19:30', '20:30', check_thread, ('thread',) * 3, 'Brak spinu lub 3 materiałów kontekstu; wyłączone spinki.'),
     Milestone('weekly', 'Raport tygodnia', 'Podsumowujemy tydzień w portalu.',
               'niedziela 20:00', 'niedziela 21:00', check_weekly, ('weekly',) * 3, 'Dzień inny niż niedziela.'),
 )

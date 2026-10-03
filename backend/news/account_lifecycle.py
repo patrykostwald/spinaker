@@ -322,8 +322,8 @@ class AccountDeleteView(APIView):
                     from news.newsletter_models import NewsletterSubscriber
                     NewsletterSubscriber.objects.filter(email=identity.email, source='account').delete()
             thread_ids = list(user.personal_context_threads.values_list('pk', flat=True))
-            Notification.objects.filter(url__in=[f'/{base}/{pk}' for pk in thread_ids for base in ('tropy', 'nitki')]).delete()
+            Notification.objects.filter(url__in=[f'/{base}/{pk}' for pk in thread_ids for base in ('spinki', 'tropy', 'nitki')]).delete()
             NotificationEvent.objects.filter(kind='thread', target_id__in=thread_ids).delete()
             user.delete()
         logout(request)
-        return Response({'detail': 'Konto, jego dane oraz prywatne i publiczne tropy zostały usunięte.'})
+        return Response({'detail': 'Konto, jego dane oraz prywatne i publiczne spinki zostały usunięte.'})

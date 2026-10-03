@@ -644,7 +644,7 @@ class Article(models.Model):
 class Thread(models.Model):
     title = models.CharField("tytuł", max_length=255)
     editorial_slot = models.CharField(max_length=16, blank=True, default='',
-        choices=[('', 'Pozostałe nitki'), ('government', 'Przekaz dnia obozu rządzącego'),
+        choices=[('', 'Pozostałe spinki'), ('government', 'Przekaz dnia obozu rządzącego'),
                  ('opposition', 'Przekaz dnia opozycji')])
     slug = models.SlugField("slug", max_length=255, unique=True)
     thread_type = models.CharField(

@@ -30,7 +30,7 @@ def context(monkeypatch):
 def create_thread(context, **changes):
     client, _, article, link = context
     payload = {
-        'title': 'Prosta nitka', 'description': '', 'query': '', 'categories': [], 'topics': [], 'source_ids': [],
+        'title': 'Prosta spinka', 'description': '', 'query': '', 'categories': [], 'topics': [], 'source_ids': [],
         'items': [{'article_id': article.pk, 'note': 'Początek'},
                   {'link_id': link.pk, 'note': 'Komentarz', 'link_note': 'Film wyjaśnia opisane zdarzenie.'}],
         **changes,
@@ -80,7 +80,7 @@ def test_thread_link_note_limit_is_validated_before_writing(context, position):
 def test_thread_link_note_legacy_items_and_article_ids(context):
     client, _, article, link = context
     for payload in ({'items': [{'article_id': article.pk}, {'link_id': link.pk}]}, {'article_ids': [article.pk]}):
-        response = client.post('/api/account/context-threads/', {'title': 'Starsza nitka', **payload}, format='json')
+        response = client.post('/api/account/context-threads/', {'title': 'Starsza spinka', **payload}, format='json')
         assert response.status_code == 201
         assert all(item['link_note'] == '' for item in response.data['elements'])
     response = create_thread(context)

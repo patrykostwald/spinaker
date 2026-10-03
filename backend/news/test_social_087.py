@@ -303,7 +303,7 @@ def test_thread_api_limits_continuation_and_old_records(setup):
     for i, link in enumerate(links, start=3):
         PersonalContextThreadItem.objects.create(thread=thread, link=link, position=i)
     assert client.get(endpoint+f'{thread.pk}/').status_code == 200
-    assert client.patch(endpoint+f'{thread.pk}/', {'title': 'Starsza długa nitka'}, format='json').status_code == 200
+    assert client.patch(endpoint+f'{thread.pk}/', {'title': 'Starsza długa spinka'}, format='json').status_code == 200
     last = thread.items.last()
     payload = {'title': 'Kontynuacja', 'continues': thread.pk, 'items': [{'link_id': last.link_id}]}
     result = client.post(endpoint, payload, format='json')

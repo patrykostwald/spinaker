@@ -348,7 +348,7 @@ def x_publish_task():
 
 @shared_task(name="news.tasks.dr_spin_thread_task", soft_time_limit=300, time_limit=360)
 def dr_spin_thread_task():
-    """Codzienna nitka kontekstowa; domyślnie wyłączona."""
+    """Codzienna spinka kontekstowa; domyślnie wyłączona."""
     if not cache.add('dr-spin-thread-lock', '1', timeout=400):
         return {'status': 'locked'}
     try:

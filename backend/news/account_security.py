@@ -15,4 +15,4 @@ def require_verified(user):
     if accounts_enabled():
         identity = getattr(user, 'account_identity', None)
         if not identity or not identity.email_verified:
-            raise PermissionDenied('Potwierdź e-mail, zanim opublikujesz nitkę lub opinię.')
+            raise PermissionDenied('Potwierdź e-mail, zanim opublikujesz spinkę lub opinię.')

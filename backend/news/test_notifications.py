@@ -36,7 +36,7 @@ def request(view, user, method='get', data=None, **kwargs):
 
 
 def public_thread(owner):
-    thread = PersonalContextThread.objects.create(owner=owner, title='Moja nitka')
+    thread = PersonalContextThread.objects.create(owner=owner, title='Moja spinka')
     for i in range(2):
         link = CommunityLink.objects.create(canonical_url=f'https://example.org/{thread.pk}/{i}', domain='example.org', title=f'Materiał {i}', submitted_by=owner)
         PersonalContextThreadItem.objects.create(thread=thread, link=link, position=i)
@@ -117,7 +117,7 @@ def test_hidden_thread_does_not_deliver(users):
 
 def test_digest_opt_in_interval_verified_email_and_no_duplicate(users):
     preference = NotificationSettings.objects.create(user=users[0], email_digest='weekly', social_enabled=True)
-    notify(users[0], 'followed_thread', 'Nowa nitka', '/nitki/1')
+    notify(users[0], 'followed_thread', 'Nowa spinka', '/nitki/1')
     notify(users[1], 'followed_thread', 'Brak zgody na mail', '/nitki/2')
     with patch('news.account_mail.send_account_mail', return_value=True) as mail:
         assert send_notification_digests() == 1
@@ -137,7 +137,7 @@ def test_digest_opt_in_interval_verified_email_and_no_duplicate(users):
 
 def test_failed_digest_is_retried(users):
     NotificationSettings.objects.create(user=users[0], email_digest='daily', social_enabled=True)
-    row = notify(users[0], 'followed_thread', 'Nowa nitka', '/nitki/1')
+    row = notify(users[0], 'followed_thread', 'Nowa spinka', '/nitki/1')
     with patch('news.account_mail.send_account_mail', return_value=False):
         assert send_notification_digests() == 0
     row.refresh_from_db()
@@ -198,7 +198,7 @@ def test_hidden_follow_is_not_exposed(users):
 
 def test_large_digest_reports_remaining_notifications(users):
     NotificationSettings.objects.create(user=users[0], email_digest='daily')
-    Notification.objects.bulk_create([Notification(user=users[0], kind='followed_thread', title=f'Nowa {i}', url=f'/tropy/{i}') for i in range(101)])
+    Notification.objects.bulk_create([Notification(user=users[0], kind='followed_thread', title=f'Nowa {i}', url=f'/spinki/{i}') for i in range(101)])
     with patch('news.account_mail.send_account_mail', return_value=True) as mail:
         assert send_notification_digests() == 1
         assert 'Pozostałe powiadomienia: 1.' in mail.call_args.args[2]

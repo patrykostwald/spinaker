@@ -17,9 +17,13 @@ module.exports = {
     return [
       ...['/glosowanie', '/glosowanie/', '/ankieta', '/ankieta/'].map(source => ({ source, destination: '/glosowanie/index.html', permanent: false })),
       // „Nitki” nazywają się teraz „Tropy”: stare linki (powiadomienia, udostępnienia) prowadzą pod nowy adres.
-      { source: '/nitki', destination: '/tropy', permanent: true },
-      { source: '/nitki/:path*', destination: '/tropy/:path*', permanent: true },
-      { source: '/konto/nitki/:path*', destination: '/konto/tropy/:path*', permanent: true },
+      { source: '/nitki', destination: '/spinki', permanent: true },
+      { source: '/nitki/:path*', destination: '/spinki/:path*', permanent: true },
+      { source: '/konto/nitki/:path*', destination: '/konto/spinki/:path*', permanent: true },
+      // Tropy -> Spinki (właściciel 3.10)
+      { source: '/tropy', destination: '/spinki', permanent: true },
+      { source: '/tropy/:path*', destination: '/spinki/:path*', permanent: true },
+      { source: '/konto/tropy/:path*', destination: '/konto/spinki/:path*', permanent: true },
     ];
   },
   async rewrites() {

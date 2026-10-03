@@ -1,4 +1,4 @@
-"""Moderacja nitek czytelników: ukrycie nitki lub linku po zgłoszeniu."""
+"""Moderacja spinek czytelników: ukrycie spinki lub linku po zgłoszeniu."""
 from django.contrib import admin, messages
 from django.utils import timezone
 

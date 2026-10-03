@@ -11,14 +11,14 @@ import type { ThreadItem } from "../../../types";
 
 export const meta = {
   id: "trop",
-  title: "Trop",
+  title: "Spinka",
   lead: "ThreadView: dwie kolumny (materiał otwierający + przewijana lista z datami) albo jeden rząd na całą szerokość z przewijaniem poziomym. Przejście między układami - morfing tych samych kart.",
 };
 
 const ITEMS: ThreadItem[] = FIXTURE_STRIPS[1].articles.map((article, index) => ({
   id: -(9000 + index),
   position: index + 1,
-  editorial_note: index === 0 ? "Komentarz redakcyjny do materiału otwierającego (przykład)." : index === 3 ? "Krótka uwaga autora tropu (przykład)." : "",
+  editorial_note: index === 0 ? "Komentarz redakcyjny do materiału otwierającego (przykład)." : index === 3 ? "Krótka uwaga autora spinki (przykład)." : "",
   author_name: "Redakcja Przykładowa",
   author_role: "editor",
   article,

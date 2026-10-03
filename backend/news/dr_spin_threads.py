@@ -1,4 +1,4 @@
-"""Codzienna nitka Dr. Spina: odnośnik do wpisu i kontekst wyłącznie z Bazy."""
+"""Codzienna spinka Dr. Spina: odnośnik do wpisu i kontekst wyłącznie z Bazy."""
 import json
 import os
 import re
@@ -15,7 +15,7 @@ from news.models import Article, Thread, ThreadItem, ThreadType
 from news.thread_review import draft_builder
 
 
-DISCLOSURE = ('Nitka przygotowana automatycznie przez Dr. Spina (AI). Obecność materiału w nitce '
+DISCLOSURE = ('Spinka przygotowana automatycznie przez Dr. Spina (AI). Obecność materiału w spince '
               'nie potwierdza niczyich twierdzeń.')
 FALLBACK_NOTE = 'Materiał z Bazy na ten sam temat.'
 STOP_WORDS = set(('oraz jest jako przez tylko tego tym dla nie się czy było będzie który która '

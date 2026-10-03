@@ -3,7 +3,7 @@ from news.thread_review import run_queue, backfill_queue
 
 
 class Command(BaseCommand):
-    help = 'Sprawdź kolejkę nitek wyłącznie darmowymi modelami w istniejących limitach.'
+    help = 'Sprawdź kolejkę spinek wyłącznie darmowymi modelami w istniejących limitach.'
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=5)

@@ -31,8 +31,11 @@ def x_enabled():
 def public_identity(user):
     connection = getattr(user, 'x_connection', None) if user else None
     selected = connection and connection.use_x_name
+    preference = getattr(user, 'profile_preference', None) if user else None
     return {'display_name': '@' + connection.username if selected else user.username if user else 'Usunięte konto',
-            'x_profile': 'https://x.com/' + connection.username if selected else None}
+            'x_profile': 'https://x.com/' + connection.username if selected else None,
+            # kolorowy nick tylko przy koncie połączonym z X
+            'color': preference.nick_color if connection and preference and preference.nick_color else ''}
 
 
 class XConnectionView(APIView):

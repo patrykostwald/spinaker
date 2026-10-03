@@ -11,13 +11,13 @@ const RECIPE = [
   ['Z Bazy albo po linku', 'box wybierają Państwo z naszej Bazy albo tworzą sami - link, tytuł, zdjęcie; nowy box trafia do Bazy.'],
   ['Kolejność', 'ustala autor - tak, by czytelnik przeszedł całą historię od materiału otwierającego.'],
   ['Każdy box ze źródłem', 'nazwa źródła, data i link do oryginału - czytelnik trafia do Państwa strony.'],
-  ['Opis jak wpis na X', 'cały opis tropu mieści się w jednym wpisie na X (do 280 znaków) - łatwo go udostępnić. Podpisuje autor i redakcja.'],
+  ['Opis jak wpis na X', 'cały opis spinki mieści się w jednym wpisie na X (do 280 znaków) - łatwo go udostępnić. Podpisuje autor i redakcja.'],
 ];
 
 export function ContextThreadExample() {
   return (
     <div id="trop-przyklad" className="sc-ctx">
-      <h3>Autoryzowany trop - jak wygląda</h3>
+      <h3>Autoryzowana spinka - jak wygląda</h3>
       <p className="sc-ctx__lead">
         Poziomy pasek boxów. Pierwszy to materiał, który chcą Państwo wypromować; za nim - boxy, które dają mu kontekst. Czytelnik przewija w bok
         i w kilka sekund widzi całą historię, a każdy box prowadzi do oryginału.

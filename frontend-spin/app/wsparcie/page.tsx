@@ -39,7 +39,7 @@ function supportProgress() {
 
 const GOALS: Array<[string, string]> = [
   ['Utrzymanie', 'Pełny miesiąc Kliniki: diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej - sprawdzamy więcej wypowiedzi.'],
-  ['Faza II', 'Konta czytelników, tropy z materiałów z Bazy i strażnica zmian, która pokaże, gdy źródło po publikacji zmieni albo usunie materiał.'],
+  ['Faza II', 'Konta czytelników, spinki z materiałów z Bazy i strażnica zmian, która pokaże, gdy źródło po publikacji zmieni albo usunie materiał.'],
   ['Własny serwer AI', 'Maszyna z kartą graficzną i otwarte modele, także polskie. Celem jest większa kontrola nad kosztami i sposobem prowadzenia analiz.'],
 ];
 

@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import { CommunityThreadsPage } from '@spin-clinic/ui';
 
 export const metadata: Metadata = {
-  title: 'Tropy - spin.clinic',
-  description: 'Tropy czytelników: sprawy ułożone z materiałów z Bazy spin.clinic i źródeł dodanych przez link.',
+  title: 'Spinki - spin.clinic',
+  description: 'Spinki czytelników: sprawy ułożone z materiałów z Bazy spin.clinic i źródeł dodanych przez link.',
 };
 
 export default async function ThreadsRoute({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {

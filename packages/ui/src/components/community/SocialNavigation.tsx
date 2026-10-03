@@ -19,7 +19,7 @@ const icon = {
   more: 'M5 12h.01M12 12h.01M19 12h.01',
 };
 const main: Entry[] = [
-  { label: 'Tropy', href: '/', path: icon.tropy },
+  { label: 'Spinki', href: '/', path: icon.tropy },
   { label: 'Klinika', href: '/klinika', path: icon.clinic },
   { label: 'Szukaj', href: '/search', path: icon.search },
   { label: 'Powiadomienia', href: '/konto#powiadomienia', path: icon.bell, account: true },
@@ -29,9 +29,10 @@ const extra: Entry[] = [
   { label: 'Konsylium AI', href: '/konsylium', path: icon.council },
   { label: 'Wesprzyj', href: '/wsparcie', path: icon.support },
 ];
+// Kolejność od najkrótszej nazwy do najdłuższej: równy „schodek” (właściciel 3.10: harmonia).
 const small = [
-  { label: 'O nas', href: '/o-nas' }, { label: 'Metodologia', href: '/metodologia' }, { label: 'Dla redakcji', href: '/dla-redakcji' },
-  { label: 'Zasady', href: '/zasady-korzystania' }, { label: 'Prywatność', href: '/polityka-prywatnosci' },
+  { label: 'O nas', href: '/o-nas' }, { label: 'Zasady', href: '/zasady-korzystania' }, { label: 'English', href: '/en/about', lang: 'en' },
+  { label: 'Prywatność', href: '/polityka-prywatnosci' }, { label: 'Dla redakcji', href: '/dla-redakcji' }, { label: 'Metodologia', href: '/metodologia' },
 ];
 
 function Icon({ d }: { d: string }) {
@@ -40,7 +41,7 @@ function Icon({ d }: { d: string }) {
 
 function current(pathname: string, href: string) {
   if (href.includes('#')) return false;
-  if (href === '/') return pathname === '/' || pathname.startsWith('/tropy');
+  if (href === '/') return pathname === '/' || pathname.startsWith('/spinki');
   return pathname === href || pathname.startsWith(`${href}/`) || (href === '/klinika' && pathname.startsWith('/raport'));
 }
 
@@ -92,7 +93,7 @@ export function SocialNavigation() {
       {accounts && !account.data?.authenticated && <Link href="/konto" className="sc-rail__login">Zaloguj się</Link>}
       <div className="sc-rail__foot">
         <ThemeSwitcher compact />
-        <p>{small.map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}<a href="/en/about" lang="en" hrefLang="en">English</a></p>
+        <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}</p>
       </div>
     </nav>
 
@@ -104,7 +105,7 @@ export function SocialNavigation() {
     {sheet && <div className="sc-more-sheet" onClick={event => { if (event.target === event.currentTarget) setSheet(false); }}>
       <div id="sc-more-sheet" role="dialog" aria-modal="true" aria-label="Więcej" className="sc-more-sheet__panel">
         <div className="sc-rail__group">{extra.map(entry => item(entry))}</div>
-        <p>{small.map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}<a href="/en/about" lang="en" hrefLang="en">English</a></p>
+        <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}</p>
         <ThemeSwitcher compact />
         <button type="button" className="sc-more-sheet__close" onClick={() => setSheet(false)}>Zamknij</button>
       </div>

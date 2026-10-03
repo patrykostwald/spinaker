@@ -36,6 +36,7 @@ class ProfileInput(serializers.Serializer):
     bio = serializers.CharField(max_length=160, allow_blank=True, required=False)
     public_activity = serializers.BooleanField(required=False)
     theme_preference = serializers.ChoiceField(choices=ProfilePreference.THEME_CHOICES, required=False)
+    nick_color = serializers.ChoiceField(choices=[''] + ProfilePreference.NICK_COLORS, required=False)
 
     def validate(self, attrs):
         if not attrs:
@@ -62,6 +63,8 @@ class ProfileView(APIView):
                 user = get_user_model().objects.select_for_update().get(pk=request.user.pk)
                 preference, _ = ProfilePreference.objects.get_or_create(user=user)
                 values = dict(serializer.validated_data)
+                if values.get('nick_color') and not hasattr(user, 'x_connection'):
+                    raise serializers.ValidationError({'nick_color': 'Kolor nicka jest dostępny po połączeniu konta z X.'})
                 nick = values.pop('username', user.username).lower()
                 if nick != user.username:
                     if preference.nick_changed_at and timezone.now() < preference.nick_changed_at + timedelta(days=30):
@@ -108,7 +111,7 @@ class FavoriteInput(serializers.Serializer):
     thread_id = serializers.IntegerField(min_value=1)
 
 
-@json_view("Ulubione nitki", tags=["konto"])
+@json_view("Ulubione spinki", tags=["konto"])
 class FavoritesView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
@@ -128,7 +131,7 @@ class FavoritesView(APIView):
         return Response(favorite_data(row), status=201 if created else 200)
 
 
-@json_view("Ulubiona nitka", tags=["konto"])
+@json_view("Ulubiona spinka", tags=["konto"])
 class FavoriteDetailView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]

@@ -7,7 +7,7 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const sections = [
     { id: "cytowanie", label: t("Cytowanie diagnozy") }, { id: "link", label: t("Trwały link") },
     { id: "zrodla", label: t("Źródła i metodologia") }, { id: "kontakt", label: t("Kontakt") }, { id: "dane", label: t("Dane i raporty") },
-    { id: "pilotaz", label: t("Pilotaż tropów") }, { id: "rss", label: t("Zgoda na odczyt RSS") },
+    { id: "pilotaz", label: t("Pilotaż spinek") }, { id: "rss", label: t("Zgoda na odczyt RSS") },
   ];
 
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
@@ -50,8 +50,8 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       <p>{t("Jedna oferta dla wszystkich: te same produkty i warunki bez względu na obóz polityczny. Klient nie ma wpływu na metodę, diagnozy ani treści serwisu. Sprzedajemy nasze analizy, nie treści cudzych wpisów.")}</p>
       <p><Button href="mailto:kontakt@spin.clinic?subject=Dane%20i%20raporty%20spin.clinic" variant="secondary">{t("Zapytaj o dane")}</Button> <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a></p>
     </section>
-    <section id="pilotaz"><h2>{t("Pilotaż autoryzowanych tropów")}</h2>
-      <p>{t("Zapraszamy redakcje i poszczególnych dziennikarzy do prowadzenia autoryzowanych tropów. To osobna forma współpracy: autor układa materiały i ich kolejność, podpisując trop nazwiskiem i redakcją. Materiały mediów pobieramy wyłącznie w uzgodnionym zakresie, za zgodą wydawcy.")}</p>
+    <section id="pilotaz"><h2>{t("Pilotaż autoryzowanych spinek")}</h2>
+      <p>{t("Zapraszamy redakcje i poszczególnych dziennikarzy do prowadzenia autoryzowanych spinek. To osobna forma współpracy: autor układa materiały i ich kolejność, podpisując spinka nazwiskiem i redakcją. Materiały mediów pobieramy wyłącznie w uzgodnionym zakresie, za zgodą wydawcy.")}</p>
       {lang === "pl" && <ContextThreadExample />}
       <p>{t("W sprawie pilotażu napisz na")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>.</p>
     </section>

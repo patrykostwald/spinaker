@@ -26,9 +26,9 @@ export function SectionBar() {
   const pathname = usePathname() ?? '/';
   const params = useSearchParams();
   const router = useRouter();
-  const tropy = pathname === '/' || pathname === '/tropy';
+  const tropy = pathname === '/' || pathname === '/spinki';
   const clinic = pathname.startsWith('/klinika') || pathname.startsWith('/raport') || pathname === '/metodologia';
-  const view = tropy || pathname.startsWith('/tropy') ? 'tropy' : clinic ? 'klinika' : 'inne';
+  const view = tropy || pathname.startsWith('/spinki') ? 'tropy' : clinic ? 'klinika' : 'inne';
   useEffect(() => { document.documentElement.dataset.view = view; }, [view]);
   if (!threads) return null;
 
@@ -44,7 +44,7 @@ export function SectionBar() {
   let items: Item[] = [];
   if (tropy) {
     items = FEED_SOURCES.map(item => ({ label: item.label, href: query({ zrodlo: item.value }), current: source === item.value }));
-    if (accounts) items.push({ label: 'Ułóż swój trop', href: '/konto/tropy/nowa', current: false, accent: true });
+    if (accounts) items.push({ label: 'Ułóż swoją spinkę', href: '/konto/spinki/nowa', current: false, accent: true });
   } else if (clinic) {
     items = clinicNavigation.map(item => ({ label: item.label, href: item.href, current: isClinicNavigationCurrent(pathname, item.href) }));
   } else if (pathname.startsWith('/konsylium')) {
@@ -57,7 +57,7 @@ export function SectionBar() {
   return <nav className="sc-topbar" aria-label="Kategorie działu" data-count={items.length + (tropy ? 1 : 0)}>
     {items.map(item => <Link key={item.href + item.label} href={item.href} scroll={false} className={item.accent ? 'sc-topbar__accent' : undefined}
       aria-current={item.current ? 'page' : undefined}>{item.label}</Link>)}
-    {tropy && <label className="sc-topbar__sort"><span className="sc-sr-only">Kolejność tropów</span>
+    {tropy && <label className="sc-topbar__sort"><span className="sc-sr-only">Kolejność spinek</span>
       <select value={sort} onChange={event => router.replace(query({ sort: event.target.value }), { scroll: false })}>
         {FEED_SORTS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
       </select></label>}

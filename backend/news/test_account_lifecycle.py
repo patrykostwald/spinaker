@@ -186,7 +186,7 @@ def test_public_thread_requires_verification_but_private_save_works(user, monkey
     articles = [Article.objects.create(source=source, title=f'Article {i}', url=f'https://example.org/{i}') for i in range(2)]
     client = APIClient()
     client.force_authenticate(user)
-    payload = {'title': 'Moja nitka', 'article_ids': [a.pk for a in articles]}
+    payload = {'title': 'Moja spinka', 'article_ids': [a.pk for a in articles]}
     private = client.post('/api/account/context-threads/', payload, format='json')
     assert private.status_code == 201
     url = f'/api/account/context-threads/{private.data["id"]}/'

@@ -181,14 +181,14 @@ function demoThread(): ThreadDetail {
   const articles = FIXTURE_STRIPS[2].articles;
   return {
     id: -9100,
-    title: "Trop demonstracyjny - układ dwóch kolumn i jednego rzędu",
+    title: "Spinka demonstracyjna - układ dwóch kolumn i jednego rzędu",
     slug: "nitka-demonstracyjna",
     thread_type: "context",
     is_featured: true,
     updated_at: articles[0]?.published_date ?? new Date().toISOString(),
     published: true,
     item_count: articles.length,
-    description: "Fikcyjny trop z fikstur witryny - tylko do pracy nad układem.",
+    description: "Fikcyjna spinka z fikstur witryny - tylko do pracy nad układem.",
     image_url: articles[0]?.image_url ?? "",
     views_count: 0,
     created_at: articles[0]?.published_date ?? new Date().toISOString(),

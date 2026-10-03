@@ -66,7 +66,7 @@ function ReferencePost({ item }: { item: ThreadItem }) {
   return (
     <div className="sc-thread-view__reference">
       <p className="sc-t-caption sc-text-3">Wpis · odnośnik X</p>
-      <p className="sc-t-body-s sc-text-2">Treść i dostępność wpisu nie zostały sprawdzone. Materiał wskazał autor tropu.</p>
+      <p className="sc-t-body-s sc-text-2">Treść i dostępność wpisu nie zostały sprawdzone. Materiał wskazał autor spinki.</p>
       <a className="sc-thread-view__source sc-t-meta" href={item.article.url} target="_blank" rel="noopener noreferrer">
         Otwórz wpis na X ↗
       </a>
@@ -125,13 +125,13 @@ export function ThreadView({
 
   return (
     <LayoutGroup id={`thread-${groupId}`}>
-      <section className={["sc-thread-view", className].filter(Boolean).join(" ")} data-layout={layout} aria-label="Materiały tropu">
+      <section className={["sc-thread-view", className].filter(Boolean).join(" ")} data-layout={layout} aria-label="Materiały spinki">
         <header className="sc-thread-view__head">
           <p className="sc-t-meta sc-text-2">
             {anchorFirst ? "Wydarzenie główne, dalej kontekst od najstarszego źródła" : "Od najstarszego źródła"} · {ordered.length} materiałów
           </p>
           {controlled === undefined || onLayoutChange ? (
-            <Segmented name={`thread-layout-${groupId}`} label="Układ tropu" value={layout} onChange={choose} options={LAYOUT_OPTIONS} />
+            <Segmented name={`thread-layout-${groupId}`} label="Układ spinki" value={layout} onChange={choose} options={LAYOUT_OPTIONS} />
           ) : null}
         </header>
 
@@ -139,31 +139,31 @@ export function ThreadView({
           <div className="sc-thread-view__columns">
             <motion.div className="sc-thread-view__anchor" layout="position" layoutId={`${groupId}-item-${anchor.id}`} transition={layoutT}>
               <p className="sc-thread-view__date sc-t-meta">{dateLabel(anchor, 0, anchorFirst)}</p>
-              {anchor.is_sponsored ? <p className="sc-t-caption sc-text-3">{anchor.sponsorship_label || "Trop sponsorowany"}</p> : null}
+              {anchor.is_sponsored ? <p className="sc-t-caption sc-text-3">{anchor.sponsorship_label || "Spinka sponsorowana"}</p> : null}
               {anchor.article.reference_only ? (
                 <ReferencePost item={anchor} />
               ) : (
-                <NewsCard article={anchor.article} size="large" headingLevel={2} eyebrow={anchorFirst ? "Wydarzenie główne" : "Początek tropu"} priority />
+                <NewsCard article={anchor.article} size="large" headingLevel={2} eyebrow={anchorFirst ? "Wydarzenie główne" : "Początek spinki"} priority />
               )}
               <ItemNote item={anchor} />
             </motion.div>
             <div className="sc-thread-view__list-wrap">
-              <ol className="sc-thread-view__list" role="list" aria-label="Kolejne materiały tropu" tabIndex={0}>
+              <ol className="sc-thread-view__list" role="list" aria-label="Kolejne materiały spinki" tabIndex={0}>
                 {rest.map((item, index) => (
                   <motion.li key={item.id} className="sc-thread-view__row" layout="position" layoutId={`${groupId}-item-${item.id}`} transition={layoutT}>
                     <span className="sc-thread-view__rail" aria-hidden="true" />
                     <p className="sc-thread-view__date sc-t-meta">{dateLabel(item, index + 1, anchorFirst)}</p>
-                    {item.is_sponsored ? <p className="sc-t-caption sc-text-3">{item.sponsorship_label || "Trop sponsorowany"}</p> : null}
+                    {item.is_sponsored ? <p className="sc-t-caption sc-text-3">{item.sponsorship_label || "Spinka sponsorowana"}</p> : null}
                     <ItemCard item={item} size="mini" headingLevel={3} />
                     <ItemNote item={item} />
                   </motion.li>
                 ))}
-                {!rest.length ? <li className="sc-t-body-s sc-text-2">Trop ma na razie jeden materiał.</li> : null}
+                {!rest.length ? <li className="sc-t-body-s sc-text-2">Spinka ma na razie jeden materiał.</li> : null}
               </ol>
             </div>
           </div>
         ) : (
-          <Strip label="Materiały tropu" slot="min(19rem, 82vw)" className="sc-thread-view__row-strip">
+          <Strip label="Materiały spinki" slot="min(19rem, 82vw)" className="sc-thread-view__row-strip">
             {ordered.map((item, index) => (
               <motion.div key={item.id} className="sc-strip__slot sc-thread-view__slot" layout="position" layoutId={`${groupId}-item-${item.id}`} transition={layoutT}>
                 <div className="sc-thread-view__slot-inner">
@@ -171,7 +171,7 @@ export function ThreadView({
                     <span className="sc-thread-view__dot" aria-hidden="true" />
                     {dateLabel(item, index, anchorFirst)}
                   </p>
-                  {item.is_sponsored ? <p className="sc-t-caption sc-text-3">{item.sponsorship_label || "Trop sponsorowany"}</p> : null}
+                  {item.is_sponsored ? <p className="sc-t-caption sc-text-3">{item.sponsorship_label || "Spinka sponsorowana"}</p> : null}
                   {/* W taśmie bez spadu karta nie rośnie na najechanie - przycięłoby ją przewijanie. */}
                   <ItemCard item={item} size="compact" headingLevel={3} expandable={false} />
                   <ItemNote item={item} />

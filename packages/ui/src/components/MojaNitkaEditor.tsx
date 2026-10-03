@@ -61,7 +61,7 @@ function PublishDialog({ onClose, children, footer }: { onClose: () => void; chi
   return <dialog ref={ref} className="sc-f2-editor-dialog" aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); onClose(); }}>
     <div className="sc-f2-dialog-panel">
-      <header><h2 id={titleId}>Publikacja tropu</h2><Button type="button" variant="ghost" onClick={onClose}>Zamknij</Button></header>
+      <header><h2 id={titleId}>Publikacja spinki</h2><Button type="button" variant="ghost" onClick={onClose}>Zamknij</Button></header>
       <div className="sc-f2-dialog-body">{children}</div>
       <footer>{footer}</footer>
     </div>
@@ -90,7 +90,7 @@ function MaterialPicker({ selected, onSelect }: { selected: Set<string>; onSelec
     try {
       const result = await resolveLink(target, label);
       if ('needsTitle' in result) { setNeedsTitle(true); setMessage(result.message); return; }
-      if (selected.has(`${result.item.kind}:${result.item.id}`)) { setMessage('Ten materiał jest już w tropie.'); return; }
+      if (selected.has(`${result.item.kind}:${result.item.id}`)) { setMessage('Ten materiał jest już w spince.'); return; }
       onSelect({ ...result.item, note: '', link_note: '', position: 0 } as ThreadElement);
     } catch (reason) { setMessage(accountMessage(reason)); }
     finally { setPending(false); }
@@ -152,7 +152,7 @@ export function MojaNitkaEditor({ threadId }: { threadId?: number }) {
   const { account, ownerId } = useOwnerId();
   if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam logowanie…</p>;
   if (account.isError) return <div className="sc-account"><AccountDataState query={account} empty="Konta będą dostępne wkrótce." /></div>;
-  if (!ownerId) return <SignedOutPanel title="Zaloguj się, aby ułożyć własny trop" />;
+  if (!ownerId) return <SignedOutPanel title="Zaloguj się, aby ułożyć własną spinkę" />;
   return <Editor key={`${ownerId}:${threadId ?? 'new'}`} ownerId={ownerId} threadId={threadId} />;
 }
 
@@ -235,9 +235,9 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
   }
   async function persist(makePublic: boolean, automatic = false) {
     if (saving.current) return;
-    if (!draft.title.trim()) { setError('Podaj tytuł tropu.'); return; }
+    if (!draft.title.trim()) { setError('Podaj tytuł spinki.'); return; }
     if (!complete && (makePublic || !emptyDraft)) { setError('Wybierz materiał w każdym boksie albo usuń pusty boks.'); return; }
-    if (makePublic && thread.data?.hidden_at) { setError('Trop jest ukryty przez zespół po zgłoszeniu.'); return; }
+    if (makePublic && thread.data?.hidden_at) { setError('Spinka jest ukryta przez zespół po zgłoszeniu.'); return; }
     if (makePublic && (!publishOpen || !terms || !emailVerified(account.data))) { setError('Potwierdź e-mail i Zasady w oknie publikacji.'); return; }
     if (makePublic && draft.items.length < MIN_PUBLIC_ITEMS) { setError('Do publikacji dodaj co najmniej dwa materiały.'); return; }
     const snapshot = { ...draft, isPublic: makePublic };
@@ -262,21 +262,21 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         await cache.invalidateQueries({ queryKey: ['community-threads'] });
         await cache.invalidateQueries({ queryKey: ['community-thread', String(result.id)] });
       }
-      setNotice(`Zapisano ${formatDateTimePl(result.updated_at)}. ${result.is_public ? 'Trop jest publiczny.' : 'Szkic jest prywatny.'}`);
-      if (!activeId) window.history.replaceState(window.history.state, '', `/konto/tropy/${result.id}`);
+      setNotice(`Zapisano ${formatDateTimePl(result.updated_at)}. ${result.is_public ? 'Spinka jest publiczna.' : 'Szkic jest prywatny.'}`);
+      if (!activeId) window.history.replaceState(window.history.state, '', `/konto/spinki/${result.id}`);
       return result.id;
     } catch (reason) { if (automatic) failedSnapshot.current = serialize(draft); setError(accountMessage(reason)); }
     finally { saving.current = false; setPending(false); }
   }
   async function continueThread() {
-    if (dirty || !activeId) { setError('Zapisz trop przed ułożeniem kontynuacji.'); return; }
+    if (dirty || !activeId) { setError('Zapisz spinkę przed ułożeniem kontynuacji.'); return; }
     const last = draft.items.at(-1)?.material;
     if (!last || pending) return;
     setPending(true); setError('');
     try {
       const next = await savePersonalThread({ title: ('Kontynuacja: ' + draft.title).slice(0, 80), description: '', query: '', categories: [], source_ids: [], continues: activeId,
         items: [{ ...(last.kind === 'article' ? { article_id: last.id } : { link_id: last.id }), note: draft.items.at(-1)?.note ?? '', link_note: '' }], is_public: false });
-      router.push(`/konto/tropy/${next.id}`);
+      router.push(`/konto/spinki/${next.id}`);
     } catch (e) { setError(accountMessage(e)); } finally { setPending(false); }
   }
   async function removeThread() {
@@ -286,16 +286,16 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
     catch (reason) { setError(accountMessage(reason)); saving.current = false; setPending(false); }
   }
   function submit(event: FormEvent) { event.preventDefault(); setError(''); setPublishOpen(true); }
-  if (threadId && thread.isPending) return <p role="status" className="sc-account-empty">Ładuję trop…</p>;
-  if (threadId && thread.isError) return <div className="sc-account"><AccountDataState query={thread} empty="Nie znaleziono tropu." /></div>;
+  if (threadId && thread.isPending) return <p role="status" className="sc-account-empty">Ładuję spinka…</p>;
+  if (threadId && thread.isError) return <div className="sc-account"><AccountDataState query={thread} empty="Nie znaleziono spinki." /></div>;
 
-  return <form className="sc-account sc-simple-thread" onSubmit={submit} noValidate aria-label="Kreator tropu">
+  return <form className="sc-account sc-simple-thread" onSubmit={submit} noValidate aria-label="Kreator spinki">
     <label className="sc-simple-thread__title">Tytuł nitki
       <input value={draft.title} maxLength={THREAD_LIMITS.title} required placeholder="O czym chcesz opowiedzieć?"
         onChange={event => setDraft(current => ({ ...current, title: event.target.value }))} />
       <CharacterCount text={draft.title} limit={THREAD_LIMITS.title} />
     </label>
-    <ol className="sc-simple-thread__boxes" aria-label="Boksy tropu">
+    <ol className="sc-simple-thread__boxes" aria-label="Boksy spinki">
       {draft.items.map((item, index) => <li key={item.key} className="sc-simple-thread__box">
         <header><h2 tabIndex={-1} ref={node => { if (node) headings.current.set(item.key, node); else headings.current.delete(item.key); }}>Boks {index + 1}</h2>
           <div className="sc-simple-thread__actions">
@@ -324,32 +324,32 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
       </li>)}
     </ol>
     <div className="sc-simple-thread__actions">
-      {draft.items.length >= MAX_THREAD_ARTICLES ? <div><p>To maksimum jednego tropu. Możesz ułożyć kolejny i połączyć go z tym.</p><Button type="button" variant="quiet" disabled={pending || !complete || dirty || !activeId} onClick={continueThread}>Ułóż kontynuację</Button>{dirty && <small>Zapisz zmiany, aby ułożyć kontynuację.</small>}</div> : <Button type="button" variant="quiet" disabled={!complete} onClick={addBox}>Dodaj kolejny</Button>}
+      {draft.items.length >= MAX_THREAD_ARTICLES ? <div><p>To maksimum jednej spinki. Możesz ułożyć kolejną i połączyć ją z tą.</p><Button type="button" variant="quiet" disabled={pending || !complete || dirty || !activeId} onClick={continueThread}>Ułóż kontynuację</Button>{dirty && <small>Zapisz zmiany, aby ułożyć kontynuację.</small>}</div> : <Button type="button" variant="quiet" disabled={!complete} onClick={addBox}>Dodaj kolejny</Button>}
       <Button type="submit" variant="primary" disabled={pending}>{draft.isPublic ? 'Zapisz zmiany' : 'Opublikuj'}</Button>
     </div>
     <small>{draft.items.length}/{MAX_THREAD_ARTICLES} boksów. Do publikacji potrzebujesz co najmniej dwóch materiałów.</small>
-    {thread.data?.hidden_at && <p role="alert">Trop jest ukryty przez zespół po zgłoszeniu.</p>}
+    {thread.data?.hidden_at && <p role="alert">Spinka jest ukryta przez zespół po zgłoszeniu.</p>}
     {error && <p role="alert" className="sc-account-error">{error}</p>}
     <p role="status">{pending ? 'Zapisuję…' : notice || (dirty ? 'Masz niezapisane zmiany.' : activeId ? 'Wszystkie zmiany zapisane.' : 'Szkic zapisuje się automatycznie po wpisaniu tytułu.')}</p>
     <div className="sc-simple-thread__actions">
       {!draft.isPublic && <Button type="button" variant="ghost" disabled={pending} onClick={() => persist(false)}>Zapisz szkic</Button>}
-      {draft.isPublic && activeId && <Link href={`/tropy/${activeId}`}>Otwórz trop</Link>}
+      {draft.isPublic && activeId && <Link href={`/spinki/${activeId}`}>Otwórz spinkę</Link>}
       <Link href="/konto#moje-tropy">Moje konto</Link>
       {activeId && (confirmDelete ? <>
-        <Button type="button" variant="quiet" disabled={pending} onClick={removeThread}>Potwierdź usunięcie tropu</Button>
+        <Button type="button" variant="quiet" disabled={pending} onClick={removeThread}>Potwierdź usunięcie spinki</Button>
         <Button type="button" variant="ghost" onClick={() => setConfirmDelete(false)}>Anuluj</Button>
-      </> : <Button type="button" variant="ghost" disabled={pending} onClick={() => setConfirmDelete(true)}>Usuń trop</Button>)}
+      </> : <Button type="button" variant="ghost" disabled={pending} onClick={() => setConfirmDelete(true)}>Usuń spinkę</Button>)}
     </div>
     {publishOpen && <PublishDialog onClose={() => { if (!pending) setPublishOpen(false); }} footer={<>
       <Button type="button" variant="ghost" disabled={pending} onClick={() => setPublishOpen(false)}>Anuluj</Button>
       <Button type="button" variant="primary" loading={pending}
         disabled={pending || !complete || !draft.title.trim() || !terms || !emailVerified(account.data) || draft.items.length < MIN_PUBLIC_ITEMS || Boolean(thread.data?.hidden_at)}
-        onClick={() => persist(true)}>{draft.isPublic ? 'Zapisz zmiany' : 'Opublikuj trop'}</Button>
+        onClick={() => persist(true)}>{draft.isPublic ? 'Zapisz zmiany' : 'Opublikuj spinkę'}</Button>
     </>}>
       <p>„{draft.title}” · {draft.items.length} boksów. Tytuł, komentarze i powiązania będą publiczne pod nazwą @{account.data?.user?.username}.</p>
       <VerifyEmailNotice />
       <label className="sc-f2-check"><input type="checkbox" checked={terms} onChange={event => setTerms(event.target.checked)} /><span>Potwierdzam <Link href="/zasady-korzystania" target="_blank">Zasady korzystania</Link> (wersja {TERMS_VERSION}). Nie publikuję danych prywatnych ani treści naruszających prawa innych.</span></label>
-      {!draft.title.trim() && <p>Podaj tytuł tropu.</p>}
+      {!draft.title.trim() && <p>Podaj tytuł spinki.</p>}
       {!complete && <p>Wybierz materiał w każdym boksie albo usuń pusty boks.</p>}
       {draft.items.length < MIN_PUBLIC_ITEMS && <p>Do publikacji dodaj co najmniej dwa materiały.</p>}
       {error && <p role="alert">{error}</p>}

@@ -3,7 +3,7 @@ from news.thread_moderation import deliver_mail
 
 
 class Command(BaseCommand):
-    help = 'Ponów niewysłane powiadomienia o decyzjach moderacji nitek.'
+    help = 'Ponów niewysłane powiadomienia o decyzjach moderacji spinek.'
 
     def handle(self, **options):
         deliver_mail()

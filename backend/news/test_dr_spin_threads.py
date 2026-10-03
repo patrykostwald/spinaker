@@ -1,4 +1,4 @@
-"""Nitki z lokalnej Bazy; model i sieć zastąpione w testach."""
+"""Spinki z lokalnej Bazy; model i sieć zastąpione w testach."""
 import json
 from datetime import timedelta
 from io import StringIO

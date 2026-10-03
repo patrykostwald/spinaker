@@ -17,7 +17,7 @@ export function DrSpin({ thread }: { thread: ThreadDetail | null }) {
           <p>SPIN.CLINIC · DR. SPIN</p>
           <h2>Dr. Spin</h2>
         </div>
-        <div><p>Dzisiejszy trop</p><ThreadFavoriteButton thread={published} /></div>
+        <div><p>Dzisiejsza spinka</p><ThreadFavoriteButton thread={published} /></div>
       </header>
       <div className="sc-dr-spin__layout">
         <NewsCard article={anchorArticle} href={`/thread/${published.slug}`} size="large" headingLevel={3} showDescription action={<span className="sc-dr-spin__thread-label">Trop</span>} />

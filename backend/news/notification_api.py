@@ -32,7 +32,7 @@ def follow_data(row):
     elif row.target_user_id:
         label, url = row.target_user.username, f'/profile/{quote(row.target_user.username, safe="")}'
     else:
-        label, url = row.thread.title, f'/tropy/{row.thread_id}'
+        label, url = row.thread.title, f'/spinki/{row.thread_id}'
     return {'id': row.pk, 'kind': row.kind, 'target_id': row.target_id, 'label': label, 'url': url, 'mode': row.mode if row.figure_id else None}
 
 

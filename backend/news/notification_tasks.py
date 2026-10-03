@@ -82,7 +82,7 @@ def _deliver_event(event):
         if not thread or not thread.owner_id:
             return
         recipients = Follow.objects.filter(target_user=thread.owner, created_at__lte=event.created_at).exclude(user=thread.owner).exclude(user__muted_users__target_id=thread.owner_id)
-        kind, title, url = 'followed_thread', f'{thread.owner.username}: {thread.title}', f'/tropy/{thread.pk}'
+        kind, title, url = 'followed_thread', f'{thread.owner.username}: {thread.title}', f'/spinki/{thread.pk}'
     elif event.kind == 'thread_comment':
         from news.community import public_threads
         from news.thread_social_models import ThreadComment
@@ -99,7 +99,7 @@ def _deliver_event(event):
         from news.account_models import MutedUser
         ids -= set(MutedUser.objects.filter(user_id__in=ids, target_id=comment.author_id).values_list('user_id', flat=True))
         for user in get_user_model().objects.filter(pk__in=ids, is_active=True):
-            notify(user, 'thread_reply', f'Nowy komentarz: {comment.thread.title}', f'/tropy/{comment.thread_id}')
+            notify(user, 'thread_reply', f'Nowy komentarz: {comment.thread.title}', f'/spinki/{comment.thread_id}')
         return
     elif event.kind == 'reply':
         from news.community import public_threads
@@ -113,7 +113,7 @@ def _deliver_event(event):
         ids.add(opinion.thread.owner_id)
         ids.discard(opinion.user_id)
         for user in get_user_model().objects.filter(pk__in=ids, is_active=True):
-            notify(user, 'thread_reply', f'Nowa opinia: {opinion.thread.title}', f'/tropy/{opinion.thread_id}')
+            notify(user, 'thread_reply', f'Nowa opinia: {opinion.thread.title}', f'/spinki/{opinion.thread_id}')
         return
     else:
         return

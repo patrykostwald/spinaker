@@ -4,7 +4,7 @@ from news.narrative_threads import build_narratives
 
 
 class Command(BaseCommand):
-    help = 'Przelicz nitki narracji z zapisanych przekazów (bez sieci, idempotentnie).'
+    help = 'Przelicz spinki narracji z zapisanych przekazów (bez sieci, idempotentnie).'
 
     def add_arguments(self, parser):
         parser.add_argument('--day', type=date.fromisoformat)

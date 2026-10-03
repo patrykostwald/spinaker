@@ -68,25 +68,26 @@ class ThreadRatingsView(SocialView):
                          'distribution': {key: value / total if total else 0 for key, value in counts.items()}})
 
     def post(self, request, thread_id):
-        """Trop ocenia się krok po kroku (news/thread_steps.py); ocena całości wynika z przejścia wszystkich kroków."""
+        """Spinkę ocenia się krok po kroku (news/thread_steps.py); ocena całości wynika z przejścia wszystkich kroków."""
         get_object_or_404(public_threads(request.user), pk=thread_id)
-        raise serializers.ValidationError('Oceń trop krok po kroku: każdy boks i każde powiązanie.')
+        raise serializers.ValidationError('Oceń spinkę krok po kroku: każdy boks i każde powiązanie.')
 
     patch = post
 
 
 class CommentInput(serializers.Serializer):
-    body = serializers.CharField(max_length=600)
+    body = serializers.CharField(max_length=2000)
 
     def validate_body(self, body):
         body = unicodedata.normalize('NFC', body).strip()
-        if not body or len(body) > 600:
-            raise serializers.ValidationError('Komentarz musi mieć od 1 do 600 znaków.')
+        # krótki komentarz do 280 znaków albo dłuższy do 2000 z odniesieniami do boksów (właściciel 3.10)
+        if not body or len(body) > 2000:
+            raise serializers.ValidationError('Komentarz musi mieć od 1 do 2000 znaków.')
         return body
 
 
 def author_stances(thread_id, author_ids):
-    """Ocena tropu wystawiona przez autorów komentarzy (✓ ? ✕): front koloruje nią pierwsze zdanie komentarza."""
+    """Ocena spinki wystawiona przez autorów komentarzy (✓ ? ✕): front koloruje nią pierwsze zdanie komentarza."""
     from news.community_models import CommunityThreadOpinion
     return dict(CommunityThreadOpinion.objects.filter(thread_id=thread_id, user_id__in=[a for a in author_ids if a]).values_list('user_id', 'polarity'))
 
@@ -95,7 +96,7 @@ def comment_data(row, user, stance=None):
     from news.x_accounts import public_identity
     identity = public_identity(row.author)
     mine = user.is_authenticated and row.author_id == user.pk
-    return {'id': row.pk, 'body': row.body, 'author': identity['display_name'], 'username': row.author.username if row.author_id else '', 'x_profile': identity['x_profile'],
+    return {'id': row.pk, 'body': row.body, 'author': identity['display_name'], 'username': row.author.username if row.author_id else '', 'x_profile': identity['x_profile'], 'author_color': identity['color'],
             'reactions_count': row.reaction_count if hasattr(row, 'reaction_count') else row.reactions.filter(polarity='positive').count(),
             'reacted': user.is_authenticated and row.reactions.filter(user=user, polarity='positive').exists(),
             # trzy oceny komentarza od innych czytelników: ✓ ? ✕ i ocena bieżącego czytelnika
@@ -162,7 +163,7 @@ class ThreadCommentsView(SocialView):
             if thread.owner_id and thread.owner_id != request.user.pk:
                 count = thread.comments.filter(deleted_at__isnull=True, hidden_at__isnull=True).exclude(author_id=thread.owner_id).count()
                 grouped_notification(thread.owner_id, f'thread-comments:{thread.pk}', 'thread_reply',
-                    f'Komentarze pod Twoim tropem: {count}', f'/tropy/{thread.pk}')
+                    f'Komentarze pod Twoją spinką: {count}', f'/spinki/{thread.pk}')
         return Response(comment_data(row, request.user), status=201)
 
 
@@ -203,7 +204,7 @@ class ThreadCommentReactionView(SocialView):
                 key = f'comment-reactions:{row.pk}'
                 if count:
                     title = '1 osoba uznała Twój komentarz za trafny' if count == 1 else f'{count} osób uznało Twój komentarz za trafny'
-                    grouped_notification(row.author_id, key, 'comment_reaction', title, f'/tropy/{thread_id}')
+                    grouped_notification(row.author_id, key, 'comment_reaction', title, f'/spinki/{thread_id}')
                 else:
                     Notification.objects.filter(group_key=key).delete()
         return Response(comment_data(row, request.user))

@@ -164,10 +164,10 @@ def test_notifications_defaults_and_outbox(setup):
     from news.notify import notify
     settings = client.get('/api/account/notification-settings/').data
     assert settings['service_enabled'] and not settings['social_enabled']
-    assert notify(owner, 'followed_thread', 'Nowa nitka', '/nitki') is None
+    assert notify(owner, 'followed_thread', 'Nowa spinka', '/nitki') is None
     assert notify(owner, 'report_status', 'Decyzja', '/konto') is not None
     client.patch('/api/account/notification-settings/', {'social_enabled': True}, format='json')
-    assert notify(owner, 'followed_thread', 'Nowa nitka', '/nitki') is not None
+    assert notify(owner, 'followed_thread', 'Nowa spinka', '/nitki') is not None
 
 def test_profile_report_and_delete_comments(setup):
     client, owner, other = setup

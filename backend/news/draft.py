@@ -88,7 +88,7 @@ def select_ids(topic, articles, provider):
     return provider.select(topic, candidates)
 
 
-@json_view("Szkic nitki redakcyjnej (AI)", tags=["redakcja"])
+@json_view("Szkic spinki redakcyjnej (AI)", tags=["redakcja"])
 class EditorialDraftView(APIView):
     permission_classes = [IsAdminUser]
     throttle_classes = [DraftThrottle]
@@ -112,10 +112,10 @@ class EditorialDraftView(APIView):
             return Response({'detail': 'Trwa przygotowanie szkicu. Spróbuj później.'}, status=429)
         try:
             if not reserve_daily_attempt():
-                return Response({'status': 'budget_exhausted', 'detail': 'Wykorzystano dzienny limit szkiców AI. Możesz ułożyć nitkę ręcznie.'}, status=429)
+                return Response({'status': 'budget_exhausted', 'detail': 'Wykorzystano dzienny limit szkiców AI. Możesz ułożyć spinkę ręcznie.'}, status=429)
             ids = select_ids(serializer.validated_data['topic'], articles, provider)
         except DraftProviderError:
-            return Response({'status': 'unavailable', 'detail': 'Nie udało się przygotować poprawnego szkicu. Możesz ułożyć nitkę ręcznie.'}, status=502)
+            return Response({'status': 'unavailable', 'detail': 'Nie udało się przygotować poprawnego szkicu. Możesz ułożyć spinkę ręcznie.'}, status=502)
         finally:
             cache.delete(lock)
         selected = [a for a in articles if a.pk in ids]

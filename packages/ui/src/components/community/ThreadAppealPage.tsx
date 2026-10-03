@@ -11,7 +11,7 @@ export function ThreadAppealPage({ params }: { params: { id: string } }) {
   const path = `/api/community/reports/${params.id}/`;
   const query = useQuery({ queryKey: ['thread-appeal', params.id], queryFn: () => apiFetch<{ status: string; appealed: boolean; decisions: Decision[] }>(path), enabled: enabled && threads, retry: false });
   const [body, setBody] = useState(''), [status, setStatus] = useState(''), [pending, setPending] = useState(false);
-  if (!enabled || !threads) return <p>Odwołania będą dostępne po włączeniu kont i tropów. Kontakt: <a href="/zasady-korzystania#tropy">punkt kontaktowy</a>.</p>;
+  if (!enabled || !threads) return <p>Odwołania będą dostępne po włączeniu kont i spinek. Kontakt: <a href="/zasady-korzystania#tropy">punkt kontaktowy</a>.</p>;
   return <article className="sc-community sc-thread-social"><h1>Decyzja i odwołanie</h1>
     {query.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie decyzji" />}
     {query.isError && <p>Decyzję może odczytać autor lub osoba zgłaszająca. <a href="/konto">Zaloguj się</a>.</p>}

@@ -18,7 +18,7 @@ const SORTS: FeedSort[] = ['hot', 'new', 'best', 'comments'];
  * Jedna lista tropów. Źródło i kolejność wybiera się w pasku kategorii nad treścią (SectionBar, ?zrodlo= i ?sort=). Bez filtra obozów:
  * ta sama miara dla wszystkich. Izba przyjęć: nowe tropy czytelników przed awansem na główną (news/admission.py).
  */
-export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}, exclude, label = 'Tropy' }: {
+export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}, exclude, label = 'Spinki' }: {
   initialSort?: FeedSort; limit?: number; term?: string; context?: { article_id?: number; figure_id?: number; url?: string }; exclude?: number; label?: string;
 }) {
   const accounts = useFeature('ACCOUNTS_ENABLED');
@@ -38,16 +38,16 @@ export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}
   const all = (query.data?.pages.flatMap(page => page.results) ?? []).filter(thread => thread.id !== exclude);
   const threads = limit ? all.slice(0, limit) : all;
   return <section className="sc-thread-feed" aria-label={label}>
-    {source === 'izba' && <p className="sc-thread-sortbar__hint">Nowe tropy czytelników. Na główną przechodzi trop, który w 7 dni zbierze 10 ocen ✓ i co najmniej 60% poparcia.</p>}
-    {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie tropów" />}
-    {query.isError && <p role="alert" className="sc-thread-feed__empty">Nie udało się pobrać tropów. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
+    {source === 'izba' && <p className="sc-thread-sortbar__hint">Nowe spinki czytelników. Na główną przechodzi spinka, która w 7 dni zbierze 10 ocen ✓ i co najmniej 60% poparcia.</p>}
+    {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinek" />}
+    {query.isError && <p role="alert" className="sc-thread-feed__empty">Nie udało się pobrać spinek. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
     {query.isSuccess && !threads.length && (source === 'izba'
       ? <div className="sc-thread-feed__izba">
-          <p className="sc-thread-feed__izba-title">Izba przyjęć czeka na pierwsze tropy</p>
-          <p>Tu trafia każdy nowy trop czytelnika. Twoje oceny ✓ ? ✕ decydują, co przejdzie na główną.</p>
-          {accounts && <Button href="/konto/tropy/nowa" variant="secondary" size="sm">Ułóż swój trop</Button>}
+          <p className="sc-thread-feed__izba-title">Izba przyjęć czeka na pierwsze spinki</p>
+          <p>Tu trafia każda nowa spinka czytelnika. Twoje oceny ✓ ? ✕ decydują, co przejdzie na główną.</p>
+          {accounts && <Button href="/konto/spinki/nowa" variant="secondary" size="sm">Ułóż swoją spinkę</Button>}
         </div>
-      : <p className="sc-thread-feed__empty">{source === 'readers' ? 'Pierwsze tropy czytelników pojawią się tu po przejściu przez izbę przyjęć.' : 'Nie ma jeszcze tropów w tym widoku.'}</p>)}
+      : <p className="sc-thread-feed__empty">{source === 'readers' ? 'Pierwsze spinki czytelników pojawią się tu po przejściu przez izbę przyjęć.' : 'Nie ma jeszcze spinek w tym widoku.'}</p>)}
     {threads.length > 0 && <ol className="sc-thread-feed__list">
       {threads.map((thread, index) => <li key={thread.id}>
         <ThreadStrip thread={thread} variant="row" open={openId === thread.id} offset={(index % 6) * 600}
@@ -55,6 +55,6 @@ export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}
       </li>)}
     </ol>}
     {fullId !== null && <ThreadOverlay id={fullId} onClose={() => viewTransition(() => setFullId(null))} />}
-    {!limit && query.hasNextPage && <button type="button" className="sc-thread-feed__more" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej tropów</button>}
+    {!limit && query.hasNextPage && <button type="button" className="sc-thread-feed__more" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej spinek</button>}
   </section>;
 }

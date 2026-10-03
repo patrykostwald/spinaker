@@ -19,14 +19,14 @@ export function JournalistInvite() {
       <header className="sc-invite__head">
         <div>
           <p className="sc-clinic-kicker">Dla dziennikarzy i redakcji</p>
-          <h3 id="journalists-title">Prowadzisz temat? Poprowadź tu autoryzowany trop.</h3>
+          <h3 id="journalists-title">Prowadzisz temat? Poprowadź tu autoryzowaną spinkę.</h3>
           <p>
             Dr. Spin pokazuje, jak zbudowany jest przekaz. Ty wiesz, co wydarzyło się naprawdę. Ułóż swój materiał i jego kontekst w jedną
             nitkę - pod własnym nazwiskiem, z linkiem do redakcji - i udostępnij ją na X jako gotowy wątek.{" "}
-            <Link href="/dla-redakcji#trop-przyklad">Więcej o tropach</Link>
+            <Link href="/dla-redakcji#trop-przyklad">Więcej o spinkach</Link>
           </p>
         </div>
-        <a className="sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowany trop w spin.clinic")}`} title={CONTACT}>Napisz do nas</a>
+        <a className="sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana spinka w spin.clinic")}`} title={CONTACT}>Napisz do nas</a>
       </header>
       <ContextThreadStrip />
       <ol className="sc-invite__steps">

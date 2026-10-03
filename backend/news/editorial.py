@@ -59,7 +59,7 @@ class WriteThreadSerializer(serializers.ModelSerializer):
         if not 1 <= len(items) <= 100:
             raise serializers.ValidationError('Dodaj od 1 do 100 materiałów.')
         if not self.context['request'].user.is_staff and len(items) > JOURNALIST_MAX_ITEMS:
-            raise serializers.ValidationError('Trop ma najwyżej 15 boxów: box otwierający i do 14 boxów kontekstu.')
+            raise serializers.ValidationError('Spinka ma najwyżej 15 boxów: box otwierający i do 14 boxów kontekstu.')
         ids = [('article', i['article_id'].pk) if i.get('article_id') else ('url', i['external_url']) for i in items]
         if len(ids) != len(set(ids)):
             raise serializers.ValidationError('Ten sam materiał nie może występować dwukrotnie.')
@@ -79,7 +79,7 @@ class WriteThreadSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'description': 'Tytuł i opis muszą zmieścić się w jednym wpisie na X — razem najwyżej 250 znaków.'})
         effective = lambda field, default: attrs.get(field, getattr(self.instance, field, default))
         if effective('is_featured', False) and not effective('published', False):
-            raise serializers.ValidationError('Wyróżnić można wyłącznie opublikowaną nitkę.')
+            raise serializers.ValidationError('Wyróżnić można wyłącznie opublikowaną spinkę.')
         sponsored = effective('is_sponsored', False)
         if self.instance and self.instance.thread_type == ThreadType.SPONSORED and 'is_sponsored' not in attrs:
             sponsored = True
@@ -93,7 +93,7 @@ class WriteThreadSerializer(serializers.ModelSerializer):
             if self.instance and self.instance.thread_type == ThreadType.SPONSORED:
                 attrs['thread_type'] = ThreadType.CONTEXT
         elif not sponsored and name:
-            raise serializers.ValidationError({'sponsor_name': 'Oznacz nitkę jako materiał sponsorowany.'})
+            raise serializers.ValidationError({'sponsor_name': 'Oznacz spinkę jako materiał sponsorowany.'})
         return attrs
     @transaction.atomic
     def create(self, validated_data):
@@ -168,7 +168,7 @@ class WriteArticleSerializer(serializers.ModelSerializer):
     def validate_url(self, value):
         parsed = urlparse(value)
         if parsed.hostname in {'x.com', 'www.x.com', 'twitter.com', 'www.twitter.com'}:
-            raise serializers.ValidationError('Dodaj post X jako odnośnik w nitce, poza bazą artykułów.')
+            raise serializers.ValidationError('Dodaj post X jako odnośnik w spince, poza bazą artykułów.')
         if parsed.scheme not in ('http', 'https') or parsed.username:
             raise serializers.ValidationError('Podaj adres HTTP lub HTTPS źródła.')
         return value
@@ -182,7 +182,7 @@ class WriteArticleSerializer(serializers.ModelSerializer):
         return article
 
 class EditorialArticleViewSet(viewsets.GenericViewSet):
-    """Nowy box w Bazie po adresie URL — zespół i dziennikarze (box z nitki dziennikarza trafia do Bazy)."""
+    """Nowy box w Bazie po adresie URL — zespół i dziennikarze (box ze spinki dziennikarza trafia do Bazy)."""
     permission_classes = [IsThreadAuthorWriter]
     serializer_class = WriteArticleSerializer
 

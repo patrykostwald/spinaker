@@ -25,11 +25,11 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
   // Bez opublikowanej nitki nie pokazujemy makiety - tylko pasek dla dziennikarzy i jedno zdanie (29.09).
   if (!published) {
     return (
-      <section className="sc-home-section sc-home-drspin" aria-label="Tropy">
+      <section className="sc-home-section sc-home-drspin" aria-label="Spinki">
         <aside className="sc-home-drspin__invite sc-home-drspin__invite--solo" aria-label="Dla dziennikarzy i redakcji">
           <p>
             <strong>Tropy:</strong> gdy Dr. Spin znajdzie w Bazie trafny kontekst do spinu dnia, pokaże tu nitkę - materiał i źródła wokół niego.
-            <span> Dziennikarze i redakcje mogą prowadzić własne, autoryzowane tropy.</span>
+            <span> Dziennikarze i redakcje mogą prowadzić własne, autoryzowane spinki.</span>
           </p>
           <Button href="/dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
         </aside>
@@ -45,18 +45,18 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
             {/* Tytuł według autora: nitka Dr. Spina (AI) albo wyróżniona nitka dziennikarza - nigdy nie mylimy autorstwa. */}
             {byDrSpin ? (
               <>
-                <p className="sc-t-caption sc-text-3 sc-home-kicker">Trop przygotowany automatycznie przez AI</p>
-                <h2 className="sc-t-title-l sc-home-section__title">Trop Dr. Spina</h2>
+                <p className="sc-t-caption sc-text-3 sc-home-kicker">Spinka przygotowana automatycznie przez AI</p>
+                <h2 className="sc-t-title-l sc-home-section__title">Spinka Dr. Spina</h2>
               </>
             ) : (
               <>
                 <p className="sc-t-caption sc-text-3 sc-home-kicker">Trop · autor: {published?.author_name}</p>
-                <h2 className="sc-t-title-l sc-home-section__title">Trop</h2>
+                <h2 className="sc-t-title-l sc-home-section__title">Spinka</h2>
               </>
             )}
           </div>
           <div className="sc-home-section__actions">
-            <p className="sc-t-body-s sc-text-2">{published ? published.title : "Codzienny trop"}</p>
+            <p className="sc-t-body-s sc-text-2">{published ? published.title : "Codzienna spinka"}</p>
             {published ? (
               <Button href={`/thread/${published.slug}`} variant="quiet" size="sm">
                 Otwórz trop
@@ -106,12 +106,12 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
           </div>
         </div>
 
-        <p className="sc-home-drspin__disclaimer">Obecność materiału w tropie nie potwierdza niczyich twierdzeń - każdy box prowadzi do oryginału.</p>
+        <p className="sc-home-drspin__disclaimer">Obecność materiału w spince nie potwierdza niczyich twierdzeń - każdy box prowadzi do oryginału.</p>
         {/* Zamiast dużego zaproszenia: jeden pasek dla dziennikarzy i zapowiedź własnych nitek (28.09). */}
         <aside className="sc-home-drspin__invite" aria-label="Dla dziennikarzy i redakcji">
           <p>
             <strong>Dla dziennikarzy i redakcji:</strong> poprowadź autoryzowaną nitkę - Twój materiał i jego kontekst, pod Twoim nazwiskiem.
-            <span> Wkrótce własne tropy ułożą też czytelnicy.</span>
+            <span> Wkrótce własne spinki ułożą też czytelnicy.</span>
           </p>
           <Button href="/dla-redakcji" variant="primary" size="sm">Dołącz do pilotażu →</Button>
         </aside>

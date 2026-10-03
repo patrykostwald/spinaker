@@ -78,7 +78,7 @@ class ThreadModerationMail(models.Model):
 
 
 class ThreadStepReaction(models.Model):
-    """Reakcja czytelnika na jeden krok tropu: boks albo powiązanie prowadzące do niego (news/thread_steps.py)."""
+    """Reakcja czytelnika na jeden krok spinki: boks albo powiązanie prowadzące do niego (news/thread_steps.py)."""
     thread = models.ForeignKey('news.PersonalContextThread', on_delete=models.CASCADE, related_name='step_reactions')
     item = models.ForeignKey('news.PersonalContextThreadItem', on_delete=models.CASCADE, related_name='step_reactions')
     part = models.CharField(max_length=8, choices=[('box', 'Boks'), ('context', 'Powiązanie')])

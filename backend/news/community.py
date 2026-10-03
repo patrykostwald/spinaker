@@ -1,4 +1,4 @@
-"""Nitki czytelników (faza II): publiczne nitki kontekstowe, linki spoza Bazy, reakcje i zgłoszenia."""
+"""Spinki czytelników (faza II): publiczne spinki kontekstowe, linki spoza Bazy, reakcje i zgłoszenia."""
 import os
 from datetime import timedelta
 from django.utils import timezone
@@ -25,7 +25,7 @@ MIN_PUBLIC_ITEMS = 2
 
 
 def _disabled():
-    return Response({'detail': 'Tropy czytelników będą dostępne wkrótce.'}, status=404)
+    return Response({'detail': 'Spinki czytelników będą dostępne wkrótce.'}, status=404)
 
 
 def canonical_url(value: str) -> str:
@@ -87,7 +87,7 @@ class LinkThrottle(UserRateThrottle):
     rate = '60/hour'
 
 
-@extend_schema(summary='Dodaj materiał do nitki przez link (bez kopiowania treści)', tags=['nitki'],
+@extend_schema(summary='Dodaj materiał do spinki przez link (bez kopiowania treści)', tags=['nitki'],
                request=LinkInput, responses=OpenApiTypes.OBJECT)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -182,13 +182,24 @@ def source_key(item):
     return f"b:{data.get('source_name') or data.get('url') or ''}" if (data.get('source_name') or data.get('url')) else ''
 
 
+def clip_counts(items):
+    """Reakcje na każdą spinkę (połączenie kolejnych boksów) - kwadraty w wierszu listy."""
+    from news.thread_social_models import ThreadStepReaction
+    ids = [item.pk for item in items[1:]]
+    out = {pk: {'positive': 0, 'doubt': 0, 'negative': 0} for pk in ids}
+    for row in ThreadStepReaction.objects.filter(item_id__in=ids, part='context').values('item_id', 'polarity').annotate(n=Count('id')):
+        out[row['item_id']][row['polarity']] = row['n']
+    return [out[pk] for pk in ids]
+
+
 def top_comments(thread, limit=2):
     from news.thread_social_models import ThreadComment
     rows = (ThreadComment.objects.filter(thread=thread, deleted_at__isnull=True, hidden_at__isnull=True)
             .select_related('author').annotate(liked=Count('reactions', filter=Q(reactions__polarity='positive')))
             .order_by('-liked', '-created_at')[:limit])
+    from news.x_accounts import public_identity
     return [{'id': row.pk, 'author': f'@{row.author.username}' if row.author_id else 'Czytelnik', 'body': row.body[:220],
-             'created_at': row.created_at} for row in rows]
+             'author_color': public_identity(row.author)['color'] if row.author_id else '', 'created_at': row.created_at} for row in rows]
 
 
 def _scores(thread_ids):
@@ -219,6 +230,7 @@ def thread_summary(thread, counts):
             'contexts_count': sum(1 for item in items if item.position and item.link_note),
             'sources_count': len({source_key(item) for item in items} - {''}),
             'top_comments': top_comments(thread),
+            'clips': clip_counts(items),
             'admission': admission_progress(thread) if thread.owner_id and not thread.admitted_at else None}
 
 
@@ -227,7 +239,7 @@ def admission_progress(thread):
     return progress(thread)
 
 
-@extend_schema(summary='Publiczne nitki kontekstowe czytelników', tags=['nitki'], responses=OpenApiTypes.OBJECT)
+@extend_schema(summary='Publiczne spinki kontekstowe czytelników', tags=['nitki'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def community_threads(request):
     if not threads_enabled():
@@ -322,7 +334,7 @@ def community_threads(request):
                      'next_page': page + 1 if len(batch) > size else None, 'context_filtered': context_filtered}, headers={'Cache-Control': 'private, no-store'})
 
 
-@extend_schema(summary='Publiczna nitka czytelnika', tags=['nitki'], responses=OpenApiTypes.OBJECT)
+@extend_schema(summary='Publiczna spinka czytelnika', tags=['nitki'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def community_thread_detail(request, thread_id):
     if not threads_enabled():

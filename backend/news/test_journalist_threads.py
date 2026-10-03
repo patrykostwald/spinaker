@@ -39,7 +39,7 @@ def article():
 
 
 def payload(article):
-    return {'title': 'Autorska nitka', 'items': [{'article_id': article.pk, 'editorial_note': 'Komentarz autora'}]}
+    return {'title': 'Autorska spinka', 'items': [{'article_id': article.pk, 'editorial_note': 'Komentarz autora'}]}
 
 
 def listed(response):

@@ -46,8 +46,8 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     <section id="rozwoj"><h2>{t("Co działa i co planujemy")}</h2>
       <p>{t("Działa obecnie: diagnozy wypowiedzi polityków, analizy wywiadów, „Przekaz dnia” obu obozów, raporty tygodnia, dane i wykresy oraz publikacja wybranych diagnoz w mediach społecznościowych.")}</p>
       <ol>
-        <li><strong>{t("Faza I - działa w wersji beta:")}</strong> {t("wiadomości, Klinika z Konsylium AI, wywiady, raporty, wykresy, filmy z diagnoz i pilotaż autoryzowanych tropów.")}</li>
-        <li><strong>{t("Faza II - planowana:")}</strong> {t("konta i tropy czytelników, dyskusje oraz śledzenie zmian źródeł.")}</li>
+        <li><strong>{t("Faza I - działa w wersji beta:")}</strong> {t("wiadomości, Klinika z Konsylium AI, wywiady, raporty, wykresy, filmy z diagnoz i pilotaż autoryzowanych spinek.")}</li>
+        <li><strong>{t("Faza II - planowana:")}</strong> {t("konta i spinki czytelników, dyskusje oraz śledzenie zmian źródeł.")}</li>
         <li><strong>{t("Faza III - planowana:")}</strong> {t("własna maszyna do analiz na otwartych modelach, asystent oparty na bazie źródeł i aplikacje mobilne.")}</li>
       </ol>
       <p><Link lang={lang} href="/newsletter">{t("Newsletter o rozwoju projektu")}</Link>.</p>

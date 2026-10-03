@@ -50,7 +50,7 @@ PortalConfigResponse = inline_serializer("PortalConfigResponse", {
     "sources": SourceSerializer(many=True, help_text="Katalog źródeł (bez wykluczonych); `portal_group`: top / publiczne / media."),
     "top_sources": SourceSerializer(many=True),
     "source_stats": serializers.DictField(child=serializers.IntegerField()),
-    "editorial": serializers.DictField(help_text="Nitki redakcyjne „Przekaz dnia” (rząd / opozycja) albo null."),
+    "editorial": serializers.DictField(help_text="Spinki redakcyjne „Przekaz dnia” (rząd / opozycja) albo null."),
     "x_editorial": serializers.DictField(),
     "platforms": serializers.DictField(),
 })

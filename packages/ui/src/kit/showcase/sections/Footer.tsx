@@ -29,13 +29,13 @@ const COLUMNS: SiteFooterColumn[] = [
     links: [
       { label: "Moje konto", href: "/konto" },
       { label: "Ustawienia", href: "/profile" },
-      { label: "Nowy trop", href: "/konto/tropy/nowa" },
+      { label: "Nowa spinka", href: "/konto/spinki/nowa" },
     ],
   },
   {
     title: "Redakcja",
     links: [
-      { label: "Warsztat tropów", href: "/editor" },
+      { label: "Warsztat spinek", href: "/editor" },
       { label: "Katalog źródeł", href: "/editor/sources" },
       { label: "Panel redakcyjny X", href: "/editor/political" },
     ],

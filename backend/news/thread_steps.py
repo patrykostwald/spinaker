@@ -20,15 +20,10 @@ WEIGHT = {'positive': 1.0, 'doubt': 0.5, 'negative': 0.0}
 
 
 def steps_of(thread):
-    """Kroki tropu w kolejności: boks, potem powiązanie prowadzące do następnego boksu."""
-    out = []
-    for item in thread.items.all():
-        if item.link_id and item.link.hidden_at:
-            continue
-        if item.position and item.link_note:
-            out.append((item.pk, 'context'))
-        out.append((item.pk, 'box'))
-    return out
+    """Kroki do oceny (właściciel 3.10): tylko spinki, czyli powiązania między kolejnymi boksami (także bez opisu autora).
+    Boksy to materiały ze źródeł; ocenia się to, co je łączy."""
+    items = [item for item in thread.items.all() if not (item.link_id and item.link.hidden_at)]
+    return [(item.pk, 'context') for item in items[1:]]
 
 
 def verdict(values):
@@ -49,7 +44,7 @@ def score_of(thread_ids):
 
 
 def sync_opinion(thread, user):
-    """Pełne przejście tropu daje jedną ocenę całości; niepełne jej nie daje."""
+    """Pełne przejście spinki daje jedną ocenę całości; niepełne jej nie daje."""
     steps = steps_of(thread)
     mine = dict(((r.item_id, r.part), r.polarity) for r in ThreadStepReaction.objects.filter(thread=thread, user=user))
     values = [mine[step] for step in steps if step in mine]
@@ -61,7 +56,7 @@ def sync_opinion(thread, user):
 
 class StepInput(serializers.Serializer):
     item_id = serializers.IntegerField()
-    part = serializers.ChoiceField(choices=['box', 'context'])
+    part = serializers.ChoiceField(choices=['context'])
     polarity = serializers.ChoiceField(choices=['positive', 'doubt', 'negative'])
 
 
@@ -89,7 +84,7 @@ class ThreadStepsView(SocialView):
         data.is_valid(raise_exception=True)
         item_id, part, polarity = (data.validated_data[key] for key in ('item_id', 'part', 'polarity'))
         if (item_id, part) not in steps_of(thread):
-            raise serializers.ValidationError('Tego kroku nie ma w tym tropie.')
+            raise serializers.ValidationError('Tego kroku nie ma w tej spince.')
         with transaction.atomic():
             locked_account(request.user, 'rating')
             current = ThreadStepReaction.objects.filter(thread=thread, item_id=item_id, part=part, user=request.user).first()
@@ -105,7 +100,7 @@ class ThreadStepsView(SocialView):
 
 
 class ThreadBoxView(SocialView):
-    """Boks z Bazy: źródło, reakcje w tym tropie, powiązania obok i te same materiały w innych tropach (sieć kontekstów)."""
+    """Boks z Bazy: źródło, reakcje w tej spince, powiązania obok i te same materiały w innych spinkach (sieć kontekstów)."""
     def get(self, request, thread_id, item_id):
         thread = get_object_or_404(public_threads(request.user), pk=thread_id)
         item = get_object_or_404(thread.items.all(), pk=item_id)

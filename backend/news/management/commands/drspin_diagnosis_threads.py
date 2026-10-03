@@ -8,7 +8,7 @@ from news.diagnosis_threads import sync_diagnosis_thread
 
 
 class Command(BaseCommand):
-    help = 'Uzupełnij nitki wszystkich opublikowanych diagnoz, bez wywołań AI.'
+    help = 'Uzupełnij spinki wszystkich opublikowanych diagnoz, bez wywołań AI.'
 
     def add_arguments(self, parser):
         parser.add_argument('--since', help='Data publikacji od RRRR-MM-DD (włącznie).')
@@ -26,4 +26,4 @@ class Command(BaseCommand):
         for pk in rows.order_by('pk').values_list('pk', flat=True).iterator():
             if sync_diagnosis_thread(pk):
                 count += 1
-        self.stdout.write(self.style.SUCCESS(f'Zsynchronizowano {count} nitek diagnoz.'))
+        self.stdout.write(self.style.SUCCESS(f'Zsynchronizowano {count} spinek diagnoz.'))

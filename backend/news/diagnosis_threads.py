@@ -77,7 +77,7 @@ def sync_diagnosis_thread(diagnosis_id):
         return None
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
         'title': short('Rozkład: ' + diagnosis.headline, 80),
-        'description': 'Trop Dr. Spina (AI), ułożony automatycznie z opublikowanej diagnozy.',
+        'description': 'Spinka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.',
         'is_public': False, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
     title = short('Rozkład: ' + diagnosis.headline, 80)
     payload = boxes(diagnosis)
