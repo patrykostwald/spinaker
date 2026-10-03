@@ -8278,3 +8278,10 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 /* licznik przepięć w wierszu listy */
 .sc-trow__repins { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--sc-text-2); margin-right: 14px; }
 .sc-trow__repins .sc-clasp { width: 22px; height: 16px; color: var(--sc-text-3); }
+/* boks jako osobny obiekt (werdykt Konsylium 2326, kierunek „matowa płyta”): delikatny gradient czerni, światło od góry,
+   cień pod spodem; otwarte narożniki rysuje dalej .sc-rframe; bez koloru w spoczynku */
+.sc-thread-strip__box { background: linear-gradient(180deg, #121316 0%, #0a0b0d 100%) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .05), 0 10px 24px -14px rgb(0 0 0 / .9) !important; transition: box-shadow .35s, background .35s, transform .35s cubic-bezier(.2,.8,.2,1); }
+.sc-thread-strip__box:hover { background: linear-gradient(180deg, #17181c 0%, #0d0e10 100%) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .08), 0 14px 30px -14px rgb(0 0 0 / .95) !important; transform: translateY(-2px); }
+:root[data-theme="light"] .sc-thread-strip__box { background: linear-gradient(180deg, #ffffff 0%, #f4f5f7 100%) !important; box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 10px 24px -16px rgb(0 0 0 / .25) !important; }
