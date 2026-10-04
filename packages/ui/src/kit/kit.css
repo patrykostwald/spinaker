@@ -9027,3 +9027,12 @@ html { scrollbar-width: thin; }
   visibility: visible; opacity: 1; pointer-events: auto; transform: translateX(-50%) !important; clip-path: inset(-20px -20px -20px -20px);
   transition: transform .55s cubic-bezier(.2,.8,.2,1) .18s, clip-path .55s cubic-bezier(.2,.8,.2,1) .18s, opacity .2s ease .18s, visibility 0s; }
 @media (prefers-reduced-motion: reduce) { .sc-trop-overlay__body > article .sc-joint__pop, .sc-trop-overlay__body > article .sc-joint.is-open .sc-joint__pop { transition: none; } }
+
+/* otwarcie spinki w dwóch ruchach (właściciel 5.10): linia między boksami wydłuża się o 50% (boksy rozjeżdżają się na boki),
+   dopiero potem boks kontekstowy wychodzi w górę; przy zamykaniu odwrotnie: najpierw w dół, potem boksy się zsuwają */
+.sc-trop-overlay__body > article .sc-thread-strip__track .sc-joint { min-width: 100px; transition: min-width .45s cubic-bezier(.2,.8,.2,1) .45s; }
+.sc-trop-overlay__body > article .sc-thread-strip__track .sc-joint.is-open { min-width: 150px !important; transition: min-width .45s cubic-bezier(.2,.8,.2,1) 0s; }
+.sc-trop-overlay__body > article .sc-thread-strip__track .sc-joint.is-open::before { transition-delay: .4s; }
+.sc-trop-overlay__body > article .sc-thread-strip__track .sc-joint.is-open .sc-joint__pop {
+  transition: transform .55s cubic-bezier(.2,.8,.2,1) .45s, clip-path .55s cubic-bezier(.2,.8,.2,1) .45s, opacity .2s ease .45s, visibility 0s .45s; }
+@media (prefers-reduced-motion: reduce) { .sc-trop-overlay__body > article .sc-thread-strip__track .sc-joint { transition: none; } }

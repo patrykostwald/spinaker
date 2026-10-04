@@ -86,9 +86,9 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     if (!full || reduced || !joints) return;
     // 1. boksy przeskakują (CSS, ok. 1 s), 2. linie spinek rozsuwają się, 3. okienka po kolei co 0,55 s, 4. po chwili zamknięcie
     // boksy kontekstowe wysuwają się w górę po kolei, a po chwili chowają od prawej do lewej - nitka się zamyka
-    const timers = Array.from({ length: joints }, (_, i) => window.setTimeout(() => setIntroStep(i + 1), 1500 + i * 650));
-    const closing = 1500 + joints * 650 + 1400;
-    for (let i = joints - 1; i >= 0; i--) timers.push(window.setTimeout(() => setIntroStep(i), closing + (joints - 1 - i) * 260));
+    const timers = Array.from({ length: joints }, (_, i) => window.setTimeout(() => setIntroStep(i + 1), 1500 + i * 800));
+    const closing = 1500 + joints * 800 + 1500;
+    for (let i = joints - 1; i >= 0; i--) timers.push(window.setTimeout(() => setIntroStep(i), closing + (joints - 1 - i) * 320));
     return () => timers.forEach(clearTimeout);
   }, [full, reduced, joints, thread.id]);
   const row = variant === 'row' && !full;
