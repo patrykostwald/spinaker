@@ -112,7 +112,17 @@ def clinic_page(request):
         window = min(30, max(1, int(request.query_params.get('window', '7'))))
     except ValueError:
         return Response({'detail': 'Parametr window musi być liczbą dni (1–30).'}, status=400)
-    return Response(clinic.clinic_page_data(window))
+    # Te same dane dla wszystkich: na produkcji (PostgreSQL + Redis) gotowe przez minutę, żeby wejście było szybkie (właściciel 5.10).
+    from django.core.cache import cache
+    from django.db import connection
+    if connection.vendor != 'postgresql':
+        return Response(clinic.clinic_page_data(window))
+    key = f'clinic-page:{window}'
+    data = cache.get(key)
+    if data is None:
+        data = clinic.clinic_page_data(window)
+        cache.set(key, data, 60)
+    return Response(data)
 
 
 @extend_schema(summary='Lista zatwierdzonych diagnoz jednej strony', tags=['klinika'], responses=OpenApiTypes.OBJECT)

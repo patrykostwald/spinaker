@@ -23,7 +23,8 @@ TEMPLATE_WORDS = frozenset(
     'Fraza Kontekst Materiał Metoda Narracja Spinka Spinka Nowa Obecność Pełna Powtórzone Przekaz Rozkład Sygnał '
     'Technika Techniki Wspólny Zapis Zbieżność Zgłoszone Diagnoza Kolejne Najwcześniejszy Ten To Dla '
     'Twierdzenie Twierdzenia Źródło Uwaga Wątek Teza Ton Strona Rządzący Opozycja '
-    'Spina Spinem Spinowi Klinika Kliniki Klinice Sejm Sejmu Senat Senatu'.split())
+    'Spina Spinem Spinowi Klinika Kliniki Klinice Sejm Sejmu Senat Senatu '
+    'Czytaj Jakiego Czy Skąd Ocena Następne Bez Chwyt Sprawdzenie Potwierdzone Sprzeczne Wprowadza Niezweryfikowane'.split())
 
 
 def draft_builder(fn):

@@ -89,13 +89,13 @@ export function CommunityThreadPage({ id }: { id: string }) {
   const thread = query.data;
   return (
     <div className="sc-community sc-community--detail sc-f2">
-      <p><Link href="/spinki" className="sc-spin-detail__back">← Spinki czytelników</Link></p>
+      <p><Link href="/spinki" className="sc-spin-detail__back">← Wszystkie spinki</Link></p>
       <header className="sc-community__head">
         <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Spinka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link> {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</>}</p>
         <ClampedText><h1>{thread.title}</h1></ClampedText>
         {thread.description && <ClampedText>{thread.description}</ClampedText>}
         <p className="sc-community-card__meta">
-          {thread.published_at ? `Opublikowana ${formatDateTimePl(thread.published_at)}` : ""} · {thread.items_count} elementów · kolejność ustalił autor
+          {thread.published_at ? `Opublikowana ${formatDateTimePl(thread.published_at)}` : ""} · {thread.items_count} {thread.items_count === 1 ? 'boks' : [2, 3, 4].includes(thread.items_count % 10) && ![12, 13, 14].includes(thread.items_count % 100) ? 'boksy' : 'boksów'}
         </p>
       </header>
       <ThreadStrip thread={thread} items={thread.items} full />

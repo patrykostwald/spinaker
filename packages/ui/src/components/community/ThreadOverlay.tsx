@@ -38,6 +38,9 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
     body.current?.scrollTo({ top: 0 });
   }
   const close = useRef<HTMLButtonElement>(null);
+  // wejście prosto z linku nie ma czego cofać: wtedy „wróć” prowadzi na listę spinek, a nie poza serwis (znajomy właściciela 5.10)
+  const pushed = useRef(false);
+  const leave = () => { if (pushed.current) window.history.back(); else window.location.assign('/spinki'); };
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
@@ -48,9 +51,10 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
     const mobile = window.matchMedia('(max-width: 767px)').matches;
     if (mobile) root.dataset.immersive = '1';
     // Raz na otwarcie (React w trybie deweloperskim uruchamia efekt dwa razy).
+    if (window.location.pathname !== `/spinki/${initial}`) pushed.current = true;
     if (window.location.pathname !== `/spinki/${initial}`) window.history.pushState({ ...window.history.state, scTrop: initial }, '', `/spinki/${initial}`);
     const pop = () => closeRef.current();
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') window.history.back(); };
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') leave(); };
     window.addEventListener('popstate', pop);
     window.addEventListener('keydown', key);
     close.current?.focus();
@@ -94,7 +98,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
   useEffect(() => () => setReactionMood(null), []);
   return <div className="sc-trop-overlay" role="dialog" aria-modal="true" aria-label={thread ? `Spinka: ${thread.title}` : 'Spinka'}>
     <div className="sc-trop-overlay__bar">
-      <button ref={close} type="button" className="sc-trop-overlay__back" onClick={() => window.history.back()}>← Wszystkie spinki</button>
+      <button ref={close} type="button" className="sc-trop-overlay__back" onClick={leave}>← Wszystkie spinki</button>
       {/* tytuł w linii „Wszystkie spinki”, od krawędzi pierwszego boksu; pod nim cały podtytuł (właściciel 4.10) */}
       {thread && <h1 className="sc-trop-overlay__title"><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</h1>}
       <span className="sc-trop-overlay__who">{thread ? (thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`) : ''}</span>
@@ -104,7 +108,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       onMouseMove={event => { const r = body.current?.getBoundingClientRect(); setNearLeft(!!r && event.clientX - Math.max(r.left, (r.left + r.right) / 2 - 590) < 220); }}
       onMouseLeave={() => setNearLeft(false)}>
       {/* powrót do listy pojawia się po najechaniu na sekcję (właściciel 4.10) */}
-      <button type="button" className="sc-trop-overlay__side-back" style={{ top: backTop }} aria-label="Wróć do wszystkich spinek" title="Wszystkie spinki" onClick={() => window.history.back()}>‹</button>
+      <button type="button" className="sc-trop-overlay__side-back" style={{ top: backTop }} aria-label="Wróć do wszystkich spinek" title="Wszystkie spinki" onClick={leave}>‹</button>
       {query.isPending && <Loading label="Ładowanie spinki" />}
       {query.isError && <p role="alert">Nie udało się pobrać spinki. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
       {thread && <>

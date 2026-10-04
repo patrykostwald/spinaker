@@ -24,7 +24,20 @@ def sentence(value):
     return short(re.split(r'(?<=[.!?])\s+', str(value or ''), maxsplit=1)[0])
 
 
+ENGLISH = re.compile(r'(the|and|of|is|are|was|were|in|for|to|with|that|has|have)', re.I)
+
+
+def polish(text, fallback):
+    """Zdanie po angielsku (zdarza się w polu claim) zastępujemy polskim wyjaśnieniem (konsylium 5.10)."""
+    text = str(text or '').strip()
+    if text and not re.search('[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]', text) and len(ENGLISH.findall(text)) >= 2:
+        return fallback or text
+    return text or fallback
+
+
 def boxes(diagnosis):
+    """Teksty prostym językiem (właściciel 5.10: „dla człowieka nieczytelne”; konsylium spinki-tresc-0510):
+    bez słów rozkład, element, twierdzenie, technika; bez jednoliterowych słów w łącznikach (porównanie przy synchronizacji)."""
     from news.clinic import ASSESSMENT_LABELS, author_data
     from news.clinic_council import clean_claim
 
@@ -32,38 +45,50 @@ def boxes(diagnosis):
     url = f'/klinika/{diagnosis.pk}'
     result = []
 
-    def add(kind, title, href=url, *, body='', author='', date=None, note='', link_note=''):
-        result.append({'box_data': {'kind': 'link', 'box_type': kind, 'title': short(title, 80),
-            'url': href, 'domain': urlsplit(href).hostname or 'spin.clinic', 'title_origin': 'system',
-            'body': short(body, 400), 'source_name': author, 'published_date': date},
-            'note': short(note, 400), 'link_note': short(link_note) if result else ''})
+    def add(kind, title, href=url, *, body='', author='', date=None, note='', link_note='', image=''):
+        data = {'kind': 'link', 'box_type': kind, 'title': short(title, 80),
+                'url': href, 'domain': urlsplit(href).hostname or 'spin.clinic', 'title_origin': 'system',
+                'body': short(body, 400), 'source_name': author, 'published_date': date}
+        if image:
+            data['image_url'] = image
+        result.append({'box_data': data, 'note': short(note, 400), 'link_note': short(link_note) if result else ''})
 
     author = author_data(post, None)['name']
-    # pierwszy boks = pełna diagnoza Dr. Spina (właściciel 3.10): od niej spinka się zaczyna
-    add('diagnosis', 'Pełna diagnoza: ' + diagnosis.headline, body=sentence(diagnosis.headline),
-        author='Dr. Spin', date=diagnosis.created_at.isoformat() if getattr(diagnosis, 'created_at', None) else None)
+    # pierwszy boks = pełna diagnoza w naszej bazie (właściciel 5.10): miniatura karty na zmianę z komentarzem Dr. Spina
+    add('diagnosis', f'Diagnoza Dr. Spina: spin {diagnosis.intensity or 0}/100', body=sentence(diagnosis.headline),
+        author='Dr. Spin', date=diagnosis.created_at.isoformat() if getattr(diagnosis, 'created_at', None) else None,
+        note=sentence(diagnosis.summary) or sentence(diagnosis.headline), image=f'/api/clinic/spins/{diagnosis.pk}/card.png')
     add('post', post.text, post.url, body=post.text, author=author,
-        date=post.published_at.isoformat() if post.published_at else None, link_note='Wpis, który Dr. Spin zdiagnozował.')
+        date=post.published_at.isoformat() if post.published_at else None, link_note='Ten wpis sprawdził Dr. Spin.')
     technique = next(iter(diagnosis.techniques or []), {})
-    technique_note = short(f"Technika: {technique.get('name') or 'brak wskazanej techniki'}. "
-                           f"{sentence(technique.get('explanation'))}")
-    add('technique', 'Technika: ' + (technique.get('name') or 'Brak wskazanej techniki'),
-        body=sentence(technique.get('explanation')) or 'W diagnozie nie wskazano techniki perswazji.', link_note=technique_note)
+    name = str(technique.get('name') or '').strip()
+    name = name[:1].upper() + name[1:] if name else 'Bez wyraźnego chwytu'
+    add('technique', name, body=sentence(technique.get('explanation')) or 'Dr. Spin nie wskazał tu żadnego chwytu.',
+        link_note=f'Jakiego chwytu użyto? {name}.')
     claims = [clean_claim(row) for row in (diagnosis.claims or []) if isinstance(row, dict)][:3]
     for index, claim in enumerate(claims):
         if len(result) >= 8:
             break
-        assessment = ASSESSMENT_LABELS.get(claim.get('assessment'), 'niezweryfikowane')
-        add('claim', f"{assessment}: {claim.get('claim', '')}", body=sentence(claim.get('explanation')),
-            link_note=f'Twierdzenie sprawdzone przez Dr. Spina: {assessment}.' if index == 0 else 'Kolejne sprawdzone twierdzenie')
+        label = ASSESSMENT_LABELS.get(claim.get('assessment'), 'niezweryfikowane')
+        explanation = sentence(claim.get('explanation'))
+        add('claim', f"{label[:1].upper() + label[1:]}: {polish(claim.get('claim'), explanation)}", body=explanation,
+            link_note=f'Czy to prawda? Ocena Dr. Spina: {label}.' if index == 0 else f'Następne sprawdzone zdanie. Ocena: {label}.')
         for source in claim.get('sources') or []:
             if len(result) >= 8:
                 break
             if not isinstance(source, dict) or urlsplit(source.get('url') or '').scheme not in ('http', 'https'):
                 continue
-            add('source', source.get('title') or source['url'], source['url'],
-                link_note=sentence(claim.get('explanation')) or 'Źródło przywołane przy tym twierdzeniu.')
+            domain = (urlsplit(source['url']).hostname or '').removeprefix('www.')
+            add('source', source.get('title') or source['url'], source['url'], link_note=f'Skąd to wiadomo? Źródło: {domain}.')
     return result
+
+
+OLD_DESCRIPTION = 'Spinka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.'
+
+
+def description(diagnosis):
+    from news.clinic import author_data
+    return f"Dr. Spin (AI) sprawdził wpis: {author_data(diagnosis.post, None)['name']}. Czytaj od lewej: co napisano, jakiego chwytu użyto, czy to prawda."
 
 
 @transaction.atomic
@@ -88,16 +113,19 @@ def sync_diagnosis_thread(diagnosis_id):
     if (diagnosis.intensity or 0) < min_intensity() and not PersonalContextThread.objects.filter(diagnosis=diagnosis).exists():
         return None
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
-        'title': short('Rozkład: ' + diagnosis.headline, 65),
-        'description': 'Spinka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.',
+        'title': short(diagnosis.headline, 65), 'description': description(diagnosis),
         'is_public': False, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
-    title = short('Rozkład: ' + diagnosis.headline, 65)
+    title, about = short(diagnosis.headline, 65), description(diagnosis)
     payload = boxes(diagnosis)
     existing = list(thread.items.values('box_data', 'note', 'link_note'))
     if existing != payload:
         thread.items.all().delete()
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=thread, position=index, **row) for index, row in enumerate(payload)])
+    # podtytuł potem pisze Redaktor tytułów; zastępujemy tylko dawny, niezrozumiały szablon
+    if thread.description == OLD_DESCRIPTION:
+        thread.description = about
+        thread.save(update_fields=['description'])
     if existing != payload or thread.title != title or not thread.is_public:
         thread.title, thread.is_public = title, False
         thread.save(update_fields=['title', 'is_public', 'updated_at'])

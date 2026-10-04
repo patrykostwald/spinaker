@@ -50,10 +50,10 @@ def test_diagnosis_thread_full_and_idempotent():
     assert items[1].box_data['body'] == row.post.text
     assert items[1].box_data['source_name'] == 'Poseł Test'
     assert items[1].box_data['published_date'] and items[1].box_data['url'] == row.post.url
-    assert items[1].link_note == 'Wpis, który Dr. Spin zdiagnozował.'
-    assert items[2].link_note.startswith('Technika: wybiórczość.')
+    assert items[1].link_note == 'Ten wpis sprawdził Dr. Spin.'
+    assert items[2].link_note.startswith('Jakiego chwytu użyto? Wybiórczość.')
     assert items[3].box_data['body'] == 'Dane mówią inaczej.'
-    assert items[4].link_note == 'Dane mówią inaczej.'
+    assert items[4].link_note == 'Skąd to wiadomo? Źródło: stat.gov.pl.'
     assert all(len(item.link_note) <= 280 for item in items)
     before = [item.pk for item in items]
     assert sync_diagnosis_thread(row.pk).pk == thread.pk
@@ -67,8 +67,8 @@ def test_diagnosis_thread_without_claims_and_without_council():
     row.save()
     items = list(row.context_thread.items.all())
     assert [item.box_data['box_type'] for item in items] == ['diagnosis', 'post', 'technique']
-    assert items[2].link_note.startswith('Technika:')
-    assert items[0].box_data['title'].endswith(row.headline)
+    assert items[2].link_note.startswith('Jakiego chwytu użyto?')
+    assert items[0].box_data['title'] == 'Diagnoza Dr. Spina: spin 72/100'
 
 
 def test_diagnosis_thread_claim_without_sources_and_moderation_survives_sync():

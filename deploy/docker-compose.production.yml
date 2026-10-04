@@ -37,7 +37,7 @@ services:
   backend:
     build:
       context: ../backend
-    command: sh -c "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers $${WEB_WORKERS:-3} --threads $${WEB_THREADS:-4} --worker-class gthread --timeout 120"
     env_file: ../.env.production
     volumes:
       - social_media:/app/media/social
