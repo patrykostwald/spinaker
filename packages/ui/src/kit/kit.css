@@ -9006,3 +9006,13 @@ html { scrollbar-width: thin; }
 .sc-simple-thread__boxes { display: grid; gap: 22px; }
 .sc-simple-thread__box > header button { border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; min-width: 28px !important; min-height: 28px !important; padding: 2px 6px !important; color: var(--sc-text-2); }
 .sc-simple-thread__box > header button:hover { color: var(--sc-text); }
+
+/* ===== Otwarta spinka: połączenia zawsze otwarte, łańcuch przeciągany na boki (właściciel 5.10) ===== */
+.sc-thread-strip__track[data-drag] { cursor: grab; scroll-snap-type: none; user-select: none; }
+.sc-thread-strip__track[data-drag][data-dragging] { cursor: grabbing; scroll-behavior: auto; }
+.sc-thread-strip__track[data-drag][data-dragging] * { pointer-events: none; }
+/* wejście: linia spinki rozsuwa się od środka po przeskoku boksów, okienko podnosi się z dołu (właściciel 5.10) */
+@keyframes sc-joint-spread { from { transform: scaleX(0); opacity: 0; } to { transform: none; opacity: 1; } }
+.sc-trop-overlay__body > article .sc-joint { animation: sc-joint-spread .45s cubic-bezier(.2,.8,.2,1) calc(1s + var(--j, 0) * 60ms) both; }
+.sc-trop-overlay__body > article .sc-thread-strip__track { transition: padding-top .35s cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) { .sc-trop-overlay__body > article .sc-joint { animation: none; } }

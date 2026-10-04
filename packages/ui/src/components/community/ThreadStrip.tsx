@@ -57,6 +57,11 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   const [focus, setFocus] = useState<FocusStep | null>(null);
   const [picked, setPicked] = useState<FocusStep | null>(null);
   const [openJoint, setOpenJoint] = useState<number | null>(null);
+  // wejście w spinkę (właściciel 5.10): po przeskoku boksów spinki od lewej do prawej po kolei podnoszą okienka z wyjaśnieniem,
+  // a na końcu wszystko się zamyka - czytelnik widzi, że spinki są do kliknięcia. Łańcuch przesuwa się na boki.
+  const [introStep, setIntroStep] = useState(0);
+  const jointOpen = (index: number) => openJoint === index || (introStep > 0 && index <= introStep);
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
   function edges() {
@@ -76,6 +81,14 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   const uid = useId();
   const reduced = useReducedMotion();
   const ordered = [...items].sort((a, b) => a.position - b.position);
+  const joints = Math.max(0, items.length - 1);
+  useEffect(() => {
+    if (!full || reduced || !joints) return;
+    // 1. boksy przeskakują (CSS, ok. 1 s), 2. linie spinek rozsuwają się, 3. okienka po kolei co 0,55 s, 4. po chwili zamknięcie
+    const timers = Array.from({ length: joints }, (_, i) => window.setTimeout(() => setIntroStep(i + 1), 1500 + i * 550));
+    timers.push(window.setTimeout(() => setIntroStep(0), 1500 + joints * 550 + 1600));
+    return () => timers.forEach(clearTimeout);
+  }, [full, reduced, joints, thread.id]);
   const row = variant === 'row' && !full;
   const shown = counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative };
   const total = shown.positive + shown.doubt + shown.negative;
@@ -205,6 +218,14 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     {expanded && canPrev && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--prev" aria-label="Poprzednie boksy" onClick={() => slide(-1)}>‹</button>}
     {expanded && canNext && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--next" aria-label="Kolejne boksy" onClick={() => slide(1)}>›</button>}
     <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" tabIndex={0} aria-label={`Boksy spinki: ${thread.title}`}
+      data-drag={full || undefined}
+      onPointerDown={event => { if (!full || event.pointerType !== 'mouse' || event.button !== 0) return; drag.current = { x: event.clientX, left: event.currentTarget.scrollLeft, moved: false }; }}
+      onPointerMove={event => { const d = drag.current; if (!d) return; const dx = event.clientX - d.x; if (!d.moved && Math.abs(dx) < 6) return;
+        if (!d.moved) { d.moved = true; event.currentTarget.setPointerCapture(event.pointerId); event.currentTarget.dataset.dragging = ''; }
+        event.currentTarget.scrollLeft = d.left - dx; }}
+      onPointerUp={event => { const d = drag.current; drag.current = null; delete event.currentTarget.dataset.dragging;
+        if (d?.moved) { const stop = (e: Event) => { e.stopPropagation(); e.preventDefault(); }; event.currentTarget.addEventListener('click', stop, { capture: true, once: true }); } }}
+      onPointerCancel={event => { drag.current = null; delete event.currentTarget.dataset.dragging; }}
       onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); move(active + (event.key === 'ArrowRight' ? 1 : -1)); } }}
       onScroll={event => {
         const left = event.currentTarget.getBoundingClientRect().left;
@@ -219,19 +240,19 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         edges();
       }}>
       {ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
-        {expanded && index > 0 && <li className={`sc-joint${openJoint === index ? ' is-open' : ''}`} data-kind={item.link_kind || undefined}>
+        {expanded && index > 0 && <li className={`sc-joint${jointOpen(index) ? ' is-open' : ''}`} data-kind={item.link_kind || undefined}>
           {/* rodzaj spinki nad zatrzaskiem (właściciel 4.10) */}
           {item.link_kind && <span className="sc-joint__kind">{LINK_WORD[item.link_kind]}</span>}
           {/* Spinka (właściciel 3.10): kreska z zawijasem spinająca następny boks, w kolorze reakcji. Kliknięta rozsuwa się
               z lekkim zygzakiem, a nad nią pojawia się boks z wyjaśnieniem autora i oceną; „Otwórz” pokazuje ją na całym obszarze. */}
-          <button type="button" className="sc-joint__dot" aria-expanded={openJoint === index}
+          <button type="button" className="sc-joint__dot" aria-expanded={jointOpen(index)}
             onMouseEnter={() => { if (window.matchMedia('(hover: hover)').matches) { clearTimeout(hover.current); hover.current = setTimeout(() => setOpenJoint(index), 320); } }}
             onMouseLeave={() => clearTimeout(hover.current)}
             aria-label={`Spinka ${index}: łączy boks ${index} i ${index + 1}${steps.find(item.item_id, 'context')?.mine ? ' (ocenione)' : ''}`}
-            data-done={steps.find(item.item_id, 'context')?.mine || undefined} onClick={() => setOpenJoint(openJoint === index ? null : index)}>
-            <SpinkaClip counts={steps.find(item.item_id, 'context')?.counts} id={`clip-${thread.id}-${index}`} open={openJoint === index} />
+            data-done={steps.find(item.item_id, 'context')?.mine || undefined} onClick={() => { setIntroStep(0); setOpenJoint(openJoint === index ? null : index); }}>
+            <SpinkaClip counts={steps.find(item.item_id, 'context')?.counts} id={`clip-${thread.id}-${index}`} open={jointOpen(index)} />
           </button>
-          <div className="sc-joint__pop" hidden={openJoint !== index}>
+          <div className="sc-joint__pop" hidden={!jointOpen(index)}>
             <span className="sc-joint__label">Spinka {index}</span>
             <p>{item.link_note || 'Autor nie opisał tej spinki.'}</p>
             <span className="sc-joint__actions">
