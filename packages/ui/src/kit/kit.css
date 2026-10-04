@@ -8646,3 +8646,11 @@ details.sc-source-disclosure, details.sc-deleted, .sc-clinic-discussion, .sc-f2-
 .sc-thread-strip__box[data-note]:not([data-img]) { --sc-base-anim: sc-base-note; }
 .sc-thread-strip__box[data-img]:not([data-note]) { --sc-base-anim: sc-base-img; }
 @media (prefers-reduced-motion: reduce) { .sc-trop-overlay__body > article .sc-thread-strip__box .sc-box-face, .sc-trop-overlay__body > article .sc-thread-strip__box > * { animation: none !important; } }
+/* podtytuł spinki zaczyna się równo z pierwszym boksem (właściciel 4.10) */
+@media (min-width: 768px) { .sc-trop-overlay__desc { margin-left: 60px !important; margin-right: 60px; max-width: 72ch; color: var(--sc-text-2); } }
+/* tytuł otwartej spinki: w swojej linii, od lewej, równo z pierwszym boksem i podtytułem (właściciel 4.10) */
+@media (min-width: 768px) {
+  .sc-trop-overlay__body > article .sc-thread-strip__head--full { justify-content: flex-start; text-align: left; margin-top: 0; padding-left: 60px; }
+  .sc-trop-overlay__body > article .sc-thread-strip__head--full .sc-fullhead { text-align: left; }
+  .sc-trop-overlay__body > article .sc-thread-strip__head--full .sc-repins { flex: 0 1 auto; justify-content: flex-start; margin-left: 24px; }
+}
