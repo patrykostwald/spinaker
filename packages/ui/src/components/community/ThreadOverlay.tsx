@@ -65,6 +65,19 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
   // strzałka powrotu na wysokości łańcucha boksów (właściciel 4.10)
   const [backTop, setBackTop] = useState(160);
   const [nearLeft, setNearLeft] = useState(false);
+  const [moreBelow, setMoreBelow] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const commentsBox = () => body.current?.querySelector('article > .sc-thread-social') as HTMLElement | null;
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let box: HTMLElement | null = null;
+    const check = () => { if (box) setMoreBelow(box.scrollTop + box.clientHeight < box.scrollHeight - 4); };
+    const onScroll = () => { check(); setMoving(true); clearTimeout(timer); timer = setTimeout(() => setMoving(false), 700); };
+    const attach = () => { const next = commentsBox(); if (next && next !== box) { box?.removeEventListener('scroll', onScroll); box = next; box.addEventListener('scroll', onScroll, { passive: true }); } check(); };
+    attach();
+    const mo = new MutationObserver(attach); if (body.current) mo.observe(body.current, { childList: true, subtree: true });
+    return () => { mo.disconnect(); box?.removeEventListener('scroll', onScroll); clearTimeout(timer); };
+  }, [thread]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const root = body.current;
     if (!root) return;
@@ -94,8 +107,16 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinki" />}
       {query.isError && <p role="alert">Nie udało się pobrać spinki. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
       {thread && <>
-        {thread.description && !thread.signal_kind && !thread.narrative && <p className="sc-trop-overlay__desc">{thread.description}</p>}
+        {/* podtytuł zawsze, także u Dr. Spina (pisze go Redaktor tytułów) */}
+        {thread.description && <p className="sc-trop-overlay__desc">{thread.description}</p>}
         <ThreadStrip key={thread.id} thread={thread} items={thread.items} full />
+        {/* przewijanie komentarzy (właściciel 4.10): przycisk w kółku na środku linii nad „Warto też zobaczyć”,
+            linia ma na niego przerwę; w czasie przewijania pod nim pojawia się mniejszy, drugi znak */}
+        <div className="sc-trop-overlay__scroller" data-more={moreBelow || undefined} data-moving={moving || undefined}>
+          <i /><button type="button" aria-label="Przewiń komentarze w dół" onClick={() => commentsBox()?.scrollBy({ top: (commentsBox()?.clientHeight ?? 300) * .8, behavior: 'smooth' })}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg></button><i />
+          <svg className="sc-trop-overlay__scroller-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10l4 4 4-4" /></svg>
+        </div>
         {next && <section className="sc-trop-overlay__next" aria-label="Warto też zobaczyć">
           <p className="sc-trop-overlay__next-k">Warto też zobaczyć</p>
           <ThreadStrip key={`next-${next.id}`} thread={next} variant="row" onFullscreen={() => open(next.id)} />

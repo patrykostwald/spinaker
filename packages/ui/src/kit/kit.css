@@ -8845,3 +8845,39 @@ html { scrollbar-width: thin; }
 .sc-spin-explainer__grid li { margin: 0 !important; transform: none !important; }
 .sc-spin-explainer__grid .sc-spin-explainer__punch { min-height: calc(2 * 22px + 12px); box-sizing: border-box; }
 @container (max-width: 680px) { .sc-spin-explainer__grid .sc-spin-explainer__punch { min-height: 0; } }
+
+/* wybrany boks (właściciel 4.10): tytuł i podtytuł wyśrodkowane nad kartą, bez licznika i filtra komentarzy,
+   większy mini-łańcuch pod reakcjami, środek łańcucha pod „?” */
+.sc-trop-overlay:has(.sc-pick) .sc-trop-overlay__title { left: 190px !important; right: 190px !important; text-align: center; }
+.sc-trop-overlay:has(.sc-pick) .sc-trop-overlay__desc { margin-left: auto !important; margin-right: auto !important; text-align: center; text-wrap: balance; }
+.sc-pick__count, .sc-social-filter { display: none !important; }
+.sc-pick { gap: 6px; padding-top: 0; }
+.sc-pick__bar { min-height: 0; }
+.sc-pick__card .sc-step-rate { left: 22px !important; right: 22px !important; }
+.sc-pick__chain { padding-top: 26px; gap: 5px; }
+.sc-pick__chain .sc-trow__sq { width: 15px; height: 15px; }
+.sc-pick__chain .sc-trow__link { width: 12px; height: 1.5px; }
+.sc-pick__chain button[aria-current="true"] { transform: scale(1.35) !important; }
+
+/* otwarta spinka na komputerze: stała wysokość ekranu, komentarze przewijane w środku, „Warto też zobaczyć” zawsze na dole */
+@media (min-width: 768px) {
+  .sc-trop-overlay__body { overflow: hidden !important; padding-bottom: 12px !important; }
+  .sc-trop-overlay__body > article { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding-top: 22px; }
+  .sc-trop-overlay__body > article > .sc-thread-social { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin-top: 8px !important; padding-bottom: 12px; }
+  .sc-trop-overlay__next { margin-top: 0 !important; border-top: 0 !important; padding-top: 4px !important; }
+  .sc-trop-overlay__desc { margin-top: 10px !important; }
+}
+.sc-trop-overlay__scroller { position: relative; display: flex; align-items: center; gap: 14px; margin: 6px 0 2px; }
+.sc-trop-overlay__scroller > i { flex: 1; height: 1px; background: linear-gradient(90deg, var(--sc-grid), var(--sc-grid)); transition: background .3s; }
+.sc-trop-overlay__scroller > i:first-of-type { background: linear-gradient(90deg, var(--sc-grid) 0%, var(--sc-grid) 70%, var(--sc-grid) 100%); }
+.sc-trop-overlay__scroller[data-more] > i:first-of-type { background: linear-gradient(90deg, var(--sc-grid) 60%, color-mix(in srgb, var(--sc-text) 55%, transparent)); }
+.sc-trop-overlay__scroller[data-more] > i:last-of-type { background: linear-gradient(90deg, color-mix(in srgb, var(--sc-text) 55%, transparent), var(--sc-grid) 40%); }
+.sc-trop-overlay__scroller button { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--sc-text) 30%, transparent); border-radius: 50%;
+  background: none; color: var(--sc-text-3); cursor: pointer; opacity: .35; transition: opacity .3s, border-color .3s, color .3s, box-shadow .3s; }
+.sc-trop-overlay__scroller[data-more] button { opacity: 1; color: var(--sc-text); border-color: color-mix(in srgb, var(--sc-text) 65%, transparent); box-shadow: 0 0 18px -6px color-mix(in srgb, var(--sc-text) 50%, transparent); }
+.sc-trop-overlay__scroller svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sc-trop-overlay__scroller-small { position: absolute; left: 50%; top: calc(50% + 18px); width: 14px !important; height: 14px !important; margin-left: -7px; color: var(--sc-text-2);
+  opacity: 0; transform: translateY(-4px); transition: opacity .25s, transform .25s; pointer-events: none; }
+.sc-trop-overlay__scroller[data-moving] .sc-trop-overlay__scroller-small { opacity: 1; transform: none; }
+@media (max-width: 767px) { .sc-trop-overlay__scroller { display: none; } }
+@media (min-width: 768px) { .sc-trop-overlay__body > article > .sc-thread-social { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); } }
