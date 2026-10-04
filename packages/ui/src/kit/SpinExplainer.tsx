@@ -19,12 +19,20 @@ export const SPIN_EXPLAINER_PL: SpinExplainerText = {
   ],
 };
 
+const hard = (text: string) => text.replace(/(^|\s)([aiouwzAIOUWZ])\s+/g, '$1$2 ');
+function split(text: string): [string, string] {
+  const at = text.slice(0, -1).lastIndexOf('. ');
+  return at > 0 ? [hard(text.slice(0, at + 1)), hard(text.slice(at + 2))] : [hard(text), ''];
+}
+
 export function SpinExplainer({ text = SPIN_EXPLAINER_PL, headingLevel = 2, id, collapsible = false }: { text?: SpinExplainerText; headingLevel?: 2 | 3; id?: string; collapsible?: boolean }) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
   const uid = useId();
   const [open, setOpen] = useState(!collapsible);
   const grid = <ul className="sc-spin-explainer__grid" id={`${uid}-grid`} hidden={!open}>{text.items.map((item, index) => (
-    <li key={item.name} data-step={index + 1}><strong>{item.name}</strong><p>{item.text}</p></li>
+    <li key={item.name} data-step={index + 1}><strong>{item.name}</strong>
+      {/* opis i puenta osobno: puenta (ostatnie zdanie) zawsze w swoim wierszu przy dole boksu, twarde spacje po jednoliterowych wyrazach (właściciel 4.10) */}
+      {(() => { const parts = split(item.text); return <><p>{parts[0]}</p>{parts[1] ? <p className="sc-spin-explainer__punch">{parts[1]}</p> : null}</>; })()}</li>
   ))}</ul>;
   // Strona główna (właściciel 3.10): tytuł „Jak działa przekaz” z przeskakującymi literami, obok szare „Czym jest spin?”,
   // które rozsuwa trzy boksy; reszta strony przesuwa się w dół.

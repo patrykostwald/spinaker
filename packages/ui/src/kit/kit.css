@@ -8833,3 +8833,15 @@ html { scrollbar-width: thin; }
 .sc-trop-overlay__side-back { opacity: 0 !important; pointer-events: none !important; transition: opacity .3s, border-color .2s, background .2s !important; }
 .sc-trop-overlay__body[data-near-left] .sc-trop-overlay__side-back, .sc-trop-overlay__side-back:focus-visible { opacity: 1 !important; pointer-events: auto !important; }
 @media (hover: none) { .sc-trop-overlay__side-back { opacity: 1 !important; pointer-events: auto !important; } }
+
+/* „Czym jest spin”: trzy płytki obok siebie, opis łamany ładnie, puenta w osobnym wierszu przy dole (właściciel 4.10) */
+.sc-spin-explainer__grid li { display: flex !important; flex-direction: column; gap: 10px; padding: 20px 20px 18px !important; }
+.sc-spin-explainer__grid p { text-wrap: pretty; }
+.sc-spin-explainer__grid .sc-spin-explainer__punch { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--sc-grid); color: var(--sc-text); font-weight: 500; text-wrap: balance; }
+.sc-spin-explainer__grid li:first-child strong { color: var(--sc-spin-hi); }
+@container (max-width: 1000px) { .sc-spin-explainer__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container (max-width: 680px) { .sc-spin-explainer__grid { grid-template-columns: minmax(0, 1fr); } }
+.sc-spin-explainer__grid { align-items: stretch !important; }
+.sc-spin-explainer__grid li { margin: 0 !important; transform: none !important; }
+.sc-spin-explainer__grid .sc-spin-explainer__punch { min-height: calc(2 * 22px + 12px); box-sizing: border-box; }
+@container (max-width: 680px) { .sc-spin-explainer__grid .sc-spin-explainer__punch { min-height: 0; } }
