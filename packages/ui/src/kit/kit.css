@@ -9278,3 +9278,38 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-list-metrics__families { margin-top: 0 !important; }
 .sc-list-metrics > div { display: flex !important; flex-direction: column; align-items: flex-end; }
 .sc-list-metrics > div > dt { order: 1; } .sc-list-metrics > div > dd { order: 2; } .sc-list-metrics > div > .sc-list-metrics__families, .sc-list-metrics > div > .sc-list-metrics__track { order: 3; margin-top: 6px !important; }
+/* Dla redakcji: przykład spinki w obecnym wyglądzie (5.10), bez paska przewijania */
+.sc-ctx2__demo { margin: 18px 0 22px; display: grid; gap: 16px; }
+.sc-ctx2__demo header { display: grid; gap: 8px; }
+.sc-ctx2__title { margin: 0; font-size: 20px; line-height: 1.3; font-weight: 600; }
+.sc-ctx2__title span { color: var(--sc-text-3); font-weight: 500; }
+.sc-ctx2__desc { margin: 0; color: var(--sc-text-2); font-size: 15px; }
+.sc-ctx2__chain { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
+.sc-ctx2__step { display: flex; align-items: stretch; min-width: 0; }
+.sc-ctx2__link { flex: 0 0 64px; display: grid; place-items: center; position: relative; }
+.sc-ctx2__link i { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--sc-positive); opacity: .7; }
+.sc-ctx2__link b { position: relative; z-index: 1; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px;
+  background: var(--sc-bg); border: 1px solid color-mix(in srgb, var(--sc-text) 22%, transparent); white-space: nowrap; }
+.sc-ctx2__box { flex: 1; min-width: 0; height: 168px; box-sizing: border-box; padding: 14px; display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--sc-line); border-radius: 4px; background: linear-gradient(180deg, var(--sc-plate-top) 0%, var(--sc-plate-bottom) 100%); }
+.sc-ctx2__step:first-child .sc-ctx2__box { border-color: var(--sc-accent); }
+.sc-ctx2__kind { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-ctx2__box strong { font-size: 14px; line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.sc-ctx2__box small { margin-top: auto; font-size: 12px; color: var(--sc-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-ctx2__demo figcaption { font-size: 12.5px; color: var(--sc-text-3); }
+@media (max-width: 900px) {
+  .sc-ctx2__chain { grid-template-columns: minmax(0, 1fr); }
+  .sc-ctx2__step { flex-direction: column; }
+  .sc-ctx2__link { flex-basis: 44px; }
+  .sc-ctx2__link i { left: 50%; right: auto; top: 0; bottom: 0; width: 2px; height: auto; }
+  .sc-ctx2__box { height: auto; min-height: 112px; }
+}
+.sc-ctx2__chain { grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr) 84px minmax(0, 1fr) !important; }
+.sc-ctx2__chain > .sc-ctx2__link { position: relative; display: grid; place-items: center; }
+.sc-ctx2__box[data-first] { border-color: var(--sc-accent); }
+@media (max-width: 760px) {
+  .sc-ctx2__chain { grid-template-columns: minmax(0, 1fr) !important; }
+  .sc-ctx2__chain > .sc-ctx2__link { height: 44px; }
+  .sc-ctx2__chain > .sc-ctx2__link i { left: 50%; right: auto; top: 0; bottom: 0; width: 2px; height: auto; }
+}
+.sc-ctx2__chain { align-items: stretch; } .sc-ctx2__chain > .sc-ctx2__box { height: 168px; }

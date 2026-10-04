@@ -1,28 +1,47 @@
-import { ContextThreadStrip } from '@spin-clinic/ui';
-
 /**
- * Ilustracja dla redakcji: autoryzowana nitka kontekstowa to poziomy pasek boxów.
- * Box otwierający (materiał, który redakcja chce wypromować) → 1–14 boxów kontekstu, najwyżej 15 razem.
- * Przykład jest wymyślony - pokazuje zasadę, nie prawdziwą sprawę.
+ * Ilustracja dla redakcji (aktualizacja 5.10): autoryzowana spinka w obecnym wyglądzie - nagłówek (tytuł i opis),
+ * boksy połączone spinkami z typem połączenia; czytelnicy oceniają połączenia. Przykład wymyślony, pokazuje zasadę.
  */
+const BOXES: [string, string, string][] = [
+  ['Wywiad', 'Rozmowa z byłym dyrektorem spółki: „Ostrzegałem zarząd pół roku wcześniej”', 'Państwa redakcja · 12.09'],
+  ['Komunikat', 'Zatrzymanie trzech osób w sprawie przetargu', 'Prokuratura Krajowa · 14.09'],
+  ['Dokument', 'Uchwała zarządu z marca: zmiana warunków przetargu', 'KRS, akta spółki · 03.03'],
+];
+const LINKS = ['wynika z', 'bo'];
+
 const RECIPE = [
   ['Boks otwierający', 'Państwa materiał, który chcą Państwo wypromować: artykuł, wywiad, film, śledztwo.'],
-  ['Do 14 boksów kontekstu', 'razem najwyżej 15. Dowolne materiały: komunikaty, dokumenty, artykuły innych redakcji, filmy.'],
-  ['Z Bazy albo po linku', 'boks wybierają Państwo z naszej Bazy albo tworzą sami: link, tytuł, zdjęcie. Nowy boks trafia do Bazy.'],
-  ['Kolejność', 'ustala autor - tak, by czytelnik przeszedł całą historię od materiału otwierającego.'],
-  ['Każdy boks ze źródłem', 'nazwa źródła, data i link do oryginału - czytelnik trafia do Państwa strony.'],
-  ['Opis jak wpis na X', 'cały opis spinki mieści się w jednym wpisie na X (do 280 znaków) - łatwo go udostępnić. Podpisuje autor i redakcja.'],
+  ['Do 14 boksów kontekstu', 'razem najwyżej 15: komunikaty, dokumenty, artykuły innych redakcji, filmy. Z naszej Bazy albo po linku.'],
+  ['Połączenia z uzasadnieniem', 'między boksami autor wybiera typ (wynika z, bo, ale, czy na pewno?, przeczy) i jednym zdaniem pisze, dlaczego.'],
+  ['Czytelnicy oceniają', 'każde połączenie: ✓ zgadzam się, ? wątpię, ✕ nie zgadzam się. Kolor spinki pokazuje, jak oceniono rozumowanie.'],
+  ['Tytuł i opis', 'tytuł w dwóch wierszach, pod nim opis całej spinki; po kliknięciu boksu lub połączenia w tym miejscu pojawia się jego wyjaśnienie.'],
+  ['Każdy boks ze źródłem', 'nazwa źródła, data i link do oryginału - czytelnik trafia do Państwa strony. Spinkę podpisuje autor i redakcja.'],
 ];
 
 export function ContextThreadExample() {
   return (
-    <div id="trop-przyklad" className="sc-ctx">
+    <div id="trop-przyklad" className="sc-ctx sc-ctx2">
       <h3>Autoryzowana spinka - jak wygląda</h3>
       <p className="sc-ctx__lead">
-        Poziomy pasek boksów. Pierwszy to materiał, który chcą Państwo wypromować. Za nim są boksy, które dają mu kontekst. Czytelnik przewija w bok
-        i w kilka sekund widzi całą historię. Każdy boks prowadzi do oryginału.
+        Pierwszy boks to materiał, który chcą Państwo wypromować. Za nim są boksy, które dają mu kontekst, połączone spinkami:
+        każda mówi, dlaczego następny materiał wynika z poprzedniego. Czytelnik w kilka sekund widzi całą historię i ocenia rozumowanie.
       </p>
-      <ContextThreadStrip />
+      <figure className="sc-ctx2__demo" aria-label="Przykład spinki">
+        <header>
+          <p className="sc-ctx2__title"><span>Państwa redakcja:</span> Przetarg, który zarząd znał wcześniej</p>
+          <p className="sc-ctx2__desc">Wywiad z byłym dyrektorem zestawiony z komunikatem prokuratury i uchwałą zarządu.</p>
+        </header>
+        <ol className="sc-ctx2__chain">
+          {BOXES.flatMap(([kind, title, source], index) => [
+            ...(index > 0 ? [<li key={`l${index}`} className="sc-ctx2__link" aria-label={`Połączenie: ${LINKS[index - 1]}`}><b>{LINKS[index - 1]}</b><i /></li>] : []),
+            <li key={title} className="sc-ctx2__box" data-first={index === 0 || undefined}>
+              <span className="sc-ctx2__kind">{index === 0 ? `${kind} · otwiera` : kind}</span>
+              <strong>{title}</strong>
+              <small>{source}</small>
+            </li>])}
+        </ol>
+        <figcaption>Przykład wymyślony - pokazuje zasadę, nie prawdziwą sprawę.</figcaption>
+      </figure>
       <dl className="sc-ctx__recipe">
         {RECIPE.map(([term, text]) => <div key={term}><dt>{term}</dt><dd>{text}</dd></div>)}
       </dl>
