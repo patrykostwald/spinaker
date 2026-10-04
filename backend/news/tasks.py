@@ -503,6 +503,21 @@ def projektant_task():
 
 
 @shared_task
+def automatyk_task():
+    """Raz dziennie: przegląd wszystkich pętli agentów obu portali i usprawnienia (Automatyk, właściciel 5.10)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import automatyk
+    from news.agents_common import WindowClosed
+    try:
+        note = automatyk.step()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk}
+
+
+@shared_task
 def pracownia_osint_task():
     """Dwa razy dziennie krok Pracowni OSINT: każda rola sama pilnuje swojego terminu (kontroler codziennie, testy co 3 dni, reszta co tydzień)."""
     import os
