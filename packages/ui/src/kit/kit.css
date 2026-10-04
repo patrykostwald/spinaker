@@ -9467,3 +9467,11 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
   .sc-clinic-ranking__list .sc-spin-row, .sc-clinic-column__list .sc-spin-row { height: var(--sc-spin-row-h, 196px) !important; box-sizing: border-box; overflow: hidden !important; }
   .sc-clinic-ranking__list .sc-spin-row__title, .sc-clinic-column__list .sc-spin-row__title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 }
+
+/* Wskaźniki w paskach diagnoz o rozmiar większe (właściciel 5.10, po przeglądzie projektanta): liczby 28 px, wszystkie cztery do prawej */
+.sc-list-metrics > div { text-align: right !important; }
+.sc-list-metrics dt { font-size: 11px !important; line-height: 14px !important; font-weight: 700; }
+.sc-list-metrics dd { margin-top: 2px !important; font-size: 28px !important; line-height: 32px !important; font-weight: 600 !important; letter-spacing: -.01em; font-variant-numeric: tabular-nums; justify-content: flex-end; }
+.sc-list-metrics dd small { font-size: 12px !important; line-height: 1 !important; font-weight: 600 !important; opacity: .55; margin-left: 2px; }
+.sc-list-metrics__families { justify-content: flex-end; }
+@container (max-width: 470px) { .sc-spin-row .sc-list-metrics dd { font-size: 24px !important; line-height: 28px !important; } .sc-spin-row .sc-list-metrics > div { padding-top: 6px; } }
