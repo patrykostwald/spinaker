@@ -8,7 +8,7 @@ import { ago, Avatar, SocialIcon, ClampedText, type Counts } from './SocialPrimi
 import { SocialReport, ThreadSocial } from './ThreadSocial';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
-import { FocusView, focusRef, SpinkaClip, StepRate, useThreadSteps, type FocusStep } from './ThreadSteps';
+import { boxImage, contentTag, FocusView, focusRef, SpinkaClip, StepRate, useThreadSteps, type FocusStep } from './ThreadSteps';
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
@@ -20,8 +20,8 @@ const plural = (n: number, one: string, few: string, many: string) => n === 1 ? 
 /** Druga strona boksu (na zmianę z tekstem): zdjęcie, jeśli źródło na nie pozwala, inaczej znak rodzaju i krótka etykieta. */
 function BoxFace({ item }: { item: ThreadElement }) {
   return <>
-    {item.image_url && <span className="sc-box-face sc-box-face--img" aria-hidden="true"><img src={item.image_url} alt="" loading="lazy" /></span>}
-    {item.note && <span className="sc-box-face sc-box-face--note" data-only={!item.image_url || undefined}><span>{item.note}</span></span>}
+    {boxImage(item) && <span className="sc-box-face sc-box-face--img" data-card={boxImage(item).includes('/card.png') || undefined} aria-hidden="true"><img src={boxImage(item)} alt="" loading="lazy" /></span>}
+    {item.note && <span className="sc-box-face sc-box-face--note" data-only={!boxImage(item) || undefined}><span>{item.note}</span></span>}
   </>;
 }
 const ratingsWord = (n: number) => n === 1 ? 'ocena' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'oceny' : 'ocen';
@@ -62,6 +62,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   // wejście w spinkę (właściciel 5.10): po przeskoku boksów spinki od lewej do prawej po kolei podnoszą okienka z wyjaśnieniem,
   // a na końcu wszystko się zamyka - czytelnik widzi, że spinki są do kliknięcia. Łańcuch przesuwa się na boki.
   const [introStep, setIntroStep] = useState(0);
+  const [tight, setTight] = useState(false);
   const jointOpen = (index: number) => openJoint === index || (introStep > 0 && index <= introStep);
   const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
   const [canPrev, setCanPrev] = useState(false);
@@ -88,9 +89,10 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     if (!full || reduced || !joints) return;
     // 1. boksy przeskakują (CSS, ok. 1 s), 2. linie spinek rozsuwają się, 3. okienka po kolei co 0,55 s, 4. po chwili zamknięcie
     // boksy kontekstowe wysuwają się w górę po kolei, a po chwili chowają od prawej do lewej - nitka się zamyka
-    const timers = Array.from({ length: joints }, (_, i) => window.setTimeout(() => setIntroStep(i + 1), 1500 + i * 800));
-    const closing = 1500 + joints * 800 + 1500;
-    for (let i = joints - 1; i >= 0; i--) timers.push(window.setTimeout(() => setIntroStep(i), closing + (joints - 1 - i) * 320));
+    // werdykt panelu agentów (5.10): łańcuch raz się napina i wraca (CSS, 1,3 s), potem tylko pierwsze połączenie pokazuje
+    // na chwilę swoje wyjaśnienie - miejsce nad boksami jest zarezerwowane, więc nic się nie przesuwa
+    const timers = [window.setTimeout(() => setTight(true), 1100), window.setTimeout(() => setTight(false), 1550),
+      window.setTimeout(() => setIntroStep(1), 2600), window.setTimeout(() => setIntroStep(0), 6200)];
     return () => timers.forEach(clearTimeout);
   }, [full, reduced, joints, thread.id]);
   // pole opisu w nagłówku: notatka przy otwartym połączeniu albo bieżącym kroku widoku jednego elementu (właściciel 5.10)
@@ -101,7 +103,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     const item = ordered[step.index];
     if (!item) { onNote(null); return; }
     if (step.kind === 'clip') onNote({ label: `Połączenie ${step.index}: boks ${step.index} → ${step.index + 1}.`, text: item.link_note || 'Autor nie opisał tego połączenia.' });
-    else onNote({ label: `Boks ${step.index + 1}: ${item.box_type ? TYPES[item.box_type] : 'materiał'}.`, text: item.note || 'Autor nie dodał tu wyjaśnienia.' });
+    else onNote({ label: `Boks ${step.index + 1}: ${item.box_type ? TYPES[item.box_type] : 'materiał'}.`, text: item.note || item.title });
   }, [picked, focus, openJoint]); // eslint-disable-line react-hooks/exhaustive-deps
   const row = variant === 'row' && !full;
   const shown = counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative };
@@ -241,7 +243,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     {focus ? <FocusView key={`${focus.kind}-${focus.index}`} threadId={thread.id} items={ordered} start={focus} steps={steps} onClose={() => { setFocus(null); setPicked(null); }} onStep={setPicked} /> : <div className="sc-thread-strip__rail">
     {expanded && canPrev && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--prev" aria-label="Poprzednie boksy" onClick={() => slide(-1)}>‹</button>}
     {expanded && canNext && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--next" aria-label="Kolejne boksy" onClick={() => slide(1)}>›</button>}
-    <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" tabIndex={0} aria-label={`Boksy spinki: ${thread.title}`}
+    <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" data-tight={tight || undefined} tabIndex={0} aria-label={`Boksy spinki: ${thread.title}`}
       data-drag={full || undefined}
       onPointerDown={event => { if (!full || event.pointerType !== 'mouse' || event.button !== 0) return; drag.current = { x: event.clientX, left: event.currentTarget.scrollLeft, moved: false }; }}
       onPointerMove={event => { const d = drag.current; if (!d) return; const dx = event.clientX - d.x; if (!d.moved && Math.abs(dx) < 6) return;
@@ -264,7 +266,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         edges();
       }}>
       {ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
-        {expanded && index > 0 && <li className={`sc-joint${jointOpen(index) ? ' is-open' : ''}`} data-kind={item.link_kind || undefined}>
+        {expanded && index > 0 && <li className={`sc-joint${jointOpen(index) ? ' is-open' : ''}`} data-kind={item.link_kind || undefined} style={{ ['--i' as string]: index - .5 }}>
           {/* rodzaj spinki nad zatrzaskiem (właściciel 4.10) */}
           {item.link_kind && <span className="sc-joint__kind">{LINK_WORD[item.link_kind]}</span>}
           {/* Spinka (właściciel 3.10): kreska z zawijasem spinająca następny boks, w kolorze reakcji. Kliknięta rozsuwa się
@@ -272,21 +274,21 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
           <button type="button" className="sc-joint__dot" aria-expanded={jointOpen(index)}
             onMouseEnter={() => { if (window.matchMedia('(hover: hover)').matches) { clearTimeout(hover.current); hover.current = setTimeout(() => setOpenJoint(index), 320); } }}
             onMouseLeave={() => clearTimeout(hover.current)}
-            aria-label={`Spinka ${index}: łączy boks ${index} i ${index + 1}${steps.find(item.item_id, 'context')?.mine ? ' (ocenione)' : ''}`}
+            aria-label={`Połączenie ${index}: łączy boks ${index} i ${index + 1}${steps.find(item.item_id, 'context')?.mine ? ' (ocenione)' : ''}`}
             data-done={steps.find(item.item_id, 'context')?.mine || undefined} onClick={() => { setIntroStep(0); setOpenJoint(openJoint === index ? null : index); }}>
             <SpinkaClip counts={steps.find(item.item_id, 'context')?.counts} id={`clip-${thread.id}-${index}`} open={jointOpen(index)} />
           </button>
           <div className="sc-joint__pop" hidden={!full && !jointOpen(index)} aria-hidden={!jointOpen(index) || undefined} {...(full && !jointOpen(index) ? ({ inert: '' } as unknown as object) : {})}>
-            <span className="sc-joint__label">Spinka {index}</span>
+            <span className="sc-joint__label">Połączenie {index} → {index + 1}</span>
             <p>{item.link_note || 'Autor nie opisał tej spinki.'}</p>
             <span className="sc-joint__actions">
-              {item.item_id && <StepRate step={steps.find(item.item_id, 'context')} canRate={steps.canRate} label={`spinka ${index}`}
+              {item.item_id && <StepRate step={steps.find(item.item_id, 'context')} canRate={steps.canRate} label={`połączenie ${index}`}
                 onRate={polarity => void steps.rate(item.item_id!, 'context', polarity)} />}
               <button type="button" className="sc-joint__more" onClick={() => setFocus({ kind: 'clip', index })}>Otwórz →</button>
             </span>
           </div>
         </li>}
-        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)} data-img={expanded && item.image_url ? '' : undefined} data-note={expanded && item.note ? '' : undefined}
+        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)} data-img={expanded && boxImage(item) ? '' : undefined} data-note={expanded && item.note ? '' : undefined}
           style={{ ['--i' as string]: index, ...(expanded && reactionTint(steps.find(item.item_id, 'box')?.counts) ? { ['--tint' as string]: reactionTint(steps.find(item.item_id, 'box')?.counts) } : {}) }} onClick={event => { if (expanded && !(event.target as HTMLElement).closest('a, button')) setFocus({ kind: 'box', index }); }}>
           {item.note && !expanded && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
           {/* rodzaj wpisany w otwarty narożnik obrysu (propozycja 1, właściciel 4.10) */}
@@ -300,7 +302,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
             <span className="sc-thread-strip__type"><span aria-hidden="true">{item.box_type === 'claim' ? '✓' : '↗'}</span> {item.box_type ? TYPES[item.box_type] : item.kind === 'article' ? categoryLabel(item.category) : 'Link'}</span>
             <strong title={item.title}>{item.title}</strong>
             {item.body && <span className="sc-thread-strip__excerpt">{item.body}</span>}
-            <span className="sc-thread-strip__source">{item.source_name || (item.kind === 'link' ? item.domain : '')}
+            <span className="sc-thread-strip__source"><span className="sc-type-tag sc-type-tag--inline">{contentTag(item)}</span>{item.source_name || (item.kind === 'link' ? item.domain : '')}
               {item.published_date && <time dateTime={item.published_date}> · {formatDatePl(item.published_date)}</time>}</span>
           </button>}
         </motion.li>

@@ -91,6 +91,21 @@ export function focusRef(step: FocusStep): FocusRef {
  * (z lewej miniatura, z prawej tekst), po bokach strzałki, licznik i mini-łańcuch z podświetlonym elementem.
  * Komentarze zostają na dole w tym samym miejscu, tylko zawężone do tego elementu (onStep przekazuje odnośnik).
  */
+/** Obrazek boksu; boks diagnozy bez obrazka dostaje kartę diagnozy (właściciel 5.10: pierwszy boks zmienia się w miniaturę). */
+export function boxImage(item: ThreadElement): string {
+  if (item.image_url) return item.image_url;
+  const id = item.box_type === 'diagnosis' ? (item.diagnosis_id ?? Number(/\/klinika\/(\d+)/.exec(item.url)?.[1] ?? NaN)) : NaN;
+  return Number.isFinite(id) ? `/api/clinic/spins/${id}/card.png` : '';
+}
+/** Rodzaj treści boksu (werdykt panelu agentów 5.10, pomysł właściciela): po polsku, nie kodami. */
+export function contentTag(item: ThreadElement): 'LINK' | 'FILM' | 'ZDJĘCIE' | 'TEKST' {
+  const url = item.url || '';
+  if (/youtube\.com|youtu\.be|vimeo\.com|tiktok\.com|\.mp4($|\?)/i.test(url)) return 'FILM';
+  if (/\.(jpe?g|png|webp|gif)($|\?)/i.test(url)) return 'ZDJĘCIE';
+  if (!url) return 'TEKST';
+  return 'LINK';
+}
+
 export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
   threadId: number; items: ThreadElement[]; start: FocusStep; steps: ReturnType<typeof useThreadSteps>; onClose: () => void; onStep: (step: FocusStep) => void;
 }) {
@@ -123,19 +138,24 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
   };
   const source = [item.source_name || (item.kind === 'link' ? item.domain : ''), item.published_date ? formatDatePl(item.published_date) : ''].filter(Boolean).join(' · ');
   const kind = item.box_type ?? item.kind;
-  return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Spinka ${step.index}`}>
+  const image = boxImage(item);
+  return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Połączenie ${step.index} → ${step.index + 1}`}>
     <header className="sc-pick__bar">
       <span />
-      <span className="sc-pick__count">{step.kind === 'box' ? `Boks ${step.index + 1} z ${items.length}` : `Spinka ${step.index} z ${items.length - 1}`}</span>
+      <span className="sc-pick__count">{step.kind === 'box' ? `Boks ${step.index + 1} z ${items.length}` : `Połączenie ${step.index} z ${items.length - 1}`}</span>
     </header>
     <div className="sc-pick__stage">
       {/* łatwy powrót po lewej, na wysokości karty; dalsza droga po prawej jaśniejsza (właściciel 4.10) */}
       <button type="button" className="sc-pick__home" onClick={onClose}>← Cała spinka</button>
       <button type="button" className="sc-pick__arrow" disabled={at === 0} onClick={() => setAt(at - 1)} aria-label="Poprzedni element">‹</button>
       <article className="sc-pick__card" key={at} data-kind={step.kind}>
-        <div className="sc-pick__media" data-type={kind}>
+        {/* lewe pole zawsze treść (zdjęcie, karta diagnozy, podgląd linku), prawe zawsze tytuł i opis (właściciel 5.10, 3 głosy na tak) */}
+        <div className="sc-pick__media" data-type={kind} data-card={image.includes('/card.png') || undefined}>
           {step.kind === 'clip' ? <SpinkaClip counts={clipStep?.counts} />
-            : item.image_url ? <img src={item.image_url} alt="" /> : <span aria-hidden="true">{kind.slice(0, 1).toUpperCase()}</span>}
+            : image ? <img src={image} alt="" />
+            : <a className="sc-pick__preview" href={item.url} target={item.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">
+                <b>{(item.source_name || (item.kind === 'link' ? item.domain : '') || 'źródło').replace(/^www\./, '')}</b><span>Otwórz źródło ↗</span></a>}
+          {step.kind === 'box' && <span className="sc-type-tag">{contentTag(item)}</span>}
         </div>
         <div className="sc-pick__text">
           {step.kind === 'box' ? <>
@@ -148,10 +168,10 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
           </> : <>
             <p className="sc-pick__kicker">Łączy boks {step.index} i {step.index + 1}</p>
             <p className="sc-pick__pair"><span>{items[step.index - 1].title}</span><b aria-hidden="true">→</b><span>{item.title}</span></p>
-            <p className="sc-pick__body">{item.link_note || 'Autor nie opisał tej spinki. Oceń, czy te dwa materiały naprawdę się łączą.'}</p>
+            <p className="sc-pick__body">{item.link_note || 'Autor nie opisał tego połączenia. Oceń, czy z pierwszego materiału wynika drugi.'}</p>
           </>}
         </div>
-        {item.item_id && <StepRate step={current} canRate={steps.canRate} label={step.kind === 'box' ? `boks ${step.index + 1}` : `spinka ${step.index}`}
+        {item.item_id && <StepRate step={current} canRate={steps.canRate} label={step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`}
           onRate={polarity => void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity)} />}
       </article>
       <button type="button" className="sc-pick__arrow" disabled={at === sequence.length - 1} onClick={() => setAt(at + 1)} aria-label="Następny element">›</button>
@@ -160,7 +180,7 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
       {sequence.map((row, i) => <button key={i} type="button" className={row.kind === 'box' ? 'sc-trow__sq' : 'sc-trow__link'} aria-current={i === at || undefined}
         style={row.kind === 'clip' ? { background: clipColor(steps.find(items[row.index].item_id, 'context')?.counts) } : undefined}
         data-r={dominant(steps.find(items[row.index].item_id, row.kind === 'box' ? 'box' : 'context')?.counts)}
-        aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Spinka ${row.index}`} onClick={() => setAt(i)} />)}
+        aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Połączenie ${row.index} → ${row.index + 1}`} onClick={() => setAt(i)} />)}
     </nav>
   </section>;
 }
