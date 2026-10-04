@@ -24,6 +24,10 @@ module.exports = {
       { source: '/tropy', destination: '/spinki', permanent: true },
       { source: '/tropy/:path*', destination: '/spinki/:path*', permanent: true },
       { source: '/konto/tropy/:path*', destination: '/konto/spinki/:path*', permanent: true },
+      // polskie adresy wpisywane z ręki (audyt 4.10): bez 404
+      { source: '/szukaj', destination: '/search', permanent: false },
+      { source: '/powiadomienia', destination: '/konto#powiadomienia', permanent: false },
+      { source: '/profil', destination: '/konto', permanent: false },
     ];
   },
   async rewrites() {

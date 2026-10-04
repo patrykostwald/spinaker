@@ -8989,3 +8989,20 @@ html { scrollbar-width: thin; }
   .sc-pick__media { max-width: none !important; width: 100%; min-height: 0 !important; height: auto !important; aspect-ratio: 16 / 9; max-height: 200px; font-size: 36px; }
   .sc-trop-overlay__body > article .sc-pick { margin-left: 0 !important; }
 }
+
+/* ===== Edytor spinki w nowym stylu (audyt 4.10): pola jako linia, boks na płytce z otwartymi narożnikami, przyciski jako tekst ===== */
+.sc-simple-thread input[type="text"], .sc-simple-thread input[type="url"], .sc-simple-thread input[type="search"], .sc-simple-thread input:not([type]), .sc-simple-thread textarea, .sc-simple-thread select {
+  background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--sc-line) !important; border-radius: 0 !important; padding: 10px 0 !important; box-shadow: none !important; color: var(--sc-text); }
+.sc-simple-thread input:focus-visible, .sc-simple-thread textarea:focus-visible { outline: none; border-bottom-color: var(--sc-text) !important; }
+.sc-simple-thread__title input { font-size: 20px !important; font-weight: 600; }
+.sc-simple-thread__box { border: 0 !important; border-radius: 3px !important; padding: 22px 22px 20px !important; position: relative;
+  background:
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 22px top 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) right 0 top 0 / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 bottom 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 top 22px / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(180deg, #121316 0%, #0a0b0d 100%) !important; }
+.sc-simple-thread__box .sc-btn, .sc-simple-thread__actions .sc-btn { border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; min-width: 0 !important; padding-inline: 4px !important; }
+.sc-simple-thread__boxes { display: grid; gap: 22px; }
+.sc-simple-thread__box > header button { border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; min-width: 28px !important; min-height: 28px !important; padding: 2px 6px !important; color: var(--sc-text-2); }
+.sc-simple-thread__box > header button:hover { color: var(--sc-text); }
