@@ -470,3 +470,33 @@ def mechanik_task():
         return {'status': 'disabled'}
     from news import mechanik
     return mechanik.step()
+
+
+@shared_task
+def recenzent_task():
+    """Co 2 godziny: Recenzent czyta nowe teksty (spinki Dr. Spina, przekazy, raporty, diagnozy) i wytyka błędy."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import recenzent
+    from news.agents_common import WindowClosed
+    try:
+        note = recenzent.step()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk if note else None}
+
+
+@shared_task
+def projektant_task():
+    """Raz w tygodniu (krok sam pomija, gdy raport ma mniej niż 6 dni): stan wiedzy UX/UI i przegląd stron."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import projektant
+    from news.agents_common import WindowClosed
+    try:
+        note = projektant.step()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk}

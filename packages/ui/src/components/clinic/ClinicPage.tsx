@@ -205,7 +205,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
             subtitle="Wywiad z wczoraj: gość i prowadzący." link={<Link className="sc-archive-btn" href="/klinika/wywiady" aria-label="Archiwum wywiadów">Archiwum</Link>} />
           <InterviewScanner interview={data.interview} />
           {data.interview.selection_label ? <p>{data.interview.selection_label}</p> : null}
-          <p><Link href="/klinika/wywiady/glosowanie">Głosowanie na wywiad dnia →</Link></p>
+          <p><Link className="sc-ind-link" href="/klinika/wywiady/glosowanie">Głosowanie na wywiad dnia →</Link></p>
         </section> : null}
 
         <ClinicRanking data={data} />
