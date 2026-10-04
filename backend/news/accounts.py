@@ -341,7 +341,7 @@ class OpinionsView(APIView):
         if not body:
             raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
         with transaction.atomic():
-            opinion = get_object_or_404(ArticleOpinion.objects.select_for_update().select_related('user'),
+            opinion = get_object_or_404(ArticleOpinion.objects.select_for_update(of=('self',)).select_related('user'),
                                        article_id=article_id, user=request.user)
             if opinion.body or not ArticleOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
                 return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
@@ -398,7 +398,7 @@ class ThreadOpinionsView(APIView):
         if not body:
             raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
         with transaction.atomic():
-            opinion = get_object_or_404(ThreadOpinion.objects.select_for_update().select_related('user'), thread__slug=slug,
+            opinion = get_object_or_404(ThreadOpinion.objects.select_for_update(of=('self',)).select_related('user'), thread__slug=slug,
                                         thread__published=True, user=request.user)
             if opinion.body or not ThreadOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
                 return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)

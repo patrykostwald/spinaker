@@ -154,7 +154,7 @@ def send_notification_digests():
     for pk in ids.iterator():
         try:
             with transaction.atomic():
-                preference = NotificationSettings.objects.select_for_update().select_related('user').get(pk=pk)
+                preference = NotificationSettings.objects.select_for_update(of=('self',)).select_related('user').get(pk=pk)
                 if preference.email_digest == 'off':
                     continue
                 days = 1 if preference.email_digest == 'daily' else 7

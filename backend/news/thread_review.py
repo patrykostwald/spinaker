@@ -224,7 +224,7 @@ def free_role(role, system, data, schema, max_tokens):
 def review_one(pk, *, now=None):
     """Row lock prevents concurrent reviews. Each completed step survives quota exhaustion."""
     now = now or timezone.now()
-    review = ThreadReview.objects.select_for_update().select_related('thread', 'editorial_thread').get(pk=pk)
+    review = ThreadReview.objects.select_for_update(of=('self',)).select_related('thread', 'editorial_thread').get(pk=pk)
     if review.status in ('approved', 'rejected') or (review.next_attempt_at and review.next_attempt_at > now):
         return review.status
     thread = review.thread or review.editorial_thread

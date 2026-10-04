@@ -70,7 +70,7 @@ def boxes(diagnosis):
 @draft_builder
 def sync_diagnosis_thread(diagnosis_id):
     """Blokada diagnozy i OneToOne chronią przed podwójną publikacją. Nie cofamy moderacji."""
-    diagnosis = SpinDiagnosis.objects.select_for_update().select_related('post__account').get(pk=diagnosis_id)
+    diagnosis = SpinDiagnosis.objects.select_for_update(of=('self',)).select_related('post__account').get(pk=diagnosis_id)
     visible = (diagnosis.status == 'approved' and not diagnosis.withdrawn_at
                and not diagnosis.hidden_at and diagnosis.post.available)
     if not visible:

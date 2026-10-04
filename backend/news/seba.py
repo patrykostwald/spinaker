@@ -118,7 +118,7 @@ def process(pk):
         return 'disabled'
     now, token = timezone.now(), uuid4().hex
     with transaction.atomic():
-        job = SebaReview.objects.select_for_update().select_related('note', 'warden').get(pk=pk)
+        job = SebaReview.objects.select_for_update(of=('self',)).select_related('note', 'warden').get(pk=pk)
         if job.status != 'queued' or job.due_at > now or (job.lease_until and job.lease_until > now):
             return 'waiting'
         if job.rounds >= 2:

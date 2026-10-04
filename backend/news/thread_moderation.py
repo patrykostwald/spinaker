@@ -112,7 +112,7 @@ def deliver_mail(decision_id=None, max_messages=100):
         rows = rows.filter(decision_id=decision_id)
     for pk in rows.order_by(F('last_attempt_at').asc(nulls_first=True), 'pk').values_list('pk', flat=True)[:max_messages]:
         with transaction.atomic():
-            mail = ThreadModerationMail.objects.select_for_update().select_related('decision').get(pk=pk)
+            mail = ThreadModerationMail.objects.select_for_update(of=('self',)).select_related('decision').get(pk=pk)
             if mail.sent_at:
                 continue
             mail.last_attempt_at = timezone.now()

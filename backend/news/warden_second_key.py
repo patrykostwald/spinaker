@@ -146,7 +146,7 @@ def verify(review_id):
         return 'disabled'
     now, token = timezone.now(), uuid4().hex
     with transaction.atomic():
-        review = WardenReview.objects.select_for_update().select_related('account').get(pk=review_id)
+        review = WardenReview.objects.select_for_update(of=('self',)).select_related('account').get(pk=review_id)
         if review.status != 'pending' or review.due_at > now or review.created_at + timedelta(hours=6) > now:
             return 'waiting'
         if review.lease_until and review.lease_until > now:

@@ -118,7 +118,7 @@ def flush_post_pushes():
                 continue
             # Same lock order as intake, also serializing pushes from separate groups.
             follow = Follow.objects.select_for_update().filter(user=row.user, figure_id=row.figure_id).first()
-            row = Notification.objects.select_for_update().select_related('user').get(pk=pk)
+            row = Notification.objects.select_for_update(of=('self',)).select_related('user').get(pk=pk)
             if not row.push_pending:
                 continue
             content_allowed = bool(follow and follow.mode == 'posts' and row.posts.filter(post__available=True).exists())
