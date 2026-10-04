@@ -481,3 +481,28 @@ class InterviewMessageAdmin(admin.ModelAdmin):
     list_display = ('created_at', 'ballot', 'text')
     list_filter = ('ballot__day',)
     readonly_fields = ('ballot', 'user', 'text', 'created_at')
+
+
+from news.feedback_models import BugReport, JourneyStep  # noqa: E402
+
+
+@admin.register(BugReport)
+class BugReportAdmin(admin.ModelAdmin):
+    """Zgłoszenia z przycisku „Zgłoś błąd” (właściciel 5.10). Zespół zmienia tylko status i notatkę."""
+    list_display = ('created_at', 'kind', 'status', 'path', 'viewport', 'theme', 'text')
+    list_filter = ('status', 'kind', 'theme')
+    search_fields = ('text', 'path')
+    readonly_fields = ('created_at', 'kind', 'text', 'path', 'viewport', 'theme', 'trail', 'contact', 'user')
+    fields = ('status', 'staff_note', *readonly_fields)
+
+
+@admin.register(JourneyStep)
+class JourneyStepAdmin(admin.ModelAdmin):
+    """Zbiorcza mapa przejść: bez osób, tylko liczniki na godzinę. Pełny raport: manage.py journey_report."""
+    list_display = ('hour', 'device', 'source', 'action', 'target', 'count')
+    list_filter = ('device', 'action')
+    search_fields = ('source', 'target', 'action')
+    readonly_fields = ('hour', 'device', 'source', 'action', 'target', 'count')
+
+    def has_add_permission(self, request):
+        return False

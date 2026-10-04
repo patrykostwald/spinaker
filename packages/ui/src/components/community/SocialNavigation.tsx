@@ -6,6 +6,8 @@ import { useFeature } from '../../lib/features';
 import { useAccount } from '../../lib/account';
 import { useNotifications } from '../../lib/accountPhase2';
 import { ThemeSwitcher } from '../ThemeSwitcher';
+import { BugReportButton } from '../BugReport';
+import { trackPage } from '../../lib/journey';
 
 type Entry = { label: string; href: string; path: string; account?: boolean };
 const icon = {
@@ -59,6 +61,7 @@ export function SocialNavigation() {
   const pathname = usePathname() ?? '/', notifications = useNotifications(), account = useAccount();
   const [sheet, setSheet] = useState(false);
   useEffect(() => setSheet(false), [pathname]);
+  useEffect(() => trackPage(pathname), [pathname]);
   useEffect(() => {
     if (!sheet) return;
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setSheet(false); };
@@ -93,7 +96,7 @@ export function SocialNavigation() {
       {accounts && !account.data?.authenticated && <Link href="/konto" className="sc-rail__login">Zaloguj się</Link>}
       <div className="sc-rail__foot">
         <ThemeSwitcher compact />
-        <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}</p>
+        <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}<BugReportButton className="sc-rail__bug" /></p>
       </div>
     </nav>
 
@@ -107,6 +110,7 @@ export function SocialNavigation() {
         <div className="sc-rail__group">{extra.map(entry => item(entry))}</div>
         <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}</p>
         <ThemeSwitcher compact />
+        <BugReportButton className="sc-rail__bug" />
         <button type="button" className="sc-more-sheet__close" onClick={() => setSheet(false)}>Zamknij</button>
       </div>
     </div>}

@@ -9068,3 +9068,19 @@ html[data-theme="light"] .sc-intro { background: #000; }
 /* „wróć” i strzałki zawsze nad paskiem boksów, żeby kliknięcie nie trafiało w pasek (znajomy właściciela 5.10) */
 .sc-trop-overlay__side-back { z-index: 40 !important; }
 .sc-thread-strip__arrow { z-index: 40 !important; }
+/* „Zgłoś błąd” (właściciel 5.10): drobny link w stopce paska, okno w stylu serwisu */
+.sc-rail__bug { border: 0; background: none; padding: 0; font: inherit; font-size: 13px; color: var(--sc-text-2); cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+.sc-rail__bug:hover { color: var(--sc-text); }
+.sc-bug-report { max-width: 480px; }
+.sc-bug-report__form { display: grid; gap: 14px; }
+.sc-bug-report__form label { display: grid; gap: 6px; font-size: 13px; color: var(--sc-text-2); }
+.sc-bug-report__form textarea, .sc-bug-report__form input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--sc-line); border-radius: 3px; background: var(--sc-bg); color: var(--sc-text); font: inherit; font-size: 15px; resize: vertical; }
+.sc-bug-report__form textarea:focus, .sc-bug-report__form input:focus { outline: none; border-color: var(--sc-accent); }
+.sc-bug-report__kind { display: flex; gap: 8px; }
+.sc-bug-report__kind button { flex: 1; padding: 9px 10px; border: 1px solid var(--sc-line); border-radius: 3px; background: none; color: var(--sc-text-2); font: inherit; font-size: 14px; cursor: pointer; }
+.sc-bug-report__kind button[aria-checked="true"] { border-color: var(--sc-accent); color: var(--sc-text); }
+.sc-bug-report__note { margin: 0; font-size: 12px; color: var(--sc-text-3); }
+.sc-bug-report__error { margin: 0; color: var(--sc-danger, #e5484d); font-size: 13px; }
+.sc-bug-report__done { display: grid; gap: 16px; justify-items: start; }
+.sc-rail__foot p .sc-rail__bug { display: block; text-decoration: none; font-size: inherit; color: inherit; white-space: nowrap; }
+.sc-rail__foot p .sc-rail__bug:hover { color: var(--sc-text); }
