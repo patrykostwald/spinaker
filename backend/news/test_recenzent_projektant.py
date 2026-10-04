@@ -88,3 +88,16 @@ def test_ask_any_skips_rate_limited_model(monkeypatch):
         return {'ok': True}
     monkeypatch.setattr(agents_common, 'ask', fake)
     assert agents_common.ask_any('p', {}, {}, force=True) == ({'ok': True}, ('openrouter', 'google/gemma-3:free'))
+
+
+def test_polish_message_keeps_original(models, monkeypatch):
+    from datetime import date
+    from news.clinic_models import ClinicDailyMessage
+    m = ClinicDailyMessage.objects.create(day=date(2026, 10, 3), camp='government', status='approved', thesis='Obronność',
+        message='Rządzący podkreślają postępy w obronności, prezentując drony i AI, oraz inwestują w edukację młodzieży poprzez szkolenia.')
+    answers = iter([{'thesis': 'Obronność', 'message': 'Rządzący podkreślają postępy w obronności, prezentując drony i AI. Inwestują też w edukację młodzieży poprzez szkolenia.', 'analysis': ''},
+                    {'message': True, 'reason': 'ten sam sens'}])
+    monkeypatch.setattr('news.agents_common.ask_any', lambda *a, **k: (next(answers), ('groq', 'a')))
+    assert recenzent.polish_message(m) == ['message']
+    m.refresh_from_db()
+    assert m.message.count('.') == 2 and 'oraz inwestują' in m.usage['original_text']['message']

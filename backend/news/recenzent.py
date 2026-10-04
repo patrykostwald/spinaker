@@ -113,6 +113,12 @@ def _act(finding, item):
         if d and polish_diagnosis(d):
             return 'redakcja językowa (sens bez zmian, oryginał zachowany)'
         return ''
+    if kind == 'przekaz' and finding.get('criterion') in (4, 6):
+        from news.clinic_models import ClinicDailyMessage
+        m = ClinicDailyMessage.objects.filter(pk=pk).first()
+        if m and polish_message(m):
+            return 'redakcja językowa (sens bez zmian, oryginał zachowany)'
+        return ''
     if kind == 'spinka':
         from news.account_models import PersonalContextThread
         from news.thread_review import enqueue
@@ -233,15 +239,21 @@ def audit_pages(force=False, base=None):
 # i cytaty, (2) długość 60-130% oryginału, (3) drugi model innej firmy potwierdza ten sam sens. Oryginał zostaje
 # w usage['original_text'] i jest jawny na stronie („pokaż tekst pierwotny”).
 POLISH_FIELDS = ('headline', 'summary', 'analysis')
-POLISH = ('Jesteś redaktorem językowym. Popraw WYŁĄCZNIE formę tekstów diagnozy, żeby czytelnik laik zrozumiał je szybciej: '
+MESSAGE_FIELDS = ('thesis', 'message', 'analysis')
+LIMITS = {'thesis': 160, 'headline': 200}
+POLISH = ('Jesteś redaktorem językowym. Popraw WYŁĄCZNIE formę tekstów, żeby czytelnik laik zrozumiał je szybciej: '
           'krótsze zdania, prostszy szyk, bez powtórzeń i żargonu, poprawna polszczyzna, krótkie myślniki. NIE zmieniaj sensu, ocen, '
-          'siły twierdzeń, liczb, nazw, nazwisk, dat ani cytatów; nie dodawaj i nie usuwaj żadnej informacji. Jeśli tekst jest już '
+          'siły twierdzeń, liczb, nazw, nazwisk, dat ani cytatów; nie dodawaj i nie usuwaj żadnej informacji. Sformułowania, które '
+          'relacjonują czyjeś stanowisko (np. „opozycja podkreśla, że…”), zostaw w brzmieniu tej strony. Jeśli tekst jest już '
           'czytelny, zwróć go bez zmian.')
-POLISH_SCHEMA = {'type': 'object', 'properties': {k: {'type': 'string'} for k in POLISH_FIELDS}, 'required': list(POLISH_FIELDS)}
 SAME = ('Porównaj oryginał i wersję po redakcji każdego pola. same=true tylko wtedy, gdy sens, oceny, stopień pewności, '
-        'liczby, nazwy i cytaty są identyczne, a zmieniła się wyłącznie forma.')
-SAME_SCHEMA = {'type': 'object', 'properties': {k: {'type': 'boolean'} for k in POLISH_FIELDS} | {'reason': {'type': 'string'}},
-               'required': [*POLISH_FIELDS, 'reason']}
+        'liczby, nazwy, cytaty i relacjonowane stanowiska stron są identyczne, a zmieniła się wyłącznie forma.')
+
+
+def _schemas(fields):
+    return ({'type': 'object', 'properties': {k: {'type': 'string'} for k in fields}, 'required': list(fields)},
+            {'type': 'object', 'properties': {**{k: {'type': 'boolean'} for k in fields}, 'reason': {'type': 'string'}},
+             'required': [*fields, 'reason']})
 
 
 def _facts(text):
@@ -262,27 +274,40 @@ def safe_rewrite(original, rewritten):
     return a[0] == b[0] and a[1] <= b[1] | {w for w in a[1] if w.lower() in rewritten.lower()} and a[2] == b[2]
 
 
-def polish_diagnosis(diagnosis, force=False):
+def polish(obj, fields, force=False):
+    """Redakcja językowa obiektu (diagnoza albo przekaz dnia): tylko forma, trzy bezpieczniki, oryginał w usage."""
     from django.utils import timezone
-    original = {k: getattr(diagnosis, k) or '' for k in POLISH_FIELDS}
-    if (diagnosis.usage or {}).get('readability_edit') or not any(original.values()):
+    original = {k: getattr(obj, k) or '' for k in fields}
+    if (obj.usage or {}).get('readability_edit') or not any(original.values()):
         return []
-    draft = _ask_author(POLISH, {'tekst': original}, POLISH_SCHEMA, force)
-    candidate = {k: str(draft.get(k) or '').strip() for k in POLISH_FIELDS}
-    changed = [k for k in POLISH_FIELDS if candidate[k] and candidate[k] != original[k] and safe_rewrite(original[k], candidate[k])]
+    polish_schema, same_schema = _schemas(fields)
+    draft = _ask_author(POLISH, {'tekst': original}, polish_schema, force)
+    candidate = {k: str(draft.get(k) or '').strip() for k in fields}
+    changed = [k for k in fields if candidate[k] and candidate[k] != original[k] and safe_rewrite(original[k], candidate[k])
+               and len(candidate[k]) <= LIMITS.get(k, 100000)]
     if not changed:
         return []
+    _, same_schema = _schemas(changed)
     verdict = _ask_checker(SAME, {'oryginał': {k: original[k] for k in changed}, 'po_redakcji': {k: candidate[k] for k in changed}},
-                         SAME_SCHEMA, force)
+                           same_schema, force)
     changed = [k for k in changed if verdict.get(k) is True]
     if not changed:
         return []
-    usage = dict(diagnosis.usage or {})
+    usage = dict(obj.usage or {})
     usage['original_text'] = {k: original[k] for k in changed}
     usage['readability_edit'] = {'at': timezone.now().isoformat(timespec='minutes'), 'fields': changed,
-                                 'editor': ':'.join(_used['author'] or ('-',)), 'checker': ':'.join(_used['checker'] or ('-',)), 'reason': str(verdict.get('reason', ''))[:300]}
+                                 'editor': ':'.join(_used['author'] or ('-',)), 'checker': ':'.join(_used['checker'] or ('-',)),
+                                 'reason': str(verdict.get('reason', ''))[:300]}
     for k in changed:
-        setattr(diagnosis, k, candidate[k])
-    diagnosis.usage = usage
-    diagnosis.save(update_fields=[*changed, 'usage'])
+        setattr(obj, k, candidate[k])
+    obj.usage = usage
+    obj.save(update_fields=[*changed, 'usage'])
     return changed
+
+
+def polish_diagnosis(diagnosis, force=False):
+    return polish(diagnosis, POLISH_FIELDS, force)
+
+
+def polish_message(message, force=False):
+    return polish(message, MESSAGE_FIELDS, force)
