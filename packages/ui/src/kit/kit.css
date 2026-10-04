@@ -8881,3 +8881,7 @@ html { scrollbar-width: thin; }
 .sc-trop-overlay__scroller[data-moving] .sc-trop-overlay__scroller-small { opacity: 1; transform: none; }
 @media (max-width: 767px) { .sc-trop-overlay__scroller { display: none; } }
 @media (min-width: 768px) { .sc-trop-overlay__body > article > .sc-thread-social { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); } }
+
+/* kółko powrotu: wielkość i krój awatara, w kolumnie awatarów, na wysokości dolnej krawędzi boksów (właściciel 4.10) */
+.sc-trop-overlay__side-back { width: 40px !important; height: 40px !important; font: 700 15px/38px var(--sc-font-sans, Montserrat, sans-serif) !important; text-align: center; }
+.sc-trop-overlay__side-back { font-size: 22px !important; line-height: 36px !important; }

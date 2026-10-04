@@ -82,7 +82,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
     const root = body.current;
     if (!root) return;
     const place = () => { const track = root.querySelector('.sc-thread-strip__track, .sc-pick__stage') as HTMLElement | null;
-      if (track) setBackTop(track.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop + track.offsetHeight / 2); };
+      if (track) setBackTop(track.getBoundingClientRect().bottom - root.getBoundingClientRect().top + root.scrollTop - 20); };
     place();
     const observer = new ResizeObserver(place); observer.observe(root);
     const mo = new MutationObserver(place); mo.observe(root, { childList: true, subtree: true });
