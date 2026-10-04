@@ -1,6 +1,7 @@
 "use client";
 
 import { DiscussionCounts } from "./ClinicDiscussion";
+import { spinTint } from '../../lib/clipColor';
 
 import Link from "next/link";
 import { Dialog } from "../Dialog";
@@ -79,7 +80,7 @@ export function SpinRow({ spin, withSummary = false, badge, returnTo, onOpen }: 
   const image = spin.post.media.find(item => item.url);
   const href = `/klinika/${spin.id}${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
   return (
-    <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`}>
+    <article className="sc-spin-row" data-verdict={spin.verdict} aria-labelledby={`spin-row-${spin.id}`} style={spinTint(spin.intensity) ? { ['--tint' as string]: spinTint(spin.intensity)! } : undefined}>
       {/* Siatka 2×2: kto i kiedy obok tytułu, miniatura obok danych diagnozy. */}
       <div className="sc-spin-row__side">
         <span className="sc-spin-row__thumb">

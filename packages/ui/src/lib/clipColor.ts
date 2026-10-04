@@ -26,3 +26,19 @@ export function clipColor(counts?: Counts | null) {
   const alpha = .35 + .65 * strength;
   return `rgb(${rgb[0]} ${rgb[1]} ${rgb[2]} / ${alpha.toFixed(2)})`;
 }
+
+/** Delikatny odcień płytki z ocen czytelników (bez głosu autora); null, gdy nikt nie ocenił (właściciel 4.10). */
+export function reactionTint(counts?: Counts | null) {
+  const c = counts ?? { positive: 0, doubt: 0, negative: 0 };
+  const n = c.positive + c.doubt + c.negative;
+  if (!n) return null;
+  const value = (c.positive + .5 * c.doubt) / n;
+  const rgb = value >= .5 ? lerp(YELLOW, GREEN, (value - .5) * 2) : lerp(RED, YELLOW, value * 2);
+  return `rgb(${rgb[0]} ${rgb[1]} ${rgb[2]})`;
+}
+
+/** Odcień według siły spinu: słaby zielony, średni niebieski, silny czerwony (jak w całym serwisie). */
+export function spinTint(intensity?: number | null) {
+  if (intensity == null) return null;
+  return intensity >= 70 ? 'var(--sc-spin-hi)' : intensity >= 40 ? 'var(--sc-spin-mid)' : 'var(--sc-spin-lo)';
+}

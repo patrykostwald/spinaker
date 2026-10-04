@@ -8280,7 +8280,7 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-trow__repins .sc-clasp { width: 22px; height: 16px; color: var(--sc-text-3); }
 /* boks jako osobny obiekt (werdykt Konsylium 2326, kierunek „matowa płyta”): delikatny gradient czerni, światło od góry,
    cień pod spodem; otwarte narożniki rysuje dalej .sc-rframe; bez koloru w spoczynku */
-.sc-thread-strip__box { background: linear-gradient(180deg, #121316 0%, #0a0b0d 100%) !important;
+.sc-thread-strip__box { background: var(--plate, linear-gradient(180deg, #121316 0%, #0a0b0d 100%)) !important;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .05), 0 10px 24px -14px rgb(0 0 0 / .9) !important; transition: box-shadow .35s, background .35s, transform .35s cubic-bezier(.2,.8,.2,1); }
 .sc-thread-strip__box:hover { background: linear-gradient(180deg, #17181c 0%, #0d0e10 100%) !important;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .08), 0 14px 30px -14px rgb(0 0 0 / .95) !important; transform: translateY(-2px); }
@@ -8546,7 +8546,8 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
     linear-gradient(var(--sc-fr-o), var(--sc-fr-o)) left 28px top 0 / calc(100% - 28px) 1px no-repeat,
     linear-gradient(var(--sc-fr-o), var(--sc-fr-o)) right 0 top 0 / 1px calc(100% - 28px) no-repeat,
     linear-gradient(var(--sc-fr-o), var(--sc-fr-o)) left 0 bottom 0 / calc(100% - 28px) 1px no-repeat,
-    linear-gradient(var(--sc-fr-o), var(--sc-fr-o)) left 0 top 28px / 1px calc(100% - 28px) no-repeat !important; }
+    linear-gradient(var(--sc-fr-o), var(--sc-fr-o)) left 0 top 28px / 1px calc(100% - 28px) no-repeat,
+    var(--outer-fill, linear-gradient(transparent, transparent)) !important; }
 .sc-message-card, .sc-scan-card, .sc-spin-row, .sc-scan-m, .sc-scan-fam, .sc-council__member, .sc-recruit__row, .sc-ctx__box, .sc-ctx__more,
 details.sc-source-disclosure, details.sc-deleted, .sc-clinic-discussion, .sc-f2-context {
   border: 0 !important; border-radius: 3px !important;
@@ -8555,7 +8556,7 @@ details.sc-source-disclosure, details.sc-deleted, .sc-clinic-discussion, .sc-f2-
     linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) right 0 top 0 / 1px calc(100% - 22px) no-repeat,
     linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 bottom 0 / calc(100% - 22px) 1px no-repeat,
     linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 top 22px / 1px calc(100% - 22px) no-repeat,
-    linear-gradient(180deg, #121316 0%, #0a0b0d 100%) !important;
+    var(--plate, linear-gradient(180deg, #121316 0%, #0a0b0d 100%)) !important;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .04), 0 14px 30px -16px rgb(0 0 0 / .9) !important; }
 /* dociąganie w kartach: nagłówek u góry, treść w środku, stopka przy dole */
 .sc-message-card, .sc-scan-card, .sc-council__member, .sc-ctx__box { display: flex; flex-direction: column; }
@@ -8667,3 +8668,50 @@ details.sc-source-disclosure, details.sc-deleted, .sc-clinic-discussion, .sc-f2-
 .sc-deleted__list > li { border-radius: 3px !important; }
 .sc-deleted__list li { grid-template-columns: minmax(0, 1.4fr) 11rem minmax(0, 1fr) auto; }
 @media (max-width: 640px) { .sc-deleted__list li { grid-template-columns: minmax(0, 1fr) auto; } }
+
+/* obrys reaguje na kliknięcie (właściciel 4.10):
+   element, w który się wchodzi - niedociągnięte linie dobiegają do narożników i domykają obrys;
+   element nieklikalny - przerwy w narożnikach lekko się przesuwają i wracają */
+.sc-rframe { transition: background-size .22s cubic-bezier(.2,.8,.2,1), background-position .22s cubic-bezier(.2,.8,.2,1); }
+.sc-thread-strip__box:active .sc-rframe {
+  background-size: 100% 1px, 1px 100%, 100% 1px, 1px 100% !important;
+  background-position: left 0 top 0, right 0 top 0, left 0 bottom 0, left 0 top 0 !important; }
+@keyframes sc-frame-nudge { 0%, 100% { background-position: left 22px top 0, right 0 top 0, left 0 bottom 0, left 0 top 22px, 0 0; }
+  45% { background-position: left 30px top 0, right 0 top -8px, left -8px bottom 0, left 0 top 30px, 0 0; } }
+.sc-message-card:active, .sc-scan-m:active, .sc-council__member:active, .sc-pick__card:active, .sc-method-steps > li:active, .sc-spin-explainer__grid > li:active {
+  animation: sc-frame-nudge .35s cubic-bezier(.2,.8,.2,1); }
+.sc-thread-feed__list > li:active .sc-trow { transform: scale(.995); transition: transform .15s; }
+@media (prefers-reduced-motion: reduce) { .sc-rframe { transition: none; } .sc-message-card:active, .sc-scan-m:active, .sc-council__member:active, .sc-pick__card:active { animation: none; } }
+
+/* delikatne odcienie płytek (właściciel 4.10): boksy i wiersze spinek według ocen, karty diagnoz według siły spinu,
+   newsletter z własnym akcentem; bardzo subtelnie, tylko od góry lub z lewej */
+[style*="--tint"] { --plate: linear-gradient(180deg, color-mix(in srgb, var(--tint) 10%, #121316) 0%, #0a0b0d 70%); }
+.sc-thread-strip--row[style*="--tint"] .sc-trow { background: linear-gradient(90deg, color-mix(in srgb, var(--tint) 7%, transparent) 0%, transparent 38%); }
+.sc-newsletter { --outer-fill: radial-gradient(90% 140% at 0% 0%, color-mix(in srgb, var(--sc-accent) 8%, transparent) 0%, transparent 62%); }
+/* wiersz listy: odcień na całym wierszu, bez twardej krawędzi */
+.sc-thread-strip--row[style*="--tint"] .sc-trow { background: none !important; }
+.sc-thread-strip--row[style*="--tint"] { background: linear-gradient(90deg, color-mix(in srgb, var(--tint) 7%, transparent) 0%, transparent 40%) !important; }
+/* baza diagnoz: pole, filtry i sortowanie w tym samym stylu (cienkie linie, sam tekst) */
+.sc-clinic-db__search, .sc-clinic-db__input { border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; }
+.sc-clinic-db__search { border-bottom: 1px solid var(--sc-grid) !important; }
+.sc-clinic-db__search:focus-within { border-bottom-color: var(--sc-accent) !important; }
+.sc-clinic-db__toggle { border: 0 !important; border-radius: 0 !important; background: none !important; color: var(--sc-text-2) !important; padding: 6px 2px !important; }
+.sc-clinic-db__toggle:hover { color: var(--sc-text) !important; }
+.sc-clinic-db select, .sc-clinic-db__sort select { border: 0 !important; border-bottom: 1px solid var(--sc-grid) !important; border-radius: 0 !important; background-color: transparent !important; }
+
+/* pasek „dziś w danych” (właściciel 4.10): bez wypełnienia, cienka niedociągnięta linia, szarości */
+.sc-ticker { position: relative; overflow: hidden; margin: 6px 0 14px; padding: 11px 0; font-size: 12.5px; color: var(--sc-text-2);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  background: linear-gradient(var(--sc-grid), var(--sc-grid)) left 40px bottom 0 / calc(100% - 40px) 1px no-repeat; }
+.sc-ticker__track { display: flex; width: max-content; animation: sc-ticker calc(var(--n, 8) * 7s) linear infinite; }
+.sc-ticker:hover .sc-ticker__track, .sc-ticker:focus-within .sc-ticker__track { animation-play-state: paused; }
+.sc-ticker__row { display: flex; gap: 44px; margin: 0; padding: 0 44px 0 0; list-style: none; }
+.sc-ticker__row li { white-space: nowrap; }
+.sc-ticker__row a { color: inherit; text-decoration: none; transition: color .2s; }
+.sc-ticker__row a:hover { color: var(--sc-text); }
+.sc-ticker__row time { margin-right: 10px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
+.sc-ticker__row b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--sc-text); }
+.sc-ticker__row b[data-tone="lo"] { color: var(--sc-spin-lo); } .sc-ticker__row b[data-tone="mid"] { color: var(--sc-spin-mid); } .sc-ticker__row b[data-tone="hi"] { color: var(--sc-spin-hi); }
+.sc-ticker__row li + li::before { content: ""; display: inline-block; width: 4px; height: 4px; margin: 0 22px 2px -26px; border-radius: 50%; background: var(--sc-text-3); opacity: .5; }
+@keyframes sc-ticker { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .sc-ticker { overflow-x: auto; } .sc-ticker__track { animation: none; } }

@@ -12,7 +12,7 @@ import { FocusView, focusRef, SpinkaClip, StepRate, useThreadSteps, type FocusSt
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
-import { clipColor } from '../../lib/clipColor';
+import { clipColor, reactionTint } from '../../lib/clipColor';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
@@ -145,7 +145,9 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     onMouseEnter: (event: React.MouseEvent) => { if (!(event.currentTarget as HTMLElement).closest('.sc-trop-overlay')) setReactionMood(sumCounts(clips)); },
     onMouseLeave: (event: React.MouseEvent) => { if (!(event.currentTarget as HTMLElement).closest('.sc-trop-overlay')) setReactionMood(null); },
   } : {};
-  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} {...hoverProps} {...enter}>
+  // wiersz listy: delikatny odcień według ogólnej oceny spinki (właściciel 4.10)
+  const rowTint = row ? reactionTint(sumCounts(clips)) : null;
+  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} style={rowTint ? { ['--tint' as string]: rowTint } : undefined} {...hoverProps} {...enter}>
     <div className="sc-thread-strip__frame">
     {row ? <header className="sc-trow">
       {/* Wiersz listy (właściciel 3.10): z lewej autor, tytuł i kwadraty reakcji (jeden na spinkę), w środku miniatury boksów,
@@ -237,7 +239,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
           </div>
         </li>}
         <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)} data-img={expanded && item.image_url ? '' : undefined} data-note={expanded && item.note ? '' : undefined}
-          style={{ ['--i' as string]: index }} onClick={event => { if (expanded && !(event.target as HTMLElement).closest('a, button')) setFocus({ kind: 'box', index }); }}>
+          style={{ ['--i' as string]: index, ...(expanded && reactionTint(steps.find(item.item_id, 'box')?.counts) ? { ['--tint' as string]: reactionTint(steps.find(item.item_id, 'box')?.counts) } : {}) }} onClick={event => { if (expanded && !(event.target as HTMLElement).closest('a, button')) setFocus({ kind: 'box', index }); }}>
           {item.note && !expanded && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
           {/* rodzaj wpisany w otwarty narożnik obrysu (propozycja 1, właściciel 4.10) */}
           {expanded && item.role && <span className="sc-box-tag" data-role={item.role}>{ROLE_WORD[item.role]}</span>}
