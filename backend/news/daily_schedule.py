@@ -15,7 +15,7 @@ BEAT_PLAN = {
     'mechanik-1h': ('mechanik_task', {'minute': 23}),
     'recenzent-2h': ('recenzent_task', {'minute': 41, 'hour': '*/2'}),  # właściciel 5.10: recenzuje wszystko, co trafia na stronę
     'projektant-daily': ('projektant_task', {'hour': 4, 'minute': 20}),
-    'automatyk-daily': ('automatyk_task', {'hour': 6, 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
+    'automatyk-daily': ('automatyk_task', {'hour': '6,13', 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
     'pracownia-osint': ('pracownia_osint_task', {'hour': '4,16', 'minute': 50}),  # właściciel 5.10: agenci rozwijający przeszłość.today
     'przeszlosc-topics': ('przeszlosc_topics_task', {'hour': 5, 'minute': 10}),  # tydzień: stan wiedzy UX/UI i przegląd wszystkich stron  # właściciel 5.10: agent naprawiający połączenia z modelami
     'narrative-thread-daily': ('narrative_thread_task', {'hour': 21, 'minute': 45}),

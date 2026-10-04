@@ -94,7 +94,7 @@ for task, name, env in (
     ('source_social_task', 'Zbieracz kanałów źródeł', ''),
     ('deleted_posts_task', 'Kontrola usuniętych wpisów', ''),
     ('sejm_career_task', 'Zbieracz karier poselskich', ''),
-    ('political_poll_task', 'Zbieracz X', 'X_POLITICAL_POLL_ENABLED'),
+    ('political_poll_task', 'Zbieracz X', 'X_POLITICAL_POLLING_ENABLED'),
     ('sync_live_public_rosters_task', 'Zbieracz składów instytucji', ''),
 ):
     REGISTRY[task] = agent(name, 'Aktualizuje dane z publicznych źródeł w granicach limitów.',
@@ -151,7 +151,10 @@ def snapshot(now=None):
     from news.duty import daily_costs
     now = now or timezone.now()
     costs = daily_costs(now)
-    entries = app.conf.beat_schedule
+    from celery.schedules import schedule as every
+    # tryb ciągły zbieracza X zapisuje harmonogram jako timedelta (audyt Automatyka 5.10: przez to padała mapa agentów)
+    entries = {key: ({**entry, 'schedule': every(entry['schedule'])} if isinstance(entry['schedule'], timedelta) else entry)
+               for key, entry in app.conf.beat_schedule.items()}
     pulses = cache.get_many(['heartbeat:' + key for key in entries])
     rows = []
     for identity, spec in REGISTRY.items():

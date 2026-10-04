@@ -526,7 +526,9 @@ def pracownia_osint_task():
     from news import pracownia_osint, przeszlosc
     if not przeszlosc.enabled():
         return {'status': 'disabled'}
-    return {'status': 'ok', 'done': pracownia_osint.step()}
+    done = pracownia_osint.step()
+    failed = [agent for agent, result in done.items() if isinstance(result, str) and result.startswith('błąd')]
+    return {'status': 'error' if failed else 'ok', 'roles': len(done), 'failed': len(failed)}
 
 
 @shared_task

@@ -29,3 +29,13 @@ def test_step_checks_without_ai_and_keeps_checked_fixes(monkeypatch):
     assert [f['change'] for f in note.scores['fixes']] == [fix['change']]
     assert AgentNote.objects.filter(agent='automatyk', kind='idea', score=90).count() == 1
     assert automatyk.step() == note  # raz dziennie
+
+
+def test_agent_map_handles_seconds_schedule(monkeypatch):
+    """Tryb ciągły zbieracza X: harmonogram jako timedelta nie może wywracać mapy agentów (audyt 5.10)."""
+    from datetime import timedelta
+    from config.celery import app
+    from news.agent_registry import snapshot
+    monkeypatch.setitem(app.conf.beat_schedule, 'political-x-minute', {'task': 'news.tasks.political_poll_task', 'schedule': timedelta(seconds=60)})
+    rows = [r for r in snapshot() if r['beat'] == 'political-x-minute']
+    assert rows and rows[0]['schedule'] == 'co 1 min'

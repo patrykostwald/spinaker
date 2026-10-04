@@ -109,6 +109,8 @@ def loops_state(rows=None):
                     checks.append(f'{portal} · {name}: krok „{label}” jest wyłączony - pętla stoi w tym miejscu.')
                 elif row['result'] == 'error':
                     checks.append(f'{portal} · {name}: krok „{label}” kończy się błędem ({state["summary"][:80]}).')
+                elif row['result'] == 'warn' and row.get('last_run'):
+                    checks.append(f'{portal} · {name}: krok „{label}” jest spóźniony albo pominięty ({state["summary"][:80]}).')
                 elif row['schedule'] == 'wkrótce':
                     checks.append(f'{portal} · {name}: krok „{label}” nie ma harmonogramu.')
             elif ident:

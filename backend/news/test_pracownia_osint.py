@@ -42,13 +42,13 @@ def test_zwiadowca_takes_license_from_catalog_not_model(quiet, monkeypatch):
     assert note.scores['sources'][0]['license'] == 'CC0 1.0'
 
 
-def test_prawnik_reviews_new_proposals_once_and_defaults_to_conditional(quiet, monkeypatch):
+def test_prawnik_reviews_new_proposals_once_and_defaults_to_consultation(quiet, monkeypatch):
     AgentNote.objects.create(agent='kartograf', kind='finding', title='L', body='',
                              scores={'gaps': [{'feature': 'Alerty', 'why_journalists_care': 'czas'}, {'feature': 'Scraping FB', 'why_journalists_care': 'x'}]})
     answers(monkeypatch, {'verdicts': [{'n': 1, 'verdict': 'niedozwolone', 'why': 'obchodzi logowanie'}]})
     note = po.prawnik(force=True)
     verdicts = [r['verdict'] for r in note.scores['verdicts']]
-    assert verdicts == ['warunkowo', 'niedozwolone'] and '1 odrzuconych' in note.title
+    assert verdicts == ['do konsultacji', 'niedozwolone'] and '1 odrzuconych' in note.title
     assert not po.due('prawnik') and po.prawnik(force=True) is None
 
 

@@ -207,7 +207,7 @@ WYNALAZCA_CHECK = ('Sprawdź pomysły kolegi. W remove podaj numery (od 0) pomys
                    'katalog lub previous, zwykłych (konkurencja już to ma), naruszających zasadę tej samej miary albo profilujących osoby prywatne.')
 ARCHITEKT = (MISSION + ' Jesteś Architektem produktu. Masz katalog funkcji, luki Kartografa, pomysły Wynalazcy (ideas), technologie Technologa (tech), zbiory Zwiadowcy z werdyktami Prawnika, '
              'raporty dziennikarzy testowych i stan danych Kontrolera. Ułóż plan 10 następnych funkcji, od najważniejszej. Tylko '
-             'propozycje dozwolone lub warunkowe (z warunkami w brief). Dla każdej: tytuł, catalog_id, poziom (darmowe/Pro), wysiłek '
+             'propozycje dozwolone lub warunkowe (z warunkami w brief), pomijasz „do konsultacji” i niedozwolone. Dla każdej: tytuł, catalog_id, poziom (darmowe/Pro), wysiłek '
              'S/M/L, wartość 1-10, dlaczego (z odwołaniem do konkretnego raportu), 3-5 kryteriów odbioru i brief: gotowe zlecenie dla '
              'programisty (co zbudować, z jakich danych, jak pokazać prosto). Najpierw to, co przyciągnie dziennikarzy najszybciej.')
 ARCHITEKT_CHECK = ('Sprawdź plan kolegi. W remove podaj numery (od 0) pozycji niedozwolonych prawnie, bez oparcia w raportach, '
@@ -327,7 +327,7 @@ def prawnik(force=False):
     if since:
         notes = notes.filter(created_at__gt=since)
     proposals = []
-    for note in notes[:6]:
+    for note in notes[:20]:
         for g in (note.scores or {}).get('gaps', []):
             proposals.append({'note': note.pk, 'what': f"Funkcja: {g['feature']} ({g.get('why_journalists_care', '')})"})
         for t in (note.scores or {}).get('tech', []):
@@ -338,10 +338,10 @@ def prawnik(force=False):
             proposals.append({'note': note.pk, 'what': f"Zbiór: {s['dataset']}, licencja {s['license']}, użycie: {s['use']}"})
     if not proposals:
         return None
-    proposals = [{'n': n, **p} for n, p in enumerate(proposals[:30])]
+    proposals = [{'n': n, **p} for n, p in enumerate(proposals[:60])]
     answer = _ask(PRAWNIK, {'rules': LEGAL, 'proposals': proposals}, LEGAL_SCHEMA, force)
     verdicts = {v['n']: v for v in answer.get('verdicts', []) if isinstance(v, dict) and isinstance(v.get('n'), int)}
-    rows = [{**p, 'verdict': verdicts.get(p['n'], {}).get('verdict', 'warunkowo'), 'why': verdicts.get(p['n'], {}).get('why', 'brak oceny: do konsultacji'),
+    rows = [{**p, 'verdict': verdicts.get(p['n'], {}).get('verdict', 'do konsultacji'), 'why': verdicts.get(p['n'], {}).get('why', 'brak oceny: do konsultacji'),
              'conditions': verdicts.get(p['n'], {}).get('conditions', '')} for p in proposals]
     data = {'verdicts': rows, 'authors': _authors()}
     body = chr(10).join(f"[{r['verdict']}] {r['what']}: {r['why']}{(' Warunki: ' + r['conditions']) if r['conditions'] else ''}" for r in rows)
