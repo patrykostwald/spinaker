@@ -9016,3 +9016,14 @@ html { scrollbar-width: thin; }
 .sc-trop-overlay__body > article .sc-joint { animation: sc-joint-spread .45s cubic-bezier(.2,.8,.2,1) calc(1s + var(--j, 0) * 60ms) both; }
 .sc-trop-overlay__body > article .sc-thread-strip__track { transition: padding-top .35s cubic-bezier(.2,.8,.2,1); }
 @media (prefers-reduced-motion: reduce) { .sc-trop-overlay__body > article .sc-joint { animation: none; } }
+
+/* otwarta spinka: boks kontekstowy wysuwa się w górę z zatrzasku i chowa z powrotem (właściciel 5.10) */
+.sc-trop-overlay__body > article .sc-joint__pop {
+  display: grid !important; visibility: hidden; opacity: 0; pointer-events: none;
+  transform: translateX(-50%) translateY(34px) !important; clip-path: inset(100% 0 0 0);
+  transition: transform .5s cubic-bezier(.2,.8,.2,1), clip-path .5s cubic-bezier(.2,.8,.2,1), opacity .25s ease .1s, visibility 0s linear .5s;
+  animation: none !important; }
+.sc-trop-overlay__body > article .sc-joint.is-open .sc-joint__pop {
+  visibility: visible; opacity: 1; pointer-events: auto; transform: translateX(-50%) !important; clip-path: inset(-20px -20px -20px -20px);
+  transition: transform .55s cubic-bezier(.2,.8,.2,1) .18s, clip-path .55s cubic-bezier(.2,.8,.2,1) .18s, opacity .2s ease .18s, visibility 0s; }
+@media (prefers-reduced-motion: reduce) { .sc-trop-overlay__body > article .sc-joint__pop, .sc-trop-overlay__body > article .sc-joint.is-open .sc-joint__pop { transition: none; } }
