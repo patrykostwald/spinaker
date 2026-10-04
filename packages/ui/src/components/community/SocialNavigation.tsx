@@ -22,8 +22,8 @@ const main: Entry[] = [
   { label: 'Spinki', href: '/', path: icon.tropy },
   { label: 'Klinika', href: '/klinika', path: icon.clinic },
   { label: 'Szukaj', href: '/search', path: icon.search },
-  { label: 'Powiadomienia', href: '/konto#powiadomienia', path: icon.bell, account: true },
   { label: 'Profil', href: '/profile', path: icon.profile, account: true },
+  { label: 'Powiadomienia', href: '/konto#powiadomienia', path: icon.bell, account: true },
 ];
 const extra: Entry[] = [
   { label: 'Konsylium AI', href: '/konsylium', path: icon.council },
@@ -98,7 +98,7 @@ export function SocialNavigation() {
     </nav>
 
     <nav className="sc-tabbar" aria-label="Działy serwisu">
-      {[main[0], main[1], main[2], main[4]].map(entry => item(entry, true))}
+      {[main[0], main[1], main[2], main[3]].map(entry => item(entry, true))}
       <button type="button" aria-expanded={sheet} aria-controls="sc-more-sheet" onClick={() => setSheet(value => !value)}><Icon d={icon.more} /><span>Więcej</span></button>
     </nav>
 

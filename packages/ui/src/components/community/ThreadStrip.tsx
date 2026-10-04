@@ -21,7 +21,7 @@ const plural = (n: number, one: string, few: string, many: string) => n === 1 ? 
 function BoxFace({ item }: { item: ThreadElement }) {
   return <>
     {item.image_url && <span className="sc-box-face sc-box-face--img" aria-hidden="true"><img src={item.image_url} alt="" loading="lazy" /></span>}
-    {item.note && <span className="sc-box-face sc-box-face--note" data-only={!item.image_url || undefined}><span>{item.note}</span><small>komentarz autora</small></span>}
+    {item.note && <span className="sc-box-face sc-box-face--note" data-only={!item.image_url || undefined}><span>{item.note}</span></span>}
   </>;
 }
 const ratingsWord = (n: number) => n === 1 ? 'ocena' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'oceny' : 'ocen';
@@ -236,7 +236,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
             </span>
           </div>
         </li>}
-        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)}
+        <motion.li layout="position" transition={{ duration: reduced ? 0 : .3, ease: [.2, .8, .2, 1] }} className={`sc-thread-strip__box${highlight === index + 1 ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)} data-img={expanded && item.image_url ? '' : undefined} data-note={expanded && item.note ? '' : undefined}
           style={{ ['--i' as string]: index }} onClick={event => { if (expanded && !(event.target as HTMLElement).closest('a, button')) setFocus({ kind: 'box', index }); }}>
           {item.note && !expanded && <span className="sc-thread-strip__lead" title={item.note}>{item.note}</span>}
           {/* rodzaj wpisany w otwarty narożnik obrysu (propozycja 1, właściciel 4.10) */}

@@ -121,10 +121,12 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
   const kind = item.box_type ?? item.kind;
   return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Spinka ${step.index}`}>
     <header className="sc-pick__bar">
-      <button type="button" className="sc-pick__back" onClick={onClose}>← Cała spinka</button>
+      <span />
       <span className="sc-pick__count">{step.kind === 'box' ? `Boks ${step.index + 1} z ${items.length}` : `Spinka ${step.index} z ${items.length - 1}`}</span>
     </header>
     <div className="sc-pick__stage">
+      {/* łatwy powrót po lewej, na wysokości karty; dalsza droga po prawej jaśniejsza (właściciel 4.10) */}
+      <button type="button" className="sc-pick__home" onClick={onClose}>← Cała spinka</button>
       <button type="button" className="sc-pick__arrow" disabled={at === 0} onClick={() => setAt(at - 1)} aria-label="Poprzedni element">‹</button>
       <article className="sc-pick__card" key={at} data-kind={step.kind}>
         <div className="sc-pick__media" data-type={kind}>

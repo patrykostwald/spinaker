@@ -72,13 +72,15 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       {following !== null && <button type="button" className="sc-trop-overlay__following" onClick={() => viewTransition(() => open(following))}>Następna spinka →</button>}
     </div>
     <div className="sc-trop-overlay__body" ref={body}>
+      {/* powrót do listy pojawia się po najechaniu na sekcję (właściciel 4.10) */}
+      <button type="button" className="sc-trop-overlay__side-back" onClick={() => window.history.back()}>← Wszystkie spinki</button>
       {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinki" />}
       {query.isError && <p role="alert">Nie udało się pobrać spinki. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
       {thread && <>
         {thread.description && !thread.signal_kind && !thread.narrative && <p className="sc-trop-overlay__desc">{thread.description}</p>}
         <ThreadStrip key={thread.id} thread={thread} items={thread.items} full />
-        {next && <section className="sc-trop-overlay__next" aria-label="Polecana spinka">
-          <p className="sc-trop-overlay__next-k">Polecana spinka</p>
+        {next && <section className="sc-trop-overlay__next" aria-label="Warto też zobaczyć">
+          <p className="sc-trop-overlay__next-k">Warto też zobaczyć</p>
           <ThreadStrip key={`next-${next.id}`} thread={next} variant="row" onFullscreen={() => open(next.id)} />
         </section>}
       </>}
