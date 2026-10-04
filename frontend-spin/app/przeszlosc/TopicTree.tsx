@@ -9,7 +9,9 @@ import { Loading } from '@spin-clinic/ui/kit';
 type Node = { id: string; kind: string; label: string; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
 type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
-type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number> };
+type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
+  clubs: { club: string; size: number; votes: Record<string, number> }[]; members: [string, string, string][] };
+type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[] };
 
 const COLUMNS: [string, string][] = [['person', 'Osoby'], ['organisation', 'Spółki i fundacje (KRS)'], ['record', 'Sejm'],
   ['statement', 'Wpisy na X'], ['diagnosis', 'Diagnozy Dr. Spina'], ['media', 'Media']];
@@ -136,10 +138,11 @@ function TopicView({ data }: { data: Graph }) {
   return <div className="sc-tv">
     <header className="sc-tv__head">
       <h2>{data.topic}</h2>
-      <p>{[['statement', 'wpisów polityków'], ['diagnosis', 'diagnoz Dr. Spina'], ['record', 'dokumentów Sejmu'], ['media', 'artykułów'], ['person', 'osób i instytucji']]
+      <p>{[['statement', 'wpisów polityków'], ['diagnosis', 'diagnoz Dr. Spina'], ['vote', 'głosowań'], ['record', 'dokumentów Sejmu'], ['media', 'artykułów'], ['person', 'osób i instytucji']]
         .filter(([k]) => data.counts[k]).map(([k, label]) => `${data.counts[k]} ${label}`).join(' · ')}</p>
     </header>
     <div className="sc-tv__grid">
+      {Boolean(data.votes?.length) && <Votes votes={data.votes!} />}
       <section className="sc-tv__time" aria-label="Oś czasu">
         <h3>Oś czasu</h3>
         <ol>{shown.map(n => {
@@ -182,4 +185,41 @@ function TopicView({ data }: { data: Graph }) {
       </aside>
     </div>
   </div>;
+}
+
+
+/* Głosowania w temacie (właściciel 5.10, funkcja 1 z mapy): wynik, kluby zbiorczo w tej samej skali, imiennie po rozwinięciu.
+   Kolory znaczą głos (za, przeciw, wstrzymał się, nieobecny), nigdy stronę sceny politycznej. */
+const VOTE_ORDER = ['za', 'przeciw', 'wstrzymał się', 'nieobecny'];
+const SHORT: Record<string, string> = { za: 'za', przeciw: 'przeciw', 'wstrzymał się': 'wstrz.', nieobecny: 'nieob.' };
+function Votes({ votes }: { votes: Vote[] }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return <section className="sc-tv__votes" aria-label="Głosowania w Sejmie">
+    <h3>Głosowania w Sejmie</h3>
+    <ul className="sc-tv__vote-legend" aria-hidden="true">{VOTE_ORDER.map(v => <li key={v} data-v={v}><i />{v}</li>)}</ul>
+    <ol>{votes.map(v => {
+      const max = Math.max(...v.clubs.map(c => c.size), 1);
+      return <li key={v.id} className="sc-tv__vote">
+        <div className="sc-tv__vote-head">
+          <span className="sc-tv__kind">{v.date ? new Date(v.date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</span>
+          <p>{v.title}</p>
+          {v.motion && v.motion !== v.title && <small>{v.motion}</small>}
+          <span className="sc-tv__vote-result">{[['yes', 'za'], ['no', 'przeciw'], ['abstain', 'wstrzymało się']].filter(([k]) => v.result[k] != null).map(([k, l]) => <b key={k} data-v={l === 'wstrzymało się' ? 'wstrzymał się' : l}>{v.result[k]} {l}</b>)}</span>
+        </div>
+        <ul className="sc-tv__clubs">{v.clubs.map(c => <li key={c.club}>
+          <span>{c.club}</span>
+          <i style={{ width: `${(100 * c.size) / max}%` }}>{VOTE_ORDER.map(k => c.votes[k] ? <b key={k} data-v={k} style={{ flexGrow: c.votes[k] }} title={`${k}: ${c.votes[k]}`} /> : null)}</i>
+          <em>{VOTE_ORDER.filter(k => c.votes[k]).map(k => `${c.votes[k]} ${SHORT[k]}`).join(', ')}</em>
+        </li>)}</ul>
+        <span className="sc-tv__links">
+          <button type="button" onClick={() => setOpen(open === v.id ? null : v.id)} aria-expanded={open === v.id}>{open === v.id ? 'Zwiń' : 'Kto jak głosował'}</button>
+          <a href={v.url} target="_blank" rel="noopener noreferrer">wynik w Sejmie →</a>
+        </span>
+        {open === v.id && <div className="sc-tv__members">{v.clubs.map(c => <div key={c.club}>
+          <h4>{c.club}</h4>
+          <ul>{v.members.filter(m => m[1] === c.club).sort((a, b) => VOTE_ORDER.indexOf(a[2]) - VOTE_ORDER.indexOf(b[2])).map(m => <li key={m[0]} data-v={m[2]}><i />{m[0]}</li>)}</ul>
+        </div>)}</div>}
+      </li>;
+    })}</ol>
+  </section>;
 }

@@ -56,3 +56,23 @@ def test_pick_topics_ranks_richest():
         post(str(30 + i), 'government' if i % 2 else 'opposition', 'KPO znowu opóźnione, KPO.')
     rows = pick_topics()
     assert all(r['edges'] >= 3 for r in rows) and auto_topics() == rows
+
+
+def test_topic_votes_by_club_and_name(monkeypatch):
+    from news.models import Article, Ballot, ParliamentaryVoting, Source
+    from news.przeszlosc import topic_votes
+    source = Source.objects.create(name='Sejm', url='https://sejm.example')
+    article = Article.objects.create(source=source, title='Pkt 3. Projekt ustawy o podatku VAT', url='https://sejm.example/v',
+                                     published_date='2026-09-20T10:00:00Z')
+    voting = ParliamentaryVoting.objects.create(article=article, term=10, sitting=40, number=7, motion='wniosek o odrzucenie',
+                                                kind='ELECTRONIC', counts={'yes': 2, 'no': 1})
+    for n, (name, club, vote) in enumerate([('Anna A', 'KO', 'YES'), ('Jan B', 'KO', 'YES'), ('Ewa C', 'PiS', 'NO'), ('Piotr D', 'PiS', 'ABSENT')]):
+        Ballot.objects.create(voting=voting, mp_id=n + 1, name=name, club=club, vote=vote)
+    rows = topic_votes('VAT')
+    assert len(rows) == 1 and rows[0]['result'] == {'yes': 2, 'no': 1}
+    assert {c['club']: c['votes'] for c in rows[0]['clubs']} == {'KO': {'za': 2}, 'PiS': {'przeciw': 1, 'nieobecny': 1}}
+    assert ['Ewa C', 'PiS', 'przeciw'] in rows[0]['members'] and 'NrGlosowania=7' in rows[0]['url']
+    assert topic_votes('lotnisko') == []
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    data = APIClient().get('/api/przeszlosc/temat/?q=VAT').json()
+    assert data['counts']['vote'] == 1 and data['votes'][0]['id'] == '10/40/7'

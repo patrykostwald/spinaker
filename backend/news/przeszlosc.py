@@ -156,6 +156,41 @@ from rest_framework.permissions import AllowAny  # noqa: E402
 from rest_framework.response import Response  # noqa: E402
 
 
+VOTE_GROUP = {'YES': 'za', 'NO': 'przeciw', 'ABSTAIN': 'wstrzymał się', 'ABSENT': 'nieobecny', 'NO_VOTE': 'nieobecny',
+              'PRESENT': 'obecny, bez głosu', 'VOTE_VALID': 'głos na liście', 'VOTE_INVALID': 'głos nieważny'}
+
+
+def topic_votes(query, limit=8):
+    """Głosowania Sejmu w temacie (właściciel 5.10, funkcja 1 z mapy): wynik zbiorczo, kluby i głosy imienne posłów.
+    Dopasowanie po tytule punktu i opisie głosowania; kluby w kolejności wielkości, ta sama skala dla wszystkich."""
+    from collections import Counter
+    from news.models import ParliamentaryVoting
+    words = terms(query)
+    if not words:
+        return []
+    rows = []
+    votings = (ParliamentaryVoting.objects.filter(_match(['article__title', 'motion'], words))
+               .select_related('article').prefetch_related('ballots').order_by('-article__published_date', '-number')[:limit])
+    for v in votings:
+        ballots = list(v.ballots.all())
+        clubs = Counter(b.club or 'niezrzeszeni' for b in ballots)
+        by_club = []
+        for club, size in clubs.most_common():
+            tally = Counter(VOTE_GROUP.get(b.vote, 'inne') for b in ballots if (b.club or 'niezrzeszeni') == club)
+            by_club.append({'club': club, 'size': size, 'votes': dict(tally)})
+        when = v.article.published_date
+        rows.append({
+            'id': f'{v.term}/{v.sitting}/{v.number}', 'title': v.article.title[:300], 'motion': (v.motion or '')[:400],
+            'date': when.date().isoformat() if when else None, 'kind': v.kind,
+            'result': {k: v.counts.get(k) for k in ('yes', 'no', 'abstain', 'notParticipating') if k in (v.counts or {})},
+            'url': (f'https://www.sejm.gov.pl/sejm{v.term}.nsf/agent.xsp?symbol=glosowania&NrKadencji={v.term}'
+                    f'&NrPosiedzenia={v.sitting}&NrGlosowania={v.number}'),
+            'clubs': by_club,
+            'members': sorted([[b.name, b.club or 'niezrzeszeni', VOTE_GROUP.get(b.vote, 'inne')] for b in ballots], key=lambda m: (m[1], m[0])),
+        })
+    return rows
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def topic_view(request):
@@ -171,6 +206,9 @@ def topic_view(request):
     data = cache.get(key) if connection.vendor == 'postgresql' else None
     if data is None:
         data = topic_graph(query)
+        data['votes'] = topic_votes(query)
+        if data['votes']:
+            data['counts']['vote'] = len(data['votes'])
         if connection.vendor == 'postgresql':
             cache.set(key, data, 600)
     return Response(data)
