@@ -33,9 +33,11 @@ const TYPES = { post: 'Wpis na X', claim: 'Sprawdzenie', source: 'Źródło', te
  * `variant="row"`: wiersz wspólnej listy (ThreadFeed) - rozwija się po chwili najechania albo stuknięciu,
  * otwarty jest tylko jeden naraz (stan trzyma lista), pod spodem 3 najtrafniejsze komentarze i „Odpowiedz”.
  */
-export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false, variant = 'card', open, onOpenChange, offset = 0, onFullscreen, badge }: {
+export function ThreadStrip({ thread, items = thread.preview ?? [], full = false, initiallyExpanded = false, variant = 'card', open, onOpenChange, offset = 0, onFullscreen, badge, onNote }: {
   thread: CommunityThreadSummary; items?: ThreadElement[]; full?: boolean; initiallyExpanded?: boolean;
   variant?: 'card' | 'row'; open?: boolean; onOpenChange?: (open: boolean) => void; offset?: number; onFullscreen?: () => void; badge?: string;
+  /** Notatka autora przy klikniętym połączeniu lub boksie (pole opisu w nagłówku spinki); null = opis całej spinki. */
+  onNote?: (note: { label: string; text: string } | null) => void;
 }) {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [commentCount, setCommentCount] = useState<number | null>(null);
@@ -91,6 +93,16 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     for (let i = joints - 1; i >= 0; i--) timers.push(window.setTimeout(() => setIntroStep(i), closing + (joints - 1 - i) * 320));
     return () => timers.forEach(clearTimeout);
   }, [full, reduced, joints, thread.id]);
+  // pole opisu w nagłówku: notatka przy otwartym połączeniu albo bieżącym kroku widoku jednego elementu (właściciel 5.10)
+  useEffect(() => {
+    if (!onNote) return;
+    const step = picked ?? focus ?? (openJoint !== null ? { kind: 'clip' as const, index: openJoint } : null);
+    if (!step) { onNote(null); return; }
+    const item = ordered[step.index];
+    if (!item) { onNote(null); return; }
+    if (step.kind === 'clip') onNote({ label: `Połączenie ${step.index}: boks ${step.index} → ${step.index + 1}.`, text: item.link_note || 'Autor nie opisał tego połączenia.' });
+    else onNote({ label: `Boks ${step.index + 1}: ${item.box_type ? TYPES[item.box_type] : 'materiał'}.`, text: item.note || 'Autor nie dodał tu wyjaśnienia.' });
+  }, [picked, focus, openJoint]); // eslint-disable-line react-hooks/exhaustive-deps
   const row = variant === 'row' && !full;
   const shown = counts ?? { positive: thread.opinions.positive, doubt: thread.opinions.doubt ?? 0, negative: thread.opinions.negative };
   const total = shown.positive + shown.doubt + shown.negative;

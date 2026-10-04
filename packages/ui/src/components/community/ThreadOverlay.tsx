@@ -67,6 +67,24 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
   }, [initial]);
 
   const thread = query.data;
+  // nagłówek spinki: pole opisu i wyrównanie do lewej krawędzi pierwszego boksu (właściciel 5.10)
+  const [note, setNote] = useState<{ label: string; text: string } | null>(null);
+  const head = useRef<HTMLElement>(null);
+  useEffect(() => { setNote(null); }, [id]);
+  useEffect(() => {
+    const root = body.current;
+    if (!root) return;
+    const align = () => {
+      const box = root.querySelector('.sc-thread-strip__box') as HTMLElement | null, track = root.querySelector('.sc-thread-strip__track') as HTMLElement | null;
+      if (!box || !head.current) return;
+      const left = box.getBoundingClientRect().left + (track?.scrollLeft ?? 0) - head.current.getBoundingClientRect().left;
+      head.current.style.setProperty('--sp-left', `${Math.max(0, Math.round(left))}px`);
+    };
+    align();
+    const observer = new ResizeObserver(align); observer.observe(root);
+    const late = window.setTimeout(align, 1600);
+    return () => { observer.disconnect(); clearTimeout(late); };
+  }, [thread]);
   // strzałka powrotu na wysokości łańcucha boksów (właściciel 4.10)
   const [backTop, setBackTop] = useState(160);
   const [nearLeft, setNearLeft] = useState(false);
@@ -113,8 +131,11 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       {query.isError && <p role="alert">Nie udało się pobrać spinki. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
       {thread && <>
         {/* podtytuł zawsze, także u Dr. Spina (pisze go Redaktor tytułów) */}
-        {thread.description && <p className="sc-trop-overlay__desc">{thread.description}</p>}
-        <ThreadStrip key={thread.id} thread={thread} items={thread.items} full />
+        <header className="sc-sp-head" ref={head}>
+          <h1 className="sc-sp-title" title={thread.title}><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</h1>
+          <p className="sc-sp-desc" aria-live="polite" data-note={note ? '' : undefined}>{note ? <><b>{note.label}</b>{note.text}</> : thread.description || 'Autor nie dodał opisu tej spinki.'}</p>
+        </header>
+        <ThreadStrip key={thread.id} thread={thread} items={thread.items} full onNote={setNote} />
         {/* przewijanie komentarzy (właściciel 4.10): przycisk w kółku na środku linii nad „Warto też zobaczyć”,
             linia ma na niego przerwę; w czasie przewijania pod nim pojawia się mniejszy, drugi znak */}
         <div className="sc-trop-overlay__scroller" data-more={moreBelow || undefined} data-moving={moving || undefined}>

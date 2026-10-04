@@ -9115,3 +9115,30 @@ html[data-theme="light"] .sc-intro { background: #000; }
 .sc-pt__time li span { color: var(--sc-text-2); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
 .sc-pt__time li b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 640px) { .sc-pt__time li { grid-template-columns: 1fr; gap: 2px; } .sc-pt__time li b { white-space: normal; } }
+
+/* Boks w pasku (właściciel 5.10: tekst ucięty w połowie linii i nachodzący na opis). Stałe miejsca: rodzaj (1 linia),
+   tytuł (2 linie, 4 bez opisu), opis (2 linie), stopka zawsze przy dolnej krawędzi. Nic się nie ściska w pół linii. */
+.sc-thread-strip__box > .sc-thread-strip__select > * { flex-shrink: 0; min-width: 0; }
+.sc-thread-strip__box > .sc-thread-strip__select > strong { display: -webkit-box !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2 !important; overflow: hidden; font-size: 14.5px !important; line-height: 1.3 !important; max-height: none !important; }
+.sc-thread-strip__box > .sc-thread-strip__select:not(:has(.sc-thread-strip__excerpt)) > strong { -webkit-line-clamp: 4 !important; }
+.sc-thread-strip__box > .sc-thread-strip__select > .sc-thread-strip__excerpt { -webkit-line-clamp: 2 !important; font-size: 12.5px !important; line-height: 1.45 !important; }
+.sc-thread-strip__box > .sc-thread-strip__select > .sc-thread-strip__type { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Nagłówek spinki (stałe założenie właściciela 5.10): tytuł do 2 linii, przerwa, pole opisu; zaczyna się na lewej krawędzi
+   pierwszego boksu (--sp-left liczone na żywo). Pole opisu pokazuje notatkę autora przy klikniętym boksie lub połączeniu. */
+.sc-trop-overlay__title { display: none !important; }
+.sc-sp-head { display: grid; gap: 12px; margin: 6px 0 22px; padding-left: var(--sp-left, 0px); padding-right: var(--sc-page-gutter, 16px); max-width: calc(var(--sp-left, 0px) + 980px); }
+.sc-sp-title { margin: 0; font-size: clamp(22px, 2.3vw, 30px); line-height: 1.22; font-weight: 600; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-wrap: balance; }
+.sc-sp-title span { color: var(--sc-text-3); font-weight: 500; }
+.sc-sp-desc { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--sc-text-2); min-height: calc(3 * 1.55em); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; max-width: 80ch; }
+.sc-sp-desc b { color: var(--sc-text); font-weight: 600; margin-right: 6px; }
+.sc-sp-desc[data-note] { color: var(--sc-text); }
+.sc-trop-overlay__body > .sc-trop-overlay__desc { display: none !important; }
+@media (max-width: 767px) { .sc-sp-head { padding-left: 0; margin-top: 2px; } .sc-sp-title { font-size: 20px; } .sc-sp-desc { font-size: 15px; min-height: calc(2 * 1.55em); } }
+/* telefon: zaproszenie do komentowania w osobnym wierszu, sortowanie i „Udostępnij / Zgłoś” pod nim, bez łamania słów */
+@media (max-width: 600px) {
+  .sc-social-sortrow { display: flex !important; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  .sc-social-sortrow > p { flex: 1 0 100%; margin: 0; }
+  .sc-social-sortrow .sc-social-composer__end { margin-left: auto; display: inline-flex; gap: 14px; border-left: 0 !important; padding-left: 0 !important; }
+  .sc-social-sortrow button, .sc-social-sortrow a { white-space: nowrap; word-break: normal; }
+}
