@@ -161,6 +161,9 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {query.isLoading && <p className="sc-clinic-empty"><Loading label="Ładowanie diagnoz" /></p>}
 
       {data && <>
+        {/* na samej górze skala pracy Kliniki: ile wpisów czytamy i diagnozujemy (właściciel 5.10) */}
+        <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
+
         {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
         <section className="sc-clinic-group" aria-labelledby="clinic-messages-title">
           <SectionHeader titleId="clinic-messages-title" kicker={<>Klinika spinu <AiTag /></>} title="Przekazy dnia"
@@ -206,7 +209,6 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         </section> : null}
 
         <ClinicRanking data={data} />
-        <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
 
         <DeletedPosts />
         <p><Link href="/osoby-publiczne">Katalog osób publicznych →</Link> · <Link href="/klinika/raporty">Raporty tygodnia →</Link></p>
