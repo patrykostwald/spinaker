@@ -14,7 +14,7 @@ BEAT_PLAN = {
     'ekspert-ai-daily': ('ekspert_ai_task', {'hour': 3, 'minute': 40}),
     'narrative-thread-daily': ('narrative_thread_task', {'hour': 21, 'minute': 45}),
     'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),
-    'duty-15m': ('duty_task', {'minute': '*/15'}),
+    'duty-15m': ('duty_task', {'minute': '*/5'}),  # właściciel 5.10: jak najczęściej
     'political-x-minute': ('political_poll_task', {'minute': '*'}),
     'clinic-screen-5m': ('clinic_screen_task', {'minute': '*/5'}),
     'clinic-diagnoses-day': ('clinic_diagnose_task', {'minute': '*/10', 'hour': '7-22'}),

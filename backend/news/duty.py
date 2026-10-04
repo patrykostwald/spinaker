@@ -207,7 +207,10 @@ def check_rate_limits(ctx):
     return alarms
 
 
-CHECKS = (check_budget, check_warden, check_importers, check_tasks, check_interviews, check_diagnoses, check_rate_limits)
+from news import duty_extra  # noqa: E402 - kontrole dopisane 5.10 (zbieracz X, dostawcy modeli, spinki, produkty dnia)
+
+CHECKS = (check_budget, check_warden, check_importers, check_tasks, check_interviews, check_diagnoses, check_rate_limits,
+          *duty_extra.CHECKS)
 
 
 def dispatch(row, ctx, repair_run):
@@ -242,6 +245,7 @@ def run(now=None):
             reconcile(name + ':health', [], ctx, repair_run)
             reconcile(name, found, ctx, repair_run)
         ctx.save()
+        duty_extra.notify_owner(now)  # mail: nowe alarmy krytyczne od razu, otwarte co 6 h
         from news.rescuer import guard
         guard(now)
         return {'status': 'ok' if not errors else 'error', 'errors': errors,
@@ -263,7 +267,7 @@ def reconcile(check, alarms, ctx, repair_run):
             row.occurrences += 1
             row.save()
         dispatch(row, ctx, repair_run)
-    DutyAlarm.objects.filter(rule=check, status='open').exclude(key__in=keys).update(status='closed', closed_at=ctx.now)
+    DutyAlarm.objects.filter(rule=check, status='open').exclude(key__in=keys).update(status='closed', closed_at=ctx.now, last_dispatch_at=None)
 
 
 def panel_section(now):

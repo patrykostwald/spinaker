@@ -331,3 +331,45 @@ def test_panel_counts():
     metrics = {m['label']: m['value'] for m in section['metrics']}
     assert section['status'] == 'error' and metrics['Krytyczne'] == 1
     assert metrics['Najstarszy alarm'] != 'unknown'
+
+
+# --- kontrole dopisane 5.10 (właściciel: „Dyżurny musi sprawdzać wszystko”) ---
+from news import duty_extra  # noqa: E402
+
+
+def test_x_collector_stalled_with_request_limit(monkeypatch):
+    monkeypatch.setenv('X_POLITICAL_DAILY_REQUEST_LIMIT', '600')
+    diagnosis(at=NOW - timedelta(hours=5))
+    PoliticalPost.objects.update(fetched_at=NOW - timedelta(hours=3))
+    ImportState.objects.create(name='political-x-budget', cursor={'daily_requests': 600, 'daily_posts': 79})
+    found = duty_extra.check_x_collector(context())
+    assert found[0]['key'] == 'x:collector' and found[0]['details']['limits_hit'] == ['daily_requests']
+    PoliticalPost.objects.update(fetched_at=NOW - timedelta(minutes=20))
+    assert duty_extra.check_x_collector(context()) == []
+
+
+def test_model_providers_billing_and_capacity():
+    from news.clinic_models import CouncilCall
+    for i in range(4):
+        CouncilCall.objects.create(provider='hf', model='bielik', outcome='402', created_at=NOW - timedelta(minutes=10 + i))
+    for i in range(18):
+        CouncilCall.objects.create(provider='groq', model='qwen', outcome='429', created_at=NOW - timedelta(minutes=5 + i))
+    keys = {a['key'] for a in duty_extra.check_model_providers(context())}
+    assert {'provider:402:hf', 'provider:capacity'} <= keys
+
+
+def test_no_diagnoses_today_even_when_budget_check_is_silent():
+    post_row = diagnosis(at=NOW - timedelta(days=1))
+    SpinDiagnosis.objects.filter(pk=post_row.pk).update(status='queued', diagnosed_at=None)
+    found = duty_extra.check_diagnoses_today(context())
+    assert found and found[0]['key'] == 'diagnoses:none-today'
+
+
+def test_owner_mail_new_critical_then_every_six_hours():
+    DutyAlarm.objects.create(key='x:collector', rule='check_x_collector', severity='critical', title='Zbieracz X', instruction='Podnieś limit')
+    with patch('news.social_publish._mail', return_value=True) as mail, \
+         patch('news.council_recruiter._owner_email', return_value='owner@example.org'):
+        assert duty_extra.notify_owner(NOW) == 1
+        assert duty_extra.notify_owner(NOW + timedelta(hours=1)) == 0
+        assert duty_extra.notify_owner(NOW + timedelta(hours=6)) == 1
+    assert mail.call_count == 2 and 'Zbieracz X' in mail.call_args.args[1]

@@ -37,7 +37,7 @@ REGISTRY = {
     'strateg': agent('Strateg', 'Proponuje rozwój serwisu w wolnym oknie modeli.', 'news.tasks.agents_window_task', 'AGENTS_ENABLED'),
     'pilgrim': agent('Pielgrzym', 'Szuka usprawnień Konsylium na zmianę ze Strategiem.', 'news.tasks.agents_window_task', 'AGENTS_ENABLED'),
     'reports': agent('Raporty Stratega i Pielgrzyma', 'Podsumowuje propozycje tygodnia lub miesiąca.', 'news.tasks.agents_report_task', 'AGENTS_ENABLED'),
-    'duty': agent('Dyżurny', 'Wykrywa anomalie wyników i zleca bezpieczne naprawy.', 'news.tasks.duty_task', 'DUTY_ENABLED', True),
+    'duty': agent('Dyżurny', 'Co 5 minut sprawdza wszystko: zbieracz X, dostawców modeli, diagnozy, wywiady, przekazy, spinki, budżet i zadania; o problemach pisze mailem.', 'news.tasks.duty_task', 'DUTY_ENABLED', True),
     'interview-candidates': agent('Kandydaci na wywiad dnia', 'Zbiera kandydatów do głosowania na wywiad dnia.', 'news.tasks.clinic_interview_candidates_task', default=True),
     'moderation-mail': agent('Poczta moderacji', 'Ponawia wysyłkę e-maili z decyzjami moderacji spinek.', 'news.notification_tasks.retry_thread_moderation_mail', 'THREADS_ENABLED'),
     'narrative-threads': agent('Spinka narracji dnia', 'Układa spinkę narracji dnia dla każdej strony według jawnego kryterium.', 'news.tasks.narrative_thread_task', 'THREADS_ENABLED'),
