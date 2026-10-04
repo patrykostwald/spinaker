@@ -47,3 +47,4 @@ celerybeat-schedule*
 
 # Generated reports from commands running inside the backend container
 backend/reports/
+frontend-spin/dev.log
