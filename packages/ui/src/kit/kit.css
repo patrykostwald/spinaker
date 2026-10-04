@@ -9500,3 +9500,7 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-tv__members h4 { margin: 0 0 6px; font-size: 13px; }
 .sc-tv__members ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13px; color: var(--sc-text-2); }
 @media (max-width: 600px) { .sc-tv__clubs li { grid-template-columns: 90px minmax(0, 1fr); } .sc-tv__clubs em { grid-column: 2; text-align: left; } }
+.sc-tv__export { display: flex; gap: 18px; margin: 4px 0 0; }
+.sc-tv__export button { border: 0; background: none; padding: 0; font: inherit; font-size: 15px; font-weight: 600; color: var(--sc-accent); cursor: pointer; }
+.sc-tv__export button::after { content: " ↓"; }
+.sc-tv__export button:hover { text-decoration: underline; text-underline-offset: 3px; }

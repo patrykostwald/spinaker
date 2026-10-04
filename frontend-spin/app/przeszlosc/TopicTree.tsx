@@ -140,6 +140,7 @@ function TopicView({ data }: { data: Graph }) {
       <h2>{data.topic}</h2>
       <p>{[['statement', 'wpisów polityków'], ['diagnosis', 'diagnoz Dr. Spina'], ['vote', 'głosowań'], ['record', 'dokumentów Sejmu'], ['media', 'artykułów'], ['person', 'osób i instytucji']]
         .filter(([k]) => data.counts[k]).map(([k, label]) => `${data.counts[k]} ${label}`).join(' · ')}</p>
+      <Export data={data} author={author} />
     </header>
     <div className="sc-tv__grid">
       {Boolean(data.votes?.length) && <Votes votes={data.votes!} />}
@@ -222,4 +223,34 @@ function Votes({ votes }: { votes: Vote[] }) {
       </li>;
     })}</ol>
   </section>;
+}
+
+
+/* Eksport tematu (właściciel 5.10, funkcja 3 z mapy): każdy wiersz z przypisem źródła i datą pobrania; w becie bez opłat. */
+const KIND_EXPORT: Record<string, string> = { record: 'dokument Sejmu', statement: 'wpis polityka', diagnosis: 'diagnoza Dr. Spina', media: 'artykuł', person: 'osoba', organisation: 'podmiot KRS' };
+function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
+  const save = (name: string, type: string, text: string) => {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const stamp = new Date().toLocaleDateString('sv-SE');
+  const slug = data.topic.toLowerCase().replace(/[^a-z0-9ąćęłńóśźż]+/gi, '-').replace(/^-|-$/g, '') || 'temat';
+  const rows = data.nodes.filter(n => n.kind !== 'person').map(n => ({
+    data: n.date ?? '', rodzaj: KIND_EXPORT[n.kind] ?? n.kind, tresc: n.label, autor: author.get(n.id)?.label ?? '',
+    strona: n.camp === 'government' ? 'rządzący' : n.camp === 'opposition' ? 'opozycja' : '', zrodlo: n.sub ?? '', link: n.url ?? '',
+  })).sort((a, b) => b.data.localeCompare(a.data));
+  const csv = () => {
+    const head = ['data', 'rodzaj', 'treść', 'autor', 'strona', 'źródło', 'link'];
+    const cell = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = [head.join(';'), ...rows.map(r => [r.data, r.rodzaj, r.tresc, r.autor, r.strona, r.zrodlo, r.link].map(cell).join(';'))];
+    for (const v of data.votes ?? []) for (const m of v.members) lines.push([v.date ?? '', 'głos imienny', `${v.title}: ${m[2]}`, m[0], m[1], 'Sejm RP', v.url].map(cell).join(';'));
+    lines.push('', cell(`Źródło: przeszłość.today, temat „${data.topic}”, pobrano ${stamp}. Każdy wiersz prowadzi do oryginału.`));
+    save(`przeszlosc-${slug}-${stamp}.csv`, 'text/csv;charset=utf-8', '﻿' + lines.join('\r\n'));
+  };
+  const json = () => save(`przeszlosc-${slug}-${stamp}.json`, 'application/json', JSON.stringify({
+    temat: data.topic, pobrano: stamp, zrodlo: 'przeszłość.today', wiersze: rows, glosowania: data.votes ?? [],
+    osoby: data.nodes.filter(n => n.kind === 'person').map(n => ({ nazwa: n.label, funkcja: n.role ?? '', link: n.url ?? '' })),
+    powiazania: data.edges }, null, 2));
+  return <p className="sc-tv__export"><button type="button" onClick={csv}>Pobierz CSV</button><button type="button" onClick={json}>Pobierz JSON</button></p>;
 }
