@@ -9413,3 +9413,14 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-trow__thumb { border: 1px solid color-mix(in srgb, var(--sc-text) 12%, transparent); }
 .sc-trow__main .sc-trow__desc { display: block; -webkit-line-clamp: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 1100px) { .sc-trow__main { grid-template-columns: 96px 96px minmax(0, 1fr) !important; } }
+
+/* Praca Kliniki (właściciel 5.10): odnośniki z obu kolumn dociągnięte do dolnej krawędzi, w jednej linii */
+.sc-ind-show { align-items: stretch; }
+.sc-ind-show__main, .sc-ind-show__spark { display: flex; flex-direction: column; min-height: 100%; }
+.sc-ind-show__main .sc-ind-show__actions { margin-top: auto; margin-bottom: 0; padding-top: 18px; }
+.sc-ind-show__spark > .sc-chart-data { margin-top: auto; margin-bottom: 0; padding-top: 18px; }
+.sc-ind-show__spark > .sc-chart-data > summary, .sc-ind-show__main .sc-ind-show__actions { line-height: 24px; }
+.sc-ind-show__spark > .sc-chart-data > summary { display: flex; align-items: flex-end; gap: 6px; min-height: 44px; }
+.sc-ind-show__spark > .sc-chart-data > summary::-webkit-details-marker { display: none; }
+.sc-ind-show__spark > .sc-chart-data > summary::before { content: "▸"; }
+.sc-ind-show__spark > .sc-chart-data[open] > summary::before { content: "▾"; }
