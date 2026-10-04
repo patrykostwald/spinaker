@@ -273,7 +273,7 @@ function Editor({ ownerId, threadId, counterTo }: { ownerId: number; threadId?: 
         await cache.invalidateQueries({ queryKey: ['community-threads'] });
         await cache.invalidateQueries({ queryKey: ['community-thread', String(result.id)] });
       }
-      setNotice(`Zapisano ${formatDateTimePl(result.updated_at)}. ${result.is_public ? 'Spinka jest publiczna.' : 'Szkic jest prywatny.'}`);
+      setNotice(`Zapisano ${formatDateTimePl(result.updated_at)}. ${!result.is_public ? 'Szkic jest prywatny.' : result.admitted_at ? 'Spinka jest publiczna.' : 'Spinka jest w izbie przyjęć: trafi na główną listę po pierwszym komentarzu lub reakcji innej osoby.'}`);
       if (!activeId) window.history.replaceState(window.history.state, '', `/konto/spinki/${result.id}`);
       return result.id;
     } catch (reason) { if (automatic) failedSnapshot.current = serialize(draft); setError(accountMessage(reason)); }
@@ -285,7 +285,7 @@ function Editor({ ownerId, threadId, counterTo }: { ownerId: number; threadId?: 
     if (!last || pending) return;
     setPending(true); setError('');
     try {
-      const next = await savePersonalThread({ title: ('Kontynuacja: ' + draft.title).slice(0, 80), description: '', query: '', categories: [], source_ids: [], continues: activeId,
+      const next = await savePersonalThread({ title: ('Kontynuacja: ' + draft.title).slice(0, 65), description: '', query: '', categories: [], source_ids: [], continues: activeId,
         items: [{ ...(last.kind === 'article' ? { article_id: last.id } : { link_id: last.id }), note: draft.items.at(-1)?.note ?? '', link_note: '' }], is_public: false });
       router.push(`/konto/spinki/${next.id}`);
     } catch (e) { setError(accountMessage(e)); } finally { setPending(false); }
