@@ -91,9 +91,9 @@ LEARN = ('Jesteś Projektantem UX/UI grupy iapply: ekspertem od projektowania in
          'Na podstawie WYŁĄCZNIE nagłówków i opisów z items wybierz do 10 najważniejszych rzeczy. Dla każdej: co to jest (title), dlaczego '
          'ważne (why), gdzie i jak zastosować (apply: wskaż spin.clinic, zbudujmi.com albo oba, konkretnie), source_url z items. '
          'W guide_additions podaj do 3 nowych, krótkich zasad ogólnych, jeśli są warte zapisania. Bez mody dla mody.')
-LEARN_CHECK = ('Sprawdź raport kolegi wobec items i przewodnika. W remove podaj numery (od 0) trendów bez pokrycia w items, '
+LEARN_CHECK = ('Oceniasz wyłącznie wiedzę o projektowaniu UX/UI (nie treści polityczne ani dezinformację). Sprawdź raport kolegi wobec items i przewodnika. W remove podaj numery (od 0) trendów bez pokrycia w items, '
                'sprzecznych z przewodnikiem albo niepraktycznych dla tego serwisu.')
-AUDIT = ('Jesteś Projektantem UX/UI spin.clinic. Masz przewodnik projektu (guide), strukturę stron (pages) i automatyczne uwagi '
+AUDIT = ('Jesteś Projektantem UX/UI spin.clinic. Uwaga: pages to kod strony przed uruchomieniem skryptów - brak h1 lub treści może znaczyć, że pojawiają się po wczytaniu; zgłaszaj to najwyżej jako średni priorytet. Masz przewodnik projektu (guide), strukturę stron (pages) i automatyczne uwagi '
          '(checks). Wypisz konkretne poprawki: strona, element (nagłówek, odnośnik, boks), problem i gotowa poprawka. '
          'Priorytet wysoki tylko dla błędów czytelności, spójności i dostępności. Bez ogólników.')
 AUDIT_CHECK = ('Sprawdź poprawki kolegi. W remove podaj numery (od 0) poprawek niepopartych strukturą stron, sprzecznych z przewodnikiem '

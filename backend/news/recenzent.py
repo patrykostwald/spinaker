@@ -191,7 +191,7 @@ def page_texts(base=None):
             html = requests.get(base.rstrip('/') + path, timeout=20, headers={'User-Agent': 'spin.clinic Recenzent'}).text
         except requests.RequestException:
             continue
-        html = _re.sub(r'(?s)<(script|style|svg|noscript)[^>]*>.*?</\1>', ' ', html)
+        html = _re.sub(r'(?s)<(script|style|svg|noscript|nav|footer)[^>]*>.*?</\1>', ' ', html)
         parts = [' '.join(_re.sub(r'<[^>]+>', ' ', m).split()) for m in _re.findall(r'(?s)<(?:p|h1|h2|h3|li|dd|dt)[^>]*>(.*?)</(?:p|h1|h2|h3|li|dd|dt)>', html)]
         parts = [x for x in dict.fromkeys(parts) if len(x) >= 25]
         if parts:
