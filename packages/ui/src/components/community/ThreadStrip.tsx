@@ -174,6 +174,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   } : {};
   // wiersz listy: delikatny odcień według ogólnej oceny spinki (właściciel 4.10)
   const rowTint = row ? reactionTint(sumCounts(clips)) : null;
+  const first = items[0];
+  const thumb = first?.image_url || (thread.diagnosis_id != null ? `/api/clinic/spins/${thread.diagnosis_id}/card.png` : '');
   return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} style={rowTint ? { ['--tint' as string]: rowTint } : undefined} {...hoverProps} {...enter}>
     <div className="sc-thread-strip__frame">
     {row ? <header className="sc-trow">
@@ -184,6 +186,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         {/* obok awatara: czas publikacji nad nazwą autora, dalej tytuł (właściciel 3.10) */}
         <span className="sc-trow__by"><span className="sc-trow__when">{thread.published_at && <time dateTime={thread.published_at}>{ago(thread.published_at)}</time>}{badge && <span className="sc-trow__badge">{badge}</span>}</span>
           <span className="sc-trow__who"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}</span></span>
+        {/* miniatura pierwszego boksu między autorem a tytułem (właściciel 5.10); bez obrazka kafelek z rodzajem boksu */}
+        <span className="sc-trow__thumb" aria-hidden="true" data-card={thumb.includes('/card.png') || undefined}>{thumb ? <img src={thumb} alt="" loading="lazy" decoding="async" /> : <span>{TYPES[(first?.box_type ?? '') as keyof typeof TYPES] ?? 'Spinka'}</span>}</span>
         {/* przepięcia jako mała etykieta przy tytule = sygnał sporu (propozycja Qwen, 1. miejsce Konsylium 0104, właściciel 4.10) */}
         <span className="sc-trow__title" title={thread.title}>{thread.title}{Boolean(thread.repins?.length) && <span className="sc-trow__repin-tag" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}>⇄ {thread.repins!.length}</span>}</span>
         {thread.description && !thread.signal_kind && !thread.narrative && <span className="sc-trow__desc">{thread.description}</span>}

@@ -9378,3 +9378,38 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-trow__count--clips:hover + .sc-trow__boxes, .sc-trow__count--clips:focus-visible + .sc-trow__boxes, .sc-trow__boxes:hover { visibility: visible !important; pointer-events: auto !important; transform: none !important; }
 .sc-trow__boxes { bottom: auto !important; top: calc(100% - 14px) !important; transform: translateY(-6px) !important; }
 .sc-trow__ticker-pop { bottom: auto !important; top: calc(100% + 6px); transform: translateY(-6px); }
+
+/* wiersz listy: miniatura pierwszego boksu między autorem a tytułem (właściciel 5.10) */
+.sc-trow__main { grid-template-columns: 132px 128px minmax(0, 1fr) !important; }
+.sc-trow__main .sc-trow__thumb { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.sc-trow__main .sc-trow__title, .sc-trow__main .sc-trow__desc { grid-column: 3; }
+.sc-trow__thumb { display: grid; place-items: center; width: 128px; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 8px; border: 1px solid var(--sc-line); background: var(--sc-surface-2, var(--sc-plate-bottom)); }
+.sc-trow__thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; transition: transform .25s ease; }
+.sc-trow__main:hover .sc-trow__thumb img { transform: scale(1.04); }
+.sc-trow__thumb > span { padding: 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-text-3); text-align: center; line-height: 1.3; }
+@media (max-width: 1100px) { .sc-trow__main { grid-template-columns: 132px 104px minmax(0, 1fr) !important; } .sc-trow__thumb { width: 104px; } }
+@media (max-width: 600px) {
+  .sc-thread-strip--row .sc-trow__main { grid-template-columns: minmax(0, 1fr) !important; }
+  .sc-thread-strip--row .sc-trow__thumb { display: none; }
+}
+/* karta diagnozy 1600x900: w miniaturze tylko lewy górny panel (autor i zdjęcie wpisu), cała karta byłaby nieczytelna */
+.sc-trow__thumb { width: 120px; aspect-ratio: 4 / 3; place-items: start; }
+.sc-trow__main { grid-template-columns: 132px 120px minmax(0, 1fr) !important; }
+.sc-trow__thumb[data-card] img { width: 267%; max-width: none; height: auto; margin: -8% 0 0 -8%; object-fit: initial; transform-origin: 8% 8%; }
+.sc-trow__thumb > span { place-self: center; }
+@media (max-width: 1100px) { .sc-trow__main { grid-template-columns: 132px 104px minmax(0, 1fr) !important; } .sc-trow__thumb { width: 104px; } }
+/* tytuł i opis jako jeden blok wyśrodkowany przy miniaturze (bez rozpychania wierszy) */
+.sc-trow__main { grid-template-columns: 112px 120px minmax(0, 1fr) !important; grid-template-rows: 1fr auto auto 1fr !important; column-gap: 20px; }
+.sc-trow__main .sc-trow__by, .sc-trow__main .sc-trow__thumb { grid-row: 1 / -1 !important; align-self: center; }
+.sc-trow__main .sc-trow__title { grid-row: 2 !important; align-self: end; }
+.sc-trow__main .sc-trow__desc { grid-row: 3 !important; }
+.sc-trow__main:not(:has(.sc-trow__desc)) .sc-trow__title { grid-row: 2 / span 2 !important; align-self: center; }
+.sc-trow__thumb { aspect-ratio: 3 / 2; }
+@media (max-width: 1100px) { .sc-trow__main { grid-template-columns: 104px 96px minmax(0, 1fr) !important; } .sc-trow__thumb { width: 96px; } }
+@media (max-width: 600px) { .sc-thread-strip--row .sc-trow__main { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: none !important; } }
+/* po przeglądzie projektanta (5.10): równe odstępy 24 px, ramka miniatury widoczna w obu motywach, opis w jednej linii */
+.sc-trow__main { grid-template-columns: 96px 120px minmax(0, 1fr) !important; column-gap: 24px; }
+.sc-trow, .sc-trow:not(:has(.sc-trow__voices)) { column-gap: 24px; }
+.sc-trow__thumb { border: 1px solid color-mix(in srgb, var(--sc-text) 12%, transparent); }
+.sc-trow__main .sc-trow__desc { display: block; -webkit-line-clamp: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1100px) { .sc-trow__main { grid-template-columns: 96px 96px minmax(0, 1fr) !important; } }
