@@ -19,6 +19,21 @@ from django.utils import timezone
 from news import agents_common as common
 from news.agent_models import AgentNote
 
+_used = {'author': None, 'checker': None}
+
+
+def _ask_author(prompt, data, schema, force=False):
+    answer, member = common.ask_any(prompt, data, schema, force)
+    _used['author'] = member
+    return answer
+
+
+def _ask_checker(prompt, data, schema, force=False):
+    answer, member = common.ask_any(prompt, data, schema, force, exclude=tuple(m for m in [_used['author']] if m))
+    _used['checker'] = member
+    return answer
+
+
 WEEK = timedelta(days=6)
 FEEDS = {
     'Nielsen Norman Group': 'https://www.nngroup.com/feed/rss/',
@@ -171,13 +186,13 @@ def learn(force=False):
     urls = {i['url'] for i in items}
     if not items:
         raise common.WindowClosed('Brak nagłówków ze źródeł branżowych.')
-    author, checker = common.members(2, force)
-    brief = common.ask(author, LEARN, {'items': items[:40], 'guide': guide()}, BRIEF_SCHEMA, force)
+    author = checker = None
+    brief = _ask_author(LEARN, {'items': items[:40], 'guide': guide()}, BRIEF_SCHEMA, force)
     trends = [t for t in brief.get('trends', []) if isinstance(t, dict) and t.get('source_url') in urls]
-    verdict = common.ask(checker, LEARN_CHECK, {'items': items[:40], 'guide': guide(), 'trends': trends}, CHECK_SCHEMA, force)
+    verdict = _ask_checker(LEARN_CHECK, {'items': items[:40], 'guide': guide(), 'trends': trends}, CHECK_SCHEMA, force)
     drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
     brief['trends'] = [t for n, t in enumerate(trends) if n not in drop]
-    data = {**brief, 'check': verdict.get('reason', ''), 'authors': [':'.join(author), ':'.join(checker)]}
+    data = {**brief, 'check': verdict.get('reason', ''), 'authors': [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]}
     note = AgentNote.objects.create(agent='projektant', kind='report', status='new',
         title=f'Stan wiedzy UX/UI: {timezone.localdate():%d.%m.%Y}', body=readable_brief(data), scores=data,
         sources=sorted({t['source_url'] for t in brief['trends']}))
@@ -195,18 +210,18 @@ def audit(force=False, base=None):
             continue
     if not pages:
         raise common.WindowClosed('Strony serwisu niedostępne dla przeglądu.')
-    author, checker = common.members(2, force)
+    author = checker = None
     fixes = []
     for start in range(0, len(pages), 6):  # partiami, żeby pytanie zmieściło się w limicie modelu
         batch = pages[start:start + 6]
-        answer = common.ask(author, AUDIT, {'guide': guide(), 'pages': batch}, AUDIT_SCHEMA, force)
+        answer = _ask_author(AUDIT, {'guide': guide(), 'pages': batch}, AUDIT_SCHEMA, force)
         rows = [f for f in answer.get('fixes', []) if isinstance(f, dict)]
         if rows:
-            verdict = common.ask(checker, AUDIT_CHECK, {'guide': guide(), 'pages': batch, 'fixes': rows}, CHECK_SCHEMA, force)
+            verdict = _ask_checker(AUDIT_CHECK, {'guide': guide(), 'pages': batch, 'fixes': rows}, CHECK_SCHEMA, force)
             drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
             fixes += [f for n, f in enumerate(rows) if n not in drop]
     auto = [{'page': p['page'], 'check': c} for p in pages for c in p['checks']]
-    data = {'fixes': fixes, 'auto_checks': auto, 'pages': [p['page'] for p in pages], 'authors': [':'.join(author), ':'.join(checker)]}
+    data = {'fixes': fixes, 'auto_checks': auto, 'pages': [p['page'] for p in pages], 'authors': [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]}
     note = AgentNote.objects.create(agent='projektant', kind='audit', status='new' if fixes or auto else 'done',
         title=f"Przegląd stron: {len(pages)} stron, {len(fixes)} poprawek", body=readable_audit(data), scores=data, sources=[])
     if any(f.get('priority') == 'wysoki' for f in fixes):

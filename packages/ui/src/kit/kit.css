@@ -9351,3 +9351,6 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-tv__media i { height: 6px; border-radius: 3px; background: var(--sc-line); overflow: hidden; } .sc-tv__media b { display: block; height: 100%; background: var(--sc-accent); }
 .sc-tv__media em { font-style: normal; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .sc-pt__latest a { white-space: nowrap; }
+.sc-spin-detail__edit { margin-top: 14px; font-size: 13.5px; color: var(--sc-text-3); }
+.sc-spin-detail__edit summary { cursor: pointer; color: var(--sc-text-2); }
+.sc-spin-detail__edit p { margin: 8px 0 0; color: var(--sc-text-2); }

@@ -17,6 +17,21 @@ from django.utils import timezone
 from news import agents_common as common
 from news.agent_models import AgentNote
 
+_used = {'author': None, 'checker': None}
+
+
+def _ask_author(prompt, data, schema, force=False):
+    answer, member = common.ask_any(prompt, data, schema, force)
+    _used['author'] = member
+    return answer
+
+
+def _ask_checker(prompt, data, schema, force=False):
+    answer, member = common.ask_any(prompt, data, schema, force, exclude=tuple(m for m in [_used['author']] if m))
+    _used['checker'] = member
+    return answer
+
+
 BATCH = 8
 SEEN = 'recenzent:seen:'
 CRITERIA = (
@@ -72,7 +87,7 @@ def collect(since=None):
                       'text': {'zdania': [s.get('text', '') for s in (r.draft or {}).get('sentences', [])][:12]},
                       'dane': {k: r.snapshot.get(k) for k in ('kind', 'start', 'end_exclusive', 'aggregates')}})
     for d in published_diagnoses().filter(created_at__gte=since).order_by('-created_at')[:12]:
-        items.append({'id': f'diagnoza:{d.pk}', 'kind': 'diagnoza Dr. Spina (tylko zgłoszenie, bez zmian)',
+        items.append({'id': f'diagnoza:{d.pk}', 'kind': 'diagnoza Dr. Spina (wolno poprawić tylko formę, nigdy sens)',
                       'url': f'https://spin.clinic/klinika/{d.pk}', 'text': {'nagłówek': d.headline, 'w skrócie': _cut(d.summary)},
                       'dane': {'wpis': _cut(d.post.text, 600), 'siła': d.intensity}})
     return [i for i in items if not cache.get(_key(i))]
@@ -92,6 +107,12 @@ def _act(finding, item):
             report.status = 'working'
             report.save()
             return 'raport wrócił do poprawki'
+    if kind == 'diagnoza' and finding.get('criterion') in (4, 6):
+        from news.clinic_models import SpinDiagnosis
+        d = SpinDiagnosis.objects.filter(pk=pk).first()
+        if d and polish_diagnosis(d):
+            return 'redakcja językowa (sens bez zmian, oryginał zachowany)'
+        return ''
     if kind == 'spinka':
         from news.account_models import PersonalContextThread
         from news.thread_review import enqueue
@@ -108,14 +129,14 @@ def step(force=False, items=None):
     items = items if items is not None else collect()
     if not items:
         return None
-    author, checker = common.members(2, force)
+    author = checker = None
     findings = []
     for start in range(0, len(items), BATCH):
         batch = items[start:start + BATCH]
-        answer = common.ask(author, REVIEW, {'items': batch}, REVIEW_SCHEMA, force)
+        answer = _ask_author(REVIEW, {'items': batch}, REVIEW_SCHEMA, force)
         rows = [f for f in answer.get('findings', []) if isinstance(f, dict) and any(f.get('id') == i['id'] for i in batch)]
         if rows:
-            verdict = common.ask(checker, CHECK, {'items': batch, 'findings': rows}, CHECK_SCHEMA, force)
+            verdict = _ask_checker(CHECK, {'items': batch, 'findings': rows}, CHECK_SCHEMA, force)
             drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
             rows = [f for n, f in enumerate(rows) if n not in drop]
         findings += rows
@@ -128,7 +149,7 @@ def step(force=False, items=None):
     critical = [f for f in findings if f.get('severity') == 'krytyczne']
     note = AgentNote.objects.create(agent='recenzent', kind='review', status='new' if findings else 'done',
         title=f"Recenzja treści: {len(items)} tekstów, {len(findings)} uwag ({len(critical)} krytycznych)",
-        body=readable(findings), scores={'findings': findings, 'checked': len(items), 'authors': [':'.join(author), ':'.join(checker)]},
+        body=readable(findings), scores={'findings': findings, 'checked': len(items), 'authors': [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]},
         sources=sorted({f['url'] for f in findings if f.get('url')}))
     if critical:
         common.notify(note)
@@ -184,15 +205,15 @@ def audit_pages(force=False, base=None):
     items = page_texts(base)
     if not items:
         raise common.WindowClosed('Strony serwisu niedostępne dla audytu tekstów.')
-    author, checker = common.members(2, force)
+    author = checker = None
     findings = []
     for item in items:
-        answer = common.ask(author, REVIEW + ' ' + PANEL + STATE, {'items': [item]}, REVIEW_SCHEMA, force)
+        answer = _ask_author(REVIEW + ' ' + PANEL + STATE, {'items': [item]}, REVIEW_SCHEMA, force)
         rows = [f for f in answer.get('findings', []) if isinstance(f, dict)]
         for f in rows:
             f['id'] = item['id']
         if rows:
-            verdict = common.ask(checker, CHECK + ' ' + STATE, {'items': [item], 'findings': rows}, CHECK_SCHEMA, force)
+            verdict = _ask_checker(CHECK + ' ' + STATE, {'items': [item], 'findings': rows}, CHECK_SCHEMA, force)
             drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
             rows = [f for n, f in enumerate(rows) if n not in drop]
         for f in rows:
@@ -201,7 +222,67 @@ def audit_pages(force=False, base=None):
     critical = [f for f in findings if f.get('severity') == 'krytyczne']
     note = AgentNote.objects.create(agent='recenzent', kind='audit', status='new' if findings else 'done',
         title=f"Audyt tekstów stron: {len(items)} stron, {len(findings)} uwag ({len(critical)} krytycznych)",
-        body=readable(findings), scores={'findings': findings, 'pages': [i['id'] for i in items], 'authors': [':'.join(author), ':'.join(checker)]},
+        body=readable(findings), scores={'findings': findings, 'pages': [i['id'] for i in items], 'authors': [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]},
         sources=sorted({f['url'] for f in findings}))
     common.notify(note)
     return note
+
+
+# --- redakcja językowa diagnoz (właściciel 5.10: „tylko czytelniej, nie tracąc sensu; nic w sam sens”) ---
+# Poprawiamy wyłącznie formę nagłówka, podsumowania i uzasadnienia. Trzy bezpieczniki: (1) te same liczby, nazwy
+# i cytaty, (2) długość 60-130% oryginału, (3) drugi model innej firmy potwierdza ten sam sens. Oryginał zostaje
+# w usage['original_text'] i jest jawny na stronie („pokaż tekst pierwotny”).
+POLISH_FIELDS = ('headline', 'summary', 'analysis')
+POLISH = ('Jesteś redaktorem językowym. Popraw WYŁĄCZNIE formę tekstów diagnozy, żeby czytelnik laik zrozumiał je szybciej: '
+          'krótsze zdania, prostszy szyk, bez powtórzeń i żargonu, poprawna polszczyzna, krótkie myślniki. NIE zmieniaj sensu, ocen, '
+          'siły twierdzeń, liczb, nazw, nazwisk, dat ani cytatów; nie dodawaj i nie usuwaj żadnej informacji. Jeśli tekst jest już '
+          'czytelny, zwróć go bez zmian.')
+POLISH_SCHEMA = {'type': 'object', 'properties': {k: {'type': 'string'} for k in POLISH_FIELDS}, 'required': list(POLISH_FIELDS)}
+SAME = ('Porównaj oryginał i wersję po redakcji każdego pola. same=true tylko wtedy, gdy sens, oceny, stopień pewności, '
+        'liczby, nazwy i cytaty są identyczne, a zmieniła się wyłącznie forma.')
+SAME_SCHEMA = {'type': 'object', 'properties': {k: {'type': 'boolean'} for k in POLISH_FIELDS} | {'reason': {'type': 'string'}},
+               'required': [*POLISH_FIELDS, 'reason']}
+
+
+def _facts(text):
+    import re as _re
+    nums = set(_re.findall(r'\d+(?:[.,]\d+)?', text or ''))
+    names = set(_re.findall(r'(?<![.!?]\s)(?<!^)\b[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]{2,}', text or ''))
+    quotes = set(_re.findall(r'[„"]([^”"]{4,})[”"]', text or ''))
+    return nums, names, quotes
+
+
+def safe_rewrite(original, rewritten):
+    """Bezpieczniki automatyczne: te same liczby, nazwy własne i cytaty; rozsądna długość."""
+    if not rewritten or not original:
+        return False
+    if not 0.6 <= len(rewritten) / max(1, len(original)) <= 1.3:
+        return False
+    a, b = _facts(original), _facts(rewritten)
+    return a[0] == b[0] and a[1] <= b[1] | {w for w in a[1] if w.lower() in rewritten.lower()} and a[2] == b[2]
+
+
+def polish_diagnosis(diagnosis, force=False):
+    from django.utils import timezone
+    original = {k: getattr(diagnosis, k) or '' for k in POLISH_FIELDS}
+    if (diagnosis.usage or {}).get('readability_edit') or not any(original.values()):
+        return []
+    draft = _ask_author(POLISH, {'tekst': original}, POLISH_SCHEMA, force)
+    candidate = {k: str(draft.get(k) or '').strip() for k in POLISH_FIELDS}
+    changed = [k for k in POLISH_FIELDS if candidate[k] and candidate[k] != original[k] and safe_rewrite(original[k], candidate[k])]
+    if not changed:
+        return []
+    verdict = _ask_checker(SAME, {'oryginał': {k: original[k] for k in changed}, 'po_redakcji': {k: candidate[k] for k in changed}},
+                         SAME_SCHEMA, force)
+    changed = [k for k in changed if verdict.get(k) is True]
+    if not changed:
+        return []
+    usage = dict(diagnosis.usage or {})
+    usage['original_text'] = {k: original[k] for k in changed}
+    usage['readability_edit'] = {'at': timezone.now().isoformat(timespec='minutes'), 'fields': changed,
+                                 'editor': ':'.join(_used['author'] or ('-',)), 'checker': ':'.join(_used['checker'] or ('-',)), 'reason': str(verdict.get('reason', ''))[:300]}
+    for k in changed:
+        setattr(diagnosis, k, candidate[k])
+    diagnosis.usage = usage
+    diagnosis.save(update_fields=[*changed, 'usage'])
+    return changed

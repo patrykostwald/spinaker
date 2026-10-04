@@ -808,6 +808,8 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')}
                    for claim in (clean_claim(item) for item in diagnosis.claims)],
         'limitations': diagnosis.limitations,
+        # redakcja językowa (sens bez zmian): jawna, z tekstem pierwotnym (właściciel 5.10)
+        'readability_edit': {'at': (diagnosis.usage or {}).get('readability_edit', {}).get('at'), 'original': (diagnosis.usage or {}).get('original_text', {})} if (diagnosis.usage or {}).get('readability_edit') else None,
         'x_thread': diagnosis.x_thread,
         'council': (diagnosis.usage or {}).get('council'),
         'model': diagnosis.model_name,

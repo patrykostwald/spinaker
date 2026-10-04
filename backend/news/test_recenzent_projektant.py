@@ -19,7 +19,7 @@ def test_recenzent_keeps_checked_findings_only(models, monkeypatch):
                       {'id': 'diagnoza:1', 'criterion': 6, 'severity': 'drobne', 'quote': 'X', 'problem': 'na wyrost', 'fix': 'Z'},
                       {'id': 'obcy:9', 'criterion': 1, 'severity': 'ważne', 'quote': '', 'problem': 'spoza', 'fix': ''}]},
         {'remove': [1], 'reason': 'drugi zarzut przesadzony'}])
-    monkeypatch.setattr('news.agents_common.ask', lambda *a, **k: next(answers))
+    monkeypatch.setattr('news.agents_common.ask_any', lambda *a, **k: (next(answers), ('groq', 'a')))
     note = recenzent.step(items=items)
     assert note.agent == 'recenzent' and len(note.scores['findings']) == 1
     assert note.scores['findings'][0]['problem'] == 'intencja' and 'krytyczne' in note.body
@@ -31,7 +31,7 @@ def test_projektant_audit_finds_style_problems(models, monkeypatch):
     monkeypatch.setattr(projektant.requests, 'get', lambda *a, **k: type('R', (), {'text': html})())
     answers = iter([{'fixes': [{'page': '/', 'element': 'h1', 'problem': 'dwa h1', 'fix': 'jeden', 'priority': 'wysoki'}]},
                     {'remove': [], 'reason': 'ok'}] * 10)
-    monkeypatch.setattr('news.agents_common.ask', lambda *a, **k: next(answers))
+    monkeypatch.setattr('news.agents_common.ask_any', lambda *a, **k: (next(answers), ('groq', 'a')))
     monkeypatch.setattr(projektant, 'PAGES', ['/'])
     note = projektant.audit(force=True, base='http://test')
     checks = ' '.join(c['check'] for c in note.scores['auto_checks'])
@@ -50,7 +50,41 @@ def test_audit_pages_reads_visible_text(models, monkeypatch):
     monkeypatch.setattr('news.projektant.PAGES', ['/o-nas'])
     answers = iter([{'findings': [{'id': 'x', 'criterion': 1, 'severity': 'krytyczne', 'quote': 'Oceniasz całą spinkę',
                      'problem': '(rzetelność) oceny dotyczą połączeń', 'fix': 'Oceniasz połączenia'}]}, {'remove': [], 'reason': 'ok'}])
-    monkeypatch.setattr('news.agents_common.ask', lambda *a, **k: next(answers))
+    monkeypatch.setattr('news.agents_common.ask_any', lambda *a, **k: (next(answers), ('groq', 'a')))
     note = recenzent.audit_pages(base='http://test')
     assert note.kind == 'audit' and note.scores['findings'][0]['id'] == 'strona:/o-nas'
     assert 'x' not in ''.join(recenzent.page_texts('http://test')[0]['text']['akapity'][0])
+
+
+def test_polish_diagnosis_keeps_meaning_and_original(models, monkeypatch):
+    from news.test_diagnosis_threads import diagnosis as make
+    d = make(key='501')
+    d.summary = 'Wpis twierdzi, że podatki spadły o 50%, co jest, jak wynika z danych GUS, nieprawdą, ponieważ spadły o 10%.'
+    d.save()
+    answers = iter([{'headline': 'Podatki', 'summary': 'Wpis twierdzi, że podatki spadły o 50%. Według danych GUS spadły o 10%.', 'analysis': ''},
+                    {'headline': True, 'summary': True, 'analysis': True, 'reason': 'ten sam sens'}])
+    monkeypatch.setattr('news.agents_common.ask_any', lambda *a, **k: (next(answers), ('groq', 'a')))
+    assert recenzent.polish_diagnosis(d) == ['summary']
+    d.refresh_from_db()
+    assert d.summary.startswith('Wpis twierdzi') and 'GUS' in d.summary
+    assert d.usage['original_text']['summary'].endswith('o 10%.')
+
+
+def test_rewrite_rejected_when_numbers_change():
+    assert not recenzent.safe_rewrite('Spadek o 50% według GUS.', 'Spadek o 40% według GUS.')
+    assert not recenzent.safe_rewrite('Krótko.', 'Bardzo długi tekst ' * 10)
+    assert recenzent.safe_rewrite('Według GUS spadek wyniósł 10%.', 'GUS podaje spadek o 10%.')
+
+
+def test_ask_any_skips_rate_limited_model(monkeypatch):
+    from news import agents_common
+    from news.clinic_ai import ClinicAIError
+    monkeypatch.setattr('news.clinic_council._members', lambda *a: [('groq', 'qwen/qwen3-32b'), ('openrouter', 'google/gemma-3:free')])
+    monkeypatch.setattr(agents_common, 'free_member', lambda m: True)
+    monkeypatch.setattr(agents_common.registry, 'available', lambda m: True)
+    def fake(member, *a, **k):
+        if member[0] == 'groq':
+            raise ClinicAIError('groq: http_429')
+        return {'ok': True}
+    monkeypatch.setattr(agents_common, 'ask', fake)
+    assert agents_common.ask_any('p', {}, {}, force=True) == ({'ok': True}, ('openrouter', 'google/gemma-3:free'))

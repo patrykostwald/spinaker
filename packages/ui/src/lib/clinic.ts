@@ -75,6 +75,7 @@ export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   techniques: Array<{ name: string; quote: string; explanation: string; category?: string }>;
   claims: SpinClaim[];
   limitations: string;
+  readability_edit?: { at: string | null; original: { headline?: string; summary?: string; analysis?: string } } | null;
   /** Synteza diagnozy do wątku na X (pusta, dopóki darmowy model jej nie przygotuje). */
   x_thread?: string[];
   /** Konsylium Dr. Spina: członkowie (model, werdykt, siła), zgodność, przewodniczący, językoznawca, recenzja, docisk. */

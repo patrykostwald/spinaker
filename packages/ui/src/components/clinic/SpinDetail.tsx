@@ -87,6 +87,10 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
       {spin.council ? <details className="sc-spin-detail__models"><summary>Pokaż oceny modeli</summary><CouncilNote council={spin.council} /></details> : <p>Model: {spin.model || "brak danych o modelu"}. Szczegółowe głosy nie są dostępne.</p>}
     </section>
     <section className="sc-spin-detail__section" id={`spin-${spin.id}-ograniczenia`}><h2>Ograniczenia analizy</h2><p className="sc-spin-detail__limits">{spin.limitations || "Nie zapisano dodatkowych ograniczeń tej analizy."}</p></section>
+    {/* redakcja językowa (właściciel 5.10): tylko forma, sens bez zmian; jawnie, z tekstem pierwotnym */}
+    {spin.readability_edit ? <details className="sc-spin-detail__edit"><summary>Redakcja językowa: tekst wygładzony, sens bez zmian · pokaż tekst pierwotny</summary>
+      {Object.entries(spin.readability_edit.original).map(([key, text]) => <p key={key}><b>{key === "headline" ? "Nagłówek" : key === "summary" ? "W skrócie" : "Uzasadnienie"}:</b> {text}</p>)}
+    </details> : null}
     <p className="sc-spin-detail__meta"><AiTag /> Model {spin.model} · instrukcja {spin.prompt_version} · diagnoza {formatDateTimePl(spin.created_at)}{spin.auto_published ? " · opublikowana automatycznie" : spin.reviewed_at ? ` · zatwierdzona bez zmian ${formatDateTimePl(spin.reviewed_at)}` : ""}</p>
     <p>Zasady publikacji i korekt: <Link href="/konsylium/karta">Karta Konsylium</Link>.</p>
     <p><ReportError spin={spin} /></p>

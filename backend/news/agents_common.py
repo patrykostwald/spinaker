@@ -283,3 +283,21 @@ def report(agent):
         return note.pk
     finally:
         compare_delete(key, token)
+
+
+def ask_any(prompt, data, schema, force=False, exclude=()):
+    """Pierwszy działający darmowy model (właściciel 5.10: audyt nie może stanąć na jednym 429).
+    Zwraca (odpowiedź, model); WindowClosed, gdy żaden nie odpowiedział."""
+    from news.clinic_ai import ClinicAIError
+    from news.clinic_council import _members, DEFAULT_COUNCIL
+    tried = []
+    for member in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL):
+        company = registry.metadata(member)['company']
+        if (member in exclude or company in {registry.metadata(m)['company'] for m in exclude} or company == 'unknown'
+                or not free_member(member) or not registry.available(member) or (not force and not agent_window(member))):
+            continue
+        try:
+            return ask(member, prompt, data, schema, force), member
+        except (ClinicAIError, WindowClosed) as error:
+            tried.append(f"{member[1]}: {getattr(error, 'code', error)}")
+    raise WindowClosed('Żaden darmowy model nie odpowiedział: ' + '; '.join(tried[:6]))
