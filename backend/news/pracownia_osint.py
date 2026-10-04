@@ -15,7 +15,12 @@ Sześć ról (każda z drugim modelem innej firmy do sprawdzenia, poza Kontroler
   kryteriami odbioru i gotowym zleceniem dla wykonawcy. Każda pozycja trafia do panelu jako pomysł (ocenia ją też Seba).
 - Wynalazca (właściciel 5.10: „agent od kreatywności”): co 3 dni wymyśla nowe funkcje, których nie ma konkurencja,
   wyłącznie z danych, które już zbieramy (spis INVENTORY i liczby z bazy), na bazie katalogu i planu Architekta.
-  Drugi model odrzuca pomysły bez danych, powielone albo zwykłe; Prawnik ocenia resztę, Architekt bierze najlepsze do planu."""
+  Drugi model odrzuca pomysły bez danych, powielone albo zwykłe; Prawnik ocenia resztę, Architekt bierze najlepsze do planu.
+- Technolog (właściciel 5.10: „badać nowe technologie i przyłączać je”): co tydzień czyta wydania otwartych narzędzi OSINT,
+  danych i NLP (TECH_FEEDS) i proponuje, co podłączyć; licencja i bezpieczeństwo do sprawdzenia przez Claude przed instalacją.
+
+Pętla (właściciel 5.10): badacze (Kartograf, Zwiadowca, Wynalazca, Technolog) -> Prawnik -> Architekt (plan i zlecenia)
+-> budowa (Claude i Codex) -> strażnicy (testy, Recenzent, Projektant, Dziennikarz testowy, Kontroler) -> wdrożenie -> badacze."""
 import re
 from datetime import timedelta
 
@@ -26,8 +31,8 @@ from django.utils import timezone
 from news import agents_common as common
 from news.agent_models import AgentNote
 
-AGENTS = ('kartograf', 'zwiadowca', 'prawnik', 'dziennikarz', 'kontroler', 'architekt', 'wynalazca')
-EVERY = {'wynalazca': timedelta(days=3), 'kartograf': timedelta(days=6), 'zwiadowca': timedelta(days=6), 'architekt': timedelta(days=6),
+AGENTS = ('kartograf', 'zwiadowca', 'prawnik', 'dziennikarz', 'kontroler', 'architekt', 'wynalazca', 'technolog')
+EVERY = {'technolog': timedelta(days=6), 'wynalazca': timedelta(days=3), 'kartograf': timedelta(days=6), 'zwiadowca': timedelta(days=6), 'architekt': timedelta(days=6),
          'dziennikarz': timedelta(days=3), 'kontroler': timedelta(hours=20)}
 UA = {'User-Agent': 'przeszlosc.today Pracownia OSINT (+https://spin.clinic)'}
 
@@ -96,6 +101,17 @@ FEEDS = {
     'Nieman Lab': 'https://www.niemanlab.org/feed/',
     'Journalism.co.uk': 'https://www.journalism.co.uk/feed/',
     'First Draft / Information Futures Lab': 'https://firstdraftnews.org/feed/',
+}
+TECH_FEEDS = {
+    'FollowTheMoney (format danych OSINT)': 'https://github.com/alephdata/followthemoney/releases.atom',
+    'OpenSanctions yente (dopasowanie podmiotów)': 'https://github.com/opensanctions/yente/releases.atom',
+    'Datashare (ICIJ)': 'https://github.com/ICIJ/datashare/releases.atom',
+    'spaCy (rozpoznawanie nazw)': 'https://github.com/explosion/spaCy/releases.atom',
+    'Datasette (publikacja danych)': 'https://github.com/simonw/datasette/releases.atom',
+    'MapLibre (mapy)': 'https://github.com/maplibre/maplibre-gl-js/releases.atom',
+    'Sigma.js (grafy)': 'https://github.com/jacomyal/sigma.js/releases.atom',
+    'Hugging Face (modele)': 'https://huggingface.co/blog/feed.xml',
+    'Simon Willison (narzędzia danych i AI)': 'https://simonwillison.net/atom/everything/',
 }
 DATA_QUERIES = ['krs', 'zamówienia publiczne', 'dotacje', 'umowy', 'oświadczenia majątkowe', 'lobbing', 'partie polityczne',
                 'subwencje', 'beneficjenci', 'spółki skarbu państwa', 'fundusze europejskie', 'wybory', 'posłowie', 'rejestr',
@@ -167,6 +183,15 @@ PRAWNIK = ('Jesteś Prawnikiem Pracowni OSINT (prawo polskie i UE: RODO, prawo p
 DZIENNIKARZ = ('Jesteś dziennikarzem testującym narzędzie OSINT ({persona}). {task} Masz tylko to, co narzędzie zwróciło (result). '
                'Oceń 1-10, na ile udało się wykonać zadanie (score), co ustaliłeś (answered), czego zabrakło (missing: konkretne dane '
                'lub funkcje), co przeszkadzało (friction) i jedną najważniejszą prośbę (wish). Nie zmyślaj faktów spoza result.')
+TECH = {'type': 'object', 'properties': {'tool': TEXT, 'what': TEXT, 'use_here': TEXT, 'feature': TEXT, 'license': TEXT,
+        'effort': {'type': 'string', 'enum': ['S', 'M', 'L']}, 'value': INT, 'source_url': TEXT},
+        'required': ['tool', 'what', 'use_here', 'license', 'effort', 'value', 'source_url']}
+TECH_SCHEMA = {'type': 'object', 'properties': {'summary': TEXT, 'tech': {'type': 'array', 'items': TECH}}, 'required': ['summary', 'tech']}
+TECHNOLOG = (MISSION + ' Jesteś Technologiem. Z items (wydania i wpisy o otwartych narzędziach) wybierz do 6 technologii, które warto '
+             'podłączyć do przeszłość.today: co to jest, gdzie u nas pomoże (use_here, funkcja z katalogu), licencja (jeśli nieznana, napisz '
+             '„do sprawdzenia”), wysiłek S/M/L, wartość 1-10, source_url z items. Tylko otwarte i darmowe; nic, co wysyła dane osób na zewnątrz.')
+TECHNOLOG_CHECK = ('Sprawdź wybór kolegi. W remove podaj numery (od 0) pozycji bez pokrycia w items, płatnych, zamkniętych, '
+                   'niepotrzebnych przy obecnych funkcjach albo ryzykownych dla prywatności.')
 IDEA = {'type': 'object', 'properties': {'title': TEXT, 'what': TEXT, 'why_unique': TEXT, 'data_used': LIST, 'example': TEXT,
         'tier': {'type': 'string', 'enum': ['darmowe', 'Pro']}, 'wow': INT, 'risk': TEXT},
         'required': ['title', 'what', 'why_unique', 'data_used', 'example', 'tier', 'wow']}
@@ -180,7 +205,7 @@ WYNALAZCA = (MISSION + ' Jesteś Wynalazcą: najbardziej kreatywnym członkiem z
              'tytuł, co robi, dlaczego nikt tego nie ma, przykład na prawdziwym temacie z topics, poziom, efekt wow 1-10, ryzyko.')
 WYNALAZCA_CHECK = ('Sprawdź pomysły kolegi. W remove podaj numery (od 0) pomysłów: wymagających danych spoza inventory, powielających '
                    'katalog lub previous, zwykłych (konkurencja już to ma), naruszających zasadę tej samej miary albo profilujących osoby prywatne.')
-ARCHITEKT = (MISSION + ' Jesteś Architektem produktu. Masz katalog funkcji, luki Kartografa, pomysły Wynalazcy (ideas), zbiory Zwiadowcy z werdyktami Prawnika, '
+ARCHITEKT = (MISSION + ' Jesteś Architektem produktu. Masz katalog funkcji, luki Kartografa, pomysły Wynalazcy (ideas), technologie Technologa (tech), zbiory Zwiadowcy z werdyktami Prawnika, '
              'raporty dziennikarzy testowych i stan danych Kontrolera. Ułóż plan 10 następnych funkcji, od najważniejszej. Tylko '
              'propozycje dozwolone lub warunkowe (z warunkami w brief). Dla każdej: tytuł, catalog_id, poziom (darmowe/Pro), wysiłek '
              'S/M/L, wartość 1-10, dlaczego (z odwołaniem do konkretnego raportu), 3-5 kryteriów odbioru i brief: gotowe zlecenie dla '
@@ -225,10 +250,10 @@ def _last(agent, kind=None):
 
 
 # ---------- Kartograf ----------
-def feed_items(limit=6):
+def feed_items(limit=6, feeds=None):
     import feedparser
     items = []
-    for name, url in FEEDS.items():
+    for name, url in (feeds or FEEDS).items():
         try:
             parsed = feedparser.parse(requests.get(url, timeout=15, headers=UA).content)
         except requests.RequestException:
@@ -298,13 +323,15 @@ def zwiadowca(force=False):
 # ---------- Prawnik ----------
 def prawnik(force=False):
     since = getattr(_last('prawnik', 'review'), 'created_at', None)
-    notes = AgentNote.objects.filter(agent__in=['kartograf', 'zwiadowca', 'wynalazca'], kind='finding')
+    notes = AgentNote.objects.filter(agent__in=['kartograf', 'zwiadowca', 'wynalazca', 'technolog'], kind='finding')
     if since:
         notes = notes.filter(created_at__gt=since)
     proposals = []
     for note in notes[:6]:
         for g in (note.scores or {}).get('gaps', []):
             proposals.append({'note': note.pk, 'what': f"Funkcja: {g['feature']} ({g.get('why_journalists_care', '')})"})
+        for t in (note.scores or {}).get('tech', []):
+            proposals.append({'note': note.pk, 'what': f"Technologia: {t['tool']}, licencja {t['license']}, użycie: {t['use_here']}"})
         for i in (note.scores or {}).get('ideas', []):
             proposals.append({'note': note.pk, 'what': f"Pomysł: {i['title']} ({i['what']}; dane: {', '.join(i.get('data_used', []))})"})
         for s in (note.scores or {}).get('sources', []):
@@ -393,6 +420,22 @@ def kontroler(force=False):
     return _save('kontroler', 'audit', f'Stan danych: {len(problems)} problemów', body, data)
 
 
+# ---------- Technolog ----------
+def technolog(force=False):
+    items = feed_items(feeds=TECH_FEEDS, limit=4)
+    if not items:
+        raise common.WindowClosed('Brak wydań narzędzi do przejrzenia.')
+    urls = {i['url'] for i in items}
+    answer = _ask(TECHNOLOG, {'items': items[:40], 'catalog': catalog()}, TECH_SCHEMA, force)
+    tech = [t for t in answer.get('tech', []) if isinstance(t, dict) and t.get('source_url') in urls]
+    if tech:
+        tech = _drop(tech, _ask(TECHNOLOG_CHECK, {'items': items[:40], 'tech': tech}, CHECK_SCHEMA, force, True))
+    data = {'summary': answer.get('summary', ''), 'tech': tech, 'authors': _authors()}
+    body = chr(10).join([data['summary'], ''] + [f"- {t['tool']} [{t['license']}, wysiłek {t['effort']}, wartość {t['value']}/10]: "
+                                                f"{t['use_here']} ({t['source_url']})" for t in tech]).strip()
+    return _save('technolog', 'finding', f'Technologie do podłączenia: {timezone.localdate():%d.%m.%Y}', body, data, [t['source_url'] for t in tech])
+
+
 # ---------- Wynalazca ----------
 def inventory():
     """Spis źródeł z liczbami z bazy (Wynalazca wie, na czym może budować)."""
@@ -438,10 +481,10 @@ def architekt(force=False):
     def latest(agent, kind):
         note = _last(agent, kind)
         return {'note': note.pk, **(note.scores or {})} if note else {}
-    inputs = {'catalog': catalog(), 'gaps': latest('kartograf', 'finding'), 'ideas': latest('wynalazca', 'finding'), 'sources': latest('zwiadowca', 'finding'),
+    inputs = {'catalog': catalog(), 'gaps': latest('kartograf', 'finding'), 'ideas': latest('wynalazca', 'finding'), 'tech': latest('technolog', 'finding'), 'sources': latest('zwiadowca', 'finding'),
               'legal': latest('prawnik', 'review'), 'tests': latest('dziennikarz', 'review'), 'data': latest('kontroler', 'audit'),
               'rules': LEGAL}
-    for key in ('gaps', 'ideas', 'sources', 'legal', 'tests'):
+    for key in ('gaps', 'ideas', 'tech', 'sources', 'legal', 'tests'):
         inputs[key].pop('authors', None)
     answer = _ask(ARCHITEKT, inputs, PLAN_SCHEMA, force)
     items = [i for i in answer.get('items', []) if isinstance(i, dict)][:10]
@@ -461,14 +504,14 @@ def architekt(force=False):
     return report
 
 
-ORDER = [('kontroler', kontroler), ('dziennikarz', dziennikarz), ('kartograf', kartograf), ('zwiadowca', zwiadowca), ('wynalazca', wynalazca),
+ORDER = [('kontroler', kontroler), ('dziennikarz', dziennikarz), ('kartograf', kartograf), ('zwiadowca', zwiadowca), ('wynalazca', wynalazca), ('technolog', technolog),
          ('prawnik', prawnik), ('architekt', architekt)]
 
 
 def due(agent):
     if agent == 'prawnik':  # gdy są nowe propozycje do oceny
         last = _last('prawnik', 'review')
-        return AgentNote.objects.filter(agent__in=['kartograf', 'zwiadowca', 'wynalazca'], kind='finding',
+        return AgentNote.objects.filter(agent__in=['kartograf', 'zwiadowca', 'wynalazca', 'technolog'], kind='finding',
                                         **({'created_at__gt': last.created_at} if last else {})).exists()
     last = AgentNote.objects.filter(agent=agent).exclude(kind='idea').first()
     return last is None or timezone.now() - last.created_at >= EVERY[agent]

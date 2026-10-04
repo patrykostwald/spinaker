@@ -84,3 +84,17 @@ def test_wynalazca_keeps_checked_new_ideas_and_prawnik_sees_them(quiet, monkeypa
     answers(monkeypatch, {'verdicts': [{'n': 0, 'verdict': 'dozwolone', 'why': 'dane publiczne'}]})
     review = po.prawnik(force=True)
     assert review.scores['verdicts'][0]['what'].startswith('Pomysł: Licznik obietnic')
+
+
+def test_technolog_and_orders_command(quiet, monkeypatch):
+    from io import StringIO
+    from django.core.management import call_command
+    monkeypatch.setattr(po, 'feed_items', lambda **k: [{'source': 'spaCy', 'title': 'v4', 'url': 'https://github.com/x', 'summary': ''}])
+    answers(monkeypatch, {'summary': 'S', 'tech': [{'tool': 'spaCy', 'what': 'NER', 'use_here': 'osoby w dokumentach', 'license': 'MIT',
+                                                    'effort': 'M', 'value': 8, 'source_url': 'https://github.com/x'}]}, {'remove': [], 'reason': 'ok'})
+    assert po.technolog(force=True).scores['tech'][0]['tool'] == 'spaCy'
+    AgentNote.objects.create(agent='architekt', kind='idea', title='przeszłość.today: Profil osoby', body='', score=80,
+                             scores={'tier': 'darmowe', 'effort': 'M', 'value': 8, 'why': 'testy', 'acceptance': ['funkcje KRS'], 'brief': 'Zbuduj'})
+    out = StringIO()
+    call_command('pracownia_zlecenia', stdout=out)
+    assert 'Profil osoby' in out.getvalue() and 'odbiór: funkcje KRS' in out.getvalue()
