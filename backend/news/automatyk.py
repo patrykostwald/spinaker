@@ -60,6 +60,34 @@ LEARN_FEEDS = {
     'Martin Fowler (architektura)': 'https://martinfowler.com/feed.atom',
     'Google SRE i niezawodność': 'https://sre.google/feed.xml',
 }
+# Szeroki research (właściciel 5.10): gdy podstawowe źródła nie mają nic nowego, Automatyk idzie dalej - co tydzień kolejna porcja,
+# aż przejdzie wszystkie, potem od początku. Tylko publiczne kanały RSS/Atom (bez logowania i bez scrapowania).
+WIDE_FEEDS = {
+    'arXiv: systemy wieloagentowe': 'https://export.arxiv.org/rss/cs.MA',
+    'arXiv: sztuczna inteligencja': 'https://export.arxiv.org/rss/cs.AI',
+    'arXiv: inżynieria oprogramowania': 'https://export.arxiv.org/rss/cs.SE',
+    'Hacker News: agenci AI': 'https://hnrss.org/newest?q=AI+agents&points=50',
+    'Hacker News: automatyzacja': 'https://hnrss.org/newest?q=automation&points=50',
+    'Reddit r/LocalLLaMA': 'https://www.reddit.com/r/LocalLLaMA/top/.rss?t=week',
+    'Reddit r/MachineLearning': 'https://www.reddit.com/r/MachineLearning/top/.rss?t=week',
+    'OpenAI': 'https://openai.com/news/rss.xml',
+    'Google DeepMind': 'https://deepmind.google/blog/rss.xml',
+    'Microsoft Research': 'https://www.microsoft.com/en-us/research/feed/',
+    'Hugging Face': 'https://huggingface.co/blog/feed.xml',
+    'Latent Space': 'https://www.latent.space/feed',
+    'InfoQ: AI i dane': 'https://feed.infoq.com/ai-ml-data-eng/',
+    'Prefect': 'https://www.prefect.io/blog/rss.xml',
+    'Dagster': 'https://dagster.io/rss.xml',
+    'Apache Airflow (wydania)': 'https://github.com/apache/airflow/releases.atom',
+    'CrewAI (wydania)': 'https://github.com/crewAIInc/crewAI/releases.atom',
+    'AutoGen (wydania)': 'https://github.com/microsoft/autogen/releases.atom',
+    'LangGraph (wydania)': 'https://github.com/langchain-ai/langgraph/releases.atom',
+    'LlamaIndex': 'https://www.llamaindex.ai/blog/feed',
+    'Chip Huyen': 'https://huyenchip.com/feed.xml',
+    'Lilian Weng': 'https://lilianweng.github.io/index.xml',
+}
+WIDE_BATCH = 6
+FRESH_MIN = 5
 PROPOSERS = ('strateg', 'pielgrzym', 'ekspert', 'projektant', 'kartograf', 'zwiadowca', 'wynalazca', 'technolog', 'architekt', 'automatyk')
 CONTEXT = [
     'spin.clinic: Klinika spinu - automatyczne diagnozy wpisów polityków (Dr. Spin z Konsylium 4 modeli), przekazy dnia obu stron, '
@@ -216,17 +244,31 @@ def learn(force=False):
     import re
     import feedparser
     import requests
-    items = []
-    for name, url in LEARN_FEEDS.items():
-        try:
-            parsed = feedparser.parse(requests.get(url, timeout=15, headers={'User-Agent': 'spin.clinic Automatyk (+https://spin.clinic)'}).content)
-        except requests.RequestException:
-            continue
-        for entry in parsed.entries[:5]:
-            link = entry.get('link', '')
-            if link.startswith('https://'):
-                items.append({'source': name, 'title': entry.get('title', '')[:200], 'url': link,
-                              'summary': re.sub(r'<[^>]+>', ' ', entry.get('summary', ''))[:400]})
+    seen = set()
+    for note in AgentNote.objects.filter(agent='automatyk', kind='report')[:12]:
+        seen |= set((note.scores or {}).get('seen', []))
+
+    def fetch(feeds):
+        out = []
+        for name, url in feeds.items():
+            try:
+                parsed = feedparser.parse(requests.get(url, timeout=15, headers={'User-Agent': 'spin.clinic Automatyk (+https://spin.clinic)'}).content)
+            except requests.RequestException:
+                continue
+            for entry in parsed.entries[:5]:
+                link = entry.get('link', '')
+                if link.startswith('https://') and link not in seen:
+                    out.append({'source': name, 'title': entry.get('title', '')[:200], 'url': link,
+                                'summary': re.sub(r'<[^>]+>', ' ', entry.get('summary', ''))[:400]})
+        return out
+
+    items, mode = fetch(LEARN_FEEDS), 'podstawowe'
+    if len(items) < FRESH_MIN:  # podstawowe źródła wyczerpane: szeroki research, kolejna porcja co tydzień
+        names = list(WIDE_FEEDS)
+        start = (AgentNote.objects.filter(agent='automatyk', kind='report', scores__mode='szerokie').count() * WIDE_BATCH) % len(names)
+        batch = (names + names)[start:start + WIDE_BATCH]
+        items += fetch({n: WIDE_FEEDS[n] for n in batch})
+        mode = 'szerokie'
     if not items:
         raise common.WindowClosed('Brak nowości o automatyzacji do nauki.')
     urls = {i['url'] for i in items}
@@ -238,10 +280,11 @@ def learn(force=False):
         verdict, _ = common.ask_any(LEARN_CHECK, {'items': items[:45], 'loops': loops, 'lessons': lessons}, CHECK, force, exclude=(author,))
         drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
         lessons, reason = [l for n, l in enumerate(lessons) if n not in drop], verdict.get('reason', '')
-    data = {'summary': answer.get('summary', ''), 'lessons': lessons, 'check': reason}
+    data = {'summary': answer.get('summary', ''), 'lessons': lessons, 'check': reason, 'mode': mode,
+            'sources': sorted({i['source'] for i in items}), 'seen': sorted({i['url'] for i in items[:45]})}
     body = chr(10).join([data['summary'], ''] + [f"- {l['title']}: {l['lesson']}{chr(10)}  U nas: {l['apply']} ({l['source_url']})" for l in lessons])
     return AgentNote.objects.create(agent='automatyk', kind='report', status='new',
-        title=f'Automatyk się uczy: {len(lessons)} lekcji ({timezone.localdate():%d.%m.%Y})', body=body.strip(), scores=data,
+        title=f"Automatyk się uczy ({'szeroki research' if mode == 'szerokie' else 'podstawowe źródła'}): {len(lessons)} lekcji ({timezone.localdate():%d.%m.%Y})", body=body.strip(), scores=data,
         sources=sorted({l['source_url'] for l in lessons}))
 
 

@@ -53,3 +53,22 @@ def test_automatyk_learns_lessons_and_uses_them(monkeypatch):
     note = automatyk.learn(force=True)
     assert [l['title'] for l in note.scores['lessons']] == ['Ponowienia z odstępem'] and not automatyk.learn_due()
     assert automatyk.knowledge() == ['Ponowienia z odstępem: Diagnozy: ponów po 429']
+
+
+def test_automatyk_goes_wide_when_core_sources_are_exhausted(monkeypatch):
+    import types
+    calls = []
+
+    def get(url, **k):
+        calls.append(url)
+        return types.SimpleNamespace(content=url.encode())
+    monkeypatch.setattr('requests.get', get)
+    # podstawowe źródła zwracają tylko już przeczytany artykuł, szerokie - nowe
+    monkeypatch.setattr('feedparser.parse', lambda c: types.SimpleNamespace(entries=[
+        {'link': 'https://stare.pl/a' if c.decode() in automatyk.LEARN_FEEDS.values() else c.decode().replace('http://', 'https://') + '#n', 'title': 't', 'summary': ''}]))
+    AgentNote.objects.create(agent='automatyk', kind='report', title='x', body='', scores={'seen': ['https://stare.pl/a']})
+    monkeypatch.setattr('news.agents_common.ask_any', lambda *a, **k: ({'summary': 'S', 'lessons': []}, ('groq', 'a')))
+    note = automatyk.learn(force=True)
+    assert note.scores['mode'] == 'szerokie' and 'szeroki research' in note.title
+    assert any(u in calls for u in automatyk.WIDE_FEEDS.values())
+    assert 'https://stare.pl/a' not in note.scores['seen']
