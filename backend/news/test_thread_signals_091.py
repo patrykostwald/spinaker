@@ -314,3 +314,17 @@ def test_title_editor_rewrites_only_title_and_description(monkeypatch):
     assert thread.title == 'Ten sam zapis w\u00a0dwóch poprawkach do druku'
     assert {k: v for k, v in review.working_texts.items() if k not in ('title', 'description')} == before
     assert review.rounds.get(role='Redaktor tytułów').model == 'mock:editor'
+
+
+def test_retry_rejected_returns_review_to_first_step():
+    from io import StringIO
+    from django.core.management import call_command
+    from news.thread_review_models import ThreadReview
+    review = ThreadReview.objects.first()
+    if review is None:
+        return
+    review.status, review.step = 'rejected', 3
+    review.save()
+    call_command('drspin_review_threads', '--retry-rejected', '--limit', '0', stdout=StringIO())
+    review.refresh_from_db()
+    assert review.status == 'pending' and review.step == 0

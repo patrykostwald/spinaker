@@ -55,7 +55,7 @@ def boxes(diagnosis):
             break
         assessment = ASSESSMENT_LABELS.get(claim.get('assessment'), 'niezweryfikowane')
         add('claim', f"{assessment}: {claim.get('claim', '')}", body=sentence(claim.get('explanation')),
-            link_note=technique_note if index == 0 else 'Kolejne sprawdzone twierdzenie')
+            link_note=f'Twierdzenie sprawdzone przez Dr. Spina: {assessment}.' if index == 0 else 'Kolejne sprawdzone twierdzenie')
         for source in claim.get('sources') or []:
             if len(result) >= 8:
                 break

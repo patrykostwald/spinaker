@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
+import { FirstVisitIntro } from "./FirstVisitIntro";
 import { SiteHeader, TouchScrollGuard, SocialNavigation, SectionBar } from "@spin-clinic/ui";
 import { FeatureFooter, PreviewBanner, PreviewPwa } from "./PreviewControls";
 
@@ -9,7 +10,6 @@ import "./preview.css";
 // Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css - порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
 import { Providers } from "./providers";
-import { SurveyBar } from "./SurveyBar";
 import { site } from "../lib/site";
 
 // Montserrat includes Polish diacritics and is the shared typeface for live pages.
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteHeader site={site} />
           <TouchScrollGuard />
           <PreviewPwa />
-          <div className="sc-social-layout"><SocialNavigation /><div className="sc-app-col"><Suspense><SectionBar /></Suspense><main id="main-content" className="sc-app-main"><SurveyBar />{children}</main></div></div>
+          <div className="sc-social-layout"><SocialNavigation /><div className="sc-app-col"><Suspense><SectionBar /></Suspense><main id="main-content" className="sc-app-main">{children}</main><FirstVisitIntro /></div></div>
           <FeatureFooter />
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}

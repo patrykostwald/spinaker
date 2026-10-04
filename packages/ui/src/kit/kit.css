@@ -9036,3 +9036,10 @@ html { scrollbar-width: thin; }
 .sc-trop-overlay__body > article .sc-thread-strip__track .sc-joint.is-open .sc-joint__pop {
   transition: transform .55s cubic-bezier(.2,.8,.2,1) .45s, clip-path .55s cubic-bezier(.2,.8,.2,1) .45s, opacity .2s ease .45s, visibility 0s .45s; }
 @media (prefers-reduced-motion: reduce) { .sc-trop-overlay__body > article .sc-thread-strip__track .sc-joint { transition: none; } }
+
+/* okno powitalne z filmem przy pierwszej wizycie (właściciel 5.10) */
+.sc-intro { position: fixed; inset: 0; z-index: 1000; background: #000; animation: sc-intro-in .4s ease both; }
+@keyframes sc-intro-in { from { opacity: 0; } to { opacity: 1; } }
+.sc-intro__film { width: 100%; height: 100%; border: 0; display: block; }
+.sc-intro__skip { position: absolute; left: max(16px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); background: none; border: 0; color: #9aa0a6; font: 600 13px var(--font-montserrat, Montserrat), sans-serif; letter-spacing: .08em; text-transform: uppercase; padding: 6px 2px; cursor: pointer; }
+.sc-intro__skip:hover { color: #e7e9ea; }

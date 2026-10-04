@@ -262,7 +262,9 @@ def review_one(pk, *, now=None):
         except ClinicAIError:
             result, reason = 'wait', 'Darmowy model niedostępny lub limit wyczerpany. Spinka czeka na kolejne okno.'
         except ValueError as error:
-            result, reason = 'reject', str(error)
+            # Zła forma odpowiedzi darmowego modelu to nie ocena spinki: dwie kolejne próby, dopiero trzecia odrzuca.
+            tries = ThreadReviewRound.objects.filter(review=review, role=ROLES[step], reason__startswith='Format: ').count()
+            result, reason = ('reject' if tries >= 2 else 'wait'), 'Format: ' + str(error)
         ThreadReviewRound.objects.create(review=review, revision=review.revision, role=ROLES[step],
             model=model, result=result, reason=reason, texts=review.working_texts)
         review.reason = reason

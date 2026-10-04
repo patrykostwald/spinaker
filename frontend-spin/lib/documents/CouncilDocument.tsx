@@ -67,8 +67,8 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
 
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/council" : "/konsylium"} eyebrow={t("KONSYLIUM AI")} title={<>{t("Kilka modeli AI,")}<br />{t("jedna diagnoza")}</>} version="1.1" updatedAt="2026-09-29" sections={sections}
     lead={t("Wybrane wpisy polityków osobno ocenia kilka modeli AI różnych firm. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę - z jawnym składem i ograniczeniami. Modele mogą się mylić.")}>
-
     <section aria-label={t("Film: jak działa spin.clinic")}><HowItWorksFilm lang={lang} /></section>
+
 
     <section id="droga"><h2>{t("Droga wpisu do diagnozy")}</h2>
       <ol className="sc-kons-flow">{FLOW.map(([title, text], index) =>
