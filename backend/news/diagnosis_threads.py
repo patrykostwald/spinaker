@@ -114,6 +114,7 @@ def min_intensity():
 
 
 @draft_builder
+@transaction.atomic  # blokada wiersza wymaga transakcji także przy wywołaniu z polecenia (wdrożenie 5.10)
 def sync_diagnosis_thread(diagnosis_id, force_text=False):
     """Blokada diagnozy i OneToOne chronią przed podwójną publikacją. Nie cofamy moderacji."""
     diagnosis = SpinDiagnosis.objects.select_for_update(of=('self',)).select_related('post__account').get(pk=diagnosis_id)

@@ -9565,3 +9565,19 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pick__media[data-card] > img, .sc-box-face--img[data-card] img { inset: 0 auto auto 0 !important; width: 267% !important; max-width: none !important; height: auto !important;
   margin: -8% 0 0 -8%; object-fit: initial !important; }
 .sc-pick__media > .sc-type-tag { top: auto; bottom: 12px; }
+
+/* przeszłość.today: „Kto występuje” od góry tematu, równo z nagłówkiem (właściciel 5.10) */
+@media (min-width: 901px) {
+  .sc-tv { grid-template-columns: minmax(0, 1fr) 320px; column-gap: 28px; align-items: start; }
+  .sc-tv > .sc-tv__head { grid-column: 1; grid-row: 1; }
+  .sc-tv > .sc-tv__grid { display: contents; }
+  .sc-tv__grid > .sc-tv__votes, .sc-tv__grid > .sc-tv__time { grid-column: 1; }
+  .sc-tv__grid > .sc-tv__side { grid-column: 2; grid-row: 1 / span 3; }
+}
+/* Ceny (właściciel 5.10): tekst wyśrodkowany, trzy pola cen na całą szerokość, w tej samej siatce co boksy nad nimi */
+.sc-pt__price { max-width: none; justify-items: center; text-align: center; margin-top: 10px; }
+.sc-pt__price p { max-width: 70ch; }
+.sc-pt__price ul { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 6px; }
+.sc-pt__price li { display: grid; place-items: center; gap: 4px; padding: 16px; font-size: 14.5px; }
+.sc-pt__price li b { font-size: 16px; }
+@media (max-width: 760px) { .sc-pt__price ul { grid-template-columns: 1fr; } }

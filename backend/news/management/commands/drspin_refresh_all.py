@@ -2,6 +2,7 @@
 podtytuł „co zbadano. co znaleziono.”, diagnozy jako łańcuch rozumowania. Bez wywołań AI; Redaktor tytułów
 poprawi teksty później w zwykłej recenzji (ta sama reguła)."""
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from news.account_models import PersonalContextThread
 from news.diagnosis_threads import short, sync_diagnosis_thread
@@ -38,14 +39,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from news.narrative_threads import sync_message
         diagnoses = narratives = signals = 0
-        for pk in PersonalContextThread.objects.filter(diagnosis__isnull=False).values_list('diagnosis_id', flat=True).iterator():
-            if sync_diagnosis_thread(pk, force_text=True):
-                diagnoses += 1
-        for pk in PersonalContextThread.objects.filter(narrative_message__isnull=False).values_list('narrative_message_id', flat=True).iterator():
-            if sync_message(pk):
-                narratives += 1
-        for thread in PersonalContextThread.objects.filter(owner__isnull=True).exclude(signal_kind=''):
-            if refresh_signal(thread):
-                signals += 1
+        # każda spinka w osobnej transakcji: przepisanie blokuje wiersz (select_for_update), a błąd jednej nie cofa pozostałych
+        for pk in list(PersonalContextThread.objects.filter(diagnosis__isnull=False).values_list('diagnosis_id', flat=True)):
+            with transaction.atomic():
+                diagnoses += bool(sync_diagnosis_thread(pk, force_text=True))
+        for pk in list(PersonalContextThread.objects.filter(narrative_message__isnull=False).values_list('narrative_message_id', flat=True)):
+            with transaction.atomic():
+                narratives += bool(sync_message(pk))
+        for thread in list(PersonalContextThread.objects.filter(owner__isnull=True).exclude(signal_kind='')):
+            with transaction.atomic():
+                signals += bool(refresh_signal(thread))
         self.stdout.write(self.style.SUCCESS(
             f'Przepisano: {diagnoses} spinek z diagnoz, {narratives} przekazów dnia, {signals} sygnałów (nowe narracje i lobbing).'))

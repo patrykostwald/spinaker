@@ -138,8 +138,10 @@ function TopicView({ data }: { data: Graph }) {
   return <div className="sc-tv">
     <header className="sc-tv__head">
       <h2>{data.topic}</h2>
-      <p>{[['statement', 'wpisów polityków'], ['diagnosis', 'diagnoz Dr. Spina'], ['vote', 'głosowań'], ['record', 'dokumentów Sejmu'], ['media', 'artykułów'], ['person', 'osób i instytucji']]
-        .filter(([k]) => data.counts[k]).map(([k, label]) => `${data.counts[k]} ${label}`).join(' · ')}</p>
+      <p>{([['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
+        ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['record', 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu'], ['media', 'artykuł', 'artykuły', 'artykułów'],
+        ['person', 'osoba lub instytucja', 'osoby i instytucje', 'osób i instytucji']] as const)
+        .filter(([k]) => data.counts[k]).map(([k, one, few, many]) => { const n = data.counts[k]; const w = n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many; return `${n} ${w}`; }).join(' · ')}</p>
       <Export data={data} author={author} />
     </header>
     <div className="sc-tv__grid">
