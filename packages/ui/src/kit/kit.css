@@ -9228,3 +9228,8 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-spin-detail__post figure { margin: 0 0 18px !important; }
 .sc-spin-detail__post figcaption { margin-top: 8px; }
 .sc-spin-detail__post .sc-spin-card__source { display: inline-block; margin-top: 4px; }
+/* „W skrócie” w panelu wskaźników diagnozy: etykieta jak pozostałe, tekst na szerokość liczby i wykresu */
+.sc-dg-score .sc-scan-brief { align-items: start !important; }
+.sc-dg-score .sc-scan-brief .sc-scan-m-lbl { padding-top: 4px; }
+.sc-dg-score .sc-scan-brief__text { grid-column: 2 / -1; margin: 0; font-size: 17px; line-height: 1.6; font-weight: 500; color: var(--sc-text); text-wrap: pretty; }
+@media (max-width: 560px) { .sc-dg-score .sc-scan-brief__text { grid-column: 1 / -1; font-size: 16px; } }

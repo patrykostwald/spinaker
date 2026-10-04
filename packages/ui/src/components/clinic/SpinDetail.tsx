@@ -144,10 +144,9 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
           ))}
           <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Oryginalny wpis na X ↗</a>
         </SourceDisclosure>
-        <section className="sc-dg-quick" aria-label="Podsumowanie"><h2>W skrócie</h2><p className="sc-spin-detail__summary">{spin.summary}</p></section>
         </FitStickyAside>
         <div className="sc-dg-main">
-        <div className="sc-dg-score"><SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} /><HowToRead /></div>
+        <div className="sc-dg-score"><SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} brief={spin.summary} /><HowToRead /></div>
         <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>
         <article className="sc-spin-detail__diagnosis">
           <SpinDiagnosisBody spin={spin} withSummary={false} />

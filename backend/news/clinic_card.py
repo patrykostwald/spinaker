@@ -17,8 +17,8 @@ from news.techniques import FAMILY_LABELS
 from news.spin_colors import CLAIM_COLORS, FAMILY_COLORS, VERDICT_COLORS, strength_bar, strength_color, tabular_score
 from news.x_card import _font, EMOJI, glue_short
 
-VERSION = 'v9'
-FORMATS = {'diagnoza', 'skrot'}
+VERSION = 'v10'
+FORMATS = {'diagnoza', 'skrot', 'szczegoly'}
 COLORS = VERDICT_COLORS
 MUTED, ACCENT = '#a6a6a6', '#4a9eff'
 FAMILIES = {key: FAMILY_COLORS[key] for key in FAMILY_LABELS}
@@ -201,7 +201,7 @@ def _model_label(model):
     return next((label for key, label in MODEL_LABELS if key in value), (str(model or '').split('/')[-1].split('-')[0] or '?').capitalize())
 
 
-def _draw_panel(draw, data, box):
+def _draw_panel(draw, data, box, fill='#0f0f0f'):
     """Wspólny panel obu formatów; grafiki mają tę samą linię dołu."""
     left, top, right, bottom = box
     scale = min((right - left) / 868, (bottom - top) / 272)
@@ -211,7 +211,7 @@ def _draw_panel(draw, data, box):
     families = scan.get('families') or {}
     counts = [families.get(key, {}).get('technique_types', 0) for key in FAMILIES]
     total = sum(v.get('technique_types', 0) for v in families.values())
-    draw.rounded_rectangle(box, radius=22 * scale, fill='#0f0f0f')
+    draw.rounded_rectangle(box, radius=22 * scale, fill=fill)
     def text(value, x, y, end, size=15, color=MUTED, weight=500):
         selected = round(size * scale)
         return _text(draw, value, (x, y, end, y + selected + 10), size=selected, color=color, weight=weight)
@@ -222,7 +222,7 @@ def _draw_panel(draw, data, box):
             draw.rounded_rectangle((x, y, x + max(height, width * min(1, fraction)), y + height), radius=height / 2, fill=color)
     numbers = [data.get('intensity', 0), council.get('verdict_agreement') or '—', claims.get('checked', 0), total]
     suffixes = ['/100', 'zgodne', plural_pl(numbers[2], 'sprawdzone', 'sprawdzone', 'sprawdzonych'), plural_pl(total, 'typ', 'typy', 'typów')]
-    for i, title in enumerate(['NASILENIE SPINU', 'KONSYLIUM AI', 'TWIERDZENIA', 'TECHNIKI']):
+    for i, title in enumerate(['SIŁA SPINU', 'KONSYLIUM AI', 'TWIERDZENIA', 'TECHNIKI']):
         edge = left + cell * i
         if i:
             draw.line((edge, top, edge, bottom), fill='#262626', width=1)
@@ -327,11 +327,83 @@ def _render_short(data):
     return buffer.getvalue()
 
 
+def _render_share(data):
+    """Grafika do udostępnienia (właściciel 5.10): cztery pola o równych odstępach.
+    Lewa góra: wpis autora. Prawa góra: werdykt i „W skrócie”. Prawy dół: wskaźniki. Lewy dół: spin.clinic."""
+    image = Image.new('RGB', (1600, 900), '#0b0b0b')
+    draw = ImageDraw.Draw(image)
+    pad, gap = 48, 24
+    left_end = pad + 600
+    right = left_end + gap
+    end = 1600 - pad
+    bottom_top = 900 - pad - 272
+    top_bottom = bottom_top - gap
+    scan, author, post = data['scan'], data['author'], data['post']
+    def text(value, box, **kwargs):
+        return _text(draw, value, box, **kwargs)
+    for box in ((pad, pad, left_end, top_bottom), (right, pad, end, top_bottom), (pad, bottom_top, left_end, 900 - pad)):
+        draw.rounded_rectangle(box, radius=22, fill='#171717')
+    # lewa góra: wpis autora
+    x, x_end = pad + 28, left_end - 28
+    avatar = fetch_image(author.get('avatar_url'))
+    if avatar is not None:
+        _paste(image, avatar, (x, pad + 28, x + 56, pad + 84), 28)
+    else:
+        draw.ellipse((x, pad + 28, x + 56, pad + 84), fill='#303030')
+        text(''.join(p[0] for p in author.get('name', '').split()[:2]).upper(), (x + 9, pad + 44, x + 49, pad + 76), size=20, minimum=14, weight=700)
+    party = (author.get('party') or {}).get('short')
+    text(author.get('name', '') + (f', {party}' if party else ''), (x + 72, pad + 30, x_end, pad + 58), size=22, minimum=17, weight=700)
+    text(f"{_date(post.get('published_at'))} · wpis na X", (x + 72, pad + 62, x_end, pad + 88), size=18, color=MUTED)
+    body_top = pad + 108
+    if _deleted(post):
+        text('Wpis usunięty przez autora', (x, body_top, x_end, top_bottom - 28), size=24, lines=3, color=MUTED)
+    else:
+        media = post.get('media') or []
+        attachment = fetch_image(media[0].get('url')) if media else None
+        if attachment is not None:
+            _paste(image, attachment, (x, body_top, x_end, body_top + 170), 14)
+            body_top += 170 + 18
+        text(post.get('text', ''), (x, body_top, x_end, top_bottom - 24), size=22, minimum=19, lines=100, tight=True)
+    # prawa góra: werdykt i „W skrócie”
+    rx, r_end = right + 32, end - 32
+    shade = COLORS.get(data.get('verdict'), MUTED)
+    verdict = data.get('verdict_label') or ''
+    badge_end = rx + int(draw.textlength(verdict, font=_font(18, 700)) + 30)
+    draw.rounded_rectangle((rx, pad + 30, badge_end, pad + 64), radius=17, outline=shade, width=2)
+    text(verdict, (rx + 14, pad + 37, badge_end - 12, pad + 63), size=18, color=shade, weight=700)
+    text('W SKRÓCIE · DR. SPIN (AI)', (badge_end + 16, pad + 39, r_end, pad + 64), size=16, weight=700, color='#8c8c8c')
+    synthesis = scan.get('synthesis') or {}
+    lead = synthesis.get('lead') or data.get('headline')
+    lead_bottom = text(lead, (rx, pad + 88, r_end, pad + 88 + 3 * 46), size=42, minimum=32, lines=3, weight=700, tight=True)
+    summary = data.get('summary') or ' '.join(synthesis.get('points') or [])
+    text(summary, (rx, lead_bottom + 22, r_end, top_bottom - 28), size=27, minimum=20, lines=6, color='#cfcfcf', tight=True)
+    # prawy dół: wskaźniki
+    _draw_panel(draw, data, (right, bottom_top, end, 900 - pad), fill='#171717')
+    # lewy dół: spin.clinic
+    mark = _font(44, 800)
+    x0, base = pad + 28, bottom_top + 40
+    top = mark.getbbox('spin', anchor='ls')[1]
+    for part, colour in (('spin', '#ffffff'), ('.', ACCENT), ('clinic', '#ffffff')):
+        width = draw.textlength(part, font=mark)
+        dy = mark.getbbox(part, anchor='ls')[1] - top
+        text(part, (x0 - 2, base + dy, x0 + width + 8, base + 56 + dy), size=44, weight=800, color=colour)
+        x0 += width
+    text('Klinika spinu: jak politycy obu stron kręcą przekazem. Ta sama miara dla rządzących i opozycji.',
+         (pad + 28, bottom_top + 112, left_end - 28, bottom_top + 200), size=20, minimum=17, lines=3, color='#cfcfcf')
+    text(f"spin.clinic/klinika/{data['id']} · diagnoza {_date(scan.get('diagnosed_at'))}",
+         (pad + 28, 900 - pad - 52, left_end - 28, 900 - pad - 22), size=18, minimum=15, color=MUTED)
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
 def render(data, card_format='diagnoza'):
     if card_format not in FORMATS:
         raise ValueError('Unknown card format')
     if card_format == 'skrot':
         return _render_short(data)
+    if card_format == 'diagnoza':
+        return _render_share(data)
     image = Image.new('RGB', (1600, 900), '#0b0b0b')
     draw = ImageDraw.Draw(image)
     draw.rounded_rectangle((40, 40, 1560, 834), radius=28, fill='#171717')

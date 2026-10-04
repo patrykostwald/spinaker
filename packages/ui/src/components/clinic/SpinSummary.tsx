@@ -18,7 +18,7 @@ export function ReportError({ spin }: { spin: SpinDetailData }) {
 }
 
 /** Wspólny wynik i panel liczb; źródło i akcje pozostają w komponencie osadzającym. */
-export function SpinSummary({ spin, heading: Heading = "h3", compact = false, withPoint = true, withReport = false, withTable = !compact }: { spin: SpinDetailData; heading?: "h1" | "h2" | "h3"; compact?: boolean; withPoint?: boolean; withReport?: boolean; withTable?: boolean }) {
+export function SpinSummary({ spin, heading: Heading = "h3", compact = false, withPoint = true, withReport = false, withTable = !compact, brief }: { spin: SpinDetailData; heading?: "h1" | "h2" | "h3"; compact?: boolean; withPoint?: boolean; withReport?: boolean; withTable?: boolean; brief?: string }) {
   const scan = spin.scan;
   const lead = Heading === "h1" ? spin.headline : scan?.synthesis?.lead || spin.headline;
   const point = scan?.synthesis?.points?.[0] || firstSentence(spin.summary);
@@ -30,6 +30,8 @@ export function SpinSummary({ spin, heading: Heading = "h3", compact = false, wi
       <Heading className="sc-scan-dg-lead" id={`scan-lead-${spin.id}`}>{lead}</Heading>
       {withPoint ? <p className="sc-scan-dg-point">{point}</p> : null}
       <div className="sc-scan-m">
+        {/* „W skrócie” jako pierwszy wiersz panelu (właściciel 5.10): najpierw wniosek, pod nim liczby, które go uzasadniają */}
+        {brief ? <div className="sc-scan-m-col sc-scan-brief"><p className="sc-scan-m-lbl">W skrócie</p><p className="sc-scan-brief__text">{brief}</p></div> : null}
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Siła spinu</p><p className="sc-scan-m-num sc-scan-strength sc-spin-num" style={spinVar(spin.intensity)}>{spin.intensity}<small>/100</small></p>
           <div className="sc-scan-g" title="Ocena AI w skali 0–100"><span className="sc-scan-g-track"><i className="sc-spin-fill" style={{ ...spinVar(spin.intensity), width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div></div>
         <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Konsylium AI</p><p className="sc-scan-m-num" title={agreementLabel(agreement)}>{agreement && /\d/.test(agreement) ? agreement : "-"}</p>
