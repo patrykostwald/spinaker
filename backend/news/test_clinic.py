@@ -1055,7 +1055,7 @@ def test_pick_requeues_interview_that_failed_on_payment(monkeypatch):
                                             status='failed', error='gemini_402: {"error": {"code": 402}}', title='Wywiad')
     ClinicInterview.objects.create(video_id='bbbbbbbbbbb', url='https://www.youtube.com/watch?v=bbbbbbbbbbb', day=day,
                                    status='not_applicable', error='nie_wywiad: monolog')
-    monkeypatch.setattr(clinic_interview, 'find_loudest_interview', lambda *a, **k: pytest.fail('nie szukamy nowego'))
+    monkeypatch.setattr(clinic_interview, 'find_loudest_interview', lambda *a, **k: None if k.get('mode') == 'votes' else pytest.fail('nie szukamy nowego'))
     result = clinic_interview.pick_yesterday()
     failed.refresh_from_db()
     assert result['status'] == 'requeued' and result['id'] == failed.pk

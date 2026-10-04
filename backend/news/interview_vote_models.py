@@ -45,3 +45,11 @@ class InterviewVote(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['user', 'ballot'], name='interview_vote_user_day')]
+
+
+class InterviewMessage(models.Model):
+    """Wiadomość czytelnika do Dr. Spina przy głosowaniu (propozycja tematu, uwaga). Widzi ją tylko zespół."""
+    ballot = models.ForeignKey(InterviewBallot, on_delete=models.CASCADE, related_name='messages')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='+')
+    text = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)

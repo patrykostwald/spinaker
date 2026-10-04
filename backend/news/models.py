@@ -1018,7 +1018,7 @@ from .evidence_extraction import (  # noqa: E402,F401
 from .account_models import AccountIdentity
 from .notification_models import Follow, Notification, NotificationSettings, NotificationEvent
 from .poll_models import PollVote
-from .interview_vote_models import InterviewBallot, InterviewCandidate, InterviewSubmission, InterviewVote
+from .interview_vote_models import InterviewBallot, InterviewCandidate, InterviewMessage, InterviewSubmission, InterviewVote
 
 from .thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRateEvent, ThreadModerationReport, ThreadModerationDecision, ThreadModerationMail  # noqa: E402,F401
 

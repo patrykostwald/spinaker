@@ -22,7 +22,7 @@ export function useAccountProfile() {
 }
 export function ProfileHeading({ profile, children }: { profile: ProfileData; children?: React.ReactNode }) {
   return <header className="sc-account-identity">
-    <div className="sc-account-avatar" aria-hidden="true">{profile.username[0]?.toUpperCase()}</div>
+    <div className="sc-account-avatar" aria-hidden="true">{profile.username?.[0]?.toUpperCase()}</div>
     <div><h2>@{profile.username}</h2>{profile.bio && <p>{profile.bio}</p>}
       <p className="sc-account-meta">Dołączono {formatDatePl(profile.date_joined)}</p></div>
     <dl className="sc-account-numbers">{([['threads', 'Spinki'], ['ratings', 'Oceny'], ['comments', 'Komentarze']] as const).map(([key, title]) =>

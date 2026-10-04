@@ -483,7 +483,7 @@ html.sc-theme-transition .sc-root {
 
 .sc-info-page.sc-source-page .sc-info-page__body { max-width: none; }
 
-@media (max-width: 899px) {
+@media (max-width: 767px) {
   .sc-doc-layout { grid-template-columns: minmax(0, 68ch); gap: 24px; }
   .sc-doc-layout__aside { position: static; }
   .sc-doc-layout__toc { max-height: none; overflow: visible; }
@@ -8885,3 +8885,74 @@ html { scrollbar-width: thin; }
 /* kółko powrotu: wielkość i krój awatara, w kolumnie awatarów, na wysokości dolnej krawędzi boksów (właściciel 4.10) */
 .sc-trop-overlay__side-back { width: 40px !important; height: 40px !important; font: 700 15px/38px var(--sc-font-sans, Montserrat, sans-serif) !important; text-align: center; }
 .sc-trop-overlay__side-back { font-size: 22px !important; line-height: 36px !important; }
+
+/* ===== Głosowanie: dwa wywiady dnia (właściciel 4.10) ===== */
+.sc-interview-voting__header { border-top: 0; padding-top: 8px; }
+.sc-interview-voting__header h1 { white-space: normal; text-wrap: balance; font-weight: 600; }
+.sc-iv-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 8px 0 18px; }
+.sc-iv-pick { display: grid; align-content: start; gap: 6px; min-height: 132px; padding: 18px 18px 16px; position: relative; font-size: 13px; color: var(--sc-text-2); border-radius: 3px;
+  background:
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 22px top 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) right 0 top 0 / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 bottom 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 top 22px / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(180deg, #121316 0%, #0a0b0d 100%); }
+.sc-iv-pick__k { position: absolute; left: 0; top: -7px; padding-right: 8px; background: var(--sc-bg, #000); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; line-height: 14px; color: var(--sc-text); }
+.sc-iv-pick strong { font-size: 16px; font-weight: 600; color: var(--sc-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-iv-pick > span:not(.sc-iv-pick__k) { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.sc-iv-pick b { color: var(--sc-text); }
+.sc-iv-pick a { color: var(--sc-text); margin-top: auto; text-decoration: none; font-weight: 600; }
+.sc-iv-rules { border-top: 1px solid var(--sc-line); border-bottom: 1px solid var(--sc-line); padding: 12px 0; font-size: 13px; color: var(--sc-text-2); }
+.sc-iv-rules summary { cursor: pointer; color: var(--sc-text); font-weight: 600; list-style: none; }
+.sc-iv-rules summary::-webkit-details-marker { display: none; }
+.sc-iv-rules summary::after { content: " ›"; color: var(--sc-text-2); }
+.sc-iv-rules[open] summary::after { content: " ‹"; }
+.sc-iv-rules ol { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; line-height: 1.55; }
+.sc-iv-rules li b { display: inline-block; min-width: 76px; color: var(--sc-text); font-weight: 600; }
+.sc-interview-voting__row[data-mine] strong { color: var(--sc-text); }
+.sc-interview-voting__row { height: auto; min-height: 84px; }
+.sc-iv-forms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.sc-iv-forms .sc-interview-voting__add { margin: 0; border-bottom: 0; }
+.sc-iv-forms .sc-interview-voting__add input { min-width: 0; width: 100%; flex: 1; border: 0; border-bottom: 1px solid var(--sc-line); border-radius: 0; padding: 10px 0; background: transparent; color: var(--sc-text); font-size: 14px; }
+.sc-iv-forms .sc-interview-voting__add input:focus-visible { outline: none; border-bottom-color: var(--sc-text); }
+.sc-iv-forms__err { grid-column: 1 / -1; margin: 0; color: var(--sc-negative); font-size: 12px; }
+.sc-iv-forms__err:empty { display: none; }
+@media (max-width: 640px) {
+  .sc-iv-pair, .sc-iv-forms { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .sc-iv-pick { min-height: 0; }
+  .sc-iv-rules li b { display: block; }
+}
+.sc-interview-voting__row { grid-template-columns: 96px minmax(0, 1fr) 128px; }
+.sc-interview-voting__actions > span { white-space: nowrap; }
+.sc-iv-forms .sc-interview-voting__add input[type] { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--sc-line) !important; border-radius: 0 !important; padding: 10px 0 !important; }
+@media (max-width: 640px) { .sc-interview-voting__row { grid-template-columns: 48px minmax(0, 1fr) 96px; } }
+
+/* ===== Panel użytkownika w nowym stylu (właściciel 4.10, Konsylium: 6 sekcji) =====
+   bez pigułek i pełnych ramek: liczby jako sam tekst nad cienką linią, menu tekstowe z kreską, pierwsze kroki na płytce z otwartymi narożnikami. */
+.sc-account-086 > h1 { font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; }
+.sc-account-086 .sc-account-identity { grid-template-columns: 40px minmax(0, 1fr); gap: 14px; align-items: center; padding-block: 12px 4px; }
+.sc-account-086 .sc-account-avatar { width: 40px; height: 40px; font-size: 16px; font-weight: 600; background: transparent; border-color: var(--sc-fr-i); }
+.sc-account-086 .sc-account-numbers { display: flex; gap: 0; margin: 14px 0 6px; max-width: none !important; border-top: 1px solid var(--sc-line); border-bottom: 1px solid var(--sc-line); }
+.sc-account-086 .sc-account-numbers > div { flex: 1 1 0; border: 0; border-radius: 0; background: none; padding: 14px 0; text-align: left; display: flex; flex-direction: column-reverse; gap: 2px; }
+.sc-account-086 .sc-account-numbers > div + div { padding-left: 20px; background: linear-gradient(var(--sc-line), var(--sc-line)) left 0 center / 1px 60% no-repeat; }
+.sc-account-086 .sc-account-numbers dd { margin: 0; font-size: 22px; font-weight: 600; }
+.sc-account-086 .sc-account-numbers dt { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.sc-account-086 .sc-f2-onboarding { border: 0 !important; border-radius: 3px; padding: 20px 22px; margin-block: 18px;
+  background:
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 22px top 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) right 0 top 0 / 1px calc(100% - 22px) no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 bottom 0 / calc(100% - 22px) 1px no-repeat,
+    linear-gradient(var(--sc-fr-i), var(--sc-fr-i)) left 0 top 22px / 1px calc(100% - 22px) no-repeat !important; }
+.sc-account-086 .sc-account-sidenav a { border-radius: 0 !important; background: none !important; box-shadow: none !important; color: var(--sc-text-2); font-size: 14px; }
+.sc-account-086 .sc-account-sidenav a[aria-current] { color: var(--sc-text) !important; font-weight: 600; box-shadow: inset 2px 0 var(--sc-text) !important; }
+.sc-account-086 .sc-account-sidenav a:hover { color: var(--sc-text); }
+.sc-account-086 .sc-account-filter button, .sc-account-086 .sc-account-filter .sc-btn { border: 0 !important; border-radius: 0 !important; background: none !important; padding-inline: 0 !important; margin-right: 18px; color: var(--sc-text-2); }
+.sc-account-086 .sc-account-filter [aria-pressed="true"] { color: var(--sc-text) !important; box-shadow: inset 0 -1px var(--sc-text) !important; }
+.sc-account-086 .sc-f2-settings > section { border: 0; border-top: 1px solid var(--sc-line); border-radius: 0; background: none; padding: 18px 0; }
+.sc-account-086 .sc-f2-settings input:not([type="checkbox"]), .sc-account-086 .sc-f2-settings select { background: transparent; border: 0; border-bottom: 1px solid var(--sc-line); border-radius: 0; padding-inline: 0; color: var(--sc-text); }
+@media (max-width: 767px) {
+  .sc-account-086 .sc-account-sidenav { scrollbar-width: none; border-bottom: 1px solid var(--sc-line); gap: 18px !important; }
+  .sc-account-086 .sc-account-sidenav::-webkit-scrollbar { display: none; }
+  .sc-account-086 .sc-account-sidenav a { padding-inline: 0 !important; }
+  .sc-account-086 .sc-account-sidenav a[aria-current] { box-shadow: inset 0 -2px var(--sc-text) !important; }
+}

@@ -39,11 +39,13 @@ function SavedSection() {
     </ul>{(articles.hasNextPage || threads.hasNextPage) && <Button disabled={articles.isFetchingNextPage || threads.isFetchingNextPage} onClick={() => { if (articles.hasNextPage) void articles.fetchNextPage(); if (threads.hasNextPage) void threads.fetchNextPage(); }}>Pokaż więcej zapisanych</Button>}{message && <p role="status">{message}</p>}
   </section>;
 }
-const NAV = [['moje-tropy', 'Moje spinki'], ['aktywnosc', 'Aktywność'], ['obserwowani', 'Obserwowani'], ['powiadomienia', 'Powiadomienia'], ['zgloszenia', 'Zgłoszenia'], ['ustawienia', 'Ustawienia']] as const;
+/* Sześć sekcji (Konsylium 4.10, ścieżki użytkowników): to, co robię, co obserwuję, co do mnie przychodzi, konto, dane. */
+const NAV = [['moje-tropy', 'Moje spinki'], ['aktywnosc', 'Aktywność'], ['obserwowani', 'Obserwuję'], ['powiadomienia', 'Powiadomienia'], ['konto', 'Konto'], ['prywatnosc', 'Prywatność i dane']] as const;
+const OLD: Record<string, string> = { ustawienia: 'konto', zgloszenia: 'aktywnosc' };
 export function MojeKonto() {
   const account = useAccount(), profile = useAccountProfile(), threadsEnabled = useFeature('THREADS_ENABLED');
   const [section, setSection] = useState<string>('moje-tropy');
-  useEffect(() => { const read = () => { const key = window.location.hash.slice(1); if (NAV.some(([id]) => id === key)) setSection(key); }; read(); window.addEventListener('hashchange', read); return () => window.removeEventListener('hashchange', read); }, []);
+  useEffect(() => { const read = () => { const raw = window.location.hash.slice(1), key = OLD[raw] ?? raw; if (NAV.some(([id]) => id === key)) setSection(key); }; read(); window.addEventListener('hashchange', read); return () => window.removeEventListener('hashchange', read); }, []);
   const nav = NAV.filter(([id]) => threadsEnabled || id !== 'moje-tropy');
   const active = !threadsEnabled && section === 'moje-tropy' ? 'aktywnosc' : section;
   if (account.isPending || account.isError) return <div className="sc-account"><AccountDataState query={account} /></div>;
@@ -51,13 +53,13 @@ export function MojeKonto() {
   function navigate(id: string) { setSection(id); window.history.replaceState(null, '', `#${id}`); }
   return <div className="sc-account sc-f2 sc-account-dashboard sc-account-086">
     <h1>Mój spin.clinic</h1><AccountDataState query={profile} />
-    {profile.data && <ProfileHeading profile={profile.data}><Button variant="secondary" onClick={() => navigate('ustawienia')}>Edytuj profil</Button><Button href={`/profile/${encodeURIComponent(profile.data.username)}`} variant="quiet">Zobacz profil publiczny</Button></ProfileHeading>}
+    {profile.data && <ProfileHeading profile={profile.data}><Button variant="secondary" onClick={() => navigate('konto')}>Edytuj profil</Button><Button href={`/profile/${encodeURIComponent(profile.data.username)}`} variant="quiet">Zobacz profil publiczny</Button></ProfileHeading>}
     <AccountOnboarding key={account.data.user.id} ownerId={account.data.user.id} />
     <div className="sc-account-layout"><nav className="sc-account-sidenav" aria-label="Sekcje konta">{nav.map(([id, label]) => <a key={id} href={`#${id}`} aria-current={active === id ? 'page' : undefined} onClick={event => { event.preventDefault(); navigate(id); }}>{label}</a>)}</nav>
       <div className="sc-account-content" key={active}>
-        {active === 'moje-tropy' && <AccountThreads />}{active === 'aktywnosc' && <AccountActivity />}
-        {active === 'obserwowani' && <><FollowedSection /><SavedSection /></>}{active === 'powiadomienia' && <NotificationsSection />}
-        {active === 'zgloszenia' && <AccountReports />}{active === 'ustawienia' && <AccountSettings />}
+        {active === 'moje-tropy' && <AccountThreads />}{active === 'aktywnosc' && <><AccountActivity /><AccountReports /></>}
+        {active === 'obserwowani' && <><FollowedSection /><SavedSection /></>}{active === 'powiadomienia' && <><NotificationsSection /><AccountSettings part="powiadomienia" /></>}
+        {active === 'konto' && <AccountSettings part="konto" />}{active === 'prywatnosc' && <AccountSettings part="prywatnosc" />}
       </div>
     </div>
   </div>;

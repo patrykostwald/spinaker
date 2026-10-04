@@ -15,7 +15,7 @@ from django.contrib.auth.models import Group, User
 from django import forms
 from rest_framework.exceptions import ValidationError as APIValidationError
 
-from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
+from news.models import (InterviewMessage, Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
     ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt,
     SourceThumbnailPolicy, SourceReviewDecision)
 from news.account_models import ArticleFavorite, CommentReport, PersonalContextThread
@@ -473,3 +473,11 @@ register_public_records(site)
 from news import report_admin  # noqa: E402,F401
 if site is not admin.site:
     report_admin.register(site)
+
+
+@admin.register(InterviewMessage)
+class InterviewMessageAdmin(admin.ModelAdmin):
+    """Wiadomości czytelników do Dr. Spina przy głosowaniu na drugi wywiad dnia."""
+    list_display = ('created_at', 'ballot', 'text')
+    list_filter = ('ballot__day',)
+    readonly_fields = ('ballot', 'user', 'text', 'created_at')

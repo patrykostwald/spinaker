@@ -15,7 +15,7 @@ from news import clinic_interview as interviews
 from news.account_models import AccountIdentity
 from news.daily_schedule import WARSAW
 from news.features import accounts_enabled
-from news.interview_vote_models import InterviewBallot, InterviewCandidate, InterviewSubmission, InterviewVote
+from news.interview_vote_models import InterviewBallot, InterviewCandidate, InterviewMessage, InterviewSubmission, InterviewVote
 
 
 def closing_at(day):
@@ -45,6 +45,21 @@ def lock_verified(user):
     identity = AccountIdentity.objects.select_for_update().filter(user=user, email_verified=True).first()
     if not identity:
         raise PermissionDenied('Potwierdź e-mail, żeby głosować i dodawać wywiady.')
+
+
+def min_account_days():
+    """Ochrona przed farmami kont bez danych o IP (Konsylium 4.10): głos dopiero po N dniach od założenia konta."""
+    import os
+    try:
+        return max(0, int(os.environ.get('INTERVIEW_MIN_ACCOUNT_DAYS', '3')))
+    except ValueError:
+        return 3
+
+
+def check_account_age(user):
+    days = min_account_days()
+    if days and user.date_joined > timezone.now() - timedelta(days=days):
+        raise PermissionDenied(f'Głosować można po {days} dniach od założenia konta.')
 
 
 def youtube_id(url):
@@ -171,10 +186,36 @@ def add_candidate(user, day, url):
         return candidate
 
 
+MESSAGES_PER_DAY = 3
+
+
+def send_message(user, day, text):
+    text = ' '.join(text.split())
+    if len(text) < 10:
+        raise ValidationError('Napisz co najmniej 10 znaków.')
+    with transaction.atomic():
+        ballot = lock_ballot(day)
+        lock_verified(user)
+        if InterviewMessage.objects.filter(ballot=ballot, user=user).count() >= MESSAGES_PER_DAY:
+            raise ValidationError(f'Na ten dzień wysłano już {MESSAGES_PER_DAY} wiadomości.')
+        return InterviewMessage.objects.create(ballot=ballot, user=user, text=text[:500])
+
+
+def dr_spin_pick(day):
+    from news.clinic_models import ClinicInterview
+    row = (ClinicInterview.objects.filter(day=day, status__in=['queued', 'flagged', 'pending_review', 'approved'], hidden_at__isnull=True)
+           .exclude(selection_method__in=['votes', 'tie']).order_by('created_at').first())
+    if not row:
+        return None
+    return {'id': row.pk, 'video_id': row.video_id, 'title': row.title, 'guest_name': row.guest_name, 'channel': row.channel,
+            'ready': row.status == 'approved'}
+
+
 def cast_vote(user, day, candidate_id):
     with transaction.atomic():
         ballot = lock_ballot(day)
         lock_verified(user)
+        check_account_age(user)
         check_open(day)
         candidate = ballot.candidates.filter(pk=candidate_id).first()
         if not candidate:
@@ -187,7 +228,9 @@ def ballot_data(day, user):
     mine = InterviewVote.objects.filter(ballot__day=day, user=user).values_list('candidate_id', flat=True).first() if user.is_authenticated else None
     return {'day': day.isoformat(), 'closes_at': closing_at(day).isoformat(),
         'open': day <= timezone.now().astimezone(WARSAW).date() and timezone.now() < closing_at(day),
-        'accounts_enabled': accounts_enabled(), 'mine': mine,
+        'accounts_enabled': accounts_enabled(), 'mine': mine, 'min_votes': interviews.reader_min_votes(), 'min_account_days': min_account_days(),
+        'dr_spin': dr_spin_pick(day),
+        'messages_left': max(0, MESSAGES_PER_DAY - InterviewMessage.objects.filter(ballot__day=day, user=user).count()) if user.is_authenticated else 0,
         'results': [{'id': row.pk, 'video_id': row.video_id, 'title': row.title, 'guest_name': row.guest_name,
             'channel': row.channel, 'duration': row.duration, 'views': row.views, 'votes': row.vote_count,
             'thumbnail_url': f'https://i.ytimg.com/vi/{row.video_id}/mqdefault.jpg'} for row in rows]}
@@ -211,6 +254,11 @@ def previous_guest_keys(day):
 
 
 def selection_label(interview):
+    from news.clinic_interview import reader_pick_enabled
+    if reader_pick_enabled() and interview.selection_method in ('votes', 'tie'):
+        return f'Wywiad czytelników: wybrany głosami ({interview.selection_votes} głosów)'
+    if reader_pick_enabled() and interview.selection_method == 'views':
+        return 'Wywiad dnia Dr. Spina: najczęściej oglądana rozmowa polityka'
     if interview.selection_method == 'votes':
         return f'Wybrany głosami czytelników ({interview.selection_votes} głosów)'
     if interview.selection_method == 'tie':

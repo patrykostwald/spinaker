@@ -97,7 +97,10 @@ export function VerifyEmailNotice() {
   </div>;
 }
 
-export function AccountSettings() {
+export type SettingsPart = 'konto' | 'powiadomienia' | 'prywatnosc';
+const PART_TITLE: Record<SettingsPart, string> = { konto: 'Konto', powiadomienia: 'Ustawienia powiadomień', prywatnosc: 'Prywatność i dane' };
+
+export function AccountSettings({ part = 'konto' }: { part?: SettingsPart }) {
   const PUSH_ENABLED = useFeature('PUSH_ENABLED');
   const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const account = useAccount(); const cache = useQueryClient(); const ownerId = account.data?.user?.id;
@@ -131,13 +134,10 @@ export function AccountSettings() {
       cache.clear(); window.location.assign('/');
     }, 'Usunięto konto.');
   }
-  return <PanelSection id="ustawienia" title="Ustawienia">
+  return <PanelSection id={part} title={PART_TITLE[part]}>
     <div className="sc-f2-settings">
-      <XAccountSettings />
-      <ProfileEditor />
-      <MutedSettings />
-      <section><h3>Motyw</h3><ThemeSwitcher /></section>
-      <section><h3>Powiadomienia e-mail i push</h3><AccountDataState query={settings} />
+      {part === 'konto' && <><ProfileEditor /><XAccountSettings /><section><h3>Motyw</h3><ThemeSwitcher /></section></>}
+      {part === 'powiadomienia' && <section><h3>E-mail i push</h3><AccountDataState query={settings} />
         {settings.data && <>
         {([['service_enabled', 'Powiadomienia serwisowe'], ['social_enabled', 'Powiadomienia społecznościowe']] as const).map(([key, label]) => <label className="sc-f2-check" key={key}><input type="checkbox" checked={settings.data[key]} disabled={pending} onChange={event => { const checked = event.target.checked; void perform(() => updateSettings({ [key]: checked }), 'Zapisano powiadomienia.'); }} />{label}</label>)}<label>Podsumowanie e-mail<select value={settings.data.email_digest} disabled={pending} onChange={event => { const email_digest = event.target.value as NotificationSettings['email_digest']; void perform(() => updateSettings({ email_digest }), 'Zapisano powiadomienia.'); }}>
           <option value="off">Wyłączone</option><option value="daily">Raz dziennie</option><option value="weekly">Raz w tygodniu</option>
@@ -146,8 +146,8 @@ export function AccountSettings() {
           ['push_spin_of_day', 'Spin dnia'], ['push_followed', 'Nowości u obserwowanych'], ...(THREADS_ENABLED ? [['push_thread_replies', 'Odpowiedzi w spinkach']] : []),
         ] as [keyof Omit<NotificationSettings, 'email_digest'>, string][]).map(([key, label]) => <label className="sc-f2-check" key={key}><input type="checkbox" checked={settings.data[key]} disabled={pending} onChange={event => { const checked = event.target.checked; void perform(() => updateSettings({ [key]: checked }), 'Zapisano preferencje push.'); }} />{label}</label>)}</>}
         </>}
-      </section>
-      <section><h3>E-mail i bezpieczeństwo</h3>
+      </section>}
+      {part === 'konto' && <><section><h3>E-mail i bezpieczeństwo</h3>
         <form onSubmit={emailSubmit}><label>Adres e-mail<input key={accountEmail(account.data)} name="email" type="email" autoComplete="email" required defaultValue={accountEmail(account.data)} /></label><p>{emailVerified(account.data) ? 'E-mail potwierdzony.' : 'E-mail nie jest jeszcze potwierdzony.'}</p><label>Aktualne hasło<input name="password" required type="password" autoComplete="current-password" /></label>
           {!account.data?.user?.accepted_terms_version && <label className="sc-f2-check"><input type="checkbox" name="accepted_terms" required />Akceptuję <Link href="/zasady-korzystania">zasady korzystania</Link>.</label>}
           <Button type="submit" variant="secondary" disabled={pending}>Zapisz e-mail</Button></form>
@@ -159,9 +159,11 @@ export function AccountSettings() {
         </form>
         <Button disabled={pending} onClick={() => perform(async () => { await apiWrite('/api/account/logout-all/', {}); cache.clear(); window.location.assign('/konto'); }, 'Wylogowano ze wszystkich urządzeń.')}>Wyloguj ze wszystkich urządzeń</Button>
         <Button variant="quiet" disabled={pending || !accountEmail(account.data)} onClick={() => perform(() => apiWrite('/api/account/password-reset/', { email: accountEmail(account.data) }), 'Jeśli adres jest przypisany do konta, otrzymasz link do zmiany hasła.')}>Wyślij link do zmiany hasła</Button>
-        <Button variant="quiet" disabled={pending} onClick={() => perform(download, 'Przygotowano plik JSON do pobrania.')}>Pobierz eksport konta (JSON)</Button>
       </section>
-      <section><h3>Aplikacja na telefonie</h3><p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna. Na iPhonie: Safari → Udostępnij → Do ekranu początkowego.</p></section>
+      <section><h3>Aplikacja na telefonie</h3><p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna. Na iPhonie: Safari → Udostępnij → Do ekranu początkowego.</p></section></>}
+      {part === 'prywatnosc' && <><MutedSettings />
+      <section><h3>Twoje dane</h3><p>Zbieramy tylko to, co potrzebne do konta: e-mail, nick, Twoje spinki, komentarze i reakcje. Bez śledzenia i reklam.</p>
+        <Button variant="quiet" disabled={pending} onClick={() => perform(download, 'Przygotowano plik JSON do pobrania.')}>Pobierz moje dane (JSON)</Button></section>
       <section><h3>Usunięcie konta</h3><p>Konto i treści zostaną usunięte od razu po potwierdzeniu hasłem. To działanie jest nieodwracalne. Przed usunięciem pobierz eksport danych. Historia decyzji moderacji pozostaje bez przypisania do konta. Jeśli logujesz się przez Google, najpierw ustaw hasło przez e-mail.</p>
         {!deleting ? <Button variant="quiet" onClick={() => setDeleting(true)}>Chcę usunąć konto</Button> : <form onSubmit={deleteSubmit}>
           <label>Potwierdź aktualnym hasłem<input required name="password" type="password" autoComplete="current-password" /></label>
@@ -169,7 +171,7 @@ export function AccountSettings() {
           <div className="sc-f2-actions"><Button type="submit" variant="danger" disabled={pending}>Usuń konto nieodwracalnie</Button><Button variant="quiet" disabled={pending} onClick={() => setDeleting(false)}>Anuluj</Button></div>
         </form>}
         <p><Link href="/polityka-prywatnosci">Polityka prywatności</Link> · <Link href="/zasady-korzystania">Zasady korzystania</Link></p>
-      </section>
+      </section></>}
     </div>
     {message && <p role="status" className="sc-f2-notice">{message}</p>}
   </PanelSection>;

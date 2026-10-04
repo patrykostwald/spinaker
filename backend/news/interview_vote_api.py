@@ -28,6 +28,10 @@ class AddInput(BallotInput):
     url = serializers.CharField(max_length=500)
 
 
+class MessageInput(BallotInput):
+    text = serializers.CharField(max_length=500)
+
+
 class VoteInput(BallotInput):
     candidate_id = serializers.IntegerField(min_value=1)
 
@@ -71,3 +75,14 @@ class InterviewVoteView(InterviewBallotView):
         day = data.validated_data.get('day', votes.yesterday())
         votes.cast_vote(request.user, day, data.validated_data['candidate_id'])
         return Response(votes.ballot_data(day, request.user))
+
+
+class InterviewMessageView(InterviewBallotView):
+    http_method_names = ['post', 'options']
+
+    def post(self, request):
+        data = MessageInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        day = data.validated_data.get('day', votes.yesterday())
+        votes.send_message(request.user, day, data.validated_data['text'])
+        return Response(votes.ballot_data(day, request.user) | {'sent': True})

@@ -783,8 +783,21 @@ def rank_interviews(day) -> list[dict]:
     return sorted(ranked, key=lambda row: row['score'], reverse=True)
 
 
-def find_loudest_interview(day, exclude=()) -> dict | None:
-    """Głosy, potem dotychczasowy ranking. Pomijamy gościa z poprzedniego dnia."""
+def reader_pick_enabled() -> bool:
+    """Dwa wywiady dnia (właściciel 4.10): pierwszy wybiera Dr. Spin (ranking wyświetleń), drugi czytelnicy głosami."""
+    return os.environ.get('INTERVIEW_READER_PICK', 'true').strip().lower() == 'true'
+
+
+def reader_min_votes() -> int:
+    try:
+        return max(1, int(os.environ.get('INTERVIEW_READER_MIN_VOTES', '3')))
+    except ValueError:
+        return 3
+
+
+def find_loudest_interview(day, exclude=(), mode=None, exclude_guests=()) -> dict | None:
+    """Głosy, potem dotychczasowy ranking. Pomijamy gościa z poprzedniego dnia.
+    mode='auto': tylko ranking wyświetleń (wybór Dr. Spina); mode='votes': tylko głosy czytelników (min. próg)."""
     from news.interview_votes import ranked_candidates, previous_guest_keys
     names = set(_politician_names()) | set(_top_politicians())
     previous_keys, previous_name = previous_guest_keys(day)
@@ -792,12 +805,23 @@ def find_loudest_interview(day, exclude=()) -> dict | None:
     eligible = [row for row in rows if row.video_id not in exclude
                 and not previous_keys.intersection(row.guest_keys)
                 and not (previous_name and previous_name == row.guest_name.casefold().strip())]
+    if mode == 'auto':
+        eligible = sorted((row for row in eligible if row.from_ranking), key=lambda row: (-row.score, -row.views, row.video_id))
+    if mode == 'votes':
+        guests = {name.casefold().strip() for name in exclude_guests if name}
+        eligible = [row for row in eligible if row.vote_count >= reader_min_votes()
+                    and row.guest_name.casefold().strip() not in guests]
     for row in eligible:
         candidate = {key: getattr(row, key) for key in ('video_id', 'title', 'description', 'channel', 'loudness', 'top', 'guest_name')}
         tied = row.vote_count > 0 and sum(other.vote_count == row.vote_count for other in eligible) > 1
         candidate.update(selection_votes=row.vote_count,
                          selection_method='tie' if tied else 'votes' if row.vote_count else 'views')
-        if row.vote_count or not row.from_ranking:
+        if mode == 'auto':
+            candidate.update(selection_votes=0, selection_method='views')
+        if mode == 'votes':
+            candidate['selection_method'] = 'votes'
+            return candidate
+        if mode != 'auto' and (row.vote_count or not row.from_ranking):
             return candidate
         import time
         ok, reason = looks_like_interview(candidate['title'], candidate['description'], candidate['channel'])
@@ -823,6 +847,51 @@ def _transient_error_q():
     return query
 
 
+def _queue_pick(day, best):
+    interview = queue_interview(f"https://www.youtube.com/watch?v={best['video_id']}", day)
+    interview.title, interview.channel = best['title'], best['channel']
+    interview.guest_name = best.get('guest_name', '')[:200]
+    interview.selection_method = best.get('selection_method', 'views')
+    interview.selection_votes = best.get('selection_votes', 0)
+    interview.save(update_fields=['title', 'channel', 'guest_name', 'selection_method', 'selection_votes'])
+    return interview
+
+
+def _pick_two(day, *, next_candidate=False):
+    """Wybór Dr. Spina (ranking) i wybór czytelników (głosy, próg). Każdy wybór liczony osobno; powtórne wywołanie
+    uzupełnia tylko brakujący. Błąd chwilowy wraca do kolejki jak dotąd."""
+    active = ClinicInterview.objects.filter(day=day, status__in=['queued', 'flagged', 'approved', 'pending_review'])
+    has_readers = active.filter(selection_method__in=['votes', 'tie']).exists()
+    has_auto = active.exclude(selection_method__in=['votes', 'tie']).exists()
+    retry = (ClinicInterview.objects.filter(day=day, status='failed').filter(_transient_error_q()).order_by('created_at').first())
+    if retry and not next_candidate:
+        retry.status, retry.error = 'queued', ''
+        retry.save(update_fields=['status', 'error'])
+        return {'status': 'requeued', 'day': str(day), 'id': retry.pk, 'title': retry.title}
+    tried = set(ClinicInterview.objects.values_list('video_id', flat=True))
+    queued, first_best = [], None
+    if not has_auto:
+        best = find_loudest_interview(day, exclude=tried, mode='auto')
+        if best:
+            queued.append(_queue_pick(day, best))
+            first_best = best
+            tried.add(best['video_id'])
+    if not has_readers:
+        guests = list(active.values_list('guest_name', flat=True)) + [row.guest_name for row in queued]
+        best = find_loudest_interview(day, exclude=tried, mode='votes', exclude_guests=guests)
+        if best:
+            interview = _queue_pick(day, best)
+            queued.append(interview)
+            from news.notify import queue_event
+            queue_event('vote_result', interview.pk)
+    if not queued:
+        return {'status': 'already_chosen' if has_auto or has_readers else 'none_found', 'day': str(day)}
+    first = queued[0]
+    extra = {'loudness': first_best['loudness'], 'top_politician': first_best['top']} if first_best else {}
+    return {'status': 'queued', 'day': str(day), 'id': first.pk, 'title': first.title, 'channel': first.channel,
+            'ids': [row.pk for row in queued]} | extra
+
+
 def pick_yesterday(*, next_candidate=False) -> dict:
     """Głosowanie zamyka się o 7:00; beat i Ratownik korzystają z tego samego wyniku."""
     if not enabled():
@@ -838,6 +907,8 @@ def pick_yesterday(*, next_candidate=False) -> dict:
 
 
 def _pick_day(day, *, next_candidate=False):
+    if reader_pick_enabled():
+        return _pick_two(day, next_candidate=next_candidate)
     if ClinicInterview.objects.filter(day=day, status__in=['queued', 'flagged', 'approved', 'pending_review']).exists():
         return {'status': 'already_chosen', 'day': str(day)}
     # Błąd chwilowy (brak środków, limit) nie przekreśla wywiadu: po doładowaniu wraca do kolejki (właściciel 2.10).

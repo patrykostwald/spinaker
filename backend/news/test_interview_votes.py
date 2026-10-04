@@ -24,6 +24,7 @@ URL = '/api/clinic/interviews/voting/'
 @pytest.fixture(autouse=True)
 def isolated(settings, monkeypatch):
     cache.clear()
+    monkeypatch.setenv('INTERVIEW_MIN_ACCOUNT_DAYS', '0')
     settings.ACCOUNTS_ENABLED = True
     monkeypatch.setattr(timezone, 'now', lambda: NOW)
     monkeypatch.setattr('requests.sessions.Session.request', Mock(side_effect=AssertionError('Bez prawdziwego HTTP')))
@@ -190,6 +191,7 @@ def test_interview_vote_verified_and_enabled(users, settings):
 
 @pytest.mark.parametrize('counts,expected,method', [((2, 1), 'a', 'votes'), ((1, 1), 'b', 'tie'), ((0, 0), 'b', 'views')])
 def test_interview_selection_votes_tie_no_votes(users, monkeypatch, counts, expected, method):
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'false')
     a, b = candidate('a', score=10), candidate('b', score=1000)
     index = 0
     for row, count in zip((a, b), counts):
@@ -207,6 +209,7 @@ def test_interview_selection_votes_tie_no_votes(users, monkeypatch, counts, expe
 
 
 def test_interview_selection_skips_same_guest_two_days(users, monkeypatch):
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'false')
     a = candidate('a', score=1000)
     b = candidate('b', score=10, guest_keys=['kowalsk'], guest_name='Anna Kowalska')
     ClinicInterview.objects.create(day=DAY - timedelta(days=1), video_id='z' * 11,
@@ -219,6 +222,7 @@ def test_interview_selection_skips_same_guest_two_days(users, monkeypatch):
 
 
 def test_interview_rescuer_uses_next_voted_candidate(users, monkeypatch):
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'false')
     a, b = candidate('a'), candidate('b', guest_keys=['kowalsk'])
     votes.cast_vote(users[0], DAY, a.pk)
     votes.cast_vote(users[1], DAY, a.pk)
@@ -232,6 +236,7 @@ def test_interview_rescuer_uses_next_voted_candidate(users, monkeypatch):
 
 
 def test_interview_never_reuses_video_from_another_day(users, monkeypatch):
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'false')
     a, b = candidate('a'), candidate('b')
     older = ClinicInterview.objects.create(day=DAY - timedelta(days=3), video_id=a.video_id, status='approved')
     votes.cast_vote(users[0], DAY, a.pk)
@@ -317,3 +322,65 @@ def test_interview_schedule_keeps_milestone_and_populates_before_close():
     assert BEAT_PLAN['clinic-interview-pick'][1] == {'hour': '7,10,13,16,19', 'minute': 5}
     assert '6' in BEAT_PLAN['clinic-interview-candidates'][1]['hour'].split(',')
     assert next(row for row in MILESTONES if row.key == 'interview').deadline == 'wybór 8:00, gotowy 18:00'
+
+
+def test_two_interviews_dr_spin_by_ranking_and_readers_by_votes(users, monkeypatch):
+    """Właściciel 4.10: pierwszy wywiad wybiera Dr. Spin (ranking), drugi czytelnicy (głosy, min. 3)."""
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'true')
+    monkeypatch.setenv('INTERVIEW_READER_MIN_VOTES', '3')
+    loud, voted = candidate('a', score=1000, from_ranking=True), candidate('b', score=10, guest_keys=['kowalsk'], guest_name='Anna Kowalska')
+    for i in range(3):
+        votes.cast_vote(users[i], DAY, voted.pk)
+    close(monkeypatch)
+    result = interviews.pick_yesterday()
+    assert result['status'] == 'queued' and len(result['ids']) == 2
+    auto = ClinicInterview.objects.get(day=DAY, video_id=loud.video_id)
+    readers = ClinicInterview.objects.get(day=DAY, video_id=voted.video_id)
+    assert auto.selection_method == 'views' and readers.selection_method == 'votes' and readers.selection_votes == 3
+    assert 'czytelników' in votes.selection_label(readers) and 'Dr. Spina' in votes.selection_label(auto)
+    assert interviews.pick_yesterday()['status'] == 'already_chosen'
+
+
+def test_reader_pick_needs_minimum_votes(users, monkeypatch):
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'true')
+    monkeypatch.setenv('INTERVIEW_READER_MIN_VOTES', '3')
+    candidate('a', score=1000, from_ranking=True)
+    voted = candidate('b', score=10, guest_keys=['kowalsk'], guest_name='Anna Kowalska')
+    votes.cast_vote(users[0], DAY, voted.pk)
+    close(monkeypatch)
+    result = interviews.pick_yesterday()
+    assert len(result['ids']) == 1 and not ClinicInterview.objects.filter(day=DAY, video_id=voted.video_id).exists()
+
+
+def test_reader_pick_skips_guest_already_chosen_by_dr_spin(users, monkeypatch):
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'true')
+    monkeypatch.setenv('INTERVIEW_READER_MIN_VOTES', '1')
+    candidate('a', score=1000, from_ranking=True)
+    same = candidate('b', score=10)
+    votes.cast_vote(users[0], DAY, same.pk)
+    close(monkeypatch)
+    assert len(interviews.pick_yesterday()['ids']) == 1
+
+
+def test_message_to_dr_spin_limit_and_ballot_fields(users, monkeypatch):
+    monkeypatch.setenv('INTERVIEW_READER_PICK', 'true')
+    candidate('a')
+    api = client(users[0])
+    for i in range(3):
+        response = api.post('/api/clinic/interviews/voting/message/', {'day': DAY.isoformat(), 'text': f'Proszę o wywiad z ministrem nr {i}'}, format='json')
+        assert response.status_code == 200 and response.data['sent']
+    assert response.data['messages_left'] == 0 and response.data['min_votes'] == 3 and response.data['dr_spin'] is None
+    assert api.post('/api/clinic/interviews/voting/message/', {'day': DAY.isoformat(), 'text': 'Jeszcze jedna wiadomość'}, format='json').status_code == 400
+    assert client().post('/api/clinic/interviews/voting/message/', {'text': 'Bez konta nie wolno'}, format='json').status_code in (401, 403)
+
+
+def test_vote_needs_account_age(users, monkeypatch):
+    monkeypatch.setenv('INTERVIEW_MIN_ACCOUNT_DAYS', '3')
+    row = candidate('a')
+    users[0].date_joined = NOW
+    users[0].save(update_fields=['date_joined'])
+    with pytest.raises(PermissionDenied, match='3 dniach'):
+        votes.cast_vote(users[0], DAY, row.pk)
+    users[1].date_joined = NOW - timedelta(days=4)
+    users[1].save(update_fields=['date_joined'])
+    votes.cast_vote(users[1], DAY, row.pk)
