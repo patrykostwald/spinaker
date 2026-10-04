@@ -338,12 +338,13 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
         <ul className="sc-ind-show__tiles">
           {tiles.map(([label, total, today]) => (
             <li key={label}>
-              {/* „+N dziś” jak wykładnik przy liczbie (właściciel 5.10) */}
-              <strong>{format(total)}{today ? <sup>+{format(today)} dziś</sup> : null}</strong>
+              {/* „+N dziś” tuż nad liczbą (właściciel 5.10); puste miejsce zachowane, żeby liczby stały równo */}
+              <small className="sc-ind-today">{today ? `+${format(today)} dziś` : ' '}</small>
+              <strong>{format(total)}</strong>
               <span>{label}</span>
             </li>
           ))}
-          {accounts ? <li><strong>{format(accounts)}</strong><span>Polityków z diagnozą</span></li> : null}
+          {accounts ? <li><small className="sc-ind-today">{' '}</small><strong>{format(accounts)}</strong><span>Polityków z diagnozą</span></li> : null}
         </ul>
         <p className="sc-ind-show__actions">
           <Link className="sc-ind-link" href="/klinika/diagnozy">Wszystkie diagnozy ({format(totals.diagnosed.total)}) →</Link>

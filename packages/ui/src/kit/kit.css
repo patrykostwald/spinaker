@@ -9270,3 +9270,4 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
    kolor zostaje jedyną różnicą; „/100” czytelne w obu motywach */
 .sc-list-metrics .sc-list-metrics__strength, .sc-spin-num, .sc-scan-m-num.sc-scan-strength { font-weight: 800 !important; }
 .sc-list-metrics dd small, .sc-spin-num small { font-size: 11px !important; font-weight: 600 !important; color: var(--sc-text-2) !important; margin-left: 3px; }
+.sc-ind-show__tiles .sc-ind-today { display: block; font-size: 13px !important; line-height: 16px; font-weight: 700; color: var(--sc-positive); margin: 0 0 2px !important; white-space: nowrap; }
