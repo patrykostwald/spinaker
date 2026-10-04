@@ -86,9 +86,17 @@ def boxes(diagnosis):
 OLD_DESCRIPTION = 'Spinka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.'
 
 
+MONTHS = ('stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia')
+
+
 def description(diagnosis):
+    """Podtytuł mówi wprost, czyj wpis i co wyjaśnia Dr. Spin (właściciel 5.10); bez jednoliterowych słów."""
+    from django.utils import timezone
     from news.clinic import author_data
-    return f"Dr. Spin (AI) sprawdził wpis: {author_data(diagnosis.post, None)['name']}. Czytaj od lewej: co napisano, jakiego chwytu użyto, czy to prawda."
+    day = timezone.localtime(diagnosis.post.published_at) if diagnosis.post.published_at else None
+    when = f', {day.day} {MONTHS[day.month - 1]} {day.year}' if day else ''
+    return (f"Dr. Spin (AI) wyjaśnia, jaki spin znalazł we wpisie: {author_data(diagnosis.post, None)['name']}{when}. "
+            f"Siła spinu {diagnosis.intensity or 0}/100, użyty chwyt, co jest prawdą, skąd to wiadomo.")
 
 
 @transaction.atomic
@@ -114,9 +122,9 @@ def sync_diagnosis_thread(diagnosis_id):
         PersonalContextThread.objects.filter(diagnosis=diagnosis).update(is_public=False)
         return None
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
-        'title': short(diagnosis.headline, 65), 'description': description(diagnosis),
+        'title': short('Diagnoza: ' + diagnosis.headline, 65), 'description': description(diagnosis),
         'is_public': False, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
-    title, about = short(diagnosis.headline, 65), description(diagnosis)
+    title, about = short('Diagnoza: ' + diagnosis.headline, 65), description(diagnosis)
     payload = boxes(diagnosis)
     existing = list(thread.items.values('box_data', 'note', 'link_note'))
     if existing != payload:
@@ -124,7 +132,7 @@ def sync_diagnosis_thread(diagnosis_id):
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=thread, position=index, **row) for index, row in enumerate(payload)])
     # podtytuł potem pisze Redaktor tytułów; zastępujemy tylko dawny, niezrozumiały szablon
-    if thread.description == OLD_DESCRIPTION:
+    if thread.description == OLD_DESCRIPTION or thread.description.startswith('Dr. Spin (AI) sprawdził wpis:'):
         thread.description = about
         thread.save(update_fields=['description'])
     if existing != payload or thread.title != title or not thread.is_public:

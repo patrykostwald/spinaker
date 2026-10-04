@@ -207,3 +207,11 @@ def test_below_70_no_spinka_and_old_one_hidden():
     strong.save()
     sync_diagnosis_thread(strong.pk)
     assert not public_threads().filter(diagnosis=strong).exists()
+
+
+def test_title_and_subtitle_say_whose_post_dr_spin_explains():
+    row = diagnosis(key='81')
+    thread = row.context_thread
+    assert thread.title == 'Diagnoza: Podatki' and thread.is_public
+    assert thread.description.startswith('Dr. Spin (AI) wyjaśnia, jaki spin znalazł we wpisie: Poseł Test, ')
+    assert 'Siła spinu 72/100' in thread.description and len(thread.description) <= 170
