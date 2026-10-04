@@ -55,7 +55,7 @@ export function RepinPanel({ thread, items, onClose }: { thread: CommunityThread
     <ol className="sc-repin__track">
       {items.map((item, index) => <li key={`${item.kind}:${item.id}`} className="sc-repin__step">
         {index > 0 && <div className="sc-repin__joint">
-          <SpinkaClip />
+          <SpinkaClip neutral />
           <label><span>Twoja spinka {index}</span>
             <textarea rows={3} maxLength={200} value={links[index]} placeholder={item.link_note ? `Autor: ${item.link_note}` : 'Dlaczego te dwa materiały się łączą?'}
               onChange={event => setLinks(links.map((value, at) => at === index ? event.target.value : value))} /></label>

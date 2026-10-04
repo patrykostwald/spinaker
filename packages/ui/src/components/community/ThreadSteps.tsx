@@ -10,6 +10,7 @@ import { useFeature } from '../../lib/features';
 import { Avatar, ago, SocialIcon, RATINGS } from './SocialPrimitives';
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { formatDatePl } from '../../lib/utils';
+import { clipColor } from '../../lib/clipColor';
 
 const LABELS = { positive: 'Trafne', doubt: 'Wątpliwe', negative: 'Nietrafne' } as const;
 
@@ -60,10 +61,9 @@ type Counts3 = { positive: number; doubt: number; negative: number };
  * Spinka (właściciel 3.10): kreska z zawijasem w górę, która „spina” następny boks.
  * Kolor = reakcje czytelników (zielony ✓, żółty ?, czerwony ✕ w proporcji); bez reakcji - szara.
  */
-export function SpinkaClip({ counts, open = false }: { counts?: Counts3; id?: string; open?: boolean }) {
-  const c = counts ?? { positive: 0, doubt: 0, negative: 0 };
-  const top = Math.max(c.positive, c.doubt, c.negative);
-  const color = !top ? 'var(--sc-ctx)' : c.positive === top ? 'var(--sc-positive)' : c.doubt === top ? 'var(--sc-warning)' : 'var(--sc-negative)';
+export function SpinkaClip({ counts, open = false, neutral = false }: { counts?: Counts3; id?: string; open?: boolean; neutral?: boolean }) {
+  // kolor = głos autora (✓) + weryfikacja innych, płynna skala i nasycenie (lib/clipColor, właściciel 4.10)
+  const color = neutral ? 'var(--sc-ctx)' : clipColor(counts);
   // zatrzask (właściciel 3.10): linia od boksu do boksu, pośrodku dwa zazębione ogniwa = spięcie dwóch materiałów.
   // Rozwinięta: ogniwa płynnie rozprostowują się w jedną prostą linię; po zwinięciu znów zaczepiają się w zatrzask.
   return <span className={`sc-clip sc-clasp${open ? ' is-open' : ''}`} style={{ color }} aria-hidden="true">
@@ -152,6 +152,7 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
     </div>
     <nav className="sc-pick__chain" aria-label="Elementy spinki">
       {sequence.map((row, i) => <button key={i} type="button" className={row.kind === 'box' ? 'sc-trow__sq' : 'sc-trow__link'} aria-current={i === at || undefined}
+        style={row.kind === 'clip' ? { background: clipColor(steps.find(items[row.index].item_id, 'context')?.counts) } : undefined}
         data-r={dominant(steps.find(items[row.index].item_id, row.kind === 'box' ? 'box' : 'context')?.counts)}
         aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Spinka ${row.index}`} onClick={() => setAt(i)} />)}
     </nav>

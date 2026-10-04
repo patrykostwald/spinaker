@@ -12,6 +12,7 @@ import { FocusView, focusRef, SpinkaClip, StepRate, useThreadSteps, type FocusSt
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
+import { clipColor } from '../../lib/clipColor';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
@@ -163,7 +164,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
             bez reakcji boksy są szare, a zatrzaski niebieskie */}
         <span className="sc-trow__chainrow">
         <span className="sc-trow__chain" role="img" aria-label={clipsLabel}>{Array.from({ length: Math.min(thread.items_count, 8) }, (_, i) => <Fragment key={i}>
-          {i > 0 && <i className="sc-trow__link" data-r={clips[i - 1] ? dominant(clips[i - 1]) : undefined} />}
+          {i > 0 && <i className="sc-trow__link" style={{ background: clipColor(clips[i - 1]) }} />}
           <i className="sc-trow__sq" data-r={thread.boxes?.[i] ? dominant(thread.boxes[i]) : undefined} /></Fragment>)}</span></span>
         <span className="sc-trow__facts" hidden>{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
       </span>
