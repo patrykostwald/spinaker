@@ -8500,3 +8500,26 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-thread-strip__box:hover .sc-box-face--note[data-only], .sc-thread-strip__box:focus-within .sc-box-face--note[data-only] { animation-name: sc-face-note-only; }
 /* paleta 10 „Jeden akcent” (wybór właściciela 4.10): rodzaje białe, pytanie w akcencie serwisu, opinia przygaszona */
 :root { --sc-r-teza: #e7e9ea; --sc-r-fakt: #e7e9ea; --sc-r-kontekst: #e7e9ea; --sc-r-pytanie: #4a9eff; --sc-r-opinia: #9aa0a6; --sc-r-wniosek: #ffffff; }
+/* karta wybranego boksu w skali boksów (właściciel 4.10): wyższa, większa miniatura i tytuł, treść pośrodku, źródło na dole */
+.sc-pick__stage { grid-template-columns: 40px minmax(0, 720px) 40px; }
+.sc-pick__card { grid-template-columns: 280px minmax(0, 1fr); gap: 30px; min-height: 340px; padding: 28px 30px 38px; align-items: stretch; }
+.sc-pick__media { aspect-ratio: auto; height: 100%; min-height: 280px; font-size: 52px; }
+.sc-pick__text { display: grid; grid-template-rows: auto 1fr auto; align-content: stretch; gap: 14px; }
+.sc-pick__text > .sc-pick__kicker { align-self: start; }
+.sc-pick__text h2 { font-size: 24px; line-height: 1.25; align-self: end; }
+.sc-pick__body { font-size: 15.5px; }
+.sc-pick__note { font-size: 15px; }
+.sc-pick__source { align-self: end; margin-top: 6px; }
+/* wnętrze każdego boksu w tym samym rytmie (właściciel 4.10): nagłówek u góry, treść pośrodku,
+   źródło albo „Otwórz na X” zawsze przy dolnej krawędzi */
+.sc-thread-strip__box > .sc-thread-strip__select { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 16px; gap: 6px; }
+.sc-thread-strip__box > .sc-thread-strip__select > strong { margin-top: auto; }
+.sc-thread-strip__box > .sc-thread-strip__select > .sc-thread-strip__source { margin-top: auto; padding-top: 8px; font-size: 11.5px; color: var(--sc-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-thread-strip__box > .sc-x-post-card { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 16px; gap: 6px; border: 0; background: none; }
+.sc-thread-strip__box > .sc-x-post-card > time { display: none; }
+.sc-thread-strip__box > .sc-x-post-card > .sc-social-text { margin-top: auto; font-size: 13.5px; line-height: 1.45; }
+.sc-thread-strip__box > .sc-x-post-card > .sc-social-text .sc-social-clamp { -webkit-line-clamp: 4; }
+.sc-thread-strip__box > .sc-x-post-card > .sc-social-text > button { display: none; }
+.sc-thread-strip__box > .sc-x-post-card > a { font-size: 11.5px; color: var(--sc-text-3); text-decoration: none; }
+.sc-thread-strip__box > .sc-x-post-card > a:first-of-type { margin-top: auto; padding-top: 8px; }
+.sc-thread-strip__box > .sc-x-post-card > a:hover { color: var(--sc-text); }
