@@ -8527,3 +8527,5 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-joint__pop { bottom: calc(100% + 22px) !important; }
 .sc-joint::before { height: calc(50% + 22px); }
 .sc-thread-strip__track:has(.sc-joint.is-open), .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open) { padding-top: 244px; }
+/* ✓ ? ✕ w dymku: niewidoczne pole dotyku 44x44 px (werdykt Konsylium 4.10, WCAG 2.5.5) */
+.sc-joint__pop .sc-step-rate button::after, .sc-pick__card .sc-step-rate button::after { content: ""; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
