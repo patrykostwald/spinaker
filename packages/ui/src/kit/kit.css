@@ -9354,3 +9354,27 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-spin-detail__edit { margin-top: 14px; font-size: 13.5px; color: var(--sc-text-3); }
 .sc-spin-detail__edit summary { cursor: pointer; color: var(--sc-text-2); }
 .sc-spin-detail__edit p { margin: 8px 0 0; color: var(--sc-text-2); }
+/* Lista spinek (właściciel 5.10): licznik spinki (zatrzask + liczba połączeń w kolorze średniej oceny) zamiast paska;
+   pasek wysuwa się po najechaniu; nad licznikiem komentarzy zjeżdża okienko z komentarzami zmieniającymi się co 4 s */
+.sc-trow { position: relative; }
+.sc-trow__count { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--sc-text-2); cursor: default; position: relative; }
+.sc-trow__count .sc-clip { width: 30px; }
+.sc-trow__boxes { position: absolute !important; right: 92px; top: 50%; transform: translate(8px, -50%); opacity: 0; pointer-events: none; z-index: 6;
+  padding: 10px 12px; border-radius: 4px; border: 1px solid var(--sc-line); background: var(--sc-bg); box-shadow: 0 12px 30px -12px rgb(0 0 0 / .6); transition: opacity .2s, transform .25s; }
+.sc-trow__count--clips:hover + .sc-trow__boxes, .sc-trow__count--clips:focus-visible + .sc-trow__boxes, .sc-trow__boxes:hover { opacity: 1; transform: translate(0, -50%); pointer-events: auto; }
+.sc-trow__side { position: relative; display: flex; align-items: center; gap: 18px; }
+.sc-trow__ticker { position: absolute; inset: -6px -8px; z-index: 5; }
+.sc-trow__ticker-pop { position: absolute; right: 0; bottom: calc(100% + 6px); width: 300px; display: grid; gap: 4px; padding: 10px 12px; font-size: 13px; line-height: 1.45;
+  border: 1px solid var(--sc-line); border-radius: 4px; background: var(--sc-bg); box-shadow: 0 12px 30px -12px rgb(0 0 0 / .6);
+  opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .2s, transform .25s; }
+.sc-trow__ticker[data-on] .sc-trow__ticker-pop { opacity: 1; transform: none; }
+.sc-trow__ticker-pop b { font-size: 12.5px; }
+.sc-trow__ticker-pop span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; color: var(--sc-text); animation: sc-ticker-in .35s ease; }
+.sc-trow__ticker-pop i { font-style: normal; font-size: 11.5px; color: var(--sc-text-3); justify-self: end; }
+@keyframes sc-ticker-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (hover: none) { .sc-trow__ticker { display: none; } }
+@media (max-width: 767px) { .sc-trow__boxes { display: none !important; } }
+.sc-trow__boxes { visibility: hidden !important; pointer-events: none !important; top: auto !important; bottom: calc(100% - 14px) !important; transform: translateY(6px) !important; }
+.sc-trow__count--clips:hover + .sc-trow__boxes, .sc-trow__count--clips:focus-visible + .sc-trow__boxes, .sc-trow__boxes:hover { visibility: visible !important; pointer-events: auto !important; transform: none !important; }
+.sc-trow__boxes { bottom: auto !important; top: calc(100% - 14px) !important; transform: translateY(-6px) !important; }
+.sc-trow__ticker-pop { bottom: auto !important; top: calc(100% + 6px); transform: translateY(-6px); }

@@ -246,7 +246,7 @@ def thread_summary(thread, counts):
             # dane do wiersza na liście (właściciel 3.10): powiązania, źródła, dwa najlepsze komentarze
             'contexts_count': sum(1 for item in items if item.position and item.link_note),
             'sources_count': len({source_key(item) for item in items} - {''}),
-            'top_comments': top_comments(thread),
+            'top_comments': top_comments(thread, 5),  # rotacja w okienku na liście (właściciel 5.10)
             'clips': clip_counts(items),
             'boxes': box_counts(items),
             'admission': admission_progress(thread) if thread.owner_id and not thread.admitted_at else None}

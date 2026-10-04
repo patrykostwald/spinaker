@@ -188,6 +188,11 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         <span className="sc-trow__title" title={thread.title}>{thread.title}{Boolean(thread.repins?.length) && <span className="sc-trow__repin-tag" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}>⇄ {thread.repins!.length}</span>}</span>
         {thread.description && !thread.signal_kind && !thread.narrative && <span className="sc-trow__desc">{thread.description}</span>}
       </button></h2>
+      {/* Licznik spinki (właściciel 5.10): ikonka zatrzasku i liczba połączeń w kolorze średniej oceny;
+          po najechaniu wysuwa się pełny pasek spinki */}
+      <span className="sc-trow__count sc-trow__count--clips" tabIndex={0} aria-label={`${clips.length} ${plural(clips.length, 'połączenie', 'połączenia', 'połączeń')}. ${clipsLabel}`}>
+        <SpinkaClip counts={sumCounts(clips) ?? undefined} />{clips.length}
+      </span>
       <span className="sc-trow__boxes">
         {/* miniatura spinki (właściciel 3.10): kwadraty boksów i zatrzaski między nimi, każdy w kolorze przeważającej reakcji;
             bez reakcji boksy są szare, a zatrzaski niebieskie */}
@@ -201,6 +206,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       {/* izba przyjęć: postęp nad komentarzami, pozostałe dni pod nimi (właściciel 4.10) */}
       <span className="sc-trow__side">
         {thread.admission && thread.admission.mode !== 'first' && thread.admission.open && <span className="sc-trow__adm">{thread.admission.positive}/{thread.admission.needed}</span>}
+        {Boolean(thread.top_comments?.length) && <CommentTicker comments={thread.top_comments!} />}
         <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={onFullscreen ? undefined : () => { if (!expanded) toggle(); setShowComments(!showComments); }}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
         {thread.admission && thread.admission.mode !== 'first' && <span className="sc-trow__adm">{thread.admission.open ? `zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'czas minął'}</span>}
       </span>
@@ -344,3 +350,23 @@ function ExportTools({ thread, items, onRepin }: { thread: CommunityThreadSummar
     {false && <button type="button" className="sc-thread-social-actions__tool" onClick={download}>Pobierz CSV</button>}
   </>;
 }
+
+
+/** Okienko nad licznikiem komentarzy (właściciel 5.10): po najechaniu zjeżdża z góry i co 4 s pokazuje kolejny komentarz,
+ *  zaczynając od najgorętszego. Bez ruchu, gdy system prosi o ograniczenie animacji. */
+function CommentTicker({ comments }: { comments: NonNullable<CommentSource> }) {
+  const [at, setAt] = useState(0);
+  const [on, setOn] = useState(false);
+  const reduced = useReducedMotion();
+  useEffect(() => {
+    if (!on || reduced || comments.length < 2) return;
+    const tick = window.setInterval(() => setAt(i => (i + 1) % comments.length), 4000);
+    return () => clearInterval(tick);
+  }, [on, reduced, comments.length]);
+  const row = comments[at % comments.length];
+  return <span className="sc-trow__ticker" data-on={on || undefined} onMouseEnter={() => { setAt(0); setOn(true); }} onMouseLeave={() => setOn(false)} aria-hidden="true">
+    <span className="sc-trow__ticker-pop"><b style={row.author_color ? { color: row.author_color } : undefined}>{row.author}</b><span key={row.id}>{row.body}</span>
+      {comments.length > 1 && <i>{(at % comments.length) + 1} / {comments.length}</i>}</span>
+  </span>;
+}
+type CommentSource = CommunityThreadSummary['top_comments'];
