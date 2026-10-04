@@ -37,6 +37,7 @@ from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
 from news.push_api import SubscriptionsView
 from news.interview_vote_api import InterviewBallotView, InterviewVoteView, InterviewMessageView
 from news.feedback import BugReportView, JourneyView
+from news.przeszlosc import topic_view as przeszlosc_topic
 
 router = DefaultRouter()
 router.register(r"editor/threads", EditorialThreadViewSet, basename="editor-threads")
@@ -101,6 +102,7 @@ urlpatterns = [
     path('clinic/interviews/voting/message/', InterviewMessageView.as_view()),
     path('feedback/bug/', BugReportView.as_view()),
     path('feedback/journey/', JourneyView.as_view()),
+    path('przeszlosc/temat/', przeszlosc_topic),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
     path('clinic/messages/', clinic_messages),
     path('clinic/messages/<str:day>/', clinic_message_detail),
