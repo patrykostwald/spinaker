@@ -51,7 +51,7 @@ TEMAT: Wniosek o ponowne wykorzystywanie informacji sektora publicznego - dane C
 
 Wnioskodawca: iapply sp. z o.o., operator serwisu spin.clinic
 Adres do korespondencji elektronicznej: kontakt@spin.clinic
-[DOPISZ: adres siedziby, KRS, NIP spółki - z danych rejestrowych iapply]
+iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094
 
 Na podstawie ustawy z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wykorzystywaniu
 informacji sektora publicznego wnoszę o udostępnienie do ponownego wykorzystywania danych
