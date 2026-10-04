@@ -84,7 +84,7 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
       <figure className="sc-method-strength">
         <p className="sc-method-strength__num"><span className="sc-spin-num" style={{ "--spin": 55 } as CSSProperties}>55</span><small>/100</small></p>
         <div><div className="sc-method-strength__track"><i className="sc-spin-fill" style={{ "--spin": 55, width: "55%" } as CSSProperties} /></div>
-          <figcaption>{t("Siła spinu to nasilenie rozpoznanych zabiegów - nie procent fałszu ani winy. Wynik to mediana ocen modeli; dla „bez spinu” najwyżej 20.")}</figcaption></div>
+          <figcaption>{t("Siła spinu to nasilenie rozpoznanych zabiegów - nie procent fałszu ani miara winy. Wynik to mediana ocen modeli; dla „bez spinu” najwyżej 20.")}</figcaption></div>
       </figure>
       <p>{t("Werdykt to środkowa ocena Konsylium; przy remisie wybieramy łagodniejszą. Głosy „nie da się ocenić” nie wchodzą do mediany. Nie dopisujemy fikcyjnych głosów tam, gdzie oceniał jeden model.")}</p>
     </section>
@@ -92,26 +92,26 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
     <section id="zgodnosc"><h2>{t("Zgodność modeli")}</h2>
       <div className="sc-method-agree">
         <p className="sc-method-agree__num">2/3<small>{t("ten sam werdykt")}</small></p>
-        <p>{t("Tyle modeli dało werdykt równy wynikowi diagnozy. „Nie da się ocenić” liczy się do mianownika, brak odpowiedzi - nie. Obok pokazujemy rozrzut ocen siły.")}</p>
+        <p>{t("Tyle modeli dało werdykt zgodny z wynikiem diagnozy. „Nie da się ocenić” liczy się do mianownika, brak odpowiedzi - nie. Obok pokazujemy rozrzut ocen siły.")}</p>
       </div>
-      <p className="sc-method-note">{t("Modele mogą popełnić ten sam błąd, więc zgoda nie jest dowodem. Docelowo: co najmniej 4 odpowiedzi z 3 firm i model polski; przy limitach usług - 3 odpowiedzi z opisem braków.")} <Link lang={lang} href="/konsylium#sklad">{t("Aktualny skład")}</Link></p>
+      <p className="sc-method-note">{t("Modele mogą popełnić ten sam błąd, więc zgoda nie jest dowodem. Docelowo: co najmniej 4 odpowiedzi z 3 firm, w tym model polski; przy limitach usług - 3 odpowiedzi z opisem braków.")} <Link lang={lang} href="/konsylium#sklad">{t("Aktualny skład")}</Link></p>
     </section>
 
     <section id="twierdzenia"><h2>{t("Statusy twierdzeń")}</h2>
       <ul className="sc-method-claims">{claims.map(([key, label, text]) =>
         <li key={key}><i data-k={key} /><strong>{label}</strong><span>{text}</span></li>)}</ul>
-      <p>{t("Status faktu wymaga źródła z wyszukiwania - bez niego twierdzenie zostaje niezweryfikowane. Podobne twierdzenia łączymy przed liczeniem. W zestawieniach grupa „opinie” obejmuje dziś także fakty, których nie udało się sprawdzić.")}</p>
+      <p>{t("Status faktu wymaga źródła z wyszukiwania - bez niego twierdzenie pozostaje niezweryfikowane. Podobne twierdzenia łączymy przed liczeniem. W zestawieniach grupa „opinie” obejmuje dziś także fakty, których nie udało się sprawdzić.")}</p>
     </section>
 
     <section id="techniki"><h2>{t("Rodziny technik")}</h2>
-      <p>{t("21 kategorii w trzech rodzinach oraz „Inne”. Technika trafia do diagnozy tylko z cytatem z materiału i gdy wskaże ją co najmniej 2 członków Konsylium (przy 1-2 rozstrzygniętych głosach wystarczy jedno wskazanie). Najwyżej 6 technik na diagnozę.")}</p>
+      <p>{t("21 kategorii w trzech rodzinach oraz „Inne”. Technika trafia do diagnozy tylko z cytatem z materiału i gdy wskażą ją co najmniej 2 modele Konsylium (przy 1-2 rozstrzygniętych głosach wystarczy jedno wskazanie). Najwyżej 6 technik na diagnozę.")}</p>
       <div className="sc-method-families">{families.map(([key, label, items]) =>
         <div key={key} className="sc-method-family" data-family={key}>
           <h3><i />{label}<span>{items.length}</span></h3>
           <ul>{items.map(item => <li key={item}>{item}</li>)}</ul>
         </div>)}</div>
       <h3 id="semeval-title">{t("Zgodność z SemEval 2023")}</h3>
-      <p><a href="https://propaganda.math.unipd.it/semeval2023task3/">SemEval 2023 Task 3</a> {t("to międzynarodowe zadanie badawcze, którego podzadanie 3 dotyczy rozpoznawania 23 technik perswazji w 6 grupach, także w tekstach po polsku. Poniższe przypisanie jest nasze i orientacyjne. Kategorie dotyczące rzetelności danych, faktów i wnioskowania wykraczają poza ten katalog perswazji językowej. Przypisanie nie oznacza walidacji skuteczności naszego systemu w SemEval.")}</p>
+      <p><a href="https://propaganda.math.unipd.it/semeval2023task3/">SemEval 2023 Task 3</a> {t("to międzynarodowe zadanie badawcze, którego podzadanie 3 dotyczy rozpoznawania 23 technik perswazji w 6 grupach, także w tekstach po polsku. Poniższe przypisanie jest nasze i orientacyjne. Kategorie dotyczące rzetelności danych, faktów i wnioskowania wykraczają poza ten katalog perswazji językowej. To przypisanie nie oznacza, że nasz system przeszedł walidację w SemEval.")}</p>
       <div className="sc-semeval-scroll" role="region" aria-labelledby="semeval-title" tabIndex={0}>
         <table className="sc-method-table sc-semeval-table"><thead><tr><th scope="col">{t("Nasza kategoria")}</th><th scope="col">{t("Odpowiednik SemEval")}</th></tr></thead>
           <tbody>{Object.entries(SEMEVAL_MAP).map(([name, equivalents]) => <tr key={name}><th scope="row">{category(name)}</th><td>{equivalents.length ? equivalents.join("; ") : <span className="sc-semeval-note">{t("brak odpowiednika")}</span>}</td></tr>)}
@@ -124,7 +124,7 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
 
     <section id="slowa"><h2>{t("Słowa nacechowane")}</h2>
       <ul className="sc-method-chips">{[t("strach i zagrożenie"), t("gniew i oburzenie"), t("pogarda i wyśmiewanie"), t("duma i wspólnota"), t("współczucie i krzywda")].map(item => <li key={item}>{item}</li>)}</ul>
-      <p>{t("Najpierw bierzemy wskazania modeli (słowo musi być we wpisie), a gdy ich brak - polski słownik. Liczymy różne słowa i zwroty, nie wszystkie wystąpienia. Samo nacechowane słowo nie przesądza o spinie.")}</p>
+      <p>{t("Najpierw bierzemy wskazania modeli (słowo musi występować we wpisie), a gdy ich brak, korzystamy z polskiego słownika. Liczymy różne słowa i zwroty, nie wszystkie wystąpienia. Samo nacechowane słowo nie przesądza o spinie.")}</p>
     </section>
 
     <section id="wykresy"><h2>{t("Jak liczymy dane")}</h2>
@@ -136,7 +136,7 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
 
     <section id="ograniczenia"><h2>{t("Ograniczenia")}</h2>
       <ul>
-        <li>{t("AI może pomylić cytat, kontekst, ironię, ocenę faktu albo kategorię techniki.")}</li>
+        <li>{t("Modele AI mogą pomylić cytat, kontekst, ironię, ocenę faktu albo kategorię techniki.")}</li>
         <li>{t("Modele różnych firm mogą mieć wspólne dane treningowe i uprzedzenia.")}</li>
         <li>{t("Wyszukiwanie nie obejmuje całej wiedzy; źródła bywają nieaktualne.")}</li>
         <li>{t("Limity usług zmieniają skład Konsylium i zakres badań.")}</li>
@@ -146,9 +146,9 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
 
     <section id="korekty"><h2>{t("Błędy i wycofanie")}</h2>
       <div className="sc-method-callout">
-        <p><strong>{t("Widzisz błąd?")}</strong> {t("Wyślij link do diagnozy, opis i źródła na")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>{t(". Tą samą drogą autor wypowiedzi może przesłać odpowiedź.")}</p>
+        <p><strong>{t("Widzisz błąd?")}</strong> {t("Wyślij link do diagnozy, opis i źródła na")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>{t(". W ten sam sposób autor wypowiedzi może przesłać odpowiedź.")}</p>
       </div>
-      <p>{t("Operator może wycofać całą diagnozę - zapisujemy datę i powód. Treści, werdyktu ani siły nie poprawia się ręcznie. Każde wycofanie, ukrycie prawne i odpowiedź autora znajdziesz w")} <Link lang={lang} href="/klinika/korekty">{t("publicznym rejestrze korekt i odpowiedzi")}</Link>. <Link lang={lang} href="/konsylium/karta">{t("Karta Konsylium")}</Link></p>
+      <p>{t("Operator może wycofać całą diagnozę - zapisujemy datę i powód. Treści, werdyktu ani siły spinu nie zmieniamy ręcznie. Każde wycofanie, ukrycie prawne i odpowiedź autora znajdziesz w")} <Link lang={lang} href="/klinika/korekty">{t("publicznym rejestrze korekt i odpowiedzi")}</Link>. <Link lang={lang} href="/konsylium/karta">{t("Karta Konsylium")}</Link></p>
     </section>
   </DocLayout>;
 }

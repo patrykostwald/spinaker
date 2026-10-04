@@ -27,7 +27,7 @@ export function HomeSupport() {
     <section className="sc-home-section sc-home-support" aria-labelledby="home-support-title">
       <div className="sc-home-support__text">
         <h2 id="home-support-title" className="sc-t-title-m">Pomóż nam analizować kolejne wypowiedzi</h2>
-        <p>Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu.</p>
+        <p>Wpłaty pomagają pokrywać koszty pobierania wpisów, analiz AI i utrzymania serwisu.</p>
       </div>
       {mounted && goal > 0 ? (
         <div className="sc-home-support__progress" aria-label={`Zebrano ${format(raised)} z ${format(goal)} zł w tym miesiącu`}>

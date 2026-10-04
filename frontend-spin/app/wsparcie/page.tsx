@@ -40,7 +40,7 @@ function supportProgress() {
 const GOALS: Array<[string, string]> = [
   ['Utrzymanie', 'Pełny miesiąc Kliniki: diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej - sprawdzamy więcej wypowiedzi.'],
   ['Faza II', 'Konta czytelników, spinki z materiałów z Bazy i strażnica zmian, która pokaże, gdy źródło po publikacji zmieni albo usunie materiał.'],
-  ['Własny serwer AI', 'Maszyna z kartą graficzną i otwarte modele, także polskie. Celem jest większa kontrola nad kosztami i sposobem prowadzenia analiz.'],
+  ['Własny serwer AI', 'Maszyna z kartą graficzną i otwarte modele, także polskie. Celem jest lepsza kontrola kosztów i sposobu prowadzenia analiz.'],
 ];
 
 export default function SupportPage() {
@@ -53,7 +53,7 @@ export default function SupportPage() {
     patronite && { label: 'Wesprzyj projekt na Patronite', href: patronite },
   ].filter(Boolean) as { label: string; href: string }[];
 
-  return <InfoPage eyebrow="WSPARCIE" title="Pomóż nam analizować kolejne wypowiedzi." longTitle lead="Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu."
+  return <InfoPage eyebrow="WSPARCIE" title="Pomóż nam analizować kolejne wypowiedzi." longTitle lead="Wpłaty pomagają pokrywać koszty pobierania wpisów, analiz AI i utrzymania serwisu."
     actions={<Button href={SUPPORT_LINKS.monthly} variant="primary">Wesprzyj miesięczny budżet</Button>}>
     <p>Politycy mają spin doktorów. My mamy spin.clinic</p>
     <section><h2>Kto za tym stoi</h2><p>Operatorem serwisu jest iapply sp. z o.o.; wsparcie czytelników pomaga finansować dalsze działanie. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. <Link href="/o-nas#operator">Dane operatora</Link> · <Link href="/o-nas#kontakt">pozostałe kontakty</Link>.</p></section>
@@ -71,7 +71,7 @@ export default function SupportPage() {
       <p><Link href="/o-nas#rozwoj">Trzy fazy projektu</Link></p>
     </section>
     <section><h2>Wsparcie nie kupuje wpływu</h2><p>Nie przyjmujemy darowizn od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Dane i raporty sprzedajemy każdemu na tych samych warunkach; klient też nie ma wpływu na diagnozy. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.</p></section>
-    <section><h2>Inne sposoby wsparcia</h2><p>Wpłaty obsługują zewnętrzne serwisy; spin.clinic nie przetwarza danych płatniczych. Zbiórka na miesięczny budżet nie jest subskrypcją.</p><ul>{links.filter(link => link.href !== SUPPORT_LINKS.monthly).map(link => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}</ul><p>Możesz też udostępnić diagnozę z <Link href="/klinika">Kliniki</Link>.</p></section>
+    <section><h2>Inne sposoby wsparcia</h2><p>Wpłaty obsługują zewnętrzne serwisy. spin.clinic nie przetwarza danych płatniczych. Zbiórka na miesięczny budżet nie jest subskrypcją.</p><ul>{links.filter(link => link.href !== SUPPORT_LINKS.monthly).map(link => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}</ul><p>Możesz też udostępnić diagnozę z <Link href="/klinika">Kliniki</Link>.</p></section>
     <NewsletterSignup source="wsparcie" />
   </InfoPage>;
 }

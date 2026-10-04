@@ -23,35 +23,35 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/press" : "/dla-redakcji"} eyebrow={t("DLA REDAKCJI")} title={t("Korzystaj z analiz i źródeł")} version="1.1" updatedAt="2026-10-05" sections={sections}
     lead={t("Diagnoza Dr. Spina może być punktem wyjścia do pracy dziennikarskiej. Cytuj konkretną analizę, zaznacz udział AI i sprawdź materiał źródłowy.")}>
     <section id="cytowanie"><h2>{t("Jak cytować diagnozę")}</h2>
-      <p>{t("Podaj nazwę spin.clinic, tytuł i datę diagnozy oraz jej bezpośredni adres. Zaznacz, że analizę przygotowało AI. Rozróżniaj ocenę techniki perswazji od statusu sprawdzanego twierdzenia; zachowaj kontekst cytatu i ograniczenia wyniku.")}</p>
+      <p>{t("Podaj nazwę spin.clinic, tytuł i datę diagnozy oraz jej bezpośredni adres. Zaznacz, że analizę przygotowało AI. Rozróżniaj ocenę techniki perswazji od statusu sprawdzanego twierdzenia. Zachowaj kontekst cytatu i ograniczenia wyniku.")}</p>
       <blockquote className="sc-doc-quote">{t("Przykład zapisu: „Według analizy AI Dr. Spina w spin.clinic («[tytuł diagnozy]», [data diagnozy]) w tej wypowiedzi rozpoznano [technikę]. Źródło: [trwały adres diagnozy], dostęp: [data]”.")}</blockquote>
-      <p>{t("Wpis lub film spin.clinic w mediach społecznościowych jest skrótem analizy - przed cytowaniem otwórz pełną diagnozę i sprawdź materiał źródłowy. Uzupełnij pola danymi wybranej diagnozy. Jej siła 0-100 opisuje komunikat, nie osobę. Ocena AI nie zastępuje samodzielnej weryfikacji redakcyjnej.")}</p>
+      <p>{t("Wpis lub film spin.clinic w mediach społecznościowych jest skrótem analizy. Przed cytowaniem otwórz pełną diagnozę i sprawdź materiał źródłowy. Uzupełnij pola danymi wybranej diagnozy. Jej siła 0-100 opisuje komunikat, nie osobę. Ocena AI nie zastępuje samodzielnej weryfikacji redakcyjnej.")}</p>
     </section>
     <section id="link"><h2>{t("Trwały link")}</h2>
-      <p>{t("Otwórz konkretną diagnozę z")} <Link lang={lang} href="/klinika/diagnozy">{t("archiwum")}</Link> {t("i skopiuj adres jej strony:")} <code>https://spin.clinic/klinika/[id]</code>{t(". Zachowuje on identyfikator analizy; adres strony głównej lub widok „spin dnia” nie wskazuje stale tego samego materiału.")}</p>
+      <p>{t("Otwórz konkretną diagnozę z")} <Link lang={lang} href="/klinika/diagnozy">{t("archiwum")}</Link> {t("i skopiuj jej adres:")} <code>https://spin.clinic/klinika/[id]</code>{t(". Zachowuje on identyfikator analizy. Adres strony głównej lub widok „spin dnia” nie wskazuje stale tego samego materiału.")}</p>
       <p>{t("Zapisz również datę dostępu. Po wycofaniu diagnozy albo utracie dostępności wpisu treść może przestać być publicznie widoczna. Stały identyfikator nie jest gwarancją wieczystego dostępu.")}</p>
     </section>
     <section id="zrodla"><h2>{t("Źródła i metodologia")}</h2>
-      <p>{t("Przy diagnozie są wpis wejściowy, cytaty i źródła do sprawdzanych twierdzeń. Otwórz oryginały i sprawdź, co rzeczywiście potwierdzają.")} <Link lang={lang} href="/zrodla">{t("Katalog źródeł")}</Link> {t("to osobny wykaz; nie jest listą dowodów użytych w każdej diagnozie.")}</p>
+      <p>{t("Przy diagnozie znajdziesz wpis wejściowy, cytaty i źródła do sprawdzanych twierdzeń. Otwórz oryginały i sprawdź, co rzeczywiście potwierdzają.")} <Link lang={lang} href="/zrodla">{t("Katalog źródeł")}</Link> {t("to osobny wykaz. Nie jest listą dowodów użytych w każdej diagnozie.")}</p>
       <p><Link lang={lang} href="/metodologia">{t("Aktualna metodologia")}</Link> {t("wyjaśnia sposób obliczeń i ograniczenia.")} <Link lang={lang} href="/konsylium">{t("Konsylium AI")}</Link> {t("pokazuje aktualny skład, a uczestników konkretnej analizy sprawdzisz przy jej wyniku.")} <Link lang={lang} href="/metodologia#korekty">{t("Zasady wycofania diagnozy")}</Link>.</p>
     </section>
     <section id="kontakt"><h2>{t("Kontakt z projektem")}</h2>
-      <p>{t("Współpraca i pytania mediów:")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>{t(". Zgłoszenia błędów wraz z linkiem i dowodami:")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Operator: iapply sp. z o.o.; <Link lang={lang} href="/o-nas#operator">{t("dane operatora")}</Link>.</p>
+      <p>{t("Współpraca i pytania mediów:")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>{t(". Zgłoszenia błędów (z linkiem i dowodami):")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Operator: iapply sp. z o.o.; <Link lang={lang} href="/o-nas#operator">{t("dane operatora")}</Link>.</p>
     </section>
     <section id="dane"><h2>{t("Dane i raporty dla firm i instytucji")}</h2>
-      <p>{t("Z danych, które zbieramy i analizujemy, przygotowujemy zestawienia na zamówienie:")}</p>
+      <p>{t("Na zamówienie przygotowujemy zestawienia z naszych danych:")}</p>
       <ul>
-        <li>{t("powiadomienia o nowych wpisach i diagnozach wskazanych polityków,")}</li>
+        <li>{t("powiadomienia o nowych wpisach i diagnozach wybranych polityków,")}</li>
         <li>{t("tygodniowy raport przekazu rządzących i opozycji,")}</li>
         <li>{t("monitoring tematu lub branży: projekty ustaw, wypowiedzi polityków, sygnały lobbingu,")}</li>
         <li>{t("zestawienie wypowiedzi polityka: historia, zmiany stanowiska, zgodność z głosowaniami,")}</li>
         <li>{t("dane do badań naukowych.")}</li>
       </ul>
-      <p>{t("Jedna oferta dla wszystkich: te same produkty i warunki bez względu na obóz polityczny. Klient nie ma wpływu na metodę, diagnozy ani treści serwisu. Sprzedajemy nasze analizy, nie treści cudzych wpisów.")}</p>
+      <p>{t("Jedna oferta dla wszystkich: te same produkty i warunki niezależnie od obozu politycznego. Klient nie ma wpływu na metodę, diagnozy ani treści serwisu. Sprzedajemy nasze analizy, nie cudze treści.")}</p>
       <p><Button href="mailto:kontakt@spin.clinic?subject=Dane%20i%20raporty%20spin.clinic" variant="secondary">{t("Zapytaj o dane")}</Button> <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a></p>
     </section>
     <section id="pilotaz"><h2>{t("Spinki podpisane przez redakcje")}</h2>
-      <p>{t("Każdy może ułożyć spinkę z konta: boksy z materiałami, połączenia i wyjaśnienie w podtytule. Redakcje i dziennikarze mogą prowadzić spinki podpisane nazwiskiem i redakcją. Ocenia je ta sama miara co spinki Dr. Spina i czytelników.")}</p>
+      <p>{t("Każdy może ułożyć spinkę z konta: boksy z materiałami, połączenia i wyjaśnienie w podtytule. Redakcje i dziennikarze mogą prowadzić spinki podpisane nazwiskiem i nazwą redakcji. Ocenia je ta sama miara co spinki Dr. Spina i czytelników.")}</p>
       {lang === "pl" && <ContextThreadExample />}
       <p>{t("W sprawie spinek podpisanych przez redakcję napisz na")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>.</p>
     </section>

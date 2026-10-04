@@ -18,25 +18,25 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
 
   /** Kolejność jak w kodzie: clinic_council.diagnose (głosy → łączenie → fakty → laboratorium → uzasadnienie → recenzja → język). */
   const FLOW = [
-    [t("Selekcja"), t("Strażnik czyta nowe wpisy polityków i wybiera te, w których jest teza do sprawdzenia.")],
+    [t("Selekcja"), t("Strażnik czyta nowe wpisy polityków i wybiera te, które zawierają tezę do sprawdzenia.")],
     [t("Niezależne głosy"), t("Kilka modeli różnych firm ocenia wpis osobno. Żaden nie widzi odpowiedzi innych.")],
     [t("Łączenie"), t("Stałe reguły łączą głosy w jeden werdykt, siłę spinu i listę technik.")],
-    [t("Źródła i badania"), t("Twierdzenia trafiają do wyszukiwarki, a laboratorium dodaje badania pomocnicze. Źródło musi pochodzić z wyników.")],
-    [t("Uzasadnienie"), t("Przewodniczący pisze diagnozę z ustaleń, recenzent sprawdza zgodność, językoznawca poprawia polszczyznę.")],
+    [t("Źródła i badania"), t("Twierdzenia trafiają do wyszukiwarki, a laboratorium dodaje badania pomocnicze. Każde źródło musi pochodzić z tych wyników.")],
+    [t("Uzasadnienie"), t("Przewodniczący pisze diagnozę na podstawie ustaleń, recenzent sprawdza zgodność, a językoznawca poprawia polszczyznę.")],
     [t("Publikacja"), t("Diagnoza ukazuje się automatycznie, z głosami modeli i ograniczeniami. Nikt nie edytuje jej treści. Wybrane wyniki trafiają też jako skróty i filmy do mediów społecznościowych - zawsze z linkiem do pełnej analizy.")],
   ];
 
   const ROLES = [
     { role: t("Członkowie Konsylium"), who: "gpt-oss · Qwen · Nemotron · Gemini · Bielik · PLLuM · Llama · Mistral",
-      text: t("Każdy osobno podaje werdykt, siłę 0-100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia.") },
+      text: t("Każdy model osobno podaje werdykt, siłę spinu 0-100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia.") },
     { role: t("Sprawdzanie faktów"), who: t("Gemini z wyszukiwarką Google"),
-      text: t("Szuka źródeł do każdego twierdzenia. Bez źródła twierdzenie zostaje niezweryfikowane.") },
+      text: t("Szuka źródeł do każdego twierdzenia. Bez źródła twierdzenie pozostaje niezweryfikowane.") },
     { role: t("Konsultant"), who: t("Claude (Anthropic) · płatny"),
-      text: t("Mocniejsze sprawdzenie faktów, gdy modele są podzielone (zgoda poniżej 2/3) albo spin jest silny (70/100 i więcej).") },
+      text: t("Mocniejsze sprawdzenie faktów, gdy modele są podzielone (zgoda poniżej 2/3) albo siła spinu jest wysoka (70/100 i więcej).") },
     { role: t("Laboratorium"), who: "HerBERT · Google Fact Check · GUS · Firecrawl",
-      text: t("Badania pomocnicze: wydźwięk, wcześniejsze fact-checki, dane GUS, obecność cytatu w źródle. Nie zmieniają werdyktu.") },
+      text: t("Badania pomocnicze: wydźwięk, wcześniejsze weryfikacje faktów, dane GUS, obecność cytatu w źródle. Nie zmieniają werdyktu.") },
     { role: t("Przewodniczący"), who: t("Gemini (w zapasie inne modele)"),
-      text: t("Pisze uzasadnienie wyłącznie z ocen Konsylium i dowodów. Nie może zmienić werdyktu, siły ani dodać techniki.") },
+      text: t("Pisze uzasadnienie wyłącznie na podstawie ocen Konsylium i dowodów. Nie może zmienić werdyktu, siły spinu ani dodać techniki.") },
     { role: t("Recenzent"), who: t("Nemotron (w zapasie inne modele)"),
       text: t("Sprawdza, czy tekst zgadza się z ocenami i Kartą. Przy uwagach przewodniczący raz poprawia diagnozę; brak recenzji nie wstrzymuje publikacji.") },
     { role: t("Językoznawca"), who: t("Bielik (w zapasie PLLuM, Qwen, Gemini)"),
@@ -66,7 +66,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   ];
 
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/council" : "/konsylium"} eyebrow={t("KONSYLIUM AI")} title={<>{t("Kilka modeli AI,")}<br />{t("jedna diagnoza")}</>} version="1.1" updatedAt="2026-09-29" sections={sections}
-    lead={t("Wybrane wpisy polityków osobno ocenia kilka modeli AI różnych firm. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę - z jawnym składem i ograniczeniami. Modele mogą się mylić.")}>
+    lead={t("Kilka modeli AI różnych firm osobno ocenia wybrane wpisy polityków. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę - z jawnym składem i ograniczeniami. Modele mogą się mylić.")}>
     <section aria-label={t("Film: jak działa spin.clinic")}><HowItWorksFilm lang={lang} /></section>
 
 
@@ -76,7 +76,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     </section>
 
     <section id="role"><h2>{t("Kto co robi")}</h2>
-      <p>{t("Konsylium działa jak rada lekarska: kilku niezależnych specjalistów, osobne badania i jeden opis wyniku. Poniżej domyślna obsada ról - gdy model nie odpowie, zastępuje go kolejny. Rzeczywistych wykonawców pokazujemy przy każdej diagnozie.")}</p>
+      <p>{t("Konsylium działa jak rada lekarska: kilku niezależnych specjalistów, osobne badania i jeden opis wyniku. Poniżej domyślna obsada ról. Gdy model nie odpowie, zastępuje go kolejny. Rzeczywistych wykonawców pokazujemy przy każdej diagnozie.")}</p>
       <ul className="sc-kons-roles">{ROLES.map(item =>
         <li key={item.role}><h3>{item.role}</h3><p className="sc-kons-roles__who">{item.who}</p><p>{item.text}</p></li>)}</ul>
     </section>
@@ -97,7 +97,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       <ul className="sc-kons-rules">
         <li><strong>{t("Werdykt i siła")}</strong> {t("to środkowe oceny (mediana). Jeden skrajny model nie przesądza wyniku; przy remisie wybieramy łagodniejszą ocenę.")}</li>
         <li><strong>{t("Technika")}</strong> {t("wymaga dosłownego cytatu z badanego materiału. Przy co najmniej trzech rozstrzygniętych głosach muszą ją wskazać minimum dwa modele; przy jednym lub dwóch takich głosach wystarczy jedno wskazanie.")}</li>
-        <li><strong>{t("Zgoda modeli")}</strong> {t("to informacja dla czytelnika, nie dowód prawdy: modele mogą popełnić ten sam błąd.")}</li>
+        <li><strong>{t("Zgoda modeli")}</strong> {t("to informacja dla czytelnika, nie dowód prawdy, bo modele mogą popełnić ten sam błąd.")}</li>
       </ul>
     </section>
 

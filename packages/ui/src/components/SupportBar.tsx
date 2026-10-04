@@ -21,7 +21,7 @@ export function SupportBar() {
   const format = (value: number) => value.toLocaleString("pl-PL");
   return (
     <div className="sc-support-bar">
-      <p className="sc-support-bar__text">Wpłaty pomagają pokrywać pobieranie wpisów, analizy AI i utrzymanie serwisu.</p>
+      <p className="sc-support-bar__text">Wpłaty pomagają pokrywać koszty pobierania wpisów, analiz AI i utrzymania serwisu.</p>
       {goal > 0 ? (
         <a className="sc-support-bar__progress" href={SUPPORT_LINKS.monthly} target="_blank" rel="noopener noreferrer" aria-label={`Zebrano ${format(raised)} z ${format(goal)} zł w tym miesiącu`}>
           <span className="sc-support-bar__amount"><strong>{format(raised)} zł</strong> z {format(goal)} zł w tym miesiącu</span>
