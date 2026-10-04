@@ -145,3 +145,63 @@ def readable(findings):
         lines.append(f"  Fragment: „{f.get('quote')}”")
         lines.append(f"  Poprawka: {f.get('fix')}" + (f" · {f['action']}" if f.get('action') else ''))
     return chr(10).join(lines)
+
+
+# --- audyt stałych tekstów stron (właściciel 5.10: „wszystko, co publikujemy na stronie, musi być rzetelne i czytelne”) ---
+PANEL = ('Patrzysz na tekst czterema oczami naraz i przy każdym zarzucie podajesz perspektywę w polu problem (na początku, w nawiasie): '
+         '(językoznawca) poprawność, styl, powtórzenia, anglicyzmy, interpunkcja; '
+         '(dziennikarz) czy najważniejsze jest na początku, czy tekst jest konkretny, ciekawy i bez waty; '
+         '(rzetelność) czy obietnice i twierdzenia o serwisie zgadzają się z tym, jak serwis działa (dane w opisie stanu), bez przesady; '
+         '(czytelnik) czy laik zrozumie bez żargonu i wewnętrznych nazw. ')
+STATE = ('Stan serwisu do sprawdzania rzetelności: oceny w spinkach dotyczą połączeń między boksami w kolejności ✕ ? ✓; '
+         'diagnozy przygotowuje AI (konsylium modeli), człowiek może je tylko wycofać; ta sama miara dla rządzących i opozycji; '
+         'tytuł spinki do 65 znaków, opis do 170; spinki Dr. Spina z diagnoz tylko od siły 70/100; serwis jest w becie.')
+
+
+def page_texts(base=None):
+    """Widoczne teksty stron serwisu (akapity i nagłówki) z listy Projektanta."""
+    import re as _re
+    import requests
+    from news.projektant import PAGES, _site_base
+    base = base or _site_base()
+    items = []
+    for path in PAGES:
+        try:
+            html = requests.get(base.rstrip('/') + path, timeout=20, headers={'User-Agent': 'spin.clinic Recenzent'}).text
+        except requests.RequestException:
+            continue
+        html = _re.sub(r'(?s)<(script|style|svg|noscript)[^>]*>.*?</\1>', ' ', html)
+        parts = [' '.join(_re.sub(r'<[^>]+>', ' ', m).split()) for m in _re.findall(r'(?s)<(?:p|h1|h2|h3|li|dd|dt)[^>]*>(.*?)</(?:p|h1|h2|h3|li|dd|dt)>', html)]
+        parts = [x for x in dict.fromkeys(parts) if len(x) >= 25]
+        if parts:
+            items.append({'id': f'strona:{path}', 'kind': 'stały tekst strony', 'url': 'https://spin.clinic' + path,
+                          'text': {'akapity': [_cut(x, 400) for x in parts[:40]]}})
+    return items
+
+
+def audit_pages(force=False, base=None):
+    """Raz na tydzień i na żądanie: wszystkie stałe teksty stron przez czterech recenzentów, sprawdzone drugim modelem."""
+    items = page_texts(base)
+    if not items:
+        raise common.WindowClosed('Strony serwisu niedostępne dla audytu tekstów.')
+    author, checker = common.members(2, force)
+    findings = []
+    for item in items:
+        answer = common.ask(author, REVIEW + ' ' + PANEL + STATE, {'items': [item]}, REVIEW_SCHEMA, force)
+        rows = [f for f in answer.get('findings', []) if isinstance(f, dict)]
+        for f in rows:
+            f['id'] = item['id']
+        if rows:
+            verdict = common.ask(checker, CHECK + ' ' + STATE, {'items': [item], 'findings': rows}, CHECK_SCHEMA, force)
+            drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
+            rows = [f for n, f in enumerate(rows) if n not in drop]
+        for f in rows:
+            f['url'] = item['url']
+        findings += rows
+    critical = [f for f in findings if f.get('severity') == 'krytyczne']
+    note = AgentNote.objects.create(agent='recenzent', kind='audit', status='new' if findings else 'done',
+        title=f"Audyt tekstów stron: {len(items)} stron, {len(findings)} uwag ({len(critical)} krytycznych)",
+        body=readable(findings), scores={'findings': findings, 'pages': [i['id'] for i in items], 'authors': [':'.join(author), ':'.join(checker)]},
+        sources=sorted({f['url'] for f in findings}))
+    common.notify(note)
+    return note

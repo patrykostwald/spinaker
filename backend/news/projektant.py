@@ -220,6 +220,8 @@ def step(force=False):
         return last
     note = learn(force)
     audit(force)
+    from news import recenzent
+    recenzent.audit_pages(force)  # raz w tygodniu wszystkie stałe teksty stron
     return note
 
 

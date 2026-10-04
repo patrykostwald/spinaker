@@ -42,3 +42,15 @@ def test_projektant_audit_finds_style_problems(models, monkeypatch):
 def test_guide_has_owner_rules_and_canon():
     rules = ' '.join(projektant.guide())
     assert '15 px' in rules and 'WCAG' in rules and AgentNote.objects.count() == 0
+
+
+def test_audit_pages_reads_visible_text(models, monkeypatch):
+    html = '<html><script>x</script><h1>O nas i nasza misja w serwisie</h1><p>Oceniasz całą spinkę jednym kliknięciem, to bardzo proste.</p></html>'
+    monkeypatch.setattr('requests.get', lambda *a, **k: type('R', (), {'text': html})())
+    monkeypatch.setattr('news.projektant.PAGES', ['/o-nas'])
+    answers = iter([{'findings': [{'id': 'x', 'criterion': 1, 'severity': 'krytyczne', 'quote': 'Oceniasz całą spinkę',
+                     'problem': '(rzetelność) oceny dotyczą połączeń', 'fix': 'Oceniasz połączenia'}]}, {'remove': [], 'reason': 'ok'}])
+    monkeypatch.setattr('news.agents_common.ask', lambda *a, **k: next(answers))
+    note = recenzent.audit_pages(base='http://test')
+    assert note.kind == 'audit' and note.scores['findings'][0]['id'] == 'strona:/o-nas'
+    assert 'x' not in ''.join(recenzent.page_texts('http://test')[0]['text']['akapity'][0])
