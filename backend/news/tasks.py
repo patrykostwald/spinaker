@@ -514,7 +514,13 @@ def automatyk_task():
         note = automatyk.step()
     except WindowClosed as error:
         return {'status': 'waiting', 'reason': str(error)}
-    return {'status': 'ok', 'note': note.pk}
+    learned = None
+    if automatyk.learn_due():  # wolny czas: nauka raz w tygodniu, po przeglądzie
+        try:
+            learned = automatyk.learn().pk
+        except WindowClosed:
+            learned = None
+    return {'status': 'ok', 'note': note.pk, 'learned': learned}
 
 
 @shared_task

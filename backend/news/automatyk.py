@@ -6,6 +6,8 @@ Raz dziennie:
 2. Model ekspert proponuje usprawnienia (harmonogram, kolejność, strażnik, scalenie, próg, monitoring...) z gotowym zleceniem;
    drugi model innej firmy odrzuca ogólniki i propozycje bez oparcia w danych.
 3. Zapisuje raport w panelu, trzy najważniejsze usprawnienia jako pomysły do decyzji (krytykuje je też Seba).
+4. W wolnym czasie (raz w tygodniu, po codziennym przeglądzie) uczy się najnowszej wiedzy o automatyzacji i agentach AI
+   z uznanych źródeł (LEARN_FEEDS); lekcje ze źródłem, sprawdzone przez drugi model, trafiają do jego codziennego przeglądu.
 Automatyk proponuje; zmiany wprowadzają Claude i Codex po zgodzie właściciela (tak jak w każdej pętli)."""
 from datetime import timedelta
 
@@ -45,6 +47,19 @@ LOOPS = [
         ('Kontroler danych', 'pracownia-osint', 1), ('Zwiadowca', 'pracownia-osint', 0), ('Prawnik', 'pracownia-osint', 1)]),
 ]
 DAY = timedelta(hours=20)
+WEEK = timedelta(days=6)
+LEARN_FEEDS = {
+    'Anthropic (agenci i narzędzia)': 'https://www.anthropic.com/news/rss.xml',
+    'LangChain (agenci, orkiestracja)': 'https://blog.langchain.dev/rss/',
+    'n8n (automatyzacja przepływów)': 'https://blog.n8n.io/rss/',
+    'Temporal (niezawodne przepływy)': 'https://temporal.io/blog/rss.xml',
+    'Celery (wydania)': 'https://github.com/celery/celery/releases.atom',
+    'Simon Willison (agenci w praktyce)': 'https://simonwillison.net/atom/everything/',
+    'Hamel Husain (ewaluacja LLM)': 'https://hamel.dev/index.xml',
+    'Eugene Yan (systemy z LLM)': 'https://eugeneyan.com/rss/',
+    'Martin Fowler (architektura)': 'https://martinfowler.com/feed.atom',
+    'Google SRE i niezawodność': 'https://sre.google/feed.xml',
+}
 PROPOSERS = ('strateg', 'pielgrzym', 'ekspert', 'projektant', 'kartograf', 'zwiadowca', 'wynalazca', 'technolog', 'architekt', 'automatyk')
 CONTEXT = [
     'spin.clinic: Klinika spinu - automatyczne diagnozy wpisów polityków (Dr. Spin z Konsylium 4 modeli), przekazy dnia obu stron, '
@@ -75,7 +90,8 @@ PROMPT = ('Jesteś Automatykiem: ekspertem od automatyzacji, pętli zwrotnych i 
           'Wypisz problemy (issues) i do 8 usprawnień (fixes) od najważniejszego: co zmienić, dlaczego, dowód z danych (evidence), rodzaj, '
           'wysiłek, wpływ 1-10, ryzyko i brief - gotowe zlecenie dla programisty. Szukaj: pętli bez strażnika, kroków, które się dublują '
           'albo czekają na siebie, złej kolejności (np. publikacja przed kontrolą), harmonogramów kolidujących o limity modeli, propozycji, '
-          'które nikt nie zamyka, brakującego sprzężenia zwrotnego (wynik pętli nie wraca do jej początku). Nie powtarzaj previous '
+          'które nikt nie zamyka, brakującego sprzężenia zwrotnego (wynik pętli nie wraca do jej początku). Korzystaj ze swojej wiedzy '
+          '(knowledge: lekcje z najnowszych źródeł o automatyzacji), gdy pasuje. Nie powtarzaj previous '
           'przyjętych lub odrzuconych. Szanuj zasady z context.')
 PROMPT_CHECK = ('Sprawdź zalecenia kolegi. W remove podaj numery (od 0) zaleceń bez oparcia w loops/checks/proposals, ogólnikowych, '
                 'łamiących zasady z context (np. edycja sensu diagnoz, płatne modele, wdrożenie bez zgody) albo powtarzających previous.')
@@ -152,7 +168,7 @@ def step(force=False):
     for agent, d in flow.items():
         if d['czekają_ponad_tydzień'] >= 5:
             checks.append(f'Propozycje agenta {agent}: {d["czekają_ponad_tydzień"]} czeka na decyzję ponad tydzień - pętla rozwoju się zatyka.')
-    data = {'context': CONTEXT, 'loops': loops, 'checks': checks, 'proposals': flow, 'previous': previous()}
+    data = {'context': CONTEXT, 'loops': loops, 'checks': checks, 'proposals': flow, 'previous': previous(), 'knowledge': knowledge()}
     answer, author = common.ask_any(PROMPT, data, SCHEMA, force)
     _used['author'] = author
     fixes = [f for f in answer.get('fixes', []) if isinstance(f, dict) and f.get('change')][:8]
@@ -175,6 +191,63 @@ def step(force=False):
     if any(i.get('severity') == 'wysoki' for i in issues) or any('wyłączony' in c or 'błędem' in c for c in checks):
         common.notify(note)
     return note
+
+
+LESSON = {'type': 'object', 'properties': {'title': TEXT, 'lesson': TEXT, 'apply': TEXT, 'source_url': TEXT},
+          'required': ['title', 'lesson', 'apply', 'source_url']}
+LEARN_SCHEMA = {'type': 'object', 'properties': {'summary': TEXT, 'lessons': {'type': 'array', 'items': LESSON}}, 'required': ['summary', 'lessons']}
+LEARN = ('Jesteś Automatykiem i w wolnym czasie uczysz się wszystkiego, co najnowsze o automatyzacji: agenci AI, orkiestracja, '
+         'pętle zwrotne, ewaluacja modeli, niezawodne przepływy, kolejki, koszty. Na podstawie WYŁĄCZNIE items wybierz do 8 lekcji: '
+         'czego się nauczyłeś (lesson) i jak to zastosować w naszych pętlach (apply: wskaż pętlę z loops, konkretnie). source_url z items. '
+         'Bez mody dla mody; tylko to, co da się zrobić przy darmowych modelach i obecnym stosie (Django, Celery).')
+LEARN_CHECK = ('Sprawdź lekcje kolegi. W remove podaj numery (od 0) lekcji bez pokrycia w items, ogólnikowych albo niemożliwych '
+               'do zastosowania w podanych pętlach.')
+
+
+def knowledge(limit=12):
+    """Najnowsze sprawdzone lekcje Automatyka (do codziennego przeglądu)."""
+    rows = []
+    for note in AgentNote.objects.filter(agent='automatyk', kind='report')[:3]:
+        rows += [f"{l['title']}: {l['apply']}" for l in (note.scores or {}).get('lessons', [])]
+    return rows[:limit]
+
+
+def learn(force=False):
+    import re
+    import feedparser
+    import requests
+    items = []
+    for name, url in LEARN_FEEDS.items():
+        try:
+            parsed = feedparser.parse(requests.get(url, timeout=15, headers={'User-Agent': 'spin.clinic Automatyk (+https://spin.clinic)'}).content)
+        except requests.RequestException:
+            continue
+        for entry in parsed.entries[:5]:
+            link = entry.get('link', '')
+            if link.startswith('https://'):
+                items.append({'source': name, 'title': entry.get('title', '')[:200], 'url': link,
+                              'summary': re.sub(r'<[^>]+>', ' ', entry.get('summary', ''))[:400]})
+    if not items:
+        raise common.WindowClosed('Brak nowości o automatyzacji do nauki.')
+    urls = {i['url'] for i in items}
+    loops = [f'{portal} · {name}' for portal, name, _, _ in LOOPS]
+    answer, author = common.ask_any(LEARN, {'items': items[:45], 'loops': loops}, LEARN_SCHEMA, force)
+    lessons = [l for l in answer.get('lessons', []) if isinstance(l, dict) and l.get('source_url') in urls]
+    reason = ''
+    if lessons:
+        verdict, _ = common.ask_any(LEARN_CHECK, {'items': items[:45], 'loops': loops, 'lessons': lessons}, CHECK, force, exclude=(author,))
+        drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
+        lessons, reason = [l for n, l in enumerate(lessons) if n not in drop], verdict.get('reason', '')
+    data = {'summary': answer.get('summary', ''), 'lessons': lessons, 'check': reason}
+    body = chr(10).join([data['summary'], ''] + [f"- {l['title']}: {l['lesson']}{chr(10)}  U nas: {l['apply']} ({l['source_url']})" for l in lessons])
+    return AgentNote.objects.create(agent='automatyk', kind='report', status='new',
+        title=f'Automatyk się uczy: {len(lessons)} lekcji ({timezone.localdate():%d.%m.%Y})', body=body.strip(), scores=data,
+        sources=sorted({l['source_url'] for l in lessons}))
+
+
+def learn_due():
+    last = AgentNote.objects.filter(agent='automatyk', kind='report').first()
+    return last is None or timezone.now() - last.created_at >= WEEK
 
 
 def readable(r):

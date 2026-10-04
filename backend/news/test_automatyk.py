@@ -39,3 +39,17 @@ def test_agent_map_handles_seconds_schedule(monkeypatch):
     monkeypatch.setitem(app.conf.beat_schedule, 'political-x-minute', {'task': 'news.tasks.political_poll_task', 'schedule': timedelta(seconds=60)})
     rows = [r for r in snapshot() if r['beat'] == 'political-x-minute']
     assert rows and rows[0]['schedule'] == 'co 1 min'
+
+
+def test_automatyk_learns_lessons_and_uses_them(monkeypatch):
+    import types
+    monkeypatch.setattr('requests.get', lambda *a, **k: types.SimpleNamespace(content=b''))
+    monkeypatch.setattr('feedparser.parse', lambda c: types.SimpleNamespace(entries=[{'link': 'https://temporal.io/x', 'title': 'Retries', 'summary': ''}]))
+    lesson = {'title': 'Ponowienia z odstępem', 'lesson': 'retry', 'apply': 'Diagnozy: ponów po 429', 'source_url': 'https://temporal.io/x'}
+    answers = iter([({'summary': 'S', 'lessons': [lesson, {**lesson, 'source_url': 'https://zmyslone.pl'}]}, ('groq', 'a')),
+                    ({'remove': [], 'reason': 'ok'}, ('nim', 'b'))])
+    monkeypatch.setattr('news.agents_common.ask_any', lambda *a, **k: next(answers))
+    assert automatyk.learn_due()
+    note = automatyk.learn(force=True)
+    assert [l['title'] for l in note.scores['lessons']] == ['Ponowienia z odstępem'] and not automatyk.learn_due()
+    assert automatyk.knowledge() == ['Ponowienia z odstępem: Diagnozy: ponów po 429']
