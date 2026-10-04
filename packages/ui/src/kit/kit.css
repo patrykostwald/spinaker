@@ -8799,3 +8799,17 @@ html { scrollbar-width: thin; }
   .sc-rail .sc-rail__foot > button svg { transform: translate(6px, 0) !important; }
 }
 @media (min-width: 768px) { .sc-rail .sc-rail__foot > button { margin-bottom: 6px !important; } }
+
+/* przekazy dnia: kolory stron, równe karty, miary zawsze przy dole (właściciel 4.10) */
+.sc-message-card[data-camp="government"] { --camp: var(--sc-ind-gov); }
+.sc-message-card[data-camp="opposition"] { --camp: var(--sc-ind-opp); }
+.sc-message-card[data-camp] { --plate: linear-gradient(180deg, color-mix(in srgb, var(--camp) 9%, #121316) 0%, #0a0b0d 60%); --sc-fr-i: color-mix(in srgb, var(--camp) 40%, transparent); }
+.sc-message-card__label > span { color: var(--camp, var(--sc-text-2)); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600 !important; }
+.sc-message-card { height: 100%; }
+.sc-message-card .sc-message-measures { margin-top: auto; }
+.sc-message-card > .sc-message-card__details, .sc-message-card > .sc-message-card__more { margin-top: 0 !important; }
+.sc-message-metrics dd strong { font-size: 26px; font-weight: 600; line-height: 1.1; white-space: nowrap; }
+.sc-message-metrics dd small { display: block; min-height: 2.6em; }
+.sc-message-metrics[data-empty] dd strong { color: var(--sc-text-3); }
+.sc-message-metric__tone { font-size: 15px !important; }
+.sc-message-metric__bar span, .sc-message-metrics [class*="bar"] i { background-color: var(--camp); }

@@ -15,11 +15,12 @@ export function MessageMetrics({ stats }: { stats?: MessageStats }) {
   const known = stats?.version === 1;
   const tone = known ? stats.tone : null;
   return <div className="sc-message-measures">
-    <dl className="sc-message-metrics">
-      <div><dt>Wpisy</dt><dd><strong>{known ? stats.posts : "Brak danych"}</strong><small>autorów: {known ? stats.authors : "brak danych"}</small></dd><Bar value={known && stats.posts ? 100 : null} /></div>
-      <div title="Odsetek wpisów z liczbą lub linkiem. Nie oznacza potwierdzenia ich prawdziwości."><dt>Konkret</dt><dd><strong>{known ? `${stats.concrete_pct}%` : "Brak danych"}</strong><small>liczba lub link</small></dd><Bar value={known ? stats.concrete_pct : null} /></div>
-      <div title="Autorzy wpisów przypisanych do głównego wątku dnia."><dt>Spójność</dt><dd><strong>{known && stats.coherence_authors !== null ? `${stats.coherence_authors} z ${stats.authors}` : "Brak danych"}</strong><small>autorów</small></dd><Bar value={known ? stats.coherence_pct : null} /></div>
-      <div><dt>Ton</dt><dd><strong className="sc-message-metric__tone">{tone ? TONES.map(([key]) => `${tone[key]}%`).join(" / ") : "Brak danych"}</strong><small>atak / osiągnięcia / apel</small></dd>
+    {/* bez danych: kreska zamiast napisu, układ ten sam co z liczbami (właściciel 4.10) */}
+    <dl className="sc-message-metrics" data-empty={known ? undefined : ""}>
+      <div><dt>Wpisy</dt><dd><strong>{known ? stats.posts : "–"}</strong><small>autorów: {known ? stats.authors : "–"}</small></dd><Bar value={known && stats.posts ? 100 : null} /></div>
+      <div title="Odsetek wpisów z liczbą lub linkiem. Nie oznacza potwierdzenia ich prawdziwości."><dt>Konkret</dt><dd><strong>{known ? `${stats.concrete_pct}%` : "–"}</strong><small>liczba lub link</small></dd><Bar value={known ? stats.concrete_pct : null} /></div>
+      <div title="Autorzy wpisów przypisanych do głównego wątku dnia."><dt>Spójność</dt><dd><strong>{known && stats.coherence_authors !== null ? `${stats.coherence_authors} z ${stats.authors}` : "–"}</strong><small>autorów</small></dd><Bar value={known ? stats.coherence_pct : null} /></div>
+      <div><dt>Ton</dt><dd><strong className="sc-message-metric__tone">{tone ? TONES.map(([key]) => `${tone[key]}%`).join(" / ") : "–"}</strong><small>atak / osiągnięcia / apel</small></dd>
         <span className="sc-message-metric__bar" aria-hidden="true">{tone ? TONES.map(([key]) => <span key={key} data-tone={key} style={{ width: `${tone[key]}%` }} />) : null}</span>
       </div>
     </dl>
