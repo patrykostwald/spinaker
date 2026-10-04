@@ -503,6 +503,18 @@ def projektant_task():
 
 
 @shared_task
+def pracownia_osint_task():
+    """Dwa razy dziennie krok Pracowni OSINT: każda rola sama pilnuje swojego terminu (kontroler codziennie, testy co 3 dni, reszta co tydzień)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import pracownia_osint, przeszlosc
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return {'status': 'ok', 'done': pracownia_osint.step()}
+
+
+@shared_task
 def przeszlosc_topics_task():
     """Raz dziennie: automatyczny wybór tematów przeszłość.today z druków Sejmu i wpisów polityków."""
     from news import przeszlosc
