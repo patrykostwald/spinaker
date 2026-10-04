@@ -71,6 +71,12 @@ export function TopicTree() {
       <p className="sc-pt__ex">{start?.auto_topics?.length ? 'Tematy dnia:' : 'Przykłady:'} {(start?.auto_topics?.length ? start.auto_topics.map(t => t.topic) : EXAMPLES).map(e => <button key={e} type="button" onClick={() => { setQuery(e); void load(e); }}>{e}</button>)}</p>
     </header>
 
+    {state === 'idle' && data && !new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('q') && <p className="sc-pt__k">Temat dnia: {data.topic}</p>}
+    {state === 'loading' && <Loading label="Ładowanie tematu" />}
+    {state === 'off' && <p className="sc-pt__msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
+    {state === 'error' && <p className="sc-pt__msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}
+    {state === 'idle' && data && <TopicView data={data} />}
+
     {start && <section className="sc-pt__stats" aria-label="Co jest w bazie">
       {([['people', 'osób publicznych'], ['organisations', 'spółek i fundacji z KRS'], ['records', 'dokumentów Sejmu'], ['posts', 'wpisów polityków'], ['diagnoses', 'diagnoz Dr. Spina'], ['articles', 'artykułów']] as const)
         .map(([key, label]) => <div key={key}><b>{(start.counts[key] ?? 0).toLocaleString('pl-PL')}</b><span>{label}</span></div>)}
@@ -79,33 +85,6 @@ export function TopicTree() {
       <h2>Najnowsze w Sejmie</h2>
       <ol>{start.latest.map((row, i) => <li key={i}><time>{row.date ?? ''}</time><span>{row.kind}</span><a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>
     </section>}
-    {state === 'idle' && data && !new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('q') && <p className="sc-pt__k">Temat dnia: {data.topic}</p>}
-    {state === 'loading' && <Loading label="Ładowanie tematu" />}
-    {state === 'off' && <p className="sc-pt__msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
-    {state === 'error' && <p className="sc-pt__msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}
-    {state === 'idle' && data && <>
-      <p className="sc-pt__sum">{data.nodes.length ? `${data.nodes.length} elementów, ${data.edges.length} powiązań. Najedź na element, aby zobaczyć, z czym się łączy.` : 'Nic nie znaleźliśmy. Spróbuj innego słowa.'}</p>
-      <div className="sc-pt__cols" onMouseLeave={() => setFocus(null)}>
-        {COLUMNS.map(([kind, title]) => {
-          const rows = data.nodes.filter(n => n.kind === kind);
-          if (!rows.length) return null;
-          return <section key={kind} className="sc-pt__col" aria-label={title}>
-            <h2>{title} <small>{rows.length}</small></h2>
-            <ul>{rows.slice(0, 25).map(n => <li key={n.id} data-dim={linked && !linked.has(n.id) ? '' : undefined} data-on={focus === n.id ? '' : undefined}
-              onMouseEnter={() => setFocus(n.id)} onClick={() => setFocus(focus === n.id ? null : n.id)}>
-              <span className="sc-pt__label">{n.label}</span>
-              <span className="sc-pt__meta">{[n.role, n.kind === 'record' && n.sub ? SUB[n.sub] ?? n.sub : n.sub, n.date, n.intensity != null ? `spin ${n.intensity}/100` : '', n.links ? `${n.links} powiąz.` : ''].filter(Boolean).join(' · ')}</span>
-              {n.url && <a href={n.url} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>źródło →</a>}
-            </li>)}</ul>
-          </section>;
-        })}
-      </div>
-      {timeline.length > 0 && <section className="sc-pt__time" aria-label="Oś czasu">
-        <h2>Oś czasu</h2>
-        <ol>{timeline.map(n => <li key={n.id} data-kind={n.kind}><time>{n.date}</time><span>{COLUMNS.find(c => c[0] === n.kind)?.[1]}</span><b>{n.label}</b></li>)}</ol>
-      </section>}
-    </>}
-
     <section className="sc-pt__about" id="jak" aria-label="Jak to działa">
       <div><b>Tylko osoby i podmioty publiczne</b><p>Politycy, urzędnicy, spółki i fundacje z KRS. Żadnych osób prywatnych.</p></div>
       <div><b>Każde powiązanie ma źródło</b><p>Oficjalne dane Sejmu i KRS, wpisy na X, artykuły. Nic nie łączymy po samym nazwisku.</p></div>
@@ -118,4 +97,89 @@ export function TopicTree() {
     </section>
     <footer className="sc-pt__foot">przeszłość.today prowadzi iapply sp. z o.o. · dane wspólne ze spin.clinic · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></footer>
   </main>;
+}
+
+
+const KIND_LABEL: Record<string, string> = { record: 'Sejm', statement: 'Wpis', diagnosis: 'Diagnoza Dr. Spina', media: 'Media' };
+const CAMP_LABEL: Record<string, string> = { government: 'rządzący', opposition: 'opozycja', public: 'instytucja' };
+
+/** Widok tematu (właściciel 5.10): oś czasu jako główna treść, obok kto występuje, pod spodem rozkład źródeł medialnych. */
+function TopicView({ data }: { data: Graph }) {
+  const [more, setMore] = useState(false);
+  const [open, setOpen] = useState<string | null>(null);
+  const byId = useMemo(() => new Map(data.nodes.map(n => [n.id, n])), [data]);
+  const author = useMemo(() => {
+    const map = new Map<string, Node>();
+    for (const e of data.edges) if (e.label === 'napisał(a)') { const who = byId.get(e.source); if (who) map.set(e.target, who); }
+    return map;
+  }, [data, byId]);
+  const diagnosisOf = useMemo(() => {
+    const map = new Map<string, Node>();
+    for (const e of data.edges) if (e.label === 'diagnoza Dr. Spina') { const d = byId.get(e.target); if (d) map.set(e.source, d); }
+    return map;
+  }, [data, byId]);
+  const roles = useMemo(() => {
+    const map = new Map<string, { org: Node; role: string }[]>();
+    for (const e of data.edges) { const org = byId.get(e.target); if (org?.kind === 'organisation') map.set(e.source, [...(map.get(e.source) ?? []), { org, role: e.label }]); }
+    return map;
+  }, [data, byId]);
+  const events = data.nodes.filter(n => n.date && (n.kind === 'statement' || n.kind === 'record' || n.kind === 'media'))
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+  const shown = more ? events : events.slice(0, 18);
+  const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => b.links - a.links);
+  const media = new Map<string, number>();
+  for (const n of data.nodes) if (n.kind === 'media' && n.sub) media.set(n.sub, (media.get(n.sub) ?? 0) + 1);
+  const mediaRows = [...media.entries()].sort((a, b) => b[1] - a[1]);
+  const mediaTotal = mediaRows.reduce((sum, [, n]) => sum + n, 0);
+  if (!data.nodes.length) return <p className="sc-pt__msg">Nic nie znaleźliśmy. Spróbuj innego słowa.</p>;
+  let lastDay = '';
+  return <div className="sc-tv">
+    <header className="sc-tv__head">
+      <h2>{data.topic}</h2>
+      <p>{[['statement', 'wpisów polityków'], ['diagnosis', 'diagnoz Dr. Spina'], ['record', 'dokumentów Sejmu'], ['media', 'artykułów'], ['person', 'osób i instytucji']]
+        .filter(([k]) => data.counts[k]).map(([k, label]) => `${data.counts[k]} ${label}`).join(' · ')}</p>
+    </header>
+    <div className="sc-tv__grid">
+      <section className="sc-tv__time" aria-label="Oś czasu">
+        <h3>Oś czasu</h3>
+        <ol>{shown.map(n => {
+          const day = n.date ?? '';
+          const head = day !== lastDay ? <li className="sc-tv__day" key={`d${day}`}>{new Date(day).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</li> : null;
+          lastDay = day;
+          const who = author.get(n.id);
+          const dg = diagnosisOf.get(n.id);
+          return [head, <li key={n.id} className="sc-tv__item" data-kind={n.kind} data-camp={n.camp || undefined}>
+            <span className="sc-tv__kind">{KIND_LABEL[n.kind]}{n.kind === 'record' && n.sub ? ` · ${SUB[n.sub] ?? n.sub}` : ''}{n.kind === 'media' && n.sub ? ` · ${n.sub}` : ''}</span>
+            {who && <span className="sc-tv__who">{who.label}{n.camp && CAMP_LABEL[n.camp] ? <em> · {CAMP_LABEL[n.camp]}</em> : null}</span>}
+            <p>{n.label}</p>
+            <span className="sc-tv__links">
+              {dg && <a href={dg.url} target="_blank" rel="noopener noreferrer" className="sc-tv__dg">Diagnoza Dr. Spina: spin {dg.intensity}/100 →</a>}
+              {n.url && <a href={n.url} target="_blank" rel="noopener noreferrer">źródło →</a>}
+            </span>
+          </li>];
+        })}</ol>
+        {events.length > 18 && <button type="button" className="sc-tv__more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${events.length})`}</button>}
+      </section>
+      <aside className="sc-tv__side">
+        <section aria-label="Kto występuje">
+          <h3>Kto występuje</h3>
+          <ul className="sc-tv__people">{people.slice(0, 16).map(p => {
+            const r = roles.get(p.id) ?? [];
+            return <li key={p.id} data-camp={p.camp || undefined}>
+              <span className="sc-tv__pname">{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer">{p.label}</a> : p.label}<small>{p.links}</small></span>
+              {p.role && <span className="sc-tv__prole">{p.role}</span>}
+              {r.length > 0 && <button type="button" onClick={() => setOpen(open === p.id ? null : p.id)} aria-expanded={open === p.id}>Funkcje w KRS ({r.length})</button>}
+              {open === p.id && <ul className="sc-tv__krs">{r.map(({ org, role }) => <li key={org.id}><a href={org.url} target="_blank" rel="noopener noreferrer">{org.label}</a> <span>{role}</span></li>)}</ul>}
+            </li>;
+          })}</ul>
+          <p className="sc-tv__note">Funkcje w KRS to kontekst osoby, nie dowód związku z tematem.</p>
+        </section>
+        {mediaTotal > 0 && <section aria-label="Źródła medialne">
+          <h3>Źródła medialne w temacie</h3>
+          <ul className="sc-tv__media">{mediaRows.slice(0, 8).map(([name, n]) => <li key={name}><span>{name}</span><i><b style={{ width: `${(100 * n) / mediaTotal}%` }} /></i><em>{n}</em></li>)}</ul>
+          <p className="sc-tv__note">Pokazujemy, co jest w naszej bazie. Jeśli jedna redakcja przeważa, to informacja o bazie, nie o temacie.</p>
+        </section>}
+      </aside>
+    </div>
+  </div>;
 }

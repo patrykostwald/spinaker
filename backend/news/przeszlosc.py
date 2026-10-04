@@ -22,10 +22,10 @@ def terms(query):
 
 
 # Rozwinięcia częstych skrótów (wyszukiwanie łapie oba zapisy)
-EXPAND = {'cpk': ['Centraln Port Komunikacyjn', 'Portu Komunikacyjnego', 'Port Polska', 'Portu Polska'], 'kpo': ['Krajow Plan Odbudowy', 'Planu Odbudowy'],
-          'krrit': ['Krajow Rad Radiofonii', 'Rady Radiofonii'], 'nfz': ['Narodow Fundusz Zdrowia', 'Funduszu Zdrowia'],
-          'zus': ['Zakład Ubezpieczeń Społecznych', 'Ubezpieczeń Społecznych'], 'tvp': ['Telewizj Polsk'],
-          'pkp': ['Polskie Koleje Państwowe'], 'oze': ['odnawialn źród']}
+EXPAND = {'cpk': ['Centralny Port Komunikacyjny', 'Centralnego Portu Komunikacyjnego', 'Port Polska', 'Portu Polska', 'Portem Polska'],
+          'kpo': ['Krajowy Plan Odbudowy', 'Krajowego Planu Odbudowy'], 'krrit': ['Krajowa Rada Radiofonii', 'Krajowej Rady Radiofonii'],
+          'nfz': ['Narodowy Fundusz Zdrowia', 'Narodowego Funduszu Zdrowia'], 'zus': ['Zakład Ubezpieczeń Społecznych', 'Zakładu Ubezpieczeń Społecznych'],
+          'oze': ['odnawialnych źródeł', 'odnawialne źródła']}
 
 
 def _stem(word):
@@ -42,9 +42,17 @@ def _phrase(term):
 
 
 def _match(fields, words):
+    """Fraza użytkownika: słowa w dowolnej odmianie; rozwinięcia skrótów: dokładny zapis (bez szumu jak „raport” dla „Port”)."""
     q = Q()
     for term in words:
-        variants = [_phrase(term)] + [_phrase(x) for x in EXPAND.get(term.lower().strip(), [])]
+        for full in EXPAND.get(term.lower().strip(), []):
+            for field in fields:
+                q |= Q(**{f'{field}__icontains': full})
+        if term.strip().isupper() and len(term.strip()) <= 6:
+            for field in fields:
+                q |= Q(**{f'{field}__regex': r'(^|[^A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż])' + re.escape(term.strip()) + r'($|[^A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż])'})
+            continue
+        variants = [_phrase(term)]
         for stems in variants:
             for field in fields:
                 part = Q()
@@ -76,7 +84,12 @@ def topic_graph(query):
     # Sejm: druki, głosowania, konsultacje, lobbing - osoby tylko z oficjalnych identyfikatorów posłów
     records = (PublicRecord.objects.filter(_match(['title', 'text'], words))
                .order_by('-date', '-pk').prefetch_related('people__figure')[:PER_KIND])
+    seen_titles = set()
     for record in records:
+        title_key = (record.title or '').strip().lower()[:120]
+        if title_key in seen_titles:
+            continue
+        seen_titles.add(title_key)
         key = node(f'record:{record.pk}', 'record', record.title or f'{record.kind} {record.external_id}',
                    date=record.date.isoformat() if record.date else None, url=record.source_url, sub=record.kind)
         for person in record.people.all():
@@ -92,8 +105,9 @@ def topic_graph(query):
         key = node(f'post:{post.pk}', 'statement', post.text, date=post.published_at.date().isoformat(), url=post.url,
                    sub=post.account.display_name, camp=post.camp_at_collection)
         author = people.get(post.account_id)
-        edges.append({'source': figure(author) if author else node(f'account:{post.account_id}', 'person', post.account.display_name),
-                      'target': key, 'label': 'napisał(a)'})
+        who = figure(author) if author else node(f'account:{post.account_id}', 'person', post.account.display_name)
+        nodes[who].setdefault('camp', post.camp_at_collection)
+        edges.append({'source': who, 'target': key, 'label': 'napisał(a)'})
         diagnosis = diagnoses.get(post.pk)
         if diagnosis:
             d = node(f'diagnosis:{diagnosis.pk}', 'diagnosis', diagnosis.headline, url=f'https://spin.clinic/klinika/{diagnosis.pk}',
@@ -102,7 +116,12 @@ def topic_graph(query):
 
     # Media: artykuły z bazy; osoby tylko przez potwierdzone powiązanie
     articles = list(Article.objects.filter(_match(['title'], words)).select_related('source').order_by('-published_date')[:PER_KIND])
+    seen_titles = set()
     for article in articles:
+        title_key = article.title.strip().lower()[:120]
+        if title_key in seen_titles:
+            continue
+        seen_titles.add(title_key)
         node(f'article:{article.pk}', 'media', article.title, url=article.url, sub=article.source.name if article.source_id else '',
              date=article.published_date.date().isoformat() if article.published_date else None)
     for ref in (PublicFigureArticleReference.objects.filter(article__in=articles, verification_status='confirmed')
@@ -168,7 +187,14 @@ def start_data():
     from news.models import Article
     from news.political_models import PoliticalPost, PublicFigure, PublicFigureOrganisationRelation
     from news.public_records_models import PublicRecord
-    latest = PublicRecord.objects.exclude(title='').order_by('-date', '-pk')[:8]
+    latest, seen = [], set()
+    for r in PublicRecord.objects.exclude(title='').order_by('-date', '-pk')[:80]:
+        key = r.title.strip().lower()[:120]
+        if key not in seen:
+            seen.add(key)
+            latest.append(r)
+        if len(latest) == 6:
+            break
     return {
         'counts': {
             'people': PublicFigure.objects.filter(archived=False).count(),
@@ -202,7 +228,8 @@ def start_view(request):
 TOPICS_STATE = 'przeszlosc-auto-topics'
 PRINT_SUBJECT = re.compile(r'ustaw\w*\s+o\s+(?:zmianie\s+(?:niektórych\s+)?ustaw\w*\s+(?:w\s+związku\s+z\s+)?(?:o\s+)?)?([^,(;]{6,60})', re.I)
 ACRONYM = re.compile(r'\b([A-ZĄĆĘŁŃÓŚŹŻ]{2,6})\b')
-STOP = {'PIS', 'PO', 'PSL', 'KO', 'TVN', 'RP', 'UE', 'USA', 'AI', 'PAP', 'ON', 'TO', 'NIE', 'JEST', 'PL', 'II', 'III', 'NA', 'KE', 'OK', 'TAK'}
+STOP = {'PIS', 'PO', 'PSL', 'KO', 'TVN', 'RP', 'UE', 'USA', 'AI', 'PAP', 'ON', 'TO', 'NIE', 'JEST', 'PL', 'II', 'III', 'NA', 'KE', 'OK', 'TAK',
+        'UWAGA', 'PILNE', 'ME', 'MSZ', 'TVP', 'KPRM', 'SEJM', 'RM', 'ŻE', 'JAK', 'CO', 'ALE', 'DLA', 'PO', 'BO', 'TU', 'WAŻNE', 'STOP', 'NOWE', 'TAK', 'BRAWO', 'HIT'}
 
 
 def candidates(days=45, limit=24):
@@ -217,7 +244,9 @@ def candidates(days=45, limit=24):
     for title in PublicRecord.objects.filter(fetched_at__gte=since).exclude(title='').values_list('title', flat=True)[:3000]:
         m = PRINT_SUBJECT.search(title)
         if m:
-            subjects[' '.join(m.group(1).strip().split()[:4])] += 1
+            subject = ' '.join(m.group(1).strip(' -–—"„”').split()[:4])
+            if len(subject) >= 5 and not subject.lower().startswith(('zmianie', 'niektórych')):
+                subjects[subject] += 1
     acronyms = Counter()
     for text in PoliticalPost.objects.filter(published_at__gte=since).values_list('text', flat=True)[:5000]:
         for a in set(ACRONYM.findall(text)):
