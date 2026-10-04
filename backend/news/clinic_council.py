@@ -191,6 +191,8 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
         raise ClinicAIError(f'{service}_key_missing')
     if not registry.reserve(member):
         raise ClinicAIError(f'{service}_daily_limit')
+    from news.mechanik import alias
+    model = alias(service, model)  # zamiennik nazwy zapisany przez Mechanika (np. model przemianowany u dostawcy)
     system += registry.CHARTER_SUMMARY
     if service == 'gemini':
         return _ask_gemini(model, system, user, schema, max_tokens)

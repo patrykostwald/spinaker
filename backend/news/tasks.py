@@ -460,3 +460,13 @@ def thread_reviews_task():
         return {'status': 'disabled'}
     backfill_queue()
     return run_queue(limit=10)
+
+
+@shared_task
+def mechanik_task():
+    """Co godzinę: modele Konsylium z błędem 404/400 albo zawieszone - sprawdzenie u dostawcy, próba, zamiennik nazwy."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import mechanik
+    return mechanik.step()

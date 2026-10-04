@@ -43,6 +43,7 @@ REGISTRY = {
     'narrative-threads': agent('Spinka narracji dnia', 'Układa spinkę narracji dnia dla każdej strony według jawnego kryterium.', 'news.tasks.narrative_thread_task', 'THREADS_ENABLED'),
     'signal-threads': agent('Sygnały i narracje', 'Bez AI wykrywa sygnały lobbingu przy drukach i nowe narracje; układa szkice spinek.', 'news.tasks.signal_threads_task', 'THREADS_ENABLED'),
     'thread-review': agent('Kontrola spinek', 'Miernik, recenzent merytoryczny, redaktor tytułów i językoznawca poprawiają każdą spinkę Dr. Spina; zdejmują ją tylko przy odrzuceniu.', 'news.tasks.thread_reviews_task', 'THREADS_ENABLED'),
+    'mechanik': agent('Mechanik', 'Co godzinę naprawia połączenia z modelami: sprawdza listę modeli u dostawcy, przywraca działające, podpina następcę przemianowanego modelu.', 'news.tasks.mechanik_task', 'AGENTS_ENABLED'),
     'ekspert-ai': agent('Ekspert AI', 'Raz w tygodniu stan wiedzy o AI ze znalezisk Pielgrzyma; wskazuje Rekruterowi modele do egzaminu.', 'news.tasks.ekspert_ai_task', 'AGENTS_ENABLED'),
     'krs': agent('Agent KRS', 'Sprawdza powiązania osób z podmiotami KRS.', 'news.tasks.krs_agent_task', 'KRS_AGENT_ENABLED', cost='krs'),
     'seba': agent('Seba', 'Krytycznie ocenia propozycje agentów.', 'news.tasks.seba_task', 'SEBA_ENABLED'),

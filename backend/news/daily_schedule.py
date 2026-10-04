@@ -12,6 +12,7 @@ BEAT_PLAN = {
     'signal-threads-daily': ('signal_threads_task', {'hour': 22, 'minute': 20}),
     'thread-reviews-20m': ('thread_reviews_task', {'minute': '*/20'}),
     'ekspert-ai-daily': ('ekspert_ai_task', {'hour': 3, 'minute': 40}),
+    'mechanik-1h': ('mechanik_task', {'minute': 23}),  # właściciel 5.10: agent naprawiający połączenia z modelami
     'narrative-thread-daily': ('narrative_thread_task', {'hour': 21, 'minute': 45}),
     'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),
     'duty-15m': ('duty_task', {'minute': '*/5'}),  # właściciel 5.10: jak najczęściej
