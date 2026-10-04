@@ -77,10 +77,10 @@ def sync_diagnosis_thread(diagnosis_id):
         PersonalContextThread.objects.filter(diagnosis=diagnosis).update(is_public=False)
         return None
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
-        'title': short('Rozkład: ' + diagnosis.headline, 80),
+        'title': short('Rozkład: ' + diagnosis.headline, 65),
         'description': 'Spinka Dr. Spina (AI), ułożona automatycznie z opublikowanej diagnozy.',
         'is_public': False, 'published_at': diagnosis.reviewed_at or diagnosis.diagnosed_at or diagnosis.created_at})
-    title = short('Rozkład: ' + diagnosis.headline, 80)
+    title = short('Rozkład: ' + diagnosis.headline, 65)
     payload = boxes(diagnosis)
     existing = list(thread.items.values('box_data', 'note', 'link_note'))
     if existing != payload:

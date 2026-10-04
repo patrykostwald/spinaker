@@ -8772,3 +8772,30 @@ html { scrollbar-width: thin; }
 .sc-hscroll__arrow:hover { color: var(--sc-text); }
 .sc-hscroll__arrow--prev { left: -8px; } .sc-hscroll__arrow--next { right: -8px; }
 @media (hover: none) { .sc-hscroll__arrow { opacity: .8; } }
+
+/* strzałka powrotu ‹ w lewym marginesie, na wysokości boksów; jak strzałki przewijania */
+.sc-trop-overlay__side-back { position: absolute !important; left: calc(max(0px, (100% - 1180px) / 2) + var(--sc-page-gutter) + 40px) !important; top: 160px;
+  transform: translateY(-50%) !important; width: 36px; height: 36px; padding: 0 !important; font-size: 28px !important; line-height: 1; color: var(--sc-text-3) !important; }
+.sc-trop-overlay__body:hover .sc-trop-overlay__side-back { transform: translateY(-50%) !important; }
+.sc-trop-overlay__side-back:hover { color: var(--sc-text) !important; }
+@media (max-width: 1280px) { .sc-trop-overlay__side-back { display: block; } }
+@media (max-width: 767px) { .sc-trop-overlay__side-back { display: none; } }
+/* pasek „dziś w danych” czytelniejszy */
+.sc-ticker { font-size: 13.5px; color: var(--sc-text); }
+.sc-ticker__row time { color: var(--sc-text-2); font-weight: 500; }
+
+/* wiersz listy: tytuł w jednym wierszu, podtytuł w dwóch, wiersz nieco wyższy (właściciel 4.10) */
+.sc-trow__title { -webkit-line-clamp: 1 !important; }
+.sc-trow__desc { white-space: normal !important; display: -webkit-box !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 4px; }
+.sc-thread-feed__list > li .sc-trow, .sc-spin-of-day .sc-trow { padding-block: 12px; }
+
+/* stopka menu: większe pismo, równe odstępy (także ikonka motywu nad „O nas”), podniesiona (właściciel 4.10) */
+@media (min-width: 768px) {
+  .sc-rail { padding-bottom: 44px !important; }
+  .sc-rail .sc-rail__foot { gap: 9px !important; }
+  .sc-rail .sc-rail__foot p { gap: 9px !important; font-size: 13px !important; }
+  .sc-rail .sc-rail__foot p a { line-height: 18px; }
+  .sc-rail .sc-rail__foot > button { height: 18px !important; }
+  .sc-rail .sc-rail__foot > button svg { transform: translate(6px, 0) !important; }
+}
+@media (min-width: 768px) { .sc-rail .sc-rail__foot > button { margin-bottom: 6px !important; } }

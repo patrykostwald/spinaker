@@ -93,12 +93,12 @@ def sync_message(message_id):
         return None
     best = eligible[0]
     thread, _ = PersonalContextThread.objects.get_or_create(narrative_message=message, defaults={
-        'title': short('Narracja dnia: ' + best['point']['title'], 80), 'published_at': timezone.now()})
+        'title': short('Narracja dnia: ' + best['point']['title'], 65), 'published_at': timezone.now()})
     data = payload(message, best)
     if list(thread.items.values('box_data', 'note', 'link_note')) != data:
         thread.items.all().delete()
         PersonalContextThreadItem.objects.bulk_create([PersonalContextThreadItem(thread=thread, position=i, **row) for i, row in enumerate(data)])
-    thread.title = short('Narracja dnia: ' + best['point']['title'], 80)
+    thread.title = short('Narracja dnia: ' + best['point']['title'], 65)
     thread.description, thread.is_public, thread.narrative_score = CRITERION, False, best['score']
     thread.save(update_fields=['title', 'description', 'is_public', 'narrative_score', 'updated_at'])
     from news.thread_review import enqueue

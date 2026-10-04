@@ -35,7 +35,7 @@ GRAPH_VIDEO = 'https://graph-video.facebook.com'
 BSKY = 'https://bsky.social/xrpc'
 VIDEO_NAME = re.compile(r'^\d+-[0-9a-f]{20}\.mp4$')
 HASHTAGS = '#polityka #spin #edukacjamedialna #sprawdzam #dezinformacja'
-FOOTER = 'Rządzący i opozycja — ta sama miara. Bez reklam i bez pieniędzy partii.'
+FOOTER = 'Rządzący i opozycja: ta sama miara. Bez reklam i bez pieniędzy partii.'
 
 
 def _env(name: str) -> str:
@@ -293,7 +293,7 @@ def _mail(to: str, subject: str, body: str, attachment: Path | None = None, soci
 def post_manual(path: Path, caption: str, link: str) -> tuple[str, str]:
     body = ('Gotowy film do wrzucenia na TikTok i YouTube Shorts (w załączniku).\n\n'
             f'Opis do wklejenia:\n\n{caption}\n\nLink do diagnozy (do bio / pierwszego komentarza): {link}\n\n'
-            'Jeśli polityk usunie wpis, dostaniesz osobny mail — wtedy usuń film ręcznie z TikToka i YouTube.')
+            'Jeśli polityk usunie wpis, dostaniesz osobny mail - wtedy usuń film ręcznie z TikToka i YouTube.')
     from news.clinic import staff_mail_enabled
     if not _video_email() or (not staff_mail_enabled() and not social_manager()):
         return '', ''  # maile wyłączone: film czeka w panelu, bez wiadomości
@@ -376,7 +376,7 @@ def run(dry_run: bool = False) -> dict:
                 failed.add(platform)
                 alert(f'spin.clinic: wpis na {platform} się nie udał',
                       f'Diagnoza {diagnosis.pk} nie trafiła na {platform}.\n\nOdpowiedź: {str(error)[:500]}\n\n'
-                      'Najczęstsze przyczyny: wygasły token (META_PAGE_TOKEN — uruchom meta_setup), złe hasło aplikacji '
+                      'Najczęstsze przyczyny: wygasły token (META_PAGE_TOKEN - uruchom meta_setup), złe hasło aplikacji '
                       'Bluesky albo limit serwisu. Kolejna próba przy następnym przebiegu.')
                 results.append({'id': diagnosis.pk, 'platform': platform, 'posted': False, 'error': str(error)[:200]})
                 continue
@@ -386,7 +386,7 @@ def run(dry_run: bool = False) -> dict:
 
 
 def unpublish_deleted(diagnosis) -> None:
-    """Autor usunął wpis — usuwamy nasze wpisy z jego treścią; czego nie da się usunąć przez API — alarm."""
+    """Autor usunął wpis - usuwamy nasze wpisy z jego treścią; czego nie da się usunąć przez API - alarm."""
     manual = []
     for item in diagnosis.social_posts.filter(deleted_at__isnull=True):
         try:
@@ -408,7 +408,7 @@ def unpublish_deleted(diagnosis) -> None:
         _mail(_env('SOCIAL_VIDEO_EMAIL') or _env('X_POST_ALERT_EMAIL') or _env('CLINIC_REVIEW_EMAIL'),
               f'spin.clinic: usuń ręcznie film diagnozy {diagnosis.pk}',
               f'Polityk usunął wpis, którego dotyczy diagnoza {diagnosis.pk}. Zasady serwisów: usuwamy też nasze materiały.\n\n'
-              f'Usuń ręcznie: {where}\n(TikTok i YouTube Shorts — jeśli film tam wrzuciłeś.)', social=True)
+              f'Usuń ręcznie: {where}\n(TikTok i YouTube Shorts - jeśli film tam wrzuciłeś.)', social=True)
         # Sending an alert is not proof of deletion. The social panel records confirmation.
     try:
         (video_dir() / video_name(diagnosis.pk)).unlink(missing_ok=True)

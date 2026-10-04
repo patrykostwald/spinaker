@@ -157,7 +157,7 @@ def build_new_narratives(now=None):
             continue
         evidence = {**candidate, 'posts': [{**p, 'published_at': p['published_at'].isoformat()} for p in candidate['posts']], 'method': NEW_METHOD}
         thread = save_signal('new_narrative', digest(['new_narrative', candidate['phrase'], min(ids)]),
-            short('Nowa narracja: ' + candidate['phrase'], 80), NEW_METHOD, narrative_boxes(candidate), evidence,
+            short('Nowa narracja: ' + candidate['phrase'], 65), NEW_METHOD, narrative_boxes(candidate), evidence,
             {'day': day.isoformat(), 'phrase': candidate['phrase'], 'post_ids': sorted(ids), 'authors': candidate['authors'], 'reach': candidate['reach']})
         result.append(thread.pk)
         if used + len(result) == 2:

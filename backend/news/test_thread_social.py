@@ -211,8 +211,9 @@ def test_human_decisions_mail_retry_appeal_and_permissions(setup, monkeypatch):
 
 def test_write_limits_and_legacy_data_preserved(setup):
     client, thread, reader, _, base = setup
-    assert client.post('/api/account/context-threads/', {'title':'x'*81}).status_code == 400
-    assert client.post('/api/account/context-threads/', {'title':'x'*80}).status_code == 201
+    assert client.post('/api/account/context-threads/', {'title':'x'*66}).status_code == 400
+    assert client.post('/api/account/context-threads/', {'title':'x'*65, 'description': 'y'*170}).status_code == 201
+    assert client.post('/api/account/context-threads/', {'title':'Test', 'description': 'y'*171}).status_code == 400
     item = thread.items.first()
     for field, limit in [('note',4000),('link_note',200)]:
         payload = {'title':'Test','items':[{'link_id':item.link_id,field:'x'*(limit+1)}]}

@@ -62,6 +62,18 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
   }, [initial]);
 
   const thread = query.data;
+  // strzałka powrotu na wysokości łańcucha boksów (właściciel 4.10)
+  const [backTop, setBackTop] = useState(160);
+  useEffect(() => {
+    const root = body.current;
+    if (!root) return;
+    const place = () => { const track = root.querySelector('.sc-thread-strip__track, .sc-pick__stage') as HTMLElement | null;
+      if (track) setBackTop(track.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop + track.offsetHeight / 2); };
+    place();
+    const observer = new ResizeObserver(place); observer.observe(root);
+    const mo = new MutationObserver(place); mo.observe(root, { childList: true, subtree: true });
+    return () => { observer.disconnect(); mo.disconnect(); };
+  }, [thread]);
   // po wejściu w spinkę tło odpowiada jej reakcjom; po wyjściu wraca do kolorów działu
   useEffect(() => { setReactionMood(sumCounts(thread?.clips)); }, [thread]);
   useEffect(() => () => setReactionMood(null), []);
@@ -75,7 +87,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
     </div>
     <div className="sc-trop-overlay__body" ref={body}>
       {/* powrót do listy pojawia się po najechaniu na sekcję (właściciel 4.10) */}
-      <button type="button" className="sc-trop-overlay__side-back" onClick={() => window.history.back()}>← Wszystkie spinki</button>
+      <button type="button" className="sc-trop-overlay__side-back" style={{ top: backTop }} aria-label="Wróć do wszystkich spinek" title="Wszystkie spinki" onClick={() => window.history.back()}>‹</button>
       {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinki" />}
       {query.isError && <p role="alert">Nie udało się pobrać spinki. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
       {thread && <>

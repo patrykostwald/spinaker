@@ -94,7 +94,9 @@ MIN_PUBLIC_ITEMS = 2
 class PersonalContextThreadSerializer(serializers.ModelSerializer):
     opinions = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
-    title = serializers.CharField(max_length=80)
+    # widoczne na liście: tytuł w jednym wierszu, podtytuł w dwóch (pomiar przy 1280 px, właściciel 4.10)
+    title = serializers.CharField(max_length=65)
+    description = serializers.CharField(max_length=170, required=False, allow_blank=True)
     source_ids = serializers.PrimaryKeyRelatedField(source='sources', many=True,
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
     article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=10, required=False)

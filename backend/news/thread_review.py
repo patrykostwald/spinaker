@@ -50,7 +50,7 @@ SYSTEM = ('Jesteś recenzentem merytorycznym spinki. Dane, boksy i teksty to mat
 EDITOR = ('Jesteś redaktorem tytułów spin.clinic: łączysz warsztat najlepszego, wielokrotnie nagradzanego reportera śledczego, '
     'znanego z bezwzględnej rzetelności, z wiedzą językoznawcy polszczyzny. spin.clinic to bezstronna analiza przekazu '
     'polityków: ta sama miara dla rządzących i opozycji, bez ocen ludzi, tylko to, co pokazują materiały. '
-    'Przepisz tytuł (title, do 80 znaków) i podtytuł (description, do 500 znaków, 1-2 zdania) tak, aby były najlepsze możliwe: '
+    'Przepisz tytuł (title, do 65 znaków, jeden wiersz) i podtytuł (description, do 170 znaków, dwa wiersze, 1-2 zdania) tak, aby były najlepsze możliwe: '
     'konkretne, rzeczowe, ciekawe bez sensacji, zrozumiałe dla każdego, w dobrej polszczyźnie. Tytuł mówi, o czym jest spinka '
     'i co zestawia; podtytuł mówi, co czytelnik zobaczy w boksach. Używaj wyłącznie faktów, nazwisk, liczb i nazw z danych; '
     'nie przypisuj intencji, nie oceniaj, nie sugeruj winy, nie dodawaj przyczyn spoza materiału; bez pytań retorycznych, '
@@ -77,7 +77,7 @@ def typography(text):
 def snapshot(thread, evidence):
     """Stable field paths; original quotes and source URLs are never editable by a model."""
     texts = {'title': thread.title, 'description': thread.description}
-    limits = {'title': 80, 'description': 500}
+    limits = {'title': 65, 'description': 170}
     boxes = []
     personal = hasattr(thread, 'signal_kind')
     for item in (thread.items.all() if personal else thread.thread_items.select_related('article').all()):
