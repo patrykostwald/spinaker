@@ -290,6 +290,9 @@ def ask_any(prompt, data, schema, force=False, exclude=()):
     Zwraca (odpowiedź, model); WindowClosed, gdy żaden nie odpowiedział."""
     from news.clinic_ai import ClinicAIError
     from news.clinic_council import _members, DEFAULT_COUNCIL
+    from news import dyrygent
+    if not force and not dyrygent.allowed():
+        raise WindowClosed(f'Dyrygent: tryb {dyrygent.mode()} - poziom „{dyrygent._tier.get()}” czeka na wolne limity.')
     tried = []
     for member in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL):
         company = registry.metadata(member)['company']

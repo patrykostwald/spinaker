@@ -480,8 +480,10 @@ def recenzent_task():
         return {'status': 'disabled'}
     from news import recenzent
     from news.agents_common import WindowClosed
+    from news import dyrygent
     try:
-        note = recenzent.step()
+        with dyrygent.tier('strażnicy'):
+            note = recenzent.step()
     except WindowClosed as error:
         return {'status': 'waiting', 'reason': str(error)}
     return {'status': 'ok', 'note': note.pk if note else None}
@@ -495,11 +497,22 @@ def projektant_task():
         return {'status': 'disabled'}
     from news import projektant
     from news.agents_common import WindowClosed
+    from news import dyrygent
     try:
-        note = projektant.step()
+        with dyrygent.tier('nauka'):
+            note = projektant.step()
     except WindowClosed as error:
         return {'status': 'waiting', 'reason': str(error)}
     return {'status': 'ok', 'note': note.pk}
+
+
+@shared_task
+def dyrygent_task():
+    """Co 15 minut tryb według wolnych limitów; raz dziennie plan dnia (hierarchia pętli, kolizje, kolejka budowy)."""
+    from news import dyrygent
+    mode, free = dyrygent.decide()
+    note = dyrygent.plan()
+    return {'status': 'ok', 'free_pct': round(free * 100), 'plan': note.pk}
 
 
 @shared_task
@@ -511,7 +524,10 @@ def badacz_task():
     from news import badacz
     from news.agents_common import WindowClosed
     try:
-        return {'status': 'ok', **{k.replace('ź', 'z').replace('ę', 'e').replace('ś', 's'): v for k, v in badacz.step().items()}}
+        from news import dyrygent
+        with dyrygent.tier('nauka'):
+            done = badacz.step()
+        return {'status': 'ok', **{k.replace('ź', 'z').replace('ę', 'e').replace('ś', 's'): v for k, v in done.items()}}
     except WindowClosed as error:
         return {'status': 'waiting', 'reason': str(error)}
 
@@ -523,7 +539,9 @@ def opiekunowie_task():
     if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
         return {'status': 'disabled'}
     from news import opiekunowie
-    done = opiekunowie.step()
+    from news import dyrygent
+    with dyrygent.tier('niezawodność'):
+        done = opiekunowie.step()
     failed = sum(isinstance(v, str) and v.startswith('błąd') for v in done.values())
     return {'status': 'error' if failed else 'ok', 'failed': failed}
 
@@ -543,7 +561,9 @@ def automatyk_task():
     learned = None
     if automatyk.learn_due():  # wolny czas: nauka raz w tygodniu, po przeglądzie
         try:
-            learned = automatyk.learn().pk
+            from news import dyrygent
+            with dyrygent.tier('nauka'):
+                learned = automatyk.learn().pk
         except WindowClosed:
             learned = None
     return {'status': 'ok', 'note': note.pk, 'learned': learned}

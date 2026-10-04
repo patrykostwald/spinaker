@@ -23,6 +23,16 @@ Przed oddaniem czegokolwiek z boksami sprawdź każdy punkt:
 3. Panel designu: niezależni recenzenci (UX/wygląd, czytelnik-laik, ruch i dostępność) oceniają zrzuty i dają konkretne poprawki.
 4. Poprawki, ponowny pomiar; dopiero potem publikacja. Uwagi właściciela wracają do przewodnika jako nowe zasady.
 
+## Mapa pętli do zadań (właściciel 5.10: „korzystaj z pętli zamiast robić sam”)
+Każde zadanie właściciela przepuszczaj przez pętle w tej kolejności (Claude jest dyrygentem pracy w sesji):
+1. Research: agenci badawczy w sesji (konkurencja, ceny, wzorce) + zbiór źródeł Badacza (backend/news/badacz.py).
+2. Prawnik: twierdzenia publiczne, ceny porównawcze, dane osobowe (zasady w backend/news/pracownia_osint.py: LEGAL).
+3. Design: przewodnik Projektanta + panel designu (UX, laik, dostępność) przed i po budowie.
+4. Budowa: Codex (gdy ma limit; zlecenia małe i średnie) albo Claude; testy.
+5. Strażnicy: Recenzent (teksty), panel designu (zrzuty i pomiar), testy, bezpieczeństwo.
+6. Wdrożenie: komenda dla właściciela; potem opiekunowie pętli i Automatyk przejmują nadzór.
+Hierarchię limitów pilnuje Dyrygent (backend/news/dyrygent.py): treść > strażnicy > niezawodność > rozwój > nauka.
+
 ## Język i komunikacja
 - Z właścicielem po polsku, tylko krótki myślnik „-”, dwukropek przed wyliczeniem, bez powtórzeń.
 - Przeglądy, plany i stan pokazuj graficznie (artefakt), z przełącznikiem „przed / po”, gdy coś się zmienia.
