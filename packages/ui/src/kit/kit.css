@@ -8813,3 +8813,23 @@ html { scrollbar-width: thin; }
 .sc-message-metrics[data-empty] dd strong { color: var(--sc-text-3); }
 .sc-message-metric__tone { font-size: 15px !important; }
 .sc-message-metric__bar span, .sc-message-metrics [class*="bar"] i { background-color: var(--camp); }
+
+/* stopka diagnozy: komentarze przy prawej krawędzi, pod nimi akcje z lewej i „Zgłoś błąd” z prawej (właściciel 4.10) */
+.sc-scan-dg .sc-discussion-counts { align-self: flex-end; text-align: right; margin-left: auto; }
+.sc-scan-dg-foot { flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+.sc-scan-dg-foot .sc-scan-dg-report { margin-left: auto; }
+/* otwarta spinka: bez „Wszystkie spinki” u góry; powrót jako strzałka w cienkim białym kółku na wysokości boksów;
+   tytuł równo z tekstem komentarzy */
+.sc-trop-overlay__back { display: none !important; }
+.sc-trop-overlay__side-back { opacity: 1 !important; pointer-events: auto !important; width: 40px !important; height: 40px !important; border: 1px solid color-mix(in srgb, var(--sc-text) 55%, transparent) !important;
+  border-radius: 50% !important; font-size: 20px !important; line-height: 36px !important; color: var(--sc-text) !important; transition: border-color .2s, background .2s !important; }
+.sc-trop-overlay__side-back:hover { border-color: var(--sc-text) !important; background: color-mix(in srgb, var(--sc-text) 6%, transparent) !important; }
+@media (min-width: 768px) { .sc-trop-overlay__title { left: calc(max(0px, (100% - 1180px) / 2) + var(--sc-page-gutter) + 60px) !important; } }
+/* jedna linia startu: tytuł, boksy i tekst komentarzy; kółko powrotu w kolumnie awatarów (właściciel 4.10) */
+:root { --sc-ov-ind: 60px; }
+.sc-trop-overlay__side-back { left: calc(max(0px, (100% - 1180px) / 2) + var(--sc-page-gutter)) !important; }
+
+/* kółko powrotu (rozmiar awatara) pojawia się, gdy kursor jest po lewej (właściciel 4.10) */
+.sc-trop-overlay__side-back { opacity: 0 !important; pointer-events: none !important; transition: opacity .3s, border-color .2s, background .2s !important; }
+.sc-trop-overlay__body[data-near-left] .sc-trop-overlay__side-back, .sc-trop-overlay__side-back:focus-visible { opacity: 1 !important; pointer-events: auto !important; }
+@media (hover: none) { .sc-trop-overlay__side-back { opacity: 1 !important; pointer-events: auto !important; } }

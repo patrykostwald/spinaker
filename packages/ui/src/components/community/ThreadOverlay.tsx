@@ -64,6 +64,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
   const thread = query.data;
   // strzałka powrotu na wysokości łańcucha boksów (właściciel 4.10)
   const [backTop, setBackTop] = useState(160);
+  const [nearLeft, setNearLeft] = useState(false);
   useEffect(() => {
     const root = body.current;
     if (!root) return;
@@ -85,7 +86,9 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       <span className="sc-trop-overlay__who">{thread ? (thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`) : ''}</span>
       {following !== null && <button type="button" className="sc-trop-overlay__following" onClick={() => viewTransition(() => open(following))}>Następna spinka →</button>}
     </div>
-    <div className="sc-trop-overlay__body" ref={body}>
+    <div className="sc-trop-overlay__body" ref={body} data-near-left={nearLeft || undefined}
+      onMouseMove={event => { const r = body.current?.getBoundingClientRect(); setNearLeft(!!r && event.clientX - Math.max(r.left, (r.left + r.right) / 2 - 590) < 220); }}
+      onMouseLeave={() => setNearLeft(false)}>
       {/* powrót do listy pojawia się po najechaniu na sekcję (właściciel 4.10) */}
       <button type="button" className="sc-trop-overlay__side-back" style={{ top: backTop }} aria-label="Wróć do wszystkich spinek" title="Wszystkie spinki" onClick={() => window.history.back()}>‹</button>
       {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinki" />}

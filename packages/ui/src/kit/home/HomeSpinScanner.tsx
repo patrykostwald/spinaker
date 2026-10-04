@@ -131,11 +131,11 @@ export function HomeSpinScanner({ spin }: { spin: SpinDetailData }) {
     <div className="sc-scan-dg">
       <SpinSummary spin={spin} />
       <DiscussionCounts {...spin} />
-      <footer className="sc-scan-dg-foot"><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie ${spin.id}`)}`}>Zgłoś błąd</a><div className="sc-scan-dg-actions">
+      <footer className="sc-scan-dg-foot"><div className="sc-scan-dg-actions">
         <button ref={expandRef} type="button" aria-expanded={expanded} aria-controls={`scan-details-${spin.id}`} onClick={() => expanded ? collapse() : setExpanded(true)}>{expanded ? "Zwiń uzasadnienie" : "Pokaż uzasadnienie"}</button>
         <button type="button" aria-expanded={sharing} aria-controls={`scan-share-${spin.id}`} onClick={() => setSharing(!sharing)}>Udostępnij</button>
         <Link className="sc-scan-button sc-scan-primary" href={`/klinika/${spin.id}`}>Pełna diagnoza →</Link>
-      </div></footer>
+      </div><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie ${spin.id}`)}`}>Zgłoś błąd</a></footer>
       <div className="sc-scan-expand" data-open={expanded}><div><section id={`scan-details-${spin.id}`} className="sc-scan-details" aria-label="Uzasadnienie" aria-hidden={!expanded}>
         <div className="sc-scan-details-grid">
           <div className="sc-scan-details-col">
