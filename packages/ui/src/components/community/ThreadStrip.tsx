@@ -171,8 +171,11 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         <span className="sc-trow__facts" hidden>{thread.items_count} {plural(thread.items_count, 'boks', 'boksy', 'boksów')}{thread.sources_count ? ` · ${thread.sources_count} ${plural(thread.sources_count, 'źródło', 'źródła', 'źródeł')}` : ''}</span>
       </span>
       {/* bez komentarza w wierszu (właściciel 3.10): tytuł w dwóch wierszach i opis jak na Wykopie, łańcuch przy licznikach */}
+      {/* izba przyjęć: postęp nad komentarzami, pozostałe dni pod nimi (właściciel 4.10) */}
       <span className="sc-trow__side">
+        {thread.admission && thread.admission.mode !== 'first' && thread.admission.open && <span className="sc-trow__adm">{thread.admission.positive}/{thread.admission.needed}</span>}
         <button type="button" className="sc-thread-comment-count" aria-label={`Komentarze: ${commentCount ?? thread.comments_count ?? 0}`} onClick={onFullscreen ? undefined : () => { if (!expanded) toggle(); setShowComments(!showComments); }}><SocialIcon kind="comment" />{commentCount ?? thread.comments_count ?? 0}</button>
+        {thread.admission && thread.admission.mode !== 'first' && <span className="sc-trow__adm">{thread.admission.open ? `zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'czas minął'}</span>}
       </span>
     </header> : full ? <header className="sc-thread-strip__head sc-thread-strip__head--full">
       {/* otwarta spinka: jeden wiersz „Autor: tytuł”, z prawej data i komentarze; „Zgłoś” jest w pasku akcji (właściciel 3.10) */}
@@ -194,7 +197,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       {onFullscreen && <button type="button" className="sc-thread-strip__full" aria-label={`Otwórz spinkę na cały ekran: ${thread.title}`} title="Na cały ekran" onClick={onFullscreen}>⤢</button>}
     </header>}
     {thread.admission?.mode === 'first' && <p className="sc-thread-admission">W izbie przyjęć: przejdzie na główną po pierwszym komentarzu albo reakcji.</p>}
-    {thread.admission && thread.admission.mode !== 'first' && <p className="sc-thread-admission" aria-label="Postęp w izbie przyjęć">
+    {!row && thread.admission && thread.admission.mode !== 'first' && <p className="sc-thread-admission" aria-label="Postęp w izbie przyjęć">
       <span className="sc-thread-admission__bar" aria-hidden="true"><span style={{ width: `${Math.min(100, 100 * thread.admission.positive / thread.admission.needed)}%` }} /></span>
       {thread.admission.open ? `${thread.admission.positive}/${thread.admission.needed} ✓ do głównej · zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'Czas w izbie minął'}
     </p>}

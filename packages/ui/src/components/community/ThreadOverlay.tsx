@@ -68,6 +68,8 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
   return <div className="sc-trop-overlay" role="dialog" aria-modal="true" aria-label={thread ? `Spinka: ${thread.title}` : 'Spinka'}>
     <div className="sc-trop-overlay__bar">
       <button ref={close} type="button" className="sc-trop-overlay__back" onClick={() => window.history.back()}>← Wszystkie spinki</button>
+      {/* tytuł w linii „Wszystkie spinki”, od krawędzi pierwszego boksu; pod nim cały podtytuł (właściciel 4.10) */}
+      {thread && <h1 className="sc-trop-overlay__title"><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</h1>}
       <span className="sc-trop-overlay__who">{thread ? (thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`) : ''}</span>
       {following !== null && <button type="button" className="sc-trop-overlay__following" onClick={() => viewTransition(() => open(following))}>Następna spinka →</button>}
     </div>

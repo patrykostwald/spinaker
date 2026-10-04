@@ -8715,3 +8715,45 @@ details.sc-source-disclosure, details.sc-deleted, .sc-clinic-discussion, .sc-f2-
 .sc-ticker__row li + li::before { content: ""; display: inline-block; width: 4px; height: 4px; margin: 0 22px 2px -26px; border-radius: 50%; background: var(--sc-text-3); opacity: .5; }
 @keyframes sc-ticker { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .sc-ticker { overflow-x: auto; } .sc-ticker__track { animation: none; } }
+
+.sc-trop-overlay__bar { position: relative; }
+.sc-trop-overlay__title { position: absolute; top: 50%; transform: translateY(-50%); margin: 0;
+  left: calc(max(0px, (100% - 1180px) / 2) + var(--sc-page-gutter) + 60px); right: 190px;
+  font-size: 18px; font-weight: 500; color: var(--sc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-trop-overlay__title span { color: var(--sc-text-3); }
+.sc-trop-overlay__body > article .sc-thread-strip__head--full .sc-fullhead { display: none; }
+.sc-trop-overlay__body > article .sc-thread-strip__head--full:not(:has(.sc-repins)) { display: none; }
+.sc-trop-overlay__desc { margin-top: 4px !important; margin-bottom: 4px !important; font-size: 15px; line-height: 1.55; white-space: normal; overflow: visible; -webkit-line-clamp: unset; display: block; }
+@media (max-width: 767px) { .sc-trop-overlay__title { position: static; transform: none; white-space: normal; font-size: 16px; } }
+
+.sc-trow__side { display: grid !important; justify-items: center; align-content: center; gap: 4px; }
+.sc-trow__adm { font-size: 11.5px; color: var(--sc-text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* otwarta spinka: wspólne wcięcie (za „Wszystkie spinki”), tytuł w linii nawigacji równo z boksami */
+:root { --sc-ov-ind: 150px; }
+@media (min-width: 768px) {
+  .sc-trop-overlay__body > article .sc-thread-strip__track { padding-left: var(--sc-ov-ind); }
+  .sc-trop-overlay__body > article .sc-pick { margin-left: var(--sc-ov-ind); }
+  .sc-trop-overlay__desc { margin-left: var(--sc-ov-ind) !important; }
+  .sc-trop-overlay__body > article .sc-thread-strip__head--full { padding-left: var(--sc-ov-ind); }
+  .sc-trop-overlay__title { left: calc(max(0px, (100% - 1180px) / 2) + var(--sc-page-gutter) + var(--sc-ov-ind)); }
+}
+
+/* jedna typografia w całym serwisie, jak w spinkach i menu (właściciel 4.10): lżejsze odmiany, spokojniejsze nagłówki */
+.sc-page h1, .sc-clinic-group h2, .sc-ind-card h2, .sc-method h2, main h1, main h2 { font-weight: 600 !important; letter-spacing: -.01em; }
+.sc-spin-row__title, .sc-spin-row__title a, .sc-scan-dg-lead, .sc-scan-p-name, .sc-message-card h3 { font-weight: 600 !important; }
+.sc-spin-row__title { font-size: 17px !important; line-height: 1.35 !important; }
+.sc-scan-m-num, .sc-spin-row [class*="num"], .sc-spin-row b { font-weight: 600 !important; }
+.sc-clinic-camp-head, [class*="camp-head"], [class*="camp__head"] { font-size: 13px !important; font-weight: 600 !important; letter-spacing: .14em !important; }
+.sc-clinic-kicker, .sc-spin-row__author { font-weight: 500 !important; }
+/* karty diagnoz: wysokość z treści, stopka zawsze w całości przy dolnej krawędzi */
+.sc-spin-row { height: auto !important; max-height: none !important; overflow: visible !important; display: grid; }
+.sc-spin-row__body { display: flex; flex-direction: column; }
+.sc-spin-row__body > :last-child { margin-top: auto; }
+/* „Praca Kliniki”: okres tuż pod tytułem, liczby i odnośniki dociągnięte do dołu, równo z wykresem obok (właściciel 4.10) */
+.sc-ind-show { align-items: stretch !important; }
+.sc-ind-show__main { display: flex !important; flex-direction: column; }
+.sc-ind-show__main .sc-ind-note { order: -1; margin-top: 2px !important; margin-bottom: 0 !important; }
+.sc-ind-show__main > :first-child { order: -2; }
+.sc-ind-show__tiles { margin-top: auto !important; }
+.sc-ind-show__actions { margin-top: 18px !important; margin-bottom: 0 !important; }
+.sc-ind-show__main > .sc-section-header { margin-bottom: 4px !important; padding-bottom: 0 !important; }
