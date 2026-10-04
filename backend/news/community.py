@@ -138,11 +138,14 @@ def public_threads(user=None):
     from news.clinic import published_diagnoses
     from news.thread_review import visible_statuses
     from news.account_models import MutedUser
+    from news.diagnosis_threads import min_intensity as diagnosis_min_intensity
     muted = MutedUser.objects.filter(user=user).values('target_id') if user and user.is_authenticated else []
     return (PersonalContextThread.objects.filter(is_public=True, hidden_at__isnull=True)
             .filter(Q(owner__isnull=False) | Q(publication_review__status__in=visible_statuses()))
             .exclude(owner_id__in=muted)
             .filter(Q(diagnosis__isnull=True) | Q(diagnosis__in=published_diagnoses()))
+            # spinki z diagnoz tylko od 70/100 (właściciel 5.10); inne rodzaje spinek Dr. Spina bez zmian
+            .exclude(diagnosis__intensity__lt=diagnosis_min_intensity())
             .filter(Q(narrative_message__isnull=True) | Q(narrative_message__status='approved'))
             .annotate(items_count=Count('items', distinct=True), visible_comments_count=Count('comments', filter=Q(comments__deleted_at__isnull=True, comments__hidden_at__isnull=True) & ~Q(comments__author_id__in=muted), distinct=True)).filter(items_count__gte=MIN_PUBLIC_ITEMS))
 

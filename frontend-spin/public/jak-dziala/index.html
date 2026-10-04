@@ -17,7 +17,7 @@ body.portrait #stage { width: 600px; height: 1000px; }
 .sc { position: absolute; inset: 0 0 132px; display: grid; place-items: center; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s .6s; }
 .sc.on { opacity: 1; visibility: visible; transition: opacity .6s ease .15s, visibility 0s; }
 /* podpis sceny i postęp */
-#cap { position: absolute; left: 64px; right: 64px; bottom: 74px; min-height: 52px; display: grid; align-content: end; text-align: center; font-size: 20px; line-height: 1.45; color: var(--t2); }
+#cap { position: absolute; left: 64px; right: 64px; top: calc(100% - 126px); min-height: 52px; transition: top .45s var(--ease); display: grid; align-content: start; text-align: center; font-size: 23px; line-height: 1.45; color: var(--t1); text-wrap: balance; }
 #cap b { color: var(--t1); font-weight: 600; }
 #cap span { transition: opacity .35s ease, transform .35s var(--ease); }
 #cap span.out { opacity: 0; transform: translateY(8px); }
@@ -237,6 +237,17 @@ body.portrait #s8 .logo { font-size: 56px; }
     document.body.classList.toggle('portrait', portrait);
     var w = portrait ? 600 : 1280, h = portrait ? 1000 : 720;
     stage.style.transform = 'translate(-50%, -50%) scale(' + Math.min(innerWidth / w, innerHeight / h) + ')';
+    placeCap();
+  }
+  // napis zaraz pod treścią bieżącej sceny, nie przy samym dole (właściciel 5.10: ludzie nie zauważali napisów)
+  var capBox = document.getElementById('cap');
+  function placeCap() {
+    var on = document.querySelector('.sc.on'), body = on && on.firstElementChild;
+    if (!body) return;
+    var k = stage.getBoundingClientRect().height / stage.offsetHeight || 1;
+    var bottom = (body.getBoundingClientRect().bottom - stage.getBoundingClientRect().top) / k;
+    var max = stage.offsetHeight - 132;
+    capBox.style.top = Math.min(max, Math.max(0, bottom) + 28) + 'px';
   }
   addEventListener('resize', fit); fit();
 
@@ -311,7 +322,7 @@ body.portrait #s8 .logo { font-size: 56px; }
       s.classList.toggle('on', k === i);
       if (k === i) { s.querySelectorAll('.up, .cursor, .mini > *').forEach(function (e) { e.style.animation = 'none'; e.offsetWidth; e.style.animation = ''; }); }
     });
-    caption(S[i].cap);
+    caption(S[i].cap); setTimeout(placeCap, 80); setTimeout(placeCap, 900);
     bar.querySelectorAll('b').forEach(function (b, k) { b.style.width = k < i ? '100%' : '0'; });
     if (scenes[S[i].id]) scenes[S[i].id](document.getElementById(S[i].id));
     later(next, S[i].t);

@@ -109,8 +109,9 @@ def sync_diagnosis_thread(diagnosis_id):
     if not visible:
         PersonalContextThread.objects.filter(diagnosis=diagnosis).update(is_public=False)
         return None
-    # Nowe spinki tylko z mocnych diagnoz (właściciel 5.10: od 70/100); istniejące zostają.
-    if (diagnosis.intensity or 0) < min_intensity() and not PersonalContextThread.objects.filter(diagnosis=diagnosis).exists():
+    # Spinki tylko z mocnych diagnoz (właściciel 5.10: od 70/100); słabsze nie powstają, a dawne są ukryte.
+    if (diagnosis.intensity or 0) < min_intensity():
+        PersonalContextThread.objects.filter(diagnosis=diagnosis).update(is_public=False)
         return None
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
         'title': short(diagnosis.headline, 65), 'description': description(diagnosis),

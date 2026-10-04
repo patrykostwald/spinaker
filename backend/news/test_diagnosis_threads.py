@@ -32,7 +32,7 @@ def diagnosis(key='1', camp='government', **kwargs):
     post = PoliticalPost.objects.create(account=account, post_id=key, url=f'https://x.com/posel{key}/status/{key}',
         text='Podatki spadły o połowę.', published_at=timezone.now(), camp_at_collection=camp)
     return SpinDiagnosis.objects.create(post=post, status=kwargs.pop('status', 'approved'), headline='Podatki',
-        intensity=72, verdict='spin', techniques=[{'name': 'wybiórczość', 'explanation': 'Pominięto część danych.'}],
+        intensity=kwargs.pop('intensity', 72), verdict='spin', techniques=[{'name': 'wybiórczość', 'explanation': 'Pominięto część danych.'}],
         usage={'council': {'members': [{'model': 'a', 'verdict': 'spin'}, {'model': 'b', 'verdict': 'spin'},
                                      {'model': 'c', 'verdict': 'no_spin'}]}}, **kwargs)
 
@@ -184,13 +184,26 @@ def test_community_read_write_flags(settings, threads, accounts):
     assert client.post('/api/account/context-threads/', {'title': 'Szkic'}, format='json').status_code == (201 if threads and accounts else 403)
 
 
-def test_new_threads_only_from_strong_diagnoses_existing_stay(monkeypatch):
-    """Właściciel 5.10: nowe spinki z diagnoz od 70/100; spinki, które już są, zostają."""
+def test_threshold_follows_setting(monkeypatch):
+    """Właściciel 5.10 (wieczór): spinki z diagnoz tylko od progu; po podniesieniu progu słabsze znikają z listy."""
     monkeypatch.setenv('DRSPIN_THREAD_MIN_INTENSITY', '80')
-    weak = diagnosis('7')  # 72 < 80: bez nowej spinki
+    weak = diagnosis('7')  # 72 < 80: bez spinki
     assert not PersonalContextThread.objects.filter(diagnosis=weak).exists()
     monkeypatch.setenv('DRSPIN_THREAD_MIN_INTENSITY', '70')
-    sync_diagnosis_thread(weak.pk)
-    assert PersonalContextThread.objects.filter(diagnosis=weak).exists()
+    assert sync_diagnosis_thread(weak.pk) is not None
     monkeypatch.setenv('DRSPIN_THREAD_MIN_INTENSITY', '90')
-    assert sync_diagnosis_thread(weak.pk) is not None  # istniejąca spinka nie znika po podniesieniu progu
+    assert sync_diagnosis_thread(weak.pk) is None
+    assert not PersonalContextThread.objects.get(diagnosis=weak).is_public
+
+
+def test_below_70_no_spinka_and_old_one_hidden():
+    from news.community import public_threads
+    strong = diagnosis(key='71')
+    assert public_threads().filter(diagnosis=strong).exists()
+    weak = diagnosis(key='72', intensity=50)
+    assert not PersonalContextThread.objects.filter(diagnosis=weak).exists()
+    # dawna spinka ze słabej diagnozy znika z listy, nawet gdy recenzja ją wcześniej opublikowała
+    strong.intensity = 55
+    strong.save()
+    sync_diagnosis_thread(strong.pk)
+    assert not public_threads().filter(diagnosis=strong).exists()
