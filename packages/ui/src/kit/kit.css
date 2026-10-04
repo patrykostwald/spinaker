@@ -8523,3 +8523,7 @@ body:has(.sc-rail) .sc-social-layout { position: relative; z-index: 1; }
 .sc-thread-strip__box > .sc-x-post-card > a { font-size: 11.5px; color: var(--sc-text-3); text-decoration: none; }
 .sc-thread-strip__box > .sc-x-post-card > a:first-of-type { margin-top: auto; padding-top: 8px; }
 .sc-thread-strip__box > .sc-x-post-card > a:hover { color: var(--sc-text); }
+/* dymek spinki kilka pikseli wyżej, nitka dłuższa (właściciel 4.10) */
+.sc-joint__pop { bottom: calc(100% + 22px) !important; }
+.sc-joint::before { height: calc(50% + 22px); }
+.sc-thread-strip__track:has(.sc-joint.is-open), .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open) { padding-top: 244px; }
