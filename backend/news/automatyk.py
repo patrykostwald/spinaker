@@ -38,6 +38,11 @@ LOOPS = [
         ('Kontrola dostępności', 'schedule-health', 1)]),
     ('spin.clinic', 'Konta polityków', 'codziennie', [('Strażnik kont', 'warden', 1), ('Drugi klucz', 'second-key', 1), ('Agent KRS', 'krs', 0)]),
     ('spin.clinic', 'Raporty', 'w nocy i co tydzień', [('Raportysta', 'raportysta', 0), ('Seba', 'seba', 1), ('Raport tygodnia', 'weekly', 0)]),
+    ('oba portale', 'Research', 'codziennie 3:20', [('Badacz: odkrywa źródła', 'badacz', 0), ('Drugi model: ocena jakości', 'badacz', 1),
+        ('Automatyk, Projektant, Pracownia: czytają', 'automatyk', 0), ('Uśpienie martwych źródeł', 'badacz', 1)]),
+    ('oba portale', 'Design', 'każda zmiana i co tydzień', [('Projektant: wiedza i przewodnik', 'projektant', 0), ('Claude: projekt', None, 0),
+        ('Panel designu: UX, laik, dostępność', None, 1), ('Claude: poprawki i pomiar', None, 0), ('Projektant: przegląd stron', 'projektant', 1),
+        ('Recenzent: teksty', 'recenzent', 1), ('Właściciel: odbiór', None, 1)]),
     ('przeszłość.today', 'Pracownia OSINT', 'co tydzień', [('Kartograf, Zwiadowca, Wynalazca, Technolog', 'pracownia-osint', 0),
         ('Prawnik', 'pracownia-osint', 1), ('Architekt', 'pracownia-osint', 0), ('Claude i Codex', None, 0), ('Recenzent', 'recenzent', 1),
         ('Projektant', 'projektant', 1), ('Dziennikarz testowy i Kontroler', 'pracownia-osint', 1), ('Właściciel: wdrożenie', None, 1)]),
@@ -267,7 +272,7 @@ def learn(force=False):
         names = list(WIDE_FEEDS)
         start = (AgentNote.objects.filter(agent='automatyk', kind='report', scores__mode='szerokie').count() * WIDE_BATCH) % len(names)
         batch = (names + names)[start:start + WIDE_BATCH]
-        items += fetch({n: WIDE_FEEDS[n] for n in batch})
+        items += fetch({**{n: WIDE_FEEDS[n] for n in batch}, **_found('automatyzacja')})
         mode = 'szerokie'
     if not items:
         raise common.WindowClosed('Brak nowości o automatyzacji do nauki.')
@@ -307,3 +312,12 @@ def readable(r):
     if r.get('check'):
         lines += ['', f"Sprawdzenie drugiego eksperta: {r['check']}"]
     return chr(10).join(lines).strip()
+
+
+def _found(topic):
+    """Odkryte przez Badacza źródła tematu (pętla researchu); pusto, gdy Badacz jeszcze nic nie przyjął."""
+    try:
+        from news import badacz
+        return badacz.feeds(topic)
+    except Exception:  # noqa: BLE001 - research nie może zatrzymać agenta
+        return {}

@@ -253,7 +253,7 @@ def _last(agent, kind=None):
 def feed_items(limit=6, feeds=None):
     import feedparser
     items = []
-    for name, url in (feeds or FEEDS).items():
+    for name, url in (feeds or {**FEEDS, **_found('osint')}).items():
         try:
             parsed = feedparser.parse(requests.get(url, timeout=15, headers=UA).content)
         except requests.RequestException:
@@ -422,7 +422,7 @@ def kontroler(force=False):
 
 # ---------- Technolog ----------
 def technolog(force=False):
-    items = feed_items(feeds=TECH_FEEDS, limit=4)
+    items = feed_items(feeds={**TECH_FEEDS, **_found('ai')}, limit=4)
     if not items:
         raise common.WindowClosed('Brak wydań narzędzi do przejrzenia.')
     urls = {i['url'] for i in items}
@@ -531,3 +531,12 @@ def step(force=False, only=None):
         except Exception as error:  # noqa: BLE001 - raport dla panelu, kolejne role działają dalej
             done[agent] = f'błąd: {type(error).__name__}: {str(error)[:160]}'
     return done
+
+
+def _found(topic):
+    """Odkryte przez Badacza źródła tematu (pętla researchu); pusto, gdy Badacz jeszcze nic nie przyjął."""
+    try:
+        from news import badacz
+        return badacz.feeds(topic)
+    except Exception:  # noqa: BLE001 - research nie może zatrzymać agenta
+        return {}

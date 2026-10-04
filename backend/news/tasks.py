@@ -503,6 +503,20 @@ def projektant_task():
 
 
 @shared_task
+def badacz_task():
+    """Raz dziennie: pętla researchu - nowe źródła dla wszystkich agentów (Badacz, właściciel 5.10)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import badacz
+    from news.agents_common import WindowClosed
+    try:
+        return {'status': 'ok', **{k.replace('ź', 'z').replace('ę', 'e').replace('ś', 's'): v for k, v in badacz.step().items()}}
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+
+
+@shared_task
 def opiekunowie_task():
     """Co godzinę: opiekunowie pętli (alarmy, naprawy, usprawnienia po kolei, bezpieczeństwo raz w tygodniu na pętlę)."""
     import os

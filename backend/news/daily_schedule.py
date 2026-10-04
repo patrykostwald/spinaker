@@ -15,6 +15,7 @@ BEAT_PLAN = {
     'mechanik-1h': ('mechanik_task', {'minute': 23}),
     'recenzent-2h': ('recenzent_task', {'minute': 41, 'hour': '*/2'}),  # właściciel 5.10: recenzuje wszystko, co trafia na stronę
     'projektant-daily': ('projektant_task', {'hour': 4, 'minute': 20}),
+    'badacz-daily': ('badacz_task', {'hour': 3, 'minute': 20}),  # właściciel 5.10: pętla researchu
     'opiekunowie-1h': ('opiekunowie_task', {'minute': 17}),  # właściciel 5.10: opiekunowie każdej pętli
     'automatyk-daily': ('automatyk_task', {'hour': '6,13', 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
     'pracownia-osint': ('pracownia_osint_task', {'hour': '4,16', 'minute': 50}),  # właściciel 5.10: agenci rozwijający przeszłość.today

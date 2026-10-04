@@ -17,6 +17,12 @@ Przed oddaniem czegokolwiek z boksami sprawdź każdy punkt:
 8. **Styl:** czysto, minimalistycznie, najwyżej 2 kroje; raporty dla właściciela w ciemnym motywie spin.clinic.
 9. **Sprawdzenie:** zrzut ekranu 1440 i 390 px przed oddaniem; zmierz położenia (górne i dolne krawędzie) zamiast zgadywać.
 
+## Pętla designu (obowiązkowa przed oddaniem strony, widoku, raportu lub artefaktu)
+1. Projekt według przewodnika Projektanta (backend/news/projektant.py: GUIDE i CANON) i listy kontrolnej wyżej.
+2. Zrzuty 1440 i 390 px oraz pomiar położeń.
+3. Panel designu: niezależni recenzenci (UX/wygląd, czytelnik-laik, ruch i dostępność) oceniają zrzuty i dają konkretne poprawki.
+4. Poprawki, ponowny pomiar; dopiero potem publikacja. Uwagi właściciela wracają do przewodnika jako nowe zasady.
+
 ## Język i komunikacja
 - Z właścicielem po polsku, tylko krótki myślnik „-”, dwukropek przed wyliczeniem, bez powtórzeń.
 - Przeglądy, plany i stan pokazuj graficznie (artefakt), z przełącznikiem „przed / po”, gdy coś się zmienia.

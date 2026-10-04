@@ -112,7 +112,7 @@ def guide():
 def feed_items(limit=8):
     import feedparser
     items = []
-    for name, url in FEEDS.items():
+    for name, url in {**FEEDS, **_found('ux')}.items():
         try:
             response = requests.get(url, timeout=15, headers={'User-Agent': 'spin.clinic Projektant (+https://spin.clinic)'})
             parsed = feedparser.parse(response.content)
@@ -258,3 +258,12 @@ def readable_audit(data):
     if data.get('auto_checks'):
         lines += ['', 'Sprawdzenia automatyczne:'] + [f"- {a['page']}: {a['check']}" for a in data['auto_checks']]
     return chr(10).join(lines) or 'Bez uwag.'
+
+
+def _found(topic):
+    """Odkryte przez Badacza źródła tematu (pętla researchu); pusto, gdy Badacz jeszcze nic nie przyjął."""
+    try:
+        from news import badacz
+        return badacz.feeds(topic)
+    except Exception:  # noqa: BLE001 - research nie może zatrzymać agenta
+        return {}
