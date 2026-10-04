@@ -5,6 +5,7 @@ import { apiWrite, ApiValidationError } from "../lib/api";
 import { useAccount } from "../lib/account";
 import { Button } from "../kit/Button";
 import { AccountDialog } from "./AccountDialog";
+import { Loading } from "../kit/Loading";
 
 export function AccountDelete() {
   const account = useAccount();
@@ -26,7 +27,7 @@ export function AccountDelete() {
       requestAnimationFrame(() => formRef.current?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus());
     } finally { setPending(false); }
   }
-  return <main className="sc-account-recovery"><h1 className="sc-t-title-m">Usuń konto</h1>{account.isPending ? <p role="status">Wczytywanie…</p> : !account.data?.authenticated ? <Button type="button" variant="primary" size="md" onClick={() => setLogin(true)}>Zaloguj się</Button> : <form ref={formRef} onSubmit={submit} className="sc-account-form" aria-busy={pending}>
+  return <main className="sc-account-recovery"><h1 className="sc-t-title-m">Usuń konto</h1>{account.isPending ? <p role="status"><Loading label="Wczytywanie" /></p> : !account.data?.authenticated ? <Button type="button" variant="primary" size="md" onClick={() => setLogin(true)}>Zaloguj się</Button> : <form ref={formRef} onSubmit={submit} className="sc-account-form" aria-busy={pending}>
     <p>Usuniemy Twoje dane osobowe oraz konto. Twoje publiczne i prywatne spinki, opinie, ulubione i obserwowani również znikną. Tego nie można cofnąć.</p>
     <Button href="/api/account/export/" variant="secondary" size="md">Pobierz kopię danych (JSON)</Button>
     <label>Hasło<input name="password" required type="password" autoComplete="current-password" maxLength={256} aria-invalid={!!fields.password} aria-describedby={fields.password ? "delete-password-error" : "delete-password-help"} /><span id="delete-password-help" className="sc-t-caption sc-text-2">Konto z Google bez hasła? Ustaw hasło przez „Nie pamiętam hasła” w oknie logowania.</span>{fields.password && <span id="delete-password-error" role="alert" className="sc-account-form__error">{fields.password}</span>}</label>

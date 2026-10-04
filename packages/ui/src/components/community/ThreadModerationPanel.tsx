@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch, apiWrite } from '../../lib/api';
 import { ClampedText } from './SocialPrimitives';
+import { Loading } from "../../kit/Loading";
 
 type Report = { id: number; thread_id: number | null; target_kind: string; reason: string; details: string; snapshot: string; status: string; ai: { state?: string; probability?: number; rule?: string }; appeal: string; decisions: { action: string; rule: string; explanation: string }[] };
 type Queue = { results: Report[]; next_page: number | null; rules: Record<string, string> };
@@ -34,7 +35,7 @@ export function ThreadModerationPanel() {
   const [open, setOpen] = useState(false), [page, setPage] = useState(1);
   const query = useQuery({ queryKey: ['thread-moderation', page], queryFn: () => apiFetch<Queue>(`/api/community/moderation/?page=${page}`), enabled: open, retry: false });
   return <details className="sc-command-card sc-thread-moderation" onToggle={e => setOpen(e.currentTarget.open)}><summary>Moderacja spinek i komentarzy</summary>
-    {query.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie zgłoszeń" />}
+    {query.isLoading && <Loading label="Ładowanie zgłoszeń" />}
     {query.isError && <p role="alert">Nie można odczytać kolejki. Potrzebujesz uprawnienia do moderacji spinek. <button onClick={() => query.refetch()}>Ponów</button></p>}
     {query.data?.results.map(row => <Review key={row.id} report={row} rules={query.data.rules} done={() => { setPage(1); void query.refetch(); }} />)}
     {query.isSuccess && !query.data.results.length && <p>Nie ma zgłoszeń oczekujących na decyzję.</p>}

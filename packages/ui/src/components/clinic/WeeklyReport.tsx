@@ -17,6 +17,7 @@ import { ClinicNav } from "./ClinicNav";
 import { SpinAuthorRow } from "./SpinParts";
 import { Button } from "../../kit/Button";
 import { AiTag, VerdictTag } from "./SpinParts";
+import { Loading } from "../../kit/Loading";
 
 function shorten(text: string, budget: number): string {
   if (measurePost(text).weightedLength <= budget) return text;
@@ -87,7 +88,7 @@ export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initi
     initialData,
   });
   const data = query.data;
-  if (query.isLoading) return <p className="sc-clinic-empty">Ładowanie raportu…</p>;
+  if (query.isLoading) return <p className="sc-clinic-empty"><Loading label="Ładowanie raportu" /></p>;
   if (query.isError && !data?.report) return <div role="alert"><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
   if (!data?.report) return <p className="sc-clinic-empty">Raport za ten okres nie został jeszcze opublikowany.</p>;
   const report = data.report;

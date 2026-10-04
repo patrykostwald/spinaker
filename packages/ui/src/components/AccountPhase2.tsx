@@ -17,9 +17,10 @@ import { FollowButton, FollowModeSelect } from './FollowButton';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { XAccountSettings } from './XAccountSettings';
 import { ProfileEditor, MutedSettings } from './AccountDashboardParts';
+import { Loading } from "../kit/Loading";
 
 export function AccountDataState({ query, empty = 'Ta część będzie dostępna wkrótce.' }: { query: { isPending: boolean; isError: boolean; error: unknown; refetch: () => unknown }; empty?: string }) {
-  if (query.isPending) return <div role="status" aria-label="Ładowanie" className="sc-social-skeleton" />;
+  if (query.isPending) return <Loading label="Ładowanie" />;
   if (isUnavailable(query.error)) return <p>{empty}</p>;
   if (query.isError) return <p role="alert">Nie udało się pobrać danych. <Button variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>;
   return null;

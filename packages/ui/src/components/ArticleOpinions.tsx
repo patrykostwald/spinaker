@@ -11,6 +11,7 @@ import { AccountDialog } from "./AccountDialog";
 import { CommentReportButton } from "./CommentReportButton";
 import { Button, RadioGroup, Reveal } from "../kit";
 import { useFeature } from "../lib/features";
+import { Loading } from "../kit/Loading";
 
 type Polarity = "positive" | "negative";
 type Opinion = { id: number; author: { id: number; username: string }; polarity: Polarity; body: string; created_at: string };
@@ -67,7 +68,7 @@ function OpinionContent({ article, ownerId }: { article: Pick<Article, "id">; ow
 
   return <section className="sc-article-opinions">
     <header><div><p>REAKCJE CZYTELNIKÓW</p><h2>Reakcje i komentarze</h2><span>Czy materiał był przydatny w tym kontekście? Reakcja dotyczy materiału - nie ocenia osób ani prawdziwości treści.</span></div></header>
-    {opinions.isPending ? <p role="status" className="sc-article-opinions__message">Ładuję opinie…</p> : null}
+    {opinions.isPending ? <p role="status" className="sc-article-opinions__message"><Loading label="Ładuję opinie" /></p> : null}
     {opinions.isError ? <p role="alert" className="sc-article-opinions__message">Nie udało się pobrać opinii. <Button type="button" variant="quiet" size="sm" onClick={() => opinions.refetch()}>Ponów</Button></p> : null}
     {opinions.data ? <div className="sc-article-opinions__columns">{(["negative", "positive"] as const).map(side => {
       const rows = [...new Map([...opinions.data![side].results, ...extra[side]].map(item => [item.id, item])).values()];

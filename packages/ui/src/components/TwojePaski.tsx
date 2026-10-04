@@ -7,6 +7,7 @@ import type { Source } from "../types";
 import { MAX_PERSONAL_STRIPS, loadPersonalStrips, removePersonalStrip, savePersonalStrip, updatePersonalStrip, type PersonalStrip } from "../lib/personalStrips";
 import { MaterialBox } from "./MaterialBox";
 import { Button, Dropdown, ReorderableStrips, SearchField } from "../kit";
+import { Loading } from "../kit/Loading";
 
 function StripForm({ initial, categories, sources, onSave, onCancel }: {
   initial?: PersonalStrip; categories: CategoryOption[]; sources: Source[];
@@ -44,7 +45,7 @@ function StripRow({ strip, editing, categories, sources, onEdit, onSave, onCance
   if (editing) return <StripForm initial={strip} categories={categories} sources={sources} onSave={onSave} onCancel={onCancelEdit} />;
   return <section className="sc-personal-strip" aria-label={`Twój przegląd Bazy: ${strip.label}`}>
     <header><h3>{strip.label}</h3><div><Button type="button" variant="quiet" size="sm" onClick={onEdit}>Edytuj</Button><Button type="button" variant="quiet" size="sm" onClick={onRemove}>Usuń pasek</Button></div></header>
-    {feed.isPending ? <p role="status">Ładuję materiały…</p> : null}
+    {feed.isPending ? <p role="status"><Loading label="Ładuję materiały" /></p> : null}
     {feed.isSuccess && !articles.length ? <p>Nie znaleźliśmy jeszcze materiałów pasujących do tego wyboru.</p> : null}
     {articles.length ? <div className="sc-personal-strip__track sc-strip-bleed" aria-label={`${strip.label} - przewijaj poziomo`}>{articles.map(article => <MaterialBox key={article.id} article={article} />)}</div> : null}
   </section>;

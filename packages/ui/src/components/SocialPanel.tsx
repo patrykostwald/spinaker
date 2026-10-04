@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiFetch, apiWrite, ApiError } from '../lib/api';
+import { Loading } from "../kit/Loading";
 
 type Publication = { id?: number; diagnosis_id?: number; platform: string; url: string; posted_at: string; deleted_at: string | null };
 export type SocialMaterial = { id: number; title: string; caption?: string; link?: string; thumbnail?: string; video?: string; remove_required: boolean; posts: Publication[] };
@@ -103,7 +104,7 @@ export function SocialInbox({ staff = false }: { staff?: boolean }) {
   return <section id={staff ? 'social-tasks' : undefined} className="sc-social-inbox"><div className="sc-social-actions"><h2>{staff ? 'Zadania od social media' : 'Zadania i pytania'}</h2><button onClick={() => void refresh()}>Odśwież skrzynkę</button></div>
     {!staff && <form className="sc-social-box sc-social-form" onSubmit={submit}><label>Rodzaj<select name="kind"><option value="question">Pytanie do asystenta</option><option value="task">Zadanie dla właściciela / Claude</option></select></label><label>Treść<textarea name="content" required maxLength={4000} rows={4} placeholder="Napisz, w czym potrzebujesz pomocy…" /></label><p>Na pytania odpowiada asystent AI. Zadania trafiają do właściciela. Odpowiedź pojawi się tutaj.</p><button disabled={busy}>{busy ? 'Wysyłanie, czekam na odpowiedź…' : 'Wyślij'}</button></form>}
     {error && <p className="sc-command-error" role="alert">{error}</p>}
-    {!loaded && !error && <p role="status">Wczytywanie skrzynki…</p>}
+    {!loaded && !error && <p role="status"><Loading label="Wczytywanie skrzynki" /></p>}
     {loaded && !tasks.length && <p className="sc-social-box">Skrzynka jest pusta.</p>}
     {tasks.map(task => <article className="sc-social-box" key={task.id}><div className="sc-social-actions"><strong>{task.kind === 'question' ? 'Pytanie' : 'Zadanie'}{task.author ? ` · ${task.author}` : ''}</strong><span className="sc-social-tag">{status[task.status]}</span></div><p className="sc-social-copy">{task.content}</p><small>{date(task.created_at)}</small>
       {task.answer && <div className="sc-social-answer"><strong>{authors[task.answered_by]}</strong><p className="sc-social-copy">{task.answer}</p>{task.answered_at && <small>{date(task.answered_at)}</small>}</div>}
@@ -133,7 +134,7 @@ export function SocialWorkspace({ items, onChange, isStaff = false }: { items: S
   return <><div className="sc-social-intro"><p>Gotowe materiały, publikacje i kontakt z zespołem.</p>{isStaff && <a href="/panel">Panel dowodzenia</a>}</div>
     <nav className="sc-social-tabs" aria-label="Widok social media">{[['queue', `Do publikacji (${items.length})`], ['published', 'Opublikowane'], ['tasks', 'Zadania i pytania']].map(([value, label]) => <button key={value} aria-pressed={tab === value} onClick={() => setTab(value)}>{label}</button>)}</nav>
     {tab === 'queue' && <>{items.length ? <div className="sc-social-grid">{items.map(item => <MaterialCard key={item.id} item={item} onChange={onChange} />)}</div> : <div className="sc-social-box"><h2>Wszystko na bieżąco</h2><p>Nie ma teraz materiałów do publikacji. Wróć później lub odśwież kolejkę.</p></div>}</>}
-    {tab === 'published' && <section><h2>Ostatnie 50 publikacji</h2>{error && <p role="alert">{error}</p>}{!posts && !error && <p role="status">Wczytywanie…</p>}{posts?.length === 0 && <p>Brak publikacji.</p>}{posts?.map(post => <article className="sc-social-box" key={post.id}><strong>{post.platform === 'tiktok' ? 'TikTok' : 'YouTube Shorts'} · Materiał #{post.diagnosis_id}</strong><p><a href={post.url} target="_blank" rel="noopener noreferrer">Otwórz post</a></p><small>{date(post.posted_at)}{post.deleted_at ? ` · Usunięte: ${date(post.deleted_at)}` : ''}</small></article>)}</section>}
+    {tab === 'published' && <section><h2>Ostatnie 50 publikacji</h2>{error && <p role="alert">{error}</p>}{!posts && !error && <p role="status"><Loading label="Wczytywanie" /></p>}{posts?.length === 0 && <p>Brak publikacji.</p>}{posts?.map(post => <article className="sc-social-box" key={post.id}><strong>{post.platform === 'tiktok' ? 'TikTok' : 'YouTube Shorts'} · Materiał #{post.diagnosis_id}</strong><p><a href={post.url} target="_blank" rel="noopener noreferrer">Otwórz post</a></p><small>{date(post.posted_at)}{post.deleted_at ? ` · Usunięte: ${date(post.deleted_at)}` : ''}</small></article>)}</section>}
     {tab === 'tasks' && <SocialInbox />}</>;
 }
 
@@ -155,7 +156,7 @@ export function SocialPanel() {
   }
   return <div className="sc-command-panel sc-command-v2 sc-social"><header className="sc-command-header"><div><span className="sc-command-eyebrow">spin.clinic · publikacje</span><h1>Social media</h1></div><div className="sc-social-actions"><button disabled={busy} onClick={() => void refresh()}>{busy ? 'Odświeżanie…' : 'Odśwież'}</button>{data && <button onClick={() => void logout()}>Wyloguj</button>}</div></header>
     {error && <p className="sc-command-error" role="alert">{error}</p>}
-    {forbidden ? <SocialLogin onLogin={refresh} /> : data ? <SocialWorkspace items={data.items} isStaff={data.is_staff} onChange={refresh} /> : <p role="status">Wczytywanie panelu…</p>}
+    {forbidden ? <SocialLogin onLogin={refresh} /> : data ? <SocialWorkspace items={data.items} isStaff={data.is_staff} onChange={refresh} /> : <p role="status"><Loading label="Wczytywanie panelu" /></p>}
     <p className="sc-command-install">Na telefonie: menu przeglądarki → Dodaj do ekranu głównego. Panel wymaga połączenia z internetem.</p>
   </div>;
 }

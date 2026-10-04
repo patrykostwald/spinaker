@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Article } from "../types";
 import { Button, ChevronLeftIcon, ChevronRightIcon, NewsCard } from "../kit";
+import { Loading } from "../kit/Loading";
 
 export function NewsStrip({ title, eyebrow, articles, onSelect, loading = false, error = false, onRetry, empty = "Nie ma jeszcze materiałów w tym zakresie.", large = false, controls, live = false }: {
   title: string; eyebrow?: string; articles: Article[]; onSelect?: (article: Article) => void;
@@ -63,7 +64,7 @@ export function NewsStrip({ title, eyebrow, articles, onSelect, loading = false,
       </div>
     </header>
     {error ? <p role="status" className="sc-news-strip__empty">Nie udało się odświeżyć materiałów. {onRetry ? <Button type="button" size="sm" variant="quiet" onClick={onRetry}>Spróbuj ponownie</Button> : null}</p> : null}
-    {loading && !articles.length ? <p role="status" className="sc-news-strip__empty">Ładuję materiały ze źródeł…</p> : !articles.length && !error ? <p className="sc-news-strip__empty">{empty}</p> : null}
+    {loading && !articles.length ? <p role="status" className="sc-news-strip__empty"><Loading label="Ładuję materiały ze źródeł" /></p> : !articles.length && !error ? <p className="sc-news-strip__empty">{empty}</p> : null}
     {articles.length > 0 ? <div ref={scroller} className="sc-news-strip__track sc-strip-bleed" style={automatic && playing ? { scrollBehavior: "auto", scrollSnapType: "none" } : undefined} tabIndex={0} aria-label={`${title} - materiały`} onMouseEnter={() => { hovering.current = true; }} onMouseLeave={() => { hovering.current = false; }} onFocus={() => { focused.current = true; }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) focused.current = false; }} onPointerDown={() => setPlaying(false)} onWheel={() => setPlaying(false)} onKeyDown={event => { if (event.target === event.currentTarget && ["ArrowLeft", "ArrowRight"].includes(event.key)) { event.preventDefault(); move(event.key === "ArrowLeft" ? -1 : 1); } }}>
       {articles.map(article => <div key={article.id} className="sc-news-strip__item"><NewsCard article={article} size={large ? "medium" : "compact"} onOpen={onSelect} showDescription={large} /></div>)}
     </div> : null}

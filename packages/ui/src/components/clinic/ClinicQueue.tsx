@@ -10,6 +10,7 @@ import { useAccount } from "../../lib/account";
 import { SpinDiagnosisBody } from "./SpinDetail";
 import { SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
+import { Loading } from "../../kit/Loading";
 
 /** Kolejka zatwierdzania. Tylko dwie decyzje - treści nie da się tu zmienić. */
 export function ClinicQueue() {
@@ -41,7 +42,7 @@ export function ClinicQueue() {
     } finally { setBusy(""); }
   }
 
-  if (account.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Ładowanie…</p></div>;
+  if (account.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty"><Loading label="Ładowanie" /></p></div>;
   if (!isStaff) return <div className="sc-clinic"><p className="sc-clinic-empty">Kolejka Kliniki jest dostępna tylko dla zespołu. <Link href="/konto">Zaloguj się</Link></p></div>;
   const data = query.data;
   const buttons = (kind: "spin" | "message", id: number) => (

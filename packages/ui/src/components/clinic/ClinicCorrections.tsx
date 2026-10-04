@@ -8,6 +8,7 @@ import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
 import { ClinicNav } from "./ClinicNav";
 import { SpinAuthorRow } from "./SpinParts";
+import { Loading } from "../../kit/Loading";
 
 const labels = { withdrawal: "Wycofanie", hiding: "Ukrycie prawne", author_reply: "Odpowiedź autora" };
 
@@ -31,7 +32,7 @@ export function ClinicCorrections() {
       </dl>
       <p className="sc-corrections__note">Liczba opublikowanych obejmuje także diagnozy później wycofane lub ukryte. Zdarzenia pokazujemy od najnowszych.</p>
     </> : null}
-    {query.isPending ? <p role="status">Wczytywanie rejestru…</p> : null}
+    {query.isPending ? <p role="status"><Loading label="Wczytywanie rejestru" /></p> : null}
     {query.isError ? <p role="alert">Nie udało się wczytać rejestru. <Button onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !events.length ? <p className="sc-corrections__empty">Na razie nie wycofaliśmy żadnej diagnozy.</p> : null}
     <ol className="sc-corrections__feed" aria-label="Zdarzenia w rejestrze">{events.map(event => <li key={event.id}>
@@ -43,7 +44,7 @@ export function ClinicCorrections() {
         {event.diagnosis_url ? <Link href={event.diagnosis_url}>{event.type === "author_reply" ? "Przeczytaj całą odpowiedź" : "Zobacz informację o diagnozie"} →</Link> : null}
       </div>
     </li>)}</ol>
-    {query.hasNextPage ? <Button disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż wcześniejsze zdarzenia"}</Button> : null}
+    {query.hasNextPage ? <Button disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż wcześniejsze zdarzenia"}</Button> : null}
     <p className="sc-corrections__contact">Chcesz zgłosić błąd lub przesłać odpowiedź? <Link href="/o-nas#kontakt">Skontaktuj się z nami</Link>. <Link href="/metodologia#korekty">Zasady korekt</Link></p>
   </section>;
 }

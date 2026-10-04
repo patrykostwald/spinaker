@@ -15,6 +15,7 @@ import { NewsCard } from "../NewsCard";
 import { useMotionTokens } from "../motion/useMotionTokens";
 import type { Article } from "../../types";
 import type { Collapsed } from "./collapseSimilar";
+import { Loading } from "../Loading";
 
 export function HomeLead({
   main,
@@ -59,7 +60,7 @@ export function HomeLead({
               <div className="sc-home-anchor-placeholder sc-home-lead__placeholder">
                 <div className="sc-skeleton sc-home-anchor-placeholder__media" />
                 <span className="sc-t-caption sc-text-3">Najnowsze</span>
-                <strong className="sc-t-title-m">Ładuję dzisiejsze doniesienia…</strong>
+                <strong className="sc-t-title-m"><Loading label="Ładuję dzisiejsze doniesienia" /></strong>
               </div>
             )}
           </div>

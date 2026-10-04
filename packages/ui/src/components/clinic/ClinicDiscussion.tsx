@@ -9,6 +9,7 @@ import { useFeature } from "../../lib/features";
 import { formatDateTimePl } from "../../lib/utils";
 import { Button } from "../../kit/Button";
 import { AccountDialog } from "../AccountDialog";
+import { Loading } from "../../kit/Loading";
 
 type Polarity = "positive" | "negative";
 type Ratings = { counts: Record<Polarity, number>; mine: { polarity: Polarity } | null };
@@ -56,11 +57,11 @@ function Comments({ endpoint, ownerId, canWrite, parent, onReply }: { endpoint: 
   const refresh = () => { void cache.invalidateQueries({ queryKey: ["clinic-comments", endpoint] }); };
   const rows = [...new Map(query.data?.pages.flatMap(page => page.results).map(row => [row.id, row]) ?? []).values()];
   return <div className={parent ? "sc-discussion-replies" : "sc-discussion-list"}>
-    {query.isPending ? <p role="status">Ładowanie komentarzy…</p> : null}
+    {query.isPending ? <p role="status"><Loading label="Ładowanie komentarzy" /></p> : null}
     {query.isError ? <p role="status">{unavailable(query.error) ? "Dyskusja jest jeszcze niedostępna." : <>Nie udało się pobrać komentarzy. <Button variant="quiet" onClick={() => void query.refetch()}>Ponów</Button></>}</p> : null}
     {query.isSuccess && !rows.length ? <p>{parent ? "Brak odpowiedzi." : "Nie ma jeszcze komentarzy. Rozpocznij dyskusję."}</p> : null}
     {rows.map(row => <CommentRow key={row.id} row={row} endpoint={endpoint} ownerId={ownerId} canWrite={canWrite} onReply={onReply} refresh={refresh} />)}
-    {query.hasNextPage ? <Button variant="quiet" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Ładowanie…" : parent ? "Pokaż więcej odpowiedzi" : "Pokaż więcej"}</Button> : null}
+    {query.hasNextPage ? <Button variant="quiet" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Ładowanie" /> : parent ? "Pokaż więcej odpowiedzi" : "Pokaż więcej"}</Button> : null}
   </div>;
 }
 
@@ -116,7 +117,7 @@ function DiscussionContent({ endpoint }: { endpoint: string }) {
   return <section id="dyskusja" className="sc-clinic-discussion" aria-labelledby="dyskusja-title">
     <h2 id="dyskusja-title">Dyskusja</h2>
     <p>Czy analiza jest trafna? Ocena i komentarz są niezależne. Kliknij wybraną ocenę ponownie, aby ją cofnąć.</p>
-    {ratings.isPending ? <p role="status">Ładowanie ocen…</p> : null}
+    {ratings.isPending ? <p role="status"><Loading label="Ładowanie ocen" /></p> : null}
     {ratings.isError ? <p role="status">{unavailable(ratings.error) ? "Dyskusja jest jeszcze niedostępna." : <>Nie udało się pobrać ocen. <Button variant="quiet" onClick={() => void ratings.refetch()}>Ponów</Button></>}</p> : null}
     {ratings.data ? <div className="sc-discussion-actions sc-discussion-rate" aria-label="Ocena analizy">{(["positive", "negative"] as const).map(side => <Button key={side} variant="quiet" className={`sc-rate sc-rate--${side}`} disabled={busy || Boolean(ownerId && !verified)} aria-pressed={ratings.data.mine?.polarity === side} onClick={() => void rate(side)}>{side === "positive" ? "Trafne +" : "Nietrafne −"} <span>{ratings.data.counts[side]}</span></Button>)}</div> : null}
     {ratings.data?.mine ? <p>Twoja ocena: {ratings.data.mine.polarity === "positive" ? "Trafne +" : "Nietrafne −"}.</p> : null}

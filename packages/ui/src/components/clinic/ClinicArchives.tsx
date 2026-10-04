@@ -14,6 +14,7 @@ import { formatDatePl } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { MessageDayContent } from "./MessageDetail";
 import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
+import { Loading } from "../../kit/Loading";
 export function ClinicInterviewArchive() {
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("");
@@ -38,7 +39,7 @@ export function ClinicInterviewArchive() {
       </select>
     </div>
     {first && (q || channel) ? <p role="status" className="sc-iv-search__count">Znaleziono: {first.count.toLocaleString("pl-PL")}</p> : null}
-    {query.isPending ? <p role="status">Wczytywanie wywiadów…</p> : null}
+    {query.isPending ? <p role="status"><Loading label="Wczytywanie wywiadów" /></p> : null}
     {query.isError ? <p role="alert">Nie udało się wczytać wywiadów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !rows.length ? <p>Brak wywiadów spełniających wybrane kryteria.</p> : null}
     {/* Karta: z lewej teksty i przycisk na dole, z prawej gość i prowadzący w wierszach (uwagi recenzenta UX, 30.09) */}
@@ -53,7 +54,7 @@ export function ClinicInterviewArchive() {
       </div>
       <InterviewResults interview={interview} />
     </article>)}</div>
-    {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button> : null}
+    {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż więcej"}</Button> : null}
     <InterviewScope />
   </section>;
 }
@@ -88,7 +89,7 @@ export function ClinicMessageArchive() {
     <ClinicNav />
     <SectionHeader variant="page" title="Archiwum przekazów" subtitle="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji." />
     {first ? <p>Liczba dni: {first.count.toLocaleString("pl-PL")}</p> : null}
-    {query.isPending ? <p role="status">Wczytywanie przekazów…</p> : null}
+    {query.isPending ? <p role="status"><Loading label="Wczytywanie przekazów" /></p> : null}
     {query.isError ? <p role="alert">Nie udało się wczytać przekazów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
     {first && !rows.length ? <p>Nie ma jeszcze opublikowanych przekazów.</p> : null}
     <div className="sc-clinic-archives__list">{rows.map(row => <section className="sc-clinic-archives__day" key={row.day} aria-labelledby={`day-${row.day}`}>
@@ -96,6 +97,6 @@ export function ClinicMessageArchive() {
       <MessageDayContent data={row} />
       <Link href={`/klinika/przekazy/${row.day}`}>Pełny przekaz i źródła →</Link>
     </section>)}</div>
-    {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż wcześniejsze dni"}</Button> : null}
+    {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż wcześniejsze dni"}</Button> : null}
   </section>;
 }

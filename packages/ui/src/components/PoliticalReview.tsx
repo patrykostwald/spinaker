@@ -7,6 +7,7 @@ import { formatDateTimePl } from '../lib/utils';
 import type { Paginated } from '../types';
 import { ThreadEditor } from './ThreadEditor';
 import { Button } from '../kit';
+import { Loading } from "../kit/Loading";
 
 type Camp = 'government' | 'opposition' | 'public';
 
@@ -184,7 +185,7 @@ export function PoliticalReview() {
           <option value="all">Wszystkie grupy</option><option value="government">Obóz rządzący</option><option value="opposition">Opozycja</option><option value="public">Instytucje publiczne</option>
         </select></label>}
       </div>
-      {posts.isPending ? <p role="status">Ładuję zapisane wpisy…</p>
+      {posts.isPending ? <p role="status"><Loading label="Ładuję zapisane wpisy" /></p>
         : posts.isError ? <div role="alert"><p>Nie udało się pobrać wpisów.</p>
             <button className={button} onClick={() => posts.refetch()}>Spróbuj ponownie</button></div>
         : <div className="sc-political-list">
@@ -251,7 +252,7 @@ export function PoliticalReview() {
 
     <section className="sc-political-section">
       <h2 className="sc-t-title-m">Ostatnie propozycje w tym widoku</h2>
-      {drafts.isPending ? <p role="status">Ładuję listę propozycji…</p>
+      {drafts.isPending ? <p role="status"><Loading label="Ładuję listę propozycji" /></p>
         : drafts.isError ? <p role="alert">Nie udało się pobrać listy propozycji.</p>
         : <div className="sc-political-list">
             {drafts.data?.results.map(item => <article key={item.id} className="sc-political-draft">

@@ -18,6 +18,7 @@ import { ClinicRanking } from "./ClinicRanking";
 import { formatDateTimePl } from "../../lib/utils";
 import { InterviewScanner } from "./InterviewScanner";
 import { MessageBox } from "./ClinicExtras";
+import { Loading } from "../../kit/Loading";
 
 export { MessageBox } from "./ClinicExtras";
 
@@ -157,7 +158,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       <ClinicRecentlyViewed />
 
       {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
-      {query.isLoading && <p className="sc-clinic-empty">Ładowanie diagnoz…</p>}
+      {query.isLoading && <p className="sc-clinic-empty"><Loading label="Ładowanie diagnoz" /></p>}
 
       {data && <>
         {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}

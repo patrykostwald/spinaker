@@ -8,6 +8,7 @@ import type { Source } from '../types';
 import { MaterialBox } from './MaterialBox';
 import { TwojePaski } from './TwojePaski';
 import { BottomSheet, Button, Checkbox, RadioGroup, SearchField } from '../kit';
+import { Loading } from "../kit/Loading";
 
 const PERIODS: { value: string; label: string; hours: number | null }[] = [
   { value: 'all', label: 'Zawsze', hours: null },
@@ -108,7 +109,7 @@ export const Baza = forwardRef<HTMLDivElement, { categories: CategoryOption[]; s
         </Button>
         <div className="sc-base-layout">
           <div className="sc-base-results">
-            {feed.isPending && <p role="status" className="sc-base-empty">Ładuję materiały…</p>}
+            {feed.isPending && <p role="status" className="sc-base-empty"><Loading label="Ładuję materiały" /></p>}
             {feed.isError && <p role="alert" className="sc-base-empty">Nie udało się odświeżyć bazy. <Button size="sm" variant="quiet" onClick={() => feed.refetch()}>Ponów</Button></p>}
             {feed.isSuccess && !articles.length && <p className="sc-base-empty">Brak materiałów pasujących do wybranych filtrów.</p>}
             <div className="sc-base-grid" aria-label="Najnowsze materiały w Bazie">

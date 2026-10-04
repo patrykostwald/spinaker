@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch, apiWrite } from '../../lib/api';
 import { useFeature } from '../../lib/features';
+import { Loading } from "../../kit/Loading";
 
 type Decision = { action: string; rule: string; explanation: string; created_at: string; is_appeal: boolean };
 export function ThreadAppealPage({ params }: { params: { id: string } }) {
@@ -13,7 +14,7 @@ export function ThreadAppealPage({ params }: { params: { id: string } }) {
   const [body, setBody] = useState(''), [status, setStatus] = useState(''), [pending, setPending] = useState(false);
   if (!enabled || !threads) return <p>Odwołania będą dostępne po włączeniu kont i spinek. Kontakt: <a href="/zasady-korzystania#tropy">punkt kontaktowy</a>.</p>;
   return <article className="sc-community sc-thread-social"><h1>Decyzja i odwołanie</h1>
-    {query.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie decyzji" />}
+    {query.isLoading && <Loading label="Ładowanie decyzji" />}
     {query.isError && <p>Decyzję może odczytać autor lub osoba zgłaszająca. <a href="/konto">Zaloguj się</a>.</p>}
     {query.data?.decisions.map((d, i) => <section key={i}><h2>{d.is_appeal ? 'Rozpatrzenie odwołania' : 'Decyzja zespołu'}</h2><p>{d.action === 'hide' ? 'Ukrycie treści' : 'Przywrócenie widoczności'} · {d.rule}</p><p>{d.explanation}</p></section>)}
     {query.data?.status === 'resolved' && !query.data.appealed && <form onSubmit={async e => {

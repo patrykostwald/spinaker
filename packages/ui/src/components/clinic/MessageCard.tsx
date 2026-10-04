@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { CAMP_LABELS, getClinicMessage, type Camp, type DailyMessage, type MessageStats } from "../../lib/clinic";
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
+import { Loading } from "../../kit/Loading";
 
 const TONES = [["atak", "Atak"], ["osiagniecie", "Osiągnięcia"], ["apel", "Apel"]] as const;
 function Bar({ value }: { value: number | null | undefined }) {
@@ -51,7 +52,7 @@ export function MessageCard({ camp, message, day, compact = false, emptyText }: 
           <div className="sc-message-card__expanded">
             {message.analysis ? <div><h4>Pełna analiza</h4>{message.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>)}</div> : null}
             <div><h4>Źródła - wpisy</h4>
-              {sources.isFetching ? <p role="status">Wczytywanie źródeł…</p> : null}
+              {sources.isFetching ? <p role="status"><Loading label="Wczytywanie źródeł" /></p> : null}
               {sources.isError ? <p role="alert">Nie udało się pobrać źródeł. <button type="button" onClick={() => void sources.refetch()}>Spróbuj ponownie</button></p> : null}
               {full?.posts?.length ? <ol className="sc-message-detail__sources">{full.posts.map(post => <li key={post.url}>
                 <a href={post.url} target="_blank" rel="noopener noreferrer"><strong>{post.author}</strong> @{post.handle} ↗</a>

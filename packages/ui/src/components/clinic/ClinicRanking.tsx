@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, searchClinicSpins, type Camp, type ClinicPageData } from "../../lib/clinic";
 import { SectionHeader } from "../../kit/SectionHeader";
 import { SpinRow } from "./SpinParts";
+import { Loading } from "../../kit/Loading";
 
 function RankingColumn({ camp, from, to }: { camp: Camp; from: string; to: string }) {
   const query = useQuery({ queryKey: ["clinic-ranking", camp, from, to],
@@ -12,7 +13,7 @@ function RankingColumn({ camp, from, to }: { camp: Camp; from: string; to: strin
   return <section className="sc-clinic-column" aria-labelledby={`clinic-ranking-${camp}`}>
     <h3 id={`clinic-ranking-${camp}`} className="sc-camp-heading" data-camp={camp}>{CAMP_LABELS[camp]}
       {query.data?.count !== undefined ? <small> z {query.data.count} diagnoz</small> : null}</h3>
-    {query.isPending ? <p role="status">Wczytywanie rankingu…</p> : null}
+    {query.isPending ? <p role="status"><Loading label="Wczytywanie rankingu" /></p> : null}
     {query.isError ? <p role="alert">Nie udało się pobrać rankingu. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
     {query.data ? query.data.results.length ? <ol className="sc-clinic-ranking__list">
       {query.data.results.slice(0, 3).map(spin => <li key={spin.id}><SpinRow spin={spin} /></li>)}

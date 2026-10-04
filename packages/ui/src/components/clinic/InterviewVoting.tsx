@@ -9,6 +9,7 @@ import { useFeature } from "../../lib/features";
 import { Button } from "../../kit/Button";
 import { AccountDialog } from "../AccountDialog";
 import { ClinicNav } from "./ClinicNav";
+import { Loading } from "../../kit/Loading";
 
 type Candidate = { id: number; video_id: string; title: string; guest_name: string; channel: string;
   duration: number; views: number; votes: number; thumbnail_url: string };
@@ -83,7 +84,7 @@ export function InterviewVoting() {
     <ClinicNav />
     <header className="sc-interview-voting__header">
       <h1>Drugi wywiad dnia wybierają czytelnicy</h1>
-      <p>{data ? !enabled ? "Głosowanie ruszy wkrótce." : open ? `Głosowanie trwa jeszcze ${timeLeft(Date.parse(data.closes_at) - now)}, do 7:00 (${dateLabel(data.closes_at.slice(0, 10))}).` : "Głosowanie zakończone o 7:00." : "Wczytywanie głosowania…"}</p>
+      <p>{data ? !enabled ? "Głosowanie ruszy wkrótce." : open ? `Głosowanie trwa jeszcze ${timeLeft(Date.parse(data.closes_at) - now)}, do 7:00 (${dateLabel(data.closes_at.slice(0, 10))}).` : "Głosowanie zakończone o 7:00." : <Loading label="Wczytywanie głosowania" />}</p>
     </header>
     {enabled ? <nav className="sc-interview-voting__days" aria-label="Dzień wywiadów">
       <Button variant="quiet" aria-pressed={!isToday} onClick={() => reset("")}>Wczoraj</Button>

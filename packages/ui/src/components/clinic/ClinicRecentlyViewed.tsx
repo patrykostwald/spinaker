@@ -10,6 +10,7 @@ import { SectionHeader } from "../../kit/SectionHeader";
 import { HomeSpinScanner } from "../../kit/home/HomeSpinScanner";
 import { InterviewScanner } from "./InterviewScanner";
 import { ShareSpinOnX, ShareXCardContent } from "./ShareSpinOnX";
+import { Loading } from "../../kit/Loading";
 
 function RecentCard({ item }: { item: ClinicVisit }) {
   const [copyStatus, setCopyStatus] = useState("");
@@ -27,7 +28,7 @@ function RecentCard({ item }: { item: ClinicVisit }) {
     if (missing) writeClinicHistory(readClinicHistory().filter(old => visitKey(old) !== visitKey(item)));
   }, [missing, item.type, item.id]);
   if (missing) return null;
-  if (query.isPending || query.isFetching) return <p role="status">Wczytywanie karty…</p>;
+  if (query.isPending || query.isFetching) return <p role="status"><Loading label="Wczytywanie karty" /></p>;
   if (query.isError) return <p role="alert">Nie udało się wczytać karty. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>;
   const result = query.data;
   if (result.type === "diagnosis" && result.data.status === "withdrawn") return null;

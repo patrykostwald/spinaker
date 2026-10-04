@@ -14,6 +14,7 @@ import { ThreadStrip } from './ThreadStrip';
 import { ThreadFeed } from './ThreadFeed';
 import { ClampedText } from './SocialPrimitives';
 import { useAccount } from '../../lib/account';
+import { Loading } from "../../kit/Loading";
 
 /** Jeden element nitki: materiał z Bazy (z linkiem do kontekstu) albo link spoza Bazy - wyraźnie oznaczony. */
 export function ElementRow({ element, index }: { element: ThreadElement; index: number }) {
@@ -82,7 +83,7 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
 
 export function CommunityThreadPage({ id }: { id: string }) {
   const query = useQuery({ queryKey: ["community-thread", id], queryFn: () => getCommunityThread(id), retry: false });
-  if (query.isLoading) return <div className="sc-community"><div className="sc-social-skeleton" aria-label="Ładowanie spinki" /></div>;
+  if (query.isLoading) return <div className="sc-community"><Loading label="Ładowanie spinki" /></div>;
   if (query.isError && !isUnavailable(query.error)) return <div className="sc-community"><AccountDataState query={query} /></div>;
   if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono spinki - mogła zostać usunięta albo nie jest publiczna. <Link href="/spinki">Wszystkie spinki</Link></p></div>;
   const thread = query.data;

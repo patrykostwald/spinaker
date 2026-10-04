@@ -12,6 +12,7 @@ import { MaterialFilters, type MaterialSelection } from './MaterialFilters';
 import { Button, SearchField } from '../kit';
 import { isUnavailable } from '../lib/personal';
 import { accountMessage } from '../lib/accountPhase2';
+import { Loading } from "../kit/Loading";
 
 function TopicStrip({ topic, onSelect, onEdit }: { topic: SavedTopic; onSelect: (article: Article) => void; onEdit: () => void }) {
   const feed = useQuery({ queryKey: ['topic-feed', topic.id, topic.query, topic.categories.join(','), topic.topics?.join(',') ?? '', topic.source_ids.join(',')], queryFn: () => getNewsFeed({ query: topic.query, categories: topic.categories, topics: topic.topics ?? [], sources: topic.source_ids, pageSize: 15 }), refetchInterval: 30_000, refetchIntervalInBackground: false });
@@ -65,7 +66,7 @@ export function PersonalizedNews({ categories, topics: topicOptions, sources, on
   return <section className="sc-saved-topics" aria-label="Twoje zapisane tematy">
     <header className="sc-saved-topics__head"><div><h2 className="sc-t-title-m">Zapisane tematy</h2><p className="sc-t-body sc-text-2">Hasła, tematy, typy i źródła · do 5 własnych pasków</p></div>{ownerId ? <Button size="sm" variant="secondary" disabled={rows.length >= maximum || !topics.isSuccess} onClick={() => setEditing(null)}>Dodaj temat{rows.length ? ` · ${rows.length}/${maximum}` : ''}</Button> : <Button size="sm" variant="secondary" onClick={() => setAccountOpen(true)}>Dopasuj do siebie</Button>}</header>
     {(!ownerId || (topics.isSuccess && !rows.length)) && <div className="sc-saved-topics__empty" aria-label="Miejsca na własne tematy">{[1, 2, 3].map(position => <Button key={position} type="button" variant="quiet" className="sc-saved-topics__placeholder" onClick={() => ownerId ? setEditing(null) : setAccountOpen(true)}>Dodaj temat</Button>)}</div>}
-    {ownerId && topics.isPending && <p role="status" className="sc-saved-topics__status">Ładuję Twoje tematy…</p>}
+    {ownerId && topics.isPending && <p role="status" className="sc-saved-topics__status"><Loading label="Ładuję Twoje tematy" /></p>}
     {topics.isError && (isUnavailable(topics.error) ? <p className="sc-saved-topics__status">Zapisane tematy będą dostępne wkrótce.</p> : <p role="alert" className="sc-saved-topics__status">Nie udało się pobrać tematów. <Button onClick={() => topics.refetch()} size="sm" variant="quiet">Ponów</Button></p>)}
     {ownerId && rows.slice(0, maximum).map(topic => <TopicStrip key={topic.id} topic={topic} onSelect={onSelect} onEdit={() => setEditing(topic)} />)}
     {ownerId && rows.length > maximum && <details><summary>Pozostałe tematy z wcześniejszej wersji ({rows.length - maximum})</summary><p>W panelu pokazujemy do pięciu pasków. Twoje wcześniejsze zapisy pozostają dostępne do edycji i usunięcia.</p>{rows.slice(maximum).map(topic => <Button key={topic.id} variant="quiet" onClick={() => setEditing(topic)}>{topic.label} - zmień lub usuń</Button>)}</details>}

@@ -28,6 +28,7 @@ import type { Source } from "../../types";
 import { useHomeInfiniteFeed } from "./data";
 import { HomePeople, usePeople } from "./HomePeople";
 import { GROUP_EMPTY_HINT, activeSources, groupSources, sourceGroupLabel, type SourceGroup } from "./sourceGroups";
+import { Loading } from "../Loading";
 
 // ---------------------------------------------------------------------------
 // Filtry
@@ -272,7 +273,7 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
           ) : (
             <>
           {groupEmpty && sourceGroup ? <p className="sc-t-body-s sc-text-2">Brak aktywnych źródeł w grupie „{sourceGroupLabel(sourceGroup)}”. {GROUP_EMPTY_HINT}</p> : null}
-          {feed.isPending && !groupEmpty ? <p role="status" className="sc-t-body-s sc-text-2">Ładuję materiały…</p> : null}
+          {feed.isPending && !groupEmpty ? <p role="status" className="sc-t-body-s sc-text-2"><Loading label="Ładuję materiały" /></p> : null}
           {feed.isError ? (
             <p role="alert" className="sc-t-body-s sc-text-2">
               Nie udało się odświeżyć bazy.{" "}
@@ -293,7 +294,7 @@ export const HomeBaza = forwardRef<HTMLElement, { sources: Source[]; initialQuer
           />
           {feed.hasNextPage ? (
             <div ref={sentinelRef} className="sc-home-baza__more" role="status">
-              {feed.isFetchingNextPage ? "Ładuję kolejne materiały…" : "Przewiń siatkę niżej, aby załadować kolejne materiały."}
+              {feed.isFetchingNextPage ? <Loading label="Ładuję kolejne materiały" /> : "Przewiń siatkę niżej, aby załadować kolejne materiały."}
             </div>
           ) : null}
             </>

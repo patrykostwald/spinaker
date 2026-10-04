@@ -9,6 +9,7 @@ import { REPORT_REASONS } from '../../lib/community';
 import { Dialog } from '../Dialog';
 import { FollowButton } from '../FollowButton';
 import { ago, Avatar, CharacterCount, ClampedText, RATINGS, ratingLabels, SocialIcon, type Counts, type Rating } from './SocialPrimitives';
+import { Loading } from "../../kit/Loading";
 
 type Comment = { id: number; body: string; author: string; author_color?: string; username?: string; x_profile?: string | null; reactions_count: number; reacted: boolean; created_at: string; edited_at: string | null; is_owner: boolean; can_edit: boolean; hidden?: boolean; stance?: '' | 'positive' | 'doubt' | 'negative'; reactions?: Counts; my_reaction?: '' | Rating };
 type CommentPage = { results: Comment[]; next_cursor: string | null; count: number };
@@ -176,7 +177,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         {canWrite ? <Composer id={id} me={me} draft={draft} setDraft={setDraft} boxCount={boxCount} pending={pending}
           onSubmit={async () => { if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }} />
  : enabled ? <p className="sc-social-login"><a href="/konto">Zaloguj się</a>, aby skomentować.</p> : null}
-        {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
+        {comments.isLoading && <Loading label="Ładowanie komentarzy" />}
         {comments.isSuccess && !rows.length && <p className="sc-social-empty">Nikt jeszcze nie skomentował. Bądź pierwszy.</p>}
         {rows.length > 0 && <ol>{rows.map(row => <li key={row.id} className="sc-cmt">
           <Avatar name={row.author} />
@@ -201,7 +202,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
   const end = <><button type="button" className="sc-social-share" onClick={() => void share()}>Udostępnij</button><SocialReport threadId={id} /></>;
   return <div className="sc-thread-social">
     {showRatings && <section aria-label="Ocena całej spinki" className="sc-social-ratings">
-      {ratings.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie ocen" />}
+      {ratings.isLoading && <Loading label="Ładowanie ocen" />}
       {ratings.isError && <button onClick={() => ratings.refetch()}>Ponów odczyt ocen</button>}
       {RATINGS.map(key => enabled ? <button key={key} data-rating={key} disabled={!canWrite || pending} aria-pressed={ratings.data?.mine?.polarity === key} onClick={() => rate(key)}>
         <SocialIcon kind={key} />{labels[key]}<span className="sc-social-rating-count">{ratings.data?.counts[key] ?? 0}</span>
@@ -213,7 +214,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
       {canWrite ? <Composer id={id} me={me} draft={draft} setDraft={setDraft} boxCount={boxCount} pending={pending} extra={<CommentSort sort={sort} setSort={setSort} />} end={end}
         onSubmit={async () => { if (await write('comments/', { body: draft })) { setDraft(''); setStatus('Komentarz dodany.'); } }} />
         : <div className="sc-social-sortrow">{enabled && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p>}<CommentSort sort={sort} setSort={setSort} /><span className="sc-social-composer__end">{end}</span></div>}
-      {comments.isLoading && <div className="sc-social-skeleton" aria-label="Ładowanie komentarzy" />}
+      {comments.isLoading && <Loading label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
       {comments.isSuccess && !comments.data.pages[0].results.length && <p><SocialIcon kind="comment" /> Bądź pierwszy.</p>}
       {filter && comments.isSuccess && !comments.data.pages.flatMap(page => page.results).some(row => filter.pattern.test(row.body)) && <p className="sc-social-empty">Nikt jeszcze nie skomentował: {filter.label}.</p>}

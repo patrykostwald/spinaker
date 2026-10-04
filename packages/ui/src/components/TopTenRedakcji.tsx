@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getNewsFeed } from '../lib/portal';
 import type { Source } from '../types';
 import { Button, Checkbox, NewsCard, SearchField } from '../kit';
+import { Loading } from "../kit/Loading";
 
 const TOPIC_PILLS: { label: string; value: string }[] = [
   { label: 'Polityka', value: 'polityka' },
@@ -61,7 +62,7 @@ export function TopTenRedakcji({ topSources: sources }: { topSources: Source[] }
         </div>
         <SearchField className="sc-top-ten-search" placeholder="Szukaj hasła…" value={query} onChange={setQuery} maxLength={200} />
       </div>
-      {feed.isPending ? <p role="status" className="sc-top-ten-empty">Ładuję materiały ze źródeł…</p> : null}
+      {feed.isPending ? <p role="status" className="sc-top-ten-empty"><Loading label="Ładuję materiały ze źródeł" /></p> : null}
       {feed.isError ? <p role="alert" className="sc-top-ten-empty">Nie udało się odświeżyć materiałów. <Button size="sm" variant="quiet" onClick={() => feed.refetch()}>Spróbuj ponownie</Button></p> : null}
       {!feed.isPending && !feed.isError && !articles.length ? <p className="sc-top-ten-empty">Nie ma jeszcze materiałów dla wybranych filtrów.</p> : null}
       {articles.length ? <div className="sc-top-ten__track sc-strip-bleed" tabIndex={0} aria-label="Wszystkie źródła - przewijaj poziomo">

@@ -18,6 +18,7 @@ import { Button } from '../kit';
 import { CharacterCount } from './community/SocialPrimitives';
 import { SignedOutPanel } from './MojeKonto';
 import { XPostCard } from './community/XPostCard';
+import { Loading } from "../kit/Loading";
 
 type Box = { key: string; material: ThreadElement | null; note: string; link_note: string };
 type Draft = { title: string; items: Box[]; isPublic: boolean };
@@ -297,7 +298,7 @@ function Editor({ ownerId, threadId, counterTo }: { ownerId: number; threadId?: 
     catch (reason) { setError(accountMessage(reason)); saving.current = false; setPending(false); }
   }
   function submit(event: FormEvent) { event.preventDefault(); setError(''); setPublishOpen(true); }
-  if (threadId && thread.isPending) return <p role="status" className="sc-account-empty">Ładuję spinka…</p>;
+  if (threadId && thread.isPending) return <p role="status" className="sc-account-empty"><Loading label="Ładuję spinka" /></p>;
   if (threadId && thread.isError) return <div className="sc-account"><AccountDataState query={thread} empty="Nie znaleziono spinki." /></div>;
 
   return <form className="sc-account sc-simple-thread" onSubmit={submit} noValidate aria-label="Kreator spinki">

@@ -6,6 +6,7 @@ import { Button } from "../../kit";
 import { getSpin, type SpinDetailData } from "../../lib/clinic";
 import { buildXThread, xIntentUrl } from "../../lib/xThread";
 import { Dialog } from "../Dialog";
+import { Loading } from "../../kit/Loading";
 
 function ThreadPosts({ spin }: { spin: SpinDetailData }) {
   const posts = buildXThread(spin);
@@ -63,7 +64,7 @@ export function ShareSpinOnX({ id, spin }: { id: number; spin?: SpinDetailData }
     <Dialog open={open} onClose={() => setOpen(false)} title="Udostępnij diagnozę na X">
       {query.isFetching ? <p>Sprawdzanie dostępności diagnozy…</p> : query.isError ? <p>Diagnoza jest niedostępna. Nie można przygotować publikacji.</p>
         : data?.status === "withdrawn" ? <p>Diagnoza została wycofana. Nie można jej udostępnić.</p>
-        : data ? <ThreadPosts spin={data} /> : <p>Ładowanie diagnozy…</p>}
+        : data ? <ThreadPosts spin={data} /> : <p><Loading label="Ładowanie diagnozy" /></p>}
     </Dialog>
   </>;
 }

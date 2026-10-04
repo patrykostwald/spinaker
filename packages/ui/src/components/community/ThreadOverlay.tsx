@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCommunityThread, getCommunityThreads } from '../../lib/community';
 import { ThreadStrip } from './ThreadStrip';
 import { setReactionMood, sumCounts } from '../../lib/mood';
+import { Loading } from "../../kit/Loading";
 
 /** Płynne przenikanie przy otwieraniu i zamykaniu pełnego ekranu (View Transitions); bez wsparcia albo przy ograniczonym ruchu - od razu. */
 export function viewTransition(update: () => void) {
@@ -104,7 +105,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       onMouseLeave={() => setNearLeft(false)}>
       {/* powrót do listy pojawia się po najechaniu na sekcję (właściciel 4.10) */}
       <button type="button" className="sc-trop-overlay__side-back" style={{ top: backTop }} aria-label="Wróć do wszystkich spinek" title="Wszystkie spinki" onClick={() => window.history.back()}>‹</button>
-      {query.isPending && <div className="sc-social-skeleton" aria-label="Ładowanie spinki" />}
+      {query.isPending && <Loading label="Ładowanie spinki" />}
       {query.isError && <p role="alert">Nie udało się pobrać spinki. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p>}
       {thread && <>
         {/* podtytuł zawsze, także u Dr. Spina (pisze go Redaktor tytułów) */}

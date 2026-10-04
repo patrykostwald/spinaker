@@ -11,6 +11,7 @@ import { Button, MorphList, Reveal, Switch, usePortalApi } from '../kit';
 import { PersonalizedNews } from './PersonalizedNews';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { FollowButton } from './FollowButton';
+import { Loading } from "../kit/Loading";
 
 type HistoryItem = { id: number; article_id: number; body: string; polarity: 'positive' | 'negative'; created_at: string };
 type HistoryPage = { results: HistoryItem[]; next_page: number | null };
@@ -36,7 +37,7 @@ function HistoryRows({ rows }: { rows: HistoryItem[] }) {
 function ProfileTopics() {
   const config = useQuery({ queryKey: ['portal-config'], queryFn: getPortalConfig, staleTime: 60_000 });
   const portal = usePortalApi();
-  if (config.isPending) return <p role="status" className="sc-account-profile-empty">Ładuję ustawienia tematów…</p>;
+  if (config.isPending) return <p role="status" className="sc-account-profile-empty"><Loading label="Ładuję ustawienia tematów" /></p>;
   if (config.isError) return <p role="alert" className="sc-account-profile-empty">Nie udało się pobrać dostępnych filtrów. <Button size="sm" variant="quiet" onClick={() => config.refetch()}>Ponów</Button></p>;
   return <PersonalizedNews categories={config.data.categories} topics={config.data.topics ?? []} sources={config.data.sources ?? []} onSelect={portal.open} />;
 }
@@ -80,7 +81,7 @@ export function AccountProfile() {
     catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się usunąć spinki z ulubionych.'); }
     finally { setPending(false); }
   }
-  if (account.isPending) return <p role="status" className="sc-account-profile-empty">Ładuję konto…</p>;
+  if (account.isPending) return <p role="status" className="sc-account-profile-empty"><Loading label="Ładuję konto" /></p>;
   if (!ownerId) return <section className="sc-account-profile-page sc-account-profile-signed-out"><p className="sc-account-profile-kicker">TWOJE MIEJSCE W SPIN.CLINIC</p><h1>Wracaj do tego, co ważne.</h1><p>Zapisuj spinki, układaj własne paski tematów i przeglądaj swoją aktywność. Ulubione i tematy pozostają prywatne.</p><Button variant="primary" onClick={() => setOpen(true)}>Zaloguj się</Button><Button href="/" variant="quiet">Przeglądaj wiadomości ↗</Button><AccountDialog open={open} onClose={() => setOpen(false)} /></section>;
   const user = account.data!.user!;
   const role = user.is_staff ? 'Zespół spin.clinic' : user.is_journalist ? 'Dziennikarz' : 'Czytelnik';
@@ -94,7 +95,7 @@ export function AccountProfile() {
         <Reveal when={Boolean(error)} className="sc-account-profile-message sc-account-profile-message-error"><p role="alert">{error}</p></Reveal><Reveal when={Boolean(notice)} className="sc-account-profile-message"><p role="status">{notice}</p></Reveal>
         {section === 'saved' && <>
           <section className="sc-account-profile-block"><h3>Ulubione spinki</h3>
-            {favorites.isPending && <p role="status" className="sc-account-profile-empty">Ładuję ulubione…</p>}
+            {favorites.isPending && <p role="status" className="sc-account-profile-empty"><Loading label="Ładuję ulubione" /></p>}
             {favorites.isError && <p role="alert" className="sc-account-profile-empty">Nie udało się pobrać ulubionych. <Button size="sm" variant="quiet" onClick={() => favorites.refetch()}>Ponów</Button></p>}
             {favorites.isSuccess && !favoriteRows.length && <div className="sc-account-profile-empty"><p>Twoja kolekcja zaczyna się od jednej spinki.</p><p>Zapisz opublikowaną spinkę przyciskiem serca. Znajdziesz ją tutaj po powrocie.</p><Link href="/">Znajdź spinkę ↗</Link></div>}
             <MorphList id="account-favorites" as="div" itemAs="div" className="sc-account-profile-favorites" items={favoriteRows} getKey={item => item.id} renderItem={item => <><div><Link href={`/thread/${item.thread.slug}`}>{item.thread.title}</Link><time dateTime={item.created_at}>Zapisano {formatDateTimePl(item.created_at)}</time></div><Button size="sm" variant="quiet" disabled={pending} onClick={() => removeFavorite(item.thread.id)}>Usuń z ulubionych</Button></>} />
@@ -102,7 +103,7 @@ export function AccountProfile() {
           </section><section className="sc-account-profile-block sc-account-profile-topics"><ProfileTopics /></section>
         </>}
         {section === 'activity' && <section className="sc-account-profile-block"><p className="sc-account-profile-explanation">Oceny i komentarze, które zostawiasz pod materiałami. Widoczność tej zbiorczej historii zmienisz w sekcji <Button size="sm" variant="quiet" onClick={() => navigate('privacy')}>Prywatność</Button>.</p>
-          {history.isPending && <p role="status" className="sc-account-profile-empty">Ładuję historię…</p>}{history.isError && <p role="alert" className="sc-account-profile-empty">Nie udało się pobrać historii. <Button size="sm" variant="quiet" onClick={() => history.refetch()}>Ponów</Button></p>}
+          {history.isPending && <p role="status" className="sc-account-profile-empty"><Loading label="Ładuję historię" /></p>}{history.isError && <p role="alert" className="sc-account-profile-empty">Nie udało się pobrać historii. <Button size="sm" variant="quiet" onClick={() => history.refetch()}>Ponów</Button></p>}
           {history.isSuccess && !historyRows.length && <div className="sc-account-profile-empty"><p>Nie masz jeszcze zapisanych reakcji ani komentarzy.</p><p>Otwórz materiał, poznaj jego kontekst i zaznacz, czy był przydatny.</p><Link href="/">Przejdź do wiadomości ↗</Link></div>}
           <HistoryRows rows={historyRows} />{history.hasNextPage && <Button loading={history.isFetchingNextPage} variant="secondary" onClick={() => history.fetchNextPage()}>Wcześniejsza aktywność ↓</Button>}
         </section>}
@@ -119,7 +120,7 @@ export function AccountProfile() {
 
 export function PublicAccountProfile({ username }: { username: string }) {
   const history = useInfiniteQuery({ queryKey: ['public-profile', username], initialPageParam: 1, queryFn: ({ pageParam }) => apiFetch<{ id?: number; username: string; display_name?: string; x_profile?: string | null; history: HistoryPage }>(`/api/profiles/${encodeURIComponent(username)}/activity/?page=${pageParam}`), getNextPageParam: last => last.history.next_page ?? undefined, retry: false });
-  if (history.isPending) return <p role="status" className="sc-account-profile-empty">Ładuję publiczną historię…</p>;
+  if (history.isPending) return <p role="status" className="sc-account-profile-empty"><Loading label="Ładuję publiczną historię" /></p>;
   if (history.isError) return <section className="sc-account-profile-page sc-account-profile-signed-out"><p className="sc-account-profile-kicker">PROFIL UŻYTKOWNIKA</p><h1>Historia aktywności</h1><p>{history.error instanceof ApiError && history.error.status === 404 ? 'Ten profil nie udostępnia publicznej historii.' : 'Nie udało się pobrać publicznej historii.'}</p><Button href="/" variant="quiet">Wróć do wiadomości ↗</Button></section>;
   const rows = history.data.pages.flatMap(page => page.history.results);
   return <section className="sc-account-profile-page sc-account-profile-public"><header className="sc-account-profile-header"><div><p className="sc-account-profile-kicker">PROFIL PUBLICZNY</p><h1>{history.data.pages[0].display_name || `@${history.data.pages[0].username}`} {history.data.pages[0].x_profile && <a href={history.data.pages[0].x_profile} target="_blank" rel="noopener noreferrer">𝕏</a>}</h1><p className="sc-account-profile-role">Historia udostępniona przez użytkownika</p></div><Button href="/" variant="quiet">Wiadomości ↗</Button></header><div className="sc-account-profile-public-content"><h2>Aktywność</h2>{history.data.pages[0].id && <FollowButton kind="user" targetId={history.data.pages[0].id} label={`@${username}`} />}<HistoryRows rows={rows} />{!rows.length && <p className="sc-account-profile-empty">Brak aktywności do wyświetlenia.</p>}{history.hasNextPage && <Button loading={history.isFetchingNextPage} variant="secondary" onClick={() => history.fetchNextPage()}>Wcześniejsza aktywność ↓</Button>}</div></section>;

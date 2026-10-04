@@ -19,6 +19,7 @@ import { CAMPS, CAMP_LABELS, spinVar, type Camp, type Party, type DataPeriod } f
 import { clinicPeriodLabel } from "../../lib/clinicPeriod";
 import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "./SpinParts";
+import { Loading } from "../../kit/Loading";
 
 type Sample = { count: number; enough_data: boolean };
 type Pair = { total: number; today: number };
@@ -414,7 +415,7 @@ export function ClinicIndicators() {
         link={<Link href="/metodologia">Jak wybieramy i liczymy?</Link>} />
 
       {query.isError ? <p role="alert" className="sc-clinic-empty">Nie udało się pobrać wskaźników. <Button type="button" variant="quiet" onClick={() => query.refetch()}>Spróbuj ponownie</Button></p> : null}
-      {query.isLoading ? <p className="sc-clinic-empty">Ładowanie wskaźników…</p> : null}
+      {query.isLoading ? <p className="sc-clinic-empty"><Loading label="Ładowanie wskaźników" /></p> : null}
 
       {stats ? <UpdatedAt.Provider value={query.dataUpdatedAt}>
         <section className="sc-ind-card" aria-labelledby="ind-sides-title">

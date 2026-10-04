@@ -12,6 +12,7 @@ import { ShareThreadOnX } from './ShareThreadOnX';
 import { ImportStatus } from './ImportStatus';
 import { DraftAssistant } from './DraftAssistant';
 import { Button, SearchField } from '../kit';
+import { Loading } from "../kit/Loading";
 const input = 'sc-editor-input';
 const button = 'sc-editor-button';
 const kinds = ['voting', 'legislation', 'parliamentary_print', 'document', 'factcheck', 'context', 'article', 'interview', 'reportage', 'statement', 'tweet', 'mention', 'sponsored', 'advertisement', 'video', 'podcast', 'opinion', 'other'];
@@ -83,7 +84,7 @@ export function ThreadEditor() {
     {canPublish && <Link href="/editor/political" className="sc-editor-link">Panel przeglądu X · propozycje z zapisanych wpisów ↗</Link>}
     {canPublish && <ImportStatus />}
     <header className="sc-editor__head"><p className="sc-t-caption">WARSZTAT</p><h1 className="sc-t-title-l">{slug ? 'Edytuj spinkę' : journalist ? 'Autoryzowana spinka' : 'Połącz źródła w historię'}</h1><p className="sc-t-body sc-text-2">{journalist ? 'Box otwierający - materiał, który chcesz wypromować - i do 14 boxów kontekstu. Tytuł z opisem to pierwszy wpis wątku na X.' : 'Wybierz materiały, dodaj kontekst i opublikuj chronologiczną spinkę.'}</p></header>
-    {slug && existing.isPending && <p role="status">Ładuję spinka…</p>}
+    {slug && existing.isPending && <p role="status"><Loading label="Ładuję spinka" /></p>}
     {slug && existing.isError && <p role="alert" className="sc-editor-error">Nie udało się wczytać spinki. Wróć do listy i spróbuj ponownie.</p>}
     {!canPublish && <p className="sc-editor-notice">Warsztat dziennikarza. Tworzysz własne szkice; publikację zatwierdza zespół spin.clinic. Zmiana opublikowanej spinki wycofa ją do ponownego zatwierdzenia.</p>}
     {canPublish && <DraftAssistant key={slug ?? 'new'} articles={picked.map(item => item.article)} onAdd={add} />}
