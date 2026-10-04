@@ -8,6 +8,7 @@ import { Loading } from '@spin-clinic/ui/kit';
  */
 type Node = { id: string; kind: string; label: string; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
 type Edge = { source: string; target: string; label: string };
+type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean };
 type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number> };
 
 const COLUMNS: [string, string][] = [['person', 'Osoby'], ['organisation', 'Spółki i fundacje (KRS)'], ['record', 'Sejm'],
@@ -20,15 +21,16 @@ export function TopicTree() {
   const [data, setData] = useState<Graph | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'error' | 'off'>('idle');
   const [focus, setFocus] = useState<string | null>(null);
+  const [start, setStart] = useState<Start | null>(null);
 
-  async function load(q: string) {
+  async function load(q: string, remember = true) {
     setState('loading'); setFocus(null);
     try {
       const response = await fetch(`/api/przeszlosc/temat/?q=${encodeURIComponent(q)}`);
       if (response.status === 404) { setState('off'); return; }
       if (!response.ok) throw new Error();
       setData(await response.json()); setState('idle');
-      window.history.replaceState(null, '', `?q=${encodeURIComponent(q)}`);
+      if (remember) window.history.replaceState(null, '', `?q=${encodeURIComponent(q)}`);
     } catch { setState('error'); }
   }
   // osobna strona (przeszlosc.today): bez pasków i menu spin.clinic, własny nagłówek i stopka
@@ -38,6 +40,11 @@ export function TopicTree() {
   }, []);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('q');
+    // strona główna od razu pokazuje stan bazy, najnowsze dokumenty Sejmu i przykładowy temat (właściciel 5.10: „wygląda, jakby nic nie było”)
+    fetch('/api/przeszlosc/start/').then(r => r.ok ? r.json() : null).then((data: Start | null) => {
+      setStart(data);
+      if (!q && data?.topics_enabled) { setQuery(EXAMPLES[0]); void load(EXAMPLES[0], false); }
+    }).catch(() => undefined);
     if (q) { setQuery(q); void load(q); }
   }, []);
 
@@ -63,6 +70,15 @@ export function TopicTree() {
       <p className="sc-pt__ex">Przykłady: {EXAMPLES.map(e => <button key={e} type="button" onClick={() => { setQuery(e); void load(e); }}>{e}</button>)}</p>
     </header>
 
+    {start && <section className="sc-pt__stats" aria-label="Co jest w bazie">
+      {([['people', 'osób publicznych'], ['organisations', 'spółek i fundacji z KRS'], ['records', 'dokumentów Sejmu'], ['posts', 'wpisów polityków'], ['diagnoses', 'diagnoz Dr. Spina'], ['articles', 'artykułów']] as const)
+        .map(([key, label]) => <div key={key}><b>{(start.counts[key] ?? 0).toLocaleString('pl-PL')}</b><span>{label}</span></div>)}
+    </section>}
+    {start && start.latest.length > 0 && <section className="sc-pt__latest" aria-label="Najnowsze w Sejmie">
+      <h2>Najnowsze w Sejmie</h2>
+      <ol>{start.latest.map((row, i) => <li key={i}><time>{row.date ?? ''}</time><span>{row.kind}</span><a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>
+    </section>}
+    {state === 'idle' && data && !new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('q') && <p className="sc-pt__k">Przykładowy temat: {data.topic}</p>}
     {state === 'loading' && <Loading label="Ładowanie tematu" />}
     {state === 'off' && <p className="sc-pt__msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
     {state === 'error' && <p className="sc-pt__msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}

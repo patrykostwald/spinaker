@@ -36,7 +36,7 @@ def test_bug_report_saved_without_secret_fields(monkeypatch):
 def test_bug_report_validation_and_throttle(monkeypatch):
     monkeypatch.setattr('news.feedback.notify', lambda report: None)
     client = APIClient()
-    assert client.post('/api/feedback/bug/', {'text': 'ab', 'path': '/'}, format='json').status_code == 400
+    assert client.post('/api/feedback/bug/', {'text': 'x' * 1300, 'path': '/'}, format='json').status_code == 400
     codes = [client.post('/api/feedback/bug/', {'text': f'Opis błędu {i}', 'path': '/'}, format='json').status_code for i in range(6)]
     assert codes[:4] == [201] * 4 and codes[4] == 429  # nieudana próba też się liczy
 

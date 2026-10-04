@@ -96,7 +96,7 @@ export function SocialNavigation() {
       {accounts && !account.data?.authenticated && <Link href="/konto" className="sc-rail__login">Zaloguj się</Link>}
       <div className="sc-rail__foot">
         <ThemeSwitcher compact />
-        <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}<BugReportButton className="sc-rail__bug" /></p>
+        <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}</p>
       </div>
     </nav>
 
@@ -105,12 +105,14 @@ export function SocialNavigation() {
       <button type="button" aria-expanded={sheet} aria-controls="sc-more-sheet" onClick={() => setSheet(value => !value)}><Icon d={icon.more} /><span>Więcej</span></button>
     </nav>
 
+    {/* „Zgłoś błąd” jako ikonka w prawym dolnym rogu, na wysokości ostatniego wiersza lewego menu (właściciel 5.10) */}
+    <BugReportButton className="sc-bug-fab" />
+
     {sheet && <div className="sc-more-sheet" onClick={event => { if (event.target === event.currentTarget) setSheet(false); }}>
       <div id="sc-more-sheet" role="dialog" aria-modal="true" aria-label="Więcej" className="sc-more-sheet__panel">
         <div className="sc-rail__group">{extra.map(entry => item(entry))}</div>
         <p>{small.map(link => link.lang ? <a key={link.href} href={link.href} lang={link.lang} hrefLang={link.lang}>{link.label}</a> : <Link key={link.href} href={link.href}>{link.label}</Link>)}</p>
         <ThemeSwitcher compact />
-        <BugReportButton className="sc-rail__bug" />
         <button type="button" className="sc-more-sheet__close" onClick={() => setSheet(false)}>Zamknij</button>
       </div>
     </div>}

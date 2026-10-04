@@ -130,3 +130,43 @@ def topic_view(request):
         if connection.vendor == 'postgresql':
             cache.set(key, data, 600)
     return Response(data)
+
+
+KIND_LABELS = {'print': 'Druk sejmowy', 'ballot': 'Głosowanie', 'voting': 'Głosowanie', 'consultation': 'Konsultacje',
+               'lobby_activity': 'Lobbing', 'lobby_document': 'Lobbing', 'financial_document': 'Finanse', 'financial_row': 'Finanse',
+               'interpellation': 'Interpelacja'}
+
+
+def start_data():
+    """Strona główna przeszłość.today: co jest w bazie i co nowego w Sejmie (same zbiorcze liczby i dokumenty publiczne)."""
+    from news.clinic import published_diagnoses
+    from news.models import Article
+    from news.political_models import PoliticalPost, PublicFigure, PublicFigureOrganisationRelation
+    from news.public_records_models import PublicRecord
+    latest = PublicRecord.objects.exclude(title='').order_by('-date', '-pk')[:8]
+    return {
+        'counts': {
+            'people': PublicFigure.objects.filter(archived=False).count(),
+            'organisations': PublicFigureOrganisationRelation.objects.filter(verification_status='confirmed').values('organisation').distinct().count(),
+            'records': PublicRecord.objects.count(),
+            'posts': PoliticalPost.objects.count(),
+            'diagnoses': published_diagnoses().count(),
+            'articles': Article.objects.count(),
+        },
+        'latest': [{'title': r.title[:180], 'date': r.date.isoformat() if r.date else None, 'kind': KIND_LABELS.get(r.kind, 'Dokument'),
+                    'url': r.source_url} for r in latest],
+        'topics_enabled': enabled(),
+    }
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def start_view(request):
+    from django.core.cache import cache
+    from django.db import connection
+    data = cache.get('przeszlosc:start') if connection.vendor == 'postgresql' else None
+    if data is None:
+        data = start_data()
+        if connection.vendor == 'postgresql':
+            cache.set('przeszlosc:start', data, 600)
+    return Response(data)

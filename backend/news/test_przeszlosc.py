@@ -35,3 +35,9 @@ def test_endpoint_off_by_default(monkeypatch):
     monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
     assert client.get('/api/przeszlosc/temat/?q=a').status_code == 400
     assert client.get('/api/przeszlosc/temat/?q=CPK').json()['terms'] == ['CPK']
+
+
+def test_start_counts_and_latest():
+    post('9', 'government', 'CPK ruszy.')
+    data = APIClient().get('/api/przeszlosc/start/').json()
+    assert data['counts']['posts'] == 1 and data['latest'] == [] and data['topics_enabled'] is False

@@ -11,7 +11,8 @@ export function FirstVisitIntro() {
   const pathname = usePathname() || "/";
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    if (pathname !== "/" || navigator.webdriver || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // film tylko na spin.clinic; przeszlosc.today (ta sama aplikacja) ma własną stronę główną
+    if (pathname !== "/" || window.location.hostname.endsWith("przeszlosc.today") || navigator.webdriver || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     try { if (!localStorage.getItem(SEEN)) setOpen(true); } catch { /* bez pamięci przeglądarki nie pokazujemy */ }
   }, [pathname]);
   useEffect(() => {

@@ -12,7 +12,7 @@ class BugReport(models.Model):
     STATUSES = [('new', 'Nowe'), ('fixed', 'Naprawione'), ('rejected', 'Nie dotyczy')]
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     kind = models.CharField(max_length=8, choices=KINDS, default='bug')
-    text = models.TextField(max_length=1000)
+    text = models.TextField(max_length=1200)
     path = models.CharField(max_length=200)
     # dołączane jawnie (formularz mówi, co wysyła): rozmiar ekranu, motyw, ostatnie strony tej wizyty
     viewport = models.CharField(max_length=20, blank=True)

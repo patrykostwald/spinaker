@@ -39,7 +39,7 @@ class BugUserThrottle(UserRateThrottle):
 
 class BugInput(serializers.Serializer):
     kind = serializers.ChoiceField(choices=['bug', 'idea'], default='bug')
-    text = serializers.CharField(min_length=5, max_length=1000)
+    text = serializers.CharField(max_length=1200, required=False, allow_blank=True, default='')
     path = serializers.CharField(max_length=200)
     viewport = serializers.RegexField(r'^\d{2,5}x\d{2,5}$', required=False, allow_blank=True)
     theme = serializers.ChoiceField(choices=['light', 'dark', ''], required=False, default='')
@@ -56,7 +56,7 @@ class BugReportView(APIView):
         data.is_valid(raise_exception=True)
         row = data.validated_data
         report = BugReport.objects.create(
-            kind=row['kind'], text=row['text'].strip(), path=clean_path(row['path']) or '/',
+            kind=row['kind'], text=row['text'].strip() or '(bez opisu)', path=clean_path(row['path']) or '/',
             viewport=row.get('viewport', ''), theme=row.get('theme', ''),
             trail=[p for p in (clean_path(item) for item in row.get('trail', [])) if p],
             contact=row.get('contact', ''), user=request.user if request.user.is_authenticated else None)
