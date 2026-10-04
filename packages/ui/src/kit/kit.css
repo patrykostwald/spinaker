@@ -8757,3 +8757,5 @@ details.sc-source-disclosure, details.sc-deleted, .sc-clinic-discussion, .sc-f2-
 .sc-ind-show__tiles { margin-top: auto !important; }
 .sc-ind-show__actions { margin-top: 18px !important; margin-bottom: 0 !important; }
 .sc-ind-show__main > .sc-section-header { margin-bottom: 4px !important; padding-bottom: 0 !important; }
+/* karty diagnoz: same liczby, bez pasków siły spinu (właściciel 4.10) */
+.sc-list-metrics__track { display: none !important; }
