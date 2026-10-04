@@ -9183,3 +9183,8 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pt__latest a:hover { text-decoration: underline; }
 @media (max-width: 900px) { .sc-pt__stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .sc-pt__stats > div:nth-child(4) { border-left: 0; padding-left: 0; } .sc-pt__stats > div:nth-child(n+4) { border-top: 1px solid var(--sc-line); } }
 @media (max-width: 560px) { .sc-pt__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sc-pt__stats > div { border-left: 0; padding-left: 0; border-top: 1px solid var(--sc-line); } .sc-pt__stats > div:nth-child(-n+2) { border-top: 0; } .sc-pt__latest li { grid-template-columns: 1fr; gap: 2px; } .sc-pt__latest a { white-space: normal; } }
+/* logo (właściciel 5.10: „poprzednie było grubsze i niższe”): reguła menu `.sc-rail a { font: inherit }` ścinała grubość do 400.
+   Porównanie 5 wariantów w obu motywach: wybrany 700 / 19,5 px / -0,025 em - pasuje do pogrubionego menu i BETA, nie dominuje nad nagłówkiem. */
+.sc-rail .sc-rail__logo, .sc-rail .sc-rail__logo > span, .sc-rail-top .sc-rail__logo, .sc-rail-top .sc-rail__logo > span { font-weight: 700 !important; letter-spacing: -0.025em; }
+@media (min-width: 768px) { .sc-rail > .sc-rail__logo { font-size: 19.5px !important; } }
+.sc-rail-top .sc-rail__logo { font-size: 19px; }
