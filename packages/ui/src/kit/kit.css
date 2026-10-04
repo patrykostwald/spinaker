@@ -9142,3 +9142,22 @@ html[data-theme="light"] .sc-intro { background: #000; }
   .sc-social-sortrow .sc-social-composer__end { margin-left: auto; display: inline-flex; gap: 14px; border-left: 0 !important; padding-left: 0 !important; }
   .sc-social-sortrow button, .sc-social-sortrow a { white-space: nowrap; word-break: normal; }
 }
+/* przeszłość.today jako osobna strona (właściciel 5.10): bez pasków spin.clinic */
+html[data-standalone] :is(.sc-rail, .sc-rail-top, .sc-tabbar, .sc-topbar, .sc-preview-banner) { display: none !important; }
+html[data-standalone] .sc-social-layout { display: block !important; max-width: none !important; margin: 0 !important; }
+.sc-pt__brand { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--sc-line); flex-wrap: wrap; }
+.sc-pt__mark { font-size: 22px; font-weight: 700; letter-spacing: -.01em; color: var(--sc-text); text-decoration: none; }
+.sc-pt__mark i { font-style: normal; color: var(--sc-accent); }
+.sc-pt__brand nav { display: flex; gap: 18px; font-size: 14px; }
+.sc-pt__brand nav a { color: var(--sc-text-2); text-decoration: none; }
+.sc-pt__brand nav a:hover { color: var(--sc-text); }
+.sc-pt__about { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.sc-pt__about > div { border: 1px solid var(--sc-line); border-radius: 3px; padding: 16px; display: grid; gap: 6px; }
+.sc-pt__about p, .sc-pt__price p { margin: 0; color: var(--sc-text-2); font-size: 14.5px; line-height: 1.5; }
+.sc-pt__price { display: grid; gap: 10px; max-width: 760px; }
+.sc-pt__price h2 { margin: 0; font-size: 20px; }
+.sc-pt__price ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
+.sc-pt__price li { border: 1px solid var(--sc-line); border-radius: 3px; padding: 8px 12px; font-size: 14px; }
+.sc-pt__foot { border-top: 1px solid var(--sc-line); padding-top: 14px; font-size: 13px; color: var(--sc-text-3); }
+.sc-pt__foot a { color: inherit; }
+@media (max-width: 760px) { .sc-pt__about { grid-template-columns: 1fr; } }

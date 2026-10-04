@@ -31,6 +31,11 @@ export function TopicTree() {
       window.history.replaceState(null, '', `?q=${encodeURIComponent(q)}`);
     } catch { setState('error'); }
   }
+  // osobna strona (przeszlosc.today): bez pasków i menu spin.clinic, własny nagłówek i stopka
+  useEffect(() => {
+    document.documentElement.dataset.standalone = '1';
+    return () => { delete document.documentElement.dataset.standalone; };
+  }, []);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('q');
     if (q) { setQuery(q); void load(q); }
@@ -45,8 +50,10 @@ export function TopicTree() {
   const timeline = useMemo(() => (data?.nodes ?? []).filter(n => n.date).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, 40), [data]);
 
   return <main className="sc-pt">
+    <div className="sc-pt__brand"><a href="/przeszlosc" className="sc-pt__mark">przeszłość<i>.</i>today</a>
+      <nav><a href="#jak">Jak to działa</a><a href="#ceny">Ceny</a><a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">spin.clinic ↗</a></nav></div>
     <header className="sc-pt__head">
-      <p className="sc-pt__k">przeszłość.today · podgląd na danych spin.clinic</p>
+      <p className="sc-pt__k">Wersja beta · bezpłatnie</p>
       <h1>Kto, co i kiedy w jednym temacie</h1>
       <p>Wpisz temat. Pokażemy osoby publiczne, ich spółki i fundacje z KRS, dokumenty Sejmu, wpisy na X z diagnozami Dr. Spina i artykuły. Każde powiązanie ma źródło.</p>
       <form onSubmit={event => { event.preventDefault(); if (query.trim().length >= 3) void load(query.trim()); }} className="sc-pt__search">
@@ -81,5 +88,17 @@ export function TopicTree() {
         <ol>{timeline.map(n => <li key={n.id} data-kind={n.kind}><time>{n.date}</time><span>{COLUMNS.find(c => c[0] === n.kind)?.[1]}</span><b>{n.label}</b></li>)}</ol>
       </section>}
     </>}
+
+    <section className="sc-pt__about" id="jak" aria-label="Jak to działa">
+      <div><b>Tylko osoby i podmioty publiczne</b><p>Politycy, urzędnicy, spółki i fundacje z KRS. Żadnych osób prywatnych.</p></div>
+      <div><b>Każde powiązanie ma źródło</b><p>Oficjalne dane Sejmu i KRS, wpisy na X, artykuły. Nic nie łączymy po samym nazwisku.</p></div>
+      <div><b>Ta sama miara dla wszystkich</b><p>Rządzący i opozycja przechodzą przez identyczne zapytania i te same reguły.</p></div>
+    </section>
+    <section className="sc-pt__price" id="ceny" aria-label="Ceny">
+      <h2>Ceny</h2>
+      <p>W becie wszystko jest bezpłatne. Po becie przeglądanie tematów zostaje bezpłatne, a narzędzia dla redakcji są płatne (ceny netto, miesięcznie):</p>
+      <ul><li><b>Pro</b> 199 zł · dziennikarz</li><li><b>Zespół</b> 599 zł · redakcja</li><li><b>Instytucje</b> od 2 500 zł</li></ul>
+    </section>
+    <footer className="sc-pt__foot">przeszłość.today prowadzi iapply sp. z o.o. · dane wspólne ze spin.clinic · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></footer>
   </main>;
 }
