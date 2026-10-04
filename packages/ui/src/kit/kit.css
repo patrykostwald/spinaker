@@ -8956,3 +8956,36 @@ html { scrollbar-width: thin; }
   .sc-account-086 .sc-account-sidenav a { padding-inline: 0 !important; }
   .sc-account-086 .sc-account-sidenav a[aria-current] { box-shadow: inset 0 -2px var(--sc-text) !important; }
 }
+
+/* ===== Telefon (właściciel 4.10, przegląd 390 px) =====
+   wiersz spinki: awatar | czas, autor, tytuł w 2 wierszach i opis | komentarze; łańcuch pod spodem na całą szerokość. */
+@media (max-width: 600px) {
+  .sc-thread-strip--row .sc-trow, .sc-thread-strip--row .sc-trow:not(:has(.sc-trow__voices)) {
+    grid-template-columns: 32px minmax(0, 1fr) auto !important; grid-template-areas: "av main side" "av boxes boxes"; column-gap: 12px; row-gap: 10px; align-items: start; }
+  .sc-thread-strip--row .sc-trow > .sc-social-avatar { grid-area: av; width: 32px; height: 32px; }
+  .sc-thread-strip--row .sc-trow__h { grid-area: main; }
+  .sc-thread-strip--row .sc-trow__boxes { grid-area: boxes; justify-self: start; }
+  .sc-thread-strip--row .sc-trow__side { grid-area: side; align-self: start; }
+  .sc-thread-strip--row .sc-trow__main { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: none !important; row-gap: 4px; }
+  .sc-thread-strip--row .sc-trow__main > * { grid-column: 1 !important; grid-row: auto !important; }
+  .sc-thread-strip--row .sc-trow__by { display: flex !important; gap: 8px; align-items: baseline; }
+  .sc-thread-strip--row .sc-trow__title { -webkit-line-clamp: 2 !important; font-size: 15px; line-height: 1.35; }
+  .sc-thread-strip--row .sc-trow__desc { -webkit-line-clamp: 2; }
+  .sc-trow__chainrow { display: inline-flex !important; }
+  /* pole komentarza: odnośniki w jednym wierszu, narzędzia pod nimi bez łamania słów */
+  .sc-social-composer__top { row-gap: 6px; }
+  .sc-social-composer__tools { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+  .sc-social-composer__tools .sc-social-composer__end { padding-left: 0 !important; margin-left: auto !important; border: 0 !important; }
+  .sc-social-composer__tools * { white-space: nowrap; word-break: keep-all; }
+}
+/* widok boksu na telefonie: „Cała spinka” u góry, karta na całą szerokość (obraz nad tekstem), strzałki pod kartą */
+@media (max-width: 767px) {
+  .sc-pick__stage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; grid-template-areas: "home home" "card card" "prev next"; row-gap: 12px; column-gap: 0 !important; }
+  .sc-pick__stage > :nth-child(1) { grid-area: home; }
+  .sc-pick__stage > :nth-child(2) { grid-area: prev; justify-self: start; }
+  .sc-pick__stage > :nth-child(3) { grid-area: card; }
+  .sc-pick__stage > :nth-child(4) { grid-area: next; justify-self: end; }
+  .sc-pick__card { grid-template-columns: minmax(0, 1fr) !important; min-height: 0 !important; padding: 22px 18px 48px !important; gap: 16px !important; }
+  .sc-pick__media { max-width: none !important; width: 100%; min-height: 0 !important; height: auto !important; aspect-ratio: 16 / 9; max-height: 200px; font-size: 36px; }
+  .sc-trop-overlay__body > article .sc-pick { margin-left: 0 !important; }
+}
