@@ -14,17 +14,17 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--t1); f
 #fit { position: fixed; inset: 0; overflow: hidden; }
 #stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px; transform-origin: center; overflow: hidden; }
 body.portrait #stage { width: 600px; height: 1000px; }
-.sc { position: absolute; inset: 0 0 96px; display: grid; place-items: center; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s .6s; }
+.sc { position: absolute; inset: 0 0 132px; display: grid; place-items: center; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s .6s; }
 .sc.on { opacity: 1; visibility: visible; transition: opacity .6s ease .15s, visibility 0s; }
 /* podpis sceny i postęp */
-#cap { position: absolute; left: 64px; right: 64px; bottom: 34px; min-height: 52px; display: grid; align-content: end; text-align: center; font-size: 20px; line-height: 1.45; color: var(--t2); }
+#cap { position: absolute; left: 64px; right: 64px; bottom: 74px; min-height: 52px; display: grid; align-content: end; text-align: center; font-size: 20px; line-height: 1.45; color: var(--t2); }
 #cap b { color: var(--t1); font-weight: 600; }
 #cap span { transition: opacity .35s ease, transform .35s var(--ease); }
 #cap span.out { opacity: 0; transform: translateY(8px); }
-#bar { position: absolute; left: 64px; right: 64px; bottom: 14px; display: flex; gap: 6px; }
+#bar { position: absolute; left: 64px; right: 64px; bottom: 54px; display: flex; gap: 6px; }
 #bar i { flex: 1; height: 2px; background: var(--ln); overflow: hidden; border-radius: 1px; }
 #bar i b { display: block; height: 100%; width: 0; background: var(--t1); }
-#ctl { position: absolute; right: 18px; top: 14px; display: flex; gap: 14px; z-index: 5; }
+#ctl { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 28px; z-index: 5; }
 #ctl button { background: none; border: 0; color: var(--t2); font: 600 13px Montserrat, sans-serif; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; padding: 6px 2px; }
 #ctl button:hover { color: var(--t1); }
 body.portrait #cap { left: 28px; right: 28px; font-size: 22px; }
