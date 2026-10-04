@@ -9271,3 +9271,10 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-list-metrics .sc-list-metrics__strength, .sc-spin-num, .sc-scan-m-num.sc-scan-strength { font-weight: 800 !important; }
 .sc-list-metrics dd small, .sc-spin-num small { font-size: 11px !important; font-weight: 600 !important; color: var(--sc-text-2) !important; margin-left: 3px; }
 .sc-ind-show__tiles .sc-ind-today { display: block; font-size: 13px !important; line-height: 16px; font-weight: 700; color: var(--sc-positive); margin: 0 0 2px !important; white-space: nowrap; }
+/* wskaźniki na liście: bez podpisów, zwarte i równe (właściciel 5.10) */
+.sc-list-metrics > div { align-content: start; row-gap: 6px !important; }
+.sc-list-metrics > div > small { display: none !important; }
+.sc-list-metrics dd { margin-top: 8px !important; }
+.sc-list-metrics__families { margin-top: 0 !important; }
+.sc-list-metrics > div { display: flex !important; flex-direction: column; align-items: flex-end; }
+.sc-list-metrics > div > dt { order: 1; } .sc-list-metrics > div > dd { order: 2; } .sc-list-metrics > div > .sc-list-metrics__families, .sc-list-metrics > div > .sc-list-metrics__track { order: 3; margin-top: 6px !important; }

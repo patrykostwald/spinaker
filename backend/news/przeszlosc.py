@@ -22,7 +22,7 @@ def terms(query):
 
 
 # Rozwinięcia częstych skrótów (wyszukiwanie łapie oba zapisy)
-EXPAND = {'cpk': ['Centraln Port Komunikacyjn', 'Portu Komunikacyjnego'], 'kpo': ['Krajow Plan Odbudowy', 'Planu Odbudowy'],
+EXPAND = {'cpk': ['Centraln Port Komunikacyjn', 'Portu Komunikacyjnego', 'Port Polska', 'Portu Polska'], 'kpo': ['Krajow Plan Odbudowy', 'Planu Odbudowy'],
           'krrit': ['Krajow Rad Radiofonii', 'Rady Radiofonii'], 'nfz': ['Narodow Fundusz Zdrowia', 'Funduszu Zdrowia'],
           'zus': ['Zakład Ubezpieczeń Społecznych', 'Ubezpieczeń Społecznych'], 'tvp': ['Telewizj Polsk'],
           'pkp': ['Polskie Koleje Państwowe'], 'oze': ['odnawialn źród']}

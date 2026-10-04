@@ -115,8 +115,9 @@ export function SpinListMetrics({ spin }: { spin: SpinCardData }) {
     <div><dt>Siła spinu</dt><dd className="sc-list-metrics__strength sc-spin-num" style={spinVar(spin.intensity)}>{spin.intensity}<small>/100</small></dd>
       <span className="sc-list-metrics__track" aria-hidden="true"><i className="sc-spin-fill" style={{ ...spinVar(spin.intensity), width: `${Math.max(0, Math.min(100, spin.intensity))}%` }} /></span></div>
     <div><dt>Konsylium AI</dt><dd>{council.agreement ?? "-"}</dd></div>
-    <div><dt>Twierdzenia</dt><dd>{checked}</dd><small>{unverified > 0 ? `sprawdzone z ${checked + unverified}` : "sprawdzone"}</small></div>
-    <div><dt>Techniki</dt><dd>{typeCount}</dd><small>{techniqueLabel(typeCount)}</small>
+    {/* bez podpisów pod etykietami (właściciel 5.10); szczegół w dymku */}
+    <div title={unverified > 0 ? `Sprawdzone twierdzenia: ${checked} z ${checked + unverified}` : "Sprawdzone twierdzenia"}><dt>Twierdzenia</dt><dd>{checked}</dd></div>
+    <div title={`${typeCount} ${techniqueLabel(typeCount)}`}><dt>Techniki</dt><dd>{typeCount}</dd>
       <span className="sc-list-metrics__families">{families.filter(family => family.key !== "inne").map(family =>
         <i key={family.key} data-family={family.key} data-empty={!family.count || undefined} role="img" aria-label={`${family.label}: ${family.count}`} title={`${family.label}: ${family.count}`} />)}</span></div>
   </dl>;
