@@ -71,3 +71,16 @@ def test_architekt_plan_creates_ideas_and_step_survives_failures(quiet, monkeypa
     monkeypatch.setattr(po, 'ORDER', [('kartograf', boom), ('kontroler', po.kontroler)])
     done = po.step(force=True)
     assert done['kartograf'].startswith('błąd') and isinstance(done['kontroler'], int)
+
+
+def test_wynalazca_keeps_checked_new_ideas_and_prawnik_sees_them(quiet, monkeypatch):
+    idea = {'title': 'Licznik obietnic', 'what': 'zestawia zapowiedzi z głosowaniami', 'why_unique': 'nikt nie łączy wpisów z głosami',
+            'data_used': ['Wpisy polityków z X'], 'example': 'VAT', 'tier': 'darmowe', 'wow': 9}
+    answers(monkeypatch, {'summary': 'S', 'ideas': [idea, {**idea, 'title': 'Zwykła wyszukiwarka', 'wow': 3}]},
+            {'remove': [1], 'reason': 'konkurencja ma'})
+    note = po.wynalazca(force=True)
+    assert [i['title'] for i in note.scores['ideas']] == ['Licznik obietnic'] and note.kind == 'finding'
+    assert note.scores is not None and po.due('prawnik')
+    answers(monkeypatch, {'verdicts': [{'n': 0, 'verdict': 'dozwolone', 'why': 'dane publiczne'}]})
+    review = po.prawnik(force=True)
+    assert review.scores['verdicts'][0]['what'].startswith('Pomysł: Licznik obietnic')
