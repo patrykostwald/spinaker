@@ -9266,3 +9266,7 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
   .sc-ind-show:not([data-compact]) .sc-ind-show__tiles span { white-space: normal !important; font-size: 14px !important; }
 }
 @media (min-width: 761px) { .sc-ind-show:not([data-compact]) .sc-ind-show__tiles strong { font-size: clamp(32px, 3vw, 46px) !important; } }
+/* Siła spinu tą samą grubością co pozostałe liczby wskaźników (właściciel 5.10: w jasnym motywie wydawała się mniejsza i zlewała się);
+   kolor zostaje jedyną różnicą; „/100” czytelne w obu motywach */
+.sc-list-metrics .sc-list-metrics__strength, .sc-spin-num, .sc-scan-m-num.sc-scan-strength { font-weight: 800 !important; }
+.sc-list-metrics dd small, .sc-spin-num small { font-size: 11px !important; font-weight: 600 !important; color: var(--sc-text-2) !important; margin-left: 3px; }

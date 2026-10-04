@@ -5,6 +5,7 @@ Raz w tygodniu:
    w spin.clinic przy naszym zakresie; każdy punkt ma źródło, drugi model innej firmy sprawdza raport.
 2. Przegląd stron: pobiera kluczowe strony serwisu, wyciąga strukturę (nagłówki, odnośniki, przyciski, obrazy, długości
    tekstów), sprawdza ją bez AI według przewodnika (GUIDE) i prosi model o konkretne poprawki z miejscem i uzasadnieniem.
+Uczy się wszystkiego (właściciel 5.10), bo jego wiedzy używamy też w zbudujmi.com; przegląd stron dotyczy spin.clinic.
 Projektant proponuje; poprawki wdraża człowiek (zmiany w kodzie strony wymagają zgody właściciela).
 Z przewodnika i raportów korzystamy przy zmianach na froncie i przy stronach dla nowych klientów."""
 import json
@@ -69,11 +70,12 @@ FIX = {'type': 'object', 'properties': {'page': TEXT, 'element': TEXT, 'problem'
 AUDIT_SCHEMA = {'type': 'object', 'properties': {'fixes': {'type': 'array', 'items': FIX}}, 'required': ['fixes']}
 CHECK_SCHEMA = {'type': 'object', 'properties': {'remove': {'type': 'array', 'items': {'type': 'integer'}}, 'reason': TEXT},
                 'required': ['remove', 'reason']}
-LEARN = ('Jesteś Projektantem UX/UI spin.clinic: ekspertem od projektowania interfejsów, dostępności i czytelności, który zna '
-         'najnowsze trendy i dobre zasady branży. Na podstawie WYŁĄCZNIE nagłówków i opisów z items wybierz do 6 rzeczy, które '
-         'naprawdę warto wprowadzić w serwisie analizującym przekaz polityków (czarny minimalny interfejs, karty z danymi, '
-         'łańcuchy dowodów, telefon i komputer). Dla każdej: co to jest, dlaczego u nas, jak konkretnie zastosować, source_url z items. '
-         'W guide_additions podaj do 3 nowych, krótkich zasad do przewodnika, jeśli są warte zapisania. Bez mody dla mody.')
+LEARN = ('Jesteś Projektantem UX/UI grupy iapply: ekspertem od projektowania interfejsów, dostępności, czytelności, typografii, '
+         'animacji i sprzedażowych stron www, który zna najnowsze trendy i dobre zasady branży. Uczysz się WSZYSTKIEGO, nie tylko pod jeden '
+         'projekt: twoją wiedzę wykorzystują spin.clinic (serwis danych o przekazie polityków) i zbudujmi.com (strony i sklepy dla małych firm). '
+         'Na podstawie WYŁĄCZNIE nagłówków i opisów z items wybierz do 10 najważniejszych rzeczy. Dla każdej: co to jest (title), dlaczego '
+         'ważne (why), gdzie i jak zastosować (apply: wskaż spin.clinic, zbudujmi.com albo oba, konkretnie), source_url z items. '
+         'W guide_additions podaj do 3 nowych, krótkich zasad ogólnych, jeśli są warte zapisania. Bez mody dla mody.')
 LEARN_CHECK = ('Sprawdź raport kolegi wobec items i przewodnika. W remove podaj numery (od 0) trendów bez pokrycia w items, '
                'sprzecznych z przewodnikiem albo niepraktycznych dla tego serwisu.')
 AUDIT = ('Jesteś Projektantem UX/UI spin.clinic. Masz przewodnik projektu (guide), strukturę stron (pages) i automatyczne uwagi '
