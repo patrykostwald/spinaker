@@ -1,4 +1,5 @@
 "use client";
+import { ScrollArrows } from "../ScrollArrows";
 
 /**
  * Wskaźniki Kliniki (/klinika/wskazniki, 29.09.2026): ile pracy wykonuje Klinika i co widać w diagnozach.
@@ -351,7 +352,7 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
       {!compact && perDay.length ? (
         <figure className="sc-ind-show__spark">
           <figcaption>Diagnozy dziennie</figcaption>
-          <div className="sc-ind-show__chart-scroll" role="region" aria-label="Diagnozy dziennie - wykres przewijany poziomo" tabIndex={0}>
+          <ScrollArrows className="sc-ind-show__chart-scroll" label="Diagnozy dziennie">
             <div className="sc-ind-show__bars" role="img" aria-label={`Diagnozy dziennie: ${days.map((day, index) => `${day.date}: ${perDay[index]}`).join(", ")}`}>
               {days.map((day, index) => (
                 <div className="sc-ind-show__day" key={day.date} title={`${day.date}: ${perDay[index]}`} aria-hidden="true">
@@ -360,7 +361,7 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
                 </div>
               ))}
             </div>
-          </div>
+          </ScrollArrows>
           {stats ? <PeriodNote stats={stats} from={days[0].date} to={days.at(-1)?.date} /> : null}
           <DataTable title="Diagnozy dziennie" headers={["Data", "Diagnozy"]} rows={days.map((day, index) => [day.date, perDay[index]])} />
         </figure>
