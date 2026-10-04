@@ -42,7 +42,9 @@ def draft():
 
 
 def accepted(role, data):
-    if role == 2:
+    if role == reviews.EDITOR_STEP:
+        return {'title': data['texts']['title'], 'description': data['texts']['description'], 'reason': 'Tytuł już rzeczowy.'}, 'mock:editor'
+    if role == reviews.LINGUIST_STEP:
         return {'texts': dict(data['texts']), 'reason': 'Poprawiono język bez zmiany sensu.'}, 'mock:linguist'
     return {**{k: True for k in reviews.CHECKS}, 'reason': 'Każde zdanie ma pokrycie w danych.'}, 'mock:reviewer'
 
@@ -165,14 +167,14 @@ def test_complete_gate_language_and_two_reviews(monkeypatch):
     assert thread.is_public and public_threads().filter(pk=thread.pk).exists()
     review.refresh_from_db()
     assert list(review.rounds.values_list('role', flat=True)) == list(reviews.ROLES)
-    assert mock.call_count == 3
+    assert mock.call_count == 4
     # After the linguist every text is in final typography (short dashes, hard spaces after one-letter words).
     assert all(reviews.typography(v) == v for v in review.working_texts.values())
     assert reviews.typography('Dane z sejmu i opinie \u2014 test') == 'Dane z\u00a0sejmu i\u00a0opinie - test'
-    assert reviews.review_one(review.pk) == 'approved' and mock.call_count == 3
+    assert reviews.review_one(review.pk) == 'approved' and mock.call_count == 4
 
 
-@pytest.mark.parametrize('step', [1, 4])
+@pytest.mark.parametrize('step', [1, 5])
 def test_factual_rejection_never_publishes(monkeypatch, step):
     thread = draft()
     def reject(role, data):
@@ -193,7 +195,7 @@ def test_language_cannot_change_evidence_and_remeasurement_rejects(monkeypatch):
     original = list(thread.items.values_list('box_data', flat=True))
     def too_long(role, data):
         answer, model = accepted(role, data)
-        if role == 2:
+        if role == reviews.LINGUIST_STEP:
             answer['texts']['title'] = 'x'*81
         return answer, model
     monkeypatch.setattr(reviews, 'ask', too_long)
@@ -205,7 +207,7 @@ def test_language_cannot_change_evidence_and_remeasurement_rejects(monkeypatch):
 def test_quota_wait_resumes_at_unfinished_step(monkeypatch):
     thread = draft()
     def unavailable(role, data):
-        if role == 4:
+        if role == 5:
             raise ClinicAIError('quota')
         return accepted(role, data)
     monkeypatch.setattr(reviews, 'ask', unavailable)
@@ -214,12 +216,12 @@ def test_quota_wait_resumes_at_unfinished_step(monkeypatch):
     thread.refresh_from_db()
     assert not thread.is_public
     review = ThreadReview.objects.get(thread=thread)
-    assert review.step == 4 and review.next_attempt_at > now
+    assert review.step == 5 and review.next_attempt_at > now
     mock = Mock(side_effect=accepted)
     monkeypatch.setattr(reviews, 'ask', mock)
     assert reviews.review_one(review.pk, now=now) == 'waiting' and not mock.called
     assert reviews.review_one(review.pk, now=now+timedelta(hours=1, seconds=1)) == 'approved'
-    assert mock.call_count == 1 and mock.call_args.args[0] == 4
+    assert mock.call_count == 1 and mock.call_args.args[0] == 5
 
 
 @pytest.mark.parametrize('text', ['Poseł lobbował.', 'Poseł załatwił sprawę.', 'Działa na zlecenie.', 'Kowalski mówi o projekcie.'])
@@ -245,7 +247,7 @@ def test_approved_edit_revokes_and_audit_survives(monkeypatch):
     thread.refresh_from_db()
     assert not thread.is_public
     review = ThreadReview.objects.get(thread=thread)
-    assert review.revision == 2 and review.step == 0 and review.rounds.count() == 5
+    assert review.revision == 2 and review.step == 0 and review.rounds.count() == 6
 
 
 def test_generator_is_idempotent_after_review(monkeypatch):
@@ -294,3 +296,21 @@ def test_actual_090_and_official_adapters():
     parsed = signals.local_lobbying_records()
     assert len(parsed) == 3 and parsed[-1]['text'] == TEXT
     assert len(signals.build_lobbying()) == 3
+
+
+def test_title_editor_rewrites_only_title_and_description(monkeypatch):
+    """Redaktor tytułów (właściciel 4.10): zmienia tylko tytuł i podtytuł, a dalsze kroki je sprawdzają."""
+    thread = draft()
+    before = {k: v for k, v in thread.publication_review.payload['texts'].items() if k not in ('title', 'description')}
+    def editor(role, data):
+        if role == reviews.EDITOR_STEP:
+            return {'title': 'Ten sam zapis w dwóch poprawkach do druku',
+                    'description': 'Druk i dwie poprawki mają ten sam zapis.', 'reason': 'Konkretniej.'}, 'mock:editor'
+        return accepted(role, data)
+    monkeypatch.setattr(reviews, 'ask', editor)
+    assert reviews.review_one(thread.publication_review.pk) == 'approved'
+    thread.refresh_from_db()
+    review = ThreadReview.objects.get(thread=thread)
+    assert thread.title == 'Ten sam zapis w\u00a0dwóch poprawkach do druku'
+    assert {k: v for k, v in review.working_texts.items() if k not in ('title', 'description')} == before
+    assert review.rounds.get(role='Redaktor tytułów').model == 'mock:editor'
