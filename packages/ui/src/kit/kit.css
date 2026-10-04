@@ -9198,3 +9198,33 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 /* typ połączenia widoczny od razu po wejściu w spinkę (właściciel 5.10); klik wysuwa okienko z pełnym tekstem i oceną */
 .sc-joint__kind { font-size: 11.5px !important; font-weight: 700 !important; letter-spacing: .06em !important; text-transform: uppercase; color: var(--sc-text) !important;
   padding: 2px 7px; border-radius: 3px; background: var(--sc-bg); border: 1px solid color-mix(in srgb, var(--sc-text) 22%, transparent); }
+
+/* „W spinkach” (właściciel 5.10): tekst nie przylega do ramki */
+.sc-f2-context { padding: 20px 24px !important; }
+.sc-f2-context > h2 { margin: 0 0 6px; }
+.sc-f2-context > p { margin: 0; }
+
+/* Klinika, najnowsze diagnozy (właściciel 5.10): boksy w obu kolumnach tej samej wysokości - stałe miejsca na tytuł (3 linie),
+   autora (1 linia) i wskaźniki, więc kolejne wiersze stoją równo obok siebie */
+.sc-clinic-column__list .sc-spin-row__title { min-height: calc(3 * 1.35em); }
+.sc-clinic-column__list .sc-spin-row__who .sc-spin-row__author { -webkit-line-clamp: 1 !important; }
+.sc-clinic-column__list { display: grid; grid-auto-rows: 1fr; }
+.sc-clinic-columns { align-items: stretch; }
+
+/* panel wskaźników diagnozy (właściciel 5.10): etykiety do lewej krawędzi, liczby w jednej kolumnie, wykresy do prawej krawędzi */
+.sc-dg-score .sc-scan-m-col { grid-template-columns: 150px 120px minmax(0, 1fr) !important; padding: 18px 22px !important; column-gap: 20px !important; }
+.sc-dg-score .sc-scan-m .sc-scan-m-lbl { text-align: left !important; justify-self: start; margin: 0; }
+.sc-dg-score .sc-scan-m-num { text-align: left !important; justify-self: start; }
+.sc-dg-score .sc-scan-g { width: 100%; justify-self: stretch; }
+@media (max-width: 560px) {
+  .sc-dg-score .sc-scan-m-col { grid-template-columns: minmax(0, 1fr) auto !important; padding: 14px 16px !important; }
+  .sc-dg-score .sc-scan-m-num { justify-self: end; text-align: right !important; }
+}
+
+/* wpis polityka w diagnozie (właściciel 5.10: tekst ściśnięty): odstęp awatar-nazwisko, nagłówek-tekst i tekst-zdjęcia */
+.sc-spin-detail__post .sc-spin-author { gap: 14px !important; }
+.sc-spin-detail__post .sc-spin-detail__role { margin: 12px 0 0 !important; color: var(--sc-text-2); font-size: 14px; }
+.sc-spin-detail__post .sc-spin-card__text--full { margin: 14px 0 20px !important; line-height: 1.6 !important; }
+.sc-spin-detail__post figure { margin: 0 0 18px !important; }
+.sc-spin-detail__post figcaption { margin-top: 8px; }
+.sc-spin-detail__post .sc-spin-card__source { display: inline-block; margin-top: 4px; }
