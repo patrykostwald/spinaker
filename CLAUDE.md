@@ -1,4 +1,11 @@
-# Zasady projektu (spin.clinic, przeszłość.today)
+# Zasady projektu (spin.clinic, przeszłość.today, zbudujmi)
+
+## Zasada nadrzędna: triaż każdego zadania (właściciel 5.10)
+Przed każdym zadaniem zdecyduj i powiedz krótko, którą drogę wybierasz:
+- **A. Odpal istniejące pętle** (research, Prawnik, design, budowa, strażnicy, wdrożenie) - na chwilę, tylko te potrzebne.
+- **B. Zbuduj nową pętlę agentów** - gdy zadanie powtarza się albo wymaga stałej opieki; od razu z opiekunami i wpisem w LOOPS Automatyka.
+- **C. Zrób sam** - gdy zadanie jest proste (mała poprawka, jedna odpowiedź) i pętla nic by nie dodała.
+Przy A i B zbierz kilka niezależnych głosów (quasi-konsylium) i dopiero z ich werdyktu buduj.
 
 ## Design: zasady nadrzędne (właściciel; stosuj ZAWSZE, w każdym nowym boksie, stronie, raporcie i artefakcie)
 
