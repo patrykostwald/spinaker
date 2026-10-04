@@ -157,7 +157,9 @@ def build_new_narratives(now=None):
             continue
         evidence = {**candidate, 'posts': [{**p, 'published_at': p['published_at'].isoformat()} for p in candidate['posts']], 'method': NEW_METHOD}
         thread = save_signal('new_narrative', digest(['new_narrative', candidate['phrase'], min(ids)]),
-            short('Nowa narracja: ' + candidate['phrase'], 65), NEW_METHOD, narrative_boxes(candidate), evidence,
+            short('Nowa narracja: ' + candidate['phrase'], 65),
+            short(f"Fraza pojawiła się u {candidate['authors']} autorów. Pokazujemy, kto użył jej pierwszy, oraz kolejne wpisy.", 170),
+            narrative_boxes(candidate), evidence,
             {'day': day.isoformat(), 'phrase': candidate['phrase'], 'post_ids': sorted(ids), 'authors': candidate['authors'], 'reach': candidate['reach']})
         result.append(thread.pk)
         if used + len(result) == 2:
@@ -257,7 +259,9 @@ def build_lobbying(records=None):
                 f'podobieństwo tekstów {signal["score"]:.0%}, próg średni 72%, wysoki 95%, bez przepisów szablonowych')
         method = f'Metoda: {rule}, ta sama miara dla wszystkich klubów; poziom pewności sygnału: {signal["confidence"]}.'
         evidence = {'signal': signal, 'posts': [{'text': p.text, 'author': p.account.display_name} for p in posts], 'method': method}
-        results.append(save_signal('lobbying', key, f'Sygnał lobbingu: druk {number}', method, items, evidence,
+        about = (f'Analiza druku {number}: zgłoszone zapisy zestawione ze stanowiskami organizacji. '
+                 'Zbieżność tekstu nie wskazuje autora ani przyczyny.')
+        results.append(save_signal('lobbying', key, f'Sygnał lobbingu: druk {number}', about, items, evidence,
                                    {'confidence': signal['confidence'], 'rule': rule, 'print': number}).pk)
     return results
 

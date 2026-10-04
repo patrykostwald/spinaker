@@ -93,13 +93,18 @@ def sync_message(message_id):
         return None
     best = eligible[0]
     thread, _ = PersonalContextThread.objects.get_or_create(narrative_message=message, defaults={
-        'title': short('Narracja dnia: ' + best['point']['title'], 65), 'published_at': timezone.now()})
+        'title': short('Przekaz dnia: ' + best['point']['title'], 65), 'published_at': timezone.now()})
     data = payload(message, best)
     if list(thread.items.values('box_data', 'note', 'link_note')) != data:
         thread.items.all().delete()
         PersonalContextThreadItem.objects.bulk_create([PersonalContextThreadItem(thread=thread, position=i, **row) for i, row in enumerate(data)])
-    thread.title = short('Narracja dnia: ' + best['point']['title'], 65)
-    thread.description, thread.is_public, thread.narrative_score = CRITERION, False, best['score']
+    thread.title = short('Przekaz dnia: ' + best['point']['title'], 65)
+    # jeden szablon spinek Dr. Spina (właściciel 5.10): co zbadano, co pokazujemy; metoda zostaje w dowodach recenzji
+    authors = len({p.account_id for p in best['posts']})
+    side = 'rządzących' if message.camp == 'government' else 'opozycji'
+    thread.description = short(f"Analiza {len(best['posts'])} wpisów od {authors} autorów ({side}), dzień {message.day.strftime('%d.%m.%Y')}. "
+                               'Pokazujemy, jak powtarzają ten sam wątek.', 170)
+    thread.is_public, thread.narrative_score = False, best['score']
     thread.save(update_fields=['title', 'description', 'is_public', 'narrative_score', 'updated_at'])
     from news.thread_review import enqueue
     enqueue(thread, {'posts': [{'text': p.text, 'author': p.account.display_name} for p in best['posts']],
