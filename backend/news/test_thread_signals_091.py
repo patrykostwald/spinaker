@@ -18,6 +18,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def offline(monkeypatch, settings):
     settings.THREADS_ENABLED = True
+    monkeypatch.setenv('THREAD_REVIEW_GATE', 'before')  # tryb bramki; publikacja przed recenzją: test_publish_first_*
     def forbidden(*args, **kwargs):
         pytest.fail('Test attempted real HTTP/AI')
     monkeypatch.setattr('requests.sessions.Session.request', forbidden)
@@ -278,8 +279,9 @@ def test_free_only_guard_even_with_paid_configuration(monkeypatch):
 
 
 def test_no_truncated_evidence_review():
+    # dowody skracamy (fit), ale samych tekstów spinki nigdy - zbyt długie teksty dalej zatrzymują recenzję
     with pytest.raises(ValueError, match='rozmiar'):
-        reviews.ask(1, {'evidence': 'x'*12001})
+        reviews.ask(1, {'texts': {'title': 'x' * 14001}, 'evidence': 'x' * 12001})
 
 
 def test_actual_090_and_official_adapters():
@@ -328,3 +330,22 @@ def test_retry_rejected_returns_review_to_first_step():
     call_command('drspin_review_threads', '--retry-rejected', '--limit', '0', stdout=StringIO())
     review.refresh_from_db()
     assert review.status == 'pending' and review.step == 0
+
+
+def test_publish_first_shows_thread_and_rejection_takes_it_down(monkeypatch):
+    """Właściciel 5.10: spinka Dr. Spina widoczna od razu; odrzucenie zdejmuje ją z listy."""
+    monkeypatch.setenv('THREAD_REVIEW_GATE', 'after')
+    thread = draft()
+    review = thread.publication_review
+    thread.refresh_from_db()
+    assert thread.is_public and public_threads().filter(pk=thread.pk).exists()
+    def reject(role, data):
+        answer, model = accepted(role, data)
+        if role == 1:
+            answer['no_overreach'] = False
+            answer['reason'] = 'Wniosek wykracza poza dane.'
+        return answer, model
+    monkeypatch.setattr(reviews, 'ask', reject)
+    assert reviews.review_one(review.pk) == 'rejected'
+    thread.refresh_from_db()
+    assert not thread.is_public and not public_threads().filter(pk=thread.pk).exists()

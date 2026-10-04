@@ -36,7 +36,7 @@ def agent_map(request):
 @permission_classes([IsAdminUser])
 def notes(request):
     agent, kind = request.query_params.get('agent', 'strateg'), request.query_params.get('kind', '')
-    if agent not in ('strateg', 'pielgrzym') or kind not in ('', 'signal', 'idea', 'finding', 'experiment', 'request', 'report'):
+    if agent not in ('strateg', 'pielgrzym', 'ekspert') or kind not in ('', 'signal', 'idea', 'finding', 'experiment', 'request', 'report'):
         return Response({'detail': 'Nieprawidłowy filtr.'}, status=400)
     try:
         offset = max(0, int(request.query_params.get('offset', 0)))

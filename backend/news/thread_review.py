@@ -168,6 +168,17 @@ def _apply(review, publish):
 
 
 @transaction.atomic
+def publish_first():
+    """Właściciel 5.10: spinki Dr. Spina widoczne od razu; recenzja poprawia teksty po publikacji i zdejmuje spinkę
+    tylko przy odrzuceniu. THREAD_REVIEW_GATE=before przywraca publikację dopiero po zatwierdzeniu."""
+    import os
+    return os.environ.get('THREAD_REVIEW_GATE', 'after').strip().lower() != 'before'
+
+
+def visible_statuses():
+    return ['approved', 'pending', 'waiting'] if publish_first() else ['approved']
+
+
 def enqueue(thread, evidence):
     payload = snapshot(thread, evidence)
     fingerprint = digest(payload)
@@ -179,13 +190,49 @@ def enqueue(thread, evidence):
         review.fingerprint, review.payload, review.working_texts = fingerprint, payload, payload['texts']
         review.status, review.step, review.reason, review.next_attempt_at = 'pending', 0, '', None
         review.save()
-    _apply(review, review.status == 'approved')
+    _apply(review, review.status in visible_statuses())
     thread.refresh_from_db()
     return review
 
 
+SAFE_SIZE = 12000
+
+
+def _size(data):
+    return len(json.dumps(data, ensure_ascii=False))
+
+
+def fit(data, limit=SAFE_SIZE):
+    """Materiał dla modelu bez powtórzeń: oryginał tylko gdy różni się od tekstów, a długie dowody i treści boksów
+    skrócone. Teksty do oceny zostają w całości - skracamy wyłącznie kontekst."""
+    data = dict(data)
+    if data.get('original') == data.get('texts'):
+        data.pop('original', None)
+    for cap in (600, 300, 160, 80):
+        if _size(data) <= limit:
+            break
+        def trim(value):
+            if isinstance(value, str):
+                return value if len(value) <= cap else value[:cap] + '…'
+            if isinstance(value, list):
+                return [trim(v) for v in value]
+            if isinstance(value, dict):
+                return {k: trim(v) for k, v in value.items()}
+            return value
+        for key in ('evidence', 'boxes', 'original'):
+            if key in data:
+                data[key] = trim(data[key])
+    return data
+
+
 def ask(role, data):
-    if len(json.dumps(data, ensure_ascii=False)) > 12000:
+    data = fit(data)
+    if role not in (EDITOR_STEP, LINGUIST_STEP):
+        from news.ekspert_ai import context_for
+        knowledge = context_for(data.get('texts'))
+        if knowledge:
+            data['ai_knowledge'] = knowledge  # stan wiedzy Eksperta AI, gdy tekst dotyczy AI (właściciel 5.10)
+    if _size(data) > SAFE_SIZE + 1500:
         raise ValueError('Materiał przekracza bezpieczny rozmiar recenzji; wymaga skrócenia spinki.')
     if role == EDITOR_STEP:
         return free_role('THREAD_EDITOR', EDITOR, data, EDITOR_SCHEMA, 1200)
@@ -272,7 +319,7 @@ def review_one(pk, *, now=None):
             review.status = 'waiting' if result == 'wait' else 'rejected'
             review.next_attempt_at = now + timedelta(hours=1) if result == 'wait' else None
             review.save()
-            _apply(review, False)
+            _apply(review, review.status in visible_statuses())
             return review.status
         review.step += 1
         review.save()

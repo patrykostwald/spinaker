@@ -259,7 +259,13 @@ def sieve(found: list[dict]) -> list[dict]:
             continue  # model, którego pochodzenia nie umiemy jawnie podać, nie spełnia Karty (pkt 11)
         bases.add(base_name(item['model']))
         candidates.append({**item, 'company': company, 'polish': polish, 'new_company': company not in companies, 'billions': size})
-    candidates.sort(key=lambda c: (not c['polish'], not c['new_company'], -(c['billions'] or 0)))
+    # Modele wskazane przez Eksperta AI egzaminujemy wcześniej; egzamin, progi i Karta bez zmian (właściciel 5.10).
+    from news.ekspert_ai import watched_models
+    watched = watched_models()
+    for c in candidates:
+        name = c['model'].casefold()
+        c['watched'] = any(w and (w in name or base_name(c['model']).casefold() in w) for w in watched)
+    candidates.sort(key=lambda c: (not c['polish'], not c['watched'], not c['new_company'], -(c['billions'] or 0)))
     return candidates
 
 

@@ -182,3 +182,15 @@ def test_community_read_write_flags(settings, threads, accounts):
     client.force_authenticate(reader)
     assert client.post(url + 'steps/', step).status_code == (200 if threads and accounts else 404)
     assert client.post('/api/account/context-threads/', {'title': 'Szkic'}, format='json').status_code == (201 if threads and accounts else 403)
+
+
+def test_new_threads_only_from_strong_diagnoses_existing_stay(monkeypatch):
+    """Właściciel 5.10: nowe spinki z diagnoz od 70/100; spinki, które już są, zostają."""
+    monkeypatch.setenv('DRSPIN_THREAD_MIN_INTENSITY', '80')
+    weak = diagnosis('7')  # 72 < 80: bez nowej spinki
+    assert not PersonalContextThread.objects.filter(diagnosis=weak).exists()
+    monkeypatch.setenv('DRSPIN_THREAD_MIN_INTENSITY', '70')
+    sync_diagnosis_thread(weak.pk)
+    assert PersonalContextThread.objects.filter(diagnosis=weak).exists()
+    monkeypatch.setenv('DRSPIN_THREAD_MIN_INTENSITY', '90')
+    assert sync_diagnosis_thread(weak.pk) is not None  # istniejąca spinka nie znika po podniesieniu progu

@@ -156,10 +156,10 @@ export function AgentsPanel() {
     <h2 id="agents-heading">Agenci</h2>
     <p><a href="/admin/news/institutionalreport/">Raportysta: raporty, recenzje i pliki do zatwierdzenia</a></p>
     <AgentMap />
-    <p>Strateg rozwija serwis. Pielgrzym zbiera propozycje dla Konsylium. Seba sprawdza pomysły przed Twoją decyzją. Drugi klucz weryfikuje wnioski Strażnika kont.</p>
+    <p>Strateg rozwija serwis. Pielgrzym zbiera propozycje dla Konsylium. Ekspert AI raz w tygodniu pisze stan wiedzy o AI (tylko ze źródłami) i wskazuje Rekruterowi modele do egzaminu. Seba sprawdza pomysły przed Twoją decyzją. Drugi klucz weryfikuje wnioski Strażnika kont.</p>
     <div className="sc-command-toolbar"><div role="group" aria-label="Wybór agenta">
-      {['strateg', 'pielgrzym', 'warden'].map(name => <button className="sc-command-filter" type="button" key={name} aria-pressed={agent === name}
-        onClick={() => { setAgent(name); setOffset(0); }}>{name === 'strateg' ? 'Strateg' : name === 'warden' ? 'Drugi klucz' : 'Pielgrzym'}</button>)}
+      {['strateg', 'pielgrzym', 'ekspert', 'warden'].map(name => <button className="sc-command-filter" type="button" key={name} aria-pressed={agent === name}
+        onClick={() => { setAgent(name); setOffset(0); }}>{name === 'strateg' ? 'Strateg' : name === 'warden' ? 'Drugi klucz' : name === 'ekspert' ? 'Ekspert AI' : 'Pielgrzym'}</button>)}
     </div><label>Rodzaj <select disabled={agent === 'warden'} value={kind} onChange={e => { setKind(e.target.value); setOffset(0); }}>
       <option value="">Wszystkie</option>{Object.entries(kinds).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
     </select></label><button className="sc-command-refresh" type="button" disabled={loading} onClick={() => setRevision(v => v + 1)}>Odśwież dziennik</button></div>

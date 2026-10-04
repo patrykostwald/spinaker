@@ -67,6 +67,14 @@ def boxes(diagnosis):
 
 
 @transaction.atomic
+def min_intensity():
+    import os
+    try:
+        return int(os.environ.get('DRSPIN_THREAD_MIN_INTENSITY', '70'))
+    except ValueError:
+        return 70
+
+
 @draft_builder
 def sync_diagnosis_thread(diagnosis_id):
     """Blokada diagnozy i OneToOne chronią przed podwójną publikacją. Nie cofamy moderacji."""
@@ -75,6 +83,9 @@ def sync_diagnosis_thread(diagnosis_id):
                and not diagnosis.hidden_at and diagnosis.post.available)
     if not visible:
         PersonalContextThread.objects.filter(diagnosis=diagnosis).update(is_public=False)
+        return None
+    # Nowe spinki tylko z mocnych diagnoz (właściciel 5.10: od 70/100); istniejące zostają.
+    if (diagnosis.intensity or 0) < min_intensity() and not PersonalContextThread.objects.filter(diagnosis=diagnosis).exists():
         return None
     thread, _ = PersonalContextThread.objects.get_or_create(diagnosis=diagnosis, defaults={
         'title': short('Rozkład: ' + diagnosis.headline, 65),

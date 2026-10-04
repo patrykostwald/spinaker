@@ -11,6 +11,7 @@ BEAT_PLAN = {
     'institutional-reports-night': ('institutional_reports_task', {'hour': '2-5', 'minute': '*/5'}),
     'signal-threads-daily': ('signal_threads_task', {'hour': 22, 'minute': 20}),
     'thread-reviews-20m': ('thread_reviews_task', {'minute': '*/20'}),
+    'ekspert-ai-daily': ('ekspert_ai_task', {'hour': 3, 'minute': 40}),
     'narrative-thread-daily': ('narrative_thread_task', {'hour': 21, 'minute': 45}),
     'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),
     'duty-15m': ('duty_task', {'minute': '*/15'}),

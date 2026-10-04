@@ -47,6 +47,21 @@ def agents_report_task(agent):
     return report(agent)
 
 
+@shared_task
+def ekspert_ai_task():
+    """Stan wiedzy o AI raz w tygodniu (zadanie codzienne, krok sam pomija, gdy raport ma mniej niż 6 dni)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import ekspert_ai
+    from news.agents_common import WindowClosed
+    try:
+        note = ekspert_ai.step()
+    except WindowClosed as error:
+        return {'status': 'closed', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk, 'state': note.status}
+
+
 @shared_task(name='news.tasks.repairer_task', soft_time_limit=210, time_limit=240)
 def repairer_task():
     from news.repairer import run

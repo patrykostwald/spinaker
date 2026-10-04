@@ -19,6 +19,8 @@ class Command(BaseCommand):
                 review.working_texts = review.payload.get('texts', review.working_texts)
                 review.revision += 1
                 review.save(update_fields=['status', 'step', 'next_attempt_at', 'working_texts', 'revision', 'updated_at'])
+                from news.thread_review import _apply, visible_statuses
+                _apply(review, review.status in visible_statuses())
             self.stdout.write(f'Do ponownej kontroli: {rows.model.objects.filter(status="pending").count()}')
         backfill_queue(limit=max(0, options['limit']))
         self.stdout.write(str(run_queue(limit=max(0, options['limit']))))

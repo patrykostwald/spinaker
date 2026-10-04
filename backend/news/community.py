@@ -136,10 +136,11 @@ def resolve_link(request):
 
 def public_threads(user=None):
     from news.clinic import published_diagnoses
+    from news.thread_review import visible_statuses
     from news.account_models import MutedUser
     muted = MutedUser.objects.filter(user=user).values('target_id') if user and user.is_authenticated else []
     return (PersonalContextThread.objects.filter(is_public=True, hidden_at__isnull=True)
-            .filter(Q(owner__isnull=False) | Q(publication_review__status='approved'))
+            .filter(Q(owner__isnull=False) | Q(publication_review__status__in=visible_statuses()))
             .exclude(owner_id__in=muted)
             .filter(Q(diagnosis__isnull=True) | Q(diagnosis__in=published_diagnoses()))
             .filter(Q(narrative_message__isnull=True) | Q(narrative_message__status='approved'))

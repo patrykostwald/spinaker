@@ -51,6 +51,7 @@ def test_health_suspends_after_three_days_and_returns_on_answer(monkeypatch):
 
 @pytest.mark.django_db
 def test_sieve_filters_small_and_tooling_models_and_prefers_polish(monkeypatch):
+    monkeypatch.setattr('news.ekspert_ai.watched_models', lambda: set())
     monkeypatch.setattr(recruiter.registry, 'configured', lambda member: True)
     found = [{'provider': 'openrouter', 'model': 'meta-llama/llama-guard-4-12b:free', 'context': 128000},
              {'provider': 'openrouter', 'model': 'mistralai/mistral-7b-instruct:free', 'context': 32000},
@@ -152,6 +153,7 @@ def test_old_rejection_with_zero_answers_is_retried_but_404_stays_blocked():
 
 
 def test_sieve_skips_outdated_models_and_second_routes(monkeypatch):
+    monkeypatch.setattr('news.ekspert_ai.watched_models', lambda: set())
     monkeypatch.setattr(recruiter, 'blocked', lambda: set())
     monkeypatch.setattr(recruiter.registry, 'configured', lambda member: True)
     with patch('news.clinic_council._members', return_value=[('groq', 'openai/gpt-oss-120b')]), \
@@ -169,3 +171,16 @@ def test_new_catalog_companies_are_known():
     from news import council_registry as registry
     for model, company in (('thinkingmachines/inkling:free', 'Thinking Machines Lab'), ('inclusionai/ling-3.0-flash-sante:free', 'Inclusion AI (Ant Group)')):
         assert registry.metadata(('openrouter', model))['company'] == company
+
+
+@pytest.mark.django_db
+def test_sieve_examines_models_watched_by_ai_expert_first(monkeypatch):
+    """Ekspert AI zmienia tylko kolejność egzaminów; filtry i egzamin bez zmian (właściciel 5.10)."""
+    monkeypatch.setattr(recruiter.registry, 'configured', lambda member: True)
+    monkeypatch.setattr(recruiter, 'blocked', lambda: set())
+    found = [{'provider': 'openrouter', 'model': 'deepseek/deepseek-v4-671b:free', 'context': 128000},
+             {'provider': 'openrouter', 'model': 'z-ai/glm-4.5-air-106b:free', 'context': 128000}]
+    monkeypatch.setattr('news.ekspert_ai.watched_models', lambda: set())
+    assert recruiter.sieve(found)[0]['model'] == 'deepseek/deepseek-v4-671b:free'  # bez eksperta: większy pierwszy
+    monkeypatch.setattr('news.ekspert_ai.watched_models', lambda: {'glm-4.5-air'})
+    assert [c['model'] for c in recruiter.sieve(found)] == ['z-ai/glm-4.5-air-106b:free', 'deepseek/deepseek-v4-671b:free']
