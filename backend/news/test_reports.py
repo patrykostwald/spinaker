@@ -575,3 +575,21 @@ def test_research_completes_full_chain(records):
     assert row.status == 'awaiting_approval'
     assert len([r for r in row.snapshot['rows'] if r['kind'] == 'diagnosis']) == 104
     assert row.pdf.startswith(b'%PDF') and row.csv
+
+
+@pytest.mark.django_db
+def test_reports_export_writes_only_ready_reports(tmp_path, monkeypatch):
+    from io import StringIO
+    from django.core.management import call_command
+    from news import raportysta, report_data
+    from news.report_models import InstitutionalReport
+    ready = InstitutionalReport.objects.create(kind='weekly', audience='redakcje', sample_key='redakcje', status='awaiting_approval',
+                                               pdf=b'%PDF-1', csv=b'a;b', method='Metoda', artifact_hash='h')
+    InstitutionalReport.objects.create(kind='weekly', audience='uczelnie', sample_key='uczelnie', status='working')
+    monkeypatch.setattr(raportysta, 'artifact_fingerprint', lambda report: 'h')
+    monkeypatch.setattr(report_data, 'sources_current', lambda snapshot: True)
+    out = StringIO()
+    call_command('reports_export', dir=str(tmp_path), stdout=out)
+    assert sorted(p.name for p in tmp_path.iterdir()) == [f'raport-{ready.pk}-weekly-redakcje-metoda.txt',
+        f'raport-{ready.pk}-weekly-redakcje.csv', f'raport-{ready.pk}-weekly-redakcje.pdf']
+    assert 'Zapisane raporty: 1' in out.getvalue()
