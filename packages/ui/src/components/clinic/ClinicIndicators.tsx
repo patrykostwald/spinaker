@@ -326,9 +326,9 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
   const perDay = days.map((day) => CAMPS.reduce((sum, camp) => sum + day.by_camp[camp].diagnosed, 0));
   const top = Math.max(...perDay, 1);
   const tiles: Array<[string, number, number | null]> = [
-    ["przeczytanych wpisów polityków", totals.read.total, totals.read.today],
-    ["wstępnie ocenionych wpisów", totals.screened.total, totals.screened.today],
-    ["diagnoz Dr. Spina", totals.diagnosed.total, totals.diagnosed.today],
+    ["Przeczytanych wpisów", totals.read.total, totals.read.today],
+    ["Wstępnie ocenionych", totals.screened.total, totals.screened.today],
+    ["Diagnoz Dr. Spina", totals.diagnosed.total, totals.diagnosed.today],
   ];
   return (
     <UpdatedAt.Provider value={query.dataUpdatedAt}><section className="sc-ind-show" data-compact={compact || undefined} aria-labelledby="ind-show-title">
@@ -338,21 +338,23 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
         <ul className="sc-ind-show__tiles">
           {tiles.map(([label, total, today]) => (
             <li key={label}>
-              <strong>{format(total)}</strong>
+              {/* „+N dziś” jak wykładnik przy liczbie (właściciel 5.10) */}
+              <strong>{format(total)}{today ? <sup>+{format(today)} dziś</sup> : null}</strong>
               <span>{label}</span>
-              {today ? <small>+{format(today)} dziś</small> : null}
             </li>
           ))}
-          {accounts ? <li><strong>{format(accounts)}</strong><span>kont z opublikowaną diagnozą polityków</span></li> : null}
+          {accounts ? <li><strong>{format(accounts)}</strong><span>Polityków z diagnozą</span></li> : null}
         </ul>
         <p className="sc-ind-show__actions">
-          <Button variant="primary" href="/klinika/diagnozy">Wszystkie diagnozy ({format(totals.diagnosed.total)}) →</Button>
-          <Link href="/klinika/wskazniki">Dane i wykresy →</Link>
+          <Link className="sc-ind-link" href="/klinika/diagnozy">Wszystkie diagnozy ({format(totals.diagnosed.total)}) →</Link>
+          <Link className="sc-ind-link" href="/klinika/wskazniki">Dane i wykresy →</Link>
         </p>
       </div>
       {!compact && perDay.length ? (
         <figure className="sc-ind-show__spark">
           <figcaption>Diagnozy dziennie</figcaption>
+          {/* zakres czasu pod tytułem wykresu (właściciel 5.10) */}
+          {stats ? <PeriodNote stats={stats} from={days[0].date} to={days.at(-1)?.date} /> : null}
           <ScrollArrows className="sc-ind-show__chart-scroll" label="Diagnozy dziennie">
             <div className="sc-ind-show__bars" role="img" aria-label={`Diagnozy dziennie: ${days.map((day, index) => `${day.date}: ${perDay[index]}`).join(", ")}`}>
               {days.map((day, index) => (
@@ -363,7 +365,6 @@ export function ClinicShowcase({ fallback, fallbackPeriod, fetchedAt = 0, compac
               ))}
             </div>
           </ScrollArrows>
-          {stats ? <PeriodNote stats={stats} from={days[0].date} to={days.at(-1)?.date} /> : null}
           <DataTable title="Diagnozy dziennie" headers={["Data", "Diagnozy"]} rows={days.map((day, index) => [day.date, perDay[index]])} />
         </figure>
       ) : null}

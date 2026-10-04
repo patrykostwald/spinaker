@@ -9233,3 +9233,18 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-dg-score .sc-scan-brief .sc-scan-m-lbl { padding-top: 4px; }
 .sc-dg-score .sc-scan-brief__text { grid-column: 2 / -1; margin: 0; font-size: 17px; line-height: 1.6; font-weight: 500; color: var(--sc-text); text-wrap: pretty; }
 @media (max-width: 560px) { .sc-dg-score .sc-scan-brief__text { grid-column: 1 / -1; font-size: 16px; } }
+
+/* Jeden styl odnośników „… →” w całym serwisie (właściciel 5.10): ten sam krój, rozmiar, grubość i niebieski kolor */
+.sc-ind-link, .sc-ind-show summary, .sc-clinic-latest__foot a, .sc-archive-btn, .sc-clinic-column__more, a.sc-clinic-db__all {
+  font-family: var(--sc-font-sans) !important; font-size: 15px !important; font-weight: 600 !important; line-height: 1.4 !important;
+  color: var(--sc-accent) !important; text-decoration: none !important; background: none !important; border: 0 !important; padding: 0 !important; letter-spacing: 0 !important; text-transform: none !important; }
+.sc-ind-link:hover, .sc-ind-show summary:hover, .sc-clinic-latest__foot a:hover, .sc-archive-btn:hover, .sc-clinic-column__more:hover { text-decoration: underline !important; text-underline-offset: 3px; }
+.sc-ind-show__actions, .sc-ind-links { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; }
+.sc-ind-links { margin: 8px 0 0; }
+
+/* Praca Kliniki: podpisy w jednym wierszu, „+N dziś” jako wykładnik przy liczbie, równy rytm kolumn */
+.sc-ind-show__tiles li { display: grid; gap: 6px; align-content: start; }
+.sc-ind-show__tiles strong { position: relative; display: inline-flex; align-items: flex-start; gap: 6px; white-space: nowrap; }
+.sc-ind-show__tiles strong sup { font-size: 13px; line-height: 1; font-weight: 700; color: var(--sc-positive); top: 0; margin-top: 4px; letter-spacing: 0; }
+.sc-ind-show__tiles span { white-space: nowrap; font-size: 14.5px; color: var(--sc-text-2); }
+.sc-ind-show__spark figcaption + .sc-ind-note, .sc-ind-show__spark figcaption + p { margin: 2px 0 12px !important; }

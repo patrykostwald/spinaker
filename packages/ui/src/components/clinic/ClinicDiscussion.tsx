@@ -20,8 +20,11 @@ const reasons = [["spam", "Spam"], ["abuse", "Naruszenie zasad"], ["privacy", "D
 const unavailable = (error: unknown) => error instanceof ApiError && error.status === 404;
 const message = (error: unknown) => unavailable(error) ? "Dyskusja jest jeszcze niedostępna." : error instanceof Error ? error.message : "Nie udało się zapisać. Spróbuj ponownie.";
 
+// Reakcje i komentarze pod diagnozami ukryte, dopóki ich nie ma (właściciel 5.10: „później to włączymy”); zmień na true, by pokazać.
+const SHOW_DISCUSSION_COUNTS = false;
+
 export function DiscussionCounts({ opinions, comment_count }: { opinions?: Record<Polarity, number>; comment_count?: number }) {
-  const enabled = useFeature("ACCOUNTS_ENABLED");
+  const enabled = useFeature("ACCOUNTS_ENABLED") && SHOW_DISCUSSION_COUNTS;
   if (!enabled || !opinions || comment_count === undefined) return null;
   const noun = comment_count === 1 ? "komentarz" : comment_count % 10 >= 2 && comment_count % 10 <= 4 && (comment_count % 100 < 12 || comment_count % 100 > 14) ? "komentarze" : "komentarzy";
   return <span className="sc-discussion-counts" aria-label={`Trafne: ${opinions.positive}, nietrafne: ${opinions.negative}, komentarze: ${comment_count}`}>+{opinions.positive} −{opinions.negative} · {comment_count} {noun}</span>;

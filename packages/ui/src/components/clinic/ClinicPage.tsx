@@ -211,7 +211,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         <ClinicRanking data={data} />
 
         <DeletedPosts />
-        <p><Link href="/osoby-publiczne">Katalog osób publicznych →</Link> · <Link href="/klinika/raporty">Raporty tygodnia →</Link></p>
+        <p className="sc-ind-links"><Link className="sc-ind-link" href="/osoby-publiczne">Katalog osób publicznych →</Link><Link className="sc-ind-link" href="/klinika/raporty">Raporty tygodnia →</Link></p>
 
         <NewsletterSignup source="klinika" />
       </>}
