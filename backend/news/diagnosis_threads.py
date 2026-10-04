@@ -114,7 +114,7 @@ def min_intensity():
 
 
 @draft_builder
-def sync_diagnosis_thread(diagnosis_id):
+def sync_diagnosis_thread(diagnosis_id, force_text=False):
     """Blokada diagnozy i OneToOne chronią przed podwójną publikacją. Nie cofamy moderacji."""
     diagnosis = SpinDiagnosis.objects.select_for_update(of=('self',)).select_related('post__account').get(pk=diagnosis_id)
     visible = (diagnosis.status == 'approved' and not diagnosis.withdrawn_at
@@ -137,7 +137,7 @@ def sync_diagnosis_thread(diagnosis_id):
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=thread, position=index, **row) for index, row in enumerate(payload)])
     # podtytuł potem pisze Redaktor tytułów; zastępujemy tylko dawny, niezrozumiały szablon
-    if thread.description == OLD_DESCRIPTION or thread.description.startswith(('Dr. Spin (AI) sprawdził wpis:', 'Dr. Spin (AI) wyjaśnia, jaki spin')):
+    if force_text or thread.description == OLD_DESCRIPTION or thread.description.startswith(('Dr. Spin (AI) sprawdził wpis:', 'Dr. Spin (AI) wyjaśnia, jaki spin')):
         thread.description = about
         thread.save(update_fields=['description'])
     if existing != payload or thread.title != title or not thread.is_public:

@@ -214,3 +214,14 @@ def test_title_and_subtitle_say_whose_post_dr_spin_explains():
     thread = row.context_thread
     assert thread.title == 'Diagnoza: Podatki' and thread.is_public
     assert thread.description == 'Analiza wpisu: Poseł Test. Techniki: wybiórczość.'
+
+
+def test_refresh_all_rewrites_old_texts():
+    from django.core.management import call_command
+    row = diagnosis(key='91')
+    thread = row.context_thread
+    PersonalContextThread.objects.filter(pk=thread.pk).update(title='Rozkład: Podatki', description='Stary opis od redaktora.')
+    call_command('drspin_refresh_all')
+    thread.refresh_from_db()
+    assert thread.title == 'Diagnoza: Podatki'
+    assert thread.description == 'Analiza wpisu: Poseł Test. Techniki: wybiórczość.'
