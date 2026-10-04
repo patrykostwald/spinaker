@@ -130,11 +130,12 @@ function DeletedPosts() {
           <li key={`${item.author.handle}-${item.published_at}`}>
             <span className="sc-deleted__who"><a href={item.author.account_url} target="_blank" rel="noopener noreferrer">{item.author.name}</a>
               <small>@{item.author.handle}{item.author.party ? ` · ${item.author.party.short}` : ""} · {item.camp_label}</small></span>
-            <span className="sc-deleted__when">opublikowany {formatDateTimePl(item.published_at)}<br />zniknął {visibleFor(item.hours_visible)} od publikacji</span>
+            {/* archiwum przed datami, bez kolumny „bez diagnozy” (właściciel 4.10) */}
             <span className="sc-deleted__archive">{item.archive_url
               ? <a href={item.archive_url} target="_blank" rel="noopener noreferrer">kopia w archiwum ↗</a>
               : <a className="sc-deleted__search" href={item.archive_search_url} target="_blank" rel="noopener noreferrer">szukaj w archive.today ↗</a>}</span>
-            <span>{item.verdict ? <VerdictTag verdict={item.verdict} label={item.verdict_label} /> : <span className="sc-deleted__none">bez diagnozy</span>}</span>
+            <span className="sc-deleted__when">opublikowany {formatDateTimePl(item.published_at)}<br />zniknął {visibleFor(item.hours_visible)} od publikacji</span>
+            {item.verdict ? <span><VerdictTag verdict={item.verdict} label={item.verdict_label} /></span> : null}
           </li>
         ))}</ul>
       ) : <p className="sc-clinic-empty">W ostatnich {data.days} dniach nie zauważyliśmy niedostępnych wpisów. Sprawdzamy co 3 godziny wpisy z ostatnich dwóch tygodni.</p>}

@@ -99,10 +99,10 @@ function CompactInterviewScanner({ interview, full = false }: { interview: Inter
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {interview.thumbnail_url ? <img src={interview.thumbnail_url} alt="" referrerPolicy="no-referrer" /> : null}<span aria-hidden="true">▶</span>
         </a>
-        <p className="sc-interview-recording-label">Tytuł nagrania</p><h3 className="sc-scan-p-name">{interview.title}</h3>
-        <p>Gość: {interview.guest_name}{interview.guest_role ? `, ${interview.guest_role}` : ""}</p>
-        <p>Prowadzący: {interview.host_name}</p>
+        {/* data i kanał w miejscu etykiety, gość i prowadzący w jednym wierszu (właściciel 4.10) */}
         <div className="sc-interview-scan-meta"><time dateTime={interview.day}>{formatDatePl(interview.day)}</time><a href={interview.url} target="_blank" rel="noopener noreferrer">{interview.channel} ↗</a></div>
+        <h3 className="sc-scan-p-name">{interview.title}</h3>
+        <p className="sc-interview-people"><span>Gość: {interview.guest_name}{interview.guest_role ? `, ${interview.guest_role}` : ""}</span><span>Prowadzący: {interview.host_name}</span></p>
       </div>
     </div>
     <div className="sc-scan-dg">
