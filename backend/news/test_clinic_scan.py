@@ -111,7 +111,7 @@ def test_card_attachment_precedes_text_and_fills_available_space(post_text):
     with patch('news.clinic_card.fetch_image', side_effect=[None, Image.new('RGB', (300, 900), '#ff0000')]), \
             patch.object(clinic_card, '_paste', wraps=clinic_card._paste) as paste, \
             patch.object(clinic_card, '_text', wraps=clinic_card._text) as text:
-        image = Image.open(io.BytesIO(clinic_card.render(data)))
+        image = Image.open(io.BytesIO(clinic_card.render(data, 'szczegoly')))
     attachment = paste.call_args.args[2]
     assert attachment[1] == 214 and attachment[3] - attachment[1] >= 220
     assert image.getpixel((300, 215)) == (255, 0, 0)
@@ -351,3 +351,18 @@ def test_short_quote_and_complete_reason():
     assert reason == 'Krótkie pełne zdanie.'
     assert len(_wrap(draw, reason, _font(17), 864)) <= 2
     assert _short_reason(draw, long, long, 864) == ''
+
+
+def test_share_card_has_four_panels():
+    """Grafika do udostępnienia (właściciel 5.10): wpis, W skrócie, wskaźniki i spin.clinic w 4 polach 1600x900."""
+    import io
+    from PIL import Image
+    from news import clinic_card
+    data = {'id': 1, 'intensity': 72, 'verdict': 'spin', 'verdict_label': 'Spin', 'headline': 'Nagłówek', 'summary': 'Krótko o diagnozie.',
+            'author': {'name': 'Poseł Test'}, 'post': {'text': 'Treść wpisu.', 'published_at': '2026-10-01T10:00:00Z', 'media': []},
+            'scan': {'synthesis': {'lead': 'Wniosek'}, 'council': {}, 'claims': {}, 'families': {}, 'diagnosed_at': '2026-10-02'}}
+    image = Image.open(io.BytesIO(clinic_card.render(data)))
+    assert image.size == (1600, 900)
+    # cztery pola mają jednolite tło kart
+    for point in [(60, 450), (1540, 450), (60, 830), (1545, 840)]:
+        assert image.getpixel(point) == (0x17, 0x17, 0x17)
