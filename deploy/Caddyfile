@@ -26,3 +26,25 @@ www.{$SPIN_DOMAIN:spin.clinic} {
 beta.{$SPIN_DOMAIN:spin.clinic} {
 	redir https://{$SPIN_DOMAIN:spin.clinic}{uri} permanent
 }
+
+# przeszłość.today (właściciel 5.10): ta sama aplikacja; middleware pokazuje drzewo tematów, inne adresy przekierowuje na spin.clinic
+przeszlosc.today {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		Content-Security-Policy "base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'self'"
+		-Server
+		-X-Powered-By
+	}
+	@api path /api/*
+	reverse_proxy @api backend:8000
+	reverse_proxy frontend:3000
+}
+
+www.przeszlosc.today {
+	redir https://przeszlosc.today{uri} permanent
+}

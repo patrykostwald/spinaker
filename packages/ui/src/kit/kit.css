@@ -9161,3 +9161,5 @@ html[data-standalone] .sc-social-layout { display: block !important; max-width: 
 .sc-pt__foot { border-top: 1px solid var(--sc-line); padding-top: 14px; font-size: 13px; color: var(--sc-text-3); }
 .sc-pt__foot a { color: inherit; }
 @media (max-width: 760px) { .sc-pt__about { grid-template-columns: 1fr; } }
+/* „Bądź pierwszy.” z odstępem pod paskiem komentarzy, bez ikonki (właściciel 5.10) */
+.sc-social-first { margin: 28px 0 0 !important; color: var(--sc-text-2); }
