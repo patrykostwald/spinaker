@@ -9424,3 +9424,46 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-ind-show__spark > .sc-chart-data > summary::-webkit-details-marker { display: none; }
 .sc-ind-show__spark > .sc-chart-data > summary::before { content: "▸"; }
 .sc-ind-show__spark > .sc-chart-data[open] > summary::before { content: "▾"; }
+
+/* ===== Spinka: stałe strefy ekranu (właściciel 5.10, „harmonia”) =====
+   góra: tytuł i podtytuł od krawędzi pierwszego boksu; środek: scena o stałej wysokości (pasek boksów albo karta
+   wybranego elementu, zawsze 860x400); pod kartą w stałym miejscu mini-pasek; niżej komentarze, które nie skaczą. */
+@media (min-width: 1101px) {
+  .sc-trop-overlay__body > article { --sp-zone: 500px; --sp-card-w: 860px; --sp-card-h: 400px; }
+  .sc-trop-overlay__body > article .sc-thread-strip__rail { min-height: var(--sp-zone); }
+  .sc-trop-overlay__body > article .sc-pick { height: var(--sp-zone); display: grid; grid-template-rows: var(--sp-card-h) 1fr; gap: 0; padding: 0; margin-left: 0 !important; align-content: start; }
+  .sc-trop-overlay__body > article .sc-pick__bar { display: none; }
+  .sc-trop-overlay__body > article .sc-pick__stage { position: relative; height: var(--sp-card-h); grid-template-columns: 44px minmax(0, var(--sp-card-w)) 44px !important; justify-content: center; gap: 16px; }
+  .sc-trop-overlay__body > article .sc-pick__home { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+  .sc-trop-overlay__body > article .sc-pick__home:hover { transform: translate(-3px, -50%); }
+  .sc-trop-overlay__body > article .sc-pick__card { height: var(--sp-card-h); min-height: 0 !important; grid-template-columns: 300px minmax(0, 1fr); overflow: visible; box-sizing: border-box; }
+  .sc-trop-overlay__body > article .sc-pick__media { height: 100%; min-height: 0 !important; }
+  .sc-trop-overlay__body > article .sc-pick__text { grid-template-rows: auto auto minmax(0, 1fr) auto; overflow: hidden; }
+  .sc-trop-overlay__body > article .sc-pick__text h2 { align-self: start; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+  .sc-trop-overlay__body > article .sc-pick__body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+  .sc-trop-overlay__body > article .sc-pick__pair { display: grid; gap: 8px; }
+  .sc-trop-overlay__body > article .sc-pick__pair span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  /* mini-pasek: stałe miejsce 44 px pod kartą; bieżący element podświetlony i powiększony, sąsiedzi lekko */
+  .sc-trop-overlay__body > article .sc-pick__chain { align-self: start; padding-top: 44px; gap: 6px; }
+  .sc-trop-overlay__body > article .sc-pick__chain button { opacity: .55; transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .25s, box-shadow .25s; }
+  .sc-trop-overlay__body > article .sc-pick__chain button:hover { opacity: .9; }
+  .sc-trop-overlay__body > article .sc-pick__chain button[aria-current="true"] { opacity: 1; transform: scale(1.7) !important; border-color: var(--sc-accent) !important;
+    box-shadow: 0 0 0 1px var(--sc-accent), 0 0 14px color-mix(in srgb, var(--sc-accent) 55%, transparent); }
+  .sc-trop-overlay__body > article .sc-pick__chain button.sc-trow__link[aria-current="true"] { transform: scale(1.5, 2.6) !important; background: var(--sc-accent) !important; box-shadow: 0 0 10px color-mix(in srgb, var(--sc-accent) 60%, transparent); }
+  .sc-trop-overlay__body > article .sc-pick__chain button:has(+ [aria-current="true"]), .sc-trop-overlay__body > article .sc-pick__chain [aria-current="true"] + button { opacity: .85; }
+}
+@media (min-width: 1101px) {
+  .sc-trop-overlay__body > article .sc-pick__chain .sc-trow__sq { width: 14px !important; height: 14px !important; min-width: 0 !important; min-height: 0 !important; flex: none; border-radius: 2px; }
+  .sc-trop-overlay__body > article .sc-pick__chain .sc-trow__link { width: 14px !important; height: 2px !important; min-width: 0 !important; min-height: 0 !important; flex: none; }
+}
+
+/* Wiersze diagnoz (właściciel 5.10, „harmonia”): autor w jednej linii, data tuż pod nim, awatar zaraz pod datą - wszystko od góry;
+   każdy wiersz ma tę samą, stałą wysokość w obu kolumnach, więc wiersze po lewej i prawej stoją równo. */
+@media (min-width: 521px) {
+  .sc-spin-row .sc-spin-row__side { display: flex; flex-direction: column; justify-content: flex-start; align-self: stretch; }
+  .sc-spin-row .sc-spin-row__side .sc-spin-row__author { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block !important; -webkit-line-clamp: unset !important; }
+  .sc-spin-row .sc-spin-row__side .sc-spin-row__date { margin-top: 2px !important; padding-top: 0 !important; }
+  .sc-spin-row .sc-spin-row__side .sc-spin-row__thumb { margin-top: 10px !important; }
+  .sc-clinic-ranking__list .sc-spin-row, .sc-clinic-column__list .sc-spin-row { height: var(--sc-spin-row-h, 196px) !important; box-sizing: border-box; overflow: hidden !important; }
+  .sc-clinic-ranking__list .sc-spin-row__title, .sc-clinic-column__list .sc-spin-row__title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+}
