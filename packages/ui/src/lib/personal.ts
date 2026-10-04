@@ -33,6 +33,7 @@ export type PersonalContextThread = {
   is_public?: boolean;
   published_at?: string | null;
   hidden_at?: string | null;
+  admitted_at?: string | null;
   created_at: string;
   updated_at: string;
 };

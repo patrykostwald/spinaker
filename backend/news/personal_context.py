@@ -111,8 +111,8 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonalContextThread
         fields = ['id', 'continues', 'repin_of', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
-                  'articles', 'items', 'elements', 'is_public', 'published_at', 'hidden_at', 'created_at', 'updated_at', 'opinions', 'comments_count']
-        read_only_fields = ['id', 'articles', 'elements', 'published_at', 'hidden_at', 'created_at', 'updated_at']
+                  'articles', 'items', 'elements', 'is_public', 'published_at', 'admitted_at', 'hidden_at', 'created_at', 'updated_at', 'opinions', 'comments_count']
+        read_only_fields = ['id', 'articles', 'elements', 'published_at', 'admitted_at', 'hidden_at', 'created_at', 'updated_at']
 
     def get_articles(self, instance):
         return [

@@ -65,7 +65,7 @@ export function AccountThreads() {
     <div className="sc-account-filter" role="group" aria-label="Status spinki">{[['all', 'Wszystkie'], ['draft', 'Szkice'], ['published', 'Opublikowane'], ['hidden', 'Ukryte']].map(([id, label]) => <button key={id} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div>
     <AccountDataState query={query} />{query.isSuccess && !rows.length && <EmptyState href="/klinika" label="Wybierz diagnozę">Nie masz tu jeszcze spinek - ułóż pierwszą z diagnozy.</EmptyState>}
     <ul className="sc-account-thread-list">{rows.map(row => <li key={row.id}>
-      <p className="sc-account-meta">{row.hidden_at ? 'Ukryta' : row.is_public ? 'Opublikowana' : 'Szkic'}</p>
+      <p className="sc-account-meta">{row.hidden_at ? 'Ukryta' : !row.is_public ? 'Szkic' : row.admitted_at === null ? 'W izbie przyjęć: czeka na pierwszy komentarz lub reakcję innej osoby' : 'Opublikowana'}</p>
       <Link href={`/konto/spinki/${row.id}`}><strong>{row.title}</strong></Link>
       {row.description && <ClampedText>{row.description}</ClampedText>}
       <p className="sc-account-meta">Zmieniono {formatDateTimePl(row.updated_at)}</p>

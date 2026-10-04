@@ -15,6 +15,7 @@ from django.core.cache import cache
 from django.core.validators import validate_email
 from django.db import transaction
 from django.http import HttpResponseRedirect
+from news.account_security import safe_next
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -115,6 +116,7 @@ class GoogleStartView(APIView):
             'consent': request.query_params.get('accepted_terms') == 'true'
                        and request.query_params.get('adult') == 'true',
             'newsletter': request.query_params.get('newsletter') == 'true',
+            'next': safe_next(request.query_params.get('next')),
             'terms_version': settings.ACCOUNT_TERMS_VERSION,
             'privacy_version': settings.ACCOUNT_PRIVACY_VERSION,
         }
@@ -172,4 +174,5 @@ class GoogleCallbackView(APIView):
             # Provider errors and invalid signatures receive the same public result.
             # Never log tokens, authorization codes, email addresses, or secrets.
             return failed
-        return HttpResponseRedirect(destination)
+        back = safe_next(flow.get('next'))
+        return HttpResponseRedirect(settings.ACCOUNT_PUBLIC_URL.rstrip('/') + back if back else destination)

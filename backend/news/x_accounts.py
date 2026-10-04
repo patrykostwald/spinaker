@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model, login
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.http import HttpResponseRedirect
+from news.account_security import safe_next
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
@@ -76,7 +77,8 @@ class XConnectionStartView(APIView):
         request.session[SESSION] = {'state': state, 'verifier': verifier, 'created': time.time(),
             'user_id': request.user.pk if connecting else None, 'redirect': redirect,
             'consent': request.query_params.get('accepted_terms') == 'true' and request.query_params.get('adult') == 'true',
-            'terms': settings.ACCOUNT_TERMS_VERSION, 'privacy': settings.ACCOUNT_PRIVACY_VERSION}
+            'terms': settings.ACCOUNT_TERMS_VERSION, 'privacy': settings.ACCOUNT_PRIVACY_VERSION,
+            'next': safe_next(request.query_params.get('next'))}
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
         return HttpResponseRedirect('https://x.com/i/oauth2/authorize?' + urlencode({
             'response_type': 'code', 'client_id': settings.X_OAUTH_CLIENT_ID, 'redirect_uri': redirect,
@@ -135,4 +137,5 @@ class XConnectionCallbackView(APIView):
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         except (requests.RequestException, KeyError, TypeError, ValueError, IntegrityError):
             return failed
-        return HttpResponseRedirect(destination)
+        back = safe_next(flow.get('next'))
+        return HttpResponseRedirect(settings.ACCOUNT_PUBLIC_URL.rstrip('/') + back if back else destination)

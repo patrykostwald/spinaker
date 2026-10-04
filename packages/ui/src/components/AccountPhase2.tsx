@@ -185,7 +185,7 @@ export function AccountOnboarding({ ownerId }: { ownerId: number }) {
   const steps = [
     ['Oceniaj spinki', 'Trzy znaki pomagają wyrazić ocenę: ✓ zgadzam się, ? mam wątpliwości, ✕ nie zgadzam się.'],
     ['Obserwuj', 'Obserwuj polityków i autorów, aby łatwo wracać do ich treści.'],
-    ['Ustaw powiadomienia', 'Powiadomienia serwisowe są włączone. Społecznościowe możesz włączyć w ustawieniach.'],
+    ['Ustaw powiadomienia', 'Powiadomienia serwisowe są włączone. Społecznościowe włączysz w sekcji Powiadomienia.'],
   ];
   return <section className="sc-f2-onboarding" aria-labelledby="onboarding-title"><p className="sc-account-meta">Pierwsze kroki · {step + 1}/3</p><h2 id="onboarding-title">{steps[step][0]}</h2><p>{steps[step][1]}</p>
     <div className="sc-f2-actions">{step > 0 && <Button onClick={() => setStep(step - 1)}>Wstecz</Button>}<Button variant="primary" onClick={() => step === 2 ? finish() : setStep(step + 1)}>{step === 2 ? 'Gotowe' : 'Dalej'}</Button><Button variant="quiet" onClick={finish}>Pomiń</Button></div>

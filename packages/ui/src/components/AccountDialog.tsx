@@ -10,6 +10,12 @@ import { Dialog } from "./Dialog";
 import { Button } from "../kit/Button";
 
 type Mode = "login" | "register" | "reset";
+/** Po logowaniu Google lub X wracamy na tę samą stronę (Konsylium 4.10). */
+function withNext(url: string) {
+  const here = window.location.pathname + window.location.search;
+  return here.startsWith("/konto") ? url : `${url}${url.includes("?") ? "&" : "?"}next=${encodeURIComponent(here)}`;
+}
+
 export function AccountDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const [mode, setMode] = useState<Mode>("login");
@@ -67,8 +73,8 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
       <Button type="button" fullWidth variant="quiet" size="md" disabled={pending} onClick={() => changeMode(mode === "login" ? "register" : "login")}>{mode === "login" ? "Nie masz konta? Zarejestruj się" : "Wróć do logowania"}</Button>
     </form>
     {(account.data?.google_enabled || account.data?.x_enabled) && mode !== "reset" && <div className="sc-account-form sc-account-form__google"><p className="sc-t-caption sc-text-2">Pierwszy raz z Google lub X? Zaakceptuj zasady, aby utworzyć konto.</p><label className="sc-account-form__consent"><input type="checkbox" checked={googleConsent} onChange={event => setGoogleConsent(event.target.checked)} /><span>Akceptuję <Link href="/zasady-korzystania" target="_blank" rel="noopener noreferrer">Zasady korzystania</Link> (nowa karta).</span></label><label className="sc-account-form__consent"><input type="checkbox" checked={googleAdult} onChange={e => setGoogleAdult(e.target.checked)} /><span>Mam ukończone 18 lat.</span></label>{account.data?.google_enabled && <label className="sc-account-form__consent"><input type="checkbox" checked={googleNewsletter} onChange={e => setGoogleNewsletter(e.target.checked)} /><span>Chcę otrzymywać newsletter e-mailem (opcjonalnie, przy Google).</span></label>}
-      {account.data?.google_enabled && <Button type="button" fullWidth variant="secondary" size="md" disabled={pending} onClick={() => { window.location.assign(`/api/account/google/start/${googleConsent && googleAdult ? `?accepted_terms=true&adult=true&newsletter=${googleNewsletter}` : ""}`); }}>Kontynuuj z Google</Button>}
-      {account.data?.x_enabled && <Button type="button" fullWidth variant="secondary" size="md" disabled={pending} onClick={() => { window.location.assign(`/api/account/x/start/${googleConsent && googleAdult ? "?accepted_terms=true&adult=true" : ""}`); }}>Zaloguj przez X</Button>}</div>}
+      {account.data?.google_enabled && <Button type="button" fullWidth variant="secondary" size="md" disabled={pending} onClick={() => { window.location.assign(withNext(`/api/account/google/start/${googleConsent && googleAdult ? `?accepted_terms=true&adult=true&newsletter=${googleNewsletter}` : ""}`)); }}>Kontynuuj z Google</Button>}
+      {account.data?.x_enabled && <Button type="button" fullWidth variant="secondary" size="md" disabled={pending} onClick={() => { window.location.assign(withNext(`/api/account/x/start/${googleConsent && googleAdult ? "?accepted_terms=true&adult=true" : ""}`)); }}>Zaloguj przez X</Button>}</div>}
     </>}
   </Dialog>;
 }
