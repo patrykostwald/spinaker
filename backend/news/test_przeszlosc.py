@@ -41,3 +41,18 @@ def test_start_counts_and_latest():
     post('9', 'government', 'CPK ruszy.')
     data = APIClient().get('/api/przeszlosc/start/').json()
     assert data['counts']['posts'] == 1 and data['latest'] == [] and data['topics_enabled'] is False
+
+
+def test_inflection_and_acronym_expansion():
+    post('21', 'government', 'Ceny energii spadną.')
+    post('22', 'opposition', 'Budowa Centralnego Portu Komunikacyjnego stoi.')
+    assert topic_graph('ceny energia')['counts']['statement'] == 1
+    assert topic_graph('CPK')['counts']['statement'] == 1
+
+
+def test_pick_topics_ranks_richest():
+    from news.przeszlosc import auto_topics, pick_topics
+    for i in range(4):
+        post(str(30 + i), 'government' if i % 2 else 'opposition', 'KPO znowu opóźnione, KPO.')
+    rows = pick_topics()
+    assert all(r['edges'] >= 3 for r in rows) and auto_topics() == rows

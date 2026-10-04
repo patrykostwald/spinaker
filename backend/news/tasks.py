@@ -500,3 +500,12 @@ def projektant_task():
     except WindowClosed as error:
         return {'status': 'waiting', 'reason': str(error)}
     return {'status': 'ok', 'note': note.pk}
+
+
+@shared_task
+def przeszlosc_topics_task():
+    """Raz dziennie: automatyczny wybór tematów przeszłość.today z druków Sejmu i wpisów polityków."""
+    from news import przeszlosc
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return {'status': 'ok', 'topics': [t['topic'] for t in przeszlosc.pick_topics()]}

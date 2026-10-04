@@ -8,7 +8,7 @@ import { Loading } from '@spin-clinic/ui/kit';
  */
 type Node = { id: string; kind: string; label: string; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
 type Edge = { source: string; target: string; label: string };
-type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean };
+type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number> };
 
 const COLUMNS: [string, string][] = [['person', 'Osoby'], ['organisation', 'Spółki i fundacje (KRS)'], ['record', 'Sejm'],
@@ -43,7 +43,8 @@ export function TopicTree() {
     // strona główna od razu pokazuje stan bazy, najnowsze dokumenty Sejmu i przykładowy temat (właściciel 5.10: „wygląda, jakby nic nie było”)
     fetch('/api/przeszlosc/start/').then(r => r.ok ? r.json() : null).then((data: Start | null) => {
       setStart(data);
-      if (!q && data?.topics_enabled) { setQuery(EXAMPLES[0]); void load(EXAMPLES[0], false); }
+      const first = data?.auto_topics?.[0]?.topic ?? EXAMPLES[0];
+      if (!q && data?.topics_enabled) { setQuery(first); void load(first, false); }
     }).catch(() => undefined);
     if (q) { setQuery(q); void load(q); }
   }, []);
@@ -67,7 +68,7 @@ export function TopicTree() {
         <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Np. CPK, lotnisko" aria-label="Temat" />
         <button type="submit">Pokaż</button>
       </form>
-      <p className="sc-pt__ex">Przykłady: {EXAMPLES.map(e => <button key={e} type="button" onClick={() => { setQuery(e); void load(e); }}>{e}</button>)}</p>
+      <p className="sc-pt__ex">{start?.auto_topics?.length ? 'Tematy dnia:' : 'Przykłady:'} {(start?.auto_topics?.length ? start.auto_topics.map(t => t.topic) : EXAMPLES).map(e => <button key={e} type="button" onClick={() => { setQuery(e); void load(e); }}>{e}</button>)}</p>
     </header>
 
     {start && <section className="sc-pt__stats" aria-label="Co jest w bazie">
@@ -78,7 +79,7 @@ export function TopicTree() {
       <h2>Najnowsze w Sejmie</h2>
       <ol>{start.latest.map((row, i) => <li key={i}><time>{row.date ?? ''}</time><span>{row.kind}</span><a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>
     </section>}
-    {state === 'idle' && data && !new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('q') && <p className="sc-pt__k">Przykładowy temat: {data.topic}</p>}
+    {state === 'idle' && data && !new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('q') && <p className="sc-pt__k">Temat dnia: {data.topic}</p>}
     {state === 'loading' && <Loading label="Ładowanie tematu" />}
     {state === 'off' && <p className="sc-pt__msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
     {state === 'error' && <p className="sc-pt__msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}

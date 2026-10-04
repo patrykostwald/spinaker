@@ -21,11 +21,36 @@ def terms(query):
     return [t.strip() for t in re.split(r'[,;|]', query or '') if len(t.strip()) >= 3][:5]
 
 
+# Rozwinięcia częstych skrótów (wyszukiwanie łapie oba zapisy)
+EXPAND = {'cpk': ['Centraln Port Komunikacyjn', 'Portu Komunikacyjnego'], 'kpo': ['Krajow Plan Odbudowy', 'Planu Odbudowy'],
+          'krrit': ['Krajow Rad Radiofonii', 'Rady Radiofonii'], 'nfz': ['Narodow Fundusz Zdrowia', 'Funduszu Zdrowia'],
+          'zus': ['Zakład Ubezpieczeń Społecznych', 'Ubezpieczeń Społecznych'], 'tvp': ['Telewizj Polsk'],
+          'pkp': ['Polskie Koleje Państwowe'], 'oze': ['odnawialn źród']}
+
+
+def _stem(word):
+    """Polskie odmiany: wspólny początek wyrazu (energia / energii / energią)."""
+    word = word.strip()
+    if len(word) <= 4 or word.isupper():
+        return word
+    return word[:max(4, len(word) - 2)]
+
+
+def _phrase(term):
+    """Wszystkie słowa frazy muszą wystąpić (w dowolnej odmianie)."""
+    return [_stem(w) for w in re.split(r'\s+', term) if len(w) >= 2]
+
+
 def _match(fields, words):
     q = Q()
-    for word in words:
-        for field in fields:
-            q |= Q(**{f'{field}__icontains': word})
+    for term in words:
+        variants = [_phrase(term)] + [_phrase(x) for x in EXPAND.get(term.lower().strip(), [])]
+        for stems in variants:
+            for field in fields:
+                part = Q()
+                for stem in stems:
+                    part &= Q(**{f'{field}__icontains': stem})
+                q |= part
     return q
 
 
@@ -156,6 +181,7 @@ def start_data():
         'latest': [{'title': r.title[:180], 'date': r.date.isoformat() if r.date else None, 'kind': KIND_LABELS.get(r.kind, 'Dokument'),
                     'url': r.source_url} for r in latest],
         'topics_enabled': enabled(),
+        'auto_topics': [{'topic': t['topic'], 'edges': t['edges']} for t in auto_topics()],
     }
 
 
@@ -170,3 +196,60 @@ def start_view(request):
         if connection.vendor == 'postgresql':
             cache.set('przeszlosc:start', data, 600)
     return Response(data)
+
+
+# --- automatyczny wybór tematów (właściciel 5.10: „sam wybierz, to ma być też zautomatyzowane”) ---
+TOPICS_STATE = 'przeszlosc-auto-topics'
+PRINT_SUBJECT = re.compile(r'ustaw\w*\s+o\s+(?:zmianie\s+(?:niektórych\s+)?ustaw\w*\s+(?:w\s+związku\s+z\s+)?(?:o\s+)?)?([^,(;]{6,60})', re.I)
+ACRONYM = re.compile(r'\b([A-ZĄĆĘŁŃÓŚŹŻ]{2,6})\b')
+STOP = {'PIS', 'PO', 'PSL', 'KO', 'TVN', 'RP', 'UE', 'USA', 'AI', 'PAP', 'ON', 'TO', 'NIE', 'JEST', 'PL', 'II', 'III', 'NA', 'KE', 'OK', 'TAK'}
+
+
+def candidates(days=45, limit=24):
+    """Kandydaci: przedmioty najnowszych ustaw z druków i skróty najczęstsze we wpisach polityków."""
+    from collections import Counter
+    from datetime import timedelta
+    from django.utils import timezone
+    from news.political_models import PoliticalPost
+    from news.public_records_models import PublicRecord
+    since = timezone.now() - timedelta(days=days)
+    subjects = Counter()
+    for title in PublicRecord.objects.filter(fetched_at__gte=since).exclude(title='').values_list('title', flat=True)[:3000]:
+        m = PRINT_SUBJECT.search(title)
+        if m:
+            subjects[' '.join(m.group(1).strip().split()[:4])] += 1
+    acronyms = Counter()
+    for text in PoliticalPost.objects.filter(published_at__gte=since).values_list('text', flat=True)[:5000]:
+        for a in set(ACRONYM.findall(text)):
+            if a not in STOP:
+                acronyms[a] += 1
+    pool = [x for x, _ in subjects.most_common(limit // 2)] + [a for a, n in acronyms.most_common(limit) if n >= 3][:limit // 2]
+    return list(dict.fromkeys(pool))
+
+
+def score(graph):
+    kinds = set(graph['counts'])
+    return (len(graph['edges']) * 3 + len(kinds) * 5 + min(graph['counts'].get('record', 0), 10) * 2
+            + graph['counts'].get('diagnosis', 0) * 4)
+
+
+def pick_topics(top=6):
+    """Raz dziennie: ocenia kandydatów po bogactwie drzewa i zapisuje najlepsze tematy (ta sama reguła dla wszystkich)."""
+    from django.utils import timezone
+    from news.models import ImportState
+    rows = []
+    for term in candidates():
+        graph = topic_graph(term)
+        if len(graph['edges']) >= 3 and len(graph['counts']) >= 3:
+            rows.append({'topic': term, 'score': score(graph), 'counts': graph['counts'], 'edges': len(graph['edges'])})
+    rows.sort(key=lambda r: -r['score'])
+    state, _ = ImportState.objects.get_or_create(name=TOPICS_STATE)
+    state.cursor = {'at': timezone.now().isoformat(timespec='minutes'), 'topics': rows[:top]}
+    state.save(update_fields=['cursor'])
+    return rows[:top]
+
+
+def auto_topics():
+    from news.models import ImportState
+    state = ImportState.objects.filter(name=TOPICS_STATE).first()
+    return (state.cursor or {}).get('topics', []) if state else []
