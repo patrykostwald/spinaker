@@ -70,7 +70,7 @@ def boxes(diagnosis):
     name = str(technique.get('name') or '').strip()
     name = name[:1].upper() + name[1:] if name else 'Bez wyraźnego chwytu'
     add('technique', name, body=sentence(technique.get('explanation')) or 'Dr. Spin nie wskazał tu żadnego chwytu.',
-        link_note='Tak wpis próbuje przekonać czytelnika.')
+        link_note='Tak wpis próbuje przekonać czytelnika.', link_kind='jak')
     # 4-8. czy to prawda: sprawdzone zdania i ich źródła
     claims = [clean_claim(row) for row in (diagnosis.claims or []) if isinstance(row, dict)][:3]
     for index, claim in enumerate(claims):

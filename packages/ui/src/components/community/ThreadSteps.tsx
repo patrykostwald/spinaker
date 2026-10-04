@@ -11,6 +11,7 @@ import { Avatar, ago, SocialIcon, RATINGS } from './SocialPrimitives';
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { formatDatePl } from '../../lib/utils';
 import { clipColor } from '../../lib/clipColor';
+import { AccountDialog } from '../AccountDialog';
 
 const LABELS = { positive: 'Trafne', doubt: 'Wątpliwe', negative: 'Nietrafne' } as const;
 
@@ -36,11 +37,14 @@ export function useThreadSteps(threadId: number, enabled: boolean) {
 export function StepRate({ step, onRate, canRate, label }: {
   step?: { counts: Record<string, number>; mine: string | null }; onRate: (polarity: string) => void; canRate: boolean; label: string;
 }) {
+  // zawsze klikalne (właściciel 5.10): bez konta kliknięcie zaprasza do logowania lub założenia konta
+  const [invite, setInvite] = useState(false);
   return <span className="sc-step-rate" role="group" aria-label={`Oceń: ${label}`}>
-    {RATINGS.map(key => <button key={key} type="button" data-rating={key} aria-pressed={step?.mine === key} disabled={!canRate}
-      title={canRate ? `${LABELS[key]}: ${step?.counts[key] ?? 0}` : 'Zaloguj się, aby oceniać'}
-      onClick={event => { event.stopPropagation(); onRate(key); }}>
+    {RATINGS.map(key => <button key={key} type="button" data-rating={key} aria-pressed={step?.mine === key}
+      title={canRate ? `${LABELS[key]}: ${step?.counts[key] ?? 0}` : `${LABELS[key]}: załóż konto, aby oceniać`}
+      onClick={event => { event.stopPropagation(); if (canRate) onRate(key); else setInvite(true); }}>
       <SocialIcon kind={key} /></button>)}
+    <AccountDialog open={invite} onClose={() => setInvite(false)} />
   </span>;
 }
 

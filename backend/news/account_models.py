@@ -157,7 +157,7 @@ class PersonalContextThreadItem(models.Model):
     box_data = models.JSONField(null=True, blank=True, help_text='Deterministyczny fragment diagnozy Dr. Spina.')
     # rodzaj boksu i rodzaj spinki do poprzedniego (właściciel 4.10, werdykt Konsylium 2357): pokazywane nad boksem i nad zatrzaskiem
     ROLES = [('', '-'), ('teza', 'Teza'), ('fakt', 'Fakt'), ('kontekst', 'Kontekst'), ('pytanie', 'Pytanie'), ('opinia', 'Opinia'), ('wniosek', 'Wniosek')]
-    LINK_KINDS = [('', '-'), ('bo', 'bo'), ('ale', 'ale'), ('czy_na_pewno', 'czy na pewno?'), ('przeczy', 'przeczy'), ('wynika_z', 'wynika z')]
+    LINK_KINDS = [('', '-'), ('bo', 'bo'), ('ale', 'ale'), ('czy_na_pewno', 'czy na pewno?'), ('przeczy', 'przeczy'), ('wynika_z', 'wynika z'), ('jak', 'jak?')]
     role = models.CharField(max_length=12, blank=True, default='', choices=ROLES)
     link_kind = models.CharField(max_length=16, blank=True, default='', choices=LINK_KINDS)
     position = models.PositiveSmallIntegerField()

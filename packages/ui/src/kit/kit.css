@@ -9188,3 +9188,13 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-rail .sc-rail__logo, .sc-rail .sc-rail__logo > span, .sc-rail-top .sc-rail__logo, .sc-rail-top .sc-rail__logo > span { font-weight: 700 !important; letter-spacing: -0.025em; }
 @media (min-width: 768px) { .sc-rail > .sc-rail__logo { font-size: 19.5px !important; } }
 .sc-rail-top .sc-rail__logo { font-size: 19px; }
+/* oceny połączenia w środku okienka, nad „Otwórz” (właściciel 5.10: nie na krawędzi ramki), zawsze klikalne */
+.sc-joint__pop .sc-step-rate { position: static !important; transform: none !important; justify-content: center; gap: 26px !important; margin: 4px 0 2px; }
+.sc-joint__pop .sc-step-rate::before, .sc-joint__pop .sc-step-rate::after, .sc-joint__pop .sc-step-rate button + button::before { display: none !important; }
+.sc-joint__pop .sc-step-rate button { margin: 0 !important; padding: 6px !important; border-radius: 50%; }
+.sc-joint__pop .sc-step-rate button svg { width: 18px; height: 18px; }
+.sc-joint__pop .sc-step-rate button:hover { background: color-mix(in srgb, currentColor 14%, transparent) !important; }
+.sc-step-rate button:disabled { opacity: 1; }
+/* typ połączenia widoczny od razu po wejściu w spinkę (właściciel 5.10); klik wysuwa okienko z pełnym tekstem i oceną */
+.sc-joint__kind { font-size: 11.5px !important; font-weight: 700 !important; letter-spacing: .06em !important; text-transform: uppercase; color: var(--sc-text) !important;
+  padding: 2px 7px; border-radius: 3px; background: var(--sc-bg); border: 1px solid color-mix(in srgb, var(--sc-text) 22%, transparent); }

@@ -51,7 +51,7 @@ def test_diagnosis_thread_full_and_idempotent():
     assert items[1].box_data['source_name'] == 'Poseł Test'
     assert items[1].box_data['published_date'] and items[1].box_data['url'] == row.post.url
     assert items[1].link_note == 'Diagnoza dotyczy tego wpisu.' and items[1].link_kind == 'wynika_z'
-    assert items[2].link_note == 'Tak wpis próbuje przekonać czytelnika.' and items[2].box_data['title'] == 'Wybiórczość'
+    assert items[2].link_note == 'Tak wpis próbuje przekonać czytelnika.' and items[2].box_data['title'] == 'Wybiórczość' and items[2].link_kind == 'jak'
     assert items[3].box_data['body'] == 'Dane mówią inaczej.'
     assert items[4].link_note == 'Ocena opiera się na tym źródle.' and items[4].link_kind == 'bo'
     assert all(len(item.link_note) <= 280 for item in items)
