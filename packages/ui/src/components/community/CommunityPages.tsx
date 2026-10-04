@@ -60,8 +60,9 @@ export function CommunityThreadsPage({ context = {} }: { context?: { article_id?
         <p className="sc-clinic-kicker">Spinki</p>
         <h1>Diagnozy i materiały ułożone w spinki</h1>
         <p className="sc-clinic-lead">
-          Trop to jeden materiał na początku, a za nim - w kolejności - to, co go dopełnia, potwierdza albo podważa. Każdy może ułożyć
-          swoją z materiałów z naszej Bazy albo dodać źródło przez link.
+          Spinka to łańcuch materiałów: na początku jeden materiał, a za nim kolejne, które go dopełniają, potwierdzają albo podważają.
+          Między nimi są połączenia z krótkim wyjaśnieniem, dlaczego jeden materiał wynika z drugiego. Każdy może ułożyć własną spinkę
+          z materiałów z naszej Bazy albo dodać źródło przez link.
         </p>
         <div className="sc-community__actions">
           {ACCOUNTS_ENABLED && <Button href="/konto/spinki/nowa" variant="primary">Ułóż swoją spinkę</Button>}

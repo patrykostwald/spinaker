@@ -45,7 +45,7 @@ export function ClinicCorrections() {
       </div>
     </li>)}</ol>
     {query.hasNextPage ? <Button disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż wcześniejsze zdarzenia"}</Button> : null}
-    <p className="sc-corrections__contact">Chcesz zgłosić błąd lub przesłać odpowiedź? <Link href="/o-nas#kontakt">Skontaktuj się z nami</Link>. <Link href="/metodologia#korekty">Zasady korekt</Link></p>
+    <p className="sc-corrections__contact">Chcesz zgłosić błąd lub przesłać odpowiedź? <Link href="/o-nas#kontakt">Skontaktuj się z nami</Link>.{" "}<Link href="/metodologia#korekty">Zasady korekt</Link></p>
   </section>;
 }
 

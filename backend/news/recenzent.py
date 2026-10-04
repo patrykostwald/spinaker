@@ -196,7 +196,7 @@ def page_texts(base=None):
         parts = [x for x in dict.fromkeys(parts) if len(x) >= 25]
         if parts:
             items.append({'id': f'strona:{path}', 'kind': 'stały tekst strony', 'url': 'https://spin.clinic' + path,
-                          'text': {'akapity': [_cut(x, 400) for x in parts[:40]]}})
+                          'text': {'akapity': [_cut(x, 1200) for x in parts[:40]]}})
     return items
 
 
