@@ -65,6 +65,7 @@ PAGES = ['/', '/spinki', '/klinika', '/klinika/diagnozy', '/klinika/wskazniki', 
          '/konto', '/przeszlosc']
 # Stałe zasady projektu (decyzje właściciela); Projektant ich pilnuje i proponuje kolejne.
 GUIDE = [
+    'NADRZĘDNE: w każdym boksie górny element przy górnej krawędzi, dolny (odnośnik, data, źródło, przycisk) przy dolnej; boksy jednego rodzaju równej, stałej wysokości; te same elementy na tej samej wysokości we wszystkich boksach; podpisy i odnośniki sąsiednich kolumn w jednej linii.',
     'Czysto, jasno, harmonijnie, profesjonalnie, minimalnie; najwyżej 2 kroje pisma.',
     'Boksy w rzędzie: te same krawędzie i wysokości, tytuły w ustalonej liczbie linii, nic nie ucięte w pół linii.',
     'Każdy odnośnik „… →” w jednym stylu: ten sam krój, rozmiar 15 px, grubość 600, niebieski akcent, bez wyglądu przycisku.',
