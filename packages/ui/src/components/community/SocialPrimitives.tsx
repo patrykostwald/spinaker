@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 
-export const RATINGS = ['positive', 'doubt', 'negative'] as const;
+// kolejność wyświetlania ✕ ? ✓ (właściciel 5.10)
+export const RATINGS = ['negative', 'doubt', 'positive'] as const;
 export type Rating = typeof RATINGS[number];
 export type Counts = Record<Rating, number>;
 export const ratingLabels = (ai = false): Record<Rating, string> => ({ positive: ai ? 'Trafna' : 'Zgadzam się', doubt: 'Mam wątpliwości', negative: ai ? 'Błędna' : 'Nie zgadzam się' });

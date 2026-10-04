@@ -13,7 +13,7 @@ const RECIPE = [
   ['Boks otwierający', 'Państwa materiał, który chcą Państwo wypromować: artykuł, wywiad, film, śledztwo.'],
   ['Do 14 boksów kontekstu', 'razem najwyżej 15: komunikaty, dokumenty, artykuły innych redakcji, filmy. Z naszej Bazy albo po linku.'],
   ['Połączenia z uzasadnieniem', 'między boksami autor wybiera typ (wynika z, bo, ale, czy na pewno?, przeczy) i jednym zdaniem pisze, dlaczego.'],
-  ['Czytelnicy oceniają', 'każde połączenie: ✓ zgadzam się, ? wątpię, ✕ nie zgadzam się. Kolor spinki pokazuje, jak oceniono rozumowanie.'],
+  ['Czytelnicy oceniają', 'każde połączenie: ✕ nie zgadzam się, ? wątpię, ✓ zgadzam się. Kolor spinki pokazuje, jak oceniono rozumowanie.'],
   ['Tytuł i opis', 'tytuł w dwóch wierszach, pod nim opis całej spinki; po kliknięciu boksu lub połączenia w tym miejscu pojawia się jego wyjaśnienie.'],
   ['Każdy boks ze źródłem', 'nazwa źródła, data i link do oryginału - czytelnik trafia do Państwa strony. Spinkę podpisuje autor i redakcja.'],
 ];

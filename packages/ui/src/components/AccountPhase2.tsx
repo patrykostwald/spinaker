@@ -184,7 +184,7 @@ export function AccountOnboarding({ ownerId }: { ownerId: number }) {
   function finish() { try { localStorage.setItem(`sc-onboarding-social:${ownerId}`, 'done'); } catch {} setStep(null); }
   if (step === null) return <Button variant="quiet" onClick={() => setStep(0)}>Pierwsze kroki</Button>;
   const steps = [
-    ['Oceniaj spinki', 'Trzy znaki pomagają wyrazić ocenę: ✓ zgadzam się, ? mam wątpliwości, ✕ nie zgadzam się.'],
+    ['Oceniaj połączenia', 'Oceniasz połączenia między boksami: ✕ nie zgadzam się, ? mam wątpliwości, ✓ zgadzam się.'],
     ['Obserwuj', 'Obserwuj polityków i autorów, aby łatwo wracać do ich treści.'],
     ['Ustaw powiadomienia', 'Powiadomienia serwisowe są włączone. Społecznościowe włączysz w sekcji Powiadomienia.'],
   ];

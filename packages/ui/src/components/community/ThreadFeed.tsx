@@ -45,7 +45,7 @@ export function ThreadFeed({ initialSort = 'hot', limit, term = '', context = {}
     {query.isSuccess && !threads.length && (source === 'izba'
       ? <div className="sc-thread-feed__izba">
           <p className="sc-thread-feed__izba-title">Izba przyjęć czeka na pierwsze spinki</p>
-          <p>Tu trafia każda nowa spinka czytelnika. Twoje oceny ✓ ? ✕ decydują, co przejdzie na główną.</p>
+          <p>Tu trafia każda nowa spinka czytelnika. Twoje oceny ✕ ? ✓ decydują, co przejdzie na główną.</p>
           {accounts && <Button href="/konto/spinki/nowa" variant="secondary" size="sm">Ułóż swoją spinkę</Button>}
         </div>
       : <p className="sc-thread-feed__empty">{source === 'readers' ? 'Pierwsze spinki czytelników pojawią się tu po przejściu przez izbę przyjęć.' : 'Nie ma jeszcze spinek w tym widoku.'}</p>)}
