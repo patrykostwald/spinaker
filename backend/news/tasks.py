@@ -503,6 +503,18 @@ def projektant_task():
 
 
 @shared_task
+def opiekunowie_task():
+    """Co godzinę: opiekunowie pętli (alarmy, naprawy, usprawnienia po kolei, bezpieczeństwo raz w tygodniu na pętlę)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import opiekunowie
+    done = opiekunowie.step()
+    failed = sum(isinstance(v, str) and v.startswith('błąd') for v in done.values())
+    return {'status': 'error' if failed else 'ok', 'failed': failed}
+
+
+@shared_task
 def automatyk_task():
     """Raz dziennie: przegląd wszystkich pętli agentów obu portali i usprawnienia (Automatyk, właściciel 5.10)."""
     import os
