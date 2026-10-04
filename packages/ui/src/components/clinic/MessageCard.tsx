@@ -51,6 +51,10 @@ export function MessageCard({ camp, message, day, compact = false, emptyText }: 
           <summary>Szczegóły</summary>
           <div className="sc-message-card__expanded">
             {message.analysis ? <div><h4>Pełna analiza</h4>{message.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>)}</div> : null}
+            {/* redakcja językowa (właściciel 5.10): tylko forma, sens bez zmian; tekst pierwotny jawny */}
+            {message.readability_edit ? <details className="sc-spin-detail__edit"><summary>Redakcja językowa: tekst wygładzony, sens bez zmian · pokaż tekst pierwotny</summary>
+              {Object.entries(message.readability_edit.original).map(([key, text]) => <p key={key}><b>{key === "thesis" ? "Teza" : key === "message" ? "Przekaz" : "Analiza"}:</b> {text}</p>)}
+            </details> : null}
             <div><h4>Źródła - wpisy</h4>
               {sources.isFetching ? <p role="status"><Loading label="Wczytywanie źródeł" /></p> : null}
               {sources.isError ? <p role="alert">Nie udało się pobrać źródeł. <button type="button" onClick={() => void sources.refetch()}>Spróbuj ponownie</button></p> : null}
