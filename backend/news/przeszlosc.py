@@ -231,6 +231,10 @@ KIND_LABELS = {'print': 'Druk sejmowy', 'ballot': 'Głosowanie', 'voting': 'Gło
                'interpellation': 'Interpelacja'}
 
 
+SOURCE_LABELS = {'sejm': 'Sejm', 'senat': 'Senat', 'lobbying': 'Lobbing', 'rcl': 'Projekt rządowy', 'krs': 'KRS', 'mf': 'Finanse publiczne',
+                 'gov': 'Rząd', 'consultations': 'Konsultacje', 'eli': 'Dziennik Ustaw'}
+
+
 def start_data():
     """Strona główna przeszłość.today: co jest w bazie i co nowego w Sejmie (same zbiorcze liczby i dokumenty publiczne)."""
     from news.clinic import published_diagnoses
@@ -238,7 +242,9 @@ def start_data():
     from news.political_models import PoliticalPost, PublicFigure, PublicFigureOrganisationRelation
     from news.public_records_models import PublicRecord
     latest, seen = [], set()
-    for r in PublicRecord.objects.exclude(title='').order_by('-date', '-pk')[:80]:
+    # najpierw dokumenty z datą (w Postgresie puste daty stały na górze); bez daty liczy się dzień pobrania (audyt 6.10)
+    from django.db.models import F
+    for r in PublicRecord.objects.exclude(title='').order_by(F('date').desc(nulls_last=True), '-fetched_at', '-pk')[:80]:
         key = r.title.strip().lower()[:120]
         if key not in seen:
             seen.add(key)
@@ -254,7 +260,8 @@ def start_data():
             'diagnoses': published_diagnoses().count(),
             'articles': Article.objects.count(),
         },
-        'latest': [{'title': r.title[:180], 'date': r.date.isoformat() if r.date else None, 'kind': KIND_LABELS.get(r.kind, 'Dokument'),
+        'latest': [{'title': r.title[:180], 'date': (r.date or r.fetched_at.date()).isoformat(),
+                    'kind': KIND_LABELS.get(r.kind) or SOURCE_LABELS.get(r.source, 'Dokument'),
                     'url': r.source_url} for r in latest],
         'topics_enabled': enabled(),
         'auto_topics': [{'topic': t['topic'], 'edges': t['edges']} for t in auto_topics()],

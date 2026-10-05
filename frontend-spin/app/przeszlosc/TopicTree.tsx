@@ -92,10 +92,16 @@ export function TopicTree() {
       <div><b>Każde powiązanie ma źródło</b><p>Oficjalne dane Sejmu i KRS, wpisy na X, artykuły. Nic nie łączymy po samym nazwisku.</p></div>
       <div><b>Ta sama miara dla wszystkich</b><p>Rządzący i opozycja przechodzą przez identyczne zapytania i te same reguły.</p></div>
     </section>
-    <section className="sc-pt__price" id="ceny" aria-label="Ceny">
-      <h2>Ceny</h2>
-      <p>W becie wszystko jest bezpłatne. Po becie przeglądanie tematów zostaje bezpłatne, a narzędzia dla redakcji są płatne (ceny netto, miesięcznie):</p>
-      <ul><li><b>Pro</b> 199 zł · dziennikarz</li><li><b>Zespół</b> 599 zł · redakcja</li><li><b>Instytucje</b> od 2 500 zł</li></ul>
+    <section className="sc-pt__price" id="ceny" aria-label="Dla redakcji i ceny">
+      <h2>Dla redakcji</h2>
+      <p>W becie wszystko jest bezpłatne. Przeglądanie tematów zostanie bezpłatne. Dla redakcji przygotowujemy narzędzia płatne (ceny netto, miesięcznie):</p>
+      <div className="sc-pt__plans">
+        <div><b>Bezpłatnie</b><em>0 zł</em><ul><li>tematy, oś czasu, drzewo powiązań</li><li>panel osoby i wpisu</li><li>RSS tematu</li></ul></div>
+        <div data-hl><b>Pro</b><em>199 zł</em><ul><li>alerty e-mail o osobach i tematach</li><li>eksport z licencją do publikacji</li><li>historia i notatki śledztwa</li></ul></div>
+        <div><b>Zespół</b><em>599 zł</em><ul><li>wszystko z Pro dla 5 osób</li><li>wspólne teczki tematów</li><li>pierwszeństwo nowych źródeł</li></ul></div>
+        <div><b>Instytucje</b><em>od 2 500 zł</em><ul><li>dostęp do danych przez API</li><li>raporty na zamówienie</li><li>umowa i faktura</li></ul></div>
+      </div>
+      <p className="sc-pt__cta"><a href="mailto:kontakt@spin.clinic?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji →</a><span>Odpowiadamy w 1 dzień roboczy. Każdy klient na tych samych warunkach.</span></p>
     </section>
     <footer className="sc-pt__foot">przeszłość.today prowadzi iapply sp. z o.o. · dane wspólne ze spin.clinic · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></footer>
   </main>;
