@@ -10112,3 +10112,15 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-drspin-mark__spiral { transform-box: fill-box; transform-origin: center; animation: sc-ds-turn 1.6s cubic-bezier(.2,.8,.2,1) .3s 1 both; }
 @keyframes sc-ds-turn { from { transform: rotate(-200deg); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .sc-thread-strip--row .sc-social-avatar[data-ai]::before, .sc-drspin-mark__spiral { animation: none; } }
+/* runda 2: plany przeszłość.today - listy w kartach jako zwykła kolumna (starsze reguły .sc-pt__price łamały tekst) */
+.sc-pt__price .sc-pt__plans ul { grid-template-columns: 1fr !important; width: auto !important; display: grid !important; }
+.sc-pt__price .sc-pt__plans li { display: block !important; border: 0 !important; padding: 0 !important; text-align: left !important; place-items: unset !important; min-height: 0 !important; background: none !important; }
+.sc-pt__plans > div[data-hl] { box-shadow: inset 2px 0 0 var(--sc-accent); }
+.sc-pt__cta a { padding: 0 18px; background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 26%, transparent), transparent); }
+.sc-tv__filters button { min-height: 44px; }
+.sc-tg__wrap { grid-template-columns: minmax(190px, .9fr) minmax(260px, 1.6fr) minmax(190px, 1fr); }
+/* runda 2: przycisk zgłoszeń nie zasłania treści */
+.sc-thread-feed, .sc-home { padding-bottom: 72px; }
+@media (min-width: 768px) { .sc-bug-fab { bottom: 16px !important; right: 16px !important; width: 40px !important; height: 40px !important; opacity: .7; } .sc-bug-fab:hover { opacity: 1; } }
+/* runda 2: autor diagnozy raz - na szerokim ekranie jest w karcie źródła */
+@media (min-width: 1101px) { .sc-spin-detail > .sc-spin-author { display: none; } }
