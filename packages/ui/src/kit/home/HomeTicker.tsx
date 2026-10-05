@@ -22,6 +22,7 @@ function alternate<T extends { camp?: string }>(rows: T[]) {
  * (bez wypełnienia, cienka linia, szarości; kolor tylko przy sile spinu). Przewija się wolno, staje po najechaniu,
  * przy ograniczonym ruchu stoi.
  */
+const wpisy = (n: number) => `${n} ${n === 1 ? 'wpis' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'wpisy' : 'wpisów'}`;
 export function HomeTicker() {
   const spins = useQuery({ queryKey: ['ticker', 'spins'], queryFn: () => searchClinicSpins({ sort: 'new' }), staleTime: 300_000, retry: false });
   const messages = useQuery({ queryKey: ['ticker', 'messages'], queryFn: () => getClinicMessages(1), staleTime: 600_000, retry: false });
@@ -33,7 +34,7 @@ export function HomeTicker() {
     text: `${s.author.name} · siła spinu`, value: `${s.intensity}/100`, tone: tone(s.intensity), href: `/klinika/${s.id}` }));
   const day = messages.data?.results?.[0];
   if (day) {
-    const part = (label: string, m: typeof day.government) => m ? `${label}: ${m.posts_count} wpisów${m.themes?.[0] ? `, temat: ${m.themes[0]}` : ''}` : '';
+    const part = (label: string, m: typeof day.government) => m ? `${label}: ${wpisy(m.posts_count)}${m.themes?.[0] ? `, temat: ${m.themes[0]}` : ''}` : '';
     const text = [part('Rządzący', day.government), part('Opozycja', day.opposition)].filter(Boolean).join(' · ');
     if (text) items.splice(Math.min(2, items.length), 0, { key: `m${day.day}`, time: 'przekaz dnia', text, href: `/klinika/przekazy/${day.day}` });
   }

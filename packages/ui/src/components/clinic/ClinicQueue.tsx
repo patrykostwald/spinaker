@@ -13,6 +13,7 @@ import { ShareSpinOnX } from "./ShareSpinOnX";
 import { Loading } from "../../kit/Loading";
 
 /** Kolejka zatwierdzania. Tylko dwie decyzje - treści nie da się tu zmienić. */
+const wpisy = (n: number) => `${n} ${n === 1 ? 'wpis' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'wpisy' : 'wpisów'}`;
 export function ClinicQueue() {
   const account = useAccount();
   const isStaff = Boolean(account.data?.user?.is_staff);
@@ -109,7 +110,7 @@ export function ClinicQueue() {
       )}
       {data?.messages.map(message => (
         <article key={`m-${message.id}`} className="sc-clinic-queue__item">
-          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {message.posts_count} wpisów</p>
+          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {wpisy(message.posts_count)}</p>
           <p className="sc-clinic-message__text">{message.message}</p>
           <p>{message.themes.join(" · ")}</p>
           {buttons("message", message.id)}

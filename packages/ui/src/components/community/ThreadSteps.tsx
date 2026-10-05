@@ -77,7 +77,7 @@ export function StepRate({ step, onRate, canRate, label }: {
       title={canRate ? `${LABELS[key]}: ${step?.counts[key] ?? 0}` : `${LABELS[key]}: załóż konto, aby oceniać`}
       onClick={event => { event.stopPropagation(); if (canRate) onRate(key); else setInvite(true); }}>
       <SocialIcon kind={key} /></button>)}
-    <AccountDialog open={invite} onClose={() => setInvite(false)} />
+    <AccountDialog open={invite} onClose={() => setInvite(false)} reason="rate" />
   </span>;
 }
 

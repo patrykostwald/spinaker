@@ -10048,3 +10048,17 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 
 .sc-tv__people > li[data-inst] { opacity: .8; } .sc-tv__people > li[data-inst] .sc-tv__pname::after { content: "instytucja"; margin-left: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-text-3); }
 .sc-tv__item p { -webkit-line-clamp: 4; }
+
+/* diagnoza: zdanie dla wchodzących z linku i zakończenie strony (audyt 6.10, Peak-End) */
+.sc-spin-detail__intro { margin: 4px 0 14px; padding: 10px 14px; font-size: 14px; line-height: 1.5; color: var(--sc-text-2);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 12%, transparent), transparent 70%); }
+.sc-spin-detail__intro b { color: var(--sc-text); } .sc-spin-detail__intro a { color: var(--sc-accent); font-weight: 600; }
+.sc-spin-detail__next { margin: 40px 0 8px; padding: 22px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 24px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sc-text) 5%, transparent), transparent); }
+.sc-spin-detail__next-main { font-size: 18px; font-weight: 700; color: var(--sc-text); min-height: 44px; display: inline-flex; align-items: center; }
+.sc-spin-detail__next-main:hover { color: var(--sc-accent); }
+.sc-spin-detail__next p { margin: 0; font-size: 14px; color: var(--sc-text-2); } .sc-spin-detail__next p a { color: var(--sc-accent); font-weight: 600; }
+/* pasek boczny: „Zaloguj się” w tej samej linii co pozostałe pozycje (audyt 6.10, wspólne linie) */
+@media (min-width: 1101px) { .sc-rail .sc-account-control { padding-left: 0 !important; margin-left: 0 !important; justify-content: flex-start; } }
+/* „← Cała spinka” nie styka się ze strzałką */
+.sc-pick__home { margin-right: 16px; }

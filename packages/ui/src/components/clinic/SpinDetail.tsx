@@ -123,7 +123,8 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
   return (
     <div className="sc-clinic sc-spin-detail">
       <ClinicNav />
-      <Link className="sc-spin-detail__back" href={clinicResultsUrl(returnTo ?? null)} scroll={false}>← Wróć do wyników</Link>
+      <Link className="sc-spin-detail__back" href={returnTo ? clinicResultsUrl(returnTo) : "/klinika/diagnozy"} scroll={false}>{returnTo ? "← Wróć do wyników" : "← Wszystkie diagnozy"}</Link>
+      {!returnTo && <p className="sc-spin-detail__intro"><b>spin.clinic</b> · AI Dr. Spin pokazuje, jak zbudowany jest przekaz polityka. Ta sama miara dla wszystkich partii. <Link href="/metodologia">Jak to działa</Link></p>}
       <SpinAuthorRow author={spin.author} publishedAt={spin.post.published_at} />
       {simple && <>
         <PlainDiagnosis spin={spin} />
@@ -160,6 +161,10 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
       </div>
       <AuthorReplies replies={spin.author_replies} />
       <ClinicDiscussion kind="spins" id={spin.id} />
+      <aside className="sc-spin-detail__next" aria-label="Co dalej">
+        <Link className="sc-spin-detail__next-main" href="/klinika/diagnozy">Następne diagnozy →</Link>
+        <p>Analizujemy codziennie, bez reklam i bez pieniędzy od partii. <Link href="/wsparcie">Wesprzyj Klinikę</Link></p>
+      </aside>
       </div>
     </div>
   );

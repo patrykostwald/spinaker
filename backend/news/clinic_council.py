@@ -570,7 +570,7 @@ def diagnose(context: dict, lines: str) -> dict:
     from news.clinic_plain import edit_plain
     plain = edit_plain({**text, **combined, 'claims': claims}, context['text'])
     if diversity['degraded']:
-        text['limitations'] = ('Ograniczony skład: nie uzyskano 4 odpowiedzi z 3 firm lub odpowiedzi modelu polskiego. '
+        text['limitations'] = ('Część modeli nie odpowiedziała, więc diagnozę wystawił mniejszy skład niż zwykle. '
                                + str(text.get('limitations', '')))
     return {
         'verdict': combined['verdict'], 'intensity': combined['intensity'],

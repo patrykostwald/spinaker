@@ -51,9 +51,8 @@ VERDICT_LABELS = {'spin': 'Spin', 'partial': 'Częściowy spin', 'no_spin': 'Bez
 ASSESSMENT_LABELS = {'supported': 'potwierdzone', 'contradicted': 'sprzeczne ze źródłami',
                      'misleading': 'wprowadza w błąd', 'unverified': 'niezweryfikowane'}  # jedno słowo w całym serwisie (audyt 046)
 SCALE_MIN_SAMPLE = 10
-NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera wpisy warte sprawdzenia, a konsylium kilku modeli stawia diagnozę. '
-               'Fakty są sprawdzane w wyszukiwarce. Przy zgodności werdyktu poniżej 2/3 lub spinie z oceną co najmniej 70 '
-               'możliwa jest konsultacja faktów z Claude. '
+NOTICE_AUTO = ('Wpisy do analizy wybiera automat. Kilka niezależnych modeli AI ocenia każdy osobno, a fakty sprawdzamy '
+               'w wyszukiwarce. Przy sporze modeli albo bardzo silnym spinie fakty sprawdza dodatkowo mocniejszy model. '
                'Publikacja jest automatyczna · nikt nie poprawia treści diagnoz.')
 NOTICE_REVIEW = ('Diagnozy przygotowuje AI. Człowiek może je tylko zatwierdzić albo odrzucić — nie zmienia ich treści.')
 NOTICE = NOTICE_AUTO
