@@ -54,3 +54,48 @@ def inquiry(request):
     if not sent:
         return _cors(JsonResponse({'detail': 'Nie udało się wysłać. Napisz na ' + TO + '.'}, status=503), request)
     return _cors(JsonResponse({'ok': True}), request)
+
+
+NOTE_LIMITS = {'p': 60, 'u': 200, 's': 200, 'm': 2000, 'n': 120, 'v': 20}
+
+
+def _fraction(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return min(max(number, 0.0), 1.0)
+
+
+@csrf_exempt
+def client_note(request):
+    """Uwagi klientów z podglądów na zbudujmi.com/podglad/... (właściciel 6.10). Zapis w bazie i e-mail do firmy;
+    klient wpisuje tylko uwagę i (opcjonalnie) imię, miejsce kliknięcia zapisujemy jako ułamek strony."""
+    from news.feedback_models import ClientNote
+    if request.method == 'OPTIONS':
+        return _cors(HttpResponse(status=204), request)
+    if request.method != 'POST':
+        return _cors(JsonResponse({'detail': 'Tylko POST.'}, status=405), request)
+    try:
+        data = json.loads(request.body or b'{}')
+    except ValueError:
+        return _cors(JsonResponse({'detail': 'Niepoprawne dane.'}, status=400), request)
+    if data.get('website'):
+        return _cors(JsonResponse({'ok': True}), request)
+    fields = {k: str(data.get(k, '')).strip()[:limit] for k, limit in NOTE_LIMITS.items()}
+    project = re.sub(r'[^a-z0-9-]', '', fields['p'].lower())
+    if not project or not fields['m']:
+        return _cors(JsonResponse({'detail': 'Wpisz uwagę.'}, status=400), request)
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')).split(',')[0].strip()
+    key = 'zbudujmi-note:' + re.sub(r'[^0-9a-f.:]', '', ip.lower())
+    count = cache.get(key, 0)
+    if count >= 30:
+        return _cors(JsonResponse({'detail': 'Za dużo uwag naraz. Napisz na ' + TO + '.'}, status=429), request)
+    cache.set(key, count + 1, 3600)
+    note = ClientNote.objects.create(project=project, page=fields['u'], x=_fraction(data.get('x')), y=_fraction(data.get('y')),
+                                     anchor=fields['s'], text=fields['m'], name=fields['n'], viewport=fields['v'])
+    body = (f"Nowa uwaga do podglądu: {project}\n\nMiejsce: {note.anchor or '-'} "
+            f"({'%.0f%%' % (note.y * 100) if note.y is not None else '-'} wysokości strony)\n"
+            f"Uwaga: {note.text}\nOd: {note.name or '-'}\nEkran: {note.viewport or '-'}\nStrona: {note.page or '-'}\n")
+    send_account_mail(TO, f'Uwaga klienta ({project})', body)
+    return _cors(JsonResponse({'ok': True}), request)

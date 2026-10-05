@@ -42,3 +42,26 @@ class JourneyStep(models.Model):
         constraints = [models.UniqueConstraint(fields=['hour', 'source', 'target', 'action', 'device'], name='journey_step_unique')]
         verbose_name = 'krok ścieżki'
         verbose_name_plural = 'ścieżki użytkowników (zbiorczo)'
+
+
+class ClientNote(models.Model):
+    """Uwagi klientów do podglądów stron zbudujmi (właściciel 6.10: podgląd u nas zamiast na Claude, kontakt przez
+    zbudujmi). Klient klika miejsce na stronie i pisze uwagę; zapisujemy tylko to, co sam wpisał, plus miejsce."""
+    STATUSES = [('new', 'Nowa'), ('done', 'Wprowadzona'), ('rejected', 'Nie wprowadzamy')]
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    project = models.CharField(max_length=60, db_index=True)
+    page = models.CharField(max_length=200, blank=True)
+    # miejsce kliknięcia jako ułamek szerokości i wysokości dokumentu (0-1) oraz najbliższy nagłówek sekcji
+    x = models.FloatField(null=True, blank=True)
+    y = models.FloatField(null=True, blank=True)
+    anchor = models.CharField(max_length=200, blank=True)
+    text = models.TextField(max_length=2000)
+    name = models.CharField(max_length=120, blank=True)
+    viewport = models.CharField(max_length=20, blank=True)
+    status = models.CharField(max_length=10, choices=STATUSES, default='new', db_index=True)
+    staff_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'uwaga klienta (zbudujmi)'
+        verbose_name_plural = 'uwagi klientów (zbudujmi)'

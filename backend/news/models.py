@@ -1019,7 +1019,7 @@ from .account_models import AccountIdentity
 from .notification_models import Follow, Notification, NotificationSettings, NotificationEvent
 from .poll_models import PollVote
 from .interview_vote_models import InterviewBallot, InterviewCandidate, InterviewMessage, InterviewSubmission, InterviewVote
-from .feedback_models import BugReport, JourneyStep  # noqa: E402,F401
+from .feedback_models import BugReport, ClientNote, JourneyStep  # noqa: E402,F401
 
 from .thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRateEvent, ThreadModerationReport, ThreadModerationDecision, ThreadModerationMail  # noqa: E402,F401
 

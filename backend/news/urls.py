@@ -37,7 +37,7 @@ from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
 from news.push_api import SubscriptionsView
 from news.interview_vote_api import InterviewBallotView, InterviewVoteView, InterviewMessageView
 from news.feedback import BugReportView, JourneyView
-from news.zbudujmi_inquiry import inquiry as zbudujmi_inquiry
+from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 
 router = DefaultRouter()
@@ -107,6 +107,7 @@ urlpatterns = [
     path('przeszlosc/start/', przeszlosc_start),
     path('przeszlosc/rss/', przeszlosc_rss),
     path('zbudujmi/zapytanie/', zbudujmi_inquiry),
+    path('zbudujmi/uwagi/', zbudujmi_client_note),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
     path('clinic/messages/', clinic_messages),
     path('clinic/messages/<str:day>/', clinic_message_detail),

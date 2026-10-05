@@ -483,7 +483,7 @@ class InterviewMessageAdmin(admin.ModelAdmin):
     readonly_fields = ('ballot', 'user', 'text', 'created_at')
 
 
-from news.feedback_models import BugReport, JourneyStep  # noqa: E402
+from news.feedback_models import BugReport, ClientNote, JourneyStep  # noqa: E402
 
 
 @admin.register(BugReport)
@@ -506,3 +506,13 @@ class JourneyStepAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+@admin.register(ClientNote)
+class ClientNoteAdmin(admin.ModelAdmin):
+    """Uwagi klientów z podglądów zbudujmi (6.10). Zespół zmienia tylko status i notatkę."""
+    list_display = ('created_at', 'project', 'status', 'anchor', 'name', 'text')
+    list_filter = ('status', 'project')
+    search_fields = ('text', 'anchor', 'name')
+    readonly_fields = ('created_at', 'project', 'page', 'x', 'y', 'anchor', 'text', 'name', 'viewport')
+    fields = ('status', 'staff_note', *readonly_fields)
