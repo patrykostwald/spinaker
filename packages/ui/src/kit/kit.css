@@ -10147,3 +10147,24 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-spin-next b { color: color-mix(in srgb, var(--sc-spin-lo, #4ed18a) calc(100% - var(--spin) * 1%), var(--sc-spin-hi, #ff6b6b)); }
 @media (min-width: 1024px) { .sc-bug-fab { right: auto !important; left: 24px !important; bottom: 16px !important; } }
 .sc-trow__badge { white-space: nowrap; overflow: visible; font-size: 10.5px !important; letter-spacing: .06em !important; }
+/* wyjątek od „przyciski: sam tekst” (właściciel 6.10): główny przycisk widoku ma wypełnienie - kontrast zamiast ramki, z lewej ciemniej, ku prawej akcent */
+.sc-btn[data-variant="primary"], a.sc-btn[data-variant="primary"] { display: inline-flex !important; align-items: center; justify-content: center; gap: 8px; min-height: 44px !important; padding: 0 22px !important;
+  color: #fff !important; background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 55%, var(--sc-bg)) 0%, var(--sc-accent) 100%) !important; transition: filter .25s, transform .15s; }
+.sc-btn[data-variant="primary"]:hover { filter: brightness(1.12); } .sc-btn[data-variant="primary"]:active { transform: translateY(1px); }
+.sc-btn[data-variant="primary"]::after { display: none !important; }
+.sc-btn[data-variant="primary"]:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 3px; }
+/* przeszłość.today bez kolorów obozów (właściciel 6.10): wpisy, osoby, drzewo i panele w jednym neutralnym odcieniu; kolor tylko dla akcji i diagnozy */
+.sc-tv__item, .sc-tv__item[data-camp], .sc-tv__people > li, .sc-tv__people > li[data-camp], .sc-tg__col button[data-camp], .sc-ptp__box, .sc-ptp__box[data-camp] { --cc: var(--sc-text) !important; }
+.sc-tv__item[data-camp], .sc-tv__item { background: linear-gradient(90deg, color-mix(in srgb, var(--sc-text) 6%, transparent) 0%, transparent 30%) !important; }
+.sc-tv__people > li, .sc-tv__people > li[data-camp] { background: linear-gradient(90deg, color-mix(in srgb, var(--sc-text) 6%, transparent) 0%, transparent 70%) !important; }
+.sc-tg__col button[data-kind="organisation"], .sc-tg__col button[data-kind="record"], .sc-tg__col button[data-kind="vote"] { --cc: var(--sc-text) !important; }
+.sc-tv__density, .sc-tv__density svg { color: var(--sc-text); }
+.sc-tv__people .sc-tv__pbtn, .sc-tv__pname a { color: var(--sc-text) !important; }
+/* kolumna „Kto występuje” nie rozpycha wierszy po lewej (dziura nad „W 30 sekund”) */
+@media (min-width: 901px) { .sc-tv { grid-auto-rows: min-content; } .sc-tv__grid > .sc-tv__side { grid-row: 1 / span 30 !important; } }
+/* przeszłość.today: jak to działa w 3 krokach pod nagłówkiem (właściciel 6.10: „tu nic nie można zrozumieć”) */
+.sc-pt__how { list-style: none; margin: 14px 0 6px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.sc-pt__how li { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 12px 14px; background: linear-gradient(90deg, color-mix(in srgb, var(--sc-text) 6%, transparent), transparent); }
+.sc-pt__how b { font-size: 26px; font-weight: 700; color: var(--sc-accent); line-height: 1; }
+.sc-pt__how span { display: grid; font-size: 13px; color: var(--sc-text-2); } .sc-pt__how strong { font-size: 15px; color: var(--sc-text); }
+@media (max-width: 760px) { .sc-pt__how { grid-template-columns: 1fr; } }

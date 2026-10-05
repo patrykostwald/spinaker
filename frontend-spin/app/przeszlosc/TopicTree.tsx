@@ -65,7 +65,12 @@ export function TopicTree() {
     <header className="sc-pt__head">
       <p className="sc-pt__k">Wersja beta · bezpłatnie</p>
       <h1>Kto, co i kiedy w jednym temacie</h1>
-      <p>Wpisz temat. Pokażemy osoby publiczne, ich spółki i fundacje z KRS, dokumenty Sejmu, wpisy na X z diagnozami Dr. Spina i artykuły. Każde powiązanie ma źródło.</p>
+      <p>Wpisujesz temat, na przykład VAT albo CPK. W kilka sekund widzisz, kto o nim mówi, co dokładnie powiedział, kiedy temat wybuchł, jak głosował Sejm i z jakimi spółkami są związani ci ludzie. Każda informacja ma link do oryginału.</p>
+      <ol className="sc-pt__how" aria-label="Jak to działa">
+        <li><b>1</b><span><strong>Wpisz temat</strong>albo kliknij temat dnia</span></li>
+        <li><b>2</b><span><strong>Zobacz kto, co i kiedy</strong>oś czasu, drzewo powiązań, głosowania</span></li>
+        <li><b>3</b><span><strong>Kliknij osobę lub wpis</strong>diagnoza spinu, KRS, źródło, cytat</span></li>
+      </ol>
       <form onSubmit={event => { event.preventDefault(); if (query.trim().length >= 3) void load(query.trim()); }} className="sc-pt__search">
         <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Np. CPK, lotnisko" aria-label="Temat" />
         <button type="submit">Pokaż</button>
@@ -118,7 +123,8 @@ const INSTITUTIONS: Record<string, string> = { ME: 'Ministerstwo Energii', MF: '
   MSZ: 'Ministerstwo Spraw Zagranicznych', MSWiA: 'Ministerstwo Spraw Wewnętrznych i Administracji', KPRM: 'Kancelaria Prezesa Rady Ministrów', MEN: 'Ministerstwo Edukacji Narodowej' };
 const nice = (name: string) => INSTITUTIONS[name.trim()] ?? name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase()
   ? w[0] + w.slice(1).toLowerCase() : w).join('');
-const CAMP_COLOR: Record<string, string> = { government: '#5B9BFF', opposition: '#FF6B6B' };
+// bez kolorów obozów (właściciel 6.10: „strasznie wygląda czerwone z niebieskim”): obóz tylko słowem, pasek w odcieniach szarości
+const CAMP_COLOR: Record<string, string> = { government: 'currentColor', opposition: 'currentColor' };
 
 /** Pasek gęstości tematu (panel designu 5.10): kiedy temat „wybuchł”; słupek dnia w kolorach obozów, klik przewija do dnia. */
 function Density({ events }: { events: Node[] }) {
@@ -135,10 +141,10 @@ function Density({ events }: { events: Node[] }) {
           <title>{`${k}: ${Object.values(row).reduce((a, b) => a + b, 0)}`}</title>
           <rect x={i * w} y={0} width={w} height={40} fill="transparent" />
           {(['government', 'opposition', 'other'] as const).filter(c => row[c]).map(c => { const h = (36 * row[c]) / max; y -= h;
-            return <rect key={c} x={i * w + w * .15} y={y} width={w * .7} height={h} fill={CAMP_COLOR[c] ?? 'currentColor'} opacity={c === 'other' ? .35 : .85} />; })}
+            return <rect key={c} x={i * w + w * .15} y={y} width={w * .7} height={h} fill="currentColor" opacity={c === 'government' ? .75 : c === 'opposition' ? .5 : .25} />; })}
         </g>; })}
     </svg>
-    <figcaption><span>{new Date(keys[0]).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span>niebieski: rządzący · czerwony: opozycja · szary: media i dokumenty</span><span>{new Date(keys[keys.length - 1]).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}</span></figcaption>
+    <figcaption><span>{new Date(keys[0]).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span>jaśniej: rządzący · ciemniej: opozycja · najciemniej: media i dokumenty</span><span>{new Date(keys[keys.length - 1]).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}</span></figcaption>
   </figure>;
 }
 
