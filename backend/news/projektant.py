@@ -44,6 +44,25 @@ FEEDS = {
     'UX Collective': 'https://uxdesign.cc/feed',
     'Awwwards': 'https://www.awwwards.com/blog/feed/',
     'Codrops': 'https://tympanus.net/codrops/feed/',
+    'DEV Community': 'https://dev.to/feed',
+    'Minimal Gallery': 'https://minimal.gallery/feed/',
+}
+# Galerie i źródła wskazane przez właściciela (5.10): Projektant uczy się na najlepiej ocenianych stronach (szczególnie agencji);
+# Badacz szuka ich kanałów RSS, a strony bez kanału Projektant czyta jako listę najnowszych pozycji.
+DESIGN_PAGES = {
+    'Awwwards: strony dnia': 'https://www.awwwards.com/websites/sites_of_the_day/',
+    'Awwwards: agencje': 'https://www.awwwards.com/websites/agency/',
+    'SiteInspire': 'https://www.siteinspire.com/',
+    'Minimal Gallery': 'https://minimal.gallery/',
+    'Dribbble: popularne': 'https://dribbble.com/shots/popular',
+    'Site of Sites': 'https://www.siteofsites.co/?p=1',
+    'Tabnav: najlepsze strony': 'https://tabnav.com/blog/best-website-design-examples',
+    'Eleken: przykłady stron': 'https://www.eleken.co/blog-posts/best-website-design-examples',
+    'Netguru: wzorce frontendu': 'https://www.netguru.com/blog/frontend-design-patterns',
+    'WeWeb: platformy frontendu': 'https://www.weweb.io/blog/frontend-development-platform-guide',
+    'Refonte: narzędzia frontendu 2026': 'https://www.refontelearning.com/blog/new-front-end-development-tools-in-2026-a-comprehensive-guide',
+    'OpenDesign: narzędzia AI do projektowania': 'https://open-design.ai/solutions/',
+    'DEV Community': 'https://dev.to/',
 }
 # Kanon zasad z klasycznych podręczników (stała wiedza Projektanta; uzupełniana o nowe źródła na prośbę właściciela).
 CANON = [
@@ -182,8 +201,28 @@ def _site_base():
     return os.environ.get('PROJEKTANT_BASE_URL', '').strip() or 'http://frontend:3000'
 
 
+def page_items(limit=6):
+    """Strony bez kanału RSS (galerie, zestawienia): najnowsze pozycje jako nagłówki z linkami."""
+    import re as _re
+    items = []
+    for name, url in DESIGN_PAGES.items():
+        try:
+            html = requests.get(url, timeout=15, headers={'User-Agent': 'spin.clinic Projektant (+https://spin.clinic)'}).text[:400_000]
+        except requests.RequestException:
+            continue
+        seen = 0
+        for href, text in _re.findall(r'<a[^>]+href="(https://[^"]+)"[^>]*>(.*?)</a>', html, _re.S):
+            text = ' '.join(_re.sub(r'<[^>]+>', ' ', text).split())
+            if 18 <= len(text) <= 140:
+                items.append({'source': name, 'title': text, 'url': href, 'summary': ''})
+                seen += 1
+            if seen >= limit:
+                break
+    return items
+
+
 def learn(force=False):
-    items = feed_items()
+    items = feed_items() + page_items()
     urls = {i['url'] for i in items}
     if not items:
         raise common.WindowClosed('Brak nagłówków ze źródeł branżowych.')

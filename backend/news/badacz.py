@@ -143,8 +143,24 @@ def judge(candidates, force=False):
     return accepted
 
 
+def trusted_pages(data):
+    """Strony wskazane przez właściciela: kanał RSS znaleziony automatycznie trafia od razu do aktywnych (bez oceny)."""
+    from news.projektant import DESIGN_PAGES
+    added = 0
+    for name, page in DESIGN_PAGES.items():
+        if any(r.get('page') == page for r in data.values()):
+            continue
+        feed, _ = find_feed(page)
+        key = feed or page
+        data.setdefault(key, {'name': name, 'topic': 'ux', 'status': 'odkryte' if feed else 'strona', 'fails': 0,
+                              'added': timezone.localdate().isoformat(), 'page': page})
+        added += bool(feed)
+    return added
+
+
 def step(force=False):
     data = load()
+    trusted_pages(data)
     candidates = discover(data)
     accepted = judge(candidates, force) if candidates else []
     today = timezone.localdate().isoformat()
