@@ -234,7 +234,7 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
       <button type="button" className="sc-pick__arrow" disabled={at === sequence.length - 1} onClick={() => setAt(at + 1)} aria-label="Następny element">›</button>
     </div>
     {rateMode && <p className="sc-pick__progress" aria-live="polite">{finished ? <>Dziękujemy, oceniłeś całą spinkę. <button type="button" onClick={onClose}>Wróć do spinki</button></>
-      : <>Ocena krok po kroku: <b>{at + 1} z {sequence.length}</b> · {step.kind === 'box' ? 'czy boks jest trafny?' : 'czy połączenie jest trafne?'}</>}</p>}
+      : <>Krok <b>{at + 1} z {sequence.length}</b> · {step.kind === 'box' ? 'boks' : 'połączenie'}</>}</p>}
     <nav className="sc-pick__chain" ref={chain} aria-label="Elementy spinki">
       {sequence.map((row, i) => <button key={i} type="button" className={row.kind === 'box' ? 'sc-trow__sq' : 'sc-trow__link'} aria-current={i === at || undefined}
         style={row.kind === 'clip' ? { background: clipColor(steps.find(items[row.index].item_id, 'context')?.counts) } : undefined}

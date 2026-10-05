@@ -96,8 +96,8 @@ export function TopicTree() {
       <h2>Dla redakcji</h2>
       <p>W becie wszystko jest bezpłatne. Przeglądanie tematów zostanie bezpłatne. Dla redakcji przygotowujemy narzędzia płatne (ceny netto, miesięcznie):</p>
       <div className="sc-pt__plans">
-        <div><b>Bezpłatnie</b><em>0 zł</em><ul><li>tematy, oś czasu, drzewo powiązań</li><li>panel osoby i wpisu</li><li>RSS tematu</li></ul></div>
-        <div data-hl><b>Pro</b><em>199 zł</em><ul><li>alerty e-mail o osobach i tematach</li><li>eksport z licencją do publikacji</li><li>historia i notatki śledztwa</li></ul></div>
+        <div><b>Bezpłatnie</b><em>0 zł</em><ul><li>tematy i oś czasu</li><li>drzewo powiązań</li><li>panel osoby i wpisu</li><li>RSS tematu</li></ul></div>
+        <div data-hl><b>Pro</b><em>199 zł</em><ul><li>alerty e-mail</li><li>eksport z licencją do publikacji</li><li>historia i notatki śledztwa</li></ul></div>
         <div><b>Zespół</b><em>599 zł</em><ul><li>wszystko z Pro dla 5 osób</li><li>wspólne teczki tematów</li><li>pierwszeństwo nowych źródeł</li></ul></div>
         <div><b>Instytucje</b><em>od 2 500 zł</em><ul><li>dostęp do danych przez API</li><li>raporty na zamówienie</li><li>umowa i faktura</li></ul></div>
       </div>
@@ -138,7 +138,7 @@ function Density({ events }: { events: Node[] }) {
             return <rect key={c} x={i * w + w * .15} y={y} width={w * .7} height={h} fill={CAMP_COLOR[c] ?? 'currentColor'} opacity={c === 'other' ? .35 : .85} />; })}
         </g>; })}
     </svg>
-    <figcaption><span>{keys[0]}</span><span>niebieski: rządzący · czerwony: opozycja · szary: media i dokumenty</span><span>{keys[keys.length - 1]}</span></figcaption>
+    <figcaption><span>{new Date(keys[0]).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span>niebieski: rządzący · czerwony: opozycja · szary: media i dokumenty</span><span>{new Date(keys[keys.length - 1]).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}</span></figcaption>
   </figure>;
 }
 
@@ -508,7 +508,7 @@ function Brief({ data, events, author, diagnosisOf }: { data: Graph; events: Nod
   const first = [...events].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0];
   const parts = [
     `Najgłośniej było ${day(peak[0])} (${peak[1]} ${peak[1] === 1 ? 'pozycja' : peak[1] % 10 >= 2 && peak[1] % 10 <= 4 && (peak[1] % 100 < 10 || peak[1] % 100 >= 20) ? 'pozycje' : 'pozycji'}), pierwszy ślad ${day(first.date)}.`,
-    gov || opp ? `Najczęściej mówią: ${[gov && `${nice(gov.who.label)} (rządzący, ${gov.n})`, opp && `${nice(opp.who.label)} (opozycja, ${opp.n})`].filter(Boolean).join(' i ')}.` : '',
+    gov || opp ? `Najwięcej wpisów: ${[gov && `${nice(gov.who.label)} (rządzący, ${gov.n} ${gov.n === 1 ? 'wpis' : gov.n < 5 ? 'wpisy' : 'wpisów'})`, opp && `${nice(opp.who.label)} (opozycja, ${opp.n} ${opp.n === 1 ? 'wpis' : opp.n < 5 ? 'wpisy' : 'wpisów'})`].filter(Boolean).join(' i ')}.` : '',
     data.counts.record || data.counts.vote ? `W Sejmie: ${data.counts.record ?? 0} dokumentów i ${data.counts.vote ?? 0} głosowań.` : 'Sejm: brak dokumentów w tym temacie w naszej bazie.',
     avg !== null ? `Średnia siła spinu w ${spins.length} diagnozach Dr. Spina: ${avg}/100.` : '',
   ].filter(Boolean);

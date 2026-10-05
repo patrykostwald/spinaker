@@ -177,8 +177,8 @@ function NextSpins({ current }: { current: number }) {
   const query = useQuery({ queryKey: ["clinic-next", current], queryFn: () => searchClinicSpins({}), staleTime: 60_000 });
   const rows = (query.data?.results ?? []).filter(row => row.id !== current).slice(0, 3);
   if (!rows.length) return null;
-  return <ol className="sc-spin-next">{rows.map(row => <li key={row.id}><Link href={`/klinika/${row.id}`} style={spinVar(row.intensity)}>
-    <b>{row.intensity}/100</b><span>{row.headline}</span><small>{row.author?.name}</small></Link></li>)}</ol>;
+  return <><h2 className="sc-spin-next__h">Kolejne diagnozy</h2><ol className="sc-spin-next">{rows.map(row => <li key={row.id}><Link href={`/klinika/${row.id}`} style={spinVar(row.intensity)}>
+    <b>{row.intensity}/100</b><span>{row.headline}</span><small>{row.author?.name}</small></Link></li>)}</ol></>;
 }
 
 const VERDICT_SHORT: Record<string, string> = { spin: "spin", partial: "częściowy spin", no_spin: "bez spinu", unclear: "nie da się ocenić" };
