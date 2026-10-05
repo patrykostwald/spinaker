@@ -113,7 +113,7 @@ LEARN = ('Jesteś Projektantem UX/UI grupy iapply: ekspertem od projektowania in
          'W guide_additions podaj do 3 nowych, krótkich zasad ogólnych, jeśli są warte zapisania. Bez mody dla mody.')
 LEARN_CHECK = ('Oceniasz wyłącznie wiedzę o projektowaniu UX/UI (nie treści polityczne ani dezinformację). Sprawdź raport kolegi wobec items i przewodnika. W remove podaj numery (od 0) trendów bez pokrycia w items, '
                'sprzecznych z przewodnikiem albo niepraktycznych dla tego serwisu.')
-AUDIT = ('Jesteś Projektantem UX/UI spin.clinic. Uwaga: pages to kod strony przed uruchomieniem skryptów - brak h1 lub treści może znaczyć, że pojawiają się po wczytaniu; zgłaszaj to najwyżej jako średni priorytet. Masz przewodnik projektu (guide), strukturę stron (pages) i automatyczne uwagi '
+AUDIT = ('Jesteś Projektantem UX/UI spin.clinic. Twoją biblią są Laws of UX (w guide i laws_of_ux_takeaways): przy każdej poprawce wskaż, które prawo łamie strona. Uwaga: pages to kod strony przed uruchomieniem skryptów - brak h1 lub treści może znaczyć, że pojawiają się po wczytaniu; zgłaszaj to najwyżej jako średni priorytet. Masz przewodnik projektu (guide), strukturę stron (pages) i automatyczne uwagi '
          '(checks). Wypisz konkretne poprawki: strona, element (nagłówek, odnośnik, boks), problem i gotowa poprawka. '
          'Priorytet wysoki tylko dla błędów czytelności, spójności i dostępności. Bez ogólników.')
 AUDIT_CHECK = ('Sprawdź poprawki kolegi. W remove podaj numery (od 0) poprawek niepopartych strukturą stron, sprzecznych z przewodnikiem '
@@ -125,7 +125,8 @@ def guide():
     extra = []
     for note in AgentNote.objects.filter(agent='projektant', kind='report', status__in=['new', 'accepted'])[:8]:
         extra += [str(x) for x in (note.scores or {}).get('guide_additions', [])]
-    return GUIDE + CANON + list(dict.fromkeys(extra))[:12]
+    from news.laws_of_ux import guide_lines
+    return GUIDE + CANON + guide_lines() + list(dict.fromkeys(extra))[:12]  # Laws of UX: biblia Projektanta (właściciel 5.10)
 
 
 def feed_items(limit=8):
@@ -240,6 +241,11 @@ def learn(force=False):
     return note
 
 
+def _laws():
+    from news.laws_of_ux import takeaways
+    return {k: v[:3] for k, v in takeaways().items()}
+
+
 def audit(force=False, base=None):
     base = base or _site_base()
     pages = []
@@ -254,7 +260,7 @@ def audit(force=False, base=None):
     fixes = []
     for start in range(0, len(pages), 6):  # partiami, żeby pytanie zmieściło się w limicie modelu
         batch = pages[start:start + 6]
-        answer = _ask_author(AUDIT, {'guide': guide(), 'pages': batch}, AUDIT_SCHEMA, force)
+        answer = _ask_author(AUDIT, {'guide': guide(), 'pages': batch, 'laws_of_ux_takeaways': _laws()}, AUDIT_SCHEMA, force)
         rows = [f for f in answer.get('fixes', []) if isinstance(f, dict)]
         if rows:
             verdict = _ask_checker(AUDIT_CHECK, {'guide': guide(), 'pages': batch, 'fixes': rows}, CHECK_SCHEMA, force)
@@ -274,6 +280,14 @@ def step(force=False):
     if last and not force and timezone.now() - last.created_at < WEEK:
         return last
     note = learn(force)
+    try:  # Laws of UX: cotygodniowe sprawdzenie, czy autor nie dodał praw albo nie zmienił wniosków
+        from news import laws_of_ux
+        changes, _ = laws_of_ux.check()
+        if changes:
+            common.notify(AgentNote.objects.create(agent='projektant', kind='finding', status='new',
+                title=f'Laws of UX: {len(changes)} zmian na lawsofux.com', body=chr(10).join(changes), sources=[laws_of_ux.SITE]))
+    except requests.RequestException:
+        pass
     audit(force)
     from news import recenzent
     recenzent.audit_pages(force)  # raz w tygodniu wszystkie stałe teksty stron

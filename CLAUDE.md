@@ -24,6 +24,12 @@ Przed oddaniem czegokolwiek z boksami sprawdź każdy punkt:
 8. **Styl:** czysto, minimalistycznie, najwyżej 2 kroje; raporty dla właściciela w ciemnym motywie spin.clinic.
 9. **Sprawdzenie:** zrzut ekranu 1440 i 390 px przed oddaniem; zmierz położenia (górne i dolne krawędzie) zamiast zgadywać.
 
+## Biblia designu: Laws of UX (lawsofux.com, właściciel 5.10)
+Wszystkie 30 praw z zastosowaniem u nas: backend/news/laws_of_ux.py (LAWS). Każda poprawka designu wskazuje prawo, które naprawia.
+Najczęściej u nas: Jakob (konwencje), Hick i Choice Overload (mniej wyborów), Fitts (cele 44 px), Proximity i Common Region (grupy),
+Similarity (jeden styl dla jednej funkcji), Doherty (odpowiedź poniżej 400 ms), Peak-End (szczyt i zakończenie), Von Restorff (jedno wyróżnienie),
+Tesler (złożoność bierze system, nie użytkownik). Projektant co tydzień sprawdza lawsofux.com i zgłasza nowe prawa lub zmiany.
+
 ## Pętla designu (obowiązkowa przed oddaniem strony, widoku, raportu lub artefaktu)
 1. Projekt według przewodnika Projektanta (backend/news/projektant.py: GUIDE i CANON) i listy kontrolnej wyżej.
 2. Zrzuty 1440 i 390 px oraz pomiar położeń.
