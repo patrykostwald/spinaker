@@ -106,3 +106,14 @@ def test_refresh_and_api(monkeypatch):
     assert client.get('/api/przeszlosc/odstepstwa/?posel=999').status_code == 404
     assert client.get('/api/przeszlosc/odstepstwa/?okres=rok').status_code == 400
     assert client.get('/api/przeszlosc/odstepstwa/?posel=abc').status_code == 400
+
+
+@pytest.mark.django_db
+def test_profile_summary_uses_official_id_only():
+    from news.analysis_models import VotingDeviationSnapshot
+    from news.przeszlosc_osoba import deviation_summary
+    data = analyse(mirrored())
+    VotingDeviationSnapshot.objects.create(term=10, period='term', data={**data, 'term': 10, 'period': 'term'})
+    summary = deviation_summary({(10, 104)})
+    assert summary['club'] == 'KO' and summary['flagged'] and summary['rebellions_total'] == 5 and summary['share'] == 20.0
+    assert deviation_summary({(10, 999)}) is None and deviation_summary(set()) is None

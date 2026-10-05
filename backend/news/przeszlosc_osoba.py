@@ -110,6 +110,18 @@ def search(query, limit=10):
 
 
 # --- tożsamości posła: tylko oficjalne identyfikatory Sejmu ---
+def deviation_summary(identities):
+    """Odstępstwa od klubu z nocnego wyniku (news.voting_anomalies), najnowsza kadencja posła, cała kadencja."""
+    from news import voting_anomalies
+    for term, mp_id in sorted(identities, reverse=True):
+        found = voting_anomalies.member(mp_id, term, 'term')
+        if found:
+            m = found['clubs'][0]
+            return {'term': term, 'club': m['club'], 'share': m['share'], 'club_median': m['club_median'], 'flagged': m['flagged'],
+                    'counted': m['counted'], 'rebellions_total': m['rebellions_total'], 'latest': m['latest']}
+    return None
+
+
 def mp_identities(figure):
     """[(kadencja, id posła)] z ręcznie sprawdzonego mandatu albo z ról importowanych z API Sejmu."""
     found = set()
@@ -253,6 +265,7 @@ def profile(figure):
                      'results': [{'date': b.voting.article.published_date.date().isoformat() if b.voting.article.published_date else None,
                                   'title': b.voting.article.title[:300], 'motion': (b.voting.motion or '')[:300],
                                   'vote': VOTE_LABEL.get(b.vote, 'inne'), 'club': b.club, 'url': vote_url(b.voting)} for b in recent]}
+    data['votes']['deviation'] = deviation_summary(identities)
 
     # Aktywność w czasie
     media_dates = [m['published_date'] for m in data.get('materials', {}).get('results', []) if m.get('published_date')]

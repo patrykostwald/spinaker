@@ -17,7 +17,8 @@ type Profile = {
   posts: { count: number; diagnoses: number; avg_spin: number | null; results: { id: number; url: string; text: string; date: string; handle: string;
     diagnosis: { id: number; intensity: number; headline: string; url: string } | null }[] };
   documents: { available: boolean; count: number; by_kind: Record<string, number>; results: { id: number; kind: string; label: string; title: string; date: string | null; url: string; replies: number | null }[] };
-  votes: { available: boolean; count: number; summary: Record<string, number>; reason: string; results: { date: string | null; title: string; motion: string; vote: string; club: string; url: string }[] };
+  votes: { available: boolean; count: number; summary: Record<string, number>; reason: string; results: { date: string | null; title: string; motion: string; vote: string; club: string; url: string }[];
+    deviation?: { term: number; club: string; share: number; club_median: number | null; flagged: boolean; counted: number; rebellions_total: number; latest: { url: string; title: string; date: string | null } | null } | null };
   organisations: { id: number; name: string; krs_number: string; official_register_url: string; public_role: string; organ: string; relation_status: string; since?: string | null; until?: string | null }[];
   employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; source?: { url: string } }[];
   materials: { count: number; results: { id: number; title: string; url: string; source: string; published_date: string | null }[] };
@@ -107,6 +108,8 @@ function ProfileView({ data }: { data: Profile }) {
         <dl>
           <div><dt>Średni spin</dt><dd>{data.posts.avg_spin !== null ? <><i className="px-spin-dot" style={{ ['--spin' as string]: spinColor(data.posts.avg_spin) }} />{data.posts.avg_spin}/100 <small>· {data.posts.diagnoses} {plural(data.posts.diagnoses, 'diagnoza', 'diagnozy', 'diagnoz')}</small></> : <small>brak diagnoz</small>}</dd></div>
           <div><dt>Głosowania</dt><dd>{data.votes.count ? <VoteBar summary={data.votes.summary} /> : <small>{data.votes.available ? 'brak w bazie' : 'nie jest posłem w naszych danych'}</small>}</dd></div>
+          {data.votes.deviation && <div><dt>Odstępstwa od klubu</dt><dd>{pctPl(data.votes.deviation.share)} <small>· mediana {data.votes.deviation.club} {data.votes.deviation.club_median === null ? '-' : pctPl(data.votes.deviation.club_median)}
+            {data.votes.deviation.latest ? <> · <a href={data.votes.deviation.latest.url} target="_blank" rel="noopener noreferrer">{data.votes.deviation.rebellions_total} wbrew klubowi ↗</a></> : ''}</small></dd></div>}
           <div><dt>W Sejmie</dt><dd>{data.documents.count ? Object.entries(data.documents.by_kind).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k}: ${n}`).join(', ') : <small>brak dokumentów w bazie</small>}</dd></div>
           <div><dt>Ostatnio</dt><dd>{items[0] ? <>{day(items[0].date)} <small>· {items[0].source}</small></> : <small>brak aktywności w bazie</small>}</dd></div>
         </dl>
@@ -166,6 +169,8 @@ function ProfileView({ data }: { data: Profile }) {
     <Denominators data={data} />
   </>;
 }
+
+const pctPl = (v: number) => `${v.toLocaleString('pl-PL', { maximumFractionDigits: 1 })}%`;
 
 function VoteBar({ summary }: { summary: Record<string, number> }) {
   const total = Object.values(summary).reduce((a, b) => a + b, 0) || 1;
