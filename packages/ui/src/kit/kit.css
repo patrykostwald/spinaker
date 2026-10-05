@@ -10694,14 +10694,14 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
   .px-panel__text { font-size: 16.5px; }
 }
 
-/* Spinki: prześwietlenie od dołu (właściciel 6.10, szkic): poświata wychodzi z dolnych rogów paska i łukiem gaśnie ku górze
+/* Spinki: prześwietlenie od dołu (właściciel 6.10, szkic; łuk od górnego rogu do dołu pod miniaturą): poświata wychodzi z dolnych rogów paska i łukiem gaśnie ku górze
    (autor z lewego dolnego rogu, reakcje z prawego); kropki o 25% gęściej (co 13,5 px) i delikatniejsze */
 .sc-thread-strip.sc-thread-strip--row[style], .sc-thread-strip.sc-thread-strip--row { background:
-    radial-gradient(38% 140% at 0% 100%, color-mix(in srgb, var(--who-c) 13%, transparent) 0%, transparent 72%),
-    radial-gradient(34% 140% at 100% 100%, color-mix(in srgb, var(--tint-c) calc((var(--tint-k, 14%) + var(--tint-h, 0%)) * .8), transparent) 0%, transparent 72%) !important; }
+    radial-gradient(21% 145% at 0% 100%, color-mix(in srgb, var(--who-c) 16%, transparent) 0%, transparent 72%),
+    radial-gradient(19% 145% at 100% 100%, color-mix(in srgb, var(--tint-c) calc((var(--tint-k, 14%) + var(--tint-h, 0%)) * .8), transparent) 0%, transparent 72%) !important; }
 .sc-thread-strip--row::after { background:
-    radial-gradient(36% 135% at 0% 100%, color-mix(in srgb, var(--who-c) 70%, transparent) 0%, transparent 72%),
-    radial-gradient(32% 135% at 100% 100%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) * 3 + var(--tint-h, 0%) * 3), transparent) 0%, transparent 72%);
+    radial-gradient(20% 140% at 0% 100%, color-mix(in srgb, var(--who-c) 80%, transparent) 0%, transparent 72%),
+    radial-gradient(18% 140% at 100% 100%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) * 3 + var(--tint-h, 0%) * 3), transparent) 0%, transparent 72%);
   -webkit-mask: radial-gradient(circle, #000 .7px, transparent 1.1px) 0 0 / 13.5px 13.5px; mask: radial-gradient(circle, #000 .7px, transparent 1.1px) 0 0 / 13.5px 13.5px;
   opacity: .65; }
 .sc-thread-strip--row:hover::after { opacity: .9; }
