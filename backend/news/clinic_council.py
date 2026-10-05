@@ -355,7 +355,9 @@ def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
             return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
         except ClinicAIError as error:
             logger.warning('council fact check (Gemini) failed: %s', error.code)
-    return free_check(claims) or claude_check(claims) or ([{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.',
+    # zapas za Gemini: darmowy Groq, a Claude tylko gdy nie wyłączono go (CLINIC_CLAUDE_FALLBACK=false, właściciel 6.10)
+    claude = os.environ.get('CLINIC_CLAUDE_FALLBACK', 'true').strip().lower() != 'false'
+    return free_check(claims) or (claude and claude_check(claims)) or ([{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.',
                                                          'sources': []} for c in claims], {})
 
 
@@ -515,9 +517,23 @@ def needs_escalation(combined: dict, opinions: list[dict]) -> bool:
     return total and (agree / total < 2 / 3 or (combined['verdict'] == 'spin' and combined['intensity'] >= 70))
 
 
+NL = chr(10)
+
+
 def escalate_claims(claims: list[str]) -> tuple[list[dict], dict] | None:
-    """Mocniejsze sprawdzenie faktów płatnym Claude z wyszukiwaniem (CLINIC_ESCALATE=claude, klucz i budżet)."""
-    if os.environ.get('CLINIC_ESCALATE', '').strip().lower() != 'claude':
+    """Mocniejsze sprawdzenie faktów przy sporze modeli albo silnym spinie: CLINIC_ESCALATE=gemini (właściciel 6.10:
+    zamiast Claude) - Gemini z wyszukiwarką i głębszym myśleniem; CLINIC_ESCALATE=claude - jak dawniej."""
+    mode = os.environ.get('CLINIC_ESCALATE', '').strip().lower()
+    if mode == 'gemini' and os.environ.get('GEMINI_API_KEY', '').strip():
+        try:
+            response = clinic_ai._call_gemini(CHECK_SYSTEM, NL.join(f'- {c}' for c in claims)
+                                              + NL + NL + 'Sprawdź każde twierdzenie starannie, w kilku niezależnych źródłach.',
+                                              CHECK_SCHEMA, web_search=True, max_tokens=24000, task='escalate')
+            return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
+        except ClinicAIError as error:
+            logger.warning('council escalation (Gemini) failed: %s', error.code)
+            return None
+    if mode != 'claude':
         return None
     return claude_check(claims)
 

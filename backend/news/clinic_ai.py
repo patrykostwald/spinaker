@@ -309,7 +309,7 @@ def _align_sources(data, found: dict[str, str]):
 # Poziom „myślenia” Gemini dla każdego zadania. Bez ustawienia model myśli na najwyższym poziomie, a tokeny myślenia
 # kosztują jak odpowiedź — przy przepisywaniu nagrań i opisach zdjęć to czysty koszt. Sprawdzanie faktów i ocena wywiadu
 # zostają na średnim poziomie (jakość), role Konsylium na niskim. Nadpisanie: GEMINI_THINKING_<ZADANIE>=minimal|low|medium|high|default.
-GEMINI_THINKING = {'check': 'medium', 'interview': 'medium', 'krs': 'low', 'council': 'low', 'image': 'minimal', 'video': 'minimal', 'transcript': 'minimal'}
+GEMINI_THINKING = {'check': 'medium', 'escalate': 'high', 'interview': 'medium', 'krs': 'low', 'council': 'low', 'image': 'minimal', 'video': 'minimal', 'transcript': 'minimal'}
 
 
 def gemini_thinking(task: str) -> dict:
