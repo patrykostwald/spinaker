@@ -139,13 +139,16 @@ export function contentTag(item: ThreadElement): 'LINK' | 'FILM' | 'ZDJĘCIE' | 
   return 'LINK';
 }
 
-export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
+export function FocusView({ threadId, items, start, steps, onClose, onStep, rateMode = false }: {
   threadId: number; items: ThreadElement[]; start: FocusStep; steps: ReturnType<typeof useThreadSteps>; onClose: () => void; onStep: (step: FocusStep) => void;
+  /** Ocena krok po kroku (właściciel 6.10): po każdej reakcji karta sama przechodzi do następnego elementu, na końcu podziękowanie. */
+  rateMode?: boolean;
 }) {
   const sequence = useMemo(() => items.flatMap((_, i): FocusStep[] => i === 0 ? [{ kind: 'box', index: 0 }] : [{ kind: 'clip', index: i }, { kind: 'box', index: i }]), [items]);
   const [at, setAt] = useState(() => Math.max(0, sequence.findIndex(step => step.kind === start.kind && step.index === start.index)));
   const step = sequence[at];
   const item = items[step.index];
+  const [finished, setFinished] = useState(false);
   const chain = useRef<HTMLElement>(null);
   // mini-pasek: bieżący element zawsze widoczny na środku (na telefonie pasek bywa szerszy niż ekran)
   useEffect(() => { const nav = chain.current, cur = nav?.querySelector<HTMLElement>('[aria-current]');
@@ -223,12 +226,15 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
             {step.kind === 'box' ? <a className="sc-pick__source" href={item.url} target={external ? '_blank' : undefined} rel="noopener noreferrer">{linkLabel(item)}</a> : <span />}
             {item.item_id && <span className="sc-pick__rate"><span className="sc-pick__ask">{step.kind === 'box' ? 'Trafny boks?' : 'Trafne połączenie?'}</span>
               <StepRate step={current} canRate={steps.canRate} label={step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`}
-                onRate={polarity => void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity)} /></span>}
+                onRate={polarity => { void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity);
+                  if (rateMode) window.setTimeout(() => { if (at < sequence.length - 1) setAt(at + 1); else setFinished(true); }, 450); }} /></span>}
           </footer>
         </div>
       </article>
       <button type="button" className="sc-pick__arrow" disabled={at === sequence.length - 1} onClick={() => setAt(at + 1)} aria-label="Następny element">›</button>
     </div>
+    {rateMode && <p className="sc-pick__progress" aria-live="polite">{finished ? <>Dziękujemy, oceniłeś całą spinkę. <button type="button" onClick={onClose}>Wróć do spinki</button></>
+      : <>Ocena krok po kroku: <b>{at + 1} z {sequence.length}</b> · {step.kind === 'box' ? 'czy boks jest trafny?' : 'czy połączenie jest trafne?'}</>}</p>}
     <nav className="sc-pick__chain" ref={chain} aria-label="Elementy spinki">
       {sequence.map((row, i) => <button key={i} type="button" className={row.kind === 'box' ? 'sc-trow__sq' : 'sc-trow__link'} aria-current={i === at || undefined}
         style={row.kind === 'clip' ? { background: clipColor(steps.find(items[row.index].item_id, 'context')?.counts) } : undefined}

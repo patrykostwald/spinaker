@@ -56,6 +56,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   };
   const hover = useRef<ReturnType<typeof setTimeout>>();
   const [focus, setFocus] = useState<FocusStep | null>(null);
+  const [rateMode, setRateMode] = useState(false);
   const [picked, setPicked] = useState<FocusStep | null>(null);
   const [openJoint, setOpenJoint] = useState<number | null>(null);
   // wejście w spinkę (właściciel 5.10): po przeskoku boksów spinki od lewej do prawej po kolei podnoszą okienka z wyjaśnieniem,
@@ -251,7 +252,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       {thread.admission.open ? `${thread.admission.positive}/${thread.admission.needed} ✓ do głównej · zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'Czas w izbie minął'}
     </p>}
     {focus ? <FocusView key={`${focus.kind}-${focus.index}`} threadId={thread.id} items={ordered} start={focus} steps={steps} onClose={() => { const at = (picked ?? focus)?.index ?? 0; setFocus(null); setPicked(null);
-      requestAnimationFrame(() => track.current?.querySelector<HTMLElement>(`[data-box="${at + 1}"] button, [data-box="${at + 1}"]`)?.focus()); }} onStep={setPicked} /> : <div className="sc-thread-strip__rail">
+      setRateMode(false);
+      requestAnimationFrame(() => track.current?.querySelector<HTMLElement>(`[data-box="${at + 1}"] button, [data-box="${at + 1}"]`)?.focus()); }} onStep={setPicked} rateMode={rateMode} /> : <div className="sc-thread-strip__rail">
     {expanded && canPrev && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--prev" aria-label="Poprzednie boksy" onClick={() => slide(-1)}>‹</button>}
     {expanded && canNext && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--next" aria-label="Kolejne boksy" onClick={() => slide(1)}>›</button>}
     <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" data-tight={tight || undefined} data-more={(expanded && canNext) || undefined} tabIndex={0} aria-label={`Boksy spinki: ${thread.title}`}
@@ -326,6 +328,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         </motion.li>
       </Fragment>)}
     </ol>
+    {full && ordered.length > 1 && <button type="button" className="sc-rate-all" onClick={() => { setRateMode(true); setFocus({ kind: 'box', index: 0 }); }}>
+      Oceń spinkę krok po kroku <span aria-hidden="true">→</span></button>}
     </div>}
     {/* W zwiniętym wierszu jest tylko „78% trafnych”; szczegóły ✓ ? ✕ po rozwinięciu (werdykt 1810). */}
     {/* Ocena tropu = średnia reakcji na kroki; całości nie ocenia się osobno (właściciel 3.10). */}
