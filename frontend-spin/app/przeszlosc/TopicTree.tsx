@@ -183,7 +183,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
   const since = period === 'all' ? '' : new Date(Date.now() - Number(period) * 864e5).toISOString().slice(0, 10);
   const events = allEvents.filter(n => (!since || (n.date ?? '') >= since) && (kindFilter === 'all' || (kindFilter === 'government' || kindFilter === 'opposition' ? n.camp === kindFilter
     : kindFilter === 'diag' ? diagnosisOf.has(n.id) : n.kind === kindFilter)));
-  const shown = more ? events : events.slice(0, 18);
+  const shown = more ? events : events.slice(0, 10);
   // osoby najpierw, instytucje i konta partii po nich (audyt 6.10: instytucja to nie osoba)
   const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => Number(Boolean(a.institution)) - Number(Boolean(b.institution)) || b.links - a.links);
   const media = new Map<string, number>();
@@ -232,7 +232,8 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
             {who && <span className="sc-tv__twig" aria-label="Powiązania wpisu"><i>{nice(who.label)}</i><i>wpis</i>{dg && <i data-dg>spin {dg.intensity}/100</i>}
               {(roles.get(who.id)?.length ?? 0) > 0 && <i>KRS: {roles.get(who.id)!.length}</i>}</span>}
             <span className="sc-tv__links">
-              <button type="button" className="sc-tv__open" onClick={() => openPanel({ kind: 'entry', id: n.id })}>{dg ? `Diagnoza Dr. Spina: spin ${dg.intensity}/100` : 'Więcej'} →</button>
+              {dg && <button type="button" className="sc-tv__open" onClick={() => openPanel({ kind: 'entry', id: n.id })}>Diagnoza Dr. Spina: spin {dg.intensity}/100 →</button>}
+              <button type="button" className="sc-tv__open" onClick={() => openPanel({ kind: 'entry', id: n.id })}>Więcej →</button>
               {n.url && <a href={n.url} target="_blank" rel="noopener noreferrer" aria-label={`źródło: ${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])}, ${n.date ?? ''}`}>źródło →</a>}
               {n.url && <a href={`https://web.archive.org/web/*/${n.url}`} target="_blank" rel="noopener noreferrer" className="sc-tv__arch">archiwum</a>}
               <button type="button" className="sc-tv__cite" onClick={() => { void navigator.clipboard?.writeText(cite).catch(() => undefined); setCopied(n.id); setTimeout(() => setCopied(c => (c === n.id ? null : c)), 1400); }}
@@ -240,7 +241,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
             </span>
           </li>];
         })}</ol>
-        {events.length > 18 && <button type="button" className="sc-tv__more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${events.length})`}</button>}
+        {events.length > 10 && <button type="button" className="sc-tv__more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${events.length})`}</button>}
       </section>
       <aside className="sc-tv__side">
         <section aria-label="Kto występuje">
@@ -419,7 +420,7 @@ const TG_MID = new Set(['statement', 'record', 'media', 'vote']);
 function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Graph; byId: Map<string, Node>; focus?: string; compact?: boolean;
   onOpen: (p: { kind: 'person' | 'entry'; id: string } | null) => void }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const [paths, setPaths] = useState<{ id: string; d: string; s: string; t: string }[]>([]);
+  const [paths, setPaths] = useState<{ id: string; d: string; s: string; t: string; ctx?: boolean }[]>([]);
   const [hot, setHot] = useState<string | null>(null);
   const model = useMemo(() => {
     const persons = focus ? [byId.get(focus)].filter(Boolean) as Node[] : data.nodes.filter(n => n.kind === 'person').sort((a, b) => b.links - a.links).slice(0, 8);
@@ -451,10 +452,10 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
       const at = (id: string) => root.querySelector<HTMLElement>(`[data-g="${CSS.escape(id)}"]`)?.getBoundingClientRect();
       setPaths(model.edges.flatMap((e, i) => { const a = at(e.source), b = at(e.target); if (!a || !b) return [];
         const x1 = a.right - box.left, y1 = a.top + a.height / 2 - box.top, x2 = b.left - box.left, y2 = b.top + b.height / 2 - box.top, k = (x2 - x1) * .5;
-        return [{ id: `${i}`, s: e.source, t: e.target, d: `M${x1},${y1} C${x1 + k},${y1} ${x2 - k},${y2} ${x2},${y2}` }]; }));
+        return [{ id: `${i}`, s: e.source, t: e.target, ctx: byId.get(e.target)?.kind === 'organisation', d: `M${x1},${y1} C${x1 + k},${y1} ${x2 - k},${y2} ${x2},${y2}` }]; }));
     };
     draw(); const ro = new ResizeObserver(draw); ro.observe(root); return () => ro.disconnect();
-  }, [model]);
+  }, [model, byId]);
   if (!model.persons.length || !model.mid.length) return null;
   const open = (n: Node) => {
     if (n.kind === 'person') onOpen({ kind: 'person', id: n.id });
@@ -471,7 +472,7 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
   return <figure className={`sc-tg${compact ? ' sc-tg--compact' : ''}`} aria-label="Drzewo powiązań">
     {!compact && <figcaption className="sc-tg__head"><h3>Drzewo powiązań</h3><span>osoby → wpisy, dokumenty i artykuły → diagnozy i funkcje w KRS</span></figcaption>}
     <div className="sc-tg__scroll"><div className="sc-tg__wrap" ref={wrap}>
-      <svg className="sc-tg__lines" aria-hidden="true">{paths.map(p => <path key={p.id} d={p.d} data-on={lit && lit.has(p.s) && lit.has(p.t) ? '' : undefined} data-dim={lit && !(lit.has(p.s) && lit.has(p.t)) ? '' : undefined} />)}</svg>
+      <svg className="sc-tg__lines" aria-hidden="true">{paths.map(p => <path key={p.id} d={p.d} data-ctx={p.ctx || undefined} data-on={lit && lit.has(p.s) && lit.has(p.t) ? '' : undefined} data-dim={lit && !(lit.has(p.s) && lit.has(p.t)) ? '' : undefined} />)}</svg>
       <ol className="sc-tg__col">{model.persons.map(item)}</ol>
       <ol className="sc-tg__col">{model.mid.map(item)}</ol>
       <ol className="sc-tg__col">{model.right.map(item)}</ol>

@@ -10124,3 +10124,5 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 @media (min-width: 768px) { .sc-bug-fab { bottom: 16px !important; right: 16px !important; width: 40px !important; height: 40px !important; opacity: .7; } .sc-bug-fab:hover { opacity: 1; } }
 /* runda 2: autor diagnozy raz - na szerokim ekranie jest w karcie źródła */
 @media (min-width: 1101px) { .sc-spin-detail > .sc-spin-author { display: none; } }
+/* KRS w drzewie to kontekst osoby, nie związek z wpisem: przerywana, szara linia (runda 2, Prawnik) */
+.sc-tg__lines path[data-ctx] { stroke-dasharray: 3 4; stroke: color-mix(in srgb, var(--sc-text) 14%, transparent); }
