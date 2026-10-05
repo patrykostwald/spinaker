@@ -51,12 +51,71 @@ function AgentRowView({ row }: { row: AgentRow }) {
   </details>;
 }
 
+// Kategorie mapy (właściciel 5.10: kafelki z ikoną, 2-4 w rzędzie, pogrupowane)
+const CATEGORIES: { id: string; label: string; icon: string; ids: string[] }[] = [
+  { id: 'tresc', label: 'Treść serwisu', icon: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h6M10 16h6',
+    ids: ['dr-spin', 'screen', 'plain-editor', 'plain-meter', 'plain-guard', 'plain-reader', 'messages', 'interviews', 'interview-pick', 'interview-candidates', 'spin-thread', 'narrative-threads', 'signal-threads', 'weekly', 'raportysta', 'council'] },
+  { id: 'straz', label: 'Strażnicy', icon: 'M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4',
+    ids: ['recenzent', 'thread-review', 'inquisitor', 'auditor', 'warden', 'second-key', 'seba', 'krs'] },
+  { id: 'nieza', label: 'Niezawodność i dyrygent', icon: 'M3 12h4l2-5 4 10 2-5h6',
+    ids: ['dyrygent', 'automatyk', 'opiekunowie', 'duty', 'repairer', 'mechanik', 'schedule-health', 'video-stats'] },
+  { id: 'rozwoj', label: 'Rozwój i nauka', icon: 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6',
+    ids: ['strateg', 'pilgrim', 'reports', 'ekspert-ai', 'recruiter', 'projektant', 'badacz'] },
+  { id: 'osint', label: 'przeszłość.today', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
+    ids: ['pracownia-osint', 'przeszlosc-topics'] },
+  { id: 'pub', label: 'Publikacja i czytelnicy', icon: 'M4 10v4h3l6 4V6L7 10zM16 9a4 4 0 0 1 0 6M18.5 7a7 7 0 0 1 0 10',
+    ids: ['x-publish', 'social', 'social-assistant', 'push', 'notifications', 'digests', 'moderation-mail'] },
+];
+const COLLECT_ICON = 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6';
+const identity = (row: AgentRow) => row.id.slice(0, row.id.lastIndexOf(':'));
+const Icon = ({ d }: { d: string }) => <svg viewBox="0 0 24 24" aria-hidden="true"><path d={d} /></svg>;
+
+function AgentTile({ row, icon, selected, onSelect }: { row: AgentRow; icon: string; selected: boolean; onSelect: () => void }) {
+  const s = state(row);
+  return <button type="button" className="sc-agenttile" data-status={s} aria-pressed={selected} onClick={onSelect} title={row.description}>
+    <span className="sc-agenttile__icon"><Icon d={icon} /><i aria-label={RESULT[s]} /></span>
+    <strong>{row.name}</strong>
+    <small>{row.description}</small>
+    <span className="sc-agenttile__foot"><span>{when(row.last_run)}</span><span>{row.schedule}</span></span>
+  </button>;
+}
+
+function AgentDetail({ row, onClose }: { row: AgentRow; onClose: () => void }) {
+  const s = state(row);
+  return <div className="sc-agentdetail" data-status={s}>
+    <header><strong>{row.name}</strong><b data-status={s}>{RESULT[s]}</b><button type="button" onClick={onClose} aria-label="Zamknij szczegóły">✕</button></header>
+    <p>{row.description}</p>
+    <dl className="sc-agentmap__more">
+      <div><dt>Wynik</dt><dd>{row.summary}</dd></div>
+      <div><dt>Ostatnio</dt><dd>{when(row.last_run)}</dd></div>
+      <div><dt>Następny bieg</dt><dd>{row.enabled ? when(row.next_run) : 'wyłączony'}</dd></div>
+      <div><dt>Harmonogram</dt><dd>{row.schedule}</dd></div>
+      {row.cost_today_usd != null && <div><dt>Koszt dziś</dt><dd title={row.cost_note}>{row.cost_today_usd.toLocaleString('pl-PL', { maximumFractionDigits: 3 })} USD</dd></div>}
+      {row.flag && <div><dt>Włącznik</dt><dd><code>{row.flag}</code> {row.enabled ? 'włączony' : 'wyłączony'}</dd></div>}
+      {row.source && <div><dt>Zadanie</dt><dd>{row.source}</dd></div>}
+    </dl>
+  </div>;
+}
+
+function TileGroup({ label, icon, rows, selected, setSelected }: { label: string; icon: string; rows: AgentRow[]; selected: string | null; setSelected: (id: string | null) => void }) {
+  if (!rows.length) return null;
+  const bad = rows.filter(r => state(r) === 'error').length, warn = rows.filter(r => state(r) === 'warn').length;
+  const open = rows.find(r => r.id === selected);
+  return <section className="sc-agentgroup" aria-label={label}>
+    <h3><Icon d={icon} />{label}<span>{rows.length}</span>{bad > 0 && <em data-status="error">{bad} błąd</em>}{warn > 0 && <em data-status="warn">{warn} uwagi</em>}</h3>
+    <div className="sc-agentgrid">{rows.map(row => <AgentTile key={row.id} row={row} icon={icon} selected={row.id === selected}
+      onSelect={() => setSelected(row.id === selected ? null : row.id)} />)}</div>
+    {open && <AgentDetail row={open} onClose={() => setSelected(null)} />}
+  </section>;
+}
+
 function AgentMap() {
   const [rows, setRows] = useState<AgentRow[]>([]);
   const [reports, setReports] = useState<Note[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
@@ -73,13 +132,21 @@ function AgentMap() {
     return () => { active = false; clearTimeout(timeout); controller.abort(); };
   }, [revision]);
   const sorted = (items: AgentRow[]) => [...items].sort((a, b) => ORDER[state(a)] - ORDER[state(b)] || a.name.localeCompare(b.name, 'pl'));
-  const agents = sorted(rows.filter(row => !row.collector));
-  const collectors = sorted(rows.filter(row => row.collector));
+  // jeden kafelek na agenta: kilka harmonogramów tego samego agenta scalamy (gorszy wynik, wszystkie godziny)
+  const merge = (items: AgentRow[]) => Object.values(items.reduce<Record<string, AgentRow>>((acc, row) => {
+    const key = identity(row), prev = acc[key];
+    if (!prev) acc[key] = { ...row };
+    else acc[key] = { ...(ORDER[state(row)] < ORDER[state(prev)] ? row : prev), id: prev.id, schedule: `${prev.schedule} · ${row.schedule}`,
+      last_run: [prev.last_run, row.last_run].filter(Boolean).sort().pop() ?? null };
+    return acc;
+  }, {}));
+  const agents = sorted(merge(rows.filter(row => !row.collector)));
+  const collectors = sorted(merge(rows.filter(row => row.collector)));
   const count = (s: string) => agents.filter(row => state(row) === s).length;
   const problems = count('error') + count('warn');
   return <details className="sc-agentmap" open={problems > 0 || undefined}>
     <summary className="sc-agentmap__head">
-      <span><strong>Mapa agentów</strong><small>co robią, kiedy działają, z jakim wynikiem · kliknij wiersz po szczegóły</small></span>
+      <span><strong>Mapa agentów</strong><small>co robią, kiedy działają, z jakim wynikiem · kliknij kafelek po szczegóły</small></span>
       <span className="sc-agentmap__chips">
         {loading ? <em>wczytywanie…</em> : <>
           <em data-status="ok">{count('ok')} OK</em>
@@ -92,9 +159,12 @@ function AgentMap() {
     <div className="sc-agentmap__body">
       <div className="sc-agentmap__tools"><button type="button" className="sc-command-refresh" disabled={loading} onClick={() => setRevision(v => v + 1)}>Odśwież</button></div>
       {error && <p role="alert" className="sc-command-error">{error}</p>}
-      <div className="sc-agentmap__list">{agents.map(row => <AgentRowView key={row.id} row={row} />)}</div>
+      {CATEGORIES.map(c => <TileGroup key={c.id} label={c.label} icon={c.icon} selected={selected} setSelected={setSelected}
+        rows={agents.filter(row => c.ids.includes(identity(row)))} />)}
+      <TileGroup label="Pozostali" icon="M5 12h14M12 5v14" selected={selected} setSelected={setSelected}
+        rows={agents.filter(row => !CATEGORIES.some(c => c.ids.includes(identity(row))))} />
       {collectors.length > 0 && <details className="sc-agentmap__group"><summary>Zbieracze danych ({collectors.length})</summary>
-        <div className="sc-agentmap__list">{collectors.map(row => <AgentRowView key={row.id} row={row} />)}</div></details>}
+        <TileGroup label="Zbieracze danych" icon={COLLECT_ICON} rows={collectors} selected={selected} setSelected={setSelected} /></details>}
       {reports.length > 0 && <details className="sc-agentmap__group"><summary>Ostatnie raporty agentów ({reports.length})</summary>
         <div className="sc-agentmap__list">{reports.map(note => <details key={note.id} className="sc-agentmap__row" data-status="ok">
           <summary><span className="sc-agentmap__dot" /><span className="sc-agentmap__name"><strong>{note.title}</strong></span><span className="sc-agentmap__when">{when(note.created_at)}</span></summary>

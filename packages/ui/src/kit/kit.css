@@ -9581,3 +9581,39 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pt__price li { display: grid; place-items: center; gap: 4px; padding: 16px; font-size: 14.5px; }
 .sc-pt__price li b { font-size: 16px; }
 @media (max-width: 760px) { .sc-pt__price ul { grid-template-columns: 1fr; } }
+
+/* Mapa agentów jako kafelki (właściciel 5.10): ikona kategorii, 2-4 w rzędzie, równe wysokości, stopka przy dolnej krawędzi */
+.sc-agentgroup { display: grid; gap: 12px; padding: 14px 0 6px; }
+.sc-agentgroup h3 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-text-2); }
+.sc-agentgroup h3 svg { width: 18px; height: 18px; fill: none; stroke: var(--sc-accent); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sc-agentgroup h3 span { color: var(--sc-text-3); font-weight: 600; }
+.sc-agentgroup h3 em { font-style: normal; font-size: 10px; letter-spacing: .12em; }
+.sc-agentgroup h3 em[data-status="error"] { color: #ef726b; } .sc-agentgroup h3 em[data-status="warn"] { color: #e8ac3e; }
+.sc-agentgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); grid-auto-rows: 1fr; gap: 10px; }
+.sc-agenttile { display: grid; grid-template-rows: auto auto 1fr auto; gap: 6px; text-align: left; padding: 14px 14px 12px; border: 1px solid var(--sc-line);
+  border-radius: 6px; background: color-mix(in srgb, var(--sc-text) 3%, transparent); color: inherit; font: inherit; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s; min-height: 148px; }
+.sc-agenttile:hover { background: color-mix(in srgb, var(--sc-text) 6%, transparent); transform: translateY(-1px); }
+.sc-agenttile[aria-pressed="true"] { border-color: var(--sc-accent); background: color-mix(in srgb, var(--sc-accent) 8%, transparent); }
+.sc-agenttile:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.sc-agenttile__icon { position: relative; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--sc-text) 18%, transparent); }
+.sc-agenttile__icon svg { width: 18px; height: 18px; fill: none; stroke: var(--sc-text-2); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sc-agenttile__icon i { position: absolute; right: -2px; top: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--sc-bg); background: #3cc28c; }
+.sc-agenttile[data-status="warn"] .sc-agenttile__icon i { background: #e8ac3e; }
+.sc-agenttile[data-status="error"] .sc-agenttile__icon i { background: #ef726b; box-shadow: 0 0 8px #ef726b; }
+.sc-agenttile[data-status="error"] .sc-agenttile__icon { border-color: color-mix(in srgb, #ef726b 60%, transparent); }
+.sc-agenttile[data-status="off"] { opacity: .55; } .sc-agenttile[data-status="off"] .sc-agenttile__icon i { background: var(--sc-text-3); }
+.sc-agenttile strong { font-size: 14.5px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-agenttile small { font-size: 12.5px; line-height: 1.45; color: var(--sc-text-3); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; align-self: start; }
+.sc-agenttile__foot { display: flex; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid var(--sc-line); font-size: 11.5px; color: var(--sc-text-2); }
+.sc-agenttile__foot span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-agenttile__foot span + span { color: var(--sc-text-3); }
+.sc-agentdetail { display: grid; gap: 8px; padding: 16px 18px; border: 1px solid var(--sc-accent); border-radius: 6px; background: color-mix(in srgb, var(--sc-accent) 5%, transparent); }
+.sc-agentdetail header { display: flex; align-items: center; gap: 10px; }
+.sc-agentdetail header strong { font-size: 16px; }
+.sc-agentdetail header b { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #3cc28c; }
+.sc-agentdetail header b[data-status="warn"] { color: #e8ac3e; } .sc-agentdetail header b[data-status="error"] { color: #ef726b; }
+.sc-agentdetail header button { margin-left: auto; border: 0; background: none; color: var(--sc-text-2); font-size: 16px; cursor: pointer; }
+.sc-agentdetail p { margin: 0; color: var(--sc-text-2); font-size: 14px; }
+@media (max-width: 600px) { .sc-agentgrid { grid-template-columns: 1fr 1fr; } .sc-agenttile small { display: none; } .sc-agenttile { min-height: 110px; } }
