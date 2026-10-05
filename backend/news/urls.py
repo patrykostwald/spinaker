@@ -42,6 +42,7 @@ from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry a
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 from news import przeszlosc_alerts, przeszlosc_osoba
 from news.voting_anomalies import deviations_view as przeszlosc_deviations
+from news.coordinated import clusters_view as coordinated_clusters
 
 router = DefaultRouter()
 router.register(r"editor/threads", EditorialThreadViewSet, basename="editor-threads")
@@ -121,6 +122,7 @@ urlpatterns = [
     path('zbudujmi/zapytanie/', zbudujmi_inquiry),
     path('zbudujmi/uwagi/', zbudujmi_client_note),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
+    path('clinic/wspolny-przekaz/', coordinated_clusters),
     path('clinic/messages/', clinic_messages),
     path('clinic/messages/<str:day>/', clinic_message_detail),
     path('clinic/council/', clinic_council),

@@ -658,3 +658,17 @@ def voting_deviations_task():
     if not przeszlosc.enabled():
         return {'status': 'disabled'}
     return voting_anomalies.refresh()
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
+def coordinated_narratives_task():
+    """Co 2 godziny: wspólny przekaz (prawie identyczne wpisy z co najmniej 3 kont w 6 godzin), ostatnie 48 godzin."""
+    from news import coordinated
+    return coordinated.refresh()
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def coordinated_narratives_night_task():
+    """Co noc: wspólny przekaz z ostatniego tygodnia (wpisy dosłane później przez zbieranie X)."""
+    from news import coordinated
+    return coordinated.refresh(hours=coordinated.NIGHT_LOOKBACK_HOURS)

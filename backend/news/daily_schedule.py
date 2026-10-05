@@ -23,6 +23,8 @@ BEAT_PLAN = {
     'sprint-intake': ('sprint_intake_task', {'hour': 6, 'minute': 0}),  # audyt pętli 5.3: poniedziałek pełny sprint, inne dni dopełnienie (< 3 otwartych)
     'automatyk-daily': ('automatyk_task', {'hour': '6,13', 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
     'pracownia-osint': ('pracownia_osint_task', {'hour': '4,16', 'minute': 50}),  # właściciel 5.10: agenci rozwijający przeszłość.today
+    'wspolny-przekaz-2h': ('coordinated_narratives_task', {'hour': '*/2', 'minute': 35}),  # plan Architekta 6.10: wspólny przekaz z wpisów X
+    'wspolny-przekaz-nightly': ('coordinated_narratives_night_task', {'hour': 3, 'minute': 5}),  # noc: tydzień wstecz (dosłane i spóźnione wpisy)
     'odstepstwa-nightly': ('voting_deviations_task', {'hour': 4, 'minute': 35}),  # plan Architekta 6.10: po nocnym imporcie i uzupełnianiu głosowań
     'przeszlosc-topics': ('przeszlosc_topics_task', {'hour': 5, 'minute': 10}),  # tydzień: stan wiedzy UX/UI i przegląd wszystkich stron  # właściciel 5.10: agent naprawiający połączenia z modelami
     'przeszlosc-alerts-daily': ('przeszlosc_alerts_task', {'hour': 7, 'minute': 0}),  # sprint 1: dzienny list alertów

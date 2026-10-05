@@ -1026,4 +1026,4 @@ from .thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRa
 from .public_records_models import PublicRecord, PublicRecordPerson, PublicCollectionState, PublicCollectionJob  # noqa: E402,F401
 from .przeszlosc_models import PrzeszloscAlert  # noqa: E402,F401
 
-from .analysis_models import VotingDeviationSnapshot  # noqa: E402,F401
+from .analysis_models import CoordinatedCluster, VotingDeviationSnapshot  # noqa: E402,F401

@@ -66,6 +66,7 @@ export { SpinDetail } from "./components/clinic/SpinDetail";
 export { ClinicCorrections } from "./components/clinic/ClinicCorrections";
 export { ClinicQueue } from "./components/clinic/ClinicQueue";
 export { ClinicIndicators, ClinicShowcase } from "./components/clinic/ClinicIndicators";
+export { ClinicNav } from "./components/clinic/ClinicNav";
 export { NewsletterSignup, NEWSLETTER_CONSENT } from "./components/NewsletterSignup";
 export { ShareThreadOnX } from "./components/ShareThreadOnX";
 export { TouchScrollGuard } from "./components/TouchScrollGuard";

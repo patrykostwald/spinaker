@@ -48,6 +48,7 @@ export const clinicNavigation: SiteNavigationItem[] = [
   { href: "/klinika/wywiady", label: "Wywiady" },
   { href: "/klinika/wywiady/glosowanie", label: "Głosowanie" },
   { href: "/klinika/przekazy", label: "Przekazy" },
+  { href: "/klinika/wspolny-przekaz", label: "Wspólny przekaz" },
   { href: "/klinika/raporty", label: "Raporty" },
   links.corrections,
 ];
