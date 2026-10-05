@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 
 /**
@@ -107,7 +107,10 @@ const CAMP_LABEL: Record<string, string> = { government: 'rządzący', oppositio
 
 /** Widok tematu (właściciel 5.10): oś czasu jako główna treść, obok kto występuje, pod spodem rozkład źródeł medialnych. */
 /** Nazwiska zapisane wielkimi literami (MÜLLER) jak zwykłe nazwiska; skróty do 3 liter zostają. */
-const nice = (name: string) => name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase()
+// skróty kont instytucji pełną nazwą (panel designu 5.10: „ME” nic nie mówi czytelnikowi)
+const INSTITUTIONS: Record<string, string> = { ME: 'Ministerstwo Energii', MF: 'Ministerstwo Finansów', MON: 'Ministerstwo Obrony Narodowej', MZ: 'Ministerstwo Zdrowia',
+  MSZ: 'Ministerstwo Spraw Zagranicznych', MSWiA: 'Ministerstwo Spraw Wewnętrznych i Administracji', KPRM: 'Kancelaria Prezesa Rady Ministrów', MEN: 'Ministerstwo Edukacji Narodowej' };
+const nice = (name: string) => INSTITUTIONS[name.trim()] ?? name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase()
   ? w[0] + w.slice(1).toLowerCase() : w).join('');
 const CAMP_COLOR: Record<string, string> = { government: '#5B9BFF', opposition: '#FF6B6B' };
 
@@ -141,6 +144,14 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
   const [copied, setCopied] = useState<string | null>(null);
   const [allPeople, setAllPeople] = useState(false);
   const byId = useMemo(() => new Map(data.nodes.map(n => [n.id, n])), [data]);
+  // panel osoby albo wpisu (właściciel 6.10: „nie można wejść w nic, tylko odnosi do źródła”)
+  const [panel, setPanel] = useState<{ kind: 'person' | 'entry'; id: string } | null>(null);
+  useEffect(() => { const p = new URLSearchParams(window.location.search);
+    const o = p.get('osoba'), w = p.get('wpis'); if (o) setPanel({ kind: 'person', id: o }); else if (w) setPanel({ kind: 'entry', id: w }); }, [data.topic]);
+  const openPanel = (next: { kind: 'person' | 'entry'; id: string } | null) => {
+    setPanel(next); const p = new URLSearchParams(window.location.search); p.delete('osoba'); p.delete('wpis');
+    if (next) p.set(next.kind === 'person' ? 'osoba' : 'wpis', next.id);
+    window.history.replaceState(null, '', `?${p.toString()}`); };
   const author = useMemo(() => {
     const map = new Map<string, Node>();
     for (const e of data.edges) if (e.label === 'napisał(a)') { const who = byId.get(e.source); if (who) map.set(e.target, who); }
@@ -190,11 +201,10 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
           const cite = `${n.date ?? ''} · ${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])} · ${n.url ?? ''} · via przeszłość.today`;
           return [head, <li key={n.id} className="sc-tv__item" data-kind={n.kind} data-camp={n.camp || undefined}
             data-on={hot && who?.id === hot ? '' : undefined} data-copied={copied === n.id || undefined}>
-            <span className="sc-tv__who"><span>{who ? nice(who.label) : (n.kind === 'media' ? n.sub : KIND_LABEL[n.kind])}{n.camp && CAMP_LABEL[n.camp] ? <em> · {CAMP_LABEL[n.camp]}</em> : null}</span>{kind && <small>{kind}</small>}</span>
-            <p data-full={full.has(n.id) || undefined} title={full.has(n.id) ? undefined : 'Kliknij, aby rozwinąć'}
-              onClick={() => setFull(prev => { const next = new Set(prev); if (next.has(n.id)) next.delete(n.id); else next.add(n.id); return next; })}>{n.label}</p>
+            <span className="sc-tv__who"><span>{who ? <button type="button" className="sc-tv__pbtn" onClick={() => openPanel({ kind: 'person', id: who.id })}>{nice(who.label)}</button> : (n.kind === 'media' ? n.sub : KIND_LABEL[n.kind])}{n.camp && CAMP_LABEL[n.camp] ? <em> · {CAMP_LABEL[n.camp]}</em> : null}</span>{kind && <small>{kind}</small>}</span>
+            <p data-full={full.has(n.id) || undefined}>{n.label}</p>
             <span className="sc-tv__links">
-              {dg && <a href={dg.url} target="_blank" rel="noopener noreferrer" className="sc-tv__dg">Diagnoza Dr. Spina: spin {dg.intensity}/100 →</a>}
+              <button type="button" className="sc-tv__open" onClick={() => openPanel({ kind: 'entry', id: n.id })}>{dg ? `Diagnoza Dr. Spina: spin ${dg.intensity}/100` : 'Więcej'} →</button>
               {n.url && <a href={n.url} target="_blank" rel="noopener noreferrer" aria-label={`źródło: ${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])}, ${n.date ?? ''}`}>źródło →</a>}
               <button type="button" className="sc-tv__cite" onClick={() => { void navigator.clipboard?.writeText(cite).catch(() => undefined); setCopied(n.id); setTimeout(() => setCopied(c => (c === n.id ? null : c)), 1400); }}
                 aria-label="Kopiuj przypis">{copied === n.id ? 'skopiowano ✓' : 'cytuj'}</button>
@@ -210,7 +220,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
             const r = roles.get(p.id) ?? [];
             return <li key={p.id} data-camp={p.camp || undefined} onMouseEnter={() => setHot(p.id)} onMouseLeave={() => setHot(null)}
               onFocus={() => setHot(p.id)} onBlur={() => setHot(null)}>
-              <span className="sc-tv__pname">{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer">{nice(p.label)}</a> : nice(p.label)}<small title="wystąpień w temacie">{p.links}×</small></span>
+              <span className="sc-tv__pname"><button type="button" className="sc-tv__pbtn" onClick={() => openPanel({ kind: 'person', id: p.id })}>{nice(p.label)}</button><small title="wystąpień w temacie">{p.links}×</small></span>
               {p.role && <span className="sc-tv__prole">{p.role}</span>}
               {r.length > 0 && <button type="button" onClick={() => setOpen(open === p.id ? null : p.id)} aria-expanded={open === p.id}>Funkcje w KRS ({r.length})</button>}
               {open === p.id && <ul className="sc-tv__krs">{r.map(({ org, role }) => <li key={org.id}><a href={org.url} target="_blank" rel="noopener noreferrer">{org.label}</a> <span>{role}</span></li>)}</ul>}
@@ -226,6 +236,80 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
         </section>}
       </aside>
     </div>
+    {panel && <Panel data={data} panel={panel} byId={byId} author={author} diagnosisOf={diagnosisOf} roles={roles} onOpen={openPanel} />}
+  </div>;
+}
+
+/* Panel osoby i wpisu (właściciel 6.10): wejście „w głąb” bez wychodzenia do źródła. Dane osoby z rejestru spin.clinic
+   (funkcje, KRS, historia stanowisk, głosowania, wpisy na X), diagnoza w środku wpisu. Esc zamyka, adres do udostępnienia. */
+type Figure = { id: number; name: string; role_title: string; organisation: string; party?: string | null; evidence_url?: string; official_profile_url?: string;
+  organisations?: { id: number; name: string; krs_number?: string; official_register_url?: string }[];
+  employment_timeline?: { position: string; organisation: string; status: string; since?: string | null }[];
+  votes?: { available: boolean; results: { date: string; topic: string; vote: string }[] };
+  x_posts?: { available: boolean; results: { id: number; url: string; text: string; published_at: string }[] } };
+type Diagnosis = { intensity: number; verdict_label: string; headline: string; summary: string; techniques?: { name: string; quote: string; explanation: string }[];
+  claims?: { claim: string; assessment: string; explanation: string }[] };
+const ASSESS: Record<string, string> = { true: 'prawdziwe', false: 'fałszywe', misleading: 'wprowadza w błąd', unverified: 'niezweryfikowane', partly_true: 'częściowo prawdziwe' };
+const VOTE_PL: Record<string, string> = { YES: 'za', NO: 'przeciw', ABSTAIN: 'wstrzymał się', ABSENT: 'nieobecny', NO_VOTE: 'nieobecny' };
+const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data: Graph; panel: { kind: 'person' | 'entry'; id: string }; byId: Map<string, Node>;
+  author: Map<string, Node>; diagnosisOf: Map<string, Node>; roles: Map<string, { org: Node; role: string }[]>; onOpen: (p: { kind: 'person' | 'entry'; id: string } | null) => void }) {
+  const node = byId.get(panel.id);
+  const [fig, setFig] = useState<Figure | null>(null);
+  const [dg, setDg] = useState<Diagnosis | null>(null);
+  const close = useRef<HTMLButtonElement>(null);
+  const figureId = panel.kind === 'person' && panel.id.startsWith('figure:') ? panel.id.slice(7) : null;
+  const diag = panel.kind === 'entry' ? diagnosisOf.get(panel.id) : undefined;
+  useEffect(() => { setFig(null); if (figureId) fetch(`/api/public-figures/${figureId}/`).then(r => r.ok ? r.json() : null).then(setFig).catch(() => undefined); }, [figureId]);
+  useEffect(() => { setDg(null); const id = diag?.id.split(':')[1]; if (id) fetch(`/api/clinic/spins/${id}/`).then(r => r.ok ? r.json() : null).then(setDg).catch(() => undefined); }, [diag?.id]);
+  useEffect(() => { close.current?.focus(); const key = (e: KeyboardEvent) => { if (e.key === 'Escape') onOpen(null); };
+    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [panel.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!node) return null;
+  const entriesOf = (personId: string) => data.nodes.filter(n => author.get(n.id)?.id === personId).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+  const who = panel.kind === 'entry' ? author.get(node.id) : node;
+  const camp = (who ?? node).camp;
+  return <div className="sc-ptp" role="dialog" aria-modal="true" aria-label={panel.kind === 'person' ? `Osoba: ${nice(node.label)}` : 'Wpis'}>
+    <button type="button" className="sc-ptp__scrim" aria-label="Zamknij" tabIndex={-1} onClick={() => onOpen(null)} />
+    <aside className="sc-ptp__box" data-camp={camp || undefined}>
+      <header className="sc-ptp__head"><span className="sc-ptp__k">{panel.kind === 'person' ? 'Osoba w temacie' : node.kind === 'statement' ? 'Wpis' : KIND_LABEL[node.kind]} · {data.topic}</span>
+        <button ref={close} type="button" className="sc-ptp__x" onClick={() => onOpen(null)} aria-label="Zamknij">×</button></header>
+      {panel.kind === 'person' ? <>
+        <h2>{nice(fig?.name ?? node.label)}</h2>
+        <p className="sc-ptp__sub">{[fig?.role_title ?? node.role, fig?.organisation, fig?.party, camp && CAMP_LABEL[camp]].filter(Boolean).join(' · ')}</p>
+        <section><h3>W tym temacie ({entriesOf(node.id).length})</h3>
+          <ol className="sc-ptp__list">{entriesOf(node.id).map(n => <li key={n.id}><button type="button" onClick={() => onOpen({ kind: 'entry', id: n.id })}>
+            <time>{day(n.date)}</time><span>{n.label}</span>{diagnosisOf.get(n.id) && <em>spin {diagnosisOf.get(n.id)!.intensity}/100</em>}</button></li>)}</ol></section>
+        {Boolean((fig?.organisations?.length ?? 0) || roles.get(node.id)?.length) && <section><h3>Funkcje w KRS</h3>
+          <ul className="sc-ptp__rows">{(fig?.organisations ?? roles.get(node.id)?.map(r => ({ id: r.org.id, name: r.org.label, official_register_url: r.org.url, krs_number: r.org.sub })) ?? []).map(o =>
+            <li key={String(o.id)}><a href={o.official_register_url} target="_blank" rel="noopener noreferrer">{o.name}</a><small>{o.krs_number && !String(o.krs_number).startsWith('KRS') ? `KRS ${o.krs_number}` : o.krs_number}</small></li>)}</ul>
+          <p className="sc-ptp__note">Funkcje w KRS to kontekst osoby, nie dowód związku z tematem.</p></section>}
+        {Boolean(fig?.employment_timeline?.length) && <section><h3>Stanowiska</h3>
+          <ul className="sc-ptp__rows">{fig!.employment_timeline!.slice(0, 6).map((r, i) => <li key={i}><span>{r.position}</span><small>{[r.organisation, r.status === 'current' ? 'obecnie' : 'wcześniej'].filter(Boolean).join(' · ')}</small></li>)}</ul></section>}
+        {fig?.votes?.available && fig.votes.results.length > 0 && <section><h3>Ostatnie głosowania</h3>
+          <ul className="sc-ptp__rows">{fig.votes.results.slice(0, 8).map((v, i) => <li key={i}><span>{v.topic}</span><small>{day(v.date)} · <b data-v={VOTE_PL[v.vote] ?? v.vote}>{VOTE_PL[v.vote] ?? v.vote}</b></small></li>)}</ul></section>}
+        {fig?.x_posts?.available && fig.x_posts.results.length > 0 && <section><h3>Ostatnie wpisy na X</h3>
+          <ul className="sc-ptp__rows">{fig.x_posts.results.slice(0, 5).map(p => <li key={p.id}><span>{p.text}</span><small>{day(p.published_at)} · <a href={p.url} target="_blank" rel="noopener noreferrer">na X →</a></small></li>)}</ul></section>}
+        <footer className="sc-ptp__foot">{(fig?.official_profile_url || node.url) && <a href={fig?.official_profile_url || node.url} target="_blank" rel="noopener noreferrer">Oficjalny profil →</a>}
+          {fig?.evidence_url && <a href={fig.evidence_url} target="_blank" rel="noopener noreferrer">Źródło funkcji →</a>}
+          {figureId && <a href={`https://spin.clinic/osoby-publiczne/${figureId}`} target="_blank" rel="noopener noreferrer">Pełna karta w spin.clinic →</a>}</footer>
+      </> : <>
+        <p className="sc-ptp__by">{who ? <button type="button" className="sc-tv__pbtn" onClick={() => onOpen({ kind: 'person', id: who.id })}>{nice(who.label)}</button> : node.sub}
+          {camp && CAMP_LABEL[camp] ? <em> · {CAMP_LABEL[camp]}</em> : null}<time> · {day(node.date)}</time></p>
+        <blockquote className="sc-ptp__text">{node.label}</blockquote>
+        {diag && <section className="sc-ptp__dg"><h3>Diagnoza Dr. Spina</h3>
+          {!dg ? <p className="sc-ptp__note">Wczytuję diagnozę…</p> : <>
+            <p className="sc-ptp__score"><b data-hi={dg.intensity >= 70 || undefined}>{dg.intensity}</b><small>/100 · {dg.verdict_label}</small></p>
+            <p className="sc-ptp__dgh">{dg.headline}</p><p>{dg.summary}</p>
+            {Boolean(dg.techniques?.length) && <><h4>Chwyty</h4><ul className="sc-ptp__rows">{dg.techniques!.map((t, i) => <li key={i}><span>{t.name}</span><small>„{t.quote}”</small></li>)}</ul></>}
+            {Boolean(dg.claims?.length) && <><h4>Sprawdzone zdania</h4><ul className="sc-ptp__rows">{dg.claims!.map((c, i) => <li key={i}><span>{c.claim}</span><small>{ASSESS[c.assessment] ?? c.assessment}</small></li>)}</ul></>}
+          </>}</section>}
+        {who && entriesOf(who.id).length > 1 && <section><h3>Inne wpisy tej osoby w temacie</h3>
+          <ol className="sc-ptp__list">{entriesOf(who.id).filter(n => n.id !== node.id).slice(0, 6).map(n => <li key={n.id}><button type="button" onClick={() => onOpen({ kind: 'entry', id: n.id })}>
+            <time>{day(n.date)}</time><span>{n.label}</span></button></li>)}</ol></section>}
+        <footer className="sc-ptp__foot">{diag && <a href={diag.url} target="_blank" rel="noopener noreferrer">Pełna diagnoza w spin.clinic →</a>}
+          {node.url && <a href={node.url} target="_blank" rel="noopener noreferrer">Źródło →</a>}</footer>
+      </>}
+    </aside>
   </div>;
 }
 
