@@ -311,8 +311,10 @@ def poll_page(config, account_id, group=None, interval=None):
     account = accounts[0]
     try:
         raw = bytes(read.response_body) if read.response_body is not None else None
+        logger.info('x read %s: reserved %s posts, fetching (%s)', read.pk, read.reserved_posts, 'search' if group else 'timeline')
         if raw is None:
             raw = fetch_x_search(window, config) if group else fetch_x_timeline(account, window, config)
+            logger.info('x read %s: got %s bytes', read.pk, len(raw))
             # Durable inbox: never fetch an already received page just because the
             # later post transaction fails. Cleared after successful consumption.
             PoliticalRead.objects.filter(pk=read.pk).update(response_body=raw)
@@ -321,6 +323,7 @@ def poll_page(config, account_id, group=None, interval=None):
         else:
             rows, next_token, user_count = parse_page(raw, account, window)
             rows = [{**row, 'account_id': account.pk} for row in rows]
+        logger.info('x read %s: parsed %s posts', read.pk, len(rows))
         digest = sha256(raw).hexdigest()
         with transaction.atomic():
             state = ImportState.objects.select_for_update().get(name='political-x-budget')

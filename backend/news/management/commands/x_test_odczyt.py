@@ -19,6 +19,19 @@ class Command(BaseCommand):
         out(f'Zwolnione zawieszone rezerwacje: {release_stale(minutes=3)}')
         state = ImportState.objects.filter(name='political-x-budget').first()
         out(f'Budżet po zwolnieniu: { {k: v for k, v in (state.cursor if state else {}).items() if k != "lease"} }')
+        import logging
+        from django.utils import timezone
+        handler = logging.StreamHandler(self.stdout)
+        handler.setFormatter(logging.Formatter('  %(asctime)s %(name)s: %(message)s', '%H:%M:%S'))
+        for name in ('news.political_polling', 'news.x_watch'):
+            lg = logging.getLogger(name); lg.setLevel(logging.INFO); lg.addHandler(handler)
+        # czekamy, aż zadanie w tle zwolni blokadę (lease), żeby odczyt wykonał się tutaj, na naszych oczach
+        for _ in range(75):
+            st = ImportState.objects.filter(name='political-x-budget').first()
+            if not st or not st.cursor.get('lease_until') or st.cursor['lease_until'] < timezone.now().isoformat():
+                break
+            time.sleep(2)
+        out(f'Blokada wolna: {not st or not st.cursor.get("lease_until") or st.cursor["lease_until"] < timezone.now().isoformat()}')
         started = time.monotonic()
         try:
             result = political_poll_cycle()
