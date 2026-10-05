@@ -127,7 +127,10 @@ def check_daily_products(ctx):
     return alarms
 
 
-CHECKS = (check_x_collector, check_model_providers, check_diagnoses_today, check_public_threads, check_daily_products)
+from news import petle_bezpieczniki  # noqa: E402 - bezpieczniki pętli agentów (audyt pętli 5.10)
+
+CHECKS = (check_x_collector, check_model_providers, check_diagnoses_today, check_public_threads, check_daily_products,
+          *petle_bezpieczniki.CHECKS)
 
 
 def notify_owner(now):

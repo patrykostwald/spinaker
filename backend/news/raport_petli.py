@@ -222,9 +222,9 @@ def _apply_fuses(loops, now):
     for loop in loops:
         for fuse in fired.get(loop['key'], []):
             loop.setdefault('fuses', []).append(fuse['title'])
-            if loop['state'] == 'idle':
-                continue
-            target = 'bad' if fuse['severity'] == 'critical' else 'warn'
+            if loop['state'] == 'idle' or fuse['key'].startswith('petle:silent:'):
+                continue  # cisza jest już w stanie pętli (loop_state)
+            target = fuse['level']
             if rank[target] > rank[loop['state']]:
                 loop['state'] = target
             if fuse['title'] not in loop['reason']:
