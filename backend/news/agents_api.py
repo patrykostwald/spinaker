@@ -93,5 +93,5 @@ def loops(request):
                      'categories': [{'key': c['key'], 'label': c['label'], 'loops': [
                          {**{k: l[k] for k in ('key', 'label', 'title', 'state', 'last_run', 'last_output', 'outputs_24h', 'outputs_7d',
                                                'pending', 'consumer', 'cadence_h', 'sla_days', 'errors', 'top')},
-                          'reason': short(l['reason']), 'details': l['reason']}
+                          'reason': short(l['reason']), 'details': l['reason'], 'repairs': l.get('repairs', [])}
                          for l in c['loops']]} for c in report['categories']]})

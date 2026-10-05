@@ -26,6 +26,7 @@ def isolated(monkeypatch):
     monkeypatch.setenv('REPAIRER_ENABLED', 'true')
     monkeypatch.setenv('REPAIRER_DRY_RUN', 'false')
     monkeypatch.setenv('AGENTS_ENABLED', 'true')
+    monkeypatch.setenv('LOOP_AUTOREPAIR', 'false')  # naprawy automatyczne: test_petle_naprawy (bez brokera Celery)
     with patch('django.utils.timezone.now', return_value=NOW), \
          patch('requests.sessions.Session.request', side_effect=AssertionError('No HTTP')), \
          patch('config.celery.app.send_task') as send:

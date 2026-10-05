@@ -8,7 +8,10 @@ Cztery kontrole Dyżurnego (duty_extra.CHECKS -> DutyAlarm, panel „Wymaga uwag
 (d) check_consumers - wynik pętli ma odbiorcę i odbiorca działa w terminie SLA (właściciel rozstrzyga w panelu,
     Prawnik i Architekt czytają ustalenia badaczy).
 Alarmy mają wagę „warning”: widać je w panelu i w Raporcie pętli, ale nie budzą właściciela mailem co 6 godzin.
-Raport pętli bierze z fuses() poziom: „bad” stawia pętlę na czerwono, „warn” na żółto."""
+Raport pętli bierze z fuses() poziom: „bad” stawia pętlę na czerwono, „warn” na żółto, „info” to tylko przypomnienie
+w raporcie (sprawy wyłącznie właściciela: raporty Raportysty, bilety L, koszty).
+Przed alarmem każda kontrola uruchamia naprawę automatyczną (petle_naprawy, właściciel 6.10); alarm tylko, gdy naprawa
+się nie udała albo nie jest możliwa. Naprawa w toku (ponowione zadanie, ponowienie po 02:00) wstrzymuje alarm."""
 import os
 from datetime import timedelta
 from difflib import SequenceMatcher
@@ -45,7 +48,7 @@ def _loop_for(agent):
 
 def unused_outputs(now):
     """(a) Wyniki bez odbiorcy: stos starych wpisów agenta i zielony puls bez wyniku."""
-    from django.db.models import Count, Min
+    from django.db.models import Count, Min, Q
     from news import raport_petli
     days, limit = _int('LOOP_UNUSED_DAYS', 7), _int('LOOP_UNUSED_MAX', 10)
     out = []
@@ -53,6 +56,7 @@ def unused_outputs(now):
         if not c['agents']:
             continue
         row = (raport_petli._notes(c).filter(status__in=raport_petli.OPEN, created_at__lt=now - timedelta(days=days))
+               .exclude(Q(scores__has_key='auto') & Q(scores__auto__stage='seba'))  # czeka na ocenę Seby: pilnuje tego kolejka Seby
                .aggregate(n=Count('pk'), oldest=Min('created_at')))
         if row['n'] > limit:
             out.append(fuse(c['key'], f"unused:{c['key']}", 'bad' if row['n'] > 3 * limit else 'warn',
@@ -93,8 +97,10 @@ def silent_loops(now):
 def quality(now):
     """(c) Jakość: powtórzone tytuły pomysłów agenta; kolejka Seby starsza niż 48 h."""
     from news.agent_models import AgentNote, SebaReview
+    from news.petle_naprawy import seba_requeued
     out = []
-    recent = AgentNote.objects.filter(kind__in=('idea', 'experiment', 'finding'), created_at__gte=now - timedelta(days=14))
+    recent = AgentNote.objects.filter(kind__in=('idea', 'experiment', 'finding'), created_at__gte=now - timedelta(days=14)).exclude(
+        status__in=('rejected', 'denied'))  # odrzucone duplikaty (naprawa) już się nie liczą
     for agent in set(recent.values_list('agent', flat=True)):
         titles = list(recent.filter(agent=agent).order_by('-created_at').values_list('title', flat=True)[:30])
         pairs = [(a, b) for i, a in enumerate(titles) for b in titles[i + 1:]
@@ -103,7 +109,8 @@ def quality(now):
             out.append(fuse(_loop_for(agent), f'duplicates:{agent}', 'warn', f'{agent}: {len(pairs)} par prawie takich samych tytułów',
                             {'agent': agent, 'pairs': len(pairs), 'example': pairs[0][0][:120]}, now - timedelta(days=14),
                             'Agent powtarza propozycje: dodaj wcześniejsze tytuły do „previous” albo zmniejsz częstotliwość.'))
-    old = SebaReview.objects.filter(status='queued', created_at__lt=now - timedelta(hours=SEBA_QUEUE_HOURS))
+    old = SebaReview.objects.filter(status='queued', created_at__lt=now - timedelta(hours=SEBA_QUEUE_HOURS)).exclude(
+        pk__in=seba_requeued(now))  # ponowione przez naprawę: 48 h na wynik bez alarmu
     count = old.count()
     if count:
         oldest = old.order_by('created_at').values_list('created_at', flat=True).first()
@@ -155,7 +162,8 @@ def deadlines(now):
     reports = InstitutionalReport.objects.filter(status='awaiting_approval', awaiting_since__lt=now - timedelta(hours=24))
     if reports.exists():
         oldest = reports.order_by('awaiting_since').values_list('awaiting_since', flat=True).first()
-        out.append(fuse('raporty', 'reports-awaiting', 'warn', f'Raporty: {reports.count()} czeka na Twoją zgodę ponad 24 h',
+        # nigdy nie publikujemy sami: tylko przypomnienie raz dziennie w Raporcie pętli
+        out.append(fuse('raporty', 'reports-awaiting', 'info', f'Raporty: {reports.count()} czeka na Twoją zgodę ponad 24 h',
                         {'reports': list(reports.values_list('pk', flat=True)[:10])}, oldest,
                         'Zatwierdź albo odrzuć raporty w panelu (Raportysta: raporty do zatwierdzenia).'))
     sprint = raport_petli.tickets(now)
@@ -166,7 +174,7 @@ def deadlines(now):
                         f"Zbuduj albo przesuń bilet #{first['id']} ({first['title'][:80]}); zamknięcie: manage.py sprint_zlecenia."))
     owner = raport_petli.owner_decisions(now)
     if owner['waiting']:
-        out.append(fuse('decyzje', 'owner-decisions', 'warn',
+        out.append(fuse('decyzje', 'owner-decisions', 'info',  # po naprawach zostaje to, co tylko właściciel
                         f"Decyzje: {owner['waiting']} propozycji czeka ponad {owner['sla_days']} dni",
                         {'waiting': owner['waiting'], 'last_decision': owner['last_decision'].isoformat() if owner['last_decision'] else None},
                         owner['oldest'] or now, 'Rozstrzygnij pomysły i bilety w panelu (Biorę / Odrzucam, Buduj / Nie teraz).'))
@@ -192,29 +200,39 @@ def by_loop(now=None):
     return grouped
 
 
-def _alarms(rule, ctx):
+def _alarms(rule, ctx, check):
+    """Najpierw naprawa automatyczna, potem alarm tylko dla tego, czego naprawa nie załatwiła."""
+    from news import petle_naprawy as fix
     from news.duty import alarm
-    return [alarm(f['key'], 'warning', f['title'], f['details'], f['since'], f['instruction']) for f in rule(ctx.now)]
+    results = fix.remedy(check, ctx.now) if fix.enabled() else {}
+    state = fix.load()
+    out = []
+    for f in rule(ctx.now):
+        if f['level'] == 'info' or fix.suppressed(f['key'], ctx.now, state):
+            continue
+        details = {**f['details'], **({'naprawa': results[f['key']]} if f['key'] in results else {})}
+        out.append(alarm(f['key'], 'warning', f['title'], details, f['since'], f['instruction']))
+    return out
 
 
 def check_unused_outputs(ctx):
-    return _alarms(unused_outputs, ctx)
+    return _alarms(unused_outputs, ctx, 'check_unused_outputs')
 
 
 def check_silent_loops(ctx):
-    return _alarms(silent_loops, ctx)
+    return _alarms(silent_loops, ctx, 'check_silent_loops')
 
 
 def check_quality(ctx):
-    return _alarms(quality, ctx)
+    return _alarms(quality, ctx, 'check_quality')
 
 
 def check_consumers(ctx):
-    return _alarms(consumers, ctx)
+    return _alarms(consumers, ctx, 'check_consumers')
 
 
 def check_deadlines(ctx):
-    return _alarms(deadlines, ctx)
+    return _alarms(deadlines, ctx, 'check_deadlines')
 
 
 CHECKS = (check_unused_outputs, check_silent_loops, check_quality, check_consumers, check_deadlines)

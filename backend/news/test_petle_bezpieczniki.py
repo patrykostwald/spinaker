@@ -18,6 +18,7 @@ NOW = datetime(2026, 10, 6, 12, tzinfo=ZoneInfo('Europe/Warsaw'))
 def isolated(monkeypatch):
     cache.clear()
     monkeypatch.setenv('AGENTS_ENABLED', 'true')
+    monkeypatch.setenv('LOOP_AUTOREPAIR', 'false')  # naprawy automatyczne: test_petle_naprawy (bez brokera Celery)
     monkeypatch.setenv('SEBA_ENABLED', 'false')
     with patch('django.utils.timezone.now', return_value=NOW), \
          patch('requests.post', side_effect=AssertionError('Bez sieci')), \

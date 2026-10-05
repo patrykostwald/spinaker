@@ -21,6 +21,7 @@ NOW = datetime(2026, 10, 6, 12, tzinfo=ZoneInfo('Europe/Warsaw'))
 def isolated(monkeypatch):
     cache.clear()
     monkeypatch.setenv('AGENTS_ENABLED', 'true')
+    monkeypatch.setenv('LOOP_AUTOREPAIR', 'false')  # naprawy automatyczne: test_petle_naprawy (bez brokera Celery)
     monkeypatch.setenv('SEBA_ENABLED', 'false')
     with patch('django.utils.timezone.now', return_value=NOW), \
          patch('requests.post', side_effect=AssertionError('Bez sieci')), \
@@ -78,9 +79,9 @@ def test_awaiting_report_fuse_and_loop_state(monkeypatch):
     monkeypatch.setenv('REPORTS_ENABLED', 'true')
     report(30)
     found = {f['key']: f for f in fuses.deadlines(NOW)}
-    assert found['petle:reports-awaiting']['loop'] == 'raporty' and found['petle:reports-awaiting']['level'] == 'warn'
-    rap = loop(raport_petli.build(NOW), 'raporty')
-    assert rap['pending'] == 1 and 'Raporty: 1 czeka na Twoją zgodę ponad 24 h' in rap['reason'] and rap['state'] != 'ok'
+    assert found['petle:reports-awaiting']['loop'] == 'raporty' and found['petle:reports-awaiting']['level'] == 'info'
+    rap = loop(raport_petli.build(NOW), 'raporty')  # przypomnienie, nie alarm (naprawy 6.10: raportów nie publikujemy sami)
+    assert rap['pending'] == 1 and rap['state'] != 'ok'
 
 
 def test_raportysta_sets_awaiting_since():

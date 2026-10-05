@@ -24,6 +24,7 @@ EFFORT_DAYS = {'S': 3, 'M': 7, 'L': 14}
 EFFORT_BONUS = {'S': 3, 'M': 2, 'L': 1}  # wartość/wysiłek: wartość 0-10 razy premia za mały wysiłek
 DROP_PAUSE = timedelta(days=28)  # „Nie teraz” właściciela: pomysł wraca najwcześniej po 4 tygodniach
 LOOKBACK = timedelta(days=60)
+AUTO_DECISION = 'auto: brak decyzji 48 h'
 
 
 def _norm(text):
@@ -150,6 +151,15 @@ def expire(now=None):
         status='dropped', decided_at=now)
 
 
+def create_ticket(cand, now):
+    """Bilet `proposed` z kandydata (intake i naprawy automatyczne petle_naprawy)."""
+    local = timezone.localtime(now)
+    return BuildTicket.objects.create(
+        note=cand['note'], title=cand['title'], rank=cand['rank'], brief=cand['brief'], acceptance=cand['acceptance'],
+        effort=cand['effort'], executor=executor(cand['effort'], local.date()), status='proposed',
+        due_date=local.date() + timedelta(days=7), created_at=now)
+
+
 @transaction.atomic
 def intake(now=None, weekly=None):
     """Tworzy do 8 biletów `proposed`. weekly=None: poniedziałek pełny przegląd, inne dni dopełnienie przy < 3 otwartych."""
@@ -160,12 +170,7 @@ def intake(now=None, weekly=None):
     if not weekly and open_count() >= MIN_OPEN:
         return {'created': [], 'expired': 0, 'mode': 'pełna kolejka'}
     room = MAX_PROPOSED - BuildTicket.objects.filter(status='proposed').count()
-    created = []
-    for cand in candidates(now)[:max(0, room)]:
-        created.append(BuildTicket.objects.create(
-            note=cand['note'], title=cand['title'], rank=cand['rank'], brief=cand['brief'], acceptance=cand['acceptance'],
-            effort=cand['effort'], executor=executor(cand['effort'], local.date()), status='proposed',
-            due_date=local.date() + timedelta(days=7), created_at=now))
+    created = [create_ticket(cand, now) for cand in candidates(now)[:max(0, room)]]
     return {'created': [t.pk for t in created], 'expired': expired, 'mode': 'tydzień' if weekly else 'dopełnienie'}
 
 
@@ -204,9 +209,14 @@ def close(ticket, commit, now=None):
     return ticket
 
 
+def auto_decided(ticket):
+    """Zatwierdzony bez właściciela (petle_naprawy: brak decyzji 48 h); właściciel może go nadal odłożyć."""
+    return ticket.status in ('approved', 'in_progress', 'done') and bool(ticket.decided_at) and not ticket.decided_by_id
+
+
 def row(ticket):
     return {'id': ticket.pk, 'title': ticket.title, 'rank': ticket.rank, 'effort': ticket.effort, 'executor': ticket.executor,
-            'status': ticket.status, 'due_date': ticket.due_date.isoformat() if ticket.due_date else None,
+            'status': ticket.status, 'decided_note': AUTO_DECISION if auto_decided(ticket) else '', 'due_date': ticket.due_date.isoformat() if ticket.due_date else None,
             'agent': ticket.note.agent if ticket.note else '', 'note': ticket.note_id, 'brief': ticket.brief,
             'acceptance': ticket.acceptance, 'commit': ticket.commit,
             'created_at': ticket.created_at.isoformat(), 'decided_at': ticket.decided_at.isoformat() if ticket.decided_at else None,

@@ -21,6 +21,7 @@ CONSUMERS = {'owner:panel': 'właściciel w panelu', 'owner:mail': 'właściciel
              'agent:recruiter': 'Rekruter', 'agent:all': 'wszyscy agenci', 'agent:council': 'Konsylium'}
 PENDING_TEXT = {'reports': '{n} raport(y) czeka na zgodę ponad 24 h', 'proposals': '{n} propozycji czeka na decyzję ponad {sla} dni',
                 'tickets': '{n} bilet(y) po terminie'}
+LIST_MAX = 40
 PLAIN_READER = {'scores__reader': 'plain'}  # raporty Czytelnika testowego zapisywane jako strateg/report
 
 
@@ -272,11 +273,49 @@ def build(now=None):
     now = now or timezone.now()
     loops = [loop_state(c, now) for c in CONTRACTS]
     _apply_fuses(loops, now)
+    auto = _apply_repairs(loops, now)
     summary = {s: sum(l['state'] == s for l in loops) for s in ('ok', 'warn', 'bad', 'idle')}
     categories = [{'key': key, 'label': label, 'loops': [l for l in loops if l['category'] == key]} for key, label in CATEGORIES]
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
-            'categories': categories, 'top': top, 'sprint': tickets(now)}
+            'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build()}
+
+
+def to_build(limit=10):
+    """Zatwierdzone bilety sprintu jako gotowe zlecenia (sprint.brief) - Claude bierze je z maila Raportu pętli."""
+    from news import sprint
+    from news.agent_models import BuildTicket
+    rows = BuildTicket.objects.select_related('note').filter(status__in=('approved', 'in_progress')).order_by('due_date', '-rank', 'pk')[:limit]
+    return [{'id': t.pk, 'title': t.title, 'status': t.status, 'auto': sprint.auto_decided(t), 'brief': sprint.brief(t)} for t in rows]
+
+
+def _apply_repairs(loops, now):
+    """Naprawy automatyczne (petle_naprawy) w stanie pętli: udana naprawa -> „naprawione HH:MM” przy stanie ok,
+    naprawa w toku -> co najwyżej „warn” (bez czerwonego), nieudana -> „warn” z powodem. Zwraca dane dla raportu."""
+    try:
+        from news import petle_naprawy as fix
+        done, state, waiting = fix.actions(now), fix.load(), fix.owner_waiting(now)
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return {'done': [], 'failed': [], 'deferred': [], 'waiting': {}}
+    for loop in loops:
+        mine = [a for a in done if a['loop'] == loop['key']]
+        notes = [fix.suppressed(f"petle:{kind}:{loop['key']}", now, state) for kind in ('silent', 'green-empty', 'error', 'consumer')]
+        pending = next((n for n in notes if n), None)
+        failed = [a for a in mine if a['result'] == 'failed']
+        loop['repairs'] = [{k: (v.isoformat() if k == 'at' else v) for k, v in a.items()} for a in mine[-10:]]
+        if loop['state'] == 'idle':
+            continue
+        if pending and loop['state'] == 'bad' and not failed:
+            loop['state'] = 'warn'
+            loop['reason'] = '; '.join(r for r in (fix.PENDING_TEXT + ': ' + pending, loop['reason']) if r)
+        elif failed and loop['state'] == 'ok':
+            loop['state'] = 'warn'
+            loop['reason'] = 'naprawa nieudana: ' + failed[-1]['description']
+        elif loop['state'] == 'ok' and any(a['result'] in fix.DONE for a in mine):
+            last = max(a['at'] for a in mine if a['result'] in fix.DONE)
+            loop['reason'] = f'naprawione {fix.hhmm(last)}'
+    return {'done': [a for a in done if a['result'] in fix.DONE], 'failed': [a for a in done if a['result'] == 'failed'],
+            'deferred': [a for a in done if a['result'] == 'skipped'], 'waiting': waiting}
 
 
 def _apply_fuses(loops, now):
@@ -289,11 +328,22 @@ def _apply_fuses(loops, now):
     except Exception:  # noqa: BLE001 - raport zawsze wychodzi
         return
     rank = {'idle': -1, 'ok': 0, 'warn': 1, 'bad': 2}
+    try:
+        from news import petle_naprawy as fix
+        state = fix.load()
+
+        def held(key):
+            return fix.suppressed(key, now, state)  # naprawa w toku
+    except Exception:  # noqa: BLE001
+        def held(key):
+            return None
     for loop in loops:
         for fuse in fired.get(loop['key'], []):
+            if fuse['level'] == 'info':
+                continue  # tylko przypomnienie w raporcie („Czeka na Ciebie”)
             loop.setdefault('fuses', []).append(fuse['title'])
-            if loop['state'] == 'idle' or fuse['key'].startswith('petle:silent:'):
-                continue  # cisza jest już w stanie pętli (loop_state)
+            if loop['state'] == 'idle' or fuse['key'].startswith('petle:silent:') or held(fuse['key']):
+                continue  # cisza jest już w stanie pętli (loop_state); naprawa w toku nie podnosi stanu
             target = fuse['level']
             if rank[target] > rank[loop['state']]:
                 loop['state'] = target
@@ -308,6 +358,7 @@ def text(report):
     lines = [f"Raport pętli spin.clinic i przeszłość.today - {report['day']}",
              f"Działa: {s['ok']} · do sprawdzenia: {s['warn']} · stoi: {s['bad']} · wyłączone: {s['idle']}", '']
     marks = {'ok': 'OK', 'warn': 'UWAGA', 'bad': 'STOI', 'idle': 'wył.'}
+    lines += _build_lines(report, clean) + _auto_lines(report, clean)
     problems = [l for c in report['categories'] for l in c['loops'] if l['state'] in ('bad', 'warn')]
     lines.append('== Wymaga uwagi ==')
     lines += [f"[{marks[l['state']]}] {l['title']}: {clean(l['reason'])}" for l in sorted(problems, key=lambda l: l['state'] != 'bad')] or ['Nic.']
@@ -332,6 +383,42 @@ def text(report):
     lines += [f"- {t['score']}/100 · {t['agent']}: {clean(t['title'])}" for t in report['top']] or ['Brak nowych.']
     lines += ['', 'Panel: https://spin.clinic/panel · Szczegóły: python manage.py raport_petli']
     return chr(10).join(lines)
+
+
+def _build_lines(report, clean):
+    """Na górze maila: zatwierdzone bilety jako gotowe zlecenia - Claude bierze je stąd w sesji."""
+    rows = report.get('build') or []
+    lines = ['== Do zbudowania przez Claude ==']
+    if not rows:
+        return lines + ['Nic zatwierdzonego.', '']
+    from news.management.commands.stan_bledow import SECRET
+    lines.append('Zatwierdzone bilety sprintu, gotowe zlecenia (Claude albo Codex w sesji):')
+    for t in rows:
+        lines += ['', SECRET.sub('[ukryte]', t['brief'])[:3000] + (' [zatwierdzony automatycznie: brak decyzji 48 h]' if t['auto'] else '')]
+    return lines + ['']
+
+
+def _auto_lines(report, clean):
+    """Naprawy automatyczne z ostatniej doby i to, co zostaje tylko dla właściciela (przypomnienie raz dziennie)."""
+    auto = report.get('auto') or {}
+    done = auto.get('done') or []
+    lines = ['== Naprawione automatycznie ==']
+    lines += [f"- {a['at'].astimezone(WARSAW):%H:%M} {clean(a['description'])}" for a in done[:LIST_MAX]] or ['Nic do naprawy.']
+    if len(done) > LIST_MAX:
+        lines.append(f'- i {len(done) - LIST_MAX} więcej (dziennik napraw w panelu: Naprawiacz)')
+    lines += [f"- ponowienie po 02:00: {clean(a['description'])}" for a in (auto.get('deferred') or [])[:10]]
+    lines += [f"- NIEUDANE: {clean(a['description'])}" for a in (auto.get('failed') or [])[:10]]
+    waiting = auto.get('waiting') or {}
+    owner = []
+    if waiting.get('reports'):
+        owner.append(f"Raporty Raportysty czekają na Twoją zgodę ponad 24 h: {', '.join('#' + str(r) for r in waiting['reports'])} "
+                     '(nie publikujemy ich sami).')
+    owner += [f"Bilet #{t['id']} ({t['effort']}) czeka na decyzję ponad 48 h: {clean(t['title'])}" for t in waiting.get('tickets', [])]
+    if waiting.get('costs'):
+        owner.append(f"Prośby o koszt bez decyzji ponad 7 dni: {waiting['costs']}.")
+    lines += ['', '== Czeka na Ciebie (przypomnienie raz dziennie) ==']
+    lines += [f'- {o}' for o in owner] or ['Nic.']
+    return lines + ['']
 
 
 def recipient():
