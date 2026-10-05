@@ -12,6 +12,8 @@ export type CommunityThreadSummary = {
   author: string;
   display_name?: string;
   x_profile?: string | null;
+  /** Kolor nicka autora (puste u Dr. Spina i bez wybranego koloru). */
+  author_color?: string;
   narrative?: boolean;
   signal_kind?: '' | 'lobbying' | 'new_narrative';
   admission?: { mode?: 'first'; positive: number; needed: number; ratio: number; ratio_needed: number; days_left: number; open: boolean } | null;

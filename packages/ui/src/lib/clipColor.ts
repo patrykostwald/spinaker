@@ -27,6 +27,13 @@ export function clipColor(counts?: Counts | null) {
   return `rgb(${rgb[0]} ${rgb[1]} ${rgb[2]} / ${alpha.toFixed(2)})`;
 }
 
+/** Pełny odcień połączeń bez przezroczystości (do rozjaśnień wierszy): ta sama skala co ikonka spinki (właściciel 6.10). */
+export function clipHue(counts?: Counts | null) {
+  const { value } = clipScore(counts);
+  const rgb = value >= .5 ? lerp(YELLOW, GREEN, (value - .5) * 2) : lerp(RED, YELLOW, value * 2);
+  return `rgb(${rgb[0]} ${rgb[1]} ${rgb[2]})`;
+}
+
 /** Delikatny odcień płytki z ocen czytelników (bez głosu autora); null, gdy nikt nie ocenił (właściciel 4.10). */
 export function reactionTint(counts?: Counts | null) {
   const c = counts ?? { positive: 0, doubt: 0, negative: 0 };

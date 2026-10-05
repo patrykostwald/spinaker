@@ -65,7 +65,8 @@ class ProfilePreference(models.Model):
     theme_preference = models.CharField(max_length=8, choices=THEME_CHOICES, default='auto')
     # Kolor nicka (właściciel 3.10): tylko dla kont połączonych z X - znak lepiej zweryfikowanego konta; konto z samym e-mailem ma biały.
     # Paleta bez zieleni, żółci i czerwieni, bo te kolory znaczą reakcje ✓ ? ✕.
-    NICK_COLORS = ['#4a9eff', '#a78bfa', '#2dd4bf', '#f472b6', '#fb923c', '#7dd3fc']
+    # niebieski jest zarezerwowany dla Dr. Spina (właściciel 6.10): czytelnicy wybierają spośród pozostałych
+    NICK_COLORS = ['#a78bfa', '#2dd4bf', '#f472b6', '#fb923c', '#e879f9', '#d6d3d1']
     nick_color = models.CharField(max_length=7, blank=True, default='')
 
 

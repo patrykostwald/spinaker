@@ -370,14 +370,15 @@ def test_nick_color_only_for_x_connected_accounts(setup):
     """Kolor nicka (właściciel 3.10) tylko po połączeniu konta z X; konto z samym e-mailem zostaje białe."""
     from news.account_models import UserXConnection
     client, thread, reader, _, base = setup
-    assert client.patch('/api/account/profile/', {'nick_color': '#4a9eff'}, format='json').status_code == 400
+    assert client.patch('/api/account/profile/', {'nick_color': '#a78bfa'}, format='json').status_code == 400
     UserXConnection.objects.create(user=reader, x_user_id='1', username='czytelnik')
     reader.refresh_from_db()
     assert client.patch('/api/account/profile/', {'nick_color': '#123456'}, format='json').status_code == 400
-    data = client.patch('/api/account/profile/', {'nick_color': '#4a9eff'}, format='json').json()
-    assert data['nick_color'] == '#4a9eff' and data['can_color_nick']
+    assert client.patch('/api/account/profile/', {'nick_color': '#4a9eff'}, format='json').status_code == 400  # niebieski tylko Dr. Spin
+    data = client.patch('/api/account/profile/', {'nick_color': '#a78bfa'}, format='json').json()
+    assert data['nick_color'] == '#a78bfa' and data['can_color_nick']
     ThreadComment.objects.create(thread=thread, author=reader, body='Kolorowy nick')
-    assert client.get(base+'comments/').json()['results'][0]['author_color'] == '#4a9eff'
+    assert client.get(base+'comments/').json()['results'][0]['author_color'] == '#a78bfa'
 
 
 def test_admission_first_activity_mode(setup, settings):

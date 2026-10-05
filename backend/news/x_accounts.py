@@ -36,7 +36,7 @@ def public_identity(user):
     return {'display_name': '@' + connection.username if selected else user.username if user else 'Usunięte konto',
             'x_profile': 'https://x.com/' + connection.username if selected else None,
             # kolorowy nick tylko przy koncie połączonym z X
-            'color': preference.nick_color if connection and preference and preference.nick_color else ''}
+            'color': preference.nick_color if connection and preference and preference.nick_color in preference.NICK_COLORS else ''}
 
 
 class XConnectionView(APIView):

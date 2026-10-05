@@ -12,7 +12,7 @@ import { BOX_TYPES as TYPES, boxImage, contentTag, FocusView, focusRef, SpinkaCl
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
-import { clipColor, reactionTint } from '../../lib/clipColor';
+import { clipColor, clipHue, reactionTint } from '../../lib/clipColor';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
@@ -179,10 +179,13 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     onMouseLeave: (event: React.MouseEvent) => { if (!(event.currentTarget as HTMLElement).closest('.sc-trop-overlay')) setReactionMood(null); },
   } : {};
   // wiersz listy: delikatny odcień według ogólnej oceny spinki (właściciel 4.10)
-  const rowTint = row ? reactionTint(sumCounts(clips)) : null;
+  // z prawej kolor reakcji; bez ocen czytelników - kolor ikonki spinki (głos autora), jak przy liczniku (właściciel 6.10)
+  const rowTint = row ? reactionTint(sumCounts(clips)) ?? clipHue(sumCounts(clips)) : null;
+  // z lewej rozjaśnienie w kolorze autora: Dr. Spin niebieski, czytelnik - kolor nicka (właściciel 6.10)
+  const rowAuthor = row ? (thread.is_ai ? 'var(--sc-accent)' : thread.author_color || null) : null;
   const first = items[0];
   const thumb = first?.image_url || (thread.diagnosis_id != null ? `/api/clinic/spins/${thread.diagnosis_id}/card.png` : '');
-  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} style={rowTint ? { ['--tint' as string]: rowTint } : undefined} {...hoverProps} {...enter}>
+  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} style={rowTint || rowAuthor ? { ...(rowTint ? { ['--tint' as string]: rowTint } : {}), ...(rowAuthor ? { ['--who' as string]: rowAuthor } : {}) } : undefined} {...hoverProps} {...enter}>
     <div className="sc-thread-strip__frame">
     {row ? <header className="sc-trow">
       {/* Wiersz listy (właściciel 3.10): z lewej autor, tytuł i kwadraty reakcji (jeden na spinkę), w środku miniatury boksów,

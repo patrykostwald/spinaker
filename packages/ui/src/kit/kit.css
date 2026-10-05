@@ -9757,3 +9757,34 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
   .sc-trop-overlay__back, .sc-spin-detail__back, .sc-social-login a, .sc-social-sortrow a { min-height: 44px; display: inline-flex; align-items: center; }
 }
 :is(input, textarea, select):focus-visible { outline: 2px solid var(--sc-accent) !important; outline-offset: 2px; }
+
+/* ===== Wiersze spinek (właściciel 6.10): kontrast zamiast ramek =====
+   z lewej rozjaśnienie w kolorze autora (Dr. Spin niebieski, czytelnik - kolor nicka) na 18% szerokości,
+   z prawej kolor reakcji czytelników na 30% szerokości (pod licznikami spinek i komentarzy), środek w kolorze tła
+   z cienkim obrysem, który wygasa tam, gdzie zaczynają się rozjaśnienia; wiersze nie stykają się (odstęp 10 px) */
+.sc-thread-strip--row { --who-c: var(--who, transparent); --tint-c: var(--tint, var(--sc-text));
+  position: relative; border: 0 !important; border-radius: 0 !important; margin-bottom: 10px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--who-c) 13%, transparent) 0%, transparent 18%),
+    linear-gradient(90deg, transparent 70%, color-mix(in srgb, var(--tint-c) var(--tint-k, 9%), transparent) 100%) !important;
+  transition: --tint-k .3s; }
+.sc-thread-strip--row:not([style*="--tint"]) { --tint-k: 4%; }
+.sc-thread-strip--row::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  border: 1px solid color-mix(in srgb, var(--sc-text) 11%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 12%, #000 20%, #000 64%, transparent 72%);
+  mask-image: linear-gradient(90deg, transparent 0%, transparent 12%, #000 20%, #000 64%, transparent 72%); }
+.sc-thread-strip--row:not([style*="--who"])::before { -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 64%, transparent 72%); mask-image: linear-gradient(90deg, #000 0%, #000 64%, transparent 72%); }
+.sc-thread-strip--row:hover { --tint-k: 15%; }
+.sc-thread-strip--row:not([style*="--tint"]):hover { --tint-k: 8%; }
+.sc-thread-strip--row .sc-trow { border: 0 !important; background: none !important; }
+@property --tint-k { syntax: "<percentage>"; inherits: true; initial-value: 9%; }
+@media (max-width: 767px) {
+  .sc-thread-strip--row { background:
+    linear-gradient(180deg, color-mix(in srgb, var(--who-c) 12%, transparent) 0%, transparent 22%),
+    linear-gradient(90deg, transparent 55%, color-mix(in srgb, var(--tint-c) var(--tint-k, 9%), transparent) 100%) !important; }
+  .sc-thread-strip--row::before { -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 50%, transparent 60%); mask-image: linear-gradient(90deg, #000 0%, #000 50%, transparent 60%); }
+}
+@media (prefers-reduced-motion: reduce) { .sc-thread-strip--row { transition: none; } }
+
+.sc-thread-strip--row { --tint-k: 12%; }
+.sc-thread-strip--row:hover { --tint-k: 20%; }

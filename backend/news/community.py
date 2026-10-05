@@ -230,6 +230,8 @@ def thread_summary(thread, counts):
     return {'id': thread.pk, 'title': thread.title, 'description': thread.description, 'topics': thread.topics,
             'author': 'Dr. Spin (AI)' if ai else thread.owner.username,
             'display_name': 'Dr. Spin (AI)' if ai else identity['display_name'], 'x_profile': identity['x_profile'],
+            # kolor autora do rozjaśnienia wiersza z lewej (właściciel 6.10): Dr. Spin zawsze niebieski, czytelnik - kolor nicka
+            'author_color': '' if ai else identity['color'],
             'is_ai': ai, 'diagnosis_id': thread.diagnosis_id,
             'narrative': bool(thread.narrative_message_id),
             'signal_kind': thread.signal_kind,
