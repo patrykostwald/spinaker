@@ -27,11 +27,11 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   ];
 
   const ROLES = [
-    { role: t("Członkowie Konsylium"), who: "gpt-oss · Qwen · Nemotron · Gemini · Bielik · PLLuM · Llama · Mistral",
+    { role: t("Członkowie Konsylium"), who: "gpt-oss · Qwen · Nemotron · Gemini · Bielik · Llama · Mistral · Gemma",
       text: t("Każdy model osobno podaje werdykt, siłę spinu 0-100, techniki z dosłownym cytatem i twierdzenia do sprawdzenia.") },
     { role: t("Sprawdzanie faktów"), who: t("Gemini z wyszukiwarką Google"),
       text: t("Szuka źródeł do każdego twierdzenia. Bez źródła twierdzenie pozostaje niezweryfikowane.") },
-    { role: t("Konsultant"), who: t("Claude (Anthropic) · płatny"),
+    { role: t("Konsultant"), who: t("Gemini z głębokim myśleniem · płatny"),
       text: t("Mocniejsze sprawdzenie faktów, gdy modele są podzielone (zgoda poniżej 2/3) albo siła spinu jest wysoka (70/100 i więcej).") },
     { role: t("Laboratorium"), who: "HerBERT · Google Fact Check · GUS · Firecrawl",
       text: t("Badania pomocnicze: wydźwięk, wcześniejsze weryfikacje faktów, dane GUS, obecność cytatu w źródle. Nie zmieniają werdyktu.") },
@@ -39,7 +39,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       text: t("Pisze uzasadnienie wyłącznie na podstawie ocen Konsylium i dowodów. Nie może zmienić werdyktu, siły spinu ani dodać techniki.") },
     { role: t("Recenzent"), who: t("Nemotron (w zapasie inne modele)"),
       text: t("Sprawdza, czy tekst zgadza się z ocenami i Kartą. Przy uwagach przewodniczący raz poprawia diagnozę; brak recenzji nie wstrzymuje publikacji.") },
-    { role: t("Językoznawca"), who: t("Bielik (w zapasie PLLuM, Qwen, Gemini)"),
+    { role: t("Językoznawca"), who: t("Bielik (w zapasie Qwen, Gemini)"),
       text: t("Poprawia tylko polszczyznę. Gdy poprawka wyraźnie zmienia długość tekstu albo nie jest po polsku, zostaje wersja przewodniczącego.") },
   ];
 
@@ -54,7 +54,7 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const TOOLS: Array<[string, string, "obsługiwane" | "planowane"]> = [
     [t("Konsylium, łączenie głosów, przewodniczący, recenzent, językoznawca"), t("rdzeń każdej diagnozy"), "obsługiwane"],
     [t("Gemini z wyszukiwarką Google"), t("źródła do twierdzeń"), "obsługiwane"],
-    [t("Claude z wyszukiwaniem"), t("konsultacja przy sporze i silnym spinie, gdy pozwala budżet"), "obsługiwane"],
+    [t("Gemini z wyszukiwaniem i głębokim myśleniem"), t("konsultacja przy sporze i silnym spinie, gdy pozwala budżet"), "obsługiwane"],
     [t("Słownik słów nacechowanych i 21 kategorii technik"), t("wspólny język diagnoz"), "obsługiwane"],
     ["HerBERT (Hugging Face)", t("wydźwięk i mowa nienawiści - sygnał pomocniczy"), "obsługiwane"],
     ["Google Fact Check Tools", t("wcześniejsze sprawdzenia innych redakcji"), "obsługiwane"],

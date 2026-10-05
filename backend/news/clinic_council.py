@@ -38,7 +38,7 @@ DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemo
 CHAIR = 'gemini:gemini-3.8-flash,nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # przewodniczący
 LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,groq:qwen/qwen3.8-27b,gemini:gemini-3.8-flash'  # językoznawca — tylko polszczyzna
 REVIEWER = 'nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # recenzent — zgodność z ocenami i zasadami
-MIN_MEMBERS = 2  # absolutne minimum: dwie niezależne oceny; poniżej trzech diagnoza jest jawnie oznaczona jako ograniczony skład
+MIN_MEMBERS = 3  # właściciel 6.10: co najmniej trzy niezależne oceny; przy mniejszej liczbie diagnoza się nie ukazuje (wpis wraca do kolejki)
 PREFERRED_MEMBERS = 3
 SLOW_TIMEOUT = 180  # DeepSeek i Kimi przez NVIDIA odpowiadają wolno
 
