@@ -10134,3 +10134,5 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-spin-next b { font-size: 20px; } .sc-spin-next span { font-size: 14px; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; } .sc-spin-next small { color: var(--sc-text-3); font-size: 12px; }
 @media (max-width: 767px) { .sc-spin-next { grid-template-columns: 1fr; } }
 .sc-spin-next span { max-height: calc(2 * 1.4em); }
+.sc-tv__brief { margin: 4px 0 14px; padding: 14px 16px; font-size: 15px; line-height: 1.6; color: var(--sc-text-2); background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 12%, transparent), transparent 80%); }
+.sc-tv__brief b { color: var(--sc-text); }

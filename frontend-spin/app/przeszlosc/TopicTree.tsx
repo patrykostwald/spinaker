@@ -203,6 +203,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
       <p className="sc-tv__follow"><a href={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} target="_blank" rel="noopener noreferrer">Obserwuj temat (RSS)</a>
         <span>Nowe wpisy, dokumenty i artykuły trafią do Twojego czytnika lub poczty.</span></p>
     </header>
+    <Brief data={data} events={allEvents} author={author} diagnosisOf={diagnosisOf} />
     <Density events={allEvents} />
     <TopicGraph data={data} byId={byId} onOpen={openPanel} />
     <div className="sc-tv__grid">
@@ -490,4 +491,26 @@ function SejmPath({ data }: { data: Graph }) {
   return <section className="sc-tv__path" aria-label="Ścieżka w Sejmie"><h3>Ścieżka w Sejmie</h3>
     <ol>{steps.slice(-10).map(s => <li key={s.id} data-kind={s.kind}><time>{day(s.date)}</time><b>{s.kind}</b>
       {s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a> : <span>{s.title}</span>}</li>)}</ol></section>;
+}
+
+
+/* Temat w 30 sekund (audyt 6.10): streszczenie liczone z danych, bez AI - kiedy wybuchł, kto mówi najwięcej (obie strony),
+   ile Sejmu i jaka średnia siła spinu. Każda liczba wynika z listy poniżej. */
+function Brief({ data, events, author, diagnosisOf }: { data: Graph; events: Node[]; author: Map<string, Node>; diagnosisOf: Map<string, Node> }) {
+  if (events.length < 3) return null;
+  const byDay = new Map<string, number>(); for (const n of events) if (n.date) byDay.set(n.date, (byDay.get(n.date) ?? 0) + 1);
+  const peak = [...byDay.entries()].sort((a, b) => b[1] - a[1])[0];
+  const speakers = new Map<string, { n: number; who: Node }>();
+  for (const n of events) { const w = author.get(n.id); if (w && !w.institution) speakers.set(w.id, { n: (speakers.get(w.id)?.n ?? 0) + 1, who: w }); }
+  const top = (camp: string) => [...speakers.values()].filter(x => x.who.camp === camp).sort((a, b) => b.n - a.n)[0];
+  const gov = top('government'), opp = top('opposition');
+  const spins = [...diagnosisOf.values()].map(d => d.intensity ?? 0); const avg = spins.length ? Math.round(spins.reduce((a, b) => a + b, 0) / spins.length) : null;
+  const first = [...events].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0];
+  const parts = [
+    `Najgłośniej było ${day(peak[0])} (${peak[1]} ${peak[1] === 1 ? 'pozycja' : peak[1] % 10 >= 2 && peak[1] % 10 <= 4 && (peak[1] % 100 < 10 || peak[1] % 100 >= 20) ? 'pozycje' : 'pozycji'}), pierwszy ślad ${day(first.date)}.`,
+    gov || opp ? `Najczęściej mówią: ${[gov && `${nice(gov.who.label)} (rządzący, ${gov.n})`, opp && `${nice(opp.who.label)} (opozycja, ${opp.n})`].filter(Boolean).join(' i ')}.` : '',
+    data.counts.record || data.counts.vote ? `W Sejmie: ${data.counts.record ?? 0} dokumentów i ${data.counts.vote ?? 0} głosowań.` : 'Sejm: brak dokumentów w tym temacie w naszej bazie.',
+    avg !== null ? `Średnia siła spinu w ${spins.length} diagnozach Dr. Spina: ${avg}/100.` : '',
+  ].filter(Boolean);
+  return <p className="sc-tv__brief"><b>W 30 sekund:</b> {parts.join(' ')}</p>;
 }
