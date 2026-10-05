@@ -1,0 +1,31 @@
+/* Odstępstwa od klubu (przeszłość.today). Dwa boksy obok siebie o stałej wysokości: 6 wierszy po 60 px, stopka przy dole. */
+.px-dev { --dev-row: 60px; display: grid; gap: 16px; }
+.px-dev__head { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.px-dev__head .px-h2 { margin: 0; }
+.px-dev__method { margin: 0; max-width: 72ch; font-size: 15px; line-height: 1.55; color: var(--sc-text-2); }
+.px-dev__range { margin-top: -8px; }
+.px-dev__tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+.px-dev__tabs button { flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--px-line);
+  border-radius: 12px; background: var(--px-card); color: var(--sc-text-2); font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.px-dev__tabs button small { font-size: 12px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
+.px-dev__tabs button:hover { color: var(--sc-text); border-color: var(--px-line-2); }
+.px-dev__tabs button[aria-selected="true"] { color: var(--sc-text); font-weight: 600; border-color: color-mix(in srgb, var(--sc-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--sc-accent) 8%, var(--px-card)); }
+.px-dev__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.px-dev__card { align-content: stretch; }
+.px-dev__card .px-h3 small { font-variant-numeric: tabular-nums; }
+.px-dev__list { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-rows: var(--dev-row); align-content: start; min-height: calc(6 * var(--dev-row)); }
+.px-dev__list li { min-width: 0; border-top: 1px solid var(--px-line); }
+.px-dev__list li:first-child { border-top: 0; }
+.px-dev__list :is(a, div) { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-content: center; column-gap: 12px; row-gap: 2px;
+  color: var(--sc-text); text-decoration: none; min-width: 0; }
+.px-dev__list a:hover b { color: var(--sc-accent); }
+.px-dev__list b { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-dev__val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--sc-text-2); white-space: nowrap; text-align: right; }
+.px-dev__list small { grid-column: 1 / -1; font-size: 12.5px; color: var(--sc-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-dev__empty { margin: 0; align-self: center; min-height: calc(6 * var(--dev-row)); display: grid; place-items: center; text-align: center; font-size: 14px; color: var(--sc-text-3); }
+@media (max-width: 760px) {
+  .px-dev__grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .px-dev__empty { min-height: 120px; }
+  .px-dev__list { min-height: 0; }
+}

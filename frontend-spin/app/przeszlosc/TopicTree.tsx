@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, day, nb, nice, personHref, plural, reduced, short, spinColor, useStandalone } from './ui';
+import { Odstepstwa } from './Odstepstwa';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -183,6 +184,8 @@ export function TopicTree() {
           .map(([icon, title, text]) => <li key={title}><span className="px-rules__ic"><Icon name={icon} size={20} /></span><h3>{title}</h3><p>{nb(text)}</p></li>)}
       </ul>
     </section>
+
+    <Odstepstwa />
 
     {start && start.latest.length > 0 && <section className="px-sec" aria-labelledby="sejm-h">
       <h2 id="sejm-h" className="px-h2">Najnowsze w&nbsp;Sejmie</h2>

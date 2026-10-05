@@ -41,6 +41,7 @@ from news.feedback import BugReportView, JourneyView
 from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 from news import przeszlosc_alerts, przeszlosc_osoba
+from news.voting_anomalies import deviations_view as przeszlosc_deviations
 
 router = DefaultRouter()
 router.register(r"editor/threads", EditorialThreadViewSet, basename="editor-threads")
@@ -116,6 +117,7 @@ urlpatterns = [
     path('przeszlosc/alerty/', przeszlosc_alerts.subscribe_view),
     path('przeszlosc/alerty/potwierdz/', przeszlosc_alerts.confirm_view),
     path('przeszlosc/alerty/wypisz/', przeszlosc_alerts.unsubscribe_view),
+    path('przeszlosc/odstepstwa/', przeszlosc_deviations),
     path('zbudujmi/zapytanie/', zbudujmi_inquiry),
     path('zbudujmi/uwagi/', zbudujmi_client_note),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),

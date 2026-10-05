@@ -649,3 +649,12 @@ def x_value_task():
     """Raz dziennie: czytanie X według wartości konta (właściciel 6.10: taniej i legalnie)."""
     from news import x_value
     return x_value.apply()
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def voting_deviations_task():
+    """Co noc: odstępstwa posłów od większości klubu (cała kadencja i 90 dni), bez AI i bez sieci."""
+    from news import przeszlosc, voting_anomalies
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return voting_anomalies.refresh()
