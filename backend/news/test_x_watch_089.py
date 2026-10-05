@@ -410,3 +410,18 @@ def test_long_x_error_detail_fits_last_error(staff, config):
         pp.political_poll_cycle()
     state = ImportState.objects.get(name='political-x-budget')
     assert len(state.last_error) <= 200 and not PoliticalRead.objects.filter(status='reserved').exists()
+
+
+def test_search_never_mixes_since_id_with_time_window():
+    # 6.10: X odrzucał zapytanie (400), gdy obok since_id szło end_time
+    from news.x_watch import fetch_x_search
+    sent = {}
+    def fake(url, params, config):
+        sent.update(params)
+        return b'{}'
+    with patch('news.x_watch.request_x', side_effect=fake):
+        fetch_x_search({'query': 'from:a', 'page_size': 10, 'since_id': '123', 'start_time': 's', 'end_time': 'e'}, {})
+        assert 'since_id' in sent and 'end_time' not in sent and 'start_time' not in sent
+        sent.clear()
+        fetch_x_search({'query': 'from:a', 'page_size': 10, 'since_id': '', 'start_time': 's', 'end_time': 'e'}, {})
+        assert sent['start_time'] == 's' and sent['end_time'] == 'e' and 'since_id' not in sent

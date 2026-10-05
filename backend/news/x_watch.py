@@ -122,12 +122,14 @@ def fetch_x_search(window, config):
     params = {'query': window['query'], 'max_results': window['page_size'], 'sort_order': 'recency',
         'post.fields': POST_FIELDS,
         'expansions': 'attachments.media_keys',
-        'media.fields': MEDIA_FIELDS,
-        'end_time': window['end_time']}
+        'media.fields': MEDIA_FIELDS}
+    # X nie pozwala łączyć since_id z start_time/end_time (6.10: błąd 400 „Invalid use of since_id … with start_time or
+    # end_time” zatrzymał zbieranie). Z since_id czytamy wszystko nowsze od ostatniego wpisu; bez niego - okno czasowe.
     if window.get('since_id'):
         params['since_id'] = window['since_id']
     else:
         params['start_time'] = window['start_time']
+        params['end_time'] = window['end_time']
     if window.get('pagination_token'):
         params['next_token'] = window['pagination_token']
     return request_x('https://api.x.com/2/tweets/search/recent', params, config)
