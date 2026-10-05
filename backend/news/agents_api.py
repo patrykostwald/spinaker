@@ -30,7 +30,11 @@ def daily_schedule(request):
 def agent_map(request):
     from news.agent_registry import snapshot
     from news.admin_status import local_times
-    reports = list(AgentNote.objects.filter(kind='report').order_by('-created_at', '-pk').values(*FIELDS)[:5])
+    # Bez szumu: plan dnia Dyrygenta i 20 notatek Czytelnika testowego zakrywały resztę; najpierw nieprzeczytane, potem najnowsze.
+    rows = list(AgentNote.objects.filter(kind='report').exclude(agent='dyrygent')
+                .exclude(pk__in=AgentNote.objects.filter(scores__reader='plain').values('pk'))
+                .order_by('-created_at', '-pk').values(*FIELDS)[:40])
+    reports = sorted(rows, key=lambda r: r['status'] != 'new')[:8]
     return Response(local_times({'results': snapshot(), 'reports': reports, 'agents': list(AGENTS)}))
 
 

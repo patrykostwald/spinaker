@@ -132,6 +132,9 @@ def repair(note, force=False):
     existing = open_note('naprawiacz', loop, key)
     if existing:  # ten sam błąd ma już otwartą propozycję naprawy - bez wywołania modelu i bez nowego wpisu
         return existing
+    alerts = note.scores.get('alerts', [])
+    if alerts and all(a.get('human') for a in alerts):
+        return None  # zator na decyzji właściciela: widać go w alarmie i w Raporcie pętli, model nic tu nie naprawi
     data = {**_loop_context(loop), 'alerts': note.scores.get('alerts', [])}
     used = {}
     summary, fixes, reason = _ask(ROLE_PROMPT['naprawiacz'], data, FIXES, force, 'fixes', used)
@@ -204,7 +207,7 @@ def step(force=False):
     """Co godzinę: alarmy dla wszystkich pętli; naprawy do nowych alarmów; raz dziennie usprawnienia kolejnych pętli;
     raz w tygodniu bezpieczeństwo każdej pętli (po jednej na uruchomienie). Jedna awaria nie zatrzymuje reszty."""
     out = {}
-    for name, run in (('alarmy', alarms), ('naprawy', lambda: [repair(n, force) for n in alarms_without_repair()]),
+    for name, run in (('alarmy', alarms), ('naprawy', lambda: [r for r in (repair(n, force) for n in alarms_without_repair()) if r]),
                       ('usprawnienia', lambda: improve(force)), ('bezpieczeństwo', lambda: security(force))):
         try:
             out[name] = len(run())

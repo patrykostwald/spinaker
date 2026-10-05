@@ -317,7 +317,7 @@ def test_map_staff_only_and_reports(django_user_model):
     response = client.get('/api/staff/agents/map/')
     assert response.status_code == 200
     assert 'no-store' in response['Cache-Control']
-    assert len(response.data['reports']) == 5
+    assert len(response.data['reports']) == 6  # do 8 najistotniejszych (audyt pętli 5.10)
     assert response.data['reports'][0]['title'] == 'Raport 5'
     rows = response.data['results']
     assert next(r for r in rows if r['name'] == 'Seba')['schedule'] == 'co godzinę, minuta: 30'

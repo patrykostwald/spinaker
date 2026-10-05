@@ -112,4 +112,4 @@ def test_duty_run_opens_warnings_and_report_marks_loop(monkeypatch):
     assert alarm.status == 'open' and alarm.severity == 'warning' and alarm.rule == 'check_unused_outputs'
     report = raport_petli.build(NOW)
     technolog = next(l for c in report['categories'] for l in c['loops'] if l['key'] == 'technolog')
-    assert 'technolog: 11 wpisów czeka ponad 7 dni' in technolog['reason'] and technolog['state'] in ('warn', 'bad')
+    assert 'Technolog: 11 wpisów czeka ponad 7 dni' in technolog['reason'] and technolog['state'] in ('warn', 'bad')

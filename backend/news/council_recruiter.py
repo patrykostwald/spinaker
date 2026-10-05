@@ -69,10 +69,11 @@ def _owner_email() -> str:
                  if os.environ.get(name, '').strip()), '')
 
 
-def _notify(subject: str, body: str) -> bool:
+def _notify(subject: str, body: str, sender: str = 'Rekruter Konsylium') -> bool:
+    """Mail do właściciela; sender to nazwa agenta w temacie („spin.clinic · Strateg: ...”), domyślnie Rekruter."""
     from news.social_publish import _mail
     try:
-        return _mail(_owner_email(), f'spin.clinic · Rekruter Konsylium: {subject}', body)
+        return _mail(_owner_email(), f'spin.clinic · {sender}: {subject}', body)
     except Exception as error:  # poczta nie może zatrzymać Rekrutera
         logger.warning('recruiter mail: %s', error)
         return False

@@ -33,7 +33,7 @@ LOOPS = [
     ('spin.clinic', 'Konsylium', 'co noc i co tydzień', [('Pielgrzym', 'pilgrim', 0), ('Ekspert AI', 'ekspert-ai', 0),
         ('Rekruter', 'recruiter', 0), ('Audytor', 'auditor', 1), ('Mechanik', 'mechanik', 0), ('Karta Konsylium', 'council', 1)]),
     ('spin.clinic', 'Rozwój serwisu', 'w wolnym oknie modeli', [('Strateg', 'strateg', 0), ('Pielgrzym', 'pilgrim', 0),
-        ('Seba', 'seba', 1), ('Właściciel', None, 1), ('Claude i Codex', None, 0), ('Projektant', 'projektant', 1), ('Recenzent', 'recenzent', 1)]),
+        ('Seba', 'seba', 1), ('Właściciel', 'owner-decisions', 1), ('Claude i Codex', None, 0), ('Projektant', 'projektant', 1), ('Recenzent', 'recenzent', 1)]),
     ('spin.clinic', 'Niezawodność', 'co 5 min', [('Dyżurny', 'duty', 1), ('Naprawiacz', 'repairer', 0), ('Mechanik', 'mechanik', 0),
         ('Kontrola dostępności', 'schedule-health', 1)]),
     ('spin.clinic', 'Konta polityków', 'codziennie', [('Strażnik kont', 'warden', 1), ('Drugi klucz', 'second-key', 1), ('Agent KRS', 'krs', 0)]),
@@ -42,10 +42,10 @@ LOOPS = [
         ('Automatyk, Projektant, Pracownia: czytają', 'automatyk', 0), ('Uśpienie martwych źródeł', 'badacz', 1)]),
     ('oba portale', 'Design', 'każda zmiana i co tydzień', [('Projektant: wiedza i przewodnik', 'projektant', 0), ('Claude: projekt', None, 0),
         ('Panel designu: UX, laik, dostępność', None, 1), ('Claude: poprawki i pomiar', None, 0), ('Projektant: przegląd stron', 'projektant', 1),
-        ('Recenzent: teksty', 'recenzent', 1), ('Właściciel: odbiór', None, 1)]),
+        ('Recenzent: teksty', 'recenzent', 1), ('Właściciel: odbiór', 'owner-decisions', 1)]),
     ('przeszłość.today', 'Pracownia OSINT', 'co tydzień', [('Kartograf, Zwiadowca, Wynalazca, Technolog', 'pracownia-osint', 0),
         ('Prawnik', 'pracownia-osint', 1), ('Architekt', 'pracownia-osint', 0), ('Claude i Codex', None, 0), ('Recenzent', 'recenzent', 1),
-        ('Projektant', 'projektant', 1), ('Dziennikarz testowy i Kontroler', 'pracownia-osint', 1), ('Właściciel: wdrożenie', None, 1)]),
+        ('Projektant', 'projektant', 1), ('Dziennikarz testowy i Kontroler', 'pracownia-osint', 1), ('Właściciel: wdrożenie', 'owner-decisions', 1)]),
     ('przeszłość.today', 'Tematy dnia', 'codziennie 5:10', [('Zbieracze Sejmu i X', 'political_poll_task', 0),
         ('Tematy dnia', 'przeszlosc-topics', 0), ('Dziennikarz testowy', 'pracownia-osint', 1)]),
     ('przeszłość.today', 'Dane', 'codziennie', [('Zbieracz Sejmu i ELI', 'import_official_task', 0), ('Agent KRS', 'krs', 0),
@@ -139,7 +139,23 @@ def health():
     for row in snapshot():
         identity = row['id'].rsplit(':', 1)[0]
         rows.setdefault(identity, row)
+    rows[OWNER] = owner_row()
     return rows
+
+
+OWNER = 'owner-decisions'
+
+
+def owner_row(now=None):
+    """Krok „Właściciel” jako puls (audyt 5.10, P6): ostatnia decyzja w panelu; „warn”, gdy propozycje czekają ponad SLA."""
+    from news.raport_petli import owner_decisions
+    now = now or timezone.now()
+    data = owner_decisions(now)
+    late = data['waiting'] > 0
+    summary = (f"{data['waiting']} propozycji czeka na decyzję ponad {data['sla_days']} dni" if late
+               else 'Brak propozycji czekających ponad termin.')
+    return {'id': OWNER + ':panel', 'enabled': True, 'result': 'warn' if late else 'ok', 'schedule': 'decyzje w panelu',
+            'summary': summary, 'last_run': data['last_decision'] or (data['oldest'] if late else None)}
 
 
 def loops_state(rows=None):
@@ -149,7 +165,7 @@ def loops_state(rows=None):
         items = []
         for label, ident, guard in steps:
             row = rows.get(ident) if ident else None
-            state = {'step': label, 'guard': bool(guard), 'human': ident is None}
+            state = {'step': label, 'guard': bool(guard), 'human': ident is None or ident == OWNER}
             if row:
                 last = row.get('last_run')
                 state.update(enabled=row['enabled'], result=row['result'], schedule=row['schedule'], summary=str(row.get('summary', ''))[:160],

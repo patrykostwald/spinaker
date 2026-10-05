@@ -52,7 +52,7 @@ def test_contracts_cover_every_note_producer_and_are_complete():
     for c in raport_petli.CONTRACTS:
         assert c['consumer'] in raport_petli.CONSUMERS, c['key']
         assert c['category'] in categories and c['cadence_h'] > 0 and c['sla_days'] > 0
-        assert c['registry'] in agent_registry.REGISTRY, c['key']
+        assert c['registry'] in agent_registry.REGISTRY or (not c['registry'] and not c['beats']), c['key']  # krok człowieka bez zadania
         assert all(b in app.conf.beat_schedule for b in c['beats']), c['key']
     assert len(raport_petli.BY_KEY) == len(raport_petli.CONTRACTS)
 

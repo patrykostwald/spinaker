@@ -37,6 +37,8 @@ class InstitutionalReport(models.Model):
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                     on_delete=models.SET_NULL, related_name='+')
     approved_at = models.DateTimeField(null=True, blank=True)
+    # Od kiedy raport czeka na zgodę właściciela (audyt pętli 5.10: czekające ponad 24 h = bezpiecznik i stan „warn”)
+    awaiting_since = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField('utworzono', default=timezone.now)
 
     class Meta:

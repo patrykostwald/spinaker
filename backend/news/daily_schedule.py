@@ -252,6 +252,12 @@ def check_institutional_reports(now):
         return result('na', 'Przygotowanie raportów jest wyłączone.')
     pending = InstitutionalReport.objects.filter(status__in=['queued', 'working'])
     if not pending.exists():
+        # Raport gotowy, ale bez zgody właściciela, to nie „zrobione” (audyt pętli 5.10): po 24 h - spóźnione.
+        awaiting = InstitutionalReport.objects.filter(status='awaiting_approval')
+        if awaiting.exists():
+            late = awaiting.filter(awaiting_since__lt=now - timedelta(hours=24)).count()
+            detail = f'{awaiting.count()} raport(y) czeka na Twoją zgodę' + (f', {late} ponad 24 h' if late else '') + '.'
+            return result('late' if late else 'waiting', detail)
         return result('done', 'Brak raportów oczekujących na recenzję.', now)
     if ReportDailyBudget.objects.filter(day=now.date(), calls__gte=settings.REPORTS_DAILY_CALLS).exists():
         return result('budget', 'Dzienny limit raportów wykorzystany. Ciąg dalszy w kolejnym oknie.')

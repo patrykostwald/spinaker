@@ -19,13 +19,17 @@ CATEGORIES = (('tresc', 'Treść dnia'), ('agenci', 'Agenci rozwoju'), ('przeszl
 CONSUMERS = {'owner:panel': 'właściciel w panelu', 'owner:mail': 'właściciel mailem', 'public': 'czytelnicy',
              'claude:sprint': 'Claude i Codex (sprint)', 'agent:prawnik': 'Prawnik', 'agent:architekt': 'Architekt',
              'agent:recruiter': 'Rekruter', 'agent:all': 'wszyscy agenci', 'agent:council': 'Konsylium'}
+PENDING_TEXT = {'reports': '{n} raport(y) czeka na zgodę ponad 24 h', 'proposals': '{n} propozycji czeka na decyzję ponad {sla} dni',
+                'tickets': '{n} bilet(y) po terminie'}
+PLAIN_READER = {'scores__reader': 'plain'}  # raporty Czytelnika testowego zapisywane jako strateg/report
 
 
 def contract(key, label, category, cadence_h, consumer, sla_days=7, agents=(), kinds=None, beats=(), registry='', counter='',
-             role=None, title=''):
+             role=None, title='', match=None, exclude=None, pending=''):
     # label najwyżej 14 znaków (podpis pod kołem zębatym w panelu), pełna nazwa w title
     return dict(key=key, label=label, title=title or label, category=category, cadence_h=cadence_h, consumer=consumer, sla_days=sla_days,
-                agents=tuple(agents), kinds=kinds, beats=tuple(beats), registry=registry, counter=counter, role=role)
+                agents=tuple(agents), kinds=kinds, beats=tuple(beats), registry=registry, counter=counter, role=role,
+                match=match or {}, exclude=exclude or {}, pending=pending)
 
 
 # Rytm (cadence_h) to oczekiwany odstęp między WYNIKAMI pętli (nie między uruchomieniami zadania).
@@ -36,13 +40,22 @@ CONTRACTS = (
     contract('wywiad', 'Wywiad dnia', 'tresc', 24, 'public', 1, beats=('clinic-interview-10m',), registry='interviews', counter='interviews'),
     contract('spinki', 'Spinki', 'tresc', 24, 'public', 1, beats=('dr-spin-thread-daily', 'thread-reviews-20m'),
              registry='spin-thread', counter='threads', title='Spinki Dr. Spina'),
+    contract('raporty', 'Raporty', 'tresc', 24, 'owner:panel', 1, beats=('institutional-reports-night',), registry='raportysta',
+             pending='reports', title='Raporty dla instytucji'),
+    contract('czytelnik', 'Czytelnik', 'tresc', 168, 'owner:panel', 14, agents=('strateg',), match=PLAIN_READER, beats=('plain-reader-weekly',),
+             registry='plain-reader', title='Czytelnik testowy'),
     contract('recenzent', 'Recenzent', 'tresc', 24, 'owner:panel', 7, agents=('recenzent',), beats=('recenzent-2h',), registry='recenzent'),
     # Agenci rozwoju spin.clinic
-    contract('strateg', 'Strateg', 'agenci', 24, 'owner:panel', 7, agents=('strateg',), beats=('agents-window-hourly',), registry='strateg'),
+    contract('strateg', 'Strateg', 'agenci', 24, 'owner:panel', 7, agents=('strateg',), exclude=PLAIN_READER, beats=('agents-window-hourly',),
+             registry='strateg'),
     contract('pielgrzym', 'Pielgrzym', 'agenci', 48, 'owner:panel', 7, agents=('pielgrzym',), beats=('agents-window-hourly',), registry='pilgrim'),
     contract('projektant', 'Projektant', 'agenci', 168, 'owner:panel', 7, agents=('projektant',), beats=('projektant-daily',),
              registry='projektant', title='Projektant UX/UI'),
     contract('automatyk', 'Automatyk', 'agenci', 24, 'owner:panel', 7, agents=('automatyk',), beats=('automatyk-daily',), registry='automatyk'),
+    contract('decyzje', 'Decyzje', 'agenci', 72, 'claude:sprint', 7, counter='decisions', pending='proposals',
+             title='Decyzje właściciela (pomysły i bilety)'),
+    contract('sprint', 'Sprint', 'agenci', 168, 'claude:sprint', 7, beats=('sprint-intake',), registry='sprint', counter='tickets',
+             pending='tickets', title='Sprint tygodnia (bilety budowy)'),
     contract('seba', 'Seba', 'agenci', 24, 'owner:panel', 2, beats=('seba-hourly',), registry='seba', counter='seba', title='Seba - krytyk propozycji'),
     # przeszłość.today - Pracownia OSINT
     contract('kartograf', 'Kartograf', 'przeszlosc', 168, 'agent:prawnik', 7, agents=('kartograf',), beats=('pracownia-osint',),
@@ -105,7 +118,55 @@ def _notes(c):
         rows = rows.filter(kind__in=c['kinds'])
     if c['role']:
         rows = rows.filter(scores__role=c['role'])
+    if c['match']:
+        rows = rows.filter(**c['match'])
+    if c['exclude']:
+        rows = rows.exclude(pk__in=AgentNote.objects.filter(**c['exclude']).values('pk'))
     return rows
+
+
+def owner_decisions(now=None):
+    """Krok „Właściciel” (audyt 5.10, P6): ostatnia decyzja w panelu (notatki agentów i bilety sprintu) oraz pomysły
+    i bilety, które czekają na decyzję dłużej niż SLA. Puls dla automatyk.LOOPS i dla pętli „Decyzje”."""
+    from django.db.models import Max
+    from news.agent_models import AgentNote, BuildTicket
+    now = now or timezone.now()
+    sla = timedelta(days=BY_KEY['decyzje']['sla_days'])
+    last = [AgentNote.objects.aggregate(at=Max('decided_at'))['at'], BuildTicket.objects.aggregate(at=Max('decided_at'))['at']]
+    waiting = AgentNote.objects.filter(kind__in=('idea', 'experiment', 'request'), status__in=OPEN, created_at__lt=now - sla)
+    proposed = BuildTicket.objects.filter(status='proposed', created_at__lt=now - sla)
+    oldest = min([d for d in (waiting.order_by('created_at').values_list('created_at', flat=True).first(),
+                              proposed.order_by('created_at').values_list('created_at', flat=True).first()) if d], default=None)
+    return {'last_decision': max([d for d in last if d], default=None), 'waiting': waiting.count() + proposed.count(),
+            'oldest': oldest, 'sla_days': sla.days}
+
+
+def tickets(now=None):
+    """Bilety Sprintu tygodnia: otwarte, zatwierdzone i po terminie (zatwierdzone albo w budowie po due_date)."""
+    from news.agent_models import BuildTicket
+    now = now or timezone.now()
+    today = now.astimezone(WARSAW).date()
+    rows = BuildTicket.objects.filter(status__in=BuildTicket.OPEN)
+    building = rows.filter(status__in=('approved', 'in_progress'))
+    overdue = building.filter(due_date__lt=today)
+
+    def pack(qs):
+        return [{'id': t.pk, 'title': t.title, 'status': t.status, 'executor': t.executor,
+                 'due': t.due_date.isoformat() if t.due_date else None} for t in qs.order_by('due_date', '-rank')[:10]]
+    return {'open': rows.count(), 'proposed': rows.filter(status='proposed').count(), 'approved': building.count(),
+            'overdue': overdue.count(), 'overdue_list': pack(overdue), 'approved_list': pack(building)}
+
+
+def _pending(c, now):
+    """Wyniki czekające na odbiorcę dłużej niż SLA w pętlach bez notatek agentów."""
+    if c['pending'] == 'reports':
+        from news.report_models import InstitutionalReport
+        return InstitutionalReport.objects.filter(status='awaiting_approval', awaiting_since__lt=now - timedelta(hours=24)).count()
+    if c['pending'] == 'proposals':
+        return owner_decisions(now)['waiting']
+    if c['pending'] == 'tickets':
+        return tickets(now)['overdue']
+    return 0
 
 
 def _counter(c, since):
@@ -127,6 +188,13 @@ def _counter(c, since):
     elif name == 'posts':
         from news.political_models import PoliticalPost
         rows, field = PoliticalPost.objects.all(), 'fetched_at'
+    elif name == 'decisions':
+        from news.agent_models import AgentNote, BuildTicket
+        count = AgentNote.objects.filter(decided_at__gte=since).count() + BuildTicket.objects.filter(decided_at__gte=since).count()
+        return count, owner_decisions()['last_decision']
+    elif name == 'tickets':
+        from news.agent_models import BuildTicket
+        rows, field = BuildTicket.objects.all(), 'created_at'
     elif name == 'seba':
         from news.agent_models import SebaReview
         rows, field = SebaReview.objects.exclude(status='queued'), 'due_at'
@@ -160,6 +228,8 @@ def loop_state(c, now):
     else:
         out_24 = out_7 = None
         last_output = max([_stamp(p.get('last_output_at')) for p in pulses if p.get('last_output_at')], default=None)
+    if c['pending'] and not c['agents']:
+        pending = _pending(c, now)
     pulse_output = max([_stamp(p.get('last_output_at')) for p in pulses if p.get('last_output_at')], default=None)
     if pulse_output and (not last_output or pulse_output > last_output):
         last_output = pulse_output
@@ -179,7 +249,7 @@ def loop_state(c, now):
             state = 'bad'
         else:
             if pending:
-                reasons.append(f"{pending} czeka dłużej niż {c['sla_days']} dni")
+                reasons.append(PENDING_TEXT.get(c['pending'], '{n} czeka dłużej niż {sla} dni').format(n=pending, sla=c['sla_days']))
             if waiting_only and not out_24:
                 reasons.append('tylko „czeka na okno”, bez wyniku')
             if reasons:
@@ -206,7 +276,7 @@ def build(now=None):
     categories = [{'key': key, 'label': label, 'loops': [l for l in loops if l['category'] == key]} for key, label in CATEGORIES]
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
-            'categories': categories, 'top': top}
+            'categories': categories, 'top': top, 'sprint': tickets(now)}
 
 
 def _apply_fuses(loops, now):
@@ -250,6 +320,14 @@ def text(report):
             extra = f", czeka ponad SLA: {l['pending']}" if l['pending'] else ''
             lines.append(f"[{marks[l['state']]}] {l['title']} - {ran}, {made}{extra}; odbiorca: {l['consumer']}")
         lines.append('')
+    sprint = report.get('sprint') or {}
+    lines.append('== Sprint tygodnia ==')
+    lines.append(f"Otwarte bilety: {sprint.get('open', 0)} (czeka na decyzję: {sprint.get('proposed', 0)}, "
+                 f"zatwierdzone: {sprint.get('approved', 0)}, po terminie: {sprint.get('overdue', 0)})")
+    lines += [f"- PO TERMINIE #{t['id']} {clean(t['title'])} (termin {t['due']}, {t['executor']})" for t in sprint.get('overdue_list', [])]
+    lines += [f"- #{t['id']} {clean(t['title'])} (termin {t['due']}, {t['executor']})" for t in sprint.get('approved_list', [])
+              if t not in sprint.get('overdue_list', [])]
+    lines.append('')
     lines.append('== Najlepsze nowe pomysły i ustalenia (7 dni) ==')
     lines += [f"- {t['score']}/100 · {t['agent']}: {clean(t['title'])}" for t in report['top']] or ['Brak nowych.']
     lines += ['', 'Panel: https://spin.clinic/panel · Szczegóły: python manage.py raport_petli']

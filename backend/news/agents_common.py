@@ -111,14 +111,21 @@ def ask(member, prompt, data, schema, force=False):
         registry.reservation_guard.reset(token)
 
 
+# Nazwa agenta w temacie maila: „spin.clinic · Architekt: ...” (audyt 5.10: wcześniej każdy mail był „Rekruter Konsylium”)
+AGENT_NAMES = {'strateg': 'Strateg', 'pielgrzym': 'Pielgrzym', 'ekspert': 'Ekspert AI', 'recenzent': 'Recenzent',
+               'projektant': 'Projektant UX/UI', 'kartograf': 'Kartograf', 'zwiadowca': 'Zwiadowca', 'prawnik': 'Prawnik',
+               'dziennikarz': 'Dziennikarz testowy', 'kontroler': 'Kontroler danych', 'architekt': 'Architekt',
+               'wynalazca': 'Wynalazca', 'technolog': 'Technolog', 'automatyk': 'Automatyk', 'opiekun': 'Opiekun pętli',
+               'dyrygent': 'Dyrygent'}
+
+
 def notify(note):
     from news.seba import can_show
     if not can_show(note):
         return False
     from news.council_recruiter import _notify
-    return _notify(f'{note.agent.capitalize()} — {note.title}',
-                   f'{note.body}\n\nOcena: {note.score}/100\nKoszt USD: {note.cost_usd or 0}\n'
-                   f'Źródła: {json.dumps(note.sources, ensure_ascii=False)}\nPanel: https://spin.clinic/panel')
+    return _notify(note.title, f'{note.body}\n\nOcena: {note.score}/100\nKoszt USD: {note.cost_usd or 0}\n'
+                   f'Źródła: {json.dumps(note.sources, ensure_ascii=False)}\nPanel: https://spin.clinic/panel', sender=AGENT_NAMES.get(note.agent, note.agent.capitalize()))
 
 
 def proposal(agent, track, signal, force=False):

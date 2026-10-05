@@ -321,6 +321,7 @@ def _step(report):
                         report.pdf, report.csv, report.method = render(report.snapshot, report.draft)
                         report.artifact_hash = artifact_fingerprint(report)
                         report.status = 'awaiting_approval'
+                        report.awaiting_since = timezone.now()
                     except (ValueError, OSError, KeyError) as error:
                         report.status = 'rejected'
                         report.objections = [f'Nie udało się przygotować kompletu plików: {type(error).__name__}.']

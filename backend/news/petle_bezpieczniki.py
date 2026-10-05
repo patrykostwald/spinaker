@@ -47,16 +47,17 @@ def unused_outputs(now):
     """(a) Wyniki bez odbiorcy: stos starych wpisów agenta i zielony puls bez wyniku."""
     from django.db.models import Count, Min
     from news import raport_petli
-    from news.agent_models import AgentNote
     days, limit = _int('LOOP_UNUSED_DAYS', 7), _int('LOOP_UNUSED_MAX', 10)
     out = []
-    rows = (AgentNote.objects.filter(status__in=raport_petli.OPEN, created_at__lt=now - timedelta(days=days))
-            .values('agent').annotate(n=Count('pk'), oldest=Min('created_at')))
-    for row in rows:
+    for c in raport_petli.CONTRACTS:  # per pętla, nie per agent: raporty Czytelnika testowego to nie zator Stratega
+        if not c['agents']:
+            continue
+        row = (raport_petli._notes(c).filter(status__in=raport_petli.OPEN, created_at__lt=now - timedelta(days=days))
+               .aggregate(n=Count('pk'), oldest=Min('created_at')))
         if row['n'] > limit:
-            out.append(fuse(_loop_for(row['agent']), f"unused:{row['agent']}", 'bad' if row['n'] > 3 * limit else 'warn',
-                            f"{row['agent']}: {row['n']} wpisów czeka ponad {days} dni",
-                            {'agent': row['agent'], 'waiting': row['n'], 'days': days}, row['oldest'],
+            out.append(fuse(c['key'], f"unused:{c['key']}", 'bad' if row['n'] > 3 * limit else 'warn',
+                            f"{c['label']}: {row['n']} wpisów czeka ponad {days} dni",
+                            {'loop': c['key'], 'waiting': row['n'], 'days': days}, row['oldest'],
                             'Przejrzyj wpisy agenta w panelu (Przeczytane / Odrzucam) albo zmień odbiorcę pętli.'))
     for c in _active():
         if not (c['agents'] or c['counter']):
@@ -145,8 +146,35 @@ def consumers(now):
     return out
 
 
+def deadlines(now):
+    """(e) Terminy: raporty dla instytucji czekające na zgodę ponad 24 h, bilety sprintu po terminie,
+    pomysły i bilety bez decyzji właściciela dłużej niż SLA."""
+    from news import raport_petli
+    from news.report_models import InstitutionalReport
+    out = []
+    reports = InstitutionalReport.objects.filter(status='awaiting_approval', awaiting_since__lt=now - timedelta(hours=24))
+    if reports.exists():
+        oldest = reports.order_by('awaiting_since').values_list('awaiting_since', flat=True).first()
+        out.append(fuse('raporty', 'reports-awaiting', 'warn', f'Raporty: {reports.count()} czeka na Twoją zgodę ponad 24 h',
+                        {'reports': list(reports.values_list('pk', flat=True)[:10])}, oldest,
+                        'Zatwierdź albo odrzuć raporty w panelu (Raportysta: raporty do zatwierdzenia).'))
+    sprint = raport_petli.tickets(now)
+    if sprint['overdue']:
+        first = sprint['overdue_list'][0]
+        out.append(fuse('sprint', 'tickets-overdue', 'bad', f"Sprint: {sprint['overdue']} bilet(y) po terminie",
+                        {'tickets': [t['id'] for t in sprint['overdue_list']]}, now,
+                        f"Zbuduj albo przesuń bilet #{first['id']} ({first['title'][:80]}); zamknięcie: manage.py sprint_zlecenia."))
+    owner = raport_petli.owner_decisions(now)
+    if owner['waiting']:
+        out.append(fuse('decyzje', 'owner-decisions', 'warn',
+                        f"Decyzje: {owner['waiting']} propozycji czeka ponad {owner['sla_days']} dni",
+                        {'waiting': owner['waiting'], 'last_decision': owner['last_decision'].isoformat() if owner['last_decision'] else None},
+                        owner['oldest'] or now, 'Rozstrzygnij pomysły i bilety w panelu (Biorę / Odrzucam, Buduj / Nie teraz).'))
+    return out
+
+
 RULES = (('check_unused_outputs', unused_outputs), ('check_silent_loops', silent_loops),
-         ('check_quality', quality), ('check_consumers', consumers))
+         ('check_quality', quality), ('check_consumers', consumers), ('check_deadlines', deadlines))
 
 
 def fuses(now=None):
@@ -185,4 +213,8 @@ def check_consumers(ctx):
     return _alarms(consumers, ctx)
 
 
-CHECKS = (check_unused_outputs, check_silent_loops, check_quality, check_consumers)
+def check_deadlines(ctx):
+    return _alarms(deadlines, ctx)
+
+
+CHECKS = (check_unused_outputs, check_silent_loops, check_quality, check_consumers, check_deadlines)

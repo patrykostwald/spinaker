@@ -8,7 +8,7 @@ pytestmark = pytest.mark.django_db
 
 def test_loops_reference_real_agents():
     from news.agent_registry import REGISTRY
-    assert not {i for _, _, _, steps in automatyk.LOOPS for _, i, _ in steps if i and i not in REGISTRY}
+    assert not {i for _, _, _, steps in automatyk.LOOPS for _, i, _ in steps if i and i not in REGISTRY and i != automatyk.OWNER}
     assert all(any(g for _, _, g in steps) for _, _, _, steps in automatyk.LOOPS)
 
 
