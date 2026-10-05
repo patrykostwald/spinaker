@@ -1,5 +1,6 @@
 """Opt-in official X polling with shared pre-request budget reservations."""
 from datetime import datetime, timedelta, timezone as dt_timezone
+import logging
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 import json
@@ -24,6 +25,8 @@ POST_FIELDS = ('id,text,author_id,created_at,entities,attachments,note_post,publ
 MEDIA_FIELDS = 'media_key,type,url,preview_image_url,alt_text,variants,duration_ms'
 MAX_RESPONSE_BYTES = 1_000_000
 NUMERIC_ID = re.compile(r'^[1-9][0-9]{0,18}$')
+
+logger = logging.getLogger(__name__)
 
 
 class PoliticalReadError(Exception):
@@ -403,6 +406,35 @@ def poll_page(config, account_id, group=None, interval=None):
         return {'status': 'error', 'reason': code, 'new_posts': 0, 'account_id': account.pk}
 
 
+def release_stale(now=None, minutes=10):
+    """Odczyty, które zarezerwowały limit, ale nigdy się nie zakończyły (proces ubity w trakcie, 5-6.10: 376 takich
+    odczytów zjadło dzienny limit przy zerze pobranych wpisów). Oznaczamy je jako porzucone i oddajemy limit wpisów
+    i budżet z tego samego dnia/miesiąca; przeterminowaną blokadę (lease) zdejmujemy."""
+    now = now or timezone.now()
+    cutoff = now - timedelta(minutes=minutes)
+    with transaction.atomic():
+        state = ImportState.objects.select_for_update().filter(name='political-x-budget').first()
+        stale = list(PoliticalRead.objects.select_for_update().filter(status='reserved', response_body__isnull=True, started_at__lt=cutoff))
+        if not stale and not state:
+            return 0
+        budget = dict(state.cursor) if state else {}
+        for read in stale:
+            if budget.get('day') == read.started_at.astimezone(dt_timezone.utc).date().isoformat():
+                budget['daily_posts'] = max(0, budget.get('daily_posts', 0) - read.reserved_posts)
+            if budget.get('month') == read.started_at.astimezone(dt_timezone.utc).strftime('%Y-%m'):
+                budget['spent_upper_usd'] = str(max(Decimal('0'), Decimal(budget.get('spent_upper_usd', '0')) - read.reserved_usd))
+        if stale:
+            PoliticalRead.objects.filter(pk__in=[r.pk for r in stale]).update(status='abandoned', finished_at=now)
+        if budget.get('lease_until') and budget['lease_until'] < now.isoformat():
+            budget.update(lease=None, lease_until='')
+        if state and (stale or budget != state.cursor):
+            state.cursor = budget
+            state.save(update_fields=['cursor'])
+    if stale:
+        logger.warning('x: released %s stale reservations', len(stale))
+    return len(stale)
+
+
 def political_poll_cycle():
     from news.x_watch import batched_cycle
     try:
@@ -411,6 +443,7 @@ def political_poll_cycle():
         return {'status': 'disabled', 'reason': exc.code, 'new_posts': 0}
     if config is None:
         return {'status': 'disabled', 'reason': 'x_not_configured', 'new_posts': 0}
+    release_stale()
     candidates = list(PoliticalAccount.objects.filter(enabled=True, confirmed_at__isnull=False,
         confirmed_by__is_active=True, confirmed_by__is_staff=True).select_related('confirmed_by'))
     candidates = [a for a in candidates if a.is_confirmed()]

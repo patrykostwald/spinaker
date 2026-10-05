@@ -382,3 +382,18 @@ def test_admin_latency_context_is_staff_only(account, staff, client, rf):
 def test_cost_formula(accounts, posts, usd):
     assert x_watch.monthly_cost(accounts * posts) == Decimal(usd)
     assert x_watch.monthly_cost(accounts * posts, accounts * posts) == Decimal(usd * 3)
+
+
+def test_release_stale_refunds_hanging_reservations(staff):
+    from news.political_polling import release_stale
+    acct = other(staff, 7771)
+    now = timezone.now()
+    ImportState.objects.create(name='political-x-budget', cursor={'day': now.date().isoformat(), 'month': now.strftime('%Y-%m'),
+        'daily_posts': 1210, 'spent_upper_usd': '10', 'lease': 'x', 'lease_until': (now - timedelta(minutes=5)).isoformat()})
+    old = PoliticalRead.objects.create(account=acct, started_at=now - timedelta(minutes=30), reserved_posts=100, reserved_usd=Decimal('0.5'))
+    fresh = PoliticalRead.objects.create(account=acct, started_at=now - timedelta(minutes=1), reserved_posts=100, reserved_usd=Decimal('0.5'))
+    assert release_stale(now) == 1
+    old.refresh_from_db(); fresh.refresh_from_db()
+    assert old.status == 'abandoned' and fresh.status == 'reserved'
+    budget = ImportState.objects.get(name='political-x-budget').cursor
+    assert budget['daily_posts'] == 1110 and Decimal(budget['spent_upper_usd']) == Decimal('9.5') and budget['lease_until'] == ''
