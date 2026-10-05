@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiWrite } from '../lib/api';
+import { SprintCard } from './SprintCard';
 
 type Note = { id: number; kind: string; track: string; title: string; body: string; status: string;
   score: number; cost_usd: string | null; created_at: string; decided_at: string | null;
@@ -246,6 +247,7 @@ export function AgentsPanel() {
     <p><a href="/panel/petle">Pętle: która działa, która stoi (koła zębate) →</a></p>
     <p><a href="/admin/news/institutionalreport/">Raportysta: raporty, recenzje i pliki do zatwierdzenia</a></p>
     <AgentMap />
+    <SprintCard />
     <p>Strateg rozwija serwis. Pielgrzym zbiera propozycje dla Konsylium. Ekspert AI raz w tygodniu pisze stan wiedzy o AI (tylko ze źródłami) i wskazuje Rekruterowi modele do egzaminu. Seba sprawdza pomysły przed Twoją decyzją. Drugi klucz weryfikuje wnioski Strażnika kont.</p>
     <div className="sc-command-toolbar"><div role="group" aria-label="Wybór agenta">
       {[...agents, 'warden'].map(name => <button className="sc-command-filter" type="button" key={name} aria-pressed={agent === name}

@@ -516,6 +516,13 @@ def dyrygent_task():
 
 
 @shared_task
+def sprint_intake_task():
+    """6:00: w poniedziałek Sprint tygodnia (do 8 biletów budowy), w inne dni dopełnienie, gdy otwartych jest mniej niż 3."""
+    from news import sprint
+    return {'status': 'ok', **sprint.intake()}
+
+
+@shared_task
 def badacz_task():
     """Raz dziennie: pętla researchu - nowe źródła dla wszystkich agentów (Badacz, właściciel 5.10)."""
     import os

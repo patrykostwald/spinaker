@@ -58,3 +58,31 @@ class SebaReview(models.Model):
                 models.Q(note__isnull=True, warden__isnull=False)), name='seba_one_subject'),
             models.CheckConstraint(condition=models.Q(rounds__lte=2), name='seba_two_rounds'),
         ]
+
+
+class BuildTicket(models.Model):
+    """Bilet budowy ze Sprintu tygodnia (news/sprint.py): przyjęty pomysł agenta z terminem; nic nie leży bez końca."""
+    STATUSES = ('proposed', 'approved', 'in_progress', 'done', 'dropped')
+    OPEN = ('proposed', 'approved', 'in_progress')
+    note = models.ForeignKey(AgentNote, null=True, blank=True, on_delete=models.SET_NULL, related_name='build_tickets')
+    title = models.CharField(max_length=240)
+    rank = models.FloatField(default=0)
+    brief = models.TextField(blank=True)
+    acceptance = models.JSONField(default=list, blank=True)
+    effort = models.CharField(max_length=1, default='M', choices=[(v, v) for v in ('S', 'M', 'L')])
+    executor = models.CharField(max_length=6, default='claude', choices=[(v, v) for v in ('claude', 'codex')])
+    status = models.CharField(max_length=12, default='proposed', db_index=True, choices=[(v, v) for v in STATUSES])
+    commit = models.CharField(max_length=64, blank=True)
+    due_date = models.DateField(null=True, blank=True)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    decided_at = models.DateTimeField(null=True, blank=True)
+    done_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-rank', '-pk']
+        verbose_name = 'bilet sprintu'
+        verbose_name_plural = 'Sprint tygodnia: bilety budowy'
+
+    def __str__(self):
+        return f'#{self.pk} [{self.status}] {self.title}'

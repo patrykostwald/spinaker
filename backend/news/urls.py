@@ -8,6 +8,7 @@ from news.clinic_api import clinic_council, clinic_corrections
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import agents_api
+from news import sprint_api
 from news import warden_api
 from news import newsletter
 from news import polls
@@ -63,6 +64,8 @@ urlpatterns = [
     path('staff/warden-reviews/', warden_api.reviews),
     path('staff/warden-reviews/<int:review_id>/decision/', warden_api.decide),
     path('staff/agents/<int:note_id>/decision/', agents_api.decide),
+    path('staff/sprint/', sprint_api.tickets),
+    path('staff/sprint/<int:ticket_id>/decision/', sprint_api.decide),
     path('push/subscriptions/', SubscriptionsView.as_view()),
     path('admin/status/', admin_status),
     path('admin/wallets/', admin_wallets),

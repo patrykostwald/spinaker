@@ -529,3 +529,28 @@ class ClientNoteAdmin(admin.ModelAdmin):
     search_fields = ('text', 'anchor', 'name')
     readonly_fields = ('created_at', 'project', 'page', 'x', 'y', 'anchor', 'text', 'name', 'viewport')
     fields = ('status', 'staff_note', *readonly_fields)
+
+
+from news.agent_models import BuildTicket  # noqa: E402
+
+
+@admin.register(BuildTicket)
+class BuildTicketAdmin(admin.ModelAdmin):
+    """Sprint tygodnia: tryb awaryjny, gdy panel Agenci nie działa."""
+    list_display = ('id', 'title', 'status', 'effort', 'executor', 'rank', 'due_date', 'commit')
+    list_filter = ('status', 'effort', 'executor')
+    search_fields = ('title', 'brief')
+    raw_id_fields = ('note', 'decided_by')
+    actions = ('approve', 'drop')
+
+    @admin.action(description='Buduj (zatwierdź)')
+    def approve(self, request, queryset):
+        from news import sprint
+        for ticket in queryset.filter(status='proposed'):
+            sprint.decide(ticket, 'approved', request.user)
+
+    @admin.action(description='Nie teraz (odłóż)')
+    def drop(self, request, queryset):
+        from news import sprint
+        for ticket in queryset.filter(status__in=('proposed', 'approved')):
+            sprint.decide(ticket, 'dropped', request.user)

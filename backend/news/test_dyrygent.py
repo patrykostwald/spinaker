@@ -2,7 +2,7 @@ import pytest
 from django.core.cache import cache
 
 from news import agents_common, dyrygent
-from news.agent_models import AgentNote
+from news.agent_models import AgentNote, BuildTicket
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +33,8 @@ def test_plan_lists_collisions_and_queue(monkeypatch):
     monkeypatch.setattr(dyrygent, 'capacity', lambda: .8)
     monkeypatch.setattr('news.daily_schedule.BEAT_PLAN', {'a': ('automatyk_task', {'hour': 6, 'minute': 30}),
                                                           'b': ('badacz_task', {'hour': 6, 'minute': 35})})
-    AgentNote.objects.create(agent='architekt', kind='idea', title='Profil osoby', body='', score=90, scores={'effort': 'M'})
+    source = AgentNote.objects.create(agent='architekt', kind='idea', title='Profil osoby', body='', score=90, scores={'effort': 'M'})
+    BuildTicket.objects.create(note=source, title='Profil osoby', effort='M', status='approved')
     note = dyrygent.plan(force=True)
     assert note.scores['collisions'] == [{'okno': '06:30', 'zadania': ['automatyk_task', 'badacz_task']}]
     assert note.scores['queue'][0]['title'] == 'Profil osoby' and 'Kolejka budowy' in note.body

@@ -90,18 +90,17 @@ def collisions():
 
 
 def build_queue(limit=10):
-    """Kolejka budowy: przyjęte pomysły agentów (najpierw przyjęte przez właściciela, potem wysoko ocenione nowe)."""
-    from news.agent_models import AgentNote
-    rows = AgentNote.objects.filter(kind='idea', agent__in=['architekt', 'automatyk', 'opiekun', 'strateg']).exclude(
-        status__in=['rejected', 'denied', 'done'])
-    rows = sorted(rows, key=lambda n: (n.status != 'accepted', -n.score, -n.pk))[:limit]
+    """Kolejka budowy = otwarte bilety Sprintu tygodnia (news/sprint.py); bez biletów podgląd najlepszych kandydatów."""
+    from news import sprint
+    from news.agent_models import BuildTicket
     codex = date.today() >= date.fromisoformat(CODEX_BACK)
-    out = []
-    for n in rows:
-        effort = (n.scores or {}).get('effort', 'M')
-        who = 'Codex' if codex and effort in ('S', 'M') else 'Claude'
-        out.append({'id': n.pk, 'title': n.title, 'status': n.status, 'effort': effort, 'who': who})
-    return out, codex
+    who = {'codex': 'Codex', 'claude': 'Claude'}
+    tickets = BuildTicket.objects.filter(status__in=BuildTicket.OPEN)[:limit]
+    if tickets:
+        return [{'id': t.pk, 'title': t.title, 'status': t.status, 'effort': t.effort, 'who': who[t.executor], 'ticket': True}
+                for t in tickets], codex
+    return [{'id': c['note'].pk, 'title': c['title'], 'status': c['note'].status, 'effort': c['effort'],
+             'who': who[sprint.executor(c['effort'])], 'ticket': False} for c in sprint.candidates()[:limit]], codex
 
 
 def plan(force=False):
