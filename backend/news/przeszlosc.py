@@ -199,8 +199,39 @@ def topic_votes(query, limit=8):
                     f'&NrPosiedzenia={v.sitting}&NrGlosowania={v.number}'),
             'clubs': by_club,
             'members': sorted([[b.name, b.club or 'niezrzeszeni', VOTE_GROUP.get(b.vote, 'inne')] for b in ballots], key=lambda m: (m[1], m[0])),
+            'mp_votes': [[b.mp_id, VOTE_GROUP.get(b.vote, 'inne')] for b in ballots],
         })
     return rows
+
+
+def link_votes(data):
+    """Krawędzie osoba → głosowanie (audyt 6.10: bez nich nie ma drzewa). Tylko posłowie z tematu, połączeni z mandatem
+    przez oficjalny identyfikator Sejmu w rejestrze osób (nigdy po nazwisku)."""
+    from news.political_models import PublicFigure
+    ids = [int(n['id'].split(':')[1]) for n in data['nodes'] if n['id'].startswith('figure:')]
+    if not ids or not data.get('votes'):
+        return data
+    mp = {}
+    for f in PublicFigure.objects.filter(pk__in=ids).select_related('parliamentary_roster_entry'):
+        e = f.parliamentary_roster_entry
+        if e and e.source == 'sejm' and str(e.external_id).isdigit() and e.term:
+            mp[(int(e.external_id), e.term)] = f'figure:{f.pk}'
+    if not mp:
+        return data
+    for v in data['votes']:
+        term = int(v['id'].split('/')[0])
+        key = f"vote:{v['id']}"
+        linked = False
+        for mp_id, vote in v.get('mp_votes', []):
+            who = mp.get((mp_id, term))
+            if who:
+                if not linked:
+                    data['nodes'].append({'id': key, 'kind': 'vote', 'label': v['title'][:160], 'date': v['date'], 'url': v['url'], 'links': 0})
+                    linked = True
+                data['edges'].append({'source': who, 'target': key, 'label': f'głosował(a): {vote}'})
+    for v in data['votes']:
+        v.pop('mp_votes', None)
+    return data
 
 
 @api_view(['GET'])
@@ -219,6 +250,7 @@ def topic_view(request):
     if data is None:
         data = topic_graph(query)
         data['votes'] = topic_votes(query)
+        link_votes(data)
         if data['votes']:
             data['counts']['vote'] = len(data['votes'])
         if connection.vendor == 'postgresql':

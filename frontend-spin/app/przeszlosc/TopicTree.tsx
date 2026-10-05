@@ -108,7 +108,7 @@ export function TopicTree() {
 }
 
 
-const KIND_LABEL: Record<string, string> = { record: 'Sejm', statement: 'Wpis', diagnosis: 'Diagnoza Dr. Spina', media: 'Media' };
+const KIND_LABEL: Record<string, string> = { record: 'Sejm', statement: 'Wpis', diagnosis: 'Diagnoza Dr. Spina', media: 'Media', vote: 'Głosowanie' };
 const CAMP_LABEL: Record<string, string> = { government: 'rządzący', opposition: 'opozycja', public: 'instytucja' };
 
 /** Widok tematu (właściciel 5.10): oś czasu jako główna treść, obok kto występuje, pod spodem rozkład źródeł medialnych. */
@@ -415,7 +415,7 @@ function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
 /* Drzewo powiązań (właściciel 6.10: „nie widać drzew powiązań na żadnym elemencie”): trzy kolumny - osoby, ich wpisy,
    dokumenty i artykuły, a z prawej diagnozy i funkcje w KRS; linie pokazują, co z czego wynika. Najechanie podświetla
    całą gałąź, kliknięcie otwiera osobę albo wpis. W panelu osoby to samo drzewo zawężone do niej. */
-const TG_MID = new Set(['statement', 'record', 'media']);
+const TG_MID = new Set(['statement', 'record', 'media', 'vote']);
 function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Graph; byId: Map<string, Node>; focus?: string; compact?: boolean;
   onOpen: (p: { kind: 'person' | 'entry'; id: string } | null) => void }) {
   const wrap = useRef<HTMLDivElement>(null);
@@ -458,6 +458,7 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
   if (!model.persons.length || !model.mid.length) return null;
   const open = (n: Node) => {
     if (n.kind === 'person') onOpen({ kind: 'person', id: n.id });
+    else if (n.kind === 'vote') { if (n.url) window.open(n.url, '_blank', 'noopener'); }
     else if (TG_MID.has(n.kind)) onOpen({ kind: 'entry', id: n.id });
     else if (n.kind === 'diagnosis') { const src = data.edges.find(e => e.target === n.id)?.source; if (src) onOpen({ kind: 'entry', id: src }); }
     else if (n.url) window.open(n.url, '_blank', 'noopener');

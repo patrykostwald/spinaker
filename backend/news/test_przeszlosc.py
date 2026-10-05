@@ -100,3 +100,17 @@ def test_expand_vat_matches_full_name():
     assert 'podatek od towarów i usług' in EXPAND['vat']
     q = str(_match(['title'], ['VAT']))
     assert 'podatku od towarów i usług' in q and 'VAT' in q
+
+
+def test_link_votes_by_official_id(db):
+    """Osoba z tematu łączy się z głosowaniem tylko przez oficjalny identyfikator posła."""
+    from news.przeszlosc import link_votes
+    from news.political_models import ParliamentaryRosterEntry, PublicFigure
+    entry = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='77', full_name='Jan Test', term=10, source_url='https://sejm.gov.pl')
+    f = PublicFigure.objects.create(canonical_name='Jan Test', role_category='parliamentary', role_title='Poseł', evidence_url='https://sejm.gov.pl',
+                                    parliamentary_roster_entry=entry)
+    data = {'nodes': [{'id': f'figure:{f.pk}', 'kind': 'person', 'label': 'Jan Test'}], 'edges': [],
+            'votes': [{'id': '10/5/3', 'title': 'Ustawa o VAT', 'date': '2026-10-01', 'url': 'https://sejm.gov.pl/g', 'mp_votes': [[77, 'za'], [78, 'przeciw']]}]}
+    out = link_votes(data)
+    assert {'source': f'figure:{f.pk}', 'target': 'vote:10/5/3', 'label': 'głosował(a): za'} in out['edges']
+    assert any(n['id'] == 'vote:10/5/3' for n in out['nodes']) and 'mp_votes' not in out['votes'][0]

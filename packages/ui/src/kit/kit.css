@@ -10088,3 +10088,4 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pt__cta { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; } .sc-pt__cta a { font-weight: 700; color: var(--sc-accent); min-height: 44px; display: inline-flex; align-items: center; }
 .sc-pt__cta span { font-size: 13px; color: var(--sc-text-3); }
 @media (max-width: 900px) { .sc-pt__plans { grid-template-columns: repeat(2, minmax(0, 1fr)); } } @media (max-width: 480px) { .sc-pt__plans { grid-template-columns: 1fr; } }
+.sc-tg__col button[data-kind="vote"] { --cc: #3aa676; }
