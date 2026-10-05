@@ -6,7 +6,7 @@ import { SourceDisclosure } from "./SourceDisclosure";
 import Link from "next/link";
 import { ApiError } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { agreementLabel, getSpin, spinVar, type SpinDetailData } from "../../lib/clinic";
+import { agreementLabel, getSpin, searchClinicSpins, spinVar, type SpinDetailData } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { ClinicDiscussion } from "./ClinicDiscussion";
 import { AiTag, FitStickyAside, HowToRead, SpinAuthorRow } from "./SpinParts";
@@ -162,7 +162,8 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
       <AuthorReplies replies={spin.author_replies} />
       <ClinicDiscussion kind="spins" id={spin.id} />
       <aside className="sc-spin-detail__next" aria-label="Co dalej">
-        <Link className="sc-spin-detail__next-main" href="/klinika/diagnozy">Następne diagnozy →</Link>
+        <NextSpins current={spin.id} />
+        <Link className="sc-spin-detail__next-main" href="/klinika/diagnozy">Wszystkie diagnozy →</Link>
         <p>Analizujemy codziennie, bez reklam i bez pieniędzy od partii. <Link href="/wsparcie">Wesprzyj Klinikę</Link></p>
       </aside>
       </div>
@@ -170,6 +171,15 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
   );
 }
 
+
+/** Trzy kolejne diagnozy na końcu strony (runda 2 audytu, Peak-End): czytelnik ma dokąd pójść dalej. */
+function NextSpins({ current }: { current: number }) {
+  const query = useQuery({ queryKey: ["clinic-next", current], queryFn: () => searchClinicSpins({}), staleTime: 60_000 });
+  const rows = (query.data?.results ?? []).filter(row => row.id !== current).slice(0, 3);
+  if (!rows.length) return null;
+  return <ol className="sc-spin-next">{rows.map(row => <li key={row.id}><Link href={`/klinika/${row.id}`} style={spinVar(row.intensity)}>
+    <b>{row.intensity}/100</b><span>{row.headline}</span><small>{row.author?.name}</small></Link></li>)}</ol>;
+}
 
 const VERDICT_SHORT: Record<string, string> = { spin: "spin", partial: "częściowy spin", no_spin: "bez spinu", unclear: "nie da się ocenić" };
 const short = (model: string) => model.split("/").pop() ?? model;

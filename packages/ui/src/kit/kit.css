@@ -10126,3 +10126,11 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 @media (min-width: 1101px) { .sc-spin-detail > .sc-spin-author { display: none; } }
 /* KRS w drzewie to kontekst osoby, nie związek z wpisem: przerywana, szara linia (runda 2, Prawnik) */
 .sc-tg__lines path[data-ctx] { stroke-dasharray: 3 4; stroke: color-mix(in srgb, var(--sc-text) 14%, transparent); }
+/* trzy kolejne diagnozy pod diagnozą (runda 2): kolor siły spinu z lewej, tytuł w 2 liniach, autor przy dolnej krawędzi */
+.sc-spin-detail__next { display: grid !important; grid-template-columns: 1fr; }
+.sc-spin-next { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.sc-spin-next a { display: grid; grid-template-rows: auto 1fr auto; gap: 6px; height: 100%; min-height: 132px; padding: 14px 16px; color: var(--sc-text); text-decoration: none; background: linear-gradient(90deg, color-mix(in srgb, var(--sc-text) 6%, transparent), transparent); }
+.sc-spin-next a:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 16%, transparent), transparent); }
+.sc-spin-next b { font-size: 20px; } .sc-spin-next span { font-size: 14px; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; } .sc-spin-next small { color: var(--sc-text-3); font-size: 12px; }
+@media (max-width: 767px) { .sc-spin-next { grid-template-columns: 1fr; } }
+.sc-spin-next span { max-height: calc(2 * 1.4em); }
