@@ -72,14 +72,15 @@ def test_official_requests_never_expand_profiles(account, config, mode):
     response.__enter__ = Mock(return_value=response)
     response.__exit__ = Mock(return_value=False)
     response.iter_content.return_value = [page([])]
+    recent = str((int(datetime(2026, 10, 2, tzinfo=dt_timezone.utc).timestamp() * 1000) - 1288834974657) << 22)
     window = {'page_size': 10, 'start_time': '2026-10-02T12:00:00Z', 'end_time': '2026-10-03T11:59:50Z',
-        'query': '(from:FixtureOnly) -is:retweet', 'since_id': '100', 'pagination_token': 'NEXT'}
+        'query': '(from:FixtureOnly) -is:retweet', 'since_id': recent, 'pagination_token': 'NEXT'}
     with patch('news.political_polling.requests.get', return_value=response) as get:
         (fetch_x_timeline(account, window, config) if mode == 'timeline' else x_watch.fetch_x_search(window, config))
     params = get.call_args.kwargs['params']
     assert params['expansions'] == 'attachments.media_keys' and 'user.fields' not in params
     assert 'author_id' in params['post.fields'] and 'public_metrics' in params['post.fields']
-    assert 'start_time' not in params and params['since_id'] == '100'
+    assert 'start_time' not in params and params['since_id'] == recent
     assert params['next_token' if mode == 'batched' else 'pagination_token'] == 'NEXT'
     assert get.call_args.kwargs['allow_redirects'] is False
     assert get.call_args.args[0] == ('https://api.x.com/2/tweets/search/recent' if mode == 'batched'
@@ -420,8 +421,19 @@ def test_search_never_mixes_since_id_with_time_window():
         sent.update(params)
         return b'{}'
     with patch('news.x_watch.request_x', side_effect=fake):
-        fetch_x_search({'query': 'from:a', 'page_size': 10, 'since_id': '123', 'start_time': 's', 'end_time': 'e'}, {})
+        recent = str((int(datetime(2026, 10, 2, tzinfo=dt_timezone.utc).timestamp() * 1000) - 1288834974657) << 22)
+        fetch_x_search({'query': 'from:a', 'page_size': 10, 'since_id': recent, 'start_time': 's', 'end_time': 'e'}, {})
         assert 'since_id' in sent and 'end_time' not in sent and 'start_time' not in sent
         sent.clear()
-        fetch_x_search({'query': 'from:a', 'page_size': 10, 'since_id': '', 'start_time': 's', 'end_time': 'e'}, {})
-        assert sent['start_time'] == 's' and sent['end_time'] == 'e' and 'since_id' not in sent
+        fetch_x_search({'query': 'from:a', 'page_size': 10, 'since_id': '', 'start_time': '2026-10-02T00:00:00Z', 'end_time': 'e'}, {})
+        assert sent['start_time'] == '2026-10-02T00:00:00Z' and sent['end_time'] == 'e' and 'since_id' not in sent
+
+
+def test_search_drops_since_id_older_than_seven_days():
+    # 6.10: X odrzucał since_id starszy niż 7 dni (400); wtedy pytamy o okno czasowe od granicy 7 dni
+    from news.x_watch import fetch_x_search
+    sent = {}
+    old_id = str((int(datetime(2026, 9, 20, tzinfo=dt_timezone.utc).timestamp() * 1000) - 1288834974657) << 22)
+    with patch('news.x_watch.request_x', side_effect=lambda u, p, c: sent.update(p) or b'{}'):
+        fetch_x_search({'query': 'from:a', 'page_size': 10, 'since_id': old_id, 'start_time': '2026-09-01T00:00:00Z', 'end_time': '2026-10-03T11:59:00Z'}, {})
+    assert 'since_id' not in sent and sent['end_time'] == '2026-10-03T11:59:00Z' and sent['start_time'] > '2026-09-26'

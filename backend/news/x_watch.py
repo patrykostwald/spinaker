@@ -1,6 +1,6 @@
 """Official recent search: bounded queries, shared checkpoints and local metrics."""
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
 import json
 import logging
@@ -125,10 +125,19 @@ def fetch_x_search(window, config):
         'media.fields': MEDIA_FIELDS}
     # X nie pozwala łączyć since_id z start_time/end_time (6.10: błąd 400 „Invalid use of since_id … with start_time or
     # end_time” zatrzymał zbieranie). Z since_id czytamy wszystko nowsze od ostatniego wpisu; bez niego - okno czasowe.
+    # since_id starszy niż 7 dni X też odrzuca (400 „since_id must be a tweet id created after …”) - wtedy okno czasowe
+    since_ok = False
     if window.get('since_id'):
+        try:
+            made = datetime.fromtimestamp(((int(window['since_id']) >> 22) + 1288834974657) / 1000, tz=dt_timezone.utc)
+            since_ok = made > timezone.now() - timedelta(days=6, hours=23)
+        except (TypeError, ValueError, OverflowError):
+            since_ok = False
+    if since_ok:
         params['since_id'] = window['since_id']
     else:
-        params['start_time'] = window['start_time']
+        floor = utc_text(timezone.now() - timedelta(days=6, hours=23))
+        params['start_time'] = max(window['start_time'], floor)
         params['end_time'] = window['end_time']
     if window.get('pagination_token'):
         params['next_token'] = window['pagination_token']
