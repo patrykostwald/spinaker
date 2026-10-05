@@ -243,6 +243,7 @@ export function AgentsPanel() {
   };
   return <section className="sc-command-agents" aria-labelledby="agents-heading">
     <h2 id="agents-heading">Agenci</h2>
+    <p><a href="/panel/petle">Pętle: która działa, która stoi (koła zębate) →</a></p>
     <p><a href="/admin/news/institutionalreport/">Raportysta: raporty, recenzje i pliki do zatwierdzenia</a></p>
     <AgentMap />
     <p>Strateg rozwija serwis. Pielgrzym zbiera propozycje dla Konsylium. Ekspert AI raz w tygodniu pisze stan wiedzy o AI (tylko ze źródłami) i wskazuje Rekruterowi modele do egzaminu. Seba sprawdza pomysły przed Twoją decyzją. Drugi klucz weryfikuje wnioski Strażnika kont.</p>
