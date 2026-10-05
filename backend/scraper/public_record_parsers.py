@@ -441,6 +441,41 @@ def _unique(values):
     return seen
 
 
+# Forma prawna w nazwie wykonawcy: bez niej traktujemy wykonawcę jak osobę fizyczną prowadzącą działalność
+# (LEGAL: osoby prywatne nie są wyszukiwane ani profilowane). Spółka cywilna (s.c.) to umowa osób fizycznych - też chroniona.
+LEGAL_FORM = re.compile(
+    r'(sp(ó|o)łk|\bsp\.?\s*z\s*o\.?\s*o|\bs\.?\s?a\.?(?=\W|$)|\bp\.?\s?s\.?\s?a\b|\bsp\.?\s?[kjp]\b|'
+    r'fundacj|stowarzysz|przedsi(ę|e)biorstw\w*\s+pa(ń|n)stw|sp(ó|o)łdziel|\bgmin|\bmiast|\bpowiat|wojew(ó|o)dztw|skarb\s+pa(ń|n)stwa|'
+    r'uniwersytet|politechnik|akademi|instytut|szpital|zak(ł|l)ad|centrum|urz(ą|a)d|agencj|\bizba|konsorcj|\bgrupa|holding|'
+    r'\b(ltd|limited|gmbh|ag|kg|s\.?r\.?o|a\.?s|inc|llc|plc|b\.?v|n\.?v|sarl|s\.?p\.?a|s\.?r\.?l|ab|a/s|kft|zrt|d\.?o\.?o|corp)\b)',
+    re.I)
+NATURAL_PERSON = 'wykonawca - osoba fizyczna prowadząca działalność'
+
+
+def is_natural_person(name, flags=None):
+    """True, gdy nazwa nie ma formy prawnej albo TED oznacza wykonawcę jako osobę fizyczną."""
+    if flags and (flags.get('natural_person') or (flags.get('size') == 'micro' and not flags.get('org_id'))):
+        return True
+    return not LEGAL_FORM.search(name or '')
+
+
+def ted_winners(names, ids, flags=None):
+    """Wykonawcy ogłoszenia. Osoba fizyczna: tylko nazwa w kontekście ogłoszenia, bez NIP i bez identyfikatora.
+    Identyfikatory zostają tylko, gdy da się je jednoznacznie przypisać (tyle samo co nazw) i tylko dla organizacji."""
+    flags = flags or []
+    paired = len(ids) == len(names)
+    winners = []
+    for i, name in enumerate(names):
+        natural = is_natural_person(name, flags[i] if i < len(flags) else None)
+        row = {'name': name, 'osoba_fizyczna': natural}
+        if natural:
+            row['label'] = NATURAL_PERSON
+        elif paired:
+            row['id'] = ids[i]
+        winners.append(row)
+    return winners
+
+
 def ted_notice(row):
     if not isinstance(row, dict) or not re.fullmatch(r'\d{1,8}-\d{4}', str(row.get('publication-number', ''))):
         raise ValueError('ted_notice_shape')
@@ -460,8 +495,7 @@ def ted_notice(row):
         'cpv': _unique(row.get('classification-cpv')),
         'value': value[0] if isinstance(value, list) and value else value,
         'currency': (currency[0] if isinstance(currency, list) and currency else currency) or '',
-        'winners': _unique(winners if isinstance(winners, list) else [winners]),
-        'winner_ids': _unique(row.get('winner-identifier')),
+        'winners': ted_winners(_unique(winners if isinstance(winners, list) else [winners]), _unique(row.get('winner-identifier'))),
         'winner_country': _unique(row.get('winner-country')),
         'url': f'https://ted.europa.eu/pl/notice/-/detail/{number}',
     }

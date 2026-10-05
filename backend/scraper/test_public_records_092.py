@@ -201,7 +201,8 @@ def test_ted_notices_upsert_and_page_identity():
     award = PublicRecord.objects.get(source='ted', external_id='674307-2026')
     assert award.data['buyer'] == ['Sąd Apelacyjny Testowy'] and award.data['value'] == 6133530.3
     assert award.data['cpv'] == ['30200000', '30213100'] and award.data['currency'] == 'PLN'
-    assert award.data['winners'] == ['Firma A Sp. z o.o.', 'Firma B Sp. z o.o.']
+    assert [w['name'] for w in award.data['winners']] == ['Firma A Sp. z o.o.', 'Firma B Sp. z o.o.']
+    assert not any(w['osoba_fizyczna'] for w in award.data['winners'])
     assert award.title.startswith('Polska') and award.source_url.endswith('/674307-2026')
     pages = list(j.state.jobs.filter(kind='ted_page').order_by('pk'))
     assert len(pages) == 2 and pages[1].context['body']['page'] == 2 and pages[0].identity != pages[1].identity
@@ -331,3 +332,31 @@ def test_first_cycle_windows(monkeypatch):
             collectors.collect(source, max_requests=1)
         state = PublicCollectionState.objects.get(source=source)
         assert state.since == timezone.localdate() - timedelta(days=days)
+
+
+def test_ted_natural_person_winner_kept_only_in_notice_without_nip():
+    """LEGAL: wykonawca bez formy prawnej to osoba fizyczna prowadząca działalność - tylko nazwa w ogłoszeniu, bez NIP."""
+    row = {**DATA['ted_page']['notices'][0], 'winner-name': {'pol': ['Usługi Remontowe Jan Kowalski', 'Budimex S.A.']},
+           'winner-identifier': ['5260000000', '5260250995']}
+    data = parsers.ted_notice(row)
+    person, company = data['winners']
+    assert person == {'name': 'Usługi Remontowe Jan Kowalski', 'osoba_fizyczna': True, 'label': 'wykonawca - osoba fizyczna prowadząca działalność'}
+    assert company == {'name': 'Budimex S.A.', 'osoba_fizyczna': False, 'id': '5260250995'}
+    assert '5260000000' not in json.dumps(data) and 'winner_ids' not in data
+    # niejednoznaczne przypisanie identyfikatorów: żadnego nie zapisujemy
+    data = parsers.ted_notice({**row, 'winner-identifier': ['5260000000']})
+    assert all('id' not in w for w in data['winners'])
+    # nie trafia do wyszukiwania ani do osób: tytuł i tekst rekordu to przedmiot i zamawiający
+    j = job('ted', 'ted_page', collectors.TED_SEARCH, {'body': {'query': 'q', 'limit': 50, 'page': 1}})
+    handle(j, body('ted_page', {'notices': [row], 'totalNoticeCount': 1}))
+    record = PublicRecord.objects.get(source='ted', external_id=row['publication-number'])
+    assert 'Kowalski' not in record.title and 'Kowalski' not in record.text and not record.people.exists()
+
+
+@pytest.mark.parametrize('name,natural', [('Jan Kowalski', True), ('Kowalski i Nowak s.c.', True), ('PHU Marek Nowak', True),
+    ('Firma Sp. z o.o.', False), ('ABC S.A.', False), ('Spółka Akcyjna X', False), ('Fundacja Y', False), ('Stowarzyszenie Z', False),
+    ('Nowak Sp.k.', False), ('Kowalski Sp. j.', False), ('Comarch P.S.A.', False), ('Gmina Wrocław', False),
+    ('Przedsiębiorstwo Państwowe Porty Lotnicze', False), ('Siemens AG', False), ('Agnieszka Sas', True)])
+def test_ted_legal_form_markers(name, natural):
+    assert parsers.is_natural_person(name) is natural
+    assert parsers.is_natural_person('Firma Sp. z o.o.', {'natural_person': True}) is True
