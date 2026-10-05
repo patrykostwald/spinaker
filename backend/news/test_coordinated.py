@@ -54,6 +54,7 @@ def test_same_measure_independent_of_account_labels():
 
 @pytest.mark.django_db
 def test_refresh_stores_cross_party_cluster_and_api(monkeypatch):
+    monkeypatch.setenv('WSPOLNY_PRZEKAZ_PUBLIC', 'true')
     from news.analysis_models import CoordinatedCluster
     from news.political_models import PoliticalAccount, PoliticalPost
 
@@ -92,3 +93,19 @@ def test_refresh_stores_cross_party_cluster_and_api(monkeypatch):
     PoliticalPost.objects.filter(pk__in=[first[1].pk, first[2].pk]).update(available=False)
     assert APIClient().get('/api/clinic/wspolny-przekaz/').json()['results'] == []
     assert APIClient().get('/api/clinic/wspolny-przekaz/?limit=x').status_code == 400
+
+
+@pytest.mark.django_db
+def test_hidden_until_public_flag_staff_preview(monkeypatch, django_user_model):
+    monkeypatch.delenv('WSPOLNY_PRZEKAZ_PUBLIC', raising=False)
+    client = APIClient()
+    assert client.get('/api/clinic/wspolny-przekaz/').status_code == 404
+    client.force_authenticate(django_user_model.objects.create_user('czytelnik'))
+    assert client.get('/api/clinic/wspolny-przekaz/').status_code == 404
+    client.force_authenticate(django_user_model.objects.create_user('redakcja', is_staff=True))
+    body = client.get('/api/clinic/wspolny-przekaz/').json()
+    assert body['public'] is False and body['results'] == []
+    monkeypatch.setenv('WSPOLNY_PRZEKAZ_PUBLIC', 'false')
+    assert APIClient().get('/api/clinic/wspolny-przekaz/').status_code == 404
+    monkeypatch.setenv('WSPOLNY_PRZEKAZ_PUBLIC', 'true')
+    assert APIClient().get('/api/clinic/wspolny-przekaz/').json()['public'] is True

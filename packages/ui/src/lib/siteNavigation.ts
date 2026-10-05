@@ -48,7 +48,8 @@ export const clinicNavigation: SiteNavigationItem[] = [
   { href: "/klinika/wywiady", label: "Wywiady" },
   { href: "/klinika/wywiady/glosowanie", label: "Głosowanie" },
   { href: "/klinika/przekazy", label: "Przekazy" },
-  { href: "/klinika/wspolny-przekaz", label: "Wspólny przekaz" },
+  // Ta sama fraza (news/coordinated.py): w menu dopiero po sprawdzeniu wyników na prawdziwych danych; wcześniej podgląd dla redakcji pod adresem.
+  ...(process.env.NEXT_PUBLIC_WSPOLNY_PRZEKAZ_PUBLIC === "true" ? [{ href: "/klinika/wspolny-przekaz", label: "Ta sama fraza" }] : []),
   { href: "/klinika/raporty", label: "Raporty" },
   links.corrections,
 ];

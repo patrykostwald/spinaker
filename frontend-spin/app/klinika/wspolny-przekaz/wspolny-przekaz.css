@@ -1,5 +1,6 @@
 /* Wspólny przekaz: jedna lista, boksy jednej wysokości (cytat zawsze 3 linie, ludzie 1 linia), stopka przy dole. */
 .sc-wp { display: grid; gap: var(--sc-s-5); }
+.sc-wp__preview { margin-left: 10px; font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--sc-line); color: var(--sc-text-2); }
 .sc-wp__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sc-s-4); }
 .sc-wp__card { display: grid; grid-template-rows: auto 1fr auto auto auto; gap: 10px; padding: var(--sc-s-5); border: 1px solid var(--sc-line);
   border-radius: var(--sc-r-lg); background: var(--sc-surface); min-width: 0; }

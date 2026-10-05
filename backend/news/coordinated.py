@@ -215,11 +215,21 @@ def payload(cluster):
     }
 
 
+def public():
+    """Strona publiczna dopiero po sprawdzeniu wyników na prawdziwych danych (właściciel 6.10); liczenie działa zawsze."""
+    import os
+    return os.environ.get('WSPOLNY_PRZEKAZ_PUBLIC', '').strip().lower() in ('1', 'true', 'yes')
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def clusters_view(request):
-    """GET /api/clinic/wspolny-przekaz/?limit=30 - klastry od najnowszego, wszystkie obozy na jednej liście."""
+    """GET /api/clinic/wspolny-przekaz/?limit=30 - klastry od najnowszego, wszystkie obozy na jednej liście.
+    Przy WSPOLNY_PRZEKAZ_PUBLIC=false tylko podgląd dla redakcji (staff); dla pozostałych 404."""
     from news.analysis_models import CoordinatedCluster
+    staff = bool(getattr(request.user, 'is_staff', False))
+    if not public() and not staff:
+        return Response({'detail': 'Nie znaleziono.'}, status=404)
     try:
         limit = max(1, min(int(request.query_params.get('limit', 30)), 100))
     except ValueError:
@@ -231,4 +241,4 @@ def clusters_view(request):
             results.append(row)
         if len(results) >= limit:
             break
-    return Response({'method': METHOD, 'thresholds': THRESHOLDS, 'results': results})
+    return Response({'method': METHOD, 'thresholds': THRESHOLDS, 'public': public(), 'results': results})
