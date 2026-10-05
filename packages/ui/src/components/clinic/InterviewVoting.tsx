@@ -54,7 +54,7 @@ export function InterviewVoting() {
     return () => clearInterval(timer);
   }, []);
   const query = useQuery({ queryKey: ["interview-voting", day, ownerId],
-    queryFn: () => apiFetch<Ballot>(`${endpoint}${day ? `?day=${day}` : ""}`), refetchInterval: 30_000 });
+    queryFn: () => apiFetch<Ballot>(`${endpoint}${day ? `?day=${day}` : ""}`), refetchInterval: 30_000, retry: 1 });
   const data = query.data;
   const enabled = featureEnabled && data?.accounts_enabled;
   const open = Boolean(data?.open && now < Date.parse(data.closes_at));
@@ -84,7 +84,7 @@ export function InterviewVoting() {
     <ClinicNav />
     <header className="sc-interview-voting__header">
       <h1>Drugi wywiad dnia wybierają czytelnicy</h1>
-      <p>{data ? !enabled ? "Głosowanie ruszy wkrótce." : open ? `Głosowanie trwa jeszcze ${timeLeft(Date.parse(data.closes_at) - now)}, do 7:00 (${dateLabel(data.closes_at.slice(0, 10))}).` : "Głosowanie zakończone o 7:00." : <Loading label="Wczytywanie głosowania" />}</p>
+      <p>{data ? !enabled ? "Głosowanie ruszy wkrótce." : open ? `Głosowanie trwa jeszcze ${timeLeft(Date.parse(data.closes_at) - now)}, do 7:00 (${dateLabel(data.closes_at.slice(0, 10))}).` : "Głosowanie zakończone o 7:00." : query.isError ? "Nie udało się wczytać głosowania." : <Loading label="Wczytywanie głosowania" />}</p>
     </header>
     {enabled ? <nav className="sc-interview-voting__days" aria-label="Dzień wywiadów">
       <Button variant="quiet" aria-pressed={!isToday} onClick={() => reset("")}>Wczoraj</Button>

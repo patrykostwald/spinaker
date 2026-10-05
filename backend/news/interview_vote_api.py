@@ -10,6 +10,12 @@ from news.accounts import OpinionReadThrottle
 from news import interview_votes as votes
 
 
+class InterviewReadThrottle(OpinionReadThrottle):
+    """Odczyt głosowania odświeża się co 30 s, więc ma własny, wyższy limit (panel designu 5.10: 429 dawał pustą stronę)."""
+    scope = 'interview_read'
+    rate = '900/hour'
+
+
 class InterviewAddThrottle(UserRateThrottle):
     scope = 'interview_add'
     rate = '10/hour'
@@ -45,7 +51,7 @@ class InterviewBallotView(APIView):
 
     def get_throttles(self):
         if self.request.method == 'GET':
-            return [OpinionReadThrottle()]
+            return [InterviewReadThrottle()]
         return [InterviewVoteThrottle() if isinstance(self, InterviewVoteView) else InterviewAddThrottle()]
 
     def finalize_response(self, request, response, *args, **kwargs):

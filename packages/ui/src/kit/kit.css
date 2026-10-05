@@ -9657,3 +9657,25 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 }
 .sc-tv__more--people { display: none; }
 @media (max-width: 900px) { .sc-tv__people:not([data-all]) > li:nth-child(n+7) { display: none; } .sc-tv__more--people { display: inline-flex; } }
+
+/* ===== Panel designu spin.clinic (5.10, Laws of UX) - poprawki stylu bez zmian treści ===== */
+/* opisy w boksach bez stopki stoją zaraz pod tytułem (Common Region, Uniform Connectedness) */
+:is(.sc-info-page__body .sc-method-steps li, .sc-method-family, .sc-kons-flow > li, .sc-kons-roles > li) > :last-child { margin-top: 0 !important; }
+.sc-info-page__body :is(.sc-kons-flow, .sc-kons-roles) li { align-content: start; }
+/* podpowiedź przewijania tylko tam, gdzie tabela naprawdę się przewija */
+@media (min-width: 721px) { .sc-ind-scroll-hint { display: none; } }
+/* jeden krój: plakietka X bez kroju maszynowego */
+.sc-x-badge { font-family: var(--sc-font-sans) !important; letter-spacing: .02em; }
+/* przycisk zgłoszenia błędu na telefonie: 44 px i nad dolnym paskiem, nie na treści (Fitts) */
+@media (max-width: 767px) { .sc-bug-fab { width: 44px !important; height: 44px !important; bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important; opacity: .85; } }
+/* wyszukiwarka na całą szerokość na stronie wyszukiwania */
+.sc-search-page .sc-search { max-width: none; }
+/* rejestr korekt: równe kolumny liczników, wspólna lewa krawędź, odstęp notki */
+.sc-corrections__counts { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.sc-corrections__note { margin-bottom: 16px; }
+/* raporty: odstęp między najnowszym a archiwum (Proximity) */
+.sc-report-archive__latest { margin-bottom: 32px; }
+/* ruch: podkreślenia przycisków bez animacji przy ograniczonym ruchu */
+@media (prefers-reduced-motion: reduce) { .sc-btn::after, .sc-archive-btn::after, .sc-clinic-db__all::after, .sc-survey-bar__go::after, .sc-share-cta::after, .sc-scan-button::after { transition: none !important; } }
+/* etykieta werdyktu na miniaturze: pełne tło, czytelna na każdym zdjęciu */
+.sc-spin-row__verdict .sc-verdict { background: var(--sc-bg) !important; }
