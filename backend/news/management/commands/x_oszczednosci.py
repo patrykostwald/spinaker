@@ -45,6 +45,8 @@ class Command(BaseCommand):
         state = ImportState.objects.filter(name='political-x-budget').first()
         budget = {k: v for k, v in ((state.cursor or {}) if state else {}).items() if k not in ('lease',)}
         self.stdout.write(f'Stan budżetu X: {budget}')
+        if state and state.last_error:
+            self.stdout.write(f'Ostatni błąd X: {state.last_error}')
         for read in PoliticalRead.objects.order_by('-started_at')[:5]:
             self.stdout.write(f'  odczyt {read.started_at:%d.%m %H:%M}: {read.status}, http {read.http_status}, wpisów {read.returned_posts}')
         if options['zastosuj']:

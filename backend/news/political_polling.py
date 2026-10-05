@@ -94,7 +94,14 @@ def request_x(url, params, config):
                     int(response.headers.get('x-rate-limit-reset', 0)) - int(time.time()))
             except (ValueError, TypeError):
                 pass
-            raise PoliticalReadError(f'x_http_{response.status_code}', response.status_code, min(wait, 86400))
+            error = PoliticalReadError(f'x_http_{response.status_code}', response.status_code, min(wait, 86400))
+            # opis błędu od X (bez danych dostępowych) - bez niego 400 było nie do zdiagnozowania (6.10)
+            try:
+                body = response.raw.read(2000, decode_content=True).decode('utf-8', 'replace')
+                error.detail = ' '.join(body.split())[:300]
+            except Exception:  # noqa: BLE001
+                error.detail = ''
+            raise error
         chunks, size = [], 0
         for chunk in response.iter_content(65536):
             size += len(chunk)
@@ -372,12 +379,26 @@ def poll_page(config, account_id, group=None, interval=None):
             if state.cursor.get('lease') == token:
                 budget = dict(state.cursor)
                 budget.update(lease=None, lease_until='')
+                # odczyt z błędem HTTP nic nie kosztuje u X: zwracamy rezerwację do dziennego limitu i budżetu
+                # (6.10: pętla błędów 400 co minutę zjadała dzienny limit wpisów, choć nic nie pobrano)
+                if http_status and http_status != 200 and not read.response_body:
+                    if budget.get('day') == read.started_at.astimezone(dt_timezone.utc).date().isoformat():
+                        budget['daily_posts'] = max(0, budget.get('daily_posts', 0) - read.reserved_posts)
+                    if budget.get('month') == read.started_at.astimezone(dt_timezone.utc).strftime('%Y-%m'):
+                        budget['spent_upper_usd'] = str(max(Decimal('0'), Decimal(budget['spent_upper_usd']) - read.reserved_usd))
                 if http_status in (401, 402, 403, 429):
                     budget['blocked_until'] = (timezone.now() + timedelta(seconds=wait)).isoformat()
-                state.cursor, state.last_error = budget, code
+                detail = getattr(exc, 'detail', '')
+                state.cursor, state.last_error = budget, (f'{code}: {detail}' if detail else code)[:500]
                 state.save(update_fields=['cursor', 'last_error'])
                 PoliticalAccount.objects.filter(pk__in=fingerprints).update(last_error=code,
                     next_poll_at=timezone.now() + timedelta(seconds=wait))
+                if http_status == 400:
+                    # zła prośba nie naprawi się sama: porzucamy zapamiętane okno (stronę i parametry), następny odczyt
+                    # zaczyna od ostatniego pewnego wpisu (since_id)
+                    for current in PoliticalAccount.objects.filter(pk__in=fingerprints):
+                        cursor = dict(current.poll_cursor); cursor.pop('window', None)
+                        PoliticalAccount.objects.filter(pk=current.pk).update(poll_cursor=cursor)
             PoliticalRead.objects.filter(pk=read.pk).update(status='error', http_status=http_status, finished_at=timezone.now())
         return {'status': 'error', 'reason': code, 'new_posts': 0, 'account_id': account.pk}
 
