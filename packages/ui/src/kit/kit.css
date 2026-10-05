@@ -10062,3 +10062,18 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 @media (min-width: 1101px) { .sc-rail .sc-account-control { padding-left: 0 !important; margin-left: 0 !important; justify-content: flex-start; } }
 /* „← Cała spinka” nie styka się ze strzałką */
 .sc-pick__home { margin-right: 16px; }
+
+/* wsparcie: dwie drogi wpłaty na górze (audyt 6.10) - kontrast zamiast ramek, cała karta klikalna, dół przy dole */
+.sc-support-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 8px 0 24px; }
+.sc-support-pick__opt { display: grid; grid-template-rows: auto 1fr auto; gap: 8px; min-height: 160px; padding: 20px 22px; text-decoration: none; color: var(--sc-text);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 16%, transparent) 0%, transparent 75%); transition: background .3s; }
+.sc-support-pick__opt:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 28%, transparent) 0%, transparent 90%); }
+.sc-support-pick__opt b { font-size: 18px; } .sc-support-pick__opt span { font-size: 14px; color: var(--sc-text-2); line-height: 1.5; }
+.sc-support-pick__opt em { font-style: normal; font-weight: 700; color: var(--sc-accent); }
+.sc-support-pick__note { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--sc-text-3); }
+/* karta wsparcia wewnątrz InfoPage: wygrywa z ogólnym stylem odnośników */
+:is(.sc-info-page__body, .sc-info-page, main) a.sc-support-pick__opt { display: grid !important; text-decoration: none !important; color: var(--sc-text) !important; background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 16%, transparent) 0%, transparent 75%) !important; padding: 20px 22px !important; }
+:is(.sc-info-page__body, .sc-info-page, main) a.sc-support-pick__opt:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 28%, transparent) 0%, transparent 90%) !important; }
+:is(.sc-info-page__body, .sc-info-page, main) a.sc-support-pick__opt b { color: var(--sc-text) !important; font-size: 20px !important; } :is(.sc-info-page__body, .sc-info-page, main) a.sc-support-pick__opt span { font-weight: 400 !important; color: var(--sc-text-2) !important; }
+/* „Zaloguj się” w pasku: ta sama lewa linia co pozostałe pozycje (audyt 6.10) */
+@media (min-width: 1101px) { .sc-rail .sc-rail__login { justify-content: flex-start !important; margin-left: 52px !important; padding-left: 0 !important; border: 0 !important; font-size: 13px !important; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; } }

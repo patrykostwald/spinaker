@@ -365,4 +365,8 @@ export const english = {
   "dane do badań naukowych.": "data for academic research.",
   "Jedna oferta dla wszystkich: te same produkty i warunki niezależnie od obozu politycznego. Klient nie ma wpływu na metodę, diagnozy ani treści serwisu. Sprzedajemy nasze analizy, nie cudze treści.": "One offer for everyone: the same products and terms regardless of political camp. Clients have no influence over the method, diagnoses or site content. We sell our analyses, not the content of other people's posts.",
   "Zapytaj o dane": "Ask about data",
+  "Zamów przykładowy raport": "Order a sample report",
+  "Odpowiadamy w 1 dzień roboczy. Na start wysyłamy przykładowy raport z wybranego tematu.": "We reply within 1 working day and start with a sample report on a topic of your choice.",
+  "Dane i raporty o przekazie politycznym": "Data and reports on political messaging",
+  "Raporty przekazu rządzących i opozycji, monitoring tematów i polityków, dane do badań. Niżej: jak cytować diagnozy Dr. Spina.": "Reports on government and opposition messaging, monitoring of topics and politicians, research data. Below: how to cite Dr. Spin diagnoses.",
 } as const;

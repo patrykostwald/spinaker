@@ -38,8 +38,8 @@ function supportProgress() {
 }
 
 const GOALS: Array<[string, string]> = [
-  ['Utrzymanie', 'Pełny miesiąc Kliniki: diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej - sprawdzamy więcej wypowiedzi.'],
-  ['Faza II', 'Konta czytelników, spinki z materiałów z Bazy i strażnica zmian, która pokaże, gdy źródło po publikacji zmieni albo usunie materiał.'],
+  ['Miesiąc pracy Kliniki', 'Diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej - sprawdzamy więcej wypowiedzi.'],
+  ['Strażnica zmian', 'Pokaże, gdy polityk albo redakcja po publikacji zmieni lub usunie wpis.'],
   ['Własny serwer AI', 'Maszyna z kartą graficzną i otwarte modele, także polskie. Celem jest lepsza kontrola kosztów i sposobu prowadzenia analiz.'],
 ];
 
@@ -55,7 +55,12 @@ export default function SupportPage() {
 
   return <InfoPage eyebrow="WSPARCIE" title="Pomóż nam analizować kolejne wypowiedzi." longTitle lead="Wpłaty pomagają pokrywać koszty pobierania wpisów, analiz AI i utrzymania serwisu."
     actions={<Button href={SUPPORT_LINKS.monthly} variant="primary">Wesprzyj miesięczny budżet</Button>}>
-    <p>Politycy mają spin doktorów. My mamy spin.clinic</p>
+    <p>Politycy mają spin doktorów. My mamy spin.clinic.</p>
+    <section className="sc-support-pick" aria-label="Jak wesprzeć">
+      <a className="sc-support-pick__opt" href={SUPPORT_LINKS.monthly}><b>Co miesiąc</b><span>Stały budżet Kliniki na zrzutka.pl. Nawet 20 zł miesięcznie to kilkanaście diagnoz.</span><em>Wesprzyj co miesiąc →</em></a>
+      {buycoffee && <a className="sc-support-pick__opt" href={buycoffee}><b>Jednorazowo</b><span>Postaw kawę na BuyCoffee. Bez konta i bez zobowiązań.</span><em>Postaw kawę →</em></a>}
+      <p className="sc-support-pick__note">Nie przyjmujemy pieniędzy od partii, polityków ani ich fundacji. Wpłata nie wpływa na wybór wpisów ani na wynik diagnozy.</p>
+    </section>
     <section><h2>Kto za tym stoi</h2><p>Operatorem serwisu jest iapply sp. z o.o.; wsparcie czytelników pomaga finansować dalsze działanie. Kontakt: <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. <Link href="/o-nas#operator">Dane operatora</Link> · <Link href="/o-nas#kontakt">pozostałe kontakty</Link>.</p></section>
     <section><h2>Na co idą pieniądze</h2>
       <p>Finansujemy dostęp do wpisów na X, płatne etapy analizy, transkrypcje nagrań oraz serwer, bazę danych i kopie zapasowe. Część zadań korzysta z bezpłatnych limitów usług.</p>
