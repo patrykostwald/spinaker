@@ -397,3 +397,16 @@ def test_release_stale_refunds_hanging_reservations(staff):
     assert old.status == 'abandoned' and fresh.status == 'reserved'
     budget = ImportState.objects.get(name='political-x-budget').cursor
     assert budget['daily_posts'] == 1110 and Decimal(budget['spent_upper_usd']) == Decimal('9.5') and budget['lease_until'] == ''
+
+
+def test_long_x_error_detail_fits_last_error(staff, config):
+    # 6.10: opis błędu X dłuższy niż pole last_error (200) wywracał zapis i zostawiał rezerwację na zawsze
+    from news.political_polling import PoliticalReadError
+    import news.political_polling as pp
+    acct = other(staff, 7772)
+    err = PoliticalReadError('x_http_400', 400, 300)
+    err.detail = 'x' * 300
+    with patch('news.x_watch.fetch_x_search', side_effect=err), patch('news.political_polling.fetch_x_timeline', side_effect=err):
+        pp.political_poll_cycle()
+    state = ImportState.objects.get(name='political-x-budget')
+    assert len(state.last_error) <= 200 and not PoliticalRead.objects.filter(status='reserved').exists()

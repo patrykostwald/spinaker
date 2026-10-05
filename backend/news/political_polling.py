@@ -422,7 +422,7 @@ def poll_page(config, account_id, group=None, interval=None):
                 if http_status in (401, 402, 403, 429):
                     budget['blocked_until'] = (timezone.now() + timedelta(seconds=wait)).isoformat()
                 detail = getattr(exc, 'detail', '')
-                state.cursor, state.last_error = budget, (f'{code}: {detail}' if detail else code)[:500]
+                state.cursor, state.last_error = budget, (f'{code}: {detail}' if detail else code)[:200]
                 state.save(update_fields=['cursor', 'last_error'])
                 PoliticalAccount.objects.filter(pk__in=fingerprints).update(last_error=code,
                     next_poll_at=timezone.now() + timedelta(seconds=wait))
