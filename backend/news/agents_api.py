@@ -83,10 +83,11 @@ def decide(request, note_id):
 @permission_classes([IsAdminUser])
 def loops(request):
     """Stan pętli agentów dla panelu (koła zębate): kategorie, stan każdej pętli i powód (raport_petli.build)."""
-    from news.raport_petli import build
+    from news.raport_petli import build, short
     report = build()
     return Response({'generated_at': report['generated_at'], 'summary': report['summary'], 'top': report['top'],
                      'categories': [{'key': c['key'], 'label': c['label'], 'loops': [
-                         {k: l[k] for k in ('key', 'label', 'state', 'reason', 'last_run', 'last_output', 'outputs_24h', 'outputs_7d',
-                                            'pending', 'consumer', 'cadence_h', 'sla_days', 'errors', 'top')}
+                         {**{k: l[k] for k in ('key', 'label', 'title', 'state', 'last_run', 'last_output', 'outputs_24h', 'outputs_7d',
+                                               'pending', 'consumer', 'cadence_h', 'sla_days', 'errors', 'top')},
+                          'reason': short(l['reason']), 'details': l['reason']}
                          for l in c['loops']]} for c in report['categories']]})

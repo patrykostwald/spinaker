@@ -22,27 +22,28 @@ CONSUMERS = {'owner:panel': 'właściciel w panelu', 'owner:mail': 'właściciel
 
 
 def contract(key, label, category, cadence_h, consumer, sla_days=7, agents=(), kinds=None, beats=(), registry='', counter='',
-             role=None):
-    return dict(key=key, label=label, category=category, cadence_h=cadence_h, consumer=consumer, sla_days=sla_days,
+             role=None, title=''):
+    # label najwyżej 14 znaków (podpis pod kołem zębatym w panelu), pełna nazwa w title
+    return dict(key=key, label=label, title=title or label, category=category, cadence_h=cadence_h, consumer=consumer, sla_days=sla_days,
                 agents=tuple(agents), kinds=kinds, beats=tuple(beats), registry=registry, counter=counter, role=role)
 
 
 # Rytm (cadence_h) to oczekiwany odstęp między WYNIKAMI pętli (nie między uruchomieniami zadania).
 CONTRACTS = (
     # Treść dnia - konsumentem są czytelnicy
-    contract('diagnozy', 'Diagnozy Dr. Spina', 'tresc', 6, 'public', 1, beats=('clinic-diagnoses-day',), registry='dr-spin', counter='diagnoses'),
+    contract('diagnozy', 'Diagnozy', 'tresc', 6, 'public', 1, beats=('clinic-diagnoses-day',), registry='dr-spin', counter='diagnoses', title='Diagnozy Dr. Spina'),
     contract('przekaz', 'Przekaz dnia', 'tresc', 24, 'public', 1, beats=('clinic-daily-messages-day',), registry='messages', counter='messages'),
     contract('wywiad', 'Wywiad dnia', 'tresc', 24, 'public', 1, beats=('clinic-interview-10m',), registry='interviews', counter='interviews'),
-    contract('spinki', 'Spinki Dr. Spina', 'tresc', 24, 'public', 1, beats=('dr-spin-thread-daily', 'thread-reviews-20m'),
-             registry='spin-thread', counter='threads'),
+    contract('spinki', 'Spinki', 'tresc', 24, 'public', 1, beats=('dr-spin-thread-daily', 'thread-reviews-20m'),
+             registry='spin-thread', counter='threads', title='Spinki Dr. Spina'),
     contract('recenzent', 'Recenzent', 'tresc', 24, 'owner:panel', 7, agents=('recenzent',), beats=('recenzent-2h',), registry='recenzent'),
     # Agenci rozwoju spin.clinic
     contract('strateg', 'Strateg', 'agenci', 24, 'owner:panel', 7, agents=('strateg',), beats=('agents-window-hourly',), registry='strateg'),
     contract('pielgrzym', 'Pielgrzym', 'agenci', 48, 'owner:panel', 7, agents=('pielgrzym',), beats=('agents-window-hourly',), registry='pilgrim'),
-    contract('projektant', 'Projektant UX/UI', 'agenci', 168, 'owner:panel', 7, agents=('projektant',), beats=('projektant-daily',),
-             registry='projektant'),
+    contract('projektant', 'Projektant', 'agenci', 168, 'owner:panel', 7, agents=('projektant',), beats=('projektant-daily',),
+             registry='projektant', title='Projektant UX/UI'),
     contract('automatyk', 'Automatyk', 'agenci', 24, 'owner:panel', 7, agents=('automatyk',), beats=('automatyk-daily',), registry='automatyk'),
-    contract('seba', 'Seba (krytyk propozycji)', 'agenci', 24, 'owner:panel', 2, beats=('seba-hourly',), registry='seba', counter='seba'),
+    contract('seba', 'Seba', 'agenci', 24, 'owner:panel', 2, beats=('seba-hourly',), registry='seba', counter='seba', title='Seba - krytyk propozycji'),
     # przeszłość.today - Pracownia OSINT
     contract('kartograf', 'Kartograf', 'przeszlosc', 168, 'agent:prawnik', 7, agents=('kartograf',), beats=('pracownia-osint',),
              registry='pracownia-osint'),
@@ -54,16 +55,16 @@ CONTRACTS = (
              registry='pracownia-osint'),
     contract('prawnik', 'Prawnik', 'przeszlosc', 168, 'agent:architekt', 7, agents=('prawnik',), beats=('pracownia-osint',),
              registry='pracownia-osint'),
-    contract('dziennikarz', 'Dziennikarz testowy', 'przeszlosc', 72, 'agent:architekt', 7, agents=('dziennikarz',), beats=('pracownia-osint',),
-             registry='pracownia-osint'),
-    contract('kontroler', 'Kontroler danych', 'przeszlosc', 24, 'agent:architekt', 7, agents=('kontroler',), beats=('pracownia-osint',),
-             registry='pracownia-osint'),
+    contract('dziennikarz', 'Dziennikarz', 'przeszlosc', 72, 'agent:architekt', 7, agents=('dziennikarz',), beats=('pracownia-osint',),
+             registry='pracownia-osint', title='Dziennikarz testowy'),
+    contract('kontroler', 'Kontroler', 'przeszlosc', 24, 'agent:architekt', 7, agents=('kontroler',), beats=('pracownia-osint',),
+             registry='pracownia-osint', title='Kontroler danych'),
     contract('architekt', 'Architekt', 'przeszlosc', 168, 'claude:sprint', 7, agents=('architekt',), beats=('pracownia-osint',),
              registry='pracownia-osint'),
-    contract('tematy', 'Tematy dnia przeszłość.today', 'przeszlosc', 24, 'public', 1, beats=('przeszlosc-topics',), registry='przeszlosc-topics'),
+    contract('tematy', 'Tematy dnia', 'przeszlosc', 24, 'public', 1, beats=('przeszlosc-topics',), registry='przeszlosc-topics', title='Tematy dnia przeszłość.today'),
     # Niezawodność
-    contract('opiekun', 'Opiekunowie pętli', 'niezawodnosc', 24, 'owner:panel', 3, agents=('opiekun',), beats=('opiekunowie-1h',),
-             registry='opiekunowie'),
+    contract('opiekun', 'Opiekunowie', 'niezawodnosc', 24, 'owner:panel', 3, agents=('opiekun',), beats=('opiekunowie-1h',),
+             registry='opiekunowie', title='Opiekunowie pętli'),
     contract('dyrygent', 'Dyrygent', 'niezawodnosc', 24, 'claude:sprint', 7, agents=('dyrygent',), beats=('dyrygent-15m',), registry='dyrygent'),
     contract('dyzurny', 'Dyżurny', 'niezawodnosc', 1, 'owner:panel', 1, beats=('duty-15m',), registry='duty'),
     contract('raport-petli', 'Raport pętli', 'niezawodnosc', 24, 'owner:mail', 1, beats=('raport-petli-daily',), registry='raport-petli'),
@@ -74,7 +75,7 @@ CONTRACTS = (
     contract('rekruter', 'Rekruter', 'konsylium', 24, 'agent:council', 7, beats=('council-recruiter-night',), registry='recruiter'),
     # Zbieracze danych
     contract('zbieracz-x', 'Zbieracz X', 'dane', 2, 'agent:all', 1, beats=('political-x-minute',), registry='political_poll_task', counter='posts'),
-    contract('badacz', 'Badacz (źródła)', 'dane', 24, 'agent:all', 7, beats=('badacz-daily',), registry='badacz'),
+    contract('badacz', 'Badacz', 'dane', 24, 'agent:all', 7, beats=('badacz-daily',), registry='badacz', title='Badacz - nowe źródła'),
 )
 BY_KEY = {c['key']: c for c in CONTRACTS}
 
@@ -183,12 +184,18 @@ def loop_state(c, now):
                 reasons.append('tylko „czeka na okno”, bez wyniku')
             if reasons:
                 state = 'warn'
-    return {'key': c['key'], 'label': c['label'], 'category': c['category'], 'state': state, 'reason': '; '.join(reasons),
+    return {'key': c['key'], 'label': c['label'], 'title': c['title'], 'category': c['category'], 'state': state, 'reason': '; '.join(reasons),
             'enabled': enabled, 'last_run': last_run.isoformat() if last_run else None,
             'last_output': last_output.isoformat() if last_output else None, 'ran_24h': bool(last_run and last_run >= day),
             'outputs_24h': out_24 or 0, 'outputs_7d': out_7 or 0, 'counted': out_7 is not None, 'pending': pending,
             'consumer': CONSUMERS.get(c['consumer'], c['consumer']), 'consumer_key': c['consumer'], 'cadence_h': c['cadence_h'],
             'sla_days': c['sla_days'], 'top': top, 'errors': errors}
+
+
+def short(reason, limit=60):
+    """Krótki powód pod kołem w panelu: pierwszy powód, najwyżej limit znaków."""
+    first = (reason or '').split('; ')[0]
+    return first if len(first) <= limit else first[:limit - 1].rstrip() + '…'
 
 
 def build(now=None):
@@ -233,7 +240,7 @@ def text(report):
     marks = {'ok': 'OK', 'warn': 'UWAGA', 'bad': 'STOI', 'idle': 'wył.'}
     problems = [l for c in report['categories'] for l in c['loops'] if l['state'] in ('bad', 'warn')]
     lines.append('== Wymaga uwagi ==')
-    lines += [f"[{marks[l['state']]}] {l['label']}: {clean(l['reason'])}" for l in sorted(problems, key=lambda l: l['state'] != 'bad')] or ['Nic.']
+    lines += [f"[{marks[l['state']]}] {l['title']}: {clean(l['reason'])}" for l in sorted(problems, key=lambda l: l['state'] != 'bad')] or ['Nic.']
     lines.append('')
     for category in report['categories']:
         lines.append(f"== {category['label']} ==")
@@ -241,7 +248,7 @@ def text(report):
             made = (f"wyniki 24 h: {l['outputs_24h']}, 7 dni: {l['outputs_7d']}" if l['counted'] else 'wyniki: puls zadania')
             ran = 'ruszyła w 24 h' if l['ran_24h'] else 'nie ruszyła w 24 h'
             extra = f", czeka ponad SLA: {l['pending']}" if l['pending'] else ''
-            lines.append(f"[{marks[l['state']]}] {l['label']} - {ran}, {made}{extra}; odbiorca: {l['consumer']}")
+            lines.append(f"[{marks[l['state']]}] {l['title']} - {ran}, {made}{extra}; odbiorca: {l['consumer']}")
         lines.append('')
     lines.append('== Najlepsze nowe pomysły i ustalenia (7 dni) ==')
     lines += [f"- {t['score']}/100 · {t['agent']}: {clean(t['title'])}" for t in report['top']] or ['Brak nowych.']
@@ -278,7 +285,7 @@ def panel_section(now):
     from news.admin_status import card, metric
     report = build(now)
     s = report['summary']
-    items = [card(l['label'], 'error' if l['state'] == 'bad' else 'warn', l['reason'], l['last_output'] or l['last_run'],
+    items = [card(l['title'], 'error' if l['state'] == 'bad' else 'warn', l['reason'], l['last_output'] or l['last_run'],
                   [metric('Wyniki 24 h', l['outputs_24h']), metric('Wyniki 7 dni', l['outputs_7d']), metric('Czeka ponad SLA', l['pending'])])
              for c in report['categories'] for l in c['loops'] if l['state'] in ('bad', 'warn')]
     return card('Pętle agentów', 'error' if s['bad'] else 'warn' if s['warn'] else 'ok',

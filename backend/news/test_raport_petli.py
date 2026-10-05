@@ -152,3 +152,17 @@ def test_staff_endpoint_contract(django_user_model):
 def test_panel_section_lists_problems():
     card = raport_petli.panel_section(NOW)
     assert card['title'] == 'Pętle agentów' and card['status'] in ('ok', 'warn', 'error')
+
+
+def test_labels_fit_under_gear_and_keys_unique(django_user_model):
+    for c in raport_petli.CONTRACTS:
+        assert len(c['label']) <= 14, c['label']
+    for key, _ in raport_petli.CATEGORIES:
+        keys = [c['key'] for c in raport_petli.CONTRACTS if c['category'] == key]
+        assert len(keys) == len(set(keys))
+    assert raport_petli.short('a' * 80) == 'a' * 59 + '…' and raport_petli.short('x; y') == 'x'
+    client = APIClient()
+    client.force_authenticate(django_user_model.objects.create_user(username='staff2', is_staff=True))
+    for c in client.get('/api/staff/petle/').data['categories']:
+        for row in c['loops']:
+            assert len(row['reason']) <= 60 and row['title']
