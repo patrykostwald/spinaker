@@ -216,7 +216,7 @@ export function ThreadSocial({ id, title, ai, expanded, preview = false, showCom
         : <div className="sc-social-sortrow">{enabled && <p><a href="/konto">Zaloguj się i potwierdź e-mail</a>, aby dodać komentarz.</p>}<CommentSort sort={sort} setSort={setSort} /><span className="sc-social-composer__end">{end}</span></div>}
       {comments.isLoading && <Loading label="Ładowanie komentarzy" />}
       {comments.isError && <button onClick={() => comments.refetch()}>Ponów odczyt komentarzy</button>}
-      {comments.isSuccess && !comments.data.pages[0].results.length && <p className="sc-social-first">Bądź pierwszy.</p>}
+      {comments.isSuccess && !filter && !comments.data.pages[0].results.length && <p className="sc-social-first">Bądź pierwszy.</p>}
       {filter && comments.isSuccess && !comments.data.pages.flatMap(page => page.results).some(row => filter.pattern.test(row.body)) && <p className="sc-social-empty">Nikt jeszcze nie skomentował: {filter.label}.</p>}
       <ol>{comments.data?.pages.flatMap(page => page.results).filter(row => !filter || filter.pattern.test(row.body)).map(row => <li key={row.id} id={`comment-${row.id}`} className="sc-cmt">
         <Avatar name={row.author} />

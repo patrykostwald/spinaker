@@ -54,11 +54,13 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
     if (window.location.pathname !== `/spinki/${initial}`) pushed.current = true;
     if (window.location.pathname !== `/spinki/${initial}`) window.history.pushState({ ...window.history.state, scTrop: initial }, '', `/spinki/${initial}`);
     const pop = () => closeRef.current();
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') leave(); };
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape' && !document.querySelector('.sc-trop-overlay .sc-pick')) leave(); };
     window.addEventListener('popstate', pop);
     window.addEventListener('keydown', key);
     close.current?.focus();
+    const late = requestAnimationFrame(() => close.current?.focus());
     return () => {
+      cancelAnimationFrame(late);
       delete root.dataset.immersive;
       window.removeEventListener('popstate', pop);
       window.removeEventListener('keydown', key);
@@ -118,7 +120,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
     <div className="sc-trop-overlay__bar">
       <button ref={close} type="button" className="sc-trop-overlay__back" onClick={leave}>← Wszystkie spinki</button>
       {/* tytuł w linii „Wszystkie spinki”, od krawędzi pierwszego boksu; pod nim cały podtytuł (właściciel 4.10) */}
-      {thread && <h1 className="sc-trop-overlay__title"><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</h1>}
+      {thread && <p className="sc-trop-overlay__title" aria-hidden="true"><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</p>}
       <span className="sc-trop-overlay__who">{thread ? (thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`) : ''}</span>
       {following !== null && <button type="button" className="sc-trop-overlay__following" onClick={() => viewTransition(() => open(following))}>Następna spinka →</button>}
     </div>

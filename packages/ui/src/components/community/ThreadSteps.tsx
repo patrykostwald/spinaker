@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getThreadBox, getThreadSteps, rateThreadStep, type StepPart, type StepsData, type ThreadElement } from '../../lib/community';
@@ -14,6 +14,14 @@ import { clipColor } from '../../lib/clipColor';
 import { AccountDialog } from '../AccountDialog';
 
 const LABELS = { positive: 'Trafne', doubt: 'Wątpliwe', negative: 'Nietrafne' } as const;
+/** Rodzaje boksów po polsku (wspólne dla paska spinki i widoku jednego elementu). */
+export const BOX_TYPES = { post: 'Wpis na X', claim: 'Sprawdzenie', source: 'Źródło', technique: 'Chwyt', diagnosis: 'Diagnoza', message: 'Przekaz dnia', print: 'Druk sejmowy', amendment: 'Poprawka', consultation: 'Postulat organizacji', registry: 'Wpis w rejestrze', declaration: 'Zgłoszenie w uzasadnieniu', summary: 'Podsumowanie Dr. Spina' } as const;
+/** Podpis odnośnika zależny od tego, dokąd prowadzi (panel designu 6.10: „Otwórz źródło” przy diagnozie mylił). */
+export function linkLabel(item: ThreadElement): string {
+  if (item.box_type === 'diagnosis' || item.url.startsWith('/klinika')) return 'Otwórz diagnozę →';
+  if (item.box_type === 'post' || /(^|\.)(x|twitter)\.com\//.test(item.url)) return 'Otwórz wpis na X ↗';
+  return item.url.startsWith('/') ? 'Otwórz →' : 'Otwórz źródło ↗';
+}
 
 /**
  * Trop ocenia się krok po kroku (właściciel 3.10): każdy boks i każde powiązanie dostaje ✓ ? ✕,
@@ -40,7 +48,7 @@ export function StepRate({ step, onRate, canRate, label }: {
   // zawsze klikalne (właściciel 5.10): bez konta kliknięcie zaprasza do logowania lub założenia konta
   const [invite, setInvite] = useState(false);
   return <span className="sc-step-rate" role="group" aria-label={`Oceń: ${label}`}>
-    {RATINGS.map(key => <button key={key} type="button" data-rating={key} aria-pressed={step?.mine === key}
+    {RATINGS.map(key => <button key={key} type="button" data-rating={key} aria-pressed={step?.mine === key} aria-label={`${LABELS[key]} (${step?.counts[key] ?? 0})`}
       title={canRate ? `${LABELS[key]}: ${step?.counts[key] ?? 0}` : `${LABELS[key]}: załóż konto, aby oceniać`}
       onClick={event => { event.stopPropagation(); if (canRate) onRate(key); else setInvite(true); }}>
       <SocialIcon kind={key} /></button>)}
@@ -113,18 +121,26 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
   const [at, setAt] = useState(() => Math.max(0, sequence.findIndex(step => step.kind === start.kind && step.index === start.index)));
   const step = sequence[at];
   const item = items[step.index];
+  const chain = useRef<HTMLElement>(null);
+  // mini-pasek: bieżący element zawsze widoczny na środku (na telefonie pasek bywa szerszy niż ekran)
+  useEffect(() => { const nav = chain.current, cur = nav?.querySelector<HTMLElement>('[aria-current]');
+    if (nav && cur && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: cur.offsetLeft - nav.clientWidth / 2 + cur.offsetWidth / 2, behavior: 'smooth' }); }, [at]);
   const box = useQuery({ queryKey: ['thread-box', threadId, item.item_id], queryFn: () => getThreadBox(threadId, item.item_id!), enabled: step.kind === 'box' && Boolean(item.item_id), retry: false });
   useEffect(() => { onStep(step); }, [at]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if ((event.target as HTMLElement | null)?.closest?.('input, textarea')) return;
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') { event.stopImmediatePropagation(); onClose(); }
       if (event.key === 'ArrowRight') setAt(value => Math.min(sequence.length - 1, value + 1));
       if (event.key === 'ArrowLeft') setAt(value => Math.max(0, value - 1));
     };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
   }, [onClose, sequence.length]);
+  const card = useRef<HTMLElement>(null);
+  const first = useRef(true);
+  // fokus na karcie bez przewijania strony (nagłówek spinki zostaje na swoim miejscu)
+  useEffect(() => { if (!first.current) card.current?.focus({ preventScroll: true }); first.current = false; }, [at]);
   const clipStep = step.kind === 'clip' ? steps.find(item.item_id, 'context') : undefined;
   const boxStep = step.kind === 'box' ? steps.find(item.item_id, 'box') : undefined;
   // tło w kolorach reakcji wybranego elementu; po wyjściu: całej spinki
@@ -139,44 +155,53 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
   const source = [item.source_name || (item.kind === 'link' ? item.domain : ''), item.published_date ? formatDatePl(item.published_date) : ''].filter(Boolean).join(' · ');
   const kind = item.box_type ?? item.kind;
   const image = boxImage(item);
+  const typeWord = item.box_type ? BOX_TYPES[item.box_type as keyof typeof BOX_TYPES] : '';
+  // bez obrazka rodzaj stoi w lewym polu, więc nad tytułem tylko źródło i data (bez powtórzeń)
+  const kicker = (image ? [typeWord, source] : [source]).filter(Boolean).join(' · ');
+  // wyjaśnienie autora tylko, gdy mówi coś innego niż opis i tytuł (panel designu 6.10)
+  const note = item.note && item.note.trim() !== (item.body ?? '').trim() && item.note.trim() !== item.title.trim() ? item.note : '';
+  const external = !item.url.startsWith('/');
   return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Połączenie ${step.index} → ${step.index + 1}`}>
     <header className="sc-pick__bar">
       <span />
-      <span className="sc-pick__count">{step.kind === 'box' ? `Boks ${step.index + 1} z ${items.length}` : `Połączenie ${step.index} z ${items.length - 1}`}</span>
+      <span className="sc-pick__count" aria-live="polite">{step.kind === 'box' ? `Boks ${step.index + 1} z ${items.length}` : `Połączenie ${step.index} z ${items.length - 1}`}</span>
     </header>
     <div className="sc-pick__stage">
       {/* łatwy powrót po lewej, na wysokości karty; dalsza droga po prawej jaśniejsza (właściciel 4.10) */}
       <button type="button" className="sc-pick__home" onClick={onClose}>← Cała spinka</button>
       <button type="button" className="sc-pick__arrow" disabled={at === 0} onClick={() => setAt(at - 1)} aria-label="Poprzedni element">‹</button>
-      <article className="sc-pick__card" key={at} data-kind={step.kind}>
+      <article className="sc-pick__card" key={at} data-kind={step.kind} ref={card} tabIndex={-1}>
         {/* lewe pole zawsze treść (zdjęcie, karta diagnozy, podgląd linku), prawe zawsze tytuł i opis (właściciel 5.10, 3 głosy na tak) */}
         <div className="sc-pick__media" data-type={kind} data-card={image.includes('/card.png') || undefined}>
           {step.kind === 'clip' ? <SpinkaClip counts={clipStep?.counts} />
             : image ? <img src={image} alt="" />
-            : <a className="sc-pick__preview" href={item.url} target={item.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">
-                <b>{(item.source_name || (item.kind === 'link' ? item.domain : '') || 'źródło').replace(/^www\./, '')}</b><span>Otwórz źródło ↗</span></a>}
+            : <span className="sc-pick__preview" aria-hidden="true"><i>{item.box_type === 'claim' ? '✓' : item.box_type === 'diagnosis' ? '✚' : '↗'}</i><b>{typeWord || 'Materiał'}</b></span>}
           {step.kind === 'box' && <span className="sc-type-tag">{contentTag(item)}</span>}
         </div>
         <div className="sc-pick__text">
           {step.kind === 'box' ? <>
-            {source && <p className="sc-pick__kicker">{source}</p>}
+            {kicker && <p className="sc-pick__kicker">{kicker}</p>}
             <h2>{item.title}</h2>
             {item.body && <p className="sc-pick__body">{item.body}</p>}
-            {item.note && <p className="sc-pick__note"><span>Wyjaśnienie autora</span>{item.note}</p>}
-            <a className="sc-pick__source" href={item.url} target={item.url.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">Otwórz źródło ↗</a>
+            {note && <p className="sc-pick__note"><span>Wyjaśnienie autora</span>{note}</p>}
             {Boolean(box.data?.other_threads.length) && <p className="sc-pick__web"><span>W innych spinkach:</span> {box.data!.other_threads.map((row, i) => <Fragment key={row.id}>{i > 0 && ', '}<Link href={`/spinki/${row.id}`}>{row.title}</Link></Fragment>)}</p>}
           </> : <>
             <p className="sc-pick__kicker">Łączy boks {step.index} i {step.index + 1}</p>
             <p className="sc-pick__pair"><span>{items[step.index - 1].title}</span><b aria-hidden="true">→</b><span>{item.title}</span></p>
             <p className="sc-pick__body">{item.link_note || 'Autor nie opisał tego połączenia. Oceń, czy z pierwszego materiału wynika drugi.'}</p>
           </>}
+          {/* stopka karty przy dolnej krawędzi (panel designu 6.10): z lewej odnośnik, z prawej ocena z pytaniem */}
+          <footer className="sc-pick__foot">
+            {step.kind === 'box' ? <a className="sc-pick__source" href={item.url} target={external ? '_blank' : undefined} rel="noopener noreferrer">{linkLabel(item)}</a> : <span />}
+            {item.item_id && <span className="sc-pick__rate"><span className="sc-pick__ask">{step.kind === 'box' ? 'Trafny boks?' : 'Trafne połączenie?'}</span>
+              <StepRate step={current} canRate={steps.canRate} label={step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`}
+                onRate={polarity => void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity)} /></span>}
+          </footer>
         </div>
-        {item.item_id && <StepRate step={current} canRate={steps.canRate} label={step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`}
-          onRate={polarity => void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity)} />}
       </article>
       <button type="button" className="sc-pick__arrow" disabled={at === sequence.length - 1} onClick={() => setAt(at + 1)} aria-label="Następny element">›</button>
     </div>
-    <nav className="sc-pick__chain" aria-label="Elementy spinki">
+    <nav className="sc-pick__chain" ref={chain} aria-label="Elementy spinki">
       {sequence.map((row, i) => <button key={i} type="button" className={row.kind === 'box' ? 'sc-trow__sq' : 'sc-trow__link'} aria-current={i === at || undefined}
         style={row.kind === 'clip' ? { background: clipColor(steps.find(items[row.index].item_id, 'context')?.counts) } : undefined}
         data-r={dominant(steps.find(items[row.index].item_id, row.kind === 'box' ? 'box' : 'context')?.counts)}

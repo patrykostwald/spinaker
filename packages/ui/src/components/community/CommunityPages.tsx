@@ -5,14 +5,13 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { getCommunityThread, type ThreadElement } from "../../lib/community";
-import { categoryLabel, formatDatePl, formatDateTimePl } from "../../lib/utils";
+import { categoryLabel, formatDatePl } from "../../lib/utils";
 
 import { AccountDataState } from '../AccountPhase2';
 import { useFeature } from '../../lib/features';
 import { isUnavailable } from '../../lib/personal';
-import { ThreadStrip } from './ThreadStrip';
+import { ThreadOverlay } from './ThreadOverlay';
 import { ThreadFeed } from './ThreadFeed';
-import { ClampedText } from './SocialPrimitives';
 import { useAccount } from '../../lib/account';
 import { Loading } from "../../kit/Loading";
 
@@ -88,18 +87,6 @@ export function CommunityThreadPage({ id }: { id: string }) {
   if (query.isError && !isUnavailable(query.error)) return <div className="sc-community"><AccountDataState query={query} /></div>;
   if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono spinki - mogła zostać usunięta albo nie jest publiczna. <Link href="/spinki">Wszystkie spinki</Link></p></div>;
   const thread = query.data;
-  return (
-    <div className="sc-community sc-community--detail sc-f2">
-      <p><Link href="/spinki" className="sc-spin-detail__back">← Wszystkie spinki</Link></p>
-      <header className="sc-community__head">
-        <p className="sc-clinic-kicker">{thread.is_ai ? 'Dr. Spin (AI)' : <>Spinka czytelnika · <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link> {thread.x_profile && <a href={thread.x_profile} target="_blank" rel="noopener noreferrer" aria-label="Połączone konto X">𝕏</a>}</>}</p>
-        <ClampedText><h1>{thread.title}</h1></ClampedText>
-        {thread.description && <ClampedText>{thread.description}</ClampedText>}
-        <p className="sc-community-card__meta">
-          {thread.published_at ? `Opublikowana ${formatDateTimePl(thread.published_at)}` : ""} · {thread.items_count} {thread.items_count === 1 ? 'boks' : [2, 3, 4].includes(thread.items_count % 10) && ![12, 13, 14].includes(thread.items_count % 100) ? 'boksy' : 'boksów'}
-        </p>
-      </header>
-      <ThreadStrip thread={thread} items={thread.items} full />
-    </div>
-  );
+  // jeden układ spinki (panel designu 6.10): wejście z adresu wygląda tak samo jak wejście z listy
+  return <ThreadOverlay id={thread.id} onClose={() => window.location.assign('/spinki')} />;
 }
