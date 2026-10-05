@@ -61,7 +61,7 @@ export function TopicTree() {
 
   return <main className="sc-pt">
     <div className="sc-pt__brand"><a href="/przeszlosc" className="sc-pt__mark">przeszłość<i>.</i>today</a>
-      <nav><a href="#jak">Jak to działa</a><a href="#ceny">Ceny</a><a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">spin.clinic ↗</a></nav></div>
+      <nav><a href="#jak">Jak to działa</a><a href="#redakcje">Dla redakcji</a><a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">spin.clinic ↗</a></nav></div>
     <header className="sc-pt__head">
       <p className="sc-pt__k">Wersja beta · bezpłatnie</p>
       <h1>Kto, co i kiedy w jednym temacie</h1>
@@ -97,16 +97,11 @@ export function TopicTree() {
       <div><b>Każde powiązanie ma źródło</b><p>Oficjalne dane Sejmu i KRS, wpisy na X, artykuły. Nic nie łączymy po samym nazwisku.</p></div>
       <div><b>Ta sama miara dla wszystkich</b><p>Rządzący i opozycja przechodzą przez identyczne zapytania i te same reguły.</p></div>
     </section>
-    <section className="sc-pt__price" id="ceny" aria-label="Dla redakcji i ceny">
+    {/* ceny wyłączone na razie (właściciel 6.10); zostaje kontakt dla redakcji */}
+    <section className="sc-pt__price" id="redakcje" aria-label="Dla redakcji">
       <h2>Dla redakcji</h2>
-      <p>W becie wszystko jest bezpłatne. Przeglądanie tematów zostanie bezpłatne. Dla redakcji przygotowujemy narzędzia płatne (ceny netto, miesięcznie):</p>
-      <div className="sc-pt__plans">
-        <div><b>Bezpłatnie</b><em>0 zł</em><ul><li>tematy i oś czasu</li><li>drzewo powiązań</li><li>panel osoby i wpisu</li><li>RSS tematu</li></ul></div>
-        <div data-hl><b>Pro</b><em>199 zł</em><ul><li>alerty e-mail</li><li>eksport z licencją do publikacji</li><li>historia i notatki śledztwa</li></ul></div>
-        <div><b>Zespół</b><em>599 zł</em><ul><li>wszystko z Pro dla 5 osób</li><li>wspólne teczki tematów</li><li>pierwszeństwo nowych źródeł</li></ul></div>
-        <div><b>Instytucje</b><em>od 2 500 zł</em><ul><li>dostęp do danych przez API</li><li>raporty na zamówienie</li><li>umowa i faktura</li></ul></div>
-      </div>
-      <p className="sc-pt__cta"><a href="mailto:kontakt@spin.clinic?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji →</a><span>Odpowiadamy w 1 dzień roboczy. Każdy klient na tych samych warunkach.</span></p>
+      <p>W becie wszystko jest bezpłatne. Przygotowujemy narzędzia dla redakcji: alerty o osobach i tematach, eksport do publikacji, wspólne teczki.</p>
+      <p className="sc-pt__cta"><a href="mailto:kontakt@spin.clinic?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji →</a></p>
     </section>
     <footer className="sc-pt__foot">przeszłość.today prowadzi iapply sp. z o.o. · dane wspólne ze spin.clinic · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></footer>
   </main>;
