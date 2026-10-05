@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
+import { Bar, Follow, Foot, Icon, day, nb, nice, personHref, plural, reduced, short, spinColor, useStandalone } from './ui';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -8,12 +9,13 @@ import { Loading } from '@spin-clinic/ui/kit';
  * drzewo powiązań jako środek strony, oś czasu i „Kto występuje”. Na dole: jak to działa, zasady, Sejm, dla redakcji.
  * Bez kolorów obozów (właściciel 6.10): obóz tylko słowem. Jeden akcent, siła spinu w skali zielony < niebieski < czerwony.
  */
-type Node = { id: string; kind: string; label: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
+type Node = { id: string; kind: string; label: string; slug?: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
 type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
   clubs: { club: string; size: number; votes: Record<string, number> }[]; members: [string, string, string][] };
 type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[] };
+type PersonHit = { id: number; slug: string; name: string; role: string; organisation?: string; has_x?: boolean };
 type Open = (p: { kind: 'person' | 'entry'; id: string } | null) => void;
 
 const SUB: Record<string, string> = { print: 'druk', ballot: 'głosowanie', voting: 'głosowanie', consultation: 'konsultacje', lobby_activity: 'lobbing', lobby_document: 'lobbing', financial_document: 'finanse', financial_row: 'finanse' };
@@ -21,38 +23,6 @@ const EXAMPLES = ['CPK', 'ceny energii', 'Turów', 'KPO'];
 const KIND_LABEL: Record<string, string> = { record: 'Sejm', statement: 'Wpis', diagnosis: 'Diagnoza Dr. Spina', media: 'Media', vote: 'Głosowanie', organisation: 'Spółka z KRS', person: 'Osoba' };
 const CAMP_LABEL: Record<string, string> = { government: 'rządzący', opposition: 'opozycja', public: 'instytucja' };
 
-/** Polska typografia (zasada właściciela): jednoliterowe słowa nie zostają na końcu wiersza. */
-const nb = (text: string) => text.replace(/(^|[\s(])([aiouwzAIOUWZ])\s+/g, '$1$2 ');
-const plural = (n: number, one: string, few: string, many: string) => n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many;
-const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-const short = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : '';
-const spinColor = (v = 0) => v >= 70 ? 'var(--sc-spin-hi)' : v >= 40 ? 'var(--sc-spin-mid)' : 'var(--sc-spin-lo)';
-const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-// skróty kont instytucji pełną nazwą (panel designu 5.10: „ME” nic nie mówi czytelnikowi); NAZWISKA wielkimi literami jak zwykłe
-const INSTITUTIONS: Record<string, string> = { ME: 'Ministerstwo Energii', MF: 'Ministerstwo Finansów', MON: 'Ministerstwo Obrony Narodowej', MZ: 'Ministerstwo Zdrowia',
-  MSZ: 'Ministerstwo Spraw Zagranicznych', MSWiA: 'Ministerstwo Spraw Wewnętrznych i Administracji', KPRM: 'Kancelaria Prezesa Rady Ministrów', MEN: 'Ministerstwo Edukacji Narodowej' };
-const nice = (name: string) => INSTITUTIONS[name.trim()] ?? name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase()
-  ? w[0] + w.slice(1).toLowerCase() : w).join('');
-
-/* Ikony rodzajów (jedna linia 1,7 px, ten sam styl wszędzie) */
-const ICON: Record<string, string> = {
-  person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 20a7 7 0 0 1 14 0',
-  institution: 'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18',
-  statement: 'M4 5h16v11H9l-5 4V5Z',
-  record: 'M7 3h7l4 4v14H7V3Zm7 0v4h4M10 12h5M10 16h5',
-  media: 'M4 5h13v14H6a2 2 0 0 1-2-2V5Zm13 4h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5',
-  diagnosis: 'M3 12h4l2-5 4 10 2-5h6',
-  organisation: 'M4 21V8l8-5 8 5v13M9 21v-5h6v5M9 11h.01M15 11h.01',
-  vote: 'M5 12l4 4 10-10',
-  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 5 5',
-  rss: 'M5 11a8 8 0 0 1 8 8M5 5a14 14 0 0 1 14 14M6 19h.01',
-  down: 'M12 4v12m-5-5 5 5 5-5M5 20h14',
-};
-function Icon({ name, size = 16 }: { name: string; size?: number }) {
-  return <svg className="px-ic" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.7}
-    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICON[name] ?? ICON.statement} /></svg>;
-}
 const iconOf = (n: Node) => n.kind === 'person' && n.institution ? 'institution' : n.kind;
 
 /* Linie drzewa liczone z położenia elementów (data-g). Element po prawej: łagodna krzywa; element niżej i z wcięciem: „kolanko”
@@ -90,6 +60,21 @@ export function TopicTree() {
   const [state, setState] = useState<'idle' | 'loading' | 'error' | 'off'>('idle');
   const [start, setStart] = useState<Start | null>(null);
   const [daily, setDaily] = useState(false);
+  // tryb wyszukiwarki (sprint 1): temat albo osoba publiczna z rejestru
+  const [mode, setMode] = useState<'topic' | 'person'>('topic');
+  const [hits, setHits] = useState<PersonHit[] | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (mode !== 'person') return;
+    const q = query.trim();
+    if (q.length < 3) { setHits(null); return; }
+    const t = setTimeout(() => {
+      fetch(`/api/przeszlosc/osoby/?q=${encodeURIComponent(q)}`).then(r => r.ok ? r.json() : { results: [] })
+        .then((d: { results?: PersonHit[] }) => setHits(d.results ?? [])).catch(() => setHits([]));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query, mode]);
+  const switchMode = (next: 'topic' | 'person') => { setMode(next); setHits(null); if (next === 'person') setQuery(''); requestAnimationFrame(() => input.current?.focus()); };
 
   async function load(q: string, remember = true) {
     setState('loading');
@@ -105,12 +90,11 @@ export function TopicTree() {
     } catch { setState('error'); }
   }
   // osobna strona (przeszlosc.today): bez pasków i menu spin.clinic, własny nagłówek i stopka
+  useStandalone();
   useEffect(() => {
-    document.documentElement.dataset.standalone = '1';
-    return () => { delete document.documentElement.dataset.standalone; };
-  }, []);
-  useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get('q');
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (params.get('tryb') === 'osoba') { setMode('person'); requestAnimationFrame(() => input.current?.focus()); }
     // strona główna od razu pokazuje stan bazy i temat dnia (właściciel 5.10: „wygląda, jakby nic nie było”)
     fetch('/api/przeszlosc/start/').then(r => r.ok ? r.json() : null).then((s: Start | null) => {
       setStart(s);
@@ -132,24 +116,38 @@ export function TopicTree() {
   const pick = (t: string) => { setQuery(t); void load(t); };
 
   return <main className="px">
-    <nav className="px-bar" aria-label="Menu">
-      <a href="/przeszlosc" className="px-mark">przeszłość<i>.</i>today</a>
-      <span className="px-bar__links"><a href="#jak">Jak to działa</a><a href="#redakcje">Dla redakcji</a>
-        <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">spin.clinic ↗</a></span>
-    </nav>
+    <Bar />
 
     <header className="px-hero">
       <div className="px-hero__copy">
         <p className="px-kicker"><span className="px-dot" aria-hidden="true" />Beta · bezpłatnie · dane publiczne</p>
         <h1>Kto, co i&nbsp;kiedy w&nbsp;jednym temacie</h1>
         <p className="px-lead">{nb('Wpisz temat, a w kilka sekund zobaczysz, kto o nim mówi, co dokładnie powiedział, jak głosował Sejm i z jakimi spółkami są związani ci ludzie. Każda informacja prowadzi do oryginału.')}</p>
-        <form className="px-search" role="search" onSubmit={event => { event.preventDefault(); if (query.trim().length >= 3) void load(query.trim()); }}>
-          <Icon name="search" size={20} />
-          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Np. CPK, VAT, ceny energii" aria-label="Temat do sprawdzenia" enterKeyHint="search" />
-          <button type="submit">Pokaż</button>
-        </form>
-        <div className="px-chips"><span>{start?.auto_topics?.length ? 'Tematy dnia' : 'Przykłady'}</span>
+        <div className="px-find">
+          <div className="px-modes" role="group" aria-label="Czego szukasz">
+            <button type="button" aria-pressed={mode === 'topic'} onClick={() => switchMode('topic')}>Temat</button>
+            <button type="button" aria-pressed={mode === 'person'} onClick={() => switchMode('person')}>Osoba</button>
+          </div>
+          <form className="px-search" role="search" onSubmit={event => { event.preventDefault();
+            if (mode === 'person') { if (hits?.length) window.location.href = personHref(hits[0]); return; }
+            if (query.trim().length >= 3) void load(query.trim()); }}>
+            <Icon name={mode === 'person' ? 'person' : 'search'} size={20} />
+            <input ref={input} value={query} onChange={event => setQuery(event.target.value)} enterKeyHint="search" autoComplete="off"
+              placeholder={mode === 'person' ? 'Nazwisko, np. Kosiniak, Bosak, Zandberg' : 'Np. CPK, VAT, ceny energii'}
+              aria-label={mode === 'person' ? 'Osoba publiczna do sprawdzenia' : 'Temat do sprawdzenia'} aria-controls={mode === 'person' ? 'px-hits' : undefined} />
+            <button type="submit">Pokaż</button>
+          </form>
+          {mode === 'person' && hits && <ul className="px-hits" id="px-hits" aria-label="Znalezione osoby">
+            {hits.length ? hits.slice(0, 8).map(p => <li key={p.id}><a href={personHref(p)}>
+              <span className="px-hits__ic"><Icon name="person" /></span>
+              <span className="px-hits__body"><b>{p.name}</b><small>{p.role}</small></span>
+              {p.has_x && <em title="potwierdzone konto X">X</em>}</a></li>)
+              : <li className="px-hits__none">{nb('Nie ma takiej osoby w rejestrze osób publicznych. Sprawdź pisownię albo wpisz samo nazwisko.')}</li>}
+          </ul>}
+        </div>
+        {mode === 'topic' ? <div className="px-chips"><span>{start?.auto_topics?.length ? 'Tematy dnia' : 'Przykłady'}</span>
           {topics.slice(0, 6).map(t => <button key={t} type="button" aria-pressed={data?.topic === t} onClick={() => pick(t)}>{t}</button>)}</div>
+          : <p className="px-chips px-note">{nb('Rejestr osób publicznych: posłowie, ministrowie, urzędnicy i samorządowcy. Bez osób prywatnych. Wielkość liter i polskie znaki nie mają znaczenia.')}</p>}
       </div>
       <HeroDemo />
     </header>
@@ -198,12 +196,11 @@ export function TopicTree() {
       <div>
         <h2 id="red-h">Dla redakcji</h2>
         <p>{nb('W becie wszystko jest bezpłatne. Przygotowujemy narzędzia dla zespołów:')}</p>
-        <ul><li>alerty o&nbsp;osobach i&nbsp;tematach</li><li>eksport do publikacji z&nbsp;przypisami</li><li>wspólne teczki tematów</li></ul>
+        <ul><li>wspólne teczki tematów</li><li>eksport do publikacji z&nbsp;przypisami</li><li>API dla redakcji</li></ul>
       </div>
       <a className="px-btn" href="mailto:kontakt@spin.clinic?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji</a>
     </section>
-    <footer className="px-foot"><span>przeszłość.today prowadzi iapply sp. z&nbsp;o.o. · dane wspólne ze spin.clinic</span>
-      <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></footer>
+    <Foot />
   </main>;
 }
 
@@ -293,8 +290,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
         <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}</p>
       </div>
       <div className="px-tv__tools">
-        <a className="px-tool" href={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} target="_blank" rel="noopener noreferrer"
-          title="Kanał RSS: nowe wpisy, dokumenty i artykuły trafią do Twojego czytnika lub poczty"><Icon name="rss" />Obserwuj temat</a>
+        <Follow kind="topic" target={data.topic} label={data.topic} rss={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} />
         <Export data={data} author={author} />
       </div>
     </header>
@@ -571,6 +567,7 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
         <div className="px-panel__who"><span className="px-panel__av"><Icon name={iconOf(node)} size={22} /></span>
           <div><h2>{nice(fig?.name ?? node.label)}</h2>
             <p className="px-panel__sub">{[fig?.role_title ?? node.role, fig?.organisation, fig?.party, camp && CAMP_LABEL[camp]].filter(Boolean).join(' · ')}</p></div></div>
+        {figureId && <a className="px-btn px-panel__profile" href={personHref({ id: figureId, slug: node.slug })}>Pełny profil osoby: wpisy, głosowania, KRS, wspólne mianowniki →</a>}
         <section><h3>Powiązania w temacie</h3><TopicGraph data={data} byId={byId} focus={node.id} onOpen={onOpen} compact /></section>
         <section><h3>W tym temacie ({entriesOf(node.id).length})</h3>
           <ol className="px-panel__list">{entriesOf(node.id).map(n => <li key={n.id}><button type="button" onClick={() => onOpen({ kind: 'entry', id: n.id })}>
@@ -587,7 +584,7 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
           <ul className="px-panel__rows">{fig.x_posts.results.slice(0, 5).map(p => <li key={p.id}><span>{p.text}</span><small>{day(p.published_at)} · <a href={p.url} target="_blank" rel="noopener noreferrer">na X ↗</a></small></li>)}</ul></section>}
         <footer className="px-panel__foot">{(fig?.official_profile_url || node.url) && <a href={fig?.official_profile_url || node.url} target="_blank" rel="noopener noreferrer">Oficjalny profil ↗</a>}
           {fig?.evidence_url && <a href={fig.evidence_url} target="_blank" rel="noopener noreferrer">Źródło funkcji ↗</a>}
-          {figureId && <a href={`https://spin.clinic/osoby-publiczne/${figureId}`} target="_blank" rel="noopener noreferrer">Pełna karta w spin.clinic ↗</a>}</footer>
+          {figureId && <a href={personHref({ id: figureId, slug: node.slug })}>Pełny profil osoby →</a>}</footer>
       </> : <>
         <p className="px-panel__by">{who ? <button type="button" className="px-name" onClick={() => onOpen({ kind: 'person', id: who.id })}>{nice(who.label)}</button> : <b>{node.sub}</b>}
           {camp && CAMP_LABEL[camp] ? <span> · {CAMP_LABEL[camp]}</span> : null}<time> · {day(node.date)}</time></p>

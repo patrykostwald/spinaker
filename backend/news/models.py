@@ -1024,3 +1024,4 @@ from .feedback_models import BugReport, ClientNote, JourneyStep  # noqa: E402,F4
 from .thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRateEvent, ThreadModerationReport, ThreadModerationDecision, ThreadModerationMail  # noqa: E402,F401
 
 from .public_records_models import PublicRecord, PublicRecordPerson, PublicCollectionState, PublicCollectionJob  # noqa: E402,F401
+from .przeszlosc_models import PrzeszloscAlert  # noqa: E402,F401

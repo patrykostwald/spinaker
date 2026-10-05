@@ -91,7 +91,8 @@ def topic_graph(query):
         return key
 
     def figure(f):
-        return node(f'figure:{f.pk}', 'person', f.canonical_name, role=f.role_title, url=f.official_profile_url or f.evidence_url)
+        from news.przeszlosc_osoba import slug
+        return node(f'figure:{f.pk}', 'person', f.canonical_name, role=f.role_title, url=f.official_profile_url or f.evidence_url, slug=slug(f))
 
     # Sejm: druki, głosowania, konsultacje, lobbing - osoby tylko z oficjalnych identyfikatorów posłów
     records = (PublicRecord.objects.filter(_match(['title', 'text'], words))
@@ -387,12 +388,16 @@ def pick_topics(top=6):
     """Raz dziennie: ocenia kandydatów po bogactwie drzewa i zapisuje najlepsze tematy (ta sama reguła dla wszystkich)."""
     from django.utils import timezone
     from news.models import ImportState
-    rows = []
+    from news.przeszlosc_osoba import remember_topics
+    rows, people = [], {}
     for term in candidates():
         graph = topic_graph(term)
         if len(graph['edges']) >= 3 and len(graph['counts']) >= 3:
             rows.append({'topic': term, 'score': score(graph), 'counts': graph['counts'], 'edges': len(graph['edges'])})
+            people[term] = [int(n['id'].split(':')[1]) for n in graph['nodes'] if n['id'].startswith('figure:')]
     rows.sort(key=lambda r: -r['score'])
+    # kto występował w tematach dnia: dowód współwystępowania na profilu osoby (Wspólne mianowniki)
+    remember_topics([{'topic': r['topic'], 'people': people[r['topic']]} for r in rows[:max(top, 12)]])
     state, _ = ImportState.objects.get_or_create(name=TOPICS_STATE)
     state.cursor = {'at': timezone.now().isoformat(timespec='minutes'), 'topics': rows[:top]}
     state.save(update_fields=['cursor'])

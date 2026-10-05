@@ -592,6 +592,31 @@ def przeszlosc_topics_task():
     return {'status': 'ok', 'topics': [t['topic'] for t in przeszlosc.pick_topics()]}
 
 
+@shared_task(name="news.tasks.przeszlosc_alert_confirmation_task", soft_time_limit=60, time_limit=90)
+def przeszlosc_alert_confirmation_task(alert_id):
+    """Mail z linkiem potwierdzającym alert przeszłość.today (podwójne potwierdzenie)."""
+    from news.przeszlosc_alerts import send_confirmation
+    return send_confirmation(alert_id)
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def przeszlosc_alerts_task():
+    """Codziennie o 7:00: jeden list na adres z nowościami w obserwowanych tematach i osobach."""
+    from news import przeszlosc
+    from news.przeszlosc_alerts import send_digests
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    report = send_digests()
+    return {'status': 'error' if report['failed'] else 'ok', **report}
+
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def public_record_people_task():
+    """Co noc: dokumenty Sejmu (interpelacje, zapytania, wystąpienia) łączone z osobami po oficjalnym id posła."""
+    from news.public_record_people import link_people
+    return {'status': 'ok', **link_people()}
+
+
 @shared_task
 def x_value_task():
     """Raz dziennie: czytanie X według wartości konta (właściciel 6.10: taniej i legalnie)."""

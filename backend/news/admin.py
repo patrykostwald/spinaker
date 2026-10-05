@@ -468,6 +468,19 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
 
 from news import thread_social_admin  # noqa: E402,F401
 
+from news.przeszlosc_models import PrzeszloscAlert  # noqa: E402
+
+
+@admin.register(PrzeszloscAlert)
+class PrzeszloscAlertAdmin(admin.ModelAdmin):
+    """Alerty przeszłość.today: tylko podgląd i wypisanie; adres widzi wyłącznie administrator."""
+    list_display = ('email', 'kind', 'query', 'figure', 'status', 'created_at', 'confirmed_at', 'last_sent_at')
+    list_filter = ('status', 'kind')
+    search_fields = ('email', 'query', 'figure__canonical_name')
+    raw_id_fields = ('figure',)
+    readonly_fields = ('token', 'key', 'consent_version', 'created_at', 'confirmation_sent_at', 'confirmed_at',
+                       'unsubscribed_at', 'last_sent_at', 'sent_ids')
+
 from news.public_records_admin import register as register_public_records
 register_public_records(site)
 from news import report_admin  # noqa: E402,F401

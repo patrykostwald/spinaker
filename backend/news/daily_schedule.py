@@ -22,7 +22,9 @@ BEAT_PLAN = {
     'automatyk-daily': ('automatyk_task', {'hour': '6,13', 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
     'pracownia-osint': ('pracownia_osint_task', {'hour': '4,16', 'minute': 50}),  # właściciel 5.10: agenci rozwijający przeszłość.today
     'przeszlosc-topics': ('przeszlosc_topics_task', {'hour': 5, 'minute': 10}),  # tydzień: stan wiedzy UX/UI i przegląd wszystkich stron  # właściciel 5.10: agent naprawiający połączenia z modelami
-    'narrative-thread-daily': ('narrative_thread_task', {'hour': 21, 'minute': 45}),
+    'przeszlosc-alerts-daily': ('przeszlosc_alerts_task', {'hour': 7, 'minute': 0}),  # sprint 1: dzienny list alertów
+    'public-record-people-nightly': ('public_record_people_task', {'hour': 4, 'minute': 35}),  # dokumenty Sejmu → osoby po id posła
+    'narrative-thread-daily':('narrative_thread_task', {'hour': 21, 'minute': 45}),
     'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),
     'duty-15m': ('duty_task', {'minute': '*/5'}),  # właściciel 5.10: jak najczęściej
     'political-x-minute': ('political_poll_task', {'minute': '*'}),

@@ -8,13 +8,15 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def send_account_mail(recipient, subject, body):
+def send_account_mail(recipient, subject, body, headers=None):
     if not settings.SOURCE_MAIL_SMTP_ENABLED:
         return False
     message = EmailMessage()
     message['From'] = settings.SOURCE_MAIL_SMTP_FROM
     message['To'] = recipient
     message['Subject'] = subject
+    for name, value in (headers or {}).items():  # np. List-Unsubscribe (wypisanie jednym kliknięciem, RFC 8058)
+        message[name] = value
     message.set_content(body)
     try:
         with smtplib.SMTP_SSL(settings.SOURCE_MAIL_SMTP_HOST, settings.SOURCE_MAIL_SMTP_PORT,
