@@ -201,7 +201,7 @@ def step(force=False):
     for agent, d in flow.items():
         if d['czekają_ponad_tydzień'] >= 5:
             checks.append(f'Propozycje agenta {agent}: {d["czekają_ponad_tydzień"]} czeka na decyzję ponad tydzień - pętla rozwoju się zatyka.')
-    data = {'context': CONTEXT, 'loops': loops, 'checks': checks, 'proposals': flow, 'previous': previous(), 'knowledge': knowledge()}
+    data = {'context': CONTEXT, 'loops': loops, 'checks': checks, 'proposals': flow, 'previous': previous(), 'knowledge': knowledge(), 'canons': _canons()}
     answer, author = common.ask_any(PROMPT, data, SCHEMA, force)
     _used['author'] = author
     fixes = [f for f in answer.get('fixes', []) if isinstance(f, dict) and f.get('change')][:8]
@@ -321,3 +321,8 @@ def _found(topic):
         return badacz.feeds(topic)
     except Exception:  # noqa: BLE001 - research nie może zatrzymać agenta
         return {}
+
+
+def _canons():
+    from news.kanony import canons
+    return canons('automatyzacja') + canons('bezpieczeństwo')

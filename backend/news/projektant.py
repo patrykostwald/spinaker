@@ -126,7 +126,9 @@ def guide():
     for note in AgentNote.objects.filter(agent='projektant', kind='report', status__in=['new', 'accepted'])[:8]:
         extra += [str(x) for x in (note.scores or {}).get('guide_additions', [])]
     from news.laws_of_ux import guide_lines
-    return GUIDE + CANON + guide_lines() + list(dict.fromkeys(extra))[:12]  # Laws of UX: biblia Projektanta (właściciel 5.10)
+    from news.kanony import canons
+    kan = [f'Kanon: {c}' for c in canons('ux') + canons('dostępność')]
+    return GUIDE + CANON + guide_lines() + kan + list(dict.fromkeys(extra))[:12]  # Laws of UX: biblia Projektanta (właściciel 5.10)
 
 
 def feed_items(limit=8):

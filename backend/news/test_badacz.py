@@ -8,6 +8,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_discovers_judges_and_serves_new_sources(monkeypatch):
+    monkeypatch.setattr('news.kanony.hunt', lambda force=False: {})
     pages = {'https://nowe.pl/': '<html><head><title>Nowe Automaty</title><link rel="alternate" type="application/rss+xml" href="/feed"></head></html>',
              'https://sklep.pl/': '<html><head><link rel="alternate" type="application/rss+xml" href="https://sklep.pl/rss"></head></html>'}
     monkeypatch.setattr('requests.get', lambda url, **k: types.SimpleNamespace(text=pages.get(url, ''), content=url.encode()))
@@ -28,6 +29,7 @@ def test_discovers_judges_and_serves_new_sources(monkeypatch):
 
 
 def test_dead_feed_sleeps_after_three_failures(monkeypatch):
+    monkeypatch.setattr('news.kanony.hunt', lambda force=False: {})
     monkeypatch.setattr(badacz, '_seeds', lambda: {'https://martwe.example/feed': {'name': 'M', 'topic': 'ux', 'status': 'nasiono', 'fails': 0, 'added': None}})
     monkeypatch.setattr(badacz, 'read', lambda url, limit=5: (_ for _ in ()).throw(RuntimeError('404')))
     for _ in range(3):

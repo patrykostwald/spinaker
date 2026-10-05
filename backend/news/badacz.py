@@ -161,6 +161,11 @@ def trusted_pages(data):
 def step(force=False):
     data = load()
     trusted_pages(data)
+    try:  # łowca kanonów: „prawa wykonania” do każdego tematu (właściciel 5.10)
+        from news import kanony
+        kanony.hunt()
+    except common.WindowClosed:
+        pass
     candidates = discover(data)
     accepted = judge(candidates, force) if candidates else []
     today = timezone.localdate().isoformat()

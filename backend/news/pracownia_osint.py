@@ -271,7 +271,8 @@ def kartograf(force=False):
     if not items:
         raise common.WindowClosed('Brak nowości ze źródeł branży OSINT.')
     urls = {i['url'] for i in items}
-    answer = _ask(KARTOGRAF, {'items': items[:45], 'catalog': catalog()}, GAPS_SCHEMA, force)
+    from news.kanony import canons
+    answer = _ask(KARTOGRAF, {'items': items[:45], 'catalog': catalog(), 'canons': canons('osint')}, GAPS_SCHEMA, force)
     gaps = [g for g in answer.get('gaps', []) if isinstance(g, dict) and g.get('source_url') in urls]
     if gaps:
         gaps = _drop(gaps, _ask(KARTOGRAF_CHECK, {'items': items[:45], 'catalog': catalog(), 'gaps': gaps}, CHECK_SCHEMA, force, True))
