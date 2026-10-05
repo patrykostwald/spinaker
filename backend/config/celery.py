@@ -123,6 +123,7 @@ app.conf.beat_schedule.update(beat_entries())
 for _index, _source in enumerate((
     'votes', 'statements', 'interpellations', 'questions', 'lobby_mswia',
     'lobby_sejm', 'consultations', 'pkw', 'assets', 'meta_ads',
+    'processes', 'committees', 'krs_changes', 'ted', 'eu_transparency',
 )):
     app.conf.beat_schedule['public-records-' + _source] = {
         'task': 'scraper.tasks.collect_public_' + _source,

@@ -31,6 +31,20 @@ SEJM = API + '/sejm/term10'
 MSWIA = 'https://www.gov.pl/web/mswia/dzialalnosc-lobbingowa'
 LOBBY = 'https://www.sejm.gov.pl/sejm10.nsf/page.xsp/lobbing'
 PKW = 'https://pkw.gov.pl/finansowanie-polityki/'
+KRS_API = 'https://api-krs.ms.gov.pl/api/krs'
+TED_SEARCH = 'https://api.ted.europa.eu/v3/notices/search'
+TR_EXPORT = 'https://ec.europa.eu/transparencyregister/public/files/ODP/download/XML/latest'
+# Sejm term-scoped sources (term field, START as the earliest date).
+SEJM_SOURCES = {'votes', 'statements', 'interpellations', 'questions', 'consultations', 'assets', 'processes', 'committees'}
+# Hosts outside the Sejm API: (host, allowed path prefixes, catalogue root, channel).
+EXTERNAL = {
+    'krs_changes': ('api-krs.ms.gov.pl', ('/api/krs/Biuletyn/', '/api/krs/OdpisAktualny/'), 'https://api-krs.ms.gov.pl', 'api'),
+    'ted': ('api.ted.europa.eu', ('/v3/notices/search',), 'https://api.ted.europa.eu', 'api'),
+    'eu_transparency': ('ec.europa.eu', ('/transparencyregister/public/files/ODP/download/XML/',),
+                        'https://ec.europa.eu/transparencyregister', 'export'),
+}
+TED_FIELDS = ['publication-number', 'publication-date', 'notice-type', 'buyer-name', 'buyer-country', 'notice-title',
+              'classification-cpv', 'total-value', 'total-value-cur', 'winner-name', 'winner-identifier', 'winner-country']
 
 
 @dataclass(frozen=True)
@@ -38,6 +52,10 @@ class Spec:
     title: str
     cap: int = 100
     refresh_hours: int = 24
+    # First cycle without --since: look back N days instead of START (0 = START).
+    lookback_days: int = 0
+    # Later cycles re-read this many days before the previous cycle start.
+    overlap_days: int = 7
 
     def flag(self, source):
         return 'PUBLIC_RECORDS_' + source.upper() + '_ENABLED'
@@ -54,6 +72,11 @@ SOURCES = {
     'pkw': Spec('Finanse partii i komitetów PKW', 40, 168),
     'assets': Spec('Indeks oświadczeń majątkowych', 60, 168),
     'meta_ads': Spec('Archiwum reklam politycznych Meta', 30, 24),
+    'processes': Spec('Procesy legislacyjne Sejmu', 150, 6),
+    'committees': Spec('Komisje sejmowe i ich posiedzenia', 100, 24),
+    'krs_changes': Spec('Zmiany w KRS obserwowanych podmiotów', 60, 24, lookback_days=3, overlap_days=2),
+    'ted': Spec('Ogłoszenia TED zamawiających z Polski', 60, 24, lookback_days=14, overlap_days=2),
+    'eu_transparency': Spec('Rejestr przejrzystości UE (Polska)', 2, 168),
 }
 
 
@@ -67,7 +90,10 @@ def setting_int(source, suffix, default, maximum):
 def enqueue(state, url, kind, context=None):
     url = parsers.public_url(url)
     context = context or {}
-    identity = sha256((kind + '\n' + url).encode()).hexdigest()
+    key = kind + '\n' + url
+    if 'body' in context:  # POST pages share one URL; the body is part of identity.
+        key += '\n' + json.dumps(context['body'], sort_keys=True)
+    identity = sha256(key.encode()).hexdigest()
     job, created = PublicCollectionJob.objects.get_or_create(state=state, identity=identity,
         defaults={'url': url, 'kind': kind, 'context': context})
     return job, created
@@ -87,7 +113,7 @@ def figure_for(term, mp_id):
 def save(job, raw, kind, external_id, *, data=None, title='', text='', source_url=None,
          date_value=None, people=(), print_number='', receipt=None):
     defaults = dict(data=data or {}, title=title, text=text,
-        term=TERM if job.state.source in {'votes', 'statements', 'interpellations', 'questions', 'consultations', 'assets'} else None,
+        term=TERM if job.state.source in SEJM_SOURCES else None,
         source_url=source_url or job.url, response_url=job.url, response_sha256=sha256(raw).hexdigest(),
         fetched_at=timezone.now(), date=parsers.day(date_value), print_number=print_number, fetch_attempt=receipt)
     defaults['official_print'] = (OfficialRecord.objects.filter(provider='sejm',
@@ -137,6 +163,26 @@ def seed(state, since, incremental=False):
     elif source == 'pkw':
         for part in ('finansowanie-partii-politycznych', 'finansowanie-kampanii-wyborczych'):
             enqueue(state, PKW + part, 'pkw_page', {**context, 'depth': 0})
+    elif source == 'processes':
+        filters = {'modifiedSince': since.isoformat() + 'T00:00:00', 'sort': 'lastModif'}
+        enqueue(state, page_url(SEJM + '/processes', filters), 'process_index', {'filters': filters, 'offset': 0})
+    elif source == 'committees':
+        enqueue(state, SEJM + '/committees', 'committee_index', context)
+    elif source == 'krs_changes':
+        from news.political_models import RegisteredOrganisation
+        if not RegisteredOrganisation.objects.filter(archived=False).exists():
+            return  # Only companies we already track; nothing to watch yet.
+        today = timezone.localdate()
+        first = max(since, today - timedelta(days=14))
+        for offset in range((today - first).days + 1):
+            day_value = (first + timedelta(days=offset)).isoformat()
+            enqueue(state, f'{KRS_API}/Biuletyn/{day_value}', 'krs_bulletin', {'day': day_value})
+    elif source == 'ted':
+        body = {'query': f"buyer-country=POL AND publication-date>={since:%Y%m%d}", 'fields': TED_FIELDS,
+                'limit': 100, 'page': 1, 'paginationMode': 'PAGE_NUMBER', 'scope': 'ALL'}
+        enqueue(state, TED_SEARCH, 'ted_page', {'body': body})
+    elif source == 'eu_transparency':
+        enqueue(state, TR_EXPORT, 'tr_export', context)
     elif source == 'meta_ads':
         version = os.environ.get('META_AD_LIBRARY_API_VERSION', '')
         if not re.fullmatch(r'v\d+\.0', version):
@@ -169,12 +215,16 @@ def source_access(job):
     pkw = source == 'pkw' and p.hostname == 'pkw.gov.pl' and (
         p.path.startswith('/finansowanie-polityki/') or p.path.startswith('/uploaded_files/'))
     meta = source == 'meta_ads' and p.hostname == 'graph.facebook.com' and re.fullmatch(r'/v\d+\.0/ads_archive', p.path)
-    if not (api or html_sejm or mswia or pkw or meta) or p.scheme != 'https':
+    external = EXTERNAL.get(source)
+    other = bool(external) and p.hostname == external[0] and p.path.startswith(external[1])
+    if external:
+        api = False  # A new external collector never borrows the Sejm card.
+    if not (api or html_sejm or mswia or pkw or meta or other) or p.scheme != 'https':
         raise AccessDenied('collector_url_out_of_scope')
     root = API + '/sejm' if api else ('https://www.gov.pl/web/mswia' if mswia else
-            'https://graph.facebook.com' if meta else 'https://' + p.hostname)
+            'https://graph.facebook.com' if meta else external[2] if other else 'https://' + p.hostname)
     provider = Source.objects.filter(url=root).first()
-    channel = 'api' if api or meta else 'html'
+    channel = external[3] if other else 'api' if api or meta else 'html'
     instruction = approved_instruction(provider, channel, job.url)
     if instruction is None:
         raise AccessDenied('no_approved_instruction')
@@ -205,7 +255,12 @@ def fetch(job, token):
         state.requests_today += 1
         state.next_request_at = now + timedelta(seconds=interval)
         state.save(update_fields=['budget_day', 'requests_today', 'next_request_at'])
-    headers = None
+    if job.kind == 'tr_export':
+        return transparency_download(job.url, provider, instruction), None
+    headers, method, body = None, 'GET', None
+    if job.kind == 'ted_page':
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+        method, body = 'POST', json.dumps(job.context['body']).encode()
     if source == 'meta_ads':
         secret = os.environ.get('META_AD_LIBRARY_TOKEN', '')
         if not secret:
@@ -215,7 +270,25 @@ def fetch(job, token):
     # Tokens are headers only, never stored in job URLs, cursors or error strings.
     return fetch_feed(job.url, hostname_transport=True, audit_source=provider,
         audit_instruction=instruction, requested_kind='api_record' if instruction.channel == 'api' else 'page',
-        request_headers=headers, return_receipt=True, budget_share=0.6)
+        request_headers=headers, return_receipt=True, budget_share=0.6, method=method, body=body)
+
+
+def transparency_download(url, provider, instruction):
+    """Weekly 100+ MB open-data export: stream, keep only Polish entries, return them as JSON.
+
+    The shared transport stops at 5 MB, so this one export is streamed here with the
+    same access card (checked again just before the request), no redirects and a hard size cap.
+    """
+    import requests
+    from scraper.utils import SOURCE_USER_AGENT
+    if approved_instruction(provider, instruction.channel, url) is None:
+        raise AccessDenied('no_approved_instruction')
+    with requests.get(url, stream=True, allow_redirects=False, timeout=(10, 120),
+                      headers={'User-Agent': SOURCE_USER_AGENT}) as response:
+        if response.status_code != 200:
+            raise ValueError(f'http_{response.status_code}')
+        rows = parsers.transparency_polish(response.iter_content(1 << 16))
+    return json.dumps(rows, ensure_ascii=False, sort_keys=True).encode()
 
 
 def _next_page(job, rows, base):
@@ -429,6 +502,90 @@ def handle(job, raw, receipt=None):
             child, created = enqueue(state, ctx['base'] + '?' + urlencode(filters), 'meta_page', {**ctx, 'filters': filters})
             if not created and child.done:
                 raise ValueError('repeated_meta_cursor')
+    elif kind == 'process_index':
+        rows = _json(raw, list)
+        for row in rows:
+            if row.get('term') != TERM:
+                raise ValueError('process_term_mismatch')
+            number = str(row['number'])
+            enqueue(state, f'{SEJM}/processes/{quote(number, safe="")}', 'process', {'number': number})
+        _next_page(job, rows, SEJM + '/processes')
+    elif kind == 'process':
+        payload = _json(raw, dict)
+        if str(payload.get('number')) != ctx['number']:
+            raise ValueError('process_identity_mismatch')
+        data = parsers.process(payload, TERM)
+        keys = [v['key'] for v in data['votings']]
+        # Link to what we already hold: ballots (votes collector) and Sejm prints (OfficialRecord).
+        official_votes = set(OfficialRecord.objects.filter(provider='sejm',
+            external_id__in=['vote/' + key for key in keys]).values_list('external_id', flat=True))
+        data['linked_votings'] = [key for key in keys if 'vote/' + key in official_votes or PublicRecord.objects.filter(
+            source='votes', kind='ballot', external_id__startswith=key + '/').exists()]
+        data['linked_prints'] = list(OfficialRecord.objects.filter(provider='sejm',
+            external_id__in=[f'print/{TERM}/{n}' for n in data['prints']]).values_list('external_id', flat=True))
+        put('process', f"{TERM}/{ctx['number']}", data=data, title=payload.get('title', ''),
+            text=payload.get('description') or '', print_number=ctx['number'][:32],
+            date_value=payload.get('processStartDate') or payload.get('documentDate'),
+            source_url=f'{SEJM}/processes/{quote(ctx["number"], safe="")}')
+    elif kind == 'committee_index':
+        for row in _json(raw, list):
+            data, members = parsers.committee(row)
+            put('committee', f"{TERM}/{data['code']}", data=data, title=data.get('name', data['code']),
+                date_value=data.get('appointmentDate'), people=members,
+                source_url=f"{SEJM}/committees/{data['code']}")
+            enqueue(state, f"{SEJM}/committees/{data['code']}/sittings", 'committee_sittings',
+                    {**ctx, 'code': data['code'], 'name': data.get('name', '')})
+    elif kind == 'committee_sittings':
+        for row in _json(raw, list):
+            data, agenda = parsers.committee_sitting(row, ctx['code'])
+            if data['date'] < ctx['since']:
+                continue
+            data['linked_prints'] = list(OfficialRecord.objects.filter(provider='sejm',
+                external_id__in=[f'print/{TERM}/{n}' for n in data['prints']]).values_list('external_id', flat=True))
+            put('committee_sitting', f"{TERM}/{ctx['code']}/{data['num']}", data={**data, 'committee': ctx['name']},
+                title=f"{ctx['name'] or ctx['code']} - posiedzenie nr {data['num']}", text=agenda,
+                date_value=data['date'], source_url=f"{SEJM}/committees/{ctx['code']}/sittings/{data['num']}")
+    elif kind == 'krs_bulletin':
+        from news.political_models import RegisteredOrganisation
+        counts = parsers.krs_bulletin(_json(raw, list))
+        for org in RegisteredOrganisation.objects.filter(krs_number__in=list(counts), archived=False).order_by('krs_number'):
+            put('krs_bulletin_entry', f"{org.krs_number}/{ctx['day']}", title=org.name, date_value=ctx['day'],
+                data={'krs': org.krs_number, 'day': ctx['day'], 'entries': counts[org.krs_number],
+                      'organisation_id': org.pk}, source_url=job.url)
+            register = org.register if org.register in {'P', 'S'} else 'P'
+            enqueue(state, f'{KRS_API}/OdpisAktualny/{org.krs_number}?rejestr={register}&format=json', 'krs_extract',
+                    {'krs': org.krs_number, 'day': ctx['day'], 'organisation_id': org.pk})
+    elif kind == 'krs_extract':
+        header = parsers.krs_header(_json(raw, dict), ctx['krs'])
+        put('krs_change', f"{ctx['krs']}/{header['last_entry_number']}", title=header['name'],
+            date_value=header['last_entry_date'] or ctx['day'],
+            data={**header, 'bulletin_day': ctx['day'], 'organisation_id': ctx['organisation_id']})
+    elif kind == 'ted_page':
+        payload = _json(raw, dict)
+        notices = payload.get('notices')
+        if not isinstance(notices, list):
+            raise ValueError('ted_response_shape')
+        for row in notices:
+            data = parsers.ted_notice(row)
+            put('notice', data['id'], data=data, title=data['title'], source_url=data['url'],
+                text='; '.join(data['buyer']), date_value=data['date'] or None)
+        body = ctx['body']
+        total = int(payload.get('totalNoticeCount') or 0)
+        if notices and len(notices) == body['limit'] and body['page'] * body['limit'] < min(total, 15000):
+            enqueue(state, job.url, 'ted_page', {'body': {**body, 'page': body['page'] + 1}})
+    elif kind == 'tr_export':
+        rows = _json(raw, list)
+        seen = []
+        for row in rows:
+            put('organisation', row['id'], data=row, title=row['name'], date_value=row.get('updated') or row.get('registered'),
+                text=row.get('goals', ''),
+                source_url='https://transparency-register.europa.eu/searchregister-or-update/organisation-detail_en?id=' + row['id'])
+            seen.append(row['id'])
+        # An organisation that left the export stays as evidence, marked as absent.
+        for record in PublicRecord.objects.filter(source=state.source, kind='organisation').exclude(external_id__in=seen):
+            if record.data.get('status') != 'brak_w_eksporcie':
+                record.data = {**record.data, 'status': 'brak_w_eksporcie'}
+                record.save(update_fields=['data'])
     else:
         raise ValueError('unknown_job_kind')
 
@@ -464,7 +621,7 @@ def collect(source, *, since=None, max_requests=None):
     if source == 'meta_ads' and not os.environ.get('META_AD_LIBRARY_TOKEN'):
         return {'status': 'disabled', 'reason': 'meta_token_required', 'new_records': 0}
     since = parsers.day(since) if since else None
-    earliest = START if source in {'votes', 'statements', 'interpellations', 'questions', 'consultations', 'assets'} else date(1970, 1, 1)
+    earliest = START if source in SEJM_SOURCES else date(1970, 1, 1)
     if since and (since < earliest or since > timezone.localdate()):
         raise ValueError('since_outside_source_range')
     limit = setting_int(source, 'BATCH_REQUESTS', 4, 20)
@@ -486,7 +643,8 @@ def collect(source, *, since=None, max_requests=None):
             if not since and previous_scan and now - previous_scan < timedelta(hours=spec.refresh_hours):
                 return {'status': 'idle', 'new_records': 0}
             state.jobs.all().delete()
-            start = since or (state.cycle_started_at.date() - timedelta(days=7) if previous_scan else START)
+            first_start = timezone.localdate() - timedelta(days=spec.lookback_days) if spec.lookback_days else START
+            start = since or (state.cycle_started_at.date() - timedelta(days=spec.overlap_days) if previous_scan else first_start)
             # Archive indexes (wealth, PKW, lobbying) need a full rediscovery for corrections.
             if source in {'assets', 'pkw', 'lobby_mswia', 'lobby_sejm'} and not since:
                 start = START
@@ -505,7 +663,7 @@ def collect(source, *, since=None, max_requests=None):
             if job is None:
                 status = 'deferred' if state.jobs.filter(done=False).exists() else 'ok'
                 break
-            binary = job.kind in {'osr_text', 'register_pdf', 'pkw_xlsx'}
+            binary = job.kind in {'osr_text', 'register_pdf', 'pkw_xlsx', 'tr_export'}
             if binary and documents:
                 break  # At most one document per tick, never a large-file loop.
             requests += 1

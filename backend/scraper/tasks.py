@@ -322,3 +322,28 @@ def collect_public_assets():
 def collect_public_meta_ads():
     from scraper.public_records import collect
     return collect('meta_ads')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_processes():
+    from scraper.public_records import collect
+    return collect('processes')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_committees():
+    from scraper.public_records import collect
+    return collect('committees')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_krs_changes():
+    from scraper.public_records import collect
+    return collect('krs_changes')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_ted():
+    from scraper.public_records import collect
+    return collect('ted')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_eu_transparency():
+    from scraper.public_records import collect
+    return collect('eu_transparency')

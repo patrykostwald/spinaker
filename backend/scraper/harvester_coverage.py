@@ -17,6 +17,9 @@ DIRECT_SCHEDULES = {
     'https://www.gov.pl/web/finanse': 'ministry-finance-metadata-6h',
     'https://dane.gov.pl': 'dane-gov-metadata-daily',
     'https://stat.gov.pl': 'gus-bdl-metadata-daily',
+    'https://api-krs.ms.gov.pl': 'public-records-krs_changes (PUBLIC_RECORDS_KRS_CHANGES_ENABLED)',
+    'https://api.ted.europa.eu': 'public-records-ted (PUBLIC_RECORDS_TED_ENABLED)',
+    'https://ec.europa.eu/transparencyregister': 'public-records-eu_transparency (PUBLIC_RECORDS_EU_TRANSPARENCY_ENABLED)',
 }
 
 DIRECT_NAMES = {

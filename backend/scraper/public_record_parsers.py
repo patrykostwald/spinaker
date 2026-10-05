@@ -283,3 +283,284 @@ def meta_ad(row):
             'delivery_by_region', 'ad_creative_bodies')
     # In particular, never retain ad_snapshot_url (it can contain an access token).
     return {key: row[key] for key in keys if key in row}
+
+
+# --- 092: procesy, komisje, KRS, TED, rejestr przejrzystości UE --------------------------------------------
+
+PRINT_REF = re.compile(r'druk(?:i|ów|u|ach)?\s+(?:sejmow\w*\s+)?nr\s*((?:\d+(?:-[A-Za-z0-9]+)?(?:\s*(?:,|i|oraz)\s*)?)+)', re.I)
+
+
+def strip_tags(value):
+    """Agenda fields are small official HTML fragments; keep text only."""
+    if not value:
+        return ''
+    return HTML(value).root.text() if '<' in value else ' '.join(value.split())
+
+
+def print_refs(text):
+    found = []
+    for match in PRINT_REF.finditer(text or ''):
+        for number in re.findall(r'\d+(?:-[A-Za-z0-9]+)?', match.group(1)):
+            if number not in found:
+                found.append(number)
+    return found
+
+
+def process_stages(stages, parent=''):
+    """Flatten the Sejm stage tree; keep voting identity for linking ballots."""
+    rows = []
+    for stage in stages or []:
+        if not isinstance(stage, dict):
+            raise ValueError('process_stage_shape')
+        row = {k: stage[k] for k in ('date', 'stageName', 'stageType', 'printNumber', 'committeeCode',
+                                       'decision', 'sittingNum', 'type', 'comment') if stage.get(k) not in (None, '')}
+        if parent:
+            row['parent'] = parent
+        voting = stage.get('voting')
+        if isinstance(voting, dict) and voting.get('sitting') and voting.get('votingNumber'):
+            row['voting'] = {k: voting.get(k) for k in ('term', 'sitting', 'votingNumber', 'date', 'yes', 'no',
+                                                         'abstain', 'notParticipating', 'totalVoted', 'title')}
+        rows.append(row)
+        rows.extend(process_stages(stage.get('children'), stage.get('stageName', '')))
+    return rows
+
+
+def process(payload, term):
+    if not isinstance(payload, dict) or payload.get('term') != term or not payload.get('number'):
+        raise ValueError('process_identity_mismatch')
+    stages = process_stages(payload.get('stages'))
+    prints = [str(payload['number'])]
+    for value in [s.get('printNumber') for s in stages] + list(payload.get('printsConsideredJointly') or []):
+        if value and str(value) not in prints:
+            prints.append(str(value))
+    votings = []
+    for stage in stages:
+        v = stage.get('voting')
+        if v:
+            key = f"{term}/{int(v['sitting'])}/{int(v['votingNumber'])}"
+            if key not in [x['key'] for x in votings]:
+                votings.append({**v, 'key': key, 'stage': stage.get('parent') or stage.get('stageName', '')})
+    data = {k: payload.get(k) for k in ('number', 'documentType', 'documentTypeEnum', 'passed', 'UE', 'urgencyStatus',
+                                         'ELI', 'displayAddress', 'closureDate', 'changeDate', 'processStartDate',
+                                         'documentDate', 'titleFinal', 'description', 'shortenProcedure',
+                                         'legislativeCommittee', 'principleOfSubsidiarity') if payload.get(k) not in (None, '')}
+    data.update(stages=stages, prints=prints, votings=votings,
+                links=[x['href'] for x in payload.get('links') or [] if isinstance(x, dict) and x.get('href')])
+    return data
+
+
+def committee(row):
+    if not isinstance(row, dict) or not re.fullmatch(r'[A-Z0-9]{2,8}', str(row.get('code', ''))):
+        raise ValueError('committee_shape')
+    members = [{k: m.get(k) for k in ('id', 'lastFirstName', 'club', 'function', 'joinDate', 'leaveDate') if m.get(k)}
+               for m in row.get('members') or [] if isinstance(m, dict) and m.get('id')]
+    data = {k: row.get(k) for k in ('code', 'name', 'nameGenitive', 'type', 'appointmentDate', 'compositionDate',
+                                     'scope', 'subCommittees') if row.get(k) not in (None, '')}
+    data['members'] = members
+    return data, [m['id'] for m in members]
+
+
+def committee_sitting(row, code):
+    if not isinstance(row, dict) or not isinstance(row.get('num'), int) or not row.get('date'):
+        raise ValueError('committee_sitting_shape')
+    if row.get('code') and row['code'] != code:
+        raise ValueError('committee_sitting_identity_mismatch')
+    agenda = strip_tags(row.get('agenda'))
+    data = {k: row.get(k) for k in ('num', 'date', 'startDateTime', 'endDateTime', 'closed', 'remote', 'city',
+                                     'room', 'status', 'notes', 'comments', 'audio') if row.get(k) not in (None, '')}
+    data.update(code=code, jointWith=[j for j in row.get('jointWith') or [] if isinstance(j, dict)],
+                video=[v.get('videoLink') or v.get('playerLink') for v in row.get('video') or []
+                       if isinstance(v, dict) and (v.get('videoLink') or v.get('playerLink'))],
+                prints=print_refs(agenda))
+    return data, agenda
+
+
+def krs_number(value):
+    value = str(value).strip()
+    if not value.isdecimal() or len(value) > 10:
+        raise ValueError('krs_bulletin_shape')
+    return value.zfill(10)
+
+
+def krs_bulletin(payload):
+    """Biuletyn KRS: lista numerów (powtórzenie = kolejny wpis tego dnia)."""
+    if not isinstance(payload, list):
+        raise ValueError('krs_bulletin_shape')
+    counts = {}
+    for value in payload:
+        number = krs_number(value)
+        counts[number] = counts.get(number, 0) + 1
+    return counts
+
+
+def pl_date(value):
+    if not value:
+        return None
+    match = re.fullmatch(r'(\d{2})\.(\d{2})\.(\d{4})', str(value).strip())
+    return f'{match[3]}-{match[2]}-{match[1]}' if match else str(value)[:10]
+
+
+def krs_header(payload, krs):
+    """Tylko nagłówek odpisu (stan, ostatni wpis, sąd); dane osób nigdy nie są czytane ani zapisywane."""
+    try:
+        header = payload['odpis']['naglowekA']
+    except (KeyError, TypeError):
+        raise ValueError('krs_extract_shape')
+    if str(header.get('numerKRS', '')).zfill(10) != krs:
+        raise ValueError('krs_identity_mismatch')
+    name = ''
+    try:
+        name = payload['odpis']['dane']['dzial1']['danePodmiotu']['nazwa']
+    except (KeyError, TypeError):
+        pass
+    return {
+        'krs': krs, 'register': header.get('rejestr', ''), 'name': name,
+        'state_date': pl_date(header.get('stanZDnia')),
+        'last_entry_number': header.get('numerOstatniegoWpisu'),
+        'last_entry_date': pl_date(header.get('dataOstatniegoWpisu')),
+        'case_reference': header.get('sygnaturaAktSprawyDotyczacejOstatniegoWpisu', ''),
+        'court': header.get('oznaczenieSaduDokonujacegoOstatniegoWpisu', ''),
+    }
+
+
+def _lang(value, order=('pol', 'eng')):
+    """TED multilingual field: dict lang -> str | [str]."""
+    if isinstance(value, dict):
+        for lang in order:
+            if value.get(lang):
+                return value[lang]
+        return next((v for v in value.values() if v), '')
+    return value or ''
+
+
+def _unique(values):
+    seen = []
+    for value in values or []:
+        if value not in (None, '') and value not in seen:
+            seen.append(value)
+    return seen
+
+
+def ted_notice(row):
+    if not isinstance(row, dict) or not re.fullmatch(r'\d{1,8}-\d{4}', str(row.get('publication-number', ''))):
+        raise ValueError('ted_notice_shape')
+    number = row['publication-number']
+    buyers = _lang(row.get('buyer-name'))
+    winners = _lang(row.get('winner-name'))
+    title = _lang(row.get('notice-title'))
+    value = row.get('total-value')
+    currency = row.get('total-value-cur')
+    return {
+        'id': number,
+        'date': str(row.get('publication-date', ''))[:10],
+        'notice_type': row.get('notice-type', ''),
+        'buyer': _unique(buyers if isinstance(buyers, list) else [buyers]),
+        'buyer_country': _unique(row.get('buyer-country') or ['POL']),
+        'title': title if isinstance(title, str) else ' '.join(title),
+        'cpv': _unique(row.get('classification-cpv')),
+        'value': value[0] if isinstance(value, list) and value else value,
+        'currency': (currency[0] if isinstance(currency, list) and currency else currency) or '',
+        'winners': _unique(winners if isinstance(winners, list) else [winners]),
+        'winner_ids': _unique(row.get('winner-identifier')),
+        'winner_country': _unique(row.get('winner-country')),
+        'url': f'https://ted.europa.eu/pl/notice/-/detail/{number}',
+    }
+
+
+# XML 1.1: odwołania do znaków sterujących, których expat (XML 1.0) nie przyjmie.
+_XML11_CONTROL = re.compile(rb'&#(?:[xX]0*(?:[0-8bBcCeE]|1[0-9a-fA-F])|0*(?:[0-8]|1[124-9]|2[0-9]|3[01]));')
+_XML11_DECL = re.compile(rb"^(<\?xml[^>]*version=)(?:'1\.1'|\"1\.1\")")
+TR_POLISH = re.compile(r'\b(polsk|poland|polish|pologne|polen)', re.I)
+
+
+def _text(el, path):
+    return ' '.join((el.findtext(path) or '').split())
+
+
+def transparency_entry(el):
+    """Organizacja z rejestru przejrzystości UE; bez telefonów, adresów i nazw osób."""
+    code = _text(el, 'identificationCode')
+    if not re.fullmatch(r'\d{6,15}-\d{2}', code):
+        raise ValueError('transparency_entry_shape')
+    head, eu = _text(el, 'headOffice/country'), _text(el, 'EUOffice/country')
+    closed = el.find('financialData/closedYear')
+    finance = {}
+    if closed is not None:
+        costs = closed.find('costs')
+        finance = {
+            'start': _text(closed, 'startDate'), 'end': _text(closed, 'endDate'),
+            'cost_min': _text(closed, 'costs/range/min') or None, 'cost_max': _text(closed, 'costs/range/max') or None,
+            'cost_exact': _text(closed, 'costs/absoluteCost') or None,
+            'currency': costs.get('currency', '') if costs is not None else '',
+            'total_budget': _text(closed, 'totalBudget/absoluteCost') or _text(closed, 'totalBudget') or None,
+            'grants': [{'source': _text(g, 'source'), 'amount': _text(g, 'amount/absoluteCost') or None}
+                       for g in closed.findall('grants/grant')][:50],
+            'clients': _unique(_text(c, 'name') for c in closed.findall('.//client'))[:100],
+            'intermediaries': _unique(_text(i, 'name') for i in closed.findall('.//intermediary'))[:100],
+            # Darczyńcy mogą być osobami prywatnymi: tylko liczba, bez nazw.
+            'contributors': len(closed.findall('.//contributor')),
+        }
+    return {
+        'id': code, 'name': _text(el, 'name/originalName'), 'acronym': _text(el, 'acronym'),
+        'form': _text(el, 'entityForm'), 'website': _text(el, 'webSiteURL'),
+        'category': _text(el, 'registrationCategory'),
+        'head_office_city': _text(el, 'headOffice/city'), 'head_office_country': head, 'eu_office_country': eu,
+        'registered': _text(el, 'registrationDate')[:10], 'updated': _text(el, 'lastUpdateDate')[:10],
+        'goals': _text(el, 'goals')[:2000], 'proposals': _text(el, 'EULegislativeProposals')[:2000],
+        'interests': _unique(_text(i, 'name') for i in el.findall('interests/interest')),
+        'levels': _unique(_text(i, 'levelOfInterest') for i in el.findall('levelsOfInterest/levelOfInterest')),
+        'members_fte': _text(el, 'members/membersFTE') or None,
+        'ep_accredited': _text(el, 'EPAccreditedNumber') or None,
+        'represented': _text(el, 'interestRepresented'),
+        'finance': finance,
+        'match': 'siedziba' if 'POLAND' in (head, eu) else 'wzmianka',
+    }
+
+
+def transparency_polish(chunks, max_bytes=300_000_000):
+    """Strumień eksportu XML -> tylko organizacje z Polski albo z polskim interesem (bez całego pliku w pamięci)."""
+    from xml.etree.ElementTree import XMLPullParser
+    parser = XMLPullParser(events=('end',))
+    rows, buffer, size, started, total = [], b'', 0, False, [0]
+
+    def drain():
+        for _, el in parser.read_events():
+            if el.tag != 'interestRepresentative':
+                continue
+            total[0] += 1
+            head, eu = _text(el, 'headOffice/country'), _text(el, 'EUOffice/country')
+            if 'POLAND' in (head, eu) or TR_POLISH.search(_text(el, 'name/originalName') + ' ' + _text(el, 'goals')):
+                rows.append(transparency_entry(el))
+            el.clear()
+
+    def feed(part):
+        parser.feed(_XML11_CONTROL.sub(b'', part))
+        drain()
+
+    for chunk in chunks:
+        size += len(chunk)
+        if size > max_bytes:
+            raise ValueError('Source response too large')
+        buffer += chunk
+        if not started:
+            if len(buffer) < 4096:
+                continue
+            if b'<!DOCTYPE' in buffer[:4096] or b'<!ENTITY' in buffer[:4096]:
+                raise ValueError('unsafe_xml')
+            buffer, started = _XML11_DECL.sub(rb"\g<1>'1.0'", buffer), True
+        # Odwołanie znakowe może być rozcięte między kawałkami: zostaw ogon od ostatniego '&'.
+        cut = buffer.rfind(b'&')
+        if cut == -1 or len(buffer) - cut > 16:
+            cut = len(buffer)
+        part, buffer = buffer[:cut], buffer[cut:]
+        feed(part)
+    if not started:
+        if b'<!DOCTYPE' in buffer or b'<!ENTITY' in buffer:
+            raise ValueError('unsafe_xml')
+        buffer = _XML11_DECL.sub(rb"\g<1>'1.0'", buffer)
+    feed(buffer)
+    parser.close()
+    drain()
+    if not total[0]:
+        raise ValueError('transparency_export_empty')
+    return rows

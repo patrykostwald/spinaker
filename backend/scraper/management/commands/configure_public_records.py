@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from news.models import Source, SourceAccessInstruction
-from scraper.public_records import SOURCES, API, SEJM, MSWIA, LOBBY, PKW
+from scraper.public_records import SOURCES, API, SEJM, MSWIA, LOBBY, PKW, KRS_API, TED_SEARCH, TR_EXPORT
 
 
 def cards(source):
@@ -43,6 +43,19 @@ def cards(source):
     if source == 'pkw':
         return [('https://pkw.gov.pl', 'html', PKW.rstrip('/'), 'metadata', []),
                 ('https://pkw.gov.pl', 'html', 'https://pkw.gov.pl/uploaded_files', 'metadata', [])]
+    if source == 'processes':
+        return [(sejm, 'api', SEJM + '/processes', 'metadata', [
+            '/sejm/term10/processes', '/sejm/term10/processes/{token}'])]
+    if source == 'committees':
+        return [(sejm, 'api', SEJM + '/committees', 'metadata', [
+            '/sejm/term10/committees', '/sejm/term10/committees/{token}/sittings'])]
+    if source == 'krs_changes':
+        return [('https://api-krs.ms.gov.pl', 'api', KRS_API, 'metadata', [
+            '/api/krs/Biuletyn/{token}', '/api/krs/OdpisAktualny/{token}'])]
+    if source == 'ted':
+        return [('https://api.ted.europa.eu', 'api', TED_SEARCH, 'metadata', [])]
+    if source == 'eu_transparency':
+        return [('https://ec.europa.eu/transparencyregister', 'export', TR_EXPORT.rsplit('/', 1)[0], 'metadata', [])]
     if source == 'meta_ads':
         version = os.environ.get('META_AD_LIBRARY_API_VERSION', '')
         if not re.fullmatch(r'v\d+\.0', version):
