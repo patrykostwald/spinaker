@@ -1,12 +1,11 @@
 import { DocumentLink as Link, documentTranslator, type DocumentLanguage } from "./locale";
-import { CouncilRecruitmentLog, CouncilRoster, HowItWorksFilm } from "@spin-clinic/ui";
+import { CouncilLoops, CouncilRecruitmentLog, CouncilRoster } from "@spin-clinic/ui";
 import { DocLayout } from "@spin-clinic/ui/kit";
 import type { CSSProperties } from "react";
 
 export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const t = documentTranslator(lang);
   const sections = [
-    { id: "film", label: "Film" },
     { id: "droga", label: t("Droga wpisu") },
     { id: "role", label: t("Kto co robi") },
     { id: "glosy", label: t("Jak łączymy głosy") },
@@ -14,16 +13,6 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     { id: "narzedzia", label: t("Narzędzia") },
     { id: "granice", label: t("Granice analizy") },
     { id: "zasady", label: t("Zasady i błędy") },
-  ];
-
-  /** Kolejność jak w kodzie: clinic_council.diagnose (głosy → łączenie → fakty → laboratorium → uzasadnienie → recenzja → język). */
-  const FLOW = [
-    [t("Selekcja"), t("Strażnik czyta nowe wpisy polityków i wybiera te, które zawierają tezę do sprawdzenia.")],
-    [t("Niezależne głosy"), t("Kilka modeli różnych firm ocenia wpis osobno. Żaden nie widzi odpowiedzi innych.")],
-    [t("Łączenie"), t("Stałe reguły łączą głosy w jeden werdykt, siłę spinu i listę technik.")],
-    [t("Źródła i badania"), t("Twierdzenia trafiają do wyszukiwarki, a laboratorium dodaje badania pomocnicze. Każde źródło musi pochodzić z tych wyników.")],
-    [t("Uzasadnienie"), t("Przewodniczący pisze diagnozę na podstawie ustaleń, recenzent sprawdza zgodność, a językoznawca poprawia polszczyznę.")],
-    [t("Publikacja"), t("Diagnoza ukazuje się automatycznie, z głosami modeli i ograniczeniami. Nikt nie edytuje jej treści. Wybrane wyniki trafiają też jako skróty i filmy do mediów społecznościowych - zawsze z linkiem do pełnej analizy.")],
   ];
 
   const ROLES = [
@@ -67,12 +56,9 @@ export function CouncilDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
 
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/council" : "/konsylium"} eyebrow={t("KONSYLIUM AI")} title={<>{t("Kilka modeli AI,")}<br />{t("jedna diagnoza")}</>} version="1.1" updatedAt="2026-09-29" sections={sections}
     lead={t("Kilka modeli AI różnych firm osobno ocenia wybrane wpisy polityków. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę - z jawnym składem i ograniczeniami. Modele mogą się mylić.")}>
-    <section aria-label={t("Film: jak działa spin.clinic")}><HowItWorksFilm lang={lang} /></section>
-
-
     <section id="droga"><h2>{t("Droga wpisu do diagnozy")}</h2>
-      <ol className="sc-kons-flow">{FLOW.map(([title, text], index) =>
-        <li key={title}><span className="sc-kons-flow__n">{index + 1}</span><strong>{title}</strong><p>{text}</p></li>)}</ol>
+      <p>{t("Dwie pętle: na zewnątrz agenci pracują nad wpisem, w środku modele różnych firm oceniają go osobno, a stałe reguły łączą ich głosy.")}</p>
+      <CouncilLoops lang={lang} />
     </section>
 
     <section id="role"><h2>{t("Kto co robi")}</h2>
