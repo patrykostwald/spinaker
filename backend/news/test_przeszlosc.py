@@ -92,3 +92,11 @@ def test_topic_rss(settings):
     assert '<item>' in body and 'VAT &amp; akcyza &lt;test&gt;' in body and 'Osoba' not in body
     with mock.patch.object(przeszlosc, 'enabled', return_value=False):
         assert Client().get('/api/przeszlosc/rss/', {'q': 'VAT'}).status_code == 404
+
+
+def test_expand_vat_matches_full_name():
+    """Skrót VAT trafia też w pełną nazwę podatku (druki Sejmu piszą ją słownie)."""
+    from news.przeszlosc import EXPAND, _match
+    assert 'podatek od towarów i usług' in EXPAND['vat']
+    q = str(_match(['title'], ['VAT']))
+    assert 'podatku od towarów i usług' in q and 'VAT' in q

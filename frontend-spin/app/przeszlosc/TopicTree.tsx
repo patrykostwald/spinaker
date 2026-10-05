@@ -6,7 +6,7 @@ import { Loading } from '@spin-clinic/ui/kit';
  * przeszłość.today, tydzień 1 (właściciel 5.10): drzewo powiązań tematu z danych spin.clinic.
  * Kolumny według rodzaju, najechanie lub dotknięcie podświetla powiązane elementy; pod spodem oś czasu.
  */
-type Node = { id: string; kind: string; label: string; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
+type Node = { id: string; kind: string; label: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
 type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
@@ -147,7 +147,9 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
   // panel osoby albo wpisu (właściciel 6.10: „nie można wejść w nic, tylko odnosi do źródła”)
   const [panel, setPanel] = useState<{ kind: 'person' | 'entry'; id: string } | null>(null);
   useEffect(() => { const p = new URLSearchParams(window.location.search);
-    const o = p.get('osoba'), w = p.get('wpis'); if (o) setPanel({ kind: 'person', id: o }); else if (w) setPanel({ kind: 'entry', id: w }); }, [data.topic]);
+    const o = p.get('osoba'), w = p.get('wpis'); if (o) setPanel({ kind: 'person', id: o }); else if (w) setPanel({ kind: 'entry', id: w });
+    else { const q = data.topic.trim().toLowerCase(); const hit = data.nodes.find(n => n.kind === 'person' && !n.institution && n.label.toLowerCase() === q);
+      if (hit) setPanel({ kind: 'person', id: hit.id }); } }, [data.topic]); // eslint-disable-line react-hooks/exhaustive-deps
   const openPanel = (next: { kind: 'person' | 'entry'; id: string } | null) => {
     setPanel(next); const p = new URLSearchParams(window.location.search); p.delete('osoba'); p.delete('wpis');
     if (next) p.set(next.kind === 'person' ? 'osoba' : 'wpis', next.id);
@@ -176,7 +178,8 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
   const events = allEvents.filter(n => (!since || (n.date ?? '') >= since) && (kindFilter === 'all' || (kindFilter === 'government' || kindFilter === 'opposition' ? n.camp === kindFilter
     : kindFilter === 'diag' ? diagnosisOf.has(n.id) : n.kind === kindFilter)));
   const shown = more ? events : events.slice(0, 18);
-  const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => b.links - a.links);
+  // osoby najpierw, instytucje i konta partii po nich (audyt 6.10: instytucja to nie osoba)
+  const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => Number(Boolean(a.institution)) - Number(Boolean(b.institution)) || b.links - a.links);
   const media = new Map<string, number>();
   for (const n of data.nodes) if (n.kind === 'media' && n.sub) media.set(n.sub, (media.get(n.sub) ?? 0) + 1);
   const mediaRows = [...media.entries()].sort((a, b) => b[1] - a[1]);
@@ -215,11 +218,11 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
           const who = author.get(n.id);
           const dg = diagnosisOf.get(n.id);
           const kind = n.kind === 'statement' ? '' : `${KIND_LABEL[n.kind]}${n.kind === 'record' && n.sub ? ` · ${SUB[n.sub] ?? n.sub}` : ''}${n.kind === 'media' && n.sub ? ` · ${n.sub}` : ''}`;
-          const cite = `${n.date ?? ''} · ${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])} · ${n.url ?? ''} · via przeszłość.today`;
+          const cite = `„${n.text ?? n.label}” (${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])}${who?.role ? `, ${who.role}` : ''}, ${n.date ?? ''}). Źródło: ${n.url ?? ''}. Zestawienie: przeszłość.today, ${typeof window === 'undefined' ? '' : window.location.origin}/przeszlosc?q=${encodeURIComponent(data.topic)}&wpis=${encodeURIComponent(n.id)}`;
           return [head, <li key={n.id} className="sc-tv__item" data-kind={n.kind} data-camp={n.camp || undefined}
             data-on={hot && who?.id === hot ? '' : undefined} data-copied={copied === n.id || undefined}>
             <span className="sc-tv__who"><span>{who ? <button type="button" className="sc-tv__pbtn" onClick={() => openPanel({ kind: 'person', id: who.id })}>{nice(who.label)}</button> : (n.kind === 'media' ? n.sub : KIND_LABEL[n.kind])}{n.camp && CAMP_LABEL[n.camp] ? <em> · {CAMP_LABEL[n.camp]}</em> : null}</span>{kind && <small>{kind}</small>}</span>
-            <p data-full={full.has(n.id) || undefined}>{n.label}</p>
+            <p data-full={full.has(n.id) || undefined}>{n.text ?? n.label}</p>
             {who && <span className="sc-tv__twig" aria-label="Powiązania wpisu"><i>{nice(who.label)}</i><i>wpis</i>{dg && <i data-dg>spin {dg.intensity}/100</i>}
               {(roles.get(who.id)?.length ?? 0) > 0 && <i>KRS: {roles.get(who.id)!.length}</i>}</span>}
             <span className="sc-tv__links">
@@ -238,7 +241,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
           <h3>Kto występuje</h3>
           <ul className="sc-tv__people" data-all={allPeople || undefined}>{people.slice(0, 16).map(p => {
             const r = roles.get(p.id) ?? [];
-            return <li key={p.id} data-camp={p.camp || undefined} onMouseEnter={() => setHot(p.id)} onMouseLeave={() => setHot(null)}
+            return <li key={p.id} data-camp={p.camp || undefined} data-inst={p.institution || undefined} onMouseEnter={() => setHot(p.id)} onMouseLeave={() => setHot(null)}
               onFocus={() => setHot(p.id)} onBlur={() => setHot(null)}>
               <span className="sc-tv__pname"><button type="button" className="sc-tv__pbtn" onClick={() => openPanel({ kind: 'person', id: p.id })}>{nice(p.label)}</button><small title="wystąpień w temacie">{p.links}×</small></span>
               {p.role && <span className="sc-tv__prole">{p.role}</span>}
@@ -316,7 +319,7 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
       </> : <>
         <p className="sc-ptp__by">{who ? <button type="button" className="sc-tv__pbtn" onClick={() => onOpen({ kind: 'person', id: who.id })}>{nice(who.label)}</button> : node.sub}
           {camp && CAMP_LABEL[camp] ? <em> · {CAMP_LABEL[camp]}</em> : null}<time> · {day(node.date)}</time></p>
-        <blockquote className="sc-ptp__text">{node.label}</blockquote>
+        <blockquote className="sc-ptp__text">{node.text ?? node.label}</blockquote>
         {diag && <section className="sc-ptp__dg"><h3>Diagnoza Dr. Spina</h3>
           {!dg ? <p className="sc-ptp__note">Wczytuję diagnozę…</p> : <>
             <p className="sc-ptp__score"><b data-hi={dg.intensity >= 70 || undefined}>{dg.intensity}</b><small>/100 · {dg.verdict_label}</small></p>
@@ -385,7 +388,7 @@ function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
   const stamp = new Date().toLocaleDateString('sv-SE');
   const slug = data.topic.toLowerCase().replace(/[^a-z0-9ąćęłńóśźż]+/gi, '-').replace(/^-|-$/g, '') || 'temat';
   const rows = data.nodes.filter(n => n.kind !== 'person').map(n => ({
-    data: n.date ?? '', rodzaj: KIND_EXPORT[n.kind] ?? n.kind, tresc: n.label, autor: author.get(n.id)?.label ?? '',
+    data: n.date ?? '', rodzaj: KIND_EXPORT[n.kind] ?? n.kind, tresc: n.text ?? n.label, autor: author.get(n.id)?.label ?? '',
     strona: n.camp === 'government' ? 'rządzący' : n.camp === 'opposition' ? 'opozycja' : '', zrodlo: n.sub ?? '', link: n.url ?? '',
   })).sort((a, b) => b.data.localeCompare(a.data));
   const csv = () => {

@@ -10045,3 +10045,6 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-tv__twig { gap: 0; }
 .sc-tv__twig i + i::before { content: "→"; display: inline; width: auto; height: auto; margin: 0 6px 0 0; background: none; transform: none; color: var(--sc-text-3); }
 .sc-tv__twig i { padding: 2px 8px 2px 0; background: none; }
+
+.sc-tv__people > li[data-inst] { opacity: .8; } .sc-tv__people > li[data-inst] .sc-tv__pname::after { content: "instytucja"; margin-left: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-text-3); }
+.sc-tv__item p { -webkit-line-clamp: 4; }

@@ -25,7 +25,17 @@ def terms(query):
 EXPAND = {'cpk': ['Centralny Port Komunikacyjny', 'Centralnego Portu Komunikacyjnego', 'Port Polska', 'Portu Polska', 'Portem Polska'],
           'kpo': ['Krajowy Plan Odbudowy', 'Krajowego Planu Odbudowy'], 'krrit': ['Krajowa Rada Radiofonii', 'Krajowej Rady Radiofonii'],
           'nfz': ['Narodowy Fundusz Zdrowia', 'Narodowego Funduszu Zdrowia'], 'zus': ['Zakład Ubezpieczeń Społecznych', 'Zakładu Ubezpieczeń Społecznych'],
-          'oze': ['odnawialnych źródeł', 'odnawialne źródła']}
+          'oze': ['odnawialnych źródeł', 'odnawialne źródła'],
+          'vat': ['podatek od towarów i usług', 'podatku od towarów i usług', 'podatkiem od towarów i usług'],
+          'pit': ['podatek dochodowy od osób fizycznych', 'podatku dochodowym od osób fizycznych', 'podatku dochodowego od osób fizycznych'],
+          'cit': ['podatek dochodowy od osób prawnych', 'podatku dochodowym od osób prawnych', 'podatku dochodowego od osób prawnych'],
+          'mon': ['Ministerstwo Obrony Narodowej', 'Ministra Obrony Narodowej', 'obronie Ojczyzny', 'obrony narodowej'],
+          'nato': ['Sojuszu Północnoatlantyckiego', 'Traktatu Północnoatlantyckiego'],
+          'cpn': ['paliw', 'stacjach paliw', 'cen paliw', 'Ceny Paliw Niżej'],
+          'rcb': ['Rządowe Centrum Bezpieczeństwa', 'Rządowego Centrum Bezpieczeństwa', 'zarządzaniu kryzysowym'],
+          'ue': ['Unii Europejskiej', 'Unia Europejska'], 'krs': ['Krajowy Rejestr Sądowy', 'Krajowego Rejestru Sądowego'],
+          'tk': ['Trybunał Konstytucyjny', 'Trybunału Konstytucyjnego'], 'sn': ['Sąd Najwyższy', 'Sądu Najwyższego'],
+          'pkp': ['Polskie Koleje Państwowe', 'kolei'], 'lpg': ['gazu płynnego', 'autogazu']}
 
 
 def _stem(word):
@@ -75,7 +85,9 @@ def topic_graph(query):
         return {'topic': query, 'terms': [], 'nodes': [], 'edges': [], 'counts': {}}
 
     def node(key, kind, label, **meta):
-        nodes.setdefault(key, {'id': key, 'kind': kind, 'label': label[:160], **meta})
+        label = label or ''
+        extra = {'text': label[:4000]} if len(label) > 160 else {}
+        nodes.setdefault(key, {'id': key, 'kind': kind, 'label': label[:160], **extra, **meta})
         return key
 
     def figure(f):
@@ -105,7 +117,7 @@ def topic_graph(query):
         key = node(f'post:{post.pk}', 'statement', post.text, date=post.published_at.date().isoformat(), url=post.url,
                    sub=post.account.display_name, camp=post.camp_at_collection)
         author = people.get(post.account_id)
-        who = figure(author) if author else node(f'account:{post.account_id}', 'person', post.account.display_name)
+        who = figure(author) if author else node(f'account:{post.account_id}', 'person', post.account.display_name, institution=True)
         nodes[who].setdefault('camp', post.camp_at_collection)
         edges.append({'source': who, 'target': key, 'label': 'napisał(a)'})
         diagnosis = diagnoses.get(post.pk)
