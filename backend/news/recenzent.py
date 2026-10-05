@@ -150,7 +150,10 @@ def step(force=False, items=None):
             cache.set(_key(item), 1, 60 * 60 * 24 * 14)
     by_id = {i['id']: i for i in items}
     for f in findings:
-        f['action'] = _act(f, by_id.get(f['id'], {}))
+        try:
+            f['action'] = _act(f, by_id.get(f['id'], {}))
+        except Exception as error:  # noqa: BLE001 - jedna nieudana akcja nie może zgubić całej recenzji (teksty są już oznaczone)
+            f['action'] = f'błąd akcji: {type(error).__name__}'
         f['url'] = by_id.get(f['id'], {}).get('url', '')
     critical = [f for f in findings if f.get('severity') == 'krytyczne']
     note = AgentNote.objects.create(agent='recenzent', kind='review', status='new' if findings else 'done',

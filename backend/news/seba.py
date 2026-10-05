@@ -73,7 +73,12 @@ def enqueue_warden(review):
 
 
 def author(note):
-    return note.scores.get('author') or ({'company': 'local'} if note.kind == 'finding' else {})
+    """Autor propozycji do wyboru krytyka innej firmy. Bez danych modelu (pomysły Architekta, Automatyka, Opiekuna
+    sprzed 6.10, notatki systemowe) - firma „local”, żeby choose() nie blokował oceny na zawsze (audyt pętli 5.10, P1)."""
+    info = (note.scores or {}).get('author')
+    if isinstance(info, dict) and info.get('company') not in (None, '', 'unknown'):
+        return info
+    return {**(info if isinstance(info, dict) else {}), 'company': 'local'}
 
 
 def inventory(note):

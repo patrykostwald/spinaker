@@ -184,7 +184,10 @@ def visible_statuses():
     return ['approved', 'pending', 'waiting'] if publish_first() else ['approved']
 
 
+@transaction.atomic
 def enqueue(thread, evidence):
+    # Własna transakcja: select_for_update poza nią rzuca TransactionManagementError (6.10: Recenzent odsyłał spinkę
+    # do recenzji poza atomic(), krok kończył się błędem co 2 h, a Opiekun pisał o tym setki wpisów).
     payload = snapshot(thread, evidence)
     fingerprint = digest(payload)
     field = 'thread' if hasattr(thread, 'signal_kind') else 'editorial_thread'

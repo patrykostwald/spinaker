@@ -10,7 +10,15 @@ type Note = { id: number; kind: string; track: string; title: string; body: stri
 type WardenItem = { id: number; handle: string; status: string; reason: string; first_decision: string; second_decision: string;
   evidence: { old_name?: string; new_name?: string; expected_name?: string }; second_evidence: unknown;
   created_at: string; due_at: string; last_error: string; seba: { reason: string }[]; seba_waiting: boolean };
-const kinds: Record<string, string> = { signal: 'Sygnały', idea: 'Pomysły', finding: 'Znaleziska', experiment: 'Eksperymenty', request: 'Prośby', report: 'Raporty' };
+const kinds: Record<string, string> = { signal: 'Sygnały', idea: 'Pomysły', finding: 'Znaleziska', experiment: 'Eksperymenty', request: 'Prośby', report: 'Raporty', review: 'Recenzje', audit: 'Audyty' };
+// Nazwy agentów w panelu; lista przycisków przychodzi z API (wszyscy agenci z AgentNote), nowi agenci dostają nazwę z klucza.
+const agentLabels: Record<string, string> = { strateg: 'Strateg', pielgrzym: 'Pielgrzym', ekspert: 'Ekspert AI', recenzent: 'Recenzent',
+  projektant: 'Projektant UX/UI', kartograf: 'Kartograf', zwiadowca: 'Zwiadowca', prawnik: 'Prawnik', dziennikarz: 'Dziennikarz testowy',
+  kontroler: 'Kontroler danych', architekt: 'Architekt', wynalazca: 'Wynalazca', technolog: 'Technolog', automatyk: 'Automatyk',
+  opiekun: 'Opiekun pętli', dyrygent: 'Dyrygent', warden: 'Drugi klucz' };
+const defaultAgents = ['strateg', 'pielgrzym', 'ekspert', 'recenzent', 'projektant'];
+const agentLabel = (name: string) => agentLabels[name] || name.charAt(0).toUpperCase() + name.slice(1);
+const readKinds = ['finding', 'review', 'audit', 'report', 'signal'];
 const statuses: Record<string, string> = { new: 'Nowy', accepted: 'Przyjęty', rejected: 'Odrzucony', done: 'Zakończony', pending: 'Czeka na zgodę', approved: 'Zgoda zapisana', denied: 'Odmowa' };
 
 type AgentRow = { id: string; name: string; description: string; collector: boolean; flag: string;
@@ -186,6 +194,17 @@ export function AgentsPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<number | null>(null);
   const [revision, setRevision] = useState(0);
+  const [agents, setAgents] = useState<string[]>(defaultAgents);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch('/api/staff/agents/map/', {
+      credentials: 'include', cache: 'no-store', signal: controller.signal,
+      headers: { Accept: 'application/json', 'X-Frontend-Domain': process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic' },
+    }).then(response => response.ok ? response.json() : null)
+      .then(data => { if (data && Array.isArray(data.agents) && data.agents.length) setAgents(data.agents.filter((a: unknown) => typeof a === 'string')); })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
@@ -228,8 +247,8 @@ export function AgentsPanel() {
     <AgentMap />
     <p>Strateg rozwija serwis. Pielgrzym zbiera propozycje dla Konsylium. Ekspert AI raz w tygodniu pisze stan wiedzy o AI (tylko ze źródłami) i wskazuje Rekruterowi modele do egzaminu. Seba sprawdza pomysły przed Twoją decyzją. Drugi klucz weryfikuje wnioski Strażnika kont.</p>
     <div className="sc-command-toolbar"><div role="group" aria-label="Wybór agenta">
-      {['strateg', 'pielgrzym', 'ekspert', 'recenzent', 'projektant', 'warden'].map(name => <button className="sc-command-filter" type="button" key={name} aria-pressed={agent === name}
-        onClick={() => { setAgent(name); setOffset(0); }}>{name === 'strateg' ? 'Strateg' : name === 'warden' ? 'Drugi klucz' : name === 'ekspert' ? 'Ekspert AI' : name === 'recenzent' ? 'Recenzent' : name === 'projektant' ? 'Projektant UX/UI' : 'Pielgrzym'}</button>)}
+      {[...agents, 'warden'].map(name => <button className="sc-command-filter" type="button" key={name} aria-pressed={agent === name}
+        onClick={() => { setAgent(name); setOffset(0); }}>{agentLabel(name)}</button>)}
     </div><label>Rodzaj <select disabled={agent === 'warden'} value={kind} onChange={e => { setKind(e.target.value); setOffset(0); }}>
       <option value="">Wszystkie</option>{Object.entries(kinds).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
     </select></label><button className="sc-command-refresh" type="button" disabled={loading} onClick={() => setRevision(v => v + 1)}>Odśwież dziennik</button></div>
@@ -250,6 +269,9 @@ export function AgentsPanel() {
           <button className="sc-command-filter" disabled={saving !== null} onClick={() => void decide(note, 'denied')}>Odmowa</button></div>}
         {['idea', 'experiment'].includes(note.kind) && note.status === 'new' && <div>
           <button className="sc-command-refresh" disabled={saving !== null} onClick={() => void decide(note, 'accepted')}>Biorę</button>{' '}
+          <button className="sc-command-filter" disabled={saving !== null} onClick={() => void decide(note, 'rejected')}>Odrzucam</button></div>}
+        {readKinds.includes(note.kind) && note.status === 'new' && <div>
+          <button className="sc-command-refresh" disabled={saving !== null} onClick={() => void decide(note, 'done')}>Przeczytane</button>{' '}
           <button className="sc-command-filter" disabled={saving !== null} onClick={() => void decide(note, 'rejected')}>Odrzucam</button></div>}
       </div></article>)}
     {rejected.length > 0 && <details><summary>Odrzucone przez Sebę ({rejected.length})</summary>

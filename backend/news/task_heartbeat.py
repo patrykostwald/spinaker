@@ -37,7 +37,8 @@ def summary(result):
                   'no_free_models': 'Pominięto: brak wolnych modeli',
                   'blocked_access_review': 'Zablokowane: przegląd dostępu', 'brak odpowiedzi': 'Brak odpowiedzi'}
         states.update(partial='Porcja zakończona', deferred='Odroczone: limit lub odstęp',
-                      idle='Oczekuje na następny cykl', needs_review='Dokumenty wymagają kontroli')
+                      idle='Oczekuje na następny cykl', needs_review='Dokumenty wymagają kontroli',
+                      waiting='Czeka na okno modeli', closed='Okno modeli zamknięte')
         if result.get('status') in states:
             safe.insert(0, states[result['status']])
         for key in ('completed', 'failed', 'errors', 'screened'):
@@ -45,6 +46,18 @@ def summary(result):
                 safe.append(f'{key}: {len(result[key])}')
         return '; '.join(safe)[:240] or 'Zakończono; wynik szczegółowy nie jest zapisywany.'
     return 'Zakończono; wynik szczegółowy nie jest zapisywany.'
+
+
+def produced(result):
+    """Ile wpisów wyprodukowało zadanie: pole „produced”, a bez niego „note” (jeden wpis). None, gdy zadanie tego nie mówi."""
+    if not isinstance(result, dict):
+        return None
+    value = result.get('produced')
+    if isinstance(value, int) and not isinstance(value, bool):
+        return max(0, value)
+    if 'note' in result:
+        return 1 if result.get('note') else 0
+    return None
 
 
 def record(sender, phase, task_id=None, args=None, kwargs=None, result=None, exception=None):
@@ -75,6 +88,12 @@ def record(sender, phase, task_id=None, args=None, kwargs=None, result=None, exc
                     data.update(consecutive_errors=0, error_since=None)
                     if phase == 'ok':
                         data['last_success'] = now
+                # Wynik pętli (audyt 5.10, P5): kiedy zadanie ostatnio coś wyprodukowało, nie tylko kiedy ruszyło.
+                count = produced(result)
+                if count is not None:
+                    data['last_produced'] = count
+                    if count > 0 and phase == 'ok':
+                        data['last_output_at'] = now
                 # Retain a classification, never the exception message or a
                 # provider response. Generic HTTPError can otherwise hide 402.
                 from news.repairer import permanent, transient
@@ -104,7 +123,7 @@ def started(sender=None, task_id=None, args=None, kwargs=None, **extra):
 def succeeded(sender=None, result=None, **extra):
     failed_result = isinstance(result, dict) and (result.get('status') in ('error', 'failed', 'too_many_failures') or bool(result.get('error')) or bool(result.get('failed')) or bool(result.get('errors')))
     skipped = isinstance(result, dict) and result.get('status') in (
-        'no_free_models', 'closed', 'disabled', 'already_run', 'busy', 'daily_limit', 'locked', 'already_running')
+        'no_free_models', 'closed', 'disabled', 'already_run', 'busy', 'daily_limit', 'locked', 'already_running', 'waiting')
     if getattr(sender, 'name', '') == 'news.tasks.political_poll_task' and isinstance(result, dict):
         skipped = result.get('status') not in ('ok', 'idle')
     if getattr(sender, 'name', '').startswith('scraper.tasks.collect_public_') and isinstance(result, dict):

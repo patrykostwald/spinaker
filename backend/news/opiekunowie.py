@@ -9,12 +9,13 @@
 Zamiast 4 osobnych agentów na każdą z kilkunastu pętli (dziesiątki agentów i limitów) to cztery role, które obchodzą pętle
 po kolei - każda pętla ma swoich opiekunów, a koszt i limity modeli zostają pod kontrolą. Opiekunowie tylko proponują i alarmują.
 Pętle i ich stan bierzemy z Automatyka (LOOPS, health), więc nowa pętla dopisana tam od razu dostaje opiekunów."""
+import re
 from datetime import timedelta
 
 from django.core.cache import cache
 from django.utils import timezone
 
-from news import agents_common as common
+from news import agents_common as common, council_registry as registry
 from news import automatyk
 from news.agent_models import AgentNote
 
@@ -49,9 +50,29 @@ CHECK_PROMPT = ('Sprawdź propozycje kolegi dla tej pętli. W remove podaj numer
                 'pętli albo łamiących zasady z context.')
 
 
-def _note(role, loop, kind, title, body, data, score=0):
+def _note(role, loop, kind, title, body, data, score=0, author=None):
+    if author is not None:  # Seba wybiera krytyka innej firmy i może poprosić autora o jedną poprawkę
+        data = {**data, 'author': registry.metadata(author) if author else {'company': 'local'}}
     return AgentNote.objects.create(agent='opiekun', kind=kind, status='new', title=f'{loop} · {role}: {title}'[:240], body=body,
                                     scores={'role': role, 'loop': loop, **data}, score=score)
+
+
+def error_kind(summary):
+    """Rodzaj błędu z podsumowania kroku: nazwa wyjątku albo tekst bez liczb i dat (ten sam błąd = ten sam klucz)."""
+    text = str(summary or '')
+    found = re.search(r'\b([A-Z]\w*(?:Error|Exception|Timeout))\b', text)
+    if found:
+        return found.group(1)
+    return re.sub(r'\s+', ' ', re.sub(r'[\d:./-]+', '#', text)).strip()[:60]
+
+
+def alarm_key(bad):
+    """Klucz otwartego alarmu: kroki, wynik i rodzaj błędu (6.10: sto prawie identycznych wpisów o tym samym błędzie)."""
+    return ' | '.join(sorted(f"{s.get('step')}:{s.get('result')}:{error_kind(s.get('summary'))}" for s in bad))[:400]
+
+
+def open_note(role, loop, key):
+    return AgentNote.objects.filter(agent='opiekun', status='new', scores__role=role, scores__loop=loop, scores__key=key).first()
 
 
 def _loop_context(loop):
@@ -64,8 +85,10 @@ def _loop_context(loop):
             'notes': notes}
 
 
-def _ask(prompt, data, schema, force, key):
+def _ask(prompt, data, schema, force, key, used=None):
     answer, author = common.ask_any(prompt, data, schema, force)
+    if used is not None:
+        used['author'] = author
     rows = [r for r in answer.get(key, []) if isinstance(r, dict)]
     reason = ''
     if rows:
@@ -76,7 +99,8 @@ def _ask(prompt, data, schema, force, key):
 
 
 def alarms():
-    """Bez AI: kroki z błędem albo spóźnione, per pętla; najwyżej raz na 6 godzin na pętlę."""
+    """Bez AI: kroki z błędem albo spóźnione, per pętla; najwyżej raz na 6 godzin na pętlę. Jeden otwarty wpis na
+    (pętla, kroki, rodzaj błędu): powtórka tego samego alarmu odświeża istniejący wpis zamiast tworzyć nowy."""
     state, _ = automatyk.loops_state()
     raised = []
     for item in state:
@@ -87,7 +111,16 @@ def alarms():
         if not cache.add(key, 1, int(ALARM_EVERY.total_seconds())):
             continue
         lines = [f"- {s['step']}: {'błąd' if s['result'] == 'error' else 'spóźniony lub pominięty'} ({s.get('summary', '')[:120]})" for s in bad]
-        note = _note('alarmowy', item['loop'], 'audit', f'{len(bad)} krok(i) do sprawdzenia', chr(10).join(lines), {'alerts': bad})
+        signature, now = alarm_key(bad), timezone.now().isoformat()
+        existing = open_note('alarmowy', item['loop'], signature)
+        if existing:
+            scores = dict(existing.scores)
+            scores.update(alerts=bad, repeats=int(scores.get('repeats') or 1) + 1, last_seen=now)
+            existing.scores, existing.body = scores, chr(10).join(lines)
+            existing.save(update_fields=['scores', 'body'])
+            continue
+        note = _note('alarmowy', item['loop'], 'audit', f'{len(bad)} krok(i) do sprawdzenia', chr(10).join(lines),
+                     {'alerts': bad, 'key': signature, 'repeats': 1, 'last_seen': now})
         common.notify(note)
         raised.append(note)
     return raised
@@ -95,11 +128,17 @@ def alarms():
 
 def repair(note, force=False):
     loop = note.scores['loop']
+    key = note.scores.get('key') or alarm_key(note.scores.get('alerts', []))
+    existing = open_note('naprawiacz', loop, key)
+    if existing:  # ten sam błąd ma już otwartą propozycję naprawy - bez wywołania modelu i bez nowego wpisu
+        return existing
     data = {**_loop_context(loop), 'alerts': note.scores.get('alerts', [])}
-    summary, fixes, reason = _ask(ROLE_PROMPT['naprawiacz'], data, FIXES, force, 'fixes')
+    used = {}
+    summary, fixes, reason = _ask(ROLE_PROMPT['naprawiacz'], data, FIXES, force, 'fixes', used)
     body = chr(10).join([summary, ''] + [f"- {f['change']} ({f['effort']}): {f['why']}{chr(10)}  Zlecenie: {f['brief']}" for f in fixes])
-    return _note('naprawiacz', loop, 'finding', f'{len(fixes)} propozycji naprawy', body.strip(), {'fixes': fixes, 'check': reason, 'alarm': note.pk},
-                 score=max([int(f.get('impact') or 0) * 10 for f in fixes] or [0]))
+    return _note('naprawiacz', loop, 'finding', f'{len(fixes)} propozycji naprawy', body.strip(),
+                 {'fixes': fixes, 'check': reason, 'alarm': note.pk, 'key': key},
+                 score=max([int(f.get('impact') or 0) * 10 for f in fixes] or [0]), author=used.get('author'))
 
 
 def _least_recent(role, count):
@@ -119,10 +158,11 @@ def improve(force=False, count=IMPROVE_PER_DAY):
         previous = [n.title for n in AgentNote.objects.filter(agent='opiekun', scores__role='usprawniacz', scores__loop=loop)[:5]]
         data = {**_loop_context(loop), 'previous': previous,
                 'automatyk': [n.title for n in AgentNote.objects.filter(agent='automatyk', kind='idea')[:6]]}
-        summary, fixes, reason = _ask(ROLE_PROMPT['usprawniacz'], data, FIXES, force, 'fixes')
+        used = {}
+        summary, fixes, reason = _ask(ROLE_PROMPT['usprawniacz'], data, FIXES, force, 'fixes', used)
         body = chr(10).join([summary, ''] + [f"- {f['change']} ({f['effort']}, wpływ {f['impact']}/10): {f['why']}{chr(10)}  Zlecenie: {f['brief']}" for f in fixes])
         note = _note('usprawniacz', loop, 'idea' if fixes else 'report', f'{len(fixes)} usprawnień', body.strip(), {'fixes': fixes, 'check': reason},
-                     score=max([int(f.get('impact') or 0) * 10 for f in fixes] or [0]))
+                     score=max([int(f.get('impact') or 0) * 10 for f in fixes] or [0]), author=used.get('author'))
         done.append(note)
     return done
 
@@ -176,6 +216,31 @@ def step(force=False):
 
 
 def alarms_without_repair(limit=2):
-    repaired = set(AgentNote.objects.filter(agent='opiekun', scores__role='naprawiacz').values_list('scores__alarm', flat=True)[:200])
+    repairs = [n.scores or {} for n in AgentNote.objects.filter(agent='opiekun', scores__role='naprawiacz')[:200]]
+    repaired = {r.get('alarm') for r in repairs}
+    open_keys = {((n.scores or {}).get('loop'), (n.scores or {}).get('key'))
+                 for n in AgentNote.objects.filter(agent='opiekun', scores__role='naprawiacz', status='new')[:200]}
     return [n for n in AgentNote.objects.filter(agent='opiekun', scores__role='alarmowy',
-                                                created_at__gte=timezone.now() - timedelta(days=1))[:10] if n.pk not in repaired][:limit]
+                                                created_at__gte=timezone.now() - timedelta(days=1))[:10]
+            if n.pk not in repaired and (n.scores.get('loop'), n.scores.get('key')) not in open_keys][:limit]
+
+
+def duplicate_groups():
+    """Otwarte wpisy Opiekuna pogrupowane po (rola, pętla, klucz błędu), najnowszy pierwszy. Do jednorazowego sprzątania."""
+    rows = list(AgentNote.objects.filter(agent='opiekun', status='new').order_by('-created_at', '-pk'))
+    alarm_keys = {n.pk: n.scores.get('key') or alarm_key(n.scores.get('alerts', []))
+                  for n in rows if n.scores.get('role') == 'alarmowy'}
+    groups = {}
+    for n in rows:
+        role, loop = n.scores.get('role'), n.scores.get('loop')
+        if role == 'alarmowy':
+            key = alarm_keys[n.pk]
+        elif role == 'naprawiacz':
+            key = n.scores.get('key') or alarm_keys.get(n.scores.get('alarm'))
+            if key is None:
+                source = AgentNote.objects.filter(pk=n.scores.get('alarm')).first()
+                key = alarm_key(source.scores.get('alerts', [])) if source else re.sub(r'\d+', '#', n.title)
+        else:
+            key = re.sub(r'\d+', '#', n.title)
+        groups.setdefault((role, loop, key), []).append(n)
+    return groups

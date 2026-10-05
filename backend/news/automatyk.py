@@ -13,7 +13,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from news import agents_common as common
+from news import agents_common as common, council_registry as registry
 from news.agent_models import AgentNote
 
 # Pętle obu portali: kroki w kolejności przepływu; id = klucz w rejestrze agentów (None = człowiek lub poza harmonogramem);
@@ -220,7 +220,7 @@ def step(force=False):
     for f in fixes[:3]:
         AgentNote.objects.create(agent='automatyk', kind='idea', status='new', title=f"Pętla {f['loop']}: {f['change']}"[:240],
             body=f"{f['why']}\nDowód: {f['evidence']}\nZlecenie: {f['brief']}", score=max(0, min(100, int(f.get('impact') or 0) * 10)),
-            scores={'audit': note.pk, **f})
+            scores={'audit': note.pk, **f, 'author': registry.metadata(author) if author else {'company': 'local'}})
     if any(i.get('severity') == 'wysoki' for i in issues) or any('wyłączony' in c or 'błędem' in c for c in checks):
         common.notify(note)
     return note

@@ -486,7 +486,7 @@ def recenzent_task():
             note = recenzent.step()
     except WindowClosed as error:
         return {'status': 'waiting', 'reason': str(error)}
-    return {'status': 'ok', 'note': note.pk if note else None}
+    return {'status': 'ok', 'note': note.pk if note else None, 'produced': 1 if note else 0}
 
 
 @shared_task
@@ -503,7 +503,7 @@ def projektant_task():
             note = projektant.step()
     except WindowClosed as error:
         return {'status': 'waiting', 'reason': str(error)}
-    return {'status': 'ok', 'note': note.pk}
+    return {'status': 'ok', 'note': note.pk, 'produced': 1}
 
 
 @shared_task
@@ -542,8 +542,7 @@ def opiekunowie_task():
     from news import dyrygent
     with dyrygent.tier('niezawodność'):
         done = opiekunowie.step()
-    failed = sum(isinstance(v, str) and v.startswith('błąd') for v in done.values())
-    return {'status': 'error' if failed else 'ok', 'failed': failed}
+    return role_status(done, counts=True)
 
 
 @shared_task
@@ -566,7 +565,7 @@ def automatyk_task():
                 learned = automatyk.learn().pk
         except WindowClosed:
             learned = None
-    return {'status': 'ok', 'note': note.pk, 'learned': learned}
+    return {'status': 'ok', 'note': note.pk, 'learned': learned, 'produced': 1 + (learned is not None)}
 
 
 @shared_task
@@ -579,8 +578,19 @@ def pracownia_osint_task():
     if not przeszlosc.enabled():
         return {'status': 'disabled'}
     done = pracownia_osint.step()
-    failed = [agent for agent, result in done.items() if isinstance(result, str) and result.startswith('błąd')]
-    return {'status': 'error' if failed else 'ok', 'roles': len(done), 'failed': len(failed)}
+    return {**role_status(done), 'roles': len(done)}
+
+
+def role_status(done, counts=False):
+    """Wynik kroku z wieloma rolami (Pracownia, Opiekunowie): błąd, gdy któraś rola padła; „waiting”, gdy nic nie powstało,
+    a któraś rola czeka na okno modeli (audyt 5.10, P5: zielony puls bez wyniku). counts=True: liczby to liczba wpisów
+    (Opiekunowie); inaczej liczba to numer jednego nowego wpisu (Pracownia)."""
+    failed = sum(isinstance(v, str) and v.startswith('błąd') for v in done.values())
+    waiting = sum(isinstance(v, str) and v.startswith('czeka') for v in done.values())
+    numbers = [v for v in done.values() if type(v) is int]
+    produced = sum(numbers) if counts else len(numbers)
+    return {'status': 'error' if failed else 'waiting' if waiting and not produced else 'ok', 'failed': failed,
+            'waiting': waiting, 'produced': produced}
 
 
 @shared_task

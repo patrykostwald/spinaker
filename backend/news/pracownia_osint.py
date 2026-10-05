@@ -223,6 +223,12 @@ def _ask(prompt, data, schema, force, checker=False):
     return answer
 
 
+def _author_meta():
+    """Model autora dla Seby (krytyk innej firmy, jedna poprawka autora); „local”, gdy autor nieznany."""
+    from news import council_registry as registry
+    return registry.metadata(_used['author']) if _used['author'] else {'company': 'local'}
+
+
 def _authors():
     return [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]
 
@@ -501,7 +507,7 @@ def architekt(force=False):
     for i in items[:5]:  # pięć najważniejszych jako osobne pomysły do decyzji (i do krytyki Seby)
         AgentNote.objects.create(agent='architekt', kind='idea', status='new', title=f"przeszłość.today: {i['title']}"[:240],
                                  body=f"{i['why']}{chr(10)}Odbiór: {'; '.join(i.get('acceptance', []))}{chr(10)}Zlecenie: {i['brief']}",
-                                 score=max(0, min(100, int(i.get('value') or 0) * 10)), scores={'plan': report.pk, **i})
+                                 score=max(0, min(100, int(i.get('value') or 0) * 10)), scores={'plan': report.pk, **i, 'author': _author_meta()})
     return report
 
 
