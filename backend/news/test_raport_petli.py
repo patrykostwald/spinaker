@@ -166,3 +166,70 @@ def test_labels_fit_under_gear_and_keys_unique(django_user_model):
     for c in client.get('/api/staff/petle/').data['categories']:
         for row in c['loops']:
             assert len(row['reason']) <= 60 and row['title']
+
+
+def test_stoi_shows_last_error_reason():
+    """„[STOI] Dyżurny: duty-15m: błąd (279 z rzędu)” bez powodu - raport ma mówić DLACZEGO (6.10)."""
+    cache.set('heartbeat:duty-15m', {'result': 'error', 'consecutive_errors': 279, 'started_at': NOW.isoformat(),
+                                     'last_error': "AttributeError: 'datetime.timedelta' object has no attribute 'day_of_month'"})
+    state = raport_petli.loop_state(raport_petli.BY_KEY['dyzurny'], NOW)
+    assert state['state'] == 'bad'
+    assert state['reason'].startswith("duty-15m: błąd (279 z rzędu): AttributeError: 'datetime.timedelta'")
+    text = raport_petli.text(raport_petli.build(NOW))
+    assert '[STOI] Dyżurny: duty-15m: błąd (279 z rzędu): AttributeError' in text
+
+
+def test_partial_pulse_is_warning_with_reason():
+    cache.set('heartbeat:duty-15m', {'result': 'ok', 'started_at': NOW.isoformat(), 'last_output_at': NOW.isoformat(),
+                                     'partial': 'check_warden: RuntimeError: boom'})
+    state = raport_petli.loop_state(raport_petli.BY_KEY['dyzurny'], NOW)
+    assert state['state'] == 'warn' and 'częściowo - check_warden: RuntimeError: boom' in state['reason']
+
+
+def test_new_loop_grace_period_then_stoi():
+    """Pętla dopisana po pierwszym zapisie first_seen: rytm + 1 h bez „STOI”, potem zwykła cisza."""
+    from news import petle_bezpieczniki as fuses
+    raport_petli.first_seen(NOW)  # istniejące pętle: stara data, bez okresu ochronnego
+    extra = raport_petli.contract('nowa-petla', 'Nowa', 'tresc', 24, 'public', 1, counter='position_checks')
+    with patch.object(raport_petli, 'CONTRACTS', raport_petli.CONTRACTS + (extra,)):
+        seen = raport_petli.first_seen(NOW)
+        state = raport_petli.loop_state(extra, NOW + timedelta(hours=10), seen)
+        assert state['state'] == 'ok' and state['new'] and state['reason'].startswith('nowa pętla')
+        later = raport_petli.loop_state(extra, NOW + timedelta(hours=26), seen)
+        assert later['state'] == 'bad' and 'brak wyniku' in later['reason']
+        assert 'petle:silent:nowa-petla' not in {f['key'] for f in fuses.silent_loops(NOW + timedelta(hours=10))}
+    # stare pętle bez wyniku nadal stoją od razu (bez okresu ochronnego)
+    assert raport_petli.loop_state(raport_petli.BY_KEY['badacz'], NOW, raport_petli.first_seen(NOW))['state'] == 'bad'
+
+
+def test_loops_deployed_6_10_have_grace():
+    seen = raport_petli.first_seen(NOW)
+    for key in ('zmiana-zdania', 'raport-petli'):
+        state = raport_petli.loop_state(raport_petli.BY_KEY[key], NOW + timedelta(hours=20), seen)
+        assert state['state'] != 'bad', state
+
+
+def test_auto_send_once_manual_override_and_pulse(monkeypatch):
+    """Mail 3 razy w 30 min (6.10): ścieżka automatyczna najwyżej raz na dzień, --wyslij jawnie wymusza,
+    --wyslij --raz (skrypt wdrożenia) pomija; każda wysyłka zapisuje puls pętli."""
+    monkeypatch.setenv('LOOP_REPORT_EMAIL', 'petle@example.com')
+    from news.tasks import raport_petli_task
+    with patch('news.social_publish._mail', return_value=True) as mail:
+        call_command('raport_petli', '--wyslij', '--raz', stdout=StringIO())
+        assert mail.call_count == 1
+        call_command('raport_petli', '--wyslij', '--raz', stdout=StringIO())
+        assert raport_petli_task()['status'] == 'already_run'
+        assert raport_petli.send(NOW + timedelta(minutes=30))['status'] == 'already_run'
+        assert mail.call_count == 1
+        call_command('raport_petli', '--wyslij', stdout=StringIO())
+        assert mail.call_count == 2
+    pulse = raport_petli.pulse('raport-petli-daily')
+    assert pulse['result'] == 'ok' and pulse['last_success'] == NOW.isoformat()
+    state = raport_petli.loop_state(raport_petli.BY_KEY['raport-petli'], NOW + timedelta(hours=1))
+    assert state['ran_24h'] and state['state'] == 'ok'
+    assert len(RepairerState.objects.get(key='raport-petli:2026-10-06').data['sends']) == 2
+
+
+def test_seba_not_marked_off_when_flag_unset(monkeypatch):
+    monkeypatch.delenv('SEBA_ENABLED', raising=False)
+    assert raport_petli.loop_state(raport_petli.BY_KEY['seba'], NOW)['state'] != 'idle'

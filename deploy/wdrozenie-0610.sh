@@ -56,5 +56,5 @@ echo '== 5. Podgląd porannego maila alertów przeszłości (bez wysyłki)'
 $M przeszlosc_alerts_digest --dry-run | tail -8
 
 echo '== 6. Raport pętli: wysyłka na adres admina'
-$M raport_petli --wyslij | tail -40
+$M raport_petli --wyslij --raz | tail -40
 echo 'GOTOWE'

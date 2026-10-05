@@ -60,6 +60,8 @@ def escalate(item, now):
 def rescue(item, now):
     """Rezerwacja przeżywa błąd brokera; sukces potwierdzamy tylko wynikiem w bazie."""
     from config.celery import app
+    if not item.remedies:
+        return
     should_escalate = False
     with transaction.atomic():
         row, _ = RepairerState.objects.get_or_create(key=state_key(item.key, now))
@@ -195,29 +197,39 @@ def requeue_diagnosis():
 
 
 def guard(now, items=None):
+    """Każdy etap osobno: błąd jednego (np. zapis alarmu) nie zatrzymuje pozostałych ani Dyżurnego."""
+    import logging
     from news.daily_schedule import MILESTONES
     for item in items if items is not None else MILESTONES:
-        key = 'schedule:' + item.key
         try:
-            status, details = item.check(now)
-        except Exception:
-            # Brak dowodu nie zamyka istniejącego alarmu i nie uruchamia naprawy.
-            DutyAlarm.objects.update_or_create(key='schedule-check:' + item.key, defaults={
-                'rule': 'schedule-health', 'severity': 'warning', 'title': 'Błąd kontroli: ' + item.name,
-                'instruction': 'Sprawdź logi Dyżurnego.', 'status': 'open', 'last_seen': now, 'closed_at': None})
-            continue
-        DutyAlarm.objects.filter(key='schedule-check:' + item.key, status='open').update(status='closed', closed_at=now)
-        if status != 'late':
-            DutyAlarm.objects.filter(key=key, status='open').update(status='closed', closed_at=now)
-            continue
-        state = state_data(item.key, now)
-        row, created = DutyAlarm.objects.get_or_create(key=key, defaults={
-            'rule': 'schedule', 'severity': 'warning', 'title': item.name + ': po terminie',
-            'instruction': 'Ratownik wykona najwyżej trzy próby. Potem sprawdź propozycję Naprawiacza.',
-            'first_seen': now, 'since': now})
-        row.status, row.closed_at, row.last_seen = 'open', None, now
-        row.severity = 'critical' if state.get('escalated_at') else 'warning'
-        row.details = details
-        row.occurrences += 1
-        row.save()
+            guard_item(item, now)
+        except Exception:  # noqa: BLE001
+            logging.getLogger(__name__).warning('Ratownik: błąd etapu %s', item.key, exc_info=True)
+
+
+def guard_item(item, now):
+    key = 'schedule:' + item.key
+    try:
+        status, details = item.check(now)
+    except Exception:
+        # Brak dowodu nie zamyka istniejącego alarmu i nie uruchamia naprawy.
+        DutyAlarm.objects.update_or_create(key='schedule-check:' + item.key, defaults={
+            'rule': 'schedule-health', 'severity': 'warning', 'title': 'Błąd kontroli: ' + item.name,
+            'instruction': 'Sprawdź logi Dyżurnego.', 'status': 'open', 'last_seen': now, 'closed_at': None})
+        return
+    DutyAlarm.objects.filter(key='schedule-check:' + item.key, status='open').update(status='closed', closed_at=now)
+    if status != 'late':
+        DutyAlarm.objects.filter(key=key, status='open').update(status='closed', closed_at=now)
+        return
+    state = state_data(item.key, now)
+    row, created = DutyAlarm.objects.get_or_create(key=key, defaults={
+        'rule': 'schedule', 'severity': 'warning', 'title': item.name + ': po terminie',
+        'instruction': 'Ratownik wykona najwyżej trzy próby. Potem sprawdź propozycję Naprawiacza.',
+        'first_seen': now, 'since': now})
+    row.status, row.closed_at, row.last_seen = 'open', None, now
+    row.severity = 'critical' if state.get('escalated_at') else 'warning'
+    row.details = details
+    row.occurrences += 1
+    row.save()
+    if item.remedies:  # bez napraw (raporty czekające na zgodę właściciela): tylko alarm, Ratownik nic nie ponawia
         rescue(item, now)

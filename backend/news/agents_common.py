@@ -246,7 +246,22 @@ def window_step():
         state.save(update_fields=['data'])
         try:
             result = step('auto', hourly=True)
-        except ClinicAIError as error:
+        except Exception as error:  # noqa: BLE001 - poniżej tylko 404, reszta jak dawniej
+            import requests
+            code = (error.code if isinstance(error, ClinicAIError) else
+                    str(getattr(getattr(error, 'response', None), 'status_code', '')) if isinstance(error, requests.HTTPError) else '')
+            if not re.search(r'(?<!\d)404(?!\d)|not.?found|does not exist|decommission', code or '', re.I):
+                if not isinstance(error, ClinicAIError):
+                    raise
+                code = None
+            if code:
+                # Model zniknął u dostawcy (404, „not found”): to nie błąd pętli, tylko robota dla Mechanika
+                # (co godzinę szuka zamiennika). Krótkie odroczenie zamiast „STOI” w Raporcie pętli (6.10).
+                data.update(next_attempt=(now + timedelta(hours=1)).isoformat(), model_unavailable=str(code)[:120])
+                state.data = data
+                state.save(update_fields=['data'])
+                return {'status': 'no_free_models', 'reason': 'model_unavailable', 'mechanik': 1,
+                        'next_attempt': data['next_attempt']}
             if not re.search(r'(?<!\d)429(?!\d)|_daily_limit|_unavailable|no_free_models', error.code):
                 raise
             result = {'status': 'closed'}

@@ -222,34 +222,47 @@ def dispatch(row, ctx, repair_run):
 
 
 def run(now=None):
+    """Każda kontrola osobno (właściciel 6.10): błąd jednej zapisuje własny alarm z powodem, reszta działa dalej.
+    Bieg z błędami części kontroli kończy się „partial” (zielony puls z notatką), a nie błędem całego Dyżurnego."""
     if not flag('DUTY_ENABLED', True):
         return {'status': 'disabled'}
+    from news.task_heartbeat import error_text
     now = now or timezone.now()
     token = uuid4().hex
     if not cache.add('duty:lock', token, 180):
         return {'status': 'locked'}
     try:
         ctx, repair_run = Context(now), Run(now)
-        errors = 0
+        failed = []
+
+        def guarded(name, step):
+            try:
+                step()
+            except Exception as error:  # noqa: BLE001 - jedna kontrola nie zatrzymuje pozostałych
+                failed.append(f'{name}: {error_text(error)}')
+                return False
+            return True
+
         for check in CHECKS:
             name = check.__name__
-            try:
-                found = check(ctx)
-            except Exception:
-                # Never close alarms on missing evidence or store arbitrary errors.
-                errors += 1
-                found = [alarm('check:' + name, 'warning', 'Dyżurny: nie udało się wykonać kontroli',
-                               {'check': name}, now, 'Sprawdź logi workera Dyżurnego.')]
-                reconcile(name + ':health', found, ctx, repair_run)
+            found = []
+            if not guarded(name, lambda: found.extend(check(ctx))):
+                # Brak dowodu nie zamyka alarmów tej kontroli; powód błędu w szczegółach alarmu.
+                guarded(name + ':health', lambda: reconcile(name + ':health', [alarm(
+                    'check:' + name, 'warning', 'Dyżurny: nie udało się wykonać kontroli',
+                    {'check': name, 'error': failed[-1].split(': ', 1)[1]}, now, 'Sprawdź logi workera Dyżurnego.')],
+                    ctx, repair_run))
                 continue
-            reconcile(name + ':health', [], ctx, repair_run)
-            reconcile(name, found, ctx, repair_run)
-        ctx.save()
-        duty_extra.notify_owner(now)  # mail: nowe alarmy krytyczne od razu, otwarte co 6 h
+            guarded(name + ':health', lambda: reconcile(name + ':health', [], ctx, repair_run))
+            guarded(name, lambda: reconcile(name, found, ctx, repair_run))
+        guarded('observations', ctx.save)
+        guarded('notify_owner', lambda: duty_extra.notify_owner(now))  # mail: nowe alarmy krytyczne od razu, otwarte co 6 h
         from news.rescuer import guard
-        guard(now)
-        return {'status': 'ok' if not errors else 'error', 'errors': errors,
-                'open': DutyAlarm.objects.filter(status='open').count()}
+        guarded('rescuer', lambda: guard(now))
+        open_count = DutyAlarm.objects.filter(status='open').count()
+        if failed:
+            return {'status': 'partial', 'check_errors': len(failed), 'partial': '; '.join(failed)[:400], 'open': open_count}
+        return {'status': 'ok', 'check_errors': 0, 'open': open_count}
     finally:
         compare_delete('duty:lock', token)
 

@@ -25,6 +25,33 @@ EFFORT_BONUS = {'S': 3, 'M': 2, 'L': 1}  # wartość/wysiłek: wartość 0-10 ra
 DROP_PAUSE = timedelta(days=28)  # „Nie teraz” właściciela: pomysł wraca najwcześniej po 4 tygodniach
 LOOKBACK = timedelta(days=60)
 AUTO_DECISION = 'auto: brak decyzji 48 h'
+# Pomysł Architekta lub Wynalazcy z wynikiem >= 85, którego Seba nie ocenił w 48 h, wchodzi do sprintu bez Seby
+# (ten sam próg czasu co petle_naprawy.SEBA_WAIT; Seba wyłączony lub bez limitu nie może zatrzymać sprintu - 6.10).
+SEBA_BYPASS_SCORE = 85
+SEBA_BYPASS_AGENTS = ('architekt', 'wynalazca')
+SEBA_BYPASS_WAIT = timedelta(hours=48)
+# Funkcje już zbudowane: pomysły o tych tematach nie wracają do sprintu (słowa kluczowe w znormalizowanym tytule).
+BUILT = ((('anomali', 'głosowa'), 'zbudowane 6.10 (770cd47, 2264682)'),
+         (('odstęp', 'głosowa'), 'zbudowane 6.10 (770cd47, 2264682)'),
+         (('skoordynowan', 'narracj'), 'zbudowane 6.10 (770cd47, 2264682)'),
+         (('wspóln', 'przekaz'), 'zbudowane 6.10 (770cd47, 2264682)'))
+
+
+def built_note(title):
+    """Notatka „zbudowane …”, gdy tytuł pomysłu opisuje funkcję, która już działa; inaczej ''."""
+    text = _norm(title)
+    return next((note for words, note in BUILT if all(w in text for w in words)), '')
+
+
+def seba_bypass(note, now):
+    """Nowy pomysł bez oceny Seby po 48 h: Architekt lub Wynalazca, wynik >= 85, recenzja Seby nie odrzuciła."""
+    from news.agent_models import SebaReview
+    if note.status != 'new' or note.agent not in SEBA_BYPASS_AGENTS or note.score < SEBA_BYPASS_SCORE:
+        return False
+    if now - note.created_at < SEBA_BYPASS_WAIT:
+        return False
+    review = SebaReview.objects.filter(note=note).values_list('status', flat=True).first()
+    return review in (None, 'queued')
 
 
 def _norm(text):
@@ -119,11 +146,11 @@ def candidates(now=None):
         if note.pk in blocked_notes:
             continue
         accepted = note.status in ('accepted', 'approved')
-        if not accepted and not can_show(note):
-            continue  # nowe propozycje tylko po pozytywnej ocenie Seby
+        if not accepted and not can_show(note) and not seba_bypass(note, now):
+            continue  # nowe propozycje tylko po pozytywnej ocenie Seby (albo po 48 h bez oceny, wynik >= 85)
         built = set((note.scores or {}).get('zbudowane', []))
         for item in _items(note):
-            if item['title'] in built or (not accepted and item['score'] < NEW_MIN_SCORE):
+            if item['title'] in built or built_note(item['title']) or (not accepted and item['score'] < NEW_MIN_SCORE):
                 continue
             legal = _legal(note, item['title'], verdicts)
             if legal == 'niedozwolone':

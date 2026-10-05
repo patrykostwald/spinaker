@@ -200,7 +200,7 @@ def test_alarm_dedup_close_reopen_and_no_models(isolated):
     with patch('news.clinic_ai._client', side_effect=AssertionError('No model')), \
          patch('news.clinic_ai._call_gemini', side_effect=AssertionError('No model')), \
          patch('news.clinic_council.ask', side_effect=AssertionError('No model')):
-        assert duty.run(NOW)['errors'] == 0
+        assert duty.run(NOW)['check_errors'] == 0
         duty.run(NOW + timedelta(minutes=15))
         row = DutyAlarm.objects.get(key='budget:daily')
         assert row.occurrences == 2 and row.first_seen == NOW
@@ -221,9 +221,14 @@ def test_failed_check_does_not_close_alarm():
     diagnosis(cost=6)
     duty.run(NOW)
     with patch('news.duty.diagnosis_costs', side_effect=ValueError('secret')):
-        assert duty.run(NOW)['errors'] == 1
+        result = duty.run(NOW)
+    # Jedna kontrola z błędem: reszta działa, bieg „partial” (zielony puls z notatką), powód w alarmie kontroli.
+    assert result['status'] == 'partial' and result['check_errors'] == 1 and 'errors' not in result
+    assert result['partial'].startswith('check_budget: ValueError: secret')
     assert DutyAlarm.objects.get(key='budget:daily').status == 'open'
-    assert DutyAlarm.objects.get(key='check:check_budget').status == 'open'
+    failed = DutyAlarm.objects.get(key='check:check_budget')
+    assert failed.status == 'open' and failed.details['error'] == 'ValueError: secret'
+    assert DutyAlarm.objects.filter(key='budget:daily', status='open').exists()
     duty.run(NOW)
     assert DutyAlarm.objects.get(key='check:check_budget').status == 'closed'
 
@@ -374,3 +379,75 @@ def test_owner_mail_new_critical_then_every_six_hours():
         assert duty_extra.notify_owner(NOW + timedelta(hours=1)) == 0
         assert duty_extra.notify_owner(NOW + timedelta(hours=6)) == 1
     assert mail.call_count == 2 and 'Zbieracz X' in mail.call_args.args[1]
+
+
+def test_timedelta_schedule_does_not_break_task_check(monkeypatch):
+    """Przyczyna „Dyżurny: błąd (279 z rzędu)”: tryb ciągły X (X_POLL_MODE=batched) zapisuje harmonogram jako timedelta,
+    a cadence() czytał z niego day_of_month (AttributeError) - kontrola zadań padała przy każdym biegu."""
+    from config.celery import app
+    assert task_heartbeat.cadence(timedelta(seconds=60)) == 60
+    monkeypatch.setitem(app.conf.beat_schedule, 'political-x-minute',
+                        {'task': 'news.tasks.political_poll_task', 'schedule': timedelta(seconds=60)})
+    ctx = context()
+    duty.check_tasks(ctx)
+    duty.check_importers(ctx)
+    result = duty.run(NOW)
+    assert result['status'] == 'ok' and result['check_errors'] == 0
+    assert not DutyAlarm.objects.filter(key__startswith='check:', status='open').exists()
+
+
+def test_partial_run_is_green_pulse_with_reason():
+    sender = SimpleNamespace(name='news.tasks.duty_task', request=SimpleNamespace(args=(), kwargs={}, id='duty'))
+    with patch('news.duty.AccountWardenRun.objects.filter', side_effect=RuntimeError('boom')):
+        result = duty.run(NOW)
+    assert result['status'] == 'partial'
+    task_heartbeat.succeeded(sender, result)
+    pulse = cache.get('heartbeat:duty-15m')
+    assert pulse['result'] == 'ok' and pulse['consecutive_errors'] == 0
+    assert pulse['partial'].startswith('check_warden: RuntimeError: boom') and pulse['last_error'] == ''
+    # pozostałe kontrole działały mimo błędu jednej
+    assert RepairerState.objects.filter(key='duty-observations').exists()
+
+
+def test_heartbeat_keeps_exception_class_and_message():
+    sender = SimpleNamespace(name='news.tasks.duty_task', request=SimpleNamespace(args=(), kwargs={}, id='duty'))
+    task_heartbeat.failed(sender, 'duty', ValueError('value too long for type character varying(48) ' + 'x' * 400 +
+                                                     ' api_key=sk-abcdefghijklmnop'))
+    pulse = cache.get('heartbeat:duty-15m')
+    assert pulse['result'] == 'error' and pulse['last_error'].startswith('ValueError: value too long')
+    assert len(pulse['last_error']) <= task_heartbeat.ERROR_MAX and 'sk-abc' not in pulse['last_error']
+    assert RepairerState.objects.get(key='pulse:duty-15m').data['last_error'] == pulse['last_error']
+    task_heartbeat.succeeded(sender, {'status': 'ok', 'check_errors': 0})
+    assert cache.get('heartbeat:duty-15m')['last_error'] == ''
+
+
+def test_milestone_without_remedies_only_alarms(monkeypatch):
+    """Raporty czekające na zgodę właściciela > 24 h: etap „po terminie”, ale bez napraw - wcześniej IndexError
+    (remedies=()) wywracał cały bieg Dyżurnego."""
+    from news import rescuer
+    from news.daily_schedule import MILESTONES
+    item = next(m for m in MILESTONES if m.key == 'institutional-reports')
+    assert item.remedies == ()
+    late = SimpleNamespace(key=item.key, name=item.name, remedies=(), check=lambda now: ('late', {'detail': 'x', 'completed_at': None}))
+    broken = SimpleNamespace(key='poll', name='Zbieranie', remedies=('poll',), check=lambda now: 1 / 0)
+    rescuer.guard(NOW, items=(late, broken))
+    assert DutyAlarm.objects.get(key='schedule:institutional-reports').status == 'open'
+    assert not RepairerState.objects.filter(key__startswith='rescue:').exists()
+    assert DutyAlarm.objects.get(key='schedule-check:poll').status == 'open'
+
+
+def test_window_step_model_404_is_skip_for_mechanik():
+    with patch('news.agents_common.step', side_effect=ClinicAIError('groq: http_404')):
+        result = agents_common.window_step()
+    assert result['status'] == 'no_free_models' and result['reason'] == 'model_unavailable' and result['mechanik'] == 1
+    data = RepairerState.objects.get(key='agents-window').data
+    assert data['model_unavailable'] == 'groq: http_404' and data['next_attempt']
+    sender = SimpleNamespace(name='news.tasks.agents_window_task', request=SimpleNamespace(args=(), kwargs={}, id='w'))
+    task_heartbeat.succeeded(sender, result)
+    assert cache.get('heartbeat:agents-window-hourly')['result'] == 'skipped'
+
+
+def test_seba_registry_matches_seba_default(monkeypatch):
+    monkeypatch.delenv('SEBA_ENABLED', raising=False)
+    from news import seba
+    assert seba.enabled() and agent_registry.enabled(agent_registry.REGISTRY['seba'])

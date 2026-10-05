@@ -130,3 +130,39 @@ def test_sprint_intake_command_is_data_free():
     out = StringIO()
     call_command('sprint_intake', podglad=True, stdout=out)
     assert 'Oś czasu' in out.getvalue() and not BuildTicket.objects.exists()
+
+
+def test_new_high_score_idea_enters_after_48h_without_seba(monkeypatch):
+    """Seba wyłączony albo bez limitu: pomysł Architekta lub Wynalazcy >= 85 bez oceny po 48 h wchodzi do sprintu."""
+    from news.agent_models import SebaReview
+    monkeypatch.setenv('SEBA_ENABLED', 'true')
+    old = idea('Profil komisji sejmowej', score=90, days=3)
+    fresh = idea('Mapa lobbystów', score=90, days=1)
+    low = idea('Oś czasu ustaw', score=84, days=3)
+    rejected = idea('Ranking posłów', score=95, days=3)
+    strateg = idea('Pomysł Stratega', agent='strateg', score=95, days=3)
+    for n in (old, fresh, low, rejected, strateg):
+        SebaReview.objects.get_or_create(note=n)
+    SebaReview.objects.filter(note=rejected).update(status='rejected')
+    titles = [c['title'] for c in sprint.candidates(MONDAY)]
+    assert titles == ['Profil komisji sejmowej']
+    created = sprint.intake(MONDAY, weekly=True)['created']
+    assert BuildTicket.objects.filter(pk__in=created).values_list('title', flat=True).get() == 'Profil komisji sejmowej'
+
+
+def test_built_features_are_skipped_and_marked_done():
+    voting = idea('Wykrywanie anomalii w głosowaniach', score=90)
+    narratives = idea('przeszłość.today: Wykrywanie skoordynowanych narracji', agent='wynalazca', score=92)
+    other = idea('Profil komisji sejmowej', score=90)
+    assert [c['title'] for c in sprint.candidates(MONDAY)] == ['Profil komisji sejmowej']
+    from news.management.commands.porzadki_petli import cleanup
+    assert cleanup(apply=False)['zbudowane'] == 2
+    out = StringIO()
+    call_command('porzadki_petli', '--wykonaj', stdout=out)
+    assert 'pomysły już zbudowane -> done 2' in out.getvalue()
+    for note in (voting, narratives):
+        note.refresh_from_db()
+        assert note.status == 'done' and note.scores['zbudowane_uwaga'] == 'zbudowane 6.10 (770cd47, 2264682)'
+    other.refresh_from_db()
+    assert other.status == 'new'
+    assert cleanup(apply=True)['zbudowane'] == 0  # idempotentne

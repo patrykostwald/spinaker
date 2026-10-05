@@ -1,5 +1,7 @@
 """Local Celery telemetry only; never retain task arguments or arbitrary results."""
 import logging
+import re
+from datetime import timedelta
 from functools import lru_cache
 
 from celery.signals import task_prerun, task_success, task_failure
@@ -8,12 +10,35 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 TTL = 90 * 86400  # Monthly jobs need history longer than one cadence.
+ERROR_MAX = 200
+_SECRET = re.compile(r'(sk-[A-Za-z0-9_-]{8,}|[A-Za-z0-9_-]{32,}|[\w.+-]+@[\w-]+\.[\w.]+)')
+_SECRET_AFTER = re.compile(r'(?i)\b(password|passwd|pwd|token|secret|api[_-]?key|key|authorization|bearer|cookie)(\s*[:=]\s*|\s+)\S+')
+_QUERY = re.compile(r'\?\S+')
+
+
+def error_text(value):
+    """Powód błędu do pulsu i Raportu pętli: klasa wyjątku i skrócony komunikat, bez sekretów (właściciel 6.10:
+    „raport ma mówić DLACZEGO”). Najwyżej ERROR_MAX znaków."""
+    if value is None or value == '':
+        return ''
+    if isinstance(value, BaseException):
+        message = ' '.join(str(value).split())
+        value = f'{type(value).__name__}: {message}' if message else type(value).__name__
+    text = _SECRET_AFTER.sub(lambda m: m.group(1) + ' [ukryte]', ' '.join(str(value).split()))
+    return _SECRET.sub('[ukryte]', _QUERY.sub('?[ukryte]', text))[:ERROR_MAX]
 
 
 def cadence(schedule):
-    """Longest weekly gap, including night/weekend pauses, for our beat crontabs."""
+    """Longest weekly gap, including night/weekend pauses, for our beat crontabs.
+
+    Tryb ciągły zbieracza X zapisuje harmonogram jako zwykły timedelta (X_POLL_MODE=batched). Bez tej gałęzi
+    kontrola zadań Dyżurnego padała przy każdym biegu (AttributeError: day_of_month) - Raport pętli 6.10."""
+    if isinstance(schedule, timedelta):
+        return schedule.total_seconds()
     if hasattr(schedule, 'run_every'):
         return schedule.run_every.total_seconds()
+    if not hasattr(schedule, 'day_of_month'):
+        return None
     if schedule.day_of_month != set(range(1, 32)) or schedule.month_of_year != set(range(1, 13)):
         return None
     return _weekly_cadence(tuple(sorted(schedule.day_of_week)), tuple(sorted(schedule.hour)), tuple(sorted(schedule.minute)))
@@ -102,6 +127,13 @@ def record(sender, phase, task_id=None, args=None, kwargs=None, result=None, exc
                          if exception else str(result.get('error', '')) if isinstance(result, dict) else '')
                 data['repair_error'] = 'permanent' if permanent(error) else 'transient' if transient(error) else 'unknown'
                 data['repair_hint'] = safe_error(error) if error.strip() else ''
+                # Powód w Raporcie pętli: „błąd (N z rzędu): Klasa: komunikat”; przy częściowym sukcesie (Dyżurny:
+                # jedna kontrola padła, reszta działa) puls jest zielony, a powód zostaje w „partial”.
+                reason = error_text(exception) if exception else error_text(
+                    result.get('error') or result.get('last_error') or '') if isinstance(result, dict) else ''
+                data['last_error'] = reason if phase == 'error' else ''
+                data['partial'] = (error_text(result.get('partial')) if isinstance(result, dict) and phase != 'error'
+                                   and result.get('status') == 'partial' else '')
             cache.set(key, data, TTL)
             from news.daily_schedule import BEAT_PLAN
             if name in BEAT_PLAN:

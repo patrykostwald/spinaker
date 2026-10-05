@@ -63,10 +63,13 @@ def unused_outputs(now):
                             f"{c['label']}: {row['n']} wpisów czeka ponad {days} dni",
                             {'loop': c['key'], 'waiting': row['n'], 'days': days}, row['oldest'],
                             'Przejrzyj wpisy agenta w panelu (Przeczytane / Odrzucam) albo zmień odbiorcę pętli.'))
+    seen = raport_petli.first_seen(now)
     for c in _active():
         if not (c['agents'] or c['counter']):
             continue
         window = now - timedelta(hours=ZERO_RUNS * c['cadence_h'])
+        if (seen.get(c['key']) or window) > window:
+            continue  # nowa pętla: najpierw ZERO_RUNS rytmów od pierwszego pojawienia się
         made = (raport_petli._notes(c).filter(created_at__gte=window).count() if c['agents'] else raport_petli._counter(c, window)[0])
         pulses = [raport_petli.pulse(b) for b in c['beats']]
         green = any(p.get('result') == 'ok' and (raport_petli._stamp(p.get('last_success')) or window) > window for p in pulses)
@@ -81,8 +84,11 @@ def silent_loops(now):
     """(b) Cisza: ostatni wynik (albo bieg, gdy pętla nie liczy wyników) starszy niż 2 rytmy."""
     from news import raport_petli
     out = []
+    seen = raport_petli.first_seen(now)
     for c in _active():
-        state = raport_petli.loop_state(c, now)
+        state = raport_petli.loop_state(c, now, seen)
+        if state.get('new'):
+            continue  # nowa pętla: rytm + 1 h na pierwszy wynik
         reference = raport_petli._stamp(state['last_output']) or (raport_petli._stamp(state['last_run']) if not state['counted'] else None)
         if reference and now - reference <= timedelta(hours=2 * c['cadence_h']):
             continue

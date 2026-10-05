@@ -209,15 +209,57 @@ def _counter(c, since):
     return rows.filter(**{field + '__gte': since}).count(), rows.aggregate(at=Max(field))['at']
 
 
-def loop_state(c, now):
+FIRST_SEEN = 'petle-first-seen'
+OLD = '2026-01-01T00:00:00+00:00'
+# Pętle wdrożone 6.10 (zanim powstał zapis first_seen): pierwszy rytm liczymy od dnia wdrożenia.
+ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00'}
+
+
+def first_seen(now, keys=None):
+    """Kiedy pętla pojawiła się pierwszy raz (trwały zapis w bazie). Nowa pętla dostaje jeden rytm + 1 h na pierwszy
+    wynik, zanim Raport pętli i bezpieczniki uznają ciszę za „STOI” (fałszywe alarmy po wdrożeniu 6.10).
+    Przy pierwszym zapisie pętle już istniejące dostają starą datę (bez okresu ochronnego); każda pętla dopisana
+    później do CONTRACTS dostaje chwilę, w której Raport pętli zobaczył ją pierwszy raz."""
+    from news.models import RepairerState
+    keys = keys or [c['key'] for c in CONTRACTS]
+    try:
+        row, created = RepairerState.objects.get_or_create(key=FIRST_SEEN)
+        data = dict(row.data or {})
+        if created or not data:
+            data = {c['key']: ADDED.get(c['key'], OLD) for c in CONTRACTS}
+        missing = [k for k in keys if k not in data]
+        data.update({k: ADDED.get(k, now.isoformat()) for k in missing})
+        if created or missing or row.data != data:
+            row.data = data
+            row.save(update_fields=['data'])
+        return {k: _stamp(v) for k, v in data.items() if _stamp(v)}
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return {}
+
+
+def _new_loop(c, now, seen):
+    """Okres ochronny nowej pętli: od pierwszego pojawienia się minęło mniej niż rytm + 1 h."""
+    first = seen.get(c['key'])
+    return bool(first) and now - first < timedelta(hours=c['cadence_h'] + 1)
+
+
+def _error_line(beat, p):
+    why = p.get('last_error') or p.get('repair_hint') or ''
+    return f"{beat}: błąd ({p.get('consecutive_errors') or 1} z rzędu){': ' + why if why else ''}"
+
+
+def loop_state(c, now, seen=None):
     from django.db.models import Max
     pulses = [pulse(b) for b in c['beats']]
     runs = [_stamp(p.get('started_at') or p.get('last_event')) for p in pulses]
     last_run = max([r for r in runs if r], default=None)
     errors = []
+    partial = []
     for beat, p in zip(c['beats'], pulses):
         if p.get('result') == 'error':
-            errors.append(f"{beat}: błąd ({p.get('consecutive_errors') or 1} z rzędu){' - ' + p['repair_hint'] if p.get('repair_hint') else ''}")
+            errors.append(_error_line(beat, p))
+        elif p.get('result') == 'ok' and p.get('partial'):
+            partial.append(f"{beat}: częściowo - {p['partial']}")
     waiting_only = bool(pulses) and all(p.get('result') == 'skipped' for p in pulses if p)
     day, week = now - timedelta(hours=24), now - timedelta(days=7)
     pending, top = 0, []
@@ -243,6 +285,10 @@ def loop_state(c, now):
     reference = last_output or (last_run if not (c['agents'] or c['counter']) else None)
     silence_h = round((now - reference).total_seconds() / 3600, 1) if reference else None
     silent = enabled and (reference is None or silence_h > 2 * c['cadence_h'])
+    new = False
+    if silent and reference is None:
+        new = _new_loop(c, now, seen if seen is not None else first_seen(now, [c['key']]))
+        silent = not new
     state, reasons = 'ok', []
     if not enabled:
         state, reasons = 'idle', ['wyłączona flagą']
@@ -254,18 +300,21 @@ def loop_state(c, now):
         if errors or silent:
             state = 'bad'
         else:
+            reasons += partial[:1]
             if pending:
                 reasons.append(PENDING_TEXT.get(c['pending'], '{n} czeka dłużej niż {sla} dni').format(n=pending, sla=c['sla_days']))
             if waiting_only and not out_24:
                 reasons.append('tylko „czeka na okno”, bez wyniku')
             if reasons:
                 state = 'warn'
+            if new:  # okres ochronny: nie „STOI”, tylko informacja
+                reasons.insert(0, f"nowa pętla - pierwszy wynik w ciągu {c['cadence_h'] + 1:g} h")
     return {'key': c['key'], 'label': c['label'], 'title': c['title'], 'category': c['category'], 'state': state, 'reason': '; '.join(reasons),
             'enabled': enabled, 'last_run': last_run.isoformat() if last_run else None,
             'last_output': last_output.isoformat() if last_output else None, 'ran_24h': bool(last_run and last_run >= day),
             'outputs_24h': out_24 or 0, 'outputs_7d': out_7 or 0, 'counted': out_7 is not None, 'pending': pending,
             'consumer': CONSUMERS.get(c['consumer'], c['consumer']), 'consumer_key': c['consumer'], 'cadence_h': c['cadence_h'],
-            'sla_days': c['sla_days'], 'top': top, 'errors': errors}
+            'sla_days': c['sla_days'], 'top': top, 'errors': errors, 'new': new}
 
 
 def short(reason, limit=60):
@@ -276,7 +325,8 @@ def short(reason, limit=60):
 
 def build(now=None):
     now = now or timezone.now()
-    loops = [loop_state(c, now) for c in CONTRACTS]
+    seen = first_seen(now)
+    loops = [loop_state(c, now, seen) for c in CONTRACTS]
     _apply_fuses(loops, now)
     auto = _apply_repairs(loops, now)
     summary = {s: sum(l['state'] == s for l in loops) for s in ('ok', 'warn', 'bad', 'idle')}
@@ -431,22 +481,59 @@ def recipient():
     return next((_env(name) for name in ('LOOP_REPORT_EMAIL', 'COUNCIL_RECRUITER_EMAIL', 'X_POST_ALERT_EMAIL') if _env(name)), '')
 
 
+BEAT = 'raport-petli-daily'
+
+
+def _touch_pulse(now, sent):
+    """Wysyłka ręczna (manage.py raport_petli --wyslij) też jest biegiem pętli: puls jak po zadaniu Celery,
+    żeby raport następnego dnia nie mówił „nie ruszyła w 24 h”."""
+    from news.models import RepairerState
+    from news.task_heartbeat import TTL
+    stamp = now.isoformat()
+    data = {'phase': 'ok' if sent else 'skipped', 'result': 'ok' if sent else 'skipped', 'last_event': stamp,
+            'started_at': stamp, 'finished_at': stamp, 'summary': 'Raport wysłany.' if sent else 'Raport bez wysyłki.',
+            'consecutive_errors': 0, 'error_since': None, 'last_error': '', 'last_produced': int(bool(sent))}
+    if sent:
+        data.update(last_success=stamp, last_output_at=stamp)
+    try:
+        cache.set('heartbeat:' + BEAT, {**(cache.get('heartbeat:' + BEAT) or {}), **data}, TTL)
+        row, _ = RepairerState.objects.get_or_create(key='pulse:' + BEAT)
+        row.data = {**(row.data or {}), **data}
+        row.save(update_fields=['data'])
+    except Exception:  # noqa: BLE001 - puls nie zatrzymuje raportu
+        pass
+
+
 def send(now=None, force=False):
-    """Jeden mail dziennie (important=True: zastępuje rozproszone powiadomienia). Idempotentne per dzień."""
+    """Jeden mail dziennie (important=True: zastępuje rozproszone powiadomienia). Ścieżka automatyczna (zadanie 7:05,
+    ponowienia, naprawy) wysyła najwyżej raz na dzień; force=True to jawna wysyłka ręczna (--wyslij)."""
+    from django.db import transaction
     from news.models import RepairerState
     from news.social_publish import _mail
     now = now or timezone.now()
     key = f"raport-petli:{now.astimezone(WARSAW).date().isoformat()}"
-    state, _ = RepairerState.objects.get_or_create(key=key)
-    if state.data.get('sent') and not force:
-        return {'status': 'already_run', 'produced': 0}
+    with transaction.atomic():
+        RepairerState.objects.get_or_create(key=key)
+        state = RepairerState.objects.select_for_update().get(key=key)
+        data = dict(state.data or {})
+        if not force and (data.get('sent') or data.get('sending_until') and (_stamp(data['sending_until']) or now) > now):
+            return {'status': 'already_run', 'produced': 0}
+        # Rezerwacja przed SMTP: dwa równoległe biegi nie wyślą dwóch maili.
+        state.data = {**data, 'sending_until': (now + timedelta(minutes=10)).isoformat()}
+        state.save(update_fields=['data'])
     report = build(now)
     to = recipient()
-    sent = bool(to) and _mail(to, f"spin.clinic · Raport pętli {report['day']}", text(report), important=True)
-    state.data = {'sent': sent, 'summary': report['summary'], 'at': now.isoformat(),
-                  'loops': {l['key']: l['state'] for c in report['categories'] for l in c['loops']}}
-    state.save(update_fields=['data'])
-    return {'status': 'ok' if sent else 'not_configured' if not to else 'error', 'produced': int(sent),
+    sent = False
+    try:
+        sent = bool(to) and _mail(to, f"spin.clinic · Raport pętli {report['day']}", text(report), important=True)
+    finally:
+        sends = list(data.get('sends') or []) + ([{'at': now.isoformat(), 'manual': bool(force)}] if sent else [])
+        state.data = {'sent': bool(sent or data.get('sent')), 'summary': report['summary'], 'at': now.isoformat(),
+                      'sends': sends[-10:], 'sending_until': None,
+                      'loops': {l['key']: l['state'] for c in report['categories'] for l in c['loops']}}
+        state.save(update_fields=['data'])
+        _touch_pulse(now, sent)
+    return {'status': 'ok' if sent else 'not_configured' if not to else 'error', 'produced': int(bool(sent)),
             **{k: v for k, v in report['summary'].items()}}
 
 
