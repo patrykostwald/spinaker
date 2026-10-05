@@ -29,6 +29,7 @@ import type { Article } from '../types';
 import { ArticleFavoriteButton } from './ArticleFavoriteButton';
 import { voteLabel } from './VotingDetails';
 import { PublicFigureTimeline } from './PublicFigureTimeline';
+import { PublicFigureTrace } from './PublicFigureTrace';
 import { Button, MorphIndicator } from '../kit';
 
 type FigureMaterial = Pick<Article, 'id' | 'title' | 'url' | 'category' | 'published_date'> & {
@@ -512,6 +513,7 @@ export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: 
     <article className="sc-public-figure sc-f2-figure" aria-labelledby={titleId}>
       <FigureHeader figure={figure} titleId={titleId} materialsTotal={materialsTotal} onSelect={select} />
       <FollowButton kind="figure" targetId={figure.id} label={figure.name} />
+      <PublicFigureTrace figureId={figure.id} onShowVotes={() => setTab('votes')} />
       <nav className="sc-public-figure-tabs" role="tablist" aria-label="Dane profilu">
         {tabs.map((item, index) => <button key={item.id} id={`${titleId}-tab-${item.id}`} type="button" role="tab" tabIndex={tab === item.id ? 0 : -1} aria-selected={tab === item.id} aria-controls={`${titleId}-panel-${item.id}`} onClick={() => setTab(item.id)} onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;

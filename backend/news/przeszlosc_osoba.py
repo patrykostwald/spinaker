@@ -281,6 +281,80 @@ def profile(figure):
     return data
 
 
+# --- spin.clinic: bezpłatny „Ślad w dokumentach” (wycinek profilu przeszłość.today) ---
+FREE_KINDS = ('interpellations', 'questions')
+PRO_FEATURES = ['Funkcje w KRS', 'Wspólne mianowniki', 'Alerty e-mail', 'Eksport CSV i JSON']
+
+
+def club_line(ballots):
+    """{voting_id: {klub: większościowy głos}} - tylko głosy za/przeciw/wstrzymał się; remis = brak większości."""
+    from news.models import Ballot
+    counts = defaultdict(Counter)
+    rows = (Ballot.objects.filter(voting_id__in={b.voting_id for b in ballots}, club__in={b.club for b in ballots if b.club}, vote__in=DECISIVE)
+            .values('voting_id', 'club', 'vote').annotate(n=Count('id')))
+    for r in rows:
+        counts[(r['voting_id'], r['club'])][r['vote']] = r['n']
+    out = {}
+    for key, c in counts.items():
+        top = c.most_common(2)
+        out[key] = top[0][0] if len(top) == 1 or top[0][1] > top[1][1] else None
+    return out
+
+
+def free_trace(figure):
+    """Ślad w dokumentach dla czytelników spin.clinic: 5 ostatnich głosowań (głos wobec większości klubu), 3 ostatnie
+    interpelacje lub zapytania i liczby z 12 miesięcy. Ta sama miara dla każdej osoby i partii; posła łączymy z Sejmem
+    wyłącznie przez oficjalny identyfikator (mp_identities), nigdy po nazwisku. KRS, Wspólne mianowniki, alerty
+    i eksport zostają w pełnym profilu przeszłość.today."""
+    from news.przeszlosc import enabled
+    from news.przeszlosc_alerts import site
+    identities = mp_identities(figure)
+    since = timezone.now() - timedelta(days=365)
+    ballots = _ballots(identities)
+    recent = list(ballots.select_related('voting__article').order_by('-voting__article__published_date', '-pk')[:5])
+    line = club_line(recent)
+    votes = []
+    for b in recent:
+        majority = line.get((b.voting_id, b.club)) if b.club else None
+        if b.vote not in DECISIVE:
+            relation = ''
+        elif not b.club or majority is None:
+            relation = 'brak większości w klubie' if b.club else ''
+        else:
+            relation = 'zgodnie z klubem' if b.vote == majority else 'inaczej niż klub'
+        votes.append({'date': b.voting.article.published_date.date().isoformat() if b.voting.article.published_date else None,
+                      'title': (b.voting.motion or b.voting.article.title or '')[:200], 'vote': VOTE_LABEL.get(b.vote, 'inne'),
+                      'club': _club(b.club), 'club_vote': VOTE_LABEL.get(majority, '') if majority else '', 'relation': relation,
+                      'url': vote_url(b.voting)})
+    records = _records(figure, identities)
+    docs, seen = [], set()
+    for p in records.filter(record__kind__in=FREE_KINDS).select_related('record').order_by(F('record__date').desc(nulls_last=True), '-record__pk')[:12]:
+        r = p.record
+        if r.pk in seen:
+            continue
+        seen.add(r.pk)
+        replies = r.data.get('replies') if isinstance(r.data, dict) else None
+        docs.append({'kind': r.kind, 'label': RECORD_LABEL.get(r.kind, 'Dokument Sejmu'), 'title': (r.title or '')[:200],
+                     'date': r.date.isoformat() if r.date else None, 'url': r.source_url,
+                     'answered': bool(replies) if isinstance(replies, list) else None})
+        if len(docs) == 3:
+            break
+    return {
+        'available': bool(identities),
+        'reason': '' if identities else 'Brak potwierdzonego mandatu poselskiego (oficjalny identyfikator Sejmu) - głosowań i interpelacji tu nie łączymy.',
+        'votes': votes,
+        'documents': docs,
+        'year': {'votes': ballots.filter(voting__article__published_date__gte=since).count(),
+                 'documents': records.filter(record__date__gte=since.date()).values('record_id').distinct().count()},
+        'full_profile': {'url': f'{site()}/przeszlosc/osoba/{slug(figure)}', 'features': PRO_FEATURES} if enabled() else None,
+    }
+
+
+def _club(code):
+    from news.public_figures import _club_short
+    return _club_short(code)
+
+
 # --- historia tematów dnia: kto występował w jakim temacie (dowód współwystępowania) ---
 def remember_topics(rows):
     """Zapis osób z tematów dnia (pick_topics). Trzymamy 200 ostatnich tematów; nic z zapytań użytkowników."""
@@ -484,3 +558,22 @@ def person_view(request, ident):
     if fmt == 'json':
         response['Content-Disposition'] = f'attachment; filename="przeszlosc-{data["slug"]}-{stamp}.json"'
     return response
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def spin_trace_view(request, figure_id):
+    """GET /api/public-figures/<id>/slad/ - bezpłatny „Ślad w dokumentach” na profilu spin.clinic."""
+    from django.core.cache import cache
+    from django.db import connection
+    from news.political_models import PublicFigure
+    figure = PublicFigure.objects.filter(pk=figure_id, archived=False).select_related('parliamentary_roster_entry').first()
+    if figure is None:
+        return Response({'detail': 'Nie ma takiej osoby publicznej w rejestrze.'}, status=404)
+    key = f'spin:slad:{figure.pk}'
+    data = cache.get(key) if connection.vendor == 'postgresql' else None
+    if data is None:
+        data = free_trace(figure)
+        if connection.vendor == 'postgresql':
+            cache.set(key, data, 900)
+    return Response(data)

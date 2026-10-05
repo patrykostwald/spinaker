@@ -113,9 +113,9 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
   // tło przyjmuje siłę spinu tej diagnozy (właściciel 3.10)
   const moodIntensity = query.data && 'intensity' in query.data ? query.data.intensity : null;
   useEffect(() => { setSpinMood(moodIntensity); return () => setSpinMood(null); }, [moodIntensity]);
-  if (query.isFetching || query.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Wczytujemy diagnozę…</p></div>;
-  if (query.isError && !(query.error instanceof ApiError && query.error.status === 404)) return <div className="sc-clinic" role="alert"><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
-  if (query.isError || !query.data) return <div className="sc-clinic"><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;
+  if (query.isFetching || query.isLoading) return <div className="sc-clinic"><h1 className="sc-sr-only">Diagnoza Kliniki spinu</h1><p className="sc-clinic-empty">Wczytujemy diagnozę…</p></div>;
+  if (query.isError && !(query.error instanceof ApiError && query.error.status === 404)) return <div className="sc-clinic" role="alert"><h1 className="sc-sr-only">Diagnoza Kliniki spinu</h1><p>Nie udało się pobrać danych.</p><button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></div>;
+  if (query.isError || !query.data) return <div className="sc-clinic"><h1 className="sc-sr-only">Nie znaleziono diagnozy</h1><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;
   const spin = query.data;
   if (spin.status === "withdrawn") return <WithdrawnSpin spin={spin} />;
   const simple = hasPlain(spin.plain);

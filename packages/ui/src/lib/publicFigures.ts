@@ -176,3 +176,17 @@ export function usePublicFigures(query: string, roleCategory: string, page = 1) 
 export function usePublicFigure(id: number | null) {
   return useQuery({ queryKey: ['public-figure', id], queryFn: () => getPublicFigure(id!), enabled: id !== null, retry: false, staleTime: 60_000 });
 }
+
+/** GET /api/public-figures/<id>/slad/ - bezpłatny „Ślad w dokumentach” (backend/news/przeszlosc_osoba.py: free_trace). */
+export type PublicFigureTrace = {
+  available: boolean;
+  reason: string;
+  votes: Array<{ date: string | null; title: string; vote: string; club: string; club_vote: string; relation: '' | 'zgodnie z klubem' | 'inaczej niż klub' | 'brak większości w klubie'; url: string }>;
+  documents: Array<{ kind: string; label: string; title: string; date: string | null; url: string; answered: boolean | null }>;
+  year: { votes: number; documents: number };
+  full_profile: { url: string; features: string[] } | null;
+};
+
+export function usePublicFigureTrace(id: number) {
+  return useQuery({ queryKey: ['public-figure-trace', id], queryFn: () => apiFetch<PublicFigureTrace>(`/api/public-figures/${id}/slad/`), retry: false, staleTime: 300_000 });
+}

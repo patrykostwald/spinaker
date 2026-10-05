@@ -149,6 +149,7 @@ urlpatterns = [
     path('staff/clinic/diagnoses/<int:diagnosis_id>/flag/', decide_flag),
     path('public-figures/<int:figure_id>/context/', public_figure_context),
     path('public-figures/<int:figure_id>/dossier/', public_figure_dossier),
+    path('public-figures/<int:figure_id>/slad/', przeszlosc_osoba.spin_trace_view),
     path('articles/<int:article_id>/context/', article_context),
     path('context/counts/', context_counts),
     path("editor/sources/", SourceCatalogList.as_view()),

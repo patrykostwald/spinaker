@@ -10828,3 +10828,37 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
   .sc-petle__tile { grid-template-rows: 56px auto auto auto; }
   .sc-petle__gear { width: 56px; height: 56px; }
 }
+/* Ślad w dokumentach (profil osoby, spin.clinic): trzy równe boksy, góra przy górze, stopka przy dole. */
+.sc-trace { display: grid; gap: var(--sc-s-3); margin-block: var(--sc-s-5); }
+.sc-trace__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--sc-s-1) var(--sc-s-3); }
+.sc-trace__head h2 { margin: 0; font-size: var(--sc-t-title-m-size); line-height: var(--sc-t-title-m-lh); font-weight: var(--sc-w-title); white-space: nowrap; }
+.sc-trace__head p { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); }
+.sc-trace__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sc-s-3); align-items: stretch; }
+.sc-trace__grid--loading { min-height: 22rem; background: var(--sc-surface-2); }
+.sc-trace__box { position: relative; display: grid; grid-template-rows: auto 1fr auto; gap: var(--sc-s-3); min-width: 0; padding: var(--sc-s-4); border: 1px solid var(--sc-line); background: var(--sc-surface); }
+.sc-trace__box h3 { margin: 0; overflow: hidden; color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); font-weight: var(--sc-w-caption); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; text-overflow: ellipsis; }
+.sc-trace__list { display: grid; align-content: start; gap: 0; margin: 0; padding: 0; list-style: none; }
+.sc-trace__list > li { display: grid; gap: 2px; padding-block: var(--sc-s-2); border-top: 1px solid var(--sc-line); }
+.sc-trace__list > li:first-child { border-top: 0; padding-top: 0; }
+.sc-trace .sc-trace__title { overflow: hidden; color: var(--sc-text); font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); font-weight: 600; text-decoration: none; white-space: nowrap; text-overflow: ellipsis; }
+.sc-trace .sc-trace__title--two { display: -webkit-box; white-space: normal; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: calc(2 * var(--sc-t-body-s-lh)); }
+.sc-trace a.sc-trace__title:hover { color: var(--sc-accent); text-decoration: underline; }
+.sc-trace__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--sc-s-2); color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); }
+.sc-trace__vote { color: var(--sc-text); font-weight: 700; }
+.sc-trace__club { padding: 0 6px; border: 1px solid var(--sc-line); }
+.sc-trace__club.is-different { border-color: var(--sc-accent); color: var(--sc-accent); }
+.sc-trace__empty { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); }
+.sc-trace__body { display: grid; align-content: space-between; gap: var(--sc-s-4); }
+.sc-trace__numbers { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sc-s-3); margin: 0; }
+.sc-trace__numbers div { display: flex; flex-direction: column-reverse; gap: 2px; }
+.sc-trace__numbers dt { color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); }
+.sc-trace__numbers dd { margin: 0; color: var(--sc-accent); font-size: var(--sc-t-title-m-size); line-height: var(--sc-t-title-m-lh); font-weight: var(--sc-w-title); }
+.sc-trace__pro { padding: var(--sc-s-3); background: var(--sc-surface-2); font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); }
+.sc-trace__pro p { margin: 0 0 var(--sc-s-1); color: var(--sc-text-2); }
+.sc-trace__pro ul { display: grid; gap: 2px; margin: 0; padding-left: 1.1em; }
+.sc-trace .sc-sr-only { top: 0; left: 0; }
+.sc-trace__foot { box-sizing: content-box; display: flex; align-items: center; min-height: 44px; margin: 0; padding-top: var(--sc-s-2); border-top: 1px solid var(--sc-line); color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); }
+.sc-trace .sc-trace__link { display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--sc-accent); font: inherit; font-size: var(--sc-t-body-s-size); font-weight: 700; text-decoration: none; cursor: pointer; }
+.sc-trace .sc-trace__link:hover { text-decoration: underline; }
+.sc-trace__link:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+@media (max-width: 900px) { .sc-trace__grid { grid-template-columns: minmax(0, 1fr); } }

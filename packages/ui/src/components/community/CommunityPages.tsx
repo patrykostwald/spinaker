@@ -88,5 +88,5 @@ export function CommunityThreadPage({ id }: { id: string }) {
   if (!query.data) return <div className="sc-community"><p className="sc-clinic-empty">Nie znaleziono spinki - mogła zostać usunięta albo nie jest publiczna. <Link href="/spinki">Wszystkie spinki</Link></p></div>;
   const thread = query.data;
   // jeden układ spinki (panel designu 6.10): wejście z adresu wygląda tak samo jak wejście z listy
-  return <ThreadOverlay id={thread.id} onClose={() => window.location.assign('/spinki')} />;
+  return <ThreadOverlay id={thread.id} asPage onClose={() => window.location.assign('/spinki')} />;
 }

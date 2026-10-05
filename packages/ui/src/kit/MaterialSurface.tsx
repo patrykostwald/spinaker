@@ -93,6 +93,8 @@ export function MaterialSurface({
   const m = useMotionTokens();
   const target = useTargetBox();
   const isOverlay = mode === "overlay";
+  // Strona /material/[id]: tytuł jest jedynym h1; w nakładce nad listą - h2.
+  const TitleTag = isOverlay ? "h2" : "h1";
   const src = article.image_url?.trim();
   const [favourite, setFavourite] = useState(false);
 
@@ -166,7 +168,7 @@ export function MaterialSurface({
         </div>
 
         <div className="sc-surface__body">
-          <h2 className="sc-t-title-l sc-surface__title">{article.title}</h2>
+          <TitleTag className="sc-t-title-l sc-surface__title">{article.title}</TitleTag>
 
           <p className="sc-t-meta sc-text-2 sc-surface__source">
             <a href={article.url} target="_blank" rel="noopener noreferrer" className="sc-surface__source-link">

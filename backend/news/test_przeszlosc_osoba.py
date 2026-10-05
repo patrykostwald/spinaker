@@ -213,3 +213,32 @@ def test_beat_plan_has_sprint_tasks():
     assert BEAT_PLAN['przeszlosc-alerts-daily'] == ('przeszlosc_alerts_task', {'hour': 7, 'minute': 0})
     assert BEAT_PLAN['public-record-people-nightly'][0] == 'public_record_people_task'
     assert callable(tasks.przeszlosc_alerts_task) and callable(tasks.public_record_people_task)
+
+
+def test_spin_trace_free_slice_votes_vs_club_documents_and_cta(monkeypatch):
+    me, co, rival = build_world()
+    # Głosowanie, w którym posłanka głosuje inaczej niż większość klubu, i drugie - z remisem w klubie.
+    voting(0, [(77, 'Anna Kowalska', 'KO', 'NO'), (78, 'Piotr Wspólny', 'KO', 'YES'), (81, 'Inny Klubowy', 'KO', 'YES')])
+    client = APIClient()
+    data = client.get(f'/api/public-figures/{me.pk}/slad/').json()
+    assert data['available'] and len(data['votes']) == 4
+    newest = data['votes'][0]
+    assert newest['vote'] == 'przeciw' and newest['club_vote'] == 'za' and newest['relation'] == 'inaczej niż klub'
+    assert data['votes'][1]['relation'] == 'zgodnie z klubem' and 'NrGlosowania=' in data['votes'][1]['url']
+    assert [d['label'] for d in data['documents']] == ['Zapytanie poselskie', 'Interpelacja'] and data['documents'][0]['answered'] is True
+    assert data['year'] == {'votes': 4, 'documents': 2}
+    # Płatne funkcje przeszłość.today nie trafiają do spin.clinic; link tylko gdy przeszłość jest włączona.
+    assert data['full_profile'] is None and 'organisations' not in data and 'denominators' not in data
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    monkeypatch.setenv('PRZESZLOSC_DOMAIN', 'przeszlosc.today')
+    full = client.get(f'/api/public-figures/{me.pk}/slad/').json()['full_profile']
+    assert full['url'] == f'https://przeszlosc.today/przeszlosc/osoba/{slug(me)}' and 'Wspólne mianowniki' in full['features']
+    assert client.get('/api/public-figures/999999/slad/').status_code == 404
+
+
+def test_spin_trace_never_matches_by_name():
+    minister = PublicFigure.objects.create(canonical_name='Ministra Publiczna', role_category='government', role_title='Ministra',
+                                           evidence_url='https://gov.pl')
+    voting(1, [(5, 'Ministra Publiczna', 'KO', 'YES')])
+    data = APIClient().get(f'/api/public-figures/{minister.pk}/slad/').json()
+    assert data['available'] is False and data['votes'] == [] and data['documents'] == [] and data['year'] == {'votes': 0, 'documents': 0}

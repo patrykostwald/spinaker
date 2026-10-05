@@ -69,8 +69,8 @@ export function ThreadEditor() {
   const opening = openingPost(title, description, slug ?? '', Math.max(2, picked.length + 1));
   const full = journalist && picked.length >= JOURNALIST_MAX;
   const canEdit = Boolean(me.data?.can_edit_threads ?? me.data?.is_editor);
-  if (me.isPending) return <p role="status">Sprawdzam dostęp…</p>;
-  if (me.isError) return <div role="alert"><p>Nie udało się połączyć z serwisem.</p><button onClick={() => me.refetch()} className={button}>Spróbuj ponownie</button></div>;
+  if (me.isPending) return <section className="sc-editor-login"><h1 className="sc-t-title-l">Warsztat</h1><p role="status">Sprawdzam dostęp…</p></section>;
+  if (me.isError) return <div role="alert" className="sc-editor-login"><h1 className="sc-t-title-l">Warsztat</h1><p>Nie udało się połączyć z serwisem.</p><button onClick={() => me.refetch()} className={button}>Spróbuj ponownie</button></div>;
   if (!canEdit) return <section className="sc-editor-login">
     <h1 className="sc-t-title-l">Warsztat</h1><p className="sc-editor-copy">W wersji beta spinki publikuje zespół spin.clinic. Czytanie i przeszukiwanie całej bazy jest dostępne bez konta.</p>
     <form className="sc-editor-stack" onSubmit={async e => {

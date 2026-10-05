@@ -21,7 +21,9 @@ export function viewTransition(update: () => void) {
  * (polecana, a bez niej najgorętsza). Z prawej u góry „Następna spinka”: cały widok przechodzi do kolejnej spinki z listy.
  * Wyjście: „Wszystkie spinki”, Esc albo „wstecz”.
  */
-export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number; onClose: () => void; order?: number[] }) {
+/** asPage: osobna trasa /spinki/[id] - tytuł jest jedynym h1 strony; w nakładce nad listą lub główną - h2 (jeden h1 na stronę). */
+export function ThreadOverlay({ id: initial, onClose, order = [], asPage = false }: { id: number; onClose: () => void; order?: number[]; asPage?: boolean }) {
+  const Title = asPage ? 'h1' : 'h2';
   const [id, setId] = useState(initial);
   const query = useQuery({ queryKey: ['community-thread', String(id)], queryFn: () => getCommunityThread(id), retry: false });
   const featured = useQuery({ queryKey: ['community-threads', 'next-pick'], queryFn: () => getCommunityThreads(1, '', '', { featured: '1' }), retry: false, staleTime: 60_000 });
@@ -136,7 +138,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       {thread && <>
         {/* podtytuł zawsze, także u Dr. Spina (pisze go Redaktor tytułów) */}
         <header className="sc-sp-head" ref={head}>
-          <h1 className="sc-sp-title" title={thread.title} ref={titleRef} tabIndex={-1}><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</h1>
+          <Title className="sc-sp-title" title={thread.title} ref={titleRef} tabIndex={-1}><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</Title>
           <p className="sc-sp-desc" aria-live={note?.auto ? 'off' : 'polite'} data-note={note ? '' : undefined}>{note ? <><b>{note.label}</b>{note.text}</> : thread.description || 'Autor nie dodał opisu tej spinki.'}</p>
         </header>
         <ThreadStrip key={thread.id} thread={thread} items={thread.items} full onNote={setNote} />
