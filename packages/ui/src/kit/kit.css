@@ -10168,3 +10168,46 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pt__how b { font-size: 26px; font-weight: 700; color: var(--sc-accent); line-height: 1; }
 .sc-pt__how span { display: grid; font-size: 13px; color: var(--sc-text-2); } .sc-pt__how strong { font-size: 15px; color: var(--sc-text); }
 @media (max-width: 760px) { .sc-pt__how { grid-template-columns: 1fr; } }
+
+/* ===== „Prześwietlenie” (właściciel 6.10): lżejszy efekt, który rozchodzi się od krawędzi jak poświata,
+   a w nim te same kropki co w tle strony (1 px co 18 px) - jakby element był prześwietlony światłem z jednej strony.
+   Warstwa 1: miękka poświata (bardzo słaba). Warstwa 2 (::after): kropki w kolorze, widoczne tylko tam, gdzie poświata. */
+.sc-thread-strip.sc-thread-strip--row[style], .sc-thread-strip.sc-thread-strip--row { position: relative; isolation: isolate; background:
+    radial-gradient(55% 150% at 0% 50%, color-mix(in srgb, var(--who-c) 7%, transparent) 0%, transparent 70%),
+    radial-gradient(42% 170% at 100% 50%, color-mix(in srgb, var(--tint-c) calc((var(--tint-k, 14%) + var(--tint-h, 0%)) * .5), transparent) 0%, transparent 72%) !important; }
+.sc-thread-strip--row::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(50% 150% at 0% 50%, color-mix(in srgb, var(--who-c) 55%, transparent) 0%, transparent 70%),
+    radial-gradient(40% 170% at 100% 50%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) * 3 + var(--tint-h, 0%) * 3), transparent) 0%, transparent 72%);
+  -webkit-mask: radial-gradient(circle, #000 1px, transparent 1.5px) 0 0 / 18px 18px; mask: radial-gradient(circle, #000 1px, transparent 1.5px) 0 0 / 18px 18px;
+  opacity: .7; transition: opacity .4s; }
+.sc-thread-strip--row:hover::after { opacity: 1; }
+@media (max-width: 767px) {
+  .sc-thread-strip.sc-thread-strip--row[style], .sc-thread-strip.sc-thread-strip--row { background:
+    radial-gradient(80% 60% at 0% 0%, color-mix(in srgb, var(--who-c) 7%, transparent) 0%, transparent 70%),
+    radial-gradient(70% 90% at 100% 100%, color-mix(in srgb, var(--tint-c) calc((var(--tint-k, 14%) + var(--tint-h, 0%)) * .5), transparent) 0%, transparent 72%) !important; }
+  .sc-thread-strip--row::after { background:
+    radial-gradient(70% 55% at 0% 0%, color-mix(in srgb, var(--who-c) 55%, transparent) 0%, transparent 70%),
+    radial-gradient(65% 85% at 100% 100%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) * 3), transparent) 0%, transparent 72%); }
+}
+/* boksy spinki: zieleń tezy jako prześwietlenie z prawego brzegu */
+.sc-abox { isolation: isolate; background:
+    radial-gradient(60% 120% at 100% 50%, color-mix(in srgb, var(--tint-c) calc((var(--tk, 12%) + var(--tk-h, 0%)) * .45), transparent) 0%, transparent 72%),
+    color-mix(in srgb, var(--sc-text) 2%, transparent) !important; }
+[data-theme="light"] .sc-abox { background:
+    radial-gradient(60% 120% at 100% 50%, color-mix(in srgb, var(--tint-c) calc((var(--tk, 12%) + var(--tk-h, 0%)) * .35), transparent) 0%, transparent 72%) !important; }
+.sc-abox::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(55% 120% at 100% 50%, color-mix(in srgb, var(--tint-c) calc(var(--tk, 12%) * 3.5), transparent) 0%, transparent 72%);
+  -webkit-mask: radial-gradient(circle, #000 1px, transparent 1.5px) 0 0 / 18px 18px; mask: radial-gradient(circle, #000 1px, transparent 1.5px) 0 0 / 18px 18px; opacity: .75; }
+/* ten sam język w innych elementach: karty wsparcia, kolejne diagnozy, plany, kroki przeszłość.today, główny przycisk */
+:is(a.sc-support-pick__opt, .sc-spin-next a, .sc-pt__plans > div, .sc-pt__how li, .sc-spin-detail__next) { position: relative; isolation: isolate; }
+:is(a.sc-support-pick__opt, .sc-spin-next a, .sc-pt__plans > div, .sc-pt__how li, .sc-spin-detail__next)::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(60% 140% at 0% 50%, color-mix(in srgb, var(--sc-accent) 45%, transparent) 0%, transparent 70%);
+  -webkit-mask: radial-gradient(circle, #000 1px, transparent 1.5px) 0 0 / 18px 18px; mask: radial-gradient(circle, #000 1px, transparent 1.5px) 0 0 / 18px 18px; opacity: .6; transition: opacity .4s; }
+:is(a.sc-support-pick__opt, .sc-spin-next a):hover::after { opacity: 1; }
+.sc-btn[data-variant="primary"] { position: relative; isolation: isolate; }
+.sc-btn[data-variant="primary"]::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(70% 160% at 100% 50%, rgba(255,255,255,.55) 0%, transparent 70%);
+  -webkit-mask: radial-gradient(circle, #000 .8px, transparent 1.2px) 0 0 / 9px 9px; mask: radial-gradient(circle, #000 .8px, transparent 1.2px) 0 0 / 9px 9px; opacity: .35; }
+@media (prefers-reduced-motion: reduce) { .sc-thread-strip--row::after { transition: none; } }
+.sc-trow__when, .sc-trow__by { overflow: visible !important; text-overflow: clip !important; } .sc-trow__when { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
