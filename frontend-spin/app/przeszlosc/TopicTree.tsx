@@ -73,11 +73,11 @@ export function TopicTree() {
       <p className="sc-pt__ex">{start?.auto_topics?.length ? 'Tematy dnia:' : 'Przykłady:'} {(start?.auto_topics?.length ? start.auto_topics.map(t => t.topic) : EXAMPLES).map(e => <button key={e} type="button" onClick={() => { setQuery(e); void load(e); }}>{e}</button>)}</p>
     </header>
 
-    {state === 'idle' && data && !new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('q') && <p className="sc-pt__k">Temat dnia: {data.topic}</p>}
-    {state === 'loading' && <Loading label="Ładowanie tematu" />}
+    {state === 'loading' && !data && <Loading label="Ładowanie tematu" />}
     {state === 'off' && <p className="sc-pt__msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
     {state === 'error' && <p className="sc-pt__msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}
-    {state === 'idle' && data && <TopicView data={data} />}
+    {data && (state === 'idle' || state === 'loading') && <TopicView data={data} busy={state === 'loading'}
+      daily={!new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('q')} />}
 
     {start && <section className="sc-pt__stats" aria-label="Co jest w bazie">
       {([['people', 'osób publicznych'], ['organisations', 'spółek i fundacji z KRS'], ['records', 'dokumentów Sejmu'], ['posts', 'wpisów polityków'], ['diagnoses', 'diagnoz Dr. Spina'], ['articles', 'artykułów']] as const)
@@ -85,7 +85,7 @@ export function TopicTree() {
     </section>}
     {start && start.latest.length > 0 && <section className="sc-pt__latest" aria-label="Najnowsze w Sejmie">
       <h2>Najnowsze w Sejmie</h2>
-      <ol>{start.latest.map((row, i) => <li key={i}><time>{row.date ?? ''}</time><span>{row.kind}</span><a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>
+      <ol>{start.latest.map((row, i) => <li key={i} data-nodate={!row.date || undefined}>{row.date && <time>{row.date}</time>}<span>{row.kind}</span><a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>
     </section>}
     <section className="sc-pt__about" id="jak" aria-label="Jak to działa">
       <div><b>Tylko osoby i podmioty publiczne</b><p>Politycy, urzędnicy, spółki i fundacje z KRS. Żadnych osób prywatnych.</p></div>
@@ -106,9 +106,40 @@ const KIND_LABEL: Record<string, string> = { record: 'Sejm', statement: 'Wpis', 
 const CAMP_LABEL: Record<string, string> = { government: 'rządzący', opposition: 'opozycja', public: 'instytucja' };
 
 /** Widok tematu (właściciel 5.10): oś czasu jako główna treść, obok kto występuje, pod spodem rozkład źródeł medialnych. */
-function TopicView({ data }: { data: Graph }) {
+/** Nazwiska zapisane wielkimi literami (MÜLLER) jak zwykłe nazwiska; skróty do 3 liter zostają. */
+const nice = (name: string) => name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase()
+  ? w[0] + w.slice(1).toLowerCase() : w).join('');
+const CAMP_COLOR: Record<string, string> = { government: '#5B9BFF', opposition: '#FF6B6B' };
+
+/** Pasek gęstości tematu (panel designu 5.10): kiedy temat „wybuchł”; słupek dnia w kolorach obozów, klik przewija do dnia. */
+function Density({ events }: { events: Node[] }) {
+  const days = new Map<string, Record<string, number>>();
+  for (const n of events) { const d = n.date ?? ''; const row = days.get(d) ?? {}; const k = n.camp && CAMP_COLOR[n.camp] ? n.camp : 'other'; row[k] = (row[k] ?? 0) + 1; days.set(d, row); }
+  const keys = [...days.keys()].sort();
+  if (keys.length < 2) return null;
+  const max = Math.max(...keys.map(k => Object.values(days.get(k)!).reduce((a, b) => a + b, 0)));
+  const w = 100 / keys.length;
+  return <figure className="sc-tv__density" aria-label="Kiedy o temacie było najgłośniej">
+    <svg viewBox="0 0 100 40" preserveAspectRatio="none" role="img" aria-label={`Aktywność w temacie od ${keys[0]} do ${keys[keys.length - 1]}`}>
+      {keys.map((k, i) => { let y = 40; const row = days.get(k)!;
+        return <g key={k} className="sc-tv__dday" onClick={() => document.getElementById(`d-${k}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+          <title>{`${k}: ${Object.values(row).reduce((a, b) => a + b, 0)}`}</title>
+          <rect x={i * w} y={0} width={w} height={40} fill="transparent" />
+          {(['government', 'opposition', 'other'] as const).filter(c => row[c]).map(c => { const h = (36 * row[c]) / max; y -= h;
+            return <rect key={c} x={i * w + w * .15} y={y} width={w * .7} height={h} fill={CAMP_COLOR[c] ?? 'currentColor'} opacity={c === 'other' ? .35 : .85} />; })}
+        </g>; })}
+    </svg>
+    <figcaption><span>{keys[0]}</span><span>niebieski: rządzący · czerwony: opozycja · szary: media i dokumenty</span><span>{keys[keys.length - 1]}</span></figcaption>
+  </figure>;
+}
+
+function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: boolean; daily?: boolean }) {
   const [more, setMore] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  const [hot, setHot] = useState<string | null>(null);
+  const [full, setFull] = useState<Set<string>>(new Set());
+  const [copied, setCopied] = useState<string | null>(null);
+  const [allPeople, setAllPeople] = useState(false);
   const byId = useMemo(() => new Map(data.nodes.map(n => [n.id, n])), [data]);
   const author = useMemo(() => {
     const map = new Map<string, Node>();
@@ -135,32 +166,38 @@ function TopicView({ data }: { data: Graph }) {
   const mediaTotal = mediaRows.reduce((sum, [, n]) => sum + n, 0);
   if (!data.nodes.length) return <p className="sc-pt__msg">Nic nie znaleźliśmy. Spróbuj innego słowa.</p>;
   let lastDay = '';
-  return <div className="sc-tv">
+  return <div className="sc-tv" data-busy={busy || undefined} data-hot={hot ? '' : undefined}>
     <header className="sc-tv__head">
       <h2>{data.topic}</h2>
-      <p>{([['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
+      <p>{daily ? 'Temat dnia · ' : ''}{([['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
         ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['record', 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu'], ['media', 'artykuł', 'artykuły', 'artykułów'],
         ['person', 'osoba lub instytucja', 'osoby i instytucje', 'osób i instytucji']] as const)
         .filter(([k]) => data.counts[k]).map(([k, one, few, many]) => { const n = data.counts[k]; const w = n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many; return `${n} ${w}`; }).join(' · ')}</p>
       <Export data={data} author={author} />
     </header>
+    <Density events={events} />
     <div className="sc-tv__grid">
       {Boolean(data.votes?.length) && <Votes votes={data.votes!} />}
       <section className="sc-tv__time" aria-label="Oś czasu">
         <h3>Oś czasu</h3>
         <ol>{shown.map(n => {
           const day = n.date ?? '';
-          const head = day !== lastDay ? <li className="sc-tv__day" key={`d${day}`}>{new Date(day).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</li> : null;
+          const head = day !== lastDay ? <li className="sc-tv__day" id={`d-${day}`} key={`d${day}`}>{new Date(day).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</li> : null;
           lastDay = day;
           const who = author.get(n.id);
           const dg = diagnosisOf.get(n.id);
-          return [head, <li key={n.id} className="sc-tv__item" data-kind={n.kind} data-camp={n.camp || undefined}>
-            <span className="sc-tv__kind">{KIND_LABEL[n.kind]}{n.kind === 'record' && n.sub ? ` · ${SUB[n.sub] ?? n.sub}` : ''}{n.kind === 'media' && n.sub ? ` · ${n.sub}` : ''}</span>
-            {who && <span className="sc-tv__who">{who.label}{n.camp && CAMP_LABEL[n.camp] ? <em> · {CAMP_LABEL[n.camp]}</em> : null}</span>}
-            <p>{n.label}</p>
+          const kind = n.kind === 'statement' ? '' : `${KIND_LABEL[n.kind]}${n.kind === 'record' && n.sub ? ` · ${SUB[n.sub] ?? n.sub}` : ''}${n.kind === 'media' && n.sub ? ` · ${n.sub}` : ''}`;
+          const cite = `${n.date ?? ''} · ${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])} · ${n.url ?? ''} · via przeszłość.today`;
+          return [head, <li key={n.id} className="sc-tv__item" data-kind={n.kind} data-camp={n.camp || undefined}
+            data-on={hot && who?.id === hot ? '' : undefined} data-copied={copied === n.id || undefined}>
+            <span className="sc-tv__who"><span>{who ? nice(who.label) : (n.kind === 'media' ? n.sub : KIND_LABEL[n.kind])}{n.camp && CAMP_LABEL[n.camp] ? <em> · {CAMP_LABEL[n.camp]}</em> : null}</span>{kind && <small>{kind}</small>}</span>
+            <p data-full={full.has(n.id) || undefined} title={full.has(n.id) ? undefined : 'Kliknij, aby rozwinąć'}
+              onClick={() => setFull(prev => { const next = new Set(prev); if (next.has(n.id)) next.delete(n.id); else next.add(n.id); return next; })}>{n.label}</p>
             <span className="sc-tv__links">
               {dg && <a href={dg.url} target="_blank" rel="noopener noreferrer" className="sc-tv__dg">Diagnoza Dr. Spina: spin {dg.intensity}/100 →</a>}
-              {n.url && <a href={n.url} target="_blank" rel="noopener noreferrer">źródło →</a>}
+              {n.url && <a href={n.url} target="_blank" rel="noopener noreferrer" aria-label={`źródło: ${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])}, ${n.date ?? ''}`}>źródło →</a>}
+              <button type="button" className="sc-tv__cite" onClick={() => { void navigator.clipboard?.writeText(cite).catch(() => undefined); setCopied(n.id); setTimeout(() => setCopied(c => (c === n.id ? null : c)), 1400); }}
+                aria-label="Kopiuj przypis">{copied === n.id ? 'skopiowano ✓' : 'cytuj'}</button>
             </span>
           </li>];
         })}</ol>
@@ -169,20 +206,22 @@ function TopicView({ data }: { data: Graph }) {
       <aside className="sc-tv__side">
         <section aria-label="Kto występuje">
           <h3>Kto występuje</h3>
-          <ul className="sc-tv__people">{people.slice(0, 16).map(p => {
+          <ul className="sc-tv__people" data-all={allPeople || undefined}>{people.slice(0, 16).map(p => {
             const r = roles.get(p.id) ?? [];
-            return <li key={p.id} data-camp={p.camp || undefined}>
-              <span className="sc-tv__pname">{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer">{p.label}</a> : p.label}<small>{p.links}</small></span>
+            return <li key={p.id} data-camp={p.camp || undefined} onMouseEnter={() => setHot(p.id)} onMouseLeave={() => setHot(null)}
+              onFocus={() => setHot(p.id)} onBlur={() => setHot(null)}>
+              <span className="sc-tv__pname">{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer">{nice(p.label)}</a> : nice(p.label)}<small title="wystąpień w temacie">{p.links}×</small></span>
               {p.role && <span className="sc-tv__prole">{p.role}</span>}
               {r.length > 0 && <button type="button" onClick={() => setOpen(open === p.id ? null : p.id)} aria-expanded={open === p.id}>Funkcje w KRS ({r.length})</button>}
               {open === p.id && <ul className="sc-tv__krs">{r.map(({ org, role }) => <li key={org.id}><a href={org.url} target="_blank" rel="noopener noreferrer">{org.label}</a> <span>{role}</span></li>)}</ul>}
             </li>;
           })}</ul>
+          {people.length > 6 && <button type="button" className="sc-tv__more sc-tv__more--people" onClick={() => setAllPeople(!allPeople)}>{allPeople ? 'Pokaż mniej' : `Pokaż wszystkie osoby (${Math.min(people.length, 16)})`}</button>}
           <p className="sc-tv__note">Funkcje w KRS to kontekst osoby, nie dowód związku z tematem.</p>
         </section>
         {mediaTotal > 0 && <section aria-label="Źródła medialne">
           <h3>Źródła medialne w temacie</h3>
-          <ul className="sc-tv__media">{mediaRows.slice(0, 8).map(([name, n]) => <li key={name}><span>{name}</span><i><b style={{ width: `${(100 * n) / mediaTotal}%` }} /></i><em>{n}</em></li>)}</ul>
+          <ul className="sc-tv__media">{mediaRows.slice(0, 8).map(([name, n]) => <li key={name}><span title={name}>{name}</span><i><b style={{ width: `${(100 * n) / mediaTotal}%` }} /></i><em>{n}</em></li>)}</ul>
           <p className="sc-tv__note">Pokazujemy, co jest w naszej bazie. Jeśli jedna redakcja przeważa, to informacja o bazie, nie o temacie.</p>
         </section>}
       </aside>
