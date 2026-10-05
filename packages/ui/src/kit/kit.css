@@ -9741,3 +9741,19 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pick__foot .sc-pick__source { white-space: nowrap; }
 @media (max-width: 1100px) { .sc-pick__card { height: 440px; } .sc-pick__media { max-height: 110px !important; aspect-ratio: auto !important; height: 110px !important; } }
 @media (max-width: 767px) { .sc-pick__card { height: 440px; padding: 16px 16px 10px !important; gap: 12px !important; } .sc-pick__ask { display: none; } .sc-pick__text .sc-pick__body { -webkit-line-clamp: 6; } }
+
+/* ===== Panel designu 6.10, runda 1: cały portal =====
+   jeden rozmiar tytułu strony (48 px na komputerze, 32 px na telefonie; Similarity, Jakob), najwyżej 2 kroje (bez maszynowego),
+   widoczny fokus w polach (WCAG 2.4.7), cele dotyku co najmniej 44 px na telefonie (Fitts, WCAG 2.5.8) */
+:root { --sc-font-mono: var(--sc-font-sans); }
+.sc-glitch__l[data-g]::after, .sc-loading__l[data-g]::after { font-family: inherit !important; }
+.sc-section-header__title, .sc-community__head > h1, .sc-search-page h1, h1.sc-t-title-l { font-size: 48px !important; line-height: 1.08 !important; letter-spacing: -.02em; }
+.sc-account h1 { font-size: 32px !important; line-height: 1.15 !important; margin: 0 0 12px; }
+@media (max-width: 767px) {
+  .sc-section-header__title, .sc-community__head > h1, .sc-search-page h1, h1.sc-t-title-l { font-size: 32px !important; }
+  .sc-account h1 { font-size: 26px !important; }
+  .sc-rail-top__bell { min-width: 44px; min-height: 44px; align-items: center; justify-content: center; }
+  .sc-rail__foot p a, .sc-more-sheet__panel > p a { min-height: 44px; display: inline-flex; align-items: center; }
+  .sc-trop-overlay__back, .sc-spin-detail__back, .sc-social-login a, .sc-social-sortrow a { min-height: 44px; display: inline-flex; align-items: center; }
+}
+:is(input, textarea, select):focus-visible { outline: 2px solid var(--sc-accent) !important; outline-offset: 2px; }

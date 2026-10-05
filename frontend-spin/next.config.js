@@ -26,6 +26,9 @@ module.exports = {
       { source: '/konto/tropy/:path*', destination: '/konto/spinki/:path*', permanent: true },
       // polskie adresy wpisywane z ręki (audyt 4.10): bez 404
       { source: '/szukaj', destination: '/search', permanent: false },
+      // wpisane z ręki adresy (panel designu 6.10): prowadzą do właściwych stron zamiast 404
+      { source: '/wywiady', destination: '/klinika/wywiady', permanent: false },
+      { source: '/osoby', destination: '/osoby-publiczne', permanent: false },
       { source: '/powiadomienia', destination: '/konto#powiadomienia', permanent: false },
       { source: '/profil', destination: '/konto', permanent: false },
     ];
