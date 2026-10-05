@@ -36,7 +36,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   thread: CommunityThreadSummary; items?: ThreadElement[]; full?: boolean; initiallyExpanded?: boolean;
   variant?: 'card' | 'row'; open?: boolean; onOpenChange?: (open: boolean) => void; offset?: number; onFullscreen?: () => void; badge?: string;
   /** Notatka autora przy klikniętym połączeniu lub boksie (pole opisu w nagłówku spinki); null = opis całej spinki. */
-  onNote?: (note: { label: string; text: string } | null) => void;
+  onNote?: (note: { label: string; text: string; auto?: boolean } | null) => void;
 }) {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [commentCount, setCommentCount] = useState<number | null>(null);
@@ -106,7 +106,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
     if (!step) { onNote(null); return; }
     const item = ordered[step.index];
     if (!item) { onNote(null); return; }
-    if (step.kind === 'clip') onNote({ label: `Połączenie ${step.index}: boks ${step.index} → ${step.index + 1}.`, text: item.link_note || 'Autor nie opisał tego połączenia.' });
+    if (step.kind === 'clip') onNote({ label: `Połączenie ${step.index}: boks ${step.index} → ${step.index + 1}.`, text: item.link_note || 'Autor nie opisał tego połączenia.', auto: !picked && !focus && openJoint === null });
     else onNote({ label: `Boks ${step.index + 1}: ${item.box_type ? TYPES[item.box_type] : 'materiał'}.`, text: item.note || item.title });
   }, [picked, focus, openJoint, introStep]); // eslint-disable-line react-hooks/exhaustive-deps
   const row = variant === 'row' && !full;
@@ -247,7 +247,8 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <span className="sc-thread-admission__bar" aria-hidden="true"><span style={{ width: `${Math.min(100, 100 * thread.admission.positive / thread.admission.needed)}%` }} /></span>
       {thread.admission.open ? `${thread.admission.positive}/${thread.admission.needed} ✓ do głównej · zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'Czas w izbie minął'}
     </p>}
-    {focus ? <FocusView key={`${focus.kind}-${focus.index}`} threadId={thread.id} items={ordered} start={focus} steps={steps} onClose={() => { setFocus(null); setPicked(null); }} onStep={setPicked} /> : <div className="sc-thread-strip__rail">
+    {focus ? <FocusView key={`${focus.kind}-${focus.index}`} threadId={thread.id} items={ordered} start={focus} steps={steps} onClose={() => { const at = (picked ?? focus)?.index ?? 0; setFocus(null); setPicked(null);
+      requestAnimationFrame(() => track.current?.querySelectorAll<HTMLElement>('.sc-thread-strip__box')[at]?.querySelector<HTMLElement>('button, a')?.focus()); }} onStep={setPicked} /> : <div className="sc-thread-strip__rail">
     {expanded && canPrev && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--prev" aria-label="Poprzednie boksy" onClick={() => slide(-1)}>‹</button>}
     {expanded && canNext && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--next" aria-label="Kolejne boksy" onClick={() => slide(1)}>›</button>}
     <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" data-tight={tight || undefined} data-more={(expanded && canNext) || undefined} tabIndex={0} aria-label={`Boksy spinki: ${thread.title}`}

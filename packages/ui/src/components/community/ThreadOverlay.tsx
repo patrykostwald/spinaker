@@ -69,8 +69,10 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
   }, [initial]);
 
   const thread = query.data;
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (thread) requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true })); }, [thread?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // nagłówek spinki: pole opisu i wyrównanie do lewej krawędzi pierwszego boksu (właściciel 5.10)
-  const [note, setNote] = useState<{ label: string; text: string } | null>(null);
+  const [note, setNote] = useState<{ label: string; text: string; auto?: boolean } | null>(null);
   const head = useRef<HTMLElement>(null);
   useEffect(() => { setNote(null); }, [id]);
   useEffect(() => {
@@ -134,17 +136,17 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
       {thread && <>
         {/* podtytuł zawsze, także u Dr. Spina (pisze go Redaktor tytułów) */}
         <header className="sc-sp-head" ref={head}>
-          <h1 className="sc-sp-title" title={thread.title}><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</h1>
-          <p className="sc-sp-desc" aria-live="polite" data-note={note ? '' : undefined}>{note ? <><b>{note.label}</b>{note.text}</> : thread.description || 'Autor nie dodał opisu tej spinki.'}</p>
+          <h1 className="sc-sp-title" title={thread.title} ref={titleRef} tabIndex={-1}><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</h1>
+          <p className="sc-sp-desc" aria-live={note?.auto ? 'off' : 'polite'} data-note={note ? '' : undefined}>{note ? <><b>{note.label}</b>{note.text}</> : thread.description || 'Autor nie dodał opisu tej spinki.'}</p>
         </header>
         <ThreadStrip key={thread.id} thread={thread} items={thread.items} full onNote={setNote} />
         {/* przewijanie komentarzy (właściciel 4.10): przycisk w kółku na środku linii nad „Warto też zobaczyć”,
             linia ma na niego przerwę; w czasie przewijania pod nim pojawia się mniejszy, drugi znak */}
-        <div className="sc-trop-overlay__scroller" data-more={moreBelow || undefined} data-moving={moving || undefined}>
+        {moreBelow && <div className="sc-trop-overlay__scroller" data-more data-moving={moving || undefined}>
           <i /><button type="button" aria-label="Przewiń komentarze w dół" onClick={() => commentsBox()?.scrollBy({ top: (commentsBox()?.clientHeight ?? 300) * .8, behavior: 'smooth' })}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg></button><i />
           <svg className="sc-trop-overlay__scroller-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10l4 4 4-4" /></svg>
-        </div>
+        </div>}
         {next && <section className="sc-trop-overlay__next" aria-label="Warto też zobaczyć">
           <p className="sc-trop-overlay__next-k">Warto też zobaczyć</p>
           <ThreadStrip key={`next-${next.id}`} thread={next} variant="row" onFullscreen={() => open(next.id)} />

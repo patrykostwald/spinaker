@@ -9788,3 +9788,19 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 
 .sc-thread-strip--row { --tint-k: 12%; }
 .sc-thread-strip--row:hover { --tint-k: 20%; }
+
+/* ===== Panel designu 6.10, runda 2: spinka =====
+   telefon: widoczne „‹ Spinki” w pasku nakładki (Jakob); tytuł zawsze rezerwuje 2 linie, więc „Następna spinka” nie przesuwa sceny;
+   cele dotyku 44 px; strzałki toru na telefonie zbędne (gest przewijania) */
+.sc-sp-title { min-height: calc(2 * 1.22em); } .sc-sp-title:focus { outline: none; }
+@media (max-width: 767px) {
+  .sc-trop-overlay__back { display: inline-flex !important; align-items: center; min-height: 44px; font-size: 0 !important; }
+  .sc-trop-overlay__back::before { content: "‹ Spinki"; font-size: 15px; font-weight: 600; }
+  .sc-trop-overlay__following, .sc-joint__more { min-height: 44px; display: inline-flex; align-items: center; }
+  .sc-pick__arrow { width: 44px !important; height: 44px !important; }
+  .sc-thread-strip__arrow { display: none !important; }
+}
+
+/* pasek nakładki ma stałą wysokość od początku: „Następna spinka” dojeżdża po chwili i nie może przesuwać sceny (runda 2) */
+.sc-trop-overlay__bar { min-height: 51px; box-sizing: border-box; }
+@media (max-width: 767px) { .sc-trop-overlay__bar { min-height: 64px; } }
