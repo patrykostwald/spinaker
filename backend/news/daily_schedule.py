@@ -16,7 +16,8 @@ BEAT_PLAN = {
     'recenzent-2h': ('recenzent_task', {'minute': 41, 'hour': '*/2'}),  # właściciel 5.10: recenzuje wszystko, co trafia na stronę
     'projektant-daily': ('projektant_task', {'hour': 4, 'minute': 20}),
     'dyrygent-15m': ('dyrygent_task', {'minute': '*/15'}),  # właściciel 5.10: hierarchia i harmonogram pętli
-    'badacz-daily': ('badacz_task', {'hour': 3, 'minute': 20}),  # właściciel 5.10: pętla researchu
+    'badacz-daily': ('badacz_task', {'hour': 3, 'minute': 20}),
+    'x-value-daily': ('x_value_task', {'hour': 3, 'minute': 40}),  # właściciel 6.10: X według wartości konta  # właściciel 5.10: pętla researchu
     'opiekunowie-1h': ('opiekunowie_task', {'minute': 17}),  # właściciel 5.10: opiekunowie każdej pętli
     'automatyk-daily': ('automatyk_task', {'hour': '6,13', 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
     'pracownia-osint': ('pracownia_osint_task', {'hour': '4,16', 'minute': 50}),  # właściciel 5.10: agenci rozwijający przeszłość.today

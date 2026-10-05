@@ -590,3 +590,10 @@ def przeszlosc_topics_task():
     if not przeszlosc.enabled():
         return {'status': 'disabled'}
     return {'status': 'ok', 'topics': [t['topic'] for t in przeszlosc.pick_topics()]}
+
+
+@shared_task
+def x_value_task():
+    """Raz dziennie: czytanie X według wartości konta (właściciel 6.10: taniej i legalnie)."""
+    from news import x_value
+    return x_value.apply()
