@@ -8,7 +8,7 @@ import { ago, Avatar, SocialIcon, ClampedText, type Counts } from './SocialPrimi
 import { SocialReport, ThreadSocial } from './ThreadSocial';
 import { formatDatePl, categoryLabel } from '../../lib/utils';
 import { XPostCard } from './XPostCard';
-import { BOX_TYPES as TYPES, boxImage, contentTag, FocusView, focusRef, SpinkaClip, StepRate, useThreadSteps, type FocusStep } from './ThreadSteps';
+import { BOX_TYPES as TYPES, boxImage, contentTag, FocusView, focusRef, Glyph, LINK_GLYPH, LINK_WORDS, splitTitle, SpinkaClip, StepRate, TYPE_GLYPH, useThreadSteps, type FocusStep } from './ThreadSteps';
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
@@ -248,7 +248,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       {thread.admission.open ? `${thread.admission.positive}/${thread.admission.needed} ✓ do głównej · zostało ${thread.admission.days_left} ${thread.admission.days_left === 1 ? 'dzień' : 'dni'}` : 'Czas w izbie minął'}
     </p>}
     {focus ? <FocusView key={`${focus.kind}-${focus.index}`} threadId={thread.id} items={ordered} start={focus} steps={steps} onClose={() => { const at = (picked ?? focus)?.index ?? 0; setFocus(null); setPicked(null);
-      requestAnimationFrame(() => track.current?.querySelectorAll<HTMLElement>('.sc-thread-strip__box')[at]?.querySelector<HTMLElement>('button, a')?.focus()); }} onStep={setPicked} /> : <div className="sc-thread-strip__rail">
+      requestAnimationFrame(() => track.current?.querySelector<HTMLElement>(`[data-box="${at + 1}"] button, [data-box="${at + 1}"]`)?.focus()); }} onStep={setPicked} /> : <div className="sc-thread-strip__rail">
     {expanded && canPrev && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--prev" aria-label="Poprzednie boksy" onClick={() => slide(-1)}>‹</button>}
     {expanded && canNext && <button type="button" className="sc-thread-strip__arrow sc-thread-strip__arrow--next" aria-label="Kolejne boksy" onClick={() => slide(1)}>›</button>}
     <ol id={`${uid}-track`} ref={track} className="sc-thread-strip__track" data-tight={tight || undefined} data-more={(expanded && canNext) || undefined} tabIndex={0} aria-label={`Boksy spinki: ${thread.title}`}
@@ -273,7 +273,12 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         setActive(nearest); if (scrollingTo.current === null) setSelected(slots[nearest] ?? 0);
         edges();
       }}>
-      {ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
+      {full ? ordered.map((item, index) => <Fragment key={`a-${item.position}-${item.id}`}>
+        {index > 0 && <AJoint item={item} index={index} counts={steps.find(item.item_id, 'context')?.counts}
+          onOpen={() => { setIntroStep(0); setFocus({ kind: 'clip', index }); }} onShow={on => setOpenJoint(on ? index : null)} />}
+        <ABox item={item} index={index} count={ordered.length} tint={reactionTint(steps.find(item.item_id, 'box')?.counts)} highlight={highlight === index + 1}
+          onOpen={() => setFocus({ kind: 'box', index })} />
+      </Fragment>) : ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
         {expanded && index > 0 && <li className={`sc-joint${jointOpen(index) ? ' is-open' : ''}`} data-kind={item.link_kind || undefined} style={{ ['--i' as string]: index - .5 }}>
           {/* rodzaj spinki nad zatrzaskiem (właściciel 4.10) */}
           {item.link_kind && <span className="sc-joint__kind">{LINK_WORD[item.link_kind]}</span>}
@@ -336,6 +341,38 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
         <button type="button" className="sc-thread-strip__collapse" onClick={toggle}>Zwiń spinkę <span aria-hidden="true">⌃</span></button></span>
     </div>}
   </article>;
+}
+
+/** Boks pełnej spinki (kierunek A, właściciel 6.10): rodzaj z ikoną i mała etykieta stanu u góry, tytuł w jednej linii,
+ *  treść, źródło przy dolnej krawędzi; zamiast ramki kolor reakcji z prawej i obrys, który przy nim wygasa. */
+function ABox({ item, index, count, tint, highlight, onOpen }: { item: ThreadElement; index: number; count: number; tint: string | null; highlight: boolean; onOpen: () => void }) {
+  const { tag, title, spin } = splitTitle(item);
+  const type = item.box_type ? TYPES[item.box_type] : item.kind === 'article' ? categoryLabel(item.category) : 'Link';
+  const image = boxImage(item);
+  const source = [item.source_name || (item.kind === 'link' ? item.domain : ''), item.published_date ? formatDatePl(item.published_date) : ''].filter(Boolean).join(' · ');
+  return <li className={`sc-abox${highlight ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)} style={tint ? { ['--tint' as string]: tint } : undefined}>
+    <button type="button" onClick={onOpen} aria-label={`Boks ${index + 1} z ${count}: ${type}. ${title}`}>
+      <span className="sc-abox__top"><span className="sc-abox__type"><Glyph name={TYPE_GLYPH[item.box_type ?? ''] ?? 'doc'} />{type}</span>{tag && <em>{tag}</em>}</span>
+      <strong className="sc-abox__title" title={title}>{title}</strong>
+      {spin != null
+        ? <span className="sc-abox__score"><span><b>{spin}</b><small>/100</small></span><i aria-hidden="true"><i style={{ width: `${spin}%` }} /></i><span>siła spinu</span></span>
+        : image && !image.includes('/card.png') ? <span className="sc-abox__media"><img src={image} alt="" loading="lazy" /></span>
+        : <span className="sc-abox__body">{item.body || item.note || ''}</span>}
+      <span className="sc-abox__src">{source || contentTag(item).toLowerCase()}</span>
+    </button>
+  </li>;
+}
+/** Połączenie pełnej spinki (kierunek A): znacznik z ikoną i słowem na linii w kolorze ocen, wyjaśnienie zawsze pod spodem. */
+function AJoint({ item, index, counts, onOpen, onShow }: { item: ThreadElement; index: number; counts?: { positive: number; doubt: number; negative: number }; onOpen: () => void; onShow: (on: boolean) => void }) {
+  const word = LINK_WORDS[item.link_kind ?? ''] ?? 'połączenie';
+  return <li className="sc-alnk" style={{ ['--rc' as string]: clipColor(counts) }}>
+    <button type="button" onClick={onOpen} onMouseEnter={() => onShow(true)} onMouseLeave={() => onShow(false)} onFocus={() => onShow(true)} onBlur={() => onShow(false)}
+      aria-label={`Połączenie ${index} → ${index + 1}: ${word}. ${item.link_note || ''}`}>
+      <span className="sc-alnk__step">{index} → {index + 1}</span>
+      <span className="sc-rel"><Glyph name={LINK_GLYPH[item.link_kind ?? ''] ?? 'pin'} />{word}</span>
+      <span className="sc-alnk__why">{item.link_note || 'Autor nie opisał tego połączenia.'}</span>
+    </button>
+  </li>;
 }
 
 const ROLE_WORD = { teza: 'Teza', fakt: 'Fakt', kontekst: 'Kontekst', pytanie: 'Pytanie', opinia: 'Opinia', wniosek: 'Wniosek' } as const;

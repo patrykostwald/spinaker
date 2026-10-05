@@ -16,6 +16,31 @@ import { AccountDialog } from '../AccountDialog';
 const LABELS = { positive: 'Trafne', doubt: 'Wątpliwe', negative: 'Nietrafne' } as const;
 /** Rodzaje boksów po polsku (wspólne dla paska spinki i widoku jednego elementu). */
 export const BOX_TYPES = { post: 'Wpis na X', claim: 'Sprawdzenie', source: 'Źródło', technique: 'Chwyt', diagnosis: 'Diagnoza', message: 'Przekaz dnia', print: 'Druk sejmowy', amendment: 'Poprawka', consultation: 'Postulat organizacji', registry: 'Wpis w rejestrze', declaration: 'Zgłoszenie w uzasadnieniu', summary: 'Podsumowanie Dr. Spina' } as const;
+/** Ikony kierunku A (właściciel 6.10): rodzaje boksów i połączeń jedną kreską. */
+const GLYPHS: Record<string, string> = {
+  diag: '<path d="M3 12h4l2.2-5 4.6 10 2.2-5H21"/>', post: '<path d="M4.5 5.5h15v10.5H10l-5.5 4z"/>',
+  hook: '<path d="M15.5 3v10a5 5 0 0 1-10 0v-2.5l3 3"/>', check: '<circle cx="10.5" cy="10.5" r="6"/><path d="M20 20l-5-5"/><path d="M8 10.5l2 2 3.2-3.5"/>',
+  doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>', sejm: '<path d="M4 20h16M5 10h14M12 4l8 6H4zM7 10v8M12 10v8M17 10v8"/>',
+  from: '<circle cx="5.5" cy="12" r="2.2"/><path d="M8 12h11M15 8l4 4-4 4"/>', how: '<path d="M4 20l9-9"/><path d="M15 3.5l1.3 3.2 3.2 1.3-3.2 1.3L15 12.5l-1.3-3.2L10.5 8l3.2-1.3z"/>',
+  ask: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.6"/><path d="M12 17v.01"/>',
+  because: '<path d="M5 12h14M14 7l5 5-5 5"/>', but: '<path d="M3 12h7l4-5h7M10 12l4 5h7"/>', not: '<path d="M5 9h14M5 15h14M16 5L8 19"/>',
+  pin: '<path d="M2.5 9.5h15a3 3 0 0 1 0 6h-11a1.5 1.5 0 0 1 0-3h12"/>',
+};
+export const TYPE_GLYPH: Record<string, string> = { diagnosis: 'diag', summary: 'diag', post: 'post', message: 'post', technique: 'hook', claim: 'check', source: 'doc', consultation: 'doc', registry: 'doc', declaration: 'doc', print: 'sejm', amendment: 'sejm' };
+export const LINK_GLYPH: Record<string, string> = { wynika_z: 'from', jak: 'how', czy_na_pewno: 'ask', bo: 'because', ale: 'but', przeczy: 'not' };
+export const LINK_WORDS: Record<string, string> = { bo: 'bo', ale: 'ale', czy_na_pewno: 'czy na pewno?', przeczy: 'przeczy', wynika_z: 'wynika z', jak: 'jak?' };
+export function Glyph({ name, size = 16 }: { name: string; size?: number }) {
+  return <svg className="sc-glyph" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLYPHS[name] ?? GLYPHS.doc }} />;
+}
+/** Tytuł boksu bez przedrostka stanu („Niezweryfikowane: …”, „Diagnoza: …”); stan idzie do małej etykiety po prawej. */
+export function splitTitle(item: ThreadElement): { tag: string; title: string; spin?: number } {
+  const s = /^Spin (\d{1,3})\/100:\s+(.+)$/.exec(item.title);
+  if (s) return { tag: `Spin ${s[1]}/100`, title: s[2], spin: Number(s[1]) };
+  const m = /^(Niezweryfikowane|Zweryfikowane|Potwierdzone|Fałsz|Fałszywe|Prawda|Częściowo prawdziwe|Manipulacja|Diagnoza):\s+(.+)$/.exec(item.title);
+  const tag = item.box_type === 'diagnosis' && item.intensity != null ? `Spin ${item.intensity}/100` : m && m[1] !== 'Diagnoza' ? m[1] : '';
+  return { tag, title: m ? m[2] : item.title, spin: item.box_type === 'diagnosis' && item.intensity != null ? item.intensity : undefined };
+}
+
 /** Podpis odnośnika zależny od tego, dokąd prowadzi (panel designu 6.10: „Otwórz źródło” przy diagnozie mylił). */
 export function linkLabel(item: ThreadElement): string {
   if (item.box_type === 'diagnosis' || item.url.startsWith('/klinika')) return 'Otwórz diagnozę →';
@@ -175,15 +200,18 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
         <div className="sc-pick__media" data-type={kind} data-card={image.includes('/card.png') || undefined}>
           {step.kind === 'clip' ? <SpinkaClip counts={clipStep?.counts} />
             : image ? <img src={image} alt="" />
-            : <span className="sc-pick__preview" aria-hidden="true"><i>{item.box_type === 'claim' ? '✓' : item.box_type === 'diagnosis' ? '✚' : '↗'}</i><b>{typeWord || 'Materiał'}</b></span>}
+            : <span className="sc-pick__preview" aria-hidden="true"><Glyph name={TYPE_GLYPH[item.box_type ?? ''] ?? 'doc'} size={44} /><b>{(item.source_name || (item.kind === 'link' ? item.domain : '') || 'źródło').replace(/^www\./, '')}</b></span>}
           {step.kind === 'box' && <span className="sc-type-tag">{contentTag(item)}</span>}
         </div>
         <div className="sc-pick__text">
           {step.kind === 'box' ? <>
-            {kicker && <p className="sc-pick__kicker">{kicker}</p>}
-            <h2>{item.title}</h2>
+            <p className="sc-pick__type"><span><Glyph name={TYPE_GLYPH[item.box_type ?? ''] ?? 'doc'} />{typeWord || 'Materiał'}</span>{splitTitle(item).tag && <em>{splitTitle(item).tag}</em>}</p>
+            {source && <p className="sc-pick__kicker">{source}</p>}
+            <h2>{splitTitle(item).title}</h2>
             {item.body && <p className="sc-pick__body">{item.body}</p>}
             {note && <p className="sc-pick__note"><span>Wyjaśnienie autora</span>{note}</p>}
+            {step.index > 0 && <p className="sc-pick__ctx"><span className="sc-rel"><Glyph name={LINK_GLYPH[item.link_kind ?? ''] ?? 'pin'} size={14} />{LINK_WORDS[item.link_kind ?? ''] ?? 'połączenie'}</span>
+              <span>z boksem {step.index}: {item.link_note || 'autor nie opisał połączenia.'}</span></p>}
             {Boolean(box.data?.other_threads.length) && <p className="sc-pick__web"><span>W innych spinkach:</span> {box.data!.other_threads.map((row, i) => <Fragment key={row.id}>{i > 0 && ', '}<Link href={`/spinki/${row.id}`}>{row.title}</Link></Fragment>)}</p>}
           </> : <>
             <p className="sc-pick__kicker">Łączy boks {step.index} i {step.index + 1}</p>
@@ -205,7 +233,8 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep }: {
       {sequence.map((row, i) => <button key={i} type="button" className={row.kind === 'box' ? 'sc-trow__sq' : 'sc-trow__link'} aria-current={i === at || undefined}
         style={row.kind === 'clip' ? { background: clipColor(steps.find(items[row.index].item_id, 'context')?.counts) } : undefined}
         data-r={dominant(steps.find(items[row.index].item_id, row.kind === 'box' ? 'box' : 'context')?.counts)}
-        aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Połączenie ${row.index} → ${row.index + 1}`} onClick={() => setAt(i)} />)}
+        aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Połączenie ${row.index} → ${row.index + 1}`} onClick={() => setAt(i)}>
+        {row.kind === 'box' && <Glyph name={TYPE_GLYPH[items[row.index].box_type ?? ''] ?? 'doc'} size={14} />}</button>)}
     </nav>
   </section>;
 }

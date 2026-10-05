@@ -79,7 +79,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [] }: { id: number
     const root = body.current;
     if (!root) return;
     const align = () => {
-      const box = root.querySelector('.sc-thread-strip__box') as HTMLElement | null, track = root.querySelector('.sc-thread-strip__track') as HTMLElement | null;
+      const box = root.querySelector('.sc-abox, .sc-thread-strip__box') as HTMLElement | null, track = root.querySelector('.sc-thread-strip__track') as HTMLElement | null;
       if (!box || !head.current) return;
       const left = box.getBoundingClientRect().left + (track?.scrollLeft ?? 0) - head.current.getBoundingClientRect().left;
       head.current.style.setProperty('--sp-left', `${Math.max(0, Math.round(left))}px`);
