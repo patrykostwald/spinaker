@@ -48,10 +48,10 @@ def test_staff_snapshot_shape_and_recorded_failures():
     assert response.status_code == 200
     assert 'no-store' in response['Cache-Control']
     sections = {s['title']: s for s in response.data['sections']}
-    assert len(sections) == 24  # + skrzynka social media
+    assert len(sections) == 25  # + skrzynka social media, + Pętle agentów (raport pętli)
     assert sections['Zadania od social media']['metrics'] == [status.metric('Nowe', 0)]
     assert sections['Zadania od social media']['href'] == '/panel#social-tasks'
-    assert 'Dyżurny' in sections
+    assert 'Dyżurny' in sections and 'Pętle agentów' in sections
     assert 'Strażnik kont' in sections
     assert 'Audytor-inkwizytor' in sections
     assert {"Pobieranie i czytanie", "Kolejki", "AI i koszty", "Agenci", "YouTube"} <= set(sections)

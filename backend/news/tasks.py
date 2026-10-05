@@ -533,6 +533,16 @@ def badacz_task():
 
 
 @shared_task
+def raport_petli_task():
+    """Codziennie 7:05: Raport pętli mailem (audyt pętli 5.10). Bez AI; jeden mail na dzień."""
+    import os
+    if os.environ.get('LOOP_REPORT_ENABLED', 'true').strip().lower() == 'false':
+        return {'status': 'disabled'}
+    from news import raport_petli
+    return raport_petli.send()
+
+
+@shared_task
 def opiekunowie_task():
     """Co godzinę: opiekunowie pętli (alarmy, naprawy, usprawnienia po kolei, bezpieczeństwo raz w tygodniu na pętlę)."""
     import os

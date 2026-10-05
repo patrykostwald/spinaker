@@ -58,6 +58,7 @@ urlpatterns = [
     path('staff/social/tasks/<int:task_id>/', StaffSocialTaskDetailView.as_view()),
     path('staff/agents/', agents_api.notes),
     path('staff/agents/map/', agents_api.agent_map),
+    path('staff/petle/', agents_api.loops),
     path('staff/daily-schedule/', agents_api.daily_schedule),
     path('staff/warden-reviews/', warden_api.reviews),
     path('staff/warden-reviews/<int:review_id>/decision/', warden_api.decide),

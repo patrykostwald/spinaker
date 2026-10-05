@@ -319,6 +319,8 @@ def snapshot(now):
         wallets = finance['wallets']
     except Exception:
         sections.append(card('AI i koszty', description='Nie udało się odczytać kosztów i portfeli.'))
+    from news.raport_petli import panel_section as loops_section
+    collect('Pętle agentów', lambda: loops_section(now))
     from news.repairer import panel_section, annotate_actions
     from news.duty import panel_section as duty_section
     collect('Dyżurny', lambda: duty_section(now))
