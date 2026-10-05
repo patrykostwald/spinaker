@@ -262,6 +262,38 @@ def start_view(request):
     return Response(data)
 
 
+def topic_rss(query):
+    """Kanał RSS tematu (alerty bez konta, właściciel 6.10): najnowsze wpisy, dokumenty Sejmu i artykuły w temacie,
+    każdy z datą i odnośnikiem do źródła. Czytnik RSS albo skrzynka z obsługą RSS daje powiadomienie o nowościach."""
+    from xml.sax.saxutils import escape
+    graph = topic_graph(query)
+    kinds = {'statement': 'Wpis', 'record': 'Sejm', 'media': 'Artykuł', 'diagnosis': 'Diagnoza Dr. Spina'}
+    rows = sorted((n for n in graph['nodes'] if n['kind'] in kinds and n.get('date')), key=lambda n: n['date'], reverse=True)[:40]
+    page = 'https://spin.clinic/przeszlosc?q=' + escape(query)
+    items = []
+    for n in rows:
+        title = kinds[n['kind']] + (' · ' + n['sub'] if n.get('sub') else '') + ': ' + n['label'][:140]
+        items.append(f"<item><title>{escape(title)}</title><link>{escape(n.get('url') or page)}</link>"
+                     f"<guid isPermaLink='false'>{escape(n['id'])}</guid><pubDate>{n['date']}</pubDate>"
+                     f"<description>{escape(n['label'])}</description></item>")
+    head = (f"<title>{escape('przeszłość.today: ' + query)}</title><link>{page}</link>"
+            f"<description>{escape('Nowe wpisy, dokumenty Sejmu i artykuły w temacie: ' + query)}</description><language>pl</language>")
+    return '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>' + head + ''.join(items) + '</channel></rss>'
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def rss_view(request):
+    """GET /api/przeszlosc/rss/?q=CPK - kanał RSS tematu."""
+    from django.http import HttpResponse
+    if not enabled():
+        return Response({'detail': 'Funkcja jeszcze wyłączona.'}, status=404)
+    query = request.query_params.get('q', '')[:120]
+    if not terms(query):
+        return Response({'detail': 'Podaj temat (co najmniej 3 znaki).'}, status=400)
+    return HttpResponse(topic_rss(query), content_type='application/rss+xml; charset=utf-8')
+
+
 # --- automatyczny wybór tematów (właściciel 5.10: „sam wybierz, to ma być też zautomatyzowane”) ---
 TOPICS_STATE = 'przeszlosc-auto-topics'
 PRINT_SUBJECT = re.compile(r'ustaw\w*\s+o\s+(?:zmianie\s+(?:niektórych\s+)?ustaw\w*\s+(?:w\s+związku\s+z\s+)?(?:o\s+)?)?([^,(;]{6,60})', re.I)

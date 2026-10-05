@@ -76,3 +76,19 @@ def test_topic_votes_by_club_and_name(monkeypatch):
     monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
     data = APIClient().get('/api/przeszlosc/temat/?q=VAT').json()
     assert data['counts']['vote'] == 1 and data['votes'][0]['id'] == '10/40/7'
+
+
+def test_topic_rss(settings):
+    """Kanał RSS tematu: poprawny XML z elementami tematu, wyłączony razem z przeszłością."""
+    from unittest import mock
+    from django.test import Client
+    from news import przeszlosc
+    graph = {'nodes': [{'id': 'post:1', 'kind': 'statement', 'label': 'VAT & akcyza <test>', 'date': '2026-10-03', 'url': 'https://x.com/a/1', 'sub': 'Ktoś'},
+                       {'id': 'figure:1', 'kind': 'person', 'label': 'Osoba'}]}
+    with mock.patch.object(przeszlosc, 'enabled', return_value=True), mock.patch.object(przeszlosc, 'topic_graph', return_value=graph):
+        r = Client().get('/api/przeszlosc/rss/', {'q': 'VAT'})
+    assert r.status_code == 200 and r['Content-Type'].startswith('application/rss+xml')
+    body = r.content.decode()
+    assert '<item>' in body and 'VAT &amp; akcyza &lt;test&gt;' in body and 'Osoba' not in body
+    with mock.patch.object(przeszlosc, 'enabled', return_value=False):
+        assert Client().get('/api/przeszlosc/rss/', {'q': 'VAT'}).status_code == 404

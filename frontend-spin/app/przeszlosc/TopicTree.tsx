@@ -167,8 +167,14 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
     for (const e of data.edges) { const org = byId.get(e.target); if (org?.kind === 'organisation') map.set(e.source, [...(map.get(e.source) ?? []), { org, role: e.label }]); }
     return map;
   }, [data, byId]);
-  const events = data.nodes.filter(n => n.date && (n.kind === 'statement' || n.kind === 'record' || n.kind === 'media'))
+  const allEvents = data.nodes.filter(n => n.date && (n.kind === 'statement' || n.kind === 'record' || n.kind === 'media'))
     .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+  // filtry osi czasu (funkcja z mapy): obóz, rodzaj, tylko z diagnozą, okres
+  const [kindFilter, setKindFilter] = useState('all');
+  const [period, setPeriod] = useState('all');
+  const since = period === 'all' ? '' : new Date(Date.now() - Number(period) * 864e5).toISOString().slice(0, 10);
+  const events = allEvents.filter(n => (!since || (n.date ?? '') >= since) && (kindFilter === 'all' || (kindFilter === 'government' || kindFilter === 'opposition' ? n.camp === kindFilter
+    : kindFilter === 'diag' ? diagnosisOf.has(n.id) : n.kind === kindFilter)));
   const shown = more ? events : events.slice(0, 18);
   const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => b.links - a.links);
   const media = new Map<string, number>();
@@ -185,12 +191,23 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
         ['person', 'osoba lub instytucja', 'osoby i instytucje', 'osób i instytucji']] as const)
         .filter(([k]) => data.counts[k]).map(([k, one, few, many]) => { const n = data.counts[k]; const w = n === 1 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many; return `${n} ${w}`; }).join(' · ')}</p>
       <Export data={data} author={author} />
+      <p className="sc-tv__follow"><a href={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} target="_blank" rel="noopener noreferrer">Obserwuj temat (RSS)</a>
+        <span>Nowe wpisy, dokumenty i artykuły trafią do Twojego czytnika lub poczty.</span></p>
     </header>
-    <Density events={events} />
+    <Density events={allEvents} />
+    <TopicGraph data={data} byId={byId} onOpen={openPanel} />
     <div className="sc-tv__grid">
+      <SejmPath data={data} />
       {Boolean(data.votes?.length) && <Votes votes={data.votes!} />}
       <section className="sc-tv__time" aria-label="Oś czasu">
         <h3>Oś czasu</h3>
+        <div className="sc-tv__filters" role="group" aria-label="Filtry osi czasu">
+          {([['all', 'Wszystko'], ['government', 'Rządzący'], ['opposition', 'Opozycja'], ['diag', 'Z diagnozą'], ['record', 'Sejm'], ['media', 'Media']] as const).map(([k, l]) =>
+            <button key={k} type="button" aria-pressed={kindFilter === k} onClick={() => setKindFilter(k)}>{l}</button>)}
+          <span className="sc-tv__fsep" aria-hidden="true" />
+          {([['all', 'Cały okres'], ['30', '30 dni'], ['7', '7 dni']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={period === k} onClick={() => setPeriod(k)}>{l}</button>)}
+        </div>
+        {!events.length && <p className="sc-tv__note">Nic w tym filtrze. Zmień obóz, rodzaj albo okres.</p>}
         <ol>{shown.map(n => {
           const day = n.date ?? '';
           const head = day !== lastDay ? <li className="sc-tv__day" id={`d-${day}`} key={`d${day}`}>{new Date(day).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}</li> : null;
@@ -203,9 +220,12 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
             data-on={hot && who?.id === hot ? '' : undefined} data-copied={copied === n.id || undefined}>
             <span className="sc-tv__who"><span>{who ? <button type="button" className="sc-tv__pbtn" onClick={() => openPanel({ kind: 'person', id: who.id })}>{nice(who.label)}</button> : (n.kind === 'media' ? n.sub : KIND_LABEL[n.kind])}{n.camp && CAMP_LABEL[n.camp] ? <em> · {CAMP_LABEL[n.camp]}</em> : null}</span>{kind && <small>{kind}</small>}</span>
             <p data-full={full.has(n.id) || undefined}>{n.label}</p>
+            {who && <span className="sc-tv__twig" aria-label="Powiązania wpisu"><i>{nice(who.label)}</i><i>wpis</i>{dg && <i data-dg>spin {dg.intensity}/100</i>}
+              {(roles.get(who.id)?.length ?? 0) > 0 && <i>KRS: {roles.get(who.id)!.length}</i>}</span>}
             <span className="sc-tv__links">
               <button type="button" className="sc-tv__open" onClick={() => openPanel({ kind: 'entry', id: n.id })}>{dg ? `Diagnoza Dr. Spina: spin ${dg.intensity}/100` : 'Więcej'} →</button>
               {n.url && <a href={n.url} target="_blank" rel="noopener noreferrer" aria-label={`źródło: ${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])}, ${n.date ?? ''}`}>źródło →</a>}
+              {n.url && <a href={`https://web.archive.org/web/*/${n.url}`} target="_blank" rel="noopener noreferrer" className="sc-tv__arch">archiwum</a>}
               <button type="button" className="sc-tv__cite" onClick={() => { void navigator.clipboard?.writeText(cite).catch(() => undefined); setCopied(n.id); setTimeout(() => setCopied(c => (c === n.id ? null : c)), 1400); }}
                 aria-label="Kopiuj przypis">{copied === n.id ? 'skopiowano ✓' : 'cytuj'}</button>
             </span>
@@ -276,6 +296,7 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
       {panel.kind === 'person' ? <>
         <h2>{nice(fig?.name ?? node.label)}</h2>
         <p className="sc-ptp__sub">{[fig?.role_title ?? node.role, fig?.organisation, fig?.party, camp && CAMP_LABEL[camp]].filter(Boolean).join(' · ')}</p>
+        <section><h3>Powiązania w temacie</h3><TopicGraph data={data} byId={byId} focus={node.id} onOpen={onOpen} compact /></section>
         <section><h3>W tym temacie ({entriesOf(node.id).length})</h3>
           <ol className="sc-ptp__list">{entriesOf(node.id).map(n => <li key={n.id}><button type="button" onClick={() => onOpen({ kind: 'entry', id: n.id })}>
             <time>{day(n.date)}</time><span>{n.label}</span>{diagnosisOf.get(n.id) && <em>spin {diagnosisOf.get(n.id)!.intensity}/100</em>}</button></li>)}</ol></section>
@@ -307,7 +328,9 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
           <ol className="sc-ptp__list">{entriesOf(who.id).filter(n => n.id !== node.id).slice(0, 6).map(n => <li key={n.id}><button type="button" onClick={() => onOpen({ kind: 'entry', id: n.id })}>
             <time>{day(n.date)}</time><span>{n.label}</span></button></li>)}</ol></section>}
         <footer className="sc-ptp__foot">{diag && <a href={diag.url} target="_blank" rel="noopener noreferrer">Pełna diagnoza w spin.clinic →</a>}
-          {node.url && <a href={node.url} target="_blank" rel="noopener noreferrer">Źródło →</a>}</footer>
+          {node.url && <a href={node.url} target="_blank" rel="noopener noreferrer">Źródło →</a>}
+          {node.url && <a href={`https://web.archive.org/web/*/${node.url}`} target="_blank" rel="noopener noreferrer">Kopie w archiwum →</a>}
+          {node.url && <a href={`https://web.archive.org/save/${node.url}`} target="_blank" rel="noopener noreferrer">Zapisz kopię teraz →</a>}</footer>
       </>}
     </aside>
   </div>;
@@ -378,4 +401,82 @@ function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
     osoby: data.nodes.filter(n => n.kind === 'person').map(n => ({ nazwa: n.label, funkcja: n.role ?? '', link: n.url ?? '' })),
     powiazania: data.edges }, null, 2));
   return <p className="sc-tv__export"><button type="button" onClick={csv}>Pobierz CSV</button><button type="button" onClick={json}>Pobierz JSON</button></p>;
+}
+
+/* Drzewo powiązań (właściciel 6.10: „nie widać drzew powiązań na żadnym elemencie”): trzy kolumny - osoby, ich wpisy,
+   dokumenty i artykuły, a z prawej diagnozy i funkcje w KRS; linie pokazują, co z czego wynika. Najechanie podświetla
+   całą gałąź, kliknięcie otwiera osobę albo wpis. W panelu osoby to samo drzewo zawężone do niej. */
+const TG_MID = new Set(['statement', 'record', 'media']);
+function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Graph; byId: Map<string, Node>; focus?: string; compact?: boolean;
+  onOpen: (p: { kind: 'person' | 'entry'; id: string } | null) => void }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const [paths, setPaths] = useState<{ id: string; d: string; s: string; t: string }[]>([]);
+  const [hot, setHot] = useState<string | null>(null);
+  const model = useMemo(() => {
+    const persons = focus ? [byId.get(focus)].filter(Boolean) as Node[] : data.nodes.filter(n => n.kind === 'person').sort((a, b) => b.links - a.links).slice(0, 8);
+    const pid = new Set(persons.map(p => p.id));
+    const midIds = new Set<string>();
+    for (const e of data.edges) if (pid.has(e.source) && TG_MID.has(byId.get(e.target)?.kind ?? '')) midIds.add(e.target);
+    const mid = [...midIds].map(id => byId.get(id)!).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, compact ? 6 : 9);
+    const midSet = new Set(mid.map(n => n.id));
+    const rightIds = new Set<string>();
+    for (const e of data.edges) {
+      const t = byId.get(e.target)?.kind;
+      if ((midSet.has(e.source) && t === 'diagnosis') || (pid.has(e.source) && t === 'organisation')) rightIds.add(e.target);
+    }
+    const right = [...rightIds].map(id => byId.get(id)!).sort((a, b) => (a.kind === b.kind ? b.links - a.links : a.kind === 'diagnosis' ? -1 : 1)).slice(0, compact ? 6 : 9);
+    const rightSet = new Set(right.map(n => n.id));
+    const edges = data.edges.filter(e => (pid.has(e.source) && (midSet.has(e.target) || rightSet.has(e.target))) || (midSet.has(e.source) && rightSet.has(e.target)));
+    return { persons, mid, right, edges };
+  }, [data, byId, focus, compact]);
+  const lit = useMemo(() => {
+    if (!hot) return null;
+    const on = new Set([hot]);
+    for (let i = 0; i < 2; i++) for (const e of model.edges) { if (on.has(e.source)) on.add(e.target); if (on.has(e.target)) on.add(e.source); }
+    return on;
+  }, [hot, model]);
+  useEffect(() => {
+    const root = wrap.current; if (!root) return;
+    const draw = () => {
+      const box = root.getBoundingClientRect();
+      const at = (id: string) => root.querySelector<HTMLElement>(`[data-g="${CSS.escape(id)}"]`)?.getBoundingClientRect();
+      setPaths(model.edges.flatMap((e, i) => { const a = at(e.source), b = at(e.target); if (!a || !b) return [];
+        const x1 = a.right - box.left, y1 = a.top + a.height / 2 - box.top, x2 = b.left - box.left, y2 = b.top + b.height / 2 - box.top, k = (x2 - x1) * .5;
+        return [{ id: `${i}`, s: e.source, t: e.target, d: `M${x1},${y1} C${x1 + k},${y1} ${x2 - k},${y2} ${x2},${y2}` }]; }));
+    };
+    draw(); const ro = new ResizeObserver(draw); ro.observe(root); return () => ro.disconnect();
+  }, [model]);
+  if (!model.persons.length || !model.mid.length) return null;
+  const open = (n: Node) => {
+    if (n.kind === 'person') onOpen({ kind: 'person', id: n.id });
+    else if (TG_MID.has(n.kind)) onOpen({ kind: 'entry', id: n.id });
+    else if (n.kind === 'diagnosis') { const src = data.edges.find(e => e.target === n.id)?.source; if (src) onOpen({ kind: 'entry', id: src }); }
+    else if (n.url) window.open(n.url, '_blank', 'noopener');
+  };
+  const item = (n: Node) => <li key={n.id}><button type="button" data-g={n.id} data-kind={n.kind} data-camp={n.camp || undefined}
+    data-dim={lit && !lit.has(n.id) ? '' : undefined} onMouseEnter={() => setHot(n.id)} onMouseLeave={() => setHot(null)} onFocus={() => setHot(n.id)} onBlur={() => setHot(null)} onClick={() => open(n)}>
+    {n.kind === 'person' ? <b>{nice(n.label)}</b> : n.kind === 'diagnosis' ? <><b>Spin {n.intensity}/100</b><span>{n.label}</span></>
+      : n.kind === 'organisation' ? <><b>{n.label}</b><span>{n.sub}</span></> : <><small>{day(n.date)}{n.kind !== 'statement' ? ` · ${KIND_LABEL[n.kind]}` : ''}</small><span>{n.label}</span></>}
+  </button></li>;
+  return <figure className={`sc-tg${compact ? ' sc-tg--compact' : ''}`} aria-label="Drzewo powiązań">
+    {!compact && <figcaption className="sc-tg__head"><h3>Drzewo powiązań</h3><span>osoby → wpisy, dokumenty i artykuły → diagnozy i funkcje w KRS</span></figcaption>}
+    <div className="sc-tg__scroll"><div className="sc-tg__wrap" ref={wrap}>
+      <svg className="sc-tg__lines" aria-hidden="true">{paths.map(p => <path key={p.id} d={p.d} data-on={lit && lit.has(p.s) && lit.has(p.t) ? '' : undefined} data-dim={lit && !(lit.has(p.s) && lit.has(p.t)) ? '' : undefined} />)}</svg>
+      <ol className="sc-tg__col">{model.persons.map(item)}</ol>
+      <ol className="sc-tg__col">{model.mid.map(item)}</ol>
+      <ol className="sc-tg__col">{model.right.map(item)}</ol>
+    </div></div>
+  </figure>;
+}
+
+/* Ścieżka w Sejmie (funkcja z mapy): druki, konsultacje i głosowania w temacie po kolei, od najstarszego. */
+function SejmPath({ data }: { data: Graph }) {
+  const steps = [
+    ...data.nodes.filter(n => n.kind === 'record' && n.date).map(n => ({ id: n.id, date: n.date!, kind: n.sub ? (SUB[n.sub] ?? n.sub) : 'dokument', title: n.label, url: n.url })),
+    ...(data.votes ?? []).filter(v => v.date).map(v => ({ id: v.id, date: v.date!, kind: 'głosowanie', title: `${v.title}${v.result.yes != null ? ` (za ${v.result.yes}, przeciw ${v.result.no ?? 0})` : ''}`, url: v.url })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+  if (steps.length < 2) return null;
+  return <section className="sc-tv__path" aria-label="Ścieżka w Sejmie"><h3>Ścieżka w Sejmie</h3>
+    <ol>{steps.slice(-10).map(s => <li key={s.id} data-kind={s.kind}><time>{day(s.date)}</time><b>{s.kind}</b>
+      {s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a> : <span>{s.title}</span>}</li>)}</ol></section>;
 }

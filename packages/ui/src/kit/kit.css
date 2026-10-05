@@ -9981,3 +9981,67 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-ptp__foot a { font-weight: 600; color: var(--sc-accent); min-height: 44px; display: inline-flex; align-items: center; }
 @media (max-width: 767px) { .sc-ptp { grid-template-columns: 1fr; } .sc-ptp__scrim { display: none; } .sc-ptp__box { padding: 16px 16px 40px; } }
 @media (prefers-reduced-motion: reduce) { .sc-ptp__box { animation: none; } }
+
+/* przeszłość.today: drzewo powiązań, filtry, drzewko przy wpisie, ścieżka w Sejmie, obserwowanie (właściciel 6.10) */
+.sc-tg { margin: 8px 0 24px; display: grid; gap: 10px; }
+.sc-tg__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; } .sc-tg__head h3 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--sc-text-3); }
+.sc-tg__head span { font-size: 13px; color: var(--sc-text-3); }
+.sc-tg__scroll { overflow-x: auto; scrollbar-width: thin; }
+.sc-tg__wrap { position: relative; display: grid; grid-template-columns: minmax(150px, .8fr) minmax(260px, 1.6fr) minmax(190px, 1fr); gap: 0 64px; min-width: 760px; }
+.sc-tg--compact .sc-tg__wrap { grid-template-columns: 120px minmax(160px, 1.4fr) minmax(130px, 1fr); gap: 0 34px; min-width: 500px; }
+.sc-tg__lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.sc-tg__lines path { fill: none; stroke: color-mix(in srgb, var(--sc-text) 22%, transparent); stroke-width: 1; transition: stroke .2s, opacity .2s; }
+.sc-tg__lines path[data-on] { stroke: var(--sc-accent); stroke-width: 1.5; } .sc-tg__lines path[data-dim] { opacity: .15; }
+.sc-tg__col { list-style: none; margin: 0; padding: 0; display: grid; align-content: center; gap: 6px; position: relative; z-index: 1; }
+.sc-tg__col button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; gap: 1px; padding: 7px 10px; font-size: 13px; line-height: 1.35;
+  --cc: var(--sc-text); background: linear-gradient(90deg, color-mix(in srgb, var(--cc) 12%, var(--sc-bg)) 0%, var(--sc-bg) 70%); transition: opacity .2s, background .2s; }
+.sc-tg__col button[data-camp="government"] { --cc: var(--sc-ind-gov, #4a9eff); } .sc-tg__col button[data-camp="opposition"] { --cc: var(--sc-ind-opp, #e0544a); }
+.sc-tg__col button[data-kind="diagnosis"] { --cc: #ff6b6b; } .sc-tg__col button[data-kind="organisation"] { --cc: #d39a2a; } .sc-tg__col button[data-kind="record"] { --cc: var(--sc-accent); }
+.sc-tg__col button:hover, .sc-tg__col button:focus-visible { background: linear-gradient(90deg, color-mix(in srgb, var(--cc) 24%, var(--sc-bg)) 0%, var(--sc-bg) 90%); }
+.sc-tg__col button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 1px; }
+.sc-tg__col button[data-dim] { opacity: .28; }
+.sc-tg__col b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-tg__col span { color: var(--sc-text-2); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.sc-tg__col small { color: var(--sc-text-3); font-size: 11.5px; }
+.sc-tv__filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.sc-tv__filters button { min-height: 36px; padding: 0 12px; border: 0; cursor: pointer; font: inherit; font-size: 13px; color: var(--sc-text-2);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sc-text) 6%, transparent), transparent); }
+.sc-tv__filters button[aria-pressed="true"] { color: var(--sc-text); background: linear-gradient(90deg, color-mix(in srgb, var(--sc-accent) 28%, transparent), transparent); }
+.sc-tv__fsep { width: 1px; background: color-mix(in srgb, var(--sc-text) 14%, transparent); margin: 0 4px; }
+.sc-tv__twig { display: flex; flex-wrap: wrap; align-items: center; gap: 0; font-size: 11.5px; color: var(--sc-text-3); }
+.sc-tv__twig i { font-style: normal; padding: 2px 8px; background: color-mix(in srgb, var(--sc-text) 6%, transparent); white-space: nowrap; }
+.sc-tv__twig i + i::before { content: ""; display: inline-block; width: 14px; height: 1px; margin: 0 8px 3px -8px; background: color-mix(in srgb, var(--sc-text) 30%, transparent); vertical-align: middle; transform: translateX(-8px); }
+.sc-tv__twig i[data-dg] { color: #ff8a8a; }
+.sc-tv__arch { color: var(--sc-text-3) !important; font-weight: 500 !important; }
+.sc-tv__follow { margin: 2px 0 0; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font-size: 13px; color: var(--sc-text-3); }
+.sc-tv__follow a { font-weight: 600; color: var(--sc-accent); min-height: 32px; display: inline-flex; align-items: center; }
+.sc-tv__path { grid-column: 1 / -1; display: grid; gap: 8px; margin-bottom: 8px; }
+.sc-tv__path h3 { margin: 0; } .sc-tv__path ol { list-style: none; margin: 0; padding: 0 0 0 18px; display: grid; gap: 10px; border-left: 1px solid color-mix(in srgb, var(--sc-text) 18%, transparent); }
+.sc-tv__path li { position: relative; display: grid; grid-template-columns: 140px 110px minmax(0, 1fr); gap: 4px 12px; font-size: 14px; align-items: baseline; }
+.sc-tv__path li::before { content: ""; position: absolute; left: -23px; top: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--sc-bg); border: 1.5px solid var(--sc-accent); }
+.sc-tv__path li[data-kind="głosowanie"]::before { background: var(--sc-accent); }
+.sc-tv__path time { color: var(--sc-text-3); font-size: 13px; } .sc-tv__path b { font-weight: 600; font-size: 12.5px; color: var(--sc-text-2); }
+.sc-tv__path a { color: var(--sc-text); } .sc-tv__path a:hover { color: var(--sc-accent); }
+@media (max-width: 767px) { .sc-tv__path li { grid-template-columns: 1fr; } }
+
+/* spinka: lżejsze boksy (konsylium 6.10, wariant W5: laik 8, projektant 9, strażnik znaczenia 8) - węższy rytm 216/132,
+   siła zieleni osobno dla nocy (12-22%) i dnia (8-16%, bez szarego tła), poprawka 7. linii we wpisie */
+.sc-abox { flex-basis: 216px; }
+.sc-alnk { flex-basis: 132px; }
+.sc-abox { background:
+    linear-gradient(90deg, transparent 0%, transparent 70%, color-mix(in srgb, var(--tint-c) calc(var(--tk, 12%) * 0.6 + 5% + var(--tk-h, 0%)), transparent) 100%),
+    color-mix(in srgb, var(--sc-text) 2%, transparent) !important; }
+.sc-abox::before { border-color: color-mix(in srgb, var(--sc-text) 20%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 62%, transparent 76%); mask-image: linear-gradient(90deg, #000 0%, #000 62%, transparent 76%); }
+.sc-abox:hover, .sc-abox:focus-within { --tk-h: 6%; }
+[data-theme="light"] .sc-abox { background:
+    linear-gradient(90deg, transparent 0%, transparent 70%, color-mix(in srgb, var(--tint-c) calc(var(--tk, 12%) * 0.5 + 2% + var(--tk-h, 0%)), transparent) 100%) !important; }
+[data-theme="light"] .sc-abox::before { border-color: color-mix(in srgb, var(--sc-text) 16%, transparent); }
+.sc-abox__body { align-self: start; max-height: calc(1.5em * 6); }
+.sc-abox__type { min-width: 0; overflow: hidden; }
+@media (max-width: 767px) { .sc-abox { flex-basis: 248px; } .sc-alnk { flex-basis: 108px; } }
+
+/* drzewko przy wpisie: równe ogniwa ze strzałką zamiast łamanych kresek */
+.sc-tv__twig { gap: 0; }
+.sc-tv__twig i + i::before { content: "→"; display: inline; width: auto; height: auto; margin: 0 6px 0 0; background: none; transform: none; color: var(--sc-text-3); }
+.sc-tv__twig i { padding: 2px 8px 2px 0; background: none; }
