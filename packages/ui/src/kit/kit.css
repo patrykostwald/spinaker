@@ -10104,3 +10104,11 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pick__text .sc-pick__foot { flex: none; }
 .sc-pick__kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 767px) { .sc-pick__media { height: 96px !important; max-height: 96px !important; } }
+/* awatar Dr. Spina bawi się tłem na głównej (właściciel 6.10): niebieska poświata oddycha i rozlewa się w wiersz, spirala obraca się raz przy wejściu (bez hipnozy) */
+.sc-thread-strip--row .sc-social-avatar[data-ai] { position: relative; isolation: isolate; }
+.sc-thread-strip--row .sc-social-avatar[data-ai]::before { content: ""; position: absolute; inset: -60%; z-index: -1; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--sc-drspin, #3b82f6) 34%, transparent) 0%, transparent 70%); animation: sc-ds-breathe 6s ease-in-out infinite; pointer-events: none; }
+[data-theme="light"] .sc-thread-strip--row .sc-social-avatar[data-ai]::before { background: radial-gradient(circle, color-mix(in srgb, var(--sc-drspin, #3b82f6) 22%, transparent) 0%, transparent 70%); }
+@keyframes sc-ds-breathe { 0%, 100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.08); } }
+.sc-drspin-mark__spiral { transform-box: fill-box; transform-origin: center; animation: sc-ds-turn 1.6s cubic-bezier(.2,.8,.2,1) .3s 1 both; }
+@keyframes sc-ds-turn { from { transform: rotate(-200deg); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sc-thread-strip--row .sc-social-avatar[data-ai]::before, .sc-drspin-mark__spiral { animation: none; } }
