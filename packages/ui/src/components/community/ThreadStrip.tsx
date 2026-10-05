@@ -12,7 +12,7 @@ import { BOX_TYPES as TYPES, boxImage, contentTag, FocusView, focusRef, Glyph, L
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
-import { clipColor, clipHue, reactionTint } from '../../lib/clipColor';
+import { clipColor, clipHue, clipScore, reactionTint } from '../../lib/clipColor';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
@@ -180,12 +180,15 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
   } : {};
   // wiersz listy: delikatny odcień według ogólnej oceny spinki (właściciel 4.10)
   // z prawej kolor reakcji; bez ocen czytelników - kolor ikonki spinki (głos autora), jak przy liczniku (właściciel 6.10)
-  const rowTint = row ? reactionTint(sumCounts(clips)) ?? clipHue(sumCounts(clips)) : null;
+  // teza wchodzi lekko zielona (autor się pod nią podpisuje), zgoda czytelników wzmacnia kolor, sprzeciw przesuwa go
+  // w żółty i czerwony (właściciel 6.10): kolor ze skali ikonki spinki, siła rośnie z liczbą ocen od 14% do 30%
+  const rowTint = row ? clipHue(sumCounts(clips)) : null;
+  const rowK = row ? Math.round(14 + 16 * clipScore(sumCounts(clips)).strength) : null;
   // z lewej rozjaśnienie w kolorze autora: Dr. Spin niebieski, czytelnik - kolor nicka (właściciel 6.10)
   const rowAuthor = row ? (thread.is_ai ? 'var(--sc-accent)' : thread.author_color || null) : null;
   const first = items[0];
   const thumb = first?.image_url || (thread.diagnosis_id != null ? `/api/clinic/spins/${thread.diagnosis_id}/card.png` : '');
-  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} style={rowTint || rowAuthor ? { ...(rowTint ? { ['--tint' as string]: rowTint } : {}), ...(rowAuthor ? { ['--who' as string]: rowAuthor } : {}) } : undefined} {...hoverProps} {...enter}>
+  return <article className={`sc-thread-strip${expanded ? ' is-expanded' : ''}${variant === 'row' ? ' sc-thread-strip--row' : ''}`} style={rowTint || rowAuthor ? { ...(rowTint ? { ['--tint' as string]: rowTint, ['--tint-k' as string]: `${rowK}%` } : {}), ...(rowAuthor ? { ['--who' as string]: rowAuthor } : {}) } : undefined} {...hoverProps} {...enter}>
     <div className="sc-thread-strip__frame">
     {row ? <header className="sc-trow">
       {/* Wiersz listy (właściciel 3.10): z lewej autor, tytuł i kwadraty reakcji (jeden na spinkę), w środku miniatury boksów,
@@ -276,7 +279,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       {full ? ordered.map((item, index) => <Fragment key={`a-${item.position}-${item.id}`}>
         {index > 0 && <AJoint item={item} index={index} counts={steps.find(item.item_id, 'context')?.counts}
           onOpen={() => { setIntroStep(0); setFocus({ kind: 'clip', index }); }} onShow={on => setOpenJoint(on ? index : null)} />}
-        <ABox item={item} index={index} count={ordered.length} tint={reactionTint(steps.find(item.item_id, 'box')?.counts)} highlight={highlight === index + 1}
+        <ABox item={item} index={index} count={ordered.length} counts={steps.find(item.item_id, 'box')?.counts} highlight={highlight === index + 1}
           onOpen={() => setFocus({ kind: 'box', index })} />
       </Fragment>) : ordered.map((item, index) => <Fragment key={`${item.position}-${item.id}`}>
         {expanded && index > 0 && <li className={`sc-joint${jointOpen(index) ? ' is-open' : ''}`} data-kind={item.link_kind || undefined} style={{ ['--i' as string]: index - .5 }}>
@@ -345,12 +348,14 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
 
 /** Boks pełnej spinki (kierunek A, właściciel 6.10): rodzaj z ikoną i mała etykieta stanu u góry, tytuł w jednej linii,
  *  treść, źródło przy dolnej krawędzi; zamiast ramki kolor reakcji z prawej i obrys, który przy nim wygasa. */
-function ABox({ item, index, count, tint, highlight, onOpen }: { item: ThreadElement; index: number; count: number; tint: string | null; highlight: boolean; onOpen: () => void }) {
+function ABox({ item, index, count, counts, highlight, onOpen }: { item: ThreadElement; index: number; count: number; counts?: { positive: number; doubt: number; negative: number }; highlight: boolean; onOpen: () => void }) {
+  // ta sama zasada co w wierszach: lekka zieleń autora, wzmacniana albo zmieniana przez oceny czytelników
+  const tint = clipHue(counts), k = Math.round(12 + 16 * clipScore(counts).strength);
   const { tag, title, spin } = splitTitle(item);
   const type = item.box_type ? TYPES[item.box_type] : item.kind === 'article' ? categoryLabel(item.category) : 'Link';
   const image = boxImage(item);
   const source = [item.source_name || (item.kind === 'link' ? item.domain : ''), item.published_date ? formatDatePl(item.published_date) : ''].filter(Boolean).join(' · ');
-  return <li className={`sc-abox${highlight ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)} style={tint ? { ['--tint' as string]: tint } : undefined}>
+  return <li className={`sc-abox${highlight ? ' is-highlighted' : ''}`} data-box={index + 1} data-type={kindOf(item)} style={{ ['--tint' as string]: tint, ['--tk' as string]: `${k}%` }}>
     <button type="button" onClick={onOpen} aria-label={`Boks ${index + 1} z ${count}: ${type}. ${title}`}>
       <span className="sc-abox__top"><span className="sc-abox__type"><Glyph name={TYPE_GLYPH[item.box_type ?? ''] ?? 'doc'} />{type}</span>{tag && <em>{tag}</em>}</span>
       <strong className="sc-abox__title" title={title}>{title}</strong>

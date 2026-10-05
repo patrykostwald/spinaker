@@ -9876,3 +9876,26 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
 .sc-pick__media > .sc-type-tag { display: none !important; }
 .sc-pick__kicker { text-transform: none !important; letter-spacing: 0 !important; font-size: 12.5px !important; }
 .sc-pick__preview { color: var(--sc-text-3); }
+
+/* zieleń tezy (właściciel 6.10): siła odcienia z danych (14-30% w wierszach, 12-28% w boksach), najechanie dodaje 8 punktów */
+.sc-thread-strip--row { background:
+    linear-gradient(90deg, color-mix(in srgb, var(--who-c) 13%, transparent) 0%, transparent 18%),
+    linear-gradient(90deg, transparent 66%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) + var(--tint-h, 0%)), transparent) 100%) !important; }
+.sc-thread-strip--row:hover, .sc-thread-strip--row:not([style*="--tint"]):hover { --tint-h: 8%; }
+.sc-abox { background: linear-gradient(90deg, transparent 0%, transparent 66%, color-mix(in srgb, var(--tint-c) calc(var(--tk, 12%) + var(--tk-h, 0%)), transparent) 100%) !important; }
+.sc-abox:hover, .sc-abox:focus-within { --tk-h: 8%; }
+@media (max-width: 767px) {
+  .sc-thread-strip--row { background:
+    linear-gradient(180deg, color-mix(in srgb, var(--who-c) 12%, transparent) 0%, transparent 22%),
+    linear-gradient(90deg, transparent 52%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) + var(--tint-h, 0%)), transparent) 100%) !important; }
+}
+
+/* stara reguła odcienia wiersza (7% od lewej) miała większą wagę: nowe rozjaśnienia muszą wygrać */
+.sc-thread-strip.sc-thread-strip--row[style] { background:
+    linear-gradient(90deg, color-mix(in srgb, var(--who-c) 13%, transparent) 0%, transparent 18%),
+    linear-gradient(90deg, transparent 66%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) + var(--tint-h, 0%)), transparent) 100%) !important; }
+@media (max-width: 767px) {
+  .sc-thread-strip.sc-thread-strip--row[style] { background:
+    linear-gradient(180deg, color-mix(in srgb, var(--who-c) 12%, transparent) 0%, transparent 22%),
+    linear-gradient(90deg, transparent 52%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) + var(--tint-h, 0%)), transparent) 100%) !important; }
+}
