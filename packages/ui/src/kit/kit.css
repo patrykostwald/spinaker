@@ -9899,3 +9899,18 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
     linear-gradient(180deg, color-mix(in srgb, var(--who-c) 12%, transparent) 0%, transparent 22%),
     linear-gradient(90deg, transparent 52%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) + var(--tint-h, 0%)), transparent) 100%) !important; }
 }
+
+/* jedna lewa linia w otwartej spince (właściciel 6.10, „miałeś rację”): tytuł, opis, łańcuch, komentarze i „Warto też zobaczyć”
+   startują od tej samej krawędzi treści, bez wcięcia; powrót jako „← Wszystkie spinki” w pasku naprzeciw „Następna spinka” (Jakob) */
+@media (min-width: 768px) {
+  .sc-trop-overlay { --sc-ov-ind: 0px; }
+  .sc-trop-overlay__body > article .sc-thread-strip__track, .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-joint.is-open),
+  .sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-abox):not(#_) { padding-left: 0 !important; }
+  .sc-trop-overlay__body > article .sc-pick { margin-left: 0 !important; }
+  .sc-trop-overlay__body > article .sc-thread-social, .sc-trop-overlay__body > article .sc-social-comments { padding-left: 0 !important; margin-left: 0 !important; }
+  .sc-trop-overlay__side-back { display: none !important; }
+  .sc-trop-overlay__back { display: inline-flex !important; align-items: center; gap: 6px; min-height: 44px; font-size: 14px !important; font-weight: 600; color: var(--sc-text-2) !important; }
+  .sc-trop-overlay__back:hover { color: var(--sc-text) !important; }
+  .sc-trop-overlay__body > article .sc-thread-strip__rail:has(.sc-abox) .sc-thread-strip__arrow--prev { left: -22px !important; }
+}
+@media (min-width: 768px) { .sc-trop-overlay__bar .sc-trop-overlay__back { padding-left: 0 !important; padding-right: 0 !important; margin-left: calc(var(--sp-left, 0px) + 15px); } }
