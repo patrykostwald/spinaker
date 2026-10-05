@@ -10713,3 +10713,14 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
     radial-gradient(58% 85% at 0% 100%, color-mix(in srgb, var(--who-c) 55%, transparent) 0%, transparent 72%),
     radial-gradient(52% 85% at 100% 100%, color-mix(in srgb, var(--tint-c) calc(var(--tint-k, 14%) * 3), transparent) 0%, transparent 72%); }
 }
+
+/* Boksy w nitce spinki (właściciel 6.10): szersze i niższe, bez gradientu i kropek - jednolite wnętrze o ton jaśniejsze od tła */
+.sc-abox { flex-basis: 272px !important; height: 236px !important;
+  background: color-mix(in srgb, var(--sc-text) 4.5%, var(--sc-bg)) !important; transition: background-color .25s; }
+.sc-abox:hover, .sc-abox:focus-within { background: color-mix(in srgb, var(--sc-text) 7%, var(--sc-bg)) !important; }
+[data-theme="light"] .sc-abox { background: color-mix(in srgb, var(--sc-text) 3.5%, var(--sc-bg)) !important; }
+[data-theme="light"] .sc-abox:hover, [data-theme="light"] .sc-abox:focus-within { background: color-mix(in srgb, var(--sc-text) 6%, var(--sc-bg)) !important; }
+.sc-abox::after { content: none !important; }
+.sc-abox::before { -webkit-mask-image: none !important; mask-image: none !important; border-color: color-mix(in srgb, var(--sc-text) 10%, transparent) !important; }
+.sc-abox__body { max-height: calc(1.5em * 4); }
+@media (max-width: 767px) { .sc-abox { flex-basis: 264px !important; height: 228px !important; } }
