@@ -164,7 +164,8 @@ def parse_page(raw, account, window):
                 raise ValueError()
         except (ValueError, KeyError, TypeError, AttributeError):
             raise PoliticalReadError('missing_x_post_date')
-        if published > datetime.fromisoformat(window['end_time'].replace('Z', '+00:00')):
+        # z since_id wyszukiwanie nie wysyła end_time (X nie pozwala ich łączyć), więc wpisy mogą być nowsze od końca okna
+        if not (window.get('since_id') and window.get('query')) and published > datetime.fromisoformat(window['end_time'].replace('Z', '+00:00')):
             raise PoliticalReadError('x_post_outside_window')
         if not window.get('since_id') and published < datetime.fromisoformat(window['start_time'].replace('Z', '+00:00')):
             raise PoliticalReadError('x_post_outside_window')
