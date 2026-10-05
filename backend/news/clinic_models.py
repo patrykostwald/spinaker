@@ -349,3 +349,53 @@ class SocialPost(models.Model):
 
     def __str__(self):
         return f'{self.get_platform_display()} — diagnoza {self.diagnosis_id}'
+
+
+POSITION_SOURCE_KINDS = [('post', 'Wpis na X'), ('statement', 'Wystąpienie w Sejmie'), ('vote', 'Głosowanie w Sejmie')]
+POSITION_RELATIONS = [
+    ('pending', 'Czeka na sprawdzenie'),
+    ('change', 'Zmiana stanowiska'),
+    ('same', 'To samo stanowisko'),
+    ('off_topic', 'Nie na temat'),
+    ('unclear', 'Nie da się ocenić (cytat bez potwierdzenia)'),
+]
+
+
+class PositionScan(models.Model):
+    """Zmiana zdania: znak, że dla diagnozy wyszukano już wcześniejsze wypowiedzi tej samej osoby (news/zmiana_zdania.py)."""
+    diagnosis = models.OneToOneField(SpinDiagnosis, on_delete=models.CASCADE, related_name='position_scan')
+    scanned_at = models.DateTimeField(default=timezone.now, db_index=True)
+    candidates = models.PositiveSmallIntegerField(default=0)
+
+
+class PositionCheck(models.Model):
+    """Wcześniejsza wypowiedź tej samej osoby na ten sam temat i ocena modelu: zmiana stanowiska, to samo albo nie na temat.
+
+    Kandydaci powstają bez AI (wspólne słowa, co najmniej 14 dni wcześniej); jeden darmowy model ocenia parę.
+    Publicznie pokazujemy wyłącznie „change” z pewnością od progu (ten sam próg dla każdej partii) i z potwierdzonymi cytatami."""
+    diagnosis = models.ForeignKey(SpinDiagnosis, on_delete=models.CASCADE, related_name='position_checks')
+    source_kind = models.CharField(max_length=12, choices=POSITION_SOURCE_KINDS)
+    source_key = models.CharField(max_length=40, help_text='post:<id>, record:<id> albo ballot:<id>.')
+    earlier_post = models.ForeignKey(PoliticalPost, null=True, blank=True, on_delete=models.CASCADE, related_name='+')
+    source_url = models.URLField(max_length=1024)
+    source_date = models.DateField()
+    source_title = models.CharField(max_length=300, blank=True)
+    earlier_text = models.TextField(help_text='Wcześniejsza wypowiedź (fragment) albo opis głosu.')
+    similarity = models.FloatField(default=0)
+    relation = models.CharField(max_length=12, choices=POSITION_RELATIONS, default='pending', db_index=True)
+    confidence = models.PositiveSmallIntegerField(default=0)
+    explanation = models.CharField(max_length=400, blank=True)
+    quote_then = models.CharField(max_length=400, blank=True)
+    quote_now = models.CharField(max_length=400, blank=True)
+    model_name = models.CharField(max_length=200, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    error = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    checked_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    class Meta:
+        ordering = ['-source_date', '-pk']
+        constraints = [models.UniqueConstraint(fields=['diagnosis', 'source_key'], name='position_check_once')]
+
+    def __str__(self):
+        return f'{self.source_key} → diagnoza {self.diagnosis_id}: {self.relation}'

@@ -539,6 +539,18 @@ def badacz_task():
         return {'status': 'waiting', 'reason': str(error)}
 
 
+@shared_task(soft_time_limit=600, time_limit=660)
+def zmiana_zdania_task():
+    """Co 30 minut: Zmiana zdania - wcześniejsze wypowiedzi tej samej osoby przy nowych diagnozach (bez AI), potem jeden darmowy
+    model ocenia pary w oknie agentów. Brak modelu = pary czekają; diagnoza nigdy na to nie czeka."""
+    import os
+    if os.environ.get('ZMIANA_ZDANIA_ENABLED', 'true').strip().lower() == 'false':
+        return {'status': 'disabled'}
+    from news import dyrygent, zmiana_zdania
+    with dyrygent.tier('treść'):
+        return zmiana_zdania.run()
+
+
 @shared_task
 def raport_petli_task():
     """Codziennie 7:05: Raport pętli mailem (audyt pętli 5.10). Bez AI; jeden mail na dzień."""

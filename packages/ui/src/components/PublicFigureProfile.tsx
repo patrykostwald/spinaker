@@ -15,7 +15,6 @@ import {
   ORGANISATION_KIND_LABELS,
   ORGANISATION_KIND_ORDER,
   SECTOR_LABELS,
-  VERIFICATION_LABELS,
   type EmploymentEntry,
   ROLE_CATEGORY_LABELS,
   groupOfCategory,
@@ -221,10 +220,10 @@ function orderedOrganisations(rows: PublicFigureOrganisation[]) {
     || Number(a.relation_status === 'former') - Number(b.relation_status === 'former') || a.name.localeCompare(b.name, 'pl'));
 }
 
-function period(since?: string | null, until?: string | null, status?: 'current' | 'former') {
-  const year = (value?: string | null) => (value ? value.slice(0, 4) : '');
-  if (since || until) return `${year(since) || '?'}–${until ? year(until) : 'obecnie'}`;
-  return status === 'current' ? 'obecnie' : 'dawniej';
+/** Funkcja w KRS jednym wierszem: „członek rady nadzorczej - Spółka X S.A.” (właściciel 6.10: na spin.clinic bez dat i historii). */
+function krsFunction(relation: PublicFigureOrganisation) {
+  const role = relation.public_role || relation.organ || 'funkcja';
+  return `${role.charAt(0).toUpperCase()}${role.slice(1)} - ${relation.name}`;
 }
 
 function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
@@ -232,41 +231,29 @@ function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
   return (
     <section id="relacje" className="sc-public-figure-section" aria-labelledby="pf-orgs">
       <header>
-        <h2 id="pf-orgs">Występuje w podmiotach</h2>
+        <h2 id="pf-orgs">Funkcje w KRS</h2>
         <p>
-          Fundacje, stowarzyszenia i spółki z Krajowego Rejestru Sądowego, w których ta osoba pełni albo pełniła funkcję. Każdy wpis potwierdza
-          oficjalny KRS (organ, funkcja i daty) albo co najmniej dwa niezależne źródła. Nie pokazujemy danych prywatnych - tylko jawne funkcje.
+          Jawne funkcje tej osoby w fundacjach, stowarzyszeniach i spółkach z Krajowego Rejestru Sądowego, potwierdzone w KRS albo w dwóch
+          niezależnych źródłach. Funkcja w KRS to kontekst, nie dowód związku z tematem.
         </p>
       </header>
       {rows.length ? (
-        <div className="sc-entities" role="table" aria-label="Podmioty">
-          <div className="sc-entities__row sc-entities__head" role="row">
-            <span role="columnheader">Nazwa</span><span role="columnheader">Typ</span><span role="columnheader">Funkcja</span>
-            <span role="columnheader">Okres</span><span role="columnheader">Potwierdzenie</span>
-          </div>
+        <ul className="sc-krs-functions" aria-label="Funkcje w KRS">
           {rows.map(relation => (
-            <div key={`${relation.id}-${relation.public_role}-${relation.relation_status}`} className="sc-entities__row" role="row" data-status={relation.relation_status}>
-              <span role="cell" className="sc-entities__name">
-                <strong>{relation.name}</strong>
-                {relation.sector && SECTOR_LABELS[relation.sector] ? <small>{SECTOR_LABELS[relation.sector]}</small> : null}
-              </span>
-              <span role="cell">
-                <SourceLink href={relation.official_register_url}>{ORGANISATION_KIND_LABELS[relation.kind].singular} · KRS {relation.krs_number}</SourceLink>
-              </span>
-              <span role="cell">{relation.public_role}{relation.organ && !relation.public_role.includes(relation.organ) ? <small> ({relation.organ})</small> : null}</span>
-              <span role="cell" className="sc-entities__period">{period(relation.since, relation.until, relation.relation_status)}</span>
-              <span role="cell" className="sc-entities__proof">
-                <span className="sc-public-figure-verified"><span aria-hidden="true">✓</span> {VERIFICATION_LABELS[relation.verification_method ?? 'editor']}</span>
-                {(relation.sources ?? []).slice(0, 2).map(source => <SourceLink key={source.url} href={source.url}>{source.title || 'źródło'}</SourceLink>)}
-              </span>
-            </div>
+            <li key={`${relation.id}-${relation.public_role}-${relation.relation_status}`} data-status={relation.relation_status}>
+              <span className="sc-krs-functions__name">{krsFunction(relation)}</span>
+              <small className="sc-krs-functions__state">{relation.relation_status === 'current' ? 'obecnie' : 'dawniej'}</small>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <Neutral>
-          Nie znaleźliśmy jeszcze potwierdzonych podmiotów. Agent sprawdza kolejne osoby co noc - brak wpisu nie oznacza braku funkcji, tylko że
+          Nie znaleźliśmy jeszcze potwierdzonych funkcji. Agent sprawdza kolejne osoby co noc - brak wpisu nie oznacza braku funkcji, tylko że
           nie potwierdziliśmy jej w KRS ani w dwóch niezależnych źródłach.
         </Neutral>
+      )}
+      {figure.krs_full_profile && (
+        <p className="sc-krs-functions__more"><a href={figure.krs_full_profile.url} target="_blank" rel="noopener noreferrer">{figure.krs_full_profile.label} ↗</a></p>
       )}
       <CareerTree entries={figure.employment_timeline ?? []} />
     </section>
@@ -313,7 +300,7 @@ function CareerTree({ entries }: { entries: EmploymentEntry[] }) {
   return (
     <section className="sc-career" aria-labelledby="pf-career">
       <h3 id="pf-career">Kariera publiczna</h3>
-      <p className="sc-career__lead">Stanowiska publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych - z datami z oficjalnych rejestrów (Sejm, KRS).</p>
+      <p className="sc-career__lead">Stanowiska publiczne z datami z oficjalnych rejestrów (np. Sejm). Daty funkcji w KRS są w pełnej historii w przeszłość.today.</p>
       <ol className="sc-career__groups">
         {groups.map((group, index) => {
           const first = group.entries[group.entries.length - 1];

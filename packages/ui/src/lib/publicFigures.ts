@@ -30,12 +30,13 @@ export type OrganisationVerification = 'editor' | 'krs_register' | 'public_sourc
 export type PublicFigureOrganisation = {
   id: number;
   name: string;
-  krs_number: string;
+  /** Tylko przeszłość.today; profil spin.clinic pokazuje z KRS wyłącznie nazwę funkcji i podmiotu (właściciel 6.10). */
+  krs_number?: string;
   kind: OrganisationKind;
   legal_form?: string;
   sector?: OrganisationSector;
   /** Publiczna strona podmiotu z danymi KRS. */
-  official_register_url: string;
+  official_register_url?: string;
   public_role: string;
   organ?: string;
   relation_status: 'current' | 'former';
@@ -44,8 +45,8 @@ export type PublicFigureOrganisation = {
   until?: string | null;
   verification_method?: OrganisationVerification;
   sources?: Array<{ url: string; title: string }>;
-  evidence_url: string;
-  verified_at: string | null;
+  evidence_url?: string;
+  verified_at?: string | null;
 };
 
 /** Oś kariery: funkcje publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych (z KRS). */
@@ -102,6 +103,8 @@ export type PublicFigureXPost = {
 export type PublicFigureDetail = PublicFigureSummary & {
   organisations: PublicFigureOrganisation[];
   employment_timeline?: EmploymentEntry[];
+  /** Odnośnik do pełnej historii KRS w przeszłość.today (tylko gdy przeszłość jest włączona). */
+  krs_full_profile?: { url: string; label: string } | null;
   /** Obecny klub lub partia (z rejestru Sejmu albo notatki). */
   party?: { code: string; short: string; name: string } | null;
   votes: PublicFigureVotes;

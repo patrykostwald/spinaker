@@ -99,6 +99,29 @@ def figure_data(figure, include_detail=False):
     return data
 
 
+KRS_SPIN_FIELDS = ('id', 'name', 'kind', 'sector', 'public_role', 'organ', 'relation_status')
+
+
+def krs_functions(organisations):
+    """spin.clinic (właściciel 6.10): z KRS tylko nazwa funkcji i podmiotu - bez dat, numerów KRS, źródeł i historii.
+    Pełne dane zostają w profilu przeszłość.today (przeszlosc_osoba.profile)."""
+    return [{key: row.get(key) for key in KRS_SPIN_FIELDS} for row in organisations]
+
+
+def spin_profile(figure, data):
+    """Profil osoby na spin.clinic: minimum danych z KRS i odnośnik do pełnej historii w przeszłość.today (gdy włączona)."""
+    from news.przeszlosc import enabled
+    data['organisations'] = krs_functions(data.get('organisations') or [])
+    # oś kariery bez wpisów z KRS (daty funkcji w spółkach są tylko w przeszłość.today)
+    data['employment_timeline'] = [entry for entry in data.get('employment_timeline') or [] if 'sector' not in entry]
+    data['krs_full_profile'] = None
+    if enabled():
+        from news.przeszlosc_alerts import site
+        from news.przeszlosc_osoba import slug
+        data['krs_full_profile'] = {'url': f'{site()}/przeszlosc/osoba/{slug(figure)}', 'label': 'Pełna historia w przeszłość.today'}
+    return data
+
+
 def confirmed_youtube_channels_data(figure):
     """Return only editorially confirmed official channels for this person.
 
@@ -359,7 +382,7 @@ def dossier_data(figure):
         },
         'timeline': timeline[:30],
         'materials': materials,
-        'organisations': details['organisations'],
+        'organisations': krs_functions(details['organisations']),
         'roles': details['roles'],
         'votes': details['votes'],
         'graph': graph,
@@ -549,7 +572,7 @@ def public_office_list(request):
 @api_view(['GET'])
 def public_figure_detail(request, figure_id):
     figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
-    return Response(figure_data(figure, include_detail=True))
+    return Response(spin_profile(figure, figure_data(figure, include_detail=True)))
 
 
 @extend_schema(summary="Kontekst osoby publicznej", tags=["osoby publiczne"], responses=OpenApiTypes.OBJECT)

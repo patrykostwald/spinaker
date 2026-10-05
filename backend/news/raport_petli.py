@@ -45,6 +45,8 @@ CONTRACTS = (
              pending='reports', title='Raporty dla instytucji'),
     contract('czytelnik', 'Czytelnik', 'tresc', 168, 'owner:panel', 14, agents=('strateg',), match=PLAIN_READER, beats=('plain-reader-weekly',),
              registry='plain-reader', title='Czytelnik testowy'),
+    contract('zmiana-zdania', 'Zmiana zdania', 'tresc', 24, 'public', 1, beats=('zmiana-zdania-30m',), registry='zmiana-zdania',
+             counter='position_checks', title='Zmiana zdania przy diagnozach'),
     contract('recenzent', 'Recenzent', 'tresc', 24, 'owner:panel', 7, agents=('recenzent',), beats=('recenzent-2h',), registry='recenzent'),
     # Agenci rozwoju spin.clinic
     contract('strateg', 'Strateg', 'agenci', 24, 'owner:panel', 7, agents=('strateg',), exclude=PLAIN_READER, beats=('agents-window-hourly',),
@@ -196,6 +198,9 @@ def _counter(c, since):
     elif name == 'tickets':
         from news.agent_models import BuildTicket
         rows, field = BuildTicket.objects.all(), 'created_at'
+    elif name == 'position_checks':
+        from news.clinic_models import PositionCheck
+        rows, field = PositionCheck.objects.exclude(checked_at__isnull=True), 'checked_at'
     elif name == 'seba':
         from news.agent_models import SebaReview
         rows, field = SebaReview.objects.exclude(status='queued'), 'due_at'

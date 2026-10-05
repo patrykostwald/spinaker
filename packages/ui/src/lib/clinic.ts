@@ -64,6 +64,20 @@ export type SpinClaim = {
   sources: Array<{ url: string; title: string }>;
 };
 
+/** Zmiana zdania (backend news/zmiana_zdania.py): wcześniejsza wypowiedź tej samej osoby z innym stanowiskiem. */
+export type PositionChange = {
+  kind: "post" | "statement" | "vote";
+  kind_label: string;
+  date: string;
+  url: string;
+  title: string;
+  quote_then: string;
+  quote_now: string;
+  explanation: string;
+  now_date: string;
+  now_url: string;
+};
+
 export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   plain?: { title: string; gist: string; top: Array<{ name: string; quote: string }> } | null;
   status?: "approved";
@@ -90,6 +104,8 @@ export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   reviewed_at: string | null;
   auto_published?: boolean;
   notice: string;
+  /** Tylko pary powyżej progu (ten sam dla każdej partii); null, gdy nic nie przeszło. */
+  position_changes?: { items: PositionChange[]; note: string } | null;
 };
 
 /** Opcjonalne dane skanera; starsze API nadal korzysta z pól diagnozy. */

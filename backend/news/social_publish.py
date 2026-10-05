@@ -128,7 +128,8 @@ def texts_from_data(data: dict) -> dict:
     synthesis = data['x_thread']
     if any(shorten(text, len(text)) != text for text in synthesis):
         return {}
-    full = '\n\n'.join([heading(data), *synthesis])
+    from news.zmiana_zdania import social_line
+    full = '\n\n'.join([heading(data), *synthesis, *filter(None, [social_line(data)])])
     return {
         'facebook': f'{full}\n\nPełna diagnoza ze źródłami: {link}\n\n{FOOTER}',
         'instagram': f'{posts[0]}\n\nPełna diagnoza ze źródłami: spin.clinic (link w bio)\n\n{FOOTER}\n\n{HASHTAGS}',

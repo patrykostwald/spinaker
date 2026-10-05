@@ -528,7 +528,8 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
   </figure>;
 }
 
-/* Panel osoby i wpisu (właściciel 6.10): wejście „w głąb” bez wychodzenia do źródła. Esc zamyka, adres do udostępnienia. */
+/* Profil spin.clinic (/api/public-figures/) ma z KRS tylko nazwy funkcji - numery i odnośniki KRS bierzemy z grafu tematu.
+   Panel osoby i wpisu (właściciel 6.10): wejście „w głąb” bez wychodzenia do źródła. Esc zamyka, adres do udostępnienia. */
 type Figure = { id: number; name: string; role_title: string; organisation: string; party?: string | null; evidence_url?: string; official_profile_url?: string;
   organisations?: { id: number; name: string; krs_number?: string; official_register_url?: string }[];
   employment_timeline?: { position: string; organisation: string; status: string; since?: string | null }[];
@@ -576,7 +577,7 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
           <ol className="px-panel__list">{entriesOf(node.id).map(n => <li key={n.id}><button type="button" onClick={() => onOpen({ kind: 'entry', id: n.id })}>
             <time>{day(n.date)}</time><span>{n.label}</span>{diagnosisOf.get(n.id) && <em className="px-spin" style={{ ['--spin' as string]: spinColor(diagnosisOf.get(n.id)!.intensity) }}>spin {diagnosisOf.get(n.id)!.intensity}/100</em>}</button></li>)}</ol></section>
         {Boolean((fig?.organisations?.length ?? 0) || roles.get(node.id)?.length) && <section><h3>Funkcje w KRS</h3>
-          <ul className="px-panel__rows">{(fig?.organisations ?? roles.get(node.id)?.map(r => ({ id: r.org.id, name: r.org.label, official_register_url: r.org.url, krs_number: r.org.sub })) ?? []).map(o =>
+          <ul className="px-panel__rows">{(roles.get(node.id)?.map(r => ({ id: r.org.id, name: r.org.label, official_register_url: r.org.url, krs_number: r.org.sub })) ?? fig?.organisations ?? []).map(o =>
             <li key={String(o.id)}><a href={o.official_register_url} target="_blank" rel="noopener noreferrer">{o.name}</a><small>{o.krs_number && !String(o.krs_number).startsWith('KRS') ? `KRS ${o.krs_number}` : o.krs_number}</small></li>)}</ul>
           <p className="px-note">Funkcje w&nbsp;KRS to kontekst osoby, nie dowód związku z&nbsp;tematem.</p></section>}
         {Boolean(fig?.employment_timeline?.length) && <section><h3>Stanowiska</h3>

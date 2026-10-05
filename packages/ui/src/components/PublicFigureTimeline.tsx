@@ -99,9 +99,9 @@ export function PublicFigureTimeline({ figureId, onShowMaterials, materialsTotal
                   </p>
                   <p className="sc-pf-axis__title">{relation.name}</p>
                   <p className="sc-pf-axis__meta">{relation.public_role}</p>
-                  <a className="sc-pf-axis__source" href={relation.evidence_url} target="_blank" rel="noopener noreferrer">
+                  {relation.evidence_url && <a className="sc-pf-axis__source" href={relation.evidence_url} target="_blank" rel="noopener noreferrer">
                     Dowód publiczny ↗
-                  </a>
+                  </a>}
                 </li>
               ))}
             </ul>

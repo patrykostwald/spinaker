@@ -821,6 +821,8 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'author_replies': list(diagnosis.author_replies.filter(published_at__lte=timezone.now()).values(
             'id', 'body', 'source_url', 'received_at', 'published_at')),
     })
+    from news.zmiana_zdania import public_data as position_changes
+    data['position_changes'] = position_changes(diagnosis)  # Zmiana zdania: tylko pary powyżej progu, ten sam dla każdej partii
     from news.x_share import build
     data['x_share'] = build(data)
     return data
