@@ -9922,3 +9922,7 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
     color-mix(in srgb, var(--sc-text) 4%, transparent) !important; }
 .sc-abox::before { border-color: color-mix(in srgb, var(--sc-text) 26%, transparent); }
 .sc-rel { background: color-mix(in srgb, var(--sc-text) 6%, var(--sc-bg)); }
+
+/* awatar Dr. Spina: znak dymka ze spiralą zamiast liter DS (właściciel 6.10); koło rysuje sam znak, w obu motywach ten sam niebieski */
+.sc-social-avatar[data-ai] { background: none !important; color: inherit !important; padding: 0 !important; overflow: visible; box-shadow: none !important; }
+.sc-social-avatar[data-ai] > .sc-drspin-mark { width: 100%; height: 100%; display: block; }

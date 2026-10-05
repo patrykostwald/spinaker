@@ -95,8 +95,21 @@ export function ago(iso: string) {
   return new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
 }
 /** Stały, delikatny kolor awatara z nazwy - autorów łatwiej odróżnić. Dr. Spin ma akcent serwisu. */
+/** Znak Dr. Spina (właściciel 6.10, werdykt panelu: dymek ze spiralą): wypowiedź, którą ktoś zakręcił - oceniamy
+ *  wypowiedź, nie osobę. Ogonek krótki i ścięty po prawej, spirala Archimedesa; w małych rozmiarach prostsza spirala. */
+const DS_BUBBLE = 'M37.32 46.95L35.82 47.22L34.3 47.4L32.77 47.49L31.23 47.49L29.7 47.4L28.18 47.22L26.68 46.95L25.2 46.59L23.76 46.15L22.36 45.63L21 45.02L19.7 44.34L18.46 43.58L17.28 42.75L16.17 41.85L15.15 40.89L14.2 39.87L13.34 38.8L12.58 37.69L11.9 36.52L11.33 35.33L10.85 34.1L10.48 32.85L10.21 31.57L10.05 30.29L10 29L10.05 27.71L10.21 26.43L10.48 25.15L10.85 23.9L11.33 22.67L11.9 21.48L12.58 20.31L13.34 19.2L14.2 18.13L15.15 17.11L16.17 16.15L17.28 15.25L18.46 14.42L19.7 13.66L21 12.98L22.36 12.37L23.76 11.85L25.2 11.41L26.68 11.05L28.18 10.78L29.7 10.6L31.23 10.51L32.77 10.51L34.3 10.6L35.82 10.78L37.32 11.05L38.8 11.41L40.24 11.85L41.64 12.37L43 12.98L44.3 13.66L45.54 14.42L46.72 15.25L47.83 16.15L48.85 17.11L49.8 18.13L50.66 19.2L51.42 20.31L52.1 21.48L52.67 22.67L53.15 23.9L53.52 25.15L53.79 26.43L53.95 27.71L54 29L53.95 30.29L53.79 31.57L53.52 32.85L53.15 34.1L52.67 35.33L52.1 36.52L51.42 37.69L50.66 38.8L49.8 39.87L48.85 40.89L47.83 41.85L46.72 42.75L47 50Z';
+const DS_SPIRAL = 'M32 19L32.69 19.13L33.36 19.32L34.01 19.54L34.63 19.81L35.22 20.12L35.79 20.47L36.32 20.85L36.82 21.27L37.28 21.71L37.7 22.18L38.09 22.67L38.43 23.19L38.73 23.72L38.99 24.26L39.21 24.81L39.38 25.37L39.52 25.94L39.61 26.5L39.65 27.07L39.66 27.62L39.63 28.17L39.56 28.71L39.45 29.23L39.3 29.74L39.12 30.23L38.91 30.69L38.67 31.14L38.41 31.55L38.11 31.94L37.8 32.31L37.46 32.64L37.11 32.95L36.74 33.22L36.35 33.46L35.96 33.67L35.56 33.84L35.16 33.98L34.75 34.09L34.34 34.17L33.94 34.22L33.54 34.23L33.15 34.22L32.77 34.18L32.4 34.11L32.04 34.01L31.7 33.89L31.37 33.75L31.06 33.58L30.78 33.4L30.51 33.2L30.27 32.99L30.04 32.76L29.85 32.52L29.67 32.27L29.52 32.01L29.39 31.75L29.29 31.49L29.21 31.23L29.15 30.96L29.12 30.7L29.1 30.45L29.11 30.2L29.14 29.96L29.19 29.73L29.25 29.52L29.33 29.31L29.43 29.12L29.54 28.94L29.66 28.78L29.79 28.64L29.93 28.51L30.07 28.4L30.22 28.31L30.37 28.23L30.53 28.18L30.68 28.14L30.83 28.11L30.98 28.11L31.12 28.12L31.26 28.14L31.39 28.18L31.51 28.23L31.61 28.3';
+const DS_SPIRAL_SMALL = 'M32 20L32.62 20.15L33.21 20.35L33.78 20.59L34.33 20.86L34.84 21.16L35.33 21.5L35.78 21.87L36.19 22.26L36.57 22.68L36.92 23.11L37.22 23.57L37.49 24.03L37.72 24.51L37.91 24.99L38.06 25.48L38.17 25.97L38.24 26.45L38.28 26.93L38.28 27.41L38.24 27.87L38.17 28.32L38.07 28.76L37.94 29.18L37.78 29.58L37.6 29.96L37.39 30.31L37.16 30.64L36.91 30.95L36.64 31.23L36.36 31.48L36.06 31.7L35.76 31.9L35.45 32.06L35.14 32.2L34.82 32.31L34.5 32.39L34.19 32.44L33.88 32.47L33.58 32.47L33.29 32.45L33.01 32.4L32.74 32.34L32.49 32.25L32.25 32.14L32.03 32.02L31.83 31.88L31.64 31.73L31.48 31.57L31.34 31.4L31.22 31.22L31.12 31.04L31.04 30.85L30.98 30.67L30.95 30.49L30.93 30.31L30.93 30.13L30.95 29.97L30.99 29.81L31.05 29.66L31.12 29.52L31.2 29.4L31.3 29.29L31.41 29.2L31.52 29.13L31.65 29.07';
+export function DrSpinMark({ size = 36, title }: { size?: number; title?: string }) {
+  return <svg className="sc-drspin-mark" width={size} height={size} viewBox="0 0 64 64" role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true}>
+    <circle cx="32" cy="32" r="32" fill="var(--sc-drspin, #3b82f6)" />
+    <g fill="none" stroke="#fff" strokeWidth={size <= 20 ? 6 : 5} strokeLinecap="round" strokeLinejoin="round">
+      <path d={DS_BUBBLE} /><path className="sc-drspin-mark__spiral" d={size <= 20 ? DS_SPIRAL_SMALL : DS_SPIRAL} /></g>
+  </svg>;
+}
+
 export function Avatar({ name, ai = false, size }: { name: string; ai?: boolean; size?: number }) {
   let hue = 0; for (const c of name) hue = (hue * 31 + c.charCodeAt(0)) % 360;
   const style = { ['--hue' as string]: hue, ...(size ? { width: size, height: size } : {}) };
-  return <span className="sc-social-avatar" data-ai={ai || undefined} aria-hidden="true" style={style}>{ai ? 'DS' : name.replace('@', '').charAt(0).toUpperCase()}</span>;
+  return <span className="sc-social-avatar" data-ai={ai || undefined} aria-hidden="true" style={style}>{ai ? <DrSpinMark size={size ?? 36} /> : name.replace('@', '').charAt(0).toUpperCase()}</span>;
 }
