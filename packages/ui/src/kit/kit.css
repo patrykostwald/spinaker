@@ -9914,3 +9914,11 @@ html[data-immersive] .sc-bug-fab, html[data-standalone] .sc-bug-fab { display: n
   .sc-trop-overlay__body > article .sc-thread-strip__rail:has(.sc-abox) .sc-thread-strip__arrow--prev { left: -22px !important; }
 }
 @media (min-width: 768px) { .sc-trop-overlay__bar .sc-trop-overlay__back { padding-left: 0 !important; padding-right: 0 !important; margin-left: calc(var(--sp-left, 0px) + 15px); } }
+
+/* boksy spinki o dwa tony jaśniejsze (właściciel 6.10): lekkie tło całego boksu, wyraźniejszy obrys, mocniejsza zieleń;
+   znaczniki połączeń też odrobinę jaśniejsze */
+.sc-abox { background:
+    linear-gradient(90deg, transparent 0%, transparent 66%, color-mix(in srgb, var(--tint-c) calc(var(--tk, 12%) + 6% + var(--tk-h, 0%)), transparent) 100%),
+    color-mix(in srgb, var(--sc-text) 4%, transparent) !important; }
+.sc-abox::before { border-color: color-mix(in srgb, var(--sc-text) 26%, transparent); }
+.sc-rel { background: color-mix(in srgb, var(--sc-text) 6%, var(--sc-bg)); }
