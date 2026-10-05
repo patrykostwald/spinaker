@@ -32,8 +32,21 @@ class Command(BaseCommand):
             out(f'  przykład: {e}')
         queued = SpinDiagnosis.objects.filter(status__in=('queued', 'flagged')).count()
         out(f'W kolejce do diagnozy: {queued}')
+        from news.political_models import PoliticalPost
+        from news import clinic
+        newest = PoliticalPost.objects.order_by('-published_at').values_list('published_at', flat=True).first()
+        fresh = PoliticalPost.objects.filter(published_at__gte=day).count()
+        out(f'Najnowszy wpis polityka w bazie: {newest:%d.%m %H:%M}' if newest else 'Brak wpisów w bazie.')
+        out(f'Wpisy z ostatnich 24 h (tylko takie idą do diagnozy): {fresh}')
+        fresh_queue = SpinDiagnosis.objects.filter(status__in=('queued', 'flagged'), post__published_at__gte=day).count()
+        out(f'W kolejce ze świeżych wpisów: {fresh_queue}')
+        try:
+            out(f'Budżet: zostało {clinic.budget_left():.2f} USD, rezerwa {clinic.diagnosis_reserve():.2f}; '
+                f'diagnoz dziś {clinic.diagnoses_today()}, poważnych błędów dziś {clinic.failures_today()}')
+        except Exception as error:  # odczyt pomocniczy, nie może zatrzymać raportu
+            out(f'Budżet: nie udało się odczytać ({type(error).__name__})')
         reads = PoliticalRead.objects.filter(started_at__gte=day)
-        out(f'X: odczyty z 24 h: {reads.count()}, wpisów: {sum(reads.values_list("returned_posts", flat=True))}')
+        out(f'X: odczyty z 24 h: {reads.count()}, wpisów: {sum(n or 0 for n in reads.values_list("returned_posts", flat=True))}')
         for r in PoliticalRead.objects.order_by('-started_at')[:5]:
             out(f'  odczyt {r.started_at:%d.%m %H:%M}: {r.status}, http {r.http_status}, wpisów {r.returned_posts}')
         state = ImportState.objects.filter(name='political-x-budget').first()
