@@ -120,11 +120,33 @@ def _metadata(row, window_from, window_to):
 
 def save_metadata(source, row, window_from, window_to):
     """Idempotently save only public notice metadata as a box."""
-    _, number, title, published, url = _metadata(row, window_from, window_to)
+    notice_id, number, title, published, url = _metadata(row, window_from, window_to)
     article, created = upsert_article(source=source, title=title, url=url,
         published_date=published, category=ArticleCategory.DOCUMENT,
         description=f'Ogłoszenie BZP {number}', ingestion_method='archive')
+    save_notice_record(row, notice_id, number, title, published, url)
     return bool(article and created)
+
+
+NOTICE_FIELDS = ('noticeType', 'orderType', 'cpvCode', 'organizationName', 'organizationCity', 'organizationProvince',
+                 'organizationNationalId', 'submittingOffersDate', 'isTenderAmountBelowEU', 'procedureResult', 'tenderId', 'bzpNumber')
+
+
+def save_notice_record(row, notice_id, number, title, published, url):
+    """Pola ogłoszenia z tej samej odpowiedzi (bez dodatkowych zapytań): CPV, zamawiający, termin ofert.
+    Czyta je pętla „Zamówienia publiczne” (news/zamowienia.py). Błąd zapisu nie zatrzymuje zbieracza."""
+    import hashlib
+    from news.public_records_models import PublicRecord
+    data = {key: row.get(key) for key in NOTICE_FIELDS if row.get(key) not in (None, '')}
+    data['noticeNumber'] = number
+    try:
+        with transaction.atomic():
+            PublicRecord.objects.update_or_create(source='bzp', kind='notice', external_id=notice_id[:256], defaults=dict(
+                source_url=url, response_url=SEARCH_URL,
+                response_sha256=hashlib.sha256(json.dumps(row, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest(),
+                date=timezone.localtime(published, ZoneInfo('Europe/Warsaw')).date(), title=title[:2000], data=data))
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def history_floor(cursor):

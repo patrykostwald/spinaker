@@ -735,3 +735,13 @@ def sales_leads_task():
     """Co godzinę: ponowienia maili, powiadomienia właściciela o potwierdzonych zgłoszeniach, usuwanie niepotwierdzonych."""
     from news.sales import run
     return run()
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def zamowienia_publiczne_task():
+    """Codziennie 8:10: ogłoszenia BZP o strony, BIP i WCAG -> sygnały ze szkicem oferty (bez AI, bez wysyłki do zamawiających)."""
+    from news import agent_registry
+    if not agent_registry.enabled(agent_registry.REGISTRY['zamowienia-publiczne']):
+        return {'status': 'disabled'}
+    from news.zamowienia import run
+    return run()

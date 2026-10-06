@@ -109,3 +109,42 @@ class WeeklyReportIssueAdmin(admin.ModelAdmin):
         from news.raport_tygodniowy import generate
         for issue in queryset:
             generate(issue.week_start + timedelta(days=7), force=True)
+
+
+from news.sales_models import ZamowienieSygnal  # noqa: E402
+
+
+@admin.register(ZamowienieSygnal)
+class ZamowienieSygnalAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'title', 'deadline', 'decision', 'status')
+    list_filter = ('status',)
+    search_fields = ('title', 'body')
+    readonly_fields = ('title', 'body', 'sources', 'scores', 'status', 'decided_by', 'decided_at', 'created_at')
+    fields = readonly_fields
+    actions = ('submit', 'skip')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(agent='zamowienia')
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description='termin ofert')
+    def deadline(self, obj):
+        return (obj.scores.get('deadline') or '')[:16].replace('T', ' ')
+
+    @admin.display(description='decyzja')
+    def decision(self, obj):
+        return obj.scores.get('decision') or '-'
+
+    @admin.action(description='Składamy')
+    def submit(self, request, queryset):
+        from news.zamowienia import decide
+        for note in queryset:
+            decide(note, 'składamy', request.user)
+
+    @admin.action(description='Pomijamy')
+    def skip(self, request, queryset):
+        from news.zamowienia import decide
+        for note in queryset:
+            decide(note, 'pomijamy', request.user)

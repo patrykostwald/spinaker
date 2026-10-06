@@ -69,3 +69,14 @@ class WeeklyReportIssue(models.Model):
 
     def __str__(self):
         return f'Raport tygodniowy {self.week_start:%d.%m}-{self.week_end:%d.%m.%Y}'
+
+
+from news.agent_models import AgentNote  # noqa: E402
+
+
+class ZamowienieSygnal(AgentNote):
+    """Sygnały pętli „Zamówienia publiczne” (agent='zamowienia') w osobnej liście panelu z decyzją składamy / pomijamy."""
+    class Meta:
+        proxy = True
+        verbose_name = 'zamówienie publiczne (sygnał)'
+        verbose_name_plural = 'Zamówienia publiczne: strony i WCAG'

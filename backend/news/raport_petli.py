@@ -61,6 +61,8 @@ CONTRACTS = (
     contract('projektant', 'Projektant', 'agenci', 168, 'owner:panel', 7, agents=('projektant',), beats=('projektant-daily',),
              registry='projektant', title='Projektant UX/UI'),
     contract('automatyk', 'Automatyk', 'agenci', 24, 'owner:panel', 7, agents=('automatyk',), beats=('automatyk-daily',), registry='automatyk'),
+    contract('zamowienia', 'Zamówienia', 'agenci', 24, 'owner:panel', 3, agents=('zamowienia',), kinds=('signal',),
+             beats=('zamowienia-daily',), registry='zamowienia-publiczne', title='Zamówienia publiczne: strony i WCAG (składamy / pomijamy)'),
     contract('decyzje', 'Decyzje', 'agenci', 72, 'claude:sprint', 7, counter='decisions', pending='proposals',
              title='Decyzje właściciela (pomysły i bilety)'),
     contract('sprint', 'Sprint', 'agenci', 168, 'claude:sprint', 7, beats=('sprint-intake',), registry='sprint', counter='tickets',
@@ -240,7 +242,7 @@ FIRST_SEEN = 'petle-first-seen'
 OLD = '2026-01-01T00:00:00+00:00'
 # Pętle wdrożone 6.10 (zanim powstał zapis first_seen): pierwszy rytm liczymy od dnia wdrożenia.
 ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'odbior-spinu': '2026-10-07T12:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00',
-         'raport-tyg': '2026-10-07T12:00:00+02:00', 'zapytania': '2026-10-07T12:00:00+02:00'}
+         'raport-tyg': '2026-10-07T12:00:00+02:00', 'zapytania': '2026-10-07T12:00:00+02:00', 'zamowienia': '2026-10-07T12:00:00+02:00'}
 
 
 def first_seen(now, keys=None):

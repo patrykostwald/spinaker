@@ -40,6 +40,8 @@ LOOPS = [
     ('spin.clinic', 'Raporty', 'w nocy i co tydzień', [('Raportysta', 'raportysta', 0), ('Seba', 'seba', 1), ('Raport tygodnia', 'weekly', 0),
         ('Raport tygodniowy dla instytucji', 'raport-tygodniowy', 0), ('Właściciel: próbka publiczna', 'owner-decisions', 1),
         ('Zapytania i piloci', 'zapytania', 0)]),
+    ('iapply', 'Zamówienia publiczne', 'codziennie 8:10', [('Zbieracz BZP', 'import_bzp_metadata', 0),
+        ('Zamówienia publiczne: sygnał, szkic oferty, lista WCAG', 'zamowienia-publiczne', 0), ('Właściciel: składamy / pomijamy', 'owner-decisions', 1)]),
     ('oba portale', 'Research', 'codziennie 3:20', [('Badacz: odkrywa źródła', 'badacz', 0), ('Drugi model: ocena jakości', 'badacz', 1),
         ('Automatyk, Projektant, Pracownia: czytają', 'automatyk', 0), ('Uśpienie martwych źródeł', 'badacz', 1)]),
     ('oba portale', 'Design', 'każda zmiana i co tydzień', [('Projektant: wiedza i przewodnik', 'projektant', 0), ('Claude: projekt', None, 0),
