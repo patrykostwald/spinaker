@@ -11098,3 +11098,8 @@ a.sc-sp-meta__who:hover { text-decoration: underline; text-underline-offset: 3px
 .sc-kind-pick__note { margin: 8px 0 0; font-size: 13px; color: var(--sc-text-3); }
 @media (max-width: 600px) { .sc-kind-pick__grid { grid-template-columns: minmax(0, 1fr); } .sc-kind-pick__opt small { white-space: normal; } }
 @media (prefers-reduced-motion: reduce) { .sc-kind-pick__opt { transition: none; } }
+
+/* „Zgłoś błąd” z powrotem po prawej na komputerze (właściciel 6.10): runda 3 audytu (5.10) przestawiła
+   przycisk w lewy dolny róg przy lewym pasku - strony nie mają spójnej prawej kolumny na każdej podstronie,
+   więc zostaje jak na telefonie i tablecie: ikonka przy prawej krawędzi. */
+@media (min-width: 1024px) { .sc-bug-fab { left: auto !important; right: 16px !important; bottom: 16px !important; } }
