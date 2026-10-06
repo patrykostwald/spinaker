@@ -9,6 +9,10 @@ from django.utils import timezone
 
 from news.models import Source, SourceAccessInstruction
 from scraper.public_records import SOURCES, API, SEJM, MSWIA, LOBBY, PKW, KRS_API, TED_SEARCH, TR_EXPORT
+from scraper import nowe_zrodla as nz
+
+# Zbiory organizacji pozarządowych i społeczności (nie urzędów): typ katalogu 'portal'.
+PORTALS = {'meta_ads', 'howtheyvote', 'wikidata', 'integrity_watch', 'mileage'}
 
 
 def cards(source):
@@ -56,6 +60,27 @@ def cards(source):
         return [('https://api.ted.europa.eu', 'api', TED_SEARCH, 'metadata', [])]
     if source == 'eu_transparency':
         return [('https://ec.europa.eu/transparencyregister', 'export', TR_EXPORT.rsplit('/', 1)[0], 'metadata', [])]
+    if source == 'videos':
+        # Lista transmisji i zapis przebiegu posiedzenia komisji (tekst urzędowy; nagrań nie pobieramy).
+        return [(sejm, 'api', SEJM + '/videos', 'metadata', ['/sejm/term10/videos']),
+                (sejm, 'api', SEJM + '/committees', 'content', ['/sejm/term10/committees/{token}/sittings/{int}/html'])]
+    if source == 'howtheyvote':
+        return [('https://howtheyvote.eu', 'api', nz.HTV, 'metadata', ['/api/votes', '/api/votes/{int}'])]
+    if source == 'wikidata':
+        return [('https://query.wikidata.org', 'api', nz.WIKIDATA, 'metadata', ['/sparql'])]
+    if source == 'kohesio':
+        return [('https://cohesiondata.ec.europa.eu', 'api', nz.KOHESIO, 'metadata', [])]
+    if source == 'fts':
+        root = 'https://ec.europa.eu/budget/financial-transparency-system'
+        return [(root, 'export', root + '/download', 'metadata', [])]
+    if source == 'integrity_watch':
+        root = 'https://www.integritywatch.eu'
+        return [(root, 'export', nz.IW + 'meps/dpi_legislature_10', 'metadata', []),
+                (root, 'export', nz.IW + 'mepmeetings/legislature_10', 'metadata', [])]
+    if source == 'mileage':
+        return [('https://jakglosuja.pl', 'api', nz.JAKGLOSUJA.rstrip('/'), 'metadata',
+                 ['/api/eksport/kilometrowki', '/api/eksport/sprawozdania']),
+                ('https://orka.sejm.gov.pl', 'export', 'https://orka.sejm.gov.pl/rozlicz10.nsf', 'metadata', [])]
     if source == 'meta_ads':
         version = os.environ.get('META_AD_LIBRARY_API_VERSION', '')
         if not re.fullmatch(r'v\d+\.0', version):
@@ -95,7 +120,7 @@ class Command(BaseCommand):
             if not options['apply']:
                 continue
             provider, _ = Source.objects.get_or_create(url=root, defaults={
-                'name': spec.title, 'source_type': 'institution' if options['source'] != 'meta_ads' else 'portal',
+                'name': spec.title, 'source_type': 'portal' if options['source'] in PORTALS else 'institution',
                 'is_active': False, 'scrape_enabled': False})
             provider = Source.objects.select_for_update().get(pk=provider.pk)
             if provider.catalog_stage == 'excluded':

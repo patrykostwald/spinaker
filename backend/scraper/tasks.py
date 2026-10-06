@@ -348,6 +348,43 @@ def collect_public_eu_transparency():
     from scraper.public_records import collect
     return collect('eu_transparency')
 
+# Raport źródeł 6.10: nowe zbieracze (scraper.nowe_zrodla), każdy z własną flagą i pulsem.
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_videos():
+    from scraper.public_records import collect
+    return collect('videos')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_howtheyvote():
+    from scraper.public_records import collect
+    return collect('howtheyvote')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_wikidata():
+    from scraper.public_records import collect
+    return collect('wikidata')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_kohesio():
+    from scraper.public_records import collect
+    return collect('kohesio')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_fts():
+    from scraper.public_records import collect
+    return collect('fts')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_integrity_watch():
+    from scraper.public_records import collect
+    return collect('integrity_watch')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_mileage():
+    from scraper.public_records import collect
+    return collect('mileage')
+
 
 @shared_task(soft_time_limit=570, time_limit=600)
 def zasil_baze_task(lane='sejm', mode='noc'):

@@ -31,18 +31,23 @@ from scraper.public_records import (KRS_API, SEJM_SOURCES, SOURCES, START, TED_F
 
 LANES = {
     'sejm': ('votes', 'statements', 'interpellations', 'questions', 'consultations', 'processes', 'committees',
-             'assets', 'lobby_sejm'),
+             'assets', 'lobby_sejm', 'videos'),
     'inne': ('krs_changes', 'ted', 'lobby_mswia', 'pkw', 'eu_transparency'),
+    # Otwarte zbiory spoza administracji polskiej (raport źródeł 6.10): osobny pas, inne hosty.
+    'otwarte': ('howtheyvote', 'wikidata', 'kohesio', 'fts', 'integrity_watch', 'mileage'),
 }
 MODES = {'noc': range(1, 6), 'resztka': range(23, 24)}
 # Zapytań zasilania na dobę na źródło (bezpieczne domyślne; env PUBLIC_RECORDS_<ŹRÓDŁO>_BACKFILL_CAP, 1-20000).
 BACKFILL_CAP = {'votes': 1200, 'statements': 1500, 'interpellations': 300, 'questions': 300, 'consultations': 100,
                 'processes': 600, 'committees': 150, 'assets': 400, 'lobby_sejm': 20, 'krs_changes': 500, 'ted': 300,
-                'lobby_mswia': 20, 'pkw': 100, 'eu_transparency': 2}
+                'lobby_mswia': 20, 'pkw': 100, 'eu_transparency': 2,
+                'videos': 1500, 'howtheyvote': 1500, 'wikidata': 2, 'kohesio': 120, 'fts': 3, 'integrity_watch': 3,
+                'mileage': 400}
 # Szacunek wszystkich zapytań pełnej historii (X kadencja do 10.2026; strony po 20 pozycji), tylko do --plan.
 ESTIMATE = {'votes': 7400, 'statements': 26000, 'interpellations': 750, 'questions': 450, 'consultations': 600,
             'processes': 2100, 'committees': 45, 'assets': 1000, 'lobby_sejm': 5, 'lobby_mswia': 6, 'pkw': 150,
-            'eu_transparency': 1}
+            'eu_transparency': 1, 'videos': 4500, 'howtheyvote': 2600, 'wikidata': 2, 'kohesio': 105, 'fts': 6,
+            'integrity_watch': 3, 'mileage': 735}
 TED_PAGES_PER_MONTH = 65    # ok. 6500 ogłoszeń zamawiających z Polski miesięcznie, 100 na stronę
 LANE_NIGHT = 4500           # zapytań na pas w nocy: 5 h, odstęp hosta 3 s + czas odpowiedzi
 BZP_PAGES_PER_DAY = 30      # ok. 750 ogłoszeń BZP w dzień roboczy, 25 na stronę
@@ -86,6 +91,9 @@ def target(source, days=None):
         start = today - timedelta(days=int(days))
     elif source == 'ted':
         start = today - timedelta(days=ted_months() * 31)
+    elif source == 'fts':
+        # Pliki roczne FTS: obecne wieloletnie ramy finansowe (od 2021), env PUBLIC_RECORDS_FTS_FIRST_YEAR.
+        start = date(min(max(2014, int(os.environ.get('PUBLIC_RECORDS_FTS_FIRST_YEAR', '2021'))), today.year), 1, 1)
     else:
         start = START
     return max(start, START) if source in SEJM_SOURCES else start
@@ -230,7 +238,7 @@ def run(lane='sejm', mode='noc', seconds=480, force=False, now=None):
 
 def link_after(lane='sejm'):
     """Po zasileniu: dopięcie nowych dokumentów Sejmu do osób (bez sieci, idempotentne); wynik do raportu."""
-    if lane != 'sejm':
+    if lane not in ('sejm', 'otwarte'):
         return None
     from news.public_record_people import link_people
     result = link_people()

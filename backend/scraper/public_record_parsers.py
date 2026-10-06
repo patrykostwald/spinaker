@@ -447,6 +447,8 @@ LEGAL_FORM = re.compile(
     r'(sp(ó|o)łk|\bsp\.?\s*z\s*o\.?\s*o|\bs\.?\s?a\.?(?=\W|$)|\bp\.?\s?s\.?\s?a\b|\bsp\.?\s?[kjp]\b|'
     r'fundacj|stowarzysz|przedsi(ę|e)biorstw\w*\s+pa(ń|n)stw|sp(ó|o)łdziel|\bgmin|\bmiast|\bpowiat|wojew(ó|o)dztw|skarb\s+pa(ń|n)stwa|'
     r'uniwersytet|politechnik|akademi|instytut|szpital|zak(ł|l)ad|centrum|urz(ą|a)d|agencj|\bizba|konsorcj|\bgrupa|holding|'
+    r'szko(ł|l)|uczelni|przedszkol|o(ś|s)rod(ek|ka)|muzeum|bibliotek|teatr|parafi|zgromadzeni|zwi(ą|a)zek|komend|starostw|'
+    r'\bklub|kuratori|filharmoni|regionaln|krajow|narodow|pa(ń|n)stwow|'
     r'\b(ltd|limited|gmbh|ag|kg|s\.?r\.?o|a\.?s|inc|llc|plc|b\.?v|n\.?v|sarl|s\.?p\.?a|s\.?r\.?l|ab|a/s|kft|zrt|d\.?o\.?o|corp)\b)',
     re.I)
 NATURAL_PERSON = 'wykonawca - osoba fizyczna prowadząca działalność'

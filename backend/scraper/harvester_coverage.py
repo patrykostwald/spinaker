@@ -20,6 +20,13 @@ DIRECT_SCHEDULES = {
     'https://api-krs.ms.gov.pl': 'public-records-krs_changes (PUBLIC_RECORDS_KRS_CHANGES_ENABLED)',
     'https://api.ted.europa.eu': 'public-records-ted (PUBLIC_RECORDS_TED_ENABLED)',
     'https://ec.europa.eu/transparencyregister': 'public-records-eu_transparency (PUBLIC_RECORDS_EU_TRANSPARENCY_ENABLED)',
+    'https://howtheyvote.eu': 'public-records-howtheyvote (PUBLIC_RECORDS_HOWTHEYVOTE_ENABLED)',
+    'https://query.wikidata.org': 'public-records-wikidata (PUBLIC_RECORDS_WIKIDATA_ENABLED)',
+    'https://cohesiondata.ec.europa.eu': 'public-records-kohesio (PUBLIC_RECORDS_KOHESIO_ENABLED)',
+    'https://ec.europa.eu/budget/financial-transparency-system': 'public-records-fts (PUBLIC_RECORDS_FTS_ENABLED)',
+    'https://www.integritywatch.eu': 'public-records-integrity_watch (PUBLIC_RECORDS_INTEGRITY_WATCH_ENABLED)',
+    'https://jakglosuja.pl': 'public-records-mileage (PUBLIC_RECORDS_MILEAGE_ENABLED)',
+    'https://orka.sejm.gov.pl': 'public-records-mileage (PUBLIC_RECORDS_MILEAGE_ENABLED)',
 }
 
 DIRECT_NAMES = {

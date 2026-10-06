@@ -35,7 +35,12 @@ KRS_API = 'https://api-krs.ms.gov.pl/api/krs'
 TED_SEARCH = 'https://api.ted.europa.eu/v3/notices/search'
 TR_EXPORT = 'https://ec.europa.eu/transparencyregister/public/files/ODP/download/XML/latest'
 # Sejm term-scoped sources (term field, START as the earliest date).
-SEJM_SOURCES = {'votes', 'statements', 'interpellations', 'questions', 'consultations', 'assets', 'processes', 'committees'}
+SEJM_SOURCES = {'votes', 'statements', 'interpellations', 'questions', 'consultations', 'assets', 'processes', 'committees',
+                'videos'}
+# Europoseł w PublicRecordPerson: kadencja 0 = identyfikator Parlamentu Europejskiego (ParliamentaryRosterEntry source='ep').
+EP_TERM = 0
+# Reklamy polityczne w UE: Meta zakończyła je 6.10.2025 (rozporządzenie TTPA) - zbieramy tylko archiwum sprzed tej daty.
+META_ADS_ARCHIVE_END = date(2025, 10, 5)
 # Hosts outside the Sejm API: (host, allowed path prefixes, catalogue root, channel).
 EXTERNAL = {
     'krs_changes': ('api-krs.ms.gov.pl', ('/api/krs/Biuletyn/', '/api/krs/OdpisAktualny/'), 'https://api-krs.ms.gov.pl', 'api'),
@@ -71,13 +76,22 @@ SOURCES = {
     'consultations': Spec('Tabele konsultacji OSR', 30, 24),
     'pkw': Spec('Finanse partii i komitetów PKW', 40, 168),
     'assets': Spec('Indeks oświadczeń majątkowych', 60, 168),
-    'meta_ads': Spec('Archiwum reklam politycznych Meta', 30, 24),
+    'meta_ads': Spec('Archiwum reklam politycznych Meta (do 5.10.2025, TTPA)', 30, 24),
     'processes': Spec('Procesy legislacyjne Sejmu', 150, 6),
     'committees': Spec('Komisje sejmowe i ich posiedzenia', 100, 24),
     'krs_changes': Spec('Zmiany w KRS obserwowanych podmiotów', 60, 24, lookback_days=3, overlap_days=2),
     'ted': Spec('Ogłoszenia TED zamawiających z Polski', 60, 24, lookback_days=14, overlap_days=2),
     'eu_transparency': Spec('Rejestr przejrzystości UE (Polska)', 2, 168),
+    # Raport źródeł 6.10 (tydzień 1-2), kod w scraper.nowe_zrodla
+    'videos': Spec('Transmisje wideo Sejmu (sala i komisje)', 120, 6, lookback_days=14, overlap_days=3),
+    'howtheyvote': Spec('Głosowania europosłów z Polski (HowTheyVote.eu)', 300, 24, lookback_days=45, overlap_days=7),
+    'wikidata': Spec('Tożsamości osób publicznych (Wikidata)', 4, 168),
+    'kohesio': Spec('Fundusze UE 2014-2020 w Polsce (Kohesio)', 130, 168),
+    'fts': Spec('Budżet UE - beneficjenci z Polski (FTS)', 3, 720),
+    'integrity_watch': Spec('Dochody i spotkania europosłów (Integrity Watch EU)', 4, 168),
+    'mileage': Spec('Kilometrówki i biura posłów (jakglosuja.pl)', 150, 720),
 }
+NEW_SOURCES = {'videos', 'howtheyvote', 'wikidata', 'kohesio', 'fts', 'integrity_watch', 'mileage'}
 
 
 def setting_int(source, suffix, default, maximum):
@@ -100,6 +114,8 @@ def enqueue(state, url, kind, context=None):
 
 
 def figure_for(term, mp_id):
+    if term == EP_TERM:
+        return figure_for_ep(mp_id)
     # Require a term-scoped roster identity or a term-scoped role. A bare
     # import_key cannot establish the term and a surname never establishes ID.
     figures = set(PublicFigure.objects.filter(parliamentary_roster_entry__source='sejm',
@@ -110,8 +126,16 @@ def figure_for(term, mp_id):
     return next(iter(figures)) if len(figures) == 1 else None
 
 
+def figure_for_ep(ep_id):
+    """Europoseł: wyłącznie oficjalny identyfikator PE z rosteru (ParliamentaryRosterEntry source='ep'), nigdy nazwisko."""
+    figures = set(PublicFigure.objects.filter(parliamentary_roster_entry__source='ep',
+        parliamentary_roster_entry__external_id=str(ep_id)).values_list('pk', flat=True))
+    figures.update(PublicFigureRole.objects.filter(import_key=f'ep:{ep_id}').values_list('public_figure_id', flat=True))
+    return next(iter(figures)) if len(figures) == 1 else None
+
+
 def save(job, raw, kind, external_id, *, data=None, title='', text='', source_url=None,
-         date_value=None, people=(), print_number='', receipt=None):
+         date_value=None, people=(), print_number='', receipt=None, persons=()):
     defaults = dict(data=data or {}, title=title, text=text,
         term=TERM if job.state.source in SEJM_SOURCES else None,
         source_url=source_url or job.url, response_url=job.url, response_sha256=sha256(raw).hexdigest(),
@@ -120,11 +144,16 @@ def save(job, raw, kind, external_id, *, data=None, title='', text='', source_ur
         external_id=f'print/{TERM}/{print_number}').first() if print_number else None)
     record, _ = PublicRecord.objects.update_or_create(source=job.state.source, kind=kind,
         external_id=str(external_id), defaults=defaults)
-    ids = {int(i) for i in people if i and int(i) > 0}
-    record.people.exclude(mp_id__in=ids, term=TERM).delete()
-    for mp_id in ids:
-        PublicRecordPerson.objects.update_or_create(record=record, term=TERM, mp_id=mp_id,
-            defaults={'figure_id': figure_for(TERM, mp_id)})
+    # people: posłowie X kadencji; persons: pary (kadencja, identyfikator), w tym (EP_TERM, id PE) dla europosłów.
+    pairs = {(TERM, int(i)) for i in people if i and int(i) > 0}
+    pairs.update((int(t), int(i)) for t, i in persons if i and int(i) > 0)
+    keep = Q(pk__in=[])
+    for term, mp_id in pairs:
+        keep |= Q(term=term, mp_id=mp_id)
+    record.people.exclude(keep).delete()
+    for term, mp_id in sorted(pairs):
+        PublicRecordPerson.objects.update_or_create(record=record, term=term, mp_id=mp_id,
+            defaults={'figure_id': figure_for(term, mp_id)})
     return record
 
 
@@ -141,6 +170,9 @@ def page_url(base, context, offset=0):
 
 def seed(state, since, incremental=False, backfill=False):
     source = state.source
+    if source in NEW_SOURCES:
+        from scraper import nowe_zrodla
+        return nowe_zrodla.seed(state, since, incremental=incremental, backfill=backfill)
     if backfill and source in {'krs_changes', 'ted'}:
         from scraper.zasil_baze import seed_history
         if seed_history(state, since):
@@ -194,9 +226,13 @@ def seed(state, since, incremental=False, backfill=False):
         pages = [p.strip() for p in os.environ.get('META_AD_LIBRARY_PAGE_IDS', '').split(',') if p.strip()]
         if not pages or any(not p.isdigit() for p in pages) or len(pages) > 100:
             raise ValueError('meta_page_ids_required')
+        # Od 6.10.2025 Meta nie emituje reklam politycznych w UE (TTPA): tylko archiwum do META_ADS_ARCHIVE_END.
+        until = min(timezone.localdate(), META_ADS_ARCHIVE_END)
+        if since > until:
+            return
         filters = {'ad_type': 'POLITICAL_AND_ISSUE_ADS', 'ad_reached_countries': '["PL"]',
             'ad_active_status': 'ALL',
-            'ad_delivery_date_min': since.isoformat(), 'ad_delivery_date_max': timezone.localdate().isoformat(),
+            'ad_delivery_date_min': since.isoformat(), 'ad_delivery_date_max': until.isoformat(),
             'fields': 'id,page_id,page_name,bylines,currency,spend,impressions,ad_creation_time,ad_delivery_start_time,ad_delivery_stop_time,delivery_by_region,ad_creative_bodies',
             'limit': 20}
         base = f'https://graph.facebook.com/{version}/ads_archive'
@@ -220,6 +256,9 @@ def source_access(job):
         p.path.startswith('/finansowanie-polityki/') or p.path.startswith('/uploaded_files/'))
     meta = source == 'meta_ads' and p.hostname == 'graph.facebook.com' and re.fullmatch(r'/v\d+\.0/ads_archive', p.path)
     external = EXTERNAL.get(source)
+    if source in NEW_SOURCES and source != 'videos':
+        from scraper.nowe_zrodla import HOSTS
+        external = next((h for h in HOSTS[source] if p.hostname == h[0] and p.path.startswith(h[1])), HOSTS[source][0])
     other = bool(external) and p.hostname == external[0] and p.path.startswith(external[1])
     if external:
         api = False  # A new external collector never borrows the Sejm card.
@@ -232,7 +271,7 @@ def source_access(job):
     instruction = approved_instruction(provider, channel, job.url)
     if instruction is None:
         raise AccessDenied('no_approved_instruction')
-    if job.kind in {'statement', 'osr_text', 'register_pdf', 'meta_page'} and instruction.allowed_scope not in {'content', 'snapshot'}:
+    if job.kind in {'statement', 'osr_text', 'register_pdf', 'meta_page', 'committee_transcript'} and instruction.allowed_scope not in {'content', 'snapshot'}:
         raise AccessDenied('content_scope_required')
     return provider, instruction
 
@@ -267,7 +306,10 @@ def fetch(job, token, backfill=None):
         state.save(update_fields=['budget_day', 'requests_today', 'next_request_at'])
     if job.kind == 'tr_export':
         return transparency_download(job.url, provider, instruction), None
-    headers, method, body = None, 'GET', None
+    from scraper import nowe_zrodla
+    if job.kind in nowe_zrodla.DOWNLOADS:
+        return nowe_zrodla.download(job, provider, instruction), None
+    headers, method, body = nowe_zrodla.headers(job), 'GET', None
     if job.kind == 'ted_page':
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
         method, body = 'POST', json.dumps(job.context['body']).encode()
@@ -597,7 +639,10 @@ def handle(job, raw, receipt=None):
                 record.data = {**record.data, 'status': 'brak_w_eksporcie'}
                 record.save(update_fields=['data'])
     else:
-        raise ValueError('unknown_job_kind')
+        from scraper.nowe_zrodla import HANDLERS
+        if kind not in HANDLERS:
+            raise ValueError('unknown_job_kind')
+        HANDLERS[kind](job, raw, put)
 
 
 def document_text(raw, url):
@@ -676,7 +721,7 @@ def collect(source, *, since=None, max_requests=None, backfill=None):
             if job is None:
                 status = 'deferred' if state.jobs.filter(done=False).exists() else 'ok'
                 break
-            binary = job.kind in {'osr_text', 'register_pdf', 'pkw_xlsx', 'tr_export'}
+            binary = job.kind in {'osr_text', 'register_pdf', 'pkw_xlsx', 'tr_export', 'fts_year', 'iw_meetings', 'office_pdf'}
             if binary and documents:
                 break  # At most one document per tick, never a large-file loop.
             requests += 1
