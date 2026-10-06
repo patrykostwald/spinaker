@@ -21,6 +21,7 @@ export type PersonalContextThread = {
   opinions?: { positive: number; doubt: number; negative: number };
   comments_count?: number;
   id: number;
+  kind?: string;
   title: string;
   description: string;
   query: string;
@@ -43,6 +44,8 @@ export type PersonalThreadItemInput = { article_id?: number; link_id?: number; b
 export type PersonalContextThreadInput = {
   continues?: number | null;
   repin_of?: number | null;
+  /** Rodzaj spinki czytelnika (właściciel 6.10): kontekst, sprzecznosc, sprawdzam, pytanie. */
+  kind?: string;
   title: string;
   description: string;
   query: string;

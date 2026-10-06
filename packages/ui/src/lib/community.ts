@@ -9,6 +9,9 @@ export type CommunityThreadSummary = {
   id: number;
   title: string;
   description: string;
+  /** Rodzaj spinki (właściciel 6.10), np. diagnoza, kontekst; patrz lib/threadKind.ts. */
+  kind?: string;
+  kind_label?: string;
   author: string;
   display_name?: string;
   x_profile?: string | null;

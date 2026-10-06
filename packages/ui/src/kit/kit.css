@@ -11034,3 +11034,67 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
   .px-bar { margin-bottom: -36px; }
   .px-hero { padding-top: 0; }
 }
+/* Nagłówek spinki (właściciel 6.10): linia meta „AUTOR · RODZAJ” (autor w swoim kolorze, rodzaj w kolorze przeważającej
+   reakcji czytelników, bez reakcji neutralny), pod nią sam tytuł do 2 linii, niżej stałe pole opisu. Ta sama lewa krawędź. */
+.sc-sp-meta { margin: 0; display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 12px; line-height: 16px; height: 16px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; color: var(--sc-text-2); }
+.sc-sp-meta__who { text-decoration: none; flex: none; }
+a.sc-sp-meta__who:hover { text-decoration: underline; text-underline-offset: 3px; }
+.sc-sp-meta__sep { color: var(--sc-text-3); font-weight: 400; }
+.sc-sp-meta__kind { color: var(--sc-text-2); transition: color .3s; overflow: hidden; text-overflow: ellipsis; }
+.sc-sp-head .sc-sp-meta { margin-bottom: -4px; }
+@media (prefers-reduced-motion: reduce) { .sc-sp-meta__kind { transition: none; } }
+/* wiersz listy: rodzaj nad tytułem w środkowej kolumnie */
+.sc-trow__main { grid-template-rows: 1fr auto auto auto 1fr !important; }
+.sc-trow__main .sc-trow__kind { grid-column: 3; grid-row: 2 !important; font-size: 11px; line-height: 14px; height: 14px; margin: 0 0 4px; }
+.sc-trow__main .sc-trow__title { grid-row: 3 !important; }
+.sc-trow__main .sc-trow__desc { grid-row: 4 !important; }
+.sc-trow__main:not(:has(.sc-trow__desc)) .sc-trow__title { grid-row: 3 / span 2 !important; align-self: start; }
+@media (max-width: 600px) { .sc-thread-strip--row .sc-trow__main { grid-template-rows: none !important; } .sc-trow__main .sc-trow__kind { grid-column: 1 !important; grid-row: auto !important; margin: 0; } }
+.sc-fullhead { display: grid; gap: 6px; min-width: 0; } .sc-fullhead h2 { margin: 0; }
+
+/* Boksy pełnej spinki (właściciel 6.10): wydłużone w dół, aby odstęp od boksów do paska komentarzy był równy
+   odstępowi od opisu do boksów (32 px); równe wysokości, treść u góry, źródło przy dolnej krawędzi. */
+.sc-trop-overlay__body > article { --abox-h: clamp(260px, calc(100dvh - 560px), 360px); }
+.sc-trop-overlay__body > article .sc-abox { height: var(--abox-h) !important; }
+.sc-trop-overlay__body > article .sc-alnk { height: var(--abox-h); }
+.sc-trop-overlay__body > article .sc-thread-strip__track:has(.sc-abox):not(#_) { padding-bottom: 0 !important; }
+.sc-trop-overlay__body > article .sc-abox__body { max-height: none; -webkit-line-clamp: 9; align-self: start; }
+@media (min-width: 768px) {
+  .sc-trop-overlay__body > article:has(.sc-abox) > .sc-thread-social { margin-top: 0 !important; padding-top: 8px !important; }
+  .sc-trop-overlay__body > article:has(.sc-abox) > .sc-thread-social > .sc-social-comments:first-child { margin-top: 0 !important; }
+}
+@media (max-width: 767px) {
+  .sc-trop-overlay__body > article { --abox-h: 300px; }
+  .sc-trop-overlay__body > article:has(.sc-abox) .sc-rate-all { margin-top: 38px; }
+}
+
+/* Połączenie (właściciel 6.10): bez pigułki - linia, ikona, linia; słowo nad ikoną (w miejscu dawnego „1 → 2”),
+   krótkie wyjaśnienie pod nią; kolor z ocen; cały pas to cel kliknięcia, nic się nie przesuwa po kliknięciu. */
+.sc-alnk::before, .sc-alnk::after { content: ""; position: absolute; top: 50%; height: 2px; margin-top: -1px; background: var(--rc); pointer-events: none; }
+.sc-alnk::before { left: 0; right: calc(50% + 22px); }
+.sc-alnk::after { left: calc(50% + 22px); right: 0; }
+.sc-alnk__word { align-self: end; margin-bottom: 8px; padding: 0 6px; font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--sc-text); text-align: center; white-space: nowrap; }
+.sc-alnk__icon { width: 44px; height: 44px; display: grid; place-items: center; color: var(--rc, var(--sc-accent)); transition: transform .2s; }
+.sc-alnk__icon .sc-glyph { color: inherit; }
+.sc-alnk > button:hover .sc-alnk__icon, .sc-alnk > button:focus-visible .sc-alnk__icon { transform: scale(1.12); }
+.sc-alnk__why { margin-top: 8px !important; }
+@media (prefers-reduced-motion: reduce) { .sc-alnk__icon { transition: none; } }
+
+/* Kreator spinki (właściciel 6.10): na starcie wybór rodzaju - duże przyciski 44 px z ikoną i jednym zdaniem. */
+.sc-kind-pick { border: 0; margin: 0 0 8px; padding: 0; min-width: 0; }
+.sc-kind-pick legend { padding: 0; margin-bottom: 10px; font-weight: 600; }
+.sc-kind-pick__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sc-kind-pick__opt { all: unset; box-sizing: border-box; min-height: 64px; padding: 12px 14px; display: grid; grid-template-columns: 26px minmax(0, 1fr); grid-template-rows: auto auto;
+  column-gap: 12px; row-gap: 2px; align-items: center; cursor: pointer; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--sc-text) 16%, transparent);
+  background: color-mix(in srgb, var(--sc-text) 3%, var(--sc-bg)); transition: border-color .2s, background-color .2s; }
+.sc-kind-pick__opt .sc-glyph { grid-row: 1 / span 2; color: var(--sc-text-2); }
+.sc-kind-pick__opt b { font-size: 15px; line-height: 1.3; color: var(--sc-text); }
+.sc-kind-pick__opt small { font-size: 13px; line-height: 1.4; color: var(--sc-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-kind-pick .sc-kind-pick__opt:hover:not([aria-checked="true"]) { border-color: color-mix(in srgb, var(--sc-text) 32%, transparent); }
+.sc-kind-pick .sc-kind-pick__opt[aria-checked="true"] { border-color: var(--sc-accent); background: color-mix(in srgb, var(--sc-accent) 10%, var(--sc-bg)); }
+.sc-kind-pick__opt[aria-checked="true"] .sc-glyph { color: var(--sc-accent); }
+.sc-kind-pick__opt:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.sc-kind-pick__note { margin: 8px 0 0; font-size: 13px; color: var(--sc-text-3); }
+@media (max-width: 600px) { .sc-kind-pick__grid { grid-template-columns: minmax(0, 1fr); } .sc-kind-pick__opt small { white-space: normal; } }
+@media (prefers-reduced-motion: reduce) { .sc-kind-pick__opt { transition: none; } }

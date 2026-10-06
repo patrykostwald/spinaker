@@ -19,15 +19,17 @@ import { CharacterCount } from './community/SocialPrimitives';
 import { SignedOutPanel } from './MojeKonto';
 import { XPostCard } from './community/XPostCard';
 import { Loading } from "../kit/Loading";
+import { Glyph } from './community/ThreadSteps';
+import { READER_KINDS, THREAD_KINDS, type ThreadKind } from '../lib/threadKind';
 
 type Box = { key: string; material: ThreadElement | null; note: string; link_note: string };
-type Draft = { title: string; items: Box[]; isPublic: boolean };
+type Draft = { kind: ThreadKind; title: string; items: Box[]; isPublic: boolean };
 // wyjaśnienie autora = „tytuł” boksu; może być długie (właściciel 3.10)
 const NOTE_LIMIT = 4000;
 const LINK_NOTE_LIMIT = 200;
 const MIN_PUBLIC_ITEMS = 2;
 const blankBox = (key: string): Box => ({ key, material: null, note: '', link_note: '' });
-const initialDraft = (): Draft => ({ title: '', items: [blankBox('first')], isPublic: false });
+const initialDraft = (): Draft => ({ kind: 'kontekst', title: '', items: [blankBox('first')], isPublic: false });
 const serialize = (draft: Draft) => JSON.stringify(draft);
 const withoutFirstLink = (items: Box[]) => items.map((item, index) => index === 0 ? { ...item, link_note: '' } : item);
 
@@ -40,7 +42,8 @@ function fromThread(thread: PersonalContextThread): Draft {
   const items = [...elements].sort((a, b) => a.position - b.position).map(element => ({
     key: `${element.kind}:${element.id}`, material: element, note: element.note ?? '', link_note: element.link_note ?? '',
   }));
-  return { title: thread.title, isPublic: Boolean(thread.is_public), items: items.length ? withoutFirstLink(items) : [blankBox('first')] };
+  const kind = READER_KINDS.includes(thread.kind as ThreadKind) ? thread.kind as ThreadKind : 'kontekst';
+  return { kind, title: thread.title, isPublic: Boolean(thread.is_public), items: items.length ? withoutFirstLink(items) : [blankBox('first')] };
 }
 
 function domain(url: string) {
@@ -150,6 +153,29 @@ function MaterialPicker({ selected, onSelect }: { selected: Set<string>; onSelec
   </div>;
 }
 
+/** Wybór rodzaju spinki: grupa przełączników (strzałki zmieniają wybór), cele co najmniej 44 px (prawo Fittsa). */
+function KindPicker({ value, locked, onChange }: { value: ThreadKind; locked: boolean; onChange: (kind: ThreadKind) => void }) {
+  const legend = useId();
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  function key(event: React.KeyboardEvent, index: number) {
+    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const next = (index + step + READER_KINDS.length) % READER_KINDS.length;
+    onChange(READER_KINDS[next]); refs.current[next]?.focus();
+  }
+  return <fieldset className="sc-kind-pick" disabled={locked}>
+    <legend id={legend}>Jaką spinkę układasz?</legend>
+    <div className="sc-kind-pick__grid" role="radiogroup" aria-labelledby={legend}>
+      {READER_KINDS.map((kind, index) => <button key={kind} ref={node => { refs.current[index] = node; }} type="button" role="radio" className="sc-kind-pick__opt"
+        aria-checked={value === kind} tabIndex={value === kind ? 0 : -1} onClick={() => onChange(kind)} onKeyDown={event => key(event, index)}>
+        <Glyph name={THREAD_KINDS[kind].glyph} size={24} /><b>{THREAD_KINDS[kind].label}</b><small>{THREAD_KINDS[kind].hint}</small>
+      </button>)}
+    </div>
+    <p className="sc-kind-pick__note">{locked ? 'Rodzaj opublikowanej spinki jest stały.' : 'Rodzaj zmienisz do chwili publikacji. Widać go nad tytułem.'}</p>
+  </fieldset>;
+}
+
 export function MojaNitkaEditor({ threadId, counterTo }: { threadId?: number; counterTo?: number }) {
   const { account, ownerId } = useOwnerId();
   if (account.isPending) return <p role="status" className="sc-account-empty">Sprawdzam logowanie…</p>;
@@ -257,7 +283,7 @@ function Editor({ ownerId, threadId, counterTo }: { ownerId: number; threadId?: 
     try {
       if (makePublic) await apiWrite('/api/account/me/', { accepted_terms_version: TERMS_VERSION }, 'PATCH');
       const previous = thread.data;
-      const result = await savePersonalThread({ title: draft.title.trim(),
+      const result = await savePersonalThread({ kind: draft.kind, title: draft.title.trim(),
         description: previous?.description ?? '', query: previous?.query ?? '', categories: previous?.categories ?? [],
         topics: previous?.topics ?? [], source_ids: previous?.source_ids ?? [],
         items: draft.items.filter(item => item.material).map((item, index) => ({
@@ -302,6 +328,9 @@ function Editor({ ownerId, threadId, counterTo }: { ownerId: number; threadId?: 
   if (threadId && thread.isError) return <div className="sc-account"><AccountDataState query={thread} empty="Nie znaleziono spinki." /></div>;
 
   return <form className="sc-account sc-simple-thread" onSubmit={submit} noValidate aria-label="Kreator spinki">
+    {/* na starcie rodzaj spinki (właściciel 6.10): duże przyciski z ikoną i jednym zdaniem, domyślnie kontekst;
+        można zmienić do publikacji, potem rodzaj jest częścią spinki */}
+    <KindPicker value={draft.kind} locked={draft.isPublic} onChange={kind => setDraft(current => ({ ...current, kind }))} />
     <label className="sc-simple-thread__title">Tytuł spinki
       <input value={draft.title} maxLength={THREAD_LIMITS.title} required placeholder="O czym chcesz opowiedzieć?"
         onChange={event => setDraft(current => ({ ...current, title: event.target.value }))} />

@@ -228,6 +228,8 @@ def thread_summary(thread, counts):
     identity = public_identity(thread.owner)
     items = [item for item in thread.items.all() if not (item.link_id and item.link.hidden_at)]
     return {'id': thread.pk, 'title': thread.title, 'description': thread.description, 'topics': thread.topics,
+            # rodzaj spinki w linii meta nagłówka (właściciel 6.10)
+            'kind': thread.kind, 'kind_label': dict(thread.KINDS).get(thread.kind, ''),
             'author': 'Dr. Spin (AI)' if ai else thread.owner.username,
             'display_name': 'Dr. Spin (AI)' if ai else identity['display_name'], 'x_profile': identity['x_profile'],
             # kolor autora do rozjaśnienia wiersza z lewej (właściciel 6.10): Dr. Spin zawsze niebieski, czytelnik - kolor nicka

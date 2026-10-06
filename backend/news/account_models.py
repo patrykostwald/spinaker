@@ -123,6 +123,13 @@ class PersonalContextThread(models.Model):
         on_delete=models.CASCADE, related_name='context_thread')
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
         related_name='personal_context_threads')
+    # rodzaj spinki w nagłówku (właściciel 6.10): Dr. Spin ma rodzaje z jednego szablonu tytułów „Rodzaj: synteza”
+    # (thread_review.EDITOR), czytelnik wybiera jeden z 4 rodzajów na starcie kreatora (Konsylium 2357: 4 szablony)
+    AI_KINDS = [('diagnoza', 'Diagnoza'), ('przekaz_dnia', 'Przekaz dnia'), ('nowa_narracja', 'Nowa narracja'),
+                ('sygnal_lobbingu', 'Sygnał lobbingu')]
+    READER_KINDS = [('kontekst', 'Kontekst'), ('sprzecznosc', 'Sprzeczność'), ('sprawdzam', 'Sprawdzam'), ('pytanie', 'Pytanie')]
+    KINDS = AI_KINDS + READER_KINDS
+    kind = models.CharField(max_length=16, choices=KINDS, default='kontekst')
     title = models.TextField()
     description = models.CharField(max_length=500, blank=True, default='')
     query = models.CharField(max_length=200, blank=True, default='')
@@ -144,6 +151,22 @@ class PersonalContextThread(models.Model):
                        models.Q(owner__isnull=True, diagnosis__isnull=True, narrative_message__isnull=False, signal_kind='') |
                        models.Q(owner__isnull=True, diagnosis__isnull=True, narrative_message__isnull=True, signal_kind__in=['lobbying', 'new_narrative'], signal_key__isnull=False)),
             name='context_thread_origin_091')]
+
+    def origin_kind(self):
+        """Rodzaj wynikający z pochodzenia spinki Dr. Spina; None u czytelnika (wybiera sam)."""
+        if self.diagnosis_id:
+            return 'diagnoza'
+        if self.narrative_message_id:
+            return 'przekaz_dnia'
+        return {'lobbying': 'sygnal_lobbingu', 'new_narrative': 'nowa_narracja'}.get(self.signal_kind)
+
+    def save(self, *args, **kwargs):
+        # rodzaj Dr. Spina wynika z pochodzenia; czytelnik ma tylko rodzaje czytelników (domyślnie kontekst)
+        origin = self.origin_kind()
+        self.kind = origin or (self.kind if self.kind in dict(self.READER_KINDS) else 'kontekst')
+        if kwargs.get('update_fields') is not None:
+            kwargs['update_fields'] = list(set(kwargs['update_fields']) | {'kind'})
+        super().save(*args, **kwargs)
 
 
 class PersonalContextThreadItem(models.Model):

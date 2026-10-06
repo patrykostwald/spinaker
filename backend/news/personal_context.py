@@ -96,6 +96,8 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
     comments_count = serializers.SerializerMethodField()
     # widoczne na liście: tytuł w jednym wierszu, podtytuł w dwóch (pomiar przy 1280 px, właściciel 4.10)
     title = serializers.CharField(max_length=65)
+    # czytelnik wybiera rodzaj na starcie kreatora (właściciel 6.10); rodzaje Dr. Spina są zarezerwowane
+    kind = serializers.ChoiceField(choices=PersonalContextThread.READER_KINDS, required=False)
     description = serializers.CharField(max_length=170, required=False, allow_blank=True)
     source_ids = serializers.PrimaryKeyRelatedField(source='sources', many=True,
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
@@ -110,7 +112,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PersonalContextThread
-        fields = ['id', 'continues', 'repin_of', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
+        fields = ['id', 'kind', 'continues', 'repin_of', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
                   'articles', 'items', 'elements', 'is_public', 'published_at', 'admitted_at', 'hidden_at', 'created_at', 'updated_at', 'opinions', 'comments_count']
         read_only_fields = ['id', 'articles', 'elements', 'published_at', 'admitted_at', 'hidden_at', 'created_at', 'updated_at']
 

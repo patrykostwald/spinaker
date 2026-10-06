@@ -7,6 +7,8 @@ import { getCommunityThread, getCommunityThreads } from '../../lib/community';
 import { ThreadStrip } from './ThreadStrip';
 import { setReactionMood, sumCounts } from '../../lib/mood';
 import { Loading } from "../../kit/Loading";
+import { ThreadMeta } from './ThreadMeta';
+import { displayTitle, THREAD_KINDS, threadKind } from '../../lib/threadKind';
 
 /** Płynne przenikanie przy otwieraniu i zamykaniu pełnego ekranu (View Transitions); bez wsparcia albo przy ograniczonym ruchu - od razu. */
 export function viewTransition(update: () => void) {
@@ -124,7 +126,7 @@ export function ThreadOverlay({ id: initial, onClose, order = [], asPage = false
     <div className="sc-trop-overlay__bar">
       <button ref={close} type="button" className="sc-trop-overlay__back" onClick={leave}>← Wszystkie spinki</button>
       {/* tytuł w linii „Wszystkie spinki”, od krawędzi pierwszego boksu; pod nim cały podtytuł (właściciel 4.10) */}
-      {thread && <p className="sc-trop-overlay__title" aria-hidden="true"><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</p>}
+      {thread && <p className="sc-trop-overlay__title" aria-hidden="true"><span>{THREAD_KINDS[threadKind(thread)].label}:</span> {displayTitle(thread)}</p>}
       <span className="sc-trop-overlay__who">{thread ? (thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`) : ''}</span>
       {following !== null && <button type="button" className="sc-trop-overlay__following" onClick={() => viewTransition(() => open(following))}>Następna spinka →</button>}
     </div>
@@ -138,7 +140,9 @@ export function ThreadOverlay({ id: initial, onClose, order = [], asPage = false
       {thread && <>
         {/* podtytuł zawsze, także u Dr. Spina (pisze go Redaktor tytułów) */}
         <header className="sc-sp-head" ref={head}>
-          <Title className="sc-sp-title" title={thread.title} ref={titleRef} tabIndex={-1}><span>{thread.is_ai ? 'Dr. Spin (AI)' : thread.display_name || `@${thread.author}`}:</span> {thread.title}</Title>
+          {/* linia meta „AUTOR · RODZAJ”, pod nią sam tytuł (do 2 linii), niżej stałe pole opisu (właściciel 6.10) */}
+          <ThreadMeta thread={thread} />
+          <Title className="sc-sp-title" title={thread.title} ref={titleRef} tabIndex={-1}>{displayTitle(thread)}</Title>
           <p className="sc-sp-desc" aria-live={note?.auto ? 'off' : 'polite'} data-note={note ? '' : undefined}>{note ? <><b>{note.label}</b>{note.text}</> : thread.description || 'Autor nie dodał opisu tej spinki.'}</p>
         </header>
         <ThreadStrip key={thread.id} thread={thread} items={thread.items} full onNote={setNote} />

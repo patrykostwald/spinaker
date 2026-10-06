@@ -13,6 +13,8 @@ import { setReactionMood, sumCounts } from '../../lib/mood';
 import { spinkaCsv, spinkaMarkdown } from '../../lib/spinkaExport';
 import { RepinPanel } from './RepinPanel';
 import { clipColor, clipHue, clipScore, reactionTint } from '../../lib/clipColor';
+import { authorColor, displayTitle } from '../../lib/threadKind';
+import { ThreadMeta } from './ThreadMeta';
 
 /** Rodzaj boksu do koloru (kwadraciki w wierszu, pasek z boku karty). */
 const kindOf = (item: ThreadElement) => item.box_type ?? (item.kind === 'link' ? 'link' : 'article');
@@ -198,11 +200,13 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       <h2 className="sc-trow__h"><button type="button" className="sc-trow__main" aria-expanded={expanded} aria-controls={`${uid}-track`} onClick={onFullscreen ? undefined : toggle}>
         {/* obok awatara: czas publikacji nad nazwą autora, dalej tytuł (właściciel 3.10) */}
         <span className="sc-trow__by"><span className="sc-trow__when">{thread.published_at && <time dateTime={thread.published_at}>{ago(thread.published_at)}</time>}{badge && <span className="sc-trow__badge">{badge}</span>}</span>
-          <span className="sc-trow__who"><b>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}</span></span>
+          <span className="sc-trow__who"><b style={{ color: authorColor(thread) }}>{thread.is_ai ? 'Dr. Spin' : thread.display_name || `@${thread.author}`}</b>{thread.is_ai && <span className="sc-trow__ai">AI</span>}</span></span>
         {/* miniatura pierwszego boksu między autorem a tytułem (właściciel 5.10); bez obrazka kafelek z rodzajem boksu */}
         <span className="sc-trow__thumb" aria-hidden="true" data-card={thumb.includes('/card.png') || undefined}>{thumb ? <img src={thumb} alt="" loading="lazy" decoding="async" /> : <span>{TYPES[(first?.box_type ?? '') as keyof typeof TYPES] ?? 'Spinka'}</span>}</span>
         {/* przepięcia jako mała etykieta przy tytule = sygnał sporu (propozycja Qwen, 1. miejsce Konsylium 0104, właściciel 4.10) */}
-        <span className="sc-trow__title" title={thread.title}>{thread.title}{Boolean(thread.repins?.length) && <span className="sc-trow__repin-tag" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}>⇄ {thread.repins!.length}</span>}</span>
+        {/* rodzaj spinki nad tytułem jak w nagłówku widoku; autor stoi już z lewej (właściciel 6.10) */}
+        <ThreadMeta thread={thread} withAuthor={false} className="sc-sp-meta sc-trow__kind" />
+        <span className="sc-trow__title" title={thread.title}>{displayTitle(thread)}{Boolean(thread.repins?.length) && <span className="sc-trow__repin-tag" title="Przepięcia tej spinki" aria-label={`Przepięcia: ${thread.repins!.length}`}>⇄ {thread.repins!.length}</span>}</span>
         {thread.description && !thread.signal_kind && !thread.narrative && <span className="sc-trow__desc">{thread.description}</span>}
       </button></h2>
       {/* Licznik spinki (właściciel 5.10): ikonka zatrzasku i liczba połączeń w kolorze średniej oceny;
@@ -229,7 +233,7 @@ export function ThreadStrip({ thread, items = thread.preview ?? [], full = false
       </span>
     </header> : full ? <header className="sc-thread-strip__head sc-thread-strip__head--full">
       {/* otwarta spinka: jeden wiersz „Autor: tytuł”, z prawej data i komentarze; „Zgłoś” jest w pasku akcji (właściciel 3.10) */}
-      <h2 className="sc-fullhead"><span className="sc-fullhead__who">{thread.is_ai ? 'Dr. Spin (AI)' : <Link href={`/profile/${encodeURIComponent(thread.author)}`}>{thread.display_name || `@${thread.author}`}</Link>}:</span> {thread.title}</h2>
+      <div className="sc-fullhead"><ThreadMeta thread={thread} /><h2>{displayTitle(thread)}</h2></div>
       {/* przepięcia na górze, wyśrodkowane w linii tytułu (właściciel 4.10) */}
       {(thread.repin_of || Boolean(thread.repins?.length)) && <nav className="sc-repins" aria-label="Przepięcia">
         {thread.repin_of && <Link href={`/spinki/${thread.repin_of}`}>Przepięcie innej spinki: zobacz oryginał →</Link>}
@@ -371,14 +375,15 @@ function ABox({ item, index, count, counts, highlight, onOpen }: { item: ThreadE
     </button>
   </li>;
 }
-/** Połączenie pełnej spinki (kierunek A): znacznik z ikoną i słowem na linii w kolorze ocen, wyjaśnienie zawsze pod spodem. */
+/** Połączenie pełnej spinki (kierunek A, właściciel 6.10): linia - ikona - linia w kolorze ocen, bez pigułki;
+ *  słowo połączenia nad ikoną, krótkie wyjaśnienie pod nią. Cały pas jest celem kliknięcia (co najmniej 44 px). */
 function AJoint({ item, index, counts, onOpen, onShow }: { item: ThreadElement; index: number; counts?: { positive: number; doubt: number; negative: number }; onOpen: () => void; onShow: (on: boolean) => void }) {
   const word = LINK_WORDS[item.link_kind ?? ''] ?? 'połączenie';
   return <li className="sc-alnk" style={{ ['--rc' as string]: clipColor(counts) }}>
     <button type="button" onClick={onOpen} onMouseEnter={() => onShow(true)} onMouseLeave={() => onShow(false)} onFocus={() => onShow(true)} onBlur={() => onShow(false)}
       aria-label={`Połączenie ${index} → ${index + 1}: ${word}. ${item.link_note || ''}`}>
-      <span className="sc-alnk__step">{index} → {index + 1}</span>
-      <span className="sc-rel"><Glyph name={LINK_GLYPH[item.link_kind ?? ''] ?? 'pin'} />{word}</span>
+      <span className="sc-alnk__word">{word}</span>
+      <span className="sc-alnk__icon"><Glyph name={LINK_GLYPH[item.link_kind ?? ''] ?? 'pin'} size={26} /></span>
       <span className="sc-alnk__why">{item.link_note || 'Autor nie opisał tego połączenia.'}</span>
     </button>
   </li>;
