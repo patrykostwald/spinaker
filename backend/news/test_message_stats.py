@@ -165,7 +165,7 @@ def test_message_pipeline_stats_sources_and_backfill(monkeypatch):
                             'post_ids': [rows[0]['id']], 'authors': [rows[0]['author']]}],
                 'tone': [{'post_id': row['id'], 'label': 'inne'} for row in rows]}
     monkeypatch.setattr(clinic_ai, 'daily_message', fake)
-    day = timezone.localdate()
+    day = timezone.localdate(records[0].published_at)  # wpisy są „godzinę temu”: tuż po północy to jeszcze wczoraj
     clinic.run_daily_messages(day)
     message = ClinicDailyMessage.objects.get(day=day, camp='government')
     assert message.stats['posts'] == 3 and message.stats['noise'] == 2

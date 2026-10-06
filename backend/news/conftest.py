@@ -1,6 +1,15 @@
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def zakaz_sieci(monkeypatch):
+    """Testy nigdy nie wychodzą w sieć (7.10: test podglądu social wołał żywe Gemini, bo klucz był w środowisku powłoki).
+    Blokada na poziomie adaptera requests: biblioteka `responses` (@responses.activate) nadal działa, bo podmienia ten sam adapter;
+    testy mockujące `requests.get` albo `Session.request` też nie dochodzą do tego miejsca."""
+    from unittest.mock import Mock
+    monkeypatch.setattr('requests.adapters.HTTPAdapter.send', Mock(side_effect=AssertionError('Zakaz sieci w testach')))
+
+
 @pytest.fixture
 def auto_approve_threads(monkeypatch):
     """For tests of thread builders and views (not of the review gate itself): every Dr. Spin thread

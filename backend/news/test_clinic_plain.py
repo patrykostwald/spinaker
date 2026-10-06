@@ -247,6 +247,11 @@ def test_council_calls_editor_after_polish(monkeypatch):
     combined = {'verdict': 'spin', 'intensity': 70, 'agreement': '3/3', 'techniques': [
         {**t, 'name': t['category'], 'explanation': 'Opis.'} for t in diagnosis()['techniques']]}
     monkeypatch.setattr(council, 'consult', lambda *a: opinions)
+    # Kworum (6.10) ma własne testy (test_council_quorum); tu sprawdzamy kolejność redaktorów, więc kworum jest spełnione.
+    monkeypatch.setattr('news.council_quorum.active_core', lambda *a: [])
+    monkeypatch.setattr('news.council_quorum.check', lambda *a, **k: {'met': True, 'reason': '', 'members': 3, 'need_members': 3,
+                                                                        'core': 0, 'need_core': 0, 'missing_core': []})
+    monkeypatch.setattr('news.council_quorum.member_biases', lambda *a, **k: {})
     monkeypatch.setattr(council.registry, 'diversity', lambda *a: {'sufficient': True, 'polish': True})
     monkeypatch.setattr(council, '_members', lambda *a: [])
     monkeypatch.setattr(council, 'combine', lambda *a: combined)
