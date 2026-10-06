@@ -19,6 +19,7 @@ import { rememberClinicVisit } from "../../lib/clinicHistory";
 import { AuthorReplies, WithdrawnSpin } from "./ClinicCorrections";
 import { PositionChanges } from "./PositionChanges";
 import { SpinReceptionBlock } from "./SpinReception";
+import { ArchiveNote, FactChecks } from "./OpenSources";
 
 // Jedno ustawienie pierwszego ekranu: "word" pokazuje samą ocenę słowną.
 export const SCORE_STYLE: "number" | "word" = "number";
@@ -77,7 +78,8 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
             <div className="sc-spin-detail__claim-body">
               {claim.explanation && <p>{claim.explanation}</p>}
               {claim.sources.length > 0 && <ul className="sc-spin-detail__sources">{claim.sources.map(source => (
-                <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || "Źródło"} · {sourceDomain(source.url)} ↗</a></li>
+                <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || "Źródło"} · {sourceDomain(source.url)} ↗</a>
+                  <ArchiveNote archive={spin.source_archives?.[source.url]} /></li>
               ))}</ul>}
             </div>
           </details>
@@ -85,6 +87,7 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
       ))}</ul>
     </section>
 
+    <FactChecks id={spin.id} items={spin.factchecks} />
     <PositionChanges id={spin.id} block={spin.position_changes} />
 
     <SpinReceptionBlock id={spin.id} block={spin.reception} />
@@ -158,7 +161,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
         </FitStickyAside>
         <div className="sc-dg-main">
         <div className="sc-dg-score"><SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} brief={spin.summary} /><HowToRead /></div>
-        <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ...(spin.position_changes?.items.length ? [["zmiana-zdania", "Zmiana zdania"]] : []), ...(spin.reception ? [["odbior", "Jak zadziałało"]] : []), ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>
+        <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ...(spin.factchecks?.length ? [["sprawdzili", "Sprawdzili"]] : []), ...(spin.position_changes?.items.length ? [["zmiana-zdania", "Zmiana zdania"]] : []), ...(spin.reception ? [["odbior", "Jak zadziałało"]] : []), ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>
         <article className="sc-spin-detail__diagnosis">
           <SpinDiagnosisBody spin={spin} withSummary={false} />
           <p className="sc-clinic-roadmap">{spin.notice}</p>

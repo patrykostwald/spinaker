@@ -26,7 +26,10 @@ VOTE_LABEL = {'YES': 'za', 'NO': 'przeciw', 'ABSTAIN': 'wstrzymał się', 'ABSEN
               'PRESENT': 'obecny, bez głosu', 'VOTE_VALID': 'głos na liście', 'VOTE_INVALID': 'głos nieważny'}
 RECORD_LABEL = {'interpellations': 'Interpelacja', 'questions': 'Zapytanie poselskie', 'statement': 'Wystąpienie w Sejmie',
                 'print': 'Druk sejmowy', 'consultation': 'Konsultacje', 'amendment': 'Poprawka', 'position': 'Stanowisko',
-                'lobby_activity': 'Lobbing', 'financial_document': 'Finanse', 'asset_declaration': 'Oświadczenie majątkowe'}
+                'lobby_activity': 'Lobbing', 'financial_document': 'Finanse', 'asset_declaration': 'Oświadczenie majątkowe',
+                'committee_speech': 'Wystąpienie w komisji'}
+# Dane z otwartych zbiorów mają własne bloki profilu (news.zrodla_profil), nie listę dokumentów Sejmu.
+OPEN_DATA_KINDS = ('ballot', 'ep_vote', 'mep', 'mep_income', 'mep_meeting', 'person', 'mileage', 'office_report')
 TOPIC_PEOPLE = 'przeszlosc-topic-people'
 _PL = str.maketrans({'ł': 'l', 'Ł': 'L'})
 
@@ -172,7 +175,7 @@ def _records(figure, identities):
     q = Q(figure=figure)
     for term, mp_id in identities:
         q |= Q(term=term, mp_id=mp_id)
-    return PublicRecordPerson.objects.filter(q).exclude(record__kind='ballot')
+    return PublicRecordPerson.objects.filter(q).exclude(record__kind__in=OPEN_DATA_KINDS)
 
 
 def x_accounts(figure):
@@ -274,6 +277,11 @@ def profile(figure):
         [d for d in record_rows.filter(record__date__isnull=False, record__date__gte=since.date()).values_list('record__date', flat=True)],
         [d for d in ballots.filter(voting__article__published_date__gte=since).values_list('voting__article__published_date', flat=True)],
         media_dates)
+    # Raport źródeł 6.10: wystąpienia z nagrań Sejmu z diagnozą i dane z otwartych zbiorów (europosłowie, Wikidata, biura)
+    from news import sejm_wideo
+    from news.zrodla_profil import open_data
+    data['sejm_video'] = [sejm_wideo.item(r) for r in sejm_wideo.published().filter(figure=figure)[:10]]
+    data['open_data'] = open_data(figure, identities)
     data['topics'] = [t for t in topic_history() if figure.pk in t['people']][:12]
     for t in data['topics']:
         t.pop('people', None)

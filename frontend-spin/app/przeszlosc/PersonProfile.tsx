@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, day, nb, plural, short, spinColor, useStandalone } from './ui';
+import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 
 /**
  * Profil osoby bez tematu (sprint 1, właściciel 6.10: „najlepsze narzędzie OSINT”): wszystko o jednej osobie publicznej
@@ -24,6 +25,8 @@ type Profile = {
   materials: { count: number; results: { id: number; title: string; url: string; source: string; published_date: string | null }[] };
   activity: { month: string; posts: number; documents: number; votes: number; media: number }[];
   topics: { topic: string; at: string }[];
+  sejm_video?: SejmVideo[];
+  open_data?: OpenData;
   denominators: { note: string; people: (Person & { score: number; shared: Record<string, number>; evidence: Ev[] })[];
     krs: (Person & { count: number; evidence: Ev[] })[];
     votes: { available: boolean; window: number; club?: string; aligned: (Person & { club: string; pct: number; shared: number; agreed: number; evidence: Ev[] })[];
@@ -163,6 +166,8 @@ function ProfileView({ data }: { data: Profile }) {
           <h3 id="pp-topics-h" className="px-h3">W tematach dnia</h3>
           <div className="px-chips">{data.topics.map(t => <a key={t.topic} className="px-pp__chip" href={`/przeszlosc?q=${encodeURIComponent(t.topic)}&osoba=figure:${data.id}`}>{t.topic}</a>)}</div>
         </section>}
+        <SejmVideos items={data.sejm_video ?? []} />
+        <ProfileOpenData data={data.open_data} />
       </aside>
     </div>
 

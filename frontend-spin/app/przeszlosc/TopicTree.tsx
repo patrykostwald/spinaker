@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, day, nb, nice, personHref, plural, reduced, short, spinColor, useStandalone } from './ui';
 import { Odstepstwa } from './Odstepstwa';
+import { TopicFunds, type EuFunds } from './OpenData';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -15,7 +16,7 @@ type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
   clubs: { club: string; size: number; votes: Record<string, number> }[]; members: [string, string, string][] };
-type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[] };
+type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[]; eu_funds?: EuFunds };
 type PersonHit = { id: number; slug: string; name: string; role: string; organisation?: string; has_x?: boolean };
 type Open = (p: { kind: 'person' | 'entry'; id: string } | null) => void;
 
@@ -380,6 +381,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
           <ul className="px-media">{mediaRows.slice(0, 8).map(([name, n]) => <li key={name}><span title={name}>{name}</span><i><b style={{ width: `${(100 * n) / mediaMax}%` }} /></i><em>{n}</em></li>)}</ul>
           <p className="px-note">{nb('Pokazujemy, co jest w naszej bazie. Przewaga jednej redakcji to informacja o bazie, nie o temacie.')}</p>
         </section>}
+        <TopicFunds funds={data.eu_funds} />
       </aside>
     </div>
     {panel && <Panel data={data} panel={panel} byId={byId} author={author} diagnosisOf={diagnosisOf} roles={roles} onOpen={openPanel} />}

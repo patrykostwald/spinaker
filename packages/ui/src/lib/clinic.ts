@@ -122,7 +122,23 @@ export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   position_changes?: { items: PositionChange[]; note: string } | null;
   /** Odbiór po dobie; null, gdy wpisu nie sprawdzano (słaby spin albo funkcja wyłączona). */
   reception?: SpinReception | null;
+  /** Raport źródeł 6.10: weryfikacje tej samej tezy (Google Fact Check API) i kopie cytowanych artykułów (Wayback). */
+  factchecks?: FactCheck[];
+  source_archives?: Record<string, SourceArchive>;
 };
+
+export type FactCheck = { publisher: string; rating: string; url: string; title: string; reviewed_claim: string };
+export type SourceArchive = { archive_url: string; archived_at: string | null; changed_at: string | null; compare_url: string };
+
+/** Wystąpienie z nagrania Sejmu z diagnozą (backend news/sejm_wideo.py). */
+export type SejmVideoSpin = {
+  id: number; day: string; place: "sala" | "komisja"; place_label: string;
+  person: { id: number; name: string; slug: string } | null;
+  title: string; headline: string; summary: string; verdict: string; intensity: number; techniques: string[];
+  video_url: string; timecode: string; exact: boolean; source_url: string; committee: string;
+};
+export const getSejmVideoSpins = (figureId?: number) =>
+  apiFetch<{ results: SejmVideoSpin[]; source: { label: string; url: string } }>(`/api/clinic/sejm-wideo/${figureId ? `?osoba=${figureId}` : ""}`);
 
 /** Opcjonalne dane skanera; starsze API nadal korzysta z pól diagnozy. */
 export type SpinScan = {
@@ -291,13 +307,13 @@ export type WithdrawnDiagnosis = {
   author_replies: ClinicAuthorReply[];
 };
 export type ClinicCorrection = {
-  id: string; type: "withdrawal" | "hiding" | "author_reply"; date: string;
+  id: string; type: "withdrawal" | "hiding" | "author_reply" | "revision" | "sejm_withdrawal" | "sejm_hiding"; date: string;
   author: SpinAuthor | null; camp: Camp | null; camp_label: string | null; post_date: string | null;
   diagnosis_url: string | null; reason: string; reply_excerpt: string; notice?: string;
 };
 export type ClinicCorrectionsData = {
   results: ClinicCorrection[]; count: number; next_page: number | null;
-  counts: { published: number; withdrawn: number; hidden: number; replies: number };
+  counts: { published: number; withdrawn: number; hidden: number; replies: number; revisions?: number; sejm?: number };
 };
 export const getClinicCorrections = (page = 1) => apiFetch<ClinicCorrectionsData>(`/api/clinic/corrections/?page=${page}`);
 export const getSpin = (id: number | string) => apiFetch<SpinDetailData | WithdrawnDiagnosis>(`/api/clinic/spins/${id}/`);

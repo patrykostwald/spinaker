@@ -7,7 +7,7 @@ Ta sama miara: rządzący i opozycja przechodzą przez identyczne zapytania.
 import os
 import re
 
-from django.db.models import Q
+from django.db.models import F, Q
 
 PER_KIND = 30
 
@@ -72,6 +72,26 @@ def _match(fields, words):
     return q
 
 
+EU_FUNDS = {'eu_project': 'Fundusze UE (Kohesio)', 'eu_grant': 'Budżet UE (FTS)'}
+
+
+def eu_funds(query, limit=12):
+    """Dotacje UE w temacie (Kohesio CC0, FTS CC BY 4.0): beneficjenci-organizacje, kwoty i źródło."""
+    from news.public_records_models import PublicRecord
+    from scraper.nowe_zrodla import LICENSES
+    words = terms(query)
+    if not words:
+        return {'results': [], 'total_eur': 0, 'sources': []}
+    rows = (PublicRecord.objects.filter(_match(['title', 'text'], words), kind__in=list(EU_FUNDS))
+            .order_by(F('date').desc(nulls_last=True), '-pk')[:limit])
+    out = [{'kind': EU_FUNDS[r.kind], 'beneficiary': r.data.get('beneficiary', ''), 'title': (r.data.get('project') or r.data.get('subject') or '')[:300],
+            'amount_eur': r.data.get('eu_budget') if r.kind == 'eu_project' else r.data.get('amount'),
+            'year': (r.date.year if r.date else None), 'url': r.source_url, 'krs': r.data.get('krs', ''),
+            'link': r.data.get('link', '')} for r in rows]
+    return {'results': out, 'total_eur': round(sum(x['amount_eur'] or 0 for x in out), 2),
+            'sources': [LICENSES['kohesio'], LICENSES['fts']]}
+
+
 def topic_graph(query):
     from news.clinic import figures_by_account, published_diagnoses
     from news.models import Article
@@ -104,7 +124,13 @@ def topic_graph(query):
             continue
         seen_titles.add(title_key)
         key = node(f'record:{record.pk}', 'record', record.title or f'{record.kind} {record.external_id}',
-                   date=record.date.isoformat() if record.date else None, url=record.source_url, sub=record.kind)
+                   date=record.date.isoformat() if record.date else None, url=record.source_url,
+                   sub=EU_FUNDS.get(record.kind, record.kind))
+        # Fundusze UE (Kohesio, FTS): beneficjent-organizacja z KRS, gdy nazwa jednoznacznie wskazuje obserwowany podmiot
+        org_id = (record.data or {}).get('organisation_id') if record.kind in EU_FUNDS else None
+        if org_id:
+            org_node = node(f'org:{org_id}', 'organisation', record.data.get('beneficiary', ''), sub=f"KRS {record.data.get('krs', '')}")
+            edges.append({'source': org_node, 'target': key, 'label': 'dotacja UE'})
         for person in record.people.all():
             if person.figure_id and not person.figure.archived:
                 edges.append({'source': figure(person.figure), 'target': key, 'label': 'w dokumencie'})
@@ -251,6 +277,7 @@ def topic_view(request):
     if data is None:
         data = topic_graph(query)
         data['votes'] = topic_votes(query)
+        data['eu_funds'] = eu_funds(query)
         link_votes(data)
         if data['votes']:
             data['counts']['vote'] = len(data['votes'])

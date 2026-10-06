@@ -11008,3 +11008,21 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
   .sc-reception__bars li { grid-template-columns: 132px minmax(0, 1fr) 44px; }
   .sc-reception__label { font-size: 12px; }
 }
+
+/* Raport źródeł 6.10: kopia cytowanego artykułu (Wayback), „Tę tezę sprawdzili” i cztery równe liczniki rejestru korekt.
+   Etykieta stanu mała i po prawej od linku (zasada 7); karty weryfikacji równej wysokości: wydawca u góry, link na dole. */
+.sc-archive-note { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-left: 8px; font-size: 12px; color: var(--sc-text-2); }
+.sc-archive-note a { color: var(--sc-text-2); text-underline-offset: 3px; }
+.sc-archive-note__changed { padding: 2px 8px; border-radius: 6px; background: var(--sc-accent-soft); color: var(--sc-text); font-weight: 600; }
+.sc-factchecks__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); grid-auto-rows: 1fr; gap: var(--sc-s-3); }
+.sc-factchecks__card { display: grid; grid-template-rows: auto 1fr auto; gap: var(--sc-s-2); min-height: 176px; padding: var(--sc-s-4); border: 1px solid var(--sc-line); border-radius: var(--sc-r-md); background: var(--sc-surface); min-width: 0; }
+.sc-factchecks__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0; font-size: 14px; min-width: 0; }
+.sc-factchecks__head b { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-factchecks__head span { flex: none; font-size: 12px; color: var(--sc-text-2); }
+.sc-factchecks__claim { margin: 0; font-size: 14px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-factchecks__card a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-accent); font-size: 14px; text-underline-offset: 4px; }
+.sc-factchecks__src { margin-top: var(--sc-s-3); font-size: 12px; }
+.sc-corrections__counts { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; grid-auto-rows: 1fr; }
+.sc-corrections__counts > div:first-child { grid-column: auto; }
+@media (max-width: 760px) { .sc-corrections__counts { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+.sc-corrections__chip[data-type="revision"] { color: var(--sc-text); background: var(--sc-surface-2); border-color: transparent; }
