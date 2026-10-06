@@ -113,6 +113,11 @@ for task, name, env in (
                            'news.tasks.' + task, env, collector=True)
 
 
+REGISTRY['zasil-baze'] = agent(
+    'Zasilanie bazy', 'Co noc (01:00-06:00) i przed północą dociąga całą historię włączonych źródeł od początku X kadencji '
+    '(TED 12 miesięcy, KRS wszystkie obserwowane podmioty) w osobnym limicie, w granicach kart dostępu; gotowe źródła '
+    'pomija sam. Bez AI.', 'scraper.tasks.zasil_baze_task', 'ZASIL_BAZE_ENABLED', True, collector=True)
+
 # Explicit private research sources, each with its own flag/task/pulse.
 from scraper.public_records import SOURCES as PUBLIC_RECORD_SOURCES
 for _source, _spec in PUBLIC_RECORD_SOURCES.items():

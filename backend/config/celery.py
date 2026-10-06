@@ -129,3 +129,11 @@ for _index, _source in enumerate((
         'task': 'scraper.tasks.collect_public_' + _source,
         'schedule': crontab(minute=f'{_index}-59/15'),
     }
+
+# Zasilanie bazy (6.10): historia źródeł w ciche godziny 01:00-05:59 (limit nocny), a 23:00-23:59 resztka dziennych
+# limitów kart przed resetem. Dwa pasy, żeby Sejm i inne hosty szły równolegle. Gotowe źródła zadanie pomija samo.
+for _lane, _minute in (('sejm', '2-59/10'), ('inne', '7-59/10')):
+    app.conf.beat_schedule['zasil-baze-' + _lane] = {
+        'task': 'scraper.tasks.zasil_baze_task', 'args': [_lane, 'noc'], 'schedule': crontab(minute=_minute, hour='1-5')}
+    app.conf.beat_schedule['zasil-baze-' + _lane + '-resztka'] = {
+        'task': 'scraper.tasks.zasil_baze_task', 'args': [_lane, 'resztka'], 'schedule': crontab(minute=_minute, hour=23)}

@@ -139,8 +139,12 @@ def page_url(base, context, offset=0):
     return base + '?' + urlencode({**context, 'offset': offset, 'limit': 20})
 
 
-def seed(state, since, incremental=False):
+def seed(state, since, incremental=False, backfill=False):
     source = state.source
+    if backfill and source in {'krs_changes', 'ted'}:
+        from scraper.zasil_baze import seed_history
+        if seed_history(state, since):
+            return
     context = {'since': since.isoformat()}
     if source == 'votes':
         filters = {'dateFrom': since.isoformat(), 'dateTo': timezone.localdate().isoformat()}
@@ -233,7 +237,9 @@ def source_access(job):
     return provider, instruction
 
 
-def fetch(job, token):
+def fetch(job, token, backfill=None):
+    """backfill ('noc' / 'resztka'): zasilanie bazy z osobnym limitem nocnym (scraper.zasil_baze), bez zjadania
+    dziennego limitu zwykłego zbieracza; karta dostępu i odstęp hosta obowiązują tak samo."""
     source = job.state.source
     spec = SOURCES[source]
     if not flag(spec.flag(source), False):
@@ -246,13 +252,17 @@ def fetch(job, token):
             raise AccessDenied('collector_lease_lost')
         if state.budget_day != timezone.localdate():
             state.budget_day, state.requests_today = timezone.localdate(), 0
-        if state.requests_today >= setting_int(source, 'DAILY_CAP', spec.cap, 10000):
+        if not backfill and state.requests_today >= setting_int(source, 'DAILY_CAP', spec.cap, 10000):
             raise HostRateLimited(86400)
         if state.next_request_at and state.next_request_at > now:
             raise HostRateLimited((state.next_request_at - now).total_seconds())
+        if backfill:
+            from scraper.zasil_baze import reserve
+            if not reserve(source, backfill):
+                raise HostRateLimited(3600)
         interval = max(3, instruction.minimum_interval_seconds,
                        setting_int(source, 'INTERVAL_SECONDS', 3, 3600))
-        state.requests_today += 1
+        state.requests_today += 0 if backfill else 1
         state.next_request_at = now + timedelta(seconds=interval)
         state.save(update_fields=['budget_day', 'requests_today', 'next_request_at'])
     if job.kind == 'tr_export':
@@ -270,7 +280,7 @@ def fetch(job, token):
     # Tokens are headers only, never stored in job URLs, cursors or error strings.
     return fetch_feed(job.url, hostname_transport=True, audit_source=provider,
         audit_instruction=instruction, requested_kind='api_record' if instruction.channel == 'api' else 'page',
-        request_headers=headers, return_receipt=True, budget_share=0.6, method=method, body=body)
+        request_headers=headers, return_receipt=True, budget_share=1.0 if backfill else 0.6, method=method, body=body)
 
 
 def transparency_download(url, provider, instruction):
@@ -613,8 +623,11 @@ def document_text(raw, url):
     raise ValueError('unsupported_text_document')
 
 
-def collect(source, *, since=None, max_requests=None):
-    """One bounded tick. --since starts/resumes a historical cycle, never loops."""
+def collect(source, *, since=None, max_requests=None, backfill=None):
+    """One bounded tick. --since starts/resumes a historical cycle, never loops.
+
+    backfill ('noc'/'resztka', scraper.zasil_baze): the same frontier and access card, but requests count against
+    the separate backfill budget; a new cycle started with since seeds the full history (TED by month, KRS extracts)."""
     spec = SOURCES[source]
     if not flag(spec.flag(source), False):
         return {'status': 'disabled', 'new_records': 0}
@@ -649,7 +662,7 @@ def collect(source, *, since=None, max_requests=None):
             if source in {'assets', 'pkw', 'lobby_mswia', 'lobby_sejm'} and not since:
                 start = START
             state.since = max(start, earliest)
-            seed(state, state.since, incremental=bool(previous_scan and not since))
+            seed(state, state.since, incremental=bool(previous_scan and not since), backfill=bool(backfill and since))
             state.cycle_started_at = now
         state.lease_token, state.lease_until = token, now + timedelta(minutes=15)
         state.last_started_at, state.status = now, 'running'
@@ -668,7 +681,7 @@ def collect(source, *, since=None, max_requests=None):
                 break  # At most one document per tick, never a large-file loop.
             requests += 1
             try:
-                raw, receipt = fetch(job, token)
+                raw, receipt = fetch(job, token, backfill) if backfill else fetch(job, token)
                 with transaction.atomic():
                     locked = PublicCollectionState.objects.select_for_update().get(pk=state.pk)
                     if locked.lease_token != token or locked.lease_until <= timezone.now():

@@ -127,6 +127,27 @@ def save_metadata(source, row, window_from, window_to):
     return bool(article and created)
 
 
+def history_floor(cursor):
+    """Najstarszy dzień przejścia (zasilanie bazy 6.10): pierwsze przejście sięga BZP_BACKFILL_DAYS wstecz
+    od dnia odcięcia (domyślnie 365, najwyżej 1095); kolejne przejścia kończą się na poprzednim odcięciu."""
+    if cursor.get('floor'):
+        return date.fromisoformat(cursor['floor'])
+    import os
+    days = min(1095, max(1, int(os.environ.get('BZP_BACKFILL_DAYS', '365'))))
+    return date.fromisoformat(cursor['cutoff']) - timedelta(days=days)
+
+
+def _next_pass(cursor, started):
+    """Po ukończonym przejściu: nowe, krótkie przejście od wczoraj do poprzedniego odcięcia (nowe ogłoszenia)."""
+    yesterday = timezone.localdate(started) - timedelta(days=1)
+    previous = date.fromisoformat(cursor['cutoff'])
+    if previous >= yesterday:
+        return None
+    return {'cutoff': yesterday.isoformat(), 'day': yesterday.isoformat(), 'page': 1, 'complete': False,
+            'floor': (previous + timedelta(days=1)).isoformat(),
+            'history_complete_at': cursor.get('history_complete_at') or started.isoformat()}
+
+
 def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
     """Import at most one page, walking complete days newest-to-oldest."""
     source = _enabled_source()
@@ -148,10 +169,21 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
         state.cursor = cursor
         state.save(update_fields=['cursor'])
     if cursor.get('complete'):
-        return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
+        fresh = _next_pass(cursor, started)
+        if fresh is None:
+            return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
+        cursor = state.cursor = fresh
+        state.save(update_fields=['cursor'])
     if cursor.get('cutoff') < cursor.get('day'):
         raise ValueError('Invalid BZP newest-to-oldest cursor')
     day = date.fromisoformat(cursor['day'])
+    if day < history_floor(cursor):
+        # Okno historii zebrane: koniec przejścia bez zapytania; następne zaczyna się od nowych dni.
+        cursor = {**cursor, 'complete': True, 'floor': history_floor(cursor).isoformat(),
+                  'history_complete_at': cursor.get('history_complete_at') or started.isoformat()}
+        state.cursor = cursor
+        state.save(update_fields=['cursor'])
+        return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
     try:
         rows = fetch_page(source=source, instruction=instruction, endpoint=endpoint,
             date_from=day.isoformat(), date_to=day.isoformat(),

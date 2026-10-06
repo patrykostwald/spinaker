@@ -347,3 +347,15 @@ def collect_public_ted():
 def collect_public_eu_transparency():
     from scraper.public_records import collect
     return collect('eu_transparency')
+
+
+@shared_task(soft_time_limit=570, time_limit=600)
+def zasil_baze_task(lane='sejm', mode='noc'):
+    """Zasilanie bazy (scraper.zasil_baze): historia źródeł w ciche godziny (noc) i resztka limitów kart przed północą."""
+    from scraper.zasil_baze import run
+    if not cache.add('lock:zasil-baze:' + lane, True, 620):
+        return {'status': 'already_running'}
+    try:
+        return run(lane, mode, seconds=480)
+    finally:
+        cache.delete('lock:zasil-baze:' + lane)

@@ -92,6 +92,8 @@ CONTRACTS = (
     # Zbieracze danych
     contract('zbieracz-x', 'Zbieracz X', 'dane', 2, 'agent:all', 1, beats=('political-x-minute',), registry='political_poll_task', counter='posts'),
     contract('badacz', 'Badacz', 'dane', 24, 'agent:all', 7, beats=('badacz-daily',), registry='badacz', title='Badacz - nowe źródła'),
+    contract('zasil-baze', 'Zasilanie bazy', 'dane', 24, 'agent:all', 1, beats=('zasil-baze-sejm', 'zasil-baze-inne'),
+             registry='zasil-baze', counter='public_records', title='Zasilanie bazy (historia źródeł)'),
 )
 BY_KEY = {c['key']: c for c in CONTRACTS}
 
@@ -201,6 +203,9 @@ def _counter(c, since):
     elif name == 'position_checks':
         from news.clinic_models import PositionCheck
         rows, field = PositionCheck.objects.exclude(checked_at__isnull=True), 'checked_at'
+    elif name == 'public_records':
+        from news.public_records_models import PublicRecord
+        rows, field = PublicRecord.objects.all(), 'fetched_at'
     elif name == 'seba':
         from news.agent_models import SebaReview
         rows, field = SebaReview.objects.exclude(status='queued'), 'due_at'
@@ -333,7 +338,17 @@ def build(now=None):
     categories = [{'key': key, 'label': label, 'loops': [l for l in loops if l['category'] == key]} for key, label in CATEGORIES]
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
-            'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build()}
+            'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build(),
+            'baza': _baza()}
+
+
+def _baza():
+    """Postęp zasilania bazy per źródło (scraper.zasil_baze): % historii, +24 h, razem, dni do końca."""
+    try:
+        from scraper.zasil_baze import report_lines
+        return report_lines()
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return []
 
 
 def to_build(limit=10):
@@ -426,6 +441,9 @@ def text(report):
             extra = f", czeka ponad SLA: {l['pending']}" if l['pending'] else ''
             lines.append(f"[{marks[l['state']]}] {l['title']} - {ran}, {made}{extra}; odbiorca: {l['consumer']}")
         lines.append('')
+    if report.get('baza'):
+        lines.append('== Zasilanie bazy (historia źródeł) ==')
+        lines += [clean(line) for line in report['baza']] + ['']
     sprint = report.get('sprint') or {}
     lines.append('== Sprint tygodnia ==')
     lines.append(f"Otwarte bilety: {sprint.get('open', 0)} (czeka na decyzję: {sprint.get('proposed', 0)}, "

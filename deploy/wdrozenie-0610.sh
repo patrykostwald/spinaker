@@ -57,4 +57,7 @@ $M przeszlosc_alerts_digest --dry-run | tail -8
 
 echo '== 6. Raport pętli: wysyłka na adres admina'
 $M raport_petli --wyslij --raz | tail -40
+
+echo '== 7. Zasilanie bazy: karty z limitem na historię i plan (szczegóły: deploy/zasil-baze.sh)'
+sh deploy/zasil-baze.sh
 echo 'GOTOWE'
