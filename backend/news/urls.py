@@ -38,6 +38,7 @@ from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
 from news.push_api import SubscriptionsView
 from news.interview_vote_api import InterviewBallotView, InterviewVoteView, InterviewMessageView
 from news.feedback import BugReportView, JourneyView
+from news import sales  # noqa: E402
 from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 from news import przeszlosc_alerts, przeszlosc_osoba
@@ -120,6 +121,10 @@ urlpatterns = [
     path('przeszlosc/alerty/wypisz/', przeszlosc_alerts.unsubscribe_view),
     path('przeszlosc/odstepstwa/', przeszlosc_deviations),
     path('zbudujmi/zapytanie/', zbudujmi_inquiry),
+    path('raporty/zapytanie/', sales.report_inquiry),
+    path('raporty/probka/', sales.sample),
+    path('przeszlosc/pilot/', sales.pilot_signup),
+    path('leady/potwierdz/', sales.confirm),
     path('zbudujmi/uwagi/', zbudujmi_client_note),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
     path('clinic/wspolny-przekaz/', coordinated_clusters),

@@ -554,3 +554,6 @@ class BuildTicketAdmin(admin.ModelAdmin):
         from news import sprint
         for ticket in queryset.filter(status__in=('proposed', 'approved')):
             sprint.decide(ticket, 'dropped', request.user)
+
+
+from news import sales_admin  # noqa: E402,F401  (zapytania i raporty tygodniowe dla instytucji)

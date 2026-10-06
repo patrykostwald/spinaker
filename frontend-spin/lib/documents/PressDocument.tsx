@@ -1,6 +1,7 @@
 import { DocumentLink as Link, documentTranslator, type DocumentLanguage } from "./locale";
 import { Button, DocLayout } from "@spin-clinic/ui/kit";
 import { ContextThreadExample } from "../../app/dla-redakcji/ContextThreadExample";
+import { ReportInquiry, ReportSample } from "../../app/dla-redakcji/InstitutionReports";
 
 export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const t = documentTranslator(lang);
@@ -33,7 +34,8 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
         <li>{t("dane do badań naukowych.")}</li>
       </ul>
       <p>{t("Jedna oferta dla wszystkich: te same produkty i warunki niezależnie od obozu politycznego. Klient nie ma wpływu na metodę, diagnozy ani treści serwisu. Sprzedajemy nasze analizy, nie cudze treści.")}</p>
-      <p><Button href="mailto:kontakt@spin.clinic?subject=Przykładowy%20raport%20spin.clinic" variant="primary">{t("Zamów przykładowy raport")}</Button> <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a></p>
+      {lang === "pl" ? <><ReportSample /><ReportInquiry /></> :
+        <p><Button href="mailto:kontakt@spin.clinic?subject=Przykładowy%20raport%20spin.clinic" variant="primary">{t("Zamów przykładowy raport")}</Button> <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a></p>}
     </section>
     <section id="cytowanie"><h2>{t("Jak cytować diagnozę")}</h2>
       <p>{t("Podaj nazwę spin.clinic, tytuł i datę diagnozy oraz jej bezpośredni adres. Zaznacz, że analizę przygotowało AI. Rozróżniaj ocenę techniki perswazji od statusu sprawdzanego twierdzenia. Zachowaj kontekst cytatu i ograniczenia wyniku.")}</p>

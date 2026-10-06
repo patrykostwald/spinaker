@@ -47,6 +47,8 @@ BEAT_PLAN = {
     'social-publish-day': ('social_publish_task', {'minute': '25,55', 'hour': '8-21'}),
     'dr-spin-thread-daily': ('dr_spin_thread_task', {'hour': 19, 'minute': 30}),
     'weekly-report-sunday': ('weekly_report_task', {'day_of_week': 'sun', 'hour': 20, 'minute': 0}),
+    'raport-tygodniowy-mon': ('raport_tygodniowy_task', {'day_of_week': 'mon', 'hour': 6, 'minute': 40}),  # plan finansowy 6.10, ruch 6: PDF + CSV dla instytucji
+    'zapytania-1h': ('sales_leads_task', {'minute': 50}),  # ruchy 6 i 9: ponowienia maili, powiadomienia właściciela, usuwanie niepotwierdzonych
     'schedule-health-6h': ('schedule_health_task', {'hour': '*/6', 'minute': 5}),
 }
 

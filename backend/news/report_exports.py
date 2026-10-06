@@ -2,6 +2,7 @@
 import csv
 import io
 import json
+import re
 
 from PIL import Image, ImageDraw
 
@@ -102,10 +103,14 @@ class Pages:
     def text(self, text, size=22, bold=False, color=INK):
         # Split long identifiers/URLs instead of clipping or silently truncating them.
         text = str(text).replace('—', '-').replace('–', '-')
+        # Polska typografia: jednoliterowe słowo nie zostaje na końcu wiersza (twarda spacja do następnego słowa).
+        text = re.sub(r'(?<![^\s(])([aiouwzAIOUWZ]) +', '\\1\u00a0', text)
         font = _font(size, 700 if bold else 500)
         for paragraph in text.split('\n'):
             line = ''
-            for word in paragraph.split():
+            for word in re.split(r'[ \t\r]+', paragraph.strip()):
+                if not word:
+                    continue
                 candidate = (line + ' ' + word).strip()
                 if self.draw.textlength(candidate, font=font) > WIDTH - 2 * PAD and line:
                     self._line(line, font, size, color)

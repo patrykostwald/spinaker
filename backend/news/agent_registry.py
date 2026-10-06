@@ -71,6 +71,8 @@ REGISTRY = {
     'interview-pick': agent('Wybór wywiadu', 'Wybiera materiał do wywiadu dnia.', 'news.tasks.clinic_interview_pick_task', 'CLINIC_INTERVIEW_ENABLED'),
     'spin-thread': agent('Wątek Dr. Spina', 'Przygotowuje kontekst spinu dnia.', 'news.tasks.dr_spin_thread_task', 'DR_SPIN_THREADS_ENABLED'),
     'messages': agent('Przekaz dnia', 'Porównuje przekaz obu obozów politycznych.', 'news.tasks.clinic_daily_messages_task', 'CLINIC_AI_ENABLED'),
+    'raport-tygodniowy': agent('Raport tygodniowy dla instytucji', 'W poniedziałek o 6:40 bez AI liczy PDF i CSV za poprzedni tydzień: wypowiedzi, techniki obu stron, trend klubów, ta sama miara; próbka publiczna na /dla-redakcji tylko po zatwierdzeniu (albo WEEKLY_SAMPLE_AUTO_PUBLIC).', 'news.tasks.raport_tygodniowy_task', 'WEEKLY_INSTITUTION_REPORT_ENABLED', True),
+    'zapytania': agent('Zapytania (raporty i piloci)', 'Co godzinę bez AI: ponawia maile potwierdzające i ważne powiadomienia właściciela o potwierdzonych zgłoszeniach, usuwa niepotwierdzone po 30 dniach.', 'news.tasks.sales_leads_task', default=True),
     'weekly': agent('Raport tygodnia', 'Przygotowuje tygodniowe podsumowanie.', 'news.tasks.weekly_report_task'),
     'x-publish': agent('Publikacja X', 'Publikuje zatwierdzone wątki w granicach limitów.', 'news.tasks.x_publish_task', 'X_POST_ENABLED'),
     'social': agent('Publikacja społecznościowa', 'Przygotowuje publikacje w kanałach społecznościowych.', 'news.tasks.social_publish_task', 'SOCIAL_POST_ENABLED'),

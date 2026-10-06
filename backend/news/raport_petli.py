@@ -43,6 +43,10 @@ CONTRACTS = (
              registry='spin-thread', counter='threads', title='Spinki Dr. Spina'),
     contract('raporty', 'Raporty', 'tresc', 24, 'owner:panel', 1, beats=('institutional-reports-night',), registry='raportysta',
              pending='reports', title='Raporty dla instytucji'),
+    contract('raport-tyg', 'Raport tyg.', 'tresc', 168, 'owner:panel', 7, beats=('raport-tygodniowy-mon',), registry='raport-tygodniowy',
+             counter='weekly_issues', title='Raport tygodniowy dla instytucji (PDF + CSV)'),
+    contract('zapytania', 'Zapytania', 'tresc', 1, 'owner:mail', 2, beats=('zapytania-1h',), registry='zapytania',
+             title='Zapytania: raporty dla instytucji i piloci'),
     contract('czytelnik', 'Czytelnik', 'tresc', 168, 'owner:panel', 14, agents=('strateg',), match=PLAIN_READER, beats=('plain-reader-weekly',),
              registry='plain-reader', title='Czytelnik testowy'),
     contract('zmiana-zdania', 'Zmiana zdania', 'tresc', 24, 'public', 1, beats=('zmiana-zdania-30m',), registry='zmiana-zdania',
@@ -221,6 +225,9 @@ def _counter(c, since):
     elif name == 'quorum_reruns':
         from news.council_rerun import done_since
         return done_since(since)
+    elif name == 'weekly_issues':
+        from news.sales_models import WeeklyReportIssue
+        rows, field = WeeklyReportIssue.objects.exclude(status='failed'), 'generated_at'
     elif name == 'seba':
         from news.agent_models import SebaReview
         rows, field = SebaReview.objects.exclude(status='queued'), 'due_at'
@@ -232,7 +239,8 @@ def _counter(c, since):
 FIRST_SEEN = 'petle-first-seen'
 OLD = '2026-01-01T00:00:00+00:00'
 # Pętle wdrożone 6.10 (zanim powstał zapis first_seen): pierwszy rytm liczymy od dnia wdrożenia.
-ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'odbior-spinu': '2026-10-07T12:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00'}
+ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'odbior-spinu': '2026-10-07T12:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00',
+         'raport-tyg': '2026-10-07T12:00:00+02:00', 'zapytania': '2026-10-07T12:00:00+02:00'}
 
 
 def first_seen(now, keys=None):

@@ -711,3 +711,27 @@ def coordinated_narratives_night_task():
     """Co noc: wspólny przekaz z ostatniego tygodnia (wpisy dosłane później przez zbieranie X)."""
     from news import coordinated
     return coordinated.refresh(hours=coordinated.NIGHT_LOOKBACK_HOURS)
+
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def raport_tygodniowy_task():
+    """Poniedziałek 6:40: Raport tygodniowy dla instytucji (PDF + CSV) za poprzedni tydzień. Bez AI, bez wysyłki."""
+    from news import agent_registry
+    if not agent_registry.enabled(agent_registry.REGISTRY['raport-tygodniowy']):
+        return {'status': 'disabled'}
+    from news.raport_tygodniowy import generate
+    return generate()
+
+
+@shared_task(soft_time_limit=120, time_limit=150)
+def sales_lead_confirmation_task(lead_id):
+    """Mail z linkiem potwierdzającym zgłoszenie (raporty dla instytucji, pilot przeszłość.today)."""
+    from news.sales import send_confirmation
+    return send_confirmation(lead_id)
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def sales_leads_task():
+    """Co godzinę: ponowienia maili, powiadomienia właściciela o potwierdzonych zgłoszeniach, usuwanie niepotwierdzonych."""
+    from news.sales import run
+    return run()

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button, InfoPage } from '@spin-clinic/ui/kit';
-import { NewsletterSignup, SUPPORT_LINKS } from '@spin-clinic/ui';
+import { NewsletterSignup, SUPPORT_LINKS, glueShortWords } from '@spin-clinic/ui';
 
 export const metadata = { title: 'Wsparcie · spin.clinic' };
 // Linki BUYCOFFEE_URL i PATRONITE_URL czytamy z .env.production przy każdym wejściu, nie przy budowaniu obrazu.
@@ -37,6 +37,10 @@ function supportProgress() {
     updated: Number.isFinite(timestamp) ? new Date(timestamp).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' }) : null };
 }
 
+/** Zobowiązanie: SUPPORT_PLEDGE_V2=true włącza nowy tekst dopiero po akceptacji właściciela (plan finansowy 6.10, ruch 6). */
+const PLEDGE_V1 = 'Nie przyjmujemy darowizn od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Dane i raporty sprzedajemy każdemu na tych samych warunkach; klient też nie ma wpływu na diagnozy. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.';
+const PLEDGE_V2 = 'Nie przyjmujemy darowizn od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Dane i raporty sprzedajemy wszystkim na tych samych warunkach, także partiom i sztabom; kupujący nie mają wpływu na kryteria Dr. Spina, wybór wpisów, diagnozy ani treść serwisu. Ceny podajemy w ofercie, ta sama oferta dla każdego. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.';
+
 const GOALS: Array<[string, string]> = [
   ['Miesiąc pracy Kliniki', 'Diagnozy, API X i serwer. Gdy wpłat jest mniej, zmniejszamy dzienną liczbę diagnoz; gdy więcej - sprawdzamy więcej wypowiedzi.'],
   ['Strażnica zmian', 'Pokaże, gdy polityk albo redakcja po publikacji zmieni lub usunie wpis.'],
@@ -47,6 +51,7 @@ export default function SupportPage() {
   const buycoffee = publicSupportUrl(process.env.BUYCOFFEE_URL);
   const patronite = publicSupportUrl(process.env.PATRONITE_URL);
   const progress = supportProgress();
+  const pledgeV2 = process.env.SUPPORT_PLEDGE_V2 === 'true';
   const links = [
     { label: 'Wesprzyj miesięczny budżet', href: SUPPORT_LINKS.monthly },
     buycoffee && { label: 'Postaw kawę na BuyCoffee', href: buycoffee },
@@ -75,7 +80,7 @@ export default function SupportPage() {
       <p><a href={SUPPORT_LINKS.phase3}>Wesprzyj własny serwer AI na zrzutka.pl</a></p>
       <p><Link href="/o-nas#rozwoj">Trzy fazy projektu</Link></p>
     </section>
-    <section><h2>Wsparcie nie kupuje wpływu</h2><p>Nie przyjmujemy darowizn od partii, polityków ani ich fundacji. Wpłata nie daje wpływu na wybór analizowanych materiałów ani wynik diagnozy. Dane i raporty sprzedajemy każdemu na tych samych warunkach; klient też nie ma wpływu na diagnozy. Zgłoszenia błędów rozpatrujemy według tych samych zasad, niezależnie od tego, kto je przesyła.</p></section>
+    <section><h2>Wsparcie nie kupuje wpływu</h2><p>{glueShortWords(pledgeV2 ? PLEDGE_V2 : PLEDGE_V1)}</p></section>
     <section><h2>Inne sposoby wsparcia</h2><p>Wpłaty obsługują zewnętrzne serwisy. spin.clinic nie przetwarza danych płatniczych. Zbiórka na miesięczny budżet nie jest subskrypcją.</p><ul>{links.filter(link => link.href !== SUPPORT_LINKS.monthly).map(link => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}</ul><p>Możesz też udostępnić diagnozę z <Link href="/klinika">Kliniki</Link>.</p></section>
     <NewsletterSignup source="wsparcie" />
   </InfoPage>;
