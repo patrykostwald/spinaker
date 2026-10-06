@@ -160,7 +160,7 @@ def test_pilot_signup_grant_and_flag(monkeypatch, django_capture_on_commit_callb
     with django_capture_on_commit_callbacks(execute=True):
         post('/api/przeszlosc/pilot/', org_type='redakcja')
     lead = SalesLead.objects.get(kind='pilot')
-    assert '/przeszlosc/pilot?potwierdz=' in sent[0] and '60 dni' in sent[0]
+    assert '/przeszlosc/pilot?potwierdz=' in sent[0] and 'w becie wszystkie funkcje są bezpłatne' in sent[0]  # bez cen (7.10)
     assert not sales.is_pilot_pro('anna@example.org')
     lead.status = 'confirmed'
     lead.save()

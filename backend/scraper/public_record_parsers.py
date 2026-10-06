@@ -62,6 +62,15 @@ class HTML(HTMLParser):
             self.current.children.append(data)
 
 
+BOT_WALL_MARKERS = (b'_Incapsula_Resource', b'Incapsula incident', b'/cdn-cgi/challenge-platform', b'cf-browser-verification')
+
+
+def bot_wall(raw):
+    """Strona zabezpieczenia przed botami zamiast treści (Imperva/Incapsula, Cloudflare). Tylko początek odpowiedzi."""
+    head = bytes(raw[:8192]) if isinstance(raw, (bytes, bytearray)) else str(raw)[:8192].encode('utf-8', 'ignore')
+    return any(marker in head for marker in BOT_WALL_MARKERS)
+
+
 def links(raw, base):
     out = []
     for a in HTML(raw).root.find('a'):

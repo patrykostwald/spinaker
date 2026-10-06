@@ -197,6 +197,58 @@ def test_link_public_record_people_is_idempotent():
     assert link_people()['linked'] == 0
 
 
+def test_unlinked_is_state_with_reasons_not_a_regression():
+    """Wdrożenie 6.10: {"checked": 12, "linked": 0, "unlinked": 198} - unlinked to stan, nie odpięte w przebiegu."""
+    from io import StringIO
+    from news.public_record_people import link_people
+    record(1, 'Interpelacja byłego posła', [(70, None)])          # wygasły mandat: lista Sejmu ma tylko aktywnych
+    ParliamentaryRosterEntry.objects.create(source='sejm', external_id='71', full_name='Bez Profilu', term=10,
+                                            source_url='https://api.sejm.gov.pl/sejm/term10/MP')
+    record(2, 'Interpelacja posła bez profilu', [(71, None)])     # mandat jest, profil niepołączony (ręczna kontrola)
+    linked = mp('Jest Profil', 72)
+    record(3, 'Interpelacja', [(72, None)])
+    result = link_people()
+    assert result['linked'] == 1 and result['cleared'] == 0 and result['unlinked'] == 2
+    assert result['why_unlinked'] == {'not_in_roster': 1, 'roster_without_profile': 1, 'ambiguous': 0}
+    assert PublicRecordPerson.objects.get(mp_id=72).figure == linked
+    out = StringIO()
+    call_command('link_public_record_people', stdout=out)
+    assert 'stan, nie odpięte teraz' in out.getvalue() and '1 spoza listy mandatów' in out.getvalue()
+
+
+def committee(code, name, members):
+    r = PublicRecord.objects.create(source='committees', kind='committee', external_id=f'10/{code}', term=10, title=name,
+                                    source_url=f'https://api.sejm.gov.pl/sejm/term10/committees/{code}', response_sha256='c' * 64,
+                                    response_url='https://api.sejm.gov.pl', data={'code': code, 'name': name, 'members': members})
+    for m in members:
+        PublicRecordPerson.objects.create(record=r, term=10, mp_id=m['id'])
+    return r
+
+
+def test_profile_lists_committees_by_name_and_never_raw_kind_keys(monkeypatch):
+    """Właściciel 7.10 (profil posła): „W Sejmie: committee: 3” i „[object Object]” w podtytule."""
+    from news.przeszlosc_osoba import DOCUMENT_LABEL, RECORD_LABEL
+    me = mp('Michał Testowy', 44)
+    committee('ASW', 'Komisja Administracji i Spraw Wewnętrznych', [{'id': 44, 'function': 'zastępca przewodniczącego', 'joinDate': '2023-11-21'}, {'id': 9}])
+    committee('ENM', 'Komisja do Spraw Energii', [{'id': 44}])
+    committee('OBN', 'Komisja Obrony Narodowej', [{'id': 44, 'function': 'przewodniczący'}])
+    committee('CNT', 'Komisja do Spraw Kontroli Państwowej', [{'id': 44, 'leaveDate': '2024-06-01'}])  # dawny skład
+    record(1, 'Interpelacja w sprawie testu', [(44, None)])
+    PublicRecord.objects.create(source='consultations', kind='osr_document', external_id='x1', term=10, title='OSR',
+                                source_url='https://api.sejm.gov.pl/sejm/term10/prints/1/a.pdf', response_sha256='d' * 64,
+                                response_url='https://api.sejm.gov.pl').people.create(term=10, mp_id=44)
+    data = profile(me)
+    assert [(c['name'], c['role']) for c in data['committees']] == [
+        ('Komisja Obrony Narodowej', 'przewodniczący'), ('Komisja Administracji i Spraw Wewnętrznych', 'zastępca przewodniczącego'),
+        ('Komisja do Spraw Energii', 'członek')]
+    assert data['committees'][0]['url'].endswith('KodKom=OBN') and data['committees'][1]['since'] == '2023-11-21'
+    labels = set(RECORD_LABEL.values()) | {DOCUMENT_LABEL}
+    assert set(data['documents']['by_kind']) <= labels and 'committee' not in str(data['documents']['by_kind'])
+    assert data['documents']['count'] == 2  # komisja to funkcja, nie dokument
+    party = data.get('party')
+    assert party is None or isinstance(party, dict) and party['name']  # strona pokazuje name (ui.tsx: text), nie obiekt
+
+
 def test_pick_topics_remembers_people(monkeypatch):
     from news import przeszlosc
     from news.przeszlosc_osoba import topic_history

@@ -21,3 +21,7 @@ HTML: minimalne kontrakty parserów, NIE zapis rzeczywistego DOM:
 `register.txt`: syntetyczna warstwa tekstowa rejestru; parser heurystyczny.
 Nie są to fixtures potwierdzające zgodność z żywym HTML/PDF; przed uruchomieniem
 potrzebny jest kontrolny odczyt w granicach zatwierdzonej karty dostępu.
+
+`incapsula.html` (7.10.2026): skrócona, zanonimizowana odpowiedź www.sejm.gov.pl/sejm10.nsf/posel.xsp
+dla klienta bez przeglądarki (Imperva/Incapsula: najpierw 302 na ten sam adres z ciasteczkiem, potem 403
+ze stroną wyzwania). Identyfikatory incydentu i adres IP usunięte. Zabezpieczenia nie obchodzimy.

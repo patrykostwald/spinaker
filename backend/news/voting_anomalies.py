@@ -209,6 +209,9 @@ def deviations_view(request):
     from news import przeszlosc
     if not przeszlosc.enabled():
         return Response({'detail': 'Funkcja jeszcze wyłączona.'}, status=404)
+    from news.przeszlosc_dostep import has, locked
+    if not has('deviations', request):
+        return locked('deviations')
     period = PERIODS.get(request.query_params.get('okres', '90d'))
     if not period:
         return Response({'detail': 'Okres: 90d albo kadencja.'}, status=400)

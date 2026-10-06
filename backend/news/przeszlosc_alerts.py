@@ -109,6 +109,9 @@ def subscribe_view(request):
         return Response({'detail': 'Podaj poprawny adres e-mail.'}, status=400)
     if request.data.get('consent') is not True:
         return Response({'detail': 'Zaznacz zgodę na codzienne powiadomienia.'}, status=400)
+    from news.przeszlosc_dostep import has, locked
+    if not has('alerts', request, email):
+        return locked('alerts')
     kind = request.data.get('kind')
     figure, query = None, ''
     if kind == 'topic':

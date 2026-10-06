@@ -283,6 +283,10 @@ def topic_view(request):
             data['counts']['vote'] = len(data['votes'])
         if connection.vendor == 'postgresql':
             cache.set(key, data, 600)
+    from news.przeszlosc_dostep import access, has
+    data = {**data, 'access': access(request)}
+    if not has('money_trail', request):
+        data.pop('eu_funds', None)  # ślad pieniędzy to funkcja Pro (po becie); w becie otwarta dla wszystkich
     return Response(data)
 
 
@@ -338,7 +342,8 @@ def start_view(request):
         data = start_data()
         if connection.vendor == 'postgresql':
             cache.set('przeszlosc:start', data, 600)
-    return Response(data)
+    from news.przeszlosc_dostep import access
+    return Response({**data, 'access': access(request)})
 
 
 def topic_rss(query):

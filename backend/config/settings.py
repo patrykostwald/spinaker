@@ -237,6 +237,8 @@ SOURCE_ACCESS_AUTOPROBE_ENABLED = env.bool("SOURCE_ACCESS_AUTOPROBE_ENABLED", de
 # Official BZP metadata is disabled until the operator explicitly enables it
 # in the deployment environment.  The adapter never falls back to enabled.
 BZP_API_ENABLED = env.bool("BZP_API_ENABLED", default=False)
+# przeszłość.today w becie (właściciel 7.10): wszystkie funkcje Pro otwarte dla każdego, bez cen (news.przeszlosc_dostep).
+PRZESZLOSC_BETA_ALL_FEATURES = env.bool("PRZESZLOSC_BETA_ALL_FEATURES", default=True)
 EDITOR_NETWORK_PREVIEW_ENABLED = env.bool("EDITOR_NETWORK_PREVIEW_ENABLED", default=False)
 NEWSAPI_ENABLED = env.bool("NEWSAPI_ENABLED", default=False)
 TWITTER_ENABLED = env.bool("TWITTER_ENABLED", default=False)

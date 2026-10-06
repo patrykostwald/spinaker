@@ -28,3 +28,5 @@
   .px-pilot__hero { padding-top: 40px; }
   .px-pilot__lead { font-size: 16px; }
 }
+.px-pilot__all { margin: 12px 0 0; }
+.px-pilot__all .px-quiet { padding-left: 0; color: var(--sc-accent); font-size: 14px; font-weight: 600; }

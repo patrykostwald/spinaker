@@ -26,6 +26,8 @@ cfg pkw https://pkw.gov.pl/finansowanie-polityki/ https://pkw.gov.pl/ 200
 cfg videos "$SEJM_DOC" "$SEJM_DOC" 1800
 cfg howtheyvote https://howtheyvote.eu/api/votes https://howtheyvote.eu/about 1800
 cfg mileage https://jakglosuja.pl/dane-otwarte https://creativecommons.org/licenses/by/4.0/ 500
+# Kohesio: limit zasilania 120/dobę (BACKFILL_CAP) + zwykły zbieracz 130 - karta nie może być mniejsza (test_zasil_baze).
+cfg kohesio https://data.europa.eu/data/datasets/557j-pmg8 https://kohesio.ec.europa.eu/en/faq 300
 
 echo '== Zasilanie bazy: plan (bez sieci)'
 $M zasil_baze --plan

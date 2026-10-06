@@ -48,6 +48,12 @@ EXTERNAL = {
     'eu_transparency': ('ec.europa.eu', ('/transparencyregister/public/files/ODP/download/XML/',),
                         'https://ec.europa.eu/transparencyregister', 'export'),
 }
+# Zabezpieczenie przed botami (Imperva/Incapsula na www.sejm.gov.pl i orka.sejm.gov.pl, sprawdzone 7.10): pętla 302 do
+# tego samego adresu (ciasteczko + JavaScript) albo strona wyzwania. Nie obchodzimy go: źródło staje z powodem
+# 'bot_protection' i próbuje najwyżej raz na PUBLIC_RECORDS_<ŹRÓDŁO>_BOT_WALL_PAUSE_HOURS (domyślnie 24 h).
+BOT_WALL = 'bot_protection'
+# Zadania pomocnicze: ściana przy nich nie zatrzymuje źródła, tylko oznacza kontrolę jako niewykonaną.
+OPTIONAL_WALL_KINDS = {'office_pdf': 'PDF Kancelarii Sejmu niedostępny automatycznie (zabezpieczenie strony przed botami)'}
 TED_FIELDS = ['publication-number', 'publication-date', 'notice-type', 'buyer-name', 'buyer-country', 'notice-title',
               'classification-cpv', 'total-value', 'total-value-cur', 'winner-name', 'winner-identifier', 'winner-country']
 
@@ -92,6 +98,13 @@ SOURCES = {
     'mileage': Spec('Kilometrówki i biura posłów (jakglosuja.pl)', 150, 720),
 }
 NEW_SOURCES = {'videos', 'howtheyvote', 'wikidata', 'kohesio', 'fts', 'integrity_watch', 'mileage'}
+
+
+class BotWall(AccessDenied):
+    """Host odpowiada zabezpieczeniem przed botami zamiast treści; nie obchodzimy go."""
+
+    def __init__(self):
+        super().__init__(BOT_WALL)
 
 
 def setting_int(source, suffix, default, maximum):
@@ -320,9 +333,18 @@ def fetch(job, token, backfill=None):
         headers = {'Authorization': 'Bearer ' + secret}
     # Existing transport streams at most 5 MB and validates redirects and DNS.
     # Tokens are headers only, never stored in job URLs, cursors or error strings.
-    return fetch_feed(job.url, hostname_transport=True, audit_source=provider,
-        audit_instruction=instruction, requested_kind='api_record' if instruction.channel == 'api' else 'page',
-        request_headers=headers, return_receipt=True, budget_share=1.0 if backfill else 0.6, method=method, body=body)
+    try:
+        raw, receipt = fetch_feed(job.url, hostname_transport=True, audit_source=provider,
+            audit_instruction=instruction, requested_kind='api_record' if instruction.channel == 'api' else 'page',
+            request_headers=headers, return_receipt=True, budget_share=1.0 if backfill else 0.6, method=method, body=body)
+    except ValueError as exc:
+        # Ciasteczko + 302 na ten sam adres bez końca: zabezpieczenie przed botami, nie błąd danych.
+        if str(exc) == 'Too many source redirects':
+            raise BotWall() from None
+        raise
+    if parsers.bot_wall(raw):
+        raise BotWall()
+    return raw, receipt
 
 
 def transparency_download(url, provider, instruction):
@@ -645,6 +667,22 @@ def handle(job, raw, receipt=None):
         HANDLERS[kind](job, raw, put)
 
 
+def skip_walled(state, kind):
+    """Kontrola pomocnicza za ścianą botów: wszystkie zaległe zadania tego rodzaju kończymy z adnotacją (bez sieci)."""
+    note = OPTIONAL_WALL_KINDS[kind]
+    with transaction.atomic():
+        jobs = list(state.jobs.filter(done=False, kind=kind))
+        if kind == 'office_pdf':
+            for job in jobs:
+                record = PublicRecord.objects.filter(source=state.source, kind='office_report',
+                    external_id=f"{job.context.get('mp_id')}/{job.context.get('year')}").first()
+                if record and record.data.get('pdf_check', '').startswith('oczekuje'):
+                    record.data = {**record.data, 'pdf_check': note}
+                    record.save(update_fields=['data'])
+        state.jobs.filter(pk__in=[j.pk for j in jobs]).update(done=True, last_error='', retry_at=None)
+    return len(jobs)
+
+
 def document_text(raw, url):
     if raw.startswith(b'%PDF-'):
         return parsers.pdf_text(raw)
@@ -693,6 +731,10 @@ def collect(source, *, since=None, max_requests=None, backfill=None):
         state = PublicCollectionState.objects.select_for_update().get(pk=state.pk)
         if state.lease_until and state.lease_until > now:
             return {'status': 'already_running', 'new_records': 0}
+        if (state.status == 'blocked_access_review' and state.last_error == BOT_WALL and state.last_started_at
+                and now - state.last_started_at < timedelta(hours=setting_int(source, 'BOT_WALL_PAUSE_HOURS', 24, 720))):
+            return {'status': 'blocked_access_review', 'error': BOT_WALL, 'new_records': 0, 'completed': 0, 'requests': 0,
+                    'pending': state.jobs.filter(done=False).count()}
         pending = state.jobs.filter(done=False).exists()
         if pending and since and state.since != since:
             raise ValueError('different_backfill_in_progress')
@@ -741,6 +783,10 @@ def collect(source, *, since=None, max_requests=None, backfill=None):
                     locked.save(update_fields=['last_success_at'])
                 completed += 1
                 documents += int(binary)
+            except BotWall:
+                if job.kind not in OPTIONAL_WALL_KINDS:
+                    raise
+                skip_walled(state, job.kind)  # dalej zwykły odstęp hosta i następne zadanie
             except (AccessDenied, HostRateLimited):
                 raise
             except Exception as exc:
@@ -748,7 +794,10 @@ def collect(source, *, since=None, max_requests=None, backfill=None):
                 review_errors = {'Source response too large', 'invalid_or_large_pdf', 'pdf_requires_manual_review',
                                  'pdf_text_limit', 'docx_text_limit', 'spreadsheet_expansion_limit'}
                 requires_review = isinstance(exc, ValueError) and str(exc) in review_errors
-                error = str(exc).replace(' ', '_').lower() if requires_review else type(exc).__name__
+                # Własne kody parserów (np. asset_navigation_missing) są bezpieczne i mówią, co się zmieniło.
+                own_code = isinstance(exc, ValueError) and re.fullmatch(r'[a-z][a-z0-9_]{2,63}', str(exc))
+                error = (str(exc).replace(' ', '_').lower() if requires_review else
+                         f'{type(exc).__name__}: {exc}' if own_code else type(exc).__name__)
                 job.failures += 1
                 job.last_error, job.retry_at = error, timezone.now() + timedelta(hours=min(24, 2 ** min(job.failures, 5)))
                 job.done = requires_review

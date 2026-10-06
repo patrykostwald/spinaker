@@ -115,7 +115,9 @@ def check(records, core=None, size=None):
     size = seats() if size is None else size
     need = max(MIN_MEMBERS, min(min_members(), size))
     met = len(models) >= need and got_core >= need_core
-    reason = '' if met else f'council_quorum: {len(models)}/{need} członków, stałych {got_core}/{need_core}'
+    # Jednoznacznie (7.10): ilu odpowiedziało z ilu wymaganych, osobno dla całego składu i dla stałego rdzenia.
+    reason = '' if met else (f'council_quorum: odpowiedziało {len(models)} z wymaganych {need}, '
+                             f'stałych {got_core} z wymaganych {need_core}')
     return {'met': met, 'members': len(models), 'need_members': need, 'core': got_core, 'need_core': need_core,
             'missing_core': sorted(core_models - set(models)), 'reason': reason}
 

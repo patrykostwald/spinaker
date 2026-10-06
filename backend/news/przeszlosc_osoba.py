@@ -27,7 +27,14 @@ VOTE_LABEL = {'YES': 'za', 'NO': 'przeciw', 'ABSTAIN': 'wstrzymał się', 'ABSEN
 RECORD_LABEL = {'interpellations': 'Interpelacja', 'questions': 'Zapytanie poselskie', 'statement': 'Wystąpienie w Sejmie',
                 'print': 'Druk sejmowy', 'consultation': 'Konsultacje', 'amendment': 'Poprawka', 'position': 'Stanowisko',
                 'lobby_activity': 'Lobbing', 'financial_document': 'Finanse', 'asset_declaration': 'Oświadczenie majątkowe',
-                'committee_speech': 'Wystąpienie w komisji'}
+                'committee_speech': 'Wystąpienie w komisji', 'asset_document': 'Oświadczenie majątkowe',
+                'osr_document': 'Ocena skutków regulacji', 'process': 'Proces legislacyjny',
+                'committee_sitting': 'Posiedzenie komisji', 'video': 'Transmisja Sejmu'}
+DOCUMENT_LABEL = 'Dokument Sejmu'  # nigdy surowy klucz rodzaju na stronie (właściciel 7.10: „committee: 3”)
+# Członkostwo w komisji to funkcja, nie dokument: osobny blok „Komisje sejmowe”, bez liczenia w dokumentach i mianownikach.
+MEMBERSHIP_KINDS = ('committee',)
+COMMITTEE_URL = 'https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KOMISJAST&NrKadencji={term}&KodKom={code}'
+ROLE_ORDER = ('przewodnicząc', 'zastępca', 'sekretarz')
 # Dane z otwartych zbiorów mają własne bloki profilu (news.zrodla_profil), nie listę dokumentów Sejmu.
 OPEN_DATA_KINDS = ('ballot', 'ep_vote', 'mep', 'mep_income', 'mep_meeting', 'person', 'mileage', 'office_report')
 TOPIC_PEOPLE = 'przeszlosc-topic-people'
@@ -175,7 +182,32 @@ def _records(figure, identities):
     q = Q(figure=figure)
     for term, mp_id in identities:
         q |= Q(term=term, mp_id=mp_id)
-    return PublicRecordPerson.objects.filter(q).exclude(record__kind__in=OPEN_DATA_KINDS)
+    return PublicRecordPerson.objects.filter(q).exclude(record__kind__in=OPEN_DATA_KINDS + MEMBERSHIP_KINDS)
+
+
+def committees(figure, identities):
+    """Komisje sejmowe posła w bieżącej kadencji: z zbieracza committees (skład komisji z API Sejmu), po oficjalnym
+    identyfikatorze posła, nigdy po nazwisku. Funkcja z API (przewodniczący, zastępca...), domyślnie „członek”."""
+    from news.public_records_models import PublicRecordPerson
+    from scraper.public_records import TERM
+    pairs = [(t, i) for t, i in identities if t == TERM]
+    q = Q(figure=figure, term=TERM)
+    for term, mp_id in pairs:
+        q |= Q(term=term, mp_id=mp_id)
+    rows = PublicRecordPerson.objects.filter(q, record__source='committees', record__kind='committee').select_related('record')
+    out = {}
+    for person in rows:
+        data = person.record.data if isinstance(person.record.data, dict) else {}
+        code = str(data.get('code') or person.record.external_id.rsplit('/', 1)[-1])
+        member = next((m for m in data.get('members') or [] if isinstance(m, dict) and str(m.get('id')) == str(person.mp_id)), {})
+        if member.get('leaveDate'):
+            continue  # tylko obecny skład
+        role = str(member.get('function') or 'członek').strip().lower()
+        out[code] = {'code': code, 'name': str(data.get('name') or person.record.title or code), 'role': role,
+                     'since': member.get('joinDate') or None,
+                     'url': COMMITTEE_URL.format(term=person.record.term or TERM, code=code)}
+    rank = lambda c: next((i for i, r in enumerate(ROLE_ORDER) if c['role'].startswith(r)), len(ROLE_ORDER))  # noqa: E731
+    return sorted(out.values(), key=lambda c: (rank(c), c['name']))
 
 
 def x_accounts(figure):
@@ -246,6 +278,7 @@ def profile(figure):
     # Interpelacje, zapytania, wystąpienia i inne dokumenty Sejmu (oficjalny identyfikator posła)
     record_rows = _records(figure, identities)
     by_kind = Counter(record_rows.values_list('record__kind', flat=True))
+    data['committees'] = committees(figure, identities)
     records = [p.record for p in record_rows.select_related('record').order_by(F('record__date').desc(nulls_last=True), '-record__pk')[:120]]
     seen, docs = set(), []
     for r in records:
@@ -253,10 +286,13 @@ def profile(figure):
             continue
         seen.add(r.pk)
         replies = r.data.get('replies') if isinstance(r.data, dict) else None
-        docs.append({'id': r.pk, 'kind': r.kind, 'label': RECORD_LABEL.get(r.kind, 'Dokument Sejmu'), 'title': (r.title or '')[:300],
+        docs.append({'id': r.pk, 'kind': r.kind, 'label': RECORD_LABEL.get(r.kind, DOCUMENT_LABEL), 'title': (r.title or '')[:300],
                      'date': r.date.isoformat() if r.date else None, 'url': r.source_url,
                      'replies': len(replies) if isinstance(replies, list) else None})
-    data['documents'] = {'available': bool(identities) or bool(docs), 'by_kind': {RECORD_LABEL.get(k, k): n for k, n in by_kind.items()},
+    labels = Counter()
+    for k, n in by_kind.items():
+        labels[RECORD_LABEL.get(k, DOCUMENT_LABEL)] += n
+    data['documents'] = {'available': bool(identities) or bool(docs), 'by_kind': dict(labels),
                          'count': sum(by_kind.values()), 'results': docs}
 
     # Głosowania imienne
@@ -556,7 +592,15 @@ def person_view(request, ident):
         data['denominators'] = denominators(figure)
         if connection.vendor == 'postgresql':
             cache.set(key, data, 900)
+    from news.przeszlosc_dostep import access, has, locked
     fmt = request.query_params.get('eksport', '')
+    if fmt in ('csv', 'json') and not has('export', request):
+        return locked('export')
+    data = {**data, 'access': access(request)}
+    if not has('denominators', request):
+        data['denominators'] = None
+    if not has('krs', request):
+        data['organisations'] = []
     stamp = timezone.localdate().isoformat()
     if fmt == 'csv':
         response = HttpResponse(export_csv(data), content_type='text/csv; charset=utf-8')

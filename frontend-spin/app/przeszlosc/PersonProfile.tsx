@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, day, nb, plural, short, spinColor, useStandalone } from './ui';
+import { Bar, Follow, Foot, Icon, day, nb, plural, short, spinColor, text, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 
 /**
@@ -12,7 +12,9 @@ import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './Op
 type Ev = { kind: string; label: string; url: string };
 type Person = { id: number | null; slug: string | null; name: string; role: string };
 type Profile = {
-  id: number; slug: string; name: string; role_title: string; organisation: string; party?: string | null; status: string;
+  id: number; slug: string; name: string; role_title: string; organisation: string; status: string;
+  party?: string | { code: string; short: string; name: string } | null; access?: Access;
+  committees?: { code: string; name: string; role: string; since: string | null; url: string }[];
   official_profile_url?: string; evidence_url?: string; krs_note: string; generated_at: string;
   x_accounts: { handle: string; url: string; evidence_url: string }[];
   posts: { count: number; diagnoses: number; avg_spin: number | null; results: { id: number; url: string; text: string; date: string; handle: string;
@@ -27,7 +29,7 @@ type Profile = {
   topics: { topic: string; at: string }[];
   sejm_video?: SejmVideo[];
   open_data?: OpenData;
-  denominators: { note: string; people: (Person & { score: number; shared: Record<string, number>; evidence: Ev[] })[];
+  denominators: null | { note: string; people: (Person & { score: number; shared: Record<string, number>; evidence: Ev[] })[];
     krs: (Person & { count: number; evidence: Ev[] })[];
     votes: { available: boolean; window: number; club?: string; aligned: (Person & { club: string; pct: number; shared: number; agreed: number; evidence: Ev[] })[];
       cross_club: (Person & { club: string; pct: number; shared: number; agreed: number; evidence: Ev[] })[] } };
@@ -75,7 +77,11 @@ function ProfileView({ data }: { data: Profile }) {
   ].sort((a, b) => b.date.localeCompare(a.date)), [data]);
   const shown = items.filter(i => kind === 'all' || (kind === 'diag' ? Boolean(i.spin) : i.kind === kind));
   const visible = more ? shown : shown.slice(0, 12);
-  const sub = [data.role_title, data.party, data.organisation].filter(Boolean).join(' · ');
+  const sub = [data.role_title, data.party, data.organisation].map(text).filter(Boolean).join(' · ');
+  const locked = new Set(data.access?.locked ?? []);
+  const committees = data.committees ?? [];
+  const inSejm = [committees.length ? `${committees.length} ${plural(committees.length, 'komisja', 'komisje', 'komisji')}` : '',
+    ...Object.entries(data.documents.by_kind).sort((a, b) => b[1] - a[1]).slice(0, committees.length ? 2 : 3).map(([k, n]) => `${k}: ${n}`)].filter(Boolean);
   const stamp = data.generated_at.slice(0, 10);
   let lastDay = '';
   return <>
@@ -91,9 +97,9 @@ function ProfileView({ data }: { data: Profile }) {
         </p>
       </div>
       <div className="px-tv__tools">
-        <Follow kind="person" target={data.slug} label={data.name} />
-        <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=csv`} download><Icon name="down" />CSV</a>
-        <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=json`} download><Icon name="down" />JSON</a>
+        {!locked.has('alerts') && <Follow kind="person" target={data.slug} label={data.name} />}
+        {!locked.has('export') && <><a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=csv`} download><Icon name="down" />CSV</a>
+        <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=json`} download><Icon name="down" />JSON</a></>}
       </div>
     </header>
 
@@ -113,7 +119,7 @@ function ProfileView({ data }: { data: Profile }) {
           <div><dt>Głosowania</dt><dd>{data.votes.count ? <VoteBar summary={data.votes.summary} /> : <small>{data.votes.available ? 'brak w bazie' : 'nie jest posłem w naszych danych'}</small>}</dd></div>
           {data.votes.deviation && <div><dt>Odstępstwa od klubu</dt><dd>{pctPl(data.votes.deviation.share)} <small>· mediana {data.votes.deviation.club} {data.votes.deviation.club_median === null ? '-' : pctPl(data.votes.deviation.club_median)}
             {data.votes.deviation.latest ? <> · <a href={data.votes.deviation.latest.url} target="_blank" rel="noopener noreferrer">{data.votes.deviation.rebellions_total} wbrew klubowi ↗</a></> : ''}</small></dd></div>}
-          <div><dt>W Sejmie</dt><dd>{data.documents.count ? Object.entries(data.documents.by_kind).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k}: ${n}`).join(', ') : <small>brak dokumentów w bazie</small>}</dd></div>
+          <div><dt>W Sejmie</dt><dd>{inSejm.length ? inSejm.join(' · ') : <small>brak dokumentów w bazie</small>}</dd></div>
           <div><dt>Ostatnio</dt><dd>{items[0] ? <>{day(items[0].date)} <small>· {items[0].source}</small></> : <small>brak aktywności w bazie</small>}</dd></div>
         </dl>
         <p className="px-card__foot">Policzone z&nbsp;danych poniżej, bez AI. Stan na {day(stamp)}.</p>
@@ -154,9 +160,17 @@ function ProfileView({ data }: { data: Profile }) {
           <ul className="px-panel__rows">{data.employment_timeline.slice(0, 8).map((r, i) => <li key={i}><span>{r.source?.url ? <a href={r.source.url} target="_blank" rel="noopener noreferrer">{r.position}</a> : r.position}</span>
             <small>{[r.organisation, r.since ? `od ${day(r.since)}` : '', r.until ? `do ${day(r.until)}` : '', r.status === 'current' ? 'obecnie' : 'wcześniej'].filter(Boolean).join(' · ')}</small></li>)}</ul>
         </section>
+        {committees.length > 0 && <section className="px-card" aria-labelledby="pp-com-h">
+          <h3 id="pp-com-h" className="px-h3">Komisje sejmowe <small>{committees.length}</small></h3>
+          <ul className="px-panel__rows">{committees.map(c => <li key={c.code}>
+            <a href={c.url} target="_blank" rel="noopener noreferrer">{c.name}</a>
+            <small>{[c.role, c.since ? `od ${day(c.since)}` : ''].filter(Boolean).join(' · ')}</small></li>)}</ul>
+          <p className="px-note">{nb('Skład komisji z oficjalnego API Sejmu, po identyfikatorze posła.')}</p>
+        </section>}
         <section className="px-card" aria-labelledby="pp-krs-h">
           <h3 id="pp-krs-h" className="px-h3">Funkcje w KRS</h3>
-          {data.organisations.length ? <ul className="px-panel__rows">{data.organisations.map(o => <li key={`${o.id}-${o.public_role}-${o.relation_status}`}>
+          {locked.has('krs') ? <p className="px-note">{nb('Funkcje w KRS są w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>
+          : data.organisations.length ? <ul className="px-panel__rows">{data.organisations.map(o => <li key={`${o.id}-${o.public_role}-${o.relation_status}`}>
             <a href={o.official_register_url} target="_blank" rel="noopener noreferrer">{o.name}</a>
             <small>{[o.organ || o.public_role, `KRS ${o.krs_number}`, o.relation_status === 'former' ? 'historyczna' : 'obecna'].filter(Boolean).join(' · ')}</small></li>)}</ul>
             : <p className="px-note">{nb('Brak potwierdzonych funkcji w KRS.')}</p>}
@@ -171,7 +185,7 @@ function ProfileView({ data }: { data: Profile }) {
       </aside>
     </div>
 
-    <Denominators data={data} />
+    {data.denominators && <Denominators data={data} />}
   </>;
 }
 
@@ -207,7 +221,7 @@ function Activity({ rows }: { rows: Profile['activity'] }) {
 
 /* Wspólne mianowniki v1: trzy równe boksy, po 10 pozycji; każda pozycja z dowodami (linki do źródeł). */
 function Denominators({ data }: { data: Profile }) {
-  const d = data.denominators;
+  const d = data.denominators!;
   const [cross, setCross] = useState(false);
   const votes = cross ? d.votes.cross_club : d.votes.aligned;
   return <section className="px-sec px-dn" aria-labelledby="dn-h">

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, day, nb, nice, personHref, plural, reduced, short, spinColor, useStandalone } from './ui';
+import { Bar, Follow, Foot, Icon, day, nb, nice, personHref, plural, reduced, short, spinColor, text, useStandalone } from './ui';
 import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
 
@@ -16,7 +16,7 @@ type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
   clubs: { club: string; size: number; votes: Record<string, number> }[]; members: [string, string, string][] };
-type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[]; eu_funds?: EuFunds };
+type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[]; eu_funds?: EuFunds; access?: { beta: boolean; label: string; locked: string[] } };
 type PersonHit = { id: number; slug: string; name: string; role: string; organisation?: string; has_x?: boolean };
 type Open = (p: { kind: 'person' | 'entry'; id: string } | null) => void;
 
@@ -195,14 +195,17 @@ export function TopicTree() {
         <a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>
     </section>}
 
-    {/* ceny wyłączone na razie (właściciel 6.10); zostaje kontakt dla redakcji */}
+    {/* bez cen (właściciel 7.10): w becie wszystkie funkcje otwarte; pełna lista na /przeszlosc/funkcje */}
     <section className="px-cta" id="redakcje" aria-labelledby="red-h">
       <div>
         <h2 id="red-h">Dla redakcji</h2>
-        <p>{nb('W becie wszystko jest bezpłatne. Przygotowujemy narzędzia dla zespołów:')}</p>
+        <p>{nb('W becie wszystkie funkcje są bezpłatne dla każdego: alerty, eksport, Wspólne mianowniki, KRS, ślad pieniędzy z UE i odstępstwa od klubu. Dla zespołów przygotowujemy:')}</p>
         <ul><li>wspólne teczki tematów</li><li>eksport do publikacji z&nbsp;przypisami</li><li>API dla redakcji</li></ul>
       </div>
-      <a className="px-btn" href="mailto:kontakt@spin.clinic?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji</a>
+      <div className="px-cta__act">
+        <a className="px-btn" href="/przeszlosc/funkcje">Zobacz wszystkie funkcje</a>
+        <a className="px-quiet" href="mailto:kontakt@spin.clinic?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji</a>
+      </div>
     </section>
     <Foot />
   </main>;
@@ -294,8 +297,8 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
         <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}</p>
       </div>
       <div className="px-tv__tools">
-        <Follow kind="topic" target={data.topic} label={data.topic} rss={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} />
-        <Export data={data} author={author} />
+        {!data.access?.locked.includes('alerts') && <Follow kind="topic" target={data.topic} label={data.topic} rss={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} />}
+        {!data.access?.locked.includes('export') && <Export data={data} author={author} />}
       </div>
     </header>
 
@@ -532,7 +535,7 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
 
 /* Profil spin.clinic (/api/public-figures/) ma z KRS tylko nazwy funkcji - numery i odnośniki KRS bierzemy z grafu tematu.
    Panel osoby i wpisu (właściciel 6.10): wejście „w głąb” bez wychodzenia do źródła. Esc zamyka, adres do udostępnienia. */
-type Figure = { id: number; name: string; role_title: string; organisation: string; party?: string | null; evidence_url?: string; official_profile_url?: string;
+type Figure = { id: number; name: string; role_title: string; organisation: string; party?: string | { name: string; short?: string } | null; evidence_url?: string; official_profile_url?: string;
   organisations?: { id: number; name: string; krs_number?: string; official_register_url?: string }[];
   employment_timeline?: { position: string; organisation: string; status: string; since?: string | null }[];
   votes?: { available: boolean; results: { date: string; topic: string; vote: string }[] };
@@ -572,7 +575,7 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
       {panel.kind === 'person' ? <>
         <div className="px-panel__who"><span className="px-panel__av"><Icon name={iconOf(node)} size={22} /></span>
           <div><h2>{nice(fig?.name ?? node.label)}</h2>
-            <p className="px-panel__sub">{[fig?.role_title ?? node.role, fig?.organisation, fig?.party, camp && CAMP_LABEL[camp]].filter(Boolean).join(' · ')}</p></div></div>
+            <p className="px-panel__sub">{[fig?.role_title ?? node.role, fig?.organisation, fig?.party, camp && CAMP_LABEL[camp]].map(text).filter(Boolean).join(' · ')}</p></div></div>
         {figureId && <a className="px-btn px-panel__profile" href={personHref({ id: figureId, slug: node.slug })}>Pełny profil osoby: wpisy, głosowania, KRS, wspólne mianowniki →</a>}
         <section><h3>Powiązania w temacie</h3><TopicGraph data={data} byId={byId} focus={node.id} onOpen={onOpen} compact /></section>
         <section><h3>W tym temacie ({entriesOf(node.id).length})</h3>

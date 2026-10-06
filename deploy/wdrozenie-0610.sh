@@ -75,13 +75,23 @@ echo '== 7. Zasilanie bazy: karty z limitem na historię i plan (szczegóły: de
 sh deploy/zasil-baze.sh
 
 echo '== 8. Kworum Konsylium: powtórka diagnoz bez kworum od 4.10 (opcjonalnie, tylko raz)'
-# Podgląd zawsze; prawdziwa powtórka raz (znacznik). Poza 2:00-7:00 komenda tylko planuje - zrobi ją zadanie nocne 2:40.
-MARK=.konsylium-powtorz-0610.done
+# Podgląd zawsze. Znacznik tylko po prawdziwym przebiegu (status ok albo idle). Poza 2:00-7:00 komenda tylko planuje
+# (status deferred) i znacznika NIE stawia - powtórkę zrobi zadanie nocne 2:40 (ostatnie 7 dni, 8 diagnoz na noc).
+# Nowa nazwa znacznika: stary (.konsylium-powtorz-0610.done) mógł powstać po samym planowaniu w dzień.
+MARK=.konsylium-powtorz-0610-v2.done
 $M konsylium_powtorz --od 2026-10-04 --dry-run | head -40
 if [ "${POWTORKA:-tak}" = tak ] && [ ! -f "$MARK" ]; then
-  $M konsylium_powtorz --od 2026-10-04 --limit 8 | head -40 && touch "$MARK"
+  OUT=$($M konsylium_powtorz --od 2026-10-04 --limit 8 2>&1) || OUT='{"status": "error"}'
+  echo "$OUT" | head -40
+  if printf '%s' "$OUT" | grep -q '"status": "\(ok\|idle\)"'; then
+    touch "$MARK"; echo 'Powtórka wykonana - znacznik ustawiony'
+  else
+    echo 'Powtórka nie wykonana teraz (np. poza 2:00-7:00 albo brak kworum) - znacznik nie ustawiony; zrobi ją zadanie nocne 2:40'
+  fi
+elif [ -f "$MARK" ]; then
+  echo "Powtórka pominięta: znacznik $MARK istnieje (usuń go, jeśli powtórka naprawdę się nie odbyła)"
 else
-  echo 'Powtórka pominięta (znacznik istnieje albo POWTORKA=nie)'
+  echo 'Powtórka pominięta (POWTORKA=nie)'
 fi
 echo '== 9. Karty dostępu z limitem 0 (zatwierdzone, ale nic nie przepuszczają)'
 $M shell -c "

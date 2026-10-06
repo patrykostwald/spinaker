@@ -602,7 +602,7 @@ def _diagnose(context: dict, lines: str) -> dict:
     if len(opinions) < MIN_MEMBERS or not quorum_state['met']:
         # Kworum (właściciel 6.10): bez wymaganej liczby odpowiedzi i stałego rdzenia diagnoza się nie ukazuje -
         # wpis czeka w kolejce na pełniejszy skład (news/clinic.py: _defer_quorum). Ta sama reguła dla każdej partii.
-        error = ClinicAIError(quorum_state['reason'] or f'council_quorum: {len(opinions)} członków')
+        error = ClinicAIError(quorum_state['reason'] or f'council_quorum: odpowiedziało {len(opinions)}')
         error.council = {'members': member_records, 'diversity': diversity, 'quorum': quorum_state}
         error.quorum = quorum_state
         raise error

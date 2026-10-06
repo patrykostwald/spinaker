@@ -79,8 +79,10 @@ def send_confirmation(lead_id):
     if not lead:
         return 'skipped'
     if lead.kind == 'pilot':
-        what = ('zgłoszenie do pilotażu przeszłość.today. Po potwierdzeniu odezwiemy się w ciągu 2 dni roboczych; '
-                f'piloci dostają bezpłatny dostęp Pro na {pilot_days()} dni.')
+        from news.przeszlosc_dostep import beta
+        perk = ('w becie wszystkie funkcje są bezpłatne dla każdego, a pilot daje bezpośredni kanał do zespołu.' if beta()
+                else f'piloci dostają bezpłatny dostęp do wszystkich funkcji na {pilot_days()} dni.')
+        what = ('zgłoszenie do pilotażu przeszłość.today. Po potwierdzeniu odezwiemy się w ciągu 2 dni roboczych; ' + perk)
         sign = 'przeszłość.today - iapply sp. z o.o., Poznań'
     else:
         what = ('zapytanie o raporty spin.clinic dla instytucji. Po potwierdzeniu odpowiemy w 1 dzień roboczy '

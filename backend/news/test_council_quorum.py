@@ -63,7 +63,7 @@ def test_quorum_not_met_like_5_10():
                rec(EXTRA[0], 5, 'no_spin'), rec(EXTRA[1], 30)]
     state = quorum.check(records, core_tuples())
     assert not state['met'] and state['core'] == 2 and state['need_core'] == 3
-    assert state['reason'].startswith('council_quorum: 4/4 członków, stałych 2/3')
+    assert state['reason'] == 'council_quorum: odpowiedziało 4 z wymaganych 4, stałych 2 z wymaganych 3'
     too_few = quorum.check([rec(c) for c in CORE[:3]], core_tuples())
     assert not too_few['met'] and too_few['members'] == 3
 
@@ -297,7 +297,7 @@ def test_rerun_dry_run_lists_without_calls(broken_row, monkeypatch):
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda c: pytest.fail('dry-run bez zapytań'))
     result = council_rerun.run(since(), dry_run=True)
     assert result['status'] == 'dry_run' and result['candidates'] == 1
-    assert result['rows'][0]['reason'].startswith('council_quorum: 3/4')
+    assert result['rows'][0]['reason'].startswith('council_quorum: odpowiedziało 3 z wymaganych 4')
 
 
 def test_rerun_keeps_history_and_is_idempotent(broken_row, rerun_ready, monkeypatch):

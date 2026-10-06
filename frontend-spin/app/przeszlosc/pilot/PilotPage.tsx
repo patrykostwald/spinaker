@@ -14,7 +14,7 @@ const WHO: [string, string, string][] = [
   ['record', 'Zespoły z grantami', 'Projekty IJ4EU i Journalismfund: narzędzie jako pozycja w budżecie.'],
 ];
 const GET: [string, string][] = [
-  ['Pełny dostęp Pro przez 60 dni', 'Bez opłat i bez karty. Po pilotażu sam decydujesz, czy zostajesz.'],
+  ['Wszystkie funkcje od razu', 'W becie każda funkcja jest otwarta. Bez opłat i bez karty, sam decydujesz, czy zostajesz.'],
   ['Kto, co i kiedy w temacie', 'Wypowiedzi polityków, druki i głosowania Sejmu, KRS i przetargi na jednej osi czasu.'],
   ['Profil osoby i alerty', 'Historia wypowiedzi i głosowań, odstępstwa od klubu, codzienny list o nowościach.'],
   ['Bezpośredni kanał do zespołu', 'Zgłaszasz brakujące dane i funkcje; odpowiadamy w 2 dni robocze.'],
@@ -77,6 +77,7 @@ export function PilotPage() {
     <section aria-labelledby="co-dostajesz">
       <h2 className="px-h2" id="co-dostajesz">Co dostajesz</h2>
       <ol className="px-pilot__get">{GET.map(([title, text], i) => <li key={title}><b>{i + 1}</b><div><h3>{title}</h3><p>{nb(text)}</p></div></li>)}</ol>
+      <p className="px-pilot__all"><a className="px-quiet" href="/przeszlosc/funkcje">Zobacz wszystkie funkcje →</a></p>
     </section>
 
     <section aria-labelledby="zasady" className="px-pilot__rules">
@@ -85,7 +86,7 @@ export function PilotPage() {
         <li>{nb('Każdy zespół dostaje ten sam zakres i ten sam czas pilotażu, niezależnie od profilu redakcji.')}</li>
         <li>{nb('Pilotaż nie daje wpływu na dane, kryteria ani diagnozy Dr. Spina.')}</li>
         <li>{nb('Pokazujemy tylko osoby publiczne i dokumenty z urzędowych źródeł, z linkiem do oryginału.')}</li>
-        <li>{nb('Po pilotażu cennik jest jeden dla wszystkich. Nic nie przedłuża się samo.')}</li>
+        <li>{nb('Warunki po becie ustalamy indywidualnie, te same dla każdego zespołu. Nic nie przedłuża się samo.')}</li>
       </ul>
     </section>
 

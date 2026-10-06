@@ -10,6 +10,14 @@ export const plural = (n: number, one: string, few: string, many: string) => n =
 export const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 export const short = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : '';
 export const spinColor = (v = 0) => v >= 70 ? 'var(--sc-spin-hi)' : v >= 40 ? 'var(--sc-spin-mid)' : 'var(--sc-spin-lo)';
+/** Tekst do wyświetlenia z wartości z API: nigdy „[object Object]” (właściciel 7.10). Obiekt -> name / short / label / title. */
+export const text = (v: unknown): string => {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number') return String(v);
+  if (v && typeof v === 'object') { const o = v as Record<string, unknown>; for (const k of ['name', 'short', 'label', 'title']) if (typeof o[k] === 'string' && o[k]) return o[k] as string; }
+  return '';
+};
+export type Access = { beta: boolean; label: string; locked: string[] };
 export const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // skróty kont instytucji pełną nazwą (panel designu 5.10: „ME” nic nie mówi czytelnikowi); NAZWISKA wielkimi literami jak zwykłe
@@ -51,10 +59,24 @@ export function useStandalone() {
   }, []);
 }
 
+/** Etykieta bety z serwera (PRZESZLOSC_BETA_ALL_FEATURES): jedna prośba na stronę, pamiętana między komponentami. */
+let accessPromise: Promise<Access | null> | null = null;
+export function useAccess() {
+  const [access, setAccess] = useState<Access | null>(null);
+  useEffect(() => {
+    accessPromise ??= fetch('/api/przeszlosc/funkcje/').then(r => r.ok ? r.json() : null).catch(() => null);
+    let live = true; void accessPromise.then(a => { if (live) setAccess(a); }); return () => { live = false; };
+  }, []);
+  return access;
+}
+
 export function Bar() {
+  const access = useAccess();
   return <nav className="px-bar" aria-label="Menu">
-    <a href="/przeszlosc" className="px-mark">przeszłość<i>.</i>today</a>
-    <span className="px-bar__links"><a href="/przeszlosc?tryb=osoba">Szukaj osoby</a><a href="/przeszlosc#jak">Jak to działa</a>
+    <span className="px-bar__brand"><a href="/przeszlosc" className="px-mark">przeszłość<i>.</i>today</a>
+      {access?.beta && access.label && <span className="px-beta" title={access.label}>
+        <span className="px-beta__full">{access.label}</span><span className="px-beta__short">Beta</span></span>}</span>
+    <span className="px-bar__links"><a href="/przeszlosc/funkcje">Funkcje</a><a href="/przeszlosc?tryb=osoba">Szukaj osoby</a><a href="/przeszlosc#jak">Jak to działa</a>
       <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">spin.clinic ↗</a></span>
   </nav>;
 }

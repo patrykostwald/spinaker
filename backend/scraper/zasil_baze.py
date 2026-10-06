@@ -273,6 +273,22 @@ def _estimate(source, state):
     return ESTIMATE.get(source, 10)
 
 
+BOT_WALL_NOTE = ('strona za zabezpieczeniem przed botami (Imperva) - nie obchodzimy go; zbieracz próbuje raz na dobę, '
+                 'trwale pomoże tylko dostęp od wydawcy (np. zgoda Kancelarii Sejmu dla adresu serwera)')
+STALE_NOTE = 'blokada sprzed zatwierdzenia karty - karta już jest, zbieracz wznowi kolejkę sam (najbliższy przebieg co 15 min)'
+
+
+def _note(state, card):
+    """Wyjaśnienie stanu dla właściciela (bez sieci): ściana botów albo nieaktualna blokada sprzed karty."""
+    if not state or state.status != 'blocked_access_review':
+        return ''
+    if state.last_error == 'bot_protection':
+        return BOT_WALL_NOTE
+    if state.last_error == 'no_approved_instruction' and card:
+        return STALE_NOTE
+    return ''
+
+
 def plan_row(source, lane):
     from news.public_records_models import PublicRecord
     spec, state, data = SOURCES[source], _state(source), info(source)
@@ -301,7 +317,7 @@ def plan_row(source, lane):
             'complete_at': data.get('complete_at'), 'requests_today': data.get('requests_today', 0)
             if data.get('day') == timezone.localdate().isoformat() else 0,
             'requests_total': data.get('requests_total', 0), 'status': state.status if state else 'brak',
-            'error': state.last_error if state else ''}
+            'error': state.last_error if state else '', 'note': _note(state, card)}
 
 
 def bzp_row():
@@ -372,7 +388,8 @@ def _line(r):
         state = f"{r['percent']}%, zostało ok. {r['remaining']} zapytań{days}"
     added = f", +{r['added_24h']} / 24 h" if r['added_24h'] is not None else ''
     total = f", razem {r['records']}" if r['records'] is not None else ''
-    return f"{r['source']}: {state}{added}{total}"
+    note = f" ({r['note']})" if r.get('note') else ''
+    return f"{r['source']}: {state}{added}{total}{note}"
 
 
 def report_lines():

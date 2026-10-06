@@ -67,6 +67,8 @@ class Command(BaseCommand):
             self.stdout.write(f"{r['source']:<16}{('tak' if r['enabled'] else 'nie'):<6}{card:>7}{limit:>7}"
                               f"{r['target']:>12}{records:>9}{added:>7}{r['pending']:>9}{r['remaining']:>9}"
                               f"{r['percent']:>5}{days:>6}  {state}")
+            if r.get('note'):
+                self.stdout.write('  ! ' + r['note'])
             if r['enabled'] and r['card_cap'] == 0:
                 self.stdout.write('  ! brak ważnej karty dostępu: deploy/zasil-baze.sh')
             elif r['enabled'] and r['card_cap'] and r['backfill_cap'] and r['card_cap'] < r['backfill_cap']:
