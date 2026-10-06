@@ -10885,3 +10885,79 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
 .sc-krs-functions li[data-status="former"] .sc-krs-functions__name { color: var(--sc-text-2); }
 .sc-krs-functions__more { margin: var(--sc-s-3) 0 0; }
 .sc-krs-functions__more a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-accent); text-underline-offset: 4px; }
+
+/* ===== Spinka: strefa „Oceń” pod mini-paskiem i lewe pole połączenia (właściciel 6.10) =====
+   Strefa ma stałą wysokość (dwie linie wyjaśnienia + przycisk 44 px), więc przejście między boksami i połączeniami
+   nic nie przesuwa (stałe strefy ekranu). Prawa UX: Jakob (znany przycisk „Oceń”), Fitts (cele 44 px),
+   Von Restorff (jedno wyróżnienie w strefie), Tesler (wyjaśnienie bierze system, nie czytelnik). */
+.sc-pick__guide { display: grid; grid-template-rows: 20px 20px 50px; row-gap: 2px; align-content: start; height: 94px; margin-top: 10px; box-sizing: border-box; min-width: 0; }
+.sc-pick__guide > p { margin: 0; min-width: 0; font-size: 13px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-pick__lead { color: var(--sc-text-3); }
+.sc-pick__lead-short { display: none; }
+.sc-pick__why { color: var(--sc-text-2); }
+.sc-pick__cta { display: flex; align-items: flex-end; min-width: 0; height: 50px; }
+.sc-pick__rate-btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; min-width: 132px; padding: 0 22px; box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--sc-accent) 70%, transparent); border-radius: 3px; background: color-mix(in srgb, var(--sc-accent) 10%, transparent);
+  color: var(--sc-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .2s, border-color .2s; }
+.sc-pick__rate-btn:hover { background: color-mix(in srgb, var(--sc-accent) 20%, transparent); border-color: var(--sc-accent); }
+.sc-pick__rate-btn:focus-visible, .sc-pick__mine button:focus-visible, .sc-step-rate--labels button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.sc-pick__mine { display: inline-flex; align-items: center; gap: 8px; height: 44px; margin: 0; font-size: 14px; color: var(--sc-text-2); }
+.sc-pick__mine b { display: inline-flex; align-items: center; gap: 4px; color: var(--sc-text); font-weight: 600; }
+.sc-pick__mine b svg { width: 16px; height: 16px; }
+.sc-pick__mine[data-rating="positive"] b svg { color: var(--sc-positive); }
+.sc-pick__mine[data-rating="doubt"] b svg { color: var(--sc-warning); }
+.sc-pick__mine[data-rating="negative"] b svg { color: var(--sc-negative); }
+.sc-pick__mine span { color: var(--sc-text-3); }
+.sc-pick__mine button { height: 44px; padding: 0 6px; border: 0; background: none; color: var(--sc-accent); font: inherit; font-size: 14px; cursor: pointer; }
+.sc-pick__mine button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.sc-step-rate--labels { gap: 8px; }
+.sc-step-rate--labels button { height: 44px; padding: 0 14px !important; gap: 6px; border: 1px solid color-mix(in srgb, var(--sc-text) 18%, transparent) !important; border-radius: 3px;
+  color: var(--sc-text-2); font-size: 14px; }
+.sc-step-rate--labels button svg { width: 16px; height: 16px; }
+.sc-step-rate--labels button:hover { border-color: currentColor !important; }
+
+/* lewe pole połączenia: dwa spięte boksy jako małe karty ze znakiem połączenia (zamiast pustego prostokąta) */
+.sc-pick__pairviz { display: grid; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; width: 100%; height: 100%; padding: 18px; box-sizing: border-box; gap: 0; }
+.sc-pick__mini { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-height: 0; padding: 12px 14px; box-sizing: border-box; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--sc-text) 16%, transparent); border-radius: 3px; background: color-mix(in srgb, var(--sc-bg) 60%, transparent); }
+.sc-pick__mini-k { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-text-3); }
+.sc-pick__mini b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 13px; line-height: 1.4; font-weight: 600; color: var(--sc-text); align-self: start; }
+.sc-pick__pairjoint { display: grid; grid-template-rows: 12px auto 12px; justify-items: center; padding: 2px 0; }
+.sc-pick__pairjoint > i { width: 1.5px; height: 100%; background: currentColor; }
+.sc-pick__pairjoint .sc-rel { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid currentColor; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--sc-text); }
+.sc-pick__pairjoint .sc-rel svg { color: inherit; }
+.sc-pick__pairjoint .sc-glyph { color: currentColor; }
+
+@media (min-width: 1101px) {
+  /* stała wysokość sceny: karta + mini-pasek 44 px + strefa „Oceń”; „Cała spinka” w linii mini-paska, przy lewej krawędzi karty */
+  .sc-trop-overlay__body > article .sc-pick { height: auto; grid-template-rows: var(--sp-card-h) auto auto; }
+  .sc-trop-overlay__body > article .sc-pick__chain { height: 44px; margin-top: 10px; padding: 0 !important; align-items: center; box-sizing: border-box; }
+  .sc-trop-overlay__body > article .sc-pick__home { top: calc(100% + 10px); left: calc(50% - min(var(--sp-card-w), 100% - 120px) / 2); height: 44px; padding: 0; transform: none;
+    display: inline-flex; align-items: center; z-index: 1; }
+  .sc-trop-overlay__body > article .sc-pick__home:hover { transform: translateX(-3px); }
+  .sc-trop-overlay__body > article .sc-pick__arrow { width: 44px !important; height: 44px !important; }
+  .sc-trop-overlay__body > article .sc-pick__guide { width: min(var(--sp-card-w), 100% - 120px); justify-self: center; margin-bottom: 16px; }
+}
+/* średnio wysokie ekrany: przy otwartym boksie lub połączeniu „Warto też zobaczyć” chowa się, żeby strefa „Oceń” i komentarze miały miejsce */
+@media (min-width: 1101px) and (max-height: 1199px) {
+  .sc-trop-overlay:has(.sc-pick) .sc-trop-overlay__next, .sc-trop-overlay:has(.sc-pick) .sc-trop-overlay__scroller { display: none !important; }
+}
+@media (max-width: 1100px) {
+  .sc-pick__guide { width: 100%; }
+  .sc-pick__pairviz { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; padding: 12px; }
+  .sc-pick__pairjoint { grid-template-rows: none; grid-template-columns: 8px auto 8px; align-items: center; padding: 0 2px; }
+  .sc-pick__pairjoint > i { width: 100%; height: 1.5px; }
+  .sc-pick__pairjoint .sc-rel { padding: 3px 8px; font-size: 11px; }
+  .sc-pick__mini { padding: 8px 10px; }
+  .sc-pick__mini b { font-size: 12px; -webkit-line-clamp: 3; }
+  .sc-pick__media:has(.sc-pick__pairviz) { aspect-ratio: auto !important; height: 150px !important; }
+}
+@media (max-width: 600px) {
+  .sc-pick__lead-long { display: none; }
+  .sc-pick__lead-short { display: inline; }
+  /* telefon: druga linia może zająć dwa wiersze (stała wysokość strefy), żeby nazwa chwytu nie znikała */
+  .sc-pick__guide { grid-template-rows: 20px 40px 50px; height: 114px; }
+  .sc-pick__guide > .sc-pick__why { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .sc-step-rate--labels { gap: 6px; }
+  .sc-step-rate--labels button { padding: 0 10px !important; font-size: 13px; }
+}

@@ -67,16 +67,18 @@ export function useThreadSteps(threadId: number, enabled: boolean) {
   return { data: query.data as StepsData | undefined, find, rate, canRate };
 }
 
-export function StepRate({ step, onRate, canRate, label }: {
+export function StepRate({ step, onRate, canRate, label, withLabels = false }: {
   step?: { counts: Record<string, number>; mine: string | null }; onRate: (polarity: string) => void; canRate: boolean; label: string;
+  /** Wersja z podpisami (strefa „Oceń” pod kartą): ten sam przycisk i ta sama obsługa, tylko ze słowem obok znaku. */
+  withLabels?: boolean;
 }) {
   // zawsze klikalne (właściciel 5.10): bez konta kliknięcie zaprasza do logowania lub założenia konta
   const [invite, setInvite] = useState(false);
-  return <span className="sc-step-rate" role="group" aria-label={`Oceń: ${label}`}>
+  return <span className={`sc-step-rate${withLabels ? ' sc-step-rate--labels' : ''}`} role="group" aria-label={`Oceń: ${label}`}>
     {RATINGS.map(key => <button key={key} type="button" data-rating={key} aria-pressed={step?.mine === key} aria-label={`${LABELS[key]} (${step?.counts[key] ?? 0})`}
       title={canRate ? `${LABELS[key]}: ${step?.counts[key] ?? 0}` : `${LABELS[key]}: załóż konto, aby oceniać`}
       onClick={event => { event.stopPropagation(); if (canRate) onRate(key); else setInvite(true); }}>
-      <SocialIcon kind={key} /></button>)}
+      <SocialIcon kind={key} />{withLabels && <span>{LABELS[key]}</span>}</button>)}
     <AccountDialog open={invite} onClose={() => setInvite(false)} reason="rate" />
   </span>;
 }
@@ -139,6 +141,55 @@ export function contentTag(item: ThreadElement): 'LINK' | 'FILM' | 'ZDJĘCIE' | 
   return 'LINK';
 }
 
+/** Rodzaj boksu małą literą do zdań („chwyt”, „wpis na X”). */
+const typeLower = (item: ThreadElement) => { const word: string = item.box_type ? BOX_TYPES[item.box_type as keyof typeof BOX_TYPES] : 'materiał'; return word.charAt(0).toLowerCase() + word.slice(1); };
+
+/** Mały boks w lewym polu połączenia: rodzaj, numer i tytuł (zamiast pustego prostokąta, właściciel 6.10). */
+function MiniBox({ item, n }: { item: ThreadElement; n: number }) {
+  return <span className="sc-pick__mini">
+    <span className="sc-pick__mini-k"><Glyph name={TYPE_GLYPH[item.box_type ?? ''] ?? 'doc'} size={14} />Boks&nbsp;{n}</span>
+    <b>{splitTitle(item).title}</b>
+  </span>;
+}
+
+/** Lewe pole wybranego połączenia: dwa spięte boksy jako małe karty, między nimi znak połączenia w kolorze reakcji. */
+function JointPreview({ from, to, index, counts }: { from: ThreadElement; to: ThreadElement; index: number; counts?: Counts3 }) {
+  return <span className="sc-pick__pairviz" aria-hidden="true">
+    <MiniBox item={from} n={index} />
+    <span className="sc-pick__pairjoint" style={{ color: clipColor(counts) }}>
+      <i /><span className="sc-rel"><Glyph name={LINK_GLYPH[to.link_kind ?? ''] ?? 'pin'} size={16} />{LINK_WORDS[to.link_kind ?? ''] ?? 'połączenie'}</span><i />
+    </span>
+    <MiniBox item={to} n={index + 1} />
+  </span>;
+}
+
+/**
+ * Strefa pod mini-paskiem (właściciel 6.10): dwie linie wyjaśnienia dla nowego czytelnika i jedno wezwanie „Oceń”.
+ * Ta sama obsługa i ten sam stan co ✕ ? ✓ w stopce karty (StepRate i steps.rate), więc obie oceny zawsze się zgadzają.
+ * Stała wysokość: przejście między boksami i połączeniami nic nie przesuwa.
+ */
+function StepGuide({ why, current, canRate, label, noun, onRate }: {
+  why: string; current?: { counts: Record<string, number>; mine: string | null }; canRate: boolean; label: string; noun: string; onRate?: (polarity: string) => void;
+}) {
+  const [choosing, setChoosing] = useState(false);
+  const [invite, setInvite] = useState(false);
+  const mine = current?.mine as keyof typeof LABELS | null | undefined;
+  return <div className="sc-pick__guide">
+    <p className="sc-pick__lead">
+      <span className="sc-pick__lead-long">Spinka to łańcuch boksów: każdy boks to dowód, każde połączenie to krok, którym wpis prowadzi czytelnika.</span>
+      <span className="sc-pick__lead-short">Spinka: boksy to dowody, połączenia to kroki.</span>
+    </p>
+    <p className="sc-pick__why" title={why}>{why}</p>
+    <div className="sc-pick__cta">
+      {onRate && (choosing ? <StepRate step={current} canRate={canRate} label={label} withLabels onRate={polarity => { onRate(polarity); setChoosing(false); }} />
+        : mine ? <p className="sc-pick__mine" data-rating={mine}>Twoja ocena: <b><SocialIcon kind={mine} />{LABELS[mine].toLowerCase()}</b>
+            <span aria-hidden="true">·</span><button type="button" onClick={() => setChoosing(true)} aria-label={`Zmień ocenę: ${label}`}>zmień</button></p>
+        : <button type="button" className="sc-pick__rate-btn" onClick={() => canRate ? setChoosing(true) : setInvite(true)}>Oceń {noun}</button>)}
+      <AccountDialog open={invite} onClose={() => setInvite(false)} reason="rate" />
+    </div>
+  </div>;
+}
+
 export function FocusView({ threadId, items, start, steps, onClose, onStep, rateMode = false }: {
   threadId: number; items: ThreadElement[]; start: FocusStep; steps: ReturnType<typeof useThreadSteps>; onClose: () => void; onStep: (step: FocusStep) => void;
   /** Ocena krok po kroku (właściciel 6.10): po każdej reakcji karta sama przechodzi do następnego elementu, na końcu podziękowanie. */
@@ -189,6 +240,14 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
   // wyjaśnienie autora tylko, gdy mówi coś innego niż opis i tytuł (panel designu 6.10)
   const note = item.note && item.note.trim() !== (item.body ?? '').trim() && item.note.trim() !== item.title.trim() ? item.note : '';
   const external = !item.url.startsWith('/');
+  // jedna obsługa oceny dla stopki karty i strefy „Oceń” (stan wspólny w useThreadSteps)
+  const rateCurrent = item.item_id ? (polarity: string) => { void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity);
+    if (rateMode) window.setTimeout(() => { if (at < sequence.length - 1) setAt(at + 1); else setFinished(true); }, 450); } : undefined;
+  const rateLabel = step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`;
+  // druga linia wyjaśnienia: z czego wynika ten krok (dane, które API już zwraca: rodzaj i tytuł boksu docelowego)
+  const why = step.kind === 'clip'
+    ? `To połączenie (boks\u00a0${step.index} → boks\u00a0${step.index + 1}) wynika z:\u00a0${typeLower(item)} „${splitTitle(item).title}”`
+    : `Ten boks (${step.index + 1}\u00a0z\u00a0${items.length}) ${step.index === 0 ? 'otwiera spinkę' : 'to dowód'}: ${typeLower(item)}${source ? `, ${source}` : ''}`;
   return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Połączenie ${step.index} → ${step.index + 1}`}>
     <header className="sc-pick__bar">
       <span />
@@ -201,7 +260,7 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
       <article className="sc-pick__card" key={at} data-kind={step.kind} ref={card} tabIndex={-1}>
         {/* lewe pole zawsze treść (zdjęcie, karta diagnozy, podgląd linku), prawe zawsze tytuł i opis (właściciel 5.10, 3 głosy na tak) */}
         <div className="sc-pick__media" data-type={kind} data-card={image.includes('/card.png') || undefined}>
-          {step.kind === 'clip' ? <SpinkaClip counts={clipStep?.counts} />
+          {step.kind === 'clip' ? <JointPreview from={items[step.index - 1]} to={item} index={step.index} counts={clipStep?.counts} />
             : image ? <img src={image} alt="" />
             : <span className="sc-pick__preview" aria-hidden="true"><Glyph name={TYPE_GLYPH[item.box_type ?? ''] ?? 'doc'} size={44} /><b>{(item.source_name || (item.kind === 'link' ? item.domain : '') || 'źródło').replace(/^www\./, '')}</b></span>}
           {step.kind === 'box' && <span className="sc-type-tag">{contentTag(item)}</span>}
@@ -225,9 +284,7 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
           <footer className="sc-pick__foot">
             {step.kind === 'box' ? <a className="sc-pick__source" href={item.url} target={external ? '_blank' : undefined} rel="noopener noreferrer">{linkLabel(item)}</a> : <span />}
             {item.item_id && <span className="sc-pick__rate"><span className="sc-pick__ask">{step.kind === 'box' ? 'Trafny boks?' : 'Trafne połączenie?'}</span>
-              <StepRate step={current} canRate={steps.canRate} label={step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`}
-                onRate={polarity => { void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity);
-                  if (rateMode) window.setTimeout(() => { if (at < sequence.length - 1) setAt(at + 1); else setFinished(true); }, 450); }} /></span>}
+              <StepRate step={current} canRate={steps.canRate} label={rateLabel} onRate={rateCurrent!} /></span>}
           </footer>
         </div>
       </article>
@@ -242,5 +299,6 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
         aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Połączenie ${row.index} → ${row.index + 1}`} onClick={() => setAt(i)}>
         {row.kind === 'box' && <Glyph name={TYPE_GLYPH[items[row.index].box_type ?? ''] ?? 'doc'} size={14} />}</button>)}
     </nav>
+    <StepGuide key={at} why={why} current={current} canRate={steps.canRate} label={rateLabel} noun={step.kind === 'box' ? 'boks' : 'połączenie'} onRate={rateCurrent} />
   </section>;
 }
