@@ -99,7 +99,7 @@ def test_dynamic_source_pool_refuses_unapproved_or_unconfigured_sources(monkeypa
         allowed_scope='metadata', endpoint='https://approved.example/sitemap.xml',
         terms_url='https://approved.example/terms', evidence={'basis': 'test'},
         reviewed_at=__import__('django.utils.timezone', fromlist=['now']).now(),
-        reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_by='test', minimum_interval_seconds=3, daily_request_cap=24)
 
     assert approved_source_ids() == [approved.pk]
     assert approved_access_instructions()[approved.pk].allowed_scope == 'metadata'

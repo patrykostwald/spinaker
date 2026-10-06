@@ -4,6 +4,7 @@ from django.utils import timezone
 from news.models import Article, Source, ArchiveJob
 from news.enrichment import fill_missing_thumbnail
 from scraper.archive import process, _HOST_STATES
+from scraper.testing import approve_access, configure_source
 
 
 @pytest.fixture
@@ -55,6 +56,8 @@ def test_missing_unattributed_or_foreign_metadata_is_not_used(record):
 
 @pytest.mark.django_db
 def test_archive_enriches_rss_record_without_an_extra_network_request(record):
+    configure_source(record.source)
+    approve_access(record.source, 'html', 'https://example.org', 'metadata')
     job = ArchiveJob.objects.create(source=record.source, url=record.url, kind='page')
     html = b'<title>Later headline</title><meta property="og:type" content="article"><meta property="og:image" content="/image.jpg">'
     _HOST_STATES.clear()

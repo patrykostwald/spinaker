@@ -38,7 +38,8 @@ def source(db):
         source=source, version=1, status='approved', channel='api',
         allowed_scope='metadata', endpoint=ENDPOINT,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3,
+        daily_request_cap=1000)
     return source
 
 
