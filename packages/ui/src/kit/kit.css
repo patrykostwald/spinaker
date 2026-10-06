@@ -10886,35 +10886,41 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
 .sc-krs-functions__more { margin: var(--sc-s-3) 0 0; }
 .sc-krs-functions__more a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-accent); text-underline-offset: 4px; }
 
-/* ===== Spinka: strefa „Oceń” pod mini-paskiem i lewe pole połączenia (właściciel 6.10) =====
-   Strefa ma stałą wysokość (dwie linie wyjaśnienia + przycisk 44 px), więc przejście między boksami i połączeniami
-   nic nie przesuwa (stałe strefy ekranu). Prawa UX: Jakob (znany przycisk „Oceń”), Fitts (cele 44 px),
-   Von Restorff (jedno wyróżnienie w strefie), Tesler (wyjaśnienie bierze system, nie czytelnik). */
-.sc-pick__guide { display: grid; grid-template-rows: 20px 20px 50px; row-gap: 2px; align-content: start; height: 94px; margin-top: 10px; box-sizing: border-box; min-width: 0; }
-.sc-pick__guide > p { margin: 0; min-width: 0; font-size: 13px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sc-pick__lead { color: var(--sc-text-3); }
-.sc-pick__lead-short { display: none; }
-.sc-pick__why { color: var(--sc-text-2); }
-.sc-pick__cta { display: flex; align-items: flex-end; min-width: 0; height: 50px; }
-.sc-pick__rate-btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; min-width: 132px; padding: 0 22px; box-sizing: border-box;
-  border: 1px solid color-mix(in srgb, var(--sc-accent) 70%, transparent); border-radius: 3px; background: color-mix(in srgb, var(--sc-accent) 10%, transparent);
-  color: var(--sc-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .2s, border-color .2s; }
-.sc-pick__rate-btn:hover { background: color-mix(in srgb, var(--sc-accent) 20%, transparent); border-color: var(--sc-accent); }
-.sc-pick__rate-btn:focus-visible, .sc-pick__mine button:focus-visible, .sc-step-rate--labels button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
-.sc-pick__mine { display: inline-flex; align-items: center; gap: 8px; height: 44px; margin: 0; font-size: 14px; color: var(--sc-text-2); }
-.sc-pick__mine b { display: inline-flex; align-items: center; gap: 4px; color: var(--sc-text); font-weight: 600; }
-.sc-pick__mine b svg { width: 16px; height: 16px; }
-.sc-pick__mine[data-rating="positive"] b svg { color: var(--sc-positive); }
-.sc-pick__mine[data-rating="doubt"] b svg { color: var(--sc-warning); }
-.sc-pick__mine[data-rating="negative"] b svg { color: var(--sc-negative); }
-.sc-pick__mine span { color: var(--sc-text-3); }
-.sc-pick__mine button { height: 44px; padding: 0 6px; border: 0; background: none; color: var(--sc-accent); font: inherit; font-size: 14px; cursor: pointer; }
-.sc-pick__mine button:hover { text-decoration: underline; text-underline-offset: 3px; }
-.sc-step-rate--labels { gap: 8px; }
-.sc-step-rate--labels button { height: 44px; padding: 0 14px !important; gap: 6px; border: 1px solid color-mix(in srgb, var(--sc-text) 18%, transparent) !important; border-radius: 3px;
-  color: var(--sc-text-2); font-size: 14px; }
-.sc-step-rate--labels button svg { width: 16px; height: 16px; }
-.sc-step-rate--labels button:hover { border-color: currentColor !important; }
+/* ===== Spinka: strefa „Oceń” pod mini-paskiem (właściciel 6.10) =====
+   Tytuł bieżącego kroku na środku pod kropkami, pod nim migoczące „Oceń” (ten sam efekt co „przekaz”, GlitchWord).
+   Kliknięcie: ✕ wyjeżdża w lewo, ✓ w prawo, słowo zmienia się w „?”. Po ocenie tylko wybrany znak w kolorze reakcji.
+   Stała wysokość strefy: przejście między krokami nic nie przesuwa. Prawa UX: Fitts (cele 44 px), Von Restorff (jedno wyróżnienie),
+   Hick (trzy wybory dopiero po kliknięciu), Doherty (odpowiedź 250 ms). */
+.sc-pick__guide { display: grid; grid-template-rows: 20px 44px; row-gap: 6px; justify-items: center; align-content: start; height: 80px; margin-top: 10px; box-sizing: border-box; min-width: 0; }
+.sc-pick__why { max-width: 100%; margin: 0; min-width: 0; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--sc-text); text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-pick__cta { position: relative; display: grid; place-items: center; width: 220px; height: 44px; }
+.sc-pick__cta > button { position: absolute; top: 0; left: 50%; height: 44px; margin: 0; padding: 0; border: 0; background: none; font: inherit; cursor: pointer;
+  display: grid; place-items: center; transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .25s, color .2s; }
+.sc-pick__cta > button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; border-radius: 3px; }
+.sc-pick__cta svg { width: 20px; height: 20px; }
+/* środek: „Oceń” (albo wybrany znak), po otwarciu „?” */
+.sc-pick__center { z-index: 2; min-width: 88px; transform: translateX(-50%); color: var(--sc-accent); }
+.sc-pick__center > span { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; transition: opacity .25s, transform .25s cubic-bezier(.2,.8,.2,1); }
+.sc-pick__word { font-size: 15px; font-weight: 700; letter-spacing: .04em; color: var(--sc-accent); }
+.sc-pick__q { opacity: 0; transform: scale(.6); color: var(--sc-text-2); }
+.sc-pick__cta[data-open] .sc-pick__word { opacity: 0; transform: scale(.6); }
+.sc-pick__cta[data-open] .sc-pick__q { opacity: 1; transform: none; }
+.sc-pick__cta[data-mine] .sc-pick__word svg { width: 24px; height: 24px; }
+.sc-pick__cta[data-mine="positive"] .sc-pick__word { color: var(--sc-positive); }
+.sc-pick__cta[data-mine="doubt"] .sc-pick__word { color: var(--sc-warning); }
+.sc-pick__cta[data-mine="negative"] .sc-pick__word { color: var(--sc-negative); }
+/* boki: schowane pod środkiem, po otwarciu rozsuwają się na boki */
+.sc-pick__opt { z-index: 1; width: 44px; transform: translateX(-50%); opacity: 0; pointer-events: none; color: var(--sc-text-2); }
+.sc-pick__cta[data-open] .sc-pick__opt { opacity: 1; pointer-events: auto; }
+.sc-pick__cta[data-open] .sc-pick__opt--negative { transform: translateX(calc(-50% - 72px)); }
+.sc-pick__cta[data-open] .sc-pick__opt--positive { transform: translateX(calc(-50% + 72px)); }
+.sc-pick__opt--negative:hover, .sc-pick__opt--negative[aria-pressed="true"] { color: var(--sc-negative); }
+.sc-pick__opt--positive:hover, .sc-pick__opt--positive[aria-pressed="true"] { color: var(--sc-positive); }
+.sc-pick__cta[data-open] .sc-pick__center:hover .sc-pick__q, .sc-pick__cta[data-open] .sc-pick__center[aria-pressed="true"] .sc-pick__q { color: var(--sc-warning); }
+@media (prefers-reduced-motion: reduce) {
+  .sc-pick__cta > button, .sc-pick__center > span { transition: none !important; }
+}
 
 /* lewe pole połączenia: dwa spięte boksy jako małe karty ze znakiem połączenia (zamiast pustego prostokąta) */
 .sc-pick__pairviz { display: grid; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; width: 100%; height: 100%; padding: 18px; box-sizing: border-box; gap: 0; }
@@ -10953,11 +10959,7 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
   .sc-pick__media:has(.sc-pick__pairviz) { aspect-ratio: auto !important; height: 150px !important; }
 }
 @media (max-width: 600px) {
-  .sc-pick__lead-long { display: none; }
-  .sc-pick__lead-short { display: inline; }
-  /* telefon: druga linia może zająć dwa wiersze (stała wysokość strefy), żeby nazwa chwytu nie znikała */
-  .sc-pick__guide { grid-template-rows: 20px 40px 50px; height: 114px; }
-  .sc-pick__guide > .sc-pick__why { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-  .sc-step-rate--labels { gap: 6px; }
-  .sc-step-rate--labels button { padding: 0 10px !important; font-size: 13px; }
+  /* telefon: tytuł kroku może zająć dwa wiersze (stała wysokość strefy) */
+  .sc-pick__guide { grid-template-rows: 40px 44px; height: 100px; }
+  .sc-pick__why { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 }

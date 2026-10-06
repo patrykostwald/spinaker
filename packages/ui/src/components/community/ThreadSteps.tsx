@@ -12,6 +12,7 @@ import { setReactionMood, sumCounts } from '../../lib/mood';
 import { formatDatePl } from '../../lib/utils';
 import { clipColor } from '../../lib/clipColor';
 import { AccountDialog } from '../AccountDialog';
+import { GlitchWord } from '../../kit/GlitchWord';
 
 const LABELS = { positive: 'Trafne', doubt: 'Wątpliwe', negative: 'Nietrafne' } as const;
 /** Rodzaje boksów po polsku (wspólne dla paska spinki i widoku jednego elementu). */
@@ -67,18 +68,16 @@ export function useThreadSteps(threadId: number, enabled: boolean) {
   return { data: query.data as StepsData | undefined, find, rate, canRate };
 }
 
-export function StepRate({ step, onRate, canRate, label, withLabels = false }: {
+export function StepRate({ step, onRate, canRate, label }: {
   step?: { counts: Record<string, number>; mine: string | null }; onRate: (polarity: string) => void; canRate: boolean; label: string;
-  /** Wersja z podpisami (strefa „Oceń” pod kartą): ten sam przycisk i ta sama obsługa, tylko ze słowem obok znaku. */
-  withLabels?: boolean;
 }) {
   // zawsze klikalne (właściciel 5.10): bez konta kliknięcie zaprasza do logowania lub założenia konta
   const [invite, setInvite] = useState(false);
-  return <span className={`sc-step-rate${withLabels ? ' sc-step-rate--labels' : ''}`} role="group" aria-label={`Oceń: ${label}`}>
+  return <span className="sc-step-rate" role="group" aria-label={`Oceń: ${label}`}>
     {RATINGS.map(key => <button key={key} type="button" data-rating={key} aria-pressed={step?.mine === key} aria-label={`${LABELS[key]} (${step?.counts[key] ?? 0})`}
       title={canRate ? `${LABELS[key]}: ${step?.counts[key] ?? 0}` : `${LABELS[key]}: załóż konto, aby oceniać`}
       onClick={event => { event.stopPropagation(); if (canRate) onRate(key); else setInvite(true); }}>
-      <SocialIcon kind={key} />{withLabels && <span>{LABELS[key]}</span>}</button>)}
+      <SocialIcon kind={key} /></button>)}
     <AccountDialog open={invite} onClose={() => setInvite(false)} reason="rate" />
   </span>;
 }
@@ -141,9 +140,6 @@ export function contentTag(item: ThreadElement): 'LINK' | 'FILM' | 'ZDJĘCIE' | 
   return 'LINK';
 }
 
-/** Rodzaj boksu małą literą do zdań („chwyt”, „wpis na X”). */
-const typeLower = (item: ThreadElement) => { const word: string = item.box_type ? BOX_TYPES[item.box_type as keyof typeof BOX_TYPES] : 'materiał'; return word.charAt(0).toLowerCase() + word.slice(1); };
-
 /** Mały boks w lewym polu połączenia: rodzaj, numer i tytuł (zamiast pustego prostokąta, właściciel 6.10). */
 function MiniBox({ item, n }: { item: ThreadElement; n: number }) {
   return <span className="sc-pick__mini">
@@ -164,29 +160,34 @@ function JointPreview({ from, to, index, counts }: { from: ThreadElement; to: Th
 }
 
 /**
- * Strefa pod mini-paskiem (właściciel 6.10): dwie linie wyjaśnienia dla nowego czytelnika i jedno wezwanie „Oceń”.
- * Ta sama obsługa i ten sam stan co ✕ ? ✓ w stopce karty (StepRate i steps.rate), więc obie oceny zawsze się zgadzają.
+ * Strefa pod mini-paskiem (właściciel 6.10): tytuł bieżącego kroku i migoczące „Oceń” (ten sam efekt co „przekaz”).
+ * Kliknięcie rozsuwa ocenę: ✕ wyjeżdża w lewo, ✓ w prawo, a słowo zmienia się w „?”. Po ocenie zostaje tylko wybrany znak.
+ * Ta sama obsługa i ten sam stan co ✕ ? ✓ w stopce karty (steps.rate), więc obie oceny zawsze się zgadzają.
  * Stała wysokość: przejście między boksami i połączeniami nic nie przesuwa.
  */
-function StepGuide({ why, current, canRate, label, noun, onRate }: {
-  why: string; current?: { counts: Record<string, number>; mine: string | null }; canRate: boolean; label: string; noun: string; onRate?: (polarity: string) => void;
+function StepGuide({ title, current, canRate, label, onRate }: {
+  title: string; current?: { counts: Record<string, number>; mine: string | null }; canRate: boolean; label: string; onRate?: (polarity: string) => void;
 }) {
-  const [choosing, setChoosing] = useState(false);
+  const [open, setOpen] = useState(false);
   const [invite, setInvite] = useState(false);
-  const mine = current?.mine as keyof typeof LABELS | null | undefined;
+  const mine = (current?.mine ?? null) as keyof typeof LABELS | null;
+  const choose = (polarity: keyof typeof LABELS) => { onRate?.(polarity); setOpen(false); };
+  const side = (polarity: 'negative' | 'positive') => <button type="button" className={`sc-pick__opt sc-pick__opt--${polarity}`} data-rating={polarity}
+    aria-pressed={mine === polarity} aria-label={`${LABELS[polarity]} (${current?.counts[polarity] ?? 0})`} title={LABELS[polarity]}
+    tabIndex={open ? 0 : -1} aria-hidden={!open || undefined} onClick={() => choose(polarity)}><SocialIcon kind={polarity} /></button>;
   return <div className="sc-pick__guide">
-    <p className="sc-pick__lead">
-      <span className="sc-pick__lead-long">Spinka to łańcuch boksów: każdy boks to dowód, każde połączenie to krok, którym wpis prowadzi czytelnika.</span>
-      <span className="sc-pick__lead-short">Spinka: boksy to dowody, połączenia to kroki.</span>
-    </p>
-    <p className="sc-pick__why" title={why}>{why}</p>
-    <div className="sc-pick__cta">
-      {onRate && (choosing ? <StepRate step={current} canRate={canRate} label={label} withLabels onRate={polarity => { onRate(polarity); setChoosing(false); }} />
-        : mine ? <p className="sc-pick__mine" data-rating={mine}>Twoja ocena: <b><SocialIcon kind={mine} />{LABELS[mine].toLowerCase()}</b>
-            <span aria-hidden="true">·</span><button type="button" onClick={() => setChoosing(true)} aria-label={`Zmień ocenę: ${label}`}>zmień</button></p>
-        : <button type="button" className="sc-pick__rate-btn" onClick={() => canRate ? setChoosing(true) : setInvite(true)}>Oceń {noun}</button>)}
-      <AccountDialog open={invite} onClose={() => setInvite(false)} reason="rate" />
-    </div>
+    <p className="sc-pick__why" title={title}>{title}</p>
+    {onRate ? <div className="sc-pick__cta" role="group" aria-label={`Oceń: ${label}`} data-open={open || undefined} data-mine={mine ?? undefined}>
+      {side('negative')}
+      <button type="button" className="sc-pick__center" data-rating={open ? 'doubt' : mine ?? undefined} aria-pressed={open ? mine === 'doubt' : undefined}
+        aria-label={open ? `${LABELS.doubt} (${current?.counts.doubt ?? 0})` : mine ? `Twoja ocena: ${LABELS[mine].toLowerCase()}. Zmień` : `Oceń ${label}`}
+        onClick={() => { if (open) choose('doubt'); else if (!canRate) setInvite(true); else setOpen(true); }}>
+        <span className="sc-pick__word" aria-hidden="true">{mine ? <SocialIcon kind={mine} /> : <GlitchWord word="Oceń" />}</span>
+        <span className="sc-pick__q" aria-hidden="true"><SocialIcon kind="doubt" /></span>
+      </button>
+      {side('positive')}
+    </div> : <div className="sc-pick__cta" />}
+    <AccountDialog open={invite} onClose={() => setInvite(false)} reason="rate" />
   </div>;
 }
 
@@ -244,10 +245,6 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
   const rateCurrent = item.item_id ? (polarity: string) => { void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity);
     if (rateMode) window.setTimeout(() => { if (at < sequence.length - 1) setAt(at + 1); else setFinished(true); }, 450); } : undefined;
   const rateLabel = step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`;
-  // druga linia wyjaśnienia: z czego wynika ten krok (dane, które API już zwraca: rodzaj i tytuł boksu docelowego)
-  const why = step.kind === 'clip'
-    ? `To połączenie (boks\u00a0${step.index} → boks\u00a0${step.index + 1}) wynika z:\u00a0${typeLower(item)} „${splitTitle(item).title}”`
-    : `Ten boks (${step.index + 1}\u00a0z\u00a0${items.length}) ${step.index === 0 ? 'otwiera spinkę' : 'to dowód'}: ${typeLower(item)}${source ? `, ${source}` : ''}`;
   return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Połączenie ${step.index} → ${step.index + 1}`}>
     <header className="sc-pick__bar">
       <span />
@@ -299,6 +296,6 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
         aria-label={row.kind === 'box' ? `Boks ${row.index + 1}` : `Połączenie ${row.index} → ${row.index + 1}`} onClick={() => setAt(i)}>
         {row.kind === 'box' && <Glyph name={TYPE_GLYPH[items[row.index].box_type ?? ''] ?? 'doc'} size={14} />}</button>)}
     </nav>
-    <StepGuide key={at} why={why} current={current} canRate={steps.canRate} label={rateLabel} noun={step.kind === 'box' ? 'boks' : 'połączenie'} onRate={rateCurrent} />
+    <StepGuide key={at} title={splitTitle(item).title} current={current} canRate={steps.canRate} label={rateLabel} onRate={rateCurrent} />
   </section>;
 }
