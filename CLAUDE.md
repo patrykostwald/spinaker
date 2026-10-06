@@ -20,6 +20,7 @@ Przed oddaniem czegokolwiek z boksami sprawdź każdy punkt:
 4. **Tytuły w boksach w jednej linii:** mniejsza czcionka albo krótszy tekst zamiast łamania; opis o stałej liczbie linii.
 5. **Stałe strefy ekranu:** przy zmianie widoku nic nie skacze; nagłówek, scena i komentarze mają stałe miejsca.
 6. **Odstępy:** boksy jeden pod drugim nie stykają się krawędziami (stały odstęp); te same odstępy w całym widoku.
+   Pierwszy element strony stoi blisko paska menu: najwyżej ok. 40 px na komputerze i 28 px na telefonie (właściciel 7.10).
 7. **Etykiety stanu** (dobrze, do poprawy, BETA): małe, po prawej od tytułu, mniejsze niż tytuł.
 8. **Styl:** czysto, minimalistycznie, najwyżej 2 kroje; raporty dla właściciela w ciemnym motywie spin.clinic.
 9. **Sprawdzenie:** zrzut ekranu 1440 i 390 px przed oddaniem; zmierz położenia (górne i dolne krawędzie) zamiast zgadywać.
