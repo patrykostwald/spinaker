@@ -129,7 +129,7 @@ class ClinicAuthorReplyAdmin(admin.ModelAdmin):
 class ClinicDailyMessageAdmin(admin.ModelAdmin):
     list_display = ('day', 'camp', 'status', 'created_at')
     list_filter = ('status', 'camp')
-    readonly_fields = ('day', 'camp', 'message', 'themes', 'posts', 'status', 'model_name', 'prompt_version', 'usage',
+    readonly_fields = ('day', 'camp', 'message', 'themes', 'posts', 'status', 'error', 'model_name', 'prompt_version', 'usage',
                        'created_at', 'reviewed_by', 'reviewed_at', 'alert_sent_at')
     actions = [_decide('approve'), _decide('reject')]
 

@@ -48,6 +48,7 @@ BEAT_PLAN = {
     'clinic-interview-candidates': ('clinic_interview_candidates_task', {'hour': '0,6,12,18,23', 'minute': 0}),
     'clinic-daily-messages-day': ('clinic_daily_messages_task', {'hour': '9,12,15,18', 'minute': 0}),
     'clinic-daily-messages-evening': ('clinic_daily_messages_task', {'hour': 21, 'minute': 30}),
+    'clinic-daily-messages-repair': ('clinic_daily_messages_repair_task', {'hour': '10-23', 'minute': 40}),  # 6.10: tylko brakujące lub z błędem
     'x-publish-day': ('x_publish_task', {'minute': '15,45', 'hour': '8-21'}),
     'social-publish-day': ('social_publish_task', {'minute': '25,55', 'hour': '8-21'}),
     'dr-spin-thread-daily': ('dr_spin_thread_task', {'hour': 19, 'minute': 30}),
@@ -178,6 +179,9 @@ def check_message(camp, now):
     if len({p.account_id for p in posts}) < MIN_MESSAGE_ACCOUNTS:
         return result('na', 'Wpisy z mniej niż 3 kont tej strony.')
     detail = 'Brak przekazu mimo wpisów z co najmniej 3 kont.'
+    failed = ClinicDailyMessage.objects.filter(day=day, camp=camp, status='failed').exclude(error='').first()
+    if failed:
+        detail += ' Ostatni błąd: ' + failed.error
     if now >= at(now, 22, 15):
         detail = 'Kontrola końcowa 22:15: ' + detail
     return missing(now, at(now, 12, 30), detail)

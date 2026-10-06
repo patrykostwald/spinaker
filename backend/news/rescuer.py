@@ -171,10 +171,12 @@ def apply_remedy(item, remedy):
         return {**outcome, 'errors': {str(pk): safe_error(error).replace('—', '-') for pk, error in errors}}
     if remedy.startswith('message_'):
         from news.clinic import run_daily_messages
-        from news.clinic_ai import DAILY_MESSAGE_MODELS
-        model = DAILY_MESSAGE_MODELS[('message_free', 'message_backup', 'message_paid').index(remedy)]
+        from news.clinic_ai import DAILY_FREE_MODELS, DAILY_MESSAGE_MODELS
+        # free: Groq; backup: pozostałe darmowe (NIM, Mercury); paid: tylko Gemini z osobnym limitem.
+        models = {'message_free': DAILY_FREE_MODELS[:1], 'message_backup': DAILY_FREE_MODELS[1:],
+                  'message_paid': DAILY_MESSAGE_MODELS[-1:]}[remedy]
         return run_daily_messages(day=timezone.localdate(), camps=(item.key.removeprefix('message-'),),
-                                  models=(model,), only_missing=True)
+                                  models=models, only_missing=True)
     raise ValueError('Nieznana naprawa.')
 
 

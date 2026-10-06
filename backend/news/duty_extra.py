@@ -121,7 +121,7 @@ def check_daily_products(ctx):
             {'day': str(yesterday), 'statuses': list(ClinicInterview.objects.filter(day=yesterday).values_list('status', flat=True))},
             local.replace(hour=14, minute=0, second=0, microsecond=0), 'Sprawdź kolejkę wywiadów i portfel Gemini.'))
     from news.clinic_models import ClinicDailyMessage as Message
-    if local.hour >= 10 and not Message.objects.filter(day=yesterday).exists():
+    if local.hour >= 10 and not Message.objects.filter(day=yesterday).exclude(status='failed').exists():
         alarms.append(_alarm(f'messages:{yesterday}', 'warning', 'Przekaz dnia: brak za wczoraj',
             {'day': str(yesterday)}, local.replace(hour=10, minute=0, second=0, microsecond=0), 'Sprawdź zadanie przekazu dnia.'))
     return alarms

@@ -208,6 +208,9 @@ class ClinicDailyMessage(models.Model):
                                     related_name='+')
     reviewed_at = models.DateTimeField(null=True, blank=True)
     alert_sent_at = models.DateTimeField(null=True, blank=True)
+    # Wiersz ze status='failed' i pustym message: zapisany powód, dlaczego przekaz nie powstał (6.10: błąd ginął w logu).
+    # Nigdy nie jest publiczny i nie blokuje kolejnych przebiegów - udany przebieg go nadpisuje.
+    error = models.CharField(max_length=300, blank=True, default='')
 
     class Meta:
         ordering = ['-day', 'camp']

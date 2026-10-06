@@ -659,26 +659,38 @@ def _daily_input(camp_label: str, day: str, posts: list[dict]) -> str:
     return _daily_material(camp_label, day, posts)[0]
 
 
-DAILY_MESSAGE_MODELS = ('groq:openai/gpt-oss-120b', 'nim:deepseek-ai/deepseek-v4.1-flash', 'gemini:gemini-2.5-flash')
+# Kolejność darmowych: Groq, NIM, Inception (Mercury - własna darmowa pula, news/inception.py); płatny Gemini na końcu.
+# 6.10: Groq i NIM nie odpowiedziały i przekaz rządzących nie powstał - Mercury jest trzecim darmowym zapasem.
+DAILY_MESSAGE_MODELS = ('groq:openai/gpt-oss-120b', 'nim:deepseek-ai/deepseek-v4.1-flash', 'inception:mercury-2.5',
+                        'gemini:gemini-2.5-flash')
+DAILY_FREE_MODELS = DAILY_MESSAGE_MODELS[:3]
 
 
 def daily_message(camp_label: str, day: str, posts: list[dict], *, models=None) -> dict:
     """Jawna lista modeli; płatny zapas wybiera wyłącznie Ratownik."""
     from news.message_structure import clean_structure
+    from news import inception
     prompt, included = _daily_material(camp_label, day, posts)
     camp = 'opposition' if camp_label.casefold() in ('opozycja', 'opposition') else 'government'
-    models = tuple(models) if models is not None else DAILY_MESSAGE_MODELS[:2]
-    if not models or len(models) > 3 or any(m not in DAILY_MESSAGE_MODELS for m in models):
+    models = tuple(models) if models is not None else DAILY_FREE_MODELS
+    if not models or len(models) > len(DAILY_MESSAGE_MODELS) or any(m not in DAILY_MESSAGE_MODELS for m in models):
         raise ClinicAIError('invalid_message_models')
     if not included:
         raise ClinicAIError('empty_message_material')
     last_error = ClinicAIError('free_models_unavailable')
     for spec in models:
         provider, model = spec.split(':', 1)
+        if provider == 'inception' and not inception.configured():
+            continue  # bez klucza Mercury nie zasłania prawdziwego powodu (brak odpowiedzi Groq i NIM)
         try:
             if provider == 'gemini':
                 from news.daily_message_fallback import generate
                 data, usage = generate(DAILY_SYSTEM, prompt, DAILY_SCHEMA)
+            elif provider == 'inception':
+                # Ta sama pula i strażnik budżetu co w zadaniach pobocznych: odmowa to InceptionError (podtyp ClinicAIError).
+                # Nazwę modelu wybiera inception.model() (INCEPTION_MODEL albo zamiennik Mechanika).
+                data, model = inception.chat(DAILY_SYSTEM, prompt, DAILY_SCHEMA, max_tokens=2500)
+                usage = {'model': model}
             else:
                 data, model = _free_chat(DAILY_SYSTEM, prompt, DAILY_SCHEMA, max_tokens=2500,
                                          model=model, only_provider=provider)

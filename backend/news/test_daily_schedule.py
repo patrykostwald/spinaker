@@ -321,12 +321,14 @@ def test_publication_dispatches_both_channels():
         x.assert_called_once(); social.assert_called_once()
 
 
-@pytest.mark.parametrize('remedy,index', [('message_free', 0), ('message_backup', 1), ('message_paid', 2)])
-def test_message_remedies_are_explicit_and_only_missing(remedy, index):
+@pytest.mark.parametrize('remedy,models', [
+    ('message_free', ('groq:openai/gpt-oss-120b',)),
+    ('message_backup', ('nim:deepseek-ai/deepseek-v4.1-flash', 'inception:mercury-2.5')),
+    ('message_paid', ('gemini:gemini-2.5-flash',))])
+def test_message_remedies_are_explicit_and_only_missing(remedy, models):
     with patch('news.clinic.run_daily_messages') as run:
         rescuer.apply_remedy(milestone('message-opposition'), remedy)
-    assert run.call_args.kwargs == {'day': NOW.date(), 'camps': ('opposition',),
-                                   'models': (clinic_ai.DAILY_MESSAGE_MODELS[index],), 'only_missing': True}
+    assert run.call_args.kwargs == {'day': NOW.date(), 'camps': ('opposition',), 'models': models, 'only_missing': True}
 
 
 def test_paid_reservation_survives_errors_and_cache_clear(settings):

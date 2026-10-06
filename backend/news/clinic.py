@@ -604,16 +604,17 @@ MIN_MESSAGE_ACCOUNTS = 3
 
 
 def run_daily_messages(day=None, *, camps=None, models=None, only_missing=False) -> dict:
-    """Przekaz dnia każdego obozu — darmowe modele (Groq, zapasowo NIM), z postów co najmniej trzech kont.
+    """Przekaz dnia każdego obozu — darmowe modele (Groq, zapasowo NIM, potem Mercury), z postów co najmniej trzech kont.
 
     W ciągu dnia przekaz jest odświeżany (9:00, 12:00, 15:00, 18:00, 21:30), dopóki nikt go ręcznie nie zatwierdził.
+    Niepowodzenie zostaje w bazie jako wiersz failed z powodem; repair_daily_messages dorabia brakujące co godzinę.
     """
     created = {}
     if day is None:
         # Dogrywka (właściciel 3.10: brak przekazu opozycji z 2.10): gdy wczoraj żaden przebieg nie zapisał przekazu
         # obozu (np. limit darmowych modeli), próbujemy jeszcze raz dla wczoraj, zanim zrobimy dzisiejszy.
         yesterday = timezone.localdate() - timedelta(days=1)
-        missing = [camp for camp in CAMPS if not ClinicDailyMessage.objects.filter(day=yesterday, camp=camp).exists()]
+        missing = [camp for camp in CAMPS if not ClinicDailyMessage.objects.filter(day=yesterday, camp=camp).exclude(status='failed').exists()]
         if missing:
             created.update({f'{yesterday.isoformat()}:{camp}': pk for camp, pk in _daily_messages_for(yesterday, missing).items()})
     day = day or timezone.localdate()
@@ -621,6 +622,50 @@ def run_daily_messages(day=None, *, camps=None, models=None, only_missing=False)
     created.update(_daily_messages_for(day, camps or CAMPS, models=models, only_missing=only_missing, errors=errors))
     alert = send_review_alert()
     return {'status': 'error' if errors else 'ok', 'created': created, 'alert': alert, 'errors': errors}
+
+
+def message_settled(day, camp) -> bool:
+    """Przekaz jest: zapisany (approved / pending_review z treścią) albo rozstrzygnięty ręcznie (także odrzucony)."""
+    return ClinicDailyMessage.objects.filter(day=day, camp=camp).filter(
+        Q(reviewed_by__isnull=False) | (Q(status__in=('approved', 'pending_review')) & ~Q(message=''))).exists()
+
+
+def repair_daily_messages(day=None) -> dict:
+    """Naprawa co godzinę (10-23): tylko obozy bez przekazu albo z zapisanym błędem; gdy oba są - nic nie robi.
+    Po przebiegu 21:30 dalszy brak przekazu to jeden mail do właściciela na obóz i dzień (naprawa sama nie pomogła)."""
+    day = day or timezone.localdate()
+    missing = [camp for camp in CAMPS if not message_settled(day, camp)]
+    if not missing:
+        return {'status': 'ok', 'created': {}, 'skipped': 'complete'}
+    result = run_daily_messages(day, camps=missing, only_missing=True)
+    result['owner_alerts'] = alert_owner_missing_messages(day)
+    return result
+
+
+def alert_owner_missing_messages(day, now=None) -> list:
+    """Właściciel dostaje wiadomość dopiero, gdy po wieczornym przebiegu (21:30) przekaz dnia nadal nie powstał
+    (zasada „najpierw naprawa automatyczna”). Powód z wiersza failed; alert_sent_at pilnuje jednego maila."""
+    from news.council_recruiter import _owner_email
+    from news.daily_schedule import at
+    from news.social_publish import _mail
+    now = now or timezone.now()
+    if day != timezone.localdate(now) or now < at(now, 21, 30):
+        return []
+    sent = []
+    for row in ClinicDailyMessage.objects.filter(day=day, status='failed', alert_sent_at__isnull=True):
+        label = 'rządzący' if row.camp == 'government' else 'opozycja'
+        body = (f'Przekaz dnia ({label}) za {day.isoformat()} nie powstał mimo prób co godzinę.\n'
+                f'Ostatni powód: {row.error or "brak zapisanego powodu"}\n\n'
+                'Kolejny przebieg naprawy spróbuje ponownie; przekaz można też uruchomić ręcznie:\n'
+                "run_daily_messages(camps=('" + row.camp + "',))\n\nPanel: https://spin.clinic/panel")
+        try:
+            ok = _mail(_owner_email(), f'spin.clinic: brak przekazu dnia ({label}) {day.isoformat()}', body, important=True)
+        except Exception:  # noqa: BLE001 - poczta nie może przerwać naprawy
+            ok = False
+        if ok:
+            ClinicDailyMessage.objects.filter(pk=row.pk).update(alert_sent_at=now)
+            sent.append(row.camp)
+    return sent
 
 
 def message_posts(day, camp):
@@ -666,6 +711,27 @@ def _daily_messages_for(day, camps, *, models=None, only_missing=False, errors=N
     return created
 
 
+MESSAGE_ERROR_LABELS = {
+    'free_models_unavailable': 'Darmowe modele nie odpowiedziały.',
+    'daily_message_paid_budget': 'Wyłączony lub wyczerpany limit płatnego zapasu.',
+    'not_polish': 'Model nie odpowiedział po polsku.', 'empty_message': 'Pusta odpowiedź modelu.',
+    'invalid_message_structure': 'Odpowiedź modelu nie pasuje do wpisów.',
+    'gemini_missing_key': 'Brak klucza Gemini.', 'gemini_daily_budget': 'Wyczerpany limit Gemini.',
+    'inception_free_budget': 'Wyczerpana darmowa pula Inception (Mercury).',
+    'inception_daily_limit': 'Dzienny pułap Inception (Mercury) wykorzystany.',
+    'inception_halted': 'Inception (Mercury) zatrzymany do zmiany klucza.',
+}
+
+
+def message_error_label(code: str) -> str:
+    from news.admin_telemetry import safe_error
+    if code in MESSAGE_ERROR_LABELS:
+        return MESSAGE_ERROR_LABELS[code]
+    if code.startswith('inception'):
+        return 'Inception (Mercury) nie odpowiedział.'
+    return safe_error(code).replace('—', '-')
+
+
 def _message_for(day, camps, *, models=None, only_missing=False, errors=None) -> dict:
     created = {}
     for camp in camps:
@@ -686,20 +752,21 @@ def _message_for(day, camps, *, models=None, only_missing=False, errors=None) ->
             result = clinic_ai.daily_message(CAMP_PROMPT_LABELS[camp], day.isoformat(), material, **options)
         except clinic_ai.ClinicAIError as error:
             logger.warning('clinic daily message failed: %s', error.code)
+            label = message_error_label(error.code)
             if errors is not None:
-                from news.admin_telemetry import safe_error
-                labels = {'free_models_unavailable': 'Darmowe modele nie odpowiedziały.',
-                          'daily_message_paid_budget': 'Wyłączony lub wyczerpany limit płatnego zapasu.',
-                          'not_polish': 'Model nie odpowiedział po polsku.', 'empty_message': 'Pusta odpowiedź modelu.',
-                          'gemini_missing_key': 'Brak klucza Gemini.', 'gemini_daily_budget': 'Wyczerpany limit Gemini.'}
-                errors[f'{day}:{camp}'] = labels.get(error.code, safe_error(error.code).replace('—', '-'))
+                errors[f'{day}:{camp}'] = label
+            # Powód zostaje w bazie (wiersz failed bez treści), ale nigdy nie zastępuje już zapisanego przekazu.
+            if existing is None or existing.status == 'failed':
+                ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
+                    'message': '', 'status': 'failed', 'error': f'{error.code}: {label}'[:300],
+                    'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
             continue
         status = 'approved' if auto_publish() else 'pending_review'
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
             'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
             'thesis': result.get('thesis', ''), 'points': result.get('points', []), 'tone': result.get('tone', []),
             'stats': calculate_stats(rows, result.get('points'), result.get('tone')),
-            'usage': result['usage'], 'status': status,
+            'usage': result['usage'], 'status': status, 'error': '', 'alert_sent_at': None,
             'model_name': result['usage'].get('model', '')[:64], 'prompt_version': clinic_ai.PROMPT_VERSION,
             'reviewed_at': timezone.now() if status == 'approved' else None})
         message.posts.set(posts)

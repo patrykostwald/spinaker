@@ -161,6 +161,12 @@ def clinic_daily_messages_task():
     return run_daily_messages()
 
 
+@shared_task(name="news.tasks.clinic_daily_messages_repair_task", soft_time_limit=600, time_limit=660)
+def clinic_daily_messages_repair_task():
+    from news.clinic import repair_daily_messages
+    return repair_daily_messages()
+
+
 @shared_task(name="news.tasks.political_poll_task", soft_time_limit=90, time_limit=100)
 def political_poll_task():
     """Run due official X groups, or one account in timeline mode.

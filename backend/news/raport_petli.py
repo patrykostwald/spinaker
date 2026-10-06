@@ -218,7 +218,7 @@ def _counter(c, since):
         rows, field = SpinDiagnosis.objects.exclude(diagnosed_at__isnull=True), 'diagnosed_at'
     elif name == 'messages':
         from news.clinic_models import ClinicDailyMessage
-        rows, field = ClinicDailyMessage.objects.all(), 'created_at'
+        rows, field = ClinicDailyMessage.objects.exclude(status='failed'), 'created_at'
     elif name == 'interviews':
         from news.clinic_models import ClinicInterview
         rows, field = ClinicInterview.objects.exclude(diagnosed_at__isnull=True), 'diagnosed_at'
