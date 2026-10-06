@@ -843,3 +843,31 @@ def zamowienia_publiczne_task():
         return {'status': 'disabled'}
     from news.zamowienia import run
     return run()
+
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def poczta_task():
+    """Co 10 minut: Poczta (właściciel 6.10) - nowe wiadomości ze skrzynek projektów (IMAP po UID), klasyfikacja jednym
+    darmowym modelem, odpowiedzi w wątku dla bezpiecznych kategorii (tylko przy MAIL_AGENT_AUTOSEND=true), reszta do zestawienia."""
+    from django.core.cache import cache
+    from news import agent_registry, dyrygent, poczta
+    if not agent_registry.enabled(agent_registry.REGISTRY['poczta']):
+        return {'status': 'disabled'}
+    if not cache.add('poczta-lock', 1, timeout=600):
+        return {'status': 'locked'}
+    try:
+        with dyrygent.tier('treść'):
+            return poczta.run()
+    finally:
+        cache.delete('poczta-lock')
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def poczta_digest_task():
+    """Codziennie 7:10: jedno zestawienie wiadomości bez automatycznej odpowiedzi (z proponowanymi szkicami) do właściciela;
+    treść wiadomości starszych niż 180 dni usuwana."""
+    from news import agent_registry, poczta
+    if not agent_registry.enabled(agent_registry.REGISTRY['poczta']):
+        return {'status': 'disabled'}
+    cleaned = poczta.retention()
+    return {**poczta.digest(), 'cleaned': cleaned}

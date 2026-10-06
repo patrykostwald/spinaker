@@ -61,7 +61,9 @@ BEAT_PLAN = {
     'sprint-export': ('sprint_export_task', {'hour': 6, 'minute': 20}),  # Z1: zatwierdzone bilety S/M -> GitHub Issues
     'kopia-kontrola-daily': ('kopia_task', {'hour': 4, 'minute': 30}),  # Z2: kontrola kopii w B2 (cron 3:30 ją tworzy), 1. dnia test odtworzenia
     'puls-zewnetrzny-5m': ('puls_zewnetrzny_task', {'minute': '2-59/5'}),  # Z3: ping do healthchecks.io tylko przy świeżym Dyżurnym
-    'terminy-daily': ('terminy_task', {'hour': 6, 'minute': 15}),  # Z3: domena (RDAP), TLS, DNS, salda API, token GitHub
+    'terminy-daily': ('terminy_task', {'hour': 6, 'minute': 15}),
+    'poczta-10m': ('poczta_task', {'minute': '*/10'}),  # właściciel 6.10: agent Poczty czyta skrzynki projektów i odpowiada
+    'poczta-digest-daily': ('poczta_digest_task', {'hour': 7, 'minute': 10}),  # zestawienie do właściciela po Raporcie pętli (7:05)  # Z3: domena (RDAP), TLS, DNS, salda API, token GitHub
 }
 
 

@@ -137,6 +137,16 @@ REGISTRY['terminy'] = agent('Terminy zewnętrzne', 'Codziennie o 6:15 bez AI: wy
                             'OpenRouter i limit X, ważność tokena GitHub, dostępność Codexa; ostrzeżenia 30/14/3 dni przed terminem.',
                             'news.tasks.terminy_task', default=True)
 
+REGISTRY['poczta'] = agent('Poczta', 'Co 10 minut czyta skrzynki projektów (MAILBOXES: spin.clinic, przeszłość.today, zbudujmi, iapply) po UID, '
+                           'jeden darmowy model klasyfikuje (sprostowanie, pytanie, prasa, partner, instytucja, spam, inne) i pisze szkic; '
+                           'szkic po kontroli Recenzenta idzie w wątku przez SMTP skrzynki tylko dla bezpiecznych kategorii, przy '
+                           'MAIL_AGENT_AUTOSEND=true, do 20 dziennie na skrzynkę i raz na wątek na dobę. Nigdy pierwszy kontakt. Instytucje, '
+                           'prawo, pieniądze i niepewne -> jedno zestawienie dziennie 7:10 do właściciela ze szkicem.',
+                           'news.tasks.poczta_task', 'MAIL_AGENT_ENABLED', True)
+REGISTRY['poczta-digest'] = agent('Poczta: zestawienie', 'Codziennie o 7:10 jeden mail do właściciela z wiadomościami bez automatycznej odpowiedzi '
+                                  '(instytucje, prawo, pieniądze, niepewne, błędy SMTP) i proponowanymi szkicami; usuwa treść wiadomości starszych niż 180 dni.',
+                                  'news.tasks.poczta_digest_task', 'MAIL_AGENT_ENABLED', True)
+
 REGISTRY['zasil-baze'] = agent(
     'Zasilanie bazy', 'Co noc (01:00-06:00) i przed północą dociąga całą historię włączonych źródeł od początku X kadencji '
     '(TED 12 miesięcy, KRS wszystkie obserwowane podmioty) w osobnym limicie, w granicach kart dostępu; gotowe źródła '

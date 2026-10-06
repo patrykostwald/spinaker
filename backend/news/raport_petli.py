@@ -110,6 +110,8 @@ CONTRACTS = (
              title='Puls z zewnątrz (healthchecks.io)'),
     contract('terminy', 'Terminy', 'niezawodnosc', 24, 'owner:mail', 3, beats=('terminy-daily',), registry='terminy',
              title='Terminy zewnętrzne (domeny, TLS, DNS, salda, token)'),
+    contract('poczta', 'Poczta', 'niezawodnosc', 1, 'owner:mail', 1, beats=('poczta-10m', 'poczta-digest-daily'), registry='poczta',
+             title='Poczta (skrzynki projektów: odebrane, odpowiedziane, do właściciela)'),
     contract('issues', 'Issues', 'agenci', 24, 'claude:sprint', 7, beats=('sprint-export',), registry='sprint-export',
              title='Kolejka budowy (GitHub Issues)'),
     # Konsylium
@@ -275,7 +277,8 @@ OLD = '2026-01-01T00:00:00+00:00'
 # Pętle wdrożone 6.10 (zanim powstał zapis first_seen): pierwszy rytm liczymy od dnia wdrożenia.
 ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'odbior-spinu': '2026-10-07T12:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00',
          'raport-tyg': '2026-10-07T12:00:00+02:00', 'zapytania': '2026-10-07T12:00:00+02:00', 'zamowienia': '2026-10-07T12:00:00+02:00',
-         'sejm-wideo': '2026-10-07T23:00:00+02:00', 'straznik-mediow': '2026-10-07T23:00:00+02:00', 'fakty': '2026-10-07T23:00:00+02:00'}
+         'sejm-wideo': '2026-10-07T23:00:00+02:00', 'straznik-mediow': '2026-10-07T23:00:00+02:00', 'fakty': '2026-10-07T23:00:00+02:00',
+         'poczta': '2026-10-08T12:00:00+02:00'}
 
 
 def first_seen(now, keys=None):
@@ -397,13 +400,23 @@ def build(now=None):
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
             'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build(),
-            'baza': _baza(), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now), 'zewnetrzne': _zewnetrzne(now)}
+            'baza': _baza(), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now), 'zewnetrzne': _zewnetrzne(now),
+            'poczta': _poczta(now)}
 
 
 def _mozliwosci(now):
     """Nowe możliwości tygodnia (Zwiadowca rozwiązań): do 5 najlepszych ustaleń i otwarte sygnały."""
     try:
         from news.zwiadowca_rozwiazan import report_lines
+        return report_lines(now)
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return []
+
+
+def _poczta(now):
+    """Poczta (właściciel 6.10): odebrane, odpowiedziane automatycznie, do właściciela; błędy IMAP skrzynek. Bez sieci."""
+    try:
+        from news.poczta import report_lines
         return report_lines(now)
     except Exception:  # noqa: BLE001 - raport zawsze wychodzi
         return []
@@ -550,6 +563,9 @@ def text(report):
         lines += [clean(line) for line in (zew.get('kopia'), zew.get('puls')) if line]
         lines += [clean(line) for line in zew.get('terminy') or []]
         lines.append('')
+    if report.get('poczta'):
+        lines.append('== Poczta (skrzynki projektów) ==')
+        lines += [clean(line) for line in report['poczta']] + ['']
     sprint = report.get('sprint') or {}
     lines.append('== Sprint tygodnia ==')
     lines.append(f"Otwarte bilety: {sprint.get('open', 0)} (czeka na decyzję: {sprint.get('proposed', 0)}, "

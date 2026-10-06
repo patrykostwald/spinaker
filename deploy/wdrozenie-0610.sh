@@ -150,4 +150,17 @@ echo '== 12. Drzewo przepływu pieniędzy (właściciel 6.10): NIP i REGON podmi
 $M drzewo_pieniedzy --plan | tail -4
 $M drzewo_pieniedzy --identyfikatory --limit 300 | tail -3
 $M drzewo_pieniedzy --stan | tail -3
+echo '== 13. Poczta (właściciel 6.10): agent czyta skrzynki projektów i odpowiada; idempotentne, nic nie wysyła'
+# Wartości wkleja właściciel do .env.production; skrypt pokazuje tylko NAZWY brakujących zmiennych.
+# Wysyłka automatyczna dopiero po: setv MAIL_AGENT_AUTOSEND true (domyślnie false: szkice tylko w zestawieniu 7:10).
+grep -q '^MAILBOXES=.' "$ENV" || echo 'UWAGA: brak MAILBOXES (np. MAILBOXES=SPIN,PRZESZLOSC,ZBUDUJMI,IAPPLY)'
+for box in $(grep '^MAILBOXES=' "$ENV" | cut -d= -f2 | tr ',' ' '); do
+  for k in IMAP_HOST IMAP_USER IMAP_PASSWORD SMTP_HOST SMTP_USER SMTP_PASSWORD; do
+    grep -q "^MAILBOX_${box}_${k}=." "$ENV" || echo "UWAGA: brak MAILBOX_${box}_${k} w $ENV"
+  done
+done
+grep -q '^MAIL_AGENT_AUTOSEND=' "$ENV" || setv MAIL_AGENT_AUTOSEND false
+grep -q '^MAIL_AGENT_DAILY_LIMIT=' "$ENV" || setv MAIL_AGENT_DAILY_LIMIT 20
+$M poczta --stan | tail -20
+$M poczta --plan | tail -60
 echo 'GOTOWE'
