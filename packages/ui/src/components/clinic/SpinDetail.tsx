@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import { rememberClinicVisit } from "../../lib/clinicHistory";
 import { AuthorReplies, WithdrawnSpin } from "./ClinicCorrections";
 import { PositionChanges } from "./PositionChanges";
+import { SpinReceptionBlock } from "./SpinReception";
 
 // Jedno ustawienie pierwszego ekranu: "word" pokazuje samą ocenę słowną.
 export const SCORE_STYLE: "number" | "word" = "number";
@@ -85,6 +86,8 @@ export function SpinDiagnosisBody({ spin, withSummary = true }: { spin: SpinDeta
     </section>
 
     <PositionChanges id={spin.id} block={spin.position_changes} />
+
+    <SpinReceptionBlock id={spin.id} block={spin.reception} />
 
     <section className="sc-spin-detail__section" id={`spin-${spin.id}-modele`}><h2>Modele</h2>
       {spin.council ? <details className="sc-spin-detail__models"><summary>Pokaż oceny modeli</summary><CouncilNote council={spin.council} /></details> : <p>Model: {spin.model || "brak danych o modelu"}. Szczegółowe głosy nie są dostępne.</p>}
@@ -155,7 +158,7 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
         </FitStickyAside>
         <div className="sc-dg-main">
         <div className="sc-dg-score"><SpinSummary spin={spin} heading="h1" withPoint={false} withReport withTable={false} brief={spin.summary} /><HowToRead /></div>
-        <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ...(spin.position_changes?.items.length ? [["zmiana-zdania", "Zmiana zdania"]] : []), ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>
+        <nav className="sc-spin-detail__anchors" aria-label="W tej diagnozie">{[["techniki", "Techniki"], ["twierdzenia", "Twierdzenia i źródła"], ...(spin.position_changes?.items.length ? [["zmiana-zdania", "Zmiana zdania"]] : []), ...(spin.reception ? [["odbior", "Jak zadziałało"]] : []), ["modele", "Modele"], ["ograniczenia", "Ograniczenia"]].map(([anchor, label]) => <a key={anchor} href={`#spin-${spin.id}-${anchor}`}>{label}</a>)}</nav>
         <article className="sc-spin-detail__diagnosis">
           <SpinDiagnosisBody spin={spin} withSummary={false} />
           <p className="sc-clinic-roadmap">{spin.notice}</p>

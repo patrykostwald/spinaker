@@ -569,6 +569,15 @@ def zmiana_zdania_task():
         return zmiana_zdania.run()
 
 
+@shared_task(soft_time_limit=600, time_limit=660)
+def odbior_spinu_task():
+    """Co godzinę: Jak spin zadziałał - dobę po wpisie z mocnym spinem liczniki i próbka odpowiedzi z oficjalnego API X
+    (płatne odczyty, domyślnie wyłączone: X_REPLIES_ENABLED), ocena jednym darmowym modelem Konsylium. Tylko liczby zbiorcze."""
+    from news import dyrygent, odbior_spinu
+    with dyrygent.tier('treść'):
+        return odbior_spinu.run()
+
+
 @shared_task
 def raport_petli_task():
     """Codziennie 7:05: Raport pętli mailem (audyt pętli 5.10). Bez AI; jeden mail na dzień."""

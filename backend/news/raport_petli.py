@@ -47,6 +47,8 @@ CONTRACTS = (
              registry='plain-reader', title='Czytelnik testowy'),
     contract('zmiana-zdania', 'Zmiana zdania', 'tresc', 24, 'public', 1, beats=('zmiana-zdania-30m',), registry='zmiana-zdania',
              counter='position_checks', title='Zmiana zdania przy diagnozach'),
+    contract('odbior-spinu', 'Odbiór spinu', 'tresc', 24, 'public', 1, beats=('odbior-spinu-1h',), registry='odbior-spinu',
+             counter='reception', title='Jak spin zadziałał (po 24 h)'),
     contract('recenzent', 'Recenzent', 'tresc', 24, 'owner:panel', 7, agents=('recenzent',), beats=('recenzent-2h',), registry='recenzent'),
     # Agenci rozwoju spin.clinic
     contract('strateg', 'Strateg', 'agenci', 24, 'owner:panel', 7, agents=('strateg',), exclude=PLAIN_READER, beats=('agents-window-hourly',),
@@ -210,6 +212,9 @@ def _counter(c, since):
     elif name == 'position_checks':
         from news.clinic_models import PositionCheck
         rows, field = PositionCheck.objects.exclude(checked_at__isnull=True), 'checked_at'
+    elif name == 'reception':
+        from news.clinic_models import ReceptionCheck
+        rows, field = ReceptionCheck.objects.filter(status__in=('done', 'no_model')), 'checked_at'
     elif name == 'public_records':
         from news.public_records_models import PublicRecord
         rows, field = PublicRecord.objects.all(), 'fetched_at'
@@ -227,7 +232,7 @@ def _counter(c, since):
 FIRST_SEEN = 'petle-first-seen'
 OLD = '2026-01-01T00:00:00+00:00'
 # Pętle wdrożone 6.10 (zanim powstał zapis first_seen): pierwszy rytm liczymy od dnia wdrożenia.
-ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00'}
+ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'odbior-spinu': '2026-10-07T12:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00'}
 
 
 def first_seen(now, keys=None):
@@ -349,7 +354,16 @@ def build(now=None):
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
             'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build(),
-            'baza': _baza()}
+            'baza': _baza(), 'koszty': _koszty(now)}
+
+
+def _koszty(now):
+    """Płatne odczyty X poza zbieraniem wpisów (odbior_spinu): odczyty i USD z dnia i 30 dni."""
+    try:
+        from news.odbior_spinu import report_line
+        return [report_line(now)]
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return []
 
 
 def _baza():
@@ -451,6 +465,9 @@ def text(report):
             extra = f", czeka ponad SLA: {l['pending']}" if l['pending'] else ''
             lines.append(f"[{marks[l['state']]}] {l['title']} - {ran}, {made}{extra}; odbiorca: {l['consumer']}")
         lines.append('')
+    if report.get('koszty'):
+        lines.append('== Koszty X (odpowiedzi) ==')
+        lines += [clean(line) for line in report['koszty']] + ['']
     if report.get('baza'):
         lines.append('== Zasilanie bazy (historia źródeł) ==')
         lines += [clean(line) for line in report['baza']] + ['']

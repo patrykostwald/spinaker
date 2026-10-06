@@ -878,6 +878,8 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
     })
     from news.zmiana_zdania import public_data as position_changes
     data['position_changes'] = position_changes(diagnosis)  # Zmiana zdania: tylko pary powyżej progu, ten sam dla każdej partii
+    from news.odbior_spinu import public_data as reception
+    data['reception'] = reception(diagnosis)  # Jak zadziałało (po 24 h): liczby zbiorcze, bez danych osób prywatnych
     from news.x_share import build
     data['x_share'] = build(data)
     return data

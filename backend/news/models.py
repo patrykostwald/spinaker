@@ -991,7 +991,7 @@ from .account_models import (  # noqa: E402,F401
     PersonalContextThread, PersonalContextThreadItem, CommentReport,
 )
 from .community_models import CommunityLink, CommunityThreadOpinion, CommunityThreadReport  # noqa: E402,F401
-from .clinic_models import SpinDiagnosis, ClinicAuthorReply, ClinicDailyMessage, SpinOpinion, XAccountSuggestion, SocialPost, CouncilCharterAcceptance, PositionScan, PositionCheck  # noqa: E402,F401
+from .clinic_models import SpinDiagnosis, ClinicAuthorReply, ClinicDailyMessage, SpinOpinion, XAccountSuggestion, SocialPost, CouncilCharterAcceptance, PositionScan, PositionCheck, ReceptionCheck  # noqa: E402,F401
 from .social_models import SocialMaterial, SocialTask, SocialAssistantUsage  # noqa: E402,F401
 from .clinic_discussion_models import ClinicComment, ClinicCommentReport, InterviewOpinion  # noqa: E402,F401
 from .newsletter_models import NewsletterSubscriber  # noqa: E402,F401

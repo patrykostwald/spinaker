@@ -47,7 +47,16 @@ def daily_costs(now):
                                     for part in ('claude', 'gemini')), 6),
             'warden': float(sum(AccountWardenRun.objects.filter(started_at__gte=start, started_at__lte=now)
                                 .values_list('lookups', flat=True)) * USER_PRICE),
+            'replies': _replies_cost(now),
             'krs': cache.get(f'krs-agent-spent:{start.date().isoformat()}')}
+
+
+def _replies_cost(now):
+    try:
+        from news.odbior_spinu import daily_cost
+        return daily_cost(now)['usd']
+    except Exception:  # noqa: BLE001 - koszt pomocniczy nie zatrzymuje Dyżurnego
+        return None
 
 
 class Context:

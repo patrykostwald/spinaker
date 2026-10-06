@@ -78,6 +78,20 @@ export type PositionChange = {
   now_url: string;
 };
 
+/** Jak zadziałało (backend news/odbior_spinu.py): odbiór wpisu dobę później, tylko liczby zbiorcze. */
+export type SpinReception = {
+  hours: number;
+  checked_at: string | null;
+  metrics: Array<{ key: string; label: string; before: number | null; after: number }>;
+  sample: number;
+  shares: Array<{ key: string; label: string; share: number }>;
+  sentiment: Array<{ key: string; label: string; share: number }>;
+  phrases: Array<{ text: string; count: number }>;
+  figures: Array<{ name: string; handle: string; url: string }>;
+  verdict: { key: "podchwycony" | "odrzucony" | "podzielony" | "za_malo"; label: string } | null;
+  note: string;
+};
+
 export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   plain?: { title: string; gist: string; top: Array<{ name: string; quote: string }> } | null;
   status?: "approved";
@@ -106,6 +120,8 @@ export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   notice: string;
   /** Tylko pary powyżej progu (ten sam dla każdej partii); null, gdy nic nie przeszło. */
   position_changes?: { items: PositionChange[]; note: string } | null;
+  /** Odbiór po dobie; null, gdy wpisu nie sprawdzano (słaby spin albo funkcja wyłączona). */
+  reception?: SpinReception | null;
 };
 
 /** Opcjonalne dane skanera; starsze API nadal korzysta z pól diagnozy. */
