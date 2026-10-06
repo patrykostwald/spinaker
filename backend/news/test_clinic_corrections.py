@@ -110,7 +110,7 @@ def test_register_three_types_privacy_counts_pagination_and_replies():
     response = client.get('/api/clinic/corrections/')
     assert response.status_code == 200
     data = response.data
-    assert data['counts'] == {'published': 3, 'withdrawn': 1, 'hidden': 1, 'replies': 1}
+    assert data['counts'] == {'published': 3, 'withdrawn': 1, 'hidden': 1, 'replies': 1, 'revisions': 0, 'sejm': 0}
     assert {row['type'] for row in data['results']} == {'withdrawal', 'hiding', 'author_reply'}
     assert data['results'][0]['reason'] == 'Błędne źródło'
     event = next(row for row in data['results'] if row['type'] == 'hiding')
@@ -251,3 +251,28 @@ def test_withdrawal_during_social_preparation_stops_publication(monkeypatch):
     assert result['results'][0]['error'] == 'diagnosis_unavailable'
     row.refresh_from_db()
     assert row.x_posted_ids == ['first'] and row.x_posted_at is None and row.status == 'withdrawn'
+
+
+def test_register_includes_council_revisions_and_sejm_withdrawals():
+    """Raport źródeł 6.10: rejestr kompletny - aktualizacje po pełnym składzie i wycofania diagnoz z nagrań Sejmu."""
+    from news.public_records_models import PublicRecord
+    from news.zrodla_models import SejmVideoSpin
+    row = diagnosis()
+    row.usage = {'rerun': {'at': timezone.now().isoformat(), 'reason': 'brak 2 stałych członków', 'changed': True,
+                           'previous': {'verdict': 'spin', 'intensity': 40}}}
+    row.intensity = 70
+    row.save()
+    same = diagnosis(row.post.account, 2)
+    same.usage = {'rerun': {'at': timezone.now().isoformat(), 'reason': 'x', 'changed': False}}
+    same.save()
+    record = PublicRecord.objects.create(source='statements', kind='statement', external_id='1', source_url='https://api.sejm.gov.pl/x',
+                                         response_url='https://api.sejm.gov.pl/x', response_sha256='0', title='Wystąpienie')
+    SejmVideoSpin.objects.create(record=record, day=timezone.localdate(), place='sala', status='withdrawn',
+                                 withdrawn_at=timezone.now(), withdrawn_reason='Zły fragment nagrania')
+    data = corrections_data()
+    types = {event['type']: event for event in data['results']}
+    assert set(types) == {'revision', 'sejm_withdrawal'}
+    assert 'siła 40/100' in types['revision']['reason'] and 'teraz 70/100' in types['revision']['reason']
+    assert types['revision']['diagnosis_url'] == f'/klinika/{row.pk}'
+    assert types['sejm_withdrawal']['reason'] == 'Zły fragment nagrania'
+    assert data['counts']['revisions'] == 1 and data['counts']['sejm'] == 1 and data['count'] == 2

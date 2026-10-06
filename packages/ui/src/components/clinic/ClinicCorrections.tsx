@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getClinicCorrections, type ClinicAuthorReply, type WithdrawnDiagnosis } from "../../lib/clinic";
+import { getClinicCorrections, type ClinicAuthorReply, type ClinicCorrection, type WithdrawnDiagnosis } from "../../lib/clinic";
 import { formatDateTimePl } from "../../lib/utils";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
@@ -10,7 +10,10 @@ import { ClinicNav } from "./ClinicNav";
 import { SpinAuthorRow } from "./SpinParts";
 import { Loading } from "../../kit/Loading";
 
-const labels = { withdrawal: "Wycofanie", hiding: "Ukrycie prawne", author_reply: "Odpowiedź autora" };
+const labels = { withdrawal: "Wycofanie", hiding: "Ukrycie prawne", author_reply: "Odpowiedź autora", revision: "Aktualizacja",
+  sejm_withdrawal: "Wycofanie (Sejm)", sejm_hiding: "Ukrycie prawne (Sejm)" };
+const body = (event: ClinicCorrection) => event.notice || (event.type === "author_reply" ? event.reply_excerpt
+  : event.type === "hiding" || event.type === "sejm_hiding" ? "Ukryto po zgłoszeniu prawnym" : event.reason);
 
 export function ClinicCorrections() {
   const query = useInfiniteQuery({
@@ -23,12 +26,13 @@ export function ClinicCorrections() {
     <ClinicNav />
     <SectionHeader variant="page" title="Rejestr korekt" subtitle="Przejrzystość także wtedy, gdy popełniamy błąd." />
     <p className="sc-corrections__lead">Treści AI nie poprawiamy ręcznie. Możemy wycofać całą diagnozę: każde wycofanie jest tu widoczne.
-      Publikujemy też informacje o ukryciach prawnych i odpowiedzi autorów wypowiedzi.</p>
+      Publikujemy też ukrycia prawne, odpowiedzi autorów, aktualizacje po pełnym składzie Konsylium i korekty diagnoz wystąpień z Sejmu.</p>
     {first ? <>
       <dl className="sc-corrections__counts" aria-label="Liczniki rejestru">
         <div><dt>Wycofane diagnozy</dt><dd>{first.counts.withdrawn.toLocaleString("pl-PL")}<span>z {first.counts.published.toLocaleString("pl-PL")} opublikowanych</span></dd></div>
         <div><dt>Ukrycia prawne</dt><dd>{first.counts.hidden.toLocaleString("pl-PL")}</dd></div>
         <div><dt>Odpowiedzi autorów</dt><dd>{first.counts.replies.toLocaleString("pl-PL")}</dd></div>
+        <div><dt>Aktualizacje</dt><dd>{(first.counts.revisions ?? 0).toLocaleString("pl-PL")}<span>po pełnym składzie Konsylium</span></dd></div>
       </dl>
       <p className="sc-corrections__note">Liczba opublikowanych obejmuje także diagnozy później wycofane lub ukryte. Zdarzenia pokazujemy od najnowszych.</p>
     </> : null}
@@ -40,8 +44,8 @@ export function ClinicCorrections() {
         <span className="sc-corrections__chip" data-type={event.type}>{labels[event.type]}</span></div>
       <div className="sc-corrections__event-body">
         {event.author ? <><h2>{event.author.name}</h2><p className="sc-corrections__note">{event.camp_label}{event.post_date ? <> · wpis z <time dateTime={event.post_date}>{formatDateTimePl(event.post_date)}</time></> : null}</p></> : null}
-        <p>{event.notice || (event.type === "withdrawal" ? event.reason : event.type === "author_reply" ? event.reply_excerpt : "Ukryto po zgłoszeniu prawnym")}</p>
-        {event.diagnosis_url ? <Link href={event.diagnosis_url}>{event.type === "author_reply" ? "Przeczytaj całą odpowiedź" : "Zobacz informację o diagnozie"} →</Link> : null}
+        <p>{body(event)}</p>
+        {event.diagnosis_url ? <Link href={event.diagnosis_url}>{event.type === "author_reply" ? "Przeczytaj całą odpowiedź" : event.type === "revision" ? "Zobacz diagnozę i poprzedni wynik" : "Zobacz informację o diagnozie"} →</Link> : null}
       </div>
     </li>)}</ol>
     {query.hasNextPage ? <Button disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż wcześniejsze zdarzenia"}</Button> : null}
