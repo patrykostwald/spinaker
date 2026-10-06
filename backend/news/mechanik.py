@@ -118,7 +118,13 @@ def step():
         if listed is not None and current not in listed:
             new = successor(seat.provider, seat.model, listed)
             if not new:
-                _note({'model': seat.model, 'wynik': 'brak u dostawcy, nie znaleziono następcy'})
+                # Zwiadowca rozwiązań (7.10): inne darmowe drogi do tego samego modelu bazowego (tylko podpowiedź w dzienniku)
+                try:
+                    from news.zwiadowca_rozwiazan import fallbacks
+                    other = fallbacks(seat.provider, seat.model)
+                except Exception:  # noqa: BLE001
+                    other = []
+                _note({'model': seat.model, 'wynik': 'brak u dostawcy, nie znaleziono następcy' + (f"; zamienniki Zwiadowcy: {', '.join(other)}" if other else '')})
                 done.append((seat.model, 'brak następcy'))
                 continue
             ok, error = probe(seat.provider, new)

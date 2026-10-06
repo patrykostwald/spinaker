@@ -32,6 +32,8 @@ from news import agents_common as common
 from news.agent_models import AgentNote
 
 AGENTS = ('kartograf', 'zwiadowca', 'prawnik', 'dziennikarz', 'kontroler', 'architekt', 'wynalazca', 'technolog')
+# Badacze, których ustalenia czyta Prawnik; 'rozwiazania' = Zwiadowca rozwiązań (osobna pętla, news/zwiadowca_rozwiazan.py)
+RESEARCHERS = ('kartograf', 'zwiadowca', 'wynalazca', 'technolog', 'rozwiazania')
 EVERY = {'technolog': timedelta(days=6), 'wynalazca': timedelta(days=3), 'kartograf': timedelta(days=6), 'zwiadowca': timedelta(days=6), 'architekt': timedelta(days=6),
          'dziennikarz': timedelta(days=3), 'kontroler': timedelta(hours=20)}
 UA = {'User-Agent': 'przeszlosc.today Pracownia OSINT (+https://spin.clinic)'}
@@ -206,6 +208,7 @@ WYNALAZCA = (MISSION + ' Jesteś Wynalazcą: najbardziej kreatywnym członkiem z
 WYNALAZCA_CHECK = ('Sprawdź pomysły kolegi. W remove podaj numery (od 0) pomysłów: wymagających danych spoza inventory, powielających '
                    'katalog lub previous, zwykłych (konkurencja już to ma), naruszających zasadę tej samej miary albo profilujących osoby prywatne.')
 ARCHITEKT = (MISSION + ' Jesteś Architektem produktu. Masz katalog funkcji, luki Kartografa, pomysły Wynalazcy (ideas), technologie Technologa (tech), zbiory Zwiadowcy z werdyktami Prawnika, '
+             'ustalenia Zwiadowcy rozwiązań (solutions: tanie lub darmowe modele, dane i narzędzia z dowodami - evidence_urls; wykorzystaj te z action=architekt), '
              'raporty dziennikarzy testowych i stan danych Kontrolera. Ułóż plan 10 następnych funkcji, od najważniejszej. Tylko '
              'propozycje dozwolone lub warunkowe (z warunkami w brief), pomijasz „do konsultacji” i niedozwolone. Dla każdej: tytuł, catalog_id, poziom (darmowe/Pro), wysiłek '
              'S/M/L, wartość 1-10, dlaczego (z odwołaniem do konkretnego raportu), 3-5 kryteriów odbioru i brief: gotowe zlecenie dla '
@@ -330,11 +333,15 @@ def zwiadowca(force=False):
 # ---------- Prawnik ----------
 def prawnik(force=False):
     since = getattr(_last('prawnik', 'review'), 'created_at', None)
-    notes = AgentNote.objects.filter(agent__in=['kartograf', 'zwiadowca', 'wynalazca', 'technolog'], kind='finding')
+    notes = AgentNote.objects.filter(agent__in=RESEARCHERS, kind='finding')
     if since:
         notes = notes.filter(created_at__gt=since)
     proposals = []
     for note in notes[:20]:
+        for f in (note.scores or {}).get('findings', []):  # Zwiadowca rozwiązań: tylko pozycje z ryzykiem prawnym lub regulaminowym
+            if isinstance(f, dict) and (f.get('legal_risk') or f.get('action') == 'prawnik'):
+                proposals.append({'note': note.pk, 'what': f"Rozwiązanie: {f.get('title', '')} ({f.get('unlocks', '')}; prawo: {f.get('legality', '')}, "
+                                                           f"trenowanie na danych z API: {f.get('tos_training', '')})"})
         for g in (note.scores or {}).get('gaps', []):
             proposals.append({'note': note.pk, 'what': f"Funkcja: {g['feature']} ({g.get('why_journalists_care', '')})"})
         for t in (note.scores or {}).get('tech', []):
@@ -489,9 +496,10 @@ def architekt(force=False):
         note = _last(agent, kind)
         return {'note': note.pk, **(note.scores or {})} if note else {}
     inputs = {'catalog': catalog(), 'gaps': latest('kartograf', 'finding'), 'ideas': latest('wynalazca', 'finding'), 'tech': latest('technolog', 'finding'), 'sources': latest('zwiadowca', 'finding'),
+              'solutions': latest('rozwiazania', 'finding'),  # Zwiadowca rozwiązań: tanie modele, dane, narzędzia z dowodami (7.10)
               'legal': latest('prawnik', 'review'), 'tests': latest('dziennikarz', 'review'), 'data': latest('kontroler', 'audit'),
               'rules': LEGAL}
-    for key in ('gaps', 'ideas', 'tech', 'sources', 'legal', 'tests'):
+    for key in ('gaps', 'ideas', 'tech', 'sources', 'solutions', 'legal', 'tests'):
         inputs[key].pop('authors', None)
     answer = _ask(ARCHITEKT, inputs, PLAN_SCHEMA, force)
     items = [i for i in answer.get('items', []) if isinstance(i, dict)][:10]
@@ -518,7 +526,7 @@ ORDER = [('kontroler', kontroler), ('dziennikarz', dziennikarz), ('kartograf', k
 def due(agent):
     if agent == 'prawnik':  # gdy są nowe propozycje do oceny
         last = _last('prawnik', 'review')
-        return AgentNote.objects.filter(agent__in=['kartograf', 'zwiadowca', 'wynalazca', 'technolog'], kind='finding',
+        return AgentNote.objects.filter(agent__in=RESEARCHERS, kind='finding',
                                         **({'created_at__gt': last.created_at} if last else {})).exists()
     last = AgentNote.objects.filter(agent=agent).exclude(kind='idea').first()
     return last is None or timezone.now() - last.created_at >= EVERY[agent]

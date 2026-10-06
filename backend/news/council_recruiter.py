@@ -211,6 +211,12 @@ def discover() -> list[dict]:
                               'context': live[0].get('context_length') or 0})
     except (requests.RequestException, ValueError) as error:
         logger.info('recruiter hf: %s', error)
+    # Zwiadowca rozwiązań (7.10): modele wskazane w zwiadzie tygodnia; ten sam egzamin, progi i Karta co dla każdego.
+    try:
+        from news.zwiadowca_rozwiazan import recruiter_candidates
+        found += recruiter_candidates()
+    except Exception as error:  # noqa: BLE001 - kolejka Zwiadowcy nie może zatrzymać zwiadu
+        logger.info('recruiter zwiadowca: %s', error)
     return found
 
 
@@ -277,7 +283,7 @@ def sieve(found: list[dict]) -> list[dict]:
     for c in candidates:
         name = c['model'].casefold()
         # Inception zgłosił właściciel 7.10 - wcześniej w kolejce, ale egzamin, progi i Karta te same co dla każdego.
-        c['watched'] = c['provider'] == 'inception' or any(w and (w in name or base_name(c['model']).casefold() in w) for w in watched)
+        c['watched'] = c['provider'] == 'inception' or bool(c.get('scout')) or any(w and (w in name or base_name(c['model']).casefold() in w) for w in watched)
     candidates.sort(key=lambda c: (not c['polish'], not c['watched'], not c['new_company'], -(c['billions'] or 0)))
     return candidates
 

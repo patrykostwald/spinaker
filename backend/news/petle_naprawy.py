@@ -474,6 +474,41 @@ def owner_waiting(now):
     return {'reports': reports, 'tickets': [{'id': pk, 'title': t, 'effort': e} for pk, t, e in large], 'costs': costs}
 
 
+# --- (f) sygnały Zwiadowcy rozwiązań ------------------------------------------------------------------------------
+
+def scout_signals(now, data):
+    """Sygnał bez odbiorcy: najpierw zamknięcie tych, które odbiorca już wziął (egzamin, klucz), potem jedno ponowienie
+    Rekrutera na dobę dla sygnałów „rekruter”. Sygnały dla właściciela (klucz do założenia) zostają w przypomnieniu."""
+    from news import zwiadowca_rozwiazan as zwiad
+    out = {}
+    closed = zwiad.mark_consumed(now)
+    if closed:
+        log('zwiadowca', 'rozwiazania', 'sygnaly', 'fixed', f'Zwiadowca rozwiązań: {closed} sygnał(y) odebrane (egzamin, klucz, plan Architekta).', now)
+    rows, _ = zwiad.unconsumed_signals(now)
+    waiting = {str((s or {}).get('consumer', '')) for s in rows.values_list('scores', flat=True)}
+    if not waiting:
+        return out
+    key = 'petle:scout-signals'
+    if 'rekruter' in waiting:
+        day = reset_day(now)
+        if data.get('scout_recruiter') == day:
+            out[key] = 'retried-again'
+        else:
+            from config.celery import app
+            data['scout_recruiter'] = day
+            try:
+                app.send_task('news.tasks.council_recruiter_task', retry=False)
+                suppress(data, key, now + timedelta(hours=12), f'Rekruter ponowiony {hhmm(now)}')
+                log('zwiadowca', 'rozwiazania', 'rekruter', 'retried', 'Zwiadowca rozwiązań: sygnał o modelu bez egzaminu, Rekruter ponowiony.', now)
+                out[key] = 'retried'
+            except Exception:  # noqa: BLE001 - broker niedostępny: alarm
+                log('zwiadowca', 'rozwiazania', 'rekruter', 'failed', 'Zwiadowca rozwiązań: nie udało się ponowić Rekrutera (broker).', now)
+                out[key] = 'failed'
+    else:
+        out[key] = 'impossible'  # klucz dostawcy zakłada tylko właściciel
+    return out
+
+
 # --- wejście dla bezpieczników ------------------------------------------------------------------------------------
 
 def remedy(check, now):
@@ -503,6 +538,8 @@ def remedy(check, now):
                     out[f['key']] = retrigger(reader, now, data, f['key'], 'consumer')
         elif check == 'check_deadlines':
             approve_tickets(now)
+        elif check == 'check_scout_signals':
+            out.update(scout_signals(now, data))
     except Exception as error:  # noqa: BLE001 - nieudana naprawa = alarm, nie zatrzymanie Dyżurnego
         from news.admin_telemetry import safe_error
         log('awaria', 'naprawy', check, 'failed', f'Naprawa automatyczna ({check}) nie powiodła się: {safe_error(error)}', now)

@@ -187,8 +187,23 @@ def deadlines(now):
     return out
 
 
+def scout_signals(now):
+    """(f) Sygnały Zwiadowcy rozwiązań bez odbiorcy ponad SLA (nowy darmowy model lub dostawca, którego nikt nie odebrał)."""
+    from news import zwiadowca_rozwiazan as zwiad
+    rows, hours = zwiad.unconsumed_signals(now)
+    count = rows.count()
+    if not count:
+        return []
+    oldest = rows.order_by('created_at').values_list('created_at', flat=True).first()
+    consumers = sorted({str((s or {}).get('consumer', '')) for s in rows.values_list('scores', flat=True)})
+    return [fuse('rozwiazania', 'scout-signals', 'warn', f"Rozwiązania: {count} sygnał(y) bez odbiorcy ponad {hours} h",
+                 {'signals': count, 'hours': hours, 'consumers': consumers}, oldest,
+                 'Rekruter: egzamin modelu (manage.py council_recruiter); właściciel: klucz dostawcy w .env; potem sygnał zamyka się sam.')]
+
+
 RULES = (('check_unused_outputs', unused_outputs), ('check_silent_loops', silent_loops),
-         ('check_quality', quality), ('check_consumers', consumers), ('check_deadlines', deadlines))
+         ('check_quality', quality), ('check_consumers', consumers), ('check_deadlines', deadlines),
+         ('check_scout_signals', scout_signals))
 
 
 def fuses(now=None):
@@ -241,4 +256,8 @@ def check_deadlines(ctx):
     return _alarms(deadlines, ctx, 'check_deadlines')
 
 
-CHECKS = (check_unused_outputs, check_silent_loops, check_quality, check_consumers, check_deadlines)
+def check_scout_signals(ctx):
+    return _alarms(scout_signals, ctx, 'check_scout_signals')
+
+
+CHECKS = (check_unused_outputs, check_silent_loops, check_quality, check_consumers, check_deadlines, check_scout_signals)

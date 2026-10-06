@@ -28,7 +28,8 @@ _tier = contextvars.ContextVar('dyrygent_tier', default='rozwój')
 AI_TASKS = {'recenzent_task': 'strażnicy', 'thread_reviews_task': 'strażnicy', 'opiekunowie_task': 'niezawodność', 'mechanik_task': 'niezawodność',
             'pracownia_osint_task': 'rozwój', 'automatyk_task': 'rozwój', 'agents_window_task': 'rozwój', 'ekspert_ai_task': 'rozwój',
             'projektant_task': 'nauka', 'badacz_task': 'nauka', 'institutional_reports_task': 'rozwój', 'signal_threads_task': 'rozwój',
-            'narrative_thread_task': 'rozwój', 'zmiana_zdania_task': 'treść', 'konsylium_powtorz_task': 'treść', 'odbior_spinu_task': 'treść'}
+            'narrative_thread_task': 'rozwój', 'zmiana_zdania_task': 'treść', 'konsylium_powtorz_task': 'treść', 'odbior_spinu_task': 'treść',
+            'zwiadowca_zwiad_task': 'rozwój'}
 CODEX_BACK = os.environ.get('CODEX_AVAILABLE_FROM', '2026-10-10')  # limit Codexa (plan ChatGPT właściciela); po resecie wpis w .env
 
 
@@ -117,6 +118,12 @@ def plan(force=False):
     if clash:
         lines += ['Kolizje harmonogramu (zadania z AI w tym samym oknie, warto rozsunąć):'] + [f"- {c['okno']}: {', '.join(c['zadania'])}" for c in clash] + ['']
     lines += ['Kolejka budowy:'] + [f"- #{q['id']} [{q['status']}, {q['effort']}, {q['who']}] {q['title']}" for q in queue]
+    try:  # rejestr pojemności Zwiadowcy rozwiązań: darmowe pule i dostawcy poza Konsylium (7.10)
+        from news.zwiadowca_rozwiazan import capacity_lines
+        extra = capacity_lines()
+        lines += [''] + extra if extra else []
+    except Exception:  # noqa: BLE001 - plan dnia wychodzi zawsze
+        pass
     note = AgentNote.objects.create(agent='dyrygent', kind='report', status='new', title=f'Plan dnia: tryb {mode_now}, {len(queue)} w kolejce budowy',
                                     body=chr(10).join(lines), scores={'mode': mode_now, 'free': free, 'collisions': clash, 'queue': queue})
     if clash or mode_now == 'strażnicy':

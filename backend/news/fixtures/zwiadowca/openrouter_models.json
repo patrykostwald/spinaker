@@ -1,0 +1,7 @@
+{"data": [
+ {"id": "meta-llama/llama-4-scout:free", "context_length": 128000, "pricing": {"prompt": "0", "completion": "0"}, "supported_parameters": ["response_format", "temperature"]},
+ {"id": "openai/gpt-oss-120b", "context_length": 131072, "pricing": {"prompt": "0.00000005", "completion": "0.00000025"}, "supported_parameters": ["response_format"]},
+ {"id": "anthropic/claude-sonnet-4", "context_length": 200000, "pricing": {"prompt": "0.000003", "completion": "0.000015"}, "supported_parameters": ["response_format"]},
+ {"id": "google/gemma-3n-e2b-it:free", "context_length": 8192, "pricing": {"prompt": "0", "completion": "0"}, "supported_parameters": ["temperature"]},
+ {"id": "openai/whisper-large-v3", "context_length": 0, "pricing": {"prompt": "0", "completion": "0"}, "supported_parameters": []}
+]}

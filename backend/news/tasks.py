@@ -558,6 +558,34 @@ def badacz_task():
 
 
 @shared_task(soft_time_limit=600, time_limit=660)
+def zwiadowca_rozwiazan_task():
+    """Codziennie 5:40: obserwatorzy Zwiadowcy rozwiązań (bez AI) - katalogi modeli, kanały dostawców, wydania narzędzi,
+    nowe zbiory; różnica wobec rejestru = sygnał (news.zwiadowca_rozwiazan)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import zwiadowca_rozwiazan as zwiad
+    done = zwiad.run_watchers()
+    return {'status': 'ok', 'produced': done['signals'], **{k: v for k, v in done.items() if k != 'errors'}, 'errors': len(done['errors'])}
+
+
+@shared_task(soft_time_limit=840, time_limit=900)
+def zwiadowca_zwiad_task():
+    """Poniedziałek 4:10: zwiad tygodnia - jeden darmowy model (Inception pierwszy) ocenia pozycje z 7 dni; do 10 ustaleń z dowodami."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import dyrygent, zwiadowca_rozwiazan as zwiad
+    from news.agents_common import WindowClosed
+    try:
+        with dyrygent.tier('rozwój'):
+            note = zwiad.scout()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk, 'produced': 1, 'findings': len((note.scores or {}).get('findings', []))}
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
 def zmiana_zdania_task():
     """Co 30 minut: Zmiana zdania - wcześniejsze wypowiedzi tej samej osoby przy nowych diagnozach (bez AI), potem jeden darmowy
     model ocenia pary w oknie agentów. Brak modelu = pary czekają; diagnoza nigdy na to nie czeka."""

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ <title>Cloudflare changelog</title>
+ <entry><title>Workers AI: new free quota for Llama 4</title><link href="https://developers.cloudflare.com/changelog/2026-10-05-workers-ai/"/><summary>&lt;p&gt;Workers AI adds Llama 4 Scout with 10k free neurons.&lt;/p&gt;</summary></entry>
+ <entry><title>Pages build</title><link href="http://insecure.example/x"/><summary>not https</summary></entry>
+</feed>

@@ -6,7 +6,7 @@ from django.utils import timezone
 
 
 class AgentNote(models.Model):
-    agent = models.CharField(max_length=12, choices=[(v, v) for v in ('strateg', 'pielgrzym', 'ekspert', 'recenzent', 'projektant', 'kartograf', 'zwiadowca', 'prawnik', 'dziennikarz', 'kontroler', 'architekt', 'wynalazca', 'technolog', 'automatyk', 'opiekun', 'dyrygent', 'zamowienia')])
+    agent = models.CharField(max_length=12, choices=[(v, v) for v in ('strateg', 'pielgrzym', 'ekspert', 'recenzent', 'projektant', 'kartograf', 'zwiadowca', 'prawnik', 'dziennikarz', 'kontroler', 'architekt', 'wynalazca', 'technolog', 'automatyk', 'opiekun', 'dyrygent', 'zamowienia', 'rozwiazania')])
     kind = models.CharField(max_length=12, choices=[(v, v) for v in ('signal', 'idea', 'finding', 'experiment', 'request', 'report', 'review', 'audit')])
     track = models.CharField(max_length=1, choices=[('A', 'A'), ('B', 'B'), ('', '—')], blank=True)
     title = models.CharField(max_length=240)

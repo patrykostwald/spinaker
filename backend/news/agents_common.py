@@ -141,7 +141,7 @@ AGENT_NAMES = {'strateg': 'Strateg', 'pielgrzym': 'Pielgrzym', 'ekspert': 'Ekspe
                'projektant': 'Projektant UX/UI', 'kartograf': 'Kartograf', 'zwiadowca': 'Zwiadowca', 'prawnik': 'Prawnik',
                'dziennikarz': 'Dziennikarz testowy', 'kontroler': 'Kontroler danych', 'architekt': 'Architekt',
                'wynalazca': 'Wynalazca', 'technolog': 'Technolog', 'automatyk': 'Automatyk', 'opiekun': 'Opiekun pętli',
-               'dyrygent': 'Dyrygent'}
+               'dyrygent': 'Dyrygent', 'rozwiazania': 'Zwiadowca rozwiązań'}
 
 
 def notify(note):

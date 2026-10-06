@@ -16,7 +16,7 @@ const kinds: Record<string, string> = { signal: 'Sygnały', idea: 'Pomysły', fi
 const agentLabels: Record<string, string> = { strateg: 'Strateg', pielgrzym: 'Pielgrzym', ekspert: 'Ekspert AI', recenzent: 'Recenzent',
   projektant: 'Projektant UX/UI', kartograf: 'Kartograf', zwiadowca: 'Zwiadowca', prawnik: 'Prawnik', dziennikarz: 'Dziennikarz testowy',
   kontroler: 'Kontroler danych', architekt: 'Architekt', wynalazca: 'Wynalazca', technolog: 'Technolog', automatyk: 'Automatyk',
-  opiekun: 'Opiekun pętli', dyrygent: 'Dyrygent', warden: 'Drugi klucz' };
+  opiekun: 'Opiekun pętli', dyrygent: 'Dyrygent', warden: 'Drugi klucz', rozwiazania: 'Zwiadowca rozwiązań' };
 const defaultAgents = ['strateg', 'pielgrzym', 'ekspert', 'recenzent', 'projektant'];
 const agentLabel = (name: string) => agentLabels[name] || name.charAt(0).toUpperCase() + name.slice(1);
 const readKinds = ['finding', 'review', 'audit', 'report', 'signal'];

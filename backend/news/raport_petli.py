@@ -74,6 +74,11 @@ CONTRACTS = (
     contract('sprint', 'Sprint', 'agenci', 168, 'claude:sprint', 7, beats=('sprint-intake',), registry='sprint', counter='tickets',
              pending='tickets', title='Sprint tygodnia (bilety budowy)'),
     contract('seba', 'Seba', 'agenci', 24, 'owner:panel', 2, beats=('seba-hourly',), registry='seba', counter='seba', title='Seba - krytyk propozycji'),
+    # Zwiadowca rozwiązań (7.10): sygnały codziennie (bez AI), ustalenia co tydzień; czyta Architekt (Rekruter, Dyrygent, Mechanik, Prawnik
+    # biorą swoje pozycje sami - bezpiecznik „sygnał bez odbiorcy” w petle_bezpieczniki.scout_signals)
+    contract('rozwiazania', 'Rozwiązania', 'agenci', 168, 'agent:architekt', 7, agents=('rozwiazania',),
+             beats=('zwiadowca-daily', 'zwiadowca-weekly'), registry='zwiadowca-rozwiazan',
+             title='Zwiadowca rozwiązań (tanie modele, dane, narzędzia)'),
     # przeszłość.today - Pracownia OSINT
     contract('kartograf', 'Kartograf', 'przeszlosc', 168, 'agent:prawnik', 7, agents=('kartograf',), beats=('pracownia-osint',),
              registry='pracownia-osint'),
@@ -380,7 +385,16 @@ def build(now=None):
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
             'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build(),
-            'baza': _baza(), 'koszty': _koszty(now)}
+            'baza': _baza(), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now)}
+
+
+def _mozliwosci(now):
+    """Nowe możliwości tygodnia (Zwiadowca rozwiązań): do 5 najlepszych ustaleń i otwarte sygnały."""
+    try:
+        from news.zwiadowca_rozwiazan import report_lines
+        return report_lines(now)
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return []
 
 
 def _koszty(now):
@@ -515,6 +529,9 @@ def text(report):
     lines.append('')
     lines.append('== Najlepsze nowe pomysły i ustalenia (7 dni) ==')
     lines += [f"- {t['score']}/100 · {t['agent']}: {clean(t['title'])}" for t in report['top']] or ['Brak nowych.']
+    if report.get('mozliwosci'):
+        lines += ['', '== Nowe możliwości tygodnia (Zwiadowca rozwiązań) ==']
+        lines += [clean(line) for line in report['mozliwosci']]
     lines += ['', 'Panel: https://spin.clinic/panel · Szczegóły: python manage.py raport_petli']
     return chr(10).join(lines)
 

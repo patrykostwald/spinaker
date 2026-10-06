@@ -18,6 +18,8 @@ BEAT_PLAN = {
     'projektant-daily': ('projektant_task', {'hour': 4, 'minute': 20}),
     'dyrygent-15m': ('dyrygent_task', {'minute': '*/15'}),  # właściciel 5.10: hierarchia i harmonogram pętli
     'badacz-daily': ('badacz_task', {'hour': 3, 'minute': 20}),
+    'zwiadowca-daily': ('zwiadowca_rozwiazan_task', {'hour': 5, 'minute': 40}),  # właściciel 7.10: obserwatorzy tanich technologii (bez AI)
+    'zwiadowca-weekly': ('zwiadowca_zwiad_task', {'day_of_week': 'mon', 'hour': 4, 'minute': 10}),  # zwiad tygodnia przed sprintem 6:00
     'x-value-daily': ('x_value_task', {'hour': 3, 'minute': 40}),  # właściciel 6.10: X według wartości konta  # właściciel 5.10: pętla researchu
     'opiekunowie-1h': ('opiekunowie_task', {'minute': 17}),  # właściciel 5.10: opiekunowie każdej pętli
     'zmiana-zdania-30m': ('zmiana_zdania_task', {'minute': '7,37'}),  # właściciel 6.10: Zmiana zdania przy diagnozach

@@ -1,0 +1,4 @@
+{"data": [
+ {"id": "4711", "attributes": {"title": "Rejestr korzyści posłów", "license_name": "CC BY 4.0", "created": "2026-10-05T10:00:00Z"}, "links": {"self": "https://api.dane.gov.pl/1.4/datasets/4711"}},
+ {"id": "12", "attributes": {"title": "Stary zbiór", "license_name": "CC0", "created": "2021-01-01T10:00:00Z"}, "links": {"self": "https://api.dane.gov.pl/1.4/datasets/12"}}
+]}
