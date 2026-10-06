@@ -161,8 +161,9 @@ TEST_SCHEMA = {'type': 'object', 'properties': {'score': INT, 'answered': TEXT, 
                'required': ['score', 'answered', 'missing', 'friction', 'wish']}
 ITEM = {'type': 'object', 'properties': {
     'title': TEXT, 'catalog_id': TEXT, 'tier': {'type': 'string', 'enum': ['darmowe', 'Pro']},
-    'effort': {'type': 'string', 'enum': ['S', 'M', 'L']}, 'value': INT, 'why': TEXT, 'acceptance': LIST, 'brief': TEXT},
-    'required': ['title', 'tier', 'effort', 'value', 'why', 'acceptance', 'brief']}
+    'effort': {'type': 'string', 'enum': ['S', 'M', 'L']}, 'value': INT, 'why': TEXT, 'acceptance': LIST, 'brief': TEXT,
+    'evidence': LIST},  # Z6: odwołania do danych wejściowych (raport, pomysł, test), bez dowodu pozycja nie staje się biletem
+    'required': ['title', 'tier', 'effort', 'value', 'why', 'acceptance', 'brief', 'evidence']}
 PLAN_SCHEMA = {'type': 'object', 'properties': {'summary': TEXT, 'items': {'type': 'array', 'items': ITEM}}, 'required': ['summary', 'items']}
 
 MISSION = ('Pracujesz w Pracowni OSINT przeszłość.today: narzędzia, które ma być pierwszym wyborem dziennikarzy w Polsce do badania życia '
@@ -491,6 +492,15 @@ def wynalazca(force=False):
 
 
 # ---------- Architekt ----------
+def proposals_for_architekt(limit=12):
+    """Z6 (7.10): Architekt jest jedynym autorem planu, więc dostaje pomysły innych agentów (Strateg, Pielgrzym, Automatyk) jako
+    wejście; nie trafiają już same do sprintu. Tylko tytuł, ocena i skrót - bez pełnych treści."""
+    from news.sprint import PROPOSERS
+    rows = AgentNote.objects.filter(agent__in=PROPOSERS, kind__in=('idea', 'experiment'), status__in=('new', 'accepted', 'approved')
+                                    ).order_by('-score', '-created_at')[:limit]
+    return [{'note': n.pk, 'agent': n.agent, 'title': n.title, 'score': n.score, 'summary': ' '.join(n.body.split())[:300]} for n in rows]
+
+
 def architekt(force=False):
     def latest(agent, kind):
         note = _last(agent, kind)
@@ -498,7 +508,7 @@ def architekt(force=False):
     inputs = {'catalog': catalog(), 'gaps': latest('kartograf', 'finding'), 'ideas': latest('wynalazca', 'finding'), 'tech': latest('technolog', 'finding'), 'sources': latest('zwiadowca', 'finding'),
               'solutions': latest('rozwiazania', 'finding'),  # Zwiadowca rozwiązań: tanie modele, dane, narzędzia z dowodami (7.10)
               'legal': latest('prawnik', 'review'), 'tests': latest('dziennikarz', 'review'), 'data': latest('kontroler', 'audit'),
-              'rules': LEGAL}
+              'proposals': proposals_for_architekt(), 'rules': LEGAL}
     for key in ('gaps', 'ideas', 'tech', 'sources', 'solutions', 'legal', 'tests'):
         inputs[key].pop('authors', None)
     answer = _ask(ARCHITEKT, inputs, PLAN_SCHEMA, force)

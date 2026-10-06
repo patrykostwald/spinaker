@@ -193,7 +193,18 @@ def tickets(now=None):
         return [{'id': t.pk, 'title': t.title, 'status': t.status, 'executor': t.executor,
                  'due': t.due_date.isoformat() if t.due_date else None} for t in qs.order_by('due_date', '-rank')[:10]]
     return {'open': rows.count(), 'proposed': rows.filter(status='proposed').count(), 'approved': building.count(),
-            'overdue': overdue.count(), 'overdue_list': pack(overdue), 'approved_list': pack(building)}
+            'overdue': overdue.count(), 'overdue_list': pack(overdue), 'approved_list': pack(building), 'flow': flow(now)}
+
+
+def flow(now=None, days=30):
+    """Przepływ pomysł -> bilet -> zbudowane w ostatnich 30 dniach (Z6: jeden autor biletów, mierzalny strumień)."""
+    from news.agent_models import AgentNote, BuildTicket
+    now = now or timezone.now()
+    since = now - timedelta(days=days)
+    proposed = AgentNote.objects.filter(kind__in=PROPOSALS, created_at__gte=since).exclude(agent__in=('opiekun', 'dyrygent')).count()
+    tickets_made = BuildTicket.objects.filter(created_at__gte=since).count()
+    built = BuildTicket.objects.filter(status='done', decided_at__gte=since).count()
+    return {'proposed': proposed, 'tickets': tickets_made, 'built': built, 'days': days}
 
 
 def _pending(c, now):
@@ -401,7 +412,16 @@ def build(now=None):
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
             'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build(),
             'baza': _baza(), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now), 'zewnetrzne': _zewnetrzne(now),
-            'poczta': _poczta(now)}
+            'poczta': _poczta(now), 'koszty_petli': _koszty_petli(now)}
+
+
+def _koszty_petli(now):
+    """Koszty pętli (właściciel 7.10): zapytania do modeli na zadanie (dziś, 7 dni) i przebiegi pominięte bez zapytania."""
+    try:
+        from news.petle_koszty import report_lines
+        return report_lines(now)
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return []
 
 
 def _mozliwosci(now):
@@ -551,6 +571,8 @@ def text(report):
             extra = f", czeka ponad SLA: {l['pending']}" if l['pending'] else ''
             lines.append(f"[{marks[l['state']]}] {l['title']} - {ran}, {made}{extra}; odbiorca: {l['consumer']}")
         lines.append('')
+    lines.append('== Koszty pętli (zapytania do modeli) ==')
+    lines += [clean(line) for line in report.get('koszty_petli') or ['Brak danych.']] + ['']
     if report.get('koszty'):
         lines.append('== Koszty X (odpowiedzi) ==')
         lines += [clean(line) for line in report['koszty']] + ['']
@@ -572,6 +594,10 @@ def text(report):
                  f"zatwierdzone: {sprint.get('approved', 0)}, po terminie: {sprint.get('overdue', 0)})")
     if zew.get('issues'):
         lines.append(clean(zew['issues']))
+    if sprint.get('flow'):
+        f = sprint['flow']
+        lines.append(f"Przepływ {f['days']} dni: propozycje agentów {f['proposed']} -> bilety {f['tickets']} -> zbudowane {f['built']} "
+                     '(bilety tworzy tylko Sprint z planu Architekta; inni agenci zgłaszają propozycje)')
     lines += [f"- PO TERMINIE #{t['id']} {clean(t['title'])} (termin {t['due']}, {t['executor']})" for t in sprint.get('overdue_list', [])]
     lines += [f"- #{t['id']} {clean(t['title'])} (termin {t['due']}, {t['executor']})" for t in sprint.get('approved_list', [])
               if t not in sprint.get('overdue_list', [])]

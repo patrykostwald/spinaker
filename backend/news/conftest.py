@@ -5,9 +5,11 @@ import pytest
 def zakaz_sieci(monkeypatch):
     """Testy nigdy nie wychodzą w sieć (7.10: test podglądu social wołał żywe Gemini, bo klucz był w środowisku powłoki).
     Blokada na poziomie adaptera requests: biblioteka `responses` (@responses.activate) nadal działa, bo podmienia ten sam adapter;
-    testy mockujące `requests.get` albo `Session.request` też nie dochodzą do tego miejsca."""
+    testy mockujące `requests.get` albo `Session.request` też nie dochodzą do tego miejsca. Błąd to ConnectionError, czyli to samo,
+    co kod widzi bez sieci - ścieżki „dostawca nie odpowiada” zachowują się jak na produkcji bez połączenia."""
+    import requests
     from unittest.mock import Mock
-    monkeypatch.setattr('requests.adapters.HTTPAdapter.send', Mock(side_effect=AssertionError('Zakaz sieci w testach')))
+    monkeypatch.setattr('requests.adapters.HTTPAdapter.send', Mock(side_effect=requests.ConnectionError('Zakaz sieci w testach')))
 
 
 @pytest.fixture

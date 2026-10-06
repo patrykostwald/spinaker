@@ -138,7 +138,11 @@ def reserve(member):
     if guard is None and not content_purpose.get() and used > side_limit(member):
         cache.decr(key)  # odmowa nie zużywa limitu
         return False
-    return used <= daily_limit(member)
+    granted = used <= daily_limit(member)
+    if granted:
+        from news.petle_koszty import count_call
+        count_call()  # Koszty pętli (7.10): zapytanie na konto zadania, które właśnie biegnie
+    return granted
 
 
 def reserve_side(member):

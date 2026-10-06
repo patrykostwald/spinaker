@@ -46,10 +46,12 @@ def test_rank_formula_and_conditional_legal():
 
 
 def test_wynalazca_findings_expand_to_items():
-    idea('Nowe pomysły: 2', agent='wynalazca', kind='finding', score=0,
+    # Z6 (7.10): ustalenia Wynalazcy wchodzą do sprintu po akceptacji (jako nowe idą do Architekta, jedynego autora planu)
+    idea('Nowe pomysły: 2', agent='wynalazca', kind='finding', score=0, status='accepted',
          ideas=[{'title': 'Mapa powiązań spółek', 'wow': 9, 'tier': 'Pro', 'what': 'graf'}, {'title': 'Słabe', 'wow': 3}])
-    [cand] = sprint.candidates(MONDAY)
+    cand, weak = sprint.candidates(MONDAY)
     assert cand['title'] == 'Mapa powiązań spółek' and cand['effort'] == 'L' and 'graf' in cand['brief']
+    assert weak['title'] == 'Słabe' and weak['rank'] < cand['rank']
 
 
 def test_intake_weekly_cap_expiry_and_daily_topup(django_user_model):
@@ -112,10 +114,10 @@ def test_command_prints_briefs_and_closes_ticket():
 
 def test_close_multi_idea_finding_marks_built_items():
     items = [{'title': 'Mapa spółek', 'wow': 9}, {'title': 'Eksport do CSV', 'wow': 9}]
-    note = idea('Nowe pomysły', agent='wynalazca', kind='finding', ideas=items)
+    note = idea('Nowe pomysły', agent='wynalazca', kind='finding', status='accepted', ideas=items)
     sprint.close(BuildTicket.objects.create(note=note, title='Mapa spółek', status='approved'), 'aaa')
     note.refresh_from_db()
-    assert note.status == 'new' and note.scores['zbudowane'] == ['Mapa spółek']
+    assert note.status == 'accepted' and note.scores['zbudowane'] == ['Mapa spółek']
     assert [c['title'] for c in sprint.candidates()] == ['Eksport do CSV']
     sprint.close(BuildTicket.objects.create(note=note, title='Eksport do CSV', status='approved'), 'bbb')
     note.refresh_from_db()

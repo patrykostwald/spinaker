@@ -38,6 +38,7 @@ CRITIQUE_SCHEMA = {'type': 'object', 'properties': {
 
 
 COMPANY_INCEPTION = 'Inception Labs'
+DEFAULT_DAILY_STEPS = 4
 
 
 class WindowClosed(Exception):
@@ -229,10 +230,12 @@ def step(agent, force=False, hourly=False):
         members(1, force)
         day = (now - timedelta(hours=2)).date().isoformat()
         counts = data.get('counts', {}) if data.get('day') == day else {}
+        # Koszty pętli (7.10): domyślnie 4 kroki dziennie na agenta (było 12; każdy krok to 2-3 zapytania, a propozycje
+        # i tak czekały na decyzje). Więcej: STRATEG_DAILY_STEPS / PIELGRZYM_DAILY_STEPS.
         try:
-            limit = max(0, int(os.environ.get(f'{agent.upper()}_DAILY_STEPS', '12')))
+            limit = max(0, int(os.environ.get(f'{agent.upper()}_DAILY_STEPS', str(DEFAULT_DAILY_STEPS))))
         except ValueError:
-            limit = 12
+            limit = DEFAULT_DAILY_STEPS
         if counts.get(agent, 0) >= limit:
             # A disabled/exhausted agent must not starve the other agent.
             state.data = {**data, 'last': agent}

@@ -148,11 +148,15 @@ def record(sender, phase, task_id=None, args=None, kwargs=None, result=None, exc
 
 @task_prerun.connect(weak=False)
 def started(sender=None, task_id=None, args=None, kwargs=None, **extra):
+    from news.petle_koszty import begin
+    begin(getattr(sender, 'name', ''))  # Koszty pętli: zapytania do modeli liczą się na konto tego zadania
     record(sender, 'running', task_id, args, kwargs)
 
 
 @task_success.connect(weak=False)
 def succeeded(sender=None, result=None, **extra):
+    from news.petle_koszty import end
+    end()
     failed_result = isinstance(result, dict) and (result.get('status') in ('error', 'failed', 'too_many_failures') or bool(result.get('error')) or bool(result.get('failed')) or bool(result.get('errors')))
     skipped = isinstance(result, dict) and result.get('status') in (
         'no_free_models', 'closed', 'disabled', 'already_run', 'busy', 'daily_limit', 'locked', 'already_running', 'waiting')
@@ -167,4 +171,6 @@ def succeeded(sender=None, result=None, **extra):
 
 @task_failure.connect(weak=False)
 def failed(sender=None, task_id=None, exception=None, args=None, kwargs=None, **extra):
+    from news.petle_koszty import end
+    end()
     record(sender, 'error', task_id, args, kwargs, exception=exception)

@@ -60,6 +60,9 @@ def choose(author_company='local'):
     from news.clinic_council import _members, DEFAULT_COUNCIL
     if not author_company or author_company == 'unknown':
         raise common.WindowClosed('Nieznana firma autora. Potrzebne dane modelu.')
+    first = common.inception_member()  # Koszty pętli (7.10): krytyka z własnej puli Inception, nie z limitów Konsylium
+    if first and author_company != common.COMPANY_INCEPTION:
+        return first
     for member in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL):
         company = registry.metadata(member)['company']
         if company not in ('unknown', author_company) and common.agent_window(member):

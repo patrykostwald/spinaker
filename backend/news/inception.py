@@ -192,6 +192,8 @@ def record(tokens: int, now=None) -> None:
         data.update(total=int(data.get('total', 0)) + int(tokens), days=days, months=months, calls=calls)
         state.cursor = data
         state.save(update_fields=['cursor'])
+    from news.petle_koszty import count_call
+    count_call(now=now)  # Koszty pętli (7.10): Inception nie przechodzi przez limity Konsylium, liczymy tu
 
 
 def _note_error(code: str, halt: bool = False) -> None:

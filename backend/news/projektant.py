@@ -258,7 +258,11 @@ def audit(force=False, base=None):
             continue
     if not pages:
         raise common.WindowClosed('Strony serwisu niedostępne dla przeglądu.')
-    author = checker = None
+    from news import petle_koszty as koszty
+    last = AgentNote.objects.filter(agent='projektant', kind='audit').first()
+    if not force and last and not koszty.changed('projektant:strony', pages):
+        koszty.count_skip()  # struktura stron bez zmian od ostatniego przeglądu: bez zapytań (Koszty pętli 7.10)
+        return last
     fixes = []
     for start in range(0, len(pages), 6):  # partiami, żeby pytanie zmieściło się w limicie modelu
         batch = pages[start:start + 6]
@@ -272,6 +276,7 @@ def audit(force=False, base=None):
     data = {'fixes': fixes, 'auto_checks': auto, 'pages': [p['page'] for p in pages], 'authors': [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]}
     note = AgentNote.objects.create(agent='projektant', kind='audit', status='new' if fixes or auto else 'done',
         title=f"Przegląd stron: {len(pages)} stron, {len(fixes)} poprawek", body=readable_audit(data), scores=data, sources=[])
+    koszty.mark('projektant:strony', pages)
     if any(f.get('priority') == 'wysoki' for f in fixes):
         common.notify(note)
     return note

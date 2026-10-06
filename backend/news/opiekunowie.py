@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from news import agents_common as common, council_registry as registry
 from news import automatyk
+from news import petle_koszty as koszty
 from news.agent_models import AgentNote
 
 ALARM_EVERY = timedelta(hours=6)
@@ -144,28 +145,46 @@ def repair(note, force=False):
                  score=max([int(f.get('impact') or 0) * 10 for f in fixes] or [0]), author=used.get('author'))
 
 
-def _least_recent(role, count):
+def _least_recent(role, count=None):
     loops = [name for _, name, _, _ in automatyk.LOOPS]
     last = {}
     for n in AgentNote.objects.filter(agent='opiekun', scores__role=role).order_by('-created_at')[:200]:
         last.setdefault(n.scores.get('loop'), n.created_at)
-    return sorted(loops, key=lambda l: last.get(l) or timezone.make_aware(timezone.datetime(2000, 1, 1)))[:count], last
+    ordered = sorted(loops, key=lambda l: last.get(l) or timezone.make_aware(timezone.datetime(2000, 1, 1)))
+    return (ordered if count is None else ordered[:count]), last
+
+
+def _stable(ctx):
+    """Trwała część kontekstu pętli (bez godzin pulsów i zmiennych podsumowań): zmiana tu = powód, by zapytać model."""
+    return {'loop': ctx.get('loop'), 'rhythm': ctx.get('rhythm'),
+            'steps': [{k: s.get(k) for k in ('step', 'enabled', 'result', 'guard', 'schedule')} for s in ctx.get('steps', [])],
+            'notes': [n for n in ctx.get('notes', []) if n.get('agent') != 'opiekun']}  # własne wpisy nie są „zmianą”
 
 
 def improve(force=False, count=IMPROVE_PER_DAY):
-    loops, last = _least_recent('usprawniacz', count)
+    """Usprawniacz: kolejne pętle (najdawniej odwiedzane najpierw), ale model pyta tylko o pętlę, w której od ostatniej wizyty
+    coś się zmieniło (kroki, stan, wpisy) albo nieodwiedzaną od tygodnia (Koszty pętli 7.10: bez zmian = bez zapytania)."""
+    loops, last = _least_recent('usprawniacz')
     done = []
     for loop in loops:
+        if len(done) >= count:
+            break
         if not force and last.get(loop) and timezone.now() - last[loop] < timedelta(hours=20):
             continue
         previous = [n.title for n in AgentNote.objects.filter(agent='opiekun', scores__role='usprawniacz', scores__loop=loop)[:5]]
         data = {**_loop_context(loop), 'previous': previous,
                 'automatyk': [n.title for n in AgentNote.objects.filter(agent='automatyk', kind='idea')[:6]]}
+        mark_key = f'opiekun:usprawniacz:{loop}'
+        stable = {**_stable(data), 'automatyk': data['automatyk']}
+        stale = not last.get(loop) or timezone.now() - last[loop] >= SECURITY_EVERY
+        if not force and not stale and koszty.unchanged_since(mark_key, stable):
+            continue
         used = {}
         summary, fixes, reason = _ask(ROLE_PROMPT['usprawniacz'], data, FIXES, force, 'fixes', used)
         body = chr(10).join([summary, ''] + [f"- {f['change']} ({f['effort']}, wpływ {f['impact']}/10): {f['why']}{chr(10)}  Zlecenie: {f['brief']}" for f in fixes])
         note = _note('usprawniacz', loop, 'idea' if fixes else 'report', f'{len(fixes)} usprawnień', body.strip(), {'fixes': fixes, 'check': reason},
                      score=max([int(f.get('impact') or 0) * 10 for f in fixes] or [0]), author=used.get('author'))
+        koszty.mark(mark_key, stable)
         done.append(note)
     return done
 
@@ -183,14 +202,24 @@ def security_checks(item):
 
 
 def security(force=False):
-    loops, last = _least_recent('bezpieczeństwo', SECURITY_PER_RUN)
+    """Strażnik bezpieczeństwa: raz w tygodniu każda pętla, po jednej na przebieg; pętla bez zmian w krokach i strażnikach od
+    ostatniego przeglądu nie wraca do modelu (tylko po 4 tygodniach dla pewności)."""
+    loops, last = _least_recent('bezpieczeństwo')
     done = []
     for loop in loops:
+        if len(done) >= SECURITY_PER_RUN:
+            break
         if not force and last.get(loop) and timezone.now() - last[loop] < SECURITY_EVERY:
             continue
         ctx = _loop_context(loop)
         checks = security_checks({'steps': ctx['steps']})
+        mark_key = f'opiekun:bezpieczenstwo:{loop}'
+        stable = {**_stable(ctx), 'checks': checks}
+        stale = not last.get(loop) or timezone.now() - last[loop] >= 4 * SECURITY_EVERY
+        if not force and not stale and koszty.unchanged_since(mark_key, stable):
+            continue
         summary, risks, reason = _ask(SECURITY, {**ctx, 'checks': checks}, RISKS, force, 'risks')
+        koszty.mark(mark_key, stable)
         order = {'wysoki': 0, 'średni': 1, 'niski': 2}
         risks.sort(key=lambda r: order.get(r.get('severity'), 3))
         body = chr(10).join([summary, ''] + [f'- automatycznie: {c}' for c in checks] +

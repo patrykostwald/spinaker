@@ -17,7 +17,10 @@ MAX_PROPOSED = 8
 MIN_OPEN = 3
 SIMILAR = .85
 NEW_MIN_SCORE = 80
-SOURCES = ('architekt', 'wynalazca', 'strateg', 'pielgrzym', 'automatyk')
+# Z6 (7.10): jeden autor biletów - nowe propozycje wchodzą do sprintu tylko z planu Architekta (który dostaje na wejściu pomysły
+# Stratega, Pielgrzyma, Automatyka i Wynalazcy); pomysły innych agentów trafiają do biletu dopiero po akceptacji właściciela.
+SOURCES = ('architekt',)
+PROPOSERS = ('wynalazca', 'strateg', 'pielgrzym', 'automatyk')
 SKIP_AGENTS = ('opiekun', 'dyrygent')  # naprawy Opiekunów mają własną pętlę (Naprawiacz); plan Dyrygenta to nie pomysł
 KINDS = ('idea', 'experiment', 'finding')
 EFFORT_DAYS = {'S': 3, 'M': 7, 'L': 14}
@@ -149,6 +152,8 @@ def candidates(now=None):
         if not accepted and not can_show(note) and not seba_bypass(note, now):
             continue  # nowe propozycje tylko po pozytywnej ocenie Seby (albo po 48 h bez oceny, wynik >= 85)
         built = set((note.scores or {}).get('zbudowane', []))
+        if not accepted and note.agent == 'architekt' and 'plan' in (note.scores or {}) and not (note.scores or {}).get('evidence'):
+            continue  # Z6: pozycja planu bez dowodu (odwołania do danych) nie staje się biletem
         for item in _items(note):
             if item['title'] in built or built_note(item['title']) or (not accepted and item['score'] < NEW_MIN_SCORE):
                 continue

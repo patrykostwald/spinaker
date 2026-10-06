@@ -13,10 +13,12 @@ import os
 import re
 
 import requests
+from django.core.cache import cache
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 ALIASES = 'council-model-aliases'
+PROBE_EVERY = 6 * 3600  # odstęp między próbami tego samego zawieszonego modelu (Koszty pętli 7.10: nie 24 próby na dobę)
 LOG = 'mechanik-log'
 HARD = re.compile(r'(^|\D)(404|400)(\D|$)|not.?found|does not exist|decommission', re.I)
 # Znane zmiany nazw u dostawców (najpierw sprawdzane); reszta z listy modeli dostawcy.
@@ -139,12 +141,17 @@ def step():
                 _note({'model': seat.model, 'wynik': f'następca {new} nie odpowiada ({error})'})
                 done.append((seat.model, 'następca nie odpowiada'))
             continue
+        probe_key = f'mechanik:probe:{seat.provider}|{seat.model}'
+        if cache.get(probe_key):
+            done.append((seat.model, 'sprawdzony niedawno'))  # odstęp między próbami (Koszty pętli 7.10): nie co godzinę
+            continue
         ok, error = probe(seat.provider, current)
         if ok:
             CouncilSeat.objects.filter(pk=seat.pk).update(status='active', first_fail_at=None, last_error='', last_ok_at=timezone.now())
             _note({'model': seat.model, 'wynik': 'działa ponownie, przywrócony'})
             done.append((seat.model, 'przywrócony'))
         else:
+            cache.set(probe_key, 1, PROBE_EVERY)
             _note({'model': seat.model, 'wynik': f'nadal nie działa ({error})'})
             done.append((seat.model, error or 'błąd'))
     if any(result == 'przywrócony' or result.startswith('zamiennik') for _, result in done):

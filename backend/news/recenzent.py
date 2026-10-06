@@ -209,29 +209,46 @@ def page_texts(base=None):
     return items
 
 
+PAGE_BATCH = 4  # stron w jednym zapytaniu (Koszty pętli 7.10: wcześniej jedno zapytanie na stronę)
+PAGE_SEEN_DAYS = 60
+
+
 def audit_pages(force=False, base=None):
-    """Raz na tydzień i na żądanie: wszystkie stałe teksty stron przez czterech recenzentów, sprawdzone drugim modelem."""
+    """Raz na tydzień i na żądanie: stałe teksty stron przez czterech recenzentów, sprawdzone drugim modelem.
+    Strona, której tekst nie zmienił się od ostatniego audytu (skrót w cache, 60 dni), nie wraca do modelu; reszta partiami."""
+    from news import petle_koszty as koszty
     items = page_texts(base)
     if not items:
         raise common.WindowClosed('Strony serwisu niedostępne dla audytu tekstów.')
-    author = checker = None
+    fresh = [i for i in items if force or koszty.changed('recenzent:strona:' + i['id'], i['text'])]
+    if not fresh:
+        koszty.count_skip()
+        return None
     findings = []
-    for item in items:
-        answer = _ask_author(REVIEW + ' ' + PANEL + STATE, {'items': [item]}, REVIEW_SCHEMA, force)
+    for start in range(0, len(fresh), PAGE_BATCH):
+        batch = fresh[start:start + PAGE_BATCH]
+        ids = {i['id'] for i in batch}
+        answer = _ask_author(REVIEW + ' ' + PANEL + STATE, {'items': batch}, REVIEW_SCHEMA, force)
         rows = [f for f in answer.get('findings', []) if isinstance(f, dict)]
         for f in rows:
-            f['id'] = item['id']
+            if f.get('id') not in ids:
+                f['id'] = batch[0]['id'] if len(batch) == 1 else ''
+        rows = [f for f in rows if f.get('id') in ids]
         if rows:
-            verdict = _ask_checker(CHECK + ' ' + STATE, {'items': [item], 'findings': rows}, CHECK_SCHEMA, force)
+            verdict = _ask_checker(CHECK + ' ' + STATE, {'items': batch, 'findings': rows}, CHECK_SCHEMA, force)
             drop = {int(x) for x in verdict.get('remove', []) if str(x).lstrip('-').isdigit()}
             rows = [f for n, f in enumerate(rows) if n not in drop]
+        urls = {i['id']: i['url'] for i in batch}
         for f in rows:
-            f['url'] = item['url']
+            f['url'] = urls[f['id']]
         findings += rows
+        for item in batch:
+            koszty.mark('recenzent:strona:' + item['id'], item['text'])
     critical = [f for f in findings if f.get('severity') == 'krytyczne']
     note = AgentNote.objects.create(agent='recenzent', kind='audit', status='new' if findings else 'done',
-        title=f"Audyt tekstów stron: {len(items)} stron, {len(findings)} uwag ({len(critical)} krytycznych)",
-        body=readable(findings), scores={'findings': findings, 'pages': [i['id'] for i in items], 'authors': [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]},
+        title=f"Audyt tekstów stron: {len(fresh)} stron ({len(items) - len(fresh)} bez zmian), {len(findings)} uwag ({len(critical)} krytycznych)",
+        body=readable(findings), scores={'findings': findings, 'pages': [i['id'] for i in fresh], 'unchanged': len(items) - len(fresh),
+                                         'authors': [':'.join(_used['author'] or ('-',)), ':'.join(_used['checker'] or ('-',))]},
         sources=sorted({f['url'] for f in findings}))
     common.notify(note)
     return note

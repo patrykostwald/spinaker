@@ -192,6 +192,13 @@ def ask(payload):
     if not dyrygent.allowed('treść'):
         raise common.WindowClosed(f'Dyrygent: tryb {dyrygent.mode()}.')
     tried = []
+    first = common.inception_member()
+    if first:  # Koszty pętli (7.10): najpierw Inception z własną darmową pulą, limity Konsylium zostają na diagnozy
+        from news import inception
+        answer = inception.side_json(SYSTEM, json.dumps(payload, ensure_ascii=False), SCHEMA, max_tokens=900)
+        if answer is not None:
+            return answer[0], answer[1]
+        tried.append(f'{first[1]}: odmowa')
     for member in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL):
         if not common.free_member(member) or not registry.available(member) or not common.agent_window(member):
             continue
