@@ -198,7 +198,7 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
     organisation, _ = RegisteredOrganisation.objects.update_or_create(krs_number=extract.krs, defaults={
         'name': _pretty(extract.name) or candidate['name'], 'kind': extract.kind, 'legal_form': extract.legal_form.lower(),
         'register': extract.register, 'official_register_url': extract.public_url, 'sector': sector, 'sector_note': note,
-        'source_checked_at': timezone.now()})
+        'source_checked_at': timezone.now(), **{k: v for k, v in (('nip', extract.nip), ('regon', extract.regon)) if v}})
     role = (person.function if person and person.function else candidate['role']) or 'funkcja w organie'
     role = role[:1].lower() + role[1:] if not role[:2].isupper() else role.lower()
     status = ('former' if person.until else 'current') if person else ('current' if candidate['current'] else 'former')

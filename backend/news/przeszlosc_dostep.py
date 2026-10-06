@@ -37,6 +37,8 @@ FEATURES = [
      '„Funkcje w KRS” w profilu', '/przeszlosc?tryb=osoba', 'Pro'),
     ('pieniadze', 'institution', 'Ślad pieniędzy z UE', 'Dotacje i projekty z funduszy UE (Kohesio, FTS) przy spółkach i organizacjach z tematu.',
      '„Fundusze UE w temacie” przy KPO', '/przeszlosc?q=KPO', 'Pro'),
+    ('drzewo-pieniedzy', 'organisation', 'Drzewo przepływu pieniędzy', 'Spółka z KRS: zamówienia (TED, BZP), dotacje UE i osoby z funkcjami, łączone tylko po NIP, KRS i REGON.',
+     '„Pieniądze powiązanych spółek” w profilu', '/przeszlosc?tryb=osoba', 'Pro'),
     ('alerty', 'bell', 'Alerty e-mail', 'Codziennie o 7:00 jeden list o nowych wpisach, dokumentach i głosowaniach w obserwowanym temacie.',
      'Przycisk „Obserwuj” przy temacie', '/przeszlosc/alerty', 'Pro'),
     ('eksport', 'down', 'Eksport CSV i JSON', 'Cały temat albo profil do arkusza lub własnej bazy, każdy wiersz z linkiem do oryginału.',
@@ -94,7 +96,7 @@ def features(request=None):
 
 # Funkcja na stronie -> bramka w API (has / locked).
 FEATURE_GATES = {'odstepstwa': 'deviations', 'mianowniki': 'denominators', 'krs': 'krs', 'pieniadze': 'money_trail',
-                 'alerty': 'alerts', 'eksport': 'export'}
+                 'drzewo-pieniedzy': 'money_trail', 'alerty': 'alerts', 'eksport': 'export'}
 
 
 @api_view(['GET'])

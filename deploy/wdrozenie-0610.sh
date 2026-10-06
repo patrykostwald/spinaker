@@ -146,4 +146,8 @@ print('media z RSS aktywne:', media.filter(is_active=True, scrape_enabled=True).
 print('media wciąż bez karty (no_approved_instruction):', media.filter(last_error='no_approved_instruction').count())
 print('media pominięte przez robots/TDM:', media.filter(last_error__startswith='robots_').count() + media.filter(last_error__startswith='tdm_').count())
 "
+echo '== 12. Drzewo przepływu pieniędzy (właściciel 6.10): NIP i REGON podmiotów z API KRS (idempotentne, podmioty z NIP pomijane), potem stan'
+$M drzewo_pieniedzy --plan | tail -4
+$M drzewo_pieniedzy --identyfikatory --limit 300 | tail -3
+$M drzewo_pieniedzy --stan | tail -3
 echo 'GOTOWE'

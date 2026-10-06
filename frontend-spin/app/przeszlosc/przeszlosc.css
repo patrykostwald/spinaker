@@ -188,3 +188,65 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
   .px-wm__title { grid-column: 2 / span 2; grid-row: 2; }
   .px-wm__list i { grid-column: 4; grid-row: 1 / span 2; }
 }
+
+/* Drzewo przepływu pieniędzy (właściciel 6.10): podmiot u góry, trzy równe gałęzie pod nim, linie jak w drzewie tematu.
+   Pierwszy element 40 px pod paskiem (pasek ma margines -40, odstęp strony 48, nagłówek 32); na telefonie 28 px.
+   Boks gałęzi: nagłówek stałej wysokości, wiersze stałej wysokości (56 px, wielokropek), stopka przy dolnej krawędzi. */
+.px-mt { gap: 48px; }
+.px-mt__head { padding-top: 32px; }
+.px-mt__head h1 { margin: 0; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; font-weight: 700; letter-spacing: -.03em; overflow-wrap: anywhere; }
+.px-mt__sub { margin: 0; font-size: 15.5px; line-height: 1.5; color: var(--sc-text-2); }
+.px-mt__links { margin: 0; display: flex; flex-wrap: wrap; gap: 0 18px; }
+.px-mt__links a { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--sc-accent); text-decoration: none; }
+.px-mt__links a:hover { color: var(--sc-accent-hover); }
+.px-mt__proof { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: -16px; }
+.px-mt__proof b { font-size: clamp(20px, 2vw, 28px); overflow: hidden; text-overflow: ellipsis; }
+.px-mt__tree { gap: 28px; }
+.px-mt__wrap { position: relative; display: grid; gap: 56px; }
+.px-mt__root { display: grid; justify-content: center; }
+.px-mt__node { width: min(100%, 420px); height: 62px; text-decoration: none; }
+.px-mt__branches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.px-mt__branch { grid-template-columns: minmax(0, 1fr); grid-template-rows: 92px 300px auto; gap: 12px; padding: 20px 22px 18px; background: var(--px-card-2); }
+.px-mt__top { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 20px 34px 20px; gap: 4px; min-width: 0; align-content: start; }
+.px-mt__top .px-h3 { display: inline-flex; align-items: center; gap: 8px; }
+.px-mt__top .px-h3 .px-ic { flex-shrink: 0; color: var(--sc-text-3); }
+.px-mt__sum { font-size: 24px; line-height: 34px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-mt__top small { font-size: 12.5px; line-height: 20px; color: var(--sc-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-mt__rows { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; }
+.px-mt__rows li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; align-content: center; height: 56px; padding: 0; border-top: 1px solid var(--px-line); min-width: 0; }
+.px-mt__rows li:first-child { border-top: 0; }
+.px-mt__rows a { font-size: 14px; line-height: 1.4; font-weight: 600; color: var(--sc-text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-mt__rows a:hover { text-decoration: underline; }
+.px-mt__rows small { font-size: 12.5px; line-height: 1.4; color: var(--sc-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.px-mt__empty { align-self: center; text-align: center; padding: 0 8px; }
+.px-mt__foot { display: flex; justify-content: space-between; align-items: center; gap: 4px 12px; min-height: 36px; }
+.px-mt__foot > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.px-mt__foot .px-quiet { min-height: 36px; margin-right: -8px; flex-shrink: 0; }
+.px-mt__list { display: grid; gap: 16px; }
+.px-mt__seg { justify-self: start; }
+.px-mt__seg button em { font-style: normal; margin-left: 5px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
+.px-mt__seg button[aria-pressed="true"] em { color: inherit; }
+.px-mt__all li { min-height: 44px; }
+.px-mt__all li > span > small { font-size: 12.5px; color: var(--sc-text-3); }
+.px-mt__tag { font-style: normal; font-size: 11.5px; font-weight: 600; color: var(--sc-text-3); border: 1px solid var(--px-line); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+@media (max-width: 1080px) {
+  .px-mt__branches { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .px-mt__branches > :last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .px-mt { gap: 40px; }
+  .px-mt__head { padding-top: 24px; }
+  .px-mt__proof { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-top: -12px; }
+  .px-mt__proof > div:nth-child(3) { border-left: 0; padding-left: 0; }
+  .px-mt__proof > div:nth-child(n + 3) { border-top: 1px solid var(--px-line); }
+  .px-mt__tree { padding: 20px 16px 16px; }
+  .px-mt__wrap { gap: 20px; }
+  .px-mt__wrap .px-lines { display: none; }
+  .px-mt__node { width: 100%; }
+  .px-mt__branches { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .px-mt__branches > :last-child { grid-column: auto; }
+  .px-mt__branch { grid-template-rows: 92px auto auto; padding: 18px 16px 14px; }
+  .px-mt__rows li { height: 52px; }
+  .px-mt__seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-self: stretch; }
+  .px-mt__seg button { min-height: 44px; }
+}

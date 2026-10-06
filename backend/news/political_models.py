@@ -405,6 +405,10 @@ class RegisteredOrganisation(models.Model):
     register = models.CharField(max_length=1, blank=True, help_text='Rejestr KRS: P — przedsiębiorców, S — stowarzyszeń i fundacji.')
     sector = models.CharField(max_length=12, choices=ORGANISATION_SECTORS, default='unknown', db_index=True)
     sector_note = models.TextField(blank=True, help_text='Skąd wiemy, że podmiot jest państwowy lub komunalny.')
+    # Drzewo przepływu pieniędzy (właściciel 6.10): identyfikatory podmiotu z odpisu KRS. Zamówienia (TED, BZP) i dotacje (FTS)
+    # łączymy wyłącznie po NIP, KRS albo REGON - nigdy po samej nazwie.
+    nip = models.CharField(max_length=10, blank=True, db_index=True, help_text='NIP z odpisu KRS (same cyfry).')
+    regon = models.CharField(max_length=14, blank=True, db_index=True, help_text='REGON z odpisu KRS (same cyfry).')
     source_checked_at = models.DateTimeField(default=timezone.now)
     archived = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)

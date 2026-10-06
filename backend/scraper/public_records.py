@@ -634,6 +634,11 @@ def handle(job, raw, receipt=None):
         put('krs_change', f"{ctx['krs']}/{header['last_entry_number']}", title=header['name'],
             date_value=header['last_entry_date'] or ctx['day'],
             data={**header, 'bulletin_day': ctx['day'], 'organisation_id': ctx['organisation_id']})
+        # Drzewo przepływu pieniędzy: identyfikatory podmiotu (NIP, REGON) z tego samego odpisu, bez dodatkowego zapytania
+        from news.political_models import RegisteredOrganisation
+        fresh = {k: header[k] for k in ('nip', 'regon') if header.get(k)}
+        if fresh:
+            RegisteredOrganisation.objects.filter(pk=ctx['organisation_id']).exclude(**fresh).update(**fresh)
     elif kind == 'ted_page':
         payload = _json(raw, dict)
         notices = payload.get('notices')

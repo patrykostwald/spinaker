@@ -42,7 +42,7 @@ from news.feedback import BugReportView, JourneyView
 from news import sales  # noqa: E402
 from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
-from news import przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba
+from news import drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba
 from news.voting_anomalies import deviations_view as przeszlosc_deviations
 from news.coordinated import clusters_view as coordinated_clusters
 
@@ -119,6 +119,7 @@ urlpatterns = [
     path('przeszlosc/rss/', przeszlosc_rss),
     path('przeszlosc/osoby/', przeszlosc_osoba.people_view),
     path('przeszlosc/osoba/<str:ident>/', przeszlosc_osoba.person_view),
+    path('przeszlosc/spolka/<str:ident>/', drzewo_pieniedzy.company_view),
     path('przeszlosc/alerty/', przeszlosc_alerts.subscribe_view),
     path('przeszlosc/alerty/potwierdz/', przeszlosc_alerts.confirm_view),
     path('przeszlosc/alerty/wypisz/', przeszlosc_alerts.unsubscribe_view),

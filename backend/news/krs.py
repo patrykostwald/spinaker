@@ -49,6 +49,8 @@ class Extract:
     kind: str
     owners: list[str] = field(default_factory=list)  # nazwy wspólników/założycieli będących instytucjami (np. SKARB PAŃSTWA)
     persons: list[Person] = field(default_factory=list)
+    nip: str = ''  # identyfikatory podmiotu (nie osób) z działu 1 odpisu; same cyfry
+    regon: str = ''
 
     @property
     def official_url(self) -> str:
@@ -71,6 +73,14 @@ class Extract:
 def normalize_krs(value) -> str:
     digits = re.sub(r'\D', '', str(value or ''))
     return digits.zfill(10) if 0 < len(digits) <= 10 else ''
+
+
+def identifiers(subject: dict) -> dict[str, str]:
+    """NIP i REGON podmiotu z danePodmiotu.identyfikatory (same cyfry; NIP 10, REGON 9 albo 14 cyfr), inaczej puste."""
+    ids = (subject or {}).get('identyfikatory') or {}
+    nip = re.sub(r'\D', '', str(ids.get('nip') or ''))
+    regon = re.sub(r'\D', '', str(ids.get('regon') or ''))
+    return {'nip': nip if len(nip) == 10 else '', 'regon': regon if len(regon) in (9, 14) else ''}
 
 
 def _current(values: list) -> dict:
@@ -162,7 +172,7 @@ def parse(krs: str, register: str, data: dict) -> Extract:
     subject = (body.get('dzial1') or {}).get('danePodmiotu') or {}
     name = str(_current(subject.get('nazwa') or []).get('nazwa') or '')
     legal_form = str(_current(subject.get('formaPrawna') or []).get('formaPrawna') or '')
-    extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form))
+    extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form), **identifiers(subject))
     extract.owners = _owners({k: v for k, v in (body.get('dzial1') or {}).items() if k != 'danePodmiotu'})
     persons: list[Person] = []
     dates = _entry_dates(header)

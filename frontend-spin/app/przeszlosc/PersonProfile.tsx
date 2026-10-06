@@ -4,6 +4,7 @@ import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, day, nb, plural, short, spinColor, text, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 import { WMediach } from './WMediach';
+import { sumLine } from './DrzewoPieniedzy';
 
 /**
  * Profil osoby bez tematu (sprint 1, właściciel 6.10: „najlepsze narzędzie OSINT”): wszystko o jednej osobie publicznej
@@ -30,6 +31,9 @@ type Profile = {
   topics: { topic: string; at: string }[];
   sejm_video?: SejmVideo[];
   open_data?: OpenData;
+  // Drzewo przepływu pieniędzy (właściciel 6.10): podmioty osoby z KRS z sumami gałęzi; null = funkcja zamknięta
+  money_trail?: null | { note: string; results: { id: number; name: string; krs_number: string; role: string; status: string; url: string; identifiers_missing: boolean;
+    contracts: { count: number; sums: { currency: string; total: number }[] }; grants: { count: number; sums: { currency: string; total: number }[] }; people: number; unlinked: number }[] };
   denominators: null | { note: string; people: (Person & { score: number; shared: Record<string, number>; evidence: Ev[] })[];
     krs: (Person & { count: number; evidence: Ev[] })[];
     votes: { available: boolean; window: number; club?: string; aligned: (Person & { club: string; pct: number; shared: number; agreed: number; evidence: Ev[] })[];
@@ -178,6 +182,16 @@ function ProfileView({ data }: { data: Profile }) {
             <small>{[o.organ || o.public_role, `KRS ${o.krs_number}`, o.relation_status === 'former' ? 'historyczna' : 'obecna'].filter(Boolean).join(' · ')}</small></li>)}</ul>
             : <p className="px-note">{nb('Brak potwierdzonych funkcji w KRS.')}</p>}
           <p className="px-note">{nb(data.krs_note)}</p>
+        </section>
+        <section className="px-card" aria-labelledby="pp-money-h">
+          <h3 id="pp-money-h" className="px-h3">Pieniądze powiązanych spółek</h3>
+          {locked.has('money_trail') || data.money_trail === null ? <p className="px-note">{nb('Drzewo przepływu pieniędzy jest w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>
+          : data.money_trail?.results.length ? <ul className="px-panel__rows">{data.money_trail.results.map(o => <li key={o.id}>
+            <a href={o.url}>{o.name}</a>
+            <small>{[`zamówienia: ${o.contracts.count}${o.contracts.sums.length ? ` (${sumLine(o.contracts.sums)})` : ''}`, `dotacje UE: ${o.grants.count}${o.grants.sums.length ? ` (${sumLine(o.grants.sums)})` : ''}`,
+              `osoby: ${o.people}`, o.identifiers_missing ? 'bez NIP w bazie' : ''].filter(Boolean).join(' · ')}</small></li>)}</ul>
+            : <p className="px-note">{nb('Brak podmiotów z KRS, dla których moglibyśmy zbudować drzewo.')}</p>}
+          <p className="px-note">{nb('Każdy podmiot otwiera drzewo: zamówienia (TED, BZP), dotacje UE (FTS) i osoby, łączone tylko po NIP, KRS i REGON.')}</p>
         </section>
         {data.topics.length > 0 && <section className="px-card" aria-labelledby="pp-topics-h">
           <h3 id="pp-topics-h" className="px-h3">W tematach dnia</h3>

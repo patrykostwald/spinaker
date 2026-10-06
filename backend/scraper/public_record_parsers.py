@@ -417,13 +417,15 @@ def krs_header(payload, krs):
         raise ValueError('krs_extract_shape')
     if str(header.get('numerKRS', '')).zfill(10) != krs:
         raise ValueError('krs_identity_mismatch')
-    name = ''
+    name, subject = '', {}
     try:
-        name = payload['odpis']['dane']['dzial1']['danePodmiotu']['nazwa']
+        subject = payload['odpis']['dane']['dzial1']['danePodmiotu']
+        name = subject['nazwa']
     except (KeyError, TypeError):
         pass
+    from news.krs import identifiers
     return {
-        'krs': krs, 'register': header.get('rejestr', ''), 'name': name,
+        'krs': krs, 'register': header.get('rejestr', ''), 'name': name, **identifiers(subject if isinstance(subject, dict) else {}),
         'state_date': pl_date(header.get('stanZDnia')),
         'last_entry_number': header.get('numerOstatniegoWpisu'),
         'last_entry_date': pl_date(header.get('dataOstatniegoWpisu')),

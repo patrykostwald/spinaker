@@ -318,6 +318,9 @@ def profile(figure):
     from news.zrodla_profil import open_data
     data['sejm_video'] = [sejm_wideo.item(r) for r in sejm_wideo.published().filter(figure=figure)[:10]]
     data['open_data'] = open_data(figure, identities)
+    # Drzewo przepływu pieniędzy (właściciel 6.10): podmioty osoby z KRS z sumami zamówień i dotacji; każdy otwiera drzewo spółki
+    from news.drzewo_pieniedzy import person_companies
+    data['money_trail'] = person_companies(figure)
     data['topics'] = [t for t in topic_history() if figure.pk in t['people']][:12]
     for t in data['topics']:
         t.pop('people', None)
@@ -601,6 +604,8 @@ def person_view(request, ident):
         data['denominators'] = None
     if not has('krs', request):
         data['organisations'] = []
+    if not has('money_trail', request):
+        data['money_trail'] = None
     stamp = timezone.localdate().isoformat()
     if fmt == 'csv':
         response = HttpResponse(export_csv(data), content_type='text/csv; charset=utf-8')
