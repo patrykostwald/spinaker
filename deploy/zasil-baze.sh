@@ -23,6 +23,9 @@ cfg assets "$SEJM_DOC" "$SEJM_DOC" 500
 cfg krs_changes https://prs.ms.gov.pl/krs/openApi https://prs.ms.gov.pl/krs/openApi 600
 cfg ted https://docs.ted.europa.eu/api/latest/index.html https://op.europa.eu/en/web/about-us/legal-notices/eu-law-and-publications-website 400
 cfg pkw https://pkw.gov.pl/finansowanie-polityki/ https://pkw.gov.pl/ 200
+cfg videos "$SEJM_DOC" "$SEJM_DOC" 1800
+cfg howtheyvote https://howtheyvote.eu/api/votes https://howtheyvote.eu/about 1800
+cfg mileage https://jakglosuja.pl/dane-otwarte https://creativecommons.org/licenses/by/4.0/ 500
 
 echo '== Zasilanie bazy: plan (bez sieci)'
 $M zasil_baze --plan

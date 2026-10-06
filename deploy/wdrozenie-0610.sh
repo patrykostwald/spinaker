@@ -16,10 +16,16 @@ setv LOOP_REPORT_EMAIL "$ADMIN"
 setv COUNCIL_RECRUITER_EMAIL "$ADMIN"
 setv X_POST_ALERT_EMAIL "$ADMIN"
 for f in VOTES STATEMENTS INTERPELLATIONS QUESTIONS LOBBY_MSWIA LOBBY_SEJM CONSULTATIONS PKW ASSETS \
-         PROCESSES COMMITTEES KRS_CHANGES TED EU_TRANSPARENCY; do
+         PROCESSES COMMITTEES KRS_CHANGES TED EU_TRANSPARENCY VIDEOS HOWTHEYVOTE WIKIDATA KOHESIO FTS INTEGRITY_WATCH MILEAGE; do
   setv "PUBLIC_RECORDS_${f}_ENABLED" true
 done
 setv BZP_API_ENABLED true
+# Raport źródeł 6.10: diagnozy wystąpień z nagrań Sejmu (3 dziennie, 1 USD) i strażnik mediów (Wayback).
+# Fakty (Google Fact Check) włączamy dopiero z kluczem: setv FACTCHECK_API_KEY <klucz> i setv FACTCHECK_ENABLED true.
+setv SEJM_VIDEO_SPIN_ENABLED true
+setv SEJM_VIDEO_SPIN_DAILY 3
+setv MEDIA_WATCH_ENABLED true
+grep -q '^FACTCHECK_API_KEY=.' "$ENV" && setv FACTCHECK_ENABLED true || echo 'Fakty: brak FACTCHECK_API_KEY - pętla czeka na klucz'
 grep -q '^PRZESZLOSC_ENABLED=true' "$ENV" && echo 'PRZESZLOSC_ENABLED: ok' || echo 'UWAGA: brak PRZESZLOSC_ENABLED=true'
 grep -q '^SOURCE_MAIL_SMTP_HOST=.' "$ENV" && echo 'SMTP: ok' || echo 'UWAGA: brak SOURCE_MAIL_SMTP_HOST'
 
@@ -45,6 +51,13 @@ cfg pkw https://pkw.gov.pl/finansowanie-polityki/ https://pkw.gov.pl/
 cfg krs_changes https://prs.ms.gov.pl/krs/openApi https://prs.ms.gov.pl/krs/openApi
 cfg ted https://docs.ted.europa.eu/api/latest/index.html https://op.europa.eu/en/web/about-us/legal-notices/eu-law-and-publications-website
 cfg eu_transparency https://data.europa.eu/data/datasets/transparency-register https://ec.europa.eu/info/legal-notice_en
+cfg videos "$SEJM_DOC" "$SEJM_DOC"
+cfg howtheyvote https://howtheyvote.eu/api/votes https://howtheyvote.eu/about
+cfg wikidata https://www.wikidata.org/wiki/Wikidata:Data_access https://www.wikidata.org/wiki/Wikidata:Licensing
+cfg kohesio https://data.europa.eu/data/datasets/557j-pmg8 https://kohesio.ec.europa.eu/en/faq
+cfg fts https://data.europa.eu/data/datasets/fts https://ec.europa.eu/info/legal-notice_en
+cfg integrity_watch https://www.integritywatch.eu/about.php https://opendatacommons.org/licenses/odbl/1-0/
+cfg mileage https://jakglosuja.pl/dane-otwarte https://creativecommons.org/licenses/by/4.0/
 $M configure_bzp_metadata_source --apply --reviewed-by patrykostwald | tail -1
 
 echo '== 4. Porządki i dopięcia'
