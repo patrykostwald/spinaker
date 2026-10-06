@@ -2,7 +2,7 @@
 
 1. Kontrola zdrowia: członek, który od 3 dni zwraca wyłącznie twarde błędy (np. 404 — model zniknął u dostawcy), zostaje
    zawieszony we wszystkich rolach; zawieszony, który znów odpowie na próbę, wraca. O każdej zmianie — mail do właściciela.
-2. Zwiad: bezpłatne katalogi modeli dostawców, z których korzystamy (OpenRouter, Groq, NVIDIA, Hugging Face).
+2. Zwiad: bezpłatne katalogi modeli dostawców, z których korzystamy (OpenRouter, Groq, NVIDIA, Hugging Face, Inception).
 3. Sito (bez AI): tylko darmowe modele czatu z dużym kontekstem, bez embeddingów, strażników, mowy, małych modeli;
    pierwszeństwo: model polski, potem nowa firma w składzie. Najwyżej jeden kandydat na noc — limity idą na diagnozy.
 4. Egzamin wstępny: kandydat ocenia 5 opublikowanych wpisów (oba obozy) tym samym poleceniem co członkowie Konsylium;
@@ -192,6 +192,17 @@ def discover() -> list[dict]:
                     found.append({'provider': service, 'model': item['id'], 'context': item.get('context_window') or 0})
         except (requests.RequestException, ValueError) as error:
             logger.info('recruiter %s: %s', service, error)
+    # Inception (Mercury, 7.10): tylko modele czatu; kandydat jak każdy inny - egzamin, głosowanie, Karta.
+    if registry.credentials('inception'):
+        try:
+            for item in _get(registry.URLS['inception'].replace('/chat/completions', '/models'),
+                             headers={'Authorization': f"Bearer {registry.credentials('inception')}"}).get('data', []):
+                name = str(item.get('id', ''))
+                if name.startswith('mercury') and not re.search(r'edit|voice|coder', name, re.I):
+                    found.append({'provider': 'inception', 'model': name,
+                                  'context': item.get('context_length') or item.get('context_window') or 0})
+        except (requests.RequestException, ValueError) as error:
+            logger.info('recruiter inception: %s', error)
     try:
         for item in _get('https://router.huggingface.co/v1/models').get('data', []):
             live = [p for p in item.get('providers') or [] if p.get('status', 'live') == 'live']
@@ -265,7 +276,8 @@ def sieve(found: list[dict]) -> list[dict]:
     watched = watched_models()
     for c in candidates:
         name = c['model'].casefold()
-        c['watched'] = any(w and (w in name or base_name(c['model']).casefold() in w) for w in watched)
+        # Inception zgłosił właściciel 7.10 - wcześniej w kolejce, ale egzamin, progi i Karta te same co dla każdego.
+        c['watched'] = c['provider'] == 'inception' or any(w and (w in name or base_name(c['model']).casefold() in w) for w in watched)
     candidates.sort(key=lambda c: (not c['polish'], not c['watched'], not c['new_company'], -(c['billions'] or 0)))
     return candidates
 

@@ -3,7 +3,8 @@
 Przepływ (pętla „tresc”, zadanie co godzinę, nigdy nie blokuje diagnozy):
 1. Wybór bez AI, ta sama reguła dla każdej partii: opublikowana diagnoza („spin” albo „częściowy spin”) o sile od progu
    X_REPLIES_MIN_INTENSITY, wpis sprzed 24-72 h, jeszcze niesprawdzony.
-2. Najpierw sprawdzamy, czy jest wolny darmowy model Konsylium (okno agentów, rezerwa na diagnozy, tryb Dyrygenta).
+2. Najpierw sprawdzamy, czy jest wolny darmowy model: Inception (Mercury, gdy jest klucz, darmowa pula i potwierdzone
+   wyłączenie trenowania INCEPTION_NO_TRAINING=true), potem Konsylium (okno agentów, rezerwa na diagnozy, tryb Dyrygenta).
    Bez modelu nic nie kupujemy - wpis czeka na następny przebieg.
 3. Rezerwacja we wspólnym budżecie X (ImportState „political-x-budget”, ten sam miesięczny limit co zbieranie wpisów)
    przed każdym zapytaniem: osobny dzienny limit odczytów X_REPLIES_DAILY_CAP i zapas budżetu miesięcznego dla zbierania
@@ -114,10 +115,17 @@ def _members():
             if common.free_member(m) and registry.available(m) and common.agent_window(m)]
 
 
+def _inception_ready():
+    """Inception (Mercury) bierze ocenę odpowiedzi pierwszy, bez limitów Konsylium - ale odpowiedzi to dane osób
+    prywatnych, więc tylko po potwierdzeniu wyłączenia trenowania na danych z API (INCEPTION_NO_TRAINING=true)."""
+    from news import inception
+    return inception.no_training() and inception.ready(12000)
+
+
 def model_ready():
     """Czy teraz jest wolny darmowy model - sprawdzamy PRZED płatnym odczytem, żeby nie kupować odpowiedzi na próżno."""
     from news import dyrygent
-    return dyrygent.allowed('treść') and bool(_members())
+    return dyrygent.allowed('treść') and (_inception_ready() or bool(_members()))
 
 
 def ask(payload):
@@ -130,6 +138,12 @@ def ask(payload):
     if not dyrygent.allowed('treść'):
         raise common.WindowClosed(f'Dyrygent: tryb {dyrygent.mode()}.')
     tried = []
+    if _inception_ready():
+        from news import inception
+        answer = inception.side_json(SYSTEM, json.dumps(payload, ensure_ascii=False), SCHEMA, max_tokens=2500, private_data=True)
+        if answer is not None:
+            return answer
+        tried.append(f'{inception.base_model()}: {inception.usage().get("last_error") or "odmowa"}')
     for member in _members():
         token = registry.reservation_guard.set(common._guard)
         try:

@@ -749,14 +749,25 @@ def _screen_nim(text: str) -> dict | None:
     return _screen_result(response.json()['choices'][0]['message']['content'], 'nim', model)
 
 
+def _screen_inception(text: str) -> dict | None:
+    """Inception (Mercury) pierwszy (7.10): przesiewanie nie zabiera limitów Konsylium. None = pula, brak klucza, błąd."""
+    from news import inception
+    answer = inception.side_json(SCREEN_SYSTEM, text[:4000], SCREEN_SCHEMA, max_tokens=800)
+    if answer is None:
+        return None
+    data, model = answer
+    return _screen_result(json.dumps(data), 'inception', model)
+
+
 def screen(text: str) -> dict | None:
-    """Strażnik: darmowa ocena, czy post warto zbadać (0–100). Groq, a przy błędzie lub limicie — NVIDIA NIM.
+    """Strażnik: darmowa ocena, czy post warto zbadać (0–100). Inception (gdy jest klucz i darmowa pula), potem Groq,
+    a przy błędzie lub limicie — NVIDIA NIM.
 
     None, gdy żaden darmowy model nie odpowiedział — wtedy post czeka na ręczną decyzję (nic nie płacimy).
     """
     if os.environ.get('CLINIC_TRIAGE_ENABLED', 'true').lower() != 'true':
         return None
-    for provider in (_screen_groq, _screen_nim):
+    for provider in (_screen_inception, _screen_groq, _screen_nim):
         try:
             result = provider(text)
         except (requests.RequestException, KeyError, IndexError, ValueError, TypeError):

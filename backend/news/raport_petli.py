@@ -384,12 +384,20 @@ def build(now=None):
 
 
 def _koszty(now):
-    """Płatne odczyty X poza zbieraniem wpisów (odbior_spinu): odczyty i USD z dnia i 30 dni."""
+    """Płatne odczyty X poza zbieraniem wpisów (odbior_spinu): odczyty i USD z dnia i 30 dni; zużycie darmowej puli
+    tokenów Inception (dziś, miesiąc, zostało do progu stopu)."""
+    lines = []
     try:
         from news.odbior_spinu import report_line
-        return [report_line(now)]
+        lines.append(report_line(now))
     except Exception:  # noqa: BLE001 - raport zawsze wychodzi
-        return []
+        pass
+    try:
+        from news.inception import report_line as inception_line
+        lines.append(inception_line(now))
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        pass
+    return lines
 
 
 def _baza():

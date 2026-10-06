@@ -6,6 +6,7 @@ Co godzinę bierze modele Konsylium z twardym błędem (404, 400, nie znaleziono
 3. gdy modelu nie ma: szuka następcy pod nową nazwą (ta sama rodzina, najdłuższy wspólny początek nazwy), testuje go
    i zapisuje zamiennik; odtąd zapytania do starej nazwy idą do nowej (jawnie, w dzienniku Mechanika).
 Nie naprawia 402 (brak środków: zgłasza Dyżurny) ani 429 (dzienny limit mija sam). Nie zmienia ról ani składu.
+Przy okazji sprawdza dostawcę zadań pobocznych Inception (Mercury): czy model jest na liście, a gdy zniknął - zamiennik.
 """
 import logging
 import os
@@ -143,4 +144,12 @@ def step():
     if any(result == 'przywrócony' or result.startswith('zamiennik') for _, result in done):
         from news.council_quorum import release
         release('mechanik')  # wpisy czekające na kworum Konsylium próbują od razu, nie dopiero po resecie limitów
-    return {'status': 'ok', 'checked': len(seats), 'results': done}
+    result = {'status': 'ok', 'checked': len(seats), 'results': done}
+    # Inception (Mercury, zadania poboczne): darmowa lista modeli, bez tokenów; zniknięty model -> zamiennik z rodziny.
+    from news import inception
+    check = inception.health()
+    if check is not None:
+        result['inception'] = check
+        if check.get('replaced'):
+            _note({'model': inception.base_model(), 'wynik': f"Inception - zamiennik: {check['model']}"})
+    return result

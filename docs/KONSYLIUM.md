@@ -83,6 +83,7 @@ Cel: każdy wpis polityka zbadany możliwie wieloma **darmowymi** narzędziami r
 | `MISTRAL_API_KEY` | console.mistral.ai (+ wyłączyć trenowanie w Privacy) |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN` | dash.cloudflare.com → Workers AI |
 | `OPENROUTER_API_KEY` | openrouter.ai/keys |
+| `INCEPTION_API_KEY` (+ `INCEPTION_NO_TRAINING=true` po wyłączeniu „Improve the model for everyone”) | platform.inceptionlabs.ai - Mercury 2.5, darmowa pula 100 mln tokenów; zadania poboczne (strażnik, odbiór spinu, agenci), do Konsylium tylko przez Rekrutera; stop przy 90% puli (`news/inception.py`) |
 | `HF_TOKEN` | huggingface.co/settings/tokens (pobieranie modeli HerBERT) |
 | `FACTCHECK_API_KEY` | Google Cloud → Fact Check Tools API (może być ten sam projekt co YouTube/Gemini) |
 | `GUS_BDL_KEY` | api.stat.gov.pl (rejestracja) |
@@ -95,6 +96,7 @@ Cel: każdy wpis polityka zbadany możliwie wieloma **darmowymi** narzędziami r
 - HerBERT sentiment: https://huggingface.co/Voicelab/herbert-base-cased-sentiment · mowa nienawiści: https://huggingface.co/dkleczek/Polish-Hate-Speech-Detection-Herbert-Large · BAN-PL: https://arxiv.org/abs/2308.10592
 - Perspective API — wyłączenie: https://www.lassomoderation.com/blog/what-is-perspective-api/
 - PLLuM API: https://ainarzedziapolska.lovable.app/blog/pllum-api-poradnik-2026 · Bielik: https://bielik.ai/jak-korzystac-z-bielika/
+- Inception: regulamin (trenowanie na danych, opt-out): https://www.inceptionlabs.ai/docs/terms-of-use · modele i ceny: https://docs.inceptionlabs.ai/get-started/models
 - Mistral Experiment i trenowanie: https://help.mistral.ai/en/articles/455207-can-i-opt-out-of-my-input-or-output-data-being-used-for-training
 - Cloudflare Workers AI: https://developers.cloudflare.com/workers-ai/platform/pricing/
 - Darmowe API LLM 2026: https://openrouter.ai/blog/tutorials/free-llm-apis-compared/ · SambaNova: https://docs.sambanova.ai/docs/en/models/rate-limits · GitHub Models: https://github.blog/changelog/2025-06-24-github-models-now-supports-moving-beyond-free-limits/

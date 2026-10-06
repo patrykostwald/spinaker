@@ -198,6 +198,10 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
     system += registry.CHARTER_SUMMARY
     if service == 'gemini':
         return _ask_gemini(model, system, user, schema, max_tokens)
+    if service == 'inception':
+        # Tylko kandydat Rekrutera albo przyjęty przez niego członek; ten sam strażnik darmowej puli co zadania poboczne.
+        from news import inception
+        return inception.chat(system, user[:12000], schema, max_tokens=max_tokens, temperature=0.2, model_name=model)[0]
     url, key = registry.endpoint(service), registry.credentials(service)
     headers = {'Authorization': f'Bearer {key}'}
     if service == 'openrouter':

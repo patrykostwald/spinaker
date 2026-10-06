@@ -37,6 +37,9 @@ CRITIQUE_SCHEMA = {'type': 'object', 'properties': {
     'violations': {'type': 'array', 'items': TEXT}}, 'required': ['score', 'reason', 'scores', 'violations']}
 
 
+COMPANY_INCEPTION = 'Inception Labs'
+
+
 class WindowClosed(Exception):
     pass
 
@@ -63,9 +66,10 @@ def queue_busy():
 
 def free_member(member):
     # Same free providers as the council; never Gemini/Anthropic, even after approval.
+    # Inception (Mercury): free only inside its free token pool - news/inception.py refuses before any paid token.
     if any(name in member[1].lower() for name in ('gemini', 'claude')):
         return False
-    return (member[0] in {'groq', 'nim', 'mistral', 'cloudflare', 'pllum'}
+    return (member[0] in {'groq', 'nim', 'mistral', 'cloudflare', 'pllum', 'inception'}
             or (member[0] == 'openrouter' and member[1].endswith(':free')))
 
 
@@ -75,7 +79,16 @@ def ceiling(member):
     return registry.daily_limit(member) - math.ceil(registry.daily_limit(member) * reserve)
 
 
+def inception_member():
+    """Inception first for agent loops (7.10): own free token pool, so council limits stay for diagnoses."""
+    from news import inception
+    return inception.member() if inception.ready() else None
+
+
 def agent_window(member):
+    if member[0] == 'inception':
+        from news import inception
+        return inception.ready()
     return (free_member(member) and registry.available(member) and not queue_busy()
             and cache.get(registry.limit_key(member), 0) < ceiling(member))
 
@@ -87,6 +100,12 @@ def _guard(member, used):
 def members(count, force=False):
     from news.clinic_council import _members, DEFAULT_COUNCIL
     chosen, companies = [], set()
+    first = inception_member()
+    if first:
+        chosen.append(first)
+        companies.add(registry.metadata(first)['company'])
+        if len(chosen) == count:
+            return chosen
     for member in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL):
         company = registry.metadata(member)['company']
         if (free_member(member) and registry.available(member) and (force or agent_window(member))
@@ -100,6 +119,12 @@ def members(count, force=False):
 
 def ask(member, prompt, data, schema, force=False):
     from news.clinic_council import ask as council_ask
+    if member[0] == 'inception':
+        from news import inception
+        if not inception.ready():
+            raise WindowClosed('Inception: pula darmowa lub pułap dzienny.')
+        return inception.chat(POLICY + registry.CHARTER_SUMMARY + '\n' + prompt, json.dumps(data, ensure_ascii=False),
+                              schema, max_tokens=1800, model_name=member[1])[0]
     if not free_member(member) or not registry.available(member) or (not force and not agent_window(member)):
         raise WindowClosed('Okno zamknięte.')
     token = registry.reservation_guard.set(
@@ -313,12 +338,19 @@ def ask_any(prompt, data, schema, force=False, exclude=()):
     from news.clinic_ai import ClinicAIError
     from news.clinic_council import _members, DEFAULT_COUNCIL
     from news import dyrygent
+    tried = []
+    first = inception_member()
+    # Inception nie zużywa limitów Konsylium, więc tryb Dyrygenta (liczony z limitów Konsylium) go nie zatrzymuje.
+    if first and first not in exclude and COMPANY_INCEPTION not in {registry.metadata(m)['company'] for m in exclude}:
+        try:
+            return ask(first, prompt, data, schema, force), first
+        except (ClinicAIError, WindowClosed) as error:
+            tried.append(f"{first[1]}: {getattr(error, 'code', error)}")
     if not force and not dyrygent.allowed():
         raise WindowClosed(f'Dyrygent: tryb {dyrygent.mode()} - poziom „{dyrygent._tier.get()}” czeka na wolne limity.')
-    tried = []
     for member in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL):
         company = registry.metadata(member)['company']
-        if (member in exclude or company in {registry.metadata(m)['company'] for m in exclude} or company == 'unknown'
+        if (member in exclude or member == first or company in {registry.metadata(m)['company'] for m in exclude} or company == 'unknown'
                 or not free_member(member) or not registry.available(member) or (not force and not agent_window(member))):
             continue
         try:
