@@ -1,0 +1,30 @@
+/* Pilotaż przeszłość.today: boksy góra przy górze, stopka przy dole, równe wysokości w rzędzie. */
+.px-pilot__hero { display: grid; gap: 18px; max-width: 760px; padding-top: 56px; }
+.px-pilot__hero h1 { margin: 0; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.12; font-weight: 700; letter-spacing: -.025em; }
+.px-pilot__hero p { margin: 0; }
+.px-pilot__lead { font-size: 18px; line-height: 1.6; color: var(--sc-text-2); }
+.px-pilot__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; grid-auto-rows: 1fr; }
+.px-pilot__card { gap: 14px; }
+.px-pilot__card h3, .px-pilot__get h3 { margin: 0 0 6px; font-size: 16px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-pilot__card p, .px-pilot__get p { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--sc-text-2); }
+.px-pilot__card footer { display: none; }
+.px-pilot__ic { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--sc-accent-soft); color: var(--sc-accent); }
+.px-pilot__get { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; grid-auto-rows: 1fr; }
+.px-pilot__get li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 14px; padding: 20px var(--px-pad); border: 1px solid var(--px-line); border-radius: var(--px-r); background: var(--px-card); }
+.px-pilot__get b { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--px-line-2); font-size: 14px; }
+.px-pilot__rules ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 16px; line-height: 1.6; color: var(--sc-text-2); max-width: 760px; }
+.px-pilot__form { grid-template-rows: auto 1fr; max-width: 760px; width: 100%; }
+.px-pilot__form .px-h2 { margin: 0; }
+.px-pilot__form form { display: grid; gap: 16px; }
+.px-pilot__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+.px-pilot__fields select, .px-pilot__fields textarea { min-height: 48px; padding: 10px 14px; border: 1px solid var(--px-line-2); border-radius: 10px; background: var(--px-card); color: var(--sc-text); font: inherit; font-size: 16px; }
+.px-pilot__fields select option { color: #000; }
+.px-pilot__wide { grid-column: 1 / -1; }
+.px-pilot__ok { color: var(--sc-text); font-weight: 600; }
+.px-pilot__err { color: #ff6b6b; margin: 0; }
+@media (max-width: 1000px) { .px-pilot__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .px-pilot__grid, .px-pilot__get, .px-pilot__fields { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; }
+  .px-pilot__hero { padding-top: 40px; }
+  .px-pilot__lead { font-size: 16px; }
+}
