@@ -876,6 +876,11 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'author_replies': list(diagnosis.author_replies.filter(published_at__lte=timezone.now()).values(
             'id', 'body', 'source_url', 'received_at', 'published_at')),
     })
+    # Raport źródeł 6.10: kopie cytowanych artykułów (Wayback) i „Tę tezę sprawdzili” (Google Fact Check)
+    from news import fakty, straznik_mediow
+    urls = [s.get('url', '') for c in diagnosis.claims or [] if isinstance(c, dict) for s in c.get('sources') or [] if isinstance(s, dict)]
+    data['source_archives'] = straznik_mediow.archives_for(urls)
+    data['factchecks'] = fakty.public(diagnosis)
     from news.zmiana_zdania import public_data as position_changes
     data['position_changes'] = position_changes(diagnosis)  # Zmiana zdania: tylko pary powyżej progu, ten sam dla każdej partii
     from news.odbior_spinu import public_data as reception

@@ -39,6 +39,9 @@ BEAT_PLAN = {
     'clinic-screen-5m': ('clinic_screen_task', {'minute': '*/5'}),
     'clinic-diagnoses-day': ('clinic_diagnose_task', {'minute': '*/10', 'hour': '7-22'}),
     'clinic-interview-10m': ('clinic_interview_task', {'minute': '*/10'}),
+    'sejm-wideo-30m': ('sejm_wideo_task', {'minute': '12,42', 'hour': '8-21'}),  # raport źródeł 6.10: wystąpienia z nagrań Sejmu
+    'straznik-mediow-1h': ('straznik_mediow_task', {'minute': 27}),  # raport źródeł 6.10: Wayback i ciche edycje
+    'fakty-2h': ('fakty_task', {'minute': 52, 'hour': '*/2'}),  # raport źródeł 6.10: Google Fact Check przy diagnozach
     'clinic-interview-pick': ('clinic_interview_pick_task', {'hour': '7,10,13,16,19', 'minute': 5}),
     'clinic-interview-candidates': ('clinic_interview_candidates_task', {'hour': '0,6,12,18,23', 'minute': 0}),
     'clinic-daily-messages-day': ('clinic_daily_messages_task', {'hour': '9,12,15,18', 'minute': 0}),

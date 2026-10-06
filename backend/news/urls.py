@@ -5,6 +5,7 @@ from news.thread_social import ThreadCommentReactionView, ThreadRatingsView, Thr
 from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView
 
 from news.clinic_api import clinic_council, clinic_corrections
+from news import sejm_wideo
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
 from news import agents_api
@@ -105,6 +106,7 @@ urlpatterns = [
     path('social/video/<str:name>/', serve_video),
     path('clinic/', clinic_page),
     path('clinic/corrections/', clinic_corrections),
+    path('clinic/sejm-wideo/', sejm_wideo.sejm_video_view),
     path('clinic/interviews/', clinic_interviews),
     path('clinic/interviews/voting/', InterviewBallotView.as_view()),
     path('clinic/interviews/voting/vote/', InterviewVoteView.as_view()),

@@ -39,6 +39,12 @@ CONTRACTS = (
     contract('diagnozy', 'Diagnozy', 'tresc', 6, 'public', 1, beats=('clinic-diagnoses-day',), registry='dr-spin', counter='diagnoses', title='Diagnozy Dr. Spina'),
     contract('przekaz', 'Przekaz dnia', 'tresc', 24, 'public', 1, beats=('clinic-daily-messages-day',), registry='messages', counter='messages'),
     contract('wywiad', 'Wywiad dnia', 'tresc', 24, 'public', 1, beats=('clinic-interview-10m',), registry='interviews', counter='interviews'),
+    contract('sejm-wideo', 'Sejm wideo', 'tresc', 24, 'public', 1, beats=('sejm-wideo-30m',), registry='sejm-wideo',
+             counter='sejm_video', title='Wystąpienia z nagrań Sejmu (Dr. Spin)'),
+    contract('straznik-mediow', 'Strażnik', 'tresc', 24, 'owner:mail', 2, beats=('straznik-mediow-1h',),
+             registry='straznik-mediow', counter='media_watch', title='Strażnik mediów (Wayback, ciche edycje)'),
+    contract('fakty', 'Fakty', 'tresc', 24, 'public', 2, beats=('fakty-2h',), registry='fakty', counter='factchecks',
+             title='Tę tezę sprawdzili (Google Fact Check)'),
     contract('spinki', 'Spinki', 'tresc', 24, 'public', 1, beats=('dr-spin-thread-daily', 'thread-reviews-20m'),
              registry='spin-thread', counter='threads', title='Spinki Dr. Spina'),
     contract('raporty', 'Raporty', 'tresc', 24, 'owner:panel', 1, beats=('institutional-reports-night',), registry='raportysta',
@@ -104,7 +110,7 @@ CONTRACTS = (
     # Zbieracze danych
     contract('zbieracz-x', 'Zbieracz X', 'dane', 2, 'agent:all', 1, beats=('political-x-minute',), registry='political_poll_task', counter='posts'),
     contract('badacz', 'Badacz', 'dane', 24, 'agent:all', 7, beats=('badacz-daily',), registry='badacz', title='Badacz - nowe źródła'),
-    contract('zasil-baze', 'Zasilanie bazy', 'dane', 24, 'agent:all', 1, beats=('zasil-baze-sejm', 'zasil-baze-inne'),
+    contract('zasil-baze', 'Zasilanie bazy', 'dane', 24, 'agent:all', 1, beats=('zasil-baze-sejm', 'zasil-baze-inne', 'zasil-baze-otwarte'),
              registry='zasil-baze', counter='public_records', title='Zasilanie bazy (historia źródeł)'),
 )
 BY_KEY = {c['key']: c for c in CONTRACTS}
@@ -224,6 +230,15 @@ def _counter(c, since):
     elif name == 'public_records':
         from news.public_records_models import PublicRecord
         rows, field = PublicRecord.objects.all(), 'fetched_at'
+    elif name == 'sejm_video':
+        from news.zrodla_models import SejmVideoSpin
+        rows, field = SejmVideoSpin.objects.exclude(diagnosed_at__isnull=True), 'diagnosed_at'
+    elif name == 'media_watch':
+        from news.zrodla_models import CitedArticle
+        rows, field = CitedArticle.objects.exclude(last_checked_at__isnull=True), 'last_checked_at'
+    elif name == 'factchecks':
+        from news.clinic_models import SpinDiagnosis
+        rows, field = SpinDiagnosis.objects.filter(usage__has_key='factchecks'), 'diagnosed_at'
     elif name == 'quorum_reruns':
         from news.council_rerun import done_since
         return done_since(since)
@@ -242,7 +257,8 @@ FIRST_SEEN = 'petle-first-seen'
 OLD = '2026-01-01T00:00:00+00:00'
 # Pętle wdrożone 6.10 (zanim powstał zapis first_seen): pierwszy rytm liczymy od dnia wdrożenia.
 ADDED = {'zmiana-zdania': '2026-10-06T23:00:00+02:00', 'odbior-spinu': '2026-10-07T12:00:00+02:00', 'raport-petli': '2026-10-06T23:00:00+02:00',
-         'raport-tyg': '2026-10-07T12:00:00+02:00', 'zapytania': '2026-10-07T12:00:00+02:00', 'zamowienia': '2026-10-07T12:00:00+02:00'}
+         'raport-tyg': '2026-10-07T12:00:00+02:00', 'zapytania': '2026-10-07T12:00:00+02:00', 'zamowienia': '2026-10-07T12:00:00+02:00',
+         'sejm-wideo': '2026-10-07T23:00:00+02:00', 'straznik-mediow': '2026-10-07T23:00:00+02:00', 'fakty': '2026-10-07T23:00:00+02:00'}
 
 
 def first_seen(now, keys=None):

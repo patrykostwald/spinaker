@@ -578,6 +578,42 @@ def odbior_spinu_task():
         return odbior_spinu.run()
 
 
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def sejm_wideo_task():
+    """Co 30 minut w dzień: wystąpienia posłów z nagrań Sejmu (sala i komisje) -> Dr. Spin, najwyżej
+    SEJM_VIDEO_SPIN_DAILY dziennie, ta sama miara i Konsylium z kworum (news.sejm_wideo)."""
+    from django.core.cache import cache
+    from news import dyrygent, sejm_wideo
+    if not cache.add('sejm-wideo-lock', 1, timeout=1600):
+        return {'status': 'locked'}
+    try:
+        with dyrygent.tier('treść'):
+            return sejm_wideo.run(limit=1)
+    finally:
+        cache.delete('sejm-wideo-lock')
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def straznik_mediow_task():
+    """Co godzinę: kopie cytowanych artykułów w Wayback Machine i raz na dobę skrót tekstu - alarm po cichej edycji."""
+    from django.core.cache import cache
+    from news import dyrygent, straznik_mediow
+    if not cache.add('straznik-mediow-lock', 1, timeout=1600):
+        return {'status': 'locked'}
+    try:
+        with dyrygent.tier('niezawodność'):
+            return straznik_mediow.run()
+    finally:
+        cache.delete('straznik-mediow-lock')
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
+def fakty_task():
+    """Co 2 godziny: „Tę tezę sprawdzili” - weryfikacje tych samych tez z Google Fact Check API (klucz właściciela)."""
+    from news import fakty
+    return fakty.run()
+
+
 @shared_task
 def raport_petli_task():
     """Codziennie 7:05: Raport pętli mailem (audyt pętli 5.10). Bez AI; jeden mail na dzień."""
