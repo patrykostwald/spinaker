@@ -11026,3 +11026,11 @@ html:not([data-theme="light"]) .px { --sc-text-3: #8a8f94; }
 .sc-corrections__counts > div:first-child { grid-column: auto; }
 @media (max-width: 760px) { .sc-corrections__counts { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
 .sc-corrections__chip[data-type="revision"] { color: var(--sc-text); background: var(--sc-surface-2); border-color: transparent; }
+
+/* przeszłość: pierwszy element blisko menu (właściciel 7.10: stała zasada - bez dużej przerwy pod paskiem menu) */
+.px-bar { margin-bottom: -48px; }
+.px-hero { padding-top: 0; }
+@media (max-width: 760px) {
+  .px-bar { margin-bottom: -36px; }
+  .px-hero { padding-top: 0; }
+}
