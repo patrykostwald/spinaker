@@ -33,6 +33,7 @@ REGISTRY = {
     'repairer': agent('Naprawiacz', 'Analizuje błędy i proponuje działania właścicielowi. Nie zmienia produkcji.', 'news.tasks.repairer_task', 'REPAIRER_ENABLED', True),
     'auditor': agent('Audytor', 'Sprawdza kondycję i wyniki Konsylium.', 'news.tasks.council_audit_task'),
     'inquisitor': agent('Inkwizytor', 'Niezależnie kontroluje jakość diagnoz.', 'news.tasks.inquisitor_task'),
+    'konsylium-powtorz': agent('Kworum Konsylium', 'Co noc o 2:40 powtarza diagnozy wystawione bez kworum (za mało modeli albo stałego rdzenia); stary wynik zostaje w historii.', 'news.tasks.konsylium_powtorz_task', 'CLINIC_AI_ENABLED'),
     'recruiter': agent('Rekruter', 'Sprawdza kandydatów do Konsylium.', 'news.tasks.council_recruiter_task'),
     'strateg': agent('Strateg', 'Proponuje rozwój serwisu w wolnym oknie modeli.', 'news.tasks.agents_window_task', 'AGENTS_ENABLED'),
     'pilgrim': agent('Pielgrzym', 'Szuka usprawnień Konsylium na zmianę ze Strategiem.', 'news.tasks.agents_window_task', 'AGENTS_ENABLED'),

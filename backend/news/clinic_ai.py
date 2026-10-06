@@ -596,7 +596,7 @@ def _free_chat(system: str, user: str, schema: dict, max_tokens: int = 1200, mod
     """Darmowe modele: Groq (JSON schema), a przy błędzie — NVIDIA NIM. Zwraca (dane, model)."""
     groq_key = os.environ.get('GROQ_API_KEY', '').strip()
     groq_model = model or os.environ.get('CLINIC_TRIAGE_MODEL', '').strip() or os.environ.get('GROQ_EDITORIAL_MODEL', '').strip()
-    if groq_key and groq_model and only_provider != 'nim':
+    if groq_key and groq_model and only_provider != 'nim' and side_call('groq', groq_model):
         try:
             response = requests.post('https://api.groq.com/openai/v1/chat/completions', timeout=(5, 60), json={
                 'model': groq_model, 'temperature': 0, 'max_tokens': max_tokens,
@@ -713,10 +713,17 @@ def _screen_result(content: str, provider: str, model: str) -> dict:
     return {'score': score, 'reason': str(data.get('reason', ''))[:300], 'provider': provider, 'model': model}
 
 
+def side_call(service: str, model: str) -> bool:
+    """Strażnik i darmowe syntezy na modelu z Konsylium liczą się w jego dziennym limicie i nie sięgają rezerwy na
+    diagnozy (6.10: przesianie 1233 zaległych wpisów X na gpt-oss-20b odebrało Konsylium głosy). Przy odmowie - NIM."""
+    from news import council_registry as registry
+    return registry.reserve_side((service, model))
+
+
 def _screen_groq(text: str) -> dict | None:
     key = os.environ.get('GROQ_API_KEY', '').strip()
     model = os.environ.get('CLINIC_TRIAGE_MODEL', '').strip() or os.environ.get('GROQ_EDITORIAL_MODEL', '').strip()
-    if not key or not model:
+    if not key or not model or not side_call('groq', model):
         return None
     response = requests.post('https://api.groq.com/openai/v1/chat/completions', timeout=(5, 30), json={
         'model': model, 'temperature': 0, 'max_tokens': 1500,

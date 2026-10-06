@@ -9,6 +9,7 @@
    recenzent sprawdza zgodność z ocenami i zasadami — przy uwagach przewodniczący poprawia raz.
 Wynik ma ten sam kształt co diagnoza Claude'a, więc reszta Kliniki działa bez zmian.
 """
+import contextvars
 import json
 import os
 import re
@@ -176,8 +177,9 @@ def ask(member: tuple[str, str], system: str, user: str, schema: dict, max_token
     try:
         result = _ask(member, system, user, schema, max_tokens)
     except ClinicAIError as error:
-        record(member, error.code)
-        record_health(member, error.code, time.monotonic() - started)
+        if not str(error.code).endswith('_content_reserve'):  # odmowa z rezerwy na diagnozy to nie awaria członka
+            record(member, error.code)
+            record_health(member, error.code, time.monotonic() - started)
         raise
     record(member, None)
     record_health(member, None, time.monotonic() - started)
@@ -190,7 +192,7 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
     if not registry.configured(member):
         raise ClinicAIError(f'{service}_key_missing')
     if not registry.reserve(member):
-        raise ClinicAIError(f'{service}_daily_limit')
+        raise ClinicAIError(f'{service}_content_reserve' if registry.content_reserved(member) else f'{service}_daily_limit')
     from news.mechanik import alias
     model = alias(service, model)  # zamiennik nazwy zapisany przez Mechanika (np. model przemianowany u dostawcy)
     system += registry.CHARTER_SUMMARY
@@ -303,23 +305,34 @@ def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dic
 
 def consult(post_text: str, context_lines: str) -> list[dict]:
     """Osobne opinie wszystkich członków konsylium — równolegle; ci, którzy nie odpowiedzą, po prostu nie głosują."""
+    from news import council_quorum as quorum
     candidates = _members('CLINIC_COUNCIL', DEFAULT_COUNCIL)
     members = registry.select_members(candidates)
+    outer = contextvars.copy_context()  # rezerwa na diagnozy (registry.for_content) obowiązuje też w wątkach
     with ThreadPoolExecutor(max_workers=len(members) or 1) as pool:
-        results = list(pool.map(lambda member: _opinion(member, post_text, context_lines), members))
-    # Kolejne modele zastępują awarie albo uzupełniają różnorodność.
-    for member in registry.select_members([m for m in candidates if m not in members], target=len(candidates)):
+        results = list(pool.map(lambda member: outer.copy().run(_opinion, member, post_text, context_lines), members))
+    # Kolejne modele zastępują awarie, dopełniają kworum (najpierw stały rdzeń) albo uzupełniają różnorodność.
+    rest = registry.select_members([m for m in candidates if m not in members], target=len(candidates))
+    rest.sort(key=lambda m: not quorum.is_core(m))
+    for member in rest:
         answered = [(r['provider'], r['model']) for r in results if r.get('status') == 'odpowiedział']
         polish_left = any(registry.is_polish(m) and registry.available(m) for m in candidates if m not in members)
-        if registry.diversity(answered)['sufficient'] and (any(registry.is_polish(m) for m in answered) or not polish_left):
+        if (registry.diversity(answered)['sufficient'] and (any(registry.is_polish(m) for m in answered) or not polish_left)
+                and quorum.check(results)['met']):
             break
+        state = quorum.check(results)
+        core_left = sum(1 for m in rest if quorum.is_core(m) and m not in members and registry.available(m))
+        if not state['met'] and state['core'] + core_left < state['need_core']:
+            break  # rdzenia i tak nie będzie - nie zużywamy limitów pozostałych członków na diagnozę, która poczeka
         results.append(_opinion(member, post_text, context_lines))
         members.append(member)
     return results
 
 
-def combine(opinions: list[dict]) -> dict:
-    """Wspólna ocena: mediana werdyktu i siły; technika — gdy wskazało ją co najmniej dwóch członków (przy 1–2 odpowiedziach: każdy)."""
+def combine(opinions: list[dict], measure: dict | None = None) -> dict:
+    """Wspólna ocena: mediana werdyktu i siły; technika — gdy wskazało ją co najmniej dwóch członków (przy 1–2 odpowiedziach: każdy).
+    measure (stała miara, news/council_quorum.py): {'core': [modele rdzenia], 'biases': {model: typowe odchylenie}} -
+    gdy brakuje kogoś z rdzenia, mediana siły jest przesuwana o różnicę surowości składu; przy pełnym rdzeniu bez zmian."""
     opinions = [op for op in opinions if op.get('status') != 'brak odpowiedzi']
     judged = [op for op in opinions if op.get('verdict') in VERDICT_SCORE]
     if not judged:
@@ -327,6 +340,11 @@ def combine(opinions: list[dict]) -> dict:
     score = int(statistics.median_low([VERDICT_SCORE[op['verdict']] for op in judged]))
     verdict = SCORE_VERDICT[score]
     intensity = int(statistics.median([op['intensity'] for op in judged]))
+    shift = 0.0
+    if measure is not None:
+        from news.council_quorum import stable_intensity
+        intensity, shift = stable_intensity(statistics.median([op['intensity'] for op in judged]), [op['model'] for op in judged],
+                                            measure.get('core') or [], measure.get('biases') or {})
     need = 2 if len(judged) >= 3 else 1
     votes = {}
     for op in judged:
@@ -336,8 +354,12 @@ def combine(opinions: list[dict]) -> dict:
                    'category': technique_category({**items[0], 'name': items[0].get('name') or TECHNIQUES[key][0]}), 'quote': items[0]['quote'], 'explanation': str(items[0].get('explanation', ''))[:600],
                    'votes': len(items)} for key, items in sorted(votes.items(), key=lambda kv: -len(kv[1])) if len(items) >= need]
     agree = sum(1 for op in judged if op['verdict'] == verdict)
-    return {'verdict': verdict, 'intensity': intensity if verdict != 'no_spin' else min(intensity, 20),
-            'techniques': techniques[:6], 'agreement': f'{agree}/{len(opinions)}'}
+    result = {'verdict': verdict, 'intensity': intensity if verdict != 'no_spin' else min(intensity, 20),
+              'techniques': techniques[:6], 'agreement': f'{agree}/{len(opinions)}'}
+    if measure is not None:
+        result['measure'] = {'method': 'stała miara v1', 'raw_intensity': int(statistics.median([op['intensity'] for op in judged])),
+                             'shift': shift}
+    return result
 
 
 def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
@@ -554,7 +576,14 @@ def claude_check(claims: list[str]) -> tuple[list[dict], dict] | None:
 
 
 def diagnose(context: dict, lines: str) -> dict:
-    """Pełna diagnoza konsylium w kształcie diagnozy Claude'a (verdict, intensity, headline, … , usage)."""
+    """Pełna diagnoza konsylium w kształcie diagnozy Claude'a (verdict, intensity, headline, … , usage).
+    Zapytania idą z rezerwy na treść (registry.for_content): zadania poboczne nie mogą zabrać Konsylium głosów."""
+    with registry.for_content():
+        return _diagnose(context, lines)
+
+
+def _diagnose(context: dict, lines: str) -> dict:
+    from news import council_quorum as quorum
     members = consult(context['text'], lines)
     opinions = [op for op in members if op.get('status') != 'brak odpowiedzi']
     member_records = [{k: v for k, v in op.items() if k in (
@@ -564,11 +593,18 @@ def diagnose(context: dict, lines: str) -> dict:
                                      for m in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL))
     diversity['degraded'] = (not diversity['sufficient'] or (diversity['polish_required'] and not diversity['polish'])
                              or len(opinions) < PREFERRED_MEMBERS)
-    if len(opinions) < MIN_MEMBERS:
-        error = ClinicAIError(f'council_too_few_members: {len(opinions)}')
-        error.council = {'members': member_records, 'diversity': diversity}
+    core = quorum.active_core()
+    quorum_state = quorum.check(member_records, core)
+    if len(opinions) < MIN_MEMBERS or not quorum_state['met']:
+        # Kworum (właściciel 6.10): bez wymaganej liczby odpowiedzi i stałego rdzenia diagnoza się nie ukazuje -
+        # wpis czeka w kolejce na pełniejszy skład (news/clinic.py: _defer_quorum). Ta sama reguła dla każdej partii.
+        error = ClinicAIError(quorum_state['reason'] or f'council_quorum: {len(opinions)} członków')
+        error.council = {'members': member_records, 'diversity': diversity, 'quorum': quorum_state}
+        error.quorum = quorum_state
         raise error
-    combined = combine(opinions)
+    measure = {'core': [m[1] for m in core], 'biases': quorum.member_biases()} if quorum.stable_enabled() else None
+    combined = combine(opinions, measure)
+    measured = combined.pop('measure', None)  # tylko do jawnego zapisu w usage, nie do tekstów modeli
     claims_text = list(dict.fromkeys(c for op in opinions for c in op['claims']))[:6] if combined['verdict'] != 'unclear' else []
     escalated = needs_escalation(combined, opinions) and escalate_claims(claims_text) if claims_text else None
     claims, check_usage = escalated or check_claims(claims_text)
@@ -600,5 +636,6 @@ def diagnose(context: dict, lines: str) -> dict:
                   'model': f"konsylium: {', '.join(op['model'].split('/')[-1] for op in opinions)}",
                   'council': {'agreement': combined['agreement'], 'chair': chair, 'linguist': linguist,
                               'review': verdict_review, 'escalated': bool(escalated),
-                              'diversity': diversity, 'members': member_records}},
+                              'diversity': diversity, 'members': member_records, 'quorum': quorum_state,
+                              **({'measure': measured} if measured else {})}},
     }

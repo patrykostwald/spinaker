@@ -391,6 +391,24 @@ def council_recruiter_task():
         cache.delete("council-recruiter-lock")
 
 
+@shared_task(name="news.tasks.konsylium_powtorz_task", soft_time_limit=1500, time_limit=1600)
+def konsylium_powtorz_task():
+    """Noc (2:40, po resecie limitów): powtórka diagnoz z ostatnich 7 dni wystawionych bez kworum Konsylium."""
+    import os
+    if os.environ.get("CLINIC_AI_ENABLED", "").lower() != "true":
+        return {"status": "disabled"}
+    if not cache.add("konsylium-powtorz-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news import council_rerun
+        result = council_rerun.run(council_rerun.default_since(), limit=8)
+        result.pop("rows", None)
+        result["produced"] = result.get("done", 0)
+        return result
+    finally:
+        cache.delete("konsylium-powtorz-lock")
+
+
 @shared_task(name='news.tasks.council_audit_task', soft_time_limit=210, time_limit=240)
 def council_audit_task():
     from news.council_auditor import run

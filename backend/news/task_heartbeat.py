@@ -63,7 +63,7 @@ def summary(result):
                   'blocked_access_review': 'Zablokowane: przegląd dostępu', 'brak odpowiedzi': 'Brak odpowiedzi'}
         states.update(partial='Porcja zakończona', deferred='Odroczone: limit lub odstęp',
                       idle='Oczekuje na następny cykl', needs_review='Dokumenty wymagają kontroli',
-                      waiting='Czeka na okno modeli', closed='Okno modeli zamknięte')
+                      waiting='Czeka na okno modeli', closed='Okno modeli zamknięte', quorum='Czeka na kworum Konsylium')
         if result.get('status') in states:
             safe.insert(0, states[result['status']])
         for key in ('completed', 'failed', 'errors', 'screened'):

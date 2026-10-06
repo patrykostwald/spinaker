@@ -20,7 +20,7 @@ CONSUMERS = {'owner:panel': 'właściciel w panelu', 'owner:mail': 'właściciel
              'claude:sprint': 'Claude i Codex (sprint)', 'agent:prawnik': 'Prawnik', 'agent:architekt': 'Architekt',
              'agent:recruiter': 'Rekruter', 'agent:all': 'wszyscy agenci', 'agent:council': 'Konsylium'}
 PENDING_TEXT = {'reports': '{n} raport(y) czeka na zgodę ponad 24 h', 'proposals': '{n} propozycji czeka na decyzję ponad {sla} dni',
-                'tickets': '{n} bilet(y) po terminie'}
+                'tickets': '{n} bilet(y) po terminie', 'quorum': '{n} diagnoz(y) czeka na kworum Konsylium ponad 12 h'}
 LIST_MAX = 40
 PLAIN_READER = {'scores__reader': 'plain'}  # raporty Czytelnika testowego zapisywane jako strateg/report
 
@@ -89,6 +89,10 @@ CONTRACTS = (
              registry='ekspert-ai'),
     contract('mechanik', 'Mechanik', 'konsylium', 24, 'agent:council', 7, beats=('mechanik-1h',), registry='mechanik'),
     contract('rekruter', 'Rekruter', 'konsylium', 24, 'agent:council', 7, beats=('council-recruiter-night',), registry='recruiter'),
+    # Kworum (6.10): wynik = powtórzone diagnozy (ostatni wynik = ostatnia nocna kontrola, także bez powtórek do zrobienia);
+    # czekające na kworum ponad 12 h to ostrzeżenie.
+    contract('kworum', 'Kworum', 'konsylium', 24, 'public', 1, beats=('konsylium-powtorz-night',), registry='konsylium-powtorz',
+             counter='quorum_reruns', pending='quorum', title='Kworum Konsylium (czekające i powtórki)'),
     # Zbieracze danych
     contract('zbieracz-x', 'Zbieracz X', 'dane', 2, 'agent:all', 1, beats=('political-x-minute',), registry='political_poll_task', counter='posts'),
     contract('badacz', 'Badacz', 'dane', 24, 'agent:all', 7, beats=('badacz-daily',), registry='badacz', title='Badacz - nowe źródła'),
@@ -171,6 +175,9 @@ def _pending(c, now):
         return owner_decisions(now)['waiting']
     if c['pending'] == 'tickets':
         return tickets(now)['overdue']
+    if c['pending'] == 'quorum':
+        from news.clinic import quorum_waiting
+        return quorum_waiting().filter(created_at__lt=now - timedelta(hours=12)).count()
     return 0
 
 
@@ -206,6 +213,9 @@ def _counter(c, since):
     elif name == 'public_records':
         from news.public_records_models import PublicRecord
         rows, field = PublicRecord.objects.all(), 'fetched_at'
+    elif name == 'quorum_reruns':
+        from news.council_rerun import done_since
+        return done_since(since)
     elif name == 'seba':
         from news.agent_models import SebaReview
         rows, field = SebaReview.objects.exclude(status='queued'), 'due_at'

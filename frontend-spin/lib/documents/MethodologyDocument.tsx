@@ -94,7 +94,8 @@ export function MethodologyDocument({ lang = "pl" }: { lang?: DocumentLanguage }
         <p className="sc-method-agree__num">2/3<small>{t("ten sam werdykt")}</small></p>
         <p>{t("Tyle modeli dało werdykt zgodny z wynikiem diagnozy. „Nie da się ocenić” liczy się do mianownika, brak odpowiedzi - nie. Obok pokazujemy rozrzut ocen siły.")}</p>
       </div>
-      <p className="sc-method-note">{t("Modele mogą popełnić ten sam błąd, więc zgoda nie jest dowodem. Docelowo: co najmniej 4 odpowiedzi z 3 firm, w tym model polski; przy limitach usług - 3 odpowiedzi z opisem braków.")} <Link lang={lang} href="/konsylium#sklad">{t("Aktualny skład")}</Link></p>
+      <p className="sc-method-note">{t("Modele mogą popełnić ten sam błąd, więc zgoda nie jest dowodem. Docelowo: co najmniej 4 odpowiedzi z 3 firm, w tym model polski; bez kworum diagnoza czeka na pełniejszy skład.")} <Link lang={lang} href="/konsylium#sklad">{t("Aktualny skład")}</Link></p>
+      <p id="kworum">{t("Kworum i stała miara: diagnoza ukazuje się tylko wtedy, gdy odpowiedziały co najmniej 4 modele, w tym co najmniej 3 z 5 stałych członków Konsylium. Gdy części modeli skończą się dzienne limity, wpis czeka na pełniejszy skład (zwykle do następnego dnia) zamiast ukazać się z oceną mniejszego grona. Modele różnią się surowością, więc dla każdego liczymy jego typowe odchylenie od mediany Konsylium w ostatnich diagnozach. Gdy brakuje stałego członka, medianę przesuwamy o różnicę między typową surowością obecnego i pełnego składu; przy pełnym składzie wynik się nie zmienia. Ta sama reguła obowiązuje dla każdej partii, a diagnozy wystawione w niepełnym składzie powtarzamy i pokazujemy poprzedni wynik.")}</p>
     </section>
 
     <section id="twierdzenia"><h2>{t("Statusy twierdzeń")}</h2>

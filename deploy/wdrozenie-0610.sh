@@ -60,4 +60,14 @@ $M raport_petli --wyslij --raz | tail -40
 
 echo '== 7. Zasilanie bazy: karty z limitem na historię i plan (szczegóły: deploy/zasil-baze.sh)'
 sh deploy/zasil-baze.sh
+
+echo '== 8. Kworum Konsylium: powtórka diagnoz bez kworum od 4.10 (opcjonalnie, tylko raz)'
+# Podgląd zawsze; prawdziwa powtórka raz (znacznik). Poza 2:00-7:00 komenda tylko planuje - zrobi ją zadanie nocne 2:40.
+MARK=.konsylium-powtorz-0610.done
+$M konsylium_powtorz --od 2026-10-04 --dry-run | head -40
+if [ "${POWTORKA:-tak}" = tak ] && [ ! -f "$MARK" ]; then
+  $M konsylium_powtorz --od 2026-10-04 --limit 8 | head -40 && touch "$MARK"
+else
+  echo 'Powtórka pominięta (znacznik istnieje albo POWTORKA=nie)'
+fi
 echo 'GOTOWE'

@@ -1,7 +1,9 @@
 """Konfiguracja dostawców, pochodzenie modeli i lokalne limity zapytań."""
 import hashlib
 import logging
+import math
 import os
+from contextlib import contextmanager
 from contextvars import ContextVar
 
 from django.core.cache import cache
@@ -10,6 +12,9 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 # Optional per-call guard, used only by background proposal agents.
 reservation_guard = ContextVar('council_reservation_guard', default=None)
+# Treść ma pierwszeństwo (Dyrygent: treść > strażnicy > ...): zapytania diagnozy mogą zużyć cały dzienny limit członka,
+# wszystko inne (przesiewanie zaległości X, syntezy, Recenzent, Inkwizytor, agenci) najwyżej część poza rezerwą.
+content_purpose = ContextVar('council_content_purpose', default=False)
 KEYS = {'groq': 'GROQ_API_KEY', 'nim': 'NIM_API_KEY', 'gemini': 'GEMINI_API_KEY',
         'mistral': 'MISTRAL_API_KEY', 'openrouter': 'OPENROUTER_API_KEY',
         'cloudflare': 'CLOUDFLARE_AI_TOKEN', 'hf': 'HF_TOKEN', 'pllum': 'PLLUM_API_KEY'}
@@ -89,6 +94,34 @@ def available(member):
     return configured(member) and cache.get(limit_key(member), 0) < daily_limit(member)
 
 
+def content_reserve_share():
+    """Część dziennego limitu każdego członka zarezerwowana dla diagnoz (COUNCIL_CONTENT_RESERVE, domyślnie 35%)."""
+    try:
+        return min(0.9, max(0.0, float(os.environ.get('COUNCIL_CONTENT_RESERVE', '') or 0.35)))
+    except ValueError:
+        return 0.35
+
+
+def side_limit(member):
+    """Pułap dla zadań pobocznych: dzienny limit bez rezerwy na diagnozy."""
+    return max(1, daily_limit(member) - math.ceil(daily_limit(member) * content_reserve_share()))
+
+
+@contextmanager
+def for_content():
+    """Zapytania w tym bloku to treść serwisu (diagnoza) - mogą sięgnąć do rezerwy."""
+    token = content_purpose.set(True)
+    try:
+        yield
+    finally:
+        content_purpose.reset(token)
+
+
+def content_reserved(member):
+    """True, gdy członek ma jeszcze limit, ale tylko w rezerwie na diagnozy albo poza pułapem zadania (musi poczekać)."""
+    return not content_purpose.get() and cache.get(limit_key(member), 0) < daily_limit(member)
+
+
 def reserve(member):
     key = limit_key(member)
     cache.add(key, 0, timeout=86400)
@@ -97,7 +130,31 @@ def reserve(member):
     if guard is not None and not guard(member, used):
         cache.decr(key)
         return False
+    # Zadania z własnym pułapem (agenci: agents_common.ceiling, 60%) decydują sami; bez pułapu - rezerwa na treść.
+    if guard is None and not content_purpose.get() and used > side_limit(member):
+        cache.decr(key)  # odmowa nie zużywa limitu
+        return False
     return used <= daily_limit(member)
+
+
+def reserve_side(member):
+    """Zapytanie spoza Konsylium (np. strażnik przesiewający wpisy X) do modelu, który zasiada w Konsylium:
+    liczone w tym samym limicie i tylko do pułapu poza rezerwą. Model spoza składu - bez ograniczeń."""
+    from news.council_quorum import roster
+    try:
+        if tuple(member) not in roster():
+            return True
+    except Exception:  # noqa: BLE001 - brak bazy nie może zatrzymać przesiewania
+        return True
+    try:
+        share = min(1.0, max(0.0, float(os.environ.get('COUNCIL_SIDE_SHARE', '') or 0.25)))
+    except ValueError:
+        share = 0.25
+    # Masowe zadania (przesiewanie zaległości) odpuszczają członka wcześnie: zużycie liczymy w zapytaniach,
+    # a dostawca liczy tokeny - zapas musi zostać dla diagnoz.
+    if not content_purpose.get() and cache.get(limit_key(member), 0) >= math.floor(daily_limit(member) * share):
+        return False
+    return reserve(member)
 
 
 def endpoint(service):

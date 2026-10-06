@@ -351,7 +351,8 @@ def test_failed_diagnosis_keeps_unanswered_members(monkeypatch):
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda *a: council.diagnose({'text': 'tekst'}, 'tekst'))
     clinic.diagnose(row)
     row.refresh_from_db()
-    assert row.status == 'failed'
+    # Kworum (6.10): bez odpowiedzi wpis nie przepada jako nieudany - czeka w kolejce na pełniejszy skład
+    assert row.status == 'queued' and row.error.startswith('council_quorum')
     assert row.usage['council']['members'] == [failed]
 
 

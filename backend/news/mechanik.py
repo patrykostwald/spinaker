@@ -140,4 +140,7 @@ def step():
         else:
             _note({'model': seat.model, 'wynik': f'nadal nie działa ({error})'})
             done.append((seat.model, error or 'błąd'))
+    if any(result == 'przywrócony' or result.startswith('zamiennik') for _, result in done):
+        from news.council_quorum import release
+        release('mechanik')  # wpisy czekające na kworum Konsylium próbują od razu, nie dopiero po resecie limitów
     return {'status': 'ok', 'checked': len(seats), 'results': done}

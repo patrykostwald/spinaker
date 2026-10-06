@@ -13,6 +13,7 @@ BEAT_PLAN = {
     'thread-reviews-20m': ('thread_reviews_task', {'minute': '*/20'}),
     'ekspert-ai-daily': ('ekspert_ai_task', {'hour': 3, 'minute': 40}),
     'mechanik-1h': ('mechanik_task', {'minute': 23}),
+    'konsylium-powtorz-night': ('konsylium_powtorz_task', {'hour': 2, 'minute': 40}),  # właściciel 6.10: powtórka diagnoz bez kworum
     'recenzent-2h': ('recenzent_task', {'minute': 41, 'hour': '*/2'}),  # właściciel 5.10: recenzuje wszystko, co trafia na stronę
     'projektant-daily': ('projektant_task', {'hour': 4, 'minute': 20}),
     'dyrygent-15m': ('dyrygent_task', {'minute': '*/15'}),  # właściciel 5.10: hierarchia i harmonogram pętli

@@ -288,6 +288,8 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
             SpinDiagnosis.objects.filter(pk=row.pk).update(usage=row.usage)
         result = dict(result)
     except clinic_ai.ClinicAIError as error:
+        if str(error.code).startswith('council_quorum'):
+            return _defer_quorum(row, error)
         row.status, row.error = 'failed', error.code
         if hasattr(error, 'videos'):
             row.usage = {key: value for key, value in (row.usage or {}).items()
@@ -327,6 +329,32 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         queue_archive(row.post)
         ensure_x_thread(row)
     return row
+
+
+def _defer_quorum(row: SpinDiagnosis, error) -> SpinDiagnosis:
+    """Brak kworum Konsylium: diagnoza się nie ukazuje, wpis czeka w kolejce (bez diagnosed_at - nie liczy się do
+    dziennego limitu). Powód w error i usage['quorum']; ponowienie po resecie limitów albo po naprawie modelu."""
+    from news import council_quorum
+    now = timezone.now()
+    council = getattr(error, 'council', None) or {}
+    previous = (row.usage or {}).get('quorum') or {}
+    usage = {key: value for key, value in (row.usage or {}).items() if key not in ('snapshot', 'snapshot_at')}
+    if council:
+        usage['council'] = council
+    if hasattr(error, 'videos'):
+        usage['videos'] = error.videos
+    usage['quorum'] = {**(getattr(error, 'quorum', None) or {}), 'attempts': int(previous.get('attempts', 0)) + 1,
+                       'first_at': previous.get('first_at') or now.isoformat(), 'last_at': now.isoformat()}
+    row.status, row.error, row.usage = 'queued', str(error.code)[:240], usage
+    SpinDiagnosis.objects.filter(pk=row.pk).update(status=row.status, error=row.error, usage=row.usage)
+    council_quorum.block(council.get('members') or [], row.error, now)
+    logger.info('diagnosis %s: waits for council quorum (%s)', row.pk, row.error)
+    return row
+
+
+def quorum_waiting():
+    """Wpisy czekające na kworum Konsylium (dla Raportu pętli i kolejki)."""
+    return SpinDiagnosis.objects.filter(status='queued', error__startswith='council_quorum')
 
 
 def ensure_x_thread(row: SpinDiagnosis, save: bool = True) -> bool:
@@ -513,6 +541,15 @@ def run_diagnoses(limit: int = 2) -> dict:
     start, end = day_window(now)
     if not start <= now < end:
         return {'status': 'night'}
+    expire_quorum_waits()
+    if clinic_ai.provider() == 'council':
+        # Kworum przed zapytaniami (bez kosztów): przerwa po nieudanym kworum albo za mało wolnych członków - wpisy czekają.
+        from news import council_quorum
+        wait = council_quorum.waiting()
+        state = None if wait else council_quorum.possible()
+        if wait or not state['met']:
+            return {'status': 'quorum', 'waiting': quorum_waiting().count(),
+                    'reason': (wait or {}).get('reason') or state['reason'], 'until': (wait or {}).get('until', '')}
     daily = _env_int('CLINIC_DAILY_LIMIT', 8)
     reserve = 1 if daily > 1 else 0
     counts = {}
@@ -528,7 +565,12 @@ def run_diagnoses(limit: int = 2) -> dict:
     take = max(0, min(limit, paced_target(now, daily - reserve) - regular_done))
     # Tylko świeże posty (domyślnie z ostatnich 24 h) — Klinika komentuje bieżące przekazy, nie archiwum.
     fresh = timezone.now() - timedelta(hours=_env_int('CLINIC_FRESH_HOURS', 24))
-    rows = list(SpinDiagnosis.objects.filter(status='queued', post__published_at__gte=fresh).select_related('post__account')
+    # Wpisy czekające na kworum Konsylium wracają mimo okna świeżości (najwyżej council_quorum.MAX_WAIT_HOURS).
+    from news.council_quorum import MAX_WAIT_HOURS
+    waited = timezone.now() - timedelta(hours=MAX_WAIT_HOURS)
+    rows = list(SpinDiagnosis.objects.filter(status='queued').filter(
+        Q(post__published_at__gte=fresh) | Q(error__startswith='council_quorum', post__published_at__gte=waited))
+                .select_related('post__account')
                 .order_by('-post__watch_priority', '-screen_score', '-post__published_at')[:take])
     if auto_publish() and len(rows) < take:
         # Żeby spiny wpadały codziennie: gdy wysoko ocenionych postów brakuje, bierzemy najwyżej ocenione
@@ -543,9 +585,19 @@ def run_diagnoses(limit: int = 2) -> dict:
             break
         diagnose(row, figures.get(row.post.account_id))
         counts[row.status] = counts.get(row.status, 0) + 1
+        if row.status == 'queued':
+            counts['quorum'] = 1
+            break  # bez kworum kolejne wpisy też by czekały - nie zużywamy limitów członków
     alert = send_review_alert()
     return {'status': 'ok', 'budget_left': max(0, daily - diagnoses_today()), 'usd_left_today': budget_left(),
             'diagnosed': counts, 'alert': alert}
+
+
+def expire_quorum_waits() -> int:
+    """Wpis czekał na kworum dłużej niż MAX_WAIT_HOURS od publikacji: nieudany z powodem (nie znika bez śladu)."""
+    from news.council_quorum import MAX_WAIT_HOURS
+    old = quorum_waiting().filter(post__published_at__lt=timezone.now() - timedelta(hours=MAX_WAIT_HOURS))
+    return old.update(status='failed', error=f'council_quorum_expired: brak kworum Konsylium przez {MAX_WAIT_HOURS} h')
 
 
 MIN_MESSAGE_ACCOUNTS = 3
@@ -811,6 +863,9 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
         'readability_edit': {'at': (diagnosis.usage or {}).get('readability_edit', {}).get('at'), 'original': (diagnosis.usage or {}).get('original_text', {})} if (diagnosis.usage or {}).get('readability_edit') else None,
         'x_thread': diagnosis.x_thread,
         'council': (diagnosis.usage or {}).get('council'),
+        # Powtórka po pełnym składzie Konsylium (news/council_rerun.py): poprzednie wyniki jawnie, nic nie znika.
+        'revisions': [{key: item.get(key) for key in ('at', 'verdict', 'intensity', 'members', 'reason')}
+                      for item in (diagnosis.usage or {}).get('history') or []],
         'model': diagnosis.model_name,
         'prompt_version': diagnosis.prompt_version,
         'created_at': diagnosis.created_at,
