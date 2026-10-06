@@ -70,4 +70,15 @@ if [ "${POWTORKA:-tak}" = tak ] && [ ! -f "$MARK" ]; then
 else
   echo 'Powtórka pominięta (znacznik istnieje albo POWTORKA=nie)'
 fi
+echo '== 9. Karty dostępu z limitem 0 (zatwierdzone, ale nic nie przepuszczają)'
+$M shell -c "
+from django.utils import timezone
+from news.models import SourceAccessInstruction as I
+q=I.objects.filter(status='approved',daily_request_cap=0)
+live=q.filter(valid_until__gt=timezone.now())
+print('zatwierdzone z limitem 0:',q.count(),'- w tym ważne:',live.count())
+for i in live.select_related('source')[:20]: print('  ',i.source_id,i.source.name[:40],i.channel,i.endpoint[:60])
+n=live.update(daily_request_cap=50)
+print('ustawiono limit 50/dobę dla:',n)
+"
 echo 'GOTOWE'
