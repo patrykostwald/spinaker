@@ -26,11 +26,11 @@ grep -q '^SOURCE_MAIL_SMTP_HOST=.' "$ENV" && echo 'SMTP: ok' || echo 'UWAGA: bra
 echo '== 2. Budowa i restart'
 $DC up -d --build --force-recreate
 i=0
-until $M showmigrations news 2>/dev/null | grep -q '\[X\] 0147'; do
+until ! $M showmigrations 2>/dev/null | grep -q '[ ]' && $M showmigrations news >/dev/null 2>&1; do
   i=$((i+1)); [ $i -gt 60 ] && { echo 'Migracje nie przeszły w 5 min - wklej Claude: docker compose logs backend --tail 80'; exit 1; }
   sleep 5
 done
-echo 'Migracje: ok (do 0147)'
+echo 'Migracje: ok (wszystkie zastosowane)'
 
 echo '== 3. Karty dostępu źródeł (przegląd właściciela, ważne 365 dni)'
 cfg() { $M configure_public_records --source "$1" --apply --reviewed-by patrykostwald \
