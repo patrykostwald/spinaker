@@ -802,6 +802,34 @@ def sales_leads_task():
 
 
 @shared_task(soft_time_limit=240, time_limit=300)
+def sprint_export_task():
+    """Codziennie 6:20 (Z1): zatwierdzone bilety S/M -> GitHub Issues, zrobione -> zamknięcie Issue. Bez tokena: disabled."""
+    from news.sprint_github import export_issues
+    return export_issues()
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def kopia_task():
+    """Codziennie 4:30 (Z2): kontrola kopii w B2 (świeżość, rozmiar, retencja); 1. dnia miesiąca test odtworzenia."""
+    from news.kopia_zapasowa import daily_check
+    return daily_check()
+
+
+@shared_task(soft_time_limit=40, time_limit=50)
+def puls_zewnetrzny_task():
+    """Co 5 minut (Z3): ping do healthchecks.io tylko przy świeżym udanym biegu Dyżurnego (/start, sukces albo /fail)."""
+    from news.puls_zewnetrzny import run
+    return run()
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def terminy_task():
+    """Codziennie 6:15 (Z3): domeny (RDAP), TLS, DNS, salda API, token GitHub; alarmy 30/14/3 dni i ważny mail."""
+    from news.terminy_zewnetrzne import run
+    return run()
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
 def zamowienia_publiczne_task():
     """Codziennie 8:10: ogłoszenia BZP o strony, BIP i WCAG -> sygnały ze szkicem oferty (bez AI, bez wysyłki do zamawiających)."""
     from news import agent_registry

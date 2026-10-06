@@ -28,6 +28,19 @@ setv MEDIA_WATCH_ENABLED true
 grep -q '^FACTCHECK_API_KEY=.' "$ENV" && setv FACTCHECK_ENABLED true || echo 'Fakty: brak FACTCHECK_API_KEY - pętla czeka na klucz'
 grep -q '^PRZESZLOSC_ENABLED=true' "$ENV" && echo 'PRZESZLOSC_ENABLED: ok' || echo 'UWAGA: brak PRZESZLOSC_ENABLED=true'
 grep -q '^SOURCE_MAIL_SMTP_HOST=.' "$ENV" && echo 'SMTP: ok' || echo 'UWAGA: brak SOURCE_MAIL_SMTP_HOST'
+# Przegląd architekta 7.10 (Z1-Z3): kopia poza serwer (B2), puls z zewnątrz, kolejka Issues. Wartości wkleja właściciel; tu tylko stan.
+for v in B2_KEY_ID B2_APP_KEY B2_BUCKET HEALTHCHECK_URL GITHUB_ISSUES_TOKEN; do
+  grep -q "^$v=." "$ENV" && echo "$v: ok" || echo "UWAGA: brak $v w $ENV"
+done
+if ! grep -q '^BACKUP_PASSPHRASE=.' "$ENV"; then
+  echo "BACKUP_PASSPHRASE=$(openssl rand -base64 48 | tr -d '\n=/+')" >> "$ENV"
+  echo '!!! NOWE HASŁO KOPII: BACKUP_PASSPHRASE zapisane w .env.production. Zapisz je TERAZ w menedżerze haseł'
+  echo '!!! (bez niego kopii w B2 nie da się odczytać): grep ^BACKUP_PASSPHRASE= /srv/spin-clinic/.env.production'
+else
+  echo 'BACKUP_PASSPHRASE: ok (istnieje; ma być w menedżerze haseł właściciela)'
+fi
+grep -q '^GITHUB_ISSUES_TOKEN_CREATED=.' "$ENV" || { grep -q '^GITHUB_ISSUES_TOKEN=.' "$ENV" && setv GITHUB_ISSUES_TOKEN_CREATED "$(date +%F)"; } || true
+grep -q '^EXPECTED_SERVER_IP=' "$ENV" || setv EXPECTED_SERVER_IP 148.113.242.109
 
 echo '== 2. Budowa i restart'
 $DC up -d --build --force-recreate
@@ -104,4 +117,22 @@ for i in live.select_related('source')[:20]: print('  ',i.source_id,i.source.nam
 n=live.update(daily_request_cap=50)
 print('ustawiono limit 50/dobę dla:',n)
 "
+echo '== 10. Kopia poza serwer (B2), puls z zewnątrz, terminy zewnętrzne, kolejka Issues (przegląd architekta 7.10)'
+chmod +x deploy/backup.sh
+( crontab -l 2>/dev/null | grep -v 'deploy/backup.sh' ; echo '30 3 * * * /srv/spin-clinic/deploy/backup.sh >> /srv/backups/backup.log 2>&1' ) | crontab -
+echo "cron kopii: $(crontab -l | grep -c 'deploy/backup.sh') wpis (3:30)"
+if grep -q '^B2_BUCKET=.' "$ENV"; then
+  echo '-- pierwsza kopia do B2 (rozmiar i „KOPIA OK” poniżej):'
+  sh deploy/backup.sh | tail -4
+  echo '-- test odtworzenia pierwszej kopii (pobranie, odszyfrowanie, spójność zrzutu):'
+  $M kopia_zapasowa --test-odtworzenia | tail -2 || echo 'UWAGA: test odtworzenia nie przeszedł - wklej Claude wynik powyżej'
+else
+  echo 'B2: pomijam (brak B2_BUCKET) - kopia tylko lokalna, Dyżurny tego nie pilnuje'
+fi
+echo '-- pierwszy puls do healthchecks.io:'
+$M puls_zewnetrzny --raz | tail -2
+echo '-- terminy zewnętrzne (domeny, TLS, DNS, salda, token):'
+$M terminy_zewnetrzne --sprawdz | tail -40
+echo '-- kolejka budowy: zatwierdzone bilety S/M -> GitHub Issues:'
+$M shell -c "from news.sprint_github import export_issues; print(export_issues())"
 echo 'GOTOWE'

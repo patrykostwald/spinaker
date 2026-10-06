@@ -73,6 +73,10 @@ class BuildTicket(models.Model):
     executor = models.CharField(max_length=6, default='claude', choices=[(v, v) for v in ('claude', 'codex')])
     status = models.CharField(max_length=12, default='proposed', db_index=True, choices=[(v, v) for v in STATUSES])
     commit = models.CharField(max_length=64, blank=True)
+    # Kolejka budowy (Z1): numer i adres Issue w GitHub (sprint_github.export_issues); puste = nie wyeksportowany (np. L).
+    issue_number = models.PositiveIntegerField(null=True, blank=True)
+    issue_url = models.URLField(blank=True)
+    issue_closed_at = models.DateTimeField(null=True, blank=True)
     due_date = models.DateField(null=True, blank=True)
     decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
     decided_at = models.DateTimeField(null=True, blank=True)

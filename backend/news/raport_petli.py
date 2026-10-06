@@ -103,6 +103,15 @@ CONTRACTS = (
     contract('dyrygent', 'Dyrygent', 'niezawodnosc', 24, 'claude:sprint', 7, agents=('dyrygent',), beats=('dyrygent-15m',), registry='dyrygent'),
     contract('dyzurny', 'Dyżurny', 'niezawodnosc', 1, 'owner:panel', 1, beats=('duty-15m',), registry='duty'),
     contract('raport-petli', 'Raport pętli', 'niezawodnosc', 24, 'owner:mail', 1, beats=('raport-petli-daily',), registry='raport-petli'),
+    # Przegląd architekta 7.10 (Z1-Z3): wynik kopii = udana kopia zdalna (licznik ze stanu), puls i terminy = puls zadania
+    contract('kopia', 'Kopia', 'niezawodnosc', 24, 'owner:mail', 1, beats=('kopia-kontrola-daily',), registry='kopia', counter='backups',
+             title='Kopia poza serwer (B2) i test odtworzenia'),
+    contract('puls', 'Puls', 'niezawodnosc', 1, 'owner:mail', 1, beats=('puls-zewnetrzny-5m',), registry='puls-zewnetrzny',
+             title='Puls z zewnątrz (healthchecks.io)'),
+    contract('terminy', 'Terminy', 'niezawodnosc', 24, 'owner:mail', 3, beats=('terminy-daily',), registry='terminy',
+             title='Terminy zewnętrzne (domeny, TLS, DNS, salda, token)'),
+    contract('issues', 'Issues', 'agenci', 24, 'claude:sprint', 7, beats=('sprint-export',), registry='sprint-export',
+             title='Kolejka budowy (GitHub Issues)'),
     # Konsylium
     contract('ekspert', 'Ekspert AI', 'konsylium', 168, 'agent:recruiter', 14, agents=('ekspert',), beats=('ekspert-ai-daily',),
              registry='ekspert-ai'),
@@ -253,6 +262,9 @@ def _counter(c, since):
     elif name == 'seba':
         from news.agent_models import SebaReview
         rows, field = SebaReview.objects.exclude(status='queued'), 'due_at'
+    elif name == 'backups':
+        from news.kopia_zapasowa import runs_since
+        return runs_since(since)
     else:
         return None, None
     return rows.filter(**{field + '__gte': since}).count(), rows.aggregate(at=Max(field))['at']
@@ -385,7 +397,7 @@ def build(now=None):
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
             'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build(),
-            'baza': _baza(), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now)}
+            'baza': _baza(), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now), 'zewnetrzne': _zewnetrzne(now)}
 
 
 def _mozliwosci(now):
@@ -395,6 +407,19 @@ def _mozliwosci(now):
         return report_lines(now)
     except Exception:  # noqa: BLE001 - raport zawsze wychodzi
         return []
+
+
+def _zewnetrzne(now):
+    """Przegląd architekta 7.10: kopia poza serwer (Z2), terminy zewnętrzne i puls (Z3), kolejka Issues (Z1). Bez sieci."""
+    from news import kopia_zapasowa, puls_zewnetrzny, sprint_github, terminy_zewnetrzne
+    out = {'kopia': '', 'terminy': [], 'puls': '', 'issues': ''}
+    for key, loader in (('kopia', kopia_zapasowa.report_line), ('terminy', terminy_zewnetrzne.report_lines),
+                        ('puls', puls_zewnetrzny.report_line), ('issues', sprint_github.report_line)):
+        try:
+            out[key] = loader(now)
+        except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+            pass
+    return out
 
 
 def _koszty(now):
@@ -519,10 +544,18 @@ def text(report):
     if report.get('baza'):
         lines.append('== Zasilanie bazy (historia źródeł) ==')
         lines += [clean(line) for line in report['baza']] + ['']
+    zew = report.get('zewnetrzne') or {}
+    if zew.get('kopia') or zew.get('puls') or zew.get('terminy'):
+        lines.append('== Kopia, puls i terminy zewnętrzne ==')
+        lines += [clean(line) for line in (zew.get('kopia'), zew.get('puls')) if line]
+        lines += [clean(line) for line in zew.get('terminy') or []]
+        lines.append('')
     sprint = report.get('sprint') or {}
     lines.append('== Sprint tygodnia ==')
     lines.append(f"Otwarte bilety: {sprint.get('open', 0)} (czeka na decyzję: {sprint.get('proposed', 0)}, "
                  f"zatwierdzone: {sprint.get('approved', 0)}, po terminie: {sprint.get('overdue', 0)})")
+    if zew.get('issues'):
+        lines.append(clean(zew['issues']))
     lines += [f"- PO TERMINIE #{t['id']} {clean(t['title'])} (termin {t['due']}, {t['executor']})" for t in sprint.get('overdue_list', [])]
     lines += [f"- #{t['id']} {clean(t['title'])} (termin {t['due']}, {t['executor']})" for t in sprint.get('approved_list', [])
               if t not in sprint.get('overdue_list', [])]

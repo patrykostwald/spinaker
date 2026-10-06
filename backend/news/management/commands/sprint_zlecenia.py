@@ -32,6 +32,10 @@ class Command(BaseCommand):
             sprint.close(ticket, options['commit'].strip())
             out(f'Bilet #{ticket.pk} zrobiony ({ticket.commit}). Notatka źródłowa: '
                 f"{'#' + str(ticket.note_id) + ' ' + ticket.note.status if ticket.note else 'brak'}.")
+            from news import sprint_github
+            if ticket.issue_number:
+                closed = sprint_github.close_issue(ticket)
+                out(f'Issue #{ticket.issue_number}: ' + ('zamknięte.' if closed else 'nie zamknięte teraz (brak tokena albo sieci) - zamknie zadanie sprint-export 6:20.'))
             return
         if options['biore']:
             ticket = BuildTicket.objects.filter(pk=options['biore'], status='approved').first()

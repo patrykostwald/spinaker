@@ -123,6 +123,19 @@ for task, name, env in (
                            'news.tasks.' + task, env, collector=True)
 
 
+# Przegląd architekta 7.10 (Z1-Z3): kolejka budowy, kopia poza serwer, puls z zewnątrz, terminy zewnętrzne. Bez AI.
+REGISTRY['sprint-export'] = agent('Kolejka budowy (GitHub Issues)', 'Codziennie o 6:20 zatwierdzone bilety sprintu S/M stają się Issues w repo '
+                                  '(treść zlecenia, kryteria odbioru, etykiety wysiłku i obszaru); zrobione bilety zamykają Issue. Bilety L zostają dla Claude w sesji. '
+                                  'Token tylko do Issues jednego repo; bez tokena pętla śpi.', 'news.tasks.sprint_export_task', default=True)
+REGISTRY['kopia'] = agent('Kopia poza serwer', 'Co noc o 3:30 (cron) zaszyfrowana kopia bazy i małych plików trafia do Backblaze B2 (30 dni), o 4:30 '
+                          'kontrola: świeża kopia zdalna, rozmiar poniżej 8 GB, 1. dnia miesiąca test odtworzenia (pobranie, odszyfrowanie, spójność zrzutu).',
+                          'news.tasks.kopia_task', default=True)
+REGISTRY['puls-zewnetrzny'] = agent('Puls z zewnątrz', 'Co 5 minut ping do healthchecks.io, ale tylko gdy Dyżurny ma świeży udany bieg - padnięcie '
+                                    'serwera, beat albo workera zauważy serwis zewnętrzny i napisze do właściciela.', 'news.tasks.puls_zewnetrzny_task', default=True)
+REGISTRY['terminy'] = agent('Terminy zewnętrzne', 'Codziennie o 6:15 bez AI: wygaśnięcie domen (RDAP), certyfikatów TLS, rekord A serwera, kredyty '
+                            'OpenRouter i limit X, ważność tokena GitHub, dostępność Codexa; ostrzeżenia 30/14/3 dni przed terminem.',
+                            'news.tasks.terminy_task', default=True)
+
 REGISTRY['zasil-baze'] = agent(
     'Zasilanie bazy', 'Co noc (01:00-06:00) i przed północą dociąga całą historię włączonych źródeł od początku X kadencji '
     '(TED 12 miesięcy, KRS wszystkie obserwowane podmioty) w osobnym limicie, w granicach kart dostępu; gotowe źródła '

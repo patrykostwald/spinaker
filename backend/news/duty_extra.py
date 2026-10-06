@@ -128,9 +128,11 @@ def check_daily_products(ctx):
 
 
 from news import petle_bezpieczniki  # noqa: E402 - bezpieczniki pętli agentów (audyt pętli 5.10)
+from news.kopia_zapasowa import check_backup  # noqa: E402 - kopia poza serwer (Z2): brak kopii > 26 h = krytyczny
+from news.terminy_zewnetrzne import check_terminy  # noqa: E402 - domena, TLS, DNS, salda, token (Z3)
 
 CHECKS = (check_x_collector, check_model_providers, check_diagnoses_today, check_public_threads, check_daily_products,
-          *petle_bezpieczniki.CHECKS)
+          *petle_bezpieczniki.CHECKS, check_backup, check_terminy)
 
 
 def notify_owner(now):

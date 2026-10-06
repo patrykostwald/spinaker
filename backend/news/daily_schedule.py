@@ -56,6 +56,11 @@ BEAT_PLAN = {
     'zamowienia-daily': ('zamowienia_publiczne_task', {'hour': 8, 'minute': 10}),  # ruch 7: ogłoszenia BZP o strony i WCAG
     'zapytania-1h': ('sales_leads_task', {'minute': 50}),  # ruchy 6 i 9: ponowienia maili, powiadomienia właściciela, usuwanie niepotwierdzonych
     'schedule-health-6h': ('schedule_health_task', {'hour': '*/6', 'minute': 5}),
+    # Przegląd architekta 7.10 (Z1-Z3): kolejka budowy, kopia poza serwer, puls z zewnątrz, terminy zewnętrzne.
+    'sprint-export': ('sprint_export_task', {'hour': 6, 'minute': 20}),  # Z1: zatwierdzone bilety S/M -> GitHub Issues
+    'kopia-kontrola-daily': ('kopia_task', {'hour': 4, 'minute': 30}),  # Z2: kontrola kopii w B2 (cron 3:30 ją tworzy), 1. dnia test odtworzenia
+    'puls-zewnetrzny-5m': ('puls_zewnetrzny_task', {'minute': '2-59/5'}),  # Z3: ping do healthchecks.io tylko przy świeżym Dyżurnym
+    'terminy-daily': ('terminy_task', {'hour': 6, 'minute': 15}),  # Z3: domena (RDAP), TLS, DNS, salda API, token GitHub
 }
 
 
