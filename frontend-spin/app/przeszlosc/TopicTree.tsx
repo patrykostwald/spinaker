@@ -4,6 +4,7 @@ import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, day, nb, nice, personHref, plural, reduced, short, spinColor, text, useStandalone } from './ui';
 import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
+import { WMediach, type MediaItem } from './WMediach';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -280,10 +281,9 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
   const shown = more ? events : events.slice(0, 10);
   // osoby najpierw, instytucje i konta partii po nich (audyt 6.10: instytucja to nie osoba)
   const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => Number(Boolean(a.institution)) - Number(Boolean(b.institution)) || b.links - a.links);
-  const media = new Map<string, number>();
-  for (const n of data.nodes) if (n.kind === 'media' && n.sub) media.set(n.sub, (media.get(n.sub) ?? 0) + 1);
-  const mediaRows = [...media.entries()].sort((a, b) => b[1] - a[1]);
-  const mediaMax = Math.max(1, ...mediaRows.map(([, n]) => n));
+  // „W mediach” (właściciel 6.10): osobna grupa artykułów; tylko tytuł, data, redakcja i odnośnik do oryginału
+  const mediaItems: MediaItem[] = data.nodes.filter(n => n.kind === 'media' && n.url)
+    .map(n => ({ id: n.id, outlet: n.sub ?? 'Media', date: n.date ?? null, title: n.label, url: n.url! }));
   if (!data.nodes.length) return <p className="px-msg">Nic nie znaleźliśmy. Spróbuj innego słowa.</p>;
   const counts = ([['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
     ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['record', 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu'], ['media', 'artykuł', 'artykuły', 'artykułów'],
@@ -311,6 +311,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
 
     <div className="px-grid">
       <div className="px-main">
+        <WMediach items={mediaItems} />
         <SejmPath data={data} />
         {Boolean(data.votes?.length) && <Votes votes={data.votes!} />}
         <section className="px-time" aria-labelledby="os-h">
@@ -379,11 +380,6 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
           {people.length > 6 && <button type="button" className="px-more px-more--people" onClick={() => setAllPeople(!allPeople)}>{allPeople ? 'Pokaż mniej' : `Pokaż wszystkie (${Math.min(people.length, 16)})`}</button>}
           <p className="px-note">Funkcje w&nbsp;KRS to kontekst osoby, nie dowód związku z&nbsp;tematem.</p>
         </section>
-        {mediaRows.length > 0 && <section className="px-card" aria-labelledby="media-h">
-          <h3 id="media-h" className="px-h3">Źródła medialne</h3>
-          <ul className="px-media">{mediaRows.slice(0, 8).map(([name, n]) => <li key={name}><span title={name}>{name}</span><i><b style={{ width: `${(100 * n) / mediaMax}%` }} /></i><em>{n}</em></li>)}</ul>
-          <p className="px-note">{nb('Pokazujemy, co jest w naszej bazie. Przewaga jednej redakcji to informacja o bazie, nie o temacie.')}</p>
-        </section>}
         <TopicFunds funds={data.eu_funds} />
       </aside>
     </div>

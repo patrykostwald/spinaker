@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, day, nb, plural, short, spinColor, text, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
+import { WMediach } from './WMediach';
 
 /**
  * Profil osoby bez tematu (sprint 1, właściciel 6.10: „najlepsze narzędzie OSINT”): wszystko o jednej osobie publicznej
@@ -153,6 +154,8 @@ function ProfileView({ data }: { data: Profile }) {
           })}</ol>
           {shown.length > 12 && <button type="button" className="px-more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${shown.length})`}</button>}
         </section>
+        {/* „W mediach” (właściciel 6.10): potwierdzone artykuły o osobie; tylko tytuł, data, redakcja i odnośnik */}
+        <WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url }))} />
       </div>
       <aside className="px-side">
         <section className="px-card" aria-labelledby="pp-roles-h">

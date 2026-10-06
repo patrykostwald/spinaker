@@ -135,4 +135,15 @@ echo '-- terminy zewnętrzne (domeny, TLS, DNS, salda, token):'
 $M terminy_zewnetrzne --sprawdz | tail -40
 echo '-- kolejka budowy: zatwierdzone bilety S/M -> GitHub Issues:'
 $M shell -c "from news.sprint_github import export_issues; print(export_issues())"
+echo '== 11. Media: karty „tylko metadane” dla redakcji z publicznym RSS (właściciel 6.10; najpierw plan, potem zapis; idempotentne)'
+$M zatwierdz_media_metadane --plan | tail -30
+$M zatwierdz_media_metadane | tail -30
+$M shell -c "
+from news.models import Source, SourceAccessInstruction as I
+media = Source.objects.filter(source_type__in=('portal', 'newspaper', 'rss')).exclude(rss_url='')
+print('karty metadanych mediów (tryb media_metadata_only):', I.objects.filter(status='approved', evidence__mode='media_metadata_only').count())
+print('media z RSS aktywne:', media.filter(is_active=True, scrape_enabled=True).count(), 'z', media.count())
+print('media wciąż bez karty (no_approved_instruction):', media.filter(last_error='no_approved_instruction').count())
+print('media pominięte przez robots/TDM:', media.filter(last_error__startswith='robots_').count() + media.filter(last_error__startswith='tdm_').count())
+"
 echo 'GOTOWE'
