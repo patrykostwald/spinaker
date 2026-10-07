@@ -18,6 +18,7 @@ from news.admin_finance import admin_wallets
 from news.social_publish import serve_video
 from news.social_api import (SocialQueueView, SocialPublicationView, SocialPublishedView,
     SocialTasksView, StaffSocialTasksView, StaffSocialTaskDetailView, SocialPasswordResetConfirmView)
+from news.puls import puls
 from news.views import source_coverage, archive_status, health, me, google_news, patronite_webhook, editorial_status
 from news.auth_views import csrf, sign_in, sign_out
 from news.editorial import EditorialThreadViewSet, EditorialArticleViewSet
@@ -178,6 +179,7 @@ urlpatterns = [
     path("auth/login/", sign_in),
     path("auth/logout/", sign_out),
     path("health/", health),
+    path("puls/", puls),
     path("me/", me),
     path("admin/google-news/", google_news),
     path("patronite/webhook/", patronite_webhook),
