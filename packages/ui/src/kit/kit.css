@@ -11120,3 +11120,6 @@ a.sc-sp-meta__who:hover { text-decoration: underline; text-underline-offset: 3px
 .sc-message-tone [data-tone="osiagniecie"] .sc-message-tone__bar > span, .sc-message-tone [data-tone="osiagniecie"] i { background: var(--sc-positive); opacity: .7; }
 .sc-message-tone [data-tone="apel"] .sc-message-tone__bar > span, .sc-message-tone [data-tone="apel"] i { background: var(--sc-accent); opacity: .7; }
 @media (max-width: 760px) { .sc-message-metrics { gap: 8px; } .sc-message-metrics dd strong { font-size: 22px; } .sc-message-card .sc-message-card__thesis { min-height: 0; } }
+/* Przekaz dnia: teza do 4 linii (obecne tezy mają 4 linie na komputerze), miary w obu kartach na tej samej wysokości */
+.sc-message-card .sc-message-card__thesis { min-height: 5.4em; }
+@media (max-width: 760px) { .sc-message-card .sc-message-card__thesis { min-height: 0; } }
