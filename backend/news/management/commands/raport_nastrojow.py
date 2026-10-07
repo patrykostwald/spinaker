@@ -29,6 +29,8 @@ class Command(BaseCommand):
         parser.add_argument('--wyslij', action='store_true', help='Wyślij skrót mailem na adres administratora.')
         parser.add_argument('--zachowaj', action='store_true', help='Debugowanie: zapisz surowe dane (JSON) obok raportu; domyślnie są kasowane.')
         parser.add_argument('--plan', action='store_true', help='Tylko szacunek: liczniki X i lista filmów, bez odczytu wpisów i bez modelu.')
+        parser.add_argument('--z-pliku', default='', help='Oceń teksty z pliku (CSV poprzedniego raportu, JSONL albo JSON pamięci podręcznej) zamiast pobierać.')
+        parser.add_argument('--swiezo', action='store_true', help='Pomiń pamięć podręczną (24 h) i pobierz teksty na nowo (płatne odczyty X).')
 
     def handle(self, *args, **opts):
         od = _date(opts['od']) if opts['od'] else None
@@ -38,7 +40,7 @@ class Command(BaseCommand):
             if opts['plan']:
                 return self._plan(nastroje.plan(opts['fraza'], days=opts['dni'], limit=limit, yt_limit=yt_limit, od=od, do=do))
             result = nastroje.run(opts['fraza'], days=opts['dni'], limit=limit, yt_limit=yt_limit, title=opts['tytul'], topic=opts['temat'],
-                                  od=od, do=do, keep_raw=opts['zachowaj'])
+                                  od=od, do=do, keep_raw=opts['zachowaj'], source_file=opts['z_pliku'], refresh=opts['swiezo'])
         except nastroje.NastrojeError as error:
             raise CommandError(f'{error.code}: {error.detail}')
         self.stdout.write(nastroje.summary_text(result))
@@ -65,4 +67,5 @@ class Command(BaseCommand):
                           f"(~{est['yt_units']} jednostek, zostało {plan['yt_units_left']}), {est['mercury_calls']} wywołań Mercury "
                           f"(~{est['mercury_tokens']} tokenów)")
         self.stdout.write(f"X skonfigurowane: {tak(plan['x_configured'])}; dzienny limit odczytów X (X_REPLIES_DAILY_CAP): {plan['daily_cap']}; "
-                          f"Mercury gotowy: {tak(plan['mercury_ready'])}")
+                          f"Mercury gotowy: {tak(plan['mercury_ready'])}; darmowe modele Konsylium w zapasie: "
+                          f"{', '.join(plan['council_models']) or 'brak'}; teksty w pamięci podręcznej: {tak(plan['cached'])}")

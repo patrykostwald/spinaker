@@ -217,9 +217,12 @@ def test_full_run_all_sources_budget_files_and_anonymity(monkeypatch, tmp_path):
     s = result['summary']
     assert s['by_source']['x']['pozytyw'] == 2 and s['by_source']['x']['negatyw'] == 1 and s['by_source']['youtube']['pozytyw'] == 2
     assert s['by_source']['youtube']['negatyw'] == 1 and s['by_source']['media']['neutralny'] == 1 and s['by_source']['wykop']['n'] == 0
-    assert s['weighted']['udzial'] == pytest.approx(2 / 3) and set(s['weighted']['wagi']) == {'x', 'youtube'}
+    # łączny wynik: pula wszystkich opinii ze znakiem (4 z 6), udział źródeł w puli po liczbie opinii, mała próba poniżej 30
+    assert s['pooled']['udzial'] == pytest.approx(2 / 3) and s['pooled']['n'] == 6 and s['pooled']['small'] is True
+    assert s['pooled']['wagi'] == {'x': pytest.approx(0.5), 'youtube': pytest.approx(0.5)}
     assert s['social'] == {'n': 7, 'pozytyw': 4, 'negatyw': 2, 'neutralny': 1, 'nie_na_temat': 0, 'udzial': pytest.approx(2 / 3),
-                           'od': pytest.approx(0.300, abs=0.001), 'do': pytest.approx(0.903, abs=0.001)}
+                           'od': pytest.approx(0.300, abs=0.001), 'do': pytest.approx(0.903, abs=0.001), 'small': True}
+    assert result['meta']['models'] == {'mercury-2': 8} and result['meta']['unrated'] == 0
     assert s['volume'] == {'2026-10-04': 1, '2026-10-05': 40, '2026-10-06': 25, '2026-10-07': 4} and s['premiere'] == '2026-10-05'
     assert list(s['by_day']) == ['2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'] and s['by_day']['2026-10-04']['n'] == 0
     assert set(s['by_topic']) == {'smak', 'cena', 'osoba', 'marketing'}
@@ -230,6 +233,10 @@ def test_full_run_all_sources_budget_files_and_anonymity(monkeypatch, tmp_path):
     assert 'Test pizza' in html and '67%' in html and 'premiera?' in html and 'Facebook, Instagram i TikTok' in html
     assert '@ksiazulo' not in html and 't.co' not in html and 'Jan Kowalski' not in html and '7002' not in html and 'bez nazwy autora' in html
     assert html.count('<tr><td>') == 5 and 'Wykop (wpisy)' in html and 'Fora i blogi (RSS)' in html
+    # wygląd przeszłość.today: znak w nagłówku, noindex, etykieta małej próby, modele z liczbą ocenionych tekstów, bez spin.clinic w nagłówku
+    assert 'aria-label="przeszłość.today"' in html and 'noindex' in html and 'mała próba' in html and 'mercury-2: 8' in html
+    assert 'raport nastrojów' in html and 'Bez łącznego wyniku' not in html
+    assert '-surowe' not in result['raw'] and Path(result['meta']['cache']).exists() and '7001' not in Path(result['meta']['cache']).read_text(encoding='utf-8')
     csv_text = Path(result['csv']).read_text(encoding='utf-8')
     assert csv_text.count('\n') == 9 and '@' not in csv_text and 'UC1' not in csv_text and '7002' not in csv_text
     assert csv_text.splitlines()[0] == 'zrodlo;dzien;ocena;temat;powod;polubienia;tekst_skrocony'
@@ -253,7 +260,7 @@ def test_pagination_stops_at_limit_and_budget_cap(monkeypatch):
     assert result['meta']['raw']['x'] == 25 and result['meta']['reads'] == 30
     monkeypatch.setenv('X_REPLIES_DAILY_CAP', '35')
     FakeX(monkeypatch, pages=[rows, rows])
-    result = nastroje.run(['pizza Książulo'], limit=200)
+    result = nastroje.run(['pizza Książulo'], limit=200, refresh=True)
     assert 'budżet X: daily_cap' in result['meta']['stopped'] and result['meta']['raw'].get('x', 0) == 0
 
 
@@ -267,8 +274,112 @@ def test_errors_are_reported_not_raised(monkeypatch):
     FakeX(monkeypatch), FakeYT(monkeypatch, search={'items': []})
     FakeMercury(monkeypatch, answer=False)
     result = nastroje.run(['pizza Książulo'], limit=40)
-    assert result['meta']['unrated'] == 4 and result['meta']['calls'] == 0 and any('Mercury' in s for s in result['meta']['stopped'])
-    assert 'Brak opinii z wyraźnym znakiem' in nastroje.summary_text(result)
+    # Mercury odmówił, w Konsylium nie ma skonfigurowanych darmowych modeli, Groq/NIM z env też nie: wszystko nieocenione, bez łącznego procentu
+    assert result['meta']['unrated'] == 4 and result['meta']['calls'] == 0 and result['meta']['models'] == {}
+    stopped = result['meta']['stopped'][-1]
+    assert stopped.startswith('Żadna darmowa trasa nie oceniła 4 z 4 tekstów') and 'Mercury' in stopped and 'free_models_unavailable' in stopped
+    assert 'BEZ ŁĄCZNEGO WYNIKU: 4 z 4 tekstów nieocenionych' in nastroje.summary_text(result)
+    html = Path(result['html']).read_text(encoding='utf-8')
+    assert 'Bez łącznego wyniku: 4 z 4 tekstów' in html and '<b class="num">-</b>' in html and 'żaden model nie odpowiedział' in html
+
+
+def test_classification_falls_back_to_free_council_models_and_env_models(monkeypatch):
+    FakeX(monkeypatch), FakeYT(monkeypatch, search={'items': []}), FakeMercury(monkeypatch, answer=False)
+    from news.clinic_ai import ClinicAIError
+    asked, skip_first = [], [True]
+
+    def council_ask(member, system, user, schema, max_tokens):
+        asked.append((member, json.loads(user)))
+        if member[1] == 'padniety':
+            raise ClinicAIError('groq_rate_limit')
+        texts = json.loads(user)['teksty']
+        if skip_first[0]:  # model pomija pierwszy tekst: wraca w drugim przebiegu
+            texts, skip_first[0] = texts[1:], False
+        return {'oceny': [{'i': t['i'], 'ocena': 'pozytyw' if 'dobra' in t['tekst'] or 'świetną' in t['tekst'] else 'negatyw', 'temat': 'smak', 'powod': 'Test.'}
+                          for t in texts]}
+
+    def no_free_chat(system, user, schema, max_tokens):
+        raise ClinicAIError('free_models_unavailable')
+    monkeypatch.setattr(nastroje, '_council_members', lambda: [('groq', 'padniety'), ('groq', 'wolny-model')])
+    monkeypatch.setattr(nastroje, '_council_ask', council_ask)
+    monkeypatch.setattr(nastroje, '_free_chat', no_free_chat)
+    result = nastroje.run(['pizza Książulo'], limit=40)
+    m = result['meta']
+    assert m['unrated'] == 0 and m['models'] == {'wolny-model': 4} and m['calls'] == 2
+    assert [a[0][1] for a in asked] == ['padniety', 'wolny-model', 'wolny-model'] and len(asked[2][1]['teksty']) == 1
+    assert any(r.startswith('Mercury: paczka bez odpowiedzi') for r in m['routes']) and 'padniety: groq_rate_limit' in m['routes']
+    assert not any(s.startswith('Żadna darmowa trasa') for s in m['stopped'])
+    assert 'wolny-model: 4' in nastroje.summary_text(result)
+    # Konsylium bez wolnych modeli: ostatnia trasa to Groq/NIM z env (clinic_ai._free_chat)
+    FakeX(monkeypatch), FakeMercury(monkeypatch, answer=False)
+    monkeypatch.setattr(nastroje, '_council_members', lambda: [])
+    monkeypatch.setattr(nastroje, '_free_chat', lambda system, user, schema, max_tokens: (
+        {'oceny': [{'i': t['i'], 'ocena': 'neutralny', 'temat': 'inne', 'powod': 'x'} for t in json.loads(user)['teksty']]}, 'nim/env-model'))
+    result = nastroje.run(['pizza Książulo'], limit=40, refresh=True)
+    assert result['meta']['models'] == {'nim/env-model': 4} and result['meta']['unrated'] == 0
+
+
+def test_mercury_budget_refusal_is_named_and_mercury_is_dropped_for_the_run(monkeypatch):
+    FakeX(monkeypatch), FakeYT(monkeypatch, search={'items': []}), FakeMercury(monkeypatch, answer=False)
+    monkeypatch.setenv('INCEPTION_DAILY_TOKENS', '1')
+    monkeypatch.setattr(nastroje, '_council_members', lambda: [])
+    result = nastroje.run(['pizza Książulo'], limit=40)
+    assert 'Mercury: pułap dzienny tokenów (INCEPTION_DAILY_TOKENS)' in result['meta']['routes'][0]
+    monkeypatch.delenv('INCEPTION_DAILY_TOKENS')
+    monkeypatch.setenv('INCEPTION_NO_TRAINING', 'false')
+    result = nastroje.run(['pizza Książulo'], limit=40)
+    assert 'INCEPTION_NO_TRAINING nie jest true' in result['meta']['routes'][0]
+
+
+def test_pooled_share_weights_sources_by_their_opinions_and_marks_small_samples():
+    by_source = {s: nastroje.share([]) for s in nastroje.SOURCES}
+    by_source['x'] = dict(by_source['x'], n=33, pozytyw=10, negatyw=23, small=True)
+    by_source['youtube'] = dict(by_source['youtube'], n=429, pozytyw=34, negatyw=395, small=False)
+    by_source['media'] = dict(by_source['media'], n=20, pozytyw=20, negatyw=0, small=True)  # media nie wchodzą do puli
+    pooled = nastroje.pooled(by_source)
+    assert pooled['n'] == 462 and pooled['pozytyw'] == 44 and pooled['udzial'] == pytest.approx(44 / 462) and pooled['small'] is False
+    assert pooled['wagi'] == {'x': pytest.approx(33 / 462), 'youtube': pytest.approx(429 / 462)}
+    assert pooled['od'] == pytest.approx(0.072, abs=0.002) and pooled['do'] == pytest.approx(0.125, abs=0.002)
+    assert nastroje.share([{'label': 'pozytyw'}] * 29)['small'] is True and nastroje.share([{'label': 'pozytyw'}] * 30)['small'] is False
+    assert nastroje.share([])['small'] is False
+
+
+def test_cache_reuses_texts_for_24_hours_and_file_input_skips_fetching(monkeypatch, tmp_path):
+    x, mercury = FakeX(monkeypatch), FakeMercury(monkeypatch)
+    FakeYT(monkeypatch, search={'items': []})
+    first = nastroje.run(['pizza Książulo'], limit=40, od=date(2026, 10, 4), do=date(2026, 10, 7))
+    assert len(x.calls) == 1 and first['meta']['cache'].endswith('.json')
+    first_csv = tmp_path / 'pierwszy.csv'
+    first_csv.write_bytes(Path(first['csv']).read_bytes())
+    cached = json.loads(Path(first['meta']['cache']).read_text(encoding='utf-8'))
+    assert cached['expires'] == '2026-10-08T12:00:00+00:00' and all(set(p) == {'src', 'text', 'likes', 'created_at', 'video', 'outlet'} for p in cached['posts'])
+    assert '7001' not in json.dumps(cached) and 'label' not in json.dumps(cached['posts'])
+    # drugi przebieg: ten sam zakres i frazy - bez pobierania, te same liczby, nowa ocena
+    broken = FakeX(monkeypatch, error=PoliticalReadError('x_http_429', 429, 300))
+    second = nastroje.run(['Pizza  Książulo'], limit=40, od=date(2026, 10, 4), do=date(2026, 10, 7))
+    assert broken.calls == [] and second['meta']['kept'] == first['meta']['kept'] and second['meta']['reads'] == 8
+    assert second['summary']['pooled'] == first['summary']['pooled'] and second['meta']['stopped'][0].startswith('Teksty z pamięci podręcznej (pobrane 07.10.2026 14:00')
+    assert len(mercury.payloads) == 2 and second['meta']['cache'] == ''
+    # --swiezo: pobieranie na nowo
+    third = nastroje.run(['pizza Książulo'], limit=40, od=date(2026, 10, 4), do=date(2026, 10, 7), refresh=True)
+    assert len(broken.calls) == 1 and 'X: x_http_429' in third['meta']['stopped']
+    # po 24 h wpis znika
+    later = NOW + timedelta(hours=25)
+    monkeypatch.setattr(timezone, 'now', lambda: later)
+    assert nastroje.cache_sweep() == 1 and not list(Path(first['meta']['cache']).parent.glob('*.json'))
+    # --z-pliku: CSV poprzedniego raportu (bez autorów) oceniany od nowa, bez żadnego źródła
+    monkeypatch.setattr(timezone, 'now', lambda: NOW)
+    fresh = FakeX(monkeypatch)
+    from_file = nastroje.run(['pizza Książulo'], limit=40, source_file=str(first_csv))
+    assert fresh.calls == [] and from_file['meta']['kept'] == {'x': 4} and from_file['meta']['unrated'] == 0 and from_file['meta']['cache'] == ''
+    assert from_file['meta']['stopped'][0].startswith('Teksty z pliku ') and from_file['summary']['by_source']['x']['pozytyw'] == 2
+    jsonl = tmp_path / 'teksty.jsonl'
+    jsonl.write_text('{"src": "wykop", "text": "Pizza zaskakująco dobra @ktoś", "likes": 3, "created_at": "2026-10-06T10:00:00+02:00"}\n'
+                     '{"src": "facebook", "text": "pominięte"}\n', encoding='utf-8')
+    from_jsonl = nastroje.run(['pizza Książulo'], source_file=str(jsonl))
+    assert from_jsonl['meta']['kept'] == {'wykop': 1} and '@' not in Path(from_jsonl['csv']).read_text(encoding='utf-8')
+    with pytest.raises(nastroje.NastrojeError, match='brak_pliku'):
+        nastroje.run(['pizza Książulo'], source_file=str(tmp_path / 'nie-ma.csv'))
 
 
 def test_youtube_quota_guard_stops_before_request(monkeypatch, settings):
@@ -355,9 +466,13 @@ def test_command_prints_summary_and_mails_admin(monkeypatch):
     call_command('raport_nastrojow', '--fraza', 'pizza Książulo', '--limit', '40', '--tytul', 'Pizza test', '--od', '2026-10-04', '--do', '2026-10-07',
                  '--wyslij', stdout=out)
     text = out.getvalue()
-    assert 'pozytywne 67%' in text and 'X (wpisy): 67% (n=3)' in text and 'HTML: ' in text and 'Mail: wysłany' in text
+    assert 'pozytywne 67%' in text and 'X (wpisy): 67% (n=3, mała próba)' in text and 'HTML: ' in text and 'Mail: wysłany' in text
+    assert 'Ocena (1 paczek): mercury-2: 4' in text and 'Pamięć podręczna (24 h, bez autorów): ' in text
     assert 'Zakres: 04.10.2026 do 07.10.2026, najpewniej premiera: 2026-10-05' in text
-    assert sent == [('admin@example.com', 'spin.clinic · Pizza test', {'important': True})]
+    assert sent == [('admin@example.com', 'przeszłość.today · Pizza test', {'important': True})]
+    out = StringIO()
+    call_command('raport_nastrojow', '--fraza', 'pizza Książulo', '--z-pliku', text.split('CSV: ')[1].splitlines()[0], '--od', '2026-10-04', stdout=out)
+    assert 'Uwaga: Teksty z pliku ' in out.getvalue() and 'pozytywne 67%' in out.getvalue()
 
 
 def test_command_without_phrase_or_bad_date_fails_clearly():

@@ -1,6 +1,6 @@
 """Raport nastrojów: udział opinii pozytywnych i negatywnych o jednym temacie z trzech legalnych źródeł.
 
-Źródła (osobne sekcje + łączny wynik z jawnymi wagami):
+Źródła (osobne sekcje + łączny wynik: wszystkie opinie ze znakiem razem, bez stałych wag; źródła z mniej niż 30 opiniami to „mała próba”):
 - X: oficjalne API, wyszukiwanie pełnotekstowe ostatnich 7 dni po frazach (wszystkie publiczne wpisy zwykłych
   użytkowników), ten sam klient i ten sam strażnik budżetu co zbieranie wpisów; liczniki (tweets/counts) do planu
   i wykresu dzień po dniu;
@@ -15,11 +15,15 @@ Bez Facebooka, Instagrama i TikToka; bez Google Trends (brak oficjalnego API).
 RODO: dane przetwarzamy zbiorczo i tylko w pamięci. Nic nie zapisujemy do tabel spin.clinic. Do raportu i CSV trafia
 wyłącznie skrócony tekst bez @nazw i linków, data, klasa i temat - żadnych nazw ani identyfikatorów autorów (także osób
 publicznych). Surowe dane znikają po wygenerowaniu raportu; --zachowaj (debugowanie) zapisuje je obok raportu.
-Ocena: Mercury (news/inception.py, trasa poboczna, json_object) w paczkach po 20 tekstów.
+Pamięć podręczna (24 h, katalog raportów/pamiec): teksty już po filtrze i anonimizacji, żeby ponowna ocena (--swiezo wymusza
+pobranie) nie kupowała odczytów X drugi raz; --z-pliku <csv|jsonl|json> ocenia teksty z pliku (np. CSV poprzedniego raportu).
+Ocena: Mercury (news/inception.py, trasa poboczna) w paczkach po 20 tekstów; gdy odmówi - darmowe modele Konsylium, potem
+Groq/NIM z env; nigdy trasy płatne. Raport podaje, który model ocenił ile tekstów; bez łącznego procentu, gdy coś zostało nieocenione.
 """
 from __future__ import annotations
 
 import csv
+import hashlib
 import html
 import json
 import logging
@@ -46,9 +50,10 @@ SOURCES = ('x', 'youtube', 'wykop', 'rss', 'media')
 SOCIAL = ('x', 'youtube', 'wykop', 'rss')
 SOURCE_NAMES = {'x': 'X (wpisy)', 'youtube': 'YouTube (komentarze)', 'wykop': 'Wykop (wpisy)', 'rss': 'Fora i blogi (RSS)',
                 'media': 'Media (tytuły)'}
+SOURCE_SHORT = {'x': 'X', 'youtube': 'YouTube', 'wykop': 'Wykop', 'rss': 'Fora i blogi', 'media': 'Media'}
 KIND = {'x': 'wpis z X', 'youtube': 'komentarz z YouTube', 'wykop': 'wpis z Wykopu', 'rss': 'wpis z forum lub bloga', 'media': 'tytuł artykułu'}
-# Wagi łącznego wyniku: wybór redakcyjny, nie statystyka. Źródła bez danych wypadają, reszta jest przeskalowana do 1.
-WEIGHTS = {'x': 0.35, 'youtube': 0.35, 'wykop': 0.15, 'rss': 0.05, 'media': 0.10}
+SMALL_SAMPLE = 30  # poniżej tylu opinii ze znakiem źródło dostaje etykietę „mała próba”
+CACHE_HOURS = 24  # pamięć podręczna pobranych (zanonimizowanych) tekstów: ponowna ocena bez ponownego płacenia za X
 WYKOP_PAGES = 3
 RSS_FEEDS_MAX = 20
 UA = {'User-Agent': 'spin.clinic raport nastrojow (+https://spin.clinic)'}
@@ -455,36 +460,129 @@ def filter_posts(rows: list[dict], min_words: int = 3) -> tuple[list[dict], Coun
     return kept, dropped
 
 
-# --- ocena (Mercury, paczki) ---
+# --- ocena: Mercury, potem darmowe modele Konsylium, potem Groq/NIM z env; nigdy trasy płatne ---
+def _council_members() -> list[tuple[str, str]]:
+    """Wolne darmowe modele Konsylium (ta sama reguła co ocena odpowiedzi w odbior_spinu: bez Gemini i Claude, limity, okno agentów)."""
+    from news.odbior_spinu import _members
+    return _members()
+
+
+def _council_ask(member: tuple[str, str], system: str, user: str, schema: dict, max_tokens: int) -> dict:
+    from news import agents_common as common
+    from news import council_registry as registry
+    from news.clinic_council import ask
+    token = registry.reservation_guard.set(common._guard)
+    try:
+        return ask(member, system, user, schema, max_tokens)
+    finally:
+        registry.reservation_guard.reset(token)
+
+
+def _free_chat(system: str, user: str, schema: dict, max_tokens: int) -> tuple[dict, str]:
+    from news.clinic_ai import _free_chat
+    return _free_chat(system, user, schema, max_tokens)
+
+
+class _Router:
+    """Jedna paczka tekstów: Mercury (własna darmowa pula), przy odmowie darmowi członkowie Konsylium, na końcu Groq/NIM z env.
+    Trasa wypada z kolejki po odmowie budżetu albo po dwóch kolejnych błędach; `notes` tłumaczą każde wypadnięcie."""
+
+    def __init__(self):
+        self.mercury, self.mercury_fails, self.members, self.free_chat = True, 0, None, True
+        self.notes: list[str] = []
+
+    def mercury_reason(self, need: int) -> str:
+        from news import inception
+        if not inception.configured():
+            return 'brak klucza INCEPTION_API_KEY'
+        if not inception.no_training():
+            return 'INCEPTION_NO_TRAINING nie jest true (dane osób prywatnych)'
+        reason = inception.refusal(need)
+        if reason:
+            return {'inception_free_budget': 'wyczerpana darmowa pula tokenów', 'inception_daily_limit': 'pułap dzienny tokenów (INCEPTION_DAILY_TOKENS)',
+                    'inception_monthly_limit': 'pułap miesięczny tokenów', 'inception_halted': 'zatrzymany po błędzie konta (402/401)'}.get(reason, reason)
+        return ''
+
+    def ask(self, user: str, max_tokens: int):
+        from news import inception
+        from news.clinic_ai import ClinicAIError
+        if self.mercury:
+            answer = inception.side_json(SYSTEM, user, SCHEMA, max_tokens=max_tokens, private_data=True)
+            if answer is not None:
+                self.mercury_fails = 0
+                return answer
+            reason = self.mercury_reason(inception.estimate(SYSTEM, user, max_tokens))
+            last = str(inception.usage().get('last_error') or '')
+            if reason:
+                self.mercury = False
+                self.notes.append(f'Mercury: {reason}')
+            else:
+                self.mercury_fails += 1
+                if self.mercury_fails >= 2:
+                    self.mercury = False
+                    self.notes.append(f'Mercury: dwie kolejne paczki bez odpowiedzi ({last or "błąd API, np. 429 albo przekroczony czas"}), dalej bez niego')
+                else:
+                    self.notes.append(f'Mercury: paczka bez odpowiedzi ({last or "błąd API"}), następna paczka znów do niego')
+        if self.members is None:
+            try:
+                self.members = _council_members()
+            except Exception as error:  # noqa: BLE001 - brak bazy albo rejestru: dalej bez Konsylium
+                self.members, _ = [], self.notes.append(f'Konsylium: {type(error).__name__}')
+        while self.members:
+            member = self.members[0]
+            try:
+                return _council_ask(member, SYSTEM, user, SCHEMA, max_tokens), member[1]
+            except ClinicAIError as error:
+                self.notes.append(f'{member[1]}: {error.code}')
+            except Exception as error:  # noqa: BLE001 - zła odpowiedź jednego modelu: następny
+                self.notes.append(f'{member[1]}: {type(error).__name__}')
+            self.members.pop(0)
+        if self.free_chat:
+            try:
+                return _free_chat(SYSTEM, user, SCHEMA, max_tokens)
+            except ClinicAIError as error:
+                self.free_chat = False
+                self.notes.append(f'Groq/NIM z env: {error.code}')
+        return None
+
+
 def classify(posts: list[dict], topic: str, batch: int = BATCH) -> dict:
-    """Dopisuje do każdego tekstu ocenę, temat i powód. Zwraca {'calls': n, 'model': nazwa, 'unrated': n, 'stopped': powód}."""
-    from news import inception
-    calls, model, unrated, stopped = 0, '', 0, ''
-    for start in range(0, len(posts), batch):
-        chunk = posts[start:start + batch]
-        if stopped:
-            unrated += len(chunk)
-            continue
-        payload = {'temat': topic, 'teksty': [{'i': i, 'rodzaj': KIND[p['src']], 'tekst': p['text'][:300]} for i, p in enumerate(chunk)]}
-        answer = inception.side_json(SYSTEM, json.dumps(payload, ensure_ascii=False), SCHEMA, max_tokens=120 * len(chunk) + 200,
-                                     private_data=True)
-        if answer is None:
-            stopped = 'Mercury niedostępny (limit, brak klucza albo INCEPTION_NO_TRAINING nie jest true)'
-            unrated += len(chunk)
-            continue
-        data, model = answer
-        calls += 1
-        rated = {item['i']: item for item in data.get('oceny') or []
-                 if isinstance(item, dict) and isinstance(item.get('i'), int) and 0 <= item['i'] < len(chunk)}
-        for i, post in enumerate(chunk):
-            item = rated.get(i) or {}
-            label, topic_key = item.get('ocena'), item.get('temat')
-            post['label'] = label if label in LABELS else ''
-            post['topic'] = topic_key if topic_key in TOPICS else 'inne'
-            post['reason'] = ' '.join(str(item.get('powod') or '').split())[:200]
-            if not post['label']:
-                unrated += 1
-    return {'calls': calls, 'model': model, 'unrated': unrated, 'stopped': stopped}
+    """Dopisuje do każdego tekstu ocenę, temat i powód. Teksty pominięte przez model wracają w drugim przebiegu.
+    Zwraca {'calls': n, 'models': {model: liczba ocenionych tekstów}, 'model': nazwy, 'unrated': n, 'stopped': powód, 'routes': uwagi}."""
+    router, calls, models = _Router(), 0, Counter()
+    exhausted = False
+    for _pass in range(2):
+        todo = [p for p in posts if not p.get('label')]
+        if not todo or exhausted:
+            break
+        for start in range(0, len(todo), batch):
+            chunk = todo[start:start + batch]
+            payload = {'temat': topic, 'teksty': [{'i': i, 'rodzaj': KIND[p['src']], 'tekst': p['text'][:300]} for i, p in enumerate(chunk)]}
+            answer = router.ask(json.dumps(payload, ensure_ascii=False), 120 * len(chunk) + 200)
+            if answer is None:
+                exhausted = True
+                break
+            data, model = answer
+            calls += 1
+            rated = {item['i']: item for item in (data.get('oceny') or []) if isinstance(data, dict)
+                     if isinstance(item, dict) and isinstance(item.get('i'), int) and 0 <= item['i'] < len(chunk)}
+            for i, post in enumerate(chunk):
+                item = rated.get(i) or {}
+                label, topic_key = item.get('ocena'), item.get('temat')
+                if label not in LABELS:
+                    continue
+                post['label'], post['topic'] = label, topic_key if topic_key in TOPICS else 'inne'
+                post['reason'] = ' '.join(str(item.get('powod') or '').split())[:200]
+                models[model] += 1
+    unrated = sum(1 for p in posts if not p.get('label'))
+    for post in posts:
+        post.setdefault('label', ''), post.setdefault('topic', 'inne'), post.setdefault('reason', '')
+    stopped = ''
+    if unrated and exhausted:
+        stopped = f'Żadna darmowa trasa nie oceniła {unrated} z {len(posts)} tekstów: ' + '; '.join(router.notes[:6])
+    elif unrated:
+        stopped = f'Model pominął {unrated} z {len(posts)} tekstów także w drugim przebiegu.'
+    return {'calls': calls, 'models': dict(models), 'model': ', '.join(models), 'unrated': unrated, 'stopped': stopped, 'routes': router.notes}
 
 
 # --- statystyka ---
@@ -504,7 +602,8 @@ def share(group: list[dict]) -> dict:
     neg = sum(1 for p in group if p.get('label') == 'negatyw')
     p, low, high = wilson(pos, pos + neg)
     return {'n': len(group), 'pozytyw': pos, 'negatyw': neg, 'neutralny': sum(1 for p in group if p.get('label') == 'neutralny'),
-            'nie_na_temat': sum(1 for p in group if p.get('label') == 'nie_na_temat'), 'udzial': p, 'od': low, 'do': high}
+            'nie_na_temat': sum(1 for p in group if p.get('label') == 'nie_na_temat'), 'udzial': p, 'od': low, 'do': high,
+            'small': 0 < pos + neg < SMALL_SAMPLE}
 
 
 def premiere(counts: dict) -> str:
@@ -519,14 +618,14 @@ def premiere(counts: dict) -> str:
     return ''
 
 
-def weighted(by_source: dict) -> dict:
-    """Łączny udział pozytywnych: średnia udziałów źródeł z wagami WEIGHTS (tylko źródła z opiniami ze znakiem)."""
-    parts = {s: v for s, v in by_source.items() if v['pozytyw'] + v['negatyw']}
-    total = sum(WEIGHTS[s] for s in parts)
-    if not total:
-        return {'udzial': 0.0, 'wagi': {}, 'n': 0}
-    return {'udzial': sum(WEIGHTS[s] / total * parts[s]['udzial'] for s in parts), 'wagi': {s: WEIGHTS[s] / total for s in parts},
-            'n': sum(parts[s]['pozytyw'] + parts[s]['negatyw'] for s in parts)}
+def pooled(by_source: dict, sources=SOCIAL) -> dict:
+    """Łączny udział pozytywnych: wszystkie opinie ze znakiem z podanych źródeł razem (każdy głos liczy się raz, więc źródło
+    waży tyle, ile ma opinii). `wagi` to udział źródła w tej puli - tylko do pokazania, nie do liczenia. Wilson 95%."""
+    parts = {s: v for s, v in by_source.items() if s in sources and v['pozytyw'] + v['negatyw']}
+    pos, n = sum(v['pozytyw'] for v in parts.values()), sum(v['pozytyw'] + v['negatyw'] for v in parts.values())
+    p, low, high = wilson(pos, n)
+    return {'udzial': p, 'od': low, 'do': high, 'n': n, 'pozytyw': pos, 'negatyw': n - pos,
+            'wagi': {s: (v['pozytyw'] + v['negatyw']) / n for s, v in parts.items()} if n else {}, 'small': 0 < n < SMALL_SAMPLE}
 
 
 def summarise(posts: list[dict], start: datetime | None = None, end: datetime | None = None, counts: dict | None = None) -> dict:
@@ -544,7 +643,7 @@ def summarise(posts: list[dict], start: datetime | None = None, end: datetime | 
         rows = sorted((p for p in social if p['label'] == label), key=lambda p: (-p['likes'], p['text']))
         return [{'text': p['text'][:220], 'likes': p['likes'], 'src': p['src'], 'reason': p.get('reason', '')} for p in rows[:5]]
     return {'rated': len(rated), 'on_topic': len(on_topic), 'counts': dict(Counter(p['label'] for p in rated)),
-            'total': share(on_topic), 'social': share(social), 'by_source': by_source, 'weighted': weighted(by_source),
+            'total': share(on_topic), 'social': share(social), 'by_source': by_source, 'pooled': pooled(by_source),
             'by_day': by_day, 'by_topic': by_topic, 'volume': volume, 'volume_source': 'liczniki X' if counts else 'próba X',
             'premiere': premiere(volume),
             'media': [{'text': p['text'][:160], 'outlet': p.get('outlet', ''), 'day': _day(p['created_at']), 'label': p.get('label', '')}
@@ -583,6 +682,95 @@ def write_csv(path: Path, posts: list[dict]) -> None:
             writer.writerow([p['src'], _day(p['created_at']), p.get('label', ''), p.get('topic', ''), p.get('reason', ''), p['likes'], p['text'][:160]])
 
 
+# --- pamięć podręczna (24 h, zanonimizowane teksty po filtrze) i teksty z pliku ---
+def cache_dir() -> Path:
+    path = output_dir() / 'pamiec'
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def cache_key(frazy: list[str], start: datetime, end: datetime) -> str:
+    raw = '|'.join(sorted(_norm(f) for f in frazy)) + '|' + start.astimezone(PL).date().isoformat() + '|' + end.astimezone(PL).date().isoformat()
+    return hashlib.sha256(raw.encode()).hexdigest()[:20]
+
+
+def cache_sweep(now=None) -> int:
+    """Usuwa wpisy starsze niż CACHE_HOURS (pole `expires` albo czas pliku). Zwraca liczbę usuniętych."""
+    now, removed = now or timezone.now(), 0
+    for path in cache_dir().glob('*.json'):
+        try:
+            expires = json.loads(path.read_text(encoding='utf-8')).get('expires', '')
+            stale = datetime.fromisoformat(expires) <= now if expires else True
+        except (ValueError, OSError, AttributeError):
+            stale = True
+        if stale or datetime.fromtimestamp(path.stat().st_mtime, dt_timezone.utc) <= now - timedelta(hours=CACHE_HOURS):
+            path.unlink(missing_ok=True)
+            removed += 1
+    return removed
+
+
+def cache_save(frazy: list[str], start: datetime, end: datetime, bundle: dict, now=None) -> str:
+    now = now or timezone.now()
+    path = cache_dir() / f'{cache_key(frazy, start, end)}.json'
+    payload = {'uwaga': 'zanonimizowane teksty po filtrze (bez autorów i identyfikatorów), kasowane po 24 h', 'frazy': frazy,
+               'saved': now.isoformat(), 'expires': (now + timedelta(hours=CACHE_HOURS)).isoformat(), **bundle}
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+    return str(path)
+
+
+def cache_load(frazy: list[str], start: datetime, end: datetime, now=None) -> dict | None:
+    now = now or timezone.now()
+    path = cache_dir() / f'{cache_key(frazy, start, end)}.json'
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding='utf-8'))
+        if datetime.fromisoformat(payload['expires']) <= now:
+            path.unlink(missing_ok=True)
+            return None
+        return payload
+    except (ValueError, KeyError, OSError):
+        path.unlink(missing_ok=True)
+        return None
+
+
+def _post(row: dict) -> dict | None:
+    src, text = str(row.get('src') or row.get('zrodlo') or ''), str(row.get('text') or row.get('tekst_skrocony') or row.get('tekst') or '')
+    if src not in SOURCES or not text.strip():
+        return None
+    created = str(row.get('created_at') or row.get('dzien') or '')
+    try:
+        likes = int(row.get('likes') if row.get('likes') is not None else row.get('polubienia') or 0)
+    except (TypeError, ValueError):
+        likes = 0
+    return {'src': src, 'text': scrub(text)[:300], 'likes': likes, 'created_at': created, 'video': str(row.get('video') or ''),
+            'outlet': str(row.get('outlet') or '')}
+
+
+def load_posts(path: str) -> list[dict]:
+    """Teksty z pliku: CSV raportu (zrodlo;dzien;...;tekst_skrocony), JSONL (jeden tekst na linię) albo JSON pamięci podręcznej
+    (`posts`) lub pliku --zachowaj (`wiersze`, wtedy przechodzą przez filtr). Bez pliku albo bez tekstów: NastrojeError."""
+    file = Path(path)
+    if not file.is_file():
+        raise NastrojeError('brak_pliku', f'Nie ma pliku {path}.')
+    text = file.read_text(encoding='utf-8-sig')
+    rows: list[dict] = []
+    if file.suffix.lower() == '.csv':
+        rows = list(csv.DictReader(text.splitlines(), delimiter=';'))
+    elif file.suffix.lower() == '.jsonl':
+        rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+    else:
+        data = json.loads(text)
+        if isinstance(data, dict) and data.get('wiersze'):
+            rows, _ = filter_posts([r for r in data['wiersze'] if isinstance(r, dict) and r.get('src') in SOURCES])
+        else:
+            rows = data.get('posts') if isinstance(data, dict) else data
+    posts = [p for p in (_post(r) for r in rows or [] if isinstance(r, dict)) if p]
+    if not posts:
+        raise NastrojeError('pusty_plik', f'W pliku {path} nie ma tekstów do oceny.')
+    return posts
+
+
 def _pct(value: float) -> str:
     return f'{round(value * 100)}%'
 
@@ -594,23 +782,52 @@ def _dm(day: str) -> str:
         return day
 
 
+LOGO_SERIF = "Georgia, 'Times New Roman', 'DejaVu Serif', serif"
+LOGO_SANS = "Montserrat, 'Segoe UI', Inter, system-ui, sans-serif"
+
+
+def logo_svg(variant: int = 1, height: int = 28, title: bool = True) -> str:
+    """Znak przeszłość.today: czerń, czerwień i biel (właściciel 7.10). Dwa kroje: szeryfowy „przeszłość” i bezszeryfowe „today”;
+    czerwień tylko jako jeden akcent (kropka albo linia). 1: biały na czerni (raport), 2: czarny na bieli, 3: układ dwuwierszowy
+    na czerni z czerwoną linią (kwadrat, np. awatar). Tekst w SVG, bez osadzonych fontów."""
+    ink, bg = ('#ffffff', '#000000') if variant != 2 else ('#111111', '#ffffff')
+    red = '#e0313a'
+    label = f'<title>przeszłość.today</title>' if title else ''
+    if variant == 3:
+        return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="{height}" height="{height}" role="img" aria-label="przeszłość.today">'
+                f'{label}<rect width="320" height="320" fill="{bg}"/>'
+                f'<text x="32" y="150" fill="{ink}" font-family="{LOGO_SERIF}" font-size="58" letter-spacing="-1.5">przeszłość</text>'
+                f'<rect x="32" y="172" width="64" height="4" fill="{red}"/>'
+                f'<text x="32" y="236" fill="{ink}" font-family="{LOGO_SANS}" font-size="30" font-weight="600" letter-spacing="7">TODAY</text></svg>')
+    width = round(height * 600 / 120)
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 120" width="{width}" height="{height}" role="img" aria-label="przeszłość.today">'
+            f'{label}<rect width="600" height="120" fill="{bg}"/>'
+            f'<text x="20" y="82" fill="{ink}" font-family="{LOGO_SERIF}" font-size="72" letter-spacing="-2">przeszłość'
+            f'<tspan fill="{red}" dx="2">.</tspan><tspan fill="{ink}" font-family="{LOGO_SANS}" font-size="38" font-weight="600" letter-spacing="3" dx="6">today</tspan></text></svg>')
+
+
 def render_html(title: str, frazy: list[str], query: str, summary: dict, meta: dict) -> str:
+    """Raport w stylu przeszłość.today (kit .px-*): czerń, cienkie linie, równe boksy z góra/środek/dół, jeden akcent (czerwień)."""
     e = html.escape
-    w, src = summary['weighted'], summary['by_source']
-    soc = summary['social']
-    n_soc = soc['pozytyw'] + soc['negatyw']
+    w, src, soc = summary['pooled'], summary['by_source'], summary['social']
+    unrated, kept = meta['unrated'], sum(meta['kept'].values())
     now = meta['now'].astimezone(PL)
     zakres = f'{meta["start"].astimezone(PL).strftime("%d.%m.%Y")} do {meta["end"].astimezone(PL).strftime("%d.%m.%Y")}'
+    headline_ok = bool(w['n']) and not unrated
 
-    def tile(label, value, note, tone=''):
-        return (f'<div class="tile {tone}"><div class="tile-label">{e(label)}</div><div class="tile-value">{e(value)}</div>'
-                f'<div class="tile-note">{e(note)}</div></div>')
+    def small_tag(row):
+        return '<em class="tag">mała próba</em>' if row.get('small') else ''
+
+    def cell(label, value, note, tag=''):
+        return (f'<div class="cell"><h3 class="h3"><span>{e(label)}</span>{tag}</h3><b class="num">{e(value)}</b>'
+                f'<span class="note" title="{e(note)}">{e(note)}</span></div>')
 
     def bar_row(name, row, mark=False):
         n = row['pozytyw'] + row['negatyw']
         pos = round(row['udzial'] * 100) if n else 0
-        label = f'{e(name)} <b class="mark">premiera?</b>' if mark else e(name)
-        return (f'<div class="row{" is-premiere" if mark else ""}"><div class="row-name">{label}</div>'
+        label = f'{e(name)}<em class="mark">premiera?</em>' if mark else e(name)
+        hint = f'{e(name)}: {row["pozytyw"]} pozytywnych, {row["negatyw"]} negatywnych, {row["neutralny"]} neutralnych'
+        return (f'<div class="row{" is-mark" if mark else ""}" title="{hint}"><div class="row-name">{label}</div>'
                 f'<div class="bar"><span class="pos" style="width:{pos}%"></span><span class="neg" style="width:{100 - pos if n else 0}%"></span></div>'
                 f'<div class="row-num">{_pct(row["udzial"]) if n else "-"}</div>'
                 f'<div class="row-ci">{(_pct(row["od"]) + " do " + _pct(row["do"])) if n else "brak opinii ze znakiem"}</div>'
@@ -620,116 +837,147 @@ def render_html(title: str, frazy: list[str], query: str, summary: dict, meta: d
         return (f'<div class="quote"><p class="quote-text">„{e(q["text"])}”</p>'
                 f'<div class="quote-foot"><span>{e(KIND[q["src"]])}, bez nazwy autora</span><span>{q["likes"]} polubień</span></div></div>')
 
-    def src_tile(s):
+    def src_cell(s):
         row = src[s]
         n = row['pozytyw'] + row['negatyw']
-        return tile(SOURCE_NAMES[s], _pct(row['udzial']) if n else '-',
-                    f'{_pct(row["od"])} do {_pct(row["do"])}, n={n} / {row["n"]}' if n else f'{row["n"]} na temat, brak opinii ze znakiem', 'src')
+        note = f'n={n}/{row["n"]} · {_pct(row["od"])} do {_pct(row["do"])}' if n else (f'{row["n"]} na temat, bez znaku' if row['n'] else 'brak tekstów')
+        return cell(SOURCE_SHORT[s], _pct(row['udzial']) if n else '-', note, small_tag(row))
     days = ''.join(bar_row(_dm(d), r, mark=(d == summary['premiere'])) for d, r in summary['by_day'].items()) \
         or '<p class="muted">Brak tekstów z datą.</p>'
     topics = ''.join(bar_row(TOPIC_NAMES[t], r) for t, r in summary['by_topic'].items()) or '<p class="muted">Brak ocenionych tekstów.</p>'
     peak = max(summary['volume'].values() or [1]) or 1
-    volume = ''.join(f'<div class="vol"><span class="vol-bar" style="height:{round(100 * v / peak)}%"></span>'
+    volume = ''.join(f'<div class="vol{" is-mark" if d == summary["premiere"] else ""}" title="{_dm(d)}: {v} wpisów"><span class="vol-bar" style="height:{max(2, round(100 * v / peak))}%"></span>'
                      f'<span class="vol-n">{v}</span><span class="vol-day">{_dm(d)}</span></div>' for d, v in summary['volume'].items())
     premiere_note = (f'Najpewniej premiera: {_dm(summary["premiere"])} (pierwszy wysyp wpisów).' if summary['premiere']
                      else 'W danych nie widać wyraźnego dnia premiery (brak nagłego wysypu wpisów).')
     source_rows = ''.join(
-        f'<tr><td>{e(SOURCE_NAMES[s])}</td><td>{meta["raw"].get(s, 0)}</td><td>{meta["kept"].get(s, 0)}</td><td>{src[s]["n"]}</td>'
-        f'<td class="pos-t">{src[s]["pozytyw"]}</td><td class="neg-t">{src[s]["negatyw"]}</td><td>{src[s]["neutralny"]}</td>'
+        f'<tr><td>{e(SOURCE_NAMES[s])}{small_tag(src[s])}</td><td>{meta["raw"].get(s, 0)}</td><td>{meta["kept"].get(s, 0)}</td><td>{src[s]["n"]}</td>'
+        f'<td>{src[s]["pozytyw"]}</td><td class="neg-t">{src[s]["negatyw"]}</td><td>{src[s]["neutralny"]}</td>'
         f'<td>{_pct(src[s]["udzial"]) if src[s]["pozytyw"] + src[s]["negatyw"] else "-"}</td>'
+        f'<td>{(_pct(src[s]["od"]) + " do " + _pct(src[s]["do"])) if src[s]["pozytyw"] + src[s]["negatyw"] else "-"}</td>'
         f'<td>{_pct(w["wagi"][s]) if s in w["wagi"] else "-"}</td></tr>' for s in SOURCES)
-    media_rows = ''.join(f'<li><span>{e(m["text"])}</span><span class="muted">{e(m["outlet"])} · {_dm(m["day"])} · '
-                         f'{e(m["label"] or "nieocenione")}</span></li>' for m in summary['media']) \
-        or '<li class="muted">Brak tytułów z frazami w tym okresie w naszej bazie.</li>'
+    media_rows = ''.join(f'<li><span>{e(m["text"])}</span><small>{e(m["outlet"])} · {_dm(m["day"])} · {e(m["label"] or "nieocenione")}</small></li>'
+                         for m in summary['media']) or '<li class="muted">Brak tytułów z frazami w tym okresie w naszej bazie.</li>'
     dropped = ', '.join(f'{k}: {v}' for k, v in sorted(meta['dropped'].items())) or 'nic'
     yt_note = (f'{meta["yt_videos"]} filmów z komentarzami, {meta["yt_units"]} jednostek YouTube' if meta['yt_units'] else 'bez YouTube')
     limits = [
         'Badamy tylko X, YouTube, Wykop, publiczne kanały RSS forów i blogów oraz tytuły z naszej bazy mediów. Facebook, Instagram i TikTok nie są '
         'badane (brak legalnego dostępu) - tam może toczyć się większa część rozmowy. Google Trends pomijamy (brak oficjalnego API).',
-        'Użytkownicy X i komentujący na YouTube nie są próbą reprezentatywną klientów sieci: częściej piszą osoby zaangażowane, z silną opinią.',
+        'Użytkownicy X i komentujący na YouTube nie są próbą reprezentatywną: częściej piszą osoby zaangażowane, z silną opinią.',
         'Wyszukiwanie po frazach: pomijamy teksty bez tych słów (np. tylko ze zdjęciem albo z literówką), łapiemy część tekstów nie na temat.',
         'Filtr prosty: odrzucamy podania dalej, reklamy, powtórzone teksty i więcej niż 3 teksty tego samego autora; nie wykrywa wyrafinowanych botów.',
-        'Ocenę nadaje model językowy (Mercury) - ironia i żarty bywają źle odczytane; przedziały ufności (Wilson 95%) dotyczą tylko błędu próby.',
+        'Ocenę nadają modele językowe (lista w Metodzie) - ironia i żarty bywają źle odczytane; przedziały Wilsona 95% dotyczą tylko błędu próby.',
         'Udział liczymy wśród tekstów z wyraźnym znakiem (pozytyw + negatyw); neutralne i nie na temat podajemy osobno.',
-        'Łączny wynik to średnia udziałów źródeł z wagami ' + ', '.join(f'{SOURCE_NAMES[s].split(" ")[0]} {WEIGHTS[s]:.2f}' for s in SOURCES) + ' '
-        '(wybór redakcyjny, przeskalowany do źródeł z danymi), nie wynik statystyczny.',
+        f'Łączny wynik to wszystkie opinie ze znakiem razem (każdy głos liczy się raz, źródło waży tyle, ile ma opinii). Źródła z mniej niż {SMALL_SAMPLE} '
+        'opiniami to „mała próba” - ich procent jest orientacyjny.',
         'Dane osób prywatnych tylko w pamięci: żadnych nazw ani identyfikatorów autorów w raporcie i CSV; surowe dane usunięte po wygenerowaniu.',
     ]
-    mercury = f'{meta["calls"]} wywołań Mercury' + (f' ({e(meta["model"])})' if meta.get('model') else '')
-    stopped = ''.join(f'<p class="warn">{e(s)}</p>' for s in meta.get('stopped', []) if s)
-    weights_note = ' · '.join(f'{SOURCE_NAMES[s].split(" ")[0]} {_pct(v)}' for s, v in w['wagi'].items()) or 'brak źródeł z opiniami'
+    alerts = [s for s in meta.get('stopped', []) if s]
+    alert_html = ''.join(f'<li>{e(s)}</li>' for s in alerts)
+    big = (f'<div class="alert"><b>Bez łącznego wyniku: {unrated} z {kept} tekstów nie dostało oceny.</b>'
+           f'<span>Procenty niżej dotyczą tylko tekstów ocenionych i nie opisują całej próby. Uruchom raport ponownie, gdy wrócą darmowe modele.</span></div>'
+           if unrated else '')
+    headline = _pct(w['udzial']) if headline_ok else '-'
+    headline_note = (f'{_pct(w["od"])} do {_pct(w["do"])} (Wilson 95%) · n={w["n"]}' if headline_ok else
+                     ('bez wyniku: są teksty nieocenione' if unrated else 'brak opinii ze znakiem'))
     return f'''<!doctype html>
-<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">
 <title>{e(title)}</title>
 <style>
-:root{{--bg:#0b1020;--card:#121a2d;--line:#223052;--ink:#e8edf7;--muted:#9aa7bf;--pos:#2fbf71;--neg:#e5484d;--blue:#4f8cff;--gap:16px}}
-*{{box-sizing:border-box;min-width:0}}body{{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Inter",system-ui,-apple-system,"Segoe UI",sans-serif;overflow-wrap:anywhere}}
-.wrap{{max-width:1080px;margin:0 auto;padding:32px 16px 48px;overflow-x:clip}}h1{{font-size:28px;margin:0 0 4px;line-height:1.2}}h2{{font-size:18px;margin:0 0 12px;line-height:1.3}}
-.sub{{color:var(--muted);margin:0 0 24px}}.muted{{color:var(--muted)}}.warn{{color:#f5b84f;margin:0 0 8px}}
-.tiles{{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);margin-bottom:var(--gap)}}.tiles.five{{grid-template-columns:repeat(5,1fr)}}
-.tile{{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;height:124px;display:grid;grid-template-rows:auto 1fr auto}}
-.tile-label{{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.tile-value{{font-size:30px;font-weight:600;line-height:1;align-self:center}}.tile-note{{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.tile.pos .tile-value{{color:var(--pos)}}.tile.neg .tile-value{{color:var(--neg)}}.tile.src .tile-value{{color:var(--blue)}}
-.card{{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:var(--gap)}}
-.two{{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}}.two .card{{margin-bottom:0;display:grid;grid-template-rows:auto 1fr auto}}
-.row{{display:grid;grid-template-columns:minmax(72px,110px) minmax(120px,1fr) 44px 96px 78px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}}
-.row:first-of-type{{border-top:0}}.row-name{{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.row-num{{text-align:right;font-weight:600}}
-.row-ci,.row-n{{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}}
-.bar{{display:flex;height:10px;border-radius:5px;overflow:hidden;background:#1a2440}}.bar .pos{{background:var(--pos)}}.bar .neg{{background:var(--neg)}}
-.mark{{font-size:11px;font-weight:600;color:var(--blue);margin-left:6px}}.row.is-premiere .row-name{{color:var(--blue)}}
-.vols{{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;height:150px;margin:12px 0 0}}
-.vol{{display:grid;grid-template-rows:1fr auto auto;height:100%;text-align:center;font-size:12px;color:var(--muted)}}
-.vol-bar{{align-self:end;background:var(--blue);border-radius:4px 4px 0 0;min-height:2px;width:100%}}.vol-n{{color:var(--ink);font-weight:600;margin-top:4px}}
-table{{width:100%;border-collapse:collapse;font-size:14px}}th,td{{text-align:right;padding:8px 6px;border-top:1px solid var(--line);white-space:nowrap}}
-th{{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.04em;border-top:0}}th:first-child,td:first-child{{text-align:left}}
-td.pos-t{{color:var(--pos)}}td.neg-t{{color:var(--neg)}}
-.quotes{{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}}
-.quote{{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-height:132px;display:grid;grid-template-rows:1fr auto;margin-bottom:12px}}
-.quote-text{{margin:0 0 10px;font-size:14px}}.quote-foot{{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}}
-.side h2 span{{font-size:12px;font-weight:400;color:var(--muted);margin-left:8px}}
-ul{{margin:0;padding-left:18px}}li{{margin:4px 0}}li span{{display:block}}li span.muted{{font-size:12px}}
-.legend{{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:8px}}.legend i{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}}
-code{{font-size:12px;color:var(--muted);word-break:break-all}}.scroll{{overflow-x:auto}}.foot{{color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px}}
-@media(max-width:720px){{.wrap{{padding-top:20px}}.tiles,.tiles.five{{grid-template-columns:1fr 1fr}}.two,.quotes{{grid-template-columns:1fr}}.row{{grid-template-columns:90px 1fr 44px;row-gap:2px}}.row-ci,.row-n{{grid-column:2/4;text-align:left}}.tile-value{{font-size:24px}}table{{font-size:12px}}th,td{{padding:6px 4px}}.quote{{min-height:0}}.vol-day{{font-size:10px}}}}
+:root{{--bg:#000;--ink:#fff;--ink-2:#b6bbc1;--ink-3:#71767b;--line:rgba(255,255,255,.11);--line-2:rgba(255,255,255,.2);--card:rgba(255,255,255,.035);--card-2:rgba(255,255,255,.06);
+--red:#e0313a;--pos:#dcdcdc;--neg:#e0313a;--track:rgba(255,255,255,.08);--gap:20px;--r:16px;--pad:24px;--serif:{LOGO_SERIF};--sans:{LOGO_SANS}}}
+*{{box-sizing:border-box;min-width:0}}html{{background:var(--bg)}}body{{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);overflow-wrap:anywhere;-webkit-font-smoothing:antialiased}}
+.wrap{{max-width:1120px;margin:0 auto;padding:0 24px 56px;overflow-x:clip}}
+.bar{{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px;border-bottom:1px solid var(--line)}}.bar svg{{display:block}}
+.bar span{{font-size:13px;color:var(--ink-3);white-space:nowrap}}
+.head{{padding:36px 0 28px;display:grid;gap:10px}}h1{{margin:0;font-family:var(--serif);font-weight:400;font-size:clamp(30px,4vw,46px);line-height:1.1;letter-spacing:-.02em}}
+.sub{{margin:0;font-size:15px;color:var(--ink-2)}}.sub b{{color:var(--ink);font-weight:600}}
+.alert{{display:grid;gap:4px;padding:16px 20px;margin-bottom:var(--gap);border:1px solid var(--red);border-left-width:4px;border-radius:12px;background:rgba(224,49,58,.08)}}
+.alert b{{font-size:16px}}.alert span{{font-size:14px;color:var(--ink-2)}}
+.notes{{margin:0 0 var(--gap);padding:0;list-style:none;display:grid;gap:6px}}.notes li{{position:relative;padding-left:16px;font-size:13px;color:var(--ink-2)}}
+.notes li::before{{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;background:var(--red)}}
+.proof{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:40px}}
+.proof .cell{{border-left:1px solid var(--line);border-radius:0;background:none;padding:20px 20px 20px 22px}}.proof .cell:first-child{{border-left:0;padding-left:0}}
+.cell{{display:grid;grid-template-rows:auto 1fr auto;gap:6px;min-width:0;height:148px;padding:20px 22px;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}}
+.h3{{margin:0;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;line-height:1.5;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}}
+.h3 span{{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.tag{{flex-shrink:0;font-style:normal;font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--ink-3);border:1px solid var(--line-2);border-radius:6px;padding:1px 6px;white-space:nowrap}}
+td .tag{{margin-left:8px;vertical-align:1px}}
+.num{{align-self:center;font-size:clamp(26px,2.6vw,36px);line-height:1.1;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}}
+.note{{font-size:12.5px;line-height:1.5;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.sec{{margin-bottom:40px}}h2{{margin:0 0 20px;font-size:22px;line-height:1.25;font-weight:650;letter-spacing:-.02em}}h2 small{{margin-left:10px;font-size:13px;font-weight:500;letter-spacing:0;color:var(--ink-3)}}
+.grid5{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--gap)}}
+.card{{display:grid;grid-template-rows:auto 1fr auto;gap:14px;padding:22px var(--pad);border:1px solid var(--line);border-radius:var(--r);background:var(--card);min-width:0}}
+.card .h3{{justify-content:flex-start}}.card-foot{{margin:0;font-size:12.5px;line-height:1.5;color:var(--ink-3)}}
+.two{{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:stretch}}
+.legend{{display:flex;gap:16px;font-size:12.5px;color:var(--ink-3)}}.legend i{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}}
+.rows{{display:grid;align-content:start}}
+.row{{display:grid;grid-template-columns:minmax(72px,112px) minmax(100px,1fr) 44px 96px 78px;gap:10px;align-items:center;min-height:44px;border-top:1px solid var(--line)}}
+.rows .row:first-child{{border-top:0}}.row-name{{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}}.row-num{{text-align:right;font-weight:650;font-variant-numeric:tabular-nums}}
+.row-ci,.row-n{{color:var(--ink-3);font-size:12.5px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}}
+.bar{{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;background:var(--track);border:0;min-height:0}}.bar .pos{{background:var(--pos)}}.bar .neg{{background:var(--neg)}}
+.mark{{font-style:normal;font-size:11px;font-weight:600;color:var(--red);margin-left:6px}}
+.vols{{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;height:170px}}
+.vol{{display:grid;grid-template-rows:1fr auto auto;height:100%;text-align:center;font-size:12.5px;color:var(--ink-3)}}
+.vol-bar{{align-self:end;justify-self:center;width:min(100%,28px);background:var(--ink-2);border-radius:4px 4px 0 0}}.vol.is-mark .vol-bar{{background:var(--red)}}.vol.is-mark .vol-day{{color:var(--red)}}
+.vol-n{{color:var(--ink);font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}}
+.scroll{{overflow-x:auto;scrollbar-width:none}}.scroll::-webkit-scrollbar{{display:none}}
+table{{width:100%;border-collapse:collapse;font-size:14px}}th,td{{text-align:right;padding:10px 8px;border-top:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}}
+th{{color:var(--ink-2);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em;border-top:0;padding-top:0}}th:first-child,td:first-child{{text-align:left;padding-left:0}}
+th:last-child,td:last-child{{padding-right:0}}td.neg-t{{color:var(--neg)}}
+.quotes{{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}}.quotes h2{{margin-bottom:16px}}
+.quote{{display:grid;grid-template-rows:1fr auto;gap:10px;height:148px;padding:16px 20px;margin-bottom:12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}}
+.quote-text{{margin:0;font-family:var(--serif);font-size:15.5px;line-height:1.45;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}}
+.quote-foot{{display:flex;justify-content:space-between;gap:12px;color:var(--ink-3);font-size:12.5px;white-space:nowrap}}
+ul.list{{margin:0;padding:0;list-style:none}}.list li{{display:grid;gap:2px;min-height:44px;padding:8px 0;border-top:1px solid var(--line)}}.list li:first-child{{border-top:0;padding-top:0}}
+.list li span{{font-size:14px}}.list li small{{font-size:12.5px;color:var(--ink-3)}}
+ul.plain{{margin:0;padding-left:18px;display:grid;gap:6px;font-size:14px;color:var(--ink-2)}}ul.plain li::marker{{color:var(--ink-3)}}
+code{{font-size:12.5px;color:var(--ink-3);word-break:break-all}}.muted{{color:var(--ink-3);margin:0}}
+.foot{{display:flex;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}}
+@media(max-width:960px){{.grid5{{grid-template-columns:repeat(3,minmax(0,1fr))}}}}
+@media(max-width:720px){{.wrap{{padding:0 16px 40px}}.bar{{min-height:56px}}.bar span{{display:none}}.head{{padding:24px 0 20px}}
+.proof{{grid-template-columns:1fr 1fr}}.proof .cell{{height:118px;padding:14px 12px}}.proof .cell:nth-child(odd){{border-left:0;padding-left:0}}.proof .cell:nth-child(n+3){{border-top:1px solid var(--line)}}.proof .cell:last-child{{grid-column:1/-1}}
+.grid5{{grid-template-columns:1fr 1fr}}.grid5 .cell:last-child{{grid-column:1/-1}}.cell{{height:124px;padding:14px 16px}}
+.two,.quotes{{grid-template-columns:1fr}}.row{{grid-template-columns:84px 1fr 44px;row-gap:0;padding:6px 0}}.row-ci,.row-n{{grid-column:2/4;text-align:left}}.row-n{{grid-column:1/2;grid-row:2}}.row-ci{{grid-column:2/4;grid-row:2}}
+table{{font-size:12.5px}}th,td{{padding:8px 6px}}.quote{{height:auto;min-height:120px}}.vols{{height:140px}}.vol-day{{font-size:11px}}.sec{{margin-bottom:28px}}h2{{font-size:19px}}.card{{padding:18px 16px}}}}
 </style></head><body><div class="wrap">
-<h1>{e(title)}</h1>
-<p class="sub">spin.clinic · raport nastrojów · {now.strftime('%d.%m.%Y %H:%M')} · zakres: {zakres} · frazy: {e(', '.join(frazy))}</p>
-{stopped}
-<div class="tiles">
-{tile('Łącznie pozytywne', _pct(w['udzial']) if w['n'] else '-', f'wagi: {weights_note}' if w['n'] else 'brak opinii ze znakiem', 'pos')}
-{tile('Łącznie negatywne', _pct(1 - w['udzial']) if w['n'] else '-', f'{w["n"]} opinii ze znakiem we wszystkich źródłach' if w['n'] else 'brak opinii ze znakiem', 'neg')}
-{tile('Wszystkie głosy bez mediów', _pct(soc['udzial']) if n_soc else '-', f'{_pct(soc["od"])} do {_pct(soc["do"])} (95%), n={n_soc}' if n_soc else 'brak opinii ze znakiem')}
-{tile('Próba', str(sum(meta['kept'].values())), f'{meta["reads"]} odczytów X, {yt_note}; {summary["total"]["neutralny"]} neutralnych, {meta["unrated"]} nieocenionych')}
-</div>
-<div class="tiles five">
-{''.join(src_tile(s) for s in SOURCES)}
-</div>
-<div class="card"><h2>Źródła</h2><div class="scroll"><table><thead><tr><th>Źródło</th><th>Pobrane</th><th>Po filtrze</th><th>Na temat</th><th>Pozytyw</th><th>Negatyw</th><th>Neutralne</th><th>Udział pozytyw</th><th>Waga</th></tr></thead>
-<tbody>{source_rows}</tbody></table></div><p class="muted" style="margin:12px 0 0">Udział pozytywnych wśród opinii ze znakiem. Facebook, Instagram i TikTok nie są badane.</p></div>
-<div class="card"><h2>Wpisy na X dzień po dniu</h2><p class="muted" style="margin:0">{e(premiere_note)} Źródło liczb: {e(summary['volume_source'])}.</p><div class="vols">{volume}</div></div>
-<div class="two">
-<div class="card"><h2>Udział pozytywnych po dniach (bez mediów)</h2><div><div class="legend"><span><i style="background:var(--pos)"></i>pozytywne</span><span><i style="background:var(--neg)"></i>negatywne</span></div>{days}</div><p class="muted" style="margin:12px 0 0">Procent i 95% przedział Wilsona; n = opinie ze znakiem / wszystkie na temat.</p></div>
-<div class="card"><h2>Udział pozytywnych po tematach (bez mediów)</h2><div><div class="legend"><span><i style="background:var(--pos)"></i>pozytywne</span><span><i style="background:var(--neg)"></i>negatywne</span></div>{topics}</div><p class="muted" style="margin:12px 0 0">Temat nadaje model: smak, cena, osoba, marketing, inne.</p></div>
-</div>
-<div class="quotes">
-<div class="side"><h2>Głosy pozytywne<span>5 najczęściej polubionych</span></h2>{''.join(quote_box(q) for q in summary['quotes']['pozytyw']) or '<p class="muted">Brak.</p>'}</div>
-<div class="side"><h2>Głosy negatywne<span>5 najczęściej polubionych</span></h2>{''.join(quote_box(q) for q in summary['quotes']['negatyw']) or '<p class="muted">Brak.</p>'}</div>
-</div>
-<div class="card"><h2>Jak piszą media (tytuły z naszej bazy)</h2><ul>{media_rows}</ul></div>
-<div class="two">
-<div class="card"><h2>Metoda</h2><ul>
+<header class="bar">{logo_svg(1, 30)}<span>raport nastrojów · {now.strftime('%d.%m.%Y %H:%M')}</span></header>
+<div class="head"><h1>{e(title)}</h1><p class="sub">przeszłość.today · raport nastrojów · zakres <b>{zakres}</b> · frazy: {e(', '.join(frazy))} · {kept} tekstów po filtrze</p></div>
+{big}{f'<ul class="notes">{alert_html}</ul>' if alert_html else ''}
+<section class="proof">
+{cell('Pozytywne', headline, headline_note, small_tag(w) if headline_ok else '')}
+{cell('Negatywne', _pct(1 - w['udzial']) if headline_ok else '-', f'{w["negatyw"]} z {w["n"]} opinii ze znakiem' if headline_ok else headline_note)}
+{cell('Neutralne', str(soc['neutralny']), 'na temat, bez znaku')}
+{cell('Nie na temat', str(summary['counts'].get('nie_na_temat', 0)), 'odrzucone z udziałów')}
+{cell('Ocenione', f'{kept - unrated} / {kept}', (f'{len(meta["models"])} modele: ' if len(meta['models']) > 1 else '') + models_text(meta) if meta.get('models') else 'żaden model nie odpowiedział')}
+</section>
+<section class="sec"><h2>Źródła<small>udział pozytywnych wśród opinii ze znakiem</small></h2>
+<div class="grid5">{''.join(src_cell(s) for s in SOURCES)}</div></section>
+<section class="sec"><div class="card"><h3 class="h3">Źródła w liczbach</h3><div class="scroll"><table><thead><tr><th>Źródło</th><th>Pobrane</th><th>Po filtrze</th><th>Na temat</th><th>Pozytyw</th><th>Negatyw</th><th>Neutralne</th><th>Pozytywne</th><th>Wilson 95%</th><th>Udział w puli</th></tr></thead>
+<tbody>{source_rows}</tbody></table></div><p class="card-foot">Udział w puli: ile opinii ze znakiem z danego źródła weszło do łącznego wyniku (bez mediów). Facebook, Instagram i TikTok nie są badane.</p></div></section>
+<section class="sec"><div class="card"><h3 class="h3">Wpisy na X dzień po dniu</h3><div class="vols">{volume}</div><p class="card-foot">{e(premiere_note)} Źródło liczb: {e(summary['volume_source'])}.</p></div></section>
+<section class="sec two">
+<div class="card"><h3 class="h3">Pozytywne po dniach (bez mediów)</h3><div><div class="legend"><span><i style="background:var(--pos)"></i>pozytywne</span><span><i style="background:var(--neg)"></i>negatywne</span></div><div class="rows">{days}</div></div><p class="card-foot">Procent i 95% przedział Wilsona; n = opinie ze znakiem / wszystkie na temat.</p></div>
+<div class="card"><h3 class="h3">Pozytywne po tematach (bez mediów)</h3><div><div class="legend"><span><i style="background:var(--pos)"></i>pozytywne</span><span><i style="background:var(--neg)"></i>negatywne</span></div><div class="rows">{topics}</div></div><p class="card-foot">Temat nadaje model: smak, cena, osoba, marketing, inne.</p></div>
+</section>
+<section class="sec quotes">
+<div><h2>Głosy pozytywne<small>5 najczęściej polubionych</small></h2>{''.join(quote_box(q) for q in summary['quotes']['pozytyw']) or '<p class="muted">Brak.</p>'}</div>
+<div><h2>Głosy negatywne<small>5 najczęściej polubionych</small></h2>{''.join(quote_box(q) for q in summary['quotes']['negatyw']) or '<p class="muted">Brak.</p>'}</div>
+</section>
+<section class="sec"><div class="card"><h3 class="h3">Jak piszą media (tytuły z naszej bazy)</h3><ul class="list">{media_rows}</ul><p class="card-foot">Tylko metadane artykułów, które już mamy w bazie.</p></div></section>
+<section class="sec two">
+<div class="card"><h3 class="h3">Metoda</h3><ul class="plain">
 <li>X: oficjalne API, wyszukiwanie pełnotekstowe od {zakres}, zapytanie: <code>{e(query)}</code>; {meta['reads']} odczytów, {meta['pages']} stron.</li>
 <li>YouTube: filmy z frazami w okresie (search.list), komentarze pod najpopularniejszymi (commentThreads.list); {yt_note}.</li>
 <li>Wykop: oficjalne API v3 (wyszukiwanie wpisów i znalezisk po frazach), {meta['wykop_calls']} zapytań.</li>
 <li>Fora i blogi: {meta['rss_feeds']} publicznych kanałów RSS/Atom (źródła z zatwierdzoną kartą dostępu i lista z env), tylko tytuł i fragment z kanału.</li>
 <li>Media: tytuły artykułów z frazami w okresie z naszej bazy (tylko metadane).</li>
-<li>Filtr: po nim {sum(meta['kept'].values())} z {sum(meta['raw'].values())} tekstów; odrzucone: {e(dropped)}.</li>
-<li>Ocena: {mercury}, paczki po {BATCH} tekstów; nieocenione: {meta['unrated']}.</li>
-</ul><p class="muted" style="margin:12px 0 0">Plik CSV obok raportu: źródło, dzień, ocena, temat, powód, polubienia, skrócony tekst.</p></div>
-<div class="card"><h2>Ograniczenia</h2><ul>{''.join(f'<li>{e(l)}</li>' for l in limits)}</ul><p class="muted" style="margin:12px 0 0">Zasady: tylko legalne źródła, nic nie trafia do tabel spin.clinic.</p></div>
-</div>
-<p class="foot">spin.clinic · operator iapply sp. z o.o. · raport jednorazowy, nie jest sondażem</p>
+<li>Filtr: po nim {kept} z {sum(meta['raw'].values())} tekstów; odrzucone: {e(dropped)}.</li>
+<li>Ocena w paczkach po {BATCH} tekstów, {meta['calls']} paczek; modele i liczba ocenionych tekstów: {e(models_text(meta))}; nieocenione: {unrated}.</li>
+</ul><p class="card-foot">Plik CSV obok raportu: źródło, dzień, ocena, temat, powód, polubienia, skrócony tekst.</p></div>
+<div class="card"><h3 class="h3">Ograniczenia</h3><ul class="plain">{''.join(f'<li>{e(l)}</li>' for l in limits)}</ul><p class="card-foot">Zasady: tylko legalne źródła, nic nie trafia do tabel serwisu.</p></div>
+</section>
+<footer class="foot"><span>przeszłość.today prowadzi iapply sp. z o.o. · dane wspólne ze spin.clinic</span><span>raport jednorazowy, nie jest sondażem</span></footer>
 </div></body></html>'''
 
 
@@ -758,21 +1006,72 @@ def plan(frazy: list[str], *, days: int = 7, limit: int = 500, yt_limit: int = 1
                          'mercury_calls': calls, 'mercury_tokens': calls * (len(SYSTEM) // 3 + BATCH * 130 + 120 * BATCH + 200)},
             'x_configured': bool(config), 'daily_cap': options()['daily_cap'], 'yt_units_left': yt.units_left() if yt.enabled() else 0,
             'wykop': wykop_enabled(), 'rss_feeds': len(rss_feed_urls()),
-            'mercury_ready': inception.configured() and inception.no_training() and inception.ready(4000)}
+            'mercury_ready': inception.configured() and inception.no_training() and inception.ready(4000),
+            'council_models': [m[1] for m in _council_members()], 'cached': cache_load(frazy, start, end, now) is not None}
 
 
 def run(frazy: list[str], *, days: int = 7, limit: int = 500, yt_limit: int = 1500, title: str = '', topic: str = '', od=None, do=None,
-        keep_raw: bool = False, now=None) -> dict:
-    """Pełny przebieg: trzy źródła, filtr, ocena, statystyka, HTML + CSV. Surowe dane zostają w pamięci (keep_raw: plik JSON obok)."""
-    from news.political_polling import configuration
+        keep_raw: bool = False, source_file: str = '', refresh: bool = False, now=None) -> dict:
+    """Pełny przebieg: źródła (albo pamięć podręczna z 24 h, albo plik), filtr, ocena, statystyka, HTML + CSV.
+    Surowe dane zostają w pamięci (keep_raw: plik JSON obok); do pamięci podręcznej trafiają tylko teksty po filtrze i anonimizacji."""
     now = now or timezone.now()
     frazy = phrases(frazy)
     query = build_query(frazy)
     start, end = window(days, od, do, now)
     title = title or f'Nastroje: {frazy[0]}'
     topic = topic or ', '.join(frazy)
+    cache_sweep(now)
+    raw_rows, cache_path = [], ''
+    if source_file:
+        posts = load_posts(source_file)
+        bundle = {'posts': posts, 'counts': None, 'fetch': {}, 'raw': dict(Counter(p['src'] for p in posts)), 'dropped': {},
+                  'stopped': [], 'origin': f'Teksty z pliku {Path(source_file).name} (bez pobierania ze źródeł).'}
+    else:
+        bundle = None if refresh else cache_load(frazy, start, end, now)
+        if bundle:
+            saved = datetime.fromisoformat(bundle['saved']).astimezone(PL).strftime('%d.%m.%Y %H:%M')
+            bundle['origin'] = f'Teksty z pamięci podręcznej (pobrane {saved}, bez ponownego pobierania i płacenia; --swiezo wymusza pobranie).'
+        else:
+            bundle = fetch(frazy, query, limit=limit, yt_limit=yt_limit, start=start, end=end, now=now)
+            raw_rows = bundle.pop('raw_rows')
+            if bundle['posts']:
+                cache_path = cache_save(frazy, start, end, {k: v for k, v in bundle.items() if k != 'origin'}, now)
+    posts = bundle['posts']
+    for post in posts:
+        for key in ('label', 'topic', 'reason'):
+            post.pop(key, None)
+    fetched, counts = bundle.get('fetch') or {}, bundle.get('counts')
+    stopped = list(bundle.get('stopped') or [])
+    if bundle.get('origin'):
+        stopped.insert(0, bundle['origin'])
+    rated = classify(posts, topic)
+    if rated['stopped']:
+        stopped.append(rated['stopped'])
+    summary = summarise(posts, start, end, counts if counts else None)
+    meta = {'now': now, 'start': start, 'end': end, 'raw': dict(bundle.get('raw') or {}), 'kept': dict(Counter(p['src'] for p in posts)),
+            'reads': fetched.get('reads', 0), 'pages': fetched.get('pages', 0), 'yt_units': fetched.get('yt_units', 0),
+            'yt_videos': fetched.get('yt_videos', 0), 'wykop_calls': fetched.get('wykop_calls', 0), 'rss_feeds': fetched.get('rss_feeds', 0),
+            'dropped': dict(bundle.get('dropped') or {}), 'calls': rated['calls'], 'model': rated['model'], 'models': rated['models'],
+            'routes': rated['routes'], 'unrated': rated['unrated'], 'stopped': stopped, 'origin': bundle.get('origin', ''), 'cache': cache_path}
+    folder = output_dir()
+    stem = f'nastroje-{slug(frazy[0])}-{now.astimezone(PL).strftime("%Y%m%d-%H%M")}'
+    html_path, csv_path = folder / f'{stem}.html', folder / f'{stem}.csv'
+    html_path.write_text(render_html(title, frazy, query, summary, meta), encoding='utf-8')
+    write_csv(csv_path, posts)
+    raw_path = ''
+    if keep_raw and raw_rows:
+        raw_path = str(folder / f'{stem}-surowe.json')
+        Path(raw_path).write_text(json.dumps({'uwaga': 'dane surowe do debugowania, usuń po użyciu', 'wiersze': raw_rows}, ensure_ascii=False, indent=1),
+                                  encoding='utf-8')
+    raw_rows.clear()
+    return {'query': query, 'summary': summary, 'meta': meta, 'html': str(html_path), 'csv': str(csv_path), 'raw': raw_path, 'title': title}
+
+
+def fetch(frazy: list[str], query: str, *, limit: int, yt_limit: int, start: datetime, end: datetime, now=None) -> dict:
+    """Pobranie ze wszystkich źródeł i filtr. Zwraca paczkę do pamięci podręcznej (`posts` bez identyfikatorów) oraz `raw_rows`
+    (surowe wiersze tylko w pamięci, nie trafiają do pamięci podręcznej)."""
+    from news.political_polling import configuration
     config = configuration()
-    stopped = []
     if config:
         counts = x_counts(query, config, start, end)
         fetched = fetch_x(query, limit, config, start, end, now)
@@ -785,49 +1084,41 @@ def run(frazy: list[str], *, days: int = 7, limit: int = 500, yt_limit: int = 15
     rss = rss_entries(frazy, start, end)
     media = media_titles(frazy, start, end)
     raw = fetched['rows'] + comments['rows'] + wykop['rows'] + rss['rows'] + media
-    stopped += [s for s in (fetched['stopped'], counts['error'], videos['error'], comments['error'], wykop['error'], rss['error']) if s]
+    stopped = [s for s in (fetched['stopped'], counts['error'], videos['error'], comments['error'], wykop['error'], rss['error']) if s]
     posts, dropped = filter_posts(raw)
-    rated = classify(posts, topic)
-    if rated['stopped']:
-        stopped.append(rated['stopped'])
-    summary = summarise(posts, start, end, counts['days'] if not counts['error'] and counts['days'] else None)
-    meta = {'now': now, 'start': start, 'end': end, 'raw': dict(Counter(r['src'] for r in raw)), 'kept': dict(Counter(p['src'] for p in posts)),
-            'reads': fetched['reads'], 'pages': fetched['pages'], 'yt_units': videos['units'] + comments['units'], 'yt_videos': comments['videos'],
-            'wykop_calls': wykop['calls'], 'rss_feeds': rss['feeds'],
-            'dropped': dict(dropped), 'calls': rated['calls'], 'model': rated['model'], 'unrated': rated['unrated'], 'stopped': stopped}
-    folder = output_dir()
-    stem = f'nastroje-{slug(frazy[0])}-{now.astimezone(PL).strftime("%Y%m%d-%H%M")}'
-    html_path, csv_path = folder / f'{stem}.html', folder / f'{stem}.csv'
-    html_path.write_text(render_html(title, frazy, query, summary, meta), encoding='utf-8')
-    write_csv(csv_path, posts)
-    raw_path = ''
-    if keep_raw:
-        raw_path = str(folder / f'{stem}-surowe.json')
-        Path(raw_path).write_text(json.dumps({'uwaga': 'dane surowe do debugowania, usuń po użyciu', 'wiersze': raw}, ensure_ascii=False, indent=1),
-                                  encoding='utf-8')
-    for bucket in (raw, fetched['rows'], comments['rows'], wykop['rows'], rss['rows']):
+    for bucket in (fetched['rows'], comments['rows'], wykop['rows'], rss['rows']):
         bucket.clear()
-    return {'query': query, 'summary': summary, 'meta': meta, 'html': str(html_path), 'csv': str(csv_path), 'raw': raw_path, 'title': title}
+    return {'posts': posts, 'counts': counts['days'] if not counts['error'] and counts['days'] else None,
+            'fetch': {'reads': fetched['reads'], 'pages': fetched['pages'], 'yt_units': videos['units'] + comments['units'],
+                      'yt_videos': comments['videos'], 'wykop_calls': wykop['calls'], 'rss_feeds': rss['feeds']},
+            'raw': dict(Counter(r['src'] for r in raw)), 'dropped': dict(dropped), 'stopped': stopped, 'raw_rows': raw}
+
+
+def models_text(meta: dict) -> str:
+    return '; '.join(f'{name}: {n}' for name, n in sorted(meta.get('models', {}).items(), key=lambda kv: -kv[1])) or 'żaden model nie ocenił tekstów'
 
 
 def summary_text(result: dict) -> str:
-    s, m, w = result['summary'], result['meta'], result['summary']['weighted']
-    soc = s['social']
-    n = soc['pozytyw'] + soc['negatyw']
-    per_source = '; '.join(f'{SOURCE_NAMES[k]}: {_pct(v["udzial"])} (n={v["pozytyw"] + v["negatyw"]})' if v['pozytyw'] + v['negatyw']
-                           else f'{SOURCE_NAMES[k]}: brak opinii ze znakiem' for k, v in s['by_source'].items())
-    lines = [result['title'],
-             'Łącznie (wagi ' + ', '.join(f'{SOURCE_NAMES[s].split(" ")[0]} {WEIGHTS[s]}' for s in SOURCES) + f'): pozytywne {_pct(w["udzial"])}, '
-             f'negatywne {_pct(1 - w["udzial"])}, {w["n"]} opinii ze znakiem' if w['n'] else 'Brak opinii z wyraźnym znakiem',
-             f'Wszystkie głosy bez mediów: {_pct(soc["udzial"])} pozytywnych ({_pct(soc["od"])} do {_pct(soc["do"])}, 95%), n={n}' if n else '',
-             per_source,
+    s, m, w = result['summary'], result['meta'], result['summary']['pooled']
+    per_source = '; '.join(f'{SOURCE_NAMES[k]}: {_pct(v["udzial"])} (n={v["pozytyw"] + v["negatyw"]}{", mała próba" if v["small"] else ""})'
+                           if v['pozytyw'] + v['negatyw'] else f'{SOURCE_NAMES[k]}: brak opinii ze znakiem' for k, v in s['by_source'].items())
+    if m['unrated']:
+        headline = f'BEZ ŁĄCZNEGO WYNIKU: {m["unrated"]} z {sum(m["kept"].values())} tekstów nieocenionych (patrz uwagi niżej).'
+    elif w['n']:
+        headline = (f'Łącznie (wszystkie opinie ze znakiem bez mediów, n={w["n"]}{", mała próba" if w["small"] else ""}): pozytywne {_pct(w["udzial"])} '
+                    f'({_pct(w["od"])} do {_pct(w["do"])}, Wilson 95%), negatywne {_pct(1 - w["udzial"])}')
+    else:
+        headline = 'Brak opinii z wyraźnym znakiem'
+    lines = [result['title'], headline, per_source,
              f'Neutralne: {s["total"]["neutralny"]}, nie na temat: {s["counts"].get("nie_na_temat", 0)}, nieocenione: {m["unrated"]}',
              f'Próba: {sum(m["kept"].values())} tekstów po filtrze z {sum(m["raw"].values())} pobranych ({m["reads"]} odczytów X, '
-             f'{m["yt_units"]} jednostek YouTube, {m["calls"]} wywołań Mercury)',
+             f'{m["yt_units"]} jednostek YouTube)',
+             f'Ocena ({m["calls"]} paczek): {models_text(m)}',
              f'Zakres: {m["start"].astimezone(PL).strftime("%d.%m.%Y")} do {m["end"].astimezone(PL).strftime("%d.%m.%Y")}'
              + (f', najpewniej premiera: {s["premiere"]}' if s['premiere'] else ''),
              *(f'Uwaga: {x}' for x in m['stopped']),
              f'HTML: {result["html"]}', f'CSV: {result["csv"]}', f'Surowe (debugowanie): {result["raw"]}' if result.get('raw') else '',
+             f'Pamięć podręczna (24 h, bez autorów): {m["cache"]}' if m.get('cache') else '',
              'Tylko X, YouTube, Wykop, publiczne RSS i tytuły mediów (bez FB, IG, TikToka); ocena modelem; bez nazw autorów.']
     return '\n'.join(l for l in lines if l)
 
@@ -840,4 +1131,4 @@ def admin_email() -> str:
 def send(result: dict) -> bool:
     from news.social_publish import _mail
     to = admin_email()
-    return bool(to) and _mail(to, f'spin.clinic · {result["title"]}', summary_text(result), important=True)
+    return bool(to) and _mail(to, f'przeszłość.today · {result["title"]}', summary_text(result), important=True)
