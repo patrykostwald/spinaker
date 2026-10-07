@@ -11125,3 +11125,4 @@ a.sc-sp-meta__who:hover { text-decoration: underline; text-underline-offset: 3px
 @media (max-width: 760px) { .sc-message-card .sc-message-card__thesis { min-height: 0; } }
 /* Telefon: etykieta werdyktu łamie się na dwa wiersze zamiast wychodzić poza wąską kolumnę (np. „Częściowy / spin” pod awatarem; właściciel 7.10) */
 @media (max-width: 760px) { .sc-verdict { white-space: normal; max-width: 100%; box-sizing: border-box; text-align: center; line-height: 1.15; } }
+@media (max-width: 760px) { .sc-verdict { height: auto; min-height: 22px; padding: 3px 8px; border-radius: 8px; } }
