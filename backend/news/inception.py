@@ -237,7 +237,8 @@ def body(system: str, user: str, schema: dict | None, max_tokens: int, temperatu
                    '\nOdpowiedz wyłącznie obiektem JSON. Schemat:\n' + json.dumps(schema, ensure_ascii=False) if schema else '')},
                    {'role': 'user', 'content': user[:24000]}]}
     if schema:
-        payload['response_format'] = {'type': 'json_schema', 'json_schema': {'name': 'result', 'strict': False, 'schema': schema}}
+        # Mercury obsługuje tylko json_mode (lista modeli 7.10: supported_features tools, json_mode); json_schema daje 400.
+        payload['response_format'] = {'type': 'json_object'}
     return payload
 
 
@@ -273,6 +274,10 @@ def chat(system: str, user: str, schema: dict | None = None, *, max_tokens: int 
             except (TypeError, ValueError):
                 wait = 0
             _sleep(min(10.0, max(wait, 2 ** attempt)))
+            continue
+        if status == 400 and 'reasoning_effort' in payload and attempt < retries:
+            # parametr spoza listy supported_sampling_parameters: jedna próba bez niego
+            payload.pop('reasoning_effort')
             continue
         if status >= 400:
             text = (response.text or '')[:300]

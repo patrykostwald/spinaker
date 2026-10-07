@@ -75,7 +75,7 @@ def test_daily_message_falls_back_to_mercury_when_free_models_fail(monkeypatch):
     request = sent[0]
     assert request['url'] == 'https://api.inceptionlabs.ai/v1/chat/completions'
     assert request['headers']['Authorization'] == 'Bearer inc-test'
-    assert request['body']['response_format']['json_schema']['schema'] == clinic_ai.DAILY_SCHEMA
+    assert request['body']['response_format'] == {'type': 'json_object'}
     assert request['body']['max_completion_tokens'] == 2500
     assert inception.usage()['today'] == 1500  # tokeny policzone w darmowej puli
 

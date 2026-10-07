@@ -75,8 +75,8 @@ def test_request_shape_and_token_count(keyed, calls):
     body = request['json']
     assert body['model'] == 'mercury-2.5' and body['max_completion_tokens'] == 800 and 'max_tokens' not in body
     assert body['reasoning_effort'] == 'low' and body['temperature'] == 0
-    assert body['response_format']['type'] == 'json_schema'
-    assert body['response_format']['json_schema']['schema'] == clinic_ai.SCREEN_SCHEMA
+    assert body['response_format'] == {'type': 'json_object'}
+    assert 'Schemat:' in body['messages'][0]['content']
     assert [m['role'] for m in body['messages']] == ['system', 'user'] and body['messages'][1]['content'] == 'Wpis posła.'
     info = inception.usage()
     assert info['today'] == info['month'] == info['total'] == 1234 and info['calls_today'] == 1
