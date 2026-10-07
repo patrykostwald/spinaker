@@ -250,7 +250,7 @@ def test_smtp_failure_marks_failed_and_goes_to_digest(mailbox, monkeypatch):
     monkeypatch.setattr('news.social_publish._mail', lambda to, subject, body, **kw: sent.append((to, subject, body, kw)) or True)
     monkeypatch.setenv('LOOP_REPORT_EMAIL', 'wlasciciel@example.com')
     out = poczta.digest()
-    assert out == {'status': 'ok', 'items': 1, 'sent': True}
+    assert out == {'status': 'ok', 'items': 1, 'sent': True, 'outbox': 0}
     to, subject, body, kw = sent[0]
     assert to == 'wlasciciel@example.com' and kw == {'important': True} and 'proponowany szkic' in body and 'SMTP: OSError' in body
     assert MailMessage.objects.get(pk=row.pk).digest_sent_at and poczta.digest()['status'] == 'idle'

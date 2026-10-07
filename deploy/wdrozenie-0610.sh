@@ -163,4 +163,12 @@ grep -q '^MAIL_AGENT_AUTOSEND=' "$ENV" || setv MAIL_AGENT_AUTOSEND false
 grep -q '^MAIL_AGENT_DAILY_LIMIT=' "$ENV" || setv MAIL_AGENT_DAILY_LIMIT 20
 $M poczta --stan | tail -20
 $M poczta --plan | tail -60
+echo '== 14. Poczta wychodząca (właściciel 7.10): kolejka listów deploy/poczta-wychodzaca -> kontener; tylko PLAN, ten skrypt nigdy nie wysyła'
+# Obraz backendu nie zawiera katalogu deploy/, więc kolejka jest kopiowana do kontenera przy każdym wdrożeniu.
+# Wnioski do urzędów mają miejsce {{PODPIS}}: imię i nazwisko oraz funkcję osoby uprawnionej wpisuje właściciel
+# do .env.production jako MAIL_OUTBOX_SIGNER (nigdy do repozytorium). Wysyłka tylko ręcznie: $M poczta --wyslij-kolejke
+$DC cp deploy/poczta-wychodzaca/. backend:/app/poczta-wychodzaca/
+grep -q '^MAIL_OUTBOX_SIGNER=.' "$ENV" || echo 'UWAGA: brak MAIL_OUTBOX_SIGNER="Imię Nazwisko, funkcja" - wnioski do urzędów czekają'
+grep -q '^MAIL_OUTBOX_DAILY_LIMIT=' "$ENV" || setv MAIL_OUTBOX_DAILY_LIMIT 10
+$M poczta --wyslij-kolejke --plan | tail -80
 echo 'GOTOWE'

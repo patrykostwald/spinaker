@@ -78,3 +78,42 @@ class MailMessage(models.Model):
 
     def __str__(self):
         return f'{self.mailbox}#{self.uid} {self.subject[:40]}'
+
+
+OUTBOX_CATEGORIES = [
+    ('dostep-do-danych', 'Dostęp do danych (API, biblioteki treści)'),
+    ('instytucja', 'Wniosek lub pismo do instytucji'),
+    ('partner', 'Partner (współpraca, zgoda, porozumienie)'),
+    ('odpowiedz', 'Odpowiedź w istniejącym wątku'),
+]
+OUTBOX_STATUSES = [
+    ('sent', 'Wysłano'),
+    ('failed', 'Błąd wysyłki'),
+    ('blocked', 'Zatrzymane przez kontrolę'),
+    ('duplicate', 'Pominięte: już wysłane'),
+]
+
+
+class MailOutboxLog(models.Model):
+    """Poczta wychodząca (właściciel 7.10): rejestr listów z kolejki deploy/poczta-wychodzaca. Jeden wpis na próbę;
+    wpis „sent” dla klucza blokuje ponowną wysyłkę; wpisy bez digest_sent_at trafiają do zestawienia 7:10."""
+    key = models.CharField(max_length=120, db_index=True, help_text='Nazwa pliku listu bez rozszerzenia.')
+    mailbox = models.CharField(max_length=40, db_index=True)
+    recipient = models.CharField(max_length=254, blank=True)
+    subject = models.CharField(max_length=500, blank=True)
+    category = models.CharField(max_length=24, choices=OUTBOX_CATEGORIES, blank=True)
+    status = models.CharField(max_length=12, choices=OUTBOX_STATUSES, db_index=True)
+    reason = models.CharField(max_length=300, blank=True)
+    message_id = models.CharField(max_length=512, blank=True)
+    copy_saved = models.BooleanField(default=False, help_text='Kopia zapisana w folderze Wysłane skrzynki (IMAP APPEND).')
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    digest_sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+        verbose_name = 'Wpis Poczty wychodzącej'
+        verbose_name_plural = 'Wpisy Poczty wychodzącej'
+
+    def __str__(self):
+        return f'{self.key} -> {self.recipient} [{self.status}]'

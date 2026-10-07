@@ -459,7 +459,11 @@ def build_reply(message, cfg, text):
 
 
 def send(message, cfg, text):
-    email = build_reply(message, cfg, text)
+    return deliver(build_reply(message, cfg, text), cfg)
+
+
+def deliver(email, cfg):
+    """Jedna wiadomość przez SMTP skrzynki (465: SSL, inaczej STARTTLS). Zwraca Message-ID."""
     context = ssl.create_default_context()
     if cfg['smtp_port'] == 465:
         with smtplib.SMTP_SSL(cfg['smtp_host'], cfg['smtp_port'], timeout=30, context=context) as client:
@@ -546,9 +550,14 @@ def _snippet(text, limit=300):
     return re.sub(r'\s+', ' ', text or '').strip()[:limit]
 
 
-def digest_text(rows, now):
+def digest_text(rows, now, outbox=()):
     lines = [f'Poczta - wiadomości do Twojej decyzji ({now.astimezone(WARSAW):%d.%m %H:%M}). '
              'Agent nie wysłał odpowiedzi; przy każdej jest proponowany szkic (jeśli powstał).', '']
+    if outbox:
+        from news.poczta_wychodzaca import digest_lines
+        lines += digest_lines(outbox) + ['']
+    if not rows:
+        lines[0] = f'Poczta ({now.astimezone(WARSAW):%d.%m %H:%M}): brak wiadomości przychodzących do decyzji.'
     for i, row in enumerate(rows, 1):
         label = config(row.mailbox)['label']
         lines.append(f'{i}. [{label}] od {row.sender_address or "(brak adresu)"} · temat: {row.subject or "(bez tematu)"}')
@@ -572,15 +581,19 @@ def digest(now=None):
     """Jeden mail dziennie do właściciela (important=True) z wiadomościami bez automatycznej odpowiedzi i szkicami."""
     now = now or timezone.now()
     rows = list(MailMessage.objects.filter(status__in=('escalated', 'failed'), digest_sent_at__isnull=True).order_by('mailbox', 'fetched_at'))
-    if not rows:
+    from news.poczta_models import MailOutboxLog
+    outbox = list(MailOutboxLog.objects.filter(digest_sent_at__isnull=True).order_by('created_at', 'pk'))
+    if not rows and not outbox:
         return {'status': 'idle', 'items': 0}
     from news.raport_petli import recipient
     from news.social_publish import _mail
     to = recipient()
-    sent = bool(to) and _mail(to, f'spin.clinic · Poczta: {len(rows)} wiadomości do decyzji', digest_text(rows, now), important=True)
+    subject = f'spin.clinic · Poczta: {len(rows)} wiadomości do decyzji' + (f', {len(outbox)} wysyłek z kolejki' if outbox else '')
+    sent = bool(to) and _mail(to, subject, digest_text(rows, now, outbox), important=True)
     if sent:
         MailMessage.objects.filter(pk__in=[r.pk for r in rows]).update(digest_sent_at=now)
-    return {'status': 'ok' if sent else 'failed', 'items': len(rows), 'sent': bool(sent)}
+        MailOutboxLog.objects.filter(pk__in=[r.pk for r in outbox]).update(digest_sent_at=now)
+    return {'status': 'ok' if sent else 'failed', 'items': len(rows), 'sent': bool(sent), 'outbox': len(outbox)}
 
 
 def counts(now=None, hours=24):

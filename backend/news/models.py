@@ -1029,4 +1029,4 @@ from .sales_models import SalesLead, WeeklyReportIssue  # noqa: E402,F401
 
 from .analysis_models import CoordinatedCluster, VotingDeviationSnapshot  # noqa: E402,F401
 from .zrodla_models import CitedArticle, SejmVideoSpin  # noqa: E402,F401
-from .poczta_models import MailboxState, MailMessage  # noqa: E402,F401
+from .poczta_models import MailboxState, MailMessage, MailOutboxLog  # noqa: E402,F401
