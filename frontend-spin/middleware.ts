@@ -11,6 +11,9 @@ export function middleware(request: NextRequest) {
   if (host !== 'przeszlosc.today') return NextResponse.next();
   const { pathname, search } = request.nextUrl;
   if (pathname === '/') return NextResponse.rewrite(new URL(`/przeszlosc${search}`, request.url));
+  // raport nastrojów dla znajomego (właściciel 8.10): statyczny plik z public/raporty, noindex
+  if (pathname === '/pizza') return NextResponse.rewrite(new URL('/raporty/pizza.html', request.url));
+  if (pathname.startsWith('/raporty/')) return NextResponse.next();
   if (OWN.some(prefix => pathname.startsWith(prefix))) return NextResponse.next();
   return NextResponse.redirect(`https://spin.clinic${pathname}${search}`, 308);
 }
