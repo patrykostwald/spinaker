@@ -12,6 +12,8 @@ Dyżurny (check_backup): brak kopii zdalnej > 26 h = alarm krytyczny; nieudany t
 Odtworzenie krok po kroku: docs/KOPIE-I-ODTWORZENIE.md."""
 import gzip
 import hashlib
+import time
+import base64
 import hmac
 import logging
 import os
@@ -30,10 +32,10 @@ STATE_KEY = 'kopia-zapasowa'
 RETENTION_DAYS = 30
 MAX_AGE = timedelta(hours=26)
 SIZE_GUARD = 8 * 1024 ** 3
-PART_SIZE = 64 * 1024 ** 2
+PART_SIZE = 16 * 1024 ** 2  # mniejsze części: wolne łącze VPS->B2 przerywało zapis 64 MB (7.10)
 PREFIXES = {'pg': 'pg/', 'media': 'media/'}
 RUNS_KEEP = 60
-TIMEOUT = (10, 120)
+TIMEOUT = (10, 300)
 OPENSSL = ('openssl', 'enc', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-salt', '-pass', 'env:BACKUP_PASSPHRASE')
 RESTORE_DOC = 'docs/KOPIE-I-ODTWORZENIE.md'
 
@@ -101,8 +103,20 @@ class S3:
             raise requests.HTTPError(f'B2 HTTP {response.status_code} ({method} {key or "/"})')
         return response
 
+    def _put_part(self, key, number, upload_id, chunk, tries=3):
+        # Content-MD5 wymagane przy koszyku z Object Lock; przerwany zapis części ponawiamy
+        md5 = base64.b64encode(hashlib.md5(chunk).digest()).decode()
+        for attempt in range(tries):
+            try:
+                return self.request('PUT', key, query={'partNumber': number, 'uploadId': upload_id}, data=chunk,
+                                    extra_headers={'Content-MD5': md5})
+            except requests.ConnectionError:
+                if attempt == tries - 1:
+                    raise
+                time.sleep(2 ** attempt)
+
     def put_object(self, key, data):
-        self.request('PUT', key, data=data)
+        self.request('PUT', key, data=data, extra_headers={'Content-MD5': base64.b64encode(hashlib.md5(data).digest()).decode()})
 
     def upload_file(self, key, path):
         """Jeden PUT do PART_SIZE, powyżej - wysyłka wieloczęściowa (B2: pojedynczy PUT najwyżej 5 GB)."""
@@ -119,7 +133,7 @@ class S3:
                     chunk = handle.read(PART_SIZE)
                     if not chunk:
                         break
-                    response = self.request('PUT', key, query={'partNumber': number, 'uploadId': upload_id}, data=chunk)
+                    response = self._put_part(key, number, upload_id, chunk)
                     etags.append((number, response.headers.get('ETag', '').strip()))
                     number += 1
                 body = ('<CompleteMultipartUpload>' + ''.join(f'<Part><PartNumber>{n}</PartNumber><ETag>{tag}</ETag></Part>' for n, tag in etags)
