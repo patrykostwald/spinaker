@@ -11103,3 +11103,20 @@ a.sc-sp-meta__who:hover { text-decoration: underline; text-underline-offset: 3px
    przycisk w lewy dolny róg przy lewym pasku - strony nie mają spójnej prawej kolumny na każdej podstronie,
    więc zostaje jak na telefonie i tablecie: ikonka przy prawej krawędzi. */
 @media (min-width: 1024px) { .sc-bug-fab { left: auto !important; right: 16px !important; bottom: 16px !important; } }
+
+/* przekaz dnia: ton jako wiersze na całą szerokość, trzy miary w stałej siatce (właściciel 7.10; Proximity, Similarity) */
+.sc-message-card .sc-message-card__thesis { min-height: 4.05em; }
+.sc-message-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sc-message-metrics dd small { min-height: 1.4em; }
+.sc-message-tone { list-style: none; margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid var(--sc-line); display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 10px; }
+.sc-message-tone > li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; grid-template-rows: auto 4px; row-gap: 4px; align-items: baseline; min-width: 0; }
+.sc-message-tone__label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--sc-text-2); min-width: 0; white-space: nowrap; }
+.sc-message-tone__label i { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--sc-text-3); }
+.sc-message-tone > li > b { justify-self: end; font-size: 13px; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sc-message-tone[data-empty] > li > b { color: var(--sc-text-3); }
+.sc-message-tone__bar { grid-column: 1 / -1; display: block; height: 4px; border-radius: 2px; overflow: hidden; background: var(--sc-line); }
+.sc-message-tone__bar > span { display: block; height: 100%; border-radius: 2px; background: var(--sc-text-3); }
+.sc-message-tone [data-tone="atak"] .sc-message-tone__bar > span, .sc-message-tone [data-tone="atak"] i { background: var(--sc-negative); opacity: .7; }
+.sc-message-tone [data-tone="osiagniecie"] .sc-message-tone__bar > span, .sc-message-tone [data-tone="osiagniecie"] i { background: var(--sc-positive); opacity: .7; }
+.sc-message-tone [data-tone="apel"] .sc-message-tone__bar > span, .sc-message-tone [data-tone="apel"] i { background: var(--sc-accent); opacity: .7; }
+@media (max-width: 760px) { .sc-message-metrics { gap: 8px; } .sc-message-metrics dd strong { font-size: 22px; } .sc-message-card .sc-message-card__thesis { min-height: 0; } }

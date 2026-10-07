@@ -7,7 +7,7 @@ import { CAMP_LABELS, getClinicMessage, type Camp, type DailyMessage, type Messa
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
 import { Loading } from "../../kit/Loading";
 
-const TONES = [["atak", "Atak"], ["osiagniecie", "Osiągnięcia"], ["apel", "Apel"]] as const;
+const TONES = [["atak", "Atak"], ["osiagniecie", "Osiągnięcia"], ["apel", "Apel"], ["inne", "Inne"]] as const;
 function Bar({ value }: { value: number | null | undefined }) {
   return <span className="sc-message-metric__bar" aria-hidden="true"><span style={{ width: `${value ?? 0}%` }} /></span>;
 }
@@ -21,11 +21,15 @@ export function MessageMetrics({ stats }: { stats?: MessageStats }) {
       <div><dt>Wpisy</dt><dd><strong>{known ? stats.posts : "–"}</strong><small>autorów: {known ? stats.authors : "–"}</small></dd><Bar value={known && stats.posts ? 100 : null} /></div>
       <div title="Odsetek wpisów z liczbą lub linkiem. Nie oznacza potwierdzenia ich prawdziwości."><dt>Konkret</dt><dd><strong>{known ? `${stats.concrete_pct}%` : "–"}</strong><small>liczba lub link</small></dd><Bar value={known ? stats.concrete_pct : null} /></div>
       <div title="Autorzy wpisów przypisanych do głównego wątku dnia."><dt>Spójność</dt><dd><strong>{known && stats.coherence_authors !== null ? `${stats.coherence_authors} z ${stats.authors}` : "–"}</strong><small>autorów</small></dd><Bar value={known ? stats.coherence_pct : null} /></div>
-      <div><dt>Ton</dt><dd><strong className="sc-message-metric__tone">{tone ? TONES.map(([key]) => `${tone[key]}%`).join(" / ") : "–"}</strong><small>atak / osiągnięcia / apel</small></dd>
-        <span className="sc-message-metric__bar" aria-hidden="true">{tone ? TONES.map(([key]) => <span key={key} data-tone={key} style={{ width: `${tone[key]}%` }} />) : null}</span>
-      </div>
     </dl>
-    <p className="sc-message-legend">{TONES.map(([key, label]) => <span key={key}><i data-tone={key} aria-hidden="true" />{label}</span>)}{tone ? <span>Inne: {tone.inne}%</span> : null}</p>
+    {/* ton: cztery wiersze zawsze (także 0%), etykieta z lewej, procent z prawej, cienki pasek pod spodem (właściciel 7.10) */}
+    <ul className="sc-message-tone" aria-label="Ton wpisów" data-empty={tone ? undefined : ""}>
+      {TONES.map(([key, label]) => <li key={key} data-tone={key}>
+        <span className="sc-message-tone__label"><i aria-hidden="true" />{label}</span>
+        <b>{tone ? `${tone[key]}%` : "–"}</b>
+        <span className="sc-message-tone__bar" aria-hidden="true"><span style={{ width: `${tone ? tone[key] : 0}%` }} /></span>
+      </li>)}
+    </ul>
   </div>;
 }
 
@@ -70,7 +74,7 @@ export function MessageCard({ camp, message, day, compact = false, emptyText }: 
               <div><dt>Model</dt><dd>{message.model || "Nie zapisano"}</dd></div>
             </dl>
             <small>Szum: {message.stats?.noise ?? "brak danych"} odfiltrowanych wpisów. Krótkie reakcje i podziękowania nie wchodzą do wskaźników ani do modelu.</small>
-            <small>Konkret oznacza liczbę lub link, bez oceny prawdziwości. Spójność i ton wynikają z przypisań AI. Pusty odcinek paska tonu oznacza kategorię „inne”.</small>
+            <small>Konkret oznacza liczbę lub link, bez oceny prawdziwości. Spójność i ton wynikają z przypisań AI. </small>
           </div>
         </details>}
     </> : <p className="sc-clinic-empty">{emptyText ?? "Brak opublikowanego przekazu tej strony w tym dniu."}</p>}
