@@ -107,14 +107,24 @@ def snapshot(thread, evidence):
     return json.loads(json.dumps({'texts': texts, 'limits': limits, 'boxes': boxes, 'evidence': evidence}, ensure_ascii=False, default=str))
 
 
+def _known_name(word, known):
+    word = word.casefold()
+    prefix_length = max(5, len(word) - 2)
+    return word in known or any(
+        abs(len(candidate) - len(word)) <= 3
+        and len(word) >= prefix_length and len(candidate) >= prefix_length
+        and candidate[:prefix_length] == word[:prefix_length]
+        for candidate in known)
+
+
 def measure(texts, payload, *, final=False):
     if not isinstance(texts, dict) or set(texts) != set(payload['texts']):
         return ['Niepełny zestaw tekstów.']
     errors = []
     if not 3 <= len(payload['boxes']) <= 8:
         errors.append('Spinka musi mieć od 3 do 8 boksów.')
-    evidence = json.dumps([payload['evidence'], payload['boxes']], ensure_ascii=False)
-    known = set(re.findall(r'\w+', evidence.casefold()))
+    evidence = json.dumps([payload['evidence'], payload['boxes']], ensure_ascii=False).casefold()
+    known = set(re.findall(r'\w+', evidence))
     for key, value in texts.items():
         if not isinstance(value, str):
             errors.append(f'{key}: nieprawidłowy tekst.')
@@ -122,8 +132,7 @@ def measure(texts, payload, *, final=False):
         if len(value) > payload['limits'][key] or (key == 'title' and not value.strip()):
             errors.append(f'{key}: limit znaków lub pusty tytuł.')
         folded = ' '.join(value.casefold().split())
-        if any(re.search(r'\b' + stem + r'\w*', folded) for stem in (*ACCUSATIONS, 'lobbował', 'załatwił')) or 'na zlecenie' in folded:
-            errors.append(f'{key}: słowo z listy zarzutów.')
+        # Słownik zarzutów usunięty (właściciel 9.10): politycy używają języka, jaki chcą; oceniamy wszystko, bezsensowne wpisy wycina kontrola poparcia zdań.
         if re.search(r'właściciel|konsylium uznało|zlecenie\s*\d|decyzja\s*3[./]10', folded):
             errors.append(f'{key}: wewnętrzne ustalenia.')
         if re.search(r'\b(\w+)\s+\1\b', folded):
@@ -138,7 +147,8 @@ def measure(texts, payload, *, final=False):
                  'Powtórzone', 'Kolejne', 'Pełna', 'Diagnoza', 'Przekaz', 'Zbieżność', 'Zgłoszone',
                  'Zapis', 'Porównano', 'Źródło', 'Materiał', 'Nitka', 'Obecność', 'AI'}
         for token in re.findall(r'\b[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?\b', value):
-            if token not in fixed and token not in TEMPLATE_WORDS and token.casefold() not in known:
+            if (token not in fixed and token not in TEMPLATE_WORDS
+                    and not all(_known_name(part, known) for part in token.split('-'))):
                 errors.append(f'{key}: nazwa własna spoza danych ({token}).')
         if final and (re.search('[—–]', value) or re.search(r'(?<!\w)[aAiIoOuUwWzZ][ \t\n]+\S', value)):
             errors.append(f'{key}: myślnik lub brak twardej spacji.')

@@ -10,6 +10,7 @@ import re
 from django.db.models import F, Q
 
 PER_KIND = 30
+MEDIA_LIMIT = 100
 
 
 def enabled():
@@ -93,6 +94,7 @@ def eu_funds(query, limit=12):
 
 
 def topic_graph(query):
+    from news.material_type import MATERIAL_LABELS, classify_material_type
     from news.clinic import figures_by_account, published_diagnoses
     from news.models import Article
     from news.political_models import (PoliticalPost, PublicFigure, PublicFigureArticleReference,
@@ -154,16 +156,21 @@ def topic_graph(query):
             edges.append({'source': key, 'target': d, 'label': 'diagnoza Dr. Spina'})
 
     # Media: artykuły z bazy; osoby tylko przez potwierdzone powiązanie
-    articles = list(Article.objects.filter(_match(['title'], words)).select_related('source').order_by('-published_date')[:PER_KIND])
+    articles = list(Article.objects.filter(_match(['title', 'description'], words)).select_related('source')
+                    .order_by(F('published_date').desc(nulls_last=True), '-pk')[:MEDIA_LIMIT])
     seen_titles = set()
+    visible_article_ids = []
     for article in articles:
         title_key = article.title.strip().lower()[:120]
         if title_key in seen_titles:
             continue
         seen_titles.add(title_key)
+        visible_article_ids.append(article.pk)
+        material_type = classify_material_type(article)
         node(f'article:{article.pk}', 'media', article.title, url=article.url, sub=article.source.name if article.source_id else '',
-             date=article.published_date.date().isoformat() if article.published_date else None)
-    for ref in (PublicFigureArticleReference.objects.filter(article__in=articles, verification_status='confirmed')
+             date=article.published_date.date().isoformat() if article.published_date else None,
+             match_type='automatic', material_type=material_type, kind_label=MATERIAL_LABELS[material_type])
+    for ref in (PublicFigureArticleReference.objects.filter(article_id__in=visible_article_ids, verification_status='confirmed')
                 .select_related('public_figure')):
         edges.append({'source': figure(ref.public_figure), 'target': f'article:{ref.article_id}', 'label': 'w artykule'})
 
@@ -272,7 +279,7 @@ def topic_view(request):
         return Response({'detail': 'Podaj temat (co najmniej 3 znaki).'}, status=400)
     from django.core.cache import cache
     from django.db import connection
-    key = 'przeszlosc:' + query.lower()
+    key = 'przeszlosc:v2:' + query.lower()
     data = cache.get(key) if connection.vendor == 'postgresql' else None
     if data is None:
         data = topic_graph(query)

@@ -6,7 +6,8 @@ potwierdzone materiały medialne, wykres aktywności i eksport.
 
 Zasady (pracownia_osint.LEGAL): tylko osoby publiczne z rejestru (PublicFigure), żadnych osób prywatnych; posłowie łączeni
 z dokumentami i głosowaniami wyłącznie przez oficjalny identyfikator Sejmu (nigdy po nazwisku); materiały medialne tylko
-z potwierdzonych powiązań; ta sama miara dla wszystkich.
+z potwierdzonych powiązań; osobne wzmianki są automatycznym dopasowaniem metadanych, nie dowodem relacji.
+Ta sama miara dla wszystkich.
 """
 import csv
 import difflib
@@ -248,11 +249,19 @@ def activity(posts, documents, votes, media, months=12):
     return list(table.values())
 
 
-def profile(figure):
+def profile(figure, include_mentions=True):
     from news.clinic import published_diagnoses
     from news.political_models import PoliticalPost
     from news.public_figures import figure_data
-    data = figure_data(figure, include_detail=True)
+    data = figure_data(figure, include_detail=True, include_mentions=include_mentions)
+    from news.material_type import MATERIAL_LABELS, classify_material_type
+    from news.models import Article
+    media_rows = data['materials']['results']
+    metadata = {article.pk: article for article in Article.objects.filter(
+        pk__in=[row['id'] for row in media_rows]).only('title', 'description', 'url', 'tags', 'category')}
+    for row in media_rows:
+        material_type = classify_material_type(metadata.get(row['id'], row))
+        row.update(material_type=material_type, kind_label=MATERIAL_LABELS[material_type])
     data.pop('x_posts', None)
     data.pop('votes', None)
     data['slug'] = slug(figure)
@@ -588,14 +597,17 @@ def person_view(request, ident):
     figure = resolve(ident)
     if figure is None:
         return Response({'detail': 'Nie ma takiej osoby publicznej w rejestrze.'}, status=404)
-    key = f'przeszlosc:osoba:{figure.pk}'
+    key = f'przeszlosc:osoba:v2:{figure.pk}'
     data = cache.get(key) if connection.vendor == 'postgresql' else None
     if data is None:
-        data = profile(figure)
+        data = profile(figure, include_mentions=False)
         data['denominators'] = denominators(figure)
         if connection.vendor == 'postgresql':
             cache.set(key, data, 900)
     from news.przeszlosc_dostep import access, has, locked
+    # The profile cache must not resurrect a newly rejected metadata match.
+    from news.media_mentions import mentions_data
+    data = {**data, 'mentions': mentions_data(figure)}
     fmt = request.query_params.get('eksport', '')
     if fmt in ('csv', 'json') and not has('export', request):
         return locked('export')

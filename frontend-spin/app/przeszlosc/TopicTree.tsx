@@ -4,7 +4,7 @@ import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, nice, personHref, plural, reduced, short, spinColor, stripDiagnoses, text, useNarrativeLayer, useStandalone } from './ui';
 import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
-import { WMediach, type MediaItem } from './WMediach';
+import { WMediach } from './WMediach';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -13,7 +13,7 @@ import { WMediach, type MediaItem } from './WMediach';
  * Bez kolorów obozów (właściciel 6.10): obóz tylko słowem. Jeden akcent, siła spinu w skali zielony < niebieski < czerwony.
  * Warstwa „Wpływ na narrację” (właściciel 8.10): diagnozy i spin ze spin.clinic tylko po włączeniu (domyślnie wyłączona); wyłączona = badanie przeszłości.
  */
-type Node = { id: string; kind: string; label: string; slug?: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
+type Node = { id: string; kind: string; label: string; slug?: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; match_type?: string; material_type?: string; kind_label?: string; links: number };
 type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
@@ -289,8 +289,8 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
   // osoby najpierw, instytucje i konta partii po nich (audyt 6.10: instytucja to nie osoba)
   const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => Number(Boolean(a.institution)) - Number(Boolean(b.institution)) || b.links - a.links);
   // „W mediach” (właściciel 6.10): osobna grupa artykułów; tylko tytuł, data, redakcja i odnośnik do oryginału
-  const mediaItems: MediaItem[] = data.nodes.filter(n => n.kind === 'media' && n.url)
-    .map(n => ({ id: n.id, outlet: n.sub ?? 'Media', date: n.date ?? null, title: n.label, url: n.url! }));
+  const mediaItems = data.nodes.filter(n => n.kind === 'media' && n.url)
+    .map(n => ({ id: n.id, outlet: n.sub ?? 'Media', date: n.date ?? null, title: n.label, url: n.url!, material_type: n.material_type, kind_label: n.kind_label, automatic: n.match_type === 'automatic' }));
   if (!data.nodes.length) return <p className="px-msg">Nic nie znaleźliśmy. Spróbuj innego słowa.</p>;
   const counts = ([['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
     ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['record', 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu'], ['media', 'artykuł', 'artykuły', 'artykułów'],
@@ -318,7 +318,8 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
 
     <div className="px-grid">
       <div className="px-main">
-        <WMediach items={mediaItems} />
+        <WMediach items={mediaItems.filter(m => !m.automatic)} />
+        <WMediach id="topic-mentions-h" heading="Wzmianki" automatic mentionContext="topic" items={mediaItems.filter(m => m.automatic)} />
         <SejmPath data={data} />
         {Boolean(data.votes?.length) && <Votes votes={data.votes!} />}
         <section className="px-time" aria-labelledby="os-h">

@@ -1,4 +1,4 @@
-"""Public, evidence-only profile API for the future politician view."""
+"""Public profile API: confirmed evidence and separately labelled metadata matches."""
 from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
@@ -33,7 +33,7 @@ def headline(figure):
     return ' · '.join([*titles, figure.role_title]), better[0].role_category
 
 
-def figure_data(figure, include_detail=False):
+def figure_data(figure, include_detail=False, include_mentions=True):
     role_title, role_category = headline(figure)
     data = {
         'id': figure.pk,
@@ -96,6 +96,9 @@ def figure_data(figure, include_detail=False):
     data['x_posts'] = verified_x_posts_data(figure)
     data['youtube_channels'] = confirmed_youtube_channels_data(figure)
     data['materials'] = materials_data(figure)
+    if include_mentions:
+        from news.media_mentions import mentions_data
+        data['mentions'] = mentions_data(figure)
     return data
 
 
@@ -343,7 +346,7 @@ def dossier_data(figure):
     this bounded pack, not unrestricted database content, and may only explain
     or order the cited records.
     """
-    details = figure_data(figure, include_detail=True)
+    details = figure_data(figure, include_detail=True, include_mentions=False)
     graph = context_graph_data(figure)
     materials = details['materials']
     timeline = [

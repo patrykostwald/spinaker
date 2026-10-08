@@ -13,6 +13,7 @@ import { sumLine } from './DrzewoPieniedzy';
  */
 type Ev = { kind: string; label: string; url: string };
 type Person = { id: number | null; slug: string | null; name: string; role: string };
+type ProfileMaterial = { id: number; title: string; url: string; source: string; published_date: string | null; material_type?: string; kind_label?: string };
 type Profile = {
   id: number; slug: string; name: string; role_title: string; organisation: string; status: string;
   party?: string | { code: string; short: string; name: string } | null; access?: Access;
@@ -26,7 +27,8 @@ type Profile = {
     deviation?: { term: number; club: string; share: number; club_median: number | null; flagged: boolean; counted: number; rebellions_total: number; latest: { url: string; title: string; date: string | null } | null } | null };
   organisations: { id: number; name: string; krs_number: string; official_register_url: string; public_role: string; organ: string; relation_status: string; since?: string | null; until?: string | null }[];
   employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; source?: { url: string } }[];
-  materials: { count: number; results: { id: number; title: string; url: string; source: string; published_date: string | null }[] };
+  materials: { count: number; results: ProfileMaterial[] };
+  mentions?: { results: ProfileMaterial[] };
   activity: { month: string; posts: number; documents: number; votes: number; media: number }[];
   topics: { topic: string; at: string }[];
   sejm_video?: SejmVideo[];
@@ -161,7 +163,8 @@ function ProfileView({ data }: { data: Profile }) {
           {shown.length > 12 && <button type="button" className="px-more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${shown.length})`}</button>}
         </section>
         {/* „W mediach” (właściciel 6.10): potwierdzone artykuły o osobie; tylko tytuł, data, redakcja i odnośnik */}
-        <WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url }))} />
+        <WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label }))} />
+        <WMediach id="pp-mentions-h" heading="Wzmianki" automatic items={(data.mentions?.results ?? []).filter(m => m.url).map(m => ({ id: `mention${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label }))} />
       </div>
       <aside className="px-side">
         <section className="px-card" aria-labelledby="pp-roles-h">

@@ -19,6 +19,38 @@ def test_terms():
     assert terms('') == []
 
 
+def test_media_description_limit_and_material_type():
+    from news.models import Article, Source
+    source = Source.objects.create(name='Redakcja', url='https://media.example')
+    Article.objects.bulk_create([
+        Article(source=source, title=f'Rozmowa z ekspertem {i}', description='Budowa CPK.',
+                url=f'https://media.example/rozmowa/{i}', published_date=timezone.now())
+        for i in range(105)
+    ])
+    data = topic_graph('CPK')
+    media = [n for n in data['nodes'] if n['kind'] == 'media']
+    assert len(media) == 100
+    assert all(n['material_type'] == 'wywiad' and n['kind_label'] == 'wywiad'
+               and n['match_type'] == 'automatic' for n in media)
+    assert data['edges'] == []  # Dopasowanie tematu nie ustanawia relacji osoby.
+
+
+def test_duplicate_media_never_leave_dangling_confirmed_edges():
+    from news.models import Article, Source
+    from news.political_models import PublicFigure, PublicFigureArticleReference
+    source = Source.objects.create(name='Redakcja', url='https://media.example')
+    person = PublicFigure.objects.create(canonical_name='Anna Kowalska')
+    for i in range(2):
+        article = Article.objects.create(source=source, title='CPK: aktualności',
+                                         url=f'https://media.example/{i}', published_date=timezone.now())
+        PublicFigureArticleReference.objects.create(public_figure=person, article=article,
+                                                     verification_status='confirmed')
+    data = topic_graph('CPK')
+    ids = {n['id'] for n in data['nodes']}
+    assert len([n for n in data['nodes'] if n['kind'] == 'media']) == 1
+    assert all(e['source'] in ids and e['target'] in ids for e in data['edges'])
+
+
 def test_same_measure_for_both_camps():
     post('1', 'government', 'CPK ruszy w terminie.')
     post('2', 'opposition', 'Rząd opóźnia CPK.')
