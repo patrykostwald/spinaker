@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, day, nb, plural, short, spinColor, text, useStandalone, type Access } from './ui';
+import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, plural, short, spinColor, text, useNarrativeLayer, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 import { WMediach } from './WMediach';
 import { sumLine } from './DrzewoPieniedzy';
@@ -9,7 +9,7 @@ import { sumLine } from './DrzewoPieniedzy';
 /**
  * Profil osoby bez tematu (sprint 1, właściciel 6.10: „najlepsze narzędzie OSINT”): wszystko o jednej osobie publicznej
  * w jednym miejscu. Liczby, wykres aktywności, oś czasu (wpisy z diagnozami, dokumenty Sejmu, głosowania, artykuły),
- * funkcje i KRS z boku, na dole „Wspólne mianowniki”. Ten sam język co strona tematu (px-*): jeden akcent, równe boksy.
+ * funkcje i KRS z boku, na dole „Wspólne mianowniki”. Diagnozy i spin ze spin.clinic tylko w warstwie „Wpływ na narrację” (domyślnie wyłączonej). Ten sam język co strona tematu (px-*): jeden akcent, równe boksy.
  */
 type Ev = { kind: string; label: string; url: string };
 type Person = { id: number | null; slug: string | null; name: string; role: string };
@@ -71,15 +71,17 @@ export function PersonProfile({ ident }: { ident: string }) {
 }
 
 function ProfileView({ data }: { data: Profile }) {
-  const [kind, setKind] = useState('all');
+  const [narr] = useNarrativeLayer();
+  const [kindState, setKind] = useState('all');
+  const kind = !narr && kindState === 'diag' ? 'all' : kindState;
   const [more, setMore] = useState(false);
   const items = useMemo<Item[]>(() => [
     ...data.posts.results.map(p => ({ id: `p${p.id}`, kind: 'statement' as const, date: p.date, source: `@${p.handle}`, text: p.text, url: p.url,
-      spin: p.diagnosis ? { intensity: p.diagnosis.intensity, headline: p.diagnosis.headline, url: p.diagnosis.url } : undefined })),
+      spin: narr && p.diagnosis ? { intensity: p.diagnosis.intensity, headline: p.diagnosis.headline, url: p.diagnosis.url } : undefined })),
     ...data.documents.results.filter(d => d.date).map(d => ({ id: `d${d.id}`, kind: 'record' as const, date: d.date!, source: d.label + (d.replies ? ` · odpowiedzi: ${d.replies}` : ''), text: d.title, url: d.url })),
     ...data.votes.results.filter(v => v.date).map((v, i) => ({ id: `v${i}`, kind: 'vote' as const, date: v.date!, source: 'Głosowanie w Sejmie', text: v.title, url: v.url, vote: v.vote })),
     ...data.materials.results.filter(m => m.published_date).map(m => ({ id: `m${m.id}`, kind: 'media' as const, date: m.published_date!.slice(0, 10), source: m.source, text: m.title, url: m.url })),
-  ].sort((a, b) => b.date.localeCompare(a.date)), [data]);
+  ].sort((a, b) => b.date.localeCompare(a.date)), [data, narr]);
   const shown = items.filter(i => kind === 'all' || (kind === 'diag' ? Boolean(i.spin) : i.kind === kind));
   const visible = more ? shown : shown.slice(0, 12);
   const sub = [data.role_title, data.party, data.organisation].map(text).filter(Boolean).join(' · ');
@@ -92,7 +94,7 @@ function ProfileView({ data }: { data: Profile }) {
   return <>
     <header className="px-tv__head px-pp__head">
       <div>
-        <p className="px-kicker">Osoba publiczna</p>
+        <p className="px-kicker">Osoba publiczna<LayerCaption /></p>
         <h1>{data.name}</h1>
         {sub && <p className="px-pp__sub">{sub}</p>}
         <p className="px-pp__links">
@@ -108,11 +110,11 @@ function ProfileView({ data }: { data: Profile }) {
       </div>
     </header>
 
-    <section className="px-proof px-pp__proof" aria-label="Liczby">
+    <section className="px-proof px-pp__proof" aria-label="Liczby" data-n={narr ? 6 : 5}>
       {([[data.posts.count, 'wpisów na X', 'wpis na X', 'wpisy na X'], [data.posts.diagnoses, 'diagnoz Dr. Spina', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina'],
         [data.documents.count, 'dokumentów Sejmu', 'dokument Sejmu', 'dokumenty Sejmu'], [data.votes.count, 'głosowań imiennych', 'głosowanie imienne', 'głosowania imienne'],
         [data.organisations.length, 'funkcji w KRS', 'funkcja w KRS', 'funkcje w KRS'], [data.materials.count, 'artykułów', 'artykuł', 'artykuły']] as const)
-        .map(([n, many, one, few]) => <div key={many}><b>{n.toLocaleString('pl-PL')}</b><span>{nb(plural(n, one, few, many))}</span></div>)}
+        .filter(([, many]) => narr || many !== 'diagnoz Dr. Spina').map(([n, many, one, few]) => <div key={many}><b>{n.toLocaleString('pl-PL')}</b><span>{nb(plural(n, one, few, many))}</span></div>)}
     </section>
 
     <div className="px-pp__sum">
@@ -120,7 +122,7 @@ function ProfileView({ data }: { data: Profile }) {
       <section className="px-card px-brief" aria-labelledby="pp-brief-h">
         <h3 id="pp-brief-h" className="px-h3">W skrócie</h3>
         <dl>
-          <div><dt>Średni spin</dt><dd>{data.posts.avg_spin !== null ? <><i className="px-spin-dot" style={{ ['--spin' as string]: spinColor(data.posts.avg_spin) }} />{data.posts.avg_spin}/100 <small>· {data.posts.diagnoses} {plural(data.posts.diagnoses, 'diagnoza', 'diagnozy', 'diagnoz')}</small></> : <small>brak diagnoz</small>}</dd></div>
+          {narr && <div><dt>Średni spin</dt><dd>{data.posts.avg_spin !== null ? <><i className="px-spin-dot" style={{ ['--spin' as string]: spinColor(data.posts.avg_spin) }} />{data.posts.avg_spin}/100 <small>· {data.posts.diagnoses} {plural(data.posts.diagnoses, 'diagnoza', 'diagnozy', 'diagnoz')}</small></> : <small>brak diagnoz</small>}</dd></div>}
           <div><dt>Głosowania</dt><dd>{data.votes.count ? <VoteBar summary={data.votes.summary} /> : <small>{data.votes.available ? 'brak w bazie' : 'nie jest posłem w naszych danych'}</small>}</dd></div>
           {data.votes.deviation && <div><dt>Odstępstwa od klubu</dt><dd>{pctPl(data.votes.deviation.share)} <small>· mediana {data.votes.deviation.club} {data.votes.deviation.club_median === null ? '-' : pctPl(data.votes.deviation.club_median)}
             {data.votes.deviation.latest ? <> · <a href={data.votes.deviation.latest.url} target="_blank" rel="noopener noreferrer">{data.votes.deviation.rebellions_total} wbrew klubowi ↗</a></> : ''}</small></dd></div>}
@@ -136,7 +138,7 @@ function ProfileView({ data }: { data: Profile }) {
         <section className="px-time" aria-labelledby="pp-os-h">
           <div className="px-time__head"><h2 id="pp-os-h" className="px-h3">Oś czasu</h2><span>{shown.length} {plural(shown.length, 'pozycja', 'pozycje', 'pozycji')}</span></div>
           <div className="px-filters"><div className="px-seg" role="group" aria-label="Rodzaj">
-            {([['all', 'Wszystko'], ['statement', 'Wpisy'], ['diag', 'Z diagnozą'], ['record', 'Sejm'], ['vote', 'Głosowania'], ['media', 'Media']] as const).map(([k, l]) =>
+            {([['all', 'Wszystko'], ['statement', 'Wpisy'], ['diag', 'Z diagnozą'], ['record', 'Sejm'], ['vote', 'Głosowania'], ['media', 'Media']] as const).filter(([k]) => narr || k !== 'diag').map(([k, l]) =>
               <button key={k} type="button" aria-pressed={kind === k} onClick={() => { setKind(k); setMore(false); }}>{l}</button>)}
           </div></div>
           {!shown.length && <p className="px-note">{nb('Nic w tym filtrze. Zmień rodzaj.')}</p>}
@@ -197,7 +199,7 @@ function ProfileView({ data }: { data: Profile }) {
           <h3 id="pp-topics-h" className="px-h3">W tematach dnia</h3>
           <div className="px-chips">{data.topics.map(t => <a key={t.topic} className="px-pp__chip" href={`/przeszlosc?q=${encodeURIComponent(t.topic)}&osoba=figure:${data.id}`}>{t.topic}</a>)}</div>
         </section>}
-        <SejmVideos items={data.sejm_video ?? []} />
+        {narr && <SejmVideos items={data.sejm_video ?? []} />}
         <ProfileOpenData data={data.open_data} />
       </aside>
     </div>

@@ -84,7 +84,7 @@ export function PilotPage() {
       <h2 className="px-h2" id="zasady">Te same zasady dla wszystkich</h2>
       <ul>
         <li>{nb('Każdy zespół dostaje ten sam zakres i ten sam czas pilotażu, niezależnie od profilu redakcji.')}</li>
-        <li>{nb('Pilotaż nie daje wpływu na dane, kryteria ani diagnozy Dr. Spina.')}</li>
+        <li>{nb('Pilotaż nie daje wpływu na dane ani kryteria przeszłość.today.')}</li>
         <li>{nb('Pokazujemy tylko osoby publiczne i dokumenty z urzędowych źródeł, z linkiem do oryginału.')}</li>
         <li>{nb('Warunki po becie ustalamy indywidualnie, te same dla każdego zespołu. Nic nie przedłuża się samo.')}</li>
       </ul>

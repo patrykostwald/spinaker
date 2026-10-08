@@ -250,3 +250,24 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
   .px-mt__seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-self: stretch; }
   .px-mt__seg button { min-height: 44px; }
 }
+
+/* Warstwa „Wpływ na narrację” (właściciel 8.10): cichy przełącznik na końcu paska menu, stałe miejsce i stały rozmiar (Fitts: cel 44 px;
+   Von Restorff: wyróżniony dopiero po włączeniu). Podpis włączonej warstwy to mała etykieta stanu w linii nad tytułem. */
+.px-layer-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--sc-text-2);
+  font: inherit; font-size: 14px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.px-layer-toggle:hover { color: var(--sc-text); }
+.px-layer-toggle i { width: 22px; height: 12px; border-radius: 999px; border: 1px solid var(--px-line-2, var(--px-line)); position: relative; flex-shrink: 0; transition: background .15s, border-color .15s; }
+.px-layer-toggle i::after { content: ''; position: absolute; top: 1px; left: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--sc-text-3); transition: transform .15s, background .15s; }
+.px-layer-toggle[aria-pressed="true"] { color: var(--sc-text); }
+.px-layer-toggle[aria-pressed="true"] i { border-color: var(--sc-accent); background: color-mix(in srgb, var(--sc-accent) 22%, transparent); }
+.px-layer-toggle[aria-pressed="true"] i::after { transform: translateX(10px); background: var(--sc-accent); }
+.px-layer-toggle:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; border-radius: 8px; }
+.px-layer-toggle__short { display: none; }
+.px-layer { font-size: 11.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--sc-text-3); }
+@media (prefers-reduced-motion: reduce) { .px-layer-toggle i, .px-layer-toggle i::after { transition: none; } }
+@media (min-width: 961px) { .px-proof[data-n="5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .px-layer-toggle__full { display: none; }
+  .px-layer-toggle__short { display: inline; }
+  .px-layer { display: block; margin-top: 2px; }
+}

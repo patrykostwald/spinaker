@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, day, nb, nice, personHref, plural, reduced, short, spinColor, text, useStandalone } from './ui';
+import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, nice, personHref, plural, reduced, short, spinColor, stripDiagnoses, text, useNarrativeLayer, useStandalone } from './ui';
 import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
 import { WMediach, type MediaItem } from './WMediach';
@@ -11,6 +11,7 @@ import { WMediach, type MediaItem } from './WMediach';
  * Góra: hasło, wyszukiwarka i mała grafika „co dostajesz”; pod nią liczby z bazy. Wynik tematu: streszczenie, wykres,
  * drzewo powiązań jako środek strony, oś czasu i „Kto występuje”. Na dole: jak to działa, zasady, Sejm, dla redakcji.
  * Bez kolorów obozów (właściciel 6.10): obóz tylko słowem. Jeden akcent, siła spinu w skali zielony < niebieski < czerwony.
+ * Warstwa „Wpływ na narrację” (właściciel 8.10): diagnozy i spin ze spin.clinic tylko po włączeniu (domyślnie wyłączona); wyłączona = badanie przeszłości.
  */
 type Node = { id: string; kind: string; label: string; slug?: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; links: number };
 type Edge = { source: string; target: string; label: string };
@@ -58,6 +59,7 @@ function useNarrow(query = '(max-width: 760px)') {
 }
 
 export function TopicTree() {
+  const [narr] = useNarrativeLayer();
   const [query, setQuery] = useState('');
   const [data, setData] = useState<Graph | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'error' | 'off'>('idle');
@@ -87,7 +89,7 @@ export function TopicTree() {
       if (!response.ok) throw new Error();
       setData(await response.json()); setState('idle'); setDaily(!remember);
       if (remember) {
-        window.history.replaceState(null, '', `?q=${encodeURIComponent(q)}`);
+        { const keep = new URLSearchParams(window.location.search); keep.set('q', q); keep.delete('osoba'); keep.delete('wpis'); window.history.replaceState(null, '', `?${keep.toString()}`); }
         requestAnimationFrame(() => document.getElementById('wynik')?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }));
       }
     } catch { setState('error'); }
@@ -152,12 +154,12 @@ export function TopicTree() {
           {topics.slice(0, 6).map(t => <button key={t} type="button" aria-pressed={data?.topic === t} onClick={() => pick(t)}>{t}</button>)}</div>
           : <p className="px-chips px-note">{nb('Rejestr osób publicznych: posłowie, ministrowie, urzędnicy i samorządowcy. Bez osób prywatnych. Wielkość liter i polskie znaki nie mają znaczenia.')}</p>}
       </div>
-      <HeroDemo />
+      <HeroDemo narr={narr} />
     </header>
 
-    <section className="px-proof" aria-label="Co jest w bazie">
+    <section className="px-proof" aria-label="Co jest w bazie" data-n={narr ? 6 : 5}>
       {([['people', 'osób publicznych'], ['organisations', 'spółek i fundacji z KRS'], ['records', 'dokumentów Sejmu'], ['posts', 'wpisów polityków'], ['diagnoses', 'diagnoz Dr. Spina'], ['articles', 'artykułów z mediów']] as const)
-        .map(([key, label]) => <div key={key}><b>{start ? (start.counts[key] ?? 0).toLocaleString('pl-PL') : ' '}</b><span>{nb(label)}</span></div>)}
+        .filter(([key]) => narr || key !== 'diagnoses').map(([key, label]) => <div key={key}><b>{start ? (start.counts[key] ?? 0).toLocaleString('pl-PL') : ' '}</b><span>{nb(label)}</span></div>)}
     </section>
 
     <section className="px-result" id="wynik" aria-label="Wynik tematu" data-empty={!data || undefined}>
@@ -172,7 +174,7 @@ export function TopicTree() {
       <ol className="px-steps">
         {([['Wpisz temat', 'Albo kliknij jeden z tematów dnia. Wystarczy słowo, na przykład VAT, CPK, Turów.'],
           ['Zobacz kto, co i kiedy', 'Drzewo powiązań, oś czasu, głosowania w Sejmie i wykres, kiedy temat wybuchł.'],
-          ['Kliknij osobę lub wpis', 'Diagnoza spinu, funkcje w KRS, źródło, kopia w archiwum i gotowy przypis do cytowania.']] as const)
+          ['Kliknij osobę lub wpis', `${narr ? 'Diagnoza spinu, funkcje' : 'Funkcje'} w KRS, źródło, kopia w archiwum i gotowy przypis do cytowania.`]] as const)
           .map(([title, text], i) => <li key={title}><b aria-hidden="true">{i + 1}</b><h3>{title}</h3><p>{nb(text)}</p></li>)}
       </ol>
     </section>
@@ -205,7 +207,7 @@ export function TopicTree() {
       </div>
       <div className="px-cta__act">
         <a className="px-btn" href="/przeszlosc/funkcje">Zobacz wszystkie funkcje</a>
-        <a className="px-quiet" href="mailto:kontakt@spin.clinic?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji</a>
+        <a className="px-quiet" href="mailto:kontakt@iapply.pl?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji</a>
       </div>
     </section>
     <Foot />
@@ -220,14 +222,16 @@ const DEMO: { id: string; kind: string; title: string; text: string; depth: numb
   { id: 'd-o', kind: 'organisation', title: 'Spółka lub fundacja (KRS)', text: 'gdzie zasiada: zarząd, rada', depth: 1 },
 ];
 const DEMO_EDGES = [{ source: 'd-p', target: 'd-s', step: 1 }, { source: 'd-s', target: 'd-d', step: 2 }, { source: 'd-p', target: 'd-o', ctx: true, step: 3 }];
-function HeroDemo() {
+function HeroDemo({ narr }: { narr: boolean }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const paths = useLinks(wrap, DEMO_EDGES, 26);
-  return <figure className="px-demo" aria-label="Przykład wyniku: osoba, jej wypowiedź, diagnoza spinu i funkcja w spółce z KRS">
+  const nodes = useMemo(() => narr ? DEMO : DEMO.filter(n => n.kind !== 'diagnosis'), [narr]);
+  const edges = useMemo(() => narr ? DEMO_EDGES : DEMO_EDGES.filter(e => e.target !== 'd-d'), [narr]);
+  const paths = useLinks(wrap, edges, 26);
+  return <figure className="px-demo" aria-label={narr ? 'Przykład wyniku: osoba, jej wypowiedź, diagnoza spinu i funkcja w spółce z KRS' : 'Przykład wyniku: osoba, jej wypowiedź i funkcja w spółce z KRS'}>
     <figcaption className="px-demo__head"><span>Tak wygląda wynik</span><small>każda linia ma źródło</small></figcaption>
     <div className="px-demo__wrap" ref={wrap}>
       <svg className="px-lines" aria-hidden="true">{paths.map(p => <path key={p.id} d={p.d} pathLength={p.ctx ? undefined : 1} data-ctx={p.ctx || undefined} style={{ ['--i' as string]: p.step }} />)}</svg>
-      {DEMO.map((n, i) => <div key={n.id} className="px-node px-demo__n" data-g={n.id} data-kind={n.kind} style={{ ['--i' as string]: i, ['--depth' as string]: n.depth }}>
+      {nodes.map((n, i) => <div key={n.id} className="px-node px-demo__n" data-g={n.id} data-kind={n.kind} style={{ ['--i' as string]: i, ['--depth' as string]: n.depth }}>
         <span className="px-node__ic"><Icon name={n.kind} /></span>
         <span className="px-node__body"><b>{n.title}</b><small>{n.text}</small></span>
         {n.kind === 'diagnosis' && <i className="px-scale" aria-hidden="true" />}
@@ -236,7 +240,9 @@ function HeroDemo() {
   </figure>;
 }
 
-function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: boolean; daily?: boolean }) {
+function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; busy?: boolean; daily?: boolean }) {
+  const [narr] = useNarrativeLayer();
+  const data = useMemo(() => narr ? raw : stripDiagnoses(raw), [raw, narr]);
   const [more, setMore] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [hot, setHot] = useState<string | null>(null);
@@ -274,10 +280,11 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
     .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')), [data]);
   // filtry osi czasu: obóz (słowem), rodzaj, tylko z diagnozą, okres
   const [kindFilter, setKindFilter] = useState('all');
+  const kindNow = !narr && kindFilter === 'diag' ? 'all' : kindFilter;
   const [period, setPeriod] = useState('all');
   const since = period === 'all' ? '' : new Date(Date.now() - Number(period) * 864e5).toISOString().slice(0, 10);
-  const events = allEvents.filter(n => (!since || (n.date ?? '') >= since) && (kindFilter === 'all' || (kindFilter === 'government' || kindFilter === 'opposition' ? n.camp === kindFilter
-    : kindFilter === 'diag' ? diagnosisOf.has(n.id) : n.kind === kindFilter)));
+  const events = allEvents.filter(n => (!since || (n.date ?? '') >= since) && (kindNow === 'all' || (kindNow === 'government' || kindNow === 'opposition' ? n.camp === kindNow
+    : kindNow === 'diag' ? diagnosisOf.has(n.id) : n.kind === kindNow)));
   const shown = more ? events : events.slice(0, 10);
   // osoby najpierw, instytucje i konta partii po nich (audyt 6.10: instytucja to nie osoba)
   const people = data.nodes.filter(n => n.kind === 'person').sort((a, b) => Number(Boolean(a.institution)) - Number(Boolean(b.institution)) || b.links - a.links);
@@ -292,7 +299,7 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
   return <div className="px-tv" data-busy={busy || undefined} data-hot={hot ? '' : undefined}>
     <header className="px-tv__head">
       <div>
-        <p className="px-kicker">{daily ? 'Temat dnia' : 'Temat'}</p>
+        <p className="px-kicker">{daily ? 'Temat dnia' : 'Temat'}<LayerCaption /></p>
         <h2>{data.topic}</h2>
         <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}</p>
       </div>
@@ -318,8 +325,8 @@ function TopicView({ data, busy = false, daily = false }: { data: Graph; busy?: 
           <div className="px-time__head"><h3 id="os-h" className="px-h3">Oś czasu</h3><span>{events.length} {plural(events.length, 'pozycja', 'pozycje', 'pozycji')}</span></div>
           <div className="px-filters">
             <div className="px-seg" role="group" aria-label="Rodzaj">
-              {([['all', 'Wszystko'], ['government', 'Rządzący'], ['opposition', 'Opozycja'], ['diag', 'Z diagnozą'], ['record', 'Sejm'], ['media', 'Media']] as const).map(([k, l]) =>
-                <button key={k} type="button" aria-pressed={kindFilter === k} onClick={() => { setKindFilter(k); setMore(false); }}>{l}</button>)}
+              {([['all', 'Wszystko'], ['government', 'Rządzący'], ['opposition', 'Opozycja'], ['diag', 'Z diagnozą'], ['record', 'Sejm'], ['media', 'Media']] as const).filter(([k]) => narr || k !== 'diag').map(([k, l]) =>
+                <button key={k} type="button" aria-pressed={kindNow === k} onClick={() => { setKindFilter(k); setMore(false); }}>{l}</button>)}
             </div>
             <div className="px-seg" role="group" aria-label="Okres">
               {([['all', 'Cały okres'], ['30', '30 dni'], ['7', '7 dni']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={period === k} onClick={() => { setPeriod(k); setMore(false); }}>{l}</button>)}
@@ -446,6 +453,7 @@ function Density({ events }: { events: Node[] }) {
    Najechanie albo fokus podświetla całą ścieżkę (w górę i w dół), kliknięcie otwiera osobę albo wpis. */
 const TG_MID = new Set(['statement', 'record', 'media', 'vote']);
 function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Graph; byId: Map<string, Node>; focus?: string; compact?: boolean; onOpen: Open }) {
+  const [narr] = useNarrativeLayer();
   const narrow = useNarrow();
   const list = compact || narrow;
   const wrap = useRef<HTMLDivElement>(null);
@@ -515,14 +523,14 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
     data-on={lit && lit.has(p.s) && lit.has(p.t) ? '' : undefined} data-dim={lit && !(lit.has(p.s) && lit.has(p.t)) ? '' : undefined} />)}</svg>;
   return <figure className={`px-tree${compact ? ' px-tree--compact' : ''}`} data-list={list || undefined} data-hot={lit ? '' : undefined} aria-label="Drzewo powiązań">
     {!compact && <figcaption className="px-tree__head">
-      <div><h3 className="px-h3">Drzewo powiązań</h3><p>Kto zabrał głos, co powiedział i&nbsp;jak ocenił to Dr. Spin (automatyczna ocena manipulacji 0-100).</p></div>
+      <div><h3 className="px-h3">Drzewo powiązań</h3><p>{narr ? <>Kto zabrał głos, co powiedział i&nbsp;jak ocenił to Dr. Spin (automatyczna ocena manipulacji 0-100).</> : <>Kto zabrał głos, co powiedział i&nbsp;co z&nbsp;tego wynika w&nbsp;dokumentach i&nbsp;rejestrach.</>}</p></div>
       <ul className="px-legend">{kinds.map(k => <li key={k}><Icon name={k} />{LEGEND[k] ?? k}</li>)}<li><i className="px-legend__dash" />funkcja w&nbsp;KRS</li></ul>
     </figcaption>}
     {list ? <div className="px-tree__wrap px-tree__wrap--list" ref={wrap}>{lines}<ol className="px-tree__list">{model.rows.map((r, i) => item(r.n, i, r.depth))}</ol></div>
       : <div className="px-tree__wrap" ref={wrap}>{lines}
         <div className="px-tree__col"><span className="px-tree__lab">Kto</span><ol>{model.persons.map((n, i) => item(n, i))}</ol></div>
         <div className="px-tree__col"><span className="px-tree__lab">Co powiedział lub opublikował</span><ol>{model.mid.map((n, i) => item(n, i))}</ol></div>
-        <div className="px-tree__col"><span className="px-tree__lab">Diagnozy i&nbsp;funkcje w&nbsp;KRS</span><ol>{model.right.map((n, i) => item(n, i))}</ol></div>
+        <div className="px-tree__col"><span className="px-tree__lab">{narr ? <>Diagnozy i&nbsp;funkcje w&nbsp;KRS</> : <>Funkcje w&nbsp;KRS</>}</span><ol>{model.right.map((n, i) => item(n, i))}</ol></div>
       </div>}
     {!compact && <p className="px-card__foot px-tree__foot"><span>{list ? 'Dotknij elementu, aby go otworzyć.' : 'Najedź na element, aby zobaczyć całą ścieżkę. Kliknij, aby otworzyć.'}</span>
       <span>Linia przerywana: funkcja w&nbsp;KRS to kontekst osoby, nie dowód związku z&nbsp;tematem.</span></p>}

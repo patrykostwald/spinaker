@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
 import './przeszlosc.css';
+import { NARRATIVE_CAPTION, NARRATIVE_LABEL, useNarrativeLayer } from './narracja';
+export { NARRATIVE_CAPTION, NARRATIVE_LABEL, stripDiagnoses, useNarrativeLayer } from './narracja';
 
 /** Wspólne elementy przeszłość.today (temat, profil osoby, alerty): ikony, typografia, nagłówek i stopka. */
 
@@ -70,6 +72,18 @@ export function useAccess() {
   return access;
 }
 
+/** Cichy przełącznik warstwy „Wpływ na narrację”: stałe miejsce na końcu paska menu, cel min. 44 px, nic nie skacze. */
+export function NarrativeToggle() {
+  const [on, set] = useNarrativeLayer();
+  return <button type="button" className="px-layer-toggle" aria-pressed={on} onClick={() => set(!on)} title={NARRATIVE_CAPTION}>
+    <i aria-hidden="true" /><span className="px-layer-toggle__full">{NARRATIVE_LABEL}</span><span className="px-layer-toggle__short" aria-hidden="true">Narracja</span></button>;
+}
+/** Podpis włączonej warstwy: mały, w linii nad tytułem (etykieta stanu, nie zmienia wysokości). */
+export function LayerCaption() {
+  const [on] = useNarrativeLayer();
+  return on ? <span className="px-layer"> · {NARRATIVE_CAPTION}</span> : null;
+}
+
 export function Bar() {
   const access = useAccess();
   return <nav className="px-bar" aria-label="Menu">
@@ -77,12 +91,12 @@ export function Bar() {
       {access?.beta && access.label && <span className="px-beta" title={access.label}>
         <span className="px-beta__full">{access.label}</span><span className="px-beta__short">Beta</span></span>}</span>
     <span className="px-bar__links"><a href="/przeszlosc/funkcje">Funkcje</a><a href="/przeszlosc?tryb=osoba">Szukaj osoby</a><a href="/przeszlosc#jak">Jak to działa</a>
-      <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">spin.clinic ↗</a></span>
+      <NarrativeToggle /></span>
   </nav>;
 }
 
 export function Foot() {
-  return <footer className="px-foot"><span>przeszłość.today prowadzi iapply sp. z&nbsp;o.o. · dane wspólne ze spin.clinic</span>
+  return <footer className="px-foot"><span>przeszłość.today prowadzi iapply sp. z&nbsp;o.o. · <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">dane wspólne ze spin.clinic</a></span>
     <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></footer>;
 }
 
@@ -94,6 +108,7 @@ export function Follow({ kind, target, label, rss }: { kind: 'topic' | 'person';
   const [trap, setTrap] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [narr] = useNarrativeLayer();
   const close = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -134,8 +149,9 @@ export function Follow({ kind, target, label, rss }: { kind: 'topic' | 'person';
           <p className="px-note">{nb('Link jest ważny, dopóki nie zapiszesz się ponownie. Nie widzisz listu? Sprawdź folder z ofertami i spamem.')}</p>
           <button type="button" className="px-more" onClick={() => setOpen(false)}>Gotowe</button></div>
           : <form className="px-follow__form" onSubmit={send} noValidate>
-            <p className="px-follow__lead">{nb(kind === 'topic' ? 'Codziennie o 7:00 jeden list z nowymi wpisami, diagnozami, dokumentami Sejmu i artykułami w tym temacie. Gdy nic nowego nie ma, nie piszemy.'
-              : 'Codziennie o 7:00 jeden list z nowymi wpisami tej osoby, diagnozami Dr. Spina, interpelacjami, głosowaniami i zmianami w KRS. Gdy nic nowego nie ma, nie piszemy.')}</p>
+            <p className="px-follow__lead">{nb(kind === 'topic'
+              ? `Codziennie o 7:00 jeden list z nowymi wpisami, ${narr ? 'diagnozami, ' : ''}dokumentami Sejmu i artykułami w tym temacie. Gdy nic nowego nie ma, nie piszemy.`
+              : `Codziennie o 7:00 jeden list z nowymi wpisami tej osoby, ${narr ? 'diagnozami Dr. Spina, ' : ''}interpelacjami, głosowaniami i zmianami w KRS. Gdy nic nowego nie ma, nie piszemy.`)}</p>
             <label className="px-follow__field"><span>Adres e-mail</span>
               <input type="email" required autoComplete="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="redakcja@przyklad.pl" /></label>
             <input className="px-sr" tabIndex={-1} autoComplete="off" aria-hidden="true" value={trap} onChange={e => setTrap(e.target.value)} name="website" />
