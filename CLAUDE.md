@@ -24,6 +24,7 @@ Przed oddaniem czegokolwiek z boksami sprawdź każdy punkt:
 7. **Etykiety stanu** (dobrze, do poprawy, BETA): małe, po prawej od tytułu, mniejsze niż tytuł.
 8. **Styl:** czysto, minimalistycznie, najwyżej 2 kroje; raporty dla właściciela w ciemnym motywie spin.clinic.
 9. **Sprawdzenie:** zrzut ekranu 1440 i 390 px przed oddaniem; zmierz położenia (górne i dolne krawędzie) zamiast zgadywać.
+10. **Równe odstępy na granicach tła: odstęp od ostatniego widocznego elementu sekcji do krawędzi, gdzie zmienia się tło, musi być równy odstępowi od tej krawędzi do pierwszego widocznego elementu następnej sekcji - w każdej kolumnie osobno; sekcje na tym samym tle mają jeden rytm. Mierz: node C:\Users\User\zbudujmi\gust\odstepy.js <plik> 1440 (i 390) - wynik bez ZLE przed oddaniem.** (właściciel 8.10)
 
 ## Biblia designu: Laws of UX (lawsofux.com, właściciel 5.10)
 Wszystkie 30 praw z zastosowaniem u nas: backend/news/laws_of_ux.py (LAWS). Każda poprawka designu wskazuje prawo, które naprawia.
