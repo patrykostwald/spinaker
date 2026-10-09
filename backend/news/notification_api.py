@@ -120,9 +120,26 @@ class NotificationReadView(AccountNotificationView):
 
 
 class SettingsSerializer(serializers.ModelSerializer):
+    wake_person_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=500, required=False)
+
+    def validate_wake_person_ids(self, value):
+        ids = set(value)
+        allowed = set(Follow.objects.filter(user=self.instance.user, figure_id__in=ids).values_list('figure_id', flat=True))
+        if ids != allowed:
+            raise serializers.ValidationError('Wybierz osoby z listy obserwowanych.')
+        return sorted(ids)
+
+    def validate(self, attrs):
+        start = attrs.get('quiet_hours_start', self.instance.quiet_hours_start)
+        end = attrs.get('quiet_hours_end', self.instance.quiet_hours_end)
+        if start == end:
+            raise serializers.ValidationError('Początek i koniec ciszy muszą się różnić. Ciszę możesz wyłączyć przełącznikiem.')
+        return attrs
+
     class Meta:
         model = NotificationSettings
-        fields = ['email_digest', 'push_spin_of_day', 'push_followed', 'push_thread_replies', 'service_enabled', 'social_enabled']
+        fields = ['email_digest', 'push_spin_of_day', 'push_followed', 'push_thread_replies', 'service_enabled', 'social_enabled',
+            'quiet_hours_enabled', 'quiet_hours_start', 'quiet_hours_end', 'wake_person_ids']
 
 
 @json_view('Ustawienia powiadomień', tags=['konto'])

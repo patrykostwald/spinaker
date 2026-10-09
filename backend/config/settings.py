@@ -302,6 +302,9 @@ SOURCE_MAIL_SMTP_FROM = env('SOURCE_MAIL_SMTP_FROM', default='')
 
 # Phase 2 remains opt-in on every deployment.
 ACCOUNTS_ENABLED = env.bool('ACCOUNTS_ENABLED', default=False)
+# Właściciel 9.10, zlecenie 113: szybsze alerty wyłącznie po włączeniu flagi.
+ALERTS_FAST_MODE = env.bool('ALERTS_FAST_MODE', default=False)
+ALERTS_FAST_POLL_SECONDS = env.int('ALERTS_FAST_POLL_SECONDS', default=60)
 THREADS_ENABLED = env.bool('THREADS_ENABLED', default=False)
 PUSH_ENABLED = env.bool('PUSH_ENABLED', default=False)
 GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')

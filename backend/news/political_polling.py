@@ -39,8 +39,10 @@ def configuration():
     token = os.environ.get('X_POLITICAL_BEARER_TOKEN', '').strip()
     if os.environ.get('X_POLITICAL_POLLING_ENABLED', '').lower() != 'true' or not token:
         return None
+    from django.conf import settings
     try:
-        config = {'token': token, 'page_size': int(os.environ.get('X_POLITICAL_PAGE_SIZE', '10')),
+        config = {'fast_mode': settings.ALERTS_FAST_MODE,
+            'fast_poll_seconds': max(60, settings.ALERTS_FAST_POLL_SECONDS), 'token': token, 'page_size': int(os.environ.get('X_POLITICAL_PAGE_SIZE', '10')),
             'mode': os.environ.get('X_POLL_MODE', 'timeline'),
             'watch_seconds': max(30, int(os.environ.get('X_WATCH_SECONDS', '60'))),
             'slow_minutes': max(1, int(os.environ.get('X_WATCH_SLOW_MINUTES', '15'))),
@@ -204,19 +206,27 @@ def parse_page(raw, account, window):
     return parsed, token, len(users)
 
 
-def followed_account_ids(account_ids):
+def followed_account_counts(account_ids):
     from django.conf import settings
     from news.clinic import figures_by_account
     from news.notification_models import Follow
     if not getattr(settings, 'ACCOUNTS_ENABLED', False):
-        return set()
+        return {}
+    from django.db.models import Count
     figures = figures_by_account(account_ids)
-    followed = set(Follow.objects.filter(mode='posts', figure_id__in=[f.pk for f in figures.values()],
-        user__is_active=True).values_list('figure_id', flat=True))
-    return {pk for pk, figure in figures.items() if figure.pk in followed}
+    followed = dict(Follow.objects.filter(mode='posts', figure_id__in=[f.pk for f in figures.values()],
+        user__is_active=True).order_by().values('figure_id').annotate(n=Count('user_id', distinct=True))
+        .values_list('figure_id', 'n'))
+    return {pk: followed[figure.pk] for pk, figure in figures.items() if figure.pk in followed}
+
+
+def followed_account_ids(account_ids):
+    return set(followed_account_counts(account_ids))
 
 
 def poll_minutes(account, config, followed):
+    if config.get('fast_mode') and followed:
+        return config.get('fast_poll_seconds', 60) / 60
     return max(5, min(account.poll_interval_minutes, config.get('followed_minutes', 15))) if followed else account.poll_interval_minutes
 
 
@@ -280,12 +290,18 @@ def reserve(account_id, config, group=None):
         # another reservation or network request. Keep the original accounting date.
         read = PoliticalRead.objects.filter(pk=window.get('read_id'), response_body__isnull=False).first()
         if read is None:
+            if config.get('fast_mode') and budget.get('next_fast_poll_at', '') > now.isoformat():
+                return None, 'budget_pacing'
             minimum = 10 if group else 5
             remaining = min(config['daily_posts'] - budget.get('daily_posts', 0),
                 int((config['monthly_usd'] - Decimal(budget.get('spent_upper_usd', '0'))) / POST_PRICE))
             slots = min(window['page_size'], remaining)
             if budget.get('daily_requests', 0) >= config['daily_requests'] or slots < minimum:
                 return None, 'budget_limit'
+            if config.get('fast_mode'):
+                from news.alerts_polling import budget_snapshot
+                seconds = budget_snapshot(config, budget, now)['paced_interval_seconds']
+                budget['next_fast_poll_at'] = (now + timedelta(seconds=seconds)).isoformat()
             window = {**window, 'page_size': slots}
             cost = POST_PRICE * slots
             read = PoliticalRead.objects.create(account=account, started_at=now, reserved_posts=slots, reserved_usd=cost,
@@ -487,9 +503,11 @@ def political_poll_cycle():
         candidates = pending
     elif any(a.poll_cursor.get('window', {}).get('query') for a in candidates):
         return batched_cycle(candidates, config, pending_only=True)
-    followed = followed_account_ids([a.pk for a in candidates])
+    followed = followed_account_counts([a.pk for a in candidates])
     candidates = [a for a in candidates if due_at(a, config, a.pk in followed) <= timezone.now()]
-    candidates.sort(key=lambda a: (a.pk not in followed, due_at(a, config, a.pk in followed), a.pk))
+    candidates.sort(key=lambda a: (a.pk not in followed,
+        -followed.get(a.pk, 0) if config.get('fast_mode') else 0,
+        due_at(a, config, a.pk in followed), a.pk))
     if not candidates:
         return {'status': 'idle', 'reason': 'no_confirmed_due_accounts', 'new_posts': 0}
     return poll_page(config, candidates[0].pk)

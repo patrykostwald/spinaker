@@ -1,8 +1,10 @@
 """Opt-in Web Push. Never log endpoints, keys or message contents."""
 import json
 import logging
+from datetime import timedelta
 from django.conf import settings
-from news.push_models import PushSubscription
+from django.utils import timezone
+from news.push_models import PushSubscription, PushDelivery
 
 logger = logging.getLogger(__name__)
 TOPICS = ('spiny-na-zywo', 'spin-dnia', 'nitki-dr-spina', 'obserwowani')
@@ -48,7 +50,7 @@ def send_to_topic(topic, payload):
     return _send(PushSubscription.objects.filter(pk__in=ids), payload)
 
 
-def send_to_user(user, payload):
+def send_to_user(user, payload, notification=None):
     from news.features import threads_enabled
     if not threads_enabled() and (payload.get('kind') in ('followed_thread', 'thread_reply', 'comment_reaction')
                                   or str(payload.get('url', '')).startswith(('/spinki/', '/thread/'))):
@@ -57,7 +59,41 @@ def send_to_user(user, payload):
         return 0
     rows = PushSubscription.objects.filter(user=user)
     ids = [r.pk for r in rows.only('pk', 'topics') if 'obserwowani' in r.topics]
+    if notification is not None:
+        return _send_alert(notification, rows.filter(pk__in=ids), payload)
     return _send(rows.filter(pk__in=ids), payload)
+
+
+def _send_alert(notification, subscriptions, payload):
+    """Caller holds the notification lock. Retry only unsuccessful devices."""
+    for subscription in subscriptions:
+        PushDelivery.objects.get_or_create(notification=notification, subscription=subscription)
+    sent = 0
+    now = timezone.now()
+    for delivery in notification.push_deliveries.select_related('subscription').filter(finished=False):
+        if not delivery.subscription_id or delivery.attempts >= 3 or now >= delivery.created_at + timedelta(minutes=10):
+            delivery.finished = True
+            delivery.save(update_fields=['finished'])
+            continue
+        if delivery.next_attempt_at and delivery.next_attempt_at > now:
+            continue
+        # Revoked topic consent must also stop a queued retry.
+        if delivery.subscription.user_id != notification.user_id or 'obserwowani' not in delivery.subscription.topics:
+            delivery.finished = True
+            delivery.save(update_fields=['finished'])
+            continue
+        delivery.attempts += 1
+        result = _send(PushSubscription.objects.filter(pk=delivery.subscription_id), payload)
+        if result:
+            delivery.sent_at = now
+            delivery.finished = True
+            sent += 1
+        elif not PushSubscription.objects.filter(pk=delivery.subscription_id).exists() or delivery.attempts >= 3:
+            delivery.finished = True
+        else:
+            delivery.next_attempt_at = now + timedelta(minutes=2 ** (delivery.attempts - 1))
+        delivery.save(update_fields=['attempts', 'sent_at', 'finished', 'next_attempt_at'])
+    return sent
 
 
 def send_to_staff(payload):

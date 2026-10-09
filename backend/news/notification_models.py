@@ -1,5 +1,6 @@
 ﻿from django.conf import settings
 from django.db import models
+from datetime import time
 
 
 class Follow(models.Model):
@@ -29,6 +30,10 @@ class Follow(models.Model):
 
 
 class NotificationSettings(models.Model):
+    quiet_hours_enabled = models.BooleanField(default=True)
+    quiet_hours_start = models.TimeField(default=time(23, 0))
+    quiet_hours_end = models.TimeField(default=time(7, 0))
+    wake_person_ids = models.JSONField(default=list, blank=True)
     service_enabled = models.BooleanField(default=True)
     social_enabled = models.BooleanField(default=False)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notification_settings')
@@ -59,6 +64,8 @@ class Notification(models.Model):
 
 
 class NotificationPost(models.Model):
+    push_sent_at = models.DateTimeField(null=True, blank=True)
+    push_latency_seconds = models.FloatField(null=True, blank=True)
     notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='posts')
     post = models.ForeignKey('news.PoliticalPost', on_delete=models.CASCADE)
 

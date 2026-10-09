@@ -63,12 +63,13 @@ def activity_counts(accounts):
 
 
 def watch_groups(accounts, config, pending_only=False):
-    from news.political_polling import followed_account_ids
-    followed = followed_account_ids([a.pk for a in accounts])
+    from news.political_polling import followed_account_counts
+    followed = followed_account_counts([a.pk for a in accounts])
     counts = activity_counts(accounts)
     # Fast tier: all post-mode follows, plus the most active 10% with evidence.
     ranked = sorted((a for a in accounts if counts.get(a.pk)), key=lambda a: (-counts[a.pk], a.pk))
     active = {a.pk for a in ranked[:max(1, (len(accounts) + 9) // 10)]}
+    fast_seconds = config.get('fast_poll_seconds', 60) if config.get('fast_mode') else config['watch_seconds']
     def rank(a):
         return 0 if a.pk in followed else 1 if a.pk in active else 2
     buckets = defaultdict(list)
@@ -81,7 +82,7 @@ def watch_groups(accounts, config, pending_only=False):
             continue
         if pending_only:
             continue
-        seconds = config['watch_seconds'] if rank(account) < 2 else config['slow_minutes'] * 60
+        seconds = fast_seconds if rank(account) < 2 else config['slow_minutes'] * 60
         due = account.next_poll_at if account.last_error else (
             account.last_polled_at + timedelta(seconds=seconds) if account.last_polled_at else now)
         if due <= now:
@@ -94,7 +95,7 @@ def watch_groups(accounts, config, pending_only=False):
             buckets[(rank(account), boundary)].append(account)
     result = []
     for (tier, boundary), members in buckets.items():
-        members.sort(key=lambda a: a.pk)
+        members.sort(key=lambda a: (-followed.get(a.pk, 0), a.pk) if config.get('fast_mode') and tier != 'pending' else (0, a.pk))
         if tier == 'pending':
             window = members[0].poll_cursor['window']
             if sorted(a.pk for a in members) != sorted(window['account_ids']):
@@ -105,15 +106,19 @@ def watch_groups(accounts, config, pending_only=False):
         else:
             batches = build_queries(members)
         for batch, query in batches:
+            batch = sorted(batch, key=lambda a: a.pk)
+            if tier != 'pending':
+                query = query_for(batch)
             priority = min(rank(a) for a in batch)
             result.append({'ids': [a.pk for a in batch], 'query': query, 'checkpoint': boundary,
                 'end_time': utc_text(now - timedelta(seconds=10)),
                 'checkpoints': {a.pk: checkpoint(a) for a in batch},
                 'since_id': str(max(int(a.poll_cursor.get('since_id') or 0) for a in batch))
                     if any(a.poll_cursor.get('since_id') for a in batch) else '',
+                'followers': max((followed.get(a.pk, 0) for a in batch), default=0),
                 'priority': priority, 'due': min(a.next_poll_at for a in batch),
-                'interval': config['watch_seconds'] if priority < 2 else config['slow_minutes'] * 60})
-    return sorted(result, key=lambda g: (g['priority'], g['due'], g['ids'][0]))
+                'interval': fast_seconds if priority < 2 else config['slow_minutes'] * 60})
+    return sorted(result, key=lambda g: (g['priority'], -g['followers'] if config.get('fast_mode') else 0, g['due'], g['ids'][0]))
 
 
 def fetch_x_search(window, config):

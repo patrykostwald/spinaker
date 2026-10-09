@@ -75,7 +75,7 @@ def test_notification_read_is_owner_scoped(users):
 
 
 def test_settings_default_and_validation(users):
-    assert request(NotificationSettingsView, users[0]).data == {'email_digest': 'off', 'push_spin_of_day': False, 'push_followed': False, 'push_thread_replies': False, 'service_enabled': True, 'social_enabled': False}
+    assert request(NotificationSettingsView, users[0]).data == {'email_digest': 'off', 'push_spin_of_day': False, 'push_followed': False, 'push_thread_replies': False, 'service_enabled': True, 'social_enabled': False, 'quiet_hours_enabled': True, 'quiet_hours_start': '23:00:00', 'quiet_hours_end': '07:00:00', 'wake_person_ids': []}
     assert request(NotificationSettingsView, users[0], 'patch', {'email_digest': 'hourly'}).status_code == 400
     assert request(NotificationSettingsView, users[0], 'patch', {'email_digest': 'weekly', 'push_followed': True}).data['push_followed'] is True
     assert request(NotificationSettingsView, users[1]).data['email_digest'] == 'off'
