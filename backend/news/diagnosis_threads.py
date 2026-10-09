@@ -145,6 +145,6 @@ def sync_diagnosis_thread(diagnosis_id, force_text=False):
         thread.title, thread.is_public = title, False
         thread.save(update_fields=['title', 'is_public', 'updated_at'])
     from news.thread_review import enqueue
-    enqueue(thread, {'post': diagnosis.post.text, 'author': diagnosis.post.account.display_name,
+    enqueue(thread, {'post': diagnosis.post.text, 'camp_at_collection': diagnosis.post.camp_at_collection, 'author': diagnosis.post.account.display_name,
         'diagnosis': {key: getattr(diagnosis, key) for key in ('headline', 'summary', 'analysis', 'claims', 'techniques')}})
     return thread

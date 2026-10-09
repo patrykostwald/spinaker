@@ -258,7 +258,7 @@ def build_lobbying(records=None):
         rule = ('jawne zgłoszenie powiązane z drukiem' if not b else
                 f'podobieństwo tekstów {signal["score"]:.0%}, próg średni 72%, wysoki 95%, bez przepisów szablonowych')
         method = f'Metoda: {rule}, ta sama miara dla wszystkich klubów; poziom pewności sygnału: {signal["confidence"]}.'
-        evidence = {'signal': signal, 'posts': [{'text': p.text, 'author': p.account.display_name} for p in posts], 'method': method}
+        evidence = {'signal': signal, 'posts': [{'text': p.text, 'author': p.account.display_name, 'camp_at_collection': p.camp_at_collection} for p in posts], 'method': method}
         about = (f'Analiza druku {number}: zgłoszone zapisy zestawione ze stanowiskami organizacji. '
                  'Zbieżność tekstu nie wskazuje autora ani przyczyny.')
         results.append(save_signal('lobbying', key, f'Sygnał lobbingu: druk {number}', about, items, evidence,

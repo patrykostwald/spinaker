@@ -107,7 +107,7 @@ def sync_message(message_id):
     thread.is_public, thread.narrative_score = False, best['score']
     thread.save(update_fields=['title', 'description', 'is_public', 'narrative_score', 'updated_at'])
     from news.thread_review import enqueue
-    enqueue(thread, {'posts': [{'text': p.text, 'author': p.account.display_name} for p in best['posts']],
+    enqueue(thread, {'posts': [{'text': p.text, 'author': p.account.display_name, 'camp_at_collection': p.camp_at_collection} for p in best['posts']],
         'thesis': message.thesis, 'points': message.points, 'tone': message.tone, 'method': CRITERION})
     return thread
 
