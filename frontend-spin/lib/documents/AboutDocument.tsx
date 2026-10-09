@@ -10,6 +10,8 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     { id: "rozwoj", label: t("Co działa i co planujemy") },
   ];
 
+  // spinki (flaga NEXT_PUBLIC_THREADS_ENABLED): przy false opis nie wspomina o spinkach ani o filmie, który o nich opowiada
+  const threads = process.env.NEXT_PUBLIC_THREADS_ENABLED === "true";
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
   return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/about" : "/o-nas"} eyebrow={t("O NAS")} title={lang === "pl" ? <>Ta sama <GlitchWord word="miara" /> dla wszystkich</> : t("Ta sama miara dla wszystkich")} version="1.1" updatedAt="2026-10-05" sections={sections}
     lead={t("spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.")}>
@@ -20,8 +22,8 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       { name: t("spin.clinic"), text: t("Strażnik po Twojej stronie: Konsylium AI rozkłada przekaz na techniki i sprawdza twierdzenia. Jedna miara dla wszystkich.") },
     ] }} />
     <section id="projekt"><h2>{t("Projekt")}</h2>
-      <p>{t("spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Każdą diagnozę rozkłada na spinkę: łańcuch boksów (wpis, dokument, dane, nagranie). Połączenia między nimi wyjaśniają, co z czego wynika. Czytelnicy oceniają boksy i połączenia, komentują i układają własne spinki. Wyniki AI pokazujemy wraz z ograniczeniami, aby każdy mógł je sprawdzić i wyrobić własne zdanie. Projekt działa w wersji beta.")}</p>
-      <HowItWorksFilm lang={lang} />
+      <p>{threads ? t("spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Każdą diagnozę rozkłada na spinkę: łańcuch boksów (wpis, dokument, dane, nagranie). Połączenia między nimi wyjaśniają, co z czego wynika. Czytelnicy oceniają boksy i połączenia, komentują i układają własne spinki. Wyniki AI pokazujemy wraz z ograniczeniami, aby każdy mógł je sprawdzić i wyrobić własne zdanie. Projekt działa w wersji beta.") : t("spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Każda diagnoza pokazuje cytaty, techniki i źródła, żeby można było sprawdzić, co z czego wynika. Czytelnicy komentują diagnozy, przekazy dnia i wywiady. Wyniki AI pokazujemy wraz z ograniczeniami, aby każdy mógł je sprawdzić i wyrobić własne zdanie. Projekt działa w wersji beta.")}</p>
+      {threads && <HowItWorksFilm lang={lang} />}
       <p><Link lang={lang} id="konsylium" href="/konsylium">{t("Jak wykorzystujemy AI")}</Link> · <Link lang={lang} id="klinika" href="/metodologia">{t("Metodologia analiz")}</Link> · <Link lang={lang} id="dla-redakcji" href="/dla-redakcji">{t("Informacje dla redakcji")}</Link></p>
     </section>
     <section id="operator"><h2>{t("Operator")}</h2>
@@ -45,9 +47,9 @@ export function AboutDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       <p>{t("Zgłaszając błąd, dołącz link do diagnozy i źródła.")} <Link lang={lang} href="/metodologia#korekty">{t("Jak obsługujemy zgłoszenia")}</Link>. {t("Wycofania, ukrycia prawne i odpowiedzi autorów:")} <Link lang={lang} href="/klinika/korekty">{t("Rejestr korekt")}</Link>.</p>
     </section>
     <section id="rozwoj"><h2>{t("Co działa i co planujemy")}</h2>
-      <p>{t("Działa obecnie: spinki Dr. Spina i czytelników, diagnozy wpisów polityków, dwa wywiady dnia (wybór Dr. Spina i wybór czytelników), „Przekaz dnia” obu obozów, archiwum usuniętych wpisów, raporty, dane i wykresy, konta z powiadomieniami oraz publikacja wybranych diagnoz w mediach społecznościowych.")}</p>
+      <p>{threads ? t("Działa obecnie: spinki Dr. Spina i czytelników, diagnozy wpisów polityków, dwa wywiady dnia (wybór Dr. Spina i wybór czytelników), „Przekaz dnia” obu obozów, archiwum usuniętych wpisów, raporty, dane i wykresy, konta z powiadomieniami oraz publikacja wybranych diagnoz w mediach społecznościowych.") : t("Działa obecnie: diagnozy wpisów polityków, dwa wywiady dnia (wybór Dr. Spina i wybór czytelników), „Przekaz dnia” obu obozów, archiwum usuniętych wpisów, raporty, dane i wykresy, konta z powiadomieniami oraz publikacja wybranych diagnoz w mediach społecznościowych.")}</p>
       <ol>
-        <li><strong>{t("Faza I - działa w wersji beta:")}</strong> {t("Klinika z Konsylium AI, spinki z oceną boksów i połączeń, izba przyjęć dla spinek czytelników, przepięcia, komentarze, konta, głosowanie na drugi wywiad dnia.")}</li>
+        <li><strong>{t("Faza I - działa w wersji beta:")}</strong> {threads ? t("Klinika z Konsylium AI, spinki z oceną boksów i połączeń, izba przyjęć dla spinek czytelników, przepięcia, komentarze, konta, głosowanie na drugi wywiad dnia.") : t("Klinika z Konsylium AI, przekazy dnia obu obozów, komentarze, konta, głosowanie na drugi wywiad dnia.")}</li>
         <li><strong>{t("Faza II - planowana:")}</strong> {t("aplikacje mobilne z alertami o nowych spinach, śledzenie zmian i usunięć w źródłach, raporty dla instytucji na tych samych warunkach dla wszystkich.")}</li>
         <li><strong>{t("Faza III - planowana:")}</strong> {t("własna maszyna do analiz na otwartych modelach i asystent, który odpowiada na pytania na podstawie naszej bazy źródeł.")}</li>
       </ol>

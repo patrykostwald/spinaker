@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiWrite } from '../lib/api';
 import { useAccount } from '../lib/account';
+import { useFeature } from '../lib/features';
 import { Button } from '../kit';
 import { formatDateTimePl, formatDatePl } from '../lib/utils';
 import { AccountDataState } from './AccountPhase2';
@@ -44,13 +45,13 @@ export function ActivityRows({ rows }: { rows: ActivityRow[] }) {
   </li>)}</ol>;
 }
 export function AccountActivity() {
-  const account = useAccount(), [kind, setKind] = useState('all');
+  const account = useAccount(), threadsEnabled = useFeature('THREADS_ENABLED'), [kind, setKind] = useState('all');
   const query = useInfiniteQuery({ queryKey: ['account-activity', account.data?.user?.id, kind], initialPageParam: 1,
     queryFn: ({ pageParam }) => apiFetch<Page<ActivityRow>>(`/api/account/activity/?kind=${kind}&page=${pageParam}`), getNextPageParam: last => last.next_page ?? undefined });
   const rows = query.data?.pages.flatMap(p => p.results) ?? [];
   return <section id="aktywnosc" className="sc-account-section"><header><h2>Aktywność</h2></header>
     <div className="sc-account-filter" role="group" aria-label="Rodzaj aktywności">{[['all', 'Wszystko'], ['ratings', 'Oceny'], ['comments', 'Komentarze'], ['votes', 'Głosy']].map(([id, label]) => <button key={id} aria-pressed={kind === id} onClick={() => setKind(id)}>{label}</button>)}</div>
-    <AccountDataState query={query} />{query.isSuccess && !rows.length && <EmptyState href="/spinki" label="Przeglądaj spinki">Nie masz jeszcze aktywności w tej części.</EmptyState>}
+    <AccountDataState query={query} />{query.isSuccess && !rows.length && <EmptyState href={threadsEnabled ? "/spinki" : "/klinika"} label={threadsEnabled ? "Przeglądaj spinki" : "Przejdź do Kliniki"}>Nie masz jeszcze aktywności w tej części.</EmptyState>}
     <ActivityRows rows={rows} />{query.hasNextPage && <Button disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>Pokaż więcej</Button>}
   </section>;
 }

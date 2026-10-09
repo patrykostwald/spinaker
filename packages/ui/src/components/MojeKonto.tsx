@@ -20,7 +20,7 @@ export function SignedOutPanel({ title = 'Mój spin.clinic' }: { title?: string 
   </section>;
 }
 function SavedSection() {
-  const account = useAccount(), follows = useFollows(), cache = useQueryClient();
+  const threadsEnabled = useFeature('THREADS_ENABLED'), account = useAccount(), follows = useFollows(), cache = useQueryClient();
   const articles = useInfiniteQuery({ queryKey: ['article-favorites', account.data?.user?.id, 'pages'], initialPageParam: 1,
     queryFn: ({ pageParam }) => apiFetch<Page<ArticleFavoriteRow>>(`/api/account/article-favorites/?page=${pageParam}`), getNextPageParam: last => last.next_page ?? undefined });
   const threads = useInfiniteQuery({ queryKey: ['account-favorites', account.data?.user?.id, 'pages'], initialPageParam: 1,
@@ -31,7 +31,7 @@ function SavedSection() {
   async function remove(path: string) { setPending(true); try { await apiWrite(path, {}, 'DELETE'); await cache.invalidateQueries(); } catch (e) { setMessage(e instanceof Error ? e.message : 'Nie udało się usunąć.'); } finally { setPending(false); } }
   return <section className="sc-account-section"><header><h2>Zapisane</h2></header>
     <AccountDataState query={articles} /><AccountDataState query={threads} />
-    {articles.isSuccess && threads.isSuccess && follows.isSuccess && !articleRows.length && !threadRows.length && !saved.length && <EmptyState href="/spinki" label="Przeglądaj spinki">Nie masz jeszcze zapisanych treści.</EmptyState>}
+    {articles.isSuccess && threads.isSuccess && follows.isSuccess && !articleRows.length && !threadRows.length && !saved.length && <EmptyState href={threadsEnabled ? "/spinki" : "/klinika"} label={threadsEnabled ? "Przeglądaj spinki" : "Przejdź do Kliniki"}>Nie masz jeszcze zapisanych treści.</EmptyState>}
     <ul className="sc-account-rows">
       {saved.map(row => <li key={`saved-${row.id}`}><Link href={row.url}>{row.label}</Link><FollowButton kind="thread" targetId={row.target_id} label={row.label} compactLabel /></li>)}
       {articleRows.map(row => <li key={`article-${row.id}`}><Link href={`/material/${row.article.id}`}>{row.article.title}</Link><Button disabled={pending} onClick={() => remove(`/api/account/article-favorites/${row.article.id}/`)}>Usuń z zapisanych</Button></li>)}

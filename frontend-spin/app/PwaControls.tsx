@@ -6,11 +6,15 @@ import { useFeature } from '@spin-clinic/ui';
 
 type InstallPrompt = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Config = { enabled: boolean; public_key: string; csrfToken: string; consent_version: string; results: { endpoint: string; topics: string[] }[] };
-const topics = [['spiny-na-zywo', 'Każdy nowy spin - od razu po diagnozie'], ['spin-dnia', 'Spin dnia'], ['nitki-dr-spina', 'Spinki Dr. Spina'], ['obserwowani', 'Obserwowani (po zalogowaniu)']];
+const allTopics = [['spiny-na-zywo', 'Każdy nowy spin - od razu po diagnozie'], ['spin-dnia', 'Spin dnia'], ['nitki-dr-spina', 'Spinki Dr. Spina'], ['obserwowani', 'Obserwowani (po zalogowaniu)']];
+// Temat „nitki-dr-spina” (nazwa w bazie bez zmian) jest oferowany tylko przy włączonych spinkach.
+const THREAD_TOPIC = 'nitki-dr-spina';
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
 export function PwaControls() {
   const pushEnabled = useFeature('PUSH_ENABLED');
+  const threadsEnabled = useFeature('THREADS_ENABLED');
+  const topics = threadsEnabled ? allTopics : allTopics.filter(([key]) => key !== THREAD_TOPIC);
   const dialog = useRef<HTMLDialogElement>(null);
   const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
   const [ios, setIos] = useState(false);
@@ -23,6 +27,7 @@ export function PwaControls() {
   const [busy, setBusy] = useState(false);
   const [supported, setSupported] = useState(false);
   const [opened, setOpened] = useState(0);
+  const [denied, setDenied] = useState(false);
 
   useEffect(() => {
     setIos(/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
@@ -75,13 +80,14 @@ export function PwaControls() {
     if (mode !== 'push' || !pushEnabled) return;
     let cancelled = false;
     setConfig(null);
+    setDenied('Notification' in window && Notification.permission === 'denied');
     loadConfig().then(async data => {
       const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration('/') : undefined;
       const subscription = await registration?.pushManager?.getSubscription();
-      if (!cancelled) setSelected(data.results.find(row => row.endpoint === subscription?.endpoint)?.topics || []);
+      if (!cancelled) setSelected((data.results.find(row => row.endpoint === subscription?.endpoint)?.topics || []).filter(topic => threadsEnabled || topic !== THREAD_TOPIC));
     }).catch(error => { if (!cancelled) setMessage(error.message); });
     return () => { cancelled = true; };
-  }, [mode, opened, pushEnabled]);
+  }, [mode, opened, pushEnabled, threadsEnabled]);
 
   function dismiss() {
     setBanner(false);
@@ -143,14 +149,15 @@ export function PwaControls() {
       <button type="button" className="sc-pwa-close" onClick={close} aria-label="Zamknij okno">×</button>
       <h2 id="sc-pwa-title">{mode === 'push' ? 'Powiadomienia' : 'Zainstaluj aplikację'}</h2>
       {mode === 'install' ? <>
-        <p>Klinika i spinki pod ręką - prosto z ekranu telefonu.</p>
+        <p>{threadsEnabled ? 'Klinika i spinki pod ręką - prosto z ekranu telefonu.' : 'Klinika i przekazy dnia pod ręką - prosto z ekranu telefonu.'}</p>
         {installed ? <p>Aplikacja jest już zainstalowana.</p> : ios ? <p>Otwórz stronę w Safari. Wybierz <strong>Udostępnij → Do ekranu początkowego → Dodaj</strong>.</p> : prompt ? <button className="sc-pwa-primary" onClick={() => void install()}>Zainstaluj</button> : <p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna.</p>}
         <button onClick={() => { dismiss(); close(); }}>Nie pokazuj przez 30 dni</button>
         {pushEnabled && <p><a href="#powiadomienia">Wybierz powiadomienia</a></p>}
       </> : <>
-        <p>Wybierz tematy. Konto nie jest potrzebne do spinu dnia i spinek Dr. Spina.</p>
+        <p>{threadsEnabled ? 'Wybierz tematy. Konto nie jest potrzebne do spinu dnia i spinek Dr. Spina.' : 'Wybierz tematy. Konto nie jest potrzebne do nowych spinów i spinu dnia; alerty o obserwowanych osobach wymagają konta.'}</p>
         {ios && !installed && <p>Na iPhonie i iPadzie push działa tylko w zainstalowanej PWA (iOS 16.4 lub nowszy). <a href="#zainstaluj-aplikacje">Jak zainstalować?</a></p>}
         {!supported && <p>Ta przeglądarka nie obsługuje teraz powiadomień aplikacji.</p>}
+        {denied && <p>Powiadomienia są zablokowane dla tej strony. Zmień uprawnienia w ustawieniach przeglądarki lub systemu, a potem wróć tutaj.</p>}
         {config && !config.enabled && <p>Powiadomienia nie są jeszcze włączone w serwisie.</p>}
         <fieldset disabled={busy || !config?.enabled || !supported || (ios && !installed)}>
           <legend>Tematy na tym urządzeniu</legend>

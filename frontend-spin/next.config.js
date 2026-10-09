@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const { isThreadsEnabled, threadRedirects } = require('./lib/threadsRouting');
+
 module.exports = {
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
@@ -16,14 +18,8 @@ module.exports = {
   async redirects() {
     return [
       ...['/glosowanie', '/glosowanie/', '/ankieta', '/ankieta/'].map(source => ({ source, destination: '/glosowanie/index.html', permanent: false })),
-      // „Nitki” nazywają się teraz „Tropy”: stare linki (powiadomienia, udostępnienia) prowadzą pod nowy adres.
-      { source: '/nitki', destination: '/spinki', permanent: true },
-      { source: '/nitki/:path*', destination: '/spinki/:path*', permanent: true },
-      { source: '/konto/nitki/:path*', destination: '/konto/spinki/:path*', permanent: true },
-      // Tropy -> Spinki (właściciel 3.10)
-      { source: '/tropy', destination: '/spinki', permanent: true },
-      { source: '/tropy/:path*', destination: '/spinki/:path*', permanent: true },
-      { source: '/konto/tropy/:path*', destination: '/konto/spinki/:path*', permanent: true },
+      // spinki/nitki/tropy zależą od flagi NEXT_PUBLIC_THREADS_ENABLED (lib/threadsRouting.js)
+      ...threadRedirects(isThreadsEnabled()),
       // polskie adresy wpisywane z ręki (audyt 4.10): bez 404
       { source: '/szukaj', destination: '/search', permanent: false },
       // wpisane z ręki adresy (panel designu 6.10): prowadzą do właściwych stron zamiast 404

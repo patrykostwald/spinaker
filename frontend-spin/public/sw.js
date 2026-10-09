@@ -1,5 +1,5 @@
 /* Only allowlisted public API requests made without credentials are cached. */
-const CACHE = 'spin-pwa-v1';
+const CACHE = 'spin-pwa-v2';
 const SHELL = ['/app/offline.html', '/app/icon-192.png', '/app/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));

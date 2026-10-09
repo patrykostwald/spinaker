@@ -5,7 +5,9 @@ import { MojeKonto } from '@spin-clinic/ui';
 
 export const metadata: Metadata = {
   title: 'Mój spin.clinic',
-  description: 'Twoje spinki, aktywność, obserwowani, powiadomienia i ustawienia konta.',
+  description: process.env.NEXT_PUBLIC_THREADS_ENABLED === 'true'
+    ? 'Twoje spinki, aktywność, obserwowani, powiadomienia i ustawienia konta.'
+    : 'Twoja aktywność, obserwowani, powiadomienia i ustawienia konta.',
   robots: { index: false, follow: false },
 };
 

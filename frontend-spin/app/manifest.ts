@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { isThreadsEnabled, manifestShortcuts } from '../lib/threadsRouting';
 
 /** Aplikacja instalowana z przeglądarki (PWA) - pierwszy krok do aplikacji na telefon. */
 export default function manifest(): MetadataRoute.Manifest {
@@ -20,10 +21,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/app/maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
       { src: '/app/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
-    shortcuts: [
-      { name: 'Klinika', url: '/klinika' },
-      { name: 'Wiadomości', url: '/' },
-      { name: 'Spinki', url: '/spinki' },
-    ],
+    // skróty zależą od flagi spinek: przy false zamiast „Spinki” jest „Przekazy dnia” (lib/threadsRouting.js)
+    shortcuts: manifestShortcuts(isThreadsEnabled()),
   };
 }
