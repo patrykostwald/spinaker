@@ -217,16 +217,52 @@ def generate(today=None, force=False):
             'produced': int(issue.status == 'ready'), **({'error': issue.data.get('error')} if issue.status == 'failed' else {})}
 
 
+def _sample_unavailable(reason):
+    now = timezone.now().astimezone(WARSAW)
+    next_report = (now + timedelta(days=(-now.weekday()) % 7)).replace(
+        hour=6, minute=40, second=0, microsecond=0)
+    if next_report <= now:
+        next_report += timedelta(days=7)
+    return {'available': False, 'reason': reason, 'next_report_at': next_report.isoformat()}
+
+
 def public_sample():
-    """Ostatni zatwierdzony numer: tylko liczby zbiorcze (bez listy wypowiedzi i bez cen)."""
+    """Zatwierdzony numer: wyłącznie sprawdzone liczby zbiorcze i jawny zakres próbki."""
     from news.sales_models import WeeklyReportIssue
     issue = WeeklyReportIssue.objects.filter(status='ready', public_approved_at__isnull=False).order_by('-week_start').first()
     if not issue:
-        return {'available': False}
-    d = issue.data
-    camps = {camp: {k: v.get(k) for k in ('count', 'weighted_spin_percent', 'average_intensity')} |
-             {'top_techniques': v.get('top_techniques', [])[:3]} for camp, v in d.get('camps', {}).items()}
-    return {'available': True, 'start': d.get('start'), 'week_end': d.get('week_end'), 'total': d.get('total'),
-            'total_before': d.get('total_before'), 'camps': camps, 'club_min': d.get('club_min'),
-            'clubs': [{k: c[k] for k in ('club', 'count', 'weighted_spin_percent', 'trend_pp')} for c in d.get('clubs', [])[:8]],
-            'summary': summary_lines({**d, 'clubs': d.get('clubs', [])}) if d.get('camps') else []}
+        return _sample_unavailable('no_approved_report')
+    data = issue.data
+    if not isinstance(data, dict):
+        return _sample_unavailable('invalid_report_data')
+    # Nie przekazujemy tekstów ani dodatkowych pól ze snapshotu prywatnego raportu.
+    def count(value):
+        return type(value) is int and value >= 0
+
+    if not count(data.get('total')) or not data['total'] or not count(data.get('total_before')):
+        return _sample_unavailable('invalid_report_data')
+    source = data.get('camps')
+    if not isinstance(source, dict):
+        return _sample_unavailable('invalid_report_data')
+    camps = {}
+    for camp in ('government', 'opposition'):
+        values = source.get(camp)
+        if not isinstance(values, dict) or not count(values.get('count')):
+            return _sample_unavailable('invalid_report_data')
+        public = {'count': values['count']}
+        for key in ('weighted_spin_percent', 'average_intensity'):
+            value = values.get(key)
+            if values['count'] == 0:
+                if value is not None:
+                    return _sample_unavailable('invalid_report_data')
+            elif type(value) not in (int, float) or not 0 <= value <= 100:
+                return _sample_unavailable('invalid_report_data')
+            public[key] = value
+        camps[camp] = public
+    if sum(values['count'] for values in camps.values()) != data['total']:
+        return _sample_unavailable('invalid_report_data')
+    return {'available': True, 'start': issue.week_start.isoformat(), 'week_end': issue.week_end.isoformat(),
+            'total': data['total'], 'total_before': data['total_before'], 'camps': camps,
+            'scope': 'Próbka obejmuje liczby zbiorcze za pełny tydzień. Pełny raport zawiera zestawienie technik, '
+                     'trendy klubów i linki do analiz. Próbka nie zawiera listy wypowiedzi ani pełnych tabel.',
+            'method': report_data.METHOD['pl'] + ' Te same kryteria i wzór wskaźnika stosujemy dla wszystkich obozów.'}

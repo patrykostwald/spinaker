@@ -1,14 +1,14 @@
 import { DocumentLink as Link, documentTranslator, type DocumentLanguage } from "./locale";
 import { Button, DocLayout } from "@spin-clinic/ui/kit";
-import { ContextThreadExample } from "../../app/dla-redakcji/ContextThreadExample";
-import { ReportInquiry, ReportSample } from "../../app/dla-redakcji/InstitutionReports";
+import { ReportContact, ReportSample } from "../../app/dla-redakcji/InstitutionReports";
 
 export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
   const t = documentTranslator(lang);
+  const text = (pl: string, en: string) => lang === "pl" ? pl : en;
   const sections = [
     { id: "dane", label: t("Dane i raporty") }, { id: "cytowanie", label: t("Cytowanie diagnozy") }, { id: "link", label: t("Trwały link") },
     { id: "zrodla", label: t("Źródła i metodologia") }, { id: "kontakt", label: t("Kontakt") },
-    { id: "pilotaz", label: t("Pilotaż spinek") }, { id: "rss", label: t("Zgoda na odczyt RSS") },
+    { id: "rss", label: t("Zgoda na odczyt RSS") },
   ];
 
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
@@ -21,21 +21,27 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
     [t("Zgoda"), t("Brak odpowiedzi nie jest zgodą - źródło pozostaje wyłączone.")],
     [t("Rezygnacja"), t("Wystarczy wiadomość, a wyłączymy źródło.")],
   ];
-  return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/press" : "/dla-redakcji"} eyebrow={t("DLA REDAKCJI")} title={t("Dane i raporty o przekazie politycznym")} version="1.1" updatedAt="2026-10-05" sections={sections}
-    lead={t("Raporty przekazu rządzących i opozycji, monitoring tematów i polityków, dane do badań. Niżej: jak cytować diagnozy Dr. Spina.")}>
-    <section id="dane"><h2>{t("Dane i raporty dla firm i instytucji")}</h2>
-      <p>{t("Odpowiadamy w 1 dzień roboczy. Na start wysyłamy przykładowy raport z wybranego tematu.")}</p>
-      <p>{t("Na zamówienie przygotowujemy zestawienia z naszych danych:")}</p>
-      <ul>
-        <li>{t("powiadomienia o nowych wpisach i diagnozach wybranych polityków,")}</li>
-        <li>{t("tygodniowy raport przekazu rządzących i opozycji,")}</li>
-        <li>{t("monitoring tematu lub branży: projekty ustaw, wypowiedzi polityków, sygnały lobbingu,")}</li>
-        <li>{t("zestawienie wypowiedzi polityka: historia, zmiany stanowiska, zgodność z głosowaniami,")}</li>
-        <li>{t("dane do badań naukowych.")}</li>
-      </ul>
+  return <DocLayout lang={lang} alternateHref={lang === "pl" ? "/en/press" : "/dla-redakcji"} eyebrow={t("DLA REDAKCJI")} title={t("Dane i raporty o przekazie politycznym")} version="1.2" updatedAt="2026-10-09" className="sc-press-page" sections={sections}
+    lead={text("Raporty o przekazie rządzących i opozycji oraz dane do własnych analiz. Jedna metoda oceny dla wszystkich obozów.", "Reports on government and opposition messaging, with data for your own analysis. The same assessment method for every political camp.")}>
+    <section id="dane" className="sc-press-offer"><h2>{text("Raporty dla redakcji i instytucji", "Reports for newsrooms and institutions")}</h2>
+      <div className="sc-rep-grid sc-press-products">
+        <article className="sc-rep-box sc-press-product">
+          <h3>{text("Raport tygodniowy", "Weekly report")}</h3>
+          <p>{text("Przekaz rządzących i opozycji za poprzedni pełny tydzień.", "Government and opposition messaging over the previous full week.")}</p>
+          <p className="sc-rep-box__foot">{text("PDF i CSV: diagnozy, techniki, trendy i metoda.", "PDF and CSV: diagnoses, techniques, trends and method.")}</p>
+        </article>
+        <article className="sc-rep-box sc-press-product">
+          <h3>{text("Raport i dane", "Report and data")}</h3>
+          <p>{text("Raport tygodniowy z zestawieniem tematu i danymi do własnych analiz.", "A weekly report with a topic overview and data for your own analysis.")}</p>
+          <p className="sc-rep-box__foot">{text("Zestawienie miesięczne i dane CSV z archiwum diagnoz.", "Monthly overview and CSV data from the diagnosis archive.")}</p>
+        </article>
+      </div>
+      <div className="sc-press-upcoming">
+        {[text("Alerty", "Alerts"), text("Aplikacja", "App")].map(name => <div key={name}><h3>{name}</h3><span>{text("W przygotowaniu", "In preparation")}</span></div>)}
+      </div>
       <p>{t("Jedna oferta dla wszystkich: te same produkty i warunki niezależnie od obozu politycznego. Klient nie ma wpływu na metodę, diagnozy ani treści serwisu. Sprzedajemy nasze analizy, nie cudze treści.")}</p>
-      {lang === "pl" ? <><ReportSample /><ReportInquiry /></> :
-        <p><Button href="mailto:kontakt@spin.clinic?subject=Przykładowy%20raport%20spin.clinic" variant="primary">{t("Zamów przykładowy raport")}</Button> <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a></p>}
+      {lang === "pl" ? <><ReportSample /><ReportContact /></> :
+        <p><Button href="mailto:kontakt@iapply.pl" variant="primary">Ask about a report</Button></p>}
     </section>
     <section id="cytowanie"><h2>{t("Jak cytować diagnozę")}</h2>
       <p>{t("Podaj nazwę spin.clinic, tytuł i datę diagnozy oraz jej bezpośredni adres. Zaznacz, że analizę przygotowało AI. Rozróżniaj ocenę techniki perswazji od statusu sprawdzanego twierdzenia. Zachowaj kontekst cytatu i ograniczenia wyniku.")}</p>
@@ -51,12 +57,7 @@ export function PressDocument({ lang = "pl" }: { lang?: DocumentLanguage }) {
       <p><Link lang={lang} href="/metodologia">{t("Aktualna metodologia")}</Link> {t("wyjaśnia sposób obliczeń i ograniczenia.")} <Link lang={lang} href="/konsylium">{t("Konsylium AI")}</Link> {t("pokazuje aktualny skład, a uczestników konkretnej analizy sprawdzisz przy jej wyniku.")} <Link lang={lang} href="/metodologia#korekty">{t("Zasady wycofania diagnozy")}</Link>.</p>
     </section>
     <section id="kontakt"><h2>{t("Kontakt z projektem")}</h2>
-      <p>{t("Współpraca i pytania mediów:")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>{t(". Zgłoszenia błędów (z linkiem i dowodami):")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Operator: iapply sp. z o.o.; <Link lang={lang} href="/o-nas#operator">{t("dane operatora")}</Link>.</p>
-    </section>
-    <section id="pilotaz"><h2>{t("Spinki podpisane przez redakcje")}</h2>
-      <p>{t("Każdy może ułożyć spinkę z konta: boksy z materiałami, połączenia i wyjaśnienie w podtytule. Redakcje i dziennikarze mogą prowadzić spinki podpisane nazwiskiem i nazwą redakcji. Ocenia je ta sama miara co spinki Dr. Spina i czytelników.")}</p>
-      {lang === "pl" && <ContextThreadExample />}
-      <p>{t("W sprawie spinek podpisanych przez redakcję napisz na")} <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>.</p>
+      <p>{t("Współpraca i pytania mediów:")} <a href="mailto:kontakt@iapply.pl">kontakt@iapply.pl</a>{t(". Zgłoszenia błędów (z linkiem i dowodami):")} <a href="mailto:kontakt@iapply.pl">kontakt@iapply.pl</a>. Operator: iapply sp. z o.o.; <Link lang={lang} href="/o-nas#operator">{t("dane operatora")}</Link>.</p>
     </section>
     <section id="rss"><h2>{t("Zgoda na odczyt RSS")}</h2>
       <dl className="sc-doc-definitions">{scope.map(([term, text]) => <div key={term}><dt>{term}</dt><dd>{text}</dd></div>)}</dl>

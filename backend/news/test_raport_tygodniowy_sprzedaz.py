@@ -91,10 +91,11 @@ def test_public_sample_only_after_approval_and_without_statements(monkeypatch):
     diagnoses(date(2026, 10, 5))
     weekly.generate(date(2026, 10, 12))
     client = Client()
-    assert client.get('/api/raporty/probka/').json() == {'available': False}
+    assert client.get('/api/raporty/probka/').json() == {
+        'available': False, 'reason': 'no_approved_report', 'next_report_at': '2026-10-19T06:40:00+02:00'}
     WeeklyReportIssue.objects.update(public_approved_at=NOW)
     body = client.get('/api/raporty/probka/').json()
-    assert body['available'] and body['total'] == 8 and body['summary']
+    assert body['available'] and body['total'] == 8 and body['scope'] and body['method']
     assert 'top' not in body and 'rows' not in body and 'x.example' not in str(body)
     assert 'zł' not in str(body)  # bez cen na stronie
 
@@ -204,3 +205,66 @@ def test_admin_offer_and_weekly_download(admin_client):
     admin_client.post('/admin/news/weeklyreportissue/', {'action': 'approve_public', '_selected_action': [issue.pk]})
     issue.refresh_from_db()
     assert issue.public_approved_at
+
+
+@pytest.mark.parametrize('status', ['ready', 'empty', 'failed'])
+def test_sample_requires_ready_and_approval(status):
+    WeeklyReportIssue.objects.create(week_start=date(2026, 10, 5), week_end=date(2026, 10, 11),
+                                    status=status, public_approved_at=NOW if status != 'ready' else None)
+    body = Client().get('/api/raporty/probka/').json()
+    assert not body['available'] and body['reason'] == 'no_approved_report'
+
+
+def test_sample_without_issue_and_next_scheduled_date():
+    friday = datetime(2026, 10, 9, 12, tzinfo=WARSAW)
+    with patch('django.utils.timezone.now', return_value=friday):
+        response = Client().get('/api/raporty/probka/')
+    assert response.status_code == 200
+    assert response.json() == {'available': False, 'reason': 'no_approved_report',
+                               'next_report_at': '2026-10-12T06:40:00+02:00'}
+
+
+def sample_data():
+    return {'total': 2, 'total_before': 0, 'camps': {
+        camp: {'count': 1, 'weighted_spin_percent': 50.0, 'average_intensity': 25.0}
+        for camp in ('government', 'opposition')}}
+
+
+def test_sample_allowlist_ignores_private_fields_and_snapshot_dates():
+    data = sample_data()
+    data.update(start='PRIVATE', week_end='PRIVATE', rows=['PRIVATE'], top=['PRIVATE'],
+                clubs=['PRIVATE'], method='PRIVATE', price='PRIVATE')
+    data['camps']['other'] = {'secret': 'PRIVATE'}
+    data['camps']['government']['top_techniques'] = ['PRIVATE']
+    WeeklyReportIssue.objects.create(week_start=date(2026, 10, 5), week_end=date(2026, 10, 11),
+                                    public_approved_at=NOW, data=data)
+    body = Client().get('/api/raporty/probka/').json()
+    assert body['available'] and 'PRIVATE' not in str(body)
+    assert body['start'] == '2026-10-05' and body['week_end'] == '2026-10-11'
+    assert body['camps']['government'] == body['camps']['opposition']
+    assert set(body) == {'available', 'start', 'week_end', 'total', 'total_before', 'camps', 'scope', 'method'}
+
+
+@pytest.mark.parametrize('corruption', ['not_object', 'bad_total', 'missing_camp', 'text_metric', 'boolean_metric',
+                                        'out_of_range', 'wrong_total', 'bad_count'])
+def test_sample_corrupt_snapshot_fails_closed(corruption):
+    data = sample_data()
+    if corruption == 'not_object':
+        data = []
+    elif corruption == 'bad_total':
+        data['total'] = 'PRIVATE'
+    elif corruption == 'missing_camp':
+        del data['camps']['government']
+    elif corruption == 'wrong_total':
+        data['total'] = 3
+    elif corruption == 'bad_count':
+        data['camps']['government']['count'] = True
+    else:
+        data['camps']['government']['average_intensity'] = {
+            'text_metric': 'PRIVATE', 'boolean_metric': True, 'out_of_range': 101}[corruption]
+    WeeklyReportIssue.objects.create(week_start=date(2026, 10, 5), week_end=date(2026, 10, 11),
+                                    public_approved_at=NOW, data=data)
+    response = Client().get('/api/raporty/probka/')
+    assert response.status_code == 200
+    assert response.json()['reason'] == 'invalid_report_data' and not response.json()['available']
+    assert 'PRIVATE' not in str(response.json())
