@@ -25,7 +25,7 @@ type ContextTarget = { articleId?: number; figureId?: number; url?: string };
 export function ContextThreadStrip(props: ContextTarget = {}) {
   const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   if (props.articleId || props.figureId || props.url) return THREADS_ENABLED ? <RelatedThreads {...props} /> : null;
-  return <ExampleStrip />;
+  return THREADS_ENABLED ? <ExampleStrip /> : null;
 }
 function RelatedThreads({ articleId, figureId, url }: ContextTarget) {
   const query = useQuery({ queryKey: ['context-thread-strip', articleId, figureId, url], retry: false,

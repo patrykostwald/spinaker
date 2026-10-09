@@ -22,11 +22,12 @@ export function useAccountProfile() {
     queryFn: () => apiFetch<ProfileData>('/api/account/profile/') });
 }
 export function ProfileHeading({ profile, children }: { profile: ProfileData; children?: React.ReactNode }) {
+  const threadsEnabled = useFeature('THREADS_ENABLED');
   return <header className="sc-account-identity">
     <div className="sc-account-avatar" aria-hidden="true">{profile.username?.[0]?.toUpperCase()}</div>
     <div><h2>@{profile.username}</h2>{profile.bio && <p>{profile.bio}</p>}
       <p className="sc-account-meta">Dołączono {formatDatePl(profile.date_joined)}</p></div>
-    <dl className="sc-account-numbers">{([['threads', 'Spinki'], ['ratings', 'Oceny'], ['comments', 'Komentarze']] as const).map(([key, title]) =>
+    <dl className="sc-account-numbers">{([['threads', 'Spinki'], ['ratings', 'Oceny'], ['comments', 'Komentarze']] as const).filter(([key]) => threadsEnabled || key !== 'threads').map(([key, title]) =>
       <div key={key}><dt>{title}</dt><dd>{profile.counts[key]}</dd></div>)}</dl>
     <div className="sc-f2-actions">{children}</div>
   </header>;
@@ -35,12 +36,13 @@ export function EmptyState({ children, href, label }: { children: React.ReactNod
   return <div className="sc-account-empty"><span aria-hidden="true">○</span><p>{children}</p>{href && <Button href={href} variant="secondary">{label}</Button>}</div>;
 }
 export function ActivityRows({ rows }: { rows: ActivityRow[] }) {
+  const threadsEnabled = useFeature('THREADS_ENABLED');
   return <ol className="sc-account-timeline">{rows.map(row => <li key={row.id}>
     <p className="sc-account-meta"><time dateTime={row.created_at}>{formatDateTimePl(row.created_at)}</time> · {row.kind === 'ratings' ? 'Ocena' : row.kind === 'votes' ? 'Głos na wywiad' : 'Komentarz'}</p>
     <Link href={row.url}>{row.title}</Link>
     {row.polarity && <p className="sc-account-rating" data-rating={row.polarity}>{({ positive: '✓ Zgadzam się', doubt: '? Mam wątpliwości', negative: '✕ Nie zgadzam się' })[row.polarity]}</p>}
     {row.body && <ClampedText>{row.body}</ClampedText>}
-    {!!row.box_references?.length && <div className="sc-f2-actions">{[...new Set(row.box_references)].map(n => <Link className="sc-social-chip" key={n} href={`/spinki/${row.thread_id}#boks-${n}`}>@boks {n}</Link>)}</div>}
+    {threadsEnabled && !!row.box_references?.length && <div className="sc-f2-actions">{[...new Set(row.box_references)].map(n => <Link className="sc-social-chip" key={n} href={`/spinki/${row.thread_id}#boks-${n}`}>@boks {n}</Link>)}</div>}
     {row.kind === 'votes' && <p>{row.won == null ? 'Oczekiwanie na wynik' : row.won ? 'Wywiad wybrany' : 'Wybrano inny wywiad'}{row.day && ` · ${formatDatePl(row.day)}`}</p>}
   </li>)}</ol>;
 }
@@ -100,7 +102,7 @@ export function AccountReports() {
   </section>;
 }
 export function ProfileEditor() {
-  const profile = useAccountProfile(), cache = useQueryClient();
+  const profile = useAccountProfile(), cache = useQueryClient(), threadsEnabled = useFeature('THREADS_ENABLED');
   const [pending, setPending] = useState(false), [message, setMessage] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (pending) return;
@@ -114,7 +116,7 @@ export function ProfileEditor() {
     <p className="sc-account-meta">Nick możesz zmienić raz na 30 dni.{profile.data.nick_change_available_at && new Date(profile.data.nick_change_available_at) > new Date() && ` Kolejna zmiana: ${formatDatePl(profile.data.nick_change_available_at)}.`}</p>
     <label>Bio <span className="sc-account-meta">(opcjonalne, do 160 znaków)</span><textarea name="bio" maxLength={160} defaultValue={profile.data.bio} /></label>
     <label className="sc-f2-check"><input type="checkbox" name="public_activity" defaultChecked={profile.data.public_activity} />Pokaż komentarze na profilu publicznym</label>
-    <p className="sc-account-meta">Komentarze pod spinkami są publiczne niezależnie od tego ustawienia.</p><Button type="submit" disabled={pending}>Zapisz profil</Button>
+    <p className="sc-account-meta">{threadsEnabled ? 'Komentarze pod spinkami są publiczne niezależnie od tego ustawienia.' : 'Komentarze pod diagnozami i wywiadami są publiczne niezależnie od tego ustawienia.'}</p><Button type="submit" disabled={pending}>Zapisz profil</Button>
   </form>}{message && <p role="status">{message}</p>}</section>;
 }
 export function MutedSettings() {

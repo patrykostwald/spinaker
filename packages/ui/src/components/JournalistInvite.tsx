@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { useFeature } from "../lib/features";
 import { ContextThreadStrip } from "./ContextThreadStrip";
 
 const CONTACT = "kontakt@spin.clinic";
@@ -14,6 +16,7 @@ const STEPS = [
  * przykładowa nitka jako pasek boxów i trzy kroki w jednej linii.
  */
 export function JournalistInvite() {
+  if (!useFeature("THREADS_ENABLED")) return null;
   return (
     <aside className="sc-invite" aria-labelledby="journalists-title">
       <header className="sc-invite__head">

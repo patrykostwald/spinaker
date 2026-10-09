@@ -28,6 +28,8 @@ function threadRedirects(enabled) {
   }
   const noPreview = [{ type: 'cookie', key: 'sc_preview', value: '1' }];
   const sources = ['spinki', ...LEGACY].flatMap(name => [`/${name}`, `/${name}/:path*`, `/konto/${name}`, `/konto/${name}/:path*`]);
+  // stary portalowy wątek (news.Thread) też jest częścią funkcji spinek/nitek: bez flagi nie ma publicznej strony
+  sources.push('/thread', '/thread/:path*');
   return [
     // osoby w trybie podglądu fazy 2: stare nazwy dalej prowadzą do /spinki (strony same pilnują dostępu)
     ...LEGACY.flatMap(name => [`/${name}`, `/${name}/:path*`]).map(source => ({

@@ -17,7 +17,7 @@ function withNext(url: string) {
 }
 
 export function AccountDialog({ open, onClose, reason }: { open: boolean; onClose: () => void; reason?: "rate" }) {
-  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
+  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED'), THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const [mode, setMode] = useState<Mode>(reason === "rate" ? "register" : "login");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -49,7 +49,7 @@ export function AccountDialog({ open, onClose, reason }: { open: boolean; onClos
         let firstVisit = true;
         try { firstVisit = localStorage.getItem(`sc-onboarding:${result.user?.id}`) !== "done"; } catch {}
         if (mode === "register") setNotice("Sprawdź pocztę, aby potwierdzić e-mail. Jeśli masz już konto, zaloguj się lub ustaw nowe hasło. Link potwierdzający działa przez 48 godzin.");
-        else if (!result.user?.email_verified) setNotice("Jesteś zalogowany. Możesz czytać i zapisywać prywatnie. Aby publikować spinki i opinie, potwierdź e-mail.");
+        else if (!result.user?.email_verified) setNotice(THREADS_ENABLED ? "Jesteś zalogowany. Możesz czytać i zapisywać prywatnie. Aby publikować spinki i opinie, potwierdź e-mail." : "Jesteś zalogowany. Możesz czytać i zapisywać prywatnie. Aby komentować i oceniać, potwierdź e-mail.");
         else { onClose(); if (firstVisit) router.push("/konto"); }
       }
     } catch (reason) {
@@ -62,7 +62,7 @@ export function AccountDialog({ open, onClose, reason }: { open: boolean; onClos
   return <Dialog open={open} onClose={onClose} title={mode === "login" ? "Zaloguj się" : mode === "register" ? (reason === "rate" ? "Załóż konto, aby oceniać" : "Załóż konto") : "Zmień hasło"}>
     {notice ? <div className="sc-account-form"><p role="status">{notice}</p>{mode === "login" ? <><Button href="/konto/potwierdz" variant="primary" size="md" fullWidth onClick={onClose}>Potwierdź e-mail</Button><Button type="button" variant="quiet" size="md" fullWidth onClick={onClose}>Na razie korzystam prywatnie</Button></> : <Button type="button" variant="primary" size="md" fullWidth onClick={() => changeMode("login")}>Przejdź do logowania</Button>}</div> : <>
     <form key={mode} ref={formRef} onSubmit={submit} className="sc-account-form" aria-busy={pending}>
-      <p className="sc-t-body sc-text-2">{mode === "register" ? (reason === "rate" ? "Bezpłatnie i bez reklam. Twoja ocena zmienia kolor spinki i pomaga innym czytelnikom. Nazwa będzie publiczna, e-mail zostaje prywatny." : "Zapisuj prywatnie. Po potwierdzeniu e-maila publikuj spinki i opinie. Twoja nazwa będzie publiczna; e-mail pozostanie prywatny.") : mode === "reset" ? "Podaj e-mail konta. Wyślemy link ważny przez godzinę." : "Zaloguj się, aby oceniać, komentować i układać spinki."}</p>
+      <p className="sc-t-body sc-text-2">{mode === "register" ? (reason === "rate" ? (THREADS_ENABLED ? "Bezpłatnie i bez reklam. Twoja ocena zmienia kolor spinki i pomaga innym czytelnikom. Nazwa będzie publiczna, e-mail zostaje prywatny." : "Bezpłatnie i bez reklam. Twoja ocena pomaga innym czytelnikom. Nazwa będzie publiczna, e-mail zostaje prywatny.") : (THREADS_ENABLED ? "Zapisuj prywatnie. Po potwierdzeniu e-maila publikuj spinki i opinie. Twoja nazwa będzie publiczna; e-mail pozostanie prywatny." : "Zapisuj prywatnie. Po potwierdzeniu e-maila komentuj i oceniaj. Twoja nazwa będzie publiczna; e-mail pozostanie prywatny.")) : mode === "reset" ? "Podaj e-mail konta. Wyślemy link ważny przez godzinę." : (THREADS_ENABLED ? "Zaloguj się, aby oceniać, komentować i układać spinki." : "Zaloguj się, aby oceniać i komentować.")}</p>
       {mode !== "reset" && <label>{mode === "login" ? "Nazwa użytkownika lub e-mail" : "Nazwa użytkownika"}<input required name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} minLength={mode === "register" ? 3 : undefined} maxLength={mode === "register" ? 30 : 254} pattern={mode === "register" ? "[A-Za-z0-9_]{3,30}" : undefined} {...field("username")} />{mode === "register" && <span className="sc-t-caption sc-text-2">3-30 znaków: litery bez polskich znaków, cyfry lub podkreślenie.</span>}{fieldError("username")}</label>}
       {mode !== "login" && <label>E-mail<input required name="email" type="email" maxLength={254} autoComplete="email" {...field("email")} />{fieldError("email")}</label>}
       {mode !== "reset" && <label>Hasło<input required name="password" type="password" maxLength={256} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 8 : undefined} {...field("password")} />{mode === "register" && <span className="sc-t-caption sc-text-2">Minimum 8 znaków. Unikaj popularnych haseł i samej nazwy konta.</span>}{fieldError("password")}</label>}

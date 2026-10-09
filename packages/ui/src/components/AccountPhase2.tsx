@@ -51,8 +51,8 @@ export function FollowedSection() {
   const follows = useFollows();
   return <PanelSection id="obserwowani" title="Obserwowani">
     <AccountDataState query={follows} />
-    {follows.isSuccess && !follows.data.length && <p>Obserwuj wybrane osoby i spinki, aby łatwo do nich wracać. <Link href="/osoby-publiczne">Znajdź osobę publiczną</Link>.</p>}
-    {(['figure', 'user'] as const).map(kind => {
+    {follows.isSuccess && !follows.data.length && <p>{THREADS_ENABLED ? 'Obserwuj wybrane osoby i spinki, aby łatwo do nich wracać.' : 'Obserwuj wybrane osoby, aby łatwo do nich wracać.'} <Link href="/osoby-publiczne">Znajdź osobę publiczną</Link>.</p>}
+    {(THREADS_ENABLED ? ['figure', 'user'] as const : ['figure'] as const).map(kind => {
       const rows = follows.data?.filter(row => row.kind === kind) ?? [];
       return rows.length ? <div key={kind}><h3>{kind === 'figure' ? 'Osoby publiczne' : 'Autorzy spinek'}</h3><ul className="sc-account-rows">{rows.map(row => <li key={row.id}>
         <div><Link className="sc-account-title" href={accountHref(row.url)}>{row.label}</Link>{kind === 'figure' && <><FollowModeSelect follow={row} /><LatestDiagnosis figureId={row.target_id} /></>}</div>
@@ -84,14 +84,14 @@ export function NotificationsSection() {
   </PanelSection>;
 }
 export function VerifyEmailNotice() {
-  const account = useAccount(); const [pending, setPending] = useState(false); const [message, setMessage] = useState('');
+  const account = useAccount(), threadsEnabled = useFeature('THREADS_ENABLED'); const [pending, setPending] = useState(false); const [message, setMessage] = useState('');
   if (emailVerified(account.data)) return null;
   async function resend() {
     setPending(true); setMessage('');
     try { await apiWrite('/api/account/verify-email/resend/', {}); setMessage('Wysłano wiadomość. Sprawdź skrzynkę i folder spam.'); }
     catch (error) { setMessage(accountMessage(error)); } finally { setPending(false); }
   }
-  return <div className="sc-f2-notice"><p>{accountEmail(account.data) ? 'Potwierdź e-mail, aby publikować spinki. Szkic możesz zapisać już teraz.' : 'Dodaj e-mail w ustawieniach konta i potwierdź go, aby publikować spinki.'}</p>
+  return <div className="sc-f2-notice"><p>{threadsEnabled ? (accountEmail(account.data) ? 'Potwierdź e-mail, aby publikować spinki. Szkic możesz zapisać już teraz.' : 'Dodaj e-mail w ustawieniach konta i potwierdź go, aby publikować spinki.') : (accountEmail(account.data) ? 'Potwierdź e-mail, aby komentować i oceniać.' : 'Dodaj e-mail w ustawieniach konta i potwierdź go, aby komentować i oceniać.')}</p>
     {accountEmail(account.data) ? <Button type="button" variant="quiet" loading={pending} onClick={resend}>Wyślij ponownie link potwierdzający</Button> : <Button href="/konto#ustawienia" variant="quiet">Ustaw e-mail</Button>}
     <Button type="button" variant="quiet" disabled={account.isFetching} onClick={() => account.refetch()}>Sprawdź potwierdzenie</Button>
     {message && <p role="status">{message}</p>}
@@ -163,7 +163,7 @@ export function AccountSettings({ part = 'konto' }: { part?: SettingsPart }) {
       </section>
       <section><h3>Aplikacja na telefonie</h3><p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna. Na iPhonie: Safari → Udostępnij → Do ekranu początkowego.</p></section></>}
       {part === 'prywatnosc' && <><MutedSettings />
-      <section><h3>Twoje dane</h3><p>Zbieramy tylko to, co potrzebne do konta: e-mail, nick, Twoje spinki, komentarze i reakcje. Bez śledzenia i reklam.</p>
+      <section><h3>Twoje dane</h3><p>Zbieramy tylko to, co potrzebne do konta: e-mail, nick, {THREADS_ENABLED ? 'Twoje spinki, ' : ''}komentarze i reakcje. Bez śledzenia i reklam.</p>
         <Button variant="quiet" disabled={pending} onClick={() => perform(download, 'Przygotowano plik JSON do pobrania.')}>Pobierz moje dane (JSON)</Button></section>
       <section><h3>Usunięcie konta</h3><p>Konto i treści zostaną usunięte od razu po potwierdzeniu hasłem. To działanie jest nieodwracalne. Przed usunięciem pobierz eksport danych. Historia decyzji moderacji pozostaje bez przypisania do konta. Jeśli logujesz się przez Google, najpierw ustaw hasło przez e-mail.</p>
         {!deleting ? <Button variant="quiet" onClick={() => setDeleting(true)}>Chcę usunąć konto</Button> : <form onSubmit={deleteSubmit}>
@@ -179,13 +179,13 @@ export function AccountSettings({ part = 'konto' }: { part?: SettingsPart }) {
 }
 
 export function AccountOnboarding({ ownerId }: { ownerId: number }) {
-  const [step, setStep] = useState<number | null>(null);
+  const [step, setStep] = useState<number | null>(null), threadsEnabled = useFeature('THREADS_ENABLED');
   useEffect(() => { try { setStep(localStorage.getItem(`sc-onboarding-social:${ownerId}`) === 'done' ? null : 0); } catch { setStep(0); } }, [ownerId]);
   function finish() { try { localStorage.setItem(`sc-onboarding-social:${ownerId}`, 'done'); } catch {} setStep(null); }
   if (step === null) return <Button variant="quiet" onClick={() => setStep(0)}>Pierwsze kroki</Button>;
   const steps = [
-    ['Oceniaj połączenia', 'Oceniasz połączenia między boksami: ✕ nie zgadzam się, ? mam wątpliwości, ✓ zgadzam się.'],
-    ['Obserwuj', 'Obserwuj polityków i autorów, aby łatwo wracać do ich treści.'],
+    threadsEnabled ? ['Oceniaj połączenia', 'Oceniasz połączenia między boksami: ✕ nie zgadzam się, ? mam wątpliwości, ✓ zgadzam się.'] : ['Oceniaj diagnozy', 'Oceniasz diagnozy Dr. Spina i komentujesz je razem z innymi czytelnikami.'],
+    threadsEnabled ? ['Obserwuj', 'Obserwuj polityków i autorów, aby łatwo wracać do ich treści.'] : ['Obserwuj', 'Obserwuj osoby publiczne, aby łatwo wracać do ich diagnoz.'],
     ['Ustaw powiadomienia', 'Powiadomienia serwisowe są włączone. Społecznościowe włączysz w sekcji Powiadomienia.'],
   ];
   return <section className="sc-f2-onboarding" aria-labelledby="onboarding-title"><p className="sc-account-meta">Pierwsze kroki · {step + 1}/3</p><h2 id="onboarding-title">{steps[step][0]}</h2><p>{steps[step][1]}</p>

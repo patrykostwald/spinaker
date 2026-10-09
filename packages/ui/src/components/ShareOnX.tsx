@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api';
 import { useAccount } from '../lib/account';
+import { useFeature } from '../lib/features';
 import { Button } from '../kit/Button';
 import { Dialog } from './Dialog';
 
@@ -15,7 +16,7 @@ type ShareOnXProps = {
 export function ShareOnX({ title, path, label = "Udostępnij na X" }: ShareOnXProps) {
   const [draft, setDraft] = useState(title);
   const [open, setOpen] = useState(false);
-  const account = useAccount();
+  const account = useAccount(), threadsEnabled = useFeature('THREADS_ENABLED');
   const connection = useQuery({
     queryKey: ['x-connection'],
     queryFn: () => apiFetch<{ connected: boolean }>('/api/account/x-connection/'),
@@ -39,7 +40,7 @@ export function ShareOnX({ title, path, label = "Udostępnij na X" }: ShareOnXPr
         <label className="sc-share-x__label">Twój komentarz
           <textarea value={draft} maxLength={240} rows={4} onChange={event => setDraft(event.target.value)} />
         </label>
-        <p className="sc-t-caption sc-text-2">Link do materiału lub spinki zostanie dodany przez X. Publikację zatwierdzasz tam samodzielnie.</p>
+        <p className="sc-t-caption sc-text-2">{threadsEnabled ? 'Link do materiału lub spinki zostanie' : 'Link do materiału zostanie'} dodany przez X. Publikację zatwierdzasz tam samodzielnie.</p>
         <Button type="button" variant="primary" size="md" onClick={share}>Otwórz X ↗</Button>
       </div>
     </Dialog>
