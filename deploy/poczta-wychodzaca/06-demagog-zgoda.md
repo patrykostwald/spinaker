@@ -1,9 +1,10 @@
 ---
 to: kontakt@demagog.org.pl
 subject: Współpraca: Państwa weryfikacje przy diagnozach spin.clinic
-mailbox: SPIN
+mailbox: PATRYK
 category: partner
 lang: PL
+hold: media po wnioskach o dostęp do danych publicznych (decyzja właściciela 9.10)
 contact_url: https://demagog.org.pl/kontakt/
 source: docs/emails/wysylka-2026-09-28.txt (adres sprawdzony 28.09 na stronie kontaktowej)
 ---
@@ -18,4 +19,5 @@ prowadzimy spin.clinic - automatyczne diagnozy chwytów retorycznych polityków,
 Czy znajdą Państwo 20 minut w przyszłym tygodniu na rozmowę?
 
 Z poważaniem
-Zespół spin.clinic
+W imieniu iapply sp. z o.o., operatora spin.clinic i przeszłość.today
+{{PODPIS}}

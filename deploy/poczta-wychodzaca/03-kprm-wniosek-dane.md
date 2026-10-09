@@ -1,7 +1,7 @@
 ---
 to: bip@kprm.gov.pl
 subject: Wniosek o ponowne wykorzystywanie informacji sektora publicznego - petycje, oświadczenia członków RM, prace legislacyjne
-mailbox: IAPPLY
+mailbox: PATRYK
 category: instytucja
 lang: PL
 contact_url: https://www.gov.pl/web/premier/ponowne-wykorzystywanie
@@ -17,11 +17,12 @@ Na podstawie ustawy z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wyk
 4. Aktualny wykaz członków Rady Ministrów, sekretarzy i podsekretarzy stanu oraz pełnomocników rządu, z datami powołania i odwołania.
 5. Wykaz zbiorów danych KPRM dostępnych w formie czytelnej maszynowo i warunki ich ponownego wykorzystywania.
 
-Forma: pliki CSV, JSON lub XML na adres zrodla@spin.clinic; dla pkt 1, 3 i 4 najlepiej kanał lub plik aktualizowany co tydzień.
+Forma: pliki CSV, JSON lub XML na adres patryk@iapply.pl; dla pkt 1, 3 i 4 najlepiej kanał lub plik aktualizowany co tydzień.
 
 Cel: publikacja w serwisach spin.clinic i przeszłość.today z podaniem źródła i daty, w celu komercyjnym i niekomercyjnym. Dane osobowe przetwarzamy zgodnie z RODO, wyłącznie w zakresie funkcji publicznej.
 
-Adres do odpowiedzi: zrodla@spin.clinic
+Adres do odpowiedzi: patryk@iapply.pl
 
-W imieniu iapply sp. z o.o.
+Z poważaniem
+W imieniu iapply sp. z o.o., operatora spin.clinic i przeszłość.today
 {{PODPIS}}

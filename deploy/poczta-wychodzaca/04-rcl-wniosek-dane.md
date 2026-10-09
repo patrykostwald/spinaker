@@ -1,7 +1,7 @@
 ---
 to: kancelaria@rcl.gov.pl
 subject: Wniosek o ponowne wykorzystywanie informacji sektora publicznego - dane z Rządowego Procesu Legislacyjnego
-mailbox: IAPPLY
+mailbox: PATRYK
 category: instytucja
 lang: PL
 contact_url: https://bip.rcl.gov.pl/rcl/ponowne-wykorzystywanie/3122,dok.html
@@ -16,11 +16,12 @@ Na podstawie ustawy z dnia 11 sierpnia 2021 r. o otwartych danych i ponownym wyk
 3. Konsultacje i opiniowanie: lista uwag z podmiotem zgłaszającym, tabele uwag, zgłoszenia zainteresowania pracami nad projektem (lobbing).
 4. Informacja, czy RCL udostępnia lub planuje API albo eksport tych danych.
 
-Forma: plik startowy CSV, JSON lub XML na adres zrodla@spin.clinic, a następnie dostęp przez API albo plik aktualizowany codziennie lub co tydzień. Jeśli RCL nie przewiduje takiej formy, prosimy o zgodę na pobieranie metadanych i dokumentów ze stron serwisu z limitem jednego zapytania na 5 sekund, w godzinach 1:00-6:00, z nagłówkiem User-Agent zawierającym nazwę serwisu i adres kontaktowy.
+Forma: plik startowy CSV, JSON lub XML na adres patryk@iapply.pl, a następnie dostęp przez API albo plik aktualizowany codziennie lub co tydzień. Jeśli RCL nie przewiduje takiej formy, prosimy o zgodę na pobieranie metadanych i dokumentów ze stron serwisu z limitem jednego zapytania na 5 sekund, w godzinach 1:00-6:00, z nagłówkiem User-Agent zawierającym nazwę serwisu i adres kontaktowy.
 
 Cel: publikacja w serwisach spin.clinic i przeszłość.today (ścieżka ustawy, kto zgłaszał uwagi), z podaniem źródła i daty wytworzenia oraz informacją o przetworzeniu, zgodnie z warunkami RCL; cel komercyjny i niekomercyjny.
 
-Adres do odpowiedzi: zrodla@spin.clinic
+Adres do odpowiedzi: patryk@iapply.pl
 
-W imieniu iapply sp. z o.o.
+Z poważaniem
+W imieniu iapply sp. z o.o., operatora spin.clinic i przeszłość.today
 {{PODPIS}}

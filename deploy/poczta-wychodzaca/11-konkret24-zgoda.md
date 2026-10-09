@@ -1,9 +1,10 @@
 ---
 to: kontakt24@tvn.pl
 subject: Konkret24 przy diagnozach spin.clinic - prośba o zgodę
-mailbox: SPIN
+mailbox: PATRYK
 category: partner
 lang: PL
+hold: media po wnioskach o dostęp do danych publicznych (decyzja właściciela 9.10)
 contact_url: https://tvn24.pl/kontakt
 source: docs/SOURCE_CONSENT_RECIPIENTS_2026-09-28.md (adres kontaktowy TVN24 ze strony; sprawy treści także listownie)
 ---
@@ -17,4 +18,5 @@ spin.clinic codziennie analizuje wypowiedzi polityków pod kątem technik manipu
 Czy możemy porozmawiać o prostym porozumieniu?
 
 Z poważaniem
-Zespół spin.clinic
+W imieniu iapply sp. z o.o., operatora spin.clinic i przeszłość.today
+{{PODPIS}}

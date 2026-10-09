@@ -238,13 +238,17 @@ def test_commands_plan_and_footer(queue, capsys):
 
 
 def test_repo_queue_files_are_valid_and_addresses_only_from_sources(queue, monkeypatch):
+    monkeypatch.setenv('MAILBOXES', 'SPIN,IAPPLY,PATRYK')
+    for key, value in (('IMAP_HOST', 'imap.example'), ('IMAP_USER', 'patryk@iapply.pl'), ('IMAP_PASSWORD', 'tajne'),
+                       ('SMTP_HOST', 'smtp.example'), ('SMTP_USER', 'patryk@iapply.pl'), ('SMTP_PASSWORD', 'tajne'), ('LABEL', 'patryk')):
+        monkeypatch.setenv(poczta.env_name('PATRYK', key), value)
     items = outbox.load_items(REPO_QUEUE)
     assert len(items) >= 27 and len({i['key'] for i in items}) == len(items)
     monkeypatch.setenv('MAIL_OUTBOX_SIGNER', SIGNER)
     with_address = {}
     for item in items:
         assert item['problems'] == [], (item['key'], item['problems'])
-        assert item['mailbox'] in ('SPIN', 'IAPPLY') and '—' not in item['body'] and '–' not in item['body']
+        assert item['mailbox'] in ('SPIN', 'IAPPLY', 'PATRYK') and '—' not in item['body'] and '–' not in item['body']
         assert item['to'] or item['contact_url'], item['key']
         if item['to']:
             with_address[item['key']] = item['to']
@@ -256,14 +260,14 @@ def test_repo_queue_files_are_valid_and_addresses_only_from_sources(queue, monke
                             '18-oko-press-zestawienia': 'redakcja@oko.press'}
     held = {i['key'] for i in items if i['hold']}
     assert {'14-frontstory-pilotaz', '18-oko-press-zestawienia', '23-redakcje-lokalne-pilotaz', '24-pap-licencja', '25-brand24-api',
-            '26-sondaze-licencja', '01-sejm-wniosek-dane', '02-senat-wniosek-dane', '08-watchdog-konsultacja', '90-partner-badawczy-meta-tiktok'} <= held
+            '26-sondaze-licencja', '06-demagog-zgoda', '11-konkret24-zgoda', '01-sejm-wniosek-dane', '02-senat-wniosek-dane', '08-watchdog-konsultacja', '90-partner-badawczy-meta-tiktok'} <= held
     by_key = {i['key']: i for i in items}
     assert by_key['12-opensanctions-partnerstwo']['reply_to_item'] == '05-opensanctions-licencja' and by_key['12-opensanctions-partnerstwo']['lang'] == 'EN'
-    assert '{{PODPIS}}' in by_key['03-kprm-wniosek-dane']['body'] and by_key['03-kprm-wniosek-dane']['mailbox'] == 'IAPPLY'
+    assert '{{PODPIS}}' in by_key['03-kprm-wniosek-dane']['body'] and by_key['03-kprm-wniosek-dane']['mailbox'] == 'PATRYK'
     # plan na prawdziwej kolejce: tylko adresaci z adresem i bez wstrzymania są „do wysłania”
     monkeypatch.setenv('MAIL_OUTBOX_DIR', str(REPO_QUEUE))
     rows = {r['key']: r['action'] for r in outbox.run(plan=True)}
-    assert {k for k, a in rows.items() if a == 'send'} == {'03-kprm-wniosek-dane', '04-rcl-wniosek-dane', '06-demagog-zgoda', '11-konkret24-zgoda'}
+    assert {k for k, a in rows.items() if a == 'send'} == {'03-kprm-wniosek-dane', '04-rcl-wniosek-dane'}
     assert FakeSMTP.sent == [] and MailOutboxLog.objects.count() == 0
 
 
