@@ -191,7 +191,10 @@ def model_name() -> str:
 
 def _client():
     import anthropic
-    return anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'].strip(), timeout=300.0, max_retries=2)
+    # Klucz bez przypisanego workspace wymaga nagłówka z identyfikatorem (ANTHROPIC_WORKSPACE_ID); klucz utworzony w workspace go nie potrzebuje.
+    workspace = os.environ.get('ANTHROPIC_WORKSPACE_ID', '').strip()
+    headers = {'anthropic-workspace-id': workspace} if workspace else None
+    return anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'].strip(), timeout=300.0, max_retries=2, default_headers=headers)
 
 
 def _normalize(text: str) -> str:
