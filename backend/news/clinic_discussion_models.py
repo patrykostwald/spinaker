@@ -25,6 +25,7 @@ class ClinicComment(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='clinic_comments')
     diagnosis = models.ForeignKey('news.SpinDiagnosis', null=True, blank=True, on_delete=models.CASCADE, related_name='comments')
     interview = models.ForeignKey('news.ClinicInterview', null=True, blank=True, on_delete=models.CASCADE, related_name='comments')
+    daily_message = models.ForeignKey('news.ClinicDailyMessage', null=True, blank=True, on_delete=models.CASCADE, related_name='comments', db_index=False)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
     legacy_opinion = models.OneToOneField('news.SpinOpinion', null=True, blank=True, on_delete=models.SET_NULL, related_name='discussion_comment')
     body = models.CharField(max_length=1000, validators=[MaxLengthValidator(1000)])
@@ -43,15 +44,17 @@ class ClinicComment(models.Model):
     class Meta:
         ordering = ['-created_at', '-id']
         constraints = [models.CheckConstraint(condition=(
-            models.Q(diagnosis__isnull=False, interview__isnull=True) |
-            models.Q(diagnosis__isnull=True, interview__isnull=False)), name='clinic_comment_exactly_one_target')]
-        indexes = [models.Index(fields=['author', 'created_at'], name='clinic_comment_author_date')]
+            models.Q(diagnosis__isnull=False, interview__isnull=True, daily_message__isnull=True) |
+            models.Q(diagnosis__isnull=True, interview__isnull=False, daily_message__isnull=True) |
+            models.Q(diagnosis__isnull=True, interview__isnull=True, daily_message__isnull=False)), name='clinic_comment_exactly_one_target')]
+        indexes = [models.Index(fields=['author', 'created_at'], name='clinic_comment_author_date'),
+                   models.Index(fields=['daily_message', 'created_at'], name='clinic_comment_daily_date')]
 
     def clean(self):
         super().clean()
         if self.parent_id:
             parent = self.parent
-            if parent.parent_id or parent.pk == self.pk or (parent.diagnosis_id, parent.interview_id) != (self.diagnosis_id, self.interview_id):
+            if parent.parent_id or parent.pk == self.pk or (parent.diagnosis_id, parent.interview_id, parent.daily_message_id) != (self.diagnosis_id, self.interview_id, self.daily_message_id):
                 raise ValidationError({'parent': 'Odpowiedź może dotyczyć tylko głównego komentarza w tej dyskusji.'})
 
 
@@ -66,3 +69,32 @@ class ClinicCommentReport(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['reporter', 'comment'], name='one_report_per_user_clinic_comment')]
+
+
+class DailyMessageOpinion(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_message_opinions')
+    daily_message = models.ForeignKey('news.ClinicDailyMessage', on_delete=models.CASCADE, related_name='opinions')
+    polarity = models.CharField(max_length=8, choices=POLARITIES)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'daily_message'], name='one_opinion_user_daily_message'),
+            models.CheckConstraint(condition=models.Q(polarity__in=['positive', 'negative']), name='daily_opinion_valid_polarity'),
+        ]
+
+
+class ClinicCommentAppeal(models.Model):
+    comment = models.OneToOneField(ClinicComment, on_delete=models.CASCADE, related_name='appeal')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='clinic_comment_appeals')
+    details = models.CharField(max_length=1000, blank=True)
+    status = models.CharField(max_length=16, default='pending', db_index=True, choices=[
+        ('pending', 'Oczekuje na przegląd'), ('accepted', 'Uwzględnione'), ('rejected', 'Odrzucone')])
+    created_at = models.DateTimeField(default=timezone.now)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+
+    class Meta:
+        ordering = ['created_at', 'pk']
+        verbose_name = 'odwołanie od ukrycia komentarza'
+        verbose_name_plural = 'odwołania od ukrycia komentarzy'

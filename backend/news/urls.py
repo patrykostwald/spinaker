@@ -2,7 +2,7 @@ from __future__ import annotations
 from news.thread_card import thread_card
 from news.thread_steps import ThreadBoxView, ThreadStepsView
 from news.thread_social import ThreadCommentReactionView, ThreadRatingsView, ThreadCommentsView, ThreadCommentDetailView, ThreadReportView, ThreadAppealView, ThreadModerationQueueView
-from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView
+from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView, ClinicCommentAppealView
 
 from news.clinic_api import clinic_council, clinic_corrections
 from news import sejm_wideo
@@ -144,6 +144,12 @@ urlpatterns = [
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
     path('clinic/spins/<int:diagnosis_id>/card.png', clinic_spin_card),
     path('clinic/spins/<int:diagnosis_id>/card.png/', clinic_spin_card),
+    path('clinic/spins/<int:target_id>/comments/<int:comment_id>/appeal/', ClinicCommentAppealView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/comments/<int:comment_id>/appeal/', ClinicCommentAppealView.as_view(), {'kind': 'interviews'}),
+    path('clinic/daily-messages/<int:target_id>/comments/<int:comment_id>/appeal/', ClinicCommentAppealView.as_view(), {'kind': 'daily-messages'}),
+    path('clinic/daily-messages/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'daily-messages'}),
+    path('clinic/daily-messages/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'daily-messages'}),
+    path('clinic/daily-messages/<int:target_id>/comments/<int:comment_id>/report/', ClinicCommentReportView.as_view(), {'kind': 'daily-messages'}),
     path('clinic/spins/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'spins'}),
     path('clinic/interviews/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'interviews'}),
     path('clinic/spins/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'spins'}),

@@ -193,7 +193,8 @@ def test_opinion_unicode_budget_csrf_and_pagination(user, article):
     assert len(client.get(url + '?positive_page=2').data['positive']['results']) == 3
 
 
-def test_one_opinion_per_user_on_published_thread(user):
+def test_one_opinion_per_user_on_published_thread(user, settings):
+    settings.THREADS_ENABLED = True  # przy fladze false API portalowych wątków jest ukryte (zlecenie 110)
     published = Thread.objects.create(title='Published', slug='published', published=True)
     draft = Thread.objects.create(title='Draft', slug='draft', published=False)
     client = APIClient()

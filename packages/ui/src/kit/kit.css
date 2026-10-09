@@ -9143,7 +9143,7 @@ html[data-theme="light"] .sc-intro { background: #000; }
   .sc-social-sortrow button, .sc-social-sortrow a { white-space: nowrap; word-break: normal; }
 }
 /* przeszłość.today jako osobna strona (właściciel 5.10): bez pasków spin.clinic */
-html[data-standalone] :is(.sc-rail, .sc-rail-top, .sc-tabbar, .sc-topbar, .sc-preview-banner) { display: none !important; }
+html[data-standalone] :is(.sc-rail, .sc-rail-top, .sc-tabbar, .sc-topbar, .sc-preview-banner, .sc-shell-header, .sc-shell-mobile, .sc-shell-footer) { display: none !important; }
 html[data-standalone] .sc-social-layout { display: block !important; max-width: none !important; margin: 0 !important; }
 .sc-pt__brand { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--sc-line); flex-wrap: wrap; }
 .sc-pt__mark { font-size: 22px; font-weight: 700; letter-spacing: -.01em; color: var(--sc-text); text-decoration: none; }
@@ -11261,3 +11261,12 @@ body:has(.sc-shell-header) .sc-app-main:has(.sc-overview) { padding-bottom: 0; }
 .sc-overview-score { position: relative; }
 .sc-overview-score .sc-spin-fill { position: absolute; bottom: -5px; left: 0; height: 3px; margin: 0; }
 .sc-overview-diagnosis > * { flex-shrink: 0; }
+
+/* Zlecenie 111: wspólne krawędzie (Similarity), cele Fittsa i stały wiersz licznika. */
+.sc-discussion-counts { min-height: 38px; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+.sc-message-card > .sc-clinic-discussion, .sc-clinic-dialog__body > .sc-clinic-discussion { max-width: none; width: 100%; margin: 0; padding: 24px 0 0; }
+.sc-message-card > .sc-clinic-discussion:last-child { margin-top: 0; }
+.sc-discussion-appeal { width: 100%; }
+.sc-discussion-appeal form { width: 100%; }
+.sc-clinic-discussion select { min-height: 44px; }
+.sc-clinic-discussion h2 { white-space: nowrap; }

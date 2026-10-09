@@ -59,7 +59,12 @@ def notify_reply(comment):
     parent = comment.parent
     if parent.author_id != comment.author_id:
         from news.notify import notify
-        path = f'/klinika/{comment.diagnosis_id}' if comment.diagnosis_id else f'/klinika/wywiady/{comment.interview_id}'
+        if comment.diagnosis_id:
+            path = f'/klinika/{comment.diagnosis_id}'
+        elif comment.daily_message_id:
+            path = f'/klinika/przekazy/{comment.daily_message.day.isoformat()}'
+        else:
+            path = f'/klinika/wywiady/{comment.interview_id}'
         notify(parent.author, 'clinic_reply', 'Nowa odpowiedź na Twój komentarz', f'{path}#dyskusja')
     comment.reply_notified_at = timezone.now()
     comment.save(update_fields=['reply_notified_at'])
@@ -94,3 +99,17 @@ def moderate(queryset, moderator, show):
             row.reports.filter(reviewed_at__isnull=True).update(reviewed_at=timezone.now(), reviewed_by=moderator)
             if show:
                 notify_reply(row)
+
+
+def notify_moderators(kind, pk):
+    """Powiadomienie zespołu o nowym zgłoszeniu lub odwołaniu. Bez treści komentarza i danych autora w mailu;
+    błąd wysyłki nigdy nie psuje zapisu (w testach SMTP jest wyłączony)."""
+    try:
+        from news.raport_petli import recipient
+        from news.social_publish import _mail
+        label = 'odwołanie od ukrycia komentarza' if kind == 'appeal' else 'zgłoszenie komentarza'
+        queue = 'Odwołania do przeglądu' if kind == 'appeal' else 'Nowe zgłoszenia'
+        _mail(recipient(), f'spin.clinic · Nowe {label} (#{pk})',
+              f'W Klinice czeka nowe {label}. Otwórz panel admina, kolejka: {queue}.', important=True)
+    except Exception:
+        logger.warning('Clinic moderation notification unavailable')

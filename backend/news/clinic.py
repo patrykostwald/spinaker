@@ -1000,6 +1000,8 @@ def scale_data(window_days: int = 7) -> dict:
 def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_posts: bool = False) -> dict:
     data = {'id': message.pk, 'day': message.day, 'camp': message.camp, 'message': message.message,
             'analysis': message.analysis, 'themes': message.themes,
+            'comment_count': message.comments.count(),
+            'opinions': {'positive': message.opinions.filter(polarity='positive').count(), 'negative': message.opinions.filter(polarity='negative').count()},
             'thesis': message.thesis, 'points': message.points, 'stats': message.stats, 'posts_count': message.posts.count(),
             'model': message.model_name, 'created_at': message.created_at, 'reviewed_at': message.reviewed_at,
             'readability_edit': {'original': (message.usage or {}).get('original_text', {})} if (message.usage or {}).get('readability_edit') else None}

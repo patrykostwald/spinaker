@@ -169,6 +169,8 @@ export type MessageStats = {
 };
 export type MessagePoint = { title: string; summary: string; post_ids: string[]; authors: string[] };
 export type DailyMessage = {
+  opinions?: { positive: number; negative: number };
+  comment_count?: number;
   thesis?: string; points?: MessagePoint[]; stats?: MessageStats;
   readability_edit?: { original: { thesis?: string; message?: string; analysis?: string } } | null;
   id?: number; day: string; camp?: Camp; message: string; analysis?: string; themes: string[]; posts_count: number; model: string;

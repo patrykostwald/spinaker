@@ -13,12 +13,15 @@ export default function DiscussionRules() {
       <li>Ta sama miara obowiązuje wszystkich, niezależnie od poglądów politycznych.</li>
       <li>Moderacja ocenia zachowanie, nigdy poglądy. Może ukryć komentarz lub czasowo zablokować komentowanie. Nie edytuje treści komentarzy ani diagnoz AI.</li>
     </ul>
-    <h2>Dyskusje pod diagnozami i wywiadami w Klinice</h2>
+    <h2>Dyskusje w Klinice</h2>
+    <p>Komentarze są dostępne pod diagnozami, przekazami dnia i wywiadami. Przekazy rządzących i opozycji mają identyczne możliwości dyskusji i zasady moderacji.</p>
     <p>Komentowanie i ocenianie wymaga zalogowania oraz potwierdzenia adresu e-mail. Komentarz mieści do 1000 znaków; odpowiedzi mają jeden poziom. Limit: 10 komentarzy na godzinę i 50 na dobę, z odstępem co najmniej 30 sekund między wpisami. Powtórzenie tego samego komentarza jest blokowane.</p>
-    <p>Nowe komentarze sprawdza automatyczny filtr. Wskazane naruszenia trafiają do zespołu spin.clinic jako ukryte komentarze. Jeśli filtr nie odpowie, komentarz zostaje opublikowany i oznaczony do przeglądu. Trzy niezależne zgłoszenia ukrywają komentarz do czasu decyzji moderatora. Autor widzi swój ukryty komentarz wraz z powodem.</p>
-    <p>Przycisk „Zgłoś” służy do wskazywania naruszeń. Jeśli chcesz wyjaśnić decyzję moderacji, napisz do <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>, podając numer komentarza. Operator serwisu: iapply sp. z o.o.</p>
-    <h2>Spinki</h2><p>Pod spinką komentarze tworzą płaską listę. Limit długości to 2000 znaków (krótki komentarz: do 280). Możesz wskazać @boks 3, edytować komentarz przez 5 minut i usunąć go później. Limit: 20 zapisów komentarzy i 50 zapisów ocen na godzinę. Jeden głos na spinkę można zmieniać. Zgłoszenia sprawdza zespół z pomocą AI. Decyzja zawiera uzasadnienie oraz możliwość jednego odwołania, które rozpatruje człowiek.</p>
-    <p><Link href="/zasady-korzystania#tropy">Pełne zasady spinek, ocen i komentarzy oraz punkt kontaktowy</Link></p>
+    <p>Nowe komentarze sprawdza automatyczny filtr AI. Zgłoszenia i odwołania przegląda człowiek. Wskazane naruszenia trafiają do zespołu spin.clinic jako ukryte komentarze. Jeśli filtr nie odpowie, komentarz zostaje opublikowany i oznaczony do przeglądu. Trzy niezależne zgłoszenia ukrywają komentarz do czasu decyzji moderatora. Autor widzi swój ukryty komentarz wraz z powodem.</p>
+    <p>Przycisk „Zgłoś” służy do wskazywania naruszeń. Zgłoszenia przeglądamy bez zbędnej zwłoki. Zespół otrzymuje powiadomienia o nowych zgłoszeniach i odwołaniach.</p>
+    <h2>Odwołanie od ukrycia komentarza</h2>
+    <p>Przy własnym ukrytym komentarzu wybierz „Odwołaj się”. Możesz złożyć jedno odwołanie na komentarz. Trafi ono do kolejki przeglądu człowieka; jego status zobaczysz przy komentarzu. Moderator może przywrócić komentarz lub utrzymać ukrycie.</p>
+    <p>W sprawach moderacji możesz też napisać na <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>, podając link lub numer komentarza. Operator serwisu: iapply sp. z o.o.</p>
+    <p><Link href="/zasady-korzystania#dyskusja">Pełne zasady komentarzy, ocen i punkt kontaktowy</Link></p>
     <p><Link href="/klinika">Wróć do Kliniki</Link></p>
   </article>;
 }

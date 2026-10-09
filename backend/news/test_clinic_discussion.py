@@ -15,8 +15,8 @@ from rest_framework.test import APIClient, APIRequestFactory
 
 from news import clinic_discussion, clinic_moderation
 from news.account_models import AccountIdentity
-from news.clinic_discussion_models import ClinicComment, ClinicCommentReport, InterviewOpinion
-from news.clinic_models import ClinicInterview, SpinDiagnosis, SpinOpinion
+from news.clinic_discussion_models import ClinicComment, ClinicCommentAppeal, ClinicCommentReport, InterviewOpinion
+from news.clinic_models import ClinicDailyMessage, ClinicInterview, SpinDiagnosis, SpinOpinion
 from news.notification_models import Notification, NotificationSettings
 from news.test_clinic import account, post
 
@@ -42,11 +42,14 @@ def users():
     return result
 
 
-@pytest.fixture(params=['spins', 'interviews'])
+@pytest.fixture(params=['spins', 'interviews', 'daily-messages'])
 def subject(request):
     if request.param == 'spins':
         obj = SpinDiagnosis.objects.create(post=post(account()), status='approved')
         field = 'diagnosis'
+    elif request.param == 'daily-messages':
+        obj = ClinicDailyMessage.objects.create(day=timezone.localdate(), camp='government', message='Przekaz dnia.', status='approved')
+        field = 'daily_message'
     else:
         obj = ClinicInterview.objects.create(day=timezone.localdate(), video_id='abcdefghijk', status='approved')
         field = 'interview'
@@ -81,6 +84,10 @@ def test_rating_unique_change_withdraw_and_counts(subject, users):
     assert reader.post(url, {'polarity': 'positive', 'body': 'Dawny klient nie może zgubić tekstu'}).status_code == 400
     with pytest.raises(IntegrityError), transaction.atomic():
         subject.obj.opinions.create(user=users[1], polarity='negative')
+    if subject.kind == 'daily-messages':
+        from news.clinic import _message_data
+        assert _message_data(subject.obj)['opinions'] == {'positive': 1, 'negative': 0}
+        return
     listing = client().get('/api/clinic/' + subject.kind + '/').data
     assert listing['results'][0]['opinions'] == {'positive': 1, 'negative': 0}
 
@@ -212,6 +219,10 @@ def test_pagination_and_card_counts(subject, users):
     assert len(client().get(url + f'?parent={root.pk}').data['results']) == 20
     assert len(client().get(url + f'?parent={root.pk}&page=2').data['results']) == 1
     assert client().get(url + '?page=bad').status_code == 400
+    if subject.kind == 'daily-messages':
+        from news.clinic import _message_data
+        assert _message_data(subject.obj)['comment_count'] == 42
+        return
     listing = client().get('/api/clinic/' + subject.kind + '/').data
     assert listing['results'][0]['comment_count'] == 42
 
@@ -235,7 +246,10 @@ def test_reply_notification_only_when_visible_once_and_push(subject, users, monk
 
 
 def test_hidden_or_unpublished_target(subject, users):
-    subject.obj.hidden_at = timezone.now()
+    if subject.kind == 'daily-messages':
+        subject.obj.status = 'rejected'
+    else:
+        subject.obj.hidden_at = timezone.now()
     subject.obj.save()
     for suffix in ('opinions/', 'comments/'):
         assert client().get(subject.url + suffix).status_code == 404
@@ -318,3 +332,92 @@ def test_screening_does_not_override_moderator_decision(subject, users):
     clinic_moderation.finish_screening(row.pk, [])
     row.refresh_from_db()
     assert row.hidden_at and row.hidden_by_id == users[4].pk
+
+
+def test_appeal_flow_once_human_review_and_notification(subject, users, monkeypatch, django_capture_on_commit_callbacks):
+    sent = []
+    monkeypatch.setattr(clinic_discussion, 'notify_moderators', lambda kind, pk: sent.append((kind, pk)))
+    row = comment(subject, users[0], hidden_at=timezone.now(), hidden_reason='Wulgaryzmy')
+    url = f'{subject.url}comments/{row.pk}/appeal/'
+    visible = comment(subject, users[0], body='Widoczny')
+    assert client().post(url, {}).status_code in (401, 403)
+    assert client(users[1]).post(url, {}).status_code == 404  # nie cudzy komentarz
+    assert client(users[0]).post(f'{subject.url}comments/{visible.pk}/appeal/', {}).status_code == 400
+    with django_capture_on_commit_callbacks(execute=True):
+        first = client(users[0]).post(url, {'details': 'To pomyłka'})
+    assert first.status_code == 201 and first.data['status'] == 'pending'
+    again = client(users[0]).post(url, {'details': 'Jeszcze raz'})
+    assert again.status_code == 200 and ClinicCommentAppeal.objects.filter(comment=row).count() == 1
+    assert sent == [('appeal', ClinicCommentAppeal.objects.get(comment=row).pk)]
+    row.refresh_from_db()
+    assert row.needs_review and row.hidden_at
+    mine = client(users[0]).get(subject.url + 'comments/').data['results']
+    assert next(r for r in mine if r['id'] == row.pk)['appeal'] == {'status': 'pending'}
+    other = client(users[1]).get(subject.url + 'comments/').data['results']
+    seen = next(r for r in other if r['id'] == row.pk)
+    assert 'appeal' not in seen and seen['body'] is None
+    model_admin = admin.site._registry[ClinicCommentAppeal]
+    request = APIRequestFactory().post('/')
+    request.user = users[4]
+    model_admin.accept_appeals(request, ClinicCommentAppeal.objects.all())
+    row.refresh_from_db()
+    appeal = ClinicCommentAppeal.objects.get(comment=row)
+    assert row.hidden_at is None and appeal.status == 'accepted' and appeal.reviewed_by_id == users[4].pk
+    assert client(users[0]).post(url, {}).status_code == 200  # limit 1 na komentarz
+
+
+def test_appeal_rejected_keeps_hidden_and_report_notifies(subject, users, monkeypatch, django_capture_on_commit_callbacks):
+    sent = []
+    monkeypatch.setattr(clinic_discussion, 'notify_moderators', lambda kind, pk: sent.append(kind))
+    row = comment(subject, users[0], hidden_at=timezone.now(), hidden_reason='Spam')
+    client(users[0]).post(f'{subject.url}comments/{row.pk}/appeal/', {})
+    request = APIRequestFactory().post('/')
+    request.user = users[4]
+    admin.site._registry[ClinicCommentAppeal].reject_appeals(request, ClinicCommentAppeal.objects.all())
+    row.refresh_from_db()
+    assert row.hidden_at and ClinicCommentAppeal.objects.get(comment=row).status == 'rejected'
+    visible = comment(subject, users[2], body='Do zgłoszenia')
+    with django_capture_on_commit_callbacks(execute=True):
+        client(users[1]).post(f'{subject.url}comments/{visible.pk}/report/', {'reason': 'spam'})
+    assert 'report' in sent
+
+
+def test_notify_moderators_message_has_no_comment_body(monkeypatch):
+    calls = []
+    monkeypatch.setattr('news.social_publish._mail', lambda to, subject, body, **kw: calls.append((to, subject, body)) or False)
+    monkeypatch.setattr('news.raport_petli.recipient', lambda: 'zespol@example.org')
+    clinic_moderation.notify_moderators('appeal', 7)
+    assert calls and '#7' in calls[0][1] and 'panel admina' in calls[0][2]
+
+
+def test_both_camps_have_identical_daily_message_discussion(users):
+    for camp in ('government', 'opposition'):
+        message = ClinicDailyMessage.objects.create(day=timezone.localdate(), camp=camp, message='Przekaz.', status='approved')
+        url = f'/api/clinic/daily-messages/{message.pk}/'
+        author = users[0] if camp == 'government' else users[1]
+        assert client(author).post(url + 'comments/', {'body': 'Komentarz'}).status_code == 201
+        assert client(users[2]).get(url + 'comments/').data['count'] == 1
+        assert client(users[3]).post(url + 'opinions/', {'polarity': 'positive'}).status_code == 200
+    hidden = ClinicDailyMessage.objects.create(day=timezone.localdate() - timedelta(days=1), camp='government', message='Ukryty.', status='rejected')
+    assert client(users[0]).post(f'/api/clinic/daily-messages/{hidden.pk}/comments/', {'body': 'X'}).status_code == 404
+
+
+def test_daily_message_comment_count_in_message_data(users):
+    from news.clinic import _message_data
+    message = ClinicDailyMessage.objects.create(day=timezone.localdate(), camp='opposition', message='Przekaz.', status='approved')
+    assert _message_data(message)['comment_count'] == 0
+    ClinicComment.objects.create(daily_message=message, author=users[0], body='A', body_hash='h')
+    data = _message_data(message)
+    assert data['comment_count'] == 1 and data['opinions'] == {'positive': 0, 'negative': 0}
+
+
+def test_migration_0159_forward_and_back(transactional_db):
+    from django.core.management import call_command
+    from django.db import connection
+
+    def columns():
+        return {c.name for c in connection.introspection.get_table_description(connection.cursor(), 'news_cliniccomment')}
+    call_command('migrate', 'news', '0158_poczta_wychodzaca', verbosity=0)
+    assert 'daily_message_id' not in columns()
+    call_command('migrate', 'news', verbosity=0)
+    assert 'daily_message_id' in columns()

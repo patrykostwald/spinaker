@@ -6,6 +6,7 @@
  * i archiwum przekazów dnia. Powiększenia to natywny <dialog> (Esc i kliknięcie tła zamykają).
  */
 
+import { ClinicDiscussion, DiscussionCounts } from "./ClinicDiscussion";
 import { MessageCard } from "./MessageCard";
 import { Button } from "../../kit/Button";
 import Link from "next/link";
@@ -257,6 +258,7 @@ export function MessageHistory({ history }: { history: Record<Camp, DailyMessage
                 <button type="button" onClick={() => setOpen(message)} aria-haspopup="dialog">
                   <time dateTime={message.day}>{formatDatePl(message.day)}</time>
                   <span>{message.message}</span>
+                  <DiscussionCounts {...message} />
                 </button>
               </li>
             ))}</ol>
@@ -269,6 +271,7 @@ export function MessageHistory({ history }: { history: Record<Camp, DailyMessage
           <p className="sc-clinic-dialog__lead">{open.message}</p>
           {open.analysis ? open.analysis.split(/\n{2,}/).map((part, index) => <p key={index}>{part}</p>) : null}
           <Themes themes={open.themes} />
+          {open.id ? <ClinicDiscussion kind="daily-messages" id={open.id} /> : null}
         </> : null}
       </ClinicDialog>
     </section>

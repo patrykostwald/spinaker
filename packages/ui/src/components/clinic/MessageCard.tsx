@@ -7,6 +7,8 @@ import { CAMP_LABELS, getClinicMessage, type Camp, type DailyMessage, type Messa
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
 import { Loading } from "../../kit/Loading";
 
+import { ClinicDiscussion, DiscussionCounts } from "./ClinicDiscussion";
+
 const TONES = [["atak", "Atak"], ["osiagniecie", "Osiągnięcia"], ["apel", "Apel"], ["inne", "Inne"]] as const;
 function Bar({ value }: { value: number | null | undefined }) {
   return <span className="sc-message-metric__bar" aria-hidden="true"><span style={{ width: `${value ?? 0}%` }} /></span>;
@@ -50,6 +52,7 @@ export function MessageCard({ camp, message, day, compact = false, emptyText }: 
       {!compact && structured ? <ol className="sc-message-points">{message.points!.map((point, index) => <li key={index}>
         <strong>{point.title}</strong><p>{point.summary}</p><small>{point.authors.join(", ")} · wpisów: {point.post_ids.length}</small>
       </li>)}</ol> : null}
+      <DiscussionCounts {...message} />
       {compact ? <Link className="sc-message-card__more" href={`/klinika/przekazy/${message.day}#message-${message.day}-${camp}`}>Czytaj przekaz i źródła →</Link> :
         <details className="sc-message-card__details" onToggle={event => setOpen(event.currentTarget.open)}>
           <summary>Szczegóły</summary>
@@ -77,6 +80,7 @@ export function MessageCard({ camp, message, day, compact = false, emptyText }: 
             <small>Konkret oznacza liczbę lub link, bez oceny prawdziwości. Spójność i ton wynikają z przypisań AI. </small>
           </div>
         </details>}
+      {!compact && message.id ? <ClinicDiscussion kind="daily-messages" id={message.id} /> : null}
     </> : <p className="sc-clinic-empty">{emptyText ?? "Brak opublikowanego przekazu tej strony w tym dniu."}</p>}
   </article>;
 }

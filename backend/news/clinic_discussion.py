@@ -16,14 +16,17 @@ from news.account_models import AccountIdentity, CommentReport
 from news.account_security import AccountEnabled, require_verified
 from news.accounts import AccountWriteThrottle, OpinionReadThrottle
 from news.clinic_models import SpinOpinion
-from news.clinic_discussion_models import ClinicComment, ClinicCommentReport, InterviewOpinion
-from news.clinic_moderation import body_hash, screen_comment, finish_screening
+from news.clinic_discussion_models import ClinicComment, ClinicCommentReport, InterviewOpinion, DailyMessageOpinion, ClinicCommentAppeal
+from news.clinic_moderation import body_hash, screen_comment, finish_screening, notify_moderators
 
 
 def target(kind, target_id):
     if kind == 'spins':
         from news.clinic import published_diagnoses
         return 'diagnosis', get_object_or_404(published_diagnoses(), pk=target_id)
+    if kind == 'daily-messages':
+        from news.clinic import published_messages
+        return 'daily_message', get_object_or_404(published_messages(), pk=target_id)
     from news.clinic_interview import _published_interviews
     return 'interview', get_object_or_404(_published_interviews(), pk=target_id)
 
@@ -77,7 +80,7 @@ class ClinicOpinionsView(DiscussionView):
         field, obj = target(kind, target_id)
         data = RatingInput(data=request.data)
         data.is_valid(raise_exception=True)
-        model = SpinOpinion if field == 'diagnosis' else InterviewOpinion
+        model = {'diagnosis': SpinOpinion, 'interview': InterviewOpinion, 'daily_message': DailyMessageOpinion}[field]
         with transaction.atomic():
             locked_identity(request.user)
             model.objects.update_or_create(user=request.user, **{field: obj}, defaults=data.validated_data)
@@ -111,11 +114,15 @@ class CommentInput(serializers.Serializer):
 
 def comment_data(row, user):
     mine = user.is_authenticated and row.author_id == user.pk
-    return {'id': row.pk, 'author': {'id': row.author_id, 'username': row.author.username},
+    data = {'id': row.pk, 'author': {'id': row.author_id, 'username': row.author.username},
             'body': row.body if not row.hidden_at or mine else None,
             'hidden': bool(row.hidden_at), 'hidden_reason': row.hidden_reason if mine else '',
             'parent': row.parent_id, 'created_at': row.created_at,
             'reply_count': getattr(row, 'reply_count', 0)}
+    if mine:
+        appeal = getattr(row, 'appeal', None)
+        data['appeal'] = {'status': appeal.status} if appeal else None
+    return data
 
 
 class ClinicCommentsView(DiscussionView):
@@ -131,7 +138,7 @@ class ClinicCommentsView(DiscussionView):
         rows = obj.comments.all()
         if parent_id:
             get_object_or_404(rows, pk=parent_id, parent__isnull=True)
-        roots = rows.filter(parent_id=parent_id).select_related('author').annotate(reply_count=Count('replies')).order_by('-created_at', '-id')
+        roots = rows.filter(parent_id=parent_id).select_related('author', 'appeal').annotate(reply_count=Count('replies')).order_by('-created_at', '-id')
         batch = list(roots[(page - 1) * 20:page * 20 + 1])
         return Response({'results': [comment_data(row, request.user) for row in batch[:20]],
                          'next_page': page + 1 if len(batch) > 20 else None,
@@ -196,4 +203,30 @@ class ClinicCommentReportView(DiscussionView):
                     if row.screening == 'pending':
                         row.screening = 'unavailable'
                 row.save(update_fields=['needs_review', 'hidden_at', 'hidden_reason', 'screening', 'updated_at'])
+                transaction.on_commit(lambda: notify_moderators('report', report.pk))
         return Response({'reported': True}, status=201 if created else 200)
+
+
+class AppealInput(serializers.Serializer):
+    details = serializers.CharField(max_length=1000, required=False, allow_blank=True, default='')
+
+
+class ClinicCommentAppealView(DiscussionView):
+    def post(self, request, kind, target_id, comment_id):
+        require_verified(request.user)
+        field, obj = target(kind, target_id)
+        data = AppealInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        with transaction.atomic():
+            locked_identity(request.user)
+            row = get_object_or_404(obj.comments.select_for_update(), pk=comment_id, author=request.user)
+            existing = getattr(row, 'appeal', None)
+            if existing:
+                return Response({'status': existing.status})
+            if not row.hidden_at or row.screening == 'pending':
+                raise serializers.ValidationError('Odwołanie dotyczy wyłącznie ukrytego komentarza.')
+            appeal = ClinicCommentAppeal.objects.create(comment=row, author=request.user, **data.validated_data)
+            row.needs_review = True
+            row.save(update_fields=['needs_review', 'updated_at'])
+            transaction.on_commit(lambda: notify_moderators('appeal', appeal.pk))
+        return Response({'status': appeal.status}, status=201)
