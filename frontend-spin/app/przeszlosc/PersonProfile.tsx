@@ -100,6 +100,7 @@ function ProfileView({ data }: { data: Profile }) {
         <h1>{data.name}</h1>
         {sub && <p className="px-pp__sub">{sub}</p>}
         <p className="px-pp__links">
+          <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`osoba:${data.slug || data.id}`)}`}>Drzewo przepływu →</a>
           {data.official_profile_url && <a href={data.official_profile_url} target="_blank" rel="noopener noreferrer">Oficjalny profil ↗</a>}
           {data.evidence_url && <a href={data.evidence_url} target="_blank" rel="noopener noreferrer">Źródło funkcji ↗</a>}
           {data.x_accounts.map(a => <a key={a.handle} href={a.url} target="_blank" rel="noopener noreferrer">@{a.handle} na X ↗</a>)}

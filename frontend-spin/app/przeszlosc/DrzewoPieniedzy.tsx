@@ -117,7 +117,8 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
         <p className="px-kicker">{KIND[o.kind] ?? KIND.other}</p>
         <h1>{o.name}</h1>
         <p className="px-mt__sub">{sub}</p>
-        <p className="px-mt__links"><a href={o.url} target="_blank" rel="noopener noreferrer">Odpis KRS ↗</a></p>
+        <p className="px-mt__links"><a href={o.url} target="_blank" rel="noopener noreferrer">Odpis KRS ↗</a>
+          <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`spolka:${o.krs_number || o.nip}`)}`}>Drzewo przepływu →</a></p>
       </div>
     </header>
 

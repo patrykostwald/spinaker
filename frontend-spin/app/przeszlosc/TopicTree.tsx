@@ -5,6 +5,7 @@ import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, nice, personHref, plura
 import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
 import { WMediach } from './WMediach';
+import { Paski } from './Paski';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -121,7 +122,7 @@ export function TopicTree() {
   const pick = (t: string) => { setQuery(t); void load(t); };
 
   return <main className="px">
-    <Bar />
+    <div className="px-home-top"><Bar /><Paski /></div>
 
     <header className="px-hero">
       <div className="px-hero__copy">
