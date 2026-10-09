@@ -1,3 +1,4 @@
+from news.features import ThreadsEnabledMixin
 """Private aggregate activity unless the account owner explicitly opts in."""
 from django.contrib.auth import get_user_model
 from datetime import timedelta
@@ -112,7 +113,7 @@ class FavoriteInput(serializers.Serializer):
 
 
 @json_view("Ulubione spinki", tags=["konto"])
-class FavoritesView(APIView):
+class FavoritesView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
     def get(self, request):
@@ -132,7 +133,7 @@ class FavoritesView(APIView):
 
 
 @json_view("Ulubiona spinka", tags=["konto"])
-class FavoriteDetailView(APIView):
+class FavoriteDetailView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
     def delete(self, request, thread_id):

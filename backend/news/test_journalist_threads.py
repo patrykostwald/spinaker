@@ -13,7 +13,8 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture(autouse=True)
-def reset_cache():
+def reset_cache(settings):
+    settings.THREADS_ENABLED = True
     cache.clear()
     yield
     cache.clear()

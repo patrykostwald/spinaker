@@ -370,6 +370,10 @@ def x_publish_task():
 @shared_task(name="news.tasks.dr_spin_thread_task", soft_time_limit=300, time_limit=360)
 def dr_spin_thread_task():
     """Codzienna spinka kontekstowa; domyślnie wyłączona."""
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
     if not cache.add('dr-spin-thread-lock', '1', timeout=400):
         return {'status': 'locked'}
     try:
@@ -466,12 +470,20 @@ def council_charter_missing_task():
 
 @shared_task(name='news.tasks.narrative_thread_task', soft_time_limit=120, time_limit=180)
 def narrative_thread_task():
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
     from news.narrative_threads import build_narratives
     return build_narratives()
 
 
 @shared_task(name='news.tasks.signal_threads_task', soft_time_limit=240, time_limit=300)
 def signal_threads_task():
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
     from news.signal_threads import build_lobbying, build_new_narratives
     return {'lobbying': build_lobbying(), 'narratives': build_new_narratives()}
 
@@ -479,9 +491,10 @@ def signal_threads_task():
 @shared_task(name='news.tasks.thread_reviews_task', soft_time_limit=840, time_limit=900)
 def thread_reviews_task():
     from news.features import threads_enabled
-    from news.thread_review import run_queue, backfill_queue
     if not threads_enabled():
-        return {'status': 'disabled'}
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
+    from news.thread_review import run_queue, backfill_queue
     backfill_queue()
     return run_queue(limit=10)
 

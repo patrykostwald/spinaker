@@ -26,6 +26,10 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        from news.features import threads_enabled, threads_disabled_result
+        if not threads_enabled():
+            self.stdout.write(str(threads_disabled_result()))
+            return
         limit = options['limit']
         if limit < 0:
             raise CommandError('--limit musi być nieujemny.')

@@ -285,3 +285,8 @@ def test_keywords_include_post_claims_and_ignore_general_words():
     assert threads._hits('Błaszczak Błaszczaka Błaszczak', keywords) == 1
     assert threads._hits('Rządu Polsce program programu ministra nowy', keywords) == 0
     assert threads._hits('Dostawy amunicji', keywords) == 2
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(settings):
+    settings.THREADS_ENABLED = True

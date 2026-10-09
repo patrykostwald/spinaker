@@ -14,11 +14,18 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name='news.notification_tasks.retry_thread_moderation_mail', soft_time_limit=50, time_limit=60)
 def retry_thread_moderation_mail():
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
     from news.thread_moderation import deliver_mail
     deliver_mail(max_messages=2)
 
 
 def _deliver_event(event):
+    from news.features import threads_enabled
+    if event.kind in ('thread', 'thread_comment', 'reply', 'moderation') and not threads_enabled():
+        return None
     if event.kind == 'post':
         from news.followed_posts import deliver_post
         deliver_post(event)
@@ -76,7 +83,7 @@ def _deliver_event(event):
         kind, title, url = 'followed_diagnosis', f'Nowa diagnoza: {figure.canonical_name}', f'/klinika/{diagnosis.pk}'
     elif event.kind == 'thread':
         from news.community import public_threads
-        if not settings.THREADS_ENABLED:
+        if not threads_enabled():
             return
         thread = public_threads().filter(pk=event.target_id).select_related('owner').first()
         if not thread or not thread.owner_id:
@@ -86,7 +93,7 @@ def _deliver_event(event):
     elif event.kind == 'thread_comment':
         from news.community import public_threads
         from news.thread_social_models import ThreadComment
-        if not settings.THREADS_ENABLED:
+        if not threads_enabled():
             return
         comment = ThreadComment.objects.select_related('thread').filter(pk=event.target_id,
             thread__in=public_threads(), hidden_at__isnull=True, deleted_at__isnull=True).first()
@@ -104,7 +111,7 @@ def _deliver_event(event):
     elif event.kind == 'reply':
         from news.community import public_threads
         from news.community_models import CommunityThreadOpinion
-        if not settings.THREADS_ENABLED:
+        if not threads_enabled():
             return
         opinion = CommunityThreadOpinion.objects.select_related('thread', 'user').filter(pk=event.target_id, thread__in=public_threads()).first()
         if not opinion:
@@ -126,7 +133,11 @@ def process_notification_events():
     if not enabled():
         return 0
     count = 0
-    ids = list(NotificationEvent.objects.filter(processed_at__isnull=True).order_by('id').values_list('pk', flat=True)[:100])
+    from news.features import threads_enabled
+    pending = NotificationEvent.objects.filter(processed_at__isnull=True)
+    if not threads_enabled():
+        pending = pending.exclude(kind__in=['thread', 'thread_comment', 'reply', 'moderation'])
+    ids = list(pending.order_by('id').values_list('pk', flat=True)[:100])
     for pk in ids:
         try:
             with transaction.atomic():
@@ -165,6 +176,9 @@ def send_notification_digests():
                 if not user.is_active or not user.email or not AccountIdentity.objects.filter(user=user, email_verified=True).exists():
                     continue
                 rows = Notification.objects.exclude(kind='clinic_reply').filter(user=user, emailed_at__isnull=True, created_at__lte=now, created_at__gt=preference.last_digest_at or now - timedelta(days=days)).order_by('created_at')
+                from news.features import threads_enabled
+                if not threads_enabled():
+                    rows = rows.exclude(kind__in=['followed_thread', 'thread_reply', 'comment_reaction']).exclude(url__startswith='/spinki/').exclude(url__startswith='/thread/')
                 batch = list(rows[:100])
                 if not batch:
                     preference.last_digest_at = now

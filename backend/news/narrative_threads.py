@@ -86,6 +86,9 @@ def payload(message, candidate):
 @transaction.atomic
 @draft_builder
 def sync_message(message_id):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     message = ClinicDailyMessage.objects.select_for_update().get(pk=message_id)
     eligible = candidates(message) if message.status == 'approved' else []
     if not eligible:

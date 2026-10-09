@@ -15,6 +15,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def config(monkeypatch):
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
     cache.clear()
     monkeypatch.setenv('OPENAI_API_KEY', 'test-only-not-real')
     monkeypatch.setenv('DR_SPIN_MODEL', 'test-model')

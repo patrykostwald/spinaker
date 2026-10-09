@@ -137,3 +137,8 @@ def test_full_review_after_requeue(monkeypatch, reject_step):
     assert list(review.rounds.values_list('role', flat=True)) == list(expected)
     review.thread.refresh_from_db()
     assert review.thread.is_public == (reject_step is None)
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(settings):
+    settings.THREADS_ENABLED = True

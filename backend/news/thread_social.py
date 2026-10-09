@@ -19,7 +19,7 @@ from news.account_models import AccountIdentity
 from news.account_security import require_verified
 from news.community import public_threads, _counts
 from news.community_models import CommunityThreadOpinion, CommunityThreadReport
-from news.features import accounts_enabled, threads_enabled
+from news.features import accounts_enabled, threads_enabled, ThreadsEnabledMixin
 from news.thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRateEvent, ThreadModerationReport
 
 
@@ -41,9 +41,9 @@ class SocialView(APIView):
         return [] if self.request.method == 'GET' else [IsAuthenticated()]
 
     def initial(self, request, *args, **kwargs):
-        super().initial(request, *args, **kwargs)
         if not threads_enabled() or (request.method != 'GET' and not accounts_enabled()):
             raise Http404
+        super().initial(request, *args, **kwargs)
         if request.method not in ('GET', 'DELETE'):
             require_verified(request.user)
 
@@ -293,7 +293,7 @@ class ThreadAppealView(SocialView):
         return Response({'status': 'appeal'})
 
 
-class ThreadModerationQueueView(APIView):
+class ThreadModerationQueueView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAdminUser]
 
     def initial(self, request, *args, **kwargs):

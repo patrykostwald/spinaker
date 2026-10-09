@@ -1,4 +1,5 @@
 """Owner-scoped APIs for private context threads and comment reports."""
+from news.features import ThreadsEnabledMixin
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -258,7 +259,7 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
 
 @json_view("Prywatne spinki kontekstowe", tags=["konto"])
-class PersonalContextThreadsView(APIView):
+class PersonalContextThreadsView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAuthenticated, ThreadAccountsEnabled]
     throttle_classes = [AccountWriteThrottle]
 
@@ -286,7 +287,7 @@ class PersonalContextThreadsView(APIView):
 
 @json_view("Prywatna spinka kontekstowa", tags=["konto"])
 @extend_schema_view(get=extend_schema(operation_id="account_context_threads_detail_retrieve"))
-class PersonalContextThreadDetailView(APIView):
+class PersonalContextThreadDetailView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAuthenticated, ThreadAccountsEnabled]
     throttle_classes = [AccountWriteThrottle]
 
@@ -334,6 +335,10 @@ class CommentReportsView(APIView):
         if values.get('article_opinion_id'):
             target['article_opinion'] = get_object_or_404(ArticleOpinion, pk=values['article_opinion_id'])
         else:
+            from news.features import threads_enabled
+            if not threads_enabled():
+                from django.http import Http404
+                raise Http404
             target['thread_opinion'] = get_object_or_404(ThreadOpinion, pk=values['thread_opinion_id'])
         try:
             with transaction.atomic():

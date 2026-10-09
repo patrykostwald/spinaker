@@ -37,6 +37,10 @@ class Command(BaseCommand):
     help = 'Przepisz wszystkie spinki Dr. Spina według jednego szablonu (diagnozy, przekazy dnia, nowe narracje, lobbing).'
 
     def handle(self, *args, **options):
+        from news.features import threads_enabled, threads_disabled_result
+        if not threads_enabled():
+            self.stdout.write(str(threads_disabled_result()))
+            return
         from news.narrative_threads import sync_message
         diagnoses = narratives = signals = 0
         # każda spinka w osobnej transakcji: przepisanie blokuje wiersz (select_for_update), a błąd jednej nie cofa pozostałych

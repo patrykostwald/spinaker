@@ -38,6 +38,9 @@ def _send(rows, payload):
 
 
 def send_to_topic(topic, payload):
+    from news.features import threads_enabled
+    if topic == 'nitki-dr-spina' and not threads_enabled():
+        return 0
     if topic not in TOPICS or not enabled():
         return 0
     # JSON containment is not supported by SQLite used in tests.
@@ -46,6 +49,10 @@ def send_to_topic(topic, payload):
 
 
 def send_to_user(user, payload):
+    from news.features import threads_enabled
+    if not threads_enabled() and (payload.get('kind') in ('followed_thread', 'thread_reply', 'comment_reaction')
+                                  or str(payload.get('url', '')).startswith(('/spinki/', '/thread/'))):
+        return 0
     if not enabled() or not getattr(user, 'pk', None):
         return 0
     rows = PushSubscription.objects.filter(user=user)

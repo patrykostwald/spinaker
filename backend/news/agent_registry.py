@@ -161,6 +161,12 @@ for _source, _spec in PUBLIC_RECORD_SOURCES.items():
 
 
 def enabled(spec):
+    if spec['flag'] in ('THREADS_ENABLED', 'DR_SPIN_THREADS_ENABLED'):
+        from news.features import threads_enabled
+        if not threads_enabled():
+            return False
+        if spec['flag'] == 'THREADS_ENABLED':
+            return True
     return not spec['flag'] or flag(spec['flag'], spec['default'])
 
 

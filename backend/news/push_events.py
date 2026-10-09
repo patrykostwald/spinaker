@@ -14,6 +14,9 @@ from news.push_models import PushEvent
 
 @shared_task(name='news.push_events.deliver_event')
 def deliver_event(key, topic, payload):
+    from news.features import threads_enabled
+    if topic == 'nitki-dr-spina' and not threads_enabled():
+        return 0
     if not enabled():
         return 0
     _, created = PushEvent.objects.get_or_create(key=key)
@@ -44,6 +47,9 @@ def _morning_eta(now=None):
 
 
 def _enqueue(key, topic, payload, eta=None):
+    from news.features import threads_enabled
+    if topic == 'nitki-dr-spina' and not threads_enabled():
+        return 0
     try:
         if eta:
             deliver_event.apply_async((key, topic, payload), eta=eta)
@@ -55,6 +61,9 @@ def _enqueue(key, topic, payload, eta=None):
 
 @receiver(post_save, sender=Thread)
 def dr_spin_published(sender, instance, raw=False, **kwargs):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     if raw or not enabled() or not instance.published or instance.created_by_id is not None:
         return
     if not instance.slug.startswith('dr-spin-kontekst-'):

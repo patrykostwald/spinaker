@@ -11,6 +11,10 @@ class Command(BaseCommand):
                             help='Odrzucone spinki wracają do kontroli od pierwszego kroku (np. po poprawce kontrolerów).')
 
     def handle(self, **options):
+        from news.features import threads_enabled, threads_disabled_result
+        if not threads_enabled():
+            self.stdout.write(str(threads_disabled_result()))
+            return
         if options['retry_rejected']:
             from news.thread_review_models import ThreadReview
             rows = ThreadReview.objects.filter(status='rejected')

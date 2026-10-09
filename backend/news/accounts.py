@@ -1,3 +1,4 @@
+from news.features import ThreadsEnabledMixin
 """Public session accounts. Editorial authentication and permissions stay separate."""
 import base64
 import hashlib
@@ -359,7 +360,7 @@ class ThreadOpinionSerializer(serializers.ModelSerializer):
 
 
 @json_view("Reakcje i komentarze do spinki kontekstowej", tags=["reakcje"])
-class ThreadOpinionsView(APIView):
+class ThreadOpinionsView(ThreadsEnabledMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
     def get_permissions(self):

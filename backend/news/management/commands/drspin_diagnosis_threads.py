@@ -14,6 +14,10 @@ class Command(BaseCommand):
         parser.add_argument('--since', help='Data publikacji od RRRR-MM-DD (włącznie).')
 
     def handle(self, *args, **options):
+        from news.features import threads_enabled, threads_disabled_result
+        if not threads_enabled():
+            self.stdout.write(str(threads_disabled_result()))
+            return
         rows = SpinDiagnosis.objects.all()
         if options['since']:
             try:

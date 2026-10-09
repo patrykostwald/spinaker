@@ -176,6 +176,9 @@ def _select(spin, candidates):
 @draft_builder
 def build_daily_thread(dry_run=False) -> dict:
     """Zwraca plan lub wynik publikacji; flaga obowiązuje również przy podglądzie."""
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return {'status': 'disabled'}
     if os.environ.get('DR_SPIN_THREADS_ENABLED', '').lower() != 'true':
         return {'status': 'disabled'}
     slug = f'dr-spin-kontekst-{timezone.localdate().isoformat()}'

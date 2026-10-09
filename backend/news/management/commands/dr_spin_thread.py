@@ -12,4 +12,8 @@ class Command(BaseCommand):
         parser.add_argument('--dry-run', action='store_true', help='Pokaż plan bez zapisu spinki.')
 
     def handle(self, *args, dry_run=False, **options):
+        from news.features import threads_enabled, threads_disabled_result
+        if not threads_enabled():
+            self.stdout.write(str(threads_disabled_result()))
+            return
         self.stdout.write(json.dumps(build_daily_thread(dry_run=dry_run), ensure_ascii=False, indent=2))

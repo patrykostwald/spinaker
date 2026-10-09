@@ -1,3 +1,4 @@
+from news.features import ThreadsEnabledMixin
 from urllib.parse import urlparse
 from django.db import transaction
 from django.db.models import F, Prefetch
@@ -129,7 +130,7 @@ class WriteThreadSerializer(serializers.ModelSerializer):
         ThreadItem.objects.bulk_create([ThreadItem(thread=thread, article=item.get('article_id'), external_url=item.get('external_url', ''), position=index,
             editorial_note=item.get('editorial_note', '')) for index, (_, item) in enumerate(items)])
 
-class EditorialThreadViewSet(viewsets.ModelViewSet):
+class EditorialThreadViewSet(ThreadsEnabledMixin, viewsets.ModelViewSet):
     permission_classes = [IsThreadAuthor]
     lookup_field = 'slug'
     http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']

@@ -169,3 +169,8 @@ def test_quiet_hours_delay_to_morning():
     late = timezone.make_aware(datetime.datetime(2026, 10, 1, 23, 30))
     assert timezone.localtime(_morning_eta(late)).hour == 7
     assert _morning_eta(timezone.make_aware(datetime.datetime(2026, 10, 1, 12, 0))) is None
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(monkeypatch):
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)

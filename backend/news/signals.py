@@ -34,6 +34,9 @@ def diagnosis_changed(**kwargs):
 
 @receiver(post_save, sender=SpinDiagnosis)
 def diagnosis_thread_changed(sender, instance, raw=False, **kwargs):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     if not raw:
         from news.diagnosis_threads import sync_diagnosis_thread
         sync_diagnosis_thread(instance.pk)
@@ -50,6 +53,9 @@ from news.models import Thread, ThreadItem
 @receiver(post_save, sender=ThreadItem)
 @receiver(post_delete, sender=ThreadItem)
 def thread_text_changed(sender, instance, raw=False, **kwargs):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     from news.thread_review import authoring, enqueue, snapshot
     from news.thread_review_models import ThreadReview
     if raw or authoring.get():

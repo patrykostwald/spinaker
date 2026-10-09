@@ -531,3 +531,8 @@ def test_third_failure_escalates_immediately_and_smtp_failure_not_repeated(isola
     rescuer.guard(NOW + timedelta(minutes=20), items=(item,))
     isolated.mail.assert_called_once()
     assert 'Nie wysłano' in rescuer.state_data('screen', NOW)['mail']
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(settings):
+    settings.THREADS_ENABLED = True

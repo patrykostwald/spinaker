@@ -102,6 +102,9 @@ def narrative_boxes(candidate):
 @transaction.atomic
 @draft_builder
 def save_signal(kind, key, title, description, items, evidence, metadata):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     signature = digest([title, description, items, evidence])
     metadata = {**metadata, 'source_signature': signature}
     thread, created = PersonalContextThread.objects.get_or_create(signal_key=key, defaults={

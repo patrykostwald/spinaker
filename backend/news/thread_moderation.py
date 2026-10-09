@@ -44,6 +44,9 @@ def screen_report(text):
 
 
 def assess_report(report_id):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     report = ThreadModerationReport.objects.get(pk=report_id)
     result = screen_report(report.snapshot)
     with transaction.atomic():
@@ -106,6 +109,9 @@ def decide(report_id, moderator, action, rule, explanation):
 
 
 def deliver_mail(decision_id=None, max_messages=100):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     from news.account_mail import send_account_mail
     rows = ThreadModerationMail.objects.filter(sent_at__isnull=True)
     if decision_id:

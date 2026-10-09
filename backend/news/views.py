@@ -1,3 +1,4 @@
+from news.features import ThreadsEnabledMixin
 from collections import defaultdict
 from datetime import datetime, time, timedelta
 from hashlib import sha256
@@ -162,7 +163,7 @@ class ArticleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         scored.sort(key=lambda pair: (pair[0], pair[1].published_date), reverse=True)
         return Response({'related': ArticleSerializer([a for _, a in scored[:10]], many=True).data})
 
-class ThreadViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class ThreadViewSet(ThreadsEnabledMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     lookup_field = 'slug'
 
     def get_serializer_class(self):

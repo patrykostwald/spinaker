@@ -220,3 +220,8 @@ def test_malformed_correction_waits(monkeypatch):
     review.refresh_from_db()
     assert review.step == reviews.CORRECTION_STEP
     assert review.working_texts == review.payload['texts']
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(settings):
+    settings.THREADS_ENABLED = True

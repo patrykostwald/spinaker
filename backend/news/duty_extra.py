@@ -95,8 +95,8 @@ def check_diagnoses_today(ctx):
 
 def check_public_threads(ctx):
     """Spinki Dr. Spina są w bazie, ale główna jest pusta."""
-    from django.conf import settings
-    if not getattr(settings, 'THREADS_ENABLED', False) and not _on('THREADS_ENABLED'):
+    from news.features import threads_enabled
+    if not threads_enabled():
         return []
     from news.account_models import PersonalContextThread
     from news.community import public_threads

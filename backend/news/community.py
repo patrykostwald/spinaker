@@ -135,6 +135,9 @@ def resolve_link(request):
 # --- publiczne nitki ------------------------------------------------------------------------
 
 def public_threads(user=None):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return PersonalContextThread.objects.none()
     from news.clinic import published_diagnoses
     from news.thread_review import visible_statuses
     from news.account_models import MutedUser

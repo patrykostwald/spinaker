@@ -10,4 +10,8 @@ class Command(BaseCommand):
         parser.add_argument('--day', type=date.fromisoformat)
 
     def handle(self, **options):
+        from news.features import threads_enabled, threads_disabled_result
+        if not threads_enabled():
+            self.stdout.write(str(threads_disabled_result()))
+            return
         self.stdout.write(str(build_narratives(options['day'])))

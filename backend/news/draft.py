@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
+from news.features import ThreadsEnabledMixin
 
 from news.models import Article, ImportState
 from news.serializers import ArticleSerializer
@@ -89,7 +90,7 @@ def select_ids(topic, articles, provider):
 
 
 @json_view("Szkic spinki redakcyjnej (AI)", tags=["redakcja"])
-class EditorialDraftView(APIView):
+class EditorialDraftView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAdminUser]
     throttle_classes = [DraftThrottle]
 

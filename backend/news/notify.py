@@ -20,6 +20,9 @@ def enabled():
 
 def notify(user, kind, title, url, *, figure=None):
     """Called by the worker; in-app delivery survives unavailable push providers."""
+    from news.features import threads_enabled
+    if kind in ('followed_thread', 'thread_reply') and not threads_enabled():
+        return None
     if not enabled() or not user.is_active:
         return None
     preferences = NotificationSettings.objects.filter(user=user).first()
@@ -49,6 +52,9 @@ def notify(user, kind, title, url, *, figure=None):
 
 
 def queue_event(kind, target_id):
+    from news.features import threads_enabled
+    if kind in ('thread', 'thread_comment', 'reply', 'moderation') and not threads_enabled():
+        return
     if enabled():
         try:
             # A savepoint isolates an outbox error from the publishing transaction.

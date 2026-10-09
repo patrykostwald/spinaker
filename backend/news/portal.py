@@ -173,10 +173,12 @@ def _feed_payload(request) -> dict:
 @extend_schema(summary="Konfiguracja portalu: kategorie, tematy, katalog źródeł z grupami", tags=["portal"], responses=PortalConfigResponse)
 @api_view(['GET'])
 def portal_config(request):
-    payload = cache.get('portal-config:v1')
+    from news.features import threads_enabled
+    cache_key = f'portal-config:v1:threads:{int(threads_enabled())}'
+    payload = cache.get(cache_key)
     if payload is None:
         payload = _portal_config_payload()
-        cache.set('portal-config:v1', payload, 120)
+        cache.set(cache_key, payload, 120)
     return Response(payload)
 
 
@@ -187,6 +189,9 @@ def _portal_config_payload() -> dict:
     editions = Thread.objects.filter(published=True, editorial_slot__in=('government', 'opposition')).prefetch_related(
         Prefetch('thread_items', queryset=visible, to_attr='visible_items')).order_by('-updated_at', '-pk')
     slots = {'government': None, 'opposition': None}
+    from news.features import threads_enabled
+    if not threads_enabled():
+        editions = editions.none()
     for slot in slots:
         thread = editions.filter(editorial_slot=slot).first()
         if thread is not None:

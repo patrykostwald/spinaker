@@ -1,5 +1,5 @@
 """Account notification endpoints; all queries are scoped to their owner."""
-from news.features import accounts_enabled
+from news.features import accounts_enabled, threads_enabled
 from urllib.parse import quote
 from django.contrib.auth import get_user_model
 from django.http import Http404
@@ -77,7 +77,7 @@ class FollowsView(AccountNotificationView):
 @json_view('Przestań obserwować', tags=['konto'])
 class FollowDetailView(AccountNotificationView):
     def patch(self, request, follow_id):
-        row = get_object_or_404(Follow, user=request.user, pk=follow_id)
+        row = get_object_or_404(Follow.objects.all() if threads_enabled() else Follow.objects.filter(thread__isnull=True), user=request.user, pk=follow_id)
         data = FollowInput(data={'kind': row.kind, 'target_id': row.target_id, 'mode': request.data.get('mode')})
         data.is_valid(raise_exception=True)
         row.mode = data.validated_data['mode']
@@ -85,7 +85,7 @@ class FollowDetailView(AccountNotificationView):
         return Response(follow_data(row))
 
     def delete(self, request, follow_id):
-        get_object_or_404(Follow, user=request.user, pk=follow_id).delete()
+        get_object_or_404(Follow.objects.all() if threads_enabled() else Follow.objects.filter(thread__isnull=True), user=request.user, pk=follow_id).delete()
         return Response(status=204)
 
 

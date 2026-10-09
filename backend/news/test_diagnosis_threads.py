@@ -168,8 +168,9 @@ def test_community_hot_ranking_mixed_threads_and_comments(settings):
 
 @pytest.mark.parametrize('threads,accounts', [(True, False), (True, True), (False, True), (False, False)])
 def test_community_read_write_flags(settings, threads, accounts):
-    settings.THREADS_ENABLED, settings.ACCOUNTS_ENABLED = threads, accounts
+    settings.THREADS_ENABLED = True
     thread = diagnosis().context_thread
+    settings.THREADS_ENABLED, settings.ACCOUNTS_ENABLED = threads, accounts
     reader = get_user_model().objects.create_user('reader')
     AccountIdentity.objects.create(user=reader, email='reader@example.org', email_verified=True)
     client = APIClient()
@@ -178,10 +179,10 @@ def test_community_read_write_flags(settings, threads, accounts):
     assert client.get(url).status_code == (200 if threads else 404)
     assert client.get(url + 'opinions/').status_code == (200 if threads else 404)
     step = {'item_id': thread.items.all()[1].pk, 'part': 'context', 'polarity': 'positive'}
-    assert client.post(url + 'steps/', step).status_code in (401, 403)
+    assert client.post(url + 'steps/', step).status_code in ((401, 403) if threads and accounts else (404,))
     client.force_authenticate(reader)
     assert client.post(url + 'steps/', step).status_code == (200 if threads and accounts else 404)
-    assert client.post('/api/account/context-threads/', {'title': 'Szkic'}, format='json').status_code == (201 if threads and accounts else 403)
+    assert client.post('/api/account/context-threads/', {'title': 'Szkic'}, format='json').status_code == (201 if threads and accounts else 403 if threads else 404)
 
 
 def test_threshold_follows_setting(monkeypatch):
@@ -225,3 +226,8 @@ def test_refresh_all_rewrites_old_texts():
     thread.refresh_from_db()
     assert thread.title == 'Diagnoza: Podatki'
     assert thread.description == 'Analiza wpisu: Poseł Test. Techniki: wybiórczość.'
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(settings):
+    settings.THREADS_ENABLED = True

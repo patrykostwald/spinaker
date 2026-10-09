@@ -315,6 +315,9 @@ def visible_statuses():
 def enqueue(thread, evidence):
     # Własna transakcja: select_for_update poza nią rzuca TransactionManagementError (6.10: Recenzent odsyłał spinkę
     # do recenzji poza atomic(), krok kończył się błędem co 2 h, a Opiekun pisał o tym setki wpisów).
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     payload = snapshot(thread, evidence)
     fingerprint = digest(payload)
     field = 'thread' if hasattr(thread, 'signal_kind') else 'editorial_thread'
@@ -405,6 +408,9 @@ def free_role(role, system, data, schema, max_tokens):
 @transaction.atomic
 def review_one(pk, *, now=None):
     """Row lock prevents concurrent reviews. Each completed step survives quota exhaustion."""
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return 'disabled'
     now = now or timezone.now()
     review = ThreadReview.objects.select_for_update(of=('self',)).select_related('thread', 'editorial_thread').get(pk=pk)
     if review.status in ('approved', 'rejected') or (review.next_attempt_at and review.next_attempt_at > now):
@@ -497,6 +503,9 @@ def review_one(pk, *, now=None):
 
 
 def run_queue(limit=10):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return {}
     from django.db.models import Q
     now = timezone.now()
     ids = ThreadReview.objects.filter(status__in=['pending', 'waiting']).filter(
@@ -506,6 +515,9 @@ def run_queue(limit=10):
 
 def backfill_queue(limit=5):
     """Queue old, hidden-by-migration threads before processing any model work."""
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return None
     from news.account_models import PersonalContextThread
     from news.models import Thread
     from news.diagnosis_threads import sync_diagnosis_thread

@@ -205,6 +205,9 @@ def check_publication(now):
 
 
 def check_thread(now):
+    from news.features import threads_enabled
+    if not threads_enabled():
+        return result('na', 'Spinki są wyłączone.')
     from news import clinic
     from news.models import Thread
     from news.repairer import flag
