@@ -15,7 +15,7 @@ type State = { kind: "idle" | "sending" | "done" | "error"; message?: string };
  * Zapis na powiadomienie o starcie: e-mail + zgoda, potem mail z linkiem potwierdzającym (podwójna zgoda).
  * `source` mówi, skąd przyszedł zapis (home, klinika, o-nas…) - do statystyk w panelu.
  */
-export function NewsletterSignup({ source, compact = false }: { source: string; compact?: boolean }) {
+export function NewsletterSignup({ source, compact = false, appLaunch = false }: { source: string; compact?: boolean; appLaunch?: boolean }) {
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
@@ -40,21 +40,21 @@ export function NewsletterSignup({ source, compact = false }: { source: string; 
     <section className="sc-newsletter" data-compact={compact || undefined} aria-labelledby={`newsletter-${source}`}>
       <div className="sc-newsletter__text">
         <p className="sc-clinic-kicker">Newsletter</p>
-        <h2 id={`newsletter-${source}`}>Powiadomimy Cię o starcie pełnej wersji</h2>
+        <h2 id={`newsletter-${source}`}>{appLaunch ? "Aplikacja i alerty" : "Powiadomimy Cię o starcie pełnej wersji"}</h2>
         <p>
-          spin.clinic działa w wersji beta. Zostaw e-mail - napiszemy, gdy wystartuje pełna wersja, i od czasu do czasu o najważniejszych nowościach.
-          Bez spamu; nie sprzedajemy ani nie udostępniamy adresów do cudzego marketingu.
+          {appLaunch ? "Przygotowujemy aplikację z alertami o wpisach polityków. Zostaw e-mail, aby otrzymać wiadomość o starcie. Dla zwykłych użytkowników spin.clinic jest i pozostanie bezpłatne." : <>spin.clinic działa w wersji beta. Zostaw e-mail - napiszemy, gdy wystartuje pełna wersja, i od czasu do czasu o najważniejszych nowościach.
+          Bez spamu; nie sprzedajemy ani nie udostępniamy adresów do cudzego marketingu.</>}
         </p>
       </div>
       {state.kind === "done" ? (
         <p className="sc-newsletter__done" role="status">✓ {state.message}</p>
       ) : (
-        <form className="sc-newsletter__form" onSubmit={submit} noValidate>
+        <form className="sc-newsletter__form" onSubmit={submit}>
           <div className="sc-newsletter__row">
             <label className="sc-sr-only" htmlFor={`newsletter-email-${source}`}>Adres e-mail</label>
             <input className="sc-input" id={`newsletter-email-${source}`} type="email" required autoComplete="email" placeholder="twoj@adres.pl"
               value={email} onChange={event => setEmail(event.target.value)} />
-            <Button type="submit" variant="primary" loading={state.kind === "sending"}>{state.kind === "sending" ? "Zapisuję…" : "Zapisz mnie"}</Button>
+            <Button type="submit" variant="primary" loading={state.kind === "sending"}>{state.kind === "sending" ? "Zapisuję…" : appLaunch ? "Powiadom mnie o starcie" : "Zapisz mnie"}</Button>
           </div>
           {/* Pole-pułapka: ludzie go nie widzą, boty je wypełniają. */}
           <input className="sc-newsletter__trap" tabIndex={-1} autoComplete="off" aria-hidden="true" name="website"

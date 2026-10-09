@@ -1,24 +1,15 @@
 "use client";
 
-import { ClinicNav } from "./ClinicNav";
+import { ClinicOverview } from "./ClinicOverview";
 import { useLongPress } from "../../lib/useLongPress";
-import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
-import { CAMPS, CAMP_LABELS, getClinicDeleted, getClinicPage, type SpinDetailData } from "../../lib/clinic";
-import { NewsletterSignup } from "../NewsletterSignup";
-import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, VerdictTag } from "./SpinParts";
+import { CAMPS, CAMP_LABELS, getClinicDeleted, type SpinDetailData } from "../../lib/clinic";
+import { IntensityMeter, SpinAuthorRow, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
-import { ClinicShowcase } from "./ClinicIndicators";
-import { ClinicRecentlyViewed } from "./ClinicRecentlyViewed";
-import { ClinicRanking } from "./ClinicRanking";
 import { formatDateTimePl } from "../../lib/utils";
-import { InterviewScanner } from "./InterviewScanner";
-import { MessageBox } from "./ClinicExtras";
-import { Loading } from "../../kit/Loading";
 
 export { MessageBox } from "./ClinicExtras";
 
@@ -146,75 +137,5 @@ function DeletedPosts() {
 
 /** Przegląd: krótkie podglądy i wejścia do pełnych archiwów. */
 export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
-  const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
-  const data = query.data;
-  return (
-    <section className="sc-clinic sc-clinic-overview" id="spin" aria-labelledby="clinic-title" data-embedded={embedded || undefined}>
-      {!embedded ? <ClinicNav /> : null}
-      <SectionHeader variant={embedded ? "section" : "page"} titleId="clinic-title" kicker="Klinika spinu" title={<>Dr. Spin<sup className="sc-tm-ai"><AiTag /></sup></>}
-        subtitle={<>Analizujemy wybrane wpisy i wywiady polityków. Pokazujemy techniki perswazji i źródła.</>}
-        link={embedded ? <Link href="/metodologia">Jak działa analiza</Link> : undefined} />
-
-      <ClinicRecentlyViewed />
-
-      {query.isError && <p role="alert" className="sc-clinic-empty">Nie udało się pobrać Kliniki. <Button size="sm" variant="quiet" onClick={() => query.refetch()}>Ponów</Button></p>}
-      {query.isLoading && <p className="sc-clinic-empty"><Loading label="Ładowanie diagnoz" /></p>}
-
-      {data && <>
-        {/* na samej górze skala pracy Kliniki: ile wpisów czytamy i diagnozujemy (właściciel 5.10) */}
-        <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
-
-        {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
-        <section className="sc-clinic-group" aria-labelledby="clinic-messages-title">
-          <SectionHeader titleId="clinic-messages-title" kicker={<>Klinika spinu <AiTag /></>} title="Przekazy dnia"
-            subtitle="O czym i jak mówiły obie strony w przeanalizowanych wpisach." link={<Link className="sc-archive-btn" href="/klinika/przekazy" aria-label="Archiwum przekazów">Archiwum</Link>} />
-          <div className="sc-clinic-split">
-            {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" compact={false} />)}
-          </div>
-        </section>
-
-        {/* Panel tematyczny: waga spinu i najnowsze diagnozy obu stron. */}
-        <div className="sc-clinic-group">
-
-        <section className="sc-clinic-latest" aria-labelledby="clinic-latest-title">
-          <SectionHeader titleId="clinic-latest-title" title="Najnowsze diagnozy" subtitle="Obie strony oceniane według tych samych zasad. Liczby opublikowanych diagnoz mogą się różnić." />
-          <div className="sc-clinic-columns">
-            {CAMPS.filter(camp => data.columns[camp].length > 0).map(camp => (
-              <section key={camp} className="sc-clinic-column" aria-labelledby={`clinic-col-${camp}`}>
-                <h3 id={`clinic-col-${camp}`} className="sc-camp-heading" data-camp={camp}>{CAMP_LABELS[camp]}</h3>
-                <div className="sc-clinic-column__list">
-                  {data.columns[camp].slice(0, 3).map(spin => <SpinRow key={spin.id} spin={spin} />)}
-                </div>
-                <Button className="sc-clinic-column__more" href={`/klinika/diagnozy?camp=${camp}`} variant="quiet">Wszystkie diagnozy {camp === "government" ? "rządzących" : "opozycji"} →</Button>
-              </section>
-            ))}
-          </div>
-          {!CAMPS.some(camp => data.columns[camp].length) ? <p className="sc-clinic-empty">Nie ma jeszcze opublikowanych diagnoz.</p> : null}
-          {/* Komputer: jeden pasek pod kolumnami - rządzący do lewej krawędzi, wszystkie na środku, opozycja do prawej
-              (właściciel 3.10). Telefon: linki obozów zostają pod swoimi kolumnami. */}
-          <nav className="sc-clinic-latest__foot" aria-label="Więcej diagnoz">
-            {data.columns.government.length ? <Link className="sc-clinic-latest__camp-link" data-camp="government" href="/klinika/diagnozy?camp=government">Diagnozy rządzących →</Link> : <span />}
-            <Link className="sc-clinic-db__all" href="/klinika/diagnozy">Wszystkie diagnozy{data.stats?.diagnosed.total !== undefined ? ` (${data.stats.diagnosed.total.toLocaleString("pl-PL")})` : ""} →</Link>
-            {data.columns.opposition.length ? <Link className="sc-clinic-latest__camp-link" data-camp="opposition" href="/klinika/diagnozy?camp=opposition">Diagnozy opozycji →</Link> : <span />}
-          </nav>
-        </section>
-        </div>
-
-        {data.interview ? <section className="sc-clinic-group sc-clinic-interview-preview" aria-labelledby="clinic-interview-title">
-          <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
-            subtitle="Wywiad z wczoraj: gość i prowadzący." link={<Link className="sc-archive-btn" href="/klinika/wywiady" aria-label="Archiwum wywiadów">Archiwum</Link>} />
-          <InterviewScanner interview={data.interview} />
-          {data.interview.selection_label ? <p>{data.interview.selection_label}</p> : null}
-          <p><Link className="sc-ind-link" href="/klinika/wywiady/glosowanie">Głosowanie na wywiad dnia →</Link></p>
-        </section> : null}
-
-        <ClinicRanking data={data} />
-
-        <DeletedPosts />
-        <p className="sc-ind-links"><Link className="sc-ind-link" href="/osoby-publiczne">Katalog osób publicznych →</Link><Link className="sc-ind-link" href="/klinika/raporty">Raporty tygodnia →</Link></p>
-
-        <NewsletterSignup source="klinika" />
-      </>}
-    </section>
-  );
+  return <ClinicOverview home={embedded} extra={<DeletedPosts />} />;
 }

@@ -33,7 +33,7 @@ export const siteNavigation = {
   more: [links.press, links.methodology, links.charter, links.people, links.sources, links.newsletter, links.contact],
   support: links.support,
   footer: [
-    { title: "Czytaj", links: [links.home, links.clinic, links.people, links.sources, links.newsletter] },
+    { title: "Czytaj", links: [links.home, links.clinic, { label: "Raporty", href: "/klinika/raporty" }, links.people, links.sources, links.newsletter] },
     { title: "Jak pracujemy", links: [links.council, links.methodology, links.corrections, links.charter] },
     { title: "Projekt i kontakt", links: [links.about, links.press, links.contact] },
     { title: "Obserwuj", links: socialChannels.map(channel => ({ label: channel.name, href: channel.href })) },

@@ -1,59 +1,35 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Button, NavMenu, SearchField } from "../kit";
-import { useAccount } from "../lib/account";
+import { usePathname } from "next/navigation";
 import type { SiteConfig } from "../types";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useFeature } from "../lib/features";
-import { isSiteNavigationCurrent, siteNavigation } from "../lib/siteNavigation";
-
-function HeaderSearch() {
-  const [value, setValue] = useState("");
-  const id = useId();
-  const router = useRouter();
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (value.trim()) router.push(`/search?q=${encodeURIComponent(value.trim())}`);
-  }
-
-  return (
-    <form className="sc-nav-search" role="search" onSubmit={submit}>
-      <SearchField id={id} label="Szukaj materiałów" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj materiałów…" />
-    </form>
-  );
-}
 
 export function SiteHeader({ site }: { site: SiteConfig }) {
-  const ACCOUNTS_ENABLED = useFeature('ACCOUNTS_ENABLED');
   const THREADS_ENABLED = useFeature('THREADS_ENABLED');
   const pathname = usePathname();
-  const account = useAccount();
   const [first, ...rest] = site.name.split(".");
   const second = rest.join(".");
   // Przy tropach górnego menu nie ma: nawigacja jest w lewym pasku (SocialNavigation).
   if (THREADS_ENABLED) return null;
-  return (
-    <NavMenu
-      layout="centered"
-      items={siteNavigation.primary.map(section => ({
-        ...section,
-        current: isSiteNavigationCurrent(pathname, section.href),
-      }))}
-      desktopMore={false}
-      moreItems={siteNavigation.more.map(item => ({ ...item, current: isSiteNavigationCurrent(pathname, item.href) }))}
-      brand={
-        <div className="sc-nav-brand">
-          <Link href="/" className="sc-wordmark">{first}<span aria-hidden="true">.</span>{second}</Link>
-          <span className="sc-beta">BETA</span>
-        </div>
-      }
-      search={<HeaderSearch />}
-      mobileAction={<Link className="sc-nav-mobile-search" href="/search" aria-label="Szukaj materiałów">Szukaj</Link>}
-      cta={<div className="sc-nav-cta"><ThemeSwitcher compact /><Link className="sc-nav-support" href={siteNavigation.support.href}>{siteNavigation.support.label}</Link>{ACCOUNTS_ENABLED && <Button href="/konto" variant="quiet" size="sm">{account.data?.authenticated ? "Moje konto" : "Zaloguj"}</Button>}</div>}
-    />
-  );
+  const items = [
+    { href: "/klinika", label: "Klinika" },
+    { href: "/klinika/przekazy", label: "Przekazy dnia", mobile: "Przekazy" },
+    { href: "/klinika/wywiady", label: "Wywiady" },
+    { href: "/klinika/raporty", label: "Raporty" },
+    { href: "/search", label: "Szukaj" },
+    { href: "/konto", label: "Konto" },
+  ];
+  const current = (href: string) => href === "/klinika"
+    ? pathname.startsWith('/klinika') && !['/klinika/przekazy', '/klinika/wywiady', '/klinika/raporty'].some(section => pathname.startsWith(section))
+    : pathname === href || pathname.startsWith(`${href}/`);
+  return <>
+    <header className="sc-shell-header"><div className="sc-shell-header__inner">
+      <Link href="/" className="sc-wordmark" aria-label={`${site.name} - strona główna`}>{first}<span aria-hidden="true">.</span>{second}</Link><span className="sc-beta">BETA</span>
+      <nav className="sc-shell-desktop" aria-label="Menu główne">{items.map(item => <Link key={item.href} href={item.href} aria-current={current(item.href) ? "page" : undefined}>{item.label}</Link>)}</nav>
+      <div className="sc-shell-theme"><ThemeSwitcher compact /></div>
+    </div></header>
+    <nav className="sc-shell-mobile" aria-label="Menu główne telefonu">{items.filter(item => item.label !== "Raporty").map((item, index) => <Link key={item.href} href={item.href} aria-current={current(item.href) ? "page" : undefined}><span aria-hidden="true">{["◎", "≡", "▷", "⌕", "○"][index]}</span>{item.mobile || item.label}</Link>)}</nav>
+  </>;
 }

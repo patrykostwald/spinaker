@@ -1,6 +1,5 @@
 "use client";
-import { useFeature, usePreview, SupportBar, siteNavigation } from '@spin-clinic/ui';
-import { SiteFooter } from '@spin-clinic/ui/kit';
+import { useFeature, usePreview, siteNavigation } from '@spin-clinic/ui';
 import { usePathname } from 'next/navigation';
 import { HowToRead } from '@spin-clinic/ui';
 import { PwaControls } from './PwaControls';
@@ -22,17 +21,10 @@ export function FeatureFooter() {
   const PUSH_ENABLED = useFeature('PUSH_ENABLED');
   // Przy tropach dolnego paska nie ma: linki i „Wesprzyj” są w lewym pasku (SocialNavigation).
   if (useFeature('THREADS_ENABLED')) return null;
-  return (
-          <SiteFooter
-            brand={<strong>spin<span className="sc-wordmark__dot">.</span>clinic</strong>}
-            cta={{ label: "Wesprzyj projekt", href: "/wsparcie" }}
-            columns={APP_ENABLED ? [...siteNavigation.footer, { title: 'Aplikacja', links: [
-              { label: 'Zainstaluj aplikację', href: '#zainstaluj-aplikacje' },
-              ...(PUSH_ENABLED ? [{ label: 'Powiadomienia', href: '#powiadomienia' }] : []),
-            ] }] : siteNavigation.footer}
-            actions={<><a href="/en/about" lang="en" hrefLang="en" className="sc-footer__link">English</a>{pathname?.startsWith("/klinika") ? <div className="sc-clinic-footer-actions"><HowToRead interview={pathname.startsWith("/klinika/wywiady")} /><Link className="sc-howto-trigger" href="/klinika/korekty">Rejestr korekt</Link></div> : null}</>}
-            above={<SupportBar />}
-            sticky
-          />
-  );
+  return <footer className="sc-shell-footer">
+    <div><Link href="/" className="sc-wordmark">spin.clinic</Link><p>iapply sp. z o.o.</p></div>
+    <nav aria-label="Informacje o serwisie">{siteNavigation.footer.filter(column => column.title !== "Obserwuj").flatMap(column => column.links).filter(link => link.href !== "/").map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav>
+    <div className="sc-shell-footer__tools"><Link href="/wsparcie">Wesprzyj projekt</Link>{pathname?.startsWith('/klinika') && <HowToRead interview={pathname.startsWith('/klinika/wywiady')} />}{APP_ENABLED && <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a>}{APP_ENABLED && PUSH_ENABLED && <a href="#powiadomienia">Powiadomienia</a>}</div>
+    <a href="/en/about" lang="en" hrefLang="en">English</a>
+  </footer>;
 }

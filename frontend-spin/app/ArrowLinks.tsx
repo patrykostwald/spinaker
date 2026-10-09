@@ -6,7 +6,7 @@ import { useEffect } from "react";
 export function ArrowLinks() {
   useEffect(() => {
     const tag = () => document.querySelectorAll<HTMLAnchorElement>("main a").forEach(a => {
-      if (!a.classList.contains("sc-ind-link") && a.textContent?.trim().endsWith("→") && !a.closest("nav, .sc-trop-overlay__bar")) a.classList.add("sc-ind-link");
+      if (!a.classList.contains("sc-ind-link") && a.textContent?.trim().endsWith("→") && !a.closest("nav, .sc-trop-overlay__bar, .sc-overview")) a.classList.add("sc-ind-link");
     });
     tag();
     const observer = new MutationObserver(tag);

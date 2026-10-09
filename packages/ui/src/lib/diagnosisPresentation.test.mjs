@@ -9,7 +9,7 @@ const ts = require("typescript");
 
 // Brak runnera TS: kompilujemy prawdziwe moduły istniejącym TypeScriptem i używamy node --test.
 const compiled = mkdtempSync(join(tmpdir(), "spin-d1-test-"));
-const modules = ["techniqueFamilies", "diagnosisPresentation", "utils", "clinicPeriod", "api", "clinicReports"];
+const modules = ["techniqueFamilies", "diagnosisPresentation", "utils", "clinicPeriod", "typography", "api", "clinicReports"];
 writeFileSync(join(compiled, "package.json"), '{"type":"commonjs"}');
 for (const name of modules) {
   const source = readFileSync(new URL(`./${name}.ts`, import.meta.url), "utf8");

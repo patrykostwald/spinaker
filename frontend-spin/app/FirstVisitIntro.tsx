@@ -1,5 +1,6 @@
 "use client";
 
+import { useFeature } from "@spin-clinic/ui";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
@@ -8,13 +9,14 @@ import { usePathname } from "next/navigation";
 const SEEN = "sc-intro-seen";
 
 export function FirstVisitIntro() {
+  const threads = useFeature("THREADS_ENABLED");
   const pathname = usePathname() || "/";
   const [open, setOpen] = useState(false);
   useEffect(() => {
     // film tylko na spin.clinic; przeszlosc.today (ta sama aplikacja) ma własną stronę główną
-    if (pathname !== "/" || window.location.hostname.endsWith("przeszlosc.today") || navigator.webdriver || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!threads || pathname !== "/" || window.location.hostname.endsWith("przeszlosc.today") || navigator.webdriver || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     try { if (!localStorage.getItem(SEEN)) setOpen(true); } catch { /* bez pamięci przeglądarki nie pokazujemy */ }
-  }, [pathname]);
+  }, [pathname, threads]);
   useEffect(() => {
     if (!open) return;
     const close = () => { try { localStorage.setItem(SEEN, String(Date.now())); } catch { /* jw. */ } setOpen(false); };

@@ -166,10 +166,10 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
           <SpinDiagnosisBody spin={spin} withSummary={false} />
           <p className="sc-clinic-roadmap">{spin.notice}</p>
         </article>
+        <ClinicDiscussion kind="spins" id={spin.id} />
         </div>
       </div>
       <AuthorReplies replies={spin.author_replies} />
-      <ClinicDiscussion kind="spins" id={spin.id} />
       <aside className="sc-spin-detail__next" aria-label="Co dalej">
         <NextSpins current={spin.id} />
         <Link className="sc-spin-detail__next-main" href="/klinika/diagnozy">Wszystkie diagnozy →</Link>
