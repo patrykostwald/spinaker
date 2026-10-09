@@ -24,7 +24,7 @@ export function FeatureFooter() {
   return <footer className="sc-shell-footer">
     <div><Link href="/" className="sc-wordmark">spin.clinic</Link><p>iapply sp. z o.o.</p></div>
     <nav aria-label="Informacje o serwisie">{siteNavigation.footer.filter(column => column.title !== "Obserwuj").flatMap(column => column.links).filter(link => link.href !== "/").map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav>
-    <div className="sc-shell-footer__tools"><Link href="/wsparcie">Wesprzyj projekt</Link>{pathname?.startsWith('/klinika') && <HowToRead interview={pathname.startsWith('/klinika/wywiady')} />}{APP_ENABLED && <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a>}{APP_ENABLED && PUSH_ENABLED && <a href="#powiadomienia">Powiadomienia</a>}</div>
+    <div className="sc-shell-footer__tools"><Link href="/wsparcie">Wesprzyj projekt</Link>{pathname?.startsWith('/klinika') && <HowToRead interview={pathname.startsWith('/klinika/wywiady')} />}{APP_ENABLED && <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a>}{APP_ENABLED && <Link href="/aplikacja">Aplikacja i alerty</Link>}{APP_ENABLED && PUSH_ENABLED && <a href="#powiadomienia">Powiadomienia</a>}</div>
     <a href="/en/about" lang="en" hrefLang="en">English</a>
   </footer>;
 }

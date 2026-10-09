@@ -37,19 +37,18 @@ function threadRedirects(enabled) {
   ];
 }
 
+/** Ikona skrótu 192x192 (public/app/shortcut-*.png): Android wymaga ikon, żeby pokazać skróty przy długim dotknięciu. */
+function shortcutIcon(name) {
+  return [{ src: `/app/shortcut-${name}.png`, sizes: '192x192', type: 'image/png' }];
+}
+
 function manifestShortcuts(enabled) {
+  const clinic = { name: 'Klinika', short_name: 'Klinika', description: 'Diagnozy spinu i przekazy dnia', url: '/klinika', icons: shortcutIcon('klinika') };
+  const news = { name: 'Wiadomości', short_name: 'Wiadomości', description: 'Najnowsze wiadomości ze źródłami', url: '/', icons: shortcutIcon('wiadomosci') };
   if (enabled) {
-    return [
-      { name: 'Klinika', url: '/klinika' },
-      { name: 'Wiadomości', url: '/' },
-      { name: 'Spinki', url: '/spinki' },
-    ];
+    return [clinic, news, { name: 'Spinki', short_name: 'Spinki', description: 'Spinki Dr. Spina', url: '/spinki', icons: shortcutIcon('spinki') }];
   }
-  return [
-    { name: 'Klinika', url: '/klinika' },
-    { name: 'Przekazy dnia', url: '/klinika/przekazy' },
-    { name: 'Wiadomości', url: '/' },
-  ];
+  return [clinic, { name: 'Przekazy dnia', short_name: 'Przekazy', description: 'Przekazy dnia obu stron', url: '/klinika/przekazy', icons: shortcutIcon('przekazy') }, news];
 }
 
 module.exports = { isThreadsEnabled, threadRedirects, manifestShortcuts };

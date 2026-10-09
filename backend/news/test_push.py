@@ -51,7 +51,7 @@ def test_subscription_consent_and_withdrawal(authenticated):
     assert client.get(URL).data['results'][0]['topics'] == ['spin-dnia']
     assert APIClient().get(URL).data['results'] == []
     assert subscribe(APIClient(enforce_csrf_checks=True)).status_code == 409
-    assert subscribe(client, {**payload(), 'topics': ['obserwowani']}).status_code == 201
+    assert subscribe(client, {**payload(), 'topics': ['obserwowani']}).status_code == (201 if authenticated else 401)
     assert PushSubscription.objects.count() == 1
     csrf = client.get(URL).data['csrfToken']
     assert client.delete(URL, HTTP_X_CSRFTOKEN=csrf).status_code == 204
@@ -174,3 +174,14 @@ def test_quiet_hours_delay_to_morning():
 @pytest.fixture(autouse=True)
 def threads_feature(monkeypatch):
     monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
+
+
+def test_followed_topic_requires_account_and_binds_after_login():
+    anonymous = APIClient()
+    assert anonymous.post(URL, {**payload(), 'topics': ['obserwowani']}, format='json').status_code == 401
+    assert not PushSubscription.objects.exists()
+    user = get_user_model().objects.create_user(username='follower')
+    client = APIClient()
+    client.force_authenticate(user)
+    assert client.post(URL, {**payload(), 'topics': ['obserwowani']}, format='json').status_code == 201
+    assert PushSubscription.objects.get().user == user

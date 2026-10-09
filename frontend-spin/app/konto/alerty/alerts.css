@@ -4,6 +4,7 @@
 .sc-alert-settings p{font-size:14px;line-height:1.6;margin:8px 0;color:var(--sc-text-2)}
 .sc-alert-settings a{color:var(--sc-accent);font-size:14px;font-weight:600;display:inline-flex;align-items:center;min-height:44px}
 .sc-alert-device{margin:20px 0 24px;padding:16px;background:var(--sc-surface);border-left:2px solid var(--sc-line-strong);min-height:104px}
+.sc-alert-device__links{display:flex;flex-wrap:wrap;gap:0 24px;margin-top:8px}
 .sc-alert-section{min-width:0;margin:0 0 24px;padding:16px 0 0;border:0;border-top:1px solid var(--sc-line)}
 .sc-alert-section legend{font-size:18px;font-weight:650;padding:0 12px 0 0;white-space:nowrap}
 .sc-alert-check{display:flex;align-items:center;gap:12px;min-height:48px;font-size:14px;line-height:1.5;cursor:pointer}

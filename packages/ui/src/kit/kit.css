@@ -11270,3 +11270,6 @@ body:has(.sc-shell-header) .sc-app-main:has(.sc-overview) { padding-bottom: 0; }
 .sc-discussion-appeal form { width: 100%; }
 .sc-clinic-discussion select { min-height: 44px; }
 .sc-clinic-discussion h2 { white-space: nowrap; }
+
+/* === PWA Odnośnik do strony /aplikacja w sekcji „Aplikacja i alerty” === */
+.sc-newsletter__applink { color: var(--sc-accent); font-weight: 600; display: inline-flex; align-items: center; min-height: 44px; }

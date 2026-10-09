@@ -79,6 +79,9 @@ class SubscriptionsView(APIView):
         serializer = SubscriptionInput(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        # Alerty o obserwowanych osobach są przypisane do konta; anonimowa subskrypcja nigdy by ich nie dostała (zlecenie 116).
+        if 'obserwowani' in data['topics'] and not request.user.is_authenticated:
+            return Response({'detail': 'Alerty o obserwowanych osobach wymagają konta.'}, status=401)
         device = self._device(request)
         defaults = {**data, 'device': device,
                     'user': request.user if request.user.is_authenticated else None,

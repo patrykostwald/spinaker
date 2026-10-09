@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { apiWrite } from "../lib/api";
 import { Button } from "../kit/Button";
+import { useFeature } from "../lib/features";
 
 /** Ta sama treść zgody co w backendzie (news/newsletter.py, CONSENT_TEXT) - zapisujemy jej wersję przy każdym zapisie. */
 export const NEWSLETTER_CONSENT =
@@ -20,6 +21,7 @@ export function NewsletterSignup({ source, compact = false, appLaunch = false }:
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
+  const appEnabled = useFeature("APP_ENABLED");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -45,6 +47,7 @@ export function NewsletterSignup({ source, compact = false, appLaunch = false }:
           {appLaunch ? "Przygotowujemy aplikację z alertami o wpisach polityków. Zostaw e-mail, aby otrzymać wiadomość o starcie. Dla zwykłych użytkowników spin.clinic jest i pozostanie bezpłatne." : <>spin.clinic działa w wersji beta. Zostaw e-mail - napiszemy, gdy wystartuje pełna wersja, i od czasu do czasu o najważniejszych nowościach.
           Bez spamu; nie sprzedajemy ani nie udostępniamy adresów do cudzego marketingu.</>}
         </p>
+        {appLaunch && appEnabled && <p><Link className="sc-newsletter__applink" href="/aplikacja">Jak zainstalować aplikację i włączyć alerty →</Link></p>}
       </div>
       {state.kind === "done" ? (
         <p className="sc-newsletter__done" role="status">✓ {state.message}</p>

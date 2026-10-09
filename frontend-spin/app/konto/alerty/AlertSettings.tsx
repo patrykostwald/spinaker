@@ -6,6 +6,7 @@ import { useAccount } from '../../../../packages/ui/src/lib/account';
 import { useFollows, accountMessage } from '../../../../packages/ui/src/lib/accountPhase2';
 import { apiFetch, apiWrite } from '../../../../packages/ui/src/lib/api';
 import { useFeature } from '../../../../packages/ui/src/lib/features';
+import { HASH_FOLLOWED, isIosDevice, pushMessage, pushState } from '../../../lib/pwa';
 import './alerts.css';
 
 type Preferences = {
@@ -19,6 +20,7 @@ type Preferences = {
 export function AlertSettings() {
   const account = useAccount(), follows = useFollows(), cache = useQueryClient();
   const pushEnabled = useFeature('PUSH_ENABLED');
+  const appEnabled = useFeature('APP_ENABLED');
   const ownerId = account.data?.user?.id;
   const settings = useQuery({ queryKey: ['notification-settings', ownerId], enabled: Boolean(ownerId), retry: false,
     queryFn: () => apiFetch<Preferences>('/api/account/notification-settings/') });
@@ -32,21 +34,24 @@ export function AlertSettings() {
   useEffect(() => {
     let cancelled = false;
     async function check() {
-      const available = 'Notification' in window && 'PushManager' in window && 'serviceWorker' in navigator;
-      setSupported(available);
-      if (!pushEnabled) { setDevice('Powiadomienia push są obecnie wyłączone w serwisie. Ustawienia ciszy możesz zapisać.'); return; }
-      if (!available) { setDevice('Ta przeglądarka nie obsługuje powiadomień push. Na iPhonie dodaj aplikację do ekranu początkowego i otwórz ją stamtąd.'); return; }
-      if (Notification.permission === 'denied') { setDevice('Powiadomienia są zablokowane. Zmień uprawnienia tej strony w ustawieniach przeglądarki.'); return; }
+      const hasPush = 'Notification' in window && 'PushManager' in window && 'serviceWorker' in navigator;
+      setSupported(hasPush);
+      if (!pushEnabled || !appEnabled) { setDevice('Powiadomienia push nie są jeszcze włączone w serwisie. Ustawienia ciszy możesz zapisać już teraz - zadziałają, gdy alerty ruszą.'); return; }
+      const ios = isIosDevice({ userAgent: navigator.userAgent, platform: navigator.platform, maxTouchPoints: navigator.maxTouchPoints });
+      const installed = window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+      const state = pushState({ ios, installed, hasPush, hasServiceWorker: 'serviceWorker' in navigator, hasNotification: 'Notification' in window,
+        permission: 'Notification' in window ? Notification.permission : 'default', production: process.env.NODE_ENV === 'production' });
+      if (state !== 'ok') { setDevice(pushMessage(state)); return; }
       try {
         const registration = await navigator.serviceWorker.getRegistration('/');
         const subscription = await registration?.pushManager?.getSubscription();
-        if (!cancelled) setDevice(subscription ? 'Urządzenie ma subskrypcję push. W zgodach urządzenia zaznacz temat „Obserwowani”.' : 'To urządzenie nie ma subskrypcji push. Otwórz zgody urządzenia i wybierz temat „Obserwowani”.');
+        if (!cancelled) setDevice(subscription ? 'To urządzenie ma włączone powiadomienia push. Sprawdź, czy w tematach jest „Obserwowani”.' : 'To urządzenie nie ma jeszcze zgody na powiadomienia push. Włącz je, żeby dostawać alerty o obserwowanych osobach.');
       } catch { if (!cancelled) setDevice('Nie udało się sprawdzić subskrypcji urządzenia. Otwórz zgody urządzenia, aby spróbować ponownie.'); }
     }
     void check();
     window.addEventListener('focus', check);
     return () => { cancelled = true; window.removeEventListener('focus', check); };
-  }, [pushEnabled]);
+  }, [pushEnabled, appEnabled]);
   const people = (follows.data || []).filter(row => row.kind === 'figure').sort((a, b) => a.label.localeCompare(b.label, 'pl'));
   function change(patch: Partial<Preferences>) { setMessage(''); setDraft(current => current ? { ...current, ...patch } : current); }
   async function save(event: FormEvent) {
@@ -69,7 +74,7 @@ export function AlertSettings() {
   return <div className="sc-alert-settings">
     <a className="sc-alert-back" href="/konto#powiadomienia">← Powiadomienia na koncie</a>
     <header><h1>Ustawienia alertów</h1><p>Wybierz, kiedy mogą przychodzić powiadomienia o obserwowanych osobach.</p></header>
-    <div className="sc-alert-device" role="status"><p>{device}</p>{supported && pushEnabled && <a href="#powiadomienia">Zgody i tematy na urządzeniu →</a>}</div>
+    <div className="sc-alert-device" role="status"><p>{device}</p><div className="sc-alert-device__links">{supported && pushEnabled && appEnabled && <a href={HASH_FOLLOWED}>Włącz alerty na tym urządzeniu →</a>}{appEnabled && <a href="/aplikacja">Aplikacja: instalacja i alerty →</a>}</div></div>
     {account.isLoading && <p role="status">Wczytywanie konta…</p>}
     {account.isError && <p role="alert">Nie udało się wczytać konta. <button onClick={() => void account.refetch()}>Spróbuj ponownie</button></p>}
     {account.data && !ownerId && <p><a href="/konto">Zaloguj się</a>, aby zmienić ustawienia alertów.</p>}
