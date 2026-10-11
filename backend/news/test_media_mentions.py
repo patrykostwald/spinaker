@@ -98,7 +98,7 @@ def test_cache_and_live_exclusion_and_inactive_source(source, monkeypatch, djang
     row = article(source)
     assert mm.mentions_data(figure)['results']
     monkeypatch.setattr(mm, 'matched_field', lambda *args: pytest.fail('Cache missed'))
-    with django_assert_num_queries(3):
+    with django_assert_num_queries(4):  # +1: sprawdzenie jednoznaczności nazwiska
         assert mm.mentions_data(figure)['results']
     PublicFigureArticleReference.objects.create(public_figure=figure, article=row,
         reference_kind='mentioned', verification_status='rejected')
@@ -110,23 +110,45 @@ def test_cache_and_live_exclusion_and_inactive_source(source, monkeypatch, djang
 
 
 @pytest.mark.django_db
-def test_hard_candidate_window_and_output_limit(source, monkeypatch, django_assert_num_queries):
+def test_stary_artykul_poza_oknem_2000_jest_znaleziony_i_limit_wyniku(source, monkeypatch):
+    """Śledczy R1, P0-4: kandydatów wybiera zapytanie po nazwisku, nie okno najnowszych artykułów."""
     figure = person()
     old = article(source)
-    Article.objects.filter(pk=old.pk).update(published_date=timezone.now() - timedelta(days=10))
-    for _ in range(4):
-        article(source, title='Inny temat')
-    monkeypatch.setattr(mm, 'CANDIDATE_LIMIT', 3)
-    calls = []
-    original = mm.matched_field
-    monkeypatch.setattr(mm, 'matched_field', lambda p, a: (calls.append(a['pk']), original(p, a))[1])
-    assert mm.mentions_data(figure)['results'] == []
-    assert len(calls) == 3 and old.pk not in calls
+    Article.objects.filter(pk=old.pk).update(published_date=timezone.now() - timedelta(days=400))
+    Article.objects.bulk_create([Article(source=source, title=f'Inny temat {i}',
+        published_date=timezone.now(), url=f'https://example.test/other/{i}') for i in range(2105)])
+    assert [r['id'] for r in mm.mentions_data(figure)['results']] == [old.pk]
     cache.clear()
-    monkeypatch.setattr(mm, 'CANDIDATE_LIMIT', 2000)
     Article.objects.bulk_create([Article(source=source, title='Jan Kowalski',
         published_date=timezone.now(), url=f'https://example.test/many/{i}') for i in range(105)])
     assert len(mm.mentions_data(figure)['results']) == 100
+
+
+@pytest.mark.django_db
+def test_krotkie_nazwisko_z_imieniem_i_odmiana_na_ek(source):
+    tusk = person('Donald Tusk')
+    obajtek = person('Daniel Obajtek')
+    article(source, title='Donalda Tuska nie było w Sejmie')
+    article(source, title='Prezes Orlenu: Daniela Obajtka dotyczy zarzut')
+    article(source, title='Tusk zabrał głos')  # samo krótkie nazwisko (4 litery) nie wystarcza
+    assert len(mm.mentions_data(tusk)['results']) == 1
+    results = mm.mentions_data(obajtek)['results']
+    assert len(results) == 1 and results[0]['confidence'] == 'high'
+
+
+@pytest.mark.django_db
+def test_samo_nazwisko_tylko_jednoznaczne_i_bez_innego_imienia(source):
+    figure = person('Michał Kołodziejczak')
+    article(source, title='Kołodziejczak: wracam do rolnictwa')
+    article(source, title='Ostre słowa. Adrian Kołodziejczak odpowiada')
+    article(source, title='Kołodziejczyk: wciąż dostaję telefony')
+    results = mm.mentions_data(figure)['results']
+    assert [r['title'] for r in results] == ['Kołodziejczak: wracam do rolnictwa']
+    assert results[0]['confidence'] == 'medium'
+    # drugi człowiek z tym samym nazwiskiem w rejestrze wyłącza dopasowanie po samym nazwisku
+    person('Anna Kołodziejczak')
+    cache.clear()
+    assert mm.mentions_data(figure)['results'] == []
 
 
 @pytest.mark.django_db
