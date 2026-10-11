@@ -98,6 +98,7 @@ def test_tree_links_only_by_identifiers_and_sums_branches():
 
 
 def test_company_endpoint_gated_resolves_krs_and_id(monkeypatch):
+    monkeypatch.setattr(krs, 'fetch', lambda *a, **k: None)
     company = org()
     client = APIClient()
     assert client.get('/api/przeszlosc/spolka/0000000002/').status_code == 404
@@ -183,3 +184,59 @@ def test_wzgledna_kwota_ponad_100x_mediany_jest_podejrzana():
     dp.mark_suspect(rows)
     assert [r['amount_suspect'] for r in rows] == [False] * 5 + [True, False]
     assert dp._sums(rows) == [{'currency': 'EUR', 'total': 900000000.0}, {'currency': 'PLN', 'total': 5000010.0}]
+
+
+def _extract(number='0000026438', name='BANK TESTOWY SPÓŁKA AKCYJNA', nip='5250007738'):
+    return krs.Extract(krs=number, register='P', name=name, legal_form='SPÓŁKA AKCYJNA', kind='company', nip=nip, regon='016298263')
+
+
+def test_search_by_name_nip_regon_and_krs_with_scope_message(monkeypatch):
+    from news import przeszlosc_spolki as ps
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    monkeypatch.setattr(krs, 'fetch', lambda *a, **k: None)
+    org('PKO Bank Polski SA', '0000026438', nip='5250007738', regon='016298263')
+    client = APIClient()
+    get = lambda q: client.get('/api/przeszlosc/spolki/', {'q': q}).json()
+    assert get('PKO')['results'][0]['url'] == '/przeszlosc/spolka/0000026438'
+    assert get('525-000-77-38')['results'][0]['krs_number'] == '0000026438'
+    assert get('016298263')['results'][0]['krs_number'] == '0000026438'
+    assert get('KRS 26438')['results'][0]['krs_number'] == '0000026438'
+    miss = get('Nieistniejąca')
+    assert miss['results'] == [] and miss['status'] == 'missing' and miss['message'].startswith('Brak w naszych danych') and miss['coverage']['organisations'] == 1
+    assert get('ab')['status'] == 'short'
+    assert ps.classify('7740001454') == ('nip', '7740001454') and ps.classify('0000026438')[0] == 'krs'
+
+
+def test_search_and_company_fetch_unknown_krs_on_demand_with_cache_and_limits(monkeypatch):
+    from news import przeszlosc_spolki as ps
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    calls = []
+    def fake(number, full=True, timeout=30):
+        calls.append(number)
+        return _extract(number) if number == '0000026438' else None
+    monkeypatch.setattr(krs, 'fetch', fake)
+    client = APIClient()
+    data = client.get('/api/przeszlosc/spolki/', {'q': '0000026438'}).json()
+    assert data['fetched'] is True and data['results'][0]['name'].startswith('BANK') and RegisteredOrganisation.objects.get(krs_number='0000026438').nip == '5250007738'
+    assert client.get('/api/przeszlosc/spolka/0000026438/').status_code == 200 and calls == ['0000026438']
+    # NIP z dociągniętego podmiotu działa jak adres strony
+    assert client.get('/api/przeszlosc/spolka/5250007738/').json()['organisation']['krs_number'] == '0000026438'
+    # brak w rejestrze: komunikat z zakresem, ponowne zapytanie nie idzie do sieci
+    miss = client.get('/api/przeszlosc/spolka/0000099999/')
+    assert miss.status_code == 404 and miss.json()['detail'].startswith('Brak w naszych danych')
+    client.get('/api/przeszlosc/spolka/0000099999/')
+    assert calls.count('0000099999') == 1
+    # limit na adres IP
+    cache.clear()
+    monkeypatch.setattr(ps, 'FETCH_PER_IP_MINUTE', 2)
+    codes = [client.get(f'/api/przeszlosc/spolka/00000999{i:02d}/').status_code for i in range(4)]
+    assert codes == [404, 404, 503, 503]
+
+
+def test_fetch_on_demand_survives_network_errors(monkeypatch):
+    from news import przeszlosc_spolki as ps
+    def boom(*a, **k):
+        raise RuntimeError('net')
+    monkeypatch.setattr(krs, 'fetch', boom)
+    assert ps.fetch_on_demand('0000012345') == (None, 'error')
+    assert ps.fetch_on_demand('0000012345') == (None, 'error')  # z pamięci, bez drugiego wywołania

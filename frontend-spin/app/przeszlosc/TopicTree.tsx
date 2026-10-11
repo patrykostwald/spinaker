@@ -20,6 +20,8 @@ type Start = { counts: Record<string, number>; latest: { title: string; date: st
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
   clubs: { club: string; size: number; votes: Record<string, number> }[]; members: [string, string, string][] };
 type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[]; eu_funds?: EuFunds; access?: { beta: boolean; label: string; locked: string[] } };
+type FirmHit = { id: number; name: string; krs_number: string; nip: string; legal_form: string; url: string };
+type FirmSearch = { results: FirmHit[]; status: string; message?: string; coverage?: { organisations: number; scope: string } };
 type PersonHit = { id: number; slug: string; name: string; role: string; organisation?: string; has_x?: boolean };
 type Open = (p: { kind: 'person' | 'entry'; id: string } | null) => void;
 
@@ -67,10 +69,20 @@ export function TopicTree() {
   const [start, setStart] = useState<Start | null>(null);
   const [daily, setDaily] = useState(false);
   // tryb wyszukiwarki (sprint 1): temat albo osoba publiczna z rejestru
-  const [mode, setMode] = useState<'topic' | 'person'>('topic');
+  const [mode, setMode] = useState<'topic' | 'person' | 'company'>('topic');
   const [hits, setHits] = useState<PersonHit[] | null>(null);
+  const [firms, setFirms] = useState<FirmSearch | null>(null);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
+    if (mode === 'company') {
+      const q = query.trim();
+      if (q.length < 3 && !/\d/.test(q)) { setFirms(null); return; }
+      const t = setTimeout(() => {
+        fetch(`/api/przeszlosc/spolki/?q=${encodeURIComponent(q)}`).then(r => r.ok ? r.json() : null)
+          .then((d: FirmSearch | null) => setFirms(d ?? { results: [], status: 'error', message: 'Wyszukiwarka spółek chwilowo nie odpowiada. Spróbuj za kilka minut.' })).catch(() => setFirms({ results: [], status: 'error', message: 'Wyszukiwarka spółek chwilowo nie odpowiada. Spróbuj za kilka minut.' }));
+      }, 400);
+      return () => clearTimeout(t);
+    }
     if (mode !== 'person') return;
     const q = query.trim();
     if (q.length < 3) { setHits(null); return; }
@@ -80,7 +92,7 @@ export function TopicTree() {
     }, 250);
     return () => clearTimeout(t);
   }, [query, mode]);
-  const switchMode = (next: 'topic' | 'person') => { setMode(next); setHits(null); if (next === 'person') setQuery(''); requestAnimationFrame(() => input.current?.focus()); };
+  const switchMode = (next: 'topic' | 'person' | 'company') => { setMode(next); setHits(null); setFirms(null); if (next !== 'topic') setQuery(''); requestAnimationFrame(() => input.current?.focus()); };
 
   async function load(q: string, remember = true) {
     setState('loading');
@@ -100,6 +112,7 @@ export function TopicTree() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const q = params.get('q');
+    if (params.get('tryb') === 'spolka') { setMode('company'); requestAnimationFrame(() => input.current?.focus()); }
     if (params.get('tryb') === 'osoba') { setMode('person'); requestAnimationFrame(() => input.current?.focus()); }
     // strona główna od razu pokazuje stan bazy i temat dnia (właściciel 5.10: „wygląda, jakby nic nie było”)
     fetch('/api/przeszlosc/start/').then(r => r.ok ? r.json() : null).then((s: Start | null) => {
@@ -133,14 +146,16 @@ export function TopicTree() {
           <div className="px-modes" role="group" aria-label="Czego szukasz">
             <button type="button" aria-pressed={mode === 'topic'} onClick={() => switchMode('topic')}>Temat</button>
             <button type="button" aria-pressed={mode === 'person'} onClick={() => switchMode('person')}>Osoba</button>
+            <button type="button" aria-pressed={mode === 'company'} onClick={() => switchMode('company')}>Spółka</button>
           </div>
           <form className="px-search" role="search" onSubmit={event => { event.preventDefault();
             if (mode === 'person') { if (hits?.length) window.location.href = personHref(hits[0]); return; }
+            if (mode === 'company') { if (firms?.results.length) window.location.href = firms.results[0].url; return; }
             if (query.trim().length >= 3) void load(query.trim()); }}>
-            <Icon name={mode === 'person' ? 'person' : 'search'} size={20} />
+            <Icon name={mode === 'person' ? 'person' : mode === 'company' ? 'organisation' : 'search'} size={20} />
             <input ref={input} value={query} onChange={event => setQuery(event.target.value)} enterKeyHint="search" autoComplete="off"
-              placeholder={mode === 'person' ? 'Nazwisko, np. Kosiniak, Bosak, Zandberg' : 'Np. CPK, VAT, ceny energii'}
-              aria-label={mode === 'person' ? 'Osoba publiczna do sprawdzenia' : 'Temat do sprawdzenia'} aria-controls={mode === 'person' ? 'px-hits' : undefined} />
+              placeholder={mode === 'person' ? 'Nazwisko, np. Kosiniak, Bosak, Zandberg' : mode === 'company' ? 'Nazwa, KRS, NIP lub REGON, np. PKO, 0000026438' : 'Np. CPK, VAT, ceny energii'}
+              aria-label={mode === 'person' ? 'Osoba publiczna do sprawdzenia' : mode === 'company' ? 'Spółka, fundacja lub stowarzyszenie do sprawdzenia' : 'Temat do sprawdzenia'} aria-controls={mode === 'topic' ? undefined : 'px-hits'} />
             <button type="submit">Pokaż</button>
           </form>
           {mode === 'person' && hits && <ul className="px-hits" id="px-hits" aria-label="Znalezione osoby">
@@ -150,9 +165,16 @@ export function TopicTree() {
               {p.has_x && <em title="potwierdzone konto X">X</em>}</a></li>)
               : <li className="px-hits__none">{nb('Nie ma takiej osoby w rejestrze osób publicznych. Sprawdź pisownię albo wpisz samo nazwisko.')}</li>}
           </ul>}
+          {mode === 'company' && firms && <ul className="px-hits" id="px-hits" aria-label="Znalezione podmioty">
+            {firms.results.length ? firms.results.slice(0, 8).map(f => <li key={f.id}><a href={f.url}>
+              <span className="px-hits__ic"><Icon name="organisation" /></span>
+              <span className="px-hits__body"><b>{f.name}</b><small>{[f.legal_form, `KRS ${f.krs_number}`, f.nip ? `NIP ${f.nip}` : ''].filter(Boolean).join(' · ')}</small></span></a></li>)
+              : <li className="px-hits__none" role="status">{nb(firms.message ?? 'Brak w naszych danych.')}</li>}
+          </ul>}
         </div>
         {mode === 'topic' ? <div className="px-chips"><span>{start?.auto_topics?.length ? 'Tematy dnia' : 'Przykłady'}</span>
           {topics.slice(0, 6).map(t => <button key={t} type="button" aria-pressed={data?.topic === t} onClick={() => pick(t)}>{t}</button>)}</div>
+          : mode === 'company' ? <p className="px-chips px-note">{nb(firms?.coverage?.scope ?? 'Szukamy w spółkach, fundacjach i stowarzyszeniach z KRS, które mamy w bazie. Numer KRS pobierzemy z rejestru na żądanie.')}</p>
           : <p className="px-chips px-note">{nb('Rejestr osób publicznych: posłowie, ministrowie, urzędnicy i samorządowcy. Bez osób prywatnych. Wielkość liter i polskie znaki nie mają znaczenia.')}</p>}
       </div>
       <HeroDemo narr={narr} />

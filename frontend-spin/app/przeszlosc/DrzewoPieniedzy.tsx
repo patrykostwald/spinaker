@@ -72,9 +72,10 @@ export function DrzewoPieniedzy({ ident }: { ident: string }) {
   useStandalone();
   const [data, setData] = useState<MoneyTree | null>(null);
   const [state, setState] = useState<'loading' | 'idle' | 'missing' | 'off' | 'locked' | 'error'>('loading');
+  const [why, setWhy] = useState('');
   useEffect(() => {
     fetch(`/api/przeszlosc/spolka/${encodeURIComponent(ident)}/`).then(async r => {
-      if (r.status === 404) { const body = await r.json().catch(() => ({})); setState(String(body.detail ?? '').includes('wyłączona') ? 'off' : 'missing'); return; }
+      if (r.status === 404) { const body = await r.json().catch(() => ({})); setWhy(String(body.detail ?? '')); setState(String(body.detail ?? '').includes('wyłączona') ? 'off' : 'missing'); return; }
       if (r.status === 403) { setState('locked'); return; }
       if (!r.ok) throw new Error();
       const d: MoneyTree = await r.json(); setData(d); setState('idle');
@@ -85,7 +86,7 @@ export function DrzewoPieniedzy({ ident }: { ident: string }) {
   return <main className="px px-mt">
     <Bar />
     {state === 'loading' && <div className="px-wait"><Loading label="Ładowanie drzewa" /></div>}
-    {state === 'missing' && <p className="px-msg">{nb('Nie ma takiego podmiotu w naszym rejestrze KRS.')} <a href="/przeszlosc?tryb=osoba">Szukaj osoby</a></p>}
+    {state === 'missing' && <p className="px-msg" role="status">{nb(why.startsWith('Brak w naszych danych') ? why : 'Brak w naszych danych: nie mamy takiego podmiotu.')} <a href="/przeszlosc?tryb=spolka">Szukaj spółki</a></p>}
     {state === 'off' && <p className="px-msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
     {state === 'locked' && <p className="px-msg">{nb('Drzewo przepływu pieniędzy jest w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>}
     {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać drzewa. Spróbuj ponownie.</p>}

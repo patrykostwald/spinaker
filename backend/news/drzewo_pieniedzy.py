@@ -257,8 +257,9 @@ def resolve(ident):
     value = str(ident or '').strip()
     if not value.isdigit():
         return None
-    q = Q(krs_number=value) if len(value) == 10 else Q(pk=int(value))
-    return RegisteredOrganisation.objects.filter(q, archived=False).first()
+    # 10 cyfr: KRS (zaczyna się od 00) albo NIP; inaczej id podmiotu w naszej bazie
+    q = (Q(krs_number=value) if value.startswith('00') else Q(nip=value) | Q(krs_number=value)) if len(value) == 10 else Q(pk=int(value))
+    return RegisteredOrganisation.objects.filter(q, archived=False).order_by('pk').first()
 
 
 @api_view(['GET'])
@@ -271,9 +272,17 @@ def company_view(request, ident):
     from news.przeszlosc_dostep import access, has, locked
     if not enabled():
         return Response({'detail': 'Funkcja jeszcze wyłączona.'}, status=404)
+    from news import przeszlosc_spolki
     org = resolve(ident)
+    if org is None and przeszlosc_spolki.looks_like_krs(ident):
+        # numer KRS spoza bazy: dociągamy z api-krs (cache, limity); dostęp sprawdzamy przed pobraniem
+        if not has('money_trail', request):
+            return locked('money_trail')
+        org, status = przeszlosc_spolki.fetch_on_demand(ident, przeszlosc_spolki._ip(request))
+        if org is None and status in ('busy', 'error'):
+            return Response({'detail': 'Rejestr KRS chwilowo niedostępny albo za dużo zapytań. Spróbuj za kilka minut.', 'status': status}, status=503)
     if org is None:
-        return Response({'detail': 'Nie ma takiego podmiotu w naszym rejestrze KRS.'}, status=404)
+        return Response({'detail': 'Brak w naszych danych: nie mamy takiego podmiotu. ' + przeszlosc_spolki.SCOPE, 'status': 'missing'}, status=404)
     if not has('money_trail', request):
         return locked('money_trail')
     key = f'przeszlosc:spolka:{org.pk}'
