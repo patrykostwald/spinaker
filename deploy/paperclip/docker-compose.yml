@@ -1,0 +1,62 @@
+# Paperclip, utwardzona konfiguracja (patrz docs/VET_PAPERCLIP_HERMES.md, pkt 8).
+# Uruchomienie:
+#   cd deploy/paperclip
+#   export BETTER_AUTH_SECRET="$(openssl rand -hex 32)"
+#   docker compose build --pull
+#   docker compose up -d
+# Brak ANTHROPIC_API_KEY/OPENAI_API_KEY: logowanie abonamentem robi sie w UI
+# (izolowany login w woluminie), nie przez montowanie ~/.claude ani ~/.codex.
+name: paperclip
+services:
+  paperclip:
+    build:
+      # Przypieta rewizja zrodel (bfe7c63, 2026-10-11). Zmieniaj swiadomie po przegladzie diffu.
+      context: https://github.com/paperclipai/paperclip.git#bfe7c6357d1e0c945c8cb84259153cb3b6542d28
+      dockerfile: Dockerfile
+      args:
+        USER_UID: "10001"
+        USER_GID: "10001"
+        # Dockerfile instaluje claude-code/codex/gemini jako @latest. Ten arg tylko
+        # odswieza warstwe; zeby przypiac wersje, zrob fork Dockerfile (patrz raport).
+        CLI_TOOLS_CACHE_EPOCH: "2026-10-11"
+    image: paperclip-local:bfe7c63
+    container_name: paperclip
+    restart: unless-stopped
+    init: true                       # tini jest juz w obrazie; to dodatkowa asekuracja
+    # Obraz startuje jako root tylko po to, by wykonac chown woluminu i zrobic gosu na usera node (uid 10001).
+    user: "0:0"
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE]   # minimum dla docker-entrypoint.sh
+    security_opt:
+      - no-new-privileges:true
+    read_only: false                 # agenci piszą po workspace; ograniczone woluminem + tmpfs
+    tmpfs:
+      - /tmp:size=1g,mode=1777
+    # Limity zasobow
+    cpus: "2.0"
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 1024
+    stop_grace_period: 90s
+    ports:
+      - "127.0.0.1:3100:3100"        # tylko loopback hosta
+    environment:
+      HOST: "0.0.0.0"                # wewnatrz kontenera; na zewnatrz chroni mapowanie portu 127.0.0.1
+      PORT: "3100"
+      PAPERCLIP_HOME: "/paperclip"
+      PAPERCLIP_DEPLOYMENT_MODE: "authenticated"
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: "private"
+      PAPERCLIP_PUBLIC_URL: "http://localhost:3100"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?ustaw BETTER_AUTH_SECRET (openssl rand -hex 32)}"
+      # Telemetria wylaczona (packages/shared/src/telemetry/config.ts:71-76)
+      DO_NOT_TRACK: "1"
+      PAPERCLIP_TELEMETRY_DISABLED: "1"
+      # Brak kluczy API celowo. Nie przekazuj tu GITHUB_TOKEN ani ~/.ssh.
+    volumes:
+      # Jedyny trwaly wolumen: baza, workspace agentow, izolowane loginy. Zadnego bind-mounta z $HOME.
+      - paperclip-data:/paperclip
+    # Opcjonalnie: odciecie od LAN/internetu poza API dostawcow wymaga proxy lub regul zapory hosta
+    # (Docker Compose nie filtruje egress po domenie).
+
+volumes:
+  paperclip-data:
