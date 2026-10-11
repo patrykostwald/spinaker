@@ -58,7 +58,7 @@ def options(params):
     depth = params.get('glebokosc', '2')
     if depth not in ('1', '2', '3'):
         raise ValueError('Głębokość musi wynosić od 1 do 3.')
-    flags = [params.get(key, '0') for key in ('narracja', 'pokaz_niepowiazane')]
+    flags = [params.get(key, '0') for key in ('narracja', 'pokaz_niepowiazane', 'cala_historia')]
     if any(flag not in ('0', '1') for flag in flags):
         raise ValueError('Przełączniki przyjmują 0 lub 1.')
     dates = []
@@ -72,7 +72,7 @@ def options(params):
     if all(dates) and dates[0] > dates[1]:
         raise ValueError('Data od nie może być późniejsza niż data do.')
     return {'categories': categories, 'depth': int(depth), 'start': dates[0], 'end': dates[1],
-            'narrative': flags[0] == '1', 'unlinked': flags[1] == '1'}
+            'narrative': flags[0] == '1', 'unlinked': flags[1] == '1', 'whole_history': flags[2] == '1'}
 
 
 class Graph:
@@ -82,6 +82,8 @@ class Graph:
         self.edges = {}
         self.grouped = Counter()
         self.omitted = set()
+        # Okresy funkcji osoby w spółkach (P0-2): {org.pk: [(since, until)]}; None = korzeń to spółka.
+        self.tenures = None
 
     def in_dates(self, value):
         day = iso(value)
@@ -181,8 +183,12 @@ def relations(graph, *, figure=None, organisations=None):
     if graph.opts['end']:
         rows = rows.filter(Q(since__isnull=True) | Q(since__lte=graph.opts['end']))
     orgs = {}
+    if figure:
+        graph.tenures = defaultdict(list)
     for rel in rows.select_related('organisation', 'public_figure').order_by('pk').iterator():
         org = rel.organisation
+        if figure:
+            graph.tenures[org.pk].append((rel.since, rel.until))
         org_id = org_node(graph, org, 1) if figure else f'org:{org.pk}'
         who = f'figure:{figure.pk}' if figure else figure_node(graph, rel.public_figure, 3)
         graph.edge(who, org_id, 'pełni funkcję w KRS', source('krs', rel.evidence_url),
@@ -206,6 +212,16 @@ def bounded(graph, rows, category, kind, certainty='identifier'):
     if count > MAX_NODES:
         graph.grouped[(category, kind, certainty)] += count - MAX_NODES
     return rows[:MAX_NODES]
+
+
+def in_tenure(day, windows):
+    """Czy data mieści się w którymś okresie funkcji (brak początku lub końca = otwarty).
+
+    Brak daty rekordu nie dowodzi niczego: przechodzi tylko okres w pełni otwarty (bez znanych granic)."""
+    if day is None:
+        return any(since is None and until is None for since, until in windows)
+    day = day.date() if isinstance(day, datetime) else day
+    return any((since is None or since <= day) and (until is None or day <= until) for since, until in windows)
 
 
 def finance(graph, organisations):
@@ -266,6 +282,15 @@ def finance(graph, organisations):
                     continue
                 hits = {hinted}
                 certainty = 'name_only'
+            outside = False
+            if graph.tenures is not None:
+                # P0-2: w drzewie osoby pieniądze spółki tylko z okresu jej funkcji (chyba że włączono całą historię).
+                inside = {pk for pk in hits if in_tenure(record.date, graph.tenures.get(pk, []))}
+                if not graph.opts['whole_history']:
+                    hits = inside
+                    if not hits:
+                        continue
+                outside = hits != inside
             provenance = source(key, record.source_url, record.fetched_at)
             if graph.opts['depth'] == 1:
                 if key in ('ted', 'fts') and certainty == 'identifier':
@@ -285,6 +310,8 @@ def finance(graph, organisations):
                 day=record.date, amount=amount, currency=currency, certainty=certainty, url=record.source_url)
             if not channel:
                 continue
+            if outside:
+                graph.nodes[channel]['meta'] = {**graph.nodes[channel]['meta'], 'outside_tenure': True}
             if money.amount_suspect(graph.nodes[channel]['amount']):
                 # Kwota nierealna (P0-1): węzeł zostaje, ale bez kwoty, z flagą w meta.
                 graph.nodes[channel]['amount'] = None

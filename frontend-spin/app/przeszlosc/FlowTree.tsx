@@ -86,7 +86,7 @@ export function FlowTree({ ident }: { ident: string }) {
     if (next.od && next.do && next.od > next.do) { if (patch.od !== undefined) next.do = next.od; else next.od = next.do; }
     const url = new URL(window.location.href);
     const params = new URLSearchParams(flowQuery(next, narrative));
-    ['kategorie', 'od', 'do', 'glebokosc', 'pokaz_niepowiazane', 'narracja'].forEach(k => { url.searchParams.delete(k); if (params.has(k)) url.searchParams.set(k, params.get(k)!); });
+    ['kategorie', 'od', 'do', 'glebokosc', 'pokaz_niepowiazane', 'cala_historia', 'narracja'].forEach(k => { url.searchParams.delete(k); if (params.has(k)) url.searchParams.set(k, params.get(k)!); });
     window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
     setFilters(next);
   }
@@ -148,7 +148,8 @@ export function FlowTree({ ident }: { ident: string }) {
       <div className="px-flow__dates"><label>Od <input type="date" value={filters?.od || ''} max={filters?.do || undefined} onChange={e => update({ od: e.target.value })} /></label>
         <label>Do <input type="date" value={filters?.do || ''} min={filters?.od || undefined} onChange={e => update({ do: e.target.value })} /></label>
         <label className="px-flow__check"><input type="checkbox" checked={filters?.unlinked || false} onChange={e => update({ unlinked: e.target.checked })} />Pokaż niepowiązane</label>
-        <button type="button" onClick={() => update({ categories: null, od: '', do: '', unlinked: false, depth: 2 })}>Wyczyść filtry</button></div>
+        {ident.startsWith('osoba:') && <label className="px-flow__check" title="Domyślnie tylko rekordy z okresu pełnienia funkcji. Rekordy spoza okresu to kontekst spółki, nie dowód związku z osobą."><input type="checkbox" checked={filters?.history || false} onChange={e => update({ history: e.target.checked })} />Cała historia spółki (także poza okresem funkcji)</label>}
+        <button type="button" onClick={() => update({ categories: null, od: '', do: '', unlinked: false, depth: 2, history: false })}>Wyczyść filtry</button></div>
     </section>
     <div className="px-flow__workspace">
       <section className="px-flow__graph" aria-label="Drzewo powiązań i przepływów">

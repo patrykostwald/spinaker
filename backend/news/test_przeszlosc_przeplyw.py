@@ -262,7 +262,7 @@ def test_joint_contract_does_not_assign_total_to_each_winner():
     rel.confirm_automatically('krs_register')
     rel.save()
     notice = rec('ted', 'notice', 'joint', {'buyer': ['Urząd'], 'value': 100, 'currency': 'PLN',
-        'winners': [{'id': first.nip}, {'id': second.nip}]})
+        'winners': [{'id': first.nip}, {'id': second.nip}]}, day=date(2026, 1, 1))
     data = get(f'osoba:{figure.pk}')
     outgoing = [e for e in data['edges'] if e['from'] == f'ted:{notice.pk}']
     assert len(outgoing) == 2 and all(e['amount'] is None for e in outgoing)
@@ -343,3 +343,26 @@ def test_nierealna_kwota_ted_nie_ma_kwoty_w_grafie():
               'winners': [{'id': 'PL5260250995'}]}, 'Paliwo', date(2026, 9, 1))
     node = next(n for n in get(f'osoba:{figure.pk}')['nodes'] if n['id'] == f'ted:{ted.pk}')
     assert node['amount'] is None and node['meta']['amount_suspect'] is True
+
+
+def test_zamowienia_poza_okresem_funkcji_sa_domyslnie_pominiete():
+    """Śledczy R1, P0-2: Obajtek (funkcja do 2024) nie dostaje zamówień spółki z 2026."""
+    company = org()
+    figure = person(company)
+    PublicFigureOrganisationRelation.objects.filter(public_figure=figure).update(
+        since=date(2018, 3, 7), until=date(2024, 3, 7))
+    inside = rec('ted', 'notice', 'in', {'buyer': ['A'], 'value': 10, 'currency': 'PLN',
+                 'winners': [{'id': 'PL5260250995'}]}, 'W kadencji', date(2022, 1, 5))
+    outside = rec('ted', 'notice', 'out', {'buyer': ['B'], 'value': 10, 'currency': 'PLN',
+                  'winners': [{'id': 'PL5260250995'}]}, 'Po kadencji', date(2026, 1, 5))
+    undated = rec('ted', 'notice', 'nodate', {'buyer': ['C'], 'value': 10, 'currency': 'PLN',
+                  'winners': [{'id': 'PL5260250995'}]}, 'Bez daty')
+    ids = {n['id'] for n in get(f'osoba:{figure.pk}')['nodes']}
+    assert f'ted:{inside.pk}' in ids
+    assert f'ted:{outside.pk}' not in ids and f'ted:{undated.pk}' not in ids
+    full = {n['id']: n for n in get(f'osoba:{figure.pk}', cala_historia='1')['nodes']}
+    assert full[f'ted:{outside.pk}']['meta']['outside_tenure'] is True
+    assert 'outside_tenure' not in full[f'ted:{inside.pk}']['meta']
+    # korzeń-spółka nie jest filtrowany okresem funkcji osoby
+    company_ids = {n['id'] for n in get(f'spolka:{company.krs_number}')['nodes']}
+    assert f'ted:{outside.pk}' in company_ids

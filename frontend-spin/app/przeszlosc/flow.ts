@@ -15,7 +15,7 @@ export type FlowData = {
   limits: { max_nodes: number; max_edges: number; truncated: boolean; grouped: { id: string; label: string; count: number; category: string; kind: string }[] };
   legal: { notes: string[]; narrative: boolean }; generated_at: string;
 };
-export type Filters = { categories: Category[] | null; od: string; do: string; unlinked: boolean; depth: number };
+export type Filters = { categories: Category[] | null; od: string; do: string; unlinked: boolean; depth: number; history?: boolean };
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const strings = (v: Record<string, unknown>, keys: string[]) => keys.every(k => typeof v[k] === 'string');
 const nullableString = (v: unknown) => v === null || typeof v === 'string';
@@ -49,13 +49,14 @@ export function readFilters(search: string): Filters {
   let od = dateValue(p.get('od')), end = dateValue(p.get('do'));
   if (od && end && od > end) [od, end] = [end, od];
   return { categories: p.has('kategorie') ? CATEGORY_KEYS.filter(k => p.get('kategorie')!.split(',').includes(k)) : null,
-    od, do: end, unlinked: p.get('pokaz_niepowiazane') === '1', depth: Math.min(3, Math.max(1, Number(p.get('glebokosc')) || 2)) };
+    od, do: end, unlinked: p.get('pokaz_niepowiazane') === '1', depth: Math.min(3, Math.max(1, Number(p.get('glebokosc')) || 2)), history: p.get('cala_historia') === '1' };
 }
 export function flowQuery(filters: Filters, narrative: boolean): string {
   const p = new URLSearchParams({ narracja: narrative ? '1' : '0', glebokosc: String(filters.depth) });
   if (filters.categories !== null) p.set('kategorie', filters.categories.join(','));
   if (filters.od) p.set('od', filters.od); if (filters.do) p.set('do', filters.do);
   p.set('pokaz_niepowiazane', filters.unlinked ? '1' : '0');
+  if (filters.history) p.set('cala_historia', '1');
   return p.toString();
 }
 export const filterCategory = (category: string) => category === 'media' ? 'polityka' : category;
