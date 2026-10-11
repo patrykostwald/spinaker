@@ -15,12 +15,12 @@ import './glosowania.css';
  * Bez kolorów obozów (właściciel 6.10): obóz tylko słowem. Jeden akcent, siła spinu w skali zielony < niebieski < czerwony.
  * Warstwa „Wpływ na narrację” (właściciel 8.10): diagnozy i spin ze spin.clinic tylko po włączeniu (domyślnie wyłączona); wyłączona = badanie przeszłości.
  */
-type Node = { id: string; kind: string; label: string; slug?: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; match_type?: string; material_type?: string; kind_label?: string; links: number };
+type Node = { id: string; kind: string; label: string; slug?: string; text?: string; institution?: boolean; date?: string | null; url?: string; sub?: string; role?: string; camp?: string; intensity?: number; match_type?: string; material_type?: string; kind_label?: string; origin?: string; origin_label?: string; links: number };
 type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
   clubs: { club: string; size: number; votes: Record<string, number> }[]; members: [string, string, string][] };
-type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; votes?: Vote[]; eu_funds?: EuFunds; access?: { beta: boolean; label: string; locked: string[] } };
+type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; record_origins?: Record<string, { label: string; count: number }>; votes?: Vote[]; eu_funds?: EuFunds; access?: { beta: boolean; label: string; locked: string[] } };
 type FirmHit = { id: number; name: string; krs_number: string; nip: string; legal_form: string; url: string };
 type FirmSearch = { results: FirmHit[]; status: string; message?: string; coverage?: { organisations: number; scope: string } };
 type PersonHit = { id: number; slug: string; name: string; role: string; organisation?: string; has_x?: boolean };
@@ -324,15 +324,18 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
     .map(n => ({ id: n.id, outlet: n.sub ?? 'Media', date: n.date ?? null, title: n.label, url: n.url!, material_type: n.material_type, kind_label: n.kind_label, automatic: n.match_type === 'automatic' }));
   if (!data.nodes.length) return <p className="px-msg">Nic nie znaleźliśmy. Spróbuj innego słowa.</p>;
   const counts = ([['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
-    ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['record', 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu'], ['media', 'artykuł', 'artykuły', 'artykułów'],
+    ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['media', 'artykuł', 'artykuły', 'artykułów'],
     ['person', 'osoba lub instytucja', 'osoby i instytucje', 'osób i instytucji']] as const).filter(([k]) => data.counts[k]);
+  // P0-10: rekordy liczymy według źródła (Sejm, TED, rejestr UE...), nie jako jedną pulę „dokumentów Sejmu”
+  const originCounts = (Object.entries(data.record_origins ?? {}) as [string, { label: string; count: number }][]).sort((a, b) => (a[0] === 'sejm' ? -1 : b[0] === 'sejm' ? 1 : b[1].count - a[1].count));
   let lastDay = '';
   return <div className="px-tv" data-busy={busy || undefined} data-hot={hot ? '' : undefined}>
     <header className="px-tv__head">
       <div>
         <p className="px-kicker">{daily ? 'Temat dnia' : 'Temat'}<LayerCaption /></p>
         <h2>{data.topic}</h2>
-        <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}</p>
+        <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}
+          {originCounts.map(([k, o]) => <span key={k}><b>{o.count}</b> {k === 'sejm' ? plural(o.count, 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu') : `${o.label.toLowerCase()}`}</span>)}</p>
       </div>
       <div className="px-tv__tools">
         {!data.access?.locked.includes('alerts') && <Follow kind="topic" target={data.topic} label={data.topic} rss={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} />}
@@ -371,7 +374,7 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
             lastDay = d;
             const who = author.get(n.id);
             const dg = diagnosisOf.get(n.id);
-            const source = n.kind === 'record' ? `Sejm${n.sub ? ` · ${SUB[n.sub] ?? n.sub}` : ''}` : n.kind === 'media' ? (n.sub ?? 'Media') : KIND_LABEL[n.kind];
+            const source = n.kind === 'record' ? (n.origin && n.origin !== 'sejm' ? (n.origin_label ?? 'Rekord publiczny') : `Sejm${n.sub ? ` · ${SUB[n.sub] ?? n.sub}` : ''}`) : n.kind === 'media' ? (n.sub ?? 'Media') : KIND_LABEL[n.kind];
             const cite = `„${n.text ?? n.label}” (${who ? nice(who.label) : (n.sub ?? KIND_LABEL[n.kind])}${who?.role ? `, ${who.role}` : ''}, ${n.date ?? ''}). Źródło: ${n.url ?? ''}. Zestawienie: przeszłość.today, ${window.location.origin}/przeszlosc?q=${encodeURIComponent(data.topic)}&wpis=${encodeURIComponent(n.id)}`;
             return [head, <li key={n.id} className="px-ev" data-kind={n.kind} data-on={hot && who?.id === hot ? '' : undefined} data-copied={copied === n.id || undefined}>
               <div className="px-ev__meta">
@@ -443,7 +446,8 @@ function Brief({ data, events, author, diagnosisOf, onOpen }: { data: Graph; eve
   ];
   if (tops.length) rows.push(['Najwięcej wpisów', <>{tops.map((t, i) => <span key={t.who.id}>{i > 0 && ', '}<button type="button" className="px-name" onClick={() => onOpen({ kind: 'person', id: t.who.id })}>{nice(t.who.label)}</button>
     <small> ({CAMP_LABEL[t.who.camp ?? '']}, {t.n})</small></span>)}</>]);
-  rows.push(['W Sejmie', data.counts.record || data.counts.vote ? `${data.counts.record ?? 0} ${plural(data.counts.record ?? 0, 'dokument', 'dokumenty', 'dokumentów')}, ${data.counts.vote ?? 0} ${plural(data.counts.vote ?? 0, 'głosowanie', 'głosowania', 'głosowań')}` : nb('brak dokumentów w naszej bazie')]);
+  const sejmDocs = data.record_origins?.sejm?.count ?? 0;
+  rows.push(['W Sejmie', sejmDocs || data.counts.vote ? `${sejmDocs} ${plural(sejmDocs, 'dokument', 'dokumenty', 'dokumentów')}, ${data.counts.vote ?? 0} ${plural(data.counts.vote ?? 0, 'głosowanie', 'głosowania', 'głosowań')}` : nb('brak dokumentów w naszej bazie')]);
   if (avg !== null) rows.push(['Średni spin', <><i className="px-spin-dot" style={{ ['--spin' as string]: spinColor(avg) }} />{avg}/100 <small>· {spins.length} {plural(spins.length, 'diagnoza', 'diagnozy', 'diagnoz')} Dr. Spina</small></>]);
   return <section className="px-card px-brief" aria-labelledby="brief-h">
     <h3 id="brief-h" className="px-h3">W 30 sekund</h3>
@@ -766,7 +770,7 @@ function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
 /* Ścieżka w Sejmie: druki, konsultacje i głosowania w temacie po kolei, od najstarszego. */
 function SejmPath({ data }: { data: Graph }) {
   const steps = [
-    ...data.nodes.filter(n => n.kind === 'record' && n.date).map(n => ({ id: n.id, date: n.date!, kind: n.sub ? (SUB[n.sub] ?? n.sub) : 'dokument', title: n.label, url: n.url })),
+    ...data.nodes.filter(n => n.kind === 'record' && n.date).map(n => ({ id: n.id, date: n.date!, kind: n.origin && n.origin !== 'sejm' ? (n.origin_label ?? 'dokument') : n.sub ? (SUB[n.sub] ?? n.sub) : 'dokument', title: n.label, url: n.url })),
     ...(data.votes ?? []).filter(v => v.date).map(v => ({ id: v.id, date: v.date!, kind: 'głosowanie', title: `${v.title}${v.result.yes != null ? ` (za ${v.result.yes}, przeciw ${v.result.no ?? 0})` : ''}`, url: v.url })),
   ].sort((a, b) => a.date.localeCompare(b.date));
   if (steps.length < 2) return null;

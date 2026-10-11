@@ -95,6 +95,22 @@ def _match(fields, words):
 
 EU_FUNDS = {'eu_project': 'Fundusze UE (Kohesio)', 'eu_grant': 'Budżet UE (FTS)'}
 
+# Rodzaj źródła rekordu (Śledczy R2B, P0-10): etykieta i licznik zależą od tego, skąd jest rekord, nie od samego węzła „record”.
+# Tylko rekordy z API Sejmu (i jego komisji, głosowań, wypowiedzi) są „dokumentami Sejmu”.
+SEJM_SOURCES = frozenset({'sejm', 'committees', 'statements', 'videos', 'processes', 'consultations', 'votes'})
+RECORD_ORIGINS = {
+    'ted': 'Ogłoszenia TED (UE)', 'bzp': 'Zamówienia publiczne (BZP)', 'eu_transparency': 'Rejestr przejrzystości UE',
+    'kohesio': 'Fundusze UE (Kohesio)', 'fts': 'Budżet UE (FTS)', 'senat': 'Senat', 'ep': 'Parlament Europejski',
+    'integrity_watch': 'Integrity Watch', 'howtheyvote': 'HowTheyVote', 'cabinet': 'Rząd', 'wikidata': 'Wikidata',
+}
+
+
+def record_origin(source):
+    """(klucz, etykieta) źródła rekordu: 'sejm' dla dokumentów Sejmu, inaczej nazwa faktycznego źródła."""
+    if source in SEJM_SOURCES:
+        return 'sejm', 'Sejm'
+    return source or 'inne', RECORD_ORIGINS.get(source, source or 'Inne źródło')
+
 
 def eu_funds(query, limit=12):
     """Dotacje UE w temacie (Kohesio CC0, FTS CC BY 4.0): beneficjenci-organizacje, kwoty i źródło."""
@@ -147,7 +163,8 @@ def topic_graph(query):
         seen_titles.add(title_key)
         key = node(f'record:{record.pk}', 'record', record.title or f'{record.kind} {record.external_id}',
                    date=record.date.isoformat() if record.date else None, url=record.source_url,
-                   sub=EU_FUNDS.get(record.kind, record.kind))
+                   sub=EU_FUNDS.get(record.kind, record.kind), origin=record_origin(record.source)[0],
+                   origin_label=record_origin(record.source)[1])
         # Fundusze UE (Kohesio, FTS): beneficjent-organizacja z KRS, gdy nazwa jednoznacznie wskazuje obserwowany podmiot
         org_id = (record.data or {}).get('organisation_id') if record.kind in EU_FUNDS else None
         if org_id:
@@ -212,8 +229,12 @@ def topic_graph(query):
         edges.append({'source': f'figure:{rel.public_figure_id}', 'target': key, 'label': rel.organ or rel.public_role})
 
     counts = {}
+    origins = {}
     for item in nodes.values():
         counts[item['kind']] = counts.get(item['kind'], 0) + 1
+        if item['kind'] == 'record':
+            row = origins.setdefault(item['origin'], {'label': item['origin_label'], 'count': 0})
+            row['count'] += 1
     # najpierw osoby z największą liczbą powiązań
     degree = {}
     for edge in edges:
@@ -221,7 +242,7 @@ def topic_graph(query):
     for key, item in nodes.items():
         item['links'] = degree.get(key, 0) + sum(1 for e in edges if e['target'] == key)
     return {'topic': query, 'terms': words, 'nodes': sorted(nodes.values(), key=lambda n: (-n['links'], n.get('date') or '')),
-            'edges': edges, 'counts': counts}
+            'edges': edges, 'counts': counts, 'record_origins': origins}
 
 
 from rest_framework.decorators import api_view, permission_classes  # noqa: E402
@@ -470,7 +491,11 @@ def topic_rss(query):
         return format_datetime(moment.astimezone(dt_utc.utc))
     items = []
     for n in rows:
-        title = kinds[n['kind']] + (' · ' + n['sub'] if n.get('sub') else '') + ': ' + n['label'][:140]
+        if n['kind'] == 'record' and n.get('origin') != 'sejm':
+            prefix = n.get('origin_label') or 'Rekord publiczny'  # TED, rejestr UE itd. nie są „Sejmem”
+        else:
+            prefix = kinds[n['kind']] + (' · ' + n['sub'] if n.get('sub') else '')
+        title = prefix + ': ' + n['label'][:140]
         items.append(f"<item><title>{escape(title)}</title><link>{escape(n.get('url') or page)}</link>"
                      f"<guid isPermaLink='false'>{escape(n['id'])}</guid><pubDate>{rfc822(n['date'])}</pubDate>"
                      f"<description>{escape(n['label'])}</description></item>")

@@ -183,3 +183,25 @@ def test_start_future_records_are_scheduled_not_latest():
     data = APIClient().get('/api/przeszlosc/start/').json()
     assert [r['title'] for r in data['latest']] == ['Dokument 0']
     assert [r['title'] for r in data['scheduled']] == ['Dokument 1']
+
+
+def test_etykiety_rekordow_wedlug_zrodla_a_nie_wszystko_jako_sejm():
+    """Śledczy R2B, P0-10: TED i rejestr UE nie są dokumentami Sejmu ani w licznikach, ani w RSS."""
+    from unittest import mock
+    from news import przeszlosc
+    from news.public_records_models import PublicRecord
+    rows = [('sejm', 'print', 'a', 'https://api.sejm.gov.pl/a'), ('committees', 'committee', 'b', 'https://api.sejm.gov.pl/b'),
+            ('ted', 'notice', 'c', 'https://ted.europa.eu/c'), ('ted', 'notice', 'd', 'https://ted.europa.eu/d'),
+            ('eu_transparency', 'entry', 'e', 'https://transparency-register.europa.eu/e')]
+    for source, kind, key, url in rows:
+        PublicRecord.objects.create(source=source, kind=kind, external_id=key, title=f'CPK wpis {key}', text='CPK',
+                                    source_url=url, response_url=url, response_sha256='0', date=timezone.now().date())
+    graph = topic_graph('CPK')
+    assert graph['counts']['record'] == 5
+    assert graph['record_origins']['sejm']['count'] == 2
+    assert graph['record_origins']['ted'] == {'label': 'Ogłoszenia TED (UE)', 'count': 2}
+    assert graph['record_origins']['eu_transparency']['count'] == 1
+    with mock.patch.object(przeszlosc, 'topic_graph', return_value=graph):
+        body = przeszlosc.topic_rss('CPK')
+    assert 'Ogłoszenia TED (UE): CPK wpis c' in body and 'Sejm · notice' not in body
+    assert body.count('<title>Sejm') == 2
