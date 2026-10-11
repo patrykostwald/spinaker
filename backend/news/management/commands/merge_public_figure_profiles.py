@@ -36,6 +36,25 @@ CONFIRMED_PAIRS = (
 )
 
 
+def candidate_pairs():
+    """Niepołączone pary o identycznej nazwie, z których jedna to profil parlamentarny (cel), a druga z innego źródła.
+
+    Tylko lista do przeglądu przez redakcję (P1-20): nic nie łączy, bo sama nazwa nie dowodzi tożsamości.
+    Redakcja po sprawdzeniu dopisuje parę do CONFIRMED_PAIRS.
+    """
+    confirmed = {source for source, _ in CONFIRMED_PAIRS}
+    by_name = {}
+    for figure in PublicFigure.objects.filter(merged_into__isnull=True).exclude(import_key=''):
+        by_name.setdefault(' '.join(figure.canonical_name.casefold().split()), []).append(figure)
+    pairs = []
+    for group in by_name.values():
+        targets = [f for f in group if f.import_key.startswith('parliamentary:sejm:') and not f.archived]
+        for source in group:
+            if len(targets) == 1 and source is not targets[0] and not source.import_key.startswith('parliamentary:sejm:')                     and source.import_key not in confirmed:
+                pairs.append((source, targets[0]))
+    return pairs
+
+
 def own_role_key(profile):
     return f'profile-role:{profile.import_key}'
 
@@ -88,8 +107,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--apply', action='store_true', help='Zapisz zmiany (domyślnie tylko plan).')
         parser.add_argument('--restore', action='store_true', help='Cofnij połączenia z tej listy.')
+        parser.add_argument('--candidates', action='store_true',
+                            help='Tylko wypisz pary o tej samej nazwie do potwierdzenia przez redakcję (nic nie zmienia).')
 
     def handle(self, *args, **options):
+        if options['candidates']:
+            for source, target in candidate_pairs():
+                self.stdout.write(f"DO POTWIERDZENIA  ('{source.import_key}', '{target.import_key}'),  # {source.canonical_name}")
+            return
         if options['restore']:
             return self._restore(options['apply'])
         todo = []
