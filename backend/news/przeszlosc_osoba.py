@@ -591,7 +591,7 @@ def export_rows(figure, data):
     for p in posts:
         d = diagnoses.get(p.pk)
         rows.append(ex.row(p.published_at.date().isoformat(), 'wpis na X', p.text, d.intensity if d else '', p.url, f'X (@{p.account.handle})',
-                           'konto potwierdzone', f'post:{p.pk}', stamp))
+                           'konto potwierdzone', f'post:{p.pk}', ex.day(getattr(p, 'fetched_at', None))))
     if total > len(posts):
         omitted.append(('wpisów na X', total - len(posts)))
     full['posts'] = [{'id': p.pk, 'date': p.published_at.date().isoformat(), 'text': p.text, 'url': p.url, 'handle': p.account.handle,
@@ -606,7 +606,7 @@ def export_rows(figure, data):
         seen.add(r.pk)
         docs.append(r)
         rows.append(ex.row(r.date.isoformat() if r.date else '', RECORD_LABEL.get(r.kind, DOCUMENT_LABEL), (r.title or '')[:300], '', r.source_url,
-                           f'Sejm ({r.source})', 'wysoka: oficjalny identyfikator Sejmu' if identities else 'potwierdzony profil', f'rekord:{r.pk}', stamp))
+                           f'Sejm ({r.source})', 'wysoka: oficjalny identyfikator Sejmu' if identities else 'potwierdzony profil', f'rekord:{r.pk}', ex.day(r.fetched_at)))
     if record_total > cap:
         omitted.append(('dokumentów Sejmu', record_total - cap))
     full['documents'] = [{'id': r.pk, 'kind': RECORD_LABEL.get(r.kind, DOCUMENT_LABEL), 'title': r.title, 'date': r.date.isoformat() if r.date else None,
@@ -618,7 +618,7 @@ def export_rows(figure, data):
     for b in ballots.select_related('voting__article').order_by('-voting__article__published_date', '-pk')[:cap]:
         day = b.voting.article.published_date.date().isoformat() if b.voting.article.published_date else ''
         rows.append(ex.row(day, f"głosowanie: {VOTE_LABEL.get(b.vote, 'inne')}", b.voting.article.title[:300], '', vote_url(b.voting), 'Sejm (głosowania imienne)',
-                           'wysoka: oficjalny identyfikator Sejmu', f'glosowanie:{b.voting.term}/{b.voting.sitting}/{b.voting.number}', stamp))
+                           'wysoka: oficjalny identyfikator Sejmu', f'glosowanie:{b.voting.term}/{b.voting.sitting}/{b.voting.number}', ''))
         votes.append({'date': day or None, 'title': b.voting.article.title, 'vote': VOTE_LABEL.get(b.vote, 'inne'), 'url': vote_url(b.voting)})
     if ballot_total > cap:
         omitted.append(('głosowań', ballot_total - cap))
@@ -627,15 +627,15 @@ def export_rows(figure, data):
     for o in data.get('organisations', []):
         rows.append(ex.row(o.get('since') or '', 'funkcja w KRS (kontekst, nie dowód)', f"{o['name']}: {o.get('organ') or o.get('public_role')}", '',
                            o['official_register_url'], 'KRS (api-krs.ms.gov.pl)', f"potwierdzona ({o.get('verification_method') or 'redakcja'})",
-                           f"krs:{o['krs_number']}", stamp))
+                           f"krs:{o['krs_number']}", ''))
     mats = data.get('materials', {})
     for m in mats.get('results', []):
         rows.append(ex.row(str(m.get('published_date') or '')[:10], 'artykuł', m['title'], '', m['url'], m.get('source') or 'media',
-                           'potwierdzone przez człowieka (nie po samej nazwie)', f"artykul:{m['id']}", stamp))
+                           'potwierdzone przez człowieka (nie po samej nazwie)', f"artykul:{m['id']}", ''))
     if mats.get('count', 0) > len(mats.get('results', [])):
         omitted.append(('artykułów', mats['count'] - len(mats['results'])))
     for what, n in omitted:
-        rows.append(ex.omitted_row(n, what, stamp))
+        rows.append(ex.omitted_row(n, what, ''))
     return rows, full, omitted, pid
 
 
@@ -643,7 +643,7 @@ def export_csv(figure, data):
     from news import przeszlosc_eksport as ex
     rows, _, omitted, pid = export_rows(figure, data)
     stamp = ex.today()
-    footer = [f"Cytowanie: {ex.citation(data['name'], 'profil osoby publicznej', stamp, ex.SITE + '/przeszlosc/osoba/' + str(data['slug']))}",
+    footer = [ex.FETCH_NOTE, f"Cytowanie: {ex.citation(data['name'], 'profil osoby publicznej', stamp, ex.SITE + '/przeszlosc/osoba/' + str(data['slug']))}",
               'Każdy wiersz prowadzi do oryginału. Funkcje w KRS i wzmianki to kontekst, nie dowód winy ani związku.']
     if omitted:
         footer.append('UWAGA: eksport niepełny: ' + '; '.join(f'pominięto {n} {what}' for what, n in omitted) + '.')

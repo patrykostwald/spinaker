@@ -47,5 +47,16 @@ def csv_text(rows, footer, columns=COLUMNS):
     return out.getvalue()
 
 
+FETCH_NOTE = ('Każdy: data_pobrania to data pobrania danych źródłowych przez przeszłość.today, nie data eksportu. '
+              'Puste pole oznacza, że nie mamy zapisanej daty pobrania tego rekordu. Datę eksportu podaje przypis.')
+
+
+def day(value):
+    """Data (RRRR-MM-DD) z daty/czasu pobrania albo tekstu ISO; brak = pusty tekst, nie zgadujemy."""
+    if not value:
+        return ''
+    return value.date().isoformat() if hasattr(value, 'date') else str(value)[:10]
+
+
 def today():
     return timezone.localdate().isoformat()

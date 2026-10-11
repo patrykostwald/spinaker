@@ -171,7 +171,7 @@ def org_node(graph, org, level):
 
 
 def figure_node(graph, figure, level):
-    return graph.node(f'figure:{figure.pk}', 'person', figure.canonical_name, level,
+    return graph.node(f'figure:{figure.pk}', 'person', person.display_name(figure.canonical_name), level,
                       'polityka' if level == 0 else 'spolki', source('profile', figure.evidence_url),
                       url=f'/przeszlosc/osoba/{person.slug(figure)}', structural=True)
 
@@ -429,6 +429,23 @@ def politics(graph, figure):
                        since=row['published_date'], certainty='name_only')
 
 
+def flag_relative_suspects(graph):
+    """Ta sama flaga amount_suspect co w widoku spółki (kwota od 1 mld i ponad 100x mediany swojej waluty i rodzaju): kwota znika
+    z węzła i jego krawędzi, flaga i zgłoszona kwota zostają w meta, żeby klient nie zsumował kwoty do weryfikacji."""
+    for kind in ('contract', 'grant'):
+        rows = [{'node': n, 'amount': n['amount'], 'currency': n['currency']} for n in graph.nodes.values()
+                if n['kind'] == kind and n['amount'] is not None]
+        for row in money.mark_suspect(rows):
+            node = row['node']
+            if not row['amount_suspect'] or node['meta'].get('amount_suspect'):
+                continue
+            node['meta'] = {**node['meta'], 'amount_suspect': True, 'reported_amount': node['amount']}
+            node['amount'] = None
+            for edge in graph.edges.values():
+                if node['id'] in (edge['from'], edge['to']):
+                    edge['amount'] = None
+
+
 def build(root_object, is_person, opts):
     graph = Graph(opts)
     root = figure_node(graph, root_object, 0) if is_person else org_node(graph, root_object, 0)
@@ -445,6 +462,7 @@ def build(root_object, is_person, opts):
         finance(graph, orgs)
     if opts['depth'] == 3 and 'spolki' in opts['categories'] and orgs:
         relations(graph, organisations=orgs)
+    flag_relative_suspects(graph)
     graph.grouped = +graph.grouped  # Counter discards zero counts.
     return graph.finish(root)
 
@@ -502,16 +520,25 @@ def export_response(data, ident, fmt, part):
         response['Content-Disposition'] = f'attachment; filename="{name}.json"'
         return response
     labels = {n['id']: n['label'] for n in data['nodes']}
+    by_id = {n['id']: n for n in data['nodes']}
+
+    def fetched(edge):
+        # Krawędź dziedziczy datę pobrania z węzła o tym samym źródle (rekord, z którego powstała); brak = puste, z przypisem.
+        for end in (edge['to'], edge['from']):
+            src = (by_id.get(end) or {}).get('source') or {}
+            if src.get('key') == edge['source_key'] and src.get('retrieved_at'):
+                return ex.day(src['retrieved_at'])
+        return ''
     if part == 'krawedzie':
         cols = ['od', 'do', 'relacja', 'data_od', 'data_do', 'kwota', 'waluta', 'zrodlo', 'data_pobrania', 'pewnosc_powiazania', 'identyfikator']
         rows = [[ex.safe(labels.get(e['from'], e['from'])), ex.safe(labels.get(e['to'], e['to'])), ex.safe(e['label']), e['date_from'] or '', e['date_to'] or '',
-                 '' if e['amount'] is None else e['amount'], e['currency'] or '', e['source_key'], stamp, CERTAINTY.get(e['certainty'], e['certainty']), e['id']]
+                 '' if e['amount'] is None else e['amount'], e['currency'] or '', e['source_key'], fetched(e), CERTAINTY.get(e['certainty'], e['certainty']), e['id']]
                 for e in data['edges']]
     else:
         cols = ['identyfikator', 'rodzaj', 'etykieta', 'kategoria', 'poziom', 'data', 'kwota', 'waluta', 'link', 'zrodlo', 'data_pobrania', 'pewnosc_powiazania']
         rows = [[n['id'], n['kind'], ex.safe(n['label']), n['category'], n['level'], n['date'] or '', '' if n['amount'] is None else n['amount'], n['currency'] or '',
-                 n['url'] or '', (n.get('source') or {}).get('key', ''), stamp, CERTAINTY.get(n['certainty'], n['certainty'])] for n in data['nodes']]
-    footer = [f'Cytowanie: {cite}', *data['legal']['notes']]
+                 n['url'] or '', (n.get('source') or {}).get('key', ''), ex.day((n.get('source') or {}).get('retrieved_at')), CERTAINTY.get(n['certainty'], n['certainty'])] for n in data['nodes']]
+    footer = [f'Cytowanie: {cite}', ex.FETCH_NOTE, *data['legal']['notes']]
     footer += [f"UWAGA: eksport niepełny: pominięto {g['count']} elementów ({g['category']}/{g['kind']}) - limit rozmiaru drzewa." for g in omitted]
     response = HttpResponse(ex.csv_text(rows, footer, cols), content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="{name}-{part}.csv"'

@@ -129,7 +129,7 @@ def contracts(org, ids):
             out.append({'id': f'ted:{r.pk}', 'source': 'ted', 'role': ROLE['ted'], 'title': (r.title or '')[:300],
                         'party': '; '.join(r.data.get('buyer') or [])[:300], 'amount': _amount(r.data.get('value')),
                         'currency': r.data.get('currency') or '', 'date': r.date.isoformat() if r.date else None,
-                        'kind': r.data.get('notice_type', ''), 'url': r.source_url, 'matched_by': hit})
+                        'kind': r.data.get('notice_type', ''), 'url': r.source_url, 'matched_by': hit, 'fetched': r.fetched_at.date().isoformat()})
     nip = ids.get('NIP')
     if nip:
         for r in _records('bzp', 'notice', 'organizationNationalId', [nip]):
@@ -138,7 +138,7 @@ def contracts(org, ids):
                 out.append({'id': f'bzp:{r.pk}', 'source': 'bzp', 'role': ROLE['bzp'], 'title': (r.title or '')[:300],
                             'party': str(r.data.get('organizationName') or '')[:300], 'amount': None, 'currency': '',
                             'date': r.date.isoformat() if r.date else None, 'kind': str(r.data.get('noticeType') or ''),
-                            'url': r.source_url, 'matched_by': hit})
+                            'url': r.source_url, 'matched_by': hit, 'fetched': r.fetched_at.date().isoformat()})
     out.sort(key=lambda x: (x['date'] or ''), reverse=True)
     return mark_suspect(out)
 
@@ -153,7 +153,7 @@ def grants(org, ids):
             out.append({'id': f'fts:{r.pk}', 'source': 'fts', 'title': (r.data.get('subject') or r.title or '')[:300],
                         'programme': str(r.data.get('programme') or '')[:200], 'amount': _amount(r.data.get('amount')),
                         'currency': 'EUR', 'date': r.date.isoformat() if r.date else None, 'year': r.data.get('year'),
-                        'url': r.source_url, 'matched_by': hit})
+                        'url': r.source_url, 'matched_by': hit, 'fetched': r.fetched_at.date().isoformat()})
     return mark_suspect(out)
 
 
@@ -164,19 +164,19 @@ def unlinked(org, linked_pks, limit=PER_BRANCH):
             .exclude(pk__in=linked_pks).order_by(F('date').desc(nulls_last=True), '-pk')[:limit])
     return [{'id': f'{r.source}:{r.pk}', 'source': r.source, 'title': (r.data.get('project') or r.data.get('subject') or r.title or '')[:300],
              'amount': _amount(r.data.get('eu_budget') if r.kind == 'eu_project' else r.data.get('amount')), 'currency': 'EUR',
-             'date': r.date.isoformat() if r.date else None, 'url': r.source_url, 'reason': UNLINKED_REASON} for r in rows]
+             'date': r.date.isoformat() if r.date else None, 'url': r.source_url, 'reason': UNLINKED_REASON, 'fetched': r.fetched_at.date().isoformat()} for r in rows]
 
 
 def people(org):
     """Osoby publiczne z potwierdzoną funkcją w podmiocie; odnośnik do profilu przeszłość.today."""
     from news.political_models import PublicFigureOrganisationRelation
-    from news.przeszlosc_osoba import slug
+    from news.przeszlosc_osoba import display_name, slug
     rows = (PublicFigureOrganisationRelation.objects.filter(organisation=org, verification_status='confirmed', public_figure__archived=False)
             .select_related('public_figure').order_by('relation_status', 'public_figure__canonical_name'))
     out = []
     for r in rows:
         f = r.public_figure
-        out.append({'id': f'figure:{f.pk}', 'figure_id': f.pk, 'name': f.canonical_name, 'slug': slug(f), 'profile_url': f'/przeszlosc/osoba/{slug(f)}',
+        out.append({'id': f'figure:{f.pk}', 'figure_id': f.pk, 'name': display_name(f.canonical_name), 'slug': slug(f), 'profile_url': f'/przeszlosc/osoba/{slug(f)}',
                     'role': r.organ or r.public_role, 'function': r.public_role, 'status': r.relation_status,
                     'since': r.since.isoformat() if r.since else None, 'until': r.until.isoformat() if r.until else None,
                     'method': r.verification_method, 'url': r.evidence_url})
@@ -251,17 +251,17 @@ def export_csv(org, data):
     rows = []
     for x in data['contracts']:
         rows.append(ex.row(x['date'] or '', f"zamówienie publiczne ({x['role']})", f"{x['title'] or x['party']} | {x['party']} | {_amount_text(x)}", '', x['url'],
-                           x['source'].upper(), f"wysoka: identyfikator {x['matched_by']}", x['id'], stamp))
+                           x['source'].upper(), f"wysoka: identyfikator {x['matched_by']}", x['id'], ex.day(x.get('fetched'))))
     for x in data['grants']:
         rows.append(ex.row(x['date'] or str(x.get('year') or ''), 'dotacja UE', f"{x['title'] or x['programme']} | {x['programme']} | {_amount_text(x)}", '', x['url'],
-                           'FTS', f"wysoka: identyfikator {x['matched_by']}", x['id'], stamp))
+                           'FTS', f"wysoka: identyfikator {x['matched_by']}", x['id'], ex.day(x.get('fetched'))))
     for x in data['people']:
         rows.append(ex.row(x['since'] or '', 'funkcja w KRS (kontekst, nie dowód)', f"{x['name']}: {x['role']}" + (f" (do {x['until']})" if x['until'] else ''), '',
-                           x['url'], 'KRS (api-krs.ms.gov.pl)', f"potwierdzona ({x['method']})", x['id'], stamp))
+                           x['url'], 'KRS (api-krs.ms.gov.pl)', f"potwierdzona ({x['method']})", x['id'], ex.day(org.source_checked_at)))
     for x in data['unlinked']:
         rows.append(ex.row(x['date'] or '', 'NIEPOWIĄZANE (tylko nazwa, poza sumami)', f"{x['title']} | {_amount_text(x)}", '', x['url'], x['source'].upper(),
-                           'niska: zgodność nazwy, bez identyfikatora', x['id'], stamp))
-    footer = [f"Podmiot: {org.name}, KRS {org.krs_number}" + (f", NIP {org.nip}" if org.nip else ', NIP: brak w naszych danych') + (f", REGON {org.regon}" if org.regon else ''),
+                           'niska: zgodność nazwy, bez identyfikatora', x['id'], ex.day(x.get('fetched'))))
+    footer = [ex.FETCH_NOTE, f"Podmiot: {org.name}, KRS {org.krs_number}" + (f", NIP {org.nip}" if org.nip else ', NIP: brak w naszych danych') + (f", REGON {org.regon}" if org.regon else ''),
               f"Cytowanie: {ex.citation(org.name, 'drzewo przepływu pieniędzy spółki', stamp, f'{ex.SITE}/przeszlosc/spolka/{org.krs_number}')}", NOTE]
     if len(data['unlinked']) >= ex.EXPORT_CAP:
         footer.append(f'UWAGA: eksport niepełny: pominięto część niepowiązanych rekordów (limit {ex.EXPORT_CAP}).')
