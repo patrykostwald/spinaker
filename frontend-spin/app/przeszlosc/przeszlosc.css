@@ -257,7 +257,7 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
   .px-pp__axis > span:last-child { justify-self: end; }
   .px .px-dn__seg { display: inline-flex; }
   .px .px-dn__seg button { min-height: 40px; padding: 0 8px; }
-  .px-pp .px-tv__tools { flex-wrap: nowrap; }
+  .px-pp .px-tv__tools { flex-wrap: wrap; } /* P2-1: przyciski zawijają się zamiast nachodzić na siebie i wychodzić poza ekran */
   .px-pp .px-tv__tools .px-tool { padding: 0 10px; min-width: 0; }
   .px-pp__legend { grid-row: 2; grid-column: 1 / -1; justify-content: flex-start; }
   .px-dn__grid { grid-template-columns: minmax(0, 1fr); }

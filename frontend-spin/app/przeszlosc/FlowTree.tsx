@@ -70,6 +70,7 @@ export function FlowTree({ ident }: { ident: string }) {
   const graph = useMemo(() => data && filters ? visibleFlow(data, filters, narrative) : null, [data, filters, narrative]);
   const layout = useMemo(() => flowLayout(layoutData ? visibleFlow(layoutData, { categories: null, od: '', do: '', unlinked: true, depth: 3 }, narrative).nodes : []), [layoutData, narrative]);
   const positions = useMemo(() => new Map(layout.nodes.map(p => [p.node.id, p])), [layout]);
+  const labels = useMemo(() => new Map((graph?.nodes ?? []).map(n => [n.id, n.label])), [graph]);
   useEffect(() => {
     if (state !== 'ready' || !graph || centeredRoot.current === ident) return;
     const root = positions.get(graph.root.id);
@@ -178,7 +179,8 @@ export function FlowTree({ ident }: { ident: string }) {
                     const down = b.y >= a.y, x1 = a.x + NODE_W / 2, x2 = b.x + NODE_W / 2, y1 = a.y + (down ? NODE_H : 0), y2 = b.y + (down ? 0 : NODE_H);
                     const mid = (y1 + y2) / 2, d = a.y === b.y ? `M${x1},${y1} C${x1},${y1 + 90} ${x2},${y2 + 90} ${x2},${y2}` : `M${x1},${y1} C${x1},${mid} ${x2},${mid} ${x2},${y2}`;
                     const label = [e.date_from, e.date_to && e.date_to !== e.date_from ? `- ${e.date_to}` : '', e.amount !== null ? money(e.amount, e.currency) : ''].filter(Boolean).join(' · ') || e.label;
-                    return <g key={e.id} data-selected={edge?.id === e.id} className="px-flow__edge" onClick={() => open('edge', e.id)}>
+                    return <g key={e.id} data-selected={edge?.id === e.id} className="px-flow__edge" role="button" tabIndex={0} aria-label={`Powiązanie: ${labels.get(e.from) ?? ''} - ${labels.get(e.to) ?? ''}, ${e.label}${label !== e.label ? `, ${label}` : ''}. Pokaż źródło`}
+                      onClick={() => open('edge', e.id)} onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open('edge', e.id); } }}>
                       <path className="px-flow__edge-hit" d={d} /><path className="px-flow__edge-line" d={d} strokeWidth={edgeWidth(e.amount)} strokeDasharray={e.certainty === 'name_only' ? '5 5' : undefined} markerEnd="url(#flow-arrow)" />
                       <text x={(x1 + x2) / 2} y={a.y === b.y ? y1 + 65 : mid - 8} textAnchor="middle">{label}</text><title>{e.label}: {label}</title></g>;
                   })}

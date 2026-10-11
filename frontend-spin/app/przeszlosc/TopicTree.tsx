@@ -539,7 +539,7 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
     else if (n.url) window.open(n.url, '_blank', 'noopener');
   };
   const item = (n: Node, i: number, depth?: number) => <li key={n.id} style={{ ['--i' as string]: i, ['--depth' as string]: depth ?? 0 }}>
-    <button type="button" className="px-node" data-g={n.id} data-kind={n.kind} data-on={lit?.has(n.id) || undefined} data-dim={lit && !lit.has(n.id) ? '' : undefined}
+    <button type="button" className="px-node" data-g={n.id} data-kind={n.kind} aria-label={[KIND_LABEL[n.kind], nice(n.label), n.kind === 'person' ? n.role : n.kind === 'organisation' ? n.sub : n.date ? short(n.date) : ''].filter(Boolean).join(', ')} data-on={lit?.has(n.id) || undefined} data-dim={lit && !lit.has(n.id) ? '' : undefined}
       onPointerEnter={e => { if (e.pointerType === 'mouse') setHot(n.id); }} onPointerLeave={() => setHot(null)} onFocus={e => { if (e.currentTarget.matches(':focus-visible')) setHot(n.id); }} onBlur={() => setHot(null)} onClick={() => open(n)}>
       <span className="px-sr">{KIND_LABEL[n.kind] ?? ''}: </span>{(n.kind === 'vote' || n.kind === 'organisation') && <span className="px-sr"> (otwiera nową kartę)</span>}
       <span className="px-node__ic"><Icon name={iconOf(n)} /></span>
