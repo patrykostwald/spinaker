@@ -133,12 +133,37 @@ def surname_only_hit(pattern, text):
     return False
 
 
+def roster_identity(figure):
+    """Oficjalny identyfikator rosteru (źródło, id) albo None; to jedyny twardy dowód „ta sama osoba” poza scaleniem."""
+    entry = figure.parliamentary_roster_entry if figure.parliamentary_roster_entry_id else None
+    return (entry.source, entry.external_id) if entry else None
+
+
+def same_person(a, b):
+    """Dwa rekordy rejestru to jedna osoba tylko z twardego dowodu: ten sam wpis oficjalnego rosteru albo ten sam
+    oficjalny adres profilu. Samo to samo imię i nazwisko NIE wystarcza (ochrona prawdziwych imienników)."""
+    if a.pk == b.pk:
+        return True
+    ia, ib = roster_identity(a), roster_identity(b)
+    if ia and ia == ib:
+        return True
+    return bool(a.official_profile_url) and a.official_profile_url == b.official_profile_url
+
+
+def namesakes(figure, normalized):
+    """Inne rekordy z tym samym imieniem i nazwiskiem, które nie są tą samą osobą (scalone aliasy pomijamy)."""
+    same_name = [f for f in PublicFigure.objects.filter(merged_into__isnull=True, canonical_name__icontains=normalized.split()[-1])
+                 .exclude(pk=figure.pk).select_related('parliamentary_roster_entry')
+                 if normalize_name(f.canonical_name) == normalized]
+    return [f for f in same_name if not same_person(figure, f)]
+
+
 def unique_surname(figure, normalized):
     """Nazwisko występuje w rejestrze tylko u tej osoby (z aliasami scalonymi do niej)."""
     surname = normalized.split()[-1]
-    others = [n for n in PublicFigure.objects.filter(merged_into__isnull=True, canonical_name__iendswith=surname)
-              .exclude(pk=figure.pk).values_list('canonical_name', flat=True)
-              if normalize_name(n).split()[-1:] == [surname]]
+    others = [f for f in PublicFigure.objects.filter(merged_into__isnull=True, canonical_name__iendswith=surname)
+              .exclude(pk=figure.pk).select_related('parliamentary_roster_entry')
+              if normalize_name(f.canonical_name).split()[-1:] == [surname] and not same_person(figure, f)]
     return not others
 
 
@@ -174,29 +199,56 @@ def candidate_filter(surname):
     return query
 
 
+REASONS = {
+    'archived': 'Profil archiwalny: wzmianki nie są wyszukiwane.',
+    'merged': 'Profil scalony z inną osobą: wzmianki są przy profilu docelowym.',
+    'name_form': 'Nazwa w rejestrze (jedno słowo lub nazwisko poniżej 4 liter) nie pozwala szukać po imieniu i nazwisku.',
+    'homonym': 'Wzmianki wstrzymane: dwie osoby o tym nazwisku w rejestrze.',
+}
+
+
+def empty_mentions(code):
+    return {'results': [], 'total': 0, 'total_capped': False, 'limit': MENTION_LIMIT, 'reason_code': code,
+            'reason': REASONS.get(code, '')}
+
+
+def corpus_scope():
+    """Zakres przeszukanych artykułów (liczba i daty), do komunikatu „brak w naszych danych” (cache 10 minut)."""
+    scope = cache.get('media-mentions:scope')
+    if scope is None:
+        from django.db.models import Count, Max, Min
+        agg = Article.objects.filter(published_date__isnull=False).aggregate(n=Count('pk'), a=Min('published_date'), b=Max('published_date'))
+        scope = {'articles': agg['n'], 'from': agg['a'].date().isoformat() if agg['a'] else None,
+                 'to': agg['b'].date().isoformat() if agg['b'] else None}
+        cache.set('media-mentions:scope', scope, CACHE_SECONDS)
+    return scope
+
+
 def mentions_data(figure):
-    """Do 100 odnośników z całej bazy artykułów (wybór po formach nazwiska), cache 10 minut.
+    """Do 100 odnośników (najnowsze) z całej bazy artykułów (wybór po formach nazwiska), cache 10 minut.
 
     Pewność: high = pełne imię i nazwisko, medium = samo nazwisko jednoznaczne w rejestrze.
+    `total` to prawdziwa liczba trafień (wśród najwyżej CANDIDATE_LIMIT kandydatów; `total_capped`, gdy limit
+    techniczny mógł ją obciąć), `results` to najwyżej MENTION_LIMIT z nich. Pusty wynik niesie `reason`.
     Registry ambiguity and editorial exclusions are checked even for cache hits.
-    Archived independent identities still block homonyms; merged aliases do not.
+    Archived independent identities still block homonyms; merged aliases and the same person (ten sam wpis
+    oficjalnego rosteru lub adres profilu) do not.
     """
-    empty = {'results': []}
-    if figure.archived or figure.merged_into_id:
-        return empty
+    if figure.archived:
+        return empty_mentions('archived')
+    if figure.merged_into_id:
+        return empty_mentions('merged')
     pattern = name_pattern(figure.canonical_name)
     if pattern is None:
-        return empty
+        return empty_mentions('name_form')
     normalized = normalize_name(figure.canonical_name)
-    same_names = sum(normalize_name(name) == normalized for name in
-                     PublicFigure.objects.filter(merged_into__isnull=True).values_list('canonical_name', flat=True))
-    if same_names != 1:
-        return empty
+    if namesakes(figure, normalized):
+        return empty_mentions('homonym')
     surname_pattern = surname_only_pattern(figure.canonical_name) if unique_surname(figure, normalized) else None
     digest = hashlib.sha256(normalized.encode('utf-8')).hexdigest()[:20]
-    key = f'media-mentions:v2:{figure.pk}:{digest}:{int(bool(surname_pattern))}'
-    matches = cache.get(key)
-    if matches is None:
+    key = f'media-mentions:v3:{figure.pk}:{digest}:{int(bool(surname_pattern))}'
+    cached = cache.get(key)
+    if cached is None:
         # Kandydaci z bazy po nazwisku (najnowsi pierwsi); dopiero regex rozstrzyga o dopasowaniu.
         candidates = list(Article.objects.filter(candidate_filter(normalized.split()[-1]), published_date__isnull=False)
                           .order_by('-published_date').values(
@@ -207,7 +259,9 @@ def mentions_data(figure):
             hit = matched_field(pattern, article, surname_pattern)
             if hit:
                 matches.append({**article, 'matched_in': hit[0], 'confidence': hit[1]})
-        cache.set(key, matches, CACHE_SECONDS)
+        cached = {'matches': matches, 'capped': len(candidates) >= CANDIDATE_LIMIT}
+        cache.set(key, cached, CACHE_SECONDS)
+    matches = cached['matches']
     ids = [row['pk'] for row in matches]
     excluded = set(figure.article_references.filter(
         verification_status__in=('confirmed', 'rejected'), article_id__in=ids,
@@ -215,10 +269,9 @@ def mentions_data(figure):
     # Recheck source visibility and deletion instead of trusting stale metadata.
     live = dict(Article.objects.filter(pk__in=ids, source__is_active=True).values_list('pk', 'source__name'))
     from news.material_type import MATERIAL_LABELS, classify_material_type
+    eligible = [row for row in matches if row['pk'] not in excluded and row['pk'] in live]
     results = []
-    for row in matches:
-        if row['pk'] in excluded or row['pk'] not in live:
-            continue
+    for row in eligible[:MENTION_LIMIT]:
         material_type = classify_material_type({**row, 'automatic_match': True})
         results.append({
             'id': row['pk'], 'title': row['title'], 'url': row['url'],
@@ -229,8 +282,14 @@ def mentions_data(figure):
             'match_method': 'name_only',  # po samym nazwisku w tytule lub opisie; nie jest to identyfikator
             'kind_label': MATERIAL_LABELS[material_type],
         })
-        if len(results) >= MENTION_LIMIT:
-            break
     from news.article_changes import attach_change_flags
     attach_change_flags(results)
-    return {'results': results}
+    out = {'results': results, 'total': len(eligible), 'total_capped': bool(cached['capped'] and eligible),
+           'limit': MENTION_LIMIT, 'reason_code': '', 'reason': ''}
+    if not eligible:
+        scope = corpus_scope()
+        out.update(reason_code='excluded' if matches else 'none', scope=scope,
+                   reason='Wszystkie trafienia zostały odrzucone lub potwierdzone redakcyjnie.' if matches else
+                   f"Brak w naszych danych: przeszukano {scope['articles']} artykułów"
+                   + (f" z {scope['from']} do {scope['to']}" if scope['from'] else '') + '.')
+    return out

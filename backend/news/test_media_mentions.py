@@ -224,3 +224,46 @@ def test_krotkie_nazwisko_bez_jednoznacznosci_nie_trafia(source):
     person('Adam Tusk')
     article(source, title='Premier Tusk w Brukseli')
     assert mm.mentions_data(figure)['results'] == []
+
+
+@pytest.mark.django_db
+def test_podwojny_profil_tej_samej_osoby_nie_blokuje_wzmianek_a_imiennik_tak(source):
+    """Śledczy R2B, P0-9: ten sam wpis rosteru lub adres profilu = jedna osoba; sam zbieg nazwisk dalej blokuje."""
+    from news.political_models import ParliamentaryRosterEntry
+    entry = ParliamentaryRosterEntry.objects.create(source='senat', external_id='77', full_name='Jan Kowalski',
+                                                    source_url='https://senat.example/77')
+    first = person(parliamentary_roster_entry=entry, status='former')
+    second = person(status='current', parliamentary_roster_entry=entry)
+    article(source)
+    assert mm.mentions_data(first)['results'] and mm.mentions_data(second)['results']
+    assert mm.mentions_data(first)['total'] == 1
+    # ten sam adres profilu bez rosteru
+    cache.clear()
+    other = person('Anna Nowak', official_profile_url='https://example.test/anna')
+    twin = person('Anna Nowak', official_profile_url='https://example.test/anna')
+    article(source, title='Anna Nowak mówi')
+    assert mm.mentions_data(other)['results'] and mm.mentions_data(twin)['results']
+    # prawdziwy imiennik: brak dowodu tożsamości, wzmianki wstrzymane z wyjaśnieniem zamiast cichego 0
+    cache.clear()
+    stranger = person(official_profile_url='https://example.test/inny-jan')
+    held = mm.mentions_data(first)
+    assert held['results'] == [] and held['reason_code'] == 'homonym'
+    assert held['reason'] == 'Wzmianki wstrzymane: dwie osoby o tym nazwisku w rejestrze.'
+    assert mm.mentions_data(stranger)['reason_code'] == 'homonym'
+
+
+@pytest.mark.django_db
+def test_zero_wzmianek_ma_wyjasnienie_z_zakresem_i_licznik_pokazuje_prawdziwa_liczbe(source):
+    """Śledczy R2B, P0-9 i P1-13: puste wzmianki niosą przyczynę; total liczy trafienia ponad limit wyniku."""
+    figure = person('Marek Zerowy')
+    article(source, title='Inny temat')
+    empty = mm.mentions_data(figure)
+    assert empty['results'] == [] and empty['reason_code'] == 'none'
+    assert empty['reason'].startswith('Brak w naszych danych: przeszukano 1 artykułów z ')
+    assert mm.mentions_data(person(archived=True))['reason_code'] == 'archived'
+    many = person('Jan Wielki')
+    Article.objects.bulk_create([Article(source=source, title='Jan Wielki', published_date=timezone.now(),
+                                         url=f'https://example.test/w/{i}') for i in range(130)])
+    data = mm.mentions_data(many)
+    assert len(data['results']) == 100 and data['total'] == 130 and data['limit'] == 100
+    assert data['total_capped'] is False and data['reason'] == ''
