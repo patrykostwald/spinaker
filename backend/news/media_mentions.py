@@ -195,4 +195,6 @@ def mentions_data(figure):
         })
         if len(results) >= MENTION_LIMIT:
             break
+    from news.article_changes import attach_change_flags
+    attach_change_flags(results)
     return {'results': results}

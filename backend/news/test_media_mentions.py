@@ -99,7 +99,7 @@ def test_cache_and_live_exclusion_and_inactive_source(source, monkeypatch, djang
     row = article(source)
     assert mm.mentions_data(figure)['results']
     monkeypatch.setattr(mm, 'matched_field', lambda *args: pytest.fail('Cache missed'))
-    with django_assert_num_queries(4):  # +1: sprawdzenie jednoznaczności nazwiska
+    with django_assert_num_queries(5):  # +1: sprawdzenie jednoznaczności nazwiska, +1: strażnik cytatu (zmiany tekstu)
         assert mm.mentions_data(figure)['results']
     PublicFigureArticleReference.objects.create(public_figure=figure, article=row,
         reference_kind='mentioned', verification_status='rejected')

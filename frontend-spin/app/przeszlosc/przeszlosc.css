@@ -453,3 +453,7 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
 .px-tools__list b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .px-tools__list small { font-size: 12px; color: var(--sc-muted, #9a9a9a); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .px-tools .px-note { margin-top: 12px; }
+
+/* F2: strażnik cytatu - mała etykieta stanu po prawej od tytułu */
+.px-wm__changed { color: var(--sc-spin-hi); font-weight: 600; }
+.px-wm__subject--changed { grid-template-columns: 64px minmax(0, 1fr) auto; }

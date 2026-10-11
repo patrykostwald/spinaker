@@ -275,6 +275,8 @@ def materials_data(figure):
             'reference_kind': reference.reference_kind,
             'evidence_note': reference.evidence_note,
         })
+    from news.article_changes import attach_change_flags
+    attach_change_flags(results)
     return {
         'available': bool(results),
         'count': references.count(),
