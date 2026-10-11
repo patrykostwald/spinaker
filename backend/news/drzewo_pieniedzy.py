@@ -78,10 +78,43 @@ def _amount(value):
         return None
 
 
+# Walidacja kwot (Śledczy R1, P0-1): jedno ogłoszenie TED z kwotą bilionową (błąd źródła lub parsera) zepsułoby
+# sumę spółki. Rekord podejrzany zostaje na liście z flagą, ale nie wchodzi do sum.
+SUSPECT_ABSOLUTE = 5_000_000_000
+SUSPECT_RELATIVE_FLOOR = 1_000_000_000
+SUSPECT_RELATIVE_FACTOR = 100
+SUSPECT_MIN_SAMPLE = 5
+
+
+def amount_suspect(amount):
+    """Bezwzględna bramka kwoty: ponad 5 mld w jednej walucie to prawie na pewno błąd, nie zamówienie."""
+    return amount is not None and amount > SUSPECT_ABSOLUTE
+
+
+def mark_suspect(rows):
+    """Ustawia amount_suspect: powyżej progu bezwzględnego albo (od 1 mld) ponad 100x mediany pozostałych kwot waluty."""
+    by_currency = defaultdict(list)
+    for r in rows:
+        if r.get('amount') is not None and r['amount'] > 0:
+            by_currency[r.get('currency') or 'PLN'].append(r['amount'])
+    medians = {}
+    for currency, values in by_currency.items():
+        if len(values) >= SUSPECT_MIN_SAMPLE:
+            ordered = sorted(values)
+            medians[currency] = ordered[len(ordered) // 2]
+    for r in rows:
+        amount = r.get('amount')
+        median = medians.get(r.get('currency') or 'PLN')
+        r['amount_suspect'] = bool(amount_suspect(amount) or (
+            amount is not None and median and amount >= SUSPECT_RELATIVE_FLOOR
+            and amount > SUSPECT_RELATIVE_FACTOR * median))
+    return rows
+
+
 def _sums(rows):
     totals = defaultdict(float)
     for r in rows:
-        if r.get('amount') is not None:
+        if r.get('amount') is not None and not r.get('amount_suspect'):
             totals[r.get('currency') or 'PLN'] += r['amount']
     return [{'currency': c, 'total': round(v, 2)} for c, v in sorted(totals.items(), key=lambda x: -x[1])]
 
@@ -106,7 +139,7 @@ def contracts(org, ids):
                             'date': r.date.isoformat() if r.date else None, 'kind': str(r.data.get('noticeType') or ''),
                             'url': r.source_url, 'matched_by': hit})
     out.sort(key=lambda x: (x['date'] or ''), reverse=True)
-    return out
+    return mark_suspect(out)
 
 
 def grants(org, ids):
@@ -120,7 +153,7 @@ def grants(org, ids):
                         'programme': str(r.data.get('programme') or '')[:200], 'amount': _amount(r.data.get('amount')),
                         'currency': 'EUR', 'date': r.date.isoformat() if r.date else None, 'year': r.data.get('year'),
                         'url': r.source_url, 'matched_by': hit})
-    return out
+    return mark_suspect(out)
 
 
 def unlinked(org, linked_pks):
@@ -159,8 +192,10 @@ def branches(org):
     c, g, p = contracts(org, ids), grants(org, ids), people(org)
     linked = [int(x['id'].split(':')[1]) for x in c + g]
     u = unlinked(org, linked)
-    return {'contracts': {'count': len(c), 'sums': _sums(c), 'results': c[:PER_BRANCH]},
-            'grants': {'count': len(g), 'sums': _sums(g), 'results': g[:PER_BRANCH]},
+    return {'contracts': {'count': len(c), 'sums': _sums(c), 'suspect_count': sum(1 for x in c if x['amount_suspect']),
+                          'results': c[:PER_BRANCH]},
+            'grants': {'count': len(g), 'sums': _sums(g), 'suspect_count': sum(1 for x in g if x['amount_suspect']),
+                       'results': g[:PER_BRANCH]},
             'people': {'count': len(p), 'results': p[:PER_BRANCH]},
             'unlinked': {'count': len(u), 'results': u}}
 
@@ -174,11 +209,11 @@ def tree(org):
     edges = []
     for x in b['contracts']['results']:
         nodes.append({'id': x['id'], 'kind': 'contract', 'label': x['title'], 'sub': x['party'], 'date': x['date'], 'amount': x['amount'],
-                      'currency': x['currency'], 'url': x['url'], 'source': x['source']})
+                      'amount_suspect': x['amount_suspect'], 'currency': x['currency'], 'url': x['url'], 'source': x['source']})
         edges.append({'source': root, 'target': x['id'], 'label': x['role']})
     for x in b['grants']['results']:
         nodes.append({'id': x['id'], 'kind': 'grant', 'label': x['title'], 'sub': x['programme'], 'date': x['date'], 'amount': x['amount'],
-                      'currency': 'EUR', 'url': x['url'], 'source': 'fts'})
+                      'amount_suspect': x['amount_suspect'], 'currency': 'EUR', 'url': x['url'], 'source': 'fts'})
         edges.append({'source': root, 'target': x['id'], 'label': 'dotacja UE'})
     for x in b['people']['results']:
         nodes.append({'id': x['id'], 'kind': 'person', 'label': x['name'], 'sub': x['role'], 'slug': x['slug'], 'url': x['profile_url'], 'source': 'krs'})
@@ -206,8 +241,10 @@ def person_companies(figure):
         b = branches(org)
         out.append({'id': org.pk, 'name': org.name, 'krs_number': org.krs_number, 'nip': org.nip, 'role': r.organ or r.public_role,
                     'status': r.relation_status, 'url': f'/przeszlosc/spolka/{org.krs_number}', 'identifiers_missing': not org.nip,
-                    'contracts': {'count': b['contracts']['count'], 'sums': b['contracts']['sums']},
-                    'grants': {'count': b['grants']['count'], 'sums': b['grants']['sums']},
+                    'contracts': {'count': b['contracts']['count'], 'sums': b['contracts']['sums'],
+                                  'suspect_count': b['contracts']['suspect_count']},
+                    'grants': {'count': b['grants']['count'], 'sums': b['grants']['sums'],
+                               'suspect_count': b['grants']['suspect_count']},
                     'people': b['people']['count'], 'unlinked': b['unlinked']['count']})
     return {'results': out, 'note': NOTE}
 

@@ -160,3 +160,26 @@ def test_command_plan_offline_and_identifiers_with_mocked_api(monkeypatch):
     out = StringIO()
     call_command('drzewo_pieniedzy', '--identyfikatory', '--pauza', '0', stdout=out)
     assert len(calls) == 1  # idempotentne: podmioty z NIP pomijane
+
+
+def test_nierealna_kwota_ted_jest_oznaczona_i_poza_sumami():
+    """Śledczy R1, P0-1: Orlen 1,086 bln zł z jednego ogłoszenia nie może wejść do sumy spółki."""
+    company = org('Orlen SA', '0000028860', nip='7740001454', regon='610188201')
+    rec('ted', 'notice', '157377-2026', {'buyer': ['2. RBLog'], 'value': 1086150000000.0, 'currency': 'PLN',
+        'winners': [{'name': 'ORLEN', 'id': 'PL7740001454'}]}, 'Olej napędowy', date(2026, 5, 1))
+    rec('ted', 'notice', '2-2026', {'buyer': ['Gmina'], 'value': 2500000, 'currency': 'PLN',
+        'winners': [{'name': 'ORLEN', 'id': '7740001454'}]}, 'Paliwo', date(2026, 5, 2))
+    data = dp.tree(company)['contracts']
+    assert data['count'] == 2 and data['suspect_count'] == 1
+    assert data['sums'] == [{'currency': 'PLN', 'total': 2500000.0}]
+    flags = {x['title']: x['amount_suspect'] for x in data['results']}
+    assert flags == {'Olej napędowy': True, 'Paliwo': False}
+
+
+def test_wzgledna_kwota_ponad_100x_mediany_jest_podejrzana():
+    rows = [{'amount': 1000000.0 + i, 'currency': 'PLN'} for i in range(5)]
+    rows.append({'amount': 1012825380.0, 'currency': 'PLN'})
+    rows.append({'amount': 900000000.0, 'currency': 'EUR'})  # za mała próba w EUR i poniżej 1 mld
+    dp.mark_suspect(rows)
+    assert [r['amount_suspect'] for r in rows] == [False] * 5 + [True, False]
+    assert dp._sums(rows) == [{'currency': 'EUR', 'total': 900000000.0}, {'currency': 'PLN', 'total': 5000010.0}]

@@ -333,3 +333,13 @@ def test_many_identifiers_use_batched_union_without_duplicate_contracts():
     with CaptureQueriesContext(connection) as queries:
         get(f'osoba:{figure.pk}', glebokosc='1', kategorie='spolki,zamowienia')
     print(f'API stopień 1, 40 spółek i TED: {len(queries)} SQL, {(perf_counter() - started) * 1000:.1f} ms.')
+
+
+def test_nierealna_kwota_ted_nie_ma_kwoty_w_grafie():
+    """Śledczy R1, P0-1: węzeł zostaje, kwota znika, meta niesie flagę."""
+    company = org()
+    figure = person(company)
+    ted = rec('ted', 'notice', 'big', {'buyer': ['Gmina'], 'value': 1086150000000, 'currency': 'PLN',
+              'winners': [{'id': 'PL5260250995'}]}, 'Paliwo', date(2026, 9, 1))
+    node = next(n for n in get(f'osoba:{figure.pk}')['nodes'] if n['id'] == f'ted:{ted.pk}')
+    assert node['amount'] is None and node['meta']['amount_suspect'] is True

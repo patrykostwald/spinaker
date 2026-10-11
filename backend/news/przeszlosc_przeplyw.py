@@ -285,6 +285,10 @@ def finance(graph, organisations):
                 day=record.date, amount=amount, currency=currency, certainty=certainty, url=record.source_url)
             if not channel:
                 continue
+            if money.amount_suspect(graph.nodes[channel]['amount']):
+                # Kwota nierealna (P0-1): węzeł zostaje, ale bez kwoty, z flagą w meta.
+                graph.nodes[channel]['amount'] = None
+                graph.nodes[channel]['meta'] = {**graph.nodes[channel]['meta'], 'amount_suspect': True}
             amount = graph.nodes[channel]['amount']
             for pk in sorted(hits):
                 org_id = f'org:{pk}'
