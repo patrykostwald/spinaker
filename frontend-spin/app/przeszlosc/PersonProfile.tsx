@@ -1,4 +1,5 @@
 "use client";
+import { Sprostowanie } from './Sprostowanie';
 import { useEffect, useMemo, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, plural, short, spinColor, text, useNarrativeLayer, useStandalone, type Access } from './ui';
@@ -107,6 +108,7 @@ function ProfileView({ data }: { data: Profile }) {
         </p>
       </div>
       <div className="px-tv__tools">
+        <Sprostowanie recordId={`osoba:${data.slug || data.id}`} label={data.name} />
         {!locked.has('alerts') && <Follow kind="person" target={data.slug} label={data.name} />}
         {!locked.has('export') && <><a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=csv`} download><Icon name="down" />CSV</a>
         <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=json`} download><Icon name="down" />JSON</a></>}

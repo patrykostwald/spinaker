@@ -429,3 +429,19 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
 .px-strip :is(button, a, [tabindex]):focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 1px; }
 @media (max-width: 760px) { .px-home-top { gap: 24px; } .px .px-strip__track { grid-auto-columns: 280px; } }
 @media (prefers-reduced-motion: reduce) { .px-strip *, .px-strip *::before, .px-strip *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* Zgłoś błąd lub sprostowanie (Śledczy R1, P0-5): przycisk 44 px i okno; kolory z tokenów strony */
+.px-fix__btn { min-height: 44px; cursor: pointer; font: inherit; font-size: 14px; white-space: nowrap; }
+.px-fix { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .55); }
+.px-fix__box { box-sizing: border-box; width: min(480px, 100%); min-width: 0; max-height: calc(100dvh - 32px); overflow-y: auto; border: 1px solid var(--sc-line-strong); border-radius: 12px; background: var(--sc-bg); color: var(--sc-text); padding: 20px; }
+.px-fix__box h2 { margin: 0 0 6px; font-size: 20px; }
+.px-fix__rec { margin: 0 0 14px; font-size: 13px; color: var(--sc-text-2); overflow-wrap: anywhere; }
+.px-fix__box label { display: grid; gap: 6px; margin-bottom: 12px; font-size: 14px; }
+.px-fix__box :is(textarea, input) { box-sizing: border-box; width: 100%; font: inherit; color: var(--sc-text); background: var(--sc-bg); border: 1px solid var(--sc-line-strong); border-radius: 8px; padding: 10px; min-height: 44px; }
+.px-fix__box button { min-height: 44px; padding: 0 16px; cursor: pointer; font: inherit; color: var(--sc-text); background: var(--sc-bg); border: 1px solid var(--sc-line-strong); border-radius: 8px; }
+.px-fix__box button.px-fix__ok { border-color: var(--sc-accent); background: var(--sc-accent-soft); }
+.px-fix__box :is(button, input, textarea):focus-visible { outline: 3px solid var(--sc-accent); outline-offset: 2px; }
+.px-fix__act { display: flex; gap: 8px; }
+.px-fix__err { color: var(--sc-text); margin: 0 0 10px; font-size: 14px; }
+@media (max-width: 600px) { .px-fix__act button { flex: 1; } }
+.px-flow__panel footer { display: grid; gap: 12px; justify-items: start; }

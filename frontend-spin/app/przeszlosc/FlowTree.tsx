@@ -1,4 +1,5 @@
 "use client";
+import { Sprostowanie } from './Sprostowanie';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Foot, Icon, nb, plural, useAccess, useStandalone } from './ui';
@@ -199,7 +200,7 @@ export function FlowTree({ ident }: { ident: string }) {
           <dt>Źródło</dt><dd>{source?.label || edge?.source_key || 'Nie podano'}</dd><dt>Licencja</dt><dd>{source?.license || 'Brak szczegółów źródła w danych'}</dd>
           <dt>Pobrano</dt><dd title={source?.retrieved_at || undefined}>{retrieved(source?.retrieved_at)}</dd>
           <dt>Adres źródła</dt><dd>{safeHref(source?.url) ? <a href={safeHref(source?.url)} target="_blank" rel="noopener noreferrer">{source?.url}</a> : 'Nie podano'}</dd>
-        </dl></div><footer>{safeHref(node?.url || source?.url) ? <a href={safeHref(node?.url || source?.url)} target="_blank" rel="noopener noreferrer">Otwórz oryginał ↗</a> : <span>Brak odnośnika do oryginału</span>}</footer></>
+        </dl></div><footer><Sprostowanie recordId={selected.id} label={selected.label} className="px-flow__fix" />{safeHref(node?.url || source?.url) ? <a href={safeHref(node?.url || source?.url)} target="_blank" rel="noopener noreferrer">Otwórz oryginał ↗</a> : <span>Brak odnośnika do oryginału</span>}</footer></>
           : <p>{nb('Wybierz węzeł lub linię, aby sprawdzić datę, kwotę i podstawę powiązania. Sama linia nie oznacza przepływu pieniędzy.')}</p>}
       </aside>
     </div>

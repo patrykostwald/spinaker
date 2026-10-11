@@ -1,4 +1,5 @@
 "use client";
+import { Sprostowanie } from './Sprostowanie';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Foot, Icon, day, nb, plural, useStandalone, type Access } from './ui';
@@ -18,7 +19,7 @@ type Unlinked = { id: string; source: string; title: string; amount: number | nu
 export type MoneyTree = {
   organisation: { id: number; name: string; krs_number: string; nip: string; regon: string; kind: string; legal_form: string; sector: string; url: string; source: Source };
   identifiers: Record<string, string>; identifiers_missing: boolean;
-  contracts: { count: number; sums: Sum[]; results: Contract[] };
+  contracts: { count: number; sums: Sum[]; suspect_count?: number; results: Contract[] };
   grants: { count: number; sums: Sum[]; results: Grant[] };
   people: { count: number; results: Person[] };
   unlinked: { count: number; results: Unlinked[] };
@@ -120,12 +121,13 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
         <p className="px-mt__links"><a href={o.url} target="_blank" rel="noopener noreferrer">Odpis KRS ↗</a>
           <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`spolka:${o.krs_number || o.nip}`)}`}>Drzewo przepływu →</a></p>
       </div>
+      <div className="px-tv__tools"><Sprostowanie recordId={`spolka:${o.krs_number || o.nip}`} label={o.name} /></div>
     </header>
 
     <section className="px-proof px-mt__proof" aria-label="Liczby">
       <div><b>{data.contracts.count.toLocaleString('pl-PL')}</b><span>{nb(plural(data.contracts.count, 'zamówienie publiczne', 'zamówienia publiczne', 'zamówień publicznych'))}</span></div>
       <div><b>{data.contracts.sums.length ? money(data.contracts.sums[0].total, data.contracts.sums[0].currency) : '-'}</b>
-        <span>{nb('suma z ogłoszeń o zamówieniach')}{data.contracts.sums.length > 1 ? ` + ${sumLine(data.contracts.sums.slice(1))}` : ''}</span></div>
+        <span>{nb('suma z ogłoszeń o zamówieniach')}{data.contracts.sums.length > 1 ? ` + ${sumLine(data.contracts.sums.slice(1))}` : ''}{data.contracts.suspect_count ? nb(` · bez ${data.contracts.suspect_count} kwot do weryfikacji`) : ''}</span></div>
       <div><b>{data.grants.count.toLocaleString('pl-PL')}</b><span>{nb(plural(data.grants.count, 'dotacja UE', 'dotacje UE', 'dotacji UE'))}{data.grants.sums.length ? ` · ${sumLine(data.grants.sums)}` : ''}</span></div>
       <div><b>{data.people.count.toLocaleString('pl-PL')}</b><span>{nb(plural(data.people.count, 'osoba publiczna z funkcją w KRS', 'osoby publiczne z funkcjami w KRS', 'osób publicznych z funkcjami w KRS'))}</span></div>
     </section>
