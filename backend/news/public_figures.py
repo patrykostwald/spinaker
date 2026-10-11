@@ -35,10 +35,11 @@ def headline(figure):
 
 
 def figure_data(figure, include_detail=False, include_mentions=True):
+    from news.przeszlosc_osoba import display_name
     role_title, role_category = headline(figure)
     data = {
         'id': figure.pk,
-        'name': figure.canonical_name,
+        'name': display_name(figure.canonical_name),
         'role_category': role_category,
         'role_title': role_title,
         'organisation': figure.organisation,

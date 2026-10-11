@@ -107,3 +107,13 @@ def test_kprm_existing_articles_join_public_records_without_content():
     assert [row['title'] for row in data] == ['Komunikat KPRM', 'Druk 1']
     assert data[0]['kind'] == 'Komunikat' and data[0]['source'] == 'KPRM'
     assert 'description' not in data[0]
+
+
+def test_category_labels_are_unique():
+    from news.przeszlosc_paski import strip_data
+    from news.public_records_models import PublicRecord
+    for n, kind in enumerate(('print', 'unknown_a', 'unknown_b')):
+        PublicRecord.objects.create(source='sejm', kind=kind, external_id=f'u{n}', title=f'Dok {n}', source_url=f'https://example.org/u{n}',
+                                    response_url='https://example.org/', response_sha256='0')
+    labels = [c['label'] for c in strip_data()['kategorie']['publiczne']]
+    assert len(labels) == len(set(labels))

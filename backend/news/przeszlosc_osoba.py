@@ -53,6 +53,15 @@ def words(text):
     return [w for w in re.split(r'[^a-z0-9]+', fold(text)) if w]
 
 
+def display_name(name):
+    """P2-6: nazwiska z Parlamentu Europejskiego bywają wersalikami („Daniel OBAJTEK”): do wyświetlenia „Daniel Obajtek”.
+
+    Zmieniamy tylko człony pisane w całości wielkimi literami i dłuższe niż 3 znaki (skróty typu „PE” zostają)."""
+    def fix(part):
+        return part[:1] + part[1:].lower() if len(part) > 3 and part.isalpha() and part == part.upper() else part
+    return ' '.join('-'.join(fix(p) for p in chunk.split('-')) for chunk in str(name or '').split(' '))
+
+
 def slug(figure):
     return f"{figure.pk}-{'-'.join(words(figure.canonical_name))}".strip('-')
 
@@ -117,7 +126,7 @@ def search(query, limit=10):
     top = scored[:limit]
     figures = {f.pk: f for f in PublicFigure.objects.filter(pk__in=[row[2] for row in top]).select_related('parliamentary_roster_entry')}
     with_x = figures_with_verified_x(figures.values())
-    return [{'id': pk, 'slug': slug(figures[pk]), 'name': name, 'role': role, 'organisation': figures[pk].organisation,
+    return [{'id': pk, 'slug': slug(figures[pk]), 'name': display_name(name), 'role': role, 'organisation': figures[pk].organisation,
              'has_x': pk in with_x, 'score': round(-score, 3)} for score, name, pk, role in top if pk in figures]
 
 
@@ -434,7 +443,7 @@ def topic_history():
 
 
 def _person(f):
-    return {'id': f.pk, 'slug': slug(f), 'name': f.canonical_name, 'role': f.role_title}
+    return {'id': f.pk, 'slug': slug(f), 'name': display_name(f.canonical_name), 'role': f.role_title}
 
 
 def co_occurrence(figure, identities, limit=10):

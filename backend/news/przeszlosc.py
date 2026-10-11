@@ -323,7 +323,12 @@ def start_data():
     latest, seen = [], set()
     # najpierw dokumenty z datą (w Postgresie puste daty stały na górze); bez daty liczy się dzień pobrania (audyt 6.10)
     from django.db.models import F
-    for r in PublicRecord.objects.exclude(title='').order_by(F('date').desc(nulls_last=True), '-fetched_at', '-pk')[:80]:
+    from django.utils import timezone
+    today = timezone.localdate()
+    # daty przyszłe (planowane posiedzenia) nie są „najnowszymi”: idą osobno jako „zaplanowane” (P2-4)
+    rows = PublicRecord.objects.exclude(title='')
+    scheduled = list(rows.filter(date__gt=today).order_by('date', 'pk')[:5])
+    for r in rows.exclude(date__gt=today).order_by(F('date').desc(nulls_last=True), '-fetched_at', '-pk')[:80]:
         key = r.title.strip().lower()[:120]
         if key not in seen:
             seen.add(key)
@@ -342,6 +347,9 @@ def start_data():
         'latest': [{'title': r.title[:180], 'date': (r.date or r.fetched_at.date()).isoformat(),
                     'kind': KIND_LABELS.get(r.kind) or SOURCE_LABELS.get(r.source, 'Dokument'),
                     'url': r.source_url} for r in latest],
+        'scheduled': [{'title': r.title[:180], 'date': r.date.isoformat(),
+                       'kind': KIND_LABELS.get(r.kind) or SOURCE_LABELS.get(r.source, 'Dokument'),
+                       'url': r.source_url} for r in scheduled],
         'topics_enabled': enabled(),
         'auto_topics': [{'topic': t['topic'], 'edges': t['edges']} for t in auto_topics()],
     }
@@ -368,16 +376,35 @@ def topic_rss(query):
     graph = topic_graph(query)
     kinds = {'statement': 'Wpis', 'record': 'Sejm', 'media': 'Artykuł', 'diagnosis': 'Diagnoza Dr. Spina'}
     rows = sorted((n for n in graph['nodes'] if n['kind'] in kinds and n.get('date')), key=lambda n: n['date'], reverse=True)[:40]
-    page = 'https://spin.clinic/przeszlosc?q=' + escape(query)
+    from datetime import datetime, timezone as dt_utc
+    from email.utils import format_datetime
+    from urllib.parse import quote
+    from django.utils.dateparse import parse_date, parse_datetime
+    from django.utils import timezone as tz
+    page = escape('https://przeszlosc.today/?q=' + quote(query))
+    feed = escape('https://przeszlosc.today/api/przeszlosc/rss/?q=' + quote(query))
+
+    def rfc822(value):
+        """pubDate musi być w formacie RFC 822 (np. Mon, 06 Oct 2026 00:00:00 +0000)."""
+        moment = parse_datetime(str(value))
+        if moment is None:
+            day = parse_date(str(value)[:10])
+            moment = datetime.combine(day, datetime.min.time()) if day else None
+        if moment is None:
+            return ''
+        if tz.is_naive(moment):
+            moment = tz.make_aware(moment, dt_utc.utc)
+        return format_datetime(moment.astimezone(dt_utc.utc))
     items = []
     for n in rows:
         title = kinds[n['kind']] + (' · ' + n['sub'] if n.get('sub') else '') + ': ' + n['label'][:140]
         items.append(f"<item><title>{escape(title)}</title><link>{escape(n.get('url') or page)}</link>"
-                     f"<guid isPermaLink='false'>{escape(n['id'])}</guid><pubDate>{n['date']}</pubDate>"
+                     f"<guid isPermaLink='false'>{escape(n['id'])}</guid><pubDate>{rfc822(n['date'])}</pubDate>"
                      f"<description>{escape(n['label'])}</description></item>")
     head = (f"<title>{escape('przeszłość.today: ' + query)}</title><link>{page}</link>"
-            f"<description>{escape('Nowe wpisy, dokumenty Sejmu i artykuły w temacie: ' + query)}</description><language>pl</language>")
-    return '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>' + head + ''.join(items) + '</channel></rss>'
+            f"<description>{escape('Nowe wpisy, dokumenty Sejmu i artykuły w temacie: ' + query)}</description><language>pl</language>"
+            f'<atom:link href="{feed}" rel="self" type="application/rss+xml"/>')
+    return '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>' + head + ''.join(items) + '</channel></rss>'
 
 
 @api_view(['GET'])

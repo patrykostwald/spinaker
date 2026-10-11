@@ -122,6 +122,8 @@ def test_topic_rss(settings):
     assert r.status_code == 200 and r['Content-Type'].startswith('application/rss+xml')
     body = r.content.decode()
     assert '<item>' in body and 'VAT &amp; akcyza &lt;test&gt;' in body and 'Osoba' not in body
+    assert '<pubDate>Sat, 03 Oct 2026 00:00:00 +0000</pubDate>' in body  # RFC 822, nie ISO
+    assert '<link>https://przeszlosc.today/?q=VAT</link>' in body and 'rel="self"' in body
     with mock.patch.object(przeszlosc, 'enabled', return_value=False):
         assert Client().get('/api/przeszlosc/rss/', {'q': 'VAT'}).status_code == 404
 
@@ -168,3 +170,16 @@ def test_krs_w_grafie_tematu_tylko_gdy_podmiot_wystepuje_w_temacie():
         rel.save()
     orgs = {n['label'] for n in topic_graph('Kołodziejczak')['nodes'] if n['kind'] == 'organisation'}
     assert orgs == {'Fundacja Agrounia', 'Kołodziejczak Sp. z o.o.'}
+
+
+def test_start_future_records_are_scheduled_not_latest():
+    from datetime import timedelta
+    from django.utils import timezone
+    from news.public_records_models import PublicRecord
+    today = timezone.localdate()
+    for n, shift in enumerate((-2, 3)):
+        PublicRecord.objects.create(source='sejm', kind='print', external_id=f'p{n}', title=f'Dokument {n}', date=today + timedelta(days=shift),
+                                    source_url=f'https://example.org/p{n}', response_url='https://example.org/', response_sha256='0')
+    data = APIClient().get('/api/przeszlosc/start/').json()
+    assert [r['title'] for r in data['latest']] == ['Dokument 0']
+    assert [r['title'] for r in data['scheduled']] == ['Dokument 1']

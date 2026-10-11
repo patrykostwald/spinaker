@@ -294,3 +294,10 @@ def test_spin_trace_never_matches_by_name():
     voting(1, [(5, 'Ministra Publiczna', 'KO', 'YES')])
     data = APIClient().get(f'/api/public-figures/{minister.pk}/slad/').json()
     assert data['available'] is False and data['votes'] == [] and data['documents'] == [] and data['year'] == {'votes': 0, 'documents': 0}
+
+
+def test_display_name_normalizes_uppercase_surnames():
+    from news.przeszlosc_osoba import display_name
+    assert display_name('Daniel OBAJTEK') == 'Daniel Obajtek'
+    assert display_name('Anna NOWAK-KOWALSKA') == 'Anna Nowak-Kowalska'
+    assert display_name('Jan Kowalski') == 'Jan Kowalski' and display_name('Jan DA') == 'Jan DA' and display_name('') == ''

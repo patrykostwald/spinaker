@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.db.models import F, Value
 from django.db.models.functions import Concat
 from django.utils import timezone
+from django.utils.text import slugify
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -70,7 +71,8 @@ class PublicMetadataSerializer(serializers.ModelSerializer):
         return KIND_LABELS.get(obj.kind) or {
             'statement': 'Wystąpienie', 'speech': 'Wystąpienie', 'document': 'Dokument',
             'press_release': 'Komunikat', 'procurement': 'Zamówienie',
-            'notice': 'Zamówienie', 'committee_speech': 'Wystąpienie',
+            'notice': 'Zamówienie', 'committee_speech': 'Wystąpienie w komisji',
+            'committee': 'Komisja', 'ep_vote': 'Głosowanie PE', 'committee_sitting': 'Posiedzenie komisji',
         }.get(obj.kind, 'Dokument')
 
     def get_kind(self, obj):
@@ -120,6 +122,9 @@ def strip_data():
         if row['url'] not in seen_urls:
             unique_public.append(row)
             seen_urls.add(row['url'])
+    # P2-5: różne rodzaje o tej samej etykiecie ('Dokument', 'Dokument') łączymy w jedną kategorię filtra
+    for row in unique_public:
+        row['category'] = slugify(row['category_label']) or row['category']
     data = {'youtube': VideoMetadataSerializer(videos, many=True).data,
             'publiczne': unique_public[:LIMIT], 'media': []}
     data['kategorie'] = {
