@@ -2,6 +2,7 @@
 import { Sprostowanie } from './Sprostowanie';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
+import { Przybornik, companyTools } from './Przybornik';
 import { Bar, Foot, Icon, day, nb, plural, useStandalone, type Access } from './ui';
 
 /**
@@ -118,7 +119,7 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
         <p className="px-kicker">{KIND[o.kind] ?? KIND.other}</p>
         <h1>{o.name}</h1>
         <p className="px-mt__sub">{sub}</p>
-        <p className="px-mt__links"><a href={o.url} target="_blank" rel="noopener noreferrer">Odpis KRS ↗</a>
+        <p className="px-mt__links"><a href={o.url} target="_blank" rel="noopener noreferrer">Wyszukiwarka KRS (MS) ↗</a>
           <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`spolka:${o.krs_number || o.nip}`)}`}>Drzewo przepływu →</a></p>
       </div>
       <div className="px-tv__tools"><Sprostowanie recordId={`spolka:${o.krs_number || o.nip}`} label={o.name} /></div>
@@ -163,6 +164,8 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
       </div>
       <p className="px-card__foot px-tree__foot"><span>{narrow ? 'Dotknij elementu, aby otworzyć źródło.' : 'Kliknij element, aby otworzyć źródło w nowej karcie.'}</span><span>{nb('Niepowiązane (ta sama nazwa, brak identyfikatora) są w liście poniżej, poza sumami.')}</span></p>
     </figure>
+
+    <Przybornik id="mt-tools-h" tools={companyTools({ krs: o.krs_number, nip: o.nip, regon: o.regon })} />
 
     <section className="px-mt__list" id="mt-lista" aria-labelledby="mt-list-h">
       <div className="px-time__head"><h2 id="mt-list-h" className="px-h3">Wszystkie rekordy</h2><span>{counts[tab]} {plural(counts[tab], 'pozycja', 'pozycje', 'pozycji')}</span></div>

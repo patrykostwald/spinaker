@@ -445,3 +445,11 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
 .px-fix__err { color: var(--sc-text); margin: 0 0 10px; font-size: 14px; }
 @media (max-width: 600px) { .px-fix__act button { flex: 1; } }
 .px-flow__panel footer { display: grid; gap: 12px; justify-items: start; }
+
+/* F9: przybornik odnośników zewnętrznych - boksy jednej wysokości, tytuł i podpis w jednej linii, cel 44 px */
+.px-tools__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.px-tools__list a { display: grid; grid-template-rows: auto auto; align-content: center; gap: 2px; min-height: 52px; padding: 6px 12px; border: 1px solid var(--sc-border, rgba(255,255,255,.14)); border-radius: 8px; color: var(--sc-accent); text-decoration: none; }
+.px-tools__list a:hover { color: var(--sc-accent-hover); }
+.px-tools__list b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-tools__list small { font-size: 12px; color: var(--sc-muted, #9a9a9a); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-tools .px-note { margin-top: 12px; }

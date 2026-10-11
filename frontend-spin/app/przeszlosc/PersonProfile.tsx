@@ -5,6 +5,7 @@ import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, plural, short, spinColor, text, useNarrativeLayer, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 import { WMediach } from './WMediach';
+import { Przybornik, personTools } from './Przybornik';
 import { sumLine } from './DrzewoPieniedzy';
 
 /**
@@ -26,7 +27,7 @@ type Profile = {
   documents: { available: boolean; count: number; by_kind: Record<string, number>; results: { id: number; kind: string; label: string; title: string; date: string | null; url: string; replies: number | null }[] };
   votes: { available: boolean; count: number; summary: Record<string, number>; reason: string; results: { date: string | null; title: string; motion: string; vote: string; club: string; url: string }[];
     deviation?: { term: number; club: string; share: number; club_median: number | null; flagged: boolean; counted: number; rebellions_total: number; latest: { url: string; title: string; date: string | null } | null } | null };
-  organisations: { id: number; name: string; krs_number: string; official_register_url: string; public_role: string; organ: string; relation_status: string; since?: string | null; until?: string | null }[];
+  organisations: { id: number; name: string; krs_number: string; official_register_url: string; extra_register_url?: string; since_note?: string; public_role: string; organ: string; relation_status: string; since?: string | null; until?: string | null }[];
   employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; source?: { url: string } }[];
   materials: { count: number; results: ProfileMaterial[] };
   mentions?: { results: ProfileMaterial[] };
@@ -187,8 +188,9 @@ function ProfileView({ data }: { data: Profile }) {
           {locked.has('krs') ? <p className="px-note">{nb('Funkcje w KRS są w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>
           : data.organisations.length ? <ul className="px-panel__rows">{data.organisations.map(o => <li key={`${o.id}-${o.public_role}-${o.relation_status}`}>
             <a href={o.official_register_url} target="_blank" rel="noopener noreferrer">{o.name}</a>
-            <small>{[o.organ || o.public_role, `KRS ${o.krs_number}`, o.relation_status === 'former' ? 'historyczna' : 'obecna'].filter(Boolean).join(' · ')}</small></li>)}</ul>
-            : <p className="px-note">{nb('Brak potwierdzonych funkcji w KRS.')}</p>}
+            <small>{[o.organ || o.public_role, `KRS ${o.krs_number}`, o.since ? `wpis w KRS od ${day(o.since)}` : '', o.relation_status === 'former' ? 'historyczna' : 'obecna'].filter(Boolean).join(' · ')}{o.extra_register_url ? <> · <a href={o.extra_register_url} target="_blank" rel="noopener noreferrer">rejestr.io</a></> : null}</small></li>)}</ul>
+            : <p className="px-note">{nb(`Brak w naszych danych: potwierdzonych funkcji w KRS (zakres: osoby publiczne z naszej bazy, stan na ${day(stamp)}).`)}</p>}
+          <p className="px-note">{nb(data.organisations.find(o => o.since_note)?.since_note ?? 'Data wpisu w KRS nie zawsze jest datą faktycznego objęcia funkcji.')}</p>
           <p className="px-note">{nb(data.krs_note)}</p>
         </section>
         <section className="px-card" aria-labelledby="pp-money-h">
@@ -207,6 +209,7 @@ function ProfileView({ data }: { data: Profile }) {
         </section>}
         {narr && <SejmVideos items={data.sejm_video ?? []} />}
         <ProfileOpenData data={data.open_data} />
+        <Przybornik id="pp-tools-h" tools={personTools({ name: data.name })} />
       </aside>
     </div>
 
