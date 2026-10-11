@@ -64,7 +64,7 @@ export function PersonProfile({ ident }: { ident: string }) {
       document.title = `${d.name} - przeszłość.today`;
     }).catch(() => setState('error'));
   }, [ident]);
-  return <main className="px px-pp">
+  return <div className="px px-pp">
     <Bar />
     {state === 'loading' && <div className="px-wait"><Loading label="Ładowanie profilu" /></div>}
     {state === 'missing' && <p className="px-msg">{nb('Nie ma takiej osoby w rejestrze osób publicznych.')} <a href="/przeszlosc?tryb=osoba">Szukaj osoby</a></p>}
@@ -72,7 +72,7 @@ export function PersonProfile({ ident }: { ident: string }) {
     {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać profilu. Spróbuj ponownie.</p>}
     {data && <ProfileView data={data} />}
     <Foot />
-  </main>;
+  </div>;
 }
 
 function ProfileView({ data }: { data: Profile }) {

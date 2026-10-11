@@ -26,7 +26,7 @@ export function AlertLink() {
     error: ['Link nie działa', info.detail ?? 'Link wygasł albo jest niepoprawny. Zapisz się ponownie na stronie tematu lub osoby.'],
     none: ['Alerty przeszłość.today', 'Obserwuj temat albo osobę przyciskiem „Obserwuj” na stronie wyniku. Codziennie o 7:00 jeden list z nowościami.'],
   }[state];
-  return <main className="px">
+  return <div className="px">
     <Bar />
     <section className="px-card px-alert" aria-live="polite">
       <h1>{text[0]}</h1>
@@ -35,5 +35,5 @@ export function AlertLink() {
         <a className="px-more" href="/przeszlosc">Strona główna</a></p>
     </section>
     <Foot />
-  </main>;
+  </div>;
 }

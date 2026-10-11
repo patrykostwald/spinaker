@@ -53,7 +53,7 @@ export function PilotPage() {
     } catch { setState('error'); setMessage('Brak połączenia. Spróbuj ponownie.'); }
   }
 
-  return <main className="px">
+  return <div className="px">
     <Bar />
     <header className="px-pilot__hero">
       <p className="px-kicker"><span className="px-dot" />Pilotaż · jesień 2026</p>
@@ -112,5 +112,5 @@ export function PilotPage() {
         </form>}
     </section>
     <Foot />
-  </main>;
+  </div>;
 }

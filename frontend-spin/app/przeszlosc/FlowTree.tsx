@@ -130,7 +130,7 @@ export function FlowTree({ ident }: { ident: string }) {
     const target = document.getElementById(`flow-node-${id}`);
     target?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' });
   }
-  return <main className="px px-flow">
+  return <div className="px px-flow">
     <Bar />
     <header className="px-flow__head">
       <div><p className="px-kicker">Powiązania według dostępnych źródeł</p><h1>Drzewo przepływu <small>Etap 1</small></h1>
@@ -234,5 +234,5 @@ export function FlowTree({ ident }: { ident: string }) {
       {graph.legal.notes.map((note, i) => <p className="px-note" key={i}>{nb(note)}</p>)}
     </section>}
     <Foot />
-  </main>;
+  </div>;
 }

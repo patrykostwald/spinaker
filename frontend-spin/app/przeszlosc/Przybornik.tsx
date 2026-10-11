@@ -7,17 +7,21 @@ import { nb } from './ui';
  */
 type Tool = { label: string; href: string; hint: string };
 
-export function companyTools(c: { krs: string; nip?: string; regon?: string }): Tool[] {
+/** Fundacje i stowarzyszenia są w rejestrze S, spółki i reszta w rejestrze P. */
+export const registerFor = (kind?: string) => (kind === 'foundation' || kind === 'association' ? 'S' : 'P');
+
+export function companyTools(c: { krs: string; nip?: string; regon?: string; kind?: string }): Tool[] {
   const krs = c.krs ? `KRS ${c.krs}` : '';
   const nip = c.nip ? `NIP ${c.nip}` : '';
   const both = [krs, nip].filter(Boolean).join(' lub ') || 'numer z odpisu';
   return [
     { label: 'Wyszukiwarka KRS (MS)', href: 'https://wyszukiwarka-krs.ms.gov.pl/', hint: `wpisz ${krs || both}` },
-    { label: 'Odpis aktualny (API MS)', href: c.krs ? `https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/${c.krs}?rejestr=P&format=json` : 'https://api-krs.ms.gov.pl/', hint: 'urzędowy odpis w JSON' },
+    { label: 'Odpis aktualny (API MS)', href: c.krs ? `https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/${c.krs}?rejestr=${registerFor(c.kind)}&format=json` : 'https://api-krs.ms.gov.pl/', hint: `urzędowy odpis w JSON, rejestr ${registerFor(c.kind) === 'S' ? 'stowarzyszeń i fundacji (S)' : 'przedsiębiorców (P)'}` },
     { label: 'eKRS', href: 'https://ekrs.ms.gov.pl/', hint: 'portal dokumentów i wpisów' },
     { label: 'Sprawozdania finansowe (RDF)', href: 'https://rdf-przegladarka.ms.gov.pl/', hint: `wpisz ${krs || both}` },
     { label: 'CEIDG', href: 'https://aplikacja.ceidg.gov.pl/ceidg/ceidg.public.ui/search.aspx', hint: `wpisz ${nip || 'NIP'}` },
     { label: 'Biała lista VAT', href: 'https://www.podatki.gov.pl/wykaz-podatnikow-vat-wyszukiwarka/', hint: `wpisz ${nip || 'NIP'}` },
+    ...(c.nip ? [{ label: 'Biała lista VAT (API MF, JSON)', href: `https://wl-api.mf.gov.pl/api/search/nip/${c.nip}?date=${new Date().toISOString().slice(0, 10)}`, hint: `wynik dla NIP ${c.nip} na dziś` }] : []),
     { label: 'Krajowy Rejestr Zadłużonych', href: 'https://krz.ms.gov.pl/', hint: `wpisz ${krs || nip || 'nazwę'}` },
     { label: 'Monitor Sądowy i Gospodarczy', href: 'https://ems.ms.gov.pl/', hint: 'ogłoszenia o spółce' },
     { label: 'e-Zamówienia (BZP)', href: 'https://ezamowienia.gov.pl/mp-client/search/list', hint: `wpisz ${nip || 'nazwę'}` },
