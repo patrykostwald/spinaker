@@ -19,7 +19,7 @@ type Node = { id: string; kind: string; label: string; slug?: string; text?: str
 type Edge = { source: string; target: string; label: string };
 type Start = { counts: Record<string, number>; latest: { title: string; date: string | null; kind: string; url: string }[]; topics_enabled: boolean; auto_topics?: { topic: string; edges: number }[] };
 type Vote = { id: string; title: string; motion: string; date: string | null; kind: string; result: Record<string, number>; url: string;
-  clubs: { club: string; size: number; votes: Record<string, number> }[]; members: [string, string, string][] };
+  clubs: { club: string; size: number; votes: Record<string, number>; members: [string, string][] }[] };
 type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; record_origins?: Record<string, { label: string; count: number }>; votes?: Vote[]; eu_funds?: EuFunds; access?: { beta: boolean; label: string; locked: string[] } };
 type FirmHit = { id: number; name: string; krs_number: string; nip: string; legal_form: string; url: string };
 type FirmSearch = { results: FirmHit[]; status: string; message?: string; coverage?: { organisations: number; scope: string } };
@@ -726,7 +726,7 @@ function Votes({ votes, topic, total: initialTotal, range: initialRange }: { vot
         </span>
         {open === v.id && <div className="px-vote__members">{v.clubs.map(c => <div key={c.club}>
           <h4>{c.club}</h4>
-          <ul>{v.members.filter(m => m[1] === c.club).sort((a, b) => VOTE_ORDER.indexOf(a[2]) - VOTE_ORDER.indexOf(b[2])).map(m => <li key={m[0]} data-v={m[2]}><i />{m[0]}<span className="px-sr">: {m[2]}</span></li>)}</ul>
+          <ul>{[...c.members].sort((a, b) => VOTE_ORDER.indexOf(a[1]) - VOTE_ORDER.indexOf(b[1])).map(m => <li key={m[0]} data-v={m[1]}><i />{m[0]}<span className="px-sr">: {m[1]}</span></li>)}</ul>
         </div>)}</div>}
       </li>;
     })}</ol>
@@ -756,7 +756,7 @@ function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
     const head = ['data', 'rodzaj', 'treść', 'autor', 'strona', 'źródło', 'link'];
     const cell = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
     const lines = [head.join(';'), ...rows.map(r => [r.data, r.rodzaj, r.tresc, r.autor, r.strona, r.zrodlo, r.link].map(cell).join(';'))];
-    for (const v of data.votes ?? []) for (const m of v.members) lines.push([v.date ?? '', 'głos imienny', `${v.title}: ${m[2]}`, m[0], m[1], 'Sejm RP', v.url].map(cell).join(';'));
+    for (const v of data.votes ?? []) for (const c of v.clubs) for (const m of c.members) lines.push([v.date ?? '', 'głos imienny', `${v.title}: ${m[1]}`, m[0], c.club, 'Sejm RP', v.url].map(cell).join(';'));
     lines.push('', cell(`Źródło: przeszłość.today, temat „${data.topic}”, pobrano ${stamp}. Każdy wiersz prowadzi do oryginału.`));
     save(`przeszlosc-${slug}-${stamp}.csv`, 'text/csv;charset=utf-8', '﻿' + lines.join('\r\n'));
   };

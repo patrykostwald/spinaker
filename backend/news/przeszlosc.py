@@ -10,6 +10,7 @@ import re
 from news import krs
 from news.przeszlosc_slownik import SKROTY, formy
 from django.db.models import F, Q
+from django.views.decorators.gzip import gzip_page
 
 PER_KIND = 30
 MEDIA_LIMIT = 100
@@ -289,11 +290,13 @@ def topic_votes(query, limit=VOTES_PER_PAGE, offset=0, since=None, until=None):
     votings = (topic_votings(query, since, until).select_related('article').prefetch_related('ballots')[offset:offset + limit])
     for v in votings:
         ballots = list(v.ballots.all())
-        clubs = Counter(b.club or 'niezrzeszeni' for b in ballots)
-        by_club = []
-        for club, size in clubs.most_common():
-            tally = Counter(VOTE_GROUP.get(b.vote, 'inne') for b in ballots if (b.club or 'niezrzeszeni') == club)
-            by_club.append({'club': club, 'size': size, 'votes': dict(tally)})
+        by_club = {}
+        for b in sorted(ballots, key=lambda b: b.name):
+            by_club.setdefault(b.club or 'niezrzeszeni', []).append(b)
+        clubs = [{'club': club, 'size': len(members),
+                  'votes': dict(Counter(VOTE_GROUP.get(b.vote, 'inne') for b in members)),
+                  'members': [[b.name, VOTE_GROUP.get(b.vote, 'inne')] for b in members]}  # klub raz na grupę, nie przy każdym z ~460 posłów
+                 for club, members in sorted(by_club.items(), key=lambda kv: (-len(kv[1]), kv[0]))]
         when = v.article.published_date
         rows.append({
             'id': f'{v.term}/{v.sitting}/{v.number}', 'title': v.article.title[:300], 'motion': (v.motion or '')[:400],
@@ -301,8 +304,7 @@ def topic_votes(query, limit=VOTES_PER_PAGE, offset=0, since=None, until=None):
             'result': {k: v.counts.get(k) for k in ('yes', 'no', 'abstain', 'notParticipating') if k in (v.counts or {})},
             'url': (f'https://www.sejm.gov.pl/sejm{v.term}.nsf/agent.xsp?symbol=glosowania&NrKadencji={v.term}'
                     f'&NrPosiedzenia={v.sitting}&NrGlosowania={v.number}'),
-            'clubs': by_club,
-            'members': sorted([[b.name, b.club or 'niezrzeszeni', VOTE_GROUP.get(b.vote, 'inne')] for b in ballots], key=lambda m: (m[1], m[0])),
+            'clubs': clubs,
             'mp_votes': [[b.mp_id, VOTE_GROUP.get(b.vote, 'inne')] for b in ballots],
         })
     return rows
@@ -384,6 +386,9 @@ def topic_votes_view(request):
     from news.przeszlosc_cache import cached_topic_votes
     data = cached_topic_votes(query, page, per_page, bounds[0], bounds[1])
     return Response({'topic': query, **data})
+
+
+topic_votes_view = gzip_page(topic_votes_view)  # lista głosów imiennych ~460 posłów na głosowanie: kompresja zamiast 200 KB surowego JSON
 
 
 KIND_LABELS = {'print': 'Druk sejmowy', 'ballot': 'Głosowanie', 'voting': 'Głosowanie', 'consultation': 'Konsultacje',

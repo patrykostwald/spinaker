@@ -19,8 +19,8 @@ VOTES_SECONDS = 3600
 PROFILE_SECONDS = 3 * 3600
 PROFILE_HOT_SECONDS = 4 * 3600
 WARM_BUDGET_SECONDS = 20 * 60
-TOPIC_KEY = 'przeszlosc:temat:v3:'
-VOTES_KEY = 'przeszlosc:glosowania:v1:'
+TOPIC_KEY = 'przeszlosc:temat:v4:'
+VOTES_KEY = 'przeszlosc:glosowania:v2:'
 PROFILE_KEY = 'przeszlosc:osoba:v2:'  # ten sam klucz i kształt ładunku co dotąd w person_view (testy wzmianek na nim polegają)
 LAST_WARM_KEY = 'przeszlosc:rozgrzewanie:ostatnie'
 
