@@ -73,7 +73,7 @@ def test_topic_votes_endpoint_validates_and_pages():
     client = APIClient()
     data = client.get('/api/przeszlosc/temat/glosowania/?q=VAT&strona=2&na_strone=4').json()
     assert data['topic'] == 'VAT' and data['total'] == 10 and data['page'] == 2 and len(data['results']) == 4
-    assert data['results'][0]['members'] == [['Anna Kowalska', 'KO', 'za']]
+    assert data['results'][0]['clubs'][0]['members'] == [['Anna Kowalska', 'za']]
     assert client.get('/api/przeszlosc/temat/glosowania/?q=VAT&strona=x').status_code == 400
     assert client.get('/api/przeszlosc/temat/glosowania/?q=VAT&od=2026-13-01').status_code == 400
     assert client.get('/api/przeszlosc/temat/glosowania/?q=VAT&od=2026-02-01&do=2026-01-01').status_code == 400

@@ -103,7 +103,7 @@ def test_topic_votes_by_club_and_name(monkeypatch):
     rows = topic_votes('VAT')
     assert len(rows) == 1 and rows[0]['result'] == {'yes': 2, 'no': 1}
     assert {c['club']: c['votes'] for c in rows[0]['clubs']} == {'KO': {'za': 2}, 'PiS': {'przeciw': 1, 'nieobecny': 1}}
-    assert ['Ewa C', 'PiS', 'przeciw'] in rows[0]['members'] and 'NrGlosowania=7' in rows[0]['url']
+    assert ['Ewa C', 'przeciw'] in next(c for c in rows[0]['clubs'] if c['club'] == 'PiS')['members'] and 'members' not in rows[0] and 'NrGlosowania=7' in rows[0]['url']
     assert topic_votes('lotnisko') == []
     monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
     data = APIClient().get('/api/przeszlosc/temat/?q=VAT').json()
