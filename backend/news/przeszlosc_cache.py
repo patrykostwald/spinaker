@@ -18,7 +18,9 @@ TOPIC_EMPTY_SECONDS = 3600       # pusty wynik też kosztuje pełne skany (Śled
 VOTES_SECONDS = 3600
 PROFILE_SECONDS = 3 * 3600
 PROFILE_HOT_SECONDS = 4 * 3600
+PROFILE_ALL_SECONDS = 22 * 3600  # profil z nocnego / dosypywanego rozgrzewania: wygasa przed następnym 5:35, więc nie trzyma wczorajszych danych
 WARM_BUDGET_SECONDS = 20 * 60
+WARM_CATCHUP = 30                # tyle jeszcze niepoliczonych profili dosypuje każde godzinne rozgrzewanie (paczka zamiast jednego długiego przebiegu)
 TOPIC_KEY = 'przeszlosc:temat:v4:'
 VOTES_KEY = 'przeszlosc:glosowania:v2:'
 PROFILE_KEY = 'przeszlosc:osoba:v2:'  # ten sam klucz i kształt ładunku co dotąd w person_view (testy wzmianek na nim polegają)
@@ -140,6 +142,21 @@ def all_mps():
                 .select_related('parliamentary_roster_entry').order_by('pk'))
 
 
+def money_people(limit=150):
+    """Osoby z potwierdzonymi funkcjami w spółkach (drzewo pieniędzy) - najdroższe w zimnym odczycie (Śledczy 11.10: Obajtek p95 19 s)."""
+    from django.db.models import Count
+    from news.political_models import PublicFigure
+    return list(PublicFigure.objects.filter(archived=False, merged_into__isnull=True,
+                                            organisation_relations__verification_status='confirmed')
+                .annotate(n=Count('organisation_relations')).order_by('-n', 'pk').select_related('parliamentary_roster_entry')[:limit])
+
+
+def uncached(figures):
+    """Osoby bez wpisu w cache, w podanej kolejności (jedno get_many zamiast zapytania na osobę)."""
+    present = cache.get_many([person_key(f) for f in figures])
+    return [f for f in figures if person_key(f) not in present]
+
+
 def warm(scope='hot', budget_seconds=WARM_BUDGET_SECONDS, now=time.monotonic):
     """Przelicza i zapisuje ładunki: scope='hot' (tematy dnia + ich osoby, co godzinę) albo 'all' (dodatkowo wszyscy
     posłowie, w nocy). Mieści się w budżecie czasu; to, czego nie zdążył, zostaje na następny raz.
@@ -151,9 +168,17 @@ def warm(scope='hot', budget_seconds=WARM_BUDGET_SECONDS, now=time.monotonic):
         return stats
     topics = hot_topics()
     people = hot_people(topics)
+    hot_ids = {f.pk for f in people}
     if scope == 'all':
-        seen = {f.pk for f in people}
-        people += [f for f in all_mps() if f.pk not in seen]
+        # Kolejność: gorące, potem posłowie i osoby z drzewem pieniędzy; kto już ma wpis (przerwany wcześniejszy przebieg),
+        # jest pomijany, więc kolejny przebieg kontynuuje zamiast liczyć od początku.
+        rest = [f for f in all_mps() + money_people() if f.pk not in hot_ids]
+        rest = list({f.pk: f for f in rest}.values())
+        people += uncached(rest)
+    else:
+        # Co godzinę dosypujemy paczkę jeszcze niepoliczonych profili: 250 osób nie czeka na jeden długi nocny przebieg.
+        rest = [f for f in all_mps() + money_people() if f.pk not in hot_ids]
+        people += uncached(list({f.pk: f for f in rest}.values()))[:WARM_CATCHUP]
     for query in topics:
         if now() - started > budget_seconds:
             stats['skipped'] += 1
@@ -168,7 +193,7 @@ def warm(scope='hot', budget_seconds=WARM_BUDGET_SECONDS, now=time.monotonic):
             stats['skipped'] += 1
             continue
         try:
-            cache.set(person_key(figure), person_payload(figure), PROFILE_HOT_SECONDS)
+            cache.set(person_key(figure), person_payload(figure), PROFILE_HOT_SECONDS if figure.pk in hot_ids else PROFILE_ALL_SECONDS)
             stats['people'] += 1
         except Exception:  # noqa: BLE001
             stats['errors'] += 1

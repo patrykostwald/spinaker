@@ -473,9 +473,15 @@ def co_occurrence(figure, identities, limit=10):
     accounts = [a for a, _ in x_accounts(figure)]
     if accounts:
         messages = ClinicDailyMessage.objects.filter(status='approved', posts__account__in=accounts).distinct().order_by('-day')[:60]
+        messages = list(messages)
+        # Jedno zapytanie o konta wszystkich 60 przekazów zamiast jednego na przekaz (+ figures_by_account na przekaz).
+        accounts_by_msg = defaultdict(set)
+        for msg_id, account_id in (PoliticalPost.objects.filter(clinic_daily_messages__in=messages).exclude(account__in=accounts)
+                                   .values_list('clinic_daily_messages', 'account_id').distinct()):
+            accounts_by_msg[msg_id].add(account_id)
+        owners = figures_by_account(set().union(*accounts_by_msg.values())) if accounts_by_msg else {}
         for msg in messages:
-            other_accounts = set(PoliticalPost.objects.filter(clinic_daily_messages=msg).exclude(account__in=accounts).values_list('account_id', flat=True))
-            for f in {f.pk for f in figures_by_account(other_accounts).values()} - {figure.pk}:
+            for f in {owners[a].pk for a in accounts_by_msg.get(msg.pk, ()) if a in owners} - {figure.pk}:
                 score[f] += 1
                 evidence[f].append({'kind': 'przekaz dnia', 'label': f'Przekaz dnia {msg.day.isoformat()}', 'url': f'https://spin.clinic/klinika/przekazy/{msg.day.isoformat()}'})
     people = {f.pk: f for f in PublicFigure.objects.filter(pk__in=list(score), archived=False)}

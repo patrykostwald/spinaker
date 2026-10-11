@@ -167,6 +167,22 @@ def test_warm_fills_hot_topics_and_people_within_budget(monkeypatch):
     assert starved['skipped'] >= 1 and starved['topics'] + starved['people'] <= 1
 
 
+def test_warm_dosypuje_paczke_niepoliczonych_profili_i_wznawia_przebieg(monkeypatch):
+    monkeypatch.setenv('PRZESZLOSC_CACHE', 'always')
+    monkeypatch.setattr(pc, 'WARM_CATCHUP', 2)
+    figures = [mp(f'Poseł Numer{n}', 100 + n) for n in range(5)]
+    first = pc.warm('hot')
+    assert first['people'] == 2 and first['errors'] == 0  # paczka godzinna, nie wszyscy naraz
+    assert len(pc.uncached(figures)) == 3
+    clock = iter([0, 0, 100, 100, 100, 100, 100, 100])
+    partial = pc.warm('all', budget_seconds=10, now=lambda: next(clock))
+    assert partial['people'] <= 1 and partial['skipped'] >= 1
+    pc.warm('all')
+    assert pc.uncached(figures) == []  # przerwany przebieg jest kontynuowany, gotowych nie liczy drugi raz
+    again = pc.warm('all')
+    assert again['people'] == 0
+
+
 def test_warm_is_noop_without_cache_and_tasks_respect_switch(monkeypatch):
     assert pc.warm('hot') == {'scope': 'hot', 'topics': 0, 'people': 0, 'skipped': 0, 'errors': 0, 'disabled': True}
     from news import tasks
