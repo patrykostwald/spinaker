@@ -741,6 +741,26 @@ def przeszlosc_topics_task():
     return {'status': 'ok', 'topics': [t['topic'] for t in przeszlosc.pick_topics()]}
 
 
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def przeszlosc_warm_task(scope='hot'):
+    """Co godzinę (Śledczy R1, P1-9): tematy dnia i ich osoby przeliczone do cache, żeby czytelnik nie czekał na zimny odczyt."""
+    from news import przeszlosc
+    from news.przeszlosc_cache import warm
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return {'status': 'ok', **warm(scope)}
+
+
+@shared_task(soft_time_limit=3300, time_limit=3500)
+def przeszlosc_warm_all_task():
+    """W nocy po imporcie Sejmu i wyborze tematów (5:10): dodatkowo profile wszystkich posłów, budżet 50 minut."""
+    from news import przeszlosc
+    from news.przeszlosc_cache import warm
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return {'status': 'ok', **warm('all', budget_seconds=50 * 60)}
+
+
 @shared_task(name="news.tasks.przeszlosc_alert_confirmation_task", soft_time_limit=60, time_limit=90)
 def przeszlosc_alert_confirmation_task(alert_id):
     """Mail z linkiem potwierdzającym alert przeszłość.today (podwójne potwierdzenie)."""

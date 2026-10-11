@@ -515,14 +515,21 @@ def vote_alignment(identities, limit=10, window=400, minimum=10):
         return {'available': False, 'window': 0, 'aligned': [], 'cross_club': []}
     term, me = identities[0]
     mine = Ballot.objects.filter(mp_id=me, voting__term=term, vote__in=DECISIVE)
-    voting_ids = list(mine.order_by('-voting_id').values_list('voting_id', flat=True)[:window])
+    # P1-9: jedna lista moich głosów zamiast podzapytania skorelowanego na każdym z ~180 tys. głosów innych posłów.
+    my_votes = list(mine.order_by('-voting_id').values_list('voting_id', 'vote', 'club')[:window])
+    voting_ids = [voting_id for voting_id, _, _ in my_votes]
     if not voting_ids:
         return {'available': False, 'window': 0, 'aligned': [], 'cross_club': []}
-    my_club = mine.order_by('-voting_id').values_list('club', flat=True).first() or ''
-    my_vote = Ballot.objects.filter(voting_id=OuterRef('voting_id'), mp_id=me).values('vote')[:1]
-    stats = (Ballot.objects.filter(voting_id__in=voting_ids, vote__in=DECISIVE).exclude(mp_id=me)
-             .annotate(mine=Subquery(my_vote)).values('mp_id')
-             .annotate(total=Count('id'), same=Count('id', filter=Q(vote=F('mine')))))
+    my_club = my_votes[0][2] or ''
+    mine_map = {voting_id: vote for voting_id, vote, _ in my_votes}
+    by_vote = defaultdict(list)
+    for voting_id, vote, _ in my_votes:
+        by_vote[vote].append(voting_id)
+    same_as_me = Q()
+    for vote, ids in by_vote.items():
+        same_as_me |= Q(vote=vote, voting_id__in=ids)
+    stats = (Ballot.objects.filter(voting_id__in=voting_ids, vote__in=DECISIVE).exclude(mp_id=me).values('mp_id')
+             .annotate(total=Count('id'), same=Count('id', filter=same_as_me)))
     rows = [r for r in stats if r['total'] >= min(minimum, len(voting_ids))]
     info = {}
     for mp_id, name, club in (Ballot.objects.filter(voting_id__in=voting_ids[:50], mp_id__in=[r['mp_id'] for r in rows])
@@ -536,11 +543,20 @@ def vote_alignment(identities, limit=10, window=400, minimum=10):
     cross = [r for r in rows if r['club'] and r['club'] != my_club][:limit]
     chosen = {r['mp_id'] for r in aligned + cross}
     figures = figures_for_mps({(term, m) for m in chosen})
-    mine_map = dict(Ballot.objects.filter(mp_id=me, voting_id__in=voting_ids).values_list('voting_id', 'vote'))
+    # Dowody: lekkie krotki zamiast tysięcy instancji modeli; pełne głosowania tylko dla ≤ 3 wspólnych na osobę.
+    agree_ids = defaultdict(list)
+    for mp_id, voting_id, vote in (Ballot.objects.filter(mp_id__in=chosen, voting_id__in=voting_ids)
+                                   .order_by('-voting_id').values_list('mp_id', 'voting_id', 'vote')):
+        if mine_map.get(voting_id) == vote and len(agree_ids[mp_id]) < 3:
+            agree_ids[mp_id].append((voting_id, vote))
+    from news.models import ParliamentaryVoting
+    needed = {voting_id for pairs in agree_ids.values() for voting_id, _ in pairs}
+    votings = {v.pk: v for v in ParliamentaryVoting.objects.filter(pk__in=needed).select_related('article')}
     agree = defaultdict(list)
-    for b in (Ballot.objects.filter(mp_id__in=chosen, voting_id__in=voting_ids).select_related('voting__article').order_by('-voting_id')):
-        if mine_map.get(b.voting_id) == b.vote and len(agree[b.mp_id]) < 3:
-            agree[b.mp_id].append({'kind': 'głosowanie', 'label': f"{b.voting.article.title[:120]} ({VOTE_LABEL.get(b.vote, b.vote)})", 'url': vote_url(b.voting)})
+    for mp_id, pairs in agree_ids.items():
+        for voting_id, vote in pairs:
+            v = votings[voting_id]
+            agree[mp_id].append({'kind': 'głosowanie', 'label': f"{v.article.title[:120]} ({VOTE_LABEL.get(vote, vote)})", 'url': vote_url(v)})
 
     def item(r):
         f = figures.get((term, r['mp_id']))
@@ -665,13 +681,8 @@ def person_view(request, ident):
     figure = resolve(ident)
     if figure is None:
         return Response({'detail': 'Nie ma takiej osoby publicznej w rejestrze.'}, status=404)
-    key = f'przeszlosc:osoba:v2:{figure.pk}'
-    data = cache.get(key) if connection.vendor == 'postgresql' else None
-    if data is None:
-        data = profile(figure, include_mentions=False)
-        data['denominators'] = denominators(figure)
-        if connection.vendor == 'postgresql':
-            cache.set(key, data, 900)
+    from news.przeszlosc_cache import cached_person
+    data = cached_person(figure)  # P1-9: profil z cache rozgrzewanego w tle (przeszlosc_cache)
     from news.przeszlosc_dostep import access, has, locked
     # The profile cache must not resurrect a newly rejected metadata match.
     from news.media_mentions import mentions_data

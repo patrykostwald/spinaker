@@ -53,23 +53,42 @@ def _phrase(term):
     return [_stem(w) for w in re.split(r'\s+', term) if len(w) >= 2]
 
 
+def _alternations(stem):
+    """Odmiana z wymianą ó/o w rdzeniu (Turów / Turowa, Kraków / Krakowa): obie postacie, ta sama reguła dla każdego słowa."""
+    out = [stem]
+    if 'ó' in stem:
+        out.append(stem.replace('ó', 'o'))
+    elif 'Ó' in stem:
+        out.append(stem.replace('Ó', 'O'))
+    return out
+
+
 def _match(fields, words):
-    """Fraza użytkownika: słowa w dowolnej odmianie; rozwinięcia skrótów: dokładny zapis (bez szumu jak „raport” dla „Port”)."""
+    """Fraza użytkownika: słowa w dowolnej odmianie; rozwinięcia skrótów: dokładny zapis (bez szumu jak „raport” dla „Port”).
+
+    Skrót (VAT, CPK) ma granice słowa sprawdzane regexem, ale najpierw tani filtr `icontains` (P1-9): baza odrzuca wiersze
+    bez samego ciągu znaków, a regex liczy się tylko na kandydatach (w SQLite regex to funkcja Pythona na każdy wiersz,
+    w Postgresie oba warunki korzystają z indeksu trigramowego z komendy przeszlosc_indeksy). Wynik jest ten sam."""
     q = Q()
     for term in words:
         for full in EXPAND.get(term.lower().strip(), []):
             for field in fields:
                 q |= Q(**{f'{field}__icontains': full})
         if term.strip().isupper() and len(term.strip()) <= 6:
+            acronym = term.strip()
             for field in fields:
-                q |= Q(**{f'{field}__regex': r'(^|[^A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż])' + re.escape(term.strip()) + r'($|[^A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż])'})
+                q |= (Q(**{f'{field}__icontains': acronym})
+                      & Q(**{f'{field}__regex': r'(^|[^A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż])' + re.escape(acronym) + r'($|[^A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż])'}))
             continue
         variants = [_phrase(term)]
         for stems in variants:
             for field in fields:
                 part = Q()
                 for stem in stems:
-                    part &= Q(**{f'{field}__icontains': stem})
+                    alternative = Q()
+                    for form in _alternations(stem):
+                        alternative |= Q(**{f'{field}__icontains': form})
+                    part &= alternative
                 q |= part
     return q
 
@@ -214,17 +233,52 @@ VOTE_GROUP = {'YES': 'za', 'NO': 'przeciw', 'ABSTAIN': 'wstrzymał się', 'ABSEN
               'PRESENT': 'obecny, bez głosu', 'VOTE_VALID': 'głos na liście', 'VOTE_INVALID': 'głos nieważny'}
 
 
-def topic_votes(query, limit=8):
-    """Głosowania Sejmu w temacie (właściciel 5.10, funkcja 1 z mapy): wynik zbiorczo, kluby i głosy imienne posłów.
-    Dopasowanie po tytule punktu i opisie głosowania; kluby w kolejności wielkości, ta sama skala dla wszystkich."""
-    from collections import Counter
+VOTES_PER_PAGE = 8
+VOTES_PAGE_MAX = 50
+
+
+def topic_votings(query, since=None, until=None):
+    """Głosowania Sejmu pasujące do tematu, najnowsze pierwsze (P1-3: sortowanie po dacie, zakres dat `od`/`do`)."""
     from news.models import ParliamentaryVoting
+    words = terms(query)
+    if not words:
+        return ParliamentaryVoting.objects.none()
+    rows = ParliamentaryVoting.objects.filter(_match(['article__title', 'motion'], words))
+    if since:
+        rows = rows.filter(article__published_date__date__gte=since)
+    if until:
+        rows = rows.filter(article__published_date__date__lte=until)
+    return rows.order_by(F('article__published_date').desc(nulls_last=True), '-number')
+
+
+def topic_votes_page(query, page=1, per_page=VOTES_PER_PAGE, since=None, until=None):
+    """Strona głosowań tematu z liczbą wszystkich i zakresem dat (P1-3): `page` od 1, `per_page` najwyżej VOTES_PAGE_MAX."""
+    from django.db.models import Max, Min
+    per_page = max(1, min(int(per_page), VOTES_PAGE_MAX))
+    page = max(1, int(page))
+    rows = topic_votings(query, since, until)
+    total = rows.count()
+    pages = max(1, -(-total // per_page))
+    page = min(page, pages)
+    span = rows.aggregate(first=Min('article__published_date'), last=Max('article__published_date')) if total else {}
+    start = (page - 1) * per_page
+    return {'results': topic_votes(query, limit=per_page, offset=start, since=since, until=until),
+            'total': total, 'page': page, 'pages': pages, 'per_page': per_page,
+            'range': {'first': span['first'].date().isoformat() if span.get('first') else None,
+                      'last': span['last'].date().isoformat() if span.get('last') else None},
+            'filter': {'since': since, 'until': until}}
+
+
+def topic_votes(query, limit=VOTES_PER_PAGE, offset=0, since=None, until=None):
+    """Głosowania Sejmu w temacie (właściciel 5.10, funkcja 1 z mapy): wynik zbiorczo, kluby i głosy imienne posłów.
+    Dopasowanie po tytule punktu i opisie głosowania; kluby w kolejności wielkości, ta sama skala dla wszystkich.
+    `offset`, `since`, `until`: stronicowanie i zakres dat (P1-3); kolejność zawsze po dacie głosowania."""
+    from collections import Counter
     words = terms(query)
     if not words:
         return []
     rows = []
-    votings = (ParliamentaryVoting.objects.filter(_match(['article__title', 'motion'], words))
-               .select_related('article').prefetch_related('ballots').order_by('-article__published_date', '-number')[:limit])
+    votings = (topic_votings(query, since, until).select_related('article').prefetch_related('ballots')[offset:offset + limit])
     for v in votings:
         ballots = list(v.ballots.all())
         clubs = Counter(b.club or 'niezrzeszeni' for b in ballots)
@@ -285,24 +339,43 @@ def topic_view(request):
     query = request.query_params.get('q', '')[:120]
     if not terms(query):
         return Response({'detail': 'Podaj temat (co najmniej 3 znaki).'}, status=400)
-    from django.core.cache import cache
-    from django.db import connection
-    key = 'przeszlosc:v2:' + query.lower()
-    data = cache.get(key) if connection.vendor == 'postgresql' else None
-    if data is None:
-        data = topic_graph(query)
-        data['votes'] = topic_votes(query)
-        data['eu_funds'] = eu_funds(query)
-        link_votes(data)
-        if data['votes']:
-            data['counts']['vote'] = len(data['votes'])
-        if connection.vendor == 'postgresql':
-            cache.set(key, data, 600)
+    from news.przeszlosc_cache import cached_topic
+    data = cached_topic(query)  # P1-9: cache z rozgrzewaniem w tle (przeszlosc_cache), ten sam ładunek dla każdego
     from news.przeszlosc_dostep import access, has
     data = {**data, 'access': access(request)}
     if not has('money_trail', request):
         data.pop('eu_funds', None)  # ślad pieniędzy to funkcja Pro (po becie); w becie otwarta dla wszystkich
     return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def topic_votes_view(request):
+    """GET /api/przeszlosc/temat/glosowania/?q=VAT&strona=2&na_strone=20&od=2025-01-01&do=2025-12-31 (P1-3).
+    Pełna lista głosowań tematu ze stronicowaniem i zakresem dat; kolejność po dacie głosowania, najnowsze pierwsze."""
+    from datetime import date
+    if not enabled():
+        return Response({'detail': 'Funkcja jeszcze wyłączona.'}, status=404)
+    query = request.query_params.get('q', '')[:120]
+    if not terms(query):
+        return Response({'detail': 'Podaj temat (co najmniej 3 znaki).'}, status=400)
+    params = request.query_params
+    try:
+        page = int(params.get('strona', '1'))
+        per_page = int(params.get('na_strone', str(VOTES_PER_PAGE)))
+        bounds = []
+        for key in ('od', 'do'):
+            value = params.get(key) or None
+            if value and date.fromisoformat(value).isoformat() != value:
+                raise ValueError
+            bounds.append(value)
+    except (TypeError, ValueError):
+        return Response({'detail': 'Strona i liczba na stronę to liczby, daty w formacie YYYY-MM-DD.'}, status=400)
+    if all(bounds) and bounds[0] > bounds[1]:
+        return Response({'detail': 'Data od nie może być późniejsza niż data do.'}, status=400)
+    from news.przeszlosc_cache import cached_topic_votes
+    data = cached_topic_votes(query, page, per_page, bounds[0], bounds[1])
+    return Response({'topic': query, **data})
 
 
 KIND_LABELS = {'print': 'Druk sejmowy', 'ballot': 'Głosowanie', 'voting': 'Głosowanie', 'consultation': 'Konsultacje',

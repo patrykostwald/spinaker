@@ -33,6 +33,8 @@ BEAT_PLAN = {
     'odstepstwa-nightly': ('voting_deviations_task', {'hour': 4, 'minute': 35}),  # plan Architekta 6.10: po nocnym imporcie i uzupełnianiu głosowań
     'przeszlosc-topics': ('przeszlosc_topics_task', {'hour': 5, 'minute': 10}),  # tydzień: stan wiedzy UX/UI i przegląd wszystkich stron  # właściciel 5.10: agent naprawiający połączenia z modelami
     'przeszlosc-alerts-daily': ('przeszlosc_alerts_task', {'hour': 7, 'minute': 0}),  # sprint 1: dzienny list alertów
+    'przeszlosc-warm-hot': ('przeszlosc_warm_task', {'minute': 25}),  # Śledczy R1 P1-9: tematy dnia i ich osoby w cache co godzinę
+    'przeszlosc-warm-all': ('przeszlosc_warm_all_task', {'hour': 5, 'minute': 35}),  # P1-9: wszyscy posłowie po nocnym imporcie i tematach 5:10
     'public-record-people-nightly': ('public_record_people_task', {'hour': 4, 'minute': 35}),  # dokumenty Sejmu → osoby po id posła
     'narrative-thread-daily':('narrative_thread_task', {'hour': 21, 'minute': 45}),
     'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),

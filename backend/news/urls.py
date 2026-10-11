@@ -43,6 +43,7 @@ from news.feedback import BugReportView, JourneyView
 from news import sales  # noqa: E402
 from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
+from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
 from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_wersja
 from news.przeszlosc_paski import strips_view
 from news.voting_anomalies import deviations_view as przeszlosc_deviations
@@ -116,6 +117,7 @@ urlpatterns = [
     path('feedback/bug/', BugReportView.as_view()),
     path('feedback/journey/', JourneyView.as_view()),
     path('przeszlosc/temat/', przeszlosc_topic),
+    path('przeszlosc/temat/glosowania/', przeszlosc_topic_votes),
     path('przeszlosc/start/', przeszlosc_start),
     path('przeszlosc/funkcje/', przeszlosc_dostep.features_view),
     path('przeszlosc/wersja/', przeszlosc_wersja.wersja_view),
