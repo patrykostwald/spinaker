@@ -73,6 +73,9 @@ export function TopicTree() {
   const [hits, setHits] = useState<PersonHit[] | null>(null);
   const [firms, setFirms] = useState<FirmSearch | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  // wejście z linku ?q= (P1-8): pierwszy element pod menu to wynik tematu, paski YouTube i źródeł niżej i zwinięte (Jakob, Peak-End)
+  const [linked, setLinked] = useState(false);
+  useEffect(() => setLinked(new URLSearchParams(window.location.search).has('q')), []);
   useEffect(() => {
     if (mode === 'company') {
       const q = query.trim();
@@ -134,8 +137,16 @@ export function TopicTree() {
   const topics = start?.auto_topics?.length ? start.auto_topics.map(t => t.topic) : EXAMPLES;
   const pick = (t: string) => { setQuery(t); void load(t); };
 
-  return <main className="px">
-    <div className="px-home-top"><Bar /><Paski /></div>
+  const result = <section className="px-result" id="wynik" aria-label="Wynik tematu" data-empty={!data || undefined}>
+    {state === 'loading' && !data && <div className="px-wait"><Loading label="Ładowanie tematu" /></div>}
+    {state === 'off' && <p className="px-msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
+    {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}
+    {data && (state === 'idle' || state === 'loading') && <TopicView key={data.topic} data={data} busy={state === 'loading'} daily={daily} />}
+  </section>;
+
+  return <main className="px" data-linked={linked || undefined}>
+    <div className="px-home-top"><Bar />{!linked && <Paski />}</div>
+    {linked && result}
 
     <header className="px-hero">
       <div className="px-hero__copy">
@@ -185,12 +196,8 @@ export function TopicTree() {
         .filter(([key]) => narr || key !== 'diagnoses').map(([key, label]) => <div key={key}><b>{start ? (start.counts[key] ?? 0).toLocaleString('pl-PL') : ' '}</b><span>{nb(label)}</span></div>)}
     </section>
 
-    <section className="px-result" id="wynik" aria-label="Wynik tematu" data-empty={!data || undefined}>
-      {state === 'loading' && !data && <div className="px-wait"><Loading label="Ładowanie tematu" /></div>}
-      {state === 'off' && <p className="px-msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
-      {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}
-      {data && (state === 'idle' || state === 'loading') && <TopicView key={data.topic} data={data} busy={state === 'loading'} daily={daily} />}
-    </section>
+    {linked && <details className="px-fold"><summary>Najnowsze z YouTube i źródeł publicznych</summary><Paski /></details>}
+    {!linked && result}
 
     <section className="px-sec" id="jak" aria-labelledby="jak-h">
       <h2 id="jak-h" className="px-h2">Jak to działa</h2>

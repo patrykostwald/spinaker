@@ -461,3 +461,9 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
 /* eksport (P1-5): cele dotyku 44 px (Fitts), przyciski zawijają się zamiast wychodzić poza ekran */
 .px-flow__export { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .px-flow__export .px-tool, .px-tv__tools .px-tool { min-height: 44px; }
+
+/* wejście z ?q=: wynik tematu pierwszy, paski zwinięte pod nim (P1-8) */
+.px[data-linked] > .px-home-top { margin-bottom: -48px; } /* 88 px odstępu siatki -> 40 px pod menu */
+.px-fold { min-width: 0; border: 1px solid var(--px-line); border-radius: 12px; padding: 0 16px; }
+.px-fold > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: 15px; color: var(--sc-text-2); }
+.px-fold[open] { padding-bottom: 16px; }
