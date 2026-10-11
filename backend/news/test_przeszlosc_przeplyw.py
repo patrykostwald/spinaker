@@ -392,3 +392,20 @@ def test_eksport_data_pobrania_to_data_zrodla_nie_eksportu():
     from news import przeszlosc_eksport as ex
     assert ex.day(None) == '' and ex.day('2026-03-02T10:00:00+00:00') == '2026-03-02'
     assert 'nie data eksportu' in ex.FETCH_NOTE
+
+
+def test_domyslne_drzewo_osoby_ogranicza_rekordy_glosowan_i_grupuje_reszte():
+    from news.public_records_models import PublicRecord, PublicRecordPerson
+    figure = mp('Anna Kowalska', 77)
+    for n in range(80):
+        r = PublicRecord.objects.create(source='sejm', kind='vote', external_id=f'10/{n}', source_url=f'https://api.sejm.gov.pl/v/{n}',
+                                        response_sha256='c' * 64, response_url='https://api.sejm.gov.pl', term=10,
+                                        date=date(2025, 4, 1) + (date(2025, 7, 1) - date(2025, 4, 1)) * n // 80, title=f'Głosowanie {n}')
+        PublicRecordPerson.objects.create(record=r, term=10, mp_id=77, figure=figure)
+    data = get(f'osoba:{figure.pk}')
+    votes = [n for n in data['nodes'] if n['kind'] == 'vote']
+    assert len(votes) == flow.VOTE_NODES
+    newest = max(n['date'] for n in votes)
+    assert newest == max(r.date.isoformat() for r in PublicRecord.objects.filter(kind='vote'))
+    grouped = {(g['category'], g['kind']): g['count'] for g in data['limits']['grouped']}
+    assert grouped[('polityka', 'vote')] == 80 - flow.VOTE_NODES and data['limits']['truncated'] is True
