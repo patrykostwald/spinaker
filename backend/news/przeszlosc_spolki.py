@@ -28,6 +28,7 @@ SCOPE = ('Przeszukujemy podmioty, które mamy w bazie (spółki, fundacje i stow
 def classify(query):
     """('krs'|'nip'|'regon'|'digits'|'name'|'', wartość) - 10 cyfr zaczynających się od 00 to KRS, inne 10 cyfr to NIP."""
     q = str(query or '').strip()
+    q = re.sub(r'(?i)^\s*PL(?=[\s:.\-]*\d)', '', q).strip()   # NIP unijny z prefiksem PL (PL5250007738)
     d = re.sub(r'\D', '', q)
     if d and re.fullmatch(r'(?i)\s*(krs|nip|regon)?[\s:.\-0-9]*', q):
         label = re.match(r'(?i)\s*(krs|nip|regon)', q)
@@ -85,13 +86,14 @@ def fetch_on_demand(number, ip='-'):
     if not _allow(ip):
         return None, 'busy'
     try:
-        extract = krs_client.fetch(number, full=False)
+        extract, status = krs_client.fetch_status(number, full=False)
     except Exception:  # noqa: BLE001 - sieć i parser nie mogą wywrócić widoku
+        extract, status = None, 'error'
+    if status == 'error':
         cache.set(f'przeszlosc:krs-neg:{number}', 'error', ERROR_TTL)
         return None, 'error'
     if extract is None or not extract.name:
-        # fetch() zwraca None i dla 404, i dla błędu sieci: pamiętamy krótko, żeby nie młotkować rejestru
-        cache.set(f'przeszlosc:krs-neg:{number}', 'missing', ERROR_TTL)
+        cache.set(f'przeszlosc:krs-neg:{number}', 'missing', MISSING_TTL)
         return None, 'missing'
     org, _ = RegisteredOrganisation.objects.update_or_create(krs_number=extract.krs, defaults={
         'name': extract.name.strip()[:512], 'kind': extract.kind, 'legal_form': extract.legal_form.lower()[:128], 'register': extract.register,
@@ -107,6 +109,25 @@ def _ip(request):
 def coverage():
     from news.political_models import RegisteredOrganisation
     return {'organisations': RegisteredOrganisation.objects.filter(archived=False).count(), 'scope': SCOPE}
+
+
+def by_name(base, value):
+    """Nazwa po fragmencie: każde słowo zapytania musi wystąpić w nazwie (kolejność bez znaczenia); gdy nic, skrót (PKO BP = Powszechna Kasa Oszczędności Bank Polski)."""
+    words = [w for w in re.split(r'[\s"„”,]+', value) if w]
+    query = base
+    for word in words:
+        query = query.filter(name__icontains=word)
+    hits = list(query.order_by('name')[:LIMIT])
+    if hits or not words:
+        return hits
+    wanted = ''.join(words).upper()
+    return [o for o in base.order_by('name') if len(wanted) >= 3 and wanted in initials(o.name)][:LIMIT]
+
+
+def initials(name):
+    """Inicjały znaczących słów nazwy, bez form prawnych (np. „Powszechna Kasa Oszczędności Bank Polski SA” -> „PKOBP”)."""
+    skip = {'SA', 'S.A.', 'SP.', 'Z', 'O.O.', 'SPÓŁKA', 'AKCYJNA', 'W', 'I', 'IM.'}
+    return ''.join(w[0] for w in re.findall(r'[\wĄĆĘŁŃÓŚŹŻąćęłńóśźż.]+', name.upper()) if w not in skip)
 
 
 def search(query, ip='-'):
@@ -129,16 +150,17 @@ def search(query, ip='-'):
     elif kind == 'nip':
         hits = list(base.filter(nip=value)[:LIMIT])
     elif kind == 'regon':
-        hits = list(base.filter(regon__in={value, value[:9]})[:LIMIT])
+        # REGON 9-cyfrowy to też początek 14-cyfrowego (jednostka lokalna), więc pasuje obie formy
+        hits = list(base.filter(Q(regon__in={value, value[:9]}) | Q(regon__startswith=value[:9]))[:LIMIT])
     elif kind == 'digits':
         hits = list(base.filter(Q(nip=value) | Q(regon=value) | Q(krs_number=value.zfill(10)))[:LIMIT])
     else:
-        hits = list(base.filter(name__icontains=value).order_by('name')[:LIMIT])
+        hits = by_name(base, value)
     out['results'] = [card(o) for o in hits]
     if hits:
         out['status'] = 'ok'
     else:
-        label = {'krs': 'numeru KRS', 'nip': 'NIP', 'regon': 'REGON', 'digits': 'numeru', 'name': 'nazwy'}[kind]
+        label = {'krs': 'numerze KRS', 'nip': 'NIP', 'regon': 'REGON', 'digits': 'numerze', 'name': 'nazwie'}[kind]
         if out['status'] == 'busy':
             out['message'] = 'Za dużo pobrań z rejestru KRS naraz. Spróbuj za minutę.'
         elif out['status'] == 'error':

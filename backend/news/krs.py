@@ -19,7 +19,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 API = 'https://api-krs.ms.gov.pl/api/krs/{kind}/{krs}'
-HEADERS = {'User-Agent': 'spin.clinic KRS check (+https://spin.clinic/o-nas)'}
+HEADERS = {'User-Agent': 'spin.clinic KRS check (+https://spin.clinic/o-nas)', 'Accept': 'application/json'}
 # Oficjalna wyszukiwarka KRS Ministerstwa Sprawiedliwości nie ma stałych linków do podmiotów, więc link główny
 # prowadzi do niej (numer KRS stoi obok), a rejestr.io jest tylko dodatkowym, nieurzędowym odnośnikiem.
 # Urzędowy odpis zostaje jako dowód przy relacji.
@@ -199,28 +199,41 @@ def parse(krs: str, register: str, data: dict) -> Extract:
     return extract
 
 
-def fetch(krs: str, full: bool = True, timeout: float = 30) -> Extract | None:
-    """Odpis z oficjalnego API: najpierw rejestr przedsiębiorców, potem stowarzyszeń i fundacji. None — brak podmiotu."""
+def fetch_status(krs: str, full: bool = True, timeout: float = 30) -> tuple[Extract | None, str]:
+    """(odpis, status): ok | missing (404 w obu rejestrach, P i S) | error (sieć, HTTP inne niż 200/404, nieczytelna odpowiedź).
+    Błąd rejestru to nie „nie ma podmiotu”: wywołujący ma to rozróżniać. Jedno ponowienie przy 429/5xx/sieci."""
     krs = normalize_krs(krs)
     if not krs:
-        return None
+        return None, 'missing'
+    url = API.format(kind='OdpisPelny' if full else 'OdpisAktualny', krs=krs)
     for register in ('P', 'S'):
-        url = API.format(kind='OdpisPelny' if full else 'OdpisAktualny', krs=krs)
-        try:
-            response = requests.get(url, params={'rejestr': register, 'format': 'json'}, headers=HEADERS, timeout=(5, timeout))
-        except requests.RequestException as error:
-            logger.warning('KRS %s: %s', krs, type(error).__name__)
-            return None
+        response = None
+        for attempt in (1, 2):
+            try:
+                response = requests.get(url, params={'rejestr': register, 'format': 'json'}, headers=HEADERS, timeout=(5, timeout))
+            except requests.RequestException as error:
+                logger.warning('KRS %s (%s): %s', krs, register, type(error).__name__)
+                response = None
+            if response is not None and response.status_code not in (429, 500, 502, 503, 504):
+                break
+        if response is None:
+            return None, 'error'
         if response.status_code == 404:
             continue
         if response.status_code != 200:
-            logger.warning('KRS %s: http %s', krs, response.status_code)
-            return None
+            logger.warning('KRS %s (%s): http %s', krs, register, response.status_code)
+            return None, 'error'
         try:
-            return parse(krs, register, response.json())
-        except ValueError:
-            return None
-    return None
+            return parse(krs, register, response.json()), 'ok'
+        except (ValueError, AttributeError, TypeError, KeyError):
+            logger.warning('KRS %s (%s): nieczytelna odpowiedź', krs, register)
+            return None, 'error'
+    return None, 'missing'
+
+
+def fetch(krs: str, full: bool = True, timeout: float = 30) -> Extract | None:
+    """Odpis z oficjalnego API: najpierw rejestr przedsiębiorców (P), potem stowarzyszeń i fundacji (S). None - brak podmiotu albo błąd."""
+    return fetch_status(krs, full, timeout)[0]
 
 
 def _upper(value: str) -> str:
