@@ -214,7 +214,7 @@ export function TopicTree() {
       <h2 id="zasady-h" className="px-h2">Zasady</h2>
       <ul className="px-rules">
         {([['person', 'Tylko osoby i podmioty publiczne', 'Politycy, urzędy, spółki i fundacje z KRS. Żadnych osób prywatnych.'],
-          ['record', 'Każde powiązanie ma źródło', 'Oficjalne dane Sejmu i KRS, wpisy na X, artykuły. Nic nie łączymy po samym nazwisku.'],
+          ['record', 'Każde powiązanie ma źródło', 'Oficjalne dane Sejmu i KRS, wpisy na X, artykuły. Osoby łączymy po identyfikatorach, a wzmianki w artykułach po nazwisku i oznaczamy jako automatyczne.'],
           ['vote', 'Ta sama miara dla wszystkich', 'Rządzący i opozycja przechodzą przez identyczne zapytania i te same reguły.']] as const)
           .map(([icon, title, text]) => <li key={title}><span className="px-rules__ic"><Icon name={icon} size={20} /></span><h3>{title}</h3><p>{nb(text)}</p></li>)}
       </ul>

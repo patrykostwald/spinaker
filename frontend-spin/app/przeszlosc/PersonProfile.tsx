@@ -15,7 +15,7 @@ import { sumLine } from './DrzewoPieniedzy';
  */
 type Ev = { kind: string; label: string; url: string };
 type Person = { id: number | null; slug: string | null; name: string; role: string };
-type ProfileMaterial = { id: number; title: string; url: string; source: string; published_date: string | null; material_type?: string; kind_label?: string; snippet?: string; text_changed?: { type: string; detected_at: string } | null };
+type ProfileMaterial = { confidence?: 'high' | 'medium'; id: number; title: string; url: string; source: string; published_date: string | null; material_type?: string; kind_label?: string; snippet?: string; text_changed?: { type: string; detected_at: string } | null };
 type Profile = {
   id: number; slug: string; name: string; role_title: string; organisation: string; status: string;
   party?: string | { code: string; short: string; name: string } | null; access?: Access;
@@ -30,7 +30,7 @@ type Profile = {
   organisations: { id: number; name: string; krs_number: string; official_register_url: string; extra_register_url?: string; since_note?: string; public_role: string; organ: string; relation_status: string; since?: string | null; until?: string | null }[];
   employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; source?: { url: string } }[];
   materials: { count: number; results: ProfileMaterial[] };
-  mentions?: { results: ProfileMaterial[] };
+  mentions?: { results: ProfileMaterial[]; total?: number; limit?: number; reason?: string; reason_code?: string };
   articles_total?: number;
   activity: { month: string; posts: number; documents: number; votes: number; media: number }[];
   topics: { topic: string; at: string }[];
@@ -169,7 +169,7 @@ function ProfileView({ data }: { data: Profile }) {
         </section>
         {/* „W mediach” (właściciel 6.10): potwierdzone artykuły o osobie; tylko tytuł, data, redakcja i odnośnik */}
         <WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
-        <WMediach id="pp-mentions-h" heading="Wzmianki" automatic items={(data.mentions?.results ?? []).filter(m => m.url).map(m => ({ id: `mention${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
+        <WMediach id="pp-mentions-h" heading="Wzmianki" automatic total={data.mentions?.total} emptyReason={data.mentions?.reason} items={(data.mentions?.results ?? []).filter(m => m.url).map(m => ({ id: `mention${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, confidence: m.confidence, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
       </div>
       <aside className="px-side">
         <section className="px-card" aria-labelledby="pp-roles-h">

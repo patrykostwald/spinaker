@@ -294,6 +294,7 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
 .px-wm__head .px-note { margin: 0; }
 .px-wm__subject { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; min-width: 0; align-items: center; }
 .px-wm__kind { font-size: 11px; color: var(--sc-text-2); white-space: nowrap; }
+.px-wm__conf[data-conf="medium"] { text-decoration: underline dotted; text-underline-offset: 2px; }
 .px-wm__chips { gap: 6px; }
 .px-wm__chips button { padding: 0 12px; font-size: 13px; }
 .px-wm__chips button em { font-style: normal; margin-left: 5px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
