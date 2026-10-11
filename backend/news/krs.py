@@ -108,6 +108,16 @@ def _current(values: list) -> dict:
     return (live or values)[-1]
 
 
+def _text(value, key: str) -> str:
+    """Pole tekstowe odpisu: OdpisPelny daje historię [{key: ..., nrWpisuWprow: ...}], OdpisAktualny zwykły tekst (P1-16: przez to nazwa
+    z odpisu aktualnego wychodziła pusta i podmiot uchodził za „brak w rejestrze”)."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return str(value.get(key) or '')
+    return str(_current(value).get(key) or '')
+
+
 def _kind(legal_form: str) -> str:
     form = legal_form.upper()
     if 'FUNDACJA' in form:
@@ -187,8 +197,8 @@ def parse(krs: str, register: str, data: dict) -> Extract:
     body = odpis.get('dane') or {}
     header = odpis.get('naglowekP') or odpis.get('naglowekA') or {}
     subject = (body.get('dzial1') or {}).get('danePodmiotu') or {}
-    name = str(_current(subject.get('nazwa') or []).get('nazwa') or '')
-    legal_form = str(_current(subject.get('formaPrawna') or []).get('formaPrawna') or '')
+    name = _text(subject.get('nazwa') or [], 'nazwa')
+    legal_form = _text(subject.get('formaPrawna') or [], 'formaPrawna')
     extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form), **identifiers(subject))
     extract.owners = _owners({k: v for k, v in (body.get('dzial1') or {}).items() if k != 'danePodmiotu'})
     persons: list[Person] = []

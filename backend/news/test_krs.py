@@ -108,3 +108,12 @@ def test_fetch_status_rozroznia_brak_podmiotu_od_bledu_rejestru(monkeypatch):
     assert krs.fetch_status('26438') == (None, 'error')
     answers = [_Resp(200, [])]  # niespodziewany kształt odpowiedzi
     assert krs.fetch_status('26438') == (None, 'error')
+
+
+def test_parse_odpis_aktualny_has_plain_text_name_and_form():
+    """P1-16: OdpisAktualny daje nazwę i formę prawną jako zwykły tekst (nie historię); pusta nazwa robiła z PKO BP „brak w rejestrze”."""
+    data = {'odpis': {'rodzaj': 'Aktualny', 'naglowekA': {}, 'dane': {'dzial1': {'danePodmiotu': {
+        'formaPrawna': 'SPÓŁKA AKCYJNA', 'nazwa': 'POWSZECHNA KASA OSZCZĘDNOŚCI BANK POLSKI SPÓŁKA AKCYJNA',
+        'identyfikatory': {'nip': '5250007738', 'regon': '01629826300000'}}}}}}
+    extract = krs.parse('0000026438', 'P', data)
+    assert extract.name.startswith('POWSZECHNA KASA') and extract.kind == 'company' and extract.nip == '5250007738' and extract.regon == '01629826300000'
