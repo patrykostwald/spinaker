@@ -8,6 +8,7 @@ import os
 import re
 
 from news import krs
+from news.przeszlosc_slownik import SKROTY, formy
 from django.db.models import F, Q
 
 PER_KIND = 30
@@ -23,21 +24,7 @@ def terms(query):
     return [t.strip() for t in re.split(r'[,;|]', query or '') if len(t.strip()) >= 3][:5]
 
 
-# Rozwinięcia częstych skrótów (wyszukiwanie łapie oba zapisy)
-EXPAND = {'cpk': ['Centralny Port Komunikacyjny', 'Centralnego Portu Komunikacyjnego', 'Port Polska', 'Portu Polska', 'Portem Polska'],
-          'kpo': ['Krajowy Plan Odbudowy', 'Krajowego Planu Odbudowy'], 'krrit': ['Krajowa Rada Radiofonii', 'Krajowej Rady Radiofonii'],
-          'nfz': ['Narodowy Fundusz Zdrowia', 'Narodowego Funduszu Zdrowia'], 'zus': ['Zakład Ubezpieczeń Społecznych', 'Zakładu Ubezpieczeń Społecznych'],
-          'oze': ['odnawialnych źródeł', 'odnawialne źródła'],
-          'vat': ['podatek od towarów i usług', 'podatku od towarów i usług', 'podatkiem od towarów i usług'],
-          'pit': ['podatek dochodowy od osób fizycznych', 'podatku dochodowym od osób fizycznych', 'podatku dochodowego od osób fizycznych'],
-          'cit': ['podatek dochodowy od osób prawnych', 'podatku dochodowym od osób prawnych', 'podatku dochodowego od osób prawnych'],
-          'mon': ['Ministerstwo Obrony Narodowej', 'Ministra Obrony Narodowej', 'obronie Ojczyzny', 'obrony narodowej'],
-          'nato': ['Sojuszu Północnoatlantyckiego', 'Traktatu Północnoatlantyckiego'],
-          'cpn': ['paliw', 'stacjach paliw', 'cen paliw', 'Ceny Paliw Niżej'],
-          'rcb': ['Rządowe Centrum Bezpieczeństwa', 'Rządowego Centrum Bezpieczeństwa', 'zarządzaniu kryzysowym'],
-          'ue': ['Unii Europejskiej', 'Unia Europejska'], 'krs': ['Krajowy Rejestr Sądowy', 'Krajowego Rejestru Sądowego'],
-          'tk': ['Trybunał Konstytucyjny', 'Trybunału Konstytucyjnego'], 'sn': ['Sąd Najwyższy', 'Sądu Najwyższego'],
-          'pkp': ['Polskie Koleje Państwowe', 'kolei'], 'lpg': ['gazu płynnego', 'autogazu']}
+EXPAND = SKROTY  # zgodność wstecz; źródło prawdy: przeszlosc_slownik.py
 
 
 def _stem(word):
@@ -71,7 +58,7 @@ def _match(fields, words):
     w Postgresie oba warunki korzystają z indeksu trigramowego z komendy przeszlosc_indeksy). Wynik jest ten sam."""
     q = Q()
     for term in words:
-        for full in EXPAND.get(term.lower().strip(), []):
+        for full in formy(term):
             for field in fields:
                 q |= Q(**{f'{field}__icontains': full})
         if term.strip().isupper() and len(term.strip()) <= 6:
