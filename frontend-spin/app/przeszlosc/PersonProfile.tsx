@@ -31,6 +31,7 @@ type Profile = {
   employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; source?: { url: string } }[];
   materials: { count: number; results: ProfileMaterial[] };
   mentions?: { results: ProfileMaterial[] };
+  articles_total?: number;
   activity: { month: string; posts: number; documents: number; votes: number; media: number }[];
   topics: { topic: string; at: string }[];
   sejm_video?: SejmVideo[];
@@ -119,7 +120,7 @@ function ProfileView({ data }: { data: Profile }) {
     <section className="px-proof px-pp__proof" aria-label="Liczby" data-n={narr ? 6 : 5}>
       {([[data.posts.count, 'wpisów na X', 'wpis na X', 'wpisy na X'], [data.posts.diagnoses, 'diagnoz Dr. Spina', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina'],
         [data.documents.count, 'dokumentów Sejmu', 'dokument Sejmu', 'dokumenty Sejmu'], [data.votes.count, 'głosowań imiennych', 'głosowanie imienne', 'głosowania imienne'],
-        [data.organisations.length, 'funkcji w KRS', 'funkcja w KRS', 'funkcje w KRS'], [data.materials.count, 'artykułów', 'artykuł', 'artykuły']] as const)
+        [data.organisations.length, 'funkcji w KRS', 'funkcja w KRS', 'funkcje w KRS'], [data.articles_total ?? data.materials.count, 'artykułów', 'artykuł', 'artykuły']] as const)
         .filter(([, many]) => narr || many !== 'diagnoz Dr. Spina').map(([n, many, one, few]) => <div key={many}><b>{n.toLocaleString('pl-PL')}</b><span>{nb(plural(n, one, few, many))}</span></div>)}
     </section>
 

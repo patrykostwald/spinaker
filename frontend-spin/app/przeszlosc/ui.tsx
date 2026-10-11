@@ -97,7 +97,7 @@ export function Bar() {
 
 export function Foot() {
   return <footer className="px-foot"><span>przeszłość.today prowadzi iapply sp. z&nbsp;o.o. · <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">dane wspólne ze spin.clinic</a></span>
-    <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></footer>;
+    <span><a href="/przeszlosc/poprawki">Poprawki</a> · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></span></footer>;
 }
 
 /** Obserwuj temat albo osobę (sprint 1): e-mail, zgoda, podwójne potwierdzenie; jeden list dziennie o 7:00. */
