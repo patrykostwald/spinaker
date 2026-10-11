@@ -190,6 +190,43 @@ def test_ted_seed_is_post_with_polish_buyers_and_recent_window(monkeypatch):
     assert j.url == collectors.TED_SEARCH and j.kind == 'ted_page'
     assert j.context['body']['query'].startswith('buyer-country=POL AND publication-date>=')
     assert 'winner-name' in j.context['body']['fields']
+    assert 'buyer-identifier' in j.context['body']['fields']
+
+
+@pytest.mark.parametrize('identifiers, expected', [
+    (['PL 526-025-01-27'], '5260250127'),
+    ('PL 526-025-01-27', '5260250127'),
+    (['5260250127'], '5260250127'),
+    (['526 025 01 27'], '5260250127'),
+    (['PL 526-025-01-26'], None),  # Przykład ze zlecenia ma błędną sumę kontrolną.
+    (['1234567890'], None),  # Reszta 10 nie jest cyfrą kontrolną.
+    (['DE5260250127', 'KRS 5260250127', '526025012', '52602501270'], None),
+    (['5260250127; 5260250995', '526.025.01.27', '５２６０２５０１２７'], None),
+    ([None, 5260250127, {'nip': '5260250127'}], None),
+    (['PL 526-025-01-26', 'PL 526-025-01-27', '5260250995'], '5260250127'),
+    (['5260250995', '5260250127', '5260250995'], '5260250995'),
+    ([], None),
+    (None, None),
+])
+def test_ted_buyer_identifier_and_validated_nip(identifiers, expected):
+    from news import drzewo_pieniedzy as money
+
+    row = {'publication-number': '674307-2026', 'buyer-identifier': identifiers}
+    data = parsers.ted_notice(row)
+    raw = identifiers if isinstance(identifiers, list) else ([] if identifiers is None else [identifiers])
+    assert data['buyer_identifier'] == raw
+    assert data['buyer_nip'] == expected
+    assert money.buyer_nip(data) == expected
+
+
+def test_ted_missing_buyer_identifier_never_uses_name_or_winner():
+    data = parsers.ted_notice({
+        'publication-number': '674307-2026',
+        'buyer-name': {'pol': ['Urząd PL 526-025-01-27']},
+        'winner-identifier': ['5260250127'],
+    })
+    assert data['buyer_identifier'] == []
+    assert data['buyer_nip'] is None
 
 
 def test_ted_notices_upsert_and_page_identity():

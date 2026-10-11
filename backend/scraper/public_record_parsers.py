@@ -489,11 +489,31 @@ def ted_winners(names, ids, flags=None):
     return winners
 
 
+def _ted_buyer_nip(identifiers):
+    """Pierwszy jawny polski NIP z poprawną sumą kontrolną; nigdy z nazwy."""
+    for value in identifiers:
+        if not isinstance(value, str):
+            continue
+        value = value.strip().upper()
+        if not re.fullmatch(r'(?:PL *)?[0-9][0-9 -]*', value):
+            continue
+        nip = value.removeprefix('PL').replace(' ', '').replace('-', '')
+        if len(nip) != 10:
+            continue
+        checksum = sum(int(digit) * weight for digit, weight in zip(nip[:9], (6, 5, 7, 2, 3, 4, 5, 6, 7))) % 11
+        if checksum == int(nip[-1]):
+            return nip
+    return None
+
+
 def ted_notice(row):
     if not isinstance(row, dict) or not re.fullmatch(r'\d{1,8}-\d{4}', str(row.get('publication-number', ''))):
         raise ValueError('ted_notice_shape')
     number = row['publication-number']
     buyers = _lang(row.get('buyer-name'))
+    buyer_identifiers = row.get('buyer-identifier')
+    if not isinstance(buyer_identifiers, list):
+        buyer_identifiers = [buyer_identifiers] if buyer_identifiers is not None else []
     winners = _lang(row.get('winner-name'))
     title = _lang(row.get('notice-title'))
     value = row.get('total-value')
@@ -504,6 +524,8 @@ def ted_notice(row):
         'notice_type': row.get('notice-type', ''),
         'buyer': _unique(buyers if isinstance(buyers, list) else [buyers]),
         'buyer_country': _unique(row.get('buyer-country') or ['POL']),
+        'buyer_identifier': buyer_identifiers,
+        'buyer_nip': _ted_buyer_nip(buyer_identifiers),
         'title': title if isinstance(title, str) else ' '.join(title),
         'cpv': _unique(row.get('classification-cpv')),
         'value': value[0] if isinstance(value, list) and value else value,

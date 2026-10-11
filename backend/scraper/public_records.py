@@ -54,7 +54,7 @@ EXTERNAL = {
 BOT_WALL = 'bot_protection'
 # Zadania pomocnicze: ściana przy nich nie zatrzymuje źródła, tylko oznacza kontrolę jako niewykonaną.
 OPTIONAL_WALL_KINDS = {'office_pdf': 'PDF Kancelarii Sejmu niedostępny automatycznie (zabezpieczenie strony przed botami)'}
-TED_FIELDS = ['publication-number', 'publication-date', 'notice-type', 'buyer-name', 'buyer-country', 'notice-title',
+TED_FIELDS = ['publication-number', 'publication-date', 'notice-type', 'buyer-name', 'buyer-country', 'buyer-identifier', 'notice-title',
               'classification-cpv', 'total-value', 'total-value-cur', 'winner-name', 'winner-identifier', 'winner-country']
 
 
