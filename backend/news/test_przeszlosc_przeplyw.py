@@ -386,3 +386,9 @@ def test_tree_export_csv_json_with_provenance_and_omitted_note(monkeypatch):
     assert 'UWAGA: eksport niepełny: pominięto' in capped
     js = client.get(f'/api/przeszlosc/przeplyw/{ident}/', {'eksport': 'json'})
     assert js.json()['export']['omitted'] and 'pobrano' in js.json()['export']['citation'] and 'attachment' in js['Content-Disposition']
+
+
+def test_eksport_data_pobrania_to_data_zrodla_nie_eksportu():
+    from news import przeszlosc_eksport as ex
+    assert ex.day(None) == '' and ex.day('2026-03-02T10:00:00+00:00') == '2026-03-02'
+    assert 'nie data eksportu' in ex.FETCH_NOTE

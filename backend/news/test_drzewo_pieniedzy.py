@@ -97,8 +97,14 @@ def test_tree_links_only_by_identifiers_and_sums_branches():
     assert dp.tree(nothing)['identifiers_missing'] is True and dp.tree(nothing)['contracts']['count'] == 0
 
 
+def patch_fetch(monkeypatch, fn):
+    """Podmienia pobranie z KRS: fetch (wywołania wprost) i fetch_status (dociąganie na żądanie)."""
+    monkeypatch.setattr(krs, 'fetch', fn)
+    monkeypatch.setattr(krs, 'fetch_status', lambda *a, **k: ((r := fn(*a, **k)), 'ok' if r else 'missing'))
+
+
 def test_company_endpoint_gated_resolves_krs_and_id(monkeypatch):
-    monkeypatch.setattr(krs, 'fetch', lambda *a, **k: None)
+    patch_fetch(monkeypatch, lambda *a, **k: None)
     company = org()
     client = APIClient()
     assert client.get('/api/przeszlosc/spolka/0000000002/').status_code == 404
@@ -193,7 +199,7 @@ def _extract(number='0000026438', name='BANK TESTOWY SPÓŁKA AKCYJNA', nip='525
 def test_search_by_name_nip_regon_and_krs_with_scope_message(monkeypatch):
     from news import przeszlosc_spolki as ps
     monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
-    monkeypatch.setattr(krs, 'fetch', lambda *a, **k: None)
+    patch_fetch(monkeypatch, lambda *a, **k: None)
     org('PKO Bank Polski SA', '0000026438', nip='5250007738', regon='016298263')
     client = APIClient()
     get = lambda q: client.get('/api/przeszlosc/spolki/', {'q': q}).json()
@@ -214,7 +220,7 @@ def test_search_and_company_fetch_unknown_krs_on_demand_with_cache_and_limits(mo
     def fake(number, full=True, timeout=30):
         calls.append(number)
         return _extract(number) if number == '0000026438' else None
-    monkeypatch.setattr(krs, 'fetch', fake)
+    patch_fetch(monkeypatch, fake)
     client = APIClient()
     data = client.get('/api/przeszlosc/spolki/', {'q': '0000026438'}).json()
     assert data['fetched'] is True and data['results'][0]['name'].startswith('BANK') and RegisteredOrganisation.objects.get(krs_number='0000026438').nip == '5250007738'
@@ -237,7 +243,7 @@ def test_fetch_on_demand_survives_network_errors(monkeypatch):
     from news import przeszlosc_spolki as ps
     def boom(*a, **k):
         raise RuntimeError('net')
-    monkeypatch.setattr(krs, 'fetch', boom)
+    patch_fetch(monkeypatch, boom)
     assert ps.fetch_on_demand('0000012345') == (None, 'error')
     assert ps.fetch_on_demand('0000012345') == (None, 'error')  # z pamięci, bez drugiego wywołania
 
@@ -266,3 +272,43 @@ def test_company_export_csv_json_full_with_unlinked_labelled(monkeypatch):
 def ex_columns():
     from news import przeszlosc_eksport
     return przeszlosc_eksport.COLUMNS
+
+
+def test_search_fragment_nazwy_regon_9_i_nip_z_prefiksem_pl(monkeypatch):
+    from news import przeszlosc_spolki as ps
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    patch_fetch(monkeypatch, lambda *a, **k: None)
+    org('Powszechna Kasa Oszczędności Bank Polski SA', '0000026438', nip='5250007738', regon='01629826300000')
+    org('PKO Leasing SA', '0000000777', nip='1111111111', regon='111111111')
+    get = lambda q: [r['krs_number'] for r in APIClient().get('/api/przeszlosc/spolki/', {'q': q}).json()['results']]
+    assert get('PKO') == ['0000000777'] and get('PKO BP') == ['0000026438']  # PKO BP: skrót nazwy
+    assert get('Kasa Bank') == ['0000026438']  # słowa w dowolnej kolejności
+    assert get('016298263') == ['0000026438']  # REGON 9 cyfr trafia w zapisany 14-cyfrowy
+    assert get('PL5250007738') == ['0000026438'] and get('PL 525-000-77-38') == ['0000026438']
+    assert ps.classify('PL5250007738') == ('nip', '5250007738') and ps.classify('Plus')[0] == 'name'
+    msg = APIClient().get('/api/przeszlosc/spolki/', {'q': 'Zzzz'}).json()['message']
+    assert 'po nazwie „Zzzz”' in msg and msg.startswith('Brak w naszych danych')
+
+
+def test_drzewo_flaguje_kwote_podejrzana_wzglednie_jak_widok_spolki(monkeypatch):
+    from news import przeszlosc_przeplyw as pp
+    graph = pp.Graph({'depth': 2, 'start': '', 'end': '', 'unlinked': False, 'categories': ['zamowienia']})
+    prov = {'key': 'ted', 'retrieved_at': None}
+    graph.node('org:1', 'organisation', 'Spółka', 0, 'spolki', prov, structural=True)
+    for i, amount in enumerate([1000, 2000, 3000, 4000, 5000, 1_010_000_000]):  # 1,01 mld < 5 mld: tylko bramka względna
+        graph.node(f'ted:{i}', 'contract', f'Zamówienie {i}', 2, 'zamowienia', prov, amount=amount, currency='PLN', structural=True)
+        graph.edge(f'ted:{i}', 'org:1', 'wykonawca', prov, amount=amount, currency='PLN')
+    pp.flag_relative_suspects(graph)
+    big = graph.nodes['ted:5']
+    assert big['amount'] is None and big['meta']['amount_suspect'] is True and big['meta']['reported_amount'] == 1_010_000_000
+    assert graph.nodes['ted:0']['amount'] == 1000 and 'amount_suspect' not in graph.nodes['ted:0']['meta']
+    assert [e['amount'] for e in graph.edges.values()].count(None) == 1
+
+
+def test_nazwisko_wersalikami_w_drzewie_i_csv(monkeypatch):
+    from news import przeszlosc_przeplyw as pp
+    from news.political_models import PublicFigure
+    figure = PublicFigure.objects.create(canonical_name='Daniel OBAJTEK')
+    graph = pp.Graph({'depth': 2, 'start': '', 'end': '', 'unlinked': False, 'categories': ['polityka']})
+    pp.figure_node(graph, figure, 0)
+    assert graph.nodes[f'figure:{figure.pk}']['label'] == 'Daniel Obajtek'
