@@ -24,6 +24,7 @@ VERSION = 'v1'
 CACHE_SECONDS = 86400
 MAX_NODES = 300
 MAX_EDGES = 600
+VOTE_NODES = 50  # Śledczy R1, P1-3: głosowania nie zjadają limitu drzewa (Tusk: 297 z 300 węzłów)
 CATEGORIES = {'nieruchomosci': 'Nieruchomości', 'spolki': 'Spółki',
               'dotacje': 'Dotacje i fundusze', 'zamowienia': 'Zamówienia publiczne',
               'polityka': 'Polityka i lobbing', 'orzeczenia': 'Orzeczenia'}
@@ -373,8 +374,13 @@ def politics(graph, figure):
                             2 if kind == 'vote' else 1, 'polityka', provenance, day=record.date, url=record.source_url)
         graph.edge(f'figure:{figure.pk}', target, 'w dokumencie', provenance, since=record.date)
     if graph.opts['depth'] >= 2:
+        # P1-3: najnowsze głosowania po dacie (nie po id), najwyżej VOTE_NODES węzłów; reszta w liczniku pominiętych.
         ballots = dated(person._ballots(identities), graph.opts, 'voting__article__published_date__date')
-        for ballot in bounded(graph, ballots.select_related('voting__article').order_by('-voting_id'), 'polityka', 'vote'):
+        ballots = ballots.select_related('voting__article').order_by(F('voting__article__published_date').desc(nulls_last=True), '-voting_id')
+        total = ballots.count()
+        if total > VOTE_NODES:
+            graph.grouped[('polityka', 'vote', 'identifier')] += total - VOTE_NODES
+        for ballot in ballots[:VOTE_NODES]:
             vote = ballot.voting
             day = vote.article.published_date
             provenance = source('sejm', person.vote_url(vote))
