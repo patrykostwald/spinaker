@@ -16,7 +16,17 @@ MENTION_LIMIT = 100
 CACHE_SECONDS = 600
 MIN_SURNAME_LENGTH = 4
 # Samo nazwisko (bez imienia) tylko dla nazwisk jednoznacznych w rejestrze i dość długich.
-MIN_SURNAME_ONLY_LENGTH = 6
+MIN_SURNAME_ONLY_LENGTH = 4
+# Poniżej tej długości samo nazwisko musi być pisane z wielkiej litery (Tusk, nie „tusk”).
+SHORT_SURNAME_LENGTH = 6
+# Funkcje i słowa poprzedzające nazwisko, które nie czynią z niego innej osoby („Premier Tusk”, „Afera Obajtka”).
+FUNCTION_WORDS = frozenset({
+    'premier', 'premiera', 'premierowi', 'premierem', 'wicepremier', 'wicepremiera', 'minister', 'ministra',
+    'prezes', 'prezesa', 'prezesowi', 'prezesem', 'poseł', 'posła', 'posłowi', 'posłem', 'posłanka', 'posłanki',
+    'europoseł', 'europosła', 'senator', 'senatora', 'prezydent', 'prezydenta', 'marszałek', 'marszałka',
+    'lider', 'lidera', 'szef', 'szefa', 'szefowi', 'szefem', 'afera', 'afery', 'aferze', 'sprawa', 'sprawy',
+    'rząd', 'rządu', 'pupil', 'pupila', 'wojewoda', 'burmistrz', 'radny', 'kandydat', 'kandydata', 'sędzia',
+})
 
 
 def normalize_name(value):
@@ -88,11 +98,37 @@ def surname_only_pattern(name):
     return re.compile(r'(?<![\w-])(?:' + forms + r')(?![\w-])', re.IGNORECASE)
 
 
+def known_given_name(word):
+    word = word.casefold()
+    return word in GIVEN_NAMES or any(word in forms for forms in GIVEN_NAMES.values())
+
+
+def is_shouting(text):
+    """Tytuł pisany wersalikami: wielkość liter nie odróżnia imienia od funkcji."""
+    letters = [c for c in text if c.isalpha()]
+    return len(letters) >= 6 and sum(c.isupper() for c in letters) / len(letters) > 0.8
+
+
 def surname_only_hit(pattern, text):
-    """Wyraz z wielkiej litery tuż przed nazwiskiem (np. „Adrian Obajtek”) oznacza inną osobę: pomijamy."""
+    """Wyraz z wielkiej litery tuż przed nazwiskiem (np. „Adrian Obajtek”) oznacza inną osobę: pomijamy.
+
+    Wyjątki: funkcja lub słowo z FUNCTION_WORDS („Premier Tusk”); w tytule wersalikami odrzucamy
+    akceptujemy tylko funkcję lub krótki przyimek. Krótkie nazwisko musi zaczynać się wielką literą.
+    """
+    shouting = is_shouting(text)
     for found in pattern.finditer(text):
+        if len(found.group()) < SHORT_SURNAME_LENGTH and not found.group()[0].isupper():
+            continue
         before = re.search(r'([^\W\d_][\w-]*)\s+$', text[max(0, found.start() - 40):found.start()])
-        if not before or not before.group(1)[0].isupper():
+        if not before:
+            return True
+        word = before.group(1)
+        if word.casefold() in FUNCTION_WORDS:
+            return True
+        if shouting:
+            if len(word) <= 3 and not known_given_name(word):  # przyimek: „Z TUSKIEM”
+                return True
+        elif not word[0].isupper():
             return True
     return False
 

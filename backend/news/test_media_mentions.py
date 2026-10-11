@@ -131,8 +131,10 @@ def test_krotkie_nazwisko_z_imieniem_i_odmiana_na_ek(source):
     obajtek = person('Daniel Obajtek')
     article(source, title='Donalda Tuska nie było w Sejmie')
     article(source, title='Prezes Orlenu: Daniela Obajtka dotyczy zarzut')
-    article(source, title='Tusk zabrał głos')  # samo krótkie nazwisko (4 litery) nie wystarcza
-    assert len(mm.mentions_data(tusk)['results']) == 1
+    article(source, title='Tusk zabrał głos')  # samo krótkie nazwisko: tylko przy jedynym nosicielu w rejestrze
+    results = mm.mentions_data(tusk)['results']
+    assert len(results) == 2
+    assert sorted(r['confidence'] for r in results) == ['high', 'medium']
     results = mm.mentions_data(obajtek)['results']
     assert len(results) == 1 and results[0]['confidence'] == 'high'
 
@@ -192,3 +194,33 @@ def test_confirmed_profile_type_is_metadata_only_and_dossier_unchanged(source):
     assert material['reference_kind'] == 'mentioned'
     assert 'mentions' not in result
     assert 'material_type' not in dossier_data(figure)['materials']['results'][0]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('title,found,confidence', [
+    ('Donalda Tuska nie było w Sejmie', True, 'high'),
+    ('Spotkanie z Donaldem Tuskiem w Brukseli', True, 'high'),
+    ('Premier Tusk w Brukseli', True, 'medium'),
+    ('Tusk: nie będzie podwyżek', True, 'medium'),
+    ('PUPIL TUSKA PRZEGRAŁ WYBORY', True, 'medium'),
+    ('DONALD TUSK W BRUKSELI', True, 'high'),
+    ('Adrian Tusk wygrał konkurs', False, None),
+    ('ADRIAN TUSK WYGRAŁ KONKURS', False, None),
+    ('Dawid Tuskowski wygrał', False, None),
+    ('Kowalski i tusk', False, None),
+])
+def test_tusk_warianty_tytulow(source, title, found, confidence):
+    figure = person('Donald Tusk')
+    article(source, title=title)
+    results = mm.mentions_data(figure)['results']
+    assert bool(results) is found
+    if found:
+        assert results[0]['confidence'] == confidence
+
+
+@pytest.mark.django_db
+def test_krotkie_nazwisko_bez_jednoznacznosci_nie_trafia(source):
+    figure = person('Donald Tusk')
+    person('Adam Tusk')
+    article(source, title='Premier Tusk w Brukseli')
+    assert mm.mentions_data(figure)['results'] == []
