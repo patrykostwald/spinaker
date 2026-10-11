@@ -24,9 +24,20 @@ def clean_path(value):
     if not value.startswith('/'):
         return ''
     value = re.sub(r'^/(profile|profil|u)/[^/]+', r'/\1/:nick', value)
+    # slug osoby, spolki lub tematu to w praktyce tresc zapytania (kogo sprawdzam): nie zapisujemy go (F5-minimum)
+    value = re.sub(r'^/przeszlosc/(osoba|osoby|spolka|przeplyw|temat|szukaj)/[^/]+', r'/przeszlosc/\1/:id', value)
+    value = re.sub(r'^/(osoby-publiczne|search|szukaj)/[^/]+', r'/\1/:id', value)
     value = re.sub(r'/\d+(?=/|$)', '/:id', value)
     value = re.sub(r'/[0-9a-f]{16,}(?=/|$)', '/:id', value)
     return value[:120]
+
+
+URL_WITH_QUERY = re.compile(r'(https?://[^\s?#]+|/[^\s?#]*)[?#]\S*')
+
+
+def strip_queries(text):
+    """Z wolnego tekstu zgłoszenia usuwa zapytanie i fragment z adresów (parametr q to treść wyszukiwania)."""
+    return URL_WITH_QUERY.sub(r'\1', text or '')
 
 
 class BugThrottle(AnonRateThrottle):
@@ -56,7 +67,7 @@ class BugReportView(APIView):
         data.is_valid(raise_exception=True)
         row = data.validated_data
         report = BugReport.objects.create(
-            kind=row['kind'], text=row['text'].strip() or '(bez opisu)', path=clean_path(row['path']) or '/',
+            kind=row['kind'], text=strip_queries(row['text']).strip() or '(bez opisu)', path=clean_path(row['path']) or '/',
             viewport=row.get('viewport', ''), theme=row.get('theme', ''),
             trail=[p for p in (clean_path(item) for item in row.get('trail', [])) if p],
             contact=row.get('contact', ''), user=request.user if request.user.is_authenticated else None)

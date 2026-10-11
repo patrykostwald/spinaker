@@ -51,3 +51,22 @@ def test_journey_counts_only_aggregates():
     assert JourneyStep.objects.get(source='/', target='/spinki/:id').count == 2
     assert not JourneyStep.objects.filter(action='DROP TABLE').exists()
     assert client.post('/api/feedback/journey/', {'steps': 'zle', 'device': 'tv'}, format='json').status_code == 204
+
+
+def test_search_phrases_never_stored(monkeypatch):
+    from io import StringIO
+    from django.core.management import call_command
+    from news.feedback import strip_queries
+    assert clean_path('/search?q=jan+kowalski') == '/search'
+    assert clean_path('/przeszlosc/osoba/jan-kowalski') == '/przeszlosc/osoba/:id'
+    assert clean_path('/przeszlosc/spolka/1234567890/drzewo') == '/przeszlosc/spolka/:id/drzewo'
+    assert strip_queries('Link: https://przeszlosc.today/szukaj?q=nazwisko#x i /search?q=firma') == 'Link: https://przeszlosc.today/szukaj i /search'
+    monkeypatch.setattr('news.feedback.notify', lambda report: None)
+    client = APIClient()
+    client.post('/api/feedback/bug/', {'text': 'Nie dziala https://x.pl/a?q=tajne', 'path': '/search?q=tajne', 'trail': ['/przeszlosc/osoba/jan-kowalski?q=a']}, format='json')
+    report = BugReport.objects.get()
+    assert 'tajne' not in report.text + report.path + str(report.trail) and 'kowalski' not in str(report.trail)
+    JourneyStep.objects.create(hour='2026-10-01T10:00:00Z', source='/przeszlosc/osoba/jan-kowalski', target='/', action='nav', device='phone', count=1)
+    out = StringIO()
+    call_command('journey_report', days=3650, stdout=out)
+    assert 'kowalski' not in out.getvalue() and ':id' in out.getvalue()

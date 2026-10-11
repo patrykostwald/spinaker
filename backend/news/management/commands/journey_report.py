@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Sum
 from django.utils import timezone
 
+from news.feedback import clean_path
 from news.feedback_models import JourneyStep
 
 
@@ -24,5 +25,10 @@ class Command(BaseCommand):
             ('Wściekłe kliknięcia (3 w sekundę: pewnie nie działa)', rows.filter(action__startswith='rage'), ('device', 'source', 'action')),
         ]:
             self.stdout.write(f'\n== {title}')
-            for row in query.values(*fields).annotate(n=Sum('count')).order_by('-n')[:opts['top']]:
-                self.stdout.write(f"{row['n']:>6}  " + '  '.join(str(row[f]) for f in fields))
+            # starsze wpisy mogły mieć slug osoby lub spółki w adresie: maskujemy je przy odczycie i sumujemy ponownie
+            merged = {}
+            for row in query.values(*fields).annotate(n=Sum('count')):
+                key = tuple(clean_path(row[f]) if f in ('source', 'target') else str(row[f]) for f in fields)
+                merged[key] = merged.get(key, 0) + row['n']
+            for key, n in sorted(merged.items(), key=lambda item: -item[1])[:opts['top']]:
+                self.stdout.write(f'{n:>6}  ' + '  '.join(key))
