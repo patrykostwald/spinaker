@@ -1,4 +1,5 @@
 """Public profile API: confirmed evidence and separately labelled metadata matches."""
+from news import krs
 from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
@@ -60,7 +61,9 @@ def figure_data(figure, include_detail=False, include_mentions=True):
         'kind': relation.organisation.kind,
         'legal_form': relation.organisation.legal_form,
         'sector': relation.organisation.sector,
-        'official_register_url': relation.organisation.official_register_url,
+        'official_register_url': krs.official_register_url(relation.organisation.official_register_url),
+        'extra_register_url': krs.extra_register_url(relation.organisation.krs_number),
+        'since_note': krs.SINCE_NOTE,
         'public_role': relation.public_role,
         'organ': relation.organ,
         'relation_status': relation.relation_status,
@@ -219,7 +222,7 @@ def employment_timeline_data(figure, roles, relations=()):
             'since': relation.since,
             'until': relation.until,
             'sector': relation.organisation.sector,
-            'source': {'label': f'KRS {relation.organisation.krs_number}', 'url': relation.organisation.official_register_url},
+            'source': {'label': f'KRS {relation.organisation.krs_number}', 'url': krs.official_register_url(relation.organisation.official_register_url)},
             'office': None,
         })
 

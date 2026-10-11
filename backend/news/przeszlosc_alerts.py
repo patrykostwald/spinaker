@@ -11,6 +11,7 @@ import secrets
 from datetime import timedelta
 from urllib.parse import quote
 
+from news import krs
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
@@ -230,7 +231,7 @@ def person_items(alert, since):
                 .select_related('organisation')):
         items.append({'id': f'krs:{rel.pk}:{rel.relation_status}', 'date': (rel.since or rel.updated_at.date()).isoformat(),
                       'kind': 'KRS (kontekst, nie dowód)', 'text': f'{rel.organisation.name}: {rel.organ or rel.public_role}'
-                      + (' (historyczna)' if rel.relation_status == 'former' else ''), 'url': rel.organisation.official_register_url})
+                      + (' (historyczna)' if rel.relation_status == 'former' else ''), 'url': krs.official_register_url(rel.organisation.official_register_url)})
     items = [i for i in items if i['id'] not in sent]
     items.sort(key=lambda i: i['date'] or '', reverse=True)
     return items

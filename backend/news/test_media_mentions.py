@@ -70,6 +70,7 @@ def test_separate_mentions_api_deduplicates_and_does_not_write_references(source
     desc = next(r for r in result['mentions']['results'] if r['id'] == description.pk)
     assert desc['material_type'] == 'wzmianka'
     assert desc['kind_label'] == 'wzmianka'
+    assert desc['matched_in'] == 'description' and 'Kowalskiego' in desc['snippet'] and desc['match_method'] == 'name_only'
     assert PublicFigureArticleReference.objects.count() == 2
     dossier = APIClient().get(f'/api/public-figures/{figure.pk}/dossier/').data
     assert dossier['summary']['confirmed_materials'] == 1

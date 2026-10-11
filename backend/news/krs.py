@@ -20,9 +20,26 @@ logger = logging.getLogger(__name__)
 
 API = 'https://api-krs.ms.gov.pl/api/krs/{kind}/{krs}'
 HEADERS = {'User-Agent': 'spin.clinic KRS check (+https://spin.clinic/o-nas)'}
-# Oficjalna wyszukiwarka KRS nie ma stałych linków do podmiotów — linkujemy do publicznej strony podmiotu
-# z danymi KRS (nadpisz w KRS_PUBLIC_URL, np. innym serwisem); urzędowy odpis zostaje jako dowód przy relacji.
-PUBLIC_URL = os.environ.get('KRS_PUBLIC_URL', '').strip() or 'https://rejestr.io/krs/{krs_int}'
+# Oficjalna wyszukiwarka KRS Ministerstwa Sprawiedliwości nie ma stałych linków do podmiotów, więc link główny
+# prowadzi do niej (numer KRS stoi obok), a rejestr.io jest tylko dodatkowym, nieurzędowym odnośnikiem.
+# Urzędowy odpis zostaje jako dowód przy relacji.
+MS_SEARCH_URL = 'https://wyszukiwarka-krs.ms.gov.pl/'
+PUBLIC_URL = os.environ.get('KRS_PUBLIC_URL', '').strip() or MS_SEARCH_URL
+EXTRA_URL = 'https://rejestr.io/krs/{krs_int}'
+SINCE_NOTE = 'Data wpisu w KRS: od kiedy osoba figuruje w rejestrze. Nie zawsze jest to data faktycznego objęcia funkcji.'
+
+
+def official_register_url(url, krs_number=''):
+    """Link urzędowy: starsze wpisy z rejestr.io lub bez adresu zamieniamy na wyszukiwarkę KRS MS."""
+    if url and 'rejestr.io' not in url:
+        return url
+    return MS_SEARCH_URL
+
+
+def extra_register_url(krs_number):
+    digits = re.sub(r'\D', '', str(krs_number or ''))
+    return EXTRA_URL.format(krs_int=int(digits)) if digits else ''
+
 
 STATE_OWNERS = ('SKARB PAŃSTWA',)
 MUNICIPAL_OWNERS = ('GMINA ', 'MIASTO ', 'POWIAT ', 'WOJEWÓDZTWO ', 'MIASTO STOŁECZNE')

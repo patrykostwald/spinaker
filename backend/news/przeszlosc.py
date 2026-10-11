@@ -7,6 +7,7 @@ Ta sama miara: rządzący i opozycja przechodzą przez identyczne zapytania.
 import os
 import re
 
+from news import krs
 from django.db.models import F, Q
 
 PER_KIND = 30
@@ -188,7 +189,7 @@ def topic_graph(query):
                  .select_related('organisation')[:PER_KIND * 2])
     for rel in relations:
         org = rel.organisation
-        key = node(f'org:{org.pk}', 'organisation', org.name, url=org.official_register_url, sub=f'KRS {org.krs_number}')
+        key = node(f'org:{org.pk}', 'organisation', org.name, url=krs.official_register_url(org.official_register_url), sub=f'KRS {org.krs_number}')
         edges.append({'source': f'figure:{rel.public_figure_id}', 'target': key, 'label': rel.organ or rel.public_role})
 
     counts = {}

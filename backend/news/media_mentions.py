@@ -119,6 +119,16 @@ def matched_field(pattern, article, surname_pattern=None):
     return None
 
 
+def snippet_of(pattern, surname_pattern, row, width=70):
+    """Krótki fragment pola, w którym znaleziono nazwisko (cytat do weryfikacji, nie cały tekst)."""
+    text = unicodedata.normalize('NFC', row.get(row['matched_in']) or '')
+    found = (pattern.search(text) if pattern else None) or (surname_pattern.search(text) if surname_pattern else None)
+    if not found:
+        return ''
+    start, end = max(0, found.start() - width), min(len(text), found.end() + width)
+    return ('…' if start else '') + ' '.join(text[start:end].split()) + ('…' if end < len(text) else '')
+
+
 def candidate_filter(surname):
     """Wstępny wybór w bazie po formach nazwiska (bez pierwszej litery: wielkość liter polskich znaków)."""
     query = Q()
@@ -179,6 +189,8 @@ def mentions_data(figure):
             'source': live[row['pk']], 'published_date': row['published_date'],
             'category': row['category'], 'automatic_match': True,
             'matched_in': row['matched_in'], 'confidence': row['confidence'], 'material_type': material_type,
+            'snippet': snippet_of(pattern, surname_pattern, row),
+            'match_method': 'name_only',  # po samym nazwisku w tytule lub opisie; nie jest to identyfikator
             'kind_label': MATERIAL_LABELS[material_type],
         })
         if len(results) >= MENTION_LIMIT:

@@ -18,6 +18,7 @@ from collections import Counter, defaultdict
 from datetime import timedelta
 from urllib.parse import quote
 
+from news import krs
 from django.db.models import Count, F, OuterRef, Q, Subquery
 from django.utils import timezone
 
@@ -492,7 +493,7 @@ def shared_krs(figure, limit=10):
         orgs = {r.organisation_id: r for r in rels}
         out.append({**_person(f), 'count': len(orgs), 'evidence': [
             {'kind': 'KRS', 'label': f'{r.organisation.name} (KRS {r.organisation.krs_number}): {r.organ or r.public_role} / {my_role[r.organisation_id]}',
-             'url': r.organisation.official_register_url} for r in list(orgs.values())[:3]]})
+             'url': krs.official_register_url(r.organisation.official_register_url)} for r in list(orgs.values())[:3]]})
     out.sort(key=lambda r: (-r['count'], r['name']))
     return out[:limit]
 

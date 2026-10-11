@@ -66,3 +66,12 @@ def test_agent_confirms_only_with_register_match_or_two_sources(monkeypatch):
     assert krs_agent.verify(figure, {**candidate, 'krs': '0000099999'}) is None
     assert krs_agent.verify(figure, {**candidate, 'name': 'Zupełnie Inny Podmiot'}) is None
     assert PublicFigureOrganisationRelation.objects.filter(verification_status='confirmed').count() == 2
+
+
+def test_official_register_url_points_to_ms_search_and_rejestr_io_is_extra():
+    assert krs.official_register_url('https://rejestr.io/krs/123') == krs.MS_SEARCH_URL
+    assert krs.official_register_url('') == krs.MS_SEARCH_URL
+    assert krs.official_register_url('https://ekrs.ms.gov.pl/') == 'https://ekrs.ms.gov.pl/'
+    assert krs.extra_register_url('0000012345') == 'https://rejestr.io/krs/12345'
+    assert krs.extra_register_url('') == ''
+    assert 'wpis' in krs.SINCE_NOTE.lower()

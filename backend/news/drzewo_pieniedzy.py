@@ -16,6 +16,7 @@ from collections import defaultdict
 from functools import reduce
 from operator import or_
 
+from news import krs
 from django.db.models import F, Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -184,7 +185,8 @@ def people(org):
 
 def organisation(org):
     return {'id': org.pk, 'name': org.name, 'krs_number': org.krs_number, 'nip': org.nip, 'regon': org.regon, 'kind': org.kind,
-            'legal_form': org.legal_form, 'sector': org.sector, 'url': org.official_register_url, 'source': SOURCES['krs']}
+            'legal_form': org.legal_form, 'sector': org.sector, 'url': krs.official_register_url(org.official_register_url), 'extra_url': krs.extra_register_url(org.krs_number),
+            'source': SOURCES['krs']}
 
 
 def branches(org):
@@ -205,7 +207,7 @@ def tree(org):
     from scraper.nowe_zrodla import LICENSES
     b = branches(org)
     root = f'org:{org.pk}'
-    nodes = [{'id': root, 'kind': 'organisation', 'label': org.name[:160], 'sub': f'KRS {org.krs_number}', 'url': org.official_register_url}]
+    nodes = [{'id': root, 'kind': 'organisation', 'label': org.name[:160], 'sub': f'KRS {org.krs_number}', 'url': krs.official_register_url(org.official_register_url)}]
     edges = []
     for x in b['contracts']['results']:
         nodes.append({'id': x['id'], 'kind': 'contract', 'label': x['title'], 'sub': x['party'], 'date': x['date'], 'amount': x['amount'],
