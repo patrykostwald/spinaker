@@ -386,3 +386,20 @@ def test_tree_export_csv_json_with_provenance_and_omitted_note(monkeypatch):
     assert 'UWAGA: eksport niepełny: pominięto' in capped
     js = client.get(f'/api/przeszlosc/przeplyw/{ident}/', {'eksport': 'json'})
     assert js.json()['export']['omitted'] and 'pobrano' in js.json()['export']['citation'] and 'attachment' in js['Content-Disposition']
+
+
+def test_domyslne_drzewo_osoby_ogranicza_rekordy_glosowan_i_grupuje_reszte():
+    from news.public_records_models import PublicRecord, PublicRecordPerson
+    figure = mp('Anna Kowalska', 77)
+    for n in range(80):
+        r = PublicRecord.objects.create(source='sejm', kind='vote', external_id=f'10/{n}', source_url=f'https://api.sejm.gov.pl/v/{n}',
+                                        response_sha256='c' * 64, response_url='https://api.sejm.gov.pl', term=10,
+                                        date=date(2025, 4, 1) + (date(2025, 7, 1) - date(2025, 4, 1)) * n // 80, title=f'Głosowanie {n}')
+        PublicRecordPerson.objects.create(record=r, term=10, mp_id=77, figure=figure)
+    data = get(f'osoba:{figure.pk}')
+    votes = [n for n in data['nodes'] if n['kind'] == 'vote']
+    assert len(votes) == flow.VOTE_NODES
+    newest = max(n['date'] for n in votes)
+    assert newest == max(r.date.isoformat() for r in PublicRecord.objects.filter(kind='vote'))
+    grouped = {(g['category'], g['kind']): g['count'] for g in data['limits']['grouped']}
+    assert grouped[('polityka', 'vote')] == 80 - flow.VOTE_NODES and data['limits']['truncated'] is True

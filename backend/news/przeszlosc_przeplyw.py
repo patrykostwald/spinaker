@@ -356,13 +356,14 @@ def politics(graph, figure):
                     .exclude(kind__in=person.MEMBERSHIP_KINDS), graph.opts)
     if graph.opts['depth'] == 1:
         records = records.exclude(kind__in=('vote', 'voting', 'ballot'))
-    # Separate kinds preserve truthful overflow counts without reading full records.
-    records = records.order_by(F('date').desc(nulls_last=True), '-pk')
-    selected_records = list(records[:MAX_NODES])
+    # Rekordy-głosowania mają własny limit VOTE_NODES (Śledczy 11.10: domyślne drzewo miało 297 głosowań z kwietnia-lipca 2025);
+    # reszta trafia do grupy zwijanej limits.grouped razem z prawdziwą liczbą pominiętych.
+    vote_kinds = ('vote', 'voting', 'ballot')
+    selected_records = list(records.exclude(kind__in=vote_kinds)[:MAX_NODES]) + list(records.filter(kind__in=vote_kinds)[:VOTE_NODES])
     totals = records.order_by().values('kind').annotate(n=Count('pk'))
     loaded = Counter(r.kind for r in selected_records)
     def record_kind(kind):
-        return 'vote' if kind in ('vote', 'voting', 'ballot') else 'statement' if kind in ('statement', 'committee_speech') else 'document'
+        return 'vote' if kind in vote_kinds else 'statement' if kind in ('statement', 'committee_speech') else 'document'
     for total in totals:
         kind = record_kind(total['kind'])
         if kind != 'vote' or graph.opts['depth'] >= 2:
