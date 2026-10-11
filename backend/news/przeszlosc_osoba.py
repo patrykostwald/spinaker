@@ -677,7 +677,7 @@ def person_view(request, ident):
     from news.media_mentions import mentions_data
     mentions = mentions_data(figure)
     # Licznik „artykułów” = potwierdzone materiały + automatyczne wzmianki (wzmianki nie obejmują potwierdzonych).
-    data = {**data, 'mentions': mentions, 'articles_total': data['materials']['count'] + len(mentions['results'])}
+    data = {**data, 'mentions': mentions, 'articles_total': (data.get('materials') or {}).get('count', 0) + len(mentions['results'])}
     fmt = request.query_params.get('eksport', '')
     if fmt in ('csv', 'json') and not has('export', request):
         return locked('export')
