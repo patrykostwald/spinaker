@@ -39,6 +39,18 @@ def test_match_handles_o_alternation_and_keeps_acronym_word_boundary():
     assert [a.title for a in Article.objects.filter(_match(['title'], ['VAT']))] == ['Stawka VAT w górę']
 
 
+def test_slownik_skrotow_i_odmian_lapie_cpk_i_turow():
+    from news.models import Article, Source
+    source = Source.objects.create(name='Redakcja', url='https://media.example')
+    titles = ['Ustawa o Centralnym Porcie Komunikacyjnym', 'Spór o Turowie', 'Umowa z Turowem', 'Kopalnia Turów', 'Vatican']
+    for i, title in enumerate(titles):
+        Article.objects.create(source=source, title=title, url=f'https://m.example/s{i}', published_date=timezone.now())
+    got = lambda word: sorted(a.title for a in Article.objects.filter(_match(['title'], [word])))
+    assert got('CPK') == ['Ustawa o Centralnym Porcie Komunikacyjnym']
+    assert got('Turów') == ['Kopalnia Turów', 'Spór o Turowie', 'Umowa z Turowem']
+    assert got('Turowem') == got('Turów') == got('Turowa')
+
+
 def test_topic_votes_page_sorts_by_date_and_pages_and_filters_dates():
     many_votings(12)
     first = topic_votes_page('VAT', page=1, per_page=5)
