@@ -146,3 +146,25 @@ def test_link_votes_by_official_id(db):
     out = link_votes(data)
     assert {'source': f'figure:{f.pk}', 'target': 'vote:10/5/3', 'label': 'głosował(a): za'} in out['edges']
     assert any(n['id'] == 'vote:10/5/3' for n in out['nodes']) and 'mp_votes' not in out['votes'][0]
+
+
+def test_krs_w_grafie_tematu_tylko_gdy_podmiot_wystepuje_w_temacie():
+    """Śledczy R1, P0-3: funkcje KRS osób, które tylko pojawiły się w temacie, nie wchodzą do grafu."""
+    from news.political_models import PublicFigure, PublicFigureOrganisationRelation, RegisteredOrganisation
+    from news.public_records_models import PublicRecord, PublicRecordPerson
+    record = PublicRecord.objects.create(source='sejm', kind='statement', external_id='k1', title='Sprawa Kołodziejczak',
+                                         text='Sprawa Kołodziejczak w Sejmie.', source_url='https://example.org/k1',
+                                         response_url='https://example.org/', response_sha256='0')
+    names = {'Michał Kołodziejczak': 'Fundacja Agrounia', 'Elżbieta Witek': 'Klub Sportowy Olimpia',
+             'Anna Nowak': 'Kołodziejczak Sp. z o.o.'}
+    for i, (person_name, org_name) in enumerate(names.items()):
+        figure = PublicFigure.objects.create(canonical_name=person_name)
+        PublicRecordPerson.objects.create(record=record, figure=figure, term=10, mp_id=100 + i)
+        org = RegisteredOrganisation.objects.create(name=org_name, krs_number=f'000000000{i}', kind='company',
+                                                    official_register_url='https://ekrs.ms.gov.pl/')
+        rel = PublicFigureOrganisationRelation(public_figure=figure, organisation=org, public_role='zarząd',
+                                               evidence_url='https://example.org')
+        rel.confirm_automatically('krs_register')
+        rel.save()
+    orgs = {n['label'] for n in topic_graph('Kołodziejczak')['nodes'] if n['kind'] == 'organisation'}
+    assert orgs == {'Fundacja Agrounia', 'Kołodziejczak Sp. z o.o.'}

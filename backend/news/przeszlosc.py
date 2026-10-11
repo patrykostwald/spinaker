@@ -98,7 +98,7 @@ def topic_graph(query):
     from news.clinic import figures_by_account, published_diagnoses
     from news.models import Article
     from news.political_models import (PoliticalPost, PublicFigure, PublicFigureArticleReference,
-                                       PublicFigureOrganisationRelation)
+                                       PublicFigureOrganisationRelation, RegisteredOrganisation)
     from news.public_records_models import PublicRecord
 
     words = terms(query)
@@ -174,10 +174,17 @@ def topic_graph(query):
                 .select_related('public_figure')):
         edges.append({'source': figure(ref.public_figure), 'target': f'article:{ref.article_id}', 'label': 'w artykule'})
 
-    # KRS: spółki i fundacje osób, które pojawiły się w temacie (tylko zweryfikowane relacje)
+    # KRS (Śledczy R1, P0-3): podmiot trafia do grafu tylko wtedy, gdy sam występuje w temacie - jego nazwa pasuje
+    # do frazy, jest już w grafie (dotacja UE) albo należy do osoby, której nazwisko jest samym tematem.
+    # Funkcje innych osób, które tylko napisały o temacie, to kontekst osoby i zostają w jej profilu.
     figure_ids = [int(k.split(':')[1]) for k in nodes if k.startswith('figure:')]
+    central_ids = set(PublicFigure.objects.filter(_match(['canonical_name'], words), pk__in=figure_ids)
+                      .values_list('pk', flat=True))
+    in_topic_orgs = set(RegisteredOrganisation.objects.filter(_match(['name'], words)).values_list('pk', flat=True))
+    in_topic_orgs |= {int(k.split(':')[1]) for k in nodes if k.startswith('org:')}
     relations = (PublicFigureOrganisationRelation.objects
-                 .filter(public_figure_id__in=figure_ids, verification_status='confirmed', organisation__archived=False)
+                 .filter(Q(public_figure_id__in=central_ids) | Q(organisation_id__in=in_topic_orgs),
+                         public_figure_id__in=figure_ids, verification_status='confirmed', organisation__archived=False)
                  .select_related('organisation')[:PER_KIND * 2])
     for rel in relations:
         org = rel.organisation
