@@ -409,3 +409,45 @@ def test_domyslne_drzewo_osoby_ogranicza_rekordy_glosowan_i_grupuje_reszte():
     assert newest == max(r.date.isoformat() for r in PublicRecord.objects.filter(kind='vote'))
     grouped = {(g['category'], g['kind']): g['count'] for g in data['limits']['grouped']}
     assert grouped[('polityka', 'vote')] == 80 - flow.VOTE_NODES and data['limits']['truncated'] is True
+
+
+@pytest.mark.parametrize('depth', ['1', '2', '3'])
+def test_authority_merged_by_nip_with_most_frequent_name(depth):
+    company = org()
+    notices = []
+    common = 'Gmina Miasto Testowe - Urząd Miejski'
+    for i, (nip, name) in enumerate([
+        ('1234563218', common), ('PL123-456-32-18', common), ('123-45-63-218', 'Urząd'),
+    ]):
+        notices.append(rec('ted', 'notice', f'merged-{i}', {
+            'buyer_nip': nip, 'buyer': [name], 'winners': [{'id': company.nip}],
+            'value': 100 + i, 'currency': 'PLN',
+        }, day=date(2026, 9, i + 1)))
+    data = get(f'spolka:{company.krs_number}', glebokosc=depth)
+    authorities = [n for n in data['nodes'] if n['kind'] == 'authority']
+    assert len(authorities) == 1
+    authority = authorities[0]
+    assert authority['id'] == 'authority:nip:1234563218'
+    assert authority['label'] == common
+    assert authority['short'] == common[:27] + '…'
+    edges = [e for e in data['edges'] if e['from'] == authority['id']]
+    if depth == '1':
+        assert len(edges) == 1 and edges[0]['to'] == data['root']['id']
+    else:
+        assert {e['to'] for e in edges} == {f'ted:{r.pk}' for r in notices}
+        assert sum(e['amount'] for e in edges) == 303
+        assert len([n for n in data['nodes'] if n['kind'] == 'contract']) == 3
+    filtered = get(f'spolka:{company.krs_number}', glebokosc=depth, od='2026-09-03')
+    assert [n['label'] for n in filtered['nodes'] if n['kind'] == 'authority'] == ['Urząd']
+
+
+def test_authorities_do_not_merge_by_name_or_winner_identifier():
+    company = org()
+    for i, nip in enumerate(['1234563218', '5260250995', None, None, 'DE1234563218']):
+        rec('ted', 'notice', f'separate-{i}', {
+            'buyer_nip': nip, 'buyer': ['Gmina'], 'winners': [{'id': company.nip}],
+        })
+    data = get(f'spolka:{company.krs_number}')
+    authorities = [n for n in data['nodes'] if n['kind'] == 'authority']
+    assert len(authorities) == 5
+    assert len({n['id'] for n in authorities}) == 5

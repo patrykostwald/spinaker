@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from news import drzewo_pieniedzy as money
 from news import przeszlosc_osoba as person
 
-VERSION = 'v1'
+VERSION = 'v2'
 CACHE_SECONDS = 86400
 MAX_NODES = 300
 MAX_EDGES = 600
@@ -228,9 +228,25 @@ def in_tenure(day, windows):
     return any((since is None or since <= day) and (until is None or day <= until) for since, until in windows)
 
 
+def authority_node(graph, record, key, category, provenance, label, names):
+    """Jeden zamawiający na jawny NIP; remis nazw rozstrzyga nowsze ogłoszenie."""
+    nip = money.buyer_nip(record.data or {}) if key == 'ted' else None
+    ident = f'authority:nip:{nip}' if nip else f'authority:{key}:{record.pk}'
+    meta = {'channel_level': 2} if graph.opts['depth'] == 1 else {}
+    authority = graph.node(ident, 'authority', label or 'Zamawiający', 1, category,
+                           provenance, structural=True, url=record.source_url, meta=meta)
+    if authority and label:
+        names[authority][label] += 1
+        display = names[authority].most_common(1)[0][0][:300]
+        graph.nodes[authority]['label'] = display
+        graph.nodes[authority]['short'] = display if len(display) <= 28 else display[:27] + '…'
+    return authority
+
+
 def finance(graph, organisations):
     """Batch source queries. JSON residual checks never replace identifier validation."""
     from news.public_records_models import PublicRecord
+    authority_names = defaultdict(Counter)
     by_id = defaultdict(set)
     by_nip = defaultdict(set)
     for org in organisations.values():
@@ -299,9 +315,8 @@ def finance(graph, organisations):
             if graph.opts['depth'] == 1:
                 if key in ('ted', 'fts') and certainty == 'identifier':
                     label = '; '.join(data.get('buyer') or []) if key == 'ted' else 'Komisja Europejska'
-                    authority = graph.node(f'authority:{key}:{record.pk}', 'authority', safe_label(label) or 'Zamawiający',
-                        1, category, provenance, structural=True, url=record.source_url,
-                        meta={'channel_level': 2})
+                    authority = authority_node(graph, record, key, category, provenance,
+                                               safe_label(label), authority_names)
                     for pk in sorted(hits):
                         graph.edge(authority, f'org:{pk}', 'zamówienie - kanał na poziomie 2' if key == 'ted'
                                    else 'dotacja - kanał na poziomie 2', provenance, since=record.date)
@@ -328,11 +343,9 @@ def finance(graph, organisations):
                            provenance, since=record.date, amount=None if key == 'ted' else amount,
                            currency=currency, certainty=certainty)
             if key != 'bzp' and certainty == 'identifier':
-                # Buyer identity is unavailable in our TED payload. Keep a record-local authority,
-                # never merge different authorities on their textual name.
                 label = '; '.join(data.get('buyer') or []) if key == 'ted' else 'Komisja Europejska'
-                authority = graph.node(f'authority:{key}:{record.pk}', 'authority', safe_label(label) or 'Zamawiający',
-                    1, category, provenance, structural=True, url=record.source_url)
+                authority = authority_node(graph, record, key, category, provenance,
+                                           safe_label(label), authority_names)
                 graph.edge(authority, channel, 'zamawia' if key == 'ted' else 'finansuje', provenance,
                            since=record.date, amount=amount, currency=currency)
             if key == 'ted' and graph.opts['depth'] == 3:

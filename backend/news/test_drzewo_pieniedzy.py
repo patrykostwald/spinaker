@@ -312,3 +312,18 @@ def test_nazwisko_wersalikami_w_drzewie_i_csv(monkeypatch):
     graph = pp.Graph({'depth': 2, 'start': '', 'end': '', 'unlinked': False, 'categories': ['polityka']})
     pp.figure_node(graph, figure, 0)
     assert graph.nodes[f'figure:{figure.pk}']['label'] == 'Daniel Obajtek'
+
+
+@pytest.mark.parametrize('data, expected', [
+    ({'buyer_nip': '5260250995'}, '5260250995'),
+    ({'buyer_nip': 'PL 526-025-09-95'}, '5260250995'),
+    ({'organizationNationalId': '526-02-50-995'}, '5260250995'),
+    ({'buyer_nip': 'DE5260250995'}, None),
+    ({'buyer_nip': 'KRS 0000000002'}, None),
+    ({'buyer_nip': '123'}, None),
+    ({'buyer_nip': ['5260250995', '1234563218']}, None),
+    ({'buyer_nip': '5260250995; 1234563218'}, None),
+    ({'buyer': ['Gmina'], 'winners': [{'id': '5260250995'}]}, None),
+])
+def test_buyer_nip_requires_explicit_polish_identifier(data, expected):
+    assert dp.buyer_nip(data) == expected

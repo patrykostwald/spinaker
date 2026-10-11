@@ -42,6 +42,22 @@ def digits(value):
     return re.sub(r'\D', '', str(value or ''))
 
 
+def buyer_nip(data):
+    """Jawny NIP zamawiającego; nigdy identyfikator wykonawcy ani dopasowanie nazwy.
+
+    buyer_nip to pole jawnego wzbogacenia TED; organizationNationalId pochodzi z BZP.
+    Obecny parser TED nie dostarcza NIP: takie rekordy pozostają osobne.
+    """
+    value = data.get('buyer_nip') or data.get('organizationNationalId')
+    if not isinstance(value, str):
+        return None
+    value = value.strip().upper()
+    if not re.fullmatch(r'(?:PL\s*)?[0-9][0-9 -]*', value):
+        return None
+    nip = digits(value)
+    return nip if len(nip) == 10 else None
+
+
 def identifiers(org):
     """{'NIP': ..., 'KRS': ..., 'REGON': ...} - tylko wypełnione; wartości to same cyfry."""
     return {k: v for k, v in (('NIP', digits(org.nip)), ('KRS', digits(org.krs_number)), ('REGON', digits(org.regon))) if v}
