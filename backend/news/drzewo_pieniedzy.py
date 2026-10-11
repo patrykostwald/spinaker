@@ -157,11 +157,11 @@ def grants(org, ids):
     return mark_suspect(out)
 
 
-def unlinked(org, linked_pks):
+def unlinked(org, linked_pks, limit=PER_BRANCH):
     """Rekordy dopasowane przez zbieracz tylko po nazwie (Kohesio, FTS bez VAT): pokazane, ale nie liczone."""
     from news.public_records_models import PublicRecord
     rows = (PublicRecord.objects.filter(kind__in=('eu_project', 'eu_grant'), data__organisation_id=org.pk)
-            .exclude(pk__in=linked_pks).order_by(F('date').desc(nulls_last=True), '-pk')[:PER_BRANCH])
+            .exclude(pk__in=linked_pks).order_by(F('date').desc(nulls_last=True), '-pk')[:limit])
     return [{'id': f'{r.source}:{r.pk}', 'source': r.source, 'title': (r.data.get('project') or r.data.get('subject') or r.title or '')[:300],
              'amount': _amount(r.data.get('eu_budget') if r.kind == 'eu_project' else r.data.get('amount')), 'currency': 'EUR',
              'date': r.date.isoformat() if r.date else None, 'url': r.source_url, 'reason': UNLINKED_REASON} for r in rows]
@@ -229,6 +229,45 @@ def tree(org):
             'generated_at': timezone.now().isoformat(timespec='minutes')}
 
 
+def export_data(org):
+    """Pełne dane do eksportu spółki: wszystkie rekordy gałęzi (bez okna widoku), niepowiązane osobno i z etykietą."""
+    from news import przeszlosc_eksport as ex
+    ids = identifiers(org)
+    c, g, p = contracts(org, ids), grants(org, ids), people(org)
+    u = unlinked(org, [int(x['id'].split(':')[1]) for x in c + g], limit=ex.EXPORT_CAP)
+    return {'organisation': organisation(org), 'identifiers': ids, 'contracts': c, 'grants': g, 'people': p, 'unlinked': u,
+            'sums': {'contracts': _sums(c), 'grants': _sums(g)}, 'sources': tree(org)['sources'], 'note': NOTE}
+
+
+def _amount_text(x):
+    if x.get('amount') is None:
+        return 'bez kwoty'
+    return f"{x['amount']:.2f} {x.get('currency') or 'PLN'}" + (' (do weryfikacji, poza sumami)' if x.get('amount_suspect') else '')
+
+
+def export_csv(org, data):
+    from news import przeszlosc_eksport as ex
+    stamp = ex.today()
+    rows = []
+    for x in data['contracts']:
+        rows.append(ex.row(x['date'] or '', f"zamówienie publiczne ({x['role']})", f"{x['title'] or x['party']} | {x['party']} | {_amount_text(x)}", '', x['url'],
+                           x['source'].upper(), f"wysoka: identyfikator {x['matched_by']}", x['id'], stamp))
+    for x in data['grants']:
+        rows.append(ex.row(x['date'] or str(x.get('year') or ''), 'dotacja UE', f"{x['title'] or x['programme']} | {x['programme']} | {_amount_text(x)}", '', x['url'],
+                           'FTS', f"wysoka: identyfikator {x['matched_by']}", x['id'], stamp))
+    for x in data['people']:
+        rows.append(ex.row(x['since'] or '', 'funkcja w KRS (kontekst, nie dowód)', f"{x['name']}: {x['role']}" + (f" (do {x['until']})" if x['until'] else ''), '',
+                           x['url'], 'KRS (api-krs.ms.gov.pl)', f"potwierdzona ({x['method']})", x['id'], stamp))
+    for x in data['unlinked']:
+        rows.append(ex.row(x['date'] or '', 'NIEPOWIĄZANE (tylko nazwa, poza sumami)', f"{x['title']} | {_amount_text(x)}", '', x['url'], x['source'].upper(),
+                           'niska: zgodność nazwy, bez identyfikatora', x['id'], stamp))
+    footer = [f"Podmiot: {org.name}, KRS {org.krs_number}" + (f", NIP {org.nip}" if org.nip else ', NIP: brak w naszych danych') + (f", REGON {org.regon}" if org.regon else ''),
+              f"Cytowanie: {ex.citation(org.name, 'drzewo przepływu pieniędzy spółki', stamp, f'{ex.SITE}/przeszlosc/spolka/{org.krs_number}')}", NOTE]
+    if len(data['unlinked']) >= ex.EXPORT_CAP:
+        footer.append(f'UWAGA: eksport niepełny: pominięto część niepowiązanych rekordów (limit {ex.EXPORT_CAP}).')
+    return ex.csv_text(rows, footer)
+
+
 def person_companies(figure):
     """Blok „Pieniądze powiązanych spółek” w profilu osoby: jej podmioty z KRS z sumami gałęzi; każdy otwiera drzewo."""
     from news.political_models import PublicFigureOrganisationRelation
@@ -291,4 +330,20 @@ def company_view(request, ident):
         data = tree(org)
         if connection.vendor == 'postgresql':
             cache.set(key, data, 900)
+    fmt = request.query_params.get('eksport', '')
+    if fmt in ('csv', 'json'):
+        from django.http import HttpResponse
+        from news import przeszlosc_eksport as ex
+        if not has('export', request):
+            return locked('export')
+        stamp = ex.today()
+        full = export_data(org)
+        if fmt == 'csv':
+            response = HttpResponse(export_csv(org, full), content_type='text/csv; charset=utf-8')
+        else:
+            full['export'] = {'exported_at': timezone.now().isoformat(timespec='seconds'),
+                              'citation': ex.citation(org.name, 'drzewo przepływu pieniędzy spółki', stamp, f'{ex.SITE}/przeszlosc/spolka/{org.krs_number}')}
+            response = Response(full)
+        response['Content-Disposition'] = f'attachment; filename="przeszlosc-spolka-{org.krs_number}-{stamp}.{fmt}"'
+        return response
     return Response({**data, 'access': access(request)})

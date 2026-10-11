@@ -457,3 +457,7 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
 /* F2: strażnik cytatu - mała etykieta stanu po prawej od tytułu */
 .px-wm__changed { color: var(--sc-spin-hi); font-weight: 600; }
 .px-wm__subject--changed { grid-template-columns: 64px minmax(0, 1fr) auto; }
+
+/* eksport (P1-5): cele dotyku 44 px (Fitts), przyciski zawijają się zamiast wychodzić poza ekran */
+.px-flow__export { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.px-flow__export .px-tool, .px-tv__tools .px-tool { min-height: 44px; }

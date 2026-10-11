@@ -123,7 +123,11 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
         <p className="px-mt__links"><a href={o.url} target="_blank" rel="noopener noreferrer">Wyszukiwarka KRS (MS) ↗</a>
           <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`spolka:${o.krs_number || o.nip}`)}`}>Drzewo przepływu →</a></p>
       </div>
-      <div className="px-tv__tools"><Sprostowanie recordId={`spolka:${o.krs_number || o.nip}`} label={o.name} /></div>
+      <div className="px-tv__tools"><Sprostowanie recordId={`spolka:${o.krs_number || o.nip}`} label={o.name} />
+        {!data.access?.locked.includes('export') && <>
+          <a className="px-tool" href={`/api/przeszlosc/spolka/${o.krs_number}/?eksport=csv`} download><Icon name="down" />CSV</a>
+          <a className="px-tool" href={`/api/przeszlosc/spolka/${o.krs_number}/?eksport=json`} download><Icon name="down" />JSON</a></>}
+      </div>
     </header>
 
     <section className="px-proof px-mt__proof" aria-label="Liczby">

@@ -366,3 +366,23 @@ def test_zamowienia_poza_okresem_funkcji_sa_domyslnie_pominiete():
     # korzeń-spółka nie jest filtrowany okresem funkcji osoby
     company_ids = {n['id'] for n in get(f'spolka:{company.krs_number}')['nodes']}
     assert f'ted:{outside.pk}' in company_ids
+
+
+def test_tree_export_csv_json_with_provenance_and_omitted_note(monkeypatch):
+    company = org()
+    person(company)
+    rec('ted', 'notice', '1-2026', {'buyer': ['Gmina'], 'value': 100, 'currency': 'PLN', 'winners': [{'name': 'Port', 'id': 'PL5260250995'}]}, '=Budowa', date(2026, 3, 1))
+    ident = f'spolka:{company.krs_number}'
+    client = APIClient()
+    nodes = client.get(f'/api/przeszlosc/przeplyw/{ident}/', {'eksport': 'csv'})
+    body = nodes.content.decode('utf-8-sig')
+    assert nodes['Content-Type'].startswith('text/csv') and 'attachment' in nodes['Content-Disposition']
+    assert body.splitlines()[0].startswith('identyfikator;rodzaj;etykieta') and "'=Budowa" in body and 'wysoka: po identyfikatorze' in body and 'Cytowanie: przeszłość.today' in body
+    edges = client.get(f'/api/przeszlosc/przeplyw/{ident}/', {'eksport': 'csv', 'czesc': 'krawedzie'}).content.decode('utf-8-sig')
+    assert edges.splitlines()[0].startswith('od;do;relacja') and 'Port Lotniczy SA' in edges
+    monkeypatch.setattr(flow, 'MAX_NODES', 2)
+    cache.clear()
+    capped = client.get(f'/api/przeszlosc/przeplyw/{ident}/', {'eksport': 'csv'}).content.decode('utf-8-sig')
+    assert 'UWAGA: eksport niepełny: pominięto' in capped
+    js = client.get(f'/api/przeszlosc/przeplyw/{ident}/', {'eksport': 'json'})
+    assert js.json()['export']['omitted'] and 'pobrano' in js.json()['export']['citation'] and 'attachment' in js['Content-Disposition']

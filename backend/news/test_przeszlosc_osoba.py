@@ -186,6 +186,32 @@ def test_person_endpoint_json_csv_and_404(monkeypatch):
     assert client.get('/api/przeszlosc/osoba/999999-nikt/').status_code == 404
 
 
+def test_csv_export_is_not_silently_truncated_has_provenance_columns_and_omitted_row(monkeypatch):
+    from news import przeszlosc_eksport as ex
+    me, _, _ = build_world()
+    for n in range(10, 60):  # razem 53 głosowania: widok profilu pokazuje 40, eksport musi mieć wszystkie
+        voting(n, [(77, 'Anna Kowalska', 'KO', 'YES')])
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    client = APIClient()
+    body = client.get(f'/api/przeszlosc/osoba/{me.pk}/?eksport=csv').content.decode('utf-8-sig')
+    lines = body.splitlines()
+    assert lines[0] == ';'.join(ex.COLUMNS)
+    assert sum('głosowanie: za' in line for line in lines) == 53
+    assert any('Cytowanie: przeszłość.today, profil osoby publicznej „Anna Kowalska”' in line for line in lines)
+    assert all(line.count(';') == len(ex.COLUMNS) - 1 for line in lines[1:] if line and not line.startswith(('Cytowanie', 'Każdy', 'UWAGA')) and 'pominięto' not in line[:20])
+    assert 'wysoka: oficjalny identyfikator Sejmu' in body and 'pominięto' not in body.lower().split('cytowanie')[0]
+    monkeypatch.setattr(ex, 'EXPORT_CAP', 10)
+    capped = client.get(f'/api/przeszlosc/osoba/{me.pk}/?eksport=csv').content.decode('utf-8-sig')
+    assert 'Pominięto 43 głosowań' in capped and 'UWAGA: eksport niepełny' in capped
+    data = client.get(f'/api/przeszlosc/osoba/{me.pk}/?eksport=json').json()
+    assert data['export']['omitted'] == [{'what': 'głosowań', 'count': 43}] and 'pobrano' in data['export']['citation'] and len(data['votes']['results']) == 10
+
+
+def test_csv_cells_cannot_start_a_formula():
+    from news import przeszlosc_eksport as ex
+    assert ex.safe('=HYPERLINK("x")') == "'=HYPERLINK(\"x\")" and ex.safe('Zwykły') == 'Zwykły' and ex.safe(None) == ''
+
+
 def test_link_public_record_people_is_idempotent():
     r = record(5, 'Interpelacja', [(90, None)])
     call_command('link_public_record_people')

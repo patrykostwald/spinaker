@@ -135,6 +135,10 @@ export function FlowTree({ ident }: { ident: string }) {
       <div><p className="px-kicker">Powiązania według dostępnych źródeł</p><h1>Drzewo przepływu <small>Etap 1</small></h1>
         <p className="px-flow__subject" title={data?.root.label}>{data?.root.label || (ident.startsWith('osoba:') ? 'Osoba publiczna' : 'Podmiot')}</p></div>
       <a className="px-quiet" href={`/przeszlosc/${ident.startsWith('osoba:') ? 'osoba' : 'spolka'}/${encodeURIComponent(ident.replace(/^(osoba|spolka):/, ''))}`}>Wróć do {ident.startsWith('osoba:') ? 'profilu' : 'spółki'} →</a>
+      {state === 'ready' && !locked && <div className="px-flow__export" role="group" aria-label="Eksport drzewa">
+        {([['csv', 'Węzły CSV', ''], ['csv', 'Krawędzie CSV', '&czesc=krawedzie'], ['json', 'JSON', '']] as const).map(([fmt, label, extra]) =>
+          <a key={label} className="px-tool" href={`/api/przeszlosc/przeplyw/${encodeURIComponent(ident)}/?${query}&eksport=${fmt}${extra}`} download><Icon name="down" />{label}</a>)}
+      </div>}
     </header>
     <section className="px-flow__filters" aria-label="Filtry drzewa">
       <div className="px-flow__categories">{CATEGORY_KEYS.map((key, i) => {

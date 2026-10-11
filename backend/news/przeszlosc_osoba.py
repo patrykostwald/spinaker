@@ -556,24 +556,82 @@ def denominators(figure):
             'note': 'Współwystępowanie to wskazówka do sprawdzenia, nie dowód współpracy. Każda pozycja prowadzi do źródła.'}
 
 
-def export_csv(data):
-    out = io.StringIO()
-    out.write('﻿')
-    w = csv.writer(out, delimiter=';')
-    w.writerow(['data', 'rodzaj', 'treść', 'spin', 'link'])
-    for p in data['posts']['results']:
-        w.writerow([p['date'], 'wpis na X', p['text'], p['diagnosis']['intensity'] if p['diagnosis'] else '', p['url']])
-    for d in data['documents']['results']:
-        w.writerow([d['date'] or '', d['label'], d['title'], '', d['url']])
-    for v in data['votes']['results']:
-        w.writerow([v['date'] or '', f"głosowanie: {v['vote']}", v['title'], '', v['url']])
+def export_rows(figure, data):
+    """Pełny eksport profilu: wszystkie wpisy, dokumenty, głosowania i artykuły (nie tylko okno widoku), z jawnym wierszem
+    „pominięto N” po przekroczeniu limitu technicznego. Zwraca (wiersze, rozszerzone dane do JSON, lista pominięć)."""
+    from news import przeszlosc_eksport as ex
+    from news.clinic import published_diagnoses
+    from news.political_models import PoliticalPost
+    cap, stamp = ex.EXPORT_CAP, ex.today()
+    identities = mp_identities(figure)
+    rows, omitted, full = [], [], {}
+    pid = f'osoba:{data["slug"]}'
+
+    accounts = x_accounts(figure)
+    post_rows = PoliticalPost.objects.filter(account__in=[a for a, _ in accounts], available=True)
+    total = post_rows.count()
+    posts = list(post_rows.select_related('account').order_by('-published_at', '-pk')[:cap])
+    diagnoses = {d.post_id: d for d in published_diagnoses().filter(post__in=posts)}
+    for p in posts:
+        d = diagnoses.get(p.pk)
+        rows.append(ex.row(p.published_at.date().isoformat(), 'wpis na X', p.text, d.intensity if d else '', p.url, f'X (@{p.account.handle})',
+                           'konto potwierdzone', f'post:{p.pk}', stamp))
+    if total > len(posts):
+        omitted.append(('wpisów na X', total - len(posts)))
+    full['posts'] = [{'id': p.pk, 'date': p.published_at.date().isoformat(), 'text': p.text, 'url': p.url, 'handle': p.account.handle,
+                      'spin': diagnoses[p.pk].intensity if p.pk in diagnoses else None} for p in posts]
+
+    record_rows = _records(figure, identities)
+    seen, docs, record_total = set(), [], record_rows.count()
+    for pr in record_rows.select_related('record').order_by(F('record__date').desc(nulls_last=True), '-record__pk')[:cap]:
+        r = pr.record
+        if r.pk in seen:
+            continue
+        seen.add(r.pk)
+        docs.append(r)
+        rows.append(ex.row(r.date.isoformat() if r.date else '', RECORD_LABEL.get(r.kind, DOCUMENT_LABEL), (r.title or '')[:300], '', r.source_url,
+                           f'Sejm ({r.source})', 'wysoka: oficjalny identyfikator Sejmu' if identities else 'potwierdzony profil', f'rekord:{r.pk}', stamp))
+    if record_total > cap:
+        omitted.append(('dokumentów Sejmu', record_total - cap))
+    full['documents'] = [{'id': r.pk, 'kind': RECORD_LABEL.get(r.kind, DOCUMENT_LABEL), 'title': r.title, 'date': r.date.isoformat() if r.date else None,
+                          'url': r.source_url} for r in docs]
+
+    ballots = _ballots(identities)
+    ballot_total = ballots.count()
+    votes = []
+    for b in ballots.select_related('voting__article').order_by('-voting__article__published_date', '-pk')[:cap]:
+        day = b.voting.article.published_date.date().isoformat() if b.voting.article.published_date else ''
+        rows.append(ex.row(day, f"głosowanie: {VOTE_LABEL.get(b.vote, 'inne')}", b.voting.article.title[:300], '', vote_url(b.voting), 'Sejm (głosowania imienne)',
+                           'wysoka: oficjalny identyfikator Sejmu', f'glosowanie:{b.voting.term}/{b.voting.sitting}/{b.voting.number}', stamp))
+        votes.append({'date': day or None, 'title': b.voting.article.title, 'vote': VOTE_LABEL.get(b.vote, 'inne'), 'url': vote_url(b.voting)})
+    if ballot_total > cap:
+        omitted.append(('głosowań', ballot_total - cap))
+    full['votes'] = votes
+
     for o in data.get('organisations', []):
-        w.writerow([o.get('since') or '', 'funkcja w KRS (kontekst, nie dowód)', f"{o['name']}: {o.get('organ') or o.get('public_role')}", '', o['official_register_url']])
-    for m in data.get('materials', {}).get('results', []):
-        w.writerow([str(m.get('published_date') or '')[:10], 'artykuł', m['title'], '', m['url']])
-    w.writerow([])
-    w.writerow([f"Źródło: przeszłość.today, profil {data['name']}, pobrano {timezone.localdate().isoformat()}. Każdy wiersz prowadzi do oryginału."])
-    return out.getvalue()
+        rows.append(ex.row(o.get('since') or '', 'funkcja w KRS (kontekst, nie dowód)', f"{o['name']}: {o.get('organ') or o.get('public_role')}", '',
+                           o['official_register_url'], 'KRS (api-krs.ms.gov.pl)', f"potwierdzona ({o.get('verification_method') or 'redakcja'})",
+                           f"krs:{o['krs_number']}", stamp))
+    mats = data.get('materials', {})
+    for m in mats.get('results', []):
+        rows.append(ex.row(str(m.get('published_date') or '')[:10], 'artykuł', m['title'], '', m['url'], m.get('source') or 'media',
+                           'potwierdzone przez człowieka (nie po samej nazwie)', f"artykul:{m['id']}", stamp))
+    if mats.get('count', 0) > len(mats.get('results', [])):
+        omitted.append(('artykułów', mats['count'] - len(mats['results'])))
+    for what, n in omitted:
+        rows.append(ex.omitted_row(n, what, stamp))
+    return rows, full, omitted, pid
+
+
+def export_csv(figure, data):
+    from news import przeszlosc_eksport as ex
+    rows, _, omitted, pid = export_rows(figure, data)
+    stamp = ex.today()
+    footer = [f"Cytowanie: {ex.citation(data['name'], 'profil osoby publicznej', stamp, ex.SITE + '/przeszlosc/osoba/' + str(data['slug']))}",
+              'Każdy wiersz prowadzi do oryginału. Funkcje w KRS i wzmianki to kontekst, nie dowód winy ani związku.']
+    if omitted:
+        footer.append('UWAGA: eksport niepełny: ' + '; '.join(f'pominięto {n} {what}' for what, n in omitted) + '.')
+    return ex.csv_text(rows, footer)
 
 
 from rest_framework.decorators import api_view, permission_classes  # noqa: E402
@@ -630,9 +688,15 @@ def person_view(request, ident):
         data['money_trail'] = None
     stamp = timezone.localdate().isoformat()
     if fmt == 'csv':
-        response = HttpResponse(export_csv(data), content_type='text/csv; charset=utf-8')
+        response = HttpResponse(export_csv(figure, data), content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = f'attachment; filename="przeszlosc-{data["slug"]}-{stamp}.csv"'
         return response
+    if fmt == 'json':
+        from news import przeszlosc_eksport as ex
+        _, full, omitted, _ = export_rows(figure, data)
+        data = {**data, **{k: {**data.get(k, {}), 'results': v, 'exported': len(v)} for k, v in full.items()},
+                'export': {'exported_at': timezone.now().isoformat(timespec='seconds'), 'omitted': [{'what': w, 'count': n} for w, n in omitted],
+                           'citation': ex.citation(data['name'], 'profil osoby publicznej', ex.today(), ex.SITE + '/przeszlosc/osoba/' + str(data['slug']))}}
     response = Response(data)
     if fmt == 'json':
         response['Content-Disposition'] = f'attachment; filename="przeszlosc-{data["slug"]}-{stamp}.json"'

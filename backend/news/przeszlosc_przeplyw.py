@@ -37,6 +37,9 @@ EXTRA_SOURCES = {
 }
 
 
+CERTAINTY = {'identifier': 'wysoka: po identyfikatorze (NIP, KRS, REGON)', 'name_only': 'niska: tylko nazwa, poza sumami'}
+
+
 def iso(value):
     if isinstance(value, datetime):
         return (timezone.localtime(value) if timezone.is_aware(value) else value).date().isoformat()
@@ -479,6 +482,36 @@ def cache_is_public(data, root_object, is_person):
     return True
 
 
+def export_response(data, ident, fmt, part):
+    """Eksport drzewa: CSV węzłów albo krawędzi (?czesc=krawedzie) i JSON całości; pominięte elementy jawnie, z przypisem."""
+    from django.http import HttpResponse
+    from news import przeszlosc_eksport as ex
+    stamp = ex.today()
+    cite = ex.citation(data['root']['label'], 'drzewo przepływu', stamp, f"{ex.SITE}/przeszlosc/przeplyw/{ident}")
+    name = f"przeszlosc-przeplyw-{re.sub(r'[^0-9A-Za-z]+', '-', ident).strip('-')}-{stamp}"
+    omitted = data['limits']['grouped']
+    if fmt == 'json':
+        response = Response({**data, 'export': {'exported_at': timezone.now().isoformat(timespec='seconds'), 'citation': cite,
+                                                'omitted': [{'what': g['label'], 'count': g['count']} for g in omitted]}})
+        response['Content-Disposition'] = f'attachment; filename="{name}.json"'
+        return response
+    labels = {n['id']: n['label'] for n in data['nodes']}
+    if part == 'krawedzie':
+        cols = ['od', 'do', 'relacja', 'data_od', 'data_do', 'kwota', 'waluta', 'zrodlo', 'data_pobrania', 'pewnosc_powiazania', 'identyfikator']
+        rows = [[ex.safe(labels.get(e['from'], e['from'])), ex.safe(labels.get(e['to'], e['to'])), ex.safe(e['label']), e['date_from'] or '', e['date_to'] or '',
+                 '' if e['amount'] is None else e['amount'], e['currency'] or '', e['source_key'], stamp, CERTAINTY.get(e['certainty'], e['certainty']), e['id']]
+                for e in data['edges']]
+    else:
+        cols = ['identyfikator', 'rodzaj', 'etykieta', 'kategoria', 'poziom', 'data', 'kwota', 'waluta', 'link', 'zrodlo', 'data_pobrania', 'pewnosc_powiazania']
+        rows = [[n['id'], n['kind'], ex.safe(n['label']), n['category'], n['level'], n['date'] or '', '' if n['amount'] is None else n['amount'], n['currency'] or '',
+                 n['url'] or '', (n.get('source') or {}).get('key', ''), stamp, CERTAINTY.get(n['certainty'], n['certainty'])] for n in data['nodes']]
+    footer = [f'Cytowanie: {cite}', *data['legal']['notes']]
+    footer += [f"UWAGA: eksport niepełny: pominięto {g['count']} elementów ({g['category']}/{g['kind']}) - limit rozmiaru drzewa." for g in omitted]
+    response = HttpResponse(ex.csv_text(rows, footer, cols), content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{name}-{part}.csv"'
+    return response
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def flow_view(request, ident):
@@ -511,4 +544,9 @@ def flow_view(request, ident):
     if data is None or not cache_is_public(data, obj, prefix == 'osoba'):
         data = build(obj, prefix == 'osoba', opts)
         cache.set(key, data, CACHE_SECONDS)
+    fmt = request.query_params.get('eksport', '')
+    if fmt in ('csv', 'json'):
+        if not has('export', request):
+            return locked('export')
+        return export_response(data, ident, fmt, 'krawedzie' if request.query_params.get('czesc') == 'krawedzie' else 'wezly')
     return Response(data)

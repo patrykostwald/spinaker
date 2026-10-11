@@ -240,3 +240,29 @@ def test_fetch_on_demand_survives_network_errors(monkeypatch):
     monkeypatch.setattr(krs, 'fetch', boom)
     assert ps.fetch_on_demand('0000012345') == (None, 'error')
     assert ps.fetch_on_demand('0000012345') == (None, 'error')  # z pamięci, bez drugiego wywołania
+
+
+def test_company_export_csv_json_full_with_unlinked_labelled(monkeypatch):
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    company = org()
+    for i in range(65):  # więcej niż okno widoku (60): eksport ma wszystkie
+        rec('ted', 'notice', f'n{i}-2026', {'buyer': ['Gmina'], 'value': 100 + i, 'currency': 'PLN', 'winners': [{'name': 'Port', 'id': 'PL5260250995'}]},
+            f'Zamówienie {i}', date(2026, 3, 1))
+    rec('fts', 'eu_grant', 'f2', {'beneficiary': 'Port Lotniczy SA', 'vat': '', 'amount': 50.0, 'subject': 'Bez VAT', 'organisation_id': company.pk}, 'Port: Bez VAT')
+    client = APIClient()
+    assert len(client.get('/api/przeszlosc/spolka/0000000002/').json()['contracts']['results']) == 60
+    r = client.get('/api/przeszlosc/spolka/0000000002/?eksport=csv')
+    body = r.content.decode('utf-8-sig')
+    lines = body.splitlines()
+    assert 'attachment' in r['Content-Disposition'] and lines[0] == ';'.join(ex_columns())
+    assert sum('zamówienie publiczne' in line for line in lines) == 65 and 'NIEPOWIĄZANE' in body and 'niska: zgodność nazwy' in body
+    assert 'Cytowanie: przeszłość.today' in body and 'KRS 0000000002' in body
+    data = client.get('/api/przeszlosc/spolka/0000000002/?eksport=json').json()
+    assert len(data['contracts']) == 65 and data['export']['citation'] and data['unlinked'][0]['reason']
+    with override_settings(PRZESZLOSC_BETA_ALL_FEATURES=False):
+        assert client.get('/api/przeszlosc/spolka/0000000002/?eksport=csv').status_code == 403
+
+
+def ex_columns():
+    from news import przeszlosc_eksport
+    return przeszlosc_eksport.COLUMNS
