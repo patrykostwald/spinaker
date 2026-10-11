@@ -83,7 +83,7 @@ export function DrzewoPieniedzy({ ident }: { ident: string }) {
       document.title = `${d.organisation.name} - drzewo przepływu pieniędzy - przeszłość.today`;
     }).catch(() => setState('error'));
   }, [ident]);
-  return <main className="px px-mt">
+  return <div className="px px-mt">
     <Bar />
     {state === 'loading' && <div className="px-wait"><Loading label="Ładowanie drzewa" /></div>}
     {state === 'missing' && <p className="px-msg" role="status">{nb(why.startsWith('Brak w naszych danych') ? why : 'Brak w naszych danych: nie mamy takiego podmiotu.')} <a href="/przeszlosc?tryb=spolka">Szukaj spółki</a></p>}
@@ -92,7 +92,7 @@ export function DrzewoPieniedzy({ ident }: { ident: string }) {
     {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać drzewa. Spróbuj ponownie.</p>}
     {data && <TreeView data={data} />}
     <Foot />
-  </main>;
+  </div>;
 }
 
 type Tab = 'contracts' | 'grants' | 'people' | 'unlinked';
@@ -170,7 +170,7 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
       <p className="px-card__foot px-tree__foot"><span>{narrow ? 'Dotknij elementu, aby otworzyć źródło.' : 'Kliknij element, aby otworzyć źródło w nowej karcie.'}</span><span>{nb('Niepowiązane (ta sama nazwa, brak identyfikatora) są w liście poniżej, poza sumami.')}</span></p>
     </figure>
 
-    <Przybornik id="mt-tools-h" tools={companyTools({ krs: o.krs_number, nip: o.nip, regon: o.regon })} />
+    <Przybornik id="mt-tools-h" tools={companyTools({ krs: o.krs_number, nip: o.nip, regon: o.regon, kind: o.kind })} />
 
     <section className="px-mt__list" id="mt-lista" aria-labelledby="mt-list-h">
       <div className="px-time__head"><h2 id="mt-list-h" className="px-h3">Wszystkie rekordy</h2><span>{counts[tab]} {plural(counts[tab], 'pozycja', 'pozycje', 'pozycji')}</span></div>

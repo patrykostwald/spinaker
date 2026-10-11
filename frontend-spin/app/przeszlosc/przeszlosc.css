@@ -468,3 +468,14 @@ html .px .px-search input:focus-visible { outline: 0 !important; }
 .px-fold { min-width: 0; border: 1px solid var(--px-line); border-radius: 12px; padding: 0 16px; }
 .px-fold > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: 15px; color: var(--sc-text-2); }
 .px-fold[open] { padding-bottom: 16px; }
+
+/* Telefon 390 px: treść profilu i innych widoków nie jest ucinana. Siatka .px miała kolumnę auto (szerokość najdłuższego słowa/adresu),
+   więc elementy wychodziły poza ekran. Teraz kolumna jest minmax(0, 1fr), długie ciągi się zawijają, a poziomego przewijania nie ma. */
+@media (max-width: 760px) {
+  .px.px { grid-template-columns: minmax(0, 1fr); padding-inline: 16px; overflow-wrap: anywhere; max-width: 100%; }
+  .px.px > *, .px .px-grid > *, .px .px-main > *, .px .px-side > *, .px .px-pp__sum > * { min-width: 0; max-width: 100%; }
+  .px .px-panel__rows li, .px .px-ev__act, .px .px-ev__quiet, .px .px-tv__head, .px .px-pp__links { flex-wrap: wrap; min-width: 0; }
+  .px .px-ev__meta > b { white-space: normal; }
+  .px table { display: block; max-width: 100%; overflow-x: auto; }
+  .px img, .px svg, .px video { max-width: 100%; }
+}

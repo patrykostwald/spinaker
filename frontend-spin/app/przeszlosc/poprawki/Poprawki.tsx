@@ -17,7 +17,7 @@ export function Poprawki() {
   useEffect(() => {
     fetch('/api/przeszlosc/poprawki/').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(setData).catch(() => setFailed(true));
   }, []);
-  return <main className="px px-pop">
+  return <div className="px px-pop">
     <Bar />
     <header className="px-pop__hero">
       <h1 className="px-pop__title">Poprawki</h1>
@@ -36,5 +36,5 @@ export function Poprawki() {
       </ul>}
     </section>
     <Foot />
-  </main>;
+  </div>;
 }

@@ -145,7 +145,7 @@ export function TopicTree() {
     {data && (state === 'idle' || state === 'loading') && <TopicView key={data.topic} data={data} busy={state === 'loading'} daily={daily} />}
   </section>;
 
-  return <main className="px" data-linked={linked || undefined}>
+  return <div className="px" data-linked={linked || undefined}>
     <div className="px-home-top"><Bar />{!linked && <Paski />}</div>
     {linked && result}
 
@@ -242,7 +242,7 @@ export function TopicTree() {
       </div>
     </section>
     <Foot />
-  </main>;
+  </div>;
 }
 
 /* Mała grafika w nagłówku: rysuje się raz i pokazuje, co dostaje czytelnik (bez liczb, same rodzaje). */

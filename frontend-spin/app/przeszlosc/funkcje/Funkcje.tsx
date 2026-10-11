@@ -21,7 +21,7 @@ export function Funkcje() {
     fetch('/api/przeszlosc/funkcje/').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(setData).catch(() => setFailed(true));
   }, []);
   const items = data?.features ?? [];
-  return <main className="px px-fx">
+  return <div className="px px-fx">
     <Bar />
     <header className="px-fx__hero">
       <h1 className="px-fx__title">{nb('Co potrafi przeszłość.today')}</h1>
@@ -50,5 +50,5 @@ export function Funkcje() {
       <a className="px-btn" href="/przeszlosc/pilot">Zgłoś zespół do pilotażu</a>
     </section>
     <Foot />
-  </main>;
+  </div>;
 }
