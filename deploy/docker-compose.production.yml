@@ -37,6 +37,9 @@ services:
   backend:
     build:
       context: ../backend
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-}
+        BUILD_TIME: ${BUILD_TIME:-}
     command: sh -c "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers $${WEB_WORKERS:-3} --threads $${WEB_THREADS:-4} --worker-class gthread --timeout 120"
     env_file: ../.env.production
     volumes:
@@ -55,6 +58,9 @@ services:
   worker:
     build:
       context: ../backend
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-}
+        BUILD_TIME: ${BUILD_TIME:-}
     command: celery -A config worker -l info
     env_file: ../.env.production
     volumes:
@@ -70,6 +76,9 @@ services:
   beat:
     build:
       context: ../backend
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-}
+        BUILD_TIME: ${BUILD_TIME:-}
     command: celery -A config beat -l info
     env_file: ../.env.production
     environment:
