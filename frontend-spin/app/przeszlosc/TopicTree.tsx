@@ -6,6 +6,7 @@ import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
 import { WMediach } from './WMediach';
 import { Paski } from './Paski';
+import './glosowania.css';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -351,7 +352,7 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
         <WMediach items={mediaItems.filter(m => !m.automatic)} />
         <WMediach id="topic-mentions-h" heading="Wzmianki" automatic mentionContext="topic" items={mediaItems.filter(m => m.automatic)} />
         <SejmPath data={data} />
-        {Boolean(data.votes?.length) && <Votes votes={data.votes!} />}
+        {Boolean(data.votes?.length) && <Votes key={data.topic} votes={data.votes!} topic={data.topic} total={(data as Graph & VotesMeta).votes_total} range={(data as Graph & VotesMeta).votes_range} />}
         <section className="px-time" aria-labelledby="os-h">
           <div className="px-time__head"><h3 id="os-h" className="px-h3">Oś czasu</h3><span>{events.length} {plural(events.length, 'pozycja', 'pozycje', 'pozycji')}</span></div>
           <div className="px-filters">
@@ -655,12 +656,53 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
 /* Głosowania w temacie: kolory znaczą głos (za, przeciw, wstrzymał się, nieobecny), nigdy stronę sceny politycznej. */
 const VOTE_ORDER = ['za', 'przeciw', 'wstrzymał się', 'nieobecny'];
 const SHORT_V: Record<string, string> = { za: 'za', przeciw: 'przeciw', 'wstrzymał się': 'wstrz.', nieobecny: 'nieob.' };
-function Votes({ votes }: { votes: Vote[] }) {
+/* P1-3 (Śledczy R1): pełna lista głosowań tematu - strony po 8 z /temat/glosowania/, zakres dat jak w drzewie przepływu. */
+type VotesPage = { results: Vote[]; total: number; page: number; pages: number; range: { first: string | null; last: string | null } };
+type VotesMeta = { votes_total?: number; votes_range?: { first: string | null; last: string | null } };
+const VOTES_PAGE = 8;
+function Votes({ votes, topic, total: initialTotal, range: initialRange }: { votes: Vote[]; topic: string; total?: number; range?: VotesMeta['votes_range'] }) {
   const [open, setOpen] = useState<string | null>(null);
-  return <section className="px-votes" aria-labelledby="votes-h">
-    <h3 id="votes-h" className="px-h3">Głosowania w&nbsp;Sejmie</h3>
+  const [rows, setRows] = useState<Vote[]>(votes);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(initialTotal ?? votes.length);
+  const [range, setRange] = useState(initialRange ?? { first: null, last: null });
+  const [dates, setDates] = useState({ od: '', do: '' });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+  const filtered = Boolean(dates.od || dates.do);
+  const fetchPage = async (next: number, bounds: { od: string; do: string }, append: boolean) => {
+    setBusy(true); setError(false);
+    try {
+      const params = new URLSearchParams({ q: topic, strona: String(next), na_strone: String(VOTES_PAGE) });
+      if (bounds.od) params.set('od', bounds.od);
+      if (bounds.do) params.set('do', bounds.do);
+      const r = await fetch(`/api/przeszlosc/temat/glosowania/?${params}`);
+      if (!r.ok) throw new Error();
+      const data: VotesPage = await r.json();
+      setRows(prev => append ? [...prev, ...data.results.filter(v => !prev.some(p => p.id === v.id))] : data.results);
+      setPage(data.page); setTotal(data.total); setRange(data.range);
+    } catch { setError(true); } finally { setBusy(false); }
+  };
+  const changeDates = (patch: Partial<{ od: string; do: string }>) => {
+    const next = { ...dates, ...patch };
+    if (next.od && next.do && next.od > next.do) { if (patch.od !== undefined) next.do = next.od; else next.od = next.do; }
+    setDates(next); void fetchPage(1, next, false);
+  };
+  const reset = () => { setDates({ od: '', do: '' }); setRows(votes); setPage(1); setTotal(initialTotal ?? votes.length); setRange(initialRange ?? { first: null, last: null }); };
+  const remaining = Math.max(0, total - rows.length);
+  return <section className="px-votes" aria-labelledby="votes-h" aria-busy={busy || undefined}>
+    <div className="px-votes__head">
+      <h3 id="votes-h" className="px-h3">Głosowania w&nbsp;Sejmie</h3>
+      <span>{total} {plural(total, 'głosowanie', 'głosowania', 'głosowań')}{range.first && range.last && range.first !== range.last ? ` · ${day(range.first)} - ${day(range.last)}` : range.last ? ` · ${day(range.last)}` : ''}</span>
+    </div>
+    <div className="px-votes__filters px-flow__dates" role="group" aria-label="Zakres dat głosowań">
+      <label>Od <input type="date" value={dates.od} max={dates.do || undefined} onChange={e => changeDates({ od: e.target.value })} /></label>
+      <label>Do <input type="date" value={dates.do} min={dates.od || undefined} onChange={e => changeDates({ do: e.target.value })} /></label>
+      {filtered && <button type="button" className="px-quiet" onClick={reset}>Wyczyść daty</button>}
+    </div>
     <ul className="px-votes__legend" aria-hidden="true">{VOTE_ORDER.map(v => <li key={v} data-v={v}><i />{v}</li>)}</ul>
-    <ol>{votes.map(v => {
+    {rows.length === 0 && !busy && <p className="px-votes__empty">Brak głosowań w tym zakresie dat.</p>}
+    <ol>{rows.map(v => {
       const max = Math.max(...v.clubs.map(c => c.size), 1);
       return <li key={v.id} className="px-card px-vote">
         <div className="px-vote__head">
@@ -684,6 +726,11 @@ function Votes({ votes }: { votes: Vote[] }) {
         </div>)}</div>}
       </li>;
     })}</ol>
+    {(remaining > 0 || error) && <div className="px-votes__more">
+      {error && <span role="alert">Nie udało się pobrać kolejnych głosowań.</span>}
+      {remaining > 0 && <button type="button" className="px-quiet" disabled={busy} onClick={() => void fetchPage(page + 1, dates, true)}>
+        {busy ? 'Wczytuję…' : `Pokaż więcej (${remaining} ${plural(remaining, 'pozostałe', 'pozostałe', 'pozostałych')})`}</button>}
+    </div>}
   </section>;
 }
 
