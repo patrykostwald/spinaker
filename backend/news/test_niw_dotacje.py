@@ -330,3 +330,33 @@ def test_flow_tree_niw_channel_institution_and_legal_notes(monkeypatch):
     assert not any(n.startswith('Powiązanie osoby') for n in company_tree['legal']['notes'])
     assert 'authority:niw' in {n['id'] for n in company_tree['nodes']}
     cache.clear()
+
+
+def test_real_niw_file_headers_and_repeated_contract_numbers(monkeypatch):
+    """Układ pliku NIW z 30.07.2026: „Tytuł wniosku”, „Numer wniosku”, KRS w „Numerze w rejestrze” bez zer wiodących;
+    numer umowy powtarza się między konkursami, więc kluczem jest numer wniosku."""
+    import sys
+    headers = ['Numer wniosku', 'Tytuł wniosku', 'Program', 'Konkurs', 'Priorytet', 'Kwota dotacji', 'Rozpoczęcie zadania',
+               'Zakończenie zadania', 'Numer umowy', 'Data zawarcia umowy', 'Nazwa oferenta', 'NIP', 'Nazwa rejestru',
+               'Numer w rejestrze', 'Kod pocztowy', 'Miejscowość', 'Województwo', 'Powiat']
+    rows = [
+        ['3_FIO2018', 'Zadanie A', 'Program Fundusz Inicjatyw Obywatelskich', 'Konkurs FIO 2018', '', 36770, 43283, 43465, '75', 43285,
+         'Stowarzyszenie A', '5260250995', 'KRS', '336434', '05-306', 'Miasto', 'MAZOWIECKIE', 'miński'],
+        ['9_FIO2019', 'Zadanie B', 'Program Fundusz Inicjatyw Obywatelskich', 'Konkurs FIO 2019', '', 20000, 43700, 43800, '75', 43650,
+         'Stowarzyszenie A', '5260250995', 'KRS', '336434', '05-306', 'Miasto', 'MAZOWIECKIE', 'miński'],
+    ]
+    monkeypatch.setattr(sys.modules[__name__], 'HEADERS', headers)
+    records, stats = niw.parse_xlsx(xlsx(rows), NAME)
+    assert len(records) == 2 and stats['bez_krs'] == 0 and stats['bledne'] == 0
+    assert {r['krs'] for r in records} == {'0000336434'}
+    assert {r['external_id'] for r in records} == {'3_FIO2018', '9_FIO2019'}
+    assert records[0]['subject'] == 'Zadanie A' and records[0]['contract_no'] == '75'
+
+
+def test_missing_contract_date_is_kept_without_date(monkeypatch):
+    """142 wiersze prawdziwego pliku NIW mają KRS i kwotę, ale pustą datę umowy: nie są błędne, tylko bez daty."""
+    import sys
+    rows = [GOOD, ['Bez daty', 'FIO', '2026', 100, '7/FIO', 'brak danych', 'Fundacja B', '5260250995', 'KRS', 7]]
+    records, stats = niw.parse_xlsx(xlsx(rows), NAME)
+    assert len(records) == 2 and stats['bledne'] == 0 and stats['bez_daty'] == 1
+    assert [r['signed'] for r in records if r['contract_no'] == '7/FIO'] == [None]
