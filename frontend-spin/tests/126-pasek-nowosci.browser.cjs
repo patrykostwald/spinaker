@@ -60,7 +60,16 @@ const M = () => ({
     const sx = /(auto|scroll)/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 1, sy = /(auto|scroll)/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 1; if (!sx && !sy) return false;
     const barPx = (e.offsetHeight - e.clientHeight) + (e.offsetWidth - e.clientWidth) - (parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth));
     return cs.scrollbarWidth !== 'none' || barPx > 0; }).map(e => e.tagName + '.' + String(e.className).split(' ')[0]),
-  targets: [...document.querySelectorAll('.pt-tick a, .pt-tick button')].map(e => { const q = e.getBoundingClientRect(); return { t: (e.textContent || '').trim().slice(0, 16) || e.className, w: Math.round(q.width), h: Math.round(q.height) }; }),
+  targets: [...document.querySelectorAll('.pt-tick a, .pt-tick button')].filter(e => e.getBoundingClientRect().width > 0).map(e => { const q = e.getBoundingClientRect(); return { t: (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 16) || e.className, w: Math.round(q.width), h: Math.round(q.height) }; }),
+  // linia bazowa każdego widocznego tekstu wiersza: sonda inline-block 0x0 (jej górna krawędź = linia bazowa), różnica ma być <= 1 px
+  baselines: [...document.querySelectorAll('.pt-tick__lab, .pt-tick__kind, .pt-tick__time, .pt-tick__t, .pt-tick__srcname, .pt-tick__all .pt-tick__txt')].filter(e => { const q = e.getBoundingClientRect(); return q.width > 2 && q.height > 2; }).map(e => {
+    const probe = document.createElement('span'); probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline;padding:0;margin:0;border:0;';
+    e.appendChild(probe); const y = probe.getBoundingClientRect().top + scrollY; probe.remove();
+    return { t: e.className.split(' ')[0], y: Math.round(y * 10) / 10 }; }),
+  // tytuł ucięty tylko wtedy, gdy pełny tekst naprawdę się nie mieści (pomiar canvasem w komputowanym kroju)
+  titleRoom: (() => { const t = document.querySelector('.pt-tick__title'); if (!t) return null; const cs = getComputedStyle(t); const c = document.createElement('canvas').getContext('2d'); c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const full = c.measureText(t.getAttribute('title')).width; return { full: Math.round(full), box: t.clientWidth, cut: t.dataset.cut !== undefined, overflow: t.scrollWidth > t.clientWidth + 1 }; })(),
+  srcShown: (() => { const s = document.querySelector('.pt-tick__src'); return Boolean(s && s.getBoundingClientRect().width > 0); })(),
   item: (() => { const e = document.querySelector('.pt-tick__item'); if (!e) return null; const t = e.querySelector('.pt-tick__title'); const q = e.getBoundingClientRect(), v = e.parentElement.getBoundingClientRect();
     // skrót po całym słowie: widoczny tekst (bez "…") jest przedrostkiem pełnego tytułu zakończonym na granicy słowa
     const vis = (t.querySelector('.pt-tick__t') || t).textContent, full = t.getAttribute('title');
@@ -101,7 +110,7 @@ const M = () => ({
     st = await p.evaluate(() => document.querySelector('.pt-tick').dataset.state);
     if (st !== 'running') bad(`zdjęcie kursora: stan ${st}`); else ok('zdjęcie kursora = wznowienie');
     await p.click('.pt-tick__btn'); await p.mouse.move(5, 5); await p.waitForTimeout(100);
-    const pr = await p.evaluate(() => [document.querySelector('.pt-tick__btn').getAttribute('aria-pressed'), document.querySelector('.pt-tick__btn').textContent.trim(), document.querySelector('.pt-tick').dataset.state, document.querySelector('.pt-tick__title').textContent]);
+    const pr = await p.evaluate(() => [document.querySelector('.pt-tick__btn').getAttribute('aria-pressed'), document.querySelector('.pt-tick__btn').getAttribute('title'), document.querySelector('.pt-tick').dataset.state, document.querySelector('.pt-tick__title').textContent]);
     await p.waitForTimeout(1300);
     const pr2 = await p.evaluate(() => document.querySelector('.pt-tick__title').textContent);
     if (pr[0] !== 'true' || pr[1] !== 'Wznów' || pr[2] !== 'paused' || pr[3] !== pr2) bad(`Pauza: ${JSON.stringify(pr)} -> "${pr2.slice(0, 20)}"`); else ok('przycisk Pauza: aria-pressed=true, "Wznów", pozycja stoi');
@@ -122,10 +131,12 @@ const M = () => ({
     await ctx.close();
   }
 
-  // 2. sweep 320-1480: wysokość stała, bez poziomego przewijania i pasków, równe odstępy, cele 44 px, tytuł ucięty w polu
-  for (let w = 320; w <= 1480; w += 40) {
+  // 2. sweep 320-1920: wysokość stała, bez poziomego przewijania i pasków, równe odstępy, cele 44 px, jedna linia bazowa,
+  //    tytuł ucięty tylko bez miejsca, domena tylko od 1100 px
+  for (let w = 320; w <= 1920; w += 40) {
     const { p, ctx } = await page(b, w);
-    await p.waitForSelector('.pt-tick[data-state="running"]'); await p.waitForTimeout(80);
+    // pomiar po zakończeniu animacji wejścia pozycji (translateY -4 px -> 0, --fx-ticker-fade 320 ms)
+    await p.waitForSelector('.pt-tick[data-state="running"]'); await p.waitForTimeout(450);
     const m = await p.evaluate(M);
     const gapUp = Math.round(m.tick.top - m.barLine), gapDown = Math.round(m.heroFirst - m.tick.bottom);
     const exp = w <= 760 ? 24 : 24;
@@ -139,7 +150,12 @@ const M = () => ({
     if (m.item.overflowView || m.item.right < 0) probs.push(`pozycja wystaje z pola (${m.item.right})`);
     if (m.item.titleW < 60) probs.push(`tytuł ${m.item.titleW} px (za mało miejsca)`);
     if (!m.item.wordCut) probs.push(`tytuł ucięty w pół słowa: "${m.item.shown}"`);
-    if (probs.length) bad(`${w} px: ${probs.join('; ')}`); else ok(`${w} px: h 40, odstępy ${gapUp}/${gapDown}, tytuł ${m.item.titleW} px${m.item.clipped ? ` ("${m.item.shown}")` : ''}, cele ${m.targets.map(t => `${t.w}x${t.h}`).join(' ')}`);
+    const ys = m.baselines.map(b => b.y), spread = Math.max(...ys) - Math.min(...ys);
+    if (spread > 1) probs.push(`linie bazowe rozjechane o ${spread.toFixed(1)} px: ${m.baselines.map(b => `${b.t} ${b.y}`).join(', ')}`);
+    if (m.titleRoom.cut && m.titleRoom.full <= m.titleRoom.box - 4) probs.push(`tytuł ucięty mimo miejsca (tekst ${m.titleRoom.full} px, pole ${m.titleRoom.box} px)`);
+    if (m.titleRoom.overflow) probs.push('tytuł wylewa się z pola');
+    if (m.srcShown !== (w >= 1100)) probs.push(`domena źródła ${m.srcShown ? 'widoczna' : 'ukryta'} przy ${w} px`);
+    if (probs.length) bad(`${w} px: ${probs.join('; ')}`); else ok(`${w} px: h 40, odstępy ${gapUp}/${gapDown}, baseline ±${spread.toFixed(1)}, tytuł ${m.item.titleW} px${m.item.clipped ? ` ("${m.item.shown}")` : ' (cały)'}, cele ${m.targets.map(t => `${t.w}x${t.h}`).join(' ')}`);
     await ctx.close();
   }
 
@@ -161,10 +177,10 @@ const M = () => ({
   {
     const { p, ctx } = await page(b, 1440, { reduced: true });
     await p.waitForSelector('.pt-tick[data-state="static"]');
-    const a = await p.evaluate(() => [document.querySelector('.pt-tick__btn').textContent.trim(), document.querySelector('.pt-tick__title').textContent, getComputedStyle(document.querySelector('.pt-tick__item')).animationName]);
+    const a = await p.evaluate(() => [document.querySelector('.pt-tick__btn').getAttribute('title'), document.querySelector('.pt-tick__title').textContent, getComputedStyle(document.querySelector('.pt-tick__title')).animationName]);
     await p.click('.pt-tick__btn'); await p.waitForTimeout(100);
     const t2 = await p.evaluate(() => document.querySelector('.pt-tick__title').textContent);
-    if (a[0] !== 'Następna' || a[1] === t2 || a[2] !== 'none') bad(`reduced motion: ${JSON.stringify(a)} -> "${t2.slice(0, 20)}"`); else ok('reduced motion: "Następna" zmienia pozycję, animacja wyłączona');
+    if (a[0] !== 'Następna pozycja' || a[1] === t2 || a[2] !== 'none') bad(`reduced motion: ${JSON.stringify(a)} -> "${t2.slice(0, 20)}"`); else ok('reduced motion: "Następna" zmienia pozycję, animacja wyłączona');
     await ctx.close();
   }
 

@@ -69,13 +69,13 @@ export function PasekNowosci({ latest, loading = false, reduced: forced }: { lat
       </p>
     </div>
     <div className="pt-tick__act">
-      {state === 'static' && n > 1 ? <button type="button" className="px-tool pt-tick__btn" onClick={() => setI(x => stepIndex(x, n))}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-          <span className="pt-tick__txt">Następna</span></button>
-        : n > 1 ? <button type="button" className="px-tool pt-tick__btn" aria-pressed={paused} onClick={toggle}>
-          {paused ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>
-            : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>}
-          <span className="pt-tick__txt">{paused ? 'Wznów' : 'Pauza'}</span></button> : null}
+      {/* przyciski jako sama ikona (uwaga właściciela: wiersz ma jedną linię bazową); nazwa w aria-label i title; litera o zerowej
+          szerokości (U+200B) w przycisku daje mu linię bazową tekstu, więc ikona stoi na środku linii tytułu */}
+      {state === 'static' && n > 1 ? <button type="button" className="px-tool pt-tick__btn" aria-label="Następna pozycja" title="Następna pozycja" onClick={() => setI(x => stepIndex(x, n))}>
+          {'​'}<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+        : n > 1 ? <button type="button" className="px-tool pt-tick__btn" aria-pressed={paused} aria-label={paused ? 'Wznów zmianę pozycji' : 'Zatrzymaj zmianę pozycji'} title={paused ? 'Wznów' : 'Pauza'} onClick={toggle}>
+          {'​'}{paused ? <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z" /></svg>
+            : <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>}</button> : null}
       <a className="px-link pt-tick__all" href={`#${TICK_ANCHOR}`}><span className="pt-tick__txt">Wszystkie nowości</span><i aria-hidden="true">→</i></a>
     </div>
   </section>;
@@ -109,5 +109,5 @@ function TitleFit({ text }: { text: string }) {
 
 function Label() {
   // na telefonie zostaje sam znacznik ">" (etykietę regionu czyta czytnik z aria-label); tekst znika wizualnie, nie z DOM
-  return <span className="pt-tick__lab"><span className="pt-tick__lab-t">{TICK_LABEL}</span><i aria-hidden="true">&gt;</i></span>;
+  return <span className="pt-tick__lab"><span className="pt-tick__lab-t">{TICK_LABEL}</span> <i aria-hidden="true">&gt;</i></span>;
 }

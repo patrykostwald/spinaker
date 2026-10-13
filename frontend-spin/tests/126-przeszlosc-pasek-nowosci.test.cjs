@@ -108,11 +108,12 @@ test('render: region z etykietą, aria-live="off", pierwsza pozycja z rodzajem, 
   assert.match(h, /class="pt-tick__title" title="Druk nr 1234: rządowy projekt ustawy o CPK"><span class="pt-tick__t">Druk nr 1234: rządowy projekt ustawy o CPK<\/span><\/span>/, 'przed pomiarem pełny tytuł, bez atrybutu data-cut');
   // domena źródła jak w danych (bez www/api), reszta subdomen zostaje
   assert.match(h, /<a class="pt-tick__src" href="https:\/\/orka\.sejm\.gov\.pl\/Druki10ka\.nsf\/0\/1234" target="_blank" rel="noopener noreferrer"[^>]*><span class="pt-tick__srcname">orka\.sejm\.gov\.pl<\/span>/);
-  assert.match(h, /<button type="button" class="px-tool pt-tick__btn" aria-pressed="false">/);
-  assert.match(h, /Pauza</); assert.doesNotMatch(h, /Następna/);
+  // Pauza jako sama ikona: nazwa w aria-label i title (uwaga właściciela 13.10: jedna linia bazowa wiersza)
+  assert.match(h, /<button type="button" class="px-tool pt-tick__btn" aria-pressed="false" aria-label="Zatrzymaj zmianę pozycji" title="Pauza">/);
+  assert.doesNotMatch(h, /Następna/);
   assert.doesNotMatch(h, /pt-tick__n|1\/6/, 'bez licznika pozycji (panel 13.10: za dużo elementów w jednej linii)');
   assert.match(h, /<a class="px-link pt-tick__all" href="#najnowsze"><span class="pt-tick__txt">Wszystkie nowości<\/span><i aria-hidden="true">→<\/i><\/a>/);
-  assert.match(h, /class="pt-tick__lab"><span class="pt-tick__lab-t">Ostatnio w bazie<\/span><i aria-hidden="true">&gt;<\/i>/);
+  assert.match(h, /class="pt-tick__lab"><span class="pt-tick__lab-t">Ostatnio w bazie<\/span> <i aria-hidden="true">&gt;<\/i>/, '">" jako zwykły tekst w etykiecie');
   // bez ocen i słów zależności: tylko to, co w danych
   assert.doesNotMatch(h, /najważniejsz|alarm|ważne|zależn|związan/i);
 });
@@ -132,14 +133,17 @@ test('render: brak danych i błąd = brak paska (nie "zero"); mniej niż 3 pozyc
 test('render: prefers-reduced-motion = pozycja statyczna i przycisk "Następna" zamiast Pauzy', () => {
   const h = html({ latest: LATEST, reduced: true });
   assert.match(h, /data-state="static"/);
-  assert.match(h, /Następna</); assert.doesNotMatch(h, /Pauza|aria-pressed/);
+  assert.match(h, /aria-label="Następna pozycja" title="Następna pozycja"/); assert.doesNotMatch(h, /Pauza|aria-pressed/);
   assert.match(h, /class="pt-tick__kind">Druk</, 'pierwsza pozycja');
 });
 
 test('pliki: tokeny czasu w CSS, tylko transform/opacity w animacji, reduced motion, wysokość stała, sekcja #najnowsze i pasek w TopicTree', () => {
   const css = fs.readFileSync(P('pasek-nowosci.css'), 'utf8');
-  for (const tok of ['--fx-ticker-interval: 6000ms', '--fx-ticker-fade: 320ms', '--fx-ticker-shift: 4px', '--pt-tick-h: 40px']) assert.ok(css.includes(tok), tok);
+  for (const tok of ['--fx-ticker-interval: 6000ms', '--fx-ticker-fade: 320ms', '--fx-ticker-shift: 4px', '--pt-tick-h: 40px', '--pt-tick-lh: 1.3']) assert.ok(css.includes(tok), tok);
   assert.match(css, /height: var\(--pt-tick-h\)/);
+  assert.match(css, /\.pt-tick \{[^}]*align-items: baseline/, 'wiersz po linii bazowej (uwaga właściciela 13.10)');
+  assert.match(css, /\.pt-tick__title \{[^}]*flex: 1 1 0px; min-width: 0/, 'tytuł bierze całą wolną szerokość');
+  assert.match(css, /max-width: 1099\.98px\) \{ \.pt-v3 \.px \.pt-tick__src \{ display: none; \}/, 'domena znika poniżej 1100 px');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /scrollbar|overflow: hidden/, 'ucięcie bez paska przewijania');
   const anim = css.match(/@keyframes pt-tick-in \{[^}]*\}[^}]*\}/)[0];
