@@ -21,6 +21,8 @@ class Command(BaseCommand):
         pairs.add_argument('--max-wywolan', type=int, default=60)
         pairs.add_argument('--dry-run', action='store_true', help='Bez nowych kandydatów i wywołań modeli; tylko arkusz.')
         pairs.add_argument('--wyjscie', default=None)
+        pairs.add_argument('--na-osobe', type=int, default=2, help='Wywołania na osobę i temat w pierwszym przebiegu (równy podział).')
+        pairs.add_argument('--verbose', action='store_true', help='Skrót surowej odpowiedzi modelu (200 znaków) przy każdym powodzie.')
         chains = sub.add_parser('lancuch')
         chains.add_argument('--dni', type=int, default=20)
         chains.add_argument('--generuj', action='store_true')
@@ -37,7 +39,8 @@ class Command(BaseCommand):
             if opts['generuj'] and not opts['temat']:
                 raise CommandError('Generator wymaga co najmniej jednego --temat.')
             result = pilotaz.pairs(opts['n'], generate=opts['generuj'], topics=opts['temat'], max_calls=opts['max_wywolan'],
-                                   dry_run=opts['dry_run'], path=opts['wyjscie'])
+                                   dry_run=opts['dry_run'], path=opts['wyjscie'], per_combo=opts['na_osobe'],
+                                   verbose=opts['verbose'])
         elif opts['action'] == 'lancuch':
             result = pilotaz.chains(opts['dni'], generate=opts['generuj'], max_calls=opts['max_wywolan'],
                                     dry_run=opts['dry_run'], path=opts['wyjscie'])

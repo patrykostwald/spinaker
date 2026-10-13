@@ -49,6 +49,9 @@ class PoliticalAccount(models.Model):
     last_polled_at = models.DateTimeField(null=True, editable=False)
     last_error = models.CharField(max_length=120, blank=True, editable=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
+    # Miniatura konta (news/x_avatars.py, 13.10): tylko https://pbs.twimg.com/profile_images/..., wariant _bigger.
+    avatar_url = models.URLField(max_length=500, blank=True, editable=False)
+    avatar_checked_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     def __str__(self):
         return f'@{self.handle} — {self.get_camp_display()}'

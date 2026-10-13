@@ -15,6 +15,7 @@ Zasady (ta sama miara dla każdej strony, ZAWSZE):
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
 from datetime import timedelta
@@ -345,52 +346,124 @@ def topic_items(figure, topic, limit=400) -> list[dict]:
     return items
 
 
-def from_topic(figure, topic, *, ask=None, max_asks=MAX_ASKS) -> dict:
-    """Kandydaci dla jednej osoby i tematu: nowsza wypowiedź albo głos (B) i najbliższe tematycznie wcześniejsze (A),
-    co najmniej MIN_GAP_DAYS wcześniej; ocenę „zmiana stanowiska” daje model z tym samym poleceniem co pętla Zmiana zdania.
-    Głosy porównujemy z deklaracjami (wpisy, wystąpienia) w obie strony. Tylko kandydaci."""
+def _redact(text) -> str:
+    """Skrót surowej odpowiedzi do diagnozy (tryb --verbose): bez adresów e-mail i numerów telefonów, maks. 200 znaków."""
+    text = re.sub(r'[\w.+-]+@[\w-]+\.[\w.]+', '[e-mail]', str(text or ''))
+    text = re.sub(r'(?<!\d)(?:\+?\d[\d \-]{7,}\d)(?!\d)', '[telefon]', text)
+    return ' '.join(text.split())[:200]
+
+
+def _valid_answer(answer):
+    """(odpowiedź jako dict albo None). Odpowiedź tekstowa przechodzi przez tolerancyjny parser JSON."""
     from news import zmiana_zdania as zz
-    ask = ask or zz.ask
+    from news.json_tolerant import loads
+    if not isinstance(answer, dict):
+        try:
+            answer = loads(answer)
+        except ValueError:
+            return None
+    relation = str(answer.get('relation', '')).strip().lower()
+    try:
+        int(answer.get('confidence'))
+    except (TypeError, ValueError):
+        return None
+    return answer if relation in zz.RELATIONS else None
+
+
+def _short(payload) -> dict:
+    """Krótsze pytanie do ponownej próby: teksty obu wypowiedzi przycięte do 1200 znaków."""
+    return {key: {**value, 'tekst': str(value.get('tekst', ''))[:1200]} for key, value in payload.items()}
+
+
+def ask_pair(ask, payload):
+    """Jedno pytanie o parę z naprawą (pilotaż 13.10): nieprawidłowa odpowiedź = jedna ponowna próba z krótszym pytaniem
+    u innego dostawcy z puli darmowej (skip_inception), potem wynik 'invalid_json'. Zwraca (odpowiedź|None, model, wywołania,
+    surowa odpowiedź). Wyjątki modelu (brak wolnego modelu, okno zamknięte) przechodzą wyżej."""
+    answer, model = ask(payload)
+    raw = answer
+    valid = _valid_answer(answer)
+    if valid is not None:
+        return valid, model, 1, raw
+    try:
+        answer, model = ask(_short(payload), skip_inception=True)
+    except TypeError:  # podstawiona funkcja bez parametru skip_inception
+        answer, model = ask(_short(payload))
+    return _valid_answer(answer), model, 2, answer
+
+
+def questions(figure, topic) -> list:
+    """Pary (A starsza, B nowsza) do zapytania modelu: 5 najnowszych B, do 2 najbliższych tematycznie A dla każdej."""
+    from news import zmiana_zdania as zz
     items = topic_items(figure, topic)
-    asked = created = 0
-    reasons = []
+    out = []
     for b in items[:5]:
         b_stems = zz.stems(b['text'])
         older = []
         for a in items:
             if a['date'] and (b['date'] - a['date']).days >= zz.MIN_GAP_DAYS and not (a['kind'] == b['kind'] == 'glos'):
                 shared, score = zz.similarity(b_stems, zz.stems(a['text']))
-                if shared >= 1:  # temat już wspólny (topic_items); kolejność po podobieństwie
+                if shared >= 1:
                     older.append((score, a))
         older.sort(key=lambda row: (-row[0], -row[1]['date'].toordinal()))
-        for _, a in older[:2]:
-            if asked >= max_asks:
-                break
-            payload = {'obecna_wypowiedz': {'rodzaj': KIND_LABEL[b['kind']], 'data': b['date'].isoformat(), 'tekst': b['text'][:3000]},
-                       'wczesniejsza_wypowiedz': {'rodzaj': KIND_LABEL[a['kind']], 'data': a['date'].isoformat(), 'tekst': a['text'][:3000]}}
-            try:
-                answer, model = ask(payload)
-            except Exception as error:  # noqa: BLE001 - brak modelu = brak kandydata, nie błąd
-                reasons.append(f'model: {str(error)[:120]}')
-                return {'asked': asked, 'created': created, 'reasons': reasons}
-            asked += 1
-            relation = zz.RELATIONS.get(str(answer.get('relation', '')).strip().lower())
-            try:
-                confidence = int(answer.get('confidence') or 0)
-            except (TypeError, ValueError):
-                confidence = 0
-            if relation != 'change' or confidence < zz.MIN_CONFIDENCE:
-                continue
-            explanation = _clean(answer.get('explanation'))
-            context = explanation if not check_text(explanation, MAX_CONTEXT, 'kontekst') else ''
-            try:
-                suggest(figure, topic, a['key'], b['key'], answer.get('quote_then'), answer.get('quote_now'), context,
-                        ai_suggested=True, model=model, usage={'from': 'temat', 'confidence': confidence})
-                created += 1
-            except PairError as error:
-                reasons.append(f"{a['key']}/{b['key']}: {error}")
-    return {'asked': asked, 'created': created, 'reasons': reasons[:20]}
+        out += [(a, b) for _, a in older[:2]]
+    return out, len(items)
 
+
+def from_topic(figure, topic, *, ask=None, max_asks=MAX_ASKS, skip=0, verbose=False) -> dict:
+    """Kandydaci dla jednej osoby i tematu: nowsza wypowiedź albo głos (B) i najbliższe tematycznie wcześniejsze (A),
+    co najmniej MIN_GAP_DAYS wcześniej; ocenę „zmiana stanowiska” daje model z tym samym poleceniem co pętla Zmiana zdania.
+    Głosy porównujemy z deklaracjami (wpisy, wystąpienia) w obie strony. Tylko kandydaci.
+    Pilotaż 13.10: każde pytanie bez pary ma powód w `reasons` (invalid_json, brak_pary, odrzucone_walidatorem, brak_materialu,
+    limit); `max_asks` to limit wywołań modelu (z ponowną próbą), `skip` pomija pytania zadane we wcześniejszym przebiegu."""
+    from news import zmiana_zdania as zz
+    ask = ask or zz.ask
+    todo, n_items = questions(figure, topic)
+    asked = calls = created = 0
+    reasons = []
+
+    def note(reason, a=None, b=None, **extra):
+        row = {'osoba': figure.pk, 'temat': topic, 'reason': reason}
+        if a is not None:
+            row.update(a=a['key'], b=b['key'])
+        row.update({k: v for k, v in extra.items() if v not in (None, '')})
+        reasons.append(row)
+
+    if not todo:
+        note('brak_materialu', detail=f'materiałów z tematem: {n_items}, par z odstępem >= {zz.MIN_GAP_DAYS} dni: 0')
+        return {'asked': 0, 'calls': 0, 'created': 0, 'reasons': reasons}
+    pending = todo[skip:]
+    for index, (a, b) in enumerate(pending):
+        if calls >= max_asks:
+            note('limit', detail=f'pominięto {len(pending) - index} pytań (limit wywołań {max_asks})')
+            break
+        payload = {'obecna_wypowiedz': {'rodzaj': KIND_LABEL[b['kind']], 'data': b['date'].isoformat(), 'tekst': b['text'][:3000]},
+                   'wczesniejsza_wypowiedz': {'rodzaj': KIND_LABEL[a['kind']], 'data': a['date'].isoformat(), 'tekst': a['text'][:3000]}}
+        try:
+            answer, model, used, raw = ask_pair(ask, payload)
+        except Exception as error:  # noqa: BLE001 - brak wolnego modelu: zapisany powód zamiast cichego zera
+            note('limit', a, b, detail=f'model niedostępny: {str(error)[:120]}')
+            break
+        asked += 1
+        calls += used
+        extra = {'model': str(model)[:80], 'raw': _redact(json.dumps(raw, ensure_ascii=False) if isinstance(raw, dict) else raw)
+                 if verbose else None}
+        if answer is None:
+            note('invalid_json', a, b, **extra)
+            continue
+        relation = zz.RELATIONS.get(str(answer.get('relation', '')).strip().lower())
+        confidence = int(answer.get('confidence') or 0)
+        if relation != 'change' or confidence < zz.MIN_CONFIDENCE:
+            note('brak_pary', a, b, detail=f"relacja: {answer.get('relation')}, pewność: {confidence}", **extra)
+            continue
+        explanation = _clean(answer.get('explanation'))
+        context = explanation if not check_text(explanation, MAX_CONTEXT, 'kontekst') else ''
+        try:
+            suggest(figure, topic, a['key'], b['key'], answer.get('quote_then'), answer.get('quote_now'), context,
+                    ai_suggested=True, model=model, usage={'from': 'temat', 'confidence': confidence})
+            created += 1
+        except PairError as error:
+            note('odrzucone_walidatorem', a, b, code=error.code, detail='; '.join(error.issues[:3])[:240], **extra)
+    return {'asked': asked, 'calls': calls, 'created': created, 'reasons': reasons[:100]}
 
 # --- decyzje człowieka -------------------------------------------------------------------------------------------------
 

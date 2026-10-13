@@ -56,7 +56,11 @@ def _day(now=None):
 
 
 def _key(kind, day, task):
-    return f'petle:{kind}:{day}:{task}'
+    # Klucz bez spacji i znaków spoza [A-Za-z0-9_.-] (memcached/CacheKeyWarning przy „poza zadaniem”, pilotaż 13.10);
+    # nazwa zadania w raporcie bez zmian, bo raport buduje klucze tą samą funkcją.
+    import re
+    safe = re.sub(r'[^A-Za-z0-9_.-]+', '_', str(task or ''))[:150]
+    return f'petle:{kind}:{day}:{safe}'
 
 
 def _incr(kind, task=None, now=None):

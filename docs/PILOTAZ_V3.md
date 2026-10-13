@@ -51,3 +51,27 @@ art. 14 po przeglądzie prawnika; dyżur i SLA zgłoszeń zapisane; runbook `RUN
 Włączenie: `dj przelacznik ustaw POSITION_PAIRS_ENABLED on --kto <login> --uwaga "pilotaż przyjęty <data>"` (bez restartu).
 Zatwierdzanie par z pilotażu: `dj pary_stanowisk zatwierdz <id> --kto <login> --kontekst "..." [--potwierdzam-przedmiot]`
 (cztery oczy: inna osoba niż dodająca kandydata).
+
+## Powody w wyniku generatora (od 13.10, po pierwszym pilotażu)
+Pierwszy przebieg na produkcji (12 wywołań, 3 tematy) dał 0 par i puste `reasons`: odpowiedzi „to samo stanowisko”,
+„nie na temat” albo niska pewność, a także odpowiedzi nieprawidłowe (w logu `inception_invalid_json`; wtedy pytanie szło
+do zapasowego modelu Konsylium) były pomijane bez śladu. Teraz każde pytanie bez pary ma wpis w `log.from_topic.reasons`,
+a podsumowanie w `reasons_summary`:
+- `brak_pary` - model ocenił „to samo stanowisko” albo „nie na temat”, albo pewność < 75 (`detail`: relacja i pewność);
+- `invalid_json` - odpowiedź nieczytelna także po ponownej próbie (krótsze pytanie u innego dostawcy z puli darmowej);
+- `odrzucone_walidatorem` - model wskazał zmianę, ale walidator pary odrzucił (`code`, `detail`: np. cytat spoza materiału);
+- `brak_materialu` - osoba albo temat nie mają pary materiałów z odstępem >= 14 dni;
+- `limit` - wyczerpany limit wywołań albo brak wolnego modelu (`detail`: „model niedostępny: ...”).
+Z `--verbose` przy powodzie jest `raw`: skrót surowej odpowiedzi (200 znaków, bez adresów e-mail i telefonów).
+
+Budżet: `--na-osobe 2` (domyślnie) - w pierwszym przebiegu najwyżej 2 wywołania na osobę i temat, osoby na zmianę
+z każdego obozu (kolejność losowa z ziarnem dnia i tematu, następnego dnia inne osoby); drugi przebieg tylko, gdy zostanie
+budżet. Każda nieczytelna odpowiedź zużywa 2 wywołania (próba i ponowna próba).
+
+Ponowne uruchomienie (po wdrożeniu poprawek):
+```
+dj pilotaz par --n 50 --generuj --max-wywolan 40 --na-osobe 2 --verbose --temat paliw --temat sankcje --temat bezpieczeństwo
+```
+Czytaj `reasons_summary`: przewaga `brak_pary` = modele nie widzą zmian w tych tematach (zmień tematy albo osoby);
+przewaga `invalid_json` = problem dostawcy (sprawdź `inception_invalid_json` w logu i `python manage.py przelacznik lista`);
+`odrzucone_walidatorem` = modele cytują niedosłownie (poprawa promptu); `brak_materialu` = za mało danych w temacie.

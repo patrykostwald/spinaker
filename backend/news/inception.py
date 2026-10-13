@@ -221,7 +221,12 @@ def _json(text: str) -> dict:
         try:
             result, _ = json.JSONDecoder(strict=False).raw_decode(text[start:])
         except ValueError:
-            raise InceptionError('inception_invalid_json') from None
+            # pilotaż 13.10: blok markdown, przecinek przed nawiasem, tekst wokół obiektu
+            from news.json_tolerant import loads
+            try:
+                result = loads(text)
+            except ValueError:
+                raise InceptionError('inception_invalid_json') from None
     if not isinstance(result, dict):
         raise InceptionError('inception_invalid_json')
     return result
