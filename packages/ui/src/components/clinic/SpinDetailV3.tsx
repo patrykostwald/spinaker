@@ -17,6 +17,7 @@ import { ReportError, modelLabel } from "./SpinSummary";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { AuthorReplies } from "./ClinicCorrections";
 import { PositionChanges } from "./PositionChanges";
+import { DiagnosisPairs } from "./DiagnosisPairs";
 import { SpinReceptionBlock } from "./SpinReception";
 import { ArchiveNote, FactChecks } from "./OpenSources";
 import { ContextThreadStrip } from "../ContextThreadStrip";
@@ -30,7 +31,7 @@ const InfoIcon = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="non
 const ExtIcon = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>;
 
 /** Spis treści z podświetleniem bieżącej sekcji (od 1180 px; węziej ukryty). */
-function Toc({ items }: { items: Array<[string, string]> }) {
+export function Toc({ items }: { items: Array<[string, string]> }) {
   const [active, setActive] = useState(items[0]?.[0]);
   useEffect(() => {
     if (!("IntersectionObserver" in window)) return;
@@ -55,7 +56,7 @@ function NextSpinsV3({ current }: { current: number }) {
   return <section className="sc-v3-dg-next" aria-labelledby="dg-next-title">
     <div className="sc-v3-feed-h"><h2 id="dg-next-title">Kolejne diagnozy</h2><Link className="sc-v3-lnk" href="/klinika/diagnozy">Wszystkie diagnozy <span className="sc-v3-ar" aria-hidden="true">→</span></Link></div>
     {/* jeden schemat wiersza zamiast wąskich kart (tytuły w kartach łamały się na 6 linii) */}
-    <ol className="sc-v3-rows">{rows.map((row, index) => <SpinRow key={row.id} index={index} href={`/klinika/${row.id}`} name={row.author?.name ?? ""} kind={<>Diagnoza AI · {row.verdict === "unclear" ? "Nie da się ocenić" : row.verdict_label}</>}
+    <ol className="sc-v3-rows">{rows.map((row, index) => <SpinRow key={row.id} index={index} href={`/klinika/${row.id}`} name={row.author?.name ?? ""} kind={<><span className="sc-v3-row__kp">Diagnoza </span>AI · {row.verdict === "unclear" ? "Nie da się ocenić" : row.verdict_label}</>}
       title={row.headline} meta={[row.author?.name, row.post?.published_at ? <time key="t" dateTime={row.post.published_at}>{formatDateTimePl(row.post.published_at)}</time> : null, `#SPIN-${row.id}`]} value={row.intensity} />)}</ol>
   </section>;
 }
@@ -82,13 +83,20 @@ export function SpinDetailV3({ spin, returnTo }: { spin: SpinDetailData; returnT
     <p className="sc-v3-ctx">
       <Link className="sc-v3-crumb" href={returnTo ? clinicResultsUrl(returnTo) : "/klinika/diagnozy"} scroll={false}>← {returnTo ? "Wróć do wyników" : "Wszystkie diagnozy"}</Link>
       <span className="sc-v3-tag" data-tone="accent" title="Diagnoza przygotowana przez system AI (Konsylium kilku modeli różnych firm). Nikt nie edytuje jej treści.">AI</span>
-      <span className="sc-v3-tag" title="Wersja testowa">BETA</span>
+      
       <span>Ocena AI, może zawierać błędy</span><span className="sc-v3-dot" aria-hidden="true">·</span><span>Te same kryteria dla wszystkich partii</span>
       <Link className="sc-v3-lnk" href="/metodologia">Metoda <span className="sc-v3-ar" aria-hidden="true">→</span></Link>
     </p>
 
     <div className="sc-v3-dg__grid">
       <div className="sc-v3-dg__main">
+        {/* seria 2 (recenzja): tytuł diagnozy jako pierwszy nagłówek strony, przed cytatem i techniką */}
+        <header className="sc-v3-dg-sec sc-v3-dg-head">
+          <p className="sc-v3-dg-k"><span>#SPIN-{spin.id}</span><span>{spin.verdict === "unclear" ? "Nie da się ocenić" : spin.verdict_label}</span><time dateTime={spin.scan?.diagnosed_at || spin.created_at}>{formatDatePl(spin.scan?.diagnosed_at || spin.created_at)}</time><HowToRead /></p>
+          <h1 id="dg-title" className="sc-v3-dg-title">{title}</h1>
+          <p className="sc-v3-dg-short"><b>W skrócie.</b> {spin.summary}</p>
+        </header>
+
         <section id="dg-cytat" className="sc-v3-dg-sec" aria-labelledby="dg-cytat-h">
           <h2 id="dg-cytat-h">Cytat<small>Fakt: treść wpisu w chwili pobrania.</small></h2>
           <figure className="sc-v3-quote">
@@ -103,13 +111,12 @@ export function SpinDetailV3({ spin, returnTo }: { spin: SpinDetailData; returnT
             ))}
             <p className="sc-v3-quote__f"><span>Treść mogła zostać zmieniona lub usunięta po pobraniu.</span><a className="sc-v3-lnk" href={spin.post.url} target="_blank" rel="noopener noreferrer">Oryginalny wpis na X <ExtIcon /></a></p>
           </figure>
+          {/* „Wcześniej i teraz”: jedna linia, tylko gdy API zwróciło zatwierdzoną parę (flaga NEXT_PUBLIC_POSITION_PAIRS) */}
+          <DiagnosisPairs block={spin.position_pairs} figureId={spin.author.figure_id} />
         </section>
 
-        <section id="dg-technika" className="sc-v3-dg-sec" aria-labelledby="dg-title">
-          <h2 className="sc-v3-dg-sec__h">Technika AI<small>Opinia modeli: jak zbudowano przekaz.</small></h2>
-          <p className="sc-v3-dg-k"><span>#SPIN-{spin.id}</span><span>{spin.verdict === "unclear" ? "Nie da się ocenić" : spin.verdict_label}</span><time dateTime={spin.scan?.diagnosed_at || spin.created_at}>{formatDatePl(spin.scan?.diagnosed_at || spin.created_at)}</time><HowToRead /></p>
-          <h1 id="dg-title" className="sc-v3-dg-title">{title}</h1>
-          <p className="sc-v3-dg-short"><b>W skrócie.</b> {spin.summary}</p>
+        <section id="dg-technika" className="sc-v3-dg-sec" aria-labelledby="dg-technika-h">
+          <h2 id="dg-technika-h" className="sc-v3-dg-sec__h">Technika AI<small>Opinia modeli: jak zbudowano przekaz.</small></h2>
           {techniques.length ? <>
             <ul className="sc-v3-chips" aria-label="Techniki perswazji">{techniques.filter((item, index, all) => all.findIndex(other => other.label === item.label) === index).map(item => <li key={item.label} className="sc-v3-chip" data-fam={item.family}><i aria-hidden="true" />{item.label}</li>)}</ul>
             <p className="sc-v3-fam-leg">{families.filter(family => family.count).map(family => <span key={family.key} data-fam={family.key}><i aria-hidden="true" />{FAMILY_SHORT[family.key]} {family.count}</span>)}</p>
@@ -128,8 +135,8 @@ export function SpinDetailV3({ spin, returnTo }: { spin: SpinDetailData; returnT
           <h2 id="dg-sila-h">Siła spinu</h2>
           <div className="sc-v3-power">
             <SpinMeter value={spin.intensity} size="lg" label="Siła spinu tego wpisu" models={models}
-              legend={models.length ? models.map(model => `${model.label} ${model.value ?? "-"}`).join(" · ") : undefined} />
-            <p className="sc-v3-power__txt"><b>Ocena AI jednego wpisu.</b> Nie mówi o prawdziwości wypowiedzi ani o osobie. {models.length ? "Krótkie szare kreski to oceny poszczególnych modeli na tej samej linii; kreska w kolorze to wynik diagnozy. " : ""}Konsylium AI: {agreementLabel(council.agreement)}{council.agreement ? ` (${council.agreement})` : ""}.</p>
+              legend={models.length ? `Oceny modeli (szare kreski): ${models.map(model => `${model.label}: ${model.value ?? "brak"}`).join(" · ")}` : undefined} />
+            <p className="sc-v3-power__txt"><b>Ocena AI jednego wpisu.</b> Nie mówi o prawdziwości wypowiedzi ani o osobie. {models.length ? "Krótkie szare kreski to oceny poszczególnych modeli (lista pod linią); kreska w kolorze to wynik diagnozy. " : ""}Konsylium AI: {agreementLabel(council.agreement)}{council.agreement ? ` (${council.agreement})` : ""}.</p>
             {spin.council ? <details className="sc-v3-details"><summary>Skład Konsylium i role modeli</summary>
               <ul className="sc-v3-plain-list">{spin.council.members.map(member => <li key={member.model}><b>{short(member.model)}</b> - {member.intensity == null || !member.verdict ? "brak odpowiedzi" : <>{VERDICT_SHORT[member.verdict] ?? member.verdict}, siła spinu {member.intensity}/100</>}</li>)}</ul>
               <p>Lekarz prowadzący: {short(spin.council.chair)}{spin.council.linguist ? ` · redaktor: ${short(spin.council.linguist)}` : ""}{spin.council.review.model ? ` · ordynator: ${short(spin.council.review.model)} - ${spin.council.review.ok ? "bez zastrzeżeń" : spin.council.review.ok === false ? `uwagi${spin.council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}{spin.council.escalated ? " · konsultacja specjalisty: fakty sprawdził dodatkowo mocniejszy model z wyszukiwaniem" : ""}</p>

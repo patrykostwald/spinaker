@@ -468,3 +468,215 @@ html[data-theme="light"] .pt-v3 .px .px-flow__dates input[type="date"] { color-s
 .pt-v3 .px .px-wm__subject > .px-wm__title { grid-column: 1; grid-row: 2; min-width: 0; }
 .pt-v3 .px .px-wm__subject > .px-wm__changed { grid-column: 2; grid-row: 2; }
 .pt-v3 .px .px-wm__list a { min-height: 56px; padding-top: 6px; padding-bottom: 6px; }
+
+/* =================== SERIA 2 (13.10.2026): poprawki po wdrożeniu (uwagi właściciela, zrzut strony głównej) =================== */
+/* (3) pasek: pionowy oddech nad znakiem (min. 12 px; jest 16,5 / 15 px), BETA jak ™ na linii górnej krawędzi liter "today"
+   (wcześniej 7 px wyżej - wyglądało, jakby wisiało nad znakiem); pomiar: gust/przeszlosc/port/logo-beta.cjs */
+.pt-v3 .px .pt-top { padding-block: 12px; }
+.pt-v3 .px .pt-beta { top: calc(50% - var(--pt-logo-h) * .135); }
+@media (max-width: 760px) { .pt-v3 .px .pt-top { padding-block: 8px; } }
+
+/* (1) nagłówek BEZ akcji w lewej kolumnie (hero z kartą "Tak wygląda wynik"): kicker przy górnej krawędzi karty,
+   blok tytuł + opis WYŚRODKOWANY pionowo względem wysokości karty (symetryczne wiersze 1fr i niewidoczny odpowiednik kickera
+   na dole, więc blok nigdy nie wchodzi na kicker). Z akcjami (akta osoby, podmiot, temat) zostaje dociąganie do dołu. */
+@media (min-width: 1001px) {
+  .pt-v3 .px .pt-hero > .pt-head__l { grid-template-rows: auto minmax(12px, 1fr) auto minmax(12px, 1fr) auto; gap: 0; }
+  .pt-v3 .px .pt-hero > .pt-head__l > .px-kicker { grid-row: 1; margin: 0; line-height: 20px; }
+  .pt-v3 .px .pt-hero > .pt-head__l > .pt-head__b { grid-row: 3; align-self: center; }
+  .pt-v3 .px .pt-hero > .pt-head__l::after { content: ""; grid-row: 5; height: 20px; }
+  .pt-v3 .px .pt-hero > .px-demo { align-self: stretch; }
+}
+
+/* (2) liczby z bazy: równe kolumny, min-width 0, liczba mieści się w polu treści kolumny (najdłuższa "1 387 695" ok. 4,9 em),
+   więc między liczbą a następną kolumną zostaje co najmniej 2 x 20 px; za mało miejsca = rząd 3 + 3, telefon 2 kolumny; bez przewijania */
+.pt-v3 .px .px-proof { grid-template-columns: repeat(var(--pt-proof-n, 6), minmax(0, 1fr)); grid-auto-rows: auto; row-gap: 20px; }
+.pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 5; }
+.pt-v3 .px .px-proof > div { min-width: 0; padding: 0 20px; border-left: 1px solid var(--sc-line); border-top: 0; }
+.pt-v3 .px .px-proof > div:first-child { padding-left: 0; border-left: 0; }
+.pt-v3 .px .px-proof b { font-size: clamp(22px, 1.95vw, 30px); white-space: nowrap; }
+@media (max-width: 1100px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 3; }
+  .pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n) { padding: 0 20px; border-left: 1px solid var(--sc-line); border-top: 0; }
+  .pt-v3 .px .px-proof > div:nth-child(3n + 1) { padding-left: 0; border-left: 0; }
+  .pt-v3 .px .px-proof b { font-size: clamp(22px, 2.6vw, 30px); }
+}
+@media (max-width: 760px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 2; row-gap: 16px; }
+  .pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n) { padding: 0 0 0 16px; border-left: 1px solid var(--sc-line); }
+  .pt-v3 .px .px-proof > div:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .pt-v3 .px .px-proof b { font-size: 24px; }
+}
+/* =================== SERIA 2: skala mobilna (właściciel: "na mobilce nieczytelna, czcionki za małe, krój ledwo odczytać") ===================
+   <= 640 px: treść 17/1,55 waga 450, wiersze list i tabel 16, meta 14 text-2, etykiety 13 / 600 / maks. .04em, bez wersalików
+   dla etykiet dłuższych niż 2 słowa, nagłówki sekcji 20-22, chipy i przyciski 16 z celem 44, nic nie ucięte w połowie słowa.
+   Pomiar: gust/spin/port/czytelnosc-mobile.cjs (DPR 3, 390 i 360). */
+@media (max-width: 640px) {
+  html body .pt-v3 .px { font-size: 17px; line-height: 1.55; font-weight: 450; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-synthesis: none; }
+  html body .pt-v3 .px :is(h1, h2, h3, b, strong, .px-name) { font-synthesis: none; }
+  html body .pt-v3 .px :is(h2, .px-h2) { font-size: 21px; line-height: 1.3; }
+  /* etykiety: 13 px / 600, rozstrzelenie maks. .04em; wielowyrazowe bez wersalików */
+  html body .pt-v3 .px :is(.px-kicker, .px-day, .px-wm__status, .gl-lab, .px-latest span, .px-path b) { font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+  html body .pt-v3 .px :is(.px-kicker, .px-day, .px-path b) { text-transform: none; letter-spacing: .01em; }
+  /* meta: 14 px, text-2 */
+  html body .pt-v3 .px :is(small, time, .px-note, .px-card__foot, .px-votes__head span, .px-dev__range, .pt-tbl__m, .gl-m, .gl-hint, .gl-cover__scope, .px-strip__source, .pt-console__hint) { font-size: 14px; line-height: 1.45; color: var(--sc-text-2); }
+  html body .pt-v3 .px :is(.px-note, .px-card__foot, .pt-console__hint, .gl-hint) { font-size: 15px; }
+  /* wiersze list, drzewa, tabel (karty) i osi: 16 px, pełny tekst (bez ucięć) */
+  html body .pt-v3 .px :is(.px-path a, .px-wm__title, .px-wm__list b, .px-tools__list b, .px-node__body span, .px-node__body b, .px-ev__text, .pt-tbl__t, .gl-t, .px-proof span, .px-name, .px-votes__head span) { font-size: 16px; line-height: 1.45; }
+  html body .pt-v3 .px :is(.px-path a, .px-wm__title, .px-wm__list b, .px-node__body span, .px-node__body b, .px-ev__text, .pt-tbl__t, .gl-t, .gl-m, .px-dev__list small, .px-dev__list b, .px-name, .pt-tbl__m, .px-people__body small, .px-dn__who a, .px-dn__who small, .px-tools__list small, .px-tools__list b) {
+    display: block; white-space: normal; overflow: visible; text-overflow: clip; -webkit-line-clamp: unset; line-clamp: none; max-height: none; }
+  html body .pt-v3 .px .px-chart__peak { font-size: 14px; }
+  html body .pt-v3 .px .px-votes__head span { font-size: 15px; color: var(--sc-text-2); }
+  html body .pt-v3 .px .px-quiet { font-size: 16px; }
+  html body .pt-v3 .px .px-dev__list { grid-auto-rows: auto; }
+  html body .pt-v3 .px .px-dev__list :is(a, div) { height: auto; min-height: 64px; padding-block: 10px; }
+  html body .pt-v3 .px .px-fx__body p { font-size: 16px; color: var(--sc-text-2); }
+  html body .pt-v3 .px .px-fx__body .px-fx__ex { font-size: 15px; white-space: normal; -webkit-line-clamp: unset; color: var(--sc-text-2); }
+  html body .pt-v3 .px .px-fx__top h3 { white-space: normal; overflow: visible; -webkit-line-clamp: unset; text-overflow: clip; }
+  html body .pt-v3 .px .px-fx__body p { display: block; -webkit-line-clamp: unset; overflow: visible; }
+  /* chipy, przełączniki i przyciski: 16 px, cel 44 px */
+  html body .pt-v3 .px :is(.px-chips button, .px-modes button, .px-search button, .px-tv__tools :is(a, button), .pt-acts :is(a, button), .gl-line :is(button, select, input)) { font-size: 16px; min-height: 44px; }
+}
+/* (2b) liczby z bazy - wersja ostateczna (koordynator: "1 387 764" wylewała się na separator): rozmiar liczby z szerokości komórki
+   (container query, cqi), więc nawet "123 456 789" (6,1 em) mieści się w polu treści; prawy padding komórki 20 px = zapas >= 16 px;
+   separator = border-left następnej kolumny (nie nachodzi na treść). 6 kolumn od 1280 px, 3 + 3 od 641 px, 2 kolumny, poniżej 360 px 1. */
+.pt-v3 .px .px-proof > div { container-type: inline-size; padding-right: 20px; }
+.pt-v3 .px .px-proof b, .pt-v3 .px .px-proof[data-n] b { font-size: clamp(18px, 12.5cqi, 30px); }
+@media (max-width: 1279.98px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 3; }
+  .pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n) { padding: 0 20px; border-left: 1px solid var(--sc-line); border-top: 0; }
+  .pt-v3 .px .px-proof > div:nth-child(3n + 1) { padding-left: 0; border-left: 0; }
+}
+@media (max-width: 640px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 2; row-gap: 16px; }
+  .pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n) { padding: 0 16px; border-left: 1px solid var(--sc-line); }
+  .pt-v3 .px .px-proof > div:nth-child(odd) { padding-left: 0; border-left: 0; }
+}
+@media (max-width: 359.98px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 1; }
+  .pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n) { padding: 0 16px 0 0; border-left: 0; }
+}.pt-v3 .px .px-proof b, .pt-v3 .px .px-proof[data-n] b { font-size: clamp(16px, calc(100cqi / (var(--num-chars, 6) * .68)), 30px); }/* seria 2 (regresja): Funkcje - karty bez obramowań, tło tonalne */
+.pt-v3 .px .px-fx__card { border: 0; border-radius: 12px; background: var(--sc-surface); }
+.pt-v3 .px .px-fx__card--wait { background: var(--sc-surface-2); }.pt-v3 .px .pt-idx a b { font-size: 13px; }
+
+
+/* =================== RECENZJA FABLE (13.10.2026), część przeszłości: układ, cele 44 px, fokus, rodzina z spin.clinic =================== */
+/* (6) strona główna: karta tematu dnia zamiast całego widoku tematu */
+.pt-v3 .px .pt-daily { display: grid; gap: 8px; padding: 24px 28px 8px; border: 0; border-radius: var(--px-r); background: var(--sc-surface); }
+.pt-v3 .px .pt-daily__head { display: grid; gap: 6px; }
+.pt-v3 .px .pt-daily__head h2 { margin: 0; font: 600 clamp(26px, 3vw, 34px)/1.15 var(--sc-font-display); letter-spacing: -.02em; }
+.pt-v3 .px .pt-daily .px-tv__counts { margin: 0; }
+.pt-v3 .px .pt-daily__list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; }
+.pt-v3 .px .pt-daily__row { display: grid; gap: 0; padding: 10px 0 2px; border-top: 1px solid var(--sc-line); }
+.pt-v3 .px .pt-daily__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; margin: 0; font: 400 14px/1.5 var(--sc-font-sans); color: var(--sc-text-2); }
+.pt-v3 .px .pt-daily__meta b { font-weight: 600; color: var(--sc-text); }
+.pt-v3 .px .pt-daily__meta time { margin-left: auto; font-variant-numeric: tabular-nums; }
+.pt-v3 .px .pt-daily__text { display: block; padding: 4px 0 10px; color: var(--sc-text); font: 400 16px/1.5 var(--sc-font-sans); text-decoration: none; max-width: 80ch; }
+.pt-v3 .px .pt-daily__text:hover { color: var(--sc-accent); text-decoration: underline; text-decoration-color: var(--sc-line-strong); text-underline-offset: 3px; }
+.pt-v3 .px .pt-daily__more { margin: 0; }
+.pt-v3 .px .pt-daily__more a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 640px) {
+  .pt-v3 .px .pt-daily { padding: 20px 16px 4px; }
+  .pt-v3 .px .pt-daily__meta time { margin-left: 0; flex-basis: 100%; }
+  .pt-v3 .px .pt-daily__text { font-size: 16px; }
+}
+
+/* (7) "Kto występuje": nazwisko i funkcja w jednym celu 44 px; kit.css (line-height 44 + margin -10) nie nachodzi już na siebie */
+.pt-v3 .px .px-people__body > .pt-person { display: grid; gap: 0; align-content: center; min-height: 44px; padding: 2px 0; white-space: normal; overflow: visible; text-decoration: none; line-height: 1.35; font-weight: 400; }
+.pt-v3 .px .px-people__body > .pt-person:hover .pt-person__n { color: var(--sc-accent); text-decoration: underline; text-underline-offset: 3px; }
+.pt-v3 .px .pt-person__n { font-size: 15px; font-weight: 600; color: var(--sc-text); line-height: 1.4; }
+.pt-v3 .px .pt-person > small { display: block; margin: 0; font-size: 13px; line-height: 1.45; color: var(--sc-text-2); white-space: normal; }
+.pt-v3 .px .px-people__body { gap: 0; }
+.pt-v3 .px .px-people > li > em { padding-top: 12px; }
+@media (max-width: 640px) {
+  html body .pt-v3 .px .pt-person__n { font-size: 16px; }
+  html body .pt-v3 .px .pt-person > small { font-size: 14px; color: var(--sc-text-2); }
+}
+
+/* (10) cele dotykowe 44 px bez zmiany układu: odnośniki liniowe dostają padding w pionie (nie zmienia wiersza), blokowe padding + ujemny margines;
+   odnośniki "... ->" z klasą sc-ind-link (kit.css zeruje padding !important) - min-height na elemencie flex */
+.pt-v3 .px :is(.px-panel__rows li span a, .px-note a, .pt-tile__source a, .px-od__src a, small a, .px-pp__sub a, .pt-org__name a, .pt-nw__rule a, .pt-daily__meta a, .px-krs-btn) {
+  padding-block: 14px; }
+.pt-v3 .px :is(.px-panel__rows li > a, .px-dn__who > a, .px-krs li > a, .px-path a, .px-ev__meta .px-name, .px-brief dd .px-name) {
+  display: block; padding-block: 12px; margin-block: -12px; }
+.pt-v3 .px .px-ev__meta .px-name { display: inline-block; }
+.pt-v3 .px .pt-tile__x a { display: flex; width: fit-content; min-height: 44px; align-items: center; }
+.pt-v3 .px .px-chart__peak { display: inline-flex; align-items: center; min-height: 44px; }
+.pt-v3 .px .px-follow__check input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--sc-accent); }
+.pt-v3 .px :is(summary, details > summary):focus-visible { outline: 2px solid var(--sc-focus) !important; outline-offset: 3px; border-radius: 6px; }
+.pt-v3 .px summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+
+/* (9) drzewo: bez pustej trzeciej kolumny; licznik identycznych wpisów */
+.pt-v3 .px .px-tree__wrap[data-cols="2"] { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); }
+.pt-v3 .px .pt-dup { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--sc-text); }
+
+/* (8) Odstępstwa: karty o wysokości zawartości; równe dopiero, gdy obie listy mają >= 4 pozycji; chipy klubów równo zawinięte */
+.pt-v3 .px .px-dev__grid { align-items: start; }
+.pt-v3 .px .px-dev .px-dev__card, .pt-v3 .px .px-dev__card { grid-template-rows: auto auto auto; align-content: start; }
+.pt-v3 .px .px-dev__grid:has(> :nth-child(1) li:nth-child(4)):has(> :nth-child(2) li:nth-child(4)) { align-items: stretch; }
+.pt-v3 .px .px-dev__grid:has(> :nth-child(1) li:nth-child(4)):has(> :nth-child(2) li:nth-child(4)) .px-dev__card { grid-template-rows: auto minmax(0, 1fr) auto; }
+.pt-v3 .px .px-dev__list { min-height: 0; }
+.pt-v3 .px .px-dev__empty { min-height: 0; padding: 8px 0 12px; place-items: start; text-align: left; }
+.pt-v3 .px .px-dev__tabs { display: flex; flex-wrap: wrap; gap: 2px 6px; }
+.pt-v3 .px .px-dev__tabs button { flex: 0 0 auto; justify-content: flex-start; }
+@media (max-width: 640px) { .pt-v3 .px .px-dev__tabs button { flex: 1 1 auto; } }
+
+/* rodzina z spin.clinic: etykiety dat i rodzajów jak na telefonie (13 px, bez wersalików), menu 14 px, pasek 64 / 56 px (jeden token wysokości) */
+.pt-v3 .px :is(.px-day, .px-path b) { font-size: 13px; font-weight: 600; letter-spacing: .01em; text-transform: none; }
+.pt-v3 .px :is(.px-bar__links a, .pt-mmenu a, .pt-menu-btn) { font-size: 14px; letter-spacing: .02em; }
+.pt-v3 .px .pt-top { padding-block: 10px; }
+@media (max-width: 760px) { .pt-v3 .px .pt-top { padding-block: 6px; } }
+.pt-v3 .px.px-pp > .pt-topwrap.pt-topwrap { --pt-nw-bar: 64px; }
+@media (max-width: 760px) { .pt-v3 .px.px-pp > .pt-topwrap.pt-topwrap { --pt-nw-bar: 56px; } }
+
+/* "Aktywność": serie w tonach neutralnych (akcent zostaje dla linków i szczytu wykresu tematu) */
+.pt-v3 .px [data-s="posts"] { --k: color-mix(in srgb, var(--sc-text) 88%, transparent); }
+.pt-v3 .px [data-s="documents"] { --k: color-mix(in srgb, var(--sc-text) 62%, transparent); }
+.pt-v3 .px [data-s="votes"] { --k: color-mix(in srgb, var(--sc-text) 42%, transparent); }
+.pt-v3 .px [data-s="media"] { --k: color-mix(in srgb, var(--sc-text) 26%, transparent); }
+
+/* jedna akcja "Pobierz" zamiast CSV i JSON obok siebie */
+.pt-v3 .px .pt-dl { display: inline-block; max-width: 100%; }
+.pt-v3 .px .pt-dl > summary { list-style: none; }
+.pt-v3 .px .pt-dl > summary::-webkit-details-marker { display: none; }
+.pt-v3 .px .pt-dl__menu { display: grid; min-width: 100%; width: max-content; max-width: 100%; padding: 4px 0 6px; }
+.pt-v3 .px .pt-dl__menu .px-tool { justify-content: flex-start; width: 100%; }
+/* Odstępstwa na stronie głównej: zwarta karta z trzema liczbami i odnośnikiem */
+.pt-v3 .px .px-dev--compact { gap: 12px; }
+.pt-v3 .px .pt-devsum { display: grid; gap: 4px; padding: 20px 24px 4px; border-radius: var(--px-r); background: var(--sc-surface); }
+.pt-v3 .px .pt-devsum dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin: 0; }
+.pt-v3 .px .pt-devsum dl > div { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.pt-v3 .px .pt-devsum dd { margin: 0; order: -1; font: 600 clamp(24px, 2.4vw, 32px)/1.1 var(--sc-font-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.pt-v3 .px .pt-devsum dt { font: 400 14px/1.45 var(--sc-font-sans); color: var(--sc-text-2); }
+.pt-v3 .px .pt-devsum .px-dev__range { margin: 8px 0 0; }
+.pt-v3 .px .pt-devsum__more { margin: 0; }
+.pt-v3 .px .pt-devsum__more a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 640px) {
+  .pt-v3 .px .pt-devsum { padding: 16px 16px 4px; }
+  .pt-v3 .px .pt-devsum dl { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .pt-v3 .px .pt-devsum dd { font-size: 28px; }
+  .pt-v3 .px .pt-devsum dt { font-size: 15px; color: var(--sc-text-2); }
+}
+/* "W skrócie": głosowania jako liczby (bez paska) */
+.pt-v3 .px .pt-votes { display: flex; flex-wrap: wrap; gap: 2px 14px; }
+.pt-v3 .px .pt-votes > span { min-width: 0; overflow-wrap: anywhere; }
+.pt-v3 .px .pt-votes b { font-weight: 600; color: var(--sc-text); font-variant-numeric: tabular-nums; }
+.pt-v3 .px .pt-votes small { color: var(--sc-text-2); }
+/* menu "Pobierz" w akcjach profilu: te same zasady co w temacie */
+.pt-v3 .px .pt-acts .pt-dl { align-self: center; }
+/* cele 44 px: lista "Najnowsze w Sejmie", wiersze karty tematu dnia, odnośnik w "W skrócie" */
+.pt-v3 .px .px-latest a { display: block; padding-block: 12px; margin-block: -12px; }
+.pt-v3 .px .pt-daily__text { min-height: 44px; padding-block: 8px; }
+.pt-v3 .px .px-brief dd a { padding-block: 14px; }
+/* fokus klawiatury na wpisach osi czasu (p z role="button") i w polach: widoczny obrys 2 px akcentu */
+.pt-v3 .px .px-ev__text:focus-visible { outline: 2px solid var(--sc-focus) !important; outline-offset: 3px; border-radius: 6px; }
+.pt-v3 .px :is(input[type="date"], select, textarea):is(:focus, :focus-visible) { outline: 2px solid var(--sc-focus) !important; outline-offset: 2px; border-radius: 8px; }
+/* chipy klubów na telefonie: węższe (bez miejsca na "_"), żeby w wierszu mieściły się co najmniej 3 i krawędzie rzędów były równe */
+@media (max-width: 640px) {
+  html body .pt-v3 .px .px-dev__tabs button { padding: 0 8px 0 2px; font-size: 15px; gap: 0; }
+  .pt-v3 .px .px-dev__tabs button::after { display: none; }
+  .pt-v3 .px .px-dev__tabs button::before { width: .9ch; }
+  .pt-v3 .px .px-dev__tabs button small { margin-left: 4px; }
+}
+/* tytuły kart Odstępstw (dłuższe po neutralizacji nazw) łamią się zamiast wychodzić poza kartę */
+.pt-v3 .px .px-dev__card .px-h3 { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-width: 640px) { html body .pt-v3 .px .px-brief dt { font-size: 15px; } }

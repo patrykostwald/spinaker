@@ -15,9 +15,13 @@ const allTopics = [['spiny-na-zywo', 'Każdy nowy spin - od razu po diagnozie'],
 // Temat „nitki-dr-spina” (nazwa w bazie bez zmian) jest oferowany tylko przy włączonych spinkach.
 const THREAD_TOPIC = 'nitki-dr-spina';
 const FOLLOWED_TOPIC = 'obserwowani';
-// przeszłość.today (port v3, 13.10): ta sama aplikacja pod drugą domeną i pod /przeszlosc - własne teksty, bez powiadomień spin.clinic.
-const isPrzeszlosc = () => location.hostname.replace(/^www\./, '') === 'przeszlosc.today' || location.pathname.startsWith('/przeszlosc');
+// przeszłość.today (port v3, 13.10): ta sama aplikacja pod drugą domeną - własne teksty, bez powiadomień spin.clinic. Tylko domena
+// przeszlosc.today (seria PWA): tam manifest, ikony i service worker są przeszłości. Pod spin.clinic/przeszlosc link manifestu jest
+// wspólny (app/manifest.ts), więc instalacja daje aplikację spin.clinic i teksty zostają spin.clinic.
+const isPrzeszlosc = () => location.hostname.replace(/^www\./, '') === 'przeszlosc.today';
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+// osobny klucz odroczenia "Nie teraz" dla przeszłości (inne źródło niż spin.clinic, ale klucz zostaje jednoznaczny)
+const dismissKey = () => isPrzeszlosc() ? 'pt-install-dismissed' : 'spin-install-dismissed';
 
 /** Stan aplikacji dla strony /aplikacja (zdarzenia okna, bez wspólnego magazynu). */
 export type PwaState = { installed: boolean; canPrompt: boolean; ios: boolean };
@@ -81,7 +85,7 @@ export function PwaControls() {
       }).catch(() => setMessage('Nie udało się przygotować aplikacji. Odśwież stronę.'));
       cleanups.push(() => navigator.serviceWorker.removeEventListener('controllerchange', onController));
     }
-    const dismissed = () => { try { return Number(localStorage.getItem('spin-install-dismissed')) > Date.now(); } catch { return false; } };
+    const dismissed = () => { try { return Number(localStorage.getItem(dismissKey())) > Date.now(); } catch { return false; } };
     const onPrompt = (event: Event) => { event.preventDefault(); promptRef.current = event as InstallPrompt; setPrompt(event as InstallPrompt); setBanner(!dismissed() && !standalone()); };
     const onInstalled = () => { setInstalled(true); setPrompt(null); promptRef.current = null; setBanner(false); };
     window.addEventListener('beforeinstallprompt', onPrompt);
@@ -165,7 +169,7 @@ export function PwaControls() {
 
   function dismiss() {
     setBanner(false);
-    try { localStorage.setItem('spin-install-dismissed', String(Date.now() + 30 * 86400000)); } catch { /* Storage may be unavailable. */ }
+    try { localStorage.setItem(dismissKey(), String(Date.now() + 30 * 86400000)); } catch { /* Storage may be unavailable. */ }
   }
   function close() {
     dialog.current?.close();
@@ -221,23 +225,23 @@ export function PwaControls() {
   }
   const blocked = device !== 'ok';
   return <>
-    {update && <aside className="sc-pwa-banner sc-pwa-update" role="status" aria-label="Aktualizacja aplikacji">
+    {update && <aside className={pt ? 'sc-pwa-banner sc-pwa-update sc-pwa--pt' : 'sc-pwa-banner sc-pwa-update'} role="status" aria-label="Aktualizacja aplikacji">
       <span>Dostępna nowa wersja aplikacji.</span>
       <button type="button" onClick={() => location.reload()}>Odśwież</button>
     </aside>}
-    {banner && !update && <aside className="sc-pwa-banner" aria-label="Instalacja aplikacji">
-      <a href={HASH_INSTALL}>Zainstaluj aplikację</a>
+    {banner && !update && <aside className={pt ? 'sc-pwa-banner sc-pwa--pt' : 'sc-pwa-banner'} aria-label={pt ? 'Instalacja aplikacji przeszłość.today' : 'Instalacja aplikacji'}>
+      <a href={HASH_INSTALL}>{pt ? 'Zainstaluj przeszłość.today' : 'Zainstaluj aplikację'}</a>
       <button type="button" onClick={dismiss} aria-label="Ukryj propozycję instalacji na 30 dni">Nie teraz</button>
     </aside>}
-    <dialog ref={dialog} className="sc-pwa-dialog" aria-labelledby="sc-pwa-title" onCancel={close} onClose={() => {
+    <dialog ref={dialog} className={pt ? 'sc-pwa-dialog sc-pwa--pt' : 'sc-pwa-dialog'} aria-labelledby="sc-pwa-title" onCancel={close} onClose={() => {
       if (WINDOW_HASHES.includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     }}>
       <button type="button" className="sc-pwa-close" onClick={close} aria-label="Zamknij okno">×</button>
-      <h2 id="sc-pwa-title">{mode === 'push' ? 'Powiadomienia' : 'Zainstaluj aplikację'}</h2>
+      <h2 id="sc-pwa-title">{mode === 'push' ? 'Powiadomienia' : pt ? 'Zainstaluj przeszłość.today' : 'Zainstaluj aplikację'}</h2>
       {mode === 'install' ? <>
-        <p>{pt ? 'Wyszukiwarka przeszłość.today pod ręką - prosto z ekranu telefonu.' : threadsEnabled ? 'Klinika i spinki pod ręką - prosto z ekranu telefonu.' : 'Klinika i przekazy dnia pod ręką - prosto z ekranu telefonu.'}</p>
-        {installed ? <p>Aplikacja jest już zainstalowana.</p> : ios ? <p>Otwórz stronę w Safari. Wybierz <strong>Udostępnij → Do ekranu początkowego → Dodaj</strong>. {pt ? 'Potem uruchom aplikację z ekranu.' : 'Potem uruchom aplikację z ekranu - dopiero stamtąd działają powiadomienia.'}</p> : prompt ? <button className="sc-pwa-primary" onClick={() => void install()}>Zainstaluj</button> : <p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna.</p>}
-        {!pt && <p><a href="/aplikacja">Instrukcja krok po kroku</a></p>}
+        <p>{pt ? 'Rejestr powiązań osób publicznych pod ręką: ikona na ekranie i osobne okno, bez paska przeglądarki.' : threadsEnabled ? 'Klinika i spinki pod ręką - prosto z ekranu telefonu.' : 'Klinika i przekazy dnia pod ręką - prosto z ekranu telefonu.'}</p>
+        {installed ? <p>Aplikacja jest już zainstalowana.</p> : ios ? <p>Otwórz stronę w Safari. Wybierz <strong>Udostępnij → Do ekranu początkowego → Dodaj</strong>. {pt ? 'Potem uruchom przeszłość.today z ekranu.' : 'Potem uruchom aplikację z ekranu - dopiero stamtąd działają powiadomienia.'}</p> : prompt ? <button className="sc-pwa-primary" onClick={() => void install()}>Zainstaluj</button> : <p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna.</p>}
+        <p><a href={pt ? '/przeszlosc/aplikacja' : '/aplikacja'}>Instrukcja krok po kroku</a></p>
         <button onClick={() => { dismiss(); close(); }}>Nie pokazuj przez 30 dni</button>
         {pushOn && <p><a href={HASH_PUSH}>Wybierz powiadomienia</a></p>}
       </> : <>

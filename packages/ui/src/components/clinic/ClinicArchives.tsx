@@ -16,7 +16,13 @@ import { MessageDayContent } from "./MessageDetail";
 import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
 import { Loading } from "../../kit/Loading";
 import { PageHeaderV3 } from "../../kit/PageHeaderV3";
-export function ClinicInterviewArchive() {
+import { InterviewArchiveV3, InterviewDetailV3 } from "./InterviewsV3";
+import { SideLegend } from "../../kit/SideLegend";
+/** Wywiady v3 (seria 2): nowy układ w InterviewsV3.tsx; poprzednie wersje zostają jako *Legacy (powrót bez cofania poprawki). */
+export function ClinicInterviewArchive() { return <InterviewArchiveV3 />; }
+export function ClinicInterviewPage({ interview }: { interview: Interview }) { return <InterviewDetailV3 interview={interview} />; }
+
+export function ClinicInterviewArchiveLegacy() {
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("");
   const q = useDebouncedValue(search.trim());
@@ -60,7 +66,7 @@ export function ClinicInterviewArchive() {
   </section>;
 }
 
-export function ClinicInterviewPage({ interview }: { interview: Interview }) {
+export function ClinicInterviewPageLegacy({ interview }: { interview: Interview }) {
   const recorded = useRef<number | null>(null);
   useEffect(() => {
     if (recorded.current === interview.id) return;
@@ -88,8 +94,9 @@ export function ClinicMessageArchive() {
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   // v3 (13.10.2026): dzień = para neutralnych kart Rządzący / Opozycja (bez kolorowych teł i ramek), liczby bez pasków.
   return <section className="sc-v3 sc-v3-page sc-v3-arch">
-    <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> <span className="sc-v3-tag">BETA</span> Klinika · Dr. Spin (AI)</>}
+    <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> Klinika · Dr. Spin (AI)</>}
       title="Archiwum przekazów" sub="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji, dzień po dniu."
+      actions={<SideLegend />}
       aside={first ? <dl><div><dt>dni w archiwum</dt><dd>{first.count.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
     {query.isPending ? <p className="sc-v3-state" role="status"><Loading label="Wczytywanie przekazów" /></p> : null}
     {query.isError ? <div className="sc-v3-state" role="alert"><p>Nie udało się wczytać przekazów.</p><button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></div> : null}

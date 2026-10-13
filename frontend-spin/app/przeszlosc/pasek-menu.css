@@ -1,0 +1,20 @@
+/* Pasek menu przeszłości po dodaniu pozycji "Głosowania" (13.10.2026): pozycja kosztuje 128 px, więc przy 1000-1100 px
+   pole zapytania miało 0-53 px. Reguły dopisane osobno (v3.css ma właściciela równolegle): przełącznik narracji w krótkiej
+   formie do 1399 px, pole zapytania znika poniżej 1180 px (zostaje na stronie głównej w konsoli i pod "/" po otwarciu menu),
+   a przy 1000-1029 px menu zwija się do przycisku jak poniżej 1000 px. Cele 44 px bez zmian. */
+/* seria PWA 13.10: kontener .px ma max-width 1200 px, więc pasek nie rośnie powyżej 1280 px; pełna etykieta "Wpływ na narrację" od 1400 px
+   zwężała pole zapytania do ok. 40 px, dlatego krótka forma zostaje na wszystkich szerokościach paska. */
+@media (min-width: 1px) {
+  .pt-v3 .px .pt-top .px-bar__links .px-layer-toggle__full { display: none; }
+  .pt-v3 .px .pt-top .px-bar__links .px-layer-toggle__short { display: inline; }
+}
+@media (max-width: 1179.98px) {
+  .pt-v3 .px .pt-top .pt-q { display: none; }
+}
+@media (min-width: 1000px) and (max-width: 1079.98px) { /* 14 px w menu (Fable 13.10): zwijanie do 1080 px */
+  .pt-v3 .px .pt-top .px-bar__links { display: none; }
+  .pt-v3 .px .pt-top .pt-menu-btn { display: inline-flex; }
+}
+/* Aplikacja (PWA seria 2): pozycja "Aplikacja" tylko w menu telefonu (<= 1029 px) i w stopce; w pasku nie ma na nią miejsca
+   (przy 1440 px pole zapytania kurczyło się do ok. 0 px). */
+.pt-v3 .px .pt-top .px-bar__links .pt-link-app { display: none; }

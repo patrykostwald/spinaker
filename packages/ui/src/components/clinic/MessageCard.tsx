@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CAMP_LABELS, getClinicMessage, type Camp, type DailyMessage, type MessageStats } from "../../lib/clinic";
+import { CAMP_LABELS, getClinicMessage, messageSpinStrength, type Camp, type DailyMessage, type MessageStats } from "../../lib/clinic";
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
 import { Loading } from "../../kit/Loading";
+import { SpinMeter } from "../../kit/SpinMeter";
 
 import { ClinicDiscussion, DiscussionCounts } from "./ClinicDiscussion";
 
@@ -48,8 +49,12 @@ export function MessageCard({ camp, message, day, compact = false, emptyText }: 
     staleTime: 60_000, enabled: Boolean(open && message && (!message.posts || message.posts.length < message.posts_count) && date) });
   const full = sources.data?.[camp] ?? message;
   const structured = Boolean(message?.thesis?.trim() && message.points && message.points.length >= 2);
-  return <article className="sc-v3 sc-v3-msg" data-compact={compact || undefined} data-camp={camp} id={date ? `message-${date}-${camp}` : undefined}>
-    <header className="sc-v3-msg__k"><h3 className="sc-v3-sans">{CAMP_LABELS[camp]}</h3>{date && !compact ? <time dateTime={date}>{formatDatePl(date)}</time> : null}</header>
+  // seria 2 (API-v3): siła spinu dnia jako sama liczba w tonie; brak klucza / null / n < 3 = nic
+  const strength = messageSpinStrength(message);
+  return <article className="sc-v3 sc-v3-msg" data-compact={compact || undefined} data-camp={camp} data-side={camp} id={date ? `message-${date}-${camp}` : undefined}>
+    <header className="sc-v3-msg__k"><h3 className="sc-v3-sans"><i className="sc-v3-sidedot" aria-hidden="true" />{CAMP_LABELS[camp]}</h3>
+      {(date && !compact) || strength ? <span className="sc-v3-msg__kr">{date && !compact ? <time dateTime={date}>{formatDatePl(date)}</time> : null}
+        {strength ? <SpinMeter value={strength.value} bare label="Siła spinu dnia" title={`Siła spinu dnia: ${strength.value}/100 - mediana z ${strength.n} diagnoz wpisów tego przekazu`} /> : null}</span> : null}</header>
     {message ? <>
       {structured ? <p className="sc-v3-msg__thesis">{message.thesis}</p> : <p className="sc-v3-msg__legacy">{message.message}</p>}
       <MessageMetrics stats={message.stats} />

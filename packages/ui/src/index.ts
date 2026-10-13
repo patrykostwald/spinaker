@@ -98,3 +98,5 @@ export { SocialPanel, SocialInbox, SocialPasswordSetup } from './components/Soci
 export { ThreadAppealPage } from './components/community/ThreadAppealPage';
 export { SocialNavigation } from './components/community/SocialNavigation';
 export { SectionBar } from './components/community/SectionBar';
+// „Wcześniej i teraz” (13.10.2026): strona jednej pary (/klinika/stanowiska/<id>); funkcje i typy pary w "@spin-clinic/ui/kit"
+export { PositionPairPage } from './components/clinic/PositionPairPage';

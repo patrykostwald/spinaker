@@ -390,7 +390,7 @@ function AJoint({ item, index, counts, onOpen, onShow }: { item: ThreadElement; 
 }
 
 const ROLE_WORD = { teza: 'Teza', fakt: 'Fakt', kontekst: 'Kontekst', pytanie: 'Pytanie', opinia: 'Opinia', wniosek: 'Wniosek' } as const;
-const LINK_WORD = { bo: 'bo', ale: 'ale', czy_na_pewno: 'czy na pewno?', przeczy: 'przeczy', wynika_z: 'wynika z', jak: 'jak?' } as const;
+const LINK_WORD = { bo: 'bo', ale: 'ale', czy_na_pewno: 'czy na pewno?', przeczy: 'inaczej niż', wynika_z: 'wynika z', jak: 'jak?' } as const;
 
 /**
  * Narzędzia otwartej spinki (Konsylium 3.10, decyzja właściciela): kontraspinka, czyli ten sam materiał ułożony

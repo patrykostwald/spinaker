@@ -236,7 +236,7 @@ export function ClinicDatabase() {
       <div className="sc-clinic-db__list" aria-busy={query.isFetching}>
         {/* v3: jeden schemat wiersza list (awatar, rodzaj, tytuł w pełnej długości, meta, liczba siły w kolorze strefy) */}
         <ol className="sc-v3 sc-v3-rows">{rows.map((spin, index) => <V3Row key={spin.id} index={index} href={`/klinika/${spin.id}?returnTo=${encodeURIComponent(resultsUrl)}`} name={spin.author.name}
-          kind={<>Diagnoza AI · {spin.verdict === "unclear" ? "Nie da się ocenić" : spin.verdict_label} · {spin.camp_label}</>} title={spin.headline}
+          kind={<><span className="sc-v3-row__kp">Diagnoza </span>AI · {spin.verdict === "unclear" ? "Nie da się ocenić" : spin.verdict_label} · {spin.camp_label}</>} title={spin.headline}
           meta={[spin.author.name, <time key="t" dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time>, `#SPIN-${spin.id}`]}
           value={spin.intensity} onOpen={() => rememberClinicResults(resultsUrl, query.data?.pages.length ?? 1)} />)}</ol>
       </div>

@@ -44,7 +44,9 @@ test('middleware: przeszlosc.today dostaje własny manifest i service worker, sp
   assert.equal(mw.middleware(req('przeszlosc.today', '/przeszlosc/icon-192.png')).kind, 'next');
   assert.equal(mw.middleware(req('www.przeszlosc.today', '/')).to, '/przeszlosc');
   assert.equal(mw.middleware(req('przeszlosc.today', '/klinika')).kind, 'redirect');
-  assert.equal(mw.middleware(req('spin.clinic', '/manifest.webmanifest')).kind, 'next');
+  // seria 2: spin.clinic dostaje ten sam manifest (app/manifest.ts) przez route handler z nagłówkami pamięci
+  assert.deepEqual(mw.middleware(req('spin.clinic', '/manifest.webmanifest')), { kind: 'rewrite', to: '/spin-manifest.webmanifest' });
+  assert.equal(mw.middleware(req('spin.clinic', '/klinika')).kind, 'next');
   assert.equal(calls.length, 0);
 });
 

@@ -10,6 +10,7 @@ import { ScrollArrows } from "../ScrollArrows";
 
 import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { ClinicNav } from "./ClinicNav";
+import { PageHeaderV3 } from "../../kit/PageHeaderV3";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
@@ -408,13 +409,12 @@ export function ClinicIndicators() {
   const stats = query.data;
   const histMax = Math.max(1, ...(stats ? CAMPS.flatMap(camp => stats.by_camp[camp]?.intensity_histogram.map(bin => bin.count) ?? []) : []));
   return (
-    <section className="sc-clinic sc-ind" aria-labelledby="ind-title">
-      <ClinicNav />
-      <SectionHeader variant="page" titleId="ind-title" title="Dane i wykresy"
-        kicker={<><Link href="/klinika">Klinika spinu</Link> <AiTag /></>}
-        subtitle="Co pokazują opublikowane diagnozy - obie strony obok siebie, techniki, partie i konta - a niżej, ile wpisów przetworzyliśmy. Porównania dotyczą analizowanych materiałów, nie całej polityki."
-        action={<Button href="/klinika/diagnozy" variant="primary">Baza wszystkich diagnoz →</Button>}
-        link={<Link href="/metodologia">Jak wybieramy i liczymy?</Link>} />
+    <section className="sc-v3 sc-v3-page sc-clinic sc-ind sc-v3-ind" aria-labelledby="ind-title">
+      {/* seria 2: nagłówek v3 (dociąganie), jeden wypełniony przycisk na widok zostaje: Baza wszystkich diagnoz */}
+      <PageHeaderV3 nav={<ClinicNav />} titleId="ind-title" title="Dane i wykresy"
+        kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> Klinika · Dr. Spin (AI)</>}
+        sub="Co pokazują opublikowane diagnozy - obie strony obok siebie, techniki, partie i konta - a niżej, ile wpisów przetworzyliśmy. Porównania dotyczą analizowanych materiałów, nie całej polityki."
+        actions={<><Link className="sc-v3-btn-pri" href="/klinika/diagnozy">Baza wszystkich diagnoz <span className="sc-v3-ar" aria-hidden="true">→</span></Link><Link className="sc-v3-lnk" href="/metodologia">Jak wybieramy i liczymy? <span className="sc-v3-ar" aria-hidden="true">→</span></Link></>} />
 
       {query.isError ? <p role="alert" className="sc-clinic-empty">Nie udało się pobrać wskaźników. <Button type="button" variant="quiet" onClick={() => query.refetch()}>Spróbuj ponownie</Button></p> : null}
       {query.isLoading ? <p className="sc-clinic-empty"><Loading label="Ładowanie wskaźników" /></p> : null}

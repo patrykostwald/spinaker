@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { NavIndicator } from '../../kit/NavIndicator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useFeature } from '../../lib/features';
@@ -89,6 +90,8 @@ export function SocialNavigation() {
     </header>
 
     <nav className="sc-social-navigation sc-rail" aria-label="Działy serwisu">
+      {/* seria 2: jeden współdzielony wskaźnik pozycji zamiast podświetlenia animowanego na każdej pozycji */}
+      <NavIndicator watch={pathname ?? ""} />
       <Wordmark />
       <div className="sc-rail__group">{main.map(entry => item(entry))}</div>
       <hr />

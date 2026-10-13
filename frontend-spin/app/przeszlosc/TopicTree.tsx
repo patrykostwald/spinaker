@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, LayerCaption, day, host, nb, nice, personHref, plural, reduced, short, spinColor, stripDiagnoses, text, useNarrativeLayer, useStandalone } from './ui';
+import { Bar, Follow, Foot, Icon, LayerCaption, day, host, nb, nice, personHref, plural, reduced, short, spinColor, stripDiagnoses, text, tidyLinks, useNarrativeLayer, useStandalone } from './ui';
 import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
 import { WMediach } from './WMediach';
 import { Paski } from './Paski';
+import { HeroTytul } from './HeroTytul';
 import './glosowania.css';
+import './jak-to-dziala/jak-link.css';
 
 /**
  * przeszłość.today (właściciel 5.10, nowy wygląd 6.10): strona produktu i narzędzie w jednym.
@@ -26,10 +28,21 @@ type FirmSearch = { results: FirmHit[]; status: string; message?: string; covera
 type PersonHit = { id: number; slug: string; name: string; role: string; organisation?: string; has_x?: boolean };
 type Open = (p: { kind: 'person' | 'entry'; id: string } | null) => void;
 
-const SUB: Record<string, string> = { print: 'druk', ballot: 'głosowanie', voting: 'głosowanie', consultation: 'konsultacje', lobby_activity: 'lobbing', lobby_document: 'lobbing', financial_document: 'finanse', financial_row: 'finanse' };
+const SUB: Record<string, string> = { print: 'druk', ballot: 'głosowanie', voting: 'głosowanie', consultation: 'konsultacje', lobby_activity: 'lobbing', lobby_document: 'lobbing', financial_document: 'finanse', financial_row: 'finanse',
+  // seria 2: surowe nazwy z API pokazywały się w ścieżce (committee_sitting, video); nieznane - podkreślnik na spację
+  committee_sitting: 'komisja', video: 'nagranie', questions: 'pytania', interpellation: 'interpelacja', written_question: 'zapytanie' };
 const EXAMPLES = ['CPK', 'ceny energii', 'Turów', 'KPO'];
 const KIND_LABEL: Record<string, string> = { record: 'Sejm', statement: 'Wpis', diagnosis: 'Diagnoza Dr. Spina', media: 'Media', vote: 'Głosowanie', organisation: 'Spółka z KRS', person: 'Osoba' };
 const CAMP_LABEL: Record<string, string> = { government: 'rządzący', opposition: 'opozycja', public: 'instytucja' };
+
+/* Etykiety źródeł rekordów po polsku (recenzja Fable 13.10: "2 questions · 2 howtheyvote" w liczniku tematu). Nieznany klucz bez
+   polskiej nazwy nie jest pokazywany (Tesler: złożoność danych bierze system). */
+const ORIGIN_LABEL: Record<string, string> = { sejm: 'Sejm', ted: 'Ogłoszenia TED (UE)', bzp: 'Ogłoszenia BZP', questions: 'Pytania poselskie', interpellations: 'Interpelacje',
+  howtheyvote: 'Głosy w PE', ep_votes: 'Głosy w PE', kohesio: 'Fundusze UE (Kohesio)', fts: 'Fundusze UE (FTS)', lobby: 'Lobbing', lobbing: 'Lobbing', krs: 'KRS' };
+const originLabel = (key: string, label: string) => ORIGIN_LABEL[key] ?? (/^[a-z0-9_]+$/.test(label) ? '' : label);
+const tidyGraph = (g: Graph): Graph => ({ ...g, nodes: g.nodes.map(n => ({ ...n, label: tidyLinks(n.label), text: n.text ? tidyLinks(n.text) : n.text })) });
+/* Skrót tekstu po całym słowie (nigdy w pół słowa); pełny tekst zostaje w title i w widoku tematu. */
+const clip = (value: string, max = 150) => { const t = value.replace(/\s+/g, ' ').trim(); if (t.length <= max) return t; const cut = t.slice(0, max); return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 40)).replace(/[\s,;:.-]+$/, '')}…`; };
 
 const iconOf = (n: Node) => n.kind === 'person' && n.institution ? 'institution' : n.kind;
 
@@ -76,6 +89,7 @@ export function TopicTree() {
   const input = useRef<HTMLInputElement>(null);
   // wejście z linku ?q= (P1-8): pierwszy element pod menu to wynik tematu, paski YouTube i źródeł niżej i zwinięte (Jakob, Peak-End)
   const [linked, setLinked] = useState(false);
+  const narrow = useNarrow('(max-width: 640px)');
   useEffect(() => setLinked(new URLSearchParams(window.location.search).has('q')), []);
   useEffect(() => {
     if (mode === 'company') {
@@ -104,7 +118,7 @@ export function TopicTree() {
       const response = await fetch(`/api/przeszlosc/temat/?q=${encodeURIComponent(q)}`);
       if (response.status === 404) { setState('off'); return; }
       if (!response.ok) throw new Error();
-      setData(await response.json()); setState('idle'); setDaily(!remember);
+      setData(tidyGraph(await response.json())); setState('idle'); setDaily(!remember);
       if (remember) {
         { const keep = new URLSearchParams(window.location.search); keep.set('q', q); keep.delete('osoba'); keep.delete('wpis'); window.history.replaceState(null, '', `?${keep.toString()}`); }
         requestAnimationFrame(() => document.getElementById('wynik')?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }));
@@ -130,7 +144,7 @@ export function TopicTree() {
       setState('loading');
       fetch(`/api/przeszlosc/temat/?q=${encodeURIComponent(q)}`).then(async r => {
         if (r.status === 404) { setState('off'); return; } if (!r.ok) throw new Error();
-        setData(await r.json()); setState('idle');
+        setData(tidyGraph(await r.json())); setState('idle');
       }).catch(() => setState('error'));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -142,7 +156,7 @@ export function TopicTree() {
     {state === 'loading' && !data && <div className="px-wait"><Loading label="Ładowanie tematu" /></div>}
     {state === 'off' && <p className="px-msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
     {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać tematu. Spróbuj ponownie.</p>}
-    {data && (state === 'idle' || state === 'loading') && <TopicView key={data.topic} data={data} busy={state === 'loading'} daily={daily} />}
+    {data && (state === 'idle' || state === 'loading') && (daily ? <DailyTopic key={data.topic} data={data} busy={state === 'loading'} /> : <TopicView key={data.topic} data={data} busy={state === 'loading'} daily={daily} />)}
   </section>;
 
   return <div className="px" data-linked={linked || undefined}>
@@ -155,7 +169,7 @@ export function TopicTree() {
       <div className="px-hero__copy pt-head__l">
         <p className="px-kicker"><span className="px-dot" aria-hidden="true" />Beta · bezpłatnie · dane publiczne</p>
         <div className="pt-head__b">
-          <h1>Kto, co i&nbsp;kiedy w&nbsp;jednym temacie</h1>
+          <h1><HeroTytul /></h1>
           <p className="px-lead">{nb('Wpisz temat, a w kilka sekund zobaczysz, kto o nim mówi, co dokładnie powiedział, jak głosował Sejm i z jakimi spółkami są związani ci ludzie. Każda informacja prowadzi do oryginału.')}</p>
         </div>
       </div>
@@ -198,10 +212,13 @@ export function TopicTree() {
           {topics.slice(0, 6).map(t => <button key={t} type="button" aria-pressed={data?.topic === t} onClick={() => pick(t)}>{t}</button>)}</div>
           : mode === 'company' ? <p className="px-chips px-note">{nb(firms?.coverage?.scope ?? 'Szukamy w spółkach, fundacjach i stowarzyszeniach z KRS, które mamy w bazie. Numer KRS pobierzemy z rejestru na żądanie.')}</p>
           : <p className="px-chips px-note">{nb('Rejestr osób publicznych: posłowie, ministrowie, urzędnicy i samorządowcy. Bez osób prywatnych. Wielkość liter i polskie znaki nie mają znaczenia.')}</p>}
+        <p className="pt-console__how"><a className="px-link" href="/przeszlosc/jak-to-dziala">Jak to działa i skąd mamy dane&nbsp;→</a></p>
     </section>
     </header>
 
-    <section className="px-proof" aria-label="Co jest w bazie" data-n={narr ? 6 : 5}>
+    {/* seria 2: --num-chars = najdłuższa liczba (ze spacjami tysięcy) - CSS dobiera jedną wielkość liczb tak, by każda mieściła się w komórce */}
+    <section className="px-proof" aria-label="Co jest w bazie" data-n={narr ? 6 : 5}
+      style={{ '--num-chars': Math.max(4, ...Object.values(start?.counts ?? {}).map(v => (v ?? 0).toLocaleString('pl-PL').length)) } as CSSProperties}>
       {([['people', 'osób publicznych'], ['organisations', 'spółek i fundacji z KRS'], ['records', 'dokumentów Sejmu'], ['posts', 'wpisów polityków'], ['diagnoses', 'diagnoz Dr. Spina'], ['articles', 'artykułów z mediów']] as const)
         .filter(([key]) => narr || key !== 'diagnoses').map(([key, label]) => <div key={key}><b>{start ? (start.counts[key] ?? 0).toLocaleString('pl-PL') : ' '}</b><span>{nb(label)}</span></div>)}
     </section>
@@ -209,7 +226,8 @@ export function TopicTree() {
     {linked && <div className="px-sec"><details className="px-fold"><summary>Najnowsze z YouTube i źródeł publicznych</summary><Paski /></details></div>}
     {!linked && result}
     {/* port v3: paski YouTube i źródeł pod wynikiem tematu (wyszukiwarka jest centrum strony, pierwsza pod menu) */}
-    {!linked && <div className="px-home-top pt-strips"><Paski /></div>}
+    {!linked && (narrow ? <div className="px-sec"><details className="px-fold"><summary>Najnowsze z YouTube i źródeł publicznych</summary><Paski /></details></div>
+      : <div className="px-home-top pt-strips"><Paski /></div>)}
 
     <section className="px-sec" id="jak" aria-labelledby="jak-h">
       <h2 id="jak-h" className="px-h2">Jak to działa</h2>
@@ -219,6 +237,7 @@ export function TopicTree() {
           ['Kliknij osobę lub wpis', `${narr ? 'Diagnoza spinu, funkcje' : 'Funkcje'} w KRS, źródło, kopia w archiwum i gotowy przypis do cytowania.`]] as const)
           .map(([title, text], i) => <li key={title}><b aria-hidden="true">{i + 1}</b><h3>{title}</h3><p>{nb(text)}</p></li>)}
       </ol>
+      <p className="pt-console__how pt-console__how--sec"><a className="px-link" href="/przeszlosc/jak-to-dziala">Pełne wyjaśnienie: źródła, łączenie osób, błędy i sprostowania&nbsp;→</a></p>
     </section>
 
     <section className="px-sec" aria-labelledby="zasady-h">
@@ -231,11 +250,11 @@ export function TopicTree() {
       </ul>
     </section>
 
-    <Odstepstwa />
+    <Odstepstwa compact />
 
     {start && start.latest.length > 0 && <section className="px-sec" aria-labelledby="sejm-h">
       <h2 id="sejm-h" className="px-h2">Najnowsze w&nbsp;Sejmie</h2>
-      <ol className="px-latest">{start.latest.map((row, i) => <li key={i}>
+      <ol className="px-latest">{start.latest.slice(0, narrow ? 5 : 10).map((row, i) => <li key={i}>
         <time>{row.date ? short(row.date) : 'bez daty'}</time><span>{row.kind}</span>
         <a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>
     </section>}
@@ -280,6 +299,56 @@ function HeroDemo({ narr }: { narr: boolean }) {
       </div>)}
     </div>
   </figure>;
+}
+
+/* Liczniki tematu (jedno miejsce dla karty tematu dnia i pełnego widoku): polskie etykiety, bez surowych kluczy API. */
+const COUNT_KINDS = [['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
+  ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['media', 'artykuł', 'artykuły', 'artykułów'],
+  ['person', 'osoba lub instytucja', 'osoby i instytucje', 'osób i instytucji']] as const;
+function TopicCounts({ data }: { data: Graph }) {
+  const counts = COUNT_KINDS.filter(([k]) => data.counts[k]);
+  // P0-10: rekordy liczymy według źródła (Sejm, TED, rejestr UE...), nie jako jedną pulę „dokumentów Sejmu”
+  const origins = (Object.entries(data.record_origins ?? {}) as [string, { label: string; count: number }][])
+    .map(([k, o]) => ({ k, count: o.count, label: originLabel(k, o.label) })).filter(o => o.label)
+    .sort((a, b) => (a.k === 'sejm' ? -1 : b.k === 'sejm' ? 1 : b.count - a.count));
+  return <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}
+    {origins.map(o => <span key={o.k}><b>{o.count}</b> {o.k === 'sejm' ? plural(o.count, 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu') : o.label}</span>)}</p>;
+}
+
+/* Strona główna: karta tematu dnia (recenzja Fable 13.10: wcześniej cały widok tematu = 9400 px na komputerze i 20 000 px na telefonie).
+   Sześć najnowszych pozycji z autorem, datą i skróconym tekstem; pełny widok pod adresem ?q=<temat> ("Zobacz cały temat"). Dane te same co w widoku
+   tematu, bez ocen i podsumowań. */
+function DailyTopic({ data: raw, busy = false }: { data: Graph; busy?: boolean }) {
+  const [narr] = useNarrativeLayer();
+  const narrow = useNarrow('(max-width: 640px)');
+  const data = useMemo(() => narr ? raw : stripDiagnoses(raw), [raw, narr]);
+  const byId = useMemo(() => new Map(data.nodes.map(n => [n.id, n])), [data]);
+  const author = useMemo(() => {
+    const map = new Map<string, Node>();
+    for (const e of data.edges) if (e.label === 'napisał(a)') { const who = byId.get(e.source); if (who) map.set(e.target, who); }
+    return map;
+  }, [data, byId]);
+  const items = useMemo(() => data.nodes.filter(n => n.date && (n.kind === 'statement' || n.kind === 'record' || n.kind === 'media'))
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || a.id.localeCompare(b.id)).slice(0, narrow ? 5 : 6), [data, narrow]);
+  const href = `/przeszlosc?q=${encodeURIComponent(data.topic)}`;
+  if (!data.nodes.length) return <p className="px-msg">Nic nie znaleźliśmy. Spróbuj innego słowa.</p>;
+  return <article className="pt-daily" data-busy={busy || undefined} aria-labelledby="daily-h">
+    <header className="pt-daily__head">
+      <p className="px-kicker">Temat dnia<LayerCaption /></p>
+      <h2 id="daily-h">{data.topic}</h2>
+      <TopicCounts data={data} />
+    </header>
+    <ol className="pt-daily__list" aria-label="Najnowsze pozycje w temacie">{items.map(n => {
+      const who = author.get(n.id);
+      const source = n.kind === 'record' ? (n.origin && n.origin !== 'sejm' ? (n.origin_label ?? 'Rekord publiczny') : `Sejm${n.sub ? ` · ${SUB[n.sub] ?? n.sub.replace(/_/g, ' ')}` : ''}`) : n.kind === 'media' ? (n.sub ?? 'Media') : KIND_LABEL[n.kind];
+      const text = n.text ?? n.label;
+      return <li key={n.id} className="pt-daily__row">
+        <p className="pt-daily__meta"><b>{who ? nice(who.label) : source}</b>{who && who.role ? <span>{who.role}</span> : null}<time dateTime={n.date ?? ''}>{short(n.date)}</time></p>
+        <a className="pt-daily__text" href={`${href}&wpis=${encodeURIComponent(n.id)}`} title={text}>{clip(text, narrow ? 120 : 160)}</a>
+      </li>;
+    })}</ol>
+    <p className="pt-daily__more"><a className="px-link" href={href}>Zobacz cały temat&nbsp;→</a></p>
+  </article>;
 }
 
 function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; busy?: boolean; daily?: boolean }) {
@@ -334,19 +403,13 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
   const mediaItems = data.nodes.filter(n => n.kind === 'media' && n.url)
     .map(n => ({ id: n.id, outlet: n.sub ?? 'Media', date: n.date ?? null, title: n.label, url: n.url!, material_type: n.material_type, kind_label: n.kind_label, automatic: n.match_type === 'automatic' }));
   if (!data.nodes.length) return <p className="px-msg">Nic nie znaleźliśmy. Spróbuj innego słowa.</p>;
-  const counts = ([['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
-    ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['media', 'artykuł', 'artykuły', 'artykułów'],
-    ['person', 'osoba lub instytucja', 'osoby i instytucje', 'osób i instytucji']] as const).filter(([k]) => data.counts[k]);
-  // P0-10: rekordy liczymy według źródła (Sejm, TED, rejestr UE...), nie jako jedną pulę „dokumentów Sejmu”
-  const originCounts = (Object.entries(data.record_origins ?? {}) as [string, { label: string; count: number }][]).sort((a, b) => (a[0] === 'sejm' ? -1 : b[0] === 'sejm' ? 1 : b[1].count - a[1].count));
   let lastDay = '';
   return <div className="px-tv" data-busy={busy || undefined} data-hot={hot ? '' : undefined}>
     <header className="px-tv__head">
       <div>
         <p className="px-kicker">{daily ? 'Temat dnia' : 'Temat'}<LayerCaption /></p>
         <h2>{data.topic}</h2>
-        <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}
-          {originCounts.map(([k, o]) => <span key={k}><b>{o.count}</b> {k === 'sejm' ? plural(o.count, 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu') : `${o.label.toLowerCase()}`}</span>)}</p>
+        <TopicCounts data={data} />
       </div>
       <div className="px-tv__tools">
         {!data.access?.locked.includes('alerts') && <Follow kind="topic" target={data.topic} label={data.topic} rss={`/api/przeszlosc/rss/?q=${encodeURIComponent(data.topic)}`} />}
@@ -422,8 +485,10 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
             return <li key={p.id} data-inst={p.institution || undefined} onPointerEnter={e => { if (e.pointerType === 'mouse') setHot(p.id); }} onPointerLeave={() => setHot(null)}>
               <span className="px-people__ic"><Icon name={iconOf(p)} /></span>
               <span className="px-people__body">
-                <button type="button" className="px-name" onClick={() => openPanel({ kind: 'person', id: p.id })} onFocus={() => setHot(p.id)} onBlur={() => setHot(null)}>{nice(p.label)}</button>
-                <small>{p.role || (p.institution ? 'instytucja' : CAMP_LABEL[p.camp ?? ''] ?? '')}</small>
+                {/* nazwisko i funkcja w jednym celu 44 px (recenzja Fable: nachodziły na siebie o 9 px, cel 21-24 px) */}
+                <button type="button" className="px-name pt-person" onClick={() => openPanel({ kind: 'person', id: p.id })} onFocus={() => setHot(p.id)} onBlur={() => setHot(null)}>
+                  <span className="pt-person__n">{nice(p.label)}</span>
+                  <small>{p.role || (p.institution ? 'instytucja' : CAMP_LABEL[p.camp ?? ''] ?? '')}</small></button>
                 {r.length > 0 && <button type="button" className="px-krs-btn" onClick={() => setOpen(open === p.id ? null : p.id)} aria-expanded={open === p.id}>Funkcje w KRS ({r.length})</button>}
                 {open === p.id && <ul className="px-krs">{r.map(({ org, role }) => <li key={org.id}><a href={org.url} target="_blank" rel="noopener noreferrer">{org.label}</a><span>{role}</span></li>)}</ul>}
               </span>
@@ -452,10 +517,10 @@ function Brief({ data, events, author, diagnosisOf, onOpen }: { data: Graph; eve
   const spins = [...diagnosisOf.values()].map(d => d.intensity ?? 0); const avg = spins.length ? Math.round(spins.reduce((a, b) => a + b, 0) / spins.length) : null;
   const first = [...events].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0];
   const rows: [string, ReactNode][] = [
-    ['Najgłośniej', <>{day(peak[0])} <small>· {peak[1]} {plural(peak[1], 'pozycja', 'pozycje', 'pozycji')}</small></>],
+    ['Dzień z największą liczbą pozycji', <>{day(peak[0])} <small>· {peak[1]} {plural(peak[1], 'pozycja', 'pozycje', 'pozycji')}</small></>],
     ['Pierwsza wzmianka', day(first.date)],
   ];
-  if (tops.length) rows.push(['Najwięcej wpisów', <>{tops.map((t, i) => <span key={t.who.id}>{i > 0 && ', '}<button type="button" className="px-name" onClick={() => onOpen({ kind: 'person', id: t.who.id })}>{nice(t.who.label)}</button>
+  if (tops.length) rows.push(['Liczba wpisów (według obozu)', <>{tops.map((t, i) => <span key={t.who.id}>{i > 0 && ', '}<button type="button" className="px-name" onClick={() => onOpen({ kind: 'person', id: t.who.id })}>{nice(t.who.label)}</button>
     <small> ({CAMP_LABEL[t.who.camp ?? '']}, {t.n})</small></span>)}</>]);
   const sejmDocs = data.record_origins?.sejm?.count ?? 0;
   rows.push(['W Sejmie', sejmDocs || data.counts.vote ? `${sejmDocs} ${plural(sejmDocs, 'dokument', 'dokumenty', 'dokumentów')}, ${data.counts.vote ?? 0} ${plural(data.counts.vote ?? 0, 'głosowanie', 'głosowania', 'głosowań')}` : nb('brak dokumentów w naszej bazie')]);
@@ -480,7 +545,7 @@ function Density({ events }: { events: Node[] }) {
   const peak = buckets.findIndex(b => b.n === max);
   const w = 100 / buckets.length;
   return <section className="px-card px-chart" aria-labelledby="chart-h">
-    <h3 id="chart-h" className="px-h3">Kiedy było najgłośniej <small>{step === 7 ? 'tygodnie' : 'dni'}</small></h3>
+    <h3 id="chart-h" className="px-h3">Liczba pozycji w czasie <small>{step === 7 ? 'tygodnie' : 'dni'}</small></h3>
     <div className="px-chart__plot">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label={`Aktywność w temacie od ${day(dates[0])} do ${day(dates[dates.length - 1])}, szczyt ${day(buckets[peak].last)}`}>
         <line x1="0" x2="100" y1="99.5" y2="99.5" vectorEffect="non-scaling-stroke" />
@@ -510,7 +575,12 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
     const pid = new Set(persons.map(p => p.id));
     const midIds = new Set<string>();
     for (const e of data.edges) if (pid.has(e.source) && TG_MID.has(byId.get(e.target)?.kind ?? '')) midIds.add(e.target);
-    const mid = [...midIds].map(id => byId.get(id)!).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, compact ? 6 : 8);
+    // identyczne wpisy (ten sam rodzaj i treść) łączymy w jeden węzeł z licznikiem (recenzja Fable: 5 takich samych węzłów pod sobą)
+    const sortedMid = [...midIds].map(id => byId.get(id)!).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+    const alias = new Map<string, string>(); const dups = new Map<string, number>(); const firstOf = new Map<string, string>(); const uniqMid: Node[] = [];
+    for (const n of sortedMid) { const k = `${n.kind}|${n.label}`; const f = firstOf.get(k);
+      if (f) { alias.set(n.id, f); dups.set(f, (dups.get(f) ?? 1) + 1); } else { firstOf.set(k, n.id); uniqMid.push(n); } }
+    const mid = uniqMid.slice(0, compact ? 6 : 8);
     const midSet = new Set(mid.map(n => n.id));
     const rightIds = new Set<string>();
     for (const e of data.edges) {
@@ -519,7 +589,10 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
     }
     const right = [...rightIds].map(id => byId.get(id)!).sort((a, b) => (a.kind === b.kind ? b.links - a.links : a.kind === 'diagnosis' ? -1 : 1)).slice(0, compact ? 6 : 8);
     const rightSet = new Set(right.map(n => n.id));
-    const edges = data.edges.filter(e => (pid.has(e.source) && (midSet.has(e.target) || rightSet.has(e.target))) || (midSet.has(e.source) && rightSet.has(e.target)))
+    const seenEdge = new Set<string>();
+    const edges = data.edges.map(e => ({ ...e, source: alias.get(e.source) ?? e.source, target: alias.get(e.target) ?? e.target }))
+      .filter(e => (pid.has(e.source) && (midSet.has(e.target) || rightSet.has(e.target))) || (midSet.has(e.source) && rightSet.has(e.target)))
+      .filter(e => { const k = `${e.source}>${e.target}`; if (seenEdge.has(k)) return false; seenEdge.add(k); return true; })
       .map(e => ({ source: e.source, target: e.target, ctx: byId.get(e.target)?.kind === 'organisation', step: midSet.has(e.source) ? 2 : 1 }));
     // drzewo w pionie: osoba, pod nią jej wpisy (a pod wpisem diagnoza), potem funkcje w KRS; każdy element raz
     const seen = new Set<string>();
@@ -535,7 +608,7 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
         for (const e2 of edges.filter(x => x.source === e.target && !seen.has(x.target))) { seen.add(e2.target); rows.push({ n: byId.get(e2.target)!, depth: 2 }); listEdges.push(e2); }
       }
     }
-    return { persons, mid, right, edges, rows, listEdges };
+    return { persons, mid, right, edges, rows, listEdges, dups };
   }, [data, byId, focus, compact]);
   const paths = useLinks(wrap, list ? model.listEdges : model.edges, 26);
   const lit = useMemo(() => {
@@ -562,7 +635,7 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
       {n.kind === 'person' ? <span className="px-node__body"><b>{nice(n.label)}</b><small>{n.role || (n.institution ? 'instytucja' : CAMP_LABEL[n.camp ?? ''] ?? '')}</small></span>
         : n.kind === 'diagnosis' ? <span className="px-node__body"><small><em className="px-spin" style={{ ['--spin' as string]: spinColor(n.intensity) }}>spin {n.intensity}/100</em></small><span>{n.label}</span></span>
         : n.kind === 'organisation' ? <span className="px-node__body"><b>{n.label}</b><small>{n.sub}</small></span>
-        : <span className="px-node__body"><small>{KIND_LABEL[n.kind]} · {short(n.date)}</small><span>{n.label}</span></span>}
+        : <span className="px-node__body"><small>{KIND_LABEL[n.kind]} · {short(n.date)}{model.dups.get(n.id) ? <> · <span className="pt-dup" title="Tyle takich samych wpisów w temacie">×{model.dups.get(n.id)}</span></> : null}</small><span>{n.label}</span></span>}
     </button></li>;
   const kinds = [...new Set([...model.persons.map(iconOf), ...model.mid.map(n => n.kind), ...model.right.map(n => n.kind)])];
   const LEGEND: Record<string, string> = { person: 'osoba', institution: 'instytucja', statement: 'wpis', record: 'dokument Sejmu', media: 'artykuł', vote: 'głosowanie', diagnosis: 'diagnoza Dr. Spina', organisation: 'spółka lub fundacja z KRS' };
@@ -574,10 +647,10 @@ function TopicGraph({ data, byId, focus, onOpen, compact = false }: { data: Grap
       <ul className="px-legend">{kinds.map(k => <li key={k}><Icon name={k} />{LEGEND[k] ?? k}</li>)}<li><i className="px-legend__dash" />funkcja w&nbsp;KRS</li></ul>
     </figcaption>}
     {list ? <div className="px-tree__wrap px-tree__wrap--list" ref={wrap}>{lines}<ol className="px-tree__list">{model.rows.map((r, i) => item(r.n, i, r.depth))}</ol></div>
-      : <div className="px-tree__wrap" ref={wrap}>{lines}
+      : <div className="px-tree__wrap" ref={wrap} data-cols={model.right.length ? 3 : 2}>{lines}
         <div className="px-tree__col"><span className="px-tree__lab">Kto</span><ol>{model.persons.map((n, i) => item(n, i))}</ol></div>
         <div className="px-tree__col"><span className="px-tree__lab">Co powiedział lub opublikował</span><ol>{model.mid.map((n, i) => item(n, i))}</ol></div>
-        <div className="px-tree__col"><span className="px-tree__lab">{narr ? <>Diagnozy i&nbsp;funkcje w&nbsp;KRS</> : <>Funkcje w&nbsp;KRS</>}</span><ol>{model.right.map((n, i) => item(n, i))}</ol></div>
+        {model.right.length > 0 && <div className="px-tree__col"><span className="px-tree__lab">{narr ? <>Diagnozy i&nbsp;funkcje w&nbsp;KRS</> : <>Funkcje w&nbsp;KRS</>}</span><ol>{model.right.map((n, i) => item(n, i))}</ol></div>}
       </div>}
     {!compact && <p className="px-card__foot px-tree__foot"><span>{list ? 'Dotknij elementu, aby go otworzyć.' : 'Najedź na element, aby zobaczyć całą ścieżkę. Kliknij, aby otworzyć.'}</span>
       <span>Linia przerywana: funkcja w&nbsp;KRS to kontekst osoby, nie dowód związku z&nbsp;tematem.</span></p>}
@@ -779,13 +852,21 @@ function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
     temat: data.topic, pobrano: stamp, zrodlo: 'przeszłość.today', wiersze: rows, glosowania: data.votes ?? [],
     osoby: data.nodes.filter(n => n.kind === 'person').map(n => ({ nazwa: n.label, funkcja: n.role ?? '', link: n.url ?? '' })),
     powiazania: data.edges }, null, 2));
-  return <><button type="button" className="px-tool" onClick={csv}><Icon name="down" />CSV</button><button type="button" className="px-tool" onClick={json}><Icon name="down" />JSON</button></>;
+  // jedna akcja zamiast dwóch przycisków obok siebie (recenzja Fable 13.10: 3-4 akcje w rzędzie vs 2 w spin.clinic)
+  const done = (e: React.MouseEvent<HTMLButtonElement>, run: () => void) => { run(); (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open'); };
+  return <details className="pt-dl">
+    <summary className="px-tool"><Icon name="down" />Pobierz</summary>
+    <div className="pt-dl__menu" role="group" aria-label="Format pliku">
+      <button type="button" className="px-tool" onClick={e => done(e, csv)}>CSV (arkusz)</button>
+      <button type="button" className="px-tool" onClick={e => done(e, json)}>JSON (dane)</button>
+    </div>
+  </details>;
 }
 
 /* Ścieżka w Sejmie: druki, konsultacje i głosowania w temacie po kolei, od najstarszego. */
 function SejmPath({ data }: { data: Graph }) {
   const steps = [
-    ...data.nodes.filter(n => n.kind === 'record' && n.date).map(n => ({ id: n.id, date: n.date!, kind: n.origin && n.origin !== 'sejm' ? (n.origin_label ?? 'dokument') : n.sub ? (SUB[n.sub] ?? n.sub) : 'dokument', title: n.label, url: n.url })),
+    ...data.nodes.filter(n => n.kind === 'record' && n.date).map(n => ({ id: n.id, date: n.date!, kind: n.origin && n.origin !== 'sejm' ? (n.origin_label ?? 'dokument') : n.sub ? (SUB[n.sub] ?? n.sub.replace(/_/g, ' ')) : 'dokument', title: n.label, url: n.url })),
     ...(data.votes ?? []).filter(v => v.date).map(v => ({ id: v.id, date: v.date!, kind: 'głosowanie', title: `${v.title}${v.result.yes != null ? ` (za ${v.result.yes}, przeciw ${v.result.no ?? 0})` : ''}`, url: v.url })),
   ].sort((a, b) => a.date.localeCompare(b.date));
   if (steps.length < 2) return null;

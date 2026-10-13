@@ -21,15 +21,17 @@ function placeLabels(marks: Array<{ label: string; value: number }>, gap = 10) {
  *   opcjonalnie krótkie neutralne kreski ocen modeli z inicjałem na tej samej linii.
  * Kolor nigdy nie jest jedynym nośnikiem: liczba jest zawsze widoczna i czytana przez czytnik ekranu.
  */
-export function SpinMeter({ value, bare = false, label = "Siła spinu", size = "sm", models, legend, className }: {
+export function SpinMeter({ value, bare = false, label = "Siła spinu", size = "sm", models, legend, className, title }: {
   value: number; bare?: boolean; label?: string; size?: "sm" | "md" | "lg"; models?: SpinMeterModel[]; legend?: string; className?: string;
+  /** objaśnienie po najechaniu (np. jak liczona); czytnik dostaje je w aria-label */
+  title?: string;
 }) {
   const v = clampSpin(value);
   const zone = spinZone(v);
   const marks = (models ?? []).filter((model): model is { label: string; value: number } => typeof model.value === "number");
   return <div className={["sc-v3-meter", className].filter(Boolean).join(" ")} data-zone={zone} data-size={size}
     data-bare={bare || undefined} data-models={marks.length ? "" : undefined}
-    role="img" aria-label={`${label}: ${v} na 100`}>
+    role="img" aria-label={title ?? `${label}: ${v} na 100`} title={title}>
     {!bare && <p className="sc-v3-meter__lbl" aria-hidden="true">{label}</p>}
     <p className="sc-v3-meter__num" aria-hidden="true"><b>{v}</b><small>/100</small></p>
     {!bare && <div className="sc-v3-meter__line" aria-hidden="true" style={{ "--v": v / 100 } as CSSProperties}>

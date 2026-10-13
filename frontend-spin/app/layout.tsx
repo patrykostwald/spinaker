@@ -4,12 +4,15 @@ import { Montserrat } from "next/font/google";
 import { ArrowLinks } from "./ArrowLinks";
 import { FirstVisitIntro } from "./FirstVisitIntro";
 import { SiteHeader, TouchScrollGuard, SocialNavigation, SectionBar } from "@spin-clinic/ui";
+import { SpotlightHover } from "@spin-clinic/ui/kit";
 import { FeatureFooter, PreviewBanner, PreviewPwa } from "./PreviewControls";
 
 import "./globals.css";
 import "./preview.css";
 // Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css - порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
+// seria 2: podłoga rozmiaru pisma (13 px) dla starej kaskady kit.css - generowana, między kit.css a v3.css
+import "@spin-clinic/ui/kit/v3-floor.css";
 // v3 (13.10.2026): tokeny, kroje (Montserrat + Geist) i komponenty nowego wyglądu - zawsze PO kit.css.
 import "@spin-clinic/ui/kit/v3.css";
 import { Providers } from "./providers";
@@ -48,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PreviewBanner />
           <SiteHeader site={site} />
           <TouchScrollGuard />
+          <SpotlightHover />
           <PreviewPwa />
           <div className="sc-social-layout"><SocialNavigation /><div className="sc-app-col"><Suspense><SectionBar /></Suspense><main id="main-content" className="sc-app-main">{children}</main><FirstVisitIntro /><ArrowLinks /></div></div>
           <FeatureFooter />

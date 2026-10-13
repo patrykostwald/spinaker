@@ -18,7 +18,7 @@ const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', {
 const short = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : '';
 const nice = (name: string) => name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase() ? w[0] + w.slice(1).toLowerCase() : w).join('');
 
-export function Odstepstwa({ standalone = false }: { standalone?: boolean }) {
+export function Odstepstwa({ standalone = false, compact = false }: { standalone?: boolean; compact?: boolean }) {
   const [period, setPeriod] = useState<'90d' | 'kadencja'>('90d');
   const [data, setData] = useState<Data | null>(null);
   const [club, setClub] = useState<string | null>(null);
@@ -34,6 +34,24 @@ export function Odstepstwa({ standalone = false }: { standalone?: boolean }) {
   if (failed && !data) return standalone ? <p className="px-msg" role="alert">Nie udało się pobrać odstępstw. Spróbuj ponownie za chwilę.</p> : null;
   if (data && !data.clubs.length) return standalone ? <p className="px-msg">Brak danych o odstępstwach w tym okresie.</p> : null;
   const current = data?.clubs.find(c => c.club === club) ?? data?.clubs[0];
+  // strona główna (recenzja Fable 13.10: sekcja miała 781 / 1953 px): jedna zwarta karta z liczbami i odnośnikiem do pełnego zestawienia
+  if (compact && !data) return null;
+  if (compact && data) {
+    const total = data.clubs.reduce((a, c) => a + c.rebellions_total, 0);
+    return <section className="px-sec px-dev px-dev--compact" id="odstepstwa" aria-labelledby="dev-h">
+      <h2 id="dev-h" className="px-h2">Odstępstwa od klubu</h2>
+      <p className="px-dev__method">Odstępstwo to głos inny niż większość własnego klubu w&nbsp;tym głosowaniu. Te same progi dla każdego klubu; odstępstwo nie jest zarzutem.</p>
+      <div className="pt-devsum">
+        <dl>
+          <div><dt>Głosowania Sejmu w zestawieniu</dt><dd>{data.votings.toLocaleString('pl-PL')}</dd></div>
+          <div><dt>Kluby i koła</dt><dd>{data.clubs.length}</dd></div>
+          <div><dt>Głosy inne niż większość klubu przy zgodności klubu ≥ 80%</dt><dd>{total.toLocaleString('pl-PL')}</dd></div>
+        </dl>
+        <p className="px-note px-dev__range">{data.range.from ? `${day(data.range.from)} - ${day(data.range.to)}` : ''}{data.term ? ` · kadencja ${data.term}` : ''}{data.computed_at ? ` · liczone ${day(data.computed_at)}` : ''}</p>
+        <p className="pt-devsum__more"><a className="px-link" href="/przeszlosc/odstepstwa">Zestawienie według klubów&nbsp;→</a></p>
+      </div>
+    </section>;
+  }
   return <section className="px-sec px-dev" id="odstepstwa" aria-labelledby="dev-h">
     <div className="px-dev__head">
       {standalone ? <div className="pt-head__l"><p className="px-kicker">Głosowania Sejmu</p><h1 id="dev-h">Odstępstwa od klubu</h1></div>
@@ -52,21 +70,21 @@ export function Odstepstwa({ standalone = false }: { standalone?: boolean }) {
     </div>}
     {current && <div className="px-dev__grid" id="dev-panel" role="tabpanel" aria-labelledby={`dev-tab-${current.club}`}>
       <section className="px-card px-dev__card" aria-labelledby="dev-mps-h">
-        <h3 id="dev-mps-h" className="px-h3">Częściej niż reszta klubu <small>{current.flagged.length}</small></h3>
+        <h3 id="dev-mps-h" className="px-h3">Wyższy udział głosów innych niż większość klubu <small>{current.flagged.length}</small></h3>
         {current.flagged.length ? <ol className="px-dev__list">{current.flagged.slice(0, LIST).map(m => <li key={m.mp_id}>
-          {m.latest ? <a href={m.latest.url} target="_blank" rel="noopener noreferrer" title={`Ostatni głos wbrew klubowi: ${m.latest.title}`}>
+          {m.latest ? <a href={m.latest.url} target="_blank" rel="noopener noreferrer" title={`Ostatni głos inny niż większość klubu: ${m.latest.title}`}>
             <b>{nice(m.name)}</b><span className="px-dev__val">{pct(m.share)}</span>
             <small>{m.deviations} z&nbsp;{m.counted} głosów · ostatnio {short(m.latest.date)}: {m.latest.vote}, klub {m.latest.club_vote} ↗</small></a>
             : <div><b>{nice(m.name)}</b><span className="px-dev__val">{pct(m.share)}</span><small>{m.deviations} z&nbsp;{m.counted} głosów</small></div>}
-        </li>)}</ol> : <p className="px-dev__empty">Nikt w&nbsp;tym klubie nie odstaje od mediany o&nbsp;więcej niż 5&nbsp;pkt proc.</p>}
+        </li>)}</ol> : <p className="px-dev__empty">Brak posłów, u&nbsp;których udział głosów innych niż większość klubu jest wyższy od mediany o&nbsp;więcej niż 5&nbsp;pkt proc.</p>}
         <p className="px-card__foot">Mediana klubu: {pct(current.median)} · porównano {current.mps} {current.mps === 1 ? 'posła' : 'posłów'} z&nbsp;co najmniej 20 głosami</p>
       </section>
       <section className="px-card px-dev__card" aria-labelledby="dev-reb-h">
-        <h3 id="dev-reb-h" className="px-h3">Głosy wbrew klubowi <small>{current.rebellions_total}</small></h3>
+        <h3 id="dev-reb-h" className="px-h3">Głosy inne niż większość klubu <small>{current.rebellions_total}</small></h3>
         {current.rebellions.length ? <ol className="px-dev__list">{current.rebellions.slice(0, LIST).map(e => <li key={`${e.id}-${e.mp_id}`}>
           <a href={e.url} target="_blank" rel="noopener noreferrer"><b>{nice(e.name)}</b><span className="px-dev__val">{short(e.date)}</span>
             <small>{e.vote}, klub {e.club_vote} ({e.unity}%) · {e.title} ↗</small></a>
-        </li>)}</ol> : <p className="px-dev__empty">Brak głosów wbrew klubowi w&nbsp;tym okresie.</p>}
+        </li>)}</ol> : <p className="px-dev__empty">Brak głosów innych niż większość klubu przy zgodności klubu w&nbsp;tym okresie.</p>}
         <p className="px-card__foot">Gdy co najmniej 80% klubu głosowało tak samo</p>
       </section>
     </div>}

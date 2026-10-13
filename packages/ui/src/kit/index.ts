@@ -108,3 +108,15 @@ export { CausalChain, CAUSAL_CHAIN_ENABLED, isCausalChainValid, type CausalStep,
 export { HomeV3 } from "./home/HomeV3";
 export { PrzekazDniaCard } from "./home/PrzekazDniaCard";
 export { useWave } from "./useWave";
+export { SideLegend } from "./SideLegend";
+export { NavIndicator } from "./NavIndicator";
+export { SpotlightHover } from "./SpotlightHover";
+
+// „Wcześniej i teraz” (13.10.2026): para wypowiedzi obok siebie, bez oceny; za flagą NEXT_PUBLIC_POSITION_PAIRS
+export { PositionPair, PositionPairs, PositionPairsNote, type PositionPairProps } from "./PositionPair";
+export { PositionPairReport } from "./PositionPairReport";
+export {
+  fetchPair, fetchPersonPairs, normalizeBlock, normalizePair, pairAriaLabel, pairDate, pairDateShort, pairDetailHref, pairMetaDescription, pairMetaTitle,
+  personPairsHref, POSITION_PAIRS_ANCHOR, POSITION_PAIRS_NOTICE, POSITION_PAIRS_TITLE, POSITION_CONNECTOR_LABEL,
+  type PersonPairs, type PositionPairData, type PositionPairPerson, type PositionPairsBlock, type PositionSide,
+} from "../lib/positionPairs";

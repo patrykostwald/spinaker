@@ -1,0 +1,148 @@
+/* =====================================================================
+   „Wcześniej i teraz” (PositionPair): dwie wypowiedzi tej samej osoby obok siebie, bez oceny (13.10.2026).
+   Osobny arkusz importowany w komponencie (v3.css i przeszlosc/v3.css nie ruszane: edytuje je koordynator).
+   Zasada naczelna: ta sama miara dla każdej strony, zawsze. Dlatego:
+   - tylko tony tekstu i akcent marki (--sc-accent: niebieski spin.clinic albo sepia przeszłości); zero czerwieni,
+     żółci i zieleni, zero kolorów obozów, zero ikon ostrzegawczych;
+   - oba boksy w tym samym tonie tła (nic nie jest "ważniejsze"), bez obrysów, wspólny wzorzec wysokości (subgrid);
+   - łącznik = cienka linia ze strzałką czasu A -> B (w poziomie, na wąskim w pionie), słowo "inaczej niż" w tonie meta.
+   Skala: treść 17, cytat 17 (<= 640 px: 16), meta 14 text-2, etykiety 13 / 600, cele 44 px.
+   Układ reaguje na szerokość kontenera (container query), nie ekranu: w wąskiej kolumnie profilu też jest pionowo.
+   Ruch: tylko hover koloru; prefers-reduced-motion = bez przejść.
+   ===================================================================== */
+
+.sc-pp-list { display: grid; gap: 24px; min-width: 0; color: var(--sc-text); font-family: var(--sc-font-sans, "Geist", system-ui, sans-serif); }
+.sc-pp-list__h { margin: 0; font: 600 26px/1.2 var(--sc-font-display, "Montserrat", system-ui, sans-serif); letter-spacing: -.02em; color: var(--sc-text); }
+.sc-pp-list__lead, .sc-pp-list__note { margin: 0; max-width: 72ch; font: 400 16px/1.55 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+.sc-pp-list__note { font-size: 15px; }
+.sc-pp-list__items { list-style: none; margin: 0; padding: 0; display: grid; gap: 40px; min-width: 0; }
+.sc-pp-list__items > li { min-width: 0; scroll-margin-top: 80px; }
+
+/* ---------- jedna para ---------- */
+.sc-pp { container-type: inline-size; container-name: pp; display: grid; gap: 16px; min-width: 0; font-family: var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text); }
+.sc-pp__topic { margin: 0; font: 600 18px/1.35 var(--sc-font-display, "Montserrat", system-ui, sans-serif); letter-spacing: -.005em; color: var(--sc-text); text-wrap: balance; }
+.sc-pp__topic small { display: block; margin-bottom: 4px; font: 600 13px/1.3 var(--sc-font-sans, "Geist", system-ui, sans-serif); letter-spacing: .02em; color: var(--sc-text-2); }
+.sc-pp__lead { margin: 0; max-width: 72ch; font: 400 16px/1.55 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+
+/* siatka: boksy dzielą wiersze (subgrid): nagłówek | cytat 1fr | przełącznik | nazwa źródła | odnośnik. Te same elementy na tej samej wysokości. */
+.sc-pp__grid { display: grid; grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto auto; min-width: 0; }
+.sc-pp__box { grid-row: 1 / span 5; display: grid; grid-template-rows: subgrid; row-gap: 0; min-width: 0; padding: 20px 24px 4px; margin: 0; border: 0; border-radius: 12px; background: var(--sc-surface); }
+.sc-pp__box[data-side="a"] { grid-column: 1; }
+.sc-pp__box[data-side="b"] { grid-column: 3; }
+@supports not (grid-template-rows: subgrid) {
+  .sc-pp__box { grid-template-rows: auto minmax(0, 1fr) auto auto auto; }
+}
+
+/* nagłówek boksu: rola i data w jednej linii, pod nimi rodzaj (wpis, wystąpienie, głos) */
+.sc-pp__h { grid-row: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; row-gap: 2px; padding-bottom: 14px; min-width: 0; }
+.sc-pp__role { font: 600 13px/1.3 var(--sc-font-sans, "Geist", system-ui, sans-serif); letter-spacing: .02em; color: var(--sc-text-2); }
+.sc-pp__date { font: 500 14px/1.3 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sc-pp__kind { grid-column: 1 / -1; min-width: 0; font: 600 16px/1.35 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* cytat dosłowny: budżet 5 linii, reszta po "Pokaż całość" (bez pasków przewijania) */
+.sc-pp__q { grid-row: 2; display: grid; align-content: start; gap: 8px; min-width: 0; padding-bottom: 10px; }
+.sc-pp__vote { margin: 0; font: 500 17px/1.4 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+.sc-pp__vote b { font-weight: 700; color: var(--sc-text); }
+.sc-pp__bq { margin: 0; padding: 0; min-width: 0; }
+.sc-pp__txt { margin: 0; font: 450 17px/1.55 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text); overflow-wrap: anywhere; text-wrap: pretty;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+.sc-pp__txt[data-open] { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.sc-pp__txt[data-quote]::before { content: "\201E"; }
+.sc-pp__txt[data-quote]::after { content: "\201D"; }
+.sc-pp__txt[data-subject] { font-size: 16px; color: var(--sc-text-2); }
+.sc-pp__t { grid-row: 3; min-width: 0; }
+.sc-pp__tg { display: inline-flex; align-items: center; min-height: 44px; padding: 0; margin: 0; border: 0; background: none; cursor: pointer; color: var(--sc-accent); font: 600 15px/1.2 var(--sc-font-sans, "Geist", system-ui, sans-serif); border-radius: 6px; }
+.sc-pp__tg:hover { color: var(--sc-accent-hover, var(--sc-accent)); text-decoration: underline; text-underline-offset: 4px; }
+
+/* źródło: nazwa (do 2 linii), potem odnośnik (domena i strzałka) i data pobrania; odnośnik przy dolnej krawędzi boksu */
+.sc-pp__sn { grid-row: 4; margin: 6px 0 0; font: 400 14px/1.45 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); min-width: 0;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.sc-pp__sl { grid-row: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 16px; min-width: 0; }
+.sc-pp__sl a { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--sc-accent); font: 600 15px/1.2 var(--sc-font-sans, "Geist", system-ui, sans-serif); text-decoration: none; border-radius: 6px; overflow-wrap: anywhere; }
+.sc-pp__sl a i { font-style: normal; }
+.sc-pp__sl a:hover { color: var(--sc-accent-hover, var(--sc-accent)); text-decoration: underline; text-underline-offset: 4px; }
+.sc-pp__sl > span { font: 400 14px/1.4 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* łącznik: słowo, pod nim linia ze strzałką czasu A -> B */
+.sc-pp__link { grid-column: 2; grid-row: 1 / span 5; align-self: center; display: grid; justify-items: center; gap: 10px; padding: 0 6px; min-width: 0; }
+.sc-pp__lw { font: 500 14px/1.3 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); text-align: center; }
+.sc-pp__ln { position: relative; display: block; width: 100%; height: 0; border-top: 1px solid var(--sc-line-strong, currentColor); }
+.sc-pp__ln::after { content: ""; position: absolute; right: 0; top: -4px; width: 7px; height: 7px; box-sizing: border-box; border-top: 1px solid var(--sc-line-strong, currentColor); border-right: 1px solid var(--sc-line-strong, currentColor); transform: rotate(45deg); transform-origin: 70% 30%; }
+
+/* kontekst jednym zdaniem, zgłoszenie błędu, przejrzystość (kto zatwierdził) */
+.sc-pp__ctx { margin: 0; max-width: 72ch; font: 400 16px/1.55 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+.sc-pp__ctx b { font-weight: 600; color: var(--sc-text); }
+.sc-pp__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 24px; min-width: 0; }
+.sc-pp__meta { margin: 0; font: 400 14px/1.45 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+.sc-pp__rep { display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--sc-accent); font: 600 15px/1.2 var(--sc-font-sans, "Geist", system-ui, sans-serif); border-radius: 6px; }
+.sc-pp__rep:hover { color: var(--sc-accent-hover, var(--sc-accent)); text-decoration: underline; text-underline-offset: 4px; }
+.sc-pp :is(a, button):focus-visible, .sc-pp-rep :is(a, button, input, textarea):focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
+.sc-pp-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* wąski kontener (kolumna profilu, telefon): A u góry, strzałka czasu pionowo, B pod nim; boksy o naturalnej wysokości */
+@container pp (max-width: 699.98px) {
+  .sc-pp__grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .sc-pp__box, .sc-pp__box[data-side="a"], .sc-pp__box[data-side="b"] { grid-column: 1; grid-row: auto; grid-template-rows: auto auto auto auto auto; padding: 18px 16px 4px; }
+  .sc-pp__link { grid-column: 1; grid-row: auto; grid-auto-flow: column; justify-content: start; align-items: center; justify-items: start; gap: 12px; padding: 4px 16px; }
+  .sc-pp__ln { width: 0; height: 28px; border-top: 0; border-left: 1px solid var(--sc-line-strong, currentColor); order: -1; margin-left: 4px; }
+  .sc-pp__ln::after { right: auto; left: -4px; top: auto; bottom: 0; border-top: 0; border-right: 1px solid var(--sc-line-strong, currentColor); border-bottom: 1px solid var(--sc-line-strong, currentColor); transform: rotate(45deg); transform-origin: 30% 30%; }
+}
+
+/* skala mobilna (<= 640 px): treść 17, cytat 16, meta 14 text-2, etykiety 13, cele 44 px */
+@media (max-width: 640px) {
+  .sc-pp-list__h { font-size: 22px; }
+  .sc-pp-list__lead, .sc-pp__lead, .sc-pp__ctx { font-size: 17px; }
+  .sc-pp-list__note { font-size: 15px; }
+  .sc-pp__topic { font-size: 18px; }
+  .sc-pp__txt { font-size: 16px; }
+  .sc-pp__txt[data-subject] { font-size: 16px; }
+  .sc-pp__vote { font-size: 16px; }
+  .sc-pp__kind { font-size: 16px; }
+  .sc-pp__date, .sc-pp__lw { font-size: 14px; color: var(--sc-text-2); }
+  .sc-pp__sn, .sc-pp__sl > span, .sc-pp__meta { font-size: 15px; color: var(--sc-text-2); }
+  .sc-pp__sl a, .sc-pp__tg, .sc-pp__rep { font-size: 16px; }
+  .sc-pp-list__items { gap: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-pp *, .sc-pp-rep * { transition: none !important; animation: none !important; }
+}
+
+/* ---------- okno zgłoszenia błędu lub sprostowania (natywne <dialog>: fokus, Esc i tło za darmo) ---------- */
+.sc-pp-rep { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 24px; border: 0; border-radius: 12px; background: var(--sc-surface-2); color: var(--sc-text);
+  font-family: var(--sc-font-sans, "Geist", system-ui, sans-serif); overflow: auto; scrollbar-width: none; }
+.sc-pp-rep::-webkit-scrollbar { display: none; }
+.sc-pp-rep::backdrop { background: rgb(0 0 0 / .62); }
+.sc-pp-rep__h { margin: 0 0 4px; font: 600 20px/1.3 var(--sc-font-display, "Montserrat", system-ui, sans-serif); letter-spacing: -.01em; }
+.sc-pp-rep__rec { margin: 0 0 16px; font: 400 15px/1.5 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+.sc-pp-rep form { display: grid; gap: 16px; }
+.sc-pp-rep label { display: grid; gap: 6px; font: 500 15px/1.4 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text); }
+.sc-pp-rep textarea, .sc-pp-rep input[type="email"] { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--sc-line-strong, currentColor); border-radius: 8px; background: var(--sc-surface-3, var(--sc-surface));
+  color: var(--sc-text); font: 400 16px/1.5 var(--sc-font-sans, "Geist", system-ui, sans-serif); }
+.sc-pp-rep textarea { resize: vertical; min-height: 112px; }
+.sc-pp-rep__chk { display: flex !important; grid-template-columns: none; align-items: flex-start; gap: 12px !important; min-height: 44px; font-weight: 400 !important; }
+.sc-pp-rep__chk input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--sc-accent); }
+.sc-pp-rep__note { margin: 0; font: 400 14px/1.5 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+.sc-pp-rep__err { margin: 0; font: 500 15px/1.5 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text); }
+.sc-pp-rep__act { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.sc-pp-rep__ok, .sc-pp-rep__no { min-height: 44px; padding: 0 20px; border: 0; border-radius: 8px; cursor: pointer; font: 600 16px/1.2 var(--sc-font-sans, "Geist", system-ui, sans-serif); }
+.sc-pp-rep__ok { background: var(--sc-accent); color: var(--sc-on-accent, var(--sc-bg)); }
+.sc-pp-rep__ok:disabled { opacity: .6; cursor: default; }
+.sc-pp-rep__no { background: none; color: var(--sc-text-2); }
+.sc-pp-rep__no:hover { color: var(--sc-text); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 640px) { .sc-pp-rep { padding: 20px 16px; } .sc-pp-rep__ok, .sc-pp-rep__no { font-size: 16px; } }
+
+/* ---------- jedna linia w karcie diagnozy: "Ta osoba wypowiadała się wcześniej na ten temat: zobacz obok siebie" ---------- */
+.sc-pp-note { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; font: 400 16px/1.55 var(--sc-font-sans, "Geist", system-ui, sans-serif); color: var(--sc-text-2); }
+.sc-pp-note a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-accent); font: 600 15px/1.2 var(--sc-font-sans, "Geist", system-ui, sans-serif); text-decoration: none; border-radius: 6px; }
+.sc-pp-note a:hover { color: var(--sc-accent-hover, var(--sc-accent)); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 640px) { .sc-pp-note { font-size: 17px; } .sc-pp-note a { font-size: 16px; } }
+.sc-pp-notes { margin-top: 12px; }
+/* spinka: karta połączenia "przeczy" z zestawieniem zamiast miniatury i opisu (stała strefa sceny) */
+.sc-pick__card[data-pair] { display: block; min-height: 0; padding: 18px 22px 22px; }
+.sc-pick__card[data-pair] .sc-pp { gap: 12px; }
+/* poniżej 1101 px karty spinki mają stałe 440-560 px: karta z zestawieniem rośnie do zawartości (pionowo na telefonie), nic nie nachodzi na mini-pasek */
+@media (max-width: 1100px) {
+  .sc-pick__card[data-pair] { height: auto; min-height: 440px; padding: 18px 16px 22px !important; }
+}
+.sc-pp-list { scroll-margin-top: 80px; }

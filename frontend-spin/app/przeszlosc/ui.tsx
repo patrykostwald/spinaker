@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFeature } from '@spin-clinic/ui';
 import './przeszlosc.css';
+import './pasek-menu.css';
 import { NARRATIVE_CAPTION, NARRATIVE_LABEL, useNarrativeLayer } from './narracja';
 export { NARRATIVE_CAPTION, NARRATIVE_LABEL, stripDiagnoses, useNarrativeLayer } from './narracja';
 
@@ -30,6 +31,9 @@ const INSTITUTIONS: Record<string, string> = { ME: 'Ministerstwo Energii', MF: '
   MSZ: 'Ministerstwo Spraw Zagranicznych', MSWiA: 'Ministerstwo Spraw Wewnętrznych i Administracji', KPRM: 'Kancelaria Prezesa Rady Ministrów', MEN: 'Ministerstwo Edukacji Narodowej' };
 export const nice = (name: string) => INSTITUTIONS[name.trim()] ?? name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase()
   ? w[0] + w.slice(1).toLowerCase() : w).join('');
+
+/** Skrócone linki t.co (X) nie niosą informacji: pokazujemy "link w X" (recenzja Fable 13.10); adres w polu url zostaje bez zmian (źródło). */
+export const tidyLinks = (value: string) => value.replace(/https?:\/\/t\.co\/\w+/g, '[link w X]');
 
 /** Adres profilu osoby z węzła tematu („figure:12”) albo z danych profilu. */
 export const personHref = (p: { id: string | number | null; slug?: string | null }) =>
@@ -66,12 +70,13 @@ export function useStandalone() {
 
 /** Etykieta bety z serwera (PRZESZLOSC_BETA_ALL_FEATURES): jedna prośba na stronę, pamiętana między komponentami. */
 let accessPromise: Promise<Access | null> | null = null;
-export function useAccess() {
+export function useAccess(enabled = true) {
   const [access, setAccess] = useState<Access | null>(null);
   useEffect(() => {
+    if (!enabled) return;
     accessPromise ??= fetch('/api/przeszlosc/funkcje/').then(r => r.ok ? r.json() : null).catch(() => null);
     let live = true; void accessPromise.then(a => { if (live) setAccess(a); }); return () => { live = false; };
-  }, []);
+  }, [enabled]);
   return access;
 }
 
@@ -94,19 +99,24 @@ export function Logo() {
     <text x="0" y="31" className="pt-logo__t" fill="currentColor">przeszłość<tspan className="pt-logo__d" dx="1">.</tspan><tspan className="pt-logo__m" dx="4" fill="currentColor">today</tspan></text></svg>;
 }
 
-const MENU_LINKS: [string, string][] = [['/przeszlosc/funkcje', 'Funkcje'], ['/przeszlosc?tryb=osoba', 'Osoby'], ['/przeszlosc/odstepstwa', 'Odstępstwa'], ['/przeszlosc#jak', 'Jak to działa']];
+const MENU_LINKS: [string, string][] = [['/przeszlosc/funkcje', 'Funkcje'], ['/przeszlosc?tryb=osoba', 'Osoby'], ['/przeszlosc/odstepstwa', 'Odstępstwa'], ['/przeszlosc/glosowania', 'Głosowania'], ['/przeszlosc/jak-to-dziala', 'Jak to działa']];
+/** Aplikacja (PWA seria 2): pozycja tylko przy włączonej fladze APP; w menu telefonu i w stopce (w pasku ukryta: pasek-menu.css). */
+const APP_LINK: [string, string] = ['/przeszlosc/aplikacja', 'Aplikacja'];
 
 /** Pasek (port v3): znak z „beta” jak indeks górny, pole zapytania (skrót „/”), menu w wersalikach z konwencją terminala;
  *  poniżej 1000 px menu zwija się do przycisku „Menu”. Aktywna pozycja: aria-current (tekst akcentu, „>” i migające „_”). */
-export function Bar({ index }: { index?: React.ReactNode } = {}) {
-  const access = useAccess();
+export function Bar({ index, quiet = false }: { index?: React.ReactNode; quiet?: boolean } = {}) {
+  // quiet: strona statyczna (np. "Jak to działa") bez wywołań API; etykieta bety wraca do domyślnej "wersja beta"
+  const access = useAccess(!quiet);
+  const appOn = useFeature('APP_ENABLED');
+  const links = appOn ? [...MENU_LINKS, APP_LINK] : MENU_LINKS;
   const [here, setHere] = useState('');
   const [open, setOpen] = useState(false);
   const field = useRef<HTMLInputElement>(null);
   const menuBtn = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const p = window.location.pathname, q = new URLSearchParams(window.location.search);
-    setHere(p.startsWith('/przeszlosc/funkcje') ? '/przeszlosc/funkcje' : p.startsWith('/przeszlosc/odstepstwa') ? '/przeszlosc/odstepstwa'
+    setHere(/\/jak-to-dziala/.test(p) ? '/przeszlosc/jak-to-dziala' : /\/aplikacja/.test(p) ? '/przeszlosc/aplikacja' : p.startsWith('/przeszlosc/funkcje') ? '/przeszlosc/funkcje' : p.startsWith('/przeszlosc/odstepstwa') ? '/przeszlosc/odstepstwa' : p.startsWith('/przeszlosc/glosowania') ? '/przeszlosc/glosowania'
       : p.startsWith('/przeszlosc/osoba') || q.get('tryb') === 'osoba' ? '/przeszlosc?tryb=osoba' : '');
     const key = (e: KeyboardEvent) => {
       if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement as HTMLElement | null)?.tagName ?? '') && field.current?.offsetParent) { e.preventDefault(); field.current.focus(); }
@@ -131,13 +141,13 @@ export function Bar({ index }: { index?: React.ReactNode } = {}) {
       <input ref={field} type="search" enterKeyHint="search" autoComplete="off" placeholder="Temat, osoba, KRS" aria-label="Szukaj tematu, osoby albo numeru KRS" />
       <kbd aria-hidden="true">/</kbd>
     </form>
-    <span className="px-bar__links">{MENU_LINKS.map(([href, text]) => <a key={href} href={href} aria-current={here === href ? 'page' : undefined}>{text}</a>)}
+    <span className="px-bar__links">{links.map(([href, text]) => <a key={href} href={href} className={href === APP_LINK[0] ? 'pt-link-app' : undefined} aria-current={here === href ? 'page' : undefined}>{text}</a>)}
       <NarrativeToggle /></span>
     <button ref={menuBtn} type="button" className="pt-menu-btn" aria-expanded={open} aria-controls="pt-mmenu" onClick={() => setOpen(!open)}>
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" aria-hidden="true"><path d={open ? 'M6 6l12 12M18 6 6 18' : 'M4 7h16M4 12h16M4 17h16'} /></svg>
       <span>Menu</span></button>
     <div className="pt-mmenu" id="pt-mmenu" hidden={!open}>
-      {MENU_LINKS.map(([href, text]) => <a key={href} href={href} aria-current={here === href ? 'page' : undefined} onClick={() => setOpen(false)}>{text}</a>)}
+      {links.map(([href, text]) => <a key={href} href={href} aria-current={here === href ? 'page' : undefined} onClick={() => setOpen(false)}>{text}</a>)}
       <NarrativeToggle />
     </div>
   </nav>;
@@ -164,11 +174,16 @@ export function PageIndex({ items }: { items: [string, string][] }) {
     <li key={id}><a href={`#${id}`} aria-current={act === id ? 'location' : undefined}><b>{String(i + 1).padStart(2, '0')}</b>{text}</a></li>)}</ol></nav>;
 }
 
-/** Stopka: operator, odnośniki i instalacja aplikacji (port v3: PWA przeszłość.today, gdy włączona flaga APP). */
+/** Stopka: operator, odnośniki i aplikacja (port v3: PWA przeszłość.today, gdy włączona flaga APP). W zainstalowanej aplikacji
+ *  (display-mode: standalone) odnośnik nie zachęca do instalacji, tylko prowadzi do opisu aplikacji. */
 export function Foot() {
   const app = useFeature('APP_ENABLED');
+  const [installed, setInstalled] = useState(false);
+  useEffect(() => {
+    setInstalled(window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+  }, []);
   return <footer className="px-foot"><span>przeszłość.today prowadzi iapply sp. z&nbsp;o.o. · <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">dane wspólne ze spin.clinic</a></span>
-    <span><a href="/przeszlosc/poprawki">Poprawki</a> · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a>{app && <> · <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a></>}</span></footer>;
+    <span><a href="/przeszlosc/jak-to-dziala">Jak to działa</a> · <a href="/przeszlosc/poprawki">Poprawki</a> · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a>{app && <> · <a href="/przeszlosc/aplikacja">{installed ? 'Aplikacja' : 'Zainstaluj aplikację'}</a></>}</span></footer>;
 }
 
 /** Obserwuj temat albo osobę (sprint 1): e-mail, zgoda, podwójne potwierdzenie; jeden list dziennie o 7:00. */

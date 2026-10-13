@@ -2,13 +2,14 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CAMPS, CAMP_LABELS, getClinicMessage, type Camp, type ClinicPageData, type DailyMessage, type MessagePost } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, getClinicMessage, messageSpinStrength, type Camp, type ClinicPageData, type DailyMessage, type MessagePost } from "../../lib/clinic";
 import { formatDatePl, formatDateTimePl, formatTimePl } from "../../lib/utils";
 import { initials } from "../../lib/spinScale";
 import { Button } from "../Button";
 import { ArrowUpRightIcon } from "../icons/ArrowUpRightIcon";
 import { BugReportButton } from "../../components/BugReport";
-import { CausalChain, isCausalChainValid, type CausalStep } from "../CausalChain";
+import { CausalChain, CAUSAL_CHAIN_ENABLED as CAUSAL_CHAIN_ON, approvedChainSteps } from "../CausalChain";
+import { SpinMeter } from "../SpinMeter";
 
 /** Polska odmiana liczebnika: 1 wpis, 2-4 wpisy, 5+ wpisów. */
 export function plural(n: number, one: string, few: string, many: string): string {
@@ -41,8 +42,6 @@ function pickQuotes(message: DailyMessage): MessagePost[] {
   return result;
 }
 
-type Chained = DailyMessage & { chain?: CausalStep[] };
-
 export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
   const firstCamp = CAMPS.find(camp => data.messages[camp]) ?? CAMPS[0];
   const [camp, setCamp] = useState<Camp>(firstCamp);
@@ -69,33 +68,39 @@ export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
   // historia z /api/clinic/ nie ma wpisów źródłowych - dociągamy je tylko dla wybranego starszego dnia
   const needsPosts = Boolean(base && !base.posts?.length && activeDay);
   const detail = useQuery({ queryKey: ["clinic-message", activeDay], queryFn: () => getClinicMessage(activeDay!), enabled: needsPosts, staleTime: 5 * 60_000 });
-  const message: Chained | null = (needsPosts ? detail.data?.[camp] : null) ?? base;
+  const message: DailyMessage | null = (needsPosts ? detail.data?.[camp] : null) ?? base;
 
   const quotes = message ? pickQuotes(message) : [];
   const stats = message?.stats?.version === 1 ? message.stats : null;
   const posts = stats?.posts ?? message?.posts_count ?? 0;
   const structured = Boolean(message?.thesis?.trim());
   const points = message?.points ?? [];
-  const hasChain = isCausalChainValid(message?.chain);
+  // seria 2 (API-v3): łańcuch tylko zatwierdzony i poprawny (plus flaga NEXT_PUBLIC_CAUSAL_CHAIN w komponencie); siła dnia tylko przy n >= 3
+  const chainSteps = approvedChainSteps(message?.causal_chain);
+  const hasChain = CAUSAL_CHAIN_ON && chainSteps !== null;
+  const strength = messageSpinStrength(message);
   const windowLabel = message?.scope?.date_from && message.scope.date_to ? `${formatTimePl(message.scope.date_from)}-${formatTimePl(message.scope.date_to)}` : null;
 
   return <div className="sc-v3-pdwrap">
-    <section className="sc-v3-pd" aria-labelledby="sc-v3-pd-title">
+    <section className="sc-v3-pd" data-side={camp} aria-labelledby="sc-v3-pd-title">
       <header className="sc-v3-pd__h">
         <h2 id="sc-v3-pd-title" className="sc-v3-pd__k sc-v3-sans">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0" /><circle cx="12" cy="12" r="1" /><path d="M3 12a9 9 0 0 1 1-4M21 12a9 9 0 0 0-1-4" /></svg>
           Przekaz dnia{activeDay && <time dateTime={activeDay}>{formatDatePl(activeDay)}</time>}
         </h2>
         <div className="sc-v3-seg" role="group" aria-label="Strona sceny politycznej">
-          {CAMPS.map(side => <button key={side} type="button" aria-pressed={camp === side} onClick={() => setCamp(side)}>{CAMP_LABELS[side]}</button>)}
+          {CAMPS.map(side => <button key={side} type="button" data-side={side} aria-pressed={camp === side} onClick={() => setCamp(side)}>{CAMP_LABELS[side]}</button>)}
         </div>
         <span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span>
-        <span className="sc-v3-tag" title="Wersja testowa">BETA</span>
+        
       </header>
 
       {message ? <div className="sc-v3-pd__b sc-v3-pd__body" aria-live="polite">
         <div className="sc-v3-pd__l">
-          <p className="sc-v3-pd__eb">Dziś w obiegu · {CAMP_LABELS[camp]}</p>
+          <div className="sc-v3-pd__ebrow">
+            <p className="sc-v3-pd__eb">Dziś w obiegu · <span className="sc-v3-sidew">{CAMP_LABELS[camp]}</span></p>
+            {strength ? <SpinMeter value={strength.value} bare label="Siła spinu dnia" title={`Siła spinu dnia: ${strength.value}/100 - mediana z ${strength.n}${NBSP}diagnoz wpisów tego przekazu`} /> : null}
+          </div>
           <p className="sc-v3-pd__thesis">{structured ? message.thesis : message.message}</p>
           <ul className="sc-v3-pd__stats" aria-label="Zakres przekazu">
             <li><b>{posts}</b>{plural(posts, "wpis", "wpisy", "wpisów")}</li>
@@ -108,7 +113,7 @@ export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
               {quotes.map(post => <li key={post.url}>
                 <span className="sc-v3-av" aria-hidden="true">{initials(post.author)}</span>
                 <div style={{ minWidth: 0 }}>
-                  <p className="sc-v3-who">{post.author} · {formatDateTimePl(post.published_at)}</p>
+                  <p className="sc-v3-who"><span className="sc-v3-who__n">{post.author}</span><span className="sc-v3-who__d"><span className="sc-v3-who__sep"> · </span>{formatDateTimePl(post.published_at)}</span></p>
                   <q>{quoteText(post.text)}</q>
                 </div>
                 <a className="sc-v3-src" href={post.url} target="_blank" rel="noopener noreferrer" aria-label={`Oryginał wpisu: ${post.author}, otwiera X w nowym oknie`}><ArrowUpRightIcon /></a>
@@ -121,7 +126,8 @@ export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
         <div className="sc-v3-pd__r">
           {hasChain ? <>
             <p className="sc-v3-pd__eb">Dr Spin wyjaśnia</p>
-            <CausalChain steps={message.chain} />
+            <CausalChain steps={chainSteps} />
+            {message.causal_chain?.notice ? <p className="sc-v3-step__meta sc-v3-pd__chainnote">{message.causal_chain.notice}</p> : null}
           </> : points.length ? <>
             <p className="sc-v3-pd__eb">Główne wątki dnia</p>
             <ol className="sc-v3-steps" aria-label="Główne wątki dnia">

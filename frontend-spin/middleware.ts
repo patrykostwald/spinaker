@@ -9,11 +9,19 @@ const OWN = ['/przeszlosc', '/_next', '/api', '/fonts', '/icons', '/favicon', '/
 
 export function middleware(request: NextRequest) {
   const host = (request.headers.get('host') || '').toLowerCase().replace(/:\d+$/, '').replace(/^www\./, '');
-  if (host !== 'przeszlosc.today') return NextResponse.next();
+  // seria 2: manifest spin.clinic przez route handler z Cache-Control i Vary: Host (treść nadal z app/manifest.ts)
+  if (host !== 'przeszlosc.today') {
+    if (request.nextUrl.pathname === '/manifest.webmanifest') return NextResponse.rewrite(new URL('/spin-manifest.webmanifest', request.url));
+    return NextResponse.next();
+  }
   const { pathname, search } = request.nextUrl;
   if (pathname === '/') return NextResponse.rewrite(new URL(`/przeszlosc${search}`, request.url));
   // PWA (port v3, 13.10): własny manifest przeszłości pod standardowym adresem; spin.clinic dalej dostaje app/manifest.ts
   if (pathname === '/manifest.webmanifest') return NextResponse.rewrite(new URL('/przeszlosc/manifest.webmanifest', request.url));
+  // krótkie adresy stron przeszłości (PWA seria 2): /aplikacja i /jak-to-dziala to /przeszlosc/...; dawne /zrodla i /metodologia -> /jak-to-dziala
+  const short = pathname.replace(/\/+$/, '');
+  if (short === '/aplikacja' || short === '/jak-to-dziala') return NextResponse.rewrite(new URL(`/przeszlosc${short}${search}`, request.url));
+  if (short === '/zrodla' || short === '/metodologia') return NextResponse.redirect(new URL('/jak-to-dziala', request.url), 308);
   // raport nastrojów dla znajomego (właściciel 8.10): statyczny plik z public/raporty, noindex
   if (pathname === '/pizza') return NextResponse.rewrite(new URL('/raporty/pizza.html', request.url));
   if (pathname.startsWith('/raporty/')) return NextResponse.next();

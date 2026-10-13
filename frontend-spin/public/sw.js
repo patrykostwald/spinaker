@@ -4,6 +4,9 @@
  * - Offline: strona /app/offline.html pokazuje ostatnie przekazy dnia z pamięci podręcznej.
  * - Push: powiadomienie z nazwiskiem w tytule; kliknięcie otwiera wpis lub diagnozę.
  * - Aktualizacja: nowa wersja przejmuje stronę od razu (skipWaiting + claim); aplikacja pokazuje przycisk „Odśwież”.
+ * - przeszłość.today (seria PWA 13.10): pamięć 1 = powłoka (strona „Brak połączenia”, ikony) + pliki statyczne (/_next/static, ikony, kroje);
+ *   pamięć 2 = ostatnio otwarte STATYCZNE strony informacyjne z listy OFFLINE_PAGES (najwyżej 6, bez zapytań w adresie, tylko odpowiedzi
+ *   bez no-store/private). Nigdy: odpowiedzi API, strony osób i spółek, adresy z ?zapytaniem, żądania z autoryzacją.
  */
 const VERSION = 'v3';
 // przeszłość.today (port v3, 13.10): ta sama aplikacja pod drugą domeną - osobna pamięć, własna strona offline i ikony.
@@ -17,6 +20,11 @@ const ICON = PT ? '/przeszlosc/icon-192.png' : '/app/icon-192.png';
 const APP_NAME = PT ? 'przeszłość.today' : 'spin.clinic';
 const SHELL = PT ? [OFFLINE, ICON, '/przeszlosc/icon-512.png'] : ['/app/offline.html', '/app/icon-192.png', '/app/icon-512.png'];
 const STATIC_PREFIX = PT ? '/przeszlosc/' : '/app/';
+// Strony przeszłości, które działają bez sieci po wcześniejszym otwarciu: statyczne, bez danych z API i bez danych osobowych.
+// Strony z danymi (temat, osoba, głosowania) wolą "Brak połączenia" niż pustą powłokę z błędami.
+const PAGES_CACHE = `przeszlosc-pages-${VERSION}`;
+const OFFLINE_PAGES = PT ? ['/przeszlosc/jak-to-dziala', '/jak-to-dziala'] : [];
+const PAGES_MAX = 6;
 const MAX_ENTRIES = 100;
 const API_MAX_AGE = 5 * 60 * 1000;
 const PUBLIC_API = /^\/api\/clinic\/(?:stats|spins|messages)?\/?$/;
@@ -26,7 +34,7 @@ self.addEventListener('install', event => {
 });
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE).map(key => caches.delete(key))))
+    .then(keys => Promise.all(keys.filter(key => (key.startsWith(CACHE_PREFIX) && key !== CACHE) || (PT && key.startsWith('przeszlosc-pages-') && key !== PAGES_CACHE)).map(key => caches.delete(key))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener('message', event => {
@@ -47,6 +55,22 @@ async function staticAsset(request) {
     await trim(cache);
   }
   return response;
+}
+/** Strona informacyjna przeszłości: najpierw sieć, kopia tylko publicznej odpowiedzi 200 tej samej domeny; offline = kopia albo "Brak połączenia". */
+async function offlinePage(request, url) {
+  const cache = await caches.open(PAGES_CACHE);
+  const key = url.pathname.replace(/\/+$/, '');
+  try {
+    const response = await fetch(request);
+    if (response.ok && response.type === 'basic' && !response.redirected && !/no-store|private/.test(response.headers.get('Cache-Control') || '')) {
+      await cache.put(key, response.clone());
+      const keys = await cache.keys();
+      await Promise.all(keys.slice(0, Math.max(0, keys.length - PAGES_MAX)).map(old => cache.delete(old)));
+    }
+    return response;
+  } catch {
+    return (await cache.match(key, { ignoreVary: true })) || (await caches.match(OFFLINE));
+  }
 }
 async function publicApi(request) {
   const cache = await caches.open(CACHE);
@@ -74,7 +98,8 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || request.headers.has('authorization')) return;
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE)));
+    const page = OFFLINE_PAGES.includes(url.pathname.replace(/\/+$/, '')) && !url.search;
+    event.respondWith(page ? offlinePage(request, url) : fetch(request).catch(() => caches.match(OFFLINE)));
   } else if (url.pathname.startsWith('/_next/static/') || (url.pathname.startsWith(STATIC_PREFIX) && (!PT || /\.(png|svg|ico|woff2|html)$/.test(url.pathname)))) {
     event.respondWith(staticAsset(request));
   } else if (!PT && PUBLIC_API.test(url.pathname)) {

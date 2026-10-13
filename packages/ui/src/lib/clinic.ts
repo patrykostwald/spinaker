@@ -120,6 +120,8 @@ export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
   notice: string;
   /** Tylko pary powyżej progu (ten sam dla każdej partii); null, gdy nic nie przeszło. */
   position_changes?: { items: PositionChange[]; note: string } | null;
+  /** „Wcześniej i teraz” (API-v3.md sekcja 5): zatwierdzone pary dotyczące tego wpisu; klucza brak = funkcja wyłączona flagą backendu. */
+  position_pairs?: { items: unknown[]; notice: string; paused: boolean } | null;
   /** Odbiór po dobie; null, gdy wpisu nie sprawdzano (słaby spin albo funkcja wyłączona). */
   reception?: SpinReception | null;
   /** Raport źródeł 6.10: weryfikacje tej samej tezy (Google Fact Check API) i kopie cytowanych artykułów (Wayback). */
@@ -178,7 +180,28 @@ export type DailyMessage = {
   created_at?: string;
   reviewed_at?: string | null;
   scope?: { date_from: string | null; date_to: string | null; timezone: string };
+  /**
+   * Kontrakt API v3 (gust/spin/port/API-v3.md): klucza brak = funkcja wyłączona flagą backendu,
+   * null = włączona, ale brak danych (łańcuch niezatwierdzony, cisza wyborcza; mniej niż 3 diagnozy).
+   */
+  causal_chain?: MessageCausalChain | null;
+  spin_strength?: MessageSpinStrength | null;
 };
+
+/** Ciąg przyczyn przekazu zatwierdzony przez człowieka (kroki w kształcie CausalStep z kit/CausalChain.tsx). */
+export type MessageCausalChain = {
+  approved_at: string | null; model: string; prompt_version?: string; ai_generated: boolean; notice: string;
+  steps: Array<{ kind: "fakt" | "interpretacja" | "spin" | "wniosek"; text: string; source?: { name: string; url?: string; date?: string }; technique?: string; degraded?: boolean }>;
+};
+/** Siła spinu dnia: mediana z zatwierdzonych diagnoz wpisów przekazu (n >= 3). */
+export type MessageSpinStrength = { value: number; n: number; method: string };
+
+/** Siła spinu dnia do pokazania albo null (brak klucza, null, zła wartość = nic nie pokazujemy). */
+export function messageSpinStrength(message: Pick<DailyMessage, "spin_strength"> | null | undefined): MessageSpinStrength | null {
+  const s = message?.spin_strength;
+  if (!s || typeof s.value !== "number" || !Number.isFinite(s.value) || typeof s.n !== "number" || s.n < 3) return null;
+  return s;
+}
 
 export type InterviewQuote = { name: string; category?: string; quote: string; time: string; seconds: number | null; explanation: string };
 export type InterviewClaim = SpinClaim & { time: string; seconds: number | null };

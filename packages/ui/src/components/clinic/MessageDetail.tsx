@@ -4,15 +4,16 @@ import Link from "next/link";
 import { CAMPS, type MessageDay } from "../../lib/clinic";
 import { formatDatePl } from "../../lib/utils";
 import { PageHeaderV3 } from "../../kit/PageHeaderV3";
+import { SideLegend } from "../../kit/SideLegend";
 import { ClinicNav } from "./ClinicNav";
 import { MessageCard } from "./MessageCard";
 
 export function MessageDetail({ data }: { data: MessageDay }) {
   return <article className="sc-v3 sc-v3-page sc-message-detail">
-    <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> <span className="sc-v3-tag">BETA</span> Przekaz dnia · Dr. Spin (AI)</>}
+    <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> Przekaz dnia · Dr. Spin (AI)</>}
       title={`Przekazy dnia: ${formatDatePl(data.day).replace(/ /g, "\u00A0")}`}
       sub="Syntezy wpisów z oficjalnych kont rządzących i opozycji wraz ze źródłami. Ta sama miara dla obu stron."
-      actions={<Link className="sc-v3-lnk" href="/klinika/przekazy">Wszystkie przekazy <span className="sc-v3-ar" aria-hidden="true">→</span></Link>} />
+      actions={<Link className="sc-v3-lnk" href="/klinika/przekazy">Wszystkie przekazy <span className="sc-v3-ar" aria-hidden="true">→</span></Link>} aside={<SideLegend />} />
     <MessageDayContent data={data} />
   </article>;
 }

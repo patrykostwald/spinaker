@@ -13,6 +13,8 @@ import { formatDatePl } from '../../lib/utils';
 import { clipColor } from '../../lib/clipColor';
 import { AccountDialog } from '../AccountDialog';
 import { GlitchWord } from '../../kit/GlitchWord';
+import { PositionPair } from '../../kit/PositionPair';
+import { pairFromThreadBoxes } from '../../lib/positionPairs';
 
 const LABELS = { positive: 'Trafne', doubt: 'Wątpliwe', negative: 'Nietrafne' } as const;
 /** Rodzaje boksów po polsku (wspólne dla paska spinki i widoku jednego elementu). */
@@ -29,7 +31,7 @@ const GLYPHS: Record<string, string> = {
 };
 export const TYPE_GLYPH: Record<string, string> = { diagnosis: 'diag', summary: 'diag', post: 'post', message: 'post', technique: 'hook', claim: 'check', source: 'doc', consultation: 'doc', registry: 'doc', declaration: 'doc', print: 'sejm', amendment: 'sejm' };
 export const LINK_GLYPH: Record<string, string> = { wynika_z: 'from', jak: 'how', czy_na_pewno: 'ask', bo: 'because', ale: 'but', przeczy: 'not' };
-export const LINK_WORDS: Record<string, string> = { bo: 'bo', ale: 'ale', czy_na_pewno: 'czy na pewno?', przeczy: 'przeczy', wynika_z: 'wynika z', jak: 'jak?' };
+export const LINK_WORDS: Record<string, string> = { bo: 'bo', ale: 'ale', czy_na_pewno: 'czy na pewno?', przeczy: 'inaczej niż', wynika_z: 'wynika z', jak: 'jak?' };
 export function Glyph({ name, size = 16 }: { name: string; size?: number }) {
   return <svg className="sc-glyph" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLYPHS[name] ?? GLYPHS.doc }} />;
 }
@@ -201,6 +203,7 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
   const step = sequence[at];
   const item = items[step.index];
   const [finished, setFinished] = useState(false);
+  const pairsOn = useFeature('POSITION_PAIRS_ENABLED');
   const chain = useRef<HTMLElement>(null);
   // mini-pasek: bieżący element zawsze widoczny na środku (na telefonie pasek bywa szerszy niż ekran)
   useEffect(() => { const nav = chain.current, cur = nav?.querySelector<HTMLElement>('[aria-current]');
@@ -245,6 +248,10 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
   const rateCurrent = item.item_id ? (polarity: string) => { void steps.rate(item.item_id!, step.kind === 'box' ? 'box' : 'context', polarity);
     if (rateMode) window.setTimeout(() => { if (at < sequence.length - 1) setAt(at + 1); else setFinished(true); }, 450); } : undefined;
   const rateLabel = step.kind === 'box' ? `boks ${step.index + 1}` : `połączenie ${step.index}`;
+  // łącznik "przeczy" (w interfejsie "inaczej niż") za flagą par: ten sam komponent co "Wcześniej i teraz", bez oceny, w miejscu karty
+  // (stała strefa sceny); boksy bez daty, treści albo adresu nie są zestawiane - wtedy zostaje zwykła karta z opisem autora
+  const linkPair = pairsOn && step.kind === 'clip' && item.link_kind === 'przeczy'
+    ? pairFromThreadBoxes(items[step.index - 1], item, step.index, item.link_note || 'Połączenie w spince') : null;
   return <section className="sc-pick" aria-label={step.kind === 'box' ? `Boks ${step.index + 1}: ${item.title}` : `Połączenie ${step.index} → ${step.index + 1}`}>
     <header className="sc-pick__bar">
       <span />
@@ -254,7 +261,9 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
       {/* łatwy powrót po lewej, na wysokości karty; dalsza droga po prawej jaśniejsza (właściciel 4.10) */}
       <button type="button" className="sc-pick__home" onClick={onClose}>← Cała spinka</button>
       <button type="button" className="sc-pick__arrow" disabled={at === 0} onClick={() => setAt(at - 1)} aria-label="Poprzedni element">‹</button>
-      <article className="sc-pick__card" key={at} data-kind={step.kind} ref={card} tabIndex={-1}>
+      <article className="sc-pick__card" key={at} data-kind={step.kind} data-pair={linkPair ? '' : undefined} ref={card} tabIndex={-1}>
+        {linkPair ? <PositionPair pair={linkPair} as="h3" labels={[`Boks ${step.index}`, `Boks ${step.index + 1}`]} quotes={false} reportable={false} showApproval={false} showTopic={false}
+          notice="Autor spinki zestawił dwa materiały. Pokazujemy je obok siebie bez oceny. Sprawdź źródła i kontekst." /> : <>
         {/* lewe pole zawsze treść (zdjęcie, karta diagnozy, podgląd linku), prawe zawsze tytuł i opis (właściciel 5.10, 3 głosy na tak) */}
         <div className="sc-pick__media" data-type={kind} data-card={image.includes('/card.png') || undefined}>
           {step.kind === 'clip' ? <JointPreview from={items[step.index - 1]} to={item} index={step.index} counts={clipStep?.counts} />
@@ -284,6 +293,7 @@ export function FocusView({ threadId, items, start, steps, onClose, onStep, rate
               <StepRate step={current} canRate={steps.canRate} label={rateLabel} onRate={rateCurrent!} /></span>}
           </footer>
         </div>
+        </>}
       </article>
       <button type="button" className="sc-pick__arrow" disabled={at === sequence.length - 1} onClick={() => setAt(at + 1)} aria-label="Następny element">›</button>
     </div>

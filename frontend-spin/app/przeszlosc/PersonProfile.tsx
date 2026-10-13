@@ -2,11 +2,15 @@
 import { Sprostowanie } from './Sprostowanie';
 import { useEffect, useMemo, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, LayerCaption, PageIndex, day, host, nb, plural, short, spinColor, text, useNarrativeLayer, useStandalone, type Access } from './ui';
+import { Bar, Follow, Foot, Icon, LayerCaption, PageIndex, day, host, nb, plural, short, spinColor, text, tidyLinks, useNarrativeLayer, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 import { WMediach } from './WMediach';
 import { Przybornik, personTools } from './Przybornik';
 import { sumLine } from './DrzewoPieniedzy';
+import { Siec, type NetAvailability } from './Siec';
+import { Najwazniejsze } from './Najwazniejsze';
+import { landingIndex, LANDING_RULE_SHORT, ymd } from './najwazniejsze-dane';
+import { PairsSection, PairsTile, usePairsBlock } from './WczesniejITeraz';
 
 /**
  * Profil osoby bez tematu (sprint 1, właściciel 6.10: „najlepsze narzędzie OSINT”): wszystko o jednej osobie publicznej
@@ -27,11 +31,15 @@ type Profile = {
   documents: { available: boolean; count: number; by_kind: Record<string, number>; results: { id: number; kind: string; label: string; title: string; date: string | null; url: string; replies: number | null }[] };
   votes: { available: boolean; count: number; summary: Record<string, number>; reason: string; results: { date: string | null; title: string; motion: string; vote: string; club: string; url: string }[];
     deviation?: { term: number; club: string; share: number; club_median: number | null; flagged: boolean; counted: number; rebellions_total: number; latest: { url: string; title: string; date: string | null } | null } | null };
-  organisations: { id: number; name: string; krs_number: string; official_register_url: string; extra_register_url?: string; since_note?: string; public_role: string; organ: string; relation_status: string; since?: string | null; until?: string | null }[];
-  employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; source?: { url: string } }[];
+  organisations: { id: number; name: string; krs_number: string; official_register_url: string; extra_register_url?: string; since_note?: string; public_role: string; organ: string; relation_status: string; since?: string | null; until?: string | null;
+    kind?: string; legal_form?: string; verified_at?: string | null }[];
+  employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; checked_at?: string | null; source?: { url: string } }[];
+  source_checked_at?: string;
   materials: { count: number; results: ProfileMaterial[] };
   mentions?: { results: ProfileMaterial[]; total?: number; limit?: number; reason?: string; reason_code?: string };
   articles_total?: number;
+  /** „Wcześniej i teraz” (API-v3.md sekcja 5): zatwierdzone pary; klucza brak = funkcja wyłączona flagą backendu */
+  position_pairs?: unknown;
   activity: { month: string; posts: number; documents: number; votes: number; media: number }[];
   topics: { topic: string; at: string }[];
   sejm_video?: SejmVideo[];
@@ -64,26 +72,30 @@ export function PersonProfile({ ident }: { ident: string }) {
       document.title = `${d.name} - przeszłość.today`;
     }).catch(() => setState('error'));
   }, [ident]);
-  const index: [string, string][] = [['pp-akta', 'Akta'], ['pp-os', 'Oś czasu'], ['pp-media', 'Media'], ['pp-funkcje', 'Funkcje'], ['pp-krs', 'KRS'], ['pp-pieniadze', 'Pieniądze'],
-    ...(data?.denominators ? [['dn', 'Mianowniki'] as [string, string]] : [])];
+  // sieć powiązań (port v3): wpis w indeksie, dopóki API nie odpowie 404 (funkcja wyłączona) - wtedy sekcja znika
+  const [net, setNet] = useState<NetAvailability>('ok');
+  // landing 13.10: indeks akt jest jednocześnie spisem sekcji z landingu "Dane w jednym miejscu" (kafle) i dotychczasowych sekcji
+  const pairsIndexed = usePairsBlock(data?.position_pairs);
+  const index = landingIndex({ hasDenominators: Boolean(data?.denominators), hasNet: net !== 'none', hasPairs: Boolean(pairsIndexed) });
   return <div className="px px-pp">
     <Bar index={data ? <PageIndex items={index} /> : undefined} />
     {state === 'loading' && <div className="px-wait"><Loading label="Ładowanie profilu" /></div>}
     {state === 'missing' && <p className="px-msg">{nb('Nie ma takiej osoby w rejestrze osób publicznych.')} <a href="/przeszlosc?tryb=osoba">Szukaj osoby</a></p>}
     {state === 'off' && <p className="px-msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
     {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać profilu. Spróbuj ponownie.</p>}
-    {data && <ProfileView data={data} />}
+    {data && <ProfileView data={data} onNet={setNet} />}
+    {data && <p className="pt-nw__rule pt-nw__rule--foot">{nb(LANDING_RULE_SHORT)} <a href="/przeszlosc/jak-to-dziala">Jak to działa</a></p>}
     <Foot />
   </div>;
 }
 
-function ProfileView({ data }: { data: Profile }) {
+function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailability) => void }) {
   const [narr] = useNarrativeLayer();
   const [kindState, setKind] = useState('all');
   const kind = !narr && kindState === 'diag' ? 'all' : kindState;
   const [more, setMore] = useState(false);
   const items = useMemo<Item[]>(() => [
-    ...data.posts.results.map(p => ({ id: `p${p.id}`, kind: 'statement' as const, date: p.date, source: `@${p.handle}`, text: p.text, url: p.url,
+    ...data.posts.results.map(p => ({ id: `p${p.id}`, kind: 'statement' as const, date: p.date, source: `@${p.handle}`, text: tidyLinks(p.text), url: p.url,
       spin: narr && p.diagnosis ? { intensity: p.diagnosis.intensity, headline: p.diagnosis.headline, url: p.diagnosis.url } : undefined })),
     ...data.documents.results.filter(d => d.date).map(d => ({ id: `d${d.id}`, kind: 'record' as const, date: d.date!, source: d.label + (d.replies ? ` · odpowiedzi: ${d.replies}` : ''), text: d.title, url: d.url })),
     ...data.votes.results.filter(v => v.date).map((v, i) => ({ id: `v${i}`, kind: 'vote' as const, date: v.date!, source: 'Głosowanie w Sejmie', text: v.title, url: v.url, vote: v.vote })),
@@ -97,6 +109,7 @@ function ProfileView({ data }: { data: Profile }) {
   const inSejm = [committees.length ? `${committees.length} ${plural(committees.length, 'komisja', 'komisje', 'komisji')}` : '',
     ...Object.entries(data.documents.by_kind).sort((a, b) => b[1] - a[1]).slice(0, committees.length ? 2 : 3).map(([k, n]) => `${k}: ${n}`)].filter(Boolean);
   const stamp = data.generated_at.slice(0, 10);
+  const pairs = usePairsBlock(data.position_pairs);
   let lastDay = '';
   return <>
     {/* port v3 (13.10): nagłówek akt dwukolumnowy - kicker przy górnej krawędzi, tytuł, opis i akcje dociągnięte do dołu; po prawej
@@ -115,19 +128,29 @@ function ProfileView({ data }: { data: Profile }) {
           </p>
           <div className="px-tv__tools pt-acts">
             {!locked.has('alerts') && <Follow kind="person" target={data.slug} label={data.name} primary />}
-            {!locked.has('export') && <><a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=csv`} download><Icon name="down" />CSV</a>
-            <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=json`} download><Icon name="down" />JSON</a></>}
+            {/* jedna akcja "Pobierz" zamiast CSV i JSON obok siebie (recenzja Fable 13.10: 3-4 akcje w rzędzie vs 2 w spin.clinic) */}
+            {!locked.has('export') && <details className="pt-dl">
+              <summary className="px-tool"><Icon name="down" />Pobierz</summary>
+              <div className="pt-dl__menu" role="group" aria-label="Format pliku">
+                <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=csv`} download onClick={e => e.currentTarget.closest('details')?.removeAttribute('open')}>CSV (arkusz)</a>
+                <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=json`} download onClick={e => e.currentTarget.closest('details')?.removeAttribute('open')}>JSON (dane)</a>
+              </div>
+            </details>}
             <Sprostowanie recordId={`osoba:${data.slug || data.id}`} label={data.name} />
           </div>
         </div>
       </div>
+      {/* landing 13.10 (zlecenie właściciela): fundacje i spółki z KRS, oświadczenia, rozliczenia, głosy inne niż większość klubu, funkcje i media
+          zaraz pod tytułem. Kolejność w DOM: tytuł, landing, "W skrócie" (telefon: landing przed kartą); na komputerze "W skrócie" stoi
+          w prawej kolumnie pierwszego wiersza, landing zajmuje drugi wiersz (najwazniejsze.css). "Zobacz wszystko" ustawia filtr osi czasu. */}
+      <Najwazniejsze data={data} onFilter={k => { setKind(k); setMore(false); }} extra={<PairsTile block={pairs} stamp={`stan na ${ymd(data.generated_at)}`} />} />
       <section className="px-card px-brief pt-kv" aria-labelledby="pp-brief-h">
         <h2 id="pp-brief-h" className="px-h3">W skrócie</h2>
         <dl>
           {narr && <div><dt>Średni spin</dt><dd>{data.posts.avg_spin !== null ? <><i className="px-spin-dot" style={{ ['--spin' as string]: spinColor(data.posts.avg_spin) }} />{data.posts.avg_spin}/100 <small>· {data.posts.diagnoses} {plural(data.posts.diagnoses, 'diagnoza', 'diagnozy', 'diagnoz')}</small></> : <small>brak diagnoz</small>}</dd></div>}
           <div><dt>Głosowania</dt><dd>{data.votes.count ? <VoteBar summary={data.votes.summary} /> : <small>{data.votes.available ? 'brak w bazie' : 'nie jest posłem w naszych danych'}</small>}</dd></div>
-          {data.votes.deviation && <div><dt>Odstępstwa od klubu</dt><dd>{pctPl(data.votes.deviation.share)} <small>· mediana {data.votes.deviation.club} {data.votes.deviation.club_median === null ? '-' : pctPl(data.votes.deviation.club_median)}
-            {data.votes.deviation.latest ? <> · <a href={data.votes.deviation.latest.url} target="_blank" rel="noopener noreferrer">{data.votes.deviation.rebellions_total} wbrew klubowi ↗</a></> : ''}</small></dd></div>}
+          {data.votes.deviation && <div><dt>Inne niż klub</dt><dd>{pctPl(data.votes.deviation.share)} głosów innych niż większość klubu {data.votes.deviation.club}
+            {data.votes.deviation.latest ? <> · <a href={data.votes.deviation.latest.url} target="_blank" rel="noopener noreferrer">{data.votes.deviation.rebellions_total} przy zgodności klubu ≥ 80% ↗</a></> : ` · ${data.votes.deviation.rebellions_total} przy zgodności klubu ≥ 80%`}</dd></div>}
           <div><dt>W Sejmie</dt><dd>{inSejm.length ? inSejm.join(' · ') : <small>brak dokumentów w bazie</small>}</dd></div>
           <div><dt>Ostatnio</dt><dd>{items[0] ? <>{day(items[0].date)} <small>· {items[0].source}</small></> : <small>brak aktywności w bazie</small>}</dd></div>
         </dl>
@@ -148,6 +171,8 @@ function ProfileView({ data }: { data: Profile }) {
 
     <div className="px-grid">
       <div className="px-main">
+        {/* „Wcześniej i teraz”: pełna lista zatwierdzonych par tuż nad osią czasu (flaga NEXT_PUBLIC_POSITION_PAIRS, tylko gdy API zwraca pary) */}
+        <PairsSection block={pairs} />
         <section className="px-time pt-tl" id="pp-os" aria-labelledby="pp-os-h">
           <div className="px-time__head"><h2 id="pp-os-h" className="px-h3">Oś czasu</h2><span>{shown.length} {plural(shown.length, 'pozycja', 'pozycje', 'pozycji')}</span></div>
           <div className="px-filters"><div className="px-seg" role="group" aria-label="Rodzaj">
@@ -222,17 +247,19 @@ function ProfileView({ data }: { data: Profile }) {
       </aside>
     </div>
 
+    {data.denominators && <Siec ident={data.slug || data.id} onAvailability={onNet} />}
     {data.denominators && <Denominators data={data} />}
   </>;
 }
 
 const pctPl = (v: number) => `${v.toLocaleString('pl-PL', { maximumFractionDigits: 1 })}%`;
 
+/* Głosowania w "W skrócie": liczby zamiast paska proporcji (recenzja Fable 13.10: pasek w dwóch prawie identycznych szarościach; jedna zasada
+   "liczba zamiast paska" dla całej rodziny). Kolejność stała, sama liczba z etykietą, zero kolorów. */
 function VoteBar({ summary }: { summary: Record<string, number> }) {
   const total = Object.values(summary).reduce((a, b) => a + b, 0) || 1;
-  return <span className="px-pp__votebar">
-    <i aria-hidden="true">{VOTE_ORDER.map(k => summary[k] ? <b key={k} data-v={k} style={{ flexGrow: summary[k] }} /> : null)}</i>
-    <small>{VOTE_ORDER.filter(k => summary[k]).map(k => `${Math.round((100 * summary[k]) / total)}% ${k}`).join(', ')}</small>
+  return <span className="pt-votes">
+    {VOTE_ORDER.filter(k => summary[k]).map(k => <span key={k} data-v={k}><b>{Math.round((100 * summary[k]) / total)}%</b> {k}<small> ({summary[k].toLocaleString('pl-PL')})</small></span>)}
   </span>;
 }
 

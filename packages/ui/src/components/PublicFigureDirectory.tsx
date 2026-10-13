@@ -14,6 +14,7 @@ import {
 } from '../lib/publicFigures';
 import { Dialog } from './Dialog';
 import { PublicFigureProfile } from './PublicFigureProfile';
+import { PublicFigurePairs } from './PublicFigurePairs';
 import { Button, Dropdown, SearchField, SectionHeader } from '../kit';
 import { Loading } from "../kit/Loading";
 
@@ -38,6 +39,8 @@ export function PublicFigurePage({ id }: { id: number }) {
     <div className="sc-public-figure-page">
       <p className="sc-public-figure-back"><Link href="/osoby-publiczne">← Osoby publiczne</Link></p>
       <PublicFigureProfile figure={figure.data} />
+      {/* „Wcześniej i teraz”: za flagą NEXT_PUBLIC_POSITION_PAIRS i tylko gdy API zwraca pary */}
+      <PublicFigurePairs figureId={id} />
     </div>
   );
 }
