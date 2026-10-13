@@ -1,56 +1,50 @@
-/* Mikroanimacja słów tytułu strony głównej przeszłość.today (seria 2, 13.10.2026).
-   Jedna animacja naraz (kto -> co -> kiedy, odstęp 700 ms), pętla 14 s, start 1,4 s; tylko transform/opacity;
-   pseudoelementy pozycjonowane absolutnie (bez przesunięcia układu); reduced motion = brak animacji. */
-.pt-v3 {
-  --fx-hero-loop: 14s;
-  --fx-hero-start: 1.4s;
-  --fx-hero-ease: cubic-bezier(.22, .61, .36, 1);
-  /* kto: 0-1.9 s, co: 2.6-4.0 s, kiedy: 4.7-5.6 s (względem startu) */
-  --fx-hero-co: calc(var(--fx-hero-start) + 2.6s);
-  --fx-hero-kiedy: calc(var(--fx-hero-start) + 4.7s);
-}
+/* Tytuł "Kto, co i kiedy?" na stronie głównej przeszłość.today: trzy różne, delikatne gesty, lekko "hakerskie":
+   dekodowanie (Kto, JS: losowe znaki w stałej szerokości), zaczernienie z odsłonięciem (co), znacznik czasu i kursor (kiedy).
+   Jedna animacja naraz, pętla 14 s; tylko transform/opacity/clip-path; ozdoby aria-hidden; reduced motion = brak efektów. */
 .pt-v3 .pt-hw { position: relative; display: inline-block; }
 .pt-v3 .pt-hw::before, .pt-v3 .pt-hw::after { pointer-events: none; }
 
-/* "Kto": cienkie podkreślenie w sepii rysuje się (700 ms), trwa (900 ms), gaśnie (300 ms) */
-.pt-v3 .pt-hw[data-w="kto"]::before {
-  content: ""; position: absolute; left: 0; right: 0; bottom: .02em; height: 1.5px; border-radius: 1px;
-  background: var(--sc-accent); transform-origin: left center; transform: scaleX(0); opacity: 0;
-  animation: pt-hw-kto var(--fx-hero-loop) var(--fx-hero-ease) var(--fx-hero-start) infinite;
-}
-@keyframes pt-hw-kto {
-  0% { transform: scaleX(0); opacity: 1; }
-  5% { transform: scaleX(1); opacity: 1; }      /* 700 ms */
-  11.4% { transform: scaleX(1); opacity: 1; }   /* +900 ms */
-  13.6% { transform: scaleX(1); opacity: 0; }   /* +300 ms */
-  100% { transform: scaleX(0); opacity: 0; }
-}
+/* "Kto": litery w trakcie dekodowania lekko przygaszone w akcencie, stałe szerokości liter z JS */
+.pt-v3 .pt-hw[data-w="kto"] [data-g] { color: var(--sc-accent); opacity: .85; }
 
-/* "co": mały "?" w akcencie (ok. 35 % krycia) jak indeks po prawej u góry, unosi się o 4 px i zanika (1400 ms) */
+/* "co": pasek w akcencie przykrywa słowo (220 ms), trzyma (350 ms), odsuwa się w prawo (650 ms) */
 .pt-v3 .pt-hw[data-w="co"]::after {
-  content: "?"; content: "?" / ""; position: absolute; left: 100%; top: -.32em; margin-left: .04em;
-  font: 600 .5em/1 var(--sc-font-display); color: var(--sc-accent); opacity: 0; transform: translateY(0);
-  animation: pt-hw-co var(--fx-hero-loop) var(--fx-hero-ease) var(--fx-hero-co) infinite;
+  content: ""; position: absolute; left: -.04em; right: -.04em; top: .12em; bottom: .06em; border-radius: 2px;
+  background: var(--sc-accent); opacity: 0; clip-path: inset(0 100% 0 0);
 }
-@keyframes pt-hw-co {
-  0% { opacity: 0; transform: translateY(0); }
-  3% { opacity: .35; transform: translateY(-1.5px); }
-  10% { opacity: 0; transform: translateY(-4px); }   /* 1400 ms */
-  100% { opacity: 0; transform: translateY(-4px); }
+.pt-v3 .pt-hero-title[data-fx="co"] .pt-hw[data-w="co"]::after {
+  animation: pt-hw-redact 1.25s cubic-bezier(.22, .61, .36, 1) both;
+}
+@keyframes pt-hw-redact {
+  0% { opacity: .92; clip-path: inset(0 100% 0 0); }
+  18% { opacity: .92; clip-path: inset(0 0 0 0); }      /* 220 ms: przykrycie */
+  46% { opacity: .92; clip-path: inset(0 0 0 0); }      /* +350 ms: trzyma */
+  100% { opacity: .92; clip-path: inset(0 0 0 100%); }  /* +650 ms: odsłonięcie */
 }
 
-/* "kiedy": echo słowa (14-18 % krycia) przesuwa się o 7 px w prawo i znika (900 ms), jak odbicie w czasie */
-.pt-v3 .pt-hw[data-w="kiedy"]::after {
-  content: attr(data-echo); content: attr(data-echo) / ""; position: absolute; left: 0; top: 0; color: currentColor; opacity: 0; transform: translateX(0);
-  animation: pt-hw-kiedy var(--fx-hero-loop) var(--fx-hero-ease) var(--fx-hero-kiedy) infinite;
+/* "kiedy?": znacznik czasu (mono, tabular) nad słowem po prawej, kursor "_" po znaku zapytania */
+.pt-v3 .pt-hw__ts {
+  position: absolute; right: 0; bottom: 100%; margin-bottom: .1em; white-space: nowrap; opacity: 0;
+  font: 500 .2em/1 var(--sc-font-sans, system-ui); font-variant-numeric: tabular-nums; letter-spacing: .04em;
+  color: var(--sc-accent); transform: translateY(2px);
 }
-@keyframes pt-hw-kiedy {
-  0% { opacity: 0; transform: translateX(0); }
-  1% { opacity: .16; transform: translateX(0); }
-  6.4% { opacity: 0; transform: translateX(7px); }   /* 900 ms */
-  100% { opacity: 0; transform: translateX(7px); }
+.pt-v3 .pt-hw__cur {
+  position: absolute; left: 100%; bottom: 0; font-style: normal; color: var(--sc-accent); opacity: 0; margin-left: .03em;
+}
+.pt-v3 .pt-hero-title[data-fx="kiedy"] .pt-hw__ts { animation: pt-hw-ts 3.4s cubic-bezier(.22, .61, .36, 1) both; }
+.pt-v3 .pt-hero-title[data-fx="kiedy"] .pt-hw__cur { animation: pt-hw-cur 3.4s steps(1, end) both; }
+@keyframes pt-hw-ts {
+  0% { opacity: 0; transform: translateY(2px); }
+  8% { opacity: .85; transform: translateY(0); }
+  88% { opacity: .85; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+@keyframes pt-hw-cur {
+  0%, 100% { opacity: 0; }
+  5%, 25%, 45%, 65%, 85% { opacity: .9; }
+  15%, 35%, 55%, 75%, 95% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pt-v3 .pt-hw::before, .pt-v3 .pt-hw::after { animation: none !important; opacity: 0 !important; }
+  .pt-v3 .pt-hw::after, .pt-v3 .pt-hw__ts, .pt-v3 .pt-hw__cur { animation: none !important; opacity: 0 !important; }
 }
