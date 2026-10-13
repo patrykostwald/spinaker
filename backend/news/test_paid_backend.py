@@ -105,3 +105,22 @@ def test_claude_can_be_council_member(monkeypatch):
     member = ('claude', 'claude-haiku-5-5')
     assert registry.configured(member)
     assert registry.metadata(member)['company'] == 'Anthropic'
+
+
+def test_claude_member_call_uses_only_supported_arguments(monkeypatch):
+    """SDK Anthropic 1.x nie przyjmuje parametru temperature (TypeError na produkcji 13.10.2026)."""
+    seen = {}
+
+    class FakeMessages:
+        def create(self, *, model, max_tokens, system, messages):  # dokładnie te argumenty i żadnych więcej
+            seen.update(model=model, max_tokens=max_tokens, system=system, messages=messages)
+            from types import SimpleNamespace
+            return SimpleNamespace(content=[SimpleNamespace(type='text', text='{"accepts": true, "statement": "ok"}')])
+
+    class FakeClient:
+        messages = FakeMessages()
+
+    monkeypatch.setattr(clinic_ai, '_client', lambda: FakeClient())
+    result = council._ask_claude('claude-haiku-5-5', 'system', 'user', {'type': 'object'}, 500)
+    assert result == {'accepts': True, 'statement': 'ok'}
+    assert seen['model'] == 'claude-haiku-5-5' and seen['max_tokens'] == 500

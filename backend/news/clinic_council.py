@@ -234,11 +234,12 @@ def _ask_claude(model: str, system: str, user: str, schema: dict, max_tokens: in
     try:
         client = clinic_ai._client()
         response = client.messages.create(
-            model=model, max_tokens=max_tokens, temperature=0.2,
+            model=model, max_tokens=max_tokens,  # bez temperature: SDK Anthropic 1.x go nie przyjmuje
             system=system + '\nSchemat JSON odpowiedzi:\n' + json.dumps(schema, ensure_ascii=False),
             messages=[{'role': 'user', 'content': user[:12000]}])
     except Exception as error:  # błąd sieci, limit, brak środków albo klucza: członek po prostu nie odpowiada
         code = getattr(error, 'status_code', '') or type(error).__name__
+        logger.warning('council member claude failed: %s: %s', type(error).__name__, str(error)[:160])
         raise ClinicAIError(f'claude: {code}'[:120])
     text = ''.join(block.text for block in response.content if getattr(block, 'type', '') == 'text')
     try:
