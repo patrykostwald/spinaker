@@ -496,6 +496,12 @@ html[data-theme="light"] .pt-v3 .px .px-flow__dates input[type="date"] { color-s
 .pt-v3 .px .px-proof > div { min-width: 0; padding: 0 20px; border-left: 1px solid var(--sc-line); border-top: 0; }
 .pt-v3 .px .px-proof > div:first-child { padding-left: 0; border-left: 0; }
 .pt-v3 .px .px-proof b { font-size: clamp(22px, 1.95vw, 30px); white-space: nowrap; }
+/* pasek liczb w jednym rzędzie (13.10, uwaga właściciela): pierwszy box do lewej, środkowe wycentrowane, ostatni do prawej */
+@media (min-width: 1001px) {
+  .pt-v3 .px .px-proof > div { text-align: center; }
+  .pt-v3 .px .px-proof > div:first-child { text-align: left; }
+  .pt-v3 .px .px-proof > div:last-child { text-align: right; padding-right: 0; }
+}
 @media (max-width: 1100px) {
   .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 3; }
   .pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n) { padding: 0 20px; border-left: 1px solid var(--sc-line); border-top: 0; }
