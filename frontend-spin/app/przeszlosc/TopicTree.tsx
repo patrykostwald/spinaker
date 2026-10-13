@@ -7,6 +7,7 @@ import { TopicFunds, type EuFunds } from './OpenData';
 import { WMediach } from './WMediach';
 import { Paski } from './Paski';
 import { HeroTytul } from './HeroTytul';
+import { PasekNowosci } from './PasekNowosci';
 import './glosowania.css';
 import './jak-to-dziala/jak-link.css';
 
@@ -81,6 +82,8 @@ export function TopicTree() {
   const [data, setData] = useState<Graph | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'error' | 'off'>('idle');
   const [start, setStart] = useState<Start | null>(null);
+  // pasek "Ostatnio w bazie": szkielet, póki /start/ nie odpowie; błąd albo brak danych = pasek znika (nie "zero")
+  const [startFailed, setStartFailed] = useState(false);
   const [daily, setDaily] = useState(false);
   // tryb wyszukiwarki (sprint 1): temat albo osoba publiczna z rejestru
   const [mode, setMode] = useState<'topic' | 'person' | 'company'>('topic');
@@ -134,10 +137,10 @@ export function TopicTree() {
     if (params.get('tryb') === 'osoba') { setMode('person'); requestAnimationFrame(() => input.current?.focus()); }
     // strona główna od razu pokazuje stan bazy i temat dnia (właściciel 5.10: „wygląda, jakby nic nie było”)
     fetch('/api/przeszlosc/start/').then(r => r.ok ? r.json() : null).then((s: Start | null) => {
-      setStart(s);
+      setStart(s); if (!s) setStartFailed(true);
       const first = s?.auto_topics?.[0]?.topic ?? EXAMPLES[0];
       if (!q && s?.topics_enabled) { setQuery(first); void load(first, false); }
-    }).catch(() => undefined);
+    }).catch(() => setStartFailed(true));
     if (q) {
       setQuery(q);
       // wejście z linku: bez przewijania, ale z adresem jak był (osoba, wpis)
@@ -160,7 +163,8 @@ export function TopicTree() {
   </section>;
 
   return <div className="px" data-linked={linked || undefined}>
-    <div className="px-home-top"><Bar /></div>
+    {/* pasek "Ostatnio w bazie" (właściciel 13.10) tuż pod menu, nad hero: te same pozycje co sekcja #najnowsze, bez drugiego zapytania */}
+    <div className="px-home-top"><Bar /><PasekNowosci latest={start?.latest} loading={!start && !startFailed} /></div>
     {linked && result}
 
     {/* port v3 (13.10): nagłówek dwukolumnowy z dociąganiem (kicker u góry, tytuł i opis przy dolnej krawędzi; grafika wyniku dociągnięta
@@ -252,8 +256,9 @@ export function TopicTree() {
 
     <Odstepstwa compact />
 
-    {start && start.latest.length > 0 && <section className="px-sec" aria-labelledby="sejm-h">
-      <h2 id="sejm-h" className="px-h2">Najnowsze w&nbsp;Sejmie</h2>
+    {/* "Najnowsze w bazie" (13.10): rekordy publiczne z kilku źródeł (Sejm, Senat, RCL, Dziennik Ustaw...); cel odnośnika "Wszystkie nowości" z paska */}
+    {start && start.latest.length > 0 && <section className="px-sec" id="najnowsze" aria-labelledby="sejm-h">
+      <h2 id="sejm-h" className="px-h2">Najnowsze w&nbsp;bazie</h2>
       <ol className="px-latest">{start.latest.slice(0, narrow ? 5 : 10).map((row, i) => <li key={i}>
         <time>{row.date ? short(row.date) : 'bez daty'}</time><span>{row.kind}</span>
         <a href={row.url} target="_blank" rel="noopener noreferrer">{row.title}</a></li>)}</ol>

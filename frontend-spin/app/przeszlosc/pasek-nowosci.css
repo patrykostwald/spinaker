@@ -1,0 +1,76 @@
+/* =====================================================================
+   Pasek "Ostatnio w bazie" (przeszłość.today, strona główna, 13.10.2026). Nie-przewijany ticker: jedna linia o stałej wysokości
+   (--pt-tick-h 40 px), jedna pozycja naraz, zmiana co --fx-ticker-interval przenikaniem (opacity + translateY --fx-ticker-shift).
+   Konwencja przeszłości: tło tonalne bez obramowań, Montserrat tylko etykieta, Geist reszta, znacznik terminala ">", bez pasków
+   przewijania (ucięcie z wielokropkiem, pełny tytuł w title). Ruch maleje z hierarchią: kontrolka w treści = 160 ms koloru.
+   Kontrasty (ciemny / jasny motyw, na --sc-surface): tytuł --sc-text 15:1 / 16:1, meta --sc-text-3 6,3:1 / 5,7:1, akcent 8,4:1 / 5,1:1.
+   ===================================================================== */
+.pt-v3 .px { --fx-ticker-interval: 6000ms; --fx-ticker-fade: 320ms; --fx-ticker-shift: 4px; --pt-tick-h: 40px; }
+.pt-v3 .px .pt-tick {
+  display: flex; align-items: center; gap: 12px; height: var(--pt-tick-h); min-width: 0; padding: 0 6px 0 14px; border-radius: 10px;
+  background: var(--sc-surface); font-family: var(--sc-font-sans); color: var(--sc-text); overflow: visible;
+}
+/* pasek pod menu: 24 px od kreski menu do paska i 24 px od paska do pierwszego elementu (równe odstępy na granicy tła) */
+.pt-v3 .px > .px-home-top:first-child:has(.pt-tick) { margin-bottom: calc(24px - var(--pt-sec)); }
+.pt-v3 .px .pt-tick__lab { flex: none; display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 var(--sc-font-display); letter-spacing: .01em; color: var(--sc-text-2); white-space: nowrap; }
+.pt-v3 .px .pt-tick__lab i { font: 500 13px/1 var(--sc-font-sans); font-style: normal; color: var(--sc-accent); }
+.pt-v3 .px .pt-tick__view { position: relative; flex: 1 1 auto; display: flex; align-items: center; gap: 12px; min-width: 0; height: 100%; overflow: hidden; }
+.pt-v3 .px .pt-tick__item {
+  flex: 1 1 auto; display: flex; align-items: baseline; gap: 10px; min-width: 0; margin: 0; white-space: nowrap; font-size: 15px; line-height: 20px;
+  animation: pt-tick-in var(--fx-ticker-fade) ease-out both; will-change: transform, opacity;
+}
+.pt-v3 .px .pt-tick__item[data-out] { opacity: 0; transform: translateY(var(--fx-ticker-shift)); transition: opacity var(--fx-ticker-fade) ease-in, transform var(--fx-ticker-fade) ease-in; }
+@keyframes pt-tick-in { from { opacity: 0; transform: translateY(calc(-1 * var(--fx-ticker-shift))); } to { opacity: 1; transform: none; } }
+.pt-v3 .px .pt-tick__kind { flex: none; font-size: 12px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-3); }
+.pt-v3 .px .pt-tick__time { flex: none; font-size: 14px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
+.pt-v3 .px .pt-tick__d-short { display: none; }
+/* tytuł bierze całą resztę linii; CSS-owy wielokropek to zapas przed pomiarem (TitleFit skraca po całym słowie) */
+.pt-v3 .px .pt-tick__title { position: relative; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 500; color: var(--sc-text); }
+.pt-v3 .px .pt-tick__title[data-cut] { text-overflow: clip; }
+/* źródło (domena + ↗) jako odnośnik do oryginału: cel 44 px w pasku 40 px przez ujemny margines pionowy */
+.pt-v3 .px .pt-tick__src { flex: none; display: inline-flex; align-items: center; gap: 3px; align-self: center; min-height: 44px; margin: -2px 0; padding: 0 4px; color: var(--sc-text-3); font-size: 14px; text-decoration: none; transition: color .16s ease; }
+.pt-v3 .px .pt-tick__src i { font-style: normal; font-size: 13px; }
+.pt-v3 .px .pt-tick__src:is(:hover, :focus-visible) { color: var(--sc-accent); }
+/* kontrolki (Pauza, Wszystkie nowości) jako osobna grupa: odstęp 16 px i separator 1 px (panel 13.10: Proximity) */
+.pt-v3 .px .pt-tick__act { flex: none; display: flex; align-items: center; gap: 2px; margin-left: 4px; padding-left: 12px; border-left: 1px solid var(--sc-line); }
+.pt-v3 .px .pt-tick__btn { height: 44px; min-width: 44px; margin: -2px 0; padding: 0 10px 0 6px; gap: 6px; font-size: 15px; }
+.pt-v3 .px .pt-tick__btn::before { display: none; }
+.pt-v3 .px .pt-tick__btn svg { flex: none; color: var(--sc-text-3); transition: color .16s ease; }
+.pt-v3 .px .pt-tick__btn:is(:hover, :focus-visible) svg, .pt-v3 .px .pt-tick__btn[aria-pressed="true"] svg { color: var(--sc-accent); }
+.pt-v3 .px .pt-tick__btn[aria-pressed="true"] { color: var(--sc-accent); }
+.pt-v3 .px .pt-tick__all { display: inline-flex; align-items: center; gap: 4px; height: 44px; min-width: 44px; margin: -2px 0; padding: 0 8px; text-decoration: none; white-space: nowrap; }
+.pt-v3 .px .pt-tick__all i { font-style: normal; }
+.pt-v3 .px .pt-tick__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+/* ładowanie: szkielet tej samej wysokości (pulsuje samą przezroczystością), żeby nagłówek nie skakał po nadejściu danych */
+.pt-v3 .px .pt-tick__sk { display: block; flex: 1 1 auto; max-width: 520px; height: 12px; border-radius: 6px; background: var(--sc-surface-3); animation: pt-tick-sk 1.4s ease-in-out infinite; }
+@keyframes pt-tick-sk { 50% { opacity: .45; } }
+/* kotwica "Wszystkie nowości": sekcja zatrzymuje się pod krawędzią okna z zapasem */
+.pt-v3 .px #najnowsze { scroll-margin-top: 24px; }
+/* 761-999 px: przyciski i odnośnik jako ikony 44 px (tekst tylko dla czytnika), żeby tytuł miał min. ok. 200 px */
+@media (max-width: 999.98px) {
+  .pt-v3 .px .pt-tick__txt { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .pt-v3 .px .pt-tick__btn { padding: 0; justify-content: center; }
+  .pt-v3 .px .pt-tick__all { padding: 0; justify-content: center; }
+  .pt-v3 .px .pt-tick__all i { font-size: 18px; }
+}
+/* telefon (do 760 px): zostaje znacznik ">" (etykieta regionu w aria-label), data "dd.mm", bez rodzaju; ikony 44 px */
+@media (max-width: 760px) {
+  .pt-v3 .px .pt-tick { gap: 8px; padding: 0 2px 0 12px; }
+  /* telefon: zostaje znacznik ">" (etykieta regionu w aria-label), data "dd.mm", bez rodzaju i licznika; przyciski jako ikony 44 px */
+  .pt-v3 .px .pt-tick__lab-t, .pt-v3 .px .pt-tick__d-full, .pt-v3 .px .pt-tick__srcname { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .pt-v3 .px .pt-tick__d-short { display: inline; }
+  .pt-v3 .px .pt-tick__kind { display: none; }
+  .pt-v3 .px .pt-tick__lab { gap: 0; }
+  .pt-v3 .px .pt-tick__lab-t + i { position: static; }
+  .pt-v3 .px .pt-tick__item { gap: 8px; }
+  /* ikony ↗, pauza, → mają cele 44 px, ale wizualnie stoją bliżej tytułu (ujemne marginesy zjadają pustą część celu) */
+  .pt-v3 .px .pt-tick__src { min-width: 44px; justify-content: center; padding: 0; }
+  .pt-v3 .px .pt-tick__src i { font-size: 15px; }
+  .pt-v3 .px .pt-tick__act { gap: 0; margin-left: 0; padding-left: 4px; }
+}
+/* najwęższe telefony (do 360 px): bez daty w pasku (jest w sekcji "Najnowsze w bazie"), tytuł zachowuje ok. 100 px */
+@media (max-width: 360px) { .pt-v3 .px .pt-tick__time { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pt-v3 .px .pt-tick__item, .pt-v3 .px .pt-tick__sk { animation: none !important; transition: none !important; }
+  .pt-v3 .px .pt-tick__item[data-out] { opacity: 1; transform: none; }
+}
