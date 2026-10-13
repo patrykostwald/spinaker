@@ -212,11 +212,14 @@ export function TopicTree() {
               : <li className="px-hits__none" role="status">{nb(firms.message ?? 'Brak w naszych danych.')}</li>}
           </ul>}
         </div>
-        {mode === 'topic' ? <div className="px-chips"><span>{start?.auto_topics?.length ? 'Tematy dnia' : 'Przykłady'}</span>
-          {topics.slice(0, 6).map(t => <button key={t} type="button" aria-pressed={data?.topic === t} onClick={() => pick(t)}>{t}</button>)}</div>
-          : mode === 'company' ? <p className="px-chips px-note">{nb(firms?.coverage?.scope ?? 'Szukamy w spółkach, fundacjach i stowarzyszeniach z KRS, które mamy w bazie. Numer KRS pobierzemy z rejestru na żądanie.')}</p>
-          : <p className="px-chips px-note">{nb('Rejestr osób publicznych: posłowie, ministrowie, urzędnicy i samorządowcy. Bez osób prywatnych. Wielkość liter i polskie znaki nie mają znaczenia.')}</p>}
-        <p className="pt-console__how"><a className="px-link" href="/przeszlosc/jak-to-dziala">Jak to działa i skąd mamy dane&nbsp;→</a></p>
+        {/* odnośnik „Jak to działa” w wierszu z tematami dnia, dociągnięty do prawej (właściciel 13.10: bez osobnego wiersza) */}
+        <div className="pt-console__foot">
+          {mode === 'topic' ? <div className="px-chips"><span>{start?.auto_topics?.length ? 'Tematy dnia' : 'Przykłady'}</span>
+            {topics.slice(0, 6).map(t => <button key={t} type="button" aria-pressed={data?.topic === t} onClick={() => pick(t)}>{t}</button>)}</div>
+            : mode === 'company' ? <p className="px-chips px-note">{nb(firms?.coverage?.scope ?? 'Szukamy w spółkach, fundacjach i stowarzyszeniach z KRS, które mamy w bazie. Numer KRS pobierzemy z rejestru na żądanie.')}</p>
+            : <p className="px-chips px-note">{nb('Rejestr osób publicznych: posłowie, ministrowie, urzędnicy i samorządowcy. Bez osób prywatnych. Wielkość liter i polskie znaki nie mają znaczenia.')}</p>}
+          <p className="pt-console__how"><a className="px-link" href="/przeszlosc/jak-to-dziala">Jak to działa i skąd mamy dane&nbsp;→</a></p>
+        </div>
     </section>
     </header>
 
@@ -234,14 +237,16 @@ export function TopicTree() {
       : <div className="px-home-top pt-strips"><Paski /></div>)}
 
     <section className="px-sec" id="jak" aria-labelledby="jak-h">
-      <h2 id="jak-h" className="px-h2">Jak to działa</h2>
+      <div className="pt-how__head">
+        <h2 id="jak-h" className="px-h2">Jak to działa</h2>
+        <p className="pt-console__how pt-console__how--sec"><a className="px-link" href="/przeszlosc/jak-to-dziala">Pełne wyjaśnienie: źródła, łączenie osób, błędy i sprostowania&nbsp;→</a></p>
+      </div>
       <ol className="px-steps">
         {([['Wpisz temat', 'Albo kliknij jeden z tematów dnia. Wystarczy słowo, na przykład VAT, CPK, Turów.'],
           ['Zobacz kto, co i kiedy', 'Drzewo powiązań, oś czasu, głosowania w Sejmie i wykres, kiedy temat wybuchł.'],
           ['Kliknij osobę lub wpis', `${narr ? 'Diagnoza spinu, funkcje' : 'Funkcje'} w KRS, źródło, kopia w archiwum i gotowy przypis do cytowania.`]] as const)
           .map(([title, text], i) => <li key={title}><b aria-hidden="true">{i + 1}</b><h3>{title}</h3><p>{nb(text)}</p></li>)}
       </ol>
-      <p className="pt-console__how pt-console__how--sec"><a className="px-link" href="/przeszlosc/jak-to-dziala">Pełne wyjaśnienie: źródła, łączenie osób, błędy i sprostowania&nbsp;→</a></p>
     </section>
 
     <section className="px-sec" aria-labelledby="zasady-h">
@@ -310,6 +315,12 @@ function HeroDemo({ narr }: { narr: boolean }) {
 const COUNT_KINDS = [['statement', 'wpis polityka', 'wpisy polityków', 'wpisów polityków'], ['diagnosis', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina', 'diagnoz Dr. Spina'],
   ['vote', 'głosowanie', 'głosowania', 'głosowań'], ['media', 'artykuł', 'artykuły', 'artykułów'],
   ['person', 'osoba lub instytucja', 'osoby i instytucje', 'osób i instytucji']] as const;
+/* Krótkie, odmienione nazwy źródeł w liczniku (właściciel 13.10: wszystkie liczby w jednym wierszu); bez wersalika w środku zdania. */
+const ORIGIN_FORMS: Record<string, readonly [string, string, string]> = {
+  ted: ['ogłoszenie TED', 'ogłoszenia TED', 'ogłoszeń TED'], bzp: ['ogłoszenie BZP', 'ogłoszenia BZP', 'ogłoszeń BZP'],
+  questions: ['pytanie poselskie', 'pytania poselskie', 'pytań poselskich'], interpellations: ['interpelacja', 'interpelacje', 'interpelacji'],
+  howtheyvote: ['głos w PE', 'głosy w PE', 'głosów w PE'], ep_votes: ['głos w PE', 'głosy w PE', 'głosów w PE'] };
+const lowerFirst = (s: string) => /^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]/.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
 function TopicCounts({ data }: { data: Graph }) {
   const counts = COUNT_KINDS.filter(([k]) => data.counts[k]);
   // P0-10: rekordy liczymy według źródła (Sejm, TED, rejestr UE...), nie jako jedną pulę „dokumentów Sejmu”
@@ -317,7 +328,8 @@ function TopicCounts({ data }: { data: Graph }) {
     .map(([k, o]) => ({ k, count: o.count, label: originLabel(k, o.label) })).filter(o => o.label)
     .sort((a, b) => (a.k === 'sejm' ? -1 : b.k === 'sejm' ? 1 : b.count - a.count));
   return <p className="px-tv__counts">{counts.map(([k, one, few, many]) => <span key={k}><b>{data.counts[k]}</b> {plural(data.counts[k], one, few, many)}</span>)}
-    {origins.map(o => <span key={o.k}><b>{o.count}</b> {o.k === 'sejm' ? plural(o.count, 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu') : o.label}</span>)}</p>;
+    {origins.map(o => { const f = ORIGIN_FORMS[o.k];
+      return <span key={o.k}><b>{o.count}</b> {o.k === 'sejm' ? plural(o.count, 'dokument Sejmu', 'dokumenty Sejmu', 'dokumentów Sejmu') : f ? plural(o.count, f[0], f[1], f[2]) : lowerFirst(o.label)}</span>; })}</p>;
 }
 
 /* Strona główna: karta tematu dnia (recenzja Fable 13.10: wcześniej cały widok tematu = 9400 px na komputerze i 20 000 px na telefonie).
@@ -340,7 +352,10 @@ function DailyTopic({ data: raw, busy = false }: { data: Graph; busy?: boolean }
   return <article className="pt-daily" data-busy={busy || undefined} aria-labelledby="daily-h">
     <header className="pt-daily__head">
       <p className="px-kicker">Temat dnia<LayerCaption /></p>
-      <h2 id="daily-h">{data.topic}</h2>
+      <div className="pt-daily__title">
+        <h2 id="daily-h">{data.topic}</h2>
+        <p className="pt-daily__more"><a className="px-link" href={href}>Zobacz cały temat&nbsp;→</a></p>
+      </div>
       <TopicCounts data={data} />
     </header>
     <ol className="pt-daily__list" aria-label="Najnowsze pozycje w temacie">{items.map(n => {
@@ -352,7 +367,6 @@ function DailyTopic({ data: raw, busy = false }: { data: Graph; busy?: boolean }
         <a className="pt-daily__text" href={`${href}&wpis=${encodeURIComponent(n.id)}`} title={text}>{clip(text, narrow ? 120 : 160)}</a>
       </li>;
     })}</ol>
-    <p className="pt-daily__more"><a className="px-link" href={href}>Zobacz cały temat&nbsp;→</a></p>
   </article>;
 }
 

@@ -24,7 +24,7 @@ export function FeatureFooter() {
   // v3 (13.10.2026): stopka w kolumnach z nagłówkami, notą o ocenie AI i operatorze; te same odnośniki co wcześniej.
   return <footer className="sc-shell-footer sc-v3-foot">
     <div className="sc-v3-foot__about">
-      <Link href="/" className="sc-wordmark">spin.clinic</Link>
+      <Link href="/" className="sc-wordmark" aria-label="spin.clinic - strona główna">spin<span aria-hidden="true">.</span>clinic</Link>
       <p className="sc-v3-foot__ai">Ocena AI, nie ustalenie faktów. Siła spinu to nasilenie technik perswazji w jednym wpisie, nie procent fałszu i nie miara winy. Ta sama miara dla wszystkich partii.</p>
       <p>Operator: iapply sp. z o.o.</p>
       <div className="sc-shell-footer__tools"><Link href="/wsparcie">Wesprzyj projekt</Link>{pathname?.startsWith('/klinika') && <HowToRead interview={pathname.startsWith('/klinika/wywiady')} />}{APP_ENABLED && <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a>}{APP_ENABLED && <Link href="/aplikacja">Aplikacja i alerty</Link>}{APP_ENABLED && PUSH_ENABLED && <a href="#powiadomienia">Powiadomienia</a>}</div>

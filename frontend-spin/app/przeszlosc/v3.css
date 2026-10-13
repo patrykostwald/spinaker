@@ -569,7 +569,7 @@ html[data-theme="light"] .pt-v3 .px .px-flow__dates input[type="date"] { color-s
 
 /* =================== RECENZJA FABLE (13.10.2026), część przeszłości: układ, cele 44 px, fokus, rodzina z spin.clinic =================== */
 /* (6) strona główna: karta tematu dnia zamiast całego widoku tematu */
-.pt-v3 .px .pt-daily { display: grid; gap: 8px; padding: 24px 28px 8px; border: 0; border-radius: var(--px-r); background: var(--sc-surface); }
+.pt-v3 .px .pt-daily { display: grid; gap: 8px; padding: 24px 28px 16px; border: 0; border-radius: var(--px-r); background: var(--sc-surface); }
 .pt-v3 .px .pt-daily__head { display: grid; gap: 6px; }
 .pt-v3 .px .pt-daily__head h2 { margin: 0; font: 600 clamp(26px, 3vw, 34px)/1.15 var(--sc-font-display); letter-spacing: -.02em; }
 .pt-v3 .px .pt-daily .px-tv__counts { margin: 0; }
@@ -580,10 +580,25 @@ html[data-theme="light"] .pt-v3 .px .px-flow__dates input[type="date"] { color-s
 .pt-v3 .px .pt-daily__meta time { margin-left: auto; font-variant-numeric: tabular-nums; }
 .pt-v3 .px .pt-daily__text { display: block; padding: 4px 0 10px; color: var(--sc-text); font: 400 16px/1.5 var(--sc-font-sans); text-decoration: none; max-width: 80ch; }
 .pt-v3 .px .pt-daily__text:hover { color: var(--sc-accent); text-decoration: underline; text-decoration-color: var(--sc-line-strong); text-underline-offset: 3px; }
-.pt-v3 .px .pt-daily__more { margin: 0; }
+/* odnośniki „→”: zawsze z prawej, w wierszu z treścią, nie w osobnym wierszu (właściciel 13.10) */
+.pt-v3 .px .pt-daily__title { display: flex; align-items: center; justify-content: space-between; gap: 0 20px; min-width: 0; }
+.pt-v3 .px .pt-daily__more { flex: none; margin: 0 0 0 auto; white-space: nowrap; }
 .pt-v3 .px .pt-daily__more a { display: inline-flex; align-items: center; min-height: 44px; }
+.pt-v3 .px .pt-console__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 20px; min-width: 0; }
+.pt-v3 .px .pt-console__foot .px-chips { flex: 1 1 auto; min-width: 0; }
+.pt-v3 .px .pt-console__foot .pt-console__how { flex: none; margin: 0 0 0 auto; white-space: nowrap; }
+.pt-v3 .px .pt-how__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 20px; }
+.pt-v3 .px .pt-how__head .px-h2 { margin: 0; }
+.pt-v3 .px .pt-how__head .pt-console__how { flex: 0 1 auto; min-width: 0; margin: 0 0 0 auto; text-align: right; }
+.pt-v3 .px .pt-how__head .pt-console__how a { min-height: 44px; text-align: right; }
+.pt-v3 .px .pt-devsum__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 20px; margin-top: 8px; }
+.pt-v3 .px .pt-devsum__foot .px-dev__range { margin: 0; }
+.pt-v3 .px .pt-devsum__foot .pt-devsum__more { flex: none; margin: 0 0 0 auto; }
+/* liczby tematu: krótkie odmienione etykiety i węższy odstęp, na komputerze (1440 px) mieszczą się w jednym wierszu; węższe okno zawija całymi pozycjami */
+.pt-v3 .px .px-tv__counts { gap: 4px clamp(10px, 1.2vw, 16px); }
+.pt-v3 .px .px-tv__counts > span { white-space: nowrap; }
 @media (max-width: 640px) {
-  .pt-v3 .px .pt-daily { padding: 20px 16px 4px; }
+  .pt-v3 .px .pt-daily { padding: 20px 16px 10px; }
   .pt-v3 .px .pt-daily__meta time { margin-left: 0; flex-basis: 100%; }
   .pt-v3 .px .pt-daily__text { font-size: 16px; }
 }

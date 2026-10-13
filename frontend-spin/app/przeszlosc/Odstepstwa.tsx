@@ -47,8 +47,10 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
           <div><dt>Kluby i koła</dt><dd>{data.clubs.length}</dd></div>
           <div><dt>Głosy inne niż większość klubu przy zgodności klubu ≥ 80%</dt><dd>{total.toLocaleString('pl-PL')}</dd></div>
         </dl>
-        <p className="px-note px-dev__range">{data.range.from ? `${day(data.range.from)} - ${day(data.range.to)}` : ''}{data.term ? ` · kadencja ${data.term}` : ''}{data.computed_at ? ` · liczone ${day(data.computed_at)}` : ''}</p>
-        <p className="pt-devsum__more"><a className="px-link" href="/przeszlosc/odstepstwa">Zestawienie według klubów&nbsp;→</a></p>
+        <div className="pt-devsum__foot">
+          <p className="px-note px-dev__range">{data.range.from ? `${day(data.range.from)} - ${day(data.range.to)}` : ''}{data.term ? ` · kadencja ${data.term}` : ''}{data.computed_at ? ` · liczone ${day(data.computed_at)}` : ''}</p>
+          <p className="pt-devsum__more"><a className="px-link" href="/przeszlosc/odstepstwa">Zestawienie według klubów&nbsp;→</a></p>
+        </div>
       </div>
     </section>;
   }
