@@ -687,8 +687,9 @@ html body .sc-clinic-db__list > .sc-v3-rows { max-width: 820px; }
    Nie przechodzi na liczby siły spinu, wykresy ani przyciski. Fiolet i róż piaskowy (recenzja: ochra była za blisko sepii przeszłości #c9a878; szałwia kolidowałaby z zieloną strefą siły): poza skalą siły (zielony/niebieski/czerwony)
    i poza barwami partii. Kontrast słowa (WCAG): ciemny fiolet 6,2-7,8, róż 7,2-9,0; jasny fiolet 5,4-6,7, róż 5,4-6,7.
    Przeszłość.today tego NIE używa (obóz tylko słowem w szarości). */
-:root:not([data-theme="light"]):not([data-theme="pastel"]) { --sc-side-gov: #a99bd6; --sc-side-opp: #d9a0b5; }
-:root[data-theme="light"], :root[data-theme="pastel"] { --sc-side-gov: #5b4ba8; --sc-side-opp: #8e3f5e; }
+/* kolory stron (wybór właściciela 13.10): ciemny = złoto i indygo (#8 z drugiej dziesiątki), jasny = perła i bursztyn (#9); kontrasty >= 4.5:1; słowo strony zawsze obok koloru */
+:root:not([data-theme="light"]):not([data-theme="pastel"]) { --sc-side-gov: #f4c95d; --sc-side-opp: #8b93f5; }
+:root[data-theme="light"], :root[data-theme="pastel"] { --sc-side-gov: #616c80; --sc-side-opp: #92630b; }
 [data-side="government"] { --side: var(--sc-side-gov); }
 [data-side="opposition"] { --side: var(--sc-side-opp); }
 .sc-v3-sidew { color: var(--side, inherit); font-weight: 600; }
