@@ -31,13 +31,15 @@ from news.clinic_ai import ClinicAIError, looks_polish
 logger = logging.getLogger(__name__)
 
 # Po jednym modelu z każdej firmy (pluralizm ocen, bez powtarzania silników jednego dostawcy). Nadpisz w CLINIC_COUNCIL.
+# 13.10.2026 (właściciel): Gemini zastąpiony Claude'em (claude:claude-haiku-5-5, klucz ANTHROPIC_API_KEY) we wszystkich rolach
+# i w rdzeniu miary (council_quorum.CORE_DEFAULT). Odchylenie nowego członka liczy się od BIAS_MIN_SAMPLES diagnoz; do tego czasu 0.
 # DeepSeek i Kimi (przez NVIDIA) odpowiadają dziś > 3 min — do dopisania w CLINIC_COUNCIL, gdy przyspieszą.
 # gpt-oss-20b, nie 120b: na 120b pracują przekazy dnia i syntezy wątków, a Groq liczy dzienny limit tokenów osobno dla każdego modelu.
-DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemotron-3-super-120b-a12b,gemini:gemini-3.8-flash,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast,openrouter:google/gemma-4-31b-it:free'
+DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemotron-3-super-120b-a12b,claude:claude-haiku-5-5,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast,openrouter:google/gemma-4-31b-it:free'
 # 30.09.2026: PLLuM zniknął z Hugging Face (brak dostawcy, 404), darmowej Llamy nie ma już na OpenRouter (404) — zamiast niej Gemma 4 31B.
 # Role u różnych dostawców (darmowe limity nie wyczerpują się naraz); po przecinku — kolejne w zapasie.
-CHAIR = 'gemini:gemini-3.8-flash,nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # przewodniczący
-LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,groq:qwen/qwen3.8-27b,gemini:gemini-3.8-flash'  # językoznawca — tylko polszczyzna
+CHAIR = 'claude:claude-haiku-5-5,nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # przewodniczący
+LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,groq:qwen/qwen3.8-27b,claude:claude-haiku-5-5'  # językoznawca — tylko polszczyzna
 REVIEWER = 'nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # recenzent — zgodność z ocenami i zasadami
 MIN_MEMBERS = 3  # właściciel 6.10: co najmniej trzy niezależne oceny; przy mniejszej liczbie diagnoza się nie ukazuje (wpis wraca do kolejki)
 PREFERRED_MEMBERS = 3
@@ -198,6 +200,8 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
     system += registry.CHARTER_SUMMARY
     if service == 'gemini':
         return _ask_gemini(model, system, user, schema, max_tokens)
+    if service == 'claude':
+        return _ask_claude(model, system, user, schema, max_tokens)
     if service == 'inception':
         # Tylko kandydat Rekrutera albo przyjęty przez niego członek; ten sam strażnik darmowej puli co zadania poboczne.
         from news import inception
@@ -222,6 +226,25 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
             raise ClinicAIError(f'{service}: http_{response.status_code}')
         return _json(response.json()['choices'][0]['message']['content'])
     except (requests.RequestException, KeyError, IndexError, ValueError, TypeError) as error:
+        raise ClinicAIError(f'{model}: {type(error).__name__}'[:120])
+
+
+def _ask_claude(model: str, system: str, user: str, schema: dict, max_tokens: int) -> dict:
+    """Claude jako członek konsylium (płatny, bez wyszukiwania); JSON opisany w poleceniu, jak u pozostałych członków."""
+    try:
+        client = clinic_ai._client()
+        response = client.messages.create(
+            model=model, max_tokens=max_tokens,  # bez temperature: SDK Anthropic 1.x go nie przyjmuje
+            system=system + '\nSchemat JSON odpowiedzi:\n' + json.dumps(schema, ensure_ascii=False),
+            messages=[{'role': 'user', 'content': user[:12000]}])
+    except Exception as error:  # błąd sieci, limit, brak środków albo klucza: członek po prostu nie odpowiada
+        code = getattr(error, 'status_code', '') or type(error).__name__
+        logger.warning('council member claude failed: %s: %s', type(error).__name__, str(error)[:160])
+        raise ClinicAIError(f'claude: {code}'[:120])
+    text = ''.join(block.text for block in response.content if getattr(block, 'type', '') == 'text')
+    try:
+        return _json(text)
+    except (ValueError, TypeError) as error:
         raise ClinicAIError(f'{model}: {type(error).__name__}'[:120])
 
 
@@ -371,7 +394,15 @@ def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
     Gdy Gemini nie działa (brak klucza, 402 — brak środków, limit), sprawdza Claude z wyszukiwarką w ramach dziennego budżetu."""
     if not claims:
         return [], {}
-    if os.environ.get('GEMINI_API_KEY', '').strip():
+    use_gemini = True
+    if clinic_ai.paid_backend() == 'claude':
+        # Właściciel 13.10.2026: płatne sprawdzenie faktów robi Claude (budżet dzienny jak przy docisku); Gemini tylko
+        # za zgodą (CLINIC_GEMINI_FALLBACK=true), gdy Claude nie może (brak środków, błąd).
+        checked = claude_check(claims)
+        if checked:
+            return checked
+        use_gemini = os.environ.get('CLINIC_GEMINI_FALLBACK', '').strip().lower() == 'true'
+    if use_gemini and os.environ.get('GEMINI_API_KEY', '').strip():
         try:
             # Limit z zapasem: Gemini myśli i wyszukuje w ramach tych samych tokenów (płaci się tylko za zużyte).
             # Oszczędnie z wyszukiwarką: każde zapytanie Google jest płatne osobno.
@@ -550,6 +581,8 @@ def escalate_claims(claims: list[str]) -> tuple[list[dict], dict] | None:
     """Mocniejsze sprawdzenie faktów przy sporze modeli albo silnym spinie: CLINIC_ESCALATE=gemini (właściciel 6.10:
     zamiast Claude) - Gemini z wyszukiwarką i głębszym myśleniem; CLINIC_ESCALATE=claude - jak dawniej."""
     mode = os.environ.get('CLINIC_ESCALATE', '').strip().lower()
+    if clinic_ai.paid_backend() == 'claude' and mode in ('', 'gemini'):
+        mode = 'claude'  # 13.10.2026: docisk robi Claude; CLINIC_PAID_BACKEND=gemini przywraca Gemini
     if mode == 'gemini' and os.environ.get('GEMINI_API_KEY', '').strip():
         try:
             response = clinic_ai._call_gemini(CHECK_SYSTEM, NL.join(f'- {c}' for c in claims)

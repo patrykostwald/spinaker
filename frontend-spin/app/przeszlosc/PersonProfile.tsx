@@ -232,10 +232,10 @@ function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailabilit
           {locked.has('money_trail') || data.money_trail === null ? <p className="px-note">{nb('Drzewo przepływu pieniędzy jest w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>
           : data.money_trail?.results.length ? <ul className="px-panel__rows">{data.money_trail.results.map(o => <li key={o.id}>
             <a href={o.url}>{o.name}</a>
-            <small>{[`zamówienia: ${o.contracts.count}${o.contracts.sums.length ? ` (${sumLine(o.contracts.sums)})` : ''}`, `dotacje UE: ${o.grants.count}${o.grants.sums.length ? ` (${sumLine(o.grants.sums)})` : ''}`,
+            <small>{[`zamówienia: ${o.contracts.count}${o.contracts.sums.length ? ` (${sumLine(o.contracts.sums)})` : ''}`, `dotacje (unijne i krajowe): ${o.grants.count}${o.grants.sums.length ? ` (${sumLine(o.grants.sums)})` : ''}`,
               `osoby: ${o.people}`, o.identifiers_missing ? 'bez NIP w bazie' : ''].filter(Boolean).join(' · ')}</small></li>)}</ul>
             : <p className="px-note">{nb('Brak podmiotów z KRS, dla których moglibyśmy zbudować drzewo.')}</p>}
-          <p className="px-note">{nb('Każdy podmiot otwiera drzewo: zamówienia (TED, BZP), dotacje UE (FTS) i osoby, łączone tylko po NIP, KRS i REGON.')}</p>
+          <p className="px-note">{nb('Każdy podmiot otwiera drzewo: zamówienia (TED, BZP), dotacje (UE: FTS; krajowe: NIW-CRSO) i osoby, łączone tylko po NIP, KRS i REGON.')}</p>
         </section>
         {data.topics.length > 0 && <section className="px-card" aria-labelledby="pp-topics-h">
           <h3 id="pp-topics-h" className="px-h3">W tematach dnia</h3>

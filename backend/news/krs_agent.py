@@ -65,7 +65,7 @@ SECTORS = {'state', 'municipal', 'public', 'private', 'ngo'}
 
 
 def enabled() -> bool:
-    return os.environ.get('KRS_AGENT_ENABLED', '').strip().lower() == 'true' and clinic_ai._gemini_ready()
+    return os.environ.get('KRS_AGENT_ENABLED', '').strip().lower() == 'true' and clinic_ai.paid_ready()
 
 
 def _budget_key() -> str:
@@ -95,7 +95,7 @@ def discover(figure: PublicFigure, debug: dict | None = None) -> list[dict]:
     who = f'{figure.canonical_name} — {figure.role_title}' + (f', {figure.organisation}' if figure.organisation else '')
     queries = '\n'.join(f'- {query}' for query in _queries(_display_name(figure.canonical_name)))
     prompt = f'Osoba: {who}\n\nWyszukaj w Google co najmniej:\n{queries}'
-    response = clinic_ai._call_gemini(SYSTEM, prompt, SCHEMA, web_search=True, max_tokens=16000, task='krs')
+    response = clinic_ai._call_paid(SYSTEM, prompt, SCHEMA, web_search=True, max_tokens=16000, task='krs')
     usage = clinic_ai._usage(response)
     _spend(usage)
     found = clinic_ai._search_results(response.content)
