@@ -98,6 +98,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "news",
     "scraper",
+    "spina3",
 ]
 
 PREVIEW_KEY = env("PREVIEW_KEY", default="")
@@ -348,3 +349,43 @@ PASSWORD_RESET_TIMEOUT = 3600
 
 X_OAUTH_CLIENT_ID = env('X_OAUTH_CLIENT_ID', default='')
 X_OAUTH_CLIENT_SECRET = env('X_OAUTH_CLIENT_SECRET', default='')
+
+# spina3.pl (zlecenie 11.10.2026): konfiguracja modelu oceny i flag w jednym miejscu (spina3.config);
+# tutaj tylko przełączniki środowiskowe. Produkcja: ustawienia przez zmienne środowiskowe, nie w kodzie.
+SPINA3 = {
+    'scoring': {
+        'mode': env('SPINA3_MODE', default='zgodnosc'),
+    },
+    'flags': {
+        'enabled': env.bool('SPINA3_ENABLED', default=True),
+        'pins_enabled': env.bool('SPINA3_PINS_ENABLED', default=True),
+        'levels_visible': env.bool('SPINA3_LEVELS_VISIBLE', default=True),
+        'views_enabled': env.bool('SPINA3_VIEWS_ENABLED', default=True),
+        'url_pins_enabled': env.bool('SPINA3_URL_PINS_ENABLED', default=True),
+        'allow_image_pins': env.bool('ALLOW_IMAGE_PINS', default=False),
+        'chains_enabled': env.bool('SPINA3_CHAINS_ENABLED', default=False),
+        'public_profiles': env.bool('SPINA3_PUBLIC_PROFILES', default=False),
+        'election_silence_start': env('SPINA3_ELECTION_SILENCE_START', default=''),
+        'election_silence_end': env('SPINA3_ELECTION_SILENCE_END', default=''),
+        'election_silence_pause_user_pins': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_USER_PINS', default=False),
+        # v2 (12.10.2026): oceny przypięcia autora, komentarze, przejmowanie boxów importera bez przypięcia
+        'ratings_enabled': env.bool('SPINA3_RATINGS_ENABLED', default=True),
+        'comments_enabled': env.bool('SPINA3_COMMENTS_ENABLED', default=True),
+        'adopt_authorless_boxes': env.bool('SPINA3_ADOPT_AUTHORLESS_BOXES', default=True),
+        'election_silence_pause_ratings': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_RATINGS', default=False),
+        'election_silence_pause_comments': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_COMMENTS', default=False),
+        'url_fetch_enabled': env.bool('SPINA3_URL_FETCH_ENABLED', default=False),
+        'import_press': env.bool('SPINA3_IMPORT_PRESS', default=False),
+        'auth_mode': env('SPINA3_AUTH_MODE', default='session'),
+    },
+}
+SPINA3_DR_SPIN_USERNAME = env('SPINA3_DR_SPIN_USERNAME', default='dr_spin')
+SPINA3_PUBLIC_URL = env('SPINA3_PUBLIC_URL', default='https://spina3.pl').rstrip('/')
+SPINA3_SPIN_CLINIC_URL = env('SPINA3_SPIN_CLINIC_URL', default='https://spin.clinic').rstrip('/')
+SPINA3_PRZESZLOSC_URL = env('SPINA3_PRZESZLOSC_URL', default='https://przeszlosc.today').rstrip('/')
+SPINA3_PRZESZLOSC_PERSON_PATH = env('SPINA3_PRZESZLOSC_PERSON_PATH', default='/osoby/{slug}')
+# Wspólne logowanie (spina3.sso): usługa kont na osobnej domenie, tokeny krótkie; nazwy zmiennych, nigdy wartości w repo.
+SPINA3_SSO_ISSUER = env('SPINA3_SSO_ISSUER', default='')          # np. https://konto.iapply.pl
+SPINA3_SSO_AUDIENCE = env('SPINA3_SSO_AUDIENCE', default='spina3')
+SPINA3_SSO_CODE_MAX_AGE = env.int('SPINA3_SSO_CODE_MAX_AGE', default=120)
+SPINA3_SSO_TOKEN_MAX_AGE = env.int('SPINA3_SSO_TOKEN_MAX_AGE', default=900)
