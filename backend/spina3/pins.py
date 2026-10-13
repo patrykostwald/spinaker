@@ -203,7 +203,7 @@ def _resolve_anchor(user, kind: str, target, title: str, box_kind: str, trust, a
 
 @transaction.atomic
 def create_box_with_pin(user, *, box_kind: str = 'box', box_target=None, box_title: str = '', box_type: str = 'article',
-                        pin_kind: str = 'box', pin_target=None, comment: str = '', stance=None, now=None) -> tuple[Box, Pin, dict]:
+                        pin_kind: str = 'box', pin_target=None, comment: str = '', title: str = '', subtitle: str = '', stance=None, now=None) -> tuple[Box, Pin, dict]:
     """Jedna operacja: kotwica (box) + jedyne przypięcie autora. Zwraca (box, pin, info ze spinką)."""
     now = now or timezone.now()
     cfg = config()
@@ -220,6 +220,7 @@ def create_box_with_pin(user, *, box_kind: str = 'box', box_target=None, box_tit
     box, created_box, info = _resolve_anchor(user, box_kind, box_target, box_title, box_type, trust, actor, now, cfg)
     kind_, pinned, url_, check_, target_status, extra = _resolve_target(user, box, pin_kind, pin_target, trust, actor, now, cfg)
     pin = Pin(user=user, box=box)
+    _apply_heading(pin, title, subtitle)
     pin.kind, pin.pinned_box, pin.url, pin.url_check, pin.target_status = kind_, pinned, url_, check_, target_status
     pin.stance, pin.status, pin.is_team = stance_value, 'published', trust.is_team
     pin.created_at, pin.hidden_reason, pin.anonymized = now, '', False
@@ -242,13 +243,26 @@ def create_box_with_pin(user, *, box_kind: str = 'box', box_target=None, box_tit
     return box, pin, {'spinka': sp, **info}
 
 
+def _apply_heading(pin, title=None, subtitle=None):
+    if title is not None:
+        title = title.strip()
+        if title and not 15 <= len(title) <= 80:
+            raise PinError(400, 'Teza musi mieć od 15 do 80 znaków albo być pusta.', 'title')
+        pin.title = title
+    if subtitle is not None:
+        subtitle = subtitle.strip()
+        if len(subtitle) > 160:
+            raise PinError(400, 'Podtytuł może mieć do 160 znaków.', 'subtitle')
+        pin.subtitle = subtitle
+
+
 def _parse_end(silence: dict):
     from django.utils.dateparse import parse_datetime
     return parse_datetime(silence['ends_at']) if silence.get('ends_at') else None
 
 
 @transaction.atomic
-def update_pin(user, pin: Pin, *, stance=None, comment=None, kind: str | None = None, target=None, now=None) -> tuple[Pin, dict]:
+def update_pin(user, pin: Pin, *, stance=None, comment=None, title=None, subtitle=None, kind: str | None = None, target=None, now=None) -> tuple[Pin, dict]:
     now = now or timezone.now()
     cfg = config()
     _check_flags(now)
@@ -263,6 +277,7 @@ def update_pin(user, pin: Pin, *, stance=None, comment=None, kind: str | None = 
     trust = trust_for(user, cfg, now)
     actor = Spina3Profile.for_user(user).pseudonym
     info: dict = {}
+    _apply_heading(pin, title, subtitle)
     if stance is not None:
         new_stance = parse_author_stance(stance)
         if new_stance != pin.stance:
@@ -379,7 +394,8 @@ def anonymize_user(user, now=None) -> int:
     count = 0
     for pin in Pin.objects.filter(user=user):
         pin.user, pin.comment, pin.comment_status, pin.anonymized = None, '', 'empty', True
-        pin.save(update_fields=['user', 'comment', 'comment_status', 'anonymized', 'updated_at'])
+        pin.title, pin.subtitle = '', ''
+        pin.save(update_fields=['user', 'title', 'subtitle', 'comment', 'comment_status', 'anonymized', 'updated_at'])
         boxes.add(pin.box_id)
         count += 1
     for rating in Rating.objects.filter(user=user):

@@ -113,7 +113,7 @@ def test_election_silence_pauses_ratings_only_with_flag(api, spina3_settings):
     spina3_settings.SPINA3['flags']['election_silence_pause_ratings'] = True
     r = put_rating(api, make_user('s2'), p, 'agree')
     assert r.status_code == 423 and r.json()['code'] == 'election_silence'
-    assert api.get('/api/spina3/silence/').json()['ratings_paused'] is True
+    assert api.get('/api/spina3/silence/').json()['election_silence']['pause']['ratings'] is True
 
 
 def test_ratings_disabled_flag(api, spina3_settings):
@@ -166,7 +166,7 @@ def test_my_ratings_private(api):
     rate(user, p, -1)
     api.force_authenticate(user)
     body = api.get('/api/spina3/me/ratings/').json()
-    assert len(body['items']) == 1 and body['items'][0]['rating']['stance'] == 'disagree' and body['public_profile'] is False
+    assert len(body['items']) == 1 and body['items'][0]['stance'] == 'disagree'
     api.force_authenticate(None)
     assert api.get('/api/spina3/me/ratings/').status_code in (401, 403)
 
@@ -185,13 +185,13 @@ def test_profile_nick_color_whitelist_and_reserved_spin(api):
     user = make_user('nick')
     api.force_authenticate(user)
     body = api.get('/api/spina3/me/profile/').json()
-    assert body['nick_color'] == 'ash' and 'spin' not in body['nick_colors'] and 10 <= len(body['nick_colors']) + 1 <= 12
-    assert api.patch('/api/spina3/me/profile/', {'nick_color': 'moss'}, format='json').json()['nick_color'] == 'moss'
+    assert body['nick_color'] == 'piasek' and 'spin' not in body['nick_colors'] and len(body['nick_colors']) == 8
+    assert api.patch('/api/spina3/me/profile/', {'nick_color': 'pistacja'}, format='json').json()['nick_color'] == 'pistacja'
     r = api.patch('/api/spina3/me/profile/', {'nick_color': 'spin'}, format='json')
     assert r.status_code == 403 and r.json()['code'] == 'reserved'
     assert api.patch('/api/spina3/me/profile/', {'nick_color': '#4F8CFF'}, format='json').status_code == 400
     assert api.patch('/api/spina3/me/profile/', {'nick_color': 'blue'}, format='json').status_code == 400
-    assert Spina3Profile.objects.get(user=user).nick_color == 'moss'
+    assert Spina3Profile.objects.get(user=user).nick_color == 'pistacja'
     cfg = api.get('/api/spina3/config/').json()
     assert 'spin' in cfg['nick_colors_reserved'] and 'spin' not in cfg['nick_colors']
     # kolor widoczny przy przypięciu autora

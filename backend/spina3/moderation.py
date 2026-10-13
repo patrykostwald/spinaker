@@ -30,7 +30,8 @@ def sla_for(reason: str) -> timedelta:
 
 @transaction.atomic
 def report(user, *, pin: Pin | None = None, box: Box | None = None, comment: Comment | None = None, reason: str,
-           details: str = '', now=None) -> Report:
+           details: str = '', name: str = '', email: str = '', good_faith: bool = False,
+           location: str = '', explanation: str = '', now=None) -> Report:
     now = now or timezone.now()
     if sum(1 for t in (pin, box, comment) if t is not None) != 1:
         raise ModerationError(400, 'Zgłoszenie dotyczy przypięcia, boxa albo komentarza.')
@@ -44,6 +45,7 @@ def report(user, *, pin: Pin | None = None, box: Box | None = None, comment: Com
     if Report.objects.filter(reporter=user, pin=pin, box=box, comment=comment).exists():
         raise ModerationError(409, 'To zgłoszenie już istnieje.')
     row = Report.objects.create(reporter=user, pin=pin, box=box, comment=comment, reason=reason, details=(details or '')[:500],
+                                name=name, email=email, good_faith=good_faith, location=location, explanation=explanation,
                                 sla_deadline=now + sla_for(reason), created_at=now)
     events.log('reported', row.target_box, pin=pin, actor=events.pseudonym(user),
                meta={'reason': reason, 'comment_id': comment.pk if comment else None}, now=now)

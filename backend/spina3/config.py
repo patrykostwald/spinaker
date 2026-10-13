@@ -17,7 +17,7 @@ LEVELS = ('P1', 'P2', 'P3', 'P4', 'P5')
 OPEN = 'open'  # stan bez poziomu: "Otwarta" (aria: "bez poziomu")
 
 COLORS = {
-    'P5': '#4ED18A', 'P4': '#9BD45A', 'P3': '#F2B441', 'P2': '#F08A4B', 'P1': '#FF6B6B', OPEN: '#8E959E',
+    'P5': '#62E8A3', 'P4': '#8BBF48', 'P3': '#D49A33', 'P2': '#E07A3C', 'P1': '#E45A5A', OPEN: '#8E959E',
 }
 LEVEL_LABELS = {'P5': 'P5', 'P4': 'P4', 'P3': 'P3', 'P2': 'P2', 'P1': 'P1', OPEN: 'Otwarta'}
 
@@ -32,11 +32,11 @@ AUTHOR_STANCE_NAMES = {1: 'agree', 0: 'doubt', -1: 'disagree'}
 # Kolory nicków: identyfikatory z listy; frontend mapuje na własne tokeny. "spin" = niebieski akcent spin.clinic,
 # zarezerwowany dla konta Dr. Spina (403 przy próbie wyboru przez użytkownika).
 NICK_COLORS = {
-    'ash': '#8E959E', 'sand': '#C9B37E', 'moss': '#7FA86B', 'teal': '#5FA8A0', 'lilac': '#A58BD6',
-    'rose': '#D98BA6', 'coral': '#E08A6A', 'amber': '#D8A94B', 'olive': '#A3A65A', 'plum': '#B07AA1', 'slate': '#9AA4B2',
-}  # 11 barw dla użytkowników (bez odcieni niebieskiego) + "spin" zarezerwowany = 12
+    'lila': '#AB91F3', 'wrzos': '#D991F3', 'fuksja': '#F391E1', 'roz': '#F391B5',
+    'brzoskwinia': '#F3BF91', 'piasek': '#F3E291', 'cytryna': '#DFF391', 'pistacja': '#BFF391',
+}  # 8 barw frontu; "spin" pozostaje zarezerwowany.
 NICK_COLOR_RESERVED = {'spin': '#4F8CFF'}
-NICK_COLOR_DEFAULT = 'ash'
+NICK_COLOR_DEFAULT = 'piasek'
 
 
 @dataclass(frozen=True)
@@ -183,10 +183,16 @@ def election_silence(now=None) -> dict:
             'comments_paused': active and bool(fl.election_silence_pause_comments)}
 
 
+def public_silence() -> dict:
+    state = election_silence()
+    return {'active': state['active'], 'start': state['starts_at'], 'end': state['ends_at'],
+            'pause': {key: state['pause_' + key] for key in ('user_pins', 'ratings', 'comments')}}
+
+
 def public_config() -> dict:
     cfg, fl = config(), flags()
     return {
-        'election_silence': election_silence(),
+        'election_silence': public_silence(),
         'formula_version': FORMULA_VERSION,
         'm': cfg.m, 'bounds': list(cfg.bounds), 'hysteresis': cfg.hysteresis,
         'min_n': cfg.min_n, 'min_n_extreme': cfg.min_n_extreme, 'mode': cfg.mode,
@@ -200,6 +206,6 @@ def public_config() -> dict:
         'replace_days': cfg.replace_days,
         'daily_pins': dict(cfg.daily_pins), 'daily_ratings': dict(cfg.daily_ratings), 'daily_comments': dict(cfg.daily_comments),
         'stance_edit_cooldown_hours': cfg.stance_edit_cooldown_hours, 'rating_change_cooldown_hours': cfg.rating_change_cooldown_hours,
-        'flags': asdict(fl),
+        'flags': {key: value for key, value in asdict(fl).items() if not key.startswith('election_silence_')},
         'legend': 'Kolor spinki to oceny czytelników wobec przypięcia autora, a nie ocena prawdziwości. Liczymy oceny, nie ludzi.',
     }

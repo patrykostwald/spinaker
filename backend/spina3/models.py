@@ -12,12 +12,13 @@ from __future__ import annotations
 import secrets
 
 from django.conf import settings
+from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 
 BOX_KINDS = [
-    ('post', 'Wpis'), ('article', 'Artykuł'), ('video', 'Film'), ('document', 'Dokument'),
+    ('post', 'Wpis'), ('interview', 'Wywiad'), ('article', 'Artykuł'), ('video', 'Film'), ('document', 'Dokument'),
     ('voting', 'Głosowanie'), ('legal_act', 'Akt prawny'), ('diagnosis', 'Diagnoza'),
     ('person', 'Osoba'), ('entity', 'Podmiot'), ('image', 'Zdjęcie'),
 ]
@@ -205,6 +206,8 @@ class Pin(models.Model):
     url_check = models.ForeignKey(UrlCheck, null=True, blank=True, on_delete=models.SET_NULL, related_name='pins')
     stance = models.SmallIntegerField(null=True, blank=True,
                                       help_text='Stanowisko autora wobec treści boxa (+1 / 0 / -1), opcjonalne; nie liczy się do S.')
+    title = models.CharField(max_length=80, blank=True, default='', validators=[MinLengthValidator(15)])
+    subtitle = models.CharField(max_length=160, blank=True, default='')
     comment = models.CharField(max_length=280, blank=True, default='')
     comment_status = models.CharField(max_length=8, choices=COMMENT_STATUSES, default='empty')
     status = models.CharField(max_length=10, choices=PIN_STATUSES, default='published', db_index=True)
@@ -362,6 +365,11 @@ class Report(models.Model):
     comment = models.ForeignKey(Comment, null=True, blank=True, on_delete=models.CASCADE, related_name='reports')
     reason = models.CharField(max_length=16, choices=REASONS)
     details = models.CharField(max_length=500, blank=True, default='')
+    name = models.CharField(max_length=200, default='')
+    email = models.EmailField(default='')
+    good_faith = models.BooleanField(default=False)
+    location = models.URLField(max_length=2048, blank=True, default='')
+    explanation = models.TextField(max_length=2000, blank=True, default='')
     status = models.CharField(max_length=12, choices=STATUSES, default='new', db_index=True)
     sla_deadline = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')

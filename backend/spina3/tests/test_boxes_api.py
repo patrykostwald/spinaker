@@ -294,7 +294,7 @@ def test_my_boxes_private_and_anonymize(api):
     rate(make_user('me2'), p, -1)
     api.force_authenticate(user)
     body = api.get('/api/spina3/me/boxes/').json()
-    assert len(body['items']) == 1 and body['public_profile'] is False and body['items'][0]['pin']['ratings']['disagree'] == 1
+    assert len(body['items']) == 1 and body['items'][0]['spinka']['distribution']['disagree'] == 1
     api.force_authenticate(None)
     assert api.get('/api/spina3/me/boxes/').status_code in (401, 403)
     pin_service.anonymize_user(user)

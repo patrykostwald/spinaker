@@ -36,3 +36,28 @@ def test_schema_endpoint_served(api):
     response = api.get('/api/schema/?format=json')
     assert response.status_code == 200
     assert '/api/spina3/wall/' in response.content.decode()
+
+
+def test_checked_in_contract_matches_generated_schema():
+    from pathlib import Path
+    import yaml
+    from django.urls import include, path
+    generated = SchemaGenerator(patterns=[path('api/spina3/', include('spina3.urls'))]).get_schema(request=None, public=True)
+    saved = yaml.safe_load((Path(__file__).resolve().parents[3] / 'docs/SPINA3_OPENAPI.yaml').read_text(encoding='utf-8'))
+    assert saved['paths'] == generated['paths']
+    assert saved['components'] == generated['components']
+    schemas = saved['components']['schemas']
+    for name in ('PinOut', 'PinSummaryOut'):
+        assert {'title', 'subtitle'} <= schemas[name]['properties'].keys()
+    summary = schemas['PinSummaryOut']['properties']
+    assert all(summary[key]['deprecated'] for key in ('target_title', 'target_box_id', 'target_status'))
+    assert summary['target']['$ref'].endswith('/TargetSummaryOut')
+    assert {'name', 'email', 'good_faith'} <= set(schemas['ReportInRequest']['required'])
+    assert 'csrf_token' in schemas['ConfigOut']['required']
+    assert schemas['ConfigOut']['properties']['election_silence'] == schemas['SilenceOut']['properties']['election_silence']
+    kind = schemas['BoxItemOut']['properties']['kind']
+    ref = (kind.get('$ref') or kind['allOf'][0]['$ref']).rsplit('/', 1)[-1]
+    assert {'post', 'interview', 'article', 'video', 'document', 'diagnosis', 'voting', 'legal_act', 'person', 'entity'} <= set(schemas[ref]['enum'])
+    assert 'subtype' in schemas['BoxItemOut']['properties']
+    assert schemas['MyBoxesOut']['properties']['items']['items']['$ref'].endswith('/BoxItemOut')
+    assert schemas['MyRatingsOut']['properties']['items']['items']['$ref'].endswith('/MyRatingOut')

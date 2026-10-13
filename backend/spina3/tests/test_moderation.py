@@ -25,13 +25,13 @@ def setup_pin():
 def test_report_sla_and_decision_with_reason(api):
     author, reporter, staff, box, p = setup_pin()
     api.force_authenticate(reporter)
-    r = api.post('/api/spina3/report/', {'pin': p.pk, 'reason': 'private_data', 'details': 'dane'}, format='json')
+    r = api.post('/api/spina3/report/', {'name': 'Jan Kowalski', 'email': 'jan@example.org', 'good_faith': True, 'pin': p.pk, 'reason': 'private_data', 'details': 'dane'}, format='json')
     assert r.status_code == 201
     row = Report.objects.get()
     assert row.sla_deadline - row.created_at == timedelta(hours=24)
-    assert api.post('/api/spina3/report/', {'pin': p.pk, 'reason': 'spam'}, format='json').status_code == 409
+    assert api.post('/api/spina3/report/', {'name': 'Jan Kowalski', 'email': 'jan@example.org', 'good_faith': True, 'pin': p.pk, 'reason': 'spam'}, format='json').status_code == 409
     api.force_authenticate(author)
-    assert api.post('/api/spina3/report/', {'pin': p.pk, 'reason': 'spam'}, format='json').status_code == 400
+    assert api.post('/api/spina3/report/', {'name': 'Jan Kowalski', 'email': 'jan@example.org', 'good_faith': True, 'pin': p.pk, 'reason': 'spam'}, format='json').status_code == 400
     api.force_authenticate(staff)
     queue = api.get('/api/spina3/moderation/queue/').json()
     assert queue['counts']['reports'] == 1 and queue['reports'][0]['pin_id'] == p.pk
@@ -128,7 +128,7 @@ def test_comment_report_hide_with_reason_and_appeal(api):
     commenter = make_user('commenter')
     comment, _ = create_comment(commenter, box, 'To nieprawda, sprawdź druk.')
     api.force_authenticate(reporter)
-    r = api.post('/api/spina3/report/', {'comment': comment.pk, 'reason': 'threat'}, format='json')
+    r = api.post('/api/spina3/report/', {'name': 'Jan Kowalski', 'email': 'jan@example.org', 'good_faith': True, 'comment': comment.pk, 'reason': 'threat'}, format='json')
     assert r.status_code == 201
     row = Report.objects.get(comment=comment)
     api.force_authenticate(staff)

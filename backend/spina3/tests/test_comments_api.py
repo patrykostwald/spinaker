@@ -28,7 +28,7 @@ def test_create_list_reply_one_level_and_badges(api):
     r = post_comment(api, reader, box, 'Druk mówi coś innego niż wpis.')
     assert r.status_code == 201, r.json()
     root = r.json()['comment']
-    assert root['status'] == 'visible' and root['author']['badge'] == '' and root['author']['color'] == 'ash'
+    assert root['status'] == 'visible' and root['author']['badge'] == '' and root['author']['color'] == 'piasek'
     reply = post_comment(api, author, box, 'Dlatego przypiąłem ten druk.', parent=root['id'])
     assert reply.status_code == 201 and reply.json()['comment']['author']['badge'] == 'author'
     # odpowiedź do odpowiedzi: 400 (jeden poziom)

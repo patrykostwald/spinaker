@@ -5,13 +5,12 @@ zawierają przeliczoną spinkę: frontend liczy optymistycznie tą samą funkcj�
 """
 from __future__ import annotations
 
-from datetime import timedelta
-
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.middleware.csrf import get_token
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, PolymorphicProxySerializer, extend_schema
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -19,12 +18,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import comments, metrics, moderation, pins, ranking, ratings, sso, url_queue
-from .config import NICK_COLOR_DEFAULT, NICK_COLOR_RESERVED, NICK_COLORS, OPEN, election_silence, flags, public_config
+from .config import NICK_COLOR_DEFAULT, NICK_COLOR_RESERVED, NICK_COLORS, flags, public_config, public_silence
 from .models import Appeal, Box, BoxLink, Comment, Pin, Rating, Report, Spina3Profile, UrlCheck
 from .public import box_item, comment_item, pin_item, spinka_payload
 from .serializers import (AppealIn, BoxDetailOut, BoxWithPinIn, BoxWithPinOut, CodeIn, CommentCreateOut, CommentIn, CommentPatchIn,
                           CommentOut, CommentsOut, ConsentIn, DecisionIn, PinPatchIn, PinPatchOut, ProfileIn, ProfileOut, RatingIn,
-                          RatingOut, ReportIn, SearchOut, UrlDecisionIn, WallOut)
+                          RatingOut, ReportIn, SearchOut, UrlDecisionIn, WallOut, ConfigOut, SilenceOut,
+                          GuestProfileOut, MyBoxesOut, MyRatingsOut)
 from .sso import SsoBearerAuthentication
 from .throttles import (AuthExchangeThrottle, CommentsReadThrottle, CommentWriteThrottle, PinWriteThrottle, RatingWriteThrottle,
                         RelatedThrottle, ReportThrottle, SearchThrottle, WallThrottle)
@@ -63,17 +63,17 @@ QUESTIONS = {'diagnosis': 'Czy zgadzasz się z diagnozą Dr. Spina?', 'url': 'Cz
 class ConfigView(Spina3View):
     permission_classes = [AllowAny]
 
-    @extend_schema(summary='Publiczna konfiguracja modelu oceny, kolory nicków, flagi i stan ciszy wyborczej', tags=[TAG], responses=OpenApiTypes.OBJECT)
+    @extend_schema(summary='Publiczna konfiguracja modelu oceny, kolory nicków, flagi i stan ciszy wyborczej', tags=[TAG], responses=ConfigOut)
     def get(self, request):
-        return Response(public_config())
+        return Response({**public_config(), 'csrf_token': get_token(request)}, headers={'Cache-Control': 'no-store'})
 
 
 class SilenceView(Spina3View):
     permission_classes = [AllowAny]
 
-    @extend_schema(summary='Stan ciszy wyborczej (co jest wstrzymane)', tags=[TAG], responses=OpenApiTypes.OBJECT)
+    @extend_schema(summary='Stan ciszy wyborczej (co jest wstrzymane)', tags=[TAG], responses=SilenceOut)
     def get(self, request):
-        return Response(election_silence())
+        return Response({'election_silence': public_silence()})
 
 
 class WallView(Spina3View):
@@ -196,7 +196,7 @@ class BoxCreateView(Spina3View):
         try:
             box, pin, info = pins.create_box_with_pin(
                 request.user, box_kind=b['kind'], box_target=b['target'], box_title=b.get('title', ''), box_type=b.get('type', 'article'),
-                pin_kind=p['kind'], pin_target=p['target'], comment=p.get('comment', ''), stance=p.get('stance'))
+                pin_kind=p['kind'], pin_target=p['target'], comment=p.get('comment', ''), title=p.get('title', ''), subtitle=p.get('subtitle', ''), stance=p.get('stance'))
         except pins.PinError as exc:
             return _error(exc)
         sp = info['spinka']
@@ -216,7 +216,7 @@ class PinDetailView(Spina3View):
         data.is_valid(raise_exception=True)
         v = data.validated_data
         try:
-            pin, info = pins.update_pin(request.user, pin, stance=v.get('stance'), comment=v.get('comment'), kind=v.get('kind'), target=v.get('target'))
+            pin, info = pins.update_pin(request.user, pin, stance=v.get('stance'), comment=v.get('comment'), title=v.get('title'), subtitle=v.get('subtitle'), kind=v.get('kind'), target=v.get('target'))
         except pins.PinError as exc:
             return _error(exc)
         sp = info['spinka']
@@ -377,46 +377,30 @@ class CommentAppealView(Spina3View):
 class MyBoxesView(Spina3View):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(summary='Moje boxy z przypięciem (tylko właściciel konta): stan boxa, dowodu, spinka z ocen', tags=[TAG], responses=OpenApiTypes.OBJECT)
+    @extend_schema(summary='Moje boxy (tylko właściciel konta)', tags=[TAG], responses=MyBoxesOut)
     def get(self, request):
-        now = timezone.now()
-        rows = Pin.objects.filter(user=request.user).exclude(status='removed').select_related('box__spinka', 'pinned_box__spinka').order_by('-created_at')
-        items = []
-        for pin in rows:
-            sp = getattr(pin.box, 'spinka', None)
-            items.append({
-                'pin': pin_item(pin, viewer=request.user, sp=sp), 'box': box_item(pin.box, sp, pin=pin),
-                'level_now': sp.level if sp else OPEN, 'box_status': pin.box.status, 'box_hidden_reason': pin.box.hidden_reason,
-                'revisit_due': now >= pin.created_at + timedelta(days=30),
-                'status': pin.status, 'hidden_reason': pin.hidden_reason, 'replace_deadline': pin.replace_deadline.isoformat() if pin.replace_deadline else None,
-            })
-        profile = Spina3Profile.for_user(request.user)
-        return Response({'items': items, 'consent_art9': bool(profile.consent_art9_at), 'public_profile': False})
+        rows = Pin.objects.filter(user=request.user).exclude(status='removed').select_related(
+            'box__spinka', 'pinned_box__spinka', 'user__spina3_profile').order_by('-created_at')
+        return Response({'items': [box_item(pin.box, pin=pin) for pin in rows]})
 
 
 class MyRatingsView(Spina3View):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(summary='Moje oceny (tylko właściciel konta): oś czasu z poziomem wtedy i dziś', tags=[TAG], responses=OpenApiTypes.OBJECT)
+    @extend_schema(summary='Moje oceny (tylko właściciel konta)', tags=[TAG], responses=MyRatingsOut)
     def get(self, request):
-        now = timezone.now()
-        rows = Rating.objects.filter(user=request.user, status='active').select_related('pin__box__spinka', 'pin__user__spina3_profile', 'pin__pinned_box').order_by('-created_at')
-        items = []
-        for rating in rows:
-            sp = getattr(rating.pin.box, 'spinka', None)
-            items.append({
-                'rating': {'stance': {1: 'agree', -1: 'disagree'}[rating.stance], 'created_at': rating.created_at.isoformat(),
-                           'stance_changed_at': rating.stance_changed_at.isoformat() if rating.stance_changed_at else None},
-                'pin': pin_item(rating.pin, viewer=request.user, my_rating=rating.stance, sp=sp), 'box': box_item(rating.pin.box, sp, my_rating=rating.stance, pin=rating.pin),
-                'level_now': sp.level if sp else OPEN,
-                'revisit_due': now >= rating.created_at + timedelta(days=30) and (rating.stance_changed_at is None or now >= rating.stance_changed_at + timedelta(days=30)),
-            })
-        profile = Spina3Profile.for_user(request.user)
-        return Response({'items': items, 'consent_art9': bool(profile.consent_art9_at), 'public_profile': False})
+        rows = Rating.objects.filter(user=request.user, status='active').select_related(
+            'pin__box__spinka', 'pin__user__spina3_profile', 'pin__pinned_box').order_by('-created_at')
+        return Response({'items': [
+            {'box_id': rating.box_id, 'pin_id': rating.pin_id,
+             'stance': {1: 'agree', -1: 'disagree'}[rating.stance], 'created_at': rating.created_at.isoformat(),
+             'box': box_item(rating.pin.box, my_rating=rating.stance, pin=rating.pin)}
+            for rating in rows]})
 
 
 class ProfileView(Spina3View):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
 
     def _payload(self, request, profile):
         trust = trust_for(request.user)
@@ -425,8 +409,11 @@ class ProfileView(Spina3View):
                 'limits': {'daily_pins': trust.daily_limit, 'daily_ratings': trust.daily_ratings, 'daily_comments': trust.daily_comments},
                 'public_profile': False, 'nick_colors': sorted(NICK_COLORS)}
 
-    @extend_schema(summary='Mój profil spina3: kolor nicku, znaczek, zgoda, poziom i limity (nigdy publiczne)', tags=[TAG], responses=ProfileOut)
+    @extend_schema(summary='Mój profil spina3: kolor nicku, znaczek, zgoda, poziom i limity (nigdy publiczne)', tags=[TAG], responses=PolymorphicProxySerializer(
+                       component_name='ProfileResponse', serializers=[ProfileOut, GuestProfileOut], resource_type_field_name=None))
     def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({'nick': None, 'anonymous': True, 'consent': False})
         return Response(self._payload(request, Spina3Profile.for_user(request.user)))
 
     @extend_schema(summary='Ustaw kolor nicku z listy dozwolonych identyfikatorów (spin zarezerwowany dla Dr. Spina: 403)', tags=[TAG], request=ProfileIn, responses=ProfileOut)
@@ -462,13 +449,17 @@ class ReportView(Spina3View):
     @extend_schema(summary='Zgłoś przypięcie, box albo komentarz (kategorie DSA, SLA 24 h dla pilnych)', tags=[TAG], request=ReportIn, responses={201: OpenApiTypes.OBJECT})
     def post(self, request):
         data = ReportIn(data=request.data)
+        if not data.is_valid() and 'good_faith' in data.errors:
+            return Response({'detail': 'Potwierdź działanie w dobrej wierze.', 'code': 'good_faith'}, status=400)
         data.is_valid(raise_exception=True)
         v = data.validated_data
         pin = get_object_or_404(Pin, pk=v['pin']) if v.get('pin') else None
         box = get_object_or_404(Box, pk=v['box']) if v.get('box') else None
         comment = get_object_or_404(Comment, pk=v['comment']) if v.get('comment') else None
         try:
-            row = moderation.report(request.user, pin=pin, box=box, comment=comment, reason=v['reason'], details=v.get('details', ''))
+            row = moderation.report(request.user, pin=pin, box=box, comment=comment, reason=v['reason'], details=v.get('details', ''),
+                                    name=v['name'], email=v['email'], good_faith=v['good_faith'],
+                                    location=v['location'], explanation=v['explanation'])
         except moderation.ModerationError as exc:
             return Response({'detail': exc.detail}, status=exc.status)
         return Response({'id': row.pk, 'status': row.status, 'sla_deadline': row.sla_deadline}, status=201)

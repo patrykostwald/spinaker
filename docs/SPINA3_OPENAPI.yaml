@@ -2,15 +2,16 @@ openapi: 3.0.3
 info:
   title: spina3 API
   version: 2.0.0
-  description: 'spina3.pl v2: autor dodaje box z DOKŁADNIE JEDNYM przypięciem (dowód: box z bazy, URL
-    albo zdjęcie) z komentarzem; inni użytkownicy oceniają przypięcie dwustanowo (agree / disagree, jedna
-    ocena, zmiana i wycofanie) i komentują (jeden poziom odpowiedzi, "przydatny"). Spinka: S = suma ważonych
-    ocen / (n_w + 3). Operator: iapply sp. z o.o. Publiczne API zwraca tylko pola dozwolone flagami praw.
-    Kursor ściany zawiera wersję migawki rankingu (co 10 minut).'
+  description: 'spina3.pl v2: autor dodaje box z DOKŁADNIE JEDNYM przypięciem (dowód:
+    box z bazy, URL albo zdjęcie) z komentarzem; inni użytkownicy oceniają przypięcie
+    dwustanowo (agree / disagree, jedna ocena, zmiana i wycofanie) i komentują (jeden
+    poziom odpowiedzi, "przydatny"). Spinka: S = suma ważonych ocen / (n_w + 3). Operator:
+    iapply sp. z o.o. Publiczne API zwraca tylko pola dozwolone flagami praw. Kursor
+    ściany zawiera wersję migawki rankingu (co 10 minut).'
 paths:
   /api/spina3/auth/exchange/:
     post:
-      operationId: spina3_auth_exchange_create
+      operationId: auth_exchange_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Wymiana jednorazowego kodu z usługi kont na krótki token sesji (auth_mode=token)
       tags:
@@ -39,7 +40,7 @@ paths:
           description: ''
   /api/spina3/auth/logout-everywhere/:
     post:
-      operationId: spina3_auth_logout_everywhere_create
+      operationId: auth_logout_everywhere_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Wyloguj wszędzie (rotacja pseudonimu unieważnia wszystkie tokeny)
       tags:
@@ -56,7 +57,7 @@ paths:
           description: ''
   /api/spina3/auth/refresh/:
     post:
-      operationId: spina3_auth_refresh_create
+      operationId: auth_refresh_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Odświeżenie tokenu sesji
       tags:
@@ -73,9 +74,10 @@ paths:
           description: ''
   /api/spina3/box/{box_id}/:
     get:
-      operationId: spina3_box_retrieve
+      operationId: box_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Box, jedyne przypięcie autora z ocenami, spinka, moja ocena, czy mogę przypiąć lub ocenić
+      summary: Box, jedyne przypięcie autora z ocenami, spinka, moja ocena, czy mogę
+        przypiąć lub ocenić
       parameters:
       - in: path
         name: box_id
@@ -96,9 +98,10 @@ paths:
           description: ''
   /api/spina3/box/{box_id}/comments/:
     get:
-      operationId: spina3_box_comments_retrieve
+      operationId: box_comments_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Komentarze pod parą box + przypięcie: główne z odpowiedziami, sort newest | top, kursor'
+      summary: 'Komentarze pod parą box + przypięcie: główne z odpowiedziami, sort
+        newest | top, kursor'
       parameters:
       - in: path
         name: box_id
@@ -130,10 +133,10 @@ paths:
                 $ref: '#/components/schemas/CommentsOut'
           description: ''
     post:
-      operationId: spina3_box_comments_create
+      operationId: box_comments_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Dodaj komentarz (parent = odpowiedź do komentarza głównego); 409 duplikat, 423 cisza, 429
-        limit
+      summary: Dodaj komentarz (parent = odpowiedź do komentarza głównego); 409 duplikat,
+        423 cisza, 429 limit
       parameters:
       - in: path
         name: box_id
@@ -186,7 +189,7 @@ paths:
           description: ''
   /api/spina3/box/{box_id}/related/:
     get:
-      operationId: spina3_box_related_retrieve
+      operationId: box_related_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: 'Półka podobnych (do 6): dla wpisu najpierw diagnoza i dokumenty źródłowe'
       parameters:
@@ -210,10 +213,10 @@ paths:
           description: ''
   /api/spina3/boxes/:
     post:
-      operationId: spina3_boxes_create
+      operationId: boxes_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Dodaj box z JEDNYM przypięciem (jedna operacja): kotwica (box z bazy bez przypięcia |
-        URL | zdjęcie) + dowód (box | URL | zdjęcie) z komentarzem'
+      summary: 'Dodaj box z JEDNYM przypięciem (jedna operacja): kotwica (box z bazy
+        bez przypięcia | URL | zdjęcie) + dowód (box | URL | zdjęcie) z komentarzem'
       tags:
       - spina3
       requestBody:
@@ -267,7 +270,7 @@ paths:
           description: ''
   /api/spina3/boxes/search/:
     get:
-      operationId: spina3_boxes_search_retrieve
+      operationId: boxes_search_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Wyszukiwanie z normalizacją polskich znaków; wynik w strukturze ściany
       parameters:
@@ -294,7 +297,7 @@ paths:
           description: ''
   /api/spina3/comment/{comment_id}/:
     patch:
-      operationId: spina3_comment_partial_update
+      operationId: comment_partial_update
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Edytuj własny komentarz
       parameters:
@@ -326,7 +329,7 @@ paths:
                 $ref: '#/components/schemas/CommentCreateOut'
           description: ''
     delete:
-      operationId: spina3_comment_destroy
+      operationId: comment_destroy
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Usuń własny komentarz
       parameters:
@@ -344,7 +347,7 @@ paths:
           description: No response body
   /api/spina3/comment/{comment_id}/appeal/:
     post:
-      operationId: spina3_comment_appeal_create
+      operationId: comment_appeal_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Odwołanie od ukrycia własnego komentarza (jedno na decyzję, 14 dni)
       parameters:
@@ -379,7 +382,7 @@ paths:
           description: ''
   /api/spina3/comment/{comment_id}/helpful/:
     put:
-      operationId: spina3_comment_helpful_update
+      operationId: comment_helpful_update
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Oznacz komentarz jako przydatny
       parameters:
@@ -400,7 +403,7 @@ paths:
                 $ref: '#/components/schemas/CommentOut'
           description: ''
     delete:
-      operationId: spina3_comment_helpful_destroy
+      operationId: comment_helpful_destroy
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Cofnij "przydatny"
       parameters:
@@ -418,9 +421,10 @@ paths:
           description: No response body
   /api/spina3/config/:
     get:
-      operationId: spina3_config_retrieve
+      operationId: config_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Publiczna konfiguracja modelu oceny, kolory nicków, flagi i stan ciszy wyborczej
+      summary: Publiczna konfiguracja modelu oceny, kolory nicków, flagi i stan ciszy
+        wyborczej
       tags:
       - spina3
       security:
@@ -431,15 +435,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/ConfigOut'
           description: ''
   /api/spina3/facets/:
     get:
-      operationId: spina3_facets_retrieve
+      operationId: facets_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Liczności wymiarów (osoba lub podmiot, temat, okres, poziom, rodzaj dokumentu lub źródło,
-        z diagnozą)
+      summary: Liczności wymiarów (osoba lub podmiot, temat, okres, poziom, rodzaj
+        dokumentu lub źródło, z diagnozą)
       parameters:
       - in: query
         name: period
@@ -464,9 +467,9 @@ paths:
           description: ''
   /api/spina3/me/boxes/:
     get:
-      operationId: spina3_me_boxes_retrieve
+      operationId: me_boxes_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Moje boxy z przypięciem (tylko właściciel konta): stan boxa, dowodu, spinka z ocen'
+      summary: Moje boxy (tylko właściciel konta)
       tags:
       - spina3
       security:
@@ -476,14 +479,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/MyBoxesOut'
           description: ''
   /api/spina3/me/consent/:
     post:
-      operationId: spina3_me_consent_create
+      operationId: me_consent_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Zgoda przed pierwszą publikacją (stanowiska i komentarze publiczne przy nicku, bez profilu)
+      summary: Zgoda przed pierwszą publikacją (stanowiska i komentarze publiczne
+        przy nicku, bez profilu)
       tags:
       - spina3
       requestBody:
@@ -510,25 +513,27 @@ paths:
           description: ''
   /api/spina3/me/profile/:
     get:
-      operationId: spina3_me_profile_retrieve
+      operationId: me_profile_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Mój profil spina3: kolor nicku, znaczek, zgoda, poziom i limity (nigdy publiczne)'
+      summary: 'Mój profil spina3: kolor nicku, znaczek, zgoda, poziom i limity (nigdy
+        publiczne)'
       tags:
       - spina3
       security:
       - cookieAuth: []
+      - {}
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileOut'
+                $ref: '#/components/schemas/ProfileResponse'
           description: ''
     patch:
-      operationId: spina3_me_profile_partial_update
+      operationId: me_profile_partial_update
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Ustaw kolor nicku z listy dozwolonych identyfikatorów (spin zarezerwowany dla Dr. Spina:
-        403)'
+      summary: 'Ustaw kolor nicku z listy dozwolonych identyfikatorów (spin zarezerwowany
+        dla Dr. Spina: 403)'
       tags:
       - spina3
       requestBody:
@@ -553,9 +558,9 @@ paths:
           description: ''
   /api/spina3/me/ratings/:
     get:
-      operationId: spina3_me_ratings_retrieve
+      operationId: me_ratings_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Moje oceny (tylko właściciel konta): oś czasu z poziomem wtedy i dziś'
+      summary: Moje oceny (tylko właściciel konta)
       tags:
       - spina3
       security:
@@ -565,12 +570,11 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/MyRatingsOut'
           description: ''
   /api/spina3/moderation/appeals/{appeal_id}/:
     post:
-      operationId: spina3_moderation_appeals_create
+      operationId: moderation_appeals_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Decyzja w sprawie odwołania (accept | reject) z uzasadnieniem
       parameters:
@@ -605,9 +609,10 @@ paths:
           description: ''
   /api/spina3/moderation/comments/{comment_id}/:
     post:
-      operationId: spina3_moderation_comments_create
+      operationId: moderation_comments_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Ukryj komentarz z uzasadnieniem (DSA art. 17) albo przywróć / zatwierdź wstrzymany (restore)
+      summary: Ukryj komentarz z uzasadnieniem (DSA art. 17) albo przywróć / zatwierdź
+        wstrzymany (restore)
       parameters:
       - in: path
         name: comment_id
@@ -640,7 +645,7 @@ paths:
           description: ''
   /api/spina3/moderation/metrics/:
     get:
-      operationId: spina3_moderation_metrics_retrieve
+      operationId: moderation_metrics_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Metryki jakości z agregatów (bez śledzenia) i alarmy
       tags:
@@ -657,7 +662,7 @@ paths:
           description: ''
   /api/spina3/moderation/pins/{pin_id}/:
     post:
-      operationId: spina3_moderation_pins_create
+      operationId: moderation_pins_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Szybkie ukrycie przypięcia z powodem (bez zgłoszenia) albo przywrócenie
       parameters:
@@ -692,9 +697,10 @@ paths:
           description: ''
   /api/spina3/moderation/queue/:
     get:
-      operationId: spina3_moderation_queue_retrieve
+      operationId: moderation_queue_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Kolejki zespołu: zgłoszenia z SLA, odwołania, adresy, komentarze wstrzymane, boxy oczekujące'
+      summary: 'Kolejki zespołu: zgłoszenia z SLA, odwołania, adresy, komentarze wstrzymane,
+        boxy oczekujące'
       tags:
       - spina3 zespół
       security:
@@ -709,7 +715,7 @@ paths:
           description: ''
   /api/spina3/moderation/reports/{report_id}/:
     post:
-      operationId: spina3_moderation_reports_create
+      operationId: moderation_reports_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Decyzja w sprawie zgłoszenia (hide | dismiss) z uzasadnieniem
       parameters:
@@ -744,10 +750,10 @@ paths:
           description: ''
   /api/spina3/moderation/urls/{check_id}/:
     post:
-      operationId: spina3_moderation_urls_create
+      operationId: moderation_urls_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Decyzja w sprawie adresu z kolejki (accept publikuje box kotwicę albo tworzy box z linku;
-        reject: box ukryty, dowód 7 dni na wymianę)'
+      summary: 'Decyzja w sprawie adresu z kolejki (accept publikuje box kotwicę albo
+        tworzy box z linku; reject: box ukryty, dowód 7 dni na wymianę)'
       parameters:
       - in: path
         name: check_id
@@ -780,9 +786,10 @@ paths:
           description: ''
   /api/spina3/pin/{pin_id}/:
     patch:
-      operationId: spina3_pin_partial_update
+      operationId: pin_partial_update
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Edytuj własne przypięcie (komentarz, stanowisko autora raz na 24 h, wymiana dowodu)
+      summary: Edytuj własne przypięcie (komentarz, stanowisko autora raz na 24 h,
+        wymiana dowodu)
       parameters:
       - in: path
         name: pin_id
@@ -812,9 +819,10 @@ paths:
                 $ref: '#/components/schemas/PinPatchOut'
           description: ''
     delete:
-      operationId: spina3_pin_destroy
+      operationId: pin_destroy
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Usuń własne przypięcie (box dodany przez autora znika ze ściany; oceny przestają się liczyć)
+      summary: Usuń własne przypięcie (box dodany przez autora znika ze ściany; oceny
+        przestają się liczyć)
       parameters:
       - in: path
         name: pin_id
@@ -830,7 +838,7 @@ paths:
           description: No response body
   /api/spina3/pin/{pin_id}/appeal/:
     post:
-      operationId: spina3_pin_appeal_create
+      operationId: pin_appeal_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Odwołanie od ukrycia własnego przypięcia (jedno na decyzję, 14 dni)
       parameters:
@@ -865,10 +873,10 @@ paths:
           description: ''
   /api/spina3/pin/{pin_id}/rating/:
     put:
-      operationId: spina3_pin_rating_update
+      operationId: pin_rating_update
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: 'Oceń przypięcie autora: zgadzam się | nie zgadzam się (tworzy albo zmienia; 403 własne,
-        409 dowód niedostępny, 429 limit)'
+      summary: 'Oceń przypięcie autora: zgadzam się | nie zgadzam się (tworzy albo
+        zmienia; 403 własne, 409 dowód niedostępny, 429 limit)'
       parameters:
       - in: path
         name: pin_id
@@ -927,7 +935,7 @@ paths:
                 additionalProperties: {}
           description: ''
     delete:
-      operationId: spina3_pin_rating_destroy
+      operationId: pin_rating_destroy
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Wycofaj swoją ocenę
       parameters:
@@ -956,7 +964,7 @@ paths:
           description: ''
   /api/spina3/report/:
     post:
-      operationId: spina3_report_create
+      operationId: report_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Zgłoś przypięcie, box albo komentarz (kategorie DSA, SLA 24 h dla pilnych)
       tags:
@@ -985,7 +993,7 @@ paths:
           description: ''
   /api/spina3/silence/:
     get:
-      operationId: spina3_silence_retrieve
+      operationId: silence_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
       summary: Stan ciszy wyborczej (co jest wstrzymane)
       tags:
@@ -998,15 +1006,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/SilenceOut'
           description: ''
   /api/spina3/wall/:
     get:
-      operationId: spina3_wall_retrieve
+      operationId: wall_retrieve
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Ściana kafelków z migawki rankingu (kursor z wersją); kafelek = box + skrót przypięcia
-        + spinka z ocen
+      summary: Ściana kafelków z migawki rankingu (kursor z wersją); kafelek = box
+        + skrót przypięcia + spinka z ocen
       parameters:
       - in: query
         name: cursor
@@ -1107,9 +1114,12 @@ components:
         id:
           type: integer
         kind:
-          type: string
+          $ref: '#/components/schemas/KindDd3Enum'
         subtype:
           type: string
+          description: Podtyp dokumentu albo kategoria źródła; otwarty słownik, pusty
+            gdy brak.
+          maxLength: 32
         title:
           type: string
         source:
@@ -1124,6 +1134,7 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: 'Data źródła; dla linku czytelnika bez daty: pin.created_at.'
         quote:
           type: string
           description: Tylko gdy show_quote
@@ -1217,9 +1228,12 @@ components:
         id:
           type: integer
         kind:
-          type: string
+          $ref: '#/components/schemas/KindDd3Enum'
         subtype:
           type: string
+          description: Podtyp dokumentu albo kategoria źródła; otwarty słownik, pusty
+            gdy brak.
+          maxLength: 32
         title:
           type: string
         source:
@@ -1234,6 +1248,7 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: 'Data źródła; dla linku czytelnika bez daty: pin.created_at.'
         quote:
           type: string
           description: Tylko gdy show_quote
@@ -1303,14 +1318,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/Kind48cEnum'
           default: box
-          description: 'Kotwica: box z bazy, adres URL albo zdjęcie
-
+          description: |-
+            Kotwica: box z bazy, adres URL albo zdjęcie
 
             * `box` - box
-
             * `url` - url
-
-            * `image` - image'
+            * `image` - image
         target:
           type: string
           minLength: 1
@@ -1323,16 +1336,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/TypeEnum'
           default: article
-          description: 'Rodzaj nowego boxa z adresu
-
+          description: |-
+            Rodzaj nowego boxa z adresu
 
             * `article` - article
-
             * `video` - video
-
             * `document` - document
-
-            * `post` - post'
+            * `post` - post
       required:
       - target
     BoxWithPinInRequest:
@@ -1409,7 +1419,8 @@ components:
           type: string
         status:
           type: string
-          description: visible | held | hidden | removed (stany held/hidden tylko dla autora)
+          description: visible | held | hidden | removed (stany held/hidden tylko
+            dla autora)
         hidden_reason:
           type: string
         author:
@@ -1468,6 +1479,146 @@ components:
       - next_cursor
       - sort
       - total
+    ConfigOut:
+      type: object
+      properties:
+        election_silence:
+          $ref: '#/components/schemas/ElectionSilenceOut'
+        csrf_token:
+          type: string
+          description: 'Token do nagłówka X-CSRFToken. Odpowiedź: Cache-Control: no-store.'
+        formula_version:
+          type: string
+        m:
+          type: number
+          format: double
+        bounds:
+          type: array
+          items:
+            type: number
+            format: double
+        hysteresis:
+          type: number
+          format: double
+        min_n:
+          type: number
+          format: double
+        min_n_extreme:
+          type: number
+          format: double
+        mode:
+          type: string
+        popularity_bounds:
+          type: array
+          items:
+            type: integer
+        open_window_hours:
+          type: number
+          format: double
+        level_step_per_day:
+          type: integer
+        colors:
+          type: object
+          additionalProperties:
+            type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        stances:
+          type: object
+          additionalProperties:
+            type: integer
+        author_stances:
+          type: object
+          additionalProperties:
+            type: integer
+        nick_colors:
+          type: object
+          additionalProperties:
+            type: string
+        nick_colors_reserved:
+          type: object
+          additionalProperties:
+            type: string
+        nick_color_default:
+          type: string
+        batch_size:
+          type: integer
+        max_batches:
+          type: integer
+        default_period_days:
+          type: integer
+        min_rated_share:
+          type: number
+          format: double
+        views_min_n:
+          type: number
+          format: double
+        comment_max:
+          type: integer
+        comment_text_max:
+          type: integer
+        replace_days:
+          type: integer
+        daily_pins:
+          type: object
+          additionalProperties:
+            type: integer
+        daily_ratings:
+          type: object
+          additionalProperties:
+            type: integer
+        daily_comments:
+          type: object
+          additionalProperties:
+            type: integer
+        stance_edit_cooldown_hours:
+          type: number
+          format: double
+        rating_change_cooldown_hours:
+          type: number
+          format: double
+        flags:
+          type: object
+          additionalProperties: {}
+        legend:
+          type: string
+      required:
+      - author_stances
+      - batch_size
+      - bounds
+      - colors
+      - comment_max
+      - comment_text_max
+      - csrf_token
+      - daily_comments
+      - daily_pins
+      - daily_ratings
+      - default_period_days
+      - election_silence
+      - flags
+      - formula_version
+      - hysteresis
+      - labels
+      - legend
+      - level_step_per_day
+      - m
+      - max_batches
+      - min_n
+      - min_n_extreme
+      - min_rated_share
+      - mode
+      - nick_color_default
+      - nick_colors
+      - nick_colors_reserved
+      - open_window_hours
+      - popularity_bounds
+      - rating_change_cooldown_hours
+      - replace_days
+      - stance_edit_cooldown_hours
+      - stances
+      - views_min_n
     ConsentInRequest:
       type: object
       properties:
@@ -1475,6 +1626,14 @@ components:
           type: boolean
       required:
       - accepted
+    DecisionEnum:
+      enum:
+      - accept
+      - reject
+      type: string
+      description: |-
+        * `accept` - accept
+        * `reject` - reject
     DecisionInRequest:
       type: object
       properties:
@@ -1493,52 +1652,133 @@ components:
       required:
       - decision
       - reason
+    ElectionSilenceOut:
+      type: object
+      properties:
+        active:
+          type: boolean
+        start:
+          type: string
+          format: date-time
+          nullable: true
+        end:
+          type: string
+          format: date-time
+          nullable: true
+        pause:
+          $ref: '#/components/schemas/SilencePauseOut'
+      required:
+      - active
+      - end
+      - pause
+      - start
+    GuestProfileOut:
+      type: object
+      properties:
+        nick:
+          type: string
+          nullable: true
+        anonymous:
+          type: boolean
+        consent:
+          type: boolean
+      required:
+      - anonymous
+      - consent
+      - nick
     Kind48cEnum:
       enum:
       - box
       - url
       - image
       type: string
-      description: '* `box` - box
-
+      description: |-
+        * `box` - box
         * `url` - url
-
-        * `image` - image'
+        * `image` - image
+    KindDd3Enum:
+      enum:
+      - post
+      - interview
+      - article
+      - video
+      - document
+      - voting
+      - legal_act
+      - diagnosis
+      - person
+      - entity
+      - image
+      type: string
+      description: |-
+        * `post` - Wpis
+        * `interview` - Wywiad
+        * `article` - Artykuł
+        * `video` - Film
+        * `document` - Dokument
+        * `voting` - Głosowanie
+        * `legal_act` - Akt prawny
+        * `diagnosis` - Diagnoza
+        * `person` - Osoba
+        * `entity` - Podmiot
+        * `image` - Zdjęcie
+    MyBoxesOut:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoxItemOut'
+      required:
+      - items
+    MyRatingOut:
+      type: object
+      properties:
+        box_id:
+          type: integer
+        pin_id:
+          type: integer
+        stance:
+          $ref: '#/components/schemas/StanceEnum'
+        created_at:
+          type: string
+          format: date-time
+        box:
+          $ref: '#/components/schemas/BoxItemOut'
+      required:
+      - box_id
+      - created_at
+      - pin_id
+      - stance
+    MyRatingsOut:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyRatingOut'
+      required:
+      - items
     NickColorEnum:
       enum:
-      - amber
-      - ash
-      - coral
-      - lilac
-      - moss
-      - olive
-      - plum
-      - rose
-      - sand
-      - slate
-      - teal
+      - brzoskwinia
+      - cytryna
+      - fuksja
+      - lila
+      - piasek
+      - pistacja
+      - roz
+      - wrzos
       type: string
-      description: '* `amber` - amber
-
-        * `ash` - ash
-
-        * `coral` - coral
-
-        * `lilac` - lilac
-
-        * `moss` - moss
-
-        * `olive` - olive
-
-        * `plum` - plum
-
-        * `rose` - rose
-
-        * `sand` - sand
-
-        * `slate` - slate
-
-        * `teal` - teal'
+      description: |-
+        * `brzoskwinia` - brzoskwinia
+        * `cytryna` - cytryna
+        * `fuksja` - fuksja
+        * `lila` - lila
+        * `piasek` - piasek
+        * `pistacja` - pistacja
+        * `roz` - roz
+        * `wrzos` - wrzos
     PatchedCommentPatchInRequest:
       type: object
       properties:
@@ -1552,6 +1792,17 @@ components:
         stance:
           type: string
           nullable: true
+        title:
+          oneOf:
+          - type: string
+            enum:
+            - ''
+          - type: string
+            minLength: 15
+            maxLength: 80
+        subtitle:
+          type: string
+          maxLength: 160
         comment:
           type: string
           maxLength: 280
@@ -1566,30 +1817,17 @@ components:
         nick_color:
           allOf:
           - $ref: '#/components/schemas/NickColorEnum'
-          description: 'Identyfikator z listy config.nick_colors
+          description: |-
+            Identyfikator z listy config.nick_colors
 
-
-            * `amber` - amber
-
-            * `ash` - ash
-
-            * `coral` - coral
-
-            * `lilac` - lilac
-
-            * `moss` - moss
-
-            * `olive` - olive
-
-            * `plum` - plum
-
-            * `rose` - rose
-
-            * `sand` - sand
-
-            * `slate` - slate
-
-            * `teal` - teal'
+            * `brzoskwinia` - brzoskwinia
+            * `cytryna` - cytryna
+            * `fuksja` - fuksja
+            * `lila` - lila
+            * `piasek` - piasek
+            * `pistacja` - pistacja
+            * `roz` - roz
+            * `wrzos` - wrzos
     PinOut:
       type: object
       properties:
@@ -1615,6 +1853,11 @@ components:
           type: string
           nullable: true
           description: agree | doubt | disagree | null
+        title:
+          type: string
+        subtitle:
+          type: string
+          maxLength: 160
         comment:
           type: string
         target:
@@ -1642,17 +1885,19 @@ components:
       - my_rating
       - ratable
       - ratings
+      - subtitle
       - system
       - target
       - target_status
+      - title
     PinPatchInKindEnum:
       enum:
       - box
       - url
       type: string
-      description: '* `box` - box
-
-        * `url` - url'
+      description: |-
+        * `box` - box
+        * `url` - url
     PinPatchOut:
       type: object
       properties:
@@ -1678,6 +1923,17 @@ components:
           type: string
           minLength: 1
           description: id boxa (kind=box) albo adres (kind=url)
+        title:
+          oneOf:
+          - type: string
+            enum:
+            - ''
+          - type: string
+            minLength: 15
+            maxLength: 80
+        subtitle:
+          type: string
+          maxLength: 160
         comment:
           type: string
           default: ''
@@ -1700,16 +1956,26 @@ components:
           type: string
         target_status:
           type: string
+          deprecated: true
         author:
           $ref: '#/components/schemas/AuthorOut'
         author_stance:
           type: string
           nullable: true
+        target:
+          $ref: '#/components/schemas/TargetSummaryOut'
         target_title:
           type: string
+          deprecated: true
         target_box_id:
           type: integer
           nullable: true
+          deprecated: true
+        title:
+          type: string
+        subtitle:
+          type: string
+          maxLength: 160
         comment:
           type: string
       required:
@@ -1719,9 +1985,12 @@ components:
       - id
       - kind
       - status
+      - subtitle
+      - target
       - target_box_id
       - target_status
       - target_title
+      - title
     PortalsOut:
       type: object
       properties:
@@ -1763,6 +2032,10 @@ components:
       - nick_color
       - public_profile
       - tier
+    ProfileResponse:
+      oneOf:
+      - $ref: '#/components/schemas/ProfileOut'
+      - $ref: '#/components/schemas/GuestProfileOut'
     RatingInRequest:
       type: object
       properties:
@@ -1799,22 +2072,41 @@ components:
       - subject
       - other
       type: string
-      description: '* `private_data` - private_data
-
+      description: |-
+        * `private_data` - private_data
         * `threat` - threat
-
         * `illegal` - illegal
-
         * `copyright` - copyright
-
         * `spam` - spam
-
         * `subject` - subject
-
-        * `other` - other'
+        * `other` - other
     ReportInRequest:
       type: object
       properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        good_faith:
+          type: boolean
+          description: 'Wymagane true; brak lub false: 400, code=good_faith.'
+        location:
+          oneOf:
+          - type: string
+            format: uri
+            default: ''
+            maxLength: 2048
+          - type: string
+            maxLength: 0
+        explanation:
+          type: string
+          default: ''
+          maxLength: 2000
         pin:
           type: integer
         box:
@@ -1828,13 +2120,17 @@ components:
           default: ''
           maxLength: 500
       required:
+      - email
+      - good_faith
+      - name
       - reason
     SanctionEnum:
       enum:
       - weight_zero_30d
       - suspend_30d
       type: string
-      description: "* `` - \n* `weight_zero_30d` - weight_zero_30d\n* `suspend_30d` - suspend_30d"
+      description: "* `` - \n* `weight_zero_30d` - weight_zero_30d\n* `suspend_30d`
+        - suspend_30d"
     SearchOut:
       type: object
       properties:
@@ -1854,6 +2150,26 @@ components:
       - items
       - query
       - suggestions
+    SilenceOut:
+      type: object
+      properties:
+        election_silence:
+          $ref: '#/components/schemas/ElectionSilenceOut'
+      required:
+      - election_silence
+    SilencePauseOut:
+      type: object
+      properties:
+        user_pins:
+          type: boolean
+        ratings:
+          type: boolean
+        comments:
+          type: boolean
+      required:
+      - comments
+      - ratings
+      - user_pins
     SpinkaOut:
       type: object
       properties:
@@ -1873,8 +2189,8 @@ components:
           nullable: true
         reason:
           type: string
-          description: ok | open | hold_new_accounts | open_window | step_limited | frozen | silence |
-            calibration | no_pin | target_unavailable
+          description: ok | open | hold_new_accounts | open_window | step_limited
+            | frozen | silence | calibration | no_pin | target_unavailable
         pending:
           type: boolean
         distribution:
@@ -1910,6 +2226,65 @@ components:
       - reason
       - score
       - views
+    StanceEnum:
+      enum:
+      - agree
+      - disagree
+      type: string
+      description: |-
+        * `agree` - agree
+        * `disagree` - disagree
+    TargetSummaryOut:
+      type: object
+      properties:
+        box_id:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        kind:
+          $ref: '#/components/schemas/TargetSummaryOutKindEnum'
+        subtype:
+          type: string
+          description: Podtyp boxa; pusty dla URL i zdjęcia.
+        status:
+          type: string
+      required:
+      - box_id
+      - kind
+      - status
+      - subtype
+      - title
+    TargetSummaryOutKindEnum:
+      enum:
+      - post
+      - interview
+      - article
+      - video
+      - document
+      - voting
+      - legal_act
+      - diagnosis
+      - person
+      - entity
+      - image
+      - box
+      - url
+      type: string
+      description: |-
+        * `post` - post
+        * `interview` - interview
+        * `article` - article
+        * `video` - video
+        * `document` - document
+        * `voting` - voting
+        * `legal_act` - legal_act
+        * `diagnosis` - diagnosis
+        * `person` - person
+        * `entity` - entity
+        * `image` - image
+        * `box` - box
+        * `url` - url
     TypeEnum:
       enum:
       - article
@@ -1917,37 +2292,26 @@ components:
       - document
       - post
       type: string
-      description: '* `article` - article
-
+      description: |-
+        * `article` - article
         * `video` - video
-
         * `document` - document
-
-        * `post` - post'
-    UrlDecisionInDecisionEnum:
-      enum:
-      - accept
-      - reject
-      type: string
-      description: '* `accept` - accept
-
-        * `reject` - reject'
+        * `post` - post
     UrlDecisionInKindEnum:
       enum:
       - article
       - video
       - document
       type: string
-      description: '* `article` - article
-
+      description: |-
+        * `article` - article
         * `video` - video
-
-        * `document` - document'
+        * `document` - document
     UrlDecisionInRequest:
       type: object
       properties:
         decision:
-          $ref: '#/components/schemas/UrlDecisionInDecisionEnum'
+          $ref: '#/components/schemas/DecisionEnum'
         reason:
           type: string
           default: ''
@@ -2015,9 +2379,6 @@ components:
       - version
       - wall_end
   securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
     cookieAuth:
       type: apiKey
       in: cookie

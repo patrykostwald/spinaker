@@ -296,7 +296,9 @@ def decide(check: UrlCheck, staff, decision: str, reason: str = '', *, title: st
         box = Box.objects.create(
             kind=kind, title=(title or check.fetched.get('title') or check.url_normalized)[:500], url=check.url_normalized,
             source_name=domain, source_domain=domain, added_by='user', reader_link=True, noindex=True,
-            show_title=True, show_quote=False, show_thumbnail=False, show_avatar=False, published_at=now,
+            show_title=True, show_quote=False, show_thumbnail=False, show_avatar=False,
+            published_at=(Pin.objects.filter(url_check=check).order_by('created_at', 'pk')
+                          .values_list('created_at', flat=True).first() or check.created_at),
             search_text=normalize(title or check.fetched.get('title') or domain), status='published')
     check.status, check.box, check.reason = 'accepted', box, reason or 'Zaakceptowany przez zespół.'
     check.next_recheck_at = now + timedelta(days=config().url_recheck_days)

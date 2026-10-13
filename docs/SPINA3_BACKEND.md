@@ -78,3 +78,41 @@ Migracje: `0001_initial`, `0002_v2_ratings_comments`.
 ## spin.clinic: sekcja spinek
 Bez zmian: `THREADS_ENABLED=false`, `/spinki`, `/nitki`, `/tropy` -> 307 `/klinika` (frontend, `lib/threadsRouting.js`). Dane zostają.
 Archiwum dotychczasowych spinek: `python manage.py export_spinki_archive --eksport /tmp/spinki-archive-<data>`. Brak automatycznego importu.
+
+
+## Zmiany kontraktu 14.10
+
+S1: etap 0 „czytnik” i przygotowanie etapu 1. Migracje: `0003_contract_20261014` (pola przypięć i zgłoszeń, rodzaj `interview`) oraz
+`0004_nick_colors_front` (dane kolorów nicków). Migracja kolorów jest stratna: cofnięcie nie odtwarza poprzednich identyfikatorów.
+
+- `Pin.title`: opcjonalne, puste albo 15-80 znaków; `subtitle`: opcjonalne, do 160. Tworzenie i PATCH walidują długości.
+  Oba pola są w `PinOut` i `PinSummaryOut`. `comment` pozostaje niezależny (do 280); backend nie łączy pól przez nową linię.
+  Diagnozy zachowują dotychczasowy tytuł systemowy `diagnosis_title`. Anonimizacja usuwa też tezę i podtytuł użytkownika.
+- Kafelek ma `pin.target = {box_id, title, kind, subtype, status}` bez pełnego boxa. Dla celu z bazy `kind` i `subtype` opisują materiał;
+  dla `url`/`image`: `box_id=null`, `kind=url|image`, `subtype=""`, `title=pin.title` (także przed weryfikacją).
+  `target_title`, `target_box_id`, `target_status` pozostają na jedną wersję jako `deprecated`.
+- Kolory P5/P4/P3/P2/P1/open: `#62E8A3`, `#8BBF48`, `#D49A33`, `#E07A3C`, `#E45A5A`, `#8E959E`.
+  Nicki: lila, wrzos, fuksja, roz, brzoskwinia, piasek, cytryna, pistacja (hexy frontu). Domyślnie `piasek`; `spin` nadal zarezerwowany.
+  Migracja: lilac->lila, plum->wrzos, rose->fuksja, coral->roz, amber->brzoskwinia, sand->piasek, olive->cytryna,
+  moss->pistacja, ash->piasek, slate->lila, teal->pistacja. Puste ustawienie i `spin` pozostają bez zmian.
+- `GET config/`: `csrf_token` do `X-CSRFToken`, odpowiedź `Cache-Control: no-store`.
+- `config/` i `silence/`: `election_silence = {active, start, end, pause: {user_pins, ratings, comments}}`.
+  Daty są ISO albo null; `pause` zawiera flagi konfiguracji (obowiązują podczas `active=true`). Stare płaskie pola znikają z odpowiedzi,
+  także z `config.flags`. W kodzie istnieją w `Flags` (nie w `ScoringConfig`), pozostawione bez zmian wraz z wewnętrznym stanem blokad.
+- Gość: `GET me/profile/` zwraca 200 `{nick: null, anonymous: true, consent: false}`. Pozostałe operacje konta wymagają logowania.
+- `GET me/boxes/`: `{items: [BoxItemOut]}`; `GET me/ratings/`: `{items: [{box_id, pin_id, stance, created_at, box}]}`.
+  Usunięto poprzednie opakowania elementów; oceny i boxy są widoczne wyłącznie dla właściciela konta.
+- OpenAPI wymienia wszystkie rodzaje boxów, w tym dodany `interview` i istniejący zarezerwowany `image`.
+  `subtype` pozostaje otwartym słownikiem do 32 znaków: źródła nie definiują zamkniętej listy podtypów.
+- Box z linku czytelnika bez daty źródła otrzymuje datę przypięcia. Akceptacja dowodu URL używa daty najwcześniejszego przypięcia
+  (bez przypięcia: data zgłoszenia URL). Serializacja istniejącej kotwicy bez daty używa jej przypięcia; data źródła ma pierwszeństwo.
+- Zgłoszenie: wymagane `name` (do 200), `email` (walidowany, do 254) i `good_faith=true` (brak/false: 400 z `code=good_faith`);
+  opcjonalne `location` (URL do 2048) i `explanation` (do 2000). Dane zapisane wyłącznie w `Report`, poza odpowiedziami publicznymi.
+  Historyczne zgłoszenia dostają puste dane i `good_faith=false`, bez domniemywania dawnego oświadczenia.
+
+Zakres S1 nie obejmuje wysyłki potwierdzeń i decyzji e-mailem, nowych reguł ciszy dla kandydatów, wdrożenia ani zmian frontu/SSO.
+
+Weryfikacja S1: `python -m pytest spina3/tests -q -p no:cacheprovider`: **179 passed**, 92 ostrzeżenia (deprecjacje Django/Python
+oraz brak katalogu staticfiles), 118,30 s. Uruchomienie offline z `SKIP_DOTENV=1`, `USE_SQLITE=true`, `SQLITE_DATABASE_PATH=:memory:`.
+`python manage.py makemigrations --check --dry-run spina3`: brak zmian. YAML porównywany w teście z generowanym schematem.
+Kontrola diff: bez błędów białych znaków i uszkodzeń kodowania. Bez commitów, push i wdrożenia.

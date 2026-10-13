@@ -65,7 +65,14 @@ def pin_summary(pin: Pin | None) -> dict | None:
     if pin is None:
         return None
     target_title = pin.diagnosis_title if pin.kind == 'diagnosis' else (pin.pinned_box.title if pin.pinned_box_id and pin.target_status == 'ok' else '')
+    target_box = pin.pinned_box if pin.kind not in ('url', 'image') and pin.pinned_box_id else None
+    target = {'box_id': target_box.pk if target_box else None,
+              'title': target_title if target_box else pin.title,
+              'kind': target_box.kind if target_box else pin.kind,
+              'subtype': target_box.subtype if target_box else '', 'status': pin.target_status}
     return {'id': pin.pk, 'kind': pin.kind, 'status': pin.status, 'target_status': pin.target_status,
+            'title': pin.title or (pin.diagnosis_title if pin.kind == 'diagnosis' else ''),
+            'subtitle': pin.subtitle, 'target': target,
             'author': author_info(pin.user, is_team=pin.is_team, anonymized=pin.anonymized),
             'author_stance': AUTHOR_STANCE_NAMES.get(pin.stance), 'target_title': target_title,
             'target_box_id': pin.pinned_box_id if pin.target_status == 'ok' else None,
@@ -84,11 +91,12 @@ def box_item(box: Box, sp: BoxSpinka | None = None, *, my_rating: int | None = N
         title = 'Autor usunął wpis'
     if pin is None:
         pin = Pin.objects.filter(box=box).exclude(status='removed').select_related('user__spina3_profile', 'pinned_box').first()
+    published_at = box.published_at or (pin.created_at if box.reader_link and pin else None)
     item = {
         'id': box.pk, 'kind': box.kind, 'subtype': box.subtype, 'title': title,
         'source': {'name': box.source_name, 'domain': box.source_domain},
         'author': _author(box) if not withdrawn else None,
-        'published_at': box.published_at.isoformat() if box.published_at else None,
+        'published_at': published_at.isoformat() if published_at else None,
         'quote': box.quote if (box.show_quote and not removed and not withdrawn) else '',
         'thumbnail_url': box.thumbnail_url if (box.show_thumbnail and not removed and not withdrawn) else '',
         'source_status': box.source_status, 'status': box.status, 'reader_link': box.reader_link, 'topic': box.topic,
@@ -149,7 +157,7 @@ def pin_item(pin: Pin, *, viewer=None, my_rating: int | None = None, sp: BoxSpin
         'id': pin.pk, 'box_id': pin.box_id, 'kind': pin.kind, 'system': pin.kind == 'diagnosis',
         'ratings': ratings_summary(sp), 'my_rating': STANCE_NAMES.get(my_rating) if my_rating is not None else None,
         'ratable': pin.ratable and not own and pin.box.status == 'published' and pin.box.source_status == 'active',
-        'created_at': pin.created_at.isoformat(),
+        'created_at': pin.created_at.isoformat(), 'title': pin.title, 'subtitle': pin.subtitle,
     }
     if pin.kind == 'diagnosis':
         return {**base, 'author_stance': None, 'title': pin.diagnosis_title, 'url': pin.diagnosis_url, 'technique': pin.technique,
