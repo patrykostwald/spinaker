@@ -13,7 +13,7 @@ from news import council_rerun
 from news.clinic_ai import ClinicAIError
 from news.clinic_models import SpinDiagnosis
 
-CORE = [m[1] for m in quorum.core_members()]  # gpt-oss, qwen, nemotron, gemini, bielik
+CORE = [m[1] for m in quorum.core_members()]  # gpt-oss, qwen, nemotron, claude, bielik
 EXTRA = ['mistral-small-latest', '@cf/meta/llama-3.3-70b-instruct-fp8-fast']
 
 
@@ -59,7 +59,7 @@ def test_quorum_met_with_four_members_and_three_core():
 def test_quorum_not_met_like_5_10():
     """Skład z 5.10: gpt-oss bez odpowiedzi, Qwen i Bielik nieobecni - 4 odpowiedzi, ale tylko 2 z rdzenia."""
     records = [rec('openai/gpt-oss-20b', status='brak odpowiedzi', note='groq_daily_limit'),
-               rec('nvidia/nemotron-3-super-120b-a12b', 50), rec('gemini-3.8-flash', 45),
+               rec('nvidia/nemotron-3-super-120b-a12b', 50), rec('claude-haiku-5-5', 45),
                rec(EXTRA[0], 5, 'no_spin'), rec(EXTRA[1], 30)]
     state = quorum.check(records, core_tuples())
     assert not state['met'] and state['core'] == 2 and state['need_core'] == 3
@@ -98,7 +98,7 @@ def test_diagnosis_without_quorum_waits_in_queue_not_published(monkeypatch):
     from news.test_clinic import account, post
     row = SpinDiagnosis.objects.create(post=post(account()), status='queued', screen_score=90)
     records = [rec('openai/gpt-oss-20b', status='brak odpowiedzi', note='groq_daily_limit'),
-               rec('nvidia/nemotron-3-super-120b-a12b'), rec('gemini-3.8-flash'), rec(EXTRA[0]), rec(EXTRA[1])]
+               rec('nvidia/nemotron-3-super-120b-a12b'), rec('claude-haiku-5-5'), rec(EXTRA[0]), rec(EXTRA[1])]
     monkeypatch.setattr(council, 'consult', lambda *a: records)
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda context: council.diagnose(context, 'tekst'))
     clinic.diagnose(row)
@@ -154,7 +154,7 @@ def test_consult_fills_quorum_with_core_first(monkeypatch):
 # --- 2. stała miara --------------------------------------------------------------------------------------------------
 
 BIASES = {'openai/gpt-oss-20b': -1.0, 'qwen/qwen3.8-27b': 2.5, 'nvidia/nemotron-3-super-120b-a12b': 3.0,
-          'gemini-3.8-flash': -2.5, 'speakleash/Bielik-11B-v3.0-Instruct:publicai': -5.0, EXTRA[0]: 0.0, EXTRA[1]: 2.5}
+          'claude-haiku-5-5': -2.5, 'speakleash/Bielik-11B-v3.0-Instruct:publicai': -5.0, EXTRA[0]: 0.0, EXTRA[1]: 2.5}
 
 
 def opinions(scores, verdict='partial'):
@@ -176,7 +176,7 @@ def test_full_core_scores_are_identical_with_stable_measure(seed):
 
 def test_missing_core_member_shifts_by_composition_bias():
     full = {'openai/gpt-oss-20b': 49, 'qwen/qwen3.8-27b': 52.5, 'nvidia/nemotron-3-super-120b-a12b': 53,
-            'gemini-3.8-flash': 47.5, 'speakleash/Bielik-11B-v3.0-Instruct:publicai': 45}
+            'claude-haiku-5-5': 47.5, 'speakleash/Bielik-11B-v3.0-Instruct:publicai': 45}
     present = {k: v for k, v in full.items() if 'Bielik' not in k and 'gpt-oss' not in k}  # bez dwóch surowszych
     ops = opinions({k: int(round(v)) for k, v in present.items()})
     raw = council.combine(ops)
@@ -201,7 +201,7 @@ def test_bias_estimate_is_stable_and_recovers_full_council():
     """Typowa surowość odtwarzana z historii (szum ±10) i korekta zbliża wynik niepełnego składu do pełnego."""
     rnd = random.Random(7)
     true = {'openai/gpt-oss-20b': -1, 'qwen/qwen3.8-27b': 5, 'nvidia/nemotron-3-super-120b-a12b': 7,
-            'gemini-3.8-flash': -3, 'speakleash/Bielik-11B-v3.0-Instruct:publicai': -9, EXTRA[0]: 0}
+            'claude-haiku-5-5': -3, 'speakleash/Bielik-11B-v3.0-Instruct:publicai': -9, EXTRA[0]: 0}
     history = []
     for _ in range(120):
         truth = rnd.randint(20, 80)
@@ -274,7 +274,7 @@ def full_result(intensity=62, verdict='spin'):
 @pytest.fixture
 def broken_row(db):
     from news.test_clinic import account, post
-    members = [rec('nvidia/nemotron-3-super-120b-a12b', 30), rec('gemini-3.8-flash', 25), rec(EXTRA[0], 5, 'no_spin')]
+    members = [rec('nvidia/nemotron-3-super-120b-a12b', 30), rec('claude-haiku-5-5', 25), rec(EXTRA[0], 5, 'no_spin')]
     return SpinDiagnosis.objects.create(
         post=post(account()), status='approved', provider='anthropic', verdict='partial', intensity=30, headline='Stary',
         summary='Stare.', limitations='', diagnosed_at=timezone.now() - timedelta(hours=5), reviewed_at=timezone.now(),

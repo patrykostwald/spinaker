@@ -174,11 +174,28 @@ def _gemini_ready() -> bool:
     return bool(os.environ.get('GEMINI_API_KEY', '').strip())
 
 
+def _claude_ready() -> bool:
+    return bool(os.environ.get('ANTHROPIC_API_KEY', '').strip())
+
+
+def paid_backend() -> str:
+    """Kto wykonuje płatne zadania tekstowe z wyszukiwarką (sprawdzenie faktów, docisk, agent KRS, diagnoza w trybie
+    gemini/council): 'claude' (domyślnie, gdy jest klucz Anthropic) albo 'gemini' (CLINIC_PAID_BACKEND=gemini).
+    Właściciel 13.10.2026: płatny Gemini zastąpiony Claude'em, bo na koncie Anthropic są środki."""
+    if os.environ.get('CLINIC_PAID_BACKEND', '').strip().lower() == 'gemini':
+        return 'gemini'
+    return 'claude' if _claude_ready() else 'gemini'
+
+
+def paid_ready() -> bool:
+    return _claude_ready() if paid_backend() == 'claude' else _gemini_ready()
+
+
 def enabled() -> bool:
     if os.environ.get('CLINIC_AI_ENABLED', '').lower() != 'true':
         return False
     if provider() == 'gemini':
-        return _gemini_ready()
+        return paid_ready()
     if provider() == 'council':
         from news.clinic_council import enabled as council_enabled
         return council_enabled()
@@ -270,13 +287,26 @@ def _error_message(error) -> str:
 def _call(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000):
     """Płatna diagnoza: Claude, a gdy wybrano Gemini albo na koncie Anthropic skończyły się środki — Gemini."""
     if provider() in ('gemini', 'council'):
-        return _call_gemini(system, user, schema, web_search=web_search, max_tokens=max_tokens)
+        return _call_paid(system, user, schema, web_search=web_search, max_tokens=max_tokens)
     try:
         return _call_claude(system, user, schema, web_search=web_search, max_tokens=max_tokens)
     except ClinicAIError as error:
         if 'credit balance' in error.code.lower() and _gemini_ready():
             return _call_gemini(system, user, schema, web_search=web_search, max_tokens=max_tokens)
         raise
+
+
+def _call_paid(system: str, user: str, schema: dict, *, web_search: bool, max_tokens: int = 16000, task: str = 'check'):
+    """Płatne zadanie tekstowe z wyszukiwarką: Claude (paid_backend()), a przy braku środków na koncie Anthropic Gemini,
+    jeśli jest klucz. Obie ścieżki zwracają odpowiedź w kształcie odpowiedzi Claude'a."""
+    if paid_backend() == 'claude':
+        try:
+            return _call_claude(system, user, schema, web_search=web_search, max_tokens=max_tokens)
+        except ClinicAIError as error:
+            if 'credit balance' in error.code.lower() and _gemini_ready():
+                return _call_gemini(system, user, schema, web_search=web_search, max_tokens=max_tokens, task=task)
+            raise
+    return _call_gemini(system, user, schema, web_search=web_search, max_tokens=max_tokens, task=task)
 
 
 def _resolve_redirect(url: str) -> str:

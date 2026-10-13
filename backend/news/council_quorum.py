@@ -23,7 +23,7 @@ from django.utils import timezone
 
 WARSAW = ZoneInfo('Europe/Warsaw')
 CORE_DEFAULT = ('groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemotron-3-super-120b-a12b,'
-                'gemini:gemini-3.8-flash,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai')
+                'claude:claude-haiku-5-5,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai')
 ANSWERED = 'odpowiedział'
 WAIT_KEY = 'council:quorum:wait'
 BIAS_KEY = 'council:quorum:biases'

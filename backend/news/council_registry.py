@@ -15,7 +15,7 @@ reservation_guard = ContextVar('council_reservation_guard', default=None)
 # Treść ma pierwszeństwo (Dyrygent: treść > strażnicy > ...): zapytania diagnozy mogą zużyć cały dzienny limit członka,
 # wszystko inne (przesiewanie zaległości X, syntezy, Recenzent, Inkwizytor, agenci) najwyżej część poza rezerwą.
 content_purpose = ContextVar('council_content_purpose', default=False)
-KEYS = {'groq': 'GROQ_API_KEY', 'nim': 'NIM_API_KEY', 'gemini': 'GEMINI_API_KEY',
+KEYS = {'groq': 'GROQ_API_KEY', 'nim': 'NIM_API_KEY', 'gemini': 'GEMINI_API_KEY', 'claude': 'ANTHROPIC_API_KEY',
         'mistral': 'MISTRAL_API_KEY', 'openrouter': 'OPENROUTER_API_KEY',
         'cloudflare': 'CLOUDFLARE_AI_TOKEN', 'hf': 'HF_TOKEN', 'pllum': 'PLLUM_API_KEY',
         # Inception (Mercury): tylko kandydat Rekrutera, nie stały członek; własny strażnik darmowej puli tokenów (news/inception.py)
@@ -67,7 +67,7 @@ def metadata(member):
         ('thinkingmachines/', 'Thinking Machines Lab'), ('inclusionai/', 'Inclusion AI (Ant Group)'), ('poolside/', 'Poolside'),
         ('liquid/', 'Liquid AI'), ('dots-studio/', 'rednote hi lab'), ('mercury', 'Inception Labs'),
         ('gpt', 'OpenAI'), ('qwen', 'Alibaba'), ('nemotron', 'NVIDIA'),
-        ('gemini', 'Google'), ('mistral', 'Mistral AI'), ('llama', 'Meta'),
+        ('claude', 'Anthropic'), ('gemini', 'Google'), ('mistral', 'Mistral AI'), ('llama', 'Meta'),
         ('deepseek', 'DeepSeek'), ('kimi', 'Moonshot AI'), ('gemma', 'Google'), ('glm', 'Zhipu AI'), ('phi-', 'Microsoft'),
         ('command', 'Cohere'), ('granite', 'IBM'), ('olmo', 'Ai2'), ('hermes', 'Nous Research'), ('minimax', 'MiniMax'),
         ('ernie', 'Baidu'), ('grok', 'xAI'), ('jamba', 'AI21'), ('magistral', 'Mistral AI'), ('ministral', 'Mistral AI')) if token in lower), 'unknown')
@@ -81,7 +81,7 @@ def limit_key(member):
 
 # Domyślne limity dzienne (zapytania na model) — poniżej darmowych pul dostawców, ale z zapasem na 16 diagnoz dziennie
 # z ponowieniami, role przewodniczącego/językoznawcy/recenzenta, Rekrutera i inkwizytora. 50 wyczerpywało się do południa.
-DEFAULT_DAILY_LIMITS = {'groq': 300, 'nim': 200, 'hf': 150, 'cloudflare': 200, 'gemini': 150, 'mistral': 200, 'openrouter': 50,
+DEFAULT_DAILY_LIMITS = {'groq': 300, 'nim': 200, 'hf': 150, 'cloudflare': 200, 'gemini': 150, 'claude': 200, 'mistral': 200, 'openrouter': 50,
                         'inception': 1000}  # Inception: limit zapytań tylko dla porządku - rządzi pula tokenów (news/inception.py)
 
 
