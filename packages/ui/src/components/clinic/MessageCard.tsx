@@ -13,7 +13,7 @@ import { ClinicDiscussion, DiscussionCounts } from "./ClinicDiscussion";
 const TONES = [["atak", "Atak"], ["osiagniecie", "Osiągnięcia"], ["apel", "Apel"], ["inne", "Inne"]] as const;
 
 /**
- * Liczby przekazu strony (v3, właściciel 13.10): Wpisy, Konkret i Spójność jako same liczby z podpisem;
+ * Liczby przekazu strony (v3, właściciel 13.10): Wpisy, Konkret, Spójność i Pominięte jako same liczby z podpisem, rozłożone: pierwsza do lewej, ostatnia do prawej;
  * rozkład tonu jako czysta lista (nazwa i procent, największa wartość pogrubiona), BEZ pasków i bez kolorów
  * (kolor w serwisie oznacza wyłącznie siłę spinu), wiersze rozdzielone jedną cienką linią.
  */
@@ -27,6 +27,7 @@ export function MessageMetrics({ stats }: { stats?: MessageStats }) {
       <div><dt>Wpisy</dt><dd><b>{known ? stats.posts : "–"}</b><small>autorów: {known ? stats.authors : "–"}</small></dd></div>
       <div title="Odsetek wpisów z liczbą lub linkiem. Nie oznacza potwierdzenia ich prawdziwości."><dt>Konkret</dt><dd><b>{known ? `${stats.concrete_pct}%` : "–"}</b><small>liczba lub link</small></dd></div>
       <div title="Autorzy wpisów przypisanych do głównego wątku dnia."><dt>Spójność</dt><dd><b>{known && stats.coherence_authors !== null ? `${stats.coherence_authors} z ${stats.authors}` : "–"}</b><small>autorów</small></dd></div>
+      <div title="Wpisy pominięte w analizie: bez treści lub szum (np. same odnośniki, reakcje). Pokazujemy je, żeby było widać, czego nie liczono."><dt>Pominięte</dt><dd><b>{known ? stats.noise : "–"}</b><small>bez treści lub szum</small></dd></div>
     </dl>
     <div className="sc-v3-tone">
       <p className="sc-v3-tone__h">Ton wpisów <span>(przypisanie AI)</span></p>
