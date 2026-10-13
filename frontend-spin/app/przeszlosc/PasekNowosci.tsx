@@ -89,16 +89,19 @@ function TitleFit({ text }: { text: string }) {
   useEffect(() => {
     const el = box.current; if (!el || typeof ResizeObserver === 'undefined') return;
     const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+    const font = () => { const cs = getComputedStyle(el); return `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; };
     const fit = () => {
       if (!ctx) return;
-      const cs = getComputedStyle(el); ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      ctx.font = font();
       // 3 px zapasu: pomiar canvasem bywa o ułamek węższy niż skład w DOM (kerning), a wielokropek nie może być przycięty
       setCut(fitWords(text, el.clientWidth - 3, s => ctx.measureText(s).width));
     };
     fit();
     const ro = new ResizeObserver(fit); ro.observe(el);
-    document.fonts?.ready.then(fit).catch(() => undefined);
-    return () => ro.disconnect();
+    // krój (Geist przez next/font) może jeszcze nie być załadowany przy pierwszym pomiarze: wymuś ładowanie i zmierz ponownie
+    const fonts = document.fonts;
+    if (fonts) { fonts.load(font()).then(fit).catch(() => undefined); fonts.addEventListener('loadingdone', fit); }
+    return () => { ro.disconnect(); fonts?.removeEventListener('loadingdone', fit); };
   }, [text]);
   return <span ref={box} className="pt-tick__title" title={text} data-cut={cut ? '' : undefined}>
     <span className="pt-tick__t" aria-hidden={cut ? true : undefined}>{cut ?? text}</span>{cut && <span className="pt-tick__sr">{text}</span>}</span>;

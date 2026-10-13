@@ -64,9 +64,11 @@
   .pt-v3 .px .pt-tick__lab-t + i { position: static; }
   .pt-v3 .px .pt-tick__item { gap: 8px; }
   /* ikony ↗, pauza, → mają cele 44 px, ale wizualnie stoją bliżej tytułu (ujemne marginesy zjadają pustą część celu) */
-  .pt-v3 .px .pt-tick__src { min-width: 44px; justify-content: center; padding: 0; }
+  /* cele 44 px zostają, ale ich puste brzegi nachodzą na siebie (ujemne marginesy), żeby tytuł dostał ok. 24 px więcej (390 px: "Druk nr 1234…") */
+  .pt-v3 .px .pt-tick__src { min-width: 44px; justify-content: center; padding: 0; margin-right: -10px; }
   .pt-v3 .px .pt-tick__src i { font-size: 15px; }
-  .pt-v3 .px .pt-tick__act { gap: 0; margin-left: 0; padding-left: 4px; }
+  .pt-v3 .px .pt-tick__act { gap: 0; margin-left: -6px; padding-left: 0; }
+  .pt-v3 .px .pt-tick__act > * + * { margin-left: -8px; }
 }
 /* najwęższe telefony (do 360 px): bez daty w pasku (jest w sekcji "Najnowsze w bazie"), tytuł zachowuje ok. 100 px */
 @media (max-width: 360px) { .pt-v3 .px .pt-tick__time { display: none; } }
