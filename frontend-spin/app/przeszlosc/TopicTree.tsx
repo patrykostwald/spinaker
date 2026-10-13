@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, nice, personHref, plural, reduced, short, spinColor, stripDiagnoses, text, useNarrativeLayer, useStandalone } from './ui';
+import { Bar, Follow, Foot, Icon, LayerCaption, day, host, nb, nice, personHref, plural, reduced, short, spinColor, stripDiagnoses, text, useNarrativeLayer, useStandalone } from './ui';
 import { Odstepstwa } from './Odstepstwa';
 import { TopicFunds, type EuFunds } from './OpenData';
 import { WMediach } from './WMediach';
@@ -146,19 +146,29 @@ export function TopicTree() {
   </section>;
 
   return <div className="px" data-linked={linked || undefined}>
-    <div className="px-home-top"><Bar />{!linked && <Paski />}</div>
+    <div className="px-home-top"><Bar /></div>
     {linked && result}
 
-    <header className="px-hero">
-      <div className="px-hero__copy">
+    {/* port v3 (13.10): nagłówek dwukolumnowy z dociąganiem (kicker u góry, tytuł i opis przy dolnej krawędzi; grafika wyniku dociągnięta
+        do tej samej krawędzi), pod nim konsola zapytania na całą szerokość jako centrum strony (tryby Temat / Osoba / Spółka). */}
+    <header className="px-hero pt-hero">
+      <div className="px-hero__copy pt-head__l">
         <p className="px-kicker"><span className="px-dot" aria-hidden="true" />Beta · bezpłatnie · dane publiczne</p>
-        <h1>Kto, co i&nbsp;kiedy w&nbsp;jednym temacie</h1>
-        <p className="px-lead">{nb('Wpisz temat, a w kilka sekund zobaczysz, kto o nim mówi, co dokładnie powiedział, jak głosował Sejm i z jakimi spółkami są związani ci ludzie. Każda informacja prowadzi do oryginału.')}</p>
+        <div className="pt-head__b">
+          <h1>Kto, co i&nbsp;kiedy w&nbsp;jednym temacie</h1>
+          <p className="px-lead">{nb('Wpisz temat, a w kilka sekund zobaczysz, kto o nim mówi, co dokładnie powiedział, jak głosował Sejm i z jakimi spółkami są związani ci ludzie. Każda informacja prowadzi do oryginału.')}</p>
+        </div>
+      </div>
+      <HeroDemo narr={narr} />
+    <section className="pt-console" id="zapytanie" aria-label="Wyszukiwarka" data-mode={mode}>
         <div className="px-find">
-          <div className="px-modes" role="group" aria-label="Czego szukasz">
-            <button type="button" aria-pressed={mode === 'topic'} onClick={() => switchMode('topic')}>Temat</button>
-            <button type="button" aria-pressed={mode === 'person'} onClick={() => switchMode('person')}>Osoba</button>
-            <button type="button" aria-pressed={mode === 'company'} onClick={() => switchMode('company')}>Spółka</button>
+          <div className="pt-console__row">
+            <div className="px-modes" role="group" aria-label="Czego szukasz">
+              <button type="button" aria-pressed={mode === 'topic'} onClick={() => switchMode('topic')}>Temat</button>
+              <button type="button" aria-pressed={mode === 'person'} onClick={() => switchMode('person')}>Osoba</button>
+              <button type="button" aria-pressed={mode === 'company'} onClick={() => switchMode('company')}>Spółka</button>
+            </div>
+            <p className="pt-console__hint">{nb('Tylko osoby i podmioty publiczne. Każde powiązanie ma źródło.')}</p>
           </div>
           <form className="px-search" role="search" onSubmit={event => { event.preventDefault();
             if (mode === 'person') { if (hits?.length) window.location.href = personHref(hits[0]); return; }
@@ -188,8 +198,7 @@ export function TopicTree() {
           {topics.slice(0, 6).map(t => <button key={t} type="button" aria-pressed={data?.topic === t} onClick={() => pick(t)}>{t}</button>)}</div>
           : mode === 'company' ? <p className="px-chips px-note">{nb(firms?.coverage?.scope ?? 'Szukamy w spółkach, fundacjach i stowarzyszeniach z KRS, które mamy w bazie. Numer KRS pobierzemy z rejestru na żądanie.')}</p>
           : <p className="px-chips px-note">{nb('Rejestr osób publicznych: posłowie, ministrowie, urzędnicy i samorządowcy. Bez osób prywatnych. Wielkość liter i polskie znaki nie mają znaczenia.')}</p>}
-      </div>
-      <HeroDemo narr={narr} />
+    </section>
     </header>
 
     <section className="px-proof" aria-label="Co jest w bazie" data-n={narr ? 6 : 5}>
@@ -197,8 +206,10 @@ export function TopicTree() {
         .filter(([key]) => narr || key !== 'diagnoses').map(([key, label]) => <div key={key}><b>{start ? (start.counts[key] ?? 0).toLocaleString('pl-PL') : ' '}</b><span>{nb(label)}</span></div>)}
     </section>
 
-    {linked && <details className="px-fold"><summary>Najnowsze z YouTube i źródeł publicznych</summary><Paski /></details>}
+    {linked && <div className="px-sec"><details className="px-fold"><summary>Najnowsze z YouTube i źródeł publicznych</summary><Paski /></details></div>}
     {!linked && result}
+    {/* port v3: paski YouTube i źródeł pod wynikiem tematu (wyszukiwarka jest centrum strony, pierwsza pod menu) */}
+    {!linked && <div className="px-home-top pt-strips"><Paski /></div>}
 
     <section className="px-sec" id="jak" aria-labelledby="jak-h">
       <h2 id="jak-h" className="px-h2">Jak to działa</h2>
@@ -230,7 +241,7 @@ export function TopicTree() {
     </section>}
 
     {/* bez cen (właściciel 7.10): w becie wszystkie funkcje otwarte; pełna lista na /przeszlosc/funkcje */}
-    <section className="px-cta" id="redakcje" aria-labelledby="red-h">
+    <section className="px-sec pt-cta-wrap" id="redakcje" aria-labelledby="red-h"><div className="px-cta">
       <div>
         <h2 id="red-h">Dla redakcji</h2>
         <p>{nb('W becie wszystkie funkcje są bezpłatne dla każdego: alerty, eksport, Wspólne mianowniki, KRS, ślad pieniędzy z UE i odstępstwa od klubu. Dla zespołów przygotowujemy:')}</p>
@@ -240,7 +251,7 @@ export function TopicTree() {
         <a className="px-btn" href="/przeszlosc/funkcje">Zobacz wszystkie funkcje</a>
         <a className="px-quiet" href="mailto:kontakt@iapply.pl?subject=przeszłość.today%20dla%20redakcji">Umów 15 minut prezentacji</a>
       </div>
-    </section>
+    </div></section>
     <Foot />
   </div>;
 }
@@ -391,7 +402,7 @@ function TopicView({ data: raw, busy = false, daily = false }: { data: Graph; bu
                   : null}
                 <span className="px-ev__quiet">
                   {<button type="button" className="px-quiet" onClick={() => openPanel({ kind: 'entry', id: n.id })}>szczegóły</button>}
-                  {n.url && <a className="px-quiet" href={n.url} target="_blank" rel="noopener noreferrer" aria-label={`źródło: ${who ? nice(who.label) : source}, ${d}`}>źródło ↗</a>}
+                  {n.url && <a className="pt-src" href={n.url} target="_blank" rel="noopener noreferrer" aria-label={`źródło: ${host(n.url) || 'oryginał'}, ${who ? nice(who.label) : source}, ${d}`}><span>{host(n.url) || 'źródło'}</span><i aria-hidden="true">↗</i></a>}
                   {n.url && <a className="px-quiet" href={`https://web.archive.org/web/*/${n.url}`} target="_blank" rel="noopener noreferrer">archiwum</a>}
                   <button type="button" className="px-quiet" aria-label="Kopiuj przypis do cytowania"
                     onClick={() => { void navigator.clipboard?.writeText(cite).catch(() => undefined); setCopied(n.id); setTimeout(() => setCopied(c => (c === n.id ? null : c)), 1400); }}>
@@ -659,7 +670,6 @@ function Panel({ data, panel, byId, author, diagnosisOf, roles, onOpen }: { data
 
 /* Głosowania w temacie: kolory znaczą głos (za, przeciw, wstrzymał się, nieobecny), nigdy stronę sceny politycznej. */
 const VOTE_ORDER = ['za', 'przeciw', 'wstrzymał się', 'nieobecny'];
-const SHORT_V: Record<string, string> = { za: 'za', przeciw: 'przeciw', 'wstrzymał się': 'wstrz.', nieobecny: 'nieob.' };
 /* P1-3 (Śledczy R1): pełna lista głosowań tematu - strony po 8 z /temat/glosowania/, zakres dat jak w drzewie przepływu. */
 type VotesPage = { results: Vote[]; total: number; page: number; pages: number; range: { first: string | null; last: string | null } };
 type VotesMeta = { votes_total?: number; votes_range?: { first: string | null; last: string | null } };
@@ -706,36 +716,41 @@ function Votes({ votes, topic, total: initialTotal, range: initialRange }: { vot
     </div>
     <ul className="px-votes__legend" aria-hidden="true">{VOTE_ORDER.map(v => <li key={v} data-v={v}><i />{v}</li>)}</ul>
     {rows.length === 0 && !busy && <p className="px-votes__empty">Brak głosowań w tym zakresie dat.</p>}
-    <ol>{rows.map(v => {
-      const max = Math.max(...v.clubs.map(c => c.size), 1);
-      return <li key={v.id} className="px-card px-vote">
-        <div className="px-vote__head">
-          <span className="px-kicker">{day(v.date)}</span>
-          <p>{v.title}</p>
-          {v.motion && v.motion !== v.title && <small>{v.motion}</small>}
-          <span className="px-vote__result">{[['yes', 'za'], ['no', 'przeciw'], ['abstain', 'wstrzymało się']].filter(([k]) => v.result[k] != null).map(([k, l]) => <b key={k} data-v={l === 'wstrzymało się' ? 'wstrzymał się' : l}>{v.result[k]} {l}</b>)}</span>
-        </div>
-        <ul className="px-vote__clubs">{v.clubs.map(c => <li key={c.club}>
-          <span>{c.club}</span>
-          <i style={{ width: `${(100 * c.size) / max}%` }}>{VOTE_ORDER.map(k => c.votes[k] ? <b key={k} data-v={k} style={{ flexGrow: c.votes[k] }} title={`${k}: ${c.votes[k]}`} /> : null)}</i>
-          <em>{VOTE_ORDER.filter(k => c.votes[k]).map(k => `${c.votes[k]} ${SHORT_V[k]}`).join(', ')}</em>
-        </li>)}</ul>
-        <span className="px-vote__act">
-          <button type="button" className="px-quiet" onClick={() => setOpen(open === v.id ? null : v.id)} aria-expanded={open === v.id}>{open === v.id ? 'Zwiń' : 'Kto jak głosował'}</button>
-          <a className="px-quiet" href={v.url} target="_blank" rel="noopener noreferrer">wynik w Sejmie ↗</a>
-        </span>
-        {open === v.id && <div className="px-vote__members">{v.clubs.map(c => <div key={c.club}>
-          <h4>{c.club}</h4>
-          <ul>{[...c.members].sort((a, b) => VOTE_ORDER.indexOf(a[1]) - VOTE_ORDER.indexOf(b[1])).map(m => <li key={m[0]} data-v={m[1]}><i />{m[0]}<span className="px-sr">: {m[1]}</span></li>)}</ul>
-        </div>)}</div>}
-      </li>;
-    })}</ol>
+    {/* port v3 (13.10): czysta tabela ze wspólnymi liniami (data, głosowanie, wynik, źródło); rozbicie klubów jako tekst w rozwinięciu;
+        głos kształtem i słowem w jednym kolorze; poniżej 900 px wiersze kartowe z etykietą kolumny (bez poziomego przewijania). */}
+    {rows.length > 0 && <table className="pt-tbl px-votes__tbl">
+      <caption className="px-sr">Głosowania w Sejmie w temacie {topic}</caption>
+      <thead><tr><th scope="col">Data</th><th scope="col">Głosowanie</th><th scope="col">Wynik ogółem</th><th scope="col">Źródło</th></tr></thead>
+      <tbody>{rows.map(v => <VoteRow key={v.id} v={v} open={open === v.id} onToggle={() => setOpen(open === v.id ? null : v.id)} />)}</tbody>
+    </table>}
     {(remaining > 0 || error) && <div className="px-votes__more">
       {error && <span role="alert">Nie udało się pobrać kolejnych głosowań.</span>}
       {remaining > 0 && <button type="button" className="px-quiet" disabled={busy} onClick={() => void fetchPage(page + 1, dates, true)}>
         {busy ? 'Wczytuję…' : `Pokaż więcej (${remaining} ${plural(remaining, 'pozostałe', 'pozostałe', 'pozostałych')})`}</button>}
     </div>}
   </section>;
+}
+
+/* Wiersz tabeli głosowań: tytuł w 2 liniach (pełny w title), wynik słowem, rozwinięcie z klubami i posłami (kształt + słowo). */
+function VoteRow({ v, open, onToggle }: { v: Vote; open: boolean; onToggle: () => void }) {
+  const res = [['yes', 'za'], ['no', 'przeciw'], ['abstain', 'wstrzymało się']].filter(([k]) => v.result[k] != null);
+  return <>
+    <tr className="px-vote" data-open={open || undefined}>
+      <td data-c="d" data-l="Data"><time dateTime={v.date ?? undefined}>{day(v.date) || 'brak daty'}</time></td>
+      <td data-c="t"><p className="pt-tbl__t" title={v.title}>{v.title}</p>
+        {v.motion && v.motion !== v.title && <small className="pt-tbl__m" title={v.motion}>{v.motion}</small>}
+        <button type="button" className="pt-tbl__more" onClick={onToggle} aria-expanded={open}>{open ? 'Zwiń kluby i posłów' : 'Kto jak głosował'}</button></td>
+      <td data-c="r" data-l="Wynik ogółem">{res.length ? res.map(([k, l], i) => <span key={k}>{i > 0 && ', '}<b>{v.result[k]}</b> {l}</span>) : <span className="pt-nd">brak danych</span>}</td>
+      <td data-c="s"><a className="pt-src" href={v.url} target="_blank" rel="noopener noreferrer" aria-label={`Wynik głosowania w Sejmie, ${day(v.date)}`}><span>sejm.gov.pl</span><i aria-hidden="true">↗</i></a></td>
+    </tr>
+    {open && <tr className="px-vote__open"><td colSpan={4}>
+      <dl className="pt-clubs">{v.clubs.map(c => <div key={c.club}><dt>{c.club}</dt><dd>{VOTE_ORDER.filter(k => c.votes[k]).map(k => `${c.votes[k]} ${k}`).join(', ') || 'brak głosów'}</dd></div>)}</dl>
+      <div className="px-vote__members">{v.clubs.map(c => <div key={c.club}>
+        <h4>{c.club}</h4>
+        <ul>{[...c.members].sort((a, b) => VOTE_ORDER.indexOf(a[1]) - VOTE_ORDER.indexOf(b[1])).map(m => <li key={m[0]} data-v={m[1]}><i aria-hidden="true" />{m[0]}<span className="pt-vote-word">{m[1]}</span></li>)}</ul>
+      </div>)}</div>
+    </td></tr>}
+  </>;
 }
 
 /* Eksport tematu (właściciel 5.10): każdy wiersz z przypisem źródła i datą pobrania; w becie bez opłat. */

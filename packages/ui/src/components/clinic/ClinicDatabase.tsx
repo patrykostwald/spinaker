@@ -9,9 +9,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicStats, searchClinicSpins, type ClinicSearchParams } from "../../lib/clinic";
-import { SpinRow } from "./SpinParts";
+import { SpinRow as V3Row } from "../../kit/SpinRow";
 import { clearClinicResults, readClinicResults, rememberClinicResults } from "../../lib/clinicNavigation";
 import { Loading } from "../../kit/Loading";
+import { formatDateTimePl } from "../../lib/utils";
 
 const FILTER_KEYS = ["q", "account", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
 const format = (value: number) => value.toLocaleString("pl-PL");
@@ -233,7 +234,11 @@ export function ClinicDatabase() {
         {activeChips.map(chip => <button key={Object.keys(chip.clear).join("-")} type="button" aria-label={`Usuń filtr: ${chip.label}`} onClick={() => { if ("q" in chip.clear) setSearch(""); change(chip.clear); }}>{chip.label} <span aria-hidden="true">×</span></button>)}
       </div> : null}
       <div className="sc-clinic-db__list" aria-busy={query.isFetching}>
-        {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques returnTo={resultsUrl} onOpen={() => rememberClinicResults(resultsUrl, query.data?.pages.length ?? 1)} />)}
+        {/* v3: jeden schemat wiersza list (awatar, rodzaj, tytuł w pełnej długości, meta, liczba siły w kolorze strefy) */}
+        <ol className="sc-v3 sc-v3-rows">{rows.map((spin, index) => <V3Row key={spin.id} index={index} href={`/klinika/${spin.id}?returnTo=${encodeURIComponent(resultsUrl)}`} name={spin.author.name}
+          kind={<>Diagnoza AI · {spin.verdict === "unclear" ? "Nie da się ocenić" : spin.verdict_label} · {spin.camp_label}</>} title={spin.headline}
+          meta={[spin.author.name, <time key="t" dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time>, `#SPIN-${spin.id}`]}
+          value={spin.intensity} onOpen={() => rememberClinicResults(resultsUrl, query.data?.pages.length ?? 1)} />)}</ol>
       </div>
       {query.isError && <p role="alert">Nie udało się pobrać diagnoz. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p>}
       {query.isSuccess && rows.length === 0 && <div className="sc-clinic-empty"><p>{hasFilters ? "Nie znaleźliśmy pasujących diagnoz." : "Nie ma jeszcze opublikowanych diagnoz dla tego wyboru."}</p>{hasFilters ? <button type="button" onClick={reset}>Wyczyść filtry</button> : null}</div>}

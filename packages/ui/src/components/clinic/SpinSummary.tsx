@@ -9,7 +9,7 @@ import { VerdictTag } from "./SpinParts";
 const MODEL_LABELS: [RegExp, string][] = [[/gpt/i, "GPT"], [/qwen/i, "Qwen"], [/gemini/i, "Gemini"], [/gemma/i, "Gemma"], [/claude/i, "Claude"],
   [/nemotron/i, "Nemotron"], [/bielik/i, "Bielik"], [/pllum/i, "PLLuM"], [/llama/i, "Llama"], [/mistral|mixtral/i, "Mistral"], [/deepseek/i, "DeepSeek"],
   [/kimi/i, "Kimi"], [/glm/i, "GLM"], [/granite/i, "Granite"], [/jamba/i, "Jamba"], [/phi/i, "Phi"]];
-const modelLabel = (model = "") => MODEL_LABELS.find(([pattern]) => pattern.test(model))?.[1]
+export const modelLabel = (model = "") => MODEL_LABELS.find(([pattern]) => pattern.test(model))?.[1]
   ?? (model.split("/").pop() || model).split(":")[0].slice(0, 14);
 const firstSentence = (text = "") => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 

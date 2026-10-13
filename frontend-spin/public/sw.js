@@ -1,13 +1,22 @@
 /*
- * Service worker spin.clinic (v3).
+ * Service worker spin.clinic (v3) i przeszłość.today (ta sama aplikacja, druga domena: osobna pamięć, offline /przeszlosc/offline.html, bez pamięci API).
  * - Pamięć podręczna: tylko pliki statyczne aplikacji oraz publiczne odpowiedzi API (GET bez poświadczeń).
  * - Offline: strona /app/offline.html pokazuje ostatnie przekazy dnia z pamięci podręcznej.
  * - Push: powiadomienie z nazwiskiem w tytule; kliknięcie otwiera wpis lub diagnozę.
  * - Aktualizacja: nowa wersja przejmuje stronę od razu (skipWaiting + claim); aplikacja pokazuje przycisk „Odśwież”.
  */
 const VERSION = 'v3';
-const CACHE = `spin-pwa-${VERSION}`;
-const SHELL = ['/app/offline.html', '/app/icon-192.png', '/app/icon-512.png'];
+// przeszłość.today (port v3, 13.10): ta sama aplikacja pod drugą domeną - osobna pamięć, własna strona offline i ikony.
+// Pamięć podręczna i tak jest osobna dla każdej domeny; inna nazwa nie miesza wpisów np. na localhost.
+const HOST = new URL(self.location.origin).hostname.replace(/^www\./, '');
+const PT = HOST === 'przeszlosc.today';
+const CACHE = PT ? `przeszlosc-pwa-${VERSION}` : `spin-pwa-${VERSION}`;
+const CACHE_PREFIX = PT ? 'przeszlosc-pwa-' : 'spin-pwa-';
+const OFFLINE = PT ? '/przeszlosc/offline.html' : '/app/offline.html';
+const ICON = PT ? '/przeszlosc/icon-192.png' : '/app/icon-192.png';
+const APP_NAME = PT ? 'przeszłość.today' : 'spin.clinic';
+const SHELL = PT ? [OFFLINE, ICON, '/przeszlosc/icon-512.png'] : ['/app/offline.html', '/app/icon-192.png', '/app/icon-512.png'];
+const STATIC_PREFIX = PT ? '/przeszlosc/' : '/app/';
 const MAX_ENTRIES = 100;
 const API_MAX_AGE = 5 * 60 * 1000;
 const PUBLIC_API = /^\/api\/clinic\/(?:stats|spins|messages)?\/?$/;
@@ -17,7 +26,7 @@ self.addEventListener('install', event => {
 });
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(key => key.startsWith('spin-pwa-') && key !== CACHE).map(key => caches.delete(key))))
+    .then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE).map(key => caches.delete(key))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener('message', event => {
@@ -65,10 +74,10 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || request.headers.has('authorization')) return;
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/app/offline.html')));
-  } else if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/app/')) {
+    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE)));
+  } else if (url.pathname.startsWith('/_next/static/') || (url.pathname.startsWith(STATIC_PREFIX) && (!PT || /\.(png|svg|ico|woff2|html)$/.test(url.pathname)))) {
     event.respondWith(staticAsset(request));
-  } else if (PUBLIC_API.test(url.pathname)) {
+  } else if (!PT && PUBLIC_API.test(url.pathname)) {
     event.respondWith(publicApi(request));
   }
 });
@@ -89,11 +98,11 @@ self.addEventListener('push', event => {
     const payload = event.data?.json();
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) data = payload;
   } catch { /* Bezpieczny tekst domyślny. */ }
-  const title = typeof data.title === 'string' && data.title.trim() ? data.title.trim().slice(0, 120) : 'spin.clinic';
+  const title = typeof data.title === 'string' && data.title.trim() ? data.title.trim().slice(0, 120) : APP_NAME;
   const body = typeof data.body === 'string' && data.body.trim() ? data.body.trim().slice(0, 240) : 'Zobacz, co nowego.';
   event.waitUntil(self.registration.showNotification(title, {
-    body, lang: 'pl', icon: '/app/icon-192.png', badge: '/app/icon-192.png',
-    tag: typeof data.tag === 'string' && data.tag ? data.tag.slice(0, 80) : 'spin-clinic',
+    body, lang: 'pl', icon: ICON, badge: ICON,
+    tag: typeof data.tag === 'string' && data.tag ? data.tag.slice(0, 80) : (PT ? 'przeszlosc-today' : 'spin-clinic'),
     renotify: true, timestamp: Date.now(),
     data: { url: safeUrl(data.url).href, kind: typeof data.kind === 'string' ? data.kind : '' },
   }));

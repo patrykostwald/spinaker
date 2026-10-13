@@ -35,7 +35,8 @@ export function GlitchWord({ word }: { word: string }) {
     return () => { clearTimeout(start); clearInterval(loop); if (tick) clearInterval(tick); };
   }, [word]);
 
-  return <span className="sc-glitch" aria-label={word}>{[...word].map((letter, index) => (
+  // v3: słowo dla czytnika jako ukryty tekst (aria-label na zwykłym <span> bywa pomijany), litery z efektem aria-hidden
+  return <span className="sc-glitch"><span className="sc-v3-sr">{word}</span>{[...word].map((letter, index) => (
     <span key={index} className="sc-glitch__l" data-g={shown[index] !== letter ? shown[index] : undefined} aria-hidden="true">{letter}</span>
   ))}</span>;
 }

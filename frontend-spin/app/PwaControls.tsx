@@ -15,6 +15,8 @@ const allTopics = [['spiny-na-zywo', 'Każdy nowy spin - od razu po diagnozie'],
 // Temat „nitki-dr-spina” (nazwa w bazie bez zmian) jest oferowany tylko przy włączonych spinkach.
 const THREAD_TOPIC = 'nitki-dr-spina';
 const FOLLOWED_TOPIC = 'obserwowani';
+// przeszłość.today (port v3, 13.10): ta sama aplikacja pod drugą domeną i pod /przeszlosc - własne teksty, bez powiadomień spin.clinic.
+const isPrzeszlosc = () => location.hostname.replace(/^www\./, '') === 'przeszlosc.today' || location.pathname.startsWith('/przeszlosc');
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
 /** Stan aplikacji dla strony /aplikacja (zdarzenia okna, bez wspólnego magazynu). */
@@ -54,10 +56,15 @@ export function PwaControls() {
   const [device, setDevice] = useState('ok');
   const [opened, setOpened] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [pt, setPt] = useState(false);
+  const pushOn = pushEnabled && !pt;
 
   useEffect(() => {
     const isIos = isIosDevice({ userAgent: navigator.userAgent, platform: navigator.platform, maxTouchPoints: navigator.maxTouchPoints });
     setIos(isIos);
+    const brandPt = isPrzeszlosc();
+    setPt(brandPt);
+    const pushHere = pushEnabled && !brandPt;
     setInstalled(standalone());
     const hasServiceWorker = 'serviceWorker' in navigator;
     const cleanups: (() => void)[] = [];
@@ -81,7 +88,7 @@ export function PwaControls() {
     window.addEventListener('appinstalled', onInstalled);
     if (isIos && !standalone() && !dismissed()) setBanner(true);
     const onHash = () => {
-      const target = windowHash(location.hash, { install: true, push: pushEnabled });
+      const target = windowHash(location.hash, { install: true, push: pushHere });
       if (!target) return;
       preselect.current = target.preselect;
       setMode(target.mode);
@@ -94,7 +101,7 @@ export function PwaControls() {
     const onLink = (event: MouseEvent) => {
       const link = (event.target as Element).closest?.('a');
       const href = link?.getAttribute('href') || '';
-      if (!WINDOW_HASHES.includes(href) || !windowHash(href, { install: true, push: pushEnabled })) return;
+      if (!WINDOW_HASHES.includes(href) || !windowHash(href, { install: true, push: pushHere })) return;
       event.preventDefault();
       history.replaceState(null, '', href);
       onHash();
@@ -141,7 +148,7 @@ export function PwaControls() {
     return data;
   }
   useEffect(() => {
-    if (mode !== 'push' || !pushEnabled) return;
+    if (mode !== 'push' || !pushOn) return;
     let cancelled = false;
     setConfig(null);
     refreshDevice();
@@ -154,7 +161,7 @@ export function PwaControls() {
     }).catch(error => { if (!cancelled) setMessage(error.message); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, opened, pushEnabled, threadsEnabled, ios, installed]);
+  }, [mode, opened, pushOn, threadsEnabled, ios, installed]);
 
   function dismiss() {
     setBanner(false);
@@ -228,11 +235,11 @@ export function PwaControls() {
       <button type="button" className="sc-pwa-close" onClick={close} aria-label="Zamknij okno">×</button>
       <h2 id="sc-pwa-title">{mode === 'push' ? 'Powiadomienia' : 'Zainstaluj aplikację'}</h2>
       {mode === 'install' ? <>
-        <p>{threadsEnabled ? 'Klinika i spinki pod ręką - prosto z ekranu telefonu.' : 'Klinika i przekazy dnia pod ręką - prosto z ekranu telefonu.'}</p>
-        {installed ? <p>Aplikacja jest już zainstalowana.</p> : ios ? <p>Otwórz stronę w Safari. Wybierz <strong>Udostępnij → Do ekranu początkowego → Dodaj</strong>. Potem uruchom aplikację z ekranu - dopiero stamtąd działają powiadomienia.</p> : prompt ? <button className="sc-pwa-primary" onClick={() => void install()}>Zainstaluj</button> : <p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna.</p>}
-        <p><a href="/aplikacja">Instrukcja krok po kroku</a></p>
+        <p>{pt ? 'Wyszukiwarka przeszłość.today pod ręką - prosto z ekranu telefonu.' : threadsEnabled ? 'Klinika i spinki pod ręką - prosto z ekranu telefonu.' : 'Klinika i przekazy dnia pod ręką - prosto z ekranu telefonu.'}</p>
+        {installed ? <p>Aplikacja jest już zainstalowana.</p> : ios ? <p>Otwórz stronę w Safari. Wybierz <strong>Udostępnij → Do ekranu początkowego → Dodaj</strong>. {pt ? 'Potem uruchom aplikację z ekranu.' : 'Potem uruchom aplikację z ekranu - dopiero stamtąd działają powiadomienia.'}</p> : prompt ? <button className="sc-pwa-primary" onClick={() => void install()}>Zainstaluj</button> : <p>W menu przeglądarki wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”, jeśli ta opcja jest dostępna.</p>}
+        {!pt && <p><a href="/aplikacja">Instrukcja krok po kroku</a></p>}
         <button onClick={() => { dismiss(); close(); }}>Nie pokazuj przez 30 dni</button>
-        {pushEnabled && <p><a href={HASH_PUSH}>Wybierz powiadomienia</a></p>}
+        {pushOn && <p><a href={HASH_PUSH}>Wybierz powiadomienia</a></p>}
       </> : <>
         <p>{threadsEnabled ? 'Wybierz tematy. Konto nie jest potrzebne do spinu dnia i spinek Dr. Spina.' : 'Wybierz tematy. Konto nie jest potrzebne do nowych spinów i spinu dnia; alerty o obserwowanych osobach wymagają konta.'}</p>
         {blocked && <p role="alert">{pushMessage(device)}{device === 'ios-install' && <> <a href={HASH_INSTALL}>Jak zainstalować?</a></>}</p>}

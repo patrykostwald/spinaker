@@ -15,6 +15,7 @@ import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { MessageDayContent } from "./MessageDetail";
 import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
 import { Loading } from "../../kit/Loading";
+import { PageHeaderV3 } from "../../kit/PageHeaderV3";
 export function ClinicInterviewArchive() {
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("");
@@ -85,18 +86,19 @@ export function ClinicMessageArchive() {
   });
   const first = query.data?.pages[0];
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
-  return <section className="sc-clinic-archives">
-    <ClinicNav />
-    <SectionHeader variant="page" title="Archiwum przekazów" subtitle="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji." />
-    {first ? <p>Liczba dni: {first.count.toLocaleString("pl-PL")}</p> : null}
-    {query.isPending ? <p role="status"><Loading label="Wczytywanie przekazów" /></p> : null}
-    {query.isError ? <p role="alert">Nie udało się wczytać przekazów. <Button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</Button></p> : null}
-    {first && !rows.length ? <p>Nie ma jeszcze opublikowanych przekazów.</p> : null}
-    <div className="sc-clinic-archives__list">{rows.map(row => <section className="sc-clinic-archives__day" key={row.day} aria-labelledby={`day-${row.day}`}>
-      <h2 id={`day-${row.day}`}><time dateTime={row.day}>{formatDatePl(row.day)}</time></h2>
-      <MessageDayContent data={row} />
-      <Link href={`/klinika/przekazy/${row.day}`}>Pełny przekaz i źródła →</Link>
-    </section>)}</div>
-    {query.hasNextPage ? <Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż wcześniejsze dni"}</Button> : null}
+  // v3 (13.10.2026): dzień = para neutralnych kart Rządzący / Opozycja (bez kolorowych teł i ramek), liczby bez pasków.
+  return <section className="sc-v3 sc-v3-page sc-v3-arch">
+    <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> <span className="sc-v3-tag">BETA</span> Klinika · Dr. Spin (AI)</>}
+      title="Archiwum przekazów" sub="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji, dzień po dniu."
+      aside={first ? <dl><div><dt>dni w archiwum</dt><dd>{first.count.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
+    {query.isPending ? <p className="sc-v3-state" role="status"><Loading label="Wczytywanie przekazów" /></p> : null}
+    {query.isError ? <div className="sc-v3-state" role="alert"><p>Nie udało się wczytać przekazów.</p><button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></div> : null}
+    {first && !rows.length ? <p className="sc-v3-empty">Nie ma jeszcze opublikowanych przekazów.</p> : null}
+    {rows.map(row => <section className="sc-v3-arch__day" key={row.day} aria-labelledby={`day-${row.day}`}>
+      <div className="sc-v3-feed-h"><h2 id={`day-${row.day}`}><time dateTime={row.day}>{formatDatePl(row.day)}</time></h2>
+        <Link className="sc-v3-lnk" href={`/klinika/przekazy/${row.day}`}>Pełny przekaz i źródła <span className="sc-v3-ar" aria-hidden="true">→</span></Link></div>
+      <MessageDayContent data={row} compact />
+    </section>)}
+    {query.hasNextPage ? <p><Button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż wcześniejsze dni"}</Button></p> : null}
   </section>;
 }

@@ -11,7 +11,7 @@ import { journeyTrail } from '../lib/journey';
  * Szybki formularz: link do strony (wpisany od razu), krótki opis i e-mail - oba nieobowiązkowe.
  * Formularz mówi wprost, co dołączamy: rozmiar ekranu, motyw i ostatnie strony tej wizyty.
  */
-export function BugReportButton({ className }: { className?: string }) {
+export function BugReportButton({ className, label }: { className?: string; label?: string }) {
   const [open, setOpen] = useState(false);
   const [link, setLink] = useState('');
   const [text, setText] = useState('');
@@ -40,10 +40,12 @@ export function BugReportButton({ className }: { className?: string }) {
   }
 
   return <>
-    <button type="button" className={className ?? 'sc-bug-fab'} onClick={start} aria-label="Zgłoś błąd" title="Zgłoś błąd">
+    {/* v3: wariant z podpisem (karta przekazu dnia, diagnoza) - ten sam formularz, tekst zamiast samej ikony */}
+    <button type="button" className={className ?? 'sc-bug-fab'} onClick={start} aria-label={label ? undefined : "Zgłoś błąd"} title={label ? undefined : "Zgłoś błąd"}>
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M8 9a4 4 0 0 1 8 0v5a4 4 0 0 1-8 0Z" /><path d="M12 9v9M9.5 5.5 8 4M14.5 5.5 16 4M4 13h4M16 13h4M5 8l3 2M19 8l-3 2M5 19l3-2M19 19l-3-2" />
       </svg>
+      {label}
     </button>
     <Dialog open={open} onClose={() => setOpen(false)} title="Zgłoś błąd" className="sc-bug-report">
       {state === 'sent' ? <div className="sc-bug-report__done">

@@ -10,6 +10,8 @@ import "./globals.css";
 import "./preview.css";
 // Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css - порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
+// v3 (13.10.2026): tokeny, kroje (Montserrat + Geist) i komponenty nowego wyglądu - zawsze PO kit.css.
+import "@spin-clinic/ui/kit/v3.css";
 import { Providers } from "./providers";
 import { site } from "../lib/site";
 
@@ -23,7 +25,7 @@ const montserrat = Montserrat({
 const TITLE = "spin.clinic - pokazujemy, jak zbudowany jest przekaz";
 const DESCRIPTION = "Pokazujemy, jak zbudowany jest przekaz. Dr. Spin (AI) analizuje techniki perswazji we wpisach polityków i zestawia twierdzenia ze źródłami. Ta sama miara dla wszystkich.";
 
-export const viewport: Viewport = { themeColor: '#000000' };
+export const viewport: Viewport = { themeColor: '#0b0c0e' };
 
 export const metadata: Metadata = {
   appleWebApp: { capable: true, title: 'spin.clinic', statusBarStyle: 'black-translucent' },
@@ -39,7 +41,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pl" suppressHydrationWarning className={montserrat.variable}>
-      <head><script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true,k='sc-first-visit',f=+localStorage.getItem(k)||0,n=Date.now();if(!f)localStorage.setItem(k,String(n));if(s||(f&&n-f>432e5))document.documentElement.dataset.familiar='1'}catch(e){}try{var p=localStorage.getItem('spin-theme');if(p==='pastel'){p='light';localStorage.setItem('spin-theme',p)}var t=p==='light'||p==='dark'?p:'dark';document.documentElement.dataset.themePreference=t;document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='dark'}})();` }} /></head>
+      <head><link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" /><script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true,k='sc-first-visit',f=+localStorage.getItem(k)||0,n=Date.now();if(!f)localStorage.setItem(k,String(n));if(s||(f&&n-f>432e5))document.documentElement.dataset.familiar='1'}catch(e){}try{var p=localStorage.getItem('spin-theme');if(p==='pastel'){p='light';localStorage.setItem('spin-theme',p)}var t=p==='light'||p==='dark'?p:'dark';document.documentElement.dataset.themePreference=t;document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='dark'}})();` }} /></head>
       <body>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:p-4">Przejdź do treści</a>
         <Providers>

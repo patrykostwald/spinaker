@@ -48,7 +48,7 @@ function current(pathname: string, href: string) {
 }
 
 function Wordmark() {
-  return <Link href="/" className="sc-wordmark sc-rail__logo" aria-label="spin.clinic - strona główna"><span>spin<span aria-hidden="true">.</span>clinic</span><small className="sc-beta">BETA</small></Link>;
+  return <Link href="/" className="sc-wordmark sc-rail__logo" aria-label="spin.clinic - strona główna"><span>spin<span aria-hidden="true">.</span>clinic</span><sup className="sc-v3-beta">BETA</sup></Link>;
 }
 
 /**

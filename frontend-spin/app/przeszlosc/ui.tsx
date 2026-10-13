@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
+import { useFeature } from '@spin-clinic/ui';
 import './przeszlosc.css';
 import { NARRATIVE_CAPTION, NARRATIVE_LABEL, useNarrativeLayer } from './narracja';
 export { NARRATIVE_CAPTION, NARRATIVE_LABEL, stripDiagnoses, useNarrativeLayer } from './narracja';
@@ -19,6 +20,8 @@ export const text = (v: unknown): string => {
   if (v && typeof v === 'object') { const o = v as Record<string, unknown>; for (const k of ['name', 'short', 'label', 'title']) if (typeof o[k] === 'string' && o[k]) return o[k] as string; }
   return '';
 };
+/** Domena źródła do śladu przy fakcie (np. x.com, sejm.gov.pl); pusty tekst, gdy adres jest niepoprawny. */
+export const host = (u?: string | null) => { try { return u ? new URL(u).hostname.replace(/^www\./, '') : ''; } catch { return ''; } };
 export type Access = { beta: boolean; label: string; locked: string[] };
 export const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -84,24 +87,92 @@ export function LayerCaption() {
   return on ? <span className="px-layer"> · {NARRATIVE_CAPTION}</span> : null;
 }
 
-export function Bar() {
-  const access = useAccess();
-  return <nav className="px-bar" aria-label="Menu">
-    <span className="px-bar__brand"><a href="/przeszlosc" className="px-mark">przeszłość<i>.</i>today</a>
-      {access?.beta && access.label && <span className="px-beta" title={access.label}>
-        <span className="px-beta__full">{access.label}</span><span className="px-beta__short">Beta</span></span>}</span>
-    <span className="px-bar__links"><a href="/przeszlosc/funkcje">Funkcje</a><a href="/przeszlosc?tryb=osoba">Szukaj osoby</a><a href="/przeszlosc#jak">Jak to działa</a>
-      <NarrativeToggle /></span>
-  </nav>;
+/** Znak przeszłość.today (logo właściciela, LOGA): szeryfowe „przeszłość”, czerwona kropka, „today” w Montserrat. Wektor z tekstem
+ *  (kroje strony), wysokość jednym tokenem --pt-logo-h (port v3, 13.10: znak większy o ok. 27%, uwaga właściciela „logo za małe”). */
+export function Logo() {
+  return <svg className="pt-logo" viewBox="0 0 216 42" role="img" aria-label="przeszłość.today">
+    <text x="0" y="31" className="pt-logo__t" fill="currentColor">przeszłość<tspan className="pt-logo__d" dx="1">.</tspan><tspan className="pt-logo__m" dx="4" fill="currentColor">today</tspan></text></svg>;
 }
 
+const MENU_LINKS: [string, string][] = [['/przeszlosc/funkcje', 'Funkcje'], ['/przeszlosc?tryb=osoba', 'Osoby'], ['/przeszlosc/odstepstwa', 'Odstępstwa'], ['/przeszlosc#jak', 'Jak to działa']];
+
+/** Pasek (port v3): znak z „beta” jak indeks górny, pole zapytania (skrót „/”), menu w wersalikach z konwencją terminala;
+ *  poniżej 1000 px menu zwija się do przycisku „Menu”. Aktywna pozycja: aria-current (tekst akcentu, „>” i migające „_”). */
+export function Bar({ index }: { index?: React.ReactNode } = {}) {
+  const access = useAccess();
+  const [here, setHere] = useState('');
+  const [open, setOpen] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+  const menuBtn = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const p = window.location.pathname, q = new URLSearchParams(window.location.search);
+    setHere(p.startsWith('/przeszlosc/funkcje') ? '/przeszlosc/funkcje' : p.startsWith('/przeszlosc/odstepstwa') ? '/przeszlosc/odstepstwa'
+      : p.startsWith('/przeszlosc/osoba') || q.get('tryb') === 'osoba' ? '/przeszlosc?tryb=osoba' : '');
+    const key = (e: KeyboardEvent) => {
+      if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement as HTMLElement | null)?.tagName ?? '') && field.current?.offsetParent) { e.preventDefault(); field.current.focus(); }
+      if (e.key === 'Escape') setOpen(o => { if (o) menuBtn.current?.focus(); return false; });
+    };
+    document.addEventListener('keydown', key);
+    return () => document.removeEventListener('keydown', key);
+  }, []);
+  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const v = (field.current?.value ?? '').trim();
+    if (!v) { field.current?.focus(); return; }
+    const krs = v.replace(/^krs\s*/i, '').replace(/\s/g, '');
+    window.location.href = /^\d{10}$/.test(krs) ? `/przeszlosc/spolka/${krs}` : `/przeszlosc?q=${encodeURIComponent(v)}`;
+  };
+  const label = access?.beta && access.label ? access.label : 'wersja beta';
+  const nav = <nav className="px-bar pt-top" aria-label="Menu">
+    <span className="px-bar__brand"><a href="/przeszlosc" className="px-mark pt-brand" aria-label={`przeszłość.today, ${label}`} title={label}>
+      <Logo /><span className="pt-beta" aria-hidden="true">beta</span></a></span>
+    <form className="pt-q" role="search" onSubmit={submit}>
+      <Icon name="search" />
+      <input ref={field} type="search" enterKeyHint="search" autoComplete="off" placeholder="Temat, osoba, KRS" aria-label="Szukaj tematu, osoby albo numeru KRS" />
+      <kbd aria-hidden="true">/</kbd>
+    </form>
+    <span className="px-bar__links">{MENU_LINKS.map(([href, text]) => <a key={href} href={href} aria-current={here === href ? 'page' : undefined}>{text}</a>)}
+      <NarrativeToggle /></span>
+    <button ref={menuBtn} type="button" className="pt-menu-btn" aria-expanded={open} aria-controls="pt-mmenu" onClick={() => setOpen(!open)}>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" aria-hidden="true"><path d={open ? 'M6 6l12 12M18 6 6 18' : 'M4 7h16M4 12h16M4 17h16'} /></svg>
+      <span>Menu</span></button>
+    <div className="pt-mmenu" id="pt-mmenu" hidden={!open}>
+      {MENU_LINKS.map(([href, text]) => <a key={href} href={href} aria-current={here === href ? 'page' : undefined} onClick={() => setOpen(false)}>{text}</a>)}
+      <NarrativeToggle />
+    </div>
+  </nav>;
+  // indeks akt jako drugi wiersz tego samego paska (jedna strefa, bez odstępu sekcji między wierszami)
+  return index ? <div className="pt-topwrap">{nav}{index}</div> : nav;
+}
+
+/** Indeks akt (port v3): drugi wiersz paska na profilu, numerowane pozycje 01-0N, aktywna sekcja z przewijania (konwencja terminala).
+ *  Na telefonie jeden wiersz bez widocznego paska przewijania (scrollbar-width: none, wygaszone krawędzie) - jedyny wyjątek od zawijania. */
+export function PageIndex({ items }: { items: [string, string][] }) {
+  const [act, setAct] = useState(items[0]?.[0] ?? '');
+  const list = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    if (!('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(en => en.forEach(e => { if (e.isIntersecting) setAct(e.target.id); }), { rootMargin: '-25% 0px -65% 0px' });
+    items.forEach(([id]) => { const el = document.getElementById(id); if (el) io.observe(el); });
+    return () => io.disconnect();
+  }, [items]);
+  useEffect(() => {
+    const a = list.current?.querySelector<HTMLElement>(`a[href="#${CSS.escape(act)}"]`);
+    if (a && list.current && list.current.scrollWidth > list.current.clientWidth) list.current.scrollTo({ left: a.offsetLeft - 16, behavior: reduced() ? 'auto' : 'smooth' });
+  }, [act]);
+  return <nav className="pt-idx" aria-label="Indeks akt"><ol ref={list}>{items.map(([id, text], i) =>
+    <li key={id}><a href={`#${id}`} aria-current={act === id ? 'location' : undefined}><b>{String(i + 1).padStart(2, '0')}</b>{text}</a></li>)}</ol></nav>;
+}
+
+/** Stopka: operator, odnośniki i instalacja aplikacji (port v3: PWA przeszłość.today, gdy włączona flaga APP). */
 export function Foot() {
+  const app = useFeature('APP_ENABLED');
   return <footer className="px-foot"><span>przeszłość.today prowadzi iapply sp. z&nbsp;o.o. · <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">dane wspólne ze spin.clinic</a></span>
-    <span><a href="/przeszlosc/poprawki">Poprawki</a> · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a></span></footer>;
+    <span><a href="/przeszlosc/poprawki">Poprawki</a> · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a>{app && <> · <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a></>}</span></footer>;
 }
 
 /** Obserwuj temat albo osobę (sprint 1): e-mail, zgoda, podwójne potwierdzenie; jeden list dziennie o 7:00. */
-export function Follow({ kind, target, label, rss }: { kind: 'topic' | 'person'; target: string; label: string; rss?: string }) {
+export function Follow({ kind, target, label, rss, primary = false }: { kind: 'topic' | 'person'; target: string; label: string; rss?: string; primary?: boolean }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
@@ -138,7 +209,7 @@ export function Follow({ kind, target, label, rss }: { kind: 'topic' | 'person';
     } catch { setState('error'); setMessage('Brak połączenia. Spróbuj ponownie.'); }
   }
   return <>
-    <button type="button" className="px-tool" onClick={() => { setOpen(true); setState('idle'); setMessage(''); }} aria-haspopup="dialog">
+    <button type="button" className={primary ? 'px-tool pt-pri' : 'px-tool'} onClick={() => { setOpen(true); setState('idle'); setMessage(''); }} aria-haspopup="dialog">
       <Icon name="bell" />{kind === 'topic' ? 'Obserwuj temat' : 'Obserwuj osobę'}</button>
     {open && <div className="px-follow" role="dialog" aria-modal="true" aria-labelledby="px-follow-h">
       <button type="button" className="px-panel__scrim" aria-label="Zamknij" tabIndex={-1} onClick={() => setOpen(false)} />

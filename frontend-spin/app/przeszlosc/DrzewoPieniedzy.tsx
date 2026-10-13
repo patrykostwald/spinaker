@@ -170,7 +170,7 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
       <p className="px-card__foot px-tree__foot"><span>{narrow ? 'Dotknij elementu, aby otworzyć źródło.' : 'Kliknij element, aby otworzyć źródło w nowej karcie.'}</span><span>{nb('Niepowiązane (ta sama nazwa, brak identyfikatora) są w liście poniżej, poza sumami.')}</span></p>
     </figure>
 
-    <Przybornik id="mt-tools-h" tools={companyTools({ krs: o.krs_number, nip: o.nip, regon: o.regon, kind: o.kind })} />
+    <div className="px-sec"><Przybornik id="mt-tools-h" tools={companyTools({ krs: o.krs_number, nip: o.nip, regon: o.regon, kind: o.kind })} /></div>
 
     <section className="px-mt__list" id="mt-lista" aria-labelledby="mt-list-h">
       <div className="px-time__head"><h2 id="mt-list-h" className="px-h3">Wszystkie rekordy</h2><span>{counts[tab]} {plural(counts[tab], 'pozycja', 'pozycje', 'pozycji')}</span></div>
@@ -190,11 +190,14 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
           <small>{[money(u.amount, u.currency), day(u.date) || '', SRC[u.source] ?? u.source, u.reason].filter(Boolean).join(' · ')}</small></li>)}
         {counts[tab] === 0 && <li><span className="px-note">{tab === 'unlinked' ? nb('Brak rekordów dopasowanych tylko po nazwie.') : nb('Brak rekordów w tej gałęzi.')}</span></li>}
       </ul>
-      <p className="px-note">Źródła i licencje: {data.sources.map((s, i) => <span key={s.key}>{i ? ' · ' : ''}<a href={s.url} target="_blank" rel="noopener noreferrer">{s.label}</a> ({s.license})</span>)}</p>
-      {data.grants.sums_note && <p className="px-note">{nb(data.grants.sums_note)}</p>}
-      {data.grants.note && <p className="px-note">{nb(data.grants.note)}</p>}
-      {data.people.note && <p className="px-note">{nb(data.people.note)}</p>}
-      <p className="px-note">{nb(data.note)} Stan na {day(stamp)}.</p>
+      {/* port v3: strefa KRS i źródeł oddzielona kreskowaną linią; zdania bez zmian */}
+      <div className="pt-krs">
+        <p className="px-note">Źródła i licencje: {data.sources.map((s, i) => <span key={s.key}>{i ? ' · ' : ''}<a href={s.url} target="_blank" rel="noopener noreferrer">{s.label}</a> ({s.license})</span>)}</p>
+        {data.grants.sums_note && <p className="px-note">{nb(data.grants.sums_note)}</p>}
+        {data.grants.note && <p className="px-note">{nb(data.grants.note)}</p>}
+        {data.people.note && <p className="px-note">{nb(data.people.note)}</p>}
+        <p className="px-note">{nb(data.note)} Stan na {day(stamp)}.</p>
+      </div>
     </section>
   </>;
 }

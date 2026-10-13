@@ -21,10 +21,18 @@ export function FeatureFooter() {
   const PUSH_ENABLED = useFeature('PUSH_ENABLED');
   // Przy tropach dolnego paska nie ma: linki i „Wesprzyj” są w lewym pasku (SocialNavigation).
   if (useFeature('THREADS_ENABLED')) return null;
-  return <footer className="sc-shell-footer">
-    <div><Link href="/" className="sc-wordmark">spin.clinic</Link><p>iapply sp. z o.o.</p></div>
-    <nav aria-label="Informacje o serwisie">{siteNavigation.footer.filter(column => column.title !== "Obserwuj").flatMap(column => column.links).filter(link => link.href !== "/").map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav>
-    <div className="sc-shell-footer__tools"><Link href="/wsparcie">Wesprzyj projekt</Link>{pathname?.startsWith('/klinika') && <HowToRead interview={pathname.startsWith('/klinika/wywiady')} />}{APP_ENABLED && <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a>}{APP_ENABLED && <Link href="/aplikacja">Aplikacja i alerty</Link>}{APP_ENABLED && PUSH_ENABLED && <a href="#powiadomienia">Powiadomienia</a>}</div>
-    <a href="/en/about" lang="en" hrefLang="en">English</a>
+  // v3 (13.10.2026): stopka w kolumnach z nagłówkami, notą o ocenie AI i operatorze; te same odnośniki co wcześniej.
+  return <footer className="sc-shell-footer sc-v3-foot">
+    <div className="sc-v3-foot__about">
+      <Link href="/" className="sc-wordmark">spin.clinic</Link>
+      <p className="sc-v3-foot__ai">Ocena AI, nie ustalenie faktów. Siła spinu to nasilenie technik perswazji w jednym wpisie, nie procent fałszu i nie miara winy. Ta sama miara dla wszystkich partii.</p>
+      <p>Operator: iapply sp. z o.o.</p>
+      <div className="sc-shell-footer__tools"><Link href="/wsparcie">Wesprzyj projekt</Link>{pathname?.startsWith('/klinika') && <HowToRead interview={pathname.startsWith('/klinika/wywiady')} />}{APP_ENABLED && <a href="#zainstaluj-aplikacje">Zainstaluj aplikację</a>}{APP_ENABLED && <Link href="/aplikacja">Aplikacja i alerty</Link>}{APP_ENABLED && PUSH_ENABLED && <a href="#powiadomienia">Powiadomienia</a>}</div>
+    </div>
+    {siteNavigation.footer.filter(column => column.title !== "Obserwuj").map(column => <nav key={column.title} aria-label={column.title}>
+      <h2>{column.title}</h2>
+      <ul>{column.links.filter(link => link.href !== "/").map(link => <li key={link.href}><Link href={link.href}>{link.label}</Link></li>)}</ul>
+    </nav>)}
+    <a className="sc-v3-foot__en" href="/en/about" lang="en" hrefLang="en">English</a>
   </footer>;
 }
