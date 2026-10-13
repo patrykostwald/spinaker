@@ -157,3 +157,213 @@ class XAccountSuggestionAdmin(admin.ModelAdmin):
     list_filter = ('status',)
     search_fields = ('handle', 'public_figure__canonical_name')
     raw_id_fields = ('public_figure', 'submitted_by')
+
+
+from news.clinic_models import CausalChain, CausalChainEvent  # noqa: E402
+
+
+class CausalChainEventInline(admin.TabularInline):
+    model = CausalChainEvent
+    extra = 0
+    can_delete = False
+    readonly_fields = ('event', 'at', 'actor', 'model_name', 'prompt_version', 'details')
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CausalChain)
+class CausalChainAdmin(admin.ModelAdmin):
+    """v3 „Dr Spin wyjaśnia”: kroki tylko do odczytu; człowiek zatwierdza albo odrzuca (news/causal_chain.py)."""
+    list_display = ('message', 'status', 'approved_at', 'model_name', 'prompt_version', 'created_at')
+    list_filter = ('status',)
+    readonly_fields = tuple(f.name for f in CausalChain._meta.fields)
+    inlines = [CausalChainEventInline]
+    actions = ['approve_chains', 'reject_chains']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def _decide(self, request, queryset, decision):
+        from news import causal_chain
+        done, errors = 0, []
+        for chain in queryset:
+            try:
+                (causal_chain.approve if decision == 'approve' else causal_chain.reject)(chain, request.user)
+                done += 1
+            except causal_chain.ChainError as error:
+                errors.append(f'{chain.pk}: {error}')
+        self.message_user(request, f'Zapisano decyzje: {done}. Kroki bez zmian.', messages.SUCCESS)
+        if errors:
+            self.message_user(request, 'Pominięte: ' + '; '.join(errors[:10]), messages.WARNING)
+
+    def has_decide_permission(self, request):
+        return request.user.has_perm('news.can_decide_causalchain')
+
+    @admin.action(description='Zatwierdź ciąg przyczyn (bez zmiany kroków)', permissions=['decide'])
+    def approve_chains(self, request, queryset):
+        self._decide(request, queryset, 'approve')
+
+    @admin.action(description='Odrzuć ciąg przyczyn', permissions=['decide'])
+    def reject_chains(self, request, queryset):
+        self._decide(request, queryset, 'reject')
+
+
+from news.clinic_models import PositionPair, PositionPairEvent, PositionPairReport  # noqa: E402
+
+
+class PositionPairEventInline(admin.TabularInline):
+    model = PositionPairEvent
+    extra = 0
+    can_delete = False
+    readonly_fields = ('event', 'at', 'actor', 'details')
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class PositionPairReportInline(admin.TabularInline):
+    model = PositionPairReport
+    extra = 0
+    can_delete = False
+    readonly_fields = ('created_at', 'priority', 'verified', 'reason', 'contact', 'is_subject', 'resolved_at')
+    exclude = ('ip_hash', 'user')
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+from news.clinic_models import VerifiedReporter  # noqa: E402
+
+
+@admin.register(VerifiedReporter)
+class VerifiedReporterAdmin(admin.ModelAdmin):
+    """Konta potwierdzone jako osoba z rejestru albo jej przedstawiciel (zgłoszenie błędu pary zdejmuje ją z API)."""
+    list_display = ('user', 'figure', 'role', 'verified_at', 'revoked_at')
+    raw_id_fields = ('user', 'figure', 'verified_by')
+    readonly_fields = ('verified_by', 'verified_at')
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm('news.can_decide_positionpair')
+
+    has_add_permission = lambda self, request: request.user.has_perm('news.can_decide_positionpair')  # noqa: E731
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.verified_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(PositionPair)
+class PositionPairAdmin(admin.ModelAdmin):
+    """v3 „Wcześniej i teraz”: treść tylko do odczytu; człowiek zatwierdza albo odrzuca (news/position_pairs.py).
+    Wycofanie z publicznym powodem: komenda `pary_stanowisk wycofaj`."""
+    list_display = ('figure', 'topic', 'a_date', 'b_date', 'status', 'ai_suggested', 'approved_at')
+    list_filter = ('status', 'ai_suggested')
+    search_fields = ('figure__canonical_name', 'topic')
+    readonly_fields = tuple(f.name for f in PositionPair._meta.fields)
+    inlines = [PositionPairReportInline, PositionPairEventInline]
+    actions = ['approve_pairs', 'reject_pairs']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def _decide(self, request, queryset, decision):
+        from news import position_pairs as pp
+        done, errors = 0, []
+        for pair in queryset:
+            try:
+                (pp.approve if decision == 'approve' else pp.reject)(pair, request.user)
+                done += 1
+            except pp.PairError as error:
+                errors.append(f'{pair.pk}: {error}')
+        self.message_user(request, f'Zapisano decyzje: {done}. Treść bez zmian.', messages.SUCCESS)
+        if errors:
+            self.message_user(request, 'Pominięte: ' + '; '.join(errors[:10]), messages.WARNING)
+
+    def has_decide_permission(self, request):
+        return request.user.has_perm('news.can_decide_positionpair')
+
+    @admin.action(description='Zatwierdź parę (bez zmiany treści)', permissions=['decide'])
+    def approve_pairs(self, request, queryset):
+        self._decide(request, queryset, 'approve')
+
+    @admin.action(description='Odrzuć parę', permissions=['decide'])
+    def reject_pairs(self, request, queryset):
+        self._decide(request, queryset, 'reject')
+
+
+from news.clinic_models import CausalChainReport, SiteFlag, SiteFlagChange  # noqa: E402
+
+
+@admin.register(CausalChainReport)
+class CausalChainReportAdmin(admin.ModelAdmin):
+    """Zgłoszenia błędów w ciągach przyczyn (kolejka moderacji); decyzja: komenda lancuch_przekazu odrzuc z publicznym powodem."""
+    list_display = ('chain', 'priority', 'is_subject', 'created_at', 'resolved_at')
+    list_filter = ('priority', 'resolved_at')
+    readonly_fields = ('chain', 'reason', 'is_subject', 'priority', 'created_at', 'resolved_at')
+    exclude = ('contact', 'user', 'ip_hash')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class SiteFlagForm(forms.ModelForm):
+    class Meta:
+        model = SiteFlag
+        fields = ('key', 'value', 'active_from', 'active_until', 'note')
+
+    def clean_key(self):
+        from news.v3_flags import KNOWN
+        key = self.cleaned_data['key'].strip().upper()
+        if key not in KNOWN:
+            raise forms.ValidationError('Nieznany przełącznik. Dozwolone: ' + ', '.join(KNOWN))
+        return key
+
+
+@admin.register(SiteFlag)
+class SiteFlagAdmin(admin.ModelAdmin):
+    """Kill switch i cisza wyborcza bez restartu (docs/RUNBOOK_KILL_SWITCH.md). Każdy zapis trafia do dziennika."""
+    form = SiteFlagForm
+    list_display = ('key', 'value', 'active_from', 'active_until', 'changed_by', 'changed_at')
+    readonly_fields = ('changed_by', 'changed_at')
+
+    @staticmethod
+    def _state(obj):
+        return {'value': obj.value, 'from': obj.active_from.isoformat() if obj.active_from else None,
+                'until': obj.active_until.isoformat() if obj.active_until else None, 'note': obj.note} if obj else {}
+
+    def save_model(self, request, obj, form, change):
+        from django.utils import timezone
+        before = self._state(SiteFlag.objects.filter(pk=obj.pk).first()) if obj.pk else {}
+        obj.changed_by, obj.changed_at = request.user, timezone.now()
+        super().save_model(request, obj, form, change)
+        SiteFlagChange.objects.create(key=obj.key, before=before, after=self._state(obj), changed_by=request.user)
+
+    def delete_model(self, request, obj):
+        SiteFlagChange.objects.create(key=obj.key, before=self._state(obj), after={'deleted': True}, changed_by=request.user)
+        super().delete_model(request, obj)
+
+
+@admin.register(SiteFlagChange)
+class SiteFlagChangeAdmin(admin.ModelAdmin):
+    list_display = ('key', 'changed_by', 'changed_at')
+    readonly_fields = ('key', 'before', 'after', 'changed_by', 'changed_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

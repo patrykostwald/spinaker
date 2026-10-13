@@ -85,6 +85,13 @@ def open_data(figure, identities):
                         for m in mileage[:6]],
             'offices': [{'year': o.data.get('year'), 'total_pln': o.data.get('total_pln'), 'pdf_url': o.data.get('pdf_url'),
                          'check': o.data.get('pdf_check'), 'items': (o.data.get('items') or [])[:23]} for o in offices[:4]],
+            # Recenzja Fable (poprawka 10, R15): dane rozliczeń z serwisu trzeciego - etykieta i link do pierwotnego dokumentu;
+            # bez wskaźników pochodnych łączących wydatki, majątek, spółki i zamówienia.
+            'third_party': True,
+            'notice': 'Dane z serwisu trzeciego, nie sprawdzono automatycznie. Rozstrzyga pierwotny dokument Kancelarii Sejmu.',
+            'source_label': LICENSES.get('mileage', {}).get('label', 'serwis trzeci'),
+            'source_url': LICENSES.get('mileage', {}).get('url', ''),
+            'primary_urls': sorted({u for u in ([o.data.get('pdf_url') for o in offices[:4]] + [m.data.get('origin_url') for m in mileage[:6]]) if u}),
         }
         used.add('mileage')
     out['sources'] = [{'key': k, **LICENSES[k]} for k in sorted(used)]

@@ -161,7 +161,8 @@ def test_cached_person_endpoint_rechecks_rejection(source, monkeypatch):
     figure = person()
     row = article(source)
     original_mentions = mm.mentions_data(figure)
-    key = f'przeszlosc:osoba:v2:{figure.pk}'
+    from news.przeszlosc_cache import PROFILE_KEY
+    key = f'{PROFILE_KEY}{figure.pk}'
     cached = {'id': figure.pk, 'name': figure.canonical_name, 'mentions': original_mentions}
     cache.set(key, cached, 900)
     monkeypatch.setattr('news.przeszlosc.enabled', lambda: True)

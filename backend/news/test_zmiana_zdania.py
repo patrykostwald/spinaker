@@ -23,7 +23,10 @@ THEN_TEXT = 'Obniżka podatku VAT na żywność to zły pomysł, budżet tego ni
 
 
 @pytest.fixture(autouse=True)
-def _clean_cache():
+def _clean_cache(settings):
+    # Te testy opisują stary blok (publikacja automatyczna); od recenzji Fable 13.10 jest on za flagą domyślnie wyłączoną
+    # (testy domyślnego wyłączenia: test_fable_v3.py).
+    settings.POSITION_CHANGES_LEGACY_ENABLED = True
     cache.clear()
     yield
     cache.clear()

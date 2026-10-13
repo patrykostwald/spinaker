@@ -24,6 +24,38 @@ VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='')
 VAPID_SUBJECT = env('VAPID_SUBJECT', default='')
 SEJM_TERM = env.int('SEJM_TERM', default=10)
 
+# Spina v3 (docs/SPINA_V3_API.md): wszystko domyślnie wyłączone; włączenie to decyzja właściciela.
+CAUSAL_CHAIN_ENABLED = env.bool('CAUSAL_CHAIN_ENABLED', default=False)
+PRZEKAZ_SPIN_STRENGTH_ENABLED = env.bool('PRZEKAZ_SPIN_STRENGTH_ENABLED', default=False)
+ELECTION_SILENCE = env.bool('ELECTION_SILENCE', default=False)  # cisza wyborcza: łańcuchy niepubliczne, bez generowania
+PRZESZLOSC_VOTES_LIST_ENABLED = env.bool('PRZESZLOSC_VOTES_LIST_ENABLED', default=False)
+PRZESZLOSC_NETWORK_ENABLED = env.bool('PRZESZLOSC_NETWORK_ENABLED', default=False)
+POSITION_PAIRS_ENABLED = env.bool('POSITION_PAIRS_ENABLED', default=False)  # „Wcześniej i teraz”: tylko pary zatwierdzone
+# Zgłoszenia błędów par (recenzja Codex 2): automatyczne zdjęcie z API tylko od zweryfikowanego zgłaszającego albo
+# po N niezależnych zgłoszeniach z kont w oknie; SLA decyzji człowieka opisane w docs/SPINA_V3_API.md.
+POSITION_PAIR_REPORT_THRESHOLD = env.int('POSITION_PAIR_REPORT_THRESHOLD', default=3)
+POSITION_PAIR_REPORT_WINDOW_HOURS = env.int('POSITION_PAIR_REPORT_WINDOW_HOURS', default=24)
+POSITION_PAIR_REVIEW_SLA_HOURS = env.int('POSITION_PAIR_REVIEW_SLA_HOURS', default=48)
+# Recenzja Fable 13.10 (docs/SPINA_V3_API.md, docs/RUNBOOK_KILL_SWITCH.md):
+# stary automatyczny blok „Zmiana zdania” (position_changes) i linia social - domyślnie WYŁĄCZONE (zmiana zachowania produkcji).
+POSITION_CHANGES_LEGACY_ENABLED = env.bool('POSITION_CHANGES_LEGACY_ENABLED', default=False)
+POSITION_PAIR_ACCOUNT_MIN_AGE_DAYS = env.int('POSITION_PAIR_ACCOUNT_MIN_AGE_DAYS', default=7)  # konta liczone w progu
+POSITION_PAIR_CONFIRM_HOURS = env.int('POSITION_PAIR_CONFIRM_HOURS', default=48)  # ważność linku potwierdzającego e-mail
+POSITION_PAIR_CONTACT_RETENTION_DAYS = env.int('POSITION_PAIR_CONTACT_RETENTION_DAYS', default=90)
+# Domeny, z których potwierdzony e-mail zgłaszającego zdejmuje parę jak VerifiedReporter (lista do przeglądu prawnika).
+# Pusta = lista z pliku backend/news/config/official_domains.json (z dziennikiem zmian w bazie, komenda domeny_urzedowe);
+# ustawiona w env = zastępuje plik w całości.
+POSITION_PAIR_OFFICIAL_DOMAINS = env.list('POSITION_PAIR_OFFICIAL_DOMAINS', default=[])
+# Decyzje właściciela 13.10: klauzula art. 14 RODO w profilu (szkic do prawnika) i oświadczenia majątkowe - domyślnie wyłączone.
+PRZESZLOSC_PRIVACY_NOTICE_ENABLED = env.bool('PRZESZLOSC_PRIVACY_NOTICE_ENABLED', default=False)
+ASSETS_DECLARATIONS_ENABLED = env.bool('ASSETS_DECLARATIONS_ENABLED', default=False)
+ASSETS_DECLARATIONS_DELAY_SECONDS = env.float('ASSETS_DECLARATIONS_DELAY_SECONDS', default=5.0)
+ASSETS_ROBOTS_FAIL_OPEN = env.bool('ASSETS_ROBOTS_FAIL_OPEN', default=False)  # robots.txt niedostępny: domyślnie nie pobieramy
+# Cisza wyborcza jako okno dat (ISO 8601, np. 2027-10-09T00:00:00+02:00); też SiteFlag ELECTION_SILENCE w adminie.
+from django.utils.dateparse import parse_datetime as _parse_datetime  # noqa: E402
+ELECTION_SILENCE_FROM = _parse_datetime(env('ELECTION_SILENCE_FROM', default='') or '') if env('ELECTION_SILENCE_FROM', default='') else None
+ELECTION_SILENCE_UNTIL = _parse_datetime(env('ELECTION_SILENCE_UNTIL', default='') or '') if env('ELECTION_SILENCE_UNTIL', default='') else None
+
 # Institutional reports use a small separate quota and only spare free-model capacity.
 REPORTS_ENABLED = env.bool('REPORTS_ENABLED', default=False)
 REPORTS_DAILY_CALLS = env.int('REPORTS_DAILY_CALLS', default=12)

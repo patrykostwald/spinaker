@@ -129,6 +129,14 @@ def party_affiliation(figure):
     return result
 
 
+def _post_avatar(post) -> str:
+    """Miniatura konta z danych autora wpisu (X: profile_image_url, wariant _bigger); pusty napis, gdy brak."""
+    avatar = ((post.author_data or {}).get('profile_image_url') or '').strip()
+    if not avatar.startswith('https://'):
+        return ''
+    return avatar.replace('_normal.', '_bigger.')
+
+
 def party_data(figure: PublicFigure | None):
     return party_affiliation(figure)['party']
 
@@ -950,6 +958,8 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
     data['factchecks'] = fakty.public(diagnosis)
     from news.zmiana_zdania import public_data as position_changes
     data['position_changes'] = position_changes(diagnosis)  # Zmiana zdania: tylko pary powyżej progu, ten sam dla każdej partii
+    from news.position_pairs import extend_diagnosis  # v3 „Wcześniej i teraz”: zatwierdzone pary, tylko przy fladze
+    extend_diagnosis(data, diagnosis)
     from news.odbior_spinu import public_data as reception
     data['reception'] = reception(diagnosis)  # Jak zadziałało (po 24 h): liczby zbiorcze, bez danych osób prywatnych
     from news.x_share import build
@@ -997,11 +1007,28 @@ def scale_data(window_days: int = 7) -> dict:
     return result
 
 
+def with_message_counts(queryset):
+    """Liczniki przekazu w jednym zapytaniu listy (recenzja Codex 13.10: bez N+1); _message_data czyta je, gdy są."""
+    return queryset.annotate(
+        v3_comments=Count('comments', distinct=True),
+        v3_positive=Count('opinions', filter=Q(opinions__polarity='positive'), distinct=True),
+        v3_negative=Count('opinions', filter=Q(opinions__polarity='negative'), distinct=True))
+
+
+def message_list(queryset, limit=None) -> list:
+    """Przekazy listy z licznikami, wpisami (prefetch) i danymi v3 w stałej liczbie zapytań."""
+    from news.causal_chain import prefetch
+    rows = with_message_counts(queryset).prefetch_related('posts')
+    return prefetch(rows[:limit] if limit else rows)
+
+
 def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_posts: bool = False) -> dict:
+    counted = hasattr(message, 'v3_comments')
     data = {'id': message.pk, 'day': message.day, 'camp': message.camp, 'message': message.message,
             'analysis': message.analysis, 'themes': message.themes,
-            'comment_count': message.comments.count(),
-            'opinions': {'positive': message.opinions.filter(polarity='positive').count(), 'negative': message.opinions.filter(polarity='negative').count()},
+            'comment_count': message.v3_comments if counted else message.comments.count(),
+            'opinions': ({'positive': message.v3_positive, 'negative': message.v3_negative} if counted else
+                         {'positive': message.opinions.filter(polarity='positive').count(), 'negative': message.opinions.filter(polarity='negative').count()}),
             'thesis': message.thesis, 'points': message.points, 'stats': message.stats, 'posts_count': message.posts.count(),
             'model': message.model_name, 'created_at': message.created_at, 'reviewed_at': message.reviewed_at,
             'readability_edit': {'original': (message.usage or {}).get('original_text', {})} if (message.usage or {}).get('readability_edit') else None}
@@ -1015,8 +1042,10 @@ def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_
         data['posts'] = [{'id': str(post.pk), 'url': post.url, 'text': post.text[:280] if post.available else '',
                           'available': post.available, 'published_at': post.published_at,
                           'author': (figures[post.account_id].canonical_name if post.account_id in figures
-                                     else post.account.display_name), 'handle': post.account.handle} for post in posts]
-    return data
+                                     else post.account.display_name), 'handle': post.account.handle,
+                          'avatar_url': _post_avatar(post)} for post in posts]
+    from news.causal_chain import extend_message_data  # v3: causal_chain i spin_strength tylko przy włączonych flagach
+    return extend_message_data(data, message)
 
 
 def daily_message_data(camp: str):
@@ -1027,7 +1056,7 @@ def daily_message_data(camp: str):
 def message_history(days: int = 30) -> dict:
     """Wcześniejsze przekazy dnia każdego obozu — od najnowszych."""
     return {camp: [_message_data(message) for message in
-                   published_messages().filter(camp=camp).order_by('-day')[:days]]
+                   message_list(published_messages().filter(camp=camp).order_by('-day'), limit=days)]
             for camp in CAMPS}
 
 
