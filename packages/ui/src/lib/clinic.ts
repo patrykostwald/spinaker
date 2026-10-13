@@ -163,7 +163,7 @@ export type SpinScan = {
 export type ScaleSide = { spin: number; partial: number; no_spin: number; unclear: number; assessed: number; share: number | null };
 export type SpinScale = { window_days: number; min_sample: number; enough_data: boolean; government: ScaleSide; opposition: ScaleSide };
 
-export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string; available?: boolean };
+export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string; available?: boolean; avatar_url?: string };
 export type MessageStats = {
   version: number; posts: number; authors: number; noise: number; concrete_count: number; concrete_pct: number;
   coherence_authors: number | null; coherence_pct: number | null;

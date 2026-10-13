@@ -42,6 +42,16 @@ function pickQuotes(message: DailyMessage): MessagePost[] {
   return result;
 }
 
+/** Miniatura konta (X) w kółku; gdy brak adresu albo obraz się nie wczyta, inicjały. */
+function PostAvatar({ name, src }: { name: string; src?: string }) {
+  const [failed, setFailed] = useState(false);
+  return <span className="sc-v3-av" aria-hidden="true">
+    {src && !failed
+      ? <img src={src} alt="" width={36} height={36} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      : initials(name)}
+  </span>;
+}
+
 export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
   const firstCamp = CAMPS.find(camp => data.messages[camp]) ?? CAMPS[0];
   const [camp, setCamp] = useState<Camp>(firstCamp);
@@ -106,12 +116,12 @@ export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
             <li><b>{posts}</b>{plural(posts, "wpis", "wpisy", "wpisów")}</li>
             <li><b>{stats ? stats.authors : "–"}</b>{stats ? plural(stats.authors, "autor", "autorów", "autorów") : "autorów"}</li>
             <li title="Odsetek wpisów z liczbą lub linkiem. Nie oznacza potwierdzenia ich prawdziwości."><b>{stats ? `${stats.concrete_pct}%` : "–"}</b>z liczbą lub linkiem</li>
-            {windowLabel ? <li><b>{windowLabel}</b>okno wpisów, X</li> : <li><b>X</b>platforma</li>}
+            {windowLabel ? <li title="Godziny publikacji wpisów w tym przekazie (serwis X)"><b>{windowLabel}</b>godziny wpisów na{NBSP}X</li> : <li><b>X</b>platforma</li>}
           </ul>
           {quotes.length ? <>
             <ul className="sc-v3-pd__q" aria-label="Przykładowe wpisy">
               {quotes.map(post => <li key={post.url}>
-                <span className="sc-v3-av" aria-hidden="true">{initials(post.author)}</span>
+                <PostAvatar name={post.author} src={post.avatar_url} />
                 <div style={{ minWidth: 0 }}>
                   <p className="sc-v3-who"><span className="sc-v3-who__n">{post.author}</span><span className="sc-v3-who__d"><span className="sc-v3-who__sep"> · </span>{formatDateTimePl(post.published_at)}</span></p>
                   <q>{quoteText(post.text)}</q>
