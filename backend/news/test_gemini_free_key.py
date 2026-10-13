@@ -7,6 +7,7 @@ from news.clinic_ai import ClinicAIError
 
 class Calls(list):
     plan: dict
+    urls: list
 
 
 class Resp:
@@ -24,10 +25,12 @@ def calls(monkeypatch):
     sent = Calls()
     plan = {}
     sent.plan = plan
+    sent.urls = []
 
     def fake_post(url, json=None, timeout=None, headers=None):
         key = headers['x-goog-api-key']
         sent.append(key)
+        sent.urls.append(url)
         return Resp(plan.get(key, 200))
     monkeypatch.setattr(clinic_ai.requests, 'post', fake_post)
     monkeypatch.setattr(clinic_ai, 'record_gemini_spend', lambda task, payload: sent.append('koszt:' + task))
@@ -83,3 +86,11 @@ def test_both_keys_failing_returns_last_response(calls):
     calls.plan['darmowy'] = 429
     assert clinic_ai.gemini_post('m', {}, timeout=5).status_code == 429
     assert calls == ['platny', 'darmowy']
+
+
+def test_free_key_uses_its_own_model(calls, monkeypatch):
+    monkeypatch.setenv('GEMINI_MODEL_FREE', 'gemini-2.5-flash')
+    calls.plan['platny'] = 402
+    clinic_ai.gemini_post('gemini-3.8-flash', {}, timeout=5)
+    assert calls.urls[0].endswith('/models/gemini-3.8-flash:generateContent')
+    assert calls.urls[1].endswith('/models/gemini-2.5-flash:generateContent')

@@ -419,9 +419,8 @@ def _gemini_request(url: str, body: dict, api_key: str, timeout, model: str):
 def gemini_post(model: str, body: dict, *, timeout, key: str = '', task: str = 'check'):
     """generateContent z płatnym kluczem (GEMINI_API_KEY) i zapasowym darmowym (GEMINI_API_KEY_FREE, właściciel 13.10.2026).
     Darmowy klucz dostaje to samo żądanie, gdy płatny nie ma środków (402/403/429) albo dzienny budżet płatnego jest
-    wyczerpany; koszt liczymy tylko dla płatnego. Przy jawnie podanym `key` (członek konsylium) zapasu nie ma.
+    wyczerpany; koszt liczymy tylko dla płatnego. Przy jawnie podanym `key` (członek konsylium) zapasu nie ma. Dla klucza darmowego model może być inny (GEMINI_MODEL_FREE).
     Gdy nie ma żadnego klucza do użycia — ClinicAIError: fakty sprawdza wtedy darmowy Groq, reszta czeka do jutra."""
-    url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
     paid = key or os.environ.get('GEMINI_API_KEY', '').strip()
     free = '' if key else os.environ.get('GEMINI_API_KEY_FREE', '').strip()
     budget = gemini_daily_budget()
@@ -435,7 +434,10 @@ def gemini_post(model: str, body: dict, *, timeout, key: str = '', task: str = '
         raise ClinicAIError('gemini_daily_budget' if over_budget else 'gemini_key_missing')
     response = None
     for api_key, counted in keys:
-        response = _gemini_request(url, body, api_key, timeout, model)
+        # Darmowy klucz może nie widzieć modelu płatnego (inna lista modeli): GEMINI_MODEL_FREE, np. gemini-2.5-flash.
+        used_model = model if counted else (os.environ.get('GEMINI_MODEL_FREE', '').strip() or model)
+        url = f'https://generativelanguage.googleapis.com/v1beta/models/{used_model}:generateContent'
+        response = _gemini_request(url, body, api_key, timeout, used_model)
         if response.status_code == 200:
             if counted:
                 try:
