@@ -4,6 +4,8 @@ Spółka albo fundacja z KRS (RegisteredOrganisation) -> gałęzie:
 - zamówienia publiczne: ogłoszenia TED, w których podmiot jest wykonawcą (identyfikator wykonawcy), i ogłoszenia BZP,
   w których podmiot jest zamawiającym (NIP zamawiającego);
 - dotacje UE: wiersze FTS (budżet UE zarządzany przez KE) po numerze VAT beneficjenta;
+- dotacje krajowe: umowy z listy dotacji NIW-CRSO (niw_dotacje.py) po KRS/NIP, tylko wiersze z KRS; PLN osobno od EUR,
+  każdy wiersz z dopiskiem o źródle i stanie pliku (warunki Prawnika 13.10.2026);
 - osoby z funkcjami w KRS: potwierdzone relacje PublicFigureOrganisationRelation z odnośnikiem do profilu przeszłość.today.
 
 Łączenie wyłącznie po identyfikatorach (NIP, KRS, REGON) - LEGAL w pracownia_osint.py: nigdy po samej nazwie. Rekordy,
@@ -17,6 +19,7 @@ from functools import reduce
 from operator import or_
 
 from news import krs
+from news import niw_dotacje as niw
 from django.db.models import F, Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -24,6 +27,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 SOURCES = {
+    'niw': {'key': 'niw', 'label': 'NIW-CRSO, Lista dotacji',
+            'license': 'informacja publiczna; źródło i stan pliku podane',
+            'url': 'https://niw.gov.pl/o-niw/lista-dotacji/'},
     'krs': {'key': 'krs', 'label': 'Krajowy Rejestr Sądowy (api-krs.ms.gov.pl)', 'license': 'dane publiczne rejestru',
             'url': 'https://api-krs.ms.gov.pl/'},
     'ted': {'key': 'ted', 'label': 'TED - Tenders Electronic Daily (Urząd Publikacji UE)',
@@ -160,7 +166,7 @@ def contracts(org, ids):
 
 
 def grants(org, ids):
-    """FTS: beneficjent z Polski po numerze VAT (PL + NIP)."""
+    """FTS po VAT; NIW po jawnym NIP/KRS, z zachowaniem rodzaju identyfikatora."""
     nip = ids.get('NIP')
     out = []
     for r in _records('fts', 'eu_grant', 'vat', [nip] if nip else []):
@@ -170,7 +176,40 @@ def grants(org, ids):
                         'programme': str(r.data.get('programme') or '')[:200], 'amount': _amount(r.data.get('amount')),
                         'currency': 'EUR', 'date': r.date.isoformat() if r.date else None, 'year': r.data.get('year'),
                         'url': r.source_url, 'matched_by': hit, 'fetched': r.fetched_at.date().isoformat()})
+    seen = set()
+    for field in ('KRS', 'NIP'):
+        value = ids.get(field)
+        for r in _records('niw', 'grant_pl', field.lower(), [value] if value else []):
+            hit = matched_by(r.data.get(field.lower()), {field: value})
+            # Warunek 1 Prawnika: pokazujemy tylko umowy z poprawnym KRS, nawet gdy trafił NIP.
+            if not hit or r.pk in seen or len(digits(r.data.get('krs'))) != 10:
+                continue
+            seen.add(r.pk)
+            fetched = r.fetched_at.date().isoformat()
+            out.append({'id': f'niw:{r.pk}', 'source': 'niw', 'title': (r.data.get('subject') or r.title or '')[:300],
+                        'programme': str(r.data.get('programme') or '')[:200], 'amount': _amount(r.data.get('amount')),
+                        'currency': 'PLN', 'date': r.data.get('signed'), 'contract_no': r.data.get('contract_no'),
+                        'beneficiary': str(r.data.get('beneficiary') or '')[:300],
+                        'file_date': r.data.get('file_date'), 'file_sha256': r.data.get('file_sha256'),
+                        'attribution': niw.attribution(r.data.get('file_date'), fetched),
+                        'url': SOURCES['niw']['url'], 'matched_by': hit, 'fetched': fetched})
+    out.sort(key=lambda x: x['date'] or '', reverse=True)
     return mark_suspect(out)
+
+
+def grants_note(rows):
+    dates = sorted({r['file_date'] for r in rows if r['source'] == 'niw' and r.get('file_date')})
+    note = NOTE.replace('Kwoty z ogłoszeń, nie z umów.', 'Kwoty zamówień z ogłoszeń, nie z umów.') if dates else NOTE
+    return note + (f" Kwoty z listy dotacji NIW-CRSO (umowy), stan na {', '.join(dates)}. {niw.SUMS_NOTE}" if dates else '')
+
+
+def people_note(org, grant_rows, people_rows):
+    """Warunek 5: zastrzeżenie, gdy podmiot ma dotację krajową i potwierdzoną osobę publiczną w KRS."""
+    if not people_rows or not any(r['source'] == 'niw' for r in grant_rows):
+        return ''
+    checked = org.source_checked_at
+    stan = (timezone.localtime(checked) if timezone.is_aware(checked) else checked).date() if checked else timezone.localdate()
+    return niw.people_note(stan.isoformat())
 
 
 def unlinked(org, linked_pks, limit=PER_BRANCH):
@@ -213,8 +252,9 @@ def branches(org):
     return {'contracts': {'count': len(c), 'sums': _sums(c), 'suspect_count': sum(1 for x in c if x['amount_suspect']),
                           'results': c[:PER_BRANCH]},
             'grants': {'count': len(g), 'sums': _sums(g), 'suspect_count': sum(1 for x in g if x['amount_suspect']),
-                       'results': g[:PER_BRANCH]},
-            'people': {'count': len(p), 'results': p[:PER_BRANCH]},
+                       'results': g[:PER_BRANCH], 'sources': sorted({x['source'] for x in g}), 'note': grants_note(g),
+                       'sums_note': niw.SUMS_NOTE},
+            'people': {'count': len(p), 'results': p[:PER_BRANCH], 'note': people_note(org, g, p)},
             'unlinked': {'count': len(u), 'results': u}}
 
 
@@ -231,17 +271,18 @@ def tree(org):
         edges.append({'source': root, 'target': x['id'], 'label': x['role']})
     for x in b['grants']['results']:
         nodes.append({'id': x['id'], 'kind': 'grant', 'label': x['title'], 'sub': x['programme'], 'date': x['date'], 'amount': x['amount'],
-                      'amount_suspect': x['amount_suspect'], 'currency': 'EUR', 'url': x['url'], 'source': 'fts'})
-        edges.append({'source': root, 'target': x['id'], 'label': 'dotacja UE'})
+                      'amount_suspect': x['amount_suspect'], 'currency': x['currency'], 'url': x['url'], 'source': x['source'],
+                      'file_date': x.get('file_date'), 'attribution': x.get('attribution')})
+        edges.append({'source': root, 'target': x['id'], 'label': 'dotacja krajowa' if x['source'] == 'niw' else 'dotacja UE'})
     for x in b['people']['results']:
         nodes.append({'id': x['id'], 'kind': 'person', 'label': x['name'], 'sub': x['role'], 'slug': x['slug'], 'url': x['profile_url'], 'source': 'krs'})
         edges.append({'source': root, 'target': x['id'], 'label': 'funkcja w KRS', 'since': x['since'], 'until': x['until']})
-    used = {'krs'} | {x['source'] for x in b['contracts']['results']} | ({'fts'} if b['grants']['results'] else set()) \
+    used = {'krs'} | {x['source'] for x in b['contracts']['results']} | set(b['grants']['sources']) \
         | {x['source'] for x in b['unlinked']['results']}
     sources = [{'key': k, **(SOURCES.get(k) or LICENSES[k])} for k in sorted(used)]
     ids = identifiers(org)
     return {'organisation': organisation(org), 'identifiers': ids, 'identifiers_missing': 'NIP' not in ids,
-            'nodes': nodes, 'edges': edges, **b, 'sources': sources, 'note': NOTE, 'unlinked_reason': UNLINKED_REASON,
+            'nodes': nodes, 'edges': edges, **b, 'sources': sources, 'note': b['grants']['note'], 'unlinked_reason': UNLINKED_REASON,
             'generated_at': timezone.now().isoformat(timespec='minutes')}
 
 
@@ -252,7 +293,8 @@ def export_data(org):
     c, g, p = contracts(org, ids), grants(org, ids), people(org)
     u = unlinked(org, [int(x['id'].split(':')[1]) for x in c + g], limit=ex.EXPORT_CAP)
     return {'organisation': organisation(org), 'identifiers': ids, 'contracts': c, 'grants': g, 'people': p, 'unlinked': u,
-            'sums': {'contracts': _sums(c), 'grants': _sums(g)}, 'sources': tree(org)['sources'], 'note': NOTE}
+            'sums': {'contracts': _sums(c), 'grants': _sums(g)}, 'sums_note': niw.SUMS_NOTE, 'sources': tree(org)['sources'],
+            'note': grants_note(g), 'people_note': people_note(org, g, p)}
 
 
 def _amount_text(x):
@@ -269,8 +311,10 @@ def export_csv(org, data):
         rows.append(ex.row(x['date'] or '', f"zamówienie publiczne ({x['role']})", f"{x['title'] or x['party']} | {x['party']} | {_amount_text(x)}", '', x['url'],
                            x['source'].upper(), f"wysoka: identyfikator {x['matched_by']}", x['id'], ex.day(x.get('fetched'))))
     for x in data['grants']:
-        rows.append(ex.row(x['date'] or str(x.get('year') or ''), 'dotacja UE', f"{x['title'] or x['programme']} | {x['programme']} | {_amount_text(x)}", '', x['url'],
-                           'FTS', f"wysoka: identyfikator {x['matched_by']}", x['id'], ex.day(x.get('fetched'))))
+        state = f" | {x['attribution']}" if x.get('attribution') else ''
+        rows.append(ex.row(x['date'] or str(x.get('year') or ''), 'dotacja krajowa' if x['source'] == 'niw' else 'dotacja UE',
+                           f"{x['title'] or x['programme']} | {x['programme']} | {_amount_text(x)}{state}", '', x['url'],
+                           x['source'].upper(), f"wysoka: identyfikator {x['matched_by']}", x['id'], ex.day(x.get('fetched'))))
     for x in data['people']:
         rows.append(ex.row(x['since'] or '', 'funkcja w KRS (kontekst, nie dowód)', f"{x['name']}: {x['role']}" + (f" (do {x['until']})" if x['until'] else ''), '',
                            x['url'], 'KRS (api-krs.ms.gov.pl)', f"potwierdzona ({x['method']})", x['id'], ex.day(org.source_checked_at)))
@@ -278,7 +322,9 @@ def export_csv(org, data):
         rows.append(ex.row(x['date'] or '', 'NIEPOWIĄZANE (tylko nazwa, poza sumami)', f"{x['title']} | {_amount_text(x)}", '', x['url'], x['source'].upper(),
                            'niska: zgodność nazwy, bez identyfikatora', x['id'], ex.day(x.get('fetched'))))
     footer = [ex.FETCH_NOTE, f"Podmiot: {org.name}, KRS {org.krs_number}" + (f", NIP {org.nip}" if org.nip else ', NIP: brak w naszych danych') + (f", REGON {org.regon}" if org.regon else ''),
-              f"Cytowanie: {ex.citation(org.name, 'drzewo przepływu pieniędzy spółki', stamp, f'{ex.SITE}/przeszlosc/spolka/{org.krs_number}')}", NOTE]
+              f"Cytowanie: {ex.citation(org.name, 'drzewo przepływu pieniędzy spółki', stamp, f'{ex.SITE}/przeszlosc/spolka/{org.krs_number}')}", data['note']]
+    if data.get('people_note'):
+        footer.append(data['people_note'])
     if len(data['unlinked']) >= ex.EXPORT_CAP:
         footer.append(f'UWAGA: eksport niepełny: pominięto część niepowiązanych rekordów (limit {ex.EXPORT_CAP}).')
     return ex.csv_text(rows, footer)
@@ -303,7 +349,7 @@ def person_companies(figure):
                     'grants': {'count': b['grants']['count'], 'sums': b['grants']['sums'],
                                'suspect_count': b['grants']['suspect_count']},
                     'people': b['people']['count'], 'unlinked': b['unlinked']['count']})
-    return {'results': out, 'note': NOTE}
+    return {'results': out, 'note': NOTE, 'sums_note': niw.SUMS_NOTE}
 
 
 def resolve(ident):
