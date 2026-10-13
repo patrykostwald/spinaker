@@ -157,7 +157,7 @@ def normal(value):
 
 
 ALIASES = {
-    'subject': ('tytul', 'tytul zadania', 'tytul zadania publicznego', 'tytul projektu', 'nazwa zadania', 'tytul oferty'),
+    'subject': ('tytul', 'tytul wniosku', 'tytul zadania', 'tytul zadania publicznego', 'tytul projektu', 'nazwa zadania', 'tytul oferty'),
     'programme': ('program', 'nazwa programu'),
     'competition': ('konkurs', 'nazwa konkursu', 'edycja'),
     'amount': ('kwota', 'kwota dotacji', 'kwota dotacji zl', 'kwota dotacji w zl', 'kwota przyznanej dotacji', 'przyznana dotacja',
@@ -170,6 +170,8 @@ ALIASES = {
     'krs': ('krs', 'numer krs', 'nr krs', 'numer w rejestrze', 'nr w rejestrze', 'numer rejestru',
             'krs inny rejestr', 'numer krs lub innego rejestru'),
 }
+# Opcjonalna kolumna: numer wniosku jest unikalny (np. 3_FIO2018), a numer umowy powtarza się między konkursami.
+OPTIONAL_ALIASES = {'application_no': ('numer wniosku', 'nr wniosku')}
 KRS_REGISTER = ('krs', 'krajowy rejestr sadowy', 'rejestr stowarzyszen', 'rejestr przedsiebiorcow')
 PERSON_REGISTER = ('osoba', 'fizycz')  # fragmenty w kolumnie „rejestr” oznaczające osobę fizyczną
 
@@ -345,13 +347,14 @@ def parse_xlsx(raw, name):
             headers = None
             for cells in _rows(_xml(archive, path), strings):
                 if headers is None:
-                    candidate = {field: col for col, value in cells.items() for field, aliases in ALIASES.items() if normal(value) in aliases}
+                    candidate = {field: col for col, value in cells.items() for field, aliases in {**ALIASES, **OPTIONAL_ALIASES}.items() if normal(value) in aliases}
                     if set(ALIASES) <= candidate.keys():
                         headers, found = candidate, True
                     continue
                 if not any(cells.values()):
                     continue
                 data = {key: cells.get(col, '') for key, col in headers.items()}
+                data.setdefault('application_no', '')
                 register = normal(data['register'])
                 data['nip'] = identifier(data['nip'], 'nip')
                 data['krs'] = identifier(data['krs'], 'krs') if register in KRS_REGISTER else ''
@@ -363,7 +366,12 @@ def parse_xlsx(raw, name):
                 try:
                     if not data['contract_no'] or len(data['contract_no']) > 200:
                         raise ValueError('Brak numeru umowy albo numer dłuższy niż 200 znaków.')
-                    data.update(amount=str(amount_value(data['amount'])), signed=signed_date(data['signed'], epoch1904))
+                    if normal(str(data['signed'])) not in ('', 'brak danych', 'brak', 'nd', 'b d'):
+                        signed = signed_date(data['signed'], epoch1904)
+                    else:  # brak daty umowy w źródle nie unieważnia wiersza z KRS i kwotą; pokazujemy go bez daty
+                        signed = None
+                        stats['bez_daty'] = stats.get('bez_daty', 0) + 1
+                    data.update(amount=str(amount_value(data['amount'])), signed=signed)
                 except ValueError:
                     stats['bledne'] += 1
                     continue
@@ -375,7 +383,8 @@ def parse_xlsx(raw, name):
 
 
 def record_key(data):
-    return data['contract_no'].strip()
+    # Numer wniosku identyfikuje umowę jednoznacznie; sam numer umowy bywa powtarzany w kolejnych konkursach.
+    return (data.get('application_no') or '').strip() or data['contract_no'].strip()
 
 
 def dedupe(records, stats):
