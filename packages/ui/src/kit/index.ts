@@ -120,3 +120,4 @@ export {
   personPairsHref, POSITION_PAIRS_ANCHOR, POSITION_PAIRS_NOTICE, POSITION_PAIRS_TITLE, POSITION_CONNECTOR_LABEL,
   type PersonPairs, type PositionPairData, type PositionPairPerson, type PositionPairsBlock, type PositionSide,
 } from "../lib/positionPairs";
+export { PositionPairReply } from "./PositionPairReply";

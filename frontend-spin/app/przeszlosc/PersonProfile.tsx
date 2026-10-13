@@ -9,7 +9,9 @@ import { Przybornik, personTools } from './Przybornik';
 import { sumLine } from './DrzewoPieniedzy';
 import { Siec, type NetAvailability } from './Siec';
 import { Najwazniejsze } from './Najwazniejsze';
-import { landingIndex, LANDING_RULE_SHORT, ymd } from './najwazniejsze-dane';
+import { landingIndex, LANDING_RULE_SHORT, ymd, type AssetsDeclarations } from './najwazniejsze-dane';
+import { InformacjaODanych } from './InformacjaODanych';
+import type { PrivacyNotice } from './informacja-dane';
 import { PairsSection, PairsTile, usePairsBlock } from './WczesniejITeraz';
 
 /**
@@ -40,6 +42,9 @@ type Profile = {
   articles_total?: number;
   /** „Wcześniej i teraz” (API-v3.md sekcja 5): zatwierdzone pary; klucza brak = funkcja wyłączona flagą backendu */
   position_pairs?: unknown;
+  // decyzje właściciela 13.10 (API-v3 sekcja 0): klauzula RODO art. 14 i lista oświadczeń majątkowych (za flagami backendu)
+  privacy_notice?: PrivacyNotice | null;
+  assets_declarations?: AssetsDeclarations | null;
   activity: { month: string; posts: number; documents: number; votes: number; media: number }[];
   topics: { topic: string; at: string }[];
   sejm_video?: SejmVideo[];
@@ -85,6 +90,7 @@ export function PersonProfile({ ident }: { ident: string }) {
     {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać profilu. Spróbuj ponownie.</p>}
     {data && <ProfileView data={data} onNet={setNet} />}
     {data && <p className="pt-nw__rule pt-nw__rule--foot">{nb(LANDING_RULE_SHORT)} <a href="/przeszlosc/jak-to-dziala">Jak to działa</a></p>}
+    {data?.privacy_notice ? <div className="pt-info-wrap"><InformacjaODanych notice={data.privacy_notice} /></div> : null}
     <Foot />
   </div>;
 }

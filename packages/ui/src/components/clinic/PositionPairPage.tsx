@@ -1,3 +1,4 @@
+import { PositionPairReply } from "../../kit/PositionPairReply";
 import Link from "next/link";
 import { ClinicNav } from "./ClinicNav";
 import { PositionPair } from "../../kit/PositionPair";
@@ -20,7 +21,7 @@ export function PositionPairPage({ pair, person, paused = false }: { pair: Posit
     <h1 className="sc-v3-dg-title">{POSITION_PAIRS_TITLE}{person ? <small style={{ display: "block", marginTop: 8, font: "500 17px/1.4 var(--sc-font-sans)", color: "var(--sc-text-2)" }}>{person.name}</small> : null}</h1>
     {paused || !pair
       ? <p className="sc-pp-list__lead">{nb(paused ? POSITION_PAIRS_PAUSED : "Nie znaleziono tego zestawienia. Mogło zostać wycofane do ponownej oceny.")}</p>
-      : <PositionPair pair={pair} as="h2" notice={pair.notice || POSITION_PAIRS_NOTICE} />}
+      : <><PositionPair pair={pair} as="h2" notice={pair.notice || POSITION_PAIRS_NOTICE} /><p className="sc-pp__replyrow"><PositionPairReply pair={pair} /></p></>}
     <p className="sc-pp-list__note">{nb(POSITION_PAIRS_COMPLETENESS)}</p>
   </div>;
 }

@@ -34,6 +34,13 @@ export type LandingInput = {
   mentions?: { total?: number };
   articles_total?: number;
   posts?: { count?: number };
+  /** Decyzja właściciela 13.10 (API-v3 sekcja 0, flaga ASSETS_DECLARATIONS_ENABLED): lista oświadczeń z PDF Sejmu; klucza brak = flaga wyłączona. */
+  assets_declarations?: null | AssetsDeclarations;
+};
+export type AssetsDeclarations = {
+  items?: { year?: number | null; kind?: string; kind_label?: string; published_on?: string | null; title?: string; url?: string; sha256?: string; checked_at?: string | null;
+    auto_read?: null | { pages?: number | null; text_layer?: boolean; status?: string; note?: string } }[];
+  notice?: string; source?: { name?: string; url?: string; license?: string }; rights?: string;
 };
 
 /* ---------------------------------------------------------------- wyjście */
@@ -41,7 +48,7 @@ export type LandingInput = {
 export type TileId = 'podmioty' | 'majatek' | 'km' | 'klub' | 'funkcje' | 'media';
 export type SourceRef = { label: string; url: string | null };
 export type OrgRow = { key: string; name: string; href: string | null; krs: string; krsUrl: string | null; type: string; role: string; period: string; status: 'current' | 'former'; statusText: string };
-export type DocRow = { key: string; title: string; url: string | null; year: number | null };
+export type DocRow = { key: string; title: string; url: string | null; year: number | null; meta?: string; auto?: string };
 export type Tile = {
   id: TileId;
   anchor: string;                  // id elementu kafla (kotwica indeksu)
@@ -172,8 +179,8 @@ function moneyExtra(d: LandingInput): Tile['extra'] {
   if (LOCKED(d, 'money_trail') || d.money_trail == null || !d.money_trail.results?.length) return null;
   const total = d.money_trail.results.reduce((a, r) => a + (r.contracts?.count ?? 0) + (r.grants?.count ?? 0), 0);
   return { text: nb(total > 0
-    ? `Zamówienia publiczne i dotacje UE tych podmiotów (łączone po NIP i KRS): ${total}.`
-    : 'Zamówienia publiczne i dotacje UE tych podmiotów w naszych danych: 0.'), href: '#pp-pieniadze' };
+    ? `Zamówienia publiczne i dotacje (unijne i krajowe) tych podmiotów (łączone po NIP i KRS): ${total}.`
+    : 'Brak w naszych danych zamówień publicznych i dotacji (unijnych i krajowych) tych podmiotów.'), href: '#pp-pieniadze' };
 }
 export function podmiotyTile(d: LandingInput): Tile {
   const stamp = d.generated_at;
@@ -209,9 +216,36 @@ export function assetYear(title?: string | null): number | null {
   for (let m = re.exec(title ?? ''); m; m = re.exec(title ?? '')) years.add(m[2]);
   return years.size === 1 ? Number([...years][0]) : null;
 }
+/** Wiersz listy oświadczeń z API (rok, rodzaj, data publikacji, PDF; pola odczytane automatycznie z etykietą "sprawdź w PDF"). Bez sum i porównań. */
+export function declarationRow(it: NonNullable<AssetsDeclarations['items']>[number], i: number): DocRow {
+  const kind = (it.kind_label || (it.kind === 'korekta' ? 'korekta' : it.kind === 'oswiadczenie' ? 'oświadczenie' : 'dokument')).trim();
+  const yr = typeof it.year === 'number' ? it.year : assetYear(it.title);
+  const title = yr ? `${yr} · ${kind}` : (it.title ?? '').trim() || kind;
+  const meta = [it.published_on ? `opublikowano ${ymd(it.published_on)}` : '', safeUrl(it.url) ? 'PDF na sejm.gov.pl' : ''].filter(Boolean).join(' · ');
+  const ar = it.auto_read;
+  const auto = ar ? [typeof ar.pages === 'number' ? `${ar.pages} ${plural(ar.pages, 'strona', 'strony', 'stron')}` : '', (ar.note || 'Odczytane automatycznie, sprawdź w PDF.').trim()].filter(Boolean).join(' · ') : '';
+  return { key: `${i}-${it.url ?? title}`, title, url: safeUrl(it.url), year: yr, meta, auto };
+}
 export function majatekTile(d: LandingInput): Tile {
   const stamp = d.generated_at;
   const link = { href: '#pp-os', label: 'Zobacz wszystko →', filter: 'record' } as Tile['link'];
+  // lista z API (flaga ASSETS_DECLARATIONS_ENABLED): stan pokazujemy zawsze, także "brak w naszych danych"
+  if (d.assets_declarations !== undefined) {
+    const a = d.assets_declarations;
+    const items = a?.items ?? [];
+    const src: SourceRef[] = a?.source?.name ? [{ label: `${a.source.name}${a.source.license ? ` (${a.source.license})` : ''}`, url: safeUrl(a.source.url) }] : [SEJM_SRC()];
+    const checked = maxIso(items.map(x => x.checked_at));
+    if (!items.length) return { ...emptyTile('majatek', 'pt-t-majatek', 'Oświadczenia majątkowe', 'oświadczenia majątkowe posłów opublikowane w serwisie Sejmu (PDF)', stamp, INFO_LINK, src[0]),
+      lines: [nb('Zakres: oświadczenia majątkowe posłów opublikowane w serwisie Sejmu (PDF).'), ...(a?.notice ? [nb(a.notice)] : [])] };
+    const docs = [...items].sort((x, y) => (y.year ?? 0) - (x.year ?? 0) || (y.published_on ?? '').localeCompare(x.published_on ?? '')).slice(0, 5).map(declarationRow);
+    return {
+      id: 'majatek', anchor: 'pt-t-majatek', label: 'Oświadczenia majątkowe', state: 'ok', value: String(items.length),
+      unit: plural(items.length, 'dokument w serwisie Sejmu', 'dokumenty w serwisie Sejmu', 'dokumentów w serwisie Sejmu'),
+      lines: [a?.notice ? nb(a.notice) : nb('Odnośniki do PDF w serwisie Sejmu; bez sum i porównań.')],
+      orgs: [], docs, extra: null, source: src,
+      stamp: checked ?? stamp, stampText: stampText(checked ? 'sprawdzono' : 'stan na', checked ?? stamp), link,
+    };
+  }
   const results = d.documents?.results ?? [];
   const docsRaw = results.filter(r => ASSET_KINDS.includes(r.kind ?? '') || r.label === ASSET_LABEL);
   const count = Math.max(d.documents?.by_kind?.[ASSET_LABEL] ?? 0, docsRaw.length);

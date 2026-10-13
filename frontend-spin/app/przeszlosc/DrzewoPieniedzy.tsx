@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Przybornik, companyTools } from './Przybornik';
 import { Bar, Foot, Icon, day, nb, plural, useStandalone, type Access } from './ui';
+import { oppLine, type OppTax } from './informacja-dane';
 
 /**
  * Drzewo przepływu pieniędzy (właściciel 6.10, wersja 1): jeden podmiot z KRS u góry, pod nim trzy równe gałęzie
@@ -22,14 +23,16 @@ export type MoneyTree = {
   identifiers: Record<string, string>; identifiers_missing: boolean;
   contracts: { count: number; sums: Sum[]; suspect_count?: number; results: Contract[] };
   grants: { count: number; sums: Sum[]; results: Grant[]; sums_note?: string; note?: string };
+  /** wykaz OPP z 1,5% podatku (MF): osobna sekcja, nigdy w sumach dotacji; klucza brak = starsze API */
+  opp_tax?: OppTax;
   people: { count: number; results: Person[]; note?: string };
   unlinked: { count: number; results: Unlinked[] };
   sources: Source[]; note: string; unlinked_reason: string; generated_at: string; access?: Access;
 };
 
 const KIND: Record<string, string> = { company: 'Spółka z KRS', foundation: 'Fundacja z KRS', association: 'Stowarzyszenie z KRS', other: 'Podmiot z KRS' };
-const SRC: Record<string, string> = { ted: 'TED', bzp: 'BZP', fts: 'FTS', niw: 'NIW-CRSO', kohesio: 'Kohesio', krs: 'KRS' };
-const LIC: Record<string, string> = { ted: 'dane publiczne', bzp: 'dane publiczne', fts: 'CC BY 4.0', niw: 'informacja publiczna', kohesio: 'CC0 1.0', krs: 'dane publiczne' };
+const SRC: Record<string, string> = { ted: 'TED', bzp: 'BZP', fts: 'FTS', niw: 'NIW-CRSO', kohesio: 'Kohesio', krs: 'KRS', mf_opp: 'MF, wykaz OPP' };
+const LIC: Record<string, string> = { ted: 'dane publiczne', bzp: 'dane publiczne', fts: 'CC BY 4.0', niw: 'informacja publiczna', kohesio: 'CC0 1.0', krs: 'dane publiczne', mf_opp: 'CC0 1.0' };
 const ROWS = 5;
 
 /** Kwota z ogłoszenia: „1,5 mln zł”, „200 €”; bez kwoty: „bez kwoty”. */
@@ -152,14 +155,14 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
           {BRANCH.map(b => {
             const n = counts[b.id];
             const rows = b.id === 'contracts' ? data.contracts.results.slice(0, ROWS).map(c => ({ id: c.id, href: c.url, text: c.title || c.party, meta: [money(c.amount, c.currency), day(c.date) || '', c.role, SRC[c.source]].filter(Boolean).join(' · '), blank: true }))
-              : b.id === 'grants' ? data.grants.results.slice(0, ROWS).map(g => ({ id: g.id, href: g.url, text: g.title || g.programme, meta: [money(g.amount, g.currency), g.year ? String(g.year) : day(g.date) || '', g.programme, SRC[g.source] ?? g.source].filter(Boolean).join(' · '), blank: true }))
+              : b.id === 'grants' ? data.grants.results.slice(0, ROWS).map(g => ({ id: g.id, href: g.url, text: g.title || g.programme, meta: [money(g.amount, g.currency), g.year ? String(g.year) : day(g.date) || '', g.programme, SRC[g.source] ?? g.source].filter(Boolean).join(' · '), blank: true, attr: g.attribution }))
               : data.people.results.slice(0, ROWS).map(p => ({ id: p.id, href: p.profile_url, text: p.name, meta: [p.role, p.since ? `od ${day(p.since)}` : '', p.until ? `do ${day(p.until)}` : p.status === 'former' ? 'historyczna' : 'obecna'].filter(Boolean).join(' · '), blank: false }));
             const sum = b.id === 'contracts' ? sumLine(data.contracts.sums) : b.id === 'grants' ? sumLine(data.grants.sums) : `${n} ${plural(n, 'osoba', 'osoby', 'osób')}`;
             const empty = b.id === 'people' ? 'Brak potwierdzonych osób publicznych w organach.' : data.identifiers_missing ? 'Bez NIP w naszych danych nie łączymy ogłoszeń.' : 'Brak rekordów po identyfikatorach podmiotu.';
             return <section key={b.id} className="px-card px-mt__branch" data-g={b.id} aria-labelledby={`mt-${b.id}-h`}>
               <div className="px-mt__top"><h3 id={`mt-${b.id}-h`} className="px-h3"><Icon name={b.icon} />{b.title}</h3><b className="px-mt__sum">{sum}</b><small>{n} {plural(n, 'rekord', 'rekordy', 'rekordów')}{n > ROWS ? ` · ${ROWS} najnowszych poniżej` : ''}</small></div>
               {rows.length ? <ul className="px-mt__rows">{rows.map(r => <li key={r.id}>
-                <a href={r.href} {...(r.blank ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{r.text}</a><small>{r.meta}</small></li>)}</ul>
+                <a href={r.href} {...(r.blank ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{r.text}</a><small>{r.meta}</small>{'attr' in r && typeof r.attr === 'string' && r.attr ? <small className="px-mt__attr">{r.attr}</small> : null}</li>)}</ul>
                 : <p className="px-note px-mt__empty">{nb(empty)}</p>}
               <p className="px-card__foot px-mt__foot"><span>{foot(b.id === 'contracts' ? ['ted', 'bzp'] : b.id === 'grants' ? ['fts', 'niw'] : ['krs'])}</span>
                 {n > 0 && <a className="px-quiet" href="#mt-lista" onClick={() => setTab(b.id)}>Wszystkie {n} ↓</a>}</p>
@@ -170,6 +173,16 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
       <p className="px-card__foot px-tree__foot"><span>{narrow ? 'Dotknij elementu, aby otworzyć źródło.' : 'Kliknij element, aby otworzyć źródło w nowej karcie.'}</span><span>{nb('Niepowiązane (ta sama nazwa, brak identyfikatora) są w liście poniżej, poza sumami.')}</span></p>
     </figure>
 
+    {/* wykaz OPP z 1,5% podatku (MF, decyzja 13.10): osobna sekcja z dopiskami z API, kwoty bez sumowania z dotacjami */}
+    {data.opp_tax && <section className="px-card px-mt__opp" aria-labelledby="mt-opp-h">
+      <div className="pt-opp__top"><h3 id="mt-opp-h" className="px-h3"><Icon name="institution" />{nb('1,5% podatku (wskazanie podatników)')}</h3><small>{data.opp_tax.count ?? 0} {plural(data.opp_tax.count ?? 0, 'pozycja', 'pozycje', 'pozycji')}</small></div>
+      {data.opp_tax.results?.length ? <ul className="pt-opp__list">{data.opp_tax.results.map(r => <li key={r.id}>
+        {r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer">{nb(oppLine(r, money))}</a> : <span>{nb(oppLine(r, money))}</span>}
+        {r.attribution && <small className="pt-opp__attr">{nb(r.attribution)}</small>}</li>)}</ul>
+        : <p className="px-note px-mt__empty">{nb('Brak w naszych danych wskazań 1,5% podatku dla tego numeru KRS (wykaz Ministerstwa Finansów).')}</p>}
+      {data.opp_tax.note && <p className="px-note">{nb(data.opp_tax.note)}</p>}
+      <p className="px-card__foot px-mt__foot"><span>{data.sources.some(s => s.key === 'mf_opp') ? foot(['mf_opp']) : nb('Źródło: Ministerstwo Finansów, wykaz OPP (CC0 1.0).')}</span></p>
+    </section>}
     <div className="px-sec"><Przybornik id="mt-tools-h" tools={companyTools({ krs: o.krs_number, nip: o.nip, regon: o.regon, kind: o.kind })} /></div>
 
     <section className="px-mt__list" id="mt-lista" aria-labelledby="mt-list-h">

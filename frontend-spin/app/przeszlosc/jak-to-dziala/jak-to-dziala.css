@@ -155,3 +155,4 @@
 @media (prefers-reduced-motion: reduce) {
   .pt-v3 .px .jd-toc li a::before { transition: none; }
 }
+/* decyzja właściciela 13.10: podsekcja "Dane osób" */ .pt-v3 .jd-h3 { margin: 8px 0 0; color: var(--sc-text); font: 600 18px/1.35 var(--sc-font-display); scroll-margin-top: 80px; }

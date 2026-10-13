@@ -69,12 +69,12 @@ test('podmioty: więcej niż 5 -> licznik w odnośniku; brak -> "brak w naszych 
   assert.equal(locked.state, 'locked'); assert.equal(locked.orgs.length, 0); assert.equal(locked.link.href, '/przeszlosc/pilot');
 });
 
-test('podmioty: zamówienia i dotacje tylko z money_trail (bez wymyślania), 0 jest zerem', () => {
+test('podmioty: zamówienia i dotacje tylko z money_trail (bez wymyślania), brak = opis bez zera (wymagania prawne 13.10)', () => {
   const o = [org()];
   assert.equal(tile(base({ organisations: o, money_trail: null }), 'podmioty').extra, null);
   assert.equal(tile(base({ organisations: o, money_trail: { results: [] } }), 'podmioty').extra, null);
   const zero = tile(base({ organisations: o, money_trail: { results: [{ contracts: { count: 0 }, grants: { count: 0 } }] } }), 'podmioty').extra;
-  assert.match(zero.text, /w naszych danych: 0\.$/); assert.equal(zero.href, '#pp-pieniadze');
+  assert.match(zero.text, /^Brak w naszych danych zamówień publicznych i dotacji \(unijnych i krajowych\)/); assert.doesNotMatch(zero.text, /: 0/); assert.equal(zero.href, '#pp-pieniadze');
   const some = tile(base({ organisations: o, money_trail: { results: [{ contracts: { count: 2 }, grants: { count: 1 } }, { contracts: { count: 4 } }] } }), 'podmioty').extra;
   assert.match(some.text, /: 7\.$/);
   assert.equal(tile(base({ organisations: o, money_trail: { results: [{ contracts: { count: 2 } }] }, access: { locked: ['money_trail'] } }), 'podmioty').extra, null);

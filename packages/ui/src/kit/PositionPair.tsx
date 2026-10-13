@@ -101,6 +101,11 @@ export function PositionPair({ pair, as: Heading = "h3", labels = ["Wcześniej",
       <Side side={pair.b} which="b" role={labels[1]} domId={`${base}-b`} quotes={quotes} />
     </div>
     {pair.context && <p className="sc-pp__ctx"><b>Kontekst:</b> {nb(pair.context)}</p>}
+    {/* decyzja właściciela 13.10: odpowiedź osoby pod parą (ton tekstu, bez kolorów stron); na telefonie pod kontekstem */}
+    {pair.subject_response && <blockquote className="sc-pp__resp" aria-label={`${pair.subject_response.label}${pair.subject_response.date ? `, ${pairDateShort(pair.subject_response.date)}` : ""}`}>
+      <p className="sc-pp__resp-l">{pair.subject_response.label}{pair.subject_response.date ? `, ${pairDateShort(pair.subject_response.date)}` : ""}</p>
+      <p className="sc-pp__resp-t">{nb(pair.subject_response.text)}</p>
+    </blockquote>}
     <div className="sc-pp__foot">
       {showApproval && pair.approved_at
         ? <p className="sc-pp__meta">{pair.ai_suggested ? "Zestawienie zaproponowała AI, zatwierdził człowiek" : "Zestawienie zatwierdził człowiek"}, {pairDateShort(pair.approved_at)}.</p>

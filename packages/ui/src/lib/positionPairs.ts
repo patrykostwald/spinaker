@@ -38,7 +38,19 @@ export type PositionPairData = {
   ai_suggested: boolean;
   notice: string;
   report_url: string;
+  /** decyzja właściciela 13.10 (API-v3 sekcja 0): odpowiedź osoby pod parą albo null */
+  subject_response: SubjectResponse | null;
 };
+export type SubjectResponse = { label: string; text: string; date: string | null };
+/** Odpowiedź osoby z API: tekst 10-600 znaków, etykieta domyślnie "Odpowiedź osoby"; inaczej null. */
+export function normalizeResponse(raw: unknown): SubjectResponse | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const body = typeof r.text === 'string' ? r.text.trim() : '';
+  if (body.length < 1 || body.length > 600) return null;
+  const label = typeof r.label === 'string' && r.label.trim() ? r.label.trim() : 'Odpowiedź osoby';
+  return { label, text: body, date: typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(r.date) ? r.date : null };
+}
 export type PositionPairsBlock = { items: PositionPairData[]; notice: string; paused: boolean };
 export type PositionPairPerson = { id: number; slug: string; name: string };
 
@@ -108,6 +120,7 @@ export function normalizePair(raw: unknown): PositionPairData | null {
   return {
     id, topic, a, b, context: text(pair.context), approved_at: typeof pair.approved_at === 'string' ? pair.approved_at : null,
     ai_suggested: Boolean(pair.ai_suggested), notice: text(pair.notice) || POSITION_PAIRS_NOTICE, report_url: report,
+    subject_response: normalizeResponse(pair.subject_response),
   };
 }
 
@@ -223,5 +236,29 @@ function threadSide(box: ThreadBox): PositionSide | null {
 export function pairFromThreadBoxes(from: ThreadBox, to: ThreadBox, id: number, topic: string): PositionPairData | null {
   const a = threadSide(from);
   const b = threadSide(to);
-  return a && b ? { id, topic, a, b, context: '', approved_at: null, ai_suggested: false, notice: '', report_url: '' } : null;
+  return a && b ? { id, topic, a, b, context: '', approved_at: null, ai_suggested: false, notice: '', report_url: '', subject_response: null } : null;
+}
+
+/* ---------------------------------------------------------------- odpowiedź osoby: formularz (API-v3 sekcja 0, 3. recenzja) */
+export const REPLY_MIN = 10;
+export const REPLY_MAX = 600;
+/** Walidacja w przeglądarce: tekst 10-600 znaków; kod (jeśli podany) bez spacji, do 64 znaków. */
+export function replyError(body: string, code: string): string | null {
+  const t = body.trim();
+  if (t.length < REPLY_MIN) return `Odpowiedź musi mieć co najmniej ${REPLY_MIN} znaków.`;
+  if (t.length > REPLY_MAX) return `Odpowiedź może mieć najwyżej ${REPLY_MAX} znaków.`;
+  if (code.trim() && !/^[A-Za-z0-9-]{4,64}$/.test(code.trim())) return "Kod z wiadomości ma tylko litery, cyfry i myślniki.";
+  return null;
+}
+export function replyBody(body: string, code: string): { text: string; token?: string } {
+  const token = code.trim();
+  return token ? { text: body.trim(), token } : { text: body.trim() };
+}
+/** Komunikaty: 404 = ten sam co dla nieistniejącego zestawienia (para niepubliczna nie jest ujawniana). */
+export function replyStatusMessage(status: number): string {
+  if (status === 202 || status === 200) return "Odpowiedź przyjęta. Pokażemy ją pod zestawieniem po sprawdzeniu nadawcy.";
+  if (status === 403) return "Nie możemy przyjąć odpowiedzi bez potwierdzenia: potwierdź adres e-mail i wpisz kod z wiadomości.";
+  if (status === 404) return "Nie znaleziono tego zestawienia.";
+  if (status === 429) return "Wysłano już za dużo odpowiedzi. Spróbuj później.";
+  return "Nie udało się wysłać. Spróbuj za chwilę.";
 }

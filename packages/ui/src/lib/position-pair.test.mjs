@@ -153,3 +153,15 @@ test('spinka: łącznik "przeczy" ma w interfejsie nazwę "inaczej niż" (typ w 
   assert.match(strip, /przeczy: 'inaczej niż'/);
   assert.match(steps, /przeczy: 'not'/, 'klucz danych zostaje');
 });
+
+test('PositionPair: odpowiedź osoby pod parą (decyzja właściciela 13.10) - etykieta z datą, tekst, bez kolorów stron; null = brak bloku', () => {
+  const withResp = lib.normalizePair({ ...RAW, subject_response: { label: 'Odpowiedź osoby', text: 'Kontekst obu wypowiedzi był inny.', date: '2026-10-12' } });
+  const html = renderToStaticMarkup(React.createElement(comp.PositionPair, { pair: withResp })).replace(/\u00a0/g, ' ');
+  assert.match(html, /class="sc-pp__resp"/);
+  assert.match(html, /Odpowiedź osoby, /);
+  assert.match(html, /Kontekst obu wypowiedzi był inny\./);
+  assert.ok(html.indexOf('sc-pp__resp') > html.indexOf('data-pp="b"') || html.indexOf('sc-pp__resp') > html.lastIndexOf('sc-pp__side'), 'pod parą');
+  assert.doesNotMatch(html.slice(html.indexOf('sc-pp__resp')), /data-side|--sc-side/);
+  const none = renderToStaticMarkup(React.createElement(comp.PositionPair, { pair: lib.normalizePair({ ...RAW, subject_response: null }) }));
+  assert.doesNotMatch(none, /sc-pp__resp/);
+});

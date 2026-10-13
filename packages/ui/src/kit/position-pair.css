@@ -146,3 +146,4 @@
   .sc-pick__card[data-pair] { height: auto; min-height: 440px; padding: 18px 16px 22px !important; }
 }
 .sc-pp-list { scroll-margin-top: 80px; }
+/* odpowiedź osoby (decyzja właściciela 13.10): neutralne wyróżnienie - tło tonalne i linia tekstu, bez kolorów stron */ .sc-pp__resp { margin: 12px 0 0; padding: 14px 16px; border-radius: 10px; background: var(--sc-surface-2); box-shadow: inset 2px 0 0 var(--sc-line-strong); } .sc-pp__resp-l { margin: 0 0 4px; color: var(--sc-text-2); font: 600 14px/1.4 var(--sc-font-sans); } .sc-pp__resp-t { margin: 0; max-width: 46em; color: var(--sc-text); font-size: 16px; line-height: 1.6; } @media (max-width: 640px) { .sc-pp__resp-t { font-size: 17px; } }

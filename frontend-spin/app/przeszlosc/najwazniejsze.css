@@ -190,3 +190,4 @@ html[data-theme="light"] .pt-v3 .px .pt-org__name a { text-decoration-color: var
 
 /* dziesięć pozycji w spisie (z "Wcześniej i teraz": sieć + mianowniki + pary) mieści się w jednym wierszu przy 1088 px: 13 px zamiast 13,5 */
 .pt-v3 .px.px-pp .pt-idx ol:has(> li:nth-child(10)) a { font-size: 13px; padding-right: 2px; }
+/* oświadczenia z API: data publikacji i odczyt automatyczny ("sprawdź w PDF") pod wierszem */ .pt-v3 .pt-docs__m, .pt-v3 .pt-docs__a { display: block; color: var(--sc-text-2); font-size: 14px; line-height: 1.45; }

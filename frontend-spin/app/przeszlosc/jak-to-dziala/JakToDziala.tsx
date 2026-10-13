@@ -127,6 +127,9 @@ export function JakToDziala() {
           <p className="jd-p">{nb('Pomyłki się zdarzają. Poprawiamy je jawnie i ze źródłem:')}</p>
           <ol className="jd-list jd-list--n">{BLEDY_KROKI.map(t => <li key={t}>{nb(t)}</li>)}</ol>
           <p className="jd-p">{nb(`Pytania o dane osobowe i sprzeciw kieruj na ${KONTAKT} (procedura i terminy odpowiedzi: do potwierdzenia).`)}</p>
+          {/* decyzja właściciela 13.10: "Dane osób" - klauzula RODO art. 14 jest w stopce każdego profilu (z API, wersja robocza do prawnika); strona statyczna nie pobiera danych */}
+          <h3 className="jd-h3" id="dane-osob">Dane osób</h3>
+          <p className="jd-p">{nb('Każdy profil osoby publicznej ma w stopce zwiniętą „Informację o danych”: klauzulę informacyjną (RODO, art. 14) z wersją i datą oraz formularz „Zgłoś sprzeciw”. Sprzeciw potwierdzasz linkiem wysłanym na podany e-mail. Treść klauzuli to wersja robocza do akceptacji prawnika.')}</p>
           <p className="jd-more"><a className="px-link" href="/przeszlosc/poprawki">Rejestr poprawek&nbsp;→</a></p>
         </section>
 

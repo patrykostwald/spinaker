@@ -55,7 +55,8 @@ function TileView({ t, i, onFilter }: { t: Tile; i: number; onFilter?: (k: Filte
       {wide && shown.length > 0 && <ol className="pt-orgs" aria-label="Podmioty z KRS">{shown.map(r => <OrgItem key={r.key} r={r} />)}</ol>}
       {wide && t.orgs.length > shown.length && <p className="pt-tile__x pt-tile__x--quiet">Pokazano {shown.length} z {t.orgs.length}. Reszta jest w sekcji „Funkcje w KRS”.</p>}
       {t.docs.length > 0 && <ul className="pt-docs" aria-label="Oświadczenia majątkowe">{t.docs.map(d => <li key={d.key}>
-        {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer">{d.year ? `Oświadczenie za rok ${d.year}` : d.title}<i aria-hidden="true"> ↗</i></a> : <span>{d.title}</span>}</li>)}</ul>}
+        {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer">{d.meta !== undefined ? d.title : d.year ? `Oświadczenie za rok ${d.year}` : d.title}<i aria-hidden="true"> ↗</i></a> : <span>{d.title}</span>}
+        {d.meta ? <small className="pt-docs__m">{d.meta}</small> : null}{d.auto ? <small className="pt-docs__a">{d.auto}</small> : null}</li>)}</ul>}
       {t.extra && <p className="pt-tile__x pt-tile__x--quiet">{t.extra.text} <a href={t.extra.href}>Drzewo pieniędzy →</a></p>}
     </div>
     <footer className="pt-tile__f">
