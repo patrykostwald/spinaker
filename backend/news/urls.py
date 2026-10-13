@@ -33,7 +33,8 @@ from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
 from news.community import resolve_link, community_threads, community_thread_detail
 from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report,
-                             suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
+                             suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag,
+                             review_causal_chain)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
@@ -46,6 +47,8 @@ from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przesz
 from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
 from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_wersja
 from news.przeszlosc_paski import strips_view
+from news import przeszlosc_v3, position_pairs, privacy_notice
+from news.causal_chain import report_view as causal_chain_report_view
 from news.voting_anomalies import deviations_view as przeszlosc_deviations
 from news.coordinated import clusters_view as coordinated_clusters
 
@@ -125,6 +128,15 @@ urlpatterns = [
     path('przeszlosc/rss/', przeszlosc_rss),
     path('przeszlosc/osoby/', przeszlosc_osoba.people_view),
     path('przeszlosc/osoba/<str:ident>/', przeszlosc_osoba.person_view),
+    path('przeszlosc/osoba/<str:ident>/powiazania/', przeszlosc_v3.network_view),
+    path('przeszlosc/glosowania/', przeszlosc_v3.votes_list_view),
+    path('przeszlosc/osoba/<str:ident>/stanowiska/', position_pairs.pairs_view),
+    path('stanowiska/<int:pair_id>/zgloszenie/', position_pairs.report_view),
+    path('stanowiska/zgloszenie/potwierdz/<str:token>/', position_pairs.confirm_view),
+    path('stanowiska/<int:pair_id>/odpowiedz/', position_pairs.response_view),
+    path('przeszlosc/osoba/<str:ident>/sprzeciw/', privacy_notice.objection_view),
+    path('przeszlosc/sprzeciw/potwierdz/<str:token>/', privacy_notice.confirm_view),
+    path('clinic/messages/<int:message_id>/causal-chain/zgloszenie/', causal_chain_report_view),
     path('przeszlosc/spolki/', przeszlosc_spolki.search_view),
     path('przeszlosc/spolka/<str:ident>/', drzewo_pieniedzy.company_view),
     path('przeszlosc/przeplyw/<str:ident>/', przeszlosc_przeplyw.flow_view),
@@ -170,6 +182,7 @@ urlpatterns = [
     path('staff/clinic/diagnoses/<int:diagnosis_id>/review/', review_diagnosis),
     path('staff/clinic/diagnoses/<int:diagnosis_id>/hide/', hide_diagnosis),
     path('staff/clinic/messages/<int:message_id>/review/', review_message),
+    path('staff/clinic/messages/<int:message_id>/causal-chain/review/', review_causal_chain),
     path('staff/clinic/diagnoses/<int:diagnosis_id>/flag/', decide_flag),
     path('public-figures/<int:figure_id>/context/', public_figure_context),
     path('public-figures/<int:figure_id>/dossier/', public_figure_dossier),

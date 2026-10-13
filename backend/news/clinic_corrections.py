@@ -62,15 +62,34 @@ def corrections_data(page=1):
     sejm_hidden = sejm.order_by().filter(hidden_at__isnull=False).annotate(
         event_id=F('pk'), target_id=F('pk'), type=Value('sejm_hiding'), date=F('hidden_at'),
         reason=empty, reply_excerpt=empty).values(*fields)
-    events = withdrawals.union(hidden, answers, revisions, sejm_events, sejm_hidden, all=True).order_by('-date', '-type', '-event_id')
+    # v3 (recenzja Fable, poprawka 6): ciągi przyczyn odrzucone po publikacji, z publicznym powodem; bez danych zgłaszającego.
+    from news.clinic_models import CausalChain
+    chains = CausalChain.objects.filter(status='rejected', approved_at__isnull=False, rejected_at__isnull=False)
+    n_chains = chains.count()
+    if n_chains:  # klucz tylko, gdy są wpisy: odpowiedź bez łańcuchów identyczna jak przed v3
+        counts['chains'] = n_chains
+    chain_events = chains.order_by().annotate(
+        event_id=F('pk'), target_id=F('message_id'), type=Value('chain_withdrawal'), date=F('rejected_at'),
+        reason=F('review_note'), reply_excerpt=empty).values(*fields)
+    events = withdrawals.union(hidden, answers, revisions, sejm_events, sejm_hidden, chain_events, all=True).order_by('-date', '-type', '-event_id')
     batch = list(events[(page - 1) * 20:page * 20 + 1])
     rows = diagnoses.select_related('post__account').in_bulk(
-        {item['target_id'] for item in batch[:20] if not item['type'].startswith('sejm_')})
+        {item['target_id'] for item in batch[:20] if not item['type'].startswith(('sejm_', 'chain_'))})
+    from news.clinic_models import ClinicDailyMessage
+    messages = ClinicDailyMessage.objects.in_bulk({item['target_id'] for item in batch[:20] if item['type'] == 'chain_withdrawal'})
     sejm_ids = {item['target_id'] for item in batch[:20] if item['type'].startswith('sejm_')}
     sejm_rows = SejmVideoSpin.objects.select_related('figure', 'record').in_bulk(sejm_ids) if sejm_ids else {}
     figures = clinic.figures_by_account({row.post.account_id for row in rows.values() if not row.hidden_at})
     result = []
     for item in batch[:20]:
+        if item['type'] == 'chain_withdrawal':
+            message = messages[item.pop('target_id')]
+            item['id'] = f"chain_withdrawal:{item.pop('event_id')}"
+            item.update(author=None, camp=message.camp, camp_label=clinic.CAMP_LABELS.get(message.camp, ''),
+                        post_date=message.day, diagnosis_url=f'/klinika/przekazy/{message.day.isoformat()}',
+                        reply_excerpt='', notice='Wycofano ciąg przyczyn „Dr Spin wyjaśnia”')
+            result.append(item)
+            continue
         if item['type'].startswith('sejm_'):
             spin = sejm_rows[item.pop('target_id')]
             item['id'] = f"{item['type']}:{item.pop('event_id')}"
@@ -99,5 +118,5 @@ def corrections_data(page=1):
                         diagnosis_url=f'/klinika/{diagnosis.pk}')
         result.append(item)
     return {'results': result, 'counts': counts,
-            'count': counts['withdrawn'] + counts['hidden'] + counts['replies'] + counts['revisions'] + counts['sejm'],
+            'count': counts['withdrawn'] + counts['hidden'] + counts['replies'] + counts['revisions'] + counts['sejm'] + counts.get('chains', 0),
             'next_page': page + 1 if len(batch) > 20 else None}

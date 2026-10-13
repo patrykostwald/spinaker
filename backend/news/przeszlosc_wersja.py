@@ -71,7 +71,11 @@ def corrections_list():
         kind, _, ident = record.partition(':')
         href = f'/przeszlosc/osoba/{ident}' if kind == 'osoba' and ident else ''
         rows.append({'id': report.pk, 'date': report.created_at.date().isoformat(), 'record': record, 'label': label, 'href': href})
-    return rows
+    # v3 (recenzja Fable, poprawka 6): wycofane pary „Wcześniej i teraz” z publicznym powodem, bez danych zgłaszającego.
+    from news.position_pairs import corrections_rows
+    rows += corrections_rows(LIMIT)
+    rows.sort(key=lambda row: row['date'], reverse=True)
+    return rows[:LIMIT]
 
 
 @api_view(['GET'])

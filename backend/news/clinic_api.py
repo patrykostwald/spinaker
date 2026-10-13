@@ -79,7 +79,7 @@ def clinic_messages(request):
     count = days.count()
     batch = list(days[(page - 1) * 14:page * 14 + 1])
     grouped = {day: {'day': day, 'government': None, 'opposition': None} for day in batch[:14]}
-    for row in rows.filter(day__in=batch[:14]).prefetch_related('posts'):
+    for row in clinic.message_list(rows.filter(day__in=batch[:14])):
         grouped[row.day][row.camp] = clinic._message_data(row)
     return Response({'results': list(grouped.values()), 'next_page': page + 1 if len(batch) > 14 else None,
                      'count': count})
@@ -104,6 +104,11 @@ def clinic_message_detail(request, day):
     return Response(result)
 
 
+def _page_cache_active() -> bool:
+    from django.db import connection
+    return connection.vendor == 'postgresql'
+
+
 @extend_schema(summary='Klinika spinu: waga, przekazy dnia, spin dnia i diagnozy obu stron', tags=['klinika'],
                responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
@@ -113,11 +118,12 @@ def clinic_page(request):
     except ValueError:
         return Response({'detail': 'Parametr window musi być liczbą dni (1–30).'}, status=400)
     # Te same dane dla wszystkich: na produkcji (PostgreSQL + Redis) gotowe przez minutę, żeby wejście było szybkie (właściciel 5.10).
+    # v3: klucz zawiera stan flag v3; w ciszy wyborczej bez cache (zatwierdzony łańcuch nie może przetrwać w cache).
     from django.core.cache import cache
-    from django.db import connection
-    if connection.vendor != 'postgresql':
+    from news import causal_chain
+    if not _page_cache_active() or causal_chain.silence():
         return Response(clinic.clinic_page_data(window))
-    key = f'clinic-page:{window}'
+    key = causal_chain.page_cache_key(window)
     data = cache.get(key)
     if data is None:
         data = clinic.clinic_page_data(window)
@@ -406,6 +412,43 @@ def review_diagnosis(request, diagnosis_id):
 @permission_classes([IsAdminUser])
 def review_message(request, message_id):
     return _review(request, get_object_or_404(ClinicDailyMessage, pk=message_id))
+
+
+class ChainReviewInput(ReviewInput):
+    note = serializers.CharField(required=False, allow_blank=True, max_length=400, default='')
+    override = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, attrs):
+        if attrs['decision'] == 'reject' and not attrs.get('note', '').strip():
+            raise serializers.ValidationError({'note': 'Odrzucenie wymaga uzasadnienia.'})
+        return attrs
+
+
+@extend_schema(summary='Zatwierdź albo odrzuć ciąg przyczyn przekazu (v3, bez edycji kroków)', tags=['klinika'],
+               request=ChainReviewInput, responses=OpenApiTypes.OBJECT)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def review_causal_chain(request, message_id):
+    from news import causal_chain
+    from news.clinic_models import CausalChain
+    if not request.user.has_perm('news.can_decide_causalchain'):
+        return Response({'detail': 'Brak uprawnienia news.can_decide_causalchain.'}, status=403)
+    chain = get_object_or_404(CausalChain, message_id=message_id)
+    serializer = ChainReviewInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    try:
+        if data['decision'] == 'approve':
+            chain = causal_chain.approve(chain, request.user, data['note'], override=data['override'])
+        else:
+            chain = causal_chain.reject(chain, request.user, data['note'])
+    except causal_chain.ChainError as error:
+        status = 423 if error.code == 'silence' else 409
+        response = Response({'detail': str(error), 'code': error.code, 'gates': chain.gates}, status=status)
+    else:
+        response = Response({'id': chain.pk, 'status': chain.status, 'approved_at': chain.approved_at})
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 class HideInput(serializers.Serializer):
