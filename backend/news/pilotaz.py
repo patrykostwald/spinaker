@@ -83,7 +83,8 @@ def round_robin(by_camp: dict, n: int) -> list:
     return sample
 
 
-def pairs(n=50, *, generate=False, topics=(), ask=None, max_calls=60, dry_run=False, path=None) -> dict:
+def pairs(n=50, *, generate=False, topics=(), ask=None, max_calls=60, dry_run=False, path=None, per_combo=2,
+          verbose=False) -> dict:
     """Arkusz par do przeglądu: kandydaci z pętli (bez modeli) i opcjonalnie z generatora tematów; równy podział obozów."""
     from news import position_pairs as pp
     from news.clinic_models import PositionPair
@@ -91,13 +92,8 @@ def pairs(n=50, *, generate=False, topics=(), ask=None, max_calls=60, dry_run=Fa
     if not dry_run:
         log['from_checks'] = pp.from_checks(limit=max(n * 4, 100))
         if generate:
-            for topic in topics:
-                for figure in _figures_for_topic(topic):
-                    if log['calls'] >= max_calls:
-                        break
-                    result = pp.from_topic(figure, topic, ask=ask, max_asks=min(6, max_calls - log['calls']))
-                    log['calls'] += result['asked']
-                    log['from_topic'].append({'topic': topic, 'figure': figure.pk, **result})
+            generated = generate_from_topics(topics, ask=ask, max_calls=max_calls, per_combo=per_combo, verbose=verbose)
+            log['from_topic'], log['calls'] = generated, generated['calls']
     candidates = list(PositionPair.objects.filter(status='suggested').select_related('figure').order_by('-created_at')[:n * 10])
     by_camp = defaultdict(list)
     for pair in candidates:
@@ -119,13 +115,81 @@ def pairs(n=50, *, generate=False, topics=(), ask=None, max_calls=60, dry_run=Fa
     md.write_text('\n'.join([
         f'# Pilotaż par „Wcześniej i teraz” ({timezone.localdate().isoformat()})', '',
         f'Próbka: {len(sample)} z {len(candidates)} kandydatów; obozy w próbce: {dict(counts)}.',
-        f'Bilans (udział kont / diagnoz): {balance()}.', f'Wywołania modeli w tym przebiegu: {log["calls"]}. {COST_NOTE}', '',
+        f'Bilans (udział kont / diagnoz): {balance()}.', f'Wywołania modeli w tym przebiegu: {log["calls"]}. {COST_NOTE}',
+        f'Powody pytań bez pary (generator): {(log["from_topic"] or {}).get("reasons_summary") if isinstance(log["from_topic"], dict) else "-"}.', '',
         'Instrukcja: w CSV wpisz `decyzja` (tak/nie), `powod` (' + ', '.join(REASONS) + ') i `czas_s` (sekundy przeglądu).',
         'Czytaj oba źródła w całości. Potem: `python manage.py pilotaz raport --plik <csv>`.',
         f'Próg akceptacji: odrzucenia z powodu inna_sprawa albo kontekst < {int(THRESHOLDS["par"] * 100)}% przeglądniętych.']),
         encoding='utf-8')
     return {'csv': str(csv_path), 'md': str(md), 'sample': len(sample), 'by_camp': dict(counts), 'log': log,
             'candidates_by_camp': {c: len(v) for c, v in sorted(by_camp.items())}, 'excluded_camps': []}
+
+
+def _topic_figures(topic, *, seed, scan=300) -> dict:
+    """Osoby z co najmniej jedną parą pytań w temacie, pogrupowane wg obozu kont, w kolejności losowej z ziarnem dnia
+    i tematu (rotacja: każdy przebieg zaczyna od innych osób). Ta sama reguła dla każdego obozu."""
+    import random
+    from django.contrib.contenttypes.models import ContentType
+    from django.db.models import Q
+    from news.political_models import PublicFigure, SocialHandleEvidence
+    from news.position_pairs import questions
+    with_x = SocialHandleEvidence.objects.filter(subject_content_type=ContentType.objects.get_for_model(PublicFigure),
+                                                 status='candidate_created').values_list('subject_object_id', flat=True)
+    ids = list(PublicFigure.objects.filter(archived=False).filter(
+        Q(parliamentary_roster_entry__isnull=False) | Q(pk__in=with_x)).values_list('pk', flat=True))
+    random.Random(f'{seed}:{topic}').shuffle(ids)
+    groups = defaultdict(list)
+    for figure in PublicFigure.objects.filter(pk__in=ids[:scan]):
+        todo, _ = questions(figure, topic)
+        if todo:
+            groups[figure_camp(figure)].append(figure)
+    order = {pk: i for i, pk in enumerate(ids)}
+    return {camp: sorted(people, key=lambda f: order[f.pk]) for camp, people in groups.items()}
+
+
+def generate_from_topics(topics, *, ask=None, max_calls=60, per_combo=2, verbose=False, seed=None) -> dict:
+    """Pilotaż 13.10: budżet wywołań rozdzielony równo - najpierw po `per_combo` wywołań na osobę i temat, osoby na zmianę
+    z każdego obozu (round-robin), potem drugi przebieg dalszych pytań, jeśli budżet zostanie. Każde pytanie bez pary
+    ma powód (zbiorczo w `reasons_summary`)."""
+    from news import position_pairs as pp
+    seed = seed or timezone.localdate().isoformat()
+    combos = []
+    for topic in topics:
+        by_camp = _topic_figures(topic, seed=seed)
+        combos += [(topic, figure) for _, figure in round_robin(by_camp, sum(len(v) for v in by_camp.values()))]
+        if not by_camp:
+            combos.append((topic, None))
+    log = {'calls': 0, 'created': 0, 'combos': [], 'reasons': [], 'camps': Counter()}
+    for pass_no in (0, 1):
+        for topic, figure in combos:
+            if figure is None:
+                if pass_no == 0:
+                    log['reasons'].append({'temat': topic, 'reason': 'brak_materialu',
+                                           'detail': 'żadna osoba nie ma pary materiałów z tematem'})
+                continue
+            left = max_calls - log['calls']
+            if left <= 0:
+                break
+            result = pp.from_topic(figure, topic, ask=ask, max_asks=min(per_combo, left), skip=pass_no * per_combo, verbose=verbose)
+            if pass_no and not result['asked']:
+                continue  # w drugim przebiegu osoba nie ma już pytań
+            log['calls'] += result['calls']
+            log['created'] += result['created']
+            log['camps'][figure_camp(figure)] += result['asked']
+            log['combos'].append({'temat': topic, 'osoba': figure.pk, 'przebieg': pass_no + 1, 'asked': result['asked'],
+                                  'calls': result['calls'], 'created': result['created']})
+            log['reasons'] += [r for r in result['reasons']
+                               if not (r['reason'] == 'limit' and str(r.get('detail', '')).startswith('pominięto'))]
+            if any(str(r.get('detail', '')).startswith('model niedostępny') for r in result['reasons']):
+                log['stopped'] = 'brak wolnego modelu (okno agentów albo limity): przerwano'
+                break
+        if log.get('stopped'):
+            break
+    if log['calls'] >= max_calls:
+        log['reasons'].append({'reason': 'limit', 'detail': f'wykorzystano limit {max_calls} wywołań'})
+    log['camps'] = dict(log['camps'])
+    log['reasons_summary'] = dict(Counter(r['reason'] for r in log['reasons']))
+    return log
 
 
 def _figures_for_topic(topic, limit=10):

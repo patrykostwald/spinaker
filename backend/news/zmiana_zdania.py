@@ -181,8 +181,9 @@ def scan(limit=SCAN_BATCH):
 
 
 # --- ocena modelu ---
-def ask(payload):
-    """Pierwszy wolny darmowy model Konsylium w oknie agentów (limity, rezerwa na diagnozy, tryb Dyrygenta). (odpowiedź, model)."""
+def ask(payload, *, skip_inception=False):
+    """Pierwszy wolny darmowy model Konsylium w oknie agentów (limity, rezerwa na diagnozy, tryb Dyrygenta). (odpowiedź, model).
+    skip_inception=True (pilotaż 13.10): ponowna próba u innego dostawcy z puli darmowej po nieprawidłowej odpowiedzi."""
     from news import agents_common as common
     from news import council_registry as registry
     from news import dyrygent
@@ -192,7 +193,7 @@ def ask(payload):
     if not dyrygent.allowed('treść'):
         raise common.WindowClosed(f'Dyrygent: tryb {dyrygent.mode()}.')
     tried = []
-    first = common.inception_member()
+    first = None if skip_inception else common.inception_member()
     if first:  # Koszty pętli (7.10): najpierw Inception z własną darmową pulą, limity Konsylium zostają na diagnozy
         from news import inception
         answer = inception.side_json(SYSTEM, json.dumps(payload, ensure_ascii=False), SCHEMA, max_tokens=900)
