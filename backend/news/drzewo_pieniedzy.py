@@ -20,6 +20,7 @@ from operator import or_
 
 from news import krs
 from news import niw_dotacje as niw
+from news import opp_podatek as opp
 from django.db.models import F, Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -27,6 +28,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 SOURCES = {
+    'mf_opp': {'key': 'mf_opp', 'label': 'Ministerstwo Finansów, wykaz OPP',
+               'license': 'CC0 1.0', 'url': opp.PAGE_URL},
     'niw': {'key': 'niw', 'label': 'NIW-CRSO, Lista dotacji',
             'license': 'informacja publiczna; źródło i stan pliku podane',
             'url': 'https://niw.gov.pl/o-niw/lista-dotacji/'},
@@ -197,6 +200,22 @@ def grants(org, ids):
     return mark_suspect(out)
 
 
+def opp_tax(org, ids):
+    """Wskazania podatników wyłącznie po dokładnym KRS, poza dotacjami i ich sumami."""
+    from news.public_records_models import PublicRecord
+    number = ids.get('KRS', '')
+    if not re.fullmatch(r'[0-9]{10}', number):
+        return []
+    records = PublicRecord.objects.filter(source='mf_opp', kind='opp_15', data__krs=number)
+    out = [{'id': f'mf_opp:{r.pk}', 'tax_year': r.data.get('tax_year'),
+            'payment_year': r.data.get('payment_year'), 'amount': _amount(r.data.get('amount')),
+            'currency': 'PLN', 'source': 'mf_opp', 'url': r.data.get('resource_url') or r.source_url,
+            'attribution': opp.attribution(r.data.get('tax_year'), r.data.get('file_date')),
+            'file_date': r.data.get('file_date')} for r in records]
+    out.sort(key=lambda x: (x['tax_year'] or 0, x['payment_year'] or 0, x['id']), reverse=True)
+    return out
+
+
 def grants_note(rows):
     dates = sorted({r['file_date'] for r in rows if r['source'] == 'niw' and r.get('file_date')})
     note = NOTE.replace('Kwoty z ogłoszeń, nie z umów.', 'Kwoty zamówień z ogłoszeń, nie z umów.') if dates else NOTE
@@ -249,11 +268,13 @@ def branches(org):
     c, g, p = contracts(org, ids), grants(org, ids), people(org)
     linked = [int(x['id'].split(':')[1]) for x in c + g]
     u = unlinked(org, linked)
+    o = opp_tax(org, ids)
     return {'contracts': {'count': len(c), 'sums': _sums(c), 'suspect_count': sum(1 for x in c if x['amount_suspect']),
                           'results': c[:PER_BRANCH]},
             'grants': {'count': len(g), 'sums': _sums(g), 'suspect_count': sum(1 for x in g if x['amount_suspect']),
                        'results': g[:PER_BRANCH], 'sources': sorted({x['source'] for x in g}), 'note': grants_note(g),
                        'sums_note': niw.SUMS_NOTE},
+            'opp_tax': {'count': len(o), 'results': o[:PER_BRANCH], 'note': opp.NOTE},
             'people': {'count': len(p), 'results': p[:PER_BRANCH], 'note': people_note(org, g, p)},
             'unlinked': {'count': len(u), 'results': u}}
 
@@ -278,7 +299,7 @@ def tree(org):
         nodes.append({'id': x['id'], 'kind': 'person', 'label': x['name'], 'sub': x['role'], 'slug': x['slug'], 'url': x['profile_url'], 'source': 'krs'})
         edges.append({'source': root, 'target': x['id'], 'label': 'funkcja w KRS', 'since': x['since'], 'until': x['until']})
     used = {'krs'} | {x['source'] for x in b['contracts']['results']} | set(b['grants']['sources']) \
-        | {x['source'] for x in b['unlinked']['results']}
+        | {x['source'] for x in b['unlinked']['results']} | {x['source'] for x in b['opp_tax']['results']}
     sources = [{'key': k, **(SOURCES.get(k) or LICENSES[k])} for k in sorted(used)]
     ids = identifiers(org)
     return {'organisation': organisation(org), 'identifiers': ids, 'identifiers_missing': 'NIP' not in ids,
@@ -293,6 +314,7 @@ def export_data(org):
     c, g, p = contracts(org, ids), grants(org, ids), people(org)
     u = unlinked(org, [int(x['id'].split(':')[1]) for x in c + g], limit=ex.EXPORT_CAP)
     return {'organisation': organisation(org), 'identifiers': ids, 'contracts': c, 'grants': g, 'people': p, 'unlinked': u,
+            'opp_tax': opp_tax(org, ids), 'opp_tax_note': opp.NOTE,
             'sums': {'contracts': _sums(c), 'grants': _sums(g)}, 'sums_note': niw.SUMS_NOTE, 'sources': tree(org)['sources'],
             'note': grants_note(g), 'people_note': people_note(org, g, p)}
 
@@ -315,6 +337,10 @@ def export_csv(org, data):
         rows.append(ex.row(x['date'] or str(x.get('year') or ''), 'dotacja krajowa' if x['source'] == 'niw' else 'dotacja UE',
                            f"{x['title'] or x['programme']} | {x['programme']} | {_amount_text(x)}{state}", '', x['url'],
                            x['source'].upper(), f"wysoka: identyfikator {x['matched_by']}", x['id'], ex.day(x.get('fetched'))))
+    for x in data.get('opp_tax', []):
+        rows.append(ex.row(str(x['tax_year'] or ''), '1,5% podatku (wskazanie podatników)',
+                           f"Rok wpłaty: {x['payment_year']} | {_amount_text(x)} | {x['attribution']}", '', x['url'],
+                           'Ministerstwo Finansów, wykaz OPP (mf_opp)', 'wysoka: identyfikator KRS', x['id'], ''))
     for x in data['people']:
         rows.append(ex.row(x['since'] or '', 'funkcja w KRS (kontekst, nie dowód)', f"{x['name']}: {x['role']}" + (f" (do {x['until']})" if x['until'] else ''), '',
                            x['url'], 'KRS (api-krs.ms.gov.pl)', f"potwierdzona ({x['method']})", x['id'], ex.day(org.source_checked_at)))
@@ -325,6 +351,7 @@ def export_csv(org, data):
               f"Cytowanie: {ex.citation(org.name, 'drzewo przepływu pieniędzy spółki', stamp, f'{ex.SITE}/przeszlosc/spolka/{org.krs_number}')}", data['note']]
     if data.get('people_note'):
         footer.append(data['people_note'])
+    footer.append(data.get('opp_tax_note', opp.NOTE))
     if len(data['unlinked']) >= ex.EXPORT_CAP:
         footer.append(f'UWAGA: eksport niepełny: pominięto część niepowiązanych rekordów (limit {ex.EXPORT_CAP}).')
     return ex.csv_text(rows, footer)
