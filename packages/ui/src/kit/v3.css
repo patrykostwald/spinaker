@@ -673,13 +673,13 @@ html body .sc-clinic-db__list > .sc-v3-rows { max-width: 820px; }
 .sc-v3-hg__nums dd { margin: 0; color: var(--sc-text); font: 600 28px/1.15 var(--sc-font-display); letter-spacing: -.02em; white-space: nowrap; }
 .sc-v3-hg__nums dt { margin-top: 4px; white-space: normal; text-wrap: balance; color: var(--sc-text-3); font: 400 var(--sc-fs-meta)/1.35 var(--sc-font-sans); }
 .sc-v3-hg > .sc-v3-hh__act, .sc-v3 .sc-v3-hg__met { margin-top: 6px; }
-.sc-v3 .sc-v3-hg__met { grid-area: met; justify-self: start; }
+.sc-v3 .sc-v3-hg__met { grid-area: met; justify-self: end; }
 @media (max-width: 900px) {
   .sc-v3-hg { grid-template-columns: minmax(0, 1fr); grid-template-areas: "k" "t" "s" "a" "cap" "nums" "met"; }
   .sc-v3-hg__cap { margin-top: 24px; }
   .sc-v3-hg__nums { margin-top: 10px; align-self: start; }
   .sc-v3-hg__nums dt { white-space: normal; overflow: visible; }
-  .sc-v3 .sc-v3-hg__met { margin-top: 4px; }
+  .sc-v3 .sc-v3-hg__met { margin-top: 4px; justify-self: start; }
 }
 @media (max-width: 420px) { .sc-v3-hg__nums dd { font-size: 24px; } .sc-v3-hg__nums > div { padding: 2px 12px; } }
 /* ---------- Strona sceny (seria 2, uwaga właściciela: "jaśniej pokazać, jak odróżnić rządzących od opozycji") ----------
