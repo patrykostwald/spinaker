@@ -401,25 +401,51 @@ def gemini_daily_budget() -> float:
         return 4.0
 
 
-def gemini_post(model: str, body: dict, *, timeout, key: str = '', task: str = 'check'):
-    """generateContent; gdy model nie zna ustawienia myślenia (400), jedna próba bez niego — zadanie ma się wykonać.
-    Po przekroczeniu dziennego limitu — ClinicAIError: fakty sprawdza wtedy darmowy Groq, reszta czeka do jutra."""
-    budget = gemini_daily_budget()
-    if budget > 0 and gemini_spent_today() >= budget:
-        raise ClinicAIError('gemini_daily_budget')
-    url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
-    headers = {'x-goog-api-key': key or os.environ['GEMINI_API_KEY'].strip()}
+GEMINI_FALLBACK_STATUSES = (402, 403, 429)  # brak środków, zablokowany klucz albo limit: próbujemy klucza darmowego
+
+
+def _gemini_request(url: str, body: dict, api_key: str, timeout, model: str):
+    """Jedno żądanie generateContent; gdy model nie zna ustawienia myślenia (400), jedna próba bez niego."""
+    headers = {'x-goog-api-key': api_key}
     response = requests.post(url, json=body, timeout=timeout, headers=headers)
     config = body.get('generationConfig') or {}
     if response.status_code == 400 and 'thinkingConfig' in config and 'thinking' in response.text.lower():
         logger.warning('gemini %s: thinkingLevel odrzucony, ponawiam bez niego', model)
         body = {**body, 'generationConfig': {k: v for k, v in config.items() if k != 'thinkingConfig'}}
         response = requests.post(url, json=body, timeout=timeout, headers=headers)
-    if response.status_code == 200:
-        try:
-            record_gemini_spend(task, response.json())
-        except (ValueError, AttributeError):
-            pass
+    return response
+
+
+def gemini_post(model: str, body: dict, *, timeout, key: str = '', task: str = 'check'):
+    """generateContent z płatnym kluczem (GEMINI_API_KEY) i zapasowym darmowym (GEMINI_API_KEY_FREE, właściciel 13.10.2026).
+    Darmowy klucz dostaje to samo żądanie, gdy płatny nie ma środków (402/403/429) albo dzienny budżet płatnego jest
+    wyczerpany; koszt liczymy tylko dla płatnego. Przy jawnie podanym `key` (członek konsylium) zapasu nie ma.
+    Gdy nie ma żadnego klucza do użycia — ClinicAIError: fakty sprawdza wtedy darmowy Groq, reszta czeka do jutra."""
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
+    paid = key or os.environ.get('GEMINI_API_KEY', '').strip()
+    free = '' if key else os.environ.get('GEMINI_API_KEY_FREE', '').strip()
+    budget = gemini_daily_budget()
+    over_budget = bool(paid) and budget > 0 and gemini_spent_today() >= budget
+    keys = []
+    if paid and not over_budget:
+        keys.append((paid, True))
+    if free and free != paid:
+        keys.append((free, False))
+    if not keys:
+        raise ClinicAIError('gemini_daily_budget' if over_budget else 'gemini_key_missing')
+    response = None
+    for api_key, counted in keys:
+        response = _gemini_request(url, body, api_key, timeout, model)
+        if response.status_code == 200:
+            if counted:
+                try:
+                    record_gemini_spend(task, response.json())
+                except (ValueError, AttributeError):
+                    pass
+            return response
+        if response.status_code not in GEMINI_FALLBACK_STATUSES or (api_key, counted) == keys[-1]:
+            return response
+        logger.warning('gemini %s: klucz %s odpowiedział %s, próbuję zapasowego', model, 'płatny' if counted else 'darmowy', response.status_code)
     return response
 
 
