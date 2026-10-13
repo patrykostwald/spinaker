@@ -567,7 +567,8 @@ def vote_alignment(identities, limit=10, window=400, minimum=10):
     def item(r):
         f = figures.get((term, r['mp_id']))
         return {**(_person(f) if f else {'id': None, 'slug': None, 'name': r['name'], 'role': 'Poseł na Sejm RP'}),
-                'club': r['club'], 'pct': r['pct'], 'shared': r['total'], 'agreed': r['same'], 'evidence': agree[r['mp_id']]}
+                'club': r['club'], 'pct': r['pct'], 'shared': r['total'], 'agreed': r['same'], 'evidence': agree[r['mp_id']],
+                'mp_id': r['mp_id']}  # v3: identyfikator posła z Sejmu (graf łączy po nim, nigdy po nazwisku)
     return {'available': True, 'window': len(voting_ids), 'club': my_club, 'term': term,
             'aligned': [item(r) for r in aligned], 'cross_club': [item(r) for r in cross]}
 
@@ -699,6 +700,10 @@ def person_view(request, ident):
     if fmt in ('csv', 'json') and not has('export', request):
         return locked('export')
     data = {**data, 'access': access(request)}
+    from news.position_pairs import extend_profile  # v3 „Wcześniej i teraz”: tylko przy POSITION_PAIRS_ENABLED
+    data = extend_profile(data, figure)
+    from news import asset_declarations, privacy_notice  # decyzje właściciela 13.10: art. 14 i oświadczenia (flagi)
+    data = privacy_notice.extend_profile(asset_declarations.extend_profile(data, figure), figure)
     if not has('denominators', request):
         data['denominators'] = None
     if not has('krs', request):
@@ -717,6 +722,8 @@ def person_view(request, ident):
                 'export': {'exported_at': timezone.now().isoformat(timespec='seconds'), 'omitted': [{'what': w, 'count': n} for w, n in omitted],
                            'citation': ex.citation(data['name'], 'profil osoby publicznej', ex.today(), ex.SITE + '/przeszlosc/osoba/' + str(data['slug']))}}
     response = Response(data)
+    if 'position_pairs' in data:  # v3: pary zależą od ciszy wyborczej i zgłoszeń - bez cache pośredników
+        response['Cache-Control'] = 'no-store'
     if fmt == 'json':
         response['Content-Disposition'] = f'attachment; filename="przeszlosc-{data["slug"]}-{stamp}.json"'
     return response

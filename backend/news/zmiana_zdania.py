@@ -288,8 +288,19 @@ def shown(diagnosis):
     return list(rows[:3])
 
 
+def legacy_public() -> bool:
+    """Recenzja Fable 13.10 (poprawka 1): stary blok publikował ocenę modelu bez decyzji człowieka. Domyślnie WYŁĄCZONY
+    (POSITION_CHANGES_LEGACY_ENABLED=False); także wyłączony w ciszy wyborczej. Docelowo pary pokazuje tylko
+    „Wcześniej i teraz” (position_pairs, zatwierdzone przez człowieka). Pętla wyszukiwania kandydatów działa dalej
+    (niepublicznie) i zasila kolejkę `pary_stanowisk generuj --z-petli`."""
+    from news.v3_flags import flag, silence
+    return flag('POSITION_CHANGES_LEGACY_ENABLED') and not silence()
+
+
 def public_data(diagnosis):
-    """Blok „Zmiana zdania” na stronie diagnozy; pusta lista, gdy nic nie przeszło progu."""
+    """Blok „Zmiana zdania” na stronie diagnozy; None, gdy wyłączony albo nic nie przeszło progu."""
+    if not legacy_public():
+        return None
     post = diagnosis.post
     items = [{'kind': c.source_kind, 'kind_label': KIND_LABEL[c.source_kind], 'date': c.source_date.isoformat(), 'url': c.source_url,
               'title': c.source_title, 'quote_then': c.quote_then, 'quote_now': c.quote_now, 'explanation': c.explanation,
@@ -300,6 +311,8 @@ def public_data(diagnosis):
 
 def social_line(data):
     """Jedna linia do tekstu na Facebooku (social_publish), gdy blok istnieje."""
+    if not legacy_public():
+        return ''
     block = data.get('position_changes') or {}
     items = block.get('items') or []
     if not items:

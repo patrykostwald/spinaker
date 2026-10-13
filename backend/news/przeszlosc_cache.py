@@ -23,7 +23,7 @@ WARM_BUDGET_SECONDS = 20 * 60
 WARM_CATCHUP = 30                # tyle jeszcze niepoliczonych profili dosypuje każde godzinne rozgrzewanie (paczka zamiast jednego długiego przebiegu)
 TOPIC_KEY = 'przeszlosc:temat:v4:'
 VOTES_KEY = 'przeszlosc:glosowania:v2:'
-PROFILE_KEY = 'przeszlosc:osoba:v2:'  # ten sam klucz i kształt ładunku co dotąd w person_view (testy wzmianek na nim polegają)
+PROFILE_KEY = 'przeszlosc:osoba:v3:'  # v3 (13.10): mp_id w zgodności głosów i etykieta danych trzecich w wydatkach;  # ten sam klucz i kształt ładunku co dotąd w person_view (testy wzmianek na nim polegają)
 LAST_WARM_KEY = 'przeszlosc:rozgrzewanie:ostatnie'
 
 

@@ -767,6 +767,8 @@ class ParliamentaryVoting(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["term", "sitting", "number"], name="unique_sejm_voting")]
+        # v3: lista głosowań /api/przeszlosc/glosowania/ (filtr kadencji i złączenie z datą artykułu)
+        indexes = [models.Index(fields=["term", "article"], name="voting_term_article_v3")]
 
 
 class OfficialRevision(models.Model):
@@ -790,6 +792,8 @@ class Ballot(models.Model):
     class Meta:
         ordering = ["name", "mp_id"]
         constraints = [models.UniqueConstraint(fields=["voting", "mp_id"], name="unique_mp_ballot")]
+        # v3: filtr klubu w liście głosowań; na PostgreSQL tworzony CONCURRENTLY (migracja 0163)
+        indexes = [models.Index(fields=["club", "voting"], name="ballot_club_voting_v3")]
 
 
 class EvidenceLink(models.Model):
