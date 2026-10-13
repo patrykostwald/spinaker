@@ -2,7 +2,7 @@
 import { Sprostowanie } from './Sprostowanie';
 import { useEffect, useMemo, useState } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
-import { Bar, Follow, Foot, Icon, LayerCaption, day, nb, plural, short, spinColor, text, useNarrativeLayer, useStandalone, type Access } from './ui';
+import { Bar, Follow, Foot, Icon, LayerCaption, PageIndex, day, host, nb, plural, short, spinColor, text, useNarrativeLayer, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 import { WMediach } from './WMediach';
 import { Przybornik, personTools } from './Przybornik';
@@ -64,8 +64,10 @@ export function PersonProfile({ ident }: { ident: string }) {
       document.title = `${d.name} - przeszłość.today`;
     }).catch(() => setState('error'));
   }, [ident]);
+  const index: [string, string][] = [['pp-akta', 'Akta'], ['pp-os', 'Oś czasu'], ['pp-media', 'Media'], ['pp-funkcje', 'Funkcje'], ['pp-krs', 'KRS'], ['pp-pieniadze', 'Pieniądze'],
+    ...(data?.denominators ? [['dn', 'Mianowniki'] as [string, string]] : [])];
   return <div className="px px-pp">
-    <Bar />
+    <Bar index={data ? <PageIndex items={index} /> : undefined} />
     {state === 'loading' && <div className="px-wait"><Loading label="Ładowanie profilu" /></div>}
     {state === 'missing' && <p className="px-msg">{nb('Nie ma takiej osoby w rejestrze osób publicznych.')} <a href="/przeszlosc?tryb=osoba">Szukaj osoby</a></p>}
     {state === 'off' && <p className="px-msg">Podgląd jest jeszcze wyłączony na serwerze.</p>}
@@ -97,37 +99,30 @@ function ProfileView({ data }: { data: Profile }) {
   const stamp = data.generated_at.slice(0, 10);
   let lastDay = '';
   return <>
-    <header className="px-tv__head px-pp__head">
-      <div>
+    {/* port v3 (13.10): nagłówek akt dwukolumnowy - kicker przy górnej krawędzi, tytuł, opis i akcje dociągnięte do dołu; po prawej
+        „W skrócie” rozciągnięte do tej samej dolnej krawędzi. Jeden główny przycisk (Obserwuj osobę), reszta ghost. */}
+    <header className="pt-akta px-pp__head" id="pp-akta">
+      <div className="pt-head__l">
         <p className="px-kicker">Osoba publiczna<LayerCaption /></p>
-        <h1>{data.name}</h1>
-        {sub && <p className="px-pp__sub">{sub}</p>}
-        <p className="px-pp__links">
-          <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`osoba:${data.slug || data.id}`)}`}>Drzewo przepływu →</a>
-          {data.official_profile_url && <a href={data.official_profile_url} target="_blank" rel="noopener noreferrer">Oficjalny profil ↗</a>}
-          {data.evidence_url && <a href={data.evidence_url} target="_blank" rel="noopener noreferrer">Źródło funkcji ↗</a>}
-          {data.x_accounts.map(a => <a key={a.handle} href={a.url} target="_blank" rel="noopener noreferrer">@{a.handle} na X ↗</a>)}
-        </p>
+        <div className="pt-head__b">
+          <h1>{data.name}</h1>
+          {sub && <p className="px-pp__sub">{sub}</p>}
+          <p className="px-pp__links">
+            <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`osoba:${data.slug || data.id}`)}`}>Drzewo przepływu →</a>
+            {data.official_profile_url && <a href={data.official_profile_url} target="_blank" rel="noopener noreferrer">Oficjalny profil ↗</a>}
+            {data.evidence_url && <a href={data.evidence_url} target="_blank" rel="noopener noreferrer">Źródło funkcji ↗</a>}
+            {data.x_accounts.map(a => <a key={a.handle} href={a.url} target="_blank" rel="noopener noreferrer">@{a.handle} na X ↗</a>)}
+          </p>
+          <div className="px-tv__tools pt-acts">
+            {!locked.has('alerts') && <Follow kind="person" target={data.slug} label={data.name} primary />}
+            {!locked.has('export') && <><a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=csv`} download><Icon name="down" />CSV</a>
+            <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=json`} download><Icon name="down" />JSON</a></>}
+            <Sprostowanie recordId={`osoba:${data.slug || data.id}`} label={data.name} />
+          </div>
+        </div>
       </div>
-      <div className="px-tv__tools">
-        <Sprostowanie recordId={`osoba:${data.slug || data.id}`} label={data.name} />
-        {!locked.has('alerts') && <Follow kind="person" target={data.slug} label={data.name} />}
-        {!locked.has('export') && <><a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=csv`} download><Icon name="down" />CSV</a>
-        <a className="px-tool" href={`/api/przeszlosc/osoba/${data.id}/?eksport=json`} download><Icon name="down" />JSON</a></>}
-      </div>
-    </header>
-
-    <section className="px-proof px-pp__proof" aria-label="Liczby" data-n={narr ? 6 : 5}>
-      {([[data.posts.count, 'wpisów na X', 'wpis na X', 'wpisy na X'], [data.posts.diagnoses, 'diagnoz Dr. Spina', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina'],
-        [data.documents.count, 'dokumentów Sejmu', 'dokument Sejmu', 'dokumenty Sejmu'], [data.votes.count, 'głosowań imiennych', 'głosowanie imienne', 'głosowania imienne'],
-        [data.organisations.length, 'funkcji w KRS', 'funkcja w KRS', 'funkcje w KRS'], [data.articles_total ?? data.materials.count, 'artykułów', 'artykuł', 'artykuły']] as const)
-        .filter(([, many]) => narr || many !== 'diagnoz Dr. Spina').map(([n, many, one, few]) => <div key={many}><b>{n.toLocaleString('pl-PL')}</b><span>{nb(plural(n, one, few, many))}</span></div>)}
-    </section>
-
-    <div className="px-pp__sum">
-      <Activity rows={data.activity} />
-      <section className="px-card px-brief" aria-labelledby="pp-brief-h">
-        <h3 id="pp-brief-h" className="px-h3">W skrócie</h3>
+      <section className="px-card px-brief pt-kv" aria-labelledby="pp-brief-h">
+        <h2 id="pp-brief-h" className="px-h3">W skrócie</h2>
         <dl>
           {narr && <div><dt>Średni spin</dt><dd>{data.posts.avg_spin !== null ? <><i className="px-spin-dot" style={{ ['--spin' as string]: spinColor(data.posts.avg_spin) }} />{data.posts.avg_spin}/100 <small>· {data.posts.diagnoses} {plural(data.posts.diagnoses, 'diagnoza', 'diagnozy', 'diagnoz')}</small></> : <small>brak diagnoz</small>}</dd></div>}
           <div><dt>Głosowania</dt><dd>{data.votes.count ? <VoteBar summary={data.votes.summary} /> : <small>{data.votes.available ? 'brak w bazie' : 'nie jest posłem w naszych danych'}</small>}</dd></div>
@@ -138,11 +133,22 @@ function ProfileView({ data }: { data: Profile }) {
         </dl>
         <p className="px-card__foot">Policzone z&nbsp;danych poniżej, bez AI. Stan na {day(stamp)}.</p>
       </section>
+    </header>
+
+    <section className="px-proof px-pp__proof" aria-label="Liczby" data-n={narr ? 6 : 5}>
+      {([[data.posts.count, 'wpisów na X', 'wpis na X', 'wpisy na X'], [data.posts.diagnoses, 'diagnoz Dr. Spina', 'diagnoza Dr. Spina', 'diagnozy Dr. Spina'],
+        [data.documents.count, 'dokumentów Sejmu', 'dokument Sejmu', 'dokumenty Sejmu'], [data.votes.count, 'głosowań imiennych', 'głosowanie imienne', 'głosowania imienne'],
+        [data.organisations.length, 'funkcji w KRS', 'funkcja w KRS', 'funkcje w KRS'], [data.articles_total ?? data.materials.count, 'artykułów', 'artykuł', 'artykuły']] as const)
+        .filter(([, many]) => narr || many !== 'diagnoz Dr. Spina').map(([n, many, one, few]) => <div key={many}><b>{n.toLocaleString('pl-PL')}</b><span>{nb(plural(n, one, few, many))}</span></div>)}
+    </section>
+
+    <div className="px-pp__sum pt-full">
+      <Activity rows={data.activity} />
     </div>
 
     <div className="px-grid">
       <div className="px-main">
-        <section className="px-time" aria-labelledby="pp-os-h">
+        <section className="px-time pt-tl" id="pp-os" aria-labelledby="pp-os-h">
           <div className="px-time__head"><h2 id="pp-os-h" className="px-h3">Oś czasu</h2><span>{shown.length} {plural(shown.length, 'pozycja', 'pozycje', 'pozycji')}</span></div>
           <div className="px-filters"><div className="px-seg" role="group" aria-label="Rodzaj">
             {([['all', 'Wszystko'], ['statement', 'Wpisy'], ['diag', 'Z diagnozą'], ['record', 'Sejm'], ['vote', 'Głosowania'], ['media', 'Media']] as const).filter(([k]) => narr || k !== 'diag').map(([k, l]) =>
@@ -159,7 +165,7 @@ function ProfileView({ data }: { data: Profile }) {
                 {n.spin ? <a className="px-link" href={n.spin.url} target="_blank" rel="noopener noreferrer"><i className="px-spin-dot" style={{ ['--spin' as string]: spinColor(n.spin.intensity) }} />Diagnoza Dr. Spina · spin {n.spin.intensity}/100 ↗</a>
                   : n.vote ? <span className="px-pp__vote" data-v={n.vote}><i />głos: {n.vote}</span> : null}
                 <span className="px-ev__quiet">
-                  {n.url && <a className="px-quiet" href={n.url} target="_blank" rel="noopener noreferrer">źródło ↗</a>}
+                  {n.url && <a className="pt-src" href={n.url} target="_blank" rel="noopener noreferrer" aria-label={`źródło: ${host(n.url) || 'oryginał'}, ${n.source}, ${n.date}`}><span>{host(n.url) || 'źródło'}</span><i aria-hidden="true">↗</i></a>}
                   {n.url && n.kind !== 'vote' && <a className="px-quiet" href={`https://web.archive.org/web/*/${n.url}`} target="_blank" rel="noopener noreferrer">archiwum</a>}
                 </span>
               </div>
@@ -168,11 +174,11 @@ function ProfileView({ data }: { data: Profile }) {
           {shown.length > 12 && <button type="button" className="px-more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${shown.length})`}</button>}
         </section>
         {/* „W mediach” (właściciel 6.10): potwierdzone artykuły o osobie; tylko tytuł, data, redakcja i odnośnik */}
-        <WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
+        <div id="pp-media" className="pt-anchor" /><WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
         <WMediach id="pp-mentions-h" heading="Wzmianki" automatic total={data.mentions?.total} emptyReason={data.mentions?.reason} items={(data.mentions?.results ?? []).filter(m => m.url).map(m => ({ id: `mention${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, confidence: m.confidence, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
       </div>
       <aside className="px-side">
-        <section className="px-card" aria-labelledby="pp-roles-h">
+        <section className="px-card" id="pp-funkcje" aria-labelledby="pp-roles-h">
           <h3 id="pp-roles-h" className="px-h3">Funkcje publiczne</h3>
           <ul className="px-panel__rows">{data.employment_timeline.slice(0, 8).map((r, i) => <li key={i}><span>{r.source?.url ? <a href={r.source.url} target="_blank" rel="noopener noreferrer">{r.position}</a> : r.position}</span>
             <small>{[r.organisation, r.since ? `od ${day(r.since)}` : '', r.until ? `do ${day(r.until)}` : '', r.status === 'current' ? 'obecnie' : 'wcześniej'].filter(Boolean).join(' · ')}</small></li>)}</ul>
@@ -184,17 +190,19 @@ function ProfileView({ data }: { data: Profile }) {
             <small>{[c.role, c.since ? `od ${day(c.since)}` : ''].filter(Boolean).join(' · ')}</small></li>)}</ul>
           <p className="px-note">{nb('Skład komisji z oficjalnego API Sejmu, po identyfikatorze posła.')}</p>
         </section>}
-        <section className="px-card" aria-labelledby="pp-krs-h">
+        <section className="px-card pt-krs-card" id="pp-krs" aria-labelledby="pp-krs-h">
           <h3 id="pp-krs-h" className="px-h3">Funkcje w KRS</h3>
           {locked.has('krs') ? <p className="px-note">{nb('Funkcje w KRS są w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>
           : data.organisations.length ? <ul className="px-panel__rows">{data.organisations.map(o => <li key={`${o.id}-${o.public_role}-${o.relation_status}`}>
             <a href={o.official_register_url} target="_blank" rel="noopener noreferrer">{o.name}</a>
             <small>{[o.organ || o.public_role, `KRS ${o.krs_number}`, o.since ? `wpis w KRS od ${day(o.since)}` : '', o.relation_status === 'former' ? 'historyczna' : 'obecna'].filter(Boolean).join(' · ')}{o.extra_register_url ? <> · <a href={o.extra_register_url} target="_blank" rel="noopener noreferrer">rejestr.io</a></> : null}</small></li>)}</ul>
             : <p className="px-note">{nb(`Brak w naszych danych: potwierdzonych funkcji w KRS (zakres: osoby publiczne z naszej bazy, stan na ${day(stamp)}).`)}</p>}
-          <p className="px-note">{nb(data.organisations.find(o => o.since_note)?.since_note ?? 'Data wpisu w KRS nie zawsze jest datą faktycznego objęcia funkcji.')}</p>
-          <p className="px-note">{nb(data.krs_note)}</p>
+          <div className="pt-krs">
+            <p className="px-note">{nb(data.organisations.find(o => o.since_note)?.since_note ?? 'Data wpisu w KRS nie zawsze jest datą faktycznego objęcia funkcji.')}</p>
+            <p className="px-note">{nb(data.krs_note)}</p>
+          </div>
         </section>
-        <section className="px-card" aria-labelledby="pp-money-h">
+        <section className="px-card" id="pp-pieniadze" aria-labelledby="pp-money-h">
           <h3 id="pp-money-h" className="px-h3">Pieniądze powiązanych spółek</h3>
           {locked.has('money_trail') || data.money_trail === null ? <p className="px-note">{nb('Drzewo przepływu pieniędzy jest w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>
           : data.money_trail?.results.length ? <ul className="px-panel__rows">{data.money_trail.results.map(o => <li key={o.id}>
@@ -253,7 +261,7 @@ function Denominators({ data }: { data: Profile }) {
   const d = data.denominators!;
   const [cross, setCross] = useState(false);
   const votes = cross ? d.votes.cross_club : d.votes.aligned;
-  return <section className="px-sec px-dn" aria-labelledby="dn-h">
+  return <section className="px-sec px-dn" id="dn" aria-labelledby="dn-h">
     <div className="px-dn__head"><h2 id="dn-h" className="px-h2">Wspólne mianowniki</h2><p className="px-note">{nb(d.note)}</p></div>
     <div className="px-dn__grid">
       <DnCard title="Występują razem" icon="people" empty="Brak wspólnych dokumentów, tematów i przekazów w bazie."

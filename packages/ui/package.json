@@ -7,7 +7,8 @@
   "exports": {
     ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
     "./kit": { "types": "./src/kit/index.ts", "default": "./src/kit/index.ts" },
-    "./kit/kit.css": "./src/kit/kit.css"
+    "./kit/kit.css": "./src/kit/kit.css",
+    "./kit/v3.css": "./src/kit/v3.css"
   },
   "sideEffects": ["*.css"],
   "devDependencies": {

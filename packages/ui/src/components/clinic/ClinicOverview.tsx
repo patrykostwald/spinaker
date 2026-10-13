@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CAMPS, CAMP_LABELS, getClinicPage, spinVar, type SpinCardData } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, getClinicPage, type SpinCardData } from "../../lib/clinic";
 import { formatDatePl, formatDateTimePl } from "../../lib/utils";
 import { NewsletterSignup } from "../NewsletterSignup";
 import { ClinicShowcase } from "./ClinicIndicators";
 import { ClinicRanking } from "./ClinicRanking";
+import { ClinicV3 } from "./ClinicV3";
 
 function DiagnosisCard({ spin }: { spin: SpinCardData }) {
   return <Link className="sc-overview-card sc-overview-diagnosis" href={`/klinika/${spin.id}`}>
-    <div className="sc-overview-card__top"><span>{spin.camp_label}</span><span className="sc-overview-score" style={spinVar(spin.intensity)}>Siła spinu <b>{spin.intensity}</b>/100<i className="sc-spin-fill" aria-hidden="true" /></span></div>
+    <div className="sc-overview-card__top"><span>{spin.camp_label}</span><span className="sc-overview-score" data-zone={spin.intensity <= 33 ? "lo" : spin.intensity <= 66 ? "mid" : "hi"} title={`Siła spinu ${spin.intensity}/100`} aria-label={`Siła spinu ${spin.intensity} na 100`}><b>{spin.intensity}</b><small>/100</small></span></div>
     <h3 title={spin.headline}>{spin.headline}</h3>
     <p className="sc-overview-author" title={spin.author.name}>{spin.author.name}</p>
     <p className="sc-overview-excerpt">{spin.summary}</p>
@@ -21,6 +22,12 @@ function DiagnosisCard({ spin }: { spin: SpinCardData }) {
 
 /** Krótki przegląd oparty wyłącznie na publicznych danych Kliniki. */
 export function ClinicOverview({ home = false, extra }: { home?: boolean; extra?: ReactNode }) {
+  // v3 (13.10.2026): Klinika w nowym układzie; wariant `home` zostaje dla zgodności (główna używa HomeV3).
+  if (!home) return <ClinicV3 extra={extra} />;
+  return <ClinicOverviewLegacy home={home} extra={extra} />;
+}
+
+function ClinicOverviewLegacy({ home = false, extra }: { home?: boolean; extra?: ReactNode }) {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, refetchInterval: 5 * 60_000 });
   const [detailsOpen, setDetailsOpen] = useState(false);
   const data = query.data;

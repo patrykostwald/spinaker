@@ -18,7 +18,7 @@ const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', {
 const short = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : '';
 const nice = (name: string) => name.split(/(\s+|-)/).map(w => w.length > 3 && w === w.toUpperCase() && w !== w.toLowerCase() ? w[0] + w.slice(1).toLowerCase() : w).join('');
 
-export function Odstepstwa() {
+export function Odstepstwa({ standalone = false }: { standalone?: boolean }) {
   const [period, setPeriod] = useState<'90d' | 'kadencja'>('90d');
   const [data, setData] = useState<Data | null>(null);
   const [club, setClub] = useState<string | null>(null);
@@ -30,12 +30,14 @@ export function Odstepstwa() {
       .catch(() => { if (live) setFailed(true); });
     return () => { live = false; };
   }, [period]);
-  if (failed && !data) return null;
-  if (data && !data.clubs.length) return null;
+  // na stronie głównej sekcja znika bez danych; na osobnej stronie zawsze komunikat (stała strefa, nic nie skacze)
+  if (failed && !data) return standalone ? <p className="px-msg" role="alert">Nie udało się pobrać odstępstw. Spróbuj ponownie za chwilę.</p> : null;
+  if (data && !data.clubs.length) return standalone ? <p className="px-msg">Brak danych o odstępstwach w tym okresie.</p> : null;
   const current = data?.clubs.find(c => c.club === club) ?? data?.clubs[0];
   return <section className="px-sec px-dev" id="odstepstwa" aria-labelledby="dev-h">
     <div className="px-dev__head">
-      <h2 id="dev-h" className="px-h2">Odstępstwa od klubu</h2>
+      {standalone ? <div className="pt-head__l"><p className="px-kicker">Głosowania Sejmu</p><h1 id="dev-h">Odstępstwa od klubu</h1></div>
+        : <h2 id="dev-h" className="px-h2">Odstępstwa od klubu</h2>}
       <div className="px-seg" role="group" aria-label="Okres">
         {([['90d', '90 dni'], ['kadencja', 'Cała kadencja']] as const).map(([k, l]) =>
           <button key={k} type="button" aria-pressed={period === k} onClick={() => setPeriod(k)}>{l}</button>)}

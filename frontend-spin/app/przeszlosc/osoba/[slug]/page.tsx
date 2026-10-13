@@ -5,7 +5,6 @@ export const metadata = {
   title: 'Osoba publiczna - przeszłość.today',
   description: 'Funkcje, wpisy, dokumenty Sejmu, głosowania, KRS i wspólne mianowniki jednej osoby publicznej.',
   robots: { index: false, follow: false },
-  icons: { icon: [{ url: '/przeszlosc-icon.svg', type: 'image/svg+xml' }], shortcut: '/przeszlosc-icon.svg', apple: '/przeszlosc-icon.svg' },
 };
 
 export default function PersonRoute({ params }: { params: { slug: string } }) {

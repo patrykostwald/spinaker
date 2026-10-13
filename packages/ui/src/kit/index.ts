@@ -100,3 +100,11 @@ export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
 export { GlitchWord } from "./GlitchWord";
 export { Loading } from "./Loading";
 export { SpinExplainer, SPIN_EXPLAINER_PL, type SpinExplainerText } from "./SpinExplainer";
+
+// v3 (13.10.2026) - przeniesienie prototypu spin-v3
+export { SpinMeter, type SpinMeterModel } from "./SpinMeter";
+export { SpinRow } from "./SpinRow";
+export { CausalChain, CAUSAL_CHAIN_ENABLED, isCausalChainValid, type CausalStep, type CausalStepKind } from "./CausalChain";
+export { HomeV3 } from "./home/HomeV3";
+export { PrzekazDniaCard } from "./home/PrzekazDniaCard";
+export { useWave } from "./useWave";

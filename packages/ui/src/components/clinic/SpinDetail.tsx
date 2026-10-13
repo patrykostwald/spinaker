@@ -21,6 +21,11 @@ import { PositionChanges } from "./PositionChanges";
 import { SpinReceptionBlock } from "./SpinReception";
 import { ArchiveNote, FactChecks } from "./OpenSources";
 
+import { SpinDetailV3 } from "./SpinDetailV3";
+
+/** Widok diagnozy v3 (prototyp spin-v3). false przywraca poprzedni układ bez zmian w danych. */
+const DETAIL_V3 = true;
+
 // Jedno ustawienie pierwszego ekranu: "word" pokazuje samą ocenę słowną.
 export const SCORE_STYLE: "number" | "word" = "number";
 
@@ -127,6 +132,8 @@ export function SpinDetail({ id, returnTo }: { id: string; returnTo?: string }) 
   if (query.isError || !query.data) return <div className="sc-clinic"><h1 className="sc-sr-only">Nie znaleziono diagnozy</h1><p className="sc-clinic-empty">Nie znaleziono diagnozy. <Link href="/klinika">Wróć do Kliniki</Link></p></div>;
   const spin = query.data;
   if (spin.status === "withdrawn") return <WithdrawnSpin spin={spin} />;
+  // v3 (13.10.2026): siedem sekcji ze spisem treści; poprzedni układ (wersja prosta + szczegóły) zostaje poniżej jako zapas.
+  if (DETAIL_V3) return <SpinDetailV3 spin={spin} returnTo={returnTo} />;
   const simple = hasPlain(spin.plain);
   const expanded = expandedId === id;
   return (

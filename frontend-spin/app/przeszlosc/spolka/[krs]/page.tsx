@@ -5,7 +5,6 @@ export const metadata = {
   title: 'Drzewo przepływu pieniędzy - przeszłość.today',
   description: 'Spółka z KRS: zamówienia publiczne (TED, BZP), dotacje UE (FTS) i osoby z funkcjami w KRS, powiązane tylko po NIP, KRS i REGON.',
   robots: { index: false, follow: false },
-  icons: { icon: [{ url: '/przeszlosc-icon.svg', type: 'image/svg+xml' }], shortcut: '/przeszlosc-icon.svg', apple: '/przeszlosc-icon.svg' },
 };
 
 export default function CompanyRoute({ params }: { params: { krs: string } }) {

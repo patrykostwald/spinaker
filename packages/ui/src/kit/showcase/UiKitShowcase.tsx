@@ -19,6 +19,7 @@ import * as Footer from "./sections/Footer";
 import * as Mobile from "./sections/Mobile";
 import * as Portal from "./sections/Portal";
 import * as Thread from "./sections/Thread";
+import * as V3 from "./sections/V3";
 
 /**
  * Оболочка витрины. Владелец - R0. Исполнители поставляют файлы `sections/<Имя>.tsx`
@@ -26,7 +27,7 @@ import * as Thread from "./sections/Thread";
  */
 type SectionModule = { meta: { id: string; title: string; lead?: string }; Section: ComponentType };
 
-const SECTIONS: SectionModule[] = [Tokens, Typography, Icons, Controls, Buttons, Dropdowns, Cards, Thread, Performance, Portal, Navigation, Footer, Mobile, Motion, MorphProbe];
+const SECTIONS: SectionModule[] = [V3, Tokens, Typography, Icons, Controls, Buttons, Dropdowns, Cards, Thread, Performance, Portal, Navigation, Footer, Mobile, Motion, MorphProbe];
 
 type Theme = "dark" | "light";
 

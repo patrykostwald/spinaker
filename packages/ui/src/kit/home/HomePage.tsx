@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HomeThreads } from "./HomeThreads";
-import { ClinicOverview } from "../../components/clinic/ClinicOverview";
+import { HomeV3 } from "./HomeV3";
 import { useFeature } from "../../lib/features";
 
 export function HomePage() {
@@ -16,6 +16,6 @@ export function HomePage() {
     if (q) router.replace(`/search?q=${encodeURIComponent(q)}`);
   }, [q, router]);
 
-
-  return threads ? <div className="sc-home"><HomeThreads /></div> : <ClinicOverview home />;
+  // v3 (13.10.2026): strona główna „Jak działa przekaz?” z kartą Przekaz dnia; ClinicOverview zostaje dla /klinika.
+  return threads ? <div className="sc-home"><HomeThreads /></div> : <HomeV3 />;
 }
