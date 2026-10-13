@@ -18,6 +18,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from news import drzewo_pieniedzy as money
+from news import niw_dotacje as niw
 from news import przeszlosc_osoba as person
 
 VERSION = 'v2'
@@ -141,6 +142,18 @@ class Graph:
             'amount': amount if certainty != 'name_only' else None,
             'currency': currency or None, 'source_key': provenance['key'], 'certainty': certainty}
 
+    def legal_notes(self):
+        notes = [money.NOTE, 'Dopasowania po nazwie są niepowiązane i pozostają poza kwotami oraz licznikami kategorii.',
+                 'Poziomy oznaczają rolę w widoku; strzałki pokazują kierunek przepływu.']
+        niw_nodes = [n for n in self.nodes.values() if n['source']['key'] == 'niw']
+        if niw_nodes:
+            dates = sorted({n['meta'].get('file_date') for n in niw_nodes if n['meta'].get('file_date')})
+            notes.append(f"Kwoty z listy dotacji NIW-CRSO (umowy), stan na {', '.join(dates)}. {niw.SUMS_NOTE}")
+            if any(n['kind'] == 'person' for n in self.nodes.values()):
+                # Warunek 5 Prawnika: osoba i organizacja obok siebie bez strzałki przyczynowej; daty roli przy krawędzi KRS.
+                notes.append(niw.people_note(timezone.localdate().isoformat()))
+        return notes
+
     def finish(self, root):
         counts = Counter('polityka' if n['category'] == 'media' else n['category']
                          for n in self.nodes.values() if n['level'] and n['certainty'] != 'name_only')
@@ -157,9 +170,7 @@ class Graph:
                      'label': f'{count} pominiętych elementów' + (' (niepowiązane)' if certainty == 'name_only' else ''),
                      'count': count, 'category': cat, 'kind': kind}
                     for (cat, kind, certainty), count in sorted(self.grouped.items())]},
-            'legal': {'notes': [money.NOTE, 'Dopasowania po nazwie są niepowiązane i pozostają poza kwotami oraz licznikami kategorii.',
-                       'Poziomy oznaczają rolę w widoku; strzałki pokazują kierunek przepływu.'],
-                      'narrative': self.opts['narrative']},
+            'legal': {'notes': self.legal_notes(), 'narrative': self.opts['narrative']},
             'generated_at': timezone.now().isoformat()}
 
 
@@ -228,10 +239,16 @@ def in_tenure(day, windows):
     return any((since is None or since <= day) and (until is None or day <= until) for since, until in windows)
 
 
+def funder_label(key, data):
+    if key == 'ted':
+        return '; '.join(data.get('buyer') or [])
+    return 'NIW-CRSO (Narodowy Instytut Wolności)' if key == 'niw' else 'Komisja Europejska'
+
+
 def authority_node(graph, record, key, category, provenance, label, names):
-    """Jeden zamawiający na jawny NIP; remis nazw rozstrzyga nowsze ogłoszenie."""
+    """Jeden zamawiający na jawny NIP; remis nazw rozstrzyga nowsze ogłoszenie. NIW to jeden węzeł instytucji."""
     nip = money.buyer_nip(record.data or {}) if key == 'ted' else None
-    ident = f'authority:nip:{nip}' if nip else f'authority:{key}:{record.pk}'
+    ident = f'authority:nip:{nip}' if nip else 'authority:niw' if key == 'niw' else f'authority:{key}:{record.pk}'
     meta = {'channel_level': 2} if graph.opts['depth'] == 1 else {}
     authority = graph.node(ident, 'authority', label or 'Zamawiający', 1, category,
                            provenance, structural=True, url=record.source_url, meta=meta)
@@ -249,15 +266,20 @@ def finance(graph, organisations):
     authority_names = defaultdict(Counter)
     by_id = defaultdict(set)
     by_nip = defaultdict(set)
+    by_krs = defaultdict(set)
     for org in organisations.values():
         for key, value in money.identifiers(org).items():
             by_id[value].add(org.pk)
             if key == 'NIP':
                 by_nip[value].add(org.pk)
+            if key == 'KRS':
+                by_krs[value].add(org.pk)
     for key, kind, field, category, index in (
         ('ted', 'notice', 'winners', 'zamowienia', by_id),
         ('bzp', 'notice', 'organizationNationalId', 'zamowienia', by_nip),
         ('fts', 'eu_grant', 'vat', 'dotacje', by_nip),
+        # NIW-CRSO: tylko po KRS (warunek 1 Prawnika); rekordy bez KRS nie trafiają do bazy.
+        ('niw', 'grant_pl', 'krs', 'dotacje', by_krs),
         ('kohesio', 'eu_project', None, 'dotacje', {}),
     ):
         if category not in graph.opts['categories']:
@@ -313,22 +335,25 @@ def finance(graph, organisations):
                 outside = hits != inside
             provenance = source(key, record.source_url, record.fetched_at)
             if graph.opts['depth'] == 1:
-                if key in ('ted', 'fts') and certainty == 'identifier':
-                    label = '; '.join(data.get('buyer') or []) if key == 'ted' else 'Komisja Europejska'
+                if key in ('ted', 'fts', 'niw') and certainty == 'identifier':
                     authority = authority_node(graph, record, key, category, provenance,
-                                               safe_label(label), authority_names)
+                                               safe_label(funder_label(key, data)), authority_names)
                     for pk in sorted(hits):
                         graph.edge(authority, f'org:{pk}', 'zamówienie - kanał na poziomie 2' if key == 'ted'
                                    else 'dotacja - kanał na poziomie 2', provenance, since=record.date)
                 continue
             node_kind = 'contract' if category == 'zamowienia' else 'grant'
-            amount = data.get('value') if key == 'ted' else data.get('amount') if key == 'fts' else data.get('eu_budget') if key == 'kohesio' else None
-            currency = (data.get('currency') or None) if key == 'ted' else 'EUR' if category == 'dotacje' else None
+            amount = data.get('value') if key == 'ted' else data.get('amount') if key in ('fts', 'niw') else data.get('eu_budget') if key == 'kohesio' else None
+            currency = (data.get('currency') or None) if key == 'ted' else 'PLN' if key == 'niw' else 'EUR' if category == 'dotacje' else None
             channel = graph.node(f'{key}:{record.pk}', node_kind,
                 safe_label(data.get('subject') or data.get('project') or record.title), 2, category, provenance,
                 day=record.date, amount=amount, currency=currency, certainty=certainty, url=record.source_url)
             if not channel:
                 continue
+            if key == 'niw':
+                # Warunek 2 Prawnika: źródło, stan pliku i data pobrania przy każdym rekordzie NIW; brak logo i słowa „oficjalny”.
+                graph.nodes[channel]['meta'] = {**graph.nodes[channel]['meta'], 'file_date': data.get('file_date'),
+                                                'attribution': niw.attribution(data.get('file_date'), iso(record.fetched_at))}
             if outside:
                 graph.nodes[channel]['meta'] = {**graph.nodes[channel]['meta'], 'outside_tenure': True}
             if money.amount_suspect(graph.nodes[channel]['amount']):
@@ -343,9 +368,8 @@ def finance(graph, organisations):
                            provenance, since=record.date, amount=None if key == 'ted' else amount,
                            currency=currency, certainty=certainty)
             if key != 'bzp' and certainty == 'identifier':
-                label = '; '.join(data.get('buyer') or []) if key == 'ted' else 'Komisja Europejska'
                 authority = authority_node(graph, record, key, category, provenance,
-                                           safe_label(label), authority_names)
+                                           safe_label(funder_label(key, data)), authority_names)
                 graph.edge(authority, channel, 'zamawia' if key == 'ted' else 'finansuje', provenance,
                            since=record.date, amount=amount, currency=currency)
             if key == 'ted' and graph.opts['depth'] == 3:
