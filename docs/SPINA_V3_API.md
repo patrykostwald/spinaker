@@ -235,3 +235,25 @@ przechowywania po wygaśnięciu mandatu, dane osób trzecich w oświadczeniach (
 
 ### Pilotaż
 `docs/PILOTAZ_V3.md`, komenda `pilotaz par|lancuch|raport`, moduł `news/pilotaz.py`.
+
+## Miniatury kont X (13.10)
+Diagnoza: zbieranie wpisów (x_watch, political_polling, nastroje, odbior_spinu) prosi tylko o `attachments.media_keys`, bez
+`author_id`/`user.fields`, więc `PoliticalPost.author_data` nie ma `profile_image_url` i `avatar_url` w API był pusty.
+Rozwiązanie bez zmian w zapytaniach zbierających: `news/x_avatars.py` i komenda `x_avatary odswiez [--limit 200] [--dry-run]
+[--starsze-niz 30]`.
+- Jedno wywołanie `GET https://api.x.com/2/users/by?usernames=...&user.fields=profile_image_url` na 100 kont, przez istniejące
+  `political_polling.request_x` (stały host, bez przekierowań, limity rozmiaru i czasu).
+- Budżet: ta sama rezerwacja co odczyty wpisów (`ImportState political-x-budget`): dzierżawa, dzienny limit zapytań,
+  miesięczny limit USD; koszt `USER_PRICE` (0,010 USD) za każde zwrócone konto, rozliczany po odpowiedzi. Brak budżetu
+  albo trwający odczyt = przerwanie z komunikatem, bez wywołania. ~170 kont = 2 wywołania, do 1,70 USD (przy domyślnym
+  limicie 5 USD/mies. to istotna część - sprawdź `--dry-run`).
+- Tożsamość: zapis tylko, gdy `id` z X = `PoliticalAccount.user_id`. Adres tylko `https://pbs.twimg.com/profile_images/...`,
+  wariant `_bigger`. Konto odświeżane najwyżej co 30 dni (`avatar_checked_at`).
+- API: `author.avatar_url` i `posts[].avatar_url` biorą najpierw `profile_image_url` z danych wpisu, potem `avatar_url` konta.
+  Front ma już zastępcze inicjały.
+- Harmonogram NIE jest włączony. Po zgodzie właściciela: w `backend/config/celery.py` (`app.conf.beat_schedule`) wpis
+  `'x-avatars-weekly': {'task': 'news.tasks.x_avatars_task', 'schedule': crontab(day_of_week='sun', hour=4, minute=20)}`
+  i zadanie w `news/tasks.py` wołające `x_avatars.refresh(limit=200)` (jedno wywołanie tygodniowo wystarcza: tylko konta
+  starsze niż 30 dni).
+- Do prawnika: regulamin X (Developer Agreement) a wyświetlanie miniatur z pbs.twimg.com (hotlinking) i ich odświeżanie;
+  adresy miniatur wygasają po zmianie zdjęcia (odświeżenie co 30 dni, front pokazuje inicjały przy błędzie obrazka).

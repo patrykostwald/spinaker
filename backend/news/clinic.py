@@ -130,11 +130,14 @@ def party_affiliation(figure):
 
 
 def _post_avatar(post) -> str:
-    """Miniatura konta z danych autora wpisu (X: profile_image_url, wariant _bigger); pusty napis, gdy brak."""
+    """Miniatura konta: najpierw z danych autora wpisu (X: profile_image_url, wariant _bigger), potem zapisana przy koncie
+    (news/x_avatars.py, PoliticalAccount.avatar_url); pusty napis, gdy brak."""
     avatar = ((post.author_data or {}).get('profile_image_url') or '').strip()
-    if not avatar.startswith('https://'):
-        return ''
-    return avatar.replace('_normal.', '_bigger.')
+    if avatar.startswith('https://'):
+        return avatar.replace('_normal.', '_bigger.')
+    account = getattr(post, 'account', None)
+    fallback = (getattr(account, 'avatar_url', '') or '').strip()
+    return fallback if fallback.startswith('https://') else ''
 
 
 def party_data(figure: PublicFigure | None):
@@ -143,14 +146,14 @@ def party_data(figure: PublicFigure | None):
 
 def author_data(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     author = post.author_data or {}
-    avatar = author.get('profile_image_url') or ''
+    avatar = _post_avatar(post)  # dane wpisu, potem miniatura zapisana przy koncie
     affiliation = party_affiliation(figure)
     return {
         'account_id': post.account_id,
         'name': display_name(clean_account_name(figure.canonical_name if figure else (author.get('name') or post.account.display_name))),
         'handle': post.account.handle,
         'account_url': f'https://x.com/{post.account.handle}',
-        'avatar_url': avatar.replace('_normal.', '_bigger.') if avatar else '',
+        'avatar_url': avatar,
         'figure_id': figure.pk if figure else None,
         'role_title': figure.role_title if figure else '',
         'party': affiliation['party'],
