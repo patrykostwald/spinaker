@@ -79,3 +79,29 @@ spina3.pl {
 www.spina3.pl, spinki.org, www.spinki.org {
 	redir https://spina3.pl{uri} permanent
 }
+
+# scrollstory.pl (14.10.2026): statyczna wersja v3 (kreator i czytnik w przeglądarce; Opublikuj zapisuje na razie lokalnie w przeglądarce autora).
+# Katalog /srv/scrollstory/dist montowany tylko do odczytu. Na czas braku backendu: noindex (usunąć linię X-Robots-Tag po wdrożeniu API).
+scrollstory.pl {
+	encode zstd gzip
+	root * /srv/scrollstory/dist
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
+		-X-Powered-By
+	}
+	@statyczne path /assets/*
+	header @statyczne Cache-Control "public, max-age=604800"
+	try_files {path} {path}/index.html
+	file_server
+}
+
+www.scrollstory.pl {
+	redir https://scrollstory.pl{uri} permanent
+}
