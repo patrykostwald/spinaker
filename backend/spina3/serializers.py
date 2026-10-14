@@ -4,19 +4,21 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from .config import NICK_COLORS
+from .legal import BASES, CORRECTION_REJECTIONS
 from .models import BOX_KINDS, Report
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 
 
 class SpinkaOut(serializers.Serializer):
     n = serializers.IntegerField(help_text='Liczba ocen przypięcia autora')
-    level = serializers.CharField(help_text='P1..P5 albo open (Otwarta)')
+    level = serializers.CharField(allow_null=True, help_text='P1..P5 albo open (Otwarta); null w ciszy konta (silence_hidden)')
     label = serializers.CharField()
-    color = serializers.CharField()
+    color = serializers.CharField(allow_null=True, help_text='null w ciszy konta (silence_hidden)')
     score = serializers.FloatField(allow_null=True)
     reason = serializers.CharField(help_text='ok | open | hold_new_accounts | open_window | step_limited | frozen | silence | calibration | no_pin | target_unavailable')
     pending = serializers.BooleanField()
-    distribution = serializers.DictField(child=serializers.IntegerField(), help_text='{agree, disagree}')
+    distribution = serializers.DictField(child=serializers.IntegerField(), allow_null=True,
+                                         help_text='{agree, disagree} (agregat, nigdy lista ocen); null w ciszy konta')
     dispute = serializers.BooleanField()
     views = serializers.DictField(child=serializers.BooleanField())
     last_rating_at = serializers.DateTimeField(allow_null=True)
@@ -69,7 +71,9 @@ class BoxItemOut(serializers.Serializer):
     subtype = serializers.CharField(allow_blank=True, max_length=32, help_text='Podtyp dokumentu albo kategoria źródła; otwarty słownik, pusty gdy brak.')
     title = serializers.CharField()
     source = serializers.DictField()
-    author = serializers.DictField(allow_null=True, help_text='Autor materiału (polityk, redakcja), nie użytkownik')
+    author = serializers.DictField(allow_null=True, help_text='Autor materiału (polityk, redakcja), nie użytkownik; dla kind=post zawsze {name, handle}')
+    source_url = serializers.CharField(allow_null=True, help_text='Adres źródła; dla kind=post zawsze (także po usunięciu u źródła)')
+    silence_hidden = serializers.BooleanField(help_text='Cisza wyborcza konta kandydata lub komitetu: spinka bez rozkładu, poziomu i koloru')
     published_at = serializers.DateTimeField(allow_null=True, help_text='Data źródła; dla linku czytelnika bez daty: pin.created_at.')
     quote = serializers.CharField(help_text='Tylko gdy show_quote')
     thumbnail_url = serializers.CharField(help_text='Tylko gdy show_thumbnail')
@@ -93,7 +97,8 @@ class PinOut(serializers.Serializer):
     box_id = serializers.IntegerField()
     kind = serializers.CharField()
     system = serializers.BooleanField()
-    ratings = serializers.DictField(child=serializers.IntegerField(), help_text='{n, agree, disagree}')
+    ratings = serializers.DictField(child=serializers.IntegerField(allow_null=True),
+                                    help_text='Agregat {n, agree, disagree} (nigdy lista ocen); agree/disagree null w ciszy konta')
     my_rating = serializers.CharField(allow_null=True)
     ratable = serializers.BooleanField()
     author_stance = serializers.CharField(allow_null=True, help_text='agree | doubt | disagree | null')
@@ -107,6 +112,28 @@ class PinOut(serializers.Serializer):
     created_at = serializers.DateTimeField()
 
 
+class DiagnosisVersionOut(serializers.Serializer):
+    version = serializers.IntegerField()
+    target_id = serializers.IntegerField(help_text='Box diagnozy')
+    current = serializers.BooleanField()
+    change = serializers.ChoiceField(choices=['created', 'updated', 'withdrawn', 'restored'])
+    approved_by = serializers.CharField(allow_null=True, help_text='"konto zespołu nr N" (bez imienia i nazwiska)')
+    approved_at = serializers.DateTimeField(allow_null=True)
+    model = serializers.CharField(allow_blank=True)
+    sources = serializers.ListField(child=serializers.CharField())
+    label = serializers.CharField(help_text='Diagnoza AI, zatwierdzona przez zespół spin.clinic')
+    created_at = serializers.DateTimeField()
+
+
+class CorrectionPublicOut(serializers.Serializer):
+    id = serializers.IntegerField()
+    box_id = serializers.IntegerField()
+    text = serializers.CharField()
+    author = serializers.CharField(help_text='Imię i nazwisko tylko za zgodą (consent_public_name); inaczej "Osoba, której dotyczy wpis"')
+    published_at = serializers.DateTimeField(allow_null=True)
+    label = serializers.CharField()
+
+
 class BoxDetailOut(BoxItemOut):
     text = serializers.CharField()
     url = serializers.CharField()
@@ -115,7 +142,8 @@ class BoxDetailOut(BoxItemOut):
     can_pin = serializers.BooleanField(help_text='Zalogowany może dodać jedyne przypięcie (box bez przypięcia)')
     can_rate = serializers.BooleanField()
     question = serializers.CharField()
-    diagnosis_history = serializers.ListField(child=serializers.DictField())
+    diagnosis_history = DiagnosisVersionOut(many=True)
+    correction = CorrectionPublicOut(allow_null=True, help_text='Opublikowane sprostowanie diagnozy (prawo prasowe)')
 
 
 class WallOut(serializers.Serializer):
@@ -246,6 +274,7 @@ class ProfileOut(serializers.Serializer):
     nick_color = serializers.CharField()
     badge = serializers.CharField()
     consent_art9 = serializers.BooleanField()
+    age_16_plus = serializers.BooleanField(help_text='false przy zgodzie sprzed S2: nowa publikacja da 403 code=age')
     tier = serializers.CharField()
     limits = serializers.DictField()
     public_profile = serializers.BooleanField()
@@ -272,8 +301,10 @@ class ReportIn(serializers.Serializer):
 
 class DecisionIn(serializers.Serializer):
     decision = serializers.CharField()
-    reason = serializers.CharField(max_length=600)
+    reason = serializers.CharField(max_length=600, help_text='Fakty i okoliczności (DSA art. 17); trafiają do autora')
     sanction = serializers.ChoiceField(choices=['', 'weight_zero_30d', 'suspend_30d'], required=False, default='')
+    basis = serializers.ChoiceField(choices=[''] + sorted(BASES), required=False, default='',
+                                    help_text='Podstawa (stała z spina3.legal.BASES); domyślnie według kategorii zgłoszenia')
 
 
 class UrlDecisionIn(serializers.Serializer):
@@ -289,6 +320,86 @@ class AppealIn(serializers.Serializer):
 
 class ConsentIn(serializers.Serializer):
     accepted = serializers.BooleanField()
+    age_16_plus = serializers.BooleanField(required=False, default=False,
+                                           help_text='Oświadczenie: mam ukończone 16 lat. Wymagane true przy accepted=true (inaczej 403 code=age)')
+
+
+class ConsentOut(serializers.Serializer):
+    consent_art9 = serializers.BooleanField()
+    age_16_plus = serializers.BooleanField()
+    ratings_detached = serializers.IntegerField(required=False)
+    comments_detached = serializers.IntegerField(required=False)
+
+
+class DecisionAppealOut(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    decision_reason = serializers.CharField(allow_blank=True)
+
+
+class ModerationDecisionOut(serializers.Serializer):
+    id = serializers.IntegerField()
+    target_type = serializers.ChoiceField(choices=['pin', 'box', 'comment', 'account'])
+    target_label = serializers.CharField()
+    target_id = serializers.IntegerField(allow_null=True)
+    box_id = serializers.IntegerField(allow_null=True)
+    restriction = serializers.ChoiceField(choices=['hide', 'remove', 'demote', 'suspend'])
+    restriction_label = serializers.CharField()
+    facts = serializers.CharField()
+    basis = serializers.CharField()
+    basis_text = serializers.CharField()
+    automated = serializers.BooleanField()
+    decided_by = serializers.CharField(help_text='"zespół spina3" albo "system (automat)"; bez nazwiska')
+    until = serializers.DateTimeField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    revoked_at = serializers.DateTimeField(allow_null=True)
+    appeal_route = serializers.CharField()
+    appeal_deadline = serializers.DateTimeField()
+    appeal = DecisionAppealOut(allow_null=True)
+    can_appeal = serializers.BooleanField()
+
+
+class MyDecisionsOut(serializers.Serializer):
+    items = ModerationDecisionOut(many=True)
+
+
+class CorrectionIn(serializers.Serializer):
+    name = serializers.CharField(max_length=200, help_text='Imię i nazwisko wnioskodawcy')
+    email = serializers.EmailField(max_length=254)
+    text = serializers.CharField(help_text='Do dwukrotnej objętości diagnozy')
+    statement = serializers.BooleanField(help_text='Wymagane true: jestem osobą, której dotyczy wpis; dane są prawdziwe')
+    consent_public_name = serializers.BooleanField(required=False, default=False,
+                                                   help_text='Zgoda na publikację imienia i nazwiska przy sprostowaniu')
+
+
+class CorrectionStatusOut(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.ChoiceField(choices=['pending', 'published', 'rejected'])
+    due_at = serializers.DateTimeField(help_text='Termin publikacji: 3 dni robocze (weekendy i święta, w tym Wigilia)')
+    rejection_reason = serializers.CharField(allow_null=True)
+    rejection_label = serializers.CharField(allow_null=True)
+
+
+class CorrectionDecisionIn(serializers.Serializer):
+    decision = serializers.CharField(help_text='publish | reject')
+    rejection_reason = serializers.ChoiceField(choices=[''] + sorted(CORRECTION_REJECTIONS), required=False, default='',
+                                               help_text='Wymagane przy reject: powód z art. 33 prawa prasowego')
+    note = serializers.CharField(required=False, allow_blank=True, max_length=600, default='')
+
+
+class AccountDeleteOut(serializers.Serializer):
+    deletion_requested_at = serializers.DateTimeField()
+    content_removed_after = serializers.DateTimeField(help_text='Treści usuwane po 30 dniach (spina3_retention)')
+    nick = serializers.CharField()
+    scope = serializers.CharField()
+
+
+class PublicProfileOut(serializers.Serializer):
+    nick = serializers.CharField()
+    color = serializers.CharField(allow_null=True)
+    badge = serializers.CharField()
+    boxes = BoxItemOut(many=True)
 
 
 class CodeIn(serializers.Serializer):

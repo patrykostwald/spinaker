@@ -16,6 +16,7 @@ from django.utils import timezone
 from . import events, scoring
 from .comment_filter import check_comment
 from .config import ScoringConfig, config, election_silence, flags
+from .legal import check_publish_consent, check_silence
 from .models import Box, Comment, CommentVote, Pin, Spina3Profile
 from .pins import PinError
 from .trust import trust_for
@@ -39,6 +40,7 @@ def _check_account(user, cfg, now):
     profile = Spina3Profile.for_user(user)
     if profile.consent_art9_at is None and not trust.is_team:
         raise PinError(403, 'Przed pierwszym komentarzem potrzebna jest zgoda na publikację przy nicku.', 'consent')
+    check_publish_consent(profile, trust)
     return trust, profile
 
 
@@ -64,6 +66,7 @@ def create_comment(user, box: Box, text: str, parent: Comment | None = None, now
     _check_flags(now)
     if box.status != 'published':
         raise PinError(404, 'Nie ma takiego boxa.', 'box')
+    check_silence(box, now=now)
     trust, profile = _check_account(user, cfg, now)
     actor = profile.pseudonym
     text, status, reason = _clean_text(text, cfg)
@@ -169,7 +172,10 @@ def unvote_helpful(user, comment: Comment, now=None) -> Comment:
 # --- moderacja -----------------------------------------------------------------------------------------------
 
 @transaction.atomic
-def hide_comment(comment: Comment, staff, reason: str, now=None, *, sanction: str = '') -> Comment:
+def hide_comment(comment: Comment, staff, reason: str, now=None, *, sanction: str = '', basis: str = '', report=None,
+                 automated: bool = False) -> Comment:
+    """Ukrycie komentarza z uzasadnieniem dla autora (ModerationDecision, e-mail); sankcja konta osobną decyzją."""
+    from . import legal
     now = now or timezone.now()
     if comment.status == 'hidden':
         return comment
@@ -179,11 +185,10 @@ def hide_comment(comment: Comment, staff, reason: str, now=None, *, sanction: st
     if comment.user_id:
         profile = Spina3Profile.for_user(comment.user)
         profile.hidden_count += 1
-        if sanction == 'weight_zero_30d':
-            profile.weight_zero_until = now + timedelta(days=30)
-        elif sanction == 'suspend_30d':
-            profile.suspended_until = now + timedelta(days=30)
-        profile.save(update_fields=['hidden_count', 'weight_zero_until', 'suspended_until'])
+        profile.save(update_fields=['hidden_count'])
+        legal.record_decision(user=comment.user, target_type='comment', restriction='hide', facts=comment.hidden_reason,
+                              basis=basis, staff=staff, comment=comment, box=comment.box, report=report, automated=automated, now=now)
+        legal.apply_sanction(comment.user, staff, sanction, comment.hidden_reason, basis=basis, report=report, now=now)
     if comment.parent_id and was_visible:
         _sync_reply_count(comment.parent_id)
     events.log('hidden', comment.box, actor=events.pseudonym(comment.user) if comment.user_id else '',
@@ -200,6 +205,9 @@ def restore_comment(comment: Comment, staff, reason: str = '', now=None) -> Comm
     was_hidden = comment.status == 'hidden'
     comment.status, comment.hidden_reason = 'visible', ''
     comment.save(update_fields=['status', 'hidden_reason', 'updated_at'])
+    if was_hidden:
+        from .legal import revoke_decisions
+        revoke_decisions(comment=comment, now=now)
     if was_hidden and comment.user_id:
         profile = Spina3Profile.for_user(comment.user)
         profile.hidden_count = max(0, profile.hidden_count - 1)

@@ -63,3 +63,9 @@ class ReportThrottle(UserRateThrottle):
 class AuthExchangeThrottle(HashedIpThrottle):
     scope = 'spina3_auth'
     rate = '20/min'
+
+
+class CorrectionThrottle(HashedIpThrottle):
+    """Sprostowania składa także osoba bez konta: limit po skrócie adresu IP."""
+    scope = 'spina3_correction'
+    rate = '5/hour'

@@ -17,17 +17,20 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import comments, metrics, moderation, pins, ranking, ratings, sso, url_queue
+from datetime import timedelta
+
+from . import comments, corrections, importer, legal, metrics, moderation, pins, ranking, ratings, sso, url_queue
 from .config import NICK_COLOR_DEFAULT, NICK_COLOR_RESERVED, NICK_COLORS, flags, public_config, public_silence
-from .models import Appeal, Box, BoxLink, Comment, Pin, Rating, Report, Spina3Profile, UrlCheck
-from .public import box_item, comment_item, pin_item, spinka_payload
-from .serializers import (AppealIn, BoxDetailOut, BoxWithPinIn, BoxWithPinOut, CodeIn, CommentCreateOut, CommentIn, CommentPatchIn,
-                          CommentOut, CommentsOut, ConsentIn, DecisionIn, PinPatchIn, PinPatchOut, ProfileIn, ProfileOut, RatingIn,
-                          RatingOut, ReportIn, SearchOut, UrlDecisionIn, WallOut, ConfigOut, SilenceOut,
-                          GuestProfileOut, MyBoxesOut, MyRatingsOut)
+from .models import Appeal, Box, BoxLink, Comment, Correction, ModerationDecision, Pin, Rating, Report, Spina3Profile, UrlCheck
+from .public import author_info, box_item, comment_item, pin_item, spinka_payload
+from .serializers import (AccountDeleteOut, AppealIn, BoxDetailOut, BoxWithPinIn, BoxWithPinOut, CodeIn, CommentCreateOut, CommentIn,
+                          CommentPatchIn, CommentOut, CommentsOut, ConsentIn, ConsentOut, CorrectionDecisionIn, CorrectionIn,
+                          CorrectionStatusOut, DecisionAppealOut, DecisionIn, MyDecisionsOut, PinPatchIn, PinPatchOut, ProfileIn,
+                          ProfileOut, PublicProfileOut, RatingIn, RatingOut, ReportIn, SearchOut, UrlDecisionIn, WallOut, ConfigOut,
+                          SilenceOut, GuestProfileOut, MyBoxesOut, MyRatingsOut)
 from .sso import SsoBearerAuthentication
-from .throttles import (AuthExchangeThrottle, CommentsReadThrottle, CommentWriteThrottle, PinWriteThrottle, RatingWriteThrottle,
-                        RelatedThrottle, ReportThrottle, SearchThrottle, WallThrottle)
+from .throttles import (AuthExchangeThrottle, CommentsReadThrottle, CommentWriteThrottle, CorrectionThrottle, PinWriteThrottle,
+                        RatingWriteThrottle, RelatedThrottle, ReportThrottle, SearchThrottle, WallThrottle)
 from .trust import trust_for
 
 TAG = 'spina3'
@@ -161,10 +164,33 @@ class BoxView(Spina3View):
             'pin': pin_item(pin, viewer=user, my_rating=mine, sp=sp) if pin else None,
             'can_pin': can_pin, 'can_rate': can_rate,
             'question': QUESTIONS.get(pin.kind, QUESTIONS['box']) if pin else 'Ten box nie ma jeszcze przypięcia.',
-            'diagnosis_history': [{'version': l.version, 'target_id': l.target_id, 'current': l.is_current, 'created_at': l.created_at.isoformat()}
-                                  for l in BoxLink.objects.filter(box=box, kind='diagnosis_of').order_by('version')],
+            'diagnosis_history': importer.diagnosis_history(box),
+            'correction': corrections.public_payload(corrections.published_for(box)),
         })
         return Response(data)
+
+
+class CorrectionView(Spina3View):
+    permission_classes = [AllowAny]
+    throttle_classes = [CorrectionThrottle]
+
+    @extend_schema(summary='Sprostowanie diagnozy (prawo prasowe): osoba, której dotyczy wpis, do 21 dni od publikacji; termin publikacji due_at = 3 dni robocze',
+                   tags=[TAG], request=CorrectionIn, responses={201: CorrectionStatusOut, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
+    def post(self, request, box_id):
+        if (blocked := _disabled()) is not None:
+            return blocked
+        box = get_object_or_404(Box, pk=box_id)
+        data = CorrectionIn(data=request.data)
+        if not data.is_valid() and 'statement' in data.errors:
+            return Response({'detail': 'Potwierdź oświadczenie.', 'code': 'statement'}, status=400)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        try:
+            row = corrections.submit(box, name=v['name'], email=v['email'], text=v['text'], statement=v['statement'],
+                                     consent_public_name=v.get('consent_public_name', False))
+        except corrections.CorrectionError as exc:
+            return _error(exc)
+        return Response(corrections.status_payload(row), status=201)
 
 
 class RelatedView(Spina3View):
@@ -405,7 +431,8 @@ class ProfileView(Spina3View):
     def _payload(self, request, profile):
         trust = trust_for(request.user)
         return {'nick': request.user.username, 'nick_color': profile.nick_color or ('spin' if profile.is_system else NICK_COLOR_DEFAULT),
-                'badge': profile.badge, 'consent_art9': bool(profile.consent_art9_at), 'tier': trust.tier,
+                'badge': profile.badge, 'consent_art9': bool(profile.consent_art9_at), 'age_16_plus': bool(profile.age_16_plus_at),
+                'tier': trust.tier,
                 'limits': {'daily_pins': trust.daily_limit, 'daily_ratings': trust.daily_ratings, 'daily_comments': trust.daily_comments},
                 'public_profile': False, 'nick_colors': sorted(NICK_COLORS)}
 
@@ -432,14 +459,88 @@ class ProfileView(Spina3View):
 class ConsentView(Spina3View):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(summary='Zgoda przed pierwszą publikacją (stanowiska i komentarze publiczne przy nicku, bez profilu)', tags=[TAG], request=ConsentIn, responses=OpenApiTypes.OBJECT)
+    @extend_schema(summary='Zgoda art. 9 RODO z oświadczeniem 16+ (accepted=true wymaga age_16_plus=true, inaczej 403 age); '
+                           'accepted=false: oceny bez wagi i autora, komentarze odpięte od nicku do przeglądu',
+                   tags=[TAG], request=ConsentIn, responses={200: ConsentOut, 403: OpenApiTypes.OBJECT})
     def post(self, request):
         data = ConsentIn(data=request.data)
         data.is_valid(raise_exception=True)
         profile = Spina3Profile.for_user(request.user)
-        profile.consent_art9_at = timezone.now() if data.validated_data['accepted'] else None
-        profile.save(update_fields=['consent_art9_at'])
-        return Response({'consent_art9': bool(profile.consent_art9_at)})
+        if not data.validated_data['accepted']:
+            info = legal.withdraw_consent(request.user)
+            return Response({'consent_art9': False, 'age_16_plus': False, **info})
+        if data.validated_data.get('age_16_plus') is not True:
+            return Response({'detail': 'Z spina3.pl mogą korzystać osoby, które ukończyły 16 lat.', 'code': 'age'}, status=403)
+        if profile.deletion_requested_at is not None:
+            return Response({'detail': 'Konto spina3 jest oznaczone do usunięcia.', 'code': 'deleted'}, status=403)
+        now = timezone.now()
+        profile.consent_art9_at, profile.age_16_plus_at = now, now
+        profile.save(update_fields=['consent_art9_at', 'age_16_plus_at'])
+        return Response({'consent_art9': True, 'age_16_plus': True})
+
+
+class MeView(Spina3View):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary='Usuń dane spina3 (nie wspólne konto spin.clinic): nick od razu anonimowy, treści usuwane po 30 dniach, '
+                           'oceny zostają w agregacie bez przypisania', tags=[TAG], responses={202: AccountDeleteOut})
+    def delete(self, request):
+        profile = Spina3Profile.for_user(request.user)
+        now = timezone.now()
+        if profile.deletion_requested_at is None:
+            profile.deletion_requested_at = now
+            profile.save(update_fields=['deletion_requested_at'])
+        return Response({'deletion_requested_at': profile.deletion_requested_at.isoformat(),
+                         'content_removed_after': (profile.deletion_requested_at + timedelta(days=legal.ACCOUNT_DELETION_DAYS)).isoformat(),
+                         'nick': legal.DELETED_NICK, 'scope': 'spina3'}, status=202)
+
+
+class MyDecisionsView(Spina3View):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary='Moje decyzje moderacji z uzasadnieniem (DSA art. 17); tylko własne', tags=[TAG], responses=MyDecisionsOut)
+    def get(self, request):
+        rows = ModerationDecision.objects.filter(user=request.user).select_related('pin', 'comment').order_by('-created_at', '-pk')
+        return Response({'items': [legal.decision_payload(row) for row in rows[:200]]})
+
+
+class MyDecisionAppealView(Spina3View):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary='Odwołanie od decyzji (jedno na decyzję, 6 miesięcy; rozpatruje człowiek)', tags=[TAG], request=AppealIn,
+                   responses={201: DecisionAppealOut, 404: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT})
+    def post(self, request, decision_id):
+        row = get_object_or_404(ModerationDecision, pk=decision_id, user=request.user)
+        data = AppealIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            appeal = moderation.appeal_decision(request.user, row, data.validated_data['text'])
+        except moderation.ModerationError as exc:
+            return Response({'detail': exc.detail}, status=exc.status)
+        return Response({'id': appeal.pk, 'status': appeal.status, 'created_at': appeal.created_at.isoformat(), 'decision_reason': ''},
+                        status=201)
+
+
+class PublicProfileView(Spina3View):
+    permission_classes = [AllowAny]
+    throttle_classes = [WallThrottle]
+
+    @extend_schema(summary='Publiczny profil autora (flaga public_profiles; domyślnie 404): nick, kolor i boxy z przypięciem, nigdy oceny',
+                   tags=[TAG], responses={200: PublicProfileOut, 404: OpenApiTypes.OBJECT})
+    def get(self, request, nick):
+        from django.contrib.auth import get_user_model
+        from django.http import Http404
+        if not flags().enabled or not flags().public_profiles:
+            raise Http404
+        user = get_object_or_404(get_user_model(), username=nick, is_active=True)
+        profile = Spina3Profile.objects.filter(user=user).first()
+        if profile is None or profile.deletion_requested_at is not None or profile.is_system or profile.consent_art9_at is None:
+            raise Http404
+        rows = Pin.objects.filter(user=user, status='published', box__status='published').select_related(
+            'box__spinka', 'pinned_box', 'user__spina3_profile').order_by('-created_at')[:48]
+        info = author_info(user)
+        return Response({'nick': info['nick'], 'color': info['color'], 'badge': info['badge'],
+                         'boxes': [box_item(pin.box, pin=pin) for pin in rows]})
 
 
 class ReportView(Spina3View):
@@ -500,7 +601,7 @@ class ReportDecisionView(Spina3View):
         data.is_valid(raise_exception=True)
         try:
             moderation.decide_report(row, request.user, data.validated_data['decision'], data.validated_data['reason'],
-                                     sanction=data.validated_data.get('sanction', ''))
+                                     sanction=data.validated_data.get('sanction', ''), basis=data.validated_data.get('basis', ''))
         except moderation.ModerationError as exc:
             return Response({'detail': exc.detail}, status=exc.status)
         return Response({'id': row.pk, 'status': row.status})
@@ -548,7 +649,8 @@ class PinHideView(Spina3View):
         if data.validated_data['decision'] == 'restore':
             moderation.restore_pin(pin, request.user, data.validated_data['reason'])
         else:
-            moderation.hide_pin(pin, request.user, data.validated_data['reason'], sanction=data.validated_data.get('sanction', ''))
+            moderation.hide_pin(pin, request.user, data.validated_data['reason'], sanction=data.validated_data.get('sanction', ''),
+                                basis=data.validated_data.get('basis', ''))
         return Response({'id': pin.pk, 'status': pin.status})
 
 
@@ -563,8 +665,26 @@ class CommentHideView(Spina3View):
         if data.validated_data['decision'] == 'restore':
             comments.restore_comment(comment, request.user, data.validated_data['reason'])
         else:
-            comments.hide_comment(comment, request.user, data.validated_data['reason'], sanction=data.validated_data.get('sanction', ''))
+            comments.hide_comment(comment, request.user, data.validated_data['reason'], sanction=data.validated_data.get('sanction', ''),
+                                  basis=data.validated_data.get('basis', ''))
         return Response({'id': comment.pk, 'status': comment.status})
+
+
+class CorrectionDecisionView(Spina3View):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(summary='Decyzja zespołu w sprawie sprostowania: publish albo reject z powodem z art. 33 prawa prasowego', tags=[TEAM],
+                   request=CorrectionDecisionIn, responses={200: CorrectionStatusOut, 400: OpenApiTypes.OBJECT, 409: OpenApiTypes.OBJECT})
+    def post(self, request, correction_id):
+        row = get_object_or_404(Correction, pk=correction_id)
+        data = CorrectionDecisionIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        try:
+            corrections.decide(row, request.user, v['decision'], rejection_reason=v.get('rejection_reason', ''), note=v.get('note', ''))
+        except corrections.CorrectionError as exc:
+            return _error(exc)
+        return Response(corrections.status_payload(row))
 
 
 class MetricsView(Spina3View):

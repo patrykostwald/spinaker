@@ -214,11 +214,16 @@ def create_box_with_pin(user, *, box_kind: str = 'box', box_target=None, box_tit
     profile = Spina3Profile.for_user(user)
     if profile.consent_art9_at is None and not trust.is_team:
         raise PinError(403, 'Przed pierwszą publikacją potrzebna jest zgoda na publikację stanowisk przy nicku.', 'consent')
+    from .legal import check_publish_consent, check_silence
+    check_publish_consent(profile, trust)
     actor = profile.pseudonym
     stance_value = parse_author_stance(stance)
     _check_limits(actor, trust, now, cfg)
+    if box_kind == 'box' and str(box_target or '').isdigit():
+        check_silence(Box.objects.filter(pk=int(box_target)).first(), now=now)
     box, created_box, info = _resolve_anchor(user, box_kind, box_target, box_title, box_type, trust, actor, now, cfg)
     kind_, pinned, url_, check_, target_status, extra = _resolve_target(user, box, pin_kind, pin_target, trust, actor, now, cfg)
+    check_silence(box, pinned, now=now)
     pin = Pin(user=user, box=box)
     _apply_heading(pin, title, subtitle)
     pin.kind, pin.pinned_box, pin.url, pin.url_check, pin.target_status = kind_, pinned, url_, check_, target_status

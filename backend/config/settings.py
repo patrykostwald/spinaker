@@ -375,6 +375,7 @@ SPINA3 = {
         'election_silence_pause_ratings': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_RATINGS', default=False),
         'election_silence_pause_comments': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_COMMENTS', default=False),
         'url_fetch_enabled': env.bool('SPINA3_URL_FETCH_ENABLED', default=False),
+        'x_source_check_enabled': env.bool('SPINA3_X_SOURCE_CHECK_ENABLED', default=True),
         'import_press': env.bool('SPINA3_IMPORT_PRESS', default=False),
         'auth_mode': env('SPINA3_AUTH_MODE', default='session'),
     },
@@ -382,6 +383,10 @@ SPINA3 = {
 SPINA3_DR_SPIN_USERNAME = env('SPINA3_DR_SPIN_USERNAME', default='dr_spin')
 SPINA3_PUBLIC_URL = env('SPINA3_PUBLIC_URL', default='https://spina3.pl').rstrip('/')
 SPINA3_SPIN_CLINIC_URL = env('SPINA3_SPIN_CLINIC_URL', default='https://spin.clinic').rstrip('/')
+# S2 (14.10.2026): e-mail decyzji moderacji (spina3.pl nie ma poczty), strona decyzji, retencja dziennika zdarzeń.
+SPINA3_DECISION_FROM_EMAIL = env('SPINA3_DECISION_FROM_EMAIL', default='spina3 <kontakt@iapply.pl>')
+SPINA3_DECISIONS_PATH = env('SPINA3_DECISIONS_PATH', default='/konto/decyzje')
+SPINA3_EVENT_RETENTION_DAYS = env.int('SPINA3_EVENT_RETENTION_DAYS', default=90)
 SPINA3_PRZESZLOSC_URL = env('SPINA3_PRZESZLOSC_URL', default='https://przeszlosc.today').rstrip('/')
 SPINA3_PRZESZLOSC_PERSON_PATH = env('SPINA3_PRZESZLOSC_PERSON_PATH', default='/osoby/{slug}')
 # Wspólne logowanie (spina3.sso): usługa kont na osobnej domenie, tokeny krótkie; nazwy zmiennych, nigdy wartości w repo.

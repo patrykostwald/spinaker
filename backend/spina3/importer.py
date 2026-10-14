@@ -26,7 +26,7 @@ from news.political_models import PoliticalPost, PublicFigureArticleReference
 
 from . import events
 from .config import config, election_silence
-from .models import Box, BoxLink, HeldPublication, Pin, Spina3Profile
+from .models import Box, BoxLink, DiagnosisApproval, HeldPublication, Pin, Spina3Profile
 from .spinka import recompute
 from .text import normalize, short
 
@@ -178,6 +178,59 @@ def _technique(diagnosis: SpinDiagnosis) -> str:
     return str(first.get('name') or '').strip()[:160] if isinstance(first, dict) else ''
 
 
+def _diagnosis_sources(diagnosis: SpinDiagnosis) -> list[str]:
+    """Źródła wersji: wpis, którego dotyczy diagnoza, i adresy wskazane w tezach (bez danych osobowych)."""
+    sources = [diagnosis.post.url] if getattr(diagnosis.post, 'url', '') else []
+    for claim in diagnosis.claims or []:
+        if isinstance(claim, dict):
+            for key in ('source_url', 'url', 'source'):
+                value = claim.get(key)
+                if isinstance(value, str) and value.startswith('http') and value not in sources:
+                    sources.append(value)
+    return sources[:20]
+
+
+def record_approval(post_box: Box, diagnosis_box: Box, diagnosis: SpinDiagnosis, now=None, *, change: str = '') -> DiagnosisApproval | None:
+    """Log zatwierdzeń: nowa wersja przy imporcie i przy każdej zmianie treści, zatwierdzającego, modelu albo stanu."""
+    import hashlib
+    now = now or timezone.now()
+    withdrawn = not diagnosis_visible(diagnosis)
+    model = '/'.join(part for part in (diagnosis.provider, diagnosis.model_name) if part)
+    raw = '|'.join(str(v) for v in (diagnosis.headline, diagnosis.summary, diagnosis.reviewed_at, diagnosis.reviewed_by_id, model,
+                                    diagnosis.prompt_version, withdrawn))
+    signature = hashlib.sha256(raw.encode('utf-8')).hexdigest()
+    last = DiagnosisApproval.objects.filter(diagnosis_box=diagnosis_box).order_by('-version').first()
+    if last is not None and last.signature == signature:
+        return None
+    if not change:
+        change = 'withdrawn' if withdrawn else ('created' if last is None else ('restored' if last.change == 'withdrawn' else 'updated'))
+    return DiagnosisApproval.objects.create(
+        box=post_box, diagnosis_box=diagnosis_box, version=(last.version + 1) if last else 1, change=change,
+        approved_by=diagnosis.reviewed_by, approved_by_account=diagnosis.reviewed_by_id, approved_at=diagnosis.reviewed_at,
+        model=model[:100], sources=_diagnosis_sources(diagnosis), signature=signature, created_at=now)
+
+
+def approval_payload(row: DiagnosisApproval, current_id: int | None = None) -> dict:
+    """Wpis historii publicznie: numer konta zespołu zamiast imienia."""
+    return {'version': row.version, 'target_id': row.diagnosis_box_id, 'current': row.pk == current_id, 'change': row.change,
+            'approved_by': f'konto zespołu nr {row.approved_by_account}' if row.approved_by_account else None,
+            'approved_at': row.approved_at.isoformat() if row.approved_at else None, 'model': row.model, 'sources': list(row.sources or []),
+            'label': row.label, 'created_at': row.created_at.isoformat()}
+
+
+def diagnosis_history(box: Box) -> list[dict]:
+    from django.db.models import Q
+    rows = list(DiagnosisApproval.objects.filter(Q(box=box) | Q(diagnosis_box=box)).order_by('created_at', 'pk'))
+    if not rows:   # relacje sprzed logu zatwierdzeń (S2): wersje z BoxLink, bez zatwierdzającego i modelu
+        links = BoxLink.objects.filter(Q(box=box) | Q(target=box), kind='diagnosis_of').order_by('version', 'pk')
+        return [{'version': link.version, 'target_id': link.target_id, 'current': link.is_current, 'change': 'created',
+                 'approved_by': None, 'approved_at': None, 'model': '', 'sources': [],
+                 'label': DiagnosisApproval._meta.get_field('label').default, 'created_at': link.created_at.isoformat()}
+                for link in links]
+    current = rows[-1].pk if rows[-1].change != 'withdrawn' else None
+    return [approval_payload(row, current) for row in rows]
+
+
 @transaction.atomic
 def sync_diagnosis(diagnosis: SpinDiagnosis, now=None) -> tuple[Box | None, Pin | None]:
     """Diagnoza zatwierdzona przez człowieka -> box 'diagnosis' + BoxLink 'diagnosis_of' + przypięcie systemowe Dr. Spina.
@@ -198,6 +251,8 @@ def sync_diagnosis(diagnosis: SpinDiagnosis, now=None) -> tuple[Box | None, Pin 
         if pin is not None and pin.status != 'hidden':
             pin.status, pin.hidden_reason = 'hidden', 'diagnoza wycofana albo wpis usunięty'
             pin.save(update_fields=['status', 'hidden_reason', 'updated_at'])
+        if box is not None and DiagnosisApproval.objects.filter(diagnosis_box=box).exists():
+            record_approval(post_box, box, diagnosis, now)
         return box, pin
     release_at = _held(now)
     title = short(f'Diagnoza: {diagnosis.headline}', 200)
@@ -231,6 +286,7 @@ def sync_diagnosis(diagnosis: SpinDiagnosis, now=None) -> tuple[Box | None, Pin 
             current.save(update_fields=['is_current', 'superseded_at'])
             version = current.version + 1
         BoxLink.objects.create(box=post_box, target=box, kind='diagnosis_of', version=version, created_at=now)
+    record_approval(post_box, box, diagnosis, now)
     pin = Pin.objects.filter(box=post_box, kind='diagnosis').first()
     pin_created = False
     if pin is None:

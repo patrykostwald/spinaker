@@ -282,6 +282,9 @@ def decide(check: UrlCheck, staff, decision: str, reason: str = '', *, title: st
         for box in Box.objects.filter(url=check.url_normalized, added_by='user', status__in=('pending', 'published')):
             box.status, box.hidden_reason = 'hidden', (reason or 'Adres odrzucony przez zespół.')[:240]
             box.save(update_fields=['status', 'hidden_reason', 'updated_at'])
+            from .legal import REGULAMIN_SEKCJA_ZRODLA, record_decision
+            record_decision(user=box.added_by_user, target_type='box', restriction='hide', facts=box.hidden_reason,
+                            basis=REGULAMIN_SEKCJA_ZRODLA, staff=staff, box=box, now=now)
             recompute(box, now)
         return check
     box = Box.objects.filter(url=check.url_normalized).first()

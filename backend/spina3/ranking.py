@@ -191,7 +191,8 @@ def wall(*, cursor: str | None, sort: str | None, kind: str | None, facets: dict
     if snapshot is None:
         snapshot = latest_snapshot(now, period_days, cfg)
     sort_mode = scoring.effective_sort(sort, snapshot.rated_share, cfg, silence)
-    entries = [e for e in snapshot.entries if _matches(e, kind, facets, now)]
+    entries = _silence_accounts(snapshot.entries, now)
+    entries = [e for e in entries if _matches(e, kind, facets, now)]
     if sort_mode == 'today':
         ids = [e['id'] for e in today_row(now, cfg)]
         order = {box_id: i for i, box_id in enumerate(ids)}
@@ -216,6 +217,20 @@ def wall(*, cursor: str | None, sort: str | None, kind: str | None, facets: dict
         'sections': sections, 'wall_end': not has_more, 'election_silence': silence,
         'end_message': ('To wszystko z %d dni. Jutro o %d:00 nowy rząd Dziś.' % (snapshot.period_days, cfg.today_hour)) if not has_more else '',
     }
+
+
+def _silence_accounts(entries: list[dict], now) -> list[dict]:
+    """Cisza kont kandydatów i komitetów: ich boxy bez poziomu (Otwarta, na końcu kolejności poziomów), żeby filtr
+    poziomu ani sekcja nie ujawniały wyniku."""
+    from .legal import cached_silenced_handles, silenced_box_ids
+    handles = cached_silenced_handles()
+    if not handles:
+        return list(entries)
+    silenced = silenced_box_ids([e['id'] for e in entries], handles)
+    if not silenced:
+        return list(entries)
+    kept = [e for e in entries if e['id'] not in silenced]
+    return kept + [{**e, 'level': OPEN} for e in entries if e['id'] in silenced]
 
 
 def _after_level_cursor(entries: list[dict], cursor_key: tuple) -> list[dict]:

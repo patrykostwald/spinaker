@@ -104,7 +104,7 @@ class ScoringConfig:
     comment_replies_limit: int = 50      # odpowiedzi dołączane do komentarza głównego
     replace_days: int = 7
     comment_max: int = 280               # komentarz autora w przypięciu
-    event_retention_days: int = 365
+    event_retention_days: int = 90      # nieużywane: retencję dziennika ustawia settings.SPINA3_EVENT_RETENTION_DAYS
     url_recheck_days: int = 30
 
 
@@ -130,6 +130,7 @@ class Flags:
     election_silence_pause_ratings: bool = False     # oceny (423)
     election_silence_pause_comments: bool = False    # komentarze (423)
     url_fetch_enabled: bool = False
+    x_source_check_enabled: bool = True   # spina3_sync: oEmbed X, czy wpis istnieje u źródła (do 60 wpisów na przebieg)
     import_press: bool = False
     auth_mode: str = 'session'
 

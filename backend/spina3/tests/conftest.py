@@ -43,6 +43,7 @@ def make_user(username: str, *, verified=True, days_old=30, staff=False, team=Fa
     profile.is_team = team
     profile.tier_manual = tier if days_old >= 14 else ''
     profile.consent_art9_at = timezone.now() if consent else None
+    profile.age_16_plus_at = profile.consent_art9_at   # S2: zgoda zawsze z oświadczeniem 16+
     profile.save()
     return user
 

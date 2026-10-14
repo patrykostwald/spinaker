@@ -3,6 +3,8 @@
 Pełna treść tylko dla wpisów z API platformy (box aktywny) i dokumentów publicznych (show_quote). Wpis usunięty
 u źródła: "Autor usunął wpis", bez treści. Cisza wyborcza i zasłona kalibracyjna (levels_visible=false): spinka szara,
 n i rozkład nadal widoczne. Autorzy: nick, znaczek (dr_spin | team | author | ''), kolor nicku z listy.
+S2: cisza wyborcza kont kandydatów i komitetów (`silence_hidden`: rozkład, poziom i kolor = null); wpis z X zawsze z autorem
+(nazwa i uchwyt) i `source_url`; konto usunięte albo odpięte = "Użytkownik usunięty". Ocen jednostkowych nie zwraca nic.
 """
 from __future__ import annotations
 
@@ -11,9 +13,17 @@ from django.conf import settings
 from . import scoring
 from .config import (AUTHOR_STANCE_NAMES, COLORS, FORMULA_VERSION, LEVEL_LABELS, NICK_COLOR_DEFAULT, OPEN, STANCE_NAMES,
                      election_silence, flags)
+from .legal import DELETED_NICK, is_silenced
 from .models import Box, BoxSpinka, Comment, Pin
 
 EMPTY_DIST = {'agree': 0, 'disagree': 0}
+
+
+def silenced_spinka(payload: dict) -> dict:
+    """Cisza konta: bez rozkładu, poziomu i koloru (n zostaje); widoki ocen wyłączone."""
+    return {**payload, 'level': None, 'color': None, 'distribution': None, 'score': None, 'reason': 'silence',
+            'label': 'cisza wyborcza', 'dispute': False, 'views': {}, 'pending': False,
+            'aria': 'Cisza wyborcza: ocena ukryta do jej zakończenia.'}
 
 
 def spinka_payload(sp: BoxSpinka | None, *, silence: bool = False, levels_visible: bool = True) -> dict:
@@ -38,10 +48,16 @@ def spinka_payload(sp: BoxSpinka | None, *, silence: bool = False, levels_visibl
 
 
 def author_info(user, *, is_team: bool = False, anonymized: bool = False, is_author: bool = False) -> dict:
-    """Nick, znaczek i kolor nicku; konto usunięte = "konto usunięte" bez koloru."""
+    """Nick, znaczek i kolor nicku; konto usunięte, oznaczone do usunięcia albo odpięte = "Użytkownik usunięty" bez koloru."""
+    deleted = {'nick': DELETED_NICK, 'badge': '', 'color': None, 'is_team': False, 'system': False, 'label': ''}
     if anonymized or user is None:
-        return {'nick': 'konto usunięte', 'badge': '', 'color': None, 'is_team': False, 'system': False, 'label': ''}
-    profile = getattr(user, 'spina3_profile', None)
+        return deleted
+    try:
+        profile = user.spina3_profile
+    except Exception:  # noqa: BLE001 - brak profilu (RelatedObjectDoesNotExist)
+        profile = None
+    if profile is not None and profile.deletion_requested_at is not None:
+        return deleted
     system = bool(profile and profile.is_system)
     team = is_team or bool(profile and profile.is_team)
     if system:
@@ -54,6 +70,9 @@ def author_info(user, *, is_team: bool = False, anonymized: bool = False, is_aut
 
 
 def _author(box: Box) -> dict | None:
+    if box.kind == 'post':   # wpis z X: zawsze autor (nazwa i uchwyt), także po usunięciu u źródła
+        return {'name': box.author_name or (f'@{box.author_handle}' if box.author_handle else ''), 'handle': box.author_handle,
+                'initials': box.author_initials, 'avatar_url': box.thumbnail_url if box.show_avatar else ''}
     if not box.author_name and not box.author_handle:
         return None
     return {'name': box.author_name, 'handle': box.author_handle, 'initials': box.author_initials,
@@ -92,10 +111,13 @@ def box_item(box: Box, sp: BoxSpinka | None = None, *, my_rating: int | None = N
     if pin is None:
         pin = Pin.objects.filter(box=box).exclude(status='removed').select_related('user__spina3_profile', 'pinned_box').first()
     published_at = box.published_at or (pin.created_at if box.reader_link and pin else None)
+    silenced = is_silenced(box)
+    spinka = spinka_payload(sp, silence=silence, levels_visible=fl.levels_visible)
     item = {
         'id': box.pk, 'kind': box.kind, 'subtype': box.subtype, 'title': title,
         'source': {'name': box.source_name, 'domain': box.source_domain},
-        'author': _author(box) if not withdrawn else None,
+        'author': _author(box) if (not withdrawn or box.kind == 'post') else None,
+        'source_url': box.url if (box.kind == 'post' or box.source_status == 'active') else None,
         'published_at': published_at.isoformat() if published_at else None,
         'quote': box.quote if (box.show_quote and not removed and not withdrawn) else '',
         'thumbnail_url': box.thumbnail_url if (box.show_thumbnail and not removed and not withdrawn) else '',
@@ -108,7 +130,8 @@ def box_item(box: Box, sp: BoxSpinka | None = None, *, my_rating: int | None = N
         'pinnable': box.pinnable_as_target and box.public_function and box.source_status == 'active',
         'has_pin': bool(pin and pin.status == 'published'),
         'pin': pin_summary(pin if pin and pin.status == 'published' else None),
-        'spinka': spinka_payload(sp, silence=silence, levels_visible=fl.levels_visible),
+        'spinka': silenced_spinka(spinka) if silenced else spinka,
+        'silence_hidden': silenced,
         'my_rating': STANCE_NAMES.get(my_rating) if my_rating is not None else None,
         'comment_count': comment_count if comment_count is not None else Comment.objects.filter(box=box, status='visible').count(),
         'rel': 'ugc nofollow noopener' if box.reader_link else 'noopener',
@@ -145,8 +168,11 @@ def target_card(pin: Pin) -> dict:
             'replace_deadline': pin.replace_deadline.isoformat() if pin.replace_deadline else None}
 
 
-def ratings_summary(sp: BoxSpinka | None) -> dict:
+def ratings_summary(sp: BoxSpinka | None, *, silenced: bool = False) -> dict:
+    """Agregat ocen przypięcia (nigdy lista ocen ani oceniających); w ciszy konta bez rozkładu."""
     dist = {**EMPTY_DIST, **((sp.distribution or {}) if sp else {})}
+    if silenced:
+        return {'n': sp.n if sp else 0, 'agree': None, 'disagree': None}
     return {'n': sp.n if sp else 0, 'agree': dist['agree'], 'disagree': dist['disagree']}
 
 
@@ -155,7 +181,7 @@ def pin_item(pin: Pin, *, viewer=None, my_rating: int | None = None, sp: BoxSpin
     sp = sp if sp is not None else getattr(pin.box, 'spinka', None)
     base = {
         'id': pin.pk, 'box_id': pin.box_id, 'kind': pin.kind, 'system': pin.kind == 'diagnosis',
-        'ratings': ratings_summary(sp), 'my_rating': STANCE_NAMES.get(my_rating) if my_rating is not None else None,
+        'ratings': ratings_summary(sp, silenced=is_silenced(pin.box)), 'my_rating': STANCE_NAMES.get(my_rating) if my_rating is not None else None,
         'ratable': pin.ratable and not own and pin.box.status == 'published' and pin.box.source_status == 'active',
         'created_at': pin.created_at.isoformat(), 'title': pin.title, 'subtitle': pin.subtitle,
     }

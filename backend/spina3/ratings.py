@@ -3,7 +3,8 @@ zmiana (z odstępem) i wycofanie dozwolone. Z ocen powstaje S i ranking (spinka.
 
 Zasady: ocenia się tylko opublikowane przypięcie z dostępnym dowodem (`Pin.ratable`); własnego przypięcia nie ocenia się;
 Dr. Spin i konta T0 nie oceniają; zespół ocenia z wagą 0. Limity: dobowy (T1 30, T2 200), seria 10/min, odstęp 1 h na zmianę.
-Kody: 400 dane, 403 uprawnienia lub flaga, 404 brak przypięcia, 409 dowód niedostępny lub box zamrożony, 423 cisza, 429 limit.
+Kody: 400 dane, 403 uprawnienia, flaga, zgoda (consent) lub wiek (age), 404 brak przypięcia, 409 dowód niedostępny lub box zamrożony,
+423 cisza (także cisza konta kandydata lub komitetu), 429 limit.
 """
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ from django.utils import timezone
 
 from . import events
 from .config import STANCES, config, election_silence, flags
+from .legal import check_publish_consent, check_silence
 from .models import Pin, Rating, Spina3Profile
 from .pins import PinError
 from .spinka import recompute
@@ -59,6 +61,7 @@ def _check_account(user, cfg, now):
     profile = Spina3Profile.for_user(user)
     if profile.consent_art9_at is None and not trust.is_team:
         raise PinError(403, 'Przed pierwszą oceną potrzebna jest zgoda na publikację stanowisk przy nicku.', 'consent')
+    check_publish_consent(profile, trust)
     return trust, profile
 
 
@@ -69,6 +72,7 @@ def set_rating(user, pin: Pin, stance, now=None) -> tuple[Rating, dict]:
     cfg = config()
     _check_flags(now)
     _check_pin(pin, user)
+    check_silence(pin.box, now=now)
     trust, profile = _check_account(user, cfg, now)
     actor = profile.pseudonym
     value = parse_stance(stance)

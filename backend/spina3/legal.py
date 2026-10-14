@@ -236,13 +236,13 @@ def box_handles(box) -> set[str]:
 def is_silenced(box, now=None, handles: set[str] | None = None) -> bool:
     if box is None:
         return False
-    active = handles if handles is not None else silenced_handles(now)
+    active = handles if handles is not None else cached_silenced_handles(now)
     return bool(active and box_handles(box) & active)
 
 
 def check_silence(*boxes, now=None) -> None:
     from .pins import PinError
-    active = silenced_handles(now)
+    active = cached_silenced_handles(now)
     if active and any(is_silenced(box, handles=active) for box in boxes if box is not None):
         raise PinError(423, 'Cisza wyborcza: przy materiałach kandydatów i komitetów nowe oceny, komentarze i przypięcia '
                             'przyjmujemy po jej zakończeniu.', 'election_silence')
@@ -284,3 +284,62 @@ def withdraw_consent(user, now=None) -> dict:
     for box in Box.objects.filter(pk__in=boxes):
         recompute(box, now)
     return {'ratings_detached': ratings, 'comments_detached': comments}
+
+
+def apply_sanction(user, staff, sanction: str, facts: str, *, basis: str = '', report=None, now=None, days: int = 30):
+    """Sankcja wobec konta (waga 0 albo zawieszenie) zawsze z zapisanym uzasadnieniem (ModerationDecision target=account)."""
+    from .models import Spina3Profile
+    if user is None or sanction not in ('weight_zero_30d', 'suspend_30d'):
+        return None
+    now = now or timezone.now()
+    until = now + timedelta(days=days)
+    profile = Spina3Profile.for_user(user)
+    if sanction == 'weight_zero_30d':
+        profile.weight_zero_until, restriction = until, 'demote'
+    else:
+        profile.suspended_until, restriction = until, 'suspend'
+    profile.save(update_fields=['weight_zero_until', 'suspended_until'])
+    return record_decision(user=user, target_type='account', restriction=restriction, facts=facts, basis=basis or REGULAMIN_SEKCJA_KONTO,
+                           staff=staff, report=report, until=until, now=now)
+
+
+def lift_sanction(row, now=None) -> None:
+    """Uchylenie sankcji konta po uwzględnionym odwołaniu."""
+    from .models import Spina3Profile
+    if row.user_id is None:
+        return
+    profile = Spina3Profile.for_user(row.user)
+    if row.restriction == 'demote':
+        profile.weight_zero_until = None
+    elif row.restriction == 'suspend':
+        profile.suspended_until = None
+    profile.save(update_fields=['weight_zero_until', 'suspended_until'])
+
+
+SILENCE_CACHE_KEY = 'spina3:silenced_handles'
+
+
+def cached_silenced_handles(now=None) -> set[str]:
+    """Aktywne uchwyty z pamięci podręcznej (60 s; zapis SilencedAccount czyści wpis). Z `now` zawsze z bazy."""
+    from django.core.cache import cache
+    if now is not None:
+        return silenced_handles(now)
+    value = cache.get(SILENCE_CACHE_KEY)
+    if value is None:
+        value = sorted(silenced_handles())
+        cache.set(SILENCE_CACHE_KEY, value, 60)
+    return set(value)
+
+
+def silenced_box_ids(box_ids, handles: set[str]) -> set[int]:
+    """Boxy kont w ciszy (wpisy oraz diagnozy przypięte do ich wpisów) spośród `box_ids`."""
+    from django.db.models import Q
+    from django.db.models.functions import Lower
+    from .models import Box, BoxLink
+    if not handles:
+        return set()
+    ids = set(box_ids)
+    own = set(Box.objects.annotate(h=Lower('author_handle')).filter(pk__in=ids, h__in=handles).values_list('pk', flat=True))
+    linked = set(BoxLink.objects.annotate(h=Lower('box__author_handle')).filter(Q(target_id__in=ids), kind='diagnosis_of', h__in=handles)
+                 .values_list('target_id', flat=True))
+    return own | linked

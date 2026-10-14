@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from django.contrib import admin
 
-from .models import Appeal, Box, BoxLink, BoxSpinka, Comment, Pin, RankingSnapshot, Rating, Report, Spina3Profile, UrlCheck
+from .models import (Appeal, Box, BoxLink, BoxSpinka, Comment, Correction, DiagnosisApproval, ModerationDecision, Pin, RankingSnapshot,
+                     Rating, Report, SilencedAccount, Spina3Profile, UrlCheck)
 
 
 @admin.register(Box)
@@ -48,3 +49,30 @@ admin.site.register(Spina3Profile)
 admin.site.register(UrlCheck)
 admin.site.register(Appeal)
 admin.site.register(RankingSnapshot)
+
+
+@admin.register(Correction)
+class CorrectionAdmin(admin.ModelAdmin):
+    """Kolejka sprostowań: najpierw oczekujące według terminu publikacji (3 dni robocze)."""
+    list_display = ('pk', 'box', 'status', 'due_at', 'consent_public_name', 'rejection_reason', 'created_at')
+    list_filter = ('status', 'rejection_reason')
+    ordering = ('status', 'due_at')
+    readonly_fields = ('box', 'name', 'email', 'text', 'statement', 'consent_public_name', 'due_at', 'created_at')
+
+
+@admin.register(ModerationDecision)
+class ModerationDecisionAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'target_type', 'restriction', 'basis', 'automated', 'created_at', 'revoked_at', 'email_sent_at')
+    list_filter = ('target_type', 'restriction', 'basis', 'automated')
+
+
+@admin.register(SilencedAccount)
+class SilencedAccountAdmin(admin.ModelAdmin):
+    list_display = ('handle', 'kind', 'starts_at', 'ends_at', 'source')
+    list_filter = ('kind',)
+    search_fields = ('handle',)
+
+
+@admin.register(DiagnosisApproval)
+class DiagnosisApprovalAdmin(admin.ModelAdmin):
+    list_display = ('diagnosis_box', 'version', 'change', 'approved_by_account', 'approved_at', 'model')

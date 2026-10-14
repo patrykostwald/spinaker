@@ -591,3 +591,17 @@ class SilencedAccount(models.Model):
             models.UniqueConstraint(fields=['handle', 'starts_at', 'ends_at'], name='spina3_silenced_once'),
             models.CheckConstraint(condition=Q(ends_at__gt=F('starts_at')), name='spina3_silenced_window'),
         ]
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        from .legal import SILENCE_CACHE_KEY, normalize_handle
+        self.handle = normalize_handle(self.handle)
+        super().save(*args, **kwargs)
+        cache.delete(SILENCE_CACHE_KEY)
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        from .legal import SILENCE_CACHE_KEY
+        result = super().delete(*args, **kwargs)
+        cache.delete(SILENCE_CACHE_KEY)
+        return result

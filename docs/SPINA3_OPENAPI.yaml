@@ -187,6 +187,56 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/spina3/box/{box_id}/correction/:
+    post:
+      operationId: box_correction_create
+      description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
+      summary: 'Sprostowanie diagnozy (prawo prasowe): osoba, której dotyczy wpis,
+        do 21 dni od publikacji; termin publikacji due_at = 3 dni robocze'
+      parameters:
+      - in: path
+        name: box_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - spina3
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectionInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CorrectionInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CorrectionInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CorrectionStatusOut'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/spina3/box/{box_id}/related/:
     get:
       operationId: box_related_retrieve
@@ -465,6 +515,23 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/spina3/me/:
+    delete:
+      operationId: me_destroy
+      description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
+      summary: 'Usuń dane spina3 (nie wspólne konto spin.clinic): nick od razu anonimowy,
+        treści usuwane po 30 dniach, oceny zostają w agregacie bez przypisania'
+      tags:
+      - spina3
+      security:
+      - cookieAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeleteOut'
+          description: ''
   /api/spina3/me/boxes/:
     get:
       operationId: me_boxes_retrieve
@@ -485,8 +552,9 @@ paths:
     post:
       operationId: me_consent_create
       description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
-      summary: Zgoda przed pierwszą publikacją (stanowiska i komentarze publiczne
-        przy nicku, bez profilu)
+      summary: 'Zgoda art. 9 RODO z oświadczeniem 16+ (accepted=true wymaga age_16_plus=true,
+        inaczej 403 age); accepted=false: oceny bez wagi i autora, komentarze odpięte
+        od nicku do przeglądu'
       tags:
       - spina3
       requestBody:
@@ -505,6 +573,76 @@ paths:
       - cookieAuth: []
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentOut'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/spina3/me/decisions/:
+    get:
+      operationId: me_decisions_retrieve
+      description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
+      summary: Moje decyzje moderacji z uzasadnieniem (DSA art. 17); tylko własne
+      tags:
+      - spina3
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyDecisionsOut'
+          description: ''
+  /api/spina3/me/decisions/{decision_id}/appeal/:
+    post:
+      operationId: me_decisions_appeal_create
+      description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
+      summary: Odwołanie od decyzji (jedno na decyzję, 6 miesięcy; rozpatruje człowiek)
+      parameters:
+      - in: path
+        name: decision_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - spina3
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppealInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AppealInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AppealInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionAppealOut'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
           content:
             application/json:
               schema:
@@ -637,6 +775,55 @@ paths:
       - cookieAuth: []
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/spina3/moderation/corrections/{correction_id}/:
+    post:
+      operationId: moderation_corrections_create
+      description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
+      summary: 'Decyzja zespołu w sprawie sprostowania: publish albo reject z powodem
+        z art. 33 prawa prasowego'
+      parameters:
+      - in: path
+        name: correction_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - spina3 zespół
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectionDecisionInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CorrectionDecisionInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CorrectionDecisionInRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CorrectionStatusOut'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '409':
           content:
             application/json:
               schema:
@@ -1008,6 +1195,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/SilenceOut'
           description: ''
+  /api/spina3/u/{nick}/:
+    get:
+      operationId: u_retrieve
+      description: Sesja (domyślnie) albo token Bearer ze wspólnego logowania (auth_mode=token).
+      summary: 'Publiczny profil autora (flaga public_profiles; domyślnie 404): nick,
+        kolor i boxy z przypięciem, nigdy oceny'
+      parameters:
+      - in: path
+        name: nick
+        schema:
+          type: string
+        required: true
+      tags:
+      - spina3
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProfileOut'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/spina3/wall/:
     get:
       operationId: wall_retrieve
@@ -1071,6 +1289,25 @@ paths:
           description: ''
 components:
   schemas:
+    AccountDeleteOut:
+      type: object
+      properties:
+        deletion_requested_at:
+          type: string
+          format: date-time
+        content_removed_after:
+          type: string
+          format: date-time
+          description: Treści usuwane po 30 dniach (spina3_retention)
+        nick:
+          type: string
+        scope:
+          type: string
+      required:
+      - content_removed_after
+      - deletion_requested_at
+      - nick
+      - scope
     AppealInRequest:
       type: object
       properties:
@@ -1105,6 +1342,24 @@ components:
       - label
       - nick
       - system
+    BasisEnum:
+      enum:
+      - przepis_rodo_art17
+      - przepis_tresc_nielegalna
+      - regulamin_dane_osobowe
+      - regulamin_grozby_obrazy
+      - regulamin_prawa_autorskie
+      - regulamin_spam
+      - regulamin_tresci_niezgodne
+      - regulamin_zasady_konta
+      - regulamin_zrodla_niedozwolone
+      type: string
+      description: "* `` - \n* `przepis_rodo_art17` - przepis_rodo_art17\n* `przepis_tresc_nielegalna`\
+        \ - przepis_tresc_nielegalna\n* `regulamin_dane_osobowe` - regulamin_dane_osobowe\n\
+        * `regulamin_grozby_obrazy` - regulamin_grozby_obrazy\n* `regulamin_prawa_autorskie`\
+        \ - regulamin_prawa_autorskie\n* `regulamin_spam` - regulamin_spam\n* `regulamin_tresci_niezgodne`\
+        \ - regulamin_tresci_niezgodne\n* `regulamin_zasady_konta` - regulamin_zasady_konta\n\
+        * `regulamin_zrodla_niedozwolone` - regulamin_zrodla_niedozwolone"
     BlankEnum:
       enum:
       - ''
@@ -1129,7 +1384,16 @@ components:
           type: object
           additionalProperties: {}
           nullable: true
-          description: Autor materiału (polityk, redakcja), nie użytkownik
+          description: Autor materiału (polityk, redakcja), nie użytkownik; dla kind=post
+            zawsze {name, handle}
+        source_url:
+          type: string
+          nullable: true
+          description: Adres źródła; dla kind=post zawsze (także po usunięciu u źródła)
+        silence_hidden:
+          type: boolean
+          description: 'Cisza wyborcza konta kandydata lub komitetu: spinka bez rozkładu,
+            poziomu i koloru'
         published_at:
           type: string
           format: date-time
@@ -1190,14 +1454,19 @@ components:
         diagnosis_history:
           type: array
           items:
-            type: object
-            additionalProperties: {}
+            $ref: '#/components/schemas/DiagnosisVersionOut'
+        correction:
+          allOf:
+          - $ref: '#/components/schemas/CorrectionPublicOut'
+          nullable: true
+          description: Opublikowane sprostowanie diagnozy (prawo prasowe)
       required:
       - ai_label
       - author
       - can_pin
       - can_rate
       - comment_count
+      - correction
       - diagnosis_history
       - has_diagnosis
       - has_pin
@@ -1212,8 +1481,10 @@ components:
       - question
       - quote
       - reader_link
+      - silence_hidden
       - source
       - source_status
+      - source_url
       - spinka
       - status
       - subtype
@@ -1243,7 +1514,16 @@ components:
           type: object
           additionalProperties: {}
           nullable: true
-          description: Autor materiału (polityk, redakcja), nie użytkownik
+          description: Autor materiału (polityk, redakcja), nie użytkownik; dla kind=post
+            zawsze {name, handle}
+        source_url:
+          type: string
+          nullable: true
+          description: Adres źródła; dla kind=post zawsze (także po usunięciu u źródła)
+        silence_hidden:
+          type: boolean
+          description: 'Cisza wyborcza konta kandydata lub komitetu: spinka bez rozkładu,
+            poziomu i koloru'
         published_at:
           type: string
           format: date-time
@@ -1303,8 +1583,10 @@ components:
       - published_at
       - quote
       - reader_link
+      - silence_hidden
       - source
       - source_status
+      - source_url
       - spinka
       - status
       - subtype
@@ -1372,6 +1654,18 @@ components:
       - box
       - pin
       - spinka
+    ChangeEnum:
+      enum:
+      - created
+      - updated
+      - withdrawn
+      - restored
+      type: string
+      description: |-
+        * `created` - created
+        * `updated` - updated
+        * `withdrawn` - withdrawn
+        * `restored` - restored
     CodeInRequest:
       type: object
       properties:
@@ -1624,8 +1918,145 @@ components:
       properties:
         accepted:
           type: boolean
+        age_16_plus:
+          type: boolean
+          default: false
+          description: 'Oświadczenie: mam ukończone 16 lat. Wymagane true przy accepted=true
+            (inaczej 403 code=age)'
       required:
       - accepted
+    ConsentOut:
+      type: object
+      properties:
+        consent_art9:
+          type: boolean
+        age_16_plus:
+          type: boolean
+        ratings_detached:
+          type: integer
+        comments_detached:
+          type: integer
+      required:
+      - age_16_plus
+      - consent_art9
+    CorrectionDecisionInRequest:
+      type: object
+      properties:
+        decision:
+          type: string
+          minLength: 1
+          description: publish | reject
+        rejection_reason:
+          default: ''
+          description: "Wymagane przy reject: powód z art. 33 prawa prasowego\n\n\
+            * `` - \n* `already_corrected` - already_corrected\n* `late` - late\n\
+            * `requirements` - requirements\n* `unlawful` - unlawful"
+          oneOf:
+          - $ref: '#/components/schemas/RejectionReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 600
+      required:
+      - decision
+    CorrectionInRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Imię i nazwisko wnioskodawcy
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        text:
+          type: string
+          minLength: 1
+          description: Do dwukrotnej objętości diagnozy
+        statement:
+          type: boolean
+          description: 'Wymagane true: jestem osobą, której dotyczy wpis; dane są
+            prawdziwe'
+        consent_public_name:
+          type: boolean
+          default: false
+          description: Zgoda na publikację imienia i nazwiska przy sprostowaniu
+      required:
+      - email
+      - name
+      - statement
+      - text
+    CorrectionPublicOut:
+      type: object
+      properties:
+        id:
+          type: integer
+        box_id:
+          type: integer
+        text:
+          type: string
+        author:
+          type: string
+          description: Imię i nazwisko tylko za zgodą (consent_public_name); inaczej
+            "Osoba, której dotyczy wpis"
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        label:
+          type: string
+      required:
+      - author
+      - box_id
+      - id
+      - label
+      - published_at
+      - text
+    CorrectionStatusOut:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        due_at:
+          type: string
+          format: date-time
+          description: 'Termin publikacji: 3 dni robocze (weekendy i święta, w tym
+            Wigilia)'
+        rejection_reason:
+          type: string
+          nullable: true
+        rejection_label:
+          type: string
+          nullable: true
+      required:
+      - due_at
+      - id
+      - rejection_label
+      - rejection_reason
+      - status
+    DecisionAppealOut:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        decision_reason:
+          type: string
+      required:
+      - created_at
+      - decision_reason
+      - id
+      - status
     DecisionEnum:
       enum:
       - accept
@@ -1643,15 +2074,72 @@ components:
         reason:
           type: string
           minLength: 1
+          description: Fakty i okoliczności (DSA art. 17); trafiają do autora
           maxLength: 600
         sanction:
           default: ''
           oneOf:
           - $ref: '#/components/schemas/SanctionEnum'
           - $ref: '#/components/schemas/BlankEnum'
+        basis:
+          default: ''
+          description: "Podstawa (stała z spina3.legal.BASES); domyślnie według kategorii\
+            \ zgłoszenia\n\n* `` - \n* `przepis_rodo_art17` - przepis_rodo_art17\n\
+            * `przepis_tresc_nielegalna` - przepis_tresc_nielegalna\n* `regulamin_dane_osobowe`\
+            \ - regulamin_dane_osobowe\n* `regulamin_grozby_obrazy` - regulamin_grozby_obrazy\n\
+            * `regulamin_prawa_autorskie` - regulamin_prawa_autorskie\n* `regulamin_spam`\
+            \ - regulamin_spam\n* `regulamin_tresci_niezgodne` - regulamin_tresci_niezgodne\n\
+            * `regulamin_zasady_konta` - regulamin_zasady_konta\n* `regulamin_zrodla_niedozwolone`\
+            \ - regulamin_zrodla_niedozwolone"
+          oneOf:
+          - $ref: '#/components/schemas/BasisEnum'
+          - $ref: '#/components/schemas/BlankEnum'
       required:
       - decision
       - reason
+    DiagnosisVersionOut:
+      type: object
+      properties:
+        version:
+          type: integer
+        target_id:
+          type: integer
+          description: Box diagnozy
+        current:
+          type: boolean
+        change:
+          $ref: '#/components/schemas/ChangeEnum'
+        approved_by:
+          type: string
+          nullable: true
+          description: '"konto zespołu nr N" (bez imienia i nazwiska)'
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        model:
+          type: string
+        sources:
+          type: array
+          items:
+            type: string
+        label:
+          type: string
+          description: Diagnoza AI, zatwierdzona przez zespół spin.clinic
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - approved_at
+      - approved_by
+      - change
+      - created_at
+      - current
+      - label
+      - model
+      - sources
+      - target_id
+      - version
     ElectionSilenceOut:
       type: object
       properties:
@@ -1722,6 +2210,78 @@ components:
         * `person` - Osoba
         * `entity` - Podmiot
         * `image` - Zdjęcie
+    ModerationDecisionOut:
+      type: object
+      properties:
+        id:
+          type: integer
+        target_type:
+          $ref: '#/components/schemas/TargetTypeEnum'
+        target_label:
+          type: string
+        target_id:
+          type: integer
+          nullable: true
+        box_id:
+          type: integer
+          nullable: true
+        restriction:
+          $ref: '#/components/schemas/RestrictionEnum'
+        restriction_label:
+          type: string
+        facts:
+          type: string
+        basis:
+          type: string
+        basis_text:
+          type: string
+        automated:
+          type: boolean
+        decided_by:
+          type: string
+          description: '"zespół spina3" albo "system (automat)"; bez nazwiska'
+        until:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        appeal_route:
+          type: string
+        appeal_deadline:
+          type: string
+          format: date-time
+        appeal:
+          allOf:
+          - $ref: '#/components/schemas/DecisionAppealOut'
+          nullable: true
+        can_appeal:
+          type: boolean
+      required:
+      - appeal
+      - appeal_deadline
+      - appeal_route
+      - automated
+      - basis
+      - basis_text
+      - box_id
+      - can_appeal
+      - created_at
+      - decided_by
+      - facts
+      - id
+      - restriction
+      - restriction_label
+      - revoked_at
+      - target_id
+      - target_label
+      - target_type
+      - until
     MyBoxesOut:
       type: object
       properties:
@@ -1729,6 +2289,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BoxItemOut'
+      required:
+      - items
+    MyDecisionsOut:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModerationDecisionOut'
       required:
       - items
     MyRatingOut:
@@ -1843,7 +2412,9 @@ components:
           type: object
           additionalProperties:
             type: integer
-          description: '{n, agree, disagree}'
+            nullable: true
+          description: Agregat {n, agree, disagree} (nigdy lista ocen); agree/disagree
+            null w ciszy konta
         my_rating:
           type: string
           nullable: true
@@ -2017,6 +2588,9 @@ components:
           type: string
         consent_art9:
           type: boolean
+        age_16_plus:
+          type: boolean
+          description: 'false przy zgodzie sprzed S2: nowa publikacja da 403 code=age'
         tier:
           type: string
         limits:
@@ -2025,6 +2599,7 @@ components:
         public_profile:
           type: boolean
       required:
+      - age_16_plus
       - badge
       - consent_art9
       - limits
@@ -2036,6 +2611,25 @@ components:
       oneOf:
       - $ref: '#/components/schemas/ProfileOut'
       - $ref: '#/components/schemas/GuestProfileOut'
+    PublicProfileOut:
+      type: object
+      properties:
+        nick:
+          type: string
+        color:
+          type: string
+          nullable: true
+        badge:
+          type: string
+        boxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoxItemOut'
+      required:
+      - badge
+      - boxes
+      - color
+      - nick
     RatingInRequest:
       type: object
       properties:
@@ -2080,6 +2674,15 @@ components:
         * `spam` - spam
         * `subject` - subject
         * `other` - other
+    RejectionReasonEnum:
+      enum:
+      - already_corrected
+      - late
+      - requirements
+      - unlawful
+      type: string
+      description: "* `` - \n* `already_corrected` - already_corrected\n* `late` -\
+        \ late\n* `requirements` - requirements\n* `unlawful` - unlawful"
     ReportInRequest:
       type: object
       properties:
@@ -2124,13 +2727,25 @@ components:
       - good_faith
       - name
       - reason
+    RestrictionEnum:
+      enum:
+      - hide
+      - remove
+      - demote
+      - suspend
+      type: string
+      description: |-
+        * `hide` - hide
+        * `remove` - remove
+        * `demote` - demote
+        * `suspend` - suspend
     SanctionEnum:
       enum:
       - weight_zero_30d
       - suspend_30d
       type: string
-      description: "* `` - \n* `weight_zero_30d` - weight_zero_30d\n* `suspend_30d`
-        - suspend_30d"
+      description: "* `` - \n* `weight_zero_30d` - weight_zero_30d\n* `suspend_30d`\
+        \ - suspend_30d"
     SearchOut:
       type: object
       properties:
@@ -2178,11 +2793,14 @@ components:
           description: Liczba ocen przypięcia autora
         level:
           type: string
-          description: P1..P5 albo open (Otwarta)
+          nullable: true
+          description: P1..P5 albo open (Otwarta); null w ciszy konta (silence_hidden)
         label:
           type: string
         color:
           type: string
+          nullable: true
+          description: null w ciszy konta (silence_hidden)
         score:
           type: number
           format: double
@@ -2197,7 +2815,9 @@ components:
           type: object
           additionalProperties:
             type: integer
-          description: '{agree, disagree}'
+          nullable: true
+          description: '{agree, disagree} (agregat, nigdy lista ocen); null w ciszy
+            konta'
         dispute:
           type: boolean
         views:
@@ -2234,6 +2854,16 @@ components:
       description: |-
         * `agree` - agree
         * `disagree` - disagree
+    StatusEnum:
+      enum:
+      - pending
+      - published
+      - rejected
+      type: string
+      description: |-
+        * `pending` - pending
+        * `published` - published
+        * `rejected` - rejected
     TargetSummaryOut:
       type: object
       properties:
@@ -2285,6 +2915,18 @@ components:
         * `image` - image
         * `box` - box
         * `url` - url
+    TargetTypeEnum:
+      enum:
+      - pin
+      - box
+      - comment
+      - account
+      type: string
+      description: |-
+        * `pin` - pin
+        * `box` - box
+        * `comment` - comment
+        * `account` - account
     TypeEnum:
       enum:
       - article

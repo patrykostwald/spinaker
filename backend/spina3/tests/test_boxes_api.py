@@ -130,7 +130,7 @@ def test_consent_required_then_granted(api):
     user, box, thing = make_user('c1', consent=False), make_box('Box'), make_box('Rzecz')
     assert post_box(api, user, box.pk, thing.pk).json()['code'] == 'consent'
     api.force_authenticate(user)
-    assert api.post('/api/spina3/me/consent/', {'accepted': True}, format='json').status_code == 200
+    assert api.post('/api/spina3/me/consent/', {'accepted': True, 'age_16_plus': True}, format='json').status_code == 200
     assert post_box(api, user, box.pk, thing.pk).status_code == 201
 
 
