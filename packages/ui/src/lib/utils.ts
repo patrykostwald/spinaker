@@ -156,3 +156,11 @@ export function relativeTimePl(iso: string | null, now: number = Date.now()): st
   if (new Date(time).toDateString() === yesterday.toDateString()) return `wczoraj, ${formatTimePl(iso)}`;
   return formatShortDatePl(iso);
 }
+
+
+/** Polska odmiana liczebnika: 1 wpis, 2-4 wpisy, 5+ wpisów (12-14 jak 5+). Wspólna dla całego kitu (karta Przekaz dnia, nagłówki działów). */
+export function plural(n: number, one: string, few: string, many: string): string {
+  const n10 = n % 10, n100 = n % 100;
+  if (n === 1) return one;
+  return n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14) ? few : many;
+}

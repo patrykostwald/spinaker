@@ -708,3 +708,65 @@ html[data-theme="light"] .pt-v3 .px .px-flow__dates input[type="date"] { color-s
 .pt-v3 .px .pt-opp__top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; } .pt-v3 .px .pt-opp__top h3 { display: inline-flex; align-items: center; gap: 8px; margin: 0; } .pt-v3 .px .pt-opp__top small { color: var(--sc-text-2); font-size: 14px; } .pt-v3 .px .pt-opp__list { display: grid; margin: 0; padding: 0; list-style: none; } .pt-v3 .px .pt-opp__list li { display: grid; gap: 4px; padding: 12px 0; border-top: 1px solid var(--sc-line); } .pt-v3 .px .pt-opp__list li:first-child { border-top: 0; padding-top: 0; } .pt-v3 .px .pt-opp__list a, .pt-v3 .px .pt-opp__list span { color: var(--sc-text); font: 600 15px/1.45 var(--sc-font-sans); } .pt-v3 .px .pt-opp__list a { display: inline-flex; min-height: 44px; align-items: center; } .pt-v3 .px .pt-opp__attr { color: var(--sc-text-2); font-size: 14px; line-height: 1.5; }
 /* potwierdzenie sprzeciwu */ .pt-v3 .px .pt-confirm { display: grid; gap: 12px; max-width: 40em; } .pt-v3 .px .pt-confirm h1 { margin: 0; font: 600 clamp(26px, 3vw, 36px)/1.2 var(--sc-font-display); }
 /* potwierdzenie sprzeciwu */ .pt-v3 .px .pt-confirm { display: grid; gap: 12px; max-width: 40em; } .pt-v3 .px .pt-confirm h1 { margin: 0; font: 600 clamp(26px, 3vw, 36px)/1.2 var(--sc-font-display); }
+
+/* =================== 14.10.2026: uwagi właściciela do strony głównej (pasek liczb, harmonia sekcji) =================== */
+/* (2c) pasek liczb "Co jest w bazie" ("wycentruj jednak te wszystkie elementy w boksach"): równe komórki z symetrycznym paddingiem, liczba
+   i podpis wycentrowane, JEDEN rozmiar liczb liczony z szerokości całego paska (kontener = .px-proof, nie komórka: szersze komórki
+   drugiego rzędu nie powiększają liczby), wspólna linia bazowa: liczba u góry komórki, podpis w stałej strefie 2 linii; separator = border-left
+   komórki, która nie zaczyna rzędu. 5 komórek: >= 1280 jeden rząd; 641-1279 rzędy 3 + 2 (druga para po 3/6 szerokości, bez sieroty);
+   <= 640 rzędy 2 + 2 + 1 (ostatnia na całą szerokość); < 360 jedna kolumna. 6 komórek (spin.clinic): 6, 3 + 3, 2 + 2 + 2, 1. Test: tests/128. */
+.pt-v3 .px .px-proof { container-type: inline-size; --pt-proof-cols: var(--pt-proof-n, 6); --pt-proof-pad: 20px; }
+.pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n) { container-type: normal; grid-column: auto; padding: 0 var(--pt-proof-pad); text-align: center; align-content: start; border-left: 1px solid var(--sc-line); border-top: 0; }
+.pt-v3 .px .px-proof > div:first-child { border-left: 0; }
+.pt-v3 .px .px-proof > div > span { align-self: start; min-height: calc(2 * 1.4em); }
+.pt-v3 .px .px-proof b, .pt-v3 .px .px-proof[data-n] b { font-size: clamp(16px, calc((100cqi / var(--pt-proof-cols) - 2 * var(--pt-proof-pad)) / (var(--num-chars, 6) * .68)), 30px); }
+@media (max-width: 1279.98px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-cols: 3; }
+  .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 6; }
+  .pt-v3 .px .px-proof[data-n="5"] > div, .pt-v3 .px .px-proof[data-n="5"] > div:nth-child(n) { grid-column: span 2; }
+  .pt-v3 .px .px-proof[data-n="5"] > div:nth-child(n+4) { grid-column: span 3; }
+  .pt-v3 .px .px-proof > div:nth-child(3n + 1) { border-left: 0; }
+}
+@media (max-width: 640px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-cols: 2; --pt-proof-pad: 16px; }
+  .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-n: 4; }
+  .pt-v3 .px .px-proof[data-n="5"] > div, .pt-v3 .px .px-proof[data-n="5"] > div:nth-child(n) { grid-column: span 2; }
+  .pt-v3 .px .px-proof[data-n="5"] > div:nth-child(5) { grid-column: 1 / -1; }
+  .pt-v3 .px .px-proof > div:nth-child(3n + 1) { border-left: 1px solid var(--sc-line); }
+  .pt-v3 .px .px-proof > div:nth-child(odd) { border-left: 0; }
+  .pt-v3 .px .px-proof > div > span { min-height: calc(2 * 1.45em); }
+}
+@media (max-width: 359.98px) {
+  .pt-v3 .px .px-proof, .pt-v3 .px .px-proof[data-n="5"] { --pt-proof-cols: 1; --pt-proof-n: 1; }
+  .pt-v3 .px .px-proof > div, .pt-v3 .px .px-proof > div:nth-child(n), .pt-v3 .px .px-proof[data-n="5"] > div:nth-child(n) { grid-column: auto; padding: 0; border-left: 0; }
+}
+
+/* (3) jeden nagłówek sekcji i jeden rytm odstępów ("zwróć uwagę na tytuły i odległości; powinna być harmonia"): tytuł każdej sekcji
+   strony głównej = .px-h2 (26 px / 600 / 1.2, krój display, 21 px na telefonie) także w paskach YouTube i Źródła publiczne;
+   tytuł -> treść 24 px (--pt-h2-gap), wiersz zakładek -> karty 16 px (--pt-in), sekcja -> sekcja var(--pt-sec) także między paskami;
+   przyciski strzałek i odnośnik "Pełne wyjaśnienie" (cel 44 px) nie podnoszą wiersza tytułu (ujemny margines); scena pasków ma 4 px
+   zapasu na obrys fokusu - wyjęte z rytmu ujemnym marginesem; Zasady jako te same karty co kroki "Jak to działa" (bez linii pod tytułem). */
+.pt-v3 .px { --pt-h2-gap: 24px; --pt-in: 16px; }
+.pt-v3 .px .px-h2, .pt-v3 .px .px-strip .sc-news-strip__head h2 { margin: 0 0 var(--pt-h2-gap); font: 600 26px/1.2 var(--sc-font-display); letter-spacing: -.02em; }
+.pt-v3 .px .px-strips { gap: var(--pt-sec); }
+.pt-v3 .px .px-strip { gap: 0; }
+.pt-v3 .px .px-strip .sc-news-strip__head { min-height: 0; align-items: center; margin-bottom: var(--pt-h2-gap); }
+.pt-v3 .px .px-strip .sc-news-strip__head h2 { margin-bottom: 0; }
+.pt-v3 .px .px-strip .sc-news-strip__actions { margin-block: calc((31.2px - 44px) / 2); }
+.pt-v3 .px .px-strip__categories { padding: 0; margin-bottom: var(--pt-in); }
+.pt-v3 .px .px-strip__stage { margin-block: -4px; }
+.pt-v3 .px .pt-how__head { margin-bottom: var(--pt-h2-gap); row-gap: 0; }
+.pt-v3 .px .pt-how__head .pt-console__how a { margin-block: calc((31.2px - 44px) / 2); }
+.pt-v3 .px .px-rules li { padding: 20px 24px; border-top: 0; border-radius: 12px; background: var(--sc-surface); box-shadow: none; }
+.pt-v3 .px .px-latest li:last-child { border-bottom: 0; }
+@media (max-width: 760px) { .pt-v3 .px :is(.px-steps, .px-rules) li { padding: 16px; } }
+@media (max-width: 640px) {
+  .pt-v3 .px .px-h2, .pt-v3 .px .px-strip .sc-news-strip__head h2 { font-size: 21px; line-height: 1.3; }
+  .pt-v3 .px .px-strip .sc-news-strip__actions { margin-block: calc((27.3px - 44px) / 2); }
+  /* telefon: odnośnik "Pełne wyjaśnienie" w osobnym wierszu pod tytułem (do prawej), bez ujemnego marginesu */
+  .pt-v3 .px .pt-how__head .pt-console__how a { margin-block: 0; }
+  .pt-v3 .px .pt-how__head { margin-bottom: calc(var(--pt-h2-gap) - 8px); }
+}
+@media (max-width: 400px) { html body .pt-v3 .px .px-proof span { font-size: 15px; } }  /* wąski telefon: podpis "spółek i fundacji z KRS" w 2 liniach (3 przy 16 px) */
+/* tytuły kart "Jak to działa" i "Zasady": 17 px w stałej strefie 2 linii (po całym słowie), zamiast ucięcia "…" przy węższej karcie; opisy zaczynają się na jednej linii we wszystkich kartach rzędu */
+.pt-v3 .px :is(.px-steps, .px-rules) h3 { font-size: 17px; line-height: 1.35; white-space: normal; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-height: calc(2 * 1.35em); }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getClinicInterviews, type Interview, type InterviewQuote } from "../../lib/clinic";
-import { formatDatePl } from "../../lib/utils";
+import { formatDatePl, plural } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { rememberClinicVisit } from "../../lib/clinicHistory";
 import { initials } from "../../lib/spinScale";
@@ -60,7 +60,7 @@ export function InterviewArchiveV3() {
   return <section className="sc-v3 sc-v3-page sc-v3-iv">
     <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> Klinika · Dr. Spin (AI)</>}
       title="Archiwum wywiadów" sub="Analizy gości i prowadzących, z cytatami i odwołaniem do nagrania."
-      aside={first ? <dl><div><dt>{q || channel ? "znalezionych wywiadów" : "wywiadów w archiwum"}</dt><dd>{first.count.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
+      aside={first ? <dl><div><dt>{q || channel ? plural(first.count, "znaleziony wywiad", "znalezione wywiady", "znalezionych wywiadów") : plural(first.count, "wywiad w archiwum", "wywiady w archiwum", "wywiadów w archiwum")}</dt><dd>{first.count.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
     <div>
       <form className="sc-v3-filter" role="search" onSubmit={event => event.preventDefault()}>
         <label className="sc-v3-field"><span className="sc-v3-sr">Szukaj gościa, prowadzącego lub tytułu</span>
@@ -80,14 +80,16 @@ export function InterviewArchiveV3() {
       {first && !rows.length ? <p className="sc-v3-empty">Brak wywiadów spełniających wybrane kryteria.</p> : null}
       {rows.length ? <ol className="sc-v3-rows">{rows.map((iv, index) => {
         const score = interviewScore(iv.guest);
+        // 14.10 (właściciel): nad tytułem tylko nazwa źródła - dział "Wywiady" już mówi, że to wywiad; rodzaj zostaje dla czytnika ekranu
         return <SpinRow key={iv.id} index={index} href={`/klinika/wywiady/${iv.id}`} name={iv.guest_name} icon={<MicIcon />}
-          kind={<>Wywiad · {iv.channel}</>} title={iv.headline || "Analiza wywiadu"}
+          kind={iv.channel || " "} kindSr={iv.channel ? `Wywiad, ${iv.channel}` : "Wywiad"} title={iv.headline || "Analiza wywiadu"}
           meta={[`Gość: ${iv.guest_name}${iv.guest_role ? `, ${iv.guest_role}` : ""}`, iv.host_name ? `Prowadzący: ${iv.host_name}` : null, <time key="t" dateTime={iv.day}>{formatDatePl(iv.day)}</time>]}
           value={score} valueLabel={score === null ? <span className="sc-v3-meta sc-v3-iv__none">bez liczby</span> : undefined} />;
       })}</ol> : null}
       {query.hasNextPage ? <p className="sc-v3-more-row"><button className="sc-archive-more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż więcej"}</button></p> : null}
     </div>
-    <p className="sc-v3-meta"><InterviewScope /></p>
+    {/* InterviewScope renderuje <p>: wrapper musi być <div>, inaczej <p> w <p> = błąd hydracji (plakietka "1 error" w dev) */}
+    <div className="sc-v3-meta"><InterviewScope /></div>
   </section>;
 }
 

@@ -40,13 +40,13 @@ function Row({ v, club }: { v: VoteListRow; club: string }) {
       {r ? <>
         <span className="gl-out" data-o={v.outcome} title={unknown ? 'Brak w naszych danych: wymaganej większości dla tego głosowania (np. głosowania na listach).' : undefined}>
           {outcomeLabel(v.outcome)}{v.majority ? <small> · wymagane {v.majority.votes}</small> : null}</span>
-        <span className="gl-n">za <b>{r.yes ?? '-'}</b> · przeciw <b>{r.no ?? '-'}</b></span>
-        <span className="gl-n">wstrz. <b>{r.abstain ?? '-'}</b> · nieob. <b>{r.notParticipating ?? '-'}</b></span>
+        <span className="gl-n">za <b data-k="za">{r.yes ?? '-'}</b> · przeciw <b data-k="przeciw">{r.no ?? '-'}</b></span>
+        <span className="gl-n">wstrz. <b data-k="wstrzymał się">{r.abstain ?? '-'}</b> · nieob. <b data-k="nieobecny">{r.notParticipating ?? '-'}</b></span>
       </> : <span className="pt-nd">brak w naszych danych</span>}
     </td>
     {club && <td data-c="k" data-l={`Głos klubu ${club}`}>
       {sum ? <><span className="px-pp__vote gl-vote" data-v={sum.word}><i aria-hidden="true" />{sum.word}</span>
-        <span className="gl-n">{sum.counts}</span></>
+        <span className="gl-n">{sum.parts.map((p, i) => <span key={p.key}>{i ? ', ' : ''}<b data-k={p.key}>{p.n}</b> {p.label}</span>)}</span></>
         : <span className="pt-nd">brak w naszych danych</span>}
     </td>}
     <td data-c="s"><Source v={v} /></td>

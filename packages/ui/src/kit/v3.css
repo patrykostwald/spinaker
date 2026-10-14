@@ -937,3 +937,50 @@ html body .sc-clinic-nav > div > a[aria-current="page"] { box-shadow: none; }
   html body .sc-v3 :is(.sc-report__families li, .sc-report__families span) { font-size: 15px; }
   html body .sc-v3 .sc-scan-dg-ai { font-size: 13px; letter-spacing: .02em; text-transform: none; }
 }
+/* =================== 14.10.2026: uwagi właściciela (karta Przekaz dnia, nagłówki działów) =================== */
+/* Karta Przekaz dnia: STAŁA wysokość i stałe strefy ("ten box cały musi być jednej wielkości, jak klikasz Opozycja/Rządzący").
+   Każdy tekst ma budżet linii (ClampWords: skrót po całym słowie, pełny tekst w title i dla czytnika) i strefę o stałej wysokości, więc
+   wysokość nie zależy od zakładki, dnia, długości tezy, liczby wpisów (0-3) ani wątków (0-N). Lewa kolumna: etykieta 24, teza 3 linie,
+   liczby (podpis 2 linie), 3 miejsca na wpisy po --pd-qh, nota 2 linie (3 na telefonie). Prawa kolumna: wątki dzielą równo dostępną
+   wysokość (grid 1fr, treść wycentrowana w pionie, cienkie linie między wątkami, tytuł 17 px w 1 linii, opis 2 / 1 / 0 linii przy 1-3 / 4 / 5+
+   wątkach), "Tematy" przy dolnej krawędzi na linii noty o wpisach. Stan pusty: ta sama wysokość treści (--pd-body-h zmierzone dla tej
+   stałej struktury na 1440 / 1024 / 390; test tests/127-przekaz-dnia.browser.cjs pilnuje różnicy 0 px). */
+.sc-v3-pd { --pd-qh: 83px; --pd-pts-h: 348px; --pd-body-h: 546.6px; }
+.sc-v3-pd .sc-v3-pd__thesis { min-height: calc(3 * 1.32em); max-height: calc(3 * 1.32em); overflow: hidden; }
+.sc-v3-pd .sc-v3-pd__stats li { min-height: calc(21.6px + 2 * 1.35em); }
+.sc-v3-pd .sc-v3-pd__q { min-height: calc(3 * var(--pd-qh) + var(--pd-q) - var(--pd-qq) / 2); margin-top: auto; justify-content: flex-end; }
+.sc-v3-pd .sc-v3-pd__q li { box-sizing: border-box; height: var(--pd-qh); overflow: hidden; }
+.sc-v3-pd .sc-v3-pd__q .sc-v3-who { min-height: 1.35em; }
+.sc-v3-pd .sc-v3-pd__q q { min-height: calc(2 * var(--sc-lh-clamp) * 1em); }
+.sc-v3-pd .sc-v3-pd__qnote { min-height: calc(2 * 1.45em); }
+.sc-v3-pd .sc-v3-pd__r { overflow: hidden; }
+.sc-v3-pd .sc-v3-pd__pts { flex: 1 1 0; min-height: 0; display: grid; grid-auto-rows: minmax(0, 1fr); padding-left: 0; margin-top: var(--pd-lbl); }
+.sc-v3-pd .sc-v3-pd__pts > li { display: grid; grid-template-columns: 22px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 14px; align-content: center; padding: 0; min-height: 0; overflow: hidden; }
+.sc-v3-pd .sc-v3-pd__pts > li + li { box-shadow: 0 -1px 0 var(--sc-line); }
+.sc-v3-pd .sc-v3-pd__pts > li::after { display: none; }
+.sc-v3-pd .sc-v3-pd__pts .sc-v3-step__n { position: static; grid-row: 1 / span 3; align-self: start; margin-top: 1px; }
+.sc-v3-pd .sc-v3-pd__pts .sc-v3-step__t { grid-column: 2; font-size: 17px; line-height: 1.38; min-height: 1.38em; max-height: 1.38em; overflow: hidden; }
+.sc-v3-pd .sc-v3-pd__pts .sc-v3-step__p { grid-column: 2; overflow: hidden; }
+.sc-v3-pd .sc-v3-pd__pts .sc-v3-step__p[data-lines="2"] { min-height: calc(2 * var(--sc-lh-clamp) * 1em); max-height: calc(2 * var(--sc-lh-clamp) * 1em); }
+.sc-v3-pd .sc-v3-pd__pts .sc-v3-step__p[data-lines="1"] { min-height: calc(var(--sc-lh-clamp) * 1em); max-height: calc(var(--sc-lh-clamp) * 1em); }
+.sc-v3-pd .sc-v3-pd__pts .sc-v3-step__meta { grid-column: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-v3-pd .sc-v3-pd__rf { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
+.sc-v3-pd .sc-v3-pd__msg { flex: 1 1 0; min-height: 0; overflow: hidden; margin-top: var(--pd-lbl); }
+.sc-v3-pd .sc-v3-pd__empty { box-sizing: border-box; min-height: var(--pd-body-h); display: flex; align-items: center; }
+@media (max-width: 1100px) { .sc-v3-pd { --pd-body-h: 1007px; } .sc-v3-pd :is(.sc-v3-pd__pts, .sc-v3-pd__msg) { flex: none; height: var(--pd-pts-h); } }
+@media (max-width: 640px) { .sc-v3-pd { --pd-body-h: 1037.2px; } .sc-v3-pd .sc-v3-pd__qnote { min-height: calc(3 * 1.45em); } }
+@media (max-width: 620px) { .sc-v3-pd { --pd-qh: 126px; --pd-body-h: 1226.3px; } .sc-v3-pd .sc-v3-pd__q q { min-height: calc(3 * var(--sc-lh-clamp) * 1em); } }
+
+/* Nagłówek działu ze statystyką (Raporty tygodnia, Archiwum przekazów, Archiwum wywiadów; "tę liczbę dociągnij do prawej"): liczba i podpis
+   dociągnięte do prawej krawędzi kontenera treści (ta sama oś co odnośniki "→" i karty), tekst do prawej, podpis na linii bazowej ostatniej
+   linii podtytułu (2 px) albo legendy (5 px, wiersz legendy ma wyższe pole); na telefonie (< 900) pod podtytułem, do lewej jak pozostałe
+   nagłówki działów (ClinicV3, strona główna). Liczebniki odmienione (plural z lib/utils). */
+.sc-v3-ph .sc-v3-hh__stats dl { justify-content: end; padding-bottom: 2px; }
+.sc-v3-ph:has(.sc-v3-hh__act) .sc-v3-hh__stats dl { padding-bottom: 5px; }
+.sc-v3-ph .sc-v3-hh__stats dl > div { align-items: flex-end; text-align: right; }
+.sc-v3-ph .sc-v3-hh__stats :is(dt, dd) { text-align: right; }
+@media (max-width: 900px) {
+  .sc-v3-ph .sc-v3-hh__stats dl, .sc-v3-ph:has(.sc-v3-hh__act) .sc-v3-hh__stats dl { justify-content: start; padding-bottom: 0; }
+  .sc-v3-ph .sc-v3-hh__stats dl > div { align-items: flex-start; text-align: left; }
+  .sc-v3-ph .sc-v3-hh__stats :is(dt, dd) { text-align: left; }
+}

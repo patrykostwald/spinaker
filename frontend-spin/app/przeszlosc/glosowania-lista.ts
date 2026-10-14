@@ -113,7 +113,7 @@ export function mergeRows(prev: VoteListRow[], next: VoteListRow[]): VoteListRow
 
 const CAST = ['za', 'przeciw', 'wstrzymał się'];
 /** Głos klubu: dominujący głos oddany (za, przeciw, wstrzymał się; nieobecni nie są głosem) i liczby słowem. */
-export function clubSummary(cv: ClubVotes | undefined): { word: string; split: boolean; counts: string } | null {
+export function clubSummary(cv: ClubVotes | undefined): { word: string; split: boolean; counts: string; parts: { key: string; n: number; label: string }[] } | null {
   if (!cv || !cv.votes) return null;
   const entries = Object.entries(cv.votes).filter(([, n]) => n > 0);
   if (!entries.length) return null;
@@ -121,8 +121,9 @@ export function clubSummary(cv: ClubVotes | undefined): { word: string; split: b
   const word = cast[0]?.[0] ?? entries.sort((a, b) => b[1] - a[1])[0][0];
   const order = [...CAST, 'nieobecny'];
   const rank = (k: string) => order.includes(k) ? order.indexOf(k) : order.length;
-  const counts = [...entries].sort((a, b) => rank(a[0]) - rank(b[0]) || b[1] - a[1]).map(([k, n]) => `${n} ${k === 'nieobecny' ? 'nieob.' : k}`).join(', ');
-  return { word, split: cast.length > 1, counts };
+  const parts = [...entries].sort((a, b) => rank(a[0]) - rank(b[0]) || b[1] - a[1]).map(([k, n]) => ({ key: k, n, label: k === 'nieobecny' ? 'nieob.' : k }));
+  const counts = parts.map(p => `${p.n} ${p.label}`).join(', ');
+  return { word, split: cast.length > 1, counts, parts };
 }
 
 /** 2026-09-26 -> 26.09.2026 (stała szerokość w tabeli). */
