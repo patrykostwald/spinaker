@@ -3,20 +3,17 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicMessage, messageSpinStrength, type Camp, type ClinicPageData, type DailyMessage, type MessagePost } from "../../lib/clinic";
-import { formatDatePl, formatDateTimePl, formatTimePl } from "../../lib/utils";
+import { formatDatePl, formatDateTimePl, formatTimePl, plural } from "../../lib/utils";
 import { initials } from "../../lib/spinScale";
 import { Button } from "../Button";
 import { ArrowUpRightIcon } from "../icons/ArrowUpRightIcon";
 import { BugReportButton } from "../../components/BugReport";
 import { CausalChain, CAUSAL_CHAIN_ENABLED as CAUSAL_CHAIN_ON, approvedChainSteps } from "../CausalChain";
 import { SpinMeter } from "../SpinMeter";
+import { ClampWords } from "../ClampWords";
 
-/** Polska odmiana liczebnika: 1 wpis, 2-4 wpisy, 5+ wpisów. */
-export function plural(n: number, one: string, few: string, many: string): string {
-  const n10 = n % 10, n100 = n % 100;
-  if (n === 1) return one;
-  return n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14) ? few : many;
-}
+/** Odmiana liczebnika: wspólna funkcja w lib/utils (zostaje eksport dla dotychczasowych importów). */
+export { plural };
 
 const NBSP = " ";
 const shortDate = (day: string) => new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", day: "numeric", month: "short" }).format(new Date(`${day}T12:00:00Z`)).replace(".", "");
@@ -111,15 +108,15 @@ export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
             <p className="sc-v3-pd__eb">Dziś w obiegu · <span className="sc-v3-sidew">{CAMP_LABELS[camp]}</span></p>
             {strength ? <SpinMeter value={strength.value} bare label="Siła spinu dnia" title={`Siła spinu dnia: ${strength.value}/100 - mediana z ${strength.n}${NBSP}diagnoz wpisów tego przekazu`} /> : null}
           </div>
-          <p className="sc-v3-pd__thesis">{structured ? message.thesis : message.message}</p>
+          {/* 14.10: stałe strefy - teza 3 linie, 3 miejsca na wpisy i nota zawsze w DOM (CSS trzyma wysokość), skrót po całym słowie */}
+          <ClampWords className="sc-v3-pd__thesis" lines={3} text={(structured ? message.thesis : message.message) ?? ""} />
           <ul className="sc-v3-pd__stats" aria-label="Zakres przekazu">
             <li><b>{posts}</b>{plural(posts, "wpis", "wpisy", "wpisów")}</li>
             <li><b>{stats ? stats.authors : "–"}</b>{stats ? plural(stats.authors, "autor", "autorów", "autorów") : "autorów"}</li>
             <li title="Odsetek wpisów z liczbą lub linkiem. Nie oznacza potwierdzenia ich prawdziwości."><b>{stats ? `${stats.concrete_pct}%` : "–"}</b>z liczbą lub linkiem</li>
             {windowLabel ? <li title="Godziny publikacji wpisów w tym przekazie (serwis X)"><b>{windowLabel}</b>godziny wpisów na{NBSP}X</li> : <li><b>X</b>platforma</li>}
           </ul>
-          {quotes.length ? <>
-            <ul className="sc-v3-pd__q" aria-label="Przykładowe wpisy">
+          <ul className="sc-v3-pd__q" aria-label={quotes.length ? "Przykładowe wpisy" : undefined} aria-hidden={quotes.length ? undefined : true}>
               {quotes.map(post => <li key={post.url}>
                 <PostAvatar name={post.author} src={post.avatar_url} />
                 <div style={{ minWidth: 0 }}>
@@ -128,9 +125,10 @@ export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
                 </div>
                 <a className="sc-v3-src" href={post.url} target="_blank" rel="noopener noreferrer" aria-label={`Oryginał wpisu: ${post.author}, otwiera X w nowym oknie`}><ArrowUpRightIcon /></a>
               </li>)}
-            </ul>
-            <p className="sc-v3-pd__qnote">Fragmenty wpisów z X w brzmieniu oryginalnym. Treść mogła zostać zmieniona lub usunięta po pobraniu.</p>
-          </> : detail.isFetching ? <p className="sc-v3-pd__qnote" role="status">Wczytujemy wpisy źródłowe…</p> : null}
+          </ul>
+          <p className="sc-v3-pd__qnote" role={!quotes.length && detail.isFetching ? "status" : undefined}>
+            {quotes.length ? "Fragmenty wpisów z X w brzmieniu oryginalnym. Treść mogła zostać zmieniona lub usunięta po pobraniu." : detail.isFetching ? "Wczytujemy wpisy źródłowe…" : ""}
+          </p>
         </div>
 
         <div className="sc-v3-pd__r">
@@ -140,19 +138,23 @@ export function PrzekazDniaCard({ data }: { data: ClinicPageData }) {
             {message.causal_chain?.notice ? <p className="sc-v3-step__meta sc-v3-pd__chainnote">{message.causal_chain.notice}</p> : null}
           </> : points.length ? <>
             <p className="sc-v3-pd__eb">Główne wątki dnia</p>
-            <ol className="sc-v3-steps" aria-label="Główne wątki dnia">
-              {points.map((point, index) => <li key={index} style={{ "--d": index } as CSSProperties}>
-                <span className="sc-v3-step__n" aria-hidden="true">{index + 1}</span>
-                <p className="sc-v3-step__t">{point.title}</p>
-                <p className="sc-v3-step__p">{point.summary}</p>
-                <p className="sc-v3-step__meta">{point.post_ids.length}{NBSP}{plural(point.post_ids.length, "wpis", "wpisy", "wpisów")} · {authorsShort(point.authors)}</p>
-              </li>)}
+            {/* wątki dzielą równo wysokość kolumny (CSS .sc-v3-pd__pts); budżet opisu zależy od liczby wątków: 1-3 -> 2 linie, 4 -> 1, 5+ -> bez opisu */}
+            <ol className="sc-v3-steps sc-v3-pd__pts" aria-label="Główne wątki dnia">
+              {points.map((point, index) => {
+                const meta = `${point.post_ids.length}${NBSP}${plural(point.post_ids.length, "wpis", "wpisy", "wpisów")} · ${authorsShort(point.authors)}`;
+                return <li key={index} style={{ "--d": index } as CSSProperties}>
+                  <span className="sc-v3-step__n" aria-hidden="true">{index + 1}</span>
+                  <ClampWords className="sc-v3-step__t" lines={1} text={point.title} />
+                  {points.length <= 4 ? <ClampWords className="sc-v3-step__p" lines={points.length <= 3 ? 2 : 1} text={point.summary} /> : null}
+                  <p className="sc-v3-step__meta" title={meta}>{meta}</p>
+                </li>;
+              })}
             </ol>
           </> : <>
             <p className="sc-v3-pd__eb">Przekaz</p>
-            <p className="sc-v3-step__p" style={{ marginTop: 12 }}>{message.message}</p>
+            <ClampWords className="sc-v3-step__p sc-v3-pd__msg" lines={6} text={message.message} />
           </>}
-          {message.themes?.length ? <p className="sc-v3-step__meta sc-v3-pd__rf">Tematy: {message.themes.map(capital).join(", ")}</p> : null}
+          {message.themes?.length ? <p className="sc-v3-step__meta sc-v3-pd__rf" title={`Tematy: ${message.themes.map(capital).join(", ")}`}>Tematy: {message.themes.map(capital).join(", ")}</p> : null}
         </div>
       </div> : <p className="sc-v3-pd__empty">Brak opublikowanego przekazu tej strony w tym dniu. Przekaz pojawia się, gdy strona opublikuje co najmniej kilka wpisów.</p>}
 

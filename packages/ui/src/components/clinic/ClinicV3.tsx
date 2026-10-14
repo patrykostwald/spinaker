@@ -13,7 +13,7 @@ import { MessageCard } from "./MessageCard";
 import { SideLegend } from "../../kit/SideLegend";
 import { PageHeaderV3 } from "../../kit/PageHeaderV3";
 import { SpinRow } from "../../kit/SpinRow";
-import { plural } from "../../kit/home/PrzekazDniaCard";
+import { plural } from "../../lib/utils";
 import { numChars } from "../../kit/home/HomeV3";
 
 const pl = (n: number) => n.toLocaleString("pl-PL");

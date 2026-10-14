@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { rememberClinicVisit } from "../../lib/clinicHistory";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getClinicInterviews, getClinicMessages, type Interview } from "../../lib/clinic";
-import { formatDatePl } from "../../lib/utils";
+import { formatDatePl, plural } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { MessageDayContent } from "./MessageDetail";
 import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
@@ -97,7 +97,7 @@ export function ClinicMessageArchive() {
     <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> Klinika · Dr. Spin (AI)</>}
       title="Archiwum przekazów" sub="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji, dzień po dniu."
       actions={<SideLegend />}
-      aside={first ? <dl><div><dt>dni w archiwum</dt><dd>{first.count.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
+      aside={first ? <dl><div><dt>{plural(first.count, "dzień w archiwum", "dni w archiwum", "dni w archiwum")}</dt><dd>{first.count.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
     {query.isPending ? <p className="sc-v3-state" role="status"><Loading label="Wczytywanie przekazów" /></p> : null}
     {query.isError ? <div className="sc-v3-state" role="alert"><p>Nie udało się wczytać przekazów.</p><button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></div> : null}
     {first && !rows.length ? <p className="sc-v3-empty">Nie ma jeszcze opublikowanych przekazów.</p> : null}

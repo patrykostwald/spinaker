@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { type ReportResponse, reportWeekLabel, reportPublicationLabel } from "../../lib/clinicReports";
 import { PageHeaderV3 } from "../../kit/PageHeaderV3";
+import { plural } from "../../lib/utils";
 import { ClinicNav } from "./ClinicNav";
 
 /**
@@ -13,7 +14,7 @@ export function ReportArchive({ data }: { data: ReportResponse }) {
   return <section className="sc-v3 sc-v3-page sc-v3-rep">
     <PageHeaderV3 nav={<ClinicNav />} kicker={<><span className="sc-v3-tag" data-tone="accent" title="Wygenerowane z udziałem AI">AI</span> Klinika · Dr. Spin (AI)</>}
       title="Raporty tygodnia" sub="Obserwacje z diagnoz Dr. Spina, techniki perswazji i wywiady z kolejnych tygodni."
-      aside={data.archive.length ? <dl><div><dt>tygodni w archiwum</dt><dd>{data.archive.length.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
+      aside={data.archive.length ? <dl><div><dt>{plural(data.archive.length, "tydzień w archiwum", "tygodnie w archiwum", "tygodni w archiwum")}</dt><dd>{data.archive.length.toLocaleString("pl-PL")}</dd></div></dl> : undefined} />
     {latest ? <section aria-labelledby="rep-latest">
       <div className="sc-v3-feed-h"><h2 id="rep-latest">Najnowszy raport</h2></div>
       <Link className="sc-v3-card sc-v3-rep__latest" href={`/klinika/raporty/${latest.week_end}`}>
