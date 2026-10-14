@@ -248,6 +248,7 @@ def queue(now=None) -> dict:
     from .models import UrlCheck
     urls = UrlCheck.objects.filter(status__in=('queued', 'needs_review')).order_by('created_at')
     held = Comment.objects.filter(status='held').order_by('created_at')
+    review = Comment.objects.filter(needs_review=True).exclude(status='removed').order_by('updated_at')
     pending_boxes = Box.objects.filter(status='pending').order_by('created_at')
     return {
         'reports': [{'id': r.pk, 'reason': r.reason, 'details': r.details, 'pin_id': r.pin_id, 'box_id': r.box_id, 'comment_id': r.comment_id,
@@ -263,7 +264,10 @@ def queue(now=None) -> dict:
         'urls': [{'id': u.pk, 'url': u.url_normalized, 'status': u.status, 'reason': u.reason, 'checks': u.checks,
                   'fetched': u.fetched, 'box_id': u.box_id, 'created_at': u.created_at.isoformat()} for u in urls[:200]],
         'held_comments': [{'id': c.pk, 'box_id': c.box_id, 'text': c.text, 'created_at': c.created_at.isoformat()} for c in held[:200]],
+        'review_comments': [{'id': c.pk, 'box_id': c.box_id, 'text': c.text, 'status': c.status, 'reason': 'consent_withdrawn',
+                             'created_at': c.created_at.isoformat()} for c in review[:200]],
         'pending_boxes': [{'id': b.pk, 'title': b.title, 'url': b.url, 'created_at': b.created_at.isoformat()} for b in pending_boxes[:200]],
         'counts': {'reports': reports.count(), 'appeals': appeals.count(), 'urls': urls.count(), 'held_comments': held.count(),
-                   'pending_boxes': pending_boxes.count(), 'corrections': corrections.count()},
+                   'pending_boxes': pending_boxes.count(), 'corrections': corrections.count(),
+                   'review_comments': review.count()},
     }

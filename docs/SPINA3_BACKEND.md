@@ -116,3 +116,100 @@ Weryfikacja S1: `python -m pytest spina3/tests -q -p no:cacheprovider`: **179 pa
 oraz brak katalogu staticfiles), 118,30 s. Uruchomienie offline z `SKIP_DOTENV=1`, `USE_SQLITE=true`, `SQLITE_DATABASE_PATH=:memory:`.
 `python manage.py makemigrations --check --dry-run spina3`: brak zmian. YAML porównywany w teście z generowanym schematem.
 Kontrola diff: bez błędów białych znaków i uszkodzeń kodowania. Bez commitów, push i wdrożenia.
+
+
+## Wymagania prawne (S2, 14.10.2026)
+
+Zasady z audytu prawnego: dane osobowe tylko tam, gdzie wymaga ich prawo; każde ograniczenie treści albo konta ma zapisane
+uzasadnienie; żaden publiczny endpoint nie ujawnia ocen jednostkowych. Migracja: `0005_legal_s2` (modele `ModerationDecision`,
+`Correction`, `DiagnosisApproval`, `SilencedAccount`; pola `Spina3Profile.age_16_plus_at`, `deletion_requested_at`,
+`Comment.needs_review`, `Box.source_checked_at`, `Appeal.decision`). Nowe moduły: `legal.py` (stałe i reguły), `corrections.py`,
+`retention.py`, `x_source.py`; komendy `spina3_retention`, `spina3_silence_import`.
+
+### Endpointy (prefiks `/api/spina3/`)
+| Metoda i trasa | Kto | Opis |
+|---|---|---|
+| GET `me/decisions/` | zalogowany | Własne decyzje moderacji: co (`target_type`), rodzaj (`restriction`: hide, remove, demote, suspend), `facts`, `basis` i `basis_text`, `automated`, `decided_by` (bez nazwiska), `until`, `appeal_route`, `appeal_deadline`, `appeal`, `can_appeal`. |
+| POST `me/decisions/{id}/appeal/` | adresat decyzji | `{text}`; jedno odwołanie na decyzję, 6 miesięcy; 404 cudza, 409 drugie, po terminie lub uchylona. |
+| DELETE `me/` | zalogowany | 202: dane spina3 oznaczone do usunięcia, nick od razu „Użytkownik usunięty”, treści usuwane po 30 dniach. Wspólne konto spin.clinic zostaje (osobny przepływ). |
+| POST `me/consent/` | zalogowany | `{accepted, age_16_plus}`; `accepted=true` bez `age_16_plus=true`: 403 `code=age`. `accepted=false`: wycofanie zgody (niżej). |
+| POST `box/{id}/correction/` | każdy (limit 5/h z IP) | Sprostowanie diagnozy: `{name, email, text, statement, consent_public_name?}`; 201 `{id, status, due_at}`. |
+| POST `moderation/corrections/{id}/` | zespół | `{decision: publish|reject, rejection_reason?, note?}`; reject tylko z powodem z art. 33 (`requirements`, `unlawful`, `already_corrected`, `late`). |
+| GET `u/{nick}/` | każdy | Profil publiczny tylko przy `public_profiles=true` (domyślnie 404): nick, kolor, boxy z przypięciem; nigdy oceny. |
+
+Zespół: `POST moderation/reports/{id}/`, `moderation/pins/{id}/`, `moderation/comments/{id}/` przyjmują opcjonalne `basis`
+(klucz z `legal.BASES`; domyślnie według kategorii zgłoszenia). `reason` to fakty, które dostaje autor. Kolejka
+`moderation/queue/` ma nowe listy `corrections` (według `due_at`) i `review_comments` (komentarze po wycofaniu zgody)
+oraz `decision_id` przy odwołaniach. Sprostowania są też w panelu admina (kolejka według terminu).
+
+### Zachowanie
+1. **Uzasadnienie decyzji (DSA art. 17).** Każda akcja ograniczająca treść albo konto zapisuje `ModerationDecision`:
+   `hide_pin`, `hide_box`, `withdraw_box` (podstawa RODO art. 17), `hide_comment`, odrzucenie adresu z kolejki URL (ukrycie
+   kotwicy), sankcje `weight_zero_30d` (demote) i `suspend_30d` (suspend) jako osobna decyzja wobec konta. Zawieszenie konta
+   wyłącznie przez `moderation.suspend_account` (wymaga uzasadnienia). Treść systemowa (Dr. Spin, box importera) nie ma adresata,
+   więc decyzji nie zapisuje. Autor dostaje e-mail (szablon `spina3/templates/spina3/email/decision.txt`, `django.core.mail`):
+   nadawca `SPINA3_DECISION_FROM_EMAIL` (domyślnie `spina3 <kontakt@iapply.pl>`), link `SPINA3_PUBLIC_URL` + `SPINA3_DECISIONS_PATH`
+   (domyślnie `/konto/decyzje`). Awaria poczty nie cofa decyzji (`email_sent_at` puste). Uwzględnione odwołanie albo przywrócenie
+   treści ustawia `revoked_at` i cofa skutek (także zdejmuje sankcję konta).
+   Podstawy to nazwane stałe w `legal.py` (`REGULAMIN_SEKCJA_TRESCI_NIEZGODNE`, `..._DANE_OSOBOWE`, `..._GROZBY`, `..._SPAM`,
+   `..._PRAWA_AUTORSKIE`, `..._ZRODLA`, `..._KONTO`, `PRZEPIS_TRESC_NIELEGALNA`, `PRZEPIS_RODO_ART_17`) z tekstem do uzupełnienia
+   po przeglądzie Regulaminu; numerów punktów nie wpisujemy na sztywno.
+   Odwołania przez `pin/{id}/appeal/` i `comment/{id}/appeal/` mają teraz 6 miesięcy (było 14 dni) i łączą się z decyzją.
+2. **Sprostowanie diagnozy.** Tylko box `kind=diagnosis`; do 21 dni od `published_at` (później 400 `deadline`), treść do 2x
+   objętości diagnozy (400 `length`), `statement=true` wymagane (400 `statement`). `due_at` = koniec 3. dnia roboczego po wpływie
+   (bez sobót, niedziel i świąt ustawowych, w tym Wigilii od 2025 r.; Wielkanoc liczona). Opublikowane sprostowanie jest w
+   `BoxDetailOut.correction` (dla diagnozy i dla wpisu z aktualną diagnozą). Imię i nazwisko publicznie tylko przy
+   `consent_public_name=true`, inaczej „Osoba, której dotyczy wpis”; e-mail nigdy publicznie.
+3. **Log zatwierdzeń diagnoz.** `BoxDetailOut.diagnosis_history[]`: `{version, target_id, current, change (created | updated |
+   withdrawn | restored), approved_by ("konto zespołu nr N"), approved_at, model, sources, label ("Diagnoza AI, zatwierdzona przez
+   zespół spin.clinic"), created_at}`. Wpis powstaje w `importer.sync_diagnosis` przy imporcie i przy każdej zmianie treści,
+   zatwierdzającego, modelu lub stanu. Relacje sprzed S2 bez logu: wersje z `BoxLink` z pustym `approved_by` i `model`.
+4. **Cisza wyborcza kont.** `SilencedAccount` (uchwyt, kandydat/komitet, od-do, źródło). Lista w repozytorium pusta; import robi
+   operator po przeglądzie radcy: `python manage.py spina3_silence_import lista.csv [--dry-run] [--replace]`, kolumny
+   `konto,rodzaj,od,do,zrodlo` (rodzaj: kandydat | komitet; daty ISO 8601). W oknie ciszy boxy tych kont (wpisy i przypięte do
+   nich diagnozy) mają `silence_hidden: true`, w `spinka` pola `distribution`, `level`, `color` = null, w `pin.ratings`
+   `agree`/`disagree` = null; na ścianie trafiają do Otwartych (filtr poziomu i sekcje nie ujawniają wyniku). Oceny, komentarze
+   i przypięcia przy nich: 423 `code=election_silence`.
+5. **Retencja.** `python manage.py spina3_retention` (raz na dobę): konto oznaczone do usunięcia -> po 30 dniach przypięcia
+   usunięte, teza i komentarze bez treści, oceny w agregacie bez przypisania (`user = null`, waga zachowana), profil spina3 usunięty;
+   zgłoszenia, decyzje i odwołania (zamknięte) po 12 miesiącach; dziennik zdarzeń po `SPINA3_EVENT_RETENTION_DAYS` dniach
+   (domyślnie 90, `config/settings.py`). Cron:
+   ```
+   30 3 * * *  docker compose ... exec -T backend python manage.py spina3_retention >> /srv/backups/spina3-retention.log
+   ```
+   (alternatywnie wpis w `beat_schedule` w `config/celery.py`; spina3 nie ma dziś zadań Celery, więc zostajemy przy cronie).
+6. **Oceny jednostkowe.** Publiczne odpowiedzi zawierają tylko agregaty (`spinka.distribution`, `pin.ratings = {n, agree,
+   disagree}`); `my_rating` tylko dla właściciela sesji; `u/{nick}/` 404 przy `public_profiles=false`. Test
+   `test_legal_privacy.py` przechodzi po każdej trasie z `urls.py` jako gość.
+7. **Wycofanie zgody art. 9** (`POST me/consent/ {accepted: false}`): oceny tracą wagę (0) i autora (agregat zostaje, spinka
+   przeliczona); komentarze odpięte od nicku (autor „Użytkownik usunięty”), `needs_review=true`, treść zostaje (decyzja prawna
+   otwarta). Bez zgody oceny, komentarze i przypięcia: 403 `consent`.
+8. **Wpisy z X.** `BoxItemOut`/`BoxDetailOut` dla `kind=post` zawsze z `author` (`name`, `handle`) i `source_url`; treść bez zmian.
+   `spina3_sync` sprawdza na końcu przebiegu najwyżej 60 wpisów przez publiczny oEmbed X (najpierw niesprawdzone, potem najdawniej
+   sprawdzone); 404/410 = `source_status=removed_at_source`, treść, cytat i miniatura znikają z odpowiedzi. Przy cronie co 15 min
+   i do ~5700 aktywnych wpisów każdy jest sprawdzany co 24 h. Flaga `x_source_check_enabled` (`SPINA3_X_SOURCE_CHECK_ENABLED`,
+   domyślnie true), opcja `--bez-x`.
+9. **Wiek 16.** Zgoda wymaga oświadczenia `age_16_plus=true` (bez daty urodzenia). Profile ze zgodą sprzed S2: 403 `code=age`
+   tylko przy nowej publikacji (box z przypięciem, ocena, komentarz), odczyt bez zmian. Zespół bez zmian.
+
+### Zmiany dla frontu
+- `POST me/consent/` wysyła `{accepted: true, age_16_plus: true}` (checkbox „Mam ukończone 16 lat”); bez tego 403 `age`.
+  Obsłuż 403 `age` przy publikacji (prośba o ponowne potwierdzenie zgody) i 403 `deleted`.
+- `GET me/profile/` ma `age_16_plus`. `config.flags` ma `x_source_check_enabled`.
+- `spinka.level`, `spinka.color`, `spinka.distribution` mogą być null (`silence_hidden: true`); nowe pola `silence_hidden`,
+  `source_url` w `BoxItemOut`. `BoxDetailOut.correction` (null albo sprostowanie), `diagnosis_history[]` z nowymi polami.
+- Autor usunięty lub odpięty: „Użytkownik usunięty” (było „konto usunięte”).
+- Strona decyzji: `/konto/decyzje` (`GET me/decisions/`, przycisk odwołania), formularz sprostowania przy diagnozie, przycisk
+  usunięcia danych spina3 (`DELETE me/`).
+
+### Decyzje otwarte
+- Treść podstaw w `legal.BASES` po przeglądzie Regulaminu; oznaczenia ustępów art. 33 prawa prasowego do potwierdzenia przez radcę.
+- Los treści komentarzy po wycofaniu zgody art. 9 (dziś zostają, odpięte i do przeglądu).
+- Komentarze wstrzymane automatem (pre-filtr, link z konta T1) nie tworzą decyzji: to stan „czeka na sprawdzenie”, a decyzję
+  zapisuje dopiero ukrycie przez zespół. Do potwierdzenia, czy to wystarcza wobec DSA art. 17.
+- Usunięcie wspólnego konta spin.clinic (osobny przepływ poza spina3).
+- Czy 403 z oEmbed X (konto zawieszone lub chronione) też ma usuwać treść; dziś tylko 404 i 410.
+- Wysyłka e-maili decyzji synchronicznie w żądaniu; przy większym ruchu kolejka (Celery) i ponawianie dla `email_sent_at = null`.
+
+Weryfikacja S2: `python -m pytest spina3/tests -q -p no:cacheprovider`: 215 testów (179 + 36 w `test_legal_*.py`);
+`makemigrations --check --dry-run spina3`: bez zmian; OpenAPI wygenerowany tym samym generatorem co test.

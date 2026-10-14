@@ -44,7 +44,7 @@ def test_hide_pin_records_decision_and_sends_email():
     assert msg.from_email == 'spina3 <kontakt@iapply.pl>' and msg.to == [author.email]
     assert 'https://spina3.pl/konto/decyzje' in msg.body and 'dane osoby prywatnej' in msg.body
     assert 'Środki zautomatyzowane: nie' in msg.body and 'przeprasza' not in msg.body.lower()
-    assert '�' not in msg.body and 'zespol_d' not in msg.body   # bez nazwiska moderatora
+    assert '\ufffd' not in msg.body and 'zespol_d' not in msg.body   # bez nazwiska moderatora
 
 
 def test_every_restricting_action_records_decision():

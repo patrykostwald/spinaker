@@ -74,6 +74,9 @@ def test_withdraw_consent_zeroes_weight_detaches_and_flags_comments(api):
     assert not Rating.objects.filter(user=user).exists() and not Comment.objects.filter(user=user).exists()
     profile = Spina3Profile.objects.get(user=user)
     assert profile.consent_art9_at is None and profile.age_16_plus_at is None
+    api.force_authenticate(make_user('zespol_k', staff=True))
+    queue = api.get('/api/spina3/moderation/queue/').json()
+    assert queue['counts']['review_comments'] == 1 and queue['review_comments'][0]['id'] == comment.pk
 
 
 def test_team_still_publishes_without_age(api):
