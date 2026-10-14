@@ -286,7 +286,7 @@ def facets(kind: str | None = None, period_days: int | None = None, now=None, cf
     cfg = cfg or config()
     now = now or timezone.now()
     snapshot = latest_snapshot(now, period_days, cfg)
-    entries = [e for e in snapshot.entries if _matches(e, kind, {}, now)]
+    entries = [e for e in _silence_accounts(snapshot.entries, now) if _matches(e, kind, {}, now)]
     total = len(entries) or 1
     persons, topics, levels, docs, diag = Counter(), Counter(), Counter(), Counter(), 0
     periods = Counter()

@@ -188,7 +188,8 @@ def appeal(user, *, pin: Pin | None = None, comment: Comment | None = None, text
     deadline = decision.appeal_deadline if decision else legal.add_months(target.updated_at, legal.APPEAL_MONTHS)
     if now > deadline:
         raise ModerationError(409, 'Czas na odwołanie (6 miesięcy) minął.')
-    if Appeal.objects.filter(pin=pin, comment=comment, author=user).exists():
+    if Appeal.objects.filter(pin=pin, comment=comment, author=user).exists() or (
+            decision is not None and Appeal.objects.filter(decision=decision).exists()):
         raise ModerationError(409, 'Jedno odwołanie na decyzję.')
     return Appeal.objects.create(pin=pin, comment=comment, decision=decision, author=user, text=(text or '')[:1000], created_at=now)
 

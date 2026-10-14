@@ -197,8 +197,9 @@ def decision_payload(row) -> dict:
 
 
 def latest_open_decision(*, pin=None, comment=None):
+    """Ostatnia nieuchylona decyzja wobec treści (z odwołaniem albo bez)."""
     from .models import ModerationDecision
-    qs = ModerationDecision.objects.filter(revoked_at__isnull=True, appeal__isnull=True)
+    qs = ModerationDecision.objects.filter(revoked_at__isnull=True)
     qs = qs.filter(pin=pin, target_type='pin') if pin is not None else qs.filter(comment=comment, target_type='comment')
     return qs.order_by('-created_at', '-pk').first()
 
