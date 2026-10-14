@@ -80,8 +80,10 @@ www.spina3.pl, spinki.org, www.spinki.org {
 	redir https://spina3.pl{uri} permanent
 }
 
-# scrollstory.pl (14.10.2026): statyczna wersja v3 (kreator i czytnik w przeglądarce; Opublikuj zapisuje na razie lokalnie w przeglądarce autora).
-# Katalog /srv/scrollstory/dist montowany tylko do odczytu. Na czas braku backendu: noindex (usunąć linię X-Robots-Tag po wdrożeniu API).
+# scrollstory.pl: statyczny front z /srv/scrollstory/dist (jak dotąd) + serwer API/SSR w kontenerze "scrollstory" (port 3000, tylko w sieci Dockera).
+# Ten blok zastępuje w deploy/Caddyfile dotychczasowy blok "scrollstory.pl { ... }" (robi to zastap-blok-caddy.py z kopią Caddyfile.bak).
+# noindex zostaje do decyzji właściciela (usunąć linię X-Robots-Tag, gdy serwis ma być indeksowany).
+# Uwaga: DNS scrollstory.pl musi wskazywać bezpośrednio na ten serwer (bez pośrednika typu Cloudflare), bo adres klienta limitów to X-Forwarded-For od Caddy.
 scrollstory.pl {
 	encode zstd gzip
 	root * /srv/scrollstory/dist
@@ -96,10 +98,32 @@ scrollstory.pl {
 		-Server
 		-X-Powered-By
 	}
-	@statyczne path /assets/*
-	header @statyczne Cache-Control "public, max-age=604800"
-	try_files {path} {path}/index.html
-	file_server
+	request_body {
+		max_size 256KB
+	}
+
+	# serwer aplikacji: API, obrazy Open Graph, panel moderacji, strony scrollek /s/<id>/ (SSR) i /s/<id>/edytuj/
+	@scrollka path_regexp scrollka ^/s/[a-z2-9]{8}(/.*)?$
+	handle /api/* {
+		reverse_proxy scrollstory:3000
+	}
+	handle /og/* {
+		reverse_proxy scrollstory:3000
+	}
+	handle /admin/* {
+		reverse_proxy scrollstory:3000
+	}
+	handle @scrollka {
+		reverse_proxy scrollstory:3000
+	}
+
+	# reszta: pliki statyczne (strona główna, kreator, /konto/, zasady itd.)
+	handle {
+		@statyczne path /assets/*
+		header @statyczne Cache-Control "public, max-age=604800"
+		try_files {path} {path}/index.html
+		file_server
+	}
 }
 
 www.scrollstory.pl {
