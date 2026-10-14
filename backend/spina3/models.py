@@ -77,6 +77,8 @@ class Box(models.Model):
     search_text = models.TextField(blank=True, default='', help_text='Tytuł, autor, cytat bez polskich znaków, małe litery.')
     held_until = models.DateTimeField(null=True, blank=True, help_text='Cisza wyborcza: publikacja po tej dacie.')
     hidden_reason = models.CharField(max_length=240, blank=True, default='')
+    source_checked_at = models.DateTimeField(null=True, blank=True, db_index=True,
+                                             help_text='Ostatnie sprawdzenie, czy wpis istnieje u źródła (oEmbed X).')
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -151,7 +153,15 @@ class Spina3Profile(models.Model):
     hidden_count = models.PositiveIntegerField(default=0, help_text='Przypięcia i komentarze ukryte przez moderację.')
     nick_color = models.CharField(max_length=16, blank=True, default='',
                                   help_text='Identyfikator z listy config.NICK_COLORS; "spin" zarezerwowany dla Dr. Spina.')
+    age_16_plus_at = models.DateTimeField(null=True, blank=True,
+                                          help_text='Oświadczenie "mam ukończone 16 lat" złożone przy zgodzie (bez daty urodzenia).')
+    deletion_requested_at = models.DateTimeField(null=True, blank=True, db_index=True,
+                                                 help_text='DELETE me/: dane spina3 do usunięcia; nick od razu anonimowy.')
     created_at = models.DateTimeField(default=timezone.now)
+
+    @property
+    def deleted(self) -> bool:
+        return self.deletion_requested_at is not None
 
     def save(self, *args, **kwargs):
         if not self.pseudonym:
@@ -292,6 +302,8 @@ class Comment(models.Model):
     is_team = models.BooleanField(default=False)
     is_author = models.BooleanField(default=False, help_text='Autor przypięcia tego boxa (znaczek "autor").')
     anonymized = models.BooleanField(default=False)
+    needs_review = models.BooleanField(default=False, db_index=True,
+                                       help_text='Odpięty od nicku po wycofaniu zgody art. 9: do przeglądu (treść nie jest kasowana automatycznie).')
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     edited_at = models.DateTimeField(null=True, blank=True)
@@ -396,11 +408,45 @@ class Report(models.Model):
         return self.pin.box if self.pin_id else self.comment.box
 
 
+class ModerationDecision(models.Model):
+    """Uzasadnienie decyzji ograniczającej treść albo konto (DSA art. 17): co, jak, fakty, podstawa, automat, kto, odwołanie.
+
+    Tworzone przez każdą akcję moderacji (spina3.moderation, spina3.comments.hide_comment, odrzucenie adresu). Autor widzi
+    tylko własne decyzje (GET me/decisions/) i dostaje treść e-mailem. Retencja: 12 miesięcy (spina3_retention).
+    """
+    TARGETS = [('pin', 'Przypięcie'), ('box', 'Box'), ('comment', 'Komentarz'), ('account', 'Konto')]
+    RESTRICTIONS = [('hide', 'Ukrycie'), ('remove', 'Usunięcie'), ('demote', 'Obniżenie wagi'), ('suspend', 'Zawieszenie')]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='spina3_decisions',
+                             help_text='Konto, którego dotyczy decyzja (autor treści).')
+    target_type = models.CharField(max_length=8, choices=TARGETS)
+    pin = models.ForeignKey(Pin, null=True, blank=True, on_delete=models.SET_NULL, related_name='decisions')
+    box = models.ForeignKey(Box, null=True, blank=True, on_delete=models.SET_NULL, related_name='decisions')
+    comment = models.ForeignKey(Comment, null=True, blank=True, on_delete=models.SET_NULL, related_name='decisions')
+    report = models.ForeignKey('Report', null=True, blank=True, on_delete=models.SET_NULL, related_name='decisions')
+    restriction = models.CharField(max_length=8, choices=RESTRICTIONS)
+    facts = models.TextField(help_text='Fakty i okoliczności, na których oparto decyzję.')
+    basis = models.CharField(max_length=48, help_text='Klucz podstawy z spina3.legal.BASES (punkt Regulaminu albo przepis).')
+    basis_text = models.TextField(blank=True, default='', help_text='Treść podstawy w chwili decyzji.')
+    automated = models.BooleanField(default=False, help_text='Czy przy wykryciu lub decyzji użyto środków zautomatyzowanych.')
+    until = models.DateTimeField(null=True, blank=True, help_text='Koniec ograniczenia czasowego (waga 0, zawieszenie).')
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    appeal_route = models.TextField(blank=True, default='')
+    appeal_deadline = models.DateTimeField()
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True, help_text='Decyzja uchylona (uwzględnione odwołanie albo przywrócenie).')
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+
 class Appeal(models.Model):
-    """Jedna apelacja na decyzję (ukrycie przypięcia albo komentarza), 14 dni na złożenie, odpowiedź człowieka w 14 dni."""
+    """Jedna apelacja na decyzję: od ukrycia przypięcia albo komentarza (pin/{id}/appeal/, comment/{id}/appeal/) albo od decyzji
+    z dziennika (me/decisions/{id}/appeal/, także zawieszenie konta). 6 miesięcy na złożenie (DSA art. 20)."""
     STATUSES = [('open', 'Otwarta'), ('accepted', 'Uwzględniona'), ('rejected', 'Odrzucona')]
     pin = models.ForeignKey(Pin, null=True, blank=True, on_delete=models.CASCADE, related_name='appeals')
     comment = models.ForeignKey(Comment, null=True, blank=True, on_delete=models.CASCADE, related_name='appeals')
+    decision = models.OneToOneField(ModerationDecision, null=True, blank=True, on_delete=models.CASCADE, related_name='appeal')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='spina3_appeals')
     text = models.CharField(max_length=1000)
     status = models.CharField(max_length=10, choices=STATUSES, default='open', db_index=True)
@@ -411,7 +457,8 @@ class Appeal(models.Model):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(condition=Q(pin__isnull=False, comment__isnull=True) | Q(pin__isnull=True, comment__isnull=False),
+            models.CheckConstraint(condition=Q(pin__isnull=False, comment__isnull=True) | Q(pin__isnull=True, comment__isnull=False)
+                                   | Q(pin__isnull=True, comment__isnull=True, decision__isnull=False),
                                    name='spina3_appeal_one_target'),
             models.UniqueConstraint(fields=['pin', 'author'], condition=Q(pin__isnull=False), name='spina3_one_appeal_per_decision'),
             models.UniqueConstraint(fields=['comment', 'author'], condition=Q(comment__isnull=False), name='spina3_one_appeal_per_comment'),
@@ -476,3 +523,71 @@ class ChainItem(models.Model):
     class Meta:
         ordering = ['position']
         constraints = [models.UniqueConstraint(fields=['chain', 'pin'], name='spina3_chain_pin_once')]
+
+
+class Correction(models.Model):
+    """Sprostowanie diagnozy (prawo prasowe art. 31a-33): składa osoba, której dotyczy wpis, do 21 dni od publikacji.
+
+    Odmowa tylko z powodem z art. 33 (`rejection_reason`); termin publikacji: 3 dni robocze (`due_at`, spina3.legal).
+    Imię i nazwisko publicznie wyłącznie za jawną zgodą (`consent_public_name`). E-mail nigdy publicznie.
+    """
+    STATUSES = [('pending', 'Czeka na decyzję'), ('published', 'Opublikowane'), ('rejected', 'Odmowa')]
+    box = models.ForeignKey(Box, on_delete=models.CASCADE, related_name='corrections', help_text='Box kind=diagnosis.')
+    name = models.CharField(max_length=200)
+    email = models.EmailField(max_length=254)
+    text = models.TextField()
+    statement = models.BooleanField(default=False, help_text='Oświadczenie: jestem osobą, której dotyczy wpis; dane są prawdziwe.')
+    consent_public_name = models.BooleanField(default=False)
+    status = models.CharField(max_length=10, choices=STATUSES, default='pending', db_index=True)
+    rejection_reason = models.CharField(max_length=32, blank=True, default='')
+    rejection_note = models.CharField(max_length=600, blank=True, default='')
+    due_at = models.DateTimeField(db_index=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ['status', 'due_at', 'pk']
+        constraints = [
+            models.CheckConstraint(condition=~Q(status='rejected') | ~Q(rejection_reason=''), name='spina3_correction_rejection_reason'),
+        ]
+
+
+class DiagnosisApproval(models.Model):
+    """Log zatwierdzeń diagnozy (wersje): kto zatwierdził (numer konta zespołu), kiedy, model, źródła, etykieta."""
+    box = models.ForeignKey(Box, on_delete=models.CASCADE, related_name='diagnosis_approvals', help_text='Box wpisu (kind=post).')
+    diagnosis_box = models.ForeignKey(Box, on_delete=models.CASCADE, related_name='approvals', help_text='Box diagnozy.')
+    version = models.PositiveIntegerField(default=1)
+    change = models.CharField(max_length=12, default='created', help_text='created | updated | withdrawn | restored')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    approved_by_account = models.PositiveIntegerField(null=True, blank=True, help_text='Numer konta zespołu (publicznie zamiast imienia).')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    model = models.CharField(max_length=100, blank=True, default='')
+    sources = models.JSONField(default=list, blank=True)
+    label = models.CharField(max_length=120, default='Diagnoza AI, zatwierdzona przez zespół spin.clinic')
+    signature = models.CharField(max_length=64, blank=True, default='', help_text='Skrót treści wersji (wykrywanie zmian).')
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['diagnosis_box_id', 'version']
+        constraints = [models.UniqueConstraint(fields=['diagnosis_box', 'version'], name='spina3_diagnosis_approval_version')]
+
+
+class SilencedAccount(models.Model):
+    """Cisza wyborcza dla kandydatów i komitetów: w oknie [starts_at, ends_at) boxy konta bez rozkładu i poziomu, nowe oceny,
+    komentarze i przypięcia przy nich: 423 election_silence. Lista z importu CSV (spina3_silence_import) po przeglądzie radcy."""
+    KINDS = [('candidate', 'Kandydat'), ('committee', 'Komitet wyborczy')]
+    handle = models.CharField(max_length=64, db_index=True, help_text='Uchwyt konta źródłowego (bez @, małe litery).')
+    kind = models.CharField(max_length=10, choices=KINDS)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    source = models.CharField(max_length=300, help_text='Źródło listy (np. obwieszczenie PKW z datą).')
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['handle', 'starts_at']
+        constraints = [
+            models.UniqueConstraint(fields=['handle', 'starts_at', 'ends_at'], name='spina3_silenced_once'),
+            models.CheckConstraint(condition=Q(ends_at__gt=F('starts_at')), name='spina3_silenced_window'),
+        ]

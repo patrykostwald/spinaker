@@ -1,0 +1,20 @@
+{% autoescape off %}Decyzja nr {{ id }} z {{ created_at|slice:":10" }}
+
+Zespół spina3.pl zastosował ograniczenie: {{ restriction_label }} ({{ target_label }}{% if target_id %} nr {{ target_id }}{% endif %}){% if until %} do {{ until|slice:":10" }}{% endif %}.
+
+Fakty i okoliczności:
+{{ facts }}
+
+Podstawa:
+{{ basis_text }}
+
+Środki zautomatyzowane: {% if automated %}tak{% else %}nie{% endif %}. Decyzję podjął: {{ decided_by }}.
+
+Droga odwołania:
+{{ appeal_route }}
+Termin odwołania: {{ appeal_deadline|slice:":10" }}.
+
+Treść decyzji: {{ url }}
+
+spina3.pl
+{% endautoescape %}
