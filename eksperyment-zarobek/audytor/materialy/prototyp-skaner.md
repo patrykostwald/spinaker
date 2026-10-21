@@ -21,3 +21,13 @@ Kroki 1, 2, 6 oraz 3 tylko dla tekstów alternatywnych i nazw linków. Bez logow
 
 ## Czego nie robi
 Nie wydaje certyfikatów, nie ocenia zgodności z prawem, nie skanuje stron bez zamówienia lub prośby właściciela strony.
+
+## Stan (21.10.2026, Audytor): działa wersja 0.1 w `materialy/skaner/`
+- `skaner.js`: crawl w obrębie domeny z robots.txt i przerwą 1 s, axe-core 4.10.3 po polsku w widokach 1440 i 390 px,
+  zestawienie błędów według wagi i kryterium WCAG, lista 10 podstron do ręcznego testu, raport HTML (ciemny motyw, na telefonie karty) i JSON.
+- Sprawdzony na stronie testowej `materialy/skaner/testowa/` (celowe błędy): wykrył 10 rodzajów błędów, m.in. 1.1.1, 1.4.3, 2.4.4, 2.5.8, 3.1.1, 4.1.2;
+  podstronę, której nie ma, pomija zamiast liczyć jako „0 błędów”.
+- Uruchomienie: `cd eksperyment-zarobek/audytor/materialy/skaner && npm i && node skaner.js https://adres-klienta.pl 20`
+  (potrzebny Playwright z Chromium).
+- Nie sprawdzony na prawdziwej stronie: w tej sesji brak DNS do stron zewnętrznych.
+- Zostaje dla Warsztatu (mniej niż 1 dzień): krok 3 (rada modeli dla tekstów alternatywnych i nazw linków), PDF, szablon deklaracji, zrzuty błędów.
