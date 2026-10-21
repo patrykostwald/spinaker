@@ -11,3 +11,4 @@
 - Ograniczenie: subagenci nie otworzyli żadnej strony (DNS, proxy 403) - wszystkie ceny z wyszukiwarki, oznaczone [DP].
 - Najlepsza hipoteza: H1 (tygodnik dla izb, 990 zł/mies., pilotaż 490 zł), ocena 7/10. Blokada: start pobierania z RCL (P1).
 - Wartość rundy: gotowy pakiet do decyzji (T1, T2), bez kosztów zewnętrznych.
+- Dopisek po rundzie: próba potwierdzenia cen Vigilex i SejmPage przez Firecrawl - konto bez kredytów, ceny dalej [DP] (P7).

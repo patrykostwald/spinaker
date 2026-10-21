@@ -10,3 +10,6 @@
   (d) czy nazwy organizacji z zgłoszeń lobbingowych i konsultacji można publikować w płatnym przeglądzie.
 - **P5 (poziom 1):** Konsylium: która cena dla izby (490 / 990 / 1490 zł) i czy H3 łączyć z H1 jako dodatek.
 - **P6 (poziom 1):** Warsztat (Codex): szablon wydania z bazy RCL + strona T1 - ok. 1 dzień, po zgodzie na T1.
+- **P7 (poziom 2, przed ofertą):** potwierdzić ceny Vigilex (lex.pl) i SejmPage (sejmpage.pl) - z sesji w chmurze strony się nie
+  otwierają (WebFetch: DNS, proxy 403), a Firecrawl nie ma kredytów (doładowanie: https://www.firecrawl.dev/billing). Wystarczy, że
+  ktoś otworzy 2 strony w przeglądarce, albo zgoda na doładowanie Firecrawl.
