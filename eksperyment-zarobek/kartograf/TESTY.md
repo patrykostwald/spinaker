@@ -1,5 +1,9 @@
 # Testy popytu do zatwierdzenia przez właściciela (poziom 2)
 
+**21.10.2026: właściciel zatwierdził T1 i T2 w sesji Kartografa.** Gotowe wersje robocze: `materialy/t1-strona-tygodnik.html`
+(zrzuty 1440 i 390 px zmierzone: równe boksy, przyciski przy dolnej krawędzi, bez przewijania w bok) i `materialy/t2-oferta-pilotaz-izby.md`.
+Publikację, wysyłkę i podpięcie formularza robi koordynator; przed startem: Prawnik (P4) i start pobierania z RCL (P1).
+
 ### T1: Strona z przykładowym wydaniem i listą oczekujących (H2, H3)
 - **Co:** podstrona np. przeszlosc.today/tygodnik (bez nowej domeny): przykładowe wydanie (szkic: `materialy/przyklad-tygodnik-finanse.md`),
   wybór branży (finanse i podatki, żywność, energetyka, transport, inna), 3 przyciski z ceną: „Tygodnik 49 zł/mies.”,

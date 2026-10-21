@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tygodnik legislacyjny</title>
+<!-- WERSJA ROBOCZA testu T1 (Kartograf). Formularz bez wysyłki - podpięcie robi Warsztat po zgodzie Prawnika (RODO). -->
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--line:#2a2f3a;--txt:#e8eaee;--mute:#9aa3b2;--acc:#7cc4ff;--r:12px;--gap:24px}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f6f7f9;--panel:#fff;--line:#dde1e7;--txt:#14171c;--mute:#5b6473;--acc:#0b6bcb}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:34px;line-height:1.2;margin:0 0 12px}
+h2{font-size:22px;margin:0 0 16px}
+.lead{color:var(--mute);font-size:18px;max-width:680px;margin:0}
+section{margin-top:48px}
+.issue{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:24px}
+.issue ol{margin:0;padding-left:20px}
+.issue li{margin-bottom:10px}
+.meta{color:var(--mute);font-size:14px}
+.src{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);color:var(--mute);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:grid;grid-template-rows:auto auto 1fr auto;gap:8px;min-height:250px}
+.card h3{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.price{font-size:26px;font-weight:700}
+.price small{font-size:14px;font-weight:400;color:var(--mute)}
+.card p{margin:0;color:var(--mute);font-size:15px}
+.btn{display:block;width:100%;min-height:44px;border:0;border-radius:10px;background:var(--acc);color:#071018;font:600 15px system-ui;cursor:pointer}
+.btn:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+form{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:grid;gap:14px;max-width:560px}
+label{font-size:14px;color:var(--mute)}
+input,select{width:100%;min-height:44px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font:inherit}
+.small{font-size:13px;color:var(--mute);margin:0}
+#ok{display:none;color:var(--acc);margin:0}
+@media (max-width:760px){.wrap{padding:28px 16px 48px}h1{font-size:28px}.grid{grid-template-columns:1fr}.card{min-height:0}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Zmiany w prawie dla Twojej branży - zanim trafią do Sejmu</h1>
+    <p class="lead">Rząd pracuje nad setkami projektów przepisów. Na etapie konsultacji można zgłosić uwagi, ale trzeba o nich wiedzieć.
+      Raz w tygodniu: projekty z Twojej branży, prostym językiem, z terminami uwag i listą organizacji, które się zgłosiły.</p>
+  </header>
+
+  <section aria-labelledby="przyklad">
+    <h2 id="przyklad">Przykładowe wydanie: Finanse i podatki</h2>
+    <div class="issue">
+      <p class="meta">Tydzień 2-8 września 2026 · 4 projekty w ruchu</p>
+      <ol>
+        <li><strong>PIT i CIT (UD447)</strong> - projekt zmian w podatkach dochodowych, Minister Finansów i Gospodarki; zaktualizowany 8.09.</li>
+        <li><strong>Ustawa okołobudżetowa na 2026 (UD463)</strong> - przyjęta przez Radę Ministrów 1.09, skierowana do Sejmu 2.09.</li>
+        <li><strong>Rynek finansowy (UC132)</strong> - pakiet zmian dla rozwoju i stabilności rynku finansowego; zaktualizowany 8.09.</li>
+        <li><strong>Bezpieczeństwo żywności (UD 247)</strong> - zmiany dla producentów i inspekcji sanitarnej; zaktualizowany 8.09.</li>
+      </ol>
+      <p class="src">Źródło: Rządowe Centrum Legislacji, legislacja.rcl.gov.pl. Dane uporządkowane przez iapply sp. z o.o.
+        To przegląd informacyjny, nie porada prawna.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="opcje">
+    <h2 id="opcje">Wybierz, co Cię interesuje</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>Tygodnik</h3>
+        <div class="price">49 zł <small>netto / mies.</small></div>
+        <p>Jeden mail w poniedziałek: projekty z wybranej branży, terminy uwag, zgłoszenia lobbingowe.</p>
+        <button class="btn" data-plan="tygodnik-49">Chcę na listę</button>
+      </article>
+      <article class="card">
+        <h3>Dla izby lub zespołu</h3>
+        <div class="price">990 zł <small>netto / mies.</small></div>
+        <p>Wydanie branży do rozsyłania członkom lub zespołowi. Pilotaż 3 mies. po 490 zł.</p>
+        <button class="btn" data-plan="izba-990">Chcę pilotaż</button>
+      </article>
+      <article class="card">
+        <h3>Raport konsultacji</h3>
+        <div class="price">790 zł <small>netto / projekt</small></div>
+        <p>W 48 godzin: uwagi do jednego projektu według przepisów, kto je zgłosił, co przyjęto.</p>
+        <button class="btn" data-plan="raport-790">Chcę raport</button>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="zapis">
+    <h2 id="zapis">Lista oczekujących</h2>
+    <form id="f" novalidate>
+      <input type="hidden" name="plan" id="plan" value="">
+      <div><label for="email">Adres e-mail</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+      <div><label for="branza">Branża</label>
+        <select id="branza" name="branza"><option>Finanse i podatki</option><option>Żywność</option><option>Energetyka</option>
+          <option>Transport</option><option>Inna</option></select></div>
+      <button class="btn" type="submit">Zapisz mnie</button>
+      <p class="small">Start w listopadzie. Teraz nic nie płacisz. [Klauzula RODO i regulamin - do przygotowania z Prawnikiem]</p>
+      <p id="ok" role="status">Dziękujemy - odezwiemy się przed startem.</p>
+    </form>
+  </section>
+</main>
+<script>
+document.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{
+  document.getElementById('plan').value=b.dataset.plan;document.getElementById('email').focus();
+  document.getElementById('zapis').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}));
+document.getElementById('f').addEventListener('submit',e=>{e.preventDefault();document.getElementById('ok').style.display='block';});
+</script>
+</body>
+</html>
