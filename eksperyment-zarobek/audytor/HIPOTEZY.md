@@ -1,0 +1,45 @@
+# Hipotezy Audytora (runda 1, 21.10.2026) - najlepsza na górze
+
+Źródła liczb: `MAPA.md`. Ceny iapply to propozycje do decyzji właściciela (poziom 2).
+
+### H1: Przegląd dostępności i deklaracja dla gmin i szkół
+- **Kto płaci:** podmioty publiczne - 63 081 jednostek w raporcie o dostępności 2025, ok. 77 tys. stron, dostępność cyfrowa 36,02% ([wartowiedziec.pl](https://wartowiedziec.pl/polityka-spoleczna/81602-dostepnosc-uslug-publicznych-wskaznik-zatrzymal-sie-na-33-91-proc-nowy-raport-pokazuje-skale-wyzwania)) [DP]. Na start: gminy, szkoły, domy kultury, biblioteki - małe budżety, decyzja bez przetargu (poniżej 130 tys. zł).
+- **Problem i dlaczego teraz:** deklarację dostępności trzeba przeglądać co roku do 31 marca [DP]; kara do 5 000 zł za brak lub wadliwą deklarację, do 10 000 zł za uporczywy brak dostępności ([e-prawnik.pl](https://e-prawnik.pl/informacje/o-dostepnosci-cyfrowej.html)). Ministerstwo audytuje 100 stron w 2026 i 100 w 2027 ([gov.pl](https://www.gov.pl/web/dostepnosc-cyfrowa/prosba-o-wycene-przeprowadzenie-audytu-dostepnosci-cyfrowej-stron-internetowych-w-latach-2026---2027)) - urzędy wiedzą, że ktoś sprawdza. Okno sprzedaży: styczeń-marzec 2027.
+- **Oferta i cena:** „Przegląd 2027” - automatyczny skan całej strony + ręczny przegląd 10 kluczowych podstron według WCAG 2.1 AA + projekt deklaracji według wzoru + lista napraw z priorytetami: **1 490 zł netto**; ponowny przegląd po naprawach 490 zł; naprawy przez zbudujmi.com osobno. Konkurencja: 2 000-2 999 zł za stronę urzędową lub raport, 7 399 zł z „certyfikatem” ([studio72.net](https://studio72.net/blog/strona-wcag-2-1-cena-oraz-audyt-wcag-cena/), [wcag-audyt.pl](https://wcag-audyt.pl/cennik/)) [DP]. Taniej, bo automat i rada modeli robią 70% pracy [szacunek].
+- **Kanał popytu:** odpowiedzi na publiczne zapytania ofertowe (BIP, Baza Konkurencyjności, BZP - Łowca zleceń już łapie słowa WCAG i „deklaracja dostępności”) i ruch przychodzący (strona + post). Koszt dotarcia: ok. 1-2 h na ofertę [szacunek].
+- **Dowód popytu:** zapytania [Rzgów](https://bip.rzgow.pl/attachments/download/15601), [AWF Biała Podlaska](https://www.awf-bp.edu.pl/wp-content/uploads/2025/11/zapytanie-ofertowe.pdf), [PFRON 2026](https://bip.pfron.org.pl/fileadmin/Zamowienia/Rozeznanie_rynku/2026_rok/2026-05-21_eksperci_biegly/Zapytanie_ofertowe.pdf), ministerstwo 200 audytów, opublikowane raporty audytów urzędów (np. [ŁKA, marzec 2026](https://bip.lka.lodzkie.pl/_data/Dostepnosc/Audyt_strony_BIP.pdf), [ZDM Warszawa 2025](https://zdm.waw.pl/wp-content/uploads/2025/03/Audyt-dostepnosci-cyfrowej-strony-www.zdm_.waw_.pl_.pdf)). Brak twardej liczby zapytań rocznie [DP: policzyć w BZP/Bazie Konkurencyjności].
+- **Pierwsza faktura:** najwcześniej ok. 30-45 dni od zgody (oferta na zapytanie, wybór, wykonanie w tydzień). Warunek: część zapytań wymaga min. 2 wykonanych audytów (Rzgów) - pierwsze 2 referencje trzeba zdobyć na Useme lub u klienta komercyjnego (H2, test T1).
+- **Przychód 90 dni:** pesymistycznie 0 zł (brak referencji, przegrane oferty); realistycznie 4 × 1 490 = ok. 6 000 zł + 1-2 naprawy przez zbudujmi po 1 490-2 990 zł [szacunek: 15 ofert, 25% wygranych].
+- **Koszt i czas:** właściciel ok. 1 h tygodniowo (decyzja tak/nie na każdą ofertę), prezes podpis; zespół: 3-4 h na audyt po zbudowaniu skanera [szacunek]; Warsztat: skaner ok. 1-2 dni pracy Codex.
+- **Zasoby iapply:** Łowca zleceń (alerty), zbudujmi.com (naprawy), rada modeli i PCSS (ocena tekstów alternatywnych, prostego języka, nazw linków), lista WCAG w `backend/news/zamowienia.py`.
+- **Ryzyko (2/5):** ryzyko jakości - audyt bez testów z osobami z niepełnosprawnościami jest słabszy niż metoda ministerstwa; zmniejszenie: nazwa „przegląd”, nie „certyfikat”, jasny zakres w raporcie, partner-tester (fundacja lub audytor z orzeczeniem - przez Łącznika). Bez interpretacji prawa w raporcie (zastrzeżenie).
+- **Test popytu 48 h:** T2 (strona „Przegląd 2027” + post) i oferta na pierwsze pasujące zapytanie z Łowcy.
+- **Ocena 7/10:** prawdziwy, cykliczny termin, tysiące małych kupujących bez przetargu, nasz automat obniża koszt. Minus: potrzebne referencje i sezon zaczyna się w styczniu.
+
+### H2: Raport dostępności sklepu internetowego (Polski Akt o Dostępności)
+- **Kto płaci:** sklepy internetowe objęte ustawą z 26.04.2024 - ok. 66-70 tys. sklepów w PL ([wiadomoscihandlowe.pl](https://www.wiadomoscihandlowe.pl/e-commerce-i-e-grocery/rynek-e-commerce/w-polsce-wciaz-przybywa-sklepow-internetowych-ile-jest-ich-obecnie-dane-2514626)), ale mikroprzedsiębiorcy usługowi są wyłączeni [DP]; objętych (10+ osób lub 2+ mln EUR obrotu) może być 5-10 tys. [szacunek].
+- **Problem:** ustawa obowiązuje od 28.06.2025; kara do 10-krotności przeciętnego wynagrodzenia, max 10% obrotu; zawiadomić PFRON może każdy ([PFRON](https://www.pfron.org.pl/aktualnosci/szczegoly-aktualnosci/news/kompas-dostepnosci-poznaj-polski-akt-o-dostepnosci-cz-1/), [MDL](https://mdl-kancelariaprawna.pl/porady-prawne/dostepnosc-niektorych-produktow-i-uslug-jakich-kar-mozna-sie-spodziewac-w-przypadku-niedostosowania-sie-do-nowych-obowiazkow/)). Przed karą jest wezwanie do naprawy - presja umiarkowana.
+- **Oferta i cena:** bezpłatny automatyczny skan strony głównej i koszyka; płatny „Raport sklepu”: ścieżka zakupu (wyszukiwanie, karta produktu, koszyk, płatność, konto) + lista napraw: **990 zł netto**; naprawa w zbudujmi 1 490-4 990 zł. Konkurencja: sklep od 2 000 zł ([studio72.net](https://studio72.net/blog/strona-wcag-2-1-cena-oraz-audyt-wcag-cena/)), szybka diagnoza 690 zł ([qualityisland.pl](https://qualityisland.pl/uslugi/testy-oprogramowania/testy-dostepnosci/)) [DP].
+- **Kanał:** ruch przychodzący (strona ze skanerem, post na FB iapply), Useme, partnerzy platform sklepowych (Łącznik). Koszt: [szacunek] 0-300 zł promocji.
+- **Dowód popytu:** artykuły dla branży ([Shoper](https://www.shoper.pl/learn/artykul/polski-akt-o-dostepnosci-wplynie-na-sklepy-internetowe), [fashionbiznes.pl](https://fashionbiznes.pl/ostatni-dzwonek-dla-e-commerce-beda-surowe-kary-za-brak-dostepnosci/)), zlecenia na Useme ([wdrożenie WCAG](https://useme.com/pl/jobs/wdrozenie-wcag-2-1-na-stronie-wordpress,140833/), [audyt](https://useme.com/pl/jobs/audyt-dostepnosci-strony-internetowej,142123/)). Słabszy niż w H1 - brak publicznych budżetów.
+- **Pierwsza faktura:** 2-4 tygodnie od zgody (Useme lub pierwszy klient z ruchu); naturalny klient: obecny klient iapply ze sklepem odzieżowym [DP: czy objęty ustawą - pewnie mikro].
+- **Przychód 90 dni:** pesymistycznie 0 zł; realistycznie 3 × 990 + 1 naprawa 2 990 = ok. 6 000 zł [szacunek].
+- **Koszt i czas:** właściciel 1-2 h na zatwierdzenie strony i postu; zespół 2-3 h na raport; skaner wspólny z H1.
+- **Zasoby:** zbudujmi.com, skaner (H1), kampanie wideo iapply, Useme.
+- **Ryzyko (3/5):** straszenie karami mikrofirm, które są wyłączone, byłoby wprowadzaniem w błąd; zmniejszenie: skaner najpierw pyta o wielkość firmy i mówi wprost „prawdopodobnie Cię nie dotyczy” [DP z prawnikiem]; zero porad prawnych.
+- **Test 48 h:** T1 (Useme) i wariant strony T2 dla sklepów.
+- **Ocena 6/10:** duży rynek i dobre dopasowanie do zbudujmi, ale popyt mniej pilny i trudniej trafić do objętych firm.
+
+### H3: Przegląd przejrzystości AI (AI Act art. 50 i art. 4)
+- **Kto płaci:** firmy z chatbotem na stronie, generowanymi treściami lub obsługą klienta przez AI; liczba w PL nieznana [DP].
+- **Problem:** art. 50 obowiązuje od 2.08.2026, dla systemów generatywnych sprzed tej daty okres przejściowy art. 50(2) do 2.12.2026 [DP]; kara do 15 mln EUR lub 3% obrotu ([processexcellencenetwork](https://www.processexcellencenetwork.com/ai/articles/eu-ai-act-2026-what-actually-changed-and-what-deployers-still-must-do), [CMS](https://cms.law/en/cze/legal-updates/eu-ai-act-developments-key-political-agreement-on-the-digital-omnibus-on-ai-implementation-timeline-and-transparency-consultation)). Art. 4 złagodzony, ale obowiązuje ([ki-campus.org](https://ki-campus.org/en/blog/eu-ai-act-ai-omnibus-recalibrates-article-4-ai-literacy-remains-mandatory)).
+- **Oferta i cena:** techniczny przegląd: czy chatbot informuje, że jest AI, czy treści są oznaczone (metadane, znak), spis używanych narzędzi AI i plan szkolenia kompetencji: **990 zł netto** + szkolenie 1 h online 690 zł [szacunek; brak cenników PL w researchu]. Interpretacja prawa tylko z kancelarią partnerską.
+- **Kanał:** ruch przychodzący (konsylium.ai), Łowca zleceń (profil AI i szkolenia).
+- **Dowód popytu:** tylko ogólne komentarze kancelarii i portali; nie znalazłem polskich zapytań ofertowych na taki przegląd. Słaby.
+- **Pierwsza faktura:** 4-8 tygodni [szacunek].
+- **Przychód 90 dni:** pesymistycznie 0; realistycznie 2 × 990 = ok. 2 000 zł [szacunek].
+- **Koszt i czas:** właściciel 2 h; potrzebny partner prawny (Łącznik).
+- **Zasoby:** konsylium.ai, rada modeli, PCSS, materiały wideo.
+- **Ryzyko (4/5):** granica z poradą prawną jest cienka; bez kancelarii nie ruszać.
+- **Test 48 h:** brak w tej rundzie - najpierw partner prawny.
+- **Ocena 4/10:** termin 2.12.2026 kusi, ale brak dowodu popytu i wysokie ryzyko.
