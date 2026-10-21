@@ -115,6 +115,12 @@ if os.environ.get('GDELT_ENABLED', 'false').strip().lower() == 'true':
 if os.environ.get('SENAT_METADATA_ENABLED', 'false').strip().lower() == 'true':
     app.conf.beat_schedule['senat-metadata-6h'] = {'task': 'scraper.tasks.discover_senat_metadata', 'schedule': crontab(minute=40, hour='*/6')}
 
+# Rządowy Proces Legislacyjny (21.10.2026, pismo RCL.DPK.053.168.2026): zbieranie tylko 01:00-06:00 czasu polskiego,
+# z serwera zgłoszonego do RCL; harmonogram istnieje wyłącznie przy RCL_FETCH_ENABLED=true (ustawiane na produkcji).
+if os.environ.get('RCL_FETCH_ENABLED', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+    app.conf.beat_schedule['rcl-legislacja-night'] = {
+        'task': 'scraper.tasks.rcl_night_task', 'schedule': crontab(minute='5-55/10', hour='1-5')}
+
 # Plan dnia i terminy mają wspólne źródło.
 from news.daily_schedule import beat_entries
 app.conf.beat_schedule.update(beat_entries())

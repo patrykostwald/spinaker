@@ -396,3 +396,19 @@ def zasil_baze_task(lane='sejm', mode='noc'):
         return run(lane, mode, seconds=480)
     finally:
         cache.delete('lock:zasil-baze:' + lane)
+
+
+@shared_task(soft_time_limit=570, time_limit=600)
+def rcl_night_task():
+    """Porcja nocnego zbierania RCL (legislacja.rcl.gov.pl): co 10 minut w oknie 01:05-05:55, każda do 8 minut.
+
+    Warunki zgody (okno 01:00-06:00, odstęp 5 s, User-Agent, wstrzymanie po 429/503) egzekwuje scraper.rcl_guard;
+    zadanie poza oknem albo bez RCL_FETCH_ENABLED nie wysyła nic.
+    """
+    from scraper.rcl_harvest import run_night
+    if not cache.add('lock:rcl-night', True, 600):
+        return {'status': 'already_running'}
+    try:
+        return run_night(seconds=480)
+    finally:
+        cache.delete('lock:rcl-night')

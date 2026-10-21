@@ -23,6 +23,12 @@ log = logging.getLogger('scraper')
 SOURCE_USER_AGENT = 'ContextBeforeContent/1.0 source reader'
 
 
+def agent_for(url):
+    """User-Agent dla adresu: RCL wymaga własnego podpisu z pisma zgody (scraper.rcl_guard), reszta świata - wspólnego."""
+    from scraper.rcl_guard import RCL_USER_AGENT, is_rcl_url
+    return RCL_USER_AGENT if is_rcl_url(url) else SOURCE_USER_AGENT
+
+
 class HostRateLimited(Exception):
     """The durable host gate declined this request before network I/O."""
 
@@ -213,7 +219,7 @@ def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error
         source=source, channel=channel, requested_kind=requested_kind, **fields,
         url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
         adapter_revision='scraper.fetch_feed/v1', transport='pre_network_gate',
-        request_user_agent=SOURCE_USER_AGENT,
+        request_user_agent=agent_for(url),
         outcome=outcome, network_started=False, error_code=error_code)
 
 
@@ -228,7 +234,7 @@ def _record_transport_attempt(*, source, instruction, requested_kind, url, outco
         adapter_revision='scraper.fetch_feed/v1',
         transport=('hostname_https' if hostname_transport else 'pinned_ip_https')
         if urlparse(url).scheme == 'https' else 'pinned_ip_http',
-        request_user_agent=SOURCE_USER_AGENT,
+        request_user_agent=agent_for(url),
         decision_basis=str(instruction.evidence.get('basis') or instruction.terms_url)[:500],
         outcome=outcome, network_started=network_started, http_status=http_status,
         bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code,
@@ -460,6 +466,9 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
     for _ in range(4):
         if not safe_url(url):
             raise ValueError('Invalid source URL')
+        # Host RCL: okno 01:00-06:00, flaga produkcyjna i wstrzymanie po 429/503 sprawdzane tuż przed połączeniem (rcl_guard).
+        from scraper.rcl_guard import guard_request
+        user_agent = guard_request(url) or SOURCE_USER_AGENT
         parsed = urlparse(url)
         hostname = parsed.hostname.encode('idna').decode('ascii')
         port = parsed.port or (443 if parsed.scheme == 'https' else 80)
@@ -475,7 +484,7 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
             pool = urllib3.PoolManager(cert_reqs=ssl.CERT_REQUIRED,
                 ca_certs=requests.certs.where())
             request_url = url
-            headers = {'User-Agent': SOURCE_USER_AGENT}
+            headers = {'User-Agent': user_agent}
         elif parsed.scheme == 'https':
             pool = urllib3.HTTPSConnectionPool(address, port=port, server_hostname=hostname,
                 assert_hostname=hostname, cert_reqs=ssl.CERT_REQUIRED, ca_certs=requests.certs.where())
@@ -483,14 +492,14 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
             if parsed.port:
                 host_header += ':' + str(port)
             request_url = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
-            headers = {'Host': host_header, 'User-Agent': SOURCE_USER_AGENT}
+            headers = {'Host': host_header, 'User-Agent': user_agent}
         else:
             pool = urllib3.HTTPConnectionPool(address, port=port)
             host_header = f'[{hostname}]' if ':' in hostname else hostname
             if parsed.port:
                 host_header += ':' + str(port)
             request_url = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
-            headers = {'Host': host_header, 'User-Agent': SOURCE_USER_AGENT}
+            headers = {'Host': host_header, 'User-Agent': user_agent}
         extra_headers = dict(request_headers or {})
         if any(str(key).lower() in {'host', 'user-agent'} for key in extra_headers):
             raise ValueError('Source transport controls Host and User-Agent headers.')

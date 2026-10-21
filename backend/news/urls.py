@@ -47,6 +47,7 @@ from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przesz
 from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
 from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_wersja
 from news.przeszlosc_paski import strips_view
+from news import rcl_api
 from news import przeszlosc_v3, position_pairs, privacy_notice
 from news.causal_chain import report_view as causal_chain_report_view
 from news.voting_anomalies import deviations_view as przeszlosc_deviations
@@ -120,6 +121,8 @@ urlpatterns = [
     path('feedback/bug/', BugReportView.as_view()),
     path('feedback/journey/', JourneyView.as_view()),
     path('przeszlosc/temat/', przeszlosc_topic),
+    path('legislacja/projekty/', rcl_api.project_list),
+    path('legislacja/projekty/<int:rcl_id>/', rcl_api.project_detail),
     path('przeszlosc/temat/glosowania/', przeszlosc_topic_votes),
     path('przeszlosc/start/', przeszlosc_start),
     path('przeszlosc/funkcje/', przeszlosc_dostep.features_view),
