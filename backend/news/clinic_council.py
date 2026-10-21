@@ -219,6 +219,12 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
             body['reasoning_effort'] = 'low'
         if 'qwen' in model:
             body['reasoning_format'] = 'hidden'
+    if service == 'pcss':  # vLLM w PCSS: JSON wymuszony, bez długiego myślenia (inaczej limit słów idzie na rozważania)
+        body['response_format'] = {'type': 'json_object'}
+        if 'gpt-oss' in model:
+            body['reasoning_effort'] = 'low'
+        if 'qwen' in model.lower():
+            body['chat_template_kwargs'] = {'enable_thinking': False}
     slow = any(name in model for name in ('deepseek', 'kimi'))
     try:
         response = requests.post(url, json=body, timeout=(5, SLOW_TIMEOUT if slow else 90), headers=headers)
@@ -306,11 +312,26 @@ def _normalize_opinion(raw):
     return raw
 
 
+def _member_opinion(member: tuple[str, str], context_lines: str) -> tuple[dict, tuple[str, str] | None]:
+    """Odpowiedź członka; gdy zawiedzie, a ma bliźniaka (ten sam model u innego dostawcy) - odpowiedź bliźniaka.
+    Drugi element: bliźniak, który odpowiedział, albo None."""
+    # Groq wlicza zarezerwowaną długość odpowiedzi do limitu na minutę — krótko; NVIDIA myśli dłużej przed JSON-em.
+    try:
+        return ask(member, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=1500 if member[0] == 'groq' else 4000), None
+    except ClinicAIError as error:
+        twin = registry.twin(member)
+        if not twin or str(error.code).endswith('_content_reserve'):
+            raise
+        logger.info('council member %s failed (%s), twin %s answers', member[1], error.code, ':'.join(twin))
+        return ask(twin, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=4000), twin
+
+
 def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dict | None:
     started = time.monotonic()
+    served_by = None
     try:
-        # Groq wlicza zarezerwowaną długość odpowiedzi do limitu na minutę — krótko; NVIDIA myśli dłużej przed JSON-em.
-        raw = _normalize_opinion(ask(member, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=1500 if member[0] == 'groq' else 4000))
+        answer, served_by = _member_opinion(member, context_lines)
+        raw = _normalize_opinion(answer)
         if (not isinstance(raw, dict) or raw.get('verdict') not in (*VERDICT_SCORE, 'unclear') or
                 type(raw.get('intensity')) is not int or not 0 <= raw['intensity'] <= 100 or
                 not isinstance(raw.get('techniques'), list) or not isinstance(raw.get('claims'), list)):
@@ -323,7 +344,9 @@ def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dic
     techniques = [item for item in raw.get('techniques') or [] if isinstance(item, dict)
                   and isinstance(item.get('id'), str) and item['id'] in TECHNIQUES
                   and _quoted(post_text, str(item.get('quote', '')))]
-    return {**registry.metadata(member), 'status': 'odpowiedział',
+    # Bliźniak zajmuje miejsce członka (to samo „model” dla kworum), a dostawca jest zapisany jawnie (Karta, pkt 11).
+    twin_note = {'provider': served_by[0], 'served_by': ':'.join(served_by), 'twin_of': ':'.join(member)} if served_by else {}
+    return {**registry.metadata(member), **twin_note, 'status': 'odpowiedział',
             'seconds': round(time.monotonic() - started, 3),
             'loaded_words': validate_loaded_words(post_text, raw.get('loaded_words')),
             'model': member[1], 'verdict': verdict, 'intensity': intensity, 'techniques': techniques,

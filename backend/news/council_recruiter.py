@@ -251,6 +251,17 @@ def discover() -> list[dict]:
                                   'context': item.get('max_context_length') or 0})
         except (requests.RequestException, ValueError) as error:
             logger.info('recruiter %s: %s', service, error)
+    # PCSS (21.10): tylko modele z listy właściciela (COUNCIL_PCSS_CANDIDATES), bo pula tokenów jest wspólna dla całego
+    # konta; po testach na 120 diagnozach kandydatem jest gpt-oss_120b. Egzamin, głosowanie i Karta jak dla każdego.
+    if registry.credentials('pcss'):
+        wanted = {m.strip() for m in os.environ.get('COUNCIL_PCSS_CANDIDATES', 'gpt-oss_120b').split(',') if m.strip()}
+        try:
+            for item in _get(registry.URLS['pcss'].replace('/chat/completions', '/models'),
+                             headers={'Authorization': f"Bearer {registry.credentials('pcss')}"}).get('data', []):
+                if item.get('id') in wanted and item.get('mode', 'chat') == 'chat':
+                    found.append({'provider': 'pcss', 'model': item['id'], 'context': item.get('max_input_tokens') or 0})
+        except (requests.RequestException, ValueError) as error:
+            logger.info('recruiter pcss: %s', error)
     # Zwiadowca rozwiązań (7.10): modele wskazane w zwiadzie tygodnia; ten sam egzamin, progi i Karta co dla każdego.
     try:
         from news.zwiadowca_rozwiazan import recruiter_candidates
@@ -564,7 +575,7 @@ def weekly_summary() -> str:
     from news.clinic_models import CouncilRecruitment
     entries = list(CouncilRecruitment.objects.filter(kind='candidate', created_at__gte=timezone.now() - timedelta(days=7)))
     counts = Counter((e.provider, e.decision) for e in entries)
-    names = {'hf': 'Hugging Face', 'nim': 'NVIDIA', 'inception': 'Inception',
+    names = {'hf': 'Hugging Face', 'nim': 'NVIDIA', 'inception': 'Inception', 'pcss': 'PCSS',
              'mistral': 'Mistral', 'cloudflare': 'Cloudflare Workers AI'}
     lines = ['Rekruter Konsylium - ostatnie 7 dni (liczba prób kandydatów):']
     for (provider, decision), count in sorted(counts.items()):

@@ -241,6 +241,10 @@ def screen_post(post: PoliticalPost, retry=False) -> SpinDiagnosis | None:
     else:
         score = result['score']
         status = 'queued' if score >= auto else 'flagged' if score >= flag else 'not_applicable'
+        from news import basal_siatka
+        basal = basal_siatka.opinion(post.text)  # tryb cichy: tylko zapis zdania, status ustala Strażnik
+        if basal:
+            result = {**result, 'basal': basal}
         fields = {'status': status, 'triage': result, 'screen_score': score,
                   'provider': result['provider'], 'model_name': str(result['model'])[:64]}
     try:

@@ -19,13 +19,19 @@ KEYS = {'groq': 'GROQ_API_KEY', 'nim': 'NIM_API_KEY', 'gemini': 'GEMINI_API_KEY'
         'mistral': 'MISTRAL_API_KEY', 'openrouter': 'OPENROUTER_API_KEY',
         'cloudflare': 'CLOUDFLARE_AI_TOKEN', 'hf': 'HF_TOKEN', 'pllum': 'PLLUM_API_KEY',
         # Inception (Mercury): tylko kandydat Rekrutera, nie stały członek; własny strażnik darmowej puli tokenów (news/inception.py)
-        'inception': 'INCEPTION_API_KEY'}
+        'inception': 'INCEPTION_API_KEY',
+        # PCSS (Poznańskie Centrum Superkomputerowo-Sieciowe, 21.10): modele na infrastrukturze HPC w Polsce, API zgodne z OpenAI
+        'pcss': 'PCSS_LLM_API_KEY'}
 URLS = {'groq': 'https://api.groq.com/openai/v1/chat/completions',
         'nim': 'https://integrate.api.nvidia.com/v1/chat/completions',
         'mistral': 'https://api.mistral.ai/v1/chat/completions',
         'openrouter': 'https://openrouter.ai/api/v1/chat/completions',
         'hf': 'https://router.huggingface.co/v1/chat/completions',
-        'inception': 'https://api.inceptionlabs.ai/v1/chat/completions'}
+        'inception': 'https://api.inceptionlabs.ai/v1/chat/completions',
+        'pcss': 'https://llm.hpc.psnc.pl/v1/chat/completions'}
+# Ten sam model u drugiego dostawcy: gdy członek nie odpowie (limit, 429, awaria), odpowiada bliźniak i zajmuje to samo
+# miejsce w radzie, z jawnym zapisem dostawcy. Test 21.10 (120 diagnoz): Qwen3.8-27B przez PCSS zgodny z werdyktem w 71%.
+TWINS = {('groq', 'qwen/qwen3.8-27b'): ('pcss', 'Qwen3.8-27B')}
 POLISH_MODELS = ('bielik', 'pllum')
 CHARTER_SUMMARY = ('\nKarta Konsylium: 1. Bez sympatii politycznych. 2. Badaj słowa, nie ludzi. '
                    '3. Ta sama miara dla obu stron. 4. Nie zgaduj intencji. '
@@ -82,7 +88,8 @@ def limit_key(member):
 # Domyślne limity dzienne (zapytania na model) — poniżej darmowych pul dostawców, ale z zapasem na 16 diagnoz dziennie
 # z ponowieniami, role przewodniczącego/językoznawcy/recenzenta, Rekrutera i inkwizytora. 50 wyczerpywało się do południa.
 DEFAULT_DAILY_LIMITS = {'groq': 300, 'nim': 200, 'hf': 150, 'cloudflare': 200, 'gemini': 150, 'claude': 200, 'mistral': 200, 'openrouter': 50,
-                        'inception': 1000}  # Inception: limit zapytań tylko dla porządku - rządzi pula tokenów (news/inception.py)
+                        'inception': 1000,  # Inception: limit zapytań tylko dla porządku - rządzi pula tokenów (news/inception.py)
+                        'pcss': 500}
 
 
 def daily_limit(member):
@@ -94,8 +101,19 @@ def daily_limit(member):
         return default
 
 
+def twin(member):
+    """Bliźniak członka u drugiego dostawcy albo None. Włącza go COUNCIL_TWINS=true (właściciel 21.10)."""
+    if os.environ.get('COUNCIL_TWINS', '').strip().lower() != 'true':
+        return None
+    found = TWINS.get(tuple(member))
+    return found if found and configured(found) else None
+
+
 def available(member):
-    return configured(member) and cache.get(limit_key(member), 0) < daily_limit(member)
+    if configured(member) and cache.get(limit_key(member), 0) < daily_limit(member):
+        return True
+    found = twin(member)
+    return bool(found) and configured(found) and cache.get(limit_key(found), 0) < daily_limit(found)
 
 
 def content_reserve_share():
