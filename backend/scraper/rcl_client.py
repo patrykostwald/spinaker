@@ -17,7 +17,7 @@ from urllib.robotparser import RobotFileParser
 import requests
 from django.utils import timezone
 
-from news.models import FetchAttempt, SourceAccessInstruction
+from news.models import FetchAttempt
 from scraper import rcl_guard
 from scraper.access_gate import AccessDenied
 from scraper.rcl_guard import RCL_BASE_URL, RCL_MIN_INTERVAL_SECONDS, RclRefused

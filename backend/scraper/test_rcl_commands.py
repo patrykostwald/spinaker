@@ -9,7 +9,7 @@ import pytest
 
 from news.models import LegislativeProject, Source, SourceAccessInstruction
 from scraper import rcl_harvest
-from scraper.rcl_testsupport import at, no_network  # noqa: F401
+from scraper.rcl_testsupport import no_network  # noqa: F401
 from scraper.management.commands.configure_rcl_source import LETTER, configure
 
 pytestmark = pytest.mark.django_db
@@ -32,6 +32,17 @@ def test_configure_plan_changes_nothing_and_apply_creates_a_valid_card():
     assert any('User-Agent: iapply-legislacja/1.0' in item for item in instruction.evidence['conditions'])
     run('configure_rcl_source', '--apply')   # idempotentne: ta sama karta, bez nowej wersji
     assert SourceAccessInstruction.objects.filter(source=source).count() == 1
+
+
+def test_card_covers_robots_pages_and_documents_but_nothing_on_other_hosts():
+    from scraper.access_gate import approved_instruction
+    source, _ = configure('test')
+    html = SourceAccessInstruction.Channel.HTML
+    for url in ('https://legislacja.rcl.gov.pl/robots.txt', 'https://legislacja.rcl.gov.pl/lista?typeId=2',
+                'https://legislacja.rcl.gov.pl/projekt/1/katalog/2', 'https://legislacja.rcl.gov.pl/docs//2/1/2/dokument3.pdf'):
+        assert approved_instruction(source, html, url) is not None
+    for url in ('https://rcl.gov.pl/', 'https://www.gov.pl/web/premier', 'http://legislacja.rcl.gov.pl/lista'):
+        assert approved_instruction(source, html, url) is None
 
 
 def test_without_a_card_the_collector_has_no_access():

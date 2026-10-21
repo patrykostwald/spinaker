@@ -5,7 +5,7 @@ from freezegun import freeze_time
 import pytest
 import requests
 
-from news.models import ImportState, RclFetchEvent
+from news.models import RclFetchEvent
 from scraper import rcl_guard
 from scraper.rcl_guard import RCL_USER_AGENT, RclRefused
 from scraper.rcl_testsupport import at, no_network  # noqa: F401
