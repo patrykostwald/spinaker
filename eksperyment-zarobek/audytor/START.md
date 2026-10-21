@@ -9,6 +9,9 @@ Jeśli jeszcze nie jesteś na gałęzi `cloud/zarobek-audytor`:
 Sprawdź zapis: `git commit --allow-empty -m "zarobek audytor: sonda dostepu" && git push -u origin cloud/zarobek-audytor`.
 Jeśli push zwróci błąd, pracuj dalej, ale na końcu wklej treść swoich plików w odpowiedzi (razem najwyżej 40 KB).
 
+## Krok 0b: identyfikator sesji
+Zapisz w `eksperyment-zarobek/audytor/SESJA.txt` identyfikator tej sesji w chmurze, jeśli go znasz (np. zmienne środowiskowe ze słowem SESSION w nazwie: `env | grep -i session`, albo adres claude.ai/code/...). Koordynator wyśle Ci tam kolejne rundy. Zrób commit i push od razu po zapisaniu.
+
 ## Krok 1: przeczytaj
 `eksperyment-zarobek/KARTA.md` (ma pierwszeństwo przed wszystkim), `eksperyment-zarobek/ZASOBY.md`,
 `eksperyment-zarobek/audytor/BRIEF.md` i `STAN.json`. Do kodu i dokumentów repozytorium zaglądaj oszczędnie.
