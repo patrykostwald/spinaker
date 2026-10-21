@@ -10,3 +10,12 @@
 - **Wynik:** 10 kandydatów, 3 karty (H1 social media z rolkami 8/10, H2 strona w 72 h 7/10, H3 automatyzacja 6/10), 2 testy do zgody (T1: 3 oferty na Useme po 990 zł mies., T2: post + reklama 150 zł), opcja T3 (Baza Konkurencyjności), oferta `materialy/oferta-strona-72h.md`, 10 pytań do właściciela.
 - **Ile to warte:** jeśli właściciel zgodzi się do 23.10, pierwsza faktura możliwa ok. 10-14 dni później (abonament 990 zł mies.); realistycznie 5-6 tys. zł przychodu w 90 dni na H1 [szacunek].
 - **Następna runda:** śledzić odpowiedzi z T1 i T2 (tylko liczby), zbadać popyt na opisy produktów AI (K7) i świeże zlecenia automatyzacji, spisać pakiet „Start / Rozwój” na jednej stronie.
+
+## Runda 2 (21.10.2026, sesja w chmurze, ok. 50 minut, bez subagentów)
+- **Zrobione:** SESJA.txt; cennik H1 „Start / Rozwój” z limitem poprawek i porównaniem cen A/B (`materialy/cennik-social-start-rozwoj.md`); landing H2 dla firm remontowych i wykończeniowych (`materialy/landing-strona-dla-firmy-remontowej.html`: noindex, bez śledzenia i zewnętrznych fontów, formularz nic nie wysyła; zrzuty 1440 i 390 px, karty równej wysokości, brak poziomego przewijania, pierwszy element 40 / 28 px od paska); szkic umowy abonamentowej z 11 pytaniami do Prawnika; karta H4 (opisy produktów); lista 8 zleceń Useme w TESTY.md.
+- **Cena:** rekomenduję „Start” 1 190 zł z pierwszym miesiącem za 990 zł - wejście bez zmian, od 2. miesiąca +20% na kliencie, nadal taniej niż pakiety z rolkami (1 600-2 400 zł).
+- **H4:** ocena 4/10 - AI z redakcją człowieka kosztuje na rynku 5-20 zł za opis, aplikacje samoobsługowe 1,75-5 zł, świeżych zleceń brak. Zostaje jako dodatek do H1/H2, nie osobna hipoteza aktywna.
+- **Branża H2:** firmy remontowe - są zapytania o strony od takich firm na Oferteo (koszt i szybki termin) i oferty konkurencji od 2 000 zł netto; fizjoterapia odrzucona (brak zapytań w indeksie).
+- **Ślepe uliczki:** Oferteo i część stron z cennikami niedostępne z sieci sesji (403 na proxy) - listy z R1 nie odświeżyłem; indeks wyszukiwarki nie pokazuje zleceń Useme z ostatnich 2-3 tygodni, więc tylko 3-4 z 8 linków ma realną szansę być otwartymi.
+- **Ile to warte:** przy wariancie B i T1 realistycznie 5,6 tys. zł w 90 dni na H1 [szacunek]; umowa od Prawnika usuwa blokadę pierwszej faktury.
+- **Następna runda:** po decyzjach W1-W3 i W11 poprawić teksty T1, wpisać odpowiedzi rynku (tylko liczby), dopracować landing po uwagach Prawnika.

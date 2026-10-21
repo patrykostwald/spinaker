@@ -1,4 +1,4 @@
-# Pytania i prośby Rzemieślnika (runda 1, 21.10.2026)
+# Pytania i prośby Rzemieślnika (runda 1 i 2, 21.10.2026)
 
 Poziom 2 = decyzja właściciela, poziom 1 = koordynator. Termin = kiedy odpowiedź jest potrzebna, żeby test miał sens.
 
@@ -16,6 +16,11 @@ Poziom 2 = decyzja właściciela, poziom 1 = koordynator. Termin = kiedy odpowie
 | W8 | Opcja T3: czy składamy ofertę na kampanię targową z Bazy Konkurencyjności (ogłoszenie 295647, termin 28.10)? Wymaga konta w BK2021 i założenia budżetu mediowego min. 5000 zł netto z góry | Prawdziwy kupiec z terminem; ryzyko gotówki i kompetencji Google Ads | 26.10 |
 | W9 | Oferteo dla H2: konto firmowe i pierwszy pakiet punktów (20% rabatu, zwrot pieniędzy, jeśli w 45 dni nie będzie klienta; cena pakietu widoczna dopiero w serwisie [DP])? Najpierw opinia Prawnika (niżej) | Klienci sami pytają o strony (kilkadziesiąt zapytań w Wielkopolsce w 8 dni), mniejszy tłok niż na Useme | 31.10 |
 | W10 | Ile realnie trwa montaż 1 krótkiej reklamy z cudzych klipów, skryptu i lektora naszym automatem albo ręcznie? | Od tego zależy, czy 99 zł za film w T1b się opłaca (próg: do 30 minut na film) | 23.10 |
+| W11 | (R2) Cena „Start”: A = 990 zł stałe czy B = 1 190 zł z pierwszym miesiącem za 990 zł? Rekomenduję B ([cennik](materialy/cennik-social-start-rozwoj.md)); przy B zmieniam teksty T1a i T1c | Pierwszy klient płaci tyle samo, od 2. miesiąca +200 zł | 23.10 |
+| W12 | (R2) Limit poprawek: 1 runda na materiał w „Start”, 2 w „Rozwój”, kolejna 49 zł netto - zgoda? | Chroni marżę abonamentu (Konsylium R1) | 23.10 |
+| W13 | (R2) Landing dla firm remontowych ([plik](materialy/landing-strona-dla-firmy-remontowej.html)): czy publikujemy go pod zbudujmi.com jako cel reklamy T2 zamiast ogólnego posta? Wymaga podpięcia formularza i klauzuli RODO | Reklama do jednej branży zwykle daje tańsze zapytania niż ogólna [szacunek] | 27.10 |
+| W14 | (R2) Czy jest jakiś panel do samodzielnej edycji stron zbudujmi.com? | Na landingu obiecuję tylko zmiany przez nas w ramach opieki 149 zł | 27.10 |
+| W15 | (R2) Czy włączysz na koncie Useme powiadomienia o nowych zleceniach (Social media, Wideo) i będziesz przekazywać linki? | Indeks wyszukiwarki spóźnia się o tygodnie | 24.10 |
 
 ## Do koordynatora (poziom 1)
 
@@ -23,6 +28,8 @@ Poziom 2 = decyzja właściciela, poziom 1 = koordynator. Termin = kiedy odpowie
 |---|---|---|
 | K1 | Prawnik: krótki wzór umowy pakietowej (stały zakres, 2 rundy poprawek, przeniesienie praw autorskich po zapłacie, powierzenie danych przy automatyzacji). Bez tego pierwszą fakturę opóźni dopisywanie umowy | 28.10 |
 | K2 | Warsztat (Codex): szablon strony-wizytówki z generatorem treści z briefu, żeby prototyp w 24 h kosztował ok. 2 h pracy zamiast 4-6 h [szacunek] | 31.10 |
+| K1b | (R2) Prawnik: sprawdzenie [szkicu umowy abonamentowej](materialy/umowa-abonament-social-media-SZKIC.md) - 11 pytań na końcu pliku (konsument na prawach przedsiębiorcy, AI Act art. 50, wizerunek, forma przeniesienia praw, powierzenie, przejrzystość ceny pierwszego miesiąca, Useme) | 28.10 |
+| K4 | (R2) Prawnik: klauzula informacyjna RODO do formularza landingu | 27.10 |
 | K3 | Łowca zleceń: po zgodzie administratora Bazy Konkurencyjności dodać frazy „kampania promocyjna”, „promocji marki”, „potencjału eksportowego”, „film promocyjny”, „strona internetowa” (w tej rundzie ręcznie znalazłem 3-5 pasujących otwartych ogłoszeń naraz) | 31.10 |
 
 ## Podpowiedzi dla innych agentów (nie rozwijam)

@@ -1,4 +1,4 @@
-# Testy popytu do zatwierdzenia (runda 1, 21.10.2026)
+# Testy popytu do zatwierdzenia (runda 1, 21.10.2026; uzupełnienie runda 2)
 
 Każdy test wymaga zgody właściciela (poziom 2). Agenci niczego nie wysyłają ani nie publikują.
 
@@ -103,3 +103,26 @@ Pominięte: strona dla spółki z sektora finansowego (#145468: sektor regulowan
 - **Koszt i gotówka:** 0 zł na start, ale **iapply wykłada z góry ok. 5 000 zł budżetu mediowego** i odzyskuje go po fakturze (ok. 4-6 tygodni). **Czas właściciela:** ok. 1,5-2 h (konto w BK2021, formularz, podpis prezesa).
 - **Czego się dowiemy:** czy wygrywamy ceną w zamówieniach z funduszy UE na promocję eksportu (3 frazy „potencjału eksportowego”, „promocji marki”, „targach zagranicznych” dały 72 unikalne opublikowane ogłoszenia, głównie zabudowy stoisk i wyjazdy targowe; kampanii online było kilka, np. także 295104 z wartością szacunkową 80 000 zł).
 - **Ryzyko (3/5):** brak potwierdzonego doświadczenia iapply w Google Ads [DP: pytanie W5]; zamrożona gotówka; niemiecki wymaga sprawdzenia przez osobę znającą język. Bez konta reklamowego z historią nie polecam.
+
+## Runda 2: lista zleceń Useme pasujących do H1 - do ręcznego sprawdzenia po weryfikacji profilu
+
+Źródło: tylko indeks wyszukiwarki (8 zapytań 21.10.2026), **bez odczytu useme.com narzędziem**. Indeks spóźnia się o tygodnie:
+najnowsze trafienia mają numery 144-145 tys. (wrzesień-październik), reszta jest starsza. Numer zlecenia rośnie z czasem, więc
+lista jest od najnowszych. **Kolumna „Szansa, że otwarte” to mój szacunek - właściciel otwiera link i sprawdza status i liczbę ofert.**
+Treści ogłoszeń nie kopiuję (regulamin Useme), tylko krótki opis. Ceny według [cennika R2](materialy/cennik-social-start-rozwoj.md).
+
+| # | Zlecenie | Krótki opis | Szansa, że otwarte | Nasz pakiet |
+|---|---|---|---|---|
+| 1 | [#145793](https://useme.com/pl/jobs/montazysta-wideo-reklamy-i-filmiki-ugc-stala-wspolpraca,145793/) | stały montaż krótkich reklam i filmów UGC z materiałów klienta | wysoka (ważne do ok. 10.11) [DP] | wideo 990 zł mies. za 10 filmów (T1b) |
+| 2 | [#145725](https://useme.com/pl/jobs/social-media,145725/) | social media: 4 posty i 4 rolki mies. | średnia (dodane ok. 9.10) [DP] | „Start” (T1a) |
+| 3 | [#145190](https://useme.com/pl/jobs/kreatywna-osoba-do-social-media-art-direction-content-perfumeria-niszowa,145190/) | social i kierunek wizualny dla perfumerii, ok. 8 publikacji mies. | średnia (do ok. 27.10) [DP] | „Start” z moodboardem (T1c) |
+| 4 | [#144625](https://useme.com/pl/jobs/montazysta-wideo-montaz-krotkich-materialow-ai,144625/) | stały montaż krótkich filmów z gotowych materiałów AI; zleceniodawca szuka osoby początkującej | niska-średnia (ok. 30 dni temu) | wideo; prawdopodobnie budżet niższy niż 99 zł za film - złożyć tylko, gdy budżet podany |
+| 5 | [#140497](https://useme.com/pl/jobs/prowadzenie-social-media-dla-firmy-produkujacej-meble-premium,140497/) | social media producenta mebli: plan miesięczny, FB i IG, nagrania u klienta | niska (data nieznana) | „Rozwój”, ale nagrania na miejscu są poza pakietem - tylko jeśli blisko Poznania |
+| 6 | [#136893](https://useme.com/en/jobs/social-media-management-video-editing-monthly-reporting-5-accounts,136893/) | 5 kont, rolki i shorts, 3-5 postów tygodniowo, raport miesięczny | niska (ok. kwiecień) | ponad „Rozwój” - wycena indywidualna, ok. 5 × „Start” [szacunek]; sprawdzić język |
+| 7 | [#136029](https://useme.com/pl/jobs/social-media-branza-suplementacyjna-nowa-marka-oraz-sklep-multibrandowy,136029/) | social media nowej marki suplementów i sklepu | niska | „Rozwój”; **ryzyko**: twierdzenia zdrowotne o suplementach - tylko z treściami zatwierdzonymi przez klienta |
+| 8 | [#136028](https://useme.com/pl/jobs/poszukuje-prawej-reki-w-social-media-60-reels-miesiecznie-dla-restauracji,136028/) | montaż ok. 60 rolek mies. dla restauracji według kalendarza klienta, ok. 23 oferty | niska | za duży wolumen dla pakietu; pominąć, chyba że W10 pokaże montaż poniżej 15 min |
+
+**Jak używać:** po weryfikacji profilu (W3) właściciel otwiera linki 1-4, pomija zamknięte, w otwartych sprawdza liczbę ofert
+(cel: poniżej 25) i wkleja tekst T1a, T1b albo T1c z ceną z wybranego wariantu (W11). Linki 5-8 tylko, jeśli są otwarte.
+**Wniosek uboczny:** z indeksu nie da się rzetelnie śledzić świeżych zleceń Useme (opóźnienie, brak dat). Najtańszy legalny sposób
+to powiadomienia e-mail o nowych zleceniach na koncie właściciela (kategoria Social media i Wideo) [DP: czy Useme je oferuje i jak się włącza] - właściciel przekazuje linki, agenci piszą oferty.
