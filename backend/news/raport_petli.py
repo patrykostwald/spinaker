@@ -68,7 +68,7 @@ CONTRACTS = (
              registry='projektant', title='Projektant UX/UI'),
     contract('automatyk', 'Automatyk', 'agenci', 24, 'owner:panel', 7, agents=('automatyk',), beats=('automatyk-daily',), registry='automatyk'),
     contract('zamowienia', 'Zamówienia', 'agenci', 24, 'owner:panel', 3, agents=('zamowienia',), kinds=('signal',),
-             beats=('zamowienia-daily',), registry='zamowienia-publiczne', title='Zamówienia publiczne: strony i WCAG (składamy / pomijamy)'),
+             beats=('zamowienia-daily',), registry='zamowienia-publiczne', title='Łowca zleceń: zamówienia publiczne w 6 obszarach iapply (składamy / pomijamy)'),
     contract('decyzje', 'Decyzje', 'agenci', 72, 'claude:sprint', 7, counter='decisions', pending='proposals',
              title='Decyzje właściciela (pomysły i bilety)'),
     contract('sprint', 'Sprint', 'agenci', 168, 'claude:sprint', 7, beats=('sprint-intake',), registry='sprint', counter='tickets',

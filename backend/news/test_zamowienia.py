@@ -84,3 +84,24 @@ def test_admin_list_and_actions(admin_client):
     admin_client.post('/admin/news/zamowieniesygnal/', {'action': 'skip', '_selected_action': [note.pk]})
     note.refresh_from_db()
     assert note.status == 'rejected' and note.scores['decision'] == 'pomijamy'
+
+
+def test_hunter_profiles_beyond_websites(offline):
+    """Łowca zleceń (21.10): wszystkie obszary iapply, bez sprzętu i bez fałszywych trafień z budownictwa."""
+    notice('s1', 'Wykonanie aplikacji mobilnej dla mieszkańców')
+    notice('s2', 'Wdrożenie chatbota AI na stronie urzędu')
+    notice('s3', 'Usługa', cpv='79341000-6 (Usługi reklamowe)')
+    notice('s4', 'Automatyzacja procesów obsługi wniosków')
+    notice('s5', 'Szkolenia z zakresu sztucznej inteligencji dla pracowników')
+    notice('s6', 'Modernizacja elementów systemu informacji o prawie')
+    notice('n1', 'Budowa systemu kanalizacji sanitarnej')
+    notice('n2', 'Automatyzacja oświetlenia hali sportowej')
+    notice('n3', 'Dostawa serwerów', cpv='72413000-8 (Usługi w zakresie projektowania stron WWW)', orderType='Delivery')
+    notice('n4', 'Dostawa licencji', cpv='48000000-8 (Pakiety oprogramowania)', orderType='Delivery')
+    zamowienia.run(NOW)
+    found = {n.scores['notice_id']: n.scores['profile'] for n in AgentNote.objects.filter(agent='zamowienia')}
+    assert found == {'s1': 'oprogramowanie', 's2': 'ai', 's3': 'marketing', 's4': 'automatyzacja', 's5': 'szkolenia', 's6': 'oprogramowanie'}
+    note = AgentNote.objects.get(scores__notice_id='s2')
+    assert 'Obszar: AI i analiza danych' in note.body and 'WCAG 2.1 AA' not in note.body and 'referencje' in note.body
+    subject, text = offline.call_args.args[1], offline.call_args.args[2]
+    assert subject.startswith('Łowca zleceń: 6') and 'AI i analiza danych:' in text and 'Marketing' in text
