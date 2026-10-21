@@ -405,10 +405,22 @@ def rcl_night_task():
     Warunki zgody (okno 01:00-06:00, odstęp 5 s, User-Agent, wstrzymanie po 429/503) egzekwuje scraper.rcl_guard;
     zadanie poza oknem albo bez RCL_FETCH_ENABLED nie wysyła nic.
     """
+    import os
+    from django.utils import timezone
     from scraper.rcl_harvest import run_night
     if not cache.add('lock:rcl-night', True, 600):
         return {'status': 'already_running'}
     try:
-        return run_night(seconds=480)
+        if os.environ.get('RCL_RECON_ONLY', '').strip().lower() != 'true':
+            return run_night(seconds=480)
+        # Pierwsze noce (właściciel 21.10): tylko jedno rozpoznanie na noc (najwyżej ok. 30 zapytań, surowe strony
+        # w RCL_RECON_DIR), bez pełnego zbierania, dopóki ktoś nie porówna stron z parserem i nie zdejmie flagi.
+        key = f'rcl:recon:{timezone.localdate().isoformat()}'
+        if cache.get(key):
+            return {'status': 'recon_done'}
+        result = run_night(seconds=480, recon=True, dump_dir=os.environ.get('RCL_RECON_DIR', '/var/tmp/rcl-recon'))
+        if result.get('status') in ('ran', 'halted'):
+            cache.set(key, True, 86400)
+        return result
     finally:
         cache.delete('lock:rcl-night')

@@ -89,3 +89,19 @@ def test_celery_task_is_registered_and_idle_without_the_flag(monkeypatch, no_net
     assert rcl_night_task.name == 'scraper.tasks.rcl_night_task'
     assert rcl_night_task()['status'] == 'disabled'
     assert not no_network
+
+
+def test_recon_only_runs_once_per_night(monkeypatch, no_network):  # noqa: F811
+    from django.core.cache import cache
+    from scraper import tasks
+    cache.clear()
+    monkeypatch.setenv('RCL_RECON_ONLY', 'true')
+    calls = []
+    monkeypatch.setattr(rcl_harvest, 'run_night', lambda **kw: calls.append(kw) or {'status': 'ran'})
+    assert tasks.rcl_night_task()['status'] == 'ran'
+    assert calls[0]['recon'] is True and calls[0]['dump_dir'] == '/var/tmp/rcl-recon'
+    assert tasks.rcl_night_task()['status'] == 'recon_done' and len(calls) == 1
+    monkeypatch.delenv('RCL_RECON_ONLY')
+    tasks.rcl_night_task()
+    assert calls[-1] == {'seconds': 480}
+    cache.clear()
