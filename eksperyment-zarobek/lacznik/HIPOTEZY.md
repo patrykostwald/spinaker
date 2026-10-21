@@ -20,7 +20,7 @@ Oznaczenia: `[P]` potwierdzone, `[DP]` do potwierdzenia, `[szacunek]` z założe
 - **Kto płaci:** sklepy na Shoperze (ponad 20 tys., [Strefa Inwestorów](https://strefainwestorow.pl/wiadomosci/20260520/shoper-przekracza-6-mld-zl-gmv-kwartalnie-i-poprawia-rentownosc-biznesu)) i firmy zakładające sklep.
 - **Problem:** sklep ma platformę, ale nie ma ruchu z social media; nowe sklepy potrzebują wdrożenia.
 - **Oferta i cena:** wdrożenie sklepu 3 500 zł netto + „Rozwój” 1 690 zł netto/mies. (dokładnie to, co kupił pierwszy klient `[P]`), plus prowizja od licencji Shoper dla resellera „do 40%” ([Shoper](https://www.shoper.pl/program-partnerski)) `[DP: realna stawka w regulaminie od 2.06.2026]`.
-- **Kanał popytu:** program partnerski Shoper (publiczny formularz, wejście bez opłat: [afiliant](https://www.shoper.pl/program-partnerski/afiliant)); katalog partnerów widoczny dla sklepów dopiero od statusu Gold/Platinum ([statusy](https://www.shoper.pl/program-partnerski/statusy-i-odznaki/statusy)) - więc na start partner daje marżę i wiarygodność, a nie leady.
+- **Kanał popytu:** program partnerski Shoper (publiczny formularz, wejście bez opłat: [afiliant](https://www.shoper.pl/program-partnerski/afiliant)); katalog partnerów widoczny dla sklepów dopiero od statusu Gold/Platinum ([statusy](https://www.shoper.pl/program-partnerski/statusy-i-odznaki/statusy)). Progi aktywnych sklepów: Partner 2, Silver 10, Gold 30 (w tym 5 Premium) + test wiedzy, Platinum 60 ([Shoper statusy](https://www.shoper.pl/statusy), przez wyszukiwarkę) `[DP: dokładne przypisanie progów]`. Katalogu nie osiągniemy w 90 dni - partner daje marżę i wiarygodność, a nie leady. Afiliant: jednorazowa prowizja od opłaconych faktur za abonament Standard i Premium, wypłata od 200 zł ([afiliant](https://www.shoper.pl/program-partnerski/afiliant)).
 - **Dowód popytu:** pierwszy klient to sklep z odzieżą `[P]`; Shoper sam buduje katalog agencji dla sklepów (reklama, grafika, integracje), czyli sklepy szukają takich usług.
 - **Pierwsza faktura:** 4-8 tyg. `[szacunek]`.
 - **Przychód 90 dni:** pesymistycznie 0 zł; realistycznie 1 sklep: 3 500 + 2 x 1 690 = ok. 6 900 zł netto + prowizja `[szacunek]`.
@@ -28,7 +28,7 @@ Oznaczenia: `[P]` potwierdzone, `[DP]` do potwierdzenia, `[szacunek]` z założe
 - **Zasoby:** zbudujmi.com, automatyzacja social media, case pierwszego klienta (anonimowo, za zgodą).
 - **Ryzyko (1/5):** regulamin programu - sprawdzić wyłączność i zakaz konkurencji.
 - **Test 48 h:** T1 w `TESTY.md`.
-- **Ocena 5/10:** bez kosztu i z naszym udowodnionym pakietem, ale sam program nie przynosi klientów, dopóki nie zdobędziemy wyższego statusu.
+- **Ocena 4/10 (obniżona po weryfikacji 21.10):** bez kosztu i z naszym udowodnionym pakietem, ale katalog wymaga 30 sklepów - program nie przyniesie klientów w 90 dni; zostaje jako dodatkowa marża przy sklepach, które zdobędziemy sami.
 
 ### H3: Warsztaty AI dla MŚP przez firmę szkoleniową z wpisem w BUR
 - **Kto płaci:** małe firmy z dofinansowaniem KFS do 90% (firmy do 9 osób, [Infor](https://ksiegowosc.infor.pl/obrot-gospodarczy/finanse-i-inwestycje/7554102,dofinansowanie-szkolen-pracownikow-w-2026-r-panstwo-wylozy-do-90-proc-kosztow-rozwoju-kompetencji.html)) `[DP: w źródłach pierwotnych]`; płaci nam firma szkoleniowa z wpisem w BUR.

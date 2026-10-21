@@ -8,4 +8,5 @@
 - BUR: własny wpis wymaga certyfikatu jakości (najczęściej ISO 9001) - tylko przez partnera.
 - Ślepe: KSeF i biura rachunkowe, AI Act jako pilny termin (przesunięty wstępnie na 12.2027), programy poleceń (grosze), duże marketplace'y chmurowe.
 - Ograniczenie: proxy blokuje bezpośrednie odczyty stron, więc część warunków jest `[DP]`.
+- Dopisek po zgodzie właściciela na Firecrawl: konto Firecrawl nie ma kredytów (0 odczytów). Wyszukiwarka potwierdziła progi Shopera: Gold = 30 aktywnych sklepów (5 Premium) + test, więc H2 spada do 4/10. Opłaty za wpis do BUR nadal niepotwierdzone.
 - Wartość rundy: dwa tanie testy (0 zł i 400 zł) zamiast ogólnych statystyk; brak twardego dowodu popytu - to zadanie testów.

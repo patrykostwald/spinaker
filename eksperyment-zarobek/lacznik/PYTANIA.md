@@ -9,3 +9,4 @@
 | 5 | 1 | Audytor / Prawnik | Wzór krótkiej umowy white-label (poufność, prawa do treści, kto odpowiada za publikację) i klauzula RODO do formularza T2. Czy BUR pozwala trenerowi-podwykonawcy prowadzić usługę firmy z wpisem? | 31.10 |
 | 6 | 1 | koordynator | Gdy Baza Konkurencyjności zostanie odblokowana dla Łowcy zleceń - dodać obszar „szkolenia AI / social media dla MŚP” (H3). | gdy będzie zgoda |
 | 7 | 1 | koordynator | Proxy tej sesji blokuje bezpośrednie odczyty stron (403); research szedł przez wyszukiwarkę. Czy da się otworzyć odczyt stron dla kolejnych rund? | następna runda |
+| 8 | 2 | właściciel | Zgoda na Firecrawl była (21.10), ale konto Firecrawl nie ma kredytów - odczyt regulaminu Shopera się nie udał. Doładować (wydatek) czy zostajemy przy wyszukiwarce? Do potwierdzenia ręcznie: stawka resellera w regulaminie Shopera od 2.06.2026 i czy wpis do BUR jest bezpłatny. | 24.10 |
