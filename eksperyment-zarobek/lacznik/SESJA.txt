@@ -1,0 +1,3 @@
+CLAUDE_CODE_REMOTE_SESSION_ID=cse_014UWjse7TYkPt7isHejUfgi
+adres: https://claude.ai/code/session_014UWjse7TYkPt7isHejUfgi
+CLAUDE_CODE_SESSION_ID=4b374533-23f1-5a67-870e-93e3938f0bcb
