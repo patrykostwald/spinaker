@@ -1,0 +1,3 @@
+CLAUDE_CODE_REMOTE_SESSION_ID=cse_0182F6ytucHppeLFhpkKdv8A
+session_id (narzedzia MCP)=session_0182F6ytucHppeLFhpkKdv8A
+adres=https://claude.ai/code/session_0182F6ytucHppeLFhpkKdv8A
