@@ -10,3 +10,5 @@
 | 6 | 1 | koordynator | Gdy Baza Konkurencyjności zostanie odblokowana dla Łowcy zleceń - dodać obszar „szkolenia AI / social media dla MŚP” (H3). | gdy będzie zgoda |
 | 7 | 1 | koordynator | Proxy tej sesji blokuje bezpośrednie odczyty stron (403); research szedł przez wyszukiwarkę. Czy da się otworzyć odczyt stron dla kolejnych rund? | następna runda |
 | 8 | 2 | właściciel | Zgoda na Firecrawl była (21.10), ale konto Firecrawl nie ma kredytów - odczyt regulaminu Shopera się nie udał. Doładować (wydatek) czy zostajemy przy wyszukiwarce? Do potwierdzenia ręcznie: stawka resellera w regulaminie Shopera od 2.06.2026 i czy wpis do BUR jest bezpłatny. | 24.10 |
+| 9 | 2 | właściciel | P1-P3 w `DZIALANIA/` do zatwierdzenia. Do uzupełnienia: NIP i adres iapply, firmowy e-mail, liczba rolek w pakiecie Start, czy sklep pierwszego klienta stoi na Shoperze. | 24.10 |
+| 10 | 1 | koordynator | P2: otworzyć ogłoszenie Useme 145793 i sprawdzić termin (min. 3 dni) przed wysłaniem; uzgodnić z Rzemieślnikiem, żeby nie dublować ofert z profilu iapply. | 23.10 |

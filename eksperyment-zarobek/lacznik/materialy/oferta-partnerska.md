@@ -20,8 +20,9 @@ Klient widzi tylko Twoją agencję.
 3. Ty zatwierdzasz i pokazujesz klientowi. Poprawki w cenie.
 
 ### Cena
-- **1 190 zł netto miesięcznie za jednego klienta** `[propozycja]`. Bez umowy na rok, wypowiedzenie z miesięcznym wyprzedzeniem.
-- Od 3 klientów - indywidualna stawka `[propozycja]`.
+- **Start: 1 190 zł netto miesięcznie za jednego klienta, pierwszy miesiąc 990 zł netto** (cennik z 22.10). Bez umowy na rok, wypowiedzenie z miesięcznym wyprzedzeniem.
+- **Rozwój: 1 690 zł netto miesięcznie** - więcej formatów i wariantów.
+- Od 3 klientów - indywidualna stawka `[propozycja]`. W listopadzie przyjmujemy najwyżej 2 nowych klientów.
 - Strony www dla Twoich klientów (zbudujmi.com) - cena hurtowa na zapytanie.
 
 ### Zasady
@@ -32,6 +33,8 @@ Klient widzi tylko Twoją agencję.
 ### Poproś o próbkę
 Formularz: nazwa agencji, e-mail służbowy, branża przykładowego klienta. Pokażemy próbkę rolki na podobnym przypadku.
 `[DP: klauzula RODO od Audytora]`
+
+Patryk Ostwald, współzałożyciel, iapply sp. z o.o., +48 696 689 088
 
 ---
 Uwagi do Rzemieślnika: pakiet i liczba rolek muszą zgadzać się z jego pakietami; design podstrony przez pętlę designu z CLAUDE.md.
