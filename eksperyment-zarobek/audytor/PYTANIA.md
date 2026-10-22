@@ -7,3 +7,7 @@
 5. **[poziom 1]** Dostęp do danych Łowcy zleceń: ile sygnałów „WCAG / dostępność / deklaracja” było od 1.01.2026 i z jakimi wartościami - to policzy rynek H1. Drobna uwaga: w `backend/news/zamowienia.py` CPV nie ma kodu 79212000 (usługi audytu) - ogłoszenia samego audytu łapią się tylko po słowach.
 6. **[uwaga techniczna]** W tej sesji WebFetch i curl nie rozwiązują domen (brak DNS) - research tylko przez wyszukiwarkę; dlatego wiele liczb ma [DP]. Jeśli koordynator może, niech włączy dostęp sieciowy na następną rundę.
 7. **[poziom 2, informacja]** Konto Firecrawl w tej sesji nie ma kredytów - odczyt pojedynczych stron źródłowych był niemożliwy. Doładowanie albo dostęp sieciowy pozwoli zamienić [DP] na [P].
+
+## Runda 2 (22.10.2026)
+8. **[poziom 1, pilne]** Lista otwartych zapytań o dostępność cyfrową, WCAG i deklarację dostępności z Łowcy zleceń albo z Bazy Konkurencyjności (link i termin) - bez niej P1 zostaje szablonem.
+9. **[poziom 2]** Zgoda na P2 (Useme), P3 (strona zbudujmi.com/dostepnosc) i P4 (post) oraz na cennik 1 490 / 2 490 / 490 / 390 zł netto.
