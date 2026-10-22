@@ -40,3 +40,18 @@ Napraw to systemowo, w duchu „najpierw automatyczna naprawa”:
    samej nocy. Komenda pokrycia ma pokazywać także „ile osób czeka i od kiedy”.
 5. Koszt: każde nowe czytane konto to wydatek w budżecie X (`X_POLITICAL_MONTHLY_USD_LIMIT`). Policz przewidywany wzrost
    miesięcznego kosztu i zapisz w raporcie; częstotliwość czytania kont o małej aktywności rzadsza (mechanizm `interval` istnieje).
+
+## Dane z produkcji 23.10 (Strażnik kont, przebieg 22.10)
+177 kont czytanych, 3 wyłączone, 19 kandydatów nierozstrzygniętych; Jakubiaka nie ma ani wśród kont, ani wśród kandydatów
+(odkrywanie go pominęło). WARDEN_SECOND_KEY_ENABLED nieustawione (Drugi klucz wyłączony).
+Przebieg 22.10: 51 odrzuceń, 30 błędów „źródło niedostępne; ponowienie później”, 1 do decyzji. Odrzucenia:
+- 28 x „Konto powiązano już z innym profilem; do decyzji.” - dowody są złe: posłom przypisywane są konta partii i innych osób
+  (Tomasz Głogowski, Krystyna Sibińska, Rafał Siemaszko, Tomasz Siemoniak -> @Platforma_org; Arkadiusz Sikora -> @__Lewica,
+  @wlodekczarzasty, @AgaBak, @KGawkowski, @KotulaKat, @MarcinKulasek; Włodzimierz Skalik -> @koronypolskiej). Parser bierze
+  wszystkie linki X ze strony (stopka, lista klubu), a nie konto tej osoby. Napraw: link przyjmowany tylko, gdy jest w bloku
+  profilu osoby i nazwa/handle pasuje do osoby; konta partii i klubów nigdy jako konto osoby; test na tych przypadkach.
+- 17 x „zmiana obozu do decyzji.”, 5 x „Istniejące konto jest wyłączone lub niepotwierdzone”, 1 x „Dowód odrzucony wcześniej”
+  - rozstrzygać automatycznie (Drugi klucz), do człowieka tylko konflikt.
+- 30 błędów źródła: ustal, które źródło (np. sejm.gov.pl 403, senat, Wikidata) i dodaj obejście legalne (Wikidata/API Sejmu
+  api.sejm.gov.pl zamiast stron profili).
+Słowo „redakcja” nie opisuje naszego zespołu - w tekstach i nazwach używaj „zespół” albo „do weryfikacji”.
