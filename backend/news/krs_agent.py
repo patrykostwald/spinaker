@@ -193,7 +193,8 @@ def _sector(extract: krs.Extract, claimed: str) -> tuple[str, str]:
 
 
 @transaction.atomic
-def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: str, person: krs.Person | None) -> PublicFigureOrganisationRelation:
+def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: str, person: krs.Person | None,
+          confirm: bool = True) -> PublicFigureOrganisationRelation:
     sector, note = _sector(extract, candidate['sector'])
     organisation, _ = RegisteredOrganisation.objects.update_or_create(krs_number=extract.krs, defaults={
         'name': _pretty(extract.name) or candidate['name'], 'kind': extract.kind, 'legal_form': extract.legal_form.lower(),
@@ -209,8 +210,9 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
                   'until': person.until if person else None, 'sources': sources,
                   'evidence_url': extract.official_url if person else sources[0]['url'],
                   'evidence_note': (f"Źródło: {sources[0]['title']}" if sources else 'Oficjalny odpis KRS')[:1000]})
-    relation.confirm_automatically(method)
-    relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
+    if confirm:
+        relation.confirm_automatically(method)
+        relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
     return relation
 
 
@@ -236,7 +238,10 @@ def verify(figure: PublicFigure, candidate: dict, reasons: list | None = None) -
     if people:
         # Najpierw aktualna funkcja, potem najdłuższa historyczna.
         person = sorted(people, key=lambda p: (p.until is not None, -(p.since or date.min).toordinal()))[0]
-        return _save(figure, extract, candidate, 'krs_register', person)
+        # Imiennicy (sprint 23.10): maska KRS (inicjał i długość) nie odróżnia dwóch osób o tym samym imieniu i nazwisku.
+        # Automatyczne potwierdzenie tylko z co najmniej jednym sprawdzonym źródłem, które wymienia osobę i ten podmiot;
+        # bez niego relacja czeka na redaktora (pending_review) i nie trafia na profil.
+        return _save(figure, extract, candidate, 'krs_register', person, confirm=bool(candidate['sources']))
     if len(_domains(candidate['sources'])) >= 2:
         return _save(figure, extract, candidate, 'public_sources', None)
     return reject(f"w KRS brak osoby o zgodnych inicjałach w organie „{candidate['role']}”; sprawdzonych źródeł: {len(candidate['sources'])}")
