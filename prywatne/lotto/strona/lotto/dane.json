@@ -1,5 +1,5 @@
 {
- "wygenerowano": "2026-10-22T19:36",
+ "wygenerowano": "2026-10-22T23:28",
  "ostatnie": {
   "data": "2026-10-20",
   "numer": 7420,
@@ -1000,5 +1000,17 @@
    "ev": "nieistotna: przestępstwo skarbowe",
    "ocena": 0
   }
- ]
+ ],
+ "etap3": {
+  "technik": 26,
+  "polaczen": 5,
+  "przechodzi": [],
+  "test_od": "2010",
+  "losowan_test": 2630,
+  "najlepsza": "las",
+  "najlepsza_top12": 1.493536,
+  "najlepsza_p": 1.0,
+  "los_top12": 1.48289,
+  "zl_los": -76.712079
+ }
 }

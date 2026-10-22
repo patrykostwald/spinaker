@@ -442,14 +442,14 @@ def sekcja_etap3(d: dict) -> str:
     wynik = "żadna nie zawęża okna" if not z["przechodzi"] else "przechodzi: " + ", ".join(z["przechodzi"])
     et = '<span class="et">jak los</span>' if not z["przechodzi"] else '<span class="et zle">do sprawdzenia</span>'
     wiersze = [
-        ("Sprawdzone techniki", f'{z["technik"]} + {z["polaczen"]} połączeń'),
-        (f'Test poza próbą ({z["test_od"]}-2026, {z["losowan_test"]} losowań)', wynik),
-        (f'Najlepsza w teście: {z["najlepsza"]}', f'{liczba(z["najlepsza_top12"], 2)} z 6 w top-12 · los {liczba(6 * 12 / 49, 2)}'),
-        ("Ta sama technika po poprawce na wielokrotne testy", f'p = {liczba(z["najlepsza_p"], 2)}'),
+        ("Sprawdzone", f'{z["technik"]} technik + {z["polaczen"]} połączeń'),
+        (f'Test {z["test_od"]}-2026 ({z["losowan_test"]} losowań)', wynik),
+        (f'Najlepsza: {z["najlepsza"]}', f'{liczba(z["najlepsza_top12"], 2)} w top-12 (los {liczba(6 * 12 / 49, 2)})'),
+        ("p po poprawce na liczbę testów", liczba(z["najlepsza_p"], 2)),
     ]
     lista = "".join(f"<li><span>{e(a)}</span><span>{e(b)}</span></li>" for a, b in wiersze)
     return (f'<section class="sek"><div class="nag"><h2>Etap 3: {z["technik"]} technik, wynik</h2></div>'
-            f'<div class="box"><div class="tyt"><h3>Czy coś zawęża okno wypadających liczb?</h3>{et}</div>'
+            f'<div class="box"><div class="tyt"><h3>Czy coś zawęża okno?</h3>{et}</div>'
             f'<div><p class="t2" style="margin-bottom:10px">Systemy graczy, statystyka, uczenie maszynowe i ślady wad maszyn - '
             f'każda technika widziała tylko przeszłość, wynik porównany z losowym rankingiem.</p><ul class="lista">{lista}</ul></div>'
             f'<p class="dol">Zakłady systemowe 7-12 liczb dają ten sam zwrot ze złotówki co zwykłe. Szczegóły: etap3/RAPORT3.md.</p>'

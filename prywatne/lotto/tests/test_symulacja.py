@@ -130,6 +130,7 @@ def test_raport_i_wstawianie(tmp_path):
     w = {"policzono": "x", "losowan": 900, "od": "a", "do": "b", "rozgrzewka": 500, "ocenianych": 400,
          "uczenie_do": "c", "test_od": "d", "losowan_uczenie": 200, "losowan_test": 200, "symulacji_losu": 200,
          "czas_s": 60, "para": ["a", "b"], "trojka": ["a", "b", "c"], "przechodzi": [],
+         "systemy_test": {"testow": 4, "najmniejsze": ["los", "test", 7, 4], "p": 0.5, "p_holm": 1.0, "istotnych": 0},
          "wyniki": {"los": jedna, "czeste": jedna}}
     blok = s.blok_raportu(w)
     assert "**żadna**" in blok and "`czeste`" in blok
@@ -138,3 +139,8 @@ def test_raport_i_wstawianie(tmp_path):
     s.wstaw_do_raportu(blok, plik)
     t = plik.read_text(encoding="utf-8")
     assert "stare" not in t and "wstęp" in t and "koniec" in t and t.count(s.ZNACZNIK_OD) == 1
+
+
+def test_dwumian_ogon():
+    assert abs(s.dwumian_ogon(15, 20, 0.5) - sum(comb(20, j) for j in range(15, 21)) / 2 ** 20) < 1e-12
+    assert s.dwumian_ogon(0, 10, 0.3) == 1.0

@@ -653,6 +653,14 @@ def wygrana_systemu(h: int, n: int) -> float:
 EV_ZAKLADU = sum(hiper(49, 6, 6, j) * NAGRODY[j] for j in (3, 4, 5, 6))   # los: średnia wygrana zakładu
 
 
+def dwumian_ogon(k: int, n: int, p: float) -> float:
+    """P(X >= k) dla X ~ Dwumian(n, p)."""
+    if k <= 0:
+        return 1.0
+    return min(1.0, sum(math.exp(math.lgamma(n + 1) - math.lgamma(i + 1) - math.lgamma(n - i + 1)
+                                 + i * math.log(p) + (n - i) * math.log1p(-p)) for i in range(k, n + 1)))
+
+
 def holm(p: list[float]) -> list[float]:
     m = len(p)
     kolej = sorted(range(m), key=lambda i: p[i])
@@ -718,8 +726,9 @@ def ocen(poz: np.ndarray, symulacji: int, rng: np.random.Generator) -> dict:
             "zwrot_na_zl": float(wyg.mean() / koszt),
             "zwrot_na_zl_los": EV_ZAKLADU / CENA,
             "co_najmniej": {j: {"czestosc": float((hn >= j).mean()),
-                                "los": sum(hiper(49, 6, n, i) for i in range(j, 7)),
-                                "razy": int((hn >= j).sum())} for j in (3, 4, 5, 6)},
+                                "los": (q := sum(hiper(49, 6, n, i) for i in range(j, 7))),
+                                "razy": int((hn >= j).sum()),
+                                "p": dwumian_ogon(int((hn >= j).sum()), L, q)} for j in (3, 4, 5, 6)},
         }
     w["systemy"] = syst
     # wariant 100 zł: system 7 z rang 0-6 + system 7 z rang 7-13 + 6 zakładów z top-12
@@ -771,6 +780,14 @@ def policz_wszystko(losowania, szybko: bool = False, symulacji: int = 20_000, po
         ph = holm([wyniki[n][okres]["k"][k]["p"] for n, k in klucze])
         for (n, k), p in zip(klucze, ph):
             wyniki[n][okres]["k"][k]["p_holm"] = p
+    klucze = [(n, o, m, j) for n in wyniki for o in ("cale", "test") for m in SYSTEMY for j in (3, 4, 5)]
+    ph = holm([wyniki[n][o]["systemy"][m]["co_najmniej"][j]["p"] for n, o, m, j in klucze])
+    for (n, o, m, j), p in zip(klucze, ph):
+        wyniki[n][o]["systemy"][m]["co_najmniej"][j]["p_holm"] = p
+    najm = min(range(len(klucze)), key=lambda i: ph[i])
+    systemy_test = {"testow": len(klucze), "najmniejsze": list(klucze[najm]),
+                    "p": wyniki[klucze[najm][0]][klucze[najm][1]]["systemy"][klucze[najm][2]]["co_najmniej"][klucze[najm][3]]["p"],
+                    "p_holm": ph[najm], "istotnych": sum(p < ALFA for p in ph)}
     for n, w in wyniki.items():
         w["przechodzi"] = any(w["test"]["k"][k]["p_holm"] < ALFA and w["uczenie"]["k"][k]["roznica"] > 0 for k in K)
     return {
@@ -781,7 +798,7 @@ def policz_wszystko(losowania, szybko: bool = False, symulacji: int = 20_000, po
         "losowan_uczenie": int(uczenie.sum()), "losowan_test": int(test.sum()),
         "symulacji_losu": symulacji, "czas_s": round(time.time() - t0, 1),
         "czas_technik_s": {k: round(v, 1) for k, v in sym["czas_s"].items()},
-        "para": list(para), "trojka": list(trojka),
+        "para": list(para), "trojka": list(trojka), "systemy_test": systemy_test,
         "przechodzi": [n for n, w in wyniki.items() if w["przechodzi"] and n != "los"],
         "wyniki": wyniki,
     }
@@ -843,6 +860,10 @@ def blok_raportu(w: dict) -> str:
     L += ["", "Wszystkie 6 liczb w top-12 (system 12 = szóstka): "
           + ", ".join(f"`{n}` {r['cale']['systemy'][12]['co_najmniej'][6]['razy']}" for n, r in R.items())
           + f" razy; los spodziewa się {w['ocenianych'] * hiper(49, 6, 12, 6):.2f} razy.", "",
+          (lambda st: f"Test dwumianowy „co najmniej 3, 4, 5 trafionych w top-n” (n = 7-12, cała historia i 2010-2026): "
+           f"{st['testow']} testów, istotnych po poprawce Holma: {st['istotnych']}. Najmniejsze p: `{st['najmniejsze'][0]}`, "
+           f"{'2010-2026' if st['najmniejsze'][1] == 'test' else 'cała historia'}, system {st['najmniejsze'][2]}, "
+           f"co najmniej {st['najmniejsze'][3]}: p = {_p(st['p'])} przed poprawką, {_p(st['p_holm'])} po.")(w["systemy_test"]), "",
           "### Tabela 4. Wariant 100 zł: 2 systemy po 7 liczb (rangi 1-7 i 8-14) + 6 zwykłych zakładów z top-12", "",
           "| Metoda | bilans na losowanie, cała historia | 2010-2026 | zwykłe 20 zakładów z top-12, cała historia |",
           "|---|---|---|---|"]
