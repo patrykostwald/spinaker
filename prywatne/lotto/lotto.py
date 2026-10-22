@@ -4,6 +4,7 @@
     python lotto.py generuj                # kupony wszystkich strategii na najbliższe losowanie
     python lotto.py sprawdz                # wyniki zaległych losowań -> DZIENNIK.csv
     python lotto.py raport                 # wydane, wygrane, bilans dla strategii i łącznie
+    python lotto.py strona                 # strona z podglądem -> strona/lotto/ (także po generuj i sprawdz)
 """
 from __future__ import annotations
 
@@ -259,6 +260,19 @@ def pobierz(nagrody_ostatnich: int = 0) -> int:
     return 0
 
 
+def odswiez_strone() -> int:
+    """Generuje strona/lotto/ (index.html, dane.json, przeglad.html). Błąd strony nie zatrzymuje automatu."""
+    try:
+        import strona
+        plik = strona.generuj()
+    except Exception as ex:  # noqa: BLE001 - automat ma działać dalej, błąd trafia do logu
+        dane.loguj(f"strona: błąd {ex!r}")
+        print(f"Nie udało się wygenerować strony: {ex}")
+        return 1
+    print(f"Strona odświeżona: {plik.parent}")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Automat Lotto na wirtualnych pieniądzach")
     sub = ap.add_subparsers(dest="polecenie", required=True)
@@ -267,10 +281,16 @@ def main(argv=None) -> int:
     sub.add_parser("generuj")
     sub.add_parser("sprawdz")
     sub.add_parser("raport")
+    sub.add_parser("strona")
     a = ap.parse_args(argv)
     if a.polecenie == "pobierz":
         return pobierz(a.nagrody)
-    return {"generuj": generuj, "sprawdz": sprawdz, "raport": raport}[a.polecenie]()
+    if a.polecenie == "strona":
+        return odswiez_strone()
+    kod = {"generuj": generuj, "sprawdz": sprawdz, "raport": raport}[a.polecenie]()
+    if a.polecenie in ("generuj", "sprawdz"):
+        odswiez_strone()
+    return kod
 
 
 if __name__ == "__main__":

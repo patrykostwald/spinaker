@@ -95,3 +95,20 @@ def test_prawdziwy_przeglad_ma_12_pozycji():
     md = strona.PRZEGLAD_MD.read_text(encoding="utf-8")
     t = strona.przeglad_tabela(md)
     assert len(t) == 12 and t[0]["ocena"] == 8 and t[-1]["ocena"] == 0
+
+
+def test_lotto_sprawdz_odswieza_strone(monkeypatch):
+    wywolania = []
+    monkeypatch.setattr(lotto, "sprawdz", lambda: 0)
+    monkeypatch.setattr(lotto, "odswiez_strone", lambda: wywolania.append(1) or 0)
+    assert lotto.main(["sprawdz"]) == 0
+    assert lotto.main(["strona"]) == 0
+    assert len(wywolania) == 2
+
+
+def test_blad_strony_nie_zatrzymuje_automatu(monkeypatch):
+    def zly(*a, **k):
+        raise RuntimeError("zepsute")
+    monkeypatch.setattr(strona, "generuj", zly)
+    monkeypatch.setattr(lotto.dane, "loguj", lambda t: None)
+    assert lotto.odswiez_strone() == 1

@@ -82,4 +82,6 @@ Oczekiwane z rachunku przy tej liczbie zakładów: 3 / 4 / 5 / 6 = 4292.8 / 235.
   z godziną zapisu i sumą kontrolną SHA-256; istniejących kuponów nie nadpisuje.
 - `python lotto.py sprawdz` - wyniki zaległych losowań, trafienia i wirtualne wygrane do `DZIENNIK.csv`.
 - `python lotto.py raport` - wydane, wygrane i bilans dla strategii i łącznie.
+- `python lotto.py strona` - strona z podglądem w `strona/lotto/` (index.html, dane.json, przeglad.html);
+  generuje się też sama po każdym `generuj` i `sprawdz`. Wdrożenie na serwer robi koordynator.
 - `zadanie_windows.ps1` - uruchamia to samo samo z siebie (wt/czw/sob przed i po losowaniu, rano na wypadek wyłączonego komputera).
