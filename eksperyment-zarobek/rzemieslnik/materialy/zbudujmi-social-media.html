@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Social media z rolkami w abonamencie | zbudujmi.com</title>
+<meta name="description" content="Prowadzimy Facebooka i Instagram firmy: posty i rolki z Twoich zdjęć, plan publikacji w telefonie. Start 1190 zł netto miesięcznie, pierwszy miesiąc 990 zł.">
+<link rel="canonical" href="https://zbudujmi.com/social-media">
+<!-- Strona ofertowa pakietu social media (Rzemieślnik, runda 2, 22.10.2026). Publikacja: zbudujmi.com/social-media, po zgodzie właściciela.
+     Bez śledzenia, bez zewnętrznych skryptów i fontów. Formularz wysyła POST do istniejącego endpointu /api/zbudujmi/zapytanie/
+     (backend/news/zbudujmi_inquiry.py: pola what, m, n, e i pułapka website; CORS dla zbudujmi.com). -->
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f4f5f2;
+    --ink: #1c1f1a;
+    --muted: #5a6157;
+    --line: #dde0d8;
+    --accent: #1f5f8b;
+    --accent-ink: #ffffff;
+    --radius: 10px;
+    --gap: 20px;
+    --section: 72px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 var(--font); }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.bar { border-bottom: 1px solid var(--line); }
+  header.bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .logo { font-weight: 700; text-decoration: none; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px;
+         border-radius: 8px; background: var(--accent); color: var(--accent-ink); text-decoration: none;
+         border: 0; font: 600 16px/1 var(--font); cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+  .btn.small { min-height: 44px; padding: 0 16px; font-size: 15px; }
+  .btn:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible {
+         outline: 3px solid #c4561b; outline-offset: 2px; }
+  section { padding: var(--section) 0; }
+  section.alt { background: var(--bg-alt); }
+  .hero { padding-top: 40px; }
+  h1 { font-size: 44px; line-height: 1.15; margin: 0 0 16px; max-width: 900px; }
+  h2 { font-size: 30px; line-height: 1.2; margin: 0 0 28px; }
+  h3 { font-size: 18px; line-height: 1.3; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lead { font-size: 20px; color: var(--muted); max-width: 700px; margin: 0 0 28px; }
+  .hero-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin-top: 40px; }
+  .fact { border-top: 3px solid var(--accent); padding-top: 12px; }
+  .fact b { display: block; font-size: 26px; line-height: 1.2; }
+  .fact span { color: var(--muted); font-size: 15px; }
+  .grid { display: grid; gap: var(--gap); }
+  .g3 { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; }
+  .g2 { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 22px;
+          display: grid; grid-template-rows: auto 1fr auto; gap: 10px; }
+  .card p { margin: 0; color: var(--muted); }
+  .card .foot { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+  .step-no { font-weight: 700; color: var(--accent); }
+  .plan { background: #fff; border: 2px solid var(--line); border-radius: var(--radius); padding: 28px;
+          display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 12px; }
+  .plan.main { border: 2px solid var(--ink); }
+  .plan-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .tag { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--accent);
+         border: 1px solid var(--accent); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .amount { font-size: 40px; font-weight: 700; line-height: 1; }
+  .amount small { font-size: 17px; font-weight: 500; color: var(--muted); }
+  .note { margin: 0; color: var(--muted); font-size: 15px; min-height: 2.9em; }
+  ul.check { margin: 0; padding: 0; list-style: none; }
+  ul.check li { padding-left: 26px; position: relative; margin: 6px 0; }
+  ul.check li::before { content: ""; position: absolute; left: 4px; top: .55em; width: 10px; height: 6px;
+                        border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(-45deg); }
+  .rules { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px var(--gap); margin: 28px 0 0; padding: 0; list-style: none; }
+  .rules li { border-left: 3px solid var(--line); padding-left: 14px; color: var(--muted); }
+  .rules b { color: var(--ink); }
+  details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+  details:first-of-type { border-top: 1px solid var(--line); }
+  summary { cursor: pointer; font-weight: 600; min-height: 28px; }
+  details p { margin: 10px 0 0; color: var(--muted); }
+  form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; max-width: 760px; }
+  label { display: grid; gap: 6px; font-weight: 600; font-size: 15px; }
+  label.full { grid-column: 1 / -1; }
+  input, textarea, select { font: 16px/1.4 var(--font); padding: 12px; min-height: 48px; border: 1px solid #b9beb3;
+                            border-radius: 8px; background: #fff; color: var(--ink); width: 100%; }
+  textarea { min-height: 110px; resize: vertical; }
+  .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .info { grid-column: 1 / -1; font-size: 14px; color: var(--muted); margin: 0; }
+  .form-foot { grid-column: 1 / -1; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  #form-msg { font-size: 15px; color: var(--muted); }
+  footer { padding: 32px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  @media (max-width: 860px) {
+    :root { --section: 48px; --gap: 14px; }
+    body { font-size: 16px; }
+    .wrap { padding: 0 16px; }
+    .hero { padding-top: 28px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 24px; margin-bottom: 20px; }
+    .lead { font-size: 18px; }
+    .facts { grid-template-columns: 1fr; gap: 12px; margin-top: 28px; }
+    .g3, .g2, .rules { grid-template-columns: 1fr; }
+    form { grid-template-columns: 1fr; }
+    .hero-row .btn, .plan .btn, .form-foot .btn { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="https://zbudujmi.com/">zbudujmi.com</a>
+    <a class="btn small" href="#zapytanie">Zapytaj o start</a>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <h1>Facebook i Instagram Twojej firmy, co miesiąc z rolkami</h1>
+    <p class="lead">Ty wysyłasz zdjęcia i krótkie nagrania z telefonu. My robimy z nich posty i rolki, układamy plan
+      na cały miesiąc i publikujemy. Plan widzisz w kalendarzu w telefonie i zmieniasz go jednym formularzem.</p>
+    <div class="hero-row">
+      <a class="btn" href="#zapytanie">Chcę 2 próbne rolki</a>
+      <a class="btn ghost" href="#pakiety">Zobacz pakiety</a>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>990 zł</b><span>netto za pierwszy miesiąc pakietu Start</span></div>
+      <div class="fact"><b>2 rolki</b><span>na próbę, zanim zapłacisz, w 3 dni robocze</span></div>
+      <div class="fact"><b>bez umowy rocznej</b><span>wypowiedzenie na koniec miesiąca</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="co-robimy">
+  <div class="wrap">
+    <h2>Co robimy co miesiąc</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Plan na miesiąc</h3><p>Do 25. dnia dostajesz plan publikacji na kolejny miesiąc: tematy, daty, promocje.</p><div class="foot">jedna runda uwag w cenie</div></div>
+      <div class="card"><h3>Rolki z Twoich nagrań</h3><p>Montujemy krótkie filmy 9:16 z napisami i muzyką z legalnych bibliotek.</p><div class="foot">Facebook i Instagram</div></div>
+      <div class="card"><h3>Posty i opisy</h3><p>Zdjęcia, krótkie teksty i hasztagi pod Twoją ofertę, sezon i promocje.</p><div class="foot">publikujemy za Ciebie</div></div>
+      <div class="card"><h3>Kalendarz w telefonie</h3><p>Plan publikacji widzisz w kalendarzu iPhone albo Google, bez logowania do paneli.</p><div class="foot">subskrypcja kalendarza</div></div>
+      <div class="card"><h3>Formularz zmian</h3><p>Chcesz coś zmienić? Jeden formularz zamiast maili i telefonów.</p><div class="foot">odpowiedź w 1 dzień roboczy</div></div>
+      <div class="card"><h3>Dostęp bez haseł</h3><p>Pracujemy przez role w Meta Business. Konta zostają Twoje, hasła też.</p><div class="foot">role zdejmujesz w każdej chwili</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="pakiety">
+  <div class="wrap">
+    <h2>Pakiety</h2>
+    <div class="grid g2">
+      <div class="plan main">
+        <div class="plan-head"><h3>Start</h3><span class="tag">na początek</span></div>
+        <div class="amount">1190 zł <small>netto / mies.</small></div>
+        <p class="note">Pierwszy miesiąc 990 zł netto, od drugiego 1190 zł netto.</p>
+        <ul class="check">
+          <li>do 8 postów miesięcznie</li>
+          <li>4 rolki miesięcznie</li>
+          <li>plan miesiąca, kalendarz w telefonie, formularz zmian</li>
+          <li>1 runda poprawek każdego materiału</li>
+        </ul>
+        <a class="btn" href="#zapytanie">Zapytaj o Start</a>
+      </div>
+      <div class="plan">
+        <div class="plan-head"><h3>Rozwój</h3><span class="tag">więcej rolek</span></div>
+        <div class="amount">1690 zł <small>netto / mies.</small></div>
+        <p class="note">Dla firm, które chcą publikować prawie codziennie.</p>
+        <ul class="check">
+          <li>do 12 postów miesięcznie</li>
+          <li>8 rolek miesięcznie</li>
+          <li>plan, kalendarz, formularz i podsumowanie miesiąca</li>
+          <li>2 rundy poprawek każdego materiału</li>
+        </ul>
+        <a class="btn" href="#zapytanie">Zapytaj o Rozwój</a>
+      </div>
+    </div>
+    <ul class="rules">
+      <li><b>Płatność z góry za miesiąc,</b> faktura VAT od iapply sp. z o.o. Ceny netto, do ceny doliczamy 23% VAT.</li>
+      <li><b>Kolejna runda poprawek:</b> 49 zł netto za materiał. Nasze błędy poprawiamy zawsze bez opłaty.</li>
+      <li><b>Reklamy płatne</b> nie są w cenie; budżet reklamowy płacisz bezpośrednio Meta.</li>
+      <li><b>W listopadzie</b> przyjmujemy najwyżej 2 nowe firmy, żeby dotrzymać terminów.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="alt" id="start">
+  <div class="wrap">
+    <h2>Jak zaczynamy</h2>
+    <div class="grid g3">
+      <div class="card"><h3><span class="step-no">1.</span> Krótka rozmowa</h3><p>15 minut o Twojej firmie, klientach i tym, co chcesz pokazywać. Wysyłasz kilka zdjęć i nagrań.</p><div class="foot">dzień 0</div></div>
+      <div class="card"><h3><span class="step-no">2.</span> Plan i 2 próbne rolki</h3><p>Dostajesz plan pierwszego miesiąca i 2 rolki z Twoich materiałów. Nie podobają się? Nic nie płacisz.</p><div class="foot">do 3 dni roboczych</div></div>
+      <div class="card"><h3><span class="step-no">3.</span> Start publikacji</h3><p>Po akceptacji wystawiamy fakturę za pierwszy miesiąc i publikujemy według planu.</p><div class="foot">od akceptacji</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="pytania">
+  <div class="wrap">
+    <h2>Pytania</h2>
+    <details><summary>Czy macie już takich klientów?</summary><p>Tak. Prowadzimy w ten sposób media społecznościowe sklepu z odzieżą motocyklową: rolki, kalendarz publikacji i formularz zmian działają tam na co dzień.</p></details>
+    <details><summary>Skąd bierzecie zdjęcia i nagrania?</summary><p>Od Ciebie: wystarczy 15-30 zdjęć lub krótkich nagrań z telefonu miesięcznie. Muzykę i grafiki bierzemy z bibliotek z licencją.</p></details>
+    <details><summary>A osoby na nagraniach?</summary><p>Pokazujemy tylko osoby, które się na to zgodziły. Dajemy wzór zgody; zgody zbierasz Ty.</p></details>
+    <details><summary>Czy używacie sztucznej inteligencji?</summary><p>Tak, do montażu, napisów i szkiców tekstów. Każdy materiał przed publikacją sprawdza człowiek. Nie tworzymy wizerunków ani głosów prawdziwych osób.</p></details>
+    <details><summary>Jak zrezygnować?</summary><p>Mailem do 15. dnia miesiąca; współpraca kończy się z końcem tego miesiąca. Bez kar i bez umowy rocznej.</p></details>
+  </div>
+</section>
+
+<section class="alt" id="zapytanie">
+  <div class="wrap">
+    <h2>Zapytaj o start i 2 próbne rolki</h2>
+    <form id="form">
+      <label>Nazwa firmy i Twoje imię<input name="n" autocomplete="organization" maxlength="200" required></label>
+      <label>E-mail lub telefon do odpowiedzi<input name="e" autocomplete="email" maxlength="200" required></label>
+      <label>Pakiet
+        <select name="what"><option>Social media: Start</option><option>Social media: Rozwój</option><option>Social media: jeszcze nie wiem</option></select>
+      </label>
+      <label>Adres profilu na Facebooku lub Instagramie<input name="profil" maxlength="200" placeholder="jeśli już masz"></label>
+      <label class="full">Czym zajmuje się firma i co chcesz pokazywać?<textarea name="m" maxlength="3500" required></textarea></label>
+      <label class="trap" aria-hidden="true">Nie wypełniaj<input name="website" tabindex="-1" autocomplete="off"></label>
+      <p class="info">Administratorem danych z formularza jest iapply sp. z o.o. Używamy ich tylko do odpowiedzi na to zapytanie
+        (art. 6 ust. 1 lit. b i f RODO) i nie zapisujemy ich w bazie. Więcej: <a href="https://zbudujmi.com/polityka-prywatnosci">polityka prywatności</a>.</p>
+      <div class="form-foot">
+        <button class="btn" type="submit">Wyślij zapytanie</button>
+        <span id="form-msg" role="status" aria-live="polite">Odpowiadamy w 1 dzień roboczy. Wolisz zadzwonić? <a href="tel:+48696689088">+48 696 689 088</a></span>
+      </div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>iapply sp. z o.o., Poznań · KRS 0001133291</span>
+    <span><a href="tel:+48696689088">+48 696 689 088</a> · <a href="mailto:kontakt@iapply.pl">kontakt@iapply.pl</a></span>
+  </div>
+</footer>
+
+<script>
+  // Endpoint z backend/news/zbudujmi_inquiry.py; host do potwierdzenia przy publikacji.
+  var ENDPOINT = 'https://spin.clinic/api/zbudujmi/zapytanie/';
+  var form = document.getElementById('form');
+  var msg = document.getElementById('form-msg');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+    var d = new FormData(form);
+    var profil = (d.get('profil') || '').trim();
+    var body = {
+      what: d.get('what'),
+      m: (d.get('m') || '') + (profil ? '\n\nProfil: ' + profil : '') + '\n\nŹródło: zbudujmi.com/social-media',
+      n: d.get('n'),
+      e: d.get('e'),
+      website: d.get('website')
+    };
+    var btn = form.querySelector('button');
+    btn.disabled = true;
+    msg.textContent = 'Wysyłamy…';
+    fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (res.ok) { form.reset(); msg.textContent = 'Dziękujemy. Odpowiemy w 1 dzień roboczy.'; }
+        else { msg.textContent = res.j.detail || 'Nie udało się wysłać. Napisz na kontakt@iapply.pl.'; }
+      })
+      .catch(function () { msg.textContent = 'Nie udało się wysłać. Napisz na kontakt@iapply.pl albo zadzwoń: +48 696 689 088.'; })
+      .finally(function () { btn.disabled = false; });
+  });
+</script>
+</body>
+</html>

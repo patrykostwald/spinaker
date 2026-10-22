@@ -1,9 +1,12 @@
 {
   "agent": "rzemieslnik",
   "budzet_start_usd": 45,
-  "budzet_usd": 45,
-  "runda": 0,
+  "budzet_usd": 42,
+  "runda": 2,
   "status": "zyje",
-  "koszt_rund_usd": [],
-  "uwaga": "budzet zmienia tylko koordynator; koszt rundy = tokeny x stawka, kalibrowana saldem kredytu"
+  "koszt_rund_usd": [
+    3
+  ],
+  "uwaga": "budzet zmienia tylko koordynator; koszt rundy = tokeny x stawka, kalibrowana saldem kredytu",
+  "uwaga_runda_1": "ok. 0,65 mln tokenow (agent + subagent researchu Useme); runda poszla z planu lokalnego, nie z kredytu; koszt 3 USD to szacunek 4 USD za 1 mln [DP]"
 }

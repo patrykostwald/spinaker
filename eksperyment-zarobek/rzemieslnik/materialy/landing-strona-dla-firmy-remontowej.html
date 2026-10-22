@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Strona dla firmy remontowej w 72 godziny</title>
+<meta name="description" content="Prosta strona dla firmy remontowej i wykończeniowej. Prototyp w 24 godziny, płatność po akceptacji. 1490 zł netto.">
+<!-- WERSJA ROBOCZA (Rzemieślnik, runda 2, 21.10.2026). Nie publikować bez zgody właściciela. Bez śledzenia, bez zewnętrznych skryptów i fontów; formularz niczego nie wysyła. -->
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f4f5f2;
+    --ink: #1c1f1a;
+    --muted: #5a6157;
+    --line: #dde0d8;
+    --accent: #c4561b;
+    --accent-ink: #ffffff;
+    --card: #ffffff;
+    --radius: 10px;
+    --gap: 20px;
+    --section: 72px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 var(--font); }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.bar { border-bottom: 1px solid var(--line); background: var(--bg); }
+  header.bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .logo { font-weight: 700; letter-spacing: .2px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px;
+         border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none;
+         border: 0; font: 600 16px/1 var(--font); cursor: pointer; }
+  .btn:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible {
+         outline: 3px solid #1d5fbf; outline-offset: 2px; }
+  .btn.small { min-height: 44px; padding: 0 16px; font-size: 15px; }
+  section { padding: var(--section) 0; }
+  section.alt { background: var(--bg-alt); }
+  .hero { padding-top: 40px; }
+  h1 { font-size: 44px; line-height: 1.15; margin: 0 0 16px; max-width: 900px; }
+  h2 { font-size: 30px; line-height: 1.2; margin: 0 0 28px; }
+  h3 { font-size: 18px; line-height: 1.3; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lead { font-size: 20px; color: var(--muted); max-width: 680px; margin: 0 0 28px; }
+  .hero-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .hero-note { color: var(--muted); font-size: 15px; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin-top: 40px; }
+  .fact { border-top: 3px solid var(--accent); padding-top: 12px; }
+  .fact b { display: block; font-size: 26px; line-height: 1.2; }
+  .fact span { color: var(--muted); font-size: 15px; }
+  .grid { display: grid; gap: var(--gap); }
+  .g3 { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px;
+          display: grid; grid-template-rows: auto 1fr auto; gap: 10px; min-height: 100%; }
+  .card p { margin: 0; color: var(--muted); }
+  .card .foot { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+  .step-no { font-weight: 700; color: var(--accent); }
+  .price { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--gap); align-items: stretch; }
+  .price-box { background: var(--card); border: 2px solid var(--ink); border-radius: var(--radius); padding: 28px;
+               display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; }
+  .price-box .amount { font-size: 44px; font-weight: 700; line-height: 1; }
+  .price-box .amount small { font-size: 18px; font-weight: 500; color: var(--muted); }
+  ul.check { margin: 0; padding: 0; list-style: none; }
+  ul.check li { padding-left: 26px; position: relative; margin: 6px 0; }
+  ul.check li::before { content: ""; position: absolute; left: 4px; top: .55em; width: 10px; height: 6px;
+                        border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(-45deg); }
+  .side { border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; background: var(--card);
+          display: grid; grid-template-rows: auto 1fr auto; gap: 12px; }
+  .side table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .side td { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .side td:last-child { text-align: right; white-space: nowrap; }
+  .muted { color: var(--muted); font-size: 15px; margin: 0; }
+  details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+  details:first-of-type { border-top: 1px solid var(--line); }
+  summary { cursor: pointer; font-weight: 600; min-height: 28px; }
+  details p { margin: 10px 0 0; color: var(--muted); }
+  form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; max-width: 760px; }
+  label { display: grid; gap: 6px; font-weight: 600; font-size: 15px; }
+  label.full { grid-column: 1 / -1; }
+  input, textarea, select { font: 16px/1.4 var(--font); padding: 12px; min-height: 48px; border: 1px solid #b9beb3;
+                            border-radius: 8px; background: #fff; color: var(--ink); width: 100%; }
+  textarea { min-height: 110px; resize: vertical; }
+  .consent { grid-column: 1 / -1; display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: 14px; color: var(--muted); }
+  .consent input { width: 22px; min-height: 22px; height: 22px; margin-top: 2px; flex: none; }
+  .form-foot { grid-column: 1 / -1; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  #form-msg { font-size: 15px; color: var(--muted); }
+  footer { padding: 32px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  @media (max-width: 860px) {
+    :root { --section: 48px; --gap: 14px; }
+    body { font-size: 16px; }
+    .wrap { padding: 0 16px; }
+    .hero { padding-top: 28px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 24px; margin-bottom: 20px; }
+    .lead { font-size: 18px; }
+    .facts { grid-template-columns: 1fr; gap: 12px; margin-top: 28px; }
+    .g3, .price { grid-template-columns: 1fr; }
+    form { grid-template-columns: 1fr; }
+    .btn { width: 100%; }
+    .price-box .amount small { display: block; margin-top: 8px; }
+    header.bar .btn { width: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+  html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <span class="logo">zbudujmi.com</span>
+    <a class="btn small" href="#wycena">Zamów prototyp</a>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <h1>Strona dla firmy remontowej w 72 godziny</h1>
+    <p class="lead">Klienci szukają ekipy w Google i chcą zobaczyć zdjęcia Twoich prac. Zrobimy prostą stronę z galerią realizacji
+      i formularzem wyceny. Prototyp pokażemy w 24 godziny, płacisz dopiero, gdy Ci się spodoba.</p>
+    <div class="hero-row">
+      <a class="btn" href="#wycena">Chcę prototyp w 24 godziny</a>
+      <span class="hero-note">1490 zł netto, stała cena przy stałym zakresie</span>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>24 h</b><span>prototyp pod linkiem od otrzymania materiałów</span></div>
+      <div class="fact"><b>72 h</b><span>strona działa pod Twoim adresem od akceptacji</span></div>
+      <div class="fact"><b>0 zł</b><span>z góry: zaliczka dopiero po akceptacji prototypu</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="co-dostajesz">
+  <div class="wrap">
+    <h2>Co jest na stronie</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Zakres usług</h3><p>Remonty, wykończenia, łazienki, elewacje - tylko to, co naprawdę robisz, prostym językiem.</p><div class="foot">sekcja oferty</div></div>
+      <div class="card"><h3>Galeria przed i po</h3><p>Zdjęcia z telefonu ułożymy w pary „przed i po”. Klient widzi efekt, zanim zadzwoni.</p><div class="foot">5-15 zdjęć od Ciebie</div></div>
+      <div class="card"><h3>Obszar działania</h3><p>Miasta i gminy, w których pracujesz, oraz mapa. Klient od razu wie, czy dojedziesz.</p><div class="foot">widoczność lokalna</div></div>
+      <div class="card"><h3>Formularz wyceny</h3><p>Klient opisuje pracę, podaje metraż i termin. Zapytanie trafia na Twój e-mail.</p><div class="foot">mniej telefonów bez konkretów</div></div>
+      <div class="card"><h3>Przycisk „Zadzwoń”</h3><p>Na telefonie jeden dotyk i klient dzwoni. Strona szybko się ładuje także w terenie.</p><div class="foot">wersja na telefon</div></div>
+      <div class="card"><h3>Widoczność w Google</h3><p>Tytuły, opisy, mapa strony i zgłoszenie do Google Search Console.</p><div class="foot">podstawy, bez kampanii</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="jak">
+  <div class="wrap">
+    <h2>Jak to działa</h2>
+    <div class="grid g3">
+      <div class="card"><h3><span class="step-no">1.</span> Wysyłasz materiały</h3><p>Logo (jeśli masz), zdjęcia prac, listę usług, obszar działania i telefon. Wystarczy z telefonu.</p><div class="foot">dzień 0</div></div>
+      <div class="card"><h3><span class="step-no">2.</span> Oglądasz prototyp</h3><p>W 24 godziny dostajesz link. Uwagi zgłaszasz wprost na stronie. Dwie rundy poprawek są w cenie.</p><div class="foot">do 24 godzin</div></div>
+      <div class="card"><h3><span class="step-no">3.</span> Strona startuje</h3><p>Po akceptacji płacisz zaliczkę 50%, a w 72 godziny strona działa pod Twoim adresem.</p><div class="foot">do 72 godzin od akceptacji</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="cena">
+  <div class="wrap">
+    <h2>Cena</h2>
+    <div class="price">
+      <div class="price-box">
+        <div class="amount">1490 zł <small>netto + 23% VAT</small></div>
+        <p class="muted">Stała cena przy stałym zakresie. Faktura VAT.</p>
+        <ul class="check">
+          <li>jedna strona z sekcjami: usługi, galeria, obszar, opinie, pytania, kontakt</li>
+          <li>formularz wyceny, mapa i przycisk „Zadzwoń”</li>
+          <li>wersja na telefon i komputer</li>
+          <li>podstawy widoczności w Google</li>
+          <li>dwie rundy poprawek</li>
+          <li>zaliczka 50% po akceptacji prototypu, reszta po starcie</li>
+        </ul>
+        <a class="btn" href="#wycena">Zamów prototyp</a>
+      </div>
+      <div class="side">
+        <h3>Dodatki do wyboru</h3>
+        <table>
+          <tr><td>Teksty na stronę z Twoich notatek</td><td>390 zł</td></tr>
+          <tr><td>Dodatkowa podstrona</td><td>290 zł</td></tr>
+          <tr><td>Wersja angielska lub niemiecka</td><td>490 zł</td></tr>
+          <tr><td>Opieka: aktualizacje, kopie, drobne zmiany</td><td>149 zł / mies.</td></tr>
+        </table>
+        <p class="muted">Ceny netto. Domenę i hosting pomagamy wybrać; ich koszt płacisz dostawcy.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pytania">
+  <div class="wrap">
+    <h2>Pytania</h2>
+    <details><summary>Co, jeśli prototyp mi się nie spodoba?</summary><p>Nic nie płacisz. Prototyp robimy raz na zapytanie, po otrzymaniu materiałów.</p></details>
+    <details><summary>Nie mam dobrych zdjęć. Czy to problem?</summary><p>Zdjęcia z telefonu wystarczą. Pomożemy wybrać najlepsze i poprawimy jasność i kadr.</p></details>
+    <details><summary>Czy mogę pokazać opinie klientów?</summary><p>Tak, ale tylko prawdziwe, od Ciebie, z podpisem w formie, na którą klient się zgodził.</p></details>
+    <details><summary>Kto zmienia stronę później?</summary><p>My, w ramach opieki za 149 zł netto miesięcznie: aktualizacje, kopie zapasowe i drobne zmiany treści.</p></details>
+  </div>
+</section>
+
+<section class="alt" id="wycena">
+  <div class="wrap">
+    <h2>Zamów prototyp w 24 godziny</h2>
+    <form id="form" novalidate>
+      <label>Nazwa firmy<input name="firma" autocomplete="organization" required></label>
+      <label>Miasto lub obszar działania<input name="obszar" required></label>
+      <label>E-mail do odpowiedzi<input name="email" type="email" autocomplete="email" required></label>
+      <label>Czy masz dziś stronę?
+        <select name="strona"><option>Nie mam</option><option>Mam, ale starą</option><option>Mam profil tylko na Facebooku</option></select>
+      </label>
+      <label class="full">Jakie prace wykonujesz?<textarea name="uslugi" placeholder="np. remonty mieszkań, łazienki pod klucz, gładzie"></textarea></label>
+      <label class="consent"><input type="checkbox" name="zgoda" required>
+        <span>Zgadzam się na odpowiedź na moje zapytanie przez iapply sp. z o.o. (administrator danych). Dane służą tylko do tej odpowiedzi.
+        [DP: pełna klauzula informacyjna od Prawnika]</span></label>
+      <div class="form-foot">
+        <button class="btn" type="submit">Wyślij zapytanie</button>
+        <span id="form-msg" role="status" aria-live="polite">Odpowiadamy w 1 dzień roboczy.</span>
+      </div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>iapply sp. z o.o., Poznań · KRS 0001133291</span>
+    <span>zbudujmi.com</span>
+  </div>
+</footer>
+
+<script>
+  // Wersja robocza: formularz niczego nie wysyła.
+  document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    document.getElementById('form-msg').textContent = 'Wersja robocza: formularz jeszcze niczego nie wysyła.';
+  });
+</script>
+</body>
+</html>
