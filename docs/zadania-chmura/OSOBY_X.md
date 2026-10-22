@@ -23,3 +23,20 @@ Najpierw zrozum, jak osoba publiczna jest łączona z kontem X na obu stronach, 
 5. Komenda kontrolna `manage.py osoby_x_pokrycie`: ile osób ma konto, ile nie, lista braków. Podaj wynik dla danych w repo.
 
 Celuj w ok. 2 godziny.
+
+## Dopisek 23.10 (właściciel: „bez konta X osoba omija diagnozy - to idiotyczne”)
+Mechanizm już istnieje: `news/account_warden.py` (Strażnik kont, nocny), `link_official_x_accounts` (senat.gov.pl, PE,
+Wikidata P2002), `warden_second_key.py` (Drugi klucz, flaga WARDEN_SECOND_KEY_ENABLED), modele w `news/political_models.py`.
+Problem jest w tym, że niejasne przypadki lądują w „Do decyzji” (`pending`: brak jednoznacznego obozu, zasięg < 500, opis
+bez funkcji, inna nazwa) i nikt ich nie rozstrzyga, więc osoba nie jest czytana i nie ma diagnoz.
+Napraw to systemowo, w duchu „najpierw automatyczna naprawa”:
+1. Konto potwierdzone oficjalnym źródłem (Wikidata P2002 z dopasowaniem po identyfikatorze Sejmu/Senatu/PE, link na oficjalnym
+   profilu) włącza się automatycznie, bez czekania na człowieka.
+2. Brak jednoznacznego obozu nie blokuje czytania: obóz „inne / niezrzeszeni”, z wyjaśnieniem w raporcie (np. koła, posłowie
+   niezrzeszeni - tak może być z Markiem Jakubiakiem; sprawdź na danych).
+3. Kolejka „Do decyzji” rozstrzygana automatycznie przez Drugi klucz (drugie, niezależne sprawdzenie), a do człowieka trafia
+   tylko prawdziwy konflikt dowodów - w porannym raporcie Korektora, z gotową propozycją.
+4. Nocna synchronizacja składu: nowi posłowie, ministrowie, wiceministrowie, europosłowie, liderzy - konto X dopinane w tej
+   samej nocy. Komenda pokrycia ma pokazywać także „ile osób czeka i od kiedy”.
+5. Koszt: każde nowe czytane konto to wydatek w budżecie X (`X_POLITICAL_MONTHLY_USD_LIMIT`). Policz przewidywany wzrost
+   miesięcznego kosztu i zapisz w raporcie; częstotliwość czytania kont o małej aktywności rzadsza (mechanizm `interval` istnieje).
