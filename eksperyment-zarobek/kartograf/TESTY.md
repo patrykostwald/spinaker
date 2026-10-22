@@ -1,6 +1,6 @@
 # Testy popytu do zatwierdzenia przez właściciela (poziom 2)
 
-**21.10.2026: właściciel zatwierdził T1 i T2 w sesji Kartografa.** Gotowe wersje robocze: `materialy/t1-strona-tygodnik.html`
+**Status: wersje robocze, niezatwierdzone przez właściciela (korekta koordynatora 22.10).** Pliki: `materialy/t1-strona-tygodnik.html`
 (zrzuty 1440 i 390 px zmierzone: równe boksy, przyciski przy dolnej krawędzi, bez przewijania w bok) i `materialy/t2-oferta-pilotaz-izby.md`.
 Publikację, wysyłkę i podpięcie formularza robi koordynator; przed startem: Prawnik (P4) i start pobierania z RCL (P1).
 

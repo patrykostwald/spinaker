@@ -2,7 +2,7 @@
 
 - **P1 (poziom 2, do 28.10):** kiedy ruszy nocne pobieranie z RCL (czeka na wyjaśnienie robots.txt)? Bez tego nie zrobimy
   prawdziwego wydania - szkic stoi na kopiach stron z września.
-- **P2 - ZATWIERDZONE 21.10 (T1 i T2):** zgoda na T1 (podstrona na przeszlosc.today, post na Facebooku iapply, 0 albo 200 zł reklamy)?
+- **P2 (poziom 2, otwarte - przygotowane wersje robocze, bez zatwierdzenia):** zgoda na T1 (podstrona na przeszlosc.today, post na Facebooku iapply, 0 albo 200 zł reklamy)?
 - **P3 (poziom 2, do 28.10):** czy właściciel lub prezes znają 1-3 izby lub związki branżowe, którym można pokazać T2 (bez zimnego kontaktu)?
   Jaka branża jest im najbliżej?
 - **P4 (poziom 1):** Prawnik: (a) czy warunki zgody RCL pozwalają rozsyłać przegląd pod marką izby (white-label) ze stopką źródła;
