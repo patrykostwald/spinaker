@@ -1,0 +1,251 @@
+{
+ "wygenerowano": "2026-10-22 17:51",
+ "symulacja": true,
+ "kontrola": {
+  "liczba_losowan": 7300,
+  "pierwsze": "1 / 1957-01-27",
+  "ostatnie": "7300 / 2017-01-09",
+  "luki_w_numeracji": [],
+  "duplikaty_numerow": [],
+  "duplikaty_dat": [],
+  "bledne_zestawy": [],
+  "daty_nie_po_kolei": [],
+  "z_nagrodami": 0
+ },
+ "teoria": {
+  "srednia_trafien": 0.7346938775510204,
+  "p": {
+   "0": 0.4359649755116915,
+   "1": 0.4130194504847604,
+   "2": 0.13237802900152576,
+   "3": 0.017650403866870102,
+   "4": 0.000968619724401408,
+   "5": 1.8449899512407772e-05,
+   "6": 7.151123842018516e-08
+  },
+  "wartosc_oczekiwana_zakladu": 1.1643960418243489,
+  "zwrot_proc": 23.28792083648698
+ },
+ "powtorki": {
+  "losowan": 7300,
+  "powtorzone_zestawy": {
+   "6-8-16-30-32-33": 2,
+   "3-9-29-36-39-43": 2,
+   "3-21-24-27-36-37": 2
+  },
+  "gdzie": {
+   "6-8-16-30-32-33": [
+    "245 (1959-01-29)",
+    "5452 (2001-11-05)"
+   ],
+   "3-9-29-36-39-43": [
+    "1043 (1965-08-19)",
+    "2837 (1980-05-14)"
+   ],
+   "3-21-24-27-36-37": [
+    "1558 (1969-11-11)",
+    "3638 (1986-12-12)"
+   ]
+  },
+  "par_powtorek": 3,
+  "oczekiwane_par": 1.905,
+  "p_przynajmniej_jednej": 0.851
+ },
+ "chi2": {
+  "oczekiwana_czestosc": 893.9,
+  "najczestsza": 41,
+  "najczestsza_ile": 950,
+  "najrzadsza": 33,
+  "najrzadsza_ile": 826,
+  "chi2": 48.09,
+  "stopnie_swobody": 48,
+  "p": 0.4694
+ },
+ "backtest": {
+  "historia": {
+   "losowan": 7250,
+   "zakladow": 239250,
+   "srednia_trafien": 0.7338,
+   "przedzial95": [
+    0.7308,
+    0.7369
+   ],
+   "z_wobec_teorii": -0.57,
+   "rozklad": {
+    "0": 104446,
+    "1": 98629,
+    "2": 31810,
+    "3": 4149,
+    "4": 211,
+    "5": 5,
+    "6": 0
+   },
+   "oczekiwane_3_4_5_6": {
+    "3": 4222.9,
+    "4": 231.7,
+    "5": 4.4,
+    "6": 0.0
+   },
+   "wydane_zl": 1196250,
+   "wygrane_zl": 224915,
+   "bilans_zl": -971335,
+   "zwrot_proc": 18.8,
+   "bilans_na_losowanie_bez_6": -133.98,
+   "przedzial95_na_losowanie_bez_6": [
+    -138.59,
+    -129.36
+   ],
+   "szostki": [],
+   "historyczne_nagrody": null,
+   "naruszen_limitu_2_wspolnych": 0
+  },
+  "gorace": {
+   "losowan": 7250,
+   "zakladow": 239250,
+   "srednia_trafien": 0.7335,
+   "przedzial95": [
+    0.7305,
+    0.7366
+   ],
+   "z_wobec_teorii": -0.76,
+   "rozklad": {
+    "0": 104537,
+    "1": 98622,
+    "2": 31622,
+    "3": 4253,
+    "4": 212,
+    "5": 4,
+    "6": 0
+   },
+   "oczekiwane_3_4_5_6": {
+    "3": 4222.9,
+    "4": 231.7,
+    "5": 4.4,
+    "6": 0.0
+   },
+   "wydane_zl": 1196250,
+   "wygrane_zl": 221255,
+   "bilans_zl": -974995,
+   "zwrot_proc": 18.5,
+   "bilans_na_losowanie_bez_6": -134.48,
+   "przedzial95_na_losowanie_bez_6": [
+    -138.7,
+    -130.27
+   ],
+   "szostki": [],
+   "historyczne_nagrody": null,
+   "naruszen_limitu_2_wspolnych": 0
+  },
+  "zimne": {
+   "losowan": 7250,
+   "zakladow": 239250,
+   "srednia_trafien": 0.7366,
+   "przedzial95": [
+    0.7336,
+    0.7396
+   ],
+   "z_wobec_teorii": 1.23,
+   "rozklad": {
+    "0": 103724,
+    "1": 99455,
+    "2": 31668,
+    "3": 4177,
+    "4": 220,
+    "5": 6,
+    "6": 0
+   },
+   "oczekiwane_3_4_5_6": {
+    "3": 4222.9,
+    "4": 231.7,
+    "5": 4.4,
+    "6": 0.0
+   },
+   "wydane_zl": 1196250,
+   "wygrane_zl": 235195,
+   "bilans_zl": -961055,
+   "zwrot_proc": 19.7,
+   "bilans_na_losowanie_bez_6": -132.56,
+   "przedzial95_na_losowanie_bez_6": [
+    -137.64,
+    -127.48
+   ],
+   "szostki": [],
+   "historyczne_nagrody": null,
+   "naruszen_limitu_2_wspolnych": 0
+  },
+  "rzadko_grane": {
+   "losowan": 7250,
+   "zakladow": 239250,
+   "srednia_trafien": 0.7369,
+   "przedzial95": [
+    0.7339,
+    0.74
+   ],
+   "z_wobec_teorii": 1.45,
+   "rozklad": {
+    "0": 103769,
+    "1": 99444,
+    "2": 31485,
+    "3": 4315,
+    "4": 231,
+    "5": 6,
+    "6": 0
+   },
+   "oczekiwane_3_4_5_6": {
+    "3": 4222.9,
+    "4": 231.7,
+    "5": 4.4,
+    "6": 0.0
+   },
+   "wydane_zl": 1196250,
+   "wygrane_zl": 242225,
+   "bilans_zl": -954025,
+   "zwrot_proc": 20.2,
+   "bilans_na_losowanie_bez_6": -131.59,
+   "przedzial95_na_losowanie_bez_6": [
+    -136.65,
+    -126.53
+   ],
+   "szostki": [],
+   "historyczne_nagrody": null,
+   "naruszen_limitu_2_wspolnych": 0
+  },
+  "los": {
+   "losowan": 7250,
+   "zakladow": 239250,
+   "srednia_trafien": 0.7333,
+   "przedzial95": [
+    0.7303,
+    0.7363
+   ],
+   "z_wobec_teorii": -0.89,
+   "rozklad": {
+    "0": 104461,
+    "1": 98728,
+    "2": 31683,
+    "3": 4167,
+    "4": 207,
+    "5": 4,
+    "6": 0
+   },
+   "oczekiwane_3_4_5_6": {
+    "3": 4222.9,
+    "4": 231.7,
+    "5": 4.4,
+    "6": 0.0
+   },
+   "wydane_zl": 1196250,
+   "wygrane_zl": 217245,
+   "bilans_zl": -979005,
+   "zwrot_proc": 18.2,
+   "bilans_na_losowanie_bez_6": -135.04,
+   "przedzial95_na_losowanie_bez_6": [
+    -139.19,
+    -130.88
+   ],
+   "szostki": [],
+   "historyczne_nagrody": null,
+   "naruszen_limitu_2_wspolnych": 0
+  }
+ }
+}
