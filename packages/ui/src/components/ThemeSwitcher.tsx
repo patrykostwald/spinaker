@@ -33,7 +33,7 @@ function applyTheme(mode: ThemeMode) {
 const MODE_LABEL: Record<ThemeMode, string> = { dark: "Ciemny", light: "Jasny", auto: "Automatyczny" };
 const NEXT_MODE: Record<ThemeMode, ThemeMode> = { dark: "light", light: "auto", auto: "dark" };
 
-/** `compact` — ikona w szapce (słońce/księżyc morfują), klik przełącza Ciemny → Jasny → Automatyczny. */
+/** `compact` - ikona w szapce (słońce/księżyc morfują), klik przełącza Ciemny → Jasny → Automatyczny. */
 export function ThemeSwitcher({ compact = false }: { compact?: boolean } = {}) {
   const account = useAccount();
   const ownerId = account.data?.user?.id;

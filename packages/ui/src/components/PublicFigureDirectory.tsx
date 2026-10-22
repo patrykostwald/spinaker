@@ -14,15 +14,17 @@ import {
 } from '../lib/publicFigures';
 import { Dialog } from './Dialog';
 import { PublicFigureProfile } from './PublicFigureProfile';
+import { PublicFigurePairs } from './PublicFigurePairs';
 import { Button, Dropdown, SearchField, SectionHeader } from '../kit';
+import { Loading } from "../kit/Loading";
 
 const notFound = (error: unknown) => error instanceof ApiError && (error.status === 404 || error.status === 405);
 
-/** Pełny profil pod /osoby-publiczne/[id] — dane wyłącznie z GET /api/public-figures/:id/. */
+/** Pełny profil pod /osoby-publiczne/[id] - dane wyłącznie z GET /api/public-figures/:id/. */
 export function PublicFigurePage({ id }: { id: number }) {
   const figure = usePublicFigure(id);
-  useEffect(() => { if (figure.data) document.title = `${figure.data.name} — profil publiczny · spin.clinic`; }, [figure.data]);
-  if (figure.isPending) return <p role="status" className="sc-public-figure__hint sc-public-figure-page">Ładuję profil…</p>;
+  useEffect(() => { if (figure.data) document.title = `${figure.data.name} - profil publiczny · spin.clinic`; }, [figure.data]);
+  if (figure.isPending) return <p role="status" className="sc-public-figure__hint sc-public-figure-page"><Loading label="Ładuję profil" /></p>;
   if (figure.isError) {
     return (
       <section className="sc-public-figure sc-public-figure-page">
@@ -37,11 +39,13 @@ export function PublicFigurePage({ id }: { id: number }) {
     <div className="sc-public-figure-page">
       <p className="sc-public-figure-back"><Link href="/osoby-publiczne">← Osoby publiczne</Link></p>
       <PublicFigureProfile figure={figure.data} />
+      {/* „Wcześniej i teraz”: za flagą NEXT_PUBLIC_POSITION_PAIRS i tylko gdy API zwraca pary */}
+      <PublicFigurePairs figureId={id} />
     </div>
   );
 }
 
-/** Podgląd w oknie: nagłówek i liczniki, bez materiałów. Pełny profil — osobna trasa. */
+/** Podgląd w oknie: nagłówek i liczniki, bez materiałów. Pełny profil - osobna trasa. */
 function FigurePreview({ summary }: { summary: PublicFigureSummary }) {
   const detail = usePublicFigure(summary.id);
   const organisations = detail.data?.organisations ?? [];
@@ -50,7 +54,7 @@ function FigurePreview({ summary }: { summary: PublicFigureSummary }) {
       <p className="sc-t-caption">{ROLE_CATEGORY_LABELS[summary.role_category] ?? 'Osoba publiczna'}</p>
       <h2 className="sc-t-title-m">{summary.name}</h2>
       <p className="sc-t-body"><span className="sc-public-figure-status" data-status={summary.status}>{summary.status === 'current' ? 'Aktualna funkcja' : 'Była funkcja'}</span>{summary.role_title}{summary.organisation && ` · ${summary.organisation}`}</p>
-      {detail.isPending && <p role="status" className="sc-t-body sc-text-2">Ładuję głosowania i relacje…</p>}
+      {detail.isPending && <p role="status" className="sc-t-body sc-text-2"><Loading label="Ładuję głosowania i relacje" /></p>}
       {detail.isError && <p className="sc-t-body sc-text-2">Szczegóły profilu nie są jeszcze dostępne na tym serwerze.</p>}
       {detail.data && (
         <dl className="sc-public-figure-preview__facts">
@@ -65,7 +69,7 @@ function FigurePreview({ summary }: { summary: PublicFigureSummary }) {
   );
 }
 
-/** Lista /osoby-publiczne — dane z GET /api/public-figures/?q=&role_category=. */
+/** Lista /osoby-publiczne - dane z GET /api/public-figures/?q=&role_category=. */
 export function PublicFigureDirectory() {
   const uid = useId();
   const [input, setInput] = useState('');
@@ -95,7 +99,7 @@ export function PublicFigureDirectory() {
         <span>Strona {page}</span>
         <Button disabled={!list.data || list.isFetching || page * list.data.page_size >= list.data.count} onClick={() => setPage(value => value + 1)}>Następna</Button>
       </nav>
-      {list.isPending && <p role="status" className="sc-t-body sc-text-2">Ładuję rejestr…</p>}
+      {list.isPending && <p role="status" className="sc-t-body sc-text-2"><Loading label="Ładuję rejestr" /></p>}
       {list.isError && (
         <p className="sc-t-body sc-text-2">
           {notFound(list.error) ? 'Rejestr osób publicznych nie jest jeszcze dostępny na tym serwerze.' : 'Nie udało się pobrać rejestru.'}
@@ -109,7 +113,7 @@ export function PublicFigureDirectory() {
               <div>
                 <Link href={`/osoby-publiczne/${row.id}`} className="sc-public-directory__name">{row.name}</Link>
                 <p className="sc-t-body"><span className="sc-public-figure-status" data-status={row.status}>{row.status === 'current' ? 'Aktualna' : 'Była'}</span>{row.role_title}{row.organisation && ` · ${row.organisation}`}</p>
-                <p className="sc-public-directory__x">{row.has_x_account ? <span className="sc-x-badge" title="Konto X potwierdzone oficjalnym dowodem — czytamy je w Klinice">X · czytamy</span> : <><span className="sc-x-badge sc-x-badge--none">X · brak potwierdzonego konta w bazie</span><XAccountSuggest figureId={row.id} name={row.name} /></>}</p>
+                <p className="sc-public-directory__x">{row.has_x_account ? <span className="sc-x-badge" title="Konto X potwierdzone oficjalnym dowodem - czytamy je w Klinice">X · czytamy</span> : <><span className="sc-x-badge sc-x-badge--none">X · brak potwierdzonego konta w bazie</span><XAccountSuggest figureId={row.id} name={row.name} /></>}</p>
               </div>
               <Button type="button" variant="link" aria-haspopup="dialog" onClick={() => setPreview(row)}>Podgląd<span className="sr-only"> profilu {row.name}</span></Button>
             </li>

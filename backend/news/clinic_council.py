@@ -9,6 +9,7 @@
    recenzent sprawdza zgodność z ocenami i zasadami — przy uwagach przewodniczący poprawia raz.
 Wynik ma ten sam kształt co diagnoza Claude'a, więc reszta Kliniki działa bez zmian.
 """
+import contextvars
 import json
 import os
 import re
@@ -30,15 +31,17 @@ from news.clinic_ai import ClinicAIError, looks_polish
 logger = logging.getLogger(__name__)
 
 # Po jednym modelu z każdej firmy (pluralizm ocen, bez powtarzania silników jednego dostawcy). Nadpisz w CLINIC_COUNCIL.
+# 13.10.2026 (właściciel): Gemini zastąpiony Claude'em (claude:claude-haiku-5-5, klucz ANTHROPIC_API_KEY) we wszystkich rolach
+# i w rdzeniu miary (council_quorum.CORE_DEFAULT). Odchylenie nowego członka liczy się od BIAS_MIN_SAMPLES diagnoz; do tego czasu 0.
 # DeepSeek i Kimi (przez NVIDIA) odpowiadają dziś > 3 min — do dopisania w CLINIC_COUNCIL, gdy przyspieszą.
 # gpt-oss-20b, nie 120b: na 120b pracują przekazy dnia i syntezy wątków, a Groq liczy dzienny limit tokenów osobno dla każdego modelu.
-DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemotron-3-super-120b-a12b,gemini:gemini-3.8-flash,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast,openrouter:google/gemma-4-31b-it:free'
+DEFAULT_COUNCIL = 'groq:openai/gpt-oss-20b,groq:qwen/qwen3.8-27b,nim:nvidia/nemotron-3-super-120b-a12b,claude:claude-haiku-5-5,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast,openrouter:google/gemma-4-31b-it:free'
 # 30.09.2026: PLLuM zniknął z Hugging Face (brak dostawcy, 404), darmowej Llamy nie ma już na OpenRouter (404) — zamiast niej Gemma 4 31B.
 # Role u różnych dostawców (darmowe limity nie wyczerpują się naraz); po przecinku — kolejne w zapasie.
-CHAIR = 'gemini:gemini-3.8-flash,nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # przewodniczący
-LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,groq:qwen/qwen3.8-27b,gemini:gemini-3.8-flash'  # językoznawca — tylko polszczyzna
+CHAIR = 'claude:claude-haiku-5-5,nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # przewodniczący
+LINGUIST = 'hf:speakleash/Bielik-11B-v3.0-Instruct:publicai,groq:qwen/qwen3.8-27b,claude:claude-haiku-5-5'  # językoznawca — tylko polszczyzna
 REVIEWER = 'nim:nvidia/nemotron-3-super-120b-a12b,groq:openai/gpt-oss-20b,mistral:mistral-small-latest,cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast'  # recenzent — zgodność z ocenami i zasadami
-MIN_MEMBERS = 2  # absolutne minimum: dwie niezależne oceny; poniżej trzech diagnoza jest jawnie oznaczona jako ograniczony skład
+MIN_MEMBERS = 3  # właściciel 6.10: co najmniej trzy niezależne oceny; przy mniejszej liczbie diagnoza się nie ukazuje (wpis wraca do kolejki)
 PREFERRED_MEMBERS = 3
 SLOW_TIMEOUT = 180  # DeepSeek i Kimi przez NVIDIA odpowiadają wolno
 
@@ -176,8 +179,9 @@ def ask(member: tuple[str, str], system: str, user: str, schema: dict, max_token
     try:
         result = _ask(member, system, user, schema, max_tokens)
     except ClinicAIError as error:
-        record(member, error.code)
-        record_health(member, error.code, time.monotonic() - started)
+        if not str(error.code).endswith('_content_reserve'):  # odmowa z rezerwy na diagnozy to nie awaria członka
+            record(member, error.code)
+            record_health(member, error.code, time.monotonic() - started)
         raise
     record(member, None)
     record_health(member, None, time.monotonic() - started)
@@ -190,10 +194,18 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
     if not registry.configured(member):
         raise ClinicAIError(f'{service}_key_missing')
     if not registry.reserve(member):
-        raise ClinicAIError(f'{service}_daily_limit')
+        raise ClinicAIError(f'{service}_content_reserve' if registry.content_reserved(member) else f'{service}_daily_limit')
+    from news.mechanik import alias
+    model = alias(service, model)  # zamiennik nazwy zapisany przez Mechanika (np. model przemianowany u dostawcy)
     system += registry.CHARTER_SUMMARY
     if service == 'gemini':
         return _ask_gemini(model, system, user, schema, max_tokens)
+    if service == 'claude':
+        return _ask_claude(model, system, user, schema, max_tokens)
+    if service == 'inception':
+        # Tylko kandydat Rekrutera albo przyjęty przez niego członek; ten sam strażnik darmowej puli co zadania poboczne.
+        from news import inception
+        return inception.chat(system, user[:12000], schema, max_tokens=max_tokens, temperature=0.2, model_name=model)[0]
     url, key = registry.endpoint(service), registry.credentials(service)
     headers = {'Authorization': f'Bearer {key}'}
     if service == 'openrouter':
@@ -201,12 +213,18 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
     body = {'model': model, 'temperature': 0.2, 'max_tokens': max_tokens, 'messages': [
         {'role': 'system', 'content': system + '\nSchemat JSON odpowiedzi:\n' + json.dumps(schema, ensure_ascii=False)},
         {'role': 'user', 'content': user[:12000]}]}
-    if service == 'groq':
+    if service == 'groq' and 'compound' not in model:
         body['response_format'] = {'type': 'json_object'}
         if 'gpt-oss' in model:
             body['reasoning_effort'] = 'low'
         if 'qwen' in model:
             body['reasoning_format'] = 'hidden'
+    if service == 'pcss':  # vLLM w PCSS: JSON wymuszony, bez długiego myślenia (inaczej limit słów idzie na rozważania)
+        body['response_format'] = {'type': 'json_object'}
+        if 'gpt-oss' in model:
+            body['reasoning_effort'] = 'low'
+        if 'qwen' in model.lower():
+            body['chat_template_kwargs'] = {'enable_thinking': False}
     slow = any(name in model for name in ('deepseek', 'kimi'))
     try:
         response = requests.post(url, json=body, timeout=(5, SLOW_TIMEOUT if slow else 90), headers=headers)
@@ -214,6 +232,25 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
             raise ClinicAIError(f'{service}: http_{response.status_code}')
         return _json(response.json()['choices'][0]['message']['content'])
     except (requests.RequestException, KeyError, IndexError, ValueError, TypeError) as error:
+        raise ClinicAIError(f'{model}: {type(error).__name__}'[:120])
+
+
+def _ask_claude(model: str, system: str, user: str, schema: dict, max_tokens: int) -> dict:
+    """Claude jako członek konsylium (płatny, bez wyszukiwania); JSON opisany w poleceniu, jak u pozostałych członków."""
+    try:
+        client = clinic_ai._client()
+        response = client.messages.create(
+            model=model, max_tokens=max_tokens,  # bez temperature: SDK Anthropic 1.x go nie przyjmuje
+            system=system + '\nSchemat JSON odpowiedzi:\n' + json.dumps(schema, ensure_ascii=False),
+            messages=[{'role': 'user', 'content': user[:12000]}])
+    except Exception as error:  # błąd sieci, limit, brak środków albo klucza: członek po prostu nie odpowiada
+        code = getattr(error, 'status_code', '') or type(error).__name__
+        logger.warning('council member claude failed: %s: %s', type(error).__name__, str(error)[:160])
+        raise ClinicAIError(f'claude: {code}'[:120])
+    text = ''.join(block.text for block in response.content if getattr(block, 'type', '') == 'text')
+    try:
+        return _json(text)
+    except (ValueError, TypeError) as error:
         raise ClinicAIError(f'{model}: {type(error).__name__}'[:120])
 
 
@@ -225,10 +262,9 @@ def _ask_gemini(model: str, system: str, user: str, schema: dict, max_tokens: in
     body = {'systemInstruction': {'parts': [{'text': system}]},
             'contents': [{'role': 'user', 'parts': [{'text': user[:12000]}]}],
             'generationConfig': {'temperature': 0.2, 'maxOutputTokens': max_tokens, 'responseMimeType': 'application/json',
-                                 'responseSchema': schema}}
+                                 'responseSchema': schema, **clinic_ai.gemini_thinking('council')}}
     try:
-        response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-                                 json=body, timeout=(5, 90), headers={'x-goog-api-key': key})
+        response = clinic_ai.gemini_post(model, body, timeout=(5, 90), key=key, task='council')
         if response.status_code >= 400:
             raise ClinicAIError(f'gemini: http_{response.status_code}')  # np. 402 — wyczerpane środki, 404 — model zniknął
         parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
@@ -276,11 +312,26 @@ def _normalize_opinion(raw):
     return raw
 
 
+def _member_opinion(member: tuple[str, str], context_lines: str) -> tuple[dict, tuple[str, str] | None]:
+    """Odpowiedź członka; gdy zawiedzie, a ma bliźniaka (ten sam model u innego dostawcy) - odpowiedź bliźniaka.
+    Drugi element: bliźniak, który odpowiedział, albo None."""
+    # Groq wlicza zarezerwowaną długość odpowiedzi do limitu na minutę — krótko; NVIDIA myśli dłużej przed JSON-em.
+    try:
+        return ask(member, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=1500 if member[0] == 'groq' else 4000), None
+    except ClinicAIError as error:
+        twin = registry.twin(member)
+        if not twin or str(error.code).endswith('_content_reserve'):
+            raise
+        logger.info('council member %s failed (%s), twin %s answers', member[1], error.code, ':'.join(twin))
+        return ask(twin, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=4000), twin
+
+
 def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dict | None:
     started = time.monotonic()
+    served_by = None
     try:
-        # Groq wlicza zarezerwowaną długość odpowiedzi do limitu na minutę — krótko; NVIDIA myśli dłużej przed JSON-em.
-        raw = _normalize_opinion(ask(member, MEMBER_SYSTEM, context_lines, MEMBER_SCHEMA, max_tokens=1500 if member[0] == 'groq' else 4000))
+        answer, served_by = _member_opinion(member, context_lines)
+        raw = _normalize_opinion(answer)
         if (not isinstance(raw, dict) or raw.get('verdict') not in (*VERDICT_SCORE, 'unclear') or
                 type(raw.get('intensity')) is not int or not 0 <= raw['intensity'] <= 100 or
                 not isinstance(raw.get('techniques'), list) or not isinstance(raw.get('claims'), list)):
@@ -293,7 +344,9 @@ def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dic
     techniques = [item for item in raw.get('techniques') or [] if isinstance(item, dict)
                   and isinstance(item.get('id'), str) and item['id'] in TECHNIQUES
                   and _quoted(post_text, str(item.get('quote', '')))]
-    return {**registry.metadata(member), 'status': 'odpowiedział',
+    # Bliźniak zajmuje miejsce członka (to samo „model” dla kworum), a dostawca jest zapisany jawnie (Karta, pkt 11).
+    twin_note = {'provider': served_by[0], 'served_by': ':'.join(served_by), 'twin_of': ':'.join(member)} if served_by else {}
+    return {**registry.metadata(member), **twin_note, 'status': 'odpowiedział',
             'seconds': round(time.monotonic() - started, 3),
             'loaded_words': validate_loaded_words(post_text, raw.get('loaded_words')),
             'model': member[1], 'verdict': verdict, 'intensity': intensity, 'techniques': techniques,
@@ -302,23 +355,34 @@ def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dic
 
 def consult(post_text: str, context_lines: str) -> list[dict]:
     """Osobne opinie wszystkich członków konsylium — równolegle; ci, którzy nie odpowiedzą, po prostu nie głosują."""
+    from news import council_quorum as quorum
     candidates = _members('CLINIC_COUNCIL', DEFAULT_COUNCIL)
     members = registry.select_members(candidates)
+    outer = contextvars.copy_context()  # rezerwa na diagnozy (registry.for_content) obowiązuje też w wątkach
     with ThreadPoolExecutor(max_workers=len(members) or 1) as pool:
-        results = list(pool.map(lambda member: _opinion(member, post_text, context_lines), members))
-    # Kolejne modele zastępują awarie albo uzupełniają różnorodność.
-    for member in registry.select_members([m for m in candidates if m not in members], target=len(candidates)):
+        results = list(pool.map(lambda member: outer.copy().run(_opinion, member, post_text, context_lines), members))
+    # Kolejne modele zastępują awarie, dopełniają kworum (najpierw stały rdzeń) albo uzupełniają różnorodność.
+    rest = registry.select_members([m for m in candidates if m not in members], target=len(candidates))
+    rest.sort(key=lambda m: not quorum.is_core(m))
+    for member in rest:
         answered = [(r['provider'], r['model']) for r in results if r.get('status') == 'odpowiedział']
         polish_left = any(registry.is_polish(m) and registry.available(m) for m in candidates if m not in members)
-        if registry.diversity(answered)['sufficient'] and (any(registry.is_polish(m) for m in answered) or not polish_left):
+        if (registry.diversity(answered)['sufficient'] and (any(registry.is_polish(m) for m in answered) or not polish_left)
+                and quorum.check(results)['met']):
             break
+        state = quorum.check(results)
+        core_left = sum(1 for m in rest if quorum.is_core(m) and m not in members and registry.available(m))
+        if not state['met'] and state['core'] + core_left < state['need_core']:
+            break  # rdzenia i tak nie będzie - nie zużywamy limitów pozostałych członków na diagnozę, która poczeka
         results.append(_opinion(member, post_text, context_lines))
         members.append(member)
     return results
 
 
-def combine(opinions: list[dict]) -> dict:
-    """Wspólna ocena: mediana werdyktu i siły; technika — gdy wskazało ją co najmniej dwóch członków (przy 1–2 odpowiedziach: każdy)."""
+def combine(opinions: list[dict], measure: dict | None = None) -> dict:
+    """Wspólna ocena: mediana werdyktu i siły; technika — gdy wskazało ją co najmniej dwóch członków (przy 1–2 odpowiedziach: każdy).
+    measure (stała miara, news/council_quorum.py): {'core': [modele rdzenia], 'biases': {model: typowe odchylenie}} -
+    gdy brakuje kogoś z rdzenia, mediana siły jest przesuwana o różnicę surowości składu; przy pełnym rdzeniu bez zmian."""
     opinions = [op for op in opinions if op.get('status') != 'brak odpowiedzi']
     judged = [op for op in opinions if op.get('verdict') in VERDICT_SCORE]
     if not judged:
@@ -326,6 +390,11 @@ def combine(opinions: list[dict]) -> dict:
     score = int(statistics.median_low([VERDICT_SCORE[op['verdict']] for op in judged]))
     verdict = SCORE_VERDICT[score]
     intensity = int(statistics.median([op['intensity'] for op in judged]))
+    shift = 0.0
+    if measure is not None:
+        from news.council_quorum import stable_intensity
+        intensity, shift = stable_intensity(statistics.median([op['intensity'] for op in judged]), [op['model'] for op in judged],
+                                            measure.get('core') or [], measure.get('biases') or {})
     need = 2 if len(judged) >= 3 else 1
     votes = {}
     for op in judged:
@@ -335,8 +404,12 @@ def combine(opinions: list[dict]) -> dict:
                    'category': technique_category({**items[0], 'name': items[0].get('name') or TECHNIQUES[key][0]}), 'quote': items[0]['quote'], 'explanation': str(items[0].get('explanation', ''))[:600],
                    'votes': len(items)} for key, items in sorted(votes.items(), key=lambda kv: -len(kv[1])) if len(items) >= need]
     agree = sum(1 for op in judged if op['verdict'] == verdict)
-    return {'verdict': verdict, 'intensity': intensity if verdict != 'no_spin' else min(intensity, 20),
-            'techniques': techniques[:6], 'agreement': f'{agree}/{len(opinions)}'}
+    result = {'verdict': verdict, 'intensity': intensity if verdict != 'no_spin' else min(intensity, 20),
+              'techniques': techniques[:6], 'agreement': f'{agree}/{len(opinions)}'}
+    if measure is not None:
+        result['measure'] = {'method': 'stała miara v1', 'raw_intensity': int(statistics.median([op['intensity'] for op in judged])),
+                             'shift': shift}
+    return result
 
 
 def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
@@ -344,14 +417,27 @@ def check_claims(claims: list[str]) -> tuple[list[dict], dict]:
     Gdy Gemini nie działa (brak klucza, 402 — brak środków, limit), sprawdza Claude z wyszukiwarką w ramach dziennego budżetu."""
     if not claims:
         return [], {}
-    if os.environ.get('GEMINI_API_KEY', '').strip():
+    use_gemini = True
+    if clinic_ai.paid_backend() == 'claude':
+        # Właściciel 13.10.2026: płatne sprawdzenie faktów robi Claude (budżet dzienny jak przy docisku); Gemini tylko
+        # za zgodą (CLINIC_GEMINI_FALLBACK=true), gdy Claude nie może (brak środków, błąd).
+        checked = claude_check(claims)
+        if checked:
+            return checked
+        use_gemini = os.environ.get('CLINIC_GEMINI_FALLBACK', '').strip().lower() == 'true'
+    if use_gemini and os.environ.get('GEMINI_API_KEY', '').strip():
         try:
             # Limit z zapasem: Gemini myśli i wyszukuje w ramach tych samych tokenów (płaci się tylko za zużyte).
-            response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims), CHECK_SCHEMA, web_search=True, max_tokens=16000)
+            # Oszczędnie z wyszukiwarką: każde zapytanie Google jest płatne osobno.
+            response = clinic_ai._call_gemini(CHECK_SYSTEM, '\n'.join(f'- {c}' for c in claims)
+                                              + '\n\nWyszukuj oszczędnie: zwykle jedno zapytanie na twierdzenie wystarcza.',
+                                              CHECK_SCHEMA, web_search=True, max_tokens=16000, task='check')
             return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
         except ClinicAIError as error:
             logger.warning('council fact check (Gemini) failed: %s', error.code)
-    return free_check(claims) or claude_check(claims) or ([{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.',
+    # zapas za Gemini: darmowy Groq, a Claude tylko gdy nie wyłączono go (CLINIC_CLAUDE_FALLBACK=false, właściciel 6.10)
+    claude = os.environ.get('CLINIC_CLAUDE_FALLBACK', 'true').strip().lower() != 'false'
+    return free_check(claims) or (claude and claude_check(claims)) or ([{'claim': c, 'assessment': 'unverified', 'explanation': 'Sprawdzenie w wyszukiwarce nie powiodło się.',
                                                          'sources': []} for c in claims], {})
 
 
@@ -511,9 +597,25 @@ def needs_escalation(combined: dict, opinions: list[dict]) -> bool:
     return total and (agree / total < 2 / 3 or (combined['verdict'] == 'spin' and combined['intensity'] >= 70))
 
 
+NL = chr(10)
+
+
 def escalate_claims(claims: list[str]) -> tuple[list[dict], dict] | None:
-    """Mocniejsze sprawdzenie faktów płatnym Claude z wyszukiwaniem (CLINIC_ESCALATE=claude, klucz i budżet)."""
-    if os.environ.get('CLINIC_ESCALATE', '').strip().lower() != 'claude':
+    """Mocniejsze sprawdzenie faktów przy sporze modeli albo silnym spinie: CLINIC_ESCALATE=gemini (właściciel 6.10:
+    zamiast Claude) - Gemini z wyszukiwarką i głębszym myśleniem; CLINIC_ESCALATE=claude - jak dawniej."""
+    mode = os.environ.get('CLINIC_ESCALATE', '').strip().lower()
+    if clinic_ai.paid_backend() == 'claude' and mode in ('', 'gemini'):
+        mode = 'claude'  # 13.10.2026: docisk robi Claude; CLINIC_PAID_BACKEND=gemini przywraca Gemini
+    if mode == 'gemini' and os.environ.get('GEMINI_API_KEY', '').strip():
+        try:
+            response = clinic_ai._call_gemini(CHECK_SYSTEM, NL.join(f'- {c}' for c in claims)
+                                              + NL + NL + 'Sprawdź każde twierdzenie starannie, w kilku niezależnych źródłach.',
+                                              CHECK_SCHEMA, web_search=True, max_tokens=24000, task='escalate')
+            return _checked(clinic_ai._json_from_text(response.content), clinic_ai._search_results(response.content)), clinic_ai._usage(response)
+        except ClinicAIError as error:
+            logger.warning('council escalation (Gemini) failed: %s', error.code)
+            return None
+    if mode != 'claude':
         return None
     return claude_check(claims)
 
@@ -534,7 +636,14 @@ def claude_check(claims: list[str]) -> tuple[list[dict], dict] | None:
 
 
 def diagnose(context: dict, lines: str) -> dict:
-    """Pełna diagnoza konsylium w kształcie diagnozy Claude'a (verdict, intensity, headline, … , usage)."""
+    """Pełna diagnoza konsylium w kształcie diagnozy Claude'a (verdict, intensity, headline, … , usage).
+    Zapytania idą z rezerwy na treść (registry.for_content): zadania poboczne nie mogą zabrać Konsylium głosów."""
+    with registry.for_content():
+        return _diagnose(context, lines)
+
+
+def _diagnose(context: dict, lines: str) -> dict:
+    from news import council_quorum as quorum
     members = consult(context['text'], lines)
     opinions = [op for op in members if op.get('status') != 'brak odpowiedzi']
     member_records = [{k: v for k, v in op.items() if k in (
@@ -544,11 +653,18 @@ def diagnose(context: dict, lines: str) -> dict:
                                      for m in _members('CLINIC_COUNCIL', DEFAULT_COUNCIL))
     diversity['degraded'] = (not diversity['sufficient'] or (diversity['polish_required'] and not diversity['polish'])
                              or len(opinions) < PREFERRED_MEMBERS)
-    if len(opinions) < MIN_MEMBERS:
-        error = ClinicAIError(f'council_too_few_members: {len(opinions)}')
-        error.council = {'members': member_records, 'diversity': diversity}
+    core = quorum.active_core()
+    quorum_state = quorum.check(member_records, core)
+    if len(opinions) < MIN_MEMBERS or not quorum_state['met']:
+        # Kworum (właściciel 6.10): bez wymaganej liczby odpowiedzi i stałego rdzenia diagnoza się nie ukazuje -
+        # wpis czeka w kolejce na pełniejszy skład (news/clinic.py: _defer_quorum). Ta sama reguła dla każdej partii.
+        error = ClinicAIError(quorum_state['reason'] or f'council_quorum: odpowiedziało {len(opinions)}')
+        error.council = {'members': member_records, 'diversity': diversity, 'quorum': quorum_state}
+        error.quorum = quorum_state
         raise error
-    combined = combine(opinions)
+    measure = {'core': [m[1] for m in core], 'biases': quorum.member_biases()} if quorum.stable_enabled() else None
+    combined = combine(opinions, measure)
+    measured = combined.pop('measure', None)  # tylko do jawnego zapisu w usage, nie do tekstów modeli
     claims_text = list(dict.fromkeys(c for op in opinions for c in op['claims']))[:6] if combined['verdict'] != 'unclear' else []
     escalated = needs_escalation(combined, opinions) and escalate_claims(claims_text) if claims_text else None
     claims, check_usage = escalated or check_claims(claims_text)
@@ -563,11 +679,14 @@ def diagnose(context: dict, lines: str) -> dict:
         text, chair = write(combined, claims, lines, opinions, verdict_review['issues'])
         verdict_review = {**review(text, combined, claims, lines), 'revised': True}
     text, linguist = polish(text)
+    from news.clinic_plain import edit_plain
+    plain = edit_plain({**text, **combined, 'claims': claims}, context['text'])
     if diversity['degraded']:
-        text['limitations'] = ('Ograniczony skład: nie uzyskano 4 odpowiedzi z 3 firm lub odpowiedzi modelu polskiego. '
+        text['limitations'] = ('Część modeli nie odpowiedziała, więc diagnozę wystawił mniejszy skład niż zwykle. '
                                + str(text.get('limitations', '')))
     return {
         'verdict': combined['verdict'], 'intensity': combined['intensity'],
+        'plain': plain,
         'headline': str(text.get('headline', ''))[:200], 'summary': str(text.get('summary', ''))[:1200],
         'analysis': str(text.get('analysis', ''))[:6000], 'limitations': str(text.get('limitations', ''))[:1500],
         'techniques': [{k: t[k] for k in ('name', 'category', 'quote', 'explanation')} for t in combined['techniques']],
@@ -577,5 +696,6 @@ def diagnose(context: dict, lines: str) -> dict:
                   'model': f"konsylium: {', '.join(op['model'].split('/')[-1] for op in opinions)}",
                   'council': {'agreement': combined['agreement'], 'chair': chair, 'linguist': linguist,
                               'review': verdict_review, 'escalated': bool(escalated),
-                              'diversity': diversity, 'members': member_records}},
+                              'diversity': diversity, 'members': member_records, 'quorum': quorum_state,
+                              **({'measure': measured} if measured else {})}},
     }

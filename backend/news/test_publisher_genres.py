@@ -66,9 +66,9 @@ def test_rss_category_is_topic_not_sponsorship(monkeypatch):
         allowed_scope='metadata', endpoint=source.rss_url,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
         reviewed_at=__import__('django.utils.timezone', fromlist=['now']).now(),
-        reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_by='test', minimum_interval_seconds=3, daily_request_cap=24)
     feed = b'<rss version="2.0"><channel><title>News</title><link>https://example.org</link><description>News</description><item><title>Wywiad o reklamie</title><link>https://example.org/news/a</link><category>Reklama</category><category>Sponsorowane</category></item></channel></rss>'
-    monkeypatch.setattr('scraper.rss_scraper.fetch_feed', lambda url: feed)
+    monkeypatch.setattr('scraper.rss_scraper.fetch_feed', lambda url, **_: feed)
     scrape_rss_source(source.pk)
     article = Article.objects.get(url=URL)
     assert article.category == 'article' and article.tags == ['Reklama', 'Sponsorowane']

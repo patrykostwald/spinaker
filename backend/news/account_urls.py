@@ -9,6 +9,8 @@ from news.account_activity import MyReactionsView
 from news.accounts import XConnectionView, XConnectionStartView, XConnectionCallbackView
 
 urlpatterns = [
+    path('account/x/start/', XConnectionStartView.as_view()),
+    path('account/x/callback/', XConnectionCallbackView.as_view()),
     path('account/profile/', ProfileView.as_view()),
     path('account/history/', HistoryView.as_view()),
     path('account/reactions/', MyReactionsView.as_view()),
@@ -31,6 +33,19 @@ urlpatterns = [
     path('account/topics/<int:topic_id>/', TopicDetailView.as_view()),
     path('articles/<int:article_id>/opinions/', OpinionsView.as_view()),
     path('threads/<slug:slug>/opinions/', ThreadOpinionsView.as_view()),
+]
+
+from news.account_dashboard import (ActivityView, PublicProfileView, MutesView, MuteDetailView,
+    ReportsView, ProfileReportView, PasswordChangeView, LogoutAllView)
+urlpatterns += [
+    path('account/activity/', ActivityView.as_view()),
+    path('account/mutes/', MutesView.as_view()),
+    path('account/mutes/<int:user_id>/', MuteDetailView.as_view()),
+    path('account/reports/', ReportsView.as_view()),
+    path('account/password-change/', PasswordChangeView.as_view()),
+    path('account/logout-all/', LogoutAllView.as_view()),
+    path('profiles/<str:username>/', PublicProfileView.as_view()),
+    path('profiles/<str:username>/report/', ProfileReportView.as_view()),
 ]
 
 from news.account_lifecycle import (VerifyEmailView, ResendVerificationView, PasswordResetView,

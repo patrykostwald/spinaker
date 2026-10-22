@@ -82,7 +82,7 @@ def record_run(result):
             state, _ = RepairerState.objects.get_or_create(key='diagnosis-runs')
             state = RepairerState.objects.select_for_update().get(pk=state.pk)
             status = result.get('status', 'unknown')
-            if status not in ('ok', 'disabled', 'budget', 'night', 'too_many_failures', 'limit', 'locked', 'error'):
+            if status not in ('ok', 'disabled', 'budget', 'night', 'too_many_failures', 'limit', 'locked', 'error', 'quorum'):
                 status = 'unknown'
             if status == 'ok' and result.get('budget_left') == 0:
                 status = 'limit'

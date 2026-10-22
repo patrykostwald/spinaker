@@ -14,7 +14,10 @@ from datetime import date
 from pathlib import Path
 
 import requests
+from scraper.utils import HostRateLimited
+from scraper.access_gate import AccessDenied
 from django.db import transaction
+from django.conf import settings
 from django.utils import timezone
 
 from news.political_models import PublicFigure, PublicFigureRole
@@ -28,9 +31,8 @@ SEJM_KEY = re.compile(r'^parliamentary:sejm:(\d+)$')
 
 
 def _get(path: str):
-    response = requests.get(f'{API}/{path}', headers=HEADERS, timeout=(5, 60))
-    response.raise_for_status()
-    return response.json()
+    from scraper.official import fetch_json_paced
+    return fetch_json_paced('/sejm/' + path)
 
 
 def _day(value) -> date | None:
@@ -59,14 +61,14 @@ def _terms() -> list[dict]:
     """Lista kadencji: najpierw zbiorczo, potem po jednej, a na końcu stałe daty z KNOWN_TERMS."""
     try:
         return [term for term in _get('term') if isinstance(term, dict) and term.get('num')]
-    except (requests.RequestException, ValueError) as error:
+    except (requests.RequestException, ValueError, HostRateLimited, AccessDenied) as error:
         logger.warning('Sejm term list: %s — pobieram kadencje po kolei', type(error).__name__)
     terms = []
     for known in KNOWN_TERMS:
         try:
             term = _get(f"term{known['num']}")
             terms.append(term if isinstance(term, dict) and term.get('num') else known)
-        except (requests.RequestException, ValueError):
+        except (requests.RequestException, ValueError, HostRateLimited, AccessDenied):
             terms.append(known)
     return terms
 
@@ -74,10 +76,10 @@ def _terms() -> list[dict]:
 def load() -> tuple[list[dict], dict[int, list[dict]]]:
     terms = _terms()
     members = {}
-    for term in terms:
+    for term in sorted(terms, key=lambda item: item['num'], reverse=True):
         try:
             members[term['num']] = _get(f"term{term['num']}/MP")
-        except requests.RequestException as error:
+        except (requests.RequestException, ValueError, HostRateLimited, AccessDenied) as error:
             logger.warning('Sejm term %s: %s', term['num'], type(error).__name__)
     return terms, members
 
@@ -95,7 +97,7 @@ def _anchor(figure: PublicFigure, members: dict[int, list[dict]], current: int) 
 
 
 def mandates(figure: PublicFigure, terms: list[dict], members: dict[int, list[dict]]) -> list[dict]:
-    current = max(members) if members else 0
+    current = settings.SEJM_TERM
     birth = _anchor(figure, members, current)
     if not birth:
         return []
@@ -106,10 +108,10 @@ def mandates(figure: PublicFigure, terms: list[dict], members: dict[int, list[di
             if _norm(mp.get('firstLastName', '')) != _norm(figure.canonical_name) or mp.get('birthDate') != birth:
                 continue
             term = by_num.get(num, {})
-            ended = _day(mp.get('mandateExpiryDate')) or (None if term.get('current') else _day(term.get('to')))
+            ended = _day(mp.get('mandateExpiryDate')) or (None if num == current else _day(term.get('to')))
             found.append({'term': num, 'id': mp.get('id'), 'club': mp.get('club') or '',
                           'since': _day(mp.get('oathDate')) or _day(term.get('from')), 'until': ended,
-                          'active': bool(mp.get('active', True)) and bool(term.get('current'))})
+                          'active': bool(mp.get('active', True)) and num == current})
     return found
 
 
@@ -129,9 +131,9 @@ def save(figure: PublicFigure, found: list[dict]) -> int:
                     'party': mandate['club'][:64], 'evidence_url': f"{API}/term{mandate['term']}/MP/{mandate['id']}",
                     'official_profile_url': '', 'source_checked_at': timezone.now()}
         if role:
-            for field in ('since', 'until', 'party', 'source_checked_at'):
+            for field in ('since', 'until', 'party', 'source_checked_at', 'organisation', 'status', 'evidence_url'):
                 setattr(role, field, defaults[field])
-            role.save(update_fields=['since', 'until', 'party', 'source_checked_at'])
+            role.save(update_fields=['since', 'until', 'party', 'source_checked_at', 'organisation', 'status', 'evidence_url'])
         else:
             PublicFigureRole.objects.update_or_create(import_key=key, defaults={**defaults, 'public_figure': figure})
         saved += 1
@@ -140,10 +142,14 @@ def save(figure: PublicFigure, found: list[dict]) -> int:
 
 def current_term_fallback(figures) -> int:
     """Bez list posłów z API: poseł z rejestru bieżącej kadencji dostaje jej datę początku i klub z rejestru."""
-    current = next(term for term in KNOWN_TERMS if term.get('current'))
+    current = next((term for term in KNOWN_TERMS if term['num'] == settings.SEJM_TERM), None)
+    if current is None:
+        return 0
     updated = 0
     for figure in figures:
-        if not SEJM_KEY.match(figure.import_key or ''):
+        if (not SEJM_KEY.match(figure.import_key or '') or not figure.parliamentary_roster_entry_id
+                or figure.parliamentary_roster_entry.term != settings.SEJM_TERM
+                or not figure.parliamentary_roster_entry.active):
             continue
         club = figure.parliamentary_roster_entry.club if figure.parliamentary_roster_entry_id else ''
         roles = figure.public_roles.filter(role_title='Poseł na Sejm RP', status='current', since__isnull=True)
@@ -191,7 +197,8 @@ def run(figures=None) -> dict:
     if not members:
         figures = PublicFigure.objects.filter(archived=False).select_related('parliamentary_roster_entry')
         return {'status': 'api_unavailable', 'from_bundle': import_bundle(), 'current_term_fallback': current_term_fallback(figures)}
-    figures = list(figures if figures is not None else PublicFigure.objects.filter(archived=False))
+    figures = list(figures if figures is not None else PublicFigure.objects.filter(archived=False).select_related('parliamentary_roster_entry'))
+    current_term_fallback(figures)
     # Najpierw profile powiązane z rejestrem Sejmu; duplikat bez powiązania nie przejmuje ich mandatów.
     figures.sort(key=lambda figure: not SEJM_KEY.match(figure.import_key or ''))
     claimed: set[tuple[int, int]] = set()

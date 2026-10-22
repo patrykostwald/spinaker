@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<p>Automatyczne przygotowanie: {{ enabled|yesno:"włączone,wyłączone" }}. Dzienny limit: {{ daily_calls }} wywołań.
+Praca po 02:00, po resecie limitów i zakończeniu diagnoz. Każdy raport wymaga zatwierdzenia. Bez automatycznej wysyłki.</p>
+<form method="get"><label>Identyfikator osoby do sprawdzenia: <input name="figure_id" type="number" min="1" value="{{ figure_id }}"></label>
+<label>Temat: <input name="topic" maxlength="100" value="{{ topic }}"></label><button>Sprawdź</button></form>
+<p><a href="../../reportobservation/">Obserwacje i ich źródła</a></p>
+{% for item in readiness %}
+<section class="module"><h2>{{ item.label }}: {{ item.ready|yesno:"Gotowy do przygotowania,Brakuje danych" }}</h2>
+<ul>{% for gap in item.missing %}<li>{{ gap }}</li>{% endfor %}</ul>
+<details><summary>Pomiary i progi</summary><ul>{% for row in item.measurements %}<li>{{ row.label }}: {{ row.actual }} / {{ row.required }}</li>{% endfor %}</ul></details>
+</section>
+{% endfor %}
+{% if request.user.is_superuser %}
+<h2>Przygotuj bezpłatny przykład</h2>
+<p>Jeden przykład dla każdego typu odbiorców. Pełna recenzja może potrwać kilka nocy.</p>
+<form method="post">{% csrf_token %}
+<p><label>Typ <select name="kind">{% for key,label in types %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label></p>
+<p><label>Odbiorcy <select name="audience">{% for audience in audiences %}<option>{{ audience }}</option>{% endfor %}</select></label></p>
+<p><label>Identyfikator osoby (profil) <input name="figure_id" type="number" min="1"></label></p>
+<p><label>Temat (monitoring) <input name="topic" maxlength="200"></label></p>
+<button type="submit">Przygotuj do recenzji</button>
+</form>
+{% endif %}
+{% endblock %}

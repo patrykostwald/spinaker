@@ -39,7 +39,7 @@ export type Article = {
   author: string;
   description: string;
   source: Source;
-  /** Polubienia materiału (np. wpis na X, film), gdy źródło je podaje — prawy górny róg boxa. */
+  /** Polubienia materiału (np. wpis na X, film), gdy źródło je podaje - prawy górny róg boxa. */
   likes?: number | null;
 };
 

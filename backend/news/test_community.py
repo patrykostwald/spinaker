@@ -10,11 +10,16 @@ from news.models import Article, Source
 
 @pytest.fixture(autouse=True)
 def threads_on(monkeypatch):
+    monkeypatch.setattr('news.thread_moderation.screen_report', lambda body: {'state': 'unavailable'})
     monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
+    monkeypatch.setattr('django.conf.settings.ACCOUNTS_ENABLED', True)
 
 
 def user(name='czytelnik'):
-    return get_user_model().objects.create_user(name, password='x')
+    from news.account_models import AccountIdentity
+    row = get_user_model().objects.create_user(name, password='x')
+    AccountIdentity.objects.create(user=row, email=f'{name}@example.org', email_verified=True)
+    return row
 
 
 def article(url='https://www.gov.pl/web/premier/komunikat'):
@@ -82,8 +87,12 @@ def test_publish_thread_with_article_and_link_then_react():
     reader.force_authenticate(user('czytelnik2'))
     opinions = f'/api/community/threads/{thread_id}/opinions/'
     assert reader.post(opinions, {'body': 'sam komentarz'}, format='json').status_code == 400
-    assert reader.post(opinions, {'polarity': 'positive', 'body': 'Dobre zestawienie'}, format='json').status_code == 201
-    assert public.get(opinions).json()['counts'] == {'positive': 1, 'negative': 0}
+    assert reader.post(opinions, {'polarity': 'positive'}, format='json').status_code == 400
+    steps = f'/api/community/threads/{thread_id}/steps/'
+    for row in reader.get(steps).json()['steps']:
+        assert reader.post(steps, {'item_id': row['item_id'], 'part': row['part'], 'polarity': 'positive'}, format='json').status_code == 200
+    assert reader.post(f'/api/community/threads/{thread_id}/comments/', {'body': 'Dobre zestawienie'}, format='json').status_code == 201
+    assert public.get(opinions).json()['counts'] == {'positive': 1, 'doubt': 0, 'negative': 0}
     assert reader.post(f'/api/community/threads/{thread_id}/report/', {'reason': 'spam'}, format='json').status_code == 201
 
 

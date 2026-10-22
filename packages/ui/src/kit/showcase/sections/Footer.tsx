@@ -2,7 +2,7 @@
 
 /**
  * Witryna SiteFooter (docs/UI_KIT_PLAN.md → «Компоненты» SiteFooter,
- * «Оживление каждого элемента → Футер»). Treść i dysklaimer — dosłownie z `PortalHome.tsx`
+ * «Оживление каждого элемента → Футер»). Treść i dysklaimer - dosłownie z `PortalHome.tsx`
  * (linia ~40): to polityka redakcyjna, nie tylko wygląd.
  */
 
@@ -29,13 +29,13 @@ const COLUMNS: SiteFooterColumn[] = [
     links: [
       { label: "Moje konto", href: "/konto" },
       { label: "Ustawienia", href: "/profile" },
-      { label: "Nowa nitka kontekstowa", href: "/konto/nitki/nowa" },
+      { label: "Nowa spinka", href: "/konto/spinki/nowa" },
     ],
   },
   {
     title: "Redakcja",
     links: [
-      { label: "Warsztat nitek", href: "/editor" },
+      { label: "Warsztat spinek", href: "/editor" },
       { label: "Katalog źródeł", href: "/editor/sources" },
       { label: "Panel redakcyjny X", href: "/editor/political" },
     ],
@@ -73,7 +73,7 @@ function FooterDemo({ theme }: { theme: "dark" | "light" }) {
         }
         columns={COLUMNS}
         cta={{ eyebrow: "WSPARCIE PROJEKTU", label: "Wesprzyj spin.clinic", href: "/wsparcie" }}
-        bottom="Sekcja demonstracyjna biblioteki UI — wszystkie dane są fikcyjne."
+        bottom="Sekcja demonstracyjna biblioteki UI - wszystkie dane są fikcyjne."
       />
     </div>
   );

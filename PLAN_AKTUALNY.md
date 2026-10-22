@@ -189,3 +189,14 @@ Parametry komputera do ingestu i ewentualnego modelu (RAM, procesor, GPU/VRAM), 
 - Dyrektywa 2019/790, art. 4 i 15: https://eur-lex.europa.eu/eli/dir/2019/790/oj/eng
 
 Kwestie prawne planu wymagają weryfikacji właściwej dla konkretnego wykorzystania; dokument nie jest opinią prawną ani gwarancją legalności.
+
+
+## Kierunek 9.10.2026 (właściciel)
+- spin.clinic: usuwamy całą sekcję spinek; zostaje komentowanie diagnoz, przekazów dnia i wywiadów. Zarobki: raporty, alerty i przede wszystkim prosta aplikacja z błyskawicznymi powiadomieniami o wpisach polityków. Kolejność: dopieszczenie strony przez pętle designu, potem aplikacja (najpierw PWA).
+- Spinki: osobny produkt (nazwa i domena do ustalenia), dopracowanie w przyszłości; teraz zamrożenie kodu i eksport danych.
+- przeszłość.today: paski informacyjne (YouTube na górze, pod nim źródła publiczne, pasek mediów wyłączony do czasu podpięcia mediów); później centrum informacyjne (film, drzewo, rozmowa z AI, powiązane materiały).
+- Zespół agentów na Telegramie (Klaudiusz CTO, Audytor, Projektant, Prawnik, Raportysta): plan w artefakcie https://claude.ai/artifact/WFqxbAjyFhhS7Pn4dreACZ.
+- Spinki (wizja właściciela 9.10): ściana kafelków, każdy kafelek to box z naszej bazy (działa po podpięciu mediów). W prawym rogu boxa miejsce na spinkę; jej kolor zależy od reakcji użytkowników. Spinka reprezentuje to, co użytkownicy robią z boxem: reakcje oraz przede wszystkim funkcje spinki, czyli przypięcia z komentarzem materiału lub ciągu materiałów do danego boxa jako komentarz użytkownika.
+- Spinki: produkt społecznościowy (nie dla dziennikarzy); domena spina3.pl (po zakupie); wymaga podstaw prawnych usługi hostingowej (regulamin, zgłaszanie i usuwanie treści, moderacja, RODO, małoletni).
+- Spinki: zasady przypięć w docs/SPINKI_PRODUKT.md (jedno przypięcie na użytkownika i box; typ A: inny box z bazy z komentarzem i reakcją, typ B: treść dodana przez użytkownika; ciąg z własnych przypięć).
+- Spinki: decyzje 9.10: kolory bez zmian (otwarte na opcje), jeden autor ciągu, przypięcie z linku trafia do bazy jako nowy box po badaniu, ściana główna z kafelkami rotującymi miniaturka/post/autor/spinki.

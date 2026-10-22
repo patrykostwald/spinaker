@@ -6,18 +6,24 @@ const BASE = `https://${DOMAIN}`;
 
 export const revalidate = 3600;
 
-/** Mapa strony dla wyszukiwarek: strony stałe i najnowsze diagnozy Kliniki (gdy API nie odpowie — same strony stałe). */
+/** Mapa strony dla wyszukiwarek: strony stałe i najnowsze diagnozy Kliniki (gdy API nie odpowie - same strony stałe). */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const pages: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: 'hourly', priority: 1 },
     { url: `${BASE}/klinika`, lastModified: now, changeFrequency: 'hourly', priority: 0.9 },
+    { url: `${BASE}/klinika/korekty`, changeFrequency: 'daily', priority: 0.7 },
     { url: `${BASE}/raport`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/o-nas`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/konsylium`, lastModified: '2026-09-29', changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE}/konsylium/karta`, lastModified: '2026-09-29', changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/metodologia`, lastModified: '2026-09-29', changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/dla-redakcji`, lastModified: '2026-09-29', changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/en/about`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/en/methodology`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/en/council`, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${BASE}/en/council/charter`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/en/press`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/newsletter`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${BASE}/zrodla`, changeFrequency: 'weekly', priority: 0.5 },
     { url: `${BASE}/wsparcie`, changeFrequency: 'monthly', priority: 0.4 },

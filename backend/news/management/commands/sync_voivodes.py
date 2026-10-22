@@ -42,6 +42,8 @@ class Command(BaseCommand):
         now = timezone.now()
         with transaction.atomic():
             for row in rows:
+                previous = PublicFigure.objects.filter(import_key=holder_import_key(row.region, row.canonical_name)).first()
+                merged_target = previous.merged_into if previous and previous.merged_into_id else None
                 figure, _ = PublicFigure.objects.update_or_create(
                     import_key=holder_import_key(row.region, row.canonical_name),
                     defaults={
@@ -55,9 +57,10 @@ class Command(BaseCommand):
                         'evidence_note': 'Aktualna lista wojewodów wskazana przez KPRM.',
                         'source_checked_at': now,
                         'parliamentary_roster_entry': None,
-                        'archived': False,
+                        'archived': merged_target is not None,
                     },
                 )
+                holder = merged_target or figure
                 public_office, _ = PublicOffice.objects.update_or_create(
                     import_key=f'public-office:voivode:{row.region}',
                     defaults={
@@ -66,7 +69,7 @@ class Command(BaseCommand):
                         'organisation': row.organisation,
                         'official_roster_url': row.source_url,
                         'evidence_note': 'Aktualna lista wojewodów wskazana przez KPRM.',
-                        'current_holder': figure,
+                        'current_holder': holder,
                         'source_checked_at': now,
                         'archived': False,
                     },
@@ -74,12 +77,12 @@ class Command(BaseCommand):
                 # A change of holder closes the previous sourced role while the
                 # durable office remains the same registry record.
                 PublicFigureRole.objects.filter(public_office=public_office,
-                    status='current', archived=False).exclude(public_figure=figure).update(
+                    status='current', archived=False).exclude(public_figure=holder).update(
                         status='former', source_checked_at=now)
                 PublicFigureRole.objects.update_or_create(
                     import_key=f'public-office:voivode:{row.region}:holder:{figure.import_key}',
                     defaults={
-                        'public_figure': figure,
+                        'public_figure': holder,
                         'public_office': public_office,
                         'role_category': 'government',
                         'role_title': row.role_title,

@@ -3,10 +3,10 @@
 /**
  * Pozioma taśma kart (odpowiednik starego `MaterialStrip`): przewijanie kółkiem/palcem,
  * strzałki `ghost icon` po bokach (widoczne przy najechaniu na taśmę, zawsze z klawiatury),
- * strzałki przewijają sprężyną `move` przez `scrollBy` (w reduced motion — skokiem).
+ * strzałki przewijają sprężyną `move` przez `scrollBy` (w reduced motion - skokiem).
  * Bez stałego paska przewijania: krawędź z dalszą treścią wygasza się (`data-more-start/end`), a strzałki
  * pokazują się tylko w stronę, w którą jest co przewijać. Karty w taśmach nie
- * rosną na najechanie (`expandable={false}` u wywołujących) — przycięłoby je `overflow-x: auto`.
+ * rosną na najechanie (`expandable={false}` u wywołujących) - przycięłoby je `overflow-x: auto`.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -60,7 +60,7 @@ export function Strip({ label, children, step, className, slot = "240px" }: Stri
         ref={scroller}
         className="sc-strip__scroller"
         tabIndex={0}
-        aria-label={`${label} — przewijaj poziomo`}
+        aria-label={`${label} - przewijaj poziomo`}
         onKeyDown={(event) => {
           if (event.target !== event.currentTarget) return;
           if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
@@ -79,7 +79,7 @@ export function Strip({ label, children, step, className, slot = "240px" }: Stri
   );
 }
 
-/** Puste miejsce w taśmie — gdy materiałów jest mniej niż slotów (stary `EmptyMaterialSlot`). */
+/** Puste miejsce w taśmie - gdy materiałów jest mniej niż slotów (stary `EmptyMaterialSlot`). */
 export function EmptySlot({ index, label }: { index: number; label: string }) {
   return (
     <div className="sc-strip__empty" aria-hidden="true">

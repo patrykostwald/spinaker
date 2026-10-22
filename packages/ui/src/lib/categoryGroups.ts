@@ -1,8 +1,8 @@
 /**
- * Osiem grup kategorii portalu (decyzja właściciela 25.09) — zamiast 18 kategorii backendu w filtrach Bazy,
+ * Osiem grup kategorii portalu (decyzja właściciela 25.09) - zamiast 18 kategorii backendu w filtrach Bazy,
  * formularzu nitki użytkownika i kolumnach „wodospadu”. Każda kategoria `ArticleCategory` należy do
  * dokładnie jednej grupy; kolejność alfabetyczna (polska kolacja). Etykiety na kartach zostają
- * szczegółowe („Komunikat”, „Akt prawny”) — grupa to tylko sposób filtrowania i układania.
+ * szczegółowe („Komunikat”, „Akt prawny”) - grupa to tylko sposób filtrowania i układania.
  */
 
 export type CategoryGroup = { key: string; label: string; categories: string[] };

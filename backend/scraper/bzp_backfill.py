@@ -120,11 +120,54 @@ def _metadata(row, window_from, window_to):
 
 def save_metadata(source, row, window_from, window_to):
     """Idempotently save only public notice metadata as a box."""
-    _, number, title, published, url = _metadata(row, window_from, window_to)
+    notice_id, number, title, published, url = _metadata(row, window_from, window_to)
     article, created = upsert_article(source=source, title=title, url=url,
         published_date=published, category=ArticleCategory.DOCUMENT,
         description=f'Ogłoszenie BZP {number}', ingestion_method='archive')
+    save_notice_record(row, notice_id, number, title, published, url)
     return bool(article and created)
+
+
+NOTICE_FIELDS = ('noticeType', 'orderType', 'cpvCode', 'organizationName', 'organizationCity', 'organizationProvince',
+                 'organizationNationalId', 'submittingOffersDate', 'isTenderAmountBelowEU', 'procedureResult', 'tenderId', 'bzpNumber')
+
+
+def save_notice_record(row, notice_id, number, title, published, url):
+    """Pola ogłoszenia z tej samej odpowiedzi (bez dodatkowych zapytań): CPV, zamawiający, termin ofert.
+    Czyta je pętla „Zamówienia publiczne” (news/zamowienia.py). Błąd zapisu nie zatrzymuje zbieracza."""
+    import hashlib
+    from news.public_records_models import PublicRecord
+    data = {key: row.get(key) for key in NOTICE_FIELDS if row.get(key) not in (None, '')}
+    data['noticeNumber'] = number
+    try:
+        with transaction.atomic():
+            PublicRecord.objects.update_or_create(source='bzp', kind='notice', external_id=notice_id[:256], defaults=dict(
+                source_url=url, response_url=SEARCH_URL,
+                response_sha256=hashlib.sha256(json.dumps(row, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest(),
+                date=timezone.localtime(published, ZoneInfo('Europe/Warsaw')).date(), title=title[:2000], data=data))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def history_floor(cursor):
+    """Najstarszy dzień przejścia (zasilanie bazy 6.10): pierwsze przejście sięga BZP_BACKFILL_DAYS wstecz
+    od dnia odcięcia (domyślnie 365, najwyżej 1095); kolejne przejścia kończą się na poprzednim odcięciu."""
+    if cursor.get('floor'):
+        return date.fromisoformat(cursor['floor'])
+    import os
+    days = min(1095, max(1, int(os.environ.get('BZP_BACKFILL_DAYS', '365'))))
+    return date.fromisoformat(cursor['cutoff']) - timedelta(days=days)
+
+
+def _next_pass(cursor, started):
+    """Po ukończonym przejściu: nowe, krótkie przejście od wczoraj do poprzedniego odcięcia (nowe ogłoszenia)."""
+    yesterday = timezone.localdate(started) - timedelta(days=1)
+    previous = date.fromisoformat(cursor['cutoff'])
+    if previous >= yesterday:
+        return None
+    return {'cutoff': yesterday.isoformat(), 'day': yesterday.isoformat(), 'page': 1, 'complete': False,
+            'floor': (previous + timedelta(days=1)).isoformat(),
+            'history_complete_at': cursor.get('history_complete_at') or started.isoformat()}
 
 
 def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
@@ -148,10 +191,21 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
         state.cursor = cursor
         state.save(update_fields=['cursor'])
     if cursor.get('complete'):
-        return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
+        fresh = _next_pass(cursor, started)
+        if fresh is None:
+            return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
+        cursor = state.cursor = fresh
+        state.save(update_fields=['cursor'])
     if cursor.get('cutoff') < cursor.get('day'):
         raise ValueError('Invalid BZP newest-to-oldest cursor')
     day = date.fromisoformat(cursor['day'])
+    if day < history_floor(cursor):
+        # Okno historii zebrane: koniec przejścia bez zapytania; następne zaczyna się od nowych dni.
+        cursor = {**cursor, 'complete': True, 'floor': history_floor(cursor).isoformat(),
+                  'history_complete_at': cursor.get('history_complete_at') or started.isoformat()}
+        state.cursor = cursor
+        state.save(update_fields=['cursor'])
+        return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
     try:
         rows = fetch_page(source=source, instruction=instruction, endpoint=endpoint,
             date_from=day.isoformat(), date_to=day.isoformat(),

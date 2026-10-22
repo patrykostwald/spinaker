@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<p>Wycofanie usunie diagnozę z publicznych zestawień. Pod jej adresem pozostanie data i powód wycofania. Treść AI pozostanie bez zmian w archiwum.</p>
+<form method="post">{% csrf_token %}
+  {{ form.as_p }}
+  <p>Wybrane diagnozy:</p>
+  <ul>{% for diagnosis in diagnoses %}<li>{{ diagnosis }}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ diagnosis.pk }}">
+  </li>{% endfor %}</ul>
+  <input type="hidden" name="action" value="withdraw_diagnoses">
+  <input type="hidden" name="select_across" value="{{ select_across }}">
+  <input type="submit" name="confirm_withdrawal" value="Wycofaj i opublikuj powód">
+  <a href="{% url 'admin:news_spindiagnosis_changelist' %}">Anuluj</a>
+</form>
+{% endblock %}

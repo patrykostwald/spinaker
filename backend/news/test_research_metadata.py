@@ -144,7 +144,12 @@ def test_existing_article_is_returned_without_replacing_editorial_metadata():
         result = ResearchMetadataSession([source]).enrich([article.url])
         fetch.assert_not_called()
     assert result['articles'][0]['title'] == 'Existing title'
-    assert result['articles'][0]['image_url'] == article.image_url
+    # The stored editorial thumbnail stays untouched; a publisher without consent
+    # is shown without image (news/media_rights.py, owner decision 28.09.2026).
+    assert result['articles'][0]['image_url'] == ''
+    article.refresh_from_db()
+    assert article.image_url == 'https://images.example/original.jpg'
+    assert article.title == 'Existing title'
 
 
 @pytest.mark.django_db(transaction=True)

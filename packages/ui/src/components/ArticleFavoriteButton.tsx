@@ -9,7 +9,7 @@ import { useFeature } from "../lib/features";
 
 /**
  * Dyskretne wejście do ulubionych materiałów.
- * `compact` — ikona na boxie, widoczna tylko dla zalogowanych (strona publiczna pozostaje bez zmian).
+ * `compact` - ikona na boxie, widoczna tylko dla zalogowanych (strona publiczna pozostaje bez zmian).
  */
 function ArticleFavoriteButtonInner({ articleId, title, compact = false }: { articleId: number; title: string; compact?: boolean }) {
   const { ownerId } = useOwnerId();

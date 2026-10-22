@@ -1,5 +1,5 @@
 /**
- * Wewnętrzny barrel katalogu `portal/` (R5) — używany przez sekcję witryny i (docelowo)
+ * Wewnętrzny barrel katalogu `portal/` (R5) - używany przez sekcję witryny i (docelowo)
  * przez integratora przy dopisywaniu eksportów do `kit/index.ts` (patrz raport R5).
  */
 export {

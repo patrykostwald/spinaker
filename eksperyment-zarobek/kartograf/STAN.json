@@ -1,0 +1,9 @@
+{
+  "agent": "kartograf",
+  "budzet_start_usd": 45,
+  "budzet_usd": 45,
+  "runda": 0,
+  "status": "zyje",
+  "koszt_rund_usd": [],
+  "uwaga": "budzet zmienia tylko koordynator; koszt rundy = tokeny x stawka, kalibrowana saldem kredytu"
+}

@@ -65,13 +65,17 @@ def merge_claims(items):
     return result
 
 
-def scope_data(post):
+def scope_data(post, videos=None):
     kinds = {item.get('type', 'photo') for item in post.media or [] if isinstance(item, dict)}
     image = bool(kinds & {'photo', 'image'})
     video = bool(kinds & {'video', 'animated_gif', 'amplify_video_thumb'})
-    return {'text': True, 'image': image, 'video': False,
-            'analyzed': ['tekst'] + (['obraz'] if image else []),
-            'not_analyzed': ['film'] if video else []}
+    watched = video and any(v.get('status') in ('full', 'partial') for v in videos or [])
+    count = sum(isinstance(item, dict) and item.get('type') in ('video', 'animated_gif', 'amplify_video_thumb')
+                for item in post.media or [])
+    complete = len(videos or []) == count and all(v.get('status') == 'full' for v in videos or [])
+    return {'text': True, 'image': image, 'video': watched,
+            'analyzed': ['tekst'] + (['obraz'] if image else []) + (['film' if complete else 'fragment filmu'] if watched else []),
+            'not_analyzed': (['pozostała część nagrań'] if watched else ['film']) if video and not complete else []}
 
 
 def single_share(row, synthesis):
@@ -127,7 +131,7 @@ def scan_data(row):
     return {'loaded': loaded_data(row.post.text, (row.usage or {}).get('loaded_words')),
             'lab': getattr(row, 'lab', {}),
             'families': {key: {'technique_types': count} for key, count in families.items()}, 'techniques': techniques[:6], 'claims': claims, 'sources': len(sources), 'source_domains': sorted(sources)[:5],
-            'scope': scope_data(row.post), 'share': {'single': single_share(row, synthesis)},
+            'scope': scope_data(row.post, (row.usage or {}).get('videos')), 'share': {'single': single_share(row, synthesis)},
             'diagnosed_at': row.diagnosed_at,
             'council': {'models': len(votes), 'verdict_agreement': agreement,
                         'range': [min(scores), max(scores)] if scores else None,

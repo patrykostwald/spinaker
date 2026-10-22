@@ -66,3 +66,54 @@ def test_agent_confirms_only_with_register_match_or_two_sources(monkeypatch):
     assert krs_agent.verify(figure, {**candidate, 'krs': '0000099999'}) is None
     assert krs_agent.verify(figure, {**candidate, 'name': 'Zupełnie Inny Podmiot'}) is None
     assert PublicFigureOrganisationRelation.objects.filter(verification_status='confirmed').count() == 2
+
+
+def test_official_register_url_points_to_ms_search_and_rejestr_io_is_extra():
+    assert krs.official_register_url('https://rejestr.io/krs/123') == krs.MS_SEARCH_URL
+    assert krs.official_register_url('') == krs.MS_SEARCH_URL
+    assert krs.official_register_url('https://ekrs.ms.gov.pl/') == 'https://ekrs.ms.gov.pl/'
+    assert krs.extra_register_url('0000012345') == 'https://rejestr.io/krs/12345'
+    assert krs.extra_register_url('') == ''
+    assert 'wpis' in krs.SINCE_NOTE.lower()
+
+
+class _Resp:
+    def __init__(self, code, payload=None):
+        self.status_code, self._payload = code, payload
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError('brak json')
+        return self._payload
+
+
+def test_fetch_status_rozroznia_brak_podmiotu_od_bledu_rejestru(monkeypatch):
+    calls = []
+
+    def fake(url, params=None, **kw):
+        calls.append(params['rejestr'])
+        return answers.pop(0)
+
+    monkeypatch.setattr(krs.requests, 'get', fake)
+    answers = [_Resp(404), _Resp(404)]
+    assert krs.fetch_status('26438') == (None, 'missing') and calls == ['P', 'S']
+    calls.clear()
+    answers = [_Resp(404), _Resp(200, ODPIS)]  # fundacja: rejestr S po 404 w P
+    extract, status = krs.fetch_status('12345')
+    assert status == 'ok' and extract.register == 'S' and calls == ['P', 'S']
+    calls.clear()
+    answers = [_Resp(503), _Resp(503)]  # błąd rejestru po ponowieniu to nie „nie ma w rejestrze”
+    assert krs.fetch_status('26438') == (None, 'error') and calls == ['P', 'P']
+    answers = [_Resp(200, None)]
+    assert krs.fetch_status('26438') == (None, 'error')
+    answers = [_Resp(200, [])]  # niespodziewany kształt odpowiedzi
+    assert krs.fetch_status('26438') == (None, 'error')
+
+
+def test_parse_odpis_aktualny_has_plain_text_name_and_form():
+    """P1-16: OdpisAktualny daje nazwę i formę prawną jako zwykły tekst (nie historię); pusta nazwa robiła z PKO BP „brak w rejestrze”."""
+    data = {'odpis': {'rodzaj': 'Aktualny', 'naglowekA': {}, 'dane': {'dzial1': {'danePodmiotu': {
+        'formaPrawna': 'SPÓŁKA AKCYJNA', 'nazwa': 'POWSZECHNA KASA OSZCZĘDNOŚCI BANK POLSKI SPÓŁKA AKCYJNA',
+        'identyfikatory': {'nip': '5250007738', 'regon': '01629826300000'}}}}}}
+    extract = krs.parse('0000026438', 'P', data)
+    assert extract.name.startswith('POWSZECHNA KASA') and extract.kind == 'company' and extract.nip == '5250007738' and extract.regon == '01629826300000'

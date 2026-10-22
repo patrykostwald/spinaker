@@ -1,6 +1,8 @@
 "use client";
 
-import { techniqueLabel } from "../../lib/clinic";
+import { DiscussionCounts } from "./ClinicDiscussion";
+
+import { spinVar } from "../../lib/clinic";
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
@@ -30,11 +32,11 @@ function RecordingTime({ url, item, expanded }: { url: string; item: { time: str
 }
 
 export function InterviewScope() {
-  return <p className="sc-interview-scope">Analiza transkrypcji: u gościa badamy techniki perswazji, u prowadzącego — sposób zadawania pytań i reakcje na odpowiedzi.</p>;
+  return <p className="sc-interview-scope">Analiza transkrypcji: u gościa badamy techniki perswazji, u prowadzącego - sposób zadawania pytań i reakcje na odpowiedzi.</p>;
 }
 
 function ResultBar({ value }: { value: number }) {
-  return <div className="sc-scan-g"><span className="sc-scan-g-track"><i style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div>;
+  return <div className="sc-scan-g"><span className="sc-scan-g-track"><i className="sc-spin-fill" style={{ ...spinVar(value), width: `${Math.max(0, Math.min(100, value))}%` }} /></span><span className="sc-scan-g-scale"><b>0</b><b>50</b><b>100</b></span></div>;
 }
 
 const suspectScale = (part: { verdict: string; intensity: number }) => ["spin", "partial"].includes(part.verdict) && part.intensity > 0 && part.intensity <= 10;
@@ -43,25 +45,25 @@ const suspectScale = (part: { verdict: string; intensity: number }) => ["spin", 
 export function InterviewResults({ interview }: { interview: Interview }) {
   const { guest, host } = interview;
   return <div className="sc-interview-results">
-    <section>
-      <p className="sc-scan-m-lbl">Gość · siła spinu</p>
+    <section data-role="guest">
+      <p className="sc-scan-m-lbl">Gość</p>
       <p className="sc-interview-results__who">{interview.guest_name}{interview.guest_role ? <span>, {interview.guest_role}</span> : null}</p>
-      {/* Najstarsze analizy mogły podać siłę w skali 0–10: werdykt „spin” przy sile ≤ 10 jest sprzeczny — nie pokazujemy mylącej liczby (audyt 046) */}
+      {/* Najstarsze analizy mogły podać siłę w skali 0–10: werdykt „spin” przy sile ≤ 10 jest sprzeczny - nie pokazujemy mylącej liczby (audyt 046) */}
       {suspectScale(guest) ? <div className="sc-interview-results__score"><p className="sc-interview-results__none">Siła: skala tej analizy wymaga wyjaśnienia</p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div> : <>
-      <div className="sc-interview-results__score"><p className="sc-scan-m-num sc-scan-strength">{guest.intensity}<small>/100</small></p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div>
+      <div className="sc-interview-results__score"><p className="sc-scan-m-num sc-scan-strength sc-spin-num" style={spinVar(guest.intensity)}>{guest.intensity}<small>/100</small></p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div>
       <ResultBar value={guest.intensity} /></>}
     </section>
-    <section>
-      <p className="sc-scan-m-lbl">Prowadzący · siła spinu w pytaniach</p>
+    <section data-role="host">
+      <p className="sc-scan-m-lbl">Prowadzący</p>
       <p className="sc-interview-results__who">{interview.host_name || "Prowadzący"}</p>
-      <div className="sc-interview-results__score">{host.intensity == null ? <p className="sc-interview-results__none">Brak wyniku liczbowego</p> : <p className="sc-scan-m-num">{host.intensity}<small>/100</small></p>}
+      <div className="sc-interview-results__score">{host.intensity == null ? <p className="sc-interview-results__none">Brak wyniku liczbowego</p> : <p className="sc-scan-m-num sc-spin-num" style={spinVar(host.intensity)}>{host.intensity}<small>/100</small></p>}
         {host.verdict ? <VerdictTag verdict={host.verdict} label={host.verdict_label ?? ""} /> : null}</div>
       {host.intensity == null ? null : <ResultBar value={host.intensity} />}
     </section>
   </div>;
 }
 
-/** `full` — własna strona wywiadu: jeden tytuł (H1 strony), uzasadnienie od razu otwarte, bez odsyłacza do samej siebie (audyt 046). */
+/** `full` - własna strona wywiadu: jeden tytuł (H1 strony), uzasadnienie od razu otwarte, bez odsyłacza do samej siebie (audyt 046). */
 function CompactInterviewScanner({ interview, full = false }: { interview: Interview; full?: boolean }) {
   const [expanded, setExpanded] = useState(full);
   const [sharing, setSharing] = useState(false);
@@ -97,29 +99,30 @@ function CompactInterviewScanner({ interview, full = false }: { interview: Inter
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {interview.thumbnail_url ? <img src={interview.thumbnail_url} alt="" referrerPolicy="no-referrer" /> : null}<span aria-hidden="true">▶</span>
         </a>
-        <p className="sc-interview-recording-label">Tytuł nagrania</p><h3 className="sc-scan-p-name">{interview.title}</h3>
-        <p>Gość: {interview.guest_name}{interview.guest_role ? `, ${interview.guest_role}` : ""}</p>
-        <p>Prowadzący: {interview.host_name}</p>
+        {/* data i kanał w miejscu etykiety, gość i prowadzący w jednym wierszu (właściciel 4.10) */}
         <div className="sc-interview-scan-meta"><time dateTime={interview.day}>{formatDatePl(interview.day)}</time><a href={interview.url} target="_blank" rel="noopener noreferrer">{interview.channel} ↗</a></div>
+        <h3 className="sc-scan-p-name">{interview.title}</h3>
+        <p className="sc-interview-people"><span>Gość: {interview.guest_name}{interview.guest_role ? `, ${interview.guest_role}` : ""}</span><span>Prowadzący: {interview.host_name}</span></p>
       </div>
     </div>
     <div className="sc-scan-dg">
-      <header className="sc-scan-dg-head"><span className="sc-scan-dg-ai">OCENA KONSYLIUM AI</span><span className="sc-scan-dg-id">#WYWIAD-{interview.id} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "—"}</span></header>
+      <header className="sc-scan-dg-head"><span className="sc-scan-dg-ai">OCENA KONSYLIUM AI</span><span className="sc-scan-dg-id">#WYWIAD-{interview.id} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "-"}</span></header>
       {expanded ? <p className="sc-scan-dg-who">Wywiad: <strong>{interview.guest_name}</strong> · {formatDatePl(interview.day)} · <a href={interview.url} target="_blank" rel="noopener noreferrer">{interview.channel} ↗</a></p> : null}
       {full ? <span id={`${prefix}-lead`} hidden>{interview.headline}</span> : <h3 className="sc-scan-dg-lead" id={`${prefix}-lead`}>{interview.headline}</h3>}
       <InterviewScope />
       <InterviewResults interview={interview} />
       <p className="sc-archive-interview-summary">{interview.summary}</p>
-      <footer className="sc-scan-dg-foot"><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a><div className="sc-scan-dg-actions">
+      <DiscussionCounts {...interview} />
+      <footer className="sc-scan-dg-foot"><div className="sc-scan-dg-actions">
         <button ref={expandRef} type="button" aria-expanded={expanded} aria-controls={`${prefix}-details`} onClick={() => expanded ? collapse() : setExpanded(true)}>{expanded ? "Zwiń uzasadnienie" : "Pokaż uzasadnienie"}</button>
         <button type="button" aria-expanded={sharing} aria-controls={`${prefix}-share`} onClick={() => setSharing(!sharing)}>Udostępnij</button>{full ? null : <Link className="sc-scan-button sc-scan-primary" href={path}>Pełna analiza →</Link>}
-      </div></footer>
+      </div><a className="sc-scan-dg-report" href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a></footer>
       <div className="sc-scan-expand" data-open={expanded}><div><section id={`${prefix}-details`} className="sc-scan-details" aria-label="Uzasadnienie" aria-hidden={!expanded}>
       <div className="sc-scan-m">
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl" title="Liczymy zapisane pozycje analizy, bez scalania podobnych twierdzeń">Twierdzenia</p><p className="sc-scan-m-num">{checked}<small> sprawdzone</small></p>
-          <div className="sc-scan-g"><span className="sc-scan-g-squares" aria-hidden="true">{claimSquares.map((kind, index) => <i key={index} data-k={kind} />)}</span><span className="sc-scan-g-legend">{claims.map(claim => claim.count ? <span key={claim.key} data-k={claim.kind}>{claim.count} {claim.label}</span> : null)}</span></div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl" title="Liczymy zapisane pozycje analizy, bez scalania podobnych twierdzeń">Twierdzenia</p><p className="sc-scan-m-num">{checked}</p>
+          <div className="sc-scan-g"><span className="sc-scan-g-squares" aria-hidden="true">{claimSquares.map((kind, index) => <i key={index} data-k={kind} />)}</span><span className="sc-scan-g-legend">{claims.map(claim => claim.count ? <span key={claim.key} data-k={claim.kind}><em>{claim.label}</em><b>{claim.count}</b></span> : null)}</span></div>
         </div>
-        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{typeCount}<small> {techniqueLabel(typeCount)}</small></p><div className="sc-scan-g">{families.map(({ key, label, count }) => <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${count / familyMax * 100}%` }} /></span><b>{count}</b></span>)}</div></div>
+        <div className="sc-scan-m-col"><p className="sc-scan-m-lbl">Techniki</p><p className="sc-scan-m-num">{typeCount}</p><div className="sc-scan-g">{families.map(({ key, label, count }) => <span key={key} className="sc-scan-g-row sc-scan-g-fam" data-family={key}><em>{label.split(" ")[0]}</em><span className="sc-scan-g-track sc-scan-g-thin"><i style={{ width: `${count / familyMax * 100}%` }} /></span><b>{count}</b></span>)}</div></div>
       </div>
       <table className="sc-scan-t"><thead><tr><th>Rodzina technik</th><th>Techniki w analizowanym materiale</th><th className="sc-scan-t-n">Typy</th></tr></thead><tbody>{families.map(({ key, label, count, types }) => <tr key={key} data-family={key}><th scope="row"><i />{label}</th><td>{types.map(item => item.label).join(" · ") || <span className="sc-scan-t-none">Nie wskazano</span>}</td><td className="sc-scan-t-n">{count}</td></tr>)}</tbody></table>
         <div className="sc-scan-details-grid">
@@ -205,8 +208,8 @@ function FullInterview({ interview }: { interview: Interview }) {
         }}>{person.label}</button>)}
       </div>
       {participants.map(person => <div key={person.id} id={`${prefix}-${person.id}`} role="tabpanel" aria-labelledby={`${prefix}-tab-${person.id}`} tabIndex={0} hidden={speaker !== person.id}>
-        <section className="sc-participant-result">
-          <p className="sc-scan-m-lbl">{person.label} · {person.role === "host" ? "siła spinu w pytaniach" : "siła spinu"}</p>
+        <section className="sc-participant-result" data-role={person.role === "host" ? "host" : "guest"}>
+          <p className="sc-scan-m-lbl">{person.label}</p>
           <h2>{person.name || person.label}{person.function ? <span>, {person.function}</span> : null}</h2>
           <div className="sc-participant-result__score">
             <p className={person.intensity == null || suspectScale({ verdict: person.verdict ?? "", intensity: person.intensity }) ? "sc-participant-result__none" : "sc-scan-m-num"}>{person.intensity == null ? "Brak wyniku liczbowego" : suspectScale({ verdict: person.verdict ?? "", intensity: person.intensity }) ? "Siła: skala tej analizy wymaga wyjaśnienia" : <>{person.intensity}<small>/100</small></>}</p>
@@ -230,7 +233,7 @@ function FullInterview({ interview }: { interview: Interview }) {
         {person.limitations ? <section><h2>Ograniczenia · {person.label}</h2><p>{person.limitations}</p></section> : null}
       </div>)}
       <section id={`${prefix}-limits`}><h2>Ograniczenia analizy</h2><p>{interview.limitations || "Nie zapisano dodatkowych ograniczeń tej analizy."}</p></section>
-      <p className="sc-interview-full__meta">Ocena konsylium AI · {interview.model} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "—"}</p>
+      <p className="sc-interview-full__meta">Ocena konsylium AI · {interview.model} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "-"}</p>
       <a href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a>
       <details className="sc-interview-full__share"><summary className="sc-share-cta"><ShareXCardContent interview /></summary><label htmlFor={`${prefix}-share`}>Tekst z linkiem</label><textarea id={`${prefix}-share`} value={shareText} readOnly rows={5} /><button type="button" onClick={() => void copy()}>Kopiuj</button><p role="status">{copyStatus}</p></details>
     </article>

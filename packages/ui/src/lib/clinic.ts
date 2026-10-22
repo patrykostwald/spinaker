@@ -1,4 +1,5 @@
-/** Klinika spinu — typy i zapytania do /api/clinic/ (backend/news/clinic.py). */
+/** Klinika spinu - typy i zapytania do /api/clinic/ (backend/news/clinic.py). */
+import type { CSSProperties } from "react";
 import { apiFetch, apiWrite } from "./api";
 
 /** Etykiety wspólne dla panelu głosów i pełnej diagnozy. */
@@ -27,6 +28,7 @@ export type SpinAuthor = {
 };
 
 export type SpinCardData = {
+  comment_count?: number;
   id: number;
   camp: Camp;
   camp_label: string;
@@ -36,7 +38,10 @@ export type SpinCardData = {
   headline: string;
   summary: string;
   technique_names: string[];
-  technique_types?: Array<{ name: string; category?: string }>;
+  technique_types?: Array<{ name: string; category?: string; family?: string }>;
+  claims?: Array<Pick<SpinClaim, "assessment">>;
+  council?: { members: Array<{ model: string; verdict: string | null; intensity: number | null; status?: string }> } | null;
+  scan?: SpinScan;
   technique_groups?: string[];
   post: {
     id: string;
@@ -59,14 +64,46 @@ export type SpinClaim = {
   sources: Array<{ url: string; title: string }>;
 };
 
-export type SpinDetailData = SpinCardData & {
+/** Zmiana zdania (backend news/zmiana_zdania.py): wcześniejsza wypowiedź tej samej osoby z innym stanowiskiem. */
+export type PositionChange = {
+  kind: "post" | "statement" | "vote";
+  kind_label: string;
+  date: string;
+  url: string;
+  title: string;
+  quote_then: string;
+  quote_now: string;
+  explanation: string;
+  now_date: string;
+  now_url: string;
+};
+
+/** Jak zadziałało (backend news/odbior_spinu.py): odbiór wpisu dobę później, tylko liczby zbiorcze. */
+export type SpinReception = {
+  hours: number;
+  checked_at: string | null;
+  metrics: Array<{ key: string; label: string; before: number | null; after: number }>;
+  sample: number;
+  shares: Array<{ key: string; label: string; share: number }>;
+  sentiment: Array<{ key: string; label: string; share: number }>;
+  phrases: Array<{ text: string; count: number }>;
+  figures: Array<{ name: string; handle: string; url: string }>;
+  verdict: { key: "podchwycony" | "odrzucony" | "podzielony" | "za_malo"; label: string } | null;
+  note: string;
+};
+
+export type SpinDetailData = Omit<SpinCardData, "claims" | "council"> & {
+  plain?: { title: string; gist: string; top: Array<{ name: string; quote: string }> } | null;
+  status?: "approved";
+  author_replies?: ClinicAuthorReply[];
   scan?: SpinScan;
-  /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami — backend news/x_share.py. */
+  /** Gotowy wątek na X (2–3 wpisy): synteza, diagnoza, terapia ze źródłami - backend news/x_share.py. */
   x_share?: string[];
   analysis: string;
   techniques: Array<{ name: string; quote: string; explanation: string; category?: string }>;
   claims: SpinClaim[];
   limitations: string;
+  readability_edit?: { at: string | null; original: { headline?: string; summary?: string; analysis?: string } } | null;
   /** Synteza diagnozy do wątku na X (pusta, dopóki darmowy model jej nie przygotuje). */
   x_thread?: string[];
   /** Konsylium Dr. Spina: członkowie (model, werdykt, siła), zgodność, przewodniczący, językoznawca, recenzja, docisk. */
@@ -81,7 +118,29 @@ export type SpinDetailData = SpinCardData & {
   reviewed_at: string | null;
   auto_published?: boolean;
   notice: string;
+  /** Tylko pary powyżej progu (ten sam dla każdej partii); null, gdy nic nie przeszło. */
+  position_changes?: { items: PositionChange[]; note: string } | null;
+  /** „Wcześniej i teraz” (API-v3.md sekcja 5): zatwierdzone pary dotyczące tego wpisu; klucza brak = funkcja wyłączona flagą backendu. */
+  position_pairs?: { items: unknown[]; notice: string; paused: boolean } | null;
+  /** Odbiór po dobie; null, gdy wpisu nie sprawdzano (słaby spin albo funkcja wyłączona). */
+  reception?: SpinReception | null;
+  /** Raport źródeł 6.10: weryfikacje tej samej tezy (Google Fact Check API) i kopie cytowanych artykułów (Wayback). */
+  factchecks?: FactCheck[];
+  source_archives?: Record<string, SourceArchive>;
 };
+
+export type FactCheck = { publisher: string; rating: string; url: string; title: string; reviewed_claim: string };
+export type SourceArchive = { archive_url: string; archived_at: string | null; changed_at: string | null; compare_url: string };
+
+/** Wystąpienie z nagrania Sejmu z diagnozą (backend news/sejm_wideo.py). */
+export type SejmVideoSpin = {
+  id: number; day: string; place: "sala" | "komisja"; place_label: string;
+  person: { id: number; name: string; slug: string } | null;
+  title: string; headline: string; summary: string; verdict: string; intensity: number; techniques: string[];
+  video_url: string; timecode: string; exact: boolean; source_url: string; committee: string;
+};
+export const getSejmVideoSpins = (figureId?: number) =>
+  apiFetch<{ results: SejmVideoSpin[]; source: { label: string; url: string } }>(`/api/clinic/sejm-wideo/${figureId ? `?osoba=${figureId}` : ""}`);
 
 /** Opcjonalne dane skanera; starsze API nadal korzysta z pól diagnozy. */
 export type SpinScan = {
@@ -104,14 +163,45 @@ export type SpinScan = {
 export type ScaleSide = { spin: number; partial: number; no_spin: number; unclear: number; assessed: number; share: number | null };
 export type SpinScale = { window_days: number; min_sample: number; enough_data: boolean; government: ScaleSide; opposition: ScaleSide };
 
-export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string; available?: boolean };
+export type MessagePost = { url: string; text: string; published_at: string; author: string; handle: string; available?: boolean; avatar_url?: string };
+export type MessageStats = {
+  version: number; posts: number; authors: number; noise: number; concrete_count: number; concrete_pct: number;
+  coherence_authors: number | null; coherence_pct: number | null;
+  tone: { atak: number; osiagniecie: number; apel: number; inne: number } | null; tone_classified: number;
+};
+export type MessagePoint = { title: string; summary: string; post_ids: string[]; authors: string[] };
 export type DailyMessage = {
+  opinions?: { positive: number; negative: number };
+  comment_count?: number;
+  thesis?: string; points?: MessagePoint[]; stats?: MessageStats;
+  readability_edit?: { original: { thesis?: string; message?: string; analysis?: string } } | null;
   id?: number; day: string; camp?: Camp; message: string; analysis?: string; themes: string[]; posts_count: number; model: string;
   posts?: MessagePost[];
   created_at?: string;
   reviewed_at?: string | null;
   scope?: { date_from: string | null; date_to: string | null; timezone: string };
+  /**
+   * Kontrakt API v3 (gust/spin/port/API-v3.md): klucza brak = funkcja wyłączona flagą backendu,
+   * null = włączona, ale brak danych (łańcuch niezatwierdzony, cisza wyborcza; mniej niż 3 diagnozy).
+   */
+  causal_chain?: MessageCausalChain | null;
+  spin_strength?: MessageSpinStrength | null;
 };
+
+/** Ciąg przyczyn przekazu zatwierdzony przez człowieka (kroki w kształcie CausalStep z kit/CausalChain.tsx). */
+export type MessageCausalChain = {
+  approved_at: string | null; model: string; prompt_version?: string; ai_generated: boolean; notice: string;
+  steps: Array<{ kind: "fakt" | "interpretacja" | "spin" | "wniosek"; text: string; source?: { name: string; url?: string; date?: string }; technique?: string; degraded?: boolean }>;
+};
+/** Siła spinu dnia: mediana z zatwierdzonych diagnoz wpisów przekazu (n >= 3). */
+export type MessageSpinStrength = { value: number; n: number; method: string };
+
+/** Siła spinu dnia do pokazania albo null (brak klucza, null, zła wartość = nic nie pokazujemy). */
+export function messageSpinStrength(message: Pick<DailyMessage, "spin_strength"> | null | undefined): MessageSpinStrength | null {
+  const s = message?.spin_strength;
+  if (!s || typeof s.value !== "number" || !Number.isFinite(s.value) || typeof s.n !== "number" || s.n < 3) return null;
+  return s;
+}
 
 export type InterviewQuote = { name: string; category?: string; quote: string; time: string; seconds: number | null; explanation: string };
 export type InterviewClaim = SpinClaim & { time: string; seconds: number | null };
@@ -122,11 +212,14 @@ export type InterviewParticipant = {
   techniques: InterviewQuote[]; claims: InterviewClaim[]; limitations?: string;
 };
 export type Interview = {
+  selection_label?: string; selection_method?: string; selection_votes?: number;
+  opinions?: { positive: number; negative: number };
+  comment_count?: number;
   participants?: InterviewParticipant[];
   id: number; day: string; url: string; video_id: string; title: string; channel: string; thumbnail_url: string;
   guest_name: string; guest_role: string; host_name: string; headline: string; summary: string; overall: string;
   guest: { verdict: Verdict; verdict_label: string; intensity: number; summary: string; techniques: InterviewQuote[]; claims: InterviewClaim[] };
-  /** Werdykt i siła prowadzącego — w wywiadach ocenionych od 27.09.2026 (wcześniejsze: puste). */
+  /** Werdykt i siła prowadzącego - w wywiadach ocenionych od 27.09.2026 (wcześniejsze: puste). */
   host: { summary: string; notes: InterviewQuote[]; verdict?: Verdict; verdict_label?: string; intensity?: number };
   limitations: string; model: string; diagnosed_at: string | null;
 };
@@ -138,11 +231,11 @@ export type ClinicPageData = DataPeriod & {
   scale: SpinScale;
   messages: Record<Camp, DailyMessage | null>;
   spin_of_day: SpinDetailData | null;
-  /** Spin dnia każdej strony; `order` — najpierw strona z mocniejszym (świeższym) spinem. `window`: today | 24h | 72h | latest. */
+  /** Spin dnia każdej strony; `order` - najpierw strona z mocniejszym (świeższym) spinem. `window`: today | 24h | 72h | latest. */
   spin_by_camp?: { spins: Record<Camp, (SpinDetailData & { window: string; pool?: number; window_label?: string }) | null>; order: Camp[] };
   latest_spin: SpinDetailData | null;
   interview: Interview | null;
-  /** Drugi wywiad dnia — dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */
+  /** Drugi wywiad dnia - dodany ręcznie tego samego dnia (pokazywany pod pierwszym). */
   interview_second?: Interview | null;
   /** Wcześniejsze wywiady dnia (bez aktualnego), najnowsze najpierw. */
   interview_archive?: Interview[];
@@ -226,19 +319,36 @@ export type ClinicStats = DataPeriod & {
   };
   by_party: Record<string, { party: Party | null }>;
   accounts?: Array<{ account_id: number; name: string; handle: string }>;
+  technique_definitions?: Record<string, { definition: string; semeval: string[] }>;
   techniques: Record<string, Record<Camp, { count: number; enough_data: boolean }>>;
 };
 export const getClinicStats = () => apiFetch<ClinicStats>("/api/clinic/stats/");
 export const getClinicSpins = (camp: Camp, page: number) =>
   apiFetch<{ results: SpinCardData[]; next_page: number | null }>(`/api/clinic/spins/?camp=${camp}&page=${page}`);
-export const getSpin = (id: number | string) => apiFetch<SpinDetailData>(`/api/clinic/spins/${id}/`);
+export type ClinicAuthorReply = { id: number; body: string; source_url: string; received_at: string; published_at: string };
+export type WithdrawnDiagnosis = {
+  id: number; status: "withdrawn"; withdrawn_at: string; withdrawn_reason: string;
+  author: SpinAuthor; camp: Camp; camp_label: string; post: { url: string; published_at: string };
+  author_replies: ClinicAuthorReply[];
+};
+export type ClinicCorrection = {
+  id: string; type: "withdrawal" | "hiding" | "author_reply" | "revision" | "sejm_withdrawal" | "sejm_hiding"; date: string;
+  author: SpinAuthor | null; camp: Camp | null; camp_label: string | null; post_date: string | null;
+  diagnosis_url: string | null; reason: string; reply_excerpt: string; notice?: string;
+};
+export type ClinicCorrectionsData = {
+  results: ClinicCorrection[]; count: number; next_page: number | null;
+  counts: { published: number; withdrawn: number; hidden: number; replies: number; revisions?: number; sejm?: number };
+};
+export const getClinicCorrections = (page = 1) => apiFetch<ClinicCorrectionsData>(`/api/clinic/corrections/?page=${page}`);
+export const getSpin = (id: number | string) => apiFetch<SpinDetailData | WithdrawnDiagnosis>(`/api/clinic/spins/${id}/`);
 export const getClinicAccounts = () => apiFetch<{ results: ClinicAccount[] }>("/api/clinic/accounts/");
 
-/** Usunięte posty polityków — sam fakt (kto, kiedy, czy był spinem), bez treści (zasady X). */
+/** Usunięte posty polityków - sam fakt (kto, kiedy, czy był spinem), bez treści (zasady X). */
 export type DeletedPost = {
   author: SpinAuthor; camp: Camp; camp_label: string; published_at: string; unavailable_at: string;
   verdict: Verdict | ""; verdict_label: string;
-  /** Godziny od publikacji do wykrycia usunięcia (górna granica — sprawdzamy co 3 godziny). */
+  /** Godziny od publikacji do wykrycia usunięcia (górna granica - sprawdzamy co 3 godziny). */
   hours_visible: number;
   /** Kopia w Wayback Machine sprzed usunięcia (tylko link) albo "". */
   archive_url: string;
@@ -252,7 +362,21 @@ export const getClinicDeleted = () =>
 
 export type FlaggedPost = { id: number; score: number | null; reason: string; screened_by: string; camp_label: string; author: SpinAuthor; post: { url: string; text: string; published_at: string } };
 
+export type ClinicVideoStats = {
+  as_of: string;
+  warning: string;
+  monthly: { month: string; usd: number; pln: number; threshold_pln: number; usd_pln: number };
+  periods: Array<{
+    label: string; start: string; end: string; unassigned_usd: number;
+    camps: Record<Camp, {
+      label: string; posts: number; videos: number; full: number; partial: number;
+      thumbnail: number; unseen: number; reasons: Record<string, number>;
+      unwatched_share: number | null; cost_usd: number; cost_pln: number;
+    }>;
+  }>;
+};
 export type ClinicQueue = {
+  video_stats: ClinicVideoStats;
   flagged: FlaggedPost[];
   recent: SpinCardData[];
   diagnoses: Array<SpinDetailData & { status: string; triage: Record<string, unknown>; usage: Record<string, unknown> }>;
@@ -277,3 +401,6 @@ export const suggestXAccount = (figureId: number, url: string, note = "") =>
 export function sharePercent(side: ScaleSide): number | null {
   return side.share === null ? null : Math.round(side.share * 100);
 }
+
+/** Kolor siły spinu (właściciel 2.10): pasek i liczba od zielonego (0) przez niebieski (50) do czerwonego (100). */
+export const spinVar = (value: number) => ({ "--spin": Math.max(0, Math.min(100, Math.round(value))) }) as CSSProperties;

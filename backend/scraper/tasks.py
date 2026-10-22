@@ -92,10 +92,12 @@ def import_official_task(kind):
     from django.conf import settings
     from django.utils import timezone
     from news.models import ImportState
-    from scraper.official import import_voting_period, import_prints, import_eli_changes, official_access_allowed
+    from scraper.official import import_voting_period, import_prints, import_eli_changes, official_access_allowed, current_voting_budget
     from scraper.utils import HostRateLimited
     if kind not in {'votings', 'prints', 'eli'}:
         raise ValueError('Unknown official import')
+    if kind == 'votings':
+        cache.set('priority:official:votings', True, 3600)
     lock = 'lock:official:' + kind
     if not cache.add(lock, True, 3600):
         return {'status': 'already_running'}
@@ -117,11 +119,30 @@ def import_official_task(kind):
         # Revisit seven days for corrections; resume from last success after downtime.
         since = (state.last_success or started) - timedelta(days=7)
         if kind == 'votings':
-            count = import_voting_period(settings.SEJM_TERM, timezone.localtime(since).date().isoformat(), timezone.localtime(started).date().isoformat())
+            with current_voting_budget():
+                count = import_voting_period(settings.SEJM_TERM, timezone.localtime(since).date().isoformat(), timezone.localtime(started).date().isoformat())
         elif kind == 'prints':
             count = import_prints(settings.SEJM_TERM)
         else:
-            count = import_eli_changes(timezone.localtime(since).strftime('%Y-%m-%dT%H:%M:%S'))
+            cursor = state.cursor or {'since': timezone.localtime(since).strftime('%Y-%m-%dT%H:%M:%S'),
+                                      'offset': 0, 'started': started.isoformat()}
+            state.cursor = cursor
+            state.save(update_fields=['cursor'])
+
+            def checkpoint(offset, complete, count):
+                state.cursor = {**cursor, 'offset': offset}
+                state.save(update_fields=['cursor'])
+
+            result = import_eli_changes(cursor['since'], offset=cursor['offset'], max_pages=2, checkpoint=checkpoint)
+            if not result['complete']:
+                state.last_error = ''
+                state.save(update_fields=['last_error'])
+                return {'status': 'partial', 'new_records': result['count']}
+            from datetime import datetime
+            started = datetime.fromisoformat(cursor['started'])
+            count = result['count']
+            state.cursor = {}
+            state.save(update_fields=['cursor'])
         state.last_success, state.last_error, state.imported = started, '', count
         state.save(update_fields=['last_success', 'last_error', 'imported'])
         return {'status': 'ok', 'new_records': count}
@@ -142,6 +163,8 @@ def import_official_task(kind):
         raise
     finally:
         cache.delete(lock)
+        if kind == 'votings':
+            cache.delete('priority:official:votings')
 
 
 @shared_task(soft_time_limit=120, time_limit=150)
@@ -246,3 +269,158 @@ def enrich_data_quality():
         return enrich_quality_cycle(limit=200)
     finally:
         cache.delete('lock:quality-enrichment')
+
+
+# Public research collectors have distinct Celery identities and heartbeats.
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_votes():
+    from scraper.public_records import collect
+    return collect('votes')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_statements():
+    from scraper.public_records import collect
+    return collect('statements')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_interpellations():
+    from scraper.public_records import collect
+    return collect('interpellations')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_questions():
+    from scraper.public_records import collect
+    return collect('questions')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_lobby_mswia():
+    from scraper.public_records import collect
+    return collect('lobby_mswia')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_lobby_sejm():
+    from scraper.public_records import collect
+    return collect('lobby_sejm')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_consultations():
+    from scraper.public_records import collect
+    return collect('consultations')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_pkw():
+    from scraper.public_records import collect
+    return collect('pkw')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_assets():
+    from scraper.public_records import collect
+    return collect('assets')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_meta_ads():
+    from scraper.public_records import collect
+    return collect('meta_ads')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_processes():
+    from scraper.public_records import collect
+    return collect('processes')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_committees():
+    from scraper.public_records import collect
+    return collect('committees')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_krs_changes():
+    from scraper.public_records import collect
+    return collect('krs_changes')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_ted():
+    from scraper.public_records import collect
+    return collect('ted')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_eu_transparency():
+    from scraper.public_records import collect
+    return collect('eu_transparency')
+
+# Raport źródeł 6.10: nowe zbieracze (scraper.nowe_zrodla), każdy z własną flagą i pulsem.
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_videos():
+    from scraper.public_records import collect
+    return collect('videos')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_howtheyvote():
+    from scraper.public_records import collect
+    return collect('howtheyvote')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_wikidata():
+    from scraper.public_records import collect
+    return collect('wikidata')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_kohesio():
+    from scraper.public_records import collect
+    return collect('kohesio')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_fts():
+    from scraper.public_records import collect
+    return collect('fts')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_integrity_watch():
+    from scraper.public_records import collect
+    return collect('integrity_watch')
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def collect_public_mileage():
+    from scraper.public_records import collect
+    return collect('mileage')
+
+
+@shared_task(soft_time_limit=570, time_limit=600)
+def zasil_baze_task(lane='sejm', mode='noc'):
+    """Zasilanie bazy (scraper.zasil_baze): historia źródeł w ciche godziny (noc) i resztka limitów kart przed północą."""
+    from scraper.zasil_baze import run
+    if not cache.add('lock:zasil-baze:' + lane, True, 620):
+        return {'status': 'already_running'}
+    try:
+        return run(lane, mode, seconds=480)
+    finally:
+        cache.delete('lock:zasil-baze:' + lane)
+
+
+@shared_task(soft_time_limit=570, time_limit=600)
+def rcl_night_task():
+    """Porcja nocnego zbierania RCL (legislacja.rcl.gov.pl): co 10 minut w oknie 01:05-05:55, każda do 8 minut.
+
+    Warunki zgody (okno 01:00-06:00, odstęp 5 s, User-Agent, wstrzymanie po 429/503) egzekwuje scraper.rcl_guard;
+    zadanie poza oknem albo bez RCL_FETCH_ENABLED nie wysyła nic.
+    """
+    import os
+    from django.utils import timezone
+    from scraper.rcl_harvest import run_night
+    if not cache.add('lock:rcl-night', True, 600):
+        return {'status': 'already_running'}
+    try:
+        if os.environ.get('RCL_RECON_ONLY', '').strip().lower() != 'true':
+            return run_night(seconds=480)
+        # Pierwsze noce (właściciel 21.10): tylko jedno rozpoznanie na noc (najwyżej ok. 30 zapytań, surowe strony
+        # w RCL_RECON_DIR), bez pełnego zbierania, dopóki ktoś nie porówna stron z parserem i nie zdejmie flagi.
+        key = f'rcl:recon:{timezone.localdate().isoformat()}'
+        if cache.get(key):
+            return {'status': 'recon_done'}
+        result = run_night(seconds=480, recon=True, dump_dir=os.environ.get('RCL_RECON_DIR', '/var/tmp/rcl-recon'))
+        if result.get('status') in ('ran', 'halted'):
+            cache.set(key, True, 86400)
+        return result
+    finally:
+        cache.delete('lock:rcl-night')

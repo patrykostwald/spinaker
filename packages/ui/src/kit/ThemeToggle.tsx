@@ -2,11 +2,11 @@
 
 /**
  * ThemeToggle (docs/UI_KIT_PLAN.md → «Компоненты» ThemeToggle, «Оживление каждого
- * элемента → Смена темы»). Trzy stany: Noc / Dzień / Auto, zbudowane na `Segmented` (R1) —
+ * элемента → Смена темы»). Trzy stany: Noc / Dzień / Auto, zbudowane na `Segmented` (R1) -
  * stan jest czytelny bez koloru (etykieta tekstowa + przejeżdżający wskaźnik).
  *
  * Zapisuje WYŁĄCZNIE `document.documentElement.dataset.theme` i `style.colorScheme`.
- * Nigdy localStorage, nigdy PATCH /api/account/profile/ — to mechanizm żywego
+ * Nigdy localStorage, nigdy PATCH /api/account/profile/ - to mechanizm żywego
  * `ThemeSwitcher.tsx`, którego na tym etapie nie ruszamy. `auto` jest uczciwe: śledzi
  * `matchMedia('(prefers-color-scheme: dark)')` i nasłuchuje jej zmian na żywo.
  */
@@ -51,7 +51,7 @@ const OPTIONS = [
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const [mode, setMode] = useState<ThemeToggleMode>("night");
 
-  // Synchronizacja startowego zaznaczenia z tym, co strona już pokazuje — bez zapisu do DOM.
+  // Synchronizacja startowego zaznaczenia z tym, co strona już pokazuje - bez zapisu do DOM.
   useEffect(() => {
     setMode(document.documentElement.dataset.theme === "light" ? "day" : "night");
   }, []);
@@ -62,7 +62,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     applyTheme(resolveTheme(nextMode));
   }
 
-  // Nasłuch preferencji systemowej — tylko póki tryb auto jest aktywny.
+  // Nasłuch preferencji systemowej - tylko póki tryb auto jest aktywny.
   useEffect(() => {
     if (mode !== "auto" || typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");

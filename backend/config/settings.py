@@ -24,7 +24,56 @@ VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='')
 VAPID_SUBJECT = env('VAPID_SUBJECT', default='')
 SEJM_TERM = env.int('SEJM_TERM', default=10)
 
+# Spina v3 (docs/SPINA_V3_API.md): wszystko domyślnie wyłączone; włączenie to decyzja właściciela.
+CAUSAL_CHAIN_ENABLED = env.bool('CAUSAL_CHAIN_ENABLED', default=False)
+PRZEKAZ_SPIN_STRENGTH_ENABLED = env.bool('PRZEKAZ_SPIN_STRENGTH_ENABLED', default=False)
+ELECTION_SILENCE = env.bool('ELECTION_SILENCE', default=False)  # cisza wyborcza: łańcuchy niepubliczne, bez generowania
+PRZESZLOSC_VOTES_LIST_ENABLED = env.bool('PRZESZLOSC_VOTES_LIST_ENABLED', default=False)
+PRZESZLOSC_NETWORK_ENABLED = env.bool('PRZESZLOSC_NETWORK_ENABLED', default=False)
+POSITION_PAIRS_ENABLED = env.bool('POSITION_PAIRS_ENABLED', default=False)  # „Wcześniej i teraz”: tylko pary zatwierdzone
+# Zgłoszenia błędów par (recenzja Codex 2): automatyczne zdjęcie z API tylko od zweryfikowanego zgłaszającego albo
+# po N niezależnych zgłoszeniach z kont w oknie; SLA decyzji człowieka opisane w docs/SPINA_V3_API.md.
+POSITION_PAIR_REPORT_THRESHOLD = env.int('POSITION_PAIR_REPORT_THRESHOLD', default=3)
+POSITION_PAIR_REPORT_WINDOW_HOURS = env.int('POSITION_PAIR_REPORT_WINDOW_HOURS', default=24)
+POSITION_PAIR_REVIEW_SLA_HOURS = env.int('POSITION_PAIR_REVIEW_SLA_HOURS', default=48)
+# Recenzja Fable 13.10 (docs/SPINA_V3_API.md, docs/RUNBOOK_KILL_SWITCH.md):
+# stary automatyczny blok „Zmiana zdania” (position_changes) i linia social - domyślnie WYŁĄCZONE (zmiana zachowania produkcji).
+POSITION_CHANGES_LEGACY_ENABLED = env.bool('POSITION_CHANGES_LEGACY_ENABLED', default=False)
+POSITION_PAIR_ACCOUNT_MIN_AGE_DAYS = env.int('POSITION_PAIR_ACCOUNT_MIN_AGE_DAYS', default=7)  # konta liczone w progu
+POSITION_PAIR_CONFIRM_HOURS = env.int('POSITION_PAIR_CONFIRM_HOURS', default=48)  # ważność linku potwierdzającego e-mail
+POSITION_PAIR_CONTACT_RETENTION_DAYS = env.int('POSITION_PAIR_CONTACT_RETENTION_DAYS', default=90)
+# Domeny, z których potwierdzony e-mail zgłaszającego zdejmuje parę jak VerifiedReporter (lista do przeglądu prawnika).
+# Pusta = lista z pliku backend/news/config/official_domains.json (z dziennikiem zmian w bazie, komenda domeny_urzedowe);
+# ustawiona w env = zastępuje plik w całości.
+POSITION_PAIR_OFFICIAL_DOMAINS = env.list('POSITION_PAIR_OFFICIAL_DOMAINS', default=[])
+# Decyzje właściciela 13.10: klauzula art. 14 RODO w profilu (szkic do prawnika) i oświadczenia majątkowe - domyślnie wyłączone.
+PRZESZLOSC_PRIVACY_NOTICE_ENABLED = env.bool('PRZESZLOSC_PRIVACY_NOTICE_ENABLED', default=False)
+ASSETS_DECLARATIONS_ENABLED = env.bool('ASSETS_DECLARATIONS_ENABLED', default=False)
+ASSETS_DECLARATIONS_DELAY_SECONDS = env.float('ASSETS_DECLARATIONS_DELAY_SECONDS', default=5.0)
+ASSETS_ROBOTS_FAIL_OPEN = env.bool('ASSETS_ROBOTS_FAIL_OPEN', default=False)  # robots.txt niedostępny: domyślnie nie pobieramy
+# Cisza wyborcza jako okno dat (ISO 8601, np. 2027-10-09T00:00:00+02:00); też SiteFlag ELECTION_SILENCE w adminie.
+from django.utils.dateparse import parse_datetime as _parse_datetime  # noqa: E402
+ELECTION_SILENCE_FROM = _parse_datetime(env('ELECTION_SILENCE_FROM', default='') or '') if env('ELECTION_SILENCE_FROM', default='') else None
+ELECTION_SILENCE_UNTIL = _parse_datetime(env('ELECTION_SILENCE_UNTIL', default='') or '') if env('ELECTION_SILENCE_UNTIL', default='') else None
+
+# Institutional reports use a small separate quota and only spare free-model capacity.
+REPORTS_ENABLED = env.bool('REPORTS_ENABLED', default=False)
+REPORTS_DAILY_CALLS = env.int('REPORTS_DAILY_CALLS', default=12)
+REPORTS_DIAGNOSIS_RESERVE_RATIO = env.float('REPORTS_DIAGNOSIS_RESERVE_RATIO', default=0.8)
+REPORTS_MIN_WEEKS = env.int('REPORTS_MIN_WEEKS', default=4)
+REPORTS_MIN_WEEKLY_PER_CAMP = env.int('REPORTS_MIN_WEEKLY_PER_CAMP', default=10)
+REPORTS_MIN_STATEMENTS = env.int('REPORTS_MIN_STATEMENTS', default=30)
+REPORTS_MIN_VOTES = env.int('REPORTS_MIN_VOTES', default=10)
+REPORTS_MIN_RESEARCH = env.int('REPORTS_MIN_RESEARCH', default=100)
+REPORTS_MIN_TOPIC = env.int('REPORTS_MIN_TOPIC', default=20)
+REPORTS_AUDIENCES = env.list('REPORTS_AUDIENCES', default=[
+    'biura-poselskie', 'kluby', 'agencje-pr-pa', 'dzialy-gr', 'monitoring-mediow',
+    'redakcje', 'think-tanki', 'uczelnie'])
+
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")
+CLINIC_VIDEO_MONTHLY_ALERT_PLN = env.float('CLINIC_VIDEO_MONTHLY_ALERT_PLN', default=50)
+CLINIC_VIDEO_USD_PLN = env.float('CLINIC_VIDEO_USD_PLN', default=4.0)
+DAILY_MESSAGE_PAID_FALLBACK_USD = env('DAILY_MESSAGE_PAID_FALLBACK_USD', default='0.05')
 DEBUG = env.bool("DJANGO_DEBUG", default=env.bool("DEBUG", default=False))
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "backend", "testserver"]))
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
@@ -49,6 +98,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "news",
     "scraper",
+    "spina3",
 ]
 
 PREVIEW_KEY = env("PREVIEW_KEY", default="")
@@ -220,6 +270,8 @@ SOURCE_ACCESS_AUTOPROBE_ENABLED = env.bool("SOURCE_ACCESS_AUTOPROBE_ENABLED", de
 # Official BZP metadata is disabled until the operator explicitly enables it
 # in the deployment environment.  The adapter never falls back to enabled.
 BZP_API_ENABLED = env.bool("BZP_API_ENABLED", default=False)
+# przeszłość.today w becie (właściciel 7.10): wszystkie funkcje Pro otwarte dla każdego, bez cen (news.przeszlosc_dostep).
+PRZESZLOSC_BETA_ALL_FEATURES = env.bool("PRZESZLOSC_BETA_ALL_FEATURES", default=True)
 EDITOR_NETWORK_PREVIEW_ENABLED = env.bool("EDITOR_NETWORK_PREVIEW_ENABLED", default=False)
 NEWSAPI_ENABLED = env.bool("NEWSAPI_ENABLED", default=False)
 TWITTER_ENABLED = env.bool("TWITTER_ENABLED", default=False)
@@ -283,11 +335,57 @@ SOURCE_MAIL_SMTP_FROM = env('SOURCE_MAIL_SMTP_FROM', default='')
 
 # Phase 2 remains opt-in on every deployment.
 ACCOUNTS_ENABLED = env.bool('ACCOUNTS_ENABLED', default=False)
+# Właściciel 9.10, zlecenie 113: szybsze alerty wyłącznie po włączeniu flagi.
+ALERTS_FAST_MODE = env.bool('ALERTS_FAST_MODE', default=False)
+ALERTS_FAST_POLL_SECONDS = env.int('ALERTS_FAST_POLL_SECONDS', default=60)
 THREADS_ENABLED = env.bool('THREADS_ENABLED', default=False)
 PUSH_ENABLED = env.bool('PUSH_ENABLED', default=False)
 GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
 GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
 ACCOUNT_PUBLIC_URL = env('ACCOUNT_PUBLIC_URL', default='https://spin.clinic').rstrip('/')
-ACCOUNT_TERMS_VERSION = env('ACCOUNT_TERMS_VERSION', default='2026-09-30')
-ACCOUNT_PRIVACY_VERSION = env('ACCOUNT_PRIVACY_VERSION', default='2026-09-30')
+ACCOUNT_TERMS_VERSION = env('ACCOUNT_TERMS_VERSION', default='2026-10-03')
+ACCOUNT_PRIVACY_VERSION = env('ACCOUNT_PRIVACY_VERSION', default='2026-10-03')
 PASSWORD_RESET_TIMEOUT = 3600
+
+X_OAUTH_CLIENT_ID = env('X_OAUTH_CLIENT_ID', default='')
+X_OAUTH_CLIENT_SECRET = env('X_OAUTH_CLIENT_SECRET', default='')
+
+# spina3.pl (zlecenie 11.10.2026): konfiguracja modelu oceny i flag w jednym miejscu (spina3.config);
+# tutaj tylko przełączniki środowiskowe. Produkcja: ustawienia przez zmienne środowiskowe, nie w kodzie.
+SPINA3 = {
+    'scoring': {
+        'mode': env('SPINA3_MODE', default='zgodnosc'),
+    },
+    'flags': {
+        'enabled': env.bool('SPINA3_ENABLED', default=True),
+        'pins_enabled': env.bool('SPINA3_PINS_ENABLED', default=True),
+        'levels_visible': env.bool('SPINA3_LEVELS_VISIBLE', default=True),
+        'views_enabled': env.bool('SPINA3_VIEWS_ENABLED', default=True),
+        'url_pins_enabled': env.bool('SPINA3_URL_PINS_ENABLED', default=True),
+        'allow_image_pins': env.bool('ALLOW_IMAGE_PINS', default=False),
+        'chains_enabled': env.bool('SPINA3_CHAINS_ENABLED', default=False),
+        'public_profiles': env.bool('SPINA3_PUBLIC_PROFILES', default=False),
+        'election_silence_start': env('SPINA3_ELECTION_SILENCE_START', default=''),
+        'election_silence_end': env('SPINA3_ELECTION_SILENCE_END', default=''),
+        'election_silence_pause_user_pins': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_USER_PINS', default=False),
+        # v2 (12.10.2026): oceny przypięcia autora, komentarze, przejmowanie boxów importera bez przypięcia
+        'ratings_enabled': env.bool('SPINA3_RATINGS_ENABLED', default=True),
+        'comments_enabled': env.bool('SPINA3_COMMENTS_ENABLED', default=True),
+        'adopt_authorless_boxes': env.bool('SPINA3_ADOPT_AUTHORLESS_BOXES', default=True),
+        'election_silence_pause_ratings': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_RATINGS', default=False),
+        'election_silence_pause_comments': env.bool('SPINA3_ELECTION_SILENCE_PAUSE_COMMENTS', default=False),
+        'url_fetch_enabled': env.bool('SPINA3_URL_FETCH_ENABLED', default=False),
+        'import_press': env.bool('SPINA3_IMPORT_PRESS', default=False),
+        'auth_mode': env('SPINA3_AUTH_MODE', default='session'),
+    },
+}
+SPINA3_DR_SPIN_USERNAME = env('SPINA3_DR_SPIN_USERNAME', default='dr_spin')
+SPINA3_PUBLIC_URL = env('SPINA3_PUBLIC_URL', default='https://spina3.pl').rstrip('/')
+SPINA3_SPIN_CLINIC_URL = env('SPINA3_SPIN_CLINIC_URL', default='https://spin.clinic').rstrip('/')
+SPINA3_PRZESZLOSC_URL = env('SPINA3_PRZESZLOSC_URL', default='https://przeszlosc.today').rstrip('/')
+SPINA3_PRZESZLOSC_PERSON_PATH = env('SPINA3_PRZESZLOSC_PERSON_PATH', default='/osoby/{slug}')
+# Wspólne logowanie (spina3.sso): usługa kont na osobnej domenie, tokeny krótkie; nazwy zmiennych, nigdy wartości w repo.
+SPINA3_SSO_ISSUER = env('SPINA3_SSO_ISSUER', default='')          # np. https://konto.iapply.pl
+SPINA3_SSO_AUDIENCE = env('SPINA3_SSO_AUDIENCE', default='spina3')
+SPINA3_SSO_CODE_MAX_AGE = env.int('SPINA3_SSO_CODE_MAX_AGE', default=120)
+SPINA3_SSO_TOKEN_MAX_AGE = env.int('SPINA3_SSO_TOKEN_MAX_AGE', default=900)

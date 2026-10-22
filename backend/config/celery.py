@@ -6,17 +6,21 @@ app = Celery('spin_clinic')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 app.conf.beat_schedule = {
+    'plain-reader-weekly': {'task': 'news.tasks.plain_reader_task', 'schedule': crontab(day_of_week='mon', hour=6, minute=30)},
+    'account-warden-nightly': {'task': 'news.tasks.account_warden_task', 'schedule': crontab(hour=3, minute=10)},
+    'warden-second-key-hourly': {'task': 'news.tasks.warden_second_key_task', 'schedule': crontab(minute=15)},
+    'seba-hourly': {'task': 'news.tasks.seba_task', 'schedule': crontab(minute=30)},
+    'agents-window-hourly': {'task': 'news.tasks.agents_window_task', 'schedule': crontab(minute=20)},
+    'strateg-weekly-report': {'task': 'news.tasks.agents_report_task', 'args': ['strateg'], 'schedule': crontab(day_of_week='mon', hour=7, minute=0)},
+    'pielgrzym-monthly-report': {'task': 'news.tasks.agents_report_task', 'args': ['pielgrzym'], 'schedule': crontab(day_of_month=1, hour=7, minute=0)},
     'council-charter-missing-nightly': {'task': 'news.tasks.council_charter_missing_task', 'schedule': crontab(hour=2, minute=15)},
     'council-audit-hourly': {'task': 'news.tasks.council_audit_task', 'schedule': crontab(minute=0, hour='7-23')},
     'inquisitor-evening': {'task': 'news.tasks.inquisitor_task', 'schedule': crontab(minute=45, hour=21)},
     'account-notification-events': {'task': 'news.notification_tasks.process_notification_events', 'schedule': crontab(minute='*')},
+    'thread-moderation-mail': {'task': 'news.notification_tasks.retry_thread_moderation_mail', 'schedule': crontab(minute='*')},
     'account-notification-digests': {'task': 'news.notification_tasks.send_notification_digests', 'schedule': crontab(minute=0)},
     'repairer-15m': {'task': 'news.tasks.repairer_task', 'schedule': crontab(minute='*/15')},
-    # Kontekst spinu dnia z Bazy — 19:30 czasu Europe/Warsaw, wymaga DR_SPIN_THREADS_ENABLED=true.
-    'dr-spin-thread-daily': {'task': 'news.tasks.dr_spin_thread_task', 'schedule': crontab(hour=19, minute=30)},
-    'clinic-screen-5m': {'task': 'news.tasks.clinic_screen_task', 'schedule': crontab(minute='*/5')},
-    'clinic-interview-10m': {'task': 'news.tasks.clinic_interview_task', 'schedule': crontab(minute='*/10')},
-    'clinic-interview-pick': {'task': 'news.tasks.clinic_interview_pick_task', 'schedule': crontab(hour='7,10', minute=5)},
+    'clinic-video-stats-daily': {'task': 'news.tasks.clinic_video_stats_task', 'schedule': crontab(hour=6, minute=30)},
     # Filmy oficjalnych kanałów; o 8:35 — przed resetem darmowego limitu YouTube (ok. 9:00) zużywamy resztę jednostek.
     'youtube-official-2h': {'task': 'news.tasks.youtube_official_task', 'schedule': crontab(minute=40, hour='*/2')},
     'youtube-leftover': {'task': 'news.tasks.youtube_leftover_task', 'schedule': crontab(hour=8, minute=35)},
@@ -25,22 +29,11 @@ app.conf.beat_schedule = {
     # Agent KRS (Gemini + oficjalny KRS): nocą co godzinę partia osób, aż do KRS_AGENT_DAILY — KRS_AGENT_ENABLED=true.
     'krs-agent-night': {'task': 'news.tasks.krs_agent_task', 'schedule': crontab(hour='0-6', minute=10)},
     'sejm-career-weekly': {'task': 'news.tasks.sejm_career_task', 'schedule': crontab(day_of_week='mon', hour=5, minute=20)},
-    # Konto spin.clinic na X: silne spiny jako wątek — co 30 minut w dzień, do dziennego limitu (domyślnie wyłączone).
-    'x-publish-day': {'task': 'news.tasks.x_publish_task', 'schedule': crontab(minute='15,45', hour='8-21')},
-    # Facebook, Instagram, Bluesky i film na TikTok/Shorts — po wpisie na X, do SOCIAL_DAILY_LIMIT (domyślnie wyłączone).
-    'social-publish-day': {'task': 'news.tasks.social_publish_task', 'schedule': crontab(minute='25,55', hour='8-21')},
     # Rekruter Konsylium: kontrola zdrowia składu i jeden kandydat na noc — po diagnozach, z resztek dziennych limitów.
     'council-recruiter-night': {'task': 'news.tasks.council_recruiter_task', 'schedule': crontab(hour=23, minute=30)},
-    'weekly-report-sunday': {'task': 'news.tasks.weekly_report_task', 'schedule': crontab(day_of_week='sun', hour=20, minute=0)},
-    # Diagnozy w dzień (7:00–23:00), co 20 minut najwyżej po 2 — tempo i tak wyznacza dzienny limit rozłożony na godziny.
-    'clinic-diagnoses-day': {'task': 'news.tasks.clinic_diagnose_task', 'schedule': crontab(minute='5,25,45', hour='7-22')},
-    # Przekaz dnia obu obozów (darmowe modele): 9:00, 12:00, 15:00, 18:00 i 21:30.
-    'clinic-daily-messages-day': {'task': 'news.tasks.clinic_daily_messages_task', 'schedule': crontab(hour='9,12,15,18', minute=0)},
-    'clinic-daily-messages-evening': {'task': 'news.tasks.clinic_daily_messages_task', 'schedule': crontab(hour=21, minute=30)},
     'sejm-votes-15m': {'task': 'scraper.tasks.import_official_task', 'args': ['votings'], 'schedule': crontab(minute='*/15')},
     'sejm-prints-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['prints'], 'schedule': crontab(minute=10)},
     'eli-hourly': {'task': 'scraper.tasks.import_official_task', 'args': ['eli'], 'schedule': crontab(minute=20)},
-    'gdelt-2h': {'task': 'scraper.tasks.gdelt_daily_topics', 'schedule': crontab(minute=0, hour='*/2')},
     'archive-discovery-daily': {'task': 'scraper.tasks.discover_archives', 'schedule': crontab(hour=3, minute=30)},
     'quality-5m': {'task': 'scraper.tasks.check_data_quality', 'schedule': crontab(minute='*/5')},
     'quality-enrichment-5m': {'task': 'scraper.tasks.enrich_data_quality', 'schedule': crontab(minute='1-59/5')},
@@ -55,7 +48,6 @@ app.conf.beat_schedule = {
     'zdrowie-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['zdrowie'], 'schedule': crontab(minute=55, hour='*/6')},
     'edukacja-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['edukacja'], 'schedule': crontab(minute=10, hour='*/6')},
     'rolnictwo-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['rolnictwo'], 'schedule': crontab(minute=20, hour='*/6')},
-    'senat-metadata-6h': {'task': 'scraper.tasks.discover_senat_metadata', 'schedule': crontab(minute=40, hour='*/6')},
     'mon-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['mon'], 'schedule': crontab(minute=2, hour='*/6')},
     'justice-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['sprawiedliwosc'], 'schedule': crontab(minute=32, hour='*/6')},
     'infrastructure-metadata-6h': {'task': 'scraper.tasks.discover_named_gov_metadata', 'args': ['infrastruktura'], 'schedule': crontab(minute=50, hour='*/6')},
@@ -97,7 +89,6 @@ app.conf.beat_schedule = {
     'gus-bdl-metadata-daily': {'task': 'scraper.tasks.preflight_structured_metadata_source', 'args': ['gus_bdl'], 'schedule': crontab(hour=2, minute=15)},
     # This tick is cheap: the task makes no X request unless a confirmed,
     # enabled account is due and the explicit X polling flag is on.
-    'political-x-minute': {'task': 'news.tasks.political_poll_task', 'schedule': crontab(minute='*')},
     # Live official rosters only; static editorial lists are deliberately not
     # treated as self-updating sources.
     'live-public-rosters-daily': {'task': 'news.tasks.sync_live_public_rosters_task', 'schedule': crontab(hour=4, minute=10)},
@@ -116,3 +107,40 @@ else:
 if os.environ.get('SOURCE_MAIL_IMAP_ENABLED', '').lower() in ('1', 'true', 'yes'):
     app.conf.beat_schedule['source-mail-inbox-5m'] = {
         'task': 'scraper.tasks.sync_source_mailbox', 'schedule': crontab(minute='*/5')}
+
+# 2.10.2026: GDELT na tym serwerze nigdy nie odpowiedział (ReadTimeout we wszystkich 30 tematach), a senat.gov.pl
+# blokuje nasz serwer (403) – oba zadania tylko zaśmiecały panel. Włączenie: GDELT_ENABLED=true / SENAT_METADATA_ENABLED=true.
+if os.environ.get('GDELT_ENABLED', 'false').strip().lower() == 'true':
+    app.conf.beat_schedule['gdelt-2h'] = {'task': 'scraper.tasks.gdelt_daily_topics', 'schedule': crontab(minute=0, hour='*/2')}
+if os.environ.get('SENAT_METADATA_ENABLED', 'false').strip().lower() == 'true':
+    app.conf.beat_schedule['senat-metadata-6h'] = {'task': 'scraper.tasks.discover_senat_metadata', 'schedule': crontab(minute=40, hour='*/6')}
+
+# Rządowy Proces Legislacyjny (21.10.2026, pismo RCL.DPK.053.168.2026): zbieranie tylko 01:00-06:00 czasu polskiego,
+# z serwera zgłoszonego do RCL; harmonogram istnieje wyłącznie przy RCL_FETCH_ENABLED=true (ustawiane na produkcji).
+if os.environ.get('RCL_FETCH_ENABLED', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+    app.conf.beat_schedule['rcl-legislacja-night'] = {
+        'task': 'scraper.tasks.rcl_night_task', 'schedule': crontab(minute='5-55/10', hour='1-5')}
+
+# Plan dnia i terminy mają wspólne źródło.
+from news.daily_schedule import beat_entries
+app.conf.beat_schedule.update(beat_entries())
+
+# Small resumable batches; collector refresh_hours controls new scan cycles.
+for _index, _source in enumerate((
+    'votes', 'statements', 'interpellations', 'questions', 'lobby_mswia',
+    'lobby_sejm', 'consultations', 'pkw', 'assets', 'meta_ads',
+    'processes', 'committees', 'krs_changes', 'ted', 'eu_transparency',
+    'videos', 'howtheyvote', 'wikidata', 'kohesio', 'fts', 'integrity_watch', 'mileage',
+)):
+    app.conf.beat_schedule['public-records-' + _source] = {
+        'task': 'scraper.tasks.collect_public_' + _source,
+        'schedule': crontab(minute=f'{_index}-59/15'),
+    }
+
+# Zasilanie bazy (6.10): historia źródeł w ciche godziny 01:00-05:59 (limit nocny), a 23:00-23:59 resztka dziennych
+# limitów kart przed resetem. Dwa pasy, żeby Sejm i inne hosty szły równolegle. Gotowe źródła zadanie pomija samo.
+for _lane, _minute in (('sejm', '2-59/10'), ('inne', '7-59/10'), ('otwarte', '4-59/10')):
+    app.conf.beat_schedule['zasil-baze-' + _lane] = {
+        'task': 'scraper.tasks.zasil_baze_task', 'args': [_lane, 'noc'], 'schedule': crontab(minute=_minute, hour='1-5')}
+    app.conf.beat_schedule['zasil-baze-' + _lane + '-resztka'] = {
+        'task': 'scraper.tasks.zasil_baze_task', 'args': [_lane, 'resztka'], 'schedule': crontab(minute=_minute, hour=23)}

@@ -15,10 +15,11 @@ from django.contrib.auth.models import Group, User
 from django import forms
 from rest_framework.exceptions import ValidationError as APIValidationError
 
-from news.models import (Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
+from news.models import (InterviewMessage, Article, Source, Thread, ThreadItem, EvidenceLink, OfficialRecord,
     ImportState, SourceAccessInstruction, SourceRecoveryCase, SourceContactCard, SourceContactReply, FetchAttempt,
     SourceThumbnailPolicy, SourceReviewDecision)
 from news.account_models import ArticleFavorite, CommentReport, PersonalContextThread
+from news.thread_review_models import ThreadReview, ThreadReviewRound
 from scraper.tasks import (
     scrape_gdelt_task,
     scrape_newsapi_batch_task,
@@ -333,10 +334,31 @@ site.register(SourceContactReply)
 site.register(SourceReviewDecision, SourceReviewDecisionAdmin)
 
 
+class PublicationReviewInline(admin.StackedInline):
+    model = ThreadReview
+    fk_name = 'thread'
+    extra = 0
+    can_delete = False
+    show_change_link = True
+    fields = ('status', 'reason', 'revision', 'step', 'next_attempt_at')
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 class PersonalContextThreadAdmin(admin.ModelAdmin):
-    list_display = ('title', 'owner', 'item_count', 'updated_at')
+    list_display = ('title', 'owner', 'signal_kind', 'item_count', 'updated_at')
     search_fields = ('title', 'owner__username', 'query')
     readonly_fields = ('owner', 'created_at', 'updated_at')
+    inlines = (PublicationReviewInline,)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.owner_id is None:
+            from news.thread_review import enqueue
+            review = ThreadReview.objects.filter(thread=obj).first()
+            enqueue(obj, review.payload.get('evidence', {}) if review else {})
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(_item_count=Count('items'))
@@ -394,6 +416,34 @@ class CommentReportAdmin(admin.ModelAdmin):
 
 
 site.register(PersonalContextThread, PersonalContextThreadAdmin)
+
+
+class ReviewRoundInline(admin.StackedInline):
+    model = ThreadReviewRound
+    extra = 0
+    can_delete = False
+    fields = ('revision', 'role', 'model', 'result', 'reason', 'texts', 'created_at')
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class ThreadReviewAdmin(admin.ModelAdmin):
+    list_display = ('id', 'thread', 'editorial_thread', 'status', 'revision', 'step', 'updated_at')
+    list_filter = ('status',)
+    fields = ('thread', 'editorial_thread', 'status', 'revision', 'step', 'reason', 'next_attempt_at', 'payload', 'working_texts')
+    readonly_fields = fields
+    inlines = (ReviewRoundInline,)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+site.register(ThreadReview, ThreadReviewAdmin)
 site.register(ArticleFavorite, ArticleFavoriteAdmin)
 site.register(CommentReport, CommentReportAdmin)
 
@@ -402,6 +452,7 @@ from news.political_admin import register_political_admin
 register_political_admin(site)
 
 from news import clinic_admin  # noqa: E402,F401
+from news import clinic_discussion_admin  # noqa: E402,F401
 from news import community_admin  # noqa: E402,F401
 
 
@@ -414,3 +465,95 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     list_filter = ('status', 'source')
     search_fields = ('email',)
     readonly_fields = ('token', 'consent_version', 'created_at', 'confirmation_sent_at', 'confirmed_at', 'unsubscribed_at')
+
+from news import thread_social_admin  # noqa: E402,F401
+
+from news.przeszlosc_models import PrzeszloscAlert  # noqa: E402
+
+
+@admin.register(PrzeszloscAlert)
+class PrzeszloscAlertAdmin(admin.ModelAdmin):
+    """Alerty przeszłość.today: tylko podgląd i wypisanie; adres widzi wyłącznie administrator."""
+    list_display = ('email', 'kind', 'query', 'figure', 'status', 'created_at', 'confirmed_at', 'last_sent_at')
+    list_filter = ('status', 'kind')
+    search_fields = ('email', 'query', 'figure__canonical_name')
+    raw_id_fields = ('figure',)
+    readonly_fields = ('token', 'key', 'consent_version', 'created_at', 'confirmation_sent_at', 'confirmed_at',
+                       'unsubscribed_at', 'last_sent_at', 'sent_ids')
+
+from news.public_records_admin import register as register_public_records
+register_public_records(site)
+from news import report_admin  # noqa: E402,F401
+if site is not admin.site:
+    report_admin.register(site)
+
+
+@admin.register(InterviewMessage)
+class InterviewMessageAdmin(admin.ModelAdmin):
+    """Wiadomości czytelników do Dr. Spina przy głosowaniu na drugi wywiad dnia."""
+    list_display = ('created_at', 'ballot', 'text')
+    list_filter = ('ballot__day',)
+    readonly_fields = ('ballot', 'user', 'text', 'created_at')
+
+
+from news.feedback_models import BugReport, ClientNote, JourneyStep  # noqa: E402
+
+
+@admin.register(BugReport)
+class BugReportAdmin(admin.ModelAdmin):
+    """Zgłoszenia z przycisku „Zgłoś błąd” (właściciel 5.10). Zespół zmienia tylko status i notatkę."""
+    list_display = ('created_at', 'kind', 'status', 'path', 'viewport', 'theme', 'text')
+    list_filter = ('status', 'kind', 'theme')
+    search_fields = ('text', 'path')
+    readonly_fields = ('created_at', 'kind', 'text', 'path', 'viewport', 'theme', 'trail', 'contact', 'user')
+    fields = ('status', 'staff_note', *readonly_fields)
+
+
+@admin.register(JourneyStep)
+class JourneyStepAdmin(admin.ModelAdmin):
+    """Zbiorcza mapa przejść: bez osób, tylko liczniki na godzinę. Pełny raport: manage.py journey_report."""
+    list_display = ('hour', 'device', 'source', 'action', 'target', 'count')
+    list_filter = ('device', 'action')
+    search_fields = ('source', 'target', 'action')
+    readonly_fields = ('hour', 'device', 'source', 'action', 'target', 'count')
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(ClientNote)
+class ClientNoteAdmin(admin.ModelAdmin):
+    """Uwagi klientów z podglądów zbudujmi (6.10). Zespół zmienia tylko status i notatkę."""
+    list_display = ('created_at', 'project', 'status', 'anchor', 'name', 'text')
+    list_filter = ('status', 'project')
+    search_fields = ('text', 'anchor', 'name')
+    readonly_fields = ('created_at', 'project', 'page', 'x', 'y', 'anchor', 'text', 'name', 'viewport')
+    fields = ('status', 'staff_note', *readonly_fields)
+
+
+from news.agent_models import BuildTicket  # noqa: E402
+
+
+@admin.register(BuildTicket)
+class BuildTicketAdmin(admin.ModelAdmin):
+    """Sprint tygodnia: tryb awaryjny, gdy panel Agenci nie działa."""
+    list_display = ('id', 'title', 'status', 'effort', 'executor', 'rank', 'due_date', 'commit')
+    list_filter = ('status', 'effort', 'executor')
+    search_fields = ('title', 'brief')
+    raw_id_fields = ('note', 'decided_by')
+    actions = ('approve', 'drop')
+
+    @admin.action(description='Buduj (zatwierdź)')
+    def approve(self, request, queryset):
+        from news import sprint
+        for ticket in queryset.filter(status='proposed'):
+            sprint.decide(ticket, 'approved', request.user)
+
+    @admin.action(description='Nie teraz (odłóż)')
+    def drop(self, request, queryset):
+        from news import sprint
+        for ticket in queryset.filter(status__in=('proposed', 'approved')):
+            sprint.decide(ticket, 'dropped', request.user)
+
+
+from news import sales_admin  # noqa: E402,F401  (zapytania i raporty tygodniowe dla instytucji)

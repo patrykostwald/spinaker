@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { apiWrite } from '../lib/api';
+import { AgentsPanel } from './AgentsPanel';
+import { DailySchedule } from './DailySchedule';
+import { SocialInbox } from './SocialPanel';
+import { ThreadModerationPanel } from './community/ThreadModerationPanel';
 
 type Status = 'ok' | 'warn' | 'error' | 'unknown';
 type Reading = number | 'unknown';
@@ -86,7 +90,7 @@ function WalletCard({ wallet }: { wallet: Wallet }) {
   return <article className="sc-command-wallet" data-status={wallet.status}><div className="sc-command-wallet-head"><h3>{wallet.label}</h3><StatusDot status={wallet.status} /></div>
     {wallet.signal && <p role="alert" className="sc-command-error">{wallet.signal}</p>}
     <span className="sc-command-eyebrow">{heading}</span><strong className="sc-command-balance">{numeric(main) ? number(main, unit) : wallet.signal ? 'brak środków' : 'brak danych'}</strong>
-    {(numeric(days) || (numeric(main) && main <= 0)) && <p className="sc-command-runway">{numeric(main) && main <= 0 ? 'Saldo wyczerpane — doładuj portfel' : numeric(days) ? days < 1 ? 'Starczy na mniej niż 1 dzień' : `Starczy na ~${number(days)} dni` : ''}</p>}
+    {(numeric(days) || (numeric(main) && main <= 0)) && <p className="sc-command-runway">{numeric(main) && main <= 0 ? 'Saldo wyczerpane - doładuj portfel' : numeric(days) ? days < 1 ? 'Starczy na mniej niż 1 dzień' : `Starczy na ~${number(days)} dni` : ''}</p>}
     {numeric(days) && <div className="sc-command-wallet-track" role="meter" aria-label="Dni finansowania, skala do 30 dni" aria-valuemin={0} aria-valuemax={30} aria-valuenow={Math.min(30, Math.max(0, days))} aria-valuetext={`Około ${number(days)} dni`}><span style={{ width: `${Math.min(100, Math.max(0, days / 30 * 100))}%` }} /></div>}
     {facts.length > 0 && <dl className="sc-command-wallet-facts">{facts.map(([label, text]) => <div key={label}><dt>{label}</dt><dd>{text}</dd></div>)}</dl>}
   </article>;
@@ -135,7 +139,12 @@ export function CommandPanel() {
       const response = await fetch('/api/admin/status/', { credentials: 'include', cache: 'no-store', signal: controller.signal,
         headers: { Accept: 'application/json', 'X-Frontend-Domain': process.env.NEXT_PUBLIC_DOMAIN || 'spin.clinic' } });
       if (active.current !== controller) return;
-      if (response.status === 403 || response.status === 401) { setData(null); setForbidden(true); setError(''); return; }
+      if (response.status === 403 || response.status === 401) {
+        setData(null); setForbidden(true); setError('');
+        const account = await fetch('/api/account/me/', { credentials: 'include', cache: 'no-store' });
+        if (account.ok && (await account.json()).user?.is_social) window.location.replace('/panel/social');
+        return;
+      }
       if (!response.ok) throw new Error('Nie udało się pobrać stanu.');
       const snapshot: Snapshot = await response.json();
       if (active.current !== controller) return;
@@ -167,10 +176,14 @@ export function CommandPanel() {
       </section>
       <div className="sc-command-toolbar"><p>Stan: {data ? date(data.generated_at) : 'brak danych'}<span>Europe/Warsaw · co 60 s</span></p><button type="button" className="sc-command-filter" aria-pressed={onlyProblems} onClick={() => setOnlyProblems(current => !current)}>Tylko problemy {onlyProblems ? '✓' : ''}</button></div>
       {data && <>
+        <AgentsPanel />
+        <DailySchedule />
+        <div className="sc-social"><SocialInbox staff /></div>
+        <ThreadModerationPanel />
         {!onlyProblems && <><section className="sc-command-kpis" aria-label="Dziś w porównaniu z wczoraj">{(data.kpis || []).map(kpi => <article key={kpi.key}><h2>{kpi.label}</h2><strong>{number(kpi.today, kpi.unit)}</strong><span className="sc-command-eyebrow">Dziś{kpi.unit ? ' · szacunek' : ''}</span><Trend {...kpi} /></article>)}</section>
           <section className="sc-command-charts" aria-label="Trendy siedmiodniowe">{(data.series || []).map(series => <Sparkline key={series.key} series={series} />)}</section></>}
         <section id="command-wallets" className="sc-command-wallets" aria-labelledby="command-wallets-title"><div className="sc-command-section-heading"><h2 id="command-wallets-title">Portfele</h2><span>X · Gemini · Anthropic</span></div><p className="sc-command-note">Tylko płatne portfele (reszta modeli działa na darmowych pulach). Dostawcy nie udostępniają salda w API: liczymy wpisane saldo minus zapisane wydatki i przeliczamy przy każdym odświeżeniu panelu (co 60 s). Brak środków (402) wykrywamy automatycznie z odpowiedzi dostawcy.</p>
-          <div className="sc-command-wallet-grid">{wallets.map(wallet => <WalletCard key={wallet.provider} wallet={wallet} />)}</div>{!wallets.length && <p className="sc-command-note">{onlyProblems ? 'Brak portfeli wymagających uwagi.' : 'Brak portfeli z saldem — wpisz saldo poniżej.'}</p>}<WalletForm onSaved={refresh} />
+          <div className="sc-command-wallet-grid">{wallets.map(wallet => <WalletCard key={wallet.provider} wallet={wallet} />)}</div>{!wallets.length && <p className="sc-command-note">{onlyProblems ? 'Brak portfeli wymagających uwagi.' : 'Brak portfeli z saldem - wpisz saldo poniżej.'}</p>}<WalletForm onSaved={refresh} />
         </section>
         <section aria-labelledby="command-details-title"><div className="sc-command-section-heading"><h2 id="command-details-title">Pełny obraz projektu</h2><span>{sections.length} sekcji · rozwiń szczegóły</span></div>
           <div className="sc-command-grid">{sections.map(section => <DetailCard key={`${section.title}-${onlyProblems}`} card={section} onlyProblems={onlyProblems} />)}</div>{onlyProblems && !sections.length && <p className="sc-command-note">Brak sekcji wymagających uwagi.</p>}

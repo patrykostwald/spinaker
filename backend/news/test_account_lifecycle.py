@@ -35,7 +35,7 @@ def user():
 
 def registration(**extra):
     return {'username': 'newreader', 'email': 'new@example.org', 'password': PASSWORD,
-            'accepted_terms': True, 'accepted_privacy': True, **extra}
+            'accepted_terms': True, 'adult': True, **extra}
 
 
 def test_register_required_email_consents_and_no_privileges():
@@ -52,7 +52,7 @@ def test_register_required_email_consents_and_no_privileges():
     queued.assert_called_once_with(args=['new@example.org'], retry=False)
 
 
-@pytest.mark.parametrize('field,value', [('email', ''), ('accepted_terms', False), ('accepted_privacy', False)])
+@pytest.mark.parametrize('field,value', [('email', ''), ('accepted_terms', False), ('adult', False)])
 def test_registration_rejects_missing_requirements(field, value):
     response = APIClient().post('/api/account/register/', registration(**{field: value}), format='json')
     assert response.status_code == 400 and field in response.data
@@ -186,7 +186,7 @@ def test_public_thread_requires_verification_but_private_save_works(user, monkey
     articles = [Article.objects.create(source=source, title=f'Article {i}', url=f'https://example.org/{i}') for i in range(2)]
     client = APIClient()
     client.force_authenticate(user)
-    payload = {'title': 'Moja nitka', 'article_ids': [a.pk for a in articles]}
+    payload = {'title': 'Moja spinka', 'article_ids': [a.pk for a in articles]}
     private = client.post('/api/account/context-threads/', payload, format='json')
     assert private.status_code == 201
     url = f'/api/account/context-threads/{private.data["id"]}/'

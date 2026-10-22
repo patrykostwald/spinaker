@@ -1,19 +1,19 @@
 "use client";
 
 /**
- * PortalProvider — stan i API portalu (docs/UI_KIT_PLAN.md → «Портал», «Контракты»).
+ * PortalProvider - stan i API portalu (docs/UI_KIT_PLAN.md → «Портал», «Контракты»).
  *
  * DWA konteksty celowo: `PortalApiContext` niesie WYŁĄCZNIE stabilne funkcje (referencje
  * nie zmieniają się między renderami), więc karta, która tylko WYWOŁUJE `open`/`preview`,
  * nigdy nie renderuje się ponownie z powodu zmiany stanu portalu. `PortalEngineContext`
- * (state) niesie to, co faktycznie się zmienia — subskrybują go tylko PortalLayer/
+ * (state) niesie to, co faktycznie się zmienia - subskrybują go tylko PortalLayer/
  * useHoverExpand i ewentualne odczyty `active`/`previewing`.
  *
- * Właściciel `layoutId="sc-card-${id}"` — uwaga (odstępstwo, patrz raport R5): kontrakt
+ * Właściciel `layoutId="sc-card-${id}"` - uwaga (odstępstwo, patrz raport R5): kontrakt
  * z wave 0 zakłada, że NewsCard sama zdejmuje/nosi layoutId. R3 nigdy tego nie
  * zaimplementował (żaden layoutId w NewsCard.tsx), a jedyna dozwolona zmiana w tym pliku
  * to opcjonalny prop `onPreview`. PortalLayer/MaterialSurface NIE używają więc layoutId
- * do morfingu — odtwarzają ciągłość przez jawny zrzut `getBoundingClientRect()` w chwili
+ * do morfingu - odtwarzają ciągłość przez jawny zrzut `getBoundingClientRect()` w chwili
  * `open()`/`preview()` (patrz PortalLayer.tsx, MaterialSurface.tsx).
  */
 
@@ -44,9 +44,9 @@ export type PortalExit = {
   kind: "card" | "offscreen" | "unmounted";
   rect: DOMRect;
   radius: number;
-  /** Zamrożone w chwili `close()` — bezpieczniejsze niż osobny `originRef` czytany później. */
+  /** Zamrożone w chwili `close()` - bezpieczniejsze niż osobny `originRef` czytany później. */
   focusEl: HTMLElement | null;
-  /** id materiału, którego dotyczy powrót — do świeżego dogrania fokusu w `onExitComplete`. */
+  /** id materiału, którego dotyczy powrót - do świeżego dogrania fokusu w `onExitComplete`. */
   articleId: number | null;
 };
 
@@ -74,7 +74,7 @@ export type PortalStateValue = {
   isPreviewing: (id: number) => boolean;
 };
 
-/** Pełny stan silnika — używa go PortalLayer/useHoverExpand; nie jest częścią minimalnego `usePortal()`. */
+/** Pełny stan silnika - używa go PortalLayer/useHoverExpand; nie jest częścią minimalnego `usePortal()`. */
 export type PortalEngineValue = PortalStateValue & {
   phase: Phase;
   originEl: HTMLElement | null;
@@ -102,10 +102,10 @@ function findOriginEl(id: number): HTMLElement | null {
 
 /**
  * `useModalA11y.restoreFocus` woła `originEl.focus()` wprost (plik R4, poza zasięgiem edycji).
- * Korzeń `NewsCard` to `<article>` — ZAWSZE wolimy fokusowalne DZIECKO (prawdziwy link
+ * Korzeń `NewsCard` to `<article>` - ZAWSZE wolimy fokusowalne DZIECKO (prawdziwy link
  * tytułu), nawet jeśli sam korzeń też technicznie pasuje do selektora: framer-motion dopisuje
  * mu `tabindex="0"` samo (gesty `whileTap`/`whileHover`), więc `el.matches(...)` na korzeniu
- * dawałoby fałszywe pierwszeństwo PRZED zajrzeniem do środka — złapaliśmy to dopiero w
+ * dawałoby fałszywe pierwszeństwo PRZED zajrzeniem do środka - złapaliśmy to dopiero w
  * przeglądarce (fokus lądował na `<article>`, nie na linku, mimo że link istniał).
  */
 function focusTarget(el: HTMLElement | null): HTMLElement | null {
@@ -141,7 +141,7 @@ export function PortalProvider({
   const preview = useCallback((article: Article, originEl: HTMLElement) => {
     originRef.current = focusTarget(originEl);
     setState((prev) => {
-      if (prev.phase === "open") return prev; // pełny ekran już otwarty — podgląd go nie przerywa
+      if (prev.phase === "open") return prev; // pełny ekran już otwarty - podgląd go nie przerywa
       const size = readSize(originEl);
       return {
         phase: "previewing",
@@ -157,12 +157,12 @@ export function PortalProvider({
     setState((prev) => (prev.phase === "previewing" ? EMPTY_STATE : prev));
   }, []);
 
-  // JEDNO wywołanie setState — NIGDY startTransition (docs/UI_KIT_PLAN.md → «Портал»):
+  // JEDNO wywołanie setState - NIGDY startTransition (docs/UI_KIT_PLAN.md → «Портал»):
   // inaczej ciągłość „klik kontynuuje bieżący rozmiar” rozjechałaby się na dwa commity.
   const open = useCallback((article: Article, originEl?: HTMLElement | null) => {
     setState((prev) => {
       const resolvedOrigin = originEl ?? findOriginEl(article.id);
-      // R0 (24.09): karta sama zmienia formę na stopniu B — mierzymy `.sc-card` (rozrośniętą, jeśli
+      // R0 (24.09): karta sama zmienia formę na stopniu B - mierzymy `.sc-card` (rozrośniętą, jeśli
       // trwa B), nie slot; powierzchnia rośnie z tego, co użytkownik właśnie widzi.
       const rectSource: Element | null = resolvedOrigin?.querySelector(".sc-card") ?? resolvedOrigin;
       const size = readSize(resolvedOrigin ?? undefined);
@@ -181,7 +181,7 @@ export function PortalProvider({
   }, []);
 
   // `phase` wraca do "idle" OD RAZU (nie czeka na koniec animacji): to właśnie ten przełącznik
-  // każe PortalLayer przestać renderować dziecko AnimatePresence i uruchomić jego `exit` —
+  // każe PortalLayer przestać renderować dziecko AnimatePresence i uruchomić jego `exit` -
   // sama WIZUALNA obecność powierzchni podczas zamykania żyje dalej w LOKALNYM stanie
   // PortalLayer (`displayed`), niezależnie od tego silnika. `exit` zostaje wypełniony, żeby
   // PortalLayer znał cel animacji wyjścia (jeden z trzech przypadków powrotu).
@@ -195,7 +195,7 @@ export function PortalProvider({
         const rect = el.getBoundingClientRect();
         const inViewport = rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth;
         if (!inViewport) {
-          // Мгновенная прокрутка к карточке в ТОМ ЖЕ такте — useScrollLock уже погасил
+          // Мгновенная прокрутка к карточке в ТОМ ЖЕ такте - useScrollLock уже погасил
           // scroll-behavior:smooth на время оверлея (frontend-spin/app/globals.css:11).
           el.scrollIntoView({ behavior: "auto", block: "center" });
         }
@@ -208,7 +208,7 @@ export function PortalProvider({
           articleId: prev.article?.id ?? null,
         };
       } else {
-        // Карточка размонтирована — цели нет, схлопываемся к центру запомненного прямоугольника.
+        // Карточка размонтирована - цели нет, схлопываемся к центру запомненного прямоугольника.
         const rememberedRect = prev.flight?.rect ?? new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0);
         exit = { kind: "unmounted", rect: rememberedRect, radius: fallbackRadius, focusEl: null, articleId: null };
       }
@@ -216,7 +216,7 @@ export function PortalProvider({
     });
   }, []);
 
-  /** Wywoływane w `onExitComplete` PortalLayer — dopiero wtedy naprawdę „nie ma nic otwartego”. */
+  /** Wywoływane w `onExitComplete` PortalLayer - dopiero wtedy naprawdę „nie ma nic otwartego”. */
   const clearExit = useCallback(() => {
     setState((prev) => (prev.exit ? { ...prev, exit: null } : prev));
     setSettled(false);
@@ -266,7 +266,7 @@ export function usePortalApi(): PortalApi {
 }
 
 /**
- * R0 (24.09): NewsCard podpina się do portalu SAMA, gdy jakiś PortalProvider jest nad nią —
+ * R0 (24.09): NewsCard podpina się do portalu SAMA, gdy jakiś PortalProvider jest nad nią -
  * bez propów `onOpen`/`onPreview` w każdym miejscu użycia. Poza providerem zwraca `null`
  * i karta zachowuje się jak zwykły <Link> + stopień B w potoku.
  */
@@ -280,7 +280,7 @@ export function usePortalState(): PortalStateValue {
   return ctx;
 }
 
-/** Pełny silnik — tylko PortalLayer/useHoverExpand (potrzebują `flight`/`exit`/`originEl`/`phase`). */
+/** Pełny silnik - tylko PortalLayer/useHoverExpand (potrzebują `flight`/`exit`/`originEl`/`phase`). */
 export function usePortalEngine(): PortalEngineValue {
   const ctx = useContext(PortalEngineContext);
   if (!ctx) throw new Error("usePortalEngine must be used within <PortalProvider>");

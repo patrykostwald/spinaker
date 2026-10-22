@@ -64,7 +64,7 @@ export function Section() {
     <div>
       <p className="sc-t-body-s sc-text-2" style={{ maxWidth: "var(--sc-measure)" }}>
         Ramka 375×740 z własnym przewijaniem (<code>container-type: inline-size</code>).{" "}
-        <code>useFocalBand(..., {"{ force: true }"})</code> włącza pasmo fokalne mimo myszy — na
+        <code>useFocalBand(..., {"{ force: true }"})</code> włącza pasmo fokalne mimo myszy - na
         prawdziwym telefonie robi to samo, bo tam nie ma <code>(hover: hover) and (pointer: fine)</code>.
       </p>
 
@@ -74,14 +74,14 @@ export function Section() {
           Pokaż granice pasma (35% / 65%)
         </label>
         <p className="sc-t-meta sc-text-2">
-          Fokalna karta: <span className="sc-t-mono">{focalId ?? "—"}</span>
+          Fokalna karta: <span className="sc-t-mono">{focalId ?? "-"}</span>
         </p>
         <p className="sc-t-meta sc-text-2">
           Prędkość przewijania: <span className="sc-t-mono">{velocity.toFixed(2)} px/ms</span>
         </p>
         <p className="sc-t-meta sc-text-2">
-          Stopień B (onPreview): <span className="sc-t-mono">{previewed ?? "—"}</span> · Stopień C (onOpen):{" "}
-          <span className="sc-t-mono">{opened ?? "—"}</span>
+          Stopień B (onPreview): <span className="sc-t-mono">{previewed ?? "-"}</span> · Stopień C (onOpen):{" "}
+          <span className="sc-t-mono">{opened ?? "-"}</span>
         </p>
       </div>
 
@@ -127,13 +127,13 @@ export function Section() {
 
             <section className="sc-folded">
               <div className="sc-folded__header sc-chrome">
-                <span className="sc-t-title-s">Karuzela — karty medium</span>
+                <span className="sc-t-title-s">Karuzela - karty medium</span>
               </div>
               <div className="sc-mobile-frame__carousel-wrap">
                 <Carousel
                   articles={FIXTURE_STRIPS[0].articles}
                   size="medium"
-                  ariaLabel="Najnowsze materiały — karuzela"
+                  ariaLabel="Najnowsze materiały - karuzela"
                   onPreview={(article) => setPreviewed(article.title)}
                   onOpen={(article) => setOpened(article.title)}
                 />
@@ -162,7 +162,7 @@ export function Section() {
         <div className="sc-mobile-frame__list" style={{ padding: "0 0 var(--sc-s-4)" }}>
           <p className="sc-t-body-s sc-text-2">
             Ten sam <code>BottomSheet</code>, którego <code>Dropdown presentation=&quot;sheet&quot;</code> używa
-            wewnętrznie. Przeciągnij uchwyt w dół, żeby zamknąć — decyduje znak prędkości, nie pozycja.
+            wewnętrznie. Przeciągnij uchwyt w dół, żeby zamknąć - decyduje znak prędkości, nie pozycja.
           </p>
           <NewsCard article={FIXTURE_ARTICLES[0]} size="mini" />
           <NewsCard article={FIXTURE_ARTICLES[1]} size="mini" />
@@ -170,7 +170,7 @@ export function Section() {
       </BottomSheet>
 
       <h3 className="sc-t-title-m sc-section__sub">Karuzela pełnej szerokości (poza ramką)</h3>
-      <Carousel articles={FIXTURE_STRIPS[1].articles} size="medium" ariaLabel="Polska — karuzela pełnej szerokości" />
+      <Carousel articles={FIXTURE_STRIPS[1].articles} size="medium" ariaLabel="Polska - karuzela pełnej szerokości" />
     </div>
   );
 }

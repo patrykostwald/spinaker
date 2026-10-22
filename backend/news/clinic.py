@@ -17,7 +17,7 @@ from email.message import EmailMessage
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Count, Min, Max, Q
 from django.utils import timezone
 
@@ -51,9 +51,8 @@ VERDICT_LABELS = {'spin': 'Spin', 'partial': 'Częściowy spin', 'no_spin': 'Bez
 ASSESSMENT_LABELS = {'supported': 'potwierdzone', 'contradicted': 'sprzeczne ze źródłami',
                      'misleading': 'wprowadza w błąd', 'unverified': 'niezweryfikowane'}  # jedno słowo w całym serwisie (audyt 046)
 SCALE_MIN_SAMPLE = 10
-NOTICE_AUTO = ('Strażnik (darmowe modele) wybiera wpisy warte sprawdzenia, a konsylium kilku modeli stawia diagnozę. '
-               'Fakty są sprawdzane w wyszukiwarce. Przy zgodności werdyktu poniżej 2/3 lub spinie z oceną co najmniej 70 '
-               'możliwa jest konsultacja faktów z Claude. '
+NOTICE_AUTO = ('Wpisy do analizy wybiera automat. Kilka niezależnych modeli AI ocenia każdy osobno, a fakty sprawdzamy '
+               'w wyszukiwarce. Przy sporze modeli albo bardzo silnym spinie fakty sprawdza dodatkowo mocniejszy model. '
                'Publikacja jest automatyczna · nikt nie poprawia treści diagnoz.')
 NOTICE_REVIEW = ('Diagnozy przygotowuje AI. Człowiek może je tylko zatwierdzić albo odrzucić — nie zmienia ich treści.')
 NOTICE = NOTICE_AUTO
@@ -130,20 +129,31 @@ def party_affiliation(figure):
     return result
 
 
+def _post_avatar(post) -> str:
+    """Miniatura konta: najpierw z danych autora wpisu (X: profile_image_url, wariant _bigger), potem zapisana przy koncie
+    (news/x_avatars.py, PoliticalAccount.avatar_url); pusty napis, gdy brak."""
+    avatar = ((post.author_data or {}).get('profile_image_url') or '').strip()
+    if avatar.startswith('https://'):
+        return avatar.replace('_normal.', '_bigger.')
+    account = getattr(post, 'account', None)
+    fallback = (getattr(account, 'avatar_url', '') or '').strip()
+    return fallback if fallback.startswith('https://') else ''
+
+
 def party_data(figure: PublicFigure | None):
     return party_affiliation(figure)['party']
 
 
 def author_data(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     author = post.author_data or {}
-    avatar = author.get('profile_image_url') or ''
+    avatar = _post_avatar(post)  # dane wpisu, potem miniatura zapisana przy koncie
     affiliation = party_affiliation(figure)
     return {
         'account_id': post.account_id,
         'name': display_name(clean_account_name(figure.canonical_name if figure else (author.get('name') or post.account.display_name))),
         'handle': post.account.handle,
         'account_url': f'https://x.com/{post.account.handle}',
-        'avatar_url': avatar.replace('_normal.', '_bigger.') if avatar else '',
+        'avatar_url': avatar,
         'figure_id': figure.pk if figure else None,
         'role_title': figure.role_title if figure else '',
         'party': affiliation['party'],
@@ -162,6 +172,7 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
         'role': figure.role_title if figure else '',
         'club': party['name'] if party else '',
         'camp_label': CAMP_PROMPT_LABELS.get(post.camp_at_collection, post.camp_at_collection),
+        'camp_at_collection': post.camp_at_collection,
         'published_at': timezone.localtime(post.published_at).strftime('%Y-%m-%d %H:%M'),
         'url': post.url,
         'text': post.text,
@@ -170,11 +181,14 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
     }
 
 
-def unscreened_posts():
+def unscreened_posts(include_old=False):
     since = timezone.now() - timedelta(days=int(os.environ.get('CLINIC_MAX_POST_AGE_DAYS', '3')))
-    return (PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, published_at__gte=since,
-                                         account__enabled=True, spin_diagnosis__isnull=True)
-            .select_related('account').order_by('-published_at', '-pk'))  # najpierw najnowsze
+    rows = PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, account__enabled=True).filter(
+        Q(spin_diagnosis__isnull=True) | Q(spin_diagnosis__status='flagged', spin_diagnosis__screen_score__isnull=True,
+                                          spin_diagnosis__diagnosed_at__isnull=True))
+    if not include_old:
+        rows = rows.filter(published_at__gte=since)
+    return rows.select_related('account').order_by('fetched_at' if include_old else '-published_at', '-pk')
 
 
 def auto_publish() -> bool:
@@ -217,7 +231,7 @@ def _anthropic_today():
     return SpinDiagnosis.objects.filter(diagnosed_at__gte=start, provider='anthropic')
 
 
-def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
+def screen_post(post: PoliticalPost, retry=False) -> SpinDiagnosis | None:
     """Strażnik — darmowa ocena. Tworzy wpis: pominięty, oznaczony do decyzji albo w kolejce do diagnozy."""
     result = clinic_ai.screen(post.text)
     flag, auto = thresholds()
@@ -227,31 +241,75 @@ def screen_post(post: PoliticalPost) -> SpinDiagnosis | None:
     else:
         score = result['score']
         status = 'queued' if score >= auto else 'flagged' if score >= flag else 'not_applicable'
+        from news import basal_siatka
+        basal = basal_siatka.opinion(post.text)  # tryb cichy: tylko zapis zdania, status ustala Strażnik
+        if basal:
+            result = {**result, 'basal': basal}
         fields = {'status': status, 'triage': result, 'screen_score': score,
                   'provider': result['provider'], 'model_name': str(result['model'])[:64]}
     try:
         with transaction.atomic():
             return SpinDiagnosis.objects.create(post=post, prompt_version=clinic_ai.PROMPT_VERSION, **fields)
     except IntegrityError:
+        if retry and result is not None:
+            changed = SpinDiagnosis.objects.filter(post=post, status='flagged', screen_score__isnull=True,
+                diagnosed_at__isnull=True).update(**fields)
+            if changed:
+                return SpinDiagnosis.objects.get(post=post)
         return None
 
 
-def run_screening(limit: int = 30) -> dict:
+def run_screening(limit: int = 30, *, include_old=False, post_ids=None) -> dict:
     counts = {}
-    for post in unscreened_posts()[:limit]:
-        row = screen_post(post)
+    posts = unscreened_posts(include_old=include_old)
+    if post_ids is not None:
+        posts = posts.filter(pk__in=post_ids)
+    if not include_old:
+        posts = posts.order_by('-watch_priority', '-published_at', '-pk')
+    for post in posts[:limit]:
+        row = screen_post(post, retry=True)
         if row:
             counts[row.status] = counts.get(row.status, 0) + 1
     alert = send_review_alert() if counts.get('flagged') else 'nothing'
     return {'screened': counts, 'alert': alert}
 
 
-def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiagnosis:
-    """Płatna diagnoza (Claude) jednego wpisu z kolejki."""
+SNAPSHOT_DAYS = 7
+
+
+def _snapshot(row: SpinDiagnosis) -> dict | None:
+    """Zapisany wynik wcześniejszej, opłaconej diagnozy tego wpisu, której nie udało się zapisać w całości."""
+    snap = (row.usage or {}).get('snapshot')
+    taken = (row.usage or {}).get('snapshot_at')
+    if not isinstance(snap, dict) or not taken:
+        return None
     try:
-        result = clinic_ai.diagnose(_post_context(row.post, figure))
+        fresh = timezone.now() - datetime.fromisoformat(taken) < timedelta(days=SNAPSHOT_DAYS)
+    except (TypeError, ValueError):
+        return None
+    return dict(snap) if fresh else None
+
+
+def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiagnosis:
+    """Płatna diagnoza jednego wpisu z kolejki. Wynik najpierw trafia do bazy jako „zdjęcie” (usage['snapshot']) — gdy
+    pełny zapis się wywróci, kolejna próba bierze zdjęcie zamiast płacić za AI drugi raz (29–30.09.2026 ponawiane
+    nieudane zapisy kosztowały ok. 135 zł)."""
+    try:
+        result = _snapshot(row)
+        if result is None:
+            result = clinic_ai.diagnose(_post_context(row.post, figure))
+            # Zdjęcie: jedna mała aktualizacja samego pola JSON (bez limitów długości), zanim cokolwiek innego się zapisze.
+            row.usage = {**(row.usage or {}), 'snapshot': result, 'snapshot_at': timezone.now().isoformat()}
+            SpinDiagnosis.objects.filter(pk=row.pk).update(usage=row.usage)
+        result = dict(result)
     except clinic_ai.ClinicAIError as error:
+        if str(error.code).startswith('council_quorum'):
+            return _defer_quorum(row, error)
         row.status, row.error = 'failed', error.code
+        if hasattr(error, 'videos'):
+            row.usage = {key: value for key, value in (row.usage or {}).items()
+                         if key not in ('snapshot', 'snapshot_at')}
+            row.usage['videos'] = error.videos
         if hasattr(error, 'council'):
             row.usage = {**(row.usage or {}), 'council': error.council}
         row.provider, row.model_name = 'anthropic', clinic_ai.model_name()
@@ -259,8 +317,9 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         if 'lab' not in result:
             from news.clinic_lab import run_lab
             result['lab'] = run_lab(row.post.text, result.get('claims', []), result.get('loaded_words'))
-        usage = result.pop('usage', {})
+        usage = result.pop('usage', {})  # po udanym zapisie zdjęcie znika z usage — wynik jest już w kolumnach
         usage['loaded_words'] = result.pop('loaded_words', [])
+        result.setdefault('plain', {})  # Ponowna diagnoza starym dostawcą nie zachowuje starego skrótu.
         for field, value in result.items():
             setattr(row, field, value)
         row.status, row.usage, row.error = ('approved' if auto_publish() else 'pending_review'), usage, ''
@@ -271,12 +330,46 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         row.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
-    row.save()
+    try:
+        with transaction.atomic():
+            row.save()
+    except DatabaseError as error:
+        # Wynik jest bezpieczny w zdjęciu; wpis oznaczamy jako nieudany z przyczyną — kolejna próba nic nie kosztuje.
+        logger.error('diagnosis %s: save failed, snapshot kept: %s', row.pk, error)
+        SpinDiagnosis.objects.filter(pk=row.pk).update(status='failed', error=f'save_failed: {error}'[:240])
+        row.status, row.error = 'failed', f'save_failed: {error}'[:240]
+        return row
     if row.status in ('approved', 'pending_review'):
         from news.clinic_lab import queue_archive
         queue_archive(row.post)
         ensure_x_thread(row)
     return row
+
+
+def _defer_quorum(row: SpinDiagnosis, error) -> SpinDiagnosis:
+    """Brak kworum Konsylium: diagnoza się nie ukazuje, wpis czeka w kolejce (bez diagnosed_at - nie liczy się do
+    dziennego limitu). Powód w error i usage['quorum']; ponowienie po resecie limitów albo po naprawie modelu."""
+    from news import council_quorum
+    now = timezone.now()
+    council = getattr(error, 'council', None) or {}
+    previous = (row.usage or {}).get('quorum') or {}
+    usage = {key: value for key, value in (row.usage or {}).items() if key not in ('snapshot', 'snapshot_at')}
+    if council:
+        usage['council'] = council
+    if hasattr(error, 'videos'):
+        usage['videos'] = error.videos
+    usage['quorum'] = {**(getattr(error, 'quorum', None) or {}), 'attempts': int(previous.get('attempts', 0)) + 1,
+                       'first_at': previous.get('first_at') or now.isoformat(), 'last_at': now.isoformat()}
+    row.status, row.error, row.usage = 'queued', str(error.code)[:240], usage
+    SpinDiagnosis.objects.filter(pk=row.pk).update(status=row.status, error=row.error, usage=row.usage)
+    council_quorum.block(council.get('members') or [], row.error, now)
+    logger.info('diagnosis %s: waits for council quorum (%s)', row.pk, row.error)
+    return row
+
+
+def quorum_waiting():
+    """Wpisy czekające na kworum Konsylium (dla Raportu pętli i kolejki)."""
+    return SpinDiagnosis.objects.filter(status='queued', error__startswith='council_quorum')
 
 
 def ensure_x_thread(row: SpinDiagnosis, save: bool = True) -> bool:
@@ -437,7 +530,15 @@ def interview_budget_left() -> float:
     return round(_env_usd('CLINIC_INTERVIEW_BUDGET_USD', 3.5) - interview_spent_today(), 4)
 
 
-BUDGET_RESERVE_USD = 0.25  # nie zaczynamy diagnozy, gdy w budżecie zostało mniej niż jej przybliżony koszt
+BUDGET_RESERVE_USD = 0.25  # dolna granica rezerwy; prawdziwa rezerwa liczona z kosztów ostatnich diagnoz
+
+
+def diagnosis_reserve() -> float:
+    """Ile musi zostać w budżecie, żeby zacząć diagnozę: najdroższa z ostatnich 15 diagnoz (min. 0,25 USD, maks. 3 USD).
+    2.10.2026: przy stałej rezerwie 0,25 USD limit 5 USD przekroczono o 23% (pojedyncze diagnozy kosztowały do 1,51 USD)."""
+    recent = SpinDiagnosis.objects.filter(provider='anthropic', diagnosed_at__isnull=False).order_by('-diagnosed_at').values_list('usage', flat=True)[:15]
+    costs = [clinic_ai.cost_usd(usage or {}) for usage in recent]
+    return round(min(3.0, max([BUDGET_RESERVE_USD, *costs])), 4)
 
 
 def run_diagnoses(limit: int = 2) -> dict:
@@ -445,8 +546,9 @@ def run_diagnoses(limit: int = 2) -> dict:
     najpopularniejszy post dnia (od CLINIC_FEATURED_HOUR) — to on zostaje spinem dnia."""
     if not clinic_ai.enabled():
         return {'status': 'disabled'}
-    if budget_left() < BUDGET_RESERVE_USD:
-        return {'status': 'budget', 'spent_today_usd': spent_today()}
+    reserve = diagnosis_reserve()
+    if budget_left() < reserve:
+        return {'status': 'budget', 'spent_today_usd': spent_today(), 'reserve_usd': reserve}
     if failures_today() >= _env_int('CLINIC_DAILY_FAILURE_LIMIT', 5):
         # Seria błędów (klucz, model, limit konta) — nie palimy pieniędzy do jutra albo do naprawy.
         return {'status': 'too_many_failures', 'failed_today': failures_today()}
@@ -454,6 +556,15 @@ def run_diagnoses(limit: int = 2) -> dict:
     start, end = day_window(now)
     if not start <= now < end:
         return {'status': 'night'}
+    expire_quorum_waits()
+    if clinic_ai.provider() == 'council':
+        # Kworum przed zapytaniami (bez kosztów): przerwa po nieudanym kworum albo za mało wolnych członków - wpisy czekają.
+        from news import council_quorum
+        wait = council_quorum.waiting()
+        state = None if wait else council_quorum.possible()
+        if wait or not state['met']:
+            return {'status': 'quorum', 'waiting': quorum_waiting().count(),
+                    'reason': (wait or {}).get('reason') or state['reason'], 'until': (wait or {}).get('until', '')}
     daily = _env_int('CLINIC_DAILY_LIMIT', 8)
     reserve = 1 if daily > 1 else 0
     counts = {}
@@ -462,15 +573,20 @@ def run_diagnoses(limit: int = 2) -> dict:
         row = pick_featured()
         if row:
             figure = figures_by_account({row.post.account_id}).get(row.post.account_id)
-            if budget_left() >= BUDGET_RESERVE_USD:
+            if budget_left() >= reserve:
                 diagnose(row, figure)
             counts[f'featured_{row.status}'] = 1
     regular_done = diagnoses_today() - (1 if featured_today() else 0)
     take = max(0, min(limit, paced_target(now, daily - reserve) - regular_done))
     # Tylko świeże posty (domyślnie z ostatnich 24 h) — Klinika komentuje bieżące przekazy, nie archiwum.
     fresh = timezone.now() - timedelta(hours=_env_int('CLINIC_FRESH_HOURS', 24))
-    rows = list(SpinDiagnosis.objects.filter(status='queued', post__published_at__gte=fresh).select_related('post__account')
-                .order_by('-screen_score', '-post__published_at')[:take])
+    # Wpisy czekające na kworum Konsylium wracają mimo okna świeżości (najwyżej council_quorum.MAX_WAIT_HOURS).
+    from news.council_quorum import MAX_WAIT_HOURS
+    waited = timezone.now() - timedelta(hours=MAX_WAIT_HOURS)
+    rows = list(SpinDiagnosis.objects.filter(status='queued').filter(
+        Q(post__published_at__gte=fresh) | Q(error__startswith='council_quorum', post__published_at__gte=waited))
+                .select_related('post__account')
+                .order_by('-post__watch_priority', '-screen_score', '-post__published_at')[:take])
     if auto_publish() and len(rows) < take:
         # Żeby spiny wpadały codziennie: gdy wysoko ocenionych postów brakuje, bierzemy najwyżej ocenione
         # z oznaczonych przez strażnika (z ostatniej doby), aż do dziennego limitu.
@@ -479,58 +595,207 @@ def run_diagnoses(limit: int = 2) -> dict:
         rows += list(extra)
     figures = figures_by_account({row.post.account_id for row in rows})
     for row in rows:
-        if budget_left() < BUDGET_RESERVE_USD:
+        if budget_left() < reserve:
             counts['budget_stop'] = 1
             break
         diagnose(row, figures.get(row.post.account_id))
         counts[row.status] = counts.get(row.status, 0) + 1
+        if row.status == 'queued':
+            counts['quorum'] = 1
+            break  # bez kworum kolejne wpisy też by czekały - nie zużywamy limitów członków
     alert = send_review_alert()
     return {'status': 'ok', 'budget_left': max(0, daily - diagnoses_today()), 'usd_left_today': budget_left(),
             'diagnosed': counts, 'alert': alert}
 
 
+def expire_quorum_waits() -> int:
+    """Wpis czekał na kworum dłużej niż MAX_WAIT_HOURS od publikacji: nieudany z powodem (nie znika bez śladu)."""
+    from news.council_quorum import MAX_WAIT_HOURS
+    old = quorum_waiting().filter(post__published_at__lt=timezone.now() - timedelta(hours=MAX_WAIT_HOURS))
+    return old.update(status='failed', error=f'council_quorum_expired: brak kworum Konsylium przez {MAX_WAIT_HOURS} h')
+
+
 MIN_MESSAGE_ACCOUNTS = 3
 
 
-def run_daily_messages(day=None) -> dict:
-    """Przekaz dnia każdego obozu — darmowe modele (Groq, zapasowo NIM), z postów co najmniej trzech kont.
+def run_daily_messages(day=None, *, camps=None, models=None, only_missing=False) -> dict:
+    """Przekaz dnia każdego obozu — darmowe modele (Groq, zapasowo NIM, potem Mercury), z postów co najmniej trzech kont.
 
     W ciągu dnia przekaz jest odświeżany (9:00, 12:00, 15:00, 18:00, 21:30), dopóki nikt go ręcznie nie zatwierdził.
+    Niepowodzenie zostaje w bazie jako wiersz failed z powodem; repair_daily_messages dorabia brakujące co godzinę.
     """
-    day = day or timezone.localdate()
-    start = timezone.make_aware(datetime.combine(day, time.min))
     created = {}
-    for camp in CAMPS:
-        existing = ClinicDailyMessage.objects.filter(day=day, camp=camp).first()
-        if existing and existing.reviewed_by_id:
-            continue  # zatwierdzony ręcznie — nie nadpisujemy
-        posts = list(PoliticalPost.objects.filter(
-            available=True, camp_at_collection=camp, account__enabled=True,
-            published_at__gte=start, published_at__lt=start + timedelta(days=1),
-        ).select_related('account').order_by('-published_at')[:60])
-        if len({post.account_id for post in posts}) < MIN_MESSAGE_ACCOUNTS:
-            continue
-        figures = figures_by_account({post.account_id for post in posts})
-        rows = [{'author': (figures[p.account_id].canonical_name if p.account_id in figures else p.account.display_name),
-                 'text': p.text[:1200]} for p in posts]
+    if day is None:
+        # Dogrywka (właściciel 3.10: brak przekazu opozycji z 2.10): gdy wczoraj żaden przebieg nie zapisał przekazu
+        # obozu (np. limit darmowych modeli), próbujemy jeszcze raz dla wczoraj, zanim zrobimy dzisiejszy.
+        yesterday = timezone.localdate() - timedelta(days=1)
+        missing = [camp for camp in CAMPS if not ClinicDailyMessage.objects.filter(day=yesterday, camp=camp).exclude(status='failed').exists()]
+        if missing:
+            created.update({f'{yesterday.isoformat()}:{camp}': pk for camp, pk in _daily_messages_for(yesterday, missing).items()})
+    day = day or timezone.localdate()
+    errors = {}
+    created.update(_daily_messages_for(day, camps or CAMPS, models=models, only_missing=only_missing, errors=errors))
+    alert = send_review_alert()
+    return {'status': 'error' if errors else 'ok', 'created': created, 'alert': alert, 'errors': errors}
+
+
+def message_settled(day, camp) -> bool:
+    """Przekaz jest: zapisany (approved / pending_review z treścią) albo rozstrzygnięty ręcznie (także odrzucony)."""
+    return ClinicDailyMessage.objects.filter(day=day, camp=camp).filter(
+        Q(reviewed_by__isnull=False) | (Q(status__in=('approved', 'pending_review')) & ~Q(message=''))).exists()
+
+
+def repair_daily_messages(day=None) -> dict:
+    """Naprawa co godzinę (10-23): tylko obozy bez przekazu albo z zapisanym błędem; gdy oba są - nic nie robi.
+    Po przebiegu 21:30 dalszy brak przekazu to jeden mail do właściciela na obóz i dzień (naprawa sama nie pomogła)."""
+    day = day or timezone.localdate()
+    missing = [camp for camp in CAMPS if not message_settled(day, camp)]
+    if not missing:
+        return {'status': 'ok', 'created': {}, 'skipped': 'complete'}
+    result = run_daily_messages(day, camps=missing, only_missing=True)
+    result['owner_alerts'] = alert_owner_missing_messages(day)
+    return result
+
+
+def alert_owner_missing_messages(day, now=None) -> list:
+    """Właściciel dostaje wiadomość dopiero, gdy po wieczornym przebiegu (21:30) przekaz dnia nadal nie powstał
+    (zasada „najpierw naprawa automatyczna”). Powód z wiersza failed; alert_sent_at pilnuje jednego maila."""
+    from news.council_recruiter import _owner_email
+    from news.daily_schedule import at
+    from news.social_publish import _mail
+    now = now or timezone.now()
+    if day != timezone.localdate(now) or now < at(now, 21, 30):
+        return []
+    sent = []
+    for row in ClinicDailyMessage.objects.filter(day=day, status='failed', alert_sent_at__isnull=True):
+        label = 'rządzący' if row.camp == 'government' else 'opozycja'
+        body = (f'Przekaz dnia ({label}) za {day.isoformat()} nie powstał mimo prób co godzinę.\n'
+                f'Ostatni powód: {row.error or "brak zapisanego powodu"}\n\n'
+                'Kolejny przebieg naprawy spróbuje ponownie; przekaz można też uruchomić ręcznie:\n'
+                "run_daily_messages(camps=('" + row.camp + "',))\n\nPanel: https://spin.clinic/panel")
         try:
-            result = clinic_ai.daily_message(CAMP_PROMPT_LABELS[camp], day.isoformat(), rows)
+            ok = _mail(_owner_email(), f'spin.clinic: brak przekazu dnia ({label}) {day.isoformat()}', body, important=True)
+        except Exception:  # noqa: BLE001 - poczta nie może przerwać naprawy
+            ok = False
+        if ok:
+            ClinicDailyMessage.objects.filter(pk=row.pk).update(alert_sent_at=now)
+            sent.append(row.camp)
+    return sent
+
+
+def message_posts(day, camp):
+    start = timezone.make_aware(datetime.combine(day, time.min))
+    rows = PoliticalPost.objects.filter(
+        available=True, camp_at_collection=camp, account__enabled=True,
+        published_at__gte=start, published_at__lt=start + timedelta(days=1),
+    ).exclude(spin_diagnosis__withdrawn_at__isnull=False)
+    rows = rows.exclude(spin_diagnosis__hidden_at__isnull=False).select_related('account').order_by('-published_at')
+    from news.message_stats import is_noise
+    selected, per_account = [], {}
+    substantive_count = 0
+    for post in rows.iterator(chunk_size=200):
+        if is_noise(post.text):
+            selected.append(post)
+            continue
+        # Jedno aktywne konto nie może wyprzeć pozostałych autorów.
+        if per_account.get(post.account_id, 0) >= clinic_ai.DAILY_POSTS_PER_AUTHOR:
+            continue
+        selected.append(post)
+        per_account[post.account_id] = per_account.get(post.account_id, 0) + 1
+        substantive_count += 1
+        if substantive_count == 60:
+            break
+    return selected
+
+
+def _daily_messages_for(day, camps, *, models=None, only_missing=False, errors=None) -> dict:
+    from django.core.cache import cache
+    from uuid import uuid4
+    from news.repairer import compare_delete
+    created = {}
+    for camp in camps:
+        key, token = f'clinic-message:{day}:{camp}', uuid4().hex
+        if not cache.add(key, token, 900):
+            if errors is not None:
+                errors[f'{day}:{camp}'] = 'Przekaz jest już opracowywany przez inny przebieg.'
+            continue
+        try:
+            created.update(_message_for(day, (camp,), models=models, only_missing=only_missing, errors=errors))
+        finally:
+            compare_delete(key, token)
+    return created
+
+
+MESSAGE_ERROR_LABELS = {
+    'free_models_unavailable': 'Darmowe modele nie odpowiedziały.',
+    'daily_message_paid_budget': 'Wyłączony lub wyczerpany limit płatnego zapasu.',
+    'not_polish': 'Model nie odpowiedział po polsku.', 'empty_message': 'Pusta odpowiedź modelu.',
+    'invalid_message_structure': 'Odpowiedź modelu nie pasuje do wpisów.',
+    'gemini_missing_key': 'Brak klucza Gemini.', 'gemini_daily_budget': 'Wyczerpany limit Gemini.',
+    'inception_free_budget': 'Wyczerpana darmowa pula Inception (Mercury).',
+    'inception_daily_limit': 'Dzienny pułap Inception (Mercury) wykorzystany.',
+    'inception_halted': 'Inception (Mercury) zatrzymany do zmiany klucza.',
+}
+
+
+def message_error_label(code: str) -> str:
+    from news.admin_telemetry import safe_error
+    if code in MESSAGE_ERROR_LABELS:
+        return MESSAGE_ERROR_LABELS[code]
+    if code.startswith('inception'):
+        return 'Inception (Mercury) nie odpowiedział.'
+    return safe_error(code).replace('—', '-')
+
+
+def _message_for(day, camps, *, models=None, only_missing=False, errors=None) -> dict:
+    created = {}
+    for camp in camps:
+        existing = ClinicDailyMessage.objects.filter(day=day, camp=camp).first()
+        if existing and (existing.reviewed_by_id or (only_missing and existing.message and existing.status in ('approved', 'pending_review'))):
+            continue  # zatwierdzony ręcznie — nie nadpisujemy
+        from news.message_stats import calculate_stats, is_noise, post_rows
+        posts = message_posts(day, camp)
+        rows = post_rows(posts)
+        _, material = clinic_ai._daily_material(CAMP_PROMPT_LABELS[camp], day.isoformat(), rows)
+        included = {row['id'] for row in material}
+        posts = [post for post in posts if str(post.pk) in included or is_noise(post.text)]
+        rows = [row for row in rows if row['id'] in included or is_noise(row['text'])]
+        if len({row['author_id'] for row in material}) < MIN_MESSAGE_ACCOUNTS:
+            continue
+        try:
+            options = {'models': models} if models is not None else {}
+            result = clinic_ai.daily_message(CAMP_PROMPT_LABELS[camp], day.isoformat(), material, **options)
         except clinic_ai.ClinicAIError as error:
             logger.warning('clinic daily message failed: %s', error.code)
+            label = message_error_label(error.code)
+            if errors is not None:
+                errors[f'{day}:{camp}'] = label
+            # Powód zostaje w bazie (wiersz failed bez treści), ale nigdy nie zastępuje już zapisanego przekazu.
+            if existing is None or existing.status == 'failed':
+                ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
+                    'message': '', 'status': 'failed', 'error': f'{error.code}: {label}'[:300],
+                    'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
             continue
         status = 'approved' if auto_publish() else 'pending_review'
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
             'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
-            'usage': result['usage'], 'status': status,
+            'thesis': result.get('thesis', ''), 'points': result.get('points', []), 'tone': result.get('tone', []),
+            'stats': calculate_stats(rows, result.get('points'), result.get('tone')),
+            'usage': result['usage'], 'status': status, 'error': '', 'alert_sent_at': None,
             'model_name': result['usage'].get('model', '')[:64], 'prompt_version': clinic_ai.PROMPT_VERSION,
             'reviewed_at': timezone.now() if status == 'approved' else None})
         message.posts.set(posts)
         created[camp] = message.pk
-    alert = send_review_alert()
-    return {'status': 'ok', 'created': created, 'alert': alert}
+    return created
 
 
 # --- alerty ---------------------------------------------------------------------------------
+
+def staff_mail_enabled() -> bool:
+    """Maile wewnętrzne do zespołu (alerty, raporty agentów, filmy do TikToka). Domyślnie wyłączone (właściciel 2.10.2026:
+    za dużo wiadomości na admin@spin.clinic). Włączenie: STAFF_MAIL_ENABLED=true. Maile do czytelników działają bez zmian."""
+    return os.environ.get('STAFF_MAIL_ENABLED', 'false').strip().lower() in ('1', 'true', 'yes')
+
 
 def _smtp_ready() -> bool:
     required = ('SOURCE_MAIL_SMTP_HOST', 'SOURCE_MAIL_SMTP_USERNAME', 'SOURCE_MAIL_SMTP_PASSWORD', 'SOURCE_MAIL_SMTP_FROM')
@@ -548,7 +813,7 @@ def send_review_alert() -> str:
         return 'nothing'
     recipient = os.environ.get('CLINIC_REVIEW_EMAIL', '').strip()
     status = 'queued_only'
-    if recipient and _smtp_ready():
+    if recipient and staff_mail_enabled() and _smtp_ready():
         domain = os.environ.get('SPIN_DOMAIN', 'spin.clinic')
         email = EmailMessage()
         email['From'] = settings.SOURCE_MAIL_SMTP_FROM
@@ -587,9 +852,33 @@ def review(obj, staff, decision: str):
 
 # --- dane publiczne -------------------------------------------------------------------------
 
+@transaction.atomic
+def withdraw(diagnosis, staff, reason):
+    """Wycofuje publikację atomowo; zapisane wyniki AI pozostają nietknięte."""
+    if not staff or not staff.is_active or not staff.is_staff:
+        raise PermissionError('Wycofanie wymaga uprawnień zespołu.')
+    reason = reason.strip() if isinstance(reason, str) else ''
+    if not reason or len(reason) > 400:
+        raise ValueError('Podaj powód wycofania (od 1 do 400 znaków).')
+    current = SpinDiagnosis.objects.select_for_update().get(pk=diagnosis.pk)
+    if current.status != 'approved' or current.withdrawn_at:
+        raise ValueError('Można wycofać tylko opublikowaną diagnozę.')
+    current.status = 'withdrawn'
+    current.withdrawn_at, current.withdrawn_by, current.withdrawn_reason = timezone.now(), staff, reason
+    current.save(update_fields=['status', 'withdrawn_at', 'withdrawn_by', 'withdrawn_reason'])
+    diagnosis.refresh_from_db()
+    return diagnosis
+
+
 def published_diagnoses():
-    return (SpinDiagnosis.objects.filter(status='approved', hidden_at__isnull=True, post__available=True)
+    return (SpinDiagnosis.objects.filter(status='approved', withdrawn_at__isnull=True, hidden_at__isnull=True, post__available=True)
             .select_related('post__account'))
+
+
+def published_messages():
+    # Synteza może nadal cytować wycofany materiał: wyłączamy cały przekaz.
+    unavailable = SpinDiagnosis.objects.filter(Q(withdrawn_at__isnull=False) | Q(hidden_at__isnull=False))
+    return ClinicDailyMessage.objects.filter(status='approved').exclude(posts__spin_diagnosis__in=unavailable)
 
 
 def _media(post: PoliticalPost) -> list[dict]:
@@ -603,7 +892,7 @@ def _media(post: PoliticalPost) -> list[dict]:
     return result[:4]
 
 
-def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = None) -> dict:
+def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = None, comment_count: int | None = None) -> dict:
     post = diagnosis.post
     metrics = (post.source_data or {}).get('public_metrics', {})
     return {
@@ -616,7 +905,12 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
         'headline': diagnosis.headline,
         'summary': diagnosis.summary,
         'technique_names': [item['name'] for item in diagnosis.techniques][:4],
-        'technique_types': [{'name': item['name'], 'category': item.get('category', '')} for item in diagnosis.techniques],
+        'technique_types': [{key: item[key] for key in ('name', 'category', 'family') if key in item}
+                            for item in diagnosis.techniques],
+        'claims': [{'assessment': clean_claim(item).get('assessment', 'unverified')} for item in diagnosis.claims],
+        'council': ({'members': [{key: member.get(key) for key in ('model', 'verdict', 'intensity', 'status')}
+                                  for member in (diagnosis.usage['council'].get('members') or [])]}
+                    if (diagnosis.usage or {}).get('council') is not None else None),
         'technique_groups': technique_groups(diagnosis.techniques),
         'scan': scan_data(diagnosis),
         'post': {'id': post.post_id, 'url': post.url, 'text': post.text, 'published_at': post.published_at,
@@ -624,30 +918,57 @@ def card_data(diagnosis: SpinDiagnosis, figures: dict, counts: dict | None = Non
                  'media': _media(post), 'likes': metrics.get('like_count', 0), 'reposts': metrics.get('retweet_count', 0)},
         'author': author_data(post, figures.get(post.account_id)),
         'opinions': counts or {'positive': 0, 'negative': 0},
+        # Bez zapytania do bazy: liczbę komentarzy podaje wywołujący (lista, strona diagnozy); obrazki jej nie potrzebują.
+        'comment_count': comment_count or 0,
     }
 
 
 def detail_data(diagnosis: SpinDiagnosis) -> dict:
+    from news.clinic_corrections import withdrawn_data
+    if diagnosis.hidden_at:
+        raise ValueError('Diagnoza ukryta po zgłoszeniu prawnym.')
+    if diagnosis.withdrawn_at:
+        return withdrawn_data(diagnosis)
     figures = figures_by_account([diagnosis.post.account_id])
     counts = {'positive': 0, 'negative': 0}
-    counts.update({row['polarity']: row['n'] for row in diagnosis.opinions.values('polarity').annotate(n=Count('id'))})
-    data = card_data(diagnosis, figures, counts)
+    counts.update({row['polarity']: row['n'] for row in diagnosis.opinions.filter(polarity__isnull=False).values('polarity').annotate(n=Count('id'))})
+    data = card_data(diagnosis, figures, counts, diagnosis.comments.count())
     data.update({
         'analysis': diagnosis.analysis,
+        'plain': diagnosis.plain,
         'lab': diagnosis.lab,
         'techniques': diagnosis.techniques,
         'claims': [{**claim, 'assessment_label': ASSESSMENT_LABELS.get(claim.get('assessment'), '')}
                    for claim in (clean_claim(item) for item in diagnosis.claims)],
         'limitations': diagnosis.limitations,
+        # redakcja językowa (sens bez zmian): jawna, z tekstem pierwotnym (właściciel 5.10)
+        'readability_edit': {'at': (diagnosis.usage or {}).get('readability_edit', {}).get('at'), 'original': (diagnosis.usage or {}).get('original_text', {})} if (diagnosis.usage or {}).get('readability_edit') else None,
         'x_thread': diagnosis.x_thread,
         'council': (diagnosis.usage or {}).get('council'),
+        # Powtórka po pełnym składzie Konsylium (news/council_rerun.py): poprzednie wyniki jawnie, nic nie znika.
+        'revisions': [{key: item.get(key) for key in ('at', 'verdict', 'intensity', 'members', 'reason')}
+                      for item in (diagnosis.usage or {}).get('history') or []],
         'model': diagnosis.model_name,
         'prompt_version': diagnosis.prompt_version,
         'created_at': diagnosis.created_at,
         'reviewed_at': diagnosis.reviewed_at,
         'auto_published': diagnosis.status == 'approved' and not diagnosis.reviewed_by_id,
         'notice': NOTICE,
+        'status': 'approved',
+        'author_replies': list(diagnosis.author_replies.filter(published_at__lte=timezone.now()).values(
+            'id', 'body', 'source_url', 'received_at', 'published_at')),
     })
+    # Raport źródeł 6.10: kopie cytowanych artykułów (Wayback) i „Tę tezę sprawdzili” (Google Fact Check)
+    from news import fakty, straznik_mediow
+    urls = [s.get('url', '') for c in diagnosis.claims or [] if isinstance(c, dict) for s in c.get('sources') or [] if isinstance(s, dict)]
+    data['source_archives'] = straznik_mediow.archives_for(urls)
+    data['factchecks'] = fakty.public(diagnosis)
+    from news.zmiana_zdania import public_data as position_changes
+    data['position_changes'] = position_changes(diagnosis)  # Zmiana zdania: tylko pary powyżej progu, ten sam dla każdej partii
+    from news.position_pairs import extend_diagnosis  # v3 „Wcześniej i teraz”: zatwierdzone pary, tylko przy fladze
+    extend_diagnosis(data, diagnosis)
+    from news.odbior_spinu import public_data as reception
+    data['reception'] = reception(diagnosis)  # Jak zadziałało (po 24 h): liczby zbiorcze, bez danych osób prywatnych
     from news.x_share import build
     data['x_share'] = build(data)
     return data
@@ -656,7 +977,7 @@ def detail_data(diagnosis: SpinDiagnosis) -> dict:
 def _opinion_counts(ids) -> dict[int, dict]:
     from news.clinic_models import SpinOpinion
     result = {pk: {'positive': 0, 'negative': 0} for pk in ids}
-    for row in SpinOpinion.objects.filter(diagnosis_id__in=ids).values('diagnosis_id', 'polarity').annotate(n=Count('id')):
+    for row in SpinOpinion.objects.filter(diagnosis_id__in=ids, polarity__isnull=False).values('diagnosis_id', 'polarity').annotate(n=Count('id')):
         result[row['diagnosis_id']][row['polarity']] = row['n']
     return result
 
@@ -665,7 +986,9 @@ def cards(queryset) -> list[dict]:
     rows = list(queryset)
     figures = figures_by_account({row.post.account_id for row in rows})
     counts = _opinion_counts([row.pk for row in rows])
-    return [card_data(row, figures, counts[row.pk]) for row in rows]
+    from news.clinic_discussion_models import ClinicComment
+    comments = dict(ClinicComment.objects.filter(diagnosis_id__in=counts).values('diagnosis_id').annotate(n=Count('id')).values_list('diagnosis_id', 'n'))
+    return [card_data(row, figures, counts[row.pk], comments.get(row.pk, 0)) for row in rows]
 
 
 def scale_data(window_days: int = 7) -> dict:
@@ -691,10 +1014,31 @@ def scale_data(window_days: int = 7) -> dict:
     return result
 
 
+def with_message_counts(queryset):
+    """Liczniki przekazu w jednym zapytaniu listy (recenzja Codex 13.10: bez N+1); _message_data czyta je, gdy są."""
+    return queryset.annotate(
+        v3_comments=Count('comments', distinct=True),
+        v3_positive=Count('opinions', filter=Q(opinions__polarity='positive'), distinct=True),
+        v3_negative=Count('opinions', filter=Q(opinions__polarity='negative'), distinct=True))
+
+
+def message_list(queryset, limit=None) -> list:
+    """Przekazy listy z licznikami, wpisami (prefetch) i danymi v3 w stałej liczbie zapytań."""
+    from news.causal_chain import prefetch
+    rows = with_message_counts(queryset).prefetch_related('posts')
+    return prefetch(rows[:limit] if limit else rows)
+
+
 def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_posts: bool = False) -> dict:
+    counted = hasattr(message, 'v3_comments')
     data = {'id': message.pk, 'day': message.day, 'camp': message.camp, 'message': message.message,
-            'analysis': message.analysis, 'themes': message.themes, 'posts_count': message.posts.count(),
-            'model': message.model_name, 'created_at': message.created_at, 'reviewed_at': message.reviewed_at}
+            'analysis': message.analysis, 'themes': message.themes,
+            'comment_count': message.v3_comments if counted else message.comments.count(),
+            'opinions': ({'positive': message.v3_positive, 'negative': message.v3_negative} if counted else
+                         {'positive': message.opinions.filter(polarity='positive').count(), 'negative': message.opinions.filter(polarity='negative').count()}),
+            'thesis': message.thesis, 'points': message.points, 'stats': message.stats, 'posts_count': message.posts.count(),
+            'model': message.model_name, 'created_at': message.created_at, 'reviewed_at': message.reviewed_at,
+            'readability_edit': {'original': (message.usage or {}).get('original_text', {})} if (message.usage or {}).get('readability_edit') else None}
     if with_posts:
         data['scope'] = {**message.posts.aggregate(date_from=Min('published_at'), date_to=Max('published_at')),
                          'timezone': str(timezone.get_current_timezone())}
@@ -702,22 +1046,24 @@ def _message_data(message: ClinicDailyMessage, with_posts: bool = False, *, all_
         rows = message.posts.select_related('account').order_by('-published_at', '-pk')
         posts = list(rows if all_posts else rows[:60])
         figures = figures_by_account({post.account_id for post in posts})
-        data['posts'] = [{'url': post.url, 'text': post.text[:280] if post.available else '',
+        data['posts'] = [{'id': str(post.pk), 'url': post.url, 'text': post.text[:280] if post.available else '',
                           'available': post.available, 'published_at': post.published_at,
                           'author': (figures[post.account_id].canonical_name if post.account_id in figures
-                                     else post.account.display_name), 'handle': post.account.handle} for post in posts]
-    return data
+                                     else post.account.display_name), 'handle': post.account.handle,
+                          'avatar_url': _post_avatar(post)} for post in posts]
+    from news.causal_chain import extend_message_data  # v3: causal_chain i spin_strength tylko przy włączonych flagach
+    return extend_message_data(data, message)
 
 
 def daily_message_data(camp: str):
-    message = ClinicDailyMessage.objects.filter(camp=camp, status='approved').order_by('-day').first()
+    message = published_messages().filter(camp=camp).order_by('-day').first()
     return _message_data(message, with_posts=True) if message else None
 
 
 def message_history(days: int = 30) -> dict:
     """Wcześniejsze przekazy dnia każdego obozu — od najnowszych."""
     return {camp: [_message_data(message) for message in
-                   ClinicDailyMessage.objects.filter(camp=camp, status='approved').order_by('-day')[:days]]
+                   message_list(published_messages().filter(camp=camp).order_by('-day'), limit=days)]
             for camp in CAMPS}
 
 

@@ -56,7 +56,8 @@ class Command(BaseCommand):
                         'evidence_note': f'Oficjalny roster: {entry.get_source_display()}.',
                         'source_checked_at': now,
                         'parliamentary_roster_entry': entry,
-                        'archived': False,
+                        'archived': bool(existing.get(f'parliamentary:{source}:{entry.external_id}') and
+                                         existing[f'parliamentary:{source}:{entry.external_id}'].merged_into_id),
                     },
                 )
             PublicFigure.objects.filter(import_key__startswith=f'parliamentary:{source}:',

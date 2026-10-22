@@ -26,3 +26,106 @@ www.{$SPIN_DOMAIN:spin.clinic} {
 beta.{$SPIN_DOMAIN:spin.clinic} {
 	redir https://{$SPIN_DOMAIN:spin.clinic}{uri} permanent
 }
+
+# przeszłość.today (właściciel 5.10): ta sama aplikacja; middleware pokazuje drzewo tematów, inne adresy przekierowuje na spin.clinic
+przeszlosc.today {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		Content-Security-Policy "base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'self'"
+		-Server
+		-X-Powered-By
+	}
+	@api path /api/*
+	reverse_proxy @api backend:8000
+	reverse_proxy frontend:3000
+}
+
+www.przeszlosc.today {
+	redir https://przeszlosc.today{uri} permanent
+}
+
+# spina3.pl (14.10.2026): ukryty podgląd frontu z danymi przykładowymi (bez backendu, bez indeksowania).
+# Katalog /srv/spina3/dist jest montowany tylko do odczytu (docker-compose.production.yml). Start serwisu = osobny blok api.spina3.pl, patrz docs/SPINA3_WDROZENIE.md.
+spina3.pl {
+	encode zstd gzip
+	root * /srv/spina3/dist
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
+		-X-Powered-By
+	}
+	@podglad path /podglad-44718e42/*
+	header @podglad Cache-Control "no-cache"
+	try_files {path} {path}/index.html
+	file_server
+	handle_errors {
+		rewrite * /404.html
+		file_server
+	}
+}
+
+# www i drugi adres (spinki.org) przekierowują na spina3.pl (DNS wszystkich wskazuje na ten serwer).
+www.spina3.pl, spinki.org, www.spinki.org {
+	redir https://spina3.pl{uri} permanent
+}
+
+# scrollstory.pl: statyczny front z /srv/scrollstory/dist (jak dotąd) + serwer API/SSR w kontenerze "scrollstory" (port 3000, tylko w sieci Dockera).
+# Ten blok zastępuje w deploy/Caddyfile dotychczasowy blok "scrollstory.pl { ... }" (robi to zastap-blok-caddy.py z kopią Caddyfile.bak).
+# noindex zostaje do decyzji właściciela (usunąć linię X-Robots-Tag, gdy serwis ma być indeksowany).
+# Uwaga: DNS scrollstory.pl musi wskazywać bezpośrednio na ten serwer (bez pośrednika typu Cloudflare), bo adres klienta limitów to X-Forwarded-For od Caddy.
+scrollstory.pl {
+	encode zstd gzip
+	root * /srv/scrollstory/dist
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
+		-X-Powered-By
+	}
+	request_body {
+		max_size 256KB
+	}
+
+	# serwer aplikacji: API, obrazy Open Graph, panel moderacji, strony scrollek /s/<id>/ (SSR) i /s/<id>/edytuj/
+	@scrollka path_regexp scrollka ^/s/[a-z2-9]{8}(/.*)?$
+	handle /api/* {
+		reverse_proxy scrollstory:3000
+	}
+	handle /og/* {
+		reverse_proxy scrollstory:3000
+	}
+	handle /admin/* {
+		reverse_proxy scrollstory:3000
+	}
+	handle @scrollka {
+		reverse_proxy scrollstory:3000
+	}
+
+	# reszta: pliki statyczne (strona główna, kreator, /konto/, zasady itd.)
+	handle {
+		@statyczne path /assets/*
+		header @statyczne Cache-Control "public, max-age=604800"
+		try_files {path} {path}/index.html
+		file_server
+	}
+}
+
+www.scrollstory.pl {
+	redir https://scrollstory.pl{uri} permanent
+}

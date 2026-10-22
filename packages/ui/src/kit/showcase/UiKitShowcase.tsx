@@ -19,14 +19,16 @@ import * as Footer from "./sections/Footer";
 import * as Mobile from "./sections/Mobile";
 import * as Portal from "./sections/Portal";
 import * as Thread from "./sections/Thread";
+import * as V3 from "./sections/V3";
+import * as PositionPairs from "./sections/PositionPairs";
 
 /**
- * Оболочка витрины. Владелец — R0. Исполнители поставляют файлы `sections/<Имя>.tsx`
+ * Оболочка витрины. Владелец - R0. Исполнители поставляют файлы `sections/<Имя>.tsx`
  * с `export const meta = { id, title }` и `export function Section()`; интегратор регистрирует их здесь.
  */
 type SectionModule = { meta: { id: string; title: string; lead?: string }; Section: ComponentType };
 
-const SECTIONS: SectionModule[] = [Tokens, Typography, Icons, Controls, Buttons, Dropdowns, Cards, Thread, Performance, Portal, Navigation, Footer, Mobile, Motion, MorphProbe];
+const SECTIONS: SectionModule[] = [V3, PositionPairs, Tokens, Typography, Icons, Controls, Buttons, Dropdowns, Cards, Thread, Performance, Portal, Navigation, Footer, Mobile, Motion, MorphProbe];
 
 type Theme = "dark" | "light";
 
@@ -43,7 +45,7 @@ export function UiKitShowcase() {
   const [forceContrast, setForceContrast] = useState(false);
 
   // Переключатель меняет ТОЛЬКО dataset.theme и восстанавливает исходное значение при уходе.
-  // Не пишет в localStorage и не PATCH-ит профиль — иначе просмотр витрины перезапишет настройку владельца.
+  // Не пишет в localStorage и не PATCH-ит профиль - иначе просмотр витрины перезапишет настройку владельца.
   useEffect(() => {
     const root = document.documentElement;
     const original = { theme: root.dataset.theme, scheme: root.style.colorScheme };
@@ -75,7 +77,7 @@ export function UiKitShowcase() {
 
   return (
     <ForcedReducedMotionContext.Provider value={forceMotion ? true : null}>
-      {/* R0 (24.09): ОДИН портал на всю витрину — каждая карточка в любом разделе разворачивается
+      {/* R0 (24.09): ОДИН портал на всю витрину - каждая карточка в любом разделе разворачивается
           в единый предпросмотр и открывается/сворачивается морфингом. Историю ведём в `query`
           (`?podglad=<id>`): у фикстур отрицательные id, `path` тут не имеет смысла. */}
       <PortalProvider historyMode="query">

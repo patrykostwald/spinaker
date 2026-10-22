@@ -119,7 +119,7 @@ def test_flags_are_request_local(cookies, expected):
     request = RequestFactory().get('/')
     request.COOKIES = {'sc_preview_sig': signed_cookie()} if cookies.get('signed') else cookies
     def view(request):
-        assert (accounts_enabled(), threads_enabled(), push_enabled()) == (expected,) * 3
+        assert (accounts_enabled(), threads_enabled(), push_enabled()) == (expected, False, expected)
         return HttpResponse()
     response = PreviewMiddleware(view)(request)
     assert 'Cookie' in response['Vary']
@@ -181,7 +181,7 @@ def test_preview_registers_ordinary_account_and_delivers_transactional_mail(sett
     enter(client, settings)
     csrf = client.get('/api/account/me/').data['csrfToken']
     data = {'username': 'previewreader', 'email': 'reader@example.org', 'password': 'Str0ng~unique~zxcv!',
-            'accepted_terms': True, 'accepted_privacy': True, 'is_staff': True, 'is_superuser': True}
+            'accepted_terms': True, 'accepted_privacy': True, 'adult': True, 'is_staff': True, 'is_superuser': True}
     assert client.post('/api/account/register/', data, format='json').status_code == 403
     with patch('news.account_lifecycle.send_account_verification.apply_async') as queued:
         response = client.post('/api/account/register/', data, format='json', HTTP_X_CSRFTOKEN=csrf)
@@ -228,8 +228,8 @@ def test_account_and_push_api_require_signature(settings):
     enter(client, settings)
     assert client.get('/api/account/me/').data['accounts_enabled'] is True
     assert client.get('/api/push/subscriptions/').data['enabled'] is True
-    assert client.get('/api/community/threads/').status_code == 200
-    assert client.post('/api/editor/threads/', {}, format='json').status_code in (401, 403)
+    assert client.get('/api/community/threads/').status_code == 404
+    assert client.post('/api/editor/threads/', {}, format='json').status_code == 404
     assert not APIClient().get('/api/account/me/').data['accounts_enabled']
 
 

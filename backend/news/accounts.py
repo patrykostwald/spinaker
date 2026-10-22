@@ -1,3 +1,4 @@
+from news.features import ThreadsEnabledMixin
 """Public session accounts. Editorial authentication and permissions stay separate."""
 import base64
 import hashlib
@@ -39,7 +40,8 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 def user_data(user):
     identity = getattr(user, 'account_identity', None)
-    return {'id': user.pk, 'username': user.username, 'is_staff': user.is_staff,
+    return {'id': user.pk, 'username': user.username, **public_identity(user), 'is_staff': user.is_staff,
+            'is_social': user.groups.filter(name='social').exists(),
             'email': user.email, 'email_verified': bool(identity and identity.email_verified),
             'accepted_terms_version': identity.accepted_terms_version if identity else '', **role_data(user)}
 
@@ -65,12 +67,14 @@ class RegistrationInput(serializers.Serializer):
     password = serializers.CharField(max_length=256, trim_whitespace=False, write_only=True)
     email = serializers.EmailField(max_length=254)
     accepted_terms = serializers.BooleanField()
-    accepted_privacy = serializers.BooleanField()
+    accepted_privacy = serializers.BooleanField(required=False)
+    adult = serializers.BooleanField()
+    newsletter = serializers.BooleanField(default=False)
 
     def validate(self, attrs):
-        for field in ('accepted_terms', 'accepted_privacy'):
+        for field in ('accepted_terms', 'adult'):
             if not attrs.get(field):
-                raise serializers.ValidationError({field: 'Zaakceptuj dokument, aby utworzyć konto.'})
+                raise serializers.ValidationError({field: 'Potwierdź ukończenie 18 lat.' if field == 'adult' else 'Zaakceptuj zasady korzystania.'})
         attrs['email'] = attrs['email'].strip().lower()
         # Canonical public handles prevent case-only impersonation/races.
         attrs['username'] = attrs['username'].lower()
@@ -95,7 +99,7 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         data = dict(serializer.validated_data)
         data.pop('accepted_terms')
-        data.pop('accepted_privacy')
+        data.pop('accepted_privacy', None)
         user = get_user_model()(username=data['username'], email=data['email'],
                                 is_staff=False, is_superuser=False, is_active=True)
         user.set_password(data['password'])
@@ -105,6 +109,8 @@ class RegisterView(APIView):
                 with transaction.atomic():
                     user.save()
                     AccountIdentity.objects.create(user=user, email=data['email'],
+                        adult_declared_at=timezone.now(),
+                        newsletter_consent_at=timezone.now() if data['newsletter'] else None,
                         accepted_terms_version=settings.ACCOUNT_TERMS_VERSION,
                         accepted_privacy_version=settings.ACCOUNT_PRIVACY_VERSION, accepted_at=timezone.now())
             except IntegrityError:
@@ -168,7 +174,7 @@ class AccountMeView(APIView):
         return Response({'authenticated': request.user.is_authenticated,
                          'user': user_data(request.user) if request.user.is_authenticated else None,
                          'csrfToken': get_token(request),
-                         'accounts_enabled': accounts_enabled(),
+                         'accounts_enabled': accounts_enabled(), 'x_enabled': bool(accounts_enabled() and x_enabled()),
                          'google_enabled': bool(accounts_enabled() and settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET)})
 
     def patch(self, request):
@@ -180,52 +186,7 @@ class AccountMeView(APIView):
         return update_account(request)
 
 
-@json_view("Połączenie z kontem X", tags=["konto"])
-class XConnectionView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        connection = getattr(request.user, 'x_connection', None)
-        enabled = bool(settings.X_USER_OAUTH_ENABLED and settings.X_USER_OAUTH_CLIENT_ID and settings.X_USER_OAUTH_REDIRECT_URI)
-        return Response({'connected': bool(connection), 'username': connection.username if connection else '',
-                         'oauth_enabled': enabled, 'connect_url': '/api/account/x-connection/start/' if enabled else None})
-
-    def delete(self, request):
-        UserXConnection.objects.filter(user=request.user).delete()
-        return Response(status=204)
-
-
-@json_view("Rozpoczęcie łączenia z X", tags=["konto"])
-class XConnectionStartView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        if not (settings.X_USER_OAUTH_ENABLED and settings.X_USER_OAUTH_CLIENT_ID and settings.X_USER_OAUTH_REDIRECT_URI):
-            return Response({'detail': 'Łączenie konta X nie jest jeszcze skonfigurowane.'}, status=503)
-        state, verifier = secrets.token_urlsafe(32), secrets.token_urlsafe(64)
-        challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
-        request.session['x_oauth_state'], request.session['x_oauth_verifier'] = state, verifier
-        params = {'response_type': 'code', 'client_id': settings.X_USER_OAUTH_CLIENT_ID,
-                  'redirect_uri': settings.X_USER_OAUTH_REDIRECT_URI, 'scope': 'users.read',
-                  'state': state, 'code_challenge': challenge, 'code_challenge_method': 'S256'}
-        return HttpResponseRedirect('https://twitter.com/i/oauth2/authorize?' + urlencode(params))
-
-
-@json_view("Powrót z autoryzacji X", tags=["konto"])
-class XConnectionCallbackView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        state, verifier = request.session.pop('x_oauth_state', ''), request.session.pop('x_oauth_verifier', '')
-        if not state or not verifier or not hmac.compare_digest(state, request.query_params.get('state', '')) or not request.query_params.get('code'):
-            return HttpResponseRedirect(settings.X_USER_OAUTH_SUCCESS_PATH + '?x=failed')
-        try:
-            token = requests.post('https://api.x.com/2/oauth2/token', data={'code': request.query_params['code'],
-                'grant_type': 'authorization_code', 'client_id': settings.X_USER_OAUTH_CLIENT_ID,
-                'redirect_uri': settings.X_USER_OAUTH_REDIRECT_URI, 'code_verifier': verifier}, timeout=(5, 20)).json()['access_token']
-            identity = requests.get('https://api.x.com/2/users/me', headers={'Authorization': f'Bearer {token}'}, timeout=(5, 20)).json()['data']
-            UserXConnection.objects.update_or_create(user=request.user, defaults={'x_user_id': identity['id'], 'username': identity['username']})
-        except (requests.RequestException, KeyError, TypeError, ValueError, IntegrityError):
-            return HttpResponseRedirect(settings.X_USER_OAUTH_SUCCESS_PATH + '?x=failed')
-        return HttpResponseRedirect(settings.X_USER_OAUTH_SUCCESS_PATH + '?x=connected')
+from news.x_accounts import XConnectionView, XConnectionStartView, XConnectionCallbackView, x_enabled, public_identity
 
 
 class TopicSerializer(serializers.ModelSerializer):
@@ -381,7 +342,7 @@ class OpinionsView(APIView):
         if not body:
             raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
         with transaction.atomic():
-            opinion = get_object_or_404(ArticleOpinion.objects.select_for_update().select_related('user'),
+            opinion = get_object_or_404(ArticleOpinion.objects.select_for_update(of=('self',)).select_related('user'),
                                        article_id=article_id, user=request.user)
             if opinion.body or not ArticleOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
                 return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
@@ -398,8 +359,8 @@ class ThreadOpinionSerializer(serializers.ModelSerializer):
         return {'id': opinion.user_id, 'username': opinion.user.username}
 
 
-@json_view("Reakcje i komentarze do nitki kontekstowej", tags=["reakcje"])
-class ThreadOpinionsView(APIView):
+@json_view("Reakcje i komentarze do spinki kontekstowej", tags=["reakcje"])
+class ThreadOpinionsView(ThreadsEnabledMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
     def get_permissions(self):
@@ -426,7 +387,7 @@ class ThreadOpinionsView(APIView):
             with transaction.atomic():
                 opinion = ThreadOpinion.objects.create(user=request.user, thread=thread, **serializer.validated_data)
         except IntegrityError:
-            return Response({'detail': 'Twoja opinia o tej nitce jest już zapisana.'}, status=409)
+            return Response({'detail': 'Twoja opinia o tej spince jest już zapisana.'}, status=409)
         return Response(ThreadOpinionSerializer(opinion).data, status=201)
     def patch(self, request, slug):
         require_verified(request.user)
@@ -438,7 +399,7 @@ class ThreadOpinionsView(APIView):
         if not body:
             raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
         with transaction.atomic():
-            opinion = get_object_or_404(ThreadOpinion.objects.select_for_update().select_related('user'), thread__slug=slug,
+            opinion = get_object_or_404(ThreadOpinion.objects.select_for_update(of=('self',)).select_related('user'), thread__slug=slug,
                                         thread__published=True, user=request.user)
             if opinion.body or not ThreadOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
                 return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)

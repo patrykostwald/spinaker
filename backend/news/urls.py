@@ -1,12 +1,24 @@
 from __future__ import annotations
+from news.thread_card import thread_card
+from news.thread_steps import ThreadBoxView, ThreadStepsView
+from news.thread_social import ThreadCommentReactionView, ThreadRatingsView, ThreadCommentsView, ThreadCommentDetailView, ThreadReportView, ThreadAppealView, ThreadModerationQueueView
+from news.clinic_discussion import ClinicOpinionsView, ClinicCommentsView, ClinicCommentReportView, ClinicCommentAppealView
 
-from news.clinic_api import clinic_council
+from news.clinic_api import clinic_council, clinic_corrections
+from news import sejm_wideo
 from rest_framework.routers import DefaultRouter
 from django.urls import include, path
+from news import agents_api
+from news import sprint_api
+from news import warden_api
 from news import newsletter
+from news import polls
 from news.admin_status import admin_status
 from news.admin_finance import admin_wallets
 from news.social_publish import serve_video
+from news.social_api import (SocialQueueView, SocialPublicationView, SocialPublishedView,
+    SocialTasksView, StaffSocialTasksView, StaffSocialTaskDetailView, SocialPasswordResetConfirmView)
+from news.puls import puls
 from news.views import source_coverage, archive_status, health, me, google_news, patronite_webhook, editorial_status
 from news.auth_views import csrf, sign_in, sign_out
 from news.editorial import EditorialThreadViewSet, EditorialArticleViewSet
@@ -19,13 +31,27 @@ from news.ai_research_stream import AIResearchStreamView, AIResearchSourcesView
 from news.source_catalog import SourceCatalogList, SourceCatalogDetail, SourceCatalogExport
 from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
-from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
-from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report, SpinOpinionsView,
-                             suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
+from news.community import resolve_link, community_threads, community_thread_detail
+from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report,
+                             suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag,
+                             review_causal_chain)
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
 from news.push_api import SubscriptionsView
+from news.interview_vote_api import InterviewBallotView, InterviewVoteView, InterviewMessageView
+from news.feedback import BugReportView, JourneyView
+from news import sales  # noqa: E402
+from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
+from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
+from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
+from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_wersja
+from news.przeszlosc_paski import strips_view
+from news import rcl_api
+from news import przeszlosc_v3, position_pairs, privacy_notice
+from news.causal_chain import report_view as causal_chain_report_view
+from news.voting_anomalies import deviations_view as przeszlosc_deviations
+from news.coordinated import clusters_view as coordinated_clusters
 
 router = DefaultRouter()
 router.register(r"editor/threads", EditorialThreadViewSet, basename="editor-threads")
@@ -35,6 +61,22 @@ router.register(r"articles", ArticleViewSet, basename="articles")
 router.register(r"threads", ThreadViewSet, basename="threads")
 
 urlpatterns = [
+    path('social/queue/', SocialQueueView.as_view()),
+    path('social/published/', SocialPublishedView.as_view()),
+    path('social/materials/<int:diagnosis_id>/', SocialPublicationView.as_view()),
+    path('social/tasks/', SocialTasksView.as_view()),
+    path('social/password/confirm/', SocialPasswordResetConfirmView.as_view()),
+    path('staff/social/tasks/', StaffSocialTasksView.as_view()),
+    path('staff/social/tasks/<int:task_id>/', StaffSocialTaskDetailView.as_view()),
+    path('staff/agents/', agents_api.notes),
+    path('staff/agents/map/', agents_api.agent_map),
+    path('staff/petle/', agents_api.loops),
+    path('staff/daily-schedule/', agents_api.daily_schedule),
+    path('staff/warden-reviews/', warden_api.reviews),
+    path('staff/warden-reviews/<int:review_id>/decision/', warden_api.decide),
+    path('staff/agents/<int:note_id>/decision/', agents_api.decide),
+    path('staff/sprint/', sprint_api.tickets),
+    path('staff/sprint/<int:ticket_id>/decision/', sprint_api.decide),
     path('push/subscriptions/', SubscriptionsView.as_view()),
     path('admin/status/', admin_status),
     path('admin/wallets/', admin_wallets),
@@ -49,17 +91,71 @@ urlpatterns = [
     path('public-figures/<int:figure_id>/x-suggestions/', suggest_x_account),
     path('community/links/', resolve_link),
     path('community/threads/', community_threads),
+    path('community/moderation/', ThreadModerationQueueView.as_view()),
+    path('community/threads/<int:thread_id>/card.png', thread_card),
+    path('community/reports/<int:report_id>/', ThreadAppealView.as_view()),
+    path('community/threads/<int:thread_id>/comments/<int:comment_id>/reaction/', ThreadCommentReactionView.as_view()),
+    path('community/threads/<int:thread_id>/comments/', ThreadCommentsView.as_view()),
+    path('community/threads/<int:thread_id>/comments/<int:comment_id>/', ThreadCommentDetailView.as_view()),
+    path('community/threads/<int:thread_id>/comments/<int:comment_id>/report/', ThreadReportView.as_view()),
     path('community/threads/<int:thread_id>/', community_thread_detail),
-    path('community/threads/<int:thread_id>/opinions/', CommunityOpinionsView.as_view()),
-    path('community/threads/<int:thread_id>/report/', report_thread),
+    path('community/threads/<int:thread_id>/opinions/', ThreadRatingsView.as_view()),
+    path('community/threads/<int:thread_id>/steps/', ThreadStepsView.as_view()),
+    path('community/threads/<int:thread_id>/boxes/<int:item_id>/', ThreadBoxView.as_view()),
+    path('community/threads/<int:thread_id>/report/', ThreadReportView.as_view()),
+    path('polls/<slug:slug>/', polls.poll_results),
+    path('polls/<slug:slug>/vote/', polls.poll_vote),
     path('newsletter/subscribe/', newsletter.subscribe),
     path('newsletter/confirm/', newsletter.confirm),
     path('newsletter/unsubscribe/', newsletter.unsubscribe),
     path('staff/newsletter/', newsletter.staff_stats),
     path('social/video/<str:name>', serve_video),
+    path('social/video/<str:name>/', serve_video),
     path('clinic/', clinic_page),
+    path('clinic/corrections/', clinic_corrections),
+    path('clinic/sejm-wideo/', sejm_wideo.sejm_video_view),
     path('clinic/interviews/', clinic_interviews),
+    path('clinic/interviews/voting/', InterviewBallotView.as_view()),
+    path('clinic/interviews/voting/vote/', InterviewVoteView.as_view()),
+    path('clinic/interviews/voting/message/', InterviewMessageView.as_view()),
+    path('feedback/bug/', BugReportView.as_view()),
+    path('feedback/journey/', JourneyView.as_view()),
+    path('przeszlosc/temat/', przeszlosc_topic),
+    path('legislacja/projekty/', rcl_api.project_list),
+    path('legislacja/projekty/<int:rcl_id>/', rcl_api.project_detail),
+    path('przeszlosc/temat/glosowania/', przeszlosc_topic_votes),
+    path('przeszlosc/start/', przeszlosc_start),
+    path('przeszlosc/funkcje/', przeszlosc_dostep.features_view),
+    path('przeszlosc/wersja/', przeszlosc_wersja.wersja_view),
+    path('przeszlosc/poprawki/', przeszlosc_wersja.corrections_view),
+    path('przeszlosc/rss/', przeszlosc_rss),
+    path('przeszlosc/osoby/', przeszlosc_osoba.people_view),
+    path('przeszlosc/osoba/<str:ident>/', przeszlosc_osoba.person_view),
+    path('przeszlosc/osoba/<str:ident>/powiazania/', przeszlosc_v3.network_view),
+    path('przeszlosc/glosowania/', przeszlosc_v3.votes_list_view),
+    path('przeszlosc/osoba/<str:ident>/stanowiska/', position_pairs.pairs_view),
+    path('stanowiska/<int:pair_id>/zgloszenie/', position_pairs.report_view),
+    path('stanowiska/zgloszenie/potwierdz/<str:token>/', position_pairs.confirm_view),
+    path('stanowiska/<int:pair_id>/odpowiedz/', position_pairs.response_view),
+    path('przeszlosc/osoba/<str:ident>/sprzeciw/', privacy_notice.objection_view),
+    path('przeszlosc/sprzeciw/potwierdz/<str:token>/', privacy_notice.confirm_view),
+    path('clinic/messages/<int:message_id>/causal-chain/zgloszenie/', causal_chain_report_view),
+    path('przeszlosc/spolki/', przeszlosc_spolki.search_view),
+    path('przeszlosc/spolka/<str:ident>/', drzewo_pieniedzy.company_view),
+    path('przeszlosc/przeplyw/<str:ident>/', przeszlosc_przeplyw.flow_view),
+    path('przeszlosc/paski/', strips_view),
+    path('przeszlosc/alerty/', przeszlosc_alerts.subscribe_view),
+    path('przeszlosc/alerty/potwierdz/', przeszlosc_alerts.confirm_view),
+    path('przeszlosc/alerty/wypisz/', przeszlosc_alerts.unsubscribe_view),
+    path('przeszlosc/odstepstwa/', przeszlosc_deviations),
+    path('zbudujmi/zapytanie/', zbudujmi_inquiry),
+    path('raporty/zapytanie/', sales.report_inquiry),
+    path('raporty/probka/', sales.sample),
+    path('przeszlosc/pilot/', sales.pilot_signup),
+    path('leady/potwierdz/', sales.confirm),
+    path('zbudujmi/uwagi/', zbudujmi_client_note),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
+    path('clinic/wspolny-przekaz/', coordinated_clusters),
     path('clinic/messages/', clinic_messages),
     path('clinic/messages/<str:day>/', clinic_message_detail),
     path('clinic/council/', clinic_council),
@@ -67,7 +163,19 @@ urlpatterns = [
     path('clinic/stats/', clinic_statistics),
     path('clinic/spins/<int:diagnosis_id>/', clinic_spin_detail),
     path('clinic/spins/<int:diagnosis_id>/card.png', clinic_spin_card),
-    path('clinic/spins/<int:diagnosis_id>/opinions/', SpinOpinionsView.as_view()),
+    path('clinic/spins/<int:diagnosis_id>/card.png/', clinic_spin_card),
+    path('clinic/spins/<int:target_id>/comments/<int:comment_id>/appeal/', ClinicCommentAppealView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/comments/<int:comment_id>/appeal/', ClinicCommentAppealView.as_view(), {'kind': 'interviews'}),
+    path('clinic/daily-messages/<int:target_id>/comments/<int:comment_id>/appeal/', ClinicCommentAppealView.as_view(), {'kind': 'daily-messages'}),
+    path('clinic/daily-messages/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'daily-messages'}),
+    path('clinic/daily-messages/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'daily-messages'}),
+    path('clinic/daily-messages/<int:target_id>/comments/<int:comment_id>/report/', ClinicCommentReportView.as_view(), {'kind': 'daily-messages'}),
+    path('clinic/spins/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/opinions/', ClinicOpinionsView.as_view(), {'kind': 'interviews'}),
+    path('clinic/spins/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/comments/', ClinicCommentsView.as_view(), {'kind': 'interviews'}),
+    path('clinic/spins/<int:target_id>/comments/<int:comment_id>/report/', ClinicCommentReportView.as_view(), {'kind': 'spins'}),
+    path('clinic/interviews/<int:target_id>/comments/<int:comment_id>/report/', ClinicCommentReportView.as_view(), {'kind': 'interviews'}),
     path('clinic/accounts/', clinic_accounts),
     path('clinic/deleted/', clinic_deleted),
     path('clinic/report/', clinic_report),
@@ -77,9 +185,11 @@ urlpatterns = [
     path('staff/clinic/diagnoses/<int:diagnosis_id>/review/', review_diagnosis),
     path('staff/clinic/diagnoses/<int:diagnosis_id>/hide/', hide_diagnosis),
     path('staff/clinic/messages/<int:message_id>/review/', review_message),
+    path('staff/clinic/messages/<int:message_id>/causal-chain/review/', review_causal_chain),
     path('staff/clinic/diagnoses/<int:diagnosis_id>/flag/', decide_flag),
     path('public-figures/<int:figure_id>/context/', public_figure_context),
     path('public-figures/<int:figure_id>/dossier/', public_figure_dossier),
+    path('public-figures/<int:figure_id>/slad/', przeszlosc_osoba.spin_trace_view),
     path('articles/<int:article_id>/context/', article_context),
     path('context/counts/', context_counts),
     path("editor/sources/", SourceCatalogList.as_view()),
@@ -99,6 +209,7 @@ urlpatterns = [
     path("auth/login/", sign_in),
     path("auth/logout/", sign_out),
     path("health/", health),
+    path("puls/", puls),
     path("me/", me),
     path("admin/google-news/", google_news),
     path("patronite/webhook/", patronite_webhook),

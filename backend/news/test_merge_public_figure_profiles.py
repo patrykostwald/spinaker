@@ -77,3 +77,17 @@ def test_restore_splits_profiles_again():
     assert office.current_holder_id == source.pk
     assert source.public_roles.filter(public_office=office).exists()
     assert not target.public_roles.filter(public_office=office).exists()
+
+
+@pytest.mark.django_db
+def test_candidates_lists_same_name_pairs_but_changes_nothing(capsys):
+    """P1-20: minister bez powiązania z mandatem (Sikorski) trafia na listę do potwierdzenia, baza bez zmian."""
+    lone = PublicFigure.objects.create(canonical_name='Radosław Sikorski', role_category='government', role_title='minister spraw zagranicznych',
+                                       import_key='kprm-cabinet:radoslaw-sikorski', evidence_url=SOURCE_URL)
+    mp = PublicFigure.objects.create(canonical_name='Radosław Sikorski', role_category='parliamentary', role_title='Poseł na Sejm RP',
+                                     import_key='parliamentary:sejm:999', evidence_url='https://www.sejm.gov.pl')
+    call_command('merge_public_figure_profiles', '--candidates')
+    out = capsys.readouterr().out
+    assert "('kprm-cabinet:radoslaw-sikorski', 'parliamentary:sejm:999')" in out
+    lone.refresh_from_db()
+    assert lone.merged_into_id is None and not lone.archived and mp.merged_into_id is None

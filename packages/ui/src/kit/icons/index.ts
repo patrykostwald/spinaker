@@ -1,6 +1,6 @@
 /**
  * Katalog ikon biblioteki (docs/UI_KIT_PLAN.md → «Каталог иконок»). Właściciel: R1.
- * Eksporty jawne — patrz raport R1 po listę, którą integrator dopisuje do `kit/index.ts`.
+ * Eksporty jawne - patrz raport R1 po listę, którą integrator dopisuje do `kit/index.ts`.
  */
 
 export type { IconProps, IconSize } from "./types";

@@ -18,9 +18,11 @@ export default function RouteTemplate({ children }: { children: ReactNode }) {
   }, []);
   return (
     <motion.div
-      initial={{ opacity: 0, y: m.rise }}
+      // seria 2: stała wartość startowa (8 px) - na serwerze reduced-motion jest nieznane, więc m.rise (0 przy reduced) dawało
+      // ostrzeżenie hydratacji na każdej trasie; przy reduced motion przejście ma zerowy czas, więc ruchu i tak nie widać
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={m.t("fade")}
+      transition={m.reduced ? { duration: 0 } : m.t("fade")}
     >
       {children}
     </motion.div>

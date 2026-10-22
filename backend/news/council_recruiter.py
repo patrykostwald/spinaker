@@ -2,10 +2,10 @@
 
 1. Kontrola zdrowia: członek, który od 3 dni zwraca wyłącznie twarde błędy (np. 404 — model zniknął u dostawcy), zostaje
    zawieszony we wszystkich rolach; zawieszony, który znów odpowie na próbę, wraca. O każdej zmianie — mail do właściciela.
-2. Zwiad: bezpłatne katalogi modeli dostawców, z których korzystamy (OpenRouter, Groq, NVIDIA, Hugging Face).
+2. Zwiad: bezpłatne katalogi modeli dostawców, z których korzystamy (OpenRouter, Groq, NVIDIA, Hugging Face, Inception).
 3. Sito (bez AI): tylko darmowe modele czatu z dużym kontekstem, bez embeddingów, strażników, mowy, małych modeli;
-   pierwszeństwo: model polski, potem nowa firma w składzie. Najwyżej jeden kandydat na noc — limity idą na diagnozy.
-4. Egzamin wstępny: kandydat ocenia 5 opublikowanych wpisów (oba obozy) tym samym poleceniem co członkowie Konsylium;
+   pierwszeństwo: model polski, potem nowa firma w składzie. Awarie dostawców uruchamiają przerwę w naborze.
+4. Egzamin wstępny: kandydat ocenia domyślnie 8 opublikowanych wpisów i jedną powtórkę tym samym poleceniem co Konsylium;
    liczymy zgodność werdyktu z diagnozą końcową, różnicę siły, cytaty technik i polszczyznę. Twarde progi zawsze.
 5. Posiedzenie: 3 obecnych członków głosuje „przyjąć / odrzucić” i proponuje role; przyjęcie wymaga większości, zdanego
    egzaminu i przyjęcia Karty. Role przyznajemy tylko wtedy, gdy wynik egzaminu je uzasadnia.
@@ -15,10 +15,13 @@ i mailu. Zawieszanie działa zawsze (decyzja właściciela 30.09.2026). Dziennik
 """
 from __future__ import annotations
 
+import hashlib
 import logging
+import math
 import os
 import re
 import time
+from collections import Counter, defaultdict
 from datetime import timedelta
 
 import requests
@@ -33,10 +36,35 @@ SUSPEND_AFTER = timedelta(days=3)
 HARD_ERRORS = re.compile(r'http_(404|410)|model[_ ]not[_ ]found|does not exist|decommissioned', re.I)
 ROLE_SETTINGS = {'CLINIC_COUNCIL': 'członek', 'CLINIC_COUNCIL_CHAIR': 'przewodniczący',
                  'CLINIC_COUNCIL_LINGUIST': 'językoznawca', 'CLINIC_COUNCIL_REVIEWER': 'recenzent'}
-EXAM_SIZE = 5
-GATES = {'answered': 4, 'agreement': 0.6, 'mae': 20}
+EXAM_SIZE = 8
+GATES = {'answered': 0.75, 'agreement': 0.6, 'mae': 20}
+
+
+def _setting(name, default, low, high):
+    try:
+        value = float(os.environ.get(name, default))
+        return max(low, min(high, value)) if math.isfinite(value) else default
+    except (TypeError, ValueError):
+        return default
+
+
+def exam_size():
+    return int(_setting('COUNCIL_EXAM_SIZE', EXAM_SIZE, 5, 12))
+
+
+def exam_gates():
+    return {'answered': _setting('COUNCIL_EXAM_ANSWERED', GATES['answered'], 0.75, 1),
+            'agreement': _setting('COUNCIL_EXAM_AGREEMENT', GATES['agreement'], 0.6, 1),
+            'mae': _setting('COUNCIL_EXAM_MAE', GATES['mae'], 0, 20)}
 SKIP = re.compile(r'embed|guard|safety|whisper|tts|audio|speech|rerank|coder|code|math|ocr|vision|vl\b|-vl-|image|'
                   r'moderation|reward|retriev|nano|mini\b|-mini|tiny|small|lite|translate|instruct-1b|preview-tool', re.I)
+# Stare generacje modeli, które dostawcy jeszcze listują, ale które nie mają szans z obecnym składem.
+OUTDATED = re.compile(r'llama-?2(?![\d.])|llama3-\d|llama-3-\d+b|codellama|qwen1\.5|qwen-?2-|gemma-?2-|gemma-7b|'
+                      r'mixtral-8x7b|mistral-7b|falcon|vicuna|mpt-|dolly|zephyr|openchat|nous-hermes-2|yi-34b', re.I)
+# Egzamin bez żadnej odpowiedzi to awaria dostawcy (limit 429, brak środków 402, przeciążenie), nie ocena modelu:
+# kandydat wraca do kolejki po DEFER_DAYS. Twardy błąd (404 — model zniknął) blokuje go jak zwykłe odrzucenie.
+DEFER_DAYS = 3
+REJECT_DAYS = 60
 SIZE = re.compile(r'(\d+(?:\.\d+)?)\s*[bB](?![a-z])')
 MIN_BILLIONS = 20
 VOTE_SCHEMA = {'type': 'object', 'properties': {
@@ -62,10 +90,11 @@ def _owner_email() -> str:
                  if os.environ.get(name, '').strip()), '')
 
 
-def _notify(subject: str, body: str) -> bool:
+def _notify(subject: str, body: str, sender: str = 'Rekruter Konsylium') -> bool:
+    """Mail do właściciela; sender to nazwa agenta w temacie („spin.clinic · Strateg: ...”), domyślnie Rekruter."""
     from news.social_publish import _mail
     try:
-        return _mail(_owner_email(), f'spin.clinic · Rekruter Konsylium: {subject}', body)
+        return _mail(_owner_email(), f'spin.clinic · {sender}: {subject}', body)
     except Exception as error:  # poczta nie może zatrzymać Rekrutera
         logger.warning('recruiter mail: %s', error)
         return False
@@ -121,6 +150,9 @@ def _probe(member: tuple[str, str]) -> str | None:
         return None
     except ClinicAIError as error:
         return error.code
+    except requests.RequestException as error:
+        status = getattr(getattr(error, 'response', None), 'status_code', None)
+        return f'http_{status}' if status else type(error).__name__
 
 
 def health() -> list[dict]:
@@ -184,6 +216,17 @@ def discover() -> list[dict]:
                     found.append({'provider': service, 'model': item['id'], 'context': item.get('context_window') or 0})
         except (requests.RequestException, ValueError) as error:
             logger.info('recruiter %s: %s', service, error)
+    # Inception (Mercury, 7.10): tylko modele czatu; kandydat jak każdy inny - egzamin, głosowanie, Karta.
+    if registry.credentials('inception'):
+        try:
+            for item in _get(registry.URLS['inception'].replace('/chat/completions', '/models'),
+                             headers={'Authorization': f"Bearer {registry.credentials('inception')}"}).get('data', []):
+                name = str(item.get('id', ''))
+                if name.startswith('mercury') and not re.search(r'edit|voice|coder', name, re.I):
+                    found.append({'provider': 'inception', 'model': name,
+                                  'context': item.get('context_length') or item.get('context_window') or 0})
+        except (requests.RequestException, ValueError) as error:
+            logger.info('recruiter inception: %s', error)
     try:
         for item in _get('https://router.huggingface.co/v1/models').get('data', []):
             live = [p for p in item.get('providers') or [] if p.get('status', 'live') == 'live']
@@ -192,6 +235,39 @@ def discover() -> list[dict]:
                               'context': live[0].get('context_length') or 0})
     except (requests.RequestException, ValueError) as error:
         logger.info('recruiter hf: %s', error)
+    for service in ('mistral', 'cloudflare'):
+        if not registry.configured((service, 'catalog')):
+            continue
+        try:
+            url = (registry.URLS['mistral'].replace('/chat/completions', '/models') if service == 'mistral'
+                   else registry.endpoint(service).replace('/v1/chat/completions', '/models/search'))
+            payload = _get(url, headers={'Authorization': f'Bearer {registry.credentials(service)}'})
+            for item in payload.get('data' if service == 'mistral' else 'result', []):
+                name = str(item.get('id' if service == 'mistral' else 'name', ''))
+                chat = (item.get('capabilities', {}).get('completion_chat') is True if service == 'mistral'
+                        else name.startswith('@cf/') and item.get('task', {}).get('name') == 'Text Generation')
+                if chat and name:
+                    found.append({'provider': service, 'model': name,
+                                  'context': item.get('max_context_length') or 0})
+        except (requests.RequestException, ValueError) as error:
+            logger.info('recruiter %s: %s', service, error)
+    # PCSS (21.10): tylko modele z listy właściciela (COUNCIL_PCSS_CANDIDATES), bo pula tokenów jest wspólna dla całego
+    # konta; po testach na 120 diagnozach kandydatem jest gpt-oss_120b. Egzamin, głosowanie i Karta jak dla każdego.
+    if registry.credentials('pcss'):
+        wanted = {m.strip() for m in os.environ.get('COUNCIL_PCSS_CANDIDATES', 'gpt-oss_120b').split(',') if m.strip()}
+        try:
+            for item in _get(registry.URLS['pcss'].replace('/chat/completions', '/models'),
+                             headers={'Authorization': f"Bearer {registry.credentials('pcss')}"}).get('data', []):
+                if item.get('id') in wanted and item.get('mode', 'chat') == 'chat':
+                    found.append({'provider': 'pcss', 'model': item['id'], 'context': item.get('max_input_tokens') or 0})
+        except (requests.RequestException, ValueError) as error:
+            logger.info('recruiter pcss: %s', error)
+    # Zwiadowca rozwiązań (7.10): modele wskazane w zwiadzie tygodnia; ten sam egzamin, progi i Karta co dla każdego.
+    try:
+        from news.zwiadowca_rozwiazan import recruiter_candidates
+        found += recruiter_candidates()
+    except Exception as error:  # noqa: BLE001 - kolejka Zwiadowcy nie może zatrzymać zwiadu
+        logger.info('recruiter zwiadowca: %s', error)
     return found
 
 
@@ -200,21 +276,79 @@ def _billions(model: str) -> float | None:
     return max(sizes) if sizes else None
 
 
+def base_name(model: str) -> str:
+    """Ten sam model u różnych dostawców: „openai/gpt-oss-120b:novita” i „openai/gpt-oss-120b” → „gpt-oss-120b”."""
+    return model.split(':')[0].split('/')[-1].lower()
+
+
+def _technical_failure(exam: dict) -> bool:
+    return bool(exam) and not exam.get('answered') and not exam.get('hard_error') and not exam.get('insufficient_items')
+
+
+def skipped_providers() -> list[dict]:
+    """Historia 14 dni, próg 2 awarii w 7 dni, przerwa 1/2/4/7 dni od ostatniej awarii."""
+    from news.clinic_models import CouncilRecruitment
+    now = timezone.now()
+    histories = defaultdict(list)
+    for entry in CouncilRecruitment.objects.filter(kind='candidate', created_at__gte=now - timedelta(days=14)).order_by('created_at', 'pk'):
+        histories[entry.provider].append(entry)
+    skipped = []
+    for provider, entries in sorted(histories.items()):
+        failures, assessed = [], []
+        for entry in entries:
+            if (entry.exam or {}).get('answered') or (entry.exam or {}).get('passed'):
+                failures = []
+                assessed.append(entry.created_at)
+            elif entry.decision == 'deferred' and _technical_failure(entry.exam or {}):
+                failures.append(entry)
+        if (sum(e.created_at >= now - timedelta(days=7) for e in failures) < 2
+                or any(t >= now - timedelta(days=7) for t in assessed)):
+            continue
+        days = min(7, 2 ** min(len(failures) - 2, 3))
+        until = failures[-1].created_at + timedelta(days=days)
+        if until > now:
+            reason = failures[-1].reason or ', '.join(str(a.get('note', '')) for a in failures[-1].exam.get('answers', []))
+            skipped.append({'provider': provider, 'reason': reason, 'failures': len(failures),
+                            'days': days, 'until': until.isoformat()})
+    return skipped
+
+
+def blocked() -> set[tuple[str, str]]:
+    """Kandydaci niedawno egzaminowani: odrzuceni na 60 dni, odłożeni przez awarię dostawcy tylko na 3 dni
+    (także dawne wpisy „odrzucony” z zerem odpowiedzi — to była awaria, nie ocena)."""
+    from news.clinic_models import CouncilRecruitment
+    now = timezone.now()
+    result = set()
+    for provider, model, exam, created in (CouncilRecruitment.objects.filter(kind='candidate', created_at__gte=now - timedelta(days=REJECT_DAYS))
+                                           .values_list('provider', 'model', 'exam', 'created_at')):
+        if _technical_failure(exam or {}) and created < now - timedelta(days=DEFER_DAYS):
+            continue
+        result.add((provider, model))
+    return result
+
+
 def sieve(found: list[dict]) -> list[dict]:
-    """Twarde warunki i kolejność: polski model, nowa firma, większy model. Bez modeli ocenianych w ostatnich 60 dniach."""
+    """Twarde warunki i kolejność: polski model, nowa firma, większy model. Bez modeli niedawno egzaminowanych,
+    starych generacji i drugiej drogi do modelu, który już jest w składzie albo w kolejce."""
     from news.clinic_council import DEFAULT_COUNCIL, _members
-    from news.clinic_models import CouncilRecruitment, CouncilSeat
+    from news.clinic_models import CouncilSeat
     current = set(_members('CLINIC_COUNCIL', DEFAULT_COUNCIL))
     known = current | {(s.provider, s.model) for s in CouncilSeat.objects.all()}
-    recent = set(CouncilRecruitment.objects.filter(kind='candidate', created_at__gte=timezone.now() - timedelta(days=60))
-                 .values_list('provider', 'model'))
+    recent = blocked()
+    outages = skipped_providers()
+    unavailable = {p['provider'] for p in outages}
+    for outage in outages:
+        logger.info('recruiter pomija %s do %s: %s', outage['provider'], outage['until'], outage['reason'])
     companies = {registry.metadata(m)['company'] for m in current}
+    bases = {base_name(m[1]) for m in known}
     candidates = []
     for item in found:
         member = (item['provider'], item['model'])
-        if member in known or member in recent or not registry.configured(member):
+        if member[0] in unavailable or member in known or member in recent or not registry.configured(member):
             continue
         name = item['model'].lower()
+        if OUTDATED.search(name) or base_name(item['model']) in bases:
+            continue
         polish = registry.is_polish(member)
         size = _billions(item['model'])
         if not polish and (SKIP.search(name) or (size is not None and size < MIN_BILLIONS)):
@@ -224,28 +358,49 @@ def sieve(found: list[dict]) -> list[dict]:
         company = registry.metadata(member)['company']
         if company == 'unknown' and not polish:
             continue  # model, którego pochodzenia nie umiemy jawnie podać, nie spełnia Karty (pkt 11)
+        bases.add(base_name(item['model']))
         candidates.append({**item, 'company': company, 'polish': polish, 'new_company': company not in companies, 'billions': size})
-    candidates.sort(key=lambda c: (not c['polish'], not c['new_company'], -(c['billions'] or 0)))
+    # Modele wskazane przez Eksperta AI egzaminujemy wcześniej; egzamin, progi i Karta bez zmian (właściciel 5.10).
+    from news.ekspert_ai import watched_models
+    watched = watched_models()
+    for c in candidates:
+        name = c['model'].casefold()
+        # Inception zgłosił właściciel 7.10 - wcześniej w kolejce, ale egzamin, progi i Karta te same co dla każdego.
+        c['watched'] = c['provider'] == 'inception' or bool(c.get('scout')) or any(w and (w in name or base_name(c['model']).casefold() in w) for w in watched)
+    candidates.sort(key=lambda c: (not c['polish'], not c['watched'], not c['new_company'], -(c['billions'] or 0)))
     return candidates
 
 
 # --- egzamin ----------------------------------------------------------------------------------
 
-def exam_items() -> list:
-    """5 opublikowanych diagnoz Konsylium z rozstrzygniętym werdyktem — naprzemiennie z obu obozów, stały dobór na dzień."""
+def exam_items(candidate: str = '') -> list:
+    """Dzienny rdzeń 5; rotujący dodatek. Dla rozmiaru 5 wyjątek: obozy 3/2."""
     from news.clinic import published_diagnoses
     rows = list(published_diagnoses().filter(verdict__in=['spin', 'partial', 'no_spin'], usage__has_key='council')
-                .select_related('post__account').order_by('-pk')[:40])
-    camps = {'government': [r for r in rows if r.post.camp_at_collection == 'government'],
-             'opposition': [r for r in rows if r.post.camp_at_collection == 'opposition']}
-    offset = timezone.localdate().toordinal()
+                .select_related('post__account').order_by('-pk')[:200])
+    rows = [r for r in rows if r.post.camp_at_collection in ('government', 'opposition')]
+    day = str(timezone.localdate())
+    def ordered(pool, seed):
+        return sorted(pool, key=lambda r: hashlib.sha256(f'{day}:{seed}:{r.pk}'.encode()).digest())
+    daily = ordered(rows, 'core')
     picked = []
-    for index in range(EXAM_SIZE):
-        pool = camps['government' if index % 2 == 0 else 'opposition'] or camps['opposition'] or camps['government']
-        if pool:
-            choice = pool[(offset + index) % len(pool)]
-            if choice not in picked:
-                picked.append(choice)
+    # Skrajne przypadki należą do wspólnego rdzenia, niezależnie od kandydata.
+    for pool in ([r for r in daily if r.verdict == 'no_spin'],
+                 [r for r in daily if r.intensity >= 70]):
+        if not pool:
+            return []
+        picked.append(next((r for r in pool if r not in picked), pool[0]))
+    picked = list({r.pk: r for r in picked}.values())
+    for pool, target in ((daily, 5), (ordered(rows, candidate), exam_size())):
+        while len(picked) < target:
+            counts = Counter(r.post.camp_at_collection for r in picked)
+            camp = min(('government', 'opposition'), key=lambda c: counts[c])
+            available = [r for r in pool if r not in picked and r.post.camp_at_collection == camp]
+            if not available and counts[camp] >= (2 if exam_size() == 5 else 3):
+                available = [r for r in pool if r not in picked]
+            if not available:
+                return []
+            picked.append(available[0])
     return picked
 
 
@@ -260,22 +415,34 @@ def examine(member: tuple[str, str], items: list) -> dict:
     from news.clinic_ai import looks_polish
     from news.clinic_council import _opinion
     answers, started = [], time.monotonic()
-    for diagnosis in items:
+    for diagnosis in items + items[:1]:
         opinion = _opinion(member, diagnosis.post.text, _exam_prompt(diagnosis))
         ok = opinion.get('status') == 'odpowiedział'
         answers.append({'diagnosis': diagnosis.pk, 'expected': diagnosis.verdict, 'expected_intensity': diagnosis.intensity,
                         'verdict': opinion.get('verdict') if ok else None, 'intensity': opinion.get('intensity') if ok else None,
                         'techniques': len(opinion.get('techniques') or []) if ok else 0,
                         'claims': opinion.get('claims') or [] if ok else [], 'note': opinion.get('note', '')})
+    repeat = answers.pop() if items else None
+    first = answers[0] if answers else None
+    consistent = bool(first and repeat and first['verdict'] and repeat['verdict']
+                      and first['verdict'] == repeat['verdict']
+                      and abs(first['intensity'] - repeat['intensity']) <= 25)
+    consistency = {'passed': consistent, 'diagnosis': first['diagnosis'] if first else None,
+                   'repeat': {k: v for k, v in repeat.items() if k != 'claims'} if repeat else None}
     answered = [a for a in answers if a['verdict']]
     agreement = sum(a['verdict'] == a['expected'] for a in answered) / len(items) if items else 0
     mae = (sum(abs(a['intensity'] - a['expected_intensity']) for a in answered) / len(answered)) if answered else 100
     text = ' '.join(c for a in answered for c in a['claims'])
     polish = looks_polish(text) if text.strip() else None
-    passed = (len(answered) >= GATES['answered'] and agreement >= GATES['agreement'] and mae <= GATES['mae']
+    gates = exam_gates()
+    passed = (len(items) >= 5 and len(answered) >= math.ceil(len(items) * gates['answered'])
+              and agreement >= gates['agreement'] and mae <= gates['mae']
               and polish is not False)
-    return {'items': len(items), 'answered': len(answered), 'agreement': round(agreement, 2), 'mae': round(mae, 1),
+    hard = any(HARD_ERRORS.search(str(a['note'])) for a in answers if not a['verdict'])
+    return {'items': len(items), 'answered': len(answered), 'hard_error': hard and not answered, 'agreement': round(agreement, 2), 'mae': round(mae, 1),
             'techniques_avg': round(sum(a['techniques'] for a in answered) / len(answered), 1) if answered else 0,
+            'bias': round(sum(a['intensity'] - a['expected_intensity'] for a in answered) / len(answered), 1) if answered else None,
+            'consistency': consistency, 'gates': gates, 'insufficient_items': not items,
             'polish': polish, 'seconds': round(time.monotonic() - started), 'passed': passed,
             'answers': [{k: v for k, v in a.items() if k != 'claims'} for a in answers]}
 
@@ -293,6 +460,8 @@ def vote(candidate: dict, exam: dict) -> list[dict]:
                f"{round(exam['agreement'] * 100)}%; średnia różnica siły {exam['mae']} pkt; średnio {exam['techniques_avg']} "
                f"technik z cytatem; polszczyzna: {'poprawna' if exam['polish'] else 'brak tekstu do oceny' if exam['polish'] is None else 'niepoprawna'}; "
                f"progi: {'spełnione' if exam['passed'] else 'NIESPEŁNIONE'}.")
+    summary += (f"\nSurowość (bias): {exam.get('bias')} pkt; dodatnia = surowszy, ujemna = łagodniejszy. "
+                f"Powtarzalność: {exam.get('consistency', {}).get('passed', 'brak danych')}.")
     votes = []
     for member in voters:
         try:
@@ -310,8 +479,8 @@ def roles_for(candidate: dict, exam: dict, votes: list[dict]) -> list[str]:
     majority = lambda role: sum(role in v['roles'] for v in cast) * 2 > len(cast)
     eligible = {
         'językoznawca': exam['polish'] is True and (candidate['polish'] or exam['agreement'] >= 0.8),
-        'recenzent': exam['agreement'] >= 0.8 and exam['mae'] <= 12,
-        'przewodniczący': exam['agreement'] >= 0.8 and exam['mae'] <= 10,
+        'recenzent': exam['agreement'] >= 0.8 and exam['mae'] <= 12 and exam.get('consistency', {}).get('passed', False),
+        'przewodniczący': exam['agreement'] >= 0.8 and exam['mae'] <= 10 and exam.get('consistency', {}).get('passed', False),
     }
     return ['członek'] + [role for role, ok in eligible.items() if ok and majority(role)]
 
@@ -333,17 +502,32 @@ def accept_charter(member: tuple[str, str]) -> dict | None:
     return response
 
 
-def recruit(dry_run: bool = False) -> dict:
+def recruit(dry_run: bool = False, excluded_providers=None) -> dict:
     from news.clinic_models import CouncilRecruitment, CouncilSeat
-    candidates = sieve(discover())
+    candidates = sieve([c for c in discover() if c['provider'] not in (excluded_providers or set())])
+    candidates = [c for c in candidates if c['provider'] not in (excluded_providers or set())]
     if not candidates:
         return {'status': 'no_candidates'}
     candidate = candidates[0]
     member = (candidate['provider'], candidate['model'])
     if dry_run:
         return {'status': 'dry_run', 'candidate': candidate, 'queue': [c['model'] for c in candidates[:10]]}
-    items = exam_items()
-    exam = examine(member, items)
+    items = exam_items(candidate['model'])
+    if not items:
+        return {'status': 'insufficient_items', 'model': candidate['model']}
+    error = _probe(member)
+    exam = ({'items': len(items), 'answered': 0, 'hard_error': bool(HARD_ERRORS.search(error)),
+             'agreement': 0, 'mae': 100, 'passed': False, 'answers': [{'note': error}],
+             'probe': True} if error else examine(member, items))
+    if _technical_failure(exam):
+        codes = sorted({str(a['note']) for a in exam['answers'] if a['note']}) or ['brak odpowiedzi']
+        entry = CouncilRecruitment.objects.create(
+            kind='candidate', provider=member[0], model=member[1], company=candidate['company'],
+            source={k: candidate[k] for k in ('context', 'polish', 'new_company', 'billions')}, exam=exam, decision='deferred',
+            mode='auto' if auto_mode() else 'trial',
+            reason=f"Egzamin nieodbyty — dostawca nie odpowiedział ({', '.join(codes)[:120]}). Ponowna próba za {DEFER_DAYS} dni.")
+        return {'status': 'ok', 'id': entry.pk, 'model': candidate['model'], 'decision': 'deferred',
+                'provider': member[0], 'reason': entry.reason, 'probe': exam.get('probe', False), 'roles': []}
     votes = vote(candidate, exam) if exam['passed'] else []
     cast = [v for v in votes if v['admit'] is not None]
     admitted = exam['passed'] and len(cast) >= 2 and sum(v['admit'] for v in cast) * 2 > len(cast)
@@ -352,8 +536,9 @@ def recruit(dry_run: bool = False) -> dict:
     roles = roles_for(candidate, exam, votes) if admitted else []
     auto = auto_mode()
     if not exam['passed']:
-        reason = (f"Egzamin niezdany: odpowiedzi {exam['answered']}/{exam['items']}, zgodność {round(exam['agreement'] * 100)}%, "
-                  f"różnica siły {exam['mae']} pkt (progi: {GATES['answered']}/{EXAM_SIZE}, {round(GATES['agreement'] * 100)}%, ≤ {GATES['mae']}).")
+        gates = exam_gates()
+        reason = ("Model niedostępny u dostawcy (404) — pomijamy go na 60 dni. " if exam.get('hard_error') else '') + (f"Egzamin niezdany: odpowiedzi {exam['answered']}/{exam['items']}, zgodność {round(exam['agreement'] * 100)}%, "
+                  f"różnica siły {exam['mae']} pkt (progi: {round(gates['answered'] * 100)}% pozycji, {round(gates['agreement'] * 100)}%, ≤ {gates['mae']}).")
     elif not admitted:
         reason = 'Konsylium nie poparło kandydata większością głosów albo kandydat nie przyjął Karty.'
     else:
@@ -385,15 +570,54 @@ def per_night() -> int:
         return 3
 
 
+def weekly_summary() -> str:
+    """Jawny raport siedmiu dni; odczyt historii bez zapytań do dostawców."""
+    from news.clinic_models import CouncilRecruitment
+    entries = list(CouncilRecruitment.objects.filter(kind='candidate', created_at__gte=timezone.now() - timedelta(days=7)))
+    counts = Counter((e.provider, e.decision) for e in entries)
+    names = {'hf': 'Hugging Face', 'nim': 'NVIDIA', 'inception': 'Inception', 'pcss': 'PCSS',
+             'mistral': 'Mistral', 'cloudflare': 'Cloudflare Workers AI'}
+    lines = ['Rekruter Konsylium - ostatnie 7 dni (liczba prób kandydatów):']
+    for (provider, decision), count in sorted(counts.items()):
+        lines.append(f'{names.get(provider, provider)} ({provider}): {decision}: {count}')
+    if not entries:
+        lines.append('Brak kandydatów w ostatnich 7 dniach.')
+    for provider in sorted({e.provider for e in entries if e.decision == 'deferred'}):
+        reasons = ' '.join(e.reason + ' ' + str(e.exam) for e in entries if e.provider == provider and e.decision == 'deferred')
+        if '402' in reasons:
+            suggestion = 'brak środków, doładuj konto albo wyłącz dostawcę'
+        elif '400' in reasons:
+            suggestion = 'błędne żądanie (400), sprawdź obsługę schematu JSON i parametry modelu'
+        elif '429' in reasons:
+            suggestion = 'limit zapytań (429), zmniejsz budżet lub poczekaj na odnowienie limitu'
+        else:
+            suggestion = 'awaria lub timeout, sprawdź status dostawcy i ponów próbę po przerwie'
+        lines.append(f'{names.get(provider, provider)}: {suggestion}.')
+    skipped = skipped_providers()
+    lines.append('Dostawcy pomijani:')
+    lines.extend(f"{names.get(p['provider'], p['provider'])}: do {p['until']}; {p['reason']}" for p in skipped)
+    if not skipped:
+        lines.append('Brak aktywnych wyłączeń.')
+    return '\n'.join(lines)
+
+
 def run(dry_run: bool = False) -> dict:
     changes = [] if dry_run else health()
+    skipped = {p['provider']: p for p in skipped_providers()}
     if dry_run:
-        return {'health': changes, 'recruitment': recruit(dry_run=True)}
+        return {'health': changes, 'recruitment': recruit(dry_run=True), 'skipped_providers': list(skipped.values())}
     # Każdy egzamin trafia do dziennika, a sito pomija kandydatów z ostatnich 60 dni — kolejny przebieg bierze następnego.
     results = []
-    for _ in range(per_night()):
-        result = recruit()
+    examined = 0
+    while examined < per_night():
+        result = recruit(excluded_providers=set(skipped))
         results.append(result)
+        if not (result.get('decision') == 'deferred' and result.get('probe')):
+            examined += 1
+        if result.get('decision') == 'deferred':
+            provider = result['provider']
+            skipped[provider] = {'provider': provider, 'reason': result['reason'], 'scope': 'night'}
+            logger.info('recruiter pomija %s do końca nocy: %s', provider, result['reason'])
         if result.get('status') != 'ok':
             break
-    return {'health': changes, 'recruitment': results}
+    return {'health': changes, 'recruitment': results, 'skipped_providers': list(skipped.values())}

@@ -4,7 +4,7 @@ const STORAGE_KEY = 'spinclinic-mvp-strips';
 const MAX_STRIPS = 5;
 
 /**
- * Paski na start — Publiczne i Film, bo z tych źródeł dane płyną stale (decyzja właściciela 27.09).
+ * Paski na start - Publiczne i Film, bo z tych źródeł dane płyną stale (decyzja właściciela 27.09).
  * Czytelnik może je zmienić, usunąć i dodać kolejne; zapis zostaje na urządzeniu.
  */
 export const DEFAULT_STRIPS: PersonalStrip[] = [
@@ -12,9 +12,9 @@ export const DEFAULT_STRIPS: PersonalStrip[] = [
   { id: 'preset-film', label: 'Film', query: '', category: 'film', sourceId: '' },
 ];
 
-/** Poprzedni zestaw startowy — kto go nie zmieniał, dostaje nowy; własne paski zostają nietknięte. */
+/** Poprzedni zestaw startowy - kto go nie zmieniał, dostaje nowy; własne paski zostają nietknięte. */
 const OLD_DEFAULT_IDS = 'preset-publiczne,preset-artykuly,preset-sejm';
-const OLD_DEFAULT_LABELS = 'Instytucje publiczne,Media — artykuły,Sejm';
+const OLD_DEFAULT_LABELS = 'Instytucje publiczne,Media - artykuły,Sejm';
 
 function read(): PersonalStrip[] {
   if (typeof window === 'undefined') return [];

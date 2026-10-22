@@ -15,8 +15,8 @@ export type RevealProps = {
 
 /**
  * Появление и исчезновение любого узла: fade + `rise` (смещение по Y, 0 при уменьшенном
- * движении). Вход — `ui`, выход — `collapse` (без задержки: асимметрия намеренная,
- * раскрытие требует намерения, сворачивание — нет).
+ * движении). Вход - `ui`, выход - `collapse` (без задержки: асимметрия намеренная,
+ * раскрытие требует намерения, сворачивание - нет).
  */
 export function Reveal({ when, children, delay = 0, as: Tag = "div", className }: RevealProps) {
   const m = useMotionTokens();
@@ -47,10 +47,10 @@ export type RevealHeightProps = {
 
 /**
  * Морфинг высоты для раскрытия/сворачивания (аккордеон, фильтры `<details>`, ошибка формы).
- * Единственное разрешённое исключение из правила «только transform/opacity» — и то на
+ * Единственное разрешённое исключение из правила «только transform/opacity» - и то на
  * ОБЁРТКЕ: `height` анимируется на внешнем `motion.div` с `overflow: hidden`, а содержимое
- * внутри анимирует только `opacity` (кросс-фейд). Раскрытие — `expand` (здесь живёт bounce
- * владельца), сворачивание — `collapse`, без отскока, содержимое гаснет первым.
+ * внутри анимирует только `opacity` (кросс-фейд). Раскрытие - `expand` (здесь живёт bounce
+ * владельца), сворачивание - `collapse`, без отскока, содержимое гаснет первым.
  */
 export function RevealHeight({ when, children, contentDelay = 0.06, className }: RevealHeightProps) {
   const m = useMotionTokens();

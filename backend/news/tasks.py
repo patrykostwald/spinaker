@@ -9,9 +9,80 @@ from django.utils import timezone
 from news.models import ImportState
 
 
+@shared_task(name='news.tasks.institutional_reports_task', soft_time_limit=540, time_limit=600)
+def institutional_reports_task():
+    from news.raportysta import run
+    return run()
+
+
+@shared_task(name='news.tasks.warden_second_key_task', soft_time_limit=600, time_limit=660)
+def warden_second_key_task():
+    from news.warden_second_key import run
+    return run()
+
+
+@shared_task(name='news.tasks.seba_task', soft_time_limit=840, time_limit=900)
+def seba_task():
+    from news.seba import run
+    return run()
+
+
+@shared_task(soft_time_limit=840, time_limit=900)
+def agents_window_task():
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news.agents_common import window_step
+    return window_step()
+
+
+@shared_task
+def agents_report_task(agent):
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    if agent not in ('strateg', 'pielgrzym'):
+        raise ValueError('Unknown agent')
+    from news.agents_common import report
+    return report(agent)
+
+
+@shared_task
+def ekspert_ai_task():
+    """Stan wiedzy o AI raz w tygodniu (zadanie codzienne, krok sam pomija, gdy raport ma mniej niż 6 dni)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import ekspert_ai
+    from news.agents_common import WindowClosed
+    try:
+        note = ekspert_ai.step()
+    except WindowClosed as error:
+        return {'status': 'closed', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk, 'state': note.status}
+
+
 @shared_task(name='news.tasks.repairer_task', soft_time_limit=210, time_limit=240)
 def repairer_task():
     from news.repairer import run
+    return run()
+
+
+@shared_task(name='news.tasks.duty_task', soft_time_limit=120, time_limit=150)
+def duty_task():
+    from news.duty import run
+    return run()
+
+
+@shared_task(name='news.tasks.schedule_rescue_task', soft_time_limit=1900, time_limit=2000)
+def schedule_rescue_task(key, stored_key, token):
+    from news.rescuer import execute
+    return execute(key, stored_key, token)
+
+
+@shared_task(name='news.tasks.schedule_health_task', soft_time_limit=100, time_limit=120)
+def schedule_health_task():
+    from news.schedule_health import run
     return run()
 
 
@@ -68,13 +139,18 @@ def clinic_diagnose_task():
 
 
 @shared_task(name="news.tasks.clinic_screen_task", soft_time_limit=600, time_limit=660)
-def clinic_screen_task():
+def clinic_screen_task(include_old=False, post_ids=None):
     """Strażnik Kliniki: darmowa ocena nowych postów (Groq, zapasowo NVIDIA NIM)."""
     if not cache.add("clinic-screen-lock", "1", timeout=700):
         return {"status": "locked"}
     try:
         from news.clinic import run_screening
-        return run_screening(limit=30)
+        result = run_screening(limit=100 if post_ids is not None else 30,
+            include_old=include_old, post_ids=post_ids)
+        if result.get('screened', {}).get('queued'):
+            # Existing diagnosis task keeps its budget, pacing and thresholds.
+            clinic_diagnose_task.apply_async(priority=0)
+        return result
     finally:
         cache.delete("clinic-screen-lock")
 
@@ -85,9 +161,15 @@ def clinic_daily_messages_task():
     return run_daily_messages()
 
 
-@shared_task(name="news.tasks.political_poll_task", soft_time_limit=45, time_limit=60)
+@shared_task(name="news.tasks.clinic_daily_messages_repair_task", soft_time_limit=600, time_limit=660)
+def clinic_daily_messages_repair_task():
+    from news.clinic import repair_daily_messages
+    return repair_daily_messages()
+
+
+@shared_task(name="news.tasks.political_poll_task", soft_time_limit=90, time_limit=100)
 def political_poll_task():
-    """Run at most one due, confirmed political X account.
+    """Run due official X groups, or one account in timeline mode.
 
     ``political_poll_cycle`` is independently opt-in, budgeted and leased.  A
     frequent scheduler tick therefore does not itself make a paid request when
@@ -124,6 +206,9 @@ def sync_live_public_rosters_task():
     ]
     try:
         for label, command, options in commands:
+            if label.endswith('-profiles') and label.replace('-profiles', '-roster') not in completed:
+                failed.append({'roster': label, 'error': 'roster_not_refreshed'})
+                continue
             try:
                 call_command(command, stdout=StringIO(), **options)
                 completed.append(label)
@@ -143,13 +228,13 @@ def sync_live_public_rosters_task():
 
 
 @shared_task(name="news.tasks.clinic_interview_task", soft_time_limit=1700, time_limit=1800)
-def clinic_interview_task():
+def clinic_interview_task(day=None):
     """Wywiad dnia: transkrypcja (Gemini) i diagnoza Dr. Spina dla wklejonego linku. Wyłączone bez kluczy."""
     if not cache.add("clinic-interview-lock", "1", timeout=1790):
         return {"status": "locked"}
     try:
         from news.clinic_interview import run_interviews
-        return run_interviews(limit=1)
+        return run_interviews(limit=1, day=day)
     finally:
         cache.delete("clinic-interview-lock")
 
@@ -209,9 +294,27 @@ def youtube_leftover_task():
 
 @shared_task(name="news.tasks.clinic_interview_pick_task", soft_time_limit=600, time_limit=660)
 def clinic_interview_pick_task():
-    """Rano: najgłośniejszy wywiad z politykiem z poprzedniego dnia trafia do kolejki wywiadu dnia."""
+    """Rano: wynik zamkniętego o 7:00 głosowania trafia do kolejki wywiadu dnia."""
     from news.clinic_interview import pick_yesterday
     return pick_yesterday()
+
+
+@shared_task(name="news.tasks.clinic_interview_candidates_task", soft_time_limit=600, time_limit=660)
+def clinic_interview_candidates_task():
+    from datetime import timedelta
+    from news.daily_schedule import WARSAW
+    from news.interview_votes import refresh_candidates
+    from news.repairer import flag
+    if not flag('CLINIC_INTERVIEW_ENABLED', False):
+        return {'status': 'disabled'}
+    if not cache.add('interview-candidates-lock', '1', timeout=660):
+        return {'status': 'locked'}
+    try:
+        now = timezone.now().astimezone(WARSAW)
+        day = now.date() - timedelta(days=1) if now.hour < 7 else now.date()
+        return {'day': str(day), 'candidates': refresh_candidates(day)}
+    finally:
+        cache.delete('interview-candidates-lock')
 
 
 @shared_task(name="news.tasks.newsletter_confirmation_task", soft_time_limit=60, time_limit=90)
@@ -266,7 +369,11 @@ def x_publish_task():
 
 @shared_task(name="news.tasks.dr_spin_thread_task", soft_time_limit=300, time_limit=360)
 def dr_spin_thread_task():
-    """Codzienna nitka kontekstowa; domyślnie wyłączona."""
+    """Codzienna spinka kontekstowa; domyślnie wyłączona."""
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
     if not cache.add('dr-spin-thread-lock', '1', timeout=400):
         return {'status': 'locked'}
     try:
@@ -274,6 +381,12 @@ def dr_spin_thread_task():
         return build_daily_thread()
     finally:
         cache.delete('dr-spin-thread-lock')
+
+
+@shared_task(name="news.tasks.account_warden_task", soft_time_limit=6000, time_limit=6300)
+def account_warden_task():
+    from news.account_warden import run
+    return run()
 
 
 @shared_task(name="news.tasks.council_recruiter_task", soft_time_limit=1500, time_limit=1600)
@@ -286,6 +399,24 @@ def council_recruiter_task():
         return run()
     finally:
         cache.delete("council-recruiter-lock")
+
+
+@shared_task(name="news.tasks.konsylium_powtorz_task", soft_time_limit=1500, time_limit=1600)
+def konsylium_powtorz_task():
+    """Noc (2:40, po resecie limitów): powtórka diagnoz z ostatnich 7 dni wystawionych bez kworum Konsylium."""
+    import os
+    if os.environ.get("CLINIC_AI_ENABLED", "").lower() != "true":
+        return {"status": "disabled"}
+    if not cache.add("konsylium-powtorz-lock", "1", timeout=1700):
+        return {"status": "locked"}
+    try:
+        from news import council_rerun
+        result = council_rerun.run(council_rerun.default_since(), limit=8)
+        result.pop("rows", None)
+        result["produced"] = result.get("done", 0)
+        return result
+    finally:
+        cache.delete("konsylium-powtorz-lock")
 
 
 @shared_task(name='news.tasks.council_audit_task', soft_time_limit=210, time_limit=240)
@@ -304,9 +435,27 @@ def inquisitor_task(self):
 
 
 # Register account tasks with Celery autodiscovery.
+@shared_task(name='news.tasks.plain_reader_task', soft_time_limit=5700, time_limit=6000)
+def plain_reader_task():
+    if not cache.add('plain-reader-lock', '1', timeout=6100):
+        return {'status': 'locked'}
+    try:
+        from news.plain_reader import run
+        return run()
+    finally:
+        cache.delete('plain-reader-lock')
+
+
 from news.notification_tasks import process_notification_events, send_notification_digests  # noqa: F401,E402
 
 from news.account_lifecycle import send_password_reset, send_account_verification  # noqa: F401
+
+
+@shared_task(name='news.tasks.clinic_video_stats_task', soft_time_limit=210, time_limit=240)
+def clinic_video_stats_task():
+    """Codzienny raport filmów i wspólne powiadomienie o kosztach oraz równowadze."""
+    from news.clinic_video_stats import notify
+    return {'sent': notify(daily=True)}
 
 
 @shared_task(name="news.tasks.council_charter_missing_task", soft_time_limit=600, time_limit=660)
@@ -317,3 +466,441 @@ def council_charter_missing_task():
     out, err = StringIO(), StringIO()
     call_command('council_charter', missing=True, stdout=out, stderr=err)
     return {'status': 'ok', 'accepted': out.getvalue().count('\n'), 'no_answer': err.getvalue().count('\n')}
+
+
+@shared_task(name='news.tasks.narrative_thread_task', soft_time_limit=120, time_limit=180)
+def narrative_thread_task():
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
+    from news.narrative_threads import build_narratives
+    return build_narratives()
+
+
+@shared_task(name='news.tasks.signal_threads_task', soft_time_limit=240, time_limit=300)
+def signal_threads_task():
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
+    from news.signal_threads import build_lobbying, build_new_narratives
+    return {'lobbying': build_lobbying(), 'narratives': build_new_narratives()}
+
+
+@shared_task(name='news.tasks.thread_reviews_task', soft_time_limit=840, time_limit=900)
+def thread_reviews_task():
+    from news.features import threads_enabled
+    if not threads_enabled():
+        from news.features import threads_disabled_result
+        return threads_disabled_result()
+    from news.thread_review import run_queue, backfill_queue
+    backfill_queue()
+    return run_queue(limit=10)
+
+
+@shared_task
+def mechanik_task():
+    """Co godzinę: modele Konsylium z błędem 404/400 albo zawieszone - sprawdzenie u dostawcy, próba, zamiennik nazwy."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import mechanik
+    return mechanik.step()
+
+
+@shared_task
+def recenzent_task():
+    """Co 2 godziny: Recenzent czyta nowe teksty (spinki Dr. Spina, przekazy, raporty, diagnozy) i wytyka błędy."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import recenzent
+    from news.agents_common import WindowClosed
+    from news import dyrygent
+    try:
+        with dyrygent.tier('strażnicy'):
+            note = recenzent.step()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk if note else None, 'produced': 1 if note else 0}
+
+
+@shared_task
+def projektant_task():
+    """Raz w tygodniu (krok sam pomija, gdy raport ma mniej niż 6 dni): stan wiedzy UX/UI i przegląd stron."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import projektant
+    from news.agents_common import WindowClosed
+    from news import dyrygent
+    try:
+        with dyrygent.tier('nauka'):
+            note = projektant.step()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk, 'produced': 1}
+
+
+@shared_task
+def dyrygent_task():
+    """Co 15 minut tryb według wolnych limitów; raz dziennie plan dnia (hierarchia pętli, kolizje, kolejka budowy)."""
+    from news import dyrygent
+    mode, free = dyrygent.decide()
+    note = dyrygent.plan()
+    return {'status': 'ok', 'free_pct': round(free * 100), 'plan': note.pk}
+
+
+@shared_task
+def sprint_intake_task():
+    """6:00: w poniedziałek Sprint tygodnia (do 8 biletów budowy), w inne dni dopełnienie, gdy otwartych jest mniej niż 3."""
+    from news import sprint
+    return {'status': 'ok', **sprint.intake()}
+
+
+@shared_task
+def badacz_task():
+    """Raz dziennie: pętla researchu - nowe źródła dla wszystkich agentów (Badacz, właściciel 5.10)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import badacz
+    from news.agents_common import WindowClosed
+    try:
+        from news import dyrygent
+        with dyrygent.tier('nauka'):
+            done = badacz.step()
+        return {'status': 'ok', **{k.replace('ź', 'z').replace('ę', 'e').replace('ś', 's'): v for k, v in done.items()}}
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
+def zwiadowca_rozwiazan_task():
+    """Codziennie 5:40: obserwatorzy Zwiadowcy rozwiązań (bez AI) - katalogi modeli, kanały dostawców, wydania narzędzi,
+    nowe zbiory; różnica wobec rejestru = sygnał (news.zwiadowca_rozwiazan)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import zwiadowca_rozwiazan as zwiad
+    done = zwiad.run_watchers()
+    return {'status': 'ok', 'produced': done['signals'], **{k: v for k, v in done.items() if k != 'errors'}, 'errors': len(done['errors'])}
+
+
+@shared_task(soft_time_limit=840, time_limit=900)
+def zwiadowca_zwiad_task():
+    """Poniedziałek 4:10: zwiad tygodnia - jeden darmowy model (Inception pierwszy) ocenia pozycje z 7 dni; do 10 ustaleń z dowodami."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import dyrygent, zwiadowca_rozwiazan as zwiad
+    from news.agents_common import WindowClosed
+    try:
+        with dyrygent.tier('rozwój'):
+            note = zwiad.scout()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    return {'status': 'ok', 'note': note.pk, 'produced': 1, 'findings': len((note.scores or {}).get('findings', []))}
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
+def zmiana_zdania_task():
+    """Co 30 minut: Zmiana zdania - wcześniejsze wypowiedzi tej samej osoby przy nowych diagnozach (bez AI), potem jeden darmowy
+    model ocenia pary w oknie agentów. Brak modelu = pary czekają; diagnoza nigdy na to nie czeka."""
+    import os
+    if os.environ.get('ZMIANA_ZDANIA_ENABLED', 'true').strip().lower() == 'false':
+        return {'status': 'disabled'}
+    from news import dyrygent, zmiana_zdania
+    with dyrygent.tier('treść'):
+        return zmiana_zdania.run()
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
+def odbior_spinu_task():
+    """Co godzinę: Jak spin zadziałał - dobę po wpisie z mocnym spinem liczniki i próbka odpowiedzi z oficjalnego API X
+    (płatne odczyty, domyślnie wyłączone: X_REPLIES_ENABLED), ocena jednym darmowym modelem Konsylium. Tylko liczby zbiorcze."""
+    from news import dyrygent, odbior_spinu
+    with dyrygent.tier('treść'):
+        return odbior_spinu.run()
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def sejm_wideo_task():
+    """Co 30 minut w dzień: wystąpienia posłów z nagrań Sejmu (sala i komisje) -> Dr. Spin, najwyżej
+    SEJM_VIDEO_SPIN_DAILY dziennie, ta sama miara i Konsylium z kworum (news.sejm_wideo)."""
+    from django.core.cache import cache
+    from news import dyrygent, sejm_wideo
+    if not cache.add('sejm-wideo-lock', 1, timeout=1600):
+        return {'status': 'locked'}
+    try:
+        with dyrygent.tier('treść'):
+            return sejm_wideo.run(limit=1)
+    finally:
+        cache.delete('sejm-wideo-lock')
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def straznik_mediow_task():
+    """Co godzinę: kopie cytowanych artykułów w Wayback Machine i raz na dobę skrót tekstu - alarm po cichej edycji."""
+    from django.core.cache import cache
+    from news import dyrygent, straznik_mediow
+    if not cache.add('straznik-mediow-lock', 1, timeout=1600):
+        return {'status': 'locked'}
+    try:
+        with dyrygent.tier('niezawodność'):
+            return straznik_mediow.run()
+    finally:
+        cache.delete('straznik-mediow-lock')
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
+def fakty_task():
+    """Co 2 godziny: „Tę tezę sprawdzili” - weryfikacje tych samych tez z Google Fact Check API (klucz właściciela)."""
+    from news import fakty
+    return fakty.run()
+
+
+@shared_task
+def raport_petli_task():
+    """Codziennie 7:05: Raport pętli mailem (audyt pętli 5.10). Bez AI; jeden mail na dzień."""
+    import os
+    if os.environ.get('LOOP_REPORT_ENABLED', 'true').strip().lower() == 'false':
+        return {'status': 'disabled'}
+    from news import raport_petli
+    return raport_petli.send()
+
+
+@shared_task
+def opiekunowie_task():
+    """Co godzinę: opiekunowie pętli (alarmy, naprawy, usprawnienia po kolei, bezpieczeństwo raz w tygodniu na pętlę)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import opiekunowie
+    from news import dyrygent
+    with dyrygent.tier('niezawodność'):
+        done = opiekunowie.step()
+    return role_status(done, counts=True)
+
+
+@shared_task
+def automatyk_task():
+    """Raz dziennie: przegląd wszystkich pętli agentów obu portali i usprawnienia (Automatyk, właściciel 5.10)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import automatyk
+    from news.agents_common import WindowClosed
+    try:
+        note = automatyk.step()
+    except WindowClosed as error:
+        return {'status': 'waiting', 'reason': str(error)}
+    learned = None
+    if automatyk.learn_due():  # wolny czas: nauka raz w tygodniu, po przeglądzie
+        try:
+            from news import dyrygent
+            with dyrygent.tier('nauka'):
+                learned = automatyk.learn().pk
+        except WindowClosed:
+            learned = None
+    return {'status': 'ok', 'note': note.pk, 'learned': learned, 'produced': 1 + (learned is not None)}
+
+
+@shared_task
+def pracownia_osint_task():
+    """Dwa razy dziennie krok Pracowni OSINT: każda rola sama pilnuje swojego terminu (kontroler codziennie, testy co 3 dni, reszta co tydzień)."""
+    import os
+    if os.environ.get('AGENTS_ENABLED', '').lower() != 'true':
+        return {'status': 'disabled'}
+    from news import pracownia_osint, przeszlosc
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    done = pracownia_osint.step()
+    return {**role_status(done), 'roles': len(done)}
+
+
+def role_status(done, counts=False):
+    """Wynik kroku z wieloma rolami (Pracownia, Opiekunowie): błąd, gdy któraś rola padła; „waiting”, gdy nic nie powstało,
+    a któraś rola czeka na okno modeli (audyt 5.10, P5: zielony puls bez wyniku). counts=True: liczby to liczba wpisów
+    (Opiekunowie); inaczej liczba to numer jednego nowego wpisu (Pracownia)."""
+    failed = sum(isinstance(v, str) and v.startswith('błąd') for v in done.values())
+    waiting = sum(isinstance(v, str) and v.startswith('czeka') for v in done.values())
+    numbers = [v for v in done.values() if type(v) is int]
+    produced = sum(numbers) if counts else len(numbers)
+    return {'status': 'error' if failed else 'waiting' if waiting and not produced else 'ok', 'failed': failed,
+            'waiting': waiting, 'produced': produced}
+
+
+@shared_task
+def przeszlosc_topics_task():
+    """Raz dziennie: automatyczny wybór tematów przeszłość.today z druków Sejmu i wpisów polityków."""
+    from news import przeszlosc
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return {'status': 'ok', 'topics': [t['topic'] for t in przeszlosc.pick_topics()]}
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def przeszlosc_warm_task(scope='hot'):
+    """Co godzinę (Śledczy R1, P1-9): tematy dnia i ich osoby przeliczone do cache, żeby czytelnik nie czekał na zimny odczyt."""
+    from news import przeszlosc
+    from news.przeszlosc_cache import warm
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return {'status': 'ok', **warm(scope)}
+
+
+@shared_task(soft_time_limit=3300, time_limit=3500)
+def przeszlosc_warm_all_task():
+    """W nocy po imporcie Sejmu i wyborze tematów (5:10): dodatkowo profile wszystkich posłów, budżet 50 minut."""
+    from news import przeszlosc
+    from news.przeszlosc_cache import warm
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return {'status': 'ok', **warm('all', budget_seconds=50 * 60)}
+
+
+@shared_task(name="news.tasks.przeszlosc_alert_confirmation_task", soft_time_limit=60, time_limit=90)
+def przeszlosc_alert_confirmation_task(alert_id):
+    """Mail z linkiem potwierdzającym alert przeszłość.today (podwójne potwierdzenie)."""
+    from news.przeszlosc_alerts import send_confirmation
+    return send_confirmation(alert_id)
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def przeszlosc_alerts_task():
+    """Codziennie o 7:00: jeden list na adres z nowościami w obserwowanych tematach i osobach."""
+    from news import przeszlosc
+    from news.przeszlosc_alerts import send_digests
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    report = send_digests()
+    return {'status': 'error' if report['failed'] else 'ok', **report}
+
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def public_record_people_task():
+    """Co noc: dokumenty Sejmu (interpelacje, zapytania, wystąpienia) łączone z osobami po oficjalnym id posła."""
+    from news.public_record_people import link_people
+    return {'status': 'ok', **link_people()}
+
+
+@shared_task
+def x_value_task():
+    """Raz dziennie: czytanie X według wartości konta (właściciel 6.10: taniej i legalnie)."""
+    from news import x_value
+    return x_value.apply()
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def voting_deviations_task():
+    """Co noc: odstępstwa posłów od większości klubu (cała kadencja i 90 dni), bez AI i bez sieci."""
+    from news import przeszlosc, voting_anomalies
+    if not przeszlosc.enabled():
+        return {'status': 'disabled'}
+    return voting_anomalies.refresh()
+
+
+@shared_task(soft_time_limit=600, time_limit=660)
+def coordinated_narratives_task():
+    """Co 2 godziny: wspólny przekaz (prawie identyczne wpisy z co najmniej 3 kont w 6 godzin), ostatnie 48 godzin."""
+    from news import coordinated
+    return coordinated.refresh()
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def coordinated_narratives_night_task():
+    """Co noc: wspólny przekaz z ostatniego tygodnia (wpisy dosłane później przez zbieranie X)."""
+    from news import coordinated
+    return coordinated.refresh(hours=coordinated.NIGHT_LOOKBACK_HOURS)
+
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def raport_tygodniowy_task():
+    """Poniedziałek 6:40: Raport tygodniowy dla instytucji (PDF + CSV) za poprzedni tydzień. Bez AI, bez wysyłki."""
+    from news import agent_registry
+    if not agent_registry.enabled(agent_registry.REGISTRY['raport-tygodniowy']):
+        return {'status': 'disabled'}
+    from news.raport_tygodniowy import generate
+    return generate()
+
+
+@shared_task(soft_time_limit=120, time_limit=150)
+def sales_lead_confirmation_task(lead_id):
+    """Mail z linkiem potwierdzającym zgłoszenie (raporty dla instytucji, pilot przeszłość.today)."""
+    from news.sales import send_confirmation
+    return send_confirmation(lead_id)
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def sales_leads_task():
+    """Co godzinę: ponowienia maili, powiadomienia właściciela o potwierdzonych zgłoszeniach, usuwanie niepotwierdzonych."""
+    from news.sales import run
+    return run()
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def sprint_export_task():
+    """Codziennie 6:20 (Z1): zatwierdzone bilety S/M -> GitHub Issues, zrobione -> zamknięcie Issue. Bez tokena: disabled."""
+    from news.sprint_github import export_issues
+    return export_issues()
+
+
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def kopia_task():
+    """Codziennie 4:30 (Z2): kontrola kopii w B2 (świeżość, rozmiar, retencja); 1. dnia miesiąca test odtworzenia."""
+    from news.kopia_zapasowa import daily_check
+    return daily_check()
+
+
+@shared_task(soft_time_limit=40, time_limit=50)
+def puls_zewnetrzny_task():
+    """Co 5 minut (Z3): ping do healthchecks.io tylko przy świeżym udanym biegu Dyżurnego (/start, sukces albo /fail)."""
+    from news.puls_zewnetrzny import run
+    return run()
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def terminy_task():
+    """Codziennie 6:15 (Z3): domeny (RDAP), TLS, DNS, salda API, token GitHub; alarmy 30/14/3 dni i ważny mail."""
+    from news.terminy_zewnetrzne import run
+    return run()
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def zamowienia_publiczne_task():
+    """Codziennie 8:10: ogłoszenia BZP o strony, BIP i WCAG -> sygnały ze szkicem oferty (bez AI, bez wysyłki do zamawiających)."""
+    from news import agent_registry
+    if not agent_registry.enabled(agent_registry.REGISTRY['zamowienia-publiczne']):
+        return {'status': 'disabled'}
+    from news.zamowienia import run
+    return run()
+
+
+@shared_task(soft_time_limit=540, time_limit=600)
+def poczta_task():
+    """Co 10 minut: Poczta (właściciel 6.10) - nowe wiadomości ze skrzynek projektów (IMAP po UID), klasyfikacja jednym
+    darmowym modelem, odpowiedzi w wątku dla bezpiecznych kategorii (tylko przy MAIL_AGENT_AUTOSEND=true), reszta do zestawienia."""
+    from django.core.cache import cache
+    from news import agent_registry, dyrygent, poczta
+    if not agent_registry.enabled(agent_registry.REGISTRY['poczta']):
+        return {'status': 'disabled'}
+    if not cache.add('poczta-lock', 1, timeout=600):
+        return {'status': 'locked'}
+    try:
+        with dyrygent.tier('treść'):
+            return poczta.run()
+    finally:
+        cache.delete('poczta-lock')
+
+
+@shared_task(soft_time_limit=240, time_limit=300)
+def poczta_digest_task():
+    """Codziennie 7:10: jedno zestawienie wiadomości bez automatycznej odpowiedzi (z proponowanymi szkicami) do właściciela;
+    treść wiadomości starszych niż 180 dni usuwana."""
+    from news import agent_registry, poczta
+    if not agent_registry.enabled(agent_registry.REGISTRY['poczta']):
+        return {'status': 'disabled'}
+    cleaned = poczta.retention()
+    return {**poczta.digest(), 'cleaned': cleaned}

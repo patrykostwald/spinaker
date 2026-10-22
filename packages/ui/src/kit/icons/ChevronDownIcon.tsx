@@ -2,11 +2,11 @@ import type { IconProps } from "./types";
 import { iconStroke, iconA11yProps } from "./types";
 
 export interface ChevronDownIconProps extends IconProps {
-  /** Gdy true — obrócony o 180° (panel/select rozwinięty). Obrót idzie przez CSS transition, nie przez framer. */
+  /** Gdy true - obrócony o 180° (panel/select rozwinięty). Obrót idzie przez CSS transition, nie przez framer. */
   open?: boolean;
 }
 
-/** Szewron w dół — selecty, <details>, akordeony. Obraca się o 180° przy rozwinięciu. */
+/** Szewron w dół - selecty, <details>, akordeony. Obraca się o 180° przy rozwinięciu. */
 export function ChevronDownIcon({ size = 24, className, title, open = false }: ChevronDownIconProps) {
   return (
     <svg

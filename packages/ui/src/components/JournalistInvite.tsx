@@ -1,12 +1,14 @@
+"use client";
 import Link from "next/link";
+import { useFeature } from "../lib/features";
 import { ContextThreadStrip } from "./ContextThreadStrip";
 
 const CONTACT = "kontakt@spin.clinic";
 
 const STEPS = [
-  ["Box otwierający", "Twój artykuł, wywiad, film albo śledztwo — to, co chcesz wypromować."],
-  ["Do 14 boxów kontekstu", "Z naszej Bazy albo dodane po linku (tytuł, zdjęcie) — trafiają do Bazy."],
-  ["Wątek na X jednym kliknięciem", "Tytuł i opis w pierwszym wpisie, a każdy box jako kolejna odpowiedź z linkiem do oryginału."],
+  ["Boks otwierający", "Twój artykuł, wywiad, film albo śledztwo - to, co chcesz wypromować."],
+  ["Do 14 boksów kontekstu", "Z naszej Bazy albo dodane po linku (tytuł, zdjęcie) - trafiają do Bazy."],
+  ["Wątek na X jednym kliknięciem", "Tytuł i opis w pierwszym wpisie, a każdy boks jako kolejna odpowiedź z linkiem do oryginału."],
 ];
 
 /**
@@ -14,19 +16,20 @@ const STEPS = [
  * przykładowa nitka jako pasek boxów i trzy kroki w jednej linii.
  */
 export function JournalistInvite() {
+  if (!useFeature("THREADS_ENABLED")) return null;
   return (
     <aside className="sc-invite" aria-labelledby="journalists-title">
       <header className="sc-invite__head">
         <div>
           <p className="sc-clinic-kicker">Dla dziennikarzy i redakcji</p>
-          <h3 id="journalists-title">Prowadzisz temat? Poprowadź tu autoryzowaną nitkę.</h3>
+          <h3 id="journalists-title">Prowadzisz temat? Poprowadź tu autoryzowaną spinkę.</h3>
           <p>
             Dr. Spin pokazuje, jak zbudowany jest przekaz. Ty wiesz, co wydarzyło się naprawdę. Ułóż swój materiał i jego kontekst w jedną
-            nitkę — pod własnym nazwiskiem, z linkiem do redakcji — i udostępnij ją na X jako gotowy wątek.{" "}
-            <Link href="/dla-redakcji#nitka-kontekstowa">Więcej o nitkach</Link>
+            nitkę - pod własnym nazwiskiem, z linkiem do redakcji - i udostępnij ją na X jako gotowy wątek.{" "}
+            <Link href="/dla-redakcji#trop-przyklad">Więcej o spinkach</Link>
           </p>
         </div>
-        <a className="sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana nitka w spin.clinic")}`} title={CONTACT}>Napisz do nas</a>
+        <a className="sc-invite__cta" href={`mailto:${CONTACT}?subject=${encodeURIComponent("Autoryzowana spinka w spin.clinic")}`} title={CONTACT}>Napisz do nas</a>
       </header>
       <ContextThreadStrip />
       <ol className="sc-invite__steps">

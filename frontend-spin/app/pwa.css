@@ -1,16 +1,50 @@
 .sc-pwa-banner{position:fixed;right:16px;bottom:90px;z-index:40;display:flex;gap:16px;align-items:center;padding:12px 16px;max-width:calc(100vw - 32px);background:var(--sc-surface);border:1px solid var(--sc-line);border-radius:14px;font:14px var(--sc-font-sans);box-shadow:var(--sc-e-2)}
 .sc-pwa-banner a,.sc-pwa-dialog a{color:var(--sc-accent);text-decoration:underline;text-underline-offset:3px}
+.sc-pwa-dialog p>a:only-child,.sc-pwa-banner>a{display:inline-flex;align-items:center;min-height:44px}
+.sc-pwa-update{bottom:90px}
 .sc-pwa-dialog{position:fixed;inset:0;margin:auto;width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;padding:28px;background:var(--sc-surface);color:var(--sc-text);border:1px solid var(--sc-line);border-radius:20px;font:15px/1.65 var(--sc-font-sans);box-shadow:var(--sc-e-3)}
 .sc-pwa-dialog::backdrop{background:rgba(0,0,0,.75)}
 .sc-pwa-dialog h2{font-size:24px;font-weight:600;margin:0 24px 16px 0}
 .sc-pwa-dialog p{margin:16px 0;color:var(--sc-text-2)}
-.sc-pwa-dialog button,.sc-pwa-banner button{font:inherit;cursor:pointer;padding:10px 12px;border:1px solid var(--sc-line);border-radius:10px;background:var(--sc-surface-2);color:var(--sc-text)}
+.sc-pwa-dialog button,.sc-pwa-banner button{font:inherit;cursor:pointer;min-height:44px;min-width:44px;padding:10px 14px;border:1px solid var(--sc-line);border-radius:10px;background:var(--sc-surface-2);color:var(--sc-text)}
 .sc-pwa-dialog button{margin:4px 8px 4px 0}
 .sc-pwa-dialog button.sc-pwa-primary{background:var(--sc-accent);color:var(--sc-on-accent)}
 .sc-pwa-dialog button:disabled,.sc-pwa-dialog fieldset:disabled{opacity:.5;cursor:default}
 .sc-pwa-dialog button.sc-pwa-close{position:absolute;right:12px;top:8px;border:0;font-size:24px}
 .sc-pwa-dialog fieldset{border:1px solid var(--sc-line);border-radius:12px;padding:12px}
-.sc-pwa-dialog label{display:flex;align-items:center;gap:12px;padding:8px 0;cursor:pointer}
+.sc-pwa-dialog label{display:flex;align-items:center;gap:12px;min-height:44px;padding:4px 0;cursor:pointer}
 .sc-pwa-dialog input{width:18px;height:18px;accent-color:var(--sc-accent)}
 .sc-pwa-dialog .sc-pwa-note{font-size:12px}
 .sc-pwa-dialog :focus-visible,.sc-pwa-banner :focus-visible{outline:2px solid var(--sc-focus);outline-offset:3px}
+
+/* Obszary bezpieczne (notch, pasek gestów) dla baneru i okna: PWA w trybie standalone na iPhonie i Androidzie (seria PWA 13.10) */
+.sc-pwa-banner{right:max(16px,env(safe-area-inset-right));bottom:calc(90px + env(safe-area-inset-bottom));max-width:calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))}
+.sc-pwa-update{bottom:calc(90px + env(safe-area-inset-bottom))}
+.sc-pwa-dialog{width:min(480px,calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right)));max-height:calc(100dvh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+
+/* przeszłość.today (seria PWA 13.10): baner i okno w konwencji terminala - ">" przed, "_" po, bez ramek, jeden główny przycisk z obrysem akcentu.
+   Tokeny (sepia) z :root:has(.pt-v3) w app/przeszlosc/v3.css; bez dolnego doku spin.clinic baner przy dolnej krawędzi + obszar bezpieczny. */
+.sc-pwa--pt{border:0;background:var(--sc-surface-2);color:var(--sc-text);box-shadow:var(--sc-shadow,0 8px 32px rgba(0,0,0,.45));border-radius:12px}
+.sc-pwa-banner.sc-pwa--pt{bottom:calc(16px + env(safe-area-inset-bottom));gap:8px 16px;padding:8px 16px;font:15px/1.4 var(--sc-font-sans)}
+.sc-pwa-dialog.sc-pwa--pt{padding:28px 28px calc(28px + env(safe-area-inset-bottom));font:16px/1.6 var(--sc-font-sans)}
+.sc-pwa-dialog.sc-pwa--pt h2{font:600 22px/1.25 var(--sc-font-display);letter-spacing:-.01em}
+.sc-pwa-dialog.sc-pwa--pt p{color:var(--sc-text-2)}
+.sc-pwa--pt a{color:var(--sc-accent);font-weight:600;text-decoration:none}
+.sc-pwa--pt a:hover{color:var(--sc-accent-hover);text-decoration:underline;text-underline-offset:3px}
+.sc-pwa-banner.sc-pwa--pt>a::before{content:">";display:inline-block;width:1.5ch;font:500 13px/1 var(--sc-font-sans)}
+.sc-pwa-banner.sc-pwa--pt>a::after{content:"_";display:inline-block;margin-left:1px;font:500 13px/1 var(--sc-font-sans);animation:sc-pwa-blink 1.2s steps(1,end) infinite}
+.sc-pwa--pt button{display:inline-flex;align-items:center;min-height:44px;padding:0 12px 0 0;border:0;border-radius:8px;background:none;color:var(--sc-text-2);font:600 15.5px/1 var(--sc-font-sans)}
+.sc-pwa--pt a,.sc-pwa--pt button{white-space:nowrap}
+.sc-pwa--pt button{position:relative}
+.sc-pwa--pt button::before{content:">";position:absolute;left:-1.6ch;top:50%;margin-top:-6px;font:500 13px/1 var(--sc-font-sans);color:var(--sc-accent);opacity:0}
+.sc-pwa--pt button:is(:hover,:focus-visible){color:var(--sc-text)}
+.sc-pwa--pt button:is(:hover,:focus-visible)::before{opacity:.6}
+.sc-pwa-dialog.sc-pwa--pt button{margin:4px 8px 4px 0}
+.sc-pwa--pt button.sc-pwa-primary{min-height:48px;padding:0 18px 0 14px;border:1px solid var(--sc-accent);background:transparent;color:var(--sc-accent)}
+.sc-pwa--pt button.sc-pwa-primary::before{position:static;display:inline-block;width:1.5ch;margin:0;opacity:1;color:currentColor}
+.sc-pwa--pt button.sc-pwa-primary:hover{background:var(--sc-accent-soft);color:var(--sc-accent-hover)}
+.sc-pwa-dialog.sc-pwa--pt button.sc-pwa-close{position:absolute;right:8px;top:8px;margin:0;padding:0;justify-content:center;font-size:24px;color:var(--sc-text-2)}
+.sc-pwa--pt button.sc-pwa-close::before{display:none}
+.sc-pwa--pt :focus-visible{outline:2px solid var(--sc-focus);outline-offset:3px}
+@keyframes sc-pwa-blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sc-pwa-banner.sc-pwa--pt>a::after{animation:none}}

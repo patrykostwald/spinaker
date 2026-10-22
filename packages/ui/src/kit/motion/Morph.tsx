@@ -7,11 +7,11 @@ import { useMotionTokens } from "./useMotionTokens";
 export type MorphProps = {
   /** Тег или компонент-обёртка. По умолчанию `div`. */
   as?: ElementType;
-  /** `true` — полный layout (размер+позиция), `'position'` — дешевле, только позиция. */
+  /** `true` - полный layout (размер+позиция), `'position'` - дешевле, только позиция. */
   layout?: boolean | "position";
   /**
    * Радиус скругления, px. Передаётся ИНЛАЙНОВО и ЧИСЛОМ на том же элементе, что несёт
-   * `layoutId`/`layout`: морфинг — это проекция translate+scale, а не анимация width/height,
+   * `layoutId`/`layout`: морфинг - это проекция translate+scale, а не анимация width/height,
    * поэтому радиус из CSS растягивается в эллипс на промежуточных кадрах. framer-motion
    * корректирует только те радиусы, которыми владеет сам (см. docs/UI_KIT_PLAN.md → «Пружины»).
    */
@@ -21,7 +21,7 @@ export type MorphProps = {
 } & Omit<HTMLMotionProps<"div">, "as" | "layout" | "children" | "className">;
 
 /**
- * Контейнер с `layout` — плавно меняет размер и позицию при любом изменении содержимого.
+ * Контейнер с `layout` - плавно меняет размер и позицию при любом изменении содержимого.
  * Базовый кирпич «сплошной системы движения»: ни один компонент не меняет визуальное
  * состояние в обход примитивов движения (docs/UI_KIT_PLAN.md → «Сплошная система движения»).
  */
@@ -30,7 +30,7 @@ export const Morph = forwardRef<HTMLElement, MorphProps>(function Morph(
   ref,
 ) {
   const m = useMotionTokens();
-  // motion.create(tag) мемоизируется на теге — иначе новый компонент на каждый рендер
+  // motion.create(tag) мемоизируется на теге - иначе новый компонент на каждый рендер
   // означал бы размонтирование узла (framer-motion, «Dynamic component with a prop»).
   const Tag = useMemo(() => motion.create(as as ElementType), [as]);
   return (

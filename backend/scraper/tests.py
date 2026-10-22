@@ -209,6 +209,7 @@ def test_twitter_identity_and_cursor(mock_get, settings):
     mock_get.side_effect = [response({'data': {'id': '42', 'name': 'Verified'}}), response({'data': [{'id': '123', 'text': 'Test post', 'created_at': '2025-01-20T12:00:00Z', 'public_metrics': {'like_count': 8}}]})]
     assert scrape_twitter_politicians() == 1
     assert '/42/tweets' in mock_get.call_args.args[0]
+    assert {'variants', 'duration_ms'} <= set(mock_get.call_args.kwargs['params']['media.fields'].split(','))
     assert Source.objects.get().last_tweet_id == '123'
     assert Article.objects.get().category == "tweet" and Article.objects.get().likes_count == 8
     mock_get.side_effect = None

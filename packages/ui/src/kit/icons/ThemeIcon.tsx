@@ -11,7 +11,7 @@ export interface ThemeIconProps extends IconProps {
 
 /**
  * Przełącznik motywu. Morfing jednej formy w drugą przez zestaw dwóch warstw
- * (słońce / księżyc) krzyżowo przenikających się scale+opacity+rotate — nie przez
+ * (słońce / księżyc) krzyżowo przenikających się scale+opacity+rotate - nie przez
  * interpolację `d` (system animuje wyłącznie transform i opacity).
  */
 export function ThemeIcon({ size = 24, className, title, mode }: ThemeIconProps) {

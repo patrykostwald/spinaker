@@ -1,0 +1,1753 @@
+'''Senatorowie [[Senat Rzeczypospolitej Polskiej XI kadencji|XI kadencji Senatu Rzeczypospolitej Polskiej]]''' zostali wyłonieni podczas [[Wybory parlamentarne w Polsce w 2023 roku|wyborów parlamentarnych]] 15 października 2023.
+
+Pierwsze posiedzenie odbyło się 13 listopada 2023. Kadencja Senatu trwa od 13 listopada 2023.
+
+100 senatorów wyłoniono w okręgach [[Jednomandatowe okręgi wyborcze|jednomandatowych]] na zasadzie [[Większość względna|większości względnej]]<ref group="uwaga">Zgodnie z przepisami ustawy z dnia 5 stycznia 2011 r. – Kodeks wyborczy ({{Dziennik Ustaw|2011|21|112}}).</ref>.
+
+Kluby i koła na pierwszym posiedzeniu Senatu XI kadencji i stan aktualny (24 sierpnia 2026)<ref>{{Cytuj stronę |url = https://www.senat.gov.pl/sklad/kluby-i-kola/?kadencja=11 |tytuł = Kluby i koła |opublikowany = senat.gov.pl |data dostępu = 2023-11-14}}</ref>.
+{{col-begin}}
+{| class="wikitable" style="text-align:right;"
+|-
+! colspan=2| Ugrupowanie polityczne
+! XI 2023
+! VIII 2026
+! +/-
+|-
+| style="background:#{{partie polityczne - kolor|KO}};"|
+| style="text-align:left;"| [[Koalicja Obywatelska]]
+| 41
+| 42
+| {{zmiana|wzrost|n=1}}
+|-
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| style="text-align:left;"| {{partie polityczne - nazwa|PIS}}
+| 34
+| 31
+| {{zmiana|spadek|n=3}}
+|-
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| style="text-align:left;"| [[Trzecia Droga (Polska)|Trzecia Droga]]<ref group="uwaga">Jej senatorowie zostali wybrani jako kandydaci KKW Trzecia Droga Polska 2050 Szymona Hołowni–Polskie Stronnictwo Ludowe, jeden senator został wybrany z własnego komitetu wyborczego.</ref>
+| 12
+| 8
+| {{zmiana|spadek|n=4}}
+|-
+| style="background:#{{partie polityczne - kolor|LEWICA}};"|
+| style="text-align:left;"| [[Lewica (2019)|Lewica]]
+| 9
+| 8
+| {{zmiana|spadek|n=1}}
+|- style="background: #E6E6E6;"
+| style="background:#{{partie polityczne - kolor|NPL}};"|
+| style="text-align:left;"| [[Nowa Polska (partia)|Nowa Polska]]<ref group="uwaga">Koło istniało do 17 marca 2026, a do 27 stycznia 2026 nosiło nazwę [[Koło Senackie Niezależni i Samorządni|Niezależni i Samorządni]]. Jego senatorowie zostali wybrani z własnych komitetów wyborczych.</ref>
+| 4
+| –
+| {{Zmiana|spadek|n=4}}
+|-
+| style="background:#16718b"|
+| style="text-align:left;"| [[Klub Senacki Nowa Polska – Centrum|Nowa Polska – Centrum]]<ref group="uwaga">Klub powstał 18 marca 2026, a 24 sierpnia 2026 utracił wymaganą do funkcjonowania liczbę senatorów i stał się kołem. Jego senatorowie zostali wybrani jako kandydaci KKW Trzecia Droga Polska 2050 Szymona Hołowni–Polskie Stronnictwo Ludowe i z własnych komitetów wyborczych.</ref>
+| –
+| 6
+| {{zmiana|wzrost|n=6}}
+|-
+| style="background:#a80000;"|
+| style="text-align:left;"| [[Rozwój Plus]]<ref group="uwaga">Klub powołany został 29 lipca 2026, a 5 sierpnia 2026 uzyskał reprezentację w Senacie. Jego senatorowie zostali wybrani jako kandydaci Prawa i Sprawiedliwości.</ref>
+| –
+| 2
+| {{zmiana|wzrost|n=2}}
+|-
+| style="background: #{{partie polityczne - kolor|}};"|
+| style="text-align:left;"| Senatorowie niezrzeszeni<ref group="uwaga">Senatorowie, którzy nie przystąpili do żadnego z klubów parlamentarnych bądź opuścili je w trakcie kadencji.</ref>
+| –
+| 2
+| {{Zmiana|wzrost|n=2}}
+|-
+!colspan=2| Razem
+!colspan=3| 99
+|}
+{{col-break}}
+{{Podział miejsc
+|opis = miejsca
+|L|KO|NiS|TD|PIS|
+|L = 9
+|KO = 41
+|NiS = 4
+|TD = 12
+|PIS = 34
+|L link = [[Lewica (2019)|Lewica]]
+|KO link = [[Koalicja Obywatelska|KO]]
+|NiS link = [[Koło Senackie Niezależni i Samorządni|NiS]]
+|TD link = [[Trzecia Droga (Polska)|TD]]
+|PIS link = [[Prawo i Sprawiedliwość|PiS]]
+|L kolor = {{partie polityczne - kolor|LEWICA}}
+|KO kolor = {{partie polityczne - kolor|KO2019}}
+|NiS kolor = 808080
+|TD kolor = {{partie polityczne - kolor|TD}}
+|PIS kolor = {{partie polityczne - kolor|PIS}}
+}}
+{{col-end}}
+
+== Dane zbiorcze o senatorach wybranych 15 października 2023 ==
+Przynależność do partii politycznych deklarowało 86 senatorów: 36 – [[Platforma Obywatelska|Platforma Obywatelska RP]], 29 – [[Prawo i Sprawiedliwość]], 5 – [[Nowa Lewica]], po 4 – [[Polskie Stronnictwo Ludowe]] i [[Polska 2050|Polska 2050 Szymona Hołowni]], 2 – [[Lewica Razem (partia)|Lewica Razem]], po 1 – [[Centrum dla Polski]], [[Polska Partia Socjalistyczna]], [[Porozumienie]], [[Suwerenna Polska]], [[Unia Europejskich Demokratów]] i [[Unia Pracy]]; 14 senatorów było bezpartyjnych.
+
+== Prezydium Senatu XI kadencji ==
+[[Plik:Małgorzata Kidawa-Błońska, Marshal of the Senate of the Republic of Poland.jpg|thumb|Małgorzata Kidawa-Błońska – marszałek Senatu XI kadencji]]
+{| class="wikitable"
+|-
+! rowspan=2 colspan=2| Senator
+! rowspan=2| Funkcja
+! rowspan=2| Komitet wyborczy
+! colspan=2| Czas pełnienia funkcji
+|-
+! Od
+! Do
+|- style="background: #E6E6E6;"
+| style="background: #{{partie polityczne - kolor|PIS}};"|
+| [[Michał Seweryński]]
+| [[Marszałek senior]]
+| KP [[Prawo i Sprawiedliwość]]
+| colspan=2 align="center" style="padding-right:10px"| {{Dts|13|11|2023}}
+|- style="background: gray;"
+| colspan=6 align="center"| '''Marszałek senior przewodniczy obradom Senatu przed wyborem Prezydium'''
+|-
+| style="background: #{{partie polityczne - kolor|KO2019}};"|
+| '''[[Małgorzata Kidawa-Błońska]]'''
+| '''[[Marszałek Senatu Rzeczypospolitej Polskiej|Marszałek Senatu]]'''
+| '''KP [[Koalicja Obywatelska]] – [[Platforma Obywatelska]], [[Nowoczesna]], [[Inicjatywa Polska]], [[Zieloni (Polska)|Zieloni]]'''
+| align="right" style="padding-right:10px"| '''{{Dts|13|11|2023}}'''<ref>Uchwała Senatu Rzeczypospolitej Polskiej z dnia 13 listopada 2023 r. w sprawie wyboru Marszałka Senatu ({{Monitor Polski|2023|1228}}).</ref>
+| align="right" style="padding-right:10px"| '''''pełni funkcję'''''
+|-
+| style="background: #{{partie polityczne - kolor|LEWICA}};"|
+| [[Magdalena Biejat]]
+| rowspan="4" | [[Wicemarszałek Senatu]]
+| Koalicyjny KP [[Lewica (2019)|Lewicy]] ([[Nowa Lewica]], [[Polska Partia Socjalistyczna|PPS]], [[Unia Pracy]])
+| align="right" style="padding-right:10px"| {{Dts|13|11|2023}}<ref name="wice">Uchwała Senatu Rzeczypospolitej Polskiej z dnia 13 listopada 2023 r. w sprawie wyboru wicemarszałków Senatu ({{Monitor Polski|2023|1240}}).</ref>
+| align="right" style="padding-right:10px"| ''pełni funkcję''
+|-
+|style="background: #{{partie polityczne - kolor|KO2019}};"|
+| [[Rafał Grupiński]]
+| KP Koalicja Obywatelska – Platforma Obywatelska, Nowoczesna, Inicjatywa Polska, Zieloni
+| align="right" style="padding-right:10px"| {{Dts|13|11|2023}}<ref name="wice"/>
+| align="right" style="padding-right:10px"| ''pełni funkcję''
+|-
+|rowspan=2 style="background: #{{partie polityczne - kolor|TD}};"|
+| [[Michał Kamiński (polityk)|Michał Kamiński]]
+| rowspan="2" | Klub Senacki [[Trzecia Droga (Polska)|Trzecia Droga]]
+| align="right" style="padding-right:10px"| {{Dts|13|11|2023}}<ref name="wice"/>
+| align="right" style="padding-right:10px"| ''pełni funkcję''
+|-
+| [[Maciej Żywno]]
+| align="right" style="padding-right:10px"| {{Dts|13|11|2023}}<ref>Uchwała Senatu Rzeczypospolitej Polskiej z dnia 13 listopada 2023 r. w sprawie wyboru wicemarszałka Senatu ({{Monitor Polski|2023|1242}}).</ref>
+| align="right" style="padding-right:10px"| ''pełni funkcję''
+|}
+Funkcję [[Sekretarz Senatu Rzeczypospolitej Polskiej|sekretarzy Senatu]] pełnią: [[Rafał Ambrozik]], [[Ewa Kaliszuk]], [[Agnieszka Kołacz-Leszczyńska]], [[Piotr Masłowski (polityk)|Piotr Masłowski]], [[Joanna Sekuła]], [[Aleksander Szwed]]<ref>[https://www.senat.gov.pl/prace/posiedzenia/tematy,602,1.html 1. posiedzenie Senatu RP XI kadencji]</ref>, [[Anna Górska (ur. 1980)|Anna Górska]] oraz [[Maciej Górski (polityk)|Maciej Górski]]<ref>[https://www.senat.gov.pl/prace/posiedzenia/tematy,603,1.html 2. posiedzenie Senatu RP XI kadencji]</ref>.
+
+== Senatorowie wybrani 15 października 2023 ==
+Opracowane na podstawie danych [[Państwowa Komisja Wyborcza|Państwowej Komisji Wyborczej]]<ref name="PKW">{{Cytuj stronę |url = https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/senat/wynik/pl |tytuł = Wyniki wyborów do Senatu |opublikowany = PKW |data dostępu = 2023-10-17}}</ref>.
+
+''Kolorem szarym wyróżniono senatorów, których mandat wygasł w czasie trwania kadencji izby''.
+
+{| class="wikitable sortable" width="100%"
+|-
+! class="unsortable"| Zdjęcie
+! class="unsortable" style="border-right-style: hidden;"|
+! Senator
+! Komitet wyborczy
+! Okręg
+! Największe miasto
+! class="unsortable"| Dotychczasowy staż parlamentarny
+! % głosów
+|-
+| [[Plik:Rafał Ambrozik Kancelaria Senatu 2023.jpg|55px|Rafał Ambrozik]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Ambrozik|[[Rafał Ambrozik]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 29 do Senatu Rzeczypospolitej Polskiej|29]]
+| [[Tomaszów Mazowiecki]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 46,28
+|-
+| [[Plik:Włodzimierz Bernacki Kancelaria Senatu 2023.jpg|55px|Włodzimierz Bernacki]]
+| {{sort|Bernacki|[[Włodzimierz Bernacki]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 34 do Senatu Rzeczypospolitej Polskiej|34]]
+| [[Bochnia]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm VII i VIII kadencji <small>(2011–2019)</small>
+| 46,42
+|-
+| [[Plik:Halina Bieda Kancelaria Senatu 2019.jpg|55px|Halina Bieda]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Bieda|[[Halina Bieda]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 71 do Senatu Rzeczypospolitej Polskiej|71]]
+| [[Zabrze]]
+| senator X kadencji <small>(2019–2023)</small>
+| 57,70
+|-
+| [[Plik:Magdalena Biejat Kancelaria Senatu 2023.jpg|55px|Magdalena Biejat]]
+| style="background: #{{partie polityczne - kolor|NL}};" |
+| {{sort|Biejat|[[Magdalena Biejat]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 45 do Senatu Rzeczypospolitej Polskiej|45]]
+| [[Warszawa]]
+| poseł na Sejm IX kadencji <small>(2019–2023)</small>
+| 72,40
+|-
+| [[Plik:Krzysztof Bieńkowski Kancelaria Senatu 2023.jpg|55px]]
+| rowspan=3 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Bieńkowski|[[Krzysztof Bieńkowski (polityk)|Krzysztof Bieńkowski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 39 do Senatu Rzeczypospolitej Polskiej|39]]
+| [[Ciechanów]]
+| wybrany po raz pierwszy
+| 47,25
+|-
+| [[Plik:Grzegorz Bierecki Kancelaria Senatu 2015.jpg|55px|Grzegorz Bierecki]]
+| {{sort|Bierecki|[[Grzegorz Bierecki]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 17 do Senatu Rzeczypospolitej Polskiej|17]]
+| [[Biała Podlaska]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small>
+| 53,74
+|-
+| [[Plik:Przemysław Błaszczyk Kancelaria Senatu 2023.jpg|55px|Przemysław Błaszczyk]]
+| {{sort|Błaszczyk|[[Przemysław Błaszczyk]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 25 do Senatu Rzeczypospolitej Polskiej|25]]
+| [[Kutno]]
+| senator VII, VIII, IX i X kadencji <small>(2007–2023)</small>
+| 46,48
+|-
+| [[Plik:Ryszard Bober Kancelaria Senatu 2023.jpg|55px|Ryszard Bober]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Bober|[[Ryszard Bober]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 12 do Senatu Rzeczypospolitej Polskiej|12]]
+| [[Grudziądz]]
+| senator X kadencji <small>(2019–2023)</small>
+| 51,00
+|-
+| [[Plik:Min. Adam Bodnar.jpg|55px|Adam Bodnar]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Bodnar|[[Adam Bodnar]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 44 do Senatu Rzeczypospolitej Polskiej|44]]
+| [[Warszawa]]
+| wybrany po raz pierwszy
+| 76,47
+|-
+| [[Plik:Anna Bogucka Kancelaria Senatu 2023.jpg|55px]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Bogucka|[[Anna Bogucka]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 61 do Senatu Rzeczypospolitej Polskiej|61]]
+| [[Bielsk Podlaski]]
+| wybrana po raz pierwszy
+| 46,94
+|-
+| [[Plik:Marek Borowski Kancelaria Senatu 2019.jpg|55px|Marek Borowski]]
+| rowspan=3 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Borowski|[[Marek Borowski]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 42 do Senatu Rzeczypospolitej Polskiej|42]]
+| [[Warszawa]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small><br />poseł na Sejm I, II, III, IV i VI kadencji <small>(1991–2005, 2007–2011)</small>
+| 69,72
+|-
+| [[Plik:Bogdan Borusewicz Kancelaria Senatu 2023.jpg|55px|Bogdan Borusewicz]]
+| {{sort|Borusewicz|[[Bogdan Borusewicz]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 65 do Senatu Rzeczypospolitej Polskiej|65]]
+| [[Gdańsk]]
+| senator VI, VII, VIII, IX i X kadencji <small>(2005–2023)</small><br />poseł na Sejm I, II i III kadencji <small>(1991–2001)</small>
+| 70,12
+|-
+| [[Plik:Ryszard Brejza Kancelaria Senatu 2023.jpg|55px]]
+| {{sort|Brejza|[[Ryszard Brejza]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 10 do Senatu Rzeczypospolitej Polskiej|10]]
+| [[Inowrocław]]
+| poseł na Sejm III kadencji <small>(1997–2001)</small>
+| 44,06
+|-
+| [[Plik:Gustaw Marek Brzezin Kancelaria Senatu 2023 (cropped).jpg|55px|Gustaw Marek Brzezin]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Brzezin|[[Gustaw Marek Brzezin|Gustaw Brzezin]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 85 do Senatu Rzeczypospolitej Polskiej|85]]
+| [[Ostróda]]
+| wybrany po raz pierwszy
+| 49,06
+|-
+| [[Plik:Jerzy Chróścikowski Kancelaria Senatu 2023.jpg|55px|Jerzy Chróścikowski]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Chróścikowski|[[Jerzy Chróścikowski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 19 do Senatu Rzeczypospolitej Polskiej|19]]
+| [[Zamość]]
+| senator IV, VI, VII, VIII, IX i X kadencji <small>(1997–2001, 2005–2023)</small>
+| 47,61
+|-
+| [[Plik:Leszek Czarnobaj Kancelaria Senatu 2023.jpg|55px|Leszek Czarnobaj]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Czarnobaj|[[Leszek Czarnobaj]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 67 do Senatu Rzeczypospolitej Polskiej|67]]
+| [[Malbork]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small>
+| 52,56
+|-
+| [[Plik:Grzegorz Czelej Kancelaria Senatu 2023.jpg|55px|Grzegorz Czelej]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Czelej|[[Grzegorz Czelej]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 15 do Senatu Rzeczypospolitej Polskiej|15]]
+| [[Świdnik]]
+| senator VII, VIII, IX i X kadencji <small>(2007–2023)</small>
+| 52,50
+|-
+| [[Plik:Wiesław Dobkowski Kancelaria Senatu 2023.jpg|55px|Wiesław Dobkowski]]
+| {{sort|Dobkowski|[[Wiesław Dobkowski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 28 do Senatu Rzeczypospolitej Polskiej|28]]
+| [[Piotrków Trybunalski]]
+| senator VII, VIII, IX i X kadencji <small>(2007–2023)</small>
+| 41,04
+|-
+| [[Plik:Artur Dunin 2023 (cropped).jpg|55px|Artur Dunin]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Dunin|[[Artur Dunin]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 23 do Senatu Rzeczypospolitej Polskiej|23]]
+| [[Łódź]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm VI, VII i VIII kadencji <small>(2007–2019)</small>
+| 71,81
+|-
+| [[Plik:Wiktor Durlak Kancelaria Senatu 2023.jpg|55px|Wiktor Durlak]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Durlak|[[Wiktor Durlak]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 37 do Senatu Rzeczypospolitej Polskiej|37]]
+| [[Nowy Sącz]]
+| senator X kadencji <small>(2019–2023)</small>
+| 52,71
+|-
+| [[Plik:Waldy Dzikowski Kancelaria Senatu 2023.jpg|55px|Waldy Dzikowski]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Dzikowski|[[Waldy Dzikowski]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 90 do Senatu Rzeczypospolitej Polskiej|90]]
+| [[Swarzędz]]
+| poseł na Sejm IV, V, VI, VII, VIII i IX kadencji <small>(2001–2023)</small>
+| 75,07
+|-
+| [[Plik:Andrzej Dziuba Kancelaria Senatu 2023.jpg|55px|Andrzej Dziuba]]
+| style="background:#{{partie polityczne - kolor|}};"|
+| {{sort|Dziuba|[[Andrzej Dziuba (samorządowiec)|Andrzej Dziuba]]}}
+| KWW Andrzej Dziuba – Pakt Senacki
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 75 do Senatu Rzeczypospolitej Polskiej|75]]
+| [[Tychy]]
+| wybrany po raz pierwszy
+| 56,65
+|-
+| [[Plik:Grzegorz Fedorowicz Kancelaria Senatu 2023.jpg|55px]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Fedorowicz|[[Grzegorz Fedorowicz]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 92 do Senatu Rzeczypospolitej Polskiej|92]]
+| [[Gniezno]]
+| wybrany po raz pierwszy
+| 49,93
+|-
+| [[Plik:Jerzy Fedorowicz Kancelaria Senatu 2023.jpg|55px|Jerzy Fedorowicz]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Fedorowicz|[[Jerzy Fedorowicz]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 32 do Senatu Rzeczypospolitej Polskiej|32]]
+| [[Kraków]]
+| senator IX i X kadencji <small>(2015–2023)</small><br />poseł na Sejm V, VI i VII kadencji <small>(2005–2015)</small>
+| 67,06
+|-
+| [[Plik:Zygmunt Frankiewicz Kancelaria Senatu 2023.jpg|55px|Zygmunt Frankiewicz]]
+| style="background:#{{partie polityczne - kolor|}};"|
+| {{sort|Frankiewicz|[[Zygmunt Frankiewicz]]}}
+| KWW Zygmunt Frankiewicz – Pakt Senacki
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 70 do Senatu Rzeczypospolitej Polskiej|70]]
+| [[Gliwice]]
+| senator X kadencji <small>(2019–2023)</small>
+| 67,78
+|-
+| [[Plik:Leszek Galemba Kancelaria Senatu 2023.jpg|55px|Leszek Galemba]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Galemba|[[Leszek Galemba]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 93 do Senatu Rzeczypospolitej Polskiej|93]]
+| [[Konin]]
+| poseł na Sejm VIII i IX kadencji <small>(2015–2023)</small>
+| 44,06
+|-
+| [[Plik:Stanisław Gawłowski Kancelaria Senatu 2023.jpg|55px|Stanisław Gawłowski]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|KO2019}};"|
+|{{sort|Gawłowski|[[Stanisław Gawłowski]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 100 do Senatu Rzeczypospolitej Polskiej|100]]
+| [[Koszalin]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm V, VI, VII i VIII kadencji <small>(2005–2019)</small>
+| 42,50
+|-
+| [[Plik:Beniamin Godyla Kancelaria Senatu 2023.jpg|55px|Beniamin Godyla]]
+| {{sort|Godyla|[[Beniamin Godyla]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 53 do Senatu Rzeczypospolitej Polskiej|53]]
+| [[Kędzierzyn-Koźle]]
+| senator X kadencji <small>(2019–2023)</small>
+| 50,40
+|-
+| [[Plik:Stanisław Gogacz Kancelaria Senatu 2023.jpg|55px|Stanisław Gogacz]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Gogacz|[[Stanisław Gogacz]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 14 do Senatu Rzeczypospolitej Polskiej|14]]
+| [[Puławy]]
+| senator IV, VII, VIII, IX i X kadencji <small>(1997–2001, 2007–2023)</small>
+| 52,82
+|-
+| [[Plik:Mieczysław Golba Kancelaria Senatu 2023.jpg|55px|Mieczysław Golba]]
+| {{sort|Golba|[[Mieczysław Golba]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 58 do Senatu Rzeczypospolitej Polskiej|58]]
+| [[Przemyśl]]
+| senator IX i X kadencji <small>(2015–2023)</small><br />poseł na Sejm V, VI i VII kadencji <small>(2005–2015)</small>
+| 49,20
+|-
+| [[Plik:Agnieszka Gorgoń-Komor Kancelaria Senatu 2023.jpg|55px|Agnieszka Gorgoń-Komor]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Gorgoń-Komor|[[Agnieszka Gorgoń-Komor]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 78 do Senatu Rzeczypospolitej Polskiej|78]]
+| [[Bielsko-Biała]]
+| senator X kadencji <small>(2019–2023)</small>
+| 49,45
+|-
+| [[Plik:Anna Górska Kancelaria Senatu 2023.jpg|55px]]
+| style="background:#{{partie polityczne - kolor|NL}};"|
+| {{sort|Górska|[[Anna Górska (ur. 1980)|Anna Górska]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 63 do Senatu Rzeczypospolitej Polskiej|63]]
+| [[Chojnice]]
+| wybrana po raz pierwszy
+| 38,17
+|-
+| [[Plik:Maciej Górski Kancelaria Senatu 2023.jpg|55px|Maciej Górski]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Górski|[[Maciej Górski (polityk)|Maciej Górski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 47 do Senatu Rzeczypospolitej Polskiej|47]]
+| [[Mińsk Mazowiecki]]
+| poseł na Sejm IX kadencji <small>(2019–2023)</small>
+| 51,11
+|-
+| [[Plik:Tomasz Grodzki Kancelaria Senatu 2019.jpg|55px|Tomasz Grodzki]]
+| rowspan=3 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Grodzki|[[Tomasz Grodzki]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 97 do Senatu Rzeczypospolitej Polskiej|97]]
+| [[Szczecin]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 69,61
+|-
+| [[Plik:Janusz Gromek Kancelaria Senatu 2023.jpg|55px|Janusz Gromek]]
+| {{sort|Gromek|[[Janusz Gromek]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 99 do Senatu Rzeczypospolitej Polskiej|99]]
+| [[Kołobrzeg]]
+| senator X kadencji <small>(2019–2023)</small>
+| 55,58
+|-
+| [[Plik:Rafał Grupiński Sejm 2016.jpg|55px|Rafał Grupiński]]
+| {{sort|Grupiński|[[Rafał Grupiński]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 91 do Senatu Rzeczypospolitej Polskiej|91]]
+| [[Poznań]]
+| poseł na Sejm V, VI, VII, VIII i IX <small>(2005–2023)</small>
+| 77,64
+|-
+| [[Plik:Jan Hamerski Kancelaria Senatu 2023.jpg|55px|Jan Hamerski]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Hamerski|[[Jan Hamerski (polityk)|Jan Hamerski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 36 do Senatu Rzeczypospolitej Polskiej|36]]
+| [[Nowy Targ]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 54,14
+|-
+| [[Plik:Jolanta Hibner Kancelaria Senatu (cropped 2).jpg|55px|Jolanta Hibner]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Hibner|[[Jolanta Hibner]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 40 do Senatu Rzeczypospolitej Polskiej|40]]
+| [[Legionowo]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm V, VI i VIII kadencji <small>(2005–2009, 2015–2019)</small><br />poseł do Parlamentu Europejskiego VII kadencji <small>(2009–2014)</small>
+| 48,23
+|-
+| [[Plik:Tadeusz Jarmuziewicz Kancelaria Senatu 2023 (cropped).jpg|55px|Tadeusz Jarmuziewicz]]
+| {{sort|Jarmuziewicz|[[Tadeusz Jarmuziewicz]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 51 do Senatu Rzeczypospolitej Polskiej|51]]
+| [[Nysa]]
+| poseł na Sejm III, IV, V, VI i VII kadencji <small>(1997–2015)</small>
+| 46,76
+|-
+| [[Plik:Józef Jodłowski Kancelaria Senatu 2023.jpg|70x70px]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Jodłowski|[[Józef Jodłowski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 56 do Senatu Rzeczypospolitej Polskiej|56]]
+| [[Rzeszów]]
+| wybrany po raz pierwszy
+| 42,53
+|-
+| [[Plik:Andrzej Kalata Kancelaria Senatu 2023.jpg|55px]]
+| {{sort|Kalata|[[Andrzej Kalata]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 79 do Senatu Rzeczypospolitej Polskiej|79]]
+| [[Cieszyn]]
+| wybrany po raz pierwszy
+| 39,59
+|-
+| [[Plik:Ewa Kaliszuk Kancelaria Senatu 2023.jpg|70x70px]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Kaliszuk|[[Ewa Kaliszuk]]}}
+| |[[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 86 do Senatu Rzeczypospolitej Polskiej|86]]
+| [[Olsztyn]]
+| wybrana po raz pierwszy
+| 43,78
+|-
+| [[Plik:Michał Kamiński Kancelaria Senatu 2023.jpg|55px|Michał Kamiński]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Kamiński|[[Michał Kamiński (polityk)|Michał Kamiński]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 41 do Senatu Rzeczypospolitej Polskiej|41]]
+| [[Pruszków]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm III, IV i VIII kadencji <small>(1997–2004, 2015–2019)</small><br />poseł do Parlamentu Europejskiego V, VI i VII kadencji <small>(2004–2007, 2009–2014)</small>
+| 53,44
+|-
+| [[Plik:Stanisław Karczewski Kancelaria Senatu 2023.jpg|55px|Stanisław Karczewski]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Karczewski|[[Stanisław Karczewski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 49 do Senatu Rzeczypospolitej Polskiej|49]]
+| [[Kozienice]]
+| senator VI, VII, VIII, IX i X kadencji <small>(2005–2023)</small>
+| 51,78
+|-
+| [[Plik:Marcin Karpiński Kancelaria Senatu 2023.jpg|55px]]
+| style="background:#{{partie polityczne - kolor|NL}};"|
+| {{sort|Karpiński|[[Marcin Karpiński]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 26 do Senatu Rzeczypospolitej Polskiej|26]]
+| [[Pabianice]]
+| wybrany po raz pierwszy
+| 50,14
+|-
+| [[Plik:Kidawa-Błońska 30 November 2019 03.jpg|55px]]
+| rowspan=7 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Kidawa-Błońska|[[Małgorzata Kidawa-Błońska]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 43 do Senatu Rzeczypospolitej Polskiej|43]]
+| [[Warszawa]]
+| poseł na Sejm V, VI, VII, VIII i IX <small>(2005–2023)</small>
+| 74,70
+|-
+| [[Plik:Kazimierz Kleina Kancelaria Senatu 2023.jpg|55px|Kazimierz Kleina]]
+| {{sort|Kleina|[[Kazimierz Kleina]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 62 do Senatu Rzeczypospolitej Polskiej|62]]
+| [[Słupsk]]
+| senator IV, VII, VIII, IX i X kadencji <small>(1997–2001, 2007–2023)</small><br />poseł na Sejm V kadencji <small>(2005–2007)</small>
+| 57,84
+|- style="background:#E6E6E6;"
+| [[Plik:Bogdan Klich Kancelaria Senatu 2023.jpg|55px|Bogdan Klich]]
+| {{sort|Klich|[[Bogdan Klich]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 33 do Senatu Rzeczypospolitej Polskiej|33]]
+| [[Kraków]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small><br />poseł na Sejm IV kadencji <small>(2001–2004)</small><br />poseł do Parlamentu Europejskiego VI kadencji <small>(2004–2007)</small>
+| 70,90
+|-
+| [[Plik:Andrzej Kobiak Kancelaria Senatu 2023.jpg|55px|Andrzej Kobiak]]
+| {{sort|Kobiak|[[Andrzej Kobiak]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 9 do Senatu Rzeczypospolitej Polskiej|9]]
+| [[Bydgoszcz]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small>
+| 58,31
+|-
+| [[Plik:Magdalena Kochan Kancelaria Senatu 2019.jpg|55px|Magdalena Kochan]]
+| {{sort|Kochan|[[Magdalena Kochan]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 98 do Senatu Rzeczypospolitej Polskiej|98]]
+| [[Stargard]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm V, VI, VII i VIII kadencji <small>(2005–2019)</small>
+| 62,90
+|-
+| [[Plik:Agnieszka Kołacz-Leszczyńska Sejm 2016.jpg|55px|Agnieszka Kołacz-Leszczyńska]]
+| {{sort|Kołacz-Leszczyńska|[[Agnieszka Kołacz-Leszczyńska]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 4 do Senatu Rzeczypospolitej Polskiej|4]]
+| [[Wałbrzych]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm VII i VIII kadencji <small>(2011–2019)</small>
+| 58,68
+|-
+| [[Plik:Władysław Komarnicki Kancelaria Senatu 2019.jpg|55px|Władysław Komarnicki]]
+| {{sort|Komarnicki|[[Władysław Komarnicki]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 21 do Senatu Rzeczypospolitej Polskiej|21]]
+| [[Gorzów Wielkopolski]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 58,14
+|-
+| [[Plik:Marek Komorowski Kancelaria Senatu 2023.jpg|55px|Marek Komorowski]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Komorowski|[[Marek Komorowski]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 59 do Senatu Rzeczypospolitej Polskiej|59]]
+| [[Suwałki]]
+| senator X kadencji <small>(2019–2023)</small>
+| 48,25
+|-
+| [[Plik:Wojciech Konieczny Kancelaria Senatu 2023.jpg|55px|Wojciech Konieczny]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|NL}};"|
+| {{sort|Konieczny|[[Wojciech Konieczny]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 69 do Senatu Rzeczypospolitej Polskiej|69]]
+| [[Częstochowa]]
+| senator X kadencji <small>(2019–2023)</small>
+| 49,44
+|-
+| [[Plik:Maciej Kopiec Kancelaria Senatu 2023.jpg|55px|Maciej Kopiec]]
+| {{sort|Kopiec|[[Maciej Kopiec]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 80 do Senatu Rzeczypospolitej Polskiej|80]]
+| [[Katowice]]
+| poseł na Sejm IX kadencji <small>(2019–2023)</small>
+| 51,50
+|-
+| [[Plik:Waldemar Kraska Kancelaria Senatu 2023.jpg|55px|Waldemar Kraska]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Kraska|[[Waldemar Kraska]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 48 do Senatu Rzeczypospolitej Polskiej|48]]
+| [[Siedlce]]
+| senator VI, VII, VIII, IX i X kadencji <small>(2005–2023)</small>
+| 51,57
+|- style="background:#E6E6E6;"
+| [[File:Krzysztof Kukucki Kancelaria Senatu 2023.jpg|55px|Krzysztof Kukucki]]
+| style="background:#{{partie polityczne - kolor|NL}};"|
+| {{sort|Kukucki|[[Krzysztof Kukucki]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 13 do Senatu Rzeczypospolitej Polskiej|13]]
+| [[Włocławek]]
+| wybrany po raz pierwszy
+| 46,05
+|-
+| [[Plik:Krzysztof Kwiatkowski Kancelaria Senatu 2023.jpg|55px|Krzysztof Kwiatkowski]]
+| style="background:#{{partie polityczne - kolor|}};"|
+| {{sort|Kwiatkowski|[[Krzysztof Kwiatkowski (polityk)|Krzysztof Kwiatkowski]]}}
+| KWW Krzysztof Kwiatkowski – Pakt Senacki
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 24 do Senatu Rzeczypospolitej Polskiej|24]]
+| [[Łódź]]
+| senator VII i X kadencji <small>(2007–2011, 2019–2023)</small><br />poseł na Sejm VII kadencji <small>(2011–2013)</small>
+| 59,90
+|-
+| [[Plik:Tomasz Lenz Sejm 2015.JPG|55px|Tomasz Lenz]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Lenz|[[Tomasz Lenz]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 11 do Senatu Rzeczypospolitej Polskiej|11]]
+| [[Toruń]]
+| poseł na Sejm V, VI, VII, VIII i IX kadencji <small>(2005–2023)</small>
+| 66,98
+|-
+| [[Plik:Jan Filip Libicki Kancelaria Senatu 2015.jpg|55px|Jan Libicki]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Libicki|[[Jan Filip Libicki|Jan Libicki]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 89 do Senatu Rzeczypospolitej Polskiej|89]]
+| [[Szamotuły]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small><br />poseł na Sejm V i VI kadencji <small>(2005–2007, 2008–2011)</small>
+| 58,34
+|-
+| [[Plik:Ryszard Majer Kancelaria Senatu 2023.jpg|55px|Ryszard Majer]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Majer|[[Ryszard Majer]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 68 do Senatu Rzeczypospolitej Polskiej|68]]
+| [[Myszków]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 36,07
+|-
+| [[Plik:Beata Małecka-Libera Kancelaria Senatu 2023.jpg|55px|Beata Małecka-Libera]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Małecka-Libera|[[Beata Małecka-Libera]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 76 do Senatu Rzeczypospolitej Polskiej|76]]
+| [[Dąbrowa Górnicza]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm V, VI, VII i VIII kadencji <small>(2005–2019)</small>
+| 52,37
+|-
+| [[Plik:Robert Mamątow Kancelaria Senatu 2019.jpg|55px|Robert Mamątow]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Mamątow|[[Robert Mamątow]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 46 do Senatu Rzeczypospolitej Polskiej|46]]
+| [[Ostrołęka]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small>
+| 43,09
+|-
+| [[Plik:Piotr Masłowski Kancelaria Senatu 2023.jpg|55px]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Masłowski|[[Piotr Masłowski (polityk)|Piotr Masłowski]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 73 do Senatu Rzeczypospolitej Polskiej|73]]
+| [[Rybnik]]
+| wybrany po raz pierwszy
+| 40,86
+|-
+| [[Plik:Ewa Matecka Kancelaria Senatu 2019.jpg|55px|Ewa Matecka]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Matecka|[[Ewa Matecka]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 95 do Senatu Rzeczypospolitej Polskiej|95]]
+| [[Ostrów Wielkopolski]]
+| senator X kadencji <small>(2019–2023)</small>
+| 44,43
+|-
+| [[Plik:Gabriela Morawska-Stanecka Kancelaria Senatu 2019.jpg|55px|Gabriela Morawska-Stanecka]]
+| {{sort|Morawska-Stanecka|[[Gabriela Morawska-Stanecka]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 74 do Senatu Rzeczypospolitej Polskiej|74]]
+| [[Ruda Śląska]]
+| senator X kadencji <small>(2019–2023)</small>
+| 47,75
+|-
+| [[Plik:Andrzej Pająk Kancelaria Senatu 2023.jpg|55px|Andrzej Pająk]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Pająk|[[Andrzej Pająk]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 30 do Senatu Rzeczypospolitej Polskiej|30]]
+| [[Oświęcim]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small><br />poseł na Sejm VI kadencji <small>(2011)</small>
+| 41,94
+|-
+| [[Plik:Waldemar Pawlak candidate 2010 D crop.jpg|55px|Waldemar Pawlak]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Pawlak|[[Waldemar Pawlak]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 38 do Senatu Rzeczypospolitej Polskiej|38]]
+| [[Płock]]
+| poseł na Sejm PRL X kadencji <small>(1989-1991)</small><br />poseł na Sejm I, II, III, IV, V, VI, VII kadencji <small>(1991–2015)</small>
+| 42,37
+|-
+| [[Plik:Janusz Pęcherz Kancelaria Senatu 2023.jpg|55px|Janusz Pęcherz]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Pęcherz|[[Janusz Pęcherz]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 96 do Senatu Rzeczypospolitej Polskiej|96]]
+| [[Kalisz]]
+| senator X kadencji <small>(2019–2023)</small>
+| 40,64
+|-
+| [[Plik:Marek Pęk Kancelaria Senatu 2023.jpg|55px|Marek Pęk]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Pęk|[[Marek Pęk]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 31 do Senatu Rzeczypospolitej Polskiej|31]]
+| [[Olkusz]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 43,93
+|-
+| [[Plik:Jolanta Piotrowska Kancelaria Senatu 2023.jpg|55px|Jolanta Piotrowska]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Piotrowska|[[Jolanta Piotrowska]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 87 do Senatu Rzeczypospolitej Polskiej|87]]
+| [[Ełk]]
+| wybrana po raz pierwszy
+| 43,25
+|-
+| [[Plik:Zdzisław Pupa Kancelaria Senatu 2023.jpg|55px|Zdzisław Pupa]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Pupa|[[Zdzisław Pupa]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 55 do Senatu Rzeczypospolitej Polskiej|55]]
+| [[Mielec]]
+| senator VII, VIII, IX i X kadencji <small>(2007–2011, 2013–2023)</small><br />poseł na Sejm III kadencji <small>(1997–2001)</small>
+| 57,66
+|-
+| [[Plik:Jarosław Rusiecki Kancelaria Senatu 2023.jpg|55px|Jarosław Rusiecki]]
+| {{sort|Rusiecki|[[Jarosław Rusiecki]]}}
+| [[Prawo i Sprawiedliwość]]
+|align=right| [[Okręg wyborczy nr 82 do Senatu Rzeczypospolitej Polskiej|82]]
+| [[Ostrowiec Świętokrzyski]]
+| senator VIII, IX i X kadencji <small>(2014–2023)</small><br />poseł na Sejm V, VI i VII kadencji <small>(2005–2014)</small>
+| 39,47
+|-
+| [[Plik:Sławomir Rybicki Kancelaria Senatu 2019.jpg|55px|Sławomir Rybicki]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Rybicki|[[Sławomir Rybicki]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 64 do Senatu Rzeczypospolitej Polskiej|64]]
+| [[Gdynia]]
+| senator IX i X kadencji <small>(2015–2023)</small><br />poseł na Sejm IV, V, VI i VII kadencji <small>(2001–2012)</small>
+| 73,16
+|- style="background:#E6E6E6;"
+| [[Plik:Mirosław Różański Kancelaria Senatu 2023.jpg|55px|Mirosław Różański]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Różański|[[Mirosław Różański]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 20 do Senatu Rzeczypospolitej Polskiej|20]]
+| [[Zielona Góra]]
+| wybrany po raz pierwszy
+| 59,15
+|-
+| [[Plik:Janina Sagatowska Kancelaria Senatu 2023.jpg|55px|Janina Sagatowska]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Sagatowska|[[Janina Sagatowska]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 54 do Senatu Rzeczypospolitej Polskiej|54]]
+| [[Stalowa Wola]]
+| senator IV, V, VIII, IX i X kadencji <small>(1997–2005, 2011–2023)</small>
+| 53,49
+|-
+| [[Plik:Grzegorz Schetyna Kancelaria Senatu 2023.jpg|55px|Grzegorz Schetyna]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Schetyna|[[Grzegorz Schetyna]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 7 do Senatu Rzeczypospolitej Polskiej|7]]
+| [[Wrocław]]
+| poseł na Sejm III, IV, V, VI, VII, VIII i IX kadencji <small>(1997–2023)</small>
+| 61,21
+|-
+| [[Plik:Joanna Sekuła Kancelaria Senatu 2019.jpg|55px|Joanna Sekuła]]
+| {{sort|Sekuła|[[Joanna Sekuła]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 77 do Senatu Rzeczypospolitej Polskiej|77]]
+| [[Sosnowiec]]
+| senator X kadencji <small>(2019–2023)</small>
+| 55,16
+|-
+| [[Plik:Małgorzata Sekuła-Szmajdzińska Kancelaria Senatu 2023.jpg|55px|Małgorzata Sekuła-Szmajdzińska]]
+| style="background:#{{partie polityczne - kolor|NL}};"|
+| {{sort|Sekuła-Szmajdzińska|[[Małgorzata Sekuła-Szmajdzińska]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 3 do Senatu Rzeczypospolitej Polskiej|3]]
+| [[Legnica]]
+| poseł VII i IX kadencji <small>(2011–2015, 2019–2023)</small>
+| 38,37
+|-
+| [[Plik:Michał Seweryński Kancelaria Senatu 2023.jpg|55px|Michał Seweryński]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Seweryński|[[Michał Seweryński]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 27 do Senatu Rzeczypospolitej Polskiej|27]]
+| [[Zduńska Wola]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small>
+| 45,47
+|-
+| [[Plik:Henryk Siedlaczek Kancelaria Senatu 2023.jpg|55px]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Siedlaczek|[[Henryk Siedlaczek]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 72 do Senatu Rzeczypospolitej Polskiej|72]]
+| [[Jastrzębie-Zdrój]]
+| poseł na Sejm V, VI i VII kadencji <small>(2005–2015)</small>
+| 39,30
+|-
+| [[Plik:Wojciech Skurkiewicz Kancelaria Senatu.jpg|55px|Wojciech Skurkiewicz]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Skurkiewicz|[[Wojciech Skurkiewicz]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 50 do Senatu Rzeczypospolitej Polskiej|50]]
+| [[Radom]]
+| senator VII, VIII i X kadencji <small>(2007–2015, 2019–2023)</small><br />poseł na Sejm VIII kadencji <small>(2015–2019)</small>
+| 47,96
+|-
+| [[Plik:Krzysztof Słoń Kancelaria Senatu 2023.jpg|55px|Krzysztof Słoń]]
+| {{sort|Słoń|[[Krzysztof Słoń]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 83 do Senatu Rzeczypospolitej Polskiej|83]]
+| [[Kielce]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small>
+| 40,04
+|-
+| [[Plik:Adam Szejnfeld Kancelaria Senatu 2023.jpg|55px|Adam Szejnfeld]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Szejnfeld|[[Adam Szejnfeld]]}}
+| |[[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 88 do Senatu Rzeczypospolitej Polskiej|88]]
+| [[Piła (miasto)|Piła]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm III, IV, V, VI i VII kadencji <small>(1997–2014)</small><br />poseł do Parlamentu Europejskiego VIII kadencji <small>(2014–2019)</small>
+| 49,81
+|-
+| [[Plik:Aleksander Szwed Kancelaria Senatu 2023.jpg|55px|Aleksander Szwed]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Szwed|[[Aleksander Szwed]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 5 do Senatu Rzeczypospolitej Polskiej|5]]
+| [[Dzierżoniów]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 35,77
+|-
+| [[Plik:Ryszard Świlski Kancelaria Senatu 2023.jpg|55px|Ryszard Świlski]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Świlski|[[Ryszard Świlski]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 66 do Senatu Rzeczypospolitej Polskiej|66]]
+| [[Tczew]]
+| senator X kadencji <small>(2019–2023)</small>
+| 56,91
+|-
+| [[Plik:Jacek Trela Kancelaria Senatu 2023.jpg|55px]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Trela|[[Jacek Trela]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 16 do Senatu Rzeczypospolitej Polskiej|16]]
+| [[Lublin]]
+| wybrany po raz pierwszy
+| 48,48
+|-
+| [[Plik:Wadim Tyszkiewicz Kancelaria Senatu 2023.jpg|55px|Wadim Tyszkiewicz]]
+| style="background:#{{partie polityczne - kolor|}};"|
+| {{sort|Tyszkiewicz|[[Wadim Tyszkiewicz]]}}
+| KWW Wadim Tyszkiewicz – Pakt Senacki
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 22 do Senatu Rzeczypospolitej Polskiej|22]]
+| [[Nowa Sól]]
+| senator X kadencji <small>(2019–2023)</small>
+| 67,95
+|-
+| [[Plik:Kazimierz Michał Ujazdowski Kancelaria Senatu 2019.jpg|55px|Kazimierz Ujazdowski]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Ujazdowski|[[Kazimierz Michał Ujazdowski|Kazimierz Ujazdowski]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 6 do Senatu Rzeczypospolitej Polskiej|6]]
+| [[Oleśnica]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm I, III, IV, V, VI i VII kadencji <small>(1991–1993, 1997–2014)</small><br />poseł do Parlamentu Europejskiego VIII kadencji <small>(2014–2019)</small>
+| 48,46
+|-
+| [[Plik:Jerzy Wcisła Kancelaria Senatu 2023.jpg|55px|Jerzy Wcisła]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Wcisła|[[Jerzy Wcisła]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 84 do Senatu Rzeczypospolitej Polskiej|84]]
+| [[Elbląg]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 57,04
+|-
+| [[Plik:Kazimierz Wiatr VII kadencja Kancelaria Senatu.JPG|55px|Kazimierz Wiatr]]
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Wiatr|[[Kazimierz Wiatr]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 35 do Senatu Rzeczypospolitej Polskiej|35]]
+| [[Tarnów]]
+| senator VI, VII, VIII, IX i X kadencji <small>(2005–2023)</small>
+| 47,12
+|-
+| [[Plik:Waldemar Witkowski Kancelaria Senatu 2023.jpg|55px|Waldemar Witkowski]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|NL}};"|
+| {{sort|Witkowski|[[Waldemar Witkowski]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 1 do Senatu Rzeczypospolitej Polskiej|1]]
+| [[Bolesławiec]]
+| wybrany po raz pierwszy
+| 39,36
+|-
+| [[Plik:Piotr Woźniak Kancelaria Senatu 2023.jpg|66x66px]]
+| {{sort|Woźniak|[[Piotr Woźniak (senator)|Piotr Woźniak]]}}
+| [[Nowa Lewica]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 52 do Senatu Rzeczypospolitej Polskiej|52]]
+| [[Opole]]
+| wybrany po raz pierwszy
+| 52,29
+|-
+| [[Plik:Jacek Włosowicz Kancelaria Senatu 2023.jpg|55px|Jacek Włosowicz]]
+| rowspan=2 style="background:#{{partie polityczne - kolor|PIS}};"|
+| {{sort|Włosowicz|[[Jacek Włosowicz]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 81 do Senatu Rzeczypospolitej Polskiej|81]]
+| [[Końskie]]
+| senator VI, IX i X kadencji <small>(2005–2007, 2015–2023)</small><br />poseł do Parlamentu Europejskiego VII kadencji <small>(2009–2014)</small>
+| 49,01
+|-
+| [[Plik:Alicja Zając Kancelaria Senatu 2023.jpg|55px|Alicja Zając]]
+| {{sort|Zając A.|[[Alicja Zając]]}}
+| [[Prawo i Sprawiedliwość]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 57 do Senatu Rzeczypospolitej Polskiej|57]]
+| [[Krosno]]
+| senator VII, VIII, IX i X kadencji <small>(2010–2023)</small>
+| 56,72
+|-
+| [[Plik:Józef Zając Kancelaria Senatu 2023.jpg|55px|Józef Zając]]
+| style="background:#{{partie polityczne - kolor|}};"|
+| {{sort|Zając J.|[[Józef Zając (matematyk)|Józef Zając]]}}
+| KWW Józefa Zająca
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 18 do Senatu Rzeczypospolitej Polskiej|18]]
+| [[Chełm]]
+| senator VIII, IX i X kadencji <small>(2011–2023)</small>
+| 44,09
+|-
+| [[Plik:Marcin Zawiła Kancelaria Senatu 2023.jpg|55px|Marcin Zawiła]]
+| rowspan=3 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Zawiła|[[Marcin Zawiła]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 2 do Senatu Rzeczypospolitej Polskiej|2]]
+| [[Jelenia Góra]]
+| poseł na Sejm II, III i VI kadencji <small>(1993–2001, 2007−2010)</small>
+| 42,03
+|-
+| [[Plik:Barbara Zdrojewska Kancelaria Senatu 2019.jpg|55px|Barbara Zdrojewska]]
+| {{sort|Zdrojewska|[[Barbara Zdrojewska]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 8 do Senatu Rzeczypospolitej Polskiej|8]]
+| [[Wrocław]]
+| senator IX i X kadencji <small>(2015–2023)</small>
+| 62,09
+|-
+| [[Plik:Wojciech Ziemniak Kancelaria Senatu 2023.jpg|55px|Wojciech Ziemniak]]
+|{{sort|Ziemniak|[[Wojciech Ziemniak]]}}
+| [[Koalicja Obywatelska|KKW Koalicja Obywatelska PO .N iPL Zieloni]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 94 do Senatu Rzeczypospolitej Polskiej|94]]
+| [[Leszno]]
+| senator X kadencji <small>(2019–2023)</small><br />poseł na Sejm V, VI, VII i VIII kadencji <small>(2005–2019)</small>
+| 49,72
+|-
+| [[Plik:Maciej Żywno Kancelaria Senatu 2023.jpg|55px|Maciej Żywno]]
+| style="background:#{{partie polityczne - kolor|TD}};"|
+| {{sort|Żywno|[[Maciej Żywno]]}}
+| [[Trzecia Droga (Polska)|KKW Trzecia Droga Polska 2050 Szymona Hołowni – Polskie Stronnictwo Ludowe]]
+| align="right" style="padding-right:10px"|[[Okręg wyborczy nr 60 do Senatu Rzeczypospolitej Polskiej|60]]
+| [[Białystok]]
+| wybrany po raz pierwszy
+| 49,58
+|-
+|}
+
+=== Senatorowie wybrani w wyborach uzupełniających ===
+{{Osobny artykuł|Wybory uzupełniające do Senatu Rzeczypospolitej Polskiej XI kadencji}}
+{| class="wikitable sortable" width="100%"
+|-
+! class="unsortable"| Zdjęcie
+! class="unsortable" style="border-right-style: hidden;"|
+! Senator
+! Komitet wyborczy
+! Data wyboru
+! Okręg
+! Największe miasto
+! class="unsortable"| Dotychczasowy staż parlamentarny
+! % głosów
+|- 
+| width=55px |[[Plik:Stanisław Pawlak.png|55x55px]]
+| style="background:#{{partie polityczne - kolor|NL}};"|
+| {{sort|Pawlak|[[Stanisław Pawlak (polityk)|Stanisław Pawlak]]}}<ref group="uwaga">Ślubował 24 lipca 2024.</ref>
+| {{partie polityczne - nazwa|NL}}
+| align="right" style="padding-right:10px"| [[Wybory uzupełniające do Senatu Rzeczypospolitej Polskiej XI kadencji#Wybory uzupełniające 21 lipca 2024 (okręg nr 13)|21 lipca 2024]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 13 do Senatu Rzeczypospolitej Polskiej|13]]
+| [[Włocławek]]
+| poseł na Sejm II i III kadencji <small>(1993–2001)</small>
+| 46,30
+|-
+| width=55px |[[Plik:Monika Piątkowska (16315747540) (cropped).jpg|55px]]
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+| {{sort|Piątkowska|[[Monika Piątkowska (polityk)|Monika Piątkowska]]}}<ref group="uwaga">Ślubowała 26 marca 2025.</ref>
+| {{partie polityczne - nazwa|KO2019}}
+| align="right" style="padding-right:10px"| [[Wybory uzupełniające do Senatu Rzeczypospolitej Polskiej XI kadencji#Wybory uzupełniające 16 marca 2025 (okręg nr 33)|16 marca 2025]]
+| align="right" style="padding-right:10px"| [[Okręg wyborczy nr 33 do Senatu Rzeczypospolitej Polskiej|33]]
+| [[Kraków]]
+| wybrana po raz pierwszy
+| 50,14
+|}
+
+=== Senatorowie, których mandat wygasł w trakcie kadencji (3 senatorów) ===
+{| class="wikitable sortable"
+|-
+! colspan="2" |Senator
+!Data wygaśnięcia mandatu
+!Przyczyna
+! colspan="2" |Następca
+|-
+| style="background:#{{partie polityczne - kolor|NL}};"|
+| [[Krzysztof Kukucki]]
+|align=right| {{Dts|22|04|2024}}<ref>Postanowienie Marszałka Senatu Rzeczypospolitej Polskiej z dnia 24 kwietnia 2024 r. w sprawie stwierdzenia wygaśnięcia mandatu senatora Krzysztofa Aleksandra Kukuckiego ({{Monitor Polski|2024|341}}).</ref>
+|wybór na Prezydenta Miasta [[Włocławek|Włocławka]]<ref>Obwieszczenie Komisarza Wyborczego w Bydgoszczy I z dnia 22 kwietnia 2024 r. uzupełniające obwieszczenie z dnia 9 kwietnia 2024 r. o wynikach wyborów wójtów, burmistrzów i prezydentów miast na obszarze województwa kujawsko-pomorskiego ([https://edzienniki.bydgoszcz.uw.gov.pl/WDU_C/2024/2764/akt.pdf Dz. U. Województwa Kujawsko-Pomorskiego z 2024 r. poz. 2764]).</ref>
+| style="background: #{{partie polityczne - kolor|NL}};"|
+| {{sort|Pawlak|[[Stanisław Pawlak (polityk)|Stanisław Pawlak]]}}
+|-
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+|{{sort|Klich|[[Bogdan Klich]]}}
+|align=right| {{Dts|17|11|2024}}<ref name=":1">Postanowienie Marszałka Senatu Rzeczypospolitej Polskiej z dnia 18 listopada 2024 r. w sprawie stwierdzenia wygaśnięcia mandatu senatora Bogdana Klicha ({{Monitor Polski|2024|1014}}).</ref>
+|zrzeczenie się mandatu<ref>{{Cytuj |tytuł = Bogdan Klich złożył mandat. Przez 23 lata pracował w parlamencie |data dostępu = 2024-11-19 |opublikowany = wydarzenia.interia.pl |url = https://wydarzenia.interia.pl/kraj/news-bogdan-klich-rezygnuje-z-mandatu-senatora-chcialbym-wam-podz,nId,7857098 |język = pl}}</ref><ref group="uwaga">[[Bogdan Klich]] zrzekł się mandatu w związku z powołaniem na ministra pełnomocnego – [[chargé d’affaires]] Ambasady RP w Waszyngtonie.</ref>
+| style="background:#{{partie polityczne - kolor|KO2019}};"|
+|{{sort|Piątkowska|[[Monika Piątkowska (prawniczka)|Monika Piątkowska]]}}
+|-
+| style="background:#96D544;"|
+| [[Mirosław Różański]]
+|align=right| {{Dts|24|08|2026}}
+|śmierć<ref>https://wiadomosci.onet.pl/kraj/nie-zyje-general-miroslaw-rozanski-mial-63-lata/sgtbct8</ref>
+| style="background:#{{partie polityczne - kolor|}};"|
+| ''wakat''
+|}
+
+== Przynależność klubowa ==
+=== Stan aktualny ===
+Senatorowie X kadencji zrzeszeni są w następujących klubach i kołach<ref name=":0">{{Cytuj |tytuł = Senatorowie / Senatorowie / Kluby i koła / X kadencja Senatu |data dostępu = 2020-01-06 |opublikowany = www.senat.gov.pl |url = https://www.senat.gov.pl/sklad/kluby-i-kola/}}</ref>:
+* Klub Parlamentarny [[Koalicja Obywatelska]] – [[Platforma Obywatelska]], [[Nowoczesna]], [[Inicjatywa Polska]], [[Zieloni (Polska)|Zieloni]] – 42 senatorów,
+* Klub Parlamentarny [[Prawo i Sprawiedliwość]] – 31 senatorów,
+* Klub Senacki [[Trzecia Droga (Polska)|Trzecia Droga]] – 8 senatorów,
+* Koalicyjny Klub Parlamentarny [[Lewica (2019)|Lewicy]] ([[Nowa Lewica]], [[Polska Partia Socjalistyczna|PPS]], [[Unia Pracy]]) – 8 senatorów,
+* Koło Senackie [[Klub Senacki Nowa Polska – Centrum|Nowa Polska – Centrum]]  – 6 senatorów.
+* Klub Parlamentarny [[Rozwój Plus]] – 2 senatorów.
+Ponadto 2 senatorów jest niezrzeszonych. W trakcie kadencji istniało także Koło Senackie [[Nowa Polska (partia)|Nowa Polska]]<ref group="uwaga">Koło istniało od 13 listopada 2023 (dnia pierwszego posiedzenia) do 17 marca 2026, a do 27 stycznia 2026 nosiło nazwę [[Koło Senackie Niezależni i Samorządni|Niezależni i Samorządni]].</ref>. Od 18 lutego do 17 marca 2026 swoich przedstawicieli w Senacie miał Klub Parlamentarny [[Centrum (klub parlamentarny)|Centrum]].
+{| class="wikitable"
+! colspan="4" | Klub Parlamentarny Koalicja Obywatelska – Platforma Obywatelska, Nowoczesna, Inicjatywa Polska, Zieloni
+|-
+| colspan="4" style="background:#{{partie polityczne - kolor|KO2019}};" |
+|-
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Halina Bieda]]
+* [[Adam Bodnar]]
+* [[Marek Borowski]]
+* [[Bogdan Borusewicz]]
+* [[Ryszard Brejza]]
+* [[Leszek Czarnobaj]]
+* [[Artur Dunin]]
+* [[Waldy Dzikowski]]
+* [[Jerzy Fedorowicz]]
+* [[Stanisław Gawłowski]]
+* [[Beniamin Godyla]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Agnieszka Gorgoń-Komor]]
+* [[Tomasz Grodzki]]
+* [[Janusz Gromek]]
+* [[Rafał Grupiński]]
+* [[Jolanta Hibner]]
+* [[Tadeusz Jarmuziewicz]]
+* [[Ewa Kaliszuk]]
+* [[Małgorzata Kidawa-Błońska]]
+* [[Kazimierz Kleina]]
+* [[Andrzej Kobiak]]
+* [[Magdalena Kochan]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Agnieszka Kołacz-Leszczyńska]]
+* [[Władysław Komarnicki]]
+* [[Krzysztof Kwiatkowski (polityk)|Krzysztof Kwiatkowski]]<ref name="pps" group="uwaga">Od 22 lutego 2024; od 13 listopada 2023 do 21 lutego 2024 należał do Koła Senackiego Niezależni i Samorządni.</ref><ref name="kww" group="uwaga" />
+* [[Beata Małecka-Libera]]
+* [[Ewa Matecka]]
+* [[Gabriela Morawska-Stanecka]]
+* [[Janusz Pęcherz]]
+* [[Monika Piątkowska (polityk)|Monika Piątkowska]]<ref group="uwaga">Od 26 marca 2025 (dzień ślubowania).</ref>
+* [[Jolanta Piotrowska]]
+* [[Sławomir Rybicki]]
+| style="vertical-align:top;" |
+* [[Grzegorz Schetyna]]
+* [[Joanna Sekuła]]
+* [[Henryk Siedlaczek]]
+* [[Adam Szejnfeld]]
+* [[Ryszard Świlski]]
+* [[Jerzy Wcisła]]
+* [[Piotr Woźniak (senator)|Piotr Woźniak]]<ref group="uwaga">Od 24 września 2025; od 13 listopada 2023 do 25 kwietnia 2025 należał do Koalicyjnego Klubu Parlamentarnego Lewicy, a potem od 25 kwietnia do 23 września 2025 był senatorem niezrzeszonym.</ref><ref group="uwaga" name="wyborylewica">Wybrany/a z ramienia [[Nowa Lewica|Nowej Lewicy]].</ref>
+* [[Marcin Zawiła]]
+* [[Barbara Zdrojewska]]
+* [[Wojciech Ziemniak]]
+|-
+! colspan="4" | Klub Parlamentarny Prawo i Sprawiedliwość
+|-
+| colspan="4" style="background: #{{partie polityczne - kolor|PIS}};" |
+|-
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Rafał Ambrozik]]
+* [[Krzysztof Bieńkowski (polityk)|Krzysztof Bieńkowski]]
+* [[Grzegorz Bierecki]]
+* [[Przemysław Błaszczyk]]
+* [[Anna Bogucka]]
+* [[Jerzy Chróścikowski]]
+* [[Grzegorz Czelej]]
+* [[Wiesław Dobkowski]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Wiktor Durlak]]
+* [[Leszek Galemba]]
+* [[Stanisław Gogacz]]
+* [[Mieczysław Golba]]<ref group="uwaga">Od 29 listopada 2023 (dzień ślubowania).</ref>
+* [[Maciej Górski (polityk)|Maciej Górski]]
+* [[Jan Hamerski (polityk)|Jan Hamerski]]
+* [[Józef Jodłowski]]
+* [[Andrzej Kalata]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Stanisław Karczewski]]
+* [[Marek Komorowski]]
+* [[Waldemar Kraska]]
+* [[Robert Mamątow]]
+* [[Andrzej Pająk]]
+* [[Marek Pęk]]
+* [[Zdzisław Pupa]]
+* [[Jarosław Rusiecki]]
+| style="vertical-align:top;" |
+* [[Janina Sagatowska]]
+* [[Michał Seweryński]]
+* [[Wojciech Skurkiewicz]]
+* [[Krzysztof Słoń]]
+* [[Aleksander Szwed]]
+* [[Kazimierz Wiatr]]
+* [[Alicja Zając]]
+|-
+! colspan="4" | Klub Senacki Trzecia Droga
+|-
+| colspan="4" style="background:#{{partie polityczne - kolor|TD}};" |
+|-
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Ryszard Bober]]
+* [[Gustaw Marek Brzezin|Gustaw Brzezin]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Michał Kamiński (polityk)|Michał Kamiński]]
+* [[Jan Filip Libicki|Jan Libicki]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Waldemar Pawlak]]
+* [[Kazimierz Michał Ujazdowski|Kazimierz Ujazdowski]]
+| style="vertical-align:top;" |
+* [[Józef Zając (matematyk)|Józef Zając]]<ref group="uwaga" name="kww">Wybrany z ramienia własnego komitetu wyborczego wyborców.</ref>
+* [[Maciej Żywno]]
+|-
+! colspan="4" | Koalicyjny Klub Parlamentarny Lewicy (Nowa Lewica, PPS, Unia Pracy)
+|-
+| colspan="4" style="background:#{{partie polityczne - kolor|NL}};" |
+|-
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Magdalena Biejat]]
+* [[Anna Górska (ur. 1980)|Anna Górska]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Marcin Karpiński]]
+* [[Wojciech Konieczny]]
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Maciej Kopiec]]
+* [[Stanisław Pawlak (polityk)|Stanisław Pawlak]]<ref group="uwaga">Od 24 lipca 2024 (dzień ślubowania).</ref>
+| style="vertical-align:top;" |
+* [[Małgorzata Sekuła-Szmajdzińska]]
+* [[Waldemar Witkowski]]
+|-
+! colspan="4" | Koło Senackie Nowa Polska – Centrum 
+|-
+| colspan="4" style="background:#16718b" |
+|-
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Andrzej Dziuba (samorządowiec)|Andrzej Dziuba]]<ref name=":2" group="uwaga">Od 18 marca 2026; od 13 listopada 2023 do 27 stycznia 2026 należał do Koła Senackiego Niezależni i Samorządni, a od 28 stycznia do 17 marca 2026 do Koła Senackiego Nowa Polska.</ref><ref group="uwaga" name="kww" />
+* [[Grzegorz Fedorowicz]]<ref name=":0" group="uwaga">Od 18 marca 2026; od 13 listopada 2023 do 17 lutego 2026 należał do Klubu Senackiego Trzecia Droga, a od 18 lutego do 17 marca 2026 do Klubu Parlamentarnego Centrum.</ref><ref name=":1" group="uwaga">Wybrany/a z ramienia [[Trzecia Droga (Polska)|Trzeciej Drogi]].</ref>
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Zygmunt Frankiewicz]]<ref name=":2" group="uwaga" /><ref group="uwaga" name="kww" />
+* [[Piotr Masłowski (polityk)|Piotr Masłowski]]<ref name=":0" group="uwaga" /><ref name=":1" group="uwaga" />
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Jacek Trela]]<ref name=":0" group="uwaga" /><ref name=":1" group="uwaga" />
+| style="vertical-align: top;" |
+* [[Wadim Tyszkiewicz]]<ref name=":2" group="uwaga" /><ref group="uwaga" name="kww" />
+|-
+! colspan="4" |Klub Parlamentarny Rozwój Plus
+|-
+| colspan="4" style="background:#a80000" |
+|-
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Włodzimierz Bernacki]]<ref name=":4" group="uwaga">Od 5 sierpnia 2026; od 13 listopada 2023 do 4 sierpnia 2026 należał do Klubu Parlamentarnego Prawo i Sprawiedliwość.</ref><ref group="uwaga" name="pis">Wybrany z ramienia [[Prawo i Sprawiedliwość|Prawa i Sprawiedliwości]].</ref>
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Ryszard Majer]]<ref group="uwaga">Od 11 sierpnia 2026; od 13 listopada 2023 do 10 sierpnia 2026 należał do Klubu Parlamentarnego Prawo i Sprawiedliwość.</ref><ref group="uwaga" name="pis" />
+|style="border-right-style:hidden; vertical-align:top"|
+|style="vertical-align:top;"|
+|-
+! colspan="4" | Senatorowie niezrzeszeni 
+|-
+| colspan="4" style="background:#{{partie polityczne - kolor|}};" |
+|-
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Tomasz Lenz]]<ref group="uwaga">Od 12 maja 2026; od 13 listopada 2023 do 11 maja 2026 należał do Klubu Parlamentarnego Koalicja Obywatelska – Platforma Obywatelska, Nowoczesna, Inicjatywa Polska, Zieloni.</ref><ref group="uwaga">Wybrany/a z ramienia [[Koalicja Obywatelska|Koalicji Obywatelskiej]].</ref>
+| style="border-right-style:hidden; vertical-align:top" |
+* [[Jacek Włosowicz]]<ref group="uwaga">Od 25 marca 2026; od 13 listopada 2023 do 24 marca 2026 należał do Klubu Parlamentarnego Prawo i Sprawiedliwość.</ref><ref name="pis" group="uwaga" />
+|style="border-right-style:hidden; vertical-align:top"|
+|style="vertical-align:top;"|
+|-
+|}
+
+=== Zmiany liczebności klubów i kół w czasie kadencji ===
+{| class="wikitable" style="text-align:right; font-size:90%"
+|-
+!rowspan=3|
+!colspan="8"| Klub lub koło
+!rowspan=2| {{tooltip|Niez.|Niezrzeszeni}}
+!rowspan=3| Razem
+!rowspan=3| Wakaty
+|-
+! {{tooltip|[[Koalicja Obywatelska|KO]]|Koalicja Obywatelska}}
+! {{tooltip|[[Prawo i Sprawiedliwość|PiS]]|Prawo i Sprawiedliwość}}
+! {{tooltip|[[Trzecia Droga (Polska)|TD]]|Trzecia Droga}}
+! {{tooltip|[[Lewica (2019)|Lewica]]|Lewica}}
+! {{tooltip|[[Nowa Polska (partia)|NOWA]]|Nowa Polska}}<ref group="uwaga">Do 27 stycznia 2026 koło nosiło nazwę [[Koło Senackie Niezależni i Samorządni|Niezależni i Samorządni]].</ref>
+! {{tooltip|[[Centrum (klub parlamentarny)|Centrum]]|Centrum}}
+! {{tooltip|[[Klub Senacki Nowa Polska – Centrum|NP-C]]|Nowa Polska – Centrum}}
+! {{tooltip|[[Rozwój Plus|R+]]|Rozwój Plus}}
+|-
+|style="background: #{{partie polityczne - kolor|PO}};"|
+|style="background: #{{partie polityczne - kolor|PIS}};"|
+|style="background: #{{partie polityczne - kolor|TD}};"|
+|style="background: #{{partie polityczne - kolor|LEWICA}};"|
+|style="background: #003295;"|
+|style="background: #{{partie polityczne - kolor|CENTPAR}};"|
+|style="background: #16718b;"|
+|style="background: #{{partie polityczne - kolor|#a80000"}};"|
+|style="background: #{{partie polityczne - kolor|}};" |
+|-
+!style="font-size:85%"| 13-11-2023
+| 41
+| 34
+| 12
+| 9
+| 4
+|–
+|–
+|–
+| –
+| '''100'''
+|–
+|-
+!style="font-size:85%"| 22-02-2024
+| {{zmiana|wzrost}} 42
+| 34
+| 12
+| 9
+| {{zmiana|spadek}} 3
+|–
+|–
+|–
+| –
+| '''100'''
+|–
+|-
+!<small>22-04-2024</small>
+|42
+|34
+|12
+|{{Zmiana|spadek}}8
+|3
+|–
+|–
+|–
+| –
+|'''99'''
+|1
+|-
+!<small>24-07-2024</small>
+|42
+|34
+|12
+|{{Zmiana|wzrost}}9
+|3
+|–
+|–
+|–
+| –
+|'''100'''
+|–
+|-
+!<small>17-11-2024</small>
+|{{zmiana|spadek}}41
+|34
+|12
+|9
+|3
+|–
+|–
+|–
+| –
+|'''99'''
+|1
+|-
+!<small>26-03-2025</small>
+|{{zmiana|wzrost}}42
+|34
+|12
+|9
+|3
+|–
+|–
+|–
+| –
+|'''100'''
+|–
+|-
+!<small>25-04-2025</small>
+|42
+|34
+|12
+|{{zmiana|spadek}}8
+|3
+|–
+|–
+|–
+|{{zmiana|wzrost}}1
+|'''100'''
+|–
+|-
+!<small>24-09-2025</small>
+|{{zmiana|wzrost}}43
+|34
+|12
+|8
+|3
+|–
+|–
+|–
+|{{zmiana|spadek}}–
+|'''100'''
+|–
+|-
+!<small>18-02-2026</small>
+|43
+|34
+|{{zmiana|spadek}}9
+|8
+|3
+|{{zmiana|wzrost}}3
+|–
+|–
+|–
+|'''100'''
+|–
+|-
+!<small>18-03-2026</small>
+|43
+|34
+|{{zmiana|spadek}}8
+|8
+|{{zmiana|spadek}}–
+|{{zmiana|spadek}}–
+|{{zmiana|wzrost}}7
+|–
+|–
+|'''100'''
+|–
+|-
+!<small>24-03-2026</small>
+|43
+|{{zmiana|spadek}}33
+|8
+|8
+|–
+|–
+|7
+|–
+|{{zmiana|wzrost}}1
+|'''100'''
+|–
+|-
+!<small>11-05-2026</small>
+|{{zmiana|spadek}}42
+|33
+|8
+|8
+|–
+|–
+|7
+|–
+|{{zmiana|wzrost}}2
+|'''100'''
+|–
+|-
+!<small>05-08-2026</small>
+|42
+|{{zmiana|spadek}}32
+|8
+|8
+|–
+|–
+|7
+||{{zmiana|wzrost}}1
+||2
+|'''100'''
+|–
+|-
+!<small>11-08-2026</small>
+|42
+|{{zmiana|spadek}}31
+|8
+|8
+|–
+|–
+|7
+||{{zmiana|wzrost}}2
+|2
+|'''100'''
+|–
+|-
+!<small>24-08-2026</small>
+|42
+|31
+|8
+|8
+|–
+|–
+|{{zmiana|spadek}}6
+|2
+|2
+|'''99'''
+|1
+|}
+
+== Przewodniczący komisji ==
+{| class="wikitable"
+|-
+! Komisja
+! Data wyboru
+!colspan=2| Przewodniczący komisji
+|-
+| [[Komisja Budżetu i Finansów Publicznych]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|KO2019}};"|
+| [[Kazimierz Kleina]] (KO)
+|-
+| [[Komisja Edukacji (Senat)|Komisja Edukacji]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|NL}};"|
+| [[Waldemar Witkowski]] (NL)
+|-
+|[[Komisja Gospodarki Narodowej i Innowacyjności]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|TD}};"|
+| [[Waldemar Pawlak]] (TD)
+|-
+| [[Komisja Infrastruktury (Senat)|Komisja Infrastruktury]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|PIS}};"|
+| [[Jan Hamerski (polityk)|Jan Hamerski]] (PiS)
+|-
+| [[Komisja Klimatu i Środowiska (Senat)|Komisja Klimatu i Środowiska]]
+|align=right| 29 listopada 2023
+|rowspan=2 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| [[Stanisław Gawłowski]] (KO)
+|-
+| [[Komisja Kultury i Środków Przekazu (Senat)|Komisja Kultury i Środków Przekazu]]
+|align=right| 29 listopada 2023
+| [[Jerzy Fedorowicz]] (KO)
+|-
+| [[Komisja Nauki (Senat)|Komisja Nauki]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|PIS}};"|
+| [[Kazimierz Wiatr]] (PiS)
+|-
+| rowspan=2| [[Komisja Obrony Narodowej (Senat)|Komisja Obrony Narodowej]]
+|align=right| 29 listopada 2023
+|style="background:#003295;"|
+| [[Mirosław Różański]] (NP-C)
+|-
+|align=right| 24 sierpnia 2026
+|style="border-right-style:hidden"|
+| wakat
+|-
+|-
+| [[Komisja Petycji (Senat)|Komisja Petycji]]
+|align=right| 29 listopada 2023
+| style="background:#{{partie polityczne - kolor|PIS}};"|
+| [[Robert Mamątow]] (PiS)
+|-
+| [[Komisja Praw Człowieka i Praworządności]]
+|align=right| 29 listopada 2023
+| style="background:#{{partie polityczne - kolor|NL}};"|
+| [[Marcin Karpiński]] (NL)
+|-
+| [[Komisja Regulaminowa, Etyki i Spraw Senatorskich]]
+|align=right| 13 listopada 2023
+|style="background:#{{partie polityczne - kolor|KO2019}};"|
+| [[Sławomir Rybicki]] (KO)
+|-
+| [[Komisja Rodziny, Polityki Senioralnej i Społecznej]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|PIS}};"|
+| [[Janina Sagatowska]] (PiS)
+|-
+| [[Komisja Rolnictwa i Rozwoju Wsi (Senat)|Komisja Rolnictwa i Rozwoju Wsi]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|TD}};"|
+| [[Ryszard Bober]] (TD)
+|-
+| [[Komisja Samorządu Terytorialnego i Administracji Państwowej]]
+|align=right| 29 listopada 2023
+|style="background:#003295;"|
+| [[Zygmunt Frankiewicz]] (NP-C)
+|-
+| [[Komisja Sportu (Senat)|Komisja Sportu]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|PIS}};"|
+| [[Wiktor Durlak]] (PiS)
+|-
+|rowspan=3| [[Komisja Spraw Emigracji i Łączności z Polakami za Granicą]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|KO2019}};"|
+|[[Tomasz Grodzki]] (KO)
+|-
+|align=right| 22 grudnia 2023
+|style="border-right-style:hidden"|
+| wakat
+|-
+|align=right| 22 grudnia 2023
+|style="background:#{{partie polityczne - kolor|KO2019}};"|
+| [[Bogdan Borusewicz]] (KO)
+|-
+| rowspan=3| [[Komisja Spraw Unii Europejskiej]]
+|align=right| 29 listopada 2023
+|style="background:#{{partie polityczne - kolor|KO2019}};"|
+| [[Bogdan Klich]] (KO)
+|-
+|align=right| 17 listopada 2024
+|style="border-right-style:hidden"|
+| wakat
+|-
+|align=right| 3 grudnia 2024
+|style="background:#{{partie polityczne - kolor|KO2019}};"|
+| [[Tomasz Grodzki]] (KO)
+|-
+| [[Komisja Spraw Zagranicznych (Senat)|Komisja Spraw Zagranicznych]]
+|align=right| 29 listopada 2023
+|rowspan=3 style="background:#{{partie polityczne - kolor|KO2019}};"|
+| [[Grzegorz Schetyna]] (KO)
+|-
+| [[Komisja Ustawodawcza (Senat)|Komisja Ustawodawcza]]
+|align=right| 29 listopada 2023
+| [[Krzysztof Kwiatkowski (polityk)|Krzysztof Kwiatkowski]] (KO)
+|-
+| [[Komisja Zdrowia (Senat)|Komisja Zdrowia]]
+|align=right| 29 listopada 2023
+| [[Beata Małecka-Libera]] (KO)
+|}
+
+6 senatorów pełniło tę samą funkcję w Senacie X kadencji: [[Zygmunt Frankiewicz]], [[Jan Hamerski (polityk)|Jan Hamerski]], [[Kazimierz Kleina]], [[Krzysztof Kwiatkowski (polityk)|Krzysztof Kwiatkowski]], [[Beata Małecka-Libera]] oraz [[Sławomir Rybicki]].
+
+== Zmiany w składzie ==
+* '''13 listopada 2023'''
+** [[Małgorzata Kidawa-Błońska]] została wybrana na [[Marszałek Senatu Rzeczypospolitej Polskiej|marszałka Senatu]].
+** [[Magdalena Biejat]] została wybrana na [[Wicemarszałek Senatu|wicemarszałka Senatu]].
+** [[Rafał Grupiński]] został wybrany na [[Wicemarszałek Senatu|wicemarszałka Senatu]].
+** [[Michał Kamiński (polityk)|Michał Kamiński]] został wybrany na [[Wicemarszałek Senatu|wicemarszałka Senatu]].
+** [[Maciej Żywno]] został wybrany na [[Wicemarszałek Senatu|wicemarszałka Senatu]].
+* '''22 lutego 2024'''
+** [[Krzysztof Kwiatkowski (polityk)|Krzysztof Kwiatkowski]] wystąpił z KS [[Koło Senackie Niezależni i Samorządni|Niezależni i Samorządni]] i wstąpił do KP [[Koalicja Obywatelska]]<ref>{{Cytuj |tytuł = Senator Krzysztof Kwiatkowski przystąpił do Koalicji Obywatelskiej |data = 2024-02-22 |data dostępu = 2024-04-28 |opublikowany = www.gazetaprawna.pl |url = https://www.gazetaprawna.pl/wiadomosci/kraj/artykuly/9439624,senator-krzysztof-kwiatkowski-przystapil-do-koalicji-obywatelskiej.html |język = pl}}</ref>.
+*'''22 kwietnia 2024'''
+**wygasł mandat senatora [[Krzysztof Kukucki|Krzysztofa Kukuckiego]], w związku z wyborem na urząd [[Prezydenci Włocławka|Prezydenta Miasta Włocławka]]<ref name=":0" />.
+*'''24 lipca 2024'''
+**[[Stanisław Pawlak (polityk)|Stanisław Pawlak]] złożył ślubowanie senatorskie i objął mandat sprawowany uprzednio przez Krzysztofa Kukuckiego<ref>{{Cytuj |tytuł = Senat Rzeczypospolitej Polskiej / Aktualności / 17. posiedzenie Senatu – pierwszy dzień |data dostępu = 2024-07-24 |opublikowany = www.senat.gov.pl |url = https://www.senat.gov.pl/aktualnoscilista/art,16344,17-posiedzenie-senatu-pierwszy-dzien.html}}</ref>.
+*'''17 listopada 2024'''
+**[[Bogdan Klich]] zrzekł się mandatu senatorskiego<ref name=":1" />.
+*'''26 marca 2025'''
+**[[Monika Piątkowska (polityk)|Monika Piątkowska]] złożyła ślubowanie senatorskie i objęła mandat sprawowany uprzednio przez Bogdana Klicha.
+*'''25 kwietnia 2025'''
+**[[Piotr Woźniak (senator)|Piotr Woźniak]] został wykluczony z KKP Lewicy i został senatorem niezrzeszonym.
+*'''24 września 2025'''
+**[[Piotr Woźniak (senator)|Piotr Woźniak]] wstąpił do KP Koalicja Obywatelska.
+
+* '''28 stycznia 2026'''
+**KS [[Koło Senackie Niezależni i Samorządni|Niezależni i Samorządni]] zmieniło nazwę na KS [[Nowa Polska (partia)|Nowa Polska]].
+
+*'''18 lutego 2026'''
+**[[Grzegorz Fedorowicz]], [[Piotr Masłowski (polityk)|Piotr Masłowski]] i [[Jacek Trela]] wystąpili z KS [[Trzecia Droga (Polska)|Trzecia Droga]] i wstąpili do KP [[Centrum (klub parlamentarny)|Centrum]].
+
+* '''18 marca 2026'''
+**[[Grzegorz Fedorowicz]], [[Piotr Masłowski (polityk)|Piotr Masłowski]] i [[Jacek Trela]] wystąpili z KP [[Centrum (klub parlamentarny)|Centrum]].
+**[[Mirosław Różański]] wystąpił z KS [[Trzecia Droga (Polska)|Trzecia Droga]].
+**KS [[Nowa Polska (partia)|Nowa Polska]] zostało przekształcone w KS [[Klub Senacki Nowa Polska – Centrum|Nowa Polska – Centrum]]. W jego skład weszli [[Andrzej Dziuba (samorządowiec)|Andrzej Dziuba]], [[Grzegorz Fedorowicz]], [[Zygmunt Frankiewicz]], [[Piotr Masłowski (polityk)|Piotr Masłowski]], [[Mirosław Różański]], [[Jacek Trela]] i [[Wadim Tyszkiewicz]].
+
+* '''24 marca 2026'''
+**[[Jacek Włosowicz]] został wykluczony z KP [[Prawo i Sprawiedliwość]] i został senatorem niezrzeszonym.
+
+* '''11 maja 2026'''
+** [[Tomasz Lenz]] został wykluczony z KP [[Koalicja Obywatelska]] i został senatorem niezrzeszonym.
+* '''5 sierpnia 2026'''
+** [[Włodzimierz Bernacki]] wystąpił z KP [[Prawo i Sprawiedliwość]] i wstąpił do [[Rozwój Plus|KP R+]].
+* '''11 sierpnia 2026'''
+** [[Ryszard Majer]] wystąpił z KP [[Prawo i Sprawiedliwość]] i wstąpił do [[Rozwój Plus|KP R+]].
+* '''24 sierpnia 2026'''
+** Zmarł senator [[Mirosław Różański]], w związku z czym KS [[Klub Senacki Nowa Polska – Centrum|Nowa Polska – Centrum]] utracił wymaganą do funkcjonowania liczbę senatorów i stał się kołem senackim.
+
+== Dodatkowe informacje o senatorach wybranych 15 października 2023 ==
+=== Płeć ===
+* kobiety – 19
+* mężczyźni – 81
+
+=== Wiek ===
+* poniżej 40 lat – 1
+* od 40 do 49 lat – 15
+* od 50 do 59 lat – 26
+* od 60 do 69 lat – 43
+* od 70 do 79 lat – 14
+* 80 lat lub więcej – 1
+* najstarszy senator – [[Michał Seweryński]] (84 lata; ur. 1 lipca 1939)
+* najmłodszy senator – [[Maciej Kopiec]] (33 lata; ur. 12 lipca 1990)
+
+=== Staż parlamentarny ===
+senatorowie:
+* ze stażem senatorskim – 66, w tym:
+** 6 kadencji – 1
+** 5 kadencji – 7
+** 4 kadencje – 5
+** 3 kadencje – 14
+** 2 kadencje – 13
+** 1 kadencja – 26
+* bez stażu senatorskiego – 34, w tym:
+** ze stażem poselskim – 15
+** bez stażu parlamentarnego – 19
+* senator z najdłuższym stażem senatorskim – [[Jerzy Chróścikowski]] (6 kadencji: IV oraz od VI do X)
+* senatorowie z najdłuższym nieprzerwanym stażem senatorskim: [[Bogdan Borusewicz]], [[Jerzy Chróścikowski]], [[Stanisław Karczewski]], [[Waldemar Kraska]] i [[Kazimierz Wiatr]] (wszyscy 5 kolejnych kadencji od VI do X; od 20 października 2005)
+* 39 senatorów sprawowało wcześniej mandat posła na Sejm
+** senator z najdłuższym stażem poselskim – [[Waldemar Pawlak]] (8 kadencji: X PRL oraz od I do VII RP)
+* 6 senatorów sprawowało wcześniej mandat posła do Parlamentu Europejskiego
+** senator z najdłuższym stażem posła do Parlamentu Europejskiego – [[Michał Kamiński (polityk)|Michał Kamiński]] (3 kadencje: V, VI i VII)
+* senatorowie z najdłuższym łącznym stażem parlamentarnym – po 8 kadencji: [[Bogdan Borusewicz]] (poseł od I do III oraz senator od VI do X), [[Marek Borowski]] (poseł od I do IV i VI oraz senator od VIII do X) i [[Waldemar Pawlak]] (poseł X PRL oraz od I do VII RP)
+* senator z najdłuższym nieprzerwanym stażem parlamentarnym – [[Grzegorz Schetyna]] (poseł od III do IX kadencji; od 20 października 1997)
+
+=== Rezultaty w wyborach ===
+* senator, który otrzymał największą liczbę głosów – [[Adam Bodnar]] (628 442)
+* senator, który otrzymał najmniejszą liczbę głosów – [[Józef Zając (matematyk)|Józef Zając]] (50 763), [[Stanisław Pawlak (polityk)|Stanisław Pawlak]] (9 888)<ref group="uwaga">Wybrany w [[Wybory uzupełniające do Senatu Rzeczypospolitej Polskiej XI kadencji|wyborach uzupełniających]] 21 lipca 2024.</ref><ref>{{Cytuj |tytuł = Wybory uzupełniające do Senatu w okręgu wyborczym nr 13 |data dostępu = 2024-07-25 |opublikowany = wybory.gov.pl |url = https://wybory.gov.pl/senat20240721/pl/wyniki/pl |język = pl}}</ref>
+* senator, który uzyskał najwyższy odsetek ważnych głosów – [[Rafał Grupiński]] (77,64%)
+* senator, który uzyskał najniższy odsetek ważnych głosów – [[Aleksander Szwed]] (35,77%)
+* senator, który uzyskał mandat największą różnicą głosów – [[Adam Bodnar]] (435 086)
+* senator, który uzyskał mandat najmniejszą różnicą głosów – [[Aleksander Szwed]] (503)
+* liczba senatorów, którzy uzyskali:
+** co najmniej 70% ważnych głosów – 9
+** od 60 do 69,99% ważnych głosów – 9
+** od 50 do 59,99% ważnych głosów – 32
+** od 40 do 49,99% ważnych głosów – 42
+** poniżej 40% ważnych głosów – 8
+
+=== Przynależność partyjna ===
+
+* [[Platforma Obywatelska|Platforma Obywatelska RP]] – 36
+* [[Prawo i Sprawiedliwość]] – 29
+* [[Nowa Lewica]] – 5
+* [[Polska 2050|Polska 2050 Szymona Hołowni]] – 5
+* [[Polskie Stronnictwo Ludowe]] – 4
+* [[Lewica Razem (partia)|Lewica Razem]] – 2
+* [[Centrum dla Polski]] – 1
+* [[Polska Partia Socjalistyczna]] – 1
+* [[Porozumienie]] – 1
+* [[Suwerenna Polska]] – 1
+* [[Unia Europejskich Demokratów]] – 1
+* [[Unia Pracy]] – 1
+* [[bezpartyjność|bez przynależności partyjnej]] – 13
+
+{{small|Zródła:<ref>https://www.senat.gov.pl/sklad/senatorowie/</ref><ref>{{Cytuj |tytuł = Wybory do Sejmu i Senatu Rzeczypospolitej Polskiej w 2023 r. |data dostępu = 2023-12-07 |opublikowany = wybory.gov.pl |url = https://sejmsenat2023.pkw.gov.pl/sejmsenat2023/pl/senat/wynik/pl |język = pl}}</ref>}}
+
+== Zobacz też ==
+* [[Senat Rzeczypospolitej Polskiej XI kadencji]]
+* [[Wybory parlamentarne w Polsce w 2023 roku]]
+* [[Posłowie na Sejm Rzeczypospolitej Polskiej X kadencji]]
+
+== Uwagi ==
+{{Uwagi}}
+
+== Przypisy ==
+{{Przypisy}}
+
+{{Senatorowie RP}}
+
+[[Kategoria:Senatorowie XI kadencji Senatu Rzeczypospolitej Polskiej|!]]

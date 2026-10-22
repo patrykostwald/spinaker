@@ -3,7 +3,6 @@ import os
 import re
 from datetime import date, datetime, time, timedelta
 
-from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -19,8 +18,7 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from news import clinic
-from news.accounts import AccountWriteThrottle, OpinionInput, OpinionReadThrottle
-from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
+from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, XAccountSuggestion
 from news.political_models import PublicFigure
 from news.public_figures import verified_x_account_record
 from news.schema import json_view
@@ -76,12 +74,12 @@ def clinic_messages(request):
         page = max(1, int(request.query_params.get('page', '1')))
     except ValueError:
         return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
-    rows = ClinicDailyMessage.objects.filter(status='approved', camp__in=clinic.CAMPS)
+    rows = clinic.published_messages().filter(camp__in=clinic.CAMPS)
     days = rows.order_by('-day').values_list('day', flat=True).distinct()
     count = days.count()
     batch = list(days[(page - 1) * 14:page * 14 + 1])
     grouped = {day: {'day': day, 'government': None, 'opposition': None} for day in batch[:14]}
-    for row in rows.filter(day__in=batch[:14]).prefetch_related('posts'):
+    for row in clinic.message_list(rows.filter(day__in=batch[:14])):
         grouped[row.day][row.camp] = clinic._message_data(row)
     return Response({'results': list(grouped.values()), 'next_page': page + 1 if len(batch) > 14 else None,
                      'count': count})
@@ -97,13 +95,18 @@ def clinic_message_detail(request, day):
         selected_day = date.fromisoformat(day)
     except ValueError:
         raise Http404
-    rows = list(ClinicDailyMessage.objects.filter(day=selected_day, status='approved', camp__in=clinic.CAMPS))
+    rows = list(clinic.published_messages().filter(day=selected_day, camp__in=clinic.CAMPS))
     if not rows:
         raise Http404
     result = {'day': selected_day, 'government': None, 'opposition': None}
     for row in rows:
         result[row.camp] = clinic._message_data(row, with_posts=True, all_posts=True)
     return Response(result)
+
+
+def _page_cache_active() -> bool:
+    from django.db import connection
+    return connection.vendor == 'postgresql'
 
 
 @extend_schema(summary='Klinika spinu: waga, przekazy dnia, spin dnia i diagnozy obu stron', tags=['klinika'],
@@ -114,7 +117,18 @@ def clinic_page(request):
         window = min(30, max(1, int(request.query_params.get('window', '7'))))
     except ValueError:
         return Response({'detail': 'Parametr window musi być liczbą dni (1–30).'}, status=400)
-    return Response(clinic.clinic_page_data(window))
+    # Te same dane dla wszystkich: na produkcji (PostgreSQL + Redis) gotowe przez minutę, żeby wejście było szybkie (właściciel 5.10).
+    # v3: klucz zawiera stan flag v3; w ciszy wyborczej bez cache (zatwierdzony łańcuch nie może przetrwać w cache).
+    from django.core.cache import cache
+    from news import causal_chain
+    if not _page_cache_active() or causal_chain.silence():
+        return Response(clinic.clinic_page_data(window))
+    key = causal_chain.page_cache_key(window)
+    data = cache.get(key)
+    if data is None:
+        data = clinic.clinic_page_data(window)
+        cache.set(key, data, 60)
+    return Response(data)
 
 
 @extend_schema(summary='Lista zatwierdzonych diagnoz jednej strony', tags=['klinika'], responses=OpenApiTypes.OBJECT)
@@ -198,8 +212,30 @@ def clinic_statistics(request):
 @extend_schema(summary='Pełna diagnoza spinu', tags=['klinika'], responses=OpenApiTypes.OBJECT)
 @api_view(['GET'])
 def clinic_spin_detail(request, diagnosis_id):
-    diagnosis = get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
-    return Response(clinic.detail_data(diagnosis))
+    rows = SpinDiagnosis.objects.filter(hidden_at__isnull=True).filter(
+        Q(withdrawn_at__isnull=False) | Q(status='approved', post__available=True))
+    diagnosis = get_object_or_404(rows.select_related('post__account'), pk=diagnosis_id)
+    response = Response(clinic.detail_data(diagnosis))
+    response['Cache-Control'] = 'no-store'
+    if diagnosis.withdrawn_at:
+        response['X-Robots-Tag'] = 'noindex'
+    return response
+
+
+@extend_schema(summary='Publiczny rejestr korekt i odpowiedzi autorów', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def clinic_corrections(request):
+    from news.clinic_corrections import corrections_data
+    try:
+        page = int(request.query_params.get('page', '1'))
+        if page < 1:
+            raise ValueError
+    except ValueError:
+        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+    response = Response(corrections_data(page))
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 class CardContentNegotiation(DefaultContentNegotiation):
@@ -222,7 +258,7 @@ class ClinicSpinCardView(APIView):
         figures = clinic.figures_by_account([diagnosis.post.account_id])
         path = cached_card(clinic.card_data(diagnosis, figures), card_format)
         response = FileResponse(path.open('rb'), content_type='image/png')
-        response['Cache-Control'] = 'public, max-age=3600'
+        response['Cache-Control'] = 'no-store'
         return response
 
 
@@ -261,74 +297,6 @@ def clinic_report(request, week_end=None):
 def clinic_deleted(request):
     from news.deleted_posts import deleted_data
     return Response(deleted_data())
-
-
-class SpinOpinionSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
-
-    class Meta:
-        model = SpinOpinion
-        fields = ['id', 'author', 'polarity', 'body', 'created_at']
-
-    def get_author(self, opinion):
-        return {'id': opinion.user_id, 'username': opinion.user.username}
-
-
-@json_view('Reakcje i komentarze do diagnozy spinu (trafna / nietrafna)', tags=['klinika'])
-class SpinOpinionsView(APIView):
-    """Najpierw reakcja, komentarz opcjonalnie. Sam komentarz bez reakcji nie jest możliwy."""
-    permission_classes = [AllowAny]
-    throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
-
-    def get_permissions(self):
-        return [IsAuthenticated()] if self.request.method in ('POST', 'PATCH') else super().get_permissions()
-
-    def _diagnosis(self, diagnosis_id):
-        return get_object_or_404(clinic.published_diagnoses(), pk=diagnosis_id)
-
-    def get(self, request, diagnosis_id):
-        rows = self._diagnosis(diagnosis_id).opinions.select_related('user')
-        counts = {'positive': 0, 'negative': 0}
-        counts.update({row['polarity']: row['n'] for row in rows.values('polarity').annotate(n=Count('id'))})
-        mine = rows.filter(user=request.user).first() if request.user.is_authenticated else None
-        return Response({
-            'counts': counts,
-            'mine': SpinOpinionSerializer(mine).data if mine else None,
-            'positive': SpinOpinionSerializer(rows.filter(polarity='positive').exclude(body='')[:50], many=True).data,
-            'negative': SpinOpinionSerializer(rows.filter(polarity='negative').exclude(body='')[:50], many=True).data,
-        })
-
-    def post(self, request, diagnosis_id):
-        from news.account_security import require_verified
-        require_verified(request.user)
-        diagnosis = self._diagnosis(diagnosis_id)
-        serializer = OpinionInput(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            with transaction.atomic():
-                opinion = SpinOpinion.objects.create(user=request.user, diagnosis=diagnosis, **serializer.validated_data)
-        except IntegrityError:
-            return Response({'detail': 'Twoja reakcja na tę diagnozę jest już zapisana.'}, status=409)
-        return Response(SpinOpinionSerializer(opinion).data, status=201)
-
-    def patch(self, request, diagnosis_id):
-        from news.account_security import require_verified
-        require_verified(request.user)
-        if not isinstance(request.data, dict) or set(request.data) - {'body'}:
-            raise serializers.ValidationError('Możesz jedynie dopisać komentarz; reakcja pozostaje bez zmian.')
-        serializer = OpinionInput(data={'polarity': 'positive', **request.data})
-        serializer.is_valid(raise_exception=True)
-        body = serializer.validated_data['body']
-        if not body:
-            raise serializers.ValidationError({'body': 'Podaj treść komentarza.'})
-        self._diagnosis(diagnosis_id)
-        with transaction.atomic():
-            opinion = get_object_or_404(SpinOpinion.objects.select_for_update().select_related('user'),
-                                        diagnosis_id=diagnosis_id, user=request.user)
-            if opinion.body or not SpinOpinion.objects.filter(pk=opinion.pk, body='').update(body=body):
-                return Response({'detail': 'Komentarz został już zapisany i nie można go zastąpić.'}, status=409)
-            opinion.body = body
-        return Response(SpinOpinionSerializer(opinion).data)
 
 
 class SuggestionThrottle(AnonRateThrottle):
@@ -381,6 +349,7 @@ def _queue_diagnosis(diagnosis):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def clinic_queue(request):
+    from news.clinic_video_stats import build_report
     diagnoses = (SpinDiagnosis.objects.filter(status='pending_review').select_related('post__account')
                  .order_by('post__published_at'))[:50]
     messages = ClinicDailyMessage.objects.filter(status='pending_review').order_by('day', 'camp')[:10]
@@ -389,6 +358,7 @@ def clinic_queue(request):
                .order_by('-screen_score', '-post__published_at'))[:50]
     flagged_figures = clinic.figures_by_account({row.post.account_id for row in flagged})
     return Response({
+        'video_stats': build_report(),
         'flagged': [{'id': row.pk, 'score': row.screen_score, 'reason': (row.triage or {}).get('reason', ''),
                      'screened_by': (row.triage or {}).get('provider', ''), 'camp_label': clinic.CAMP_LABELS.get(row.post.camp_at_collection, ''),
                      'author': clinic.author_data(row.post, flagged_figures.get(row.post.account_id)),
@@ -444,6 +414,43 @@ def review_message(request, message_id):
     return _review(request, get_object_or_404(ClinicDailyMessage, pk=message_id))
 
 
+class ChainReviewInput(ReviewInput):
+    note = serializers.CharField(required=False, allow_blank=True, max_length=400, default='')
+    override = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, attrs):
+        if attrs['decision'] == 'reject' and not attrs.get('note', '').strip():
+            raise serializers.ValidationError({'note': 'Odrzucenie wymaga uzasadnienia.'})
+        return attrs
+
+
+@extend_schema(summary='Zatwierdź albo odrzuć ciąg przyczyn przekazu (v3, bez edycji kroków)', tags=['klinika'],
+               request=ChainReviewInput, responses=OpenApiTypes.OBJECT)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def review_causal_chain(request, message_id):
+    from news import causal_chain
+    from news.clinic_models import CausalChain
+    if not request.user.has_perm('news.can_decide_causalchain'):
+        return Response({'detail': 'Brak uprawnienia news.can_decide_causalchain.'}, status=403)
+    chain = get_object_or_404(CausalChain, message_id=message_id)
+    serializer = ChainReviewInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    try:
+        if data['decision'] == 'approve':
+            chain = causal_chain.approve(chain, request.user, data['note'], override=data['override'])
+        else:
+            chain = causal_chain.reject(chain, request.user, data['note'])
+    except causal_chain.ChainError as error:
+        status = 423 if error.code == 'silence' else 409
+        response = Response({'detail': str(error), 'code': error.code, 'gates': chain.gates}, status=status)
+    else:
+        response = Response({'id': chain.pk, 'status': chain.status, 'approved_at': chain.approved_at})
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
 class HideInput(serializers.Serializer):
     reason = serializers.CharField(max_length=240)
 
@@ -453,10 +460,10 @@ class HideInput(serializers.Serializer):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def hide_diagnosis(request, diagnosis_id):
-    diagnosis = get_object_or_404(SpinDiagnosis, pk=diagnosis_id, status='approved')
+    diagnosis = get_object_or_404(SpinDiagnosis, pk=diagnosis_id, status__in=['approved', 'withdrawn'])
     serializer = HideInput(data=request.data)
     serializer.is_valid(raise_exception=True)
-    diagnosis.hidden_at, diagnosis.hidden_reason = timezone.now(), serializer.validated_data['reason']
+    diagnosis.hidden_at, diagnosis.hidden_reason = diagnosis.hidden_at or timezone.now(), serializer.validated_data['reason']
     diagnosis.save(update_fields=['hidden_at', 'hidden_reason'])
     return Response({'id': diagnosis.pk, 'hidden_at': diagnosis.hidden_at})
 

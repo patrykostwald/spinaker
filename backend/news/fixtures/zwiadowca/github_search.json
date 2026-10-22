@@ -1,0 +1,4 @@
+{"items": [
+ {"full_name": "opensanctions/yente", "html_url": "https://github.com/opensanctions/yente", "description": "Entity matching API for sanctions and PEP data", "stargazers_count": 300, "license": {"spdx_id": "MIT"}},
+ {"full_name": "example/factcheck-tool", "html_url": "https://github.com/example/factcheck-tool", "description": "Claim detection", "stargazers_count": 80, "license": null}
+]}

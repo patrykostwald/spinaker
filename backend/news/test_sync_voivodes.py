@@ -60,3 +60,13 @@ def test_sync_voivodes_keeps_office_when_holder_changes(monkeypatch):
     office.refresh_from_db()
     assert office.current_holder.canonical_name == 'Druga Osoba'
     assert PublicFigureRole.objects.get(public_figure=first, public_office=office).status == 'former'
+
+
+def test_live_kprm_snapshot_with_mixed_dashes_gives_all_16():
+    """Kopia strony KPRM z 2.10.2026: część wpisów ma półpauzę „–” zamiast „-”."""
+    from pathlib import Path
+    from unittest.mock import Mock
+    from news.voivode_roster import get_rows
+    html = (Path(__file__).parent / 'fixtures' / 'kprm_wojewodowie_2026-10-02.html').read_text(encoding='utf-8')
+    rows = get_rows(http_get=Mock(return_value=Mock(text=html, raise_for_status=Mock())))
+    assert len(rows) == 16

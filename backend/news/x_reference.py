@@ -21,4 +21,4 @@ def reference_card(url, key=0):
         'published_date': None, 'date_precision': 'time', 'category': 'tweet', 'image_url': '',
         'source': {'id': 0, 'name': 'X', 'url': 'https://x.com', 'source_type': 'twitter'},
         'author': '', 'description': '', 'discovered_at': None, 'ingestion_method': 'reference',
-        'category_reviewed': False, 'evidence_note': 'Treści i dostępności posta nie zweryfikowano. Link dodany przez autora nitki.'}
+        'category_reviewed': False, 'evidence_note': 'Treści i dostępności posta nie zweryfikowano. Link dodany przez autora spinki.'}

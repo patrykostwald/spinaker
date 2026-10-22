@@ -1,0 +1,50 @@
+/* Tytuł "Kto, co i kiedy?" na stronie głównej przeszłość.today: trzy różne, delikatne gesty, lekko "hakerskie":
+   dekodowanie (Kto, JS: losowe znaki w stałej szerokości), zaczernienie z odsłonięciem (co), znacznik czasu i kursor (kiedy).
+   Jedna animacja naraz, pętla 14 s; tylko transform/opacity/clip-path; ozdoby aria-hidden; reduced motion = brak efektów. */
+.pt-v3 .pt-hw { position: relative; display: inline-block; }
+.pt-v3 .pt-hw::before, .pt-v3 .pt-hw::after { pointer-events: none; }
+
+/* "Kto": litery w trakcie dekodowania lekko przygaszone w akcencie, stałe szerokości liter z JS */
+.pt-v3 .pt-hw[data-w="kto"] [data-g] { color: var(--sc-accent); opacity: .85; }
+
+/* "co": pasek w akcencie przykrywa słowo (220 ms), trzyma (350 ms), odsuwa się w prawo (650 ms) */
+.pt-v3 .pt-hw[data-w="co"]::after {
+  content: ""; position: absolute; left: -.04em; right: -.04em; top: .12em; bottom: .06em; border-radius: 2px;
+  background: var(--sc-accent); opacity: 0; clip-path: inset(0 100% 0 0);
+}
+.pt-v3 .pt-hero-title[data-fx="co"] .pt-hw[data-w="co"]::after {
+  animation: pt-hw-redact 1.25s cubic-bezier(.22, .61, .36, 1) both;
+}
+@keyframes pt-hw-redact {
+  0% { opacity: .92; clip-path: inset(0 100% 0 0); }
+  18% { opacity: .92; clip-path: inset(0 0 0 0); }      /* 220 ms: przykrycie */
+  46% { opacity: .92; clip-path: inset(0 0 0 0); }      /* +350 ms: trzyma */
+  100% { opacity: .92; clip-path: inset(0 0 0 100%); }  /* +650 ms: odsłonięcie */
+}
+
+/* "kiedy?": znacznik czasu (mono, tabular) nad słowem po prawej, kursor "_" po znaku zapytania */
+.pt-v3 .pt-hw__ts {
+  position: absolute; right: 0; bottom: 100%; margin-bottom: .1em; white-space: nowrap; opacity: 0;
+  font: 500 .2em/1 var(--sc-font-sans, system-ui); font-variant-numeric: tabular-nums; letter-spacing: .04em;
+  color: var(--sc-accent); transform: translateY(2px);
+}
+.pt-v3 .pt-hw__cur {
+  position: absolute; left: 100%; bottom: 0; font-style: normal; color: var(--sc-accent); opacity: 0; margin-left: .03em;
+}
+.pt-v3 .pt-hero-title[data-fx="kiedy"] .pt-hw__ts { animation: pt-hw-ts 3.4s cubic-bezier(.22, .61, .36, 1) both; }
+.pt-v3 .pt-hero-title[data-fx="kiedy"] .pt-hw__cur { animation: pt-hw-cur 3.4s steps(1, end) both; }
+@keyframes pt-hw-ts {
+  0% { opacity: 0; transform: translateY(2px); }
+  8% { opacity: .85; transform: translateY(0); }
+  88% { opacity: .85; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+@keyframes pt-hw-cur {
+  0%, 100% { opacity: 0; }
+  5%, 25%, 45%, 65%, 85% { opacity: .9; }
+  15%, 35%, 55%, 75%, 95% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-v3 .pt-hw::after, .pt-v3 .pt-hw__ts, .pt-v3 .pt-hw__cur { animation: none !important; opacity: 0 !important; }
+}

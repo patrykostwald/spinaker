@@ -1,12 +1,20 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Montserrat } from "next/font/google";
-import { SiteHeader, TouchScrollGuard } from "@spin-clinic/ui";
+import { ArrowLinks } from "./ArrowLinks";
+import { FirstVisitIntro } from "./FirstVisitIntro";
+import { SiteHeader, TouchScrollGuard, SocialNavigation, SectionBar } from "@spin-clinic/ui";
+import { SpotlightHover } from "@spin-clinic/ui/kit";
 import { FeatureFooter, PreviewBanner, PreviewPwa } from "./PreviewControls";
 
 import "./globals.css";
 import "./preview.css";
-// Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css — порядок каскада (docs/UI_KIT_PLAN.md).
+// Библиотека нового визуального языка. Обязательно ПОСЛЕ globals.css - порядок каскада (docs/UI_KIT_PLAN.md).
 import "@spin-clinic/ui/kit/kit.css";
+// seria 2: podłoga rozmiaru pisma (13 px) dla starej kaskady kit.css - generowana, między kit.css a v3.css
+import "@spin-clinic/ui/kit/v3-floor.css";
+// v3 (13.10.2026): tokeny, kroje (Montserrat + Geist) i komponenty nowego wyglądu - zawsze PO kit.css.
+import "@spin-clinic/ui/kit/v3.css";
 import { Providers } from "./providers";
 import { site } from "../lib/site";
 
@@ -17,34 +25,35 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
-const TITLE = "spin.clinic — pokazujemy, jak zbudowany jest przekaz";
+const TITLE = "spin.clinic - pokazujemy, jak zbudowany jest przekaz";
 const DESCRIPTION = "Pokazujemy, jak zbudowany jest przekaz. Dr. Spin (AI) analizuje techniki perswazji we wpisach polityków i zestawia twierdzenia ze źródłami. Ta sama miara dla wszystkich.";
 
-export const viewport: Viewport = { themeColor: '#000000' };
+export const viewport: Viewport = { themeColor: '#0b0c0e' };
 
 export const metadata: Metadata = {
   appleWebApp: { capable: true, title: 'spin.clinic', statusBarStyle: 'black-translucent' },
-  icons: { apple: '/app/icon-192.png' },
+  icons: { icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }], shortcut: '/favicon.ico', apple: '/app/apple-touch-icon.png' },
   metadataBase: new URL(`https://${process.env.NEXT_PUBLIC_DOMAIN || "spin.clinic"}`),
   title: TITLE,
   description: DESCRIPTION,
-  // Podgląd linku na X, Facebooku i w komunikatorach — obrazek public/og.png (1200×630).
-  openGraph: { type: "website", siteName: "spin.clinic", locale: "pl_PL", title: TITLE, description: DESCRIPTION, images: [{ url: "/og.png", width: 1200, height: 630, alt: "spin.clinic — Klinika spinu" }] },
+  // Podgląd linku na X, Facebooku i w komunikatorach - obrazek public/og.png (1200×630).
+  openGraph: { type: "website", siteName: "spin.clinic", locale: "pl_PL", title: TITLE, description: DESCRIPTION, images: [{ url: "/og.png", width: 1200, height: 630, alt: "spin.clinic - Klinika spinu" }] },
   twitter: { card: "summary_large_image", site: "@spinclinic", title: TITLE, description: DESCRIPTION, images: ["/og.png"] },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pl" suppressHydrationWarning className={montserrat.variable}>
-      <head><script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=localStorage.getItem('spin-theme');if(p==='pastel'){p='light';localStorage.setItem('spin-theme',p)}var t=p==='light'||p==='dark'?p:'dark';document.documentElement.dataset.themePreference=t;document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='dark'}})();` }} /></head>
+      <head><link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" /><script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true,k='sc-first-visit',f=+localStorage.getItem(k)||0,n=Date.now();if(!f)localStorage.setItem(k,String(n));if(s||(f&&n-f>432e5))document.documentElement.dataset.familiar='1'}catch(e){}try{var p=localStorage.getItem('spin-theme');if(p==='pastel'){p='light';localStorage.setItem('spin-theme',p)}var t=p==='light'||p==='dark'?p:'dark';document.documentElement.dataset.themePreference=t;document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='dark'}})();` }} /></head>
       <body>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:p-4">Przejdź do treści</a>
         <Providers>
           <PreviewBanner />
           <SiteHeader site={site} />
           <TouchScrollGuard />
+          <SpotlightHover />
           <PreviewPwa />
-          <main id="main-content" className="sc-app-main">{children}</main>
+          <div className="sc-social-layout"><SocialNavigation /><div className="sc-app-col"><Suspense><SectionBar /></Suspense><main id="main-content" className="sc-app-main">{children}</main><FirstVisitIntro /><ArrowLinks /></div></div>
           <FeatureFooter />
         </Providers>
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && <script defer data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.js" />}
