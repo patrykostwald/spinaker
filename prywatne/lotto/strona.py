@@ -21,15 +21,18 @@ WYJSCIE = KATALOG / "strona" / "lotto"
 PRZEGLAD_MD = KATALOG / "dane" / "przeglad_gier.md"   # kopia RAPORT.md z gałęzi cloud/prywatne-hazard (22.10.2026)
 ANALIZA = KATALOG / "wyniki" / "analiza.json"
 ANALIZA2 = KATALOG / "wyniki" / "analiza2.json"
+ETAP3 = KATALOG / "etap3" / "wyniki" / "symulacja.json"
 
 NAZWY = {"historia": "Bez dawnych szóstek", "gorace": "Gorące liczby", "zimne": "Zimne liczby",
-         "rzadko_grane": "Rzadko grane", "los": "Czysty los"}
+         "rzadko_grane": "Rzadko grane", "los": "Czysty los",
+         "system7_los": "System 7 z losu"}
 OPISY = {"historia": "losowe zestawy, ale nigdy taki, który już padł",
          "gorace": "liczby najczęstsze w ostatnich 50 losowaniach",
          "zimne": "liczby najrzadsze w ostatnich 50 losowaniach",
          "rzadko_grane": "liczby powyżej 31, bez wzorków; mniej dzielenia nagrody",
-         "los": "punkt odniesienia"}
-KOLORY = {"historia": "#4a9eff", "gorace": "#ff6b6b", "zimne": "#7fd4f5", "rzadko_grane": "#4ed18a", "los": "#bcc1c8"}
+         "los": "punkt odniesienia",
+         "system7_los": "2 systemy po 7 losowych liczb + 6 zakładów; ta sama szansa"}
+KOLORY = {"historia": "#4a9eff", "gorace": "#ff6b6b", "zimne": "#7fd4f5", "rzadko_grane": "#4ed18a", "los": "#bcc1c8", "system7_los": "#c9a3ff"}
 TELEFONY = [("801 889 880", "telefon zaufania dla osób z problemem hazardowym i innych uzależnień behawioralnych, codziennie 17-22"),
             ("800 199 990", "bezpłatny Ogólnopolski Telefon Zaufania Uzależnienia, codziennie 16-21")]  # [DP] stan 10.2026
 DNI = ["poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela"]
@@ -196,7 +199,23 @@ def zbierz(teraz: dt.datetime | None = None, katalog_kuponow: Path = lotto.KUPON
         "dziennik": zestawienie(wiersze),
         "wnioski": wnioski(analiza, analiza2),
         "przeglad": przeglad_tabela(md),
+        "etap3": etap3_skrot(json.loads(ETAP3.read_text(encoding="utf-8")) if ETAP3.exists() else {}),
     }
+
+
+def etap3_skrot(w: dict) -> dict:
+    """Skrót wielkiej symulacji z etapu 3 (etap3/wyniki/symulacja.json)."""
+    if not w.get("wyniki"):
+        return {}
+    R = w["wyniki"]
+    techniki = [n for n in R if n not in ("los", "borda", "srednia", "stacking", "para", "trojka")]
+    najl = max((n for n in R if n != "los"), key=lambda n: R[n]["test"]["k"]["12"]["srednia"])
+    t = R[najl]["test"]["k"]["12"]
+    return {"technik": len(techniki), "polaczen": len(R) - len(techniki) - 1, "przechodzi": w.get("przechodzi", []),
+            "test_od": w["test_od"][:4], "losowan_test": w["losowan_test"],
+            "najlepsza": najl, "najlepsza_top12": t["srednia"], "najlepsza_p": t["p_holm"],
+            "los_top12": R["los"]["test"]["k"]["12"]["srednia"],
+            "zl_los": R["los"]["cale"]["zl_20_los"]}
 
 
 # ---------- HTML ----------
@@ -416,6 +435,27 @@ def sekcja_wnioskow(d: dict) -> str:
             f'<div class="rz"><div class="box">{lewy}</div><div class="box">{lewy2}</div></div></section>')
 
 
+def sekcja_etap3(d: dict) -> str:
+    z = d.get("etap3")
+    if not z:
+        return ""
+    wynik = "żadna nie zawęża okna" if not z["przechodzi"] else "przechodzi: " + ", ".join(z["przechodzi"])
+    et = '<span class="et">jak los</span>' if not z["przechodzi"] else '<span class="et zle">do sprawdzenia</span>'
+    wiersze = [
+        ("Sprawdzone techniki", f'{z["technik"]} + {z["polaczen"]} połączeń'),
+        (f'Test poza próbą ({z["test_od"]}-2026, {z["losowan_test"]} losowań)', wynik),
+        (f'Najlepsza w teście: {z["najlepsza"]}', f'{liczba(z["najlepsza_top12"], 2)} z 6 w top-12 · los {liczba(6 * 12 / 49, 2)}'),
+        ("Ta sama technika po poprawce na wielokrotne testy", f'p = {liczba(z["najlepsza_p"], 2)}'),
+    ]
+    lista = "".join(f"<li><span>{e(a)}</span><span>{e(b)}</span></li>" for a, b in wiersze)
+    return (f'<section class="sek"><div class="nag"><h2>Etap 3: {z["technik"]} technik, wynik</h2></div>'
+            f'<div class="box"><div class="tyt"><h3>Czy coś zawęża okno wypadających liczb?</h3>{et}</div>'
+            f'<div><p class="t2" style="margin-bottom:10px">Systemy graczy, statystyka, uczenie maszynowe i ślady wad maszyn - '
+            f'każda technika widziała tylko przeszłość, wynik porównany z losowym rankingiem.</p><ul class="lista">{lista}</ul></div>'
+            f'<p class="dol">Zakłady systemowe 7-12 liczb dają ten sam zwrot ze złotówki co zwykłe. Szczegóły: etap3/RAPORT3.md.</p>'
+            f'</div></section>')
+
+
 def klasa_oceny(o: int) -> str:
     return "o-hi" if o >= 6 else ("o-mid" if o >= 3 else "o-lo")
 
@@ -451,13 +491,13 @@ def szkielet(tytul: str, tresc: str, js: str = "") -> str:
 
 def strona_html(d: dict) -> str:
     gen = dt.datetime.fromisoformat(d["wygenerowano"])
-    naglowek = (f'<header><h1>Lotto: eksperyment z 5 strategiami</h1>'
+    naglowek = (f'<header><h1>Lotto: eksperyment z {len(lotto.strategie.STRATEGIE)} strategiami</h1>'
                 f'<p class="t2">Stan na {data_pl(gen.date())}, {gen:%H:%M}. Kupony zapisywane przed losowaniem, '
                 f'wyniki sprawdzane automatycznie po losowaniu.</p>'
                 f'<div class="uwaga" role="note"><b>!</b><p><b>Eksperyment na wirtualnych pieniądzach, żadna strategia nie '
                 f'zwiększa szansy.</b> Nic nie jest kupowane; każdy zestaw liczb ma tę samą szansę 1 do 13 983 816.</p></div></header>')
     tresc = (naglowek + sekcja_losowania(d) + sekcja_kuponow(d) + sekcja_dziennika(d) + sekcja_wnioskow(d)
-             + sekcja_przegladu(d) + stopka())
+             + sekcja_etap3(d) + sekcja_przegladu(d) + stopka())
     return szkielet("Lotto - eksperyment", tresc, JS)
 
 

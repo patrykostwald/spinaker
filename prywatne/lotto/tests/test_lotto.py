@@ -26,9 +26,23 @@ def test_generator_poprawne_zaklady_i_limit(nazwa, zakladow):
     for z in zaklady:
         assert strategie.poprawny(z)            # 6 różnych liczb 1-49
         assert list(z) == sorted(z)
+    if nazwa in strategie.BEZ_LIMITU:
+        return
     for i in range(len(zaklady)):
         for j in range(i):
             assert strategie.wspolne(zaklady[i], zaklady[j]) <= 2
+
+
+def test_system7_los_to_dwa_systemy_i_zwykle_zaklady():
+    zaklady = strategie.system7_los([], 20, random.Random(4))
+    assert len(zaklady) == 20 and len(set(zaklady)) == 20
+    for i in (0, 7):
+        pula = set().union(*zaklady[i:i + 7])
+        assert len(pula) == 7                              # 7 zakładów z jednej siódemki = system 7
+        assert all(len(set(z) & set(w)) == 5 for z in zaklady[i:i + 7] for w in zaklady[i:i + 7] if z != w)
+    assert not set().union(*zaklady[:7]) & set().union(*zaklady[7:14])   # dwa systemy bez wspólnych liczb
+    reszta = zaklady[14:]
+    assert all(strategie.wspolne(a, b) <= 2 for i, a in enumerate(reszta) for b in reszta[:i])
 
 
 def test_historia_i_rzadko_grane_omijaja_dawne_szostki():

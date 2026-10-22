@@ -1,6 +1,7 @@
 """Strategie wyboru zakładów. Każda dostaje tylko przeszłość (bez podglądania przyszłości).
 
-Wspólna reguła: między dowolnymi dwoma zakładami jednej strategii najwyżej 2 wspólne liczby.
+Wspólna reguła: między dowolnymi dwoma zakładami jednej strategii najwyżej 2 wspólne liczby
+(wyjątek: zakłady systemowe w `system7_los`, patrz BEZ_LIMITU).
 Zakład to posortowana krotka 6 różnych liczb 1-49.
 """
 from __future__ import annotations
@@ -128,10 +129,33 @@ def rzadko_grane(historia, n, rng, dawne_szostki=frozenset()):
     return _dobierz(n, _z_puli(pula, rng, wagi), dozwolony)
 
 
+SYSTEM = 7          # liczb w zakładzie systemowym (7 liczb = 7 zwykłych zakładów)
+
+
+def system7_los(historia, n, rng, dawne_szostki=frozenset()):
+    """Wariant porównawczy z etapu 3: 2 zakłady systemowe po 7 losowych liczb (14 zakładów) + reszta zwykłych zakładów.
+    Ta sama szansa co 20 zwykłych zakładów, inaczej rozłożona: rzadziej cokolwiek, ale przy trafieniu kilka wygranych naraz.
+    Zakłady wewnątrz systemu mają po 5 wspólnych liczb, więc limit MAX_WSPOLNYCH dotyczy tu tylko zwykłych zakładów."""
+    systemow = min(2, n // SYSTEM)
+    liczby = rng.sample(list(LICZBY), SYSTEM * systemow)
+    zaklady = []
+    for i in range(systemow):
+        pula = sorted(liczby[i * SYSTEM:(i + 1) * SYSTEM])
+        zaklady += [tuple(x for x in pula if x != pomin) for pomin in pula]
+    reszta = n - len(zaklady)
+    if reszta:
+        zaklady += _dobierz(reszta, _z_puli(list(LICZBY), rng), lambda m, z: True)
+    return zaklady
+
+
+BEZ_LIMITU = {"system7_los"}   # strategie, w których zakłady celowo dzielą więcej niż MAX_WSPOLNYCH liczb
+
+
 STRATEGIE = {
     "historia": historia_bez_szostek,
     "gorace": gorace,
     "zimne": zimne,
     "rzadko_grane": rzadko_grane,
     "los": los,
+    "system7_los": system7_los,
 }

@@ -112,3 +112,15 @@ def test_blad_strony_nie_zatrzymuje_automatu(monkeypatch):
     monkeypatch.setattr(strona, "generuj", zly)
     monkeypatch.setattr(lotto.dane, "loguj", lambda t: None)
     assert lotto.odswiez_strone() == 1
+
+
+def test_sekcja_etap3_z_wynikow_symulacji():
+    k12 = lambda sr, p: {"k": {"12": {"srednia": sr, "p_holm": p}}}  # noqa: E731
+    w = {"test_od": "2010-01-02", "losowan_test": 2630, "przechodzi": [], "wyniki": {
+        "los": {"test": k12(1.46, 1.0), "cale": {"zl_20_los": -77.0}},
+        "czeste": {"test": k12(1.49, 1.0)}, "zimne": {"test": k12(1.44, 1.0)}, "borda": {"test": k12(1.48, 1.0)}}}
+    z = strona.etap3_skrot(w)
+    assert z["technik"] == 2 and z["polaczen"] == 1 and z["najlepsza"] == "czeste"
+    h = strona.sekcja_etap3({"etap3": z})
+    assert "Etap 3: 2 technik, wynik" in h and "żadna nie zawęża okna" in h and "1,47" in h
+    assert strona.sekcja_etap3({"etap3": {}}) == ""
