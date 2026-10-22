@@ -19,3 +19,10 @@
 - **Ślepe uliczki:** Oferteo i część stron z cennikami niedostępne z sieci sesji (403 na proxy) - listy z R1 nie odświeżyłem; indeks wyszukiwarki nie pokazuje zleceń Useme z ostatnich 2-3 tygodni, więc tylko 3-4 z 8 linków ma realną szansę być otwartymi.
 - **Ile to warte:** przy wariancie B i T1 realistycznie 5,6 tys. zł w 90 dni na H1 [szacunek]; umowa od Prawnika usuwa blokadę pierwszej faktury.
 - **Następna runda:** po decyzjach W1-W3 i W11 poprawić teksty T1, wpisać odpowiedzi rynku (tylko liczby), dopracować landing po uwagach Prawnika.
+
+## Runda 2b - pakiety działań (22.10.2026, według RUNDA_2.md koordynatora, ok. 45 minut)
+- **Zrobione:** folder `DZIALANIA/` z 5 pakietami i `KOLEJNOSC.md`: P1 strona ofertowa `materialy/zbudujmi-social-media.html` (pod zbudujmi.com/social-media; formularz podpięty do istniejącego endpointu /api/zbudujmi/zapytanie/, bez śledzenia; zrzuty 1440 i 390 px, karty i pakiety równej wysokości), P2 post na Facebooku bez reklamy, P3-P5 oferty na Useme (#145725, #145190, #145793) z ceną z ustaleń (Start 990 zł pierwszy miesiąc, potem 1190 zł) i podpisem właściciela.
+- **Ustalenia uwzględnione:** brak płatnej reklamy, obecny klient tylko jako „sklep z odzieżą motocyklową”, najwyżej 2 nowych klientów w listopadzie (na stronie i w KOLEJNOSC.md). Teksty T1 z TESTY.md są nieaktualne - obowiązują P3-P5.
+- **Nowe zlecenie:** #146227 (marka łazienek, Warszawa, nagrania w salonie) - tylko jako zapas, bo zleceniodawca woli osobę na miejscu.
+- **Niepewne [DP]:** host endpointu formularza (sieć sesji blokuje spin.clinic i zbudujmi.com), istnienie strony polityki prywatności, czy zlecenia #145725 i #145793 są jeszcze otwarte (indeks wyszukiwarki spóźnia się), cena P5 spoza cennika (W10).
+- **Ile to warte:** jeśli P3 albo P5 wygra do 30.10, pierwsza faktura (990 zł) na początku listopada; dwa abonamenty Start przez 2 miesiące to 990 + 1190 razy 2 = 4 360 zł [szacunek].
