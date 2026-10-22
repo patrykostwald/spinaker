@@ -36,3 +36,16 @@ Dopisz krótką sekcję do strony (`strona.py`): „Etap 3: N technik, wynik”,
 Testy pytest dla nowych funkcji (szczególnie brak podglądania przyszłości). Commit i push po każdej części (pierwsza linia bez
 polskich znaków, na końcu `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`). Celuj w ok. 2 godziny. W ostatniej
 wiadomości najwyżej 12 linii.
+
+## Część 2b: zakłady systemowe (dopisek właściciela, 23.10)
+Lotto pozwala skreślić od 7 do 12 liczb (zakład systemowy) [DP: potwierdź regulamin Lotto]. To C(n,6) zwykłych zakładów naraz:
+7 liczb = 7 zakładów, 8 = 28, 9 = 84, 10 = 210, 11 = 462, 12 = 924 (koszt = liczba zakładów x cena jednego zakładu z RAPORT.md).
+System nie zmienia szansy na złotówkę, ale jest naturalnym sposobem wykorzystania „zawężonego okna”: jeśli top-n rankingu zawiera
+3, 4, 5 albo 6 wylosowanych liczb, system n wygrywa naraz wiele stopni.
+- Dla każdej techniki i połączenia, dla n = 7..12: jak często top-n zawierało co najmniej 3, 4, 5, 6 wylosowanych liczb, wobec losu
+  (rozkład hipergeometryczny; np. wszystkie 6 w losowej dwunastce: 924 / 13 983 816, ok. 1 na 15 134).
+- Wirtualny wynik w zł systemów 7..12 na historii (wszystkie wygrane z rozpisanych zakładów, koszt jak wyżej), na złotówkę wobec
+  zwykłych zakładów i wobec losowego systemu.
+- W budżecie 100 zł na losowanie sprawdź wariant „2 systemy po 7 liczb + 6 zwykłych zakładów” z najlepszego rankingu i dodaj go
+  do tabeli w RAPORT3.md. Do automatu trafia tylko, jeśli ranking przejdzie test poza próbą; inaczej dodaj „system 7 z losu” jako
+  wariant porównawczy z opisem, że to ta sama szansa, inaczej rozłożona.
