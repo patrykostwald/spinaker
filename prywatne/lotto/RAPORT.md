@@ -57,23 +57,23 @@ Automat w tym folderze nigdy nie kupuje kuponów - wszystko dzieje się na papie
 ## Wyniki testów (generuje `analiza.py`)
 <!-- WYNIKI-ANALIZY: START (plik generuje analiza.py, nie edytuj ręcznie) -->
 
-Wygenerowano 2026-10-22 18:30. Dane: **SYMULACJA** - prawdziwych danych jeszcze nie pobrano (dane/ZRODLA.md); losowania wygenerował komputer, więc wyniki pokazują metodę i skalę, nie historię Lotto.
+Wygenerowano 2026-10-22 21:05. Dane: Prawdziwe losowania z dane/lotto.csv (1 / 1957-01-27 - 7420 / 2026-10-20).
 
-**1. Powtórki szóstek.** Zestawy, które padły więcej niż raz: 6-8-16-30-32-33, 3-9-29-36-39-43, 3-21-24-27-36-37. Przy 7300 losowaniach rachunek daje średnio 1.91 powtórki (szansa, że choć jedna się zdarzy: 85%).
+**1. Powtórki szóstek.** Zestawy, które padły więcej niż raz: brak. Przy 7420 losowaniach rachunek daje średnio 1.97 powtórki (szansa, że choć jedna się zdarzy: 86%).
 
-**2. Równomierność (chi-kwadrat, 48 st. swobody, poprawka na losowanie bez zwracania).** Wynik 48.09, p = 0.4694. Najczęstsza liczba 41 (950 razy), najrzadsza 33 (826), oczekiwane 893.9. Brak dowodu na nierówność (p > 0,05).
+**2. Równomierność (chi-kwadrat, 48 st. swobody, poprawka na losowanie bez zwracania).** Wynik 62.33, p = 0.08. Najczęstsza liczba 17 (981 razy), najrzadsza 48 (825), oczekiwane 908.6. Brak dowodu na nierówność (p > 0,05).
 
 **3. Backtest: 33 zakłady na losowanie, okno kroczące, ceny i nagrody według dzisiejszych zasad** (zakład 5 zł; 3 = 35 zł, 4 ≈ 200 zł, 5 ≈ 7 500 zł, 6 = 3 mln zł) [DP]. Teoria: 0.7347 trafienia na zakład, zwrot 23.3% stawki.
 
 | Strategia | Śr. trafień (95%) | z | 3 / 4 / 5 / 6 trafień | Wydane | Wygrane | Zwrot | Bilans na losowanie bez szóstek (95%) |
 |---|---|---|---|---|---|---|---|
-| `historia` | 0.7338 (0.7308-0.7369) | -0.57 | 4149 / 211 / 5 / 0 | 1 196 250 zł | 224 915 zł | 18.8% | -133.98 zł (-138.59 do -129.36) |
-| `gorace` | 0.7335 (0.7305-0.7366) | -0.76 | 4253 / 212 / 4 / 0 | 1 196 250 zł | 221 255 zł | 18.5% | -134.48 zł (-138.70 do -130.27) |
-| `zimne` | 0.7366 (0.7336-0.7396) | +1.23 | 4177 / 220 / 6 / 0 | 1 196 250 zł | 235 195 zł | 19.7% | -132.56 zł (-137.64 do -127.48) |
-| `rzadko_grane` | 0.7369 (0.7339-0.7400) | +1.45 | 4315 / 231 / 6 / 0 | 1 196 250 zł | 242 225 zł | 20.2% | -131.59 zł (-136.65 do -126.53) |
-| `los` | 0.7333 (0.7303-0.7363) | -0.89 | 4167 / 207 / 4 / 0 | 1 196 250 zł | 217 245 zł | 18.2% | -135.04 zł (-139.19 do -130.88) |
+| `historia` | 0.7347 (0.7316-0.7377) | -0.02 | 4299 / 233 / 6 / 0 | 1 216 050 zł | 242 065 zł | 19.9% | -132.16 zł (-137.12 do -127.19) |
+| `gorace` | 0.7353 (0.7323-0.7383) | +0.39 | 4273 / 255 / 5 / 0 | 1 216 050 zł | 238 055 zł | 19.6% | -132.70 zł (-137.30 do -128.10) |
+| `zimne` | 0.7344 (0.7314-0.7374) | -0.18 | 4306 / 247 / 2 / 0 | 1 216 050 zł | 215 110 zł | 17.7% | -135.81 zł (-138.88 do -132.75) |
+| `rzadko_grane` | 0.7306 (0.7276-0.7336) | -2.67 | 4243 / 214 / 4 / 0 | 1 216 050 zł | 221 305 zł | 18.2% | -134.97 zł (-139.08 do -130.87) |
+| `los` | 0.7354 (0.7324-0.7384) | +0.48 | 4390 / 234 / 5 / 0 | 1 216 050 zł | 237 950 zł | 19.6% | -132.71 zł (-137.27 do -128.16) |
 
-Oczekiwane z rachunku przy tej liczbie zakładów: 3 / 4 / 5 / 6 = 4222.9 / 231.7 / 4.4 / 0.0. Limit najwyżej 2 wspólnych liczb między zakładami: naruszeń 0. |z| < 2 oznacza: strategia nie różni się od losu.
+Oczekiwane z rachunku przy tej liczbie zakładów: 3 / 4 / 5 / 6 = 4292.8 / 235.6 / 4.5 / 0.0. Limit najwyżej 2 wspólnych liczb między zakładami: naruszeń 0. |z| < 2 oznacza: strategia nie różni się od losu.
 
 <!-- WYNIKI-ANALIZY: KONIEC -->
 
