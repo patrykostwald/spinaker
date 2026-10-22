@@ -1,0 +1,552 @@
+{
+ "wygenerowano": "2026-10-22 19:24",
+ "losowan": 7420,
+ "zakres": "1957-01-27 - 2026-10-20",
+ "epoki": {
+  "testow": 11,
+  "okresy": [
+   {
+    "okres": "1957-1959",
+    "losowan": 150,
+    "chi2": 33.63,
+    "p": 0.9424,
+    "najczestsza": "8 (25 wobec 18)",
+    "najrzadsza": "3 (12 wobec 18)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.9493
+   },
+   {
+    "okres": "1960-1969",
+    "losowan": 528,
+    "chi2": 59.31,
+    "p": 0.1269,
+    "najczestsza": "17 (89 wobec 65)",
+    "najrzadsza": "48 (48 wobec 65)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.4549
+   },
+   {
+    "okres": "1970-1979",
+    "losowan": 859,
+    "chi2": 33.15,
+    "p": 0.9493,
+    "najczestsza": "29 (123 wobec 105)",
+    "najrzadsza": "6 (85 wobec 105)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.9493
+   },
+   {
+    "okres": "1980-1989",
+    "losowan": 1044,
+    "chi2": 61.06,
+    "p": 0.0977,
+    "najczestsza": "6 (158 wobec 128)",
+    "najrzadsza": "48 (100 wobec 128)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.4549
+   },
+   {
+    "okres": "1990-1999",
+    "losowan": 1043,
+    "chi2": 57.42,
+    "p": 0.1654,
+    "najczestsza": "34 (163 wobec 128)",
+    "najrzadsza": "16 (106 wobec 128)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.4549
+   },
+   {
+    "okres": "2000-2009",
+    "losowan": 1166,
+    "chi2": 45.23,
+    "p": 0.5872,
+    "najczestsza": "24 (176 wobec 143)",
+    "najrzadsza": "12 (124 wobec 143)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.8074
+   },
+   {
+    "okres": "2010-2019",
+    "losowan": 1565,
+    "chi2": 46.64,
+    "p": 0.5285,
+    "najczestsza": "6 (218 wobec 192)",
+    "najrzadsza": "39 (165 wobec 192)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.8074
+   },
+   {
+    "okres": "2020-2026",
+    "losowan": 1065,
+    "chi2": 47.01,
+    "p": 0.5134,
+    "najczestsza": "38 (154 wobec 130)",
+    "najrzadsza": "35 (101 wobec 130)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.8074
+   },
+   {
+    "okres": "1957-1974 (raz w tygodniu)",
+    "losowan": 1015,
+    "chi2": 53.17,
+    "p": 0.2818,
+    "najczestsza": "17 (148 wobec 124)",
+    "najrzadsza": "41 (97 wobec 124)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.62
+   },
+   {
+    "okres": "1975-2006 (2 razy w tygodniu)",
+    "losowan": 3340,
+    "chi2": 65.47,
+    "p": 0.0475,
+    "najczestsza": "21 (461 wobec 409)",
+    "najrzadsza": "12 (363 wobec 409)",
+    "p_bonferroni": 0.5228,
+    "q_bh": 0.4549
+   },
+   {
+    "okres": "2007-2026 (3 razy w tygodniu)",
+    "losowan": 3065,
+    "chi2": 40.17,
+    "p": 0.7819,
+    "najczestsza": "38 (413 wobec 375)",
+    "najrzadsza": "33 (333 wobec 375)",
+    "p_bonferroni": 1.0,
+    "q_bh": 0.9493
+   }
+  ],
+  "istotnych_po_poprawce": 0
+ },
+ "pary_trojki": {
+  "pary": {
+   "wszystkich": 1176,
+   "oczekiwane_na_jedna": 94.64,
+   "najczestsze": [
+    {
+     "liczby": "31-42",
+     "razy": 124,
+     "p": 0.002065
+    },
+    {
+     "liczby": "21-39",
+     "razy": 122,
+     "p": 0.003701
+    },
+    {
+     "liczby": "1-17",
+     "razy": 121,
+     "p": 0.0049
+    },
+    {
+     "liczby": "6-42",
+     "razy": 121,
+     "p": 0.0049
+    },
+    {
+     "liczby": "17-26",
+     "razy": 120,
+     "p": 0.006437
+    },
+    {
+     "liczby": "7-46",
+     "razy": 120,
+     "p": 0.006437
+    },
+    {
+     "liczby": "25-27",
+     "razy": 119,
+     "p": 0.008392
+    },
+    {
+     "liczby": "6-16",
+     "razy": 119,
+     "p": 0.008392
+    },
+    {
+     "liczby": "17-21",
+     "razy": 119,
+     "p": 0.008392
+    },
+    {
+     "liczby": "9-18",
+     "razy": 119,
+     "p": 0.008392
+    }
+   ],
+   "najmniejsze_p": 0.002065189504086701,
+   "p_bonferroni": 1.0,
+   "istotnych_bh": 0,
+   "rekord": 124,
+   "rekord_symulacje_sr": 127.9,
+   "rekord_symulacje_zakres": [
+    121,
+    145
+   ],
+   "p_rekordu": 0.925,
+   "symulacji": 200
+  },
+  "trojki": {
+   "wszystkich": 18424,
+   "oczekiwane_na_jedna": 8.05,
+   "najczestsze": [
+    {
+     "liczby": "1-17-38",
+     "razy": 21,
+     "p": 0.000102
+    },
+    {
+     "liczby": "1-28-38",
+     "razy": 21,
+     "p": 0.000102
+    },
+    {
+     "liczby": "10-11-24",
+     "razy": 20,
+     "p": 0.000273
+    },
+    {
+     "liczby": "5-18-40",
+     "razy": 19,
+     "p": 0.000698
+    },
+    {
+     "liczby": "21-22-25",
+     "razy": 19,
+     "p": 0.000698
+    },
+    {
+     "liczby": "19-22-25",
+     "razy": 19,
+     "p": 0.000698
+    },
+    {
+     "liczby": "17-21-29",
+     "razy": 19,
+     "p": 0.000698
+    },
+    {
+     "liczby": "18-20-29",
+     "razy": 19,
+     "p": 0.000698
+    },
+    {
+     "liczby": "21-29-39",
+     "razy": 19,
+     "p": 0.000698
+    },
+    {
+     "liczby": "4-20-22",
+     "razy": 19,
+     "p": 0.000698
+    }
+   ],
+   "najmniejsze_p": 0.0001019167871973199,
+   "p_bonferroni": 1.0,
+   "istotnych_bh": 0,
+   "rekord": 21,
+   "rekord_symulacje_sr": 21.7,
+   "rekord_symulacje_zakres": [
+    19,
+    27
+   ],
+   "p_rekordu": 0.841,
+   "symulacji": 200
+  }
+ },
+ "zaleznosc": {
+  "symulacji": 1000,
+  "miary": [
+   {
+    "miara": "powtorzen_z_losowania_1_wstecz",
+    "opis": "ile liczb powtarza się z poprzedniego losowania",
+    "dane": 0.7237,
+    "los_srednio": 0.7348,
+    "los_odchylenie": 0.0089,
+    "p": 0.2038,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.4678
+   },
+   {
+    "miara": "powtorzen_z_losowania_2_wstecz",
+    "opis": "ile liczb powtarza się sprzed 2 losowań",
+    "dane": 0.7443,
+    "los_srednio": 0.7347,
+    "los_odchylenie": 0.0088,
+    "p": 0.2807,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.4678
+   },
+   {
+    "miara": "powtorzen_z_losowania_3_wstecz",
+    "opis": "ile liczb powtarza się sprzed 3 losowań",
+    "dane": 0.7355,
+    "los_srednio": 0.7348,
+    "los_odchylenie": 0.009,
+    "p": 0.9341,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.959
+   },
+   {
+    "miara": "autokorelacja_sumy_lag1",
+    "opis": "czy duża suma pociąga dużą sumę w następnym",
+    "dane": 0.0059,
+    "los_srednio": 0.0003,
+    "los_odchylenie": 0.0114,
+    "p": 0.6154,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.7521
+   },
+   {
+    "miara": "autokorelacja_sumy_lag2",
+    "opis": "to samo co 2 losowania dalej",
+    "dane": 0.0115,
+    "los_srednio": -0.0004,
+    "los_odchylenie": 0.0116,
+    "p": 0.2977,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.4678
+   },
+   {
+    "miara": "autokorelacja_parzystych_lag1",
+    "opis": "czy liczba parzystych przechodzi na następne",
+    "dane": 0.0243,
+    "los_srednio": -0.0,
+    "los_odchylenie": 0.0117,
+    "p": 0.045,
+    "p_bonferroni": 0.4945,
+    "q_bh": 0.2473
+   },
+   {
+    "miara": "autokorelacja_niskich_lag1",
+    "opis": "czy liczba niskich (1-24) przechodzi na następne",
+    "dane": 0.0005,
+    "los_srednio": -0.0001,
+    "los_odchylenie": 0.0116,
+    "p": 0.959,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.959
+   },
+   {
+    "miara": "srednia_suma",
+    "opis": "średnia suma 6 liczb",
+    "dane": 149.097,
+    "los_srednio": 149.989,
+    "los_odchylenie": 0.3633,
+    "p": 0.012,
+    "p_bonferroni": 0.1319,
+    "q_bh": 0.1319
+   },
+   {
+    "miara": "wariancja_sumy",
+    "opis": "rozrzut sumy",
+    "dane": 1054.6767,
+    "los_srednio": 1074.915,
+    "los_odchylenie": 16.7453,
+    "p": 0.2268,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.4678
+   },
+   {
+    "miara": "srednio_parzystych",
+    "opis": "średnio parzystych w losowaniu",
+    "dane": 2.9458,
+    "los_srednio": 2.9392,
+    "los_odchylenie": 0.0137,
+    "p": 0.6014,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.7521
+   },
+   {
+    "miara": "srednio_niskich_1_24",
+    "opis": "średnio niskich (1-24) w losowaniu",
+    "dane": 2.9606,
+    "los_srednio": 2.939,
+    "los_odchylenie": 0.0131,
+    "p": 0.0989,
+    "p_bonferroni": 1.0,
+    "q_bh": 0.3626
+   }
+  ],
+  "istotnych_po_poprawce": 0
+ },
+ "przewidywanie": {
+  "uczenie_do": "2010-01-01",
+  "losowan_testowych": 2630,
+  "teoria_srednio": 0.7347,
+  "modele": [
+   {
+    "model": "czeste_od_1957",
+    "opis": "6 liczb najczęstszych w całej dotychczasowej historii",
+    "srednio_trafien": 0.7346,
+    "z": -0.01,
+    "p": 0.995,
+    "trojek_i_wiecej": 47,
+    "oczekiwane_trojek_i_wiecej": 49.0,
+    "p_bonferroni": 1.0
+   },
+   {
+    "model": "czeste_ostatnie_50",
+    "opis": "6 liczb najczęstszych w ostatnich 50 losowaniach",
+    "srednio_trafien": 0.7304,
+    "z": -0.29,
+    "p": 0.7729,
+    "trojek_i_wiecej": 47,
+    "oczekiwane_trojek_i_wiecej": 49.0,
+    "p_bonferroni": 1.0
+   },
+   {
+    "model": "rzadkie_ostatnie_50",
+    "opis": "6 liczb najrzadszych w ostatnich 50 losowaniach",
+    "srednio_trafien": 0.7202,
+    "z": -0.98,
+    "p": 0.3265,
+    "trojek_i_wiecej": 49,
+    "oczekiwane_trojek_i_wiecej": 49.0,
+    "p_bonferroni": 1.0
+   },
+   {
+    "model": "najdluzej_nie_bylo",
+    "opis": "6 liczb, które najdłużej nie padły („należą się”)",
+    "srednio_trafien": 0.7278,
+    "z": -0.47,
+    "p": 0.6397,
+    "trojek_i_wiecej": 50,
+    "oczekiwane_trojek_i_wiecej": 49.0,
+    "p_bonferroni": 1.0
+   },
+   {
+    "model": "markow",
+    "opis": "liczby z najwyższą szansą po tym, co padło ostatnio (uczony tylko na danych sprzed testu)",
+    "srednio_trafien": 0.7323,
+    "z": -0.16,
+    "p": 0.8727,
+    "trojek_i_wiecej": 48,
+    "oczekiwane_trojek_i_wiecej": 49.0,
+    "p_bonferroni": 1.0
+   },
+   {
+    "model": "los",
+    "opis": "6 losowych liczb (punkt odniesienia)",
+    "srednio_trafien": 0.7536,
+    "z": 1.28,
+    "p": 0.2017,
+    "trojek_i_wiecej": 58,
+    "oczekiwane_trojek_i_wiecej": 49.0,
+    "p_bonferroni": 1.0
+   }
+  ],
+  "istotnych_po_poprawce": 0
+ },
+ "hipoteza": {
+  "uczenie": "1957-2009",
+  "test": "2010-2026",
+  "kandydaci": [
+   {
+    "zakres": "1-9",
+    "ile": 5267,
+    "oczekiwane": 5278.8,
+    "z": -0.19
+   },
+   {
+    "zakres": "10-19",
+    "ile": 5836,
+    "oczekiwane": 5865.3,
+    "z": -0.45
+   },
+   {
+    "zakres": "20-29",
+    "ile": 6074,
+    "oczekiwane": 5865.3,
+    "z": 3.23
+   },
+   {
+    "zakres": "30-39",
+    "ile": 5924,
+    "oczekiwane": 5865.3,
+    "z": 0.91
+   },
+   {
+    "zakres": "40-49",
+    "ile": 5639,
+    "oczekiwane": 5865.3,
+    "z": -3.5
+   },
+   {
+    "zakres": "1-24",
+    "ile": 14136,
+    "oczekiwane": 14076.7,
+    "z": 0.74
+   },
+   {
+    "zakres": "25-49",
+    "ile": 14604,
+    "oczekiwane": 14663.3,
+    "z": -0.74
+   },
+   {
+    "zakres": "1-31",
+    "ile": 18365,
+    "oczekiwane": 18182.4,
+    "z": 2.36
+   },
+   {
+    "zakres": "32-49",
+    "ile": 10375,
+    "oczekiwane": 10557.6,
+    "z": -2.36
+   }
+  ],
+  "wybrany": "40-49",
+  "kierunek": "rzadziej",
+  "z_uczenie": -3.5,
+  "p_uczenie_bonferroni": 0.0042,
+  "test_ile": 3183,
+  "test_oczekiwane": 3220.4,
+  "z_test": -0.78,
+  "p_test": 0.2175,
+  "potwierdzona": false
+ },
+ "pokrycie": {
+  "losowe_bez_ograniczen": {
+   "srednio_trafien_na_zaklad": 0.7332,
+   "szansa_choc_jednej_wygranej_proc": 31.0,
+   "rozklad_liczby_wygranych_proc": {
+    "0": 69.0,
+    "1": 25.84,
+    "2": 4.65,
+    "3+": 0.51
+   },
+   "prob": 40000
+  },
+  "rozpisane_max_2_wspolne": {
+   "srednio_trafien_na_zaklad": 0.7341,
+   "szansa_choc_jednej_wygranej_proc": 32.6,
+   "rozklad_liczby_wygranych_proc": {
+    "0": 67.39,
+    "1": 27.73,
+    "2": 4.47,
+    "3+": 0.41
+   },
+   "prob": 40000
+  },
+  "teoria_niezalezne_proc": 31.36
+ },
+ "wysokie_liczby": {
+  "wysokich_32_49": 16104,
+  "oczekiwane": 16354.3,
+  "z": -2.6,
+  "p": 0.0093
+ },
+ "werdykt": {
+  "sygnaly": {
+   "epoki": false,
+   "pary": false,
+   "trojki": false,
+   "zaleznosc": false,
+   "przewidywanie": false,
+   "hipoteza_z_uczenia": false
+  },
+  "cokolwiek_istotne": false
+ }
+}
