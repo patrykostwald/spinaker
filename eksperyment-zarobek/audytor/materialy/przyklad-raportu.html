@@ -1,0 +1,50 @@
+<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Przegląd dostępności</title><style>
+:root{--bg:#0f1115;--fg:#e8e9ec;--mut:#9aa0aa;--line:#262a33;--card:#161922}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;margin:0;padding:32px 16px}
+main{max-width:1100px;margin:0 auto}h1{font-size:24px;margin:0 0 4px}.mut{color:var(--mut)}
+.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:20px 0}
+.k div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px}.k b{display:block;font-size:22px}
+table{width:100%;border-collapse:collapse;background:var(--card)}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.m{color:var(--mut);font:12px monospace;margin-top:4px;word-break:break-all}.w{font-size:12px;padding:2px 6px;border-radius:4px}
+.critical{background:#7f1d1d}.serious{background:#7c2d12}.moderate{background:#713f12}.minor{background:#334155}
+.tab{overflow-x:auto}.w{white-space:nowrap}.mut,li{overflow-wrap:anywhere}
+@media(max-width:640px){body{padding:24px 16px}table,tbody,tr,td{display:block}tr:first-child{display:none}
+tr{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;padding:4px 0}td{border:0;padding:4px 12px}
+td:not([data-k="Błąd"]):not([data-k="Waga"])::before{content:attr(data-k) ": ";color:var(--mut)}table{background:none}tr{background:var(--card)}}</style><main>
+<h1>Przegląd dostępności - wersja automatyczna</h1><p class="mut">https://strona-testowa.example/index.html · 2026-10-22 · WCAG 2.1/2.2 AA, axe-core, widoki 1440 i 390 px</p>
+<div class="k"><div><b>2</b>podstron</div><div><b>10</b>rodzajów błędów</div>
+<div><b>7</b>krytyczne i poważne</div></div>
+<div class="tab"><table><tr><th>Waga</th><th>Błąd i przykładowe miejsca</th><th>Kryterium</th><th>Podstron</th><th>Wystąpień</th><th>Widok</th></tr><tr><td data-k="Waga"><span class="w critical">krytyczny</span></td>
+    <td data-k="Błąd">Obrazy muszą mieć tekst alternatywny.<div class="m">img[src$=&quot;herb.png&quot;]<br>img[src$=&quot;ikona.png&quot;]</div></td>
+    <td data-k="Kryterium">1.1.1 (A)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">2</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w critical">krytyczny</span></td>
+    <td data-k="Błąd">Przyciski muszą mieć odróżniający je tekst nazwy.<div class="m">button</div></td>
+    <td data-k="Kryterium">4.1.2 (A)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">1</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w critical">krytyczny</span></td>
+    <td data-k="Błąd">Element formularza musi mieć etykietę.<div class="m">input[type=&quot;email&quot;]</div></td>
+    <td data-k="Kryterium">4.1.2 (A)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">1</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w serious">poważny</span></td>
+    <td data-k="Błąd">Elementy muszą mieć wystarczający kontrast kolorów.<div class="m">p</div></td>
+    <td data-k="Kryterium">1.4.3 (AA)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">1</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w serious">poważny</span></td>
+    <td data-k="Błąd">Element &lt;html&gt; musi mieć atrybut lang.<div class="m">html</div></td>
+    <td data-k="Kryterium">3.1.1 (A)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">1</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w serious">poważny</span></td>
+    <td data-k="Błąd">Łącza muszą mieć odróżniający je tekst.<div class="m">a[href$=&quot;kontakt.html&quot;]</div></td>
+    <td data-k="Kryterium">2.4.4, 4.1.2 (A)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">1</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w serious">poważny</span></td>
+    <td data-k="Błąd">Wszystkie cele dotykowe muszą mieć rozmiar 24px lub pozostawiać wystarczającą ilość miejsca wokół.<div class="m">input[type=&quot;text&quot;]</div></td>
+    <td data-k="Kryterium">2.5.8 (AA)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">1</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w moderate">średni</span></td>
+    <td data-k="Błąd">Dokument może mieć tylko jeden obszar kluczowy main.<div class="m">html</div></td>
+    <td data-k="Kryterium">- (dobra praktyka)</td>
+    <td data-k="Podstron">2</td><td data-k="Wystąpień">2</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w moderate">średni</span></td>
+    <td data-k="Błąd">Cała treść strony musi być zawarta w obszarach kluczowych.<div class="m">h1<br>img[src$=&quot;herb.png&quot;]<br>p<br>h4<br>a[href$=&quot;aktualnosci.html&quot;]</div></td>
+    <td data-k="Kryterium">- (dobra praktyka)</td>
+    <td data-k="Podstron">2</td><td data-k="Wystąpień">10</td><td data-k="Widok">1440, 390</td></tr><tr><td data-k="Waga"><span class="w moderate">średni</span></td>
+    <td data-k="Błąd">Poziomy nagłówków powinny wzrastać tylko o jeden.<div class="m">h4</div></td>
+    <td data-k="Kryterium">- (dobra praktyka)</td>
+    <td data-k="Podstron">1</td><td data-k="Wystąpień">1</td><td data-k="Widok">1440, 390</td></tr></table></div>
+<h2>Do ręcznego testu</h2><ol><li>https://strona-testowa.example/index.html</li><li>https://strona-testowa.example/kontakt.html</li></ol>
+<p class="mut">Test automatyczny wykrywa ok. 30-40% problemów [szacunek]. To audyt techniczny, nie opinia prawna ani certyfikat.</p></main></html>
