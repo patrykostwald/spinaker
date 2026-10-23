@@ -60,7 +60,7 @@ wyłączonych źródłach; osoby - bez potwierdzonych relacji (podmiot dociągni
 
 ## 4. Co zbudowano w tym sprincie
 
-1. **Pokrycie KRS** (`news/krs_pokrycie.py`, model `KrsKolejka`, migracja `0170_krs_kolejka`):
+1. **Pokrycie KRS** (`news/krs_pokrycie.py`, model `KrsKolejka`, migracja `0171_krs_kolejka` - po integracji 23.10):
    - `zasil()` - do kolejki: podmioty bez NIP/REGON/formy albo z odpisem starszym niż 90 dni, KRS z listy NIW, NIP-y z TED
      (wykonawcy-organizacje i zamawiający), BZP i FTS. Bez nazw, bez osób fizycznych.
    - `uzupelnij()` - NIP -> KRS z Białej listy MF (z odpowiedzi tylko pole `krs`), odpis aktualny z api-krs, zapis tylko gdy NIP

@@ -254,13 +254,17 @@ def lista_x(path: Path | None = None) -> list[dict]:
 
 def braki_x(path: Path | None = None) -> dict:
     path = path or OSOBY_X
+    from django.db.models import Q
     from news.political_models import PublicFigure
     from news.przeszlosc_osoba import x_accounts
     rows = lista_x(path)
     if not rows:
         return {'lista': str(path.name), 'dostepna': path.exists(), 'braki': [], 'sprawdzone': 0}
+    # osoba_id: numer profilu albo klucz osoby z osoby_x.csv (PublicFigure.import_key, np. parliamentary:ep:23788)
     ids = {row['id'] for row in rows if row['id'].isdigit()}
-    figures = {str(f.pk): f for f in PublicFigure.objects.filter(pk__in=ids, archived=False)}
+    keys = {row['id'] for row in rows if row['id'] and not row['id'].isdigit()}
+    found = PublicFigure.objects.filter(Q(pk__in=ids) | Q(import_key__in=keys), archived=False)
+    figures = {key: f for f in found for key in (str(f.pk), f.import_key) if key}
     braki = []
     for row in rows:
         figure = figures.get(row['id'])

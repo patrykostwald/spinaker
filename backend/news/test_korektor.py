@@ -177,6 +177,11 @@ def test_x_list_reading(tmp_path):
                     f'Ktoś Niepewny,{figure.pk},@cos,https://example.org,2026-10-23,niska\n', encoding='utf-8')
     result = korektor.braki_x(path)
     assert result['sprawdzone'] == 1 and result['braki'][0]['konto'] == 'MarekJakubiak'
+    # format osoby_x.csv z gałęzi osoby-x: osoba_id = klucz osoby (import_key), nie numer
+    keyed = tmp_path / 'osoby_x_klucz.csv'
+    keyed.write_text('imie_nazwisko,osoba_id,konto,zrodlo,data_sprawdzenia,pewnosc,stan_konta,uwagi\n'
+                     'Marek Jakubiak,test:jakubiak,MarekJakubiak,https://www.sejm.gov.pl/x,2026-10-23,wysoka,aktualne,\n', encoding='utf-8')
+    assert [b['id'] for b in korektor.braki_x(keyed)['braki']] == [figure.pk]
 
 
 @pytest.mark.django_db

@@ -40,7 +40,7 @@ Pozycje oznaczone w inwentarzu jako zrobione wcześniej (P0-9, P0-10, P1-1/P1-16
 
 | Sonda | Kryterium odbioru |
 |---|---|
-| S1 migracja i harmonogram | `0170_krs_kolejka` zastosowana; w Celery beat są `krs-pokrycie-night`, `przeszlosc-niw-weekly`, `przeszlosc-opp-weekly`; po pierwszej nocy `przeszlosc_krs_pokrycie --json` ma `kolejka.wedlug_stanu.ok` > 0 |
+| S1 migracja i harmonogram | `0171_krs_kolejka` zastosowana (po integracji 23.10 numer 0171); w Celery beat są `krs-pokrycie-night`, `przeszlosc-niw-weekly`, `przeszlosc-opp-weekly`; po pierwszej nocy `przeszlosc_krs_pokrycie --json` ma `kolejka.wedlug_stanu.ok` > 0 |
 | S2 pokrycie KRS | po 7 nocach: odsetek podmiotów z NIP rośnie co noc; `bledy` < 5% przetworzonych; liczba `biala_lista_zapytania` na dobę ≤ 10 |
 | S3 przepływy Orlenu i PKO BP | `/api/przeszlosc/przeplywy/spolka:0000028860/` 200, `suspect_count` ≥ 2 (TED 157377-2026 i 728541-2025, jak w R2b), suma `in` < 10 mld zł; PKO BP 0000026438 200 |
 | S4 przepływy osoby | Obajtek: niepusta tabela z `via` = Orlen i 0 pozycji z datą spoza okresu funkcji bez `?cala_historia=1`; osoba bez funkcji ma `empty_reason` |
