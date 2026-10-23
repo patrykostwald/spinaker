@@ -147,8 +147,10 @@ def page_mentions(url: str, surname: str, entity: str) -> bool:
 def _checked_sources(sources: list[dict], surname: str, entity: str) -> list[dict]:
     kept = []
     for source in sources[:5]:
-        if source.get('grounded') or page_mentions(source['url'], surname, entity):
-            kept.append({'url': source['url'], 'title': source.get('title') or (urlsplit(source['url']).hostname or '')})
+        # „read”: sami pobraliśmy stronę i wymienia osobę oraz podmiot; sam adres z wyników wyszukiwania (grounded) tego nie dowodzi
+        read = page_mentions(source['url'], surname, entity)
+        if source.get('grounded') or read:
+            kept.append({'url': source['url'], 'title': source.get('title') or (urlsplit(source['url']).hostname or ''), 'read': read})
     return kept
 
 
@@ -194,7 +196,8 @@ def _sector(extract: krs.Extract, claimed: str) -> tuple[str, str]:
 
 
 @transaction.atomic
-def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: str, person: krs.Person | None) -> PublicFigureOrganisationRelation:
+def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: str, person: krs.Person | None,
+          confirm: bool = True) -> PublicFigureOrganisationRelation:
     sector, note = _sector(extract, candidate['sector'])
     organisation, _ = RegisteredOrganisation.objects.update_or_create(krs_number=extract.krs, defaults={
         'name': _pretty(extract.name) or candidate['name'], 'kind': extract.kind, 'legal_form': extract.legal_form.lower(),
@@ -210,8 +213,9 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
                   'until': person.until if person else None, 'sources': sources,
                   'evidence_url': extract.official_url if person else sources[0]['url'],
                   'evidence_note': (f"Źródło: {sources[0]['title']}" if sources else 'Oficjalny odpis KRS')[:1000]})
-    relation.confirm_automatically(method)
-    relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
+    if confirm:
+        relation.confirm_automatically(method)
+        relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
     return relation
 
 
@@ -237,7 +241,14 @@ def verify(figure: PublicFigure, candidate: dict, reasons: list | None = None) -
     if people:
         # Najpierw aktualna funkcja, potem najdłuższa historyczna.
         person = sorted(people, key=lambda p: (p.until is not None, -(p.since or date.min).toordinal()))[0]
-        return _save(figure, extract, candidate, 'krs_register', person)
+        # Imiennicy (sprint 23.10): maska KRS (inicjał i długość) nie odróżnia dwóch osób o tym samym imieniu i nazwisku.
+        # Automatyczne potwierdzenie tylko z co najmniej jednym sprawdzonym źródłem, które wymienia osobę i ten podmiot;
+        # bez niego relacja czeka na weryfikację zespołu (pending_review) i nie trafia na profil.
+        # Śledczy R3 P0-12: liczy się tylko źródło przeczytane przez nas, nie sam adres z wyników Gemini.
+        confirm = any(source.get('read') for source in candidate['sources'])
+        candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
+        return _save(figure, extract, candidate, 'krs_register', person, confirm=confirm)
+    candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
     if len(_domains(candidate['sources'])) >= 2:
         return _save(figure, extract, candidate, 'public_sources', None)
     return reject(f"w KRS brak osoby o zgodnych inicjałach w organie „{candidate['role']}”; sprawdzonych źródeł: {len(candidate['sources'])}")
