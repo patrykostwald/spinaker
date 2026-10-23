@@ -661,6 +661,17 @@ def fakty_task():
     return fakty.run()
 
 
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def korektor_task():
+    """Codziennie 6:50: Korektor (właściciel 23.10) - urzędy i osoby w treściach z 2 dni, bezpieczne naprawy, mail rano."""
+    import os
+    if os.environ.get('KOREKTOR_ENABLED', 'true').strip().lower() == 'false':
+        return {'status': 'disabled'}
+    from news import korektor
+    report = korektor.run(dni=2, napraw=os.environ.get('KOREKTOR_NAPRAW', 'true').strip().lower() == 'true')
+    return {'status': 'ok', 'mail': korektor.send(report)['status'], **report['podsumowanie']}
+
+
 @shared_task
 def raport_petli_task():
     """Codziennie 7:05: Raport pętli mailem (audyt pętli 5.10). Bez AI; jeden mail na dzień."""
@@ -904,3 +915,40 @@ def poczta_digest_task():
         return {'status': 'disabled'}
     cleaned = poczta.retention()
     return {**poczta.digest(), 'cleaned': cleaned}
+
+
+@shared_task(name="news.tasks.krs_pokrycie_task", soft_time_limit=3000, time_limit=3300)
+def krs_pokrycie_task():
+    """Noc (sprint 23.10): kolejka KRS - podmioty bez odpisu i NIP-y z zamówień i dotacji (KRS_POKRYCIE_ENABLED)."""
+    if not cache.add("krs-pokrycie-lock", "1", timeout=3400):
+        return {"status": "locked"}
+    try:
+        from news.krs_pokrycie import run
+        return run()
+    finally:
+        cache.delete("krs-pokrycie-lock")
+
+
+def _auto(name):
+    import os
+    return os.environ.get(name, 'true').strip().lower() not in ('0', 'false', 'no', 'off')
+
+
+@shared_task(name="news.tasks.przeszlosc_niw_task", soft_time_limit=900, time_limit=960)
+def przeszlosc_niw_task():
+    """Tydzień (sprint 23.10): lista dotacji NIW-CRSO, dotąd tylko z ręcznej komendy (PRZESZLOSC_NIW_AUTO)."""
+    from django.core.management import call_command
+    if not _auto('PRZESZLOSC_NIW_AUTO'):
+        return {'status': 'disabled'}
+    call_command('przeszlosc_niw_dotacje')
+    return {'status': 'ok'}
+
+
+@shared_task(name="news.tasks.przeszlosc_opp_task", soft_time_limit=900, time_limit=960)
+def przeszlosc_opp_task():
+    """Tydzień (sprint 23.10): wykaz MF 1,5% podatku dla OPP, dotąd tylko z ręcznej komendy (PRZESZLOSC_OPP_AUTO)."""
+    from django.core.management import call_command
+    if not _auto('PRZESZLOSC_OPP_AUTO'):
+        return {'status': 'disabled'}
+    call_command('przeszlosc_opp_podatek')
+    return {'status': 'ok'}

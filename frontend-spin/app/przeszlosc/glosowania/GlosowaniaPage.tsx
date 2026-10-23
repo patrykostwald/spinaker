@@ -6,7 +6,7 @@ import '../glosowania-lista.css';
 import {
   EMPTY_FILTERS, MIN_QUERY, PER_PAGE, buildVotesQuery, clubSummary, filtersToSearch, hasFilters, mergeRows, outcomeLabel, parseFilters,
   queryTooShort, safeUrl, shortDay, sortRows, votesToCsv,
-  type SortDir, type SortKey, type VoteFilters, type VoteListRow, type VotesListResponse,
+  type SortDir, type SortKey, type VoteFilters, type VoteKind, type VoteListRow, type VotesListResponse,
 } from '../glosowania-lista';
 
 /**
@@ -37,7 +37,10 @@ function Row({ v, club }: { v: VoteListRow; club: string }) {
     <td data-c="t"><p className="gl-t" title={v.title}>{v.title}</p>
       {v.motion && v.motion !== v.title && <small className="gl-m" title={v.motion}>{v.motion}</small>}</td>
     <td data-c="r" data-l="Wynik ogółem">
-      {r ? <>
+      {v.polish ? <>
+        <span className="gl-out" data-o={v.outcome}>{outcomeLabel(v.outcome)}</span>
+        <span className="gl-n">{nb(`europosłowie z Polski: ${Object.entries(v.polish).map(([k, n]) => `${k} ${n}`).join(' · ') || 'brak głosów'}`)}</span>
+      </> : r ? <>
         <span className="gl-out" data-o={v.outcome} title={unknown ? 'Brak w naszych danych: wymaganej większości dla tego głosowania (np. głosowania na listach).' : undefined}>
           {outcomeLabel(v.outcome)}{v.majority ? <small> · wymagane {v.majority.votes}</small> : null}</span>
         <span className="gl-n">za <b data-k="za">{r.yes ?? '-'}</b> · przeciw <b data-k="przeciw">{r.no ?? '-'}</b></span>
@@ -107,6 +110,9 @@ export function GlosowaniaPage() {
   const short = queryTooShort(draft);
   const club = meta?.filter.klub ?? filters.klub;
   const cov = meta?.coverage;
+  const kinds: VoteKind[] = meta?.kinds ?? [];
+  const current = kinds.find(k => k.key === filters.rodzaj);
+  const kindNote = current?.count ? `Źródło: ${current.source}.` : '';
   const terms = cov?.terms ?? [];
   const first = terms.map(t => t.first).filter(Boolean).sort()[0] ?? null;
   const last = terms.map(t => t.last).filter(Boolean).sort().reverse()[0] ?? null;
@@ -132,7 +138,7 @@ export function GlosowaniaPage() {
     <Bar />
     <section className="px-sec gl" aria-labelledby="gl-h" aria-busy={busy || undefined}>
       <div className="gl-head">
-        <div className="pt-head__l"><p className="px-kicker">Tabela danych</p><h1 id="gl-h">Głosowania Sejmu</h1></div>
+        <div className="pt-head__l"><p className="px-kicker">Tabela danych</p><h1 id="gl-h">Głosowania</h1></div>
         <a className="px-link gl-head__link" href="/przeszlosc/odstepstwa">Odstępstwa od klubu&nbsp;→</a>
       </div>
       <p className="gl-lead">{nb('Głosowania imienne z naszej bazy: wynik ogółem w liczbach, głos wybranego klubu i odnośnik do źródła w Sejmie.')}</p>
@@ -142,6 +148,15 @@ export function GlosowaniaPage() {
       </div>
 
       <form className="gl-filters" role="search" aria-label="Filtry głosowań" onSubmit={submit}>
+        <div className="gl-line">
+          <span className="gl-lab" id="gl-kind-l">Rodzaj</span>
+          <div className="px-chips" role="group" aria-labelledby="gl-kind-l">
+            {kinds.filter(k => k.available || k.key === filters.rodzaj).map(k => <button key={k.key} type="button" aria-pressed={filters.rodzaj === k.key} title={k.note || k.source}
+              onClick={() => apply({ rodzaj: k.key, klub: k.key === 'sejm' ? filters.klub : '' })}>{`${k.label} (${k.count.toLocaleString('pl-PL')})`}</button>)}
+          </div>
+          {kindNote && <p className="gl-hint">{nb(kindNote)}</p>}
+          {kinds.some(k => !k.available) && <p className="gl-hint">{nb(kinds.filter(k => !k.available).map(k => `${k.label} - ${k.note}`).join(' '))}</p>}
+        </div>
         <div className="gl-line">
           <label className="gl-lab" htmlFor="gl-q">Szukaj</label>
           <div className="gl-find">
@@ -153,13 +168,13 @@ export function GlosowaniaPage() {
           <p id="gl-q-hint" className="gl-hint" role={short ? 'alert' : undefined} data-bad={short || undefined}>
             {short ? `Wpisz co najmniej ${MIN_QUERY} znaki.` : `Szukamy w tytule i opisie głosowania, od ${MIN_QUERY} znaków.`}</p>
         </div>
-        <div className="gl-line">
+        {filters.rodzaj === 'sejm' && <div className="gl-line">
           <span className="gl-lab" id="gl-club-l">Klub</span>
           <div className="px-chips" role="group" aria-labelledby="gl-club-l">
             <button type="button" aria-pressed={!filters.klub} onClick={() => apply({ klub: '' })}>Wszystkie</button>
             {clubs.map(c => <button key={c} type="button" aria-pressed={filters.klub === c} onClick={() => apply({ klub: c })}>{c}</button>)}
           </div>
-        </div>
+        </div>}
         <div className="gl-line">
           <span className="gl-lab" id="gl-out-l">Wynik</span>
           <div className="px-seg" role="group" aria-labelledby="gl-out-l">

@@ -1,5 +1,6 @@
 "use client";
 import { Sprostowanie } from './Sprostowanie';
+import { Przeplywy } from './Przeplywy';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Loading } from '@spin-clinic/ui/kit';
 import { Przybornik, companyTools } from './Przybornik';
@@ -94,6 +95,7 @@ export function DrzewoPieniedzy({ ident }: { ident: string }) {
     {state === 'locked' && <p className="px-msg">{nb('Drzewo przepływu pieniędzy jest w pilotażu przeszłość.today.')} <a href="/przeszlosc/pilot">Pilotaż</a></p>}
     {state === 'error' && <p className="px-msg" role="alert">Nie udało się pobrać drzewa. Spróbuj ponownie.</p>}
     {data && <TreeView data={data} />}
+    {data && <Przeplywy ident={`spolka:${data.organisation.krs_number}`} />}
     <Foot />
   </div>;
 }

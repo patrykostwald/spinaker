@@ -108,7 +108,7 @@ def test_fact_matched_by_post_url_and_unsourced_fact_degraded():
 
 
 @pytest.mark.parametrize('text,gate', [
-    ('Podatek wzrośnie o 23 proc. dla wszystkich.', 'fact_checker'),              # liczba spoza materiałów
+    ('Podatek wzrośnie o 470 proc. dla wszystkich.', 'fact_checker'),             # liczba spoza materiałów (nie dzień ani miesiąc z daty wpisu)
     ('Wpisy mówią: „to koniec świata dla nas”.', 'fact_checker'),               # cytat spoza materiałów
     ('Minister jest złodziejem i to widać.', 'prawnik'),                         # zarzut, który nie padł
     ('Autorzy celowo wprowadzają w błąd.', 'prawnik'),                           # intencja

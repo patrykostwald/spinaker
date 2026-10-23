@@ -24,6 +24,7 @@ BEAT_PLAN = {
     'opiekunowie-1h': ('opiekunowie_task', {'minute': 17}),  # właściciel 5.10: opiekunowie każdej pętli
     'zmiana-zdania-30m': ('zmiana_zdania_task', {'minute': '7,37'}),  # właściciel 6.10: Zmiana zdania przy diagnozach
     'odbior-spinu-1h': ('odbior_spinu_task', {'minute': 47}),  # właściciel 6.10: Jak spin zadziałał (po 24 h)
+    'korektor-morning': ('korektor_task', {'hour': 6, 'minute': 50}),  # właściciel 23.10: urzędy i osoby po nocnych zadaniach, przed raportem
     'raport-petli-daily': ('raport_petli_task', {'hour': 7, 'minute': 5}),  # audyt pętli 5.10: jeden mail rano o stanie pętli
     'sprint-intake': ('sprint_intake_task', {'hour': 6, 'minute': 0}),  # audyt pętli 5.3: poniedziałek pełny sprint, inne dni dopełnienie (< 3 otwartych)
     'automatyk-daily': ('automatyk_task', {'hour': '6,13', 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
@@ -35,6 +36,9 @@ BEAT_PLAN = {
     'przeszlosc-alerts-daily': ('przeszlosc_alerts_task', {'hour': 7, 'minute': 0}),  # sprint 1: dzienny list alertów
     'przeszlosc-warm-hot': ('przeszlosc_warm_task', {'minute': 25}),  # Śledczy R1 P1-9: tematy dnia i ich osoby w cache co godzinę
     'przeszlosc-warm-all': ('przeszlosc_warm_all_task', {'hour': 5, 'minute': 35}),  # P1-9: wszyscy posłowie po nocnym imporcie i tematach 5:10
+    'krs-pokrycie-night': ('krs_pokrycie_task', {'hour': 1, 'minute': 47}),  # sprint 23.10: kolejka KRS (Biała lista MF -> api-krs)
+    'przeszlosc-niw-weekly': ('przeszlosc_niw_task', {'day_of_week': 'sun', 'hour': 2, 'minute': 50}),  # sprint 23.10: NIW w harmonogramie
+    'przeszlosc-opp-weekly': ('przeszlosc_opp_task', {'day_of_week': 'sun', 'hour': 3, 'minute': 5}),  # sprint 23.10: 1,5% OPP w harmonogramie
     'public-record-people-nightly': ('public_record_people_task', {'hour': 4, 'minute': 35}),  # dokumenty Sejmu → osoby po id posła
     'narrative-thread-daily':('narrative_thread_task', {'hour': 21, 'minute': 45}),
     'narrative-thread-retry': ('narrative_thread_task', {'hour': 22, 'minute': '0,15'}),
@@ -120,9 +124,9 @@ def check_poll(now):
 
 def check_screen(now):
     from django.db.models import Q
-    from news.clinic import CAMPS
+    from news.clinic import DIAGNOSED_CAMPS
     from news.political_models import PoliticalPost
-    rows = PoliticalPost.objects.filter(available=True, account__enabled=True, camp_at_collection__in=CAMPS,
+    rows = PoliticalPost.objects.filter(available=True, account__enabled=True, camp_at_collection__in=DIAGNOSED_CAMPS,
                                        fetched_at__lte=now)
     if not rows.exists():
         return result('na', 'Brak wpisów do oceny.')

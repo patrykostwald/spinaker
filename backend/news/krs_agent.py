@@ -18,7 +18,7 @@ import logging
 import os
 import re
 from datetime import date, timedelta
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import requests
 
@@ -94,7 +94,8 @@ def discover(figure: PublicFigure, debug: dict | None = None) -> list[dict]:
     """Kandydaci z wyszukiwarki: podmiot, KRS, funkcja, źródła (tylko te z wyników wyszukiwania)."""
     who = f'{figure.canonical_name} — {figure.role_title}' + (f', {figure.organisation}' if figure.organisation else '')
     queries = '\n'.join(f'- {query}' for query in _queries(_display_name(figure.canonical_name)))
-    prompt = f'Osoba: {who}\n\nWyszukaj w Google co najmniej:\n{queries}'
+    from news import urzedy
+    prompt = f'Osoba: {who}\n\nWyszukaj w Google co najmniej:\n{queries}\n\n{urzedy.blok()}'  # Korektor 23.10
     response = clinic_ai._call_paid(SYSTEM, prompt, SCHEMA, web_search=True, max_tokens=16000, task='krs')
     usage = clinic_ai._usage(response)
     _spend(usage)
@@ -128,10 +129,37 @@ def _stem(word: str) -> str:
     return word[:max(4, len(word) - 2)] if len(word) > 4 else word
 
 
+def _public_url(url: str) -> bool:
+    """Tylko http(s) do publicznych adresów: adresy źródeł pisze model, a wyniki wyszukiwania mogą go sterować."""
+    import ipaddress
+    import socket
+    parts = urlsplit(url or '')
+    if parts.scheme not in ('http', 'https') or not parts.hostname:
+        return False
+    try:
+        infos = socket.getaddrinfo(parts.hostname, parts.port or (443 if parts.scheme == 'https' else 80), proto=socket.IPPROTO_TCP)
+    except (OSError, UnicodeError, ValueError):
+        return False
+    return bool(infos) and all(ipaddress.ip_address(info[4][0]).is_global for info in infos)
+
+
 def page_mentions(url: str, surname: str, entity: str) -> bool:
     """Czy strona naprawdę wymienia nazwisko i podmiot (rdzenie słów, bez znaczników HTML)."""
     try:
-        with requests.get(url, headers=PAGE_HEADERS, timeout=(4, 10), stream=True, allow_redirects=True) as response:
+        response = None
+        for _ in range(4):  # przekierowania ręcznie: każdy adres przechodzi przez _public_url (SSRF)
+            if not _public_url(url):
+                return False
+            response = requests.get(url, headers=PAGE_HEADERS, timeout=(4, 10), stream=True, allow_redirects=False)
+            if response.status_code in (301, 302, 303, 307, 308) and response.headers.get('Location'):
+                url = urljoin(url, response.headers['Location'])
+                response.close()
+                response = None
+                continue
+            break
+        if response is None:
+            return False
+        with response:
             if response.status_code != 200:
                 return False
             raw = response.raw.read(800_000, decode_content=True)
@@ -146,8 +174,10 @@ def page_mentions(url: str, surname: str, entity: str) -> bool:
 def _checked_sources(sources: list[dict], surname: str, entity: str) -> list[dict]:
     kept = []
     for source in sources[:5]:
-        if source.get('grounded') or page_mentions(source['url'], surname, entity):
-            kept.append({'url': source['url'], 'title': source.get('title') or (urlsplit(source['url']).hostname or '')})
+        # „read”: sami pobraliśmy stronę i wymienia osobę oraz podmiot; sam adres z wyników wyszukiwania (grounded) tego nie dowodzi
+        read = page_mentions(source['url'], surname, entity)
+        if source.get('grounded') or read:
+            kept.append({'url': source['url'], 'title': source.get('title') or (urlsplit(source['url']).hostname or ''), 'read': read})
     return kept
 
 
@@ -193,7 +223,8 @@ def _sector(extract: krs.Extract, claimed: str) -> tuple[str, str]:
 
 
 @transaction.atomic
-def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: str, person: krs.Person | None) -> PublicFigureOrganisationRelation:
+def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: str, person: krs.Person | None,
+          confirm: bool = True) -> PublicFigureOrganisationRelation:
     sector, note = _sector(extract, candidate['sector'])
     organisation, _ = RegisteredOrganisation.objects.update_or_create(krs_number=extract.krs, defaults={
         'name': _pretty(extract.name) or candidate['name'], 'kind': extract.kind, 'legal_form': extract.legal_form.lower(),
@@ -203,14 +234,25 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
     role = role[:1].lower() + role[1:] if not role[:2].isupper() else role.lower()
     status = ('former' if person.until else 'current') if person else ('current' if candidate['current'] else 'former')
     sources = candidate['sources']
+    if not confirm:
+        # Ponowne sprawdzenie bez przeczytanego źródła (np. strona chwilowo niedostępna) nie zdejmuje relacji już
+        # potwierdzonej - przez odpis KRS ani przez zespół (recenzja integracji 23.10).
+        kept = PublicFigureOrganisationRelation.objects.filter(
+            public_figure=figure, organisation__krs_number=extract.krs, public_role=role[:255], relation_status=status,
+            verification_status='confirmed').first()
+        if kept:
+            return kept
     relation, _ = PublicFigureOrganisationRelation.objects.update_or_create(
         public_figure=figure, organisation=organisation, public_role=role[:255], relation_status=status,
         defaults={'organ': (person.organ if person else '')[:255], 'since': person.since if person else None,
                   'until': person.until if person else None, 'sources': sources,
                   'evidence_url': extract.official_url if person else sources[0]['url'],
-                  'evidence_note': (f"Źródło: {sources[0]['title']}" if sources else 'Oficjalny odpis KRS')[:1000]})
-    relation.confirm_automatically(method)
-    relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
+                  'evidence_note': ((f"Źródło: {sources[0]['title']}" if sources else 'Oficjalny odpis KRS')
+                                    + ('' if confirm else '. Czeka na zespół: żadna pobrana strona nie wymienia osoby i podmiotu '
+                                       '(adres z wyników wyszukiwania nie wystarcza).'))[:1000]})
+    if confirm:
+        relation.confirm_automatically(method)
+        relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
     return relation
 
 
@@ -236,8 +278,17 @@ def verify(figure: PublicFigure, candidate: dict, reasons: list | None = None) -
     if people:
         # Najpierw aktualna funkcja, potem najdłuższa historyczna.
         person = sorted(people, key=lambda p: (p.until is not None, -(p.since or date.min).toordinal()))[0]
-        return _save(figure, extract, candidate, 'krs_register', person)
-    if len(_domains(candidate['sources'])) >= 2:
+        # Imiennicy (sprint 23.10): maska KRS (inicjał i długość) nie odróżnia dwóch osób o tym samym imieniu i nazwisku.
+        # Automatyczne potwierdzenie tylko z co najmniej jednym sprawdzonym źródłem, które wymienia osobę i ten podmiot;
+        # bez niego relacja czeka na weryfikację zespołu (pending_review) i nie trafia na profil.
+        # Śledczy R3 P0-12: liczy się tylko źródło przeczytane przez nas, nie sam adres z wyników Gemini.
+        confirm = any(source.get('read') for source in candidate['sources'])
+        candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
+        return _save(figure, extract, candidate, 'krs_register', person, confirm=confirm)
+    # P0-12: dwa niezależne źródła liczą się tylko przeczytane przez nas (adres z wyników Gemini to wskazówka)
+    read = [source for source in candidate['sources'] if source.get('read')]
+    candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
+    if len(_domains(read)) >= 2:
         return _save(figure, extract, candidate, 'public_sources', None)
     return reject(f"w KRS brak osoby o zgodnych inicjałach w organie „{candidate['role']}”; sprawdzonych źródeł: {len(candidate['sources'])}")
 

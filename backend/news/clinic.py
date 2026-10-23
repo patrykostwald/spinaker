@@ -33,8 +33,10 @@ logger = logging.getLogger(__name__)
 from news.clinic_council import check_failed, clean_claim  # noqa: E402
 
 CAMPS = ('government', 'opposition')
-CAMP_LABELS = {'government': 'Rządzący', 'opposition': 'Opozycja'}
-CAMP_PROMPT_LABELS = {'government': 'obóz rządzący', 'opposition': 'opozycja'}
+CAMP_LABELS = {'government': 'Rządzący', 'opposition': 'Opozycja', 'other': 'Inni i niezrzeszeni'}
+CAMP_PROMPT_LABELS = {'government': 'obóz rządzący', 'opposition': 'opozycja', 'other': 'poza głównymi obozami (koło, niezrzeszony)'}
+# Diagnozy pojedynczych wpisów obejmują też obóz „inne”; przekazy dnia i porównania zostają dla dwóch obozów.
+DIAGNOSED_CAMPS = (*CAMPS, 'other')
 # Kod klubu z API Sejmu → skrót na plakietce i pełna nazwa (tylko te, których nazwę znamy na pewno).
 CLUBS = {
     'KO': ('KO', 'Koalicja Obywatelska'),
@@ -183,7 +185,7 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
 
 def unscreened_posts(include_old=False):
     since = timezone.now() - timedelta(days=int(os.environ.get('CLINIC_MAX_POST_AGE_DAYS', '3')))
-    rows = PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, account__enabled=True).filter(
+    rows = PoliticalPost.objects.filter(available=True, camp_at_collection__in=DIAGNOSED_CAMPS, account__enabled=True).filter(
         Q(spin_diagnosis__isnull=True) | Q(spin_diagnosis__status='flagged', spin_diagnosis__screen_score__isnull=True,
                                           spin_diagnosis__diagnosed_at__isnull=True))
     if not include_old:
@@ -328,6 +330,9 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         row.provider = 'anthropic'  # płatna diagnoza (Claude albo Gemini) — to pole odróżnia ją od strażnika
         # Pełny skład Konsylium jest w usage['council']; pole ma 64 znaki (lista nazw przy komplecie członków jest dłuższa).
         row.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
+        # Korektor (23.10): urząd przypisany niewłaściwej osobie - nie publikujemy, raz ponawiamy, potem czeka na człowieka.
+        from news.korektor import bramka_diagnozy
+        bramka_diagnozy(row)
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
     try:
@@ -584,7 +589,8 @@ def run_diagnoses(limit: int = 2) -> dict:
     from news.council_quorum import MAX_WAIT_HOURS
     waited = timezone.now() - timedelta(hours=MAX_WAIT_HOURS)
     rows = list(SpinDiagnosis.objects.filter(status='queued').filter(
-        Q(post__published_at__gte=fresh) | Q(error__startswith='council_quorum', post__published_at__gte=waited))
+        Q(post__published_at__gte=fresh) | Q(error__startswith='council_quorum', post__published_at__gte=waited)
+        | Q(error__startswith='korektor_urzad', post__published_at__gte=timezone.now() - timedelta(days=7)))
                 .select_related('post__account')
                 .order_by('-post__watch_priority', '-screen_score', '-post__published_at')[:take])
     if auto_publish() and len(rows) < take:
@@ -773,10 +779,23 @@ def _message_for(day, camps, *, models=None, only_missing=False, errors=None) ->
             # Powód zostaje w bazie (wiersz failed bez treści), ale nigdy nie zastępuje już zapisanego przekazu.
             if existing is None or existing.status == 'failed':
                 ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
-                    'message': '', 'status': 'failed', 'error': f'{error.code}: {label}'[:300],
+                    'message': existing.message if existing else '', 'status': 'failed', 'error': f'{error.code}: {label}'[:300],
                     'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
             continue
         status = 'approved' if auto_publish() else 'pending_review'
+        from news.korektor import PREFIX, bledy_przekazu, opis
+        wrong = bledy_przekazu(result, day)
+        if wrong:
+            # Korektor (23.10): przekaz z urzędem przypisanym niewłaściwej osobie nie zastępuje zapisanego; naprawa
+            # co godzinę wygeneruje go ponownie (wiersz failed), a powód zostaje w error.
+            logger.warning('clinic daily message %s %s: korektor %s', day, camp, opis(wrong))
+            if errors is not None:
+                errors[f'{day}:{camp}'] = PREFIX
+            if existing is None or existing.status == 'failed':
+                ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
+                    'message': existing.message if existing else '', 'status': 'failed', 'error': f'{PREFIX}: {opis(wrong)}'[:300],
+                    'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
+            continue
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
             'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
             'thesis': result.get('thesis', ''), 'points': result.get('points', []), 'tone': result.get('tone', []),
