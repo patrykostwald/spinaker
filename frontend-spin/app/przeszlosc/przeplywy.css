@@ -6,7 +6,8 @@
 .pt-pf__tag { flex-shrink: 0; padding: 2px 8px; border: 1px solid var(--px-line-2); border-radius: 999px; font-size: 11px; letter-spacing: .06em; color: var(--sc-text-2); }
 .pt-pf__tag--warn { display: inline-block; margin-right: 6px; padding: 0 6px; letter-spacing: 0; line-height: 18px; border-color: var(--sc-accent); color: var(--sc-text); }
 .pt-pf__lead { margin: 0; }
-.pt-pf__nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pt-pf__nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1100px) { .pt-pf__nums { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pt-pf__num-box { display: grid; grid-template-rows: auto 1fr auto; gap: 6px; height: 112px; padding: 14px 16px; border: 1px solid var(--px-line); border-radius: 12px; background: var(--px-card-2); min-width: 0; }
 .pt-pf__k { font-size: 13px; color: var(--sc-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pt-pf__num-box strong { align-self: center; font: 600 20px/1.2 var(--sc-font-display); font-variant-numeric: tabular-nums; color: var(--sc-text); overflow-wrap: anywhere; }

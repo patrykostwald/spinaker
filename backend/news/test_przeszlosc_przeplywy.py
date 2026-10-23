@@ -49,6 +49,10 @@ def test_org_flows_directions_and_sums():
     assert data['suspect_count'] == 1
     pln_in = next(s for s in data['sums']['in'] if s['currency'] == 'PLN')
     assert pln_in['total'] == 1500000.5  # 9 mld do weryfikacji poza sumą
+    # P0-11: wartość wygranych zamówień osobno od dotacji (nie jedna suma „wpływów”)
+    assert [x['total'] for x in data['sums']['in_contracts'] if x['currency'] == 'PLN'] == [1500000.5]
+    assert all(x['currency'] != 'PLN' or x['total'] != 1500000.5 for x in data['sums']['in_grants'])
+    assert sum(x['count'] for x in data['sums']['in_contracts'] + data['sums']['in_grants']) == sum(x['count'] for x in data['sums']['in'])
     assert data['sums']['out'][0]['total'] == 300000
     s = data['sankey']
     assert s['currency'] == 'PLN' and s['other_currencies'] == ['EUR']

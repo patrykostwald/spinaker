@@ -175,6 +175,9 @@ def _day(value):
     return None
 
 
+CONTRACT_KINDS = ('ted_in', 'ted_out', 'bzp')
+
+
 def sums(rows):
     totals = defaultdict(float)
     counts = defaultdict(int)
@@ -231,7 +234,10 @@ def payload(rows, subject, note, extra=None):
     for r in rows:
         used.setdefault(r['source']['key'], {k: v for k, v in r['source'].items() if k != 'url'})
     return {'subject': subject, 'count': len(rows), 'truncated': len(rows) > MAX_ROWS, 'results': rows[:MAX_ROWS],
-            'sums': {'all': sums(rows), 'in': sums(counted_in), 'out': sums(counted_out)},
+            # Śledczy R3 P0-11: wartość wygranych zamówień (z ogłoszeń, nie zapłata) osobno od dotacji i 1,5% - nie jedna „suma wpływów”
+            'sums': {'all': sums(rows), 'in': sums(counted_in), 'out': sums(counted_out),
+                     'in_contracts': sums([r for r in counted_in if r['kind'] in CONTRACT_KINDS]),
+                     'in_grants': sums([r for r in counted_in if r['kind'] not in CONTRACT_KINDS])},
             'suspect_count': sum(1 for r in rows if r.get('amount_suspect')),
             'shared_count': sum(1 for r in rows if r.get('amount_shared')),
             'kinds': [{'kind': k, 'label': KIND[k], 'count': n} for k, n in sorted(kinds.items(), key=lambda x: -x[1])],

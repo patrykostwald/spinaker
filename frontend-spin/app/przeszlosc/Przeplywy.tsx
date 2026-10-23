@@ -6,7 +6,7 @@ import './przeplywy.css';
 
 /**
  * Przepływy pieniędzy v1 (sprint 23.10): skąd do kogo płyną pieniądze publiczne. GET /api/przeszlosc/przeplywy/<osoba:slug|spolka:KRS>/
- * Trzy równe boksy liczb (wpływy, wydatki, rekordy), wykres sankey (płatnicy po lewej, odbiorcy po prawej, jedna waluta)
+ * Cztery równe boksy liczb (wartość wygranych zamówień z ogłoszeń, dotacje i 1,5%, wartość udzielonych zamówień, pozycje), wykres sankey (płatnicy po lewej, odbiorcy po prawej, jedna waluta)
  * i tabela: data, od, do, kwota, rodzaj, źródło. Kwoty do weryfikacji w tabeli z etykietą, poza sumami i wykresem.
  * Laws of UX: Common Region (jeden boks na funkcję), Similarity (te same boksy liczb), Von Restorff (akcent tylko na wstędze
  * pod kursorem), Tesler (sumy i podział walut liczy system). Telefon: wykres węższy (5 + 5 węzłów), tabela jako lista.
@@ -22,7 +22,7 @@ type SNode = { id: number; label: string; side: 'from' | 'to'; total: number };
 type SLink = { source: number; target: number; value: number };
 export type Flows = {
   subject: { kind: 'person' | 'organisation'; name: string; url: string; organisations?: { name: string; url: string; nip_missing: boolean }[]; identifiers_missing?: boolean };
-  count: number; truncated: boolean; results: Flow[]; sums: { all: Sum[]; in: Sum[]; out: Sum[] }; suspect_count: number;
+  count: number; truncated: boolean; results: Flow[]; sums: { all: Sum[]; in: Sum[]; out: Sum[]; in_contracts?: Sum[]; in_grants?: Sum[] }; suspect_count: number; shared_count?: number;
   kinds: { kind: string; label: string; count: number }[];
   sankey: { currency: string | null; nodes: SNode[]; links: SLink[]; other_currencies: string[] };
   sources: { key: string; label: string; license: string }[]; note: string; generated_at: string;
@@ -35,6 +35,16 @@ const PAGE = 25;
 /** Data w jednej linii (zasada 4): 03.10.2025; sam rok bez zmian. */
 const short = (d: string) => d.length === 10 ? `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}` : d;
 const sumText = (s: Sum[]) => s.length ? s.map(x => money(x.total, x.currency)).join(' + ') : '-';
+/** Odmiana „pozycja”: 1 pozycja, 2-4 pozycje, 5+ pozycji (12-14 pozycji). */
+export const pozycji = (n: number) => `${n} ${n === 1 ? 'pozycja' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'pozycje' : 'pozycji'}`;
+const outside = (suspect: number, shared: number) => !suspect && !shared ? 'wszystkie kwoty w sumach'
+  : `poza sumami: ${[suspect && `${suspect} do weryfikacji`, shared && `${shared} kilku wykonawców`].filter(Boolean).join(', ')}`;
+
+function NumBox({ label, title, sums, what }: { label: string; title: string; sums: Sum[]; what: string }) {
+  const n = sums.reduce((s, x) => s + x.count, 0);
+  return <div className="pt-pf__num-box" title={title}><span className="pt-pf__k">{label}</span><strong>{sumText(sums)}</strong>
+    <small>{nb(n ? `${what}, ${pozycji(n)}` : 'brak pozycji z kwotą')}</small></div>;
+}
 
 function useNarrow(query = '(max-width: 760px)') {
   const [narrow, setNarrow] = useState(false);
@@ -148,9 +158,10 @@ export function Przeplywy({ ident, headingId = 'pt-pf-h' }: { ident: string; hea
     {state === 'error' && <p className="px-note" role="alert">Nie udało się pobrać przepływów. <button type="button" className="pt-pf__btn" onClick={() => setState('loading')}>Spróbuj ponownie</button></p>}
     {data && state === 'ok' && <>
       <div className="pt-pf__nums">
-        <div className="pt-pf__num-box"><span className="pt-pf__k">{person ? 'Wpływy do podmiotów osoby' : 'Wpływy'}</span><strong>{sumText(data.sums.in)}</strong><small>{nb(`${data.sums.in.reduce((s, x) => s + x.count, 0)} pozycji z kwotą`)}</small></div>
-        <div className="pt-pf__num-box"><span className="pt-pf__k">{person ? 'Wydatki podmiotów osoby' : 'Wydatki (jako zamawiający)'}</span><strong>{sumText(data.sums.out)}</strong><small>{nb(`${data.sums.out.reduce((s, x) => s + x.count, 0)} pozycji z kwotą`)}</small></div>
-        <div className="pt-pf__num-box"><span className="pt-pf__k">Pozycje</span><strong>{data.count}</strong><small>{nb(data.suspect_count ? `${data.suspect_count} do weryfikacji, poza sumami` : 'wszystkie kwoty w sumach')}</small></div>
+        <NumBox label="Wygrane zamówienia" title="Wartość z ogłoszeń TED o udzieleniu zamówienia, nie kwota zapłacona" sums={data.sums.in_contracts ?? []} what="wartość z ogłoszeń" />
+        <NumBox label="Dotacje i 1,5% podatku" title="Dotacje UE (FTS), krajowe (NIW-CRSO) i 1,5% podatku" sums={data.sums.in_grants ?? []} what="kwoty przyznane" />
+        <NumBox label="Udzielone zamówienia" title="Podmiot jako zamawiający: wartość z ogłoszeń TED" sums={data.sums.out} what="wartość z ogłoszeń" />
+        <div className="pt-pf__num-box"><span className="pt-pf__k">Pozycje</span><strong>{data.count}</strong><small>{nb(outside(data.suspect_count, data.shared_count ?? 0))}</small></div>
       </div>
       {person && <div className="pt-pf__opts">
         <label className="pt-pf__check"><input type="checkbox" checked={whole} onChange={e => { setWhole(e.target.checked); setState('loading'); }} /> {nb('Pokaż też spoza okresu funkcji')}</label>

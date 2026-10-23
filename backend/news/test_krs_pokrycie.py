@@ -142,6 +142,11 @@ def test_grounded_but_unread_source_does_not_confirm(monkeypatch):
                  'sector': 'ngo', 'sources': [{'url': 'https://example.org/a', 'title': 'x', 'grounded': True}]}
     relation = krs_agent.verify(figure, candidate)
     assert relation.verification_status == 'pending_review' and all('read' not in s for s in relation.sources)
+    assert 'Czeka na zespół' in relation.evidence_note
+    # Ścieżka „dwa niezależne źródła” (rola spoza KRS): dwa adresy z wyników Gemini bez przeczytanej treści nie wystarczą.
+    two = {**candidate, 'role': 'fundator', 'sources': [{'url': 'https://a.pl/x', 'title': 'a', 'grounded': True},
+                                                         {'url': 'https://b.pl/y', 'title': 'b', 'grounded': True}]}
+    assert krs_agent.verify(figure, two) is None
 
 
 @pytest.mark.django_db

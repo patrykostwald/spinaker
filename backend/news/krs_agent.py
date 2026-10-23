@@ -212,7 +212,9 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
         defaults={'organ': (person.organ if person else '')[:255], 'since': person.since if person else None,
                   'until': person.until if person else None, 'sources': sources,
                   'evidence_url': extract.official_url if person else sources[0]['url'],
-                  'evidence_note': (f"Źródło: {sources[0]['title']}" if sources else 'Oficjalny odpis KRS')[:1000]})
+                  'evidence_note': ((f"Źródło: {sources[0]['title']}" if sources else 'Oficjalny odpis KRS')
+                                    + ('' if confirm else '. Czeka na zespół: żadna pobrana strona nie wymienia osoby i podmiotu '
+                                       '(adres z wyników wyszukiwania nie wystarcza).'))[:1000]})
     if confirm:
         relation.confirm_automatically(method)
         relation.save(update_fields=['verification_method', 'verification_status', 'verified_by', 'verified_at', 'updated_at'])
@@ -248,8 +250,10 @@ def verify(figure: PublicFigure, candidate: dict, reasons: list | None = None) -
         confirm = any(source.get('read') for source in candidate['sources'])
         candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
         return _save(figure, extract, candidate, 'krs_register', person, confirm=confirm)
+    # P0-12: dwa niezależne źródła liczą się tylko przeczytane przez nas (adres z wyników Gemini to wskazówka)
+    read = [source for source in candidate['sources'] if source.get('read')]
     candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
-    if len(_domains(candidate['sources'])) >= 2:
+    if len(_domains(read)) >= 2:
         return _save(figure, extract, candidate, 'public_sources', None)
     return reject(f"w KRS brak osoby o zgodnych inicjałach w organie „{candidate['role']}”; sprawdzonych źródeł: {len(candidate['sources'])}")
 
