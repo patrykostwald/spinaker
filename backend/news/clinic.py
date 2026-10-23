@@ -33,8 +33,10 @@ logger = logging.getLogger(__name__)
 from news.clinic_council import check_failed, clean_claim  # noqa: E402
 
 CAMPS = ('government', 'opposition')
-CAMP_LABELS = {'government': 'Rządzący', 'opposition': 'Opozycja'}
-CAMP_PROMPT_LABELS = {'government': 'obóz rządzący', 'opposition': 'opozycja'}
+CAMP_LABELS = {'government': 'Rządzący', 'opposition': 'Opozycja', 'other': 'Inni i niezrzeszeni'}
+CAMP_PROMPT_LABELS = {'government': 'obóz rządzący', 'opposition': 'opozycja', 'other': 'poza głównymi obozami (koło, niezrzeszony)'}
+# Diagnozy pojedynczych wpisów obejmują też obóz „inne”; przekazy dnia i porównania zostają dla dwóch obozów.
+DIAGNOSED_CAMPS = (*CAMPS, 'other')
 # Kod klubu z API Sejmu → skrót na plakietce i pełna nazwa (tylko te, których nazwę znamy na pewno).
 CLUBS = {
     'KO': ('KO', 'Koalicja Obywatelska'),
@@ -183,7 +185,7 @@ def _post_context(post: PoliticalPost, figure: PublicFigure | None) -> dict:
 
 def unscreened_posts(include_old=False):
     since = timezone.now() - timedelta(days=int(os.environ.get('CLINIC_MAX_POST_AGE_DAYS', '3')))
-    rows = PoliticalPost.objects.filter(available=True, camp_at_collection__in=CAMPS, account__enabled=True).filter(
+    rows = PoliticalPost.objects.filter(available=True, camp_at_collection__in=DIAGNOSED_CAMPS, account__enabled=True).filter(
         Q(spin_diagnosis__isnull=True) | Q(spin_diagnosis__status='flagged', spin_diagnosis__screen_score__isnull=True,
                                           spin_diagnosis__diagnosed_at__isnull=True))
     if not include_old:

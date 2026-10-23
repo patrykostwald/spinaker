@@ -16,7 +16,7 @@ import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../lib/api";
-import { CAMPS, CAMP_LABELS, spinVar, type Camp, type Party, type DataPeriod } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, campLabel, spinVar, type Camp, type Party, type DataPeriod } from "../../lib/clinic";
 import { clinicPeriodLabel } from "../../lib/clinicPeriod";
 import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "./SpinParts";
@@ -271,7 +271,7 @@ function Parties({ stats }: { stats: IndicatorStats }) {
             {rows.map(([code, row]) => (
               <tr key={code}>
                 <th scope="row">{row.party?.short ?? "Nieustalona afiliacja"}</th>
-                <td>{row.camp === "mixed" ? "obie" : CAMP_LABELS[row.camp]}</td>
+                <td>{row.camp === "mixed" ? "obie" : campLabel(row.camp)}</td>
                 <td>{row.diagnosed}</td>
                 <td>{row.spin} / {row.partial}</td>
                 <td>{row.enough_data && row.average_intensity !== null ? <><span className="sc-spin-num" style={spinVar(row.average_intensity)}>{Math.round(row.average_intensity)}</span>/100</> : <span className="sc-ind-few">za mało danych</span>}</td>
@@ -299,13 +299,13 @@ function Accounts({ stats }: { stats: IndicatorStats }) {
       <ol className="sc-ind-accounts">
         {rows.map((row) => (
           <li key={`${row.account_id}-${row.camp}`} data-camp={row.camp}>
-            <Link href={`/klinika/diagnozy?account=${row.account_id}`}>{row.name}{row.party ? `, ${row.party.short}` : ""}<span className="sc-ind-account-camp"><span aria-hidden="true">{row.camp === "government" ? "●" : "■"}</span> {CAMP_LABELS[row.camp]}</span></Link>
+            <Link href={`/klinika/diagnozy?account=${row.account_id}`}>{row.name}{row.party ? `, ${row.party.short}` : ""}<span className="sc-ind-account-camp"><span aria-hidden="true">{row.camp === "government" ? "●" : row.camp === "opposition" ? "■" : "◆"}</span> {campLabel(row.camp)}</span></Link>
             <span className="sc-ind-accounts__bar" aria-hidden="true"><i style={{ width: `${(row.diagnosed / max) * 100}%` }} /></span>
             <span className="sc-ind-accounts__n">{row.diagnosed}</span>
           </li>
         ))}
       </ol>
-      <DataTable title="Badane konta" headers={["Autor", "Strona", "Diagnozy"]} rows={rows.map(row => [row.name, CAMP_LABELS[row.camp], row.diagnosed])} />
+      <DataTable title="Badane konta" headers={["Autor", "Strona", "Diagnozy"]} rows={rows.map(row => [row.name, campLabel(row.camp), row.diagnosed])} />
     </section>
   );
 }
