@@ -234,8 +234,9 @@ def _col(row: dict, *names) -> str:
     return next((lowered[name] for name in names if lowered.get(name)), '')
 
 
-def lista_x(path: Path = OSOBY_X) -> list[dict]:
+def lista_x(path: Path | None = None) -> list[dict]:
     """Zweryfikowana lista kont X (gałąź osoby-x). Brak pliku - pusta lista. Tylko wysoka pewność."""
+    path = path or OSOBY_X
     if not path.exists():
         return []
     rows = []
@@ -251,7 +252,8 @@ def lista_x(path: Path = OSOBY_X) -> list[dict]:
     return rows
 
 
-def braki_x(path: Path = OSOBY_X) -> dict:
+def braki_x(path: Path | None = None) -> dict:
+    path = path or OSOBY_X
     from news.political_models import PublicFigure
     from news.przeszlosc_osoba import x_accounts
     rows = lista_x(path)
@@ -270,8 +272,9 @@ def braki_x(path: Path = OSOBY_X) -> dict:
     return {'lista': path.name, 'dostepna': True, 'braki': braki, 'sprawdzone': len(rows)}
 
 
-def przypnij_x(path: Path = OSOBY_X) -> dict:
+def przypnij_x(path: Path | None = None) -> dict:
     """Przypina konta z listy zweryfikowanej istniejącą komendą importu (ta sama walidacja dowodów, idempotentnie)."""
+    path = path or OSOBY_X
     from io import StringIO
     from django.core.management import call_command
     from django.core.management.base import CommandError
@@ -357,8 +360,25 @@ def do_decyzji() -> dict:
                         else 'do weryfikacji: nazwa konta nie rozstrzyga')
         konflikty.append({'konto': row.handle, 'nazwa': row.display_name, 'osoby': names, 'od': row.created_at.date().isoformat(),
                           'powod': reason, 'propozycja': proposal})
+    konflikty += konflikty_straznika({row['konto'].casefold() for row in konflikty})
     return {'czeka': len(rows), 'najstarsza': rows[0].created_at.date().isoformat() if rows else None,
             'powody': dict(reasons.most_common(10)), 'konflikty': konflikty}
+
+
+def konflikty_straznika(znane: set[str] = frozenset()) -> list[dict]:
+    """Konflikty dowodów z ostatniej nocy Strażnika kont (account_warden.conflicts_for_report) w formacie kolejki;
+    konto już opisane z kandydatury nie powtarza się."""
+    from news.account_warden import conflicts_for_report
+    out = []
+    for row in conflicts_for_report():
+        handle = (row.get('handle') or '').lstrip('@')
+        if not handle or handle.casefold() in znane:
+            continue
+        znane = {*znane, handle.casefold()}
+        out.append({'konto': handle, 'nazwa': '', 'osoby': [row['name']] if row.get('name') else [], 'od': None,
+                    'powod': (row.get('reason') or '')[:120], 'propozycja': row.get('proposal') or 'do weryfikacji',
+                    'zrodlo': row.get('source') or '', 'straznik': True})
+    return out
 
 
 # --- przebieg ---------------------------------------------------------------------------------
@@ -498,8 +518,9 @@ def text(report: dict) -> str:
     lines += [f'- {reason}: {count}' for reason, count in q['powody'].items()]
     if q['konflikty']:
         lines.append('Konflikty dowodów (do decyzji człowieka, z propozycją):')
-        lines += [f"- @{c['konto']} ({c['nazwa']}), osoby: {', '.join(c['osoby']) or 'brak'}, od {c['od']} -> {c['propozycja']}"
-                  for c in q['konflikty'][:LIST_MAX]]
+        lines += [f"- @{c['konto']}" + (f" ({c['nazwa']})" if c['nazwa'] else '') + f", osoby: {', '.join(c['osoby']) or 'brak'}"
+                  + (f", od {c['od']}" if c['od'] else ', Strażnik ostatniej nocy') + f" -> {c['propozycja']}"
+                  + (f" · {c['zrodlo']}" if c.get('zrodlo') else '') for c in q['konflikty'][:LIST_MAX]]
     p = report['profile']
     lines += ['', f"== Profile przeszłości ({p['osoby']} osób obecnych) - puste sekcje ==",
               f"KRS {p['liczby']['krs']}, oświadczenia {p['liczby']['oswiadczenia']}, głosowania (posłowie) "

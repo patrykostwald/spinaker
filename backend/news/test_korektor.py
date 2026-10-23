@@ -210,3 +210,24 @@ def test_x_decision_queue_shows_only_conflicts_with_proposal():
     queue = korektor.do_decyzji()
     assert queue['czeka'] == 2 and len(queue['konflikty']) == 1
     assert queue['konflikty'][0]['osoby'] == ['Tomasz Głogowski'] and 'konto partii' in queue['konflikty'][0]['propozycja']
+
+
+@pytest.mark.django_db
+def test_x_decision_queue_includes_warden_conflicts_once():
+    from news.account_warden import STATE
+    from news.models import ImportState
+    from news.political_models import PoliticalAccountCandidate
+    PoliticalAccountCandidate.objects.all().delete()
+    ImportState.objects.update_or_create(name=STATE, defaults={'cursor': {'report': {'conflicts': [
+        {'name': 'Anna Kowalska', 'handle': 'akowalska', 'source': 'https://www.sejm.gov.pl/a',
+         'reason': 'Konflikt dowodów: konto przy innej osobie.', 'proposal': 'przypiąć do: Anna Kowalska'},
+        {'name': 'Anna Kowalska', 'handle': 'AKowalska', 'source': 'https://www.sejm.gov.pl/a', 'reason': 'x', 'proposal': 'y'},
+    ]}}})
+    queue = korektor.do_decyzji()
+    assert [c['konto'] for c in queue['konflikty']] == ['akowalska'] and queue['konflikty'][0]['straznik']
+    report = {'dzien': '2026-10-23', 'dni': 2, 'napraw': False, 'wywiady': [], 'diagnozy': [], 'przekazy': [],
+              'konta_x': {'dostepna': False, 'lista': 'osoby_x.csv'}, 'kolejka_x': queue, 'przyczyna': '',
+              'profile': {'osoby': 0, 'liczby': {k: 0 for k in korektor.SECTIONS}, 'listy': {k: [] for k in korektor.SECTIONS}},
+              'podsumowanie': {'wywiady': 0, 'diagnozy': 0, 'przekazy': 0}}
+    body = korektor.text(report)
+    assert '@akowalska, osoby: Anna Kowalska, Strażnik ostatniej nocy -> przypiąć do: Anna Kowalska · https://www.sejm.gov.pl/a' in body
