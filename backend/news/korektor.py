@@ -45,8 +45,34 @@ def _pattern(slowa, osoba: str) -> re.Pattern:
     Słowa urzędu i nazwiska bez względu na wielkość liter; wtrącone imię musi być z wielkiej."""
     office, person = _alt(slowa), _person_re(osoba)
     middle = r'(?:(?i:rp|rzeczypospolitej polskiej)\s+)?(?:[A-ZŁŚŻŹĆÓ][\w-]+\s+)?'
+    # „osoba, urząd” nie jest błędem, gdy po urzędzie stoi inna osoba („Andrzej Duda, prezydent Karol Nawrocki”),
+    # okres („premier w latach 2017-2023”) albo inna instytucja („prezydent związku”) - recenzja integracji 23.10.
+    after = (r'(?!\s+[A-ZŁŚŻŹĆÓ][\w-]+\s+[A-ZŁŚŻŹĆÓ][\w-]+)(?!\s+(?i:w\s+latach|w\s+l\.|do\s+\d|od\s+\d|\(?\d{4}))'
+             r'(?!\s+(?i:' + _alt(OTHER_BODIES) + r')(?!\w))')
     return re.compile(rf'(?<!\w)(?i:(?P<urzad>{office}))\s+{middle}(?i:(?P<osoba>{person}))(?!\w)'
-                      rf'|(?<!\w)(?i:(?P<osoba2>{person}))\s*(?:,|\(|-|–)\s*(?i:(?P<urzad2>{office}))(?!\w)')
+                      rf'|(?<!\w)(?i:(?P<osoba2>{person}))\s*(?:,|\(|-|–)\s*(?i:(?P<urzad2>{office}))(?!\w){after}')
+
+
+OTHER_BODIES = ('związku', 'klubu', 'miasta', 'fundacji', 'stowarzyszenia', 'spółki', 'zarządu', 'rady', 'izby', 'federacji',
+                'banku', 'sądu', 'instytutu', 'urzędu', 'komisji', 'partii', 'stronnictwa', 'uczelni', 'akademii', 'kongresu',
+                'firmy', 'grupy', 'koncernu', 'stowarzyszeń', 'zrzeszenia', 'solidarności')
+NOT_FIRST_NAME = {'rp', 'rzeczypospolitej', 'polskiej', 'sejmu', 'senatu', 'rządu', 'rady'}
+
+
+def _slowo_urzedu(word: str) -> bool:
+    word = word.casefold()
+    return any(phrase.split()[0].casefold() == word for office in urzedy.pewne() for phrase in office.slowa)
+
+
+def _inny_imiennik(text: str, start: int, matched: str, osoba: str) -> bool:
+    """„Piotr Duda” to nie „Andrzej Duda”: samo nazwisko poprzedzone innym imieniem (z wielkiej litery) - inna osoba."""
+    if ' ' in matched.strip():
+        return False
+    prev = re.search(r'([A-ZŁŚŻŹĆÓ][\w-]+)\s+$', text[max(0, start - 40):start])
+    if not prev or prev.group(1).casefold() in NOT_FIRST_NAME or _slowo_urzedu(prev.group(1)):
+        return False
+    first = osoba.split()[0].casefold()
+    return prev.group(1).casefold()[:4] != first[:4]
 
 
 def _znani() -> list[str]:
@@ -83,6 +109,9 @@ def bledy_urzedu(text: str, day: date | None = None) -> list[dict]:
             for match in _pattern(office.slowa, osoba).finditer(text):
                 start = match.start('urzad') if match.group('urzad') else match.start('urzad2')
                 if _byly_przed(text, start):
+                    continue
+                who = 'osoba' if match.group('osoba') else 'osoba2'
+                if _inny_imiennik(text, match.start(who), match.group(who), osoba):
                     continue
                 key = (office.klucz, osoba)
                 if key in seen:
@@ -121,6 +150,15 @@ def _same(a: str, b: str) -> bool:
     return bool(surname(a)) and surname(a) == surname(b)
 
 
+def _w_tytule(name: str, title: str) -> bool:
+    """Czy nazwisko podpisanego gościa (rdzeń, odmiana) stoi w tytule filmu."""
+    parts = (name or '').split()
+    if not parts:
+        return False
+    surname = parts[-1].casefold()
+    return bool(re.search(rf'(?<!\w){re.escape(surname[:max(4, len(surname) - 2)])}', (title or '').casefold()))
+
+
 def gosc_z_tytulu(interview) -> str | None:
     """Gość z tytułu filmu (i opisu kanału, gdy tytuł milczy): dokładnie jedna osoba z rejestru."""
     names = _mentions(interview.title)
@@ -134,7 +172,8 @@ def bledy_goscia(interview) -> list[dict]:
     for row in bledy_urzedu(f'{interview.guest_role} {interview.guest_name}', day):
         out.append({**row, 'rodzaj': 'gosc', 'pole': 'guest', 'powod': f"rola „{interview.guest_role}” należy do: {row['powinno']}"})
     expected = gosc_z_tytulu(interview)
-    if expected and interview.guest_name and not _same(expected, interview.guest_name) \
+    if expected and interview.guest_name and not _w_tytule(interview.guest_name, interview.title) \
+            and not _same(expected, interview.guest_name) \
             and not any(_same(expected, name) for name in interview.guest_name.split(',')):
         out.append({'rodzaj': 'gosc', 'pole': 'guest_name', 'napisano': interview.guest_name, 'powinno': expected,
                     'powod': f'tytuł filmu wskazuje: {expected}', 'urzad': ''})
@@ -156,7 +195,10 @@ def popraw_goscia(interview, *, save: bool = True) -> list[str]:
         return changed
     day = interview.day or timezone.localdate()
     target = gosc_z_tytulu(interview)
-    if target and not _same(target, interview.guest_name):
+    # Nazwisko nadpisujemy tylko, gdy pole jest puste albo podpisano osobę z rejestru urzędów (wpadka „Duda zamiast
+    # Nawrockiego”), a nazwiska podpisanego gościa nie ma w tytule („Bosak: Tusk musi odejść” zostaje przy Bosaku).
+    if target and not _same(target, interview.guest_name) and not _w_tytule(interview.guest_name, interview.title) \
+            and (not interview.guest_name or interview.guest_name in _znani()):
         interview.guest_name = target[:200]
         changed.append('guest_name')
     name = interview.guest_name
@@ -244,7 +286,9 @@ def lista_x(path: Path | None = None) -> list[dict]:
         for row in csv.DictReader(handle):
             handle_x = _col(row, 'konto', 'handle', 'konto_x', 'x_handle', 'proposed_x_handle').lstrip('@')
             pewnosc = _col(row, 'pewnosc', 'pewność', 'confidence', 'verification_status').casefold()
-            if not handle_x or pewnosc in ('niska', 'low', 'dp', '[dp]', 'niepewne'):
+            stan = _col(row, 'stan_konta', 'stan').casefold()
+            # ten sam filtr co import (import_public_figure_x_csv): tylko wysoka pewność i konto aktualne
+            if not handle_x or (pewnosc and pewnosc not in ('wysoka', 'high')) or (stan and stan not in ('aktualne', 'active')):
                 continue
             rows.append({'osoba': _col(row, 'imie_nazwisko', 'imię i nazwisko', 'nazwa', 'name', 'public_figure_name'),
                          'id': _col(row, 'id', 'osoba_id', 'figure_id', 'identyfikator', 'public_figure_id'),

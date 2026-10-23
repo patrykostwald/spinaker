@@ -48,6 +48,10 @@ $DC run --rm backend python manage.py migrate --noinput   # 0170_konta_oboz_inni
 $DC up -d backend worker beat frontend
 $M showmigrations news | tail -3                           # [X] 0170..., [X] 0171_krs_kolejka
 ```
+Jeśli na jakiejkolwiek bazie (np. testowej) była już wdrożona gałąź `cloud/przeszlosc-rozwoj` z migracją `0170_krs_kolejka`:
+przed `migrate` wykonaj `$M migrate news 0171_krs_kolejka --fake` po ręcznym usunięciu wpisu `0170_krs_kolejka` z
+`django_migrations` - na produkcji tej gałęzi nie wdrażano, więc zwykle nic nie trzeba.
+
 Migracje: `0170` zmienia tylko listy wyborów (obóz „Inni i niezrzeszeni”, „zespół” zamiast „redakcja”), `0171` dodaje tabelę
 kolejki KRS. Obie bez zmian istniejących danych.
 
@@ -58,7 +62,9 @@ $M osoby_x_pokrycie                     # ile osób bez konta, kolejka, koszt �
 $M przeszlosc_krs_pokrycie --json       # pokrycie KRS i stan kolejki
 curl -s https://przeszlosc.today/api/przeszlosc/stan-danych/ | head -c 600   # Stan danych (też /przeszlosc/dane)
 ```
-Gdy raport Korektora wygląda dobrze: `$M korektor --dni 7 --napraw --wyslij` (dalej sam codziennie o 6:50).
+Zalecenie po recenzji: przez pierwsze 3 dni `KOREKTOR_NAPRAW=false` w `.env.production` (sam raport, bez wstrzymywania
+treści i bez płatnych ponownych diagnoz). Gdy raporty nie mają fałszywych trafień: usuń tę linię (domyślnie `true`),
+`$DC up -d worker beat`, albo jednorazowo `$M korektor --dni 7 --napraw --wyslij`.
 
 ## 5. Koszt nowych kont X
 Lista zweryfikowana `osoby_x.csv`: 78 kont z oficjalnym źródłem. Na konto miesięcznie ok. 0,34 USD przy 2 wpisach dziennie

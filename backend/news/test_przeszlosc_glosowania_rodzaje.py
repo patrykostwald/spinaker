@@ -76,3 +76,10 @@ def test_endpoints(monkeypatch, settings):
     assert general['total'] == 1 and general['filter']['rodzaj'] == 'pe' and {k['key'] for k in general['kinds']} == set(gr.KINDS)
     assert client.get('/api/przeszlosc/glosowania/?rodzaj=senat').json()['total'] == 0
     assert client.get('/api/przeszlosc/glosowania/').json()['filter']['rodzaj'] == 'sejm'
+
+
+def test_ep_page_filters_result_and_pages():
+    world()
+    page = gr.ep_page({'wynik': 'przyjete'}, 10)
+    assert page['count'] == 1 and page['results'][0]['outcome'] == 'przyjete' and page['results'][0]['polish']
+    assert gr.ep_page({'wynik': 'odrzucone'}, 10)['count'] == 0

@@ -779,7 +779,7 @@ def _message_for(day, camps, *, models=None, only_missing=False, errors=None) ->
             # Powód zostaje w bazie (wiersz failed bez treści), ale nigdy nie zastępuje już zapisanego przekazu.
             if existing is None or existing.status == 'failed':
                 ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
-                    'message': '', 'status': 'failed', 'error': f'{error.code}: {label}'[:300],
+                    'message': existing.message if existing else '', 'status': 'failed', 'error': f'{error.code}: {label}'[:300],
                     'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
             continue
         status = 'approved' if auto_publish() else 'pending_review'
@@ -793,7 +793,7 @@ def _message_for(day, camps, *, models=None, only_missing=False, errors=None) ->
                 errors[f'{day}:{camp}'] = PREFIX
             if existing is None or existing.status == 'failed':
                 ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
-                    'message': '', 'status': 'failed', 'error': f'{PREFIX}: {opis(wrong)}'[:300],
+                    'message': existing.message if existing else '', 'status': 'failed', 'error': f'{PREFIX}: {opis(wrong)}'[:300],
                     'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
             continue
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={

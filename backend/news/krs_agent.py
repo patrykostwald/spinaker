@@ -18,7 +18,7 @@ import logging
 import os
 import re
 from datetime import date, timedelta
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import requests
 
@@ -129,10 +129,37 @@ def _stem(word: str) -> str:
     return word[:max(4, len(word) - 2)] if len(word) > 4 else word
 
 
+def _public_url(url: str) -> bool:
+    """Tylko http(s) do publicznych adresów: adresy źródeł pisze model, a wyniki wyszukiwania mogą go sterować."""
+    import ipaddress
+    import socket
+    parts = urlsplit(url or '')
+    if parts.scheme not in ('http', 'https') or not parts.hostname:
+        return False
+    try:
+        infos = socket.getaddrinfo(parts.hostname, parts.port or (443 if parts.scheme == 'https' else 80), proto=socket.IPPROTO_TCP)
+    except (OSError, UnicodeError, ValueError):
+        return False
+    return bool(infos) and all(ipaddress.ip_address(info[4][0]).is_global for info in infos)
+
+
 def page_mentions(url: str, surname: str, entity: str) -> bool:
     """Czy strona naprawdę wymienia nazwisko i podmiot (rdzenie słów, bez znaczników HTML)."""
     try:
-        with requests.get(url, headers=PAGE_HEADERS, timeout=(4, 10), stream=True, allow_redirects=True) as response:
+        response = None
+        for _ in range(4):  # przekierowania ręcznie: każdy adres przechodzi przez _public_url (SSRF)
+            if not _public_url(url):
+                return False
+            response = requests.get(url, headers=PAGE_HEADERS, timeout=(4, 10), stream=True, allow_redirects=False)
+            if response.status_code in (301, 302, 303, 307, 308) and response.headers.get('Location'):
+                url = urljoin(url, response.headers['Location'])
+                response.close()
+                response = None
+                continue
+            break
+        if response is None:
+            return False
+        with response:
             if response.status_code != 200:
                 return False
             raw = response.raw.read(800_000, decode_content=True)
@@ -207,6 +234,14 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
     role = role[:1].lower() + role[1:] if not role[:2].isupper() else role.lower()
     status = ('former' if person.until else 'current') if person else ('current' if candidate['current'] else 'former')
     sources = candidate['sources']
+    if not confirm:
+        # Ponowne sprawdzenie bez przeczytanego źródła (np. strona chwilowo niedostępna) nie zdejmuje relacji już
+        # potwierdzonej - przez odpis KRS ani przez zespół (recenzja integracji 23.10).
+        kept = PublicFigureOrganisationRelation.objects.filter(
+            public_figure=figure, organisation__krs_number=extract.krs, public_role=role[:255], relation_status=status,
+            verification_status='confirmed').first()
+        if kept:
+            return kept
     relation, _ = PublicFigureOrganisationRelation.objects.update_or_create(
         public_figure=figure, organisation=organisation, public_role=role[:255], relation_status=status,
         defaults={'organ': (person.organ if person else '')[:255], 'since': person.since if person else None,

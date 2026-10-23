@@ -262,6 +262,9 @@ def for_person(figure, whole_history=False):
     urls = {o['url'] for o in subject['organisations']}
     out['sums']['in'] = sums([r for r in rows if r['to'].get('url') in urls])
     out['sums']['out'] = sums([r for r in rows if r['from'].get('url') in urls])
+    incoming = [r for r in rows if r['to'].get('url') in urls]
+    out['sums']['in_contracts'] = sums([r for r in incoming if r['kind'] in CONTRACT_KINDS])
+    out['sums']['in_grants'] = sums([r for r in incoming if r['kind'] not in CONTRACT_KINDS])
     if not orgs:
         out['empty_reason'] = ('Brak potwierdzonych funkcji w KRS: bez nich nie łączymy pieniędzy z osobą. '
                                'Funkcje sprawdzamy w kolejce KRS (agent i zespół).')

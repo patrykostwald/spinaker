@@ -223,7 +223,12 @@ def refresh_relations(org, extract_full: krs.Extract) -> int:
         until = max(p.until for p in people)
         twin = PublicFigureOrganisationRelation.objects.filter(public_figure=rel.public_figure, organisation=org,
                                                                 public_role=rel.public_role, relation_status='former').first()
+        if twin and twin.verification_status == 'rejected':
+            continue  # zespół odrzucił „byłą” funkcję - nie zamieniamy potwierdzonej relacji na odrzuconą (recenzja 23.10)
         with transaction.atomic():
+            if twin and twin.verification_status != 'confirmed':
+                twin.delete()  # niepotwierdzony bliźniak ustępuje relacji z odpisu KRS (potwierdzonej niżej)
+                twin = None
             if twin:
                 twin.until = twin.until or until
                 twin.save(update_fields=['until', 'updated_at'])

@@ -50,4 +50,26 @@ wpisu (np. `2026-10-23`), więc liczba „23” była „obecna w materiałach�
 która nie może być datą. Zauważona słabość (bez zmiany): każda liczba równa dniowi, miesiącowi lub rokowi wpisu przechodzi
 przez fact-checkera łańcucha - do decyzji, czy wyłączyć daty z puli liczb.
 
-Wyniki pełnego zestawu i recenzji: sekcja 6 (dopisywana po przebiegu).
+## 6. Pełne testy
+`news` + `scraper` (SQLite, 4 procesy): 3721 zaliczonych, 9 błędów w pierwszym przebiegu. 1 to `test_rejected_step_rules`
+(naprawiony wyżej). Pozostałe 8 padają identycznie na `cloud/baza-2310` (sprawdzone osobno), nie są skutkiem integracji:
+`test_editorial.py` (4), `test_profiles_topics.py` (2), `test_portal.py::test_editorial_slots_only_published`,
+`test_social_panel.py::test_all_staff_and_admin_routes_deny_social` - testy starego panelu redakcji (`/api/editor/...`
+zwraca 404, trasy nie ma w `urls`). Do osobnego zadania: usunąć te testy albo przywrócić trasy.
+Drugi przebieg po poprawkach recenzji: 3728 zaliczonych, 11 błędów - te same 8 oraz `tests.py::test_drafts_domain_and_views`,
+`tests.py::test_thread_positions_and_slug_collision`, `test_audyt_petli.py::test_thread_review_enqueue_runs_in_own_transaction`;
+wszystkie 11 padają tak samo na `cloud/baza-2310` uruchomione osobno (te 3 w pierwszym przebiegu przeszły tylko przez
+kolejność testów w procesach równoległych). Żaden błąd nie dotyczy plików zmienionych w integracji.
+
+## 7. Niezależna recenzja kodu (agent recenzent) i poprawki
+| # | Uwaga | Poprawka |
+|---|---|---|
+| 1 | Korektor podmieniał gościa na osobę z tytułu („Bosak: Tusk musi odejść” -> Tusk) | nazwisko gościa obecne w tytule zostaje; nadpisanie tylko pustego pola albo osoby z rejestru urzędów; test |
+| 2 | Fałszywe błędy urzędu: „Andrzej Duda, prezydent Karol Nawrocki”, „Hołownia, marszałek Sejmu Czarzasty”, „premier w latach 2017-2023”, „Piotr Duda, prezydent związku” | wzorzec „osoba, urząd” nie trafia, gdy po urzędzie jest inna osoba, okres albo inna instytucja; samo nazwisko z innym imieniem to imiennik; testy; zalecenie `KOREKTOR_NAPRAW=false` na 3 dni |
+| 3 | Ponowne sprawdzenie agenta KRS bez przeczytanego źródła (np. błąd sieci) zdejmowało potwierdzoną relację | potwierdzona relacja zostaje bez zmian; test |
+| 4 | SSRF: pobieranie stron źródeł z adresów od modelu, z przekierowaniami | tylko http(s) do publicznych adresów IP, każde przekierowanie sprawdzane; test |
+| 5 | Profil osoby: boksy „Wygrane zamówienia” i „Dotacje” zawsze puste | sumy liczone po podmiotach osoby; test |
+| 6 | Odpis pełny KRS mógł zamienić potwierdzoną relację na odrzuconą przez zespół | odrzucony „bliźniak” blokuje zmianę, niepotwierdzony ustępuje; test |
+| 7 | Wstrzymany przez Korektora przekaz dnia tracił treść przy nieudanym ponownym wygenerowaniu | treść zostaje w wierszu `failed` (do decyzji człowieka) |
+| 8 | Raport Korektora liczył konta o średniej pewności i nieaktualne | ten sam filtr co import: `wysoka` + `aktualne` |
+| 9 | `/glosowania/?rodzaj=pe` czytało pełne dane wszystkich głosowań PE | najpierw tylko numer i wynik, pełne rekordy dla jednej strony; test |

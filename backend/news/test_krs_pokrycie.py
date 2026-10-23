@@ -107,6 +107,23 @@ def test_full_extract_closes_relation_when_person_left_organ():
 
 
 @pytest.mark.django_db
+def test_full_extract_does_not_swap_confirmed_for_rejected_twin():
+    figure = PublicFigure.objects.create(canonical_name='Jan Kowalski', role_category='parliamentary', role_title='Poseł',
+                                         evidence_url='https://sejm.gov.pl/x', import_key='test:jk6')
+    org = RegisteredOrganisation.objects.create(name='Fundacja Testowa Pomocy', krs_number='0000012345', kind='foundation',
+                                                official_register_url='https://wyszukiwarka-krs.ms.gov.pl/')
+    rel = PublicFigureOrganisationRelation.objects.create(public_figure=figure, organisation=org, public_role='członek rady',
+                                                          organ='organ nadzoru', evidence_url='https://api-krs.ms.gov.pl/x')
+    rel.confirm_automatically('krs_register')
+    rel.save()
+    PublicFigureOrganisationRelation.objects.create(public_figure=figure, organisation=org, public_role='członek rady',
+                                                    relation_status='former', organ='organ nadzoru',
+                                                    evidence_url='https://example.org/x', verification_status='rejected')
+    krs_pokrycie.refresh_relations(org, _extract())
+    assert PublicFigureOrganisationRelation.objects.filter(pk=rel.pk, verification_status='confirmed').exists()
+
+
+@pytest.mark.django_db
 def test_agent_without_source_waits_for_editor(monkeypatch):
     """Imiennicy: zgodna maska w KRS bez źródła, które wymienia osobę i podmiot, nie potwierdza relacji."""
     figure = PublicFigure.objects.create(canonical_name='Jan Kowalski', role_category='parliamentary', role_title='Poseł',
@@ -159,3 +176,27 @@ def test_org_without_nip_does_not_return_every_night():
     KrsKolejka.objects.filter(value='0000000005').update(status='ok', checked_at=timezone.now())
     assert krs_pokrycie.zasil().get('org_odswiez') is None
     assert KrsKolejka.objects.get(value='0000000005').status == 'ok'
+
+
+def test_page_fetch_only_public_addresses():
+    """Adresy źródeł pisze model: bez adresów lokalnych, metadanych chmury i innych schematów (SSRF)."""
+    for url in ('http://127.0.0.1/x', 'http://169.254.169.254/latest/meta-data', 'file:///etc/passwd',
+                'http://localhost:8000/admin', 'http://[::1]/', 'ftp://example.org/a'):
+        assert not krs_agent._public_url(url)
+    assert not krs_agent.page_mentions('http://127.0.0.1:9/strona', 'Kowalski', 'Fundacja')
+
+
+@pytest.mark.django_db
+def test_recheck_without_read_source_keeps_confirmed_relation(monkeypatch):
+    figure = PublicFigure.objects.create(canonical_name='Jan Kowalski', role_category='parliamentary', role_title='Poseł',
+                                         evidence_url='https://sejm.gov.pl/x', import_key='test:jk5')
+    monkeypatch.setattr(krs, 'fetch', lambda number: _extract())
+    candidate = {'name': 'Fundacja Testowa Pomocy', 'krs': '0000012345', 'role': 'prezes zarządu', 'period': '', 'current': True,
+                 'sector': 'ngo', 'sources': [{'url': 'https://example.org/a', 'title': 'x', 'grounded': True}]}
+    monkeypatch.setattr(krs_agent, 'page_mentions', lambda url, surname, entity: True)
+    first = krs_agent.verify(figure, candidate)
+    assert first.verification_status == 'confirmed'
+    monkeypatch.setattr(krs_agent, 'page_mentions', lambda url, surname, entity: False)  # strona chwilowo niedostępna
+    again = krs_agent.verify(figure, candidate)
+    first.refresh_from_db()
+    assert again.pk == first.pk and first.verification_status == 'confirmed' and 'Czeka' not in first.evidence_note

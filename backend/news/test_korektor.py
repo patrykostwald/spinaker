@@ -47,6 +47,11 @@ def test_former_holder_with_office_after_change_is_an_error(text):
     'Premier Donald Tusk i marszałek Sejmu Włodzimierz Czarzasty.',
     'Wicepremier Kosiniak-Kamysz o armii.',
     'Prezydent Warszawy Rafał Trzaskowski.',
+    # recenzja integracji 23.10: urząd przy innej osobie, okres, inna instytucja, imiennik
+    'Andrzej Duda, prezydent Karol Nawrocki i premier Donald Tusk.',
+    'Szymon Hołownia, marszałek Sejmu Włodzimierz Czarzasty i inni.',
+    'Morawiecki - premier w latach 2017-2023.',
+    'Piotr Duda, prezydent związku, zapowiedział protest.',
 ])
 def test_correct_or_marked_former_is_fine(text):
     assert korektor.bledy_urzedu(text, AFTER) == []
@@ -84,6 +89,15 @@ def test_regression_nawrocki_interview_signed_as_duda():
     assert changed == ['guest_name']  # rola „Prezydent RP” już była właściwa
     assert row.guest_name == 'Karol Nawrocki' and row.guest_role == 'Prezydent RP'
     assert not [e for e in korektor.bledy_wywiadu(row) if e['rodzaj'] == 'gosc']
+
+
+@pytest.mark.django_db
+def test_guest_named_in_title_is_not_replaced():
+    """„Bosak: Tusk musi odejść” - gość Bosak zostaje, choć tytuł wymienia tylko Tuska z rejestru."""
+    row = _interview(title='Bosak: Tusk musi odejść | Gość Wydarzeń', guest_name='Krzysztof Bosak', guest_role='',
+                     headline='Bosak o rządzie', summary='Krzysztof Bosak krytykuje rząd.')
+    assert not [e for e in korektor.bledy_wywiadu(row) if e.get('pole') == 'guest_name']
+    assert korektor.popraw_goscia(row) == [] and row.guest_name == 'Krzysztof Bosak'
 
 
 @pytest.mark.django_db

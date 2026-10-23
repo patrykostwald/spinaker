@@ -65,6 +65,8 @@ def test_person_flows_only_in_tenure_and_empty_reason():
     data = pp.for_person(figure)
     assert all(r['via']['url'] == '/przeszlosc/spolka/0000000002' for r in data['results'])
     assert data['count'] == 5 and data['outside_tenure'] == 0
+    # boksy osoby liczone po podmiotach osoby (nie po adresie osoby)
+    assert data['sums']['in_contracts'] and data['sums']['in_contracts'][0]['total'] == 1500000.5 and data['sums']['in_grants']
     from news.political_models import PublicFigureOrganisationRelation
     PublicFigureOrganisationRelation.objects.filter(public_figure=figure).update(until=date(2025, 1, 1))
     cut = pp.for_person(figure)

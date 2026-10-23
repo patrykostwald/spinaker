@@ -179,19 +179,22 @@ def ep_page(p, per_page):
     if p.get('q'):
         rows = rows.filter(title__icontains=p['q'])
     rows = rows.order_by(F('date').desc(nulls_last=True), '-pk')
-    items = []
-    for r in rows.iterator():
-        result = EP_RESULT.get(str((r.data or {}).get('result') or '').upper(), 'nieustalone')
-        if p.get('wynik') and result != p['wynik']:
-            continue
-        items.append((r, result))
-    total = len(items)
+    # najpierw tylko numer i wynik (bez pełnych danych głosowań europosłów), pełne rekordy tylko dla jednej strony
+    picked = []
+    for pk, raw in rows.values_list('pk', 'data__result').iterator():
+        result = EP_RESULT.get(str(raw or '').upper(), 'nieustalone')
+        if not p.get('wynik') or result == p['wynik']:
+            picked.append((pk, result))
+    total = len(picked)
     pages = max(1, -(-total // per_page))
     page = min(p.get('strona') or 1, pages)
+    chunk = picked[(page - 1) * per_page: page * per_page]
+    full = PublicRecord.objects.in_bulk([pk for pk, _ in chunk])
+    items = [(full[pk], result) for pk, result in chunk if pk in full]
     results = [{'id': f'pe:{r.pk}', 'kind': 'pe', 'title': (r.title or '')[:300], 'motion': str((r.data or {}).get('reference') or ''),
                 'date': r.date.isoformat() if r.date else None, 'outcome': result,
                 'polish': {POSITION.get(k, k): n for k, n in ((r.data or {}).get('polish') or {}).items()}, 'url': r.source_url}
-               for r, result in items[(page - 1) * per_page: page * per_page]]
+               for r, result in items]
     return {'count': total, 'page': page, 'pages': pages, 'results': results}
 
 
