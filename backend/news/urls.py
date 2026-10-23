@@ -45,7 +45,7 @@ from news import sales  # noqa: E402
 from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
-from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_przeplywy, przeszlosc_wersja
+from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_przeplywy, przeszlosc_stan, przeszlosc_wersja
 from news.przeszlosc_paski import strips_view
 from news import rcl_api
 from news import przeszlosc_v3, position_pairs, privacy_notice
@@ -144,6 +144,7 @@ urlpatterns = [
     path('przeszlosc/spolka/<str:ident>/', drzewo_pieniedzy.company_view),
     path('przeszlosc/przeplyw/<str:ident>/', przeszlosc_przeplyw.flow_view),
     path('przeszlosc/przeplywy/<str:ident>/', przeszlosc_przeplywy.flows_view),
+    path('przeszlosc/stan-danych/', przeszlosc_stan.view),
     path('przeszlosc/paski/', strips_view),
     path('przeszlosc/alerty/', przeszlosc_alerts.subscribe_view),
     path('przeszlosc/alerty/potwierdz/', przeszlosc_alerts.confirm_view),

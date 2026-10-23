@@ -44,7 +44,7 @@ function useNarrow(query = '(max-width: 760px)') {
 
 const cut = (text: string, max: number) => text.length > max ? `${text.slice(0, max - 1)}…` : text;
 
-function Sankey({ data, narrow }: { data: Flows['sankey']; narrow: boolean }) {
+function Sankey({ data, narrow, self }: { data: Flows['sankey']; narrow: boolean; self: Set<string> }) {
   const [lit, setLit] = useState<number | null>(null);
   const layout = useMemo(() => {
     const keep = narrow ? 5 : 8;
@@ -81,11 +81,11 @@ function Sankey({ data, narrow }: { data: Flows['sankey']; narrow: boolean }) {
       {ribbons.map(r => <path key={r.i} d={r.d} className={`pt-pf__ribbon${lit === r.i ? ' is-lit' : ''}`} strokeWidth={r.h}
         onMouseEnter={() => setLit(r.i)} onMouseLeave={() => setLit(null)}><title>{`${r.a} → ${r.b}: ${money(r.v, data.currency ?? 'PLN')}`}</title></path>)}
       {[...pl.entries()].map(([n, p]) => <g key={`l${n}`}>
-        <rect x={0} y={p.y} width={bar} height={p.h} className="pt-pf__bar" />
+        <rect x={0} y={p.y} width={bar} height={p.h} className={`pt-pf__bar${self.has(n) ? ' is-self' : ''}`} />
         {!narrow && <text x={bar + 6} y={p.y + Math.min(p.h / 2, 14) + 4} fontSize={font} className="pt-pf__label">{cut(n, chars)}<tspan className="pt-pf__num">{` ${money(p.v, data.currency ?? 'PLN')}`}</tspan></text>}
       </g>)}
       {[...pr.entries()].map(([n, p]) => <g key={`r${n}`}>
-        <rect x={W - bar} y={p.y} width={bar} height={p.h} className="pt-pf__bar" />
+        <rect x={W - bar} y={p.y} width={bar} height={p.h} className={`pt-pf__bar${self.has(n) ? ' is-self' : ''}`} />
         {!narrow && <text x={W - bar - 6} y={p.y + Math.min(p.h / 2, 14) + 4} fontSize={font} textAnchor="end" className="pt-pf__label">{cut(n, chars)}<tspan className="pt-pf__num">{` ${money(p.v, data.currency ?? 'PLN')}`}</tspan></text>}
       </g>)}
     </svg>
@@ -93,7 +93,7 @@ function Sankey({ data, narrow }: { data: Flows['sankey']; narrow: boolean }) {
       <span className="pt-pf__k">{t}</span>
       <ol>{[...m.entries()].map(([n, p]) => <li key={n}><span>{n}</span><span className="pt-pf__amt">{money(p.v, data.currency ?? 'PLN')}</span></li>)}</ol>
     </div>)}</div>}
-    <figcaption className="px-note">{nb(`Wykres w walucie ${data.currency === 'EUR' ? 'euro' : 'zł'}; płatnicy po lewej, odbiorcy po prawej, szerokość wstęgi = suma kwot.`)}
+    <figcaption className="px-note">{nb(`Wyróżniony słupek to badany podmiot. Szczegóły każdej wstęgi są w tabeli poniżej. Wykres w walucie ${data.currency === 'EUR' ? 'euro' : 'zł'}; płatnicy po lewej, odbiorcy po prawej, szerokość wstęgi = suma kwot.`)}
       {data.other_currencies.length ? nb(` Pozycje w innych walutach (${data.other_currencies.join(', ')}) są tylko w tabeli.`) : ''}</figcaption>
   </figure>;
 }
@@ -132,6 +132,9 @@ export function Przeplywy({ ident, headingId = 'pt-pf-h' }: { ident: string; hea
   const kinds = useMemo(() => [...new Set((data?.results ?? []).map(r => KIND[r.kind]))], [data]);
   const shown = rows.slice(0, page * (narrow ? 10 : PAGE));
   const person = data?.subject.kind === 'person';
+  // węzeł badanego podmiotu (albo podmiotów osoby) - jedyny akcent na wykresie (Von Restorff)
+  const selfNames = useMemo(() => new Set(data ? (person ? (data.subject.organisations ?? []).map(o => o.name) : [data.subject.name]) : []), [data, person]);
+  const vias = useMemo(() => new Set((data?.results ?? []).map(r => r.via?.name).filter(Boolean)), [data]);
 
   return <section className="px-card pt-pf" id="pp-przeplywy" ref={host} aria-labelledby={headingId}>
     <div className="pt-pf__head">
@@ -151,13 +154,14 @@ export function Przeplywy({ ident, headingId = 'pt-pf-h' }: { ident: string; hea
       </div>
       {person && <div className="pt-pf__opts">
         <label className="pt-pf__check"><input type="checkbox" checked={whole} onChange={e => { setWhole(e.target.checked); setState('loading'); }} /> {nb('Pokaż też spoza okresu funkcji')}</label>
+        {vias.size === 1 ? <small className="px-note">{nb(`Wszystkie pozycje przez: ${[...vias][0]}.`)}</small> : null}
         {!whole && data.outside_tenure ? <small className="px-note">{nb(`Ukryte: ${data.outside_tenure} pozycji spoza okresu funkcji w KRS.`)}</small> : null}
       </div>}
       {data.count === 0 ? <p className="px-note pt-pf__empty">{nb(data.empty_reason ?? (data.subject.identifiers_missing
         ? 'Brak przepływów w naszych danych. Podmiot nie ma jeszcze NIP z odpisu KRS - uzupełniamy go w nocnej kolejce KRS.'
         : 'Brak przepływów w naszych danych: zamówień TED i BZP, dotacji FTS i NIW-CRSO ani 1,5% podatku po identyfikatorach tego podmiotu.'))}</p>
       : <>
-        {data.sankey.nodes.length > 0 && <Sankey data={data.sankey} narrow={narrow} />}
+        {data.sankey.nodes.length > 0 && <Sankey data={data.sankey} narrow={narrow} self={selfNames} />}
         <div className="pt-pf__filters" role="group" aria-label="Rodzaj pozycji">
           <button type="button" className={`pt-pf__chip${!kind ? ' is-on' : ''}`} aria-pressed={!kind} onClick={() => { setKind(''); setPage(1); }}>{`Wszystkie (${data.count})`}</button>
           {kinds.map(k => <button key={k} type="button" className={`pt-pf__chip${kind === k ? ' is-on' : ''}`} aria-pressed={kind === k} onClick={() => { setKind(k); setPage(1); }}>{`${k} (${data.results.filter(r => KIND[r.kind] === k).length})`}</button>)}
@@ -170,9 +174,9 @@ export function Przeplywy({ ident, headingId = 'pt-pf-h' }: { ident: string; hea
           {shown.map(r => <div key={r.id} className="pt-pf__row" role="row">
             <span role="cell" className="pt-pf__date">{r.date ? short(r.date) : 'bez daty'}</span>
             <span role="cell" className="pt-pf__from"><span className="pt-pf__mob">od </span><PartyLink p={r.from} /></span>
-            <span role="cell" className="pt-pf__to"><span className="pt-pf__mob">do </span><PartyLink p={r.to} />{r.via && person ? <small>{nb(`przez: ${r.via.name}`)}</small> : null}</span>
-            <span role="cell" className="pt-pf__amt">{money(r.amount, r.currency)}{r.amount_suspect ? <small className="pt-pf__warn">do weryfikacji</small> : null}</span>
-            <span role="cell" className="pt-pf__src">{KIND[r.kind]}{r.outside_tenure ? ', poza okresem funkcji' : ''} · <a href={r.source.url} target="_blank" rel="noopener noreferrer" title={`${r.source.label} (${r.source.license}); łączone po ${r.matched_by}`}>{SRC[r.source.key] ?? r.source.label}</a>
+            <span role="cell" className="pt-pf__to"><span className="pt-pf__mob">do </span><PartyLink p={r.to} />{r.via && person && vias.size > 1 ? <small>{nb(`przez: ${r.via.name}`)}</small> : null}</span>
+            <span role="cell" className="pt-pf__amt">{money(r.amount, r.currency)}</span>
+            <span role="cell" className="pt-pf__src">{r.amount_suspect ? <span className="pt-pf__tag pt-pf__tag--warn">do weryfikacji</span> : null}{KIND[r.kind]}{r.outside_tenure ? ', poza okresem funkcji' : ''} · <a href={r.source.url} target="_blank" rel="noopener noreferrer" title={`${r.source.label} (${r.source.license}); łączone po ${r.matched_by}`}>{SRC[r.source.key] ?? r.source.label}</a>
               {r.title ? <small title={r.title}>{cut(r.title, 90)}</small> : null}</span>
           </div>)}
         </div>
