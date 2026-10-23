@@ -94,7 +94,8 @@ def discover(figure: PublicFigure, debug: dict | None = None) -> list[dict]:
     """Kandydaci z wyszukiwarki: podmiot, KRS, funkcja, źródła (tylko te z wyników wyszukiwania)."""
     who = f'{figure.canonical_name} — {figure.role_title}' + (f', {figure.organisation}' if figure.organisation else '')
     queries = '\n'.join(f'- {query}' for query in _queries(_display_name(figure.canonical_name)))
-    prompt = f'Osoba: {who}\n\nWyszukaj w Google co najmniej:\n{queries}'
+    from news import urzedy
+    prompt = f'Osoba: {who}\n\nWyszukaj w Google co najmniej:\n{queries}\n\n{urzedy.blok()}'  # Korektor 23.10
     response = clinic_ai._call_paid(SYSTEM, prompt, SCHEMA, web_search=True, max_tokens=16000, task='krs')
     usage = clinic_ai._usage(response)
     _spend(usage)
