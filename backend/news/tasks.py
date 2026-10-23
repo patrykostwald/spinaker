@@ -661,6 +661,17 @@ def fakty_task():
     return fakty.run()
 
 
+@shared_task(soft_time_limit=1500, time_limit=1600)
+def korektor_task():
+    """Codziennie 6:50: Korektor (właściciel 23.10) - urzędy i osoby w treściach z 2 dni, bezpieczne naprawy, mail rano."""
+    import os
+    if os.environ.get('KOREKTOR_ENABLED', 'true').strip().lower() == 'false':
+        return {'status': 'disabled'}
+    from news import korektor
+    report = korektor.run(dni=2, napraw=os.environ.get('KOREKTOR_NAPRAW', 'true').strip().lower() == 'true')
+    return {'status': 'ok', 'mail': korektor.send(report)['status'], **report['podsumowanie']}
+
+
 @shared_task
 def raport_petli_task():
     """Codziennie 7:05: Raport pętli mailem (audyt pętli 5.10). Bez AI; jeden mail na dzień."""

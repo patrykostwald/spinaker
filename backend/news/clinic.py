@@ -328,6 +328,9 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
         row.provider = 'anthropic'  # płatna diagnoza (Claude albo Gemini) — to pole odróżnia ją od strażnika
         # Pełny skład Konsylium jest w usage['council']; pole ma 64 znaki (lista nazw przy komplecie członków jest dłuższa).
         row.model_name = (usage.get('model') or clinic_ai.model_name())[:64]
+        # Korektor (23.10): urząd przypisany niewłaściwej osobie - nie publikujemy, raz ponawiamy, potem czeka na człowieka.
+        from news.korektor import bramka_diagnozy
+        bramka_diagnozy(row)
     row.diagnosed_at = timezone.now()
     row.prompt_version = clinic_ai.PROMPT_VERSION
     try:
@@ -584,7 +587,8 @@ def run_diagnoses(limit: int = 2) -> dict:
     from news.council_quorum import MAX_WAIT_HOURS
     waited = timezone.now() - timedelta(hours=MAX_WAIT_HOURS)
     rows = list(SpinDiagnosis.objects.filter(status='queued').filter(
-        Q(post__published_at__gte=fresh) | Q(error__startswith='council_quorum', post__published_at__gte=waited))
+        Q(post__published_at__gte=fresh) | Q(error__startswith='council_quorum', post__published_at__gte=waited)
+        | Q(error__startswith='korektor_urzad', post__published_at__gte=timezone.now() - timedelta(days=7)))
                 .select_related('post__account')
                 .order_by('-post__watch_priority', '-screen_score', '-post__published_at')[:take])
     if auto_publish() and len(rows) < take:
@@ -777,6 +781,19 @@ def _message_for(day, camps, *, models=None, only_missing=False, errors=None) ->
                     'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
             continue
         status = 'approved' if auto_publish() else 'pending_review'
+        from news.korektor import PREFIX, bledy_przekazu, opis
+        wrong = bledy_przekazu(result, day)
+        if wrong:
+            # Korektor (23.10): przekaz z urzędem przypisanym niewłaściwej osobie nie zastępuje zapisanego; naprawa
+            # co godzinę wygeneruje go ponownie (wiersz failed), a powód zostaje w error.
+            logger.warning('clinic daily message %s %s: korektor %s', day, camp, opis(wrong))
+            if errors is not None:
+                errors[f'{day}:{camp}'] = PREFIX
+            if existing is None or existing.status == 'failed':
+                ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
+                    'message': '', 'status': 'failed', 'error': f'{PREFIX}: {opis(wrong)}'[:300],
+                    'prompt_version': clinic_ai.PROMPT_VERSION, 'created_at': timezone.now()})
+            continue
         message, _ = ClinicDailyMessage.objects.update_or_create(day=day, camp=camp, defaults={
             'message': result['message'], 'analysis': result.get('analysis', ''), 'themes': result['themes'],
             'thesis': result.get('thesis', ''), 'points': result.get('points', []), 'tone': result.get('tone', []),
