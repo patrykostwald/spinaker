@@ -129,3 +129,11 @@ Otwarte z poprzednich rund: P1-2 (funkcje wykonawcze), P1-6 (obserwacja spółek
 6. **P1-23, P1-24, P1-25** (deduplikacja, węzły po NIP, eksport przepływów).
 7. Prawnik: Biała lista i odpis pełny w rejestrze czynności, węzeł osób fizycznych przy n = 1.
 8. Dalej otwarte: P1-14/G3, P1-19, P1-9 (pomiar), P1-2, P1-6.
+
+## Po rundzie (23.10, ta sama sesja, commit 16ecd2b)
+Naprawione w kodzie zaraz po ocenie, z testami (do potwierdzenia sondą na produkcji):
+- **P0-11** - ogłoszenie TED z kilkoma wykonawcami: kwota w tabeli z etykietą „kilku wykonawców”, poza sumami i wykresem (`amount_shared`).
+- **P0-12** - agent KRS potwierdza automatycznie tylko ze źródłem, które sami pobraliśmy i które wymienia osobę i podmiot (`read`); sam adres z wyników Gemini nie wystarcza.
+- **P1-21** - podmiot bez NIP w odpisie wraca do kolejki dopiero po okresie odświeżania (90 dni), nie co noc.
+- **P1-22** - stan `no_krs` opisany neutralnie: „Biała lista nie podaje numeru KRS dla tego NIP”.
+Otwarte bez zmian: P0-13, P1-23..P1-26, P2-16..P2-21.
