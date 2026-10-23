@@ -45,7 +45,7 @@ from news import sales  # noqa: E402
 from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
-from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_przeplywy, przeszlosc_stan, przeszlosc_wersja
+from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_przeplywy, przeszlosc_stan, przeszlosc_glosowania_rodzaje, przeszlosc_wersja
 from news.przeszlosc_paski import strips_view
 from news import rcl_api
 from news import przeszlosc_v3, position_pairs, privacy_notice
@@ -134,6 +134,7 @@ urlpatterns = [
     path('przeszlosc/osoba/<str:ident>/powiazania/', przeszlosc_v3.network_view),
     path('przeszlosc/glosowania/', przeszlosc_v3.votes_list_view),
     path('przeszlosc/osoba/<str:ident>/stanowiska/', position_pairs.pairs_view),
+    path('przeszlosc/osoba/<str:ident>/glosowania/', przeszlosc_glosowania_rodzaje.person_view),
     path('stanowiska/<int:pair_id>/zgloszenie/', position_pairs.report_view),
     path('stanowiska/zgloszenie/potwierdz/<str:token>/', position_pairs.confirm_view),
     path('stanowiska/<int:pair_id>/odpowiedz/', position_pairs.response_view),

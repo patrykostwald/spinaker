@@ -96,3 +96,15 @@ wyłączonych źródłach; osoby - bez potwierdzonych relacji (podmiot dociągni
 | G4 stan danych | **zrobione w tym sprincie** |
 | G2, G5-G10 | nie zrobione |
 | Przepływy pieniędzy (obietnica właściciela 6.10) | **v1 zrobione w tym sprincie** |
+
+## 6. Dopisek 23.10: filtry głosowań - dostępność danych
+
+| Rodzaj | Dane | Stan |
+|---|---|---|
+| Sejm - posiedzenia plenarne | api.sejm.gov.pl, głosowania imienne (`ParliamentaryVoting`, `Ballot`) | w filtrze: kadencja, daty, wynik, zgodność z klubem |
+| Komisje sejmowe | api.sejm.gov.pl publikuje posiedzenia komisji, nie imienne głosowania [DP - potwierdzić w dokumentacji API] | „brak danych w źródle”; wyników komisji nie przypisujemy osobom; następny krok: wyniki komisji ze sprawozdań (druków) bez głosów osób |
+| Senat | senat.gov.pl odpowiada naszemu serwerowi 403 (2.10), zbieranie wyłączone | „brak danych”; następny krok: zgoda lub inny oficjalny kanał Kancelarii Senatu |
+| Parlament Europejski | HowTheyVote.eu (ODbL, z oficjalnych protokołów PE), tylko europosłowie z Polski | w filtrze: daty, wynik; zgodności z grupą nie liczymy (brak głosów reszty grupy); następny krok: otwarte dane PE (data.europarl.europa.eu) jako źródło pierwotne |
+
+API: `GET /api/przeszlosc/osoba/<ident>/glosowania/?rodzaj=&kadencja=&od=&do=&wynik=&zgodnosc=zgodnie|inaczej&strona=` (sekcja „Głosowania” w profilu)
+oraz `GET /api/przeszlosc/glosowania/?rodzaj=sejm|pe|komisje|senat` (widok ogólny; w każdej odpowiedzi `kinds` z liczbą pozycji i opisem braku).
