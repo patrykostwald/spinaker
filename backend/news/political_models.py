@@ -14,10 +14,13 @@ from django.utils import timezone
 
 
 EDITORIAL_CAMPS = [('government', 'Obóz rządzący'), ('opposition', 'Opozycja')]
-ACCOUNT_CAMPS = [*EDITORIAL_CAMPS, ('public', 'Instytucja publiczna')]
+# „Inni i niezrzeszeni”: koła, posłowie niezrzeszeni, kluby spoza listy obozów. Konto jest czytane i diagnozowane,
+# ale nie wchodzi do przekazów dnia, które porównują dwa obozy (właściciel 23.10).
+OTHER_CAMP = 'other'
+ACCOUNT_CAMPS = [*EDITORIAL_CAMPS, ('public', 'Instytucja publiczna'), (OTHER_CAMP, 'Inni i niezrzeszeni')]
 ACCOUNT_CANDIDATE_CLASSIFICATIONS = [
     ('government', 'Obóz rządzący'), ('opposition', 'Opozycja'),
-    ('public', 'Instytucja publiczna'), ('independent', 'Niezależne / do oceny'),
+    ('public', 'Instytucja publiczna'), ('independent', 'Niezależne / do oceny'), (OTHER_CAMP, 'Inni i niezrzeszeni'),
 ]
 ID_VALIDATOR = RegexValidator(r'^[1-9][0-9]{0,18}$', 'Podaj numeryczny identyfikator X.')
 HANDLE_VALIDATOR = RegexValidator(r'^[A-Za-z0-9_]{1,15}$', 'Podaj nazwę konta X bez @.')
@@ -90,7 +93,7 @@ class PoliticalAccount(models.Model):
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie konta wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie konta wymaga aktywnej osoby z zespołu.')
         self.full_clean()
         if not self.confirmation_url:
             raise ValidationError('Dodaj źródło potwierdzenia konta i obozu.')
@@ -201,7 +204,7 @@ ORGANISATION_KINDS = [
 ]
 ORGANISATION_RELATION_STATUSES = [('current', 'Obecna'), ('former', 'Historyczna')]
 ORGANISATION_VERIFICATION_STATUSES = [
-    ('pending_review', 'Wymaga potwierdzenia redakcji'),
+    ('pending_review', 'Do weryfikacji'),
     ('confirmed', 'Potwierdzona w źródle publicznym'),
     ('rejected', 'Odrzucona'),
 ]
@@ -241,7 +244,7 @@ class PublicFigure(models.Model):
         help_text='Publiczne źródło potwierdzające rolę lub status wpisu.')
     evidence_note = models.TextField(blank=True)
     political_alignment = models.CharField(max_length=255, blank=True,
-        help_text='Opcjonalna, ręczna notatka redakcyjna; nie jest ustalana automatycznie.')
+        help_text='Opcjonalna, ręczna notatka zespołu; nie jest ustalana automatycznie.')
     organisations_checked_at = models.DateTimeField(null=True, blank=True, db_index=True,
         help_text='Kiedy agent KRS ostatnio szukał podmiotów tej osoby.')
     account_discovery_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
@@ -253,7 +256,7 @@ class PublicFigure(models.Model):
         help_text='Wpis archiwalny pozostaje w rejestrze i nie jest usuwany.')
     merged_into = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='merged_profiles',
-        help_text='Potwierdzone przez redakcję połączenie z profilem tej samej osoby. Połączony wpis '
+        help_text='Potwierdzone przez zespół połączenie z profilem tej samej osoby. Połączony wpis '
                   'pozostaje archiwalny także po synchronizacji rosterów; jego role trafiają do profilu docelowego.')
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -346,7 +349,7 @@ ARTICLE_REFERENCE_KINDS = [
 ]
 ARTICLE_REFERENCE_VERIFICATION_STATUSES = [
     ('pending_review', 'Do przeglądu'),
-    ('confirmed', 'Potwierdzone przez redakcję'),
+    ('confirmed', 'Potwierdzone przez zespół'),
     ('rejected', 'Odrzucone'),
 ]
 
@@ -385,11 +388,11 @@ class PublicFigureArticleReference(models.Model):
     def clean(self):
         super().clean()
         if self.verification_status == 'confirmed' and (not self.verified_by_id or not self.verified_at):
-            raise ValidationError('Potwierdzona relacja z materiałem wymaga redaktora i daty potwierdzenia.')
+            raise ValidationError('Potwierdzona relacja z materiałem wymaga osoby z zespołu i daty potwierdzenia.')
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie relacji z materiałem wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie relacji z materiałem wymaga aktywnej osoby z zespołu.')
         self.verified_by = staff
         self.verified_at = timezone.now()
         self.verification_status = 'confirmed'
@@ -460,7 +463,7 @@ class PublicFigureOrganisationRelation(models.Model):
     def clean(self):
         super().clean()
         if self.verification_status == 'confirmed' and self.verification_method == 'editor' and (not self.verified_by_id or not self.verified_at):
-            raise ValidationError('Potwierdzona relacja wymaga redaktora i daty potwierdzenia.')
+            raise ValidationError('Potwierdzona relacja wymaga osoby z zespołu i daty potwierdzenia.')
 
     def save(self, *args, **kwargs):
         """Return changed public evidence to the editorial review queue.
@@ -495,7 +498,7 @@ class PublicFigureOrganisationRelation(models.Model):
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie relacji wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie relacji wymaga aktywnej osoby z zespołu.')
         if not self.evidence_url:
             raise ValidationError('Dodaj bezpośredni publiczny dowód relacji.')
         self.verified_by = staff
@@ -514,7 +517,7 @@ SOCIAL_EVIDENCE_STATUSES = [
 
 OFFICIAL_VIDEO_CHANNEL_STATUSES = [
     ('pending_review', 'Do przeglądu'),
-    ('confirmed', 'Potwierdzony przez redakcję'),
+    ('confirmed', 'Potwierdzony przez zespół'),
     ('rejected', 'Odrzucony'),
 ]
 
@@ -574,11 +577,11 @@ class OfficialVideoChannel(models.Model):
         if self.collection_enabled and (self.status != 'confirmed' or not self.channel_id):
             raise ValidationError('Pobieranie metadanych wymaga potwierdzonego kanału z identyfikatorem kanału.')
         if self.status == 'confirmed' and (not self.reviewed_by_id or not self.reviewed_at):
-            raise ValidationError('Potwierdzony kanał wymaga redaktora i daty potwierdzenia.')
+            raise ValidationError('Potwierdzony kanał wymaga osoby z zespołu i daty potwierdzenia.')
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie kanału wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie kanału wymaga aktywnej osoby z zespołu.')
         self.reviewed_by = staff
         self.reviewed_at = timezone.now()
         self.status = 'confirmed'
@@ -672,7 +675,7 @@ class PoliticalDraft(models.Model):
     title = models.CharField(max_length=250)
     posts = models.ManyToManyField(PoliticalPost, related_name='drafts')
     origin = models.CharField(max_length=20, default='editorial_selection',
-        choices=[('editorial_selection', 'Wybór redakcji'), ('ai_proposal', 'Propozycja AI')])
+        choices=[('editorial_selection', 'Wybór zespołu'), ('ai_proposal', 'Propozycja AI')])
     proposed_items = models.JSONField(default=list,
         help_text='Szkic powiązań do sprawdzenia; nie są rekordami źródłowymi.')
     notes = models.TextField(blank=True)

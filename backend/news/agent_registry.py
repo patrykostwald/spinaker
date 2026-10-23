@@ -70,7 +70,8 @@ REGISTRY = {
     'ekspert-ai': agent('Ekspert AI', 'Raz w tygodniu stan wiedzy o AI ze znalezisk Pielgrzyma; wskazuje Rekruterowi modele do egzaminu.', 'news.tasks.ekspert_ai_task', 'AGENTS_ENABLED'),
     'krs': agent('Agent KRS', 'Sprawdza powiązania osób z podmiotami KRS.', 'news.tasks.krs_agent_task', 'KRS_AGENT_ENABLED', cost='krs'),
     'seba': agent('Seba', 'Krytycznie ocenia propozycje agentów.', 'news.tasks.seba_task', 'SEBA_ENABLED', True),  # seba.enabled(): domyślnie włączona (Raport pętli 6.10 pokazywał „wył.”)
-    'second-key': agent('Drugi klucz', 'Weryfikuje podejrzenia Strażnika kont.', 'news.tasks.warden_second_key_task', 'WARDEN_SECOND_KEY_ENABLED'),
+    'second-key': agent('Drugi klucz', 'Weryfikuje podejrzenia Strażnika kont.', 'news.tasks.warden_second_key_task', 'WARDEN_SECOND_KEY_ENABLED',
+                        default=True),  # jak warden_second_key.enabled(): brak flagi = włączony
     'interviews': agent('Wywiad dnia', 'Przygotowuje transkrypcję i diagnozę wywiadu.', 'news.tasks.clinic_interview_task', 'CLINIC_INTERVIEW_ENABLED', cost='interviews'),
     'sejm-wideo': agent('Wystąpienia z Sejmu', 'Co 30 minut w dzień wybiera z wczorajszych nagrań Sejmu (sala i komisje) najwyżej SEJM_VIDEO_SPIN_DAILY wystąpień posłów - tylko po długości, jedno na osobę, ta sama miara dla wszystkich - i diagnozuje je jak wpisy (Konsylium z kworum, osobny budżet). Link do odtwarzacza Sejmu z sekundą wystąpienia.', 'news.tasks.sejm_wideo_task', 'SEJM_VIDEO_SPIN_ENABLED'),
     'straznik-mediow': agent('Strażnik mediów', 'Co godzinę zapisuje w Wayback Machine kopię artykułów cytowanych w opublikowanych diagnozach i tematach dnia (najwyżej kilka na przebieg, w limicie 15/min), a raz na dobę porównuje skrót tekstu artykułu; zmiana po cytowaniu = alarm z kopią sprzed i po. Bez AI, bez zapisu treści.', 'news.tasks.straznik_mediow_task', 'MEDIA_WATCH_ENABLED'),

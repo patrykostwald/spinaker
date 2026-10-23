@@ -120,9 +120,9 @@ def check_poll(now):
 
 def check_screen(now):
     from django.db.models import Q
-    from news.clinic import CAMPS
+    from news.clinic import DIAGNOSED_CAMPS
     from news.political_models import PoliticalPost
-    rows = PoliticalPost.objects.filter(available=True, account__enabled=True, camp_at_collection__in=CAMPS,
+    rows = PoliticalPost.objects.filter(available=True, account__enabled=True, camp_at_collection__in=DIAGNOSED_CAMPS,
                                        fetched_at__lte=now)
     if not rows.exists():
         return result('na', 'Brak wpisów do oceny.')

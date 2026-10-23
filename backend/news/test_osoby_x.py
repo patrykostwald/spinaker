@@ -203,3 +203,18 @@ def test_pokrycie_command_reports_repo_data(capsys):
     out = capsys.readouterr().out
     assert 'Osoby publiczne (repo):' in out
     assert 'Marek Jakubiak · parliamentary:sejm:139' in out
+
+
+@pytest.mark.django_db
+def test_pokrycie_on_database_shows_who_waits_and_since_when(capsys):
+    from news.political_models import PoliticalAccountCandidate
+    PublicFigure.objects.create(canonical_name='Marek Jakubiak', role_category='parliamentary', role_title='Poseł na Sejm RP',
+        import_key=JAKUBIAK, evidence_url='https://api.sejm.gov.pl/sejm/term10/MP/139')
+    PoliticalAccountCandidate.objects.create(handle='KontoTestowe2', display_name='Ktoś', classification='independent',
+        resolution_error='Strażnik: konflikt dowodów: konto powiązano już z innym profilem.')
+    call_command('osoby_x_pokrycie')
+    out = capsys.readouterr().out
+    assert 'Osoby publiczne (baza): 1' in out
+    assert 'Czeka na konto X: 1 osób' in out and 'jeszcze nie sprawdzane przez Strażnika: 1' in out
+    assert 'konflikty do decyzji: 1' in out
+    assert '- Marek Jakubiak · Poseł na Sejm RP' in out and '@KontoTestowe2' in out
