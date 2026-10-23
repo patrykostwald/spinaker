@@ -13,7 +13,10 @@ try {
         Copy-Item -Path (Join-Path $Src "*") -Destination $Dist -Force
     }
     Set-Location "C:\Users\User\zbudujmi\wdrozenie"
-    & npx wrangler deploy *>> $Log
+    # wrangler pisze ostrzezenia na stderr; w PS 5.1 z Stop to wyjatek, wiec przez cmd i kod wyjscia
+    $env:CI = "1"
+    & cmd /c "npx wrangler deploy >> `"$Log`" 2>&1"
+    if ($LASTEXITCODE -ne 0) { throw "wrangler deploy kod $LASTEXITCODE" }
     Zapisz "ok"
 } catch {
     Zapisz ("blad: " + $_.Exception.Message)
