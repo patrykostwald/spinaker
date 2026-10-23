@@ -31,7 +31,7 @@ MAX_ROWS = 500
 SANKEY_SIDE = 8   # tylu największych płatników i odbiorców na wykresie; reszta jako „pozostali”
 NOTE = ('Pieniądze publiczne według rekordów źródłowych, łączone tylko po NIP, KRS i REGON. Kwoty zamówień z ogłoszeń TED '
         '(wartość całego ogłoszenia, nie umowy), dotacje z FTS i NIW-CRSO, 1,5% z wykazu MF. Kwoty do weryfikacji są w tabeli, '
-        'ale poza sumami i wykresem. Ta sama miara dla wszystkich, bez oceny.')
+        'ale poza sumami i wykresem; tak samo wartość ogłoszenia z kilkoma wykonawcami (nie wiemy, ile przypadło każdemu). Ta sama miara dla wszystkich, bez oceny.')
 PERSON_NOTE = ('Przepływy podmiotów, w których osoba ma potwierdzoną funkcję w KRS, z okresu tej funkcji. Osoba nie jest '
                'płatnikiem ani odbiorcą; funkcja w podmiocie to kontekst, nie dowód.')
 KIND = {'ted_in': 'zamówienie (wykonawca)', 'ted_out': 'zamówienie (zamawiający)', 'bzp': 'ogłoszenie BZP (zamawiający)',
@@ -99,12 +99,18 @@ def org_flows(org):
     ids = money.identifiers(org)
     me = _org_party(org)
     rows = []
-    for x in money.contracts(org, ids):
+    found = money.contracts(org, ids)
+    from news.public_records_models import PublicRecord
+    ted_pks = [int(x['id'].split(':')[1]) for x in found if x['source'] == 'ted']
+    winners = {pk: len((data or {}).get('winners') or []) for pk, data in PublicRecord.objects.filter(pk__in=ted_pks).values_list('pk', 'data')}
+    for x in found:
         base = {'date': x['date'], 'title': x['title'], 'source': _source(x['source'], x['url']), 'matched_by': x['matched_by'],
                 'record': x['id'], 'amount_suspect': x.get('amount_suspect', False)}
         if x['source'] == 'ted':
+            # Śledczy R3 P0-11: przy kilku wykonawcach kwota to wartość całego ogłoszenia, nie część podmiotu - poza sumami i wykresem
+            shared = winners.get(int(x['id'].split(':')[1]), 1) > 1
             rows.append({**base, 'id': f"{x['id']}:in", 'kind': 'ted_in', 'from': _party(x['party']), 'to': me,
-                         'amount': x['amount'], 'currency': x['currency']})
+                         'amount': x['amount'], 'currency': x['currency'], 'amount_shared': shared})
         else:
             rows.append({**base, 'id': x['id'], 'kind': 'bzp', 'from': me, 'to': _party('wykonawca: BZP go nie podaje'),
                          'amount': None, 'currency': ''})
@@ -124,6 +130,7 @@ def org_flows(org):
                      'attribution': x['attribution']})
     for r in rows:
         r.setdefault('amount_suspect', False)
+        r.setdefault('amount_shared', False)
     known = _known([p['nip'] for r in rows for p in (r['from'], r['to'])])
     for r in rows:
         for side in ('from', 'to'):
@@ -172,7 +179,7 @@ def sums(rows):
     totals = defaultdict(float)
     counts = defaultdict(int)
     for r in rows:
-        if r.get('amount') is not None and not r.get('amount_suspect'):
+        if r.get('amount') is not None and not r.get('amount_suspect') and not r.get('amount_shared'):
             totals[r['currency'] or 'PLN'] += r['amount']
             counts[r['currency'] or 'PLN'] += 1
     return [{'currency': c, 'total': round(v, 2), 'count': counts[c]} for c, v in sorted(totals.items(), key=lambda x: -x[1])]
@@ -180,7 +187,7 @@ def sums(rows):
 
 def sankey(rows, currency=None):
     """Płatnicy po lewej, odbiorcy po prawej, wstęgi proporcjonalne do sumy kwot jednej waluty (domyślnie najczęstszej)."""
-    counted = [r for r in rows if r.get('amount') and not r.get('amount_suspect')]
+    counted = [r for r in rows if r.get('amount') and not r.get('amount_suspect') and not r.get('amount_shared')]
     if not counted:
         return {'currency': None, 'nodes': [], 'links': [], 'other_currencies': []}
     by_currency = defaultdict(int)
@@ -226,6 +233,7 @@ def payload(rows, subject, note, extra=None):
     return {'subject': subject, 'count': len(rows), 'truncated': len(rows) > MAX_ROWS, 'results': rows[:MAX_ROWS],
             'sums': {'all': sums(rows), 'in': sums(counted_in), 'out': sums(counted_out)},
             'suspect_count': sum(1 for r in rows if r.get('amount_suspect')),
+            'shared_count': sum(1 for r in rows if r.get('amount_shared')),
             'kinds': [{'kind': k, 'label': KIND[k], 'count': n} for k, n in sorted(kinds.items(), key=lambda x: -x[1])],
             'sankey': sankey(rows), 'sources': list(used.values()), 'note': note, 'version': VERSION,
             'generated_at': timezone.now().isoformat(timespec='minutes'), **(extra or {})}

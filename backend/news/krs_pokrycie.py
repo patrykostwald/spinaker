@@ -70,9 +70,10 @@ def valid_nip(value) -> str:
 
 # --- 1. zasilanie kolejki -------------------------------------------------------------------------------------------
 
-def _enqueue(kind, value, origin, counter):
+def _enqueue(kind, value, origin, counter, stale=None):
     from news.przeszlosc_models import KrsKolejka
     priority = PRIORITY.get(origin, 5)
+    stale = stale or timezone.now() - timedelta(days=_env_int('KRS_POKRYCIE_DNI', STALE_DAYS))
     try:
         with transaction.atomic():
             item, created = KrsKolejka.objects.get_or_create(kind=kind, value=value, defaults={'origin': origin, 'priority': priority})
@@ -80,7 +81,8 @@ def _enqueue(kind, value, origin, counter):
         return
     if created:
         counter[origin] += 1
-    elif item.status == 'ok' and origin == 'org':
+    elif item.status == 'ok' and origin == 'org' and (item.checked_at is None or item.checked_at < stale):
+        # Śledczy R3 P1-21: tylko odpis starszy niż okres odświeżania; podmiot bez NIP w KRS nie wraca co noc
         # odpis do odświeżenia: wraca do kolejki, bez kasowania wyniku
         KrsKolejka.objects.filter(pk=item.pk).update(status='pending', next_try_at=timezone.now(), priority=0, attempts=0)
         counter['org_odswiez'] += 1

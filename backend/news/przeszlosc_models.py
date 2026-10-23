@@ -48,7 +48,7 @@ class KrsKolejka(models.Model):
     """
     KINDS = [('krs', 'numer KRS'), ('nip', 'NIP')]
     STATUSES = [('pending', 'czeka'), ('ok', 'pobrano odpis'), ('missing', 'brak w rejestrze'),
-                ('no_krs', 'NIP bez numeru KRS (np. działalność osoby fizycznej)'), ('mismatch', 'NIP z KRS niezgodny'),
+                ('no_krs', 'Biała lista nie podaje numeru KRS dla tego NIP'), ('mismatch', 'NIP z KRS niezgodny'),
                 ('error', 'błąd rejestru - ponowimy')]
 
     kind = models.CharField(max_length=4, choices=KINDS)

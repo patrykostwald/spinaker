@@ -15,7 +15,7 @@ type Party = { label: string; nip: string; url: string };
 type Sum = { currency: string; total: number; count: number };
 type Flow = {
   id: string; kind: string; date: string | null; from: Party; to: Party; amount: number | null; currency: string;
-  amount_suspect: boolean; title: string; source: { key: string; label: string; license: string; url: string };
+  amount_suspect: boolean; amount_shared?: boolean; title: string; source: { key: string; label: string; license: string; url: string };
   matched_by: string; via?: { name: string; url: string }; outside_tenure?: boolean; attribution?: string;
 };
 type SNode = { id: number; label: string; side: 'from' | 'to'; total: number };
@@ -176,7 +176,7 @@ export function Przeplywy({ ident, headingId = 'pt-pf-h' }: { ident: string; hea
             <span role="cell" className="pt-pf__from"><span className="pt-pf__mob">od </span><PartyLink p={r.from} /></span>
             <span role="cell" className="pt-pf__to"><span className="pt-pf__mob">do </span><PartyLink p={r.to} />{r.via && person && vias.size > 1 ? <small>{nb(`przez: ${r.via.name}`)}</small> : null}</span>
             <span role="cell" className="pt-pf__amt">{money(r.amount, r.currency)}</span>
-            <span role="cell" className="pt-pf__src">{r.amount_suspect ? <span className="pt-pf__tag pt-pf__tag--warn">do weryfikacji</span> : null}{KIND[r.kind]}{r.outside_tenure ? ', poza okresem funkcji' : ''} · <a href={r.source.url} target="_blank" rel="noopener noreferrer" title={`${r.source.label} (${r.source.license}); łączone po ${r.matched_by}`}>{SRC[r.source.key] ?? r.source.label}</a>
+            <span role="cell" className="pt-pf__src">{r.amount_suspect ? <span className="pt-pf__tag pt-pf__tag--warn">do weryfikacji</span> : null}{r.amount_shared ? <span className="pt-pf__tag pt-pf__tag--warn" title="Kwota całego ogłoszenia z kilkoma wykonawcami - poza sumami">kilku wykonawców</span> : null}{KIND[r.kind]}{r.outside_tenure ? ', poza okresem funkcji' : ''} · <a href={r.source.url} target="_blank" rel="noopener noreferrer" title={`${r.source.label} (${r.source.license}); łączone po ${r.matched_by}`}>{SRC[r.source.key] ?? r.source.label}</a>
               {r.title ? <small title={r.title}>{cut(r.title, 90)}</small> : null}</span>
           </div>)}
         </div>

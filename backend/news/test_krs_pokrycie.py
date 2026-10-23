@@ -129,3 +129,28 @@ def test_raport_counts():
     assert data['osoby']['wszystkie'] == 1 and data['osoby']['niesprawdzone'] == 1
     assert data['podmioty']['z_nip'] == 1
     assert 'OSOBY PUBLICZNE' in krs_pokrycie.raport_tekst(data)
+
+
+@pytest.mark.django_db
+def test_grounded_but_unread_source_does_not_confirm(monkeypatch):
+    """Śledczy R3 P0-12: adres z wyników Gemini, którego strona nie wymienia osoby i podmiotu, nie potwierdza imiennika."""
+    figure = PublicFigure.objects.create(canonical_name='Jan Kowalski', role_category='parliamentary', role_title='Poseł',
+                                         evidence_url='https://sejm.gov.pl/x', import_key='test:jk4')
+    monkeypatch.setattr(krs, 'fetch', lambda number: _extract())
+    monkeypatch.setattr(krs_agent, 'page_mentions', lambda url, surname, entity: False)
+    candidate = {'name': 'Fundacja Testowa Pomocy', 'krs': '0000012345', 'role': 'prezes zarządu', 'period': '', 'current': True,
+                 'sector': 'ngo', 'sources': [{'url': 'https://example.org/a', 'title': 'x', 'grounded': True}]}
+    relation = krs_agent.verify(figure, candidate)
+    assert relation.verification_status == 'pending_review' and all('read' not in s for s in relation.sources)
+
+
+@pytest.mark.django_db
+def test_org_without_nip_does_not_return_every_night():
+    """Śledczy R3 P1-21: świeżo sprawdzony podmiot bez NIP w KRS nie wraca do kolejki co noc."""
+    from django.utils import timezone
+    RegisteredOrganisation.objects.create(name='Bez NIP', krs_number='0000000005', kind='association',
+                                          official_register_url='https://wyszukiwarka-krs.ms.gov.pl/', nip='')
+    krs_pokrycie.zasil()
+    KrsKolejka.objects.filter(value='0000000005').update(status='ok', checked_at=timezone.now())
+    assert krs_pokrycie.zasil().get('org_odswiez') is None
+    assert KrsKolejka.objects.get(value='0000000005').status == 'ok'

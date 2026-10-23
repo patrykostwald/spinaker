@@ -146,8 +146,10 @@ def page_mentions(url: str, surname: str, entity: str) -> bool:
 def _checked_sources(sources: list[dict], surname: str, entity: str) -> list[dict]:
     kept = []
     for source in sources[:5]:
-        if source.get('grounded') or page_mentions(source['url'], surname, entity):
-            kept.append({'url': source['url'], 'title': source.get('title') or (urlsplit(source['url']).hostname or '')})
+        # „read”: sami pobraliśmy stronę i wymienia osobę oraz podmiot; sam adres z wyników wyszukiwania (grounded) tego nie dowodzi
+        read = page_mentions(source['url'], surname, entity)
+        if source.get('grounded') or read:
+            kept.append({'url': source['url'], 'title': source.get('title') or (urlsplit(source['url']).hostname or ''), 'read': read})
     return kept
 
 
@@ -241,7 +243,11 @@ def verify(figure: PublicFigure, candidate: dict, reasons: list | None = None) -
         # Imiennicy (sprint 23.10): maska KRS (inicjał i długość) nie odróżnia dwóch osób o tym samym imieniu i nazwisku.
         # Automatyczne potwierdzenie tylko z co najmniej jednym sprawdzonym źródłem, które wymienia osobę i ten podmiot;
         # bez niego relacja czeka na redaktora (pending_review) i nie trafia na profil.
-        return _save(figure, extract, candidate, 'krs_register', person, confirm=bool(candidate['sources']))
+        # Śledczy R3 P0-12: liczy się tylko źródło przeczytane przez nas, nie sam adres z wyników Gemini.
+        confirm = any(source.get('read') for source in candidate['sources'])
+        candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
+        return _save(figure, extract, candidate, 'krs_register', person, confirm=confirm)
+    candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}
     if len(_domains(candidate['sources'])) >= 2:
         return _save(figure, extract, candidate, 'public_sources', None)
     return reject(f"w KRS brak osoby o zgodnych inicjałach w organie „{candidate['role']}”; sprawdzonych źródeł: {len(candidate['sources'])}")

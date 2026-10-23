@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
                             ("missing", "brak w rejestrze"),
                             (
                                 "no_krs",
-                                "NIP bez numeru KRS (np. działalność osoby fizycznej)",
+                                "Biała lista nie podaje numeru KRS dla tego NIP",
                             ),
                             ("mismatch", "NIP z KRS niezgodny"),
                             ("error", "błąd rejestru - ponowimy"),

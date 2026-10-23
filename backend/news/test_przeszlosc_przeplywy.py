@@ -82,3 +82,13 @@ def test_endpoint(monkeypatch):
     assert body['subject']['krs_number'] == company.krs_number and body['count'] == 5
     assert client.get('/api/przeszlosc/przeplywy/spolka:0000000099/').status_code == 404
     assert client.get('/api/przeszlosc/przeplywy/spolka:0000000002/?cala_historia=5').status_code == 400
+
+
+def test_shared_notice_amount_outside_sums():
+    """Śledczy R3 P0-11: ogłoszenie z kilkoma wykonawcami - wartość całego ogłoszenia nie jest wpływem podmiotu."""
+    company = org()
+    rec('ted', 'notice', '8-2026', {'buyer': ['Gmina'], 'value': 1000, 'currency': 'PLN',
+                                   'winners': [{'name': 'Port', 'id': '5260250995'}, {'name': 'Inna', 'id': '1234563218'}]}, 'Dwóch', date(2026, 1, 1))
+    data = pp.for_org(company)
+    assert data['results'][0]['amount_shared'] and data['shared_count'] == 1
+    assert data['sums']['in'] == [] and data['sankey']['nodes'] == []
