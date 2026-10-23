@@ -36,8 +36,7 @@ const PAGE = 25;
 const short = (d: string) => d.length === 10 ? `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}` : d;
 const sumText = (s: Sum[]) => s.length ? s.map(x => money(x.total, x.currency)).join(' + ') : '-';
 const pozycji = (n: number) => `${n} ${plural(n, 'pozycja', 'pozycje', 'pozycji')}`;
-const outside = (suspect: number, shared: number) => !suspect && !shared ? 'wszystkie kwoty w sumach'
-  : `poza sumami: ${[suspect && `${suspect} do weryfikacji`, shared && `${shared} kilku wykonawców`].filter(Boolean).join(', ')}`;
+const outside = (suspect: number, shared: number) => !suspect && !shared ? 'wszystkie kwoty w sumach' : `${suspect + shared} poza sumami`;
 
 function NumBox({ label, title, sums, what }: { label: string; title: string; sums: Sum[]; what: string }) {
   const n = sums.reduce((s, x) => s + x.count, 0);
@@ -160,7 +159,7 @@ export function Przeplywy({ ident, headingId = 'pt-pf-h' }: { ident: string; hea
         <NumBox label="Wygrane zamówienia" title="Wartość z ogłoszeń TED o udzieleniu zamówienia, nie kwota zapłacona" sums={data.sums.in_contracts ?? []} what="wartość z ogłoszeń" />
         <NumBox label="Dotacje i 1,5% podatku" title="Dotacje UE (FTS), krajowe (NIW-CRSO) i 1,5% podatku" sums={data.sums.in_grants ?? []} what="kwoty przyznane" />
         <NumBox label="Udzielone zamówienia" title="Podmiot jako zamawiający: wartość z ogłoszeń TED" sums={data.sums.out} what="wartość z ogłoszeń" />
-        <div className="pt-pf__num-box"><span className="pt-pf__k">Pozycje</span><strong>{data.count}</strong><small>{nb(outside(data.suspect_count, data.shared_count ?? 0))}</small></div>
+        <div className="pt-pf__num-box" title={`Poza sumami: ${data.suspect_count} do weryfikacji, ${data.shared_count ?? 0} z kwotą ogłoszenia kilku wykonawców`}><span className="pt-pf__k">Pozycje</span><strong>{data.count}</strong><small>{nb(outside(data.suspect_count, data.shared_count ?? 0))}</small></div>
       </div>
       {person && <div className="pt-pf__opts">
         <label className="pt-pf__check"><input type="checkbox" checked={whole} onChange={e => { setWhole(e.target.checked); setState('loading'); }} /> {nb('Pokaż też spoza okresu funkcji')}</label>

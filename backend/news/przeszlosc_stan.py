@@ -36,15 +36,15 @@ NO_GAPS = 'Braki nieopisane.'
 # Śledczy R3 P0-13: zbiory widoczne na profilu, które nie są w PublicRecord - każdy z licznikiem i datą z własnej tabeli.
 # (klucz, nazwa, model, pole daty, dni do „zaległe”, znane braki)
 DATASETS = [
-    ('glosowania', 'Głosowania Sejmu (imienne, api.sejm.gov.pl)', 'news.ParliamentaryVoting', 'article__published_date', 30,
+    ('glosowania', 'Głosowania Sejmu (imienne)', 'news.ParliamentaryVoting', 'article__published_date', 30,
      'Sejm X kadencji; komisje, Senat i PE osobno lub wcale.'),
     ('druki', 'Druki i akty (Sejm, ELI)', 'news.OfficialRecord', 'fetched_at', 30, ''),
-    ('oswiadczenia', 'Oświadczenia majątkowe posłów (Sejm)', 'news.AssetDeclaration', 'fetched_at', 400,
+    ('oswiadczenia', 'Oświadczenia majątkowe posłów', 'news.AssetDeclaration', 'fetched_at', 400,
      'Tylko posłowie; link do PDF i metadane, bez odczytu kwot.'),
     ('rcl', 'Projekty aktów prawnych (RCL)', 'news.LegislativeProject', 'fetched_at', 30, ''),
     ('wpisy_x', 'Wpisy X obserwowanych kont', 'news.PoliticalPost', 'fetched_at', 7,
      'Tylko konta przypięte do osób i czytane w limicie kosztu X.'),
-    ('krs_podmioty', 'Podmioty z KRS (api-krs.ms.gov.pl)', 'news.RegisteredOrganisation', 'source_checked_at', 120,
+    ('krs_podmioty', 'Podmioty z KRS', 'news.RegisteredOrganisation', 'source_checked_at', 120,
      'Tylko podmioty powiązane z osobami lub przepływami.'),
     ('wzmianki', 'Artykuły i wzmianki w mediach', 'news.Article', 'published_date', 3,
      'Wzmianka = artykuł z nazwiskiem osoby; imiennicy możliwi.'),
