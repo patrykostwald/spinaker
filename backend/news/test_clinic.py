@@ -662,7 +662,7 @@ def test_interview_pipeline_keeps_only_quotes_from_the_transcript(monkeypatch):
     from news import clinic_interview
     from news.clinic_models import ClinicInterview
     monkeypatch.setattr(clinic_interview, '_oembed', lambda url: {'title': 'Kropka nad i', 'author_name': 'TVN24', 'thumbnail_url': 'https://i.ytimg.com/x.jpg'})
-    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url: ({'guest_name': 'Jan Kowalski', 'host_name': 'Anna Nowak', 'segments': [
+    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url, hint='': ({'guest_name': 'Jan Kowalski', 'host_name': 'Anna Nowak', 'segments': [
         {'time': '01:05', 'speaker': 'guest', 'text': 'Podatki spadły o połowę, to nasz sukces.'},
         {'time': '02:10', 'speaker': 'host', 'text': 'Ale dane GUS mówią co innego.'}]
         + [{'time': f'1{i}:00', 'speaker': who, 'text': 'Dalsza część rozmowy o budżecie.'} for i in range(6) for who in ('host', 'guest')]},
@@ -771,7 +771,7 @@ def test_loudest_political_interview_of_yesterday_is_picked(monkeypatch):
 def test_monologue_is_rejected_before_paying_for_the_diagnosis(monkeypatch):
     from news import clinic_interview
     monkeypatch.setattr(clinic_interview, '_oembed', lambda url: {})
-    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url: ({'guest_name': 'Lech Wałęsa', 'host_name': 'Robert Mazurek', 'segments':
+    monkeypatch.setattr(clinic_interview, 'transcribe', lambda url, hint='': ({'guest_name': 'Lech Wałęsa', 'host_name': 'Robert Mazurek', 'segments':
         [{'time': f'0{i}:00', 'speaker': 'host', 'text': 'Długi komentarz prowadzącego. ' * 20} for i in range(9)]
         + [{'time': '09:30', 'speaker': 'guest', 'text': 'Krótki cytat.'}]}, {'model': 'gemini'}))
     paid = []
