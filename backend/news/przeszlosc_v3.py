@@ -92,7 +92,11 @@ def _params(params):
     result = {'kadencja': number('kadencja'), 'strona': max(1, number('strona', 1)),
               'na_strone': max(1, min(PAGE_MAX, number('na_strone', PER_PAGE))),
               'klub': (params.get('klub') or '').strip()[:100] or None,
-              'wynik': (params.get('wynik') or '').strip() or None, 'q': (params.get('q') or '').strip()[:120]}
+              'wynik': (params.get('wynik') or '').strip() or None, 'q': (params.get('q') or '').strip()[:120],
+              'rodzaj': (params.get('rodzaj') or 'sejm').strip()}
+    from news.przeszlosc_glosowania_rodzaje import KINDS
+    if result['rodzaj'] not in KINDS:
+        raise ValueError('Rodzaj: sejm, komisje, senat albo pe.')
     for key in ('od', 'do'):
         value = params.get(key) or None
         if value:
@@ -183,7 +187,18 @@ def votes_list_view(request):
         params = _params(request.query_params)
     except ValueError as error:
         return Response({'detail': str(error)}, status=400)
-    response = Response(votes_page(params))
+    from news import przeszlosc_glosowania_rodzaje as rodzaje
+    # dopisek 23.10: rodzaj głosowania; liczniki rodzajów w każdej odpowiedzi, pusty rodzaj z opisem braku
+    if params['rodzaj'] == 'sejm':
+        data = votes_page(params)
+    elif params['rodzaj'] == 'pe':
+        data = {**rodzaje.ep_page(params, params['na_strone']), 'per_page': params['na_strone'], 'clubs': [], 'coverage': None}
+        data['total'] = data.pop('count')
+    else:
+        data = {'results': [], 'total': 0, 'page': 1, 'pages': 1, 'per_page': params['na_strone'], 'clubs': [], 'coverage': None}
+    data['filter'] = {**data.get('filter', {key: params[key] for key in ('kadencja', 'klub', 'od', 'do', 'wynik', 'q')}), 'rodzaj': params['rodzaj']}
+    data['kinds'] = rodzaje.general_kinds()
+    response = Response(data)
     response['Cache-Control'] = 'public, max-age=300'
     return response
 

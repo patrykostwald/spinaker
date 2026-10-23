@@ -1,0 +1,60 @@
+/* Przepływy pieniędzy v1 (sprint 23.10). Boksy liczb równe (Similarity), stopka boksu przy dolnej krawędzi (auto 1fr auto),
+   jeden akcent: podświetlona wstęga (Von Restorff). Cele dotyku 44 px (Fitts). */
+.pt-pf { display: grid; gap: 16px; margin-top: 24px; min-width: 0; }
+.pt-pf__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pt-pf__head .px-h3 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-pf__tag { flex-shrink: 0; padding: 2px 8px; border: 1px solid var(--px-line-2); border-radius: 999px; font-size: 11px; letter-spacing: .06em; color: var(--sc-text-2); }
+.pt-pf__tag--warn { display: inline-block; margin-right: 6px; padding: 0 6px; letter-spacing: 0; line-height: 18px; border-color: var(--sc-accent); color: var(--sc-text); }
+.pt-pf__lead { margin: 0; }
+.pt-pf__nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pt-pf__num-box { display: grid; grid-template-rows: auto 1fr auto; gap: 6px; height: 112px; padding: 14px 16px; border: 1px solid var(--px-line); border-radius: 12px; background: var(--px-card-2); min-width: 0; }
+.pt-pf__k { font-size: 13px; color: var(--sc-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-pf__num-box strong { align-self: center; font: 600 20px/1.2 var(--sc-font-display); font-variant-numeric: tabular-nums; color: var(--sc-text); overflow-wrap: anywhere; }
+.pt-pf__num-box small { font-size: 12px; color: var(--sc-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-pf__opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.pt-pf__check { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; color: var(--sc-text-2); cursor: pointer; }
+.pt-pf__check input { width: 18px; height: 18px; }
+.pt-pf__chart { margin: 0; display: grid; gap: 8px; min-width: 0; }
+.pt-pf__chart svg { width: 100%; height: auto; display: block; }
+.pt-pf__ribbon { fill: none; stroke: var(--sc-text-3); stroke-opacity: .22; transition: stroke-opacity .15s; }
+.pt-pf__ribbon.is-lit { stroke: var(--sc-accent); stroke-opacity: .55; }
+.pt-pf__bar { fill: var(--sc-text-3); }
+.pt-pf__bar.is-self { fill: var(--sc-accent); }
+.pt-pf__label { fill: var(--sc-text); font-family: var(--sc-font-sans); }
+.pt-pf__chart svg text { paint-order: stroke; stroke: var(--sc-bg); stroke-width: 3px; stroke-linejoin: round; }
+.pt-pf__num { fill: var(--sc-text-2); font-variant-numeric: tabular-nums; }
+.pt-pf__filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.pt-pf__chip, .pt-pf__btn { min-height: 44px; padding: 0 14px; border: 1px solid var(--px-line-2); border-radius: 999px; background: var(--px-card); color: var(--sc-text-2); font: inherit; font-size: 14px; cursor: pointer; }
+.pt-pf__chip.is-on { border-color: var(--sc-text); color: var(--sc-text); font-weight: 600; }
+.pt-pf__chip:focus-visible, .pt-pf__btn:focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
+.pt-pf__more { justify-self: start; }
+.pt-pf__table { display: grid; border-top: 1px solid var(--px-line); min-width: 0; }
+.pt-pf__row { display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr) 112px minmax(0, 1.4fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--px-line); font-size: 14px; line-height: 1.35; align-items: baseline; }
+.pt-pf__row > span { min-width: 0; overflow-wrap: anywhere; }
+.pt-pf__row small { display: block; margin-top: 2px; font-size: 12px; color: var(--sc-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-pf__row--head > :nth-child(4) { text-align: right; }
+.pt-pf__row--head { font-size: 12px; letter-spacing: .04em; color: var(--sc-text-3); padding: 8px 0; }
+.pt-pf__date { color: var(--sc-text-2); font-variant-numeric: tabular-nums; }
+.pt-pf__amt { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pt-pf__warn { color: var(--sc-text-2) !important; }
+.pt-pf__mob { display: none; color: var(--sc-text-3); }
+.pt-pf__empty, .pt-pf__foot { margin: 0; }
+@media (max-width: 760px) {
+  .pt-pf { gap: 12px; }
+  .pt-pf__nums { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .pt-pf__num-box { height: 100px; padding: 12px 14px; }
+  .pt-pf__row { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+  .pt-pf__row--head { display: none; }
+  .pt-pf__date { grid-column: 1; font-size: 13px; }
+  .pt-pf__amt { grid-column: 2; grid-row: 1; }
+  .pt-pf__from, .pt-pf__to, .pt-pf__src { grid-column: 1 / -1; }
+  .pt-pf__mob { display: inline; }
+}
+/* telefon: nazwy i kwoty pod rysunkiem, jedna lista na stronę wykresu */
+.pt-pf__legend { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.pt-pf__legend > div { min-width: 0; }
+.pt-pf__legend ol { margin: 4px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); }
+.pt-pf__legend li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--px-line); font-size: 14px; }
+.pt-pf__legend li > span:last-child { flex-shrink: 0; }
+.pt-pf__legend li > span:first-child { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .pt-pf__ribbon { transition: none; } }
