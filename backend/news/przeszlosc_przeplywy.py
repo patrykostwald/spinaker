@@ -258,7 +258,7 @@ def for_person(figure, whole_history=False):
     out['sums']['out'] = sums([r for r in rows if r['from'].get('url') in urls])
     if not orgs:
         out['empty_reason'] = ('Brak potwierdzonych funkcji w KRS: bez nich nie łączymy pieniędzy z osobą. '
-                               'Funkcje sprawdzamy w kolejce KRS (agent i redakcja).')
+                               'Funkcje sprawdzamy w kolejce KRS (agent i zespół).')
     return out
 
 

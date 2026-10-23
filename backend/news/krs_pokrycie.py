@@ -380,7 +380,7 @@ def raport_tekst(data: dict) -> str:
         f"  sprawdzone w KRS: {o['sprawdzone_w_krs']} ({pct(o['sprawdzone_w_krs'], o['wszystkie'])}), niesprawdzone: {o['niesprawdzone']}"
         f" (w tym aktualne funkcje: {o['aktualne_niesprawdzone']})",
         f"  z co najmniej jednym potwierdzonym podmiotem: {o['z_potwierdzonym_podmiotem']}",
-        f"  relacje potwierdzone: {o['relacje_potwierdzone']} {o['relacje_wedlug_metody']}, do przeglądu redakcji: {o['relacje_do_przegladu']}",
+        f"  relacje potwierdzone: {o['relacje_potwierdzone']} {o['relacje_wedlug_metody']}, do weryfikacji zespołu: {o['relacje_do_przegladu']}",
         f"  agent KRS: {'włączony' if o['agent_wlaczony'] else 'WYŁĄCZONY (KRS_AGENT_ENABLED, GEMINI_API_KEY)'}, {o['agent_dziennie']} osób na dobę",
         '',
         'PODMIOTY',

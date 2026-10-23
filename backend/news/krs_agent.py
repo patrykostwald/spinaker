@@ -242,7 +242,7 @@ def verify(figure: PublicFigure, candidate: dict, reasons: list | None = None) -
         person = sorted(people, key=lambda p: (p.until is not None, -(p.since or date.min).toordinal()))[0]
         # Imiennicy (sprint 23.10): maska KRS (inicjał i długość) nie odróżnia dwóch osób o tym samym imieniu i nazwisku.
         # Automatyczne potwierdzenie tylko z co najmniej jednym sprawdzonym źródłem, które wymienia osobę i ten podmiot;
-        # bez niego relacja czeka na redaktora (pending_review) i nie trafia na profil.
+        # bez niego relacja czeka na weryfikację zespołu (pending_review) i nie trafia na profil.
         # Śledczy R3 P0-12: liczy się tylko źródło przeczytane przez nas, nie sam adres z wyników Gemini.
         confirm = any(source.get('read') for source in candidate['sources'])
         candidate = {**candidate, 'sources': [{k: v for k, v in source.items() if k != 'read'} for source in candidate['sources']]}

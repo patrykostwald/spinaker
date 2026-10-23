@@ -21,7 +21,7 @@ Kod przepływów istnieje od 6-11.10 (`drzewo_pieniedzy.py`, `przeszlosc_przeply
 |---|---|---|---|---|---|
 | KRS - odpisy (api-krs.ms.gov.pl) | `krs.py` | `RegisteredOrganisation` | **nowe:** `krs-pokrycie-night` 1:47 | `KRS_POKRYCIE_ENABLED` (domyślnie tak) | kolejka uzupełnień, odpis aktualny + pełny |
 | Biała lista MF (NIP -> KRS) | **nowe:** `krs_pokrycie.biala_lista` | tylko numer KRS w kolejce | w tym samym zadaniu | `BIALA_LISTA_ZAPYTAN` (10 zapytań po 30 NIP) | zbudowane |
-| Funkcje osób w KRS (agent) | `krs_agent.py` | `PublicFigureOrganisationRelation` | `krs-agent-night` 0-6:10 | `KRS_AGENT_ENABLED` + Gemini | **zaostrzone** - imiennicy do redakcji |
+| Funkcje osób w KRS (agent) | `krs_agent.py` | `PublicFigureOrganisationRelation` | `krs-agent-night` 0-6:10 | `KRS_AGENT_ENABLED` + Gemini | **zaostrzone** - imiennicy do weryfikacji zespołu |
 | Zmiany w KRS | `collect_public_krs_changes` | `PublicRecord krs_changes` | co 15 min | `PUBLIC_RECORDS_KRS_CHANGES_ENABLED` | bez zmian |
 | TED | `collect_public_ted` | `PublicRecord ted/notice` | co 15 min | `PUBLIC_RECORDS_TED_ENABLED` | **przepływy w obie strony** |
 | BZP | `scraper/bzp_backfill.py` | `PublicRecord bzp/notice` | `bzp-metadata-3m` | `BZP_API_ENABLED` | bez kwot i wykonawców (BZP nie podaje) |
@@ -46,10 +46,10 @@ kodzie: osoba-spółka tylko po twardym identyfikatorze albo z potwierdzeniem.
 
 | Sekcja | Pusta, gdy |
 |---|---|
-| Funkcje w KRS | brak potwierdzonej relacji: agent wyłączony, kandydat odrzucony, relacja czeka na redakcję (`pending_review`) |
+| Funkcje w KRS | brak potwierdzonej relacji: agent wyłączony, kandydat odrzucony, relacja czeka na weryfikację zespołu (`pending_review`) |
 | Pieniądze powiązanych spółek, **Przepływy pieniędzy (nowe)** | brak funkcji w KRS; podmiot bez NIP (teraz uzupełnia kolejka KRS); źródła pieniędzy wyłączone; pozycje spoza okresu funkcji ukryte (przełącznik) |
 | Dokumenty Sejmu, komisje, głosowania | brak oficjalnego id posła (nigdy po nazwisku) albo zbieracz wyłączony; komisje tylko kadencja 10 |
-| Konta X i wpisy | brak konta z dowodem i potwierdzeniem redaktora |
+| Konta X i wpisy | brak konta z dowodem i potwierdzeniem zespołu |
 | Otwarte dane (PE, kilometrówki) | flaga źródła wyłączona; brak id PE lub Sejmu |
 | Oświadczenia | `ASSETS_DECLARATIONS_ENABLED` wyłączone albo komenda nie uruchomiona |
 | Wzmianki | imiennik w rejestrze (powód pokazany od P0-9) |
@@ -68,7 +68,7 @@ wyłączonych źródłach; osoby - bez potwierdzonych relacji (podmiot dociągni
      Odstęp 1 s, limit partii, ponowienie błędu po 2^n godz. (do 7 dni), „brak w rejestrze” osobno od błędu.
    - `raport()` + komenda `przeszlosc_krs_pokrycie [--zasil] [--uzupelnij --limit N] [--json]`.
 2. **Imiennicy**: agent KRS potwierdza automatycznie tylko, gdy obok zgodnej maski w KRS jest co najmniej jedno sprawdzone źródło,
-   które wymienia osobę i podmiot; inaczej relacja czeka na redaktora.
+   które wymienia osobę i podmiot; inaczej relacja czeka na weryfikację zespołu.
 3. **Przepływy pieniędzy v1**: API `GET /api/przeszlosc/przeplywy/<osoba:slug|spolka:KRS>/` (`przeszlosc_przeplywy.py`) i sekcja
    na profilu osoby i podmiotu (`Przeplywy.tsx`): trzy boksy (wpływy, wydatki, pozycje), sankey jednej waluty, tabela
    data / od / do / kwota / rodzaj i źródło, filtr rodzaju, „pokaż spoza okresu funkcji”.
