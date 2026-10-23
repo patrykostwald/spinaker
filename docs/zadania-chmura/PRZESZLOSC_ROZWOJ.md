@@ -27,3 +27,15 @@ bez cen na stronie.
    i nowy backlog, żeby następna sesja mogła kontynuować.
 
 Celuj w ok. 3 godziny. Ważniejsze, żeby dane były prawdziwe i pełne, niż żeby było dużo funkcji.
+
+## Dopisek właściciela 23.10: filtry głosowań
+W sekcji Głosowania (profil osoby i widok ogólny) jasny filtr rodzaju głosowania: posiedzenia Sejmu (plenarne), poszczególne
+komisje sejmowe (wybór komisji), Senat, Parlament Europejski i inne, które mamy lub możemy legalnie mieć. Do tego filtry
+daty/kadencji, wyniku i zgodności z klubem. Najpierw sprawdź dostępność danych:
+- Sejm plenarne: api.sejm.gov.pl (głosowania imienne) - już częściowo w bazie.
+- Komisje: api.sejm.gov.pl ma komisje i posiedzenia; czy są imienne głosowania komisji [DP] - jeśli nie ma imiennych, pokaż
+  wyniki komisji (przyjęto/odrzucono, z druku/sprawozdania) bez przypisywania głosów osobom; nie zgaduj.
+- Senat: oficjalne wyniki głosowań senat.gov.pl (szanuj robots, limit); Parlament Europejski: oficjalne dane głosowań imiennych
+  (otwarte dane PE).
+Filtr pokazuje tylko rodzaje, dla których mamy dane, z liczbą pozycji przy każdym; puste rodzaje opisane „brak danych w źródle”.
+Design wg CLAUDE.md (jedna linia filtrów, cele 44 px, 1440 i 390 px).
