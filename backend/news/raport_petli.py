@@ -102,6 +102,8 @@ CONTRACTS = (
              registry='opiekunowie', title='Opiekunowie pętli'),
     contract('dyrygent', 'Dyrygent', 'niezawodnosc', 24, 'claude:sprint', 7, agents=('dyrygent',), beats=('dyrygent-15m',), registry='dyrygent'),
     contract('dyzurny', 'Dyżurny', 'niezawodnosc', 1, 'owner:panel', 1, beats=('duty-15m',), registry='duty'),
+    contract('korektor', 'Korektor', 'niezawodnosc', 24, 'owner:mail', 1, beats=('korektor-morning',), registry='korektor',
+             title='Korektor: urzędy i osoby, konta X, puste profile'),
     contract('raport-petli', 'Raport pętli', 'niezawodnosc', 24, 'owner:mail', 1, beats=('raport-petli-daily',), registry='raport-petli'),
     # Przegląd architekta 7.10 (Z1-Z3): wynik kopii = udana kopia zdalna (licznik ze stanu), puls i terminy = puls zadania
     contract('kopia', 'Kopia', 'niezawodnosc', 24, 'owner:mail', 1, beats=('kopia-kontrola-daily',), registry='kopia', counter='backups',

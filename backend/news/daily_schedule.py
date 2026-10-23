@@ -24,6 +24,7 @@ BEAT_PLAN = {
     'opiekunowie-1h': ('opiekunowie_task', {'minute': 17}),  # właściciel 5.10: opiekunowie każdej pętli
     'zmiana-zdania-30m': ('zmiana_zdania_task', {'minute': '7,37'}),  # właściciel 6.10: Zmiana zdania przy diagnozach
     'odbior-spinu-1h': ('odbior_spinu_task', {'minute': 47}),  # właściciel 6.10: Jak spin zadziałał (po 24 h)
+    'korektor-morning': ('korektor_task', {'hour': 6, 'minute': 50}),  # właściciel 23.10: urzędy i osoby po nocnych zadaniach, przed raportem
     'raport-petli-daily': ('raport_petli_task', {'hour': 7, 'minute': 5}),  # audyt pętli 5.10: jeden mail rano o stanie pętli
     'sprint-intake': ('sprint_intake_task', {'hour': 6, 'minute': 0}),  # audyt pętli 5.3: poniedziałek pełny sprint, inne dni dopełnienie (< 3 otwartych)
     'automatyk-daily': ('automatyk_task', {'hour': '6,13', 'minute': 30}),  # właściciel 5.10: ekspert od pętli raz dziennie
