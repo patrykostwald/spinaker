@@ -20,6 +20,7 @@ SYNC_ROSTERS = s.sync_rosters
 SEARCH_LEADS = s.search_leads
 WIKIDATA_LEADS = s.wikidata_leads
 OFFICIAL_LEADS = s.official_leads
+REGISTRY_LEADS = s.registry_leads
 
 
 @pytest.fixture(autouse=True)
@@ -613,3 +614,80 @@ def test_unlisted_club_never_overrides_an_existing_camp():
     result, _ = w.save_candidate(t, s.Lead(account.handle, 'https://www.wikidata.org/wiki/Q6', 'wikidata-id'), user_data(), 'accepted', '')
     account.refresh_from_db()
     assert result == account and account.camp == 'government' and account.is_confirmed()
+
+
+# --- regresje z niezależnej recenzji 23.10 ---
+
+def queued_account(handle='JanKowalski', uid='1234', camp='government'):
+    return PoliticalAccount.objects.create(user_id=uid, handle=handle, display_name='Jan Kowalski', camp=camp,
+                                           confirmation_url='https://example.org/proof', enabled=False)
+
+
+def test_rejected_verdict_never_revives_a_queued_account():
+    t = target()
+    account = queued_account()
+    lead = s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q7', 'wikidata-id')
+    result, reason = w.save_candidate(t, lead, user_data(description='parodia'), 'rejected', 'Parodia lub konto nieoficjalne.')
+    account.refresh_from_db()
+    assert result is None and not account.enabled and not account.is_confirmed()
+
+
+def test_strong_lead_revives_never_read_account_only_when_accepted():
+    t = target()
+    account = queued_account()
+    result, _ = w.save_candidate(t, s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q8', 'wikidata-id'), user_data(), 'accepted', '')
+    account.refresh_from_db()
+    assert result == account and account.enabled and account.is_confirmed()
+
+
+def test_conflict_keeps_queued_account_untouched():
+    first = target(name='Jan Kowalski', suffix='1')
+    add(first)
+    account = PoliticalAccount.objects.get(handle='JanKowalski')
+    account.enabled = False
+    account.save()
+    PoliticalAccount.objects.filter(pk=account.pk).update(disabled_at=None)
+    second = target(name='Janina Kowalska', suffix='2')
+    w.save_candidate(second, s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q9', 'wikidata-id'), user_data(), 'accepted', '')
+    account.refresh_from_db()
+    assert not account.enabled
+
+
+def test_strong_source_still_needs_the_surname_somewhere():
+    t = target()
+    other = user_data('JanNowak', name='Jan Nowak')
+    assert w.check_candidate(other, t, 'wikidata-id')[0] != 'accepted'
+    assert w.check_candidate(user_data('KowalskiJ', name='Poseł RP'), t, 'wikidata-id')[0] == 'accepted'
+
+
+def test_senator_without_club_waits_instead_of_other(monkeypatch):
+    entry = ParliamentaryRosterEntry.objects.create(source='senat', external_id='5', full_name='Jan Kowalski', club='',
+        source_url='https://www.senat.gov.pl/sklad/senatorowie/senator,5.html')
+    f = PublicFigure.objects.create(canonical_name='Jan Kowalski', role_category='parliamentary', role_title='Senator',
+        evidence_url=entry.source_url, parliamentary_roster_entry=entry, import_key='parliamentary:senat:5')
+    t = s.Target(f'figure:{f.pk}', 'Jan Kowalski', 'Senator', '', 2, ('senat',), f)
+    monkeypatch.setattr('news.management.commands.link_official_x_accounts.senate_club', lambda entry: '')
+    monkeypatch.setattr(s, 'registry_leads', lambda targets, collect=None: {f.pk: [s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q1', 'wikidata-id')]})
+    monkeypatch.setattr(w, 'x_lookup', Mock(return_value={'data': user_data()}))
+    w.discover_missing([t], report(), 10)
+    assert not PoliticalAccount.objects.filter(handle='JanKowalski').exists()
+
+
+def test_older_wikidata_account_next_to_preferred_is_not_exact(monkeypatch):
+    from news import osoby_x
+    t = target()
+    rows = [{'osoba_id': t.figure.import_key, 'konto': 'StareKonto', 'zrodlo': 'https://www.wikidata.org/wiki/Q1', 'pewnosc': 'średnia',
+             'stan_konta': 'aktualne', 'uwagi': 'Wikidata P2002; dopasowanie: profil posła X kadencji (P973)'},
+            {'osoba_id': t.figure.import_key, 'konto': 'JanKowalski', 'zrodlo': 'https://www.wikidata.org/wiki/Q1', 'pewnosc': 'wysoka',
+             'stan_konta': 'aktualne', 'uwagi': 'Wikidata P2002; dopasowanie: profil posła X kadencji (P973)'}]
+    monkeypatch.setattr(osoby_x, 'read_rows', lambda: [])
+    leads = REGISTRY_LEADS([t], collect=lambda people: (rows, []))[t.figure.pk]
+    assert {(l.handle, l.source) for l in leads} == {('StareKonto', 'wikidata'), ('JanKowalski', 'wikidata-id')}
+
+
+def test_conflicts_from_last_report_reach_panel():
+    ImportState.objects.create(name=w.STATE, cursor={'report': {'conflicts': [
+        {'name': 'Janina Kowalska', 'handle': 'JanKowalski', 'source': 'https://www.wikidata.org/wiki/Q4',
+         'reason': w.conflict('x'), 'proposal': 'Zostaw @JanKowalski'}]}})
+    assert w.conflicts_for_report()[0]['handle'] == 'JanKowalski'
+    assert 'Do decyzji: @JanKowalski' in str(w.panel_section(timezone.now()))

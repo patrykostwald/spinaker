@@ -208,7 +208,8 @@ def registry_leads(targets, collect=None):
     rows, _ = (collect or osoby_x.collect)(people) if people else ([], [])
     for row in rows:
         if row['stan_konta'] == osoby_x.CURRENT:
-            exact = 'P1186' in row['uwagi'] or 'P973' in row['uwagi']
+            # „średnia” przy identyfikatorze = starsze konto obok konta z rangą „preferred”: bez automatycznego włączenia.
+            exact = ('P1186' in row['uwagi'] or 'P973' in row['uwagi']) and row['pewnosc'] == osoby_x.HIGH
             add(row['osoba_id'], row['konto'], row['zrodlo'], 'wikidata-id' if exact else 'wikidata')
     return result
 

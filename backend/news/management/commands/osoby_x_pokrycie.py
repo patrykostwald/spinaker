@@ -37,7 +37,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"- {person.name} · {person.osoba_id} · {'; '.join(person.roles[:2])}")
 
     def database(self, quiet):
-        from news.account_warden import CONFLICT, cost_projection
+        from news.account_warden import CONFLICT, conflicts_for_report, cost_projection
         from news.political_models import PoliticalAccountCandidate, PublicFigure
         from news.public_figures import figures_with_verified_x
         figures = list(PublicFigure.objects.filter(archived=False, status='current').exclude(role_category='party'))
@@ -51,7 +51,8 @@ class Command(BaseCommand):
         queue = PoliticalAccountCandidate.objects.filter(resolved_account__isnull=True, resolution_error__startswith='Strażnik:')
         conflicts = queue.filter(resolution_error__startswith='Strażnik: ' + CONFLICT)
         oldest = queue.order_by('created_at').first()
-        self.stdout.write(f'Kolejka Strażnika: {queue.count()} kandydatów (konflikty do decyzji: {conflicts.count()}); '
+        reported = conflicts_for_report()
+        self.stdout.write(f'Kolejka Strażnika: {queue.count()} kandydatów (konflikty do decyzji: {conflicts.count() + len(reported)}); '
                           f'najstarszy od {day(oldest.created_at if oldest else None)}.')
         cost = cost_projection(len(waiting))
         self.stdout.write(f"Gdyby wszystkie brakujące osoby dostały konto: ok. +{cost['usd_month']} USD/miesiąc "
@@ -63,6 +64,8 @@ class Command(BaseCommand):
         for figure in waiting:
             self.stdout.write(f'- {figure.canonical_name} · {figure.role_title} · {day(figure.created_at)} · '
                               f'{day(figure.account_discovery_at)}')
+        for row in reported:
+            self.stdout.write(f"- do decyzji: @{row['handle']} ({row['name']}): {row['reason']} Propozycja: {row['proposal']}")
         for candidate in queue.order_by('created_at'):
             self.stdout.write(f'- kolejka: @{candidate.handle} ({candidate.display_name}) od {day(candidate.created_at)}: '
                               f'{candidate.resolution_error.removeprefix("Strażnik: ")}')

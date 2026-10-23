@@ -41,6 +41,13 @@
 - „Redakcja/redaktor” zamienione na „zespół” / „do weryfikacji” w modelach kont (migracja 0170 zmienia tylko etykiety
   i dodaje obóz `other`).
 
+- **Niezależna recenzja kodu** (strażnik) znalazła 5 błędów, wszystkie poprawione z testami: konto było włączane przed
+  sprawdzeniem werdyktu, mocne źródło przepuszczało konto z samym imieniem, konflikty nie trafiały do panelu, senator
+  z nieodczytanym klubem trafiał do „innych”, starsze konto z Wikidata obok „preferred” liczyło się jako dokładne.
+- **Senatorowie bez klubu** czekają na klub (pusty klub to też nieudany odczyt profilu senat.gov.pl), nie idą do „innych”.
+- **Korektor**: funkcja `account_warden.conflicts_for_report()` zwraca konflikty z ostatniej nocy z propozycją; gałąź
+  Korektora musi ją wywołać w porannym raporcie (tu nie podpinam, żeby nie dublować jej pracy).
+
 ## Koszt (pkt 5 dopisku)
 Na konto miesięcznie: średnia wpisów na konto dziennie x 30 x 0,005 USD + kontrola profilu co 7 dni (ok. 0,043 USD).
 Przy 2 wpisach dziennie to ok. 0,34 USD na konto, czyli ok. 34 USD za 100 nowych kont. Prawdziwą średnią z produkcji

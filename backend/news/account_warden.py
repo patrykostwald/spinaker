@@ -115,8 +115,10 @@ def check_candidate(data, target, source):
         return 'rejected', 'Parodia lub konto nieoficjalne.'
     if problem:
         return 'rejected', problem
-    if not display_matches(data, expected) and source not in sources.STRONG_SOURCES:
-        # Oficjalne źródło wskazuje osobę wprost; twarde warunki wyżej (nazwisko, parodia, wiek konta) obowiązują nadal.
+    strong = source in sources.STRONG_SOURCES and sources.handle_matches_person(str(data.get('username', '')), expected)
+    if not display_matches(data, expected) and not strong:
+        # Oficjalne źródło wskazuje osobę wprost, ale nazwisko musi być choć w nazwie konta (identity_problem przy
+        # dwóch słowach przepuszcza samo imię); parodia i wiek konta obowiązują nadal.
         return 'pending', 'Nazwa wyświetlana nie potwierdza nazwiska lub nazwy partii.'
     try:
         born = datetime.fromisoformat(str(data['created_at']).replace('Z', '+00:00'))
@@ -185,16 +187,20 @@ def save_candidate(target, lead, data, verdict, reason):
     """Atomically attach evidence and reuse the normal resolution path, without a second lookup."""
     with transaction.atomic():
         staff = agent_user()
+        # Zmiany konta (włączenie, obóz) dopiero po wszystkich sprawdzeniach i tylko przy werdykcie „accepted”.
+        to_revive, camp_change = None, False
         existing = PoliticalAccount.objects.filter(handle__iexact=lead.handle).first()
         if existing and (not existing.enabled or not existing.is_confirmed()):
             if existing.last_error.startswith('warden:'):
                 return None, 'Konto wyłączone po dwóch zgodnych odczytach (usunięte, zawieszone lub chronione).'
-            if not revive(existing, target, lead, data, staff):
+            if not revivable(existing, target, lead, data):
                 return None, conflict('istniejące konto jest wyłączone lub niepotwierdzone przez zespół.')
+            to_revive = existing
         candidate = PoliticalAccountCandidate.objects.filter(handle__iexact=lead.handle).first()
         if candidate and candidate.resolved_account_id:
             account = candidate.resolved_account
-            if not data or account.user_id != str(data.get('id')) or not account.enabled or not account.is_confirmed():
+            waiting = to_revive is not None and to_revive.pk == account.pk
+            if not data or account.user_id != str(data.get('id')) or not waiting and (not account.enabled or not account.is_confirmed()):
                 return None, 'Istniejące konto ma inną tożsamość albo jest wyłączone; do decyzji.'
             if target.camp == OTHER_CAMP and account.camp != 'public':
                 target.camp = account.camp  # „inni” to brak wiedzy o obozie, nie zmiana: obóz ustawiony wcześniej zostaje
@@ -202,7 +208,7 @@ def save_candidate(target, lead, data, verdict, reason):
                 if account.camp == 'public' or not target.camp:
                     return None, conflict(f'konto ma obóz „{account.camp}”, a rejestr wskazuje „{target.camp or "brak"}”.')
                 # Obóz wynika z oficjalnego składu (klub, rząd); Drugi klucz: zgodny odczyt X (to samo ID) wyżej.
-                set_camp(account, target.camp, staff)
+                camp_change = True
         elif candidate and candidate.resolution_error and not candidate.resolution_error.startswith('Strażnik:'):
             return None, 'Kandydat ma wcześniejszą decyzję zespołu.'
         if candidate is None:
@@ -214,7 +220,7 @@ def save_candidate(target, lead, data, verdict, reason):
             evidence, _ = SocialHandleEvidence.objects.get_or_create(platform='x', handle__iexact=lead.handle,
                 subject_content_type=ContentType.objects.get_for_model(PublicFigure), subject_object_id=target.figure.pk,
                 defaults={'handle': lead.handle, 'evidence_url': lead.url, 'extracted_url': f'https://x.com/{lead.handle}'})
-            if evidence.status == 'rejected' and evidence.reviewed_by_id not in (None, staff.pk):
+            if evidence.status == 'rejected' and evidence.reviewed_by_id != staff.pk:
                 return None, 'Dowód odrzucił wcześniej zespół; decyzja zostaje.'
             # Do not bind a second person to an already attributed account.
             other = candidate.social_evidence.filter(status='candidate_created').exclude(pk=evidence.pk)
@@ -236,6 +242,11 @@ def save_candidate(target, lead, data, verdict, reason):
             candidate.confirmation_url = lead.url
             candidate.save(update_fields=['proposed_camp', 'classification', 'confirmation_url'])
         account = resolve_candidate(candidate, staff, verified_data=data)
+        if to_revive and to_revive.pk == account.pk:
+            revive(to_revive, target, lead, staff)
+            account.refresh_from_db()
+        if camp_change and account.camp != target.camp:
+            set_camp(account, target.camp, staff)
         if str(data.get('id')) != account.user_id or account.camp != target.camp:
             raise CandidateResolutionError('Tożsamość lub obóz istniejącego konta wymagają decyzji.')
         account.enabled = True
@@ -254,12 +265,17 @@ def set_camp(account, camp, staff):
     account.save(update_fields=['camp', 'confirmed_by', 'confirmed_at', 'confirmation_fingerprint'])
 
 
-def revive(account, target, lead, data, staff):
-    """Konto z kolejki, którego nikt nie wyłączył (nigdy nie czytane), włącza mocny dowód tej samej tożsamości."""
-    if (lead.source not in sources.STRONG_SOURCES or not data or str(data.get('id')) != account.user_id
-            or account.disabled_at or account.last_error or account.last_polled_at or not target.camp):
-        return False
-    account.camp = target.camp if account.camp != 'public' else account.camp
+def revivable(account, target, lead, data):
+    """Konto z kolejki, którego nikt nie wyłączył (nigdy nie czytane), może włączyć mocny dowód tej samej tożsamości."""
+    return bool(lead.source in sources.STRONG_SOURCES and data and str(data.get('id')) == account.user_id
+                and not (account.disabled_at or account.last_error or account.last_polled_at) and target.camp
+                and account.camp != 'public')
+
+
+def revive(account, target, lead, staff):
+    if target.camp == OTHER_CAMP and account.camp:
+        target.camp = account.camp  # „inni” nie nadpisuje obozu ustawionego wcześniej
+    account.camp = target.camp
     account.confirmation_url = account.confirmation_url or lead.url
     account.confirm(staff)
     account.enabled = True
@@ -301,8 +317,12 @@ def follow_roster_camps(report):
         if camp and camp != account.camp:
             staff = staff or agent_user()
             old = account.camp
-            with transaction.atomic():
-                set_camp(account, camp, staff)
+            try:
+                with transaction.atomic():
+                    set_camp(account, camp, staff)
+            except ValidationError as exc:
+                report['events'].append({'kind': 'error', 'detail': f'@{account.handle}: nie zmieniono obozu ({"; ".join(exc.messages)[:120]}).'})
+                continue
             report['events'].append({'kind': 'auto', 'detail': f'@{account.handle} ({figure.canonical_name}): obóz {old} → {camp} '
                                      f'według oficjalnego składu (klub {entry.club}).', 'source': entry.source_url})
 
@@ -374,7 +394,9 @@ def discover_missing(targets, report, limit):
                 if club and not entry.club:
                     entry.club = club
                     entry.save(update_fields=['club'])
-        if not target.camp and target.figure and target.figure.parliamentary_roster_entry:
+        entry = target.figure.parliamentary_roster_entry if target.figure else None
+        if not target.camp and entry and entry.source != 'senat':
+            # Senat: pusty klub to też nieudany odczyt profilu (senate_club), więc senator czeka na klub.
             target.camp = OTHER_CAMP
             report['events'].append({'kind': 'other_camp', 'detail': f'{target.name}: brak klubu w oficjalnym rejestrze; '
                                      'obóz „inni i niezrzeszeni” (czytany i diagnozowany, poza przekazem dnia).'})
@@ -704,14 +726,20 @@ def panel_section(now):
     items = [card(f'@{c.handle} · {c.display_name}', 'warn', c.resolution_error, c.created_at) for c in queue[:50]]
     for item, candidate in zip(items, queue[:50]):
         item.update(href=candidate.confirmation_url, link_label='Źródło dowodu')
+    conflicts = report.get('conflicts', [])
+    for row in conflicts[:50]:
+        item = card(f'Do decyzji: @{row["handle"]} · {row["name"]}', 'warn', f'{row["reason"]} Propozycja: {row["proposal"]}',
+                    state.last_started if state else None)
+        item.update(href=row['source'], link_label='Źródło dowodu')
+        items.append(item)
     for key, row in report.get('coverage', {}).items():
         if row['missing']:
             items.append(card('Braki: ' + GROUP_LABELS.get(key, key), 'warn', ', '.join(row['missing']),
                               state.last_started if state else None))
     items += [card(EVENT_LABELS.get(e['kind'], e['kind']), 'ok' if e['kind'] in ('added', 'renamed', 'interval') else 'warn', e['detail'], e['at'])
               for e in (state.cursor.get('history', []) if state else [])[:50]]
-    metrics.append(metric('Konflikty dowodów do decyzji', queue.count()))
-    return card('Strażnik kont', 'unknown' if not state else 'warn' if state.last_error or queue.exists() or
+    metrics.append(metric('Konflikty dowodów do decyzji', queue.count() + len(conflicts)))
+    return card('Strażnik kont', 'unknown' if not state else 'warn' if state.last_error or queue.exists() or conflicts or
                 state.cursor.get('mail_sent') is False else 'ok',
         'Automatyczna kontrola kont codziennie o 03:10. Do decyzji trafia tylko konflikt dowodów; resztę rozstrzyga Strażnik. '
         'Pokrycie według ostatniego przebiegu; liderzy według listy priorytetowej.',
