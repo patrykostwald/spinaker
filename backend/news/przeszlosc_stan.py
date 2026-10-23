@@ -32,6 +32,39 @@ GAPS = {
 }
 
 
+NO_GAPS = 'Braki nieopisane.'
+# Śledczy R3 P0-13: zbiory widoczne na profilu, które nie są w PublicRecord - każdy z licznikiem i datą z własnej tabeli.
+# (klucz, nazwa, model, pole daty, dni do „zaległe”, znane braki)
+DATASETS = [
+    ('glosowania', 'Głosowania Sejmu (imienne, api.sejm.gov.pl)', 'news.ParliamentaryVoting', 'article__published_date', 30,
+     'Sejm X kadencji; komisje, Senat i PE osobno lub wcale.'),
+    ('druki', 'Druki i akty (Sejm, ELI)', 'news.OfficialRecord', 'fetched_at', 30, ''),
+    ('oswiadczenia', 'Oświadczenia majątkowe posłów (Sejm)', 'news.AssetDeclaration', 'fetched_at', 400,
+     'Tylko posłowie; link do PDF i metadane, bez odczytu kwot.'),
+    ('rcl', 'Projekty aktów prawnych (RCL)', 'news.LegislativeProject', 'fetched_at', 30, ''),
+    ('wpisy_x', 'Wpisy X obserwowanych kont', 'news.PoliticalPost', 'fetched_at', 7,
+     'Tylko konta przypięte do osób i czytane w limicie kosztu X.'),
+    ('krs_podmioty', 'Podmioty z KRS (api-krs.ms.gov.pl)', 'news.RegisteredOrganisation', 'source_checked_at', 120,
+     'Tylko podmioty powiązane z osobami lub przepływami.'),
+    ('wzmianki', 'Artykuły i wzmianki w mediach', 'news.Article', 'published_date', 3,
+     'Wzmianka = artykuł z nazwiskiem osoby; imiennicy możliwi.'),
+]
+
+
+def datasets():
+    from django.apps import apps
+    now = timezone.now()
+    rows = []
+    for key, title, label, field, stale_days, gaps in DATASETS:
+        stat = apps.get_model(label).objects.aggregate(n=Count('pk'), last=Max(field))
+        last = stat['last']
+        status = 'empty' if not stat['n'] else 'stale' if last is None or now - last > timedelta(days=stale_days) else 'ok'
+        rows.append({'key': key, 'title': title, 'enabled': True, 'status': status, 'records': stat['n'],
+                     'last_fetch': last.isoformat(timespec='minutes') if last else None, 'last_error': '',
+                     'gaps': gaps or NO_GAPS, 'kind': 'dataset'})
+    return rows
+
+
 def _flag(name, default):
     value = os.environ.get(name)
     if value is None:
@@ -51,7 +84,8 @@ def sources():
         stat = stats.get(key) or {}
         state = states.get(key)
         last = (state.last_success_at if state and state.last_success_at else None) or stat.get('last')
-        on = _flag(flag, default)
+        # Flaga z env procesu web może różnić się od workera: udane pobranie w oknie zaległości też znaczy „włączone”.
+        on = _flag(flag, default) or bool(state and state.last_success_at and now - state.last_success_at <= timedelta(hours=STALE_HOURS))
         if not on:
             status = 'off'
         elif last is None:
@@ -62,7 +96,7 @@ def sources():
             status = 'ok'
         rows.append({'key': key, 'title': title, 'enabled': on, 'status': status, 'records': stat.get('n', 0),
                      'last_fetch': last.isoformat(timespec='minutes') if last else None,
-                     'last_error': (state.last_error if state else '') or '', 'gaps': gaps})
+                     'last_error': (state.last_error if state else '') or '', 'gaps': gaps or NO_GAPS, 'kind': 'collector'})
     order = {'stale': 0, 'empty': 1, 'ok': 2, 'off': 3}
     rows.sort(key=lambda r: (order[r['status']], -r['records']))
     return rows
@@ -79,7 +113,7 @@ def krs_summary():
 
 
 def payload():
-    rows = sources()
+    rows = datasets() + sources()
     return {'generated_at': timezone.now().isoformat(timespec='minutes'), 'stale_hours': STALE_HOURS, 'sources': rows,
             'counts': {s: sum(1 for r in rows if r['status'] == s) for s in ('ok', 'stale', 'empty', 'off')},
             'krs': krs_summary(),

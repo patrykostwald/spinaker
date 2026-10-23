@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { day, nb } from './ui';
+import { day, nb, plural } from './ui';
 import { money } from './DrzewoPieniedzy';
 import './przeplywy.css';
 
@@ -35,8 +35,7 @@ const PAGE = 25;
 /** Data w jednej linii (zasada 4): 03.10.2025; sam rok bez zmian. */
 const short = (d: string) => d.length === 10 ? `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}` : d;
 const sumText = (s: Sum[]) => s.length ? s.map(x => money(x.total, x.currency)).join(' + ') : '-';
-/** Odmiana „pozycja”: 1 pozycja, 2-4 pozycje, 5+ pozycji (12-14 pozycji). */
-export const pozycji = (n: number) => `${n} ${n === 1 ? 'pozycja' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'pozycje' : 'pozycji'}`;
+const pozycji = (n: number) => `${n} ${plural(n, 'pozycja', 'pozycje', 'pozycji')}`;
 const outside = (suspect: number, shared: number) => !suspect && !shared ? 'wszystkie kwoty w sumach'
   : `poza sumami: ${[suspect && `${suspect} do weryfikacji`, shared && `${shared} kilku wykonawców`].filter(Boolean).join(', ')}`;
 
@@ -166,7 +165,7 @@ export function Przeplywy({ ident, headingId = 'pt-pf-h' }: { ident: string; hea
       {person && <div className="pt-pf__opts">
         <label className="pt-pf__check"><input type="checkbox" checked={whole} onChange={e => { setWhole(e.target.checked); setState('loading'); }} /> {nb('Pokaż też spoza okresu funkcji')}</label>
         {vias.size === 1 ? <small className="px-note">{nb(`Wszystkie pozycje przez: ${[...vias][0]}.`)}</small> : null}
-        {!whole && data.outside_tenure ? <small className="px-note">{nb(`Ukryte: ${data.outside_tenure} pozycji spoza okresu funkcji w KRS.`)}</small> : null}
+        {!whole && data.outside_tenure ? <small className="px-note">{nb(`Ukryte spoza okresu funkcji w KRS: ${pozycji(data.outside_tenure)}.`)}</small> : null}
       </div>}
       {data.count === 0 ? <p className="px-note pt-pf__empty">{nb(data.empty_reason ?? (data.subject.identifiers_missing
         ? 'Brak przepływów w naszych danych. Podmiot nie ma jeszcze NIP z odpisu KRS - uzupełniamy go w nocnej kolejce KRS.'
