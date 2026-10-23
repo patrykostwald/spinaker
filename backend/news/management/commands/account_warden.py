@@ -10,11 +10,14 @@ class Command(BaseCommand):
         parser.add_argument('--dry-run', action='store_true')
         parser.add_argument('--only-missing', action='store_true')
         parser.add_argument('--limit', type=int, default=60)
+        parser.add_argument('--ponow-kolejke', action='store_true',
+                            help='Kandydaci z kolejki „Do decyzji” (bez konfliktu) wracają do sprawdzenia w tym przebiegu.')
 
     def handle(self, *args, **options):
         if options['limit'] < 1:
             raise CommandError('--limit musi być dodatni.')
-        result = run(dry_run=options['dry_run'], only_missing=options['only_missing'], limit=options['limit'])
+        result = run(dry_run=options['dry_run'], only_missing=options['only_missing'], limit=options['limit'],
+                     retry=options['ponow_kolejke'])
         self.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
         if result['status'] == 'error':
             raise CommandError('Strażnik zakończył przebieg z błędem; szczegóły powyżej i w panelu.')

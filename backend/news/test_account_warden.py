@@ -20,6 +20,7 @@ SYNC_ROSTERS = s.sync_rosters
 SEARCH_LEADS = s.search_leads
 WIKIDATA_LEADS = s.wikidata_leads
 OFFICIAL_LEADS = s.official_leads
+REGISTRY_LEADS = s.registry_leads
 
 
 @pytest.fixture(autouse=True)
@@ -28,6 +29,7 @@ def offline(monkeypatch):
     monkeypatch.setattr(w, '_notify', Mock(return_value=True))
     monkeypatch.setattr(s, 'sync_rosters', lambda events: None)
     monkeypatch.setattr(s, 'wikidata_leads', lambda: {})
+    monkeypatch.setattr(s, 'registry_leads', lambda targets, collect=None: {})
     monkeypatch.setattr(s, 'official_leads', lambda target: [])
     monkeypatch.setattr(s, 'search_leads', lambda target, reserve: [])
     monkeypatch.setattr(s, 'party_leads', lambda target: [])
@@ -163,7 +165,7 @@ def test_daily_budget_survives_runs_and_counts_users(monkeypatch):
 def test_lookup_limit_during_discovery(monkeypatch):
     t = target()
     monkeypatch.setenv('ACCOUNT_WARDEN_DAILY_X_LOOKUPS', '1')
-    monkeypatch.setattr(s, 'search_leads', lambda *a: [s.Lead('one', 'https://example.org/one', 'search'), s.Lead('two', 'https://example.org/two', 'search')])
+    monkeypatch.setattr(s, 'search_leads', lambda *a: [s.Lead('KowalskiJan', 'https://example.org/one', 'search'), s.Lead('JanKowalski2', 'https://example.org/two', 'search')])
     lookup = Mock(return_value={'data': None})
     monkeypatch.setattr(w, 'x_lookup', lookup)
     w.discover_missing([t], report(), 100)
@@ -454,3 +456,238 @@ def test_public_institution_is_not_judged_by_person_name(monkeypatch):
     w.verify_accounts(r, 100)
     a.refresh_from_db()
     assert a.enabled and not [e for e in r['events'] if e['kind'] in ('disabled', 'review')]
+
+
+# --- 23.10: dane z produkcji (przebieg 22.10) i dopisek właściciela ------------------------------------------------
+
+def party_target(name, club, suffix):
+    entry = ParliamentaryRosterEntry.objects.create(source='sejm', external_id=suffix, full_name=name, club=club,
+        source_url='https://api.sejm.gov.pl/sejm/term10/MP/' + suffix)
+    f = PublicFigure.objects.create(canonical_name=name, role_category='parliamentary', role_title='Poseł',
+        evidence_url=entry.source_url, parliamentary_roster_entry=entry, import_key='parliamentary:sejm:' + suffix)
+    return s.Target(f'figure:{f.pk}', name, 'Poseł', s.camp_for(club), 1, ('sejm',), f, 'https://lewica.org.pl/')
+
+
+@pytest.mark.parametrize('name, club, handles', [
+    ('Tomasz Głogowski', 'KO', ['Platforma_org']), ('Krystyna Sibińska', 'KO', ['Platforma_org']),
+    ('Rafał Siemaszko', 'KO', ['Platforma_org']), ('Tomasz Siemoniak', 'KO', ['Platforma_org']),
+    ('Arkadiusz Sikora', 'Lewica', ['__Lewica', 'wlodekczarzasty', 'AgaBak', 'KGawkowski', 'KotulaKat', 'MarcinKulasek']),
+    ('Włodzimierz Skalik', 'Konfederacja_KP', ['koronypolskiej']),
+])
+def test_party_and_club_page_links_never_become_a_persons_account(name, club, handles, monkeypatch):
+    t = party_target(name, club, '9' + str(len(name)))
+    monkeypatch.setattr(s, 'party_leads', lambda target: [s.Lead(h, 'https://lewica.org.pl/', 'party') for h in handles])
+    monkeypatch.setattr(s, 'official_leads', lambda target: [s.Lead(h, 'https://www.senat.gov.pl/x', 'official') for h in handles])
+    lookup = Mock(side_effect=AssertionError('no paid lookup for party or club links'))
+    monkeypatch.setattr(w, 'x_lookup', lookup)
+    r = report()
+    w.discover_missing([t], r, 10)
+    assert not SocialHandleEvidence.objects.exists() and r['lookups'] == 0 and lookup.call_count == 0
+
+
+def test_person_leads_keep_own_profile_link_and_name_matching_handles():
+    t = party_target('Agnieszka Dziemianowicz-Bąk', 'Lewica', '77')
+    own = [s.Lead('AgaBak', 'https://www.gov.pl/web/rodzina', 'official'), s.Lead('PolskiSenat', 'https://www.gov.pl/', 'official')]
+    assert [l.handle for l in s.person_leads(t, own)] == ['AgaBak']
+    single = [s.Lead('Henryk55957871', 'https://www.senat.gov.pl/sklad/x', 'official')]
+    assert s.person_leads(t, single) == single  # jedyny osobisty link na profilu osoby
+    page = [s.Lead('KotulaKat', 'https://lewica.org.pl/', 'party'), s.Lead('AgaBak', 'https://lewica.org.pl/', 'party')]
+    assert [l.handle for l in s.person_leads(t, page)] == ['AgaBak']
+    exact = [s.Lead('joankasw', 'https://www.wikidata.org/wiki/Q1', 'wikidata-id'), s.Lead('__Lewica', 'https://x', 'wikidata-id')]
+    assert [l.handle for l in s.person_leads(t, exact)] == ['joankasw']
+
+
+def test_unlisted_club_reads_as_other_camp_and_is_diagnosed(monkeypatch):
+    from news.clinic import unscreened_posts
+    from news.political_models import PoliticalPost
+    t = party_target('Marek Jakubiak', 'Kolo', '139')
+    assert t.camp == 'other'
+    monkeypatch.setattr(s, 'registry_leads', lambda targets, collect=None: {
+        t.figure.pk: [s.Lead('KontoTestowe1', 'https://www.wikidata.org/wiki/Q1', 'wikidata-id')]})
+    monkeypatch.setattr(w, 'x_lookup', Mock(return_value={'data': user_data('KontoTestowe1', name='Marek Jakubiak')}))
+    r = report()
+    w.discover_missing([t], r, 10)
+    account = PoliticalAccount.objects.get(handle='KontoTestowe1')
+    assert account.enabled and account.is_confirmed() and account.camp == 'other'
+    post = PoliticalPost.objects.create(account=account, post_id='1', text='Wpis', url='https://x.com/KontoTestowe1/status/1',
+        published_at=timezone.now(), camp_at_collection=account.camp, available=True)
+    assert post in unscreened_posts()
+
+
+def test_registry_member_without_club_is_not_blocked(monkeypatch):
+    t = party_target('Jan Kowalski', '', '55')
+    assert t.camp == ''
+    monkeypatch.setattr(s, 'registry_leads', lambda targets, collect=None: {
+        t.figure.pk: [s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q2', 'wikidata-id')]})
+    monkeypatch.setattr(w, 'x_lookup', Mock(return_value={'data': user_data()}))
+    r = report()
+    w.discover_missing([t], r, 10)
+    assert PoliticalAccount.objects.get(handle='JanKowalski').camp == 'other'
+    assert any(e['kind'] == 'other_camp' for e in r['events'])
+
+
+def test_strong_source_enables_despite_display_name_but_hard_checks_stay():
+    t = target()
+    shown = user_data(name='Kowalski | Poseł')
+    assert w.check_candidate(user_data(name='J. K. poseł', description=''), t, 'search')[0] != 'accepted'
+    assert w.check_candidate(shown, t, 'wikidata-id') == ('accepted', '')
+    assert w.check_candidate(user_data(description='parodia'), t, 'wikidata-id')[0] == 'rejected'
+
+
+def test_camp_follows_official_roster_automatically():
+    t = target('government')
+    account = add(t)
+    ParliamentaryRosterEntry.objects.filter(pk=t.figure.parliamentary_roster_entry_id).update(club='PiS')
+    r = report()
+    w.follow_roster_camps(r)
+    account.refresh_from_db()
+    assert account.camp == 'opposition' and account.enabled and account.is_confirmed()
+    assert r['events'][0]['kind'] == 'auto'
+
+
+def test_camp_mismatch_on_existing_account_resolves_without_human(monkeypatch):
+    t = target('government')
+    account = add(t)
+    t.camp = 'opposition'
+    result, reason = w.save_candidate(t, s.Lead(account.handle, 'https://www.wikidata.org/wiki/Q3', 'wikidata-id'),
+                                      user_data(), 'accepted', '')
+    account.refresh_from_db()
+    assert result == account and account.camp == 'opposition' and account.is_confirmed()
+
+
+def test_account_of_another_person_is_a_conflict_with_proposal_and_no_lookup(monkeypatch):
+    first = target(name='Jan Kowalski', suffix='1')
+    add(first)
+    second = target(name='Janina Kowalska', suffix='2')
+    monkeypatch.setattr(s, 'registry_leads', lambda targets, collect=None: {
+        second.figure.pk: [s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q4', 'wikidata-id')]})
+    monkeypatch.setattr(w, 'x_lookup', Mock(side_effect=AssertionError('no lookup')))
+    r = report()
+    w.discover_missing([second], r, 10)
+    assert len(r['conflicts']) == 1 and 'Jan Kowalski' in r['conflicts'][0]['reason']
+    assert r['conflicts'][0]['proposal'].startswith('Zostaw @JanKowalski')
+
+
+def test_warden_disabled_account_is_not_sent_to_a_human():
+    t = target()
+    a = add(t)
+    a.enabled, a.last_error = False, 'warden: konto usunięte lub zawieszone'
+    a.save()
+    result, reason = w.save_candidate(t, s.Lead(a.handle, 'https://www.wikidata.org/wiki/Q5', 'wikidata-id'), user_data(), 'accepted', '')
+    assert result is None and not reason.startswith(w.CONFLICT)
+
+
+def test_only_conflicts_wait_in_panel_queue_and_retry_requeues_the_rest():
+    t = target()
+    plain = PoliticalAccountCandidate.objects.create(handle='Czeka', display_name='A', classification='independent',
+        resolution_error='Strażnik: Zasięg poniżej 500 i brak weryfikacji X.')
+    PoliticalAccountCandidate.objects.create(handle='Spor', display_name='B', classification='independent',
+        resolution_error='Strażnik: ' + w.conflict('konto powiązano już z innym profilem.'))
+    SocialHandleEvidence.objects.create(subject=t.figure, handle='Czeka', evidence_url='https://example.org/a',
+        extracted_url='https://x.com/Czeka', candidate=plain)
+    PublicFigure.objects.filter(pk=t.figure.pk).update(account_discovery_at=timezone.now())
+    assert w.retry_queue() == 1
+    t.figure.refresh_from_db()
+    assert t.figure.account_discovery_at is None
+    section = w.panel_section(timezone.now())
+    assert '@Spor' in str(section) and '@Czeka' not in str(section)
+
+
+def test_cost_projection_uses_observed_posts_per_account():
+    from news.political_models import PoliticalPost
+    a = add(target())
+    for n in range(60):
+        PoliticalPost.objects.create(account=a, post_id=str(n + 1), text='x', url=f'https://x.com/a/status/{n + 1}',
+            published_at=timezone.now(), camp_at_collection=a.camp)
+    cost = w.cost_projection(10)
+    assert cost['posts_per_account_day'] == '2.00'
+    # 2 wpisy x 30 dni x 0,005 USD + kontrola profilu co 7 dni (30/7 x 0,01 USD) = ok. 0,343 USD na konto
+    assert cost['usd_per_account_month'] == '0.343' and cost['usd_month'] == '3.43'
+
+
+def test_unlisted_club_never_overrides_an_existing_camp():
+    t = target('government')
+    account = add(t)
+    ParliamentaryRosterEntry.objects.filter(pk=t.figure.parliamentary_roster_entry_id).update(club='Centrum')
+    w.follow_roster_camps(report())
+    t.camp = 'other'
+    result, _ = w.save_candidate(t, s.Lead(account.handle, 'https://www.wikidata.org/wiki/Q6', 'wikidata-id'), user_data(), 'accepted', '')
+    account.refresh_from_db()
+    assert result == account and account.camp == 'government' and account.is_confirmed()
+
+
+# --- regresje z niezależnej recenzji 23.10 ---
+
+def queued_account(handle='JanKowalski', uid='1234', camp='government'):
+    return PoliticalAccount.objects.create(user_id=uid, handle=handle, display_name='Jan Kowalski', camp=camp,
+                                           confirmation_url='https://example.org/proof', enabled=False)
+
+
+def test_rejected_verdict_never_revives_a_queued_account():
+    t = target()
+    account = queued_account()
+    lead = s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q7', 'wikidata-id')
+    result, reason = w.save_candidate(t, lead, user_data(description='parodia'), 'rejected', 'Parodia lub konto nieoficjalne.')
+    account.refresh_from_db()
+    assert result is None and not account.enabled and not account.is_confirmed()
+
+
+def test_strong_lead_revives_never_read_account_only_when_accepted():
+    t = target()
+    account = queued_account()
+    result, _ = w.save_candidate(t, s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q8', 'wikidata-id'), user_data(), 'accepted', '')
+    account.refresh_from_db()
+    assert result == account and account.enabled and account.is_confirmed()
+
+
+def test_conflict_keeps_queued_account_untouched():
+    first = target(name='Jan Kowalski', suffix='1')
+    add(first)
+    account = PoliticalAccount.objects.get(handle='JanKowalski')
+    account.enabled = False
+    account.save()
+    PoliticalAccount.objects.filter(pk=account.pk).update(disabled_at=None)
+    second = target(name='Janina Kowalska', suffix='2')
+    w.save_candidate(second, s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q9', 'wikidata-id'), user_data(), 'accepted', '')
+    account.refresh_from_db()
+    assert not account.enabled
+
+
+def test_strong_source_still_needs_the_surname_somewhere():
+    t = target()
+    other = user_data('JanNowak', name='Jan Nowak')
+    assert w.check_candidate(other, t, 'wikidata-id')[0] != 'accepted'
+    assert w.check_candidate(user_data('KowalskiJ', name='Poseł RP'), t, 'wikidata-id')[0] == 'accepted'
+
+
+def test_senator_without_club_waits_instead_of_other(monkeypatch):
+    entry = ParliamentaryRosterEntry.objects.create(source='senat', external_id='5', full_name='Jan Kowalski', club='',
+        source_url='https://www.senat.gov.pl/sklad/senatorowie/senator,5.html')
+    f = PublicFigure.objects.create(canonical_name='Jan Kowalski', role_category='parliamentary', role_title='Senator',
+        evidence_url=entry.source_url, parliamentary_roster_entry=entry, import_key='parliamentary:senat:5')
+    t = s.Target(f'figure:{f.pk}', 'Jan Kowalski', 'Senator', '', 2, ('senat',), f)
+    monkeypatch.setattr('news.management.commands.link_official_x_accounts.senate_club', lambda entry: '')
+    monkeypatch.setattr(s, 'registry_leads', lambda targets, collect=None: {f.pk: [s.Lead('JanKowalski', 'https://www.wikidata.org/wiki/Q1', 'wikidata-id')]})
+    monkeypatch.setattr(w, 'x_lookup', Mock(return_value={'data': user_data()}))
+    w.discover_missing([t], report(), 10)
+    assert not PoliticalAccount.objects.filter(handle='JanKowalski').exists()
+
+
+def test_older_wikidata_account_next_to_preferred_is_not_exact(monkeypatch):
+    from news import osoby_x
+    t = target()
+    rows = [{'osoba_id': t.figure.import_key, 'konto': 'StareKonto', 'zrodlo': 'https://www.wikidata.org/wiki/Q1', 'pewnosc': 'średnia',
+             'stan_konta': 'aktualne', 'uwagi': 'Wikidata P2002; dopasowanie: profil posła X kadencji (P973)'},
+            {'osoba_id': t.figure.import_key, 'konto': 'JanKowalski', 'zrodlo': 'https://www.wikidata.org/wiki/Q1', 'pewnosc': 'wysoka',
+             'stan_konta': 'aktualne', 'uwagi': 'Wikidata P2002; dopasowanie: profil posła X kadencji (P973)'}]
+    monkeypatch.setattr(osoby_x, 'read_rows', lambda: [])
+    leads = REGISTRY_LEADS([t], collect=lambda people: (rows, []))[t.figure.pk]
+    assert {(l.handle, l.source) for l in leads} == {('StareKonto', 'wikidata'), ('JanKowalski', 'wikidata-id')}
+
+
+def test_conflicts_from_last_report_reach_panel():
+    ImportState.objects.create(name=w.STATE, cursor={'report': {'conflicts': [
+        {'name': 'Janina Kowalska', 'handle': 'JanKowalski', 'source': 'https://www.wikidata.org/wiki/Q4',
+         'reason': w.conflict('x'), 'proposal': 'Zostaw @JanKowalski'}]}})
+    assert w.conflicts_for_report()[0]['handle'] == 'JanKowalski'
+    assert 'Do decyzji: @JanKowalski' in str(w.panel_section(timezone.now()))
