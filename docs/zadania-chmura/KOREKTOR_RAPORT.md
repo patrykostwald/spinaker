@@ -26,7 +26,12 @@
 5. Harmonogram: `korektor-morning` 6:50 (po nocnych zadaniach, przed Raportem pętli 7:05), mail na `LOOP_REPORT_EMAIL`
    raz dziennie. Wpis w LOOPS (pętla „Korektor” i strażnik w pętlach Diagnozy, Wywiad dnia, Przekaz dnia), rejestr agentów,
    kontrakt w Raporcie pętli. Wyłącznik: `KOREKTOR_ENABLED=false`; same raporty bez napraw: `KOREKTOR_NAPRAW=false`.
-6. Testy: `backend/news/test_korektor.py` (w tym regresja „Nawrocki podpisany jako Duda” i inne zamiany osób).
+6. Dopisek z OSOBY_X.md (23.10): poranny raport Korektora pokazuje kandydatury kont X czekające na rozstrzygnięcie
+   (ile i od kiedy, według powodu). Do człowieka trafiają tylko konflikty dowodów, z gotową propozycją, np. konto partii
+   przypisane posłowi -> „odrzucić jako konto osoby” (przypadki z produkcji: @Platforma_org, @__Lewica, @koronypolskiej).
+   Korektor tylko raportuje. Automatyczne rozstrzyganie (Drugi klucz), poprawka parsera linków i nocna synchronizacja
+   należą do gałęzi `cloud/osoby-x`, więc ich tu nie powielam.
+7. Testy: `backend/news/test_korektor.py` (w tym regresja „Nawrocki podpisany jako Duda” i inne zamiany osób).
 
 ## Do potwierdzenia przez koordynatora ([DP])
 - Strony gov.pl, sejm.gov.pl i senat.gov.pl nie otwierały się z chmury; skład rządu potwierdzony w mediach
@@ -34,6 +39,10 @@
 - Polska 2050: 22.10.2026 Pełczyńska-Nałęcz ogłosiła przekazanie przewodnictwa Hołowni - wpis [DP].
 - Przewodniczący klubów (poza Hołownią) i liderzy Konfederacji - [DP], do potwierdzenia na kluby.sejm.gov.pl.
 - Domański: wniosek o wicepremiera czeka na decyzję prezydenta - po decyzji zmienić wpis `finanse`.
+
+## Testy
+`news/test_korektor.py`: 28 przechodzi. Cały zestaw `news` i `scraper`: 3670 przechodzi, 1 nie przechodzi
+(`test_spina_v3.py::test_rejected_step_rules`). Ten sam test nie przechodzi też na `cloud/baza-2310`, więc nie wynika z tej zmiany.
 
 ## Komendy na serwerze (w tej kolejności)
 1. `git pull` gałęzi po scaleniu, restart aplikacji, Celery i beat (nowe zadanie `korektor_task`; migracji brak).

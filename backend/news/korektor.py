@@ -315,6 +315,52 @@ def puste_profile(limit: int | None = None) -> dict:
     return {'osoby': total, 'liczby': {name: len(rows) for name, rows in out.items()}, 'listy': out}
 
 
+# --- kolejka „Do decyzji” Strażnika kont (dopisek OSOBY_X 23.10) ---------------------------------
+
+PARTY_WORDS = ('platforma', 'lewica', 'pis', 'prawo i sprawiedliwość', 'konfederacja', 'korona', 'psl', 'polska 2050',
+               'razem', 'koalicja', 'klub', 'partia', 'stronnictwo', 'ruch narodowy', 'nowa nadzieja', 'centrum')
+
+
+def _party_account(handle: str, name: str) -> bool:
+    from scraper.catalog import TWITTER_POLITICIANS
+    known = {h.casefold() for h, row in TWITTER_POLITICIANS.items() if len(row.get('name', '').split()) < 2
+             or any(word in row['name'].casefold() for word in PARTY_WORDS)}
+    text = f'{handle} {name}'.casefold().replace('_', ' ')
+    return handle.casefold() in known or any(re.search(rf'(?<!\w){re.escape(word)}(?!\w)', text) for word in PARTY_WORDS)
+
+
+def _name_fits(person: str, handle: str, name: str) -> bool:
+    parts = [part.casefold() for part in re.split(r'[\s-]+', person or '') if len(part) >= 3]
+    text = f'{handle} {name}'.casefold()
+    return bool(parts) and parts[-1][:5] in text
+
+
+def do_decyzji() -> dict:
+    """Nierozstrzygnięte kandydatury kont X: ile czeka i od kiedy, a do człowieka tylko prawdziwy konflikt dowodów -
+    z gotową propozycją. Bez zmian w danych (rozstrzyga Drugi klucz i gałąź osoby-x)."""
+    from collections import Counter
+    from news.political_models import PoliticalAccountCandidate, PublicFigure
+    rows = list(PoliticalAccountCandidate.objects.filter(resolved_account__isnull=True).order_by('created_at'))
+    reasons, konflikty = Counter(), []
+    for row in rows:
+        reason = (row.resolution_error or 'bez powodu').removeprefix('Strażnik: ')[:80]
+        reasons[reason] += 1
+        if 'innym profilem' not in reason and 'odrzucony wcześniej' not in reason:
+            continue
+        people = [ev.subject for ev in row.social_evidence.all() if isinstance(getattr(ev, 'subject', None), PublicFigure)]
+        names = sorted({p.canonical_name for p in people})
+        if _party_account(row.handle, row.display_name):
+            proposal = 'odrzucić jako konto osoby: to konto partii lub klubu'
+        else:
+            fits = [name for name in names if _name_fits(name, row.handle, row.display_name)]
+            proposal = (f'przypiąć tylko do: {fits[0]} (nazwa konta pasuje), pozostałe dowody odrzucić' if len(fits) == 1
+                        else 'do weryfikacji: nazwa konta nie rozstrzyga')
+        konflikty.append({'konto': row.handle, 'nazwa': row.display_name, 'osoby': names, 'od': row.created_at.date().isoformat(),
+                          'powod': reason, 'propozycja': proposal})
+    return {'czeka': len(rows), 'najstarsza': rows[0].created_at.date().isoformat() if rows else None,
+            'powody': dict(reasons.most_common(10)), 'konflikty': konflikty}
+
+
 # --- przebieg ---------------------------------------------------------------------------------
 
 def _since(dni: int):
@@ -410,13 +456,15 @@ def run(dni: int = 2, napraw: bool = False, profile_limit: int | None = None) ->
         x['przypiecie'] = przypnij_x()
         x = {**braki_x(), 'przypiecie': x['przypiecie']}
     profiles = puste_profile(profile_limit)
+    kolejka = do_decyzji()
     for kind in ('wywiady', 'diagnozy', 'przekazy'):
         for item in found[kind]:
             item.pop('obj', None)
     return {'dzien': timezone.localdate().isoformat(), 'dni': dni, 'napraw': napraw, **found, 'akcje': akcje,
-            'konta_x': x, 'profile': profiles, 'przyczyna': PRZYCZYNA,
+            'konta_x': x, 'kolejka_x': kolejka, 'profile': profiles, 'przyczyna': PRZYCZYNA,
             'podsumowanie': {'wywiady': len(found['wywiady']), 'diagnozy': len(found['diagnozy']),
                              'przekazy': len(found['przekazy']), 'konta_x_braki': len(x['braki']),
+                             'konta_x_czeka': kolejka['czeka'], 'konta_x_konflikty': len(kolejka['konflikty']),
                              **{f'profile_bez_{k}': v for k, v in profiles['liczby'].items()}}}
 
 
@@ -445,6 +493,13 @@ def text(report: dict) -> str:
         lines += [f"- {b['osoba']} (#{b['id']}): @{b['konto']} ({b['zrodlo']})" for b in x['braki'][:LIST_MAX]]
         if x.get('przypiecie'):
             lines.append(f"Przypięcie: {x['przypiecie'].get('status')} {x['przypiecie'].get('powod', '')}".strip())
+    q = report['kolejka_x']
+    lines.append(f"Kandydatury kont X czekające na rozstrzygnięcie: {q['czeka']}" + (f", najstarsza od {q['najstarsza']}" if q['najstarsza'] else '') + '.')
+    lines += [f'- {reason}: {count}' for reason, count in q['powody'].items()]
+    if q['konflikty']:
+        lines.append('Konflikty dowodów (do decyzji człowieka, z propozycją):')
+        lines += [f"- @{c['konto']} ({c['nazwa']}), osoby: {', '.join(c['osoby']) or 'brak'}, od {c['od']} -> {c['propozycja']}"
+                  for c in q['konflikty'][:LIST_MAX]]
     p = report['profile']
     lines += ['', f"== Profile przeszłości ({p['osoby']} osób obecnych) - puste sekcje ==",
               f"KRS {p['liczby']['krs']}, oświadczenia {p['liczby']['oswiadczenia']}, głosowania (posłowie) "

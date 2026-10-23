@@ -191,3 +191,22 @@ def test_task_and_mail(monkeypatch, tmp_path):
     assert mail.call_count == 1 and 'Korektor' in mail.call_args[0][1]
     monkeypatch.setenv('KOREKTOR_ENABLED', 'false')
     assert korektor_task() == {'status': 'disabled'}
+
+
+@pytest.mark.django_db
+def test_x_decision_queue_shows_only_conflicts_with_proposal():
+    from django.contrib.contenttypes.models import ContentType
+    from news.political_models import PoliticalAccountCandidate, PublicFigure, SocialHandleEvidence
+    figure = PublicFigure.objects.create(canonical_name='Tomasz Głogowski', role_category='parliamentary', role_title='Poseł',
+                                         import_key='test:glogowski')
+    PoliticalAccountCandidate.objects.all().delete()  # migracje wstawiają kandydatury startowe
+    party = PoliticalAccountCandidate.objects.create(handle='Platforma_org', display_name='Platforma Obywatelska',
+                                                     classification='government',
+                                                     resolution_error='Strażnik: Konto powiązano już z innym profilem; do decyzji.')
+    SocialHandleEvidence.objects.create(platform='x', handle='Platforma_org', candidate=party, evidence_url='https://www.sejm.gov.pl/x',
+                                        subject_content_type=ContentType.objects.get_for_model(PublicFigure), subject_object_id=figure.pk)
+    PoliticalAccountCandidate.objects.create(handle='JanNowak', display_name='Jan Nowak', classification='independent',
+                                             resolution_error='Strażnik: Brak jednoznacznego obozu w oficjalnym rejestrze.')
+    queue = korektor.do_decyzji()
+    assert queue['czeka'] == 2 and len(queue['konflikty']) == 1
+    assert queue['konflikty'][0]['osoby'] == ['Tomasz Głogowski'] and 'konto partii' in queue['konflikty'][0]['propozycja']
