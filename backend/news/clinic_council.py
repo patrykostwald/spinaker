@@ -171,6 +171,23 @@ def _json(text: str) -> dict:
     return result
 
 
+# Surowa odpowiedź, wersja modelu i tokeny ostatniego udanego zapytania członka (dla news/council_votes.py). Zbiór ustawia
+# _opinion; poza nim (role, strażnik, egzamin) _remember nic nie robi - sygnatury i wyniki _ask* bez zmian.
+_CAPTURE = contextvars.ContextVar('council_capture', default=None)
+
+
+def _tokens(sent, received) -> dict | None:
+    numbers = [value if isinstance(value, int) and not isinstance(value, bool) else None for value in (sent, received)]
+    return {'input': numbers[0], 'output': numbers[1]} if any(n is not None for n in numbers) else None
+
+
+def _remember(answer: dict, model_served=None, tokens: dict | None = None) -> dict:
+    box = _CAPTURE.get()
+    if box is not None:
+        box.update(raw=answer, model_served=str(model_served)[:120] if model_served else None, tokens=tokens)
+    return answer
+
+
 def ask(member: tuple[str, str], system: str, user: str, schema: dict, max_tokens: int = 3000) -> dict:
     """Jedno zapytanie do członka; wynik trafia do kontroli zdrowia Rekrutera (twarde błędy → zawieszenie po 3 dniach)."""
     from news.council_recruiter import record
@@ -205,7 +222,8 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
     if service == 'inception':
         # Tylko kandydat Rekrutera albo przyjęty przez niego członek; ten sam strażnik darmowej puli co zadania poboczne.
         from news import inception
-        return inception.chat(system, user[:12000], schema, max_tokens=max_tokens, temperature=0.2, model_name=model)[0]
+        answer, served = inception.chat(system, user[:12000], schema, max_tokens=max_tokens, temperature=0.2, model_name=model)
+        return _remember(answer, served)  # Inception nie zwraca podziału tokenów
     url, key = registry.endpoint(service), registry.credentials(service)
     headers = {'Authorization': f'Bearer {key}'}
     if service == 'openrouter':
@@ -230,7 +248,10 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
         response = requests.post(url, json=body, timeout=(5, SLOW_TIMEOUT if slow else 90), headers=headers)
         if response.status_code >= 400:
             raise ClinicAIError(f'{service}: http_{response.status_code}')
-        return _json(response.json()['choices'][0]['message']['content'])
+        data = response.json()
+        answer = _json(data['choices'][0]['message']['content'])
+        usage = data.get('usage') if isinstance(data.get('usage'), dict) else {}
+        return _remember(answer, data.get('model'), _tokens(usage.get('prompt_tokens'), usage.get('completion_tokens')))
     except (requests.RequestException, KeyError, IndexError, ValueError, TypeError) as error:
         raise ClinicAIError(f'{model}: {type(error).__name__}'[:120])
 
@@ -249,9 +270,12 @@ def _ask_claude(model: str, system: str, user: str, schema: dict, max_tokens: in
         raise ClinicAIError(f'claude: {code}'[:120])
     text = ''.join(block.text for block in response.content if getattr(block, 'type', '') == 'text')
     try:
-        return _json(text)
+        answer = _json(text)
     except (ValueError, TypeError) as error:
         raise ClinicAIError(f'{model}: {type(error).__name__}'[:120])
+    usage = getattr(response, 'usage', None)
+    return _remember(answer, getattr(response, 'model', None),
+                     _tokens(getattr(usage, 'input_tokens', None), getattr(usage, 'output_tokens', None)))
 
 
 def _ask_gemini(model: str, system: str, user: str, schema: dict, max_tokens: int) -> dict:
@@ -267,8 +291,12 @@ def _ask_gemini(model: str, system: str, user: str, schema: dict, max_tokens: in
         response = clinic_ai.gemini_post(model, body, timeout=(5, 90), key=key, task='council')
         if response.status_code >= 400:
             raise ClinicAIError(f'gemini: http_{response.status_code}')  # np. 402 — wyczerpane środki, 404 — model zniknął
-        parts = ((response.json().get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
-        return _json(''.join(part.get('text', '') for part in parts))
+        data = response.json()
+        parts = ((data.get('candidates') or [{}])[0].get('content') or {}).get('parts', [])
+        answer = _json(''.join(part.get('text', '') for part in parts))
+        usage = data.get('usageMetadata') if isinstance(data.get('usageMetadata'), dict) else {}
+        return _remember(answer, data.get('modelVersion'),
+                         _tokens(usage.get('promptTokenCount'), usage.get('candidatesTokenCount')))
     except (requests.RequestException, KeyError, IndexError, ValueError, TypeError) as error:
         raise ClinicAIError(f'{model}: {type(error).__name__}'[:120])
 
@@ -327,10 +355,33 @@ def _member_opinion(member: tuple[str, str], context_lines: str) -> tuple[dict, 
 
 
 def _opinion(member: tuple[str, str], post_text: str, context_lines: str) -> dict | None:
+    """Opinia członka. Prywatny klucz _raw (surowa odpowiedź, wersja modelu, tokeny, wszystkie techniki z cytatem) służy tylko
+    do zapisu głosów (news/council_votes.py) - nie wolno go serializować do bazy ani API (member_records wybiera pola)."""
+    box = {}
+    token = _CAPTURE.set(box)
+    try:
+        opinion = _judge(member, post_text, context_lines)
+    finally:
+        _CAPTURE.reset(token)
+    raw = box.get('raw')
+    items = raw.get('techniques') if isinstance(raw, dict) and isinstance(raw.get('techniques'), list) else []
+    techniques = []
+    for item in items:
+        if isinstance(item, dict):
+            quote_ok = _quoted(post_text, str(item.get('quote', '')))
+            techniques.append({**item, 'quote_ok': quote_ok, 'accepted': quote_ok and isinstance(item.get('id'), str) and item['id'] in TECHNIQUES})
+    opinion['_raw'] = {'member': ':'.join(member), 'raw': raw, 'model_served': box.get('model_served'),
+                       'tokens': box.get('tokens'), 'techniques_all': techniques}
+    return opinion
+
+
+def _judge(member: tuple[str, str], post_text: str, context_lines: str) -> dict:
     started = time.monotonic()
     served_by = None
     try:
         answer, served_by = _member_opinion(member, context_lines)
+        if _CAPTURE.get() is not None:
+            _CAPTURE.get().setdefault('raw', answer)  # ask podmieniony albo bez _remember: surowa odpowiedź = zwrócona
         raw = _normalize_opinion(answer)
         if (not isinstance(raw, dict) or raw.get('verdict') not in (*VERDICT_SCORE, 'unclear') or
                 type(raw.get('intensity')) is not int or not 0 <= raw['intensity'] <= 100 or
@@ -645,6 +696,8 @@ def diagnose(context: dict, lines: str) -> dict:
 def _diagnose(context: dict, lines: str) -> dict:
     from news import council_quorum as quorum
     members = consult(context['text'], lines)
+    from news import council_votes
+    council_votes.stage(members)  # głosy zapisze przebieg Rady (clinic.diagnose, council_rerun); bez przebiegu nic
     opinions = [op for op in members if op.get('status') != 'brak odpowiedzi']
     member_records = [{k: v for k, v in op.items() if k in (
         'model', 'company', 'provider', 'role', 'status', 'note', 'verdict', 'intensity', 'seconds')} for op in members]

@@ -3,6 +3,7 @@ import os
 import re
 from datetime import date, datetime, time, timedelta
 
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -17,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
-from news import clinic
+from news import clinic, council_votes
 from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, XAccountSuggestion
 from news.political_models import PublicFigure
 from news.public_figures import verified_x_account_record
@@ -453,6 +454,7 @@ def review_causal_chain(request, message_id):
 
 class HideInput(serializers.Serializer):
     reason = serializers.CharField(max_length=240)
+    reason_code = serializers.ChoiceField(choices=council_votes.REASON_CHOICES, required=False, default='OTHER')
 
 
 @extend_schema(summary='Ukryj opublikowaną diagnozę po zgłoszeniu prawnym (treść zostaje bez zmian)', tags=['klinika'],
@@ -463,8 +465,11 @@ def hide_diagnosis(request, diagnosis_id):
     diagnosis = get_object_or_404(SpinDiagnosis, pk=diagnosis_id, status__in=['approved', 'withdrawn'])
     serializer = HideInput(data=request.data)
     serializer.is_valid(raise_exception=True)
-    diagnosis.hidden_at, diagnosis.hidden_reason = diagnosis.hidden_at or timezone.now(), serializer.validated_data['reason']
-    diagnosis.save(update_fields=['hidden_at', 'hidden_reason'])
+    with transaction.atomic():
+        diagnosis = SpinDiagnosis.objects.select_for_update().get(pk=diagnosis.pk)
+        diagnosis.hidden_at, diagnosis.hidden_reason = diagnosis.hidden_at or timezone.now(), serializer.validated_data['reason']
+        clinic.add_human_decision(diagnosis, 'hide', serializer.validated_data['reason_code'], diagnosis.hidden_reason, request.user)
+        diagnosis.save(update_fields=['hidden_at', 'hidden_reason', 'usage'])
     return Response({'id': diagnosis.pk, 'hidden_at': diagnosis.hidden_at})
 
 

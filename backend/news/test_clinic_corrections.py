@@ -58,7 +58,8 @@ def test_withdraw_preserves_ai_and_rejects_stale_objects_and_non_staff():
     clinic.withdraw(row, member, '  Źródło nie potwierdza wniosku.  ')
     after = SpinDiagnosis.objects.filter(pk=row.pk).values().get()
     changed = {key for key in before if before[key] != after[key]}
-    assert changed == {'status', 'withdrawn_at', 'withdrawn_by_id', 'withdrawn_reason'}
+    assert changed == {'status', 'withdrawn_at', 'withdrawn_by_id', 'withdrawn_reason', 'usage'}
+    assert set(after['usage']) == {'human_decisions'} and after['usage']['human_decisions'][0]['reason_code'] == 'OTHER'  # E0
     assert row.withdrawn_reason == 'Źródło nie potwierdza wniosku.'
     with pytest.raises(ValueError):
         clinic.withdraw(old, member, 'Drugi powód')

@@ -12,6 +12,17 @@ def zakaz_sieci(monkeypatch):
     monkeypatch.setattr('requests.adapters.HTTPAdapter.send', Mock(side_effect=requests.ConnectionError('Zakaz sieci w testach')))
 
 
+@pytest.fixture(scope='session')
+def _katalog_glosow(tmp_path_factory):
+    return tmp_path_factory.mktemp('glosy')
+
+
+@pytest.fixture(autouse=True)
+def glosy_poza_repo(monkeypatch, _katalog_glosow):
+    """Głosy Rady (news/council_votes.py) w testach trafiają do katalogu tymczasowego, nigdy do backend/var ani /app/media."""
+    monkeypatch.setenv('COUNCIL_VOTES_DIR', str(_katalog_glosow))
+
+
 @pytest.fixture
 def auto_approve_threads(monkeypatch):
     """For tests of thread builders and views (not of the review gate itself): every Dr. Spin thread
