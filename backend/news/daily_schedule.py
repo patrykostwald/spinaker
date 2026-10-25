@@ -14,6 +14,7 @@ BEAT_PLAN = {
     'ekspert-ai-daily': ('ekspert_ai_task', {'hour': 3, 'minute': 40}),
     'mechanik-1h': ('mechanik_task', {'minute': 23}),
     'konsylium-powtorz-night': ('konsylium_powtorz_task', {'hour': 2, 'minute': 40}),  # właściciel 6.10: powtórka diagnoz bez kworum
+    'glosy-porzadek-monthly': ('glosy_porzadek_task', {'day_of_month': 1, 'hour': 4, 'minute': 20}),  # Prawnik 25.10: retencja dziennika głosów Rady (730 i 1095 dni)
     'recenzent-2h': ('recenzent_task', {'minute': 41, 'hour': '*/2'}),  # właściciel 5.10: recenzuje wszystko, co trafia na stronę
     'projektant-daily': ('projektant_task', {'hour': 4, 'minute': 20}),
     'dyrygent-15m': ('dyrygent_task', {'minute': '*/15'}),  # właściciel 5.10: hierarchia i harmonogram pętli

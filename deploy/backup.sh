@@ -37,3 +37,13 @@ if [ "${BACKUP_MEDIA:-tak}" = tak ] && [ "$(date +%u)" = 7 ]; then
   fi
   rm -f "$media"
 fi
+# Dziennik głosów Rady (E0, /app/media/glosy): codziennie, zaszyfrowany, w B2 do 30 dni; pominięty, gdy brak plików albo ponad 500 MB.
+glosy="/tmp/glosy-$stamp.tar.gz"
+$DC exec -T backend sh -c 'cd /app/media && [ -n "$(ls glosy/*.jsonl 2>/dev/null)" ] && tar czf - glosy' > "$glosy" 2>/dev/null || true
+if [ -s "$glosy" ] && [ "$(stat -c %s "$glosy")" -lt 524288000 ]; then
+  $DC exec -T backend python manage.py kopia_zapasowa --z-stdin --nazwa "glosy-$stamp.tar.gz" --rodzaj glosy < "$glosy" \
+    || echo "$(date) B2: kopia dziennika głosów NIEUDANA (baza wysłana)"
+else
+  echo "$(date) B2: dziennik głosów pominięty (brak plików albo ponad 500 MB)"
+fi
+rm -f "$glosy"

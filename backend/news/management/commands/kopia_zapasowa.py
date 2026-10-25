@@ -2,6 +2,7 @@
 
 python manage.py kopia_zapasowa --z-stdin --nazwa spin_clinic-20261007-0330.sql.gz   - szyfruje stdin i wysyła (deploy/backup.sh)
 python manage.py kopia_zapasowa --z-stdin --nazwa media-20261007.tar.gz --rodzaj media
+python manage.py kopia_zapasowa --z-stdin --nazwa glosy-20261007-0330.tar.gz --rodzaj glosy   - dziennik głosów Rady
 python manage.py kopia_zapasowa --kontrola          - to, co zadanie 4:30: świeżość, retencja, rozmiar
 python manage.py kopia_zapasowa --test-odtworzenia  - pobranie ostatniej kopii, odszyfrowanie, spójność zrzutu
 python manage.py kopia_zapasowa --lista             - obiekty w koszyku
@@ -18,7 +19,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--z-stdin', action='store_true', help='czytaj kopię ze standardowego wejścia')
         parser.add_argument('--nazwa', default='', help='nazwa pliku kopii (klucz w B2: <rodzaj>/<nazwa>.enc)')
-        parser.add_argument('--rodzaj', default='pg', choices=['pg', 'media'])
+        parser.add_argument('--rodzaj', default='pg', choices=['pg', 'media', 'glosy'])
         parser.add_argument('--kontrola', action='store_true')
         parser.add_argument('--test-odtworzenia', action='store_true')
         parser.add_argument('--lista', action='store_true')

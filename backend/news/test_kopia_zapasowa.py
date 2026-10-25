@@ -134,6 +134,20 @@ def test_backup_uploads_applies_retention_and_records_state():
     assert line.startswith('Kopia: lokalna 04:30, zdalna 04:30') and '2 plików / 30 dni' in line and 'jeszcze nie było' in line
 
 
+def test_backup_of_council_votes_log_uses_its_own_prefix_and_thirty_day_retention():
+    client = FakeS3({'glosy/glosy-stara.tar.gz.enc': (b'x' * 10, NOW - timedelta(days=31)),
+                     'glosy/glosy-wczoraj.tar.gz.enc': (b'y' * 10, NOW - timedelta(days=1)),
+                     'pg/dzis.sql.gz.enc': (b'z' * 10, NOW)})
+    result = kz.backup('glosy-20261025-0330.tar.gz', io.BytesIO(dump()), 'glosy', NOW, client)
+    assert result['status'] == 'ok' and result['key'] == 'glosy/glosy-20261025-0330.tar.gz.enc'
+    assert client.deleted == ['glosy/glosy-stara.tar.gz.enc'] and kz.RETENTION_DAYS == 30
+    state = RepairerState.objects.get(key=kz.STATE_KEY).data
+    assert state['last_glosy_key'] == result['key'] and state['runs'] == []  # tylko kopia bazy liczy się do pulsu „kopia lokalna”
+    from news.management.commands.kopia_zapasowa import Command
+    parser = Command().create_parser('manage.py', 'kopia_zapasowa')
+    assert parser.parse_args(['--rodzaj', 'glosy']).rodzaj == 'glosy'
+
+
 def test_backup_without_config_or_empty_stream(monkeypatch):
     client = FakeS3()
     assert kz.backup('x.sql.gz', io.BytesIO(b'krotkie'), 'pg', NOW, client)['status'] == 'error' and not client.uploaded

@@ -8,7 +8,8 @@ To przyszły zbiór do pomiaru jakości Rady i - dopiero po zgodzie Prawnika - d
    glosy-RRRR-MM.jsonl (rekordy vote) i decyzje-RRRR-MM.jsonl (rekordy human_decision, dłuższa retencja).
 2. Przed zapisem rekord przechodzi przez filtr: klucze API, nagłówki Authorization i tokeny Bearer znikają ze wszystkich pól,
    adresy e-mail i numery telefonów - z pól raw, techniques, claims, loaded_words, note i comment (zamiana na [usunięto]).
-3. Katalog 700, plik 600 (tam, gdzie system to obsługuje); linia JSON z ensure_ascii (U+2028 psuje czytniki), blokada pliku flock.
+3. Katalog 700, plik 600 (tam, gdzie system to obsługuje); linia JSON z ensure_ascii (U+2028 psuje czytniki), blokada flock
+   (plik .glosy.lock w katalogu; ta sama przy dopisywaniu i przy usuwaniu wpisów jednej osoby: erase, komenda glosy_usun).
 4. Przebieg Rady (run) ustawia clinic.diagnose i council_rerun.rerun; bez przebiegu (np. egzamin Rekrutera, porównanie modeli)
    nic się nie zapisuje. Wyłącznik: COUNCIL_VOTES_ENABLED=false. Retencja: komenda glosy_porzadek (bez harmonogramu).
 """
@@ -34,6 +35,7 @@ SCHEMA = 'glosy/1'
 REDACTED = '[usunięto]'
 VOTES_PREFIX, DECISIONS_PREFIX = 'glosy', 'decyzje'
 DEFAULT_VOTES_DAYS, DEFAULT_DECISIONS_DAYS = 730, 1095
+LOCK_NAME = '.glosy.lock'
 
 # Kod powodu decyzji człowieka - tylko z tej listy (wolny tekst idzie do pola comment).
 REASON_LABELS = {
@@ -118,17 +120,30 @@ def clean_record(record: dict) -> dict:
 
 # --- zapis -----------------------------------------------------------------------------------------------------------
 
-def _append(path: Path, lines: list[str]) -> None:
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, 'O_BINARY', 0), 0o600)
+@contextlib.contextmanager
+def _locked(directory: Path):
+    """Blokada całego dziennika (flock na pliku .glosy.lock; na Windows bez blokady). Jedna dla dopisywania i dla
+    przepisywania plików (glosy_usun), więc linia dopisywana w trakcie przepisywania nie ginie."""
+    if not fcntl:
+        yield
+        return
+    fd = os.open(directory / LOCK_NAME, os.O_WRONLY | os.O_CREAT, 0o600)
     try:
-        if fcntl:
-            fcntl.flock(fd, fcntl.LOCK_EX)
-        os.write(fd, ('\n'.join(lines) + '\n').encode('ascii'))
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
     finally:
         try:
-            if fcntl:
-                fcntl.flock(fd, fcntl.LOCK_UN)
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+
+def _append(path: Path, lines: list[str]) -> None:
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with _locked(path.parent):
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, 'O_BINARY', 0), 0o600)
+        try:
+            os.write(fd, ('\n'.join(lines) + '\n').encode('ascii'))
         finally:
             os.close(fd)
 
@@ -293,3 +308,54 @@ def cleanup(keep_votes: int | None = None, keep_decisions: int | None = None, dr
                 logger.warning('council votes cleanup: %s: %s', path.name, type(error).__name__)
         result.append({'file': path.name, 'kind': 'vote' if prefix == VOTES_PREFIX else 'human_decision', 'removed': removed})
     return result
+
+
+# --- usuwanie wpisów jednej osoby (art. 17 i 21 RODO) -----------------------------------------------------------------
+
+def erase(post_ids=(), diagnosis_ids=(), dry_run: bool = False) -> list[dict]:
+    """Przepisuje pliki glosy-*.jsonl i decyzje-*.jsonl bez linii o podanym post_id albo diagnosis_id. Przepisanie przez plik
+    tymczasowy w tym samym katalogu i os.replace, pod blokadą dziennika; uprawnienia pliku zostają. Linie nieparsowalne zostają
+    bez zmian i są liczone osobno. Zwraca listę {file, removed, kept, unparsable} dla plików z jakąkolwiek linią do usunięcia."""
+    posts, diagnoses = {str(int(x)) for x in post_ids}, {str(int(x)) for x in diagnosis_ids}
+    directory, result = log_dir(), []
+    if not (posts or diagnoses) or not directory.is_dir():
+        return result
+    with _locked(directory):
+        for path in sorted(directory.iterdir()):
+            if not _FILE.match(path.name) or not path.is_file():
+                continue
+            kept, removed, unparsable = [], 0, 0
+            for line in path.read_bytes().split(b'\n'):
+                if not line.strip():
+                    continue
+                try:
+                    record = json.loads(line)
+                    if not isinstance(record, dict):
+                        raise ValueError
+                except ValueError:
+                    kept.append(line)
+                    unparsable += 1
+                    continue
+                if str(record.get('post_id')) in posts or str(record.get('diagnosis_id')) in diagnoses:
+                    removed += 1
+                else:
+                    kept.append(line)
+            if removed:
+                if not dry_run:
+                    _replace(path, kept)
+                result.append({'file': path.name, 'removed': removed, 'kept': len(kept) - unparsable, 'unparsable': unparsable})
+    return result
+
+
+def _replace(path: Path, lines: list[bytes]) -> None:
+    temporary = path.with_name(f'.{path.name}.{os.getpid()}.tmp')
+    mode = path.stat().st_mode & 0o777
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_BINARY', 0), 0o600)
+    try:
+        with os.fdopen(fd, 'wb') as handle:
+            handle.write(b''.join(line + b'\n' for line in lines))
+        os.chmod(temporary, mode)
+        os.replace(temporary, path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise

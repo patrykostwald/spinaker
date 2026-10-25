@@ -370,3 +370,109 @@ def test_cleanup_command_dry_run_and_real_run():
     call_command('glosy_porzadek', '--keep-days', '730', stdout=StringIO())
     assert not (votes.log_dir() / 'glosy-2001-01.jsonl').exists()
     call_command('glosy_porzadek', stdout=StringIO())  # bez katalogu i bez plików: bez błędu
+
+
+# --- usuwanie wpisów jednej osoby (glosy_usun) --------------------------------------------------------------------------
+
+def vote_line(post_id, diagnosis_id, kind='vote'):
+    return json.dumps({'type': kind, 'post_id': post_id, 'diagnosis_id': diagnosis_id, 'schema': 'glosy/1'}, sort_keys=True)
+
+
+def make_log():
+    votes.log_dir().mkdir(parents=True)
+    files = {
+        'glosy-2026-10.jsonl': [vote_line(1, 10), vote_line(2, 20), '{nie json', vote_line(3, 10), vote_line(4, None)],
+        'glosy-2026-09.jsonl': [vote_line(2, 20), vote_line(2, 21)],
+        'decyzje-2026-10.jsonl': [vote_line(1, 10, 'human_decision'), vote_line(5, 50, 'human_decision')],
+        'decyzje-2026-11.jsonl': [vote_line(7, 70, 'human_decision')],
+    }
+    for name, content in files.items():
+        (votes.log_dir() / name).write_bytes(('\n'.join(content) + '\n').encode('ascii'))
+    return files
+
+
+def test_erase_dry_run_counts_and_changes_nothing():
+    files = make_log()
+    before = {n: (votes.log_dir() / n).read_bytes() for n in files}
+    rows = votes.erase(post_ids=[1], diagnosis_ids=[20], dry_run=True)
+    assert {r['file']: (r['removed'], r['kept'], r['unparsable']) for r in rows} == {
+        'glosy-2026-10.jsonl': (2, 2, 1), 'glosy-2026-09.jsonl': (1, 1, 0), 'decyzje-2026-10.jsonl': (1, 1, 0)}
+    assert {n: (votes.log_dir() / n).read_bytes() for n in files} == before
+
+
+def test_erase_rewrites_without_matching_lines_and_keeps_the_rest_verbatim():
+    files = make_log()
+    untouched = (votes.log_dir() / 'decyzje-2026-11.jsonl').read_bytes()
+    rows = votes.erase(post_ids=[1], diagnosis_ids=[20])
+    assert sum(r['removed'] for r in rows) == 4
+    assert (votes.log_dir() / 'glosy-2026-10.jsonl').read_text('ascii').splitlines() == [
+        files['glosy-2026-10.jsonl'][2], files['glosy-2026-10.jsonl'][3], files['glosy-2026-10.jsonl'][4]]  # nieparsowalna i obce zostają
+    assert (votes.log_dir() / 'glosy-2026-09.jsonl').read_text('ascii').splitlines() == [vote_line(2, 21)]
+    assert (votes.log_dir() / 'decyzje-2026-10.jsonl').read_text('ascii').splitlines() == [vote_line(5, 50, 'human_decision')]
+    assert (votes.log_dir() / 'decyzje-2026-11.jsonl').read_bytes() == untouched
+    assert not [p for p in votes.log_dir().iterdir() if p.name.endswith('.tmp')]
+    assert votes.erase(post_ids=[1], diagnosis_ids=[20]) == []  # drugi przebieg nie ma już czego usuwać
+    votes.write([{'type': 'vote', 'post_id': 99}])  # dopisywanie po przepisaniu nadal działa
+    assert any('"post_id": 99' in line for line in votes.log_path().read_text('ascii').splitlines())
+
+
+@pytest.mark.skipif(sys.platform == 'win32', reason='uprawnienia 600 dotyczą systemów POSIX')
+def test_erase_keeps_file_permissions():
+    make_log()
+    os.chmod(votes.log_dir() / 'glosy-2026-10.jsonl', 0o600)
+    votes.erase(post_ids=[1])
+    assert oct(os.stat(votes.log_dir() / 'glosy-2026-10.jsonl').st_mode & 0o777) == '0o600'
+
+
+def test_erase_needs_an_id_and_ignores_foreign_files():
+    make_log()
+    (votes.log_dir() / 'notatki.txt').write_text(vote_line(1, 10))
+    assert votes.erase() == []
+    votes.erase(post_ids=[1])
+    assert json.loads((votes.log_dir() / 'notatki.txt').read_text())['post_id'] == 1
+
+
+def test_append_and_erase_share_one_lock(monkeypatch):
+    fake = Mock(LOCK_EX=2, LOCK_UN=8)
+    monkeypatch.setattr(votes, 'fcntl', fake)
+    make_log()
+    votes.write([{'type': 'vote', 'post_id': 1}])
+    votes.erase(post_ids=[1])
+    assert fake.flock.call_count == 4 and [c.args[1] for c in fake.flock.call_args_list] == [2, 8, 2, 8]
+    assert (votes.log_dir() / votes.LOCK_NAME).exists()
+    assert votes.cleanup(keep_votes=0, keep_decisions=0, today=date(2030, 1, 1))  # plik blokady nie pasuje do wzorca
+    assert (votes.log_dir() / votes.LOCK_NAME).exists()
+
+
+def test_erase_command_dry_run_output_and_real_run():
+    make_log()
+    out = StringIO()
+    call_command('glosy_usun', '--post-id', '1', '--post-id', '3', '--diagnosis-id', '21', '--dry-run', stdout=out)
+    text = out.getvalue()
+    assert 'glosy-2026-10.jsonl: do usunięcia linii: 2, zostaje: 2, nieparsowalnych (bez zmian): 1' in text
+    assert 'glosy-2026-09.jsonl: do usunięcia linii: 1' in text and 'Do usunięcia linii: 4 w plikach: 3' in text
+    assert len((votes.log_dir() / 'glosy-2026-10.jsonl').read_text('ascii').splitlines()) == 5
+    out = StringIO()
+    call_command('glosy_usun', '--post-id', '1', '--post-id', '3', '--diagnosis-id', '21', stdout=out)
+    assert 'Usunięto linii: 4 w plikach: 3' in out.getvalue()
+    assert len((votes.log_dir() / 'glosy-2026-10.jsonl').read_text('ascii').splitlines()) == 3
+    from django.core.management.base import CommandError
+    with pytest.raises(CommandError):
+        call_command('glosy_usun', stdout=StringIO())
+
+
+# --- zadanie miesięczne -------------------------------------------------------------------------------------------------
+
+def test_monthly_task_runs_cleanup_and_is_scheduled_without_alarms():
+    from config.celery import app
+    from news import agent_registry, task_heartbeat, tasks
+    make_files(['glosy-2001-01.jsonl', 'decyzje-2001-01.jsonl', 'glosy-2999-01.jsonl'])
+    assert tasks.glosy_porzadek_task() == {'status': 'ok', 'removed': 2}
+    assert [p.name for p in votes.log_dir().iterdir()] == ['glosy-2999-01.jsonl']
+    entry = app.conf.beat_schedule['glosy-porzadek-monthly']
+    assert entry['task'] == 'news.tasks.glosy_porzadek_task'
+    assert (entry['schedule'].day_of_month, entry['schedule'].hour, entry['schedule'].minute) == ({1}, {4}, {20})
+    assert entry['task'] in {spec['task'] for spec in agent_registry.REGISTRY.values()}
+    assert task_heartbeat.cadence(entry['schedule']) is None  # miesięczne: kontrola „brak pulsu” z rytmem nie ma czego porównywać
+    assert agent_registry.schedule_label(entry['schedule']) == 'co miesiąc, dzień: 1, godz. 4:20'
+    assert task_heartbeat.summary({'status': 'ok', 'removed': 2}) == 'OK; removed: 2'
