@@ -523,12 +523,23 @@ class JourneyStepAdmin(admin.ModelAdmin):
 
 @admin.register(ClientNote)
 class ClientNoteAdmin(admin.ModelAdmin):
-    """Uwagi klientów z podglądów zbudujmi (6.10). Zespół zmienia tylko status i notatkę."""
-    list_display = ('created_at', 'project', 'status', 'anchor', 'name', 'text')
+    """Uwagi klientów z podglądów zbudujmi (6.10). Zespół zmienia tylko status i notatkę; plik (29.10) otwiera link."""
+    list_display = ('created_at', 'project', 'status', 'anchor', 'name', 'text', 'attachment')
     list_filter = ('status', 'project')
-    search_fields = ('text', 'anchor', 'name')
-    readonly_fields = ('created_at', 'project', 'page', 'x', 'y', 'anchor', 'text', 'name', 'viewport')
+    search_fields = ('text', 'anchor', 'name', 'file_name')
+    readonly_fields = ('created_at', 'project', 'page', 'x', 'y', 'anchor', 'element', 'text', 'name', 'viewport', 'attachment')
     fields = ('status', 'staff_note', *readonly_fields)
+
+    @admin.display(description='plik')
+    def attachment(self, obj):
+        from news.zbudujmi_note_files import signed_link
+        if not obj.file_name:
+            return '-'
+        if obj.file_deleted_at:
+            return f'{obj.file_name} (usunięty)'
+        if not obj.file_done_at:
+            return f'{obj.file_name} (wysłano {obj.file_received * 100 // max(obj.file_size or 1, 1)}%)'
+        return format_html('<a href="{}" target="_blank" rel="noopener">{}</a>', signed_link(obj), obj.file_name)
 
 
 from news.agent_models import BuildTicket  # noqa: E402

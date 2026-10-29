@@ -383,6 +383,12 @@ def dr_spin_thread_task():
         cache.delete('dr-spin-thread-lock')
 
 
+@shared_task(name="news.tasks.zbudujmi_note_files_cleanup_task")
+def zbudujmi_note_files_cleanup_task():
+    from news.zbudujmi_note_files import cleanup
+    return cleanup()
+
+
 @shared_task(name="news.tasks.account_warden_task", soft_time_limit=6000, time_limit=6300)
 def account_warden_task():
     from news.account_warden import run

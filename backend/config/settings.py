@@ -314,6 +314,15 @@ EXTERNAL_SEARCH_ARCHIVE_URLS = env.bool('EXTERNAL_SEARCH_ARCHIVE_URLS', default=
 # no bulk capture, no production Supabase storage. See docs/EVIDENCE_SNAPSHOT.md.
 EVIDENCE_SNAPSHOT_ENABLED = env.bool('EVIDENCE_SNAPSHOT_ENABLED', default=False)
 EVIDENCE_SNAPSHOT_STORAGE_ROOT = env('EVIDENCE_SNAPSHOT_STORAGE_ROOT', default='')
+# Załączniki do uwag klientów zbudujmi (29.10): zdjęcia i filmy do podmiany, poza katalogiem publicznym.
+# Na VPS katalog jest wolumenem Dockera (docker-compose.production.yml), link do pliku jest podpisany.
+ZBUDUJMI_NOTE_FILES_ROOT = env('ZBUDUJMI_NOTE_FILES_ROOT', default=str(BASE_DIR / 'media' / 'private' / 'zbudujmi-uwagi'))
+ZBUDUJMI_NOTE_IMAGE_MAX_MB = env.int('ZBUDUJMI_NOTE_IMAGE_MAX_MB', default=25)
+ZBUDUJMI_NOTE_VIDEO_MAX_MB = env.int('ZBUDUJMI_NOTE_VIDEO_MAX_MB', default=500)
+ZBUDUJMI_NOTE_FILES_PER_DAY = env.int('ZBUDUJMI_NOTE_FILES_PER_DAY', default=20)
+ZBUDUJMI_NOTE_FILES_KEEP_DAYS = env.int('ZBUDUJMI_NOTE_FILES_KEEP_DAYS', default=90)
+ZBUDUJMI_NOTE_FILES_MIN_FREE_GB = env.int('ZBUDUJMI_NOTE_FILES_MIN_FREE_GB', default=5)
+
 # Private, local-only extraction from explicitly allowed evidence snapshots.
 # There is intentionally no scheduler or public endpoint wired to this flag.
 EVIDENCE_TEXT_EXTRACTION_ENABLED = env.bool(

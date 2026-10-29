@@ -56,7 +56,7 @@ def inquiry(request):
     return _cors(JsonResponse({'ok': True}), request)
 
 
-NOTE_LIMITS = {'p': 60, 'u': 200, 's': 200, 'm': 2000, 'n': 120, 'v': 20}
+NOTE_LIMITS = {'p': 60, 'u': 200, 's': 200, 'e': 200, 'm': 2000, 'n': 120, 'v': 20}
 
 
 def _fraction(value):
@@ -70,7 +70,10 @@ def _fraction(value):
 @csrf_exempt
 def client_note(request):
     """Uwagi klientów z podglądów na zbudujmi.com/podglad/... (właściciel 6.10). Zapis w bazie i e-mail do firmy;
-    klient wpisuje tylko uwagę i (opcjonalnie) imię, miejsce kliknięcia zapisujemy jako ułamek strony."""
+    klient wpisuje tylko uwagę i (opcjonalnie) imię, miejsce kliknięcia zapisujemy jako ułamek strony.
+    Z plikiem (29.10, pole f: nazwa i rozmiar) odpowiadamy adresem wysyłki kawałków, a e-mail idzie po jej końcu
+    (news.zbudujmi_note_files). Stary widżet bez pola f działa bez zmian."""
+    from news import zbudujmi_note_files as files
     from news.feedback_models import ClientNote
     if request.method == 'OPTIONS':
         return _cors(HttpResponse(status=204), request)
@@ -84,18 +87,26 @@ def client_note(request):
         return _cors(JsonResponse({'ok': True}), request)
     fields = {k: str(data.get(k, '')).strip()[:limit] for k, limit in NOTE_LIMITS.items()}
     project = re.sub(r'[^a-z0-9-]', '', fields['p'].lower())
+    declared = data.get('f') if isinstance(data.get('f'), dict) else None
+    if declared and not fields['m']:
+        fields['m'] = 'Podmień na załączony plik.'
     if not project or not fields['m']:
         return _cors(JsonResponse({'detail': 'Wpisz uwagę.'}, status=400), request)
-    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')).split(',')[0].strip()
-    key = 'zbudujmi-note:' + re.sub(r'[^0-9a-f.:]', '', ip.lower())
+    ip = files.client_ip(request)
+    key = 'zbudujmi-note:' + ip
     count = cache.get(key, 0)
     if count >= 30:
         return _cors(JsonResponse({'detail': 'Za dużo uwag naraz. Napisz na ' + TO + '.'}, status=429), request)
+    file_fields = {}
+    if declared:
+        file_fields, problem = files.check_declared(declared, ip)
+        if problem:
+            return _cors(JsonResponse({'detail': problem}, status=400), request)
     cache.set(key, count + 1, 3600)
     note = ClientNote.objects.create(project=project, page=fields['u'], x=_fraction(data.get('x')), y=_fraction(data.get('y')),
-                                     anchor=fields['s'], text=fields['m'], name=fields['n'], viewport=fields['v'])
-    body = (f"Nowa uwaga do podglądu: {project}\n\nMiejsce: {note.anchor or '-'} "
-            f"({'%.0f%%' % (note.y * 100) if note.y is not None else '-'} wysokości strony)\n"
-            f"Uwaga: {note.text}\nOd: {note.name or '-'}\nEkran: {note.viewport or '-'}\nStrona: {note.page or '-'}\n")
-    send_account_mail(TO, f'Uwaga klienta ({project})', body)
+                                     anchor=fields['s'], element=fields['e'], text=fields['m'], name=fields['n'],
+                                     viewport=fields['v'], **file_fields)
+    if declared:
+        return _cors(JsonResponse({'ok': True, 'upload': files.start(note)}), request)
+    files.note_mail(note)
     return _cors(JsonResponse({'ok': True}), request)

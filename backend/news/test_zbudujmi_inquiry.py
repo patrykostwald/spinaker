@@ -42,7 +42,7 @@ def note(data, origin='https://zbudujmi.com'):
 @pytest.mark.django_db
 def test_client_note_is_saved_and_mailed():
     from news.feedback_models import ClientNote
-    with mock.patch('news.zbudujmi_inquiry.send_account_mail', return_value=True) as send:
+    with mock.patch('news.zbudujmi_note_files.send_account_mail', return_value=True) as send:
         r = note({'p': 'Neoglass', 'u': '/podglad/neoglass-x1/', 'x': 0.4, 'y': 1.7, 's': 'Oferta', 'm': 'Większe logo', 'n': 'Ola', 'v': '390x844'})
     assert r.status_code == 200 and r['Access-Control-Allow-Origin'] == 'https://zbudujmi.com'
     saved = ClientNote.objects.get()
@@ -53,7 +53,7 @@ def test_client_note_is_saved_and_mailed():
 @pytest.mark.django_db
 def test_client_note_validation_and_honeypot():
     from news.feedback_models import ClientNote
-    with mock.patch('news.zbudujmi_inquiry.send_account_mail', return_value=True):
+    with mock.patch('news.zbudujmi_note_files.send_account_mail', return_value=True):
         assert note({'p': 'x', 'm': ''}).status_code == 400
         assert note({'p': 'x', 'm': 'spam', 'website': 'bot'}).status_code == 200
     assert ClientNote.objects.count() == 0
