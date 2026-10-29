@@ -8,6 +8,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'plain-reader-weekly': {'task': 'news.tasks.plain_reader_task', 'schedule': crontab(day_of_week='mon', hour=6, minute=30)},
     'account-warden-nightly': {'task': 'news.tasks.account_warden_task', 'schedule': crontab(hour=3, minute=10)},
+    'zbudujmi-note-files-nightly': {'task': 'news.tasks.zbudujmi_note_files_cleanup_task', 'schedule': crontab(hour=3, minute=40)},
     'warden-second-key-hourly': {'task': 'news.tasks.warden_second_key_task', 'schedule': crontab(minute=15)},
     'seba-hourly': {'task': 'news.tasks.seba_task', 'schedule': crontab(minute=30)},
     'agents-window-hourly': {'task': 'news.tasks.agents_window_task', 'schedule': crontab(minute=20)},

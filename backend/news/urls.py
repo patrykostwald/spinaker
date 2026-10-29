@@ -43,6 +43,7 @@ from news.interview_vote_api import InterviewBallotView, InterviewVoteView, Inte
 from news.feedback import BugReportView, JourneyView
 from news import sales  # noqa: E402
 from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry as zbudujmi_inquiry
+from news.zbudujmi_note_files import note_file as zbudujmi_note_file
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
 from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_przeplyw, przeszlosc_wersja
@@ -154,6 +155,7 @@ urlpatterns = [
     path('przeszlosc/pilot/', sales.pilot_signup),
     path('leady/potwierdz/', sales.confirm),
     path('zbudujmi/uwagi/', zbudujmi_client_note),
+    path('zbudujmi/uwagi/plik/<int:note_id>/', zbudujmi_note_file),
     path('clinic/interviews/<int:interview_id>/', clinic_interview_detail),
     path('clinic/wspolny-przekaz/', coordinated_clusters),
     path('clinic/messages/', clinic_messages),

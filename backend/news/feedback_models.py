@@ -58,6 +58,17 @@ class ClientNote(models.Model):
     text = models.TextField(max_length=2000)
     name = models.CharField(max_length=120, blank=True)
     viewport = models.CharField(max_length=20, blank=True)
+    # wskazany na stronie element multimedialny (np. „zdjęcie hero.jpg”), gdy klient kliknął w zdjęcie lub film
+    element = models.CharField(max_length=200, blank=True)
+    # załącznik (29.10): zdjęcie lub film do podmiany, wysyłany w kawałkach; plik leży poza katalogiem publicznym
+    file_name = models.CharField(max_length=200, blank=True)
+    file_kind = models.CharField(max_length=8, blank=True)  # image / video
+    file_size = models.BigIntegerField(null=True, blank=True)
+    file_received = models.BigIntegerField(default=0)
+    file_path = models.CharField(max_length=300, blank=True)  # względem ZBUDUJMI_NOTE_FILES_ROOT
+    file_token = models.CharField(max_length=64, blank=True)
+    file_done_at = models.DateTimeField(null=True, blank=True)
+    file_deleted_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUSES, default='new', db_index=True)
     staff_note = models.TextField(blank=True)
 
