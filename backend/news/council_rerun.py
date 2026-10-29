@@ -65,8 +65,10 @@ def rerun(row, figure=None, now=None):
     """Jedna powtórka. Zwraca 'updated', 'same', 'waiting' (bez kworum - stary wynik zostaje) albo 'failed'."""
     from news import clinic, clinic_ai
     now = now or timezone.now()
+    from news import council_votes
     try:
-        result = dict(clinic_ai.diagnose(clinic._post_context(row.post, figure)))
+        with council_votes.run(row.post_id, row.pk):  # powtórka też zapisuje głosy Rady (E0)
+            result = dict(clinic_ai.diagnose(clinic._post_context(row.post, figure)))
     except clinic_ai.ClinicAIError as error:
         code = str(error.code)[:200]
         attempts = {**((row.usage or {}).get('rerun_attempts') or {})}

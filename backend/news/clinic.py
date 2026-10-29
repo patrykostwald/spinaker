@@ -297,7 +297,9 @@ def diagnose(row: SpinDiagnosis, figure: PublicFigure | None = None) -> SpinDiag
     try:
         result = _snapshot(row)
         if result is None:
-            result = clinic_ai.diagnose(_post_context(row.post, figure))
+            from news import council_votes
+            with council_votes.run(row.post_id, row.pk):  # głosy Rady do pliku poza bazą (E0), także przy kworum i błędzie
+                result = clinic_ai.diagnose(_post_context(row.post, figure))
             # Zdjęcie: jedna mała aktualizacja samego pola JSON (bez limitów długości), zanim cokolwiek innego się zapisze.
             row.usage = {**(row.usage or {}), 'snapshot': result, 'snapshot_at': timezone.now().isoformat()}
             SpinDiagnosis.objects.filter(pk=row.pk).update(usage=row.usage)
@@ -852,20 +854,37 @@ def review(obj, staff, decision: str):
 
 # --- dane publiczne -------------------------------------------------------------------------
 
+def add_human_decision(diagnosis, action, reason_code, comment, staff):
+    """Decyzja człowieka (ukrycie, wycofanie) z kodem powodu: dopisuje ją do usage['human_decisions'] (bez zapisu - zapisuje
+    wołający w tej samej transakcji) i po zatwierdzeniu transakcji dopisuje linię human_decision do pliku (E0, news/council_votes.py)."""
+    from news import council_votes
+    record = council_votes.decision_record(diagnosis, action, reason_code, comment, staff)
+    usage = dict(diagnosis.usage or {})
+    usage['human_decisions'] = [*(usage.get('human_decisions') or []),
+                                {'action': action, 'reason_code': reason_code, 'comment': comment, 'at': record['at'],
+                                 'staff_id': record['staff_id']}]
+    diagnosis.usage = usage
+    transaction.on_commit(lambda: council_votes.write([record]))
+
+
 @transaction.atomic
-def withdraw(diagnosis, staff, reason):
-    """Wycofuje publikację atomowo; zapisane wyniki AI pozostają nietknięte."""
+def withdraw(diagnosis, staff, reason, reason_code='OTHER'):
+    """Wycofuje publikację atomowo; zapisane wyniki AI pozostają nietknięte. reason_code: kod powodu z
+    council_votes.REASON_CODES (dane o jakości Rady); bez kodu - OTHER."""
+    from news import council_votes
     if not staff or not staff.is_active or not staff.is_staff:
         raise PermissionError('Wycofanie wymaga uprawnień zespołu.')
     reason = reason.strip() if isinstance(reason, str) else ''
     if not reason or len(reason) > 400:
         raise ValueError('Podaj powód wycofania (od 1 do 400 znaków).')
+    council_votes.check_reason_code(reason_code)
     current = SpinDiagnosis.objects.select_for_update().get(pk=diagnosis.pk)
     if current.status != 'approved' or current.withdrawn_at:
         raise ValueError('Można wycofać tylko opublikowaną diagnozę.')
     current.status = 'withdrawn'
     current.withdrawn_at, current.withdrawn_by, current.withdrawn_reason = timezone.now(), staff, reason
-    current.save(update_fields=['status', 'withdrawn_at', 'withdrawn_by', 'withdrawn_reason'])
+    add_human_decision(current, 'withdraw', reason_code, reason, staff)
+    current.save(update_fields=['status', 'withdrawn_at', 'withdrawn_by', 'withdrawn_reason', 'usage'])
     diagnosis.refresh_from_db()
     return diagnosis
 

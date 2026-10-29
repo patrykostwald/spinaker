@@ -7,6 +7,7 @@
 | `deploy/backup.sh` (cron na serwerze) | 3:30 co noc | `pg_dump` z kontenera `db` -> `/srv/backups/spin_clinic-RRRRMMDD-GGMM.sql.gz` (14 dni lokalnie) | dysk VPS |
 | `manage.py kopia_zapasowa --z-stdin` (w skrypcie) | zaraz po zrzucie | szyfrowanie `openssl enc -aes-256-cbc -pbkdf2 -iter 200000` hasłem `BACKUP_PASSPHRASE`, wysyłka do Backblaze B2 (API S3, podpis SigV4 bez boto3), usunięcie obiektów starszych niż 30 dni, rozmiar koszyka | B2: `pg/<plik>.enc`; stan w `RepairerState['kopia-zapasowa']` |
 | media (`media/social`) | niedziela | tylko gdy poniżej 500 MB (karty diagnoz generują się same, nie kopiujemy) | B2: `media/<plik>.enc` |
+| dziennik głosów Rady (`/app/media/glosy`, E0) | co noc | tar.gz katalogu, tylko gdy są pliki `*.jsonl` i poniżej 500 MB; ta sama retencja 30 dni | B2: `glosy/<plik>.enc` |
 | `kopia_task` (Celery) | 4:30 co dzień | czy w B2 jest kopia z ostatnich 26 h, retencja, rozmiar (alarm ponad 8 GB; darmowe 10 GB) | Raport pętli: „Kopia: lokalna HH:MM, zdalna HH:MM, test odtworzenia DD.MM ok” |
 | test odtworzenia | 1. dnia miesiąca (i po pierwszej kopii) | pobranie ostatniej kopii, odszyfrowanie, rozpakowanie, sprawdzenie nagłówka, stopki „dump complete” i liczby tabel wobec bieżącej bazy (>= 90%) | stan + Raport pętli; nieudany = alarm krytyczny Dyżurnego |
 | Dyżurny `check_backup` | co 5 min, bez sieci | kopia zdalna starsza niż 26 h = alarm krytyczny (mail od razu) | panel, mail |

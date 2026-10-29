@@ -4,7 +4,7 @@ from django import forms
 from django.db import transaction
 from django.template.response import TemplateResponse
 
-from news import clinic
+from news import clinic, council_votes
 from news.clinic_models import ClinicAuthorReply, ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
 from news.clinic_models import InquisitorReview
 from django.utils.html import format_html
@@ -65,6 +65,8 @@ def _decide(decision):
 
 
 class WithdrawalForm(forms.Form):
+    reason_code = forms.ChoiceField(label='Kod powodu (dla oceny jakości Rady)', choices=council_votes.REASON_CHOICES,
+                                    initial='OTHER')
     reason = forms.CharField(label='Publiczny powód wycofania', max_length=400, strip=True,
                              widget=forms.Textarea(attrs={'rows': 4, 'cols': 70}),
                              help_text='Powód będzie widoczny w rejestrze korekt. Nie wpisuj danych prywatnych.')
@@ -87,7 +89,7 @@ class SpinDiagnosisAdmin(admin.ModelAdmin):
                 with transaction.atomic():
                     count = 0
                     for diagnosis in queryset.order_by('pk'):
-                        clinic.withdraw(diagnosis, request.user, form.cleaned_data['reason'])
+                        clinic.withdraw(diagnosis, request.user, form.cleaned_data['reason'], form.cleaned_data['reason_code'])
                         count += 1
             except ValueError as error:
                 form.add_error(None, str(error))

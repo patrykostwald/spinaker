@@ -47,6 +47,7 @@ services:
     volumes:
       - social_media:/app/media/social
       - zbudujmi_uwagi:/app/media/private/zbudujmi-uwagi
+      - council_votes:/app/media/glosy
     environment:
       DATABASE_URL: postgres://spin:${POSTGRES_PASSWORD}@db:5432/spin_clinic
       REDIS_URL: redis://redis:6379/0
@@ -69,6 +70,7 @@ services:
     volumes:
       - social_media:/app/media/social
       - zbudujmi_uwagi:/app/media/private/zbudujmi-uwagi
+      - council_votes:/app/media/glosy
     environment:
       DATABASE_URL: postgres://spin:${POSTGRES_PASSWORD}@db:5432/spin_clinic
       REDIS_URL: redis://redis:6379/0
@@ -116,5 +118,6 @@ volumes:
   postgres_data:
   social_media:
   zbudujmi_uwagi:  # załączniki do uwag klientów zbudujmi (29.10), poza katalogiem publicznym
+  council_votes:
   caddy_data:
   caddy_config:

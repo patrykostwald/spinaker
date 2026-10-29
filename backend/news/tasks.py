@@ -425,6 +425,14 @@ def konsylium_powtorz_task():
         cache.delete("konsylium-powtorz-lock")
 
 
+@shared_task(name="news.tasks.glosy_porzadek_task", soft_time_limit=280, time_limit=300)
+def glosy_porzadek_task():
+    """Raz w miesiącu (1. dnia, 4:20): usuwa pliki dziennika głosów Rady starsze niż okres (głosy 730 dni, decyzje 1095 dni;
+    COUNCIL_VOTES_RETENTION_DAYS i COUNCIL_DECISIONS_RETENTION_DAYS). Bez AI i bez sieci."""
+    from news import council_votes
+    return {"status": "ok", "removed": len(council_votes.cleanup())}
+
+
 @shared_task(name='news.tasks.council_audit_task', soft_time_limit=210, time_limit=240)
 def council_audit_task():
     from news.council_auditor import run

@@ -33,7 +33,8 @@ RETENTION_DAYS = 30
 MAX_AGE = timedelta(hours=26)
 SIZE_GUARD = 8 * 1024 ** 3
 PART_SIZE = 16 * 1024 ** 2  # mniejsze części: wolne łącze VPS->B2 przerywało zapis 64 MB (7.10)
-PREFIXES = {'pg': 'pg/', 'media': 'media/'}
+# glosy: dziennik głosów Rady (E0, news/council_votes.py), codziennie, ta sama retencja RETENTION_DAYS (30 dni) co media
+PREFIXES = {'pg': 'pg/', 'media': 'media/', 'glosy': 'glosy/'}
 RUNS_KEEP = 60
 TIMEOUT = (10, 300)
 OPENSSL = ('openssl', 'enc', '-aes-256-cbc', '-pbkdf2', '-iter', '200000', '-salt', '-pass', 'env:BACKUP_PASSPHRASE')
