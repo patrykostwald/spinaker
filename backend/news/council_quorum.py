@@ -74,21 +74,31 @@ def core_members():
 
 
 def roster():
-    """Skład z konfiguracji bez zawieszonych przez Rekrutera (ławka za chwilowe limity NIE zmniejsza rdzenia)."""
+    """Skład z konfiguracji bez zawieszonych przez Rekrutera (ławka nie zmniejsza rdzenia - zastępuje go active_core)."""
     from news.clinic_council import DEFAULT_COUNCIL
     from news.council_recruiter import adjust
     return adjust('CLINIC_COUNCIL', _parse(os.environ.get('CLINIC_COUNCIL', '').strip() or DEFAULT_COUNCIL))
 
 
 def active_core(members=None):
-    """Rdzeń, który realnie może głosować: w składzie i ze skonfigurowanym kluczem (zawieszony model nie blokuje miary)."""
+    """Rdzeń, który realnie może głosować, zawsze w pełnym rozmiarze COUNCIL_CORE: stałego członka zawieszonego,
+    bez klucza albo na ławce (brak środków, seria awarii) zastępuje kolejny działający członek składu.
+    30.10: zawieszony Nemotron i Bielik na ławce zostawiły 3 stałych przy wymaganych 3 - jedna awaria wstrzymała
+    diagnozy na dobę. Chwilowy dzienny limit nie jest powodem podmiany: wtedy wpis czeka na reset (stała miara)."""
     from news import council_registry as registry
+    from news.council_health import bench_key
     members = roster() if members is None else members
-    return [m for m in core_members() if m in members and registry.configured(m)]
 
-
-def is_core(member):
-    return tuple(member) in core_members()
+    def usable(member):
+        return member in members and registry.configured(member) and not cache.get(bench_key(member))
+    planned = core_members()
+    core = [m for m in planned if usable(m)]
+    for member in members:
+        if len(core) >= len(planned):
+            break
+        if member not in core and usable(member):
+            core.append(member)
+    return core
 
 
 def answered(records):
@@ -145,7 +155,7 @@ def waiting():
 def block(records, reason, now=None):
     """Po nieudanym kworum: przerwa do resetu limitów, gdy brakujący stali członkowie mają limit; inaczej godzina."""
     now = now or timezone.now()
-    core = {m[1] for m in core_members()}
+    core = {m[1] for m in active_core()}
     missing = [r for r in records or [] if r.get('model') in core and r.get('status') != ANSWERED]
     limited = bool(missing) and all(any(n in str(r.get('note', '')) for n in LIMIT_NOTES) for r in missing)
     until = next_reset(now) if limited else now + timedelta(hours=1)

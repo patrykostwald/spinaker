@@ -73,6 +73,35 @@ def test_suspended_core_member_does_not_block_measure():
     assert quorum.check([rec(core[0][1]), rec(core[1][1]), rec(EXTRA[0]), rec(EXTRA[1])], core)['met']
 
 
+def test_dead_core_members_are_replaced_to_keep_full_core(monkeypatch):
+    """30.10: Nemotron bez działającego modelu i Bielik na ławce - rdzeń dopełniają kolejni członkowie składu."""
+    from news.council_health import bench
+    monkeypatch.delenv(registry.KEYS['nim'])
+    bench(('hf', 'speakleash/Bielik-11B-v3.0-Instruct:publicai'), timezone.now())
+    core = quorum.active_core()
+    assert len(core) == 5 and [m[1] for m in core] == [
+        'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'claude-haiku-5-5', *EXTRA]
+    records = [rec('openai/gpt-oss-20b', status='brak odpowiedzi', note='Timeout'), rec('qwen/qwen3.8-27b'),
+               rec('claude-haiku-5-5'), rec(EXTRA[0]), rec(EXTRA[1])]
+    assert quorum.check(records, core)['met']  # jedna awaria nie wstrzymuje już diagnoz
+
+
+def test_daily_limit_does_not_replace_core_member():
+    member = ('groq', 'openai/gpt-oss-20b')
+    cache.set(registry.limit_key(member), registry.daily_limit(member), 3600)
+    assert quorum.active_core() == quorum.core_members()  # chwilowy limit: wpis czeka na reset, skład bez zmian
+
+
+def test_nim_nemotron_request_disables_thinking(monkeypatch):
+    from unittest.mock import Mock
+    post = Mock(return_value=Mock(status_code=200, json=lambda: {'choices': [{'message': {'content': '{"verdict": "spin"}'}}]}))
+    monkeypatch.setattr(council.requests, 'post', post)
+    assert council._ask(('nim', 'nvidia/nemotron-3.5-super-vl-120b-a12b'), 'system', 'user', {}, 4000) == {'verdict': 'spin'}
+    assert post.call_args.kwargs['json']['chat_template_kwargs'] == {'enable_thinking': False}
+    council._ask(('nim', 'google/diffusiongemma-26b-a4b-it'), 'system', 'user', {}, 4000)
+    assert 'chat_template_kwargs' not in post.call_args.kwargs['json']
+
+
 def test_breaker_waits_until_reset_when_core_hit_limits():
     now = timezone.now()
     records = [rec('openai/gpt-oss-20b', status='brak odpowiedzi', note='groq_daily_limit'),

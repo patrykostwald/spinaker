@@ -243,6 +243,9 @@ def _ask(member: tuple[str, str], system: str, user: str, schema: dict, max_toke
             body['reasoning_effort'] = 'low'
         if 'qwen' in model.lower():
             body['chat_template_kwargs'] = {'enable_thinking': False}
+    if service == 'nim' and 'nemotron' in model.lower():
+        # 30.10: Nemotron 3.5 domyślnie myśli i oddaje content=null (invalid_json) - wyłączamy rozważania (dok. NVIDIA NIM).
+        body['chat_template_kwargs'] = {'enable_thinking': False}
     slow = any(name in model for name in ('deepseek', 'kimi'))
     try:
         response = requests.post(url, json=body, timeout=(5, SLOW_TIMEOUT if slow else 90), headers=headers)
@@ -414,15 +417,16 @@ def consult(post_text: str, context_lines: str) -> list[dict]:
         results = list(pool.map(lambda member: outer.copy().run(_opinion, member, post_text, context_lines), members))
     # Kolejne modele zastępują awarie, dopełniają kworum (najpierw stały rdzeń) albo uzupełniają różnorodność.
     rest = registry.select_members([m for m in candidates if m not in members], target=len(candidates))
-    rest.sort(key=lambda m: not quorum.is_core(m))
+    core = quorum.active_core()  # razem z zastępcami niedziałających stałych członków
+    rest.sort(key=lambda m: m not in core)
     for member in rest:
         answered = [(r['provider'], r['model']) for r in results if r.get('status') == 'odpowiedział']
         polish_left = any(registry.is_polish(m) and registry.available(m) for m in candidates if m not in members)
         if (registry.diversity(answered)['sufficient'] and (any(registry.is_polish(m) for m in answered) or not polish_left)
-                and quorum.check(results)['met']):
+                and quorum.check(results, core)['met']):
             break
-        state = quorum.check(results)
-        core_left = sum(1 for m in rest if quorum.is_core(m) and m not in members and registry.available(m))
+        state = quorum.check(results, core)
+        core_left = sum(1 for m in rest if m in core and m not in members and registry.available(m))
         if not state['met'] and state['core'] + core_left < state['need_core']:
             break  # rdzenia i tak nie będzie - nie zużywamy limitów pozostałych członków na diagnozę, która poczeka
         results.append(_opinion(member, post_text, context_lines))
