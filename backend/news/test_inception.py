@@ -26,7 +26,7 @@ class Response:
         return self._data
 
 
-def ok(content, tokens=1234, model='mercury-2.5'):
+def ok(content, tokens=1234, model='mercury-3'):
     return Response(200, {'model': model, 'choices': [{'message': {'content': json.dumps(content)}}],
                           'usage': {'prompt_tokens': 1000, 'completion_tokens': 234, 'total_tokens': tokens}})
 
@@ -68,12 +68,12 @@ def test_request_shape_and_token_count(keyed, calls):
     sent, queue = calls
     queue.append(ok({'score': 80, 'reason': 'Konkretne twierdzenie.'}))
     data, model = inception.chat('System.', 'Wpis posła.', clinic_ai.SCREEN_SCHEMA, max_tokens=800)
-    assert data == {'score': 80, 'reason': 'Konkretne twierdzenie.'} and model == 'mercury-2.5'
+    assert data == {'score': 80, 'reason': 'Konkretne twierdzenie.'} and model == 'mercury-3'
     request = sent[0]
     assert request['url'] == 'https://api.inceptionlabs.ai/v1/chat/completions'
     assert request['headers']['Authorization'] == 'Bearer inc-test'
     body = request['json']
-    assert body['model'] == 'mercury-2.5' and body['max_completion_tokens'] == 800 and 'max_tokens' not in body
+    assert body['model'] == 'mercury-3' and body['max_completion_tokens'] == 800 and 'max_tokens' not in body
     assert body['reasoning_effort'] == 'low' and body['temperature'] == 0
     assert body['response_format'] == {'type': 'json_object'}
     assert 'Schemat:' in body['messages'][0]['content']
@@ -155,6 +155,20 @@ def test_missing_usage_counts_the_estimate(keyed, calls):
     assert inception.usage()['total'] == inception.estimate('abc', 'def', 100)
 
 
+def test_non_json_content_raises_and_records_last_error(keyed, calls):
+    """Odpowiedź 200 z treścią bez obiektu JSON (model odpowiedział zdaniem, nie strukturą) - błąd musi zostać
+    widoczny w usage()['last_error'], inaczej naprawa co godzinę powtarza tę samą awarię bez żadnego śladu."""
+    sent, queue = calls
+    queue.append(Response(200, {
+        'model': 'mercury-3', 'choices': [{'message': {'content': 'Przepraszam, nie mogę pomóc z tym zapytaniem.'}}],
+        'usage': {'total_tokens': 42}}))
+    with pytest.raises(inception.InceptionError) as error:
+        inception.chat('s', 'u', clinic_ai.SCREEN_SCHEMA)
+    assert error.value.code == 'inception_invalid_json'
+    last_error = inception.usage()['last_error']
+    assert last_error.startswith('inception_invalid_json:') and 'Przepraszam' in last_error
+
+
 # --- 3. zapas bez klucza i pierwszeństwo w zadaniach pobocznych -------------------------------------------------------
 
 def test_no_key_falls_back_to_current_chain(calls, monkeypatch):
@@ -171,7 +185,7 @@ def test_screening_prefers_inception(keyed, calls, monkeypatch):
     queue.append(ok({'score': 77, 'reason': 'Liczby bez źródła.'}))
     monkeypatch.setattr(clinic_ai, '_screen_groq', lambda text: pytest.fail('Konsylium nie może przesiewać, gdy jest Inception'))
     result = clinic_ai.screen('Rząd podniósł podatki o 300%!')
-    assert result == {'score': 77, 'reason': 'Liczby bez źródła.', 'provider': 'inception', 'model': 'mercury-2.5'}
+    assert result == {'score': 77, 'reason': 'Liczby bez źródła.', 'provider': 'inception', 'model': 'mercury-3'}
 
 
 def test_screening_falls_back_when_free_pool_used(keyed, calls, monkeypatch):
@@ -195,9 +209,9 @@ def test_agent_loops_prefer_inception(keyed, calls, monkeypatch):
     queue.append(ok({'title': 'Pomysł'}))
     monkeypatch.setattr(clinic_council, 'ask', lambda *a, **k: pytest.fail('limity Konsylium zostają dla diagnoz'))
     answer, member = agents_common.ask_any('Zaproponuj.', {'x': 1}, {'type': 'object'}, force=True)
-    assert answer == {'title': 'Pomysł'} and member == ('inception', 'mercury-2.5')
+    assert answer == {'title': 'Pomysł'} and member == ('inception', 'mercury-3')
     assert agents_common.POLICY.split('\n')[0] in sent[0]['json']['messages'][0]['content']
-    assert agents_common.members(1, force=True) == [('inception', 'mercury-2.5')]
+    assert agents_common.members(1, force=True) == [('inception', 'mercury-3')]
 
 
 def test_agent_loops_fall_back_to_council_when_inception_fails(keyed, calls, monkeypatch):
@@ -220,7 +234,7 @@ def test_reception_uses_inception_only_without_training(keyed, calls, monkeypatc
     monkeypatch.setenv('INCEPTION_NO_TRAINING', 'true')
     queue.append(ok({'odpowiedzi': [{'i': 1, 'stance': 'zgoda', 'tone': 'pozytywny', 'asks_source': False}]}))
     answer, model = odbior_spinu.ask({'wpis': 'x', 'odpowiedzi': [{'i': 1, 'text': 'Racja'}]})
-    assert model == 'mercury-2.5' and answer['odpowiedzi'][0]['stance'] == 'zgoda'
+    assert model == 'mercury-3' and answer['odpowiedzi'][0]['stance'] == 'zgoda'
     assert odbior_spinu.model_ready()
 
 

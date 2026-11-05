@@ -1,4 +1,4 @@
-"""Inception Labs (Mercury 2.5, model dyfuzyjny) - darmowy dostawca do zadań pobocznych (7.10.2026).
+"""Inception Labs (Mercury, model dyfuzyjny) - darmowy dostawca do zadań pobocznych (7.10.2026).
 
 Po co: przesiewanie wpisów X (strażnik), ocena odpowiedzi w „Jak spin zadziałał” i pętle agentów zjadały dzienne limity
 członków Konsylium (6.10: 1233 wpisy na gpt-oss-20b odebrały głosy diagnozom). Mercury bierze te zadania pierwszy, gdy jest
@@ -6,7 +6,10 @@ klucz; bez klucza, po wyczerpaniu puli albo przy błędzie - dotychczasowy łań
 
 Zasady:
 1. API zgodne z OpenAI: https://api.inceptionlabs.ai/v1/chat/completions, klucz INCEPTION_API_KEY (Bearer),
-   model INCEPTION_MODEL (domyślnie mercury-2.5; zamiennik nazwy zapisuje Mechanik).
+   model INCEPTION_MODEL (domyślnie mercury-3; zamiennik nazwy zapisuje Mechanik).
+   5.11: dostawca wycofał mercury-2.5 („nie dostępny dla nowych użytkowników" - lista /v1/models go jednak
+   nadal zwraca, więc Mechanik nie wykrył podmiany automatycznie) - stąd seria inception_invalid_json/http_400
+   i codzienne „brak przekazu dnia"; domyślny model podniesiony na aktualny mercury-3.
 2. Tylko darmowa pula: liczymy tokeny z odpowiedzi (usage.total_tokens) w bazie (ImportState „inception-tokens”).
    Stop przy INCEPTION_STOP_SHARE (90%) z INCEPTION_FREE_TOKENS (100 mln) - nigdy płatnych tokenów,
    chyba że właściciel ustawi INCEPTION_ALLOW_PAID=true. Do tego pułap dzienny i miesięczny (rozłożenie puli w czasie).
@@ -38,7 +41,7 @@ logger = logging.getLogger(__name__)
 SERVICE = 'inception'
 COMPANY = 'Inception Labs'
 URL = 'https://api.inceptionlabs.ai/v1/chat/completions'
-DEFAULT_MODEL = 'mercury-2.5'
+DEFAULT_MODEL = 'mercury-3'
 STATE = 'inception-tokens'
 RETRY_STATUS = {429, 500, 502, 503, 504}
 STOP_STATUS = {401, 402, 403}
@@ -295,14 +298,22 @@ def chat(system: str, user: str, schema: dict | None = None, *, max_tokens: int 
             data = response.json()
         except ValueError:
             record(need)
+            _note_error('inception_invalid_json')
             raise InceptionError('inception_invalid_json') from None
         tokens = ((data.get('usage') or {}).get('total_tokens')) if isinstance(data, dict) else None
         record(int(tokens) if isinstance(tokens, (int, float)) and tokens > 0 else need)
         try:
             content = data['choices'][0]['message']['content']
         except (KeyError, IndexError, TypeError):
+            _note_error('inception_empty')
             raise InceptionError('inception_empty') from None
-        return _json(content), str(data.get('model') or payload['model'])
+        try:
+            return _json(content), str(data.get('model') or payload['model'])
+        except InceptionError:
+            # treść bez poprawnego JSON (np. model odpowiedział tekstem) - zapisujemy początek odpowiedzi,
+            # inaczej last_error/report_line nigdy nie pokazuje, co faktycznie przyszło od dostawcy.
+            _note_error('inception_invalid_json: ' + content[:140].replace('\n', ' '))
+            raise
     raise InceptionError('inception_unavailable')  # pragma: no cover - pętla zawsze kończy się wyżej
 
 

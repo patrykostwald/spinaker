@@ -83,7 +83,7 @@ Cel: każdy wpis polityka zbadany możliwie wieloma **darmowymi** narzędziami r
 | `MISTRAL_API_KEY` | console.mistral.ai (+ wyłączyć trenowanie w Privacy) |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN` | dash.cloudflare.com → Workers AI |
 | `OPENROUTER_API_KEY` | openrouter.ai/keys |
-| `INCEPTION_API_KEY` (+ `INCEPTION_NO_TRAINING=true` po wyłączeniu „Improve the model for everyone”) | platform.inceptionlabs.ai - Mercury 2.5, darmowa pula 100 mln tokenów; zadania poboczne (strażnik, odbiór spinu, agenci), do Konsylium tylko przez Rekrutera; stop przy 90% puli (`news/inception.py`) |
+| `INCEPTION_API_KEY` (+ `INCEPTION_NO_TRAINING=true` po wyłączeniu „Improve the model for everyone”) | platform.inceptionlabs.ai - Mercury 3 (5.11: dostawca wycofał 2.5), darmowa pula 100 mln tokenów; zadania poboczne (strażnik, odbiór spinu, agenci), do Konsylium tylko przez Rekrutera; stop przy 90% puli (`news/inception.py`) |
 | `HF_TOKEN` | huggingface.co/settings/tokens (pobieranie modeli HerBERT) |
 | `FACTCHECK_API_KEY` | Google Cloud → Fact Check Tools API (może być ten sam projekt co YouTube/Gemini) |
 | `GUS_BDL_KEY` | api.stat.gov.pl (rejestracja) |
