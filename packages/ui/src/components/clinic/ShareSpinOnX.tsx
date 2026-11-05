@@ -7,7 +7,7 @@ import { getSpin, type SpinDetailData } from "../../lib/clinic";
 import { buildXThread, xIntentUrl } from "../../lib/xThread";
 import { Dialog } from "../Dialog";
 
-function ThreadPosts({ spin }: { spin: SpinDetailData }) {
+export function ThreadPosts({ spin }: { spin: SpinDetailData }) {
   const posts = buildXThread(spin);
   const [copied, setCopied] = useState<number | null>(null);
   async function copy(text: string, index: number) {

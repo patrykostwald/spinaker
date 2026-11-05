@@ -17,6 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/konsylium`, lastModified: '2026-09-29', changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE}/konsylium/karta`, lastModified: '2026-09-29', changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/metodologia`, lastModified: '2026-09-29', changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/dane`, lastModified: '2026-11-05', changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/dla-redakcji`, lastModified: '2026-09-29', changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/newsletter`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${BASE}/zrodla`, changeFrequency: 'weekly', priority: 0.5 },

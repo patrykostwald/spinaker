@@ -460,7 +460,9 @@ export function NewsCard({
       className={cn("sc-card-slot", className)}
       style={{ transformOrigin: "50% 50%", zIndex: stage === "rest" && !collapsing ? undefined : 30, height: held ? lock!.height : undefined }}
       layout="position"
-      animate={{ opacity: entered ? 1 : 0, scale, y: lift }}
+      data-entered={entered ? "true" : "false"}
+      // Przed wejściem w kadr karta jest przygaszona (zamiast niewidocznej): leniwe sekcje nie wyglądają jak puste czarne bloki.
+      animate={{ opacity: entered ? 1 : 0.45, scale, y: lift }}
       transition={{ default: uiTransition, layout: motionTokens.t("move") }}
       exit={{ opacity: 0, scale: motionTokens.scale(0.96), transition: motionTokens.t("collapse") }}
       whileTap={{ scale: motionTokens.scale(0.97), transition: motionTokens.t("press") }}

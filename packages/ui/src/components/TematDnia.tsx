@@ -1,5 +1,6 @@
 "use client";
 
+import { FORMS, plural } from "../lib/plural";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
@@ -57,7 +58,7 @@ export function TematDnia() {
         <div>
           <p className="sc-daily-topic__eyebrow">TEMAT DNIA</p>
           <h2>{topic.data?.label ?? "Wspólny temat źródeł"}</h2>
-          <p>{topic.data?.source_count ?? 0} źródeł · {topic.data?.article_count ?? articles.length} materiałów</p>
+          <p>{topic.data?.source_count ?? 0} {plural(topic.data?.source_count ?? 0, FORMS.source)} · {topic.data?.article_count ?? articles.length} {plural(topic.data?.article_count ?? articles.length, FORMS.material)}</p>
         </div>
       </header>
       <div className="sc-daily-topic__layout">

@@ -11,7 +11,7 @@ function RankingColumn({ camp, from, to }: { camp: Camp; from: string; to: strin
     staleTime: 5 * 60_000 });
   return <section className="sc-clinic-column" aria-labelledby={`clinic-ranking-${camp}`}>
     <h3 id={`clinic-ranking-${camp}`} className="sc-camp-heading" data-camp={camp}>{CAMP_LABELS[camp]}
-      {query.data?.count !== undefined ? <small> z {query.data.count} diagnoz</small> : null}</h3>
+      {query.data?.count !== undefined ? <small> z {query.data.count} {query.data.count === 1 ? "diagnozy" : "diagnoz"}</small> : null}</h3>
     {query.isPending ? <p role="status">Wczytywanie rankingu…</p> : null}
     {query.isError ? <p role="alert">Nie udało się pobrać rankingu. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
     {query.data ? query.data.results.length ? <ol className="sc-clinic-ranking__list">
@@ -19,6 +19,9 @@ function RankingColumn({ camp, from, to }: { camp: Camp; from: string; to: strin
     </ol> : <p>Brak diagnoz w tym okresie.</p> : null}
   </section>;
 }
+
+/** „30 paź” albo „5 lis 2026” zamiast ISO (jedna forma dat w całej Klinice). */
+const shortDate = (iso: string, withYear = false) => new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`)).replace(".", "");
 
 export function ClinicRanking({ data }: { data: ClinicPageData }) {
   if (!data.generated_at) return null;
@@ -28,7 +31,7 @@ export function ClinicRanking({ data }: { data: ClinicPageData }) {
   const from = start.toISOString().slice(0, 10);
   return <section className="sc-clinic-group sc-clinic-ranking" aria-labelledby="clinic-ranking-title">
     <SectionHeader titleId="clinic-ranking-title" title="Najwyższa siła spinu"
-      subtitle={`Trzy najwyższe wyniki każdej strony, wspólna skala 0–100. Wpisy z okresu ${from} – ${to} (${data.scale.window_days} dni). Przy remisie najpierw nowszy wpis. To wybrane materiały, nie reprezentatywna próba całej polityki.`} />
+      subtitle={`Trzy najwyższe wyniki każdej strony, wspólna skala 0–100. Wpisy z okresu ${shortDate(from)} – ${shortDate(to, true)} (${data.scale.window_days} dni). Przy remisie najpierw nowszy wpis. To wybrane materiały, nie reprezentatywna próba całej polityki.`} />
     <div className="sc-clinic-ranking__columns">{CAMPS.map(camp => <RankingColumn key={camp} camp={camp} from={from} to={to} />)}</div>
   </section>;
 }

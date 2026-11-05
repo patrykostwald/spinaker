@@ -10,6 +10,7 @@
  * Żadnych wniosków ani dopasowań automatycznych: brak danych to brak danych.
  */
 
+import { FORMS, plural } from "../lib/plural";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
 import { ORGANISATION_KIND_LABELS, type PublicFigureOrganisation } from "../lib/publicFigures";
@@ -139,7 +140,7 @@ export function PublicFigureTimeline({ figureId, onShowMaterials, materialsTotal
         <li className="sc-pf-axis__group">
           <h3 className="sc-pf-axis__label">Doniesienia w Bazie</h3>
           <p className="sc-pf-axis__empty">
-            {materialsTotal ? `${materialsTotal} materiałów zawiera to imię i nazwisko (dopasowanie po słowach — sprawdź, czy dotyczą tej osoby). ` : "Materiały zawierające to imię i nazwisko. "}
+            {materialsTotal ? `${materialsTotal} ${plural(materialsTotal, FORMS.material)} ${materialsTotal === 1 ? "zawiera" : "zawierają"} to imię i nazwisko (dopasowanie po słowach — sprawdź, czy dotyczą tej osoby). ` : "Materiały zawierające to imię i nazwisko. "}
             {onShowMaterials ? (
               <button type="button" className="sc-home-linkbtn" onClick={onShowMaterials}>
                 Pokaż wszystkie doniesienia

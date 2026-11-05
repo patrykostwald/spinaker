@@ -3,6 +3,7 @@
 import { ClinicNav } from "./ClinicNav";
 import { SearchField } from "../../kit/SearchField";
 import { Button } from "../../kit/Button";
+import { Breadcrumbs } from "../../kit/Breadcrumbs";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +14,9 @@ import { formatDatePl } from "../../lib/utils";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { MessageCampSwitch, MessageDayContent, useMessageCamp } from "./MessageDetail";
 import { InterviewScanner, InterviewResults, InterviewScope } from "./InterviewScanner";
+import { AiNotice, INTERVIEW_PUBLICATION_MODEL } from "./AiNotice";
+import { CorrectionForm } from "../CorrectionForm";
+import { modelFullName } from "../../lib/models";
 export function ClinicInterviewArchive() {
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState("");
@@ -66,6 +70,10 @@ export function ClinicInterviewPage({ interview }: { interview: Interview }) {
   return <section className="sc-clinic-archives">
     <ClinicNav />
     <SectionHeader variant="page" longTitle title={interview.headline || "Analiza wywiadu"} />
+    <AiNotice models={interview.model.split("+").map(part => modelFullName(part.trim())).join(" · ")}
+      publication={interview.auto_published ? { mode: "auto", at: interview.diagnosed_at } : null} explain={INTERVIEW_PUBLICATION_MODEL}
+      note="To nie jest rozstrzygnięcie redakcji: AI ocenia osobno wypowiedzi gościa i pytania prowadzącego, a transkrypcja może zawierać błędy. Dla wywiadów nie zapisujemy, ile modeli odpowiedziało." />
+    <div className="sc-dg-actionbar"><CorrectionForm kind="interview" targetId={interview.id} type="correction" label="Sprostowanie / odpowiedź" /><CorrectionForm kind="interview" targetId={interview.id} type="error" label="Zgłoś błąd" /></div>
     <InterviewScanner interview={interview} full />
   </section>;
 }
@@ -82,6 +90,7 @@ export function ClinicMessageArchive() {
   const rows = query.data?.pages.flatMap(page => page.results) ?? [];
   return <section className="sc-clinic-archives">
     <ClinicNav />
+    <Breadcrumbs items={[{ label: "Główna", href: "/" }, { label: "Klinika", href: "/klinika" }, { label: "Przekazy" }]} />
     <SectionHeader variant="page" title="Archiwum przekazów" subtitle="Podsumowania tematów i sposobów argumentacji w przeanalizowanych wpisach rządzących i opozycji." />
     {first ? <p>Liczba dni: {first.count.toLocaleString("pl-PL")}</p> : null}
     {query.isPending ? <p role="status">Wczytywanie przekazów…</p> : null}

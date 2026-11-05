@@ -6,6 +6,7 @@
  * i archiwum przekazów dnia. Powiększenia to natywny <dialog> (Esc i kliknięcie tła zamykają).
  */
 
+import { FORMS, plural } from "../../lib/plural";
 import { Button } from "../../kit/Button";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -48,7 +49,7 @@ export function MessageBox({ camp, message, emptyText, surface = "standalone" }:
         <p className="sc-clinic-message__text">{message.message}</p>
         <Themes themes={message.themes} />
         <Button variant="link" href={`/klinika/przekazy/${message.day}#${camp === "government" ? "rzadzacy" : "opozycja"}`}>Czytaj przekaz i zobacz źródła →</Button>
-        <footer className="sc-clinic-message__foot"><time dateTime={message.day}>{formatDatePl(message.day)}</time><span>Źródła: {message.posts_count} wpisów</span></footer>
+        <footer className="sc-clinic-message__foot"><time dateTime={message.day}>{formatDatePl(message.day)}</time><span>Źródła: {message.posts_count} {plural(message.posts_count, FORMS.entry)}</span></footer>
       </> : <p className="sc-clinic-empty">{emptyText ?? "Przekaz dnia pojawi się, gdy wpisy opublikują co najmniej trzy konta tego obozu."}</p>}
     </article>
   );

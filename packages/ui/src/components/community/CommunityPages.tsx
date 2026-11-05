@@ -1,5 +1,6 @@
 "use client";
 
+import { FORMS, plural } from "../../lib/plural";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -47,7 +48,7 @@ export function ElementRow({ element, index }: { element: ThreadElement; index: 
 function ThreadCardLink({ thread }: { thread: CommunityThreadSummary }) {
   return (
     <li className="sc-community-card">
-      <p className="sc-community-card__meta">@{thread.author}{thread.published_at ? ` · ${formatDatePl(thread.published_at)}` : ""} · {thread.items_count} elementów</p>
+      <p className="sc-community-card__meta">@{thread.author}{thread.published_at ? ` · ${formatDatePl(thread.published_at)}` : ""} · {thread.items_count} {plural(thread.items_count, ["element", "elementy", "elementów"])}</p>
       <h2><Link href={`/nitki/${thread.id}`}>{thread.title}</Link></h2>
       {thread.description && <p className="sc-community-card__desc">{thread.description}</p>}
       {thread.preview && thread.preview.length > 0 && (
@@ -159,7 +160,7 @@ export function CommunityThreadPage({ id }: { id: string }) {
         <h1>{thread.title}</h1>
         {thread.description && <p className="sc-clinic-lead">{thread.description}</p>}
         <p className="sc-community-card__meta">
-          {thread.published_at ? `Opublikowana ${formatDateTimePl(thread.published_at)}` : ""} · {thread.items_count} elementów · kolejność ustalił autor
+          {thread.published_at ? `Opublikowana ${formatDateTimePl(thread.published_at)}` : ""} · {thread.items_count} {plural(thread.items_count, ["element", "elementy", "elementów"])} · kolejność ustalił autor
         </p>
         <div className="sc-community__actions">
           <FollowButton kind="thread" targetId={thread.id} label={thread.title} />

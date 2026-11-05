@@ -9,21 +9,25 @@ export const metadata = {
 };
 
 const sections = [
-  { id: "projekt", label: "Projekt" }, { id: "operator", label: "Autor i operator" },
+  { id: "projekt", label: "Projekt" }, { id: "operator", label: "Autor i operator" }, { id: "redakcja", label: "Redakcja i sprostowania" },
   { id: "finansowanie", label: "Finansowanie" }, { id: "obserwuj", label: "Obserwuj nas" }, { id: "kontakt", label: "Kontakt" },
   { id: "rozwoj", label: "Co działa i co planujemy" },
 ];
 
 export default function AboutPage() {
   const sourcesEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "zrodla@spin.clinic";
-  return <DocLayout eyebrow="O NAS" title="Pokazujemy, jak zbudowany jest przekaz" version="1.0" updatedAt="2026-09-30" sections={sections}
+  return <DocLayout eyebrow="O NAS" title="Pokazujemy, jak zbudowany jest przekaz" version="1.0" updatedAt="2026-11-05" sections={sections}
     lead="spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.">
     <section id="projekt"><h2>Projekt</h2>
       <p>spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Wybrane diagnozy publikujemy także jako wpisy, grafiki i krótkie filmy w mediach społecznościowych — zawsze z linkiem do pełnej analizy. Projekt działa w wersji beta i rozwija się etapami.</p>
-      <p><Link id="konsylium" href="/konsylium">Jak wykorzystujemy AI</Link> · <Link id="klinika" href="/metodologia">Metodologia analiz</Link> · <Link id="dla-redakcji" href="/dla-redakcji">Informacje dla redakcji</Link> · <Link id="film" href="/konsylium#film">Film o serwisie</Link></p>
+      <p><Link id="konsylium" href="/konsylium">Jak wykorzystujemy AI</Link> · <Link id="klinika" href="/metodologia">Metodologia analiz</Link> · <Link id="dla-redakcji" href="/dla-redakcji">Dla dziennikarzy i redakcji</Link></p>
     </section>
     <section id="operator"><h2>Autor i operator</h2>
       <p>Projekt rozwija jedna osoba, korzystając z AI do programowania i analiz. Operatorem serwisu jest iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.</p>
+    </section>
+    <section id="redakcja"><h2>Redakcja i sprostowania</h2>
+      <p>Wydawca: iapply sp. z o.o., Poznań. Odpowiada: Redakcja spin.clinic. Analizy powstają automatycznie przy użyciu modeli AI; nie są rozstrzygnięciem redakcji.</p>
+      <p>Błąd w diagnozie, sprostowanie albo odpowiedź zgłosisz formularzem przy diagnozie, analizie wywiadu i profilu osoby albo mailem na <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Potwierdzimy odbiór zgłoszenia; nic nie jest publikowane automatycznie. <Link href="/zasady-korzystania#reklamacje">Zasady zgłoszeń</Link> · <Link href="/polityka-prywatnosci#osoby">Dane osób, o których piszemy</Link>.</p>
     </section>
     <section id="finansowanie"><h2>Finansowanie i niezależność</h2>
       <p>Projekt powstaje dzięki pracy twórcy i wsparciu czytelników. Ponosimy koszty API X, płatnych etapów analiz AI, transkrypcji i utrzymania serwisu; część zadań działa w bezpłatnych limitach usług.</p>

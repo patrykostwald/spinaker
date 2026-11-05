@@ -47,3 +47,6 @@ celerybeat-schedule*
 
 # Generated reports from commands running inside the backend container
 backend/reports/
+
+# Artefakty testów kart diagnoz (korzeń i backend/)
+clinic_cards/

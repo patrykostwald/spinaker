@@ -1,5 +1,6 @@
 "use client";
 
+import { FORMS, plural } from "../../lib/plural";
 import { ClinicNav } from "./ClinicNav";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
@@ -9,9 +10,13 @@ import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicStats, searchClinicSpins, type ClinicSearchParams } from "../../lib/clinic";
 import { SpinRow } from "./SpinParts";
+import { DataExport } from "../DataExport";
+import { formatDatePl } from "../../lib/utils";
 import { clearClinicResults, readClinicResults, rememberClinicResults } from "../../lib/clinicNavigation";
 
 const FILTER_KEYS = ["q", "account", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
+/** Progi siły spinu: jeden zestaw w całym serwisie (jak STRENGTH_BANDS w diagnosisPresentation). */
+const INTENSITY_BANDS = ["0-33", "34-66", "67-100"];
 const format = (value: number) => value.toLocaleString("pl-PL");
 
 type FilterOption = { value: string; label: string };
@@ -145,19 +150,19 @@ export function ClinicDatabase() {
   if (params.party) activeChips.push({ label: parties.find(([code]) => code === params.party)?.[1].party?.short ?? (params.party === "unknown" ? "Nieustalona afiliacja" : params.party), clear: { party: "" } });
   if (params.technique) activeChips.push({ label: params.technique, clear: { technique: "" } });
   if (intensity) activeChips.push({ label: `Siła spinu: ${intensity.replace("-", "–")}`, clear: { intensity_min: "", intensity_max: "" } });
-  if (params.date_from || params.date_to) activeChips.push({ label: `${params.date_from ?? "Początek"} – ${params.date_to ?? "dzisiaj"}`, clear: { date_from: "", date_to: "" } });
+  if (params.date_from || params.date_to) activeChips.push({ label: params.date_from && params.date_to ? `Daty: ${formatDatePl(params.date_from)} – ${formatDatePl(params.date_to)}` : params.date_from ? `Od: ${formatDatePl(params.date_from)}` : `Do: ${formatDatePl(params.date_to ?? "")}`, clear: { date_from: "", date_to: "" } });
   if (params.sort === "strong") activeChips.push({ label: "Najwyższa siła spinu", clear: { sort: "" } });
 
-  const campControl = <fieldset className="sc-clinic-db__camp">
-    <legend className="sc-clinic-db__sr-only">Strona</legend>
-    <div>{[["", "Wszystkie"], ...CAMPS.map(camp => [camp, CAMP_LABELS[camp]])].map(([value, label]) =>
-      <button key={value} type="button" aria-pressed={(params.camp ?? "") === value} onClick={() => change({ camp: value })}>{label}</button>)}</div>
+  const quickGroup = (legend: string, key: "camp" | "verdict", options: string[][]) => <fieldset className="sc-clinic-db__camp">
+    <legend className="sc-clinic-db__quick-label">{legend}</legend>
+    <div>{options.map(([value, label]) =>
+      <button key={value} type="button" aria-pressed={(params[key] ?? "") === value} onClick={() => change({ [key]: value })}>{label}</button>)}</div>
   </fieldset>;
+  const quickFilters = <div className="sc-clinic-db__quick" role="group" aria-label="Szybkie filtry">
+    {quickGroup("Strona", "camp", [["", "Wszystkie"], ...CAMPS.map(camp => [camp, CAMP_LABELS[camp]])])}
+    {quickGroup("Werdykt", "verdict", [["", "Wszystkie"], ["spin", "Spin"], ["partial", "Częściowy spin"], ["no_spin", "Bez spinu"], ["unclear", "Nie da się ocenić"]])}
+  </div>;
   const filterControls = <>
-    <FilterChip label="Werdykt" value={params.verdict ?? ""} onChange={value => change({ verdict: value })} options={[
-      { value: "", label: "Wszystkie" }, { value: "spin", label: "Spin" }, { value: "partial", label: "Częściowy spin" },
-      { value: "no_spin", label: "Bez spinu" }, { value: "unclear", label: "Nie da się ocenić" },
-    ]} />
     <FilterChip label="Partia" value={params.party ?? ""} onChange={value => change({ party: value })} options={[
       { value: "", label: "Wszystkie" },
       ...(params.party && !parties.some(([code]) => code === params.party) ? [{ value: params.party, label: params.party === "unknown" ? "Nieustalona afiliacja" : params.party }] : []),
@@ -172,22 +177,28 @@ export function ClinicDatabase() {
       const [minimum = "", maximum = ""] = value.split("-");
       change({ intensity_min: minimum, intensity_max: maximum });
     }} options={[
-      { value: "", label: "Każda" }, ...["0-29", "30-69", "70-100"].map(value => ({ value, label: value.replace("-", "–") })),
-      ...(intensity && !["0-29", "30-69", "70-100"].includes(intensity) ? [{ value: intensity, label: intensity.replace("-", "–") }] : []),
+      { value: "", label: "Każda" }, ...INTENSITY_BANDS.map(value => ({ value, label: value.replace("-", "–") })),
+      ...(intensity && !INTENSITY_BANDS.includes(intensity) ? [{ value: intensity, label: intensity.replace("-", "–") }] : []),
     ]} />
     <FilterChip label="Okres" value={period} onChange={value => change({ date_from: value ? daysAgo(Number(value)) : "", date_to: "" })} options={[
       { value: "", label: "Cały okres" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },
       ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} — ${params.date_to ?? "dzisiaj"}` }] : []),
     ]} />
+    <div className="sc-clinic-db__dates" role="group" aria-label="Własny zakres dat">
+      <label><span>Od</span><input type="date" value={params.date_from ?? ""} max={params.date_to || undefined} onChange={event => change({ date_from: event.target.value })} /></label>
+      <label><span>Do</span><input type="date" value={params.date_to ?? ""} min={params.date_from || undefined} onChange={event => change({ date_to: event.target.value })} /></label>
+    </div>
   </>;
+  const moreActive = [params.party, params.technique, params.intensity_min !== undefined || params.intensity_max !== undefined,
+    params.date_from || params.date_to].filter(Boolean).length;
 
   return (
     <section className="sc-clinic sc-clinic-db" aria-labelledby="clinic-db-title">
       <div>
         <ClinicNav />
         <SectionHeader variant="page" titleId="clinic-db-title" title="Baza diagnoz" subtitle={<>
-        <p>Znajdź analizę wpisu, autora lub techniki perswazji.</p>
-        {totals && <p>{format(totals.diagnosed.total)} diagnoz{stats.data?.accounts ? <> · {format(new Set(stats.data.accounts.map(row => row.account_id)).size)} kont z diagnozą</> : null}</p>}
+        <p>Znajdź analizę wpisu, autora lub techniki perswazji. Brak diagnozy to nie to samo co brak spinu: nie każdy wpis analizujemy.</p>
+        {totals && <p>{format(totals.diagnosed.total)} {plural(totals.diagnosed.total, FORMS.diagnosis)}{stats.data?.accounts ? <> · {format(new Set(stats.data.accounts.map(row => row.account_id)).size)} {plural(new Set(stats.data.accounts.map(row => row.account_id)).size, FORMS.account)} z diagnozą</> : null}</p>}
       </>} />
       </div>
       <div className="sc-clinic-db__toolbar">
@@ -202,8 +213,9 @@ export function ClinicDatabase() {
               timer.current = setTimeout(() => update({ q: value.trim() }), 300);
             }} />
           </label>
-          <button ref={filterButton} type="button" className="sc-clinic-db__toggle" aria-haspopup="dialog" aria-expanded={filtersOpen} aria-controls="clinic-db-filters" onClick={() => setFiltersOpen(true)}>Filtry ({active})</button>
+          <button ref={filterButton} type="button" className="sc-clinic-db__toggle" aria-haspopup="dialog" aria-expanded={filtersOpen} aria-controls="clinic-db-filters" onClick={() => setFiltersOpen(true)}>Więcej filtrów{moreActive ? ` (${moreActive})` : ""}</button>
         </div>
+        {quickFilters}
         <div className="sc-clinic-db__bottom">
           <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Wczytywanie…" : count !== undefined ? `${format(count)} ${count === 1 ? "wynik" : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? "wyniki" : "wyników"}` : ""}</p>
           <label className="sc-clinic-db__sort"><span>· Sortuj</span><select value={params.sort ?? "new"} onChange={event => change({ sort: event.target.value === "new" ? "" : "strong" })}><option value="new">Najnowsze</option><option value="strong">Najwyższa siła spinu</option></select></label>
@@ -215,10 +227,8 @@ export function ClinicDatabase() {
             if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) setFiltersOpen(false);
           }
         }}>
-          <div className="sc-clinic-db__sheet-head"><h2 id="clinic-db-filters-title">Filtry diagnoz</h2><button type="button" aria-label="Zamknij filtry" onClick={() => setFiltersOpen(false)}>×</button></div>
+          <div className="sc-clinic-db__sheet-head"><h2 id="clinic-db-filters-title">Więcej filtrów</h2><button type="button" aria-label="Zamknij filtry" onClick={() => setFiltersOpen(false)}>×</button></div>
           <div className="sc-clinic-db__sheet-body">
-            <p className="sc-clinic-db__caption">Strona</p>
-            {campControl}
             <div className="sc-clinic-db__sheet-filters">{filterControls}</div>
           </div>
           <div className="sc-clinic-db__sheet-footer">
@@ -230,14 +240,18 @@ export function ClinicDatabase() {
       </div>
       {activeChips.length ? <div className="sc-clinic-db__active" aria-label="Aktywne filtry">
         {activeChips.map(chip => <button key={Object.keys(chip.clear).join("-")} type="button" aria-label={`Usuń filtr: ${chip.label}`} onClick={() => { if ("q" in chip.clear) setSearch(""); change(chip.clear); }}>{chip.label} <span aria-hidden="true">×</span></button>)}
+        <button type="button" className="sc-clinic-db__clear-all" onClick={reset}>Wyczyść wszystko</button>
       </div> : null}
+      {/* A6/D10: bez przeskoku h1 -> h3: ukryty h2 otwiera listę wyników */}
+      <h2 className="sc-visually-hidden">Wyniki wyszukiwania diagnoz</h2>
+      <DataExport dataset="diagnozy" params={Object.fromEntries(FILTER_KEYS.map(key => [key, searchParams.get(key) ?? ""]))} />
       <div className="sc-clinic-db__list" aria-busy={query.isFetching}>
         {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques returnTo={resultsUrl} onOpen={() => rememberClinicResults(resultsUrl, query.data?.pages.length ?? 1)} />)}
       </div>
       {query.isError && <p role="alert">Nie udało się pobrać diagnoz. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p>}
       {query.isSuccess && rows.length === 0 && <div className="sc-clinic-empty"><p>{hasFilters ? "Nie znaleźliśmy pasujących diagnoz." : "Nie ma jeszcze opublikowanych diagnoz dla tego wyboru."}</p>{hasFilters ? <button type="button" onClick={reset}>Wyczyść filtry</button> : null}</div>}
       {query.hasNextPage && !query.isFetchNextPageError && <Button className="sc-clinic-db__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button>}
-      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania — to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/metodologia">Jak wybieramy i liczymy?</Link></p>
+      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które Strażnik (automatyczny filtr) uznał za warte zbadania. To nie jest próba całej polityki, a wpis bez diagnozy nie jest dowodem, że spinu w nim nie ma. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/metodologia">Jak wybieramy i liczymy?</Link></p>
     </section>
   );
 }

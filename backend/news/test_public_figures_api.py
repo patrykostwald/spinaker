@@ -29,6 +29,49 @@ def test_profile_exposes_only_confirmed_relationships_and_linked_votes():
     assert data['votes']['results'][0]['topic'] == 'Ustawa o jawności finansowania'
 
 
+def test_profile_stats_are_real_totals_not_the_length_of_a_truncated_list():
+    roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='17', full_name='Anna Publiczna', active=True, term=10)
+    figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='parliamentary', role_title='Posłanka',
+        evidence_url='https://sejm.example/anna', parliamentary_roster_entry=roster)
+    source = Source.objects.create(name='Sejm', url='https://sejm.example')
+    for number in range(35):
+        article = Article.objects.create(source=source, title=f'G{number}', url=f'https://sejm.example/g{number}', published_date='2026-09-20T10:00:00Z')
+        voting = ParliamentaryVoting.objects.create(article=article, term=10, sitting=1, number=number, motion=f'Wniosek {number}', kind='vote')
+        Ballot.objects.create(voting=voting, mp_id=17, name='Anna Publiczna', vote='Za')
+    data = APIClient().get(f'/api/public-figures/{figure.pk}/').data
+    assert len(data['votes']['results']) == 30  # lista pokazuje ostatnie 30
+    assert data['stats'] == {'x_posts': None, 'diagnoses': None, 'votes': 35, 'organisations': 0, 'confirmed_materials': 0}
+
+
+def test_profile_stats_count_x_posts_and_published_diagnoses_of_the_confirmed_account_only():
+    from django.utils import timezone
+    from news.clinic_models import SpinDiagnosis
+    staff = __import__('django.contrib.auth').contrib.auth.get_user_model().objects.create_user(username='staff2', is_staff=True)
+    roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='78', full_name='Jan Publiczny', active=True)
+    figure = PublicFigure.objects.create(canonical_name='Jan Publiczny', role_category='parliamentary', role_title='Poseł',
+        evidence_url='https://sejm.example/jan', parliamentary_roster_entry=roster)
+    candidate = PoliticalAccountCandidate.objects.create(handle='JanPubliczny', display_name='Jan Publiczny',
+        classification='independent', confirmation_url='https://sejm.example/jan', confirmation_note='Publiczny link.')
+    SocialHandleEvidence.objects.create(roster_entry=roster, handle='JanPubliczny', evidence_url='https://sejm.example/jan',
+        extracted_url='https://x.com/JanPubliczny', candidate=candidate, status='candidate_created')
+    account = PoliticalAccount.objects.create(user_id='78', handle='JanPubliczny', display_name='Jan Publiczny', camp='public',
+        confirmation_url='https://sejm.example/jan', confirmation_note='Potwierdzone.')
+    other = PoliticalAccount.objects.create(user_id='79', handle='Inny', display_name='Inny', camp='public',
+        confirmation_url='https://sejm.example/inny', confirmation_note='Potwierdzone.')
+    account.confirm(staff)
+    candidate.resolved_account = account
+    candidate.save(update_fields=['resolved_account'])
+    posts = {}
+    for owner, number in [(account, 1), (account, 2), (other, 3)]:
+        posts[number] = PoliticalPost.objects.create(account=owner, post_id=str(number), url=f'https://x.com/a/status/{number}', text='Wpis',
+            published_at='2026-09-23T10:00:00Z', response_sha256=str(number) * 64)
+    SpinDiagnosis.objects.create(post=posts[1], status='approved', verdict='spin', intensity=70, headline='A', diagnosed_at=timezone.now())
+    SpinDiagnosis.objects.create(post=posts[2], status='pending_review', verdict='spin', intensity=70, headline='B')  # nieopublikowana
+    SpinDiagnosis.objects.create(post=posts[3], status='approved', verdict='spin', intensity=70, headline='C', diagnosed_at=timezone.now())  # inne konto
+    stats = APIClient().get(f'/api/public-figures/{figure.pk}/').data['stats']
+    assert stats['x_posts'] == 2 and stats['diagnoses'] == 1
+
+
 def test_profile_never_mixes_votes_from_another_term():
     roster = ParliamentaryRosterEntry.objects.create(source='sejm', external_id='17', full_name='Anna Publiczna', active=True, term=10)
     figure = PublicFigure.objects.create(canonical_name='Anna Publiczna', role_category='parliamentary', role_title='Posłanka',
@@ -232,3 +275,32 @@ def test_dossier_returns_only_evidence_pack_and_explicit_ai_contract():
     assert data['research_questions']
     assert data['ai_output_contract']['one_call'] is True
     assert 'nie może dodawać nowych faktów' in data['ai_output_contract']['rule']
+
+
+def test_public_figure_list_sorts_by_surname_with_polish_alphabet():
+    for name in ['Wojciech Zieliński', 'Łukasz Bieniek', 'Anna Łętowska', 'Piotr Lewandowski', 'Marek Zając', 'Joanna Żak', 'Ewa Abacka']:
+        PublicFigure.objects.create(canonical_name=name, role_category='parliamentary', role_title='Poseł', evidence_url='https://sejm.example')
+    names = [row['name'] for row in APIClient().get('/api/public-figures/').json()['results']]
+    assert names == ['Ewa Abacka', 'Łukasz Bieniek', 'Piotr Lewandowski', 'Anna Łętowska', 'Marek Zając', 'Wojciech Zieliński', 'Joanna Żak']
+    second = APIClient().get('/api/public-figures/', {'page_size': 3, 'page': 2}).json()['results']
+    assert [row['name'] for row in second] == ['Anna Łętowska', 'Marek Zając', 'Wojciech Zieliński']
+
+
+def test_public_figure_list_filters_by_party_chamber_and_sorts_by_diagnoses():
+    def figure(name, club, source):
+        entry = ParliamentaryRosterEntry.objects.create(source=source, external_id=name[:3], club=club, term='10')
+        return PublicFigure.objects.create(canonical_name=name, role_category='parliamentary', role_title='Poseł',
+                                           evidence_url='https://sejm.example', parliamentary_roster_entry=entry)
+    figure('Ewa Abacka', 'KO', 'sejm')
+    figure('Jan Bielecki', 'PiS', 'sejm')
+    figure('Ola Cegła', 'KO', 'senat')
+    body = APIClient().get('/api/public-figures/').json()
+    assert {row['code']: row['count'] for row in body['facets']['parties']} == {'KO': 2, 'PiS': 1}
+    assert {row['code']: row['count'] for row in body['facets']['chambers']} == {'sejm': 2, 'senat': 1}
+    ko = APIClient().get('/api/public-figures/', {'party': 'KO'}).json()
+    assert [row['name'] for row in ko['results']] == ['Ewa Abacka', 'Ola Cegła'] and ko['results'][0]['party']['short'] == 'KO'
+    assert {row['code']: row['count'] for row in ko['facets']['chambers']} == {'sejm': 1, 'senat': 1}
+    both = APIClient().get('/api/public-figures/', {'party': 'KO', 'chamber': 'senat'}).json()
+    assert [row['name'] for row in both['results']] == ['Ola Cegła'] and both['results'][0]['chamber'] == 'senat'
+    assert APIClient().get('/api/public-figures/', {'sort': 'diagnoses'}).json()['results'][0]['diagnoses_count'] == 0
+    assert APIClient().get('/api/public-figures/', {'sort': 'zle'}).status_code == 400

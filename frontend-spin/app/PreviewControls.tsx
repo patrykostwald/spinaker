@@ -2,7 +2,6 @@
 import { useFeature, usePreview, SupportBar, siteNavigation } from '@spin-clinic/ui';
 import { SiteFooter } from '@spin-clinic/ui/kit';
 import { usePathname } from 'next/navigation';
-import { HowToRead } from '@spin-clinic/ui';
 import { PwaControls } from './PwaControls';
 
 export function PreviewBanner() {
@@ -27,7 +26,7 @@ export function FeatureFooter() {
               { label: 'Zainstaluj aplikację', href: '#zainstaluj-aplikacje' },
               ...(PUSH_ENABLED ? [{ label: 'Powiadomienia', href: '#powiadomienia' }] : []),
             ] }] : siteNavigation.footer}
-            actions={pathname?.startsWith("/klinika") ? <HowToRead interview={pathname.startsWith("/klinika/wywiady")} /> : null}
+            quickLinks={siteNavigation.trust.map(item => ({ ...item, current: pathname === item.href }))}
             above={<SupportBar />}
             sticky
           />

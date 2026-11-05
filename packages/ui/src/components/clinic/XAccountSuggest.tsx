@@ -33,12 +33,12 @@ export function XAccountSuggest({ figureId, name }: { figureId: number; name: st
     <form className="sc-x-suggest" onSubmit={submit}>
       <label htmlFor={id}>Link do profilu X osoby: {name}</label>
       <div className="sc-x-suggest__row">
-        <input id={id} type="url" required inputMode="url" placeholder="https://x.com/nazwa_konta" value={url} maxLength={300}
+        <input id={id} type="url" required inputMode="url" placeholder="https://x.com/nazwa_konta" value={url} maxLength={300} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined}
                onChange={event => setUrl(event.target.value)} />
         <Button type="submit" size="sm" variant="primary" loading={pending} disabled={pending || !url.trim()}>Wyślij</Button>
         <Button type="button" size="sm" variant="quiet" onClick={() => setOpen(false)}>Anuluj</Button>
       </div>
-      {error && <p role="alert" className="sc-x-suggest__error">{error}</p>}
+      {error && <p role="alert" id={`${id}-error`} className="sc-x-suggest__error">{error}</p>}
     </form>
   );
 }

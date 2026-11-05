@@ -8,9 +8,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
-import { CAMPS, CAMP_LABELS, getClinicDeleted, getClinicPage, type SpinDetailData } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, CAMP_NOTE, getClinicDeleted, getClinicPage, type SpinDetailData } from "../../lib/clinic";
 import { NewsletterSignup } from "../NewsletterSignup";
-import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, VerdictTag } from "./SpinParts";
+import { AiTag, SpinAuthorRow, SpinRow, SpinStrength, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { ClinicShowcase } from "./ClinicIndicators";
 import { ClinicRecentlyViewed } from "./ClinicRecentlyViewed";
@@ -52,7 +52,7 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
           <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Wpis na X ↗</a>
         </div>
         <div className="sc-clinic-sotd__diagnosis">
-          <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
+          <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><SpinStrength verdict={spin.verdict} value={spin.intensity} /></p>
           <h3 id="sotd-title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
           <div className="sc-clinic-sotd__reading" data-expanded={expanded || undefined} tabIndex={0} aria-label="Diagnoza Dr. Spina — przewijaj">
             <p>{spin.summary}</p>
@@ -161,8 +161,8 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
       {data && <>
         {/* Panel tematyczny: dzisiejsze przekazy obu stron i ich archiwum. */}
         <section className="sc-clinic-group" aria-labelledby="clinic-messages-title">
-          <SectionHeader titleId="clinic-messages-title" kicker={<>Klinika spinu <AiTag /></>} title="Przekazy dnia"
-            subtitle="O czym i jak mówiły obie strony w przeanalizowanych wpisach." link={<Link className="sc-home-spin__open" href="/klinika/przekazy">Archiwum przekazów →</Link>} />
+          <SectionHeader titleId="clinic-messages-title" kicker={<AiTag />} title="Przekazy dnia"
+            subtitle={`Zbiorcze podsumowanie dnia: o czym i jak mówiły obie strony w przeanalizowanych wpisach. ${CAMP_NOTE}`} link={<Link className="sc-home-spin__open" href="/klinika/przekazy">Archiwum przekazów →</Link>} />
           <div className="sc-clinic-split">
             {CAMPS.map(camp => <MessageBox key={camp} camp={camp} message={data.messages[camp]} surface="nested" />)}
           </div>
@@ -190,7 +190,7 @@ export function ClinicPage({ embedded = false }: { embedded?: boolean }) {
         </div>
 
         {data.interview ? <section className="sc-clinic-group sc-clinic-interview-preview" aria-labelledby="clinic-interview-title">
-          <SectionHeader titleId="clinic-interview-title" kicker={<>Klinika spinu <AiTag /></>} title="Wywiad dnia"
+          <SectionHeader titleId="clinic-interview-title" kicker={<AiTag />} title="Wywiad dnia"
             subtitle="Najgłośniejszy wywiad polityczny poprzedniego dnia: gość i prowadzący." link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
           <InterviewScanner interview={data.interview} />
         </section> : null}

@@ -73,7 +73,7 @@ export type SpinDetailData = SpinCardData & {
   council?: {
     agreement: string; chair: string; linguist: string; escalated: boolean;
     review: { ok: boolean | null; issues: string[]; model: string; revised?: boolean };
-    members: Array<{ model: string; verdict: string | null; intensity: number | null; status?: string }>;
+    members: Array<{ model: string; verdict: string | null; intensity: number | null; status?: string; company?: string; note?: string; role?: string }>;
   } | null;
   model: string;
   prompt_version: string;
@@ -110,6 +110,8 @@ export type DailyMessage = {
   posts?: MessagePost[];
   created_at?: string;
   reviewed_at?: string | null;
+  /** true: opublikowane przez potok bez ręcznego zatwierdzenia (reviewed_at to wtedy chwila publikacji). */
+  auto_published?: boolean;
   scope?: { date_from: string | null; date_to: string | null; timezone: string };
 };
 
@@ -129,6 +131,8 @@ export type Interview = {
   /** Werdykt i siła prowadzącego — w wywiadach ocenionych od 27.09.2026 (wcześniejsze: puste). */
   host: { summary: string; notes: InterviewQuote[]; verdict?: Verdict; verdict_label?: string; intensity?: number };
   limitations: string; model: string; diagnosed_at: string | null;
+  /** Wywiady publikują się bez przeglądu człowieka (człowiek wybiera tylko nagranie). */
+  auto_published?: boolean;
 };
 
 export type DataPeriod = { generated_at?: string; since?: string | null };
@@ -174,11 +178,14 @@ export type ClinicAccount = {
 
 export const CAMP_LABELS: Record<Camp, string> = { government: "Rządzący", opposition: "Opozycja" };
 export const CAMPS: Camp[] = ["government", "opposition"];
+/** Zdanie przy legendach i podziałach na strony: kolor/kształt oznacza rolę, nie partię. */
+export const CAMP_NOTE = "Kolory oznaczają rolę (rządzący / opozycja), nie przynależność partyjną.";
 
 export const getClinicPage = () => apiFetch<ClinicPageData>("/api/clinic/");
 export type ArchivePage<T> = { results: T[]; next_page: number | null; count: number };
 export type InterviewSearchParams = { page?: number; q?: string; channel?: string };
-export type MessageDay = { day: string; government: DailyMessage | null; opposition: DailyMessage | null };
+/** `previous_day` / `next_day`: sąsiednie dni z opublikowanym przekazem (tylko w odpowiedzi dla jednego dnia). */
+export type MessageDay = { day: string; government: DailyMessage | null; opposition: DailyMessage | null; previous_day?: string | null; next_day?: string | null };
 export const getClinicInterviews = (params: InterviewSearchParams = {}) => {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -272,6 +279,10 @@ export const reviewDailyMessage = (id: number, decision: "approve" | "reject") =
 
 export const suggestXAccount = (figureId: number, url: string, note = "") =>
   apiWrite<{ status: "received" | "already_suggested"; handle: string }>(`/api/public-figures/${figureId}/x-suggestions/`, { url, note });
+
+/** Sugestia źródła do katalogu: zapis do przeglądu przez zespół (nic nie jest pobierane automatycznie). */
+export const suggestSource = (url: string, note = "") =>
+  apiWrite<{ status: "received" | "already_suggested"; host: string }>("/api/source-suggestions/", { url, note });
 
 /** Udział w procentach z dokładnością do całości; null, gdy brak ocenionych postów. */
 export function sharePercent(side: ScaleSide): number | null {

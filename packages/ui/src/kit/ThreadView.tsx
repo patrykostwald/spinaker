@@ -10,6 +10,7 @@
  * Wpisy-odnośniki (`reference_only`) i komentarze autora renderują się tak samo w obu układach.
  */
 
+import { FORMS, plural } from "../lib/plural";
 import { LayoutGroup, motion } from "framer-motion";
 import { useEffect, useId, useMemo, useState } from "react";
 import { NewsCard, type NewsCardSize } from "./NewsCard";
@@ -128,7 +129,7 @@ export function ThreadView({
       <section className={["sc-thread-view", className].filter(Boolean).join(" ")} data-layout={layout} aria-label="Materiały nitki">
         <header className="sc-thread-view__head">
           <p className="sc-t-meta sc-text-2">
-            {anchorFirst ? "Wydarzenie główne, dalej kontekst od najstarszego źródła" : "Od najstarszego źródła"} · {ordered.length} materiałów
+            {anchorFirst ? "Wydarzenie główne, dalej kontekst od najstarszego źródła" : "Od najstarszego źródła"} · {ordered.length} {plural(ordered.length, FORMS.material)}
           </p>
           {controlled === undefined || onLayoutChange ? (
             <Segmented name={`thread-layout-${groupId}`} label="Układ nitki" value={layout} onChange={choose} options={LAYOUT_OPTIONS} />

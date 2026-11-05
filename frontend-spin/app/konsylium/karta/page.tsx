@@ -20,7 +20,7 @@ const rules = [
   ],
   [
     "Każde twierdzenie ma status.",
-    "Potwierdzone, sprzeczne ze źródłami, wprowadzające w błąd albo niezweryfikowane. Ocena faktu wymaga źródła. Grupa nazywana w zestawieniach opiniami obejmuje dziś także twierdzenia, których nie udało się sprawdzić."
+    "Potwierdzone, sprzeczne ze źródłami, wprowadza w błąd albo niezweryfikowane. Ocena faktu wymaga źródła. Grupa nazywana w zestawieniach opiniami obejmuje dziś także twierdzenia, których nie udało się sprawdzić."
   ],
   [
     "Cytujemy wiernie.",

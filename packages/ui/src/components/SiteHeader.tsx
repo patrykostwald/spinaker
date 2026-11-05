@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useId, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button, NavMenu, SearchField } from "../kit";
 import { useAccount } from "../lib/account";
 import type { SiteConfig } from "../types";
@@ -10,8 +10,20 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useFeature } from "../lib/features";
 import { isSiteNavigationCurrent, siteNavigation } from "../lib/siteNavigation";
 
+/** Na /search pole pokazuje bieżące zapytanie `q`; poza wyszukiwarką startuje puste. */
 function HeaderSearch() {
-  const [value, setValue] = useState("");
+  return <Suspense fallback={<HeaderSearchForm query="" />}><HeaderSearchFromUrl /></Suspense>;
+}
+
+function HeaderSearchFromUrl() {
+  const params = useSearchParams();
+  const pathname = usePathname();
+  return <HeaderSearchForm query={pathname === "/search" ? params.get("q") ?? "" : ""} />;
+}
+
+function HeaderSearchForm({ query }: { query: string }) {
+  const [value, setValue] = useState(query);
+  useEffect(() => setValue(query), [query]);
   const id = useId();
   const router = useRouter();
 
@@ -20,9 +32,23 @@ function HeaderSearch() {
     if (value.trim()) router.push(`/search?q=${encodeURIComponent(value.trim())}`);
   }
 
+  // Skrót „/”: przenosi do wyszukiwarki, o ile fokus nie jest w polu tekstowym (F11). Na wąskich ekranach, gdzie pole jest ukryte, otwiera /search.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])") || document.querySelector("dialog[open]")) return;
+      event.preventDefault();
+      const input = document.getElementById(id) as HTMLInputElement | null;
+      if (input && input.getClientRects().length) { input.focus(); input.select(); } else router.push("/search");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [id, router]);
+
   return (
     <form className="sc-nav-search" role="search" onSubmit={submit}>
-      <SearchField id={id} label="Szukaj materiałów" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj materiałów…" />
+      <SearchField id={id} label="Szukaj materiałów (skrót: /)" value={value} onChange={setValue} maxLength={200} placeholder="Szukaj materiałów… (naciśnij /)" />
     </form>
   );
 }

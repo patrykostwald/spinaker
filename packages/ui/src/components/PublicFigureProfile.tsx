@@ -1,6 +1,8 @@
 "use client";
 
 import { XAccountSuggest } from "./clinic/XAccountSuggest";
+import { CiteShare } from "./CiteShare";
+import { CorrectionForm } from "./CorrectionForm";
 import { AuthorDiagnoses } from "./AuthorDiagnoses";
 import { FollowButton } from './FollowButton';
 import { ContextThreadStrip } from './ContextThreadStrip';
@@ -70,17 +72,24 @@ function Neutral({ children }: { children: ReactNode }) {
 
 /* ——— Nagłówek profilu ——— */
 
-function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'career' | 'materials') => void }) {
+/** Jeden licznik paska: liczba z API albo „—” (nie dotyczy / brak powiązania); zero dostaje jawną etykietę zakresu. */
+function Stat({ label, title, value, onClick }: { label: string; title: string; value: number | null | undefined; onClick: () => void }) {
+  return <button type="button" title={title} onClick={onClick}><span>{label}</span><strong>{value === undefined ? '…' : value ?? '—'}</strong>{value === 0 && <small>brak w naszych danych</small>}</button>;
+}
+
+function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: PublicFigureDetail; titleId: string; materialsTotal: number | null; onSelect: (tab: 'votes' | 'relations' | 'career' | 'materials' | 'diagnoses' | 'x') => void }) {
   const x = verifiedXAccount(figure);
   const organisations = figure.organisations.length;
+  const stats = figure.stats;
   return (
     <header className="sc-public-figure-head">
       <p className="sc-public-figure-kicker">OSOBA PUBLICZNA · {ROLE_CATEGORY_LABELS[figure.role_category] ?? 'rola publiczna'}</p>
       <h1 id={titleId} tabIndex={-1}>{figure.name}{figure.party ? <span className="sc-party-tag" title={figure.party.name}>{figure.party.short}</span> : null}</h1>
       <p className="sc-public-figure-role">
         <span className={`sc-public-figure-status is-${figure.status}`}>{figure.status === 'current' ? 'Aktualna funkcja' : 'Była funkcja'}</span>
-        {figure.role_title}{figure.organisation && <> · {figure.organisation}</>}
+        {figure.role_title}{figure.organisation && !figure.role_title.toLowerCase().includes(figure.organisation.toLowerCase()) && <> · {figure.organisation}</>}
       </p>
+      <div className="sc-dg-actionbar sc-public-figure-cite"><CiteShare title={figure.name} path={`/osoby-publiczne/${figure.id}`} kind="profil osoby publicznej" updatedAt={figure.source_checked_at} shareText={`${figure.name} — profil na spin.clinic`} /><CorrectionForm kind="figure" targetId={figure.id} type="error" label="Zgłoś błąd lub sprzeciw" /></div>
       <p className="sc-public-figure-links">
         <SourceLink href={figure.evidence_url}>Źródło funkcji</SourceLink>
         <SourceLink href={figure.official_profile_url}>Oficjalny profil</SourceLink>
@@ -103,9 +112,11 @@ function FigureHeader({ figure, titleId, materialsTotal, onSelect }: { figure: P
         </p>
       )}
       <nav className="sc-public-figure-summary" aria-label="Sekcje profilu">
-        <button type="button" onClick={() => onSelect('votes')}><span>Głosowania</span><strong>{figure.votes.available ? figure.votes.results.length : '—'}</strong></button>
-        <button type="button" onClick={() => onSelect('relations')}><span>Występuje w podmiotach</span><strong>{organisations}</strong></button>
-        <button type="button" onClick={() => onSelect('materials')}><span>Materiały w Bazie</span><strong>{materialsTotal ?? '…'}</strong></button>
+        <Stat label="Diagnozy Dr. Spina" title="Opublikowane diagnozy wpisów z potwierdzonego konta X" value={stats?.diagnoses} onClick={() => onSelect('diagnoses')} />
+        <Stat label="Wpisy X" title="Wpisy z potwierdzonego konta X zebrane w Bazie" value={stats?.x_posts} onClick={() => onSelect('x')} />
+        <Stat label="Głosowania" title="Wszystkie głosowania w bieżącej kadencji z połączonego mandatu" value={stats?.votes} onClick={() => onSelect('votes')} />
+        <Stat label="Podmioty z KRS" title="Potwierdzone funkcje w podmiotach z Krajowego Rejestru Sądowego" value={organisations} onClick={() => onSelect('relations')} />
+        <Stat label="Potwierdzone materiały" title="Materiały z ręcznie potwierdzonymi linkami" value={stats?.confirmed_materials} onClick={() => onSelect('materials')} />
       </nav>
       {organisations > 0 && (
         <p className="sc-public-figure-entities">
@@ -228,6 +239,7 @@ function period(since?: string | null, until?: string | null, status?: 'current'
 
 function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
   const rows = orderedOrganisations(figure.organisations);
+  const checkedAt = figure.organisations.map(relation => relation.verified_at).filter(Boolean).sort().pop() ?? figure.source_checked_at ?? null;
   return (
     <section id="relacje" className="sc-public-figure-section" aria-labelledby="pf-orgs">
       <header>
@@ -235,6 +247,7 @@ function OrganisationsSection({ figure }: { figure: PublicFigureDetail }) {
         <p>
           Fundacje, stowarzyszenia i spółki z Krajowego Rejestru Sądowego, w których ta osoba pełni albo pełniła funkcję. Każdy wpis potwierdza
           oficjalny KRS (organ, funkcja i daty) albo co najmniej dwa niezależne źródła. Nie pokazujemy danych prywatnych — tylko jawne funkcje.
+          To dane rejestrowe, bez oceny; {checkedAt ? <>stan na <time dateTime={checkedAt}>{formatDay(checkedAt)}</time></> : <>data ostatniej weryfikacji: brak w naszych danych (sprawdzono {formatDay(new Date().toISOString())})</>}.
         </p>
       </header>
       {rows.length ? (
@@ -379,7 +392,7 @@ function MaterialsView({ name, counts, items, total, status, filters, setFilters
   return (
     <section id="materialy" className="sc-public-figure-section" aria-labelledby="pf-materials">
       <header>
-        <h2 id="pf-materials">Materiały w Bazie</h2>
+        <h2 id="pf-materials">Wyniki wyszukiwania po nazwisku: {total ?? '…'}</h2>
         <p>Wyniki wyszukiwania hasła „{name}” w Bazie. To wyszukiwanie tekstowe, nie potwierdzone powiązanie — materiał może dotyczyć innej osoby o tym samym nazwisku.</p>
       </header>
 
@@ -455,6 +468,30 @@ function MaterialsView({ name, counts, items, total, status, filters, setFilters
   );
 }
 
+/** Materiały z ręcznie potwierdzonym powiązaniem (osobno od wyników wyszukiwania po nazwisku). */
+function ConfirmedMaterials({ figure }: { figure: PublicFigureDetail }) {
+  const materials = figure.materials;
+  return (
+    <section id="potwierdzone-materialy" className="sc-public-figure-section" aria-labelledby="pf-confirmed">
+      <header>
+        <h2 id="pf-confirmed">Potwierdzone materiały: {materials?.count ?? 0}</h2>
+        <p>Materiały, które zespół ręcznie powiązał z tą osobą i opisał dowodem. Nie wynikają z dopasowania po nazwisku.</p>
+      </header>
+      {materials?.results.length ? (
+        <ul className="sc-public-figure-confirmed">
+          {materials.results.map(item => (
+            <li key={item.id}>
+              <Link href={`/material/${item.id}`}>{item.title}</Link>
+              <small>{item.source}{item.published_date ? <> · <time dateTime={item.published_date}>{formatDay(item.published_date)}</time></> : ' · data publikacji nieustalona'}</small>
+              {item.evidence_note ? <p>{item.evidence_note}</p> : null}
+            </li>
+          ))}
+        </ul>
+      ) : <Neutral>Brak w naszych danych: ręcznie potwierdzonych materiałów o tej osobie (stan na {formatDay(new Date().toISOString())}).</Neutral>}
+    </section>
+  );
+}
+
 function LiveMaterials({ name }: { name: string }) {
   const [filters, setFilters] = useState<MaterialFilters>({ group: '', source: '', topic: '', order: 'desc' });
   const config = useQuery({ queryKey: ['mvp-portal-config'], queryFn: getPortalConfig, staleTime: 60_000 });
@@ -499,7 +536,7 @@ function useMaterialsTotal(name: string) {
 export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: PublicFigureDetail; titleId?: string }) {
   const materialsTotal = useMaterialsTotal(figure.name);
   const [tab, setTab] = useState<'timeline' | 'votes' | 'relations' | 'materials' | 'x' | 'diagnoses'>('timeline');
-  const select = (next: 'votes' | 'relations' | 'career' | 'materials') => setTab(next === 'career' ? 'relations' : next);
+  const select = (next: 'votes' | 'relations' | 'career' | 'materials' | 'diagnoses' | 'x') => setTab(next === 'career' ? 'relations' : next);
   const tabs = [
     { id: 'timeline' as const, label: 'Oś czasu' },
     { id: 'diagnoses' as const, label: 'Diagnozy wpisów' },
@@ -511,7 +548,7 @@ export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: 
   return (
     <article className="sc-public-figure sc-f2-figure" aria-labelledby={titleId}>
       <FigureHeader figure={figure} titleId={titleId} materialsTotal={materialsTotal} onSelect={select} />
-      <FollowButton kind="figure" targetId={figure.id} label={figure.name} />
+      <FollowButton kind="figure" targetId={figure.id} label={figure.name} variant="secondary" />
       <nav className="sc-public-figure-tabs" role="tablist" aria-label="Dane profilu">
         {tabs.map((item, index) => <button key={item.id} id={`${titleId}-tab-${item.id}`} type="button" role="tab" tabIndex={tab === item.id ? 0 : -1} aria-selected={tab === item.id} aria-controls={`${titleId}-panel-${item.id}`} onClick={() => setTab(item.id)} onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -526,7 +563,7 @@ export function PublicFigureProfile({ figure, titleId = 'pf-title' }: { figure: 
         {tab === 'x' && <XPostsSection figure={figure} />}
         {tab === 'diagnoses' && <AuthorDiagnoses figure={figure} />}
         {tab === 'relations' && <OrganisationsSection figure={figure} />}
-        {tab === 'materials' && <LiveMaterials name={figure.name} />}
+        {tab === 'materials' && <><ConfirmedMaterials figure={figure} /><LiveMaterials name={figure.name} /></>}
       </div>
       <ContextThreadStrip figureId={figure.id} />
       <p className="sc-public-figure-disclaimer">

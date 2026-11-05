@@ -56,9 +56,16 @@ export function VerdictTag({ verdict, label }: { verdict: Verdict; label: string
   return <span className="sc-verdict" data-verdict={verdict}>{verdict === "unclear" ? "Nie da się ocenić" : label}</span>;
 }
 
+/** Siła spinu na listach: dla werdyktu „nie da się ocenić” liczba 0 nic nie znaczy, więc pokazujemy „nie dotyczy”. */
+export function SpinStrength({ verdict, value }: { verdict: Verdict; value: number }) {
+  return verdict === "unclear"
+    ? <span className="sc-intensity" data-level="none"><span className="sc-intensity__value">Siła spinu: nie dotyczy</span></span>
+    : <IntensityMeter value={value} />;
+}
+
 export function IntensityMeter({ value }: { value: number }) {
   return (
-    <span className="sc-intensity" data-level={value >= 70 ? "high" : value >= 30 ? "mid" : "low"} title="Siła spinu według diagnozy (0–100): jak mocno wpis opiera się na technikach perswazji">
+    <span className="sc-intensity" data-level={value >= 67 ? "high" : value >= 34 ? "mid" : "low"} title="Siła spinu według diagnozy (0–100): jak mocno wpis opiera się na technikach perswazji">
       <span className="sc-intensity__track" aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></span>
       <span className="sc-intensity__value">Siła spinu {value}/100</span>
     </span>
@@ -87,7 +94,7 @@ export function SpinRow({ spin, withSummary = false, withTechniques = false, bad
       </span>
       <div className="sc-spin-row__body">
         <h3 id={`spin-row-${spin.id}`} className="sc-spin-row__title"><Link href={href} onClick={onOpen}>{spin.headline}</Link></h3>
-        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
+        <p className="sc-spin-row__meta"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><SpinStrength verdict={spin.verdict} value={spin.intensity} />{badge ? <span className="sc-spin-row__badge">{badge}</span> : null}</p>
         {withSummary && spin.summary ? <p className="sc-spin-row__summary">{spin.summary}</p> : null}
         {withTechniques && <p className="sc-spin-row__techniques">{typeCount} {techniqueLabel(typeCount)}</p>}
         <p className="sc-spin-row__author">{spin.author.name}{spin.author.party?.short ? `, ${spin.author.party.short}` : ""} · @{spin.author.handle}</p><p className="sc-spin-row__date"><time dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time></p>
@@ -112,7 +119,7 @@ export function SpinCard({ spin }: { spin: SpinCardData }) {
         <a className="sc-spin-card__source" href={spin.post.url} target="_blank" rel="noopener noreferrer">Wpis na X ↗</a>
       </div>
       <div className="sc-spin-card__diagnosis">
-        <p className="sc-spin-card__verdict"><span className="sc-spin-card__camp">{spin.camp_label}</span><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
+        <p className="sc-spin-card__verdict"><span className="sc-spin-card__camp">{spin.camp_label}</span><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><SpinStrength verdict={spin.verdict} value={spin.intensity} /></p>
         <h3 id={`spin-${spin.id}-title`} className="sc-spin-card__headline"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
         <p className="sc-spin-card__summary">{spin.summary}</p>
         {spin.technique_names.length > 0 && (
@@ -168,8 +175,8 @@ export function HowToRead({ interview = false }: { interview?: boolean }) {
     <Dialog open={open} onClose={() => setOpen(false)} title="Jak czytać wynik?" className="sc-howto-panel">
     <dl>
       <div><dt>Siła spinu 0–100</dt><dd>Jak mocno {interview ? "wypowiedź opiera" : "komunikat opiera"} się na technikach perswazji. To nie procent kłamstwa i nie ocena osoby.</dd></div>
-      <div><dt>Konsylium AI</dt><dd>Ile modeli wydało ten sam werdykt co diagnoza końcowa, np. 3/4.</dd></div>
-      <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne albo wprowadzające w błąd. „Niezweryfikowane” znaczy: bez źródła — nie że to fałsz.</dd></div>
+      <div><dt>Konsylium AI</dt><dd>Ile spośród modeli, które odpowiedziały, było zgodnych z wynikiem końcowym, np. 3 z 4; modele bez odpowiedzi nie głosują. To nie jest niezależne potwierdzenie: modele mogą się mylić tak samo. Siła spinu: niska 0–33, umiarkowana 34–66, wysoka 67–100.</dd></div>
+      <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne ze źródłami albo wprowadza w błąd. „Niezweryfikowane” znaczy: bez źródła — nie że to fałsz.</dd></div>
       <div><dt>Techniki</dt><dd>Ile różnych technik wskazano, z dosłownym cytatem, w trzech rodzinach: dane, emocje, spór.</dd></div>
     </dl>
     <Link className="sc-howto-methodology" href="/metodologia">Pełna metodologia →</Link>

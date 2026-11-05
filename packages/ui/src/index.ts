@@ -18,6 +18,7 @@ export { HorizontalTimeline } from "./components/HorizontalTimeline";
 export { SiteHeader } from "./components/SiteHeader";
 export { ThemeSwitcher } from "./components/ThemeSwitcher";
 export { ShareOnX } from "./components/ShareOnX";
+export { CiteShare } from "./components/CiteShare";
 export { ThreadOpinions } from "./components/ThreadOpinions";
 
 export { SearchPageContent } from "./components/SearchPageContent";
@@ -72,9 +73,10 @@ export * from "./lib/clinic";
 export { CommunityThreadsPage, CommunityThreadPage } from "./components/community/CommunityPages";
 export * from "./lib/community";
 export * from "./lib/features";
-export { HowItWorksFilm } from "./components/HowItWorksFilm";
 export { CouncilRecruitmentLog, CouncilRoster } from "./components/clinic/CouncilRoster";
 export { siteNavigation, socialChannels } from "./lib/siteNavigation";
+export { DataExport } from "./components/DataExport";
+export { exportHref, RSS_FEEDS, type ExportDataset } from "./lib/exports";
 
 export { sourceDirectory, directoryGroup, channelIdentity } from "./lib/sourceDirectory";
 export { CommandPanel } from './components/CommandPanel';
@@ -84,3 +86,5 @@ export { AccountDelete } from "./components/AccountDelete";
 export { TERMS_VERSION } from './lib/account';
 
 export { HowToRead } from "./components/clinic/SpinParts";
+export * from "./lib/plural";
+export * from "./lib/glossary";

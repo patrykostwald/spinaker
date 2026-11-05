@@ -33,7 +33,7 @@ POSITIVE, WARNING, NEGATIVE = (78, 209, 138), (242, 180, 65), (255, 107, 107)
 FAMILIES = [('dane', 'Dane i wnioskowanie', (85, 180, 255)), ('przedstawienie', 'Emocje i przedstawienie', (245, 165, 74)),
             ('spor', 'Spór i odpowiedzialność', (181, 138, 216)), ('inne', 'Inne', TEXT3)]
 FAMILY_COLOR = {key: color for key, _, color in FAMILIES}
-CLAIM_KINDS = [('supported', POSITIVE, 'potwierdzone'), ('misleading', WARNING, 'mylące'), ('contradicted', NEGATIVE, 'sprzeczne'),
+CLAIM_KINDS = [('supported', POSITIVE, 'potwierdzone'), ('misleading', WARNING, 'wprowadza w błąd'), ('contradicted', NEGATIVE, 'sprzeczne ze źródłami'),
                ('unverified', TEXT3, 'niezweryfikowane'), ('opinion', None, 'opinie')]
 
 
