@@ -47,3 +47,11 @@ Nie czekaj na potwierdzenie przy rutynowej decyzji technicznej lub przy wypełni
 ## Wybór dostawcy AI
 
 OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. Mistral EU jest drugim dostawcą pilotażowym do klasyfikacji, rankingu kandydatów i embeddings po potwierdzeniu dostępności funkcji regionalnych. Globalnego wyszukiwania Mistral nie włączamy automatycznie. DeepSeek pozostaje wykluczony. Komentarze, dane kont i prywatna aktywność użytkowników nie trafiają do zewnętrznych modeli. Szczegóły: `docs/AI_PROVIDER_PLAN.md`.
+
+## Aktualizacja 5 listopada 2026 — przeszlosc.today jako narzędzie OSINT
+
+- Zasady nadrzędne właściciela (czystość repo, dokumentacja i przekazanie, standard git „jak CTO", aktualne plany) są w `CLAUDE.md` w katalogu głównym. Obowiązują wszystkich agentów.
+- **przeszlosc.today to dziś narzędzie OSINT** (temat/osoba/KRS → oś czasu, drzewo powiązań, głosowania Sejmu, KRS, TED/BZP, fundusze UE, PE, lobbing, eksporty, alerty). Starsze opisy w `PLAN_AKTUALNY.md`, `project.md`, `roadmap.md` (przeszlosc jako „alternatywny brand" / agregator wiadomości) są przestarzałe w tym zakresie.
+- Aktualny plan tej części: `docs/PLAN_PRZESZLOSC_OSINT.md` (funkcje z żywej strony, lista luk, kolejność prac OSINT-01…06, UI-01).
+- **Ważna rozbieżność:** kod żywej strony (trasy `/przeszlosc/*`, KRS, TED, Kohesio, odstępstwa od klubu, alerty) **nie znajduje się w tym repozytorium** (ostatni commit kodu: 30.09.2026). Nie jest też w `patrykostwald/radar` (osobny produkt: analiza narracji dla instytucji) ani w `patrykostwald/iapply` (ostatnia zmiana: 10.2025). Prawdopodobnie leży lokalnie u właściciela lub na niewypchniętej gałęzi.
+- **Następny krok:** ustalić z właścicielem lokalizację aktualnego kodu i dołączyć go bezpiecznie do repozytorium (REPO-02: bez `.env`, baz, logów). Dopiero potem wdrażać OSINT-01…06. Nic nie wdrażano w tej sesji; zmieniono tylko dokumentację.
