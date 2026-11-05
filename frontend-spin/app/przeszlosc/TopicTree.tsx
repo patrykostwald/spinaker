@@ -882,14 +882,15 @@ function Export({ data, author }: { data: Graph; author: Map<string, Node> }) {
   </details>;
 }
 
-/* Ścieżka w Sejmie: druki, konsultacje i głosowania w temacie po kolei, od najstarszego. */
+/* Ścieżka w Sejmie i rejestrach: druki, konsultacje, głosowania i rekordy z innych rejestrów publicznych (np. ogłoszenia TED,
+   rodzaj w etykiecie) w temacie po kolei, od najstarszego. Runda person 1 (5.11): nagłówek „w Sejmie” wprowadzał w błąd przy TED. */
 function SejmPath({ data }: { data: Graph }) {
   const steps = [
     ...data.nodes.filter(n => n.kind === 'record' && n.date).map(n => ({ id: n.id, date: n.date!, kind: n.origin && n.origin !== 'sejm' ? (n.origin_label ?? 'dokument') : n.sub ? (SUB[n.sub] ?? n.sub.replace(/_/g, ' ')) : 'dokument', title: n.label, url: n.url })),
     ...(data.votes ?? []).filter(v => v.date).map(v => ({ id: v.id, date: v.date!, kind: 'głosowanie', title: `${v.title}${v.result.yes != null ? ` (za ${v.result.yes}, przeciw ${v.result.no ?? 0})` : ''}`, url: v.url })),
   ].sort((a, b) => a.date.localeCompare(b.date));
   if (steps.length < 2) return null;
-  return <section className="px-card px-path" aria-labelledby="path-h"><h3 id="path-h" className="px-h3">Ścieżka w&nbsp;Sejmie</h3>
+  return <section className="px-card px-path" aria-labelledby="path-h"><h3 id="path-h" className="px-h3">Ścieżka w&nbsp;Sejmie i&nbsp;rejestrach</h3>
     <ol>{steps.slice(-10).map(s => <li key={s.id}><time>{short(s.date)}</time><b>{s.kind}</b>
       {s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a> : <span>{s.title}</span>}</li>)}</ol></section>;
 }
