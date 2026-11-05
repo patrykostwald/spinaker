@@ -123,3 +123,11 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Do zrobienia (kod):** status źródła z zerem rekordów = „puste" (dziś Kohesio pokazuje „OK" przy 0); eksport pełnej listy odstępstw (backend ucina do 30 na klub); filtr po pośle; widoki PKW i lobbingu; imienne głosy posła w profilu.
 - **Do zbadania w logach (czekamy na wyniki poleceń od właściciela):** `krs_changes` (stoi od 8.10), `interpellations` (22.10), `questions` (10.10), `fts` (nigdy), `bzp` (9 rekordów), `niw`/`mf_opp` (po dodaniu harmonogramu tygodniowego powinny odświeżyć się w niedzielę 8.11).
 - **Poza kodem:** `assets` blokuje `bot_protection`; potrzebna oficjalna droga dostępu do oświadczeń majątkowych.
+
+
+## Diagnoza zbieraczy (5.11.2026, noc)
+
+- Polecenie stanu źródeł dało: `assets` `blocked_access_review`/`bot_protection` (polityka: nie obchodzimy), `kohesio` OK z 0 rekordów (źródło nie podaje beneficjentów z Polski: 0 z 102 721), `fts`/`interpellations`/`questions`/`krs_changes` `deferred` z pustym błędem (zadania w odroczeniu; powody w `PublicCollectionJob.last_error`).
+- **Zmiany w kodzie (lokalnie, do wypchnięcia i wdrożenia):** `backend/news/przeszlosc_stan.py` (zero rekordów = „puste", opis luki Kohesio), `test_przeszlosc_stan.py`, `frontend-spin/app/przeszlosc/jak-to-dziala/tresc.ts` (datowana informacja o Kohesio i FTS). Testy: 5 backend (stan danych), 145 frontend, typecheck czysty.
+- **Następny krok:** odczyt błędów zadań dla `fts`, `interpellations`, `questions`, `krs_changes` (polecenie dla właściciela), potem naprawa przyczyny (nie masowe zerowanie opóźnień).
+- **Uwaga techniczna:** push na GitHub był odrzucany błędem po stronie GitHuba (`fatal error in commit_refs`); commity są lokalne, przypomnienie o ponowieniu ustawione.

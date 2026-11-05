@@ -29,7 +29,7 @@ EXTRA = [
 GAPS = {
     'ted': 'Ogłoszenia od 10.2025 (okno zbieracza); kwota to wartość ogłoszenia, nie umowy.',
     'fts': 'Beneficjenci budżetu UE zarządzanego przez KE; dopasowanie po VAT.',
-    'kohesio': 'Dopasowanie tylko po nazwie - pokazywane osobno, poza sumami.',
+    'kohesio': 'Stan na 5.11.2026: zbiór Komisji Europejskiej nie podaje nazw beneficjentów dla projektów z Polski (0 z 102 721), więc nie powstają rekordy powiązane z podmiotami. Beneficjentów trzeba zbierać z innego źródła (lista projektów 2014-2020 i 2021-2027).',
     'meta_ads': 'Archiwum do 5.10.2025 (TTPA).',
     'krs_changes': 'Tylko podmioty, które już mamy w bazie.',
 }
@@ -98,7 +98,8 @@ def sources():
         on = _flag(flag, default) or bool(state and state.last_success_at and now - state.last_success_at <= limit)
         if not on:
             status = 'off'
-        elif last is None:
+        elif last is None or not stat.get('n'):
+            # Włączone źródło bez żadnego rekordu jest „puste”, także po udanym pobraniu (Kohesio: 75 zapytań, 0 rekordów, status OK).
             status = 'empty'
         elif now - last > limit:
             status = 'stale'

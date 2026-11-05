@@ -19,6 +19,7 @@ def test_statuses(monkeypatch):
     monkeypatch.setenv('PUBLIC_RECORDS_HOWTHEYVOTE_ENABLED', 'true')
     monkeypatch.setenv('PUBLIC_RECORDS_VOTES_ENABLED', 'true')
     rec('ted', 'notice', '1-2026', {})
+    rec('howtheyvote', 'vote', 'v1', {})  # źródło z rekordem, ale bez świeżego pobrania: zaległe
     PublicCollectionState.objects.create(source='howtheyvote', last_success_at=timezone.now() - timedelta(hours=72))
     rows = {r['key']: r for r in przeszlosc_stan.sources()}
     assert rows['ted']['status'] == 'ok' and rows['ted']['records'] == 1 and rows['ted']['gaps']
@@ -68,6 +69,7 @@ def test_stale_limit_follows_each_source_refresh_interval(monkeypatch):
     now = timezone.now()
     for key in ('pkw', 'mileage', 'lobby_mswia'):
         monkeypatch.setenv(f'PUBLIC_RECORDS_{key.upper()}_ENABLED', 'true')
+        rec(key, 'item', f'{key}-1', {})  # bez rekordów źródło jest „puste”, nie „OK”/„zaległe”
     PublicCollectionState.objects.update_or_create(source='pkw', defaults={'last_success_at': now - timedelta(days=5)})            # tydzień: ok
     PublicCollectionState.objects.update_or_create(source='mileage', defaults={'last_success_at': now - timedelta(days=29)})       # miesiąc: ok
     PublicCollectionState.objects.update_or_create(source='lobby_mswia', defaults={'last_success_at': now - timedelta(days=15)})   # tydzień, 15 dni: zaległe
@@ -76,3 +78,13 @@ def test_stale_limit_follows_each_source_refresh_interval(monkeypatch):
     assert rows['mileage']['status'] == 'ok' and rows['mileage']['stale_after_hours'] == 1440
     assert rows['lobby_mswia']['status'] == 'stale'
     assert rows['niw']['refresh_hours'] == 168 and rows['bzp']['refresh_hours'] == 24
+
+
+def test_enabled_source_with_zero_records_is_empty_even_after_successful_fetch(monkeypatch):
+    """Kohesio (5.11): pobranie bez błędu, ale 0 rekordów (zbiór nie podaje beneficjentów) nie może być „OK”."""
+    cache.clear()
+    monkeypatch.setenv('PUBLIC_RECORDS_KOHESIO_ENABLED', 'true')
+    PublicCollectionState.objects.update_or_create(source='kohesio', defaults={'last_success_at': timezone.now() - timedelta(days=1)})
+    rows = {r['key']: r for r in przeszlosc_stan.sources()}
+    assert rows['kohesio']['records'] == 0 and rows['kohesio']['status'] == 'empty'
+    assert 'nie podaje nazw beneficjentów' in rows['kohesio']['gaps']

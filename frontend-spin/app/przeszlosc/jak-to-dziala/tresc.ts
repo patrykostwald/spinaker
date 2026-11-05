@@ -60,7 +60,7 @@ export const ZRODLA: Zrodlo[] = [
   { nazwa: 'Fundusze UE', domena: 'cohesiondata.ec.europa.eu, ec.europa.eu',
     zawiera: 'Projekty polityki spójności 2014-2020 w Polsce (Kohesio) oraz beneficjenci z Polski w budżecie UE zarządzanym przez Komisję (FTS).',
     zakres: 'FTS: od 2021 roku. Kohesio: 2014-2020.', odswiezanie: 'Kohesio: raz w tygodniu. FTS: raz na 30 dni.',
-    ograniczenia: 'Licencje: Kohesio CC0, FTS CC BY 4.0. Rekordy dopasowane tylko po nazwie pokazujemy osobno jako niepowiązane i nie wliczamy do sum.' },
+    ograniczenia: 'Licencje: Kohesio CC0, FTS CC BY 4.0. Rekordy dopasowane tylko po nazwie pokazujemy osobno jako niepowiązane i nie wliczamy do sum. Stan na 5.11.2026: zbiór Kohesio nie podaje nazw beneficjentów z Polski (0 z 102 721 projektów), więc dziś nie dodaje rekordów powiązanych z podmiotami; w bazie nie ma jeszcze rekordów FTS. Brak w naszych danych nie oznacza braku dotacji.' },
   { nazwa: 'Parlament Europejski', domena: 'howtheyvote.eu, integritywatch.eu',
     zawiera: 'Głosowania europosłów z Polski, deklaracje dochodów i spotkania z lobbystami; rejestr przejrzystości UE (podmioty z Polski); identyfikatory osób z Wikidata.',
     zakres: 'Europosłowie z Polski; okres: do potwierdzenia.', odswiezanie: 'Od raz na dobę do raz w tygodniu.',
