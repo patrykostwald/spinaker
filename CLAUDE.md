@@ -15,7 +15,7 @@ wygodą. Przeczytaj je przed pierwszą zmianą.
 ## 2. Dokumentacja i przekazanie dla następnego agenta
 
 W folderze projektu zawsze musi być aktualny komplet, z którego **następny agent bez pytania właściciela**
-ppozna: plan, poprawki, wdrożenia, uaktualnienia i wykonane ruchy.
+pozna: plan, poprawki, wdrożenia, uaktualnienia i wykonane ruchy.
 
 - **Plan** — aktualny plan projektu (tu: `PLAN_AKTUALNY.md` oraz `docs/PLAN_PRZESZLOSC_OSINT.md`).
   Zmieniasz kierunek lub zakres: aktualizujesz plan **w tej samej pracy**, nie „później".
