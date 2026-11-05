@@ -8,6 +8,7 @@ import { ApiError } from "../../lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { agreementLabel, getSpin, searchClinicSpins, type SpinDetailData } from "../../lib/clinic";
 import { Breadcrumbs } from "../../kit/Breadcrumbs";
+import { FORMS, plural } from "../../lib/plural";
 import { formatDateTimePl } from "../../lib/utils";
 import { OpinionsPanel } from "../OpinionsPanel";
 import { AiTag, FitStickyAside, HowToRead, SpinAuthorRow } from "./SpinParts";
@@ -44,7 +45,7 @@ export function SpinDiagnosisBody({ spin, withSummary = true, share = true }: { 
       <ul className="sc-spin-detail__claims">{spin.claims.map((claim, index) => (
         <li key={index} data-assessment={claim.assessment}>
           <details className="sc-spin-detail__claim-item">
-            <summary><span className="sc-verdict" data-assessment={claim.assessment}>{claim.assessment_label}</span><span className="sc-spin-detail__claim">{claim.claim}</span>{claim.sources.length ? <span className="sc-spin-detail__claim-count">{claim.sources.length} {claim.sources.length === 1 ? "źródło" : claim.sources.length < 5 ? "źródła" : "źródeł"}</span> : null}</summary>
+            <summary><span className="sc-verdict" data-assessment={claim.assessment}>{claim.assessment_label}</span><span className="sc-spin-detail__claim">{claim.claim}</span>{claim.sources.length ? <span className="sc-spin-detail__claim-count">{claim.sources.length} {plural(claim.sources.length, FORMS.source)}</span> : null}</summary>
             <div className="sc-spin-detail__claim-body">
               {claim.explanation && <p>{claim.explanation}</p>}
               {claim.sources.length > 0 && <ul className="sc-spin-detail__sources">{claim.sources.map(source => (
@@ -198,7 +199,7 @@ function CouncilNote({ council }: { council: NonNullable<SpinDetailData["council
           ? `brak odpowiedzi${member.note === "timeout" ? " (model nie odpowiedział w limicie czasu)" : member.note ? ` (${member.note})` : ""}; nie wlicza się do wyniku`
           : <>{VERDICT_SHORT[member.verdict] ?? member.verdict}, siła spinu {member.intensity}/100</>}</li>
       ))}</ul>
-      {silent.length ? <p className="sc-council__caveat">Liczymy tylko modele, które odpowiedziały ({answered}); {silent.length === 1 ? "jeden model" : `${silent.length} modele`} bez odpowiedzi nie głosuje.</p> : null}
+      {silent.length ? <p className="sc-council__caveat">Liczymy tylko modele, które odpowiedziały ({answered}); {silent.length === 1 ? "jeden model" : `${silent.length} ${plural(silent.length, FORMS.model)}`} bez odpowiedzi nie głosuje.</p> : null}
       <p className="sc-council__roles">Lekarz prowadzący: {modelFullName(council.chair)}{council.linguist ? ` · redaktor: ${modelFullName(council.linguist)}` : ""}
         {council.review.model ? ` · ordynator: ${modelFullName(council.review.model)} — ${council.review.ok ? "bez zastrzeżeń" : council.review.ok === false ? `uwagi${council.review.revised ? " (diagnoza poprawiona)" : ""}` : "brak odpowiedzi"}` : ""}</p>
     </section>

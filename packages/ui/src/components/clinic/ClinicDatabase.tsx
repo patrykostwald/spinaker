@@ -15,6 +15,8 @@ import { formatDatePl } from "../../lib/utils";
 import { clearClinicResults, readClinicResults, rememberClinicResults } from "../../lib/clinicNavigation";
 
 const FILTER_KEYS = ["q", "account", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
+/** Progi siły spinu: jeden zestaw w całym serwisie (jak STRENGTH_BANDS w diagnosisPresentation). */
+const INTENSITY_BANDS = ["0-33", "34-66", "67-100"];
 const format = (value: number) => value.toLocaleString("pl-PL");
 
 type FilterOption = { value: string; label: string };
@@ -175,8 +177,8 @@ export function ClinicDatabase() {
       const [minimum = "", maximum = ""] = value.split("-");
       change({ intensity_min: minimum, intensity_max: maximum });
     }} options={[
-      { value: "", label: "Każda" }, ...["0-29", "30-69", "70-100"].map(value => ({ value, label: value.replace("-", "–") })),
-      ...(intensity && !["0-29", "30-69", "70-100"].includes(intensity) ? [{ value: intensity, label: intensity.replace("-", "–") }] : []),
+      { value: "", label: "Każda" }, ...INTENSITY_BANDS.map(value => ({ value, label: value.replace("-", "–") })),
+      ...(intensity && !INTENSITY_BANDS.includes(intensity) ? [{ value: intensity, label: intensity.replace("-", "–") }] : []),
     ]} />
     <FilterChip label="Okres" value={period} onChange={value => change({ date_from: value ? daysAgo(Number(value)) : "", date_to: "" })} options={[
       { value: "", label: "Cały okres" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },

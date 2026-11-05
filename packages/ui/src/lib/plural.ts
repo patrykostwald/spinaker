@@ -23,6 +23,7 @@ export const FORMS = {
   diagnosis: ["diagnoza", "diagnozy", "diagnoz"],
   entry: ["wpis", "wpisy", "wpisów"],
   material: ["materiał", "materiały", "materiałów"],
+  model: ["model", "modele", "modeli"],
   source: ["źródło", "źródła", "źródeł"],
   vote: ["głosowanie", "głosowania", "głosowań"],
   day: ["dzień", "dni", "dni"],

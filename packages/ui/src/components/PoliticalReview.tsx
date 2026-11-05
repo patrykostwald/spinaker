@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiWrite, getMe } from '../lib/api';
 import { formatDateTimePl } from '../lib/utils';
+import { FORMS, plural } from '../lib/plural';
 import type { Paginated } from '../types';
 import { ThreadEditor } from './ThreadEditor';
 import { Button } from '../kit';
@@ -260,7 +261,7 @@ export function PoliticalReview() {
                 <span className="sc-political-copy">{STATUS_LABELS[item.status]}</span>
               </div>
               <p className="sc-political-copy">{item.day} · {item.camp === 'government' ? 'obóz rządzący' : 'opozycja'} ·
-                {' '}{item.posts.length} {item.posts.length === 1 ? 'wpis' : 'wpisów'} · {item.origin === 'ai_proposal' ? 'propozycja AI' : 'wybór zespołu'}</p>
+                {' '}{item.posts.length} {plural(item.posts.length, FORMS.entry)} · {item.origin === 'ai_proposal' ? 'propozycja AI' : 'wybór zespołu'}</p>
             </article>)}
             {!drafts.data?.results.length && <p className="sc-political-empty">Brak propozycji w tym widoku.</p>}
           </div>}

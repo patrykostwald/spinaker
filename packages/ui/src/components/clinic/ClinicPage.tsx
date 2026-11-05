@@ -10,7 +10,7 @@ import { Button } from "../../kit";
 import { Strip } from "../../kit/home/Strip";
 import { CAMPS, CAMP_LABELS, CAMP_NOTE, getClinicDeleted, getClinicPage, type SpinDetailData } from "../../lib/clinic";
 import { NewsletterSignup } from "../NewsletterSignup";
-import { AiTag, IntensityMeter, SpinAuthorRow, SpinRow, VerdictTag } from "./SpinParts";
+import { AiTag, SpinAuthorRow, SpinRow, SpinStrength, VerdictTag } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
 import { ClinicShowcase } from "./ClinicIndicators";
 import { ClinicRecentlyViewed } from "./ClinicRecentlyViewed";
@@ -52,7 +52,7 @@ export function SpinOfDay({ spin }: { spin: SpinDetailData }) {
           <a href={spin.post.url} target="_blank" rel="noopener noreferrer">Wpis na X ↗</a>
         </div>
         <div className="sc-clinic-sotd__diagnosis">
-          <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><IntensityMeter value={spin.intensity} /></p>
+          <p className="sc-spin-card__verdict"><VerdictTag verdict={spin.verdict} label={spin.verdict_label} /><SpinStrength verdict={spin.verdict} value={spin.intensity} /></p>
           <h3 id="sotd-title"><Link href={`/klinika/${spin.id}`}>{spin.headline}</Link></h3>
           <div className="sc-clinic-sotd__reading" data-expanded={expanded || undefined} tabIndex={0} aria-label="Diagnoza Dr. Spina — przewijaj">
             <p>{spin.summary}</p>

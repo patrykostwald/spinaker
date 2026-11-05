@@ -59,7 +59,7 @@ export function HomeHero() {
       <div className="sc-hero">
         <div className="sc-hero__copy">
           <h1 className="sc-hero__title">Konsylium AI bada przekaz polityków.</h1>
-          <p className="sc-hero__lead">Czytamy wpisy polityków rządu i opozycji i sprawdzamy, czy stosują <Term id="spin">spin</Term>, a ich twierdzenia zestawiamy ze źródłami. To dla każdego, kto chce rozumieć przekaz, a nie tylko go czytać. <Term id="konsylium">Konsylium AI</Term>, czyli kilka modeli różnych firm, ocenia każdy wpis osobno, według zasad takich samych dla obu stron.</p>
+          <p className="sc-hero__lead">Czytamy wpisy polityków rządu i opozycji i sprawdzamy, czy stosują <Term id="spin">spin</Term>, a ich twierdzenia zestawiamy ze źródłami. Chcemy dla Was odszyfrować mechanikę przekazu polityków. <Term id="konsylium">Konsylium AI</Term>, czyli kilka modeli różnych firm, ocenia każdy wybrany wpis osobno, według zasad takich samych dla obu stron.</p>
           <div className="sc-hero__actions">
             <Button href="/klinika/diagnozy" variant="primary">Przeglądaj diagnozy</Button>
             <Button href="/konsylium#film" variant="secondary">▶ Jak to działa (70 s)</Button>
