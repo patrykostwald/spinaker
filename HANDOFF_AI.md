@@ -113,3 +113,13 @@ OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. M
 Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 
 **Otwarte:** stan serwera (commit i gałąź) do potwierdzenia poleceniem `git log -1` i `git status -sb`; wdrożenie zmian przeszłość.today (commity po `b243cd5d`, w tym `TRUSTED_PROXY_COUNT=1`) wciąż czeka.
+
+
+## Wdrożone i zweryfikowane na produkcji (5.11.2026, noc)
+
+- Serwer `/srv/spin-clinic` na commicie `1fce169` (gałąź `claude/upbeat-noether-7k08ac`), kontenery `deploy-*` odtworzone; `TRUSTED_PROXY_COUNT=1` w `.env.production` **i** w działającym backendzie (`printenv` w kontenerze).
+- Zweryfikowane z zewnątrz (Firecrawl): API Stanu danych ma `refresh_hours` i `stale_after_hours`; rozkład statusów 22 OK / 7 zaległych / 2 puste / 1 wyłączone; OG przeszłość.today; Odstępstwa: wyjaśnienie okna, „Pokaż więcej", „pokazujemy 30 z 187".
+- Punkt powrotu: `b28e3ad4` (poprzedni stan serwera, z naprawionym Mercury); brak nowych migracji, więc powrót nie dotyka bazy. Kopia bazy z 5.11 21:05.
+- **Do zrobienia (kod):** status źródła z zerem rekordów = „puste" (dziś Kohesio pokazuje „OK" przy 0); eksport pełnej listy odstępstw (backend ucina do 30 na klub); filtr po pośle; widoki PKW i lobbingu; imienne głosy posła w profilu.
+- **Do zbadania w logach (czekamy na wyniki poleceń od właściciela):** `krs_changes` (stoi od 8.10), `interpellations` (22.10), `questions` (10.10), `fts` (nigdy), `bzp` (9 rekordów), `niw`/`mf_opp` (po dodaniu harmonogramu tygodniowego powinny odświeżyć się w niedzielę 8.11).
+- **Poza kodem:** `assets` blokuje `bot_protection`; potrzebna oficjalna droga dostępu do oświadczeń majątkowych.

@@ -96,13 +96,13 @@ Oznaczenia: [DP] do potwierdzenia dostępności, licencji i podstawy prawnej prz
 
 | # | Poprawka | Status |
 |---|---|---|
-| 1 | Meta/OG tytuł, opis, nazwa serwisu i obrazek dla `/przeszlosc/*` | **zrobione** (`app/przeszlosc/layout.tsx`), czeka na wdrożenie |
-| 2 | Nagłówek „Ścieżka w Sejmie" -> „Ścieżka w Sejmie i rejestrach" (zawiera rekordy TED itd.) | **zrobione** (`TopicTree.tsx`), czeka na wdrożenie |
-| 3 | Odstępstwa: wyjaśnienie okna 90 dni, podpisane liczniki (1124 = wszystkie kluby, 187 = wybrany klub), „Pokaż więcej" | **zrobione** (`Odstepstwa.tsx`, `odstepstwa-okno.ts`, test 130); filtr po pośle i CSV **nie** zrobione |
-| 4 | Automatyczne ponowienie odczytu po 429/502-504 (z `Retry-After`) | **zrobione** (`retry-fetch.ts`, `RetryFetch.tsx`, test 129); przycisk „Spróbuj ponownie" w pojedynczych widokach nie dodany |
+| 1 | Meta/OG tytuł, opis, nazwa serwisu i obrazek dla `/przeszlosc/*` | **zrobione i wdrożone** (zweryfikowane na produkcji 5.11: og:title, opis, obrazek) |
+| 2 | Nagłówek „Ścieżka w Sejmie" -> „Ścieżka w Sejmie i rejestrach" (zawiera rekordy TED itd.) | **zrobione i wdrożone** (5.11) |
+| 3 | Odstępstwa: wyjaśnienie okna 90 dni, podpisane liczniki (1124 = wszystkie kluby, 187 = wybrany klub), „Pokaż więcej" | **zrobione i wdrożone** (zweryfikowane 5.11: wyjaśnienie okna, „Pokaż więcej (24)", „pokazujemy 30 z 187"); filtr po pośle i CSV **nie** zrobione; backend ucina listę klubu do 30 |
+| 4 | Automatyczne ponowienie odczytu po 429/502-504 (z `Retry-After`) | **zrobione i wdrożone** (5.11; działanie przy 429 niezweryfikowane na produkcji); przycisk „Spróbuj ponownie" w pojedynczych widokach nie dodany |
 | 5 | Wejścia „Spółka" i „Poseł" oraz opis na stronie głównej | **już istnieją** (patrz A); tylko do oceny wizualnej w przeglądarce |
 | 6 | Nagłówek „Głosowania w temacie X" w profilu osoby | **niepotwierdzone na profilu** (patrz D13, D14); nie wymaga zmiany w profilu |
-| 7 | `TRUSTED_PROXY_COUNT=1` na produkcji | **do wykonania przez właściciela** (konfiguracja serwera) |
+| 7 | `TRUSTED_PROXY_COUNT=1` na produkcji | **wykonane** 5.11 (plik `.env.production` i działający kontener backendu: wartość 1) |
 
 ## Kolejna runda
 

@@ -112,6 +112,14 @@ zapowiedziane dla zespołów: wspólne teczki tematów, eksport z przypisami, AP
 - **Zgodne z oczekiwaniami:** `meta_ads` wyłączone (archiwum kończy się 5.10.2025); ok: głosowania, druki, RCL, wpisy X (22 784), media (554 073), TED (142 671), Sejm (wypowiedzi, komisje, procesy), HowTheyVote, wideo, lobbing Sejmu.
 - Pokrycie KRS: 775 z 775 osób sprawdzonych, 507 z podmiotem, 1043 potwierdzone relacje, 674 z 803 podmiotów z NIP, kolejka pusta.
 
+**Po wdrożeniu poprawek (5.11.2026, 23:22 UTC; commit `1fce169` na serwerze, zweryfikowane z zewnątrz):** 22 źródła OK, 7 zaległych, 2 puste, 1 wyłączone
+(przed poprawką progu: 15 / 14 / 2 / 1; wynik zgodny z prognozą). Zaległe po poprawce: `interpellations` (stoi od 22.10, interwał 6 h), `questions` (od 10.10), `niw` i `mf_opp` (od 13.10;
+próg 336 h), `krs_changes` (od 8.10, `last_error` już pusty), `bzp` (9 rekordów od 6.10), `assets` (próg 336 h). Puste: `fts` (nigdy nie pobrane) i zbiór „Oświadczenia majątkowe".
+- `assets`: ostatni błąd to **`bot_protection`**. Kolektor respektuje zabezpieczenie antybotowe i go nie obchodzi (zasada portalu). Oświadczeń majątkowych nie zbierzemy automatycznie z tego hosta;
+  potrzebna oficjalna droga (pismo/API), nie poprawka kodu.
+- `kohesio`: status „OK", ale 0 rekordów. To wada logiki statusu (pobranie bez błędu = OK nawet przy zerze rekordów); do zmiany: włączone źródło z zerem rekordów = „puste".
+- Odstępstwa: backend ucina listę klubu do 30 pozycji (`CLUB_REBELLIONS`), np. „pokazujemy 30 z 187"; pełna lista wymaga eksportu (do zrobienia).
+
 **Czego nadal nie da się ustalić bez decyzji lub logów (nie zgadywać):** przyczyny awarii z listy wyżej oraz zakresy oznaczone w `jak-to-dziala/tresc.ts` jako „do potwierdzenia" (pole `tbc`, lista do prawnika). Wypełnienie ich wymaga danych ze Stanu danych na produkcji i, tam gdzie dotyczy prawa (Regulamin X, prawo cytatu), decyzji prawnika.
 
 **Kolejne kroki OSINT-01:** (a) wdrożyć poprawkę progu zaległości (kod w tej gałęzi), (b) właściciel dostarcza z serwera logi worker/beat dla źródeł z listy realnych problemów (polecenia poda agent), (c) po naprawie uzupełnić „do potwierdzenia" w `jak-to-dziala/tresc.ts` faktycznymi danymi (zakres, odświeżanie) i dopisać tam odnośnik do Stanu danych; elementy prawne (Regulamin X, prawo cytatu) do decyzji prawnika.
