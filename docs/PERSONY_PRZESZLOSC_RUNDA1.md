@@ -57,8 +57,13 @@ przypisy, archiwum, brak oceniania („odstępstwo nie jest zarzutem").
 10. Tytuł i OG strony to „spin.clinic - pokazujemy, jak zbudowany jest przekaz" zamiast przeszłość.today (7 person: P2, P3, P5, P6, P7, P9, P10).
 11. Ogłoszenia TED pod nagłówkiem „Ścieżka w Sejmie" (P8, P9; potwierdzone osobno).
 12. Okno „90 dni" w Odstępstwach pokazuje zakres 5-21.10 (17 dni) i „liczone 4 listopada"; dwie liczby (1124 na stronie głównej, 187 na liście) bez wyjaśnienia; lista pokazuje 6 z 187 bez filtra po klubie/pośle i bez CSV. (P2, P3, P5, P10)
-13. Pomyłka dopasowania po nazwisku: artykuł o Marcinie Bosackim przy wyszukiwaniu „Krzysztof Bosak". (P10) **Do zweryfikowania** na profilu `/przeszlosc/osoba/<slug>`: persona użyła widoku tematu (`?q=...&tryb=osoba`), a nie profilu.
-14. Nagłówek „Głosowania w Sejmie w temacie X": w widoku tematu tekstowego pokazuje głosowania, w których występuje fraza, a nie głosy osoby. (P10) **Do zweryfikowania** w profilu osoby (tam osobny widok `GlosowaniaOsoby.tsx`).
+13. ~~Pomyłka dopasowania po nazwisku (Bosacki w profilu Bosaka)~~ **niepotwierdzone na profilu** (sprawdzone 5.11 na `/przeszlosc/osoba/256-krzysztof-bosak`: nazwiska Bosacki tam nie ma).
+    Źródło pomyłki: wyszukiwarka osób jest tolerancyjna na literówki i dla „Bosak" zwraca jako trzeci wynik Marcina Bosackiego (inny poseł z rejestru, wynik 0,75;
+    `/api/przeszlosc/osoby/?q=Bosak`). To działanie zamierzone, ale w widoku tematu (`?q=...&tryb=osoba`) może mieszać podobne nazwiska. Do rozważenia: przy zapytaniu o pełne imię i nazwisko
+    zawężać dopasowanie rozmyte. (P10 użyła widoku tematu, nie profilu.)
+14. ~~Nagłówek „Głosowania w temacie X" w profilu osoby pokazuje głosowania o osobie~~ **niepotwierdzone na profilu**: sekcja „Głosowania" w profilu Bosaka pokazuje jego własne głosy
+    (nieobecny/za/przeciw/wstrzymał się, klub). Wniosek P10 dotyczył widoku tematu tekstowego, gdzie nagłówek „w temacie X" opisuje głosowania zawierające frazę. Pozostaje drobna
+    niejasność nazewnicza w widoku tematu, bez wpływu na profil. Częstość i funkcje KRS z datami w profilu nie zostały zweryfikowane (odczyt zwrócił „brak na stronie", możliwy częściowy render).
 15. Do „Liczby wpisów według obozu" wliczane cudze wpisy (odpowiedzi innych osób, konto partii). (P10)
 16. „Kto" przy temacie krajowym (MON) zawiera posłów do PE, a nie posłów Sejmu. (P9)
 17. Funkcje w KRS bez dat od-do w niektórych wynikach. (P10)
@@ -96,7 +101,7 @@ Oznaczenia: [DP] do potwierdzenia dostępności, licencji i podstawy prawnej prz
 | 3 | Odstępstwa: wyjaśnienie okna 90 dni, podpisane liczniki (1124 = wszystkie kluby, 187 = wybrany klub), „Pokaż więcej" | **zrobione** (`Odstepstwa.tsx`, `odstepstwa-okno.ts`, test 130); filtr po pośle i CSV **nie** zrobione |
 | 4 | Automatyczne ponowienie odczytu po 429/502-504 (z `Retry-After`) | **zrobione** (`retry-fetch.ts`, `RetryFetch.tsx`, test 129); przycisk „Spróbuj ponownie" w pojedynczych widokach nie dodany |
 | 5 | Wejścia „Spółka" i „Poseł" oraz opis na stronie głównej | **już istnieją** (patrz A); tylko do oceny wizualnej w przeglądarce |
-| 6 | Nagłówek „Głosowania w temacie X" w profilu osoby | do zweryfikowania (patrz D14) |
+| 6 | Nagłówek „Głosowania w temacie X" w profilu osoby | **niepotwierdzone na profilu** (patrz D13, D14); nie wymaga zmiany w profilu |
 | 7 | `TRUSTED_PROXY_COUNT=1` na produkcji | **do wykonania przez właściciela** (konfiguracja serwera) |
 
 ## Kolejna runda

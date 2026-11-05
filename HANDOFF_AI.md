@@ -91,6 +91,6 @@ OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. M
 
 **Niesprawdzone / otwarte**
 - Czy wejścia „Spółka" i „Osoba" na stronie głównej są dość widoczne dla laika (przeglądarka, zrzuty 390 i 1440).
-- Pomyłka Bosak/Bosacki i nagłówek „Głosowania w temacie" w profilu osoby: zweryfikować na `/przeszlosc/osoba/<slug>`.
+- Pomyłka Bosak/Bosacki i nagłówek „Głosowania w temacie": **sprawdzone na profilu `/przeszlosc/osoba/256-krzysztof-bosak`, niepotwierdzone** (Bosackiego tam nie ma, głosowania to własne głosy posła). Źródło pomyłki: rozmyte wyszukiwanie osób (Bosacki wychodzi jako trzeci wynik dla „Bosak"). Zostaje do rozważenia zawężenie dopasowania rozmytego przy pełnym imieniu i nazwisku w widoku tematu.
 - 7 zepsutych źródeł (lista w planie) i przekaz dnia spin.clinic: diagnoza przez właściciela (polecenia podane w rozmowie); przekaz dnia prowadzi osobna sesja naprawcza spin.clinic.
 - Odstępstwa: filtr po pośle i eksport CSV; imienne głosy posła i „Mój poseł" w profilu; widoki PKW i lobbingu; oś „projekt ustawy"; tagi tematyczne głosowań (patrz dokument person).
