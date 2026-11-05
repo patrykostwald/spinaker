@@ -8,6 +8,10 @@ import { HomeSpinScanner } from "./HomeSpinScanner";
 import { CampSwitch } from "../CampSwitch";
 import { MessageBox } from "../../components/clinic/ClinicExtras";
 import { FORMS, plural } from "../../lib/plural";
+import { SectionHeader } from "../SectionHeader";
+import { AiTag } from "../../components/clinic/SpinParts";
+import { InterviewScanner } from "../../components/clinic/InterviewScanner";
+import { ClinicShowcase } from "../../components/clinic/ClinicIndicators";
 
 /** Godziny generowania przekazu dnia (jak w harmonogramie serwera). */
 const MESSAGE_SLOTS: Array<[number, number]> = [[9, 0], [12, 0], [15, 0], [18, 0], [21, 30]];
@@ -39,6 +43,7 @@ export function HomeSpinTeaser() {
   const shown: Camp = selectedCamp ?? order[0] ?? CAMPS[0];
 
   return (
+    <>
     <section id="dr-spin" className="sc-home-section sc-scan-s" aria-labelledby="home-drspin-title">
       {query.isError ? <p role="status">Pokazujemy dane z {new Date(query.dataUpdatedAt).toLocaleString("pl-PL")}. Aktualizacja jest chwilowo niedostępna. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       <div className="sc-scan-s-top">
@@ -81,5 +86,20 @@ export function HomeSpinTeaser() {
         </footer>
       ) : null}
     </section>
+    {data.interview ? (
+      <section id="wywiad-dnia" className="sc-home-section sc-clinic-interview-preview" aria-labelledby="home-interview-title">
+        <SectionHeader titleId="home-interview-title" kicker={<AiTag />} title="Wywiad dnia"
+          subtitle="Najgłośniejszy wywiad polityczny poprzedniego dnia — gość i prowadzący z diagnozą Konsylium."
+          link={<Link className="sc-home-spin__open" href="/klinika/wywiady">Archiwum wywiadów →</Link>} />
+        <InterviewScanner interview={data.interview} />
+      </section>
+    ) : null}
+    <section id="wskazniki" className="sc-home-section" aria-labelledby="home-indicators-title">
+      <SectionHeader titleId="home-indicators-title" title="Wskaźniki i dane"
+        subtitle="Co zbieramy i co z tego wynika — obie strony na jednej skali."
+        link={<Link className="sc-home-spin__open" href="/klinika/wskazniki">Wszystkie wskaźniki i wykresy →</Link>} />
+      <ClinicShowcase fallback={data.stats} fallbackPeriod={data} fetchedAt={query.dataUpdatedAt} />
+    </section>
+    </>
   );
 }
