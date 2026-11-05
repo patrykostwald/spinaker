@@ -131,3 +131,10 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Zmiany w kodzie (lokalnie, do wypchnięcia i wdrożenia):** `backend/news/przeszlosc_stan.py` (zero rekordów = „puste", opis luki Kohesio), `test_przeszlosc_stan.py`, `frontend-spin/app/przeszlosc/jak-to-dziala/tresc.ts` (datowana informacja o Kohesio i FTS). Testy: 5 backend (stan danych), 145 frontend, typecheck czysty.
 - **Następny krok:** odczyt błędów zadań dla `fts`, `interpellations`, `questions`, `krs_changes` (polecenie dla właściciela), potem naprawa przyczyny (nie masowe zerowanie opóźnień).
 - **Uwaga techniczna:** push na GitHub był odrzucany błędem po stronie GitHuba (`fatal error in commit_refs`); commity są lokalne, przypomnienie o ponowieniu ustawione.
+
+
+## Diagnoza zbieraczy, część 2 (5.11.2026, noc)
+
+- **Naprawione w kodzie (lokalnie/na gałęzi, niewdrożone):** `scraper/public_records.py` - `modifiedSince` dla interpelacji i zapytań z godziną `T00:00:00` (API Sejmu zwraca 404 dla samej daty); test `test_sejm_questions_incremental_uses_datetime_modified_since`; 117 testów zbieraczy przechodzi.
+- **Po wdrożeniu trzeba jednorazowo usunąć oczekujące zadania** źródeł `interpellations` i `questions` (mają zapisany błędny adres; kod nie założy nowych, dopóki jakieś są oczekujące). To zmiana w bazie produkcyjnej: tylko za zgodą właściciela i z kopią bazy.
+- **Do sprawdzenia na serwerze (tylko odczyt):** odpowiedź API KRS dla `krs_changes` (JSONDecodeError) i nagłówek pliku FTS (`fts_header_missing`).

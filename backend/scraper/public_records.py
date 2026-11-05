@@ -196,7 +196,9 @@ def seed(state, since, incremental=False, backfill=False):
         enqueue(state, page_url(SEJM + '/votings/search', filters), 'vote_index', {'filters': filters, 'offset': 0})
     elif source in {'interpellations', 'questions'}:
         resource = 'interpellations' if source == 'interpellations' else 'writtenQuestions'
-        filters = {'sort_by': 'num', ('modifiedSince' if incremental else 'since'): since.isoformat()}
+        # API Sejmu przyjmuje modifiedSince tylko z godziną (YYYY-MM-DDTHH:MM:SS); sama data daje 404, co kolejka traktowała jako błąd
+        # i odraczała w nieskończoność (interpelacje stały od 22.10, zapytania od 10.10; zweryfikowane na api.sejm.gov.pl 5.11.2026).
+        filters = {'sort_by': 'num', **({'modifiedSince': since.isoformat() + 'T00:00:00'} if incremental else {'since': since.isoformat()})}
         enqueue(state, page_url(SEJM + '/' + resource, filters), 'question_index',
                 {'resource': resource, 'filters': filters, 'offset': 0})
     elif source == 'statements':

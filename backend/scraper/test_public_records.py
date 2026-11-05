@@ -469,3 +469,20 @@ def test_revoked_card_after_fetch_prevents_database_write(monkeypatch):
 def test_unavailable_asset_index_is_never_successful_empty(name):
     with pytest.raises(ValueError, match='asset_index'):
         parsers.assets(name, 'https://www.sejm.gov.pl/sejm10.nsf/posel.xsp?id=001')
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('source', ['interpellations', 'questions'])
+def test_sejm_questions_incremental_uses_datetime_modified_since(source):
+    """API Sejmu: modifiedSince tylko z godziną; sama data daje 404 i kolejka odraczała zadanie w nieskończoność (5.11.2026)."""
+    from datetime import date
+    from urllib.parse import parse_qs, urlparse
+    state, _ = PublicCollectionState.objects.get_or_create(source=source)
+    state.jobs.all().delete()
+    collectors.seed(state, date(2026, 9, 27), incremental=True)
+    query = parse_qs(urlparse(state.jobs.get().url).query)
+    assert query['modifiedSince'] == ['2026-09-27T00:00:00'] and 'since' not in query
+    state.jobs.all().delete()
+    collectors.seed(state, date(2026, 9, 27), incremental=False)
+    query = parse_qs(urlparse(state.jobs.get().url).query)
+    assert query['since'] == ['2026-09-27'] and 'modifiedSince' not in query
