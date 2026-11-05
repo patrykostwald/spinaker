@@ -1,7 +1,8 @@
 """Stan danych przeszłość.today (Śledczy G4, sprint 23.10): „czy brak wyniku to brak w świecie, czy brak w bazie?”
 
 Dla każdego źródła: czy zbieranie jest włączone, ile mamy rekordów, kiedy ostatnio pobraliśmy dane, ostatni błąd i znane
-braki. Zbieracz bez udanego pobrania dłużej niż 48 h (przy włączonym harmonogramie) jest oznaczony jako „zaległy”.
+braki. Zbieracz bez udanego pobrania dłużej niż dwukrotność jego własnego interwału odświeżania (nie mniej niż 48 h; przy włączonym
+harmonogramie) jest oznaczony jako „zaległy”: źródło tygodniowe czy miesięczne nie jest zaległe po dwóch dniach.
 Na dole pokrycie KRS (krs_pokrycie.raport). Bez sieci; liczby z naszej bazy.
 """
 import os
@@ -15,6 +16,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 STALE_HOURS = 48
+# Interwały odświeżania źródeł spoza SOURCES (godziny): NIW i OPP raz w tygodniu (beat), BZP codziennie.
+EXTRA_REFRESH = {'bzp': 24, 'niw': 168, 'mf_opp': 168}
 # Źródła spoza zbieraczy collect_public_*: (klucz w PublicRecord.source, nazwa, flaga harmonogramu, domyślnie, znane braki)
 EXTRA = [
     ('bzp', 'Biuletyn Zamówień Publicznych (ezamowienia.gov.pl)', 'BZP_API_ENABLED', False,
@@ -65,6 +68,11 @@ def datasets():
     return rows
 
 
+def stale_limit(refresh_hours):
+    """Po jakim czasie bez udanego pobrania źródło jest zaległe: 2 x jego interwał, nie mniej niż STALE_HOURS."""
+    return timedelta(hours=max(STALE_HOURS, 2 * refresh_hours))
+
+
 def _flag(name, default):
     value = os.environ.get(name)
     if value is None:
@@ -79,24 +87,27 @@ def sources():
     stats = {row['source']: row for row in PublicRecord.objects.values('source').annotate(n=Count('pk'), last=Max('fetched_at'))}
     states = {s.source: s for s in PublicCollectionState.objects.all()}
     rows = []
-    entries = [(key, spec.title, spec.flag(key), False, GAPS.get(key, '')) for key, spec in SOURCES.items()] + EXTRA
-    for key, title, flag, default, gaps in entries:
+    entries = [(key, spec.title, spec.flag(key), False, GAPS.get(key, ''), spec.refresh_hours) for key, spec in SOURCES.items()]
+    entries += [(key, title, flag, default, gaps, EXTRA_REFRESH.get(key, 24)) for key, title, flag, default, gaps in EXTRA]
+    for key, title, flag, default, gaps, refresh in entries:
+        limit = stale_limit(refresh)
         stat = stats.get(key) or {}
         state = states.get(key)
         last = (state.last_success_at if state and state.last_success_at else None) or stat.get('last')
         # Flaga z env procesu web może różnić się od workera: udane pobranie w oknie zaległości też znaczy „włączone”.
-        on = _flag(flag, default) or bool(state and state.last_success_at and now - state.last_success_at <= timedelta(hours=STALE_HOURS))
+        on = _flag(flag, default) or bool(state and state.last_success_at and now - state.last_success_at <= limit)
         if not on:
             status = 'off'
         elif last is None:
             status = 'empty'
-        elif now - last > timedelta(hours=STALE_HOURS):
+        elif now - last > limit:
             status = 'stale'
         else:
             status = 'ok'
         rows.append({'key': key, 'title': title, 'enabled': on, 'status': status, 'records': stat.get('n', 0),
                      'last_fetch': last.isoformat(timespec='minutes') if last else None,
-                     'last_error': (state.last_error if state else '') or '', 'gaps': gaps or NO_GAPS, 'kind': 'collector'})
+                     'last_error': (state.last_error if state else '') or '', 'gaps': gaps or NO_GAPS, 'kind': 'collector',
+                     'refresh_hours': refresh, 'stale_after_hours': int(limit.total_seconds() // 3600)})
     order = {'stale': 0, 'empty': 1, 'ok': 2, 'off': 3}
     rows.sort(key=lambda r: (order[r['status']], -r['records']))
     return rows

@@ -1,4 +1,4 @@
-"""Stan danych (Śledczy G4): każde źródło ze stanem, licznikiem i datą; zaległe po 48 h."""
+"""Stan danych (Śledczy G4): każde źródło ze stanem, licznikiem i datą; zaległe po 2 x własnym interwale (min. 48 h)."""
 from datetime import timedelta
 
 import pytest
@@ -16,13 +16,13 @@ pytestmark = pytest.mark.django_db
 def test_statuses(monkeypatch):
     cache.clear()
     monkeypatch.setenv('PUBLIC_RECORDS_TED_ENABLED', 'true')
-    monkeypatch.setenv('PUBLIC_RECORDS_FTS_ENABLED', 'true')
+    monkeypatch.setenv('PUBLIC_RECORDS_HOWTHEYVOTE_ENABLED', 'true')
     monkeypatch.setenv('PUBLIC_RECORDS_VOTES_ENABLED', 'true')
     rec('ted', 'notice', '1-2026', {})
-    PublicCollectionState.objects.create(source='fts', last_success_at=timezone.now() - timedelta(hours=72))
+    PublicCollectionState.objects.create(source='howtheyvote', last_success_at=timezone.now() - timedelta(hours=72))
     rows = {r['key']: r for r in przeszlosc_stan.sources()}
     assert rows['ted']['status'] == 'ok' and rows['ted']['records'] == 1 and rows['ted']['gaps']
-    assert rows['fts']['status'] == 'stale'
+    assert rows['howtheyvote']['status'] == 'stale' and rows['howtheyvote']['stale_after_hours'] == 48
     assert rows['votes']['status'] == 'empty'
     assert rows['pkw']['status'] == 'off'
     assert rows['niw']['enabled'] and rows['bzp']['status'] == 'off'
@@ -56,3 +56,23 @@ def test_endpoint(monkeypatch):
     assert client.get('/api/przeszlosc/stan-danych/').status_code == 404
     monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
     assert client.get('/api/przeszlosc/stan-danych/').json()['sources']
+
+
+def test_stale_limit_follows_each_source_refresh_interval(monkeypatch):
+    """Źródło tygodniowe/miesięczne nie jest „zaległe” po 48 h; zaległe dopiero po 2 x własnym interwale."""
+    cache.clear()
+    assert przeszlosc_stan.stale_limit(1) == timedelta(hours=48)       # godzinne: nie mniej niż 48 h
+    assert przeszlosc_stan.stale_limit(24) == timedelta(hours=48)
+    assert przeszlosc_stan.stale_limit(168) == timedelta(hours=336)    # tygodniowe
+    assert przeszlosc_stan.stale_limit(720) == timedelta(hours=1440)   # miesięczne
+    now = timezone.now()
+    for key in ('pkw', 'mileage', 'lobby_mswia'):
+        monkeypatch.setenv(f'PUBLIC_RECORDS_{key.upper()}_ENABLED', 'true')
+    PublicCollectionState.objects.update_or_create(source='pkw', defaults={'last_success_at': now - timedelta(days=5)})            # tydzień: ok
+    PublicCollectionState.objects.update_or_create(source='mileage', defaults={'last_success_at': now - timedelta(days=29)})       # miesiąc: ok
+    PublicCollectionState.objects.update_or_create(source='lobby_mswia', defaults={'last_success_at': now - timedelta(days=15)})   # tydzień, 15 dni: zaległe
+    rows = {r['key']: r for r in przeszlosc_stan.sources()}
+    assert rows['pkw']['status'] == 'ok' and rows['pkw']['refresh_hours'] == 168
+    assert rows['mileage']['status'] == 'ok' and rows['mileage']['stale_after_hours'] == 1440
+    assert rows['lobby_mswia']['status'] == 'stale'
+    assert rows['niw']['refresh_hours'] == 168 and rows['bzp']['refresh_hours'] == 24

@@ -95,20 +95,31 @@ zapowiedziane dla zespołów: wspólne teczki tematów, eksport z przypisami, AP
 - Strona jest podlinkowana w stopce (`ui.tsx`). Testy backendu tego modułu przechodzą w pełnym przebiegu (5.11).
 
 **Sprawdzone na żywej produkcji (5.11.2026):**
-- `https://przeszlosc.today/przeszlosc/dane` zwraca 404, `https://przeszlosc.today/api/przeszlosc/stan-danych/` zwraca 404.
-- Wniosek: **wdrożona wersja nie zawiera Stanu danych**, czyli jest sprzed integracji z 23.10 (zgodne z tym, że `codex/mvp-public-frontend` też go nie ma). Strona Next.js zwraca 404, więc nie jest to efekt flagi `PRZESZLOSC_ENABLED` po stronie API.
+- Przed wdrożeniem: `https://przeszlosc.today/przeszlosc/dane` i `https://przeszlosc.today/api/przeszlosc/stan-danych/` zwracały 404. Po wdrożeniu przez właściciela (5.11, wieczorem; migracje 0170, 0171, 0172 zastosowane) obie działają.
+- Wniosek: **dotychczas wdrożona wersja nie zawierała Stanu danych**, czyli jest sprzed integracji z 23.10 (zgodne z tym, że `codex/mvp-public-frontend` też go nie ma). Strona Next.js zwraca 404, więc nie jest to efekt flagi `PRZESZLOSC_ENABLED` po stronie API.
 
-**Czego nie da się ustalić bez produkcji (nie zgadywać):** faktyczne daty ostatnich pobrań i włączenie źródeł (BZP, lobbing, X, media, kilometrówki, spin.clinic) oraz zakresy oznaczone w `jak-to-dziala/tresc.ts` jako „do potwierdzenia" (pole `tbc`, lista do prawnika). Wypełnienie ich wymaga danych ze Stanu danych na produkcji i, tam gdzie dotyczy prawa (Regulamin X, prawo cytatu), decyzji prawnika.
+**Prawdziwy stan produkcji po wdrożeniu (odczyt z `/api/przeszlosc/stan-danych/`, 5.11.2026 21:31 UTC):** 15 źródeł OK, 14 zaległych, 2 puste, 1 wyłączone (przed poprawką progu, patrz niżej).
 
-**Wniosek i krok właściciela:** największą wartością dla OSINT-01 jest **wdrożenie** tej gałęzi na VPS (komendy i zmienne środowiskowe w `docs/zadania-chmura/WDROZENIE_2310.md`, przed tym kopia bazy `sh deploy/backup.sh`; migracje 0171 i 0172 muszą zostać zastosowane). Dopiero po wdrożeniu `/przeszlosc/dane` pokaże prawdziwy stan, a wtedy można:
-1. uzupełnić „do potwierdzenia" w `tresc.ts` faktycznymi danymi (zakres, odświeżanie),
-2. dopisać w „Jak to działa" odnośnik do Stanu danych jako źródła prawdy o aktualności,
-3. rozstrzygnąć, które źródła są wyłączone na produkcji (BZP: `BZP_API_ENABLED`, domyślnie wyłączony).
+- **Fałszywe alarmy (naprawione w kodzie, wymaga kolejnego wdrożenia):** strona oznaczała wszystko jako „zaległe" po sztywnych 48 h, mimo że część źródeł odświeża się rzadziej. Dotyczyło: PKW, lobbing MSWiA, rejestr przejrzystości UE, Wikidata, Integrity Watch (interwał tygodniowy, ostatnie pobranie 3.11) i kilometrówek (miesięczny, 7.10). Teraz próg to 2 x własny interwał źródła (nie mniej niż 48 h), a wiersz API ma pola `refresh_hours` i `stale_after_hours`. Szacunek po poprawce na tych samych danych: 7 zaległych zamiast 14.
+- **Realne problemy do zbadania w logach serwera (nie zgadywać przyczyn):**
+  1. `krs_changes`: zaległe od 8.10, ostatni błąd `JSONDecodeError` (api-krs zwraca nie-JSON?).
+  2. `assets` (indeks oświadczeń majątkowych): 0 rekordów, błąd `request_limit_or_host_interval`, ostatnia próba 5.10; zbiór „Oświadczenia majątkowe posłów" pusty.
+  3. `fts` (budżet UE): włączone, ale nigdy nie pobrane, 0 rekordów.
+  4. `kohesio`: pobrane 1.11, ale 0 rekordów.
+  5. `interpellations` (ostatnie 22.10) i `questions` (10.10): interwał 6 h, a nie odświeżają się od tygodni.
+  6. `niw` i `mf_opp`: ostatnie pobranie 13.10; po tym wdrożeniu mają harmonogram tygodniowy (beat `przeszlosc-niw-weekly`, `przeszlosc-opp-weekly`), więc po najbliższej niedzieli powinny się odświeżyć; zweryfikować.
+  7. `bzp`: włączone, tylko 9 rekordów, ostatnie pobranie 6.10.
+- **Zgodne z oczekiwaniami:** `meta_ads` wyłączone (archiwum kończy się 5.10.2025); ok: głosowania, druki, RCL, wpisy X (22 784), media (554 073), TED (142 671), Sejm (wypowiedzi, komisje, procesy), HowTheyVote, wideo, lobbing Sejmu.
+- Pokrycie KRS: 775 z 775 osób sprawdzonych, 507 z podmiotem, 1043 potwierdzone relacje, 674 z 803 podmiotów z NIP, kolejka pusta.
+
+**Czego nadal nie da się ustalić bez decyzji lub logów (nie zgadywać):** przyczyny awarii z listy wyżej oraz zakresy oznaczone w `jak-to-dziala/tresc.ts` jako „do potwierdzenia" (pole `tbc`, lista do prawnika). Wypełnienie ich wymaga danych ze Stanu danych na produkcji i, tam gdzie dotyczy prawa (Regulamin X, prawo cytatu), decyzji prawnika.
+
+**Kolejne kroki OSINT-01:** (a) wdrożyć poprawkę progu zaległości (kod w tej gałęzi), (b) właściciel dostarcza z serwera logi worker/beat dla źródeł z listy realnych problemów (polecenia poda agent), (c) po naprawie uzupełnić „do potwierdzenia" w `jak-to-dziala/tresc.ts` faktycznymi danymi (zakres, odświeżanie) i dopisać tam odnośnik do Stanu danych; elementy prawne (Regulamin X, prawo cytatu) do decyzji prawnika.
 
 ## Następne kroki
 
 1. **OSINT-00 (w toku):** testy backendu i build frontendu na scalonej gałęzi; wynik w `HANDOFF_AI.md`.
-2. **OSINT-01 (kod sprawdzony, czeka na wdrożenie):** Stan danych pokrywa wszystkie źródła, ale produkcja go nie ma (404). Krok właściciela: wdrożenie; potem uzupełnienie „do potwierdzenia" z danych produkcyjnych.
+2. **OSINT-01 (w toku):** wdrożone 5.11; poprawka progu zaległości gotowa do wdrożenia; 7 realnych problemów ze źródłami do zbadania w logach (lista w sekcji OSINT-01).
 3. **OSINT-02:** pokazać dane już zbierane, a niewidoczne (PKW, reklamy Meta).
 4. **OSINT-03:** włączyć BZP po uzyskaniu instrukcji UZP; domknąć status „do potwierdzenia" (lobbing, PE, kilometrówki).
 5. **OSINT-04:** źródła P1 z katalogu: BIR, Biała lista, SUDOP; potem RCN i ULDK.
