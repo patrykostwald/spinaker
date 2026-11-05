@@ -34,6 +34,7 @@ REGISTRY = {
     'auditor': agent('Audytor', 'Sprawdza kondycję i wyniki Konsylium.', 'news.tasks.council_audit_task'),
     'inquisitor': agent('Inkwizytor', 'Niezależnie kontroluje jakość diagnoz.', 'news.tasks.inquisitor_task'),
     'konsylium-powtorz': agent('Kworum Konsylium', 'Co noc o 2:40 powtarza diagnozy wystawione bez kworum (za mało modeli albo stałego rdzenia); stary wynik zostaje w historii.', 'news.tasks.konsylium_powtorz_task', 'CLINIC_AI_ENABLED'),
+    'zbudujmi-pliki-uwag': agent('Porządek załączników zbudujmi', 'Co noc (3:40) usuwa załączniki do uwag klientów zbudujmi po okresie przechowywania i porzucone, niedokończone wysyłki starsze niż doba. Bez AI.', 'news.tasks.zbudujmi_note_files_cleanup_task', default=True),
     'glosy-porzadek': agent('Porządek dziennika głosów', 'Raz w miesiącu (1. dnia, 4:20) usuwa pliki dziennika głosów Rady i decyzji człowieka starsze niż okres przechowywania (730 i 1095 dni). Bez AI.', 'news.tasks.glosy_porzadek_task', default=True),
     'recruiter': agent('Rekruter', 'Sprawdza kandydatów do Konsylium.', 'news.tasks.council_recruiter_task'),
     'strateg': agent('Strateg', 'Proponuje rozwój serwisu w wolnym oknie modeli.', 'news.tasks.agents_window_task', 'AGENTS_ENABLED'),

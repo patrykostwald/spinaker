@@ -169,7 +169,7 @@ def test_reply_length_and_admin_immutable_ai(admin_client):
     assert form.status_code == 200 and 'reason' in form.context['form'].fields
     invalid = admin_client.post(url, {**selected, 'confirm_withdrawal': '1', 'reason': ' '})
     assert invalid.context['form'].errors
-    result = admin_client.post(url, {**selected, 'confirm_withdrawal': '1', 'reason': 'Błędne źródło', 'verdict': 'no_spin'})
+    result = admin_client.post(url, {**selected, 'confirm_withdrawal': '1', 'reason': 'Błędne źródło', 'reason_code': 'OTHER', 'verdict': 'no_spin'})
     assert result.status_code == 302
     row.refresh_from_db()
     assert row.status == 'withdrawn' and row.verdict == 'spin'

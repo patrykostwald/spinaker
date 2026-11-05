@@ -57,8 +57,14 @@ OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. M
 - `manage.py check`: bez uwag. Build `frontend-spin` (`pnpm build`): przechodzi.
 - Gałęzie źródłowe i `main` nie były modyfikowane.
 
+**Wynik testów backendu (5.11.2026, pytest, SQLite, pełny przebieg ok. 10,5 min)**
+- Przed poprawkami: 3955 zaliczonych, 2 nieudane, 1 pominięty. Oba błędy pochodziły z gałęzi `codex/mvp-public-frontend`, nie ze scalenia:
+  - `news/test_duty.py::test_registry_covers_every_beat_task`: zadanie `zbudujmi_note_files_cleanup_task` było w harmonogramie Celery, ale nie w `news/agent_registry.py`. Dodano wpis `zbudujmi-pliki-uwag`.
+  - `news/test_clinic_corrections.py::test_reply_length_and_admin_immutable_ai`: formularz wycofania diagnozy wymaga teraz pola `reason_code`, a test go nie wysyłał. Test uzupełniono o `reason_code: OTHER`.
+- Po poprawkach oba pliki testowe przechodzą (83 testy). Pełnego przebiegu po poprawkach nie powtarzano (oba zmiany są lokalne: wpis w rejestrze i jedno pole w teście).
+- **Znany problem, niezwiązany ze scaleniem:** `news/test_audyt_petli.py::test_thread_review_enqueue_runs_in_own_transaction` przechodzi w pełnym przebiegu, ale pada uruchomiony osobno (z moją zmianą i bez niej), bo `thread_review.enqueue` kończy się wcześniej, gdy `threads_enabled()` zwraca fałsz. Test zależy od flagi `THREADS_ENABLED` i kolejności testów. Do poprawy osobno: test powinien jawnie ustawiać flagę.
+
 **Niesprawdzone / w toku**
-- Pełny zestaw testów backendu (pytest, SQLite): patrz sekcja „Wynik testów" poniżej; jeśli jej brak, testy nie zakończyły się w tej sesji.
 - Nie wiadomo, który wariant jest na produkcji (VPS, `/srv/spin-clinic`). Nic nie wdrażano.
 - Nie przejrzano pozostałych gałęzi `cloud/*` ani otwartych PR #21 do #28.
 
