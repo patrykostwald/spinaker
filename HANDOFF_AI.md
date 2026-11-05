@@ -102,3 +102,14 @@ OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. M
 - Moja gałąź (`claude/upbeat-noether-7k08ac`, PR #29) zmienia od `b243cd5d` tylko pliki przeszłość.today, dokumentację i `backend/news/przeszlosc_stan.py`. **Brak wspólnych plików z gałęzią naprawczą.**
 - Ustalone: **jedno wdrożenie** z obu zestawów zmian; żadna sesja nie przełącza ani nie restartuje serwera sama; wdrożenie robi właściciel z gotowych poleceń. Plan: po wypchnięciu gałęzi naprawczej scalić ją do gałęzi PR #29, uruchomić testy (frontend, backend: `test_inception`, `test_przeszlosc_stan`), podać jedną procedurę (w niej `TRUSTED_PROXY_COUNT=1`).
 - Stan na teraz: gałąź naprawcza **nie jest jeszcze na GitHubie**; serwer nadal na `b243cd5d`; nic z ostatnich zmian nie jest wdrożone.
+
+## Wdrożenie Mercury i zasada bezpieczeństwa wdrożeń (5.11.2026, noc), wg raportu sesji „spin.clinic repair"
+
+**Stan (relacja tamtej sesji, nie weryfikowana przeze mnie na serwerze):** Mercury (Inception) naprawiony i wdrożony; domyślny model `mercury-3`; w bazie 22792 wpisów (bez zmian); logi czyste. Serwer stoi na commicie z jej gałęzi `claude/napraw-mercury-przekaz-883a1d` (jeden commit `b28e3ad` na `b243cd5d`). Backend był niedostępny ok. 10 minut podczas wdrożenia (pierwsze próby trafiły w złe pliki Compose). Posprzątano: błędny symlink `.env`, pusty osierocony wolumin `deploy_postgres-data` (z myślnikiem), nieużywane obrazy `spin-clinic-*`. PR #30 (jej) może być zamknięty jako wdrożony.
+**Zweryfikowane w repozytorium:** gałąź naprawcza to 1 commit, 3 pliki (`inception.py`, `test_inception.py`, `docs/KONSYLIUM.md`), 0 migracji, 0 wspólnych plików z moimi zmianami; została scalona do `claude/upbeat-noether-7k08ac` (commit `0d580cc`); 110 testów (`test_inception`, `test_przeszlosc_stan`, `test_duty`, `test_clinic_corrections`) przechodzi, `check` i `makemigrations --check` czyste.
+
+**ZASADA (zweryfikowana: w repozytorium są dwa pliki Compose bez `name:`, więc nazwa projektu = nazwa katalogu):** `docker-compose.yml` w katalogu głównym tworzy projekt „spin-clinic" z własnym, pustym woluminem bazy; produkcyjny `deploy/docker-compose.production.yml` tworzy projekt „deploy" (kontenery `deploy-*`, wolumin `deploy_postgres_data`). **Jedyna bezpieczna komenda na serwerze, zawsze z `/srv/spin-clinic`:**
+`docker compose --env-file .env.production -f deploy/docker-compose.production.yml <polecenie>`
+Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
+
+**Otwarte:** stan serwera (commit i gałąź) do potwierdzenia poleceniem `git log -1` i `git status -sb`; wdrożenie zmian przeszłość.today (commity po `b243cd5d`, w tym `TRUSTED_PROXY_COUNT=1`) wciąż czeka.
